@@ -1,0 +1,29 @@
+{
+  "info": {
+    "name": "EatFitAI Backend",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Collection kiểm thử nhanh: health, swagger, ping"
+  },
+  "item": [
+    {
+      "name": "Health",
+      "request": { "method": "GET", "url": "{{baseUrl}}/health" }
+    },
+    {
+      "name": "Swagger UI",
+      "request": { "method": "GET", "url": "{{baseUrl}}/swagger" }
+    },
+    {
+      "name": "OpenAPI JSON",
+      "request": { "method": "GET", "url": "{{baseUrl}}/openapi/v1.json" }
+    },
+    {
+      "name": "Ping",
+      "request": { "method": "GET", "url": "{{baseUrl}}/ping" }
+    }
+  ],
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8080" }
+  ]
+}
+
