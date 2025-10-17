@@ -1,0 +1,6 @@
+#!/bin/sh
+. "$(dirname "$0")/_/husky.sh"
+
+# Chạy lint-staged + typecheck để tránh commit code lỗi
+npx lint-staged
+npm run typecheck

@@ -1,0 +1,17 @@
+# Node modules và build output
+node_modules/
+.expo/
+dist/
+build/
+
+# Thư mục editor
+.vscode/
+.idea/
+
+# Hệ điều hành
+Thumbs.db
+.DS_Store
+
+# Môi trường
+.env
+.env.*
