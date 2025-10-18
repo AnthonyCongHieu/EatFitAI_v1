@@ -229,7 +229,7 @@ const HomeScreen = (): JSX.Element => {
                   <View style={styles.entryInfo}>
                     <ThemedText style={styles.entryName}>{entry.foodName}</ThemedText>
                     <ThemedText style={styles.entryMeta}>
-                      {formatNumber(entry.calories, " kcal")} � {entry.quantityText ?? "Khong ro khau phan"}
+                      {formatNumber(entry.calories, " kcal")} ? {entry.quantityText ?? "Khong ro khau phan"}
                     </ThemedText>
                   </View>
                   <Pressable onPress={() => handleDelete(entry.id, entry.foodName)} style={styles.deleteChip}>
@@ -433,3 +433,4 @@ const styles = StyleSheet.create({
 });
 
 export default HomeScreen;
+

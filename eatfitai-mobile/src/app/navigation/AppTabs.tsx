@@ -4,10 +4,12 @@
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import HomeScreen from '../screens/HomeScreen';
 import ProfileScreen from '../screens/ProfileScreen';
+import WeekStatsScreen from '../screens/stats/WeekStatsScreen';
 import { useAppTheme } from '../../theme/ThemeProvider';
 
 export type AppTabsParamList = {
   HomeTab: undefined;
+  StatsTab: undefined;
   ProfileTab: undefined;
 };
 
@@ -26,6 +28,7 @@ const AppTabs = (): JSX.Element => {
       }}
     >
       <Tab.Screen name="HomeTab" component={HomeScreen} options={{ title: 'Trang chủ' }} />
+      <Tab.Screen name="StatsTab" component={WeekStatsScreen} options={{ title: 'Thống kê' }} />
       <Tab.Screen name="ProfileTab" component={ProfileScreen} options={{ title: 'Hồ sơ' }} />
     </Tab.Navigator>
   );
