@@ -7,6 +7,9 @@ import { useAuthStore } from '../../store/useAuthStore';
 import LoginScreen from '../screens/auth/LoginScreen';
 import RegisterScreen from '../screens/auth/RegisterScreen';
 import AppTabs from './AppTabs';
+import FoodSearchScreen from '../screens/diary/FoodSearchScreen';
+import FoodDetailScreen from '../screens/diary/FoodDetailScreen';
+import CustomDishScreen from '../screens/diary/CustomDishScreen';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -38,7 +41,24 @@ const AppNavigator = (): JSX.Element => {
             </>
           ) : (
             // Đã đăng nhập: vào App Tabs
-            <Stack.Screen name="AppTabs" component={AppTabs} />
+            <>
+              <Stack.Screen name="AppTabs" component={AppTabs} />
+              <Stack.Screen
+                name="FoodSearch"
+                component={FoodSearchScreen}
+                options={{ headerShown: true, title: 'Tim mon' }}
+              />
+              <Stack.Screen
+                name="FoodDetail"
+                component={FoodDetailScreen}
+                options={{ headerShown: true, title: 'Chi tiet mon' }}
+              />
+              <Stack.Screen
+                name="CustomDish"
+                component={CustomDishScreen}
+                options={{ headerShown: true, title: 'Mon thu cong' }}
+              />
+            </>
           )}
         </Stack.Navigator>
       )}
