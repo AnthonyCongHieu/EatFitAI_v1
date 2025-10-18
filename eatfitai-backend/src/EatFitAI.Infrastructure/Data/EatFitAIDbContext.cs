@@ -23,6 +23,8 @@ public class EatFitAIDbContext : IdentityDbContext<IdentityUser<Guid>, IdentityR
     public DbSet<NguyenLieuCongThuc> NguyenLieuCongThucs => Set<NguyenLieuCongThuc>();
     public DbSet<NhatKyAnUong> NhatKyAnUongs => Set<NhatKyAnUong>();
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
+    public DbSet<EatFitAI.Infrastructure.Data.Views.VwTongHopDinhDuongNgay> VwTongHopDinhDuongNgays => Set<EatFitAI.Infrastructure.Data.Views.VwTongHopDinhDuongNgay>();
+    public DbSet<EatFitAI.Infrastructure.Data.Views.VwTongHopDinhDuongTuan> VwTongHopDinhDuongTuans => Set<EatFitAI.Infrastructure.Data.Views.VwTongHopDinhDuongTuan>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -198,6 +200,19 @@ public class EatFitAIDbContext : IdentityDbContext<IdentityUser<Guid>, IdentityR
             e.Property(x => x.ReplacedByToken).HasColumnName("ReplacedByToken");
             e.Property(x => x.ReasonRevoked).HasColumnName("ReasonRevoked");
             e.HasIndex(x => x.Token).IsUnique();
+        });
+
+        // Views mapping (keyless)
+        modelBuilder.Entity<EatFitAI.Infrastructure.Data.Views.VwTongHopDinhDuongNgay>(e =>
+        {
+            e.ToView("vw_TongHopDinhDuongNgay");
+            e.HasNoKey();
+        });
+
+        modelBuilder.Entity<EatFitAI.Infrastructure.Data.Views.VwTongHopDinhDuongTuan>(e =>
+        {
+            e.ToView("vw_TongHopDinhDuongTuan");
+            e.HasNoKey();
         });
     }
 }
