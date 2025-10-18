@@ -8,4 +8,6 @@ export type RootStackParamList = {
   FoodSearch: undefined;
   FoodDetail: { foodId: string };
   CustomDish: undefined;
+  AiCamera: undefined;
+  AiNutrition: undefined;
 };

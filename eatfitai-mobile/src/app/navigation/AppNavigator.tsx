@@ -10,6 +10,8 @@ import AppTabs from './AppTabs';
 import FoodSearchScreen from '../screens/diary/FoodSearchScreen';
 import FoodDetailScreen from '../screens/diary/FoodDetailScreen';
 import CustomDishScreen from '../screens/diary/CustomDishScreen';
+import AiCameraScreen from '../screens/ai/AiCameraScreen';
+import AiNutritionScreen from '../screens/ai/AiNutritionScreen';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -57,6 +59,16 @@ const AppNavigator = (): JSX.Element => {
                 name="CustomDish"
                 component={CustomDishScreen}
                 options={{ headerShown: true, title: 'Mon thu cong' }}
+              />
+              <Stack.Screen
+                name="AiCamera"
+                component={AiCameraScreen}
+                options={{ headerShown: true, title: 'AI Camera' }}
+              />
+              <Stack.Screen
+                name="AiNutrition"
+                component={AiNutritionScreen}
+                options={{ headerShown: true, title: 'AI Nutrition' }}
               />
             </>
           )}

@@ -135,7 +135,10 @@ const HomeScreen = (): JSX.Element => {
         navigation.navigate("CustomDish");
         return;
       }
-      Toast.show({ type: "info", text1: "AI se duoc kich hoat o buoc tiep theo" });
+      if (option === "ai") {
+        navigation.navigate("AiCamera");
+        return;
+      }
     },
     [navigation],
   );
@@ -191,8 +194,17 @@ const HomeScreen = (): JSX.Element => {
             </View>
           </View>
 
-          <Pressable style={[styles.addButton, { backgroundColor: theme.colors.primary }]} onPress={() => setShowAddModal(true)}>
+          <Pressable
+            style={[styles.addButton, { backgroundColor: theme.colors.primary }]}
+            onPress={() => setShowAddModal(true)}
+          >
             <ThemedText style={styles.addButtonText}>+ Them mon</ThemedText>
+          </Pressable>
+          <Pressable
+            style={[styles.aiButton, { borderColor: theme.colors.primary }]}
+            onPress={() => navigation.navigate("AiNutrition")}
+          >
+            <ThemedText style={[styles.aiButtonText, { color: theme.colors.primary }]}>AI dinh duong</ThemedText>
           </Pressable>
         </View>
 
@@ -217,7 +229,7 @@ const HomeScreen = (): JSX.Element => {
                   <View style={styles.entryInfo}>
                     <ThemedText style={styles.entryName}>{entry.foodName}</ThemedText>
                     <ThemedText style={styles.entryMeta}>
-                      {formatNumber(entry.calories, " kcal")} · {entry.quantityText ?? "Khong ro khau phan"}
+                      {formatNumber(entry.calories, " kcal")} ï¿½ {entry.quantityText ?? "Khong ro khau phan"}
                     </ThemedText>
                   </View>
                   <Pressable onPress={() => handleDelete(entry.id, entry.foodName)} style={styles.deleteChip}>
@@ -298,6 +310,17 @@ const styles = StyleSheet.create({
   },
   addButtonText: {
     color: "#fff",
+    fontFamily: "Inter_600SemiBold",
+  },
+  aiButton: {
+    marginTop: 8,
+    borderRadius: 999,
+    paddingVertical: 10,
+    alignItems: "center",
+    borderWidth: 1,
+    backgroundColor: "transparent",
+  },
+  aiButtonText: {
     fontFamily: "Inter_600SemiBold",
   },
   loadingBox: {
