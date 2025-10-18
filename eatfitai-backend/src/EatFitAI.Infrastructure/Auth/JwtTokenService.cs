@@ -99,7 +99,7 @@ public class JwtTokenService : IJwtTokenService
 
     private (string token, DateTime expiresAt) CreateAccessToken(IdentityUser<Guid> user)
     {
-        var key = _config["Jwt:Key"] ?? _config["Jwt__Key"] ?? "dev_secret_key_change_me";
+        var key = _config["Jwt:Key"] ?? _config["Jwt__Key"] ?? "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
         var issuer = _config["Jwt:Issuer"] ?? _config["Jwt__Issuer"] ?? "eatfitai";
         var audience = _config["Jwt:Audience"] ?? _config["Jwt__Audience"] ?? "eatfitai.app";
         var expires = DateTime.UtcNow.AddMinutes(15);

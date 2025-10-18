@@ -38,8 +38,16 @@ var connectionString = builder.Configuration.GetConnectionString("Default")
     ?? Environment.GetEnvironmentVariable("ConnectionStrings__Default")
     ?? "Server=localhost,1433;Database=EatFitAIDb;User Id=sa;Password=Your_strong_password123;TrustServerCertificate=True;";
 
-builder.Services.AddDbContext<EatFitAIDbContext>(options =>
-    options.UseSqlServer(connectionString, sql => sql.EnableRetryOnFailure()));
+if (builder.Environment.IsEnvironment("Testing"))
+{
+    var sqliteConn = builder.Configuration.GetConnectionString("Default") ?? "Data Source=EatFitAITest.db";
+    builder.Services.AddDbContext<EatFitAIDbContext>(options => options.UseSqlite(sqliteConn));
+}
+else
+{
+    builder.Services.AddDbContext<EatFitAIDbContext>(options =>
+        options.UseSqlServer(connectionString, sql => sql.EnableRetryOnFailure()));
+}
 
 // Identity + Lockout
 builder.Services
@@ -56,7 +64,7 @@ builder.Services
     .AddDefaultTokenProviders();
 
 // JWT Auth
-var jwtKey = builder.Configuration["Jwt:Key"] ?? builder.Configuration["Jwt__Key"] ?? "dev_secret_key_change_me";
+var jwtKey = builder.Configuration["Jwt:Key"] ?? builder.Configuration["Jwt__Key"] ?? "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
 var jwtIssuer = builder.Configuration["Jwt:Issuer"] ?? builder.Configuration["Jwt__Issuer"] ?? "eatfitai";
 var jwtAudience = builder.Configuration["Jwt:Audience"] ?? builder.Configuration["Jwt__Audience"] ?? "eatfitai.app";
 

@@ -1,29 +1,92 @@
 {
   "info": {
     "name": "EatFitAI Backend",
-    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-    "description": "Collection kiểm thử nhanh: health, swagger, ping"
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8080" },
+    { "key": "email", "value": "user@example.com" },
+    { "key": "password", "value": "P@ssw0rd!" },
+    { "key": "accessToken", "value": "" },
+    { "key": "refreshToken", "value": "" }
+  ],
   "item": [
     {
-      "name": "Health",
-      "request": { "method": "GET", "url": "{{baseUrl}}/health" }
+      "name": "Auth - Register",
+      "request": {
+        "method": "POST",
+        "header": [ { "key": "Content-Type", "value": "application/json" } ],
+        "url": { "raw": "{{baseUrl}}/api/auth/register", "host": ["{{baseUrl}}"], "path": ["api","auth","register"] },
+        "body": { "mode": "raw", "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\",\n  \"hoTen\": \"Tester\"\n}" }
+      },
+      "event": [ { "listen": "test", "script": { "exec": [
+        "var json = pm.response.json();",
+        "pm.collectionVariables.set('accessToken', json.accessToken);",
+        "pm.collectionVariables.set('refreshToken', json.refreshToken);"
+      ] } } ]
     },
     {
-      "name": "Swagger UI",
-      "request": { "method": "GET", "url": "{{baseUrl}}/swagger" }
+      "name": "Auth - Login",
+      "request": {
+        "method": "POST",
+        "header": [ { "key": "Content-Type", "value": "application/json" } ],
+        "url": { "raw": "{{baseUrl}}/api/auth/login", "host": ["{{baseUrl}}"], "path": ["api","auth","login"] },
+        "body": { "mode": "raw", "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\"\n}" }
+      },
+      "event": [ { "listen": "test", "script": { "exec": [
+        "var json = pm.response.json();",
+        "pm.collectionVariables.set('accessToken', json.accessToken);",
+        "pm.collectionVariables.set('refreshToken', json.refreshToken);"
+      ] } } ]
     },
     {
-      "name": "OpenAPI JSON",
-      "request": { "method": "GET", "url": "{{baseUrl}}/openapi/v1.json" }
+      "name": "Auth - Refresh",
+      "request": {
+        "method": "POST",
+        "header": [ { "key": "Content-Type", "value": "application/json" } ],
+        "url": { "raw": "{{baseUrl}}/api/auth/refresh", "host": ["{{baseUrl}}"], "path": ["api","auth","refresh"] },
+        "body": { "mode": "raw", "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}" }
+      }
     },
     {
-      "name": "Ping",
-      "request": { "method": "GET", "url": "{{baseUrl}}/ping" }
+      "name": "Foods - Search",
+      "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/foods/search?pageSize=5", "host": ["{{baseUrl}}"], "path": ["api","foods","search"], "query":[{"key":"pageSize","value":"5"}] } }
+    },
+    {
+      "name": "Diary - Create (THUCPHAM)",
+      "request": {
+        "method": "POST",
+        "header": [ { "key": "Content-Type", "value": "application/json" }, { "key": "Authorization", "value": "Bearer {{accessToken}}" } ],
+        "url": { "raw": "{{baseUrl}}/api/diary", "host": ["{{baseUrl}}"], "path": ["api","diary"] },
+        "body": { "mode": "raw", "raw": "{\n  \"ngayAn\": \"{{date}}\",\n  \"maBuaAn\": \"TRUA\",\n  \"source\": \"THUCPHAM\",\n  \"itemId\": \"<ThucPhamId>\",\n  \"soLuongGram\": 100\n}" }
+      }
+    },
+    {
+      "name": "Summary - Day",
+      "request": { "method": "GET", "header": [ {"key":"Authorization","value":"Bearer {{accessToken}}"} ], "url": { "raw": "{{baseUrl}}/api/summary/day?date={{date}}", "host": ["{{baseUrl}}"], "path": ["api","summary","day"], "query":[{"key":"date","value":"{{date}}"}] } }
+    },
+    {
+      "name": "Summary - Week",
+      "request": { "method": "GET", "header": [ {"key":"Authorization","value":"Bearer {{accessToken}}"} ], "url": { "raw": "{{baseUrl}}/api/summary/week?date={{date}}", "host": ["{{baseUrl}}"], "path": ["api","summary","week"], "query":[{"key":"date","value":"{{date}}"}] } }
+    },
+    {
+      "name": "Custom Dishes - Create",
+      "request": {
+        "method": "POST",
+        "header": [ { "key": "Content-Type", "value": "application/json" }, { "key": "Authorization", "value": "Bearer {{accessToken}}" } ],
+        "url": { "raw": "{{baseUrl}}/api/custom-dishes", "host": ["{{baseUrl}}"], "path": ["api","custom-dishes"] },
+        "body": { "mode": "raw", "raw": "{\n  \"ten\": \"Mon test\",\n  \"moTa\": \"demo\",\n  \"nangLuongKcalPer100g\": 180,\n  \"proteinGPer100g\": 15,\n  \"carbGPer100g\": 20,\n  \"fatGPer100g\": 6\n}" }
+      }
+    },
+    {
+      "name": "AI - Nutrition Recalculate",
+      "request": {
+        "method": "POST",
+        "header": [ { "key": "Content-Type", "value": "application/json" }, { "key": "Authorization", "value": "Bearer {{accessToken}}" } ],
+        "url": { "raw": "{{baseUrl}}/api/ai/nutrition/recalculate", "host": ["{{baseUrl}}"], "path": ["api","ai","nutrition","recalculate"] },
+        "body": { "mode": "raw", "raw": "{\n  \"weightKg\": 70,\n  \"heightCm\": 170,\n  \"age\": 30,\n  \"sex\": \"Nam\",\n  \"activity\": \"MODERATE\",\n  \"goal\": \"GIAM_CAN\"\n}" }
+      }
     }
-  ],
-  "variable": [
-    { "key": "baseUrl", "value": "http://localhost:8080" }
   ]
 }
 

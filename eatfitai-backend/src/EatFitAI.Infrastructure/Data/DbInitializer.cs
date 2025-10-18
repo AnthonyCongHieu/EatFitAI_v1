@@ -14,7 +14,10 @@ public static class DbInitializer
         await SeedMucTieuAsync(db, ct);
         await SeedThucPhamAsync(db, ct);
 
-        await CreateViewsAsync(db, ct);
+        if (db.Database.IsSqlServer())
+        {
+            await CreateViewsAsync(db, ct);
+        }
     }
 
     private static async Task SeedLoaiBuaAnAsync(EatFitAIDbContext db, CancellationToken ct)
@@ -135,4 +138,3 @@ GROUP BY NguoiDungId, DATEPART(isowk, CAST(NgayAn as date)), DATEPART(year, CAST
         await db.Database.ExecuteSqlRawAsync(sqlTuan, ct);
     }
 }
-
