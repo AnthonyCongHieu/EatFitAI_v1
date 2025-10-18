@@ -96,3 +96,7 @@ F:\EatFitAI_v1\eatfitai-backend\src\EatFitAI.Api\bin\Debug\net9.0\Newtonsoft.Jso
 F:\EatFitAI_v1\eatfitai-backend\src\EatFitAI.Api\bin\Debug\net9.0\System.CodeDom.dll
 F:\EatFitAI_v1\eatfitai-backend\src\EatFitAI.Api\bin\Debug\net9.0\System.Management.dll
 F:\EatFitAI_v1\eatfitai-backend\src\EatFitAI.Api\bin\Debug\net9.0\runtimes\win\lib\net7.0\System.Management.dll
+F:\EatFitAI_v1\eatfitai-backend\src\EatFitAI.Api\bin\Debug\net9.0\AutoMapper.dll
+F:\EatFitAI_v1\eatfitai-backend\src\EatFitAI.Api\bin\Debug\net9.0\AutoMapper.Extensions.Microsoft.DependencyInjection.dll
+F:\EatFitAI_v1\eatfitai-backend\src\EatFitAI.Api\bin\Debug\net9.0\FluentValidation.dll
+F:\EatFitAI_v1\eatfitai-backend\src\EatFitAI.Api\bin\Debug\net9.0\FluentValidation.DependencyInjectionExtensions.dll

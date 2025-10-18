@@ -7,6 +7,12 @@ using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using EatFitAI.Infrastructure.Auth;
 using EatFitAI.Api.Auth;
+using AutoMapper;
+using FluentValidation;
+using EatFitAI.Api.Profile;
+using EatFitAI.Api.ProfileEndpoints;
+using EatFitAI.Api.BodyMetrics;
+using EatFitAI.Api.NutritionTargets;
 
 // Khởi tạo Serilog sớm để log trong quá trình bootstrap
 Log.Logger = new LoggerConfiguration()
@@ -73,6 +79,10 @@ builder.Services.AddAuthorization();
 builder.Services.AddScoped<IJwtTokenService, JwtTokenService>();
 
 builder.Services.AddHealthChecks();
+
+// AutoMapper + FluentValidation
+builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
+builder.Services.AddValidatorsFromAssemblyContaining<UpdateProfileValidator>();
 
 
 // CORS: cho phép app Expo (exp://*) và local web (localhost:19006)
@@ -146,6 +156,11 @@ using (var scope = app.Services.CreateScope())
 
 // Map auth endpoints
 app.MapAuth();
+
+// Map B3 endpoints (require auth)
+app.MapProfileEndpoints();
+app.MapBodyMetrics();
+app.MapNutritionTargets();
 
 app.Run();
 
