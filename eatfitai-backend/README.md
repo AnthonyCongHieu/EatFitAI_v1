@@ -24,10 +24,20 @@ Getting Started
 
 - Run API (dev):
   - `dotnet run --project src/EatFitAI.Api`
-  - Swagger UI: `http://localhost:<port>/swagger`
-  - OpenAPI JSON: `http://localhost:<port>/openapi/v1.json` (OpenAPI 3.1)
-  - Health: `http://localhost:<port>/health`
-  - Ping: `http://localhost:<port>/ping`
+  - 
+
+Auth & Security
+
+- Env vars (compose wires defaults):
+  - Jwt__Key, Jwt__Issuer, Jwt__Audience
+  - Auth__Google__ClientId_Web, Auth__Google__ClientId_Android
+- Identity lockout: 5 l?n sai/15 ph�t.
+- Endpoints:
+  - POST /api/auth/register { email, password, hoTen? }
+  - POST /api/auth/login { email, password }
+  - POST /api/auth/refresh { refreshToken }
+  - POST /api/auth/google { idToken }
+  - Tr? l?i theo RFC7807 (ProblemDetails).
 
   Note: `<port>` do Kestrel sinh, xem log khi chạy (ví dụ `5189`).
 
@@ -61,3 +71,4 @@ Design Notes
 - CORS cho `http://localhost:19006` (web dev) và `exp://*` (Expo React Native) qua `SetIsOriginAllowed`.
 - OpenAPI 3.1 được sinh bởi `Microsoft.AspNetCore.OpenApi` và hiển thị bằng Swagger UI tại `/swagger`.
 - HealthChecks tối giản `/health` để monitoring.
+

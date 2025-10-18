@@ -1,9 +1,11 @@
 using EatFitAI.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 
 namespace EatFitAI.Infrastructure.Data;
 
-public class EatFitAIDbContext : DbContext
+public class EatFitAIDbContext : IdentityDbContext<IdentityUser<Guid>, IdentityRole<Guid>, Guid>
 {
     public EatFitAIDbContext(DbContextOptions<EatFitAIDbContext> options) : base(options)
     {
@@ -20,9 +22,11 @@ public class EatFitAIDbContext : DbContext
     public DbSet<CongThuc> CongThucs => Set<CongThuc>();
     public DbSet<NguyenLieuCongThuc> NguyenLieuCongThucs => Set<NguyenLieuCongThuc>();
     public DbSet<NhatKyAnUong> NhatKyAnUongs => Set<NhatKyAnUong>();
+    public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        base.OnModelCreating(modelBuilder);
         // NguoiDung
         modelBuilder.Entity<NguoiDung>(e =>
         {
@@ -176,6 +180,24 @@ public class EatFitAIDbContext : DbContext
             e.Property(x => x.FatG).HasColumnName("FatG").HasColumnType("decimal(9,2)");
             e.Property(x => x.CreatedAt).HasColumnName("CreatedAt");
             e.HasOne(x => x.NguoiDung).WithMany().HasForeignKey(x => x.NguoiDungId);
+        });
+
+        // RefreshTokens
+        modelBuilder.Entity<RefreshToken>(e =>
+        {
+            e.ToTable("RefreshTokens");
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Id).HasColumnName("Id");
+            e.Property(x => x.UserId).HasColumnName("UserId");
+            e.Property(x => x.Token).HasColumnName("Token").IsRequired();
+            e.Property(x => x.ExpiresAt).HasColumnName("ExpiresAt");
+            e.Property(x => x.CreatedAt).HasColumnName("CreatedAt");
+            e.Property(x => x.CreatedByIp).HasColumnName("CreatedByIp");
+            e.Property(x => x.RevokedAt).HasColumnName("RevokedAt");
+            e.Property(x => x.RevokedByIp).HasColumnName("RevokedByIp");
+            e.Property(x => x.ReplacedByToken).HasColumnName("ReplacedByToken");
+            e.Property(x => x.ReasonRevoked).HasColumnName("ReasonRevoked");
+            e.HasIndex(x => x.Token).IsUnique();
         });
     }
 }

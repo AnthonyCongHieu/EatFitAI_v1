@@ -25,6 +25,11 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ConnectionStrings__Default=Server=sqlserver,1433;Database=EatFitAIDb;User Id=sa;Password=${SA_PASSWORD:-Your_strong_password123};TrustServerCertificate=True;
+      - Jwt__Key=${JWT_KEY:-dev_secret_key_change_me}
+      - Jwt__Issuer=${JWT_ISSUER:-eatfitai}
+      - Jwt__Audience=${JWT_AUDIENCE:-eatfitai.app}
+      - Auth__Google__ClientId_Web=${GOOGLE_CLIENTID_WEB:-}
+      - Auth__Google__ClientId_Android=${GOOGLE_CLIENTID_ANDROID:-}
     depends_on:
       sqlserver:
         condition: service_healthy

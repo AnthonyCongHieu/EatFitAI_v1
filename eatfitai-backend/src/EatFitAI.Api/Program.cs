@@ -1,6 +1,12 @@
 using Serilog;
 using EatFitAI.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
+using EatFitAI.Infrastructure.Auth;
+using EatFitAI.Api.Auth;
 
 // Khởi tạo Serilog sớm để log trong quá trình bootstrap
 Log.Logger = new LoggerConfiguration()
@@ -21,6 +27,50 @@ var connectionString = builder.Configuration.GetConnectionString("Default")
 
 builder.Services.AddDbContext<EatFitAIDbContext>(options =>
     options.UseSqlServer(connectionString, sql => sql.EnableRetryOnFailure()));
+
+// Identity + Lockout
+builder.Services
+    .AddIdentityCore<IdentityUser<Guid>>(options =>
+    {
+        options.User.RequireUniqueEmail = true;
+        options.Password.RequiredLength = 6;
+        options.Lockout.AllowedForNewUsers = true;
+        options.Lockout.MaxFailedAccessAttempts = 5;
+        options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(15);
+    })
+    .AddSignInManager()
+    .AddEntityFrameworkStores<EatFitAIDbContext>()
+    .AddDefaultTokenProviders();
+
+// JWT Auth
+var jwtKey = builder.Configuration["Jwt:Key"] ?? builder.Configuration["Jwt__Key"] ?? "dev_secret_key_change_me";
+var jwtIssuer = builder.Configuration["Jwt:Issuer"] ?? builder.Configuration["Jwt__Issuer"] ?? "eatfitai";
+var jwtAudience = builder.Configuration["Jwt:Audience"] ?? builder.Configuration["Jwt__Audience"] ?? "eatfitai.app";
+
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+}).AddJwtBearer(options =>
+{
+    options.RequireHttpsMetadata = false;
+    options.SaveToken = true;
+    options.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidateIssuer = true,
+        ValidateAudience = true,
+        ValidateLifetime = true,
+        ValidateIssuerSigningKey = true,
+        ValidIssuer = jwtIssuer,
+        ValidAudience = jwtAudience,
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey)),
+        ClockSkew = TimeSpan.FromSeconds(30)
+    };
+});
+
+builder.Services.AddAuthorization();
+
+builder.Services.AddScoped<IJwtTokenService, JwtTokenService>();
 
 builder.Services.AddHealthChecks();
 
@@ -53,6 +103,10 @@ app.UseCors(CorsPolicyName);
 
 // Serilog request logging - theo dõi request/response cơ bản
 app.UseSerilogRequestLogging();
+
+// AuthN/Z
+app.UseAuthentication();
+app.UseAuthorization();
 
 // Xuất JSON OpenAPI tại /openapi/v1.json
 app.MapOpenApi();
@@ -90,5 +144,9 @@ using (var scope = app.Services.CreateScope())
     await db.EnsureCreatedAndSeedAsync();
 }
 
+// Map auth endpoints
+app.MapAuth();
+
 app.Run();
+
 
