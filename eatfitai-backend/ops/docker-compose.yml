@@ -1,5 +1,21 @@
 version: "3.8"
 services:
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: eatfitai-sql
+    ports:
+      - "14333:1433"
+    environment:
+      - ACCEPT_EULA=Y
+      - SA_PASSWORD=${SA_PASSWORD:-Your_strong_password123}
+    healthcheck:
+      test: ["CMD-SHELL", "(/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P $$SA_PASSWORD -C -Q 'SELECT 1') || (/opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P $$SA_PASSWORD -C -Q 'SELECT 1') || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    volumes:
+      - mssql_data:/var/opt/mssql
+
   api:
     build:
       context: ..
@@ -8,8 +24,14 @@ services:
       - "8080:8080"
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
-    # Cho phép hot-reload nếu cần (comment mặc định)
+      - ConnectionStrings__Default=Server=sqlserver,1433;Database=EatFitAIDb;User Id=sa;Password=${SA_PASSWORD:-Your_strong_password123};TrustServerCertificate=True;
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+    # Hot-reload (optional)
     # volumes:
     #   - ../src/EatFitAI.Api:/src/src/EatFitAI.Api
     #   - ../Directory.Build.props:/src/Directory.Build.props
 
+volumes:
+  mssql_data:

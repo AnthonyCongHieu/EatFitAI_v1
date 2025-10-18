@@ -11,13 +11,12 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- Swagger UI chỉ dùng UI, JSON được sinh bởi Microsoft.AspNetCore.OpenApi -->
     <PackageReference Include="Swashbuckle.AspNetCore.SwaggerUI" Version="6.6.2" />
-    <!-- Tạo OpenAPI 3.1 JSON -->
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="9.0.0" />
-    <!-- Serilog cho logging console -->
     <PackageReference Include="Serilog.AspNetCore" Version="8.0.1" />
     <PackageReference Include="Serilog.Sinks.Console" Version="5.0.1" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="9.0.0" />
   </ItemGroup>
 
 </Project>
+
