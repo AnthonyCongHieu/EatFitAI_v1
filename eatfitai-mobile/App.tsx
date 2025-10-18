@@ -4,6 +4,7 @@ import { StyleSheet } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
+import * as WebBrowser from 'expo-web-browser';
 import * as SplashScreen from 'expo-splash-screen';
 import { useFonts, Inter_400Regular, Inter_600SemiBold } from '@expo-google-fonts/inter';
 
@@ -12,6 +13,8 @@ import { ThemeProvider, useAppTheme } from './src/theme/ThemeProvider';
 
 // Giữ splash tới khi font được load đầy đủ
 void SplashScreen.preventAutoHideAsync();
+// Hoàn tất phiên duyệt web cho AuthSession (Google Sign-in)
+WebBrowser.maybeCompleteAuthSession();
 
 const AppInner = () => {
   const { theme } = useAppTheme();

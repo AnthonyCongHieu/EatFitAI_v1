@@ -1,3 +1,8 @@
+// Khai báo các screen của Stack gốc
+// - Login, Register: màn hình xác thực
+// - AppTabs: nhóm Tab chính sau khi đăng nhập
 export type RootStackParamList = {
-  Home: undefined;
+  Login: undefined;
+  Register: undefined;
+  AppTabs: undefined;
 };
