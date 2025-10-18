@@ -15,6 +15,8 @@ using EatFitAI.Api.BodyMetrics;
 using EatFitAI.Api.NutritionTargets;
 using EatFitAI.Api.DiaryEndpoints;
 using EatFitAI.Api.SummaryEndpoints;
+using EatFitAI.Api.Foods;
+using EatFitAI.Api.CustomDishesEndpoints;
 
 // Khởi tạo Serilog sớm để log trong quá trình bootstrap
 Log.Logger = new LoggerConfiguration()
@@ -165,6 +167,8 @@ app.MapBodyMetrics();
 app.MapNutritionTargets();
 app.MapDiary();
 app.MapSummaries();
+app.MapFoods();
+app.MapCustomDishes();
 
 app.Run();
 
