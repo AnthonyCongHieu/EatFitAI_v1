@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("EatFitAI.Api")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+4824f623f375f0f510cbff072e159a6ef14a558f")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+5eb2e6c159a427059f0d9f8cf10f55c7928e930d")]
 [assembly: System.Reflection.AssemblyProductAttribute("EatFitAI.Api")]
 [assembly: System.Reflection.AssemblyTitleAttribute("EatFitAI.Api")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

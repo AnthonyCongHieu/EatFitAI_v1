@@ -17,6 +17,9 @@ using EatFitAI.Api.DiaryEndpoints;
 using EatFitAI.Api.SummaryEndpoints;
 using EatFitAI.Api.Foods;
 using EatFitAI.Api.CustomDishesEndpoints;
+using EatFitAI.Api.AiEndpoints;
+using EatFitAI.Application.AI;
+using EatFitAI.Infrastructure.AI;
 
 // Khởi tạo Serilog sớm để log trong quá trình bootstrap
 Log.Logger = new LoggerConfiguration()
@@ -81,6 +84,11 @@ builder.Services.AddAuthentication(options =>
 builder.Services.AddAuthorization();
 
 builder.Services.AddScoped<IJwtTokenService, JwtTokenService>();
+
+// AI mock services
+builder.Services.AddScoped<IAiNutritionService, MockAiNutritionService>();
+builder.Services.AddScoped<IAiRecipeService, MockAiRecipeService>();
+builder.Services.AddScoped<IVisionService, MockVisionService>();
 
 builder.Services.AddHealthChecks();
 
@@ -169,6 +177,7 @@ app.MapDiary();
 app.MapSummaries();
 app.MapFoods();
 app.MapCustomDishes();
+app.MapAi();
 
 app.Run();
 
