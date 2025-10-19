@@ -4,6 +4,7 @@ import { StyleSheet } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
+import * as SystemUI from 'expo-system-ui';
 import * as WebBrowser from 'expo-web-browser';
 import * as SplashScreen from 'expo-splash-screen';
 import Toast from 'react-native-toast-message';
@@ -19,6 +20,10 @@ WebBrowser.maybeCompleteAuthSession();
 
 const AppInner = () => {
   const { theme } = useAppTheme();
+
+  useEffect(() => {
+    SystemUI.setBackgroundColorAsync(theme.colors.background).catch(() => {});
+  }, [theme.colors.background]);
 
   return (
     <>
@@ -44,6 +49,8 @@ export default function App(): JSX.Element | null {
       });
     }
   }, [fontsLoaded]);
+
+  // Nen he thong se duoc cap nhat theo theme trong AppInner
 
   if (!fontsLoaded) {
     return null;

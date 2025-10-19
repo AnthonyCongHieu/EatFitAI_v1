@@ -6,6 +6,8 @@ import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'reac
 import Toast from 'react-native-toast-message';
 
 import { ThemedText } from '../../../components/ThemedText';
+import Screen from '../../../components/Screen';
+import Card from '../../../components/Card';
 import { useAppTheme } from '../../../theme/ThemeProvider';
 import { aiService, type NutritionTarget } from '../../../services/aiService';
 import { useDiaryStore } from '../../../store/useDiaryStore';
@@ -38,7 +40,7 @@ const AiNutritionScreen = (): JSX.Element => {
       const target = await aiService.getCurrentNutritionTarget();
       setCurrentTarget(formatTarget(target));
     } catch (error) {
-      Toast.show({ type: 'error', text1: 'Khong tai duoc muc tieu dinh duong' });
+      Toast.show({ type: 'error', text1: 'Không tải được mục tiêu dinh dưỡng' });
     } finally {
       setIsLoading(false);
     }
@@ -55,9 +57,9 @@ const AiNutritionScreen = (): JSX.Element => {
     try {
       const target = await aiService.recalculateNutritionTarget();
       setSuggestedTarget(formatTarget(target));
-      Toast.show({ type: 'success', text1: 'AI da de xuat muc tieu moi' });
+      Toast.show({ type: 'success', text1: 'AI đã đề xuất mục tiêu mới' });
     } catch (error) {
-      Toast.show({ type: 'error', text1: 'AI khong de xuat duoc' });
+      Toast.show({ type: 'error', text1: 'AI không đề xuất được' });
     } finally {
       setIsRecalculating(false);
     }
@@ -66,20 +68,20 @@ const AiNutritionScreen = (): JSX.Element => {
   const handleApply = useCallback(async () => {
     const targetToApply = suggestedTarget ?? currentTarget;
     if (!targetToApply) {
-      Toast.show({ type: 'info', text1: 'Chua co muc tieu de ap dung' });
+      Toast.show({ type: 'info', text1: 'Chưa có mục tiêu để áp dụng' });
       return;
     }
     setIsApplying(true);
     try {
       await aiService.applyNutritionTarget(targetToApply);
-      Toast.show({ type: 'success', text1: 'Da ap dung muc tieu AI' });
+      Toast.show({ type: 'success', text1: 'Đã áp dụng mục tiêu AI' });
       setCurrentTarget(targetToApply);
       setSuggestedTarget(null);
       await refreshSummary().catch(() => {
         // bo qua loi refresh
       });
     } catch (error) {
-      Toast.show({ type: 'error', text1: 'Luu muc tieu that bai' });
+      Toast.show({ type: 'error', text1: 'Lưu mục tiêu thất bại' });
     } finally {
       setIsApplying(false);
     }
@@ -107,11 +109,11 @@ const AiNutritionScreen = (): JSX.Element => {
   );
 
   return (
-    <ScrollView contentContainerStyle={[styles.container, { backgroundColor: theme.colors.background }]}>
-      <View style={[styles.card, { backgroundColor: theme.colors.card }]}>
-        <ThemedText variant="title">Muc tieu dinh duong</ThemedText>
+    <Screen contentContainerStyle={styles.container}>
+      <Card>
+        <ThemedText variant="title">Mục tiêu dinh dưỡng</ThemedText>
         <ThemedText style={styles.infoText}>
-          AI giup can bang calo va macro theo trang thai hien tai. Ban co the de xuat lai va ap dung ngay.
+          AI giúp cân bằng calo và macro theo trạng thái hiện tại. Bạn có thể đề xuất lại và áp dụng ngay.
         </ThemedText>
 
         {isLoading ? (
@@ -119,10 +121,10 @@ const AiNutritionScreen = (): JSX.Element => {
             <ActivityIndicator color={theme.colors.primary} />
           </View>
         ) : (
-          renderTargetBox('Muc tieu hien tai', currentTarget)
+          renderTargetBox('Mục tiêu hiện tại', currentTarget)
         )}
 
-        {suggestedTarget ? renderTargetBox('De xuat moi', suggestedTarget, true) : null}
+        {suggestedTarget ? renderTargetBox('Đề xuất mới', suggestedTarget, true) : null}
 
         <Pressable
           style={[styles.button, { backgroundColor: theme.colors.primary, opacity: isRecalculating ? 0.6 : 1 }]}
@@ -130,7 +132,7 @@ const AiNutritionScreen = (): JSX.Element => {
           disabled={isRecalculating}
         >
           <ThemedText style={styles.buttonText}>
-            {isRecalculating ? 'Dang tinh...' : 'De xuat muc tieu moi'}
+            {isRecalculating ? 'Đang tính...' : 'Đề xuất mục tiêu mới'}
           </ThemedText>
         </Pressable>
 
@@ -140,11 +142,11 @@ const AiNutritionScreen = (): JSX.Element => {
           disabled={isApplying}
         >
           <ThemedText style={styles.buttonText}>
-            {isApplying ? 'Dang ap dung...' : 'Ap dung muc tieu AI'}
+            {isApplying ? 'Đang áp dụng...' : 'Áp dụng mục tiêu AI'}
           </ThemedText>
         </Pressable>
-      </View>
-    </ScrollView>
+      </Card>
+    </Screen>
   );
 };
 
@@ -152,16 +154,7 @@ const styles = StyleSheet.create({
   container: {
     padding: 16,
   },
-  card: {
-    borderRadius: 16,
-    padding: 20,
-    gap: 16,
-    shadowColor: '#000',
-    shadowOpacity: 0.05,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 1,
-  },
+  card: {},
   center: {
     alignItems: 'center',
     justifyContent: 'center',

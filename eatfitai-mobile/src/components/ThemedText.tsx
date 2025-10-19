@@ -24,7 +24,13 @@ export const ThemedText = ({
 
   return (
     <Text
-      style={[styles.base, { color: colors.text, fontSize: SIZE_MAP[variant] }, style]}
+      style={[
+        styles.base,
+        { color: colors.text, fontSize: SIZE_MAP[variant] },
+        variant === 'title' ? styles.title : null,
+        variant === 'subtitle' ? styles.subtitle : null,
+        style,
+      ]}
       {...rest}
     />
   );
@@ -33,5 +39,11 @@ export const ThemedText = ({
 const styles = StyleSheet.create({
   base: {
     fontFamily: 'Inter_400Regular',
+  },
+  title: {
+    fontFamily: 'Inter_600SemiBold',
+  },
+  subtitle: {
+    fontFamily: 'Inter_600SemiBold',
   },
 });

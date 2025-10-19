@@ -1,19 +1,20 @@
-// Màn hình Đăng ký sử dụng React Hook Form + zod
-// Chú thích bằng tiếng Việt
-
 import { useCallback, useState } from 'react';
+import { Alert, StyleSheet, View } from 'react-native';
 import { Controller, useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Alert, Pressable, StyleSheet, TextInput, View } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 
 import { useAppTheme } from '../../../theme/ThemeProvider';
 import { ThemedText } from '../../../components/ThemedText';
+import Screen from '../../../components/Screen';
+import Card from '../../../components/Card';
+import Button from '../../../components/Button';
+import ThemedTextInput from '../../../components/ThemedTextInput';
 import { useAuthStore } from '../../../store/useAuthStore';
 import type { RootStackParamList } from '../../types';
+import { t } from '../../../i18n/vi';
 
-// Schema validate đầu vào bằng zod
 const RegisterSchema = z
   .object({
     name: z.string().min(2, 'Tên tối thiểu 2 ký tự'),
@@ -27,7 +28,6 @@ const RegisterSchema = z
   });
 
 type RegisterValues = z.infer<typeof RegisterSchema>;
-
 type Props = NativeStackScreenProps<RootStackParamList, 'Register'>;
 
 const RegisterScreen = ({ navigation }: Props): JSX.Element => {
@@ -35,159 +35,104 @@ const RegisterScreen = ({ navigation }: Props): JSX.Element => {
   const registerFn = useAuthStore((s) => s.register);
   const [loading, setLoading] = useState(false);
 
-  const {
-    control,
-    handleSubmit,
-    formState: { errors },
-  } = useForm<RegisterValues>({
+  const { control, handleSubmit, formState: { errors } } = useForm<RegisterValues>({
     resolver: zodResolver(RegisterSchema),
     defaultValues: { name: '', email: '', password: '', confirmPassword: '' },
   });
 
-  const onSubmit = useCallback(
-    async (values: RegisterValues) => {
-      try {
-        setLoading(true);
-        await registerFn(values.name, values.email, values.password);
-        // Thành công: điều hướng sang Tabs (AppTabs)
-        navigation.reset({ index: 0, routes: [{ name: 'AppTabs' }] });
-      } catch (e: any) {
-        Alert.alert('Đăng ký thất bại', e?.message ?? 'Vui lòng thử lại');
-      } finally {
-        setLoading(false);
-      }
-    },
-    [registerFn, navigation],
-  );
+  const onSubmit = useCallback(async (values: RegisterValues) => {
+    try {
+      setLoading(true);
+      await registerFn(values.name, values.email, values.password);
+      navigation.reset({ index: 0, routes: [{ name: 'AppTabs' }] });
+    } catch (e: any) {
+      Alert.alert(t('auth.registerTitle'), e?.message ?? t('auth.processing'));
+    } finally {
+      setLoading(false);
+    }
+  }, [registerFn, navigation]);
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
-      <View style={[styles.card, { backgroundColor: theme.colors.card }]}>
-        <ThemedText variant="title">Đăng ký</ThemedText>
+    <Screen scroll={false} style={styles.container}>
+      <Card>
+        <ThemedText variant="title">{t('auth.registerTitle')}</ThemedText>
 
-        {/* Tên hiển thị */}
-        <ThemedText style={styles.label}>Tên hiển thị</ThemedText>
+        <ThemedText style={styles.label}>{t('auth.displayName')}</ThemedText>
         <Controller
           control={control}
           name="name"
           render={({ field: { onChange, onBlur, value } }) => (
-            <TextInput
-              style={[styles.input, { borderColor: theme.colors.border, color: theme.colors.text }]}
-              placeholder="Nguyễn Văn A"
-              placeholderTextColor={theme.colors.muted}
-              onBlur={onBlur}
-              onChangeText={onChange}
-              value={value}
-            />
+            <ThemedTextInput placeholder="Nguyễn Văn A" onBlur={onBlur} onChangeText={onChange} value={value} error={!!errors.name} />
           )}
         />
-        {errors.name && <ThemedText style={styles.error}>{errors.name.message}</ThemedText>}
+        {errors.name && (
+          <ThemedText style={[styles.error, { color: theme.colors.danger ?? '#E53935' }]}>
+            {errors.name.message}
+          </ThemedText>
+        )}
 
-        {/* Email */}
-        <ThemedText style={styles.label}>Email</ThemedText>
+        <ThemedText style={styles.label}>{t('auth.email')}</ThemedText>
         <Controller
           control={control}
           name="email"
           render={({ field: { onChange, onBlur, value } }) => (
-            <TextInput
-              style={[styles.input, { borderColor: theme.colors.border, color: theme.colors.text }]}
-              placeholder="you@example.com"
-              placeholderTextColor={theme.colors.muted}
-              keyboardType="email-address"
-              autoCapitalize="none"
-              onBlur={onBlur}
-              onChangeText={onChange}
-              value={value}
-            />
+            <ThemedTextInput placeholder="you@example.com" keyboardType="email-address" autoCapitalize="none" onBlur={onBlur} onChangeText={onChange} value={value} error={!!errors.email} />
           )}
         />
-        {errors.email && <ThemedText style={styles.error}>{errors.email.message}</ThemedText>}
+        {errors.email && (
+          <ThemedText style={[styles.error, { color: theme.colors.danger ?? '#E53935' }]}>
+            {errors.email.message}
+          </ThemedText>
+        )}
 
-        {/* Mật khẩu */}
-        <ThemedText style={styles.label}>Mật khẩu</ThemedText>
+        <ThemedText style={styles.label}>{t('auth.password')}</ThemedText>
         <Controller
           control={control}
           name="password"
           render={({ field: { onChange, onBlur, value } }) => (
-            <TextInput
-              style={[styles.input, { borderColor: theme.colors.border, color: theme.colors.text }]}
-              placeholder="••••••"
-              placeholderTextColor={theme.colors.muted}
-              secureTextEntry
-              onBlur={onBlur}
-              onChangeText={onChange}
-              value={value}
-            />
+            <ThemedTextInput placeholder="••••••••" secureTextEntry secureToggle onBlur={onBlur} onChangeText={onChange} value={value} error={!!errors.password} />
           )}
         />
-        {errors.password && <ThemedText style={styles.error}>{errors.password.message}</ThemedText>}
+        {errors.password && (
+          <ThemedText style={[styles.error, { color: theme.colors.danger ?? '#E53935' }]}>
+            {errors.password.message}
+          </ThemedText>
+        )}
 
-        {/* Nhập lại mật khẩu */}
-        <ThemedText style={styles.label}>Nhập lại mật khẩu</ThemedText>
+        <ThemedText style={styles.label}>{t('auth.passwordConfirm')}</ThemedText>
         <Controller
           control={control}
           name="confirmPassword"
           render={({ field: { onChange, onBlur, value } }) => (
-            <TextInput
-              style={[styles.input, { borderColor: theme.colors.border, color: theme.colors.text }]}
-              placeholder="••••••"
-              placeholderTextColor={theme.colors.muted}
-              secureTextEntry
-              onBlur={onBlur}
-              onChangeText={onChange}
-              value={value}
-            />
+            <ThemedTextInput placeholder="••••••••" secureTextEntry secureToggle onBlur={onBlur} onChangeText={onChange} value={value} error={!!errors.confirmPassword} />
           )}
         />
         {errors.confirmPassword && (
-          <ThemedText style={styles.error}>{errors.confirmPassword.message}</ThemedText>
+          <ThemedText style={[styles.error, { color: theme.colors.danger ?? '#E53935' }]}>
+            {errors.confirmPassword.message}
+          </ThemedText>
         )}
 
-        {/* Nút Đăng ký */}
-        <Pressable
-          disabled={loading}
-          onPress={handleSubmit(onSubmit)}
-          style={[styles.button, { backgroundColor: theme.colors.primary, opacity: loading ? 0.7 : 1 }]}
-        >
-          <ThemedText style={styles.buttonText}>{loading ? 'Đang xử lý…' : 'Tạo tài khoản'}</ThemedText>
-        </Pressable>
+        <View style={{ marginTop: 20 }}>
+          <Button variant="primary" disabled={loading} onPress={handleSubmit(onSubmit)} title={t('auth.createAccount')}>
+            <ThemedText style={styles.buttonText}>{loading ? t('auth.processing') : t('auth.createAccount')}</ThemedText>
+          </Button>
+        </View>
 
-        {/* Điều hướng về Đăng nhập */}
-        <Pressable onPress={() => navigation.navigate('Login')} style={{ marginTop: 16 }}>
-          <ThemedText>Đã có tài khoản? Đăng nhập</ThemedText>
-        </Pressable>
-      </View>
-    </View>
+        <View style={{ marginTop: 16 }}>
+          <ThemedText onPress={() => navigation.navigate('Login')}>{t('auth.hasAccount')}</ThemedText>
+        </View>
+      </Card>
+    </Screen>
   );
 };
 
 const styles = StyleSheet.create({
   container: { flex: 1, padding: 24 },
-  card: {
-    borderRadius: 16,
-    padding: 20,
-    shadowColor: '#000',
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 2,
-  },
   label: { marginTop: 16 },
-  input: {
-    borderWidth: 1,
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    marginTop: 8,
-  },
-  error: { color: '#E53935', marginTop: 6 },
-  button: {
-    marginTop: 20,
-    paddingVertical: 12,
-    borderRadius: 999,
-    alignItems: 'center',
-  },
+  error: { marginTop: 6 },
   buttonText: { color: '#fff', fontFamily: 'Inter_600SemiBold' },
 });
 
 export default RegisterScreen;
+

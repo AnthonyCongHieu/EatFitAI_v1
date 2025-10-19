@@ -22,13 +22,7 @@ const ThemeContext = createContext<ThemeContextValue | undefined>(undefined);
 
 export const ThemeProvider = ({ children }: { children: ReactNode }): JSX.Element => {
   const systemScheme = useColorScheme();
-  const [mode, setMode] = useState<AppTheme['mode']>(systemScheme ?? 'light');
-
-  useEffect(() => {
-    if (systemScheme) {
-      setMode(systemScheme);
-    }
-  }, [systemScheme]);
+  const [mode, setMode] = useState<AppTheme['mode']>('dark');
 
   const toggleTheme = useCallback(() => {
     setMode((prev) => (prev === 'light' ? 'dark' : 'light'));

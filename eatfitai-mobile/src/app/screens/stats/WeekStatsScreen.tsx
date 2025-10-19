@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useMemo } from "react";
-import { ActivityIndicator, RefreshControl, ScrollView, StyleSheet, View } from "react-native";
-import { VictoryArea, VictoryChart, VictoryTheme, VictoryTooltip } from "victory-native";
+import { ActivityIndicator, RefreshControl, StyleSheet, View } from "react-native";
+import { VictoryArea, VictoryChart, VictoryTheme, VictoryTooltip, VictoryAxis } from "victory-native";
 import Toast from "react-native-toast-message";
 
 import { ThemedText } from "../../../components/ThemedText";
+import Screen from "../../../components/Screen";
+import Card from "../../../components/Card";
 import { useAppTheme } from "../../../theme/ThemeProvider";
 import { useStatsStore } from "../../../store/useStatsStore";
 
@@ -48,21 +50,20 @@ const WeekStatsScreen = (): JSX.Element => {
   }, [chartData]);
 
   return (
-    <ScrollView
-      style={[styles.container, { backgroundColor: theme.colors.background }]}
+    <Screen
       contentContainerStyle={styles.content}
       refreshControl={<RefreshControl refreshing={isLoading} onRefresh={handleRefresh} tintColor={theme.colors.primary} />}
     >
-      <View style={[styles.card, { backgroundColor: theme.colors.card }]}>
-        <ThemedText variant="title">Thong ke 7 ngay</ThemedText>
-        <ThemedText style={styles.subtitle}>So sanh calo tieu thu voi muc tieu hang ngay</ThemedText>
+      <Card style={styles.card}>
+        <ThemedText variant="title">Thống kê 7 ngày</ThemedText>
+        <ThemedText style={styles.subtitle}>So sánh calo tiêu thụ với mục tiêu hằng ngày</ThemedText>
 
         {isLoading && !weekSummary ? (
           <View style={styles.loadingBox}>
             <ActivityIndicator color={theme.colors.primary} />
           </View>
         ) : chartData.length === 0 ? (
-          <ThemedText style={styles.infoText}>Chua co du lieu</ThemedText>
+          <ThemedText style={styles.infoText}>Chưa có dữ liệu</ThemedText>
         ) : (
           <VictoryChart
             height={280}
@@ -71,6 +72,21 @@ const WeekStatsScreen = (): JSX.Element => {
             domainPadding={{ x: 20, y: [10, 20] }}
             style={{ background: { fill: theme.colors.background } }}
           >
+            <VictoryAxis
+              style={{
+                axis: { stroke: theme.colors.border },
+                tickLabels: { fill: theme.colors.muted, fontSize: 12 },
+                grid: { stroke: 'transparent' },
+              }}
+            />
+            <VictoryAxis
+              dependentAxis
+              style={{
+                axis: { stroke: theme.colors.border },
+                tickLabels: { fill: theme.colors.muted, fontSize: 12 },
+                grid: { stroke: theme.colors.border, strokeDasharray: '4,4', opacity: 0.4 },
+              }}
+            />
             <VictoryArea
               data={chartData}
               x="x"
@@ -87,33 +103,23 @@ const WeekStatsScreen = (): JSX.Element => {
                 y="y"
                 interpolation="monotoneX"
                 style={{ data: { stroke: theme.colors.secondary, strokeDasharray: "6,6", fillOpacity: 0 } }}
-                labels={({ datum }) => `Target ${datum.y} kcal`}
+                labels={({ datum }) => `Mục tiêu ${datum.y} kcal`}
                 labelComponent={<VictoryTooltip renderInPortal={false} style={{ fontSize: 10 }} />}
               />
             ) : null}
           </VictoryChart>
         )}
-      </View>
-    </ScrollView>
+      </Card>
+    </Screen>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
   content: {
     padding: 16,
   },
   card: {
-    borderRadius: 16,
-    padding: 20,
     gap: 16,
-    shadowColor: "#000",
-    shadowOpacity: 0.05,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 1,
   },
   subtitle: {
     opacity: 0.8,

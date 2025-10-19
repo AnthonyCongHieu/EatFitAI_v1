@@ -1,122 +1,91 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
-import {
-  ActivityIndicator,
-  Alert,
-  Modal,
-  Pressable,
-  RefreshControl,
-  ScrollView,
-  StyleSheet,
-  View,
-} from "react-native";
-import Toast from "react-native-toast-message";
-import { useNavigation } from "@react-navigation/native";
-import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { ActivityIndicator, Alert, Modal, Pressable, RefreshControl, StyleSheet, View } from 'react-native';
+import Toast from 'react-native-toast-message';
+import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
-import { ThemedText } from "../../components/ThemedText";
-import { useDiaryStore } from "../../store/useDiaryStore";
-import { useAppTheme } from "../../theme/ThemeProvider";
-import type { RootStackParamList } from "../types";
+import { ThemedText } from '../../components/ThemedText';
+import Screen from '../../components/Screen';
+import Card from '../../components/Card';
+import Button from '../../components/Button';
+import { useDiaryStore } from '../../store/useDiaryStore';
+import { useAppTheme } from '../../theme/ThemeProvider';
+import type { RootStackParamList } from '../types';
 
 const MEAL_TITLE_MAP: Record<string, string> = {
-  breakfast: "Bua sang",
-  lunch: "Bua trua",
-  dinner: "Bua toi",
-  snack: "An vat",
+  breakfast: 'Bữa sáng',
+  lunch: 'Bữa trưa',
+  dinner: 'Bữa tối',
+  snack: 'Ăn vặt',
 };
 
-type AddOption = "search" | "custom" | "ai";
-
+type AddOption = 'search' | 'custom' | 'ai';
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
-const AddEntryModal = ({
-  visible,
-  onClose,
-  onSelect,
-}: {
-  visible: boolean;
-  onClose: () => void;
-  onSelect: (option: AddOption) => void;
-}): JSX.Element => (
-  <Modal transparent visible={visible} animationType="fade" onRequestClose={onClose}>
-    <View style={styles.modalBackdrop}>
-      <View style={styles.modalCard}>
-        <ThemedText variant="title">Them mon</ThemedText>
-        <ThemedText style={styles.modalHint}>Chon cach them mon vao nhat ky</ThemedText>
-        <Pressable style={styles.modalButton} onPress={() => onSelect("search")}>
-          <ThemedText style={styles.modalButtonText}>Tim mon co san</ThemedText>
-        </Pressable>
-        <Pressable style={styles.modalButton} onPress={() => onSelect("custom")}>
-          <ThemedText style={styles.modalButtonText}>Tao mon thu cong</ThemedText>
-        </Pressable>
-        <Pressable style={styles.modalButton} onPress={() => onSelect("ai")}>
-          <ThemedText style={styles.modalButtonText}>Goi y AI</ThemedText>
-        </Pressable>
-        <Pressable style={styles.modalCancel} onPress={onClose}>
-          <ThemedText>Dong</ThemedText>
-        </Pressable>
+const AddEntryModal = ({ visible, onClose, onSelect }: { visible: boolean; onClose: () => void; onSelect: (option: AddOption) => void }): JSX.Element => {
+  const { theme } = useAppTheme();
+  return (
+    <Modal transparent visible={visible} animationType="fade" onRequestClose={onClose}>
+      <View style={styles.modalBackdrop}>
+        <Card>
+          <ThemedText variant="title">Thêm món</ThemedText>
+          <ThemedText style={styles.modalHint}>Chọn cách thêm món vào nhật ký</ThemedText>
+          <Button title="Tìm món có sẵn" onPress={() => onSelect('search')} />
+          <View style={{ height: 8 }} />
+          <Button variant="outline" title="Tạo món thủ công" onPress={() => onSelect('custom')} />
+          <View style={{ height: 8 }} />
+          <Button variant="secondary" title="Gợi ý AI" onPress={() => onSelect('ai')} />
+          <Pressable accessibilityRole="button" hitSlop={8} onPress={onClose} style={{ alignItems: 'center', marginTop: 8 }}>
+            <ThemedText style={{ color: theme.colors.muted }}>Đóng</ThemedText>
+          </Pressable>
+        </Card>
       </View>
-    </View>
-  </Modal>
-);
+    </Modal>
+  );
+};
 
-const formatNumber = (value?: number | null, suffix = ""): string => {
-  if (typeof value !== "number" || Number.isNaN(value)) {
-    return "--";
-  }
-  const rounded = Math.round(value);
-  return `${rounded}${suffix}`;
+const formatNumber = (value?: number | null, suffix = ''): string => {
+  if (typeof value !== 'number' || Number.isNaN(value)) return '--';
+  return `${Math.round(value)}${suffix}`;
 };
 
 const formatDate = (dateValue: string | undefined): string => {
-  if (!dateValue) {
-    return "Hom nay";
-  }
+  if (!dateValue) return 'Hôm nay';
   const date = new Date(dateValue);
-  if (Number.isNaN(date.getTime())) {
-    return "Hom nay";
-  }
-  return new Intl.DateTimeFormat("vi-VN", { weekday: "long", day: "2-digit", month: "2-digit" }).format(date);
+  if (Number.isNaN(date.getTime())) return 'Hôm nay';
+  return new Intl.DateTimeFormat('vi-VN', { weekday: 'long', day: '2-digit', month: '2-digit' }).format(date);
 };
 
 const HomeScreen = (): JSX.Element => {
   const { theme } = useAppTheme();
   const navigation = useNavigation<NavigationProp>();
-  const summary = useDiaryStore((state) => state.summary);
-  const isLoading = useDiaryStore((state) => state.isLoading);
-  const isRefreshing = useDiaryStore((state) => state.isRefreshing);
-  const fetchSummary = useDiaryStore((state) => state.fetchSummary);
-  const refreshSummary = useDiaryStore((state) => state.refreshSummary);
-  const deleteEntry = useDiaryStore((state) => state.deleteEntry);
+  const summary = useDiaryStore((s) => s.summary);
+  const isLoading = useDiaryStore((s) => s.isLoading);
+  const isRefreshing = useDiaryStore((s) => s.isRefreshing);
+  const fetchSummary = useDiaryStore((s) => s.fetchSummary);
+  const refreshSummary = useDiaryStore((s) => s.refreshSummary);
+  const deleteEntry = useDiaryStore((s) => s.deleteEntry);
   const [showAddModal, setShowAddModal] = useState(false);
 
   useEffect(() => {
-    fetchSummary().catch(() => {
-      Toast.show({ type: "error", text1: "Khong the tai nhat ky hom nay" });
-    });
+    fetchSummary().catch(() => Toast.show({ type: 'error', text1: 'Không thể tải nhật ký hôm nay' }));
   }, [fetchSummary]);
 
   const handleRefresh = useCallback(() => {
-    refreshSummary().catch(() => {
-      Toast.show({ type: "error", text1: "Tai lai that bai" });
-    });
+    refreshSummary().catch(() => Toast.show({ type: 'error', text1: 'Tải lại thất bại' }));
   }, [refreshSummary]);
 
   const handleDelete = useCallback(
     (entryId: string, foodName: string) => {
-      Alert.alert("Xoa mon", `Xac nhan xoa "${foodName}" khoi nhat ky?`, [
-        { text: "Huy", style: "cancel" },
+      Alert.alert('Xóa món', `Xác nhận xóa "${foodName}" khỏi nhật ký?`, [
+        { text: 'Hủy', style: 'cancel' },
         {
-          text: "Xoa",
-          style: "destructive",
+          text: 'Xóa',
+          style: 'destructive',
           onPress: () => {
             deleteEntry(entryId)
-              .then(() => {
-                Toast.show({ type: "success", text1: "Da xoa mon" });
-              })
-              .catch(() => {
-                Toast.show({ type: "error", text1: "Xoa that bai" });
-              });
+              .then(() => Toast.show({ type: 'success', text1: 'Đã xóa món' }))
+              .catch(() => Toast.show({ type: 'error', text1: 'Xóa thất bại' }));
           },
         },
       ]);
@@ -127,125 +96,103 @@ const HomeScreen = (): JSX.Element => {
   const handleAddOption = useCallback(
     (option: AddOption) => {
       setShowAddModal(false);
-      if (option === "search") {
-        navigation.navigate("FoodSearch");
-        return;
-      }
-      if (option === "custom") {
-        navigation.navigate("CustomDish");
-        return;
-      }
-      if (option === "ai") {
-        navigation.navigate("AiCamera");
-        return;
-      }
+      if (option === 'search') return navigation.navigate('FoodSearch');
+      if (option === 'custom') return navigation.navigate('CustomDish');
+      if (option === 'ai') return navigation.navigate('AiCamera');
     },
     [navigation],
   );
 
   const calorieDiffText = useMemo(() => {
-    if (!summary || typeof summary.totalCalories !== "number" || typeof summary.targetCalories !== "number") {
-      return null;
-    }
+    if (!summary || typeof summary.totalCalories !== 'number' || typeof summary.targetCalories !== 'number') return null;
     const diff = summary.totalCalories - summary.targetCalories;
-    if (diff === 0) {
-      return "Ban dang bang voi muc tieu";
-    }
-    if (diff > 0) {
-      return `Vuot ${Math.abs(diff)} kcal so voi muc tieu`;
-    }
-    return `Thap hon ${Math.abs(diff)} kcal so voi muc tieu`;
+    if (diff === 0) return 'Bạn đang bằng với mục tiêu';
+    if (diff > 0) return `Vượt ${Math.abs(diff)} kcal so với mục tiêu`;
+    return `Thấp hơn ${Math.abs(diff)} kcal so với mục tiêu`;
   }, [summary]);
 
   return (
-    <View style={[styles.screen, { backgroundColor: theme.colors.background }]}> 
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
+    <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
+      <Screen
+        contentContainerStyle={{ padding: 16, gap: 16 }}
         refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} tintColor={theme.colors.primary} />}
       >
-        <View style={[styles.summaryCard, { backgroundColor: theme.colors.card }]}> 
-          <ThemedText variant="title">Nhat ky hom nay</ThemedText>
-          <ThemedText style={styles.dateText}>{formatDate(summary?.date)}</ThemedText>
+        <Card>
+          <ThemedText variant="title">Nhật ký hôm nay</ThemedText>
+          <ThemedText style={{ opacity: 0.7 }}>{formatDate(summary?.date)}</ThemedText>
 
-          <View style={styles.summaryRow}>
-            <View style={styles.summaryBox}>
-              <ThemedText style={styles.summaryLabel}>Tieu thu</ThemedText>
-              <ThemedText variant="title">{formatNumber(summary?.totalCalories, " kcal")}</ThemedText>
+          <View style={styles.row}>
+            <View style={[styles.box, { backgroundColor: theme.colors.background }]}>
+              <ThemedText style={styles.muted}>Tiêu thụ</ThemedText>
+              <ThemedText variant="title">{formatNumber(summary?.totalCalories, ' kcal')}</ThemedText>
             </View>
-            <View style={styles.summaryBox}>
-              <ThemedText style={styles.summaryLabel}>Muc tieu</ThemedText>
-              <ThemedText variant="title">{formatNumber(summary?.targetCalories, " kcal")}</ThemedText>
-            </View>
-          </View>
-          {calorieDiffText ? <ThemedText style={styles.infoText}>{calorieDiffText}</ThemedText> : null}
-
-          <View style={styles.macroRow}>
-            <View style={[styles.macroBox, { backgroundColor: theme.colors.background }]}>
-              <ThemedText style={styles.summaryLabel}>Protein</ThemedText>
-              <ThemedText>{formatNumber(summary?.protein, " g")}</ThemedText>
-            </View>
-            <View style={[styles.macroBox, { backgroundColor: theme.colors.background }]}>
-              <ThemedText style={styles.summaryLabel}>Carb</ThemedText>
-              <ThemedText>{formatNumber(summary?.carbs, " g")}</ThemedText>
-            </View>
-            <View style={[styles.macroBox, { backgroundColor: theme.colors.background }]}>
-              <ThemedText style={styles.summaryLabel}>Fat</ThemedText>
-              <ThemedText>{formatNumber(summary?.fat, " g")}</ThemedText>
+            <View style={[styles.box, { backgroundColor: theme.colors.background }]}>
+              <ThemedText style={styles.muted}>Mục tiêu</ThemedText>
+              <ThemedText variant="title">{formatNumber(summary?.targetCalories, ' kcal')}</ThemedText>
             </View>
           </View>
 
-          <Pressable
-            style={[styles.addButton, { backgroundColor: theme.colors.primary }]}
-            onPress={() => setShowAddModal(true)}
-          >
-            <ThemedText style={styles.addButtonText}>+ Them mon</ThemedText>
-          </Pressable>
-          <Pressable
-            style={[styles.aiButton, { borderColor: theme.colors.primary }]}
-            onPress={() => navigation.navigate("AiNutrition")}
-          >
-            <ThemedText style={[styles.aiButtonText, { color: theme.colors.primary }]}>AI dinh duong</ThemedText>
-          </Pressable>
-        </View>
+          {calorieDiffText ? <ThemedText style={styles.muted}>{calorieDiffText}</ThemedText> : null}
+
+          <View style={styles.row}>
+            <View style={[styles.box, { backgroundColor: theme.colors.background }]}>
+              <ThemedText style={styles.muted}>Protein</ThemedText>
+              <ThemedText>{formatNumber(summary?.protein, ' g')}</ThemedText>
+            </View>
+            <View style={[styles.box, { backgroundColor: theme.colors.background }]}>
+              <ThemedText style={styles.muted}>Carb</ThemedText>
+              <ThemedText>{formatNumber(summary?.carbs, ' g')}</ThemedText>
+            </View>
+            <View style={[styles.box, { backgroundColor: theme.colors.background }]}>
+              <ThemedText style={styles.muted}>Fat</ThemedText>
+              <ThemedText>{formatNumber(summary?.fat, ' g')}</ThemedText>
+            </View>
+          </View>
+
+          <Button title="+ Thêm món" onPress={() => setShowAddModal(true)} />
+          <View style={{ height: 8 }} />
+          <Button variant="outline" title="AI dinh dưỡng" onPress={() => navigation.navigate('AiNutrition')} />
+        </Card>
 
         {isLoading ? (
-          <View style={[styles.loadingBox, { backgroundColor: theme.colors.card }]}> 
-            <ActivityIndicator color={theme.colors.primary} />
-            <ThemedText style={styles.loadingText}>Dang tai nhat ky...</ThemedText>
-          </View>
+          <Card>
+            <View style={{ alignItems: 'center', paddingVertical: 20 }}>
+              <ActivityIndicator color={theme.colors.primary} />
+              <ThemedText style={{ opacity: 0.7 }}>Đang tải nhật ký...</ThemedText>
+            </View>
+          </Card>
         ) : summary && summary.meals.length > 0 ? (
           summary.meals.map((meal) => (
-            <View key={meal.mealType} style={[styles.mealCard, { backgroundColor: theme.colors.card }]}> 
+            <Card key={meal.mealType}>
               <View style={styles.mealHeader}>
                 <View>
                   <ThemedText variant="subtitle">{MEAL_TITLE_MAP[meal.mealType] ?? meal.title}</ThemedText>
-                  <ThemedText style={styles.mealTotal}>{formatNumber(meal.totalCalories, " kcal")}</ThemedText>
+                  <ThemedText style={styles.mealTotal}>{formatNumber(meal.totalCalories, ' kcal')}</ThemedText>
                 </View>
-                <ThemedText style={styles.entryCount}>{meal.entries.length} mon</ThemedText>
+                <ThemedText style={styles.muted}>{meal.entries.length} món</ThemedText>
               </View>
 
-              {meal.entries.map((entry) => (
+              {meal.entries.map((entry: any) => (
                 <View key={entry.id} style={[styles.entryRow, { borderColor: theme.colors.border }]}> 
                   <View style={styles.entryInfo}>
                     <ThemedText style={styles.entryName}>{entry.foodName}</ThemedText>
                     <ThemedText style={styles.entryMeta}>
-                      {formatNumber(entry.calories, " kcal")} ? {entry.quantityText ?? "Khong ro khau phan"}
+                      {formatNumber(entry.calories, ' kcal')} · {entry.quantityText ?? 'Không rõ khẩu phần'}
                     </ThemedText>
                   </View>
-                  <Pressable onPress={() => handleDelete(entry.id, entry.foodName)} style={styles.deleteChip}>
-                    <ThemedText style={styles.deleteText}>Xoa</ThemedText>
+                  <Pressable accessibilityRole="button" hitSlop={8} onPress={() => handleDelete(entry.id, entry.foodName)} style={styles.deleteChip}>
+                    <ThemedText style={{ color: theme.colors.danger ?? '#E53935', fontFamily: 'Inter_600SemiBold' }}>Xoá</ThemedText>
                   </Pressable>
                 </View>
               ))}
-            </View>
+            </Card>
           ))
         ) : (
-          <View style={[styles.emptyCard, { backgroundColor: theme.colors.card }]}> 
-            <ThemedText variant="subtitle">Chua co mon nao</ThemedText>
-            <ThemedText style={styles.infoText}>Nhan "Them mon" de ghi lai bua an dau tien</ThemedText>
-          </View>
+          <Card>
+            <ThemedText style={styles.muted}>Chưa có món nào hôm nay</ThemedText>
+          </Card>
         )}
-      </ScrollView>
+      </Screen>
 
       <AddEntryModal visible={showAddModal} onClose={() => setShowAddModal(false)} onSelect={handleAddOption} />
     </View>
@@ -253,183 +200,18 @@ const HomeScreen = (): JSX.Element => {
 };
 
 const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-  },
-  scrollContent: {
-    padding: 24,
-    gap: 16,
-    paddingBottom: 48,
-  },
-  summaryCard: {
-    borderRadius: 16,
-    padding: 20,
-    gap: 16,
-    shadowColor: "#000",
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 2,
-  },
-  dateText: {
-    textTransform: "capitalize",
-  },
-  summaryRow: {
-    flexDirection: "row",
-    gap: 12,
-  },
-  summaryBox: {
-    flex: 1,
-    borderRadius: 12,
-    padding: 12,
-    borderWidth: 1,
-    borderColor: "rgba(0,0,0,0.05)",
-    gap: 4,
-  },
-  summaryLabel: {
-    fontSize: 13,
-    opacity: 0.7,
-  },
-  infoText: {
-    opacity: 0.8,
-  },
-  macroRow: {
-    flexDirection: "row",
-    gap: 12,
-  },
-  macroBox: {
-    flex: 1,
-    borderRadius: 12,
-    padding: 12,
-  },
-  addButton: {
-    marginTop: 8,
-    borderRadius: 999,
-    paddingVertical: 12,
-    alignItems: "center",
-  },
-  addButtonText: {
-    color: "#fff",
-    fontFamily: "Inter_600SemiBold",
-  },
-  aiButton: {
-    marginTop: 8,
-    borderRadius: 999,
-    paddingVertical: 10,
-    alignItems: "center",
-    borderWidth: 1,
-    backgroundColor: "transparent",
-  },
-  aiButtonText: {
-    fontFamily: "Inter_600SemiBold",
-  },
-  loadingBox: {
-    borderRadius: 16,
-    padding: 20,
-    alignItems: "center",
-    gap: 8,
-    shadowColor: "#000",
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 3 },
-    elevation: 1,
-  },
-  loadingText: {
-    opacity: 0.8,
-  },
-  mealCard: {
-    borderRadius: 16,
-    padding: 20,
-    gap: 12,
-    shadowColor: "#000",
-    shadowOpacity: 0.05,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 1,
-  },
-  mealHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  mealTotal: {
-    opacity: 0.7,
-    marginTop: 4,
-  },
-  entryCount: {
-    opacity: 0.6,
-  },
-  entryRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingVertical: 12,
-    borderTopWidth: 1,
-  },
-  entryInfo: {
-    flex: 1,
-    paddingRight: 12,
-    gap: 4,
-  },
-  entryName: {
-    fontFamily: "Inter_600SemiBold",
-  },
-  entryMeta: {
-    fontSize: 13,
-    opacity: 0.7,
-  },
-  deleteChip: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 999,
-    backgroundColor: "#FDECEA",
-  },
-  deleteText: {
-    color: "#D84343",
-    fontFamily: "Inter_600SemiBold",
-  },
-  emptyCard: {
-    borderRadius: 16,
-    padding: 20,
-    alignItems: "center",
-    gap: 8,
-    shadowColor: "#000",
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 3 },
-    elevation: 1,
-  },
-  modalBackdrop: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.4)",
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 24,
-  },
-  modalCard: {
-    width: "100%",
-    borderRadius: 16,
-    padding: 20,
-    gap: 12,
-    backgroundColor: "#fff",
-  },
-  modalHint: {
-    opacity: 0.7,
-  },
-  modalButton: {
-    borderRadius: 12,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    backgroundColor: "#F0F4F3",
-  },
-  modalButtonText: {
-    fontFamily: "Inter_600SemiBold",
-    textAlign: "center",
-  },
-  modalCancel: {
-    marginTop: 8,
-    alignItems: "center",
-  },
+  row: { flexDirection: 'row', gap: 12 },
+  box: { flex: 1, padding: 12, borderRadius: 12, gap: 4 },
+  muted: { opacity: 0.7 },
+  mealHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  mealTotal: { opacity: 0.9 },
+  entryRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 10, borderBottomWidth: 1 },
+  entryInfo: { flex: 1, paddingRight: 12 },
+  entryName: { fontFamily: 'Inter_600SemiBold' },
+  entryMeta: { opacity: 0.75, fontSize: 13 },
+  deleteChip: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 999, borderWidth: 1, borderColor: 'transparent', backgroundColor: 'transparent' },
+  modalBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'center', alignItems: 'center', padding: 24 },
+  modalHint: { opacity: 0.8 },
 });
 
 export default HomeScreen;

@@ -12,8 +12,22 @@ export type AppTheme = {
     primary: string;
     secondary: string;
     muted: string;
+    danger?: string;
   };
   statusBarStyle: 'light' | 'dark';
+  spacing: {
+    xs: number;
+    sm: number;
+    md: number;
+    lg: number;
+    xl: number;
+  };
+  radius: {
+    sm: number;
+    md: number;
+    lg: number;
+    full: number;
+  };
 };
 
 export const lightTheme: AppTheme = {
@@ -26,8 +40,11 @@ export const lightTheme: AppTheme = {
     primary: '#0A8F62',
     secondary: '#0A4D3C',
     muted: '#9FA6A3',
+    danger: '#E53935',
   },
   statusBarStyle: 'dark',
+  spacing: { xs: 6, sm: 10, md: 16, lg: 20, xl: 24 },
+  radius: { sm: 8, md: 12, lg: 16, full: 999 },
 };
 
 export const darkTheme: AppTheme = {
@@ -40,8 +57,11 @@ export const darkTheme: AppTheme = {
     primary: '#32D29A',
     secondary: '#1B8C68',
     muted: '#7D8884',
+    danger: '#E53935',
   },
   statusBarStyle: 'light',
+  spacing: { xs: 6, sm: 10, md: 16, lg: 20, xl: 24 },
+  radius: { sm: 8, md: 12, lg: 16, full: 999 },
 };
 
 // Chuẩn hóa theme cho React Navigation để màu đồng bộ

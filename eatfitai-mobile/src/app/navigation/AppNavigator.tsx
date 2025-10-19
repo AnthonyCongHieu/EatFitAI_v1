@@ -34,7 +34,13 @@ const AppNavigator = (): JSX.Element => {
       {isInitializing ? (
         <></>
       ) : (
-        <Stack.Navigator screenOptions={{ headerShown: false }}>
+        <Stack.Navigator
+          screenOptions={{
+            headerShown: false,
+            contentStyle: { backgroundColor: theme.colors.background },
+            statusBarStyle: theme.statusBarStyle,
+          }}
+        >
           {!isAuthenticated ? (
             // Chưa đăng nhập: Hiển thị stack đăng nhập/đăng ký
             <>
@@ -48,27 +54,62 @@ const AppNavigator = (): JSX.Element => {
               <Stack.Screen
                 name="FoodSearch"
                 component={FoodSearchScreen}
-                options={{ headerShown: true, title: 'Tim mon' }}
+                options={{
+                  headerShown: true,
+                  title: 'Tìm món',
+                  headerStyle: { backgroundColor: theme.colors.card },
+                  headerTintColor: theme.colors.text,
+                  headerShadowVisible: false,
+                  headerTitleStyle: { fontFamily: 'Inter_600SemiBold' },
+                }}
               />
               <Stack.Screen
                 name="FoodDetail"
                 component={FoodDetailScreen}
-                options={{ headerShown: true, title: 'Chi tiet mon' }}
+                options={{
+                  headerShown: true,
+                  title: 'Chi tiết món',
+                  headerStyle: { backgroundColor: theme.colors.card },
+                  headerTintColor: theme.colors.text,
+                  headerShadowVisible: false,
+                  headerTitleStyle: { fontFamily: 'Inter_600SemiBold' },
+                }}
               />
               <Stack.Screen
                 name="CustomDish"
                 component={CustomDishScreen}
-                options={{ headerShown: true, title: 'Mon thu cong' }}
+                options={{
+                  headerShown: true,
+                  title: 'Món thủ công',
+                  headerStyle: { backgroundColor: theme.colors.card },
+                  headerTintColor: theme.colors.text,
+                  headerShadowVisible: false,
+                  headerTitleStyle: { fontFamily: 'Inter_600SemiBold' },
+                }}
               />
               <Stack.Screen
                 name="AiCamera"
                 component={AiCameraScreen}
-                options={{ headerShown: true, title: 'AI Camera' }}
+                options={{
+                  headerShown: true,
+                  title: 'AI Camera',
+                  headerStyle: { backgroundColor: theme.colors.card },
+                  headerTintColor: theme.colors.text,
+                  headerShadowVisible: false,
+                  headerTitleStyle: { fontFamily: 'Inter_600SemiBold' },
+                }}
               />
               <Stack.Screen
                 name="AiNutrition"
                 component={AiNutritionScreen}
-                options={{ headerShown: true, title: 'AI Nutrition' }}
+                options={{
+                  headerShown: true,
+                  title: 'AI Dinh dưỡng',
+                  headerStyle: { backgroundColor: theme.colors.card },
+                  headerTintColor: theme.colors.text,
+                  headerShadowVisible: false,
+                  headerTitleStyle: { fontFamily: 'Inter_600SemiBold' },
+                }}
               />
             </>
           )}

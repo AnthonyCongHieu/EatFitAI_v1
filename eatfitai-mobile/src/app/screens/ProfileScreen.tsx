@@ -18,6 +18,8 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import Toast from 'react-native-toast-message';
 
 import { ThemedText } from '../../components/ThemedText';
+import ThemedTextInput from '../../components/ThemedTextInput';
+import Screen from '../../components/Screen';
 import { useAppTheme } from '../../theme/ThemeProvider';
 import { useAuthStore } from '../../store/useAuthStore';
 import { useProfileStore } from '../../store/useProfileStore';
@@ -144,7 +146,7 @@ const ProfileScreen = (): JSX.Element => {
 
   useEffect(() => {
     fetchProfile().catch(() => {
-      Toast.show({ type: 'error', text1: 'Tai ho so that bai' });
+      Toast.show({ type: 'error', text1: 'Tải hồ sơ thất bại' });
     });
   }, [fetchProfile]);
 
@@ -169,7 +171,7 @@ const ProfileScreen = (): JSX.Element => {
         weightKg: values.weightKg ? Number(values.weightKg) : null,
         dateOfBirth: values.dateOfBirth ? values.dateOfBirth.trim() : null,
       });
-      Toast.show({ type: 'success', text1: 'Da luu thong tin ho so' });
+      Toast.show({ type: 'success', text1: 'Đã lưu thông tin hồ sơ' });
     } catch (error: any) {
       const status = error?.response?.status;
       if (status === 422) {
@@ -180,7 +182,7 @@ const ProfileScreen = (): JSX.Element => {
         });
         return;
       }
-      Toast.show({ type: 'error', text1: 'Khong the luu ho so' });
+      Toast.show({ type: 'error', text1: 'Không thể lưu hồ sơ' });
     }
   };
 
@@ -193,18 +195,18 @@ const ProfileScreen = (): JSX.Element => {
         recordedAt: values.recordedAt ? `${values.recordedAt}T00:00:00Z` : null,
       });
       resetMetrics({ heightCm: '', weightKg: '', bodyFatPercent: '', recordedAt: '' });
-      Toast.show({ type: 'success', text1: 'Da ghi nhan so do moi' });
+      Toast.show({ type: 'success', text1: 'Đã ghi nhận số đo mới' });
     } catch (error: any) {
       const status = error?.response?.status;
       if (status === 422) {
         Toast.show({
           type: 'error',
-          text1: 'So do khong hop le',
+          text1: 'Số đo không hợp lệ',
           text2: 'Vui long kiem tra cac truong',
         });
         return;
       }
-      Toast.show({ type: 'error', text1: 'Khong the luu so do' });
+      Toast.show({ type: 'error', text1: 'Không thể lưu số đo' });
     }
   };
 
@@ -212,10 +214,10 @@ const ProfileScreen = (): JSX.Element => {
     <KeyboardAvoidingView
       style={[styles.flex, { backgroundColor: theme.colors.background }]}
       behavior={Platform.select({ ios: 'padding', android: undefined })}>
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      <Screen contentContainerStyle={styles.scrollContent}>
         <View style={[styles.card, { backgroundColor: theme.colors.card }]}>
-          <ThemedText variant="title">Thong tin ca nhan</ThemedText>
-          <ThemedText style={styles.subtitle}>Chinh sua ho so va luu lai de cap nhat</ThemedText>
+          <ThemedText variant="title">Thông tin cá nhân</ThemedText>
+          <ThemedText style={styles.subtitle}>Chỉnh sửa hồ sơ và lưu lại để cập nhật</ThemedText>
 
           {isLoading ? (
             <View style={styles.loadingBox}>
@@ -223,53 +225,57 @@ const ProfileScreen = (): JSX.Element => {
             </View>
           ) : (
             <>
-              <ThemedText style={styles.label}>Ho va ten</ThemedText>
+              <ThemedText style={styles.label}>Họ và tên</ThemedText>
               <Controller
                 control={control}
                 name="fullName"
                 render={({ field: { value, onChange, onBlur } }) => (
-                  <TextInput
+                  <ThemedTextInput
                     style={[styles.input, { borderColor: theme.colors.border, color: theme.colors.text }]}
                     value={value}
                     onChangeText={onChange}
                     onBlur={onBlur}
-                    placeholder="Nhap ho ten"
+                    placeholder="Nhập họ tên"
                     placeholderTextColor={theme.colors.muted}
                   />
                 )}
               />
-              {profileErrors.fullName && (
-                <ThemedText style={styles.errorText}>{profileErrors.fullName.message}</ThemedText>
+          {profileErrors.fullName && (
+                <ThemedText style={[styles.errorText, { color: theme.colors.danger ?? '#E53935' }]}>
+                  {profileErrors.fullName.message}
+                </ThemedText>
               )}
 
-              <ThemedText style={styles.label}>So dien thoai</ThemedText>
+              <ThemedText style={styles.label}>Số điện thoại</ThemedText>
               <Controller
                 control={control}
                 name="phone"
                 render={({ field: { value, onChange, onBlur } }) => (
-                  <TextInput
+                  <ThemedTextInput
                     style={[styles.input, { borderColor: theme.colors.border, color: theme.colors.text }]}
                     value={value ?? ''}
                     onChangeText={onChange}
                     onBlur={onBlur}
-                    placeholder="Vi du: 0987654321"
+                    placeholder="Ví dụ: 0987654321"
                     placeholderTextColor={theme.colors.muted}
                     keyboardType="phone-pad"
                   />
                 )}
               />
               {profileErrors.phone && (
-                <ThemedText style={styles.errorText}>{profileErrors.phone.message}</ThemedText>
+                <ThemedText style={[styles.errorText, { color: theme.colors.danger ?? '#E53935' }]}>
+                  {profileErrors.phone.message}
+                </ThemedText>
               )}
 
               <View style={styles.row}>
                 <View style={styles.col}>
-                  <ThemedText style={styles.label}>Chieu cao (cm)</ThemedText>
+                  <ThemedText style={styles.label}>Chiều cao (cm)</ThemedText>
                   <Controller
                     control={control}
                     name="heightCm"
                     render={({ field: { value, onChange, onBlur } }) => (
-                      <TextInput
+                      <ThemedTextInput
                         style={[styles.input, { borderColor: theme.colors.border, color: theme.colors.text }]}
                         value={value ?? ''}
                         onChangeText={onChange}
@@ -281,16 +287,18 @@ const ProfileScreen = (): JSX.Element => {
                     )}
                   />
                   {profileErrors.heightCm && (
-                    <ThemedText style={styles.errorText}>{profileErrors.heightCm.message}</ThemedText>
+                    <ThemedText style={[styles.errorText, { color: theme.colors.danger ?? '#E53935' }]}>
+                      {profileErrors.heightCm.message}
+                    </ThemedText>
                   )}
                 </View>
                 <View style={styles.col}>
-                  <ThemedText style={styles.label}>Can nang (kg)</ThemedText>
+                  <ThemedText style={styles.label}>Cân nặng (kg)</ThemedText>
                   <Controller
                     control={control}
                     name="weightKg"
                     render={({ field: { value, onChange, onBlur } }) => (
-                      <TextInput
+                      <ThemedTextInput
                         style={[styles.input, { borderColor: theme.colors.border, color: theme.colors.text }]}
                         value={value ?? ''}
                         onChangeText={onChange}
@@ -302,17 +310,19 @@ const ProfileScreen = (): JSX.Element => {
                     )}
                   />
                   {profileErrors.weightKg && (
-                    <ThemedText style={styles.errorText}>{profileErrors.weightKg.message}</ThemedText>
+                    <ThemedText style={[styles.errorText, { color: theme.colors.danger ?? '#E53935' }]}>
+                      {profileErrors.weightKg.message}
+                    </ThemedText>
                   )}
                 </View>
               </View>
 
-              <ThemedText style={styles.label}>Ngay sinh (YYYY-MM-DD)</ThemedText>
+              <ThemedText style={styles.label}>Ngày sinh (YYYY-MM-DD)</ThemedText>
               <Controller
                 control={control}
                 name="dateOfBirth"
                 render={({ field: { value, onChange, onBlur } }) => (
-                  <TextInput
+                  <ThemedTextInput
                     style={[styles.input, { borderColor: theme.colors.border, color: theme.colors.text }]}
                     value={value ?? ''}
                     onChangeText={onChange}
@@ -323,7 +333,9 @@ const ProfileScreen = (): JSX.Element => {
                 )}
               />
               {profileErrors.dateOfBirth && (
-                <ThemedText style={styles.errorText}>{profileErrors.dateOfBirth.message}</ThemedText>
+                <ThemedText style={[styles.errorText, { color: theme.colors.danger ?? '#E53935' }]}>
+                  {profileErrors.dateOfBirth.message}
+                </ThemedText>
               )}
 
               <Pressable
@@ -337,29 +349,32 @@ const ProfileScreen = (): JSX.Element => {
                   },
                 ]}>
                 <ThemedText style={styles.buttonText}>
-                  {isSaving || isSubmittingProfile ? 'Dang luu...' : 'Luu ho so'}
+                  {isSaving || isSubmittingProfile ? 'Đang lưu...' : 'Lưu hồ sơ'}
                 </ThemedText>
               </Pressable>
             </>
           )}
 
           <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Đăng xuất"
+            hitSlop={8}
             onPress={() => logout().catch(() => {})}
-            style={[styles.button, { backgroundColor: '#E53935', marginTop: 16 }]}>
-            <ThemedText style={styles.buttonText}>Dang xuat</ThemedText>
+            style={[styles.button, { backgroundColor: theme.colors.danger ?? '#E53935', marginTop: 16 }]}>
+            <ThemedText style={styles.buttonText}>Đăng xuất</ThemedText>
           </Pressable>
         </View>
 
         <View style={[styles.card, { backgroundColor: theme.colors.card }]}>
-          <ThemedText variant="title">Ghi nhan chi so co the</ThemedText>
-          <ThemedText style={styles.subtitle}>Theo doi tien trinh bang cach luu so do moi</ThemedText>
+          <ThemedText variant="title">Ghi nhận chỉ số cơ thể</ThemedText>
+          <ThemedText style={styles.subtitle}>Theo dõi tiến trình bằng cách lưu số đo mới</ThemedText>
 
-          <ThemedText style={styles.label}>Chieu cao (cm)</ThemedText>
+          <ThemedText style={styles.label}>Chiều cao (cm)</ThemedText>
           <Controller
             control={metricsControl}
             name="heightCm"
             render={({ field: { value, onChange, onBlur } }) => (
-              <TextInput
+              <ThemedTextInput
                 style={[styles.input, { borderColor: theme.colors.border, color: theme.colors.text }]}
                 value={value}
                 onChangeText={onChange}
@@ -371,15 +386,17 @@ const ProfileScreen = (): JSX.Element => {
             )}
           />
           {metricsErrors.heightCm && (
-            <ThemedText style={styles.errorText}>{metricsErrors.heightCm.message}</ThemedText>
+            <ThemedText style={[styles.errorText, { color: theme.colors.danger ?? '#E53935' }]}>
+              {metricsErrors.heightCm.message}
+            </ThemedText>
           )}
 
-          <ThemedText style={styles.label}>Can nang (kg)</ThemedText>
+          <ThemedText style={styles.label}>Cân nặng (kg)</ThemedText>
           <Controller
             control={metricsControl}
             name="weightKg"
             render={({ field: { value, onChange, onBlur } }) => (
-              <TextInput
+              <ThemedTextInput
                 style={[styles.input, { borderColor: theme.colors.border, color: theme.colors.text }]}
                 value={value}
                 onChangeText={onChange}
@@ -391,15 +408,17 @@ const ProfileScreen = (): JSX.Element => {
             )}
           />
           {metricsErrors.weightKg && (
-            <ThemedText style={styles.errorText}>{metricsErrors.weightKg.message}</ThemedText>
+            <ThemedText style={[styles.errorText, { color: theme.colors.danger ?? '#E53935' }]}>
+              {metricsErrors.weightKg.message}
+            </ThemedText>
           )}
 
-          <ThemedText style={styles.label}>Body fat % (tuy chon)</ThemedText>
+          <ThemedText style={styles.label}>Body fat % (tuỳ chọn)</ThemedText>
           <Controller
             control={metricsControl}
             name="bodyFatPercent"
             render={({ field: { value, onChange, onBlur } }) => (
-              <TextInput
+              <ThemedTextInput
                 style={[styles.input, { borderColor: theme.colors.border, color: theme.colors.text }]}
                 value={value ?? ''}
                 onChangeText={onChange}
@@ -411,15 +430,17 @@ const ProfileScreen = (): JSX.Element => {
             )}
           />
           {metricsErrors.bodyFatPercent && (
-            <ThemedText style={styles.errorText}>{metricsErrors.bodyFatPercent.message}</ThemedText>
+            <ThemedText style={[styles.errorText, { color: theme.colors.danger ?? '#E53935' }]}>
+              {metricsErrors.bodyFatPercent.message}
+            </ThemedText>
           )}
 
-          <ThemedText style={styles.label}>Ngay do (YYYY-MM-DD)</ThemedText>
+          <ThemedText style={styles.label}>Ngày đo (YYYY-MM-DD)</ThemedText>
           <Controller
             control={metricsControl}
             name="recordedAt"
             render={({ field: { value, onChange, onBlur } }) => (
-              <TextInput
+              <ThemedTextInput
                 style={[styles.input, { borderColor: theme.colors.border, color: theme.colors.text }]}
                 value={value ?? ''}
                 onChangeText={onChange}
@@ -430,10 +451,15 @@ const ProfileScreen = (): JSX.Element => {
             )}
           />
           {metricsErrors.recordedAt && (
-            <ThemedText style={styles.errorText}>{metricsErrors.recordedAt.message}</ThemedText>
+            <ThemedText style={[styles.errorText, { color: theme.colors.danger ?? '#E53935' }]}>
+              {metricsErrors.recordedAt.message}
+            </ThemedText>
           )}
 
           <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Lưu số đo mới"
+            hitSlop={8}
             onPress={handleMetricsSubmit(onSubmitBodyMetrics)}
             disabled={isSubmittingMetrics}
             style={[
@@ -445,11 +471,11 @@ const ProfileScreen = (): JSX.Element => {
               },
             ]}>
             <ThemedText style={styles.buttonText}>
-              {isSubmittingMetrics ? 'Dang luu...' : 'Luu so do moi'}
+              {isSubmittingMetrics ? 'Đang lưu...' : 'Lưu số đo mới'}
             </ThemedText>
           </Pressable>
         </View>
-      </ScrollView>
+      </Screen>
     </KeyboardAvoidingView>
   );
 };
@@ -482,9 +508,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: Platform.select({ ios: 12, android: 10 }),
     marginTop: 6,
+    fontFamily: 'Inter_400Regular',
   },
   errorText: {
-    color: '#E53935',
     marginTop: 4,
   },
   button: {
