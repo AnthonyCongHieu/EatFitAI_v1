@@ -1,6 +1,8 @@
 using EatFitAI.Infrastructure.Persistence;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
+using Microsoft.IdentityModel.Tokens;
 using Serilog;
 using System.IO;
 using System.Text;
@@ -50,6 +52,26 @@ var connectionString = builder.Configuration.GetConnectionString("Default")
 builder.Services.AddDbContext<EatFitAiDbContext>(options =>
     options.UseSqlServer(connectionString));
 
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+}).AddJwtBearer(options =>
+{
+    var key = builder.Configuration["Jwt:Key"] ?? builder.Configuration["Jwt__Key"];
+    var issuer = builder.Configuration["Jwt:Issuer"] ?? builder.Configuration["Jwt__Issuer"];
+    var audience = builder.Configuration["Jwt:Audience"] ?? builder.Configuration["Jwt__Audience"];
+    options.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidateIssuer = !string.IsNullOrWhiteSpace(issuer),
+        ValidateAudience = !string.IsNullOrWhiteSpace(audience),
+        ValidateIssuerSigningKey = true,
+        ValidIssuer = issuer,
+        ValidAudience = audience,
+        IssuerSigningKey = string.IsNullOrWhiteSpace(key) ? null : new SymmetricSecurityKey(Encoding.UTF8.GetBytes(key!))
+    };
+});
+
 var app = builder.Build();
 
 app.UseSerilogRequestLogging();
@@ -90,6 +112,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseCors("AppCors");
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();

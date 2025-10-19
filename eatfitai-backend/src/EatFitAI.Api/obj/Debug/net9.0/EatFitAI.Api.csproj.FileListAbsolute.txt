@@ -297,3 +297,4 @@ D:\Project\PTUD eatfitAL\coding\EatFitAI_v1\eatfitai-backend\src\EatFitAI.Api\bi
 D:\Project\PTUD eatfitAL\coding\EatFitAI_v1\eatfitai-backend\src\EatFitAI.Api\bin\Debug\net9.0\tr\Microsoft.CodeAnalysis.Workspaces.MSBuild.BuildHost.resources.dll
 D:\Project\PTUD eatfitAL\coding\EatFitAI_v1\eatfitai-backend\src\EatFitAI.Api\bin\Debug\net9.0\zh-Hans\Microsoft.CodeAnalysis.Workspaces.MSBuild.BuildHost.resources.dll
 D:\Project\PTUD eatfitAL\coding\EatFitAI_v1\eatfitai-backend\src\EatFitAI.Api\bin\Debug\net9.0\zh-Hant\Microsoft.CodeAnalysis.Workspaces.MSBuild.BuildHost.resources.dll
+D:\Project\PTUD eatfitAL\coding\EatFitAI_v1\eatfitai-backend\src\EatFitAI.Api\bin\Debug\net9.0\Microsoft.AspNetCore.Authentication.JwtBearer.dll

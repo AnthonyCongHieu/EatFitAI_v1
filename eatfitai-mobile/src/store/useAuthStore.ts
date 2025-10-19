@@ -4,6 +4,7 @@
 import { create } from 'zustand';
 import * as AuthSession from 'expo-auth-session';
 
+import { API_BASE_URL } from '../config/env';
 import apiClient, { setAccessTokenMem } from '../services/apiClient';
 import { tokenStorage } from '../services/secureStore';
 
@@ -26,7 +27,7 @@ type AuthState = {
 };
 
 // Helper: lấy base URL từ biến môi trường Expo
-const API_BASE = process.env.EXPO_PUBLIC_API_BASE_URL ?? '';
+const API_BASE = API_BASE_URL ?? '';
 
 export const useAuthStore = create<AuthState>((set) => ({
   isInitializing: true,
@@ -87,6 +88,10 @@ export const useAuthStore = create<AuthState>((set) => ({
   // Đăng nhập Google: mở trình duyệt xác thực tại backend `/api/auth/google`
   // Backend sau khi xác thực sẽ redirect về redirectUri kèm token (query/fragment)
   signInWithGoogle: async () => {
+    if (!API_BASE) {
+      throw new Error('API base URL is not configured. Set EXPO_PUBLIC_API_BASE_URL or provide a fallback.');
+    }
+
     // redirectUri tiêu chuẩn cho Expo (dev): dùng proxy để dễ chạy trên thiết bị thật
     const redirectUri = (AuthSession as any).makeRedirectUri({ useProxy: true });
     const authUrl = `${API_BASE}/api/auth/google?redirect_uri=${encodeURIComponent(redirectUri)}`;

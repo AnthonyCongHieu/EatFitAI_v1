@@ -1,11 +1,17 @@
 import axios, { AxiosError, AxiosRequestConfig, InternalAxiosRequestConfig } from 'axios';
+import { API_BASE_URL } from '../config/env';
 import { tokenStorage } from './secureStore';
 
 // Client axios cho toàn bộ app
 const apiClient = axios.create({
-  baseURL: process.env.EXPO_PUBLIC_API_BASE_URL,
+  baseURL: API_BASE_URL,
   timeout: 10000,
 });
+
+if (__DEV__ && !API_BASE_URL) {
+  // eslint-disable-next-line no-console
+  console.warn('[EatFitAI] Missing API base URL. Set EXPO_PUBLIC_API_BASE_URL or provide fallback.');
+}
 
 // Bộ nhớ tạm trên RAM để hạn chế đọc SecureStore nhiều lần
 let accessTokenMem: string | null = null;
