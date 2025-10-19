@@ -10,3 +10,15 @@ F:\EatFitAI_v1\eatfitai-backend\src\EatFitAI.Domain\obj\Debug\net9.0\EatFitAI.Do
 F:\EatFitAI_v1\eatfitai-backend\src\EatFitAI.Domain\obj\Debug\net9.0\refint\EatFitAI.Domain.dll
 F:\EatFitAI_v1\eatfitai-backend\src\EatFitAI.Domain\obj\Debug\net9.0\EatFitAI.Domain.pdb
 F:\EatFitAI_v1\eatfitai-backend\src\EatFitAI.Domain\obj\Debug\net9.0\ref\EatFitAI.Domain.dll
+D:\Project\PTUD eatfitAL\coding\EatFitAI_v1\eatfitai-backend\src\EatFitAI.Domain\bin\Debug\net9.0\EatFitAI.Domain.deps.json
+D:\Project\PTUD eatfitAL\coding\EatFitAI_v1\eatfitai-backend\src\EatFitAI.Domain\bin\Debug\net9.0\EatFitAI.Domain.dll
+D:\Project\PTUD eatfitAL\coding\EatFitAI_v1\eatfitai-backend\src\EatFitAI.Domain\bin\Debug\net9.0\EatFitAI.Domain.pdb
+D:\Project\PTUD eatfitAL\coding\EatFitAI_v1\eatfitai-backend\src\EatFitAI.Domain\obj\Debug\net9.0\EatFitAI.Domain.GeneratedMSBuildEditorConfig.editorconfig
+D:\Project\PTUD eatfitAL\coding\EatFitAI_v1\eatfitai-backend\src\EatFitAI.Domain\obj\Debug\net9.0\EatFitAI.Domain.AssemblyInfoInputs.cache
+D:\Project\PTUD eatfitAL\coding\EatFitAI_v1\eatfitai-backend\src\EatFitAI.Domain\obj\Debug\net9.0\EatFitAI.Domain.AssemblyInfo.cs
+D:\Project\PTUD eatfitAL\coding\EatFitAI_v1\eatfitai-backend\src\EatFitAI.Domain\obj\Debug\net9.0\EatFitAI.Domain.csproj.CoreCompileInputs.cache
+D:\Project\PTUD eatfitAL\coding\EatFitAI_v1\eatfitai-backend\src\EatFitAI.Domain\obj\Debug\net9.0\EatFitAI.Domain.sourcelink.json
+D:\Project\PTUD eatfitAL\coding\EatFitAI_v1\eatfitai-backend\src\EatFitAI.Domain\obj\Debug\net9.0\EatFitAI.Domain.dll
+D:\Project\PTUD eatfitAL\coding\EatFitAI_v1\eatfitai-backend\src\EatFitAI.Domain\obj\Debug\net9.0\refint\EatFitAI.Domain.dll
+D:\Project\PTUD eatfitAL\coding\EatFitAI_v1\eatfitai-backend\src\EatFitAI.Domain\obj\Debug\net9.0\EatFitAI.Domain.pdb
+D:\Project\PTUD eatfitAL\coding\EatFitAI_v1\eatfitai-backend\src\EatFitAI.Domain\obj\Debug\net9.0\ref\EatFitAI.Domain.dll

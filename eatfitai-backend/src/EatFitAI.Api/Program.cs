@@ -1,192 +1,91 @@
+using Microsoft.OpenApi.Models;
 using Serilog;
-using EatFitAI.Infrastructure.Data;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.IdentityModel.Tokens;
+using System.IO;
 using System.Text;
-using EatFitAI.Infrastructure.Auth;
-using EatFitAI.Api.Auth;
-using AutoMapper;
-using FluentValidation;
-using EatFitAI.Api.Profile;
-using EatFitAI.Api.ProfileEndpoints;
-using EatFitAI.Api.BodyMetrics;
-using EatFitAI.Api.NutritionTargets;
-using EatFitAI.Api.DiaryEndpoints;
-using EatFitAI.Api.SummaryEndpoints;
-using EatFitAI.Api.Foods;
-using EatFitAI.Api.CustomDishesEndpoints;
-using EatFitAI.Api.AiEndpoints;
-using EatFitAI.Application.AI;
-using EatFitAI.Infrastructure.AI;
-
-// Khởi tạo Serilog sớm để log trong quá trình bootstrap
-Log.Logger = new LoggerConfiguration()
-    .WriteTo.Console()
-    .CreateLogger();
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Gắn Serilog vào host (đọc cấu hình nếu có) - vì cần log tập trung
-builder.Host.UseSerilog((ctx, lc) =>
-    lc.ReadFrom.Configuration(ctx.Configuration)
-      .WriteTo.Console());
-
-// Kết nối DB + Health checks
-var connectionString = builder.Configuration.GetConnectionString("Default")
-    ?? Environment.GetEnvironmentVariable("ConnectionStrings__Default")
-    ?? "Server=localhost,1433;Database=EatFitAIDb;User Id=sa;Password=Your_strong_password123;TrustServerCertificate=True;";
-
-if (builder.Environment.IsEnvironment("Testing"))
+// Cau hinh Serilog de log ra console cho de theo doi
+builder.Host.UseSerilog((context, services, configuration) =>
 {
-    var sqliteConn = builder.Configuration.GetConnectionString("Default") ?? "Data Source=EatFitAITest.db";
-    builder.Services.AddDbContext<EatFitAIDbContext>(options => options.UseSqlite(sqliteConn));
-}
-else
-{
-    builder.Services.AddDbContext<EatFitAIDbContext>(options =>
-        options.UseSqlServer(connectionString, sql => sql.EnableRetryOnFailure()));
-}
-
-// Identity + Lockout
-builder.Services
-    .AddIdentityCore<IdentityUser<Guid>>(options =>
-    {
-        options.User.RequireUniqueEmail = true;
-        options.Password.RequiredLength = 6;
-        options.Lockout.AllowedForNewUsers = true;
-        options.Lockout.MaxFailedAccessAttempts = 5;
-        options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(15);
-    })
-    .AddSignInManager()
-    .AddEntityFrameworkStores<EatFitAIDbContext>()
-    .AddDefaultTokenProviders();
-
-// JWT Auth
-var jwtKey = builder.Configuration["Jwt:Key"] ?? builder.Configuration["Jwt__Key"] ?? "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
-var jwtIssuer = builder.Configuration["Jwt:Issuer"] ?? builder.Configuration["Jwt__Issuer"] ?? "eatfitai";
-var jwtAudience = builder.Configuration["Jwt:Audience"] ?? builder.Configuration["Jwt__Audience"] ?? "eatfitai.app";
-
-builder.Services.AddAuthentication(options =>
-{
-    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-}).AddJwtBearer(options =>
-{
-    options.RequireHttpsMetadata = false;
-    options.SaveToken = true;
-    options.TokenValidationParameters = new TokenValidationParameters
-    {
-        ValidateIssuer = true,
-        ValidateAudience = true,
-        ValidateLifetime = true,
-        ValidateIssuerSigningKey = true,
-        ValidIssuer = jwtIssuer,
-        ValidAudience = jwtAudience,
-        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey)),
-        ClockSkew = TimeSpan.FromSeconds(30)
-    };
+    configuration
+        .ReadFrom.Configuration(context.Configuration)
+        .ReadFrom.Services(services)
+        .Enrich.FromLogContext()
+        .WriteTo.Console();
 });
 
-builder.Services.AddAuthorization();
-
-builder.Services.AddScoped<IJwtTokenService, JwtTokenService>();
-
-// AI mock services
-builder.Services.AddScoped<IAiNutritionService, MockAiNutritionService>();
-builder.Services.AddScoped<IAiRecipeService, MockAiRecipeService>();
-builder.Services.AddScoped<IVisionService, MockVisionService>();
+builder.Services.AddControllers();
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen(options =>
+{
+    options.SwaggerDoc("v1", new OpenApiInfo
+    {
+        Title = "EatFitAI API",
+        Version = "v1",
+        Description = "EatFitAI backend APIs"
+    });
+});
 
 builder.Services.AddHealthChecks();
-
-// AutoMapper + FluentValidation
-builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
-builder.Services.AddValidatorsFromAssemblyContaining<UpdateProfileValidator>();
-
-
-// CORS: cho phép app Expo (exp://*) và local web (localhost:19006)
-const string CorsPolicyName = "Default";
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy(CorsPolicyName, policy =>
+    options.AddPolicy("AppCors", policy =>
+    {
         policy
             .SetIsOriginAllowed(origin =>
-            {
-                if (string.Equals(origin, "http://localhost:19006", StringComparison.OrdinalIgnoreCase))
-                    return true;
-                if (origin.StartsWith("exp://", StringComparison.OrdinalIgnoreCase))
-                    return true; // Cho expo dev client
-                return false;
-            })
+                string.Equals(origin, "http://localhost:19006", StringComparison.OrdinalIgnoreCase) ||
+                origin.StartsWith("exp://", StringComparison.OrdinalIgnoreCase))
             .AllowAnyHeader()
-            .AllowAnyMethod());
+            .AllowAnyMethod();
+    });
 });
-
-// OpenAPI (mặc định 3.x) để mô tả API rõ ràng
-builder.Services.AddOpenApi();
 
 var app = builder.Build();
 
-// Bật CORS sớm cho tất cả route
-app.UseCors(CorsPolicyName);
-
-// Serilog request logging - theo dõi request/response cơ bản
 app.UseSerilogRequestLogging();
 
-// AuthN/Z
-app.UseAuthentication();
-app.UseAuthorization();
-
-// Xuất JSON OpenAPI tại /openapi/v1.json
-app.MapOpenApi();
-
-// Swagger UI tại /swagger, trỏ tới JSON ở trên
-app.UseSwaggerUI(c =>
+if (app.Environment.IsDevelopment())
 {
-    c.SwaggerEndpoint("/openapi/v1.json", "EatFitAI API v1");
-    c.RoutePrefix = "swagger";
-});
+    // Middleware de sua chuoi OpenAPI -> 3.1.0
+    app.Use(async (context, next) =>
+    {
+        if (string.Equals(context.Request.Path, "/swagger/v1/swagger.json", StringComparison.OrdinalIgnoreCase))
+        {
+            var originalBody = context.Response.Body;
+            await using var tempStream = new MemoryStream();
+            context.Response.Body = tempStream;
 
-// Health endpoint
-app.MapHealthChecks("/health");
+            await next();
 
-// Endpoint mẫu để kiểm tra nhanh
-app.MapGet("/", () => Results.Ok(new { name = "EatFitAI Backend", status = "ok" }));
-app.MapGet("/ping", () => Results.Ok(new { message = "pong" }));
+            tempStream.Position = 0;
+            var payload = await new StreamReader(tempStream).ReadToEndAsync();
+            payload = payload.Replace("\"openapi\":\"3.0.1\"", "\"openapi\":\"3.1.0\"");
+            var bytes = Encoding.UTF8.GetBytes(payload);
+            context.Response.ContentLength = bytes.Length;
+            context.Response.Body = originalBody;
+            await context.Response.Body.WriteAsync(bytes);
+        }
+        else
+        {
+            await next();
+        }
+    });
 
-// Quick verification endpoints
-app.MapGet("/thucpham/count", async (EatFitAIDbContext db) =>
-{
-    var count = await db.ThucPhams.CountAsync();
-    return Results.Ok(new { count });
-});
-app.MapGet("/buaan/list", async (EatFitAIDbContext db) =>
-{
-    var items = await db.LoaiBuaAns.OrderBy(x => x.ThuTu).ToListAsync();
-    return Results.Ok(items);
-});
-
-// Khởi tạo DB và seed dữ liệu
-using (var scope = app.Services.CreateScope())
-{
-    var db = scope.ServiceProvider.GetRequiredService<EatFitAIDbContext>();
-    await db.EnsureCreatedAndSeedAsync();
+    app.UseSwagger();
+    app.UseSwaggerUI(options =>
+    {
+        options.SwaggerEndpoint("/swagger/v1/swagger.json", "EatFitAI API v1");
+        options.DocumentTitle = "EatFitAI API";
+    });
 }
 
-// Map auth endpoints
-app.MapAuth();
+app.UseCors("AppCors");
+app.UseAuthorization();
 
-// Map B3 endpoints (require auth)
-app.MapProfileEndpoints();
-app.MapBodyMetrics();
-app.MapNutritionTargets();
-app.MapDiary();
-app.MapSummaries();
-app.MapFoods();
-app.MapCustomDishes();
-app.MapAi();
+app.MapControllers();
+app.MapHealthChecks("/health");
+
+app.MapGet("/", () => Results.Ok(new { message = "EatFitAI backend dang san sang" }));
 
 app.Run();
-
-

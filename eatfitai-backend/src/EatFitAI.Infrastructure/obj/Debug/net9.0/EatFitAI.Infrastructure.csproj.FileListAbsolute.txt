@@ -16,3 +16,21 @@ F:\EatFitAI_v1\eatfitai-backend\src\EatFitAI.Infrastructure\obj\Debug\net9.0\Eat
 F:\EatFitAI_v1\eatfitai-backend\src\EatFitAI.Infrastructure\obj\Debug\net9.0\refint\EatFitAI.Infrastructure.dll
 F:\EatFitAI_v1\eatfitai-backend\src\EatFitAI.Infrastructure\obj\Debug\net9.0\EatFitAI.Infrastructure.pdb
 F:\EatFitAI_v1\eatfitai-backend\src\EatFitAI.Infrastructure\obj\Debug\net9.0\ref\EatFitAI.Infrastructure.dll
+D:\Project\PTUD eatfitAL\coding\EatFitAI_v1\eatfitai-backend\src\EatFitAI.Infrastructure\bin\Debug\net9.0\EatFitAI.Infrastructure.deps.json
+D:\Project\PTUD eatfitAL\coding\EatFitAI_v1\eatfitai-backend\src\EatFitAI.Infrastructure\bin\Debug\net9.0\EatFitAI.Infrastructure.dll
+D:\Project\PTUD eatfitAL\coding\EatFitAI_v1\eatfitai-backend\src\EatFitAI.Infrastructure\bin\Debug\net9.0\EatFitAI.Infrastructure.pdb
+D:\Project\PTUD eatfitAL\coding\EatFitAI_v1\eatfitai-backend\src\EatFitAI.Infrastructure\bin\Debug\net9.0\EatFitAI.Application.dll
+D:\Project\PTUD eatfitAL\coding\EatFitAI_v1\eatfitai-backend\src\EatFitAI.Infrastructure\bin\Debug\net9.0\EatFitAI.Domain.dll
+D:\Project\PTUD eatfitAL\coding\EatFitAI_v1\eatfitai-backend\src\EatFitAI.Infrastructure\bin\Debug\net9.0\EatFitAI.Domain.pdb
+D:\Project\PTUD eatfitAL\coding\EatFitAI_v1\eatfitai-backend\src\EatFitAI.Infrastructure\bin\Debug\net9.0\EatFitAI.Application.pdb
+D:\Project\PTUD eatfitAL\coding\EatFitAI_v1\eatfitai-backend\src\EatFitAI.Infrastructure\obj\Debug\net9.0\EatFitAI.Infrastructure.csproj.AssemblyReference.cache
+D:\Project\PTUD eatfitAL\coding\EatFitAI_v1\eatfitai-backend\src\EatFitAI.Infrastructure\obj\Debug\net9.0\EatFitAI.Infrastructure.GeneratedMSBuildEditorConfig.editorconfig
+D:\Project\PTUD eatfitAL\coding\EatFitAI_v1\eatfitai-backend\src\EatFitAI.Infrastructure\obj\Debug\net9.0\EatFitAI.Infrastructure.AssemblyInfoInputs.cache
+D:\Project\PTUD eatfitAL\coding\EatFitAI_v1\eatfitai-backend\src\EatFitAI.Infrastructure\obj\Debug\net9.0\EatFitAI.Infrastructure.AssemblyInfo.cs
+D:\Project\PTUD eatfitAL\coding\EatFitAI_v1\eatfitai-backend\src\EatFitAI.Infrastructure\obj\Debug\net9.0\EatFitAI.Infrastructure.csproj.CoreCompileInputs.cache
+D:\Project\PTUD eatfitAL\coding\EatFitAI_v1\eatfitai-backend\src\EatFitAI.Infrastructure\obj\Debug\net9.0\EatFitAI.Infrastructure.sourcelink.json
+D:\Project\PTUD eatfitAL\coding\EatFitAI_v1\eatfitai-backend\src\EatFitAI.Infrastructure\obj\Debug\net9.0\EatFitAI.1D4FB048.Up2Date
+D:\Project\PTUD eatfitAL\coding\EatFitAI_v1\eatfitai-backend\src\EatFitAI.Infrastructure\obj\Debug\net9.0\EatFitAI.Infrastructure.dll
+D:\Project\PTUD eatfitAL\coding\EatFitAI_v1\eatfitai-backend\src\EatFitAI.Infrastructure\obj\Debug\net9.0\refint\EatFitAI.Infrastructure.dll
+D:\Project\PTUD eatfitAL\coding\EatFitAI_v1\eatfitai-backend\src\EatFitAI.Infrastructure\obj\Debug\net9.0\EatFitAI.Infrastructure.pdb
+D:\Project\PTUD eatfitAL\coding\EatFitAI_v1\eatfitai-backend\src\EatFitAI.Infrastructure\obj\Debug\net9.0\ref\EatFitAI.Infrastructure.dll

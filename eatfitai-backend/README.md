@@ -1,74 +1,30 @@
-**EatFitAI Backend (Clean Architecture)**
+# EatFitAI Backend
 
-- Tech: .NET 9, Minimal API, Serilog, OpenAPI 3.1, HealthChecks
-- Structure:
-  - `src/EatFitAI.Api` (API layer)
-  - `src/EatFitAI.Application` (Use cases)
-  - `src/EatFitAI.Domain` (Entities, Value Objects)
-  - `src/EatFitAI.Infrastructure` (External: DB, integrations)
-  - `tests/EatFitAI.Tests` (Unit tests)
-  - `ops` (docker-compose, postman collection)
-  - `seed` (data seeding placeholder)
+Backend duoc to chuc theo clean architecture (Domain -> Application -> Infrastructure -> Api).
 
----
+## Yeu cau
+- .NET 8 SDK
 
-Getting Started
+## Cach chay
+`ash
+dotnet restore
+dotnet build
+dotnet run --project src/EatFitAI.Api/EatFitAI.Api.csproj
+`
 
-- Prerequisites:
-  - .NET SDK 9.0+
-  - (Optional) Docker 24+
+API se mo tai http://localhost:5000 (hoac port neu thay doi). Swagger co san tai /swagger (OpenAPI 3.1). Health check tai /health.
 
-- Restore & Build:
-  - `dotnet restore`
-  - `dotnet build`
+## Cau truc thu muc
+- src/EatFitAI.Domain: cac entity, logic thuoc domain
+- src/EatFitAI.Application: cac service, use case
+- src/EatFitAI.Infrastructure: truy cap du lieu, tich hop ngoai vi
+- src/EatFitAI.Api: ASP.NET API
+- 	ests/EatFitAI.Tests: unit/integration test (dang trong)
+- ops/: docker-compose, seed, postman collection (se bo sung o cac buoc tiep theo)
 
-- Run API (dev):
-  - `dotnet run --project src/EatFitAI.Api`
-  - 
+## Logging & Health
+- Log duoc day ra console bang Serilog (de quan sat tren Docker/CI).
+- Health check mac dinh tai /health.
 
-Auth & Security
-
-- Env vars (compose wires defaults):
-  - Jwt__Key, Jwt__Issuer, Jwt__Audience
-  - Auth__Google__ClientId_Web, Auth__Google__ClientId_Android
-- Identity lockout: 5 l?n sai/15 ph�t.
-- Endpoints:
-  - POST /api/auth/register { email, password, hoTen? }
-  - POST /api/auth/login { email, password }
-  - POST /api/auth/refresh { refreshToken }
-  - POST /api/auth/google { idToken }
-  - Tr? l?i theo RFC7807 (ProblemDetails).
-
-  Note: `<port>` do Kestrel sinh, xem log khi chạy (ví dụ `5189`).
-
-- Run via Docker (optional):
-  - `cd ops`
-  - `docker compose up --build`
-  - API: `http://localhost:8080`
-
-EF Core + SQL Server
-
-- Connection:
-  - Uses `ConnectionStrings:Default` (env `ConnectionStrings__Default`).
-  - When running via docker-compose, API connects to `sqlserver` service.
-  - Create `eatfitai-backend/.env` to override when running outside compose:
-    - `ConnectionStrings__Default=<<SQL thật>>`
-    - Optional: `SA_PASSWORD=Your_strong_password123` for compose.
-
-- Database & Seed:
-  - On startup the API creates DB schema (EnsureCreated) and seeds reference data:
-    - `LoaiBuaAn`, `MucDoVanDong`, `MucTieu`, `ThucPham` (>=15 VN samples).
-  - It also creates views: `vw_TongHopDinhDuongNgay`, `vw_TongHopDinhDuongTuan`.
-  - Decimal mapping: grams/macros `decimal(9,2)`, kcal `decimal(10,2)`.
-  - Unique keys: `NguoiDung.Email`; and `(NguoiDungId, NgayAn, MaBuaAn, ItemId, Source)` on `NhatKyAnUong`.
-
----
-
-Design Notes
-
-- Nullable + Analyzers + Warnings-as-errors (trừ `CS1591`) nhằm giữ chất lượng mã.
-- Serilog (console) để quan sát logs trong dev/CI/CD.
-- CORS cho `http://localhost:19006` (web dev) và `exp://*` (Expo React Native) qua `SetIsOriginAllowed`.
-- OpenAPI 3.1 được sinh bởi `Microsoft.AspNetCore.OpenApi` và hiển thị bằng Swagger UI tại `/swagger`.
-- HealthChecks tối giản `/health` để monitoring.
-
+## CORS
+Cho phep origin http://localhost:19006 va cac app Expo (exp://*).
