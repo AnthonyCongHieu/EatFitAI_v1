@@ -1,10 +1,11 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
+using EatFitAI.Domain.Entities;
 using EatFitAI.Infrastructure.Auth;
 using EatFitAI.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authorization;
@@ -19,6 +20,8 @@ namespace EatFitAI.Api.Controllers;
 [Route("api/auth")]
 public class AuthController : ControllerBase
 {
+    private const int MaxFailedAccessAttempts = 5;
+    private static readonly TimeSpan LockoutDuration = TimeSpan.FromMinutes(15);
     private readonly EatFitAiDbContext _db;
     private readonly IPasswordHasher _passwordHasher;
     private readonly IConfiguration _configuration;
@@ -59,6 +62,7 @@ public class AuthController : ControllerBase
         }
 
         var normalizedEmail = NormalizeEmail(request.Email);
+
         if (await _db.NguoiDungs.AnyAsync(u => u.Email == normalizedEmail, cancellationToken))
         {
             return Problem(
@@ -73,17 +77,23 @@ public class AuthController : ControllerBase
             Email = normalizedEmail,
             MatKhauHash = _passwordHasher.HashPassword(request.Password),
             HoTen = string.IsNullOrWhiteSpace(request.Name) ? null : request.Name!.Trim(),
+            AccessFailedCount = 0,
+            LockoutEnd = null,
             NgayTao = DateTime.UtcNow,
             NgayCapNhat = DateTime.UtcNow,
         };
 
         _db.NguoiDungs.Add(user);
+
+        var (accessToken, accessExpiresAt, jwtId) = CreateAccessToken(user);
+        var refreshToken = CreateRefreshToken(user, jwtId, GetClientIp());
+        _db.RefreshTokens.Add(refreshToken);
+
+        await using var transaction = await _db.Database.BeginTransactionAsync(cancellationToken);
         await _db.SaveChangesAsync(cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
 
-        var (accessToken, accessExpiresAt, _) = CreateAccessToken(user);
-        var (refreshToken, refreshExpiresAt) = CreateRefreshJwt(user);
-
-        var response = BuildAuthResponse(user, accessToken, accessExpiresAt, refreshToken, refreshExpiresAt);
+        var response = BuildAuthResponse(user, accessToken, accessExpiresAt, refreshToken);
         return CreatedAtAction(nameof(Me), new { }, response);
     }
 
@@ -105,19 +115,45 @@ public class AuthController : ControllerBase
             return InvalidCredentialsProblem();
         }
 
+        if (IsAccountLocked(user))
+        {
+            var remaining = user.LockoutEnd!.Value - DateTimeOffset.UtcNow;
+            var detail = remaining > TimeSpan.Zero
+                ? $"Account locked due to multiple failed attempts. Try again in {Math.Ceiling(remaining.TotalMinutes)} minutes."
+                : "Account is temporarily locked. Please try again later.";
+            return Problem(
+                statusCode: StatusCodes.Status423Locked,
+                title: "Account locked",
+                detail: detail,
+                type: "https://datatracker.ietf.org/doc/html/rfc4918#section-11.3");
+        }
+
         if (!VerifyPassword(user, request.Password))
         {
+            user.AccessFailedCount += 1;
+            if (user.AccessFailedCount >= MaxFailedAccessAttempts)
+            {
+                user.LockoutEnd = DateTimeOffset.UtcNow.Add(LockoutDuration);
+            }
+            user.NgayCapNhat = DateTime.UtcNow;
+            await _db.SaveChangesAsync(cancellationToken);
             _logger.LogWarning("Invalid credentials for user {Email}", user.Email);
             return InvalidCredentialsProblem();
         }
 
+        user.AccessFailedCount = 0;
+        user.LockoutEnd = null;
         user.NgayCapNhat = DateTime.UtcNow;
+
+        var (accessToken, accessExpiresAt, jwtId) = CreateAccessToken(user);
+        var refreshToken = CreateRefreshToken(user, jwtId, GetClientIp());
+        _db.RefreshTokens.Add(refreshToken);
+
+        await using var transaction = await _db.Database.BeginTransactionAsync(cancellationToken);
         await _db.SaveChangesAsync(cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
 
-        var (accessToken, accessExpiresAt, _) = CreateAccessToken(user);
-        var (refreshToken, refreshExpiresAt) = CreateRefreshJwt(user);
-
-        var response = BuildAuthResponse(user, accessToken, accessExpiresAt, refreshToken, refreshExpiresAt);
+        var response = BuildAuthResponse(user, accessToken, accessExpiresAt, refreshToken);
         return Ok(response);
     }
 
@@ -130,8 +166,8 @@ public class AuthController : ControllerBase
             return ValidationProblemFromModelState();
         }
 
-        var refreshToken = request.RefreshToken?.Trim();
-        if (string.IsNullOrWhiteSpace(refreshToken))
+        var tokenValue = request.RefreshToken.Trim();
+        if (tokenValue.Length == 0)
         {
             return ValidationProblem(new ValidationProblemDetails(new Dictionary<string, string[]>
             {
@@ -144,51 +180,57 @@ public class AuthController : ControllerBase
             });
         }
 
-        try
+        var storedToken = await _db.RefreshTokens.SingleOrDefaultAsync(rt => rt.Token == tokenValue, cancellationToken);
+        if (storedToken is null)
         {
-            var principal = ValidateRefreshJwt(refreshToken);
-            var sub = principal.FindFirstValue(JwtRegisteredClaimNames.Sub);
-            if (!Guid.TryParse(sub, out var userId))
-            {
-                return UnauthorizedTokenProblem("Invalid refresh token subject.");
-            }
-
-            var user = await _db.NguoiDungs.SingleOrDefaultAsync(u => u.MaNguoiDung == userId, cancellationToken);
-            if (user is null)
-            {
-                return UnauthorizedTokenProblem("User does not exist.");
-            }
-
-            var (access, accessExp, _) = CreateAccessToken(user);
-            var (newRefresh, newRefreshExp) = CreateRefreshJwt(user);
-            var response = BuildAuthResponse(user, access, accessExp, newRefresh, newRefreshExp);
-            return Ok(response);
-        }
-        catch (SecurityTokenException ex)
-        {
-            _logger.LogWarning(ex, "Refresh token validation failed");
-            return UnauthorizedTokenProblem("Refresh token is invalid or expired.");
-        }
-    }
-
-    [Authorize]
-    [HttpGet("me")]
-    [ProducesResponseType(typeof(AuthUser), StatusCodes.Status200OK)]
-    public async Task<ActionResult<AuthUser>> Me(CancellationToken cancellationToken)
-    {
-        var subject = User.FindFirstValue(JwtRegisteredClaimNames.Sub);
-        if (!Guid.TryParse(subject, out var userId))
-        {
-            return Unauthorized();
+            return UnauthorizedTokenProblem("Refresh token is invalid.");
         }
 
-        var user = await _db.NguoiDungs.FindAsync(new object[] { userId }, cancellationToken);
+        var now = DateTimeOffset.UtcNow;
+        var clientIp = GetClientIp();
+
+        if (storedToken.RevokedAt is not null)
+        {
+            await RevokeAllActiveTokens(storedToken.MaNguoiDung, "reuse-detected", clientIp, cancellationToken);
+            return UnauthorizedTokenProblem("Refresh token has already been used.");
+        }
+
+        if (storedToken.ExpiresAt <= now)
+        {
+            storedToken.RevokedAt = now;
+            storedToken.RevokedByIp = clientIp;
+            storedToken.RevokedReason = "expired";
+            await _db.SaveChangesAsync(cancellationToken);
+            return UnauthorizedTokenProblem("Refresh token has expired.");
+        }
+
+        var user = await _db.NguoiDungs.SingleOrDefaultAsync(u => u.MaNguoiDung == storedToken.MaNguoiDung, cancellationToken);
         if (user is null)
         {
-            return NotFound();
+            storedToken.RevokedAt = now;
+            storedToken.RevokedByIp = clientIp;
+            storedToken.RevokedReason = "user-deleted";
+            await _db.SaveChangesAsync(cancellationToken);
+            return UnauthorizedTokenProblem("User associated with the refresh token no longer exists.");
         }
 
-        return Ok(new AuthUser(user.MaNguoiDung.ToString(), user.Email, user.HoTen));
+        var (accessToken, accessExpiresAt, jwtId) = CreateAccessToken(user);
+        var newRefreshToken = CreateRefreshToken(user, jwtId, clientIp);
+
+        storedToken.RevokedAt = now;
+        storedToken.RevokedByIp = clientIp;
+        storedToken.RevokedReason = "rotated";
+        storedToken.ReplacedByToken = newRefreshToken.Token;
+
+        user.NgayCapNhat = DateTime.UtcNow;
+        _db.RefreshTokens.Add(newRefreshToken);
+
+        await using var transaction = await _db.Database.BeginTransactionAsync(cancellationToken);
+        await _db.SaveChangesAsync(cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
+
+        var response = BuildAuthResponse(user, accessToken, accessExpiresAt, newRefreshToken);
+        return Ok(response);
     }
 
     [HttpPost("google")]
@@ -211,6 +253,7 @@ public class AuthController : ControllerBase
 
         var email = NormalizeEmail(validation.Email!);
         var user = await _db.NguoiDungs.SingleOrDefaultAsync(u => u.Email == email, cancellationToken);
+
         if (user is null)
         {
             user = new NguoiDung
@@ -219,23 +262,51 @@ public class AuthController : ControllerBase
                 Email = email,
                 HoTen = validation.Name,
                 MatKhauHash = _passwordHasher.HashPassword(Guid.NewGuid().ToString("N")),
+                AccessFailedCount = 0,
+                LockoutEnd = null,
                 NgayTao = DateTime.UtcNow,
                 NgayCapNhat = DateTime.UtcNow,
             };
             _db.NguoiDungs.Add(user);
-            await _db.SaveChangesAsync(cancellationToken);
         }
         else
         {
             user.HoTen ??= validation.Name;
+            user.AccessFailedCount = 0;
+            user.LockoutEnd = null;
             user.NgayCapNhat = DateTime.UtcNow;
-            await _db.SaveChangesAsync(cancellationToken);
         }
 
-        var (access, accessExp, _) = CreateAccessToken(user);
-        var (refresh, refreshExp) = CreateRefreshJwt(user);
-        var response = BuildAuthResponse(user, access, accessExp, refresh, refreshExp);
+        var (accessToken, accessExpiresAt, jwtId) = CreateAccessToken(user);
+        var refreshToken = CreateRefreshToken(user, jwtId, GetClientIp());
+        _db.RefreshTokens.Add(refreshToken);
+
+        await using var transaction = await _db.Database.BeginTransactionAsync(cancellationToken);
+        await _db.SaveChangesAsync(cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
+
+        var response = BuildAuthResponse(user, accessToken, accessExpiresAt, refreshToken);
         return Ok(response);
+    }
+
+    [Authorize]
+    [HttpGet("me")]
+    [ProducesResponseType(typeof(AuthUser), StatusCodes.Status200OK)]
+    public async Task<ActionResult<AuthUser>> Me(CancellationToken cancellationToken)
+    {
+        var subject = User.FindFirstValue(JwtRegisteredClaimNames.Sub);
+        if (!Guid.TryParse(subject, out var userId))
+        {
+            return Unauthorized();
+        }
+
+        var user = await _db.NguoiDungs.FindAsync(new object[] { userId }, cancellationToken);
+        if (user is null)
+        {
+            return NotFound();
+        }
+
+        return Ok(new AuthUser(user.MaNguoiDung.ToString(), user.Email, user.HoTen));
     }
 
     private static TimeSpan ResolveAccessLifetime(IConfiguration configuration)
@@ -256,6 +327,9 @@ public class AuthController : ControllerBase
 
     private static string NormalizeEmail(string email) => email.Trim().ToLowerInvariant();
 
+    private static bool IsAccountLocked(NguoiDung user) =>
+        user.LockoutEnd.HasValue && user.LockoutEnd.Value > DateTimeOffset.UtcNow;
+
     private (string Token, DateTimeOffset ExpiresAt, string JwtId) CreateAccessToken(NguoiDung user)
     {
         var now = DateTimeOffset.UtcNow;
@@ -268,6 +342,7 @@ public class AuthController : ControllerBase
             new(JwtRegisteredClaimNames.Email, user.Email),
             new(JwtRegisteredClaimNames.Jti, jwtId)
         };
+
         if (!string.IsNullOrWhiteSpace(user.HoTen))
         {
             claims.Add(new("name", user.HoTen!));
@@ -284,56 +359,54 @@ public class AuthController : ControllerBase
             expires: expiresAt.UtcDateTime,
             signingCredentials: signingCredentials);
 
-        return (_tokenHandler.WriteToken(token), expiresAt, jwtId);
+        var tokenString = _tokenHandler.WriteToken(token);
+        return (tokenString, expiresAt, jwtId);
     }
 
-    private (string Token, DateTimeOffset ExpiresAt) CreateRefreshJwt(NguoiDung user)
+    private RefreshToken CreateRefreshToken(NguoiDung user, string jwtId, string? clientIp)
     {
-        var now = DateTimeOffset.UtcNow;
-        var expiresAt = now.Add(_refreshTokenLifetime);
-        var claims = new List<Claim>
+        return new RefreshToken
         {
-            new(JwtRegisteredClaimNames.Sub, user.MaNguoiDung.ToString()),
-            new("typ", "refresh")
+            MaNguoiDung = user.MaNguoiDung,
+            Token = GenerateSecureToken(),
+            JwtId = jwtId,
+            ExpiresAt = DateTimeOffset.UtcNow.Add(_refreshTokenLifetime),
+            CreatedAt = DateTimeOffset.UtcNow,
+            CreatedByIp = clientIp
         };
-        var keyBytes = Encoding.UTF8.GetBytes(_jwtKey);
-        var signingCredentials = new SigningCredentials(new SymmetricSecurityKey(keyBytes), SecurityAlgorithms.HmacSha256);
-        var token = new JwtSecurityToken(
-            issuer: _jwtIssuer,
-            audience: _jwtAudience,
-            claims: claims,
-            notBefore: now.UtcDateTime,
-            expires: expiresAt.UtcDateTime,
-            signingCredentials: signingCredentials);
-        return (_tokenHandler.WriteToken(token), expiresAt);
     }
 
-    private ClaimsPrincipal ValidateRefreshJwt(string token)
-    {
-        var parameters = new TokenValidationParameters
-    {
-        ValidateIssuerSigningKey = true,
-        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwtKey)),
-        ValidateIssuer = !string.IsNullOrWhiteSpace(_jwtIssuer),
-        ValidateAudience = !string.IsNullOrWhiteSpace(_jwtAudience),
-        ValidIssuer = string.IsNullOrWhiteSpace(_jwtIssuer) ? null : _jwtIssuer,
-        ValidAudience = string.IsNullOrWhiteSpace(_jwtAudience) ? null : _jwtAudience,
-        ClockSkew = TimeSpan.FromSeconds(30),
-        ValidateLifetime = true
-    };
-        var principal = _tokenHandler.ValidateToken(token, parameters, out var validatedToken);
-        if (validatedToken is not JwtSecurityToken jwt || jwt.Claims.FirstOrDefault(c => c.Type == "typ")?.Value != "refresh")
-        {
-            throw new SecurityTokenException("Not a refresh token");
-        }
-        return principal;
-    }
-
-    private AuthResponse BuildAuthResponse(NguoiDung user, string accessToken, DateTimeOffset accessExpiresAt, string refreshToken, DateTimeOffset refreshExpiresAt)
+    private AuthResponse BuildAuthResponse(NguoiDung user, string accessToken, DateTimeOffset accessExpiresAt, RefreshToken refreshToken)
     {
         var authUser = new AuthUser(user.MaNguoiDung.ToString(), user.Email, user.HoTen);
-        var tokens = new AuthTokens(accessToken, accessExpiresAt, refreshToken, refreshExpiresAt);
+        var tokens = new AuthTokens(
+            accessToken,
+            accessExpiresAt,
+            refreshToken.Token,
+            refreshToken.ExpiresAt);
         return new AuthResponse(authUser, tokens);
+    }
+
+    private async Task RevokeAllActiveTokens(Guid userId, string reason, string? ipAddress, CancellationToken cancellationToken)
+    {
+        var now = DateTimeOffset.UtcNow;
+        var tokens = await _db.RefreshTokens
+            .Where(rt => rt.MaNguoiDung == userId && rt.RevokedAt == null)
+            .ToListAsync(cancellationToken);
+
+        if (tokens.Count == 0)
+        {
+            return;
+        }
+
+        foreach (var token in tokens)
+        {
+            token.RevokedAt = now;
+            token.RevokedByIp = ipAddress;
+            token.RevokedReason = reason;
+        }
+
+        await _db.SaveChangesAsync(cancellationToken);
     }
 
     private bool VerifyPassword(NguoiDung user, string password)
@@ -347,6 +420,7 @@ public class AuthController : ControllerBase
         }
         catch (CryptographicException)
         {
+            // fall through to legacy check
         }
 
         if (user.MatKhauHash.Length == 32)
@@ -368,31 +442,39 @@ public class AuthController : ControllerBase
         {
             return (false, null, null, "id_token is required.");
         }
+
         if (!_tokenHandler.CanReadToken(idToken))
         {
             return (false, null, null, "id_token format is invalid.");
         }
+
         var token = _tokenHandler.ReadJwtToken(idToken);
         var email = token.Claims.FirstOrDefault(c => c.Type == JwtRegisteredClaimNames.Email || c.Type == "email")?.Value;
         if (string.IsNullOrWhiteSpace(email))
         {
             return (false, null, null, "Google token missing email claim.");
         }
+
         var audience = token.Audiences.FirstOrDefault();
         var expectedAudiences = new[]
         {
             _configuration["Auth__Google__ClientId_Web"],
             _configuration["Auth__Google__ClientId_Android"]
         }.Where(v => !string.IsNullOrWhiteSpace(v)).ToHashSet(StringComparer.Ordinal);
+
         if (expectedAudiences.Count > 0 && (audience is null || !expectedAudiences.Contains(audience)))
         {
             return (false, null, null, "Google token audience does not match configured client IDs.");
         }
+
         var name = token.Claims.FirstOrDefault(c => c.Type == "name")?.Value;
         return (true, email, name, null);
     }
 
-    private string? GetClientIp() => HttpContext.Connection.RemoteIpAddress?.ToString();
+    private string? GetClientIp()
+    {
+        return HttpContext.Connection.RemoteIpAddress?.ToString();
+    }
 
     private ActionResult ValidationProblemFromModelState()
     {
@@ -401,31 +483,48 @@ public class AuthController : ControllerBase
             .ToDictionary(
                 entry => entry.Key,
                 entry => entry.Value!.Errors.Select(e => string.IsNullOrWhiteSpace(e.ErrorMessage) ? "Invalid value." : e.ErrorMessage).ToArray());
+
         var problem = new ValidationProblemDetails(errors)
         {
             Status = StatusCodes.Status422UnprocessableEntity,
             Title = "Validation error",
             Type = "https://datatracker.ietf.org/doc/html/rfc4918#section-11.2"
         };
+
         return ValidationProblem(problem);
     }
 
-    private ActionResult<AuthResponse> InvalidCredentialsProblem() => Problem(
-        statusCode: StatusCodes.Status401Unauthorized,
-        title: "Invalid credentials",
-        detail: "Email or password is incorrect.");
+    private ActionResult<AuthResponse> InvalidCredentialsProblem()
+    {
+        return Problem(
+            statusCode: StatusCodes.Status401Unauthorized,
+            title: "Invalid credentials",
+            detail: "Email or password is incorrect.");
+    }
 
-    private ActionResult<AuthResponse> UnauthorizedTokenProblem(string detail) => Problem(
-        statusCode: StatusCodes.Status401Unauthorized,
-        title: "Refresh token rejected",
-        detail: detail);
+    private ActionResult<AuthResponse> UnauthorizedTokenProblem(string detail)
+    {
+        return Problem(
+            statusCode: StatusCodes.Status401Unauthorized,
+            title: "Refresh token rejected",
+            detail: detail);
+    }
+
+    private static string GenerateSecureToken()
+    {
+        Span<byte> buffer = stackalloc byte[64];
+        RandomNumberGenerator.Fill(buffer);
+        return Convert.ToBase64String(buffer);
+    }
 
     public sealed record class RegisterRequest
     {
         [Required, EmailAddress]
         public string Email { get; init; } = string.Empty;
+
         [Required, MinLength(8)]
         public string Password { get; init; } = string.Empty;
+
         [MaxLength(150)]
         public string? Name { get; init; }
     }
@@ -434,6 +533,7 @@ public class AuthController : ControllerBase
     {
         [Required, EmailAddress]
         public string Email { get; init; } = string.Empty;
+
         [Required]
         public string Password { get; init; } = string.Empty;
     }

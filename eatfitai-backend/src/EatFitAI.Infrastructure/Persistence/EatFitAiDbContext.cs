@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using EatFitAI.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 
 namespace EatFitAI.Infrastructure.Persistence;
@@ -30,6 +31,7 @@ public partial class EatFitAiDbContext : DbContext
     public virtual DbSet<MucTieuDinhDuong> MucTieuDinhDuongs { get; set; }
 
     public virtual DbSet<NguoiDung> NguoiDungs { get; set; }
+
 
     public virtual DbSet<NguyenLieuCongThuc> NguyenLieuCongThucs { get; set; }
 
@@ -110,14 +112,14 @@ public partial class EatFitAiDbContext : DbContext
 
             entity.ToTable("MonNguoiDung");
 
-            entity.Property(e => e.Calo100g).HasColumnType("decimal(8, 2)");
-            entity.Property(e => e.Carb100g).HasColumnType("decimal(8, 2)");
-            entity.Property(e => e.Fat100g).HasColumnType("decimal(8, 2)");
+            entity.Property(e => e.Calo100g).HasColumnType("decimal(10, 2)");
+            entity.Property(e => e.Carb100g).HasColumnType("decimal(9, 2)");
+            entity.Property(e => e.Fat100g).HasColumnType("decimal(9, 2)");
             entity.Property(e => e.GhiChu).HasMaxLength(200);
             entity.Property(e => e.NgayTao)
                 .HasPrecision(0)
                 .HasDefaultValueSql("(sysdatetime())");
-            entity.Property(e => e.Protein100g).HasColumnType("decimal(8, 2)");
+            entity.Property(e => e.Protein100g).HasColumnType("decimal(9, 2)");
             entity.Property(e => e.TenMon).HasMaxLength(200);
 
             entity.HasOne(d => d.MaNguoiDungNavigation).WithMany(p => p.MonNguoiDungs)
@@ -162,8 +164,8 @@ public partial class EatFitAiDbContext : DbContext
             entity.ToTable("MucTieuDinhDuong");
 
             entity.Property(e => e.MaMucTieuDd).HasColumnName("MaMucTieuDD");
-            entity.Property(e => e.CarbG).HasColumnType("decimal(8, 2)");
-            entity.Property(e => e.FatG).HasColumnType("decimal(8, 2)");
+            entity.Property(e => e.CarbG).HasColumnType("decimal(9, 2)");
+            entity.Property(e => e.FatG).HasColumnType("decimal(9, 2)");
             entity.Property(e => e.HieuLucTuNgay)
                 .HasPrecision(0)
                 .HasDefaultValueSql("(sysdatetime())");
@@ -174,7 +176,7 @@ public partial class EatFitAiDbContext : DbContext
             entity.Property(e => e.Nguon)
                 .HasMaxLength(20)
                 .IsUnicode(false);
-            entity.Property(e => e.ProteinG).HasColumnType("decimal(8, 2)");
+            entity.Property(e => e.ProteinG).HasColumnType("decimal(9, 2)");
 
             entity.HasOne(d => d.MaNguoiDungNavigation).WithMany(p => p.MucTieuDinhDuongs)
                 .HasForeignKey(d => d.MaNguoiDung)
@@ -205,6 +207,8 @@ public partial class EatFitAiDbContext : DbContext
                 .HasPrecision(0)
                 .HasDefaultValueSql("(sysdatetime())");
         });
+
+        
 
         modelBuilder.Entity<NguyenLieuCongThuc>(entity =>
         {
@@ -265,17 +269,25 @@ public partial class EatFitAiDbContext : DbContext
 
             entity.ToTable("NhatKyAnUong");
 
+            entity.HasIndex(e => new { e.MaNguoiDung, e.NgayAn, e.MaBuaAn, e.ItemId, e.Source })
+                .HasDatabaseName("UX_NhatKyAnUong_ItemUniq")
+                .IsUnique();
+
             entity.Property(e => e.Calo).HasColumnType("decimal(10, 2)");
-            entity.Property(e => e.Carb).HasColumnType("decimal(10, 2)");
-            entity.Property(e => e.Fat).HasColumnType("decimal(10, 2)");
-            entity.Property(e => e.KhoiLuongGram).HasColumnType("decimal(10, 2)");
+            entity.Property(e => e.Carb).HasColumnType("decimal(9, 2)");
+            entity.Property(e => e.Fat).HasColumnType("decimal(9, 2)");
+            entity.Property(e => e.ItemId).HasColumnName("ItemId");
+            entity.Property(e => e.KhoiLuongGram).HasColumnType("decimal(9, 2)");
             entity.Property(e => e.MaBuaAn)
                 .HasMaxLength(20)
                 .IsUnicode(false);
             entity.Property(e => e.NgayTao)
                 .HasPrecision(0)
                 .HasDefaultValueSql("(sysdatetime())");
-            entity.Property(e => e.Protein).HasColumnType("decimal(10, 2)");
+            entity.Property(e => e.Protein).HasColumnType("decimal(9, 2)");
+            entity.Property(e => e.Source)
+                .HasMaxLength(20)
+                .IsUnicode(false);
 
             entity.HasOne(d => d.MaBuaAnNavigation).WithMany(p => p.NhatKyAnUongs)
                 .HasForeignKey(d => d.MaBuaAn)
@@ -306,13 +318,13 @@ public partial class EatFitAiDbContext : DbContext
 
             entity.ToTable("ThucPham");
 
-            entity.Property(e => e.Calo100g).HasColumnType("decimal(8, 2)");
-            entity.Property(e => e.Carb100g).HasColumnType("decimal(8, 2)");
-            entity.Property(e => e.Fat100g).HasColumnType("decimal(8, 2)");
+            entity.Property(e => e.Calo100g).HasColumnType("decimal(10, 2)");
+            entity.Property(e => e.Carb100g).HasColumnType("decimal(9, 2)");
+            entity.Property(e => e.Fat100g).HasColumnType("decimal(9, 2)");
             entity.Property(e => e.HinhAnh).HasMaxLength(400);
             entity.Property(e => e.MoTaKhauPhan).HasMaxLength(100);
             entity.Property(e => e.PhanLoai).HasMaxLength(100);
-            entity.Property(e => e.Protein100g).HasColumnType("decimal(8, 2)");
+            entity.Property(e => e.Protein100g).HasColumnType("decimal(9, 2)");
             entity.Property(e => e.TenThucPham).HasMaxLength(200);
             entity.Property(e => e.TrangThai).HasDefaultValue(true);
         });
@@ -348,3 +360,4 @@ public partial class EatFitAiDbContext : DbContext
 
     partial void OnModelCreatingPartial(ModelBuilder modelBuilder);
 }
+
