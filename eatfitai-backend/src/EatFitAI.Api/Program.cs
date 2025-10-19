@@ -1,3 +1,5 @@
+using EatFitAI.Infrastructure.Persistence;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
 using Serilog;
 using System.IO;
@@ -40,6 +42,13 @@ builder.Services.AddCors(options =>
             .AllowAnyMethod();
     });
 });
+
+var connectionString = builder.Configuration.GetConnectionString("Default")
+    ?? builder.Configuration["ConnectionStrings__Default"]
+    ?? throw new InvalidOperationException("Connection string 'Default' was not found.");
+
+builder.Services.AddDbContext<EatFitAiDbContext>(options =>
+    options.UseSqlServer(connectionString));
 
 var app = builder.Build();
 
