@@ -1,0 +1,19 @@
+﻿flowchart TD
+    A[Người dùng mở app] --> B{Đã đăng nhập?}
+    B -- Không --> C[Điền email/mật khẩu]
+    C --> D[Nhận token JWT]
+    D --> E[Đi tới trang Home]
+    B -- Có --> E
+    E --> F[Nhật ký hôm nay]
+    F -->|Thêm món| G[Chọn: Tìm / Tạo / AI]
+    G --> H[Thêm vào nhật ký]
+    F -->|Xóa hoặc xem chi tiết| I[Xử lý entry]
+    E --> J[Thống kê tuần]
+    E --> K[Hồ sơ cá nhân]
+    K --> L[Cập nhật hồ sơ / body metrics]
+    E --> M[AI Nutrition]
+    M --> N[Đề xuất mục tiêu]
+    N --> O[Áp dụng mục tiêu mới]
+    H --> P[API lưu nhật ký]
+    O --> Q[API cập nhật mục tiêu]
+    L --> R[API lưu hồ sơ]

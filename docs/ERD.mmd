@@ -1,0 +1,41 @@
+﻿erDiagram
+    NguoiDung ||--o{ ChiSoCoThe : ghi
+    NguoiDung ||--o{ MucTieuDinhDuong : dat
+    NguoiDung ||--o{ NhatKyAnUong : log
+    NguoiDung ||--o{ MonNguoiDung : tao
+    NguoiDung }o--|| MucDoVanDong : suDung
+    NguoiDung }o--|| MucTieu : theoDoi
+
+    MucTieuDinhDuong }o--|| MucTieu : thamChieu
+    NhatKyAnUong }o--|| LoaiBuaAn : thuocLoai
+    NhatKyAnUong }o--|| ThucPham : suDungThucPham
+    MonNguoiDung ||--o{ CongThuc : gom
+    CongThuc ||--o{ NguyenLieuCongThuc : chiTiet
+    NguyenLieuCongThuc }o--|| ThucPham : suDung
+
+    ChiSoCoThe {
+      int Id PK
+      datetime NgayDo
+      decimal ChieuCao
+      decimal CanNang
+      decimal Bmi
+    }
+    NhatKyAnUong {
+      int Id PK
+      datetime NgayAn
+      decimal Calories
+      decimal Protein
+      decimal Carbs
+      decimal Fat
+      string Source
+    }
+    MucTieuDinhDuong {
+      int Id PK
+      string Nguon
+      string LyDo
+      datetime HieuLucTuNgay
+      decimal Calories
+      decimal Protein
+      decimal Carbs
+      decimal Fat
+    }
