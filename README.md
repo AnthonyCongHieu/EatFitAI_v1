@@ -1,29 +1,19 @@
-﻿# EatFitAI Mobile (Expo React Native)
+﻿# EatFitAI (No-Docker, SP-first)
+API: .NET 9, http://localhost:5100
+DB: SQL Server local (Integrated Security)
+Mobile: Expo (React Native)
 
-Repo này hiện chỉ giữ phần giao diện (FE) dùng Expo + React Native. Toàn bộ backend và tài liệu docs đã được gỡ bỏ.
+### Backend
+1) Copy .env.example -> .env
+2) dotnet ef database update (hoac dotnet run)
+3) API tu migrate + ap /db/scripts
 
-## Cấu trúc
-- eatfitai-mobile/ – Ứng dụng Expo (TypeScript).
+### Mobile
+1) Copy .env.example -> .env
+2) npm i && npx expo start
 
-## Yêu cầu môi trường
-- Node.js >= 18, npm hoặc pnpm/yarn
-- Expo CLI và Android/iOS emulator hoặc Expo Go
+### Demo account
+login: demo@eatfit.ai / demo123
 
-## Cấu hình ENV
-Sao chép file mẫu và cấu hình API nếu cần:
-
-`
-cd eatfitai-mobile
-cp .env.example .env
-# Sửa EXPO_PUBLIC_API_BASE_URL nếu cần
-`
-
-## Chạy ứng dụng
-`
-cd eatfitai-mobile
-npm install
-npm run dev   # hoặc: npx expo start --android
-`
-
-## Ghi chú
-- Nếu cần backend sau này, tạo service mới hoặc trỏ tới API hiện có.
+### Ghi chu
+Khong Docker, khong CRUD EF, chi SP qua Dapper.

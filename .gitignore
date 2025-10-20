@@ -1,63 +1,11 @@
-# OS
-.DS_Store
-Thumbs.db
-
-# Node / React Native
 node_modules/
 .expo/
-.expo-shared/
-dist/
-build/
-*.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-coverage/
-web-build/
-expo-env.d.ts
-
-# Expo assets
-*.expo*
-*.apk
-*.aab
-*.ipa
-
-# Metro
-.haste-map-*
-
-# Android / iOS
-android/app/build/
-android/.gradle/
-ios/Pods/
-ios/build/
-
-# .NET
 bin/
 obj/
-*.user
-*.rsuser
-*.suo
-*.userprefs
-*.csproj.user
-*.vcxproj.user
-*.ncb
-*.sdf
-*.cache
-*.dbmdl
-*.pdb
 .vs/
-
-# Env & secrets
+.vscode/
 .env
-*.env.local
-*.env.*.local
-eatfitai-mobile/.env
-eatfitai-backend/.env
-
-# Logs / misc
-logs/
-*.sqlite
-
-# Generated docs/images
-*.png
-*.svg
+.env.*
+ios/Pods/
+android/app/build/
+.DS_Store
