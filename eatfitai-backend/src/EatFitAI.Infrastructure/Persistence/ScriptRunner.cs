@@ -2,6 +2,8 @@ using System.Data;
 using Dapper;
 using EatFitAI.Application.Data;
 using Microsoft.Extensions.Logging;
+using System.Text;
+using System.Text.RegularExpressions;
 
 namespace EatFitAI.Infrastructure.Persistence;
 
@@ -67,7 +69,11 @@ public class ScriptRunner : IScriptRunner
             using var transaction = connection.BeginTransaction();
             try
             {
-                await connection.ExecuteAsync(scriptContent, transaction: transaction, commandType: CommandType.Text);
+                foreach (var batch in SplitBatches(scriptContent))
+                {
+                    if (string.IsNullOrWhiteSpace(batch)) continue;
+                    await connection.ExecuteAsync(batch, transaction: transaction, commandType: CommandType.Text);
+                }
 
                 await connection.ExecuteAsync(
                     "INSERT INTO ScriptHistory (FileName, AppliedAt) VALUES (@FileName, SYSUTCDATETIME())",
@@ -85,5 +91,28 @@ public class ScriptRunner : IScriptRunner
         }
 
         _logger.LogInformation("Applied {Count} scripts", pendingScripts.Count);
+    }
+
+    private static IEnumerable<string> SplitBatches(string script)
+    {
+        var reader = new StringReader(script);
+        var sb = new StringBuilder();
+        string? line;
+        while ((line = reader.ReadLine()) is not null)
+        {
+            if (Regex.IsMatch(line, @"^\s*GO\s*$", RegexOptions.IgnoreCase))
+            {
+                yield return sb.ToString();
+                sb.Clear();
+            }
+            else
+            {
+                sb.AppendLine(line);
+            }
+        }
+        if (sb.Length > 0)
+        {
+            yield return sb.ToString();
+        }
     }
 }

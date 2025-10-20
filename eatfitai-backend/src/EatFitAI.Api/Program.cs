@@ -136,6 +136,8 @@ using (var scope = app.Services.CreateScope())
 {
     var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     await dbContext.Database.MigrateAsync(); // Tao DB + ap migrations khi khoi dong
+    var scriptRunner = scope.ServiceProvider.GetRequiredService<IScriptRunner>();
+    await scriptRunner.ApplyPendingScriptsAsync(); // Ap dung cac SP trong db/scripts
 }
 
 app.UseExceptionHandler(errorApp =>
