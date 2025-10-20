@@ -85,3 +85,43 @@ Content-Type: application/json
   "carbohydrateGrams": 220,
   "fatGrams": 70
 }
+
+### Foods: search "gà"
+GET {{host}}/api/foods/search?query=%C4%91%C3%B4i%20c%C3%A1nh%20g%C3%A0
+Authorization: Bearer {{accessToken}}
+
+### Foods: get by id
+@foodId = {{foodId}}
+GET {{host}}/api/foods/{{foodId}}
+Authorization: Bearer {{accessToken}}
+
+### Diary: add 150g of selected food for today lunch
+@today = {{$localDatetime date yyyy-MM-dd}}
+POST {{host}}/api/diary
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "mealDate": "{{today}}",
+  "mealCode": "lunch",
+  "source": "food",
+  "itemId": "{{foodId}}",
+  "quantityGrams": 150
+}
+
+### Summary Day before delete
+GET {{host}}/api/summary/day?date={{today}}
+Authorization: Bearer {{accessToken}}
+
+### Diary: list for today
+GET {{host}}/api/diary?date={{today}}
+Authorization: Bearer {{accessToken}}
+
+### Diary: delete one entry
+@diaryId = {{diaryId}}
+DELETE {{host}}/api/diary/{{diaryId}}
+Authorization: Bearer {{accessToken}}
+
+### Summary Day after delete
+GET {{host}}/api/summary/day?date={{today}}
+Authorization: Bearer {{accessToken}}
