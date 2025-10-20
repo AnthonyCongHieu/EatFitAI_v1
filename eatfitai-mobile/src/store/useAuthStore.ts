@@ -4,7 +4,8 @@ import { create } from 'zustand';
 import * as AuthSession from 'expo-auth-session';
 
 import { API_BASE_URL } from '../config/env';
-import apiClient, { setAccessTokenMem } from '../services/apiClient';
+import apiClient from '../services/apiClient';
+import { setAccessTokenMem } from '../services/authTokens';
 import { tokenStorage } from '../services/secureStore';
 import { initAuthSession, updateSessionFromAuthResponse } from '../services/authSession';
 
@@ -22,6 +23,28 @@ type AuthState = {
 };
 
 const API_BASE = API_BASE_URL ?? '';
+
+const extractRegisterErrorMessage = (err: any): string => {
+  const fallback = 'Đăng ký thất bại, vui lòng thử lại.';
+  if (!err) return fallback;
+
+  const responseData = err?.response?.data ?? err?.data;
+  if (!responseData) return err?.message ?? fallback;
+
+  const errors = responseData.errors as Record<string, string[]> | undefined;
+  if (errors && typeof errors === 'object') {
+    const allMessages = Object.values(errors).flat().filter(Boolean);
+    if (allMessages.length > 0) {
+      return allMessages.join('\n');
+    }
+  }
+
+  if (typeof responseData.title === 'string' && responseData.title.trim().length > 0) {
+    return responseData.title;
+  }
+
+  return err?.message ?? fallback;
+};
 
 export const useAuthStore = create<AuthState>((set) => ({
   isInitializing: true,
@@ -61,21 +84,26 @@ export const useAuthStore = create<AuthState>((set) => ({
 
   register: async (name, email, password) => {
     // Backend nhận fullName; để tương thích tạm truyền cả hai
-    const resp = await apiClient.post('/api/auth/register', { name, fullName: name, email, password });
-    const data = resp.data as any;
-    const accessToken = data?.accessToken as string | undefined;
-    if (!accessToken) throw new Error('Thiếu accessToken trong phản hồi đăng ký');
+    try {
+      const resp = await apiClient.post('/api/auth/register', { fullName: name, displayName: name, email, password });
+      const data = resp.data as any;
+      const accessToken = data?.accessToken as string | undefined;
+      if (!accessToken) throw new Error('Thiếu accessToken trong phản hồi đăng ký');
 
-    await tokenStorage.saveTokensFull({
-      accessToken,
-      accessTokenExpiresAt: data?.accessTokenExpiresAt,
-      refreshToken: data?.refreshToken,
-      refreshTokenExpiresAt: data?.refreshTokenExpiresAt,
-    });
-    setAccessTokenMem(accessToken);
-    await updateSessionFromAuthResponse(data);
+      await tokenStorage.saveTokensFull({
+        accessToken,
+        accessTokenExpiresAt: data?.accessTokenExpiresAt,
+        refreshToken: data?.refreshToken,
+        refreshTokenExpiresAt: data?.refreshTokenExpiresAt,
+      });
+      setAccessTokenMem(accessToken);
+      await updateSessionFromAuthResponse(data);
 
-    set({ isAuthenticated: true, user: (data?.user as AuthUser | undefined) ?? null });
+      set({ isAuthenticated: true, user: (data?.user as AuthUser | undefined) ?? null });
+    } catch (err: any) {
+      const message = extractRegisterErrorMessage(err);
+      throw new Error(message);
+    }
   },
 
   signInWithGoogle: async () => {

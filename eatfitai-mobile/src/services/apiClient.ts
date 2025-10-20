@@ -1,6 +1,8 @@
 import axios, { AxiosError, AxiosRequestConfig, InternalAxiosRequestConfig } from 'axios';
 import { API_BASE_URL } from '../config/env';
 import { tokenStorage } from './secureStore';
+import { getAccessTokenMem, setAccessTokenMem } from './authTokens';
+import { requestRefreshToken } from './tokenService';
 import { updateSessionFromAuthResponse } from './authSession';
 
 // Axios client
@@ -11,11 +13,7 @@ if (__DEV__ && !API_BASE_URL) {
   console.warn('[EatFitAI] Missing API base URL. Set EXPO_PUBLIC_API_BASE_URL or provide fallback.');
 }
 
-// In-memory access token to reduce SecureStore reads
-let accessTokenMem: string | null = null;
-export const setAccessTokenMem = (token: string | null): void => {
-  accessTokenMem = token;
-};
+// In-memory access token cache lives in authTokens module
 
 // Queue for 401 refresh handling
 type FailedQueueItem = { resolve: (value?: unknown) => void; reject: (reason?: unknown) => void; config: AxiosRequestConfig };
@@ -38,7 +36,7 @@ const processQueue = (error: unknown, token: string | null): void => {
 // Attach Authorization before requests
 apiClient.interceptors.request.use(async (config: InternalAxiosRequestConfig) => {
   try {
-    const token = accessTokenMem ?? (await tokenStorage.getAccessToken());
+    const token = getAccessTokenMem() ?? (await tokenStorage.getAccessToken());
     if (token) {
       config.headers = { ...(config.headers ?? {}), Authorization: `Bearer ${token}` } as InternalAxiosRequestConfig['headers'];
     }
@@ -71,8 +69,7 @@ apiClient.interceptors.response.use(
         const refreshToken = await tokenStorage.getRefreshToken();
         if (!refreshToken) throw new Error('Missing refresh token');
 
-        const refreshResp = await apiClient.post('/api/auth/refresh', { refreshToken });
-        const data: any = refreshResp.data ?? {};
+        const data = await postRefreshToken(refreshToken);
         const newAccessToken: string | undefined = data.accessToken;
         const newRefreshToken: string | undefined = data.refreshToken;
         const newAccessExp: string | undefined = data.accessTokenExpiresAt;

@@ -1,4 +1,5 @@
-﻿using System.IdentityModel.Tokens.Jwt;
+﻿using System.Collections.Generic;
+using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
 using System.Security.Claims;
 using EatFitAI.Api.Contracts.Auth;
@@ -53,13 +54,23 @@ public class AuthController : ControllerBase
         var createResult = await _userManager.CreateAsync(user, request.Password);
         if (!createResult.Succeeded)
         {
-            foreach (var error in createResult.Errors)
-            {
-                ModelState.AddModelError(error.Code, error.Description);
-            }
-
-            return ValidationProblem(ModelState);
+            return ValidationProblem(CreateValidationProblem(createResult.Errors));
         }
+
+        if (user.Profile is null)
+        {
+            user.Profile = new UserProfile
+            {
+                UserId = user.Id,
+                FullName = request.FullName ?? string.Empty,
+            };
+        }
+        else if (!string.IsNullOrWhiteSpace(request.FullName))
+        {
+            user.Profile.FullName = request.FullName;
+        }
+
+        await _userManager.UpdateAsync(user);
 
         var tokens = await _tokenService.CreateTokenPairAsync(user, GetClientIp(), cancellationToken);
         return Ok(ToAuthResponse(user, tokens, request.FullName));
@@ -140,6 +151,56 @@ public class AuthController : ControllerBase
 
         var tokens = await _tokenService.CreateTokenPairAsync(user, GetClientIp(), cancellationToken);
         return Ok(ToAuthResponse(user, tokens));
+    }
+
+    private ValidationProblemDetails CreateValidationProblem(IEnumerable<IdentityError> errors)
+    {
+        var details = new ValidationProblemDetails
+        {
+            Status = StatusCodes.Status400BadRequest,
+            Type = "https://httpstatuses.io/400",
+            Title = "Đăng ký không hợp lệ",
+            Detail = "Vui lòng kiểm tra lại thông tin nhập vào."
+        };
+
+        foreach (var error in errors)
+        {
+            var key = error.Code switch
+            {
+                "PasswordTooShort" => "password",
+                "PasswordRequiresUpper" => "password",
+                "PasswordRequiresLower" => "password",
+                "PasswordRequiresDigit" => "password",
+                "PasswordRequiresNonAlphanumeric" => "password",
+                "DuplicateEmail" => "email",
+                "InvalidEmail" => "email",
+                _ => string.Empty
+            };
+
+            var message = error.Code switch
+            {
+                "PasswordTooShort" => "Mật khẩu phải có ít nhất 6 ký tự.",
+                "PasswordRequiresUpper" => "Mật khẩu cần chứa ít nhất một chữ hoa.",
+                "PasswordRequiresLower" => "Mật khẩu cần chứa ít nhất một chữ thường.",
+                "PasswordRequiresDigit" => "Mật khẩu cần chứa ít nhất một chữ số.",
+                "PasswordRequiresNonAlphanumeric" => "Mật khẩu cần chứa ký tự đặc biệt.",
+                "DuplicateEmail" => "Email đã được sử dụng.",
+                "InvalidEmail" => "Email không hợp lệ.",
+                _ => error.Description
+            };
+
+            var targetKey = string.IsNullOrWhiteSpace(key) ? string.Empty : key;
+            if (!details.Errors.ContainsKey(targetKey))
+            {
+                details.Errors[targetKey] = [message];
+            }
+            else
+            {
+                details.Errors[targetKey] = details.Errors[targetKey].Concat(new[] { message }).Distinct().ToArray();
+            }
+        }
+
+        return details;
     }
 
     private string? GetClientIp()

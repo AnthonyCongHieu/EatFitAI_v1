@@ -1,6 +1,7 @@
 import { AppState, AppStateStatus } from 'react-native';
-import apiClient, { setAccessTokenMem } from './apiClient';
+import { setAccessTokenMem } from './authTokens';
 import { tokenStorage } from './secureStore';
+import { requestRefreshToken } from './tokenService';
 
 // Silent refresh: schedule before access token expires; also trigger on foreground
 
@@ -49,9 +50,8 @@ export const silentRefreshIfNeeded = async (): Promise<void> => {
       return; // not close to expire
     }
 
-    // Call refresh endpoint
-    const resp = await apiClient.post('/api/auth/refresh', { refreshToken });
-    const data = resp.data as any;
+    // Call refresh endpoint via token service to avoid circular import
+    const data = await postRefreshToken(refreshToken);
     const accessToken = data?.accessToken as string | undefined;
     const refreshTokenNew = data?.refreshToken as string | undefined;
     const accessTokenExpiresAt = data?.accessTokenExpiresAt as string | undefined;

@@ -19,8 +19,12 @@ const RegisterSchema = z
   .object({
     name: z.string().min(2, 'Tên tối thiểu 2 ký tự'),
     email: z.string().email('Email không hợp lệ'),
-    password: z.string().min(6, 'Mật khẩu tối thiểu 6 ký tự'),
+    password: z
+      .string()
+      .min(6, 'Mật khẩu tối thiểu 6 ký tự')
+      .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$/, 'Mật khẩu phải có chữ hoa, chữ thường và số'),
     confirmPassword: z.string().min(6, 'Nhập lại mật khẩu'),
+    passwordHint: z.string().optional(),
   })
   .refine((data) => data.password === data.confirmPassword, {
     message: 'Mật khẩu nhập lại không khớp',
