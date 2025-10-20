@@ -5,20 +5,19 @@ import apiClient from './apiClient';
 
 export type UserProfile = {
   id: string;
-  fullName: string;
-  email: string;
-  phone?: string;
+  fullName?: string;
+  email?: string;
   heightCm?: number;
-  weightKg?: number;
   dateOfBirth?: string;
+  // legacy fields for UI convenience (not provided by backend profile)
+  phone?: string;
+  weightKg?: number;
 };
 
 export type UpdateProfilePayload = {
-  fullName: string;
-  phone?: string | null;
+  fullName?: string | null;
   heightCm?: number | null;
-  weightKg?: number | null;
-  dateOfBirth?: string | null;
+  dateOfBirth?: string | null; // YYYY-MM-DD
 };
 
 export type BodyMetricsPayload = {
@@ -29,13 +28,11 @@ export type BodyMetricsPayload = {
 };
 
 const normalizeProfile = (data: any): UserProfile => ({
-  id: String(data?.id ?? ''),
-  fullName: data?.fullName ?? data?.name ?? '',
-  email: data?.email ?? '',
-  phone: data?.phone ?? data?.phoneNumber ?? undefined,
-  heightCm: typeof data?.heightCm === 'number' ? data.heightCm : data?.height ?? undefined,
-  weightKg: typeof data?.weightKg === 'number' ? data.weightKg : data?.weight ?? undefined,
-  dateOfBirth: data?.dateOfBirth ?? data?.birthDate ?? undefined,
+  id: String(data?.id ?? data?.userId ?? ''),
+  fullName: data?.fullName ?? data?.name ?? undefined,
+  email: data?.email ?? undefined,
+  heightCm: typeof data?.heightCm === 'number' ? data.heightCm : undefined,
+  dateOfBirth: data?.dateOfBirth ?? undefined,
 });
 
 export const profileService = {
@@ -47,12 +44,24 @@ export const profileService = {
 
   // Cap nhat ho so (PUT /api/profile/me)
   async updateProfile(payload: UpdateProfilePayload): Promise<UserProfile> {
-    const response = await apiClient.put('/api/profile/me', payload);
+    // Pick only fields supported by backend SP
+    const req: any = {
+      fullName: payload.fullName ?? null,
+      heightCm: payload.heightCm ?? null,
+      dateOfBirth: payload.dateOfBirth ?? null,
+    };
+    const response = await apiClient.put('/api/profile/me', req);
     return normalizeProfile(response.data);
   },
 
   // Goi so do co the (POST /api/body-metrics)
   async createBodyMetrics(payload: BodyMetricsPayload): Promise<void> {
-    await apiClient.post('/api/body-metrics', payload);
+    // Backend expects: weightKg, bodyFatPercent?, recordedAt?
+    const req: any = {
+      weightKg: payload.weightKg,
+      bodyFatPercent: payload.bodyFatPercent ?? null,
+      recordedAt: payload.recordedAt ?? null,
+    };
+    await apiClient.post('/api/body-metrics', req);
   },
-};
+}; 

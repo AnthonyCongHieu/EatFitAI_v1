@@ -46,47 +46,50 @@ const normalizeFoodItem = (data: any): FoodItem => ({
   id: String(data?.id ?? data?.foodId ?? ''),
   name: data?.name ?? data?.foodName ?? 'Mon an',
   brand: data?.brand ?? data?.brandName ?? null,
-  calories: toNumber(data?.calories ?? data?.energy),
-  protein: toNumber(data?.protein),
-  carbs: toNumber(data?.carbs ?? data?.carbohydrate),
-  fat: toNumber(data?.fat),
+  calories: toNumber(data?.caloriesKcal ?? data?.calories ?? data?.energy),
+  protein: toNumber(data?.proteinGrams ?? data?.protein),
+  carbs: toNumber(data?.carbohydrateGrams ?? data?.carbs ?? data?.carbohydrate),
+  fat: toNumber(data?.fatGrams ?? data?.fat),
 });
 
 const normalizeFoodDetail = (data: any): FoodDetail => ({
   ...normalizeFoodItem(data),
   description: data?.description ?? null,
-  servingSizeGram: toNumber(data?.servingSizeGram ?? data?.servingSize ?? data?.defaultGrams),
+  servingSizeGram: toNumber(data?.servingSizeGrams ?? data?.servingSizeGram ?? data?.servingSize ?? data?.defaultGrams),
   servingUnit: data?.servingUnit ?? data?.unit ?? 'gram',
-  perServingCalories: toNumber(data?.perServingCalories ?? data?.caloriesPerServing ?? data?.calories),
-  perServingProtein: toNumber(data?.perServingProtein ?? data?.proteinPerServing ?? data?.protein),
-  perServingCarbs: toNumber(data?.perServingCarbs ?? data?.carbsPerServing ?? data?.carbs),
-  perServingFat: toNumber(data?.perServingFat ?? data?.fatPerServing ?? data?.fat),
+  perServingCalories: toNumber(data?.caloriesKcal ?? data?.perServingCalories ?? data?.caloriesPerServing ?? data?.calories),
+  perServingProtein: toNumber(data?.proteinGrams ?? data?.perServingProtein ?? data?.proteinPerServing ?? data?.protein),
+  perServingCarbs: toNumber(data?.carbohydrateGrams ?? data?.perServingCarbs ?? data?.carbsPerServing ?? data?.carbs),
+  perServingFat: toNumber(data?.fatGrams ?? data?.perServingFat ?? data?.fatPerServing ?? data?.fat),
 });
 
 export const foodService = {
   // Tim kiem thuc pham theo tu khoa va phan trang
   async searchFoods(query: string, page: number, pageSize = 20): Promise<SearchFoodsResult> {
+    const offset = Math.max(0, (page - 1) * pageSize);
     const response = await apiClient.get('/api/foods/search', {
       params: {
-        q: query,
-        page,
-        pageSize,
+        query,
+        offset,
+        limit: pageSize,
       },
     });
 
-    const data = response.data ?? {};
-    const rawItems = Array.isArray(data?.items)
-      ? data.items
-      : Array.isArray(data?.results)
-      ? data.results
+    const data = response.data;
+    const rawItems = Array.isArray(data)
+      ? data
+      : Array.isArray((data as any)?.items)
+      ? (data as any).items
+      : Array.isArray((data as any)?.results)
+      ? (data as any).results
       : [];
 
     const normalizedItems = rawItems.map(normalizeFoodItem);
 
-    const total = Number(data?.total ?? data?.totalCount ?? normalizedItems.length);
+    const total = Number((data as any)?.total ?? (data as any)?.totalCount ?? normalizedItems.length);
     const computedTotalPages = Math.ceil(total / pageSize) || 1;
-    const totalPages = Number(data?.totalPages ?? data?.pageCount ?? computedTotalPages);
-    const hasMore = Boolean(data?.hasMore ?? (page < totalPages));
+    const totalPages = Number((data as any)?.pageCount ?? (data as any)?.totalPages ?? computedTotalPages);
+    const hasMore = Boolean((data as any)?.hasMore ?? (page < totalPages));
 
     return {
       items: normalizedItems,
@@ -107,19 +110,28 @@ export const foodService = {
   async addDiaryEntry(payload: {
     foodId: string;
     grams: number;
-    mealType: string;
+    mealType: string; // breakfast/lunch/dinner/snack
     note?: string;
   }): Promise<void> {
+    const d = new Date();
+    const y = d.getFullYear();
+    const m = `${d.getMonth() + 1}`.padStart(2, '0');
+    const day = `${d.getDate()}`.padStart(2, '0');
+    const mealDate = `${y}-${m}-${day}`;
+
     await apiClient.post('/api/diary', {
-      foodId: payload.foodId,
-      grams: payload.grams,
-      mealType: payload.mealType,
-      note: payload.note ?? null,
+      mealDate,
+      mealCode: payload.mealType,
+      source: 'food',
+      itemId: payload.foodId,
+      quantityGrams: payload.grams,
+      notes: payload.note ?? null,
     });
   },
 
   // Tao mon an thu cong
   async createCustomDish(payload: {
+    // Placeholder: existing UI likely uses a different flow; keeping method for compatibility
     name: string;
     description?: string | null;
     servingSizeGram: number;
@@ -131,11 +143,17 @@ export const foodService = {
     await apiClient.post('/api/custom-dishes', {
       name: payload.name,
       description: payload.description ?? null,
-      servingSizeGram: payload.servingSizeGram,
-      calories: payload.calories,
-      protein: payload.protein,
-      carbs: payload.carbs,
-      fat: payload.fat,
+      ingredients: [
+        {
+          foodId: null,
+          name: 'Custom',
+          quantityGrams: payload.servingSizeGram,
+          caloriesKcal: payload.calories,
+          proteinGrams: payload.protein,
+          carbohydrateGrams: payload.carbs,
+          fatGrams: payload.fat,
+        },
+      ],
     });
   },
 };

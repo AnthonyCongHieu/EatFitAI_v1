@@ -54,7 +54,7 @@ export const useDiaryStore = create<DiaryState>((set, get) => ({
     }
     set({ isLoading: true, error: null });
     try {
-      const summary = await diaryService.getTodaySummary();
+      const summary = await diaryService.getTodayCombined();
       set({ summary });
     } catch (error: any) {
       set({ error: error?.message ?? 'Khong the tai du lieu' });
@@ -70,7 +70,7 @@ export const useDiaryStore = create<DiaryState>((set, get) => ({
     }
     set({ isRefreshing: true, error: null });
     try {
-      const summary = await diaryService.getTodaySummary();
+      const summary = await diaryService.getTodayCombined();
       set({ summary });
     } catch (error: any) {
       set({ error: error?.message ?? 'Khong the tai du lieu' });

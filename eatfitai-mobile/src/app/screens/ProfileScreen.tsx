@@ -166,9 +166,7 @@ const ProfileScreen = (): JSX.Element => {
     try {
       await updateProfile({
         fullName: values.fullName.trim(),
-        phone: values.phone ? values.phone.trim() : null,
         heightCm: values.heightCm ? Number(values.heightCm) : null,
-        weightKg: values.weightKg ? Number(values.weightKg) : null,
         dateOfBirth: values.dateOfBirth ? values.dateOfBirth.trim() : null,
       });
       Toast.show({ type: 'success', text1: 'Đã lưu thông tin hồ sơ' });
@@ -189,7 +187,6 @@ const ProfileScreen = (): JSX.Element => {
   const onSubmitBodyMetrics = async (values: BodyMetricsFormValues) => {
     try {
       await profileService.createBodyMetrics({
-        heightCm: Number(values.heightCm),
         weightKg: Number(values.weightKg),
         bodyFatPercent: values.bodyFatPercent ? Number(values.bodyFatPercent) : null,
         recordedAt: values.recordedAt ? `${values.recordedAt}T00:00:00Z` : null,

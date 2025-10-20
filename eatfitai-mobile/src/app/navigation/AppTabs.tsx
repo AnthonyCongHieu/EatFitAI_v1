@@ -1,15 +1,21 @@
-// Bottom Tabs sau khi đăng nhập
+// Bottom Tabs after authentication
 
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import Ionicons from '@expo/vector-icons/Ionicons';
 
 import HomeScreen from '../screens/HomeScreen';
-import ProfileScreen from '../screens/ProfileScreen';
+import FoodSearchScreen from '../screens/diary/FoodSearchScreen';
+import AiCameraScreen from '../screens/ai/AiCameraScreen';
+import AiNutritionScreen from '../screens/ai/AiNutritionScreen';
 import WeekStatsScreen from '../screens/stats/WeekStatsScreen';
+import ProfileScreen from '../screens/ProfileScreen';
 import { useAppTheme } from '../../theme/ThemeProvider';
 
 export type AppTabsParamList = {
   HomeTab: undefined;
+  SearchTab: undefined;
+  CameraTab: undefined;
+  AITab: undefined;
   StatsTab: undefined;
   ProfileTab: undefined;
 };
@@ -39,15 +45,39 @@ const AppTabs = (): JSX.Element => {
         name="HomeTab"
         component={HomeScreen}
         options={{
-          title: 'Trang chủ',
+          title: 'Home',
           tabBarIcon: ({ color, size }) => <Ionicons name="home" color={color} size={size} />,
+        }}
+      />
+      <Tab.Screen
+        name="SearchTab"
+        component={FoodSearchScreen}
+        options={{
+          title: 'Search',
+          tabBarIcon: ({ color, size }) => <Ionicons name="search" color={color} size={size} />,
+        }}
+      />
+      <Tab.Screen
+        name="CameraTab"
+        component={AiCameraScreen}
+        options={{
+          title: 'Camera',
+          tabBarIcon: ({ color, size }) => <Ionicons name="camera" color={color} size={size} />,
+        }}
+      />
+      <Tab.Screen
+        name="AITab"
+        component={AiNutritionScreen}
+        options={{
+          title: 'AI',
+          tabBarIcon: ({ color, size }) => <Ionicons name="bulb" color={color} size={size} />,
         }}
       />
       <Tab.Screen
         name="StatsTab"
         component={WeekStatsScreen}
         options={{
-          title: 'Thống kê',
+          title: 'Stats',
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="stats-chart" color={color} size={size} />
           ),
@@ -57,7 +87,7 @@ const AppTabs = (): JSX.Element => {
         name="ProfileTab"
         component={ProfileScreen}
         options={{
-          title: 'Hồ sơ',
+          title: 'Profile',
           tabBarIcon: ({ color, size }) => <Ionicons name="person" color={color} size={size} />,
         }}
       />

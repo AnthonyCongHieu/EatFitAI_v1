@@ -82,14 +82,14 @@ export const aiService = {
     }));
   },
 
-  // Lay target dinh duong hien tai (neu backend ho tro)
+  // Lay target dinh duong hien tai
   async getCurrentNutritionTarget(): Promise<NutritionTarget | null> {
-    const response = await apiClient.get('/api/nutrition-targets/me');
+    const response = await apiClient.get('/api/nutrition-targets/current');
     const data = response.data ?? {};
-    const calories = toNumber(data?.calories);
-    const protein = toNumber(data?.protein);
-    const carbs = toNumber(data?.carbs);
-    const fat = toNumber(data?.fat);
+    const calories = toNumber(data?.caloriesKcal ?? data?.calories);
+    const protein = toNumber(data?.proteinGrams ?? data?.protein);
+    const carbs = toNumber(data?.carbohydrateGrams ?? data?.carbs);
+    const fat = toNumber(data?.fatGrams ?? data?.fat);
 
     if (calories == null || protein == null || carbs == null || fat == null) {
       return null;
@@ -117,7 +117,12 @@ export const aiService = {
 
   // Ap dung target moi
   async applyNutritionTarget(target: NutritionTarget): Promise<void> {
-    await apiClient.post('/api/nutrition-targets', target);
+    await apiClient.post('/api/nutrition-targets', {
+      caloriesKcal: target.calories,
+      proteinGrams: target.protein,
+      carbohydrateGrams: target.carbs,
+      fatGrams: target.fat,
+    });
   },
 };
 
