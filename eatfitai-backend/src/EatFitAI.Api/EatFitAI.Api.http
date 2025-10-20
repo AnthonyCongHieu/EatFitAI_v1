@@ -1,6 +1,39 @@
-@EatFitAI.Api_HostAddress = http://localhost:5114
+@host = http://localhost:5100
 
-GET {{EatFitAI.Api_HostAddress}}/weatherforecast/
-Accept: application/json
+### Health
+GET {{host}}/health
 
-###
+### Register
+POST {{host}}/api/auth/register
+Content-Type: application/json
+
+{
+  "email": "demo@eatfit.ai",
+  "password": "demo123",
+  "fullName": "Demo User"
+}
+
+### Login
+POST {{host}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "demo@eatfit.ai",
+  "password": "demo123"
+}
+
+### Refresh (call 2-3 times to see sliding 30 days)
+POST {{host}}/api/auth/refresh
+Content-Type: application/json
+
+{
+  "refreshToken": "{{refreshToken}}"
+}
+
+### Google (mock id_token: either a JWT with email claim, or format any|email)
+POST {{host}}/api/auth/google
+Content-Type: application/json
+
+{
+  "id_token": "mock|user@example.com"
+}

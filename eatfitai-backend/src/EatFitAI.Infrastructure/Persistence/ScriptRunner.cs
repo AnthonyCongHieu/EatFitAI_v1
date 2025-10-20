@@ -39,7 +39,7 @@ public class ScriptRunner : IScriptRunner
             return;
         }
 
-        await using var connection = await _connectionFactory.CreateOpenConnectionAsync(cancellationToken);
+        using var connection = await _connectionFactory.CreateOpenConnectionAsync(cancellationToken);
 
         var appliedFiles = (await connection.QueryAsync<string>(
                 "SELECT FileName FROM ScriptHistory"))
