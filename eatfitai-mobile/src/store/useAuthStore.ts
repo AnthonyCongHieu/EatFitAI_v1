@@ -141,9 +141,18 @@ export const useAuthStore = create<AuthState>((set) => ({
   },
 
   logout: async () => {
-    await tokenStorage.clearAll();
-    setAccessTokenMem(null);
-    set({ isAuthenticated: false, user: null });
+    try {
+      const refreshToken = await tokenStorage.getRefreshToken();
+      if (refreshToken) {
+        await apiClient.post('/api/auth/logout', { refreshToken });
+      }
+    } catch {
+      // ignore logout API failure; proceed to clear local session
+    } finally {
+      await tokenStorage.clearAll();
+      setAccessTokenMem(null);
+      set({ isAuthenticated: false, user: null });
+    }
   },
 }));
 

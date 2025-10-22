@@ -153,6 +153,18 @@ public class AuthController : ControllerBase
         return Ok(ToAuthResponse(user, tokens));
     }
 
+    [HttpPost("logout")]
+    public async Task<IActionResult> Logout([FromBody] LogoutRequest request, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(request.RefreshToken))
+        {
+            return Problem(statusCode: StatusCodes.Status422UnprocessableEntity, title: "Thieu refresh token");
+        }
+
+        await _tokenService.RevokeRefreshTokenAsync(request.RefreshToken, GetClientIp(), cancellationToken);
+        return NoContent();
+    }
+
     private ValidationProblemDetails CreateValidationProblem(IEnumerable<IdentityError> errors)
     {
         var details = new ValidationProblemDetails

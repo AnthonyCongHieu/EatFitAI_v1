@@ -90,6 +90,29 @@ public class JwtTokenService : ITokenService
         return new TokenPair(jwt.Token, jwt.ExpiresAt, newRefreshToken.Token, newRefreshToken.ExpiresAt);
     }
 
+    public async Task RevokeRefreshTokenAsync(string refreshTokenValue, string? ipAddress, CancellationToken cancellationToken = default)
+    {
+        var now = DateTimeOffset.UtcNow;
+        var token = await _dbContext.RefreshTokens
+            .FirstOrDefaultAsync(x => x.Token == refreshTokenValue, cancellationToken);
+
+        if (token is null)
+        {
+            return; // nothing to revoke
+        }
+
+        if (!token.RevokedAt.HasValue)
+        {
+            token.RevokedAt = now.UtcDateTime;
+            token.RevokedByIp = ipAddress;
+            token.ReasonRevoked = "UserLogout";
+        }
+
+        // if this token had a replacement chain, revoke descendants too
+        await RevokeDescendantTokensAsync(token.ReplacedByToken, ipAddress, "AncestorLogout", now, cancellationToken);
+        await _dbContext.SaveChangesAsync(cancellationToken);
+    }
+
     private async Task RevokeDescendantTokensAsync(string? refreshTokenValue, string? ipAddress, string reason, DateTimeOffset now, CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(refreshTokenValue))

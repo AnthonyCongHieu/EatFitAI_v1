@@ -4,6 +4,7 @@
 import { useEffect } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -356,7 +357,22 @@ const ProfileScreen = (): JSX.Element => {
             accessibilityRole="button"
             accessibilityLabel="Đăng xuất"
             hitSlop={8}
-            onPress={() => logout().catch(() => {})}
+            onPress={() =>
+              Alert.alert(
+                'Đăng xuất',
+                'Bạn có chắc chắn muốn đăng xuất không?',
+                [
+                  { text: 'Huỷ', style: 'cancel' },
+                  {
+                    text: 'Đồng ý',
+                    style: 'destructive',
+                    onPress: () => {
+                      logout().catch(() => {});
+                    },
+                  },
+                ],
+              )
+            }
             style={[styles.button, { backgroundColor: theme.colors.danger ?? '#E53935', marginTop: 16 }]}>
             <ThemedText style={styles.buttonText}>Đăng xuất</ThemedText>
           </Pressable>
