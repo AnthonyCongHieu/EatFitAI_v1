@@ -35,6 +35,12 @@ public class ScriptRunner : IScriptRunner
 
         var scriptFiles = Directory
             .GetFiles(_scriptsDirectory, "*.sql", SearchOption.TopDirectoryOnly)
+            .Where(file =>
+            {
+                var fileName = Path.GetFileName(file);
+                return fileName == "099_drop_old_procs.sql" ||
+                       (fileName.StartsWith("1") && fileName.EndsWith(".sql"));
+            })
             .OrderBy(Path.GetFileName)
             .ToList();
 

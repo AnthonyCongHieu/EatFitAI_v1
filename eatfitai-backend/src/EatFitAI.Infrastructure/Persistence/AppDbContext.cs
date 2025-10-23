@@ -287,9 +287,10 @@ public class AppDbContext : IdentityDbContext<NguoiDung, IdentityRole<Guid>, Gui
 
         builder.Entity<ScriptHistory>(entity =>
         {
-            entity.ToTable("ScriptHistory");
-            entity.Property(x => x.FileName).HasMaxLength(260);
-            entity.Property(x => x.AppliedAt).HasDefaultValueSql("GETUTCDATE()");
+            entity.ToTable("LichSuCapNhat");
+            entity.Property(x => x.Id).HasColumnName("MaLichSu");
+            entity.Property(x => x.FileName).HasColumnName("TenFile").HasMaxLength(260);
+            entity.Property(x => x.AppliedAt).HasColumnName("ThoiGianApDung").HasDefaultValueSql("GETUTCDATE()");
             entity.HasIndex(x => x.FileName).IsUnique();
         });
     }
