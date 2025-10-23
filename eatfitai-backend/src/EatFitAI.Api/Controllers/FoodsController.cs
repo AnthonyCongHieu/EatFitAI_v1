@@ -25,7 +25,7 @@ public sealed class FoodsController : ControllerBase
         using var conn = await _connectionFactory.CreateOpenConnectionAsync(cancellationToken);
 
         var items = await conn.QueryAsync<FoodResponse>(
-            "sp_Foods_Search",
+            "sp_ThucPham_TimKiem",
             new { Query = query, Offset = offset, Limit = limit },
             commandType: CommandType.StoredProcedure);
 
@@ -37,7 +37,7 @@ public sealed class FoodsController : ControllerBase
     {
         using var conn = await _connectionFactory.CreateOpenConnectionAsync(cancellationToken);
         var item = await conn.QuerySingleOrDefaultAsync<FoodResponse>(
-            "sp_Foods_GetById",
+            "sp_ThucPham_LayTheoId",
             new { Id = id },
             commandType: CommandType.StoredProcedure);
         if (item is null)
@@ -48,4 +48,3 @@ public sealed class FoodsController : ControllerBase
         return Ok(item);
     }
 }
-

@@ -27,7 +27,7 @@ public sealed class SummaryController : ControllerBase
         using var conn = await _connectionFactory.CreateOpenConnectionAsync(cancellationToken);
 
         var row = await conn.QuerySingleOrDefaultAsync<DayDb>(
-            "sp_Summary_Day",
+            "sp_TongHop_Ngay",
             new { UserId = userId, MealDate = date.ToDateTime(TimeOnly.MinValue) },
             commandType: CommandType.StoredProcedure);
 
@@ -51,7 +51,7 @@ public sealed class SummaryController : ControllerBase
         using var conn = await _connectionFactory.CreateOpenConnectionAsync(cancellationToken);
 
         var rows = await conn.QueryAsync<DayDb>(
-            "sp_Summary_Week",
+            "sp_TongHop_Tuan",
             new { UserId = userId, EndDate = date.ToDateTime(TimeOnly.MinValue) },
             commandType: CommandType.StoredProcedure);
 
@@ -78,4 +78,3 @@ public sealed class SummaryController : ControllerBase
         public decimal TotalFatGrams { get; set; }
     }
 }
-

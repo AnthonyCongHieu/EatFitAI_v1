@@ -44,7 +44,7 @@ public sealed class CustomDishesController : ControllerBase
         }));
 
         var row = await conn.QuerySingleAsync<DishDb>(
-            "sp_CustomDish_Create",
+            "sp_MonNguoiDung_TaoMon",
             new
             {
                 UserId = userId,
@@ -75,7 +75,7 @@ public sealed class CustomDishesController : ControllerBase
         var userId = User.GetUserId();
         using var conn = await _connectionFactory.CreateOpenConnectionAsync(cancellationToken);
         var rows = await conn.QueryAsync<DishDb>(
-            "sp_CustomDish_Get",
+            "sp_MonNguoiDung_LayDanhSach",
             new { UserId = userId },
             commandType: CommandType.StoredProcedure);
 
@@ -101,7 +101,7 @@ public sealed class CustomDishesController : ControllerBase
         using var conn = await _connectionFactory.CreateOpenConnectionAsync(cancellationToken);
 
         using var multi = await conn.QueryMultipleAsync(
-            "sp_CustomDish_GetById",
+            "sp_MonNguoiDung_LayTheoId",
             new { UserId = userId, Id = id },
             commandType: CommandType.StoredProcedure);
 
@@ -163,4 +163,3 @@ public sealed class CustomDishesController : ControllerBase
         public decimal FatGrams { get; set; }
     }
 }
-

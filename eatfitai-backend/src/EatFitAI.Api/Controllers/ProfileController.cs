@@ -29,7 +29,7 @@ public sealed class ProfileController : ControllerBase
         using var conn = await _connectionFactory.CreateOpenConnectionAsync(cancellationToken);
 
         var row = await conn.QuerySingleOrDefaultAsync<ProfileDb>(
-            "sp_Profile_Get",
+            "sp_HoSo_Lay",
             new { UserId = userId },
             commandType: CommandType.StoredProcedure);
 
@@ -56,7 +56,7 @@ public sealed class ProfileController : ControllerBase
         using var conn = await _connectionFactory.CreateOpenConnectionAsync(cancellationToken);
 
         var row = await conn.QuerySingleAsync<ProfileDb>(
-            "sp_Profile_Update",
+            "sp_HoSo_CapNhat",
             new
             {
                 UserId = userId,
@@ -103,4 +103,3 @@ public sealed class ProfileController : ControllerBase
         public string? AvatarUrl { get; set; }
     }
 }
-

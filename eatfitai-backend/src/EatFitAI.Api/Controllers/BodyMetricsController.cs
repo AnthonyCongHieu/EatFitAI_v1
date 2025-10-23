@@ -32,7 +32,7 @@ public sealed class BodyMetricsController : ControllerBase
         using var conn = await _connectionFactory.CreateOpenConnectionAsync(cancellationToken);
 
         var row = await conn.QuerySingleAsync<BodyMetricDb>(
-            "sp_BodyMetrics_Add",
+            "sp_ChiSoCoThe_Them",
             new
             {
                 UserId = userId,
@@ -72,4 +72,3 @@ public sealed class BodyMetricsController : ControllerBase
         public DateTime CreatedAt { get; set; }
     }
 }
-

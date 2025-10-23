@@ -32,7 +32,7 @@ public sealed class DiaryController : ControllerBase
         using var conn = await _connectionFactory.CreateOpenConnectionAsync(cancellationToken);
 
         var row = await conn.QuerySingleAsync<DiaryDb>(
-            "sp_Diary_Create",
+            "sp_NhatKy_Tao",
             new
             {
                 UserId = userId,
@@ -73,7 +73,7 @@ public sealed class DiaryController : ControllerBase
         using var conn = await _connectionFactory.CreateOpenConnectionAsync(cancellationToken);
 
         var rows = await conn.QueryAsync<DiaryDb>(
-            "sp_Diary_GetByDate",
+            "sp_NhatKy_LayTheoNgay",
             new { UserId = userId, MealDate = date.ToDateTime(TimeOnly.MinValue) },
             commandType: CommandType.StoredProcedure);
 
@@ -104,7 +104,7 @@ public sealed class DiaryController : ControllerBase
         var userId = User.GetUserId();
         using var conn = await _connectionFactory.CreateOpenConnectionAsync(cancellationToken);
         var affected = await conn.ExecuteScalarAsync<int>(
-            "sp_Diary_Delete",
+            "sp_NhatKy_Xoa",
             new { UserId = userId, DiaryEntryId = id },
             commandType: CommandType.StoredProcedure);
 
@@ -137,4 +137,3 @@ public sealed class DiaryController : ControllerBase
         public DateTime? UpdatedAt { get; set; }
     }
 }
-

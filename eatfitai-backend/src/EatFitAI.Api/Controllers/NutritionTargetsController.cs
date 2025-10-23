@@ -27,7 +27,7 @@ public sealed class NutritionTargetsController : ControllerBase
         using var conn = await _connectionFactory.CreateOpenConnectionAsync(cancellationToken);
 
         var row = await conn.QuerySingleOrDefaultAsync<NutritionTargetDb>(
-            "sp_NutritionTargets_GetCurrent",
+            "sp_MucTieuDinhDuong_LayHienTai",
             new { UserId = userId },
             commandType: CommandType.StoredProcedure);
 
@@ -51,7 +51,7 @@ public sealed class NutritionTargetsController : ControllerBase
         using var conn = await _connectionFactory.CreateOpenConnectionAsync(cancellationToken);
 
         var row = await conn.QuerySingleAsync<NutritionTargetDb>(
-            "sp_NutritionTargets_Upsert",
+            "sp_MucTieuDinhDuong_Upsert",
             new
             {
                 UserId = userId,
@@ -94,4 +94,3 @@ public sealed class NutritionTargetsController : ControllerBase
         public DateTime? UpdatedAt { get; set; }
     }
 }
-
