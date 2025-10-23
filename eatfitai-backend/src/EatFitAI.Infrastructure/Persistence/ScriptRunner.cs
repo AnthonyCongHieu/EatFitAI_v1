@@ -24,6 +24,9 @@ public class ScriptRunner : IScriptRunner
 
     public async Task ApplyPendingScriptsAsync(CancellationToken cancellationToken = default)
     {
+        using var connection = await _connectionFactory.CreateOpenConnectionAsync(cancellationToken);
+        await EnsureHistoryTableExistsAsync(connection);
+
         if (!Directory.Exists(_scriptsDirectory))
         {
             _logger.LogWarning("Scripts directory missing: {Directory}", _scriptsDirectory);
@@ -40,9 +43,7 @@ public class ScriptRunner : IScriptRunner
             _logger.LogInformation("No scripts found in {Directory}", _scriptsDirectory);
             return;
         }
-
-        using var connection = await _connectionFactory.CreateOpenConnectionAsync(cancellationToken);
-
+        
         var appliedFiles = (await connection.QueryAsync<string>(
                 "SELECT FileName FROM ScriptHistory"))
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
@@ -92,6 +93,30 @@ public class ScriptRunner : IScriptRunner
 
         _logger.LogInformation("Applied {Count} scripts", pendingScripts.Count);
     }
+    
+    private async Task EnsureHistoryTableExistsAsync(IDbConnection connection)
+    {
+        _logger.LogInformation("Checking for ScriptHistory table existence.");
+        const string checkTableSql = "SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'ScriptHistory' AND TABLE_SCHEMA = 'dbo'";
+        var tableExists = await connection.QueryFirstOrDefaultAsync<int?>(checkTableSql) == 1;
+        if (tableExists)
+        {
+            _logger.LogInformation("ScriptHistory table already exists.");
+            return;
+        }
+
+        _logger.LogInformation("Creating ScriptHistory table.");
+        const string createTableSql = @"
+            CREATE TABLE [dbo].[ScriptHistory](
+                [FileName] [nvarchar](255) NOT NULL,
+                [AppliedAt] [datetime2](0) NOT NULL, 
+                CONSTRAINT [PK_ScriptHistory] PRIMARY KEY CLUSTERED ([FileName] ASC)
+            );
+            ALTER TABLE [dbo].[ScriptHistory] ADD CONSTRAINT [DF_ScriptHistory_AppliedAt] DEFAULT (SYSUTCDATETIME()) FOR [AppliedAt];";
+        await connection.ExecuteAsync(createTableSql);
+        _logger.LogInformation("ScriptHistory table created successfully.");
+    }
+
 
     private static IEnumerable<string> SplitBatches(string script)
     {
