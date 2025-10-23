@@ -20,6 +20,13 @@ public sealed class DiaryCreateRequest
     public string? Notes { get; set; }
 }
 
+public sealed class DiaryUpdateRequest
+{
+    [Range(0.01, 100000)]
+    public decimal? QuantityGrams { get; set; }
+    public string? Notes { get; set; }
+}
+
 public sealed class DiaryEntryResponse
 {
     public Guid Id { get; init; }

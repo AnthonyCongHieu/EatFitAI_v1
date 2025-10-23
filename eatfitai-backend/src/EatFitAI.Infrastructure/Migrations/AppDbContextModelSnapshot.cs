@@ -8,7 +8,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
 
-namespace EatFitAI.Infrastructure.Persistence.Migrations
+namespace EatFitAI.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
     partial class AppDbContextModelSnapshot : ModelSnapshot
@@ -17,7 +17,7 @@ namespace EatFitAI.Infrastructure.Persistence.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "9.0.0")
+                .HasAnnotation("ProductVersion", "9.0.10")
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
@@ -72,37 +72,47 @@ namespace EatFitAI.Infrastructure.Persistence.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("uniqueidentifier")
+                        .HasColumnName("MaRefreshToken");
 
                     b.Property<DateTime>("CreatedAt")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("datetime2")
+                        .HasColumnName("NgayTao")
                         .HasDefaultValueSql("GETUTCDATE()");
 
                     b.Property<string>("CreatedByIp")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("TaoBoiIP");
 
                     b.Property<DateTime>("ExpiresAt")
-                        .HasColumnType("datetime2");
+                        .HasColumnType("datetime2")
+                        .HasColumnName("HetHanVao");
 
                     b.Property<string>("ReasonRevoked")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("LyDoThuHoi");
 
                     b.Property<string>("ReplacedByToken")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("ThayTheBangToken");
 
                     b.Property<DateTime?>("RevokedAt")
-                        .HasColumnType("datetime2");
+                        .HasColumnType("datetime2")
+                        .HasColumnName("ThuHoiVao");
 
                     b.Property<string>("RevokedByIp")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("ThuHoiBoiIP");
 
                     b.Property<string>("Token")
                         .IsRequired()
-                        .HasColumnType("nvarchar(450)");
+                        .HasColumnType("nvarchar(450)")
+                        .HasColumnName("Token");
 
                     b.Property<Guid>("UserId")
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("uniqueidentifier")
+                        .HasColumnName("MaNguoiDung");
 
                     b.HasKey("Id");
 
@@ -118,61 +128,78 @@ namespace EatFitAI.Infrastructure.Persistence.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("uniqueidentifier")
+                        .HasColumnName("MaNhatKy");
 
                     b.Property<Guid?>("AiRecipeId")
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("uniqueidentifier")
+                        .HasColumnName("MaCongThucAI");
 
                     b.Property<decimal>("CaloriesKcal")
-                        .HasColumnType("decimal(10,2)");
+                        .HasColumnType("decimal(10,2)")
+                        .HasColumnName("Calo");
 
                     b.Property<decimal>("CarbohydrateGrams")
-                        .HasColumnType("decimal(9,2)");
+                        .HasColumnType("decimal(9,2)")
+                        .HasColumnName("Carb");
 
                     b.Property<DateTime>("CreatedAt")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("datetime2")
+                        .HasColumnName("NgayTao")
                         .HasDefaultValueSql("GETUTCDATE()");
 
                     b.Property<Guid?>("CustomDishId")
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("uniqueidentifier")
+                        .HasColumnName("MaMonNguoiDung");
 
                     b.Property<decimal>("FatGrams")
-                        .HasColumnType("decimal(9,2)");
+                        .HasColumnType("decimal(9,2)")
+                        .HasColumnName("Fat");
 
                     b.Property<Guid?>("FoodId")
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("uniqueidentifier")
+                        .HasColumnName("MaThucPham");
 
                     b.Property<Guid>("ItemId")
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("uniqueidentifier")
+                        .HasColumnName("MaMuc");
 
                     b.Property<string>("MealCode")
                         .IsRequired()
                         .HasMaxLength(32)
-                        .HasColumnType("nvarchar(32)");
+                        .HasColumnType("nvarchar(32)")
+                        .HasColumnName("MaBuaAn");
 
                     b.Property<DateTime>("MealDate")
-                        .HasColumnType("date");
+                        .HasColumnType("date")
+                        .HasColumnName("NgayAn");
 
                     b.Property<string>("Notes")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("GhiChu");
 
                     b.Property<decimal>("ProteinGrams")
-                        .HasColumnType("decimal(9,2)");
+                        .HasColumnType("decimal(9,2)")
+                        .HasColumnName("Protein");
 
                     b.Property<decimal>("QuantityGrams")
-                        .HasColumnType("decimal(9,2)");
+                        .HasColumnType("decimal(9,2)")
+                        .HasColumnName("KhoiLuongGram");
 
                     b.Property<string>("Source")
                         .IsRequired()
                         .HasMaxLength(32)
-                        .HasColumnType("nvarchar(32)");
+                        .HasColumnType("nvarchar(32)")
+                        .HasColumnName("Nguon");
 
                     b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("datetime2");
+                        .HasColumnType("datetime2")
+                        .HasColumnName("NgayCapNhat");
 
                     b.Property<Guid>("UserId")
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("uniqueidentifier")
+                        .HasColumnName("MaNguoiDung");
 
                     b.HasKey("Id");
 
@@ -185,9 +212,9 @@ namespace EatFitAI.Infrastructure.Persistence.Migrations
                     b.HasIndex("UserId", "MealDate", "MealCode", "ItemId", "Source")
                         .IsUnique();
 
-                    b.ToTable("DiaryEntry", null, t =>
+                    b.ToTable("NhatKyAnUong", null, t =>
                         {
-                            t.HasCheckConstraint("CK_DiaryEntry_ExactlyOneSource", "(CASE WHEN [FoodId] IS NOT NULL THEN 1 ELSE 0 END + CASE WHEN [CustomDishId] IS NOT NULL THEN 1 ELSE 0 END + CASE WHEN [AiRecipeId] IS NOT NULL THEN 1 ELSE 0 END) = 1");
+                            t.HasCheckConstraint("CK_NK_ChiMotNguon", "(CASE WHEN [MaThucPham] IS NOT NULL THEN 1 ELSE 0 END + CASE WHEN [MaMonNguoiDung] IS NOT NULL THEN 1 ELSE 0 END + CASE WHEN [MaCongThucAI] IS NOT NULL THEN 1 ELSE 0 END) = 1");
                         });
                 });
 
@@ -195,46 +222,57 @@ namespace EatFitAI.Infrastructure.Persistence.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("uniqueidentifier")
+                        .HasColumnName("MaMonNguoiDung");
 
                     b.Property<decimal>("CaloriesKcal")
-                        .HasColumnType("decimal(10,2)");
+                        .HasColumnType("decimal(10,2)")
+                        .HasColumnName("Calo100g");
 
                     b.Property<decimal>("CarbohydrateGrams")
-                        .HasColumnType("decimal(9,2)");
+                        .HasColumnType("decimal(9,2)")
+                        .HasColumnName("Carb100g");
 
                     b.Property<DateTime>("CreatedAt")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("datetime2")
+                        .HasColumnName("NgayTao")
                         .HasDefaultValueSql("GETUTCDATE()");
 
                     b.Property<string>("Description")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("MoTa");
 
                     b.Property<decimal>("FatGrams")
-                        .HasColumnType("decimal(9,2)");
+                        .HasColumnType("decimal(9,2)")
+                        .HasColumnName("Fat100g");
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("TenMon");
 
                     b.Property<decimal>("PortionSizeGrams")
-                        .HasColumnType("decimal(9,2)");
+                        .HasColumnType("decimal(9,2)")
+                        .HasColumnName("KhoiLuongPhucVuGram");
 
                     b.Property<decimal>("ProteinGrams")
-                        .HasColumnType("decimal(9,2)");
+                        .HasColumnType("decimal(9,2)")
+                        .HasColumnName("Protein100g");
 
                     b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("datetime2");
+                        .HasColumnType("datetime2")
+                        .HasColumnName("NgayCapNhat");
 
                     b.Property<Guid>("UserId")
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("uniqueidentifier")
+                        .HasColumnName("MaNguoiDung");
 
                     b.HasKey("Id");
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("CustomDish", (string)null);
+                    b.ToTable("MonNguoiDung", (string)null);
                 });
 
             modelBuilder.Entity("EatFitAI.Domain.Foods.CustomDishIngredient", b =>
@@ -281,52 +319,65 @@ namespace EatFitAI.Infrastructure.Persistence.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("uniqueidentifier")
+                        .HasColumnName("MaThucPham");
 
                     b.Property<string>("Brand")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("ThuongHieu");
 
                     b.Property<decimal>("CaloriesKcal")
-                        .HasColumnType("decimal(10,2)");
+                        .HasColumnType("decimal(10,2)")
+                        .HasColumnName("Calo100g");
 
                     b.Property<decimal>("CarbohydrateGrams")
-                        .HasColumnType("decimal(9,2)");
+                        .HasColumnType("decimal(9,2)")
+                        .HasColumnName("Carb100g");
 
                     b.Property<string>("Category")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("PhanLoai");
 
                     b.Property<DateTime>("CreatedAt")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("datetime2")
+                        .HasColumnName("NgayTao")
                         .HasDefaultValueSql("GETUTCDATE()");
 
                     b.Property<string>("Description")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("MoTaKhauPhan");
 
                     b.Property<decimal>("FatGrams")
-                        .HasColumnType("decimal(9,2)");
+                        .HasColumnType("decimal(9,2)")
+                        .HasColumnName("Fat100g");
 
                     b.Property<bool>("IsCustom")
-                        .HasColumnType("bit");
+                        .HasColumnType("bit")
+                        .HasColumnName("LaTuDinhNghia");
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasColumnType("nvarchar(450)");
+                        .HasColumnType("nvarchar(450)")
+                        .HasColumnName("TenThucPham");
 
                     b.Property<decimal>("ProteinGrams")
-                        .HasColumnType("decimal(9,2)");
+                        .HasColumnType("decimal(9,2)")
+                        .HasColumnName("Protein100g");
 
                     b.Property<decimal>("ServingSizeGrams")
-                        .HasColumnType("decimal(9,2)");
+                        .HasColumnType("decimal(9,2)")
+                        .HasColumnName("KhoiLuongPhucVuGram");
 
                     b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("datetime2");
+                        .HasColumnType("datetime2")
+                        .HasColumnName("NgayCapNhat");
 
                     b.HasKey("Id");
 
                     b.HasIndex("Name");
 
-                    b.ToTable("Food", (string)null);
+                    b.ToTable("ThucPham", (string)null);
                 });
 
             modelBuilder.Entity("EatFitAI.Domain.Metadata.ScriptHistory", b =>
@@ -359,147 +410,201 @@ namespace EatFitAI.Infrastructure.Persistence.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("uniqueidentifier")
+                        .HasColumnName("MaChiSo");
 
                     b.Property<decimal?>("BodyFatPercent")
-                        .HasColumnType("decimal(9,2)");
+                        .HasColumnType("decimal(9,2)")
+                        .HasColumnName("TiLeMoCoThe");
 
                     b.Property<DateTime>("CreatedAt")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("datetime2")
+                        .HasColumnName("NgayTao")
                         .HasDefaultValueSql("GETUTCDATE()");
 
                     b.Property<decimal?>("HipCm")
-                        .HasColumnType("decimal(9,2)");
+                        .HasColumnType("decimal(9,2)")
+                        .HasColumnName("VongMongCm");
 
                     b.Property<decimal?>("MuscleMassKg")
-                        .HasColumnType("decimal(9,2)");
+                        .HasColumnType("decimal(9,2)")
+                        .HasColumnName("KhoiLuongCoKg");
 
                     b.Property<DateTime>("RecordedAt")
-                        .HasColumnType("datetime2");
+                        .HasColumnType("datetime2")
+                        .HasColumnName("NgayCapNhat");
 
                     b.Property<Guid>("UserId")
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("uniqueidentifier")
+                        .HasColumnName("MaNguoiDung");
 
                     b.Property<decimal?>("WaistCm")
-                        .HasColumnType("decimal(9,2)");
+                        .HasColumnType("decimal(9,2)")
+                        .HasColumnName("VongEoCm");
 
                     b.Property<decimal>("WeightKg")
-                        .HasColumnType("decimal(9,2)");
+                        .HasColumnType("decimal(9,2)")
+                        .HasColumnName("CanNangKg");
 
                     b.HasKey("Id");
 
                     b.HasIndex("UserId", "RecordedAt");
 
-                    b.ToTable("BodyMetric", (string)null);
+                    b.ToTable("ChiSoCoThe", (string)null);
                 });
 
             modelBuilder.Entity("EatFitAI.Domain.Nutrition.NutritionTarget", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("uniqueidentifier")
+                        .HasColumnName("MaMucTieuDD");
 
                     b.Property<decimal>("CaloriesKcal")
-                        .HasColumnType("decimal(10,2)");
+                        .HasColumnType("decimal(10,2)")
+                        .HasColumnName("CaloKcal");
 
                     b.Property<decimal>("CarbohydrateGrams")
-                        .HasColumnType("decimal(9,2)");
+                        .HasColumnType("decimal(9,2)")
+                        .HasColumnName("CarbG");
 
                     b.Property<DateTime>("CreatedAt")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("datetime2")
+                        .HasColumnName("NgayTao")
                         .HasDefaultValueSql("GETUTCDATE()");
 
                     b.Property<DateTime>("EffectiveDate")
-                        .HasColumnType("date");
+                        .HasColumnType("date")
+                        .HasColumnName("HieuLucTuNgay");
 
                     b.Property<decimal>("FatGrams")
-                        .HasColumnType("decimal(9,2)");
+                        .HasColumnType("decimal(9,2)")
+                        .HasColumnName("FatG");
 
                     b.Property<bool>("IsActive")
-                        .HasColumnType("bit");
+                        .HasColumnType("bit")
+                        .HasColumnName("LaHoatDong");
 
                     b.Property<decimal>("ProteinGrams")
-                        .HasColumnType("decimal(9,2)");
+                        .HasColumnType("decimal(9,2)")
+                        .HasColumnName("ProteinG");
 
                     b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("datetime2");
+                        .HasColumnType("datetime2")
+                        .HasColumnName("NgayCapNhat");
 
                     b.Property<Guid>("UserId")
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("uniqueidentifier")
+                        .HasColumnName("MaNguoiDung");
 
                     b.HasKey("Id");
 
                     b.HasIndex("UserId", "IsActive");
 
-                    b.ToTable("NutritionTarget", (string)null);
+                    b.ToTable("MucTieuDinhDuong", (string)null);
                 });
 
             modelBuilder.Entity("EatFitAI.Domain.Users.NguoiDung", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("uniqueidentifier")
+                        .HasColumnName("MaNguoiDung");
 
                     b.Property<int>("AccessFailedCount")
-                        .HasColumnType("int");
+                        .HasColumnType("int")
+                        .HasColumnName("SoLanDangNhapThatBai");
 
                     b.Property<string>("ConcurrencyStamp")
                         .IsConcurrencyToken()
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("DauDongBo");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("NgayTao");
+
+                    b.Property<DateOnly?>("DateOfBirth")
+                        .HasColumnType("date")
+                        .HasColumnName("NgaySinh");
 
                     b.Property<string>("Email")
                         .HasMaxLength(256)
-                        .HasColumnType("nvarchar(256)");
+                        .HasColumnType("nvarchar(256)")
+                        .HasColumnName("Email");
 
                     b.Property<bool>("EmailConfirmed")
-                        .HasColumnType("bit");
+                        .HasColumnType("bit")
+                        .HasColumnName("EmailXacNhan");
+
+                    b.Property<string>("FullName")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("HoTen");
+
+                    b.Property<string>("Gender")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("GioiTinh");
 
                     b.Property<bool>("LockoutEnabled")
-                        .HasColumnType("bit");
+                        .HasColumnType("bit")
+                        .HasColumnName("KichHoatKhoa");
 
                     b.Property<DateTimeOffset?>("LockoutEnd")
-                        .HasColumnType("datetimeoffset");
+                        .HasColumnType("datetimeoffset")
+                        .HasColumnName("KetThucKhoa");
 
                     b.Property<string>("NormalizedEmail")
                         .HasMaxLength(256)
-                        .HasColumnType("nvarchar(256)");
+                        .HasColumnType("nvarchar(256)")
+                        .HasColumnName("EmailChuanHoa");
 
                     b.Property<string>("NormalizedUserName")
                         .HasMaxLength(256)
-                        .HasColumnType("nvarchar(256)");
+                        .HasColumnType("nvarchar(256)")
+                        .HasColumnName("TenDangNhapChuanHoa");
 
                     b.Property<string>("PasswordHash")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("MatKhauHash");
 
                     b.Property<string>("PhoneNumber")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("SoDienThoai");
 
                     b.Property<bool>("PhoneNumberConfirmed")
-                        .HasColumnType("bit");
+                        .HasColumnType("bit")
+                        .HasColumnName("SoDienThoaiXacNhan");
 
                     b.Property<string>("SecurityStamp")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("DauAnToan");
 
                     b.Property<bool>("TwoFactorEnabled")
-                        .HasColumnType("bit");
+                        .HasColumnType("bit")
+                        .HasColumnName("KichHoatHaiYeuTo");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("NgayCapNhat");
 
                     b.Property<string>("UserName")
                         .HasMaxLength(256)
-                        .HasColumnType("nvarchar(256)");
+                        .HasColumnType("nvarchar(256)")
+                        .HasColumnName("TenDangNhap");
 
                     b.HasKey("Id");
 
                     b.HasIndex("NormalizedEmail")
                         .IsUnique()
                         .HasDatabaseName("EmailIndex")
-                        .HasFilter("[NormalizedEmail] IS NOT NULL");
+                        .HasFilter("[EmailChuanHoa] IS NOT NULL");
 
                     b.HasIndex("NormalizedUserName")
                         .IsUnique()
                         .HasDatabaseName("UserNameIndex")
-                        .HasFilter("[NormalizedUserName] IS NOT NULL");
+                        .HasFilter("[TenDangNhapChuanHoa] IS NOT NULL");
 
                     b.ToTable("NguoiDung", (string)null);
                 });
@@ -507,54 +612,66 @@ namespace EatFitAI.Infrastructure.Persistence.Migrations
             modelBuilder.Entity("EatFitAI.Domain.Users.UserProfile", b =>
                 {
                     b.Property<Guid>("UserId")
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("uniqueidentifier")
+                        .HasColumnName("MaNguoiDung");
 
                     b.Property<string>("ActivityLevel")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("MucDoHoatDong");
 
                     b.Property<string>("AvatarUrl")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("AnhDaiDienUrl");
 
                     b.Property<DateTime>("CreatedAt")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("datetime2")
+                        .HasColumnName("NgayTao")
                         .HasDefaultValueSql("GETUTCDATE()");
 
                     b.Property<DateTime?>("DateOfBirth")
-                        .HasColumnType("date");
+                        .HasColumnType("date")
+                        .HasColumnName("NgaySinh");
 
                     b.Property<string>("FullName")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("HoTen");
 
                     b.Property<string>("Gender")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("GioiTinh");
 
                     b.Property<string>("Goal")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("MucTieu");
 
                     b.Property<decimal?>("HeightCm")
-                        .HasColumnType("decimal(9,2)");
+                        .HasColumnType("decimal(9,2)")
+                        .HasColumnName("ChieuCaoCm");
 
                     b.Property<decimal?>("TargetWeightKg")
-                        .HasColumnType("decimal(9,2)");
+                        .HasColumnType("decimal(9,2)")
+                        .HasColumnName("CanNangMucTieuKg");
 
                     b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("datetime2");
+                        .HasColumnType("datetime2")
+                        .HasColumnName("NgayCapNhat");
 
                     b.HasKey("UserId");
 
-                    b.ToTable("UserProfile", (string)null);
+                    b.ToTable("HoSoNguoiDung", (string)null);
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole<System.Guid>", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("uniqueidentifier")
+                        .HasColumnName("MaVaiTro");
 
                     b.Property<string>("ConcurrencyStamp")
                         .IsConcurrencyToken()
@@ -582,7 +699,8 @@ namespace EatFitAI.Infrastructure.Persistence.Migrations
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
+                        .HasColumnType("int")
+                        .HasColumnName("MaClaim");
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
@@ -606,7 +724,8 @@ namespace EatFitAI.Infrastructure.Persistence.Migrations
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
+                        .HasColumnType("int")
+                        .HasColumnName("MaClaim");
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
@@ -650,7 +769,8 @@ namespace EatFitAI.Infrastructure.Persistence.Migrations
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserRole<System.Guid>", b =>
                 {
                     b.Property<Guid>("UserId")
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("uniqueidentifier")
+                        .HasColumnName("MaNguoiDung");
 
                     b.Property<Guid>("RoleId")
                         .HasColumnType("uniqueidentifier");

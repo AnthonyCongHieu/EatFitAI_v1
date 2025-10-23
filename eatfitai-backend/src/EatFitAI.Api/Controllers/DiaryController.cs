@@ -1,10 +1,12 @@
-using System.Data;
-using Dapper;
 using EatFitAI.Api.Contracts.Diary;
 using EatFitAI.Api.Extensions;
-using EatFitAI.Application.Data;
+using EatFitAI.Domain.Ai;
+using EatFitAI.Domain.Diary;
+using EatFitAI.Domain.Foods;
+using EatFitAI.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace EatFitAI.Api.Controllers;
 
@@ -13,11 +15,11 @@ namespace EatFitAI.Api.Controllers;
 [Authorize]
 public sealed class DiaryController : ControllerBase
 {
-    private readonly ISqlConnectionFactory _connectionFactory;
+    private readonly AppDbContext _context;
 
-    public DiaryController(ISqlConnectionFactory connectionFactory)
+    public DiaryController(AppDbContext context)
     {
-        _connectionFactory = connectionFactory;
+        _context = context;
     }
 
     [HttpPost]
@@ -29,70 +31,125 @@ public sealed class DiaryController : ControllerBase
         }
 
         var userId = User.GetUserId();
-        using var conn = await _connectionFactory.CreateOpenConnectionAsync(cancellationToken);
 
-        var row = await conn.QuerySingleAsync<DiaryDb>(
-            "sp_NhatKy_Tao",
-            new
-            {
-                UserId = userId,
-                MealDate = request.MealDate.ToDateTime(TimeOnly.MinValue),
-                request.MealCode,
-                request.Source,
-                request.ItemId,
-                request.QuantityGrams,
-                request.Notes
-            },
-            commandType: CommandType.StoredProcedure);
+        // Determine the source entity based on ItemId and Source
+        Food? food = null;
+        CustomDish? customDish = null;
+        AiRecipe? aiRecipe = null;
 
-        var resp = new DiaryEntryResponse
+        if (request.Source == "food")
         {
-            Id = row.Id,
-            MealDate = DateOnly.FromDateTime(row.MealDate),
-            MealCode = row.MealCode,
-            FoodId = row.FoodId,
-            CustomDishId = row.CustomDishId,
-            AiRecipeId = row.AiRecipeId,
-            ItemId = row.ItemId,
-            Source = row.Source,
-            QuantityGrams = row.QuantityGrams,
-            CaloriesKcal = row.CaloriesKcal,
-            ProteinGrams = row.ProteinGrams,
-            CarbohydrateGrams = row.CarbohydrateGrams,
-            FatGrams = row.FatGrams,
-            Notes = row.Notes
+            food = await _context.Foods.FindAsync(request.ItemId);
+            if (food == null) return NotFound("Food not found");
+        }
+        else if (request.Source == "custom-dish")
+        {
+            customDish = await _context.CustomDishes.FindAsync(request.ItemId);
+            if (customDish == null) return NotFound("Custom dish not found");
+        }
+        else if (request.Source == "ai-recipe")
+        {
+            aiRecipe = await _context.AiRecipes.FindAsync(request.ItemId);
+            if (aiRecipe == null) return NotFound("AI recipe not found");
+        }
+
+        // Calculate nutrition values based on quantity
+        decimal calories = 0, protein = 0, carbs = 0, fat = 0;
+
+        if (food != null)
+        {
+            var ratio = request.QuantityGrams / 100m;
+            calories = food.CaloriesKcal * ratio;
+            protein = food.ProteinGrams * ratio;
+            carbs = food.CarbohydrateGrams * ratio;
+            fat = food.FatGrams * ratio;
+        }
+        else if (customDish != null)
+        {
+            var ratio = request.QuantityGrams / customDish.PortionSizeGrams;
+            calories = customDish.CaloriesKcal * ratio;
+            protein = customDish.ProteinGrams * ratio;
+            carbs = customDish.CarbohydrateGrams * ratio;
+            fat = customDish.FatGrams * ratio;
+        }
+        else if (aiRecipe != null)
+        {
+            var ratio = request.QuantityGrams / 100m; // Assuming 100g portion for AI recipes
+            calories = aiRecipe.CaloriesKcal * ratio;
+            protein = aiRecipe.ProteinGrams * ratio;
+            carbs = aiRecipe.CarbohydrateGrams * ratio;
+            fat = aiRecipe.FatGrams * ratio;
+        }
+
+        var diaryEntry = new DiaryEntry
+        {
+            UserId = userId,
+            MealDate = request.MealDate,
+            MealCode = request.MealCode,
+            FoodId = food?.Id,
+            CustomDishId = customDish?.Id,
+            AiRecipeId = aiRecipe?.Id,
+            ItemId = request.ItemId,
+            Source = request.Source,
+            QuantityGrams = request.QuantityGrams,
+            CaloriesKcal = calories,
+            ProteinGrams = protein,
+            CarbohydrateGrams = carbs,
+            FatGrams = fat,
+            Notes = request.Notes,
+            CreatedAt = DateTime.UtcNow
         };
 
-        return Ok(resp);
+        _context.DiaryEntries.Add(diaryEntry);
+        await _context.SaveChangesAsync(cancellationToken);
+
+        var response = new DiaryEntryResponse
+        {
+            Id = diaryEntry.Id,
+            MealDate = diaryEntry.MealDate,
+            MealCode = diaryEntry.MealCode,
+            FoodId = diaryEntry.FoodId,
+            CustomDishId = diaryEntry.CustomDishId,
+            AiRecipeId = diaryEntry.AiRecipeId,
+            ItemId = diaryEntry.ItemId,
+            Source = diaryEntry.Source,
+            QuantityGrams = diaryEntry.QuantityGrams,
+            CaloriesKcal = diaryEntry.CaloriesKcal,
+            ProteinGrams = diaryEntry.ProteinGrams,
+            CarbohydrateGrams = diaryEntry.CarbohydrateGrams,
+            FatGrams = diaryEntry.FatGrams,
+            Notes = diaryEntry.Notes
+        };
+
+        return Ok(response);
     }
 
     [HttpGet]
     public async Task<IActionResult> GetByDate([FromQuery] DateOnly date, CancellationToken cancellationToken)
     {
         var userId = User.GetUserId();
-        using var conn = await _connectionFactory.CreateOpenConnectionAsync(cancellationToken);
 
-        var rows = await conn.QueryAsync<DiaryDb>(
-            "sp_NhatKy_LayTheoNgay",
-            new { UserId = userId, MealDate = date.ToDateTime(TimeOnly.MinValue) },
-            commandType: CommandType.StoredProcedure);
+        var entries = await _context.DiaryEntries
+            .Where(e => e.UserId == userId && e.MealDate == date)
+            .OrderBy(e => e.CreatedAt)
+            .ToListAsync(cancellationToken);
 
-        var items = rows.Select(row => new DiaryEntryResponse
+        var items = entries.Select(entry => new DiaryEntryResponse
         {
-            Id = row.Id,
-            MealDate = DateOnly.FromDateTime(row.MealDate),
-            MealCode = row.MealCode,
-            FoodId = row.FoodId,
-            CustomDishId = row.CustomDishId,
-            AiRecipeId = row.AiRecipeId,
-            ItemId = row.ItemId,
-            Source = row.Source,
-            QuantityGrams = row.QuantityGrams,
-            CaloriesKcal = row.CaloriesKcal,
-            ProteinGrams = row.ProteinGrams,
-            CarbohydrateGrams = row.CarbohydrateGrams,
-            FatGrams = row.FatGrams,
-            Notes = row.Notes
+            Id = entry.Id,
+            MealDate = entry.MealDate,
+            MealCode = entry.MealCode,
+            FoodId = entry.FoodId,
+            CustomDishId = entry.CustomDishId,
+            AiRecipeId = entry.AiRecipeId,
+            ItemId = entry.ItemId,
+            Source = entry.Source,
+            QuantityGrams = entry.QuantityGrams,
+            CaloriesKcal = entry.CaloriesKcal,
+            ProteinGrams = entry.ProteinGrams,
+            CarbohydrateGrams = entry.CarbohydrateGrams,
+            FatGrams = entry.FatGrams,
+            Notes = entry.Notes
         });
 
         return Ok(items);
@@ -102,38 +159,96 @@ public sealed class DiaryController : ControllerBase
     public async Task<IActionResult> Delete([FromRoute] Guid id, CancellationToken cancellationToken)
     {
         var userId = User.GetUserId();
-        using var conn = await _connectionFactory.CreateOpenConnectionAsync(cancellationToken);
-        var affected = await conn.ExecuteScalarAsync<int>(
-            "sp_NhatKy_Xoa",
-            new { UserId = userId, DiaryEntryId = id },
-            commandType: CommandType.StoredProcedure);
 
-        if (affected <= 0)
+        var entry = await _context.DiaryEntries
+            .FirstOrDefaultAsync(e => e.Id == id && e.UserId == userId, cancellationToken);
+
+        if (entry == null)
         {
             return NotFound();
         }
 
+        _context.DiaryEntries.Remove(entry);
+        await _context.SaveChangesAsync(cancellationToken);
+
         return NoContent();
     }
 
-    private sealed class DiaryDb
+    [HttpPut("{id:guid}")]
+    public async Task<IActionResult> Update([FromRoute] Guid id, [FromBody] DiaryUpdateRequest request, CancellationToken cancellationToken)
     {
-        public Guid Id { get; set; }
-        public Guid UserId { get; set; }
-        public DateTime MealDate { get; set; }
-        public string MealCode { get; set; } = string.Empty;
-        public Guid? FoodId { get; set; }
-        public Guid? CustomDishId { get; set; }
-        public Guid? AiRecipeId { get; set; }
-        public Guid ItemId { get; set; }
-        public string Source { get; set; } = string.Empty;
-        public decimal QuantityGrams { get; set; }
-        public decimal CaloriesKcal { get; set; }
-        public decimal ProteinGrams { get; set; }
-        public decimal CarbohydrateGrams { get; set; }
-        public decimal FatGrams { get; set; }
-        public string? Notes { get; set; }
-        public DateTime CreatedAt { get; set; }
-        public DateTime? UpdatedAt { get; set; }
+        if (!ModelState.IsValid)
+        {
+            return ValidationProblem(ModelState);
+        }
+
+        var userId = User.GetUserId();
+
+        var entry = await _context.DiaryEntries
+            .FirstOrDefaultAsync(e => e.Id == id && e.UserId == userId, cancellationToken);
+
+        if (entry == null)
+        {
+            return NotFound();
+        }
+
+        // Update allowed fields
+        entry.QuantityGrams = request.QuantityGrams ?? entry.QuantityGrams;
+        entry.Notes = request.Notes ?? entry.Notes;
+        entry.UpdatedAt = DateTime.UtcNow;
+
+        // Recalculate nutrition if quantity changed
+        if (request.QuantityGrams.HasValue)
+        {
+            decimal ratio = 0;
+
+            if (entry.Source == "food" && entry.Food != null)
+            {
+                ratio = request.QuantityGrams.Value / 100m;
+                entry.CaloriesKcal = entry.Food.CaloriesKcal * ratio;
+                entry.ProteinGrams = entry.Food.ProteinGrams * ratio;
+                entry.CarbohydrateGrams = entry.Food.CarbohydrateGrams * ratio;
+                entry.FatGrams = entry.Food.FatGrams * ratio;
+            }
+            else if (entry.Source == "custom-dish" && entry.CustomDish != null)
+            {
+                ratio = request.QuantityGrams.Value / entry.CustomDish.PortionSizeGrams;
+                entry.CaloriesKcal = entry.CustomDish.CaloriesKcal * ratio;
+                entry.ProteinGrams = entry.CustomDish.ProteinGrams * ratio;
+                entry.CarbohydrateGrams = entry.CustomDish.CarbohydrateGrams * ratio;
+                entry.FatGrams = entry.CustomDish.FatGrams * ratio;
+            }
+            else if (entry.Source == "ai-recipe" && entry.AiRecipe != null)
+            {
+                ratio = request.QuantityGrams.Value / 100m;
+                entry.CaloriesKcal = entry.AiRecipe.CaloriesKcal * ratio;
+                entry.ProteinGrams = entry.AiRecipe.ProteinGrams * ratio;
+                entry.CarbohydrateGrams = entry.AiRecipe.CarbohydrateGrams * ratio;
+                entry.FatGrams = entry.AiRecipe.FatGrams * ratio;
+            }
+        }
+
+        await _context.SaveChangesAsync(cancellationToken);
+
+        var response = new DiaryEntryResponse
+        {
+            Id = entry.Id,
+            MealDate = entry.MealDate,
+            MealCode = entry.MealCode,
+            FoodId = entry.FoodId,
+            CustomDishId = entry.CustomDishId,
+            AiRecipeId = entry.AiRecipeId,
+            ItemId = entry.ItemId,
+            Source = entry.Source,
+            QuantityGrams = entry.QuantityGrams,
+            CaloriesKcal = entry.CaloriesKcal,
+            ProteinGrams = entry.ProteinGrams,
+            CarbohydrateGrams = entry.CarbohydrateGrams,
+            FatGrams = entry.FatGrams,
+            Notes = entry.Notes
+        };
+
+        return Ok(response);
     }
+
 }

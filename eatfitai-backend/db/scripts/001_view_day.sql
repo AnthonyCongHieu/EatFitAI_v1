@@ -4,15 +4,15 @@ GO
 CREATE VIEW dbo.vw_TongHopDinhDuongNgay
 AS
 SELECT
-    de.UserId,
-    de.MealDate,
-    SUM(de.QuantityGrams) AS TotalQuantityGrams,
-    SUM(de.CaloriesKcal) AS TotalCaloriesKcal,
-    SUM(de.ProteinGrams) AS TotalProteinGrams,
-    SUM(de.CarbohydrateGrams) AS TotalCarbohydrateGrams,
-    SUM(de.FatGrams) AS TotalFatGrams
-FROM dbo.DiaryEntry AS de
+    nk.MaNguoiDung AS MaNguoiDung,
+    nk.NgayAn AS NgayAn,
+    SUM(nk.KhoiLuongGram) AS TongKhoiLuongGram,
+    SUM(nk.Calo) AS TongCalo,
+    SUM(nk.Protein) AS TongProtein,
+    SUM(nk.Carb) AS TongCarb,
+    SUM(nk.Fat) AS TongFat
+FROM dbo.NhatKyAnUong AS nk
 GROUP BY
-    de.UserId,
-    de.MealDate;
+    nk.MaNguoiDung,
+    nk.NgayAn;
 GO

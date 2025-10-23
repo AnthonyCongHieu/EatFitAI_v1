@@ -1,9 +1,9 @@
-using System.Data;
-using Dapper;
 using EatFitAI.Api.Contracts.Foods;
-using EatFitAI.Application.Data;
+using EatFitAI.Domain.Foods;
+using EatFitAI.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace EatFitAI.Api.Controllers;
 
@@ -12,39 +12,80 @@ namespace EatFitAI.Api.Controllers;
 [Authorize]
 public sealed class FoodsController : ControllerBase
 {
-    private readonly ISqlConnectionFactory _connectionFactory;
+    private readonly AppDbContext _context;
 
-    public FoodsController(ISqlConnectionFactory connectionFactory)
+    public FoodsController(AppDbContext context)
     {
-        _connectionFactory = connectionFactory;
+        _context = context;
     }
 
     [HttpGet("search")]
     public async Task<IActionResult> Search([FromQuery] string? query, [FromQuery] int offset = 0, [FromQuery] int limit = 50, CancellationToken cancellationToken = default)
     {
-        using var conn = await _connectionFactory.CreateOpenConnectionAsync(cancellationToken);
+        var queryable = _context.Foods.AsQueryable();
 
-        var items = await conn.QueryAsync<FoodResponse>(
-            "sp_ThucPham_TimKiem",
-            new { Query = query, Offset = offset, Limit = limit },
-            commandType: CommandType.StoredProcedure);
+        if (!string.IsNullOrWhiteSpace(query))
+        {
+            queryable = queryable.Where(f => f.Name.Contains(query) || f.Brand.Contains(query) || f.Category.Contains(query));
+        }
 
-        return Ok(items);
+        var totalCount = await queryable.CountAsync(cancellationToken);
+
+        var items = await queryable
+            .OrderBy(f => f.Name)
+            .Skip(offset)
+            .Take(limit)
+            .Select(f => new FoodResponse
+            {
+                Id = f.Id,
+                Name = f.Name,
+                Description = f.Description,
+                Brand = f.Brand,
+                Category = f.Category,
+                ServingSizeGrams = f.ServingSizeGrams,
+                CaloriesKcal = f.CaloriesKcal,
+                ProteinGrams = f.ProteinGrams,
+                CarbohydrateGrams = f.CarbohydrateGrams,
+                FatGrams = f.FatGrams,
+                IsCustom = f.IsCustom
+            })
+            .ToListAsync(cancellationToken);
+
+        var response = new PaginatedFoodResponse
+        {
+            Items = items,
+            TotalCount = totalCount,
+            Offset = offset,
+            Limit = limit
+        };
+
+        return Ok(response);
     }
 
     [HttpGet("{id:guid}")]
     public async Task<IActionResult> GetById([FromRoute] Guid id, CancellationToken cancellationToken)
     {
-        using var conn = await _connectionFactory.CreateOpenConnectionAsync(cancellationToken);
-        var item = await conn.QuerySingleOrDefaultAsync<FoodResponse>(
-            "sp_ThucPham_LayTheoId",
-            new { Id = id },
-            commandType: CommandType.StoredProcedure);
-        if (item is null)
+        var food = await _context.Foods.FindAsync(new object[] { id }, cancellationToken);
+        if (food == null)
         {
             return NotFound();
         }
 
-        return Ok(item);
+        var response = new FoodResponse
+        {
+            Id = food.Id,
+            Name = food.Name,
+            Description = food.Description,
+            Brand = food.Brand,
+            Category = food.Category,
+            ServingSizeGrams = food.ServingSizeGrams,
+            CaloriesKcal = food.CaloriesKcal,
+            ProteinGrams = food.ProteinGrams,
+            CarbohydrateGrams = food.CarbohydrateGrams,
+            FatGrams = food.FatGrams,
+            IsCustom = food.IsCustom
+        };
+
+        return Ok(response);
     }
 }

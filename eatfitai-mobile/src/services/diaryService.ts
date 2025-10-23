@@ -144,4 +144,9 @@ export const diaryService = {
   async deleteEntry(entryId: string): Promise<void> {
     await apiClient.delete(`/api/diary/${entryId}`);
   },
+
+  // Cap nhat mot entry trong nhat ky
+  async updateEntry(entryId: string, updates: { quantityGrams?: number; notes?: string }): Promise<void> {
+    await apiClient.put(`/api/diary/${entryId}`, updates);
+  },
 };

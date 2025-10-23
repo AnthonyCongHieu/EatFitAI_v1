@@ -40,6 +40,9 @@ export type SearchFoodsResult = {
   pageSize: number;
   total: number;
   hasMore: boolean;
+  totalCount?: number;
+  offset?: number;
+  limit?: number;
 };
 
 const normalizeFoodItem = (data: any): FoodItem => ({
@@ -66,11 +69,11 @@ const normalizeFoodDetail = (data: any): FoodDetail => ({
 export const foodService = {
   // Tim kiem thuc pham theo tu khoa va phan trang
   async searchFoods(query: string, page: number, pageSize = 20): Promise<SearchFoodsResult> {
-    const offset = Math.max(0, (page - 1) * pageSize);
+    const requestOffset = Math.max(0, (page - 1) * pageSize);
     const response = await apiClient.get('/api/foods/search', {
       params: {
         query,
-        offset,
+        offset: requestOffset,
         limit: pageSize,
       },
     });
@@ -86,17 +89,20 @@ export const foodService = {
 
     const normalizedItems = rawItems.map(normalizeFoodItem);
 
-    const total = Number((data as any)?.total ?? (data as any)?.totalCount ?? normalizedItems.length);
-    const computedTotalPages = Math.ceil(total / pageSize) || 1;
-    const totalPages = Number((data as any)?.pageCount ?? (data as any)?.totalPages ?? computedTotalPages);
-    const hasMore = Boolean((data as any)?.hasMore ?? (page < totalPages));
+    const total = Number((data as any)?.totalCount ?? (data as any)?.total ?? normalizedItems.length);
+    const responseOffset = Number((data as any)?.offset ?? requestOffset);
+    const responseLimit = Number((data as any)?.limit ?? pageSize);
+    const hasMore = total > (responseOffset + normalizedItems.length);
 
     return {
       items: normalizedItems,
-      page: Number(data?.page ?? page),
-      pageSize: Number(data?.pageSize ?? pageSize),
+      page: Math.floor(responseOffset / responseLimit) + 1,
+      pageSize: responseLimit,
       total,
       hasMore,
+      totalCount: total,
+      offset: responseOffset,
+      limit: responseLimit,
     };
   },
 
