@@ -148,9 +148,9 @@ public class JwtTokenService : ITokenService
             new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
         };
 
-        if (!string.IsNullOrWhiteSpace(user.UserName))
+        if (!string.IsNullOrWhiteSpace(user.FullName))
         {
-            claims.Add(new Claim(JwtRegisteredClaimNames.UniqueName, user.UserName));
+            claims.Add(new Claim(JwtRegisteredClaimNames.UniqueName, user.FullName));
         }
 
         var expiresAt = now.AddMinutes(_jwtOptions.AccessMinutes);

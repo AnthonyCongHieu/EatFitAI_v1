@@ -48,7 +48,9 @@ public class AuthController : ControllerBase
             Id = Guid.NewGuid(),
             Email = request.Email,
             UserName = request.Email,
-            EmailConfirmed = true
+            EmailConfirmed = true,
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow
         };
 
         var createResult = await _userManager.CreateAsync(user, request.Password);
@@ -132,7 +134,9 @@ public class AuthController : ControllerBase
                 Id = Guid.NewGuid(),
                 Email = email,
                 UserName = email,
-                EmailConfirmed = true
+                EmailConfirmed = true,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
             };
 
             var randomPassword = $"Gg!{Guid.NewGuid():N}";

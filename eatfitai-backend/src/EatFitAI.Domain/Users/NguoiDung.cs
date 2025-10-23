@@ -9,6 +9,12 @@ namespace EatFitAI.Domain.Users;
 
 public class NguoiDung : IdentityUser<Guid>
 {
+    public string? FullName { get; set; }
+    public string? Gender { get; set; }
+    public DateOnly? DateOfBirth { get; set; }
+    public DateTime CreatedAt { get; set; }
+    public DateTime UpdatedAt { get; set; }
+
     public UserProfile? Profile { get; set; }
     public ICollection<BodyMetric> BodyMetrics { get; set; } = new List<BodyMetric>();
     public ICollection<NutritionTarget> NutritionTargets { get; set; } = new List<NutritionTarget>();
