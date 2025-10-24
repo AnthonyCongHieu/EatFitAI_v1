@@ -8,6 +8,8 @@ import { ThemedText } from '../../components/ThemedText';
 import Screen from '../../components/Screen';
 import Card from '../../components/Card';
 import Button from '../../components/Button';
+import Icon from '../../components/Icon';
+import GradientBackground from '../../components/GradientBackground';
 import { useDiaryStore } from '../../store/useDiaryStore';
 import { useAppTheme } from '../../theme/ThemeProvider';
 import type { RootStackParamList } from '../types';

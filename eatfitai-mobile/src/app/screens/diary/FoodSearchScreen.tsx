@@ -14,7 +14,7 @@ import Button from '../../../components/Button';
 import { useAppTheme } from '../../../theme/ThemeProvider';
 import type { RootStackParamList } from '../../types';
 import { foodService, type FoodItem } from '../../../services/foodService';
-import { useListSkeleton } from '../../../hooks/useListSkeleton';
+import Skeleton, { SkeletonList } from '../../../components/Skeleton';
 
 const PAGE_SIZE = 20;
 
@@ -32,8 +32,6 @@ const FoodSearchScreen = (): JSX.Element => {
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
-
-  const getSkeletonItems = useListSkeleton(4);
 
   const loadFoods = useCallback(
     async (pageToLoad: number, append: boolean) => {
@@ -98,15 +96,7 @@ const FoodSearchScreen = (): JSX.Element => {
   );
 
   const renderSkeleton = () => (
-    <View style={styles.skeletonContainer}>
-      {getSkeletonItems().map((key) => (
-        <View key={key} style={[styles.skeletonItem, { borderColor: theme.colors.border, backgroundColor: theme.colors.card }]}>
-          <View style={[styles.skeletonLine, { width: '60%', backgroundColor: theme.colors.border, opacity: 0.6 }]} />
-          <View style={[styles.skeletonLine, { width: '40%', backgroundColor: theme.colors.border, opacity: 0.45 }]} />
-          <View style={[styles.skeletonLine, { width: '80%', backgroundColor: theme.colors.border, opacity: 0.55 }]} />
-        </View>
-      ))}
-    </View>
+    <SkeletonList count={4} itemHeight={80} spacing={12} style={{ marginTop: theme.spacing.lg, paddingHorizontal: theme.spacing.md }} />
   );
 
   return (
@@ -211,9 +201,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderTopWidth: 1,
   },
-  skeletonContainer: { width: '100%', gap: 12, marginTop: 24, paddingHorizontal: 16 },
-  skeletonItem: { borderWidth: 1, borderRadius: 16, padding: 16, gap: 8 },
-  skeletonLine: { height: 14, borderRadius: 999 },
 });
 
 export default FoodSearchScreen;

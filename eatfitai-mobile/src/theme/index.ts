@@ -1,2 +1,3 @@
 export { ThemeProvider, useAppTheme } from './ThemeProvider';
-export { lightTheme, darkTheme } from './themes';
+export type { AppTheme, ThemeMode } from './themes';
+export { lightTheme, darkTheme, toNavigationTheme } from './themes';
