@@ -29,6 +29,13 @@ export type AppTheme = {
     warning: string;
     info: string;
   };
+  gradients: {
+    primary: readonly [string, string];
+    secondary: readonly [string, string];
+    accent: readonly [string, string];
+    danger: readonly [string, string];
+    success: readonly [string, string];
+  };
   statusBarStyle: 'light' | 'dark';
   spacing: {
     xs: number;
@@ -105,6 +112,13 @@ export const lightTheme: AppTheme = {
     success: '#0A8F62',
     warning: '#F59E0B',
     info: '#3B82F6',
+  },
+  gradients: {
+    primary: ['#0A8F62', '#32D29A'],
+    secondary: ['#0A4D3C', '#1B8C68'],
+    accent: ['#F59E0B', '#FBBF24'],
+    danger: ['#E53935', '#EF4444'],
+    success: ['#0A8F62', '#32D29A'],
   },
   statusBarStyle: 'dark',
   spacing: { xs: 4, sm: 8, md: 16, lg: 24, xl: 32, xxl: 48 },
@@ -213,6 +227,13 @@ export const darkTheme: AppTheme = {
     success: '#32D29A',
     warning: '#FBBF24',
     info: '#60A5FA',
+  },
+  gradients: {
+    primary: ['#32D29A', '#0A8F62'],
+    secondary: ['#1B8C68', '#0A4D3C'],
+    accent: ['#FBBF24', '#F59E0B'],
+    danger: ['#EF4444', '#E53935'],
+    success: ['#32D29A', '#0A8F62'],
   },
   statusBarStyle: 'light',
   spacing: { xs: 4, sm: 8, md: 16, lg: 24, xl: 32, xxl: 48 },

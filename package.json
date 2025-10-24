@@ -1,5 +1,10 @@
 {
   "dependencies": {
-    "expo-haptics": "^15.0.7"
+    "@expo/vector-icons": "^15.0.3",
+    "expo-haptics": "^15.0.7",
+    "expo-linear-gradient": "~15.0.7"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3"
   }
 }
