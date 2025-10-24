@@ -7,7 +7,9 @@
       "launchBrowser": false,
       "applicationUrl": "http://localhost:5114",
       "environmentVariables": {
-        "ASPNETCORE_ENVIRONMENT": "Development"
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "ConnectionStrings__Default": "Server=LAPTOP-U9R2KGG0;Database=EatFitAI;Trusted_Connection=True;TrustServerCertificate=True;MultipleActiveResultSets=True",
+        "Jwt__Key": "gE9w1Lz8Qp5N2cR6tV8yB1nF4hJ7kM0sX3zD6aP9qL2uW5rT8vY1bC4eH7"
       }
     },
     "https": {
@@ -16,7 +18,9 @@
       "launchBrowser": false,
       "applicationUrl": "https://localhost:7039;http://localhost:5114",
       "environmentVariables": {
-        "ASPNETCORE_ENVIRONMENT": "Development"
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "ConnectionStrings__Default": "Server=LAPTOP-U9R2KGG0;Database=EatFitAI;Trusted_Connection=True;TrustServerCertificate=True;MultipleActiveResultSets=True",
+        "Jwt__Key": "gE9w1Lz8Qp5N2cR6tV8yB1nF4hJ7kM0sX3zD6aP9qL2uW5rT8vY1bC4eH7"
       }
     }
   }

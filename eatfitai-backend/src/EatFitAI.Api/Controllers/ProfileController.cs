@@ -1,8 +1,7 @@
-using System.Data;
-using Dapper;
 using EatFitAI.Api.Contracts.Profile;
 using EatFitAI.Api.Extensions;
-using EatFitAI.Application.Data;
+using EatFitAI.Application.Repositories;
+using EatFitAI.Domain.Users;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -13,12 +12,12 @@ namespace EatFitAI.Api.Controllers;
 [Authorize]
 public sealed class ProfileController : ControllerBase
 {
-    private readonly ISqlConnectionFactory _connectionFactory;
+    private readonly IProfileRepository _profileRepository;
     private readonly ILogger<ProfileController> _logger;
 
-    public ProfileController(ISqlConnectionFactory connectionFactory, ILogger<ProfileController> logger)
+    public ProfileController(IProfileRepository profileRepository, ILogger<ProfileController> logger)
     {
-        _connectionFactory = connectionFactory;
+        _profileRepository = profileRepository;
         _logger = logger;
     }
 
@@ -26,14 +25,9 @@ public sealed class ProfileController : ControllerBase
     public async Task<IActionResult> GetMe(CancellationToken cancellationToken)
     {
         var userId = User.GetUserId();
-        using var conn = await _connectionFactory.CreateOpenConnectionAsync(cancellationToken);
+        var profile = await _profileRepository.GetByUserIdAsync(userId, cancellationToken);
 
-        var row = await conn.QuerySingleOrDefaultAsync<ProfileDb>(
-            "sp_HoSo_Lay",
-            new { UserId = userId },
-            commandType: CommandType.StoredProcedure);
-
-        if (row is null)
+        if (profile is null)
         {
             return Ok(new ProfileResponse
             {
@@ -41,7 +35,7 @@ public sealed class ProfileController : ControllerBase
             });
         }
 
-        return Ok(ToResponse(row));
+        return Ok(ToResponse(profile));
     }
 
     [HttpPut("me")]
@@ -53,40 +47,56 @@ public sealed class ProfileController : ControllerBase
         }
 
         var userId = User.GetUserId();
-        using var conn = await _connectionFactory.CreateOpenConnectionAsync(cancellationToken);
+        var profile = await _profileRepository.GetByUserIdAsync(userId, cancellationToken);
 
-        var row = await conn.QuerySingleAsync<ProfileDb>(
-            "sp_HoSo_CapNhat",
-            new
+        if (profile == null)
+        {
+            profile = new UserProfile
             {
                 UserId = userId,
-                request.FullName,
-                request.Gender,
-                DateOfBirth = request.DateOfBirth?.ToDateTime(TimeOnly.MinValue),
-                request.HeightCm,
-                request.TargetWeightKg,
-                request.ActivityLevel,
-                request.Goal,
-                request.AvatarUrl
-            },
-            commandType: CommandType.StoredProcedure);
+                FullName = request.FullName ?? string.Empty,
+                Gender = request.Gender ?? string.Empty,
+                DateOfBirth = request.DateOfBirth,
+                HeightCm = request.HeightCm,
+                TargetWeightKg = request.TargetWeightKg,
+                ActivityLevel = request.ActivityLevel ?? string.Empty,
+                Goal = request.Goal ?? string.Empty,
+                AvatarUrl = request.AvatarUrl,
+                CreatedAt = DateTime.UtcNow
+            };
+        }
+        else
+        {
+            profile.FullName = request.FullName ?? profile.FullName;
+            profile.Gender = request.Gender ?? profile.Gender;
+            profile.DateOfBirth = request.DateOfBirth ?? profile.DateOfBirth;
+            profile.HeightCm = request.HeightCm ?? profile.HeightCm;
+            profile.TargetWeightKg = request.TargetWeightKg ?? profile.TargetWeightKg;
+            profile.ActivityLevel = request.ActivityLevel ?? profile.ActivityLevel;
+            profile.Goal = request.Goal ?? profile.Goal;
+            profile.AvatarUrl = request.AvatarUrl ?? profile.AvatarUrl;
+            profile.UpdatedAt = DateTime.UtcNow;
+        }
 
-        return Ok(ToResponse(row));
+        await _profileRepository.UpdateAsync(profile, cancellationToken);
+        await _profileRepository.SaveChangesAsync(cancellationToken);
+
+        return Ok(ToResponse(profile));
     }
 
-    private static ProfileResponse ToResponse(ProfileDb db)
+    private static ProfileResponse ToResponse(UserProfile profile)
     {
         return new ProfileResponse
         {
-            UserId = db.UserId,
-            FullName = db.FullName,
-            Gender = db.Gender,
-            DateOfBirth = db.DateOfBirth.HasValue ? DateOnly.FromDateTime(db.DateOfBirth.Value) : null,
-            HeightCm = db.HeightCm,
-            TargetWeightKg = db.TargetWeightKg,
-            ActivityLevel = db.ActivityLevel,
-            Goal = db.Goal,
-            AvatarUrl = db.AvatarUrl
+            UserId = profile.UserId,
+            FullName = profile.FullName,
+            Gender = profile.Gender,
+            DateOfBirth = profile.DateOfBirth,
+            HeightCm = profile.HeightCm,
+            TargetWeightKg = profile.TargetWeightKg,
+            ActivityLevel = profile.ActivityLevel,
+            Goal = profile.Goal,
+            AvatarUrl = profile.AvatarUrl
         };
     }
 

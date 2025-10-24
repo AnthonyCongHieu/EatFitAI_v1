@@ -1,8 +1,7 @@
-using System.Data;
-using Dapper;
 using EatFitAI.Api.Contracts.NutritionTargets;
 using EatFitAI.Api.Extensions;
-using EatFitAI.Application.Data;
+using EatFitAI.Application.Repositories;
+using EatFitAI.Domain.Nutrition;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -13,30 +12,25 @@ namespace EatFitAI.Api.Controllers;
 [Authorize]
 public sealed class NutritionTargetsController : ControllerBase
 {
-    private readonly ISqlConnectionFactory _connectionFactory;
+    private readonly INutritionTargetRepository _nutritionTargetRepository;
 
-    public NutritionTargetsController(ISqlConnectionFactory connectionFactory)
+    public NutritionTargetsController(INutritionTargetRepository nutritionTargetRepository)
     {
-        _connectionFactory = connectionFactory;
+        _nutritionTargetRepository = nutritionTargetRepository;
     }
 
     [HttpGet("current")]
     public async Task<IActionResult> GetCurrent(CancellationToken cancellationToken)
     {
         var userId = User.GetUserId();
-        using var conn = await _connectionFactory.CreateOpenConnectionAsync(cancellationToken);
+        var target = await _nutritionTargetRepository.GetCurrentAsync(userId, cancellationToken);
 
-        var row = await conn.QuerySingleOrDefaultAsync<NutritionTargetDb>(
-            "sp_MucTieuDinhDuong_LayHienTai",
-            new { UserId = userId },
-            commandType: CommandType.StoredProcedure);
-
-        if (row is null)
+        if (target is null)
         {
             return Problem(statusCode: StatusCodes.Status404NotFound, title: "Chua co muc tieu dinh duong");
         }
 
-        return Ok(ToResponse(row));
+        return Ok(ToResponse(target));
     }
 
     [HttpPost]
@@ -48,35 +42,58 @@ public sealed class NutritionTargetsController : ControllerBase
         }
 
         var userId = User.GetUserId();
-        using var conn = await _connectionFactory.CreateOpenConnectionAsync(cancellationToken);
 
-        var row = await conn.QuerySingleAsync<NutritionTargetDb>(
-            "sp_MucTieuDinhDuong_Upsert",
-            new
+        // First, try to get the current target
+        var existingTarget = await _nutritionTargetRepository.GetCurrentAsync(userId, cancellationToken);
+
+        if (existingTarget != null)
+        {
+            // Update existing
+            existingTarget.CaloriesKcal = request.CaloriesKcal;
+            existingTarget.ProteinGrams = request.ProteinGrams;
+            existingTarget.CarbohydrateGrams = request.CarbohydrateGrams;
+            existingTarget.FatGrams = request.FatGrams;
+            existingTarget.EffectiveDate = request.EffectiveDate ?? DateOnly.FromDateTime(DateTime.UtcNow);
+            existingTarget.UpdatedAt = DateTime.UtcNow;
+
+            await _nutritionTargetRepository.UpdateAsync(existingTarget, cancellationToken);
+        }
+        else
+        {
+            // Create new
+            var newTarget = new NutritionTarget
             {
+                Id = Guid.NewGuid(),
                 UserId = userId,
-                request.CaloriesKcal,
-                request.ProteinGrams,
-                request.CarbohydrateGrams,
-                request.FatGrams,
-                EffectiveDate = request.EffectiveDate?.ToDateTime(TimeOnly.MinValue)
-            },
-            commandType: CommandType.StoredProcedure);
+                EffectiveDate = request.EffectiveDate ?? DateOnly.FromDateTime(DateTime.UtcNow),
+                CaloriesKcal = request.CaloriesKcal,
+                ProteinGrams = request.ProteinGrams,
+                CarbohydrateGrams = request.CarbohydrateGrams,
+                FatGrams = request.FatGrams,
+                IsActive = true,
+                CreatedAt = DateTime.UtcNow
+            };
 
-        return Ok(ToResponse(row));
+            await _nutritionTargetRepository.AddAsync(newTarget, cancellationToken);
+            existingTarget = newTarget;
+        }
+
+        await _nutritionTargetRepository.SaveChangesAsync(cancellationToken);
+
+        return Ok(ToResponse(existingTarget!));
     }
 
-    private static NutritionTargetResponse ToResponse(NutritionTargetDb db)
+    private static NutritionTargetResponse ToResponse(NutritionTarget target)
     {
         return new NutritionTargetResponse
         {
-            Id = db.Id,
-            EffectiveDate = DateOnly.FromDateTime(db.EffectiveDate),
-            CaloriesKcal = db.CaloriesKcal,
-            ProteinGrams = db.ProteinGrams,
-            CarbohydrateGrams = db.CarbohydrateGrams,
-            FatGrams = db.FatGrams,
-            IsActive = db.IsActive
+            Id = target.Id,
+            EffectiveDate = target.EffectiveDate,
+            CaloriesKcal = target.CaloriesKcal,
+            ProteinGrams = target.ProteinGrams,
+            CarbohydrateGrams = target.CarbohydrateGrams,
+            FatGrams = target.FatGrams,
+            IsActive = target.IsActive
         };
     }
 

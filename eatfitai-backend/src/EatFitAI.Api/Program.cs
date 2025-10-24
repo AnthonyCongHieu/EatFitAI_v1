@@ -15,6 +15,8 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
+using EatFitAI.Application.Repositories;
+using EatFitAI.Infrastructure.Repositories;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -49,6 +51,16 @@ identityBuilder.AddDefaultTokenProviders();
 
 builder.Services.AddScoped<ISqlConnectionFactory, SqlConnectionFactory>();
 builder.Services.AddScoped<IScriptRunner, ScriptRunner>();
+builder.Services.AddScoped<ITokenService, JwtTokenService>();
+
+// Repositories
+builder.Services.AddScoped<IProfileRepository, ProfileRepository>();
+builder.Services.AddScoped<IBodyMetricRepository, BodyMetricRepository>();
+builder.Services.AddScoped<IDiaryRepository, DiaryRepository>();
+builder.Services.AddScoped<IFoodRepository, FoodRepository>();
+builder.Services.AddScoped<ICustomDishRepository, CustomDishRepository>();
+builder.Services.AddScoped<INutritionTargetRepository, NutritionTargetRepository>();
+builder.Services.AddScoped<ISummaryRepository, SummaryRepository>();
 builder.Services.AddScoped<ITokenService, JwtTokenService>();
 
 builder.Services.AddControllers()

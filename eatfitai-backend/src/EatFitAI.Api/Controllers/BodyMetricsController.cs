@@ -1,8 +1,7 @@
-using System.Data;
-using Dapper;
 using EatFitAI.Api.Contracts.BodyMetrics;
 using EatFitAI.Api.Extensions;
-using EatFitAI.Application.Data;
+using EatFitAI.Application.Repositories;
+using EatFitAI.Domain.Nutrition;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -13,11 +12,11 @@ namespace EatFitAI.Api.Controllers;
 [Authorize]
 public sealed class BodyMetricsController : ControllerBase
 {
-    private readonly ISqlConnectionFactory _connectionFactory;
+    private readonly IBodyMetricRepository _bodyMetricRepository;
 
-    public BodyMetricsController(ISqlConnectionFactory connectionFactory)
+    public BodyMetricsController(IBodyMetricRepository bodyMetricRepository)
     {
-        _connectionFactory = connectionFactory;
+        _bodyMetricRepository = bodyMetricRepository;
     }
 
     [HttpPost]
@@ -29,31 +28,32 @@ public sealed class BodyMetricsController : ControllerBase
         }
 
         var userId = User.GetUserId();
-        using var conn = await _connectionFactory.CreateOpenConnectionAsync(cancellationToken);
 
-        var row = await conn.QuerySingleAsync<BodyMetricDb>(
-            "sp_ChiSoCoThe_Them",
-            new
-            {
-                UserId = userId,
-                RecordedAt = request.RecordedAt,
-                request.WeightKg,
-                request.BodyFatPercent,
-                request.MuscleMassKg,
-                request.WaistCm,
-                request.HipCm
-            },
-            commandType: CommandType.StoredProcedure);
+        var bodyMetric = new BodyMetric
+        {
+            Id = Guid.NewGuid(),
+            UserId = userId,
+            RecordedAt = request.RecordedAt ?? DateTime.UtcNow,
+            WeightKg = request.WeightKg,
+            BodyFatPercent = request.BodyFatPercent,
+            MuscleMassKg = request.MuscleMassKg,
+            WaistCm = request.WaistCm,
+            HipCm = request.HipCm,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        await _bodyMetricRepository.AddAsync(bodyMetric, cancellationToken);
+        await _bodyMetricRepository.SaveChangesAsync(cancellationToken);
 
         var response = new BodyMetricResponse
         {
-            Id = row.Id,
-            RecordedAt = row.RecordedAt,
-            WeightKg = row.WeightKg,
-            BodyFatPercent = row.BodyFatPercent,
-            MuscleMassKg = row.MuscleMassKg,
-            WaistCm = row.WaistCm,
-            HipCm = row.HipCm
+            Id = bodyMetric.Id,
+            RecordedAt = bodyMetric.RecordedAt,
+            WeightKg = bodyMetric.WeightKg,
+            BodyFatPercent = bodyMetric.BodyFatPercent,
+            MuscleMassKg = bodyMetric.MuscleMassKg,
+            WaistCm = bodyMetric.WaistCm,
+            HipCm = bodyMetric.HipCm
         };
 
         return Ok(response);

@@ -1,4 +1,5 @@
 using EatFitAI.Api.Contracts.Foods;
+using EatFitAI.Application.Repositories;
 using EatFitAI.Domain.Foods;
 using EatFitAI.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authorization;
@@ -12,30 +13,21 @@ namespace EatFitAI.Api.Controllers;
 [Authorize]
 public sealed class FoodsController : ControllerBase
 {
-    private readonly AppDbContext _context;
+    private readonly IFoodRepository _foodRepository;
 
-    public FoodsController(AppDbContext context)
+    public FoodsController(IFoodRepository foodRepository)
     {
-        _context = context;
+        _foodRepository = foodRepository;
     }
 
     [HttpGet("search")]
     public async Task<IActionResult> Search([FromQuery] string? query, [FromQuery] int offset = 0, [FromQuery] int limit = 50, CancellationToken cancellationToken = default)
     {
-        var queryable = _context.Foods.AsQueryable();
+        (IEnumerable<Food> items, int totalCount) = await _foodRepository.SearchAsync(query, offset, limit, cancellationToken);
 
-        if (!string.IsNullOrWhiteSpace(query))
+        var response = new PaginatedFoodResponse
         {
-            queryable = queryable.Where(f => f.Name.Contains(query) || f.Brand.Contains(query) || f.Category.Contains(query));
-        }
-
-        var totalCount = await queryable.CountAsync(cancellationToken);
-
-        var items = await queryable
-            .OrderBy(f => f.Name)
-            .Skip(offset)
-            .Take(limit)
-            .Select(f => new FoodResponse
+            Items = items.Select(f => new FoodResponse
             {
                 Id = f.Id,
                 Name = f.Name,
@@ -48,12 +40,7 @@ public sealed class FoodsController : ControllerBase
                 CarbohydrateGrams = f.CarbohydrateGrams,
                 FatGrams = f.FatGrams,
                 IsCustom = f.IsCustom
-            })
-            .ToListAsync(cancellationToken);
-
-        var response = new PaginatedFoodResponse
-        {
-            Items = items,
+            }).ToList(),
             TotalCount = totalCount,
             Offset = offset,
             Limit = limit
@@ -65,7 +52,7 @@ public sealed class FoodsController : ControllerBase
     [HttpGet("{id:guid}")]
     public async Task<IActionResult> GetById([FromRoute] Guid id, CancellationToken cancellationToken)
     {
-        var food = await _context.Foods.FindAsync(new object[] { id }, cancellationToken);
+        var food = await _foodRepository.GetByIdAsync(id, cancellationToken);
         if (food == null)
         {
             return NotFound();

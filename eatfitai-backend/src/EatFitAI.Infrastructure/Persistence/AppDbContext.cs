@@ -188,12 +188,16 @@ public class AppDbContext : IdentityDbContext<NguoiDung, IdentityRole<Guid>, Gui
 
         builder.Entity<CustomDishIngredient>(entity =>
         {
-            entity.ToTable("CustomDishIngredient");
+            entity.ToTable("NguyenLieuMonNguoiDung");
+            entity.Property(x => x.Id).HasColumnName("MaNguyenLieu");
+            entity.Property(x => x.CustomDishId).HasColumnName("MaMonNguoiDung");
+            entity.Property(x => x.FoodId).HasColumnName("MaThucPham");
+            entity.Property(x => x.Name).HasColumnName("TenNguyenLieu");
             ConfigureMacroColumns(entity.Property(x => x.CaloriesKcal), isKcal: true);
             ConfigureMacroColumns(entity.Property(x => x.ProteinGrams));
             ConfigureMacroColumns(entity.Property(x => x.CarbohydrateGrams));
             ConfigureMacroColumns(entity.Property(x => x.FatGrams));
-            entity.Property(x => x.QuantityGrams).HasColumnType("decimal(9,2)");
+            entity.Property(x => x.QuantityGrams).HasColumnName("KhoiLuongGram").HasColumnType("decimal(9,2)");
             entity.HasOne(x => x.CustomDish)
                 .WithMany(d => d.Ingredients)
                 .HasForeignKey(x => x.CustomDishId)
@@ -206,12 +210,18 @@ public class AppDbContext : IdentityDbContext<NguoiDung, IdentityRole<Guid>, Gui
 
         builder.Entity<AiRecipe>(entity =>
         {
-            entity.ToTable("AiRecipe");
+            entity.ToTable("NhatKyAI");
+            entity.Property(x => x.Id).HasColumnName("MaGoiYAI");
+            entity.Property(x => x.UserId).HasColumnName("MaNguoiDung");
+            entity.Property(x => x.Title).HasColumnName("TenGoiY");
+            entity.Property(x => x.Summary).HasColumnName("TomTat");
+            entity.Property(x => x.IngredientsJson).HasColumnName("NguyenLieuJson");
+            entity.Property(x => x.StepsJson).HasColumnName("BuocCheBienJson");
             ConfigureMacroColumns(entity.Property(x => x.CaloriesKcal), isKcal: true);
             ConfigureMacroColumns(entity.Property(x => x.ProteinGrams));
             ConfigureMacroColumns(entity.Property(x => x.CarbohydrateGrams));
             ConfigureMacroColumns(entity.Property(x => x.FatGrams));
-            entity.Property(x => x.CreatedAt).HasDefaultValueSql("GETUTCDATE()");
+            entity.Property(x => x.CreatedAt).HasColumnName("ThoiGianTao").HasDefaultValueSql("GETUTCDATE()");
             entity.HasOne(x => x.User)
                 .WithMany(u => u.AiRecipes)
                 .HasForeignKey(x => x.UserId)

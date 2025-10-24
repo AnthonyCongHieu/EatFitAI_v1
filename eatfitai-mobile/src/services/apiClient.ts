@@ -2,7 +2,7 @@ import axios, { AxiosError, AxiosRequestConfig, InternalAxiosRequestConfig } fro
 import { API_BASE_URL } from '../config/env';
 import { tokenStorage } from './secureStore';
 import { getAccessTokenMem, setAccessTokenMem } from './authTokens';
-import { requestRefreshToken } from './tokenService';
+import { postRefreshToken } from './tokenService';
 import { updateSessionFromAuthResponse } from './authSession';
 
 // Axios client

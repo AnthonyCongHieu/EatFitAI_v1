@@ -1,8 +1,6 @@
-using System.Data;
-using Dapper;
 using EatFitAI.Api.Contracts.Summary;
 using EatFitAI.Api.Extensions;
-using EatFitAI.Application.Data;
+using EatFitAI.Application.Repositories;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -13,32 +11,27 @@ namespace EatFitAI.Api.Controllers;
 [Authorize]
 public sealed class SummaryController : ControllerBase
 {
-    private readonly ISqlConnectionFactory _connectionFactory;
+    private readonly ISummaryRepository _summaryRepository;
 
-    public SummaryController(ISqlConnectionFactory connectionFactory)
+    public SummaryController(ISummaryRepository summaryRepository)
     {
-        _connectionFactory = connectionFactory;
+        _summaryRepository = summaryRepository;
     }
 
     [HttpGet("day")]
     public async Task<IActionResult> Day([FromQuery] DateOnly date, CancellationToken cancellationToken)
     {
         var userId = User.GetUserId();
-        using var conn = await _connectionFactory.CreateOpenConnectionAsync(cancellationToken);
-
-        var row = await conn.QuerySingleOrDefaultAsync<DayDb>(
-            "sp_TongHop_Ngay",
-            new { UserId = userId, MealDate = date.ToDateTime(TimeOnly.MinValue) },
-            commandType: CommandType.StoredProcedure);
+        var summary = await _summaryRepository.GetDaySummaryAsync(userId, date, cancellationToken);
 
         var resp = new DaySummaryResponse
         {
             MealDate = date,
-            TotalQuantityGrams = row?.TotalQuantityGrams ?? 0,
-            TotalCaloriesKcal = row?.TotalCaloriesKcal ?? 0,
-            TotalProteinGrams = row?.TotalProteinGrams ?? 0,
-            TotalCarbohydrateGrams = row?.TotalCarbohydrateGrams ?? 0,
-            TotalFatGrams = row?.TotalFatGrams ?? 0
+            TotalQuantityGrams = summary?.TotalQuantityGrams ?? 0,
+            TotalCaloriesKcal = summary?.TotalCaloriesKcal ?? 0,
+            TotalProteinGrams = summary?.TotalProteinGrams ?? 0,
+            TotalCarbohydrateGrams = summary?.TotalCarbohydrateGrams ?? 0,
+            TotalFatGrams = summary?.TotalFatGrams ?? 0
         };
 
         return Ok(resp);
@@ -48,21 +41,16 @@ public sealed class SummaryController : ControllerBase
     public async Task<IActionResult> Week([FromQuery] DateOnly date, CancellationToken cancellationToken)
     {
         var userId = User.GetUserId();
-        using var conn = await _connectionFactory.CreateOpenConnectionAsync(cancellationToken);
+        var summaries = await _summaryRepository.GetWeekSummaryAsync(userId, date, cancellationToken);
 
-        var rows = await conn.QueryAsync<DayDb>(
-            "sp_TongHop_Tuan",
-            new { UserId = userId, EndDate = date.ToDateTime(TimeOnly.MinValue) },
-            commandType: CommandType.StoredProcedure);
-
-        var items = rows.Select(r => new WeekSummaryItem
+        var items = summaries.Select(s => new WeekSummaryItem
         {
-            MealDate = DateOnly.FromDateTime(r.MealDate),
-            TotalQuantityGrams = r.TotalQuantityGrams,
-            TotalCaloriesKcal = r.TotalCaloriesKcal,
-            TotalProteinGrams = r.TotalProteinGrams,
-            TotalCarbohydrateGrams = r.TotalCarbohydrateGrams,
-            TotalFatGrams = r.TotalFatGrams
+            MealDate = s.MealDate,
+            TotalQuantityGrams = s.TotalQuantityGrams,
+            TotalCaloriesKcal = s.TotalCaloriesKcal,
+            TotalProteinGrams = s.TotalProteinGrams,
+            TotalCarbohydrateGrams = s.TotalCarbohydrateGrams,
+            TotalFatGrams = s.TotalFatGrams
         }).ToList();
 
         return Ok(new WeekSummaryResponse { Days = items });

@@ -1,7 +1,7 @@
 import { AppState, AppStateStatus } from 'react-native';
 import { setAccessTokenMem } from './authTokens';
 import { tokenStorage } from './secureStore';
-import { requestRefreshToken } from './tokenService';
+import { postRefreshToken } from './tokenService';
 
 // Silent refresh: schedule before access token expires; also trigger on foreground
 

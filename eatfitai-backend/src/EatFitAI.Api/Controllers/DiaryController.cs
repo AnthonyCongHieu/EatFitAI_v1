@@ -1,5 +1,6 @@
 using EatFitAI.Api.Contracts.Diary;
 using EatFitAI.Api.Extensions;
+using EatFitAI.Application.Repositories;
 using EatFitAI.Domain.Ai;
 using EatFitAI.Domain.Diary;
 using EatFitAI.Domain.Foods;
@@ -15,10 +16,20 @@ namespace EatFitAI.Api.Controllers;
 [Authorize]
 public sealed class DiaryController : ControllerBase
 {
+    private readonly IDiaryRepository _diaryRepository;
+    private readonly IFoodRepository _foodRepository;
+    private readonly ICustomDishRepository _customDishRepository;
     private readonly AppDbContext _context;
 
-    public DiaryController(AppDbContext context)
+    public DiaryController(
+        IDiaryRepository diaryRepository,
+        IFoodRepository foodRepository,
+        ICustomDishRepository customDishRepository,
+        AppDbContext context)
     {
+        _diaryRepository = diaryRepository;
+        _foodRepository = foodRepository;
+        _customDishRepository = customDishRepository;
         _context = context;
     }
 
@@ -39,17 +50,17 @@ public sealed class DiaryController : ControllerBase
 
         if (request.Source == "food")
         {
-            food = await _context.Foods.FindAsync(request.ItemId);
+            food = await _foodRepository.GetByIdAsync(request.ItemId, cancellationToken);
             if (food == null) return NotFound("Food not found");
         }
         else if (request.Source == "custom-dish")
         {
-            customDish = await _context.CustomDishes.FindAsync(request.ItemId);
+            customDish = await _customDishRepository.GetByIdAsync(request.ItemId, userId, cancellationToken);
             if (customDish == null) return NotFound("Custom dish not found");
         }
         else if (request.Source == "ai-recipe")
         {
-            aiRecipe = await _context.AiRecipes.FindAsync(request.ItemId);
+            aiRecipe = await _context.AiRecipes.FindAsync(request.ItemId, cancellationToken);
             if (aiRecipe == null) return NotFound("AI recipe not found");
         }
 
@@ -100,8 +111,8 @@ public sealed class DiaryController : ControllerBase
             CreatedAt = DateTime.UtcNow
         };
 
-        _context.DiaryEntries.Add(diaryEntry);
-        await _context.SaveChangesAsync(cancellationToken);
+        await _diaryRepository.AddAsync(diaryEntry, cancellationToken);
+        await _diaryRepository.SaveChangesAsync(cancellationToken);
 
         var response = new DiaryEntryResponse
         {
@@ -129,10 +140,7 @@ public sealed class DiaryController : ControllerBase
     {
         var userId = User.GetUserId();
 
-        var entries = await _context.DiaryEntries
-            .Where(e => e.UserId == userId && e.MealDate == date)
-            .OrderBy(e => e.CreatedAt)
-            .ToListAsync(cancellationToken);
+        var entries = await _diaryRepository.GetByDateAsync(userId, date, cancellationToken);
 
         var items = entries.Select(entry => new DiaryEntryResponse
         {
@@ -160,16 +168,15 @@ public sealed class DiaryController : ControllerBase
     {
         var userId = User.GetUserId();
 
-        var entry = await _context.DiaryEntries
-            .FirstOrDefaultAsync(e => e.Id == id && e.UserId == userId, cancellationToken);
+        var entry = await _diaryRepository.GetByIdAsync(id, userId, cancellationToken);
 
         if (entry == null)
         {
             return NotFound();
         }
 
-        _context.DiaryEntries.Remove(entry);
-        await _context.SaveChangesAsync(cancellationToken);
+        await _diaryRepository.DeleteAsync(entry, cancellationToken);
+        await _diaryRepository.SaveChangesAsync(cancellationToken);
 
         return NoContent();
     }
@@ -184,8 +191,7 @@ public sealed class DiaryController : ControllerBase
 
         var userId = User.GetUserId();
 
-        var entry = await _context.DiaryEntries
-            .FirstOrDefaultAsync(e => e.Id == id && e.UserId == userId, cancellationToken);
+        var entry = await _diaryRepository.GetByIdAsync(id, userId, cancellationToken);
 
         if (entry == null)
         {
@@ -202,33 +208,46 @@ public sealed class DiaryController : ControllerBase
         {
             decimal ratio = 0;
 
-            if (entry.Source == "food" && entry.Food != null)
+            if (entry.Source == "food")
             {
-                ratio = request.QuantityGrams.Value / 100m;
-                entry.CaloriesKcal = entry.Food.CaloriesKcal * ratio;
-                entry.ProteinGrams = entry.Food.ProteinGrams * ratio;
-                entry.CarbohydrateGrams = entry.Food.CarbohydrateGrams * ratio;
-                entry.FatGrams = entry.Food.FatGrams * ratio;
+                var food = await _foodRepository.GetByIdAsync(entry.ItemId, cancellationToken);
+                if (food != null)
+                {
+                    ratio = request.QuantityGrams.Value / 100m;
+                    entry.CaloriesKcal = food.CaloriesKcal * ratio;
+                    entry.ProteinGrams = food.ProteinGrams * ratio;
+                    entry.CarbohydrateGrams = food.CarbohydrateGrams * ratio;
+                    entry.FatGrams = food.FatGrams * ratio;
+                }
             }
-            else if (entry.Source == "custom-dish" && entry.CustomDish != null)
+            else if (entry.Source == "custom-dish")
             {
-                ratio = request.QuantityGrams.Value / entry.CustomDish.PortionSizeGrams;
-                entry.CaloriesKcal = entry.CustomDish.CaloriesKcal * ratio;
-                entry.ProteinGrams = entry.CustomDish.ProteinGrams * ratio;
-                entry.CarbohydrateGrams = entry.CustomDish.CarbohydrateGrams * ratio;
-                entry.FatGrams = entry.CustomDish.FatGrams * ratio;
+                var customDish = await _customDishRepository.GetByIdAsync(entry.ItemId, userId, cancellationToken);
+                if (customDish != null)
+                {
+                    ratio = request.QuantityGrams.Value / customDish.PortionSizeGrams;
+                    entry.CaloriesKcal = customDish.CaloriesKcal * ratio;
+                    entry.ProteinGrams = customDish.ProteinGrams * ratio;
+                    entry.CarbohydrateGrams = customDish.CarbohydrateGrams * ratio;
+                    entry.FatGrams = customDish.FatGrams * ratio;
+                }
             }
-            else if (entry.Source == "ai-recipe" && entry.AiRecipe != null)
+            else if (entry.Source == "ai-recipe")
             {
-                ratio = request.QuantityGrams.Value / 100m;
-                entry.CaloriesKcal = entry.AiRecipe.CaloriesKcal * ratio;
-                entry.ProteinGrams = entry.AiRecipe.ProteinGrams * ratio;
-                entry.CarbohydrateGrams = entry.AiRecipe.CarbohydrateGrams * ratio;
-                entry.FatGrams = entry.AiRecipe.FatGrams * ratio;
+                var aiRecipe = await _context.AiRecipes.FindAsync(entry.ItemId, cancellationToken);
+                if (aiRecipe != null)
+                {
+                    ratio = request.QuantityGrams.Value / 100m;
+                    entry.CaloriesKcal = aiRecipe.CaloriesKcal * ratio;
+                    entry.ProteinGrams = aiRecipe.ProteinGrams * ratio;
+                    entry.CarbohydrateGrams = aiRecipe.CarbohydrateGrams * ratio;
+                    entry.FatGrams = aiRecipe.FatGrams * ratio;
+                }
             }
         }
 
-        await _context.SaveChangesAsync(cancellationToken);
+        await _diaryRepository.UpdateAsync(entry, cancellationToken);
+        await _diaryRepository.SaveChangesAsync(cancellationToken);
 
         var response = new DiaryEntryResponse
         {

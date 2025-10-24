@@ -4,6 +4,7 @@ using Dapper;
 using EatFitAI.Api.Contracts.CustomDishes;
 using EatFitAI.Api.Extensions;
 using EatFitAI.Application.Data;
+using EatFitAI.Application.Repositories;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -15,10 +16,12 @@ namespace EatFitAI.Api.Controllers;
 public sealed class CustomDishesController : ControllerBase
 {
     private readonly ISqlConnectionFactory _connectionFactory;
+    private readonly ICustomDishRepository _customDishRepository;
 
-    public CustomDishesController(ISqlConnectionFactory connectionFactory)
+    public CustomDishesController(ISqlConnectionFactory connectionFactory, ICustomDishRepository customDishRepository)
     {
         _connectionFactory = connectionFactory;
+        _customDishRepository = customDishRepository;
     }
 
     [HttpPost]
@@ -30,40 +33,57 @@ public sealed class CustomDishesController : ControllerBase
         }
 
         var userId = User.GetUserId();
-        using var conn = await _connectionFactory.CreateOpenConnectionAsync(cancellationToken);
 
-        var ingredientsJson = JsonSerializer.Serialize(request.Ingredients.Select(x => new
+        // Calculate totals from ingredients
+        var totalCalories = request.Ingredients.Sum(i => i.CaloriesKcal);
+        var totalProtein = request.Ingredients.Sum(i => i.ProteinGrams);
+        var totalCarbs = request.Ingredients.Sum(i => i.CarbohydrateGrams);
+        var totalFat = request.Ingredients.Sum(i => i.FatGrams);
+        var totalGrams = request.Ingredients.Sum(i => i.QuantityGrams);
+
+        var customDish = new Domain.Foods.CustomDish
         {
-            foodId = x.FoodId,
-            name = x.Name,
-            quantityGrams = x.QuantityGrams,
-            caloriesKcal = x.CaloriesKcal,
-            proteinGrams = x.ProteinGrams,
-            carbohydrateGrams = x.CarbohydrateGrams,
-            fatGrams = x.FatGrams
-        }));
+            Id = Guid.NewGuid(),
+            UserId = userId,
+            Name = request.Name,
+            Description = request.Description,
+            PortionSizeGrams = totalGrams,
+            CaloriesKcal = totalCalories,
+            ProteinGrams = totalProtein,
+            CarbohydrateGrams = totalCarbs,
+            FatGrams = totalFat,
+            CreatedAt = DateTime.UtcNow
+        };
 
-        var row = await conn.QuerySingleAsync<DishDb>(
-            "sp_MonNguoiDung_TaoMon",
-            new
+        // Add ingredients
+        foreach (var ingredient in request.Ingredients)
+        {
+            customDish.Ingredients.Add(new Domain.Foods.CustomDishIngredient
             {
-                UserId = userId,
-                request.Name,
-                request.Description,
-                IngredientsJson = ingredientsJson
-            },
-            commandType: CommandType.StoredProcedure);
+                Id = Guid.NewGuid(),
+                FoodId = ingredient.FoodId,
+                Name = ingredient.Name,
+                QuantityGrams = ingredient.QuantityGrams,
+                CaloriesKcal = ingredient.CaloriesKcal,
+                ProteinGrams = ingredient.ProteinGrams,
+                CarbohydrateGrams = ingredient.CarbohydrateGrams,
+                FatGrams = ingredient.FatGrams
+            });
+        }
+
+        await _customDishRepository.AddAsync(customDish, cancellationToken);
+        await _customDishRepository.SaveChangesAsync(cancellationToken);
 
         var response = new CustomDishResponse
         {
-            Id = row.Id,
-            Name = row.Name,
-            Description = row.Description,
-            PortionSizeGrams = row.PortionSizeGrams,
-            CaloriesKcal = row.CaloriesKcal,
-            ProteinGrams = row.ProteinGrams,
-            CarbohydrateGrams = row.CarbohydrateGrams,
-            FatGrams = row.FatGrams
+            Id = customDish.Id,
+            Name = customDish.Name,
+            Description = customDish.Description,
+            PortionSizeGrams = customDish.PortionSizeGrams,
+            CaloriesKcal = customDish.CaloriesKcal,
+            ProteinGrams = customDish.ProteinGrams,
+            CarbohydrateGrams = customDish.CarbohydrateGrams,
+            FatGrams = customDish.FatGrams
         };
 
         return Ok(response);
@@ -73,22 +93,18 @@ public sealed class CustomDishesController : ControllerBase
     public async Task<IActionResult> GetMine(CancellationToken cancellationToken)
     {
         var userId = User.GetUserId();
-        using var conn = await _connectionFactory.CreateOpenConnectionAsync(cancellationToken);
-        var rows = await conn.QueryAsync<DishDb>(
-            "sp_MonNguoiDung_LayDanhSach",
-            new { UserId = userId },
-            commandType: CommandType.StoredProcedure);
+        var dishes = await _customDishRepository.GetByUserIdAsync(userId, cancellationToken);
 
-        var items = rows.Select(row => new CustomDishResponse
+        var items = dishes.Select(dish => new CustomDishResponse
         {
-            Id = row.Id,
-            Name = row.Name,
-            Description = row.Description,
-            PortionSizeGrams = row.PortionSizeGrams,
-            CaloriesKcal = row.CaloriesKcal,
-            ProteinGrams = row.ProteinGrams,
-            CarbohydrateGrams = row.CarbohydrateGrams,
-            FatGrams = row.FatGrams
+            Id = dish.Id,
+            Name = dish.Name,
+            Description = dish.Description,
+            PortionSizeGrams = dish.PortionSizeGrams,
+            CaloriesKcal = dish.CaloriesKcal,
+            ProteinGrams = dish.ProteinGrams,
+            CarbohydrateGrams = dish.CarbohydrateGrams,
+            FatGrams = dish.FatGrams
         });
 
         return Ok(items);
@@ -98,28 +114,21 @@ public sealed class CustomDishesController : ControllerBase
     public async Task<IActionResult> GetById([FromRoute] Guid id, CancellationToken cancellationToken)
     {
         var userId = User.GetUserId();
-        using var conn = await _connectionFactory.CreateOpenConnectionAsync(cancellationToken);
+        var dish = await _customDishRepository.GetByIdAsync(id, userId, cancellationToken);
 
-        using var multi = await conn.QueryMultipleAsync(
-            "sp_MonNguoiDung_LayTheoId",
-            new { UserId = userId, Id = id },
-            commandType: CommandType.StoredProcedure);
-
-        var header = await multi.ReadSingleOrDefaultAsync<DishDb>();
-        if (header is null) return NotFound();
-        var ingredients = (await multi.ReadAsync<IngredientDb>()).ToList();
+        if (dish is null) return NotFound();
 
         var response = new CustomDishDetailResponse
         {
-            Id = header.Id,
-            Name = header.Name,
-            Description = header.Description,
-            PortionSizeGrams = header.PortionSizeGrams,
-            CaloriesKcal = header.CaloriesKcal,
-            ProteinGrams = header.ProteinGrams,
-            CarbohydrateGrams = header.CarbohydrateGrams,
-            FatGrams = header.FatGrams,
-            Ingredients = ingredients.Select(i => new CustomDishIngredientResponse
+            Id = dish.Id,
+            Name = dish.Name,
+            Description = dish.Description,
+            PortionSizeGrams = dish.PortionSizeGrams,
+            CaloriesKcal = dish.CaloriesKcal,
+            ProteinGrams = dish.ProteinGrams,
+            CarbohydrateGrams = dish.CarbohydrateGrams,
+            FatGrams = dish.FatGrams,
+            Ingredients = dish.Ingredients.Select(i => new CustomDishIngredientResponse
             {
                 Id = i.Id,
                 FoodId = i.FoodId,
