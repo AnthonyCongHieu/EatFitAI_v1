@@ -5,7 +5,8 @@ import Animated, {
   useSharedValue,
   withSpring,
   withSequence,
-  withTiming
+  withTiming,
+  withRepeat
 } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 

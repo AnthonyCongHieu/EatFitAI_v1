@@ -63,13 +63,13 @@ export const Modal = ({
     switch (position) {
       case 'bottom':
         return {
-          justifyContent: 'flex-end',
+          justifyContent: 'flex-end' as const,
           paddingBottom: 0,
         };
       case 'center':
       default:
         return {
-          justifyContent: 'center',
+          justifyContent: 'center' as const,
           paddingBottom: theme.spacing.xl,
         };
     }
@@ -139,7 +139,7 @@ export const Modal = ({
                 backgroundColor: theme.colors.card,
                 borderRadius: position === 'bottom' ? theme.radius.xl : theme.radius.lg,
                 ...getSizeStyles(),
-              },
+              } as any,
               contentAnimatedStyle,
             ]}
             entering={enteringAnimation}

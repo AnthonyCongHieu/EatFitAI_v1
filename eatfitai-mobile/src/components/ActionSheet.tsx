@@ -171,7 +171,7 @@ export const ActionSheet = ({
                 },
               ]}
             >
-              <ThemedText variant="button" style={styles.cancelText}>
+              <ThemedText variant="button" style={{ color: theme?.colors?.text || '#000' }}>
                 {cancelText}
               </ThemedText>
             </Pressable>
@@ -235,9 +235,6 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     paddingHorizontal: 20,
     alignItems: 'center',
-  },
-  cancelText: {
-    color: theme?.colors?.text || '#000',
   },
 });
 

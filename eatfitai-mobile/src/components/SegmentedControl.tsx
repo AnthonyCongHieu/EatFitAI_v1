@@ -5,6 +5,7 @@ import Animated, {
   useSharedValue,
   withSpring,
   withTiming,
+  interpolate,
   interpolateColor
 } from 'react-native-reanimated';
 

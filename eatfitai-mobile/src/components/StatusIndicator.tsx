@@ -157,10 +157,11 @@ export const StatusIndicator = ({
           <View style={styles.textContainer}>
             <ThemedText
               style={[
-                styles.message,
                 {
                   color: config.color,
                   fontSize: sizeConfig.fontSize,
+                  fontFamily: theme?.typography?.body?.fontFamily || 'Inter_400Regular',
+                  lineHeight: 20,
                 },
               ]}
             >
@@ -197,10 +198,6 @@ const styles = StyleSheet.create({
   },
   textContainer: {
     flex: 1,
-  },
-  message: {
-    fontFamily: theme?.typography?.body?.fontFamily || 'Inter_400Regular',
-    lineHeight: 20,
   },
 });
 

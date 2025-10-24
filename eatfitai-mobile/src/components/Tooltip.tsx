@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
+import React from 'react';
 import Animated, {
   FadeIn,
   FadeOut,
@@ -179,7 +180,7 @@ export const Tooltip = ({
             shadowRadius: 8,
             elevation: 4,
           },
-          getPositionStyles(),
+          getPositionStyles() as any,
           tooltipAnimatedStyle,
         ]}
         entering={animated ? FadeIn.duration(200) : undefined}

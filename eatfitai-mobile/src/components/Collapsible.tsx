@@ -73,7 +73,7 @@ export const Collapsible = ({
     return (
       <View style={styles.header}>
         {title && (
-          <ThemedText variant="subtitle" style={styles.title}>
+          <ThemedText variant="body" style={styles.title}>
             {title}
           </ThemedText>
         )}

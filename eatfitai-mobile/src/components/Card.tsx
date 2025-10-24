@@ -1,6 +1,7 @@
+import React from 'react';
 import type { ReactNode } from 'react';
 import type { ViewStyle } from 'react-native';
-import { Pressable } from 'react-native';
+import { Pressable, type PressableProps } from 'react-native';
 import Animated, {
   FadeInUp,
   Layout,
@@ -25,7 +26,12 @@ type CardProps = {
   animated?: boolean;
 };
 
-const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
+// Strongly type animated Pressable to satisfy JSX/TSX props typing
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable) as unknown as React.ComponentType<React.ComponentProps<typeof Pressable>>;
+
+// expo-linear-gradient sometimes has types that don't line up with JSX in certain TS configs.
+// Create a safely-typed alias to use in JSX.
+const ExpoLinearGradient = LinearGradient as unknown as React.ComponentType<any>;
 
 export const Card = ({
   children,
@@ -121,14 +127,14 @@ export const Card = ({
       layout={Layout.springify()}
       style={baseStyle}
     >
-      <LinearGradient
+      <ExpoLinearGradient
         colors={theme.gradients[gradient]}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={{ borderRadius: theme.radius.lg, flex: 1 }}
       >
         {children}
-      </LinearGradient>
+      </ExpoLinearGradient>
     </Animated.View>
   ) : cardContent;
 
