@@ -1,4 +1,4 @@
-﻿// MÃ n hÃ¬nh Chi tiáº¿t mÃ³n Äƒn vÃ  thÃªm vÃ o nháº­t kÃ½
+﻿// Màn hình Chi tiết món ăn và thêm vào nhật ký
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
@@ -8,6 +8,7 @@ import { Controller, useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import Toast from 'react-native-toast-message';
+import Animated, { FadeIn } from 'react-native-reanimated';
 
 import { ThemedText } from '../../../components/ThemedText';
 import Screen from '../../../components/Screen';
@@ -23,22 +24,22 @@ type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 type RouteProps = RouteProp<RootStackParamList, 'FoodDetail'>;
 
 const MEAL_OPTIONS = [
-  { value: 'breakfast', label: 'Bá»¯a sÃ¡ng' },
-  { value: 'lunch', label: 'Bá»¯a trÆ°a' },
-  { value: 'dinner', label: 'Bá»¯a tá»‘i' },
-  { value: 'snack', label: 'Ä‚n váº·t' },
+  { value: 'breakfast', label: 'Bữa sáng' },
+  { value: 'lunch', label: 'Bữa trưa' },
+  { value: 'dinner', label: 'Bữa tối' },
+  { value: 'snack', label: 'Ăn vặt' },
 ] as const;
 
 const FormSchema = z.object({
   grams: z
     .string()
     .trim()
-    .refine((value) => value !== '', { message: 'Vui lÃ²ng nháº­p sá»‘ gram' })
+    .refine((value) => value !== '', { message: 'Vui lòng nhập số gram' })
     .refine((value) => !Number.isNaN(Number(value)) && Number(value) > 0 && Number(value) <= 2000, {
-      message: 'Sá»‘ gram pháº£i > 0 vÃ  â‰¤ 2000',
+      message: 'Số gram phải > 0 và ≤ 2000',
     }),
   mealType: z.enum(['breakfast', 'lunch', 'dinner', 'snack']),
-  note: z.string().trim().max(200, 'Ghi chÃº tá»‘i Ä‘a 200 kÃ½ tá»±').optional(),
+  note: z.string().trim().max(200, 'Ghi chú tối đa 200 ký tự').optional(),
 });
 
 type FormValues = z.infer<typeof FormSchema>;
@@ -82,7 +83,7 @@ const FoodDetailScreen = (): JSX.Element | null => {
         }
       })
       .catch(() => {
-        Toast.show({ type: 'error', text1: 'KhÃ´ng táº£i Ä‘Æ°á»£c chi tiáº¿t mÃ³n' });
+        Toast.show({ type: 'error', text1: 'Không tải được chi tiết món' });
         navigation.goBack();
       })
       .finally(() => {
@@ -123,15 +124,15 @@ const FoodDetailScreen = (): JSX.Element | null => {
           note: values.note ?? undefined,
         })
         .then(async () => {
-          Toast.show({ type: 'success', text1: 'ÄÃ£ thÃªm vÃ o nháº­t kÃ½' });
+          Toast.show({ type: 'success', text1: 'Đã thêm vào nhật ký' });
           await refreshSummary().catch(() => {});
           navigation.goBack();
         })
         .catch((error: any) => {
           if (error?.response?.status === 422) {
-            Toast.show({ type: 'error', text1: 'Dá»¯ liá»‡u khÃ´ng há»£p lá»‡' });
+            Toast.show({ type: 'error', text1: 'Dữ liệu không hợp lệ' });
           } else {
-            Toast.show({ type: 'error', text1: 'ThÃªm mÃ³n tháº¥t báº¡i' });
+            Toast.show({ type: 'error', text1: 'Thêm món thất bại' });
           }
         })
         .finally(() => setIsSubmitting(false));
@@ -141,8 +142,11 @@ const FoodDetailScreen = (): JSX.Element | null => {
 
   if (isLoading) {
     return (
-      <View style={[styles.loadingContainer]}>
-        <ActivityIndicator size="large" />
+      <View style={[styles.loadingContainer, { backgroundColor: theme.colors.background }]}>
+        <ActivityIndicator size="large" color={theme.colors.primary} />
+        <ThemedText variant="body" color="textSecondary" style={{ marginTop: theme.spacing.md }}>
+          Đang tải...
+        </ThemedText>
       </View>
     );
   }
@@ -151,115 +155,183 @@ const FoodDetailScreen = (): JSX.Element | null => {
 
   return (
     <Screen contentContainerStyle={styles.content}>
-      <Card>
-        <ThemedText variant="title">{detail.name}</ThemedText>
-        {detail.brand ? <ThemedText style={styles.subtitle}>{detail.brand}</ThemedText> : null}
-        {detail.description ? <ThemedText style={styles.subtitle}>{detail.description}</ThemedText> : null}
-
-        <View style={styles.infoRow}>
-          <View style={[styles.infoBox, { backgroundColor: theme.colors.background }]}>
-            <ThemedText style={styles.label}>LÆ°á»£ng tham chiáº¿u</ThemedText>
-            <ThemedText>{detail.servingSizeGram ? `${detail.servingSizeGram} g` : '100 g (máº·c Ä‘á»‹nh)'}</ThemedText>
-          </View>
-          <View style={[styles.infoBox, { backgroundColor: theme.colors.background }]}>
-            <ThemedText style={styles.label}>NÄƒng lÆ°á»£ng</ThemedText>
-            <ThemedText>{detail.perServingCalories ?? detail.calories ?? '--'} kcal</ThemedText>
-          </View>
-        </View>
-
-        <View style={styles.macroRow}>
-          <View style={[styles.macroBox, { backgroundColor: theme.colors.background }]}>
-            <ThemedText style={styles.label}>Protein</ThemedText>
-            <ThemedText>{detail.perServingProtein ?? detail.protein ?? '--'} g</ThemedText>
-          </View>
-          <View style={[styles.macroBox, { backgroundColor: theme.colors.background }]}>
-            <ThemedText style={styles.label}>Carb</ThemedText>
-            <ThemedText>{detail.perServingCarbs ?? detail.carbs ?? '--'} g</ThemedText>
-          </View>
-          <View style={[styles.macroBox, { backgroundColor: theme.colors.background }]}>
-            <ThemedText style={styles.label}>Fat</ThemedText>
-            <ThemedText>{detail.perServingFat ?? detail.fat ?? '--'} g</ThemedText>
-          </View>
-        </View>
-      </Card>
-
-      <Card>
-        <ThemedText variant="subtitle">ThÃªm vÃ o nháº­t kÃ½</ThemedText>
-
-        <ThemedText style={styles.formLabel}>Sá»‘ gram</ThemedText>
-        <Controller
-          control={control}
-          name="grams"
-          render={({ field: { onChange, onBlur, value } }) => (
-            <ThemedTextInput keyboardType="numeric" value={value} onChangeText={onChange} onBlur={onBlur} placeholder="VÃ­ dá»¥: 150" error={!!errors.grams} />
-          )}
-        />
-        {errors.grams ? (
-          <ThemedText style={[styles.error, { color: theme.colors.danger ?? '#E53935' }]}>
-            {errors.grams.message}
+      <Animated.View entering={FadeIn.duration(theme.animation.normal)}>
+        <Card padding="lg" shadow="md">
+          <ThemedText variant="h2" style={{ marginBottom: theme.spacing.xs }}>
+            {detail.name}
           </ThemedText>
-        ) : null}
+          {detail.brand ? (
+            <ThemedText variant="bodySmall" color="textSecondary" style={{ marginBottom: theme.spacing.xs }}>
+              {detail.brand}
+            </ThemedText>
+          ) : null}
+          {detail.description ? (
+            <ThemedText variant="bodySmall" color="textSecondary">
+              {detail.description}
+            </ThemedText>
+          ) : null}
 
-        <ThemedText style={styles.formLabel}>Bá»¯a Äƒn</ThemedText>
-        <View style={styles.mealRow}>
-          {MEAL_OPTIONS.map((option) => (
-            <Pressable
-              key={option.value}
-              accessibilityRole="button"
-              accessibilityLabel={`Chọn bữa ăn ${option.label}`}
-              hitSlop={8}
-              onPress={() => setValue('mealType', option.value)}
-              style={[
-                styles.mealChip,
-                {
-                  backgroundColor: mealTypeValue === option.value ? theme.colors.primary : 'transparent',
-                  borderColor: theme.colors.primary,
-                },
-              ]}
-            >
-              <ThemedText
+          <View style={[styles.infoRow, { marginTop: theme.spacing.lg }]}>
+            <View style={[styles.infoBox, { backgroundColor: theme.colors.primaryLight }]}>
+              <ThemedText variant="caption" color="primary" weight="600" style={{ textTransform: 'uppercase' }}>
+                Lượng tham chiếu
+              </ThemedText>
+              <ThemedText variant="h4" color="primary">
+                {detail.servingSizeGram ? `${detail.servingSizeGram} g` : '100 g'}
+              </ThemedText>
+            </View>
+            <View style={[styles.infoBox, { backgroundColor: theme.colors.secondaryLight }]}>
+              <ThemedText variant="caption" color="secondary" weight="600" style={{ textTransform: 'uppercase' }}>
+                Năng lượng
+              </ThemedText>
+              <ThemedText variant="h4" color="secondary">
+                {detail.perServingCalories ?? detail.calories ?? '--'} kcal
+              </ThemedText>
+            </View>
+          </View>
+
+          <View style={[styles.macroRow, { marginTop: theme.spacing.md }]}>
+            <View style={[styles.macroBox, { backgroundColor: theme.colors.background }]}>
+              <ThemedText variant="caption" color="textSecondary" weight="600" style={{ textTransform: 'uppercase' }}>
+                Protein
+              </ThemedText>
+              <ThemedText variant="h4">{detail.perServingProtein ?? detail.protein ?? '--'} g</ThemedText>
+            </View>
+            <View style={[styles.macroBox, { backgroundColor: theme.colors.background }]}>
+              <ThemedText variant="caption" color="textSecondary" weight="600" style={{ textTransform: 'uppercase' }}>
+                Carb
+              </ThemedText>
+              <ThemedText variant="h4">{detail.perServingCarbs ?? detail.carbs ?? '--'} g</ThemedText>
+            </View>
+            <View style={[styles.macroBox, { backgroundColor: theme.colors.background }]}>
+              <ThemedText variant="caption" color="textSecondary" weight="600" style={{ textTransform: 'uppercase' }}>
+                Fat
+              </ThemedText>
+              <ThemedText variant="h4">{detail.perServingFat ?? detail.fat ?? '--'} g</ThemedText>
+            </View>
+          </View>
+        </Card>
+      </Animated.View>
+
+      <Animated.View entering={FadeIn.duration(theme.animation.normal).delay(100)}>
+        <Card padding="lg" shadow="md">
+          <ThemedText variant="h3" style={{ marginBottom: theme.spacing.lg }}>
+            Thêm vào nhật ký
+          </ThemedText>
+
+          <ThemedText variant="bodySmall" weight="600" style={{ marginTop: theme.spacing.md }}>
+            Số gram
+          </ThemedText>
+          <Controller
+            control={control}
+            name="grams"
+            render={({ field: { onChange, onBlur, value } }) => (
+              <ThemedTextInput 
+                keyboardType="numeric" 
+                value={value} 
+                onChangeText={onChange} 
+                onBlur={onBlur} 
+                placeholder="Ví dụ: 150" 
+                error={!!errors.grams} 
+              />
+            )}
+          />
+          {errors.grams ? (
+            <ThemedText variant="bodySmall" color="danger" style={{ marginTop: theme.spacing.xs }}>
+              {errors.grams.message}
+            </ThemedText>
+          ) : null}
+
+          <ThemedText variant="bodySmall" weight="600" style={{ marginTop: theme.spacing.md }}>
+            Bữa ăn
+          </ThemedText>
+          <View style={[styles.mealRow, { marginTop: theme.spacing.sm }]}>
+            {MEAL_OPTIONS.map((option) => (
+              <Pressable
+                key={option.value}
+                accessibilityRole="button"
+                accessibilityLabel={`Chọn bữa ăn ${option.label}`}
+                hitSlop={8}
+                onPress={() => setValue('mealType', option.value)}
                 style={[
-                  styles.mealChipText,
-                  { color: mealTypeValue === option.value ? '#fff' : theme.colors.text },
+                  styles.mealChip,
+                  {
+                    backgroundColor: mealTypeValue === option.value ? theme.colors.primary : 'transparent',
+                    borderColor: theme.colors.primary,
+                  },
                 ]}
               >
-                {option.label}
+                <ThemedText
+                  variant="button"
+                  style={{
+                    color: mealTypeValue === option.value ? '#fff' : theme.colors.text,
+                  }}
+                >
+                  {option.label}
+                </ThemedText>
+              </Pressable>
+            ))}
+          </View>
+          {errors.mealType ? (
+            <ThemedText variant="bodySmall" color="danger" style={{ marginTop: theme.spacing.xs }}>
+              {errors.mealType.message}
+            </ThemedText>
+          ) : null}
+
+          <ThemedText variant="bodySmall" weight="600" style={{ marginTop: theme.spacing.md }}>
+            Ghi chú (tùy chọn)
+          </ThemedText>
+          <Controller
+            control={control}
+            name="note"
+            render={({ field: { onChange, onBlur, value } }) => (
+              <ThemedTextInput 
+                value={value} 
+                onChangeText={onChange} 
+                onBlur={onBlur} 
+                placeholder="VD: giảm bớt nước sốt" 
+                multiline 
+                numberOfLines={3} 
+              />
+            )}
+          />
+          {errors.note ? (
+            <ThemedText variant="bodySmall" color="danger" style={{ marginTop: theme.spacing.xs }}>
+              {errors.note.message}
+            </ThemedText>
+          ) : null}
+
+          <View style={[styles.previewBox, { backgroundColor: theme.colors.primaryLight, marginTop: theme.spacing.lg }]}>
+            <ThemedText variant="body" weight="600" color="primary" style={{ marginBottom: theme.spacing.sm }}>
+              Tổng dinh dưỡng cho {gramsValue || '--'} g:
+            </ThemedText>
+            <ThemedText variant="h3" color="primary" style={{ marginBottom: theme.spacing.xs }}>
+              {calorieValue}
+            </ThemedText>
+            <View style={{ gap: theme.spacing.xs }}>
+              <ThemedText variant="body" color="primary">
+                Protein: {macroValue(detail.perServingProtein ?? detail.protein)}
               </ThemedText>
-            </Pressable>
-          ))}
-        </View>
-        {errors.mealType ? (
-          <ThemedText style={[styles.error, { color: theme.colors.danger ?? '#E53935' }]}>
-            {errors.mealType.message}
-          </ThemedText>
-        ) : null}
+              <ThemedText variant="body" color="primary">
+                Carb: {macroValue(detail.perServingCarbs ?? detail.carbs)}
+              </ThemedText>
+              <ThemedText variant="body" color="primary">
+                Fat: {macroValue(detail.perServingFat ?? detail.fat)}
+              </ThemedText>
+            </View>
+          </View>
 
-        <ThemedText style={styles.formLabel}>Ghi chÃº (tuá»³ chá»n)</ThemedText>
-        <Controller
-          control={control}
-          name="note"
-          render={({ field: { onChange, onBlur, value } }) => (
-            <ThemedTextInput value={value} onChangeText={onChange} onBlur={onBlur} placeholder="VD: giáº£m bá»›t nÆ°á»›c sá»‘t" multiline numberOfLines={3} />
-          )}
-        />
-        {errors.note ? (
-          <ThemedText style={[styles.error, { color: theme.colors.danger ?? '#E53935' }]}>
-            {errors.note.message}
-          </ThemedText>
-        ) : null}
-
-        <View style={[styles.previewBox, { backgroundColor: theme.colors.background }]}>
-          <ThemedText style={styles.previewLabel}>Tá»•ng dinh dÆ°á»¡ng cho {gramsValue || '--'} g:</ThemedText>
-          <ThemedText>{calorieValue}</ThemedText>
-          <ThemedText>Protein: {macroValue(detail.perServingProtein ?? detail.protein)}</ThemedText>
-          <ThemedText>Carb: {macroValue(detail.perServingCarbs ?? detail.carbs)}</ThemedText>
-          <ThemedText>Fat: {macroValue(detail.perServingFat ?? detail.fat)}</ThemedText>
-        </View>
-
-        <Button variant="primary" disabled={isSubmitting} onPress={handleSubmit(submit)}>
-          <ThemedText style={styles.submitText}>{isSubmitting ? 'Äang thÃªm...' : 'ThÃªm vÃ o nháº­t kÃ½'}</ThemedText>
-        </Button>
-      </Card>
+          <View style={{ marginTop: theme.spacing.xl }}>
+            <Button 
+              variant="primary" 
+              loading={isSubmitting}
+              disabled={isSubmitting} 
+              onPress={handleSubmit(submit)}
+              title={isSubmitting ? 'Đang thêm...' : 'Thêm vào nhật ký'}
+            />
+          </View>
+        </Card>
+      </Animated.View>
     </Screen>
   );
 };
@@ -267,21 +339,13 @@ const FoodDetailScreen = (): JSX.Element | null => {
 const styles = StyleSheet.create({
   loadingContainer: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   content: { padding: 16, gap: 16, flexGrow: 1 },
-  subtitle: { opacity: 0.7 },
   infoRow: { flexDirection: 'row', gap: 12 },
-  infoBox: { flex: 1, padding: 12, borderRadius: 12, gap: 4 },
-  label: { fontSize: 13, opacity: 0.7 },
+  infoBox: { flex: 1, padding: 16, borderRadius: 12, gap: 8 },
   macroRow: { flexDirection: 'row', gap: 12 },
   macroBox: { flex: 1, padding: 12, borderRadius: 12, gap: 4 },
-  formLabel: { marginTop: 4 },
-  error: { marginTop: 4 },
-  mealRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 8 },
-  mealChip: { borderWidth: 1, borderRadius: 999, paddingVertical: 8, paddingHorizontal: 16 },
-  mealChipText: { fontFamily: 'Inter_600SemiBold' },
-  previewBox: { marginTop: 16, padding: 12, borderRadius: 12, gap: 4 },
-  previewLabel: { fontFamily: 'Inter_600SemiBold' },
-  submitText: { color: '#fff', fontFamily: 'Inter_600SemiBold' },
+  mealRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  mealChip: { borderWidth: 1.5, borderRadius: 999, paddingVertical: 10, paddingHorizontal: 20 },
+  previewBox: { padding: 16, borderRadius: 12 },
 });
 
 export default FoodDetailScreen;
-

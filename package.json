@@ -1,0 +1,5 @@
+{
+  "dependencies": {
+    "expo-haptics": "^15.0.7"
+  }
+}

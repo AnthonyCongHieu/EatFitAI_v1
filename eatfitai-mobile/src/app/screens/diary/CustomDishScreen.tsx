@@ -119,13 +119,17 @@ const CustomDishScreen = (): JSX.Element => {
 
   return (
     <Screen contentContainerStyle={styles.content}>
-      <Card>
-        <ThemedText variant="title">Tạo món thủ công</ThemedText>
-        <ThemedText style={styles.hint}>
+      <Card padding="lg" shadow="md">
+        <ThemedText variant="h2" style={{ marginBottom: theme.spacing.xs }}>
+          Tạo món thủ công
+        </ThemedText>
+        <ThemedText variant="bodySmall" color="textSecondary" style={{ marginBottom: theme.spacing.lg }}>
           Nhập thông tin dinh dưỡng cho món nhà làm để sử dụng lại trong nhật ký.
         </ThemedText>
 
-        <ThemedText style={styles.label}>Tên món</ThemedText>
+        <ThemedText variant="bodySmall" weight="600" style={{ marginTop: theme.spacing.md }}>
+          Tên món
+        </ThemedText>
         <Controller
           control={control}
           name="name"
@@ -134,12 +138,14 @@ const CustomDishScreen = (): JSX.Element => {
           )}
         />
         {errors.name ? (
-          <ThemedText style={[styles.error, { color: theme.colors.danger ?? '#E53935' }]}>
+          <ThemedText variant="bodySmall" color="danger" style={{ marginTop: theme.spacing.xs }}>
             {errors.name.message}
           </ThemedText>
         ) : null}
 
-        <ThemedText style={styles.label}>Mô tả (tuỳ chọn)</ThemedText>
+        <ThemedText variant="bodySmall" weight="600" style={{ marginTop: theme.spacing.md }}>
+          Mô tả (tùy chọn)
+        </ThemedText>
         <Controller
           control={control}
           name="description"
@@ -148,14 +154,14 @@ const CustomDishScreen = (): JSX.Element => {
           )}
         />
         {errors.description ? (
-          <ThemedText style={[styles.error, { color: theme.colors.danger ?? '#E53935' }]}>
+          <ThemedText variant="bodySmall" color="danger" style={{ marginTop: theme.spacing.xs }}>
             {errors.description.message}
           </ThemedText>
         ) : null}
 
-        <View style={styles.row}>
+        <View style={[styles.row, { marginTop: theme.spacing.lg }]}>
           <View style={styles.col}>
-            <ThemedText style={styles.label}>Khẩu phần (gram)</ThemedText>
+            <ThemedText variant="bodySmall" weight="600">Khẩu phần (gram)</ThemedText>
             <Controller
               control={control}
               name="servingSizeGram"
@@ -164,13 +170,13 @@ const CustomDishScreen = (): JSX.Element => {
               )}
             />
             {errors.servingSizeGram ? (
-              <ThemedText style={[styles.error, { color: theme.colors.danger ?? '#E53935' }]}>
+              <ThemedText variant="bodySmall" color="danger" style={{ marginTop: theme.spacing.xs }}>
                 {errors.servingSizeGram.message}
               </ThemedText>
             ) : null}
           </View>
           <View style={styles.col}>
-            <ThemedText style={styles.label}>Calo</ThemedText>
+            <ThemedText variant="bodySmall" weight="600">Calo</ThemedText>
             <Controller
               control={control}
               name="calories"
@@ -179,16 +185,16 @@ const CustomDishScreen = (): JSX.Element => {
               )}
             />
             {errors.calories ? (
-              <ThemedText style={[styles.error, { color: theme.colors.danger ?? '#E53935' }]}>
+              <ThemedText variant="bodySmall" color="danger" style={{ marginTop: theme.spacing.xs }}>
                 {errors.calories.message}
               </ThemedText>
             ) : null}
           </View>
         </View>
 
-        <View style={styles.row}>
+        <View style={[styles.row, { marginTop: theme.spacing.md }]}>
           <View style={styles.col}>
-            <ThemedText style={styles.label}>Protein (g)</ThemedText>
+            <ThemedText variant="bodySmall" weight="600">Protein (g)</ThemedText>
             <Controller
               control={control}
               name="protein"
@@ -197,13 +203,13 @@ const CustomDishScreen = (): JSX.Element => {
               )}
             />
             {errors.protein ? (
-              <ThemedText style={[styles.error, { color: theme.colors.danger ?? '#E53935' }]}>
+              <ThemedText variant="bodySmall" color="danger" style={{ marginTop: theme.spacing.xs }}>
                 {errors.protein.message}
               </ThemedText>
             ) : null}
           </View>
           <View style={styles.col}>
-            <ThemedText style={styles.label}>Carb (g)</ThemedText>
+            <ThemedText variant="bodySmall" weight="600">Carb (g)</ThemedText>
             <Controller
               control={control}
               name="carbs"
@@ -212,13 +218,13 @@ const CustomDishScreen = (): JSX.Element => {
               )}
             />
             {errors.carbs ? (
-              <ThemedText style={[styles.error, { color: theme.colors.danger ?? '#E53935' }]}>
+              <ThemedText variant="bodySmall" color="danger" style={{ marginTop: theme.spacing.xs }}>
                 {errors.carbs.message}
               </ThemedText>
             ) : null}
           </View>
           <View style={styles.col}>
-            <ThemedText style={styles.label}>Fat (g)</ThemedText>
+            <ThemedText variant="bodySmall" weight="600">Fat (g)</ThemedText>
             <Controller
               control={control}
               name="fat"
@@ -227,17 +233,21 @@ const CustomDishScreen = (): JSX.Element => {
               )}
             />
             {errors.fat ? (
-              <ThemedText style={[styles.error, { color: theme.colors.danger ?? '#E53935' }]}>
+              <ThemedText variant="bodySmall" color="danger" style={{ marginTop: theme.spacing.xs }}>
                 {errors.fat.message}
               </ThemedText>
             ) : null}
           </View>
         </View>
 
-        <View style={{ marginTop: 8 }}>
-          <Button variant="primary" disabled={isSubmitting} onPress={handleSubmit(onSubmit)}>
-            <ThemedText style={styles.submitText}>{isSubmitting ? 'Đang lưu...' : 'Tạo món ăn'}</ThemedText>
-          </Button>
+        <View style={{ marginTop: theme.spacing.xl }}>
+          <Button 
+            variant="primary" 
+            loading={isSubmitting}
+            disabled={isSubmitting} 
+            onPress={handleSubmit(onSubmit)}
+            title={isSubmitting ? 'Đang lưu...' : 'Tạo món ăn'}
+          />
         </View>
       </Card>
     </Screen>
@@ -246,12 +256,8 @@ const CustomDishScreen = (): JSX.Element => {
 
 const styles = StyleSheet.create({
   content: { padding: 16, gap: 16 },
-  hint: { opacity: 0.7 },
-  label: { marginTop: 4 },
-  error: { marginTop: 4 },
   row: { flexDirection: 'row', gap: 12 },
   col: { flex: 1 },
-  submitText: { color: '#fff', fontFamily: 'Inter_600SemiBold' },
 });
 
 export default CustomDishScreen;

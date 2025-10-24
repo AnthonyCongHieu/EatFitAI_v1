@@ -1,6 +1,13 @@
 import type { ReactNode } from 'react';
-import { Pressable, StyleSheet, Animated, type Insets } from 'react-native';
-import { useRef } from 'react';
+import { Pressable, ActivityIndicator, type Insets } from 'react-native';
+import { useRef, memo, useMemo } from 'react';
+import * as Haptics from 'expo-haptics';
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+  withTiming
+} from 'react-native-reanimated';
 
 import { ThemedText } from './ThemedText';
 import { useAppTheme } from '../theme/ThemeProvider';
@@ -10,74 +17,147 @@ type ButtonProps = {
   children?: ReactNode;
   onPress?: () => void;
   disabled?: boolean;
-  variant?: 'primary' | 'secondary' | 'outline';
+  loading?: boolean;
+  variant?: 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger';
+  size?: 'sm' | 'md' | 'lg';
   fullWidth?: boolean;
   accessibilityLabel?: string;
   hitSlop?: number | Insets;
+  icon?: ReactNode;
+  iconPosition?: 'left' | 'right';
 };
 
-export const Button = ({
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
+
+export const Button = memo(({
   title,
   children,
   onPress,
   disabled,
+  loading,
   variant = 'primary',
+  size = 'md',
   fullWidth = true,
+  icon,
+  iconPosition = 'left',
 }: ButtonProps): JSX.Element => {
-  const {
-    theme: { colors, radius, spacing },
-  } = useAppTheme();
+  const { theme } = useAppTheme();
 
-  const bg = variant === 'primary' ? colors.primary : variant === 'secondary' ? colors.secondary : 'transparent';
-  const borderColor = variant === 'outline' ? colors.border : 'transparent';
-  const textColor = variant === 'outline' ? colors.text : '#fff';
-  const ripple = variant === 'outline'
-    ? (colors.text + '33') // ~20% alpha if supported
-    : 'rgba(255,255,255,0.16)';
+  // Memoize style calculations
+  const styles = useMemo(() => {
+    // Determine colors based on variant
+    let bg = theme.colors.primary;
+    let borderColor = 'transparent';
+    let textColor = '#FFFFFF';
+    let rippleColor = 'rgba(255,255,255,0.2)';
 
-  const scale = useRef(new Animated.Value(1)).current;
-  const animateTo = (to: number) =>
-    Animated.spring(scale, { toValue: to, useNativeDriver: true, speed: 20, bounciness: 6 }).start();
+    if (variant === 'secondary') {
+      bg = theme.colors.secondary;
+    } else if (variant === 'outline') {
+      bg = 'transparent';
+      borderColor = theme.colors.border;
+      textColor = theme.colors.text;
+      rippleColor = theme.colors.primary + '15';
+    } else if (variant === 'ghost') {
+      bg = 'transparent';
+      borderColor = 'transparent';
+      textColor = theme.colors.primary;
+      rippleColor = theme.colors.primary + '15';
+    } else if (variant === 'danger') {
+      bg = theme.colors.danger;
+    }
+
+    // Determine size
+    let paddingVertical = theme.spacing.sm + 4;
+    let paddingHorizontal = theme.spacing.lg;
+    let fontSize = theme.typography.button.fontSize;
+
+    if (size === 'sm') {
+      paddingVertical = theme.spacing.sm;
+      paddingHorizontal = theme.spacing.md;
+      fontSize = 14;
+    } else if (size === 'lg') {
+      paddingVertical = theme.spacing.md;
+      paddingHorizontal = theme.spacing.xl;
+      fontSize = 18;
+    }
+
+    return { bg, borderColor, textColor, rippleColor, paddingVertical, paddingHorizontal, fontSize };
+  }, [theme, variant, size]);
+
+  // Animation values
+  const scale = useSharedValue(1);
+  const opacity = useSharedValue(1);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+    opacity: opacity.value,
+  }));
+
+  const handlePressIn = () => {
+    scale.value = withSpring(0.96, { damping: 15, stiffness: 300 });
+    opacity.value = withTiming(0.8, { duration: theme.animation.fast });
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+  };
+
+  const handlePressOut = () => {
+    scale.value = withSpring(1, { damping: 15, stiffness: 300 });
+    opacity.value = withTiming(1, { duration: theme.animation.fast });
+  };
+
+  const isDisabled = disabled || loading;
 
   return (
-    <Pressable
+    <AnimatedPressable
       onPress={onPress}
-      disabled={disabled}
-      style={({ pressed }) => [
-        styles.base,
+      disabled={isDisabled}
+      style={[
+        animatedStyle,
         {
-          backgroundColor: bg,
-          borderColor,
-          borderWidth: variant === 'outline' ? 1 : 0,
-          borderRadius: radius.full,
-          opacity: disabled ? 0.7 : pressed ? 0.9 : 1,
-          paddingVertical: spacing.sm + 2,
-          paddingHorizontal: spacing.lg,
+          backgroundColor: styles.bg,
+          borderColor: styles.borderColor,
+          borderWidth: variant === 'outline' ? 1.5 : 0,
+          borderRadius: theme.radius.full,
+          opacity: isDisabled ? 0.5 : 1,
+          paddingVertical: styles.paddingVertical,
+          paddingHorizontal: styles.paddingHorizontal,
           alignSelf: fullWidth ? 'stretch' : 'auto',
+          alignItems: 'center',
+          justifyContent: 'center',
+          flexDirection: 'row',
+          gap: theme.spacing.sm,
+          minHeight: size === 'sm' ? 36 : size === 'lg' ? 56 : 48,
         },
       ]}
-      onPressIn={() => animateTo(0.98)}
-      onPressOut={() => animateTo(1)}
-      android_ripple={{ color: ripple, borderless: false }}
+      onPressIn={handlePressIn}
+      onPressOut={handlePressOut}
+      android_ripple={{ color: styles.rippleColor, borderless: false }}
       accessibilityRole="button"
       accessibilityLabel={title ?? undefined}
+      accessibilityState={{ disabled: isDisabled }}
       hitSlop={8}
     >
-      <Animated.View style={{ transform: [{ scale }] }}>
-        {children ?? <ThemedText style={[styles.text, { color: textColor }]}>{title}</ThemedText>}
-      </Animated.View>
-    </Pressable>
+      {loading ? (
+        <ActivityIndicator color={styles.textColor} size="small" />
+      ) : (
+        <>
+          {icon && iconPosition === 'left' && icon}
+          {children ?? (
+            <ThemedText
+              variant="button"
+              style={{
+                color: styles.textColor,
+                fontSize: styles.fontSize,
+              }}
+            >
+              {title}
+            </ThemedText>
+          )}
+          {icon && iconPosition === 'right' && icon}
+        </>
+      )}
+    </AnimatedPressable>
   );
-};
-
-const styles = StyleSheet.create({
-  base: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  text: {
-    fontFamily: 'Inter_600SemiBold',
-  },
 });
 
 export default Button;

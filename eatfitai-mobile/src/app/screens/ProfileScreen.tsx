@@ -20,6 +20,7 @@ import Toast from 'react-native-toast-message';
 
 import { ThemedText } from '../../components/ThemedText';
 import ThemedTextInput from '../../components/ThemedTextInput';
+import Button from '../../components/Button';
 import Screen from '../../components/Screen';
 import { useAppTheme } from '../../theme/ThemeProvider';
 import { useAuthStore } from '../../store/useAuthStore';
@@ -188,6 +189,7 @@ const ProfileScreen = (): JSX.Element => {
   const onSubmitBodyMetrics = async (values: BodyMetricsFormValues) => {
     try {
       await profileService.createBodyMetrics({
+        heightCm: Number(values.heightCm),
         weightKg: Number(values.weightKg),
         bodyFatPercent: values.bodyFatPercent ? Number(values.bodyFatPercent) : null,
         recordedAt: values.recordedAt ? `${values.recordedAt}T00:00:00Z` : null,
@@ -213,9 +215,11 @@ const ProfileScreen = (): JSX.Element => {
       style={[styles.flex, { backgroundColor: theme.colors.background }]}
       behavior={Platform.select({ ios: 'padding', android: undefined })}>
       <Screen contentContainerStyle={styles.scrollContent}>
-        <View style={[styles.card, { backgroundColor: theme.colors.card }]}>
-          <ThemedText variant="title">Thông tin cá nhân</ThemedText>
-          <ThemedText style={styles.subtitle}>Chỉnh sửa hồ sơ và lưu lại để cập nhật</ThemedText>
+        <View style={[styles.card, { backgroundColor: theme.colors.card, ...theme.shadows.md }]}>
+          <ThemedText variant="h3">Thông tin cá nhân</ThemedText>
+          <ThemedText variant="bodySmall" color="textSecondary" style={{ marginTop: theme.spacing.xs }}>
+            Chỉnh sửa hồ sơ và lưu lại để cập nhật
+          </ThemedText>
 
           {isLoading ? (
             <View style={styles.loadingBox}>
@@ -223,7 +227,9 @@ const ProfileScreen = (): JSX.Element => {
             </View>
           ) : (
             <>
-              <ThemedText style={styles.label}>Họ và tên</ThemedText>
+              <ThemedText variant="bodySmall" weight="600" style={{ marginTop: theme.spacing.md }}>
+                Họ và tên
+              </ThemedText>
               <Controller
                 control={control}
                 name="fullName"
@@ -238,13 +244,15 @@ const ProfileScreen = (): JSX.Element => {
                   />
                 )}
               />
-          {profileErrors.fullName && (
-                <ThemedText style={[styles.errorText, { color: theme.colors.danger ?? '#E53935' }]}>
+              {profileErrors.fullName && (
+                <ThemedText variant="bodySmall" color="danger" style={{ marginTop: theme.spacing.xs }}>
                   {profileErrors.fullName.message}
                 </ThemedText>
               )}
 
-              <ThemedText style={styles.label}>Số điện thoại</ThemedText>
+              <ThemedText variant="bodySmall" weight="600" style={{ marginTop: theme.spacing.md }}>
+                Số điện thoại
+              </ThemedText>
               <Controller
                 control={control}
                 name="phone"
@@ -261,14 +269,14 @@ const ProfileScreen = (): JSX.Element => {
                 )}
               />
               {profileErrors.phone && (
-                <ThemedText style={[styles.errorText, { color: theme.colors.danger ?? '#E53935' }]}>
+                <ThemedText variant="bodySmall" color="danger" style={{ marginTop: theme.spacing.xs }}>
                   {profileErrors.phone.message}
                 </ThemedText>
               )}
 
-              <View style={styles.row}>
+              <View style={[styles.row, { marginTop: theme.spacing.md }]}>
                 <View style={styles.col}>
-                  <ThemedText style={styles.label}>Chiều cao (cm)</ThemedText>
+                  <ThemedText variant="bodySmall" weight="600">Chiều cao (cm)</ThemedText>
                   <Controller
                     control={control}
                     name="heightCm"
@@ -285,13 +293,13 @@ const ProfileScreen = (): JSX.Element => {
                     )}
                   />
                   {profileErrors.heightCm && (
-                    <ThemedText style={[styles.errorText, { color: theme.colors.danger ?? '#E53935' }]}>
+                    <ThemedText variant="bodySmall" color="danger" style={{ marginTop: theme.spacing.xs }}>
                       {profileErrors.heightCm.message}
                     </ThemedText>
                   )}
                 </View>
                 <View style={styles.col}>
-                  <ThemedText style={styles.label}>Cân nặng (kg)</ThemedText>
+                  <ThemedText variant="bodySmall" weight="600">Cân nặng (kg)</ThemedText>
                   <Controller
                     control={control}
                     name="weightKg"
@@ -308,14 +316,16 @@ const ProfileScreen = (): JSX.Element => {
                     )}
                   />
                   {profileErrors.weightKg && (
-                    <ThemedText style={[styles.errorText, { color: theme.colors.danger ?? '#E53935' }]}>
+                    <ThemedText variant="bodySmall" color="danger" style={{ marginTop: theme.spacing.xs }}>
                       {profileErrors.weightKg.message}
                     </ThemedText>
                   )}
                 </View>
               </View>
 
-              <ThemedText style={styles.label}>Ngày sinh (YYYY-MM-DD)</ThemedText>
+              <ThemedText variant="bodySmall" weight="600" style={{ marginTop: theme.spacing.md }}>
+                Ngày sinh (YYYY-MM-DD)
+              </ThemedText>
               <Controller
                 control={control}
                 name="dateOfBirth"
@@ -331,58 +341,57 @@ const ProfileScreen = (): JSX.Element => {
                 )}
               />
               {profileErrors.dateOfBirth && (
-                <ThemedText style={[styles.errorText, { color: theme.colors.danger ?? '#E53935' }]}>
+                <ThemedText variant="bodySmall" color="danger" style={{ marginTop: theme.spacing.xs }}>
                   {profileErrors.dateOfBirth.message}
                 </ThemedText>
               )}
 
-              <Pressable
-                onPress={handleSubmit(onSubmitProfile)}
-                disabled={isSaving || isSubmittingProfile}
-                style={[
-                  styles.button,
-                  {
-                    backgroundColor: theme.colors.primary,
-                    opacity: isSaving || isSubmittingProfile ? 0.7 : 1,
-                  },
-                ]}>
-                <ThemedText style={styles.buttonText}>
-                  {isSaving || isSubmittingProfile ? 'Đang lưu...' : 'Lưu hồ sơ'}
-                </ThemedText>
-              </Pressable>
+              <View style={{ marginTop: theme.spacing.xl }}>
+                <Button
+                  onPress={handleSubmit(onSubmitProfile)}
+                  loading={isSaving || isSubmittingProfile}
+                  disabled={isSaving || isSubmittingProfile}
+                  title={isSaving || isSubmittingProfile ? 'Đang lưu...' : 'Lưu hồ sơ'}
+                  variant="primary"
+                />
+              </View>
             </>
           )}
 
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Đăng xuất"
-            hitSlop={8}
-            onPress={() =>
-              Alert.alert(
-                'Đăng xuất',
-                'Bạn có chắc chắn muốn đăng xuất không?',
-                [
-                  { text: 'Huỷ', style: 'cancel' },
-                  {
-                    text: 'Đồng ý',
-                    style: 'destructive',
-                    onPress: () => {
-                      logout().catch(() => {});
+          <View style={{ marginTop: theme.spacing.md }}>
+            <Button
+              accessibilityLabel="Đăng xuất"
+              onPress={() =>
+                Alert.alert(
+                  'Đăng xuất',
+                  'Bạn có chắc chắn muốn đăng xuất không?',
+                  [
+                    { text: 'Huỷ', style: 'cancel' },
+                    {
+                      text: 'Đồng ý',
+                      style: 'destructive',
+                      onPress: () => {
+                        logout().catch(() => {});
+                      },
                     },
-                  },
-                ],
-              )
-            }
-            style={[styles.button, { backgroundColor: theme.colors.danger ?? '#E53935', marginTop: 16 }]}>
-            <ThemedText style={styles.buttonText}>Đăng xuất</ThemedText>
-          </Pressable>
+                  ],
+                )
+              }
+              variant="danger"
+              title="Đăng xuất"
+            />
+          </View>
         </View>
 
-        <View style={[styles.card, { backgroundColor: theme.colors.card }]}>
-          <ThemedText variant="title">Ghi nhận chỉ số cơ thể</ThemedText>
-          <ThemedText style={styles.subtitle}>Theo dõi tiến trình bằng cách lưu số đo mới</ThemedText>
+        <View style={[styles.card, { backgroundColor: theme.colors.card, ...theme.shadows.md }]}>
+          <ThemedText variant="h3">Ghi nhận chỉ số cơ thể</ThemedText>
+          <ThemedText variant="bodySmall" color="textSecondary" style={{ marginTop: theme.spacing.xs }}>
+            Theo dõi tiến trình bằng cách lưu số đo mới
+          </ThemedText>
 
-          <ThemedText style={styles.label}>Chiều cao (cm)</ThemedText>
+          <ThemedText variant="bodySmall" weight="600" style={{ marginTop: theme.spacing.md }}>
+            Chiều cao (cm)
+          </ThemedText>
           <Controller
             control={metricsControl}
             name="heightCm"
@@ -399,12 +408,14 @@ const ProfileScreen = (): JSX.Element => {
             )}
           />
           {metricsErrors.heightCm && (
-            <ThemedText style={[styles.errorText, { color: theme.colors.danger ?? '#E53935' }]}>
+            <ThemedText variant="bodySmall" color="danger" style={{ marginTop: theme.spacing.xs }}>
               {metricsErrors.heightCm.message}
             </ThemedText>
           )}
 
-          <ThemedText style={styles.label}>Cân nặng (kg)</ThemedText>
+          <ThemedText variant="bodySmall" weight="600" style={{ marginTop: theme.spacing.md }}>
+            Cân nặng (kg)
+          </ThemedText>
           <Controller
             control={metricsControl}
             name="weightKg"
@@ -421,12 +432,14 @@ const ProfileScreen = (): JSX.Element => {
             )}
           />
           {metricsErrors.weightKg && (
-            <ThemedText style={[styles.errorText, { color: theme.colors.danger ?? '#E53935' }]}>
+            <ThemedText variant="bodySmall" color="danger" style={{ marginTop: theme.spacing.xs }}>
               {metricsErrors.weightKg.message}
             </ThemedText>
           )}
 
-          <ThemedText style={styles.label}>Body fat % (tuỳ chọn)</ThemedText>
+          <ThemedText variant="bodySmall" weight="600" style={{ marginTop: theme.spacing.md }}>
+            Body fat % (tuỳ chọn)
+          </ThemedText>
           <Controller
             control={metricsControl}
             name="bodyFatPercent"
@@ -443,12 +456,14 @@ const ProfileScreen = (): JSX.Element => {
             )}
           />
           {metricsErrors.bodyFatPercent && (
-            <ThemedText style={[styles.errorText, { color: theme.colors.danger ?? '#E53935' }]}>
+            <ThemedText variant="bodySmall" color="danger" style={{ marginTop: theme.spacing.xs }}>
               {metricsErrors.bodyFatPercent.message}
             </ThemedText>
           )}
 
-          <ThemedText style={styles.label}>Ngày đo (YYYY-MM-DD)</ThemedText>
+          <ThemedText variant="bodySmall" weight="600" style={{ marginTop: theme.spacing.md }}>
+            Ngày đo (YYYY-MM-DD)
+          </ThemedText>
           <Controller
             control={metricsControl}
             name="recordedAt"
@@ -464,29 +479,21 @@ const ProfileScreen = (): JSX.Element => {
             )}
           />
           {metricsErrors.recordedAt && (
-            <ThemedText style={[styles.errorText, { color: theme.colors.danger ?? '#E53935' }]}>
+            <ThemedText variant="bodySmall" color="danger" style={{ marginTop: theme.spacing.xs }}>
               {metricsErrors.recordedAt.message}
             </ThemedText>
           )}
 
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Lưu số đo mới"
-            hitSlop={8}
-            onPress={handleMetricsSubmit(onSubmitBodyMetrics)}
-            disabled={isSubmittingMetrics}
-            style={[
-              styles.button,
-              {
-                backgroundColor: theme.colors.secondary,
-                opacity: isSubmittingMetrics ? 0.7 : 1,
-                marginTop: 20,
-              },
-            ]}>
-            <ThemedText style={styles.buttonText}>
-              {isSubmittingMetrics ? 'Đang lưu...' : 'Lưu số đo mới'}
-            </ThemedText>
-          </Pressable>
+          <View style={{ marginTop: theme.spacing.xl }}>
+            <Button
+              accessibilityLabel="Lưu số đo mới"
+              onPress={handleMetricsSubmit(onSubmitBodyMetrics)}
+              loading={isSubmittingMetrics}
+              disabled={isSubmittingMetrics}
+              variant="secondary"
+              title={isSubmittingMetrics ? 'Đang lưu...' : 'Lưu số đo mới'}
+            />
+          </View>
         </View>
       </Screen>
     </KeyboardAvoidingView>
@@ -501,19 +508,7 @@ const styles = StyleSheet.create({
   },
   card: {
     borderRadius: 16,
-    padding: 20,
-    shadowColor: '#000',
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 2,
-  },
-  subtitle: {
-    marginTop: 4,
-    marginBottom: 12,
-  },
-  label: {
-    marginTop: 12,
+    padding: 24,
   },
   input: {
     borderWidth: 1,
@@ -522,19 +517,6 @@ const styles = StyleSheet.create({
     paddingVertical: Platform.select({ ios: 12, android: 10 }),
     marginTop: 6,
     fontFamily: 'Inter_400Regular',
-  },
-  errorText: {
-    marginTop: 4,
-  },
-  button: {
-    marginTop: 24,
-    paddingVertical: 12,
-    borderRadius: 999,
-    alignItems: 'center',
-  },
-  buttonText: {
-    color: '#fff',
-    fontFamily: 'Inter_600SemiBold',
   },
   loadingBox: {
     paddingVertical: 20,

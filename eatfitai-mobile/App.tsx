@@ -8,7 +8,14 @@ import * as SystemUI from 'expo-system-ui';
 import * as WebBrowser from 'expo-web-browser';
 import * as SplashScreen from 'expo-splash-screen';
 import Toast from 'react-native-toast-message';
-import { useFonts, Inter_400Regular, Inter_600SemiBold } from '@expo-google-fonts/inter';
+import { 
+  useFonts, 
+  Inter_300Light,
+  Inter_400Regular, 
+  Inter_500Medium,
+  Inter_600SemiBold,
+  Inter_700Bold 
+} from '@expo-google-fonts/inter';
 
 import AppNavigator from './src/app/navigation/AppNavigator';
 import { ThemeProvider, useAppTheme } from './src/theme/ThemeProvider';
@@ -37,8 +44,11 @@ const AppInner = () => {
 
 export default function App(): JSX.Element | null {
   const [fontsLoaded] = useFonts({
+    Inter_300Light,
     Inter_400Regular,
+    Inter_500Medium,
     Inter_600SemiBold,
+    Inter_700Bold,
   });
 
   useEffect(() => {

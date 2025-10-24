@@ -6,6 +6,7 @@ import Toast from "react-native-toast-message";
 import { ThemedText } from "../../../components/ThemedText";
 import Screen from "../../../components/Screen";
 import Card from "../../../components/Card";
+import Button from "../../../components/Button";
 import { useAppTheme } from "../../../theme/ThemeProvider";
 import { useStatsStore } from "../../../store/useStatsStore";
 
@@ -54,16 +55,25 @@ const WeekStatsScreen = (): JSX.Element => {
       contentContainerStyle={styles.content}
       refreshControl={<RefreshControl refreshing={isLoading} onRefresh={handleRefresh} tintColor={theme.colors.primary} />}
     >
-      <Card style={styles.card}>
-        <ThemedText variant="title">Thống kê 7 ngày</ThemedText>
-        <ThemedText style={styles.subtitle}>So sánh calo tiêu thụ với mục tiêu hằng ngày</ThemedText>
+      <Card padding="lg" shadow="md">
+        <ThemedText variant="h2" style={{ marginBottom: theme.spacing.xs }}>
+          Thống kê 7 ngày
+        </ThemedText>
+        <ThemedText variant="bodySmall" color="textSecondary" style={{ marginBottom: theme.spacing.lg }}>
+          So sánh calo tiêu thụ với mục tiêu hằng ngày
+        </ThemedText>
 
         {isLoading && !weekSummary ? (
           <View style={styles.loadingBox}>
-            <ActivityIndicator color={theme.colors.primary} />
+            <ActivityIndicator color={theme.colors.primary} size="large" />
+            <ThemedText variant="body" color="textSecondary" style={{ marginTop: theme.spacing.md }}>
+              Đang tải...
+            </ThemedText>
           </View>
         ) : chartData.length === 0 ? (
-          <ThemedText style={styles.infoText}>Chưa có dữ liệu</ThemedText>
+          <ThemedText variant="body" color="textSecondary" style={{ textAlign: 'center', paddingVertical: theme.spacing.xl }}>
+            Chưa có dữ liệu
+          </ThemedText>
         ) : (
           <VictoryChart
             height={280}
@@ -75,7 +85,7 @@ const WeekStatsScreen = (): JSX.Element => {
             <VictoryAxis
               style={{
                 axis: { stroke: theme.colors.border },
-                tickLabels: { fill: theme.colors.muted, fontSize: 12 },
+                tickLabels: { fill: theme.colors.textSecondary, fontSize: 12 },
                 grid: { stroke: 'transparent' },
               }}
             />
@@ -83,7 +93,7 @@ const WeekStatsScreen = (): JSX.Element => {
               dependentAxis
               style={{
                 axis: { stroke: theme.colors.border },
-                tickLabels: { fill: theme.colors.muted, fontSize: 12 },
+                tickLabels: { fill: theme.colors.textSecondary, fontSize: 12 },
                 grid: { stroke: theme.colors.border, strokeDasharray: '4,4', opacity: 0.4 },
               }}
             />
@@ -92,7 +102,7 @@ const WeekStatsScreen = (): JSX.Element => {
               x="x"
               y="y"
               interpolation="monotoneX"
-              style={{ data: { fill: theme.colors.primary, fillOpacity: 0.3, stroke: theme.colors.primary } }}
+              style={{ data: { fill: theme.colors.primary, fillOpacity: 0.3, stroke: theme.colors.primary, strokeWidth: 2 } }}
               labels={({ datum }) => `${datum.y} kcal`}
               labelComponent={<VictoryTooltip renderInPortal={false} style={{ fontSize: 12 }} />}
             />
@@ -102,12 +112,41 @@ const WeekStatsScreen = (): JSX.Element => {
                 x="x"
                 y="y"
                 interpolation="monotoneX"
-                style={{ data: { stroke: theme.colors.secondary, strokeDasharray: "6,6", fillOpacity: 0 } }}
+                style={{ data: { stroke: theme.colors.secondary, strokeDasharray: "6,6", fillOpacity: 0, strokeWidth: 2 } }}
                 labels={({ datum }) => `Mục tiêu ${datum.y} kcal`}
                 labelComponent={<VictoryTooltip renderInPortal={false} style={{ fontSize: 10 }} />}
               />
             ) : null}
           </VictoryChart>
+        )}
+
+        {weekSummary && weekSummary.days.length > 0 && (
+          <View style={styles.summaryRow}>
+            <View style={styles.summaryItem}>
+              <ThemedText variant="caption" color="textSecondary" weight="600">
+                Trung bình/ngày
+              </ThemedText>
+              <ThemedText variant="h4">
+                {Math.round(weekSummary.days.reduce((sum, day) => sum + day.calories, 0) / weekSummary.days.length)} kcal
+              </ThemedText>
+            </View>
+            <View style={styles.summaryItem}>
+              <ThemedText variant="caption" color="textSecondary" weight="600">
+                Tổng tuần
+              </ThemedText>
+              <ThemedText variant="h4">
+                {weekSummary.days.reduce((sum, day) => sum + day.calories, 0)} kcal
+              </ThemedText>
+            </View>
+            <View style={styles.summaryItem}>
+              <ThemedText variant="caption" color="textSecondary" weight="600">
+                Đạt mục tiêu
+              </ThemedText>
+              <ThemedText variant="h4" color="success">
+                {weekSummary.days.filter(day => day.targetCalories && day.calories >= day.targetCalories).length}/{weekSummary.days.length} ngày
+              </ThemedText>
+            </View>
+          </View>
         )}
       </Card>
     </Screen>
@@ -118,18 +157,21 @@ const styles = StyleSheet.create({
   content: {
     padding: 16,
   },
-  card: {
-    gap: 16,
-  },
-  subtitle: {
-    opacity: 0.8,
-  },
   loadingBox: {
     paddingVertical: 20,
     alignItems: "center",
   },
-  infoText: {
-    opacity: 0.8,
+  summaryRow: {
+    flexDirection: 'row',
+    gap: 16,
+    marginTop: 16,
+  },
+  summaryItem: {
+    flex: 1,
+    alignItems: 'center',
+    padding: 12,
+    backgroundColor: 'rgba(0,0,0,0.02)',
+    borderRadius: 12,
   },
 });
 

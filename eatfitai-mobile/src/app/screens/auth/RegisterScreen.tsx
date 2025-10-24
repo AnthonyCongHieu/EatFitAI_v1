@@ -58,10 +58,14 @@ const RegisterScreen = ({ navigation }: Props): JSX.Element => {
 
   return (
     <Screen scroll={false} style={styles.container}>
-      <Card>
-        <ThemedText variant="title">{t('auth.registerTitle')}</ThemedText>
+      <Card padding="lg">
+        <ThemedText variant="h2" style={{ marginBottom: theme.spacing.lg }}>
+          {t('auth.registerTitle')}
+        </ThemedText>
 
-        <ThemedText style={styles.label}>{t('auth.displayName')}</ThemedText>
+        <ThemedText variant="bodySmall" weight="600" style={{ marginTop: theme.spacing.md }}>
+          {t('auth.displayName')}
+        </ThemedText>
         <Controller
           control={control}
           name="name"
@@ -70,12 +74,14 @@ const RegisterScreen = ({ navigation }: Props): JSX.Element => {
           )}
         />
         {errors.name && (
-          <ThemedText style={[styles.error, { color: theme.colors.danger ?? '#E53935' }]}>
+          <ThemedText variant="bodySmall" color="danger" style={{ marginTop: theme.spacing.xs }}>
             {errors.name.message}
           </ThemedText>
         )}
 
-        <ThemedText style={styles.label}>{t('auth.email')}</ThemedText>
+        <ThemedText variant="bodySmall" weight="600" style={{ marginTop: theme.spacing.md }}>
+          {t('auth.email')}
+        </ThemedText>
         <Controller
           control={control}
           name="email"
@@ -84,12 +90,14 @@ const RegisterScreen = ({ navigation }: Props): JSX.Element => {
           )}
         />
         {errors.email && (
-          <ThemedText style={[styles.error, { color: theme.colors.danger ?? '#E53935' }]}>
+          <ThemedText variant="bodySmall" color="danger" style={{ marginTop: theme.spacing.xs }}>
             {errors.email.message}
           </ThemedText>
         )}
 
-        <ThemedText style={styles.label}>{t('auth.password')}</ThemedText>
+        <ThemedText variant="bodySmall" weight="600" style={{ marginTop: theme.spacing.md }}>
+          {t('auth.password')}
+        </ThemedText>
         <Controller
           control={control}
           name="password"
@@ -98,12 +106,14 @@ const RegisterScreen = ({ navigation }: Props): JSX.Element => {
           )}
         />
         {errors.password && (
-          <ThemedText style={[styles.error, { color: theme.colors.danger ?? '#E53935' }]}>
+          <ThemedText variant="bodySmall" color="danger" style={{ marginTop: theme.spacing.xs }}>
             {errors.password.message}
           </ThemedText>
         )}
 
-        <ThemedText style={styles.label}>{t('auth.passwordConfirm')}</ThemedText>
+        <ThemedText variant="bodySmall" weight="600" style={{ marginTop: theme.spacing.md }}>
+          {t('auth.passwordConfirm')}
+        </ThemedText>
         <Controller
           control={control}
           name="confirmPassword"
@@ -112,19 +122,33 @@ const RegisterScreen = ({ navigation }: Props): JSX.Element => {
           )}
         />
         {errors.confirmPassword && (
-          <ThemedText style={[styles.error, { color: theme.colors.danger ?? '#E53935' }]}>
+          <ThemedText variant="bodySmall" color="danger" style={{ marginTop: theme.spacing.xs }}>
             {errors.confirmPassword.message}
           </ThemedText>
         )}
 
-        <View style={{ marginTop: 20 }}>
-          <Button variant="primary" disabled={loading} onPress={handleSubmit(onSubmit)} title={t('auth.createAccount')}>
-            <ThemedText style={styles.buttonText}>{loading ? t('auth.processing') : t('auth.createAccount')}</ThemedText>
-          </Button>
+        <View style={{ marginTop: theme.spacing.xl }}>
+          <Button 
+            variant="primary" 
+            loading={loading}
+            disabled={loading} 
+            onPress={handleSubmit(onSubmit)} 
+            title={loading ? t('auth.processing') : t('auth.createAccount')}
+          />
         </View>
 
-        <View style={{ marginTop: 16 }}>
-          <ThemedText onPress={() => navigation.navigate('Login')}>{t('auth.hasAccount')}</ThemedText>
+        <View style={{ marginTop: theme.spacing.lg, alignItems: 'center' }}>
+          <ThemedText variant="body" color="textSecondary">
+            {t('auth.hasAccount')}{' '}
+            <ThemedText 
+              variant="body" 
+              color="primary" 
+              weight="600"
+              onPress={() => navigation.navigate('Login')}
+            >
+              Đăng nhập
+            </ThemedText>
+          </ThemedText>
         </View>
       </Card>
     </Screen>
@@ -132,10 +156,7 @@ const RegisterScreen = ({ navigation }: Props): JSX.Element => {
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 24 },
-  label: { marginTop: 16 },
-  error: { marginTop: 6 },
-  buttonText: { color: '#fff', fontFamily: 'Inter_600SemiBold' },
+  container: { flex: 1, padding: 24, justifyContent: 'center' },
 });
 
 export default RegisterScreen;

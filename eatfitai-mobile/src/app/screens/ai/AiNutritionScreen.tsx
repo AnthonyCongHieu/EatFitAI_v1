@@ -8,6 +8,7 @@ import Toast from 'react-native-toast-message';
 import { ThemedText } from '../../../components/ThemedText';
 import Screen from '../../../components/Screen';
 import Card from '../../../components/Card';
+import Button from '../../../components/Button';
 import { useAppTheme } from '../../../theme/ThemeProvider';
 import { aiService, type NutritionTarget } from '../../../services/aiService';
 import { useDiaryStore } from '../../../store/useDiaryStore';
@@ -91,34 +92,71 @@ const AiNutritionScreen = (): JSX.Element => {
     <View
       style={[
         styles.targetBox,
-        { borderColor: highlight ? theme.colors.primary : theme.colors.border },
+        {
+          borderColor: highlight ? theme.colors.primary : theme.colors.border,
+          backgroundColor: highlight ? theme.colors.primaryLight : theme.colors.card,
+        },
       ]}
     >
-      <ThemedText variant="subtitle">{title}</ThemedText>
+      <ThemedText variant="h4" style={{ marginBottom: theme.spacing.sm }}>
+        {title}
+      </ThemedText>
       {target ? (
         <>
-          <ThemedText style={styles.targetValue}>{target.calories} kcal</ThemedText>
-          <ThemedText style={styles.targetMeta}>Protein: {target.protein} g</ThemedText>
-          <ThemedText style={styles.targetMeta}>Carb: {target.carbs} g</ThemedText>
-          <ThemedText style={styles.targetMeta}>Fat: {target.fat} g</ThemedText>
+          <ThemedText variant="h2" color={highlight ? 'primary' : undefined} style={{ marginBottom: theme.spacing.sm }}>
+            {target.calories} kcal
+          </ThemedText>
+          <View style={styles.macroRow}>
+            <View style={styles.macroItem}>
+              <ThemedText variant="caption" color="textSecondary" weight="600">
+                Protein
+              </ThemedText>
+              <ThemedText variant="body" weight="600">
+                {target.protein} g
+              </ThemedText>
+            </View>
+            <View style={styles.macroItem}>
+              <ThemedText variant="caption" color="textSecondary" weight="600">
+                Carb
+              </ThemedText>
+              <ThemedText variant="body" weight="600">
+                {target.carbs} g
+              </ThemedText>
+            </View>
+            <View style={styles.macroItem}>
+              <ThemedText variant="caption" color="textSecondary" weight="600">
+                Fat
+              </ThemedText>
+              <ThemedText variant="body" weight="600">
+                {target.fat} g
+              </ThemedText>
+            </View>
+          </View>
         </>
       ) : (
-        <ThemedText style={styles.infoText}>Chua co du lieu</ThemedText>
+        <ThemedText variant="body" color="textSecondary">
+          Chưa có dữ liệu
+        </ThemedText>
       )}
     </View>
   );
 
   return (
     <Screen contentContainerStyle={styles.container}>
-      <Card>
-        <ThemedText variant="title">Mục tiêu dinh dưỡng</ThemedText>
-        <ThemedText style={styles.infoText}>
+      <Card padding="lg" shadow="md">
+        <ThemedText variant="h2" style={{ marginBottom: theme.spacing.xs }}>
+          Mục tiêu dinh dưỡng
+        </ThemedText>
+        <ThemedText variant="bodySmall" color="textSecondary" style={{ marginBottom: theme.spacing.lg }}>
           AI giúp cân bằng calo và macro theo trạng thái hiện tại. Bạn có thể đề xuất lại và áp dụng ngay.
         </ThemedText>
 
         {isLoading ? (
           <View style={styles.center}>
-            <ActivityIndicator color={theme.colors.primary} />
+            <ActivityIndicator color={theme.colors.primary} size="large" />
+            <ThemedText variant="body" color="textSecondary" style={{ marginTop: theme.spacing.md }}>
+              Đang tải...
+            </ThemedText>
           </View>
         ) : (
           renderTargetBox('Mục tiêu hiện tại', currentTarget)
@@ -126,25 +164,23 @@ const AiNutritionScreen = (): JSX.Element => {
 
         {suggestedTarget ? renderTargetBox('Đề xuất mới', suggestedTarget, true) : null}
 
-        <Pressable
-          style={[styles.button, { backgroundColor: theme.colors.primary, opacity: isRecalculating ? 0.6 : 1 }]}
-          onPress={handleRecalculate}
-          disabled={isRecalculating}
-        >
-          <ThemedText style={styles.buttonText}>
-            {isRecalculating ? 'Đang tính...' : 'Đề xuất mục tiêu mới'}
-          </ThemedText>
-        </Pressable>
+        <View style={{ gap: theme.spacing.sm, marginTop: theme.spacing.xl }}>
+          <Button
+            variant="primary"
+            loading={isRecalculating}
+            disabled={isRecalculating}
+            onPress={handleRecalculate}
+            title={isRecalculating ? 'Đang tính...' : 'Đề xuất mục tiêu mới'}
+          />
 
-        <Pressable
-          style={[styles.button, { backgroundColor: theme.colors.secondary, opacity: isApplying ? 0.6 : 1 }]}
-          onPress={handleApply}
-          disabled={isApplying}
-        >
-          <ThemedText style={styles.buttonText}>
-            {isApplying ? 'Đang áp dụng...' : 'Áp dụng mục tiêu AI'}
-          </ThemedText>
-        </Pressable>
+          <Button
+            variant="secondary"
+            loading={isApplying}
+            disabled={isApplying}
+            onPress={handleApply}
+            title={isApplying ? 'Đang áp dụng...' : 'Áp dụng mục tiêu AI'}
+          />
+        </View>
       </Card>
     </Screen>
   );
@@ -154,36 +190,24 @@ const styles = StyleSheet.create({
   container: {
     padding: 16,
   },
-  card: {},
   center: {
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 20,
   },
-  infoText: {
-    opacity: 0.8,
-  },
   targetBox: {
-    borderWidth: 1,
+    borderWidth: 1.5,
     borderRadius: 16,
-    padding: 16,
-    gap: 6,
+    padding: 20,
+    marginBottom: 16,
   },
-  targetValue: {
-    fontFamily: 'Inter_600SemiBold',
-    fontSize: 20,
+  macroRow: {
+    flexDirection: 'row',
+    gap: 16,
   },
-  targetMeta: {
-    opacity: 0.8,
-  },
-  button: {
-    borderRadius: 999,
-    paddingVertical: 14,
+  macroItem: {
+    flex: 1,
     alignItems: 'center',
-  },
-  buttonText: {
-    color: '#fff',
-    fontFamily: 'Inter_600SemiBold',
   },
 });
 

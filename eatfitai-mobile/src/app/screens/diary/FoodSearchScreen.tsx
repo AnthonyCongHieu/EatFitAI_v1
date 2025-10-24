@@ -1,4 +1,4 @@
-﻿// MÃ n hÃ¬nh tÃ¬m kiáº¿m mÃ³n Äƒn Ä‘á»ƒ thÃªm vÃ o nháº­t kÃ½
+﻿// Màn hình tìm kiếm món ăn để thêm vào nhật ký
 
 import { useCallback, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, View } from 'react-native';
@@ -38,7 +38,7 @@ const FoodSearchScreen = (): JSX.Element => {
   const loadFoods = useCallback(
     async (pageToLoad: number, append: boolean) => {
       if (!query.trim()) {
-        Toast.show({ type: 'info', text1: 'Vui lÃ²ng nháº­p tá»« khÃ³a' });
+        Toast.show({ type: 'info', text1: 'Vui lòng nhập từ khóa' });
         return;
       }
 
@@ -53,7 +53,7 @@ const FoodSearchScreen = (): JSX.Element => {
         setHasMore(result.hasMore);
         setHasSearched(true);
       } catch {
-        Toast.show({ type: 'error', text1: 'TÃ¬m kiáº¿m tháº¥t báº¡i' });
+        Toast.show({ type: 'error', text1: 'Tìm kiếm thất bại' });
       } finally {
         setIsLoading(false);
         setIsLoadingMore(false);
@@ -81,20 +81,20 @@ const FoodSearchScreen = (): JSX.Element => {
           onPress={() => navigation.navigate('FoodDetail', { foodId: item.id })}
         >
           <View style={styles.foodInfo}>
-            <ThemedText style={styles.foodName}>{item.name}</ThemedText>
-            {item.brand ? <ThemedText style={styles.foodBrand}>{item.brand}</ThemedText> : null}
-            <ThemedText style={styles.foodMeta}>
-              {item.calories != null ? `${Math.round(item.calories)} kcal` : '-- kcal'} -
-              {item.protein != null ? ` ${Math.round(item.protein)}g P` : ' --g P'} -
-              {item.carbs != null ? ` ${Math.round(item.carbs)}g C` : ' --g C'} -
+            <ThemedText variant="h4" style={styles.foodName}>{item.name}</ThemedText>
+            {item.brand ? <ThemedText variant="bodySmall" color="textSecondary">{item.brand}</ThemedText> : null}
+            <ThemedText variant="bodySmall" color="textSecondary">
+              {item.calories != null ? `${Math.round(item.calories)} kcal` : '-- kcal'} •
+              {item.protein != null ? ` ${Math.round(item.protein)}g P` : ' --g P'} •
+              {item.carbs != null ? ` ${Math.round(item.carbs)}g C` : ' --g C'} •
               {item.fat != null ? ` ${Math.round(item.fat)}g F` : ' --g F'}
             </ThemedText>
           </View>
-          <ThemedText style={[styles.detailLink, { color: theme.colors.primary }]}>Xem</ThemedText>
+          <ThemedText variant="button" color="primary">Xem</ThemedText>
         </Pressable>
       </Animated.View>
     ),
-    [navigation, theme.colors.border],
+    [navigation, theme.colors.border, theme.colors.card],
   );
 
   const renderSkeleton = () => (
@@ -116,22 +116,22 @@ const FoodSearchScreen = (): JSX.Element => {
           value={query}
           onChangeText={setQuery}
           onSubmitEditing={handleSearch}
-          placeholder="Nháº­p tá»« khÃ³a..."
+          placeholder="Nhập từ khóa..."
           autoCapitalize="none"
           returnKeyType="search"
           style={{ flex: 1, borderWidth: 0, paddingHorizontal: 0, paddingVertical: 0 }}
         />
         <View style={{ width: 90 }}>
-          <Button variant="primary" onPress={handleSearch} fullWidth>
-            <ThemedText style={styles.searchButtonText}>TÃ¬m</ThemedText>
-          </Button>
+          <Button variant="primary" size="sm" onPress={handleSearch} fullWidth title="Tìm" />
         </View>
       </View>
 
       {isLoading ? (
         <View style={styles.centerBox}>
-          <ActivityIndicator color={theme.colors.primary} />
-          <ThemedText style={styles.loadingText}>Äang tÃ¬m kiáº¿m...</ThemedText>
+          <ActivityIndicator color={theme.colors.primary} size="large" />
+          <ThemedText variant="body" color="textSecondary" style={{ marginTop: theme.spacing.md }}>
+            Đang tìm kiếm...
+          </ThemedText>
           {renderSkeleton()}
         </View>
       ) : (
@@ -145,7 +145,10 @@ const FoodSearchScreen = (): JSX.Element => {
           ListEmptyComponent={
             hasSearched ? (
               <View style={styles.centerBox}>
-                <ThemedText style={styles.emptyText}>KhÃ´ng tÃ¬m tháº¥y káº¿t quáº£</ThemedText>
+                <ThemedText variant="h4" color="textSecondary">Không tìm thấy kết quả</ThemedText>
+                <ThemedText variant="bodySmall" color="muted" style={{ marginTop: theme.spacing.sm }}>
+                  Thử tìm kiếm với từ khóa khác
+                </ThemedText>
               </View>
             ) : null
           }
@@ -160,8 +163,10 @@ const FoodSearchScreen = (): JSX.Element => {
       )}
 
       {hasSearched ? (
-        <View style={styles.totalBar}>
-          <ThemedText>Tá»•ng káº¿t quáº£: {total}</ThemedText>
+        <View style={[styles.totalBar, { backgroundColor: theme.colors.card, borderTopColor: theme.colors.border }]}>
+          <ThemedText variant="bodySmall" color="textSecondary">
+            Tổng kết quả: <ThemedText variant="bodySmall" weight="600">{total}</ThemedText>
+          </ThemedText>
         </View>
       ) : null}
     </Screen>
@@ -179,7 +184,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     alignItems: 'center',
   },
-  searchButtonText: { color: '#fff', fontFamily: 'Inter_600SemiBold' },
   listContent: { paddingHorizontal: 16, paddingBottom: 24, gap: 12 },
   foodRow: {
     flexDirection: 'row',
@@ -191,19 +195,25 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   foodInfo: { flex: 1, gap: 4 },
-  foodName: { fontFamily: 'Inter_600SemiBold' },
-  foodBrand: { fontSize: 13, opacity: 0.7 },
-  foodMeta: { fontSize: 13, opacity: 0.7 },
-  detailLink: { fontFamily: 'Inter_600SemiBold' },
-  centerBox: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 8, paddingTop: 40, width: '100%' },
-  loadingText: { opacity: 0.7 },
-  emptyText: { opacity: 0.7 },
-  footerLoading: { paddingVertical: 16 },
-  totalBar: { padding: 16, alignItems: 'center' },
+  foodName: { marginBottom: 2 },
+  centerBox: { 
+    flex: 1, 
+    alignItems: 'center', 
+    justifyContent: 'center', 
+    gap: 8, 
+    paddingTop: 40, 
+    width: '100%',
+    paddingHorizontal: 24,
+  },
+  footerLoading: { paddingVertical: 16, alignItems: 'center' },
+  totalBar: { 
+    padding: 16, 
+    alignItems: 'center',
+    borderTopWidth: 1,
+  },
   skeletonContainer: { width: '100%', gap: 12, marginTop: 24, paddingHorizontal: 16 },
   skeletonItem: { borderWidth: 1, borderRadius: 16, padding: 16, gap: 8 },
   skeletonLine: { height: 14, borderRadius: 999 },
 });
 
 export default FoodSearchScreen;
-

@@ -60,10 +60,14 @@ const LoginScreen = ({ navigation }: Props): JSX.Element => {
 
   return (
     <Screen scroll={false} style={styles.container}>
-      <Card>
-        <ThemedText variant="title">{t('auth.loginTitle')}</ThemedText>
+      <Card padding="lg">
+        <ThemedText variant="h2" style={{ marginBottom: theme.spacing.lg }}>
+          {t('auth.loginTitle')}
+        </ThemedText>
 
-        <ThemedText style={styles.label}>{t('auth.email')}</ThemedText>
+        <ThemedText variant="bodySmall" weight="600" style={{ marginTop: theme.spacing.md }}>
+          {t('auth.email')}
+        </ThemedText>
         <Controller
           control={control}
           name="email"
@@ -80,12 +84,14 @@ const LoginScreen = ({ navigation }: Props): JSX.Element => {
           )}
         />
         {errors.email && (
-          <ThemedText style={[styles.error, { color: theme.colors.danger ?? '#E53935' }]}>
+          <ThemedText variant="bodySmall" color="danger" style={{ marginTop: theme.spacing.xs }}>
             {errors.email.message}
           </ThemedText>
         )}
 
-        <ThemedText style={styles.label}>{t('auth.password')}</ThemedText>
+        <ThemedText variant="bodySmall" weight="600" style={{ marginTop: theme.spacing.md }}>
+          {t('auth.password')}
+        </ThemedText>
         <Controller
           control={control}
           name="password"
@@ -102,24 +108,39 @@ const LoginScreen = ({ navigation }: Props): JSX.Element => {
           )}
         />
         {errors.password && (
-          <ThemedText style={[styles.error, { color: theme.colors.danger ?? '#E53935' }]}>
+          <ThemedText variant="bodySmall" color="danger" style={{ marginTop: theme.spacing.xs }}>
             {errors.password.message}
           </ThemedText>
         )}
 
-        <View style={{ marginTop: 20 }}>
-          <Button variant="primary" disabled={loading} onPress={handleSubmit(onSubmit)} title={t('auth.login')}>
-            <ThemedText style={styles.buttonText}>{loading ? t('auth.processing') : t('auth.login')}</ThemedText>
-          </Button>
+        <View style={{ marginTop: theme.spacing.xl, gap: theme.spacing.sm }}>
+          <Button 
+            variant="primary" 
+            loading={loading}
+            disabled={loading} 
+            onPress={handleSubmit(onSubmit)} 
+            title={loading ? t('auth.processing') : t('auth.login')}
+          />
+          <Button 
+            variant="secondary" 
+            disabled={loading} 
+            onPress={onGoogle} 
+            title={t('auth.loginWithGoogle')}
+          />
         </View>
 
-        <View style={{ height: 10 }} />
-        <Button variant="secondary" disabled={loading} onPress={onGoogle} title={t('auth.loginWithGoogle')}>
-          <ThemedText style={styles.buttonText}>{t('auth.loginWithGoogle')}</ThemedText>
-        </Button>
-
-        <View style={{ marginTop: 16 }}>
-          <ThemedText onPress={() => navigation.navigate('Register')}>{t('auth.registerQuestion')}</ThemedText>
+        <View style={{ marginTop: theme.spacing.lg, alignItems: 'center' }}>
+          <ThemedText variant="body" color="textSecondary">
+            {t('auth.registerQuestion')}{' '}
+            <ThemedText 
+              variant="body" 
+              color="primary" 
+              weight="600"
+              onPress={() => navigation.navigate('Register')}
+            >
+              Đăng ký
+            </ThemedText>
+          </ThemedText>
         </View>
       </Card>
     </Screen>
@@ -127,10 +148,7 @@ const LoginScreen = ({ navigation }: Props): JSX.Element => {
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 24 },
-  label: { marginTop: 16 },
-  error: { marginTop: 6 },
-  buttonText: { color: '#fff', fontFamily: 'Inter_600SemiBold' },
+  container: { flex: 1, padding: 24, justifyContent: 'center' },
 });
 
 export default LoginScreen;

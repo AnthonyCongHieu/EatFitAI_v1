@@ -5,6 +5,8 @@ import { CameraView, useCameraPermissions } from 'expo-camera';
 import Toast from 'react-native-toast-message';
 import { ThemedText } from '../../../components/ThemedText';
 import Screen from '../../../components/Screen';
+import Card from '../../../components/Card';
+import Button from '../../../components/Button';
 import { useAppTheme } from '../../../theme/ThemeProvider';
 import { aiService, type IngredientItem, type SuggestedRecipe } from '../../../services/aiService';
 
@@ -91,11 +93,14 @@ const AiCameraScreen = (): JSX.Element => {
 
   if (!hasPermission) {
     return (
-      <View style={styles.center}>
-        <ThemedText variant="title">Cần cấp quyền camera</ThemedText>
-        <Pressable style={[styles.permissionButton, { backgroundColor: theme.colors.primary }]} onPress={requestPermission}>
-          <ThemedText style={styles.permissionText}>Cấp quyền</ThemedText>
-        </Pressable>
+      <View style={[styles.center, { backgroundColor: theme.colors.background }]}>
+        <ThemedText variant="h2" style={{ marginBottom: theme.spacing.md }}>
+          Cần cấp quyền camera
+        </ThemedText>
+        <ThemedText variant="body" color="textSecondary" style={{ marginBottom: theme.spacing.xl }}>
+          Ứng dụng cần quyền truy cập camera để chụp ảnh nguyên liệu
+        </ThemedText>
+        <Button variant="primary" onPress={requestPermission} title="Cấp quyền camera" />
       </View>
     );
   }
@@ -103,35 +108,49 @@ const AiCameraScreen = (): JSX.Element => {
   return (
     <Screen contentContainerStyle={styles.container}>
       {!capturedUri ? (
-        <View style={styles.cameraWrapper}>
-          <CameraView ref={(ref) => (cameraRef.current = ref)} style={styles.camera} facing="back" />
-          <Pressable
-            style={[styles.captureButton, { backgroundColor: theme.colors.primary, opacity: isCapturing ? 0.6 : 1 }]}
-            onPress={handleCapture}
-            disabled={isCapturing}
-          >
-            <ThemedText style={styles.captureText}>{isCapturing ? 'Đang chụp...' : 'Chụp ảnh'}</ThemedText>
-          </Pressable>
-        </View>
+        <Card padding="none" shadow="md">
+          <View style={styles.cameraWrapper}>
+            <CameraView ref={(ref) => (cameraRef.current = ref)} style={styles.camera} facing="back" />
+            <View style={styles.captureContainer}>
+              <Button
+                variant="primary"
+                size="lg"
+                loading={isCapturing}
+                disabled={isCapturing}
+                onPress={handleCapture}
+                title={isCapturing ? 'Đang chụp...' : 'Chụp ảnh'}
+              />
+            </View>
+          </View>
+        </Card>
       ) : (
-        <View style={[styles.previewCard, { backgroundColor: theme.colors.card }]}>
+        <Card padding="lg" shadow="md">
+          <ThemedText variant="h3" style={{ marginBottom: theme.spacing.md }}>
+            Ảnh đã chụp
+          </ThemedText>
           <Image source={{ uri: capturedUri }} style={styles.previewImage} />
-          <Pressable style={[styles.retakeButton, { backgroundColor: theme.colors.background }]} onPress={handleRetake}>
-            <ThemedText style={styles.retakeText}>Chụp lại</ThemedText>
-          </Pressable>
-        </View>
+          <View style={{ marginTop: theme.spacing.md }}>
+            <Button variant="outline" onPress={handleRetake} title="Chụp lại" />
+          </View>
+        </Card>
       )}
 
       {capturedBase64 ? (
-        <View style={[styles.resultCard, { backgroundColor: theme.colors.card }]}>
-          <ThemedText variant="subtitle">Danh sách nguyên liệu</ThemedText>
+        <Card padding="lg" shadow="md">
+          <ThemedText variant="h3" style={{ marginBottom: theme.spacing.md }}>
+            Danh sách nguyên liệu
+          </ThemedText>
           {isDetecting ? (
             <View style={styles.center}>
-              <ActivityIndicator color={theme.colors.primary} />
-              <ThemedText style={styles.infoText}>Đang phân tích ảnh...</ThemedText>
+              <ActivityIndicator color={theme.colors.primary} size="large" />
+              <ThemedText variant="body" color="textSecondary" style={{ marginTop: theme.spacing.md }}>
+                Đang phân tích ảnh...
+              </ThemedText>
             </View>
           ) : ingredients.length === 0 ? (
-            <ThemedText style={styles.infoText}>Chưa có nguyên liệu. Vui lòng chụp lại.</ThemedText>
+            <ThemedText variant="body" color="textSecondary">
+              Chưa có nguyên liệu. Vui lòng chụp lại.
+            </ThemedText>
           ) : (
             <FlatList
               data={ingredients}
@@ -146,58 +165,76 @@ const AiCameraScreen = (): JSX.Element => {
                     styles.ingredientRow,
                     {
                       borderColor: selectedIngredients[item.name] ? theme.colors.primary : theme.colors.border,
-                      backgroundColor: selectedIngredients[item.name] ? 'rgba(10,143,98,0.1)' : 'transparent',
+                      backgroundColor: selectedIngredients[item.name] ? theme.colors.primaryLight : 'transparent',
                     },
                   ]}
                 >
-                  <View>
-                    <ThemedText style={styles.ingredientName}>{item.name}</ThemedText>
+                  <View style={{ flex: 1 }}>
+                    <ThemedText variant="body" weight="600">{item.name}</ThemedText>
                     {item.confidence != null ? (
-                      <ThemedText style={styles.ingredientMeta}>
+                      <ThemedText variant="caption" color="textSecondary">
                         Độ tin cậy: {Math.round(item.confidence * 100)}%
                       </ThemedText>
                     ) : null}
                   </View>
-                  <ThemedText>{selectedIngredients[item.name] ? 'Bỏ chọn' : 'Chọn'}</ThemedText>
+                  <ThemedText variant="bodySmall" color={selectedIngredients[item.name] ? 'primary' : 'textSecondary'}>
+                    {selectedIngredients[item.name] ? '✓ Đã chọn' : 'Chọn'}
+                  </ThemedText>
                 </Pressable>
               )}
-              ItemSeparatorComponent={() => <View style={styles.separator} />}
+              ItemSeparatorComponent={() => <View style={{ height: theme.spacing.sm }} />}
             />
           )}
 
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Gợi ý công thức"
-            style={[styles.suggestButton, { backgroundColor: theme.colors.primary, opacity: isSuggesting ? 0.6 : 1 }]}
-            disabled={isSuggesting || ingredients.length === 0}
-            onPress={handleSuggestRecipes}
-          >
-            <ThemedText style={styles.suggestText}>
-              {isSuggesting ? 'Đang gợi ý...' : 'Gợi ý công thức'}
-            </ThemedText>
-          </Pressable>
-        </View>
+          <View style={{ marginTop: theme.spacing.xl }}>
+            <Button
+              variant="primary"
+              loading={isSuggesting}
+              disabled={isSuggesting || ingredients.length === 0}
+              onPress={handleSuggestRecipes}
+              title={isSuggesting ? 'Đang gợi ý...' : 'Gợi ý công thức'}
+            />
+          </View>
+        </Card>
       ) : null}
 
       {recipes.length > 0 ? (
-        <View style={[styles.resultCard, { backgroundColor: theme.colors.card }]}>
-          <ThemedText variant="subtitle">Công thức từ AI</ThemedText>
+        <Card padding="lg" shadow="md">
+          <ThemedText variant="h3" style={{ marginBottom: theme.spacing.md }}>
+            Công thức từ AI
+          </ThemedText>
           {recipes.map((recipe) => (
-            <View key={recipe.id} style={[styles.recipeCard, { backgroundColor: theme.colors.background }]}>
-              <ThemedText style={styles.recipeTitle}>{recipe.title}</ThemedText>
-              {recipe.description ? <ThemedText style={styles.infoText}>{recipe.description}</ThemedText> : null}
-              <ThemedText style={styles.infoText}>
-                {recipe.calories != null ? `${Math.round(recipe.calories)} kcal` : '-- kcal'} ·
-                {recipe.protein != null ? ` ${Math.round(recipe.protein)}g P` : ' --g P'} ·
-                {recipe.carbs != null ? ` ${Math.round(recipe.carbs)}g C` : ' --g C'} ·
-                {recipe.fat != null ? ` ${Math.round(recipe.fat)}g F` : ' --g F'}
+            <View key={recipe.id} style={[styles.recipeCard, { backgroundColor: theme.colors.primaryLight }]}>
+              <ThemedText variant="h4" style={{ marginBottom: theme.spacing.xs }}>
+                {recipe.title}
               </ThemedText>
+              {recipe.description ? (
+                <ThemedText variant="bodySmall" color="textSecondary" style={{ marginBottom: theme.spacing.sm }}>
+                  {recipe.description}
+                </ThemedText>
+              ) : null}
+              <View style={[styles.nutritionRow, { marginBottom: theme.spacing.sm }]}>
+                <ThemedText variant="caption" color="primary" weight="600">
+                  {recipe.calories != null ? `${Math.round(recipe.calories)} kcal` : '-- kcal'}
+                </ThemedText>
+                <ThemedText variant="caption" color="primary" weight="600">
+                  P: {recipe.protein != null ? `${Math.round(recipe.protein)}g` : '--g'}
+                </ThemedText>
+                <ThemedText variant="caption" color="primary" weight="600">
+                  C: {recipe.carbs != null ? `${Math.round(recipe.carbs)}g` : '--g'}
+                </ThemedText>
+                <ThemedText variant="caption" color="primary" weight="600">
+                  F: {recipe.fat != null ? `${Math.round(recipe.fat)}g` : '--g'}
+                </ThemedText>
+              </View>
               {recipe.ingredients ? (
-                <ThemedText style={styles.infoText}>Nguyên liệu: {recipe.ingredients.join(', ')}</ThemedText>
+                <ThemedText variant="bodySmall" color="textSecondary">
+                  Nguyên liệu: {recipe.ingredients.join(', ')}
+                </ThemedText>
               ) : null}
             </View>
           ))}
-        </View>
+        </Card>
       ) : null}
     </Screen>
   );
@@ -208,24 +245,11 @@ const styles = StyleSheet.create({
   center: { alignItems: 'center', justifyContent: 'center', padding: 24, gap: 12 },
   cameraWrapper: { borderRadius: 16, overflow: 'hidden', position: 'relative', aspectRatio: 3 / 4 },
   camera: { flex: 1 },
-  captureButton: { position: 'absolute', bottom: 16, alignSelf: 'center', borderRadius: 999, paddingHorizontal: 24, paddingVertical: 12 },
-  captureText: { color: '#fff', fontFamily: 'Inter_600SemiBold' },
-  previewCard: { borderRadius: 16, padding: 16, gap: 12 },
+  captureContainer: { position: 'absolute', bottom: 24, left: 0, right: 0, alignItems: 'center' },
   previewImage: { width: '100%', aspectRatio: 3 / 4, borderRadius: 12 },
-  retakeButton: { alignSelf: 'flex-start', paddingHorizontal: 16, paddingVertical: 8, borderRadius: 12 },
-  retakeText: { fontFamily: 'Inter_600SemiBold' },
-  resultCard: { borderRadius: 16, padding: 16, gap: 16, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 8, shadowOffset: { width: 0, height: 3 }, elevation: 1 },
-  ingredientRow: { borderWidth: 1, borderRadius: 12, padding: 12, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  ingredientName: { fontFamily: 'Inter_600SemiBold' },
-  ingredientMeta: { fontSize: 13, opacity: 0.7 },
-  separator: { height: 12 },
-  suggestButton: { borderRadius: 12, paddingVertical: 12, alignItems: 'center' },
-  suggestText: { color: '#fff', fontFamily: 'Inter_600SemiBold' },
-  infoText: { opacity: 0.8 },
-  recipeCard: { borderRadius: 12, padding: 12, gap: 6 },
-  recipeTitle: { fontFamily: 'Inter_600SemiBold' },
-  permissionButton: { marginTop: 12, paddingHorizontal: 20, paddingVertical: 12, borderRadius: 12 },
-  permissionText: { color: '#fff', fontFamily: 'Inter_600SemiBold' },
+  ingredientRow: { borderWidth: 1.5, borderRadius: 12, padding: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  recipeCard: { borderRadius: 12, padding: 16, marginBottom: 12 },
+  nutritionRow: { flexDirection: 'row', gap: 12 },
 });
 
 export default AiCameraScreen;

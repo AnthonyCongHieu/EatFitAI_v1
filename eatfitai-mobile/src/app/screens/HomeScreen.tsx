@@ -28,15 +28,17 @@ const AddEntryModal = ({ visible, onClose, onSelect }: { visible: boolean; onClo
     <Modal transparent visible={visible} animationType="fade" onRequestClose={onClose}>
       <View style={styles.modalBackdrop}>
         <Card>
-          <ThemedText variant="title">Thêm món</ThemedText>
-          <ThemedText style={styles.modalHint}>Chọn cách thêm món vào nhật ký</ThemedText>
+          <ThemedText variant="h3">Thêm món</ThemedText>
+          <ThemedText variant="body" color="textSecondary" style={{ marginTop: theme.spacing.xs, marginBottom: theme.spacing.md }}>
+            Chọn cách thêm món vào nhật ký
+          </ThemedText>
           <Button title="Tìm món có sẵn" onPress={() => onSelect('search')} />
           <View style={{ height: 8 }} />
           <Button variant="outline" title="Tạo món thủ công" onPress={() => onSelect('custom')} />
           <View style={{ height: 8 }} />
           <Button variant="secondary" title="Gợi ý AI" onPress={() => onSelect('ai')} />
           <Pressable accessibilityRole="button" hitSlop={8} onPress={onClose} style={{ alignItems: 'center', marginTop: 8 }}>
-            <ThemedText style={{ color: theme.colors.muted }}>Đóng</ThemedText>
+            <ThemedText variant="body" color="muted">Đóng</ThemedText>
           </Pressable>
         </Card>
       </View>
@@ -118,47 +120,66 @@ const HomeScreen = (): JSX.Element => {
         refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} tintColor={theme.colors.primary} />}
       >
         <Card>
-          <ThemedText variant="title">Nhật ký hôm nay</ThemedText>
-          <ThemedText style={{ opacity: 0.7 }}>{formatDate(summary?.date)}</ThemedText>
+          <ThemedText variant="h2">Nhật ký hôm nay</ThemedText>
+          <ThemedText variant="bodySmall" color="textSecondary">{formatDate(summary?.date)}</ThemedText>
 
-          <View style={styles.row}>
-            <View style={[styles.box, { backgroundColor: theme.colors.background }]}>
-              <ThemedText style={styles.muted}>Tiêu thụ</ThemedText>
-              <ThemedText variant="title">{formatNumber(summary?.totalCalories, ' kcal')}</ThemedText>
+          <View style={[styles.row, { marginTop: theme.spacing.lg }]}>
+            <View style={[styles.box, { backgroundColor: theme.colors.primaryLight }]}>
+              <ThemedText variant="caption" color="primary" weight="600" style={{ textTransform: 'uppercase' }}>
+                Tiêu thụ
+              </ThemedText>
+              <ThemedText variant="h2" color="primary">
+                {formatNumber(summary?.totalCalories, ' kcal')}
+              </ThemedText>
             </View>
-            <View style={[styles.box, { backgroundColor: theme.colors.background }]}>
-              <ThemedText style={styles.muted}>Mục tiêu</ThemedText>
-              <ThemedText variant="title">{formatNumber(summary?.targetCalories, ' kcal')}</ThemedText>
+            <View style={[styles.box, { backgroundColor: theme.colors.secondaryLight }]}>
+              <ThemedText variant="caption" color="secondary" weight="600" style={{ textTransform: 'uppercase' }}>
+                Mục tiêu
+              </ThemedText>
+              <ThemedText variant="h2" color="secondary">
+                {formatNumber(summary?.targetCalories, ' kcal')}
+              </ThemedText>
             </View>
           </View>
 
-          {calorieDiffText ? <ThemedText style={styles.muted}>{calorieDiffText}</ThemedText> : null}
+          {calorieDiffText ? (
+            <ThemedText variant="bodySmall" color="textSecondary" style={{ marginTop: theme.spacing.md }}>
+              {calorieDiffText}
+            </ThemedText>
+          ) : null}
 
-          <View style={styles.row}>
+          <View style={[styles.row, { marginTop: theme.spacing.lg }]}>
             <View style={[styles.box, { backgroundColor: theme.colors.background }]}>
-              <ThemedText style={styles.muted}>Protein</ThemedText>
-              <ThemedText>{formatNumber(summary?.protein, ' g')}</ThemedText>
+              <ThemedText variant="caption" color="textSecondary" weight="600" style={{ textTransform: 'uppercase' }}>
+                Protein
+              </ThemedText>
+              <ThemedText variant="h4">{formatNumber(summary?.protein, ' g')}</ThemedText>
             </View>
             <View style={[styles.box, { backgroundColor: theme.colors.background }]}>
-              <ThemedText style={styles.muted}>Carb</ThemedText>
-              <ThemedText>{formatNumber(summary?.carbs, ' g')}</ThemedText>
+              <ThemedText variant="caption" color="textSecondary" weight="600" style={{ textTransform: 'uppercase' }}>
+                Carb
+              </ThemedText>
+              <ThemedText variant="h4">{formatNumber(summary?.carbs, ' g')}</ThemedText>
             </View>
             <View style={[styles.box, { backgroundColor: theme.colors.background }]}>
-              <ThemedText style={styles.muted}>Fat</ThemedText>
-              <ThemedText>{formatNumber(summary?.fat, ' g')}</ThemedText>
+              <ThemedText variant="caption" color="textSecondary" weight="600" style={{ textTransform: 'uppercase' }}>
+                Fat
+              </ThemedText>
+              <ThemedText variant="h4">{formatNumber(summary?.fat, ' g')}</ThemedText>
             </View>
           </View>
 
-          <Button title="+ Thêm món" onPress={() => setShowAddModal(true)} />
-          <View style={{ height: 8 }} />
-          <Button variant="outline" title="AI dinh dưỡng" onPress={() => navigation.navigate('AiNutrition')} />
+          <View style={{ marginTop: theme.spacing.xl, gap: theme.spacing.sm }}>
+            <Button title="+ Thêm món" onPress={() => setShowAddModal(true)} />
+            <Button variant="outline" title="AI dinh dưỡng" onPress={() => navigation.navigate('AiNutrition')} />
+          </View>
         </Card>
 
         {isLoading ? (
           <Card>
             <View style={{ alignItems: 'center', paddingVertical: 20 }}>
               <ActivityIndicator color={theme.colors.primary} />
-              <ThemedText style={{ opacity: 0.7 }}>Đang tải nhật ký...</ThemedText>
+              <ThemedText variant="body" color="textSecondary">Đang tải nhật ký...</ThemedText>
             </View>
           </Card>
         ) : summary && summary.meals.length > 0 ? (
@@ -166,22 +187,22 @@ const HomeScreen = (): JSX.Element => {
             <Card key={meal.mealType}>
               <View style={styles.mealHeader}>
                 <View>
-                  <ThemedText variant="subtitle">{MEAL_TITLE_MAP[meal.mealType] ?? meal.title}</ThemedText>
-                  <ThemedText style={styles.mealTotal}>{formatNumber(meal.totalCalories, ' kcal')}</ThemedText>
+                  <ThemedText variant="h4">{MEAL_TITLE_MAP[meal.mealType] ?? meal.title}</ThemedText>
+                  <ThemedText variant="bodySmall" color="textSecondary">{formatNumber(meal.totalCalories, ' kcal')}</ThemedText>
                 </View>
-                <ThemedText style={styles.muted}>{meal.entries.length} món</ThemedText>
+                <ThemedText variant="bodySmall" color="textSecondary">{meal.entries.length} món</ThemedText>
               </View>
 
               {meal.entries.map((entry: any) => (
                 <View key={entry.id} style={[styles.entryRow, { borderColor: theme.colors.border }]}> 
                   <View style={styles.entryInfo}>
-                    <ThemedText style={styles.entryName}>{entry.foodName}</ThemedText>
-                    <ThemedText style={styles.entryMeta}>
+                    <ThemedText variant="body" weight="600">{entry.foodName}</ThemedText>
+                    <ThemedText variant="bodySmall" color="textSecondary">
                       {formatNumber(entry.calories, ' kcal')} · {entry.quantityText ?? 'Không rõ khẩu phần'}
                     </ThemedText>
                   </View>
                   <Pressable accessibilityRole="button" hitSlop={8} onPress={() => handleDelete(entry.id, entry.foodName)} style={styles.deleteChip}>
-                    <ThemedText style={{ color: theme.colors.danger ?? '#E53935', fontFamily: 'Inter_600SemiBold' }}>Xoá</ThemedText>
+                    <ThemedText variant="button" color="danger">Xoá</ThemedText>
                   </Pressable>
                 </View>
               ))}
@@ -189,7 +210,7 @@ const HomeScreen = (): JSX.Element => {
           ))
         ) : (
           <Card>
-            <ThemedText style={styles.muted}>Chưa có món nào hôm nay</ThemedText>
+            <ThemedText variant="body" color="textSecondary">Chưa có món nào hôm nay</ThemedText>
           </Card>
         )}
       </Screen>
