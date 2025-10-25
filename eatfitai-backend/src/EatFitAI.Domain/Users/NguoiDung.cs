@@ -3,17 +3,19 @@ using EatFitAI.Domain.Auth;
 using EatFitAI.Domain.Diary;
 using EatFitAI.Domain.Foods;
 using EatFitAI.Domain.Nutrition;
-using Microsoft.AspNetCore.Identity;
 
 namespace EatFitAI.Domain.Users;
 
-public class NguoiDung : IdentityUser<Guid>
+public class NguoiDung
 {
-    public string? FullName { get; set; }
-    public string? Gender { get; set; }
-    public DateOnly? DateOfBirth { get; set; }
-    public DateTime CreatedAt { get; set; }
-    public DateTime UpdatedAt { get; set; }
+    public Guid MaNguoiDung { get; set; }
+    public string Email { get; set; } = string.Empty;
+    public byte[] MatKhauHash { get; set; } = Array.Empty<byte>();
+    public string? HoTen { get; set; }
+    public string? GioiTinh { get; set; }
+    public DateOnly? NgaySinh { get; set; }
+    public DateTime NgayTao { get; set; }
+    public DateTime NgayCapNhat { get; set; }
 
     public UserProfile? Profile { get; set; }
     public ICollection<BodyMetric> BodyMetrics { get; set; } = new List<BodyMetric>();

@@ -1,19 +1,15 @@
-﻿namespace EatFitAI.Domain.Ai;
+namespace EatFitAI.Domain.Ai;
 
 public class AiRecipe
 {
-    public Guid Id { get; set; }
-    public Guid UserId { get; set; }
-    public string Title { get; set; } = string.Empty;
-    public string? Summary { get; set; }
-    public string? IngredientsJson { get; set; }
-    public string? StepsJson { get; set; }
-    public decimal CaloriesKcal { get; set; }
-    public decimal ProteinGrams { get; set; }
-    public decimal CarbohydrateGrams { get; set; }
-    public decimal FatGrams { get; set; }
-    public DateTime CreatedAt { get; set; }
+    public long MaGoiYAI { get; set; }
+    public Guid? MaNguoiDung { get; set; }
+    public string LoaiDeXuat { get; set; } = string.Empty;
+    public string DuLieuDauVao { get; set; } = string.Empty;
+    public string? KetQuaAI { get; set; }
+    public DateTime ThoiGianTao { get; set; }
+    public int? ThoiLuongXuLyMs { get; set; }
 
     public Users.NguoiDung? User { get; set; }
-    public ICollection<Diary.DiaryEntry> DiaryEntries { get; set; } = new List<Diary.DiaryEntry>();
+    public ICollection<ImageRecognition> ImageRecognitions { get; set; } = new List<ImageRecognition>();
 }

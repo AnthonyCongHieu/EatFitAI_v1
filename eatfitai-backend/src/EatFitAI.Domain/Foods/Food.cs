@@ -1,20 +1,17 @@
-﻿namespace EatFitAI.Domain.Foods;
+namespace EatFitAI.Domain.Foods;
 
 public class Food
 {
-    public Guid Id { get; set; }
-    public string Name { get; set; } = string.Empty;
-    public string? Description { get; set; }
-    public string? Brand { get; set; }
-    public string? Category { get; set; }
-    public decimal ServingSizeGrams { get; set; }
-    public decimal CaloriesKcal { get; set; }
-    public decimal ProteinGrams { get; set; }
-    public decimal CarbohydrateGrams { get; set; }
-    public decimal FatGrams { get; set; }
-    public bool IsCustom { get; set; }
-    public DateTime CreatedAt { get; set; }
-    public DateTime? UpdatedAt { get; set; }
+    public long MaThucPham { get; set; }
+    public string TenThucPham { get; set; } = string.Empty;
+    public string? NhomThucPham { get; set; }
+    public string? MoTaKhauPhan { get; set; }
+    public decimal Calo100g { get; set; }
+    public decimal Protein100g { get; set; }
+    public decimal Carb100g { get; set; }
+    public decimal Fat100g { get; set; }
+    public string? HinhAnh { get; set; }
+    public bool TrangThai { get; set; }
 
     public ICollection<CustomDishIngredient> CustomDishIngredients { get; set; } = new List<CustomDishIngredient>();
     public ICollection<Diary.DiaryEntry> DiaryEntries { get; set; } = new List<Diary.DiaryEntry>();

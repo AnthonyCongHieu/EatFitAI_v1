@@ -49,12 +49,12 @@ public sealed class NutritionTargetsController : ControllerBase
         if (existingTarget != null)
         {
             // Update existing
-            existingTarget.CaloriesKcal = request.CaloriesKcal;
-            existingTarget.ProteinGrams = request.ProteinGrams;
-            existingTarget.CarbohydrateGrams = request.CarbohydrateGrams;
-            existingTarget.FatGrams = request.FatGrams;
-            existingTarget.EffectiveDate = request.EffectiveDate ?? DateOnly.FromDateTime(DateTime.UtcNow);
-            existingTarget.UpdatedAt = DateTime.UtcNow;
+            existingTarget.CaloKcal = request.CaloKcal;
+            existingTarget.ProteinG = request.ProteinG;
+            existingTarget.CarbG = request.CarbG;
+            existingTarget.FatG = request.FatG;
+            existingTarget.HieuLucTuNgay = request.EffectiveDate ?? DateTime.UtcNow;
+            existingTarget.NgayTao = DateTime.UtcNow;
 
             await _nutritionTargetRepository.UpdateAsync(existingTarget, cancellationToken);
         }
@@ -63,15 +63,15 @@ public sealed class NutritionTargetsController : ControllerBase
             // Create new
             var newTarget = new NutritionTarget
             {
-                Id = Guid.NewGuid(),
-                UserId = userId,
-                EffectiveDate = request.EffectiveDate ?? DateOnly.FromDateTime(DateTime.UtcNow),
-                CaloriesKcal = request.CaloriesKcal,
-                ProteinGrams = request.ProteinGrams,
-                CarbohydrateGrams = request.CarbohydrateGrams,
-                FatGrams = request.FatGrams,
-                IsActive = true,
-                CreatedAt = DateTime.UtcNow
+                MaMucTieuDD = 0, // Will be set by database
+                MaNguoiDung = userId,
+                HieuLucTuNgay = request.EffectiveDate ?? DateTime.UtcNow,
+                CaloKcal = request.CaloKcal,
+                ProteinG = request.ProteinG,
+                CarbG = request.CarbG,
+                FatG = request.FatG,
+                Nguon = "User",
+                NgayTao = DateTime.UtcNow
             };
 
             await _nutritionTargetRepository.AddAsync(newTarget, cancellationToken);
@@ -87,27 +87,27 @@ public sealed class NutritionTargetsController : ControllerBase
     {
         return new NutritionTargetResponse
         {
-            Id = target.Id,
-            EffectiveDate = target.EffectiveDate,
-            CaloriesKcal = target.CaloriesKcal,
-            ProteinGrams = target.ProteinGrams,
-            CarbohydrateGrams = target.CarbohydrateGrams,
-            FatGrams = target.FatGrams,
-            IsActive = target.IsActive
+            Id = target.MaMucTieuDD,
+            EffectiveDate = target.HieuLucTuNgay,
+            CaloKcal = target.CaloKcal,
+            ProteinG = target.ProteinG,
+            CarbG = target.CarbG,
+            FatG = target.FatG,
+            Nguon = target.Nguon
         };
     }
 
     private sealed class NutritionTargetDb
     {
-        public Guid Id { get; set; }
-        public Guid UserId { get; set; }
-        public DateTime EffectiveDate { get; set; }
-        public decimal CaloriesKcal { get; set; }
-        public decimal ProteinGrams { get; set; }
-        public decimal CarbohydrateGrams { get; set; }
-        public decimal FatGrams { get; set; }
-        public bool IsActive { get; set; }
-        public DateTime CreatedAt { get; set; }
-        public DateTime? UpdatedAt { get; set; }
+        public long MaMucTieuDD { get; set; }
+        public Guid MaNguoiDung { get; set; }
+        public DateTime HieuLucTuNgay { get; set; }
+        public int CaloKcal { get; set; }
+        public decimal ProteinG { get; set; }
+        public decimal CarbG { get; set; }
+        public decimal FatG { get; set; }
+        public string Nguon { get; set; } = string.Empty;
+        public string? LyDo { get; set; }
+        public DateTime NgayTao { get; set; }
     }
 }

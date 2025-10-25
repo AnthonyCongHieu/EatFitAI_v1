@@ -14,7 +14,7 @@ public sealed class DiaryCreateRequest
     [MaxLength(32)]
     public string Source { get; set; } = string.Empty; // food or customDish
     [Required]
-    public Guid ItemId { get; set; }
+    public long ItemId { get; set; }
     [Range(0.01, 100000)]
     public decimal QuantityGrams { get; set; }
     public string? Notes { get; set; }
@@ -29,13 +29,13 @@ public sealed class DiaryUpdateRequest
 
 public sealed class DiaryEntryResponse
 {
-    public Guid Id { get; init; }
+    public long Id { get; init; }
     public DateOnly MealDate { get; init; }
     public string MealCode { get; init; } = string.Empty;
-    public Guid? FoodId { get; init; }
-    public Guid? CustomDishId { get; init; }
-    public Guid? AiRecipeId { get; init; }
-    public Guid ItemId { get; init; }
+    public long? FoodId { get; init; }
+    public long? CustomDishId { get; init; }
+    public long? AiRecipeId { get; init; }
+    public long ItemId { get; init; }
     public string Source { get; init; } = string.Empty;
     public decimal QuantityGrams { get; init; }
     public decimal CaloriesKcal { get; init; }

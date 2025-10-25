@@ -2,26 +2,27 @@
 
 public class DiaryEntry
 {
-    public Guid Id { get; set; }
-    public Guid UserId { get; set; }
-    public DateOnly MealDate { get; set; }
-    public string MealCode { get; set; } = string.Empty;
-    public Guid? FoodId { get; set; }
-    public Guid? CustomDishId { get; set; }
-    public Guid? AiRecipeId { get; set; }
-    public Guid ItemId { get; set; }
-    public string Source { get; set; } = string.Empty;
-    public decimal QuantityGrams { get; set; }
-    public decimal CaloriesKcal { get; set; }
-    public decimal ProteinGrams { get; set; }
-    public decimal CarbohydrateGrams { get; set; }
-    public decimal FatGrams { get; set; }
-    public string? Notes { get; set; }
-    public DateTime CreatedAt { get; set; }
-    public DateTime? UpdatedAt { get; set; }
+    public long MaNhatKy { get; set; }              // MaNhatKy
+    public Guid MaNguoiDung { get; set; }          // MaNguoiDung
+    public DateOnly NgayAn { get; set; }        // NgayAn (date)
+    public string MaBuaAn { get; set; } = string.Empty;    // MaBuaAn (varchar20)
 
+    // 3 sources, only one set:
+    public long? MaThucPham { get; set; }         // MaThucPham
+    public long? MaMonNguoiDung { get; set; }     // MaMonNguoiDung
+    public long? MaCongThuc { get; set; }       // MaCongThuc
+
+    public decimal KhoiLuongGram { get; set; }  // KhoiLuongGram (10,2)
+    public decimal Calo { get; set; }     // Calo (10,2)
+    public decimal Protein { get; set; }      // Protein (10,2)
+    public decimal Carb { get; set; }         // Carb (10,2)
+    public decimal Fat { get; set; }          // Fat (10,2)
+    public DateTime NgayTao { get; set; }   // NgayTao
+
+    // Navigations
     public Users.NguoiDung? User { get; set; }
     public Foods.Food? Food { get; set; }
-    public Foods.CustomDish? CustomDish { get; set; }
-    public Ai.AiRecipe? AiRecipe { get; set; }
+    public Foods.CustomDish? CustomDish { get; set; }   // map MonNguoiDung
+    public Foods.Recipe? Recipe { get; set; }       // map CongThuc
+    public MealType? MealType { get; set; }    // map LoaiBuaAn
 }

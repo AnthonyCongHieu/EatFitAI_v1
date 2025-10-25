@@ -5,7 +5,7 @@ namespace EatFitAI.Api.Contracts.CustomDishes;
 
 public class CustomDishResponse
 {
-    public Guid Id { get; init; }
+    public long Id { get; init; }
     public string Name { get; init; } = string.Empty;
     public string? Description { get; init; }
     public decimal PortionSizeGrams { get; init; }
@@ -22,8 +22,8 @@ public sealed class CustomDishDetailResponse : CustomDishResponse
 
 public sealed class CustomDishIngredientResponse
 {
-    public Guid Id { get; init; }
-    public Guid? FoodId { get; init; }
+    public long Id { get; init; }
+    public long? FoodId { get; init; }
     public string Name { get; init; } = string.Empty;
     public decimal QuantityGrams { get; init; }
     public decimal CaloriesKcal { get; init; }
