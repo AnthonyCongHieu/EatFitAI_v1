@@ -10,7 +10,4 @@ public sealed class LoginRequest
 
     [Required]
     public string MatKhau { get; set; } = string.Empty;
-
-    [Required]
-    public string Password { get; set; } = string.Empty;
 }

@@ -45,7 +45,6 @@ public class AuthController : ControllerBase
 
         var user = new NguoiDung
         {
-            MaNguoiDung = Guid.NewGuid(),
             Email = request.Email,
             HoTen = request.HoTen,
             GioiTinh = null,
@@ -54,7 +53,7 @@ public class AuthController : ControllerBase
             NgayCapNhat = DateTime.UtcNow
         };
 
-        var createResult = await _userManager.CreateAsync(user, request.Password);
+        var createResult = await _userManager.CreateAsync(user, request.MatKhau);
         if (!createResult.Succeeded)
         {
             return ValidationProblem(CreateValidationProblem(createResult.Errors));
@@ -81,7 +80,7 @@ public class AuthController : ControllerBase
             return Problem(statusCode: StatusCodes.Status401Unauthorized, title: "Sai email hoac mat khau");
         }
 
-        var signInResult = await _signInManager.CheckPasswordSignInAsync(user, request.Password, false);
+        var signInResult = await _signInManager.CheckPasswordSignInAsync(user, request.MatKhau, false);
         if (!signInResult.Succeeded)
         {
             return Problem(statusCode: StatusCodes.Status401Unauthorized, title: "Sai email hoac mat khau");
@@ -96,7 +95,7 @@ public class AuthController : ControllerBase
     {
         try
         {
-            var tokens = await _tokenService.RefreshTokenAsync(request.RefreshToken, GetClientIp(), cancellationToken);
+            var tokens = await _tokenService.RefreshTokenAsync(request.MaRefreshToken, GetClientIp(), cancellationToken);
             var user = await GetUserFromAccessTokenAsync(tokens.AccessToken, cancellationToken);
             if (user is null)
             {
@@ -115,7 +114,7 @@ public class AuthController : ControllerBase
     [HttpPost("google")]
     public async Task<IActionResult> Google([FromBody] GoogleLoginRequest request, CancellationToken cancellationToken)
     {
-        if (!TryExtractEmail(request.IdToken, out var email))
+        if (!TryExtractEmail(request.MaIdToken, out var email))
         {
             return Problem(statusCode: StatusCodes.Status422UnprocessableEntity, title: "Khong doc duoc email tu id_token");
         }
@@ -125,7 +124,6 @@ public class AuthController : ControllerBase
         {
             user = new NguoiDung
             {
-                MaNguoiDung = Guid.NewGuid(),
                 Email = email,
                 HoTen = null,
                 GioiTinh = null,
@@ -155,12 +153,12 @@ public class AuthController : ControllerBase
     [HttpPost("logout")]
     public async Task<IActionResult> Logout([FromBody] LogoutRequest request, CancellationToken cancellationToken)
     {
-        if (string.IsNullOrWhiteSpace(request.RefreshToken))
+        if (string.IsNullOrWhiteSpace(request.MaRefreshToken))
         {
             return Problem(statusCode: StatusCodes.Status422UnprocessableEntity, title: "Thieu refresh token");
         }
 
-        await _tokenService.RevokeRefreshTokenAsync(request.RefreshToken, GetClientIp(), cancellationToken);
+        await _tokenService.RevokeRefreshTokenAsync(request.MaRefreshToken, GetClientIp(), cancellationToken);
         return NoContent();
     }
 
@@ -274,13 +272,13 @@ public class AuthController : ControllerBase
     {
         return new AuthResponse
         {
-            UserId = user.MaNguoiDung,
+            MaNguoiDung = user.Id,
             Email = user.Email ?? string.Empty,
             HoTen = fullNameOverride ?? user.HoTen,
-            AccessToken = tokens.AccessToken,
-            AccessTokenExpiresAt = tokens.AccessTokenExpiresAt,
-            RefreshToken = tokens.RefreshToken,
-            RefreshTokenExpiresAt = tokens.RefreshTokenExpiresAt
+            MaAccessToken = tokens.AccessToken,
+            ThoiGianHetHanAccessToken = tokens.AccessTokenExpiresAt,
+            MaRefreshToken = tokens.RefreshToken,
+            ThoiGianHetHanRefreshToken = tokens.RefreshTokenExpiresAt
         };
     }
 }
