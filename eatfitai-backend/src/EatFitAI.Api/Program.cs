@@ -61,7 +61,6 @@ builder.Services.AddScoped<IFoodRepository, FoodRepository>();
 builder.Services.AddScoped<ICustomDishRepository, CustomDishRepository>();
 builder.Services.AddScoped<INutritionTargetRepository, NutritionTargetRepository>();
 builder.Services.AddScoped<ISummaryRepository, SummaryRepository>();
-builder.Services.AddScoped<ITokenService, JwtTokenService>();
 
 builder.Services.AddControllers()
     .AddJsonOptions(options =>

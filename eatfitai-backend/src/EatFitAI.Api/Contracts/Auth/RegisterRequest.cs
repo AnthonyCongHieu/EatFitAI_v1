@@ -10,9 +10,13 @@ public sealed class RegisterRequest
 
     [Required]
     [MinLength(6)]
+    public string MatKhau { get; set; } = string.Empty;
+
+    [Required]
+    [MinLength(6)]
     public string Password { get; set; } = string.Empty;
 
     public string? HoTen { get; set; }
 
-    public string? DisplayName { get; set; }
+    public string? TenHienThi { get; set; }
 }

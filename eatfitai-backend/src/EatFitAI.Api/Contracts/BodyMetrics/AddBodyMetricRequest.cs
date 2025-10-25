@@ -5,16 +5,27 @@ namespace EatFitAI.Api.Contracts.BodyMetrics;
 
 public sealed class AddBodyMetricRequest
 {
+    public DateTime? ThoiGianGhiNhan { get; set; }
+
     public DateTime? RecordedAt { get; set; }
+
+    [Range(1, 1000)]
+    public decimal CanNangKg { get; set; }
 
     [Range(1, 1000)]
     public decimal WeightKg { get; set; }
 
     [Range(0, 100)]
-    public decimal? BodyFatPercent { get; set; }
+    public decimal? PhanTramMoCoThe { get; set; }
 
     [Range(0, 1000)]
-    public decimal? MuscleMassKg { get; set; }
+    public decimal? KhoiLuongCoKg { get; set; }
+
+    [Range(0, 1000)]
+    public decimal? VongEoCm { get; set; }
+
+    [Range(0, 1000)]
+    public decimal? VongMongCm { get; set; }
 
     [Range(0, 1000)]
     public decimal? WaistCm { get; set; }

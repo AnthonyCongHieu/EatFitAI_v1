@@ -50,6 +50,7 @@ public class AppDbContext : DbContext
         builder.Entity<NguoiDung>(entity =>
         {
             entity.ToTable("NguoiDung");
+            entity.HasKey(u => u.MaNguoiDung);
             entity.Property(u => u.MaNguoiDung).HasColumnName("MaNguoiDung");
             entity.Property(u => u.Email).HasColumnName("Email");
             entity.Property(u => u.MatKhauHash).HasColumnName("MatKhauHash");
@@ -57,7 +58,7 @@ public class AppDbContext : DbContext
             entity.Property(u => u.GioiTinh).HasColumnName("GioiTinh");
             entity.Property(u => u.NgaySinh).HasColumnName("NgaySinh").HasConversion(NullableDateOnlyConverter).HasColumnType("date");
             entity.Property(u => u.NgayTao).HasColumnName("NgayTao").HasDefaultValueSql("GETUTCDATE()");
-            entity.Property(u => u.NgayCapNhat).HasColumnName("NgayCapNhat");
+            entity.Property(u => u.NgayCapNhat).HasColumnName("NgayCapNhat").HasDefaultValueSql("GETUTCDATE()");
             entity.HasIndex(u => u.Email).IsUnique();
         });
 
@@ -175,13 +176,18 @@ public class AppDbContext : DbContext
         builder.Entity<CustomDishIngredient>(entity =>
         {
             entity.ToTable("NguyenLieuMonNguoiDung");
+            entity.HasKey(x => x.MaNguyenLieu);
             entity.Property(x => x.MaNguyenLieu).HasColumnName("MaNguyenLieu");
             entity.Property(x => x.MaMonNguoiDung).HasColumnName("MaMonNguoiDung");
             entity.Property(x => x.MaThucPham).HasColumnName("MaThucPham");
             entity.Property(x => x.TenNguyenLieu).HasColumnName("TenNguyenLieu");
+            entity.Property(x => x.CaloKcal).HasColumnName("CaloKcal");
             ConfigureMacroColumns(entity.Property(x => x.CaloKcal), isKcal: true);
+            entity.Property(x => x.ProteinG).HasColumnName("ProteinG");
             ConfigureMacroColumns(entity.Property(x => x.ProteinG));
+            entity.Property(x => x.CarbG).HasColumnName("CarbG");
             ConfigureMacroColumns(entity.Property(x => x.CarbG));
+            entity.Property(x => x.FatG).HasColumnName("FatG");
             ConfigureMacroColumns(entity.Property(x => x.FatG));
             entity.Property(x => x.KhoiLuongGram).HasColumnName("KhoiLuongGram").HasColumnType("decimal(9,2)");
             entity.HasOne(x => x.CustomDish)
@@ -301,10 +307,11 @@ public class AppDbContext : DbContext
         builder.Entity<ImageRecognition>(entity =>
         {
             entity.ToTable("NhanDienAnh");
+            entity.HasKey(x => x.MaNhanDien);
             entity.Property(x => x.MaNhanDien).HasColumnName("MaNhanDien");
             entity.Property(x => x.MaGoiYAI).HasColumnName("MaGoiYAI");
             entity.Property(x => x.Nhan).HasColumnName("Nhan");
-            entity.Property(x => x.DoTinCay).HasColumnName("DoTinCay");
+            entity.Property(x => x.DoTinCay).HasColumnName("DoTinCay").HasColumnType("decimal(5,4)");
             entity.HasOne(x => x.AiRecipe)
                 .WithMany(ar => ar.ImageRecognitions)
                 .HasForeignKey(x => x.MaGoiYAI)

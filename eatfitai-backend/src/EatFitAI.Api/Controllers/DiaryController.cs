@@ -8,6 +8,7 @@ using EatFitAI.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Text.Json;
 
 namespace EatFitAI.Api.Controllers;
 
@@ -31,6 +32,14 @@ public sealed class DiaryController : ControllerBase
         _foodRepository = foodRepository;
         _customDishRepository = customDishRepository;
         _context = context;
+    }
+
+    private sealed class AiRecipeResult
+    {
+        public decimal CaloriesKcal { get; set; }
+        public decimal ProteinGrams { get; set; }
+        public decimal CarbohydrateGrams { get; set; }
+        public decimal FatGrams { get; set; }
     }
 
     [HttpPost]
@@ -85,12 +94,44 @@ public sealed class DiaryController : ControllerBase
         }
         else if (aiRecipe != null)
         {
-            // AI recipes don't have nutrition data in the domain model
-            // This would need to be parsed from KetQuaAI JSON or handled differently
-            calories = 0;
-            protein = 0;
-            carbs = 0;
-            fat = 0;
+            // Parse nutrition data from KetQuaAI JSON
+            if (!string.IsNullOrEmpty(aiRecipe.KetQuaAI))
+            {
+                try
+                {
+                    var aiResult = JsonSerializer.Deserialize<AiRecipeResult>(aiRecipe.KetQuaAI);
+                    if (aiResult != null)
+                    {
+                        var ratio = request.QuantityGrams / 100m; // Assuming AI recipes provide per 100g values
+                        calories = aiResult.CaloriesKcal * ratio;
+                        protein = aiResult.ProteinGrams * ratio;
+                        carbs = aiResult.CarbohydrateGrams * ratio;
+                        fat = aiResult.FatGrams * ratio;
+                    }
+                    else
+                    {
+                        calories = 0;
+                        protein = 0;
+                        carbs = 0;
+                        fat = 0;
+                    }
+                }
+                catch (JsonException)
+                {
+                    // If JSON parsing fails, set nutrition to 0
+                    calories = 0;
+                    protein = 0;
+                    carbs = 0;
+                    fat = 0;
+                }
+            }
+            else
+            {
+                calories = 0;
+                protein = 0;
+                carbs = 0;
+                fat = 0;
+            }
         }
 
         var diaryEntry = new DiaryEntry
@@ -230,8 +271,37 @@ public sealed class DiaryController : ControllerBase
             }
             else if (entry.MaCongThuc.HasValue)
             {
-                // AI recipes don't have nutrition data in domain model
-                // This would need to be handled differently
+                var aiRecipe = await _context.NhatKyAI.FindAsync(entry.MaCongThuc.Value, cancellationToken);
+                if (aiRecipe != null && !string.IsNullOrEmpty(aiRecipe.KetQuaAI))
+                {
+                    try
+                    {
+                        var aiResult = JsonSerializer.Deserialize<AiRecipeResult>(aiRecipe.KetQuaAI);
+                        if (aiResult != null)
+                        {
+                            decimal aiRatio = request.QuantityGrams.Value / 100m; // Assuming AI recipes provide per 100g values
+                            entry.Calo = aiResult.CaloriesKcal * aiRatio;
+                            entry.Protein = aiResult.ProteinGrams * aiRatio;
+                            entry.Carb = aiResult.CarbohydrateGrams * aiRatio;
+                            entry.Fat = aiResult.FatGrams * aiRatio;
+                        }
+                    }
+                    catch (JsonException)
+                    {
+                        // If JSON parsing fails, keep existing values or set to 0
+                        entry.Calo = 0;
+                        entry.Protein = 0;
+                        entry.Carb = 0;
+                        entry.Fat = 0;
+                    }
+                }
+                else
+                {
+                    entry.Calo = 0;
+                    entry.Protein = 0;
+                    entry.Carb = 0;
+                    entry.Fat = 0;
+                }
             }
         }
 
