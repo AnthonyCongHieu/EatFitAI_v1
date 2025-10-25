@@ -122,29 +122,29 @@ public sealed class CustomDishesController : ControllerBase
 
     private sealed class DishDb
     {
-        public Guid Id { get; set; }
-        public Guid UserId { get; set; }
-        public string Name { get; set; } = string.Empty;
-        public string? Description { get; set; }
-        public decimal PortionSizeGrams { get; set; }
-        public decimal CaloriesKcal { get; set; }
-        public decimal ProteinGrams { get; set; }
-        public decimal CarbohydrateGrams { get; set; }
-        public decimal FatGrams { get; set; }
-        public DateTime CreatedAt { get; set; }
-        public DateTime? UpdatedAt { get; set; }
+        public long MaMonNguoiDung { get; set; }
+        public Guid MaNguoiDung { get; set; }
+        public string TenMon { get; set; } = string.Empty;
+        public string? GhiChu { get; set; }
+        public decimal KhoiLuongGram { get; set; }
+        public decimal Calo100g { get; set; }
+        public decimal Protein100g { get; set; }
+        public decimal Carb100g { get; set; }
+        public decimal Fat100g { get; set; }
+        public DateTime NgayTao { get; set; }
+        public DateTime? NgayCapNhat { get; set; }
     }
 
     private sealed class IngredientDb
     {
-        public Guid Id { get; set; }
-        public Guid CustomDishId { get; set; }
-        public Guid? FoodId { get; set; }
-        public string Name { get; set; } = string.Empty;
-        public decimal QuantityGrams { get; set; }
-        public decimal CaloriesKcal { get; set; }
-        public decimal ProteinGrams { get; set; }
-        public decimal CarbohydrateGrams { get; set; }
-        public decimal FatGrams { get; set; }
+        public long MaNguyenLieu { get; set; }
+        public long MaMonNguoiDung { get; set; }
+        public long? MaThucPham { get; set; }
+        public string TenNguyenLieu { get; set; } = string.Empty;
+        public decimal KhoiLuongGram { get; set; }
+        public decimal Calo { get; set; }
+        public decimal Protein { get; set; }
+        public decimal Carb { get; set; }
+        public decimal Fat { get; set; }
     }
 }

@@ -13,10 +13,10 @@ public class SummaryRepository : ISummaryRepository
         _context = context;
     }
 
-    public async Task<(decimal TotalQuantityGrams, decimal TotalCaloriesKcal, decimal TotalProteinGrams, decimal TotalCarbohydrateGrams, decimal TotalFatGrams)?> GetDaySummaryAsync(Guid userId, DateOnly date, CancellationToken cancellationToken = default)
+    public async Task<(decimal TotalQuantityGrams, decimal TotalCaloriesKcal, decimal TotalProteinGrams, decimal TotalCarbohydrateGrams, decimal TotalFatGrams)?> GetDaySummaryAsync(Guid maNguoiDung, DateOnly ngayAn, CancellationToken cancellationToken = default)
     {
         var result = await _context.NhatKyAnUong
-            .Where(e => e.MaNguoiDung == userId && e.NgayAn == date)
+            .Where(e => e.MaNguoiDung == maNguoiDung && e.NgayAn == ngayAn)
             .GroupBy(e => 1)
             .Select(g => new
             {
@@ -31,12 +31,12 @@ public class SummaryRepository : ISummaryRepository
         return result is null ? null : (result.TotalQuantityGrams, result.TotalCaloriesKcal, result.TotalProteinGrams, result.TotalCarbohydrateGrams, result.TotalFatGrams);
     }
 
-    public async Task<IEnumerable<(DateOnly MealDate, decimal TotalQuantityGrams, decimal TotalCaloriesKcal, decimal TotalProteinGrams, decimal TotalCarbohydrateGrams, decimal TotalFatGrams)>> GetWeekSummaryAsync(Guid userId, DateOnly endDate, CancellationToken cancellationToken = default)
+    public async Task<IEnumerable<(DateOnly MealDate, decimal TotalQuantityGrams, decimal TotalCaloriesKcal, decimal TotalProteinGrams, decimal TotalCarbohydrateGrams, decimal TotalFatGrams)>> GetWeekSummaryAsync(Guid maNguoiDung, DateOnly ngayKetThuc, CancellationToken cancellationToken = default)
     {
-        var startDate = endDate.AddDays(-6);
+        var ngayBatDau = ngayKetThuc.AddDays(-6);
 
         var results = await _context.NhatKyAnUong
-            .Where(e => e.MaNguoiDung == userId && e.NgayAn >= startDate && e.NgayAn <= endDate)
+            .Where(e => e.MaNguoiDung == maNguoiDung && e.NgayAn >= ngayBatDau && e.NgayAn <= ngayKetThuc)
             .GroupBy(e => e.NgayAn)
             .Select(g => new
             {

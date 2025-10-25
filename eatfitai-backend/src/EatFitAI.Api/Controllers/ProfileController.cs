@@ -31,7 +31,7 @@ public sealed class ProfileController : ControllerBase
         {
             return Ok(new ProfileResponse
             {
-                UserId = userId
+                MaNguoiDung = userId
             });
         }
 
@@ -53,29 +53,29 @@ public sealed class ProfileController : ControllerBase
         {
             profile = new UserProfile
             {
-                UserId = userId,
-                FullName = request.FullName ?? string.Empty,
-                Gender = request.Gender ?? string.Empty,
-                DateOfBirth = request.DateOfBirth,
-                HeightCm = request.HeightCm,
-                TargetWeightKg = request.TargetWeightKg,
-                ActivityLevel = request.ActivityLevel ?? string.Empty,
-                Goal = request.Goal ?? string.Empty,
-                AvatarUrl = request.AvatarUrl,
-                CreatedAt = DateTime.UtcNow
+                MaNguoiDung = userId,
+                HoTen = request.HoTen ?? string.Empty,
+                GioiTinh = request.GioiTinh ?? string.Empty,
+                NgaySinh = request.NgaySinh,
+                ChieuCaoCm = request.ChieuCaoCm,
+                CanNangMucTieuKg = request.CanNangMucTieuKg,
+                MucDoVanDong = request.MucDoVanDong ?? string.Empty,
+                MucTieu = request.MucTieu ?? string.Empty,
+                AnhDaiDienUrl = request.AnhDaiDienUrl,
+                NgayTao = DateTime.UtcNow
             };
         }
         else
         {
-            profile.FullName = request.FullName ?? profile.FullName;
-            profile.Gender = request.Gender ?? profile.Gender;
-            profile.DateOfBirth = request.DateOfBirth ?? profile.DateOfBirth;
-            profile.HeightCm = request.HeightCm ?? profile.HeightCm;
-            profile.TargetWeightKg = request.TargetWeightKg ?? profile.TargetWeightKg;
-            profile.ActivityLevel = request.ActivityLevel ?? profile.ActivityLevel;
-            profile.Goal = request.Goal ?? profile.Goal;
-            profile.AvatarUrl = request.AvatarUrl ?? profile.AvatarUrl;
-            profile.UpdatedAt = DateTime.UtcNow;
+            profile.HoTen = request.HoTen ?? profile.HoTen;
+            profile.GioiTinh = request.GioiTinh ?? profile.GioiTinh;
+            profile.NgaySinh = request.NgaySinh ?? profile.NgaySinh;
+            profile.ChieuCaoCm = request.ChieuCaoCm ?? profile.ChieuCaoCm;
+            profile.CanNangMucTieuKg = request.CanNangMucTieuKg ?? profile.CanNangMucTieuKg;
+            profile.MucDoVanDong = request.MucDoVanDong ?? profile.MucDoVanDong;
+            profile.MucTieu = request.MucTieu ?? profile.MucTieu;
+            profile.AnhDaiDienUrl = request.AnhDaiDienUrl ?? profile.AnhDaiDienUrl;
+            profile.NgayCapNhat = DateTime.UtcNow;
         }
 
         await _profileRepository.UpdateAsync(profile, cancellationToken);
@@ -88,28 +88,28 @@ public sealed class ProfileController : ControllerBase
     {
         return new ProfileResponse
         {
-            UserId = profile.UserId,
-            FullName = profile.FullName,
-            Gender = profile.Gender,
-            DateOfBirth = profile.DateOfBirth,
-            HeightCm = profile.HeightCm,
-            TargetWeightKg = profile.TargetWeightKg,
-            ActivityLevel = profile.ActivityLevel,
-            Goal = profile.Goal,
-            AvatarUrl = profile.AvatarUrl
+            MaNguoiDung = profile.MaNguoiDung,
+            HoTen = profile.HoTen,
+            GioiTinh = profile.GioiTinh,
+            NgaySinh = profile.NgaySinh,
+            ChieuCaoCm = profile.ChieuCaoCm,
+            CanNangMucTieuKg = profile.CanNangMucTieuKg,
+            MucDoVanDong = profile.MucDoVanDong,
+            MucTieu = profile.MucTieu,
+            AnhDaiDienUrl = profile.AnhDaiDienUrl
         };
     }
 
     private sealed class ProfileDb
     {
-        public Guid UserId { get; set; }
-        public string? FullName { get; set; }
-        public string? Gender { get; set; }
-        public DateTime? DateOfBirth { get; set; }
-        public decimal? HeightCm { get; set; }
-        public decimal? TargetWeightKg { get; set; }
-        public string? ActivityLevel { get; set; }
-        public string? Goal { get; set; }
-        public string? AvatarUrl { get; set; }
+        public Guid MaNguoiDung { get; set; }
+        public string? HoTen { get; set; }
+        public string? GioiTinh { get; set; }
+        public DateTime? NgaySinh { get; set; }
+        public decimal? ChieuCaoCm { get; set; }
+        public decimal? CanNangMucTieuKg { get; set; }
+        public string? MucDoVanDong { get; set; }
+        public string? MucTieu { get; set; }
+        public string? AnhDaiDienUrl { get; set; }
     }
 }

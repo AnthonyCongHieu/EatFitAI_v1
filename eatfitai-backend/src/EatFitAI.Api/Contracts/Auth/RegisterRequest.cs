@@ -12,7 +12,7 @@ public sealed class RegisterRequest
     [MinLength(6)]
     public string Password { get; set; } = string.Empty;
 
-    public string? FullName { get; set; }
+    public string? HoTen { get; set; }
 
     public string? DisplayName { get; set; }
 }

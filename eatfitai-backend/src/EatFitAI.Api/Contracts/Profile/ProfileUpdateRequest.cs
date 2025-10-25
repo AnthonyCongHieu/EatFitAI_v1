@@ -5,24 +5,24 @@ namespace EatFitAI.Api.Contracts.Profile;
 public sealed class ProfileUpdateRequest
 {
     [MaxLength(200)]
-    public string? FullName { get; set; }
+    public string? HoTen { get; set; }
 
     [MaxLength(50)]
-    public string? Gender { get; set; }
+    public string? GioiTinh { get; set; }
 
-    public DateOnly? DateOfBirth { get; set; }
+    public DateOnly? NgaySinh { get; set; }
 
-    public decimal? HeightCm { get; set; }
+    public decimal? ChieuCaoCm { get; set; }
 
-    public decimal? TargetWeightKg { get; set; }
+    public decimal? CanNangMucTieuKg { get; set; }
 
     [MaxLength(50)]
-    public string? ActivityLevel { get; set; }
+    public string? MucDoVanDong { get; set; }
 
     [MaxLength(100)]
-    public string? Goal { get; set; }
+    public string? MucTieu { get; set; }
 
     [Url]
-    public string? AvatarUrl { get; set; }
+    public string? AnhDaiDienUrl { get; set; }
 }
 
