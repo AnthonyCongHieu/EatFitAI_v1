@@ -60,7 +60,7 @@ public sealed class DiaryController : ControllerBase
         }
         else if (request.Source == "ai-recipe")
         {
-            aiRecipe = await _context.AiRecipes.FindAsync(request.ItemId, cancellationToken);
+            aiRecipe = await _context.NhatKyAI.FindAsync(request.ItemId, cancellationToken);
             if (aiRecipe == null) return NotFound("AI recipe not found");
         }
 

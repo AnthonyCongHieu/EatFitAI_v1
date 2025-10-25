@@ -14,23 +14,23 @@ public class CustomDishRepository : ICustomDishRepository
         _context = context;
     }
 
-    public async Task<CustomDish?> GetByIdAsync(Guid id, Guid userId, CancellationToken cancellationToken = default)
+    public async Task<CustomDish?> GetByIdAsync(long id, Guid userId, CancellationToken cancellationToken = default)
     {
-        return await _context.CustomDishes
+        return await _context.MonNguoiDung
             .Include(d => d.Ingredients)
-            .FirstOrDefaultAsync(d => d.Id == id && d.UserId == userId, cancellationToken);
+            .FirstOrDefaultAsync(d => d.MaMonNguoiDung == id && d.MaNguoiDung == userId, cancellationToken);
     }
 
     public async Task<IEnumerable<CustomDish>> GetByUserIdAsync(Guid userId, CancellationToken cancellationToken = default)
     {
-        return await _context.CustomDishes
-            .Where(d => d.UserId == userId)
+        return await _context.MonNguoiDung
+            .Where(d => d.MaNguoiDung == userId)
             .ToListAsync(cancellationToken);
     }
 
     public async Task AddAsync(CustomDish dish, CancellationToken cancellationToken = default)
     {
-        await _context.CustomDishes.AddAsync(dish, cancellationToken);
+        await _context.MonNguoiDung.AddAsync(dish, cancellationToken);
     }
 
     public async Task SaveChangesAsync(CancellationToken cancellationToken = default)

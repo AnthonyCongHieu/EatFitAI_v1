@@ -15,16 +15,16 @@ public class SummaryRepository : ISummaryRepository
 
     public async Task<(decimal TotalQuantityGrams, decimal TotalCaloriesKcal, decimal TotalProteinGrams, decimal TotalCarbohydrateGrams, decimal TotalFatGrams)?> GetDaySummaryAsync(Guid userId, DateOnly date, CancellationToken cancellationToken = default)
     {
-        var result = await _context.DiaryEntries
-            .Where(e => e.UserId == userId && e.MealDate == date)
+        var result = await _context.NhatKyAnUong
+            .Where(e => e.MaNguoiDung == userId && e.NgayAn == date)
             .GroupBy(e => 1)
             .Select(g => new
             {
-                TotalQuantityGrams = g.Sum(e => e.QuantityGrams),
-                TotalCaloriesKcal = g.Sum(e => e.CaloriesKcal),
-                TotalProteinGrams = g.Sum(e => e.ProteinGrams),
-                TotalCarbohydrateGrams = g.Sum(e => e.CarbohydrateGrams),
-                TotalFatGrams = g.Sum(e => e.FatGrams)
+                TotalQuantityGrams = g.Sum(e => e.KhoiLuongGram),
+                TotalCaloriesKcal = g.Sum(e => e.Calo),
+                TotalProteinGrams = g.Sum(e => e.Protein),
+                TotalCarbohydrateGrams = g.Sum(e => e.Carb),
+                TotalFatGrams = g.Sum(e => e.Fat)
             })
             .FirstOrDefaultAsync(cancellationToken);
 
@@ -35,17 +35,17 @@ public class SummaryRepository : ISummaryRepository
     {
         var startDate = endDate.AddDays(-6);
 
-        var results = await _context.DiaryEntries
-            .Where(e => e.UserId == userId && e.MealDate >= startDate && e.MealDate <= endDate)
-            .GroupBy(e => e.MealDate)
+        var results = await _context.NhatKyAnUong
+            .Where(e => e.MaNguoiDung == userId && e.NgayAn >= startDate && e.NgayAn <= endDate)
+            .GroupBy(e => e.NgayAn)
             .Select(g => new
             {
                 MealDate = g.Key,
-                TotalQuantityGrams = g.Sum(e => e.QuantityGrams),
-                TotalCaloriesKcal = g.Sum(e => e.CaloriesKcal),
-                TotalProteinGrams = g.Sum(e => e.ProteinGrams),
-                TotalCarbohydrateGrams = g.Sum(e => e.CarbohydrateGrams),
-                TotalFatGrams = g.Sum(e => e.FatGrams)
+                TotalQuantityGrams = g.Sum(e => e.KhoiLuongGram),
+                TotalCaloriesKcal = g.Sum(e => e.Calo),
+                TotalProteinGrams = g.Sum(e => e.Protein),
+                TotalCarbohydrateGrams = g.Sum(e => e.Carb),
+                TotalFatGrams = g.Sum(e => e.Fat)
             })
             .OrderBy(r => r.MealDate)
             .ToListAsync(cancellationToken);
