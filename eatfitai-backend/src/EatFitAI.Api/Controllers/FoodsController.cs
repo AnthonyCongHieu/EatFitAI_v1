@@ -29,17 +29,17 @@ public sealed class FoodsController : ControllerBase
         {
             Items = items.Select(f => new FoodResponse
             {
-                Id = f.Id,
-                Name = f.Name,
-                Description = f.Description,
-                Brand = f.Brand,
-                Category = f.Category,
-                ServingSizeGrams = f.ServingSizeGrams,
-                CaloriesKcal = f.CaloriesKcal,
-                ProteinGrams = f.ProteinGrams,
-                CarbohydrateGrams = f.CarbohydrateGrams,
-                FatGrams = f.FatGrams,
-                IsCustom = f.IsCustom
+                Id = f.MaThucPham,
+                Name = f.TenThucPham,
+                Description = f.MoTaKhauPhan,
+                Brand = f.NhomThucPham,
+                Category = f.NhomThucPham,
+                ServingSizeGrams = 100, // Standard serving size
+                CaloriesKcal = f.Calo100g,
+                ProteinGrams = f.Protein100g,
+                CarbohydrateGrams = f.Carb100g,
+                FatGrams = f.Fat100g,
+                IsCustom = false // Domain foods are not custom
             }).ToList(),
             TotalCount = totalCount,
             Offset = offset,
@@ -49,8 +49,8 @@ public sealed class FoodsController : ControllerBase
         return Ok(response);
     }
 
-    [HttpGet("{id:guid}")]
-    public async Task<IActionResult> GetById([FromRoute] Guid id, CancellationToken cancellationToken)
+    [HttpGet("{id:long}")]
+    public async Task<IActionResult> GetById([FromRoute] long id, CancellationToken cancellationToken)
     {
         var food = await _foodRepository.GetByIdAsync(id, cancellationToken);
         if (food == null)
@@ -60,17 +60,17 @@ public sealed class FoodsController : ControllerBase
 
         var response = new FoodResponse
         {
-            Id = food.Id,
-            Name = food.Name,
-            Description = food.Description,
-            Brand = food.Brand,
-            Category = food.Category,
-            ServingSizeGrams = food.ServingSizeGrams,
-            CaloriesKcal = food.CaloriesKcal,
-            ProteinGrams = food.ProteinGrams,
-            CarbohydrateGrams = food.CarbohydrateGrams,
-            FatGrams = food.FatGrams,
-            IsCustom = food.IsCustom
+            Id = food.MaThucPham,
+            Name = food.TenThucPham,
+            Description = food.MoTaKhauPhan,
+            Brand = food.NhomThucPham,
+            Category = food.NhomThucPham,
+            ServingSizeGrams = 100, // Standard serving size
+            CaloriesKcal = food.Calo100g,
+            ProteinGrams = food.Protein100g,
+            CarbohydrateGrams = food.Carb100g,
+            FatGrams = food.Fat100g,
+            IsCustom = false // Domain foods are not custom
         };
 
         return Ok(response);

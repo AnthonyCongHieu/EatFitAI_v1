@@ -43,47 +43,33 @@ public sealed class CustomDishesController : ControllerBase
 
         var customDish = new Domain.Foods.CustomDish
         {
-            Id = Guid.NewGuid(),
-            UserId = userId,
-            Name = request.Name,
-            Description = request.Description,
-            PortionSizeGrams = totalGrams,
-            CaloriesKcal = totalCalories,
-            ProteinGrams = totalProtein,
-            CarbohydrateGrams = totalCarbs,
-            FatGrams = totalFat,
-            CreatedAt = DateTime.UtcNow
+            MaMonNguoiDung = 0, // Will be set by database
+            MaNguoiDung = userId,
+            TenMon = request.Name,
+            Calo100g = totalCalories / (totalGrams / 100m), // Per 100g
+            Protein100g = totalProtein / (totalGrams / 100m),
+            Carb100g = totalCarbs / (totalGrams / 100m),
+            Fat100g = totalFat / (totalGrams / 100m),
+            GhiChu = request.Description,
+            NgayTao = DateTime.UtcNow
         };
 
-        // Add ingredients
-        foreach (var ingredient in request.Ingredients)
-        {
-            customDish.Ingredients.Add(new Domain.Foods.CustomDishIngredient
-            {
-                Id = Guid.NewGuid(),
-                FoodId = ingredient.FoodId,
-                Name = ingredient.Name,
-                QuantityGrams = ingredient.QuantityGrams,
-                CaloriesKcal = ingredient.CaloriesKcal,
-                ProteinGrams = ingredient.ProteinGrams,
-                CarbohydrateGrams = ingredient.CarbohydrateGrams,
-                FatGrams = ingredient.FatGrams
-            });
-        }
+        // Add ingredients - Note: Domain model doesn't have ingredients collection
+        // This would need to be handled differently, perhaps through stored procedures
 
         await _customDishRepository.AddAsync(customDish, cancellationToken);
         await _customDishRepository.SaveChangesAsync(cancellationToken);
 
         var response = new CustomDishResponse
         {
-            Id = customDish.Id,
-            Name = customDish.Name,
-            Description = customDish.Description,
-            PortionSizeGrams = customDish.PortionSizeGrams,
-            CaloriesKcal = customDish.CaloriesKcal,
-            ProteinGrams = customDish.ProteinGrams,
-            CarbohydrateGrams = customDish.CarbohydrateGrams,
-            FatGrams = customDish.FatGrams
+            Id = customDish.MaMonNguoiDung,
+            Name = customDish.TenMon,
+            Description = customDish.GhiChu,
+            PortionSizeGrams = 100, // Standard 100g portion
+            CaloriesKcal = customDish.Calo100g,
+            ProteinGrams = customDish.Protein100g,
+            CarbohydrateGrams = customDish.Carb100g,
+            FatGrams = customDish.Fat100g
         };
 
         return Ok(response);
@@ -97,21 +83,21 @@ public sealed class CustomDishesController : ControllerBase
 
         var items = dishes.Select(dish => new CustomDishResponse
         {
-            Id = dish.Id,
-            Name = dish.Name,
-            Description = dish.Description,
-            PortionSizeGrams = dish.PortionSizeGrams,
-            CaloriesKcal = dish.CaloriesKcal,
-            ProteinGrams = dish.ProteinGrams,
-            CarbohydrateGrams = dish.CarbohydrateGrams,
-            FatGrams = dish.FatGrams
+            Id = dish.MaMonNguoiDung,
+            Name = dish.TenMon,
+            Description = dish.GhiChu,
+            PortionSizeGrams = 100, // Standard 100g portion
+            CaloriesKcal = dish.Calo100g,
+            ProteinGrams = dish.Protein100g,
+            CarbohydrateGrams = dish.Carb100g,
+            FatGrams = dish.Fat100g
         });
 
         return Ok(items);
     }
 
-    [HttpGet("{id:guid}")]
-    public async Task<IActionResult> GetById([FromRoute] Guid id, CancellationToken cancellationToken)
+    [HttpGet("{id:long}")]
+    public async Task<IActionResult> GetById([FromRoute] long id, CancellationToken cancellationToken)
     {
         var userId = User.GetUserId();
         var dish = await _customDishRepository.GetByIdAsync(id, userId, cancellationToken);
@@ -120,25 +106,15 @@ public sealed class CustomDishesController : ControllerBase
 
         var response = new CustomDishDetailResponse
         {
-            Id = dish.Id,
-            Name = dish.Name,
-            Description = dish.Description,
-            PortionSizeGrams = dish.PortionSizeGrams,
-            CaloriesKcal = dish.CaloriesKcal,
-            ProteinGrams = dish.ProteinGrams,
-            CarbohydrateGrams = dish.CarbohydrateGrams,
-            FatGrams = dish.FatGrams,
-            Ingredients = dish.Ingredients.Select(i => new CustomDishIngredientResponse
-            {
-                Id = i.Id,
-                FoodId = i.FoodId,
-                Name = i.Name,
-                QuantityGrams = i.QuantityGrams,
-                CaloriesKcal = i.CaloriesKcal,
-                ProteinGrams = i.ProteinGrams,
-                CarbohydrateGrams = i.CarbohydrateGrams,
-                FatGrams = i.FatGrams
-            }).ToList()
+            Id = dish.MaMonNguoiDung,
+            Name = dish.TenMon,
+            Description = dish.GhiChu,
+            PortionSizeGrams = 100, // Standard 100g portion
+            CaloriesKcal = dish.Calo100g,
+            ProteinGrams = dish.Protein100g,
+            CarbohydrateGrams = dish.Carb100g,
+            FatGrams = dish.Fat100g,
+            Ingredients = new List<CustomDishIngredientResponse>() // Domain doesn't have ingredients
         };
 
         return Ok(response);
@@ -146,29 +122,29 @@ public sealed class CustomDishesController : ControllerBase
 
     private sealed class DishDb
     {
-        public Guid Id { get; set; }
-        public Guid UserId { get; set; }
-        public string Name { get; set; } = string.Empty;
-        public string? Description { get; set; }
-        public decimal PortionSizeGrams { get; set; }
-        public decimal CaloriesKcal { get; set; }
-        public decimal ProteinGrams { get; set; }
-        public decimal CarbohydrateGrams { get; set; }
-        public decimal FatGrams { get; set; }
-        public DateTime CreatedAt { get; set; }
-        public DateTime? UpdatedAt { get; set; }
+        public long MaMonNguoiDung { get; set; }
+        public Guid MaNguoiDung { get; set; }
+        public string TenMon { get; set; } = string.Empty;
+        public string? GhiChu { get; set; }
+        public decimal KhoiLuongGram { get; set; }
+        public decimal Calo100g { get; set; }
+        public decimal Protein100g { get; set; }
+        public decimal Carb100g { get; set; }
+        public decimal Fat100g { get; set; }
+        public DateTime NgayTao { get; set; }
+        public DateTime? NgayCapNhat { get; set; }
     }
 
     private sealed class IngredientDb
     {
-        public Guid Id { get; set; }
-        public Guid CustomDishId { get; set; }
-        public Guid? FoodId { get; set; }
-        public string Name { get; set; } = string.Empty;
-        public decimal QuantityGrams { get; set; }
-        public decimal CaloriesKcal { get; set; }
-        public decimal ProteinGrams { get; set; }
-        public decimal CarbohydrateGrams { get; set; }
-        public decimal FatGrams { get; set; }
+        public long MaNguyenLieu { get; set; }
+        public long MaMonNguoiDung { get; set; }
+        public long? MaThucPham { get; set; }
+        public string TenNguyenLieu { get; set; } = string.Empty;
+        public decimal KhoiLuongGram { get; set; }
+        public decimal Calo { get; set; }
+        public decimal Protein { get; set; }
+        public decimal Carb { get; set; }
+        public decimal Fat { get; set; }
     }
 }

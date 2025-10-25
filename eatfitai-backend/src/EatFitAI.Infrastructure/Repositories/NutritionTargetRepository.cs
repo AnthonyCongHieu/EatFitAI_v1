@@ -16,20 +16,20 @@ public class NutritionTargetRepository : INutritionTargetRepository
 
     public async Task<NutritionTarget?> GetCurrentAsync(Guid userId, CancellationToken cancellationToken = default)
     {
-        return await _context.NutritionTargets
-            .Where(t => t.UserId == userId && t.IsActive)
-            .OrderByDescending(t => t.EffectiveDate)
+        return await _context.MucTieuDinhDuong
+            .Where(t => t.MaNguoiDung == userId && t.HieuLucTuNgay <= DateTime.UtcNow)
+            .OrderByDescending(t => t.HieuLucTuNgay)
             .FirstOrDefaultAsync(cancellationToken);
     }
 
     public async Task AddAsync(NutritionTarget target, CancellationToken cancellationToken = default)
     {
-        await _context.NutritionTargets.AddAsync(target, cancellationToken);
+        await _context.MucTieuDinhDuong.AddAsync(target, cancellationToken);
     }
 
     public Task UpdateAsync(NutritionTarget target, CancellationToken cancellationToken = default)
     {
-        _context.NutritionTargets.Update(target);
+        _context.MucTieuDinhDuong.Update(target);
         return Task.CompletedTask;
     }
 

@@ -15,12 +15,12 @@ public class ProfileRepository : IProfileRepository
 
     public async Task<UserProfile?> GetByUserIdAsync(Guid userId, CancellationToken cancellationToken = default)
     {
-        return await _context.UserProfiles.FindAsync(new object[] { userId }, cancellationToken);
+        return await _context.HoSoNguoiDung.FindAsync(new object[] { userId }, cancellationToken);
     }
 
     public Task UpdateAsync(UserProfile profile, CancellationToken cancellationToken = default)
     {
-        _context.UserProfiles.Update(profile);
+        _context.HoSoNguoiDung.Update(profile);
         return Task.CompletedTask;
     }
 

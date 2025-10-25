@@ -42,13 +42,13 @@ public class JwtTokenService : ITokenService
             accessToken.Token,
             accessToken.ExpiresAt,
             refreshToken.Token,
-            refreshToken.ExpiresAt);
+            refreshToken.HetHanVao);
     }
 
     public async Task<TokenPair> RefreshTokenAsync(string refreshTokenValue, string? ipAddress, CancellationToken cancellationToken = default)
     {
         var now = DateTimeOffset.UtcNow;
-        var refreshToken = await _dbContext.RefreshTokens
+        var refreshToken = await _dbContext.RefreshToken
             .Include(x => x.User)
             .FirstOrDefaultAsync(x => x.Token == refreshTokenValue, cancellationToken);
 
@@ -57,43 +57,43 @@ public class JwtTokenService : ITokenService
             throw new SecurityTokenException("Invalid refresh token");
         }
 
-        if (refreshToken.RevokedAt.HasValue)
+        if (refreshToken.ThuHoiVao.HasValue)
         {
-            await RevokeDescendantTokensAsync(refreshToken.ReplacedByToken, ipAddress, "Reuse detected", now, cancellationToken);
+            await RevokeDescendantTokensAsync(refreshToken.ThayTheBangToken, ipAddress, "Reuse detected", now, cancellationToken);
             await _dbContext.SaveChangesAsync(cancellationToken);
             throw new SecurityTokenException("Refresh token has been revoked");
         }
 
-        if (refreshToken.ExpiresAt <= now.UtcDateTime)
+        if (refreshToken.HetHanVao <= now.UtcDateTime)
         {
-            refreshToken.RevokedAt = now.UtcDateTime;
-            refreshToken.RevokedByIp = ipAddress;
-            refreshToken.ReasonRevoked = "Expired";
+            refreshToken.ThuHoiVao = now.UtcDateTime;
+            refreshToken.ThuHoiBoiIP = ipAddress;
+            refreshToken.LyDoThuHoi = "Expired";
             await _dbContext.SaveChangesAsync(cancellationToken);
             throw new SecurityTokenException("Refresh token expired");
         }
 
-        var user = refreshToken.User ?? await _dbContext.Users.FirstOrDefaultAsync(x => x.Id == refreshToken.UserId, cancellationToken)
+        var user = refreshToken.User ?? await _dbContext.NguoiDung.FirstOrDefaultAsync(x => x.MaNguoiDung == refreshToken.MaNguoiDung, cancellationToken)
             ?? throw new SecurityTokenException("User not found for refresh token");
 
-        refreshToken.RevokedAt = now.UtcDateTime;
-        refreshToken.RevokedByIp = ipAddress;
-        refreshToken.ReasonRevoked = "Rotated";
+        refreshToken.ThuHoiVao = now.UtcDateTime;
+        refreshToken.ThuHoiBoiIP = ipAddress;
+        refreshToken.LyDoThuHoi = "Rotated";
 
         var newRefreshToken = await CreateRefreshTokenAsync(user, ipAddress, now, cancellationToken);
-        refreshToken.ReplacedByToken = newRefreshToken.Token;
+        refreshToken.ThayTheBangToken = newRefreshToken.Token;
 
         var jwt = GenerateJwt(user, now);
 
         await _dbContext.SaveChangesAsync(cancellationToken);
 
-        return new TokenPair(jwt.Token, jwt.ExpiresAt, newRefreshToken.Token, newRefreshToken.ExpiresAt);
+        return new TokenPair(jwt.Token, jwt.ExpiresAt, newRefreshToken.Token, newRefreshToken.HetHanVao);
     }
 
     public async Task RevokeRefreshTokenAsync(string refreshTokenValue, string? ipAddress, CancellationToken cancellationToken = default)
     {
         var now = DateTimeOffset.UtcNow;
-        var token = await _dbContext.RefreshTokens
+        var token = await _dbContext.RefreshToken
             .FirstOrDefaultAsync(x => x.Token == refreshTokenValue, cancellationToken);
 
         if (token is null)
@@ -101,15 +101,15 @@ public class JwtTokenService : ITokenService
             return; // nothing to revoke
         }
 
-        if (!token.RevokedAt.HasValue)
+        if (!token.ThuHoiVao.HasValue)
         {
-            token.RevokedAt = now.UtcDateTime;
-            token.RevokedByIp = ipAddress;
-            token.ReasonRevoked = "UserLogout";
+            token.ThuHoiVao = now.UtcDateTime;
+            token.ThuHoiBoiIP = ipAddress;
+            token.LyDoThuHoi = "UserLogout";
         }
 
         // if this token had a replacement chain, revoke descendants too
-        await RevokeDescendantTokensAsync(token.ReplacedByToken, ipAddress, "AncestorLogout", now, cancellationToken);
+        await RevokeDescendantTokensAsync(token.ThayTheBangToken, ipAddress, "AncestorLogout", now, cancellationToken);
         await _dbContext.SaveChangesAsync(cancellationToken);
     }
 
@@ -120,20 +120,20 @@ public class JwtTokenService : ITokenService
             return;
         }
 
-        var child = await _dbContext.RefreshTokens.FirstOrDefaultAsync(x => x.Token == refreshTokenValue, cancellationToken);
+        var child = await _dbContext.RefreshToken.FirstOrDefaultAsync(x => x.Token == refreshTokenValue, cancellationToken);
         if (child is null)
         {
             return;
         }
 
-        if (!child.RevokedAt.HasValue)
+        if (!child.ThuHoiVao.HasValue)
         {
-            child.RevokedAt = now.UtcDateTime;
-            child.RevokedByIp = ipAddress;
-            child.ReasonRevoked = reason;
+            child.ThuHoiVao = now.UtcDateTime;
+            child.ThuHoiBoiIP = ipAddress;
+            child.LyDoThuHoi = reason;
         }
 
-        await RevokeDescendantTokensAsync(child.ReplacedByToken, ipAddress, reason, now, cancellationToken);
+        await RevokeDescendantTokensAsync(child.ThayTheBangToken, ipAddress, reason, now, cancellationToken);
     }
 
     private (string Token, DateTimeOffset ExpiresAt) GenerateJwt(NguoiDung user, DateTimeOffset now)
@@ -143,14 +143,14 @@ public class JwtTokenService : ITokenService
 
         var claims = new List<Claim>
         {
-            new(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
+            new(JwtRegisteredClaimNames.Sub, user.MaNguoiDung.ToString()),
             new(JwtRegisteredClaimNames.Email, user.Email ?? string.Empty),
             new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
         };
 
-        if (!string.IsNullOrWhiteSpace(user.FullName))
+        if (!string.IsNullOrWhiteSpace(user.HoTen))
         {
-            claims.Add(new Claim(JwtRegisteredClaimNames.UniqueName, user.FullName));
+            claims.Add(new Claim(JwtRegisteredClaimNames.UniqueName, user.HoTen));
         }
 
         var expiresAt = now.AddMinutes(_jwtOptions.AccessMinutes);
@@ -170,15 +170,15 @@ public class JwtTokenService : ITokenService
     {
         var refreshToken = new RefreshToken
         {
-            Id = Guid.NewGuid(),
-            UserId = user.Id,
+            MaRefreshToken = Guid.NewGuid(),
+            MaNguoiDung = user.MaNguoiDung,
             Token = GenerateRefreshTokenString(),
-            CreatedAt = now.UtcDateTime,
-            CreatedByIp = ipAddress,
-            ExpiresAt = now.AddDays(_jwtOptions.RefreshDays).UtcDateTime
+            NgayTao = now.UtcDateTime,
+            TaoBoiIP = ipAddress,
+            HetHanVao = now.AddDays(_jwtOptions.RefreshDays).UtcDateTime
         };
 
-        await _dbContext.RefreshTokens.AddAsync(refreshToken, cancellationToken);
+        await _dbContext.RefreshToken.AddAsync(refreshToken, cancellationToken);
         return refreshToken;
     }
 

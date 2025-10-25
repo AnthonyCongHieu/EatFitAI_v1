@@ -45,12 +45,13 @@ public class AuthController : ControllerBase
 
         var user = new NguoiDung
         {
-            Id = Guid.NewGuid(),
+            MaNguoiDung = Guid.NewGuid(),
             Email = request.Email,
-            UserName = request.Email,
-            EmailConfirmed = true,
-            CreatedAt = DateTime.UtcNow,
-            UpdatedAt = DateTime.UtcNow
+            HoTen = request.HoTen,
+            GioiTinh = null,
+            NgaySinh = null,
+            NgayTao = DateTime.UtcNow,
+            NgayCapNhat = DateTime.UtcNow
         };
 
         var createResult = await _userManager.CreateAsync(user, request.Password);
@@ -59,23 +60,16 @@ public class AuthController : ControllerBase
             return ValidationProblem(CreateValidationProblem(createResult.Errors));
         }
 
-        if (user.Profile is null)
+        // Profile is now part of NguoiDung, no separate profile creation needed
+        if (!string.IsNullOrWhiteSpace(request.HoTen))
         {
-            user.Profile = new UserProfile
-            {
-                UserId = user.Id,
-                FullName = request.FullName ?? string.Empty,
-            };
-        }
-        else if (!string.IsNullOrWhiteSpace(request.FullName))
-        {
-            user.Profile.FullName = request.FullName;
+            user.HoTen = request.HoTen;
         }
 
         await _userManager.UpdateAsync(user);
 
         var tokens = await _tokenService.CreateTokenPairAsync(user, GetClientIp(), cancellationToken);
-        return Ok(ToAuthResponse(user, tokens, request.FullName));
+        return Ok(ToAuthResponse(user, tokens, request.HoTen));
     }
 
     [HttpPost("login")]
@@ -131,12 +125,13 @@ public class AuthController : ControllerBase
         {
             user = new NguoiDung
             {
-                Id = Guid.NewGuid(),
+                MaNguoiDung = Guid.NewGuid(),
                 Email = email,
-                UserName = email,
-                EmailConfirmed = true,
-                CreatedAt = DateTime.UtcNow,
-                UpdatedAt = DateTime.UtcNow
+                HoTen = null,
+                GioiTinh = null,
+                NgaySinh = null,
+                NgayTao = DateTime.UtcNow,
+                NgayCapNhat = DateTime.UtcNow
             };
 
             var randomPassword = $"Gg!{Guid.NewGuid():N}";
@@ -279,9 +274,9 @@ public class AuthController : ControllerBase
     {
         return new AuthResponse
         {
-            UserId = user.Id,
+            UserId = user.MaNguoiDung,
             Email = user.Email ?? string.Empty,
-            FullName = fullNameOverride ?? user.Profile?.FullName,
+            HoTen = fullNameOverride ?? user.HoTen,
             AccessToken = tokens.AccessToken,
             AccessTokenExpiresAt = tokens.AccessTokenExpiresAt,
             RefreshToken = tokens.RefreshToken,

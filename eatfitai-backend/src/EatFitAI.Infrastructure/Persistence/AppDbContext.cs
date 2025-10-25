@@ -1,19 +1,17 @@
-﻿using EatFitAI.Domain.Ai;
+using EatFitAI.Domain.Ai;
 using EatFitAI.Domain.Auth;
 using EatFitAI.Domain.Diary;
 using EatFitAI.Domain.Foods;
 using EatFitAI.Domain.Metadata;
 using EatFitAI.Domain.Nutrition;
 using EatFitAI.Domain.Users;
-using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace EatFitAI.Infrastructure.Persistence;
 
-public class AppDbContext : IdentityDbContext<NguoiDung, IdentityRole<Guid>, Guid>
+public class AppDbContext : DbContext
 {
     private static readonly ValueConverter<DateOnly, DateTime> DateOnlyConverter = new(
         dateOnly => dateOnly.ToDateTime(TimeOnly.MinValue),
@@ -27,16 +25,23 @@ public class AppDbContext : IdentityDbContext<NguoiDung, IdentityRole<Guid>, Gui
     {
     }
 
-    public DbSet<UserProfile> UserProfiles => Set<UserProfile>();
-    public DbSet<BodyMetric> BodyMetrics => Set<BodyMetric>();
-    public DbSet<NutritionTarget> NutritionTargets => Set<NutritionTarget>();
-    public DbSet<Food> Foods => Set<Food>();
-    public DbSet<CustomDish> CustomDishes => Set<CustomDish>();
-    public DbSet<CustomDishIngredient> CustomDishIngredients => Set<CustomDishIngredient>();
-    public DbSet<DiaryEntry> DiaryEntries => Set<DiaryEntry>();
-    public DbSet<AiRecipe> AiRecipes => Set<AiRecipe>();
-    public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
-    public DbSet<ScriptHistory> ScriptHistory => Set<ScriptHistory>();
+    public DbSet<NguoiDung> NguoiDung => Set<NguoiDung>();
+    public DbSet<UserProfile> HoSoNguoiDung => Set<UserProfile>();
+    public DbSet<BodyMetric> ChiSoCoThe => Set<BodyMetric>();
+    public DbSet<NutritionTarget> MucTieuDinhDuong => Set<NutritionTarget>();
+    public DbSet<Food> ThucPham => Set<Food>();
+    public DbSet<CustomDish> MonNguoiDung => Set<CustomDish>();
+    public DbSet<CustomDishIngredient> NguyenLieuMonNguoiDung => Set<CustomDishIngredient>();
+    public DbSet<DiaryEntry> NhatKyAnUong => Set<DiaryEntry>();
+    public DbSet<Recipe> CongThuc => Set<Recipe>();
+    public DbSet<RefreshToken> RefreshToken => Set<RefreshToken>();
+    public DbSet<ScriptHistory> LichSuCapNhat => Set<ScriptHistory>();
+    public DbSet<MealType> LoaiBuaAn => Set<MealType>();
+    public DbSet<ActivityLevel> MucDoVanDong => Set<ActivityLevel>();
+    public DbSet<Goal> MucTieu => Set<Goal>();
+    public DbSet<RecipeIngredient> NguyenLieuCongThuc => Set<RecipeIngredient>();
+    public DbSet<AiRecipe> NhatKyAI => Set<AiRecipe>();
+    public DbSet<ImageRecognition> NhanDienAnh => Set<ImageRecognition>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -45,187 +50,160 @@ public class AppDbContext : IdentityDbContext<NguoiDung, IdentityRole<Guid>, Gui
         builder.Entity<NguoiDung>(entity =>
         {
             entity.ToTable("NguoiDung");
-            entity.Property(u => u.Id).HasColumnName("MaNguoiDung");
-            entity.Property(u => u.FullName).HasColumnName("HoTen");
-            entity.Property(u => u.Gender).HasColumnName("GioiTinh");
-            entity.Property(u => u.DateOfBirth).HasColumnName("NgaySinh");
-            entity.Property(u => u.CreatedAt).HasColumnName("NgayTao");
-            entity.Property(u => u.UpdatedAt).HasColumnName("NgayCapNhat");
-            entity.Property(u => u.UserName).HasColumnName("TenDangNhap");
-            entity.Property(u => u.NormalizedUserName).HasColumnName("TenDangNhapChuanHoa");
+            entity.Property(u => u.MaNguoiDung).HasColumnName("MaNguoiDung");
             entity.Property(u => u.Email).HasColumnName("Email");
-            entity.Property(u => u.NormalizedEmail).HasColumnName("EmailChuanHoa");
-            entity.Property(u => u.EmailConfirmed).HasColumnName("EmailXacNhan");
-            entity.Property(u => u.PasswordHash).HasColumnName("MatKhauHash");
-            entity.Property(u => u.SecurityStamp).HasColumnName("DauAnToan");
-            entity.Property(u => u.ConcurrencyStamp).HasColumnName("DauDongBo");
-            entity.Property(u => u.PhoneNumber).HasColumnName("SoDienThoai");
-            entity.Property(u => u.PhoneNumberConfirmed).HasColumnName("SoDienThoaiXacNhan");
-            entity.Property(u => u.TwoFactorEnabled).HasColumnName("KichHoatHaiYeuTo");
-            entity.Property(u => u.LockoutEnd).HasColumnName("KetThucKhoa");
-            entity.Property(u => u.LockoutEnabled).HasColumnName("KichHoatKhoa");
-            entity.Property(u => u.AccessFailedCount).HasColumnName("SoLanDangNhapThatBai");
-            entity.HasIndex(u => u.NormalizedEmail).IsUnique();
+            entity.Property(u => u.MatKhauHash).HasColumnName("MatKhauHash");
+            entity.Property(u => u.HoTen).HasColumnName("HoTen");
+            entity.Property(u => u.GioiTinh).HasColumnName("GioiTinh");
+            entity.Property(u => u.NgaySinh).HasColumnName("NgaySinh").HasConversion(NullableDateOnlyConverter).HasColumnType("date");
+            entity.Property(u => u.NgayTao).HasColumnName("NgayTao").HasDefaultValueSql("GETUTCDATE()");
+            entity.Property(u => u.NgayCapNhat).HasColumnName("NgayCapNhat");
+            entity.HasIndex(u => u.Email).IsUnique();
         });
-
-        builder.Entity<IdentityRole<Guid>>().ToTable("VaiTro").Property(r => r.Id).HasColumnName("MaVaiTro");
-        builder.Entity<IdentityUserRole<Guid>>().ToTable("NguoiDungVaiTro").Property(ur => ur.UserId).HasColumnName("MaNguoiDung");
-        builder.Entity<IdentityUserClaim<Guid>>().ToTable("NguoiDungClaim").Property(uc => uc.Id).HasColumnName("MaClaim");
-        builder.Entity<IdentityUserLogin<Guid>>().ToTable("NguoiDungLogin");
-        builder.Entity<IdentityRoleClaim<Guid>>().ToTable("VaiTroClaim").Property(rc => rc.Id).HasColumnName("MaClaim");
-        builder.Entity<IdentityUserToken<Guid>>().ToTable("NguoiDungToken");
 
         builder.Entity<UserProfile>(entity =>
         {
             entity.ToTable("HoSoNguoiDung");
-            entity.HasKey(x => x.UserId);
-            entity.Property(x => x.UserId).HasColumnName("MaNguoiDung");
-            entity.Property(x => x.FullName).HasColumnName("HoTen");
-            entity.Property(x => x.Gender).HasColumnName("GioiTinh");
-            entity.Property(x => x.DateOfBirth).HasColumnName("NgaySinh").HasConversion(NullableDateOnlyConverter).HasColumnType("date");
-            entity.Property(x => x.HeightCm).HasColumnName("ChieuCaoCm").HasColumnType("decimal(9,2)");
-            entity.Property(x => x.TargetWeightKg).HasColumnName("CanNangMucTieuKg").HasColumnType("decimal(9,2)");
-            entity.Property(x => x.ActivityLevel).HasColumnName("MucDoHoatDong");
-            entity.Property(x => x.Goal).HasColumnName("MucTieu");
-            entity.Property(x => x.AvatarUrl).HasColumnName("AnhDaiDienUrl");
-            entity.Property(x => x.CreatedAt).HasColumnName("NgayTao").HasDefaultValueSql("GETUTCDATE()");
-            entity.Property(x => x.UpdatedAt).HasColumnName("NgayCapNhat");
+            entity.HasKey(x => x.MaNguoiDung);
+            entity.Property(x => x.MaNguoiDung).HasColumnName("MaNguoiDung");
+            entity.Property(x => x.MucDoVanDong).HasColumnName("MucDoVanDong");
+            entity.Property(x => x.AnhDaiDienUrl).HasColumnName("AnhDaiDienUrl");
+            entity.Property(x => x.NgaySinh).HasColumnName("NgaySinh").HasConversion(NullableDateOnlyConverter).HasColumnType("date");
+            entity.Property(x => x.HoTen).HasColumnName("HoTen");
+            entity.Property(x => x.GioiTinh).HasColumnName("GioiTinh");
+            entity.Property(x => x.MucTieu).HasColumnName("MucTieu");
+            entity.Property(x => x.ChieuCaoCm).HasColumnName("ChieuCaoCm").HasColumnType("decimal(9,2)");
+            entity.Property(x => x.CanNangMucTieuKg).HasColumnName("CanNangMucTieuKg").HasColumnType("decimal(9,2)");
+            entity.Property(x => x.NgayCapNhat).HasColumnName("NgayCapNhat");
+            entity.Property(x => x.NgayTao).HasColumnName("NgayTao").HasDefaultValueSql("GETUTCDATE()");
             entity.HasOne(x => x.User)
                 .WithOne(u => u.Profile)
-                .HasForeignKey<UserProfile>(x => x.UserId)
+                .HasForeignKey<UserProfile>(x => x.MaNguoiDung)
                 .OnDelete(DeleteBehavior.Cascade);
         });
 
         builder.Entity<BodyMetric>(entity =>
         {
             entity.ToTable("ChiSoCoThe");
-            entity.Property(x => x.Id).HasColumnName("MaChiSo");
-            entity.Property(x => x.UserId).HasColumnName("MaNguoiDung");
-            entity.Property(x => x.RecordedAt).HasColumnName("NgayCapNhat");
-            entity.Property(x => x.WeightKg).HasColumnName("CanNangKg").HasColumnType("decimal(9,2)");
-            entity.Property(x => x.BodyFatPercent).HasColumnName("TiLeMoCoThe").HasColumnType("decimal(9,2)");
-            entity.Property(x => x.MuscleMassKg).HasColumnName("KhoiLuongCoKg").HasColumnType("decimal(9,2)");
-            entity.Property(x => x.WaistCm).HasColumnName("VongEoCm").HasColumnType("decimal(9,2)");
-            entity.Property(x => x.HipCm).HasColumnName("VongMongCm").HasColumnType("decimal(9,2)");
-            entity.Property(x => x.CreatedAt).HasColumnName("NgayTao").HasDefaultValueSql("GETUTCDATE()");
-            entity.HasIndex(x => new { x.UserId, x.RecordedAt });
+            entity.Property(x => x.MaChiSo).HasColumnName("MaChiSo");
+            entity.Property(x => x.MaNguoiDung).HasColumnName("MaNguoiDung");
+            entity.Property(x => x.ChieuCaoCm).HasColumnName("ChieuCaoCm").HasColumnType("decimal(6,2)");
+            entity.Property(x => x.CanNangKg).HasColumnName("CanNangKg").HasColumnType("decimal(6,2)");
+            entity.Property(x => x.MaMucDo).HasColumnName("MaMucDo");
+            entity.Property(x => x.MaMucTieu).HasColumnName("MaMucTieu");
+            entity.Property(x => x.NgayCapNhat).HasColumnName("NgayCapNhat");
+            entity.Property(x => x.GhiChu).HasColumnName("GhiChu");
+            entity.HasIndex(x => new { x.MaNguoiDung, x.NgayCapNhat });
             entity.HasOne(x => x.User)
                 .WithMany(u => u.BodyMetrics)
-                .HasForeignKey(x => x.UserId)
+                .HasForeignKey(x => x.MaNguoiDung)
                 .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne<ActivityLevel>()
+                .WithMany(al => al.BodyMetrics)
+                .HasForeignKey(x => x.MaMucDo)
+                .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne<Goal>()
+                .WithMany(g => g.BodyMetrics)
+                .HasForeignKey(x => x.MaMucTieu)
+                .OnDelete(DeleteBehavior.Restrict);
         });
 
         builder.Entity<NutritionTarget>(entity =>
         {
             entity.ToTable("MucTieuDinhDuong");
-            entity.Property(x => x.Id).HasColumnName("MaMucTieuDD");
-            entity.Property(x => x.UserId).HasColumnName("MaNguoiDung");
-            entity.Property(x => x.EffectiveDate).HasColumnName("HieuLucTuNgay").HasConversion(DateOnlyConverter).HasColumnType("date");
-            entity.Property(x => x.CaloriesKcal).HasColumnName("CaloKcal");
-            ConfigureMacroColumns(entity.Property(x => x.CaloriesKcal), isKcal: true);
-            entity.Property(x => x.ProteinGrams).HasColumnName("ProteinG");
-            ConfigureMacroColumns(entity.Property(x => x.ProteinGrams));
-            entity.Property(x => x.CarbohydrateGrams).HasColumnName("CarbG");
-            ConfigureMacroColumns(entity.Property(x => x.CarbohydrateGrams));
-            entity.Property(x => x.FatGrams).HasColumnName("FatG");
-            ConfigureMacroColumns(entity.Property(x => x.FatGrams));
-            entity.Property(x => x.IsActive).HasColumnName("LaHoatDong");
-            entity.Property(x => x.CreatedAt).HasColumnName("NgayTao").HasDefaultValueSql("GETUTCDATE()");
-            entity.Property(x => x.UpdatedAt).HasColumnName("NgayCapNhat");
-            entity.HasIndex(x => new { x.UserId, x.IsActive });
+            entity.Property(x => x.MaMucTieuDD).HasColumnName("MaMucTieuDD");
+            entity.Property(x => x.MaNguoiDung).HasColumnName("MaNguoiDung");
+            entity.Property(x => x.HieuLucTuNgay).HasColumnName("HieuLucTuNgay").HasConversion(DateOnlyConverter).HasColumnType("date");
+            entity.Property(x => x.CaloKcal).HasColumnName("CaloKcal").HasColumnType("int");
+            entity.Property(x => x.ProteinG).HasColumnName("ProteinG");
+            ConfigureMacroColumns(entity.Property(x => x.ProteinG));
+            entity.Property(x => x.CarbG).HasColumnName("CarbG");
+            ConfigureMacroColumns(entity.Property(x => x.CarbG));
+            entity.Property(x => x.FatG).HasColumnName("FatG");
+            ConfigureMacroColumns(entity.Property(x => x.FatG));
+            entity.Property(x => x.Nguon).HasColumnName("Nguon");
+            entity.Property(x => x.LyDo).HasColumnName("LyDo");
+            entity.Property(x => x.NgayTao).HasColumnName("NgayTao").HasDefaultValueSql("GETUTCDATE()");
             entity.HasOne(x => x.User)
                 .WithMany(u => u.NutritionTargets)
-                .HasForeignKey(x => x.UserId)
+                .HasForeignKey(x => x.MaNguoiDung)
                 .OnDelete(DeleteBehavior.Cascade);
         });
 
         builder.Entity<Food>(entity =>
         {
             entity.ToTable("ThucPham");
-            entity.Property(x => x.Id).HasColumnName("MaThucPham");
-            entity.Property(x => x.Name).HasColumnName("TenThucPham");
-            entity.Property(x => x.Description).HasColumnName("MoTaKhauPhan");
-            entity.Property(x => x.Brand).HasColumnName("ThuongHieu");
-            entity.Property(x => x.Category).HasColumnName("PhanLoai");
-            entity.Property(x => x.ServingSizeGrams).HasColumnName("KhoiLuongPhucVuGram").HasColumnType("decimal(9,2)");
-            entity.Property(x => x.CaloriesKcal).HasColumnName("Calo100g");
-            ConfigureMacroColumns(entity.Property(x => x.CaloriesKcal), isKcal: true);
-            entity.Property(x => x.ProteinGrams).HasColumnName("Protein100g");
-            ConfigureMacroColumns(entity.Property(x => x.ProteinGrams));
-            entity.Property(x => x.CarbohydrateGrams).HasColumnName("Carb100g");
-            ConfigureMacroColumns(entity.Property(x => x.CarbohydrateGrams));
-            entity.Property(x => x.FatGrams).HasColumnName("Fat100g");
-            ConfigureMacroColumns(entity.Property(x => x.FatGrams));
-            entity.Property(x => x.IsCustom).HasColumnName("LaTuDinhNghia");
-            entity.Property(x => x.CreatedAt).HasColumnName("NgayTao").HasDefaultValueSql("GETUTCDATE()");
-            entity.Property(x => x.UpdatedAt).HasColumnName("NgayCapNhat");
-            entity.HasIndex(x => x.Name);
+            entity.Property(x => x.MaThucPham).HasColumnName("MaThucPham");
+            entity.Property(x => x.TenThucPham).HasColumnName("TenThucPham");
+            entity.Property(x => x.NhomThucPham).HasColumnName("NhomThucPham");
+            entity.Property(x => x.MoTaKhauPhan).HasColumnName("MoTaKhauPhan");
+            entity.Property(x => x.Calo100g).HasColumnName("Calo100g");
+            ConfigureMacroColumns(entity.Property(x => x.Calo100g), isKcal: true);
+            entity.Property(x => x.Protein100g).HasColumnName("Protein100g");
+            ConfigureMacroColumns(entity.Property(x => x.Protein100g));
+            entity.Property(x => x.Carb100g).HasColumnName("Carb100g");
+            ConfigureMacroColumns(entity.Property(x => x.Carb100g));
+            entity.Property(x => x.Fat100g).HasColumnName("Fat100g");
+            ConfigureMacroColumns(entity.Property(x => x.Fat100g));
+            entity.Property(x => x.HinhAnh).HasColumnName("HinhAnh");
+            entity.Property(x => x.TrangThai).HasColumnName("TrangThai");
+            entity.HasIndex(x => x.TenThucPham);
         });
 
         builder.Entity<CustomDish>(entity =>
         {
             entity.ToTable("MonNguoiDung");
-            entity.Property(x => x.Id).HasColumnName("MaMonNguoiDung");
-            entity.Property(x => x.UserId).HasColumnName("MaNguoiDung");
-            entity.Property(x => x.Name).HasColumnName("TenMon");
-            entity.Property(x => x.Description).HasColumnName("MoTa");
-            entity.Property(x => x.PortionSizeGrams).HasColumnName("KhoiLuongPhucVuGram").HasColumnType("decimal(9,2)");
-            entity.Property(x => x.CaloriesKcal).HasColumnName("Calo100g");
-            ConfigureMacroColumns(entity.Property(x => x.CaloriesKcal), isKcal: true);
-            entity.Property(x => x.ProteinGrams).HasColumnName("Protein100g");
-            ConfigureMacroColumns(entity.Property(x => x.ProteinGrams));
-            entity.Property(x => x.CarbohydrateGrams).HasColumnName("Carb100g");
-            ConfigureMacroColumns(entity.Property(x => x.CarbohydrateGrams));
-            entity.Property(x => x.FatGrams).HasColumnName("Fat100g");
-            ConfigureMacroColumns(entity.Property(x => x.FatGrams));
-            entity.Property(x => x.CreatedAt).HasColumnName("NgayTao").HasDefaultValueSql("GETUTCDATE()");
-            entity.Property(x => x.UpdatedAt).HasColumnName("NgayCapNhat");
+            entity.Property(x => x.MaMonNguoiDung).HasColumnName("MaMonNguoiDung");
+            entity.Property(x => x.MaNguoiDung).HasColumnName("MaNguoiDung");
+            entity.Property(x => x.TenMon).HasColumnName("TenMon");
+            entity.Property(x => x.Calo100g).HasColumnName("Calo100g");
+            ConfigureMacroColumns(entity.Property(x => x.Calo100g), isKcal: true);
+            entity.Property(x => x.Protein100g).HasColumnName("Protein100g");
+            ConfigureMacroColumns(entity.Property(x => x.Protein100g));
+            entity.Property(x => x.Carb100g).HasColumnName("Carb100g");
+            ConfigureMacroColumns(entity.Property(x => x.Carb100g));
+            entity.Property(x => x.Fat100g).HasColumnName("Fat100g");
+            ConfigureMacroColumns(entity.Property(x => x.Fat100g));
+            entity.Property(x => x.GhiChu).HasColumnName("GhiChu");
+            entity.Property(x => x.NgayTao).HasColumnName("NgayTao").HasDefaultValueSql("GETUTCDATE()");
             entity.HasOne(x => x.User)
                 .WithMany(u => u.CustomDishes)
-                .HasForeignKey(x => x.UserId)
+                .HasForeignKey(x => x.MaNguoiDung)
                 .OnDelete(DeleteBehavior.Cascade);
         });
 
         builder.Entity<CustomDishIngredient>(entity =>
         {
             entity.ToTable("NguyenLieuMonNguoiDung");
-            entity.Property(x => x.Id).HasColumnName("MaNguyenLieu");
-            entity.Property(x => x.CustomDishId).HasColumnName("MaMonNguoiDung");
-            entity.Property(x => x.FoodId).HasColumnName("MaThucPham");
-            entity.Property(x => x.Name).HasColumnName("TenNguyenLieu");
-            ConfigureMacroColumns(entity.Property(x => x.CaloriesKcal), isKcal: true);
-            ConfigureMacroColumns(entity.Property(x => x.ProteinGrams));
-            ConfigureMacroColumns(entity.Property(x => x.CarbohydrateGrams));
-            ConfigureMacroColumns(entity.Property(x => x.FatGrams));
-            entity.Property(x => x.QuantityGrams).HasColumnName("KhoiLuongGram").HasColumnType("decimal(9,2)");
+            entity.Property(x => x.MaNguyenLieu).HasColumnName("MaNguyenLieu");
+            entity.Property(x => x.MaMonNguoiDung).HasColumnName("MaMonNguoiDung");
+            entity.Property(x => x.MaThucPham).HasColumnName("MaThucPham");
+            entity.Property(x => x.TenNguyenLieu).HasColumnName("TenNguyenLieu");
+            ConfigureMacroColumns(entity.Property(x => x.CaloKcal), isKcal: true);
+            ConfigureMacroColumns(entity.Property(x => x.ProteinG));
+            ConfigureMacroColumns(entity.Property(x => x.CarbG));
+            ConfigureMacroColumns(entity.Property(x => x.FatG));
+            entity.Property(x => x.KhoiLuongGram).HasColumnName("KhoiLuongGram").HasColumnType("decimal(9,2)");
             entity.HasOne(x => x.CustomDish)
                 .WithMany(d => d.Ingredients)
-                .HasForeignKey(x => x.CustomDishId)
+                .HasForeignKey(x => x.MaMonNguoiDung)
                 .OnDelete(DeleteBehavior.Cascade);
             entity.HasOne(x => x.Food)
                 .WithMany(f => f.CustomDishIngredients)
-                .HasForeignKey(x => x.FoodId)
+                .HasForeignKey(x => x.MaThucPham)
                 .OnDelete(DeleteBehavior.Restrict);
         });
 
-        builder.Entity<AiRecipe>(entity =>
+        builder.Entity<Recipe>(entity =>
         {
-            entity.ToTable("NhatKyAI");
-            entity.Property(x => x.Id).HasColumnName("MaGoiYAI");
-            entity.Property(x => x.UserId).HasColumnName("MaNguoiDung");
-            entity.Property(x => x.Title).HasColumnName("TenGoiY");
-            entity.Property(x => x.Summary).HasColumnName("TomTat");
-            entity.Property(x => x.IngredientsJson).HasColumnName("NguyenLieuJson");
-            entity.Property(x => x.StepsJson).HasColumnName("BuocCheBienJson");
-            ConfigureMacroColumns(entity.Property(x => x.CaloriesKcal), isKcal: true);
-            ConfigureMacroColumns(entity.Property(x => x.ProteinGrams));
-            ConfigureMacroColumns(entity.Property(x => x.CarbohydrateGrams));
-            ConfigureMacroColumns(entity.Property(x => x.FatGrams));
-            entity.Property(x => x.CreatedAt).HasColumnName("ThoiGianTao").HasDefaultValueSql("GETUTCDATE()");
-            entity.HasOne(x => x.User)
-                .WithMany(u => u.AiRecipes)
-                .HasForeignKey(x => x.UserId)
-                .OnDelete(DeleteBehavior.Cascade);
+            entity.ToTable("CongThuc");
+            entity.Property(x => x.MaCongThuc).HasColumnName("MaCongThuc");
+            entity.Property(x => x.TenCongThuc).HasColumnName("TenCongThuc");
+            entity.Property(x => x.LoaiMon).HasColumnName("LoaiMon");
+            entity.Property(x => x.ThoiGianUocTinhPhut).HasColumnName("ThoiGianUocTinhPhut");
+            entity.Property(x => x.HuongDanCheBien).HasColumnName("HuongDanCheBien");
+            entity.Property(x => x.HinhAnh).HasColumnName("HinhAnh");
+            entity.Property(x => x.TrangThai).HasColumnName("TrangThai");
         });
 
         builder.Entity<DiaryEntry>(entity =>
@@ -233,75 +211,142 @@ public class AppDbContext : IdentityDbContext<NguoiDung, IdentityRole<Guid>, Gui
             entity.ToTable("NhatKyAnUong", table =>
             {
                 table.HasCheckConstraint("CK_NK_ChiMotNguon",
-                    "(CASE WHEN [MaThucPham] IS NOT NULL THEN 1 ELSE 0 END + CASE WHEN [MaMonNguoiDung] IS NOT NULL THEN 1 ELSE 0 END + CASE WHEN [MaCongThucAI] IS NOT NULL THEN 1 ELSE 0 END) = 1");
+                    "(CASE WHEN [MaThucPham] IS NOT NULL THEN 1 ELSE 0 END + CASE WHEN [MaMonNguoiDung] IS NOT NULL THEN 1 ELSE 0 END + CASE WHEN [MaCongThuc] IS NOT NULL THEN 1 ELSE 0 END) = 1");
             });
-            entity.Property(x => x.Id).HasColumnName("MaNhatKy");
-            entity.Property(x => x.UserId).HasColumnName("MaNguoiDung");
-            entity.Property(x => x.MealDate).HasColumnName("NgayAn").HasConversion(DateOnlyConverter).HasColumnType("date");
-            entity.Property(x => x.MealCode).HasColumnName("MaBuaAn").HasMaxLength(32);
-            entity.Property(x => x.FoodId).HasColumnName("MaThucPham");
-            entity.Property(x => x.CustomDishId).HasColumnName("MaMonNguoiDung");
-            entity.Property(x => x.AiRecipeId).HasColumnName("MaCongThucAI");
-            entity.Property(x => x.ItemId).HasColumnName("MaMuc");
-            entity.Property(x => x.Source).HasColumnName("Nguon").HasMaxLength(32);
-            entity.Property(x => x.QuantityGrams).HasColumnName("KhoiLuongGram").HasColumnType("decimal(9,2)");
-            entity.Property(x => x.CaloriesKcal).HasColumnName("Calo");
-            ConfigureMacroColumns(entity.Property(x => x.CaloriesKcal), isKcal: true);
-            entity.Property(x => x.ProteinGrams).HasColumnName("Protein");
-            ConfigureMacroColumns(entity.Property(x => x.ProteinGrams));
-            entity.Property(x => x.CarbohydrateGrams).HasColumnName("Carb");
-            ConfigureMacroColumns(entity.Property(x => x.CarbohydrateGrams));
-            entity.Property(x => x.FatGrams).HasColumnName("Fat");
-            ConfigureMacroColumns(entity.Property(x => x.FatGrams));
-            entity.Property(x => x.Notes).HasColumnName("GhiChu");
-            entity.Property(x => x.CreatedAt).HasColumnName("NgayTao").HasDefaultValueSql("GETUTCDATE()");
-            entity.Property(x => x.UpdatedAt).HasColumnName("NgayCapNhat");
-            entity.HasIndex(x => new { x.UserId, x.MealDate, x.MealCode, x.ItemId, x.Source }).IsUnique();
+            entity.Property(x => x.MaNhatKy).HasColumnName("MaNhatKy");
+            entity.Property(x => x.MaNguoiDung).HasColumnName("MaNguoiDung");
+            entity.Property(x => x.NgayAn).HasColumnName("NgayAn").HasConversion(DateOnlyConverter).HasColumnType("date");
+            entity.Property(x => x.MaBuaAn).HasColumnName("MaBuaAn").HasMaxLength(32);
+            entity.Property(x => x.MaThucPham).HasColumnName("MaThucPham");
+            entity.Property(x => x.MaMonNguoiDung).HasColumnName("MaMonNguoiDung");
+            entity.Property(x => x.MaCongThuc).HasColumnName("MaCongThuc");
+            entity.Property(x => x.KhoiLuongGram).HasColumnName("KhoiLuongGram").HasColumnType("decimal(10,2)");
+            entity.Property(x => x.Calo).HasColumnName("Calo");
+            ConfigureMacroColumns(entity.Property(x => x.Calo), isKcal: true);
+            entity.Property(x => x.Protein).HasColumnName("Protein");
+            ConfigureMacroColumns(entity.Property(x => x.Protein));
+            entity.Property(x => x.Carb).HasColumnName("Carb");
+            ConfigureMacroColumns(entity.Property(x => x.Carb));
+            entity.Property(x => x.Fat).HasColumnName("Fat");
+            ConfigureMacroColumns(entity.Property(x => x.Fat));
+            entity.Property(x => x.NgayTao).HasColumnName("NgayTao").HasDefaultValueSql("GETUTCDATE()");
+            entity.HasIndex(x => new { x.MaNguoiDung, x.NgayAn, x.MaBuaAn, x.MaThucPham, x.MaMonNguoiDung, x.MaCongThuc }).IsUnique();
             entity.HasOne(x => x.User)
                 .WithMany(u => u.DiaryEntries)
-                .HasForeignKey(x => x.UserId)
+                .HasForeignKey(x => x.MaNguoiDung)
                 .OnDelete(DeleteBehavior.Cascade);
             entity.HasOne(x => x.Food)
                 .WithMany(f => f.DiaryEntries)
-                .HasForeignKey(x => x.FoodId)
+                .HasForeignKey(x => x.MaThucPham)
                 .OnDelete(DeleteBehavior.Restrict);
             entity.HasOne(x => x.CustomDish)
                 .WithMany(d => d.DiaryEntries)
-                .HasForeignKey(x => x.CustomDishId)
+                .HasForeignKey(x => x.MaMonNguoiDung)
                 .OnDelete(DeleteBehavior.Restrict);
-            entity.HasOne(x => x.AiRecipe)
+            entity.HasOne(x => x.Recipe)
                 .WithMany(r => r.DiaryEntries)
-                .HasForeignKey(x => x.AiRecipeId)
+                .HasForeignKey(x => x.MaCongThuc)
+                .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne<MealType>()
+                .WithMany(mt => mt.DiaryEntries)
+                .HasForeignKey(x => x.MaBuaAn)
                 .OnDelete(DeleteBehavior.Restrict);
         });
 
         builder.Entity<RefreshToken>(entity =>
         {
             entity.ToTable("RefreshToken");
-            entity.Property(x => x.Id).HasColumnName("MaRefreshToken");
-            entity.Property(x => x.UserId).HasColumnName("MaNguoiDung");
+            entity.Property(x => x.MaRefreshToken).HasColumnName("MaRefreshToken");
+            entity.Property(x => x.MaNguoiDung).HasColumnName("MaNguoiDung");
             entity.Property(x => x.Token).HasColumnName("Token");
-            entity.Property(x => x.CreatedAt).HasColumnName("NgayTao").HasDefaultValueSql("GETUTCDATE()");
-            entity.Property(x => x.ExpiresAt).HasColumnName("HetHanVao");
-            entity.Property(x => x.RevokedAt).HasColumnName("ThuHoiVao");
-            entity.Property(x => x.ReplacedByToken).HasColumnName("ThayTheBangToken");
-            entity.Property(x => x.CreatedByIp).HasColumnName("TaoBoiIP");
-            entity.Property(x => x.RevokedByIp).HasColumnName("ThuHoiBoiIP");
-            entity.Property(x => x.ReasonRevoked).HasColumnName("LyDoThuHoi");
+            entity.Property(x => x.NgayTao).HasColumnName("NgayTao").HasDefaultValueSql("GETUTCDATE()");
+            entity.Property(x => x.HetHanVao).HasColumnName("HetHanVao");
+            entity.Property(x => x.ThuHoiVao).HasColumnName("ThuHoiVao");
+            entity.Property(x => x.ThayTheBangToken).HasColumnName("ThayTheBangToken");
+            entity.Property(x => x.TaoBoiIP).HasColumnName("TaoBoiIP");
+            entity.Property(x => x.ThuHoiBoiIP).HasColumnName("ThuHoiBoiIP");
+            entity.Property(x => x.LyDoThuHoi).HasColumnName("LyDoThuHoi");
             entity.HasIndex(x => x.Token).IsUnique();
             entity.HasOne(x => x.User)
                 .WithMany(u => u.RefreshTokens)
-                .HasForeignKey(x => x.UserId)
+                .HasForeignKey(x => x.MaNguoiDung)
                 .OnDelete(DeleteBehavior.Cascade);
         });
 
         builder.Entity<ScriptHistory>(entity =>
         {
             entity.ToTable("LichSuCapNhat");
-            entity.Property(x => x.Id).HasColumnName("MaLichSu");
-            entity.Property(x => x.FileName).HasColumnName("TenFile").HasMaxLength(260);
-            entity.Property(x => x.AppliedAt).HasColumnName("ThoiGianApDung").HasDefaultValueSql("GETUTCDATE()");
-            entity.HasIndex(x => x.FileName).IsUnique();
+            entity.Property(x => x.MaLichSu).HasColumnName("MaLichSu");
+            entity.Property(x => x.TenFile).HasColumnName("TenFile").HasMaxLength(260);
+            entity.Property(x => x.ThoiGianApDung).HasColumnName("ThoiGianApDung").HasDefaultValueSql("GETUTCDATE()");
+            entity.HasIndex(x => x.TenFile).IsUnique();
+        });
+
+        builder.Entity<AiRecipe>(entity =>
+        {
+            entity.ToTable("NhatKyAI");
+            entity.Property(x => x.MaGoiYAI).HasColumnName("MaGoiYAI");
+            entity.Property(x => x.MaNguoiDung).HasColumnName("MaNguoiDung");
+            entity.Property(x => x.LoaiDeXuat).HasColumnName("LoaiDeXuat");
+            entity.Property(x => x.DuLieuDauVao).HasColumnName("DuLieuDauVao");
+            entity.Property(x => x.KetQuaAI).HasColumnName("KetQuaAI");
+            entity.Property(x => x.ThoiGianTao).HasColumnName("ThoiGianTao");
+            entity.Property(x => x.ThoiLuongXuLyMs).HasColumnName("ThoiLuongXuLyMs");
+            entity.HasOne(x => x.User)
+                .WithMany(u => u.AiRecipes)
+                .HasForeignKey(x => x.MaNguoiDung)
+                .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        builder.Entity<ImageRecognition>(entity =>
+        {
+            entity.ToTable("NhanDienAnh");
+            entity.Property(x => x.MaNhanDien).HasColumnName("MaNhanDien");
+            entity.Property(x => x.MaGoiYAI).HasColumnName("MaGoiYAI");
+            entity.Property(x => x.Nhan).HasColumnName("Nhan");
+            entity.Property(x => x.DoTinCay).HasColumnName("DoTinCay");
+            entity.HasOne(x => x.AiRecipe)
+                .WithMany(ar => ar.ImageRecognitions)
+                .HasForeignKey(x => x.MaGoiYAI)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        builder.Entity<MealType>(entity =>
+        {
+            entity.ToTable("LoaiBuaAn");
+            entity.Property(x => x.MaBuaAn).HasColumnName("MaBuaAn");
+            entity.Property(x => x.TenBuaAn).HasColumnName("TenBuaAn");
+        });
+
+        builder.Entity<ActivityLevel>(entity =>
+        {
+            entity.ToTable("MucDoVanDong");
+            entity.Property(x => x.MaMucDo).HasColumnName("MaMucDo");
+            entity.Property(x => x.TenMucDo).HasColumnName("TenMucDo");
+            entity.Property(x => x.MoTa).HasColumnName("MoTa");
+            entity.Property(x => x.HeSoTDEE).HasColumnName("HeSoTDEE").HasColumnType("decimal(5,3)");
+        });
+
+        builder.Entity<Goal>(entity =>
+        {
+            entity.ToTable("MucTieu");
+            entity.Property(x => x.MaMucTieu).HasColumnName("MaMucTieu");
+            entity.Property(x => x.TenMucTieu).HasColumnName("TenMucTieu");
+            entity.Property(x => x.MoTa).HasColumnName("MoTa");
+        });
+
+        builder.Entity<RecipeIngredient>(entity =>
+        {
+            entity.ToTable("NguyenLieuCongThuc");
+            entity.Property(x => x.MaNguyenLieu).HasColumnName("MaNguyenLieu");
+            entity.Property(x => x.MaCongThuc).HasColumnName("MaCongThuc");
+            entity.Property(x => x.MaThucPham).HasColumnName("MaThucPham");
+            entity.Property(x => x.KhoiLuongGram).HasColumnName("KhoiLuongGram").HasColumnType("decimal(10,2)");
+            // Note: Recipe navigation property may need to be added if Recipe class exists
+            entity.HasOne(x => x.Food)
+                .WithMany()
+                .HasForeignKey(x => x.MaThucPham)
+                .OnDelete(DeleteBehavior.Restrict);
         });
     }
 

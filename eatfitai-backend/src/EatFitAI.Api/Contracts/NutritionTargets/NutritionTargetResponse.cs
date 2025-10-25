@@ -4,12 +4,12 @@ namespace EatFitAI.Api.Contracts.NutritionTargets;
 
 public sealed class NutritionTargetResponse
 {
-    public Guid Id { get; init; }
-    public DateOnly EffectiveDate { get; init; }
-    public decimal CaloriesKcal { get; init; }
-    public decimal ProteinGrams { get; init; }
-    public decimal CarbohydrateGrams { get; init; }
-    public decimal FatGrams { get; init; }
-    public bool IsActive { get; init; }
+    public long Id { get; init; }
+    public DateTime EffectiveDate { get; init; }
+    public int CaloKcal { get; init; }
+    public decimal ProteinG { get; init; }
+    public decimal CarbG { get; init; }
+    public decimal FatG { get; init; }
+    public string Nguon { get; init; } = string.Empty;
 }
 

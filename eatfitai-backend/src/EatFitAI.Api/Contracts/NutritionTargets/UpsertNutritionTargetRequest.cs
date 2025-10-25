@@ -4,18 +4,18 @@ namespace EatFitAI.Api.Contracts.NutritionTargets;
 
 public sealed class UpsertNutritionTargetRequest
 {
-    public DateOnly? EffectiveDate { get; set; }
+    public DateTime? EffectiveDate { get; set; }
 
     [Range(0, 100000)]
-    public decimal CaloriesKcal { get; set; }
+    public int CaloKcal { get; set; }
 
     [Range(0, 10000)]
-    public decimal ProteinGrams { get; set; }
+    public decimal ProteinG { get; set; }
 
     [Range(0, 10000)]
-    public decimal CarbohydrateGrams { get; set; }
+    public decimal CarbG { get; set; }
 
     [Range(0, 10000)]
-    public decimal FatGrams { get; set; }
+    public decimal FatG { get; set; }
 }
 

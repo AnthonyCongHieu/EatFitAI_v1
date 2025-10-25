@@ -14,34 +14,34 @@ public class DiaryRepository : IDiaryRepository
         _context = context;
     }
 
-    public async Task<DiaryEntry?> GetByIdAsync(Guid id, Guid userId, CancellationToken cancellationToken = default)
+    public async Task<DiaryEntry?> GetByIdAsync(long id, Guid userId, CancellationToken cancellationToken = default)
     {
-        return await _context.DiaryEntries
-            .FirstOrDefaultAsync(e => e.Id == id && e.UserId == userId, cancellationToken);
+        return await _context.NhatKyAnUong
+            .FirstOrDefaultAsync(e => e.MaNhatKy == id && e.MaNguoiDung == userId, cancellationToken);
     }
 
     public async Task<IEnumerable<DiaryEntry>> GetByDateAsync(Guid userId, DateOnly date, CancellationToken cancellationToken = default)
     {
-        return await _context.DiaryEntries
-            .Where(e => e.UserId == userId && e.MealDate == date)
-            .OrderBy(e => e.CreatedAt)
+        return await _context.NhatKyAnUong
+            .Where(e => e.MaNguoiDung == userId && e.NgayAn == date)
+            .OrderBy(e => e.NgayTao)
             .ToListAsync(cancellationToken);
     }
 
     public async Task AddAsync(DiaryEntry entry, CancellationToken cancellationToken = default)
     {
-        await _context.DiaryEntries.AddAsync(entry, cancellationToken);
+        await _context.NhatKyAnUong.AddAsync(entry, cancellationToken);
     }
 
     public Task UpdateAsync(DiaryEntry entry, CancellationToken cancellationToken = default)
     {
-        _context.DiaryEntries.Update(entry);
+        _context.NhatKyAnUong.Update(entry);
         return Task.CompletedTask;
     }
 
     public Task DeleteAsync(DiaryEntry entry, CancellationToken cancellationToken = default)
     {
-        _context.DiaryEntries.Remove(entry);
+        _context.NhatKyAnUong.Remove(entry);
         return Task.CompletedTask;
     }
 

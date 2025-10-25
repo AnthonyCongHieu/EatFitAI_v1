@@ -18,7 +18,7 @@ public sealed class CustomDishCreateRequest
 
 public sealed class CustomDishIngredientInput
 {
-    public Guid? FoodId { get; set; }
+    public long? FoodId { get; set; }
     [Required]
     [MaxLength(200)]
     public string Name { get; set; } = string.Empty;

@@ -4,7 +4,7 @@ namespace EatFitAI.Api.Contracts.BodyMetrics;
 
 public sealed class BodyMetricResponse
 {
-    public Guid Id { get; init; }
+    public long Id { get; init; }
     public DateTime RecordedAt { get; init; }
     public decimal WeightKg { get; init; }
     public decimal? BodyFatPercent { get; init; }

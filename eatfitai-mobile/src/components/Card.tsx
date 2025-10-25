@@ -17,7 +17,7 @@ import { useAppTheme } from '../theme/ThemeProvider';
 type CardProps = {
   children: ReactNode;
   style?: ViewStyle | ViewStyle[];
-  padding?: 'sm' | 'md' | 'lg' | 'xl';
+  padding?: 'sm' | 'md' | 'lg' | 'xl' | 'none';
   shadow?: 'sm' | 'md' | 'lg' | 'none';
   variant?: 'elevated' | 'outlined' | 'filled' | 'gradient';
   gradient?: 'primary' | 'secondary' | 'accent' | 'danger' | 'success';
@@ -51,7 +51,8 @@ export const Card = ({
   const opacity = useSharedValue(1);
 
   // Determine padding
-  let pad = theme.spacing.md;
+  // Allow explicit 'none' to mean zero padding (used by some screens needing full-bleed content)
+  let pad = padding === 'none' ? 0 : theme.spacing.md;
   if (padding === 'sm') pad = theme.spacing.sm;
   else if (padding === 'lg') pad = theme.spacing.lg;
   else if (padding === 'xl') pad = theme.spacing.xl;

@@ -50,17 +50,17 @@ public sealed class DiaryController : ControllerBase
 
         if (request.Source == "food")
         {
-            food = await _foodRepository.GetByIdAsync(request.ItemId, cancellationToken);
+            food = await _foodRepository.GetByIdAsync((long)request.ItemId, cancellationToken);
             if (food == null) return NotFound("Food not found");
         }
         else if (request.Source == "custom-dish")
         {
-            customDish = await _customDishRepository.GetByIdAsync(request.ItemId, userId, cancellationToken);
+            customDish = await _customDishRepository.GetByIdAsync((long)request.ItemId, userId, cancellationToken);
             if (customDish == null) return NotFound("Custom dish not found");
         }
         else if (request.Source == "ai-recipe")
         {
-            aiRecipe = await _context.AiRecipes.FindAsync(request.ItemId, cancellationToken);
+            aiRecipe = await _context.NhatKyAI.FindAsync(request.ItemId, cancellationToken);
             if (aiRecipe == null) return NotFound("AI recipe not found");
         }
 
@@ -70,45 +70,43 @@ public sealed class DiaryController : ControllerBase
         if (food != null)
         {
             var ratio = request.QuantityGrams / 100m;
-            calories = food.CaloriesKcal * ratio;
-            protein = food.ProteinGrams * ratio;
-            carbs = food.CarbohydrateGrams * ratio;
-            fat = food.FatGrams * ratio;
+            calories = food.Calo100g * ratio;
+            protein = food.Protein100g * ratio;
+            carbs = food.Carb100g * ratio;
+            fat = food.Fat100g * ratio;
         }
         else if (customDish != null)
         {
-            var ratio = request.QuantityGrams / customDish.PortionSizeGrams;
-            calories = customDish.CaloriesKcal * ratio;
-            protein = customDish.ProteinGrams * ratio;
-            carbs = customDish.CarbohydrateGrams * ratio;
-            fat = customDish.FatGrams * ratio;
+            var ratio = request.QuantityGrams / 100m; // Domain uses 100g as standard
+            calories = customDish.Calo100g * ratio;
+            protein = customDish.Protein100g * ratio;
+            carbs = customDish.Carb100g * ratio;
+            fat = customDish.Fat100g * ratio;
         }
         else if (aiRecipe != null)
         {
-            var ratio = request.QuantityGrams / 100m; // Assuming 100g portion for AI recipes
-            calories = aiRecipe.CaloriesKcal * ratio;
-            protein = aiRecipe.ProteinGrams * ratio;
-            carbs = aiRecipe.CarbohydrateGrams * ratio;
-            fat = aiRecipe.FatGrams * ratio;
+            // AI recipes don't have nutrition data in the domain model
+            // This would need to be parsed from KetQuaAI JSON or handled differently
+            calories = 0;
+            protein = 0;
+            carbs = 0;
+            fat = 0;
         }
 
         var diaryEntry = new DiaryEntry
         {
-            UserId = userId,
-            MealDate = request.MealDate,
-            MealCode = request.MealCode,
-            FoodId = food?.Id,
-            CustomDishId = customDish?.Id,
-            AiRecipeId = aiRecipe?.Id,
-            ItemId = request.ItemId,
-            Source = request.Source,
-            QuantityGrams = request.QuantityGrams,
-            CaloriesKcal = calories,
-            ProteinGrams = protein,
-            CarbohydrateGrams = carbs,
-            FatGrams = fat,
-            Notes = request.Notes,
-            CreatedAt = DateTime.UtcNow
+            MaNguoiDung = userId,
+            NgayAn = request.MealDate,
+            MaBuaAn = request.MealCode,
+            MaThucPham = food?.MaThucPham,
+            MaMonNguoiDung = customDish?.MaMonNguoiDung,
+            MaCongThuc = aiRecipe?.MaGoiYAI,
+            KhoiLuongGram = request.QuantityGrams,
+            Calo = calories,
+            Protein = protein,
+            Carb = carbs,
+            Fat = fat,
+            NgayTao = DateTime.UtcNow
         };
 
         await _diaryRepository.AddAsync(diaryEntry, cancellationToken);
@@ -116,20 +114,20 @@ public sealed class DiaryController : ControllerBase
 
         var response = new DiaryEntryResponse
         {
-            Id = diaryEntry.Id,
-            MealDate = diaryEntry.MealDate,
-            MealCode = diaryEntry.MealCode,
-            FoodId = diaryEntry.FoodId,
-            CustomDishId = diaryEntry.CustomDishId,
-            AiRecipeId = diaryEntry.AiRecipeId,
-            ItemId = diaryEntry.ItemId,
-            Source = diaryEntry.Source,
-            QuantityGrams = diaryEntry.QuantityGrams,
-            CaloriesKcal = diaryEntry.CaloriesKcal,
-            ProteinGrams = diaryEntry.ProteinGrams,
-            CarbohydrateGrams = diaryEntry.CarbohydrateGrams,
-            FatGrams = diaryEntry.FatGrams,
-            Notes = diaryEntry.Notes
+            Id = diaryEntry.MaNhatKy,
+            MealDate = diaryEntry.NgayAn,
+            MealCode = diaryEntry.MaBuaAn,
+            FoodId = diaryEntry.MaThucPham,
+            CustomDishId = diaryEntry.MaMonNguoiDung,
+            AiRecipeId = diaryEntry.MaCongThuc,
+            ItemId = diaryEntry.MaThucPham ?? diaryEntry.MaMonNguoiDung ?? diaryEntry.MaCongThuc ?? 0,
+            Source = request.Source, // Need to determine source from the IDs
+            QuantityGrams = diaryEntry.KhoiLuongGram,
+            CaloriesKcal = diaryEntry.Calo,
+            ProteinGrams = diaryEntry.Protein,
+            CarbohydrateGrams = diaryEntry.Carb,
+            FatGrams = diaryEntry.Fat,
+            Notes = null // Domain doesn't have notes
         };
 
         return Ok(response);
@@ -144,27 +142,27 @@ public sealed class DiaryController : ControllerBase
 
         var items = entries.Select(entry => new DiaryEntryResponse
         {
-            Id = entry.Id,
-            MealDate = entry.MealDate,
-            MealCode = entry.MealCode,
-            FoodId = entry.FoodId,
-            CustomDishId = entry.CustomDishId,
-            AiRecipeId = entry.AiRecipeId,
-            ItemId = entry.ItemId,
-            Source = entry.Source,
-            QuantityGrams = entry.QuantityGrams,
-            CaloriesKcal = entry.CaloriesKcal,
-            ProteinGrams = entry.ProteinGrams,
-            CarbohydrateGrams = entry.CarbohydrateGrams,
-            FatGrams = entry.FatGrams,
-            Notes = entry.Notes
+            Id = entry.MaNhatKy,
+            MealDate = entry.NgayAn,
+            MealCode = entry.MaBuaAn,
+            FoodId = entry.MaThucPham,
+            CustomDishId = entry.MaMonNguoiDung,
+            AiRecipeId = entry.MaCongThuc,
+            ItemId = entry.MaThucPham ?? entry.MaMonNguoiDung ?? entry.MaCongThuc ?? 0,
+            Source = entry.MaThucPham.HasValue ? "food" : entry.MaMonNguoiDung.HasValue ? "custom-dish" : "ai-recipe",
+            QuantityGrams = entry.KhoiLuongGram,
+            CaloriesKcal = entry.Calo,
+            ProteinGrams = entry.Protein,
+            CarbohydrateGrams = entry.Carb,
+            FatGrams = entry.Fat,
+            Notes = null // Domain doesn't have notes
         });
 
         return Ok(items);
     }
 
-    [HttpDelete("{id:guid}")]
-    public async Task<IActionResult> Delete([FromRoute] Guid id, CancellationToken cancellationToken)
+    [HttpDelete("{id:long}")]
+    public async Task<IActionResult> Delete([FromRoute] long id, CancellationToken cancellationToken)
     {
         var userId = User.GetUserId();
 
@@ -181,8 +179,8 @@ public sealed class DiaryController : ControllerBase
         return NoContent();
     }
 
-    [HttpPut("{id:guid}")]
-    public async Task<IActionResult> Update([FromRoute] Guid id, [FromBody] DiaryUpdateRequest request, CancellationToken cancellationToken)
+    [HttpPut("{id:long}")]
+    public async Task<IActionResult> Update([FromRoute] long id, [FromBody] DiaryUpdateRequest request, CancellationToken cancellationToken)
     {
         if (!ModelState.IsValid)
         {
@@ -199,50 +197,41 @@ public sealed class DiaryController : ControllerBase
         }
 
         // Update allowed fields
-        entry.QuantityGrams = request.QuantityGrams ?? entry.QuantityGrams;
-        entry.Notes = request.Notes ?? entry.Notes;
-        entry.UpdatedAt = DateTime.UtcNow;
+        entry.KhoiLuongGram = request.QuantityGrams ?? entry.KhoiLuongGram;
 
         // Recalculate nutrition if quantity changed
         if (request.QuantityGrams.HasValue)
         {
             decimal ratio = 0;
 
-            if (entry.Source == "food")
+            if (entry.MaThucPham.HasValue)
             {
-                var food = await _foodRepository.GetByIdAsync(entry.ItemId, cancellationToken);
+                var food = await _foodRepository.GetByIdAsync(entry.MaThucPham.Value, cancellationToken);
                 if (food != null)
                 {
                     ratio = request.QuantityGrams.Value / 100m;
-                    entry.CaloriesKcal = food.CaloriesKcal * ratio;
-                    entry.ProteinGrams = food.ProteinGrams * ratio;
-                    entry.CarbohydrateGrams = food.CarbohydrateGrams * ratio;
-                    entry.FatGrams = food.FatGrams * ratio;
+                    entry.Calo = food.Calo100g * ratio;
+                    entry.Protein = food.Protein100g * ratio;
+                    entry.Carb = food.Carb100g * ratio;
+                    entry.Fat = food.Fat100g * ratio;
                 }
             }
-            else if (entry.Source == "custom-dish")
+            else if (entry.MaMonNguoiDung.HasValue)
             {
-                var customDish = await _customDishRepository.GetByIdAsync(entry.ItemId, userId, cancellationToken);
+                var customDish = await _customDishRepository.GetByIdAsync(entry.MaMonNguoiDung.Value, userId, cancellationToken);
                 if (customDish != null)
                 {
-                    ratio = request.QuantityGrams.Value / customDish.PortionSizeGrams;
-                    entry.CaloriesKcal = customDish.CaloriesKcal * ratio;
-                    entry.ProteinGrams = customDish.ProteinGrams * ratio;
-                    entry.CarbohydrateGrams = customDish.CarbohydrateGrams * ratio;
-                    entry.FatGrams = customDish.FatGrams * ratio;
+                    ratio = request.QuantityGrams.Value / 100m; // Domain uses 100g as standard
+                    entry.Calo = customDish.Calo100g * ratio;
+                    entry.Protein = customDish.Protein100g * ratio;
+                    entry.Carb = customDish.Carb100g * ratio;
+                    entry.Fat = customDish.Fat100g * ratio;
                 }
             }
-            else if (entry.Source == "ai-recipe")
+            else if (entry.MaCongThuc.HasValue)
             {
-                var aiRecipe = await _context.AiRecipes.FindAsync(entry.ItemId, cancellationToken);
-                if (aiRecipe != null)
-                {
-                    ratio = request.QuantityGrams.Value / 100m;
-                    entry.CaloriesKcal = aiRecipe.CaloriesKcal * ratio;
-                    entry.ProteinGrams = aiRecipe.ProteinGrams * ratio;
-                    entry.CarbohydrateGrams = aiRecipe.CarbohydrateGrams * ratio;
-                    entry.FatGrams = aiRecipe.FatGrams * ratio;
-                }
+                // AI recipes don't have nutrition data in domain model
+                // This would need to be handled differently
             }
         }
 
@@ -251,20 +240,20 @@ public sealed class DiaryController : ControllerBase
 
         var response = new DiaryEntryResponse
         {
-            Id = entry.Id,
-            MealDate = entry.MealDate,
-            MealCode = entry.MealCode,
-            FoodId = entry.FoodId,
-            CustomDishId = entry.CustomDishId,
-            AiRecipeId = entry.AiRecipeId,
-            ItemId = entry.ItemId,
-            Source = entry.Source,
-            QuantityGrams = entry.QuantityGrams,
-            CaloriesKcal = entry.CaloriesKcal,
-            ProteinGrams = entry.ProteinGrams,
-            CarbohydrateGrams = entry.CarbohydrateGrams,
-            FatGrams = entry.FatGrams,
-            Notes = entry.Notes
+            Id = entry.MaNhatKy,
+            MealDate = entry.NgayAn,
+            MealCode = entry.MaBuaAn,
+            FoodId = entry.MaThucPham,
+            CustomDishId = entry.MaMonNguoiDung,
+            AiRecipeId = entry.MaCongThuc,
+            ItemId = entry.MaThucPham ?? entry.MaMonNguoiDung ?? entry.MaCongThuc ?? 0,
+            Source = entry.MaThucPham.HasValue ? "food" : entry.MaMonNguoiDung.HasValue ? "custom-dish" : "ai-recipe",
+            QuantityGrams = entry.KhoiLuongGram,
+            CaloriesKcal = entry.Calo,
+            ProteinGrams = entry.Protein,
+            CarbohydrateGrams = entry.Carb,
+            FatGrams = entry.Fat,
+            Notes = null // Domain doesn't have notes
         };
 
         return Ok(response);

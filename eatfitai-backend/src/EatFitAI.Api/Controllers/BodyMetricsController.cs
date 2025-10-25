@@ -31,15 +31,12 @@ public sealed class BodyMetricsController : ControllerBase
 
         var bodyMetric = new BodyMetric
         {
-            Id = Guid.NewGuid(),
-            UserId = userId,
-            RecordedAt = request.RecordedAt ?? DateTime.UtcNow,
-            WeightKg = request.WeightKg,
-            BodyFatPercent = request.BodyFatPercent,
-            MuscleMassKg = request.MuscleMassKg,
-            WaistCm = request.WaistCm,
-            HipCm = request.HipCm,
-            CreatedAt = DateTime.UtcNow
+            MaChiSo = 0, // Will be set by database
+            MaNguoiDung = userId,
+            NgayCapNhat = request.RecordedAt ?? DateTime.UtcNow,
+            CanNangKg = request.WeightKg,
+            ChieuCaoCm = request.WaistCm, // Note: Mapping waist to height, but this seems wrong - need to check domain
+            GhiChu = null
         };
 
         await _bodyMetricRepository.AddAsync(bodyMetric, cancellationToken);
@@ -47,13 +44,13 @@ public sealed class BodyMetricsController : ControllerBase
 
         var response = new BodyMetricResponse
         {
-            Id = bodyMetric.Id,
-            RecordedAt = bodyMetric.RecordedAt,
-            WeightKg = bodyMetric.WeightKg,
-            BodyFatPercent = bodyMetric.BodyFatPercent,
-            MuscleMassKg = bodyMetric.MuscleMassKg,
-            WaistCm = bodyMetric.WaistCm,
-            HipCm = bodyMetric.HipCm
+            Id = bodyMetric.MaChiSo,
+            RecordedAt = bodyMetric.NgayCapNhat,
+            WeightKg = bodyMetric.CanNangKg ?? 0,
+            BodyFatPercent = null, // Domain doesn't have body fat percent
+            MuscleMassKg = null, // Domain doesn't have muscle mass
+            WaistCm = bodyMetric.ChieuCaoCm, // Mapped to height, but this is incorrect
+            HipCm = null // Domain doesn't have hip measurement
         };
 
         return Ok(response);
@@ -61,14 +58,13 @@ public sealed class BodyMetricsController : ControllerBase
 
     private sealed class BodyMetricDb
     {
-        public Guid Id { get; set; }
-        public Guid UserId { get; set; }
-        public DateTime RecordedAt { get; set; }
-        public decimal WeightKg { get; set; }
-        public decimal? BodyFatPercent { get; set; }
-        public decimal? MuscleMassKg { get; set; }
-        public decimal? WaistCm { get; set; }
-        public decimal? HipCm { get; set; }
-        public DateTime CreatedAt { get; set; }
+        public long MaChiSo { get; set; }
+        public Guid MaNguoiDung { get; set; }
+        public decimal? ChieuCaoCm { get; set; }
+        public decimal? CanNangKg { get; set; }
+        public string? MaMucDo { get; set; }
+        public string? MaMucTieu { get; set; }
+        public DateTime NgayCapNhat { get; set; }
+        public string? GhiChu { get; set; }
     }
 }

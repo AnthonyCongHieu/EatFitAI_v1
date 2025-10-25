@@ -4,7 +4,7 @@ namespace EatFitAI.Api.Contracts.Foods;
 
 public sealed class FoodResponse
 {
-    public Guid Id { get; init; }
+    public long Id { get; init; }
     public string Name { get; init; } = string.Empty;
     public string? Description { get; init; }
     public string? Brand { get; init; }

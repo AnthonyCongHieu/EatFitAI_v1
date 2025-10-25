@@ -2,7 +2,7 @@
 
 public class ScriptHistory
 {
-    public int Id { get; set; }
-    public string FileName { get; set; } = string.Empty;
-    public DateTime AppliedAt { get; set; }
+    public int MaLichSu { get; set; }
+    public string TenFile { get; set; } = string.Empty;
+    public DateTime ThoiGianApDung { get; set; }
 }
