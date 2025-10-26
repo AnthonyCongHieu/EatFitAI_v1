@@ -17,7 +17,7 @@ public class NutritionTargetRepository : INutritionTargetRepository
     public async Task<NutritionTarget?> GetCurrentAsync(Guid userId, CancellationToken cancellationToken = default)
     {
         return await _context.MucTieuDinhDuong
-            .Where(t => t.MaNguoiDung == userId && t.HieuLucTuNgay <= DateTime.UtcNow)
+            .Where(t => t.MaNguoiDung == userId && t.HieuLucTuNgay <= DateOnly.FromDateTime(DateTime.UtcNow))
             .OrderByDescending(t => t.HieuLucTuNgay)
             .FirstOrDefaultAsync(cancellationToken);
     }

@@ -2,11 +2,11 @@
 
 public sealed class AuthResponse
 {
-    public Guid UserId { get; init; }
+    public Guid MaNguoiDung { get; init; }
     public string Email { get; init; } = string.Empty;
     public string? HoTen { get; init; }
-    public string AccessToken { get; init; } = string.Empty;
-    public DateTimeOffset AccessTokenExpiresAt { get; init; }
-    public string RefreshToken { get; init; } = string.Empty;
-    public DateTimeOffset RefreshTokenExpiresAt { get; init; }
+    public string MaAccessToken { get; init; } = string.Empty;
+    public DateTimeOffset ThoiGianHetHanAccessToken { get; init; }
+    public string MaRefreshToken { get; init; } = string.Empty;
+    public DateTimeOffset ThoiGianHetHanRefreshToken { get; init; }
 }

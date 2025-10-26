@@ -5,5 +5,5 @@ namespace EatFitAI.Api.Contracts.Auth;
 public sealed class GoogleLoginRequest
 {
     [Required]
-    public string IdToken { get; set; } = string.Empty;
+    public string MaIdToken { get; set; } = string.Empty;
 }

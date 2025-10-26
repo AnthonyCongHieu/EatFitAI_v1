@@ -4,7 +4,7 @@ public class NutritionTarget
 {
     public long MaMucTieuDD { get; set; }
     public Guid MaNguoiDung { get; set; }
-    public DateTime HieuLucTuNgay { get; set; }
+    public DateOnly HieuLucTuNgay { get; set; }
     public int CaloKcal { get; set; }
     public decimal ProteinG { get; set; }
     public decimal CarbG { get; set; }

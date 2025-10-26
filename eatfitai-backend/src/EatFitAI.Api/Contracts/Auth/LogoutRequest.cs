@@ -5,6 +5,6 @@ namespace EatFitAI.Api.Contracts.Auth;
 public sealed class LogoutRequest
 {
     [Required]
-    public string RefreshToken { get; set; } = string.Empty;
+    public string MaRefreshToken { get; set; } = string.Empty;
 }
 

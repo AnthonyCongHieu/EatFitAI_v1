@@ -50,14 +50,14 @@ public class AppDbContext : DbContext
         builder.Entity<NguoiDung>(entity =>
         {
             entity.ToTable("NguoiDung");
-            entity.Property(u => u.MaNguoiDung).HasColumnName("MaNguoiDung");
+            entity.Property(u => u.Id).HasColumnName("MaNguoiDung");
             entity.Property(u => u.Email).HasColumnName("Email");
-            entity.Property(u => u.MatKhauHash).HasColumnName("MatKhauHash");
+            entity.Property(u => u.PasswordHash).HasColumnName("MatKhauHash");
             entity.Property(u => u.HoTen).HasColumnName("HoTen");
             entity.Property(u => u.GioiTinh).HasColumnName("GioiTinh");
             entity.Property(u => u.NgaySinh).HasColumnName("NgaySinh").HasConversion(NullableDateOnlyConverter).HasColumnType("date");
             entity.Property(u => u.NgayTao).HasColumnName("NgayTao").HasDefaultValueSql("GETUTCDATE()");
-            entity.Property(u => u.NgayCapNhat).HasColumnName("NgayCapNhat");
+            entity.Property(u => u.NgayCapNhat).HasColumnName("NgayCapNhat").HasDefaultValueSql("GETUTCDATE()");
             entity.HasIndex(u => u.Email).IsUnique();
         });
 
@@ -85,6 +85,7 @@ public class AppDbContext : DbContext
         builder.Entity<BodyMetric>(entity =>
         {
             entity.ToTable("ChiSoCoThe");
+            entity.HasKey(x => x.MaChiSo);
             entity.Property(x => x.MaChiSo).HasColumnName("MaChiSo");
             entity.Property(x => x.MaNguoiDung).HasColumnName("MaNguoiDung");
             entity.Property(x => x.ChieuCaoCm).HasColumnName("ChieuCaoCm").HasColumnType("decimal(6,2)");
@@ -111,6 +112,7 @@ public class AppDbContext : DbContext
         builder.Entity<NutritionTarget>(entity =>
         {
             entity.ToTable("MucTieuDinhDuong");
+            entity.HasKey(x => x.MaMucTieuDD);
             entity.Property(x => x.MaMucTieuDD).HasColumnName("MaMucTieuDD");
             entity.Property(x => x.MaNguoiDung).HasColumnName("MaNguoiDung");
             entity.Property(x => x.HieuLucTuNgay).HasColumnName("HieuLucTuNgay").HasConversion(DateOnlyConverter).HasColumnType("date");
@@ -133,6 +135,7 @@ public class AppDbContext : DbContext
         builder.Entity<Food>(entity =>
         {
             entity.ToTable("ThucPham");
+            entity.HasKey(x => x.MaThucPham);
             entity.Property(x => x.MaThucPham).HasColumnName("MaThucPham");
             entity.Property(x => x.TenThucPham).HasColumnName("TenThucPham");
             entity.Property(x => x.NhomThucPham).HasColumnName("NhomThucPham");
@@ -153,6 +156,7 @@ public class AppDbContext : DbContext
         builder.Entity<CustomDish>(entity =>
         {
             entity.ToTable("MonNguoiDung");
+            entity.HasKey(x => x.MaMonNguoiDung);
             entity.Property(x => x.MaMonNguoiDung).HasColumnName("MaMonNguoiDung");
             entity.Property(x => x.MaNguoiDung).HasColumnName("MaNguoiDung");
             entity.Property(x => x.TenMon).HasColumnName("TenMon");
@@ -175,13 +179,18 @@ public class AppDbContext : DbContext
         builder.Entity<CustomDishIngredient>(entity =>
         {
             entity.ToTable("NguyenLieuMonNguoiDung");
+            entity.HasKey(x => x.MaNguyenLieu);
             entity.Property(x => x.MaNguyenLieu).HasColumnName("MaNguyenLieu");
             entity.Property(x => x.MaMonNguoiDung).HasColumnName("MaMonNguoiDung");
             entity.Property(x => x.MaThucPham).HasColumnName("MaThucPham");
             entity.Property(x => x.TenNguyenLieu).HasColumnName("TenNguyenLieu");
+            entity.Property(x => x.CaloKcal).HasColumnName("CaloKcal");
             ConfigureMacroColumns(entity.Property(x => x.CaloKcal), isKcal: true);
+            entity.Property(x => x.ProteinG).HasColumnName("ProteinG");
             ConfigureMacroColumns(entity.Property(x => x.ProteinG));
+            entity.Property(x => x.CarbG).HasColumnName("CarbG");
             ConfigureMacroColumns(entity.Property(x => x.CarbG));
+            entity.Property(x => x.FatG).HasColumnName("FatG");
             ConfigureMacroColumns(entity.Property(x => x.FatG));
             entity.Property(x => x.KhoiLuongGram).HasColumnName("KhoiLuongGram").HasColumnType("decimal(9,2)");
             entity.HasOne(x => x.CustomDish)
@@ -197,6 +206,7 @@ public class AppDbContext : DbContext
         builder.Entity<Recipe>(entity =>
         {
             entity.ToTable("CongThuc");
+            entity.HasKey(x => x.MaCongThuc);
             entity.Property(x => x.MaCongThuc).HasColumnName("MaCongThuc");
             entity.Property(x => x.TenCongThuc).HasColumnName("TenCongThuc");
             entity.Property(x => x.LoaiMon).HasColumnName("LoaiMon");
@@ -213,6 +223,7 @@ public class AppDbContext : DbContext
                 table.HasCheckConstraint("CK_NK_ChiMotNguon",
                     "(CASE WHEN [MaThucPham] IS NOT NULL THEN 1 ELSE 0 END + CASE WHEN [MaMonNguoiDung] IS NOT NULL THEN 1 ELSE 0 END + CASE WHEN [MaCongThuc] IS NOT NULL THEN 1 ELSE 0 END) = 1");
             });
+            entity.HasKey(x => x.MaNhatKy);
             entity.Property(x => x.MaNhatKy).HasColumnName("MaNhatKy");
             entity.Property(x => x.MaNguoiDung).HasColumnName("MaNguoiDung");
             entity.Property(x => x.NgayAn).HasColumnName("NgayAn").HasConversion(DateOnlyConverter).HasColumnType("date");
@@ -256,6 +267,7 @@ public class AppDbContext : DbContext
         builder.Entity<RefreshToken>(entity =>
         {
             entity.ToTable("RefreshToken");
+            entity.HasKey(x => x.MaRefreshToken);
             entity.Property(x => x.MaRefreshToken).HasColumnName("MaRefreshToken");
             entity.Property(x => x.MaNguoiDung).HasColumnName("MaNguoiDung");
             entity.Property(x => x.Token).HasColumnName("Token");
@@ -276,6 +288,7 @@ public class AppDbContext : DbContext
         builder.Entity<ScriptHistory>(entity =>
         {
             entity.ToTable("LichSuCapNhat");
+            entity.HasKey(x => x.MaLichSu);
             entity.Property(x => x.MaLichSu).HasColumnName("MaLichSu");
             entity.Property(x => x.TenFile).HasColumnName("TenFile").HasMaxLength(260);
             entity.Property(x => x.ThoiGianApDung).HasColumnName("ThoiGianApDung").HasDefaultValueSql("GETUTCDATE()");
@@ -285,6 +298,7 @@ public class AppDbContext : DbContext
         builder.Entity<AiRecipe>(entity =>
         {
             entity.ToTable("NhatKyAI");
+            entity.HasKey(x => x.MaGoiYAI);
             entity.Property(x => x.MaGoiYAI).HasColumnName("MaGoiYAI");
             entity.Property(x => x.MaNguoiDung).HasColumnName("MaNguoiDung");
             entity.Property(x => x.LoaiDeXuat).HasColumnName("LoaiDeXuat");
@@ -301,10 +315,11 @@ public class AppDbContext : DbContext
         builder.Entity<ImageRecognition>(entity =>
         {
             entity.ToTable("NhanDienAnh");
+            entity.HasKey(x => x.MaNhanDien);
             entity.Property(x => x.MaNhanDien).HasColumnName("MaNhanDien");
             entity.Property(x => x.MaGoiYAI).HasColumnName("MaGoiYAI");
             entity.Property(x => x.Nhan).HasColumnName("Nhan");
-            entity.Property(x => x.DoTinCay).HasColumnName("DoTinCay");
+            entity.Property(x => x.DoTinCay).HasColumnName("DoTinCay").HasColumnType("decimal(5,4)");
             entity.HasOne(x => x.AiRecipe)
                 .WithMany(ar => ar.ImageRecognitions)
                 .HasForeignKey(x => x.MaGoiYAI)
@@ -314,6 +329,7 @@ public class AppDbContext : DbContext
         builder.Entity<MealType>(entity =>
         {
             entity.ToTable("LoaiBuaAn");
+            entity.HasKey(x => x.MaBuaAn);
             entity.Property(x => x.MaBuaAn).HasColumnName("MaBuaAn");
             entity.Property(x => x.TenBuaAn).HasColumnName("TenBuaAn");
         });
@@ -321,6 +337,7 @@ public class AppDbContext : DbContext
         builder.Entity<ActivityLevel>(entity =>
         {
             entity.ToTable("MucDoVanDong");
+            entity.HasKey(x => x.MaMucDo);
             entity.Property(x => x.MaMucDo).HasColumnName("MaMucDo");
             entity.Property(x => x.TenMucDo).HasColumnName("TenMucDo");
             entity.Property(x => x.MoTa).HasColumnName("MoTa");
@@ -330,6 +347,7 @@ public class AppDbContext : DbContext
         builder.Entity<Goal>(entity =>
         {
             entity.ToTable("MucTieu");
+            entity.HasKey(x => x.MaMucTieu);
             entity.Property(x => x.MaMucTieu).HasColumnName("MaMucTieu");
             entity.Property(x => x.TenMucTieu).HasColumnName("TenMucTieu");
             entity.Property(x => x.MoTa).HasColumnName("MoTa");
@@ -338,6 +356,7 @@ public class AppDbContext : DbContext
         builder.Entity<RecipeIngredient>(entity =>
         {
             entity.ToTable("NguyenLieuCongThuc");
+            entity.HasKey(x => x.MaNguyenLieu);
             entity.Property(x => x.MaNguyenLieu).HasColumnName("MaNguyenLieu");
             entity.Property(x => x.MaCongThuc).HasColumnName("MaCongThuc");
             entity.Property(x => x.MaThucPham).HasColumnName("MaThucPham");

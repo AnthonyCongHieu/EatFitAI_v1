@@ -31,7 +31,8 @@ builder.Services.Configure<JwtOptions>(builder.Configuration.GetSection(JwtOptio
 builder.Services.AddDbContext<AppDbContext>((serviceProvider, options) =>
 {
     var databaseOptions = serviceProvider.GetRequiredService<IOptions<DatabaseOptions>>().Value;
-    options.UseSqlServer(databaseOptions.Default); // Dung chung connection string cho EF schema + Dapper
+    options.UseSqlServer(databaseOptions.Default) // Dung chung connection string cho EF schema + Dapper
+        .ConfigureWarnings(warnings => warnings.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.RelationalEventId.PendingModelChangesWarning));
 });
 
 var identityBuilder = builder.Services.AddIdentityCore<NguoiDung>(options =>
@@ -61,7 +62,6 @@ builder.Services.AddScoped<IFoodRepository, FoodRepository>();
 builder.Services.AddScoped<ICustomDishRepository, CustomDishRepository>();
 builder.Services.AddScoped<INutritionTargetRepository, NutritionTargetRepository>();
 builder.Services.AddScoped<ISummaryRepository, SummaryRepository>();
-builder.Services.AddScoped<ITokenService, JwtTokenService>();
 
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
