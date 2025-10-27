@@ -35,22 +35,22 @@ public sealed class CustomDishesController : ControllerBase
         var userId = User.GetUserId();
 
         // Calculate totals from ingredients
-        var totalCalories = request.Ingredients.Sum(i => i.CaloriesKcal);
-        var totalProtein = request.Ingredients.Sum(i => i.ProteinGrams);
-        var totalCarbs = request.Ingredients.Sum(i => i.CarbohydrateGrams);
-        var totalFat = request.Ingredients.Sum(i => i.FatGrams);
-        var totalGrams = request.Ingredients.Sum(i => i.QuantityGrams);
+        var totalCalories = request.NguyenLieu.Sum(i => i.Calo);
+        var totalProtein = request.NguyenLieu.Sum(i => i.Protein);
+        var totalCarbs = request.NguyenLieu.Sum(i => i.Carb);
+        var totalFat = request.NguyenLieu.Sum(i => i.Fat);
+        var totalGrams = request.NguyenLieu.Sum(i => i.KhoiLuongGram);
 
         var customDish = new Domain.Foods.CustomDish
         {
             MaMonNguoiDung = 0, // Will be set by database
             MaNguoiDung = userId,
-            TenMon = request.Name,
+            TenMon = request.TenMon,
             Calo100g = totalCalories / (totalGrams / 100m), // Per 100g
             Protein100g = totalProtein / (totalGrams / 100m),
             Carb100g = totalCarbs / (totalGrams / 100m),
             Fat100g = totalFat / (totalGrams / 100m),
-            GhiChu = request.Description,
+            GhiChu = request.GhiChu,
             NgayTao = DateTime.UtcNow
         };
 
@@ -62,14 +62,14 @@ public sealed class CustomDishesController : ControllerBase
 
         var response = new CustomDishResponse
         {
-            Id = customDish.MaMonNguoiDung,
-            Name = customDish.TenMon,
-            Description = customDish.GhiChu,
-            PortionSizeGrams = 100, // Standard 100g portion
-            CaloriesKcal = customDish.Calo100g,
-            ProteinGrams = customDish.Protein100g,
-            CarbohydrateGrams = customDish.Carb100g,
-            FatGrams = customDish.Fat100g
+            MaMonNguoiDung = customDish.MaMonNguoiDung,
+            TenMon = customDish.TenMon,
+            GhiChu = customDish.GhiChu,
+            Calo100g = customDish.Calo100g,
+            Protein100g = customDish.Protein100g,
+            Carb100g = customDish.Carb100g,
+            Fat100g = customDish.Fat100g,
+            NgayTao = customDish.NgayTao
         };
 
         return Ok(response);
@@ -83,14 +83,14 @@ public sealed class CustomDishesController : ControllerBase
 
         var items = dishes.Select(dish => new CustomDishResponse
         {
-            Id = dish.MaMonNguoiDung,
-            Name = dish.TenMon,
-            Description = dish.GhiChu,
-            PortionSizeGrams = 100, // Standard 100g portion
-            CaloriesKcal = dish.Calo100g,
-            ProteinGrams = dish.Protein100g,
-            CarbohydrateGrams = dish.Carb100g,
-            FatGrams = dish.Fat100g
+            MaMonNguoiDung = dish.MaMonNguoiDung,
+            TenMon = dish.TenMon,
+            GhiChu = dish.GhiChu,
+            Calo100g = dish.Calo100g,
+            Protein100g = dish.Protein100g,
+            Carb100g = dish.Carb100g,
+            Fat100g = dish.Fat100g,
+            NgayTao = dish.NgayTao
         });
 
         return Ok(items);
@@ -106,15 +106,15 @@ public sealed class CustomDishesController : ControllerBase
 
         var response = new CustomDishDetailResponse
         {
-            Id = dish.MaMonNguoiDung,
-            Name = dish.TenMon,
-            Description = dish.GhiChu,
-            PortionSizeGrams = 100, // Standard 100g portion
-            CaloriesKcal = dish.Calo100g,
-            ProteinGrams = dish.Protein100g,
-            CarbohydrateGrams = dish.Carb100g,
-            FatGrams = dish.Fat100g,
-            Ingredients = new List<CustomDishIngredientResponse>() // Domain doesn't have ingredients
+            MaMonNguoiDung = dish.MaMonNguoiDung,
+            TenMon = dish.TenMon,
+            GhiChu = dish.GhiChu,
+            Calo100g = dish.Calo100g,
+            Protein100g = dish.Protein100g,
+            Carb100g = dish.Carb100g,
+            Fat100g = dish.Fat100g,
+            NgayTao = dish.NgayTao,
+            NguyenLieu = new List<CustomDishIngredientResponse>() // Domain doesn't have ingredients
         };
 
         return Ok(response);

@@ -88,10 +88,11 @@ public class AppDbContext : DbContext
             entity.HasKey(x => x.MaChiSo);
             entity.Property(x => x.MaChiSo).HasColumnName("MaChiSo");
             entity.Property(x => x.MaNguoiDung).HasColumnName("MaNguoiDung");
-            entity.Property(x => x.ChieuCaoCm).HasColumnName("ChieuCaoCm").HasColumnType("decimal(6,2)");
             entity.Property(x => x.CanNangKg).HasColumnName("CanNangKg").HasColumnType("decimal(6,2)");
-            entity.Property(x => x.MaMucDo).HasColumnName("MaMucDo");
-            entity.Property(x => x.MaMucTieu).HasColumnName("MaMucTieu");
+            entity.Property(x => x.PhanTramMoCoThe).HasColumnName("PhanTramMoCoThe").HasColumnType("decimal(5,2)");
+            entity.Property(x => x.KhoiLuongCoKg).HasColumnName("KhoiLuongCoKg").HasColumnType("decimal(6,2)");
+            entity.Property(x => x.VongEoCm).HasColumnName("VongEoCm").HasColumnType("decimal(6,2)");
+            entity.Property(x => x.VongMongCm).HasColumnName("VongMongCm").HasColumnType("decimal(6,2)");
             entity.Property(x => x.NgayCapNhat).HasColumnName("NgayCapNhat");
             entity.Property(x => x.GhiChu).HasColumnName("GhiChu");
             entity.HasIndex(x => new { x.MaNguoiDung, x.NgayCapNhat });
@@ -99,14 +100,6 @@ public class AppDbContext : DbContext
                 .WithMany(u => u.BodyMetrics)
                 .HasForeignKey(x => x.MaNguoiDung)
                 .OnDelete(DeleteBehavior.Cascade);
-            entity.HasOne<ActivityLevel>()
-                .WithMany(al => al.BodyMetrics)
-                .HasForeignKey(x => x.MaMucDo)
-                .OnDelete(DeleteBehavior.Restrict);
-            entity.HasOne<Goal>()
-                .WithMany(g => g.BodyMetrics)
-                .HasForeignKey(x => x.MaMucTieu)
-                .OnDelete(DeleteBehavior.Restrict);
         });
 
         builder.Entity<NutritionTarget>(entity =>

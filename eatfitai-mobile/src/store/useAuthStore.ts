@@ -65,16 +65,16 @@ export const useAuthStore = create<AuthState>((set) => ({
   },
 
   login: async (email, password) => {
-    const resp = await apiClient.post('/api/auth/login', { email, password });
+    const resp = await apiClient.post('/api/auth/login', { Email: email, MatKhau: password });
     const data = resp.data as any;
-    const accessToken = data?.accessToken as string | undefined;
+    const accessToken = data?.MaAccessToken as string | undefined;
     if (!accessToken) throw new Error('Thiếu accessToken trong phản hồi đăng nhập');
 
     await tokenStorage.saveTokensFull({
       accessToken,
-      accessTokenExpiresAt: data?.accessTokenExpiresAt,
-      refreshToken: data?.refreshToken,
-      refreshTokenExpiresAt: data?.refreshTokenExpiresAt,
+      accessTokenExpiresAt: data?.ThoiGianHetHanAccessToken,
+      refreshToken: data?.MaRefreshToken,
+      refreshTokenExpiresAt: data?.ThoiGianHetHanRefreshToken,
     });
     setAccessTokenMem(accessToken);
     await updateSessionFromAuthResponse(data);
@@ -83,18 +83,17 @@ export const useAuthStore = create<AuthState>((set) => ({
   },
 
   register: async (name, email, password) => {
-    // Backend nhận fullName; để tương thích tạm truyền cả hai
     try {
-      const resp = await apiClient.post('/api/auth/register', { fullName: name, displayName: name, email, password });
+      const resp = await apiClient.post('/api/auth/register', { HoTen: name, Email: email, MatKhau: password });
       const data = resp.data as any;
-      const accessToken = data?.accessToken as string | undefined;
+      const accessToken = data?.MaAccessToken as string | undefined;
       if (!accessToken) throw new Error('Thiếu accessToken trong phản hồi đăng ký');
 
       await tokenStorage.saveTokensFull({
         accessToken,
-        accessTokenExpiresAt: data?.accessTokenExpiresAt,
-        refreshToken: data?.refreshToken,
-        refreshTokenExpiresAt: data?.refreshTokenExpiresAt,
+        accessTokenExpiresAt: data?.ThoiGianHetHanAccessToken,
+        refreshToken: data?.MaRefreshToken,
+        refreshTokenExpiresAt: data?.ThoiGianHetHanRefreshToken,
       });
       setAccessTokenMem(accessToken);
       await updateSessionFromAuthResponse(data);
@@ -144,7 +143,7 @@ export const useAuthStore = create<AuthState>((set) => ({
     try {
       const refreshToken = await tokenStorage.getRefreshToken();
       if (refreshToken) {
-        await apiClient.post('/api/auth/logout', { refreshToken });
+        await apiClient.post('/api/auth/logout', { MaRefreshToken: refreshToken });
       }
     } catch {
       // ignore logout API failure; proceed to clear local session

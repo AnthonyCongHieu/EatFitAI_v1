@@ -8,44 +8,29 @@ public sealed class CustomDishCreateRequest
 {
     [Required]
     [MaxLength(200)]
-    public string Ten { get; set; } = string.Empty;
+    public string TenMon { get; set; } = string.Empty;
 
-    [Required]
-    [MaxLength(200)]
-    public string Name { get; set; } = string.Empty;
-
-    public string? MoTa { get; set; }
-
-    public string? Description { get; set; }
+    public string? GhiChu { get; set; }
 
     [MinLength(1)]
     public List<CustomDishIngredientInput> NguyenLieu { get; set; } = new();
-
-    [MinLength(1)]
-    public List<CustomDishIngredientInput> Ingredients { get; set; } = new();
 }
 
 public sealed class CustomDishIngredientInput
 {
-    public long? FoodId { get; set; }
+    public long? MaThucPham { get; set; }
     [Required]
     [MaxLength(200)]
     public string Ten { get; set; } = string.Empty;
-    public string Name { get; set; } = string.Empty;
     [Range(0.01, 100000)]
-    public decimal SoLuongGram { get; set; }
-    public decimal QuantityGrams { get; set; }
+    public decimal KhoiLuongGram { get; set; }
     [Range(0, 1000000)]
-    public decimal CaloKcal { get; set; }
-    public decimal CaloriesKcal { get; set; }
+    public decimal Calo { get; set; }
     [Range(0, 100000)]
-    public decimal ProteinGram { get; set; }
-    public decimal ProteinGrams { get; set; }
+    public decimal Protein { get; set; }
     [Range(0, 100000)]
-    public decimal CarbGram { get; set; }
-    public decimal CarbohydrateGrams { get; set; }
+    public decimal Carb { get; set; }
     [Range(0, 100000)]
-    public decimal FatGram { get; set; }
-    public decimal FatGrams { get; set; }
+    public decimal Fat { get; set; }
 }
 

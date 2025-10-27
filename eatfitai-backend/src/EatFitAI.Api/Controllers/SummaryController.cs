@@ -26,12 +26,11 @@ public sealed class SummaryController : ControllerBase
 
         var resp = new DaySummaryResponse
         {
-            MealDate = date,
-            TotalQuantityGrams = summary?.TotalQuantityGrams ?? 0,
-            TotalCaloriesKcal = summary?.TotalCaloriesKcal ?? 0,
-            TotalProteinGrams = summary?.TotalProteinGrams ?? 0,
-            TotalCarbohydrateGrams = summary?.TotalCarbohydrateGrams ?? 0,
-            TotalFatGrams = summary?.TotalFatGrams ?? 0
+            NgayAn = date,
+            TongCalo = summary?.TotalCaloriesKcal ?? 0,
+            TongProtein = summary?.TotalProteinGrams ?? 0,
+            TongCarb = summary?.TotalCarbohydrateGrams ?? 0,
+            TongFat = summary?.TotalFatGrams ?? 0
         };
 
         return Ok(resp);
@@ -45,12 +44,11 @@ public sealed class SummaryController : ControllerBase
 
         var items = summaries.Select(s => new WeekSummaryItem
         {
-            MealDate = s.MealDate,
-            TotalQuantityGrams = s.TotalQuantityGrams,
-            TotalCaloriesKcal = s.TotalCaloriesKcal,
-            TotalProteinGrams = s.TotalProteinGrams,
-            TotalCarbohydrateGrams = s.TotalCarbohydrateGrams,
-            TotalFatGrams = s.TotalFatGrams
+            NgayAn = s.MealDate,
+            TongCalo = s.TotalCaloriesKcal,
+            TongProtein = s.TotalProteinGrams,
+            TongCarb = s.TotalCarbohydrateGrams,
+            TongFat = s.TotalFatGrams
         }).ToList();
 
         return Ok(new WeekSummaryResponse { Days = items });

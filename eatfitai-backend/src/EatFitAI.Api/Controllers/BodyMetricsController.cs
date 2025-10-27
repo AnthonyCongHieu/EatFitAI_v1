@@ -33,9 +33,12 @@ public sealed class BodyMetricsController : ControllerBase
         {
             MaChiSo = 0, // Will be set by database
             MaNguoiDung = userId,
-            NgayCapNhat = request.RecordedAt ?? DateTime.UtcNow,
-            CanNangKg = request.WeightKg,
-            ChieuCaoCm = request.WaistCm, // Note: Mapping waist to height, but this seems wrong - need to check domain
+            NgayCapNhat = request.ThoiGianGhiNhan ?? DateTime.UtcNow,
+            CanNangKg = request.CanNangKg,
+            PhanTramMoCoThe = request.PhanTramMoCoThe,
+            KhoiLuongCoKg = request.KhoiLuongCoKg,
+            VongEoCm = request.VongEoCm,
+            VongMongCm = request.VongMongCm,
             GhiChu = null
         };
 
@@ -44,13 +47,13 @@ public sealed class BodyMetricsController : ControllerBase
 
         var response = new BodyMetricResponse
         {
-            Id = bodyMetric.MaChiSo,
-            RecordedAt = bodyMetric.NgayCapNhat,
-            WeightKg = bodyMetric.CanNangKg ?? 0,
-            BodyFatPercent = null, // Domain doesn't have body fat percent
-            MuscleMassKg = null, // Domain doesn't have muscle mass
-            WaistCm = bodyMetric.ChieuCaoCm, // Mapped to height, but this is incorrect
-            HipCm = null // Domain doesn't have hip measurement
+            MaChiSo = bodyMetric.MaChiSo,
+            NgayCapNhat = bodyMetric.NgayCapNhat,
+            CanNangKg = bodyMetric.CanNangKg ?? 0,
+            PhanTramMoCoThe = bodyMetric.PhanTramMoCoThe,
+            KhoiLuongCoKg = bodyMetric.KhoiLuongCoKg,
+            VongEoCm = bodyMetric.VongEoCm,
+            VongMongCm = bodyMetric.VongMongCm
         };
 
         return Ok(response);

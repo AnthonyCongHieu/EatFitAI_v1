@@ -53,7 +53,7 @@ public sealed class NutritionTargetsController : ControllerBase
             existingTarget.ProteinG = request.ProteinG;
             existingTarget.CarbG = request.CarbG;
             existingTarget.FatG = request.FatG;
-            existingTarget.HieuLucTuNgay = request.EffectiveDate.HasValue ? DateOnly.FromDateTime(request.EffectiveDate.Value) : DateOnly.FromDateTime(DateTime.UtcNow);
+            existingTarget.HieuLucTuNgay = request.HieuLucTuNgay.HasValue ? DateOnly.FromDateTime(request.HieuLucTuNgay.Value) : DateOnly.FromDateTime(DateTime.UtcNow);
             existingTarget.NgayTao = DateTime.UtcNow;
 
             await _nutritionTargetRepository.UpdateAsync(existingTarget, cancellationToken);
@@ -65,7 +65,7 @@ public sealed class NutritionTargetsController : ControllerBase
             {
                 MaMucTieuDD = 0, // Will be set by database
                 MaNguoiDung = userId,
-                HieuLucTuNgay = request.EffectiveDate.HasValue ? DateOnly.FromDateTime(request.EffectiveDate.Value) : DateOnly.FromDateTime(DateTime.UtcNow),
+                HieuLucTuNgay = request.HieuLucTuNgay.HasValue ? DateOnly.FromDateTime(request.HieuLucTuNgay.Value) : DateOnly.FromDateTime(DateTime.UtcNow),
                 CaloKcal = request.CaloKcal,
                 ProteinG = request.ProteinG,
                 CarbG = request.CarbG,
@@ -87,13 +87,14 @@ public sealed class NutritionTargetsController : ControllerBase
     {
         return new NutritionTargetResponse
         {
-            Id = target.MaMucTieuDD,
-            EffectiveDate = target.HieuLucTuNgay.ToDateTime(TimeOnly.MinValue),
+            MaMucTieuDD = target.MaMucTieuDD,
+            HieuLucTuNgay = target.HieuLucTuNgay,
             CaloKcal = target.CaloKcal,
             ProteinG = target.ProteinG,
             CarbG = target.CarbG,
             FatG = target.FatG,
-            Nguon = target.Nguon
+            Nguon = target.Nguon,
+            NgayTao = target.NgayTao
         };
     }
 

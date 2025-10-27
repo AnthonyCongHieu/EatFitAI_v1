@@ -71,6 +71,7 @@ builder.Services.AddControllers()
     });
 builder.Services.AddProblemDetails();
 builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
 builder.Services.AddAuthorization();
 
 const string corsPolicyName = "FrontendCors";
@@ -173,6 +174,8 @@ app.UseStatusCodePages(async context =>
 });
 
 app.UseCors(corsPolicyName);
+app.UseSwagger();
+app.UseSwaggerUI();
 app.UseAuthentication();
 app.UseAuthorization();
 

@@ -29,17 +29,16 @@ public sealed class FoodsController : ControllerBase
         {
             Items = items.Select(f => new FoodResponse
             {
-                Id = f.MaThucPham,
-                Name = f.TenThucPham,
-                Description = f.MoTaKhauPhan,
-                Brand = f.NhomThucPham,
-                Category = f.NhomThucPham,
-                ServingSizeGrams = 100, // Standard serving size
-                CaloriesKcal = f.Calo100g,
-                ProteinGrams = f.Protein100g,
-                CarbohydrateGrams = f.Carb100g,
-                FatGrams = f.Fat100g,
-                IsCustom = false // Domain foods are not custom
+                MaThucPham = f.MaThucPham,
+                TenThucPham = f.TenThucPham,
+                NhomThucPham = f.NhomThucPham,
+                MoTaKhauPhan = f.MoTaKhauPhan,
+                Calo100g = f.Calo100g,
+                Protein100g = f.Protein100g,
+                Carb100g = f.Carb100g,
+                Fat100g = f.Fat100g,
+                HinhAnh = f.HinhAnh,
+                TrangThai = f.TrangThai
             }).ToList(),
             TotalCount = totalCount,
             Offset = offset,
@@ -60,17 +59,16 @@ public sealed class FoodsController : ControllerBase
 
         var response = new FoodResponse
         {
-            Id = food.MaThucPham,
-            Name = food.TenThucPham,
-            Description = food.MoTaKhauPhan,
-            Brand = food.NhomThucPham,
-            Category = food.NhomThucPham,
-            ServingSizeGrams = 100, // Standard serving size
-            CaloriesKcal = food.Calo100g,
-            ProteinGrams = food.Protein100g,
-            CarbohydrateGrams = food.Carb100g,
-            FatGrams = food.Fat100g,
-            IsCustom = false // Domain foods are not custom
+            MaThucPham = food.MaThucPham,
+            TenThucPham = food.TenThucPham,
+            NhomThucPham = food.NhomThucPham,
+            MoTaKhauPhan = food.MoTaKhauPhan,
+            Calo100g = food.Calo100g,
+            Protein100g = food.Protein100g,
+            Carb100g = food.Carb100g,
+            Fat100g = food.Fat100g,
+            HinhAnh = food.HinhAnh,
+            TrangThai = food.TrangThai
         };
 
         return Ok(response);
