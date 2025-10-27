@@ -3,6 +3,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
 using System.Security.Claims;
 using System.Text;
+using Asp.Versioning;
 using EatFitAI.Api.Contracts.Auth;
 using EatFitAI.Application.Auth;
 using EatFitAI.Application.Repositories;
@@ -13,9 +14,13 @@ using Microsoft.IdentityModel.Tokens;
 
 namespace EatFitAI.Api.Controllers;
 
+/// <summary>
+/// Authentication controller for user registration, login, and token management.
+/// </summary>
 [ApiController]
 [Route("api/auth")]
 [AllowAnonymous]
+[ApiVersion("1.0")]
 public class AuthController : ControllerBase
 {
     private readonly IAuthRepository _authRepository;
@@ -32,7 +37,21 @@ public class AuthController : ControllerBase
         _logger = logger;
     }
 
+    /// <summary>
+    /// Registers a new user account.
+    /// </summary>
+    /// <param name="request">The registration request containing user details.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>Authentication response with tokens if successful.</returns>
+    /// <response code="200">User registered successfully.</response>
+    /// <response code="400">Invalid request data.</response>
+    /// <response code="422">Email already exists.</response>
+    /// <response code="500">Internal server error.</response>
     [HttpPost("register")]
+    [ProducesResponseType(typeof(AuthResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> Register([FromBody] RegisterRequest request, CancellationToken cancellationToken)
     {
         _logger.LogInformation("Registration attempt for email: {Email}", request.Email);
@@ -85,7 +104,19 @@ public class AuthController : ControllerBase
         }
     }
 
+    /// <summary>
+    /// Authenticates a user and returns access tokens.
+    /// </summary>
+    /// <param name="request">The login request containing email and password.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>Authentication response with tokens if successful.</returns>
+    /// <response code="200">Login successful.</response>
+    /// <response code="401">Invalid credentials.</response>
+    /// <response code="500">Internal server error.</response>
     [HttpPost("login")]
+    [ProducesResponseType(typeof(AuthResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> Login([FromBody] LoginRequest request, CancellationToken cancellationToken)
     {
         _logger.LogInformation("Login attempt for email: {Email}", request.Email);
@@ -140,7 +171,17 @@ public class AuthController : ControllerBase
         return Ok(ToAuthResponse(user, tokens));
     }
 
+    /// <summary>
+    /// Refreshes access token using refresh token.
+    /// </summary>
+    /// <param name="request">The refresh request containing refresh token.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>New authentication response with fresh tokens.</returns>
+    /// <response code="200">Token refreshed successfully.</response>
+    /// <response code="401">Invalid or expired refresh token.</response>
     [HttpPost("refresh")]
+    [ProducesResponseType(typeof(AuthResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Refresh([FromBody] RefreshRequest request, CancellationToken cancellationToken)
     {
         try
@@ -161,7 +202,19 @@ public class AuthController : ControllerBase
         }
     }
 
+    /// <summary>
+    /// Authenticates a user using Google OAuth ID token.
+    /// </summary>
+    /// <param name="request">The Google login request containing ID token.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>Authentication response with tokens.</returns>
+    /// <response code="200">Google login successful.</response>
+    /// <response code="422">Invalid ID token.</response>
+    /// <response code="500">Internal server error.</response>
     [HttpPost("google")]
+    [ProducesResponseType(typeof(AuthResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> Google([FromBody] GoogleLoginRequest request, CancellationToken cancellationToken)
     {
         if (!TryExtractEmail(request.MaIdToken, out var email))
@@ -182,7 +235,17 @@ public class AuthController : ControllerBase
         return Ok(ToAuthResponse(user, tokens));
     }
 
+    /// <summary>
+    /// Logs out a user by revoking the refresh token.
+    /// </summary>
+    /// <param name="request">The logout request containing refresh token.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>No content on successful logout.</returns>
+    /// <response code="204">Logout successful.</response>
+    /// <response code="422">Invalid request.</response>
     [HttpPost("logout")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> Logout([FromBody] LogoutRequest request, CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(request.MaRefreshToken))
@@ -263,13 +326,37 @@ public class AuthController : ControllerBase
 
         try
         {
-            var hash = Encoding.UTF8.GetString(storedHash);
-            var result = BCrypt.Net.BCrypt.Verify(password, hash);
-            return result;
+            // Try multiple decodings because DB may store VARBINARY of UTF-8 or NVARCHAR cast to VARBINARY (UTF-16)
+            var candidates = new List<string>(4)
+            {
+                Encoding.UTF8.GetString(storedHash),
+                Encoding.ASCII.GetString(storedHash),
+                Encoding.Unicode.GetString(storedHash),
+                Encoding.BigEndianUnicode.GetString(storedHash)
+            };
+
+            foreach (var candidate in candidates)
+            {
+                if (!string.IsNullOrWhiteSpace(candidate) && candidate.StartsWith("$2", StringComparison.Ordinal))
+                {
+                    if (BCrypt.Net.BCrypt.Verify(password, candidate))
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            // As a last resort, strip nulls from potential UTF-16 representations and try again
+            var noNulls = new string(candidates[2].Where(ch => ch != '\0').ToArray());
+            if (noNulls.StartsWith("$2", StringComparison.Ordinal) && BCrypt.Net.BCrypt.Verify(password, noNulls))
+            {
+                return true;
+            }
+
+            return false;
         }
         catch (Exception ex)
         {
-            // Log the exception for debugging
             Console.WriteLine($"Password verification failed with exception: {ex.Message}");
             return false;
         }

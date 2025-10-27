@@ -13,7 +13,7 @@ BEGIN
     SELECT
         [MaNguoiDung],
         [Email],
-        [MatKhauHash],
+        CAST([MatKhauHash] AS VARBINARY(MAX)) AS [MatKhauHash],
         [HoTen],
         [GioiTinh],
         [NgaySinh],

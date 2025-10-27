@@ -1,5 +1,3 @@
-using System.Text.Json.Serialization;
-
 namespace EatFitAI.Api.Contracts.Auth;
 
 /// <summary>
@@ -13,10 +11,6 @@ public sealed class AuthResponse
     /// <example>550e8400-e29b-41d4-a716-446655440000</example>
     public Guid MaNguoiDung { get; init; }
 
-    // Aliases expected by clients
-    [JsonPropertyName("userId")]
-    public Guid UserId => MaNguoiDung;
-
     /// <summary>
     /// User's email address.
     /// </summary>
@@ -29,17 +23,11 @@ public sealed class AuthResponse
     /// <example>Nguyen Van A</example>
     public string? HoTen { get; init; }
 
-    [JsonPropertyName("fullName")]
-    public string? FullName => HoTen;
-
     /// <summary>
     /// JWT access token for API authentication.
     /// </summary>
     /// <example>eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...</example>
     public string MaAccessToken { get; init; } = string.Empty;
-
-    [JsonPropertyName("accessToken")]
-    public string AccessToken => MaAccessToken;
 
     /// <summary>
     /// Access token expiration time.
@@ -47,25 +35,16 @@ public sealed class AuthResponse
     /// <example>2025-10-27T22:39:14.171Z</example>
     public DateTimeOffset ThoiGianHetHanAccessToken { get; init; }
 
-    [JsonPropertyName("accessTokenExpiresAt")]
-    public DateTimeOffset AccessTokenExpiresAt => ThoiGianHetHanAccessToken;
-
     /// <summary>
     /// Refresh token for obtaining new access tokens.
     /// </summary>
     /// <example>refresh_token_123456789</example>
     public string MaRefreshToken { get; init; } = string.Empty;
 
-    [JsonPropertyName("refreshToken")]
-    public string RefreshToken => MaRefreshToken;
-
     /// <summary>
     /// Refresh token expiration time.
     /// </summary>
     /// <example>2025-11-27T22:39:14.171Z</example>
     public DateTimeOffset ThoiGianHetHanRefreshToken { get; init; }
-
-    [JsonPropertyName("refreshTokenExpiresAt")]
-    public DateTimeOffset RefreshTokenExpiresAt => ThoiGianHetHanRefreshToken;
 }
 

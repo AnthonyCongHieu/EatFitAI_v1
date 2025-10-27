@@ -2,6 +2,10 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Net;
 using System.Text;
+using System.Reflection;
+using Asp.Versioning;
+using Asp.Versioning.ApiExplorer;
+using EatFitAI.Api;
 using EatFitAI.Api.Serialization;
 using EatFitAI.Application.Auth;
 using EatFitAI.Application.Configuration;
@@ -13,6 +17,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
 using EatFitAI.Application.Repositories;
 using EatFitAI.Infrastructure.Repositories;
 
@@ -55,7 +60,55 @@ builder.Services.AddControllers()
     });
 builder.Services.AddProblemDetails();
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+
+// Add API versioning
+builder.Services.AddApiVersioning(options =>
+{
+    options.DefaultApiVersion = new ApiVersion(1, 0);
+    options.AssumeDefaultVersionWhenUnspecified = true;
+    options.ReportApiVersions = true;
+})
+.AddApiExplorer(options =>
+{
+    options.GroupNameFormat = "'v'VVV";
+    options.SubstituteApiVersionInUrl = true;
+});
+
+builder.Services.AddSwaggerGen(options =>
+{
+    // Include XML comments
+    var xmlFile = $"{System.Reflection.Assembly.GetExecutingAssembly().GetName().Name}.xml";
+    var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
+    options.IncludeXmlComments(xmlPath);
+
+    // Add JWT Bearer authentication
+    options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        Description = "JWT Authorization header using the Bearer scheme. Example: \"Authorization: Bearer {token}\"",
+        Name = "Authorization",
+        In = ParameterLocation.Header,
+        Type = SecuritySchemeType.ApiKey,
+        Scheme = "Bearer"
+    });
+
+    options.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
+        {
+            new OpenApiSecurityScheme
+            {
+                Reference = new OpenApiReference
+                {
+                    Type = ReferenceType.SecurityScheme,
+                    Id = "Bearer"
+                }
+            },
+            Array.Empty<string>()
+        }
+    });
+});
+
+// Configure Swagger UI for API versioning
+builder.Services.ConfigureOptions<ConfigureSwaggerOptions>();
 builder.Services.AddAuthorization();
 
 const string corsPolicyName = "FrontendCors";
@@ -158,8 +211,18 @@ app.UseStatusCodePages(async context =>
 });
 
 app.UseCors(corsPolicyName);
+
+// Configure Swagger UI for API versioning
 app.UseSwagger();
-app.UseSwaggerUI();
+app.UseSwaggerUI(options =>
+{
+    var provider = app.Services.GetRequiredService<IApiVersionDescriptionProvider>();
+    foreach (var description in provider.ApiVersionDescriptions)
+    {
+        options.SwaggerEndpoint($"/swagger/{description.GroupName}/swagger.json", description.GroupName.ToUpperInvariant());
+    }
+});
+
 app.UseAuthentication();
 app.UseAuthorization();
 

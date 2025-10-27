@@ -21,26 +21,47 @@ public class AuthRepository : IAuthRepository
         const string sql = "EXEC [dbo].[sp_Auth_DangNhap] @Email";
 
         using var connection = await _connectionFactory.CreateOpenConnectionAsync(cancellationToken);
-        var result = await connection.QueryFirstOrDefaultAsync<NguoiDung>(sql, new { Email = email });
 
-        // Fix: Convert MatKhauHash from string to byte[] if needed
-        if (result != null && result.MatKhauHash != null && result.MatKhauHash.GetType() == typeof(string))
-        {
-            var hashString = (string)(object)result.MatKhauHash;
-            result.MatKhauHash = Encoding.UTF8.GetBytes(hashString);
-        }
-
-        // Log for debugging
-        if (result != null)
-        {
-            Console.WriteLine($"FindByEmailAsync: User {result.Email} found, MatKhauHash type: {result.MatKhauHash?.GetType()?.Name ?? "null"}, length: {result.MatKhauHash?.Length ?? 0}");
-        }
-        else
+        // Read dynamically to tolerate DB column type differences
+        var row = await connection.QueryFirstOrDefaultAsync(sql, new { Email = email });
+        if (row is null)
         {
             Console.WriteLine($"FindByEmailAsync: No user found for email {email}");
+            return null;
         }
 
-        return result;
+        // Access dynamic members safely
+        Guid maNguoiDung = row.MaNguoiDung;
+        string rowEmail = row.Email;
+        object? mkh = null;
+        try { mkh = row.MatKhauHash; } catch { mkh = null; }
+        string? hoTen = null; try { hoTen = row.HoTen; } catch { hoTen = null; }
+        string? gioiTinh = null; try { gioiTinh = row.GioiTinh; } catch { gioiTinh = null; }
+        DateTime? ngaySinh = null; try { ngaySinh = row.NgaySinh; } catch { ngaySinh = null; }
+        DateTime ngayTao = row.NgayTao;
+        DateTime ngayCapNhat = row.NgayCapNhat;
+
+        byte[] matKhauBytes = mkh switch
+        {
+            byte[] b => b,
+            string s => Encoding.UTF8.GetBytes(s),
+            _ => Array.Empty<byte>()
+        };
+
+        var user = new NguoiDung
+        {
+            MaNguoiDung = maNguoiDung,
+            Email = rowEmail,
+            MatKhauHash = matKhauBytes,
+            HoTen = hoTen,
+            GioiTinh = gioiTinh,
+            NgaySinh = ngaySinh.HasValue ? DateOnly.FromDateTime(ngaySinh.Value) : null,
+            NgayTao = ngayTao,
+            NgayCapNhat = ngayCapNhat
+        };
+
+        Console.WriteLine($"FindByEmailAsync: User {user.Email} found, MatKhauHash type: {user.MatKhauHash?.GetType()?.Name ?? "null"}, length: {user.MatKhauHash?.Length ?? 0}");
+        return user;
     }
     public async Task<NguoiDung?> FindByIdAsync(Guid userId, CancellationToken cancellationToken = default)
     {
