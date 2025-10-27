@@ -2,11 +2,12 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
 using System.Security.Claims;
+using System.Text;
 using EatFitAI.Api.Contracts.Auth;
 using EatFitAI.Application.Auth;
+using EatFitAI.Application.Repositories;
 using EatFitAI.Domain.Users;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
 
@@ -17,19 +18,16 @@ namespace EatFitAI.Api.Controllers;
 [AllowAnonymous]
 public class AuthController : ControllerBase
 {
-    private readonly UserManager<NguoiDung> _userManager;
-    private readonly SignInManager<NguoiDung> _signInManager;
+    private readonly IAuthRepository _authRepository;
     private readonly ITokenService _tokenService;
     private readonly ILogger<AuthController> _logger;
 
     public AuthController(
-        UserManager<NguoiDung> userManager,
-        SignInManager<NguoiDung> signInManager,
+        IAuthRepository authRepository,
         ITokenService tokenService,
         ILogger<AuthController> logger)
     {
-        _userManager = userManager;
-        _signInManager = signInManager;
+        _authRepository = authRepository;
         _tokenService = tokenService;
         _logger = logger;
     }
@@ -37,35 +35,25 @@ public class AuthController : ControllerBase
     [HttpPost("register")]
     public async Task<IActionResult> Register([FromBody] RegisterRequest request, CancellationToken cancellationToken)
     {
-        var existing = await _userManager.FindByEmailAsync(request.Email);
+        // Validate password
+        var passwordErrors = ValidatePassword(request.MatKhau);
+        if (passwordErrors.Any())
+        {
+            return ValidationProblem(CreateValidationProblem(passwordErrors));
+        }
+
+        // Check if email exists
+        var existing = await _authRepository.FindByEmailAsync(request.Email, cancellationToken);
         if (existing is not null)
         {
             return Problem(statusCode: StatusCodes.Status422UnprocessableEntity, title: "Email da ton tai");
         }
 
-        var user = new NguoiDung
-        {
-            Email = request.Email,
-            HoTen = request.HoTen,
-            GioiTinh = null,
-            NgaySinh = null,
-            NgayTao = DateTime.UtcNow,
-            NgayCapNhat = DateTime.UtcNow
-        };
+        // Hash password
+        var passwordHash = HashPassword(request.MatKhau);
 
-        var createResult = await _userManager.CreateAsync(user, request.MatKhau);
-        if (!createResult.Succeeded)
-        {
-            return ValidationProblem(CreateValidationProblem(createResult.Errors));
-        }
-
-        // Profile is now part of NguoiDung, no separate profile creation needed
-        if (!string.IsNullOrWhiteSpace(request.HoTen))
-        {
-            user.HoTen = request.HoTen;
-        }
-
-        await _userManager.UpdateAsync(user);
+        // Create user
+        var user = await _authRepository.CreateUserAsync(request.Email, passwordHash, request.HoTen, cancellationToken);
 
         var tokens = await _tokenService.CreateTokenPairAsync(user, GetClientIp(), cancellationToken);
         return Ok(ToAuthResponse(user, tokens, request.HoTen));
@@ -74,14 +62,14 @@ public class AuthController : ControllerBase
     [HttpPost("login")]
     public async Task<IActionResult> Login([FromBody] LoginRequest request, CancellationToken cancellationToken)
     {
-        var user = await _userManager.FindByEmailAsync(request.Email);
+        var user = await _authRepository.FindByEmailAsync(request.Email, cancellationToken);
         if (user is null)
         {
             return Problem(statusCode: StatusCodes.Status401Unauthorized, title: "Sai email hoac mat khau");
         }
 
-        var signInResult = await _signInManager.CheckPasswordSignInAsync(user, request.MatKhau, false);
-        if (!signInResult.Succeeded)
+        // Verify password
+        if (!VerifyPassword(request.MatKhau, user.MatKhauHash))
         {
             return Problem(statusCode: StatusCodes.Status401Unauthorized, title: "Sai email hoac mat khau");
         }
@@ -119,31 +107,13 @@ public class AuthController : ControllerBase
             return Problem(statusCode: StatusCodes.Status422UnprocessableEntity, title: "Khong doc duoc email tu id_token");
         }
 
-        var user = await _userManager.FindByEmailAsync(email);
+        var user = await _authRepository.FindByEmailAsync(email, cancellationToken);
         if (user is null)
         {
-            user = new NguoiDung
-            {
-                Email = email,
-                HoTen = null,
-                GioiTinh = null,
-                NgaySinh = null,
-                NgayTao = DateTime.UtcNow,
-                NgayCapNhat = DateTime.UtcNow
-            };
-
+            // Create user with random password for Google login
             var randomPassword = $"Gg!{Guid.NewGuid():N}";
-            var createResult = await _userManager.CreateAsync(user, randomPassword);
-            if (!createResult.Succeeded)
-            {
-                _logger.LogError("Tao tai khoan google that bai: {Errors}", string.Join(";", createResult.Errors.Select(e => e.Description)));
-                foreach (var error in createResult.Errors)
-                {
-                    ModelState.AddModelError(error.Code, error.Description);
-                }
-
-                return ValidationProblem(ModelState);
-            }
+            var passwordHash = HashPassword(randomPassword);
+            user = await _authRepository.CreateUserAsync(email, passwordHash, null, cancellationToken);
         }
 
         var tokens = await _tokenService.CreateTokenPairAsync(user, GetClientIp(), cancellationToken);
@@ -162,7 +132,7 @@ public class AuthController : ControllerBase
         return NoContent();
     }
 
-    private ValidationProblemDetails CreateValidationProblem(IEnumerable<IdentityError> errors)
+    private ValidationProblemDetails CreateValidationProblem(IEnumerable<string> errors)
     {
         var details = new ValidationProblemDetails
         {
@@ -174,42 +144,66 @@ public class AuthController : ControllerBase
 
         foreach (var error in errors)
         {
-            var key = error.Code switch
+            if (!details.Errors.ContainsKey("password"))
             {
-                "PasswordTooShort" => "password",
-                "PasswordRequiresUpper" => "password",
-                "PasswordRequiresLower" => "password",
-                "PasswordRequiresDigit" => "password",
-                "PasswordRequiresNonAlphanumeric" => "password",
-                "DuplicateEmail" => "email",
-                "InvalidEmail" => "email",
-                _ => string.Empty
-            };
-
-            var message = error.Code switch
-            {
-                "PasswordTooShort" => "Mật khẩu phải có ít nhất 6 ký tự.",
-                "PasswordRequiresUpper" => "Mật khẩu cần chứa ít nhất một chữ hoa.",
-                "PasswordRequiresLower" => "Mật khẩu cần chứa ít nhất một chữ thường.",
-                "PasswordRequiresDigit" => "Mật khẩu cần chứa ít nhất một chữ số.",
-                "PasswordRequiresNonAlphanumeric" => "Mật khẩu cần chứa ký tự đặc biệt.",
-                "DuplicateEmail" => "Email đã được sử dụng.",
-                "InvalidEmail" => "Email không hợp lệ.",
-                _ => error.Description
-            };
-
-            var targetKey = string.IsNullOrWhiteSpace(key) ? string.Empty : key;
-            if (!details.Errors.ContainsKey(targetKey))
-            {
-                details.Errors[targetKey] = [message];
+                details.Errors["password"] = [error];
             }
             else
             {
-                details.Errors[targetKey] = details.Errors[targetKey].Concat(new[] { message }).Distinct().ToArray();
+                var currentErrors = details.Errors["password"].ToList();
+                currentErrors.Add(error);
+                details.Errors["password"] = currentErrors.Distinct().ToArray();
             }
         }
 
         return details;
+    }
+
+    private static List<string> ValidatePassword(string password)
+    {
+        var errors = new List<string>();
+
+        if (string.IsNullOrWhiteSpace(password) || password.Length < 6)
+        {
+            errors.Add("Mật khẩu phải có ít nhất 6 ký tự.");
+        }
+
+        if (!password.Any(char.IsUpper))
+        {
+            errors.Add("Mật khẩu cần chứa ít nhất một chữ hoa.");
+        }
+
+        if (!password.Any(char.IsLower))
+        {
+            errors.Add("Mật khẩu cần chứa ít nhất một chữ thường.");
+        }
+
+        if (!password.Any(char.IsDigit))
+        {
+            errors.Add("Mật khẩu cần chứa ít nhất một chữ số.");
+        }
+
+        return errors;
+    }
+
+    private static byte[] HashPassword(string password)
+    {
+        // BCrypt tự động thêm salt và sử dụng thuật toán an toàn
+        var hash = BCrypt.Net.BCrypt.HashPassword(password);
+        return Encoding.UTF8.GetBytes(hash);
+    }
+
+    private static bool VerifyPassword(string password, byte[] storedHash)
+    {
+        try
+        {
+            var hashString = Encoding.UTF8.GetString(storedHash);
+            return BCrypt.Net.BCrypt.Verify(password, hashString);
+        }
+        catch
+        {
+            return false;
+        }
     }
 
     private string? GetClientIp()
@@ -265,14 +259,14 @@ public class AuthController : ControllerBase
             return null;
         }
 
-        return await _userManager.FindByIdAsync(userId.ToString());
+        return await _authRepository.FindByIdAsync(userId, cancellationToken);
     }
 
     private static AuthResponse ToAuthResponse(NguoiDung user, TokenPair tokens, string? fullNameOverride = null)
     {
         return new AuthResponse
         {
-            MaNguoiDung = user.Id,
+            MaNguoiDung = user.MaNguoiDung,
             Email = user.Email ?? string.Empty,
             HoTen = fullNameOverride ?? user.HoTen,
             MaAccessToken = tokens.AccessToken,

@@ -73,7 +73,7 @@ public class JwtTokenService : ITokenService
             throw new SecurityTokenException("Refresh token expired");
         }
 
-        var user = refreshToken.User ?? await _dbContext.NguoiDung.FirstOrDefaultAsync(x => x.Id == refreshToken.MaNguoiDung, cancellationToken)
+        var user = refreshToken.User ?? await _dbContext.NguoiDung.FirstOrDefaultAsync(x => x.MaNguoiDung == refreshToken.MaNguoiDung, cancellationToken)
             ?? throw new SecurityTokenException("User not found for refresh token");
 
         refreshToken.ThuHoiVao = now.UtcDateTime;
@@ -143,7 +143,7 @@ public class JwtTokenService : ITokenService
 
         var claims = new List<Claim>
         {
-            new(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
+            new(JwtRegisteredClaimNames.Sub, user.MaNguoiDung.ToString()),
             new(JwtRegisteredClaimNames.Email, user.Email ?? string.Empty),
             new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
         };
@@ -171,7 +171,7 @@ public class JwtTokenService : ITokenService
         var refreshToken = new RefreshToken
         {
             MaRefreshToken = Guid.NewGuid(),
-            MaNguoiDung = user.Id,
+            MaNguoiDung = user.MaNguoiDung,
             Token = GenerateRefreshTokenString(),
             NgayTao = now.UtcDateTime,
             TaoBoiIP = ipAddress,

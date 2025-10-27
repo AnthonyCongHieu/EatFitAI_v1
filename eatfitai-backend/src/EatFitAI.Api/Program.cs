@@ -6,12 +6,10 @@ using EatFitAI.Api.Serialization;
 using EatFitAI.Application.Auth;
 using EatFitAI.Application.Configuration;
 using EatFitAI.Application.Data;
-using EatFitAI.Domain.Users;
 using EatFitAI.Infrastructure.Auth;
 using EatFitAI.Infrastructure.Data;
 using EatFitAI.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
@@ -35,21 +33,6 @@ builder.Services.AddDbContext<AppDbContext>((serviceProvider, options) =>
         .ConfigureWarnings(warnings => warnings.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.RelationalEventId.PendingModelChangesWarning));
 });
 
-var identityBuilder = builder.Services.AddIdentityCore<NguoiDung>(options =>
-{
-    options.User.RequireUniqueEmail = true;
-    options.Password.RequireDigit = true;
-    options.Password.RequireLowercase = true;
-    options.Password.RequireUppercase = false;
-    options.Password.RequireNonAlphanumeric = false;
-    options.Password.RequiredLength = 6;
-});
-
-identityBuilder = identityBuilder.AddRoles<IdentityRole<Guid>>();
-identityBuilder.AddEntityFrameworkStores<AppDbContext>();
-identityBuilder.AddSignInManager();
-identityBuilder.AddDefaultTokenProviders();
-
 builder.Services.AddScoped<ISqlConnectionFactory, SqlConnectionFactory>();
 builder.Services.AddScoped<IScriptRunner, ScriptRunner>();
 builder.Services.AddScoped<ITokenService, JwtTokenService>();
@@ -62,6 +45,7 @@ builder.Services.AddScoped<IFoodRepository, FoodRepository>();
 builder.Services.AddScoped<ICustomDishRepository, CustomDishRepository>();
 builder.Services.AddScoped<INutritionTargetRepository, NutritionTargetRepository>();
 builder.Services.AddScoped<ISummaryRepository, SummaryRepository>();
+builder.Services.AddScoped<IAuthRepository, AuthRepository>();
 
 builder.Services.AddControllers()
     .AddJsonOptions(options =>

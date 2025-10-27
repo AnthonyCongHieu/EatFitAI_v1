@@ -50,9 +50,10 @@ public class AppDbContext : DbContext
         builder.Entity<NguoiDung>(entity =>
         {
             entity.ToTable("NguoiDung");
-            entity.Property(u => u.Id).HasColumnName("MaNguoiDung");
+            entity.HasKey(u => u.MaNguoiDung);
+            entity.Property(u => u.MaNguoiDung).HasColumnName("MaNguoiDung");
             entity.Property(u => u.Email).HasColumnName("Email");
-            entity.Property(u => u.PasswordHash).HasColumnName("MatKhauHash");
+            entity.Property(u => u.MatKhauHash).HasColumnName("MatKhauHash");
             entity.Property(u => u.HoTen).HasColumnName("HoTen");
             entity.Property(u => u.GioiTinh).HasColumnName("GioiTinh");
             entity.Property(u => u.NgaySinh).HasColumnName("NgaySinh").HasConversion(NullableDateOnlyConverter).HasColumnType("date");
