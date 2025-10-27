@@ -11,33 +11,41 @@ AS
 BEGIN
     SET NOCOUNT ON;
 
-    -- Kiểm tra email đã tồn tại
-    IF EXISTS (SELECT 1 FROM [dbo].[NguoiDung] WHERE [Email] = @Email)
-    BEGIN
-        RAISERROR('Email đã được sử dụng', 16, 1);
-        RETURN;
-    END
-
-    -- Tạo user mới
+    -- Tạo user mới (unique constraint sẽ xử lý duplicate email)
     DECLARE @MaNguoiDung UNIQUEIDENTIFIER = NEWID();
     DECLARE @NgayTao DATETIME2(0) = SYSUTCDATETIME();
 
-    INSERT INTO [dbo].[NguoiDung] (
-        [MaNguoiDung],
-        [Email],
-        [MatKhauHash],
-        [HoTen],
-        [NgayTao],
-        [NgayCapNhat]
-    )
-    VALUES (
-        @MaNguoiDung,
-        @Email,
-        @MatKhauHash,
-        @HoTen,
-        @NgayTao,
-        @NgayTao
-    );
+    BEGIN TRY
+        INSERT INTO [dbo].[NguoiDung] (
+            [MaNguoiDung],
+            [Email],
+            [MatKhauHash],
+            [HoTen],
+            [NgayTao],
+            [NgayCapNhat]
+        )
+        VALUES (
+            @MaNguoiDung,
+            @Email,
+            @MatKhauHash,
+            @HoTen,
+            @NgayTao,
+            @NgayTao
+        );
+    END TRY
+    BEGIN CATCH
+        -- Handle unique constraint violation (duplicate email)
+        IF ERROR_NUMBER() = 2627 -- Violation of UNIQUE KEY constraint
+        BEGIN
+            RAISERROR('Email đã được sử dụng', 16, 1);
+            RETURN;
+        END
+        ELSE
+        BEGIN
+            -- Re-throw other errors
+            THROW;
+        END
+    END CATCH
 
     -- Trả về thông tin user vừa tạo
     SELECT

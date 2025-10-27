@@ -35,7 +35,6 @@ public class AppDbContext : DbContext
     public DbSet<DiaryEntry> NhatKyAnUong => Set<DiaryEntry>();
     public DbSet<Recipe> CongThuc => Set<Recipe>();
     public DbSet<RefreshToken> RefreshToken => Set<RefreshToken>();
-    public DbSet<ScriptHistory> LichSuCapNhat => Set<ScriptHistory>();
     public DbSet<MealType> LoaiBuaAn => Set<MealType>();
     public DbSet<ActivityLevel> MucDoVanDong => Set<ActivityLevel>();
     public DbSet<Goal> MucTieu => Set<Goal>();
@@ -279,15 +278,6 @@ public class AppDbContext : DbContext
                 .OnDelete(DeleteBehavior.Cascade);
         });
 
-        builder.Entity<ScriptHistory>(entity =>
-        {
-            entity.ToTable("LichSuCapNhat");
-            entity.HasKey(x => x.MaLichSu);
-            entity.Property(x => x.MaLichSu).HasColumnName("MaLichSu");
-            entity.Property(x => x.TenFile).HasColumnName("TenFile").HasMaxLength(260);
-            entity.Property(x => x.ThoiGianApDung).HasColumnName("ThoiGianApDung").HasDefaultValueSql("GETUTCDATE()");
-            entity.HasIndex(x => x.TenFile).IsUnique();
-        });
 
         builder.Entity<AiRecipe>(entity =>
         {

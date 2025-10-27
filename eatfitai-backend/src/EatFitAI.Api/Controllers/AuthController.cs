@@ -35,46 +35,108 @@ public class AuthController : ControllerBase
     [HttpPost("register")]
     public async Task<IActionResult> Register([FromBody] RegisterRequest request, CancellationToken cancellationToken)
     {
+        _logger.LogInformation("Registration attempt for email: {Email}", request.Email);
+
+        // Check if email already exists (for Gmail users)
+        var existingUser = await _authRepository.FindByEmailAsync(request.Email, cancellationToken);
+        if (existingUser is not null)
+        {
+            _logger.LogWarning("Email already exists: {Email}", request.Email);
+            return Problem(statusCode: StatusCodes.Status422UnprocessableEntity, title: "Email da ton tai");
+        }
+
         // Validate password
         var passwordErrors = ValidatePassword(request.MatKhau);
         if (passwordErrors.Any())
         {
+            _logger.LogWarning("Password validation failed for email: {Email}, errors: {Errors}", request.Email, string.Join(", ", passwordErrors));
             return ValidationProblem(CreateValidationProblem(passwordErrors));
-        }
-
-        // Check if email exists
-        var existing = await _authRepository.FindByEmailAsync(request.Email, cancellationToken);
-        if (existing is not null)
-        {
-            return Problem(statusCode: StatusCodes.Status422UnprocessableEntity, title: "Email da ton tai");
         }
 
         // Hash password
         var passwordHash = HashPassword(request.MatKhau);
 
-        // Create user
-        var user = await _authRepository.CreateUserAsync(request.Email, passwordHash, request.HoTen, cancellationToken);
+        // Create user (race condition handled by database unique constraint)
+        _logger.LogInformation("Creating user for email: {Email}", request.Email);
+        try
+        {
+            var user = await _authRepository.CreateUserAsync(request.Email, passwordHash, request.HoTen, cancellationToken);
+            _logger.LogInformation("User created successfully for email: {Email}, userId: {UserId}", request.Email, user?.MaNguoiDung);
 
-        var tokens = await _tokenService.CreateTokenPairAsync(user, GetClientIp(), cancellationToken);
-        return Ok(ToAuthResponse(user, tokens, request.HoTen));
+            if (user is null)
+            {
+                _logger.LogError("User creation returned null for email: {Email}", request.Email);
+                return Problem(statusCode: StatusCodes.Status500InternalServerError, title: "Loi tao tai khoan");
+            }
+
+            var tokens = await _tokenService.CreateTokenPairAsync(user, GetClientIp(), cancellationToken);
+            return Ok(ToAuthResponse(user, tokens, request.HoTen));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to create user for email: {Email}, error: {ErrorMessage}", request.Email, ex.Message);
+            // Handle duplicate email error from database constraint (fallback)
+            if (ex.Message.Contains("Email đã được sử dụng", StringComparison.OrdinalIgnoreCase))
+            {
+                _logger.LogWarning("Email already exists: {Email}", request.Email);
+                return Problem(statusCode: StatusCodes.Status422UnprocessableEntity, title: "Email da ton tai");
+            }
+            throw; // Re-throw other exceptions
+        }
     }
 
     [HttpPost("login")]
     public async Task<IActionResult> Login([FromBody] LoginRequest request, CancellationToken cancellationToken)
     {
+        _logger.LogInformation("Login attempt for email: {Email}", request.Email);
+
         var user = await _authRepository.FindByEmailAsync(request.Email, cancellationToken);
         if (user is null)
         {
+            _logger.LogWarning("User not found for email: {Email}", request.Email);
             return Problem(statusCode: StatusCodes.Status401Unauthorized, title: "Sai email hoac mat khau");
+        }
+
+        _logger.LogInformation("User found: {UserId}, verifying password", user.MaNguoiDung);
+
+        // Debug: Log the actual type and value of MatKhauHash
+        _logger.LogInformation("MatKhauHash type: {Type}, value type: {ValueType}, is null: {IsNull}",
+            user.MatKhauHash?.GetType()?.FullName ?? "null",
+            user.MatKhauHash?.GetType()?.Name ?? "null",
+            user.MatKhauHash == null);
+
+        if (user.MatKhauHash != null)
+        {
+            _logger.LogInformation("MatKhauHash length: {Length}, first 10 bytes: {FirstBytes}",
+                user.MatKhauHash.Length,
+                BitConverter.ToString(user.MatKhauHash.Take(10).ToArray()));
+        }
+        else
+        {
+            _logger.LogError("MatKhauHash is null for user {UserId}", user.MaNguoiDung);
         }
 
         // Verify password
+        if (user.MatKhauHash == null)
+        {
+            _logger.LogError("Cannot verify password: MatKhauHash is null for user {UserId}", user.MaNguoiDung);
+            return Problem(statusCode: StatusCodes.Status500InternalServerError, title: "Loi he thong");
+        }
+
+        _logger.LogInformation("Stored hash length: {HashLength}, is empty: {IsEmpty}", user.MatKhauHash.Length, user.MatKhauHash.Length == 0);
         if (!VerifyPassword(request.MatKhau, user.MatKhauHash))
         {
+            _logger.LogWarning("Password verification failed for user: {UserId}", user.MaNguoiDung);
             return Problem(statusCode: StatusCodes.Status401Unauthorized, title: "Sai email hoac mat khau");
         }
 
+        _logger.LogInformation("Password verified, creating tokens for user: {UserId}", user.MaNguoiDung);
+
         var tokens = await _tokenService.CreateTokenPairAsync(user, GetClientIp(), cancellationToken);
+
+        _logger.LogInformation("Tokens created successfully for user: {UserId}, access token length: {AccessTokenLength}, refresh token length: {RefreshTokenLength}",
+            user.MaNguoiDung, tokens.AccessToken?.Length ?? 0, tokens.RefreshToken?.Length ?? 0);
+
         return Ok(ToAuthResponse(user, tokens));
     }
 
@@ -188,20 +250,27 @@ public class AuthController : ControllerBase
 
     private static byte[] HashPassword(string password)
     {
-        // BCrypt tự động thêm salt và sử dụng thuật toán an toàn
         var hash = BCrypt.Net.BCrypt.HashPassword(password);
         return Encoding.UTF8.GetBytes(hash);
     }
 
     private static bool VerifyPassword(string password, byte[] storedHash)
     {
+        if (storedHash.Length == 0)
+        {
+            return false;
+        }
+
         try
         {
-            var hashString = Encoding.UTF8.GetString(storedHash);
-            return BCrypt.Net.BCrypt.Verify(password, hashString);
+            var hash = Encoding.UTF8.GetString(storedHash);
+            var result = BCrypt.Net.BCrypt.Verify(password, hash);
+            return result;
         }
-        catch
+        catch (Exception ex)
         {
+            // Log the exception for debugging
+            Console.WriteLine($"Password verification failed with exception: {ex.Message}");
             return false;
         }
     }

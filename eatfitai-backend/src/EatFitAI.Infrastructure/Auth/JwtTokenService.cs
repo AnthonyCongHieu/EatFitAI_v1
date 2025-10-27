@@ -33,16 +33,27 @@ public class JwtTokenService : ITokenService
     public async Task<TokenPair> CreateTokenPairAsync(NguoiDung user, string? ipAddress, CancellationToken cancellationToken = default)
     {
         var now = DateTimeOffset.UtcNow;
+        _logger.LogInformation("Creating token pair for user: {UserId} from IP: {IpAddress}", user.MaNguoiDung, ipAddress ?? "unknown");
+
         var accessToken = GenerateJwt(user, now);
+        _logger.LogInformation("Access token generated for user: {UserId}, expires at: {ExpiresAt}", user.MaNguoiDung, accessToken.ExpiresAt);
+
         var refreshToken = await CreateRefreshTokenAsync(user, ipAddress, now, cancellationToken);
+        _logger.LogInformation("Refresh token created for user: {UserId}, expires at: {ExpiresAt}", user.MaNguoiDung, refreshToken.HetHanVao);
 
         await _dbContext.SaveChangesAsync(cancellationToken);
+        _logger.LogInformation("Database changes saved for token creation");
 
-        return new TokenPair(
+        var tokenPair = new TokenPair(
             accessToken.Token,
             accessToken.ExpiresAt,
             refreshToken.Token,
             refreshToken.HetHanVao);
+
+        _logger.LogInformation("Token pair created successfully: AccessToken present: {HasAccess}, RefreshToken present: {HasRefresh}",
+            !string.IsNullOrEmpty(tokenPair.AccessToken), !string.IsNullOrEmpty(tokenPair.RefreshToken));
+
+        return tokenPair;
     }
 
     public async Task<TokenPair> RefreshTokenAsync(string refreshTokenValue, string? ipAddress, CancellationToken cancellationToken = default)

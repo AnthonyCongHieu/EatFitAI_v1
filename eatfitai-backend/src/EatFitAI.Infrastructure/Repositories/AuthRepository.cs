@@ -1,3 +1,5 @@
+using System.Text;
+using System.Data;
 using Dapper;
 using EatFitAI.Application.Data;
 using EatFitAI.Application.Repositories;
@@ -21,9 +23,25 @@ public class AuthRepository : IAuthRepository
         using var connection = await _connectionFactory.CreateOpenConnectionAsync(cancellationToken);
         var result = await connection.QueryFirstOrDefaultAsync<NguoiDung>(sql, new { Email = email });
 
+        // Fix: Convert MatKhauHash from string to byte[] if needed
+        if (result != null && result.MatKhauHash != null && result.MatKhauHash.GetType() == typeof(string))
+        {
+            var hashString = (string)(object)result.MatKhauHash;
+            result.MatKhauHash = Encoding.UTF8.GetBytes(hashString);
+        }
+
+        // Log for debugging
+        if (result != null)
+        {
+            Console.WriteLine($"FindByEmailAsync: User {result.Email} found, MatKhauHash type: {result.MatKhauHash?.GetType()?.Name ?? "null"}, length: {result.MatKhauHash?.Length ?? 0}");
+        }
+        else
+        {
+            Console.WriteLine($"FindByEmailAsync: No user found for email {email}");
+        }
+
         return result;
     }
-
     public async Task<NguoiDung?> FindByIdAsync(Guid userId, CancellationToken cancellationToken = default)
     {
         const string sql = "EXEC [dbo].[sp_Auth_LayTheoId] @MaNguoiDung";

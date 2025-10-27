@@ -478,34 +478,6 @@ namespace EatFitAI.Infrastructure.Migrations
                     b.ToTable("NguyenLieuCongThuc", (string)null);
                 });
 
-            modelBuilder.Entity("EatFitAI.Domain.Metadata.ScriptHistory", b =>
-                {
-                    b.Property<int>("MaLichSu")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasColumnName("MaLichSu");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("MaLichSu"));
-
-                    b.Property<string>("TenFile")
-                        .IsRequired()
-                        .HasMaxLength(260)
-                        .HasColumnType("nvarchar(260)")
-                        .HasColumnName("TenFile");
-
-                    b.Property<DateTime>("ThoiGianApDung")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasColumnName("ThoiGianApDung")
-                        .HasDefaultValueSql("GETUTCDATE()");
-
-                    b.HasKey("MaLichSu");
-
-                    b.HasIndex("TenFile")
-                        .IsUnique();
-
-                    b.ToTable("LichSuCapNhat", (string)null);
-                });
 
             modelBuilder.Entity("EatFitAI.Domain.Nutrition.ActivityLevel", b =>
                 {
