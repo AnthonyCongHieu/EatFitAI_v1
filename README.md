@@ -1,7 +1,7 @@
-﻿# EatFitAI (No-Docker, SP-first)
-API: .NET 9, http://localhost:5100
-DB: SQL Server local (Integrated Security)
-Mobile: Expo (React Native)
+# EatFitAI (Mobile + Backend)
+Mobile: Expo (React Native) | Backend: .NET (sẽ setup lại)
+
+Trang thái: Đã xóa mã nguồn Backend để chuẩn bị setup lại. Ứng dụng mobile vẫn chạy bình thường và có thể trỏ tới API bên ngoài qua biến môi trường.
 
 ## Features
 - User authentication (JWT, Google OAuth)
@@ -12,47 +12,33 @@ Mobile: Expo (React Native)
 - Nutrition targets
 - Summary reports (daily/weekly)
 
-## API Endpoints
-- `POST /api/auth/register` - Register new user
-- `POST /api/auth/login` - User login
-- `POST /api/auth/refresh` - Refresh access token
-- `POST /api/auth/google` - Google OAuth login
-- `POST /api/auth/logout` - Logout user
-- `GET /api/profile/me` - Get user profile
-- `PUT /api/profile/me` - Update user profile
-- `GET /api/foods/search` - Search foods
-- `GET /api/foods/{id}` - Get food by ID
-- `POST /api/custom-dishes` - Create custom dish
-- `GET /api/custom-dishes` - Get user custom dishes
-- `GET /api/custom-dishes/{id}` - Get custom dish by ID
-- `POST /api/diary` - Create diary entry
-- `GET /api/diary/{date}` - Get diary entries for date
-- `DELETE /api/diary/{id}` - Delete diary entry
-- `GET /api/body-metrics` - Get body metrics
-- `POST /api/body-metrics` - Add body metric
-- `GET /api/nutrition-targets` - Get nutrition targets
-- `PUT /api/nutrition-targets` - Update nutrition targets
-- `GET /api/summary/daily/{date}` - Get daily summary
-- `GET /api/summary/weekly/{date}` - Get weekly summary
+## API tích hợp từ Mobile
+- Cấu hình base URL qua biến `EXPO_PUBLIC_API_BASE_URL` (xem `eatfitai-mobile/src/config/env.ts`).
+- Ví dụ khi dùng API local: đặt `EXPO_PUBLIC_API_BASE_URL=http://localhost:5100` trong `.env` của mobile.
 
 ## Setup
 
-### Backend
-1) Copy .env.example -> .env
-2) dotnet ef database update (hoac dotnet run)
-3) API tu migrate + ap /db/scripts
-
 ### Mobile
-1) Copy .env.example -> .env
-2) npm i && npx expo start
+1) Sao chép `.env.example` -> `.env` và thiết lập `EXPO_PUBLIC_API_BASE_URL` nếu có API có sẵn
+2) `npm install`
+3) `npx expo start`
+
+### Backend (setup lại)
+1) Cài .NET SDK 9 (Windows/macOS/Linux)
+2) Tạo skeleton Web API (ví dụ cấu trúc lại thư mục `eatfitai-backend/`):
+   - `mkdir eatfitai-backend && cd eatfitai-backend`
+   - `dotnet new webapi -n EatFitAI.Api`
+   - `dotnet run --project EatFitAI.Api`
+3) Swagger/OpenAPI mặc định có tại: `http://localhost:5100/swagger/v1/swagger.json` (tuỳ cấu hình cổng)
+4) Cập nhật Mobile `.env` trỏ tới URL backend mới (`EXPO_PUBLIC_API_BASE_URL`)
+
+### Generate Type (từ OpenAPI)
+- Từ URL: `OPENAPI_URL="http://localhost:5100/swagger/v1/swagger.json" npm run -w eatfitai-mobile typegen`
+- Từ file: `OPENAPI_PATH="C:\\path\\to\\openapi.json" npm run -w eatfitai-mobile typegen`
+- Hoặc truyền trực tiếp tham số: `npm run -w eatfitai-mobile typegen -- https://server.example.com/openapi.json`
 
 ### Demo account
 login: demo@eatfit.ai / demo123
 
 ## Testing
-- Build verification: Both backend and mobile compile cleanly
-- API testing: All endpoints validated and functional
-- Performance testing: Response times under 100ms for typical requests
-
-## Notes
-Khong Docker, khong CRUD EF, chi SP qua Dapper.
+- Build verification: Mobile app compile cleanly

@@ -3,17 +3,31 @@ const { execSync } = require("child_process");
 const path = require("path");
 const fs = require("fs");
 
-const openapiPath = process.argv[2] || path.join(__dirname, "..", "..", "eatfitai-backend", "openapi.json");
+// Cho phép truyền vào qua tham số CLI hoặc biến môi trường
+// Ưu tiên: CLI arg -> OPENAPI_PATH -> OPENAPI_URL
+const cliArg = process.argv[2];
+const envPath = process.env.OPENAPI_PATH;
+const envUrl = process.env.OPENAPI_URL;
+
+const input = cliArg || envPath || envUrl;
 const outputPath = path.join(__dirname, "..", "types", "api.d.ts");
 
-if (!fs.existsSync(openapiPath)) {
-  console.error(`Khong tim thay file OpenAPI: ${openapiPath}`);
-  process.exit(1);
+if (!input) {
+  console.warn(
+    "[typegen] Bo qua: khong co duong dan/URL OpenAPI (truyen qua tham so, OPENAPI_PATH hoac OPENAPI_URL)."
+  );
+  process.exit(0);
 }
 
-const cmd = `npx openapi-typescript "${openapiPath}" --output "${outputPath}"`;
-console.log(`Dang tao type tu: ${openapiPath}`);
+const isUrl = /^https?:\/\//i.test(input);
+if (!isUrl && !fs.existsSync(input)) {
+  console.warn(`[typegen] Khong tim thay file OpenAPI: ${input}. Bo qua.`);
+  process.exit(0);
+}
+
+const cmd = `npx openapi-typescript "${input}" --output "${outputPath}"`;
+console.log(`[typegen] Dang tao type tu: ${input}`);
 execSync(cmd, { stdio: "inherit" });
-console.log(`Da tao type tai: ${outputPath}`);
+console.log(`[typegen] Da tao type tai: ${outputPath}`);
 
 
