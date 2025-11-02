@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using EatFitAI.API.DTOs.Food;
 using EatFitAI.API.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
@@ -6,7 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace EatFitAI.API.Controllers
 {
     [ApiController]
-    [Route("api/food")]
+    [Route("api")]
     public class FoodController : ControllerBase
     {
         private readonly IFoodService _foodService;
@@ -53,6 +54,35 @@ namespace EatFitAI.API.Controllers
             {
                 return StatusCode(500, new { message = "An error occurred while retrieving food item", error = ex.Message });
             }
+        }
+
+        [HttpPost("custom-dishes")]
+        [Authorize]
+        public async Task<ActionResult<CustomDishResponseDto>> CreateCustomDish([FromBody] CustomDishDto customDishDto)
+        {
+            try
+            {
+                var userId = GetUserIdFromToken();
+                var customDish = await _foodService.CreateCustomDishAsync(userId, customDishDto);
+                return Ok(customDish);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "An error occurred while creating custom dish", error = ex.Message });
+            }
+        }
+
+        private Guid GetUserIdFromToken()
+        {
+            var userIdClaim = User.FindFirst("http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier")?.Value
+                            ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+            if (string.IsNullOrEmpty(userIdClaim) || !Guid.TryParse(userIdClaim, out var userId))
+            {
+                throw new UnauthorizedAccessException("Invalid user token");
+            }
+
+            return userId;
         }
     }
 }

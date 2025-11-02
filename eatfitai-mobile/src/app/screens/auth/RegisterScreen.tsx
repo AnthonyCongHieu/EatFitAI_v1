@@ -47,9 +47,19 @@ const RegisterScreen = ({ navigation }: Props): JSX.Element => {
   const onSubmit = useCallback(async (values: RegisterValues) => {
     try {
       setLoading(true);
+      console.log('[RegisterScreen] Starting registration with values:', { name: values.name, email: values.email, password: '***' });
       await registerFn(values.name, values.email, values.password);
+      console.log('[RegisterScreen] Registration successful');
       navigation.reset({ index: 0, routes: [{ name: 'AppTabs' }] });
     } catch (e: any) {
+      console.error('[RegisterScreen] Registration failed:', {
+        error: e,
+        message: e?.message,
+        response: e?.response,
+        status: e?.response?.status,
+        data: e?.response?.data,
+        isNetworkError: !e?.response
+      });
       Alert.alert(t('auth.registerTitle'), e?.message ?? t('auth.processing'));
     } finally {
       setLoading(false);

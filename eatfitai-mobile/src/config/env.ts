@@ -60,9 +60,19 @@ export const API_BASE_URL: string | undefined = (() => {
   return `${scheme}://${host}:${port}`;
 })();
 
-if (__DEV__ && !API_BASE_URL) {
-  // eslint-disable-next-line no-console
-  console.warn(
-    '[EatFitAI] API base URL chưa được cấu hình. Vui lòng đặt EXPO_PUBLIC_API_BASE_URL hoặc đảm bảo Expo hostUri khả dụng.',
-  );
+if (__DEV__) {
+  if (!API_BASE_URL) {
+    // eslint-disable-next-line no-console
+    console.error(
+      '[EatFitAI] CRITICAL ERROR: API_BASE_URL is undefined!',
+    );
+    console.error('[EatFitAI] This will cause all API requests to fail with "undefined Network Error".');
+    console.error('[EatFitAI] Solutions:');
+    console.error('[EatFitAI] 1. Set EXPO_PUBLIC_API_BASE_URL environment variable');
+    console.error('[EatFitAI] 2. Ensure Expo development server is running and accessible');
+    console.error('[EatFitAI] 3. Check network connectivity to backend server');
+  } else {
+    // eslint-disable-next-line no-console
+    console.log(`[EatFitAI] API_BASE_URL resolved to: ${API_BASE_URL}`);
+  }
 }

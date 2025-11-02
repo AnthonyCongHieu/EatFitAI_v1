@@ -50,5 +50,29 @@ namespace EatFitAI.API.Services
 
             return _mapper.Map<UserDto>(user);
         }
+
+        public async Task<BodyMetricDto> RecordBodyMetricsAsync(Guid userId, BodyMetricDto bodyMetricDto)
+        {
+            var user = await _userRepository.GetByIdAsync(userId);
+            if (user == null)
+            {
+                throw new KeyNotFoundException("User not found");
+            }
+
+            var bodyMetric = new BodyMetric
+            {
+                UserId = userId,
+                HeightCm = bodyMetricDto.HeightCm,
+                WeightKg = bodyMetricDto.WeightKg,
+                BodyFatPct = bodyMetricDto.BodyFatPct,
+                MeasuredDate = bodyMetricDto.MeasuredDate,
+                Note = bodyMetricDto.Note
+            };
+
+            await _context.BodyMetrics.AddAsync(bodyMetric);
+            await _context.SaveChangesAsync();
+
+            return _mapper.Map<BodyMetricDto>(bodyMetric);
+        }
     }
 }

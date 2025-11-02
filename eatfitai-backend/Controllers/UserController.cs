@@ -7,7 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace EatFitAI.API.Controllers
 {
     [ApiController]
-    [Route("api/users")]
+    [Route("api")]
     [Authorize]
     public class UserController : ControllerBase
     {
@@ -45,6 +45,25 @@ namespace EatFitAI.API.Controllers
             catch (KeyNotFoundException ex)
             {
                 return NotFound(new { message = ex.Message });
+            }
+        }
+
+        [HttpPost("body-metrics")]
+        public async Task<ActionResult<BodyMetricDto>> RecordBodyMetrics([FromBody] BodyMetricDto bodyMetricDto)
+        {
+            try
+            {
+                var userId = GetUserIdFromToken();
+                var recordedMetrics = await _userService.RecordBodyMetricsAsync(userId, bodyMetricDto);
+                return Ok(recordedMetrics);
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(new { message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "An error occurred while recording body metrics", error = ex.Message });
             }
         }
 

@@ -8,9 +8,15 @@ import { updateSessionFromAuthResponse } from './authSession';
 // Axios client
 const apiClient = axios.create({ baseURL: API_BASE_URL, timeout: 10000 });
 
-if (__DEV__ && !API_BASE_URL) {
-  // eslint-disable-next-line no-console
-  console.warn('[EatFitAI] Missing API base URL. Set EXPO_PUBLIC_API_BASE_URL or provide fallback.');
+if (__DEV__) {
+  if (!API_BASE_URL) {
+    // eslint-disable-next-line no-console
+    console.error('[EatFitAI] CRITICAL: API_BASE_URL is undefined! Network requests will fail.');
+    console.error('[EatFitAI] Set EXPO_PUBLIC_API_BASE_URL environment variable or ensure Expo hostUri is available.');
+  } else {
+    // eslint-disable-next-line no-console
+    console.log(`[EatFitAI] API_BASE_URL configured: ${API_BASE_URL}`);
+  }
 }
 
 // In-memory access token cache lives in authTokens module
@@ -50,7 +56,18 @@ apiClient.interceptors.response.use(
   async (error: AxiosError) => {
     if (__DEV__) {
       // eslint-disable-next-line no-console
-      console.error('EatFitAI API error:', error?.response?.status, error?.message);
+      console.error('EatFitAI API error:', {
+        status: error?.response?.status,
+        message: error?.message || 'No message',
+        url: error?.config?.url,
+        method: error?.config?.method,
+        data: error?.response?.data,
+        isNetworkError: !error?.response,
+        code: error?.code,
+        baseURL: error?.config?.baseURL,
+        timeout: error?.config?.timeout,
+        fullError: error
+      });
     }
 
     const originalRequest = error.config;
@@ -99,6 +116,32 @@ apiClient.interceptors.response.use(
         isRefreshing = false;
       }
     }
+    // Handle network errors specifically
+    if (!error.response && error.code) {
+      if (__DEV__) {
+        // eslint-disable-next-line no-console
+        console.error('[EatFitAI] Network Error Details:', {
+          code: error.code,
+          message: error.message,
+          baseURL: API_BASE_URL,
+          request: error.request ? 'Request object exists' : 'No request object',
+          config: {
+            url: error.config?.url,
+            method: error.config?.method,
+            timeout: error.config?.timeout
+          }
+        });
+      }
+
+      // Create a more descriptive error for network issues
+      const networkError = new Error(
+        `Network Error: ${error.message || 'Unable to connect to server'}. ` +
+        `Please check your internet connection and ensure the API server is running at ${API_BASE_URL || 'undefined URL'}.`
+      );
+      networkError.name = 'NetworkError';
+      return Promise.reject(networkError);
+    }
+
     return Promise.reject(error);
   },
 );

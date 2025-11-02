@@ -6,5 +6,6 @@ namespace EatFitAI.API.Services.Interfaces
     {
         Task<UserDto> GetUserByIdAsync(Guid userId);
         Task<UserDto> UpdateUserAsync(Guid userId, UserDto userDto);
+        Task<BodyMetricDto> RecordBodyMetricsAsync(Guid userId, BodyMetricDto bodyMetricDto);
     }
 }

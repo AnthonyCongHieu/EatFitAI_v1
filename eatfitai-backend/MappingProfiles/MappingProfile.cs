@@ -14,6 +14,7 @@ namespace EatFitAI.API.MappingProfiles
         {
             // User mappings
             CreateMap<User, UserDto>();
+            CreateMap<BodyMetric, BodyMetricDto>();
 
             // Auth mappings
             CreateMap<User, AuthResponse>()

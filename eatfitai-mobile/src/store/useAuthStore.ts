@@ -66,16 +66,16 @@ export const useAuthStore = create<AuthState>((set: any) => ({
   },
 
   login: async (email, password) => {
-    const resp = await apiClient.post('/api/auth/login', { Email: email, MatKhau: password });
+    const resp = await apiClient.post('/api/auth/login', { Email: email, Password: password });
     const data = resp.data as any;
-    const accessToken = data?.MaAccessToken as string | undefined;
+    const accessToken = data?.token as string | undefined;
     if (!accessToken) throw new Error('Thiếu accessToken trong phản hồi đăng nhập');
 
     await tokenStorage.saveTokensFull({
       accessToken,
-      accessTokenExpiresAt: data?.ThoiGianHetHanAccessToken,
-      refreshToken: data?.MaRefreshToken,
-      refreshTokenExpiresAt: data?.ThoiGianHetHanRefreshToken,
+      accessTokenExpiresAt: data?.expiresAt,
+      refreshToken: data?.refreshToken,
+      refreshTokenExpiresAt: data?.refreshTokenExpiresAt,
     });
     setAccessTokenMem(accessToken);
     await updateSessionFromAuthResponse(data);
@@ -85,22 +85,32 @@ export const useAuthStore = create<AuthState>((set: any) => ({
 
   register: async (name, email, password) => {
     try {
-      const resp = await apiClient.post('/api/auth/register', { HoTen: name, Email: email, MatKhau: password });
+      console.log('[useAuthStore] Starting registration API call');
+      const resp = await apiClient.post('/api/auth/register', { DisplayName: name, Email: email, Password: password });
+      console.log('[useAuthStore] Registration API response:', resp.data);
       const data = resp.data as any;
-      const accessToken = data?.MaAccessToken as string | undefined;
+      const accessToken = data?.token as string | undefined;
       if (!accessToken) throw new Error('Thiếu accessToken trong phản hồi đăng ký');
 
       await tokenStorage.saveTokensFull({
         accessToken,
-        accessTokenExpiresAt: data?.ThoiGianHetHanAccessToken,
-        refreshToken: data?.MaRefreshToken,
-        refreshTokenExpiresAt: data?.ThoiGianHetHanRefreshToken,
+        accessTokenExpiresAt: data?.expiresAt,
+        refreshToken: data?.refreshToken,
+        refreshTokenExpiresAt: data?.refreshTokenExpiresAt,
       });
       setAccessTokenMem(accessToken);
       await updateSessionFromAuthResponse(data);
 
       set({ isAuthenticated: true, user: (data?.user as AuthUser | undefined) ?? null });
     } catch (err: any) {
+      console.error('[useAuthStore] Registration failed:', {
+        error: err,
+        message: err?.message,
+        response: err?.response,
+        status: err?.response?.status,
+        data: err?.response?.data,
+        isNetworkError: !err?.response
+      });
       const message = extractRegisterErrorMessage(err);
       throw new Error(message);
     }

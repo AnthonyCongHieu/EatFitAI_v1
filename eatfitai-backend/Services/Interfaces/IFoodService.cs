@@ -6,5 +6,6 @@ namespace EatFitAI.API.Services.Interfaces
     {
         Task<IEnumerable<FoodItemDto>> SearchFoodItemsAsync(string searchTerm, int limit = 50);
         Task<(FoodItemDto FoodItem, IEnumerable<FoodServingDto> Servings)> GetFoodItemWithServingsAsync(int id);
+        Task<CustomDishResponseDto> CreateCustomDishAsync(Guid userId, CustomDishDto customDishDto);
     }
 }

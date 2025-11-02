@@ -8,5 +8,8 @@ namespace EatFitAI.API.Services.Interfaces
         Task<AuthResponse> LoginAsync(LoginRequest request);
         Task<bool> ValidateTokenAsync(string token);
         Task<Guid?> GetUserIdFromTokenAsync(string token);
+        Task LogoutAsync(string refreshToken);
+        Task<AuthResponse> RefreshTokenAsync(string refreshToken);
+        Task<AuthResponse> GoogleLoginAsync(string idToken);
     }
 }

@@ -21,12 +21,13 @@ namespace EatFitAI.API.Controllers
         [HttpGet("nutrition-summary")]
         public async Task<ActionResult<NutritionSummaryDto>> GetNutritionSummary(
             [FromQuery] DateTime startDate,
-            [FromQuery] DateTime endDate)
+            [FromQuery] DateTime? endDate = null)
         {
             try
             {
                 var userId = GetUserIdFromToken();
-                var summary = await _analyticsService.GetNutritionSummaryAsync(userId, startDate, endDate);
+                var effectiveEndDate = endDate ?? DateTime.UtcNow.Date;
+                var summary = await _analyticsService.GetNutritionSummaryAsync(userId, startDate, effectiveEndDate);
                 return Ok(summary);
             }
             catch (Exception ex)

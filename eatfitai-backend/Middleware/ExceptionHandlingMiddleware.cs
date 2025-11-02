@@ -29,6 +29,11 @@ namespace EatFitAI.API.Middleware
 
         private static async Task HandleExceptionAsync(HttpContext context, Exception exception)
         {
+            if (context.Response.HasStarted)
+            {
+                return;
+            }
+
             context.Response.ContentType = "application/json";
 
             var response = new
