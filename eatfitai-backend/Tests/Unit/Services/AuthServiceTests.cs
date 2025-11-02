@@ -134,7 +134,7 @@ namespace EatFitAI.API.Tests.Unit.Services
                 Password = "password123"
             };
 
-            _userRepositoryMock.Setup(r => r.GetByEmailAsync(request.Email)).ReturnsAsync((User?)null);
+            _userRepositoryMock.Setup(r => r.GetByEmailAsync(request.Email)).ReturnsAsync(() => null);
 
             // Act & Assert
             await Assert.ThrowsAsync<UnauthorizedAccessException>(() => _authService.LoginAsync(request));

@@ -8,6 +8,7 @@ import apiClient from '../services/apiClient';
 import { setAccessTokenMem } from '../services/authTokens';
 import { tokenStorage } from '../services/secureStore';
 import { initAuthSession, updateSessionFromAuthResponse } from '../services/authSession';
+import type { AuthResponse } from '../types';
 
 type AuthUser = { id: string; email: string; name?: string };
 

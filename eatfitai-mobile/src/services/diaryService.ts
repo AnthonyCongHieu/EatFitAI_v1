@@ -2,6 +2,7 @@
 // Chu thich bang tieng Viet khong dau
 
 import apiClient from './apiClient';
+import type { MealDiaryDto } from '../types';
 
 export type DiaryMealType = 'breakfast' | 'lunch' | 'dinner' | 'snack' | string;
 

@@ -4,6 +4,7 @@
 import { create } from 'zustand';
 
 import { profileService, type UpdateProfilePayload, type UserProfile } from '../services/profileService';
+import type { UserDto } from '../types';
 
 type ProfileState = {
   profile: UserProfile | null;

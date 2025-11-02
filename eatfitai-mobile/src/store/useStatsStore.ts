@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { summaryService, type WeekSummary } from "../services/summaryService";
+import type { NutritionSummaryDto } from '../types';
 
 export type StatsState = {
   weekSummary: WeekSummary | null;

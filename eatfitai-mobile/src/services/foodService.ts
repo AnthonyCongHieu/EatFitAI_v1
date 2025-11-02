@@ -2,6 +2,7 @@
 // Chu thich bang tieng Viet khong dau
 
 import apiClient from './apiClient';
+import type { FoodItemDto } from '../types';
 
 const toNumber = (value: unknown): number | null => {
   if (typeof value === 'number' && !Number.isNaN(value)) {

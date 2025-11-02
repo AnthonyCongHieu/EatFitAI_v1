@@ -2,6 +2,7 @@
 // Chu thich tieng Viet toan bo
 
 import apiClient from './apiClient';
+import type { UserDto } from '../types';
 
 export type UserProfile = {
   id: string;

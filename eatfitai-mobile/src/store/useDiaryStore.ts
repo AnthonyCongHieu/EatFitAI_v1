@@ -4,6 +4,7 @@
 import { create } from 'zustand';
 
 import { diaryService, type DaySummary, type DiaryMealGroup } from '../services/diaryService';
+import type { MealDiaryDto } from '../types';
 
 type DiaryState = {
   summary: DaySummary | null;

@@ -1,4 +1,5 @@
 import apiClient from "./apiClient";
+import type { NutritionSummaryDto } from '../types';
 
 export type WeekDaySummary = {
   date: string;
