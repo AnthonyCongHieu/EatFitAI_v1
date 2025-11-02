@@ -12,7 +12,9 @@
       "resizeMode": "contain",
       "backgroundColor": "#0A4D3C"
     },
-    "assetBundlePatterns": ["**/*"],
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
       "supportsTablet": true
     },
@@ -31,6 +33,9 @@
       "eas": {
         "projectId": "00000000-0000-0000-0000-000000000000"
       }
-    }
+    },
+    "plugins": [
+      "expo-secure-store"
+    ]
   }
 }

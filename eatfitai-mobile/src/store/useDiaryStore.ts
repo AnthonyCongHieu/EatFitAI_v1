@@ -43,7 +43,7 @@ const removeEntryFromMeals = (meals: DiaryMealGroup[], entryId: string) => {
     .filter((meal) => meal.entries.length > 0);
 };
 
-export const useDiaryStore = create<DiaryState>((set, get) => ({
+export const useDiaryStore = create<DiaryState>((set: any, get: any) => ({
   summary: null,
   isLoading: false,
   isRefreshing: false,
@@ -90,8 +90,8 @@ export const useDiaryStore = create<DiaryState>((set, get) => ({
     // Luu tam de rollback khi delete that bai
     const previousSummary = currentSummary;
     const removedEntry = currentSummary.meals
-      .flatMap((meal) => meal.entries)
-      .find((entry) => entry.id === entryId);
+      .flatMap((meal: any) => meal.entries)
+      .find((entry: any) => entry.id === entryId);
     set({
       summary: {
         ...currentSummary,

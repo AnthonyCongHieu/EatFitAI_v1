@@ -10,7 +10,7 @@ export type StatsState = {
   refreshWeekSummary: () => Promise<void>;
 };
 
-export const useStatsStore = create<StatsState>((set, get) => ({
+export const useStatsStore = create<StatsState>((set: any, get: any) => ({
   weekSummary: null,
   isLoading: false,
   error: null,

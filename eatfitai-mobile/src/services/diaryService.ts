@@ -50,17 +50,17 @@ const toNumberOrNull = (value: unknown): number | null => {
   return null;
 };
 
-const normalizeEntry = (data: any): DiaryEntry => ({
-  id: String(data?.id ?? ''),
-  mealType: data?.mealType ?? data?.meal ?? 'unknown',
-  foodName: data?.foodName ?? data?.name ?? 'Mon an',
-  note: data?.note ?? data?.description ?? null,
-  quantityText: data?.quantityText ?? data?.serving ?? data?.portion ?? null,
-  calories: toNumberOrNull(data?.calories),
-  protein: toNumberOrNull(data?.protein),
-  carbs: toNumberOrNull(data?.carbs),
-  fat: toNumberOrNull(data?.fat),
-  recordedAt: data?.recordedAt ?? data?.createdAt ?? null,
+const normalizeEntry = (data: MealDiaryDto): DiaryEntry => ({
+  id: String(data?.mealDiaryId ?? ''),
+  mealType: data?.mealTypeName ?? 'unknown',
+  foodName: data?.foodItemName ?? data?.userDishName ?? data?.recipeName ?? 'Mon an',
+  note: data?.note ?? null,
+  quantityText: data?.portionQuantity ? `${data.portionQuantity} ${data.servingUnitName ?? 'serving'}` : `${data.grams}g`,
+  calories: data?.calories ?? null,
+  protein: data?.protein ?? null,
+  carbs: data?.carb ?? null,
+  fat: data?.fat ?? null,
+  recordedAt: data?.createdAt ?? null,
 });
 
 const normalizeMeal = (data: any): DiaryMealGroup => ({
@@ -115,20 +115,9 @@ export const diaryService = {
   },
 
   async getEntriesByDate(date: string): Promise<DiaryEntry[]> {
-    const response = await apiClient.get('/api/diary', { params: { date } });
+    const response = await apiClient.get('/api/meal-diary', { params: { date } });
     const rows = Array.isArray(response.data) ? response.data : [];
-    return rows.map((r: any) => ({
-      id: String(r?.id ?? ''),
-      mealType: (r?.mealCode as string) ?? 'unknown',
-      foodName: (r?.foodName as string) ?? (r?.name as string) ?? 'Món ăn',
-      note: r?.notes ?? null,
-      quantityText: typeof r?.quantityGrams === 'number' ? `${Math.round(r.quantityGrams)} g` : null,
-      calories: toNumberOrNull(r?.caloriesKcal),
-      protein: toNumberOrNull(r?.proteinGrams),
-      carbs: toNumberOrNull(r?.carbohydrateGrams),
-      fat: toNumberOrNull(r?.fatGrams),
-      recordedAt: r?.createdAt ?? null,
-    }));
+    return rows.map(normalizeEntry);
   },
 
   async getTodayCombined(): Promise<DaySummary> {
@@ -143,11 +132,14 @@ export const diaryService = {
 
   // Xoa mot entry khoi nhat ky
   async deleteEntry(entryId: string): Promise<void> {
-    await apiClient.delete(`/api/diary/${entryId}`);
+    await apiClient.delete(`/api/meal-diary/${entryId}`);
   },
 
   // Cap nhat mot entry trong nhat ky
-  async updateEntry(entryId: string, updates: { quantityGrams?: number; notes?: string }): Promise<void> {
-    await apiClient.put(`/api/diary/${entryId}`, updates);
+  async updateEntry(entryId: string, updates: { grams?: number; note?: string }): Promise<void> {
+    await apiClient.put(`/api/meal-diary/${entryId}`, {
+      grams: updates.grams,
+      note: updates.note,
+    });
   },
 };

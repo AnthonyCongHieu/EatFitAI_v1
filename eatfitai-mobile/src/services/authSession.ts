@@ -52,10 +52,10 @@ export const silentRefreshIfNeeded = async (): Promise<void> => {
 
     // Call refresh endpoint via token service to avoid circular import
     const data = await postRefreshToken(refreshToken);
-    const accessToken = data?.MaAccessToken as string | undefined;
-    const refreshTokenNew = data?.MaRefreshToken as string | undefined;
-    const accessTokenExpiresAt = data?.ThoiGianHetHanAccessToken as string | undefined;
-    const refreshTokenExpiresAt = data?.ThoiGianHetHanRefreshToken as string | undefined;
+    const accessToken = data?.accessToken as string | undefined;
+    const refreshTokenNew = data?.refreshToken as string | undefined;
+    const accessTokenExpiresAt = data?.accessTokenExpiresAt as string | undefined;
+    const refreshTokenExpiresAt = data?.refreshTokenExpiresAt as string | undefined;
     if (accessToken) {
       setAccessTokenMem(accessToken);
       await tokenStorage.saveTokensFull({
@@ -86,10 +86,10 @@ export const initAuthSession = async (): Promise<void> => {
 };
 
 export const updateSessionFromAuthResponse = async (data: any): Promise<void> => {
-  const accessToken = data?.MaAccessToken as string | undefined;
-  const refreshToken = data?.MaRefreshToken as string | undefined;
-  const accessTokenExpiresAt = data?.ThoiGianHetHanAccessToken as string | undefined;
-  const refreshTokenExpiresAt = data?.ThoiGianHetHanRefreshToken as string | undefined;
+  const accessToken = data?.accessToken as string | undefined;
+  const refreshToken = data?.refreshToken as string | undefined;
+  const accessTokenExpiresAt = data?.accessTokenExpiresAt as string | undefined;
+  const refreshTokenExpiresAt = data?.refreshTokenExpiresAt as string | undefined;
   if (!accessToken) return;
   setAccessTokenMem(accessToken);
   await tokenStorage.saveTokensFull({

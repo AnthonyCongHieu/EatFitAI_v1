@@ -25,13 +25,13 @@ const toNumber = (value: unknown, fallback = 0): number => {
   return fallback;
 };
 
-const normalizeDay = (data: any): WeekDaySummary => ({
-  date: data?.date ?? new Date().toISOString(),
-  calories: toNumber(data?.calories),
-  targetCalories: data?.targetCalories != null ? toNumber(data?.targetCalories) : null,
-  protein: data?.protein != null ? toNumber(data?.protein) : null,
-  carbs: data?.carbs != null ? toNumber(data?.carbs) : null,
-  fat: data?.fat != null ? toNumber(data?.fat) : null,
+const normalizeDay = (data: NutritionSummaryDto): WeekDaySummary => ({
+  date: new Date().toISOString(),
+  calories: toNumber(data?.totalCalories),
+  targetCalories: null,
+  protein: toNumber(data?.totalProtein),
+  carbs: toNumber(data?.totalCarbs),
+  fat: toNumber(data?.totalFat),
 });
 
 const todayDate = (): string => {
@@ -42,25 +42,12 @@ const todayDate = (): string => {
   return `${y}-${m}-${day}`;
 };
 
-const normalizeServerDay = (data: any): WeekDaySummary => ({
-  date: data?.mealDate ?? data?.date ?? new Date().toISOString(),
-  calories: toNumber(data?.totalCaloriesKcal ?? data?.calories),
-  targetCalories: data?.targetCalories != null ? toNumber(data?.targetCalories) : null,
-  protein: data?.totalProteinGrams != null ? toNumber(data?.totalProteinGrams) : null,
-  carbs: data?.totalCarbohydrateGrams != null ? toNumber(data?.totalCarbohydrateGrams) : null,
-  fat: data?.totalFatGrams != null ? toNumber(data?.totalFatGrams) : null,
-});
-
 export const summaryService = {
   async getWeekSummary(): Promise<WeekSummary> {
     const date = todayDate();
-    const response = await apiClient.get("/api/summary/week", { params: { date } });
-    const raw = response.data;
-    const days = Array.isArray(raw?.days)
-      ? raw.days.map(normalizeServerDay)
-      : Array.isArray(raw)
-      ? raw.map(normalizeServerDay)
-      : [];
+    const response = await apiClient.get("/api/analytics/nutrition-summary", { params: { startDate: date } });
+    const raw = response.data as NutritionSummaryDto;
+    const days = [normalizeDay(raw)];
     return { days };
   },
 };

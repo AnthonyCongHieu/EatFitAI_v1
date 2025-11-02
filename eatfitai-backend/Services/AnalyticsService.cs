@@ -32,5 +32,19 @@ namespace EatFitAI.API.Services
                 DailyCalories = dailyCalories
             };
         }
+
+        public async Task<NutritionSummaryDto> GetDaySummaryAsync(Guid userId, DateTime date)
+        {
+            var startDate = date.Date;
+            var endDate = startDate.AddDays(1).AddTicks(-1);
+            return await GetNutritionSummaryAsync(userId, startDate, endDate);
+        }
+
+        public async Task<NutritionSummaryDto> GetWeekSummaryAsync(Guid userId, DateTime date)
+        {
+            var startOfWeek = date.Date.AddDays(-(int)date.DayOfWeek);
+            var endOfWeek = startOfWeek.AddDays(7).AddTicks(-1);
+            return await GetNutritionSummaryAsync(userId, startOfWeek, endOfWeek);
+        }
     }
 }

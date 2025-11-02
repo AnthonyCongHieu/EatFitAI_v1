@@ -47,7 +47,7 @@ const extractRegisterErrorMessage = (err: any): string => {
   return err?.message ?? fallback;
 };
 
-export const useAuthStore = create<AuthState>((set) => ({
+export const useAuthStore = create<AuthState>((set: any) => ({
   isInitializing: true,
   isAuthenticated: false,
   user: null,

@@ -13,12 +13,12 @@ type DashboardState = {
   loadProfile: () => Promise<void>;
 };
 
-export const useDashboardStore = create<DashboardState>((set) => ({
+export const useDashboardStore = create<DashboardState>((set: any) => ({
   profile: null,
   hydration: 0,
   setProfile: (profile) => set({ profile }),
   addHydration: (ml) =>
-    set((state) => ({
+    set((state: any) => ({
       hydration: Math.max(0, state.hydration + ml),
     })),
   loadProfile: async () => {

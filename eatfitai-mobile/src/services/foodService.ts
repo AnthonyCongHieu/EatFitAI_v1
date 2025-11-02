@@ -46,70 +46,55 @@ export type SearchFoodsResult = {
   limit?: number;
 };
 
-const normalizeFoodItem = (data: any): FoodItem => ({
-  id: String(data?.id ?? data?.foodId ?? ''),
-  name: data?.name ?? data?.foodName ?? 'Mon an',
-  brand: data?.brand ?? data?.brandName ?? null,
-  calories: toNumber(data?.caloriesKcal ?? data?.calories ?? data?.energy),
-  protein: toNumber(data?.proteinGrams ?? data?.protein),
-  carbs: toNumber(data?.carbohydrateGrams ?? data?.carbs ?? data?.carbohydrate),
-  fat: toNumber(data?.fatGrams ?? data?.fat),
+const normalizeFoodItem = (data: FoodItemDto): FoodItem => ({
+  id: String(data?.foodItemId ?? ''),
+  name: data?.foodName ?? 'Mon an',
+  brand: null,
+  calories: data?.caloriesPer100g ?? null,
+  protein: data?.proteinPer100g ?? null,
+  carbs: data?.carbPer100g ?? null,
+  fat: data?.fatPer100g ?? null,
 });
 
-const normalizeFoodDetail = (data: any): FoodDetail => ({
+const normalizeFoodDetail = (data: FoodItemDto): FoodDetail => ({
   ...normalizeFoodItem(data),
-  description: data?.description ?? null,
-  servingSizeGram: toNumber(data?.servingSizeGrams ?? data?.servingSizeGram ?? data?.servingSize ?? data?.defaultGrams),
-  servingUnit: data?.servingUnit ?? data?.unit ?? 'gram',
-  perServingCalories: toNumber(data?.caloriesKcal ?? data?.perServingCalories ?? data?.caloriesPerServing ?? data?.calories),
-  perServingProtein: toNumber(data?.proteinGrams ?? data?.perServingProtein ?? data?.proteinPerServing ?? data?.protein),
-  perServingCarbs: toNumber(data?.carbohydrateGrams ?? data?.perServingCarbs ?? data?.carbsPerServing ?? data?.carbs),
-  perServingFat: toNumber(data?.fatGrams ?? data?.perServingFat ?? data?.fatPerServing ?? data?.fat),
+  description: null,
+  servingSizeGram: 100,
+  servingUnit: 'gram',
+  perServingCalories: data?.caloriesPer100g ?? null,
+  perServingProtein: data?.proteinPer100g ?? null,
+  perServingCarbs: data?.carbPer100g ?? null,
+  perServingFat: data?.fatPer100g ?? null,
 });
 
 export const foodService = {
   // Tim kiem thuc pham theo tu khoa va phan trang
   async searchFoods(query: string, page: number, pageSize = 20): Promise<SearchFoodsResult> {
-    const requestOffset = Math.max(0, (page - 1) * pageSize);
-    const response = await apiClient.get('/api/foods/search', {
+    const response = await apiClient.get('/api/food/search', {
       params: {
-        query,
-        offset: requestOffset,
+        q: query,
         limit: pageSize,
       },
     });
 
-    const data = response.data;
-    const rawItems = Array.isArray(data)
-      ? data
-      : Array.isArray((data as any)?.items)
-      ? (data as any).items
-      : Array.isArray((data as any)?.results)
-      ? (data as any).results
-      : [];
-
-    const normalizedItems = rawItems.map(normalizeFoodItem);
-
-    const total = Number((data as any)?.totalCount ?? (data as any)?.total ?? normalizedItems.length);
-    const responseOffset = Number((data as any)?.offset ?? requestOffset);
-    const responseLimit = Number((data as any)?.limit ?? pageSize);
-    const hasMore = total > (responseOffset + normalizedItems.length);
+    const data = response.data as FoodItemDto[];
+    const normalizedItems = data.map(normalizeFoodItem);
 
     return {
       items: normalizedItems,
-      page: Math.floor(responseOffset / responseLimit) + 1,
-      pageSize: responseLimit,
-      total,
-      hasMore,
-      totalCount: total,
-      offset: responseOffset,
-      limit: responseLimit,
+      page: 1,
+      pageSize: data.length,
+      total: data.length,
+      hasMore: false,
+      totalCount: data.length,
+      offset: 0,
+      limit: pageSize,
     };
   },
 
   // Lay chi tiet mot thuc pham
   async getFoodDetail(foodId: string): Promise<FoodDetail> {
-    const response = await apiClient.get(`/api/foods/${foodId}`);
+    const response = await apiClient.get(`/api/food/${foodId}`);
     return normalizeFoodDetail(response.data ?? {});
   },
 
@@ -124,15 +109,14 @@ export const foodService = {
     const y = d.getFullYear();
     const m = `${d.getMonth() + 1}`.padStart(2, '0');
     const day = `${d.getDate()}`.padStart(2, '0');
-    const mealDate = `${y}-${m}-${day}`;
+    const eatenDate = `${y}-${m}-${day}`;
 
-    await apiClient.post('/api/diary', {
-      mealDate,
-      mealCode: payload.mealType,
-      source: 'food',
-      itemId: payload.foodId,
-      quantityGrams: payload.grams,
-      notes: payload.note ?? null,
+    await apiClient.post('/api/meal-diary', {
+      eatenDate,
+      mealTypeId: payload.mealType === 'breakfast' ? 1 : payload.mealType === 'lunch' ? 2 : payload.mealType === 'dinner' ? 3 : 4,
+      foodItemId: parseInt(payload.foodId),
+      grams: payload.grams,
+      note: payload.note ?? null,
     });
   },
 
