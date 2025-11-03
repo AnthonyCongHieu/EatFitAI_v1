@@ -18,6 +18,13 @@ public class Program
     {
         var builder = WebApplication.CreateBuilder(args);
 
+        // Configure listening URLs from configuration (e.g., appsettings.*.json)
+        var configuredUrls = builder.Configuration.GetValue<string>("Urls");
+        if (!string.IsNullOrWhiteSpace(configuredUrls))
+        {
+            builder.WebHost.UseUrls(configuredUrls);
+        }
+
 // Add services to the container.
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
@@ -158,7 +165,10 @@ else if (app.Environment.IsStaging())
 app.UseMiddleware<ExceptionHandlingMiddleware>();
 app.UseMiddleware<RequestLoggingMiddleware>();
 
-app.UseHttpsRedirection();
+if (!app.Environment.IsDevelopment())
+{
+    app.UseHttpsRedirection();
+}
 app.UseCors("AllowAll");
 
 // Add authentication and authorization middleware
