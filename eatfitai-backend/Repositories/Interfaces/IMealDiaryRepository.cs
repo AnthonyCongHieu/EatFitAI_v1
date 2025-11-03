@@ -1,4 +1,4 @@
-using EatFitAI.API.Models;
+using EatFitAI.API.DbScaffold.Models;
 
 namespace EatFitAI.API.Repositories.Interfaces
 {

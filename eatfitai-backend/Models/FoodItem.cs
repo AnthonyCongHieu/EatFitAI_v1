@@ -1,48 +1,43 @@
-using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
+﻿using System;
+using System.Collections.Generic;
 
-namespace EatFitAI.API.Models
+namespace EatFitAI.API.Models;
+
+public partial class FoodItem
 {
-    [Table("FoodItem")]
-    public class FoodItem
-    {
-        [Key]
-        [Column("FoodItemId")]
-        public int FoodItemId { get; set; }
+    public int FoodItemId { get; set; }
 
-        [Required]
-        [Column("FoodName")]
-        [StringLength(255)]
-        public string FoodName { get; set; } = string.Empty;
+    public string FoodName { get; set; } = null!;
 
-        [Required]
-        [Column("CaloriesPer100g", TypeName = "decimal(10,2)")]
-        public decimal CaloriesPer100g { get; set; }
+    public decimal CaloriesPer100g { get; set; }
 
-        [Required]
-        [Column("ProteinPer100g", TypeName = "decimal(10,2)")]
-        public decimal ProteinPer100g { get; set; }
+    public decimal ProteinPer100g { get; set; }
 
-        [Required]
-        [Column("CarbPer100g", TypeName = "decimal(10,2)")]
-        public decimal CarbPer100g { get; set; }
+    public decimal CarbPer100g { get; set; }
 
-        [Required]
-        [Column("FatPer100g", TypeName = "decimal(10,2)")]
-        public decimal FatPer100g { get; set; }
+    public decimal FatPer100g { get; set; }
 
-        [Required]
-        [Column("IsActive")]
-        public bool IsActive { get; set; }
+    public string? ThumbNail { get; set; }
 
-        [Column("CreatedAt")]
-        public DateTime CreatedAt { get; set; }
+    public bool IsActive { get; set; }
 
-        [Column("UpdatedAt")]
-        public DateTime UpdatedAt { get; set; }
+    public DateTime CreatedAt { get; set; }
 
-        [Required]
-        [Column("IsDeleted")]
-        public bool IsDeleted { get; set; }
-    }
+    public DateTime UpdatedAt { get; set; }
+
+    public bool IsDeleted { get; set; }
+
+    public virtual ICollection<AISuggestion> AISuggestions { get; set; } = new List<AISuggestion>();
+
+    public virtual ICollection<FoodServing> FoodServings { get; set; } = new List<FoodServing>();
+
+    public virtual ICollection<MealDiary> MealDiaries { get; set; } = new List<MealDiary>();
+
+    public virtual ICollection<RecipeIngredient> RecipeIngredients { get; set; } = new List<RecipeIngredient>();
+
+    public virtual ICollection<UserDishIngredient> UserDishIngredients { get; set; } = new List<UserDishIngredient>();
+
+    public virtual ICollection<UserFavoriteFood> UserFavoriteFoods { get; set; } = new List<UserFavoriteFood>();
+
+    public virtual ICollection<UserRecentFood> UserRecentFoods { get; set; } = new List<UserRecentFood>();
 }

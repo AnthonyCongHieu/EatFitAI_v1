@@ -1,12 +1,12 @@
-using EatFitAI.API.Data;
-using EatFitAI.API.Models;
+using EatFitAI.API.DbScaffold.Data;
+using EatFitAI.API.DbScaffold.Models;
 using EatFitAI.API.Repositories.Interfaces;
 
 namespace EatFitAI.API.Repositories
 {
     public class UserRepository : BaseRepository<User>, IUserRepository
     {
-        public UserRepository(ApplicationDbContext context) : base(context)
+        public UserRepository(EatFitAIDbContext context) : base(context)
         {
         }
 

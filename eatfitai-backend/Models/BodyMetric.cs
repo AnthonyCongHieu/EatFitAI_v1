@@ -1,37 +1,21 @@
-using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
+﻿using System;
+using System.Collections.Generic;
 
-namespace EatFitAI.API.Models
+namespace EatFitAI.API.Models;
+
+public partial class BodyMetric
 {
-    [Table("BodyMetric")]
-    public class BodyMetric
-    {
-        [Key]
-        [Column("BodyMetricId")]
-        public int BodyMetricId { get; set; }
+    public int BodyMetricId { get; set; }
 
-        [Required]
-        [Column("UserId")]
-        public Guid UserId { get; set; }
+    public Guid UserId { get; set; }
 
-        [ForeignKey("UserId")]
-        public virtual User? User { get; set; }
+    public decimal? HeightCm { get; set; }
 
-        [Column("HeightCm", TypeName = "decimal(5,2)")]
-        public decimal? HeightCm { get; set; }
+    public decimal? WeightKg { get; set; }
 
-        [Column("WeightKg", TypeName = "decimal(5,2)")]
-        public decimal? WeightKg { get; set; }
+    public DateOnly MeasuredDate { get; set; }
 
-        [Column("BodyFatPct", TypeName = "decimal(5,2)")]
-        public decimal? BodyFatPct { get; set; }
+    public string? Note { get; set; }
 
-        [Required]
-        [Column("MeasuredDate")]
-        public DateTime MeasuredDate { get; set; }
-
-        [Column("Note")]
-        [StringLength(200)]
-        public string? Note { get; set; }
-    }
+    public virtual User User { get; set; } = null!;
 }

@@ -1,100 +1,61 @@
-using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
+﻿using System;
+using System.Collections.Generic;
 
-namespace EatFitAI.API.Models
+namespace EatFitAI.API.Models;
+
+public partial class MealDiary
 {
-    [Table("MealDiary")]
-    public class MealDiary
-    {
-        [Key]
-        [Column("MealDiaryId")]
-        public int MealDiaryId { get; set; }
+    public int MealDiaryId { get; set; }
 
-        [Required]
-        [Column("UserId")]
-        public Guid UserId { get; set; }
+    public Guid UserId { get; set; }
 
-        [ForeignKey("UserId")]
-        public virtual User? User { get; set; }
+    public DateOnly EatenDate { get; set; }
 
-        [Required]
-        [Column("EatenDate")]
-        public DateTime EatenDate { get; set; }
+    public int MealTypeId { get; set; }
 
-        [Required]
-        [Column("MealTypeId")]
-        public int MealTypeId { get; set; }
+    public int? FoodItemId { get; set; }
 
-        [ForeignKey("MealTypeId")]
-        public virtual MealType? MealType { get; set; }
+    public int? UserDishId { get; set; }
 
-        [Column("FoodItemId")]
-        public int? FoodItemId { get; set; }
+    public int? UserFoodItemId { get; set; }
 
-        [ForeignKey("FoodItemId")]
-        public virtual FoodItem? FoodItem { get; set; }
+    public int? RecipeId { get; set; }
 
-        [Column("UserDishId")]
-        public int? UserDishId { get; set; }
+    public int? ServingUnitId { get; set; }
 
-        [ForeignKey("UserDishId")]
-        public virtual UserDish? UserDish { get; set; }
+    public decimal? PortionQuantity { get; set; }
 
-        [Column("RecipeId")]
-        public int? RecipeId { get; set; }
+    public decimal Grams { get; set; }
 
-        [ForeignKey("RecipeId")]
-        public virtual Recipe? Recipe { get; set; }
+    public decimal Calories { get; set; }
 
-        [Column("ServingUnitId")]
-        public int? ServingUnitId { get; set; }
+    public decimal Protein { get; set; }
 
-        [ForeignKey("ServingUnitId")]
-        public virtual ServingUnit? ServingUnit { get; set; }
+    public decimal Carb { get; set; }
 
-        [Column("PortionQuantity", TypeName = "decimal(10,2)")]
-        public decimal? PortionQuantity { get; set; }
+    public decimal Fat { get; set; }
 
-        [Required]
-        [Column("Grams", TypeName = "decimal(10,2)")]
-        public decimal Grams { get; set; }
+    public string? Note { get; set; }
 
-        [Required]
-        [Column("Calories", TypeName = "decimal(10,2)")]
-        public decimal Calories { get; set; }
+    public string? PhotoUrl { get; set; }
 
-        [Required]
-        [Column("Protein", TypeName = "decimal(10,2)")]
-        public decimal Protein { get; set; }
+    public string? SourceMethod { get; set; }
 
-        [Required]
-        [Column("Carb", TypeName = "decimal(10,2)")]
-        public decimal Carb { get; set; }
+    public DateTime CreatedAt { get; set; }
 
-        [Required]
-        [Column("Fat", TypeName = "decimal(10,2)")]
-        public decimal Fat { get; set; }
+    public DateTime UpdatedAt { get; set; }
 
-        [Column("Note")]
-        [StringLength(500)]
-        public string? Note { get; set; }
+    public bool IsDeleted { get; set; }
 
-        [Column("PhotoUrl")]
-        [StringLength(500)]
-        public string? PhotoUrl { get; set; }
+    public virtual FoodItem? FoodItem { get; set; }
 
-        [Column("SourceMethod")]
-        [StringLength(30)]
-        public string? SourceMethod { get; set; }
+    public virtual MealType MealType { get; set; } = null!;
 
-        [Column("CreatedAt")]
-        public DateTime CreatedAt { get; set; }
+    public virtual Recipe? Recipe { get; set; }
 
-        [Column("UpdatedAt")]
-        public DateTime UpdatedAt { get; set; }
+    public virtual ServingUnit? ServingUnit { get; set; }
 
-        [Required]
-        [Column("IsDeleted")]
-        public bool IsDeleted { get; set; }
-    }
+    public virtual User User { get; set; } = null!;
+
+    public virtual UserDish? UserDish { get; set; }
 }

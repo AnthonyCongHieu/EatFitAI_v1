@@ -1,30 +1,19 @@
-using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
+﻿using System;
+using System.Collections.Generic;
 
-namespace EatFitAI.API.Models
+namespace EatFitAI.API.Models;
+
+public partial class UserFavoriteFood
 {
-    [Table("UserFavoriteFood")]
-    public class UserFavoriteFood
-    {
-        [Key]
-        [Column("UserFavoriteFoodId")]
-        public int UserFavoriteFoodId { get; set; }
+    public int UserFavoriteFoodId { get; set; }
 
-        [Required]
-        [Column("UserId")]
-        public Guid UserId { get; set; }
+    public Guid UserId { get; set; }
 
-        [ForeignKey("UserId")]
-        public virtual User? User { get; set; }
+    public int FoodItemId { get; set; }
 
-        [Required]
-        [Column("FoodItemId")]
-        public int FoodItemId { get; set; }
+    public DateTime CreatedAt { get; set; }
 
-        [ForeignKey("FoodItemId")]
-        public virtual FoodItem? FoodItem { get; set; }
+    public virtual FoodItem FoodItem { get; set; } = null!;
 
-        [Column("CreatedAt")]
-        public DateTime CreatedAt { get; set; }
-    }
+    public virtual User User { get; set; } = null!;
 }

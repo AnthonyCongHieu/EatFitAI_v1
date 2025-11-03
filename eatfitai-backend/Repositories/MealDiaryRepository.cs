@@ -1,5 +1,5 @@
-using EatFitAI.API.Data;
-using EatFitAI.API.Models;
+using EatFitAI.API.DbScaffold.Data;
+using EatFitAI.API.DbScaffold.Models;
 using EatFitAI.API.Repositories.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
@@ -7,7 +7,7 @@ namespace EatFitAI.API.Repositories
 {
     public class MealDiaryRepository : BaseRepository<MealDiary>, IMealDiaryRepository
     {
-        public MealDiaryRepository(ApplicationDbContext context) : base(context)
+        public MealDiaryRepository(EatFitAIDbContext context) : base(context)
         {
         }
 
@@ -24,7 +24,8 @@ namespace EatFitAI.API.Repositories
 
             if (date.HasValue)
             {
-                query = query.Where(md => md.EatenDate.Date == date.Value.Date);
+                var dateOnly = DateOnly.FromDateTime(date.Value);
+                query = query.Where(md => md.EatenDate == dateOnly);
             }
 
             return await query.OrderByDescending(md => md.EatenDate).ToListAsync();
@@ -32,9 +33,11 @@ namespace EatFitAI.API.Repositories
 
         public async Task<IEnumerable<MealDiary>> GetByDateRangeAsync(Guid userId, DateTime startDate, DateTime endDate)
         {
+            var start = DateOnly.FromDateTime(startDate);
+            var end = DateOnly.FromDateTime(endDate);
             return await _context.MealDiaries
                 .Where(md => md.UserId == userId && !md.IsDeleted &&
-                            md.EatenDate.Date >= startDate.Date && md.EatenDate.Date <= endDate.Date)
+                            md.EatenDate >= start && md.EatenDate <= end)
                 .Include(md => md.FoodItem)
                 .Include(md => md.UserDish)
                 .Include(md => md.Recipe)

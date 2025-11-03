@@ -1,29 +1,33 @@
-using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
+﻿using System;
+using System.Collections.Generic;
 
-namespace EatFitAI.API.Models
+namespace EatFitAI.API.Models;
+
+public partial class User
 {
-    [Table("Users")]
-    public class User
-    {
-        [Key]
-        [Column("UserId")]
-        public Guid UserId { get; set; }
+    public Guid UserId { get; set; }
 
-        [Required]
-        [Column("Email")]
-        [StringLength(256)]
-        public string Email { get; set; } = string.Empty;
+    public string Email { get; set; } = null!;
 
-        [Column("PasswordHash")]
-        [StringLength(256)]
-        public string? PasswordHash { get; set; }
+    public string? PasswordHash { get; set; }
 
-        [Column("DisplayName")]
-        [StringLength(150)]
-        public string? DisplayName { get; set; }
+    public string? DisplayName { get; set; }
 
-        [Column("CreatedAt")]
-        public DateTime CreatedAt { get; set; }
-    }
+    public DateTime CreatedAt { get; set; }
+
+    public virtual ICollection<AILog> AILogs { get; set; } = new List<AILog>();
+
+    public virtual ICollection<BodyMetric> BodyMetrics { get; set; } = new List<BodyMetric>();
+
+    public virtual ICollection<MealDiary> MealDiaries { get; set; } = new List<MealDiary>();
+
+    public virtual ICollection<NutritionTarget> NutritionTargets { get; set; } = new List<NutritionTarget>();
+
+    public virtual ICollection<UserDish> UserDishes { get; set; } = new List<UserDish>();
+
+    public virtual ICollection<UserFavoriteFood> UserFavoriteFoods { get; set; } = new List<UserFavoriteFood>();
+
+    public virtual ICollection<UserFoodItem> UserFoodItems { get; set; } = new List<UserFoodItem>();
+
+    public virtual ICollection<UserRecentFood> UserRecentFoods { get; set; } = new List<UserRecentFood>();
 }

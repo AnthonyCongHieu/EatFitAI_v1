@@ -1,22 +1,15 @@
-using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
+﻿using System;
+using System.Collections.Generic;
 
-namespace EatFitAI.API.Models
+namespace EatFitAI.API.Models;
+
+public partial class ActivityLevel
 {
-    [Table("ActivityLevel")]
-    public class ActivityLevel
-    {
-        [Key]
-        [Column("ActivityLevelId")]
-        public int ActivityLevelId { get; set; }
+    public int ActivityLevelId { get; set; }
 
-        [Required]
-        [Column("Name")]
-        [StringLength(100)]
-        public string Name { get; set; } = string.Empty;
+    public string Name { get; set; } = null!;
 
-        [Required]
-        [Column("ActivityFactor", TypeName = "decimal(4,2)")]
-        public decimal ActivityFactor { get; set; }
-    }
+    public decimal ActivityFactor { get; set; }
+
+    public virtual ICollection<NutritionTarget> NutritionTargets { get; set; } = new List<NutritionTarget>();
 }

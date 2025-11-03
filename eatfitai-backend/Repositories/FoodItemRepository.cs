@@ -1,5 +1,5 @@
-using EatFitAI.API.Data;
-using EatFitAI.API.Models;
+using EatFitAI.API.DbScaffold.Data;
+using EatFitAI.API.DbScaffold.Models;
 using EatFitAI.API.Repositories.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
@@ -7,7 +7,7 @@ namespace EatFitAI.API.Repositories
 {
     public class FoodItemRepository : BaseRepository<FoodItem>, IFoodItemRepository
     {
-        public FoodItemRepository(ApplicationDbContext context) : base(context)
+        public FoodItemRepository(EatFitAIDbContext context) : base(context)
         {
         }
 

@@ -1,32 +1,23 @@
-using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
+﻿using System;
+using System.Collections.Generic;
 
-namespace EatFitAI.API.Models
+namespace EatFitAI.API.Models;
+
+public partial class Recipe
 {
-    [Table("Recipe")]
-    public class Recipe
-    {
-        [Key]
-        [Column("RecipeId")]
-        public int RecipeId { get; set; }
+    public int RecipeId { get; set; }
 
-        [Required]
-        [Column("RecipeName")]
-        [StringLength(255)]
-        public string RecipeName { get; set; } = string.Empty;
+    public string RecipeName { get; set; } = null!;
 
-        [Column("Description")]
-        [StringLength(500)]
-        public string? Description { get; set; }
+    public string? Description { get; set; }
 
-        [Column("CreatedAt")]
-        public DateTime CreatedAt { get; set; }
+    public DateTime CreatedAt { get; set; }
 
-        [Column("UpdatedAt")]
-        public DateTime UpdatedAt { get; set; }
+    public DateTime UpdatedAt { get; set; }
 
-        [Required]
-        [Column("IsDeleted")]
-        public bool IsDeleted { get; set; }
-    }
+    public bool IsDeleted { get; set; }
+
+    public virtual ICollection<MealDiary> MealDiaries { get; set; } = new List<MealDiary>();
+
+    public virtual ICollection<RecipeIngredient> RecipeIngredients { get; set; } = new List<RecipeIngredient>();
 }

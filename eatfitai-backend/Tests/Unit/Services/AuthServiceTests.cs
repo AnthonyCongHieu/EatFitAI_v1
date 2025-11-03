@@ -1,6 +1,6 @@
-using EatFitAI.API.Data;
+using EatFitAI.API.DbScaffold.Data;
 using EatFitAI.API.DTOs.Auth;
-using EatFitAI.API.Models;
+using EatFitAI.API.DbScaffold.Models;
 using EatFitAI.API.Repositories.Interfaces;
 using EatFitAI.API.Services;
 using AutoMapper;
@@ -16,7 +16,7 @@ namespace EatFitAI.API.Tests.Unit.Services
     public class AuthServiceTests : IDisposable
     {
         private readonly Mock<IUserRepository> _userRepositoryMock;
-        private readonly ApplicationDbContext _context;
+        private readonly EatFitAIDbContext _context;
         private readonly Mock<IMapper> _mapperMock;
         private readonly Mock<IConfiguration> _configurationMock;
         private readonly AuthService _authService;
@@ -28,10 +28,10 @@ namespace EatFitAI.API.Tests.Unit.Services
             _configurationMock = new Mock<IConfiguration>();
 
             // Setup in-memory database
-            var options = new DbContextOptionsBuilder<ApplicationDbContext>()
+            var options = new DbContextOptionsBuilder<EatFitAIDbContext>()
                 .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
                 .Options;
-            _context = new ApplicationDbContext(options);
+            _context = new EatFitAIDbContext(options);
 
             _configurationMock.Setup(c => c["Jwt:Key"]).Returns("test-secret-key-for-testing-purposes");
 

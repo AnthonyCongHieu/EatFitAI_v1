@@ -1,34 +1,21 @@
-using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
+﻿using System;
+using System.Collections.Generic;
 
-namespace EatFitAI.API.Models
+namespace EatFitAI.API.Models;
+
+public partial class AISuggestion
 {
-    [Table("AISuggestion")]
-    public class AISuggestion
-    {
-        [Key]
-        [Column("AISuggestionId")]
-        public int AISuggestionId { get; set; }
+    public int AISuggestionId { get; set; }
 
-        [Required]
-        [Column("AILogId")]
-        public int AILogId { get; set; }
+    public int AILogId { get; set; }
 
-        [ForeignKey("AILogId")]
-        public virtual AILog? AILog { get; set; }
+    public int FoodItemId { get; set; }
 
-        [Required]
-        [Column("FoodItemId")]
-        public int FoodItemId { get; set; }
+    public decimal Confidence { get; set; }
 
-        [ForeignKey("FoodItemId")]
-        public virtual FoodItem? FoodItem { get; set; }
+    public DateTime CreatedAt { get; set; }
 
-        [Required]
-        [Column("Confidence", TypeName = "decimal(5,4)")]
-        public decimal Confidence { get; set; }
+    public virtual AILog AILog { get; set; } = null!;
 
-        [Column("CreatedAt")]
-        public DateTime CreatedAt { get; set; }
-    }
+    public virtual FoodItem FoodItem { get; set; } = null!;
 }

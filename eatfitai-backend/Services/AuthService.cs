@@ -3,9 +3,9 @@ using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
 using AutoMapper;
-using EatFitAI.API.Data;
+using EatFitAI.API.DbScaffold.Data;
 using EatFitAI.API.DTOs.Auth;
-using EatFitAI.API.Models;
+using EatFitAI.API.DbScaffold.Models;
 using EatFitAI.API.Repositories.Interfaces;
 using EatFitAI.API.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
@@ -16,13 +16,13 @@ namespace EatFitAI.API.Services
     public class AuthService : IAuthService
     {
         private readonly IUserRepository _userRepository;
-        private readonly ApplicationDbContext _context;
+        private readonly EatFitAIDbContext _context;
         private readonly IMapper _mapper;
         private readonly IConfiguration _configuration;
 
         public AuthService(
             IUserRepository userRepository,
-            ApplicationDbContext context,
+            EatFitAIDbContext context,
             IMapper mapper,
             IConfiguration configuration)
         {

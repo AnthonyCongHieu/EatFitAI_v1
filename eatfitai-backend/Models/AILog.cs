@@ -1,36 +1,27 @@
-using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
+﻿using System;
+using System.Collections.Generic;
 
-namespace EatFitAI.API.Models
+namespace EatFitAI.API.Models;
+
+public partial class AILog
 {
-    [Table("AILog")]
-    public class AILog
-    {
-        [Key]
-        [Column("AILogId")]
-        public int AILogId { get; set; }
+    public int AILogId { get; set; }
 
-        [Column("UserId")]
-        public Guid? UserId { get; set; }
+    public Guid? UserId { get; set; }
 
-        [ForeignKey("UserId")]
-        public virtual User? User { get; set; }
+    public string Action { get; set; } = null!;
 
-        [Required]
-        [Column("Action")]
-        [StringLength(50)]
-        public string Action { get; set; } = string.Empty;
+    public string? InputJson { get; set; }
 
-        [Column("InputJson")]
-        public string? InputJson { get; set; }
+    public string? OutputJson { get; set; }
 
-        [Column("OutputJson")]
-        public string? OutputJson { get; set; }
+    public int? DurationMs { get; set; }
 
-        [Column("DurationMs")]
-        public int? DurationMs { get; set; }
+    public DateTime CreatedAt { get; set; }
 
-        [Column("CreatedAt")]
-        public DateTime CreatedAt { get; set; }
-    }
+    public virtual ICollection<AISuggestion> AISuggestions { get; set; } = new List<AISuggestion>();
+
+    public virtual ICollection<ImageDetection> ImageDetections { get; set; } = new List<ImageDetection>();
+
+    public virtual User? User { get; set; }
 }

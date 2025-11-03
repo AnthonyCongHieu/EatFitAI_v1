@@ -1,4 +1,4 @@
-using EatFitAI.API.Data;
+using EatFitAI.API.DbScaffold.Data;
 using EatFitAI.API.Repositories.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using System.Linq.Expressions;
@@ -7,10 +7,10 @@ namespace EatFitAI.API.Repositories
 {
     public class BaseRepository<T> : IRepository<T> where T : class
     {
-        protected readonly ApplicationDbContext _context;
+        protected readonly EatFitAIDbContext _context;
         protected readonly DbSet<T> _dbSet;
 
-        public BaseRepository(ApplicationDbContext context)
+        public BaseRepository(EatFitAIDbContext context)
         {
             _context = context;
             _dbSet = context.Set<T>();

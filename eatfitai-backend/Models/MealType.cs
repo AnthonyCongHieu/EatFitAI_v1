@@ -1,18 +1,13 @@
-using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
+﻿using System;
+using System.Collections.Generic;
 
-namespace EatFitAI.API.Models
+namespace EatFitAI.API.Models;
+
+public partial class MealType
 {
-    [Table("MealType")]
-    public class MealType
-    {
-        [Key]
-        [Column("MealTypeId")]
-        public int MealTypeId { get; set; }
+    public int MealTypeId { get; set; }
 
-        [Required]
-        [Column("Name")]
-        [StringLength(50)]
-        public string Name { get; set; } = string.Empty;
-    }
+    public string Name { get; set; } = null!;
+
+    public virtual ICollection<MealDiary> MealDiaries { get; set; } = new List<MealDiary>();
 }

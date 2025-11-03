@@ -1,29 +1,17 @@
-using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
+﻿using System;
+using System.Collections.Generic;
 
-namespace EatFitAI.API.Models
+namespace EatFitAI.API.Models;
+
+public partial class ImageDetection
 {
-    [Table("ImageDetection")]
-    public class ImageDetection
-    {
-        [Key]
-        [Column("ImageDetectionId")]
-        public int ImageDetectionId { get; set; }
+    public int ImageDetectionId { get; set; }
 
-        [Required]
-        [Column("AILogId")]
-        public int AILogId { get; set; }
+    public int AILogId { get; set; }
 
-        [ForeignKey("AILogId")]
-        public virtual AILog? AILog { get; set; }
+    public string Label { get; set; } = null!;
 
-        [Required]
-        [Column("Label")]
-        [StringLength(200)]
-        public string Label { get; set; } = string.Empty;
+    public decimal Confidence { get; set; }
 
-        [Required]
-        [Column("Confidence", TypeName = "decimal(5,4)")]
-        public decimal Confidence { get; set; }
-    }
+    public virtual AILog AILog { get; set; } = null!;
 }

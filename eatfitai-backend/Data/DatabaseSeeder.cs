@@ -1,4 +1,5 @@
-using EatFitAI.API.Models;
+using EatFitAI.API.DbScaffold.Models;
+using EatFitAI.API.DbScaffold.Data;
 using Microsoft.EntityFrameworkCore;
 
 namespace EatFitAI.API.Data
@@ -8,7 +9,7 @@ namespace EatFitAI.API.Data
         public static async Task SeedAsync(IServiceProvider serviceProvider)
         {
             using var scope = serviceProvider.CreateScope();
-            var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            var context = scope.ServiceProvider.GetRequiredService<EatFitAIDbContext>();
 
             await SeedActivityLevelsAsync(context);
             await SeedServingUnitsAsync(context);
@@ -17,7 +18,7 @@ namespace EatFitAI.API.Data
             await SeedFoodServingsAsync(context);
         }
 
-        private static async Task SeedActivityLevelsAsync(ApplicationDbContext context)
+        private static async Task SeedActivityLevelsAsync(EatFitAIDbContext context)
         {
             if (await context.ActivityLevels.AnyAsync()) return;
 
@@ -34,7 +35,7 @@ namespace EatFitAI.API.Data
             await context.SaveChangesAsync();
         }
 
-        private static async Task SeedServingUnitsAsync(ApplicationDbContext context)
+        private static async Task SeedServingUnitsAsync(EatFitAIDbContext context)
         {
             if (await context.ServingUnits.AnyAsync()) return;
 
@@ -55,7 +56,7 @@ namespace EatFitAI.API.Data
             await context.SaveChangesAsync();
         }
 
-        private static async Task SeedMealTypesAsync(ApplicationDbContext context)
+        private static async Task SeedMealTypesAsync(EatFitAIDbContext context)
         {
             if (await context.MealTypes.AnyAsync()) return;
 
@@ -71,7 +72,7 @@ namespace EatFitAI.API.Data
             await context.SaveChangesAsync();
         }
 
-        private static async Task SeedFoodItemsAsync(ApplicationDbContext context)
+        private static async Task SeedFoodItemsAsync(EatFitAIDbContext context)
         {
             if (await context.FoodItems.AnyAsync()) return;
 
@@ -203,7 +204,7 @@ namespace EatFitAI.API.Data
             await context.SaveChangesAsync();
         }
 
-        private static async Task SeedFoodServingsAsync(ApplicationDbContext context)
+        private static async Task SeedFoodServingsAsync(EatFitAIDbContext context)
         {
             if (await context.FoodServings.AnyAsync()) return;
 

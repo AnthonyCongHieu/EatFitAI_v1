@@ -1,39 +1,27 @@
-using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
+﻿using System;
+using System.Collections.Generic;
 
-namespace EatFitAI.API.Models
+namespace EatFitAI.API.Models;
+
+public partial class UserDish
 {
-    [Table("UserDish")]
-    public class UserDish
-    {
-        [Key]
-        [Column("UserDishId")]
-        public int UserDishId { get; set; }
+    public int UserDishId { get; set; }
 
-        [Required]
-        [Column("UserId")]
-        public Guid UserId { get; set; }
+    public Guid UserId { get; set; }
 
-        [ForeignKey("UserId")]
-        public virtual User? User { get; set; }
+    public string DishName { get; set; } = null!;
 
-        [Required]
-        [Column("DishName")]
-        [StringLength(255)]
-        public string DishName { get; set; } = string.Empty;
+    public string? Description { get; set; }
 
-        [Column("Description")]
-        [StringLength(500)]
-        public string? Description { get; set; }
+    public DateTime CreatedAt { get; set; }
 
-        [Column("CreatedAt")]
-        public DateTime CreatedAt { get; set; }
+    public DateTime UpdatedAt { get; set; }
 
-        [Column("UpdatedAt")]
-        public DateTime UpdatedAt { get; set; }
+    public bool IsDeleted { get; set; }
 
-        [Required]
-        [Column("IsDeleted")]
-        public bool IsDeleted { get; set; }
-    }
+    public virtual ICollection<MealDiary> MealDiaries { get; set; } = new List<MealDiary>();
+
+    public virtual User User { get; set; } = null!;
+
+    public virtual ICollection<UserDishIngredient> UserDishIngredients { get; set; } = new List<UserDishIngredient>();
 }

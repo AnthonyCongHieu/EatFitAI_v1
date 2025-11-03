@@ -3,7 +3,7 @@ using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
 using EatFitAI.API.Controllers;
-using EatFitAI.API.Data;
+using EatFitAI.API.DbScaffold.Data;
 using EatFitAI.API.DTOs.Auth;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
@@ -25,14 +25,14 @@ namespace EatFitAI.API.Tests.Integration.Controllers
                 {
                     // Replace the database with in-memory database for testing
                     var descriptor = services.SingleOrDefault(
-                        d => d.ServiceType == typeof(DbContextOptions<ApplicationDbContext>));
+                        d => d.ServiceType == typeof(DbContextOptions<EatFitAIDbContext>));
 
                     if (descriptor != null)
                     {
                         services.Remove(descriptor);
                     }
 
-                    services.AddDbContext<ApplicationDbContext>(options =>
+                    services.AddDbContext<EatFitAIDbContext>(options =>
                     {
                         options.UseInMemoryDatabase("TestDb");
                     });

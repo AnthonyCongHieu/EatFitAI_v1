@@ -1,3 +1,4 @@
+using EatFitAI.API.DbScaffold.Data;
 using EatFitAI.API.Data;
 using EatFitAI.API.MappingProfiles;
 using EatFitAI.API.Middleware;
@@ -73,8 +74,8 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 
-// Add DbContext
-builder.Services.AddDbContext<ApplicationDbContext>(options =>
+// Add DbContext (scaffolded from DB)
+builder.Services.AddDbContext<EatFitAIDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 // Add AutoMapper

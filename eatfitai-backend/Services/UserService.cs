@@ -1,7 +1,7 @@
 using AutoMapper;
-using EatFitAI.API.Data;
+using EatFitAI.API.DbScaffold.Data;
 using EatFitAI.API.DTOs.User;
-using EatFitAI.API.Models;
+using EatFitAI.API.DbScaffold.Models;
 using EatFitAI.API.Repositories.Interfaces;
 using EatFitAI.API.Services.Interfaces;
 
@@ -10,12 +10,12 @@ namespace EatFitAI.API.Services
     public class UserService : IUserService
     {
         private readonly IUserRepository _userRepository;
-        private readonly ApplicationDbContext _context;
+        private readonly EatFitAIDbContext _context;
         private readonly IMapper _mapper;
 
         public UserService(
             IUserRepository userRepository,
-            ApplicationDbContext context,
+            EatFitAIDbContext context,
             IMapper mapper)
         {
             _userRepository = userRepository;
@@ -64,8 +64,7 @@ namespace EatFitAI.API.Services
                 UserId = userId,
                 HeightCm = bodyMetricDto.HeightCm,
                 WeightKg = bodyMetricDto.WeightKg,
-                BodyFatPct = bodyMetricDto.BodyFatPct,
-                MeasuredDate = bodyMetricDto.MeasuredDate,
+                MeasuredDate = DateOnly.FromDateTime(bodyMetricDto.MeasuredDate),
                 Note = bodyMetricDto.Note
             };
 
