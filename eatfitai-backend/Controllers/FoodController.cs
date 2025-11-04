@@ -18,6 +18,7 @@ namespace EatFitAI.API.Controllers
         }
 
         [HttpGet("search")]
+        [HttpGet("food/search")]
         public async Task<ActionResult<IEnumerable<FoodItemDto>>> SearchFoodItems(
             [FromQuery] string q,
             [FromQuery] int limit = 50)
@@ -31,6 +32,35 @@ namespace EatFitAI.API.Controllers
             {
                 var foodItems = await _foodService.SearchFoodItemsAsync(q, limit);
                 return Ok(foodItems);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "An error occurred while searching food items", error = ex.Message });
+            }
+        }
+
+        [HttpGet("food/search-all")]
+        public async Task<ActionResult<IEnumerable<FoodSearchResultDto>>> SearchAll(
+            [FromQuery] string q,
+            [FromQuery] int limit = 50)
+        {
+            if (string.IsNullOrWhiteSpace(q))
+            {
+                return BadRequest(new { message = "Search query is required" });
+            }
+
+            try
+            {
+                Guid? userId = null;
+                var userIdClaim = User?.FindFirst("http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier")?.Value
+                               ?? User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                if (!string.IsNullOrEmpty(userIdClaim) && Guid.TryParse(userIdClaim, out var parsed))
+                {
+                    userId = parsed;
+                }
+
+                var results = await _foodService.SearchAllAsync(q, userId, limit);
+                return Ok(results);
             }
             catch (Exception ex)
             {

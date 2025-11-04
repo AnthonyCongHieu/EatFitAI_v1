@@ -35,6 +35,7 @@ namespace EatFitAI.API.DTOs.MealDiary
         public DateTime EatenDate { get; set; }
         public int MealTypeId { get; set; }
         public int? FoodItemId { get; set; }
+        public int? UserFoodItemId { get; set; }
         public int? UserDishId { get; set; }
         public int? RecipeId { get; set; }
         public int? ServingUnitId { get; set; }
@@ -54,6 +55,7 @@ namespace EatFitAI.API.DTOs.MealDiary
         public DateTime? EatenDate { get; set; }
         public int? MealTypeId { get; set; }
         public int? FoodItemId { get; set; }
+        public int? UserFoodItemId { get; set; }
         public int? UserDishId { get; set; }
         public int? RecipeId { get; set; }
         public int? ServingUnitId { get; set; }

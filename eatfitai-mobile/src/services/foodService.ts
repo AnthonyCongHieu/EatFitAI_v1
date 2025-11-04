@@ -120,6 +120,28 @@ export const foodService = {
     });
   },
 
+  // Them mot entry vao nhat ky tu UserFoodItem (mon nguoi dung tu tao)
+  async addDiaryEntryFromUserFoodItem(payload: {
+    userFoodItemId: string;
+    grams: number;
+    mealType: string; // breakfast/lunch/dinner/snack
+    note?: string;
+  }): Promise<void> {
+    const d = new Date();
+    const y = d.getFullYear();
+    const m = `${d.getMonth() + 1}`.padStart(2, '0');
+    const day = `${d.getDate()}`.padStart(2, '0');
+    const eatenDate = `${y}-${m}-${day}`;
+
+    await apiClient.post('/api/meal-diary', {
+      eatenDate,
+      mealTypeId: payload.mealType === 'breakfast' ? 1 : payload.mealType === 'lunch' ? 2 : payload.mealType === 'dinner' ? 3 : 4,
+      userFoodItemId: parseInt(payload.userFoodItemId),
+      grams: payload.grams,
+      note: payload.note ?? null,
+    });
+  },
+
   // Tao mon an thu cong
   async createCustomDish(payload: {
     // Placeholder: existing UI likely uses a different flow; keeping method for compatibility

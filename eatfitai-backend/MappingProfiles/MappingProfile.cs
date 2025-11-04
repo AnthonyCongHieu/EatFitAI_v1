@@ -28,14 +28,17 @@ namespace EatFitAI.API.MappingProfiles
                 .ForMember(dest => dest.ServingUnitName, opt => opt.MapFrom(src => src.ServingUnit!.Name))
                 .ForMember(dest => dest.ServingUnitSymbol, opt => opt.MapFrom(src => src.ServingUnit!.Symbol));
 
+            // UserFoodItem mappings
+            CreateMap<UserFoodItem, DTOs.Food.UserFoodItemDto>();
+
             // MealDiary mappings
             CreateMap<MealDiary, MealDiaryDto>()
                 .ForMember(dest => dest.MealTypeName, opt => opt.MapFrom(src => src.MealType!.Name))
-                .ForMember(dest => dest.FoodItemName, opt => opt.MapFrom(src => src.FoodItem!.FoodName))
-                .ForMember(dest => dest.UserDishName, opt => opt.MapFrom(src => src.UserDish!.DishName))
-                .ForMember(dest => dest.RecipeName, opt => opt.MapFrom(src => src.Recipe!.RecipeName))
-                .ForMember(dest => dest.ServingUnitName, opt => opt.MapFrom(src => src.ServingUnit!.Name))
-                .ForMember(dest => dest.ServingUnitSymbol, opt => opt.MapFrom(src => src.ServingUnit!.Symbol))
+                .ForMember(dest => dest.FoodItemName, opt => opt.MapFrom(src => src.FoodItem != null ? src.FoodItem.FoodName : null))
+                .ForMember(dest => dest.UserDishName, opt => opt.MapFrom(src => src.UserDish != null ? src.UserDish.DishName : null))
+                .ForMember(dest => dest.RecipeName, opt => opt.MapFrom(src => src.Recipe != null ? src.Recipe.RecipeName : null))
+                .ForMember(dest => dest.ServingUnitName, opt => opt.MapFrom(src => src.ServingUnit != null ? src.ServingUnit.Name : null))
+                .ForMember(dest => dest.ServingUnitSymbol, opt => opt.MapFrom(src => src.ServingUnit != null ? src.ServingUnit.Symbol : null))
                 .ForMember(dest => dest.EatenDate, opt => opt.MapFrom(src => src.EatenDate.ToDateTime(TimeOnly.MinValue)));
 
             CreateMap<CreateMealDiaryRequest, MealDiary>()

@@ -10,15 +10,18 @@ namespace EatFitAI.API.Services
     public class FoodService : IFoodService
     {
         private readonly IFoodItemRepository _foodItemRepository;
+        private readonly IUserFoodItemRepository _userFoodItemRepository;
         private readonly EatFitAIDbContext _context;
         private readonly IMapper _mapper;
 
         public FoodService(
             IFoodItemRepository foodItemRepository,
+            IUserFoodItemRepository userFoodItemRepository,
             EatFitAIDbContext context,
             IMapper mapper)
         {
             _foodItemRepository = foodItemRepository;
+            _userFoodItemRepository = userFoodItemRepository;
             _context = context;
             _mapper = mapper;
         }
@@ -84,6 +87,50 @@ namespace EatFitAI.API.Services
             };
 
             return response;
+        }
+
+        public async Task<IEnumerable<FoodSearchResultDto>> SearchAllAsync(string searchTerm, Guid? userId, int limit = 50)
+        {
+            var catalog = await _foodItemRepository.SearchByNameAsync(searchTerm, limit);
+
+            var catalogResults = catalog.Select(c => new FoodSearchResultDto
+            {
+                Source = "catalog",
+                Id = c.FoodItemId,
+                FoodName = c.FoodName,
+                // Map ThumbNail -> ThumbnailUrl if present
+                ThumbnailUrl = c.ThumbNail,
+                UnitType = "g",
+                CaloriesPer100 = c.CaloriesPer100g,
+                ProteinPer100 = c.ProteinPer100g,
+                CarbPer100 = c.CarbPer100g,
+                FatPer100 = c.FatPer100g
+            });
+
+            IEnumerable<FoodSearchResultDto> userResults = Enumerable.Empty<FoodSearchResultDto>();
+            if (userId.HasValue)
+            {
+                var userItems = await _userFoodItemRepository.SearchByUserAsync(userId.Value, searchTerm, 0, limit);
+                userResults = userItems.Select(u => new FoodSearchResultDto
+                {
+                    Source = "user",
+                    Id = u.UserFoodItemId,
+                    FoodName = u.FoodName,
+                    ThumbnailUrl = u.ThumbnailUrl,
+                    UnitType = u.UnitType,
+                    CaloriesPer100 = u.CaloriesPer100,
+                    ProteinPer100 = u.ProteinPer100,
+                    CarbPer100 = u.CarbPer100,
+                    FatPer100 = u.FatPer100
+                });
+            }
+
+            var combined = catalogResults.Concat(userResults)
+                .OrderBy(x => x.FoodName)
+                .Take(limit)
+                .ToList();
+
+            return combined;
         }
     }
 }
