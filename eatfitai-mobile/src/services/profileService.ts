@@ -39,7 +39,7 @@ const normalizeProfile = (data: UserDto): UserProfile => ({
 export const profileService = {
   // Lay thong tin ho so cua chinh nguoi dung
   async getProfile(): Promise<UserProfile> {
-    const response = await apiClient.get('/api/users/profile');
+    const response = await apiClient.get('/api/profile');
     return normalizeProfile(response.data);
   },
 
@@ -49,7 +49,7 @@ export const profileService = {
     const req: UserDto = {
       displayName: payload.fullName ?? null,
     };
-    const response = await apiClient.put('/api/users/profile', req);
+    const response = await apiClient.put('/api/profile', req);
     return normalizeProfile(response.data);
   },
 

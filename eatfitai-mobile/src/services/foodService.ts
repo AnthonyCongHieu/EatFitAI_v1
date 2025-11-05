@@ -70,7 +70,7 @@ const normalizeFoodDetail = (data: FoodItemDto): FoodDetail => ({
 export const foodService = {
   // Tim kiem thuc pham theo tu khoa va phan trang
   async searchFoods(query: string, page: number, pageSize = 20): Promise<SearchFoodsResult> {
-    const response = await apiClient.get('/api/food/search', {
+    const response = await apiClient.get('/api/search', {
       params: {
         q: query,
         limit: pageSize,
@@ -94,7 +94,7 @@ export const foodService = {
 
   // Lay chi tiet mot thuc pham
   async getFoodDetail(foodId: string): Promise<FoodDetail> {
-    const response = await apiClient.get(`/api/food/${foodId}`);
+    const response = await apiClient.get(`/api/${foodId}`);
     return normalizeFoodDetail(response.data ?? {});
   },
 

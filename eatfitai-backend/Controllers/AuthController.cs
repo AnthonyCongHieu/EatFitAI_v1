@@ -1,5 +1,6 @@
 using EatFitAI.API.DTOs.Auth;
 using EatFitAI.API.Services.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace EatFitAI.API.Controllers
@@ -66,6 +67,7 @@ namespace EatFitAI.API.Controllers
             }
         }
 
+        [AllowAnonymous]
         [HttpPost("refresh")]
         public async Task<ActionResult<AuthResponse>> RefreshToken([FromBody] RefreshTokenRequest request)
         {

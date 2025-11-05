@@ -1,7 +1,7 @@
 import axios, { AxiosError, AxiosRequestConfig, InternalAxiosRequestConfig } from 'axios';
 import { API_BASE_URL } from '../config/env';
 import { tokenStorage } from './secureStore';
-import { getAccessTokenMem, setAccessTokenMem } from './authTokens';
+import { getAccessTokenMem, setAccessTokenMem, clearAccessTokenMem } from './authTokens';
 import { postRefreshToken } from './tokenService';
 import { updateSessionFromAuthResponse } from './authSession';
 
@@ -43,10 +43,36 @@ const processQueue = (error: unknown, token: string | null): void => {
 apiClient.interceptors.request.use(async (config: InternalAxiosRequestConfig) => {
   try {
     const token = getAccessTokenMem() ?? (await tokenStorage.getAccessToken());
-    if (token) {
-      config.headers = { ...(config.headers ?? {}), Authorization: `Bearer ${token}` } as InternalAxiosRequestConfig['headers'];
+    if (__DEV__) {
+      console.log('[EatFitAI] Request Interceptor:', {
+        url: config.url,
+        method: config.method,
+        hasTokenInMem: !!getAccessTokenMem(),
+        hasTokenInStorage: !!token,
+        tokenLength: token ? token.length : 0,
+        headersBefore: config.headers,
+      });
     }
-  } catch {}
+    if (token) {
+      // Validate token format before attaching
+      if (typeof token === 'string' && token.trim().length > 0) {
+        config.headers = { ...(config.headers ?? {}), Authorization: `Bearer ${token}` } as InternalAxiosRequestConfig['headers'];
+        if (__DEV__) {
+          console.log('[EatFitAI] Authorization header attached:', config.headers.Authorization);
+        }
+      } else {
+        console.warn('[EatFitAI] Invalid token format, skipping authorization header');
+      }
+    } else {
+      if (__DEV__) {
+        console.warn('[EatFitAI] No token available for request:', config.url);
+      }
+    }
+  } catch (error) {
+    if (__DEV__) {
+      console.error('[EatFitAI] Error in request interceptor:', error);
+    }
+  }
   return config;
 });
 
@@ -72,6 +98,14 @@ apiClient.interceptors.response.use(
 
     const originalRequest = error.config;
     const status = error.response?.status;
+    if (__DEV__) {
+      console.log('[EatFitAI] Response Interceptor - Status check:', {
+        status,
+        hasOriginalRequest: !!originalRequest,
+        isRetry: !!(originalRequest as any)?._retry,
+        url: originalRequest?.url,
+      });
+    }
     if (status === 401 && originalRequest && !(originalRequest as any)._retry) {
       (originalRequest as any)._retry = true;
 
@@ -84,14 +118,45 @@ apiClient.interceptors.response.use(
       isRefreshing = true;
       try {
         const refreshToken = await tokenStorage.getRefreshToken();
-        if (!refreshToken) throw new Error('Missing refresh token');
+        if (__DEV__) {
+          console.log('[EatFitAI] Refresh attempt - has refresh token:', !!refreshToken);
+        }
+        if (!refreshToken) {
+          throw new Error('Missing refresh token');
+        }
+
+        // Validate refresh token format (basic check)
+        if (typeof refreshToken !== 'string' || refreshToken.trim().length === 0) {
+          throw new Error('Invalid refresh token format');
+        }
 
         const data = await postRefreshToken(refreshToken);
+        if (__DEV__) {
+          console.log('[EatFitAI] Refresh response received:', {
+            hasAccessToken: !!data.accessToken,
+            hasRefreshToken: !!data.refreshToken,
+            accessExp: data.accessTokenExpiresAt,
+            refreshExp: data.refreshTokenExpiresAt,
+          });
+        }
+
+        // Validate refresh response
         const newAccessToken: string | undefined = data.accessToken;
         const newRefreshToken: string | undefined = data.refreshToken;
         const newAccessExp: string | undefined = data.accessTokenExpiresAt;
         const newRefreshExp: string | undefined = data.refreshTokenExpiresAt;
-        if (!newAccessToken) throw new Error('Refresh response missing accessToken');
+
+        if (!newAccessToken || typeof newAccessToken !== 'string' || newAccessToken.trim().length === 0) {
+          throw new Error('Refresh response missing or invalid accessToken');
+        }
+
+        // Validate token expiration dates if provided
+        if (newAccessExp && isNaN(Date.parse(newAccessExp))) {
+          console.warn('[EatFitAI] Invalid access token expiration format:', newAccessExp);
+        }
+        if (newRefreshExp && isNaN(Date.parse(newRefreshExp))) {
+          console.warn('[EatFitAI] Invalid refresh token expiration format:', newRefreshExp);
+        }
 
         setAccessTokenMem(newAccessToken);
         if ((tokenStorage as any).saveTokensFull) {
@@ -108,8 +173,21 @@ apiClient.interceptors.response.use(
 
         processQueue(null, newAccessToken);
         (originalRequest as any).headers = { ...(originalRequest.headers ?? {}), Authorization: `Bearer ${newAccessToken}` } as any;
+        if (__DEV__) {
+          console.log('[EatFitAI] Retrying original request with new token');
+        }
         return apiClient(originalRequest);
       } catch (err) {
+        if (__DEV__) {
+          console.error('[EatFitAI] Refresh failed:', err);
+        }
+        // Clear invalid tokens on refresh failure
+        try {
+          await tokenStorage.clearAll();
+          clearAccessTokenMem();
+        } catch (clearError) {
+          console.warn('[EatFitAI] Failed to clear tokens on refresh error:', clearError);
+        }
         processQueue(err, null);
         return Promise.reject(err);
       } finally {

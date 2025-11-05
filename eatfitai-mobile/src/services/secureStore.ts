@@ -13,6 +13,14 @@ const REFRESH_EXP_KEY = 'eatfitai.refreshTokenExp'; // ISO string UTC
 export const tokenStorage = {
   // Lưu access token và refresh token vào SecureStore (mã hoá bởi hệ điều hành)
   async saveTokens(accessToken: string, refreshToken?: string): Promise<void> {
+    // Validate tokens before saving
+    if (!accessToken || typeof accessToken !== 'string' || accessToken.trim().length === 0) {
+      throw new Error('Invalid access token provided to saveTokens');
+    }
+    if (refreshToken && (typeof refreshToken !== 'string' || refreshToken.trim().length === 0)) {
+      console.warn('[EatFitAI] Invalid refresh token provided to saveTokens, skipping');
+      refreshToken = undefined;
+    }
     await SecureStore.setItemAsync(ACCESS_TOKEN_KEY, accessToken);
     if (refreshToken) {
       await SecureStore.setItemAsync(REFRESH_TOKEN_KEY, refreshToken);
@@ -27,26 +35,59 @@ export const tokenStorage = {
     refreshTokenExpiresAt?: string | null;
   }): Promise<void> {
     const { accessToken, accessTokenExpiresAt, refreshToken, refreshTokenExpiresAt } = params;
+
+    // Validate access token
+    if (!accessToken || typeof accessToken !== 'string' || accessToken.trim().length === 0) {
+      throw new Error('Invalid access token provided to saveTokensFull');
+    }
+
+    // Validate expiration dates if provided
+    if (accessTokenExpiresAt && typeof accessTokenExpiresAt === 'string' && isNaN(Date.parse(accessTokenExpiresAt))) {
+      console.warn('[EatFitAI] Invalid access token expiration date format:', accessTokenExpiresAt);
+    }
+    if (refreshTokenExpiresAt && typeof refreshTokenExpiresAt === 'string' && isNaN(Date.parse(refreshTokenExpiresAt))) {
+      console.warn('[EatFitAI] Invalid refresh token expiration date format:', refreshTokenExpiresAt);
+    }
+
+    // Validate refresh token if provided
+    if (refreshToken && (typeof refreshToken !== 'string' || refreshToken.trim().length === 0)) {
+      console.warn('[EatFitAI] Invalid refresh token provided to saveTokensFull, skipping');
+    }
+
     await SecureStore.setItemAsync(ACCESS_TOKEN_KEY, accessToken);
-    if (typeof accessTokenExpiresAt === 'string') {
+    if (typeof accessTokenExpiresAt === 'string' && !isNaN(Date.parse(accessTokenExpiresAt))) {
       await SecureStore.setItemAsync(ACCESS_EXP_KEY, accessTokenExpiresAt);
     }
-    if (refreshToken) {
+    if (refreshToken && typeof refreshToken === 'string' && refreshToken.trim().length > 0) {
       await SecureStore.setItemAsync(REFRESH_TOKEN_KEY, refreshToken);
     }
-    if (typeof refreshTokenExpiresAt === 'string') {
+    if (typeof refreshTokenExpiresAt === 'string' && !isNaN(Date.parse(refreshTokenExpiresAt))) {
       await SecureStore.setItemAsync(REFRESH_EXP_KEY, refreshTokenExpiresAt);
     }
   },
 
   // Lấy access token
   async getAccessToken(): Promise<string | null> {
-    return SecureStore.getItemAsync(ACCESS_TOKEN_KEY);
+    const token = await SecureStore.getItemAsync(ACCESS_TOKEN_KEY);
+    if (__DEV__) {
+      console.log('[EatFitAI] Getting access token from storage:', {
+        hasToken: !!token,
+        tokenLength: token ? token.length : 0,
+      });
+    }
+    return token;
   },
 
   // Lấy refresh token
   async getRefreshToken(): Promise<string | null> {
-    return SecureStore.getItemAsync(REFRESH_TOKEN_KEY);
+    const token = await SecureStore.getItemAsync(REFRESH_TOKEN_KEY);
+    if (__DEV__) {
+      console.log('[EatFitAI] Getting refresh token from storage:', {
+        hasToken: !!token,
+        tokenLength: token ? token.length : 0,
+      });
+    }
+    return token;
   },
 
   async getAccessTokenExpiresAt(): Promise<string | null> {
