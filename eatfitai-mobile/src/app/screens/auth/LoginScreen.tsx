@@ -60,19 +60,22 @@ const LoginScreen = ({ navigation }: Props): JSX.Element => {
 
   return (
     <Screen scroll={false} style={styles.container}>
-      <Card padding="lg">
-        <ThemedText variant="h2" style={{ marginBottom: theme.spacing.lg }}>
-          {t('auth.loginTitle')}
-        </ThemedText>
+      <Card padding="lg" shadow="lg">
+        <View style={{ alignItems: 'center', marginBottom: theme.spacing.xl }}>
+          <ThemedText variant="h1" style={{ marginBottom: theme.spacing.sm }}>
+            EatFit AI
+          </ThemedText>
+          <ThemedText variant="bodySmall" color="textSecondary">
+            {t('auth.loginTitle')}
+          </ThemedText>
+        </View>
 
-        <ThemedText variant="bodySmall" weight="600" style={{ marginTop: theme.spacing.md }}>
-          {t('auth.email')}
-        </ThemedText>
         <Controller
           control={control}
           name="email"
           render={({ field: { onChange, onBlur, value } }) => (
             <ThemedTextInput
+              label={t('auth.email')}
               placeholder="you@example.com"
               autoCapitalize="none"
               keyboardType="email-address"
@@ -80,23 +83,18 @@ const LoginScreen = ({ navigation }: Props): JSX.Element => {
               onChangeText={onChange}
               value={value}
               error={!!errors.email}
+              helperText={errors.email?.message}
+              required
             />
           )}
         />
-        {errors.email && (
-          <ThemedText variant="bodySmall" color="danger" style={{ marginTop: theme.spacing.xs }}>
-            {errors.email.message}
-          </ThemedText>
-        )}
 
-        <ThemedText variant="bodySmall" weight="600" style={{ marginTop: theme.spacing.md }}>
-          {t('auth.password')}
-        </ThemedText>
         <Controller
           control={control}
           name="password"
           render={({ field: { onChange, onBlur, value } }) => (
             <ThemedTextInput
+              label={t('auth.password')}
               placeholder="••••••••"
               secureTextEntry
               secureToggle
@@ -104,28 +102,32 @@ const LoginScreen = ({ navigation }: Props): JSX.Element => {
               onChangeText={onChange}
               value={value}
               error={!!errors.password}
+              helperText={errors.password?.message}
+              required
             />
           )}
         />
-        {errors.password && (
-          <ThemedText variant="bodySmall" color="danger" style={{ marginTop: theme.spacing.xs }}>
-            {errors.password.message}
-          </ThemedText>
-        )}
 
-        <View style={{ marginTop: theme.spacing.xl, gap: theme.spacing.sm }}>
-          <Button 
-            variant="primary" 
+        <View style={{ marginTop: theme.spacing.xl, gap: theme.spacing.md }}>
+          <Button
+            variant="primary"
             loading={loading}
-            disabled={loading} 
-            onPress={handleSubmit(onSubmit)} 
+            disabled={loading}
+            onPress={handleSubmit(onSubmit)}
             title={loading ? t('auth.processing') : t('auth.login')}
+            fullWidth
           />
-          <Button 
-            variant="secondary" 
-            disabled={loading} 
-            onPress={onGoogle} 
+          <View style={{ alignItems: 'center' }}>
+            <ThemedText variant="bodySmall" color="textSecondary">
+              hoặc
+            </ThemedText>
+          </View>
+          <Button
+            variant="outline"
+            disabled={loading}
+            onPress={onGoogle}
             title={t('auth.loginWithGoogle')}
+            fullWidth
           />
         </View>
 

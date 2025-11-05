@@ -232,24 +232,21 @@ namespace EatFitAI.API.Services
 
         public async Task<AuthResponse> RefreshTokenAsync(string refreshToken)
         {
-            // Placeholder implementation for refresh token functionality
-            // In a real implementation, you would:
-            // 1. Validate the refresh token against stored tokens
-            // 2. Check if the token is expired
-            // 3. Generate new JWT and refresh tokens
-            // 4. Update stored refresh token
+            // Validate refresh token format
+            if (string.IsNullOrWhiteSpace(refreshToken))
+            {
+                throw new UnauthorizedAccessException("Invalid refresh token");
+            }
 
-            // For now, return a basic response indicating the functionality is not fully implemented
-            // This prevents exceptions while maintaining API contract
+            // For now, we'll implement a simple refresh token validation
+            // In a production system, you would store refresh tokens in the database
+            // and validate them properly. For this demo, we'll accept any non-empty token
+            // and generate new tokens.
 
-            // TODO: Implement proper refresh token storage and validation
-            // This would typically involve:
-            // - A RefreshToken entity/model
-            // - Database storage of refresh tokens with expiration
-            // - Token validation logic
-            // - Secure token generation and storage
-
-            throw new NotImplementedException("Refresh token functionality is not yet fully implemented. Requires token storage infrastructure.");
+            // Generate new JWT token - we need a user context
+            // Since we don't have proper refresh token storage, we'll need to get user from somewhere
+            // For now, let's throw an exception indicating this needs proper implementation
+            throw new NotImplementedException("Refresh token functionality requires proper token storage. Please implement refresh token persistence in the database.");
         }
 
         public async Task<AuthResponse> GoogleLoginAsync(string idToken)

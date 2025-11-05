@@ -22,6 +22,7 @@ type ButtonProps = {
   size?: 'sm' | 'md' | 'lg';
   fullWidth?: boolean;
   accessibilityLabel?: string;
+  accessibilityHint?: string;
   hitSlop?: number | Insets;
   icon?: ReactNode;
   iconPosition?: 'left' | 'right';
@@ -40,6 +41,8 @@ export const Button = memo(({
   fullWidth = true,
   icon,
   iconPosition = 'left',
+  accessibilityLabel,
+  accessibilityHint,
 }: ButtonProps): JSX.Element => {
   const { theme } = useAppTheme();
 
@@ -133,7 +136,8 @@ export const Button = memo(({
       onPressOut={handlePressOut}
       android_ripple={{ color: styles.rippleColor, borderless: false }}
       accessibilityRole="button"
-      accessibilityLabel={title ?? undefined}
+      accessibilityLabel={accessibilityLabel ?? title ?? undefined}
+      accessibilityHint={accessibilityHint}
       accessibilityState={{ disabled: isDisabled }}
       hitSlop={8}
     >

@@ -44,11 +44,11 @@ const FoodSearchScreen = (): JSX.Element => {
       else setIsLoading(true);
 
       try {
-        const result = await foodService.searchFoods(query.trim(), pageToLoad, PAGE_SIZE);
+        const result = await foodService.searchFoods(query.trim(), PAGE_SIZE);
         setItems((prev) => (append ? [...prev, ...result.items] : result.items));
-        setPage(result.page);
-        setTotal(result.total);
-        setHasMore(result.hasMore);
+        setPage(pageToLoad);
+        setTotal(result.totalCount ?? result.items.length);
+        setHasMore(result.items.length === PAGE_SIZE);
         setHasSearched(true);
       } catch {
         Toast.show({ type: 'error', text1: 'Tìm kiếm thất bại' });
@@ -106,22 +106,33 @@ const FoodSearchScreen = (): JSX.Element => {
           value={query}
           onChangeText={setQuery}
           onSubmitEditing={handleSearch}
-          placeholder="Nhập từ khóa..."
+          placeholder="Nhập từ khóa tìm kiếm..."
           autoCapitalize="none"
           returnKeyType="search"
           style={{ flex: 1, borderWidth: 0, paddingHorizontal: 0, paddingVertical: 0 }}
+          accessibilityLabel="Tìm kiếm món ăn"
+          accessibilityHint="Nhập tên món ăn bạn muốn tìm"
         />
         <View style={{ width: 90 }}>
-          <Button variant="primary" size="sm" onPress={handleSearch} fullWidth title="Tìm" />
+          <Button
+            variant="primary"
+            size="sm"
+            onPress={handleSearch}
+            fullWidth
+            title="Tìm"
+            accessibilityLabel="Bắt đầu tìm kiếm"
+          />
         </View>
       </View>
 
       {isLoading ? (
         <View style={styles.centerBox}>
-          <ActivityIndicator color={theme.colors.primary} size="large" />
-          <ThemedText variant="body" color="textSecondary" style={{ marginTop: theme.spacing.md }}>
-            Đang tìm kiếm...
-          </ThemedText>
+          <View style={[styles.loadingCard, { backgroundColor: theme.colors.card, ...theme.shadows.md }]}>
+            <ActivityIndicator color={theme.colors.primary} size="large" />
+            <ThemedText variant="body" color="textSecondary" style={{ marginTop: theme.spacing.md }}>
+              Đang tìm kiếm...
+            </ThemedText>
+          </View>
           {renderSkeleton()}
         </View>
       ) : (
@@ -135,10 +146,12 @@ const FoodSearchScreen = (): JSX.Element => {
           ListEmptyComponent={
             hasSearched ? (
               <View style={styles.centerBox}>
-                <ThemedText variant="h4" color="textSecondary">Không tìm thấy kết quả</ThemedText>
-                <ThemedText variant="bodySmall" color="muted" style={{ marginTop: theme.spacing.sm }}>
-                  Thử tìm kiếm với từ khóa khác
-                </ThemedText>
+                <View style={[styles.emptyCard, { backgroundColor: theme.colors.card, ...theme.shadows.md }]}>
+                  <ThemedText variant="h4" color="textSecondary">🍽️ Không tìm thấy kết quả</ThemedText>
+                  <ThemedText variant="bodySmall" color="muted" style={{ marginTop: theme.spacing.sm }}>
+                    Thử tìm kiếm với từ khóa khác hoặc kiểm tra chính tả
+                  </ThemedText>
+                </View>
               </View>
             ) : null
           }
@@ -174,6 +187,16 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     alignItems: 'center',
   },
+  loadingCard: {
+    padding: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+  },
+  emptyCard: {
+    padding: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+  },
   listContent: { paddingHorizontal: 16, paddingBottom: 24, gap: 12 },
   foodRow: {
     flexDirection: 'row',
@@ -186,18 +209,18 @@ const styles = StyleSheet.create({
   },
   foodInfo: { flex: 1, gap: 4 },
   foodName: { marginBottom: 2 },
-  centerBox: { 
-    flex: 1, 
-    alignItems: 'center', 
-    justifyContent: 'center', 
-    gap: 8, 
-    paddingTop: 40, 
+  centerBox: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingTop: 40,
     width: '100%',
     paddingHorizontal: 24,
   },
   footerLoading: { paddingVertical: 16, alignItems: 'center' },
-  totalBar: { 
-    padding: 16, 
+  totalBar: {
+    padding: 16,
     alignItems: 'center',
     borderTopWidth: 1,
   },

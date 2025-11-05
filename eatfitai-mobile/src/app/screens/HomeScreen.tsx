@@ -13,12 +13,13 @@ import GradientBackground from '../../components/GradientBackground';
 import { useDiaryStore } from '../../store/useDiaryStore';
 import { useAppTheme } from '../../theme/ThemeProvider';
 import type { RootStackParamList } from '../types';
+import { MEAL_TYPE_LABELS, type MealTypeId } from '../../types';
 
-const MEAL_TITLE_MAP: Record<string, string> = {
-  breakfast: 'Bữa sáng',
-  lunch: 'Bữa trưa',
-  dinner: 'Bữa tối',
-  snack: 'Ăn vặt',
+const MEAL_TITLE_MAP: Record<MealTypeId, string> = {
+  1: 'Bữa sáng',
+  2: 'Bữa trưa',
+  3: 'Bữa tối',
+  4: 'Ăn vặt',
 };
 
 type AddOption = 'search' | 'custom' | 'ai';

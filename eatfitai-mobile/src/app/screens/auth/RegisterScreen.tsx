@@ -68,82 +68,98 @@ const RegisterScreen = ({ navigation }: Props): JSX.Element => {
 
   return (
     <Screen scroll={false} style={styles.container}>
-      <Card padding="lg">
-        <ThemedText variant="h2" style={{ marginBottom: theme.spacing.lg }}>
-          {t('auth.registerTitle')}
-        </ThemedText>
+      <Card padding="lg" shadow="lg">
+        <View style={{ alignItems: 'center', marginBottom: theme.spacing.xl }}>
+          <ThemedText variant="h1" style={{ marginBottom: theme.spacing.sm }}>
+            EatFit AI
+          </ThemedText>
+          <ThemedText variant="bodySmall" color="textSecondary">
+            {t('auth.registerTitle')}
+          </ThemedText>
+        </View>
 
-        <ThemedText variant="bodySmall" weight="600" style={{ marginTop: theme.spacing.md }}>
-          {t('auth.displayName')}
-        </ThemedText>
         <Controller
           control={control}
           name="name"
           render={({ field: { onChange, onBlur, value } }) => (
-            <ThemedTextInput placeholder="Nguyễn Văn A" onBlur={onBlur} onChangeText={onChange} value={value} error={!!errors.name} />
+            <ThemedTextInput
+              label={t('auth.displayName')}
+              placeholder="Nguyễn Văn A"
+              onBlur={onBlur}
+              onChangeText={onChange}
+              value={value}
+              error={!!errors.name}
+              helperText={errors.name?.message}
+              required
+            />
           )}
         />
-        {errors.name && (
-          <ThemedText variant="bodySmall" color="danger" style={{ marginTop: theme.spacing.xs }}>
-            {errors.name.message}
-          </ThemedText>
-        )}
 
-        <ThemedText variant="bodySmall" weight="600" style={{ marginTop: theme.spacing.md }}>
-          {t('auth.email')}
-        </ThemedText>
         <Controller
           control={control}
           name="email"
           render={({ field: { onChange, onBlur, value } }) => (
-            <ThemedTextInput placeholder="you@example.com" keyboardType="email-address" autoCapitalize="none" onBlur={onBlur} onChangeText={onChange} value={value} error={!!errors.email} />
+            <ThemedTextInput
+              label={t('auth.email')}
+              placeholder="you@example.com"
+              keyboardType="email-address"
+              autoCapitalize="none"
+              onBlur={onBlur}
+              onChangeText={onChange}
+              value={value}
+              error={!!errors.email}
+              helperText={errors.email?.message}
+              required
+            />
           )}
         />
-        {errors.email && (
-          <ThemedText variant="bodySmall" color="danger" style={{ marginTop: theme.spacing.xs }}>
-            {errors.email.message}
-          </ThemedText>
-        )}
 
-        <ThemedText variant="bodySmall" weight="600" style={{ marginTop: theme.spacing.md }}>
-          {t('auth.password')}
-        </ThemedText>
         <Controller
           control={control}
           name="password"
           render={({ field: { onChange, onBlur, value } }) => (
-            <ThemedTextInput placeholder="••••••••" secureTextEntry secureToggle onBlur={onBlur} onChangeText={onChange} value={value} error={!!errors.password} />
+            <ThemedTextInput
+              label={t('auth.password')}
+              placeholder="••••••••"
+              secureTextEntry
+              secureToggle
+              onBlur={onBlur}
+              onChangeText={onChange}
+              value={value}
+              error={!!errors.password}
+              helperText={errors.password?.message}
+              required
+            />
           )}
         />
-        {errors.password && (
-          <ThemedText variant="bodySmall" color="danger" style={{ marginTop: theme.spacing.xs }}>
-            {errors.password.message}
-          </ThemedText>
-        )}
 
-        <ThemedText variant="bodySmall" weight="600" style={{ marginTop: theme.spacing.md }}>
-          {t('auth.passwordConfirm')}
-        </ThemedText>
         <Controller
           control={control}
           name="confirmPassword"
           render={({ field: { onChange, onBlur, value } }) => (
-            <ThemedTextInput placeholder="••••••••" secureTextEntry secureToggle onBlur={onBlur} onChangeText={onChange} value={value} error={!!errors.confirmPassword} />
+            <ThemedTextInput
+              label={t('auth.passwordConfirm')}
+              placeholder="••••••••"
+              secureTextEntry
+              secureToggle
+              onBlur={onBlur}
+              onChangeText={onChange}
+              value={value}
+              error={!!errors.confirmPassword}
+              helperText={errors.confirmPassword?.message}
+              required
+            />
           )}
         />
-        {errors.confirmPassword && (
-          <ThemedText variant="bodySmall" color="danger" style={{ marginTop: theme.spacing.xs }}>
-            {errors.confirmPassword.message}
-          </ThemedText>
-        )}
 
         <View style={{ marginTop: theme.spacing.xl }}>
-          <Button 
-            variant="primary" 
+          <Button
+            variant="primary"
             loading={loading}
-            disabled={loading} 
-            onPress={handleSubmit(onSubmit)} 
+            disabled={loading}
+            onPress={handleSubmit(onSubmit)}
             title={loading ? t('auth.processing') : t('auth.createAccount')}
+            fullWidth
           />
         </View>
 

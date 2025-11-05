@@ -24,6 +24,8 @@ type CardProps = {
   interactive?: boolean;
   onPress?: () => void;
   animated?: boolean;
+  accessibilityLabel?: string;
+  accessibilityHint?: string;
 };
 
 // Strongly type animated Pressable to satisfy JSX/TSX props typing
@@ -42,7 +44,9 @@ export const Card = ({
   gradient,
   interactive = false,
   onPress,
-  animated = true
+  animated = true,
+  accessibilityLabel,
+  accessibilityHint,
 }: CardProps): JSX.Element => {
   const { theme } = useAppTheme();
 
@@ -147,6 +151,9 @@ export const Card = ({
         onPress={onPress}
         onPressIn={handlePressIn}
         onPressOut={handlePressOut}
+        accessibilityRole="button"
+        accessibilityLabel={accessibilityLabel}
+        accessibilityHint={accessibilityHint}
       >
         {gradientCard}
       </AnimatedPressable>
@@ -155,7 +162,12 @@ export const Card = ({
 
   if (onPress) {
     return (
-      <Pressable onPress={onPress}>
+      <Pressable
+        onPress={onPress}
+        accessibilityRole="button"
+        accessibilityLabel={accessibilityLabel}
+        accessibilityHint={accessibilityHint}
+      >
         {gradientCard}
       </Pressable>
     );

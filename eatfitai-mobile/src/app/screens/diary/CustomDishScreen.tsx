@@ -91,13 +91,9 @@ const CustomDishScreen = (): JSX.Element => {
       setIsSubmitting(true);
       foodService
         .createCustomDish({
-          name: values.name.trim(),
+          dishName: values.name.trim(),
           description: values.description?.trim() ?? null,
-          servingSizeGram: Number(values.servingSizeGram),
-          calories: Number(values.calories),
-          protein: Number(values.protein),
-          carbs: Number(values.carbs),
-          fat: Number(values.fat),
+          ingredients: [], // Empty for now, as this is a simple custom dish
         })
         .then(async () => {
           Toast.show({ type: 'success', text1: 'Đã tạo món thủ công' });
@@ -127,116 +123,139 @@ const CustomDishScreen = (): JSX.Element => {
           Nhập thông tin dinh dưỡng cho món nhà làm để sử dụng lại trong nhật ký.
         </ThemedText>
 
-        <ThemedText variant="bodySmall" weight="600" style={{ marginTop: theme.spacing.md }}>
-          Tên món
-        </ThemedText>
         <Controller
           control={control}
           name="name"
           render={({ field: { onChange, onBlur, value } }) => (
-            <ThemedTextInput onBlur={onBlur} onChangeText={onChange} value={value} placeholder="Ví dụ: Salad gà" error={!!errors.name} />
+            <ThemedTextInput
+              label="Tên món"
+              onBlur={onBlur}
+              onChangeText={onChange}
+              value={value}
+              placeholder="Ví dụ: Salad gà"
+              error={!!errors.name}
+              helperText={errors.name?.message}
+              required
+            />
           )}
         />
-        {errors.name ? (
-          <ThemedText variant="bodySmall" color="danger" style={{ marginTop: theme.spacing.xs }}>
-            {errors.name.message}
-          </ThemedText>
-        ) : null}
 
-        <ThemedText variant="bodySmall" weight="600" style={{ marginTop: theme.spacing.md }}>
-          Mô tả (tùy chọn)
-        </ThemedText>
         <Controller
           control={control}
           name="description"
           render={({ field: { onChange, onBlur, value } }) => (
-            <ThemedTextInput onBlur={onBlur} onChangeText={onChange} value={value} placeholder="Nguyên liệu chính, ghi chú..." multiline numberOfLines={3} />
+            <ThemedTextInput
+              label="Mô tả (tùy chọn)"
+              onBlur={onBlur}
+              onChangeText={onChange}
+              value={value}
+              placeholder="Nguyên liệu chính, ghi chú..."
+              multiline
+              numberOfLines={3}
+              error={!!errors.description}
+              helperText={errors.description?.message}
+            />
           )}
         />
-        {errors.description ? (
-          <ThemedText variant="bodySmall" color="danger" style={{ marginTop: theme.spacing.xs }}>
-            {errors.description.message}
+
+        <View style={{ marginTop: theme.spacing.lg }}>
+          <ThemedText variant="bodySmall" weight="600" style={{ marginBottom: theme.spacing.sm }}>
+            Thông tin dinh dưỡng (cho 100g)
           </ThemedText>
-        ) : null}
+          <View style={[styles.row]}>
+            <View style={styles.col}>
+              <Controller
+                control={control}
+                name="servingSizeGram"
+                render={({ field: { onChange, onBlur, value } }) => (
+                  <ThemedTextInput
+                    label="Khẩu phần (gram)"
+                    keyboardType="numeric"
+                    value={value}
+                    onChangeText={onChange}
+                    onBlur={onBlur}
+                    placeholder="100"
+                    error={!!errors.servingSizeGram}
+                    helperText={errors.servingSizeGram?.message}
+                  />
+                )}
+              />
+            </View>
+            <View style={styles.col}>
+              <Controller
+                control={control}
+                name="calories"
+                render={({ field: { onChange, onBlur, value } }) => (
+                  <ThemedTextInput
+                    label="Calo"
+                    keyboardType="numeric"
+                    value={value}
+                    onChangeText={onChange}
+                    onBlur={onBlur}
+                    placeholder="250"
+                    error={!!errors.calories}
+                    helperText={errors.calories?.message}
+                  />
+                )}
+              />
+            </View>
+          </View>
 
-        <View style={[styles.row, { marginTop: theme.spacing.lg }]}>
-          <View style={styles.col}>
-            <ThemedText variant="bodySmall" weight="600">Khẩu phần (gram)</ThemedText>
-            <Controller
-              control={control}
-              name="servingSizeGram"
-              render={({ field: { onChange, onBlur, value } }) => (
-                <ThemedTextInput keyboardType="numeric" value={value} onChangeText={onChange} onBlur={onBlur} placeholder="100" error={!!errors.servingSizeGram} />
-              )}
-            />
-            {errors.servingSizeGram ? (
-              <ThemedText variant="bodySmall" color="danger" style={{ marginTop: theme.spacing.xs }}>
-                {errors.servingSizeGram.message}
-              </ThemedText>
-            ) : null}
-          </View>
-          <View style={styles.col}>
-            <ThemedText variant="bodySmall" weight="600">Calo</ThemedText>
-            <Controller
-              control={control}
-              name="calories"
-              render={({ field: { onChange, onBlur, value } }) => (
-                <ThemedTextInput keyboardType="numeric" value={value} onChangeText={onChange} onBlur={onBlur} placeholder="250" error={!!errors.calories} />
-              )}
-            />
-            {errors.calories ? (
-              <ThemedText variant="bodySmall" color="danger" style={{ marginTop: theme.spacing.xs }}>
-                {errors.calories.message}
-              </ThemedText>
-            ) : null}
-          </View>
-        </View>
-
-        <View style={[styles.row, { marginTop: theme.spacing.md }]}>
-          <View style={styles.col}>
-            <ThemedText variant="bodySmall" weight="600">Protein (g)</ThemedText>
-            <Controller
-              control={control}
-              name="protein"
-              render={({ field: { onChange, onBlur, value } }) => (
-                <ThemedTextInput keyboardType="numeric" value={value} onChangeText={onChange} onBlur={onBlur} placeholder="20" error={!!errors.protein} />
-              )}
-            />
-            {errors.protein ? (
-              <ThemedText variant="bodySmall" color="danger" style={{ marginTop: theme.spacing.xs }}>
-                {errors.protein.message}
-              </ThemedText>
-            ) : null}
-          </View>
-          <View style={styles.col}>
-            <ThemedText variant="bodySmall" weight="600">Carb (g)</ThemedText>
-            <Controller
-              control={control}
-              name="carbs"
-              render={({ field: { onChange, onBlur, value } }) => (
-                <ThemedTextInput keyboardType="numeric" value={value} onChangeText={onChange} onBlur={onBlur} placeholder="15" error={!!errors.carbs} />
-              )}
-            />
-            {errors.carbs ? (
-              <ThemedText variant="bodySmall" color="danger" style={{ marginTop: theme.spacing.xs }}>
-                {errors.carbs.message}
-              </ThemedText>
-            ) : null}
-          </View>
-          <View style={styles.col}>
-            <ThemedText variant="bodySmall" weight="600">Fat (g)</ThemedText>
-            <Controller
-              control={control}
-              name="fat"
-              render={({ field: { onChange, onBlur, value } }) => (
-                <ThemedTextInput keyboardType="numeric" value={value} onChangeText={onChange} onBlur={onBlur} placeholder="10" error={!!errors.fat} />
-              )}
-            />
-            {errors.fat ? (
-              <ThemedText variant="bodySmall" color="danger" style={{ marginTop: theme.spacing.xs }}>
-                {errors.fat.message}
-              </ThemedText>
-            ) : null}
+          <View style={[styles.row, { marginTop: theme.spacing.md }]}>
+            <View style={styles.col}>
+              <Controller
+                control={control}
+                name="protein"
+                render={({ field: { onChange, onBlur, value } }) => (
+                  <ThemedTextInput
+                    label="Protein (g)"
+                    keyboardType="numeric"
+                    value={value}
+                    onChangeText={onChange}
+                    onBlur={onBlur}
+                    placeholder="20"
+                    error={!!errors.protein}
+                    helperText={errors.protein?.message}
+                  />
+                )}
+              />
+            </View>
+            <View style={styles.col}>
+              <Controller
+                control={control}
+                name="carbs"
+                render={({ field: { onChange, onBlur, value } }) => (
+                  <ThemedTextInput
+                    label="Carb (g)"
+                    keyboardType="numeric"
+                    value={value}
+                    onChangeText={onChange}
+                    onBlur={onBlur}
+                    placeholder="15"
+                    error={!!errors.carbs}
+                    helperText={errors.carbs?.message}
+                  />
+                )}
+              />
+            </View>
+            <View style={styles.col}>
+              <Controller
+                control={control}
+                name="fat"
+                render={({ field: { onChange, onBlur, value } }) => (
+                  <ThemedTextInput
+                    label="Fat (g)"
+                    keyboardType="numeric"
+                    value={value}
+                    onChangeText={onChange}
+                    onBlur={onBlur}
+                    placeholder="10"
+                    error={!!errors.fat}
+                    helperText={errors.fat?.message}
+                  />
+                )}
+              />
+            </View>
           </View>
         </View>
 

@@ -19,15 +19,16 @@ import { useAppTheme } from '../../../theme/ThemeProvider';
 import type { RootStackParamList } from '../../types';
 import { foodService, type FoodDetail } from '../../../services/foodService';
 import { useDiaryStore } from '../../../store/useDiaryStore';
+import { MEAL_TYPES, MEAL_TYPE_LABELS, type MealTypeId } from '../../../types';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 type RouteProps = RouteProp<RootStackParamList, 'FoodDetail'>;
 
 const MEAL_OPTIONS = [
-  { value: 'breakfast', label: 'Bữa sáng' },
-  { value: 'lunch', label: 'Bữa trưa' },
-  { value: 'dinner', label: 'Bữa tối' },
-  { value: 'snack', label: 'Ăn vặt' },
+  { value: MEAL_TYPES.BREAKFAST, label: MEAL_TYPE_LABELS[MEAL_TYPES.BREAKFAST] },
+  { value: MEAL_TYPES.LUNCH, label: MEAL_TYPE_LABELS[MEAL_TYPES.LUNCH] },
+  { value: MEAL_TYPES.DINNER, label: MEAL_TYPE_LABELS[MEAL_TYPES.DINNER] },
+  { value: MEAL_TYPES.SNACK, label: MEAL_TYPE_LABELS[MEAL_TYPES.SNACK] },
 ] as const;
 
 const FormSchema = z.object({
@@ -38,7 +39,7 @@ const FormSchema = z.object({
     .refine((value) => !Number.isNaN(Number(value)) && Number(value) > 0 && Number(value) <= 2000, {
       message: 'Số gram phải > 0 và ≤ 2000',
     }),
-  mealType: z.enum(['breakfast', 'lunch', 'dinner', 'snack']),
+  mealType: z.number().refine((value) => [1, 2, 3, 4].includes(value), { message: 'Bữa ăn không hợp lệ' }),
   note: z.string().trim().max(200, 'Ghi chú tối đa 200 ký tự').optional(),
 });
 
@@ -64,7 +65,7 @@ const FoodDetailScreen = (): JSX.Element | null => {
     resolver: zodResolver(FormSchema),
     defaultValues: {
       grams: '100',
-      mealType: 'lunch',
+      mealType: MEAL_TYPES.LUNCH,
       note: '',
     },
   });
@@ -120,7 +121,7 @@ const FoodDetailScreen = (): JSX.Element | null => {
         .addDiaryEntry({
           foodId: detail.id,
           grams: Number(values.grams),
-          mealType: values.mealType,
+          mealTypeId: values.mealType as MealTypeId,
           note: values.note ?? undefined,
         })
         .then(async () => {
@@ -142,12 +143,16 @@ const FoodDetailScreen = (): JSX.Element | null => {
 
   if (isLoading) {
     return (
-      <View style={[styles.loadingContainer, { backgroundColor: theme.colors.background }]}>
-        <ActivityIndicator size="large" color={theme.colors.primary} />
-        <ThemedText variant="body" color="textSecondary" style={{ marginTop: theme.spacing.md }}>
-          Đang tải...
-        </ThemedText>
-      </View>
+      <Screen contentContainerStyle={styles.loadingContainer}>
+        <Card padding="lg" shadow="md">
+          <View style={{ alignItems: 'center', padding: theme.spacing.xl }}>
+            <ActivityIndicator size="large" color={theme.colors.primary} />
+            <ThemedText variant="body" color="textSecondary" style={{ marginTop: theme.spacing.md }}>
+              Đang tải chi tiết món ăn...
+            </ThemedText>
+          </View>
+        </Card>
+      </Screen>
     );
   }
 
@@ -219,87 +224,80 @@ const FoodDetailScreen = (): JSX.Element | null => {
             Thêm vào nhật ký
           </ThemedText>
 
-          <ThemedText variant="bodySmall" weight="600" style={{ marginTop: theme.spacing.md }}>
-            Số gram
-          </ThemedText>
           <Controller
             control={control}
             name="grams"
             render={({ field: { onChange, onBlur, value } }) => (
-              <ThemedTextInput 
-                keyboardType="numeric" 
-                value={value} 
-                onChangeText={onChange} 
-                onBlur={onBlur} 
-                placeholder="Ví dụ: 150" 
-                error={!!errors.grams} 
+              <ThemedTextInput
+                label="Số gram"
+                keyboardType="numeric"
+                value={value}
+                onChangeText={onChange}
+                onBlur={onBlur}
+                placeholder="Ví dụ: 150"
+                error={!!errors.grams}
+                helperText={errors.grams?.message}
+                required
               />
             )}
           />
-          {errors.grams ? (
-            <ThemedText variant="bodySmall" color="danger" style={{ marginTop: theme.spacing.xs }}>
-              {errors.grams.message}
-            </ThemedText>
-          ) : null}
 
-          <ThemedText variant="bodySmall" weight="600" style={{ marginTop: theme.spacing.md }}>
-            Bữa ăn
-          </ThemedText>
-          <View style={[styles.mealRow, { marginTop: theme.spacing.sm }]}>
-            {MEAL_OPTIONS.map((option) => (
-              <Pressable
-                key={option.value}
-                accessibilityRole="button"
-                accessibilityLabel={`Chọn bữa ăn ${option.label}`}
-                hitSlop={8}
-                onPress={() => setValue('mealType', option.value)}
-                style={[
-                  styles.mealChip,
-                  {
-                    backgroundColor: mealTypeValue === option.value ? theme.colors.primary : 'transparent',
-                    borderColor: theme.colors.primary,
-                  },
-                ]}
-              >
-                <ThemedText
-                  variant="button"
-                  style={{
-                    color: mealTypeValue === option.value ? '#fff' : theme.colors.text,
-                  }}
+          <View style={{ marginTop: theme.spacing.md }}>
+            <ThemedText variant="bodySmall" weight="600">
+              Bữa ăn
+            </ThemedText>
+            <View style={[styles.mealRow, { marginTop: theme.spacing.sm }]}>
+              {MEAL_OPTIONS.map((option) => (
+                <Pressable
+                  key={option.value}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Chọn bữa ăn ${option.label}`}
+                  accessibilityState={{ selected: mealTypeValue === option.value }}
+                  hitSlop={8}
+                  onPress={() => setValue('mealType', option.value)}
+                  style={[
+                    styles.mealChip,
+                    {
+                      backgroundColor: mealTypeValue === option.value ? theme.colors.primary : 'transparent',
+                      borderColor: theme.colors.primary,
+                    },
+                  ]}
                 >
-                  {option.label}
-                </ThemedText>
-              </Pressable>
-            ))}
+                  <ThemedText
+                    variant="button"
+                    style={{
+                      color: mealTypeValue === option.value ? '#fff' : theme.colors.text,
+                    }}
+                  >
+                    {option.label}
+                  </ThemedText>
+                </Pressable>
+              ))}
+            </View>
+            {errors.mealType && (
+              <ThemedText variant="bodySmall" color="danger" style={{ marginTop: theme.spacing.xs }}>
+                {errors.mealType.message}
+              </ThemedText>
+            )}
           </View>
-          {errors.mealType ? (
-            <ThemedText variant="bodySmall" color="danger" style={{ marginTop: theme.spacing.xs }}>
-              {errors.mealType.message}
-            </ThemedText>
-          ) : null}
 
-          <ThemedText variant="bodySmall" weight="600" style={{ marginTop: theme.spacing.md }}>
-            Ghi chú (tùy chọn)
-          </ThemedText>
           <Controller
             control={control}
             name="note"
             render={({ field: { onChange, onBlur, value } }) => (
-              <ThemedTextInput 
-                value={value} 
-                onChangeText={onChange} 
-                onBlur={onBlur} 
-                placeholder="VD: giảm bớt nước sốt" 
-                multiline 
-                numberOfLines={3} 
+              <ThemedTextInput
+                label="Ghi chú (tùy chọn)"
+                value={value}
+                onChangeText={onChange}
+                onBlur={onBlur}
+                placeholder="VD: giảm bớt nước sốt"
+                multiline
+                numberOfLines={3}
+                error={!!errors.note}
+                helperText={errors.note?.message}
               />
             )}
           />
-          {errors.note ? (
-            <ThemedText variant="bodySmall" color="danger" style={{ marginTop: theme.spacing.xs }}>
-              {errors.note.message}
-            </ThemedText>
-          ) : null}
 
           <View style={[styles.previewBox, { backgroundColor: theme.colors.primaryLight, marginTop: theme.spacing.lg }]}>
             <ThemedText variant="body" weight="600" color="primary" style={{ marginBottom: theme.spacing.sm }}>

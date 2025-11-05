@@ -29,15 +29,14 @@ import { profileService } from '../../services/profileService';
 
 const ProfileSchema = z.object({
   fullName: z.string().trim().min(2, 'Ten can it nhat 2 ky tu'),
-  phone: z
-    .string()
-    .trim()
-    .optional()
-    .refine((value) => !value || /^[0-9+()\-\s]{8,20}$/.test(value), {
-      message: 'So dien thoai khong hop le',
-    }),
+});
+
+type ProfileFormValues = z.infer<typeof ProfileSchema>;
+
+const BodyMetricsSchema = z.object({
   heightCm: z
     .string()
+    .trim()
     .optional()
     .refine(
       (value) =>
@@ -48,6 +47,7 @@ const ProfileSchema = z.object({
     ),
   weightKg: z
     .string()
+    .trim()
     .optional()
     .refine(
       (value) =>
@@ -56,50 +56,14 @@ const ProfileSchema = z.object({
         message: 'Can nang (kg) tu 30 - 300',
       },
     ),
-  dateOfBirth: z
-    .string()
-    .trim()
-    .optional()
-    .refine((value) => !value || /^\d{4}-\d{2}-\d{2}$/.test(value), {
-      message: 'Ngay sinh dinh dang YYYY-MM-DD',
-    }),
-});
-
-type ProfileFormValues = z.infer<typeof ProfileSchema>;
-
-const BodyMetricsSchema = z.object({
-  heightCm: z
-    .string()
-    .trim()
-    .refine((value) => value !== '', { message: 'Vui long nhap chieu cao' })
-    .refine((value) => !Number.isNaN(Number(value)) && Number(value) >= 100 && Number(value) <= 250, {
-      message: 'Chieu cao (cm) tu 100 - 250',
-    }),
-  weightKg: z
-    .string()
-    .trim()
-    .refine((value) => value !== '', { message: 'Vui long nhap can nang' })
-    .refine((value) => !Number.isNaN(Number(value)) && Number(value) >= 30 && Number(value) <= 300, {
-      message: 'Can nang (kg) tu 30 - 300',
-    }),
-  bodyFatPercent: z
-    .string()
-    .trim()
-    .optional()
-    .refine(
-      (value) =>
-        !value || (!Number.isNaN(Number(value)) && Number(value) >= 3 && Number(value) <= 60),
-      {
-        message: 'Body fat % tu 3 - 60',
-      },
-    ),
-  recordedAt: z
+  measuredDate: z
     .string()
     .trim()
     .optional()
     .refine((value) => !value || /^\d{4}-\d{2}-\d{2}$/.test(value), {
       message: 'Ngay do dinh dang YYYY-MM-DD',
     }),
+  note: z.string().trim().optional(),
 });
 
 type BodyMetricsFormValues = z.infer<typeof BodyMetricsSchema>;
@@ -124,10 +88,6 @@ const ProfileScreen = (): JSX.Element => {
     resolver: zodResolver(ProfileSchema),
     defaultValues: {
       fullName: '',
-      phone: '',
-      heightCm: '',
-      weightKg: '',
-      dateOfBirth: '',
     },
   });
 
@@ -141,8 +101,8 @@ const ProfileScreen = (): JSX.Element => {
     defaultValues: {
       heightCm: '',
       weightKg: '',
-      bodyFatPercent: '',
-      recordedAt: '',
+      measuredDate: '',
+      note: '',
     },
   });
 
@@ -156,10 +116,6 @@ const ProfileScreen = (): JSX.Element => {
     if (profile) {
       reset({
         fullName: profile.fullName ?? '',
-        phone: profile.phone ?? '',
-        heightCm: profile.heightCm ? String(profile.heightCm) : '',
-        weightKg: profile.weightKg ? String(profile.weightKg) : '',
-        dateOfBirth: profile.dateOfBirth ?? '',
       });
     }
   }, [profile, reset]);
@@ -168,8 +124,6 @@ const ProfileScreen = (): JSX.Element => {
     try {
       await updateProfile({
         fullName: values.fullName.trim(),
-        heightCm: values.heightCm ? Number(values.heightCm) : null,
-        dateOfBirth: values.dateOfBirth ? values.dateOfBirth.trim() : null,
       });
       Toast.show({ type: 'success', text1: 'Đã lưu thông tin hồ sơ' });
     } catch (error: any) {
@@ -189,12 +143,12 @@ const ProfileScreen = (): JSX.Element => {
   const onSubmitBodyMetrics = async (values: BodyMetricsFormValues) => {
     try {
       await profileService.createBodyMetrics({
-        heightCm: Number(values.heightCm),
-        weightKg: Number(values.weightKg),
-        bodyFatPercent: values.bodyFatPercent ? Number(values.bodyFatPercent) : null,
-        recordedAt: values.recordedAt ? `${values.recordedAt}T00:00:00Z` : null,
+        heightCm: values.heightCm ? Number(values.heightCm) : null,
+        weightKg: values.weightKg ? Number(values.weightKg) : null,
+        measuredDate: values.measuredDate ? `${values.measuredDate}T00:00:00Z` : null,
+        note: values.note || null,
       });
-      resetMetrics({ heightCm: '', weightKg: '', bodyFatPercent: '', recordedAt: '' });
+      resetMetrics({ heightCm: '', weightKg: '', measuredDate: '', note: '' });
       Toast.show({ type: 'success', text1: 'Đã ghi nhận số đo mới' });
     } catch (error: any) {
       const status = error?.response?.status;
@@ -216,10 +170,19 @@ const ProfileScreen = (): JSX.Element => {
       behavior={Platform.select({ ios: 'padding', android: undefined })}>
       <Screen contentContainerStyle={styles.scrollContent}>
         <View style={[styles.card, { backgroundColor: theme.colors.card, ...theme.shadows.md }]}>
-          <ThemedText variant="h3">Thông tin cá nhân</ThemedText>
-          <ThemedText variant="bodySmall" color="textSecondary" style={{ marginTop: theme.spacing.xs }}>
-            Chỉnh sửa hồ sơ và lưu lại để cập nhật
-          </ThemedText>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: theme.spacing.sm, marginBottom: theme.spacing.sm }}>
+            <View style={[styles.avatar, { backgroundColor: theme.colors.primaryLight }]}>
+              <ThemedText variant="h2" color="primary">
+                {profile?.fullName?.charAt(0)?.toUpperCase() || '?'}
+              </ThemedText>
+            </View>
+            <View style={{ flex: 1 }}>
+              <ThemedText variant="h3">Thông tin cá nhân</ThemedText>
+              <ThemedText variant="bodySmall" color="textSecondary">
+                Chỉnh sửa hồ sơ và lưu lại để cập nhật
+              </ThemedText>
+            </View>
+          </View>
 
           {isLoading ? (
             <View style={styles.loadingBox}>
@@ -227,124 +190,24 @@ const ProfileScreen = (): JSX.Element => {
             </View>
           ) : (
             <>
-              <ThemedText variant="bodySmall" weight="600" style={{ marginTop: theme.spacing.md }}>
-                Họ và tên
-              </ThemedText>
               <Controller
                 control={control}
                 name="fullName"
                 render={({ field: { value, onChange, onBlur } }) => (
                   <ThemedTextInput
-                    style={[styles.input, { borderColor: theme.colors.border, color: theme.colors.text }]}
+                    label="Họ và tên"
+                    style={styles.input}
                     value={value}
                     onChangeText={onChange}
                     onBlur={onBlur}
                     placeholder="Nhập họ tên"
-                    placeholderTextColor={theme.colors.muted}
+                    error={!!profileErrors.fullName}
+                    helperText={profileErrors.fullName?.message}
+                    required
                   />
                 )}
               />
-              {profileErrors.fullName && (
-                <ThemedText variant="bodySmall" color="danger" style={{ marginTop: theme.spacing.xs }}>
-                  {profileErrors.fullName.message}
-                </ThemedText>
-              )}
 
-              <ThemedText variant="bodySmall" weight="600" style={{ marginTop: theme.spacing.md }}>
-                Số điện thoại
-              </ThemedText>
-              <Controller
-                control={control}
-                name="phone"
-                render={({ field: { value, onChange, onBlur } }) => (
-                  <ThemedTextInput
-                    style={[styles.input, { borderColor: theme.colors.border, color: theme.colors.text }]}
-                    value={value ?? ''}
-                    onChangeText={onChange}
-                    onBlur={onBlur}
-                    placeholder="Ví dụ: 0987654321"
-                    placeholderTextColor={theme.colors.muted}
-                    keyboardType="phone-pad"
-                  />
-                )}
-              />
-              {profileErrors.phone && (
-                <ThemedText variant="bodySmall" color="danger" style={{ marginTop: theme.spacing.xs }}>
-                  {profileErrors.phone.message}
-                </ThemedText>
-              )}
-
-              <View style={[styles.row, { marginTop: theme.spacing.md }]}>
-                <View style={styles.col}>
-                  <ThemedText variant="bodySmall" weight="600">Chiều cao (cm)</ThemedText>
-                  <Controller
-                    control={control}
-                    name="heightCm"
-                    render={({ field: { value, onChange, onBlur } }) => (
-                      <ThemedTextInput
-                        style={[styles.input, { borderColor: theme.colors.border, color: theme.colors.text }]}
-                        value={value ?? ''}
-                        onChangeText={onChange}
-                        onBlur={onBlur}
-                        placeholder="170"
-                        placeholderTextColor={theme.colors.muted}
-                        keyboardType="numeric"
-                      />
-                    )}
-                  />
-                  {profileErrors.heightCm && (
-                    <ThemedText variant="bodySmall" color="danger" style={{ marginTop: theme.spacing.xs }}>
-                      {profileErrors.heightCm.message}
-                    </ThemedText>
-                  )}
-                </View>
-                <View style={styles.col}>
-                  <ThemedText variant="bodySmall" weight="600">Cân nặng (kg)</ThemedText>
-                  <Controller
-                    control={control}
-                    name="weightKg"
-                    render={({ field: { value, onChange, onBlur } }) => (
-                      <ThemedTextInput
-                        style={[styles.input, { borderColor: theme.colors.border, color: theme.colors.text }]}
-                        value={value ?? ''}
-                        onChangeText={onChange}
-                        onBlur={onBlur}
-                        placeholder="60"
-                        placeholderTextColor={theme.colors.muted}
-                        keyboardType="numeric"
-                      />
-                    )}
-                  />
-                  {profileErrors.weightKg && (
-                    <ThemedText variant="bodySmall" color="danger" style={{ marginTop: theme.spacing.xs }}>
-                      {profileErrors.weightKg.message}
-                    </ThemedText>
-                  )}
-                </View>
-              </View>
-
-              <ThemedText variant="bodySmall" weight="600" style={{ marginTop: theme.spacing.md }}>
-                Ngày sinh (YYYY-MM-DD)
-              </ThemedText>
-              <Controller
-                control={control}
-                name="dateOfBirth"
-                render={({ field: { value, onChange, onBlur } }) => (
-                  <ThemedTextInput
-                    style={[styles.input, { borderColor: theme.colors.border, color: theme.colors.text }]}
-                    value={value ?? ''}
-                    onChangeText={onChange}
-                    onBlur={onBlur}
-                    placeholder="1995-01-01"
-                    placeholderTextColor={theme.colors.muted}
-                  />
-                )}
-              />
-              {profileErrors.dateOfBirth && (
-                <ThemedText variant="bodySmall" color="danger" style={{ marginTop: theme.spacing.xs }}>
-                  {profileErrors.dateOfBirth.message}
-                </ThemedText>
-              )}
 
               <View style={{ marginTop: theme.spacing.xl }}>
                 <Button
@@ -358,7 +221,8 @@ const ProfileScreen = (): JSX.Element => {
             </>
           )}
 
-          <View style={{ marginTop: theme.spacing.md }}>
+          <View style={{ marginTop: theme.spacing.xl, gap: theme.spacing.md }}>
+            <View style={{ height: 1, backgroundColor: theme.colors.border }} />
             <Button
               accessibilityLabel="Đăng xuất"
               onPress={() =>
@@ -377,112 +241,102 @@ const ProfileScreen = (): JSX.Element => {
                   ],
                 )
               }
-              variant="danger"
+              variant="outline"
               title="Đăng xuất"
+              fullWidth
             />
           </View>
         </View>
 
         <View style={[styles.card, { backgroundColor: theme.colors.card, ...theme.shadows.md }]}>
-          <ThemedText variant="h3">Ghi nhận chỉ số cơ thể</ThemedText>
-          <ThemedText variant="bodySmall" color="textSecondary" style={{ marginTop: theme.spacing.xs }}>
-            Theo dõi tiến trình bằng cách lưu số đo mới
-          </ThemedText>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: theme.spacing.sm, marginBottom: theme.spacing.sm }}>
+            <View style={[styles.icon, { backgroundColor: theme.colors.secondaryLight }]}>
+              <ThemedText variant="h4" color="secondary">
+                📏
+              </ThemedText>
+            </View>
+            <View style={{ flex: 1 }}>
+              <ThemedText variant="h3">Ghi nhận chỉ số cơ thể</ThemedText>
+              <ThemedText variant="bodySmall" color="textSecondary">
+                Theo dõi tiến trình bằng cách lưu số đo mới
+              </ThemedText>
+            </View>
+          </View>
 
-          <ThemedText variant="bodySmall" weight="600" style={{ marginTop: theme.spacing.md }}>
-            Chiều cao (cm)
-          </ThemedText>
-          <Controller
-            control={metricsControl}
-            name="heightCm"
-            render={({ field: { value, onChange, onBlur } }) => (
-              <ThemedTextInput
-                style={[styles.input, { borderColor: theme.colors.border, color: theme.colors.text }]}
-                value={value}
-                onChangeText={onChange}
-                onBlur={onBlur}
-                placeholder="170"
-                placeholderTextColor={theme.colors.muted}
-                keyboardType="numeric"
+          <View style={{ flexDirection: 'row', gap: theme.spacing.md }}>
+            <View style={{ flex: 1 }}>
+              <Controller
+                control={metricsControl}
+                name="heightCm"
+                render={({ field: { value, onChange, onBlur } }) => (
+                  <ThemedTextInput
+                    label="Chiều cao (cm)"
+                    style={styles.input}
+                    value={value}
+                    onChangeText={onChange}
+                    onBlur={onBlur}
+                    placeholder="170"
+                    keyboardType="numeric"
+                    error={!!metricsErrors.heightCm}
+                    helperText={metricsErrors.heightCm?.message}
+                  />
+                )}
               />
-            )}
-          />
-          {metricsErrors.heightCm && (
-            <ThemedText variant="bodySmall" color="danger" style={{ marginTop: theme.spacing.xs }}>
-              {metricsErrors.heightCm.message}
-            </ThemedText>
-          )}
-
-          <ThemedText variant="bodySmall" weight="600" style={{ marginTop: theme.spacing.md }}>
-            Cân nặng (kg)
-          </ThemedText>
-          <Controller
-            control={metricsControl}
-            name="weightKg"
-            render={({ field: { value, onChange, onBlur } }) => (
-              <ThemedTextInput
-                style={[styles.input, { borderColor: theme.colors.border, color: theme.colors.text }]}
-                value={value}
-                onChangeText={onChange}
-                onBlur={onBlur}
-                placeholder="60"
-                placeholderTextColor={theme.colors.muted}
-                keyboardType="numeric"
+            </View>
+            <View style={{ flex: 1 }}>
+              <Controller
+                control={metricsControl}
+                name="weightKg"
+                render={({ field: { value, onChange, onBlur } }) => (
+                  <ThemedTextInput
+                    label="Cân nặng (kg)"
+                    style={styles.input}
+                    value={value}
+                    onChangeText={onChange}
+                    onBlur={onBlur}
+                    placeholder="60"
+                    keyboardType="numeric"
+                    error={!!metricsErrors.weightKg}
+                    helperText={metricsErrors.weightKg?.message}
+                  />
+                )}
               />
-            )}
-          />
-          {metricsErrors.weightKg && (
-            <ThemedText variant="bodySmall" color="danger" style={{ marginTop: theme.spacing.xs }}>
-              {metricsErrors.weightKg.message}
-            </ThemedText>
-          )}
+            </View>
+          </View>
 
-          <ThemedText variant="bodySmall" weight="600" style={{ marginTop: theme.spacing.md }}>
-            Body fat % (tuỳ chọn)
-          </ThemedText>
           <Controller
             control={metricsControl}
-            name="bodyFatPercent"
+            name="measuredDate"
             render={({ field: { value, onChange, onBlur } }) => (
               <ThemedTextInput
-                style={[styles.input, { borderColor: theme.colors.border, color: theme.colors.text }]}
-                value={value ?? ''}
-                onChangeText={onChange}
-                onBlur={onBlur}
-                placeholder="18"
-                placeholderTextColor={theme.colors.muted}
-                keyboardType="numeric"
-              />
-            )}
-          />
-          {metricsErrors.bodyFatPercent && (
-            <ThemedText variant="bodySmall" color="danger" style={{ marginTop: theme.spacing.xs }}>
-              {metricsErrors.bodyFatPercent.message}
-            </ThemedText>
-          )}
-
-          <ThemedText variant="bodySmall" weight="600" style={{ marginTop: theme.spacing.md }}>
-            Ngày đo (YYYY-MM-DD)
-          </ThemedText>
-          <Controller
-            control={metricsControl}
-            name="recordedAt"
-            render={({ field: { value, onChange, onBlur } }) => (
-              <ThemedTextInput
-                style={[styles.input, { borderColor: theme.colors.border, color: theme.colors.text }]}
+                label="Ngày đo (YYYY-MM-DD)"
+                style={styles.input}
                 value={value ?? ''}
                 onChangeText={onChange}
                 onBlur={onBlur}
                 placeholder="2024-06-01"
-                placeholderTextColor={theme.colors.muted}
+                error={!!metricsErrors.measuredDate}
+                helperText={metricsErrors.measuredDate?.message}
               />
             )}
           />
-          {metricsErrors.recordedAt && (
-            <ThemedText variant="bodySmall" color="danger" style={{ marginTop: theme.spacing.xs }}>
-              {metricsErrors.recordedAt.message}
-            </ThemedText>
-          )}
+
+          <Controller
+            control={metricsControl}
+            name="note"
+            render={({ field: { value, onChange, onBlur } }) => (
+              <ThemedTextInput
+                label="Ghi chú (tuỳ chọn)"
+                style={styles.input}
+                value={value ?? ''}
+                onChangeText={onChange}
+                onBlur={onBlur}
+                placeholder="Ghi chú về số đo"
+                multiline
+                numberOfLines={2}
+              />
+            )}
+          />
 
           <View style={{ marginTop: theme.spacing.xl }}>
             <Button
@@ -509,6 +363,20 @@ const styles = StyleSheet.create({
   card: {
     borderRadius: 16,
     padding: 24,
+  },
+  avatar: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  icon: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   input: {
     borderWidth: 1,

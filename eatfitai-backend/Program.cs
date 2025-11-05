@@ -14,7 +14,7 @@ using Microsoft.OpenApi.Models;
 using System.Text;
 using System.Text.Json;
 
-public class Program
+public partial class Program
 {
     public static async Task Main(string[] args)
     {

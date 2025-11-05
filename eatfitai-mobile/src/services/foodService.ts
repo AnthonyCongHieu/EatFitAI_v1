@@ -2,7 +2,7 @@
 // Chu thich bang tieng Viet khong dau
 
 import apiClient from './apiClient';
-import type { FoodItemDto } from '../types';
+import type { FoodItemDto, MealTypeId, MEAL_TYPES } from '../types';
 
 const toNumber = (value: unknown): number | null => {
   if (typeof value === 'number' && !Number.isNaN(value)) {
@@ -37,13 +37,7 @@ export type FoodDetail = FoodItem & {
 
 export type SearchFoodsResult = {
   items: FoodItem[];
-  page: number;
-  pageSize: number;
-  total: number;
-  hasMore: boolean;
   totalCount?: number;
-  offset?: number;
-  limit?: number;
 };
 
 const normalizeFoodItem = (data: FoodItemDto): FoodItem => ({
@@ -68,12 +62,12 @@ const normalizeFoodDetail = (data: FoodItemDto): FoodDetail => ({
 });
 
 export const foodService = {
-  // Tim kiem thuc pham theo tu khoa va phan trang
-  async searchFoods(query: string, page: number, pageSize = 20): Promise<SearchFoodsResult> {
+  // Tim kiem thuc pham theo tu khoa
+  async searchFoods(query: string, limit = 50): Promise<SearchFoodsResult> {
     const response = await apiClient.get('/api/search', {
       params: {
         q: query,
-        limit: pageSize,
+        limit,
       },
     });
 
@@ -82,13 +76,7 @@ export const foodService = {
 
     return {
       items: normalizedItems,
-      page: 1,
-      pageSize: data.length,
-      total: data.length,
-      hasMore: false,
       totalCount: data.length,
-      offset: 0,
-      limit: pageSize,
     };
   },
 
@@ -102,7 +90,7 @@ export const foodService = {
   async addDiaryEntry(payload: {
     foodId: string;
     grams: number;
-    mealType: string; // breakfast/lunch/dinner/snack
+    mealTypeId: MealTypeId;
     note?: string;
   }): Promise<void> {
     const d = new Date();
@@ -113,7 +101,7 @@ export const foodService = {
 
     await apiClient.post('/api/meal-diary', {
       eatenDate,
-      mealTypeId: payload.mealType === 'breakfast' ? 1 : payload.mealType === 'lunch' ? 2 : payload.mealType === 'dinner' ? 3 : 4,
+      mealTypeId: payload.mealTypeId,
       foodItemId: parseInt(payload.foodId),
       grams: payload.grams,
       note: payload.note ?? null,
@@ -124,7 +112,7 @@ export const foodService = {
   async addDiaryEntryFromUserFoodItem(payload: {
     userFoodItemId: string;
     grams: number;
-    mealType: string; // breakfast/lunch/dinner/snack
+    mealTypeId: MealTypeId;
     note?: string;
   }): Promise<void> {
     const d = new Date();
@@ -135,7 +123,7 @@ export const foodService = {
 
     await apiClient.post('/api/meal-diary', {
       eatenDate,
-      mealTypeId: payload.mealType === 'breakfast' ? 1 : payload.mealType === 'lunch' ? 2 : payload.mealType === 'dinner' ? 3 : 4,
+      mealTypeId: payload.mealTypeId,
       userFoodItemId: parseInt(payload.userFoodItemId),
       grams: payload.grams,
       note: payload.note ?? null,
@@ -144,29 +132,17 @@ export const foodService = {
 
   // Tao mon an thu cong
   async createCustomDish(payload: {
-    // Placeholder: existing UI likely uses a different flow; keeping method for compatibility
-    name: string;
+    dishName: string;
     description?: string | null;
-    servingSizeGram: number;
-    calories: number;
-    protein: number;
-    carbs: number;
-    fat: number;
+    ingredients: Array<{
+      foodItemId: number;
+      grams: number;
+    }>;
   }): Promise<void> {
     await apiClient.post('/api/custom-dishes', {
-      name: payload.name,
+      dishName: payload.dishName,
       description: payload.description ?? null,
-      ingredients: [
-        {
-          foodId: null,
-          name: 'Custom',
-          quantityGrams: payload.servingSizeGram,
-          caloriesKcal: payload.calories,
-          proteinGrams: payload.protein,
-          carbohydrateGrams: payload.carbs,
-          fatGrams: payload.fat,
-        },
-      ],
+      ingredients: payload.ingredients,
     });
   },
 };

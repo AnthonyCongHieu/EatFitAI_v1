@@ -2,9 +2,10 @@
 // Chu thich bang tieng Viet khong dau
 
 import apiClient from './apiClient';
-import type { MealDiaryDto } from '../types';
+import type { MealDiaryDto, MealTypeId } from '../types';
+import { MEAL_TYPE_LABELS } from '../types';
 
-export type DiaryMealType = 'breakfast' | 'lunch' | 'dinner' | 'snack' | string;
+export type DiaryMealType = MealTypeId;
 
 export type DiaryEntry = {
   id: string;
@@ -52,7 +53,7 @@ const toNumberOrNull = (value: unknown): number | null => {
 
 const normalizeEntry = (data: MealDiaryDto): DiaryEntry => ({
   id: String(data?.mealDiaryId ?? ''),
-  mealType: data?.mealTypeName ?? 'unknown',
+  mealType: (data?.mealTypeId as MealTypeId) ?? (data?.mealTypeName ?? 'unknown'),
   foodName: data?.foodItemName ?? data?.userDishName ?? data?.recipeName ?? 'Mon an',
   note: data?.note ?? null,
   quantityText: data?.portionQuantity ? `${data.portionQuantity} ${data.servingUnitName ?? 'serving'}` : `${data.grams}g`,
@@ -63,15 +64,21 @@ const normalizeEntry = (data: MealDiaryDto): DiaryEntry => ({
   recordedAt: data?.createdAt ?? null,
 });
 
-const normalizeMeal = (data: any): DiaryMealGroup => ({
-  mealType: data?.mealType ?? data?.meal ?? 'unknown',
-  title: data?.title ?? data?.mealType ?? 'Bua an',
-  totalCalories: toNumberOrNull(data?.totalCalories),
-  protein: toNumberOrNull(data?.protein),
-  carbs: toNumberOrNull(data?.carbs),
-  fat: toNumberOrNull(data?.fat),
-  entries: Array.isArray(data?.entries) ? data.entries.map(normalizeEntry) : [],
-});
+const normalizeMeal = (data: any): DiaryMealGroup => {
+  const mealTypeId = data?.mealTypeId ?? data?.mealType ?? data?.meal ?? 'unknown';
+  const mealType = typeof mealTypeId === 'number' ? (mealTypeId as MealTypeId) : 1; // Default to breakfast if unknown
+  const title = data?.title ?? (typeof mealTypeId === 'number' ? MEAL_TYPE_LABELS[mealTypeId as MealTypeId] : data?.mealType ?? 'Bua an');
+
+  return {
+    mealType,
+    title,
+    totalCalories: toNumberOrNull(data?.totalCalories),
+    protein: toNumberOrNull(data?.protein),
+    carbs: toNumberOrNull(data?.carbs),
+    fat: toNumberOrNull(data?.fat),
+    entries: Array.isArray(data?.entries) ? data.entries.map(normalizeEntry) : [],
+  };
+};
 
 const normalizeSummary = (data: any): DaySummary => ({
   date: data?.date ?? data?.mealDate ?? new Date().toISOString(),
@@ -92,10 +99,10 @@ const todayDate = (): string => {
 };
 
 const groupByMeal = (entries: DiaryEntry[]): DiaryMealGroup[] => {
-  const map = new Map<string, DiaryMealGroup>();
+  const map = new Map<MealTypeId, DiaryMealGroup>();
   for (const e of entries) {
-    const key = e.mealType || 'unknown';
-    const g = map.get(key) ?? { mealType: key, title: key, totalCalories: 0, protein: 0, carbs: 0, fat: 0, entries: [] };
+    const key = typeof e.mealType === 'number' ? e.mealType : 1; // Default to breakfast
+    const g = map.get(key) ?? { mealType: key, title: MEAL_TYPE_LABELS[key], totalCalories: 0, protein: 0, carbs: 0, fat: 0, entries: [] };
     g.entries.push(e);
     g.totalCalories = (g.totalCalories ?? 0) + (e.calories ?? 0);
     g.protein = (g.protein ?? 0) + (e.protein ?? 0);
