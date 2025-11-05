@@ -23,6 +23,9 @@ export type FoodItem = {
   protein?: number | null;
   carbs?: number | null;
   fat?: number | null;
+  isActive?: boolean | null;
+  createdAt?: string | null;
+  updatedAt?: string | null;
 };
 
 export type FoodDetail = FoodItem & {
@@ -48,6 +51,9 @@ const normalizeFoodItem = (data: FoodItemDto): FoodItem => ({
   protein: data?.proteinPer100g ?? null,
   carbs: data?.carbPer100g ?? null,
   fat: data?.fatPer100g ?? null,
+  isActive: data?.isActive ?? null,
+  createdAt: data?.createdAt ?? null,
+  updatedAt: data?.updatedAt ?? null,
 });
 
 const normalizeFoodDetail = (data: FoodItemDto): FoodDetail => ({
@@ -82,7 +88,7 @@ export const foodService = {
 
   // Lay chi tiet mot thuc pham
   async getFoodDetail(foodId: string): Promise<FoodDetail> {
-    const response = await apiClient.get(`/api/${foodId}`);
+    const response = await apiClient.get(`/api/food/${foodId}`);
     return normalizeFoodDetail(response.data ?? {});
   },
 

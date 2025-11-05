@@ -10,6 +10,7 @@ export type UserProfile = {
   email?: string;
   heightCm?: number;
   weightKg?: number;
+  createdAt?: string;
 };
 
 export type UpdateProfilePayload = {
@@ -29,12 +30,13 @@ const normalizeProfile = (data: UserDto): UserProfile => ({
   email: data?.email ?? undefined,
   heightCm: undefined,
   weightKg: undefined,
+  createdAt: data?.createdAt ?? undefined,
 });
 
 export const profileService = {
   // Lay thong tin ho so cua chinh nguoi dung
   async getProfile(): Promise<UserProfile> {
-    const response = await apiClient.get('/api/profile');
+    const response = await apiClient.get('/api/users/profile');
     return normalizeProfile(response.data);
   },
 
@@ -44,7 +46,7 @@ export const profileService = {
     const req: UserDto = {
       displayName: payload.fullName ?? null,
     };
-    const response = await apiClient.put('/api/profile', req);
+    const response = await apiClient.put('/api/users/profile', req);
     return normalizeProfile(response.data);
   },
 

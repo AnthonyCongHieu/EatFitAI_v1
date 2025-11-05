@@ -1,6 +1,0 @@
-@EatFitAI.API_HostAddress = http://localhost:5298
-
-GET {{EatFitAI.API_HostAddress}}/weatherforecast/
-Accept: application/json
-
-###

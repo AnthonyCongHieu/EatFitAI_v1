@@ -18,6 +18,9 @@ export type DiaryEntry = {
   carbs?: number | null;
   fat?: number | null;
   recordedAt?: string | null;
+  createdAt?: string | null;
+  updatedAt?: string | null;
+  isDeleted?: boolean | null;
 };
 
 export type DiaryMealGroup = {
@@ -62,6 +65,9 @@ const normalizeEntry = (data: MealDiaryDto): DiaryEntry => ({
   carbs: data?.carb ?? null,
   fat: data?.fat ?? null,
   recordedAt: data?.createdAt ?? null,
+  createdAt: data?.createdAt ?? null,
+  updatedAt: data?.updatedAt ?? null,
+  isDeleted: data?.isDeleted ?? null,
 });
 
 const normalizeMeal = (data: any): DiaryMealGroup => {

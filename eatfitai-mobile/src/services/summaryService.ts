@@ -8,6 +8,10 @@ export type WeekDaySummary = {
   protein?: number | null;
   carbs?: number | null;
   fat?: number | null;
+  totalProtein?: number | null;
+  totalCarbs?: number | null;
+  totalFat?: number | null;
+  caloriesByMealType?: Record<string, number> | null;
 };
 
 export type WeekSummary = {
@@ -32,6 +36,10 @@ const normalizeDay = (date: string, calories: number, targetCalories?: number): 
   protein: null,
   carbs: null,
   fat: null,
+  totalProtein: null,
+  totalCarbs: null,
+  totalFat: null,
+  caloriesByMealType: null,
 });
 
 const normalizeWeekData = (data: NutritionSummaryDto): WeekDaySummary[] => {
