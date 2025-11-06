@@ -13,12 +13,15 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Text;
 using System.Text.Json;
+using Microsoft.Extensions.Configuration;
 
 public partial class Program
 {
     public static async Task Main(string[] args)
     {
         var builder = WebApplication.CreateBuilder(args);
+
+        // User Secrets will be loaded automatically in Development by CreateBuilder
 
         // Configure listening URLs from configuration (e.g., appsettings.*.json)
         var configuredUrls = builder.Configuration.GetValue<string>("Urls");
