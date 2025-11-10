@@ -10,4 +10,5 @@ export type RootStackParamList = {
   CustomDish: undefined;
   AiCamera: undefined;
   AiNutrition: undefined;
+  NutritionSuggest: undefined;
 };

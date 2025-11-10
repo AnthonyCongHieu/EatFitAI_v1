@@ -121,6 +121,16 @@ builder.Services.AddScoped<IUserFoodItemService, UserFoodItemService>();
 
 // HttpClient for external AI provider proxy
 builder.Services.AddHttpClient();
+// Nutrition + AI logging services
+builder.Services.AddScoped<INutritionCalcService, NutritionCalcService>();
+builder.Services.AddScoped<IAiLogService, AiLogService>();
+
+// Health checks (used by HealthController and readiness endpoints)
+builder.Services.AddHealthChecks()
+    .AddSqlServer(
+        builder.Configuration.GetConnectionString("DefaultConnection")!,
+        name: "sql",
+        timeout: TimeSpan.FromSeconds(3));
 
 // Add JWT Authentication
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -196,6 +206,8 @@ app.MapControllers();
 
 app.MapGet("/health/live", () => Results.Ok(new { status = "live" }));
 app.MapGet("/health/ready", async (EatFitAI.API.DbScaffold.Data.EatFitAIDbContext db) => { try { await db.Database.ExecuteSqlRawAsync("SELECT 1"); return Results.Ok(new { status = "ready" }); } catch (Exception ex) { return Results.Problem(title: "DB not ready", detail: ex.Message, statusCode: 503); } });
+// Simple health endpoint for mobile ping
+app.MapGet("/health", () => Results.Ok(new { status = "ok" }));
 
 await app.RunAsync();
     }

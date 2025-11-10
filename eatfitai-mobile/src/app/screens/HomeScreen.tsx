@@ -1,7 +1,7 @@
 ﻿import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Alert, Modal, Pressable, RefreshControl, StyleSheet, View } from 'react-native';
 import Toast from 'react-native-toast-message';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
 import { ThemedText } from '../../components/ThemedText';
@@ -78,18 +78,23 @@ const HomeScreen = (): JSX.Element => {
   const [serverDown, setServerDown] = useState(false);
 
   useEffect(() => {
-    fetchSummary().catch((error: any) => {
-      const status = error?.response?.status;
-      if (status === 401) {
-        Toast.show({ type: 'error', text1: t('common.sessionExpired'), text2: t('common.pleaseLoginAgain') });
-      } else if (status >= 500) {
-        Toast.show({ type: 'error', text1: t('common.serverError'), text2: t('common.tryAgainLater') });
-      } else if (!navigator.onLine) {
-        Toast.show({ type: 'error', text1: t('common.networkError'), text2: t('common.checkConnection') });
-      } else {
-        Toast.show({ type: 'error', text1: t('home.loadDiaryFailed'), text2: t('home.pullToRetry') });
-      }
-    });
+    fetchSummary()
+      .then(() => {
+        // Nếu load summary thành công, coi như server đang ổn
+        setServerDown(false);
+      })
+      .catch((error: any) => {
+        const status = error?.response?.status;
+        if (status === 401) {
+          Toast.show({ type: 'error', text1: t('common.sessionExpired'), text2: t('common.pleaseLoginAgain') });
+        } else if (status >= 500) {
+          Toast.show({ type: 'error', text1: t('common.serverError'), text2: t('common.tryAgainLater') });
+        } else if (!navigator.onLine) {
+          Toast.show({ type: 'error', text1: t('common.networkError'), text2: t('common.checkConnection') });
+        } else {
+          Toast.show({ type: 'error', text1: t('home.loadDiaryFailed'), text2: t('home.pullToRetry') });
+        }
+      });
   }, [fetchSummary]);
 
   useEffect(() => {
@@ -100,6 +105,18 @@ const HomeScreen = (): JSX.Element => {
     })();
     return () => { cancelled = true; };
   }, []);
+
+  // Re-check server health whenever screen gains focus (tránh kẹt cờ khi ping lần đầu thất bại)
+  useFocusEffect(
+    useCallback(() => {
+      let active = true;
+      (async () => {
+        const res = await healthService.pingRoot();
+        if (active) setServerDown(!res.ok);
+      })();
+      return () => { active = false; };
+    }, [])
+  );
 
   const handleRefresh = useCallback(() => {
     refreshSummary().catch((error: any) => {

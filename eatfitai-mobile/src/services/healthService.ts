@@ -29,8 +29,16 @@ export const healthService = {
       await apiClient.get('/health');
       return { ok: true };
     } catch (e: any) {
+      // Fallback to legacy health endpoints
+      try {
+        await apiClient.get('/api/Health/live');
+        return { ok: true };
+      } catch {}
+      try {
+        await apiClient.get('/api/Health/ready');
+        return { ok: true };
+      } catch {}
       return { ok: false, detail: e?.message };
     }
   },
 };
-

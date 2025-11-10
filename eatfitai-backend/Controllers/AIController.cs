@@ -7,6 +7,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using System.Text.Json;
 using EatFitAI.API.DTOs.AI;
+using Microsoft.EntityFrameworkCore;
 
 namespace EatFitAI.API.Controllers
 {
@@ -78,25 +79,78 @@ namespace EatFitAI.API.Controllers
         [HttpGet("nutrition-targets/current")]
         public async Task<IActionResult> GetCurrentNutritionTargets()
         {
-            // TODO: Get current nutrition targets for the user
             var userId = GetUserIdFromToken();
-            return StatusCode(501, new { message = "Get current nutrition targets not yet implemented" });
+            using var scope = HttpContext.RequestServices.CreateScope();
+            var db = scope.ServiceProvider.GetRequiredService<EatFitAI.API.DbScaffold.Data.EatFitAIDbContext>();
+            var today = DateOnly.FromDateTime(DateTime.UtcNow.Date);
+            var current = await db.NutritionTargets
+                .Where(t => t.UserId == userId && t.EffectiveFrom <= today && (t.EffectiveTo == null || t.EffectiveTo >= today))
+                .OrderByDescending(t => t.EffectiveFrom)
+                .FirstOrDefaultAsync();
+            if (current == null) return NotFound();
+            return Ok(new { caloriesKcal = current.TargetCalories, proteinGrams = current.TargetProtein, carbohydrateGrams = current.TargetCarb, fatGrams = current.TargetFat });
         }
 
         [HttpPost("nutrition/recalculate")]
         public async Task<IActionResult> RecalculateNutritionTargets([FromBody] object request)
         {
-            // TODO: Recalculate nutrition targets based on user data
-            var userId = GetUserIdFromToken();
-            return StatusCode(501, new { message = "Nutrition target recalculation not yet implemented" });
+            // Recalculate using provided payload or defaults
+            using var scope = HttpContext.RequestServices.CreateScope();
+            var calc = scope.ServiceProvider.GetRequiredService<EatFitAI.API.Services.INutritionCalcService>();
+            string sex = "male"; int age = 25; double heightCm = 170; double weightKg = 65; double activity = 1.38; string goal = "maintain";
+            try
+            {
+                if (request is JsonElement je && je.ValueKind == JsonValueKind.Object)
+                {
+                    if (je.TryGetProperty("sex", out var v) && v.ValueKind == JsonValueKind.String) sex = v.GetString() ?? sex;
+                    if (je.TryGetProperty("age", out v) && v.TryGetInt32(out var i)) age = i;
+                    if (je.TryGetProperty("heightCm", out v) && v.TryGetDouble(out var d)) heightCm = d;
+                    if (je.TryGetProperty("weightKg", out v) && v.TryGetDouble(out d)) weightKg = d;
+                    if (je.TryGetProperty("activityLevel", out v) && v.TryGetDouble(out d)) activity = d;
+                    if (je.TryGetProperty("goal", out v) && v.ValueKind == JsonValueKind.String) goal = v.GetString() ?? goal;
+                }
+            }
+            catch { }
+            var (cal, p, c, f) = calc.Suggest(sex, age, heightCm, weightKg, activity, goal);
+            return Ok(new { calories = cal, protein = p, carbs = c, fat = f });
         }
 
         [HttpPost("nutrition-targets")]
         public async Task<IActionResult> SetNutritionTargets([FromBody] object request)
         {
-            // TODO: Set custom nutrition targets for the user
             var userId = GetUserIdFromToken();
-            return StatusCode(501, new { message = "Set nutrition targets not yet implemented" });
+            int? calories = null, protein = null, carbs = null, fat = null;
+            try
+            {
+                if (request is JsonElement je && je.ValueKind == JsonValueKind.Object)
+                {
+                    if (je.TryGetProperty("caloriesKcal", out var v) && v.TryGetInt32(out var i)) calories = i;
+                    if (je.TryGetProperty("proteinGrams", out v) && v.TryGetInt32(out i)) protein = i;
+                    if (je.TryGetProperty("carbohydrateGrams", out v) && v.TryGetInt32(out i)) carbs = i;
+                    if (je.TryGetProperty("fatGrams", out v) && v.TryGetInt32(out i)) fat = i;
+                }
+            }
+            catch { }
+            if (calories is null || protein is null || carbs is null || fat is null)
+            {
+                return BadRequest(new { message = "Invalid payload" });
+            }
+            using var scope = HttpContext.RequestServices.CreateScope();
+            var db = scope.ServiceProvider.GetRequiredService<EatFitAI.API.DbScaffold.Data.EatFitAIDbContext>();
+            var today = DateOnly.FromDateTime(DateTime.UtcNow.Date);
+            var entity = new EatFitAI.API.DbScaffold.Models.NutritionTarget
+            {
+                UserId = userId,
+                TargetCalories = calories.Value,
+                TargetProtein = protein.Value,
+                TargetCarb = carbs.Value,
+                TargetFat = fat.Value,
+                EffectiveFrom = today,
+                EffectiveTo = null
+            };
+            db.NutritionTargets.Add(entity);
+            await db.SaveChangesAsync();
+            return NoContent();
         }
 
         [HttpPost("vision/ingredients")]

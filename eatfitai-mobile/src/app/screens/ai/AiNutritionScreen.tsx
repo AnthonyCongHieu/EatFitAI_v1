@@ -1,33 +1,22 @@
-// Man hinh AI Nutrition: xem muc tieu hien tai va de xuat lai bang AI
-// Chu thich bang tieng Viet khong dau
-
+// Màn AI Dinh dưỡng: xem mục tiêu hiện tại, gợi ý nhanh và áp dụng
 import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import Toast from 'react-native-toast-message';
 
-import { ThemedText } from '../../../components/ThemedText';
 import Screen from '../../../components/Screen';
 import Card from '../../../components/Card';
 import Button from '../../../components/Button';
+import { ThemedText } from '../../../components/ThemedText';
 import { useAppTheme } from '../../../theme/ThemeProvider';
 import { aiService, type NutritionTarget } from '../../../services/aiService';
 import { useDiaryStore } from '../../../store/useDiaryStore';
 
-const formatTarget = (target: NutritionTarget | null): NutritionTarget | null => {
-  if (!target) {
-    return null;
-  }
-  return {
-    calories: Math.round(target.calories),
-    protein: Math.round(target.protein),
-    carbs: Math.round(target.carbs),
-    fat: Math.round(target.fat),
-  };
-};
+const formatTarget = (t: NutritionTarget | null): NutritionTarget | null =>
+  t ? { calories: Math.round(t.calories), protein: Math.round(t.protein), carbs: Math.round(t.carbs), fat: Math.round(t.fat) } : null;
 
 const AiNutritionScreen = (): JSX.Element => {
   const { theme } = useAppTheme();
-  const refreshSummary = useDiaryStore((state) => state.refreshSummary);
+  const refreshSummary = useDiaryStore((s) => s.refreshSummary);
 
   const [isLoading, setIsLoading] = useState(true);
   const [currentTarget, setCurrentTarget] = useState<NutritionTarget | null>(null);
@@ -35,67 +24,60 @@ const AiNutritionScreen = (): JSX.Element => {
   const [isRecalculating, setIsRecalculating] = useState(false);
   const [isApplying, setIsApplying] = useState(false);
 
-  const loadCurrentTarget = useCallback(async () => {
+  const loadCurrent = useCallback(async () => {
     setIsLoading(true);
     try {
-      const target = await aiService.getCurrentNutritionTarget();
-      setCurrentTarget(formatTarget(target));
-    } catch (error) {
-      Toast.show({ type: 'error', text1: 'Không tải được mục tiêu dinh dưỡng' });
+      const t = await aiService.getCurrentNutritionTarget();
+      setCurrentTarget(formatTarget(t));
+    } catch {
+      Toast.show({ type: 'error', text1: 'Không tải được mục tiêu dinh dưỡng hiện tại' });
     } finally {
       setIsLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    loadCurrentTarget().catch(() => {
-      // da xu ly toast
-    });
-  }, [loadCurrentTarget]);
+    loadCurrent().catch(() => {});
+  }, [loadCurrent]);
 
   const handleRecalculate = useCallback(async () => {
     setIsRecalculating(true);
     try {
-      const target = await aiService.recalculateNutritionTarget();
-      setSuggestedTarget(formatTarget(target));
-      Toast.show({ type: 'success', text1: 'AI đã đề xuất mục tiêu mới' });
-    } catch (error) {
-      Toast.show({ type: 'error', text1: 'AI không đề xuất được' });
+      const t = await aiService.recalculateNutritionTarget();
+      setSuggestedTarget(formatTarget(t));
+      Toast.show({ type: 'success', text1: 'Đã gợi ý mục tiêu mới' });
+    } catch {
+      Toast.show({ type: 'error', text1: 'Gợi ý mục tiêu thất bại' });
     } finally {
       setIsRecalculating(false);
     }
   }, []);
 
   const handleApply = useCallback(async () => {
-    const targetToApply = suggestedTarget ?? currentTarget;
-    if (!targetToApply) {
+    const target = suggestedTarget ?? currentTarget;
+    if (!target) {
       Toast.show({ type: 'info', text1: 'Chưa có mục tiêu để áp dụng' });
       return;
     }
     setIsApplying(true);
     try {
-      await aiService.applyNutritionTarget(targetToApply);
+      await aiService.applyNutritionTarget(target);
       Toast.show({ type: 'success', text1: 'Đã áp dụng mục tiêu AI' });
-      setCurrentTarget(targetToApply);
+      setCurrentTarget(target);
       setSuggestedTarget(null);
-      await refreshSummary().catch(() => {
-        // bo qua loi refresh
-      });
-    } catch (error) {
+      await refreshSummary().catch(() => {});
+    } catch {
       Toast.show({ type: 'error', text1: 'Lưu mục tiêu thất bại' });
     } finally {
       setIsApplying(false);
     }
-  }, [currentTarget, refreshSummary, suggestedTarget]);
+  }, [currentTarget, suggestedTarget, refreshSummary]);
 
-  const renderTargetBox = (title: string, target: NutritionTarget | null, highlight = false) => (
+  const TargetBox = ({ title, target, highlight = false }: { title: string; target: NutritionTarget | null; highlight?: boolean }) => (
     <View
       style={[
         styles.targetBox,
-        {
-          borderColor: highlight ? theme.colors.primary : theme.colors.border,
-          backgroundColor: highlight ? theme.colors.primaryLight : theme.colors.card,
-        },
+        { borderColor: highlight ? theme.colors.primary : theme.colors.border, backgroundColor: highlight ? theme.colors.primaryLight : theme.colors.card },
       ]}
     >
       <ThemedText variant="h4" style={{ marginBottom: theme.spacing.sm }}>
@@ -148,7 +130,7 @@ const AiNutritionScreen = (): JSX.Element => {
           Mục tiêu dinh dưỡng
         </ThemedText>
         <ThemedText variant="bodySmall" color="textSecondary" style={{ marginBottom: theme.spacing.lg }}>
-          AI giúp cân bằng calo và macro theo trạng thái hiện tại. Bạn có thể đề xuất lại và áp dụng ngay.
+          AI gợi ý calo và macro theo trạng thái hiện tại.
         </ThemedText>
 
         {isLoading ? (
@@ -159,27 +141,14 @@ const AiNutritionScreen = (): JSX.Element => {
             </ThemedText>
           </View>
         ) : (
-          renderTargetBox('Mục tiêu hiện tại', currentTarget)
+          <TargetBox title="Mục tiêu hiện tại" target={currentTarget} />
         )}
 
-        {suggestedTarget ? renderTargetBox('Đề xuất mới', suggestedTarget, true) : null}
+        {suggestedTarget ? <TargetBox title="Gợi ý mới" target={suggestedTarget} highlight /> : null}
 
         <View style={{ gap: theme.spacing.sm, marginTop: theme.spacing.xl }}>
-          <Button
-            variant="primary"
-            loading={isRecalculating}
-            disabled={isRecalculating}
-            onPress={handleRecalculate}
-            title={isRecalculating ? 'Đang tính...' : 'Đề xuất mục tiêu mới'}
-          />
-
-          <Button
-            variant="secondary"
-            loading={isApplying}
-            disabled={isApplying}
-            onPress={handleApply}
-            title={isApplying ? 'Đang áp dụng...' : 'Áp dụng mục tiêu AI'}
-          />
+          <Button variant="primary" loading={isRecalculating} disabled={isRecalculating} onPress={handleRecalculate} title={isRecalculating ? 'Đang tính...' : 'Gợi ý nhanh'} />
+          <Button variant="secondary" loading={isApplying} disabled={isApplying} onPress={handleApply} title={isApplying ? 'Đang áp dụng...' : 'Áp dụng mục tiêu AI'} />
         </View>
       </Card>
     </Screen>
@@ -187,28 +156,11 @@ const AiNutritionScreen = (): JSX.Element => {
 };
 
 const styles = StyleSheet.create({
-  container: {
-    padding: 16,
-  },
-  center: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 20,
-  },
-  targetBox: {
-    borderWidth: 1.5,
-    borderRadius: 16,
-    padding: 20,
-    marginBottom: 16,
-  },
-  macroRow: {
-    flexDirection: 'row',
-    gap: 16,
-  },
-  macroItem: {
-    flex: 1,
-    alignItems: 'center',
-  },
+  container: { padding: 16 },
+  center: { alignItems: 'center', justifyContent: 'center', paddingVertical: 20 },
+  targetBox: { borderWidth: 1.5, borderRadius: 16, padding: 20, marginBottom: 16 },
+  macroRow: { flexDirection: 'row', gap: 16 },
+  macroItem: { flex: 1, alignItems: 'center' },
 });
 
 export default AiNutritionScreen;

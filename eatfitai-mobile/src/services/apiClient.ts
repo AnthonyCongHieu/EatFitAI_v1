@@ -92,8 +92,8 @@ apiClient.interceptors.response.use(
   (response) => response,
   async (error: AxiosError) => {
     if (__DEV__) {
-      // eslint-disable-next-line no-console
-      console.error('EatFitAI API error:', {
+      const urlPath = String(error?.config?.url || '').split('?')[0];
+      const safeError = {
         status: error?.response?.status,
         message: error?.message || 'No message',
         url: error?.config?.url,
@@ -103,8 +103,15 @@ apiClient.interceptors.response.use(
         code: error?.code,
         baseURL: error?.config?.baseURL,
         timeout: error?.config?.timeout,
-        fullError: error
-      });
+      } as const;
+      // Reduce noise: don't warn for /health 404 (handled by fallback)
+      if (urlPath === '/health' && safeError.status === 404) {
+        // eslint-disable-next-line no-console
+        console.debug('EatFitAI health ping fallback:', safeError);
+      } else {
+        // eslint-disable-next-line no-console
+        console.warn('EatFitAI API warning:', safeError);
+      }
     }
 
     const originalRequest = error.config;

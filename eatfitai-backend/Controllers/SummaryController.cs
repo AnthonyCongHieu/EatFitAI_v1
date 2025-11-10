@@ -3,6 +3,7 @@ using EatFitAI.API.DTOs.Analytics;
 using EatFitAI.API.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace EatFitAI.API.Controllers
 {
@@ -19,13 +20,40 @@ namespace EatFitAI.API.Controllers
         }
 
         [HttpGet("day")]
-        public async Task<ActionResult<NutritionSummaryDto>> GetDaySummary([FromQuery] DateTime date)
+        public async Task<ActionResult> GetDaySummary([FromQuery] DateTime date)
         {
             try
             {
                 var userId = GetUserIdFromToken();
                 var summary = await _analyticsService.GetDaySummaryAsync(userId, date);
-                return Ok(summary);
+
+                // Lấy target calories hiệu lực cho ngày được hỏi (nếu có)
+                int? targetCalories = null;
+                try
+                {
+                    var d = DateOnly.FromDateTime(date.Date);
+                    using var scope = HttpContext.RequestServices.CreateScope();
+                    var db = scope.ServiceProvider.GetRequiredService<EatFitAI.API.DbScaffold.Data.EatFitAIDbContext>();
+                    targetCalories = await db.NutritionTargets
+                        .Where(t => t.UserId == userId && t.EffectiveFrom <= d && (t.EffectiveTo == null || t.EffectiveTo >= d))
+                        .OrderByDescending(t => t.EffectiveFrom)
+                        .Select(t => (int?)t.TargetCalories)
+                        .FirstOrDefaultAsync();
+                }
+                catch { /* ignore target lookup errors */ }
+
+                return Ok(new
+                {
+                    // giữ nguyên các trường có sẵn
+                    summary.TotalCalories,
+                    summary.TotalProtein,
+                    summary.TotalCarbs,
+                    summary.TotalFat,
+                    summary.CaloriesByMealType,
+                    summary.DailyCalories,
+                    // bổ sung target để FE hiển thị
+                    targetCalories
+                });
             }
             catch (Exception ex)
             {
