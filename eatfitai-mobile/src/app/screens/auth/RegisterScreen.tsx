@@ -4,6 +4,7 @@ import { Controller, useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import Toast from 'react-native-toast-message';
 
 import { useAppTheme } from '../../../theme/ThemeProvider';
 import { ThemedText } from '../../../components/ThemedText';
@@ -47,20 +48,22 @@ const RegisterScreen = ({ navigation }: Props): JSX.Element => {
   const onSubmit = useCallback(async (values: RegisterValues) => {
     try {
       setLoading(true);
-      console.log('[RegisterScreen] Starting registration with values:', { name: values.name, email: values.email, password: '***' });
       await registerFn(values.name, values.email, values.password);
-      console.log('[RegisterScreen] Registration successful');
+      Toast.show({ type: 'success', text1: 'Đăng ký tài khoản thành công', text2: 'Bắt đầu hành trình ăn uống lành mạnh!' });
       navigation.reset({ index: 0, routes: [{ name: 'AppTabs' }] });
     } catch (e: any) {
-      console.error('[RegisterScreen] Registration failed:', {
-        error: e,
-        message: e?.message,
-        response: e?.response,
-        status: e?.response?.status,
-        data: e?.response?.data,
-        isNetworkError: !e?.response
-      });
-      Alert.alert(t('auth.registerTitle'), e?.message ?? t('auth.processing'));
+      const status = e?.response?.status;
+      if (status === 409) {
+        Toast.show({ type: 'error', text1: 'Email đã được sử dụng', text2: 'Vui lòng sử dụng email khác hoặc đăng nhập' });
+      } else if (status === 422) {
+        Toast.show({ type: 'error', text1: 'Dữ liệu không hợp lệ', text2: 'Vui lòng kiểm tra thông tin đã nhập' });
+      } else if (status >= 500) {
+        Toast.show({ type: 'error', text1: 'Lỗi máy chủ', text2: 'Vui lòng thử lại sau' });
+      } else if (!navigator.onLine) {
+        Toast.show({ type: 'error', text1: 'Không có kết nối mạng', text2: 'Kiểm tra kết nối và thử lại' });
+      } else {
+        Toast.show({ type: 'error', text1: 'Đăng ký thất bại', text2: 'Vui lòng thử lại hoặc liên hệ hỗ trợ' });
+      }
     } finally {
       setLoading(false);
     }

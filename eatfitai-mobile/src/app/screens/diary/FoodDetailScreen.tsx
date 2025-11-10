@@ -20,6 +20,7 @@ import type { RootStackParamList } from '../../types';
 import { foodService, type FoodDetail } from '../../../services/foodService';
 import { useDiaryStore } from '../../../store/useDiaryStore';
 import { MEAL_TYPES, MEAL_TYPE_LABELS, type MealTypeId } from '../../../types';
+import { diaryService } from '../../../services/diaryService';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 type RouteProps = RouteProp<RootStackParamList, 'FoodDetail'>;
@@ -83,8 +84,17 @@ const FoodDetailScreen = (): JSX.Element | null => {
           setValue('grams', String(Math.round(data.servingSizeGram)));
         }
       })
-      .catch(() => {
-        Toast.show({ type: 'error', text1: 'Không tải được chi tiết món' });
+      .catch((error: any) => {
+        const status = error?.response?.status;
+        if (status === 404) {
+          Toast.show({ type: 'error', text1: 'Món ăn không tồn tại', text2: 'Món này có thể đã bị xóa' });
+        } else if (status >= 500) {
+          Toast.show({ type: 'error', text1: 'Lỗi máy chủ', text2: 'Vui lòng thử lại sau' });
+        } else if (!navigator.onLine) {
+          Toast.show({ type: 'error', text1: 'Không có kết nối mạng', text2: 'Kiểm tra kết nối và thử lại' });
+        } else {
+          Toast.show({ type: 'error', text1: 'Không tải được chi tiết món', text2: 'Vui lòng thử lại' });
+        }
         navigation.goBack();
       })
       .finally(() => {
@@ -102,7 +112,8 @@ const FoodDetailScreen = (): JSX.Element | null => {
   const macroValue = useCallback(
     (base?: number | null) => {
       if (!base || multiplier <= 0) return '--';
-      return `${Math.round(base * multiplier)} g`;
+      const value = base * multiplier;
+      return `${value.toFixed(1).replace(/\.0$/, '')} g`;
     },
     [multiplier],
   );
@@ -114,29 +125,35 @@ const FoodDetailScreen = (): JSX.Element | null => {
   }, [detail?.calories, detail?.perServingCalories, multiplier]);
 
   const submit = useCallback(
-    (values: FormValues) => {
+    async (values: FormValues) => {
       if (!detail) return;
       setIsSubmitting(true);
-      foodService
-        .addDiaryEntry({
+      try {
+        await foodService.addDiaryEntry({
           foodId: detail.id,
           grams: Number(values.grams),
           mealTypeId: values.mealType as MealTypeId,
           note: values.note ?? undefined,
-        })
-        .then(async () => {
-          Toast.show({ type: 'success', text1: 'Đã thêm vào nhật ký' });
-          await refreshSummary().catch(() => {});
-          navigation.goBack();
-        })
-        .catch((error: any) => {
-          if (error?.response?.status === 422) {
-            Toast.show({ type: 'error', text1: 'Dữ liệu không hợp lệ' });
-          } else {
-            Toast.show({ type: 'error', text1: 'Thêm món thất bại' });
-          }
-        })
-        .finally(() => setIsSubmitting(false));
+        });
+        Toast.show({ type: 'success', text1: 'Đã thêm món vào nhật ký', text2: 'Tiếp tục theo dõi dinh dưỡng của bạn!' });
+        await refreshSummary().catch(() => {});
+        navigation.goBack();
+      } catch (error: any) {
+        const status = error?.response?.status;
+        if (status === 422) {
+          Toast.show({ type: 'error', text1: 'Dữ liệu không hợp lệ', text2: 'Vui lòng kiểm tra số gram và bữa ăn' });
+        } else if (status === 404) {
+          Toast.show({ type: 'error', text1: 'Món ăn không tồn tại', text2: 'Món này có thể đã bị xóa' });
+        } else if (status >= 500) {
+          Toast.show({ type: 'error', text1: 'Lỗi máy chủ', text2: 'Vui lòng thử lại sau' });
+        } else if (!navigator.onLine) {
+          Toast.show({ type: 'error', text1: 'Không có kết nối mạng', text2: 'Kiểm tra kết nối và thử lại' });
+        } else {
+          Toast.show({ type: 'error', text1: 'Thêm món thất bại', text2: 'Vui lòng thử lại hoặc liên hệ hỗ trợ' });
+        }
+      } finally {
+        setIsSubmitting(false);
+      }
     },
     [detail, navigation, refreshSummary],
   );
@@ -200,19 +217,19 @@ const FoodDetailScreen = (): JSX.Element | null => {
               <ThemedText variant="caption" color="textSecondary" weight="600" style={{ textTransform: 'uppercase' }}>
                 Protein
               </ThemedText>
-              <ThemedText variant="h4">{detail.perServingProtein ?? detail.protein ?? '--'} g</ThemedText>
+              <ThemedText variant="h4">{detail.perServingProtein ?? detail.protein ? `${(detail.perServingProtein ?? detail.protein).toFixed(1).replace(/\.0$/, '')} g` : '--'}</ThemedText>
             </View>
             <View style={[styles.macroBox, { backgroundColor: theme.colors.background }]}>
               <ThemedText variant="caption" color="textSecondary" weight="600" style={{ textTransform: 'uppercase' }}>
                 Carb
               </ThemedText>
-              <ThemedText variant="h4">{detail.perServingCarbs ?? detail.carbs ?? '--'} g</ThemedText>
+              <ThemedText variant="h4">{detail.perServingCarbs ?? detail.carbs ? `${(detail.perServingCarbs ?? detail.carbs).toFixed(1).replace(/\.0$/, '')} g` : '--'}</ThemedText>
             </View>
             <View style={[styles.macroBox, { backgroundColor: theme.colors.background }]}>
               <ThemedText variant="caption" color="textSecondary" weight="600" style={{ textTransform: 'uppercase' }}>
                 Fat
               </ThemedText>
-              <ThemedText variant="h4">{detail.perServingFat ?? detail.fat ?? '--'} g</ThemedText>
+              <ThemedText variant="h4">{detail.perServingFat ?? detail.fat ? `${(detail.perServingFat ?? detail.fat).toFixed(1).replace(/\.0$/, '')} g` : '--'}</ThemedText>
             </View>
           </View>
         </Card>
@@ -320,10 +337,10 @@ const FoodDetailScreen = (): JSX.Element | null => {
           </View>
 
           <View style={{ marginTop: theme.spacing.xl }}>
-            <Button 
-              variant="primary" 
+            <Button
+              variant="primary"
               loading={isSubmitting}
-              disabled={isSubmitting} 
+              disabled={isSubmitting}
               onPress={handleSubmit(submit)}
               title={isSubmitting ? 'Đang thêm...' : 'Thêm vào nhật ký'}
             />

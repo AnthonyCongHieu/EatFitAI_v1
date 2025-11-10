@@ -40,7 +40,7 @@ export const profileService = {
     return normalizeProfile(response.data);
   },
 
-  // Cap nhat ho so (PUT /api/profile/me)
+  // Cap nhat ho so (PUT /api/users/profile)
   async updateProfile(payload: UpdateProfilePayload): Promise<UserProfile> {
     // Pick only fields supported by backend SP
     const req: UserDto = {

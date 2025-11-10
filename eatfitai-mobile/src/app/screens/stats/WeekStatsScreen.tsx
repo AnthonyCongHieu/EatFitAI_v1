@@ -9,6 +9,7 @@ import Card from "../../../components/Card";
 import Button from "../../../components/Button";
 import { useAppTheme } from "../../../theme/ThemeProvider";
 import { useStatsStore } from "../../../store/useStatsStore";
+import { summaryService } from "../../../services/summaryService";
 
 const WeekStatsScreen = (): JSX.Element => {
   const { theme } = useAppTheme();
@@ -19,20 +20,38 @@ const WeekStatsScreen = (): JSX.Element => {
   const error = useStatsStore((state) => state.error);
 
   useEffect(() => {
-    fetchWeekSummary().catch(() => {
-      // toast da duoc hien o Home
+    fetchWeekSummary().catch((error: any) => {
+      const status = error?.response?.status;
+      if (status === 401) {
+        Toast.show({ type: 'error', text1: 'Phiên đăng nhập đã hết hạn', text2: 'Vui lòng đăng nhập lại' });
+      } else if (status >= 500) {
+        Toast.show({ type: 'error', text1: 'Lỗi máy chủ', text2: 'Vui lòng thử lại sau' });
+      } else if (!navigator.onLine) {
+        Toast.show({ type: 'error', text1: 'Không có kết nối mạng', text2: 'Kiểm tra kết nối và thử lại' });
+      } else {
+        Toast.show({ type: 'error', text1: 'Không thể tải thống kê', text2: 'Kéo xuống để thử lại' });
+      }
     });
   }, [fetchWeekSummary]);
 
   useEffect(() => {
     if (error) {
-      Toast.show({ type: "error", text1: error });
+      Toast.show({ type: "error", text1: "Không thể tải thống kê, vui lòng thử lại" });
     }
   }, [error]);
 
   const handleRefresh = useCallback(() => {
-    refreshWeekSummary().catch(() => {
-      // swallow
+    refreshWeekSummary().catch((error: any) => {
+      const status = error?.response?.status;
+      if (status === 401) {
+        Toast.show({ type: 'error', text1: 'Phiên đăng nhập đã hết hạn', text2: 'Vui lòng đăng nhập lại' });
+      } else if (status >= 500) {
+        Toast.show({ type: 'error', text1: 'Lỗi máy chủ', text2: 'Vui lòng thử lại sau' });
+      } else if (!navigator.onLine) {
+        Toast.show({ type: 'error', text1: 'Không có kết nối mạng', text2: 'Kiểm tra kết nối và thử lại' });
+      } else {
+        Toast.show({ type: 'error', text1: 'Tải lại thất bại', text2: 'Kéo xuống để thử lại' });
+      }
     });
   }, [refreshWeekSummary]);
 

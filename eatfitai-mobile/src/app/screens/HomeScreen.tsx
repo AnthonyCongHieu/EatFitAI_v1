@@ -14,6 +14,7 @@ import { useDiaryStore } from '../../store/useDiaryStore';
 import { useAppTheme } from '../../theme/ThemeProvider';
 import type { RootStackParamList } from '../types';
 import { MEAL_TYPE_LABELS, type MealTypeId } from '../../types';
+import { diaryService } from '../../services/diaryService';
 
 const MEAL_TITLE_MAP: Record<MealTypeId, string> = {
   1: 'Bữa sáng',
@@ -38,8 +39,6 @@ const AddEntryModal = ({ visible, onClose, onSelect }: { visible: boolean; onClo
           <Button title="Tìm món có sẵn" onPress={() => onSelect('search')} />
           <View style={{ height: 8 }} />
           <Button variant="outline" title="Tạo món thủ công" onPress={() => onSelect('custom')} />
-          <View style={{ height: 8 }} />
-          <Button variant="secondary" title="Gợi ý AI" onPress={() => onSelect('ai')} />
           <Pressable accessibilityRole="button" hitSlop={8} onPress={onClose} style={{ alignItems: 'center', marginTop: 8 }}>
             <ThemedText variant="body" color="muted">Đóng</ThemedText>
           </Pressable>
@@ -49,9 +48,12 @@ const AddEntryModal = ({ visible, onClose, onSelect }: { visible: boolean; onClo
   );
 };
 
-const formatNumber = (value?: number | null, suffix = ''): string => {
+const formatNumber = (value?: number | null, suffix = '', decimals = 0): string => {
   if (typeof value !== 'number' || Number.isNaN(value)) return '--';
-  return `${Math.round(value)}${suffix}`;
+  if (decimals === 0) {
+    return `${Math.round(value)}${suffix}`;
+  }
+  return `${value.toFixed(decimals)}${suffix}`;
 };
 
 const formatDate = (dateValue: string | undefined): string => {
@@ -73,11 +75,33 @@ const HomeScreen = (): JSX.Element => {
   const [showAddModal, setShowAddModal] = useState(false);
 
   useEffect(() => {
-    fetchSummary().catch(() => Toast.show({ type: 'error', text1: 'Không thể tải nhật ký hôm nay' }));
+    fetchSummary().catch((error: any) => {
+      const status = error?.response?.status;
+      if (status === 401) {
+        Toast.show({ type: 'error', text1: 'Phiên đăng nhập đã hết hạn', text2: 'Vui lòng đăng nhập lại' });
+      } else if (status >= 500) {
+        Toast.show({ type: 'error', text1: 'Lỗi máy chủ', text2: 'Vui lòng thử lại sau' });
+      } else if (!navigator.onLine) {
+        Toast.show({ type: 'error', text1: 'Không có kết nối mạng', text2: 'Kiểm tra kết nối và thử lại' });
+      } else {
+        Toast.show({ type: 'error', text1: 'Không thể tải nhật ký hôm nay', text2: 'Kéo xuống để thử lại' });
+      }
+    });
   }, [fetchSummary]);
 
   const handleRefresh = useCallback(() => {
-    refreshSummary().catch(() => Toast.show({ type: 'error', text1: 'Tải lại thất bại' }));
+    refreshSummary().catch((error: any) => {
+      const status = error?.response?.status;
+      if (status === 401) {
+        Toast.show({ type: 'error', text1: 'Phiên đăng nhập đã hết hạn', text2: 'Vui lòng đăng nhập lại' });
+      } else if (status >= 500) {
+        Toast.show({ type: 'error', text1: 'Lỗi máy chủ', text2: 'Vui lòng thử lại sau' });
+      } else if (!navigator.onLine) {
+        Toast.show({ type: 'error', text1: 'Không có kết nối mạng', text2: 'Kiểm tra kết nối và thử lại' });
+      } else {
+        Toast.show({ type: 'error', text1: 'Tải lại thất bại', text2: 'Kéo xuống để thử lại' });
+      }
+    });
   }, [refreshSummary]);
 
   const handleDelete = useCallback(
@@ -88,14 +112,31 @@ const HomeScreen = (): JSX.Element => {
           text: 'Xóa',
           style: 'destructive',
           onPress: () => {
-            deleteEntry(entryId)
-              .then(() => Toast.show({ type: 'success', text1: 'Đã xóa món' }))
-              .catch(() => Toast.show({ type: 'error', text1: 'Xóa thất bại' }));
+            diaryService
+              .deleteEntry(entryId)
+              .then(() => {
+                Toast.show({ type: 'success', text1: 'Đã xóa món khỏi nhật ký', text2: 'Nhật ký đã được cập nhật' });
+                refreshSummary().catch(() => {});
+              })
+              .catch((error: any) => {
+                const status = error?.response?.status;
+                if (status === 404) {
+                  Toast.show({ type: 'error', text1: 'Món ăn không tồn tại', text2: 'Món này có thể đã bị xóa trước đó' });
+                } else if (status === 403) {
+                  Toast.show({ type: 'error', text1: 'Không có quyền xóa món này', text2: 'Chỉ có thể xóa món do bạn thêm' });
+                } else if (status >= 500) {
+                  Toast.show({ type: 'error', text1: 'Lỗi máy chủ', text2: 'Vui lòng thử lại sau' });
+                } else if (!navigator.onLine) {
+                  Toast.show({ type: 'error', text1: 'Không có kết nối mạng', text2: 'Kiểm tra kết nối và thử lại' });
+                } else {
+                  Toast.show({ type: 'error', text1: 'Xóa thất bại', text2: 'Vui lòng thử lại hoặc liên hệ hỗ trợ' });
+                }
+              });
           },
         },
       ]);
     },
-    [deleteEntry],
+    [refreshSummary],
   );
 
   const handleAddOption = useCallback(
@@ -103,7 +144,7 @@ const HomeScreen = (): JSX.Element => {
       setShowAddModal(false);
       if (option === 'search') return navigation.navigate('FoodSearch');
       if (option === 'custom') return navigation.navigate('CustomDish');
-      if (option === 'ai') return navigation.navigate('AiCamera');
+      // Skip AI option as per task requirements
     },
     [navigation],
   );
@@ -174,7 +215,6 @@ const HomeScreen = (): JSX.Element => {
 
           <View style={{ marginTop: theme.spacing.xl, gap: theme.spacing.sm }}>
             <Button title="+ Thêm món" onPress={() => setShowAddModal(true)} />
-            <Button variant="outline" title="AI dinh dưỡng" onPress={() => navigation.navigate('AiNutrition')} />
           </View>
         </Card>
 

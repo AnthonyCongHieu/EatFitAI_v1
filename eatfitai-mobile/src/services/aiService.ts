@@ -84,7 +84,7 @@ export const aiService = {
 
   // Lay target dinh duong hien tai
   async getCurrentNutritionTarget(): Promise<NutritionTarget | null> {
-    const response = await apiClient.get('/api/nutrition-targets/current');
+    const response = await apiClient.get('/api/ai/nutrition-targets/current');
     const data = response.data ?? {};
     const calories = toNumber(data?.caloriesKcal ?? data?.calories);
     const protein = toNumber(data?.proteinGrams ?? data?.protein);
@@ -117,7 +117,7 @@ export const aiService = {
 
   // Ap dung target moi
   async applyNutritionTarget(target: NutritionTarget): Promise<void> {
-    await apiClient.post('/api/nutrition-targets', {
+    await apiClient.post('/api/ai/nutrition-targets', {
       caloriesKcal: target.calories,
       proteinGrams: target.protein,
       carbohydrateGrams: target.carbs,

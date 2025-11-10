@@ -94,12 +94,19 @@ const getWeekDateRange = (): { startDate: string; endDate: string } => {
 
 export const summaryService = {
   async getWeekSummary(): Promise<WeekSummary> {
-    const { startDate, endDate } = getWeekDateRange();
-    const response = await apiClient.get("/api/analytics/nutrition-summary", {
-      params: { startDate, endDate }
+    const today = new Date();
+    const response = await apiClient.get("/api/summary/week", {
+      params: { date: today.toISOString().split('T')[0] }
     });
     const raw = response.data as NutritionSummaryDto;
     const days = normalizeWeekData(raw);
     return { days };
+  },
+
+  async getNutritionSummary(startDate: string, endDate?: string): Promise<NutritionSummaryDto> {
+    const response = await apiClient.get("/api/analytics/nutrition-summary", {
+      params: { startDate, endDate }
+    });
+    return response.data as NutritionSummaryDto;
   },
 };

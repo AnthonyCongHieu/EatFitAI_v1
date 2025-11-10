@@ -4,6 +4,7 @@ import { Controller, useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import Toast from 'react-native-toast-message';
 
 import { useAppTheme } from '../../../theme/ThemeProvider';
 import { ThemedText } from '../../../components/ThemedText';
@@ -38,9 +39,21 @@ const LoginScreen = ({ navigation }: Props): JSX.Element => {
     try {
       setLoading(true);
       await login(values.email, values.password);
+      Toast.show({ type: 'success', text1: 'Đăng nhập thành công', text2: 'Chào mừng bạn quay trở lại!' });
       navigation.reset({ index: 0, routes: [{ name: 'AppTabs' }] });
     } catch (e: any) {
-      Alert.alert(t('auth.loginTitle'), e?.message ?? t('auth.processing'));
+      const status = e?.response?.status;
+      if (status === 401) {
+        Toast.show({ type: 'error', text1: 'Email hoặc mật khẩu không đúng', text2: 'Vui lòng kiểm tra lại thông tin đăng nhập' });
+      } else if (status === 422) {
+        Toast.show({ type: 'error', text1: 'Dữ liệu không hợp lệ', text2: 'Vui lòng kiểm tra định dạng email' });
+      } else if (status >= 500) {
+        Toast.show({ type: 'error', text1: 'Lỗi máy chủ', text2: 'Vui lòng thử lại sau' });
+      } else if (!navigator.onLine) {
+        Toast.show({ type: 'error', text1: 'Không có kết nối mạng', text2: 'Kiểm tra kết nối và thử lại' });
+      } else {
+        Toast.show({ type: 'error', text1: 'Đăng nhập thất bại', text2: 'Vui lòng thử lại hoặc liên hệ hỗ trợ' });
+      }
     } finally {
       setLoading(false);
     }
@@ -50,9 +63,14 @@ const LoginScreen = ({ navigation }: Props): JSX.Element => {
     try {
       setLoading(true);
       await signInWithGoogle();
+      Toast.show({ type: 'success', text1: 'Đăng nhập với Google thành công', text2: 'Chào mừng bạn!' });
       navigation.reset({ index: 0, routes: [{ name: 'AppTabs' }] });
     } catch (e: any) {
-      Alert.alert('Google Sign-in', e?.message ?? t('auth.loginWithGoogle'));
+      if (!navigator.onLine) {
+        Toast.show({ type: 'error', text1: 'Không có kết nối mạng', text2: 'Kiểm tra kết nối và thử lại' });
+      } else {
+        Toast.show({ type: 'error', text1: 'Đăng nhập Google thất bại', text2: 'Vui lòng thử lại hoặc sử dụng đăng nhập thông thường' });
+      }
     } finally {
       setLoading(false);
     }

@@ -175,7 +175,7 @@ export const SearchBar = ({
               color: theme.colors.text,
               flex: 1,
             },
-          ]}
+          ].filter(Boolean)}
           value={value}
           onChangeText={onChangeText}
           placeholder={placeholder}

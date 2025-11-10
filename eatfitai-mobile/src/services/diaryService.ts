@@ -127,6 +127,12 @@ export const diaryService = {
     return normalizeSummary(response.data);
   },
 
+  // Lay tong quan nhat ky tuan
+  async getWeekSummary(date: string): Promise<DaySummary> {
+    const response = await apiClient.get('/api/summary/week', { params: { date } });
+    return normalizeSummary(response.data);
+  },
+
   async getEntriesByDate(date: string): Promise<DiaryEntry[]> {
     const response = await apiClient.get('/api/meal-diary', { params: { date } });
     const rows = Array.isArray(response.data) ? response.data : [];

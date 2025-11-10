@@ -86,10 +86,30 @@ export const foodService = {
     };
   },
 
+  // Tim kiem tat ca (thuc pham co san + user food items)
+  async searchAllFoods(query: string, limit = 50): Promise<SearchFoodsResult> {
+    const response = await apiClient.get('/api/food/search-all', {
+      params: {
+        q: query,
+        limit,
+      },
+    });
+
+    const data = response.data as FoodItemDto[];
+    const normalizedItems = data.map(normalizeFoodItem);
+
+    return {
+      items: normalizedItems,
+      totalCount: data.length,
+    };
+  },
+
   // Lay chi tiet mot thuc pham
   async getFoodDetail(foodId: string): Promise<FoodDetail> {
     const response = await apiClient.get(`/api/food/${foodId}`);
-    return normalizeFoodDetail(response.data ?? {});
+    const data = response.data;
+    // Backend returns { foodItem, servings }
+    return normalizeFoodDetail(data?.foodItem ?? {});
   },
 
   // Them mot entry vao nhat ky tu mot thuc pham co san
@@ -150,5 +170,34 @@ export const foodService = {
       description: payload.description ?? null,
       ingredients: payload.ingredients,
     });
+  },
+
+  // Lay danh sach user food items
+  async getUserFoodItems(query?: string, page = 1, pageSize = 20): Promise<{ items: any[]; total: number }> {
+    const response = await apiClient.get('/api/user-food-items', {
+      params: { q: query, page, pageSize },
+    });
+    return response.data as { items: any[]; total: number };
+  },
+
+  // Tao user food item
+  async createUserFoodItem(payload: FormData): Promise<any> {
+    const response = await apiClient.post('/api/user-food-items', payload, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return response.data;
+  },
+
+  // Cap nhat user food item
+  async updateUserFoodItem(id: number, payload: FormData): Promise<any> {
+    const response = await apiClient.put(`/api/user-food-items/${id}`, payload, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return response.data;
+  },
+
+  // Xoa user food item
+  async deleteUserFoodItem(id: number): Promise<void> {
+    await apiClient.delete(`/api/user-food-items/${id}`);
   },
 };

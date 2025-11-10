@@ -15,6 +15,7 @@ import { useAppTheme } from '../../../theme/ThemeProvider';
 import type { RootStackParamList } from '../../types';
 import { foodService, type FoodItem } from '../../../services/foodService';
 import Skeleton, { SkeletonList } from '../../../components/Skeleton';
+import { useDiaryStore } from '../../../store/useDiaryStore';
 
 const PAGE_SIZE = 20;
 
@@ -23,6 +24,7 @@ type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'FoodSearch'
 const FoodSearchScreen = (): JSX.Element => {
   const { theme } = useAppTheme();
   const navigation = useNavigation<NavigationProp>();
+  const refreshSummary = useDiaryStore((state) => state.refreshSummary);
 
   const [query, setQuery] = useState('');
   const [items, setItems] = useState<FoodItem[]>([]);
@@ -36,7 +38,7 @@ const FoodSearchScreen = (): JSX.Element => {
   const loadFoods = useCallback(
     async (pageToLoad: number, append: boolean) => {
       if (!query.trim()) {
-        Toast.show({ type: 'info', text1: 'Vui lòng nhập từ khóa' });
+        Toast.show({ type: 'info', text1: 'Vui lòng nhập từ khóa tìm kiếm', text2: 'Ví dụ: gà, cơm, salad...' });
         return;
       }
 
@@ -44,14 +46,23 @@ const FoodSearchScreen = (): JSX.Element => {
       else setIsLoading(true);
 
       try {
-        const result = await foodService.searchFoods(query.trim(), PAGE_SIZE);
+        const result = await foodService.searchAllFoods(query.trim(), PAGE_SIZE);
         setItems((prev) => (append ? [...prev, ...result.items] : result.items));
         setPage(pageToLoad);
         setTotal(result.totalCount ?? result.items.length);
         setHasMore(result.items.length === PAGE_SIZE);
         setHasSearched(true);
-      } catch {
-        Toast.show({ type: 'error', text1: 'Tìm kiếm thất bại' });
+      } catch (error: any) {
+        const status = error?.response?.status;
+        if (status === 422) {
+          Toast.show({ type: 'error', text1: 'Từ khóa tìm kiếm không hợp lệ', text2: 'Vui lòng sử dụng từ khóa khác' });
+        } else if (status >= 500) {
+          Toast.show({ type: 'error', text1: 'Lỗi máy chủ', text2: 'Vui lòng thử lại sau' });
+        } else if (!navigator.onLine) {
+          Toast.show({ type: 'error', text1: 'Không có kết nối mạng', text2: 'Kiểm tra kết nối và thử lại' });
+        } else {
+          Toast.show({ type: 'error', text1: 'Tìm kiếm thất bại', text2: 'Vui lòng thử lại với từ khóa khác' });
+        }
       } finally {
         setIsLoading(false);
         setIsLoadingMore(false);
@@ -83,9 +94,9 @@ const FoodSearchScreen = (): JSX.Element => {
             {item.brand ? <ThemedText variant="bodySmall" color="textSecondary">{item.brand}</ThemedText> : null}
             <ThemedText variant="bodySmall" color="textSecondary">
               {item.calories != null ? `${Math.round(item.calories)} kcal` : '-- kcal'} •
-              {item.protein != null ? ` ${Math.round(item.protein)}g P` : ' --g P'} •
-              {item.carbs != null ? ` ${Math.round(item.carbs)}g C` : ' --g C'} •
-              {item.fat != null ? ` ${Math.round(item.fat)}g F` : ' --g F'}
+              {item.protein != null ? ` ${item.protein.toFixed(1).replace(/\.0$/, '')}g P` : ' --g P'} •
+              {item.carbs != null ? ` ${item.carbs.toFixed(1).replace(/\.0$/, '')}g C` : ' --g C'} •
+              {item.fat != null ? ` ${item.fat.toFixed(1).replace(/\.0$/, '')}g F` : ' --g F'}
             </ThemedText>
           </View>
           <ThemedText variant="button" color="primary">Xem</ThemedText>
@@ -150,6 +161,9 @@ const FoodSearchScreen = (): JSX.Element => {
                   <ThemedText variant="h4" color="textSecondary">🍽️ Không tìm thấy kết quả</ThemedText>
                   <ThemedText variant="bodySmall" color="muted" style={{ marginTop: theme.spacing.sm }}>
                     Thử tìm kiếm với từ khóa khác hoặc kiểm tra chính tả
+                  </ThemedText>
+                  <ThemedText variant="bodySmall" color="muted" style={{ marginTop: theme.spacing.xs }}>
+                    Gợi ý: gà, cơm, salad, sữa, bánh mì...
                   </ThemedText>
                 </View>
               </View>
