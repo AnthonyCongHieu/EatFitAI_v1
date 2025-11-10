@@ -1,6 +1,6 @@
-# EatFitAI Backend & Mobile — Hướng dẫn chạy cho 2 Developers
+# EatFitAI Backend & Mobile — Hướng dẫn chạy đơn giản
 
-Tài liệu này hướng dẫn chi tiết cách cấu hình và chạy hệ thống EatFitAI với 2 máy dev dùng CSDL riêng biệt, LAN binding cho device testing, và per-dev environment cho mobile app.
+Tài liệu này đã được tinh gọn để đơn giản hóa quy trình dev & debug. Bỏ các biến thể cho 2 developer; chỉ giữ một cách chạy duy nhất, dễ nhớ.
 
 ## Tổng quan hệ thống
 
@@ -12,44 +12,40 @@ Tài liệu này hướng dẫn chi tiết cách cấu hình và chạy hệ th�
 - **Database**: Mỗi dev dùng server riêng (MSI ↔ LAPTOP-U9R2KGG0)
 
 ### Mobile (Expo React Native)
-- **Environment**: Per-dev `.env` files (không commit)
-- **Scripts**: `npm run dev:hieu` và `npm run dev:tuong`
-- **Testing**: Android emulator + physical devices qua LAN
+- **Environment**: Một file `.env.development` (không commit)
+- **Script**: `npm run dev`
+- **Testing**: Android emulator hoặc thiết bị thật qua LAN
 
 ## Cấu hình Backend
 
 ## 1. Thiết lập Backend (1 lần cho mỗi máy)
 
-### Chuẩn bị User Secrets
+### Chuẩn bị Connection String (mặc định 1-dev)
 
-Thực hiện trong thư mục `eatfitai-backend`:
+Mặc định trong `appsettings.Development.json` đã cấu hình:
 
-```powershell
-# 1. Khởi tạo User Secrets (nếu chưa có)
-dotnet user-secrets init
-
-# 2. Đặt Connection String cho máy của bạn
-# Máy MSI:
-dotnet user-secrets set "ConnectionStrings:DefaultConnection" "Server=MSI;Database=EatFitAI;Trusted_Connection=True;TrustServerCertificate=True;"
-
-# Máy LAPTOP-U9R2KGG0:
-dotnet user-secrets set "ConnectionStrings:DefaultConnection" "Server=LAPTOP-U9R2KGG0;Database=EatFitAI;Trusted_Connection=True;TrustServerCertificate=True;"
-
-# 3. Đặt JWT Key (tối thiểu 32 ký tự)
-dotnet user-secrets set "Jwt:Key" "YourSuperSecretKeyHereThatIsAtLeast32CharactersLongForDevelopmentUse"
-
-# 4. Kiểm tra secrets đã đặt
-dotnet user-secrets list
+```
+"ConnectionStrings": {
+  "DefaultConnection": "Server=LAPTOP-U9R2KGG0;Database=EatFitAI;Trusted_Connection=True;TrustServerCertificate=True;"
+}
 ```
 
-**Lưu ý**: User Secrets lưu cục bộ tại `C:\Users\<USER>\AppData\Roaming\Microsoft\UserSecrets\<UserSecretsId>\secrets.json`
+Tùy chọn (nếu muốn override bằng User Secrets):
+
+```powershell
+cd eatfitai-backend
+dotnet user-secrets init
+dotnet user-secrets set "ConnectionStrings:DefaultConnection" "Server=LAPTOP-U9R2KGG0;Database=EatFitAI;Trusted_Connection=True;TrustServerCertificate=True;"
+dotnet user-secrets set "Jwt:Key" "YourSuperSecretKeyHereThatIsAtLeast32CharactersLongForDevelopmentUse"
+dotnet user-secrets list
+```
 
 ## 2. Chạy Backend Development
 
 ### Lệnh chạy khuyến nghị:
 ```powershell
 cd eatfitai-backend
-dotnet run --launch-profile http
+dotnet run
 ```
 
 ### Kết quả sau khi chạy:
@@ -67,40 +63,31 @@ dotnet run
 
 ## 3. Cấu hình Mobile App
 
-### Chuẩn bị Environment Files
+### Chuẩn bị Environment file duy nhất
 
-Trong thư mục `eatfitai-mobile`, tạo các file `.env` riêng cho từng dev:
+Trong thư mục `eatfitai-mobile`, sao chép từ `.env.development.example` sang `.env.development`, sau đó chọn 1 trong 2 dòng dưới (tuỳ môi trường test):
 
-**`.env.development.hieu`** (Android Emulator):
 ```bash
-#!/bin/bash
-export EXPO_PUBLIC_API_BASE_URL=http://10.0.2.2:5247
+# Nếu dùng Android Emulator (Android Studio):
+EXPO_PUBLIC_API_BASE_URL=http://10.0.2.2:5247
+
+# Hoặc nếu dùng thiết bị thật qua LAN:
+# EXPO_PUBLIC_API_BASE_URL=http://<HOST_IPV4>:5247
+# Ví dụ: EXPO_PUBLIC_API_BASE_URL=http://172.16.2.104:5247
 ```
 
-**`.env.development.tuong`** (Physical Device):
-```bash
-#!/bin/bash
-export EXPO_PUBLIC_API_BASE_URL=http://<HOST_IPV4>:5247
-# Ví dụ: http://172.16.2.104:5247
-```
-
-### Scripts trong package.json:
+### Scripts trong package.json (đã đơn giản hóa):
 ```json
 {
   "scripts": {
-    "dev:hieu": "env-cmd -f .env.development.hieu expo start",
-    "dev:tuong": "env-cmd -f .env.development.tuong expo start"
+    "dev": "env-cmd -f .env.development expo start"
   }
 }
 ```
 
-### Chạy Mobile App:
+### Chạy Mobile App (một lệnh duy nhất):
 ```bash
-# Developer Hieu (Emulator)
-npm run dev:hieu
-
-# Developer Tuong (Physical Device)
-npm run dev:tuong
+npm run dev
 ```
 
 ## 4. Testing & Verification
@@ -146,21 +133,18 @@ AllowedOrigins="https://app.eatfitai.com"
 - Nginx/Caddy: TLS termination + forward headers
 - Swagger: Tắt hoặc bảo vệ bằng auth
 
-## 6. Workflow Hằng Ngày
+## 6. Workflow Hằng Ngày (đơn giản)
 
-### Backend Developer:
+- Backend:
 ```powershell
 cd eatfitai-backend
 dotnet run --launch-profile http
 ```
 
-### Mobile Developer:
+- Mobile:
 ```bash
-# Hieu
-npm run dev:hieu
-
-# Tuong
-npm run dev:tuong
+cd eatfitai-mobile
+npm run dev
 ```
 
 ## 7. Ghi chú Quan trọng
@@ -182,6 +166,7 @@ npm run dev:tuong
 ### Mobile Issues:
 - **Emulator**: Dùng `10.0.2.2` (Android Studio) hoặc `10.0.3.2` (Genymotion)
 - **Physical Device**: Dùng `<HOST_IPV4>`, cùng Wi-Fi network
+- **ENV**: Kiểm tra `.env.development` có `EXPO_PUBLIC_API_BASE_URL`
 - **Firewall**: Cho phép inbound TCP 5247
 
 ### Network Issues:

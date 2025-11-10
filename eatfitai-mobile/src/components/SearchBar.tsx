@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+﻿import type { ReactNode } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import Animated, {
   useAnimatedStyle,
@@ -31,7 +31,7 @@ const AnimatedView = Animated.createAnimatedComponent(View);
 export const SearchBar = ({
   value,
   onChangeText,
-  placeholder = 'Tìm kiếm...',
+  placeholder = 'TÃ¬m kiáº¿m...',
   onSubmit,
   onClear,
   leftIcon,
@@ -118,7 +118,7 @@ export const SearchBar = ({
     return (
       <View style={styles.searchIcon}>
         <ThemedText style={[styles.iconText, { fontSize: sizeConfig.iconSize, color: theme.colors.muted }]}>
-          🔍
+          ðŸ”
         </ThemedText>
       </View>
     );
@@ -141,7 +141,7 @@ export const SearchBar = ({
           accessibilityLabel="Clear search"
         >
           <ThemedText style={[styles.iconText, { fontSize: sizeConfig.iconSize, color: theme.colors.muted }]}>
-            ✕
+            âœ•
           </ThemedText>
         </Pressable>
       );
@@ -178,7 +178,7 @@ export const SearchBar = ({
           ].filter(Boolean)}
           value={value}
           onChangeText={onChangeText}
-          placeholder={placeholder}
+          placeholder={'Tìm kiếm...'}
           placeholderTextColor={theme.colors.muted}
           onSubmitEditing={onSubmit}
           autoFocus={autoFocus}
@@ -212,7 +212,6 @@ const styles = StyleSheet.create({
     borderWidth: 0,
     paddingVertical: 0,
     paddingHorizontal: 0,
-    fontFamily: 'Inter_400Regular',
   },
   clearButton: {
     marginLeft: 8,

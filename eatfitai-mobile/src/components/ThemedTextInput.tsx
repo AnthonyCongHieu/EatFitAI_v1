@@ -1,5 +1,5 @@
 import type { TextInputProps, ViewStyle } from 'react-native';
-import { TextInput, StyleSheet, View, Pressable } from 'react-native';
+import { TextInput, StyleSheet, View, Pressable, Platform } from 'react-native';
 import { useState } from 'react';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useAppTheme } from '../theme/ThemeProvider';
@@ -46,13 +46,14 @@ export const ThemedTextInput = ({
           backgroundColor: colors.card,
           paddingRight: secureToggle ? spacing.lg + 20 : undefined,
           fontSize: typography.body.fontSize,
-          fontFamily: typography.body.fontFamily,
           minHeight: 48,
         },
         style,
       ]}
       accessibilityLabel={label || rest.accessibilityLabel}
       accessibilityHint={helperText || rest.accessibilityHint}
+      // Improve Vietnamese IME handling on Android
+      textBreakStrategy={Platform.OS === 'android' ? 'simple' : undefined}
     />
   );
 
@@ -100,7 +101,6 @@ export const ThemedTextInput = ({
 const styles = StyleSheet.create({
   base: {
     borderWidth: 1,
-    fontFamily: 'Inter_400Regular',
   },
 });
 

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+﻿import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Alert, Modal, Pressable, RefreshControl, StyleSheet, View } from 'react-native';
 import Toast from 'react-native-toast-message';
 import { useNavigation } from '@react-navigation/native';
@@ -15,12 +15,13 @@ import { useAppTheme } from '../../theme/ThemeProvider';
 import type { RootStackParamList } from '../types';
 import { MEAL_TYPE_LABELS, type MealTypeId } from '../../types';
 import { diaryService } from '../../services/diaryService';
+import { healthService } from '../../services/healthService';
 
 const MEAL_TITLE_MAP: Record<MealTypeId, string> = {
-  1: 'Bữa sáng',
-  2: 'Bữa trưa',
-  3: 'Bữa tối',
-  4: 'Ăn vặt',
+  1: 'Bá»¯a sÃ¡ng',
+  2: 'Bá»¯a trÆ°a',
+  3: 'Bá»¯a tá»‘i',
+  4: 'Ä‚n váº·t',
 };
 
 type AddOption = 'search' | 'custom' | 'ai';
@@ -32,15 +33,15 @@ const AddEntryModal = ({ visible, onClose, onSelect }: { visible: boolean; onClo
     <Modal transparent visible={visible} animationType="fade" onRequestClose={onClose}>
       <View style={styles.modalBackdrop}>
         <Card>
-          <ThemedText variant="h3">Thêm món</ThemedText>
+          <ThemedText variant="h3">ThÃªm mÃ³n</ThemedText>
           <ThemedText variant="body" color="textSecondary" style={{ marginTop: theme.spacing.xs, marginBottom: theme.spacing.md }}>
-            Chọn cách thêm món vào nhật ký
+            Chá»n cÃ¡ch thÃªm mÃ³n vÃ o nháº­t kÃ½
           </ThemedText>
-          <Button title="Tìm món có sẵn" onPress={() => onSelect('search')} />
+          <Button title="TÃ¬m mÃ³n cÃ³ sáºµn" onPress={() => onSelect('search')} />
           <View style={{ height: 8 }} />
-          <Button variant="outline" title="Tạo món thủ công" onPress={() => onSelect('custom')} />
+          <Button variant="outline" title="Táº¡o mÃ³n thá»§ cÃ´ng" onPress={() => onSelect('custom')} />
           <Pressable accessibilityRole="button" hitSlop={8} onPress={onClose} style={{ alignItems: 'center', marginTop: 8 }}>
-            <ThemedText variant="body" color="muted">Đóng</ThemedText>
+            <ThemedText variant="body" color="muted">ÄÃ³ng</ThemedText>
           </Pressable>
         </Card>
       </View>
@@ -57,9 +58,9 @@ const formatNumber = (value?: number | null, suffix = '', decimals = 0): string 
 };
 
 const formatDate = (dateValue: string | undefined): string => {
-  if (!dateValue) return 'Hôm nay';
+  if (!dateValue) return 'HÃ´m nay';
   const date = new Date(dateValue);
-  if (Number.isNaN(date.getTime())) return 'Hôm nay';
+  if (Number.isNaN(date.getTime())) return 'HÃ´m nay';
   return new Intl.DateTimeFormat('vi-VN', { weekday: 'long', day: '2-digit', month: '2-digit' }).format(date);
 };
 
@@ -73,63 +74,73 @@ const HomeScreen = (): JSX.Element => {
   const refreshSummary = useDiaryStore((s) => s.refreshSummary);
   const deleteEntry = useDiaryStore((s) => s.deleteEntry);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [serverDown, setServerDown] = useState(false);
 
   useEffect(() => {
     fetchSummary().catch((error: any) => {
       const status = error?.response?.status;
       if (status === 401) {
-        Toast.show({ type: 'error', text1: 'Phiên đăng nhập đã hết hạn', text2: 'Vui lòng đăng nhập lại' });
+        Toast.show({ type: 'error', text1: 'PhiÃªn Ä‘Äƒng nháº­p Ä‘Ã£ háº¿t háº¡n', text2: 'Vui lÃ²ng Ä‘Äƒng nháº­p láº¡i' });
       } else if (status >= 500) {
-        Toast.show({ type: 'error', text1: 'Lỗi máy chủ', text2: 'Vui lòng thử lại sau' });
+        Toast.show({ type: 'error', text1: 'Lá»—i mÃ¡y chá»§', text2: 'Vui lÃ²ng thá»­ láº¡i sau' });
       } else if (!navigator.onLine) {
-        Toast.show({ type: 'error', text1: 'Không có kết nối mạng', text2: 'Kiểm tra kết nối và thử lại' });
+        Toast.show({ type: 'error', text1: 'KhÃ´ng cÃ³ káº¿t ná»‘i máº¡ng', text2: 'Kiá»ƒm tra káº¿t ná»‘i vÃ  thá»­ láº¡i' });
       } else {
-        Toast.show({ type: 'error', text1: 'Không thể tải nhật ký hôm nay', text2: 'Kéo xuống để thử lại' });
+        Toast.show({ type: 'error', text1: 'KhÃ´ng thá»ƒ táº£i nháº­t kÃ½ hÃ´m nay', text2: 'KÃ©o xuá»‘ng Ä‘á»ƒ thá»­ láº¡i' });
       }
     });
   }, [fetchSummary]);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const res = await healthService.pingRoot();
+      if (!cancelled) setServerDown(!res.ok);
+    })();
+    return () => { cancelled = true; };
+  }, []);
 
   const handleRefresh = useCallback(() => {
     refreshSummary().catch((error: any) => {
       const status = error?.response?.status;
       if (status === 401) {
-        Toast.show({ type: 'error', text1: 'Phiên đăng nhập đã hết hạn', text2: 'Vui lòng đăng nhập lại' });
+        Toast.show({ type: 'error', text1: 'PhiÃªn Ä‘Äƒng nháº­p Ä‘Ã£ háº¿t háº¡n', text2: 'Vui lÃ²ng Ä‘Äƒng nháº­p láº¡i' });
       } else if (status >= 500) {
-        Toast.show({ type: 'error', text1: 'Lỗi máy chủ', text2: 'Vui lòng thử lại sau' });
+        Toast.show({ type: 'error', text1: 'Lá»—i mÃ¡y chá»§', text2: 'Vui lÃ²ng thá»­ láº¡i sau' });
       } else if (!navigator.onLine) {
-        Toast.show({ type: 'error', text1: 'Không có kết nối mạng', text2: 'Kiểm tra kết nối và thử lại' });
+        Toast.show({ type: 'error', text1: 'KhÃ´ng cÃ³ káº¿t ná»‘i máº¡ng', text2: 'Kiá»ƒm tra káº¿t ná»‘i vÃ  thá»­ láº¡i' });
       } else {
-        Toast.show({ type: 'error', text1: 'Tải lại thất bại', text2: 'Kéo xuống để thử lại' });
+        Toast.show({ type: 'error', text1: 'Táº£i láº¡i tháº¥t báº¡i', text2: 'KÃ©o xuá»‘ng Ä‘á»ƒ thá»­ láº¡i' });
       }
     });
   }, [refreshSummary]);
 
   const handleDelete = useCallback(
     (entryId: string, foodName: string) => {
-      Alert.alert('Xóa món', `Xác nhận xóa "${foodName}" khỏi nhật ký?`, [
-        { text: 'Hủy', style: 'cancel' },
+      Alert.alert('XÃ³a mÃ³n', `XÃ¡c nháº­n xÃ³a "${foodName}" khá»i nháº­t kÃ½?`, [
+        { text: 'Há»§y', style: 'cancel' },
         {
-          text: 'Xóa',
+          text: 'XÃ³a',
           style: 'destructive',
           onPress: () => {
             diaryService
               .deleteEntry(entryId)
               .then(() => {
-                Toast.show({ type: 'success', text1: 'Đã xóa món khỏi nhật ký', text2: 'Nhật ký đã được cập nhật' });
+                Toast.show({ type: 'success', text1: 'ÄÃ£ xÃ³a mÃ³n khá»i nháº­t kÃ½', text2: 'Nháº­t kÃ½ Ä‘Ã£ Ä‘Æ°á»£c cáº­p nháº­t' });
                 refreshSummary().catch(() => {});
               })
               .catch((error: any) => {
                 const status = error?.response?.status;
                 if (status === 404) {
-                  Toast.show({ type: 'error', text1: 'Món ăn không tồn tại', text2: 'Món này có thể đã bị xóa trước đó' });
+                  Toast.show({ type: 'error', text1: 'MÃ³n Äƒn khÃ´ng tá»“n táº¡i', text2: 'MÃ³n nÃ y cÃ³ thá»ƒ Ä‘Ã£ bá»‹ xÃ³a trÆ°á»›c Ä‘Ã³' });
                 } else if (status === 403) {
-                  Toast.show({ type: 'error', text1: 'Không có quyền xóa món này', text2: 'Chỉ có thể xóa món do bạn thêm' });
+                  Toast.show({ type: 'error', text1: 'KhÃ´ng cÃ³ quyá»n xÃ³a mÃ³n nÃ y', text2: 'Chá»‰ cÃ³ thá»ƒ xÃ³a mÃ³n do báº¡n thÃªm' });
                 } else if (status >= 500) {
-                  Toast.show({ type: 'error', text1: 'Lỗi máy chủ', text2: 'Vui lòng thử lại sau' });
+                  Toast.show({ type: 'error', text1: 'Lá»—i mÃ¡y chá»§', text2: 'Vui lÃ²ng thá»­ láº¡i sau' });
                 } else if (!navigator.onLine) {
-                  Toast.show({ type: 'error', text1: 'Không có kết nối mạng', text2: 'Kiểm tra kết nối và thử lại' });
+                  Toast.show({ type: 'error', text1: 'KhÃ´ng cÃ³ káº¿t ná»‘i máº¡ng', text2: 'Kiá»ƒm tra káº¿t ná»‘i vÃ  thá»­ láº¡i' });
                 } else {
-                  Toast.show({ type: 'error', text1: 'Xóa thất bại', text2: 'Vui lòng thử lại hoặc liên hệ hỗ trợ' });
+                  Toast.show({ type: 'error', text1: 'XÃ³a tháº¥t báº¡i', text2: 'Vui lÃ²ng thá»­ láº¡i hoáº·c liÃªn há»‡ há»— trá»£' });
                 }
               });
           },
@@ -152,9 +163,9 @@ const HomeScreen = (): JSX.Element => {
   const calorieDiffText = useMemo(() => {
     if (!summary || typeof summary.totalCalories !== 'number' || typeof summary.targetCalories !== 'number') return null;
     const diff = summary.totalCalories - summary.targetCalories;
-    if (diff === 0) return 'Bạn đang bằng với mục tiêu';
-    if (diff > 0) return `Vượt ${Math.abs(diff)} kcal so với mục tiêu`;
-    return `Thấp hơn ${Math.abs(diff)} kcal so với mục tiêu`;
+    if (diff === 0) return 'Báº¡n Ä‘ang báº±ng vá»›i má»¥c tiÃªu';
+    if (diff > 0) return `VÆ°á»£t ${Math.abs(diff)} kcal so vá»›i má»¥c tiÃªu`;
+    return `Tháº¥p hÆ¡n ${Math.abs(diff)} kcal so vá»›i má»¥c tiÃªu`;
   }, [summary]);
 
   return (
@@ -163,14 +174,20 @@ const HomeScreen = (): JSX.Element => {
         contentContainerStyle={{ padding: 16, gap: 16 }}
         refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} tintColor={theme.colors.primary} />}
       >
+        {serverDown && (
+          <View style={{ padding: 12, borderRadius: theme.radius.md, backgroundColor: theme.colors.danger + '20' }}>
+            <ThemedText color="danger" weight="600">Không thể kết nối máy chủ</ThemedText>
+            <ThemedText variant="bodySmall" color="textSecondary">Kiểm tra API_BASE_URL hoặc mạng LAN</ThemedText>
+          </View>
+        )}
         <Card>
-          <ThemedText variant="h2">Nhật ký hôm nay</ThemedText>
+          <ThemedText variant="h2">Nháº­t kÃ½ hÃ´m nay</ThemedText>
           <ThemedText variant="bodySmall" color="textSecondary">{formatDate(summary?.date)}</ThemedText>
 
           <View style={[styles.row, { marginTop: theme.spacing.lg }]}>
             <View style={[styles.box, { backgroundColor: theme.colors.primaryLight }]}>
               <ThemedText variant="caption" color="primary" weight="600" style={{ textTransform: 'uppercase' }}>
-                Tiêu thụ
+                TiÃªu thá»¥
               </ThemedText>
               <ThemedText variant="h2" color="primary">
                 {formatNumber(summary?.totalCalories, ' kcal')}
@@ -178,7 +195,7 @@ const HomeScreen = (): JSX.Element => {
             </View>
             <View style={[styles.box, { backgroundColor: theme.colors.secondaryLight }]}>
               <ThemedText variant="caption" color="secondary" weight="600" style={{ textTransform: 'uppercase' }}>
-                Mục tiêu
+                Má»¥c tiÃªu
               </ThemedText>
               <ThemedText variant="h2" color="secondary">
                 {formatNumber(summary?.targetCalories, ' kcal')}
@@ -214,7 +231,7 @@ const HomeScreen = (): JSX.Element => {
           </View>
 
           <View style={{ marginTop: theme.spacing.xl, gap: theme.spacing.sm }}>
-            <Button title="+ Thêm món" onPress={() => setShowAddModal(true)} />
+            <Button title="+ ThÃªm mÃ³n" onPress={() => setShowAddModal(true)} />
           </View>
         </Card>
 
@@ -222,7 +239,7 @@ const HomeScreen = (): JSX.Element => {
           <Card>
             <View style={{ alignItems: 'center', paddingVertical: 20 }}>
               <ActivityIndicator color={theme.colors.primary} />
-              <ThemedText variant="body" color="textSecondary">Đang tải nhật ký...</ThemedText>
+              <ThemedText variant="body" color="textSecondary">Äang táº£i nháº­t kÃ½...</ThemedText>
             </View>
           </Card>
         ) : summary && summary.meals.length > 0 ? (
@@ -233,7 +250,7 @@ const HomeScreen = (): JSX.Element => {
                   <ThemedText variant="h4">{MEAL_TITLE_MAP[meal.mealType] ?? meal.title}</ThemedText>
                   <ThemedText variant="bodySmall" color="textSecondary">{formatNumber(meal.totalCalories, ' kcal')}</ThemedText>
                 </View>
-                <ThemedText variant="bodySmall" color="textSecondary">{meal.entries.length} món</ThemedText>
+                <ThemedText variant="bodySmall" color="textSecondary">{meal.entries.length} mÃ³n</ThemedText>
               </View>
 
               {meal.entries.map((entry: any) => (
@@ -241,11 +258,11 @@ const HomeScreen = (): JSX.Element => {
                   <View style={styles.entryInfo}>
                     <ThemedText variant="body" weight="600">{entry.foodName}</ThemedText>
                     <ThemedText variant="bodySmall" color="textSecondary">
-                      {formatNumber(entry.calories, ' kcal')} · {entry.quantityText ?? 'Không rõ khẩu phần'}
+                      {formatNumber(entry.calories, ' kcal')} Â· {entry.quantityText ?? 'KhÃ´ng rÃµ kháº©u pháº§n'}
                     </ThemedText>
                   </View>
                   <Pressable accessibilityRole="button" hitSlop={8} onPress={() => handleDelete(entry.id, entry.foodName)} style={styles.deleteChip}>
-                    <ThemedText variant="button" color="danger">Xoá</ThemedText>
+                    <ThemedText variant="button" color="danger">XoÃ¡</ThemedText>
                   </Pressable>
                 </View>
               ))}
@@ -253,7 +270,7 @@ const HomeScreen = (): JSX.Element => {
           ))
         ) : (
           <Card>
-            <ThemedText variant="body" color="textSecondary">Chưa có món nào hôm nay</ThemedText>
+            <ThemedText variant="body" color="textSecondary">ChÆ°a cÃ³ mÃ³n nÃ o hÃ´m nay</ThemedText>
           </Card>
         )}
       </Screen>

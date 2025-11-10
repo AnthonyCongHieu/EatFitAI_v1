@@ -43,6 +43,18 @@ const processQueue = (error: unknown, token: string | null): void => {
 apiClient.interceptors.request.use(async (config: InternalAxiosRequestConfig) => {
   try {
     const token = getAccessTokenMem() ?? (await tokenStorage.getAccessToken());
+    const urlPath = String(config.url || '').split('?')[0];
+    const noAuthPaths = new Set([
+      '/health',
+      '/api/Health/live',
+      '/api/Health/ready',
+      '/api/auth/login',
+      '/api/auth/register',
+      '/api/auth/refresh',
+      '/api/search',
+      '/api/food/search',
+      '/api/food/search-all',
+    ]);
     if (__DEV__) {
       console.log('[EatFitAI] Request Interceptor:', {
         url: config.url,
@@ -63,10 +75,9 @@ apiClient.interceptors.request.use(async (config: InternalAxiosRequestConfig) =>
       } else {
         console.warn('[EatFitAI] Invalid token format, skipping authorization header');
       }
-    } else {
-      if (__DEV__) {
-        console.warn('[EatFitAI] No token available for request:', config.url);
-      }
+    } else if (__DEV__ && !noAuthPaths.has(urlPath)) {
+      // Only warn for endpoints that typically require auth
+      console.warn('[EatFitAI] No token available for request:', config.url);
     }
   } catch (error) {
     if (__DEV__) {

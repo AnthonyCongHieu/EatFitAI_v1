@@ -19,6 +19,7 @@ import {
 
 import AppNavigator from './src/app/navigation/AppNavigator';
 import { ThemeProvider, useAppTheme } from './src/theme/ThemeProvider';
+import { healthService } from './src/services/healthService';
 
 // Giu splash toi khi font duoc load day du
 void SplashScreen.preventAutoHideAsync();
@@ -31,6 +32,25 @@ const AppInner = () => {
   useEffect(() => {
     SystemUI.setBackgroundColorAsync(theme.colors.background).catch(() => {});
   }, [theme.colors.background]);
+
+  // Ping backend health on startup and notify if unreachable
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const res = await healthService.pingRoot();
+      if (!cancelled && !res.ok) {
+        Toast.show({
+          type: 'error',
+          text1: 'Không kết nối được máy chủ',
+          text2: 'Vui lòng kiểm tra API_BASE_URL hoặc mạng LAN',
+          visibilityTime: 4000,
+        });
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   return (
     <>

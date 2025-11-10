@@ -1,4 +1,5 @@
 import Constants from 'expo-constants';
+import { Platform } from 'react-native';
 
 const normalizeUrl = (value: string | undefined | null): string | undefined => {
   if (!value) {
@@ -50,12 +51,18 @@ export const API_BASE_URL: string | undefined = (() => {
     return explicit;
   }
 
-  const host = resolveHostUri();
+  let host = resolveHostUri();
   if (!host) {
     return undefined;
   }
 
-  const port = resolvePort() ?? '5100';
+  // Android emulator can't reach host via localhost/127.0.0.1 -> use 10.0.2.2
+  if (Platform.OS === 'android' && (host === 'localhost' || host === '127.0.0.1')) {
+    host = '10.0.2.2';
+  }
+
+  // Default dev API port simplified to match backend launch profile
+  const port = resolvePort() ?? '5247';
   const scheme = resolveScheme();
   return `${scheme}://${host}:${port}`;
 })();

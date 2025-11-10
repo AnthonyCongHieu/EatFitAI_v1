@@ -95,12 +95,24 @@ export const foodService = {
       },
     });
 
-    const data = response.data as FoodItemDto[];
-    const normalizedItems = data.map(normalizeFoodItem);
+    // Backend returns FoodSearchResultDto[]
+    const rows = Array.isArray(response.data) ? response.data : [];
+    const normalizedItems: FoodItem[] = rows.map((x: any) => ({
+      id: String(x?.id ?? ''),
+      name: x?.foodName ?? 'Mon an',
+      brand: null,
+      calories: toNumber(x?.caloriesPer100),
+      protein: toNumber(x?.proteinPer100),
+      carbs: toNumber(x?.carbPer100),
+      fat: toNumber(x?.fatPer100),
+      isActive: null,
+      createdAt: null,
+      updatedAt: null,
+    }));
 
     return {
       items: normalizedItems,
-      totalCount: data.length,
+      totalCount: rows.length,
     };
   },
 

@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "env-cmd -f .env.development expo start",
-    "start": "expo start",
+    "start": "env-cmd -f .env expo start",
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",

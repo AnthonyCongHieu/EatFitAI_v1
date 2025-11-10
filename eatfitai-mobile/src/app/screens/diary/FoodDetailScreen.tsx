@@ -217,19 +217,34 @@ const FoodDetailScreen = (): JSX.Element | null => {
               <ThemedText variant="caption" color="textSecondary" weight="600" style={{ textTransform: 'uppercase' }}>
                 Protein
               </ThemedText>
-              <ThemedText variant="h4">{detail.perServingProtein ?? detail.protein ? `${(detail.perServingProtein ?? detail.protein).toFixed(1).replace(/\.0$/, '')} g` : '--'}</ThemedText>
+              <ThemedText variant="h4">{
+                (() => {
+                  const v = detail.perServingProtein ?? detail.protein;
+                  return v != null ? `${Number(v).toFixed(1).replace(/\.0$/, '')} g` : '--';
+                })()
+              }</ThemedText>
             </View>
             <View style={[styles.macroBox, { backgroundColor: theme.colors.background }]}>
               <ThemedText variant="caption" color="textSecondary" weight="600" style={{ textTransform: 'uppercase' }}>
                 Carb
               </ThemedText>
-              <ThemedText variant="h4">{detail.perServingCarbs ?? detail.carbs ? `${(detail.perServingCarbs ?? detail.carbs).toFixed(1).replace(/\.0$/, '')} g` : '--'}</ThemedText>
+              <ThemedText variant="h4">{
+                (() => {
+                  const v = detail.perServingCarbs ?? detail.carbs;
+                  return v != null ? `${Number(v).toFixed(1).replace(/\.0$/, '')} g` : '--';
+                })()
+              }</ThemedText>
             </View>
             <View style={[styles.macroBox, { backgroundColor: theme.colors.background }]}>
               <ThemedText variant="caption" color="textSecondary" weight="600" style={{ textTransform: 'uppercase' }}>
                 Fat
               </ThemedText>
-              <ThemedText variant="h4">{detail.perServingFat ?? detail.fat ? `${(detail.perServingFat ?? detail.fat).toFixed(1).replace(/\.0$/, '')} g` : '--'}</ThemedText>
+              <ThemedText variant="h4">{
+                (() => {
+                  const v = detail.perServingFat ?? detail.fat;
+                  return v != null ? `${Number(v).toFixed(1).replace(/\.0$/, '')} g` : '--';
+                })()
+              }</ThemedText>
             </View>
           </View>
         </Card>
