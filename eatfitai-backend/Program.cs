@@ -81,6 +81,19 @@ builder.Services.AddSwaggerGen(c =>
             Array.Empty<string>()
         }
     });
+
+    // Use full type names to avoid schema ID conflicts (duplicate class names across namespaces)
+    c.CustomSchemaIds(type => type.FullName);
+
+    // Only include MVC controller actions in Swagger (exclude minimal APIs if any cause issues)
+    c.DocInclusionPredicate((docName, apiDesc) =>
+        apiDesc.ActionDescriptor is Microsoft.AspNetCore.Mvc.Controllers.ControllerActionDescriptor);
+
+    // Map newer BCL date/time types for Swagger
+    c.MapType<DateOnly>(() => new OpenApiSchema { Type = "string", Format = "date" });
+    c.MapType<DateOnly?>(() => new OpenApiSchema { Type = "string", Format = "date", Nullable = true });
+    c.MapType<TimeOnly>(() => new OpenApiSchema { Type = "string", Format = "time" });
+    c.MapType<TimeOnly?>(() => new OpenApiSchema { Type = "string", Format = "time", Nullable = true });
 });
 
 // Add DbContext (scaffolded from DB)
@@ -105,6 +118,9 @@ builder.Services.AddScoped<IMealDiaryService, MealDiaryService>();
 builder.Services.AddScoped<IFoodService, FoodService>();
 builder.Services.AddScoped<IAnalyticsService, AnalyticsService>();
 builder.Services.AddScoped<IUserFoodItemService, UserFoodItemService>();
+
+// HttpClient for external AI provider proxy
+builder.Services.AddHttpClient();
 
 // Add JWT Authentication
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)

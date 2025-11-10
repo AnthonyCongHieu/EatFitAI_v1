@@ -29,7 +29,9 @@ namespace EatFitAI.API.Services
                 TotalCarbs = totalCarbs,
                 TotalFat = totalFat,
                 CaloriesByMealType = caloriesByMealType,
-                DailyCalories = dailyCalories
+                DailyCalories = dailyCalories.ToDictionary(
+                    kvp => kvp.Key.ToString("yyyy-MM-dd"),
+                    kvp => kvp.Value)
             };
         }
 

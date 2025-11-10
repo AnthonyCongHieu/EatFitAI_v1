@@ -7,7 +7,8 @@ namespace EatFitAI.API.DTOs.Analytics
         public decimal TotalCarbs { get; set; }
         public decimal TotalFat { get; set; }
         public Dictionary<string, decimal> CaloriesByMealType { get; set; } = new();
-        public Dictionary<DateTime, decimal> DailyCalories { get; set; } = new();
+        // OpenAPI requires object keys to be strings; expose dates as ISO yyyy-MM-dd
+        public Dictionary<string, decimal> DailyCalories { get; set; } = new();
     }
 
     public class AnalyticsRequest
