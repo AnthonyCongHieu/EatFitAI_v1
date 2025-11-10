@@ -2,6 +2,7 @@ import React, { Component, ReactNode } from 'react';
 import { View, StyleSheet } from 'react-native';
 import ErrorState from './ErrorState';
 import { useAppTheme } from '../theme/ThemeProvider';
+import { t } from '../i18n/vi';
 
 interface Props {
   children: ReactNode;
@@ -37,8 +38,8 @@ class ErrorBoundaryClass extends Component<Props, State> {
 
       return (
         <ErrorState
-          title="Ứng dụng gặp lỗi"
-          description="Đã xảy ra lỗi không mong muốn. Vui lòng khởi động lại ứng dụng."
+          title={t('common.appError')}
+          description={t('common.appErrorDescription')}
           onRetry={() => {
             this.setState({ hasError: false, error: undefined });
           }}

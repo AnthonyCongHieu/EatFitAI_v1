@@ -9,6 +9,7 @@ import Animated, {
 import { ThemedText } from './ThemedText';
 import { ThemedTextInput } from './ThemedTextInput';
 import { useAppTheme } from '../theme/ThemeProvider';
+import { t } from '../i18n/vi';
 
 type SearchBarProps = {
   value: string;
@@ -31,7 +32,7 @@ const AnimatedView = Animated.createAnimatedComponent(View);
 export const SearchBar = ({
   value,
   onChangeText,
-  placeholder = 'TÃ¬m kiáº¿m...',
+  placeholder = t('search.placeholder'),
   onSubmit,
   onClear,
   leftIcon,
@@ -178,7 +179,7 @@ export const SearchBar = ({
           ].filter(Boolean)}
           value={value}
           onChangeText={onChangeText}
-          placeholder={'Tìm kiếm...'}
+          placeholder={t('search.placeholder')}
           placeholderTextColor={theme.colors.muted}
           onSubmitEditing={onSubmit}
           autoFocus={autoFocus}
@@ -186,6 +187,16 @@ export const SearchBar = ({
           returnKeyType="search"
           autoCapitalize="none"
           autoCorrect={false}
+          // Enable Vietnamese input support for search
+          keyboardType="default"
+          spellCheck={false}
+          textBreakStrategy="simple"
+          // Ensure controlled component behavior for Vietnamese input
+          multiline={false}
+          blurOnSubmit={false}
+          // Additional IME handling for Vietnamese Telex input
+          inputMode="search"
+          enterKeyHint="search"
         />
 
         {/* Right Icon */}

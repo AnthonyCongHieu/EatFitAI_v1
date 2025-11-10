@@ -4,6 +4,7 @@ import { ThemedText } from './ThemedText';
 import { Button } from './Button';
 import Icon from './Icon';
 import { useAppTheme } from '../theme/ThemeProvider';
+import { t } from '../i18n/vi';
 
 interface ErrorStateProps {
   title?: string;
@@ -14,8 +15,8 @@ interface ErrorStateProps {
 }
 
 export const ErrorState: React.FC<ErrorStateProps> = ({
-  title = 'Có lỗi xảy ra',
-  description = 'Vui lòng thử lại sau',
+  title = t('common.error'),
+  description = t('common.tryAgainLater'),
   onRetry,
   icon = 'warning',
   style,
@@ -49,7 +50,7 @@ export const ErrorState: React.FC<ErrorStateProps> = ({
           <View style={{ marginTop: theme.spacing.xl }}>
             <Button
               variant="primary"
-              title="Thử lại"
+              title={t('common.retry')}
               onPress={onRetry}
             />
           </View>

@@ -13,6 +13,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from './ThemedText';
 import { useAppTheme } from '../theme/ThemeProvider';
+import { t } from '../i18n/vi';
 
 type ActionSheetOption = {
   label: string;
@@ -38,7 +39,7 @@ export const ActionSheet = ({
   title,
   message,
   options,
-  cancelText = 'Hủy',
+  cancelText = t('common.cancel'),
   animated = true
 }: ActionSheetProps): JSX.Element => {
   const { theme } = useAppTheme();

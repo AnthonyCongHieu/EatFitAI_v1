@@ -20,6 +20,7 @@ import {
 import AppNavigator from './src/app/navigation/AppNavigator';
 import { ThemeProvider, useAppTheme } from './src/theme/ThemeProvider';
 import { healthService } from './src/services/healthService';
+import { t } from './src/i18n/vi';
 
 // Giu splash toi khi font duoc load day du
 void SplashScreen.preventAutoHideAsync();
@@ -41,8 +42,8 @@ const AppInner = () => {
       if (!cancelled && !res.ok) {
         Toast.show({
           type: 'error',
-          text1: 'Không kết nối được máy chủ',
-          text2: 'Vui lòng kiểm tra API_BASE_URL hoặc mạng LAN',
+          text1: t('app.serverConnectionError'),
+          text2: t('app.checkApiUrl'),
           visibilityTime: 4000,
         });
       }

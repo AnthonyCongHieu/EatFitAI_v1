@@ -10,6 +10,7 @@ import AiNutritionScreen from '../screens/ai/AiNutritionScreen';
 import WeekStatsScreen from '../screens/stats/WeekStatsScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import { useAppTheme } from '../../theme/ThemeProvider';
+import { t } from '../../i18n/vi';
 
 export type AppTabsParamList = {
   HomeTab: undefined;
@@ -45,7 +46,7 @@ const AppTabs = (): JSX.Element => {
         name="HomeTab"
         component={HomeScreen}
         options={{
-          title: 'Home',
+          title: t('navigation.home'),
           tabBarIcon: ({ color, size }) => <Ionicons name="home" color={color} size={size} />,
         }}
       />
@@ -53,7 +54,7 @@ const AppTabs = (): JSX.Element => {
         name="SearchTab"
         component={FoodSearchScreen}
         options={{
-          title: 'Search',
+          title: t('navigation.search'),
           tabBarIcon: ({ color, size }) => <Ionicons name="search" color={color} size={size} />,
         }}
       />
@@ -61,7 +62,7 @@ const AppTabs = (): JSX.Element => {
         name="CameraTab"
         component={AiCameraScreen}
         options={{
-          title: 'Camera',
+          title: t('navigation.camera'),
           tabBarIcon: ({ color, size }) => <Ionicons name="camera" color={color} size={size} />,
         }}
       />
@@ -69,7 +70,7 @@ const AppTabs = (): JSX.Element => {
         name="AITab"
         component={AiNutritionScreen}
         options={{
-          title: 'AI',
+          title: t('navigation.ai'),
           tabBarIcon: ({ color, size }) => <Ionicons name="bulb" color={color} size={size} />,
         }}
       />
@@ -77,7 +78,7 @@ const AppTabs = (): JSX.Element => {
         name="StatsTab"
         component={WeekStatsScreen}
         options={{
-          title: 'Stats',
+          title: t('navigation.stats'),
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="stats-chart" color={color} size={size} />
           ),
@@ -87,7 +88,7 @@ const AppTabs = (): JSX.Element => {
         name="ProfileTab"
         component={ProfileScreen}
         options={{
-          title: 'Profile',
+          title: t('navigation.profile'),
           tabBarIcon: ({ color, size }) => <Ionicons name="person" color={color} size={size} />,
         }}
       />

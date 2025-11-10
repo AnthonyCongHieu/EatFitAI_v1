@@ -1,9 +1,10 @@
 import type { TextInputProps, ViewStyle } from 'react-native';
 import { TextInput, StyleSheet, View, Pressable, Platform } from 'react-native';
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useAppTheme } from '../theme/ThemeProvider';
 import { ThemedText } from './ThemedText';
+import { t } from '../i18n/vi';
 
 type Props = TextInputProps & {
   error?: boolean;
@@ -29,11 +30,24 @@ export const ThemedTextInput = ({
     theme: { colors, radius, spacing, typography },
   } = useAppTheme();
   const [hidden, setHidden] = useState<boolean>(!!secureTextEntry);
+  const textInputRef = useRef<TextInput>(null);
+
+  const effectiveSecure = secureToggle ? hidden : secureTextEntry;
+
+  const resolvedKeyboardType = (() => {
+    // On Android, Vietnamese IME (Telex/Laban Key) often fails in secure fields
+    // unless using the 'visible-password' keyboard. Preserve explicit overrides.
+    if (Platform.OS === 'android' && effectiveSecure && !rest.keyboardType) {
+      return 'visible-password';
+    }
+    return rest.keyboardType || 'default';
+  })();
 
   const input = (
     <TextInput
+      ref={textInputRef}
       {...rest}
-      secureTextEntry={secureToggle ? hidden : secureTextEntry}
+      secureTextEntry={effectiveSecure}
       placeholderTextColor={placeholderTextColor ?? colors.muted}
       style={[
         styles.base,
@@ -52,8 +66,9 @@ export const ThemedTextInput = ({
       ]}
       accessibilityLabel={label || rest.accessibilityLabel}
       accessibilityHint={helperText || rest.accessibilityHint}
-      // Improve Vietnamese IME handling on Android
-      textBreakStrategy={Platform.OS === 'android' ? 'simple' : undefined}
+      // Avoid props that can interfere with IME composition
+      keyboardType={resolvedKeyboardType}
+      autoCapitalize={rest.autoCapitalize || 'none'}
     />
   );
 
@@ -62,7 +77,7 @@ export const ThemedTextInput = ({
       {input}
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel={hidden ? 'Hiện mật khẩu' : 'Ẩn mật khẩu'}
+        accessibilityLabel={hidden ? t('common.showPassword') : t('common.hidePassword')}
         onPress={() => setHidden((v) => !v)}
         hitSlop={12}
         style={{ position: 'absolute', right: spacing.sm, top: '50%', transform: [{ translateY: -9 }] }}

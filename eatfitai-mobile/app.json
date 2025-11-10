@@ -23,7 +23,42 @@
         "foregroundImage": "./src/assets/adaptive-icon.png",
         "backgroundColor": "#0A4D3C"
       },
-      "package": "com.eatfitai.app"
+      "package": "com.eatfitai.app",
+      "config": {
+        "locales": [
+          "vi",
+          "en"
+        ]
+      },
+      "intentFilters": [
+        {
+          "action": "MAIN",
+          "category": "LAUNCHER"
+        },
+        {
+          "action": "VIEW",
+          "data": {
+            "scheme": "eatfitai"
+          },
+          "categories": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
+        }
+      ],
+      "softwareKeyboardLayoutMode": "pan",
+      "permissions": [
+        "android.permission.INTERNET",
+        "android.permission.ACCESS_NETWORK_STATE"
+      ],
+      "manifest": {
+        "application": {
+          "activity": {
+            "windowSoftInputMode": "adjustResize",
+            "configChanges": "keyboard|keyboardHidden|orientation|screenSize"
+          }
+        }
+      }
     },
     "web": {
       "bundler": "metro",
@@ -35,7 +70,8 @@
       }
     },
     "plugins": [
-      "expo-secure-store"
+      "expo-secure-store",
+      "expo-localization"
     ]
   }
 }

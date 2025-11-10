@@ -12,6 +12,7 @@ import FoodDetailScreen from '../screens/diary/FoodDetailScreen';
 import CustomDishScreen from '../screens/diary/CustomDishScreen';
 import AiCameraScreen from '../screens/ai/AiCameraScreen';
 import AiNutritionScreen from '../screens/ai/AiNutritionScreen';
+import { t } from '../../i18n/vi';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -56,7 +57,7 @@ const AppNavigator = (): JSX.Element => {
                 component={FoodSearchScreen}
                 options={{
                   headerShown: true,
-                  title: 'Tìm món',
+                  title: t('navigation.foodSearch'),
                   headerStyle: { backgroundColor: theme.colors.card },
                   headerTintColor: theme.colors.text,
                   headerShadowVisible: false,
@@ -68,7 +69,7 @@ const AppNavigator = (): JSX.Element => {
                 component={FoodDetailScreen}
                 options={{
                   headerShown: true,
-                  title: 'Chi tiết món',
+                  title: t('navigation.foodDetail'),
                   headerStyle: { backgroundColor: theme.colors.card },
                   headerTintColor: theme.colors.text,
                   headerShadowVisible: false,
@@ -80,7 +81,7 @@ const AppNavigator = (): JSX.Element => {
                 component={CustomDishScreen}
                 options={{
                   headerShown: true,
-                  title: 'Món thủ công',
+                  title: t('navigation.customDish'),
                   headerStyle: { backgroundColor: theme.colors.card },
                   headerTintColor: theme.colors.text,
                   headerShadowVisible: false,
@@ -92,7 +93,7 @@ const AppNavigator = (): JSX.Element => {
                 component={AiCameraScreen}
                 options={{
                   headerShown: true,
-                  title: 'AI Camera',
+                  title: t('navigation.camera'),
                   headerStyle: { backgroundColor: theme.colors.card },
                   headerTintColor: theme.colors.text,
                   headerShadowVisible: false,
@@ -104,7 +105,7 @@ const AppNavigator = (): JSX.Element => {
                 component={AiNutritionScreen}
                 options={{
                   headerShown: true,
-                  title: 'AI Dinh dưỡng',
+                  title: t('navigation.aiNutrition'),
                   headerStyle: { backgroundColor: theme.colors.card },
                   headerTintColor: theme.colors.text,
                   headerShadowVisible: false,

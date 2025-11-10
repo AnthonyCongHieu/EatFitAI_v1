@@ -9,6 +9,7 @@ import { setAccessTokenMem } from '../services/authTokens';
 import { tokenStorage } from '../services/secureStore';
 import { initAuthSession, updateSessionFromAuthResponse } from '../services/authSession';
 import type { AuthResponse } from '../types';
+import { t } from '../i18n/vi';
 
 type AuthUser = { id: string; email: string; name?: string };
 
@@ -26,7 +27,7 @@ type AuthState = {
 const API_BASE = API_BASE_URL ?? '';
 
 const extractRegisterErrorMessage = (err: any): string => {
-  const fallback = 'Đăng ký thất bại, vui lòng thử lại.';
+  const fallback = t('auth.registerFailed');
   if (!err) return fallback;
 
   const responseData = err?.response?.data ?? err?.data;
@@ -69,7 +70,7 @@ export const useAuthStore = create<AuthState>((set: any) => ({
     const resp = await apiClient.post('/api/auth/login', { Email: email, Password: password });
     const data = resp.data as any;
     const accessToken = data?.token as string | undefined;
-    if (!accessToken) throw new Error('Thiếu accessToken trong phản hồi đăng nhập');
+    if (!accessToken) throw new Error(t('auth.missingAccessToken'));
 
     await tokenStorage.saveTokensFull({
       accessToken,
@@ -90,7 +91,7 @@ export const useAuthStore = create<AuthState>((set: any) => ({
       console.log('[useAuthStore] Registration API response:', resp.data);
       const data = resp.data as any;
       const accessToken = data?.token as string | undefined;
-      if (!accessToken) throw new Error('Thiếu accessToken trong phản hồi đăng ký');
+      if (!accessToken) throw new Error(t('auth.missingAccessToken'));
 
       await tokenStorage.saveTokensFull({
         accessToken,
@@ -127,7 +128,7 @@ export const useAuthStore = create<AuthState>((set: any) => ({
     const AS: any = AuthSession as any;
     const result = await AS.startAsync({ authUrl });
     if (result.type !== 'success') {
-      throw new Error('Đăng nhập Google bị hủy hoặc thất bại');
+      throw new Error(t('auth.googleLoginCancelled'));
     }
 
     const params: Record<string, string | undefined> = (result as any).params ?? {};
@@ -136,7 +137,7 @@ export const useAuthStore = create<AuthState>((set: any) => ({
     const refreshToken =
       params.refreshToken || params.refresh_token || (result as any).refreshToken || (result as any).refresh_token;
 
-    if (!accessToken) throw new Error('Không nhận được accessToken từ Google callback');
+    if (!accessToken) throw new Error(t('auth.googleAccessTokenMissing'));
 
     await tokenStorage.saveTokensFull({
       accessToken,

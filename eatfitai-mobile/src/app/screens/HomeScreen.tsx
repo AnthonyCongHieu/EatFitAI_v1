@@ -16,12 +16,13 @@ import type { RootStackParamList } from '../types';
 import { MEAL_TYPE_LABELS, type MealTypeId } from '../../types';
 import { diaryService } from '../../services/diaryService';
 import { healthService } from '../../services/healthService';
+import { t } from '../../i18n/vi';
 
 const MEAL_TITLE_MAP: Record<MealTypeId, string> = {
-  1: 'Bá»¯a sÃ¡ng',
-  2: 'Bá»¯a trÆ°a',
-  3: 'Bá»¯a tá»‘i',
-  4: 'Ä‚n váº·t',
+  1: t('mealTypes.breakfast'),
+  2: t('mealTypes.lunch'),
+  3: t('mealTypes.dinner'),
+  4: t('mealTypes.snack'),
 };
 
 type AddOption = 'search' | 'custom' | 'ai';
@@ -33,15 +34,15 @@ const AddEntryModal = ({ visible, onClose, onSelect }: { visible: boolean; onClo
     <Modal transparent visible={visible} animationType="fade" onRequestClose={onClose}>
       <View style={styles.modalBackdrop}>
         <Card>
-          <ThemedText variant="h3">ThÃªm mÃ³n</ThemedText>
+          <ThemedText variant="h3">{t('home.addDishTitle')}</ThemedText>
           <ThemedText variant="body" color="textSecondary" style={{ marginTop: theme.spacing.xs, marginBottom: theme.spacing.md }}>
-            Chá»n cÃ¡ch thÃªm mÃ³n vÃ o nháº­t kÃ½
+            {t('home.chooseAddMethod')}
           </ThemedText>
-          <Button title="TÃ¬m mÃ³n cÃ³ sáºµn" onPress={() => onSelect('search')} />
+          <Button title={t('home.searchExisting')} onPress={() => onSelect('search')} />
           <View style={{ height: 8 }} />
-          <Button variant="outline" title="Táº¡o mÃ³n thá»§ cÃ´ng" onPress={() => onSelect('custom')} />
+          <Button variant="outline" title={t('home.createCustom')} onPress={() => onSelect('custom')} />
           <Pressable accessibilityRole="button" hitSlop={8} onPress={onClose} style={{ alignItems: 'center', marginTop: 8 }}>
-            <ThemedText variant="body" color="muted">ÄÃ³ng</ThemedText>
+            <ThemedText variant="body" color="muted">{t('home.close')}</ThemedText>
           </Pressable>
         </Card>
       </View>
@@ -58,9 +59,9 @@ const formatNumber = (value?: number | null, suffix = '', decimals = 0): string 
 };
 
 const formatDate = (dateValue: string | undefined): string => {
-  if (!dateValue) return 'HÃ´m nay';
+  if (!dateValue) return t('common.today');
   const date = new Date(dateValue);
-  if (Number.isNaN(date.getTime())) return 'HÃ´m nay';
+  if (Number.isNaN(date.getTime())) return t('common.today');
   return new Intl.DateTimeFormat('vi-VN', { weekday: 'long', day: '2-digit', month: '2-digit' }).format(date);
 };
 
@@ -80,13 +81,13 @@ const HomeScreen = (): JSX.Element => {
     fetchSummary().catch((error: any) => {
       const status = error?.response?.status;
       if (status === 401) {
-        Toast.show({ type: 'error', text1: 'PhiÃªn Ä‘Äƒng nháº­p Ä‘Ã£ háº¿t háº¡n', text2: 'Vui lÃ²ng Ä‘Äƒng nháº­p láº¡i' });
+        Toast.show({ type: 'error', text1: t('common.sessionExpired'), text2: t('common.pleaseLoginAgain') });
       } else if (status >= 500) {
-        Toast.show({ type: 'error', text1: 'Lá»—i mÃ¡y chá»§', text2: 'Vui lÃ²ng thá»­ láº¡i sau' });
+        Toast.show({ type: 'error', text1: t('common.serverError'), text2: t('common.tryAgainLater') });
       } else if (!navigator.onLine) {
-        Toast.show({ type: 'error', text1: 'KhÃ´ng cÃ³ káº¿t ná»‘i máº¡ng', text2: 'Kiá»ƒm tra káº¿t ná»‘i vÃ  thá»­ láº¡i' });
+        Toast.show({ type: 'error', text1: t('common.networkError'), text2: t('common.checkConnection') });
       } else {
-        Toast.show({ type: 'error', text1: 'KhÃ´ng thá»ƒ táº£i nháº­t kÃ½ hÃ´m nay', text2: 'KÃ©o xuá»‘ng Ä‘á»ƒ thá»­ láº¡i' });
+        Toast.show({ type: 'error', text1: t('home.loadDiaryFailed'), text2: t('home.pullToRetry') });
       }
     });
   }, [fetchSummary]);
@@ -104,43 +105,43 @@ const HomeScreen = (): JSX.Element => {
     refreshSummary().catch((error: any) => {
       const status = error?.response?.status;
       if (status === 401) {
-        Toast.show({ type: 'error', text1: 'PhiÃªn Ä‘Äƒng nháº­p Ä‘Ã£ háº¿t háº¡n', text2: 'Vui lÃ²ng Ä‘Äƒng nháº­p láº¡i' });
+        Toast.show({ type: 'error', text1: t('common.sessionExpired'), text2: t('common.pleaseLoginAgain') });
       } else if (status >= 500) {
-        Toast.show({ type: 'error', text1: 'Lá»—i mÃ¡y chá»§', text2: 'Vui lÃ²ng thá»­ láº¡i sau' });
+        Toast.show({ type: 'error', text1: t('common.serverError'), text2: t('common.tryAgainLater') });
       } else if (!navigator.onLine) {
-        Toast.show({ type: 'error', text1: 'KhÃ´ng cÃ³ káº¿t ná»‘i máº¡ng', text2: 'Kiá»ƒm tra káº¿t ná»‘i vÃ  thá»­ láº¡i' });
+        Toast.show({ type: 'error', text1: t('common.networkError'), text2: t('common.checkConnection') });
       } else {
-        Toast.show({ type: 'error', text1: 'Táº£i láº¡i tháº¥t báº¡i', text2: 'KÃ©o xuá»‘ng Ä‘á»ƒ thá»­ láº¡i' });
+        Toast.show({ type: 'error', text1: t('home.reloadFailed'), text2: t('home.pullToRetry') });
       }
     });
   }, [refreshSummary]);
 
   const handleDelete = useCallback(
     (entryId: string, foodName: string) => {
-      Alert.alert('XÃ³a mÃ³n', `XÃ¡c nháº­n xÃ³a "${foodName}" khá»i nháº­t kÃ½?`, [
-        { text: 'Há»§y', style: 'cancel' },
+      Alert.alert(t('common.deleteConfirm'), t('common.deleteItem', foodName), [
+        { text: t('common.cancel'), style: 'cancel' },
         {
-          text: 'XÃ³a',
+          text: t('common.delete'),
           style: 'destructive',
           onPress: () => {
             diaryService
               .deleteEntry(entryId)
               .then(() => {
-                Toast.show({ type: 'success', text1: 'ÄÃ£ xÃ³a mÃ³n khá»i nháº­t kÃ½', text2: 'Nháº­t kÃ½ Ä‘Ã£ Ä‘Æ°á»£c cáº­p nháº­t' });
+                Toast.show({ type: 'success', text1: t('common.removed'), text2: t('common.updated') });
                 refreshSummary().catch(() => {});
               })
               .catch((error: any) => {
                 const status = error?.response?.status;
                 if (status === 404) {
-                  Toast.show({ type: 'error', text1: 'MÃ³n Äƒn khÃ´ng tá»“n táº¡i', text2: 'MÃ³n nÃ y cÃ³ thá»ƒ Ä‘Ã£ bá»‹ xÃ³a trÆ°á»›c Ä‘Ã³' });
+                  Toast.show({ type: 'error', text1: t('common.notFound'), text2: t('common.mayBeDeleted') });
                 } else if (status === 403) {
-                  Toast.show({ type: 'error', text1: 'KhÃ´ng cÃ³ quyá»n xÃ³a mÃ³n nÃ y', text2: 'Chá»‰ cÃ³ thá»ƒ xÃ³a mÃ³n do báº¡n thÃªm' });
+                  Toast.show({ type: 'error', text1: t('common.noPermission'), text2: t('common.onlyDeleteOwn') });
                 } else if (status >= 500) {
-                  Toast.show({ type: 'error', text1: 'Lá»—i mÃ¡y chá»§', text2: 'Vui lÃ²ng thá»­ láº¡i sau' });
+                  Toast.show({ type: 'error', text1: t('common.serverError'), text2: t('common.tryAgainLater') });
                 } else if (!navigator.onLine) {
-                  Toast.show({ type: 'error', text1: 'KhÃ´ng cÃ³ káº¿t ná»‘i máº¡ng', text2: 'Kiá»ƒm tra káº¿t ná»‘i vÃ  thá»­ láº¡i' });
+                  Toast.show({ type: 'error', text1: t('common.networkError'), text2: t('common.checkConnection') });
                 } else {
-                  Toast.show({ type: 'error', text1: 'XÃ³a tháº¥t báº¡i', text2: 'Vui lÃ²ng thá»­ láº¡i hoáº·c liÃªn há»‡ há»— trá»£' });
+                  Toast.show({ type: 'error', text1: t('common.deleteFailed'), text2: t('common.contactSupport') });
                 }
               });
           },
@@ -163,9 +164,9 @@ const HomeScreen = (): JSX.Element => {
   const calorieDiffText = useMemo(() => {
     if (!summary || typeof summary.totalCalories !== 'number' || typeof summary.targetCalories !== 'number') return null;
     const diff = summary.totalCalories - summary.targetCalories;
-    if (diff === 0) return 'Báº¡n Ä‘ang báº±ng vá»›i má»¥c tiÃªu';
-    if (diff > 0) return `VÆ°á»£t ${Math.abs(diff)} kcal so vá»›i má»¥c tiÃªu`;
-    return `Tháº¥p hÆ¡n ${Math.abs(diff)} kcal so vá»›i má»¥c tiÃªu`;
+    if (diff === 0) return t('home.diffEqual');
+    if (diff > 0) return t('home.diffAbove', Math.abs(diff));
+    return t('home.diffBelow', Math.abs(diff));
   }, [summary]);
 
   return (
@@ -176,18 +177,18 @@ const HomeScreen = (): JSX.Element => {
       >
         {serverDown && (
           <View style={{ padding: 12, borderRadius: theme.radius.md, backgroundColor: theme.colors.danger + '20' }}>
-            <ThemedText color="danger" weight="600">Không thể kết nối máy chủ</ThemedText>
-            <ThemedText variant="bodySmall" color="textSecondary">Kiểm tra API_BASE_URL hoặc mạng LAN</ThemedText>
+            <ThemedText color="danger" weight="600">{t('app.serverConnectionError')}</ThemedText>
+            <ThemedText variant="bodySmall" color="textSecondary">{t('app.checkApiUrl')}</ThemedText>
           </View>
         )}
         <Card>
-          <ThemedText variant="h2">Nháº­t kÃ½ hÃ´m nay</ThemedText>
+          <ThemedText variant="h2">{t('home.title')}</ThemedText>
           <ThemedText variant="bodySmall" color="textSecondary">{formatDate(summary?.date)}</ThemedText>
 
           <View style={[styles.row, { marginTop: theme.spacing.lg }]}>
             <View style={[styles.box, { backgroundColor: theme.colors.primaryLight }]}>
               <ThemedText variant="caption" color="primary" weight="600" style={{ textTransform: 'uppercase' }}>
-                TiÃªu thá»¥
+                {t('home.intake')}
               </ThemedText>
               <ThemedText variant="h2" color="primary">
                 {formatNumber(summary?.totalCalories, ' kcal')}
@@ -195,7 +196,7 @@ const HomeScreen = (): JSX.Element => {
             </View>
             <View style={[styles.box, { backgroundColor: theme.colors.secondaryLight }]}>
               <ThemedText variant="caption" color="secondary" weight="600" style={{ textTransform: 'uppercase' }}>
-                Má»¥c tiÃªu
+                {t('home.target')}
               </ThemedText>
               <ThemedText variant="h2" color="secondary">
                 {formatNumber(summary?.targetCalories, ' kcal')}
@@ -231,7 +232,7 @@ const HomeScreen = (): JSX.Element => {
           </View>
 
           <View style={{ marginTop: theme.spacing.xl, gap: theme.spacing.sm }}>
-            <Button title="+ ThÃªm mÃ³n" onPress={() => setShowAddModal(true)} />
+            <Button title={t('home.addDish')} onPress={() => setShowAddModal(true)} />
           </View>
         </Card>
 
@@ -239,7 +240,7 @@ const HomeScreen = (): JSX.Element => {
           <Card>
             <View style={{ alignItems: 'center', paddingVertical: 20 }}>
               <ActivityIndicator color={theme.colors.primary} />
-              <ThemedText variant="body" color="textSecondary">Äang táº£i nháº­t kÃ½...</ThemedText>
+              <ThemedText variant="body" color="textSecondary">{t('home.loadingDiary')}</ThemedText>
             </View>
           </Card>
         ) : summary && summary.meals.length > 0 ? (
@@ -250,7 +251,7 @@ const HomeScreen = (): JSX.Element => {
                   <ThemedText variant="h4">{MEAL_TITLE_MAP[meal.mealType] ?? meal.title}</ThemedText>
                   <ThemedText variant="bodySmall" color="textSecondary">{formatNumber(meal.totalCalories, ' kcal')}</ThemedText>
                 </View>
-                <ThemedText variant="bodySmall" color="textSecondary">{meal.entries.length} mÃ³n</ThemedText>
+                <ThemedText variant="bodySmall" color="textSecondary">{t('home.entries', meal.entries.length)}</ThemedText>
               </View>
 
               {meal.entries.map((entry: any) => (
@@ -258,11 +259,11 @@ const HomeScreen = (): JSX.Element => {
                   <View style={styles.entryInfo}>
                     <ThemedText variant="body" weight="600">{entry.foodName}</ThemedText>
                     <ThemedText variant="bodySmall" color="textSecondary">
-                      {formatNumber(entry.calories, ' kcal')} Â· {entry.quantityText ?? 'KhÃ´ng rÃµ kháº©u pháº§n'}
+                      {formatNumber(entry.calories, ' kcal')} · {entry.quantityText ?? t('home.noPortionInfo')}
                     </ThemedText>
                   </View>
                   <Pressable accessibilityRole="button" hitSlop={8} onPress={() => handleDelete(entry.id, entry.foodName)} style={styles.deleteChip}>
-                    <ThemedText variant="button" color="danger">XoÃ¡</ThemedText>
+                    <ThemedText variant="button" color="danger">{t('common.delete')}</ThemedText>
                   </Pressable>
                 </View>
               ))}
@@ -270,7 +271,7 @@ const HomeScreen = (): JSX.Element => {
           ))
         ) : (
           <Card>
-            <ThemedText variant="body" color="textSecondary">ChÆ°a cÃ³ mÃ³n nÃ o hÃ´m nay</ThemedText>
+            <ThemedText variant="body" color="textSecondary">{t('home.empty')}</ThemedText>
           </Card>
         )}
       </Screen>
