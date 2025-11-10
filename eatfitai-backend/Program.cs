@@ -41,6 +41,14 @@ builder.Services.AddControllers()
 builder.Services.AddHealthChecks()
     .AddSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")!, name: "Database");
 
+// CORS from config
+var allowedOrigins = builder.Configuration
+    .GetSection("AllowedOrigins")
+    .Get<string[]>() ?? Array.Empty<string>();
+
+builder.Services.AddCors(o => o.AddPolicy("DevCors",
+    p => p.WithOrigins(allowedOrigins).AllowAnyHeader().AllowAnyMethod()));
+
 // Add Swagger
 builder.Services.AddSwaggerGen(c =>
 {
@@ -118,17 +126,6 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 // Add Authorization
 builder.Services.AddAuthorization();
 
-// Add CORS
-builder.Services.AddCors(options =>
-{
-    options.AddPolicy("AllowAll", policy =>
-    {
-        policy.AllowAnyOrigin()
-              .AllowAnyMethod()
-              .AllowAnyHeader();
-    });
-});
-
 var app = builder.Build();
 
 // Seed the database
@@ -170,11 +167,30 @@ else if (app.Environment.IsStaging())
 app.UseMiddleware<ExceptionHandlingMiddleware>();
 app.UseMiddleware<RequestLoggingMiddleware>();
 
-if (!app.Environment.IsDevelopment())
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI(c =>
+    {
+        c.SwaggerEndpoint("/swagger/v1/swagger.json", "EatFitAI API v1");
+        c.RoutePrefix = string.Empty; // Serve Swagger UI at the app's root
+    });
+    app.UseCors("DevCors"); // Dev: open per config
+}
+else if (app.Environment.IsStaging())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI(c =>
+    {
+        c.SwaggerEndpoint("/swagger/v1/swagger.json", "EatFitAI API v1");
+        c.RoutePrefix = "swagger"; // Serve Swagger UI at /swagger
+    });
+}
+else
 {
     app.UseHttpsRedirection();
+    // In Production, configure a tighter CORS policy via appsettings.Production.json
 }
-app.UseCors("AllowAll");
 
 // Add authentication and authorization middleware
 app.UseAuthentication();

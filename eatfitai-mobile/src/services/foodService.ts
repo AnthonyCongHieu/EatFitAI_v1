@@ -106,7 +106,7 @@ export const foodService = {
 
   // Lay chi tiet mot thuc pham
   async getFoodDetail(foodId: string): Promise<FoodDetail> {
-    const response = await apiClient.get(`/api/food/${foodId}`);
+    const response = await apiClient.get(`/api/${foodId}`);
     const data = response.data;
     // Backend returns { foodItem, servings }
     return normalizeFoodDetail(data?.foodItem ?? {});
