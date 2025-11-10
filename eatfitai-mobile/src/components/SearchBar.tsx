@@ -186,17 +186,8 @@ export const SearchBar = ({
           editable={!disabled}
           returnKeyType="search"
           autoCapitalize="none"
-          autoCorrect={false}
-          // Enable Vietnamese input support for search
+          // Keep defaults for IME-friendly behavior
           keyboardType="default"
-          spellCheck={false}
-          textBreakStrategy="simple"
-          // Ensure controlled component behavior for Vietnamese input
-          multiline={false}
-          blurOnSubmit={false}
-          // Additional IME handling for Vietnamese Telex input
-          inputMode="search"
-          enterKeyHint="search"
         />
 
         {/* Right Icon */}

@@ -36,10 +36,8 @@ builder.Services.AddControllers()
     {
         options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
     });
+builder.Services.AddEndpointsApiExplorer();
 
-// Add health checks
-builder.Services.AddHealthChecks()
-    .AddSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")!, name: "Database");
 
 // CORS from config
 var allowedOrigins = builder.Configuration
@@ -143,25 +141,6 @@ using (var scope = app.Services.CreateScope())
     }
 }
 
-// Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI(c =>
-    {
-        c.SwaggerEndpoint("/swagger/v1/swagger.json", "EatFitAI API v1");
-        c.RoutePrefix = string.Empty; // Serve Swagger UI at the app's root
-    });
-}
-else if (app.Environment.IsStaging())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI(c =>
-    {
-        c.SwaggerEndpoint("/swagger/v1/swagger.json", "EatFitAI API v1");
-        c.RoutePrefix = "swagger"; // Serve Swagger UI at /swagger
-    });
-}
 
 // Add custom middleware
 app.UseMiddleware<ExceptionHandlingMiddleware>();
@@ -170,27 +149,25 @@ app.UseMiddleware<RequestLoggingMiddleware>();
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
-    app.UseSwaggerUI(c =>
+    app.UseSwaggerUI(o =>
     {
-        c.SwaggerEndpoint("/swagger/v1/swagger.json", "EatFitAI API v1");
-        c.RoutePrefix = string.Empty; // Serve Swagger UI at the app's root
+        o.SwaggerEndpoint("/swagger/v1/swagger.json", "EatFitAI v1");
+        o.RoutePrefix = "swagger"; // -> /swagger và /swagger/index.html
     });
-    app.UseCors("DevCors"); // Dev: open per config
 }
 else if (app.Environment.IsStaging())
 {
     app.UseSwagger();
-    app.UseSwaggerUI(c =>
-    {
-        c.SwaggerEndpoint("/swagger/v1/swagger.json", "EatFitAI API v1");
-        c.RoutePrefix = "swagger"; // Serve Swagger UI at /swagger
-    });
+    app.UseSwaggerUI();
 }
 else
 {
     app.UseHttpsRedirection();
     // In Production, configure a tighter CORS policy via appsettings.Production.json
 }
+
+// Add routing
+app.UseRouting();
 
 // Add authentication and authorization middleware
 app.UseAuthentication();
@@ -201,8 +178,8 @@ app.UseStaticFiles();
 
 app.MapControllers();
 
-// Map health checks
-app.MapHealthChecks("/health");
+app.MapGet("/health/live", () => Results.Ok(new { status = "live" }));
+app.MapGet("/health/ready", async (EatFitAI.API.DbScaffold.Data.EatFitAIDbContext db) => { try { await db.Database.ExecuteSqlRawAsync("SELECT 1"); return Results.Ok(new { status = "ready" }); } catch (Exception ex) { return Results.Problem(title: "DB not ready", detail: ex.Message, statusCode: 503); } });
 
 await app.RunAsync();
     }

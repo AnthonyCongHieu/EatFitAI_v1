@@ -1,6 +1,6 @@
 import type { TextInputProps, ViewStyle } from 'react-native';
 import { TextInput, StyleSheet, View, Pressable, Platform } from 'react-native';
-import { useState, useRef } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useAppTheme } from '../theme/ThemeProvider';
 import { ThemedText } from './ThemedText';
@@ -30,18 +30,38 @@ export const ThemedTextInput = ({
     theme: { colors, radius, spacing, typography },
   } = useAppTheme();
   const [hidden, setHidden] = useState<boolean>(!!secureTextEntry);
+  const [focused, setFocused] = useState<boolean>(false);
+  const [internalValue, setInternalValue] = useState<string>((rest.value as string) ?? '');
   const textInputRef = useRef<TextInput>(null);
+
+  // Keep internal value in sync when external value changes while not focused
+  useEffect(() => {
+    const incoming = (rest.value as string) ?? '';
+    if (!focused) {
+      setInternalValue(incoming);
+      return;
+    }
+    // Heuristic: if parent programmatically clears the value while focused, reflect it
+    if (focused && incoming === '' && internalValue !== '') {
+      setInternalValue('');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rest.value, focused]);
 
   const effectiveSecure = secureToggle ? hidden : secureTextEntry;
 
   const resolvedKeyboardType = (() => {
-    // On Android, Vietnamese IME (Telex/Laban Key) often fails in secure fields
-    // unless using the 'visible-password' keyboard. Preserve explicit overrides.
-    if (Platform.OS === 'android' && effectiveSecure && !rest.keyboardType) {
-      return 'visible-password';
-    }
-    return rest.keyboardType || 'default';
+    // Vietnamese IME (Telex/Laban Key) is most reliable with 'visible-password' on Android.
+    // Prefer any explicit keyboardType from callers; otherwise use 'visible-password' by default on Android.
+    if (rest.keyboardType) return rest.keyboardType;
+    if (Platform.OS === 'android') return 'visible-password';
+    return 'default';
   })();
+
+  const inputValue = useMemo(() => {
+    // While focused, prefer internal value to avoid interrupting IME composition
+    return focused ? internalValue : ((rest.value as string) ?? internalValue);
+  }, [focused, internalValue, rest.value]);
 
   const input = (
     <TextInput
@@ -68,7 +88,22 @@ export const ThemedTextInput = ({
       accessibilityHint={helperText || rest.accessibilityHint}
       // Avoid props that can interfere with IME composition
       keyboardType={resolvedKeyboardType}
+      // Avoid Android full-screen editor which can break IME composition on some devices
+      disableFullscreenUI={Platform.OS === 'android' ? true : undefined}
       autoCapitalize={rest.autoCapitalize || 'none'}
+      value={inputValue}
+      onChangeText={(text) => {
+        setInternalValue(text);
+        rest.onChangeText?.(text);
+      }}
+      onFocus={(e) => {
+        setFocused(true);
+        rest.onFocus?.(e);
+      }}
+      onBlur={(e) => {
+        setFocused(false);
+        rest.onBlur?.(e);
+      }}
     />
   );
 
