@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo, useCallback } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '../ThemedText';
@@ -20,7 +20,7 @@ type AiDetectionCardProps = {
   onTeachLabel?: () => void;
 };
 
-export const AiDetectionCard = ({
+const AiDetectionCardComponent = ({
   item,
   selected,
   grams,
@@ -174,4 +174,5 @@ const styles = StyleSheet.create({
   },
 });
 
+export const AiDetectionCard = memo(AiDetectionCardComponent);
 export default AiDetectionCard;

@@ -11,6 +11,7 @@ import { ThemedText } from '../../../components/ThemedText';
 import Screen from '../../../components/Screen';
 import ThemedTextInput from '../../../components/ThemedTextInput';
 import Button from '../../../components/Button';
+import { AppCard } from '../../../components/ui/AppCard';
 import { useAppTheme } from '../../../theme/ThemeProvider';
 import type { RootStackParamList } from '../../types';
 import { foodService, type FoodItem } from '../../../services/foodService';
@@ -83,27 +84,29 @@ const FoodSearchScreen = (): JSX.Element => {
   const renderItem = useCallback(
     ({ item }: { item: FoodItem }) => (
       <Animated.View entering={FadeIn.duration(160)} layout={Layout.springify()}>
-        <Pressable
-          accessibilityRole="button"
-          hitSlop={8}
-          style={[styles.foodRow, { borderColor: theme.colors.border, backgroundColor: theme.colors.card }]}
-          onPress={() => navigation.navigate('FoodDetail', { foodId: item.id })}
-        >
-          <View style={styles.foodInfo}>
-            <ThemedText variant="h4" style={styles.foodName}>{item.name}</ThemedText>
-            {item.brand ? <ThemedText variant="bodySmall" color="textSecondary">{item.brand}</ThemedText> : null}
-            <ThemedText variant="bodySmall" color="textSecondary">
-              {item.calories != null ? `${Math.round(item.calories)} kcal` : '-- kcal'} •
-              {item.protein != null ? ` ${item.protein.toFixed(1).replace(/\.0$/, '')}g P` : ' --g P'} •
-              {item.carbs != null ? ` ${item.carbs.toFixed(1).replace(/\.0$/, '')}g C` : ' --g C'} •
-              {item.fat != null ? ` ${item.fat.toFixed(1).replace(/\.0$/, '')}g F` : ' --g F'}
-            </ThemedText>
-          </View>
-          <ThemedText variant="button" color="primary">Xem</ThemedText>
-        </Pressable>
+        <AppCard style={{ marginBottom: 8 }}>
+          <Pressable
+            accessibilityRole="button"
+            hitSlop={8}
+            onPress={() => navigation.navigate('FoodDetail', { foodId: item.id })}
+            style={styles.foodCardContent}
+          >
+            <View style={styles.foodInfo}>
+              <ThemedText variant="h4" style={styles.foodName}>{item.name}</ThemedText>
+              {item.brand ? <ThemedText variant="bodySmall" color="textSecondary">{item.brand}</ThemedText> : null}
+              <ThemedText variant="bodySmall" color="textSecondary">
+                {item.calories != null ? `${Math.round(item.calories)} kcal` : '-- kcal'} •
+                {item.protein != null ? ` ${item.protein.toFixed(1).replace(/\.0$/, '')}g P` : ' --g P'} •
+                {item.carbs != null ? ` ${item.carbs.toFixed(1).replace(/\.0$/, '')}g C` : ' --g C'} •
+                {item.fat != null ? ` ${item.fat.toFixed(1).replace(/\.0$/, '')}g F` : ' --g F'}
+              </ThemedText>
+            </View>
+            <ThemedText variant="button" color="primary">Xem</ThemedText>
+          </Pressable>
+        </AppCard>
       </Animated.View>
     ),
-    [navigation, theme.colors.border, theme.colors.card],
+    [navigation],
   );
 
   const renderSkeleton = () => (
@@ -212,13 +215,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   listContent: { paddingHorizontal: 16, paddingBottom: 24, gap: 12 },
-  foodRow: {
+  foodCardContent: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    gap: 16,
-    borderWidth: 1,
-    borderRadius: 16,
-    padding: 16,
     alignItems: 'center',
   },
   foodInfo: { flex: 1, gap: 4 },

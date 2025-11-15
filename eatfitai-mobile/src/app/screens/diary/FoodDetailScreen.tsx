@@ -12,7 +12,8 @@ import Animated, { FadeIn } from 'react-native-reanimated';
 
 import { ThemedText } from '../../../components/ThemedText';
 import Screen from '../../../components/Screen';
-import Card from '../../../components/Card';
+import { AppCard } from '../../../components/ui/AppCard';
+import { AppStepper } from '../../../components/ui/AppStepper';
 import Button from '../../../components/Button';
 import ThemedTextInput from '../../../components/ThemedTextInput';
 import { useAppTheme } from '../../../theme/ThemeProvider';
@@ -161,14 +162,14 @@ const FoodDetailScreen = (): JSX.Element | null => {
   if (isLoading) {
     return (
       <Screen contentContainerStyle={styles.loadingContainer}>
-        <Card padding="lg" shadow="md">
+        <AppCard>
           <View style={{ alignItems: 'center', padding: theme.spacing.xl }}>
             <ActivityIndicator size="large" color={theme.colors.primary} />
             <ThemedText variant="body" color="textSecondary" style={{ marginTop: theme.spacing.md }}>
               Đang tải chi tiết món ăn...
             </ThemedText>
           </View>
-        </Card>
+        </AppCard>
       </Screen>
     );
   }
@@ -178,7 +179,7 @@ const FoodDetailScreen = (): JSX.Element | null => {
   return (
     <Screen contentContainerStyle={styles.content}>
       <Animated.View entering={FadeIn.duration(theme.animation.normal)}>
-        <Card padding="lg" shadow="md">
+        <AppCard>
           <ThemedText variant="h2" style={{ marginBottom: theme.spacing.xs }}>
             {detail.name}
           </ThemedText>
@@ -247,11 +248,11 @@ const FoodDetailScreen = (): JSX.Element | null => {
               }</ThemedText>
             </View>
           </View>
-        </Card>
+        </AppCard>
       </Animated.View>
 
       <Animated.View entering={FadeIn.duration(theme.animation.normal).delay(100)}>
-        <Card padding="lg" shadow="md">
+        <AppCard>
           <ThemedText variant="h3" style={{ marginBottom: theme.spacing.lg }}>
             Thêm vào nhật ký
           </ThemedText>
@@ -360,7 +361,7 @@ const FoodDetailScreen = (): JSX.Element | null => {
               title={isSubmitting ? 'Đang thêm...' : 'Thêm vào nhật ký'}
             />
           </View>
-        </Card>
+        </AppCard>
       </Animated.View>
     </Screen>
   );

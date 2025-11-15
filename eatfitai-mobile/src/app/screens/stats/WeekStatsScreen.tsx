@@ -5,8 +5,9 @@ import Toast from "react-native-toast-message";
 
 import { ThemedText } from "../../../components/ThemedText";
 import Screen from "../../../components/Screen";
-import Card from "../../../components/Card";
-import Button from "../../../components/Button";
+import { AppCard } from "../../../components/ui/AppCard";
+import { SectionHeader } from "../../../components/ui/SectionHeader";
+import { EmptyState } from "../../../components/ui/EmptyState";
 import { useAppTheme } from "../../../theme/ThemeProvider";
 import { useStatsStore } from "../../../store/useStatsStore";
 import { summaryService } from "../../../services/summaryService";
@@ -74,13 +75,8 @@ const WeekStatsScreen = (): JSX.Element => {
       contentContainerStyle={styles.content}
       refreshControl={<RefreshControl refreshing={isLoading} onRefresh={handleRefresh} tintColor={theme.colors.primary} />}
     >
-      <Card padding="lg" shadow="md">
-        <ThemedText variant="h2" style={{ marginBottom: theme.spacing.xs }}>
-          Thống kê 7 ngày
-        </ThemedText>
-        <ThemedText variant="bodySmall" color="textSecondary" style={{ marginBottom: theme.spacing.lg }}>
-          So sánh calo tiêu thụ với mục tiêu hằng ngày
-        </ThemedText>
+      <AppCard>
+        <SectionHeader title="Thống kê 7 ngày" subtitle="So sánh calo tiêu thụ với mục tiêu hằng ngày" />
 
         {isLoading && !weekSummary ? (
           <View style={styles.loadingBox}>
@@ -167,7 +163,7 @@ const WeekStatsScreen = (): JSX.Element => {
             </View>
           </View>
         )}
-      </Card>
+      </AppCard>
     </Screen>
   );
 };

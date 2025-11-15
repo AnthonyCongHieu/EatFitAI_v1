@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { FlatList, StyleSheet, View } from 'react-native';
+import Toast from 'react-native-toast-message';
 
 import { ThemedText } from '../ThemedText';
 import { ThemedTextInput } from '../ThemedTextInput';
@@ -27,6 +28,7 @@ export const TeachLabelBottomSheet = ({
   const [foods, setFoods] = useState<FoodItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const flatListRef = useRef<FlatList>(null);
 
   useEffect(() => {
     if (visible && currentLabel) {
@@ -35,7 +37,7 @@ export const TeachLabelBottomSheet = ({
     }
   }, [visible, currentLabel]);
 
-  const searchFoods = async (query: string) => {
+  const searchFoods = useCallback(async (query: string) => {
     if (!query.trim()) {
       setFoods([]);
       return;
@@ -48,28 +50,36 @@ export const TeachLabelBottomSheet = ({
       const result = await foodService.searchAllFoods(query, 20);
       setFoods(result.items);
     } catch (err) {
-      setError('Không thể tìm kiếm món ăn');
+      setError('Không thể tìm kiếm món ăn. Vui lòng thử lại.');
       setFoods([]);
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const handleSearchChange = (text: string) => {
+  const handleSearchChange = useCallback((text: string) => {
     setSearchQuery(text);
     // Debounce search
     const timeoutId = setTimeout(() => {
       searchFoods(text);
     }, 300);
     return () => clearTimeout(timeoutId);
-  };
+  }, [searchFoods]);
 
-  const handleSelectFood = (food: FoodItem) => {
-    onSelectFood(food);
-    onClose();
-  };
+  const handleSelectFood = useCallback((food: FoodItem) => {
+    try {
+      onSelectFood(food);
+      onClose();
+    } catch (err) {
+      Toast.show({
+        type: 'error',
+        text1: 'Lỗi',
+        text2: 'Không thể chọn món ăn. Vui lòng thử lại.',
+      });
+    }
+  }, [onSelectFood, onClose]);
 
-  const renderFoodItem = ({ item }: { item: FoodItem }) => (
+  const renderFoodItem = useCallback(({ item }: { item: FoodItem }) => (
     <ListItem
       title={item.name}
       subtitle={item.brand ? `Thương hiệu: ${item.brand}` : undefined}
@@ -82,9 +92,9 @@ export const TeachLabelBottomSheet = ({
         ) : undefined
       }
     />
-  );
+  ), [handleSelectFood]);
 
-  const renderSkeleton = () => (
+  const renderSkeleton = useCallback(() => (
     <View style={styles.skeletonContainer}>
       {Array.from({ length: 5 }).map((_, index) => (
         <View key={index} style={styles.skeletonItem}>
@@ -93,7 +103,9 @@ export const TeachLabelBottomSheet = ({
         </View>
       ))}
     </View>
-  );
+  ), []);
+
+  const keyExtractor = useCallback((item: FoodItem) => item.id, []);
 
   return (
     <BottomSheet
@@ -121,8 +133,9 @@ export const TeachLabelBottomSheet = ({
           renderSkeleton()
         ) : (
           <FlatList
+            ref={flatListRef}
             data={foods}
-            keyExtractor={(item) => item.id}
+            keyExtractor={keyExtractor}
             renderItem={renderFoodItem}
             showsVerticalScrollIndicator={false}
             contentContainerStyle={foods.length === 0 && styles.emptyContainer}
@@ -138,6 +151,9 @@ export const TeachLabelBottomSheet = ({
                 </View>
               ) : null
             }
+            initialNumToRender={10}
+            maxToRenderPerBatch={10}
+            windowSize={10}
           />
         )}
       </View>

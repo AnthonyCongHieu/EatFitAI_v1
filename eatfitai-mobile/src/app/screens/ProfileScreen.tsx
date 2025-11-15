@@ -22,6 +22,7 @@ import { ThemedText } from '../../components/ThemedText';
 import ThemedTextInput from '../../components/ThemedTextInput';
 import Button from '../../components/Button';
 import Screen from '../../components/Screen';
+import { AppCard } from '../../components/ui/AppCard';
 import { useAppTheme } from '../../theme/ThemeProvider';
 import { useAuthStore } from '../../store/useAuthStore';
 import { useProfileStore } from '../../store/useProfileStore';
@@ -169,7 +170,7 @@ const ProfileScreen = (): JSX.Element => {
       style={[styles.flex, { backgroundColor: theme.colors.background }]}
       behavior={Platform.select({ ios: 'padding', android: undefined })}>
       <Screen contentContainerStyle={styles.scrollContent}>
-        <View style={[styles.card, { backgroundColor: theme.colors.card, ...theme.shadows.md }]}>
+        <AppCard>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: theme.spacing.sm, marginBottom: theme.spacing.sm }}>
             <View style={[styles.avatar, { backgroundColor: theme.colors.primaryLight }]}>
               <ThemedText variant="h2" color="primary">
@@ -246,9 +247,9 @@ const ProfileScreen = (): JSX.Element => {
               fullWidth
             />
           </View>
-        </View>
+        </AppCard>
 
-        <View style={[styles.card, { backgroundColor: theme.colors.card, ...theme.shadows.md }]}>
+        <AppCard>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: theme.spacing.sm, marginBottom: theme.spacing.sm }}>
             <View style={[styles.icon, { backgroundColor: theme.colors.secondaryLight }]}>
               <ThemedText variant="h4" color="secondary">
@@ -348,7 +349,7 @@ const ProfileScreen = (): JSX.Element => {
               title={isSubmittingMetrics ? 'Đang lưu...' : 'Lưu số đo mới'}
             />
           </View>
-        </View>
+        </AppCard>
       </Screen>
     </KeyboardAvoidingView>
   );

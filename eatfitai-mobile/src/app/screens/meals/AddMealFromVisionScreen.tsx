@@ -1,5 +1,5 @@
-import React, { useState, useMemo } from 'react';
-import { Image, StyleSheet, View, ScrollView, Alert } from 'react-native';
+import React, { useState, useMemo, useCallback } from 'react';
+import { Image, StyleSheet, View, FlatList, ListRenderItem } from 'react-native';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import Toast from 'react-native-toast-message';
@@ -75,28 +75,28 @@ const AddMealFromVisionScreen = (): JSX.Element => {
     }, 0);
   }, [selectedItems]);
 
-  const handleSelectionChange = (index: number, selected: boolean) => {
+  const handleSelectionChange = useCallback((index: number, selected: boolean) => {
     setDetectionItems((prev) =>
       prev.map((item, i) => (i === index ? { ...item, selected } : item))
     );
-  };
+  }, []);
 
-  const handleGramsChange = (index: number, grams: number) => {
+  const handleGramsChange = useCallback((index: number, grams: number) => {
     setDetectionItems((prev) =>
       prev.map((item, i) => (i === index ? { ...item, grams } : item))
     );
-  };
+  }, []);
 
-  const handleMealTypeChange = (index: number, mealType: MealTypeId) => {
+  const handleMealTypeChange = useCallback((index: number, mealType: MealTypeId) => {
     setDetectionItems((prev) =>
       prev.map((item, i) => (i === index ? { ...item, mealType } : item))
     );
-  };
+  }, []);
 
-  const handleTeachLabel = (label: string) => {
+  const handleTeachLabel = useCallback((label: string) => {
     setCurrentTeachLabel(label);
     setTeachLabelVisible(true);
-  };
+  }, []);
 
   const handleSelectFood = async (foodItem: FoodItem) => {
     try {
@@ -166,9 +166,8 @@ const AddMealFromVisionScreen = (): JSX.Element => {
     }
   };
 
-  const renderDetectionCard = (detection: DetectionItem, index: number) => (
+  const renderDetectionCard: ListRenderItem<DetectionItem> = useCallback(({ item: detection, index }) => (
     <AiDetectionCard
-      key={`${detection.item.label}-${index}`}
       item={detection.item}
       selected={detection.selected}
       grams={detection.grams}
@@ -178,7 +177,10 @@ const AddMealFromVisionScreen = (): JSX.Element => {
       onMealTypeChange={(mealType) => handleMealTypeChange(index, mealType)}
       onTeachLabel={() => handleTeachLabel(detection.item.label)}
     />
-  );
+  ), [handleSelectionChange, handleGramsChange, handleMealTypeChange, handleTeachLabel]);
+
+  const keyExtractor = useCallback((item: DetectionItem, index: number) =>
+    `${item.item.label}-${index}`, []);
 
   const renderSkeleton = () => (
     <View style={styles.skeletonContainer}>
@@ -219,33 +221,53 @@ const AddMealFromVisionScreen = (): JSX.Element => {
         </View>
       </View>
 
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-        {loading ? (
-          renderSkeleton()
-        ) : (
-          <View style={styles.content}>
-            {/* Gợi ý của AI */}
-            {matchedItems.length > 0 && (
-              <View style={styles.section}>
-                <SectionHeader title="Gợi ý của AI" />
-                {matchedItems.map((detection, index) =>
-                  renderDetectionCard(detection, detectionItems.indexOf(detection))
-                )}
-              </View>
-            )}
-
-            {/* Cần xác nhận */}
-            {unmatchedItems.length > 0 && (
-              <View style={styles.section}>
-                <SectionHeader title="Cần xác nhận" />
-                {unmatchedItems.map((detection, index) =>
-                  renderDetectionCard(detection, detectionItems.indexOf(detection))
-                )}
-              </View>
-            )}
-          </View>
-        )}
-      </ScrollView>
+      {loading ? (
+        <View style={styles.scrollView}>
+          {renderSkeleton()}
+        </View>
+      ) : (
+        <FlatList
+          style={styles.scrollView}
+          contentContainerStyle={styles.content}
+          showsVerticalScrollIndicator={false}
+          ListHeaderComponent={
+            <>
+              {/* Gợi ý của AI */}
+              {matchedItems.length > 0 && (
+                <View style={styles.section}>
+                  <SectionHeader title="Gợi ý của AI" />
+                </View>
+              )}
+            </>
+          }
+          data={matchedItems}
+          keyExtractor={keyExtractor}
+          renderItem={renderDetectionCard}
+          ListFooterComponent={
+            <>
+              {/* Cần xác nhận */}
+              {unmatchedItems.length > 0 && (
+                <View style={styles.section}>
+                  <SectionHeader title="Cần xác nhận" />
+                  {unmatchedItems.map((detection, index) => (
+                    <AiDetectionCard
+                      key={`${detection.item.label}-${detectionItems.indexOf(detection)}`}
+                      item={detection.item}
+                      selected={detection.selected}
+                      grams={detection.grams}
+                      mealType={detection.mealType}
+                      onSelectionChange={(selected) => handleSelectionChange(detectionItems.indexOf(detection), selected)}
+                      onGramsChange={(grams) => handleGramsChange(detectionItems.indexOf(detection), grams)}
+                      onMealTypeChange={(mealType) => handleMealTypeChange(detectionItems.indexOf(detection), mealType)}
+                      onTeachLabel={() => handleTeachLabel(detection.item.label)}
+                    />
+                  ))}
+                </View>
+              )}
+            </>
+          }
+        />
+      )}
 
       {/* Summary Bar */}
       <AiSummaryBar
