@@ -144,6 +144,31 @@ const HomeScreen = (): JSX.Element => {
     });
   }, [refreshSummary]);
 
+  const handleAddOption = useCallback(
+    (option: AddOption) => {
+      setShowAddModal(false);
+      if (option === 'search') return navigation.navigate('FoodSearch');
+      if (option === 'custom') return navigation.navigate('CustomDish');
+      // Skip AI option as per task requirements
+    },
+    [navigation],
+  );
+
+  const handleQuickAction = useCallback((mealType: MealTypeId) => {
+    navigation.navigate('AddMealFromVision', {
+      imageUri: '', // Will be set by camera screen
+      result: { items: [], unmappedLabels: [] } // Placeholder
+    });
+  }, [navigation]);
+
+  const handleAICamera = useCallback(() => {
+    navigation.navigate('AiCamera');
+  }, [navigation]);
+
+  const handleViewAllDiary = useCallback(() => {
+    navigation.navigate('MealDiary');
+  }, [navigation]);
+
   const handleDelete = useCallback(
     (entryId: string, foodName: string) => {
       Alert.alert(t('common.deleteConfirm'), t('common.deleteItem', foodName), [
@@ -179,72 +204,6 @@ const HomeScreen = (): JSX.Element => {
     [refreshSummary],
   );
 
-  const handleAddOption = useCallback(
-    (option: AddOption) => {
-      setShowAddModal(false);
-      if (option === 'search') return navigation.navigate('FoodSearch');
-      if (option === 'custom') return navigation.navigate('CustomDish');
-      // Skip AI option as per task requirements
-    },
-    [navigation],
-  );
-
-  // Calculate remaining calories
-  const remainingCalories = useMemo(() => {
-    if (!summary || typeof summary.totalCalories !== 'number' || typeof summary.targetCalories !== 'number') return 0;
-    return Math.max(0, summary.targetCalories - summary.totalCalories);
-  }, [summary]);
-
-  // Calculate progress percentage
-  const calorieProgress = useMemo(() => {
-    if (!summary || typeof summary.totalCalories !== 'number' || typeof summary.targetCalories !== 'number') return 0;
-    return Math.min(1, summary.totalCalories / summary.targetCalories);
-  }, [summary]);
-
-  // Animate values when they change
-  useEffect(() => {
-    remainingCaloriesValue.value = withTiming(remainingCalories, { duration: theme.animation.normal });
-  }, [remainingCalories, remainingCaloriesValue, theme.animation.normal]);
-
-  useEffect(() => {
-    calorieProgressValue.value = withTiming(calorieProgress, { duration: theme.animation.slow });
-  }, [calorieProgress, calorieProgressValue, theme.animation.slow]);
-
-  useEffect(() => {
-    proteinValue.value = withTiming(summary?.protein || 0, { duration: theme.animation.normal });
-  }, [summary?.protein, proteinValue, theme.animation.normal]);
-
-  useEffect(() => {
-    carbsValue.value = withTiming(summary?.carbs || 0, { duration: theme.animation.normal });
-  }, [summary?.carbs, carbsValue, theme.animation.normal]);
-
-  useEffect(() => {
-    fatValue.value = withTiming(summary?.fat || 0, { duration: theme.animation.normal });
-  }, [summary?.fat, fatValue, theme.animation.normal]);
-
-  // Get today's entries for diary section (first 2-3)
-  const todayEntries = useMemo(() => {
-    if (!summary?.meals) return [];
-    return summary.meals.flatMap(meal => meal.entries).slice(0, 3);
-  }, [summary]);
-
-  // Handle quick action navigation
-  const handleQuickAction = useCallback((mealType: MealTypeId) => {
-    navigation.navigate('AddMealFromVision', {
-      imageUri: '', // Will be set by camera screen
-      result: { items: [], unmappedLabels: [] } // Placeholder
-    });
-  }, [navigation]);
-
-  // Handle AI camera navigation
-  const handleAICamera = useCallback(() => {
-    navigation.navigate('AiCamera');
-  }, [navigation]);
-
-  // Handle view all diary
-  const handleViewAllDiary = useCallback(() => {
-    navigation.navigate('MealDiary');
-  }, [navigation]);
 
   return (
     <View style={{ flex: 1, backgroundColor: theme.colors.background }}>

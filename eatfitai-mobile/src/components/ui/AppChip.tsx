@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 
 import { Chip } from '../Chip';
 
@@ -9,7 +9,7 @@ type AppChipProps = {
   onPress?: () => void;
 };
 
-export const AppChip = ({
+const AppChipComponent = ({
   label,
   selected = false,
   variant = 'solid',
@@ -26,5 +26,7 @@ export const AppChip = ({
     />
   );
 };
+
+export const AppChip = memo(AppChipComponent);
 
 export default AppChip;

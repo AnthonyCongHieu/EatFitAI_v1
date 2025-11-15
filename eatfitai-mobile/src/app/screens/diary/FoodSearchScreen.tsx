@@ -234,6 +234,10 @@ const FoodSearchScreen = (): JSX.Element => {
           contentContainerStyle={styles.listContent}
           onEndReached={handleLoadMore}
           onEndReachedThreshold={0.3}
+          initialNumToRender={10}
+          maxToRenderPerBatch={5}
+          windowSize={10}
+          removeClippedSubviews={true}
           ListEmptyComponent={
             hasSearched ? (
               <View style={styles.centerBox}>

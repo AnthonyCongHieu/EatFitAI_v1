@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo, useMemo } from 'react';
 import { Pressable, View } from 'react-native';
 import Animated, { useAnimatedStyle, interpolate } from 'react-native-reanimated';
 import { SharedValue } from 'react-native-reanimated';
@@ -17,7 +17,7 @@ type MetricCardProps = {
   onPress?: () => void;
 };
 
-export const MetricCard = ({ icon, value, label, color, progress, onPress }: MetricCardProps) => {
+const MetricCardComponent = ({ icon, value, label, color, progress, onPress }: MetricCardProps) => {
   const { theme } = useAppTheme();
 
   const animatedStyle = useAnimatedStyle(() => ({
@@ -28,32 +28,33 @@ export const MetricCard = ({ icon, value, label, color, progress, onPress }: Met
     transform: [{ scale: interpolate(value.value, [0, 100], [1, 1.05]) }],
   }));
 
+  const styles = useMemo(() => ({
+    container: { flex: 1, alignItems: 'center' as const },
+    text: {
+      fontSize: theme.typography.h3.fontSize,
+      fontFamily: theme.typography.h3.fontFamily,
+      marginTop: theme.spacing.xs,
+      color: theme.colors.text,
+    },
+    progressContainer: { marginTop: theme.spacing.xs },
+  }), [theme]);
+
   return (
     <Animated.View style={animatedStyle}>
       <Pressable
-        style={{ flex: 1, alignItems: 'center' }}
+        style={styles.container}
         onPress={onPress}
         disabled={!onPress}
       >
         <Icon name={icon} size="lg" color={color} />
-        <Animated.Text
-          style={[
-            {
-              fontSize: theme.typography.h3.fontSize,
-              fontFamily: theme.typography.h3.fontFamily,
-              marginTop: theme.spacing.xs,
-              color: theme.colors.text,
-            },
-            textAnimatedStyle,
-          ]}
-        >
+        <Animated.Text style={[styles.text, textAnimatedStyle]}>
           {Math.round(value.value)}
         </Animated.Text>
         <ThemedText variant="caption" color="textSecondary">
           {label}
         </ThemedText>
         {progress !== undefined && (
-          <View style={{ marginTop: theme.spacing.xs }}>
+          <View style={styles.progressContainer}>
             <ProgressBar
               progress={progress}
               height={4}
@@ -66,3 +67,5 @@ export const MetricCard = ({ icon, value, label, color, progress, onPress }: Met
     </Animated.View>
   );
 };
+
+export const MetricCard = memo(MetricCardComponent);
