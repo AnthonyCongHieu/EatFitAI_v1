@@ -8,11 +8,12 @@ import { Controller, useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import Toast from 'react-native-toast-message';
-import Animated, { FadeIn } from 'react-native-reanimated';
+import Animated, { FadeIn, useSharedValue, useAnimatedStyle, withTiming, interpolate } from 'react-native-reanimated';
 
 import { ThemedText } from '../../../components/ThemedText';
 import Screen from '../../../components/Screen';
 import { AppCard } from '../../../components/ui/AppCard';
+import { ScreenHeader } from '../../../components/ui/ScreenHeader';
 import { AppStepper } from '../../../components/ui/AppStepper';
 import Button from '../../../components/Button';
 import ThemedTextInput from '../../../components/ThemedTextInput';
@@ -53,9 +54,40 @@ const FoodDetailScreen = (): JSX.Element | null => {
   const route = useRoute<RouteProps>();
   const refreshSummary = useDiaryStore((state) => state.refreshSummary);
 
+  const styles = StyleSheet.create({
+    loadingContainer: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+    content: { paddingHorizontal: theme.spacing.lg, paddingVertical: theme.spacing.xl, gap: theme.spacing.xxl, flexGrow: 1 },
+    header: {
+      paddingHorizontal: theme.spacing.lg,
+      paddingTop: theme.spacing.lg,
+      paddingBottom: theme.spacing.xl,
+    },
+    title: {
+      marginBottom: theme.spacing.sm,
+    },
+    infoRow: { flexDirection: 'row', gap: theme.spacing.sm },
+    infoBox: { flex: 1, padding: theme.spacing.lg, borderRadius: theme.borderRadius.card, gap: theme.spacing.xs },
+    macroRow: { flexDirection: 'row', gap: theme.spacing.sm },
+    macroBox: { flex: 1, padding: theme.spacing.md, borderRadius: theme.borderRadius.card, gap: theme.spacing.xs },
+    mealRow: { flexDirection: 'row', flexWrap: 'wrap', gap: theme.spacing.xs },
+    mealChip: { borderWidth: 1.5, borderRadius: 999, paddingVertical: theme.spacing.sm, paddingHorizontal: theme.spacing.lg },
+    previewBox: { padding: theme.spacing.lg, borderRadius: theme.borderRadius.card },
+    animatedMacroValue: {
+      fontSize: theme.typography.bodyLarge.fontSize,
+      fontFamily: theme.typography.bodyLarge.fontFamily,
+      color: theme.colors.text,
+    },
+  });
+
   const [detail, setDetail] = useState<FoodDetail | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Animation values
+  const proteinValue = useSharedValue(0);
+  const carbsValue = useSharedValue(0);
+  const fatValue = useSharedValue(0);
+  const caloriesValue = useSharedValue(0);
 
   const {
     control,
@@ -109,6 +141,19 @@ const FoodDetailScreen = (): JSX.Element | null => {
     if (!gramsNumber || !base) return 0;
     return gramsNumber / base;
   }, [detail?.servingSizeGram, gramsValue]);
+
+  // Animate values when multiplier changes
+  useEffect(() => {
+    const protein = (detail?.perServingProtein ?? detail?.protein ?? 0) * multiplier;
+    const carbs = (detail?.perServingCarbs ?? detail?.carbs ?? 0) * multiplier;
+    const fat = (detail?.perServingFat ?? detail?.fat ?? 0) * multiplier;
+    const calories = (detail?.perServingCalories ?? detail?.calories ?? 0) * multiplier;
+
+    proteinValue.value = withTiming(protein, { duration: theme.animation.normal });
+    carbsValue.value = withTiming(carbs, { duration: theme.animation.normal });
+    fatValue.value = withTiming(fat, { duration: theme.animation.normal });
+    caloriesValue.value = withTiming(calories, { duration: theme.animation.normal });
+  }, [multiplier, detail, proteinValue, carbsValue, fatValue, caloriesValue]);
 
   const macroValue = useCallback(
     (base?: number | null) => {
@@ -177,11 +222,16 @@ const FoodDetailScreen = (): JSX.Element | null => {
   if (!detail) return null;
 
   return (
-    <Screen contentContainerStyle={styles.content}>
-      <Animated.View entering={FadeIn.duration(theme.animation.normal)}>
+    <Screen>
+      <ScreenHeader
+        title="Chi tiết món ăn"
+        subtitle={detail.name}
+      />
+
+      <Animated.View entering={FadeIn.duration(theme.animation.normal)} style={styles.content}>
         <AppCard>
           <ThemedText variant="h2" style={{ marginBottom: theme.spacing.xs }}>
-            {detail.name}
+            Thông tin dinh dưỡng
           </ThemedText>
           {detail.brand ? (
             <ThemedText variant="bodySmall" color="textSecondary" style={{ marginBottom: theme.spacing.xs }}>
@@ -214,39 +264,60 @@ const FoodDetailScreen = (): JSX.Element | null => {
           </View>
 
           <View style={[styles.macroRow, { marginTop: theme.spacing.md }]}>
-            <View style={[styles.macroBox, { backgroundColor: theme.colors.background }]}>
+            <Animated.View
+              style={[
+                styles.macroBox,
+                { backgroundColor: theme.colors.background },
+                useAnimatedStyle(() => ({
+                  transform: [{ scale: interpolate(proteinValue.value, [0, 50], [1, 1.05]) }],
+                })),
+              ]}
+            >
               <ThemedText variant="caption" color="textSecondary" weight="600" style={{ textTransform: 'uppercase' }}>
                 Protein
               </ThemedText>
-              <ThemedText variant="h4">{
-                (() => {
-                  const v = detail.perServingProtein ?? detail.protein;
-                  return v != null ? `${Number(v).toFixed(1).replace(/\.0$/, '')} g` : '--';
-                })()
-              }</ThemedText>
-            </View>
-            <View style={[styles.macroBox, { backgroundColor: theme.colors.background }]}>
+              <Animated.Text style={[styles.animatedMacroValue, useAnimatedStyle(() => ({
+                transform: [{ scale: interpolate(proteinValue.value, [0, 50], [1, 1.1]) }],
+              }))]}>
+                {proteinValue.value > 0 ? `${proteinValue.value.toFixed(1).replace(/\.0$/, '')} g` : '--'}
+              </Animated.Text>
+            </Animated.View>
+            <Animated.View
+              style={[
+                styles.macroBox,
+                { backgroundColor: theme.colors.background },
+                useAnimatedStyle(() => ({
+                  transform: [{ scale: interpolate(carbsValue.value, [0, 100], [1, 1.05]) }],
+                })),
+              ]}
+            >
               <ThemedText variant="caption" color="textSecondary" weight="600" style={{ textTransform: 'uppercase' }}>
                 Carb
               </ThemedText>
-              <ThemedText variant="h4">{
-                (() => {
-                  const v = detail.perServingCarbs ?? detail.carbs;
-                  return v != null ? `${Number(v).toFixed(1).replace(/\.0$/, '')} g` : '--';
-                })()
-              }</ThemedText>
-            </View>
-            <View style={[styles.macroBox, { backgroundColor: theme.colors.background }]}>
+              <Animated.Text style={[styles.animatedMacroValue, useAnimatedStyle(() => ({
+                transform: [{ scale: interpolate(carbsValue.value, [0, 100], [1, 1.1]) }],
+              }))]}>
+                {carbsValue.value > 0 ? `${carbsValue.value.toFixed(1).replace(/\.0$/, '')} g` : '--'}
+              </Animated.Text>
+            </Animated.View>
+            <Animated.View
+              style={[
+                styles.macroBox,
+                { backgroundColor: theme.colors.background },
+                useAnimatedStyle(() => ({
+                  transform: [{ scale: interpolate(fatValue.value, [0, 30], [1, 1.05]) }],
+                })),
+              ]}
+            >
               <ThemedText variant="caption" color="textSecondary" weight="600" style={{ textTransform: 'uppercase' }}>
                 Fat
               </ThemedText>
-              <ThemedText variant="h4">{
-                (() => {
-                  const v = detail.perServingFat ?? detail.fat;
-                  return v != null ? `${Number(v).toFixed(1).replace(/\.0$/, '')} g` : '--';
-                })()
-              }</ThemedText>
-            </View>
+              <Animated.Text style={[styles.animatedMacroValue, useAnimatedStyle(() => ({
+                transform: [{ scale: interpolate(fatValue.value, [0, 30], [1, 1.1]) }],
+              }))]}>
+                {fatValue.value > 0 ? `${fatValue.value.toFixed(1).replace(/\.0$/, '')} g` : '--'}
+              </Animated.Text>
+            </Animated.View>
           </View>
         </AppCard>
       </Animated.View>
@@ -299,7 +370,7 @@ const FoodDetailScreen = (): JSX.Element | null => {
                   <ThemedText
                     variant="button"
                     style={{
-                      color: mealTypeValue === option.value ? '#fff' : theme.colors.text,
+                      color: mealTypeValue === option.value ? theme.colors.card : theme.colors.text,
                     }}
                   >
                     {option.label}
@@ -366,17 +437,5 @@ const FoodDetailScreen = (): JSX.Element | null => {
     </Screen>
   );
 };
-
-const styles = StyleSheet.create({
-  loadingContainer: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  content: { padding: 16, gap: 16, flexGrow: 1 },
-  infoRow: { flexDirection: 'row', gap: 12 },
-  infoBox: { flex: 1, padding: 16, borderRadius: 12, gap: 8 },
-  macroRow: { flexDirection: 'row', gap: 12 },
-  macroBox: { flex: 1, padding: 12, borderRadius: 12, gap: 4 },
-  mealRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  mealChip: { borderWidth: 1.5, borderRadius: 999, paddingVertical: 10, paddingHorizontal: 20 },
-  previewBox: { padding: 16, borderRadius: 12 },
-});
 
 export default FoodDetailScreen;

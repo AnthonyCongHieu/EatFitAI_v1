@@ -1,5 +1,6 @@
-import React, { memo, useCallback } from 'react';
+import React, { memo, useCallback, useEffect, useMemo } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
+import Animated, { useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated';
 
 import { ThemedText } from '../ThemedText';
 import { useAppTheme } from '../../theme/ThemeProvider';
@@ -31,6 +32,62 @@ const AiDetectionCardComponent = ({
   onTeachLabel,
 }: AiDetectionCardProps): JSX.Element => {
   const { theme } = useAppTheme();
+
+  const styles = useMemo(() => StyleSheet.create({
+    card: {
+      marginBottom: theme.spacing.md,
+    },
+    header: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginBottom: theme.spacing.sm,
+    },
+    checkbox: {
+      width: 24,
+      height: 24,
+      borderRadius: theme.radius.sm,
+      borderWidth: 2,
+      borderColor: theme.colors.border,
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginRight: theme.spacing.md,
+    },
+    checkmark: {
+      color: theme.colors.card,
+      fontSize: 16,
+      fontWeight: 'bold',
+    },
+    titleContainer: {
+      flex: 1,
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+    },
+    title: {
+      flex: 1,
+    },
+    teachLabel: {
+      textDecorationLine: 'underline',
+    },
+    nutrition: {
+      marginBottom: theme.spacing.md,
+    },
+    calories: {
+      marginBottom: theme.spacing.xs,
+    },
+    controls: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+    },
+    stepperContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+    },
+    gramsLabel: {
+      marginLeft: theme.spacing.sm,
+    },
+  }), [theme]);
 
   // Animation values
   const scaleValue = useSharedValue(1);
@@ -86,17 +143,17 @@ const AiDetectionCardComponent = ({
           </ThemedText>
           {!item.isMatched && onTeachLabel && (
             <Pressable onPress={onTeachLabel}>
-              <ThemedText style={styles.teachLabel}>Chọn món đúng</ThemedText>
+              <ThemedText variant="bodySmall" color="primary" style={styles.teachLabel}>Chọn món đúng</ThemedText>
             </Pressable>
           )}
         </View>
       </View>
 
       <View style={styles.nutrition}>
-        <ThemedText style={styles.calories}>
+        <ThemedText variant="bodySmall" style={styles.calories}>
           {calories} kcal / 100 g
         </ThemedText>
-        <ThemedText style={styles.macros}>
+        <ThemedText variant="caption" color="textSecondary">
           P {protein}g · C {carbs}g · F {fat}g
         </ThemedText>
       </View>
@@ -110,7 +167,7 @@ const AiDetectionCardComponent = ({
             max={2000}
             step={10}
           />
-          <ThemedText style={styles.gramsLabel}>g</ThemedText>
+          <ThemedText variant="bodySmall" color="textSecondary" style={styles.gramsLabel}>g</ThemedText>
         </View>
 
         <AppChip
@@ -120,72 +177,10 @@ const AiDetectionCardComponent = ({
         />
       </View>
     </AppCard>
+    </Animated.View>
   );
 };
 
-const styles = StyleSheet.create({
-  card: {
-    marginBottom: 12,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  checkbox: {
-    width: 24,
-    height: 24,
-    borderRadius: 4,
-    borderWidth: 2,
-    borderColor: '#ccc',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
-  },
-  checkmark: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  titleContainer: {
-    flex: 1,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  title: {
-    flex: 1,
-  },
-  teachLabel: {
-    color: '#007AFF',
-    fontSize: 14,
-    textDecorationLine: 'underline',
-  },
-  nutrition: {
-    marginBottom: 12,
-  },
-  calories: {
-    fontSize: 14,
-    marginBottom: 4,
-  },
-  macros: {
-    fontSize: 12,
-    color: '#666',
-  },
-  controls: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  stepperContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  gramsLabel: {
-    marginLeft: 8,
-    fontSize: 14,
-  },
-});
 
 export const AiDetectionCard = memo(AiDetectionCardComponent);
 export default AiDetectionCard;

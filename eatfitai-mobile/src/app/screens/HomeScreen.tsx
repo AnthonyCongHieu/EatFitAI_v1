@@ -1,5 +1,6 @@
 ﻿import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Alert, Modal, Pressable, RefreshControl, StyleSheet, View } from 'react-native';
+import Animated, { FadeInUp, useSharedValue, useAnimatedStyle, withSpring, withTiming, interpolate } from 'react-native-reanimated';
 import Toast from 'react-native-toast-message';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -23,6 +24,8 @@ import { AppCard } from '../../components/ui/AppCard';
 import { AppChip } from '../../components/ui/AppChip';
 import { SectionHeader } from '../../components/ui/SectionHeader';
 import { EmptyState } from '../../components/ui/EmptyState';
+import { ScreenHeader } from '../../components/ui/ScreenHeader';
+import { MetricCard } from '../../../components/ui/MetricCard';
 
 const MEAL_TITLE_MAP: Record<MealTypeId, string> = {
   1: t('mealTypes.breakfast'),
@@ -34,28 +37,6 @@ const MEAL_TITLE_MAP: Record<MealTypeId, string> = {
 type AddOption = 'search' | 'custom' | 'ai';
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
-const AddEntryModal = ({ visible, onClose, onSelect }: { visible: boolean; onClose: () => void; onSelect: (option: AddOption) => void }): JSX.Element => {
-  const { theme } = useAppTheme();
-  return (
-    <Modal transparent visible={visible} animationType="fade" onRequestClose={onClose}>
-      <View style={styles.modalBackdrop}>
-        <Card>
-          <ThemedText variant="h3">{t('home.addDishTitle')}</ThemedText>
-          <ThemedText variant="body" color="textSecondary" style={{ marginTop: theme.spacing.xs, marginBottom: theme.spacing.md }}>
-            {t('home.chooseAddMethod')}
-          </ThemedText>
-          <Button title={t('home.searchExisting')} onPress={() => onSelect('search')} />
-          <View style={{ height: 8 }} />
-          <Button variant="outline" title={t('home.createCustom')} onPress={() => onSelect('custom')} />
-          <Pressable accessibilityRole="button" hitSlop={8} onPress={onClose} style={{ alignItems: 'center', marginTop: 8 }}>
-            <ThemedText variant="body" color="muted">{t('home.close')}</ThemedText>
-          </Pressable>
-        </Card>
-      </View>
-    </Modal>
-  );
-};
-
 const formatNumber = (value?: number | null, suffix = '', decimals = 0): string => {
   if (typeof value !== 'number' || Number.isNaN(value)) return '--';
   if (decimals === 0) {
@@ -64,15 +45,32 @@ const formatNumber = (value?: number | null, suffix = '', decimals = 0): string 
   return `${value.toFixed(decimals)}${suffix}`;
 };
 
-const formatDate = (dateValue: string | undefined): string => {
-  if (!dateValue) return t('common.today');
-  const date = new Date(dateValue);
-  if (Number.isNaN(date.getTime())) return t('common.today');
-  return new Intl.DateTimeFormat('vi-VN', { weekday: 'long', day: '2-digit', month: '2-digit' }).format(date);
-};
 
 const HomeScreen = (): JSX.Element => {
   const { theme } = useAppTheme();
+  const styles = getStyles(theme);
+
+  const AddEntryModal = ({ visible, onClose, onSelect }: { visible: boolean; onClose: () => void; onSelect: (option: AddOption) => void }): JSX.Element => {
+    return (
+      <Modal transparent visible={visible} animationType="fade" onRequestClose={onClose}>
+        <View style={styles.modalBackdrop}>
+          <Card>
+            <ThemedText variant="h3">{t('home.addDishTitle')}</ThemedText>
+            <ThemedText variant="body" color="textSecondary" style={{ marginTop: theme.spacing.xs, marginBottom: theme.spacing.md }}>
+              {t('home.chooseAddMethod')}
+            </ThemedText>
+            <Button title={t('home.searchExisting')} onPress={() => onSelect('search')} />
+            <View style={{ height: theme.spacing.sm }} />
+            <Button variant="outline" title={t('home.createCustom')} onPress={() => onSelect('custom')} />
+            <Pressable accessibilityRole="button" hitSlop={8} onPress={onClose} style={{ alignItems: 'center', marginTop: 8 }}>
+              <ThemedText variant="body" color="muted">{t('home.close')}</ThemedText>
+            </Pressable>
+          </Card>
+        </View>
+      </Modal>
+    );
+  };
+
   const navigation = useNavigation<NavigationProp>();
   const summary = useDiaryStore((s) => s.summary);
   const isLoading = useDiaryStore((s) => s.isLoading);
@@ -82,6 +80,13 @@ const HomeScreen = (): JSX.Element => {
   const deleteEntry = useDiaryStore((s) => s.deleteEntry);
   const [showAddModal, setShowAddModal] = useState(false);
   const [serverDown, setServerDown] = useState(false);
+
+  // Animation values
+  const remainingCaloriesValue = useSharedValue(0);
+  const calorieProgressValue = useSharedValue(0);
+  const proteinValue = useSharedValue(0);
+  const carbsValue = useSharedValue(0);
+  const fatValue = useSharedValue(0);
 
   useEffect(() => {
     fetchSummary()
@@ -196,6 +201,27 @@ const HomeScreen = (): JSX.Element => {
     return Math.min(1, summary.totalCalories / summary.targetCalories);
   }, [summary]);
 
+  // Animate values when they change
+  useEffect(() => {
+    remainingCaloriesValue.value = withTiming(remainingCalories, { duration: theme.animation.normal });
+  }, [remainingCalories, remainingCaloriesValue, theme.animation.normal]);
+
+  useEffect(() => {
+    calorieProgressValue.value = withTiming(calorieProgress, { duration: theme.animation.slow });
+  }, [calorieProgress, calorieProgressValue, theme.animation.slow]);
+
+  useEffect(() => {
+    proteinValue.value = withTiming(summary?.protein || 0, { duration: theme.animation.normal });
+  }, [summary?.protein, proteinValue, theme.animation.normal]);
+
+  useEffect(() => {
+    carbsValue.value = withTiming(summary?.carbs || 0, { duration: theme.animation.normal });
+  }, [summary?.carbs, carbsValue, theme.animation.normal]);
+
+  useEffect(() => {
+    fatValue.value = withTiming(summary?.fat || 0, { duration: theme.animation.normal });
+  }, [summary?.fat, fatValue, theme.animation.normal]);
+
   // Get today's entries for diary section (first 2-3)
   const todayEntries = useMemo(() => {
     if (!summary?.meals) return [];
@@ -222,81 +248,71 @@ const HomeScreen = (): JSX.Element => {
 
   return (
     <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
+      <ScreenHeader
+        title="Trang chủ"
+        subtitle="Theo dõi dinh dưỡng hàng ngày"
+      />
+
       <Screen
-        contentContainerStyle={{ padding: 16, gap: 16 }}
+        contentContainerStyle={{ paddingHorizontal: theme.spacing.lg, paddingVertical: theme.spacing.xl, gap: theme.spacing.xxl }}
         refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} tintColor={theme.colors.primary} />}
       >
         {serverDown && (
-          <View style={{ padding: 12, borderRadius: theme.radius.md, backgroundColor: theme.colors.danger + '20' }}>
+          <View style={{ padding: theme.spacing.md, borderRadius: theme.radius.md, backgroundColor: theme.colors.danger + '20' }}>
             <ThemedText color="danger" weight="600">{t('app.serverConnectionError')}</ThemedText>
             <ThemedText variant="bodySmall" color="textSecondary">{t('app.checkApiUrl')}</ThemedText>
           </View>
         )}
 
         {/* Hero Card */}
-        <AppCard style={{ backgroundColor: theme.colors.card }}>
-          <View style={{ alignItems: 'center', gap: theme.spacing.md }}>
-            <ThemedText variant="h1" weight="700">
-              {t('home.remaining_calories', remainingCalories)}
-            </ThemedText>
-            <ThemedText variant="body" color="textSecondary">
-              {t('home.eaten_vs_target', summary?.totalCalories || 0, summary?.targetCalories || 0)}
-            </ThemedText>
-            <ProgressBar
-              progress={calorieProgress}
-              height={8}
-              color={theme.colors.primary}
-              backgroundColor={theme.colors.muted + '30'}
-              animated
-            />
-          </View>
-        </AppCard>
+        <Animated.View entering={FadeInUp.duration(theme.animation.slow).springify()}>
+          <AppCard style={{ backgroundColor: theme.colors.card }}>
+            <View style={{ alignItems: 'center', gap: theme.spacing.md }}>
+              <Animated.Text style={[styles.animatedNumber, useAnimatedStyle(() => ({
+                transform: [{ scale: interpolate(remainingCaloriesValue.value, [0, 1000], [1, 1.05]) }]
+              }))]}>
+                <ThemedText variant="h1" weight="700">
+                  {t('home.remaining_calories', Math.round(remainingCaloriesValue.value))}
+                </ThemedText>
+              </Animated.Text>
+              <ThemedText variant="body" color="textSecondary">
+                {t('home.eaten_vs_target', summary?.totalCalories || 0, summary?.targetCalories || 0)}
+              </ThemedText>
+              <ProgressBar
+                progress={calorieProgressValue.value}
+                height={8}
+                color={theme.colors.primary}
+                backgroundColor={theme.colors.muted + '30'}
+                animated
+              />
+            </View>
+          </AppCard>
+        </Animated.View>
 
         {/* Macro Card */}
         <AppCard title="Macros">
           <View style={{ flexDirection: 'row', gap: theme.spacing.md }}>
-            <View style={{ flex: 1, alignItems: 'center' }}>
-              <Icon name="fitness" size="lg" color="primary" />
-              <ThemedText variant="h4" style={{ marginTop: theme.spacing.xs }}>
-                {formatNumber(summary?.protein, 'g')}
-              </ThemedText>
-              <ThemedText variant="caption" color="textSecondary">Protein</ThemedText>
-              <View style={{ marginTop: theme.spacing.xs }}>
-                <ProgressBar
-                  progress={summary?.protein && summary?.targetCalories ? Math.min(1, (summary.protein * 4) / (summary.targetCalories * 0.3)) : 0}
-                  height={4}
-                  color={theme.colors.primary}
-                />
-              </View>
-            </View>
-            <View style={{ flex: 1, alignItems: 'center' }}>
-              <Icon name="restaurant" size="lg" color="secondary" />
-              <ThemedText variant="h4" style={{ marginTop: theme.spacing.xs }}>
-                {formatNumber(summary?.carbs, 'g')}
-              </ThemedText>
-              <ThemedText variant="caption" color="textSecondary">Carb</ThemedText>
-              <View style={{ marginTop: theme.spacing.xs }}>
-                <ProgressBar
-                  progress={summary?.carbs && summary?.targetCalories ? Math.min(1, (summary.carbs * 4) / (summary.targetCalories * 0.5)) : 0}
-                  height={4}
-                  color={theme.colors.secondary}
-                />
-              </View>
-            </View>
-            <View style={{ flex: 1, alignItems: 'center' }}>
-              <Icon name="local-dining" size="lg" color="warning" />
-              <ThemedText variant="h4" style={{ marginTop: theme.spacing.xs }}>
-                {formatNumber(summary?.fat, 'g')}
-              </ThemedText>
-              <ThemedText variant="caption" color="textSecondary">Fat</ThemedText>
-              <View style={{ marginTop: theme.spacing.xs }}>
-                <ProgressBar
-                  progress={summary?.fat && summary?.targetCalories ? Math.min(1, (summary.fat * 9) / (summary.targetCalories * 0.2)) : 0}
-                  height={4}
-                  color={theme.colors.warning}
-                />
-              </View>
-            </View>
+            <MetricCard
+              icon="fitness"
+              value={proteinValue}
+              label="Protein"
+              color="primary"
+              progress={proteinValue.value && summary?.targetCalories ? Math.min(1, (proteinValue.value * 4) / (summary.targetCalories * 0.3)) : 0}
+            />
+            <MetricCard
+              icon="restaurant"
+              value={carbsValue}
+              label="Carb"
+              color="secondary"
+              progress={carbsValue.value && summary?.targetCalories ? Math.min(1, (carbsValue.value * 4) / (summary.targetCalories * 0.5)) : 0}
+            />
+            <MetricCard
+              icon="local-dining"
+              value={fatValue}
+              label="Fat"
+              color="warning"
+              progress={fatValue.value && summary?.targetCalories ? Math.min(1, (fatValue.value * 9) / (summary.targetCalories * 0.2)) : 0}
+            />
           </View>
         </AppCard>
 
@@ -304,10 +320,18 @@ const HomeScreen = (): JSX.Element => {
         <View>
           <SectionHeader title={t('home.quick_actions_title')} />
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: theme.spacing.sm }}>
-            <AppChip label={t('home.add_breakfast')} onPress={() => handleQuickAction(1)} />
-            <AppChip label={t('home.add_lunch')} onPress={() => handleQuickAction(2)} />
-            <AppChip label={t('home.add_dinner')} onPress={() => handleQuickAction(3)} />
-            <AppChip label={t('home.add_snack')} onPress={() => handleQuickAction(4)} />
+            <Animated.View style={useAnimatedStyle(() => ({ transform: [{ scale: 1 }] }))}>
+              <AppChip label={t('home.add_breakfast')} onPress={() => handleQuickAction(1)} />
+            </Animated.View>
+            <Animated.View style={useAnimatedStyle(() => ({ transform: [{ scale: 1 }] }))}>
+              <AppChip label={t('home.add_lunch')} onPress={() => handleQuickAction(2)} />
+            </Animated.View>
+            <Animated.View style={useAnimatedStyle(() => ({ transform: [{ scale: 1 }] }))}>
+              <AppChip label={t('home.add_dinner')} onPress={() => handleQuickAction(3)} />
+            </Animated.View>
+            <Animated.View style={useAnimatedStyle(() => ({ transform: [{ scale: 1 }] }))}>
+              <AppChip label={t('home.add_snack')} onPress={() => handleQuickAction(4)} />
+            </Animated.View>
           </View>
         </View>
 
@@ -376,20 +400,22 @@ const HomeScreen = (): JSX.Element => {
   );
 };
 
-const styles = StyleSheet.create({
-  row: { flexDirection: 'row', gap: 12 },
-  box: { flex: 1, padding: 12, borderRadius: 12, gap: 4 },
-  muted: { opacity: 0.7 },
-  mealHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  mealTotal: { opacity: 0.9 },
-  entryRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 10, borderBottomWidth: 1 },
-  entryInfo: { flex: 1, paddingRight: 12 },
-  entryName: { fontFamily: 'Inter_600SemiBold' },
-  entryMeta: { opacity: 0.75, fontSize: 13 },
-  deleteChip: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 999, borderWidth: 1, borderColor: 'transparent', backgroundColor: 'transparent' },
-  badge: { paddingHorizontal: 6, paddingVertical: 2, borderRadius: 8 },
-  modalBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'center', alignItems: 'center', padding: 24 },
-  modalHint: { opacity: 0.8 },
+const getStyles = (theme: any) => StyleSheet.create({
+  entryRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: theme.spacing.sm, borderBottomWidth: 1 },
+  entryInfo: { flex: 1, paddingRight: theme.spacing.md },
+  deleteChip: { paddingHorizontal: theme.spacing.sm, paddingVertical: theme.spacing.xs, borderRadius: 999, borderWidth: 1, borderColor: 'transparent', backgroundColor: 'transparent' },
+  badge: { paddingHorizontal: theme.spacing.xs, paddingVertical: 2, borderRadius: theme.radius.sm },
+  modalBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'center', alignItems: 'center', padding: theme.spacing.xl },
+  animatedNumber: {
+    fontSize: theme.typography.h1.fontSize,
+    fontFamily: theme.typography.h1.fontFamily,
+    color: theme.colors.primary,
+  },
+  macroValue: {
+    fontSize: theme.typography.h3.fontSize,
+    fontFamily: theme.typography.h3.fontFamily,
+    marginTop: theme.spacing.xs,
+  },
 });
 
 export default HomeScreen;

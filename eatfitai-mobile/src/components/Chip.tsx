@@ -47,12 +47,12 @@ export const Chip = ({
   const getSizeConfig = () => {
     switch (size) {
       case 'sm':
-        return { paddingVertical: 4, paddingHorizontal: 8, fontSize: 12, borderRadius: 12 };
+        return { paddingVertical: 6, paddingHorizontal: 10, fontSize: 12, borderRadius: theme.borderRadius.chip };
       case 'lg':
-        return { paddingVertical: 10, paddingHorizontal: 16, fontSize: 16, borderRadius: 20 };
+        return { paddingVertical: 8, paddingHorizontal: 14, fontSize: 16, borderRadius: theme.borderRadius.chip };
       case 'md':
       default:
-        return { paddingVertical: 6, paddingHorizontal: 12, fontSize: 14, borderRadius: 16 };
+        return { paddingVertical: 6, paddingHorizontal: 12, fontSize: 14, borderRadius: theme.borderRadius.chip };
     }
   };
 
@@ -70,9 +70,9 @@ export const Chip = ({
     switch (variant) {
       case 'filled':
         return {
-          backgroundColor: selected ? selectedColor : theme.colors.muted + '20',
+          backgroundColor: selected ? theme.colors.primary : theme.colors.primaryLight,
           borderColor: 'transparent',
-          textColor: selected ? '#fff' : theme.colors.text,
+          textColor: selected ? '#FFFFFF' : theme.colors.textSecondary,
         };
       case 'outlined':
         return {

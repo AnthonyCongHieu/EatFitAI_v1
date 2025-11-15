@@ -22,6 +22,7 @@ import { Skeleton } from '../../../components/Skeleton';
 import { AiDetectionCard } from '../../../components/ui/AiDetectionCard';
 import { TeachLabelBottomSheet } from '../../../components/ui/TeachLabelBottomSheet';
 import { AiSummaryBar } from '../../../components/ui/AiSummaryBar';
+import { AppCard } from '../../../components/ui/AppCard';
 import { useAppTheme } from '../../../theme/ThemeProvider';
 import type { RootStackParamList } from '../../types';
 import type { MealTypeId } from '../../../types';
@@ -46,6 +47,68 @@ const AddMealFromVisionScreen = (): JSX.Element => {
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<RouteProps>();
   const refreshSummary = useDiaryStore((s) => s.refreshSummary);
+
+  const styles = StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: theme.colors.background,
+    },
+    header: {
+      paddingHorizontal: theme.spacing.lg,
+      paddingTop: theme.spacing.lg,
+      paddingBottom: theme.spacing.xl,
+    },
+    title: {
+      marginBottom: theme.spacing.sm,
+    },
+    imageContainer: {
+      position: 'relative',
+      width: '100%',
+      height: 200,
+      marginBottom: theme.spacing.xl,
+    },
+    image: {
+      width: '100%',
+      height: '100%',
+      borderRadius: theme.borderRadius.card,
+    },
+    overlay: {
+      position: 'absolute',
+      bottom: 0,
+      left: 0,
+      right: 0,
+      backgroundColor: 'rgba(0,0,0,0.6)',
+      paddingVertical: theme.spacing.sm,
+      paddingHorizontal: theme.spacing.lg,
+      borderBottomLeftRadius: theme.borderRadius.card,
+      borderBottomRightRadius: theme.borderRadius.card,
+    },
+    scrollView: {
+      flex: 1,
+    },
+    content: {
+      paddingHorizontal: theme.spacing.lg,
+      paddingBottom: theme.spacing.xxl,
+    },
+    section: {
+      marginBottom: theme.spacing.xxl,
+    },
+    skeletonContainer: {
+      paddingHorizontal: theme.spacing.lg,
+    },
+    skeletonCard: {
+      marginBottom: theme.spacing.sm,
+    },
+    errorActions: {
+      // Add error action buttons if needed
+    },
+    summaryBarContainer: {
+      position: 'absolute',
+      bottom: 0,
+      left: 0,
+      right: 0,
+    },
+  });
 
   const { imageUri, result } = route.params;
 
@@ -242,11 +305,21 @@ const AddMealFromVisionScreen = (): JSX.Element => {
 
   return (
     <Screen style={styles.container}>
+      {/* Header */}
+      <View style={styles.header}>
+        <ThemedText variant="h1" style={styles.title}>
+          Thêm bữa ăn từ ảnh
+        </ThemedText>
+        <ThemedText variant="body" color="textSecondary">
+          AI đã nhận diện {detectionItems.length} món ăn trong ảnh
+        </ThemedText>
+      </View>
+
       {/* Image Preview */}
       <View style={styles.imageContainer}>
         <Image source={{ uri: imageUri }} style={styles.image} resizeMode="cover" />
         <View style={styles.overlay}>
-          <ThemedText style={styles.overlayText}>
+          <ThemedText variant="h2" style={{ color: '#fff' }}>
             AI nhận diện {detectionItems.length} món
           </ThemedText>
         </View>
@@ -265,9 +338,9 @@ const AddMealFromVisionScreen = (): JSX.Element => {
             <>
               {/* Gợi ý của AI */}
               {matchedItems.length > 0 && (
-                <View style={styles.section}>
+                <AppCard style={styles.section}>
                   <SectionHeader title="Gợi ý của AI" />
-                </View>
+                </AppCard>
               )}
             </>
           }
@@ -278,7 +351,7 @@ const AddMealFromVisionScreen = (): JSX.Element => {
             <>
               {/* Cần xác nhận */}
               {unmatchedItems.length > 0 && (
-                <View style={styles.section}>
+                <AppCard style={styles.section}>
                   <SectionHeader title="Cần xác nhận" />
                   {unmatchedItems.map((detection, index) => (
                     <AiDetectionCard
@@ -293,7 +366,7 @@ const AddMealFromVisionScreen = (): JSX.Element => {
                       onTeachLabel={() => handleTeachLabel(detection.item.label)}
                     />
                   ))}
-                </View>
+                </AppCard>
               )}
             </>
           }
@@ -328,59 +401,5 @@ const AddMealFromVisionScreen = (): JSX.Element => {
     </Screen>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f8f9fa',
-  },
-  imageContainer: {
-    position: 'relative',
-    width: '100%',
-    height: 200,
-  },
-  image: {
-    width: '100%',
-    height: '100%',
-  },
-  overlay: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: 'rgba(0,0,0,0.6)',
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-  },
-  overlayText: {
-    color: '#fff',
-    fontSize: 16,
-    fontFamily: 'Inter_600SemiBold',
-  },
-  scrollView: {
-    flex: 1,
-  },
-  content: {
-    padding: 16,
-  },
-  section: {
-    marginBottom: 24,
-  },
-  skeletonContainer: {
-    padding: 16,
-  },
-  skeletonCard: {
-    marginBottom: 12,
-  },
-  errorActions: {
-    // Add error action buttons if needed
-  },
-  summaryBarContainer: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-  },
-});
 
 export default AddMealFromVisionScreen;

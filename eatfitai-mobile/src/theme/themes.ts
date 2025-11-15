@@ -53,6 +53,12 @@ export type AppTheme = {
     xl: number;
     full: number;
   };
+  borderRadius: {
+    card: number;
+    button: number;
+    input: number;
+    chip: number;
+  };
   typography: {
     h1: Typography;
     h2: Typography;
@@ -63,6 +69,8 @@ export type AppTheme = {
     bodySmall: Typography;
     caption: Typography;
     button: Typography;
+    heading1: Typography;
+    heading2: Typography;
   };
   shadows: {
     sm: {
@@ -97,14 +105,14 @@ export type AppTheme = {
 export const lightTheme: AppTheme = {
   mode: 'light',
   colors: {
-    background: '#FAFAFA',
+    background: '#F1F5F9',
     card: '#FFFFFF',
-    text: '#1A1C1A',
-    textSecondary: '#5F6662',
-    border: '#E2E8E5',
-    primary: '#2563EB',
+    text: '#0F172A',
+    textSecondary: '#475569',
+    border: 'rgba(15, 23, 42, 0.06)',
+    primary: '#4ADE80',
     primaryLight: '#DBEAFE',
-    primaryDark: '#1D4ED8',
+    primaryDark: '#16A34A',
     secondary: '#0A4D3C',
     secondaryLight: '#E6F0ED',
     muted: '#9FA6A3',
@@ -121,8 +129,9 @@ export const lightTheme: AppTheme = {
     success: ['#10B981', '#34D399'],
   },
   statusBarStyle: 'dark',
-  spacing: { xs: 8, sm: 12, md: 16, lg: 24, xl: 32, xxl: 40 },
+  spacing: { xs: 4, sm: 8, md: 12, lg: 16, xl: 20, xxl: 24 },
   radius: { xs: 4, sm: 8, md: 12, lg: 16, xl: 24, full: 999 },
+  borderRadius: { card: 20, button: 12, input: 12, chip: 12 },
   typography: {
     h1: {
       fontFamily: 'Inter_700Bold',
@@ -154,8 +163,8 @@ export const lightTheme: AppTheme = {
     },
     body: {
       fontFamily: 'Inter_400Regular',
-      fontSize: 15,
-      lineHeight: 22,
+      fontSize: 16,
+      lineHeight: 24,
       letterSpacing: 0,
       fontWeight: '400',
     },
@@ -175,8 +184,8 @@ export const lightTheme: AppTheme = {
     },
     caption: {
       fontFamily: 'Inter_400Regular',
-      fontSize: 13,
-      lineHeight: 18,
+      fontSize: 14,
+      lineHeight: 20,
       letterSpacing: 0.1,
       fontWeight: '400',
     },
@@ -187,12 +196,26 @@ export const lightTheme: AppTheme = {
       letterSpacing: 0.2,
       fontWeight: '600',
     },
+    heading1: {
+      fontFamily: 'Inter_600SemiBold',
+      fontSize: 24,
+      lineHeight: 32,
+      letterSpacing: -0.2,
+      fontWeight: '600',
+    },
+    heading2: {
+      fontFamily: 'Inter_600SemiBold',
+      fontSize: 20,
+      lineHeight: 28,
+      letterSpacing: -0.1,
+      fontWeight: '600',
+    },
   },
   shadows: {
     sm: {
       shadowColor: '#000',
       shadowOffset: { width: 0, height: 1 },
-      shadowOpacity: 0.05,
+      shadowOpacity: 0.06,
       shadowRadius: 2,
       elevation: 1,
     },
@@ -206,7 +229,7 @@ export const lightTheme: AppTheme = {
     lg: {
       shadowColor: '#000',
       shadowOffset: { width: 0, height: 8 },
-      shadowOpacity: 0.12,
+      shadowOpacity: 0.08,
       shadowRadius: 16,
       elevation: 5,
     },
@@ -226,7 +249,7 @@ export const darkTheme: AppTheme = {
     text: '#F5F7F6',
     textSecondary: '#A8B0AD',
     border: '#2A3432',
-    primary: '#3B82F6',
+    primary: '#16A34A',
     primaryLight: '#1E40AF',
     primaryDark: '#1D4ED8',
     secondary: '#1B8C68',
@@ -245,8 +268,9 @@ export const darkTheme: AppTheme = {
     success: ['#34D399', '#10B981'],
   },
   statusBarStyle: 'light',
-  spacing: { xs: 8, sm: 12, md: 16, lg: 24, xl: 32, xxl: 40 },
+  spacing: { xs: 4, sm: 8, md: 12, lg: 16, xl: 20, xxl: 24 },
   radius: { xs: 4, sm: 8, md: 12, lg: 16, xl: 24, full: 999 },
+  borderRadius: { card: 20, button: 12, input: 12, chip: 12 },
   typography: {
     h1: {
       fontFamily: 'Inter_700Bold',
@@ -278,8 +302,8 @@ export const darkTheme: AppTheme = {
     },
     body: {
       fontFamily: 'Inter_400Regular',
-      fontSize: 15,
-      lineHeight: 22,
+      fontSize: 16,
+      lineHeight: 24,
       letterSpacing: 0,
       fontWeight: '400',
     },
@@ -299,8 +323,8 @@ export const darkTheme: AppTheme = {
     },
     caption: {
       fontFamily: 'Inter_400Regular',
-      fontSize: 13,
-      lineHeight: 18,
+      fontSize: 14,
+      lineHeight: 20,
       letterSpacing: 0.1,
       fontWeight: '400',
     },
@@ -311,26 +335,40 @@ export const darkTheme: AppTheme = {
       letterSpacing: 0.2,
       fontWeight: '600',
     },
+    heading1: {
+      fontFamily: 'Inter_600SemiBold',
+      fontSize: 24,
+      lineHeight: 32,
+      letterSpacing: -0.2,
+      fontWeight: '600',
+    },
+    heading2: {
+      fontFamily: 'Inter_600SemiBold',
+      fontSize: 20,
+      lineHeight: 28,
+      letterSpacing: -0.1,
+      fontWeight: '600',
+    },
   },
   shadows: {
     sm: {
       shadowColor: '#000',
       shadowOffset: { width: 0, height: 1 },
-      shadowOpacity: 0.3,
+      shadowOpacity: 0.06,
       shadowRadius: 2,
       elevation: 1,
     },
     md: {
       shadowColor: '#000',
       shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.4,
+      shadowOpacity: 0.07,
       shadowRadius: 8,
       elevation: 3,
     },
     lg: {
       shadowColor: '#000',
       shadowOffset: { width: 0, height: 8 },
-      shadowOpacity: 0.5,
+      shadowOpacity: 0.08,
       shadowRadius: 16,
       elevation: 5,
     },

@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { FlatList, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import Animated, { FadeInUp, useSharedValue, useAnimatedStyle, withSpring, withTiming, interpolate } from 'react-native-reanimated';
 import { useNavigation } from '@react-navigation/native';
 import type { NavigationProp } from '@react-navigation/native';
 
@@ -32,6 +33,98 @@ const MealDiaryScreen = (): JSX.Element => {
   const [showEditSheet, setShowEditSheet] = useState(false);
 
   const refreshSummary = useDiaryStore((s) => s.refreshSummary);
+
+  const styles = StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: theme.colors.background,
+    },
+    dateSelector: {
+      marginBottom: theme.spacing.lg,
+      paddingHorizontal: theme.spacing.lg,
+    },
+    dateList: {
+      paddingVertical: theme.spacing.sm,
+    },
+    dateItem: {
+      marginRight: theme.spacing.sm,
+    },
+    loadingContainer: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      paddingVertical: theme.spacing.xl,
+    },
+    content: {
+      flex: 1,
+      paddingHorizontal: theme.spacing.lg,
+      paddingBottom: theme.spacing.xl,
+    },
+    mealSection: {
+      marginBottom: theme.spacing.lg,
+    },
+    foodCard: {
+      marginBottom: theme.spacing.xs,
+    },
+    foodCardContent: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+    },
+    foodInfo: {
+      flex: 1,
+      marginRight: theme.spacing.md,
+    },
+    foodDetails: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginTop: theme.spacing.xs,
+      gap: theme.spacing.xs,
+    },
+    foodActions: {
+      alignItems: 'flex-end',
+      gap: theme.spacing.sm,
+    },
+    editButton: {
+      paddingVertical: theme.spacing.xs,
+      paddingHorizontal: theme.spacing.sm,
+    },
+    emptyMealCard: {
+      alignItems: 'center',
+      paddingVertical: theme.spacing.lg,
+    },
+    emptyMealText: {
+      textAlign: 'center',
+    },
+    emptyActions: {
+      gap: theme.spacing.md,
+      marginTop: theme.spacing.lg,
+    },
+    actionButtons: {
+      flexDirection: 'row',
+      padding: theme.spacing.lg,
+      gap: theme.spacing.md,
+      borderTopWidth: 1,
+      borderTopColor: theme.colors.border,
+    },
+    actionButton: {
+      flex: 1,
+    },
+    editSheetContent: {
+      gap: theme.spacing.lg,
+    },
+    editLabel: {
+      marginBottom: theme.spacing.sm,
+      ...theme.typography.body,
+      color: theme.colors.text,
+    },
+    editInput: {
+      marginBottom: theme.spacing.lg,
+    },
+    saveButton: {
+      marginTop: theme.spacing.sm,
+    },
+  });
 
   // Generate date options for horizontal selector
   const dateOptions = useMemo(() => {
@@ -165,16 +258,22 @@ const MealDiaryScreen = (): JSX.Element => {
     const isSelected = date.toDateString() === selectedDate.toDateString();
 
     return (
-      <Pressable
-        style={styles.dateItem}
-        onPress={() => handleDateSelect(date)}
+      <Animated.View
+        style={[
+          styles.dateItem,
+          useAnimatedStyle(() => ({
+            transform: [{ scale: isSelected ? withSpring(1.05) : withSpring(1) }],
+          })),
+        ]}
       >
-        <AppChip
-          label={formatDate(date)}
-          selected={isSelected}
-          variant="outline"
-        />
-      </Pressable>
+        <Pressable onPress={() => handleDateSelect(date)}>
+          <AppChip
+            label={formatDate(date)}
+            selected={isSelected}
+            variant="outline"
+          />
+        </Pressable>
+      </Animated.View>
     );
   }, [selectedDate, handleDateSelect, formatDate]);
 
@@ -218,11 +317,22 @@ const MealDiaryScreen = (): JSX.Element => {
   ), [handleEditGrams]);
 
   // Render meal section
-  const renderMealSection = useCallback(({ item }: { item: { mealType: MealTypeId; title: string; entries: DiaryEntry[] } }) => (
-    <View key={item.mealType} style={styles.mealSection}>
+  const renderMealSection = useCallback(({ item, index }: { item: { mealType: MealTypeId; title: string; entries: DiaryEntry[] }; index: number }) => (
+    <Animated.View
+      key={item.mealType}
+      style={styles.mealSection}
+      entering={FadeInUp.delay(index * 100).duration(400).springify()}
+    >
       <SectionHeader title={item.title} />
       {item.entries.length > 0 ? (
-        item.entries.map(renderFoodCard)
+        item.entries.map((entry, entryIndex) => (
+          <Animated.View
+            key={entry.id}
+            entering={FadeInUp.delay((index * 100) + (entryIndex * 50)).duration(300).springify()}
+          >
+            {renderFoodCard(entry)}
+          </Animated.View>
+        ))
       ) : (
         <AppCard style={styles.emptyMealCard}>
           <ThemedText variant="bodySmall" color="textSecondary" style={styles.emptyMealText}>
@@ -230,7 +340,7 @@ const MealDiaryScreen = (): JSX.Element => {
           </ThemedText>
         </AppCard>
       )}
-    </View>
+    </Animated.View>
   ), [renderFoodCard]);
 
   const isEmpty = entries.length === 0;
@@ -280,7 +390,7 @@ const MealDiaryScreen = (): JSX.Element => {
           />
         ) : (
           <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-            {groupedEntries.map((group) => renderMealSection({ item: group }))}
+            {groupedEntries.map((group, index) => renderMealSection({ item: group, index }))}
           </ScrollView>
         )}
 
@@ -333,88 +443,5 @@ const MealDiaryScreen = (): JSX.Element => {
     </Screen>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  dateSelector: {
-    marginBottom: 16,
-  },
-  dateList: {
-    paddingHorizontal: 16,
-  },
-  dateItem: {
-    marginRight: 8,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  content: {
-    flex: 1,
-    paddingHorizontal: 16,
-  },
-  mealSection: {
-    marginBottom: 24,
-  },
-  foodCard: {
-    marginBottom: 8,
-  },
-  foodCardContent: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  foodInfo: {
-    flex: 1,
-    marginRight: 12,
-  },
-  foodDetails: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 4,
-    gap: 4,
-  },
-  foodActions: {
-    alignItems: 'flex-end',
-    gap: 8,
-  },
-  editButton: {
-    paddingVertical: 4,
-    paddingHorizontal: 8,
-  },
-  emptyMealCard: {
-    alignItems: 'center',
-    paddingVertical: 16,
-  },
-  emptyMealText: {
-    textAlign: 'center',
-  },
-  emptyActions: {
-    gap: 12,
-  },
-  actionButtons: {
-    flexDirection: 'row',
-    padding: 16,
-    gap: 12,
-  },
-  actionButton: {
-    flex: 1,
-  },
-  editSheetContent: {
-    gap: 16,
-  },
-  editLabel: {
-    marginBottom: 8,
-  },
-  editInput: {
-    marginBottom: 16,
-  },
-  saveButton: {
-    marginTop: 8,
-  },
-});
 
 export default MealDiaryScreen;

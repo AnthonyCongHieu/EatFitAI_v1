@@ -6,6 +6,8 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
 import Screen from '../../../components/Screen';
 import Card from '../../../components/Card';
+import { AppCard } from '../../../components/ui/AppCard';
+import { ScreenHeader } from '../../../components/ui/ScreenHeader';
 import Button from '../../../components/Button';
 import { ThemedText } from '../../../components/ThemedText';
 import type { VisionDetectResult } from '../../../types/ai';
@@ -18,6 +20,49 @@ type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 const AiVisionScreen = (): JSX.Element => {
   const { theme } = useAppTheme();
   const navigation = useNavigation<NavigationProp>();
+
+  const styles = StyleSheet.create({
+    screen: {
+      flex: 1,
+      backgroundColor: theme.colors.background,
+    },
+    header: {
+      paddingHorizontal: theme.spacing.lg,
+      paddingTop: theme.spacing.lg,
+      paddingBottom: theme.spacing.xl,
+    },
+    title: {
+      marginBottom: theme.spacing.sm,
+    },
+    card: {
+      marginHorizontal: theme.spacing.lg,
+      marginBottom: theme.spacing.xxl,
+    },
+    buttonRow: {
+      flexDirection: 'row',
+      gap: theme.spacing.md,
+      marginBottom: theme.spacing.lg,
+    },
+    center: {
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingVertical: theme.spacing.md,
+    },
+    error: {
+      marginBottom: theme.spacing.md,
+    },
+    resultSection: {
+      maxHeight: 320,
+    },
+    itemRow: {
+      paddingVertical: theme.spacing.sm,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: theme.colors.border,
+    },
+    buttonContainer: {
+      marginTop: theme.spacing.lg,
+    },
+  });
 
   const [imageUri, setImageUri] = useState<string | null>(null);
   const [result, setResult] = useState<VisionDetectResult | null>(null);
@@ -79,18 +124,16 @@ const AiVisionScreen = (): JSX.Element => {
   };
 
   return (
-    <Screen contentContainerStyle={styles.container}>
-      <Card padding="lg" shadow="md">
-        <ThemedText variant="h2" style={{ marginBottom: theme.spacing.sm }}>
-          AI Vision Detect
-        </ThemedText>
-        <ThemedText variant="bodySmall" color="textSecondary" style={{ marginBottom: theme.spacing.lg }}>
-          Chon anh mon an, AI se nhan dien va map sang FoodItem (neu co).
-        </ThemedText>
+    <Screen style={styles.screen}>
+      <ScreenHeader
+        title="AI Vision Detect"
+        subtitle="Chọn ảnh món ăn, AI sẽ nhận diện và map sang FoodItem (nếu có)."
+      />
 
-        <View style={{ flexDirection: 'row', gap: theme.spacing.sm, marginBottom: theme.spacing.md }}>
-          <Button title="Chon anh" variant="primary" onPress={pickImage} />
-          <Button title="Nhan dien" variant="secondary" onPress={runDetect} disabled={!imageUri || loading} />
+      <AppCard style={styles.card}>
+        <View style={styles.buttonRow}>
+          <Button title="Chọn ảnh" variant="primary" onPress={pickImage} />
+          <Button title="Nhận diện" variant="secondary" onPress={runDetect} disabled={!imageUri || loading} />
         </View>
 
         {loading && (
@@ -103,17 +146,17 @@ const AiVisionScreen = (): JSX.Element => {
         )}
 
         {error && (
-          <View style={{ marginBottom: theme.spacing.sm }}>
-            <ThemedText variant="bodySmall" style={{ color: theme.colors.error }}>
+          <View style={styles.error}>
+            <ThemedText variant="bodySmall" color="danger">
               {error}
             </ThemedText>
           </View>
         )}
 
         {result && (
-          <View style={{ maxHeight: 320 }}>
-            <ThemedText variant="h4" style={{ marginBottom: theme.spacing.sm }}>
-              Ket qua nhan dien
+          <View style={styles.resultSection}>
+            <ThemedText variant="h2" style={{ marginBottom: theme.spacing.md }}>
+              Kết quả nhận diện
             </ThemedText>
             <FlatList
               data={result.items}
@@ -126,15 +169,15 @@ const AiVisionScreen = (): JSX.Element => {
                   {item.isMatched ? (
                     <>
                       <ThemedText variant="bodySmall">
-                        → Mon: {item.foodName ?? '-'} (#{item.foodItemId ?? '-'})
+                        → Món: {item.foodName ?? '-'} (#{item.foodItemId ?? '-'})
                       </ThemedText>
-                      <ThemedText variant="bodySmall" color="textSecondary">
+                      <ThemedText variant="caption" color="textSecondary">
                         100g: {item.caloriesPer100g ?? '-'} kcal | P {item.proteinPer100g ?? '-'} | F {item.fatPer100g ?? '-'} | C {item.carbPer100g ?? '-'}
                       </ThemedText>
                     </>
                   ) : (
                     <ThemedText variant="bodySmall" color="textSecondary">
-                      → Chua map (nhan la)
+                      → Chưa map (nhãn lạ)
                     </ThemedText>
                   )}
                 </View>
@@ -142,14 +185,14 @@ const AiVisionScreen = (): JSX.Element => {
             />
 
             {result.unmappedLabels.length > 0 && (
-              <ThemedText variant="bodySmall" style={{ marginTop: theme.spacing.sm }}>
-                Nhan chua map: {result.unmappedLabels.join(', ')}
+              <ThemedText variant="bodySmall" style={{ marginTop: theme.spacing.md }}>
+                Nhãn chưa map: {result.unmappedLabels.join(', ')}
               </ThemedText>
             )}
 
-            <View style={{ marginTop: theme.spacing.md }}>
+            <View style={styles.buttonContainer}>
               <Button
-                title={teaching ? 'Dang teach...' : 'Test TeachLabel (foodId = 1)'}
+                title={teaching ? 'Đang teach...' : 'Test TeachLabel (foodId = 1)'}
                 variant="outline"
                 onPress={runTeachLabelTest}
                 disabled={
@@ -158,9 +201,9 @@ const AiVisionScreen = (): JSX.Element => {
               />
             </View>
 
-            <View style={{ marginTop: theme.spacing.md }}>
+            <View style={styles.buttonContainer}>
               <Button
-                title="Su dung cac mon nay trong bua an"
+                title="Sử dụng các món này trong bữa ăn"
                 variant="primary"
                 onPress={() => {
                   if (!imageUri || !result) return;
@@ -171,15 +214,9 @@ const AiVisionScreen = (): JSX.Element => {
             </View>
           </View>
         )}
-      </Card>
+      </AppCard>
     </Screen>
   );
 };
-
-const styles = StyleSheet.create({
-  container: { padding: 16 },
-  center: { alignItems: 'center', justifyContent: 'center', paddingVertical: 12 },
-  itemRow: { paddingVertical: 4, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: '#eee' },
-});
 
 export default AiVisionScreen;

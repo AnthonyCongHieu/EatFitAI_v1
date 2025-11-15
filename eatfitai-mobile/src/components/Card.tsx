@@ -12,10 +12,12 @@ import Animated, {
 } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
 
+import { ThemedText } from './ThemedText';
 import { useAppTheme } from '../theme/ThemeProvider';
 
 type CardProps = {
   children: ReactNode;
+  title?: string;
   style?: ViewStyle | ViewStyle[];
   padding?: 'sm' | 'md' | 'lg' | 'xl' | 'none';
   shadow?: 'sm' | 'md' | 'lg' | 'none';
@@ -37,8 +39,9 @@ const ExpoLinearGradient = LinearGradient as unknown as React.ComponentType<any>
 
 export const Card = ({
   children,
+  title,
   style,
-  padding = 'md',
+  padding = 'lg',
   shadow = 'md',
   variant = 'elevated',
   gradient,
@@ -69,7 +72,7 @@ export const Card = ({
       case 'outlined':
         return {
           backgroundColor: theme.colors.card,
-          borderWidth: 1.5,
+          borderWidth: 1,
           borderColor: theme.colors.border,
         };
       case 'filled':
@@ -82,13 +85,15 @@ export const Card = ({
       default:
         return {
           backgroundColor: theme.colors.card,
+          borderWidth: 1,
+          borderColor: theme.colors.border,
         };
     }
   };
 
   const baseStyle = [
     {
-      borderRadius: theme.radius.lg,
+      borderRadius: theme.borderRadius.card,
       padding: pad,
       ...shadowStyle,
       ...getVariantStyles(),
@@ -121,6 +126,11 @@ export const Card = ({
       layout={Layout.springify()}
       style={baseStyle}
     >
+      {title && (
+        <ThemedText variant="h4" style={{ marginBottom: theme.spacing.sm }}>
+          {title}
+        </ThemedText>
+      )}
       {children}
     </Animated.View>
   );
@@ -136,7 +146,7 @@ export const Card = ({
         colors={theme.gradients[gradient]}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
-        style={{ borderRadius: theme.radius.lg, flex: 1 }}
+        style={{ borderRadius: theme.borderRadius.card, flex: 1 }}
       >
         {children}
       </ExpoLinearGradient>

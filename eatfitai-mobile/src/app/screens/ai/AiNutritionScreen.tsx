@@ -4,7 +4,8 @@ import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import Toast from 'react-native-toast-message';
 
 import Screen from '../../../components/Screen';
-import Card from '../../../components/Card';
+import { AppCard } from '../../../components/ui/AppCard';
+import { ScreenHeader } from '../../../components/ui/ScreenHeader';
 import Button from '../../../components/Button';
 import { ThemedText } from '../../../components/ThemedText';
 import { useAppTheme } from '../../../theme/ThemeProvider';
@@ -17,6 +18,42 @@ const formatTarget = (t: NutritionTarget | null): NutritionTarget | null =>
 const AiNutritionScreen = (): JSX.Element => {
   const { theme } = useAppTheme();
   const refreshSummary = useDiaryStore((s) => s.refreshSummary);
+
+  const styles = StyleSheet.create({
+    screen: {
+      flex: 1,
+      backgroundColor: theme.colors.background,
+    },
+    card: {
+      marginHorizontal: theme.spacing.lg,
+      marginBottom: theme.spacing.xxl,
+    },
+    center: {
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingVertical: theme.spacing.xl,
+    },
+    targetBox: {
+      borderWidth: 1,
+      borderRadius: theme.borderRadius.card,
+      padding: theme.spacing.lg,
+      marginBottom: theme.spacing.lg,
+      borderColor: theme.colors.border,
+      backgroundColor: theme.colors.card,
+    },
+    macroRow: {
+      flexDirection: 'row',
+      gap: theme.spacing.md,
+    },
+    macroItem: {
+      flex: 1,
+      alignItems: 'center',
+    },
+    buttonContainer: {
+      gap: theme.spacing.sm,
+      marginTop: theme.spacing.xl,
+    },
+  });
 
   const [isLoading, setIsLoading] = useState(true);
   const [currentTarget, setCurrentTarget] = useState<NutritionTarget | null>(null);
@@ -77,7 +114,7 @@ const AiNutritionScreen = (): JSX.Element => {
     <View
       style={[
         styles.targetBox,
-        { borderColor: highlight ? theme.colors.primary : theme.colors.border, backgroundColor: highlight ? theme.colors.primaryLight : theme.colors.card },
+        highlight && { borderColor: theme.colors.primary, backgroundColor: theme.colors.primaryLight },
       ]}
     >
       <ThemedText variant="h4" style={{ marginBottom: theme.spacing.sm }}>
@@ -124,13 +161,15 @@ const AiNutritionScreen = (): JSX.Element => {
   );
 
   return (
-    <Screen contentContainerStyle={styles.container}>
-      <Card padding="lg" shadow="md">
-        <ThemedText variant="h2" style={{ marginBottom: theme.spacing.xs }}>
+    <Screen style={styles.screen}>
+      <ScreenHeader
+        title="AI Dinh dưỡng"
+        subtitle="Mục tiêu và gợi ý từ trí tuệ nhân tạo"
+      />
+
+      <AppCard style={styles.card}>
+        <ThemedText variant="h2" style={{ marginBottom: theme.spacing.md }}>
           Mục tiêu dinh dưỡng
-        </ThemedText>
-        <ThemedText variant="bodySmall" color="textSecondary" style={{ marginBottom: theme.spacing.lg }}>
-          AI gợi ý calo và macro theo trạng thái hiện tại.
         </ThemedText>
 
         {isLoading ? (
@@ -146,22 +185,14 @@ const AiNutritionScreen = (): JSX.Element => {
 
         {suggestedTarget ? <TargetBox title="Gợi ý mới" target={suggestedTarget} highlight /> : null}
 
-        <View style={{ gap: theme.spacing.sm, marginTop: theme.spacing.xl }}>
+        <View style={styles.buttonContainer}>
           <Button variant="primary" loading={isRecalculating} disabled={isRecalculating} onPress={handleRecalculate} title={isRecalculating ? 'Đang tính...' : 'Gợi ý nhanh'} />
           <Button variant="secondary" loading={isApplying} disabled={isApplying} onPress={handleApply} title={isApplying ? 'Đang áp dụng...' : 'Áp dụng mục tiêu AI'} />
         </View>
-      </Card>
+      </AppCard>
     </Screen>
   );
 };
-
-const styles = StyleSheet.create({
-  container: { padding: 16 },
-  center: { alignItems: 'center', justifyContent: 'center', paddingVertical: 20 },
-  targetBox: { borderWidth: 1.5, borderRadius: 16, padding: 20, marginBottom: 16 },
-  macroRow: { flexDirection: 'row', gap: 16 },
-  macroItem: { flex: 1, alignItems: 'center' },
-});
 
 export default AiNutritionScreen;
 

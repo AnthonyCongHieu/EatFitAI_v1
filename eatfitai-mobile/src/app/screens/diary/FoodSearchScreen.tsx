@@ -2,7 +2,7 @@
 
 import { useCallback, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, View } from 'react-native';
-import Animated, { FadeIn, Layout } from 'react-native-reanimated';
+import Animated, { FadeIn, Layout, useSharedValue, useAnimatedStyle, withTiming } from 'react-native-reanimated';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useNavigation } from '@react-navigation/native';
 import Toast from 'react-native-toast-message';
@@ -12,6 +12,7 @@ import Screen from '../../../components/Screen';
 import ThemedTextInput from '../../../components/ThemedTextInput';
 import Button from '../../../components/Button';
 import { AppCard } from '../../../components/ui/AppCard';
+import { ScreenHeader } from '../../../components/ui/ScreenHeader';
 import { useAppTheme } from '../../../theme/ThemeProvider';
 import type { RootStackParamList } from '../../types';
 import { foodService, type FoodItem } from '../../../services/foodService';
@@ -24,6 +25,52 @@ type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'FoodSearch'
 
 const FoodSearchScreen = (): JSX.Element => {
   const { theme } = useAppTheme();
+  const styles = StyleSheet.create({
+    container: { flex: 1 },
+    searchBar: {
+      flexDirection: 'row',
+      padding: theme.spacing.lg,
+      gap: theme.spacing.md,
+      marginHorizontal: theme.spacing.lg,
+      marginBottom: theme.spacing.xxl,
+      borderRadius: theme.borderRadius.card,
+      borderWidth: 1,
+      alignItems: 'center',
+    },
+    loadingCard: {
+      padding: theme.spacing.xl,
+      borderRadius: theme.borderRadius.card,
+      alignItems: 'center',
+    },
+    emptyCard: {
+      padding: theme.spacing.xl,
+      borderRadius: theme.borderRadius.card,
+      alignItems: 'center',
+    },
+    listContent: { paddingHorizontal: theme.spacing.lg, paddingBottom: theme.spacing.xxl, gap: theme.spacing.md },
+    foodCardContent: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+    },
+    foodInfo: { flex: 1, gap: theme.spacing.xs },
+    foodName: { marginBottom: theme.spacing.xs },
+    centerBox: {
+      flex: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: theme.spacing.sm,
+      paddingTop: 40,
+      width: '100%',
+      paddingHorizontal: theme.spacing.xl,
+    },
+    footerLoading: { paddingVertical: theme.spacing.lg, alignItems: 'center' },
+    totalBar: {
+      padding: theme.spacing.lg,
+      alignItems: 'center',
+      borderTopWidth: 1,
+    },
+  });
   const navigation = useNavigation<NavigationProp>();
   const refreshSummary = useDiaryStore((state) => state.refreshSummary);
 
@@ -35,6 +82,9 @@ const FoodSearchScreen = (): JSX.Element => {
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
+
+  // Animation values
+  const searchGlow = useSharedValue(0);
 
   const loadFoods = useCallback(
     async (pageToLoad: number, append: boolean) => {
@@ -73,8 +123,12 @@ const FoodSearchScreen = (): JSX.Element => {
   );
 
   const handleSearch = useCallback(() => {
+    searchGlow.value = withTiming(1, { duration: theme.animation.normal });
+    setTimeout(() => {
+      searchGlow.value = withTiming(0, { duration: theme.animation.slow });
+    }, 1000);
     loadFoods(1, false).catch(() => {});
-  }, [loadFoods]);
+  }, [loadFoods, searchGlow, theme.animation.normal, theme.animation.slow]);
 
   const handleLoadMore = useCallback(() => {
     if (!hasMore || isLoading || isLoadingMore) return;
@@ -82,9 +136,12 @@ const FoodSearchScreen = (): JSX.Element => {
   }, [hasMore, isLoading, isLoadingMore, page, loadFoods]);
 
   const renderItem = useCallback(
-    ({ item }: { item: FoodItem }) => (
-      <Animated.View entering={FadeIn.duration(160)} layout={Layout.springify()}>
-        <AppCard style={{ marginBottom: 8 }}>
+    ({ item, index }: { item: FoodItem; index: number }) => (
+      <Animated.View
+        entering={FadeIn.delay(index * 50).duration(theme.animation.normal).springify()}
+        layout={Layout.springify()}
+      >
+        <AppCard style={{ marginBottom: theme.spacing.xs }}>
           <Pressable
             accessibilityRole="button"
             hitSlop={8}
@@ -94,19 +151,23 @@ const FoodSearchScreen = (): JSX.Element => {
             <View style={styles.foodInfo}>
               <ThemedText variant="h4" style={styles.foodName}>{item.name}</ThemedText>
               {item.brand ? <ThemedText variant="bodySmall" color="textSecondary">{item.brand}</ThemedText> : null}
-              <ThemedText variant="bodySmall" color="textSecondary">
-                {item.calories != null ? `${Math.round(item.calories)} kcal` : '-- kcal'} •
-                {item.protein != null ? ` ${item.protein.toFixed(1).replace(/\.0$/, '')}g P` : ' --g P'} •
-                {item.carbs != null ? ` ${item.carbs.toFixed(1).replace(/\.0$/, '')}g C` : ' --g C'} •
-                {item.fat != null ? ` ${item.fat.toFixed(1).replace(/\.0$/, '')}g F` : ' --g F'}
-              </ThemedText>
+              <Animated.View entering={FadeIn.delay((index * 50) + 100).duration(theme.animation.fast)}>
+                <ThemedText variant="bodySmall" color="textSecondary">
+                  {item.calories != null ? `${Math.round(item.calories)} kcal` : '-- kcal'} •
+                  {item.protein != null ? ` ${item.protein.toFixed(1).replace(/\.0$/, '')}g P` : ' --g P'} •
+                  {item.carbs != null ? ` ${item.carbs.toFixed(1).replace(/\.0$/, '')}g C` : ' --g C'} •
+                  {item.fat != null ? ` ${item.fat.toFixed(1).replace(/\.0$/, '')}g F` : ' --g F'}
+                </ThemedText>
+              </Animated.View>
             </View>
-            <ThemedText variant="button" color="primary">Xem</ThemedText>
+            <Animated.View entering={FadeIn.delay((index * 50) + 150).duration(theme.animation.fast)}>
+              <ThemedText variant="button" color="primary">Xem</ThemedText>
+            </Animated.View>
           </Pressable>
         </AppCard>
       </Animated.View>
     ),
-    [navigation],
+    [navigation, theme.animation.normal, theme.animation.fast, theme.spacing.xs],
   );
 
   const renderSkeleton = () => (
@@ -115,7 +176,23 @@ const FoodSearchScreen = (): JSX.Element => {
 
   return (
     <Screen scroll={false} style={styles.container}>
-      <View style={[styles.searchBar, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
+      <ScreenHeader
+        title="Tìm kiếm món ăn"
+        subtitle="Tìm và thêm món ăn vào nhật ký dinh dưỡng"
+      />
+
+      <Animated.View
+        style={[
+          styles.searchBar,
+          { backgroundColor: theme.colors.card, borderColor: theme.colors.border },
+          useAnimatedStyle(() => ({
+            shadowColor: theme.colors.primary,
+            shadowOpacity: searchGlow.value * 0.3,
+            shadowRadius: searchGlow.value * 8,
+            elevation: searchGlow.value * 5,
+          })),
+        ]}
+      >
         <ThemedTextInput
           value={query}
           onChangeText={setQuery}
@@ -137,7 +214,7 @@ const FoodSearchScreen = (): JSX.Element => {
             accessibilityLabel="Bắt đầu tìm kiếm"
           />
         </View>
-      </View>
+      </Animated.View>
 
       {isLoading ? (
         <View style={styles.centerBox}>
@@ -193,50 +270,5 @@ const FoodSearchScreen = (): JSX.Element => {
   );
 };
 
-const styles = StyleSheet.create({
-  container: { flex: 1 },
-  searchBar: {
-    flexDirection: 'row',
-    padding: 12,
-    gap: 12,
-    margin: 16,
-    borderRadius: 16,
-    borderWidth: 1,
-    alignItems: 'center',
-  },
-  loadingCard: {
-    padding: 32,
-    borderRadius: 16,
-    alignItems: 'center',
-  },
-  emptyCard: {
-    padding: 32,
-    borderRadius: 16,
-    alignItems: 'center',
-  },
-  listContent: { paddingHorizontal: 16, paddingBottom: 24, gap: 12 },
-  foodCardContent: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  foodInfo: { flex: 1, gap: 4 },
-  foodName: { marginBottom: 2 },
-  centerBox: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    paddingTop: 40,
-    width: '100%',
-    paddingHorizontal: 24,
-  },
-  footerLoading: { paddingVertical: 16, alignItems: 'center' },
-  totalBar: {
-    padding: 16,
-    alignItems: 'center',
-    borderTopWidth: 1,
-  },
-});
 
 export default FoodSearchScreen;

@@ -23,6 +23,7 @@ import ThemedTextInput from '../../components/ThemedTextInput';
 import Button from '../../components/Button';
 import Screen from '../../components/Screen';
 import { AppCard } from '../../components/ui/AppCard';
+import { ScreenHeader } from '../../components/ui/ScreenHeader';
 import { useAppTheme } from '../../theme/ThemeProvider';
 import { useAuthStore } from '../../store/useAuthStore';
 import { useProfileStore } from '../../store/useProfileStore';
@@ -71,6 +72,51 @@ type BodyMetricsFormValues = z.infer<typeof BodyMetricsSchema>;
 
 const ProfileScreen = (): JSX.Element => {
   const { theme } = useAppTheme();
+  const styles = StyleSheet.create({
+    flex: { flex: 1 },
+    scrollContent: {
+      paddingHorizontal: theme.spacing.lg,
+      paddingVertical: theme.spacing.xl,
+      gap: theme.spacing.xxl,
+    },
+    card: {
+      borderRadius: theme.borderRadius.card,
+      padding: theme.spacing.xl,
+    },
+    avatar: {
+      width: 60,
+      height: 60,
+      borderRadius: 30,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    icon: {
+      width: 50,
+      height: 50,
+      borderRadius: 25,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    input: {
+      borderWidth: 1,
+      borderRadius: theme.borderRadius.input,
+      paddingHorizontal: theme.spacing.md,
+      paddingVertical: Platform.select({ ios: theme.spacing.md, android: theme.spacing.sm }),
+      marginTop: theme.spacing.xs,
+      fontFamily: 'Inter_400Regular',
+    },
+    loadingBox: {
+      paddingVertical: theme.spacing.xl,
+      alignItems: 'center',
+    },
+    row: {
+      flexDirection: 'row',
+      gap: theme.spacing.md,
+    },
+    col: {
+      flex: 1,
+    },
+  });
   const logout = useAuthStore((s) => s.logout);
   const { profile, fetchProfile, isLoading, updateProfile, isSaving } = useProfileStore((state) => ({
     profile: state.profile,
@@ -169,6 +215,11 @@ const ProfileScreen = (): JSX.Element => {
     <KeyboardAvoidingView
       style={[styles.flex, { backgroundColor: theme.colors.background }]}
       behavior={Platform.select({ ios: 'padding', android: undefined })}>
+      <ScreenHeader
+        title="Hồ sơ"
+        subtitle="Quản lý thông tin cá nhân và số đo"
+      />
+
       <Screen contentContainerStyle={styles.scrollContent}>
         <AppCard>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: theme.spacing.sm, marginBottom: theme.spacing.sm }}>
@@ -355,49 +406,5 @@ const ProfileScreen = (): JSX.Element => {
   );
 };
 
-const styles = StyleSheet.create({
-  flex: { flex: 1 },
-  scrollContent: {
-    padding: 24,
-    gap: 24,
-  },
-  card: {
-    borderRadius: 16,
-    padding: 24,
-  },
-  avatar: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  icon: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  input: {
-    borderWidth: 1,
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    paddingVertical: Platform.select({ ios: 12, android: 10 }),
-    marginTop: 6,
-    fontFamily: 'Inter_400Regular',
-  },
-  loadingBox: {
-    paddingVertical: 20,
-    alignItems: 'center',
-  },
-  row: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  col: {
-    flex: 1,
-  },
-});
 
 export default ProfileScreen;

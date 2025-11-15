@@ -26,9 +26,8 @@ export const ThemedTextInput = ({
   required,
   ...rest
 }: Props): JSX.Element => {
-  const {
-    theme: { colors, radius, spacing, typography },
-  } = useAppTheme();
+  const { theme } = useAppTheme();
+  const { colors, radius, spacing, typography } = theme;
   const [hidden, setHidden] = useState<boolean>(!!secureTextEntry);
   const [focused, setFocused] = useState<boolean>(false);
   const [internalValue, setInternalValue] = useState<string>((rest.value as string) ?? '');
@@ -72,9 +71,9 @@ export const ThemedTextInput = ({
       style={[
         styles.base,
         {
-          borderColor: error ? colors.danger : colors.border,
+          borderColor: error ? colors.danger : focused ? colors.primary : colors.border,
           color: colors.text,
-          borderRadius: radius.md,
+          borderRadius: theme.borderRadius.input,
           paddingHorizontal: spacing.md,
           paddingVertical: spacing.sm,
           backgroundColor: colors.card,
@@ -125,7 +124,7 @@ export const ThemedTextInput = ({
   if (!label && !helperText) return inputWithToggle;
 
   return (
-    <View style={{ gap: spacing.xs }}>
+    <View style={{ gap: spacing.sm }}>
       {label && (
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
           <ThemedText variant="bodySmall" weight="600">
