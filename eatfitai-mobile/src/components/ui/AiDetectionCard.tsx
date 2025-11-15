@@ -32,6 +32,18 @@ const AiDetectionCardComponent = ({
 }: AiDetectionCardProps): JSX.Element => {
   const { theme } = useAppTheme();
 
+  // Animation values
+  const scaleValue = useSharedValue(1);
+
+  // Animate selection feedback
+  useEffect(() => {
+    scaleValue.value = withSpring(selected ? 0.97 : 1, { damping: 15, stiffness: 300 });
+  }, [selected, scaleValue]);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scaleValue.value }],
+  }));
+
   const handleMealTypePress = () => {
     // Cycle through meal types: 1 -> 2 -> 3 -> 4 -> 1
     const nextMealType = ((mealType % 4) + 1) as MealTypeId;
@@ -54,7 +66,8 @@ const AiDetectionCardComponent = ({
   const fat = item.fatPer100g ?? 0;
 
   return (
-    <AppCard style={styles.card}>
+    <Animated.View style={animatedStyle}>
+      <AppCard style={styles.card}>
       <View style={styles.header}>
         <Pressable
           style={[styles.checkbox, selected && { backgroundColor: theme.colors.primary }]}

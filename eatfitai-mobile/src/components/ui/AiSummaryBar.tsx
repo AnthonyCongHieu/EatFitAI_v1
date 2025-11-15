@@ -1,5 +1,6 @@
 import React from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
+import Animated, { useAnimatedStyle, interpolate, SharedValue } from 'react-native-reanimated';
 
 import { ThemedText } from '../ThemedText';
 import { useAppTheme } from '../../theme/ThemeProvider';
@@ -7,8 +8,8 @@ import type { MealTypeId } from '../../types';
 import { MEAL_TYPE_LABELS } from '../../types';
 
 type AiSummaryBarProps = {
-  selectedCount: number;
-  totalCalories: number;
+  selectedCount: SharedValue<number>;
+  totalCalories: SharedValue<number>;
   mealType: MealTypeId;
   onAddToDiary: () => void;
   disabled?: boolean;
@@ -25,12 +26,28 @@ export const AiSummaryBar = ({
 
   const mealTypeName = MEAL_TYPE_LABELS[mealType];
 
+  const animatedCountStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: interpolate(selectedCount.value, [0, 10], [1, 1.1]) }],
+  }));
+
+  const animatedCaloriesStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: interpolate(totalCalories.value, [0, 1000], [1, 1.05]) }],
+  }));
+
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.card }]}>
       <View style={styles.content}>
         <View style={styles.summary}>
           <ThemedText style={styles.summaryText}>
-            Sẽ thêm: {selectedCount} món · {totalCalories} kcal
+            Sẽ thêm:{' '}
+            <Animated.Text style={[styles.animatedNumber, animatedCountStyle]}>
+              {selectedCount.value}
+            </Animated.Text>
+            {' món · '}
+            <Animated.Text style={[styles.animatedNumber, animatedCaloriesStyle]}>
+              {totalCalories.value}
+            </Animated.Text>
+            {' kcal'}
           </ThemedText>
         </View>
 
@@ -85,6 +102,11 @@ const styles = StyleSheet.create({
   buttonText: {
     fontSize: 14,
     fontFamily: 'Inter_600SemiBold',
+  },
+  animatedNumber: {
+    fontSize: 14,
+    fontFamily: 'Inter_600SemiBold',
+    color: '#007AFF',
   },
 });
 

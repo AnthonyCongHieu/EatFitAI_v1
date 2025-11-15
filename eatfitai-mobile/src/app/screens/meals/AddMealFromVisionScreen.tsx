@@ -2,6 +2,16 @@ import React, { useState, useMemo, useCallback } from 'react';
 import { Image, StyleSheet, View, FlatList, ListRenderItem } from 'react-native';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import Animated, {
+  FadeInUp,
+  FadeIn,
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+  withTiming,
+  runOnJS,
+  interpolate,
+} from 'react-native-reanimated';
 import Toast from 'react-native-toast-message';
 
 import Screen from '../../../components/Screen';
@@ -53,6 +63,11 @@ const AddMealFromVisionScreen = (): JSX.Element => {
   const [currentTeachLabel, setCurrentTeachLabel] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Animation values
+  const summaryBarTranslateY = useSharedValue(100);
+  const selectedCountValue = useSharedValue(0);
+  const totalCaloriesValue = useSharedValue(0);
+
   const matchedItems = useMemo(
     () => detectionItems.filter((d) => d.item.isMatched),
     [detectionItems]
@@ -74,6 +89,22 @@ const AddMealFromVisionScreen = (): JSX.Element => {
       return sum + (caloriesPer100g * d.grams) / 100;
     }, 0);
   }, [selectedItems]);
+
+  // Animate summary bar when data loads
+  React.useEffect(() => {
+    if (detectionItems.length > 0) {
+      summaryBarTranslateY.value = withSpring(0, { damping: 20, stiffness: 200 });
+    }
+  }, [detectionItems.length, summaryBarTranslateY]);
+
+  // Animate count and calories changes
+  React.useEffect(() => {
+    selectedCountValue.value = withTiming(selectedItems.length, { duration: 200 });
+  }, [selectedItems.length, selectedCountValue]);
+
+  React.useEffect(() => {
+    totalCaloriesValue.value = withTiming(Math.round(totalCalories), { duration: 200 });
+  }, [totalCalories, totalCaloriesValue]);
 
   const handleSelectionChange = useCallback((index: number, selected: boolean) => {
     setDetectionItems((prev) =>
@@ -270,13 +301,22 @@ const AddMealFromVisionScreen = (): JSX.Element => {
       )}
 
       {/* Summary Bar */}
-      <AiSummaryBar
-        selectedCount={selectedItems.length}
-        totalCalories={Math.round(totalCalories)}
-        mealType={selectedItems[0]?.mealType ?? 2}
-        onAddToDiary={handleAddToDiary}
-        disabled={selectedItems.length === 0 || isSubmitting}
-      />
+      <Animated.View
+        style={[
+          styles.summaryBarContainer,
+          useAnimatedStyle(() => ({
+            transform: [{ translateY: summaryBarTranslateY.value }],
+          })),
+        ]}
+      >
+        <AiSummaryBar
+          selectedCount={selectedCountValue}
+          totalCalories={totalCaloriesValue}
+          mealType={selectedItems[0]?.mealType ?? 2}
+          onAddToDiary={handleAddToDiary}
+          disabled={selectedItems.length === 0 || isSubmitting}
+        />
+      </Animated.View>
 
       {/* Teach Label Bottom Sheet */}
       <TeachLabelBottomSheet
@@ -334,6 +374,12 @@ const styles = StyleSheet.create({
   },
   errorActions: {
     // Add error action buttons if needed
+  },
+  summaryBarContainer: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
   },
 });
 
