@@ -10,6 +10,7 @@ import AppTabs from './AppTabs';
 import FoodSearchScreen from '../screens/diary/FoodSearchScreen';
 import FoodDetailScreen from '../screens/diary/FoodDetailScreen';
 import CustomDishScreen from '../screens/diary/CustomDishScreen';
+import MealDiaryScreen from '../screens/diary/MealDiaryScreen';
 import AiCameraScreen from '../screens/ai/AiCameraScreen';
 import AiNutritionScreen from '../screens/ai/AiNutritionScreen';
 import NutritionSuggestScreen from '../screens/ai/NutritionSuggestScreen';
@@ -84,6 +85,18 @@ const AppNavigator = (): JSX.Element => {
                 options={{
                   headerShown: true,
                   title: t('navigation.customDish'),
+                  headerStyle: { backgroundColor: theme.colors.card },
+                  headerTintColor: theme.colors.text,
+                  headerShadowVisible: false,
+                  headerTitleStyle: { fontFamily: 'Inter_600SemiBold' },
+                }}
+              />
+              <Stack.Screen
+                name="MealDiary"
+                component={MealDiaryScreen}
+                options={{
+                  headerShown: true,
+                  title: 'Nhật ký bữa ăn',
                   headerStyle: { backgroundColor: theme.colors.card },
                   headerTintColor: theme.colors.text,
                   headerShadowVisible: false,

@@ -9,7 +9,7 @@ import Screen from '../../components/Screen';
 import Card from '../../components/Card';
 import Button from '../../components/Button';
 import Icon from '../../components/Icon';
-import GradientBackground from '../../components/GradientBackground';
+import ProgressBar from '../../components/ProgressBar';
 import { useDiaryStore } from '../../store/useDiaryStore';
 import { useAppTheme } from '../../theme/ThemeProvider';
 import type { RootStackParamList } from '../types';
@@ -17,6 +17,12 @@ import { MEAL_TYPE_LABELS, type MealTypeId } from '../../types';
 import { diaryService } from '../../services/diaryService';
 import { healthService } from '../../services/healthService';
 import { t } from '../../i18n/vi';
+
+// New UI components
+import { AppCard } from '../../components/ui/AppCard';
+import { AppChip } from '../../components/ui/AppChip';
+import { SectionHeader } from '../../components/ui/SectionHeader';
+import { EmptyState } from '../../components/ui/EmptyState';
 
 const MEAL_TITLE_MAP: Record<MealTypeId, string> = {
   1: t('mealTypes.breakfast'),
@@ -178,13 +184,41 @@ const HomeScreen = (): JSX.Element => {
     [navigation],
   );
 
-  const calorieDiffText = useMemo(() => {
-    if (!summary || typeof summary.totalCalories !== 'number' || typeof summary.targetCalories !== 'number') return null;
-    const diff = summary.totalCalories - summary.targetCalories;
-    if (diff === 0) return t('home.diffEqual');
-    if (diff > 0) return t('home.diffAbove', Math.abs(diff));
-    return t('home.diffBelow', Math.abs(diff));
+  // Calculate remaining calories
+  const remainingCalories = useMemo(() => {
+    if (!summary || typeof summary.totalCalories !== 'number' || typeof summary.targetCalories !== 'number') return 0;
+    return Math.max(0, summary.targetCalories - summary.totalCalories);
   }, [summary]);
+
+  // Calculate progress percentage
+  const calorieProgress = useMemo(() => {
+    if (!summary || typeof summary.totalCalories !== 'number' || typeof summary.targetCalories !== 'number') return 0;
+    return Math.min(1, summary.totalCalories / summary.targetCalories);
+  }, [summary]);
+
+  // Get today's entries for diary section (first 2-3)
+  const todayEntries = useMemo(() => {
+    if (!summary?.meals) return [];
+    return summary.meals.flatMap(meal => meal.entries).slice(0, 3);
+  }, [summary]);
+
+  // Handle quick action navigation
+  const handleQuickAction = useCallback((mealType: MealTypeId) => {
+    navigation.navigate('AddMealFromVision', {
+      imageUri: '', // Will be set by camera screen
+      result: { items: [], unmappedLabels: [] } // Placeholder
+    });
+  }, [navigation]);
+
+  // Handle AI camera navigation
+  const handleAICamera = useCallback(() => {
+    navigation.navigate('AiCamera');
+  }, [navigation]);
+
+  // Handle view all diary
+  const handleViewAllDiary = useCallback(() => {
+    navigation.navigate('MealDiary');
+  }, [navigation]);
 
   return (
     <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
@@ -198,99 +232,143 @@ const HomeScreen = (): JSX.Element => {
             <ThemedText variant="bodySmall" color="textSecondary">{t('app.checkApiUrl')}</ThemedText>
           </View>
         )}
-        <Card>
-          <ThemedText variant="h2">{t('home.title')}</ThemedText>
-          <ThemedText variant="bodySmall" color="textSecondary">{formatDate(summary?.date)}</ThemedText>
 
-          <View style={[styles.row, { marginTop: theme.spacing.lg }]}>
-            <View style={[styles.box, { backgroundColor: theme.colors.primaryLight }]}>
-              <ThemedText variant="caption" color="primary" weight="600" style={{ textTransform: 'uppercase' }}>
-                {t('home.intake')}
-              </ThemedText>
-              <ThemedText variant="h2" color="primary">
-                {formatNumber(summary?.totalCalories, ' kcal')}
-              </ThemedText>
-            </View>
-            <View style={[styles.box, { backgroundColor: theme.colors.secondaryLight }]}>
-              <ThemedText variant="caption" color="secondary" weight="600" style={{ textTransform: 'uppercase' }}>
-                {t('home.target')}
-              </ThemedText>
-              <ThemedText variant="h2" color="secondary">
-                {formatNumber(summary?.targetCalories, ' kcal')}
-              </ThemedText>
-            </View>
-          </View>
-
-          {calorieDiffText ? (
-            <ThemedText variant="bodySmall" color="textSecondary" style={{ marginTop: theme.spacing.md }}>
-              {calorieDiffText}
+        {/* Hero Card */}
+        <AppCard style={{ backgroundColor: theme.colors.card }}>
+          <View style={{ alignItems: 'center', gap: theme.spacing.md }}>
+            <ThemedText variant="h1" weight="700">
+              {t('home.remaining_calories', remainingCalories)}
             </ThemedText>
-          ) : null}
-
-          <View style={[styles.row, { marginTop: theme.spacing.lg }]}>
-            <View style={[styles.box, { backgroundColor: theme.colors.background }]}>
-              <ThemedText variant="caption" color="textSecondary" weight="600" style={{ textTransform: 'uppercase' }}>
-                Protein
-              </ThemedText>
-              <ThemedText variant="h4">{formatNumber(summary?.protein, ' g')}</ThemedText>
-            </View>
-            <View style={[styles.box, { backgroundColor: theme.colors.background }]}>
-              <ThemedText variant="caption" color="textSecondary" weight="600" style={{ textTransform: 'uppercase' }}>
-                Carb
-              </ThemedText>
-              <ThemedText variant="h4">{formatNumber(summary?.carbs, ' g')}</ThemedText>
-            </View>
-            <View style={[styles.box, { backgroundColor: theme.colors.background }]}>
-              <ThemedText variant="caption" color="textSecondary" weight="600" style={{ textTransform: 'uppercase' }}>
-                Fat
-              </ThemedText>
-              <ThemedText variant="h4">{formatNumber(summary?.fat, ' g')}</ThemedText>
-            </View>
+            <ThemedText variant="body" color="textSecondary">
+              {t('home.eaten_vs_target', summary?.totalCalories || 0, summary?.targetCalories || 0)}
+            </ThemedText>
+            <ProgressBar
+              progress={calorieProgress}
+              height={8}
+              color={theme.colors.primary}
+              backgroundColor={theme.colors.muted + '30'}
+              animated
+            />
           </View>
+        </AppCard>
 
-          <View style={{ marginTop: theme.spacing.xl, gap: theme.spacing.sm }}>
-            <Button title={t('home.addDish')} onPress={() => setShowAddModal(true)} />
-          </View>
-        </Card>
-
-        {isLoading ? (
-          <Card>
-            <View style={{ alignItems: 'center', paddingVertical: 20 }}>
-              <ActivityIndicator color={theme.colors.primary} />
-              <ThemedText variant="body" color="textSecondary">{t('home.loadingDiary')}</ThemedText>
-            </View>
-          </Card>
-        ) : summary && summary.meals.length > 0 ? (
-          summary.meals.map((meal) => (
-            <Card key={meal.mealType}>
-              <View style={styles.mealHeader}>
-                <View>
-                  <ThemedText variant="h4">{MEAL_TITLE_MAP[meal.mealType] ?? meal.title}</ThemedText>
-                  <ThemedText variant="bodySmall" color="textSecondary">{formatNumber(meal.totalCalories, ' kcal')}</ThemedText>
-                </View>
-                <ThemedText variant="bodySmall" color="textSecondary">{t('home.entries', meal.entries.length)}</ThemedText>
+        {/* Macro Card */}
+        <AppCard title="Macros">
+          <View style={{ flexDirection: 'row', gap: theme.spacing.md }}>
+            <View style={{ flex: 1, alignItems: 'center' }}>
+              <Icon name="fitness" size="lg" color="primary" />
+              <ThemedText variant="h4" style={{ marginTop: theme.spacing.xs }}>
+                {formatNumber(summary?.protein, 'g')}
+              </ThemedText>
+              <ThemedText variant="caption" color="textSecondary">Protein</ThemedText>
+              <View style={{ marginTop: theme.spacing.xs }}>
+                <ProgressBar
+                  progress={summary?.protein && summary?.targetCalories ? Math.min(1, (summary.protein * 4) / (summary.targetCalories * 0.3)) : 0}
+                  height={4}
+                  color={theme.colors.primary}
+                />
               </View>
+            </View>
+            <View style={{ flex: 1, alignItems: 'center' }}>
+              <Icon name="restaurant" size="lg" color="secondary" />
+              <ThemedText variant="h4" style={{ marginTop: theme.spacing.xs }}>
+                {formatNumber(summary?.carbs, 'g')}
+              </ThemedText>
+              <ThemedText variant="caption" color="textSecondary">Carb</ThemedText>
+              <View style={{ marginTop: theme.spacing.xs }}>
+                <ProgressBar
+                  progress={summary?.carbs && summary?.targetCalories ? Math.min(1, (summary.carbs * 4) / (summary.targetCalories * 0.5)) : 0}
+                  height={4}
+                  color={theme.colors.secondary}
+                />
+              </View>
+            </View>
+            <View style={{ flex: 1, alignItems: 'center' }}>
+              <Icon name="local-dining" size="lg" color="warning" />
+              <ThemedText variant="h4" style={{ marginTop: theme.spacing.xs }}>
+                {formatNumber(summary?.fat, 'g')}
+              </ThemedText>
+              <ThemedText variant="caption" color="textSecondary">Fat</ThemedText>
+              <View style={{ marginTop: theme.spacing.xs }}>
+                <ProgressBar
+                  progress={summary?.fat && summary?.targetCalories ? Math.min(1, (summary.fat * 9) / (summary.targetCalories * 0.2)) : 0}
+                  height={4}
+                  color={theme.colors.warning}
+                />
+              </View>
+            </View>
+          </View>
+        </AppCard>
 
-              {meal.entries.map((entry: any) => (
-                <View key={entry.id} style={[styles.entryRow, { borderColor: theme.colors.border }]}> 
+        {/* Quick Actions */}
+        <View>
+          <SectionHeader title={t('home.quick_actions_title')} />
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: theme.spacing.sm }}>
+            <AppChip label={t('home.add_breakfast')} onPress={() => handleQuickAction(1)} />
+            <AppChip label={t('home.add_lunch')} onPress={() => handleQuickAction(2)} />
+            <AppChip label={t('home.add_dinner')} onPress={() => handleQuickAction(3)} />
+            <AppChip label={t('home.add_snack')} onPress={() => handleQuickAction(4)} />
+          </View>
+        </View>
+
+        {/* Today's Diary */}
+        <View>
+          <SectionHeader
+            title={t('home.diary_today')}
+            action={handleViewAllDiary}
+            actionText={t('home.see_all')}
+          />
+          {isLoading ? (
+            <AppCard>
+              <View style={{ alignItems: 'center', paddingVertical: 20 }}>
+                <ActivityIndicator color={theme.colors.primary} />
+                <ThemedText variant="body" color="textSecondary">{t('home.loadingDiary')}</ThemedText>
+              </View>
+            </AppCard>
+          ) : todayEntries.length > 0 ? (
+            <AppCard>
+              {todayEntries.map((entry) => (
+                <View key={entry.id} style={[styles.entryRow, { borderColor: theme.colors.border }]}>
                   <View style={styles.entryInfo}>
                     <ThemedText variant="body" weight="600">{entry.foodName}</ThemedText>
-                    <ThemedText variant="bodySmall" color="textSecondary">
-                      {formatNumber(entry.calories, ' kcal')} · {entry.quantityText ?? t('home.noPortionInfo')}
-                    </ThemedText>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: theme.spacing.sm, marginTop: theme.spacing.xs }}>
+                      <ThemedText variant="bodySmall" color="textSecondary">
+                        {formatNumber(entry.calories, ' kcal')}
+                      </ThemedText>
+                      <ThemedText variant="bodySmall" color="textSecondary">
+                        {entry.quantityText ?? t('home.noPortionInfo')}
+                      </ThemedText>
+                      <View style={[styles.badge, { backgroundColor: entry.sourceMethod === 'ai' ? theme.colors.primaryLight : theme.colors.secondaryLight }]}>
+                        <ThemedText variant="caption" color={entry.sourceMethod === 'ai' ? 'primary' : 'secondary'}>
+                          {entry.sourceMethod === 'ai' ? t('home.source_ai') : t('home.source_manual')}
+                        </ThemedText>
+                      </View>
+                    </View>
                   </View>
                   <Pressable accessibilityRole="button" hitSlop={8} onPress={() => handleDelete(entry.id, entry.foodName)} style={styles.deleteChip}>
                     <ThemedText variant="button" color="danger">{t('common.delete')}</ThemedText>
                   </Pressable>
                 </View>
               ))}
-            </Card>
-          ))
-        ) : (
-          <Card>
-            <ThemedText variant="body" color="textSecondary">{t('home.empty')}</ThemedText>
-          </Card>
-        )}
+            </AppCard>
+          ) : (
+            <EmptyState
+              title={t('home.empty')}
+              description="Hãy bắt đầu thêm món ăn đầu tiên của bạn!"
+              icon="restaurant"
+            />
+          )}
+        </View>
+
+        {/* AI Highlight Card */}
+        <AppCard style={{ backgroundColor: theme.colors.primaryLight }}>
+          <Pressable onPress={handleAICamera} style={{ alignItems: 'center', gap: theme.spacing.md }}>
+            <Icon name="camera" size="xl" color="primary" />
+            <ThemedText variant="h4" color="primary" weight="600">
+              {t('home.ai_quick_add')}
+            </ThemedText>
+          </Pressable>
+        </AppCard>
       </Screen>
 
       <AddEntryModal visible={showAddModal} onClose={() => setShowAddModal(false)} onSelect={handleAddOption} />
@@ -309,6 +387,7 @@ const styles = StyleSheet.create({
   entryName: { fontFamily: 'Inter_600SemiBold' },
   entryMeta: { opacity: 0.75, fontSize: 13 },
   deleteChip: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 999, borderWidth: 1, borderColor: 'transparent', backgroundColor: 'transparent' },
+  badge: { paddingHorizontal: 6, paddingVertical: 2, borderRadius: 8 },
   modalBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'center', alignItems: 'center', padding: 24 },
   modalHint: { opacity: 0.8 },
 });

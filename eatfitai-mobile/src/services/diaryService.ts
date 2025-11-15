@@ -21,6 +21,7 @@ export type DiaryEntry = {
   createdAt?: string | null;
   updatedAt?: string | null;
   isDeleted?: boolean | null;
+  sourceMethod?: string | null;
 };
 
 export type DiaryMealGroup = {
@@ -56,7 +57,7 @@ const toNumberOrNull = (value: unknown): number | null => {
 
 const normalizeEntry = (data: MealDiaryDto): DiaryEntry => ({
   id: String(data?.mealDiaryId ?? ''),
-  mealType: (data?.mealTypeId as MealTypeId) ?? (data?.mealTypeName ?? 'unknown'),
+  mealType: (data?.mealTypeId as MealTypeId) ?? 1, // Default to breakfast if unknown
   foodName: data?.foodItemName ?? data?.userDishName ?? data?.recipeName ?? 'Mon an',
   note: data?.note ?? null,
   quantityText: data?.portionQuantity ? `${data.portionQuantity} ${data.servingUnitName ?? 'serving'}` : `${data.grams}g`,
@@ -68,6 +69,7 @@ const normalizeEntry = (data: MealDiaryDto): DiaryEntry => ({
   createdAt: data?.createdAt ?? null,
   updatedAt: data?.updatedAt ?? null,
   isDeleted: data?.isDeleted ?? null,
+  sourceMethod: data?.sourceMethod ?? null,
 });
 
 const normalizeMeal = (data: any): DiaryMealGroup => {

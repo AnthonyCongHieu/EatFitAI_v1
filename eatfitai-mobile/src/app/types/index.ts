@@ -12,4 +12,5 @@ export type RootStackParamList = {
   AiNutrition: undefined;
   NutritionSuggest: undefined;
   AddMealFromVision: import('../../types/navigation').AddMealFromVisionParams;
+  MealDiary: undefined;
 };

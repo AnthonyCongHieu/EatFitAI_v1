@@ -1,19 +1,22 @@
-import { useCallback, useMemo, useState } from 'react';
-import { FlatList, StyleSheet, View } from 'react-native';
+import React, { useState, useMemo } from 'react';
+import { Image, StyleSheet, View, ScrollView, Alert } from 'react-native';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import Toast from 'react-native-toast-message';
 
 import Screen from '../../../components/Screen';
-import Card from '../../../components/Card';
-import Button from '../../../components/Button';
-import ThemedTextInput from '../../../components/ThemedTextInput';
 import { ThemedText } from '../../../components/ThemedText';
-import FoodItemPicker from '../../components/FoodItemPicker';
+import { SectionHeader } from '../../../components/ui/SectionHeader';
+import { EmptyState } from '../../../components/ui/EmptyState';
+import { Skeleton } from '../../../components/Skeleton';
+import { AiDetectionCard } from '../../../components/ui/AiDetectionCard';
+import { TeachLabelBottomSheet } from '../../../components/ui/TeachLabelBottomSheet';
+import { AiSummaryBar } from '../../../components/ui/AiSummaryBar';
 import { useAppTheme } from '../../../theme/ThemeProvider';
 import type { RootStackParamList } from '../../types';
-import { MEAL_TYPES, MEAL_TYPE_LABELS, type MealTypeId } from '../../../types';
+import type { MealTypeId } from '../../../types';
 import type { VisionDetectResult, MappedFoodItem } from '../../../types/ai';
+import type { FoodItem } from '../../../services/foodService';
 import { aiService } from '../../../services/aiService';
 import { mealService } from '../../../services/mealService';
 import { useDiaryStore } from '../../../store/useDiaryStore';
@@ -21,19 +24,11 @@ import { useDiaryStore } from '../../../store/useDiaryStore';
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 type RouteProps = RouteProp<RootStackParamList, 'AddMealFromVision'>;
 
-type LocalItem = {
-  id: string;
-  source: MappedFoodItem;
-  grams: string;
+type DetectionItem = {
+  item: MappedFoodItem;
   selected: boolean;
-};
-
-const todayDate = (): string => {
-  const d = new Date();
-  const y = d.getFullYear();
-  const m = `${d.getMonth() + 1}`.padStart(2, '0');
-  const day = `${d.getDate()}`.padStart(2, '0');
-  return `${y}-${m}-${day}`;
+  grams: number;
+  mealType: MealTypeId;
 };
 
 const AddMealFromVisionScreen = (): JSX.Element => {
@@ -42,209 +37,282 @@ const AddMealFromVisionScreen = (): JSX.Element => {
   const route = useRoute<RouteProps>();
   const refreshSummary = useDiaryStore((s) => s.refreshSummary);
 
-  const { imageUri, result: initialResult } = route.params;
+  const { imageUri, result } = route.params;
 
-  const [visionResult, setVisionResult] = useState<VisionDetectResult>(initialResult);
-  const [items, setItems] = useState<LocalItem[]>(() =>
-    initialResult.items.map((item, index) => ({
-      id: `${index}-${item.label}`,
-      source: item,
-      grams: '100',
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [detectionItems, setDetectionItems] = useState<DetectionItem[]>(() =>
+    result.items.map((item) => ({
+      item,
       selected: item.isMatched,
-    })),
+      grams: 100,
+      mealType: 2, // Default to lunch
+    }))
   );
-  const [mealType, setMealType] = useState<MealTypeId>(MEAL_TYPES.LUNCH);
+  const [teachLabelVisible, setTeachLabelVisible] = useState(false);
+  const [currentTeachLabel, setCurrentTeachLabel] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isTeaching, setIsTeaching] = useState(false);
-  const [pickerVisible, setPickerVisible] = useState(false);
-  const [labelToMap, setLabelToMap] = useState<string | null>(null);
 
-  const validSelectedItems = useMemo(
-    () =>
-      items.filter((x) => x.selected && x.source.isMatched && x.source.foodItemId != null && !Number.isNaN(Number(x.grams)) && Number(x.grams) > 0),
-    [items],
+  const matchedItems = useMemo(
+    () => detectionItems.filter((d) => d.item.isMatched),
+    [detectionItems]
   );
 
-  const handleChangeGrams = useCallback((id: string, value: string) => {
-    setItems((prev) => prev.map((it) => (it.id === id ? { ...it, grams: value } : it)));
-  }, []);
-
-  const handleToggleSelected = useCallback((id: string) => {
-    setItems((prev) => prev.map((it) => (it.id === id ? { ...it, selected: !it.selected } : it)));
-  }, []);
-
-  const handleOpenMap = useCallback((item: LocalItem) => {
-    setLabelToMap(item.source.label);
-    setPickerVisible(true);
-  }, []);
-
-  const handleSelectFoodForLabel = useCallback(
-    async (food: { id: string }) => {
-      if (!labelToMap) return;
-      setIsTeaching(true);
-      try {
-        await aiService.teachLabel({
-          label: labelToMap,
-          foodItemId: Number(food.id),
-          minConfidence: 0.5,
-        });
-
-        const refreshed = await aiService.detectFoodByImage(imageUri);
-        setVisionResult(refreshed);
-        // Merge lai voi local state de giu grams / selected
-        setItems((prev) =>
-          refreshed.items.map((item, index) => {
-            const existing = prev.find((x) => x.source.label === item.label);
-            return {
-              id: existing?.id ?? `${index}-${item.label}`,
-              source: item,
-              grams: existing?.grams ?? '100',
-              selected: existing?.selected ?? item.isMatched,
-            };
-          }),
-        );
-      } catch (error: any) {
-        // eslint-disable-next-line no-console
-        console.warn('Teach label failed', error);
-      } finally {
-        setIsTeaching(false);
-        setLabelToMap(null);
-      }
-    },
-    [imageUri, labelToMap],
+  const unmatchedItems = useMemo(
+    () => detectionItems.filter((d) => !d.item.isMatched),
+    [detectionItems]
   );
 
-  const handleSubmit = useCallback(async () => {
-    if (validSelectedItems.length === 0) {
-      Toast.show({ type: 'info', text1: 'Chua chon mon nao', text2: 'Vui long chon it nhat 1 mon de them vao bua an' });
-      return;
+  const selectedItems = useMemo(
+    () => detectionItems.filter((d) => d.selected),
+    [detectionItems]
+  );
+
+  const totalCalories = useMemo(() => {
+    return selectedItems.reduce((sum, d) => {
+      const caloriesPer100g = d.item.caloriesPer100g ?? 0;
+      return sum + (caloriesPer100g * d.grams) / 100;
+    }, 0);
+  }, [selectedItems]);
+
+  const handleSelectionChange = (index: number, selected: boolean) => {
+    setDetectionItems((prev) =>
+      prev.map((item, i) => (i === index ? { ...item, selected } : item))
+    );
+  };
+
+  const handleGramsChange = (index: number, grams: number) => {
+    setDetectionItems((prev) =>
+      prev.map((item, i) => (i === index ? { ...item, grams } : item))
+    );
+  };
+
+  const handleMealTypeChange = (index: number, mealType: MealTypeId) => {
+    setDetectionItems((prev) =>
+      prev.map((item, i) => (i === index ? { ...item, mealType } : item))
+    );
+  };
+
+  const handleTeachLabel = (label: string) => {
+    setCurrentTeachLabel(label);
+    setTeachLabelVisible(true);
+  };
+
+  const handleSelectFood = async (foodItem: FoodItem) => {
+    try {
+      await aiService.teachLabel({
+        label: currentTeachLabel,
+        foodItemId: parseInt(foodItem.id),
+      });
+
+      Toast.show({
+        type: 'success',
+        text1: 'Đã dạy AI',
+        text2: `"${currentTeachLabel}" → ${foodItem.name}`,
+      });
+
+      // Refresh detection results
+      setLoading(true);
+      const refreshedResult = await aiService.detectFoodByImage(imageUri);
+      setDetectionItems(
+        refreshedResult.items.map((item) => ({
+          item,
+          selected: item.isMatched,
+          grams: 100,
+          mealType: 2,
+        }))
+      );
+      setLoading(false);
+    } catch (err) {
+      Toast.show({
+        type: 'error',
+        text1: 'Lỗi',
+        text2: 'Không thể dạy AI. Vui lòng thử lại.',
+      });
     }
+  };
+
+  const handleAddToDiary = async () => {
+    if (selectedItems.length === 0) return;
+
     setIsSubmitting(true);
     try {
-      const payload = validSelectedItems.map((it) => ({
-        foodItemId: Number(it.source.foodItemId),
-        grams: Number(it.grams),
+      const date = new Date().toISOString().split('T')[0]!;
+      const mealType = selectedItems[0]?.mealType ?? 2; // Use meal type from first selected item, default to lunch
+
+      const items = selectedItems.map((d) => ({
+        foodItemId: d.item.foodItemId!,
+        grams: d.grams,
       }));
-      await mealService.addMealItems(todayDate(), mealType, payload);
-      Toast.show({ type: 'success', text1: 'Da them tu AI Vision', text2: 'Nhat ky bua an da duoc cap nhat' });
-      await refreshSummary().catch(() => {});
+
+      await mealService.addMealItems(date, mealType, items);
+
+      Toast.show({
+        type: 'success',
+        text1: 'Thành công',
+        text2: `Đã thêm ${selectedItems.length} món vào nhật ký`,
+      });
+
+      await refreshSummary();
       navigation.goBack();
-    } catch (error: any) {
-      Toast.show({ type: 'error', text1: 'Them bua an that bai', text2: 'Vui long thu lai hoac kiem tra ket noi' });
+    } catch (err) {
+      Toast.show({
+        type: 'error',
+        text1: 'Lỗi',
+        text2: 'Không thể thêm vào nhật ký. Vui lòng thử lại.',
+      });
     } finally {
       setIsSubmitting(false);
     }
-  }, [mealType, navigation, refreshSummary, validSelectedItems]);
+  };
 
-  const renderItem = ({ item }: { item: LocalItem }) => (
-    <Card padding="md" shadow="none" key={item.id} style={{ marginBottom: theme.spacing.sm }}>
-      <View style={styles.row}>
-        <View style={{ flex: 1 }}>
-          <ThemedText variant="body" weight="600">
-            {item.source.foodName ?? 'Mon an'}{' '}
-            <ThemedText variant="bodySmall" color="textSecondary">
-              ({item.source.label})
-            </ThemedText>
-          </ThemedText>
-          <ThemedText variant="bodySmall" color="textSecondary">
-            Conf: {(item.source.confidence * 100).toFixed(1)}%
-          </ThemedText>
-          <ThemedText variant="bodySmall" color="textSecondary">
-            100g: {item.source.caloriesPer100g ?? '--'} kcal | P {item.source.proteinPer100g ?? '--'} | F{' '}
-            {item.source.fatPer100g ?? '--'} | C {item.source.carbPer100g ?? '--'}
-          </ThemedText>
-        </View>
-      </View>
-
-      <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: theme.spacing.sm, gap: theme.spacing.sm }}>
-        <View style={{ flex: 1 }}>
-          <ThemedTextInput
-            label="Gram"
-            keyboardType="numeric"
-            value={item.grams}
-            onChangeText={(value) => handleChangeGrams(item.id, value)}
-          />
-        </View>
-        <View style={{ width: 120 }}>
-          <Button
-            variant={item.selected ? 'primary' : 'outline'}
-            title={item.selected ? 'Se them' : 'Bo qua'}
-            size="sm"
-            onPress={() => handleToggleSelected(item.id)}
-          />
-        </View>
-      </View>
-
-      {!item.source.isMatched && (
-        <View style={{ marginTop: theme.spacing.sm }}>
-          <Button
-            variant="outline"
-            size="sm"
-            title={isTeaching && labelToMap === item.source.label ? 'Dang map...' : 'Map ngay'}
-            disabled={isTeaching}
-            onPress={() => handleOpenMap(item)}
-          />
-        </View>
-      )}
-    </Card>
+  const renderDetectionCard = (detection: DetectionItem, index: number) => (
+    <AiDetectionCard
+      key={`${detection.item.label}-${index}`}
+      item={detection.item}
+      selected={detection.selected}
+      grams={detection.grams}
+      mealType={detection.mealType}
+      onSelectionChange={(selected) => handleSelectionChange(index, selected)}
+      onGramsChange={(grams) => handleGramsChange(index, grams)}
+      onMealTypeChange={(mealType) => handleMealTypeChange(index, mealType)}
+      onTeachLabel={() => handleTeachLabel(detection.item.label)}
+    />
   );
 
-  return (
-    <Screen contentContainerStyle={styles.container}>
-      <Card padding="lg" shadow="md">
-        <ThemedText variant="h2" style={{ marginBottom: theme.spacing.xs }}>
-          Them bua an tu AI Vision
-        </ThemedText>
-        <ThemedText variant="bodySmall" color="textSecondary" style={{ marginBottom: theme.spacing.lg }}>
-          Chinh sua gram va chon nhung mon ban muon them vao bua an.
-        </ThemedText>
-
-        <ThemedText variant="bodySmall" weight="600">
-          Chon bua an
-        </ThemedText>
-        <View style={[styles.mealRow, { marginTop: theme.spacing.sm, marginBottom: theme.spacing.md }]}>
-          {[MEAL_TYPES.BREAKFAST, MEAL_TYPES.LUNCH, MEAL_TYPES.DINNER, MEAL_TYPES.SNACK].map((type) => (
-            <Button
-              key={type}
-              size="sm"
-              variant={mealType === type ? 'primary' : 'outline'}
-              title={MEAL_TYPE_LABELS[type]}
-              onPress={() => setMealType(type)}
-            />
-          ))}
+  const renderSkeleton = () => (
+    <View style={styles.skeletonContainer}>
+      {Array.from({ length: 3 }).map((_, index) => (
+        <View key={index} style={styles.skeletonCard}>
+          <Skeleton height={120} style={{ borderRadius: 12 }} />
         </View>
+      ))}
+    </View>
+  );
 
-        <FlatList
-          data={items}
-          keyExtractor={(item) => item.id}
-          renderItem={renderItem}
-          scrollEnabled={false}
+  if (error) {
+    return (
+      <Screen>
+        <EmptyState
+          title="Không thể tải kết quả từ AI. Thử lại."
+          description="Đã xảy ra lỗi khi xử lý ảnh. Vui lòng thử chụp lại hoặc liên hệ hỗ trợ."
+          icon="alert-triangle"
+          action={
+            <View style={styles.errorActions}>
+              {/* Add retry button if needed */}
+            </View>
+          }
         />
+      </Screen>
+    );
+  }
 
-        <View style={{ marginTop: theme.spacing.lg }}>
-          <Button
-            variant="primary"
-            title={isSubmitting ? 'Dang them...' : 'Them vao MealDiary'}
-            onPress={handleSubmit}
-            disabled={isSubmitting || validSelectedItems.length === 0}
-          />
+  return (
+    <Screen style={styles.container}>
+      {/* Image Preview */}
+      <View style={styles.imageContainer}>
+        <Image source={{ uri: imageUri }} style={styles.image} resizeMode="cover" />
+        <View style={styles.overlay}>
+          <ThemedText style={styles.overlayText}>
+            AI nhận diện {detectionItems.length} món
+          </ThemedText>
         </View>
-      </Card>
+      </View>
 
-      <FoodItemPicker
-        visible={pickerVisible}
-        onClose={() => setPickerVisible(false)}
-        onSelect={handleSelectFoodForLabel}
+      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+        {loading ? (
+          renderSkeleton()
+        ) : (
+          <View style={styles.content}>
+            {/* Gợi ý của AI */}
+            {matchedItems.length > 0 && (
+              <View style={styles.section}>
+                <SectionHeader title="Gợi ý của AI" />
+                {matchedItems.map((detection, index) =>
+                  renderDetectionCard(detection, detectionItems.indexOf(detection))
+                )}
+              </View>
+            )}
+
+            {/* Cần xác nhận */}
+            {unmatchedItems.length > 0 && (
+              <View style={styles.section}>
+                <SectionHeader title="Cần xác nhận" />
+                {unmatchedItems.map((detection, index) =>
+                  renderDetectionCard(detection, detectionItems.indexOf(detection))
+                )}
+              </View>
+            )}
+          </View>
+        )}
+      </ScrollView>
+
+      {/* Summary Bar */}
+      <AiSummaryBar
+        selectedCount={selectedItems.length}
+        totalCalories={Math.round(totalCalories)}
+        mealType={selectedItems[0]?.mealType ?? 2}
+        onAddToDiary={handleAddToDiary}
+        disabled={selectedItems.length === 0 || isSubmitting}
+      />
+
+      {/* Teach Label Bottom Sheet */}
+      <TeachLabelBottomSheet
+        visible={teachLabelVisible}
+        onClose={() => setTeachLabelVisible(false)}
+        onSelectFood={handleSelectFood}
+        currentLabel={currentTeachLabel}
       />
     </Screen>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { padding: 16, gap: 16 },
-  row: { flexDirection: 'row', gap: 8 },
-  mealRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  container: {
+    flex: 1,
+    backgroundColor: '#f8f9fa',
+  },
+  imageContainer: {
+    position: 'relative',
+    width: '100%',
+    height: 200,
+  },
+  image: {
+    width: '100%',
+    height: '100%',
+  },
+  overlay: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+  },
+  overlayText: {
+    color: '#fff',
+    fontSize: 16,
+    fontFamily: 'Inter_600SemiBold',
+  },
+  scrollView: {
+    flex: 1,
+  },
+  content: {
+    padding: 16,
+  },
+  section: {
+    marginBottom: 24,
+  },
+  skeletonContainer: {
+    padding: 16,
+  },
+  skeletonCard: {
+    marginBottom: 12,
+  },
+  errorActions: {
+    // Add error action buttons if needed
+  },
 });
 
 export default AddMealFromVisionScreen;
-
