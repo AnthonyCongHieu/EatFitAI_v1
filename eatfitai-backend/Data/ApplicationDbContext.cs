@@ -49,6 +49,7 @@ public partial class ApplicationDbContext : DbContext
     public virtual DbSet<UserFoodItem> UserFoodItems { get; set; }
 
     public virtual DbSet<UserRecentFood> UserRecentFoods { get; set; }
+    public virtual DbSet<AiLabelMap> AiLabelMaps { get; set; }
 
     public virtual DbSet<vw_DailyMacroShare> vw_DailyMacroShares { get; set; }
 
@@ -481,6 +482,25 @@ public partial class ApplicationDbContext : DbContext
             entity.Property(e => e.TotalCarb).HasColumnType("decimal(38, 2)");
             entity.Property(e => e.TotalFat).HasColumnType("decimal(38, 2)");
             entity.Property(e => e.TotalProtein).HasColumnType("decimal(38, 2)");
+        });
+
+        modelBuilder.Entity<AiLabelMap>(entity =>
+        {
+            entity.ToTable("AiLabelMap");
+
+            entity.HasKey(e => e.Label);
+
+            entity.Property(e => e.Label)
+                .HasMaxLength(100)
+                .IsRequired();
+
+            entity.Property(e => e.MinConfidence)
+                .HasColumnType("decimal(5, 2)")
+                .HasDefaultValue(0.60m);
+
+            entity.Property(e => e.CreatedAt)
+                .HasPrecision(3)
+                .HasDefaultValueSql("(sysutcdatetime())");
         });
 
         OnModelCreatingPartial(modelBuilder);

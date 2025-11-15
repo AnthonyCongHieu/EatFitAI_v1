@@ -7,6 +7,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using System.Text.Json;
 using EatFitAI.API.DTOs.AI;
+using EatFitAI.API.Services;
 using Microsoft.EntityFrameworkCore;
 
 namespace EatFitAI.API.Controllers
@@ -19,14 +20,21 @@ namespace EatFitAI.API.Controllers
         private readonly IHttpClientFactory _httpClientFactory;
         private readonly IConfiguration _configuration;
         private readonly ILogger<AIController> _logger;
-        private readonly EatFitAI.API.Services.IAiFoodMapService _aiFoodMapService;
+        private readonly IAiFoodMapService _aiFoodMapService;
+        private readonly IAiLogService _aiLog;
 
-        public AIController(IHttpClientFactory httpClientFactory, IConfiguration configuration, ILogger<AIController> logger, EatFitAI.API.Services.IAiFoodMapService aiFoodMapService)
+        public AIController(
+            IHttpClientFactory httpClientFactory,
+            IConfiguration configuration,
+            ILogger<AIController> logger,
+            IAiFoodMapService aiFoodMapService,
+            IAiLogService aiLog)
         {
             _httpClientFactory = httpClientFactory;
             _configuration = configuration;
             _logger = logger;
             _aiFoodMapService = aiFoodMapService;
+            _aiLog = aiLog;
         }
 
         [HttpPost("vision/detect")]
@@ -90,6 +98,28 @@ namespace EatFitAI.API.Controllers
                     .Distinct(StringComparer.OrdinalIgnoreCase)
                     .ToList()
             };
+
+            try
+            {
+                var userId = GetUserIdFromToken();
+                var logPayload = new
+                {
+                    Image = new
+                    {
+                        FileName = file.FileName,
+                        ContentType = file.ContentType,
+                        Size = file.Length
+                    },
+                    RawDetections = detections,
+                    MappedItems = result.Items,
+                    result.UnmappedLabels
+                };
+
+                await _aiLog.LogAsync(userId, "VisionDetect", logPayload, result, 0);
+            }
+            catch
+            {
+            }
 
             return Ok(result);
         }
@@ -196,6 +226,14 @@ namespace EatFitAI.API.Controllers
             }
 
             return userId;
+        }
+
+        [HttpPost("labels/teach")]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        public async Task<IActionResult> TeachLabel([FromBody] TeachLabelRequestDto request, CancellationToken cancellationToken)
+        {
+            await _aiFoodMapService.TeachLabelAsync(request, cancellationToken);
+            return NoContent();
         }
 
         private static (int count, List<string> labelsWithConf) ExtractDetectionSummary(string json)

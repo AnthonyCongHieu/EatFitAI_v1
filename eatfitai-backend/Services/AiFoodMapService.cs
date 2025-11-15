@@ -4,6 +4,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using EatFitAI.API.DbScaffold.Data;
 using EatFitAI.API.DTOs.AI;
+using EatFitAI.API.Models;
 using Microsoft.EntityFrameworkCore;
 
 namespace EatFitAI.API.Services
@@ -11,6 +12,7 @@ namespace EatFitAI.API.Services
     public interface IAiFoodMapService
     {
         Task<List<MappedFoodDto>> MapDetectionsAsync(IEnumerable<VisionDetectionDto> detections, CancellationToken cancellationToken = default);
+        Task TeachLabelAsync(TeachLabelRequestDto request, CancellationToken cancellationToken = default);
     }
 
     public sealed class AiFoodMapService : IAiFoodMapService
@@ -84,6 +86,40 @@ namespace EatFitAI.API.Services
             }
 
             return result;
+        }
+
+        public async Task TeachLabelAsync(TeachLabelRequestDto request, CancellationToken cancellationToken = default)
+        {
+            if (request == null) throw new System.ArgumentNullException(nameof(request));
+            if (string.IsNullOrWhiteSpace(request.Label))
+            {
+                throw new System.ArgumentException("Label is required", nameof(request.Label));
+            }
+
+            var normalized = request.Label.Trim().ToLowerInvariant();
+            var minConfidence = request.MinConfidence ?? 0.60m;
+
+            var existing = await _db.Set<AiLabelMap>()
+                .FirstOrDefaultAsync(x => x.Label == normalized, cancellationToken);
+
+            if (existing == null)
+            {
+                existing = new AiLabelMap
+                {
+                    Label = normalized,
+                    FoodItemId = request.FoodItemId,
+                    MinConfidence = minConfidence,
+                    CreatedAt = System.DateTime.UtcNow
+                };
+                await _db.AddAsync(existing, cancellationToken);
+            }
+            else
+            {
+                existing.FoodItemId = request.FoodItemId;
+                existing.MinConfidence = minConfidence;
+            }
+
+            await _db.SaveChangesAsync(cancellationToken);
         }
     }
 }
