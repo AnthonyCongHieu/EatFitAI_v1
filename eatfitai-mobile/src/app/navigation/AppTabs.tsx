@@ -7,6 +7,7 @@ import HomeScreen from '../screens/HomeScreen';
 import FoodSearchScreen from '../screens/diary/FoodSearchScreen';
 import AiCameraScreen from '../screens/ai/AiCameraScreen';
 import AiNutritionScreen from '../screens/ai/AiNutritionScreen';
+import AiVisionScreen from '../screens/ai/AiVisionScreen';
 import WeekStatsScreen from '../screens/stats/WeekStatsScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import { useAppTheme } from '../../theme/ThemeProvider';
@@ -17,6 +18,7 @@ export type AppTabsParamList = {
   SearchTab: undefined;
   CameraTab: undefined;
   AITab: undefined;
+  AiVisionTab: undefined;
   StatsTab: undefined;
   ProfileTab: undefined;
 };
@@ -72,6 +74,14 @@ const AppTabs = (): JSX.Element => {
         options={{
           title: t('navigation.ai'),
           tabBarIcon: ({ color, size }) => <Ionicons name="bulb" color={color} size={size} />,
+        }}
+      />
+      <Tab.Screen
+        name="AiVisionTab"
+        component={AiVisionScreen}
+        options={{
+          title: 'AI Vision (test)',
+          tabBarIcon: ({ color, size }) => <Ionicons name="image" color={color} size={size} />,
         }}
       />
       <Tab.Screen

@@ -11,4 +11,5 @@ export type RootStackParamList = {
   AiCamera: undefined;
   AiNutrition: undefined;
   NutritionSuggest: undefined;
+  AddMealFromVision: import('../../types/navigation').AddMealFromVisionParams;
 };

@@ -13,6 +13,7 @@ import CustomDishScreen from '../screens/diary/CustomDishScreen';
 import AiCameraScreen from '../screens/ai/AiCameraScreen';
 import AiNutritionScreen from '../screens/ai/AiNutritionScreen';
 import NutritionSuggestScreen from '../screens/ai/NutritionSuggestScreen';
+import AddMealFromVisionScreen from '../screens/meals/AddMealFromVisionScreen';
 import { t } from '../../i18n/vi';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -119,6 +120,18 @@ const AppNavigator = (): JSX.Element => {
                 options={{
                   headerShown: true,
                   title: t('navigation.aiNutrition'),
+                  headerStyle: { backgroundColor: theme.colors.card },
+                  headerTintColor: theme.colors.text,
+                  headerShadowVisible: false,
+                  headerTitleStyle: { fontFamily: 'Inter_600SemiBold' },
+                }}
+              />
+              <Stack.Screen
+                name="AddMealFromVision"
+                component={AddMealFromVisionScreen}
+                options={{
+                  headerShown: true,
+                  title: 'Them tu AI Vision',
                   headerStyle: { backgroundColor: theme.colors.card },
                   headerTintColor: theme.colors.text,
                   headerShadowVisible: false,

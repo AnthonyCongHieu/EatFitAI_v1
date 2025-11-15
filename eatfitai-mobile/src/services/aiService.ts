@@ -2,6 +2,7 @@
 // Chu thich bang tieng Viet khong dau
 
 import apiClient from './apiClient';
+import type { VisionDetectResult } from '../types/ai';
 
 export type IngredientItem = {
   name: string;
@@ -26,6 +27,12 @@ export type NutritionTarget = {
   fat: number;
 };
 
+export interface TeachLabelRequest {
+  label: string;
+  foodItemId: number;
+  minConfidence?: number;
+}
+
 const toNumber = (value: unknown): number | null => {
   if (typeof value === 'number' && !Number.isNaN(value)) return value;
   if (typeof value === 'string') {
@@ -34,6 +41,28 @@ const toNumber = (value: unknown): number | null => {
   }
   return null;
 };
+
+export async function detectFoodByImage(imageUri: string): Promise<VisionDetectResult> {
+  const formData = new FormData();
+
+  formData.append('file', {
+    uri: imageUri,
+    name: 'photo.jpg',
+    type: 'image/jpeg',
+  } as any);
+
+  const response = await apiClient.post<VisionDetectResult>('/api/ai/vision/detect', formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  });
+
+  return response.data;
+}
+
+export async function teachLabel(req: TeachLabelRequest): Promise<void> {
+  await apiClient.post('/api/ai/labels/teach', req);
+}
 
 export const aiService = {
   // Gui anh (base64) de nhan dien nguyen lieu
@@ -136,5 +165,14 @@ export const aiService = {
       });
     }
   },
+
+  async detectFoodByImage(imageUri: string): Promise<VisionDetectResult> {
+    return detectFoodByImage(imageUri);
+  },
+
+  async teachLabel(req: TeachLabelRequest): Promise<void> {
+    await teachLabel(req);
+  },
 };
+
 
