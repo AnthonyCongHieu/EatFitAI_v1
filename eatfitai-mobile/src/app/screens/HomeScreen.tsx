@@ -25,7 +25,7 @@ import { AppChip } from '../../components/ui/AppChip';
 import { SectionHeader } from '../../components/ui/SectionHeader';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { ScreenHeader } from '../../components/ui/ScreenHeader';
-import { MetricCard } from '../../../components/ui/MetricCard';
+import { MetricCard } from '../../components/ui/MetricCard';
 
 const MEAL_TITLE_MAP: Record<MealTypeId, string> = {
   1: t('mealTypes.breakfast'),
@@ -203,6 +203,45 @@ const HomeScreen = (): JSX.Element => {
     },
     [refreshSummary],
   );
+
+  // Calculate remaining calories
+  const remainingCalories = useMemo(() => {
+    if (!summary || typeof summary.totalCalories !== 'number' || typeof summary.targetCalories !== 'number') return 0;
+    return Math.max(0, summary.targetCalories - summary.totalCalories);
+  }, [summary]);
+
+  // Calculate progress percentage
+  const calorieProgress = useMemo(() => {
+    if (!summary || typeof summary.totalCalories !== 'number' || typeof summary.targetCalories !== 'number') return 0;
+    return Math.min(1, summary.totalCalories / summary.targetCalories);
+  }, [summary]);
+
+  // Animate values when they change
+  useEffect(() => {
+    remainingCaloriesValue.value = withTiming(remainingCalories, { duration: theme.animation.normal });
+  }, [remainingCalories, remainingCaloriesValue, theme.animation.normal]);
+
+  useEffect(() => {
+    calorieProgressValue.value = withTiming(calorieProgress, { duration: theme.animation.slow });
+  }, [calorieProgress, calorieProgressValue, theme.animation.slow]);
+
+  useEffect(() => {
+    proteinValue.value = withTiming(summary?.protein || 0, { duration: theme.animation.normal });
+  }, [summary?.protein, proteinValue, theme.animation.normal]);
+
+  useEffect(() => {
+    carbsValue.value = withTiming(summary?.carbs || 0, { duration: theme.animation.normal });
+  }, [summary?.carbs, carbsValue, theme.animation.normal]);
+
+  useEffect(() => {
+    fatValue.value = withTiming(summary?.fat || 0, { duration: theme.animation.normal });
+  }, [summary?.fat, fatValue, theme.animation.normal]);
+
+  // Get today's entries for diary section (first 2-3)
+  const todayEntries = useMemo(() => {
+    if (!summary?.meals) return [];
+    return summary.meals.flatMap(meal => meal.entries).slice(0, 3);
+  }, [summary]);
 
 
   return (

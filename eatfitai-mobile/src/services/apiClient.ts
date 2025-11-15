@@ -75,7 +75,7 @@ apiClient.interceptors.request.use(async (config: InternalAxiosRequestConfig) =>
       } else {
         console.warn('[EatFitAI] Invalid token format, skipping authorization header');
       }
-    } else if (__DEV__ && !noAuthPaths.has(urlPath)) {
+    } else if (__DEV__ && urlPath && !noAuthPaths.has(urlPath)) {
       // Only warn for endpoints that typically require auth
       console.warn('[EatFitAI] No token available for request:', config.url);
     }

@@ -125,7 +125,7 @@ const AiDetectionCardComponent = ({
   return (
     <Animated.View style={animatedStyle}>
       <AppCard style={styles.card}>
-      <View style={styles.header}>
+        <View style={styles.header}>
         <Pressable
           style={[styles.checkbox, selected && { backgroundColor: theme.colors.primary }]}
           onPress={() => onSelectionChange(!selected)}

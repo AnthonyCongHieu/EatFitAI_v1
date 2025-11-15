@@ -3,10 +3,10 @@ import { Pressable, View } from 'react-native';
 import Animated, { useAnimatedStyle, interpolate } from 'react-native-reanimated';
 import { SharedValue } from 'react-native-reanimated';
 
-import { ThemedText } from '../../../components/ThemedText';
-import { useAppTheme } from '../../../theme/ThemeProvider';
-import Icon from '../../../components/Icon';
-import ProgressBar from '../../../components/ProgressBar';
+import { ThemedText } from '../ThemedText';
+import { useAppTheme } from '../../theme/ThemeProvider';
+import Icon from '../Icon';
+import ProgressBar from '../ProgressBar';
 
 type MetricCardProps = {
   icon: string;
