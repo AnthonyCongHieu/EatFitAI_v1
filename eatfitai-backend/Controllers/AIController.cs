@@ -19,20 +19,22 @@ namespace EatFitAI.API.Controllers
         private readonly IHttpClientFactory _httpClientFactory;
         private readonly IConfiguration _configuration;
         private readonly ILogger<AIController> _logger;
+        private readonly EatFitAI.API.Services.IAiFoodMapService _aiFoodMapService;
 
-        public AIController(IHttpClientFactory httpClientFactory, IConfiguration configuration, ILogger<AIController> logger)
+        public AIController(IHttpClientFactory httpClientFactory, IConfiguration configuration, ILogger<AIController> logger, EatFitAI.API.Services.IAiFoodMapService aiFoodMapService)
         {
             _httpClientFactory = httpClientFactory;
             _configuration = configuration;
             _logger = logger;
+            _aiFoodMapService = aiFoodMapService;
         }
 
         [HttpPost("vision/detect")]
         [RequestSizeLimit(25_000_000)]
         [Consumes("multipart/form-data")]
-        [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(EatFitAI.API.DTOs.AI.VisionDetectResultDto), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(object), StatusCodes.Status400BadRequest)]
-        public async Task<IActionResult> DetectVision(DetectVisionRequest input)
+        public async Task<ActionResult<EatFitAI.API.DTOs.AI.VisionDetectResultDto>> DetectVision(DetectVisionRequest input)
         {
             var file = input.File;
             if (file == null || file.Length == 0)
@@ -56,6 +58,17 @@ namespace EatFitAI.API.Controllers
             {
                 return StatusCode((int)resp.StatusCode, new { error = "ai-provider_error", detail = body });
             }
+            List<EatFitAI.API.DTOs.AI.VisionDetectionDto> detections;
+            try
+            {
+                detections = ParseDetections(body);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to parse AI provider response");
+                return BadRequest(new { error = "invalid_ai_response" });
+            }
+
             try
             {
                 var userId = GetUserIdFromToken();
@@ -66,7 +79,19 @@ namespace EatFitAI.API.Controllers
             {
                 _logger.LogWarning(ex, "AILog parse failure");
             }
-            return Content(body, "application/json");
+
+            var items = await _aiFoodMapService.MapDetectionsAsync(detections, HttpContext.RequestAborted);
+            var result = new EatFitAI.API.DTOs.AI.VisionDetectResultDto
+            {
+                Items = items,
+                UnmappedLabels = items
+                    .Where(x => !x.IsMatched)
+                    .Select(x => x.Label)
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .ToList()
+            };
+
+            return Ok(result);
         }
 
         [HttpPost("recipes/suggest")]
@@ -190,7 +215,53 @@ namespace EatFitAI.API.Controllers
                 }
                 return (labels.Count, labels);
             }
+            else if (doc.RootElement.ValueKind == JsonValueKind.Array)
+            {
+                foreach (var item in doc.RootElement.EnumerateArray())
+                {
+                    var label = item.TryGetProperty("label", out var l) ? l.GetString() : null;
+                    var conf = item.TryGetProperty("confidence", out var c) ? c.GetDouble() : (double?)null;
+                    if (!string.IsNullOrEmpty(label) && conf.HasValue)
+                    {
+                        labels.Add($"{label}:{conf.Value:F2}");
+                    }
+                }
+                return (labels.Count, labels);
+            }
             return (0, labels);
+        }
+
+        private static List<EatFitAI.API.DTOs.AI.VisionDetectionDto> ParseDetections(string json)
+        {
+            using var doc = JsonDocument.Parse(json);
+            var list = new List<EatFitAI.API.DTOs.AI.VisionDetectionDto>();
+
+            JsonElement arrayElem;
+            if (doc.RootElement.TryGetProperty("detections", out var dets) && dets.ValueKind == JsonValueKind.Array)
+            {
+                arrayElem = dets;
+            }
+            else if (doc.RootElement.ValueKind == JsonValueKind.Array)
+            {
+                arrayElem = doc.RootElement;
+            }
+            else
+            {
+                throw new FormatException("Unexpected AI response format");
+            }
+
+            foreach (var item in arrayElem.EnumerateArray())
+            {
+                if (item.ValueKind != JsonValueKind.Object) continue;
+                var label = item.TryGetProperty("label", out var l) && l.ValueKind == JsonValueKind.String ? l.GetString() : null;
+                var conf = item.TryGetProperty("confidence", out var c) && (c.ValueKind == JsonValueKind.Number) ? (float)c.GetDouble() : (float?)null;
+                if (!string.IsNullOrWhiteSpace(label) && conf.HasValue)
+                {
+                    list.Add(new EatFitAI.API.DTOs.AI.VisionDetectionDto { Label = label!, Confidence = conf.Value });
+                }
+            }
+
+            return list;
         }
     }
 }

@@ -59,6 +59,7 @@ public partial class EatFitAIDbContext : DbContext
     public virtual DbSet<vw_TargetProgress> vw_TargetProgresses { get; set; }
 
     public virtual DbSet<vw_WeeklyNutritionTotal> vw_WeeklyNutritionTotals { get; set; }
+    public virtual DbSet<vw_AiFoodMap> vw_AiFoodMaps { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -481,6 +482,20 @@ public partial class EatFitAIDbContext : DbContext
             entity.Property(e => e.TotalCarb).HasColumnType("decimal(38, 2)");
             entity.Property(e => e.TotalFat).HasColumnType("decimal(38, 2)");
             entity.Property(e => e.TotalProtein).HasColumnType("decimal(38, 2)");
+        });
+
+        modelBuilder.Entity<vw_AiFoodMap>(entity =>
+        {
+            entity
+                .HasNoKey()
+                .ToView("vw_AiFoodMap");
+
+            entity.Property(e => e.CaloriesPer100g).HasColumnType("decimal(10, 2)");
+            entity.Property(e => e.ProteinPer100g).HasColumnType("decimal(10, 2)");
+            entity.Property(e => e.FatPer100g).HasColumnType("decimal(10, 2)");
+            entity.Property(e => e.CarbPer100g).HasColumnType("decimal(10, 2)");
+            entity.Property(e => e.MinConfidence).HasColumnType("decimal(5, 2)");
+            entity.Property(e => e.Label).HasMaxLength(100);
         });
 
         OnModelCreatingPartial(modelBuilder);
