@@ -53,7 +53,11 @@ export const API_BASE_URL: string | undefined = (() => {
 
   let host = resolveHostUri();
   if (!host) {
-    return undefined;
+    if (Platform.OS === 'web') {
+      host = 'localhost';
+    } else {
+      return undefined;
+    }
   }
 
   // Android emulator can't reach host via localhost/127.0.0.1 -> use 10.0.2.2

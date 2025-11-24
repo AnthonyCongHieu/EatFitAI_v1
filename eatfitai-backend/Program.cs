@@ -46,7 +46,10 @@ var allowedOrigins = builder.Configuration
     .Get<string[]>() ?? Array.Empty<string>();
 
 builder.Services.AddCors(o => o.AddPolicy("DevCors",
-    p => p.WithOrigins(allowedOrigins).AllowAnyHeader().AllowAnyMethod()));
+    p => p.SetIsOriginAllowed(_ => true)
+          .AllowAnyHeader()
+          .AllowAnyMethod()
+          .AllowCredentials()));
 
 // Add Swagger
 builder.Services.AddSwaggerGen(c =>
@@ -203,6 +206,8 @@ else
 
 // Add routing
 app.UseRouting();
+
+app.UseCors("DevCors");
 
 // Add authentication and authorization middleware
 app.UseAuthentication();

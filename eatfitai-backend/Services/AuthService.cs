@@ -272,10 +272,12 @@ namespace EatFitAI.API.Services
 
         public async Task<ForgotPasswordResponse> ForgotPasswordAsync(ForgotPasswordRequest request)
         {
+            Console.WriteLine($"[AuthService] ForgotPassword called for email: {request.Email}");
             var user = await _userRepository.GetByEmailAsync(request.Email);
-            // Always respond success to avoid leaking whether an email exists
+            
             if (user == null)
             {
+                Console.WriteLine($"[AuthService] Email NOT found in database: {request.Email}");
                 return new ForgotPasswordResponse
                 {
                     Success = true,
@@ -284,6 +286,8 @@ namespace EatFitAI.API.Services
                     ResetCode = string.Empty
                 };
             }
+
+            Console.WriteLine($"[AuthService] Email found in database: {user.Email} (UserId: {user.UserId})");
 
             var code = GenerateNumericCode(6);
             var cacheEntry = new ResetCacheEntry

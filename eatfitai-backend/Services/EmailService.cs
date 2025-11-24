@@ -1,8 +1,9 @@
-using System.Net;
-using System.Net.Mail;
 using EatFitAI.API.Options;
 using EatFitAI.API.Services.Interfaces;
 using Microsoft.Extensions.Options;
+using MailKit.Net.Smtp;
+using MailKit.Security;
+using MimeKit;
 
 namespace EatFitAI.API.Services
 {
@@ -28,24 +29,48 @@ namespace EatFitAI.API.Services
                 return;
             }
 
-            using var client = new SmtpClient(_settings.Host, _settings.Port)
+            try
             {
-                EnableSsl = _settings.EnableSsl,
-                Credentials = new NetworkCredential(_settings.User, _settings.Password),
-                UseDefaultCredentials = false,
-                DeliveryMethod = SmtpDeliveryMethod.Network
-            };
+                // Remove any spaces from password (common issue with app passwords)
+                var cleanPassword = _settings.Password.Replace(" ", "");
+                Console.WriteLine($"[EmailService] Password length: {cleanPassword.Length} characters");
 
-            var message = new MailMessage
+                var message = new MimeMessage();
+                message.From.Add(new MailboxAddress(_settings.FromDisplayName, _settings.FromEmail));
+                message.To.Add(new MailboxAddress("", email));
+                message.Subject = "EatFitAI - Mã đặt lại mật khẩu";
+                message.Body = new TextPart("plain")
+                {
+                    Text = BuildBody(code, expiresAt)
+                };
+
+                using var client = new SmtpClient();
+                
+                Console.WriteLine($"[EmailService] Connecting to SMTP server...");
+                await client.ConnectAsync(_settings.Host, _settings.Port, SecureSocketOptions.StartTls);
+                
+                Console.WriteLine($"[EmailService] Authenticating...");
+                await client.AuthenticateAsync(_settings.User, cleanPassword);
+                
+                Console.WriteLine($"[EmailService] Sending email...");
+                await client.SendAsync(message);
+                
+                Console.WriteLine($"[EmailService] Disconnecting...");
+                await client.DisconnectAsync(true);
+                
+                Console.WriteLine($"[EmailService] Email sent successfully to {email}");
+            }
+            catch (Exception ex)
             {
-                From = new MailAddress(_settings.FromEmail, _settings.FromDisplayName),
-                Subject = "EatFitAI - Mã đặt lại mật khẩu",
-                Body = BuildBody(code, expiresAt),
-                IsBodyHtml = false
-            };
-            message.To.Add(email);
-
-            await client.SendMailAsync(message);
+                Console.WriteLine($"[EmailService] FAILED to send email: {ex.GetType().Name}");
+                Console.WriteLine($"[EmailService] Error message: {ex.Message}");
+                Console.WriteLine($"[EmailService] Stack trace: {ex.StackTrace}");
+                if (ex.InnerException != null)
+                {
+                    Console.WriteLine($"[EmailService] Inner exception: {ex.InnerException.Message}");
+                }
+                throw;
+            }
         }
 
         private string BuildBody(string code, DateTime expiresAt)
