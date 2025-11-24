@@ -7,5 +7,6 @@ namespace EatFitAI.API.Services.Interfaces
         Task<NutritionSummaryDto> GetNutritionSummaryAsync(Guid userId, DateTime startDate, DateTime endDate);
         Task<NutritionSummaryDto> GetDaySummaryAsync(Guid userId, DateTime date);
         Task<NutritionSummaryDto> GetWeekSummaryAsync(Guid userId, DateTime date);
+        Task<DaySummaryDto> GetDaySummaryWithMealsAsync(Guid userId, DateTime date);
     }
 }

@@ -48,5 +48,34 @@ namespace EatFitAI.API.Services
             var endOfWeek = startOfWeek.AddDays(7).AddTicks(-1);
             return await GetNutritionSummaryAsync(userId, startOfWeek, endOfWeek);
         }
+
+        public async Task<DaySummaryDto> GetDaySummaryWithMealsAsync(Guid userId, DateTime date)
+        {
+            var startDate = date.Date;
+            var endDate = startDate.AddDays(1).AddTicks(-1);
+
+            // Get nutrition summary
+            var summary = await GetDaySummaryAsync(userId, date);
+
+            // Get target calories (placeholder - will use existing logic from SummaryController)
+            int? targetCalories = null;
+            // TODO: Get target from NutritionTarget table
+
+            // Get meal diary entries for the day - we'll need MealDiaryRepository
+            // For now, return basic structure without meals
+            // This will be enhanced when we integrate with MealDiaryRepository
+
+            return new DaySummaryDto
+            {
+                Date = date,
+                TotalCalories = summary.TotalCalories,
+                TargetCalories = targetCalories,
+                TotalProtein = summary.TotalProtein,
+                TotalCarbs = summary.TotalCarbs,
+                TotalFat = summary.TotalFat,
+                CaloriesByMealType = summary.CaloriesByMealType,
+                Meals = new List<MealGroupDto>()
+            };
+        }
     }
 }
