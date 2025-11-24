@@ -1,16 +1,26 @@
 using EatFitAI.API.DTOs.Analytics;
+using EatFitAI.API.DTOs.MealDiary;
 using EatFitAI.API.Repositories.Interfaces;
 using EatFitAI.API.Services.Interfaces;
+using EatFitAI.API.DbScaffold.Data;
+using Microsoft.EntityFrameworkCore;
 
 namespace EatFitAI.API.Services
 {
     public class AnalyticsService : IAnalyticsService
     {
         private readonly IAnalyticsRepository _analyticsRepository;
+        private readonly IMealDiaryService _mealDiaryService;
+        private readonly EatFitAIDbContext _dbContext;
 
-        public AnalyticsService(IAnalyticsRepository analyticsRepository)
+        public AnalyticsService(
+            IAnalyticsRepository analyticsRepository,
+            IMealDiaryService mealDiaryService,
+            EatFitAIDbContext dbContext)
         {
             _analyticsRepository = analyticsRepository;
+            _mealDiaryService = mealDiaryService;
+            _dbContext = dbContext;
         }
 
         public async Task<NutritionSummaryDto> GetNutritionSummaryAsync(Guid userId, DateTime startDate, DateTime endDate)
@@ -57,13 +67,37 @@ namespace EatFitAI.API.Services
             // Get nutrition summary
             var summary = await GetDaySummaryAsync(userId, date);
 
-            // Get target calories (placeholder - will use existing logic from SummaryController)
+            // Get target calories from NutritionTarget table
             int? targetCalories = null;
-            // TODO: Get target from NutritionTarget table
+            try
+            {
+                var d = DateOnly.FromDateTime(date.Date);
+                targetCalories = await _dbContext.NutritionTargets
+                    .Where(t => t.UserId == userId && t.EffectiveFrom <= d && (t.EffectiveTo == null || t.EffectiveTo >= d))
+                    .OrderByDescending(t => t.EffectiveFrom)
+                    .Select(t => (int?)t.TargetCalories)
+                    .FirstOrDefaultAsync();
+            }
+            catch { /* ignore target lookup errors */ }
 
-            // Get meal diary entries for the day - we'll need MealDiaryRepository
-            // For now, return basic structure without meals
-            // This will be enhanced when we integrate with MealDiaryRepository
+            // Get meal diary entries for the day
+            var mealEntries = await _mealDiaryService.GetUserMealDiariesAsync(userId, date);
+
+            // Group entries by meal type
+            var mealGroups = mealEntries
+                .GroupBy(m => new { m.MealTypeId, m.MealTypeName })
+                .Select(g => new MealGroupDto
+                {
+                    MealTypeId = g.Key.MealTypeId,
+                    MealTypeName = g.Key.MealTypeName,
+                    TotalCalories = g.Sum(m => m.Calories),
+                    Protein = g.Sum(m => m.Protein),
+                    Carbs = g.Sum(m => m.Carb), // Note: DTO uses Carb (singular)
+                    Fat = g.Sum(m => m.Fat),
+                    Entries = g.ToList()
+                })
+                .OrderBy(g => g.MealTypeId)
+                .ToList();
 
             return new DaySummaryDto
             {
@@ -74,7 +108,7 @@ namespace EatFitAI.API.Services
                 TotalCarbs = summary.TotalCarbs,
                 TotalFat = summary.TotalFat,
                 CaloriesByMealType = summary.CaloriesByMealType,
-                Meals = new List<MealGroupDto>()
+                Meals = mealGroups
             };
         }
     }

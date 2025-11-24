@@ -26,24 +26,6 @@ namespace EatFitAI.API.Controllers
             {
                 var userId = GetUserIdFromToken();
                 var summary = await _analyticsService.GetDaySummaryWithMealsAsync(userId, date);
-
-                // Get target calories for the requested date
-                int? targetCalories = null;
-                try
-                {
-                    var d = DateOnly.FromDateTime(date.Date);
-                    using var scope = HttpContext.RequestServices.CreateScope();
-                    var db = scope.ServiceProvider.GetRequiredService<EatFitAI.API.DbScaffold.Data.EatFitAIDbContext>();
-                    targetCalories = await db.NutritionTargets
-                        .Where(t => t.UserId == userId && t.EffectiveFrom <= d && (t.EffectiveTo == null || t.EffectiveTo >= d))
-                        .OrderByDescending(t => t.EffectiveFrom)
-                        .Select(t => (int?)t.TargetCalories)
-                        .FirstOrDefaultAsync();
-                    
-                    summary.TargetCalories = targetCalories;
-                }
-                catch { /* ignore target lookup errors */ }
-
                 return Ok(summary);
             }
             catch (Exception ex)
