@@ -1,5 +1,8 @@
 namespace EatFitAI.API.DTOs.Analytics
 {
+    /// <summary>
+    /// Complete day summary including nutrition totals, target, and meals grouped by type
+    /// </summary>
     public class DaySummaryDto
     {
         public DateTime Date { get; set; }

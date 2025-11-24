@@ -19,6 +19,11 @@ namespace EatFitAI.API.Controllers
             _analyticsService = analyticsService;
         }
 
+        /// <summary>
+        /// Get day summary with meals grouped by meal type
+        /// </summary>
+        /// <param name="date">Date to get summary for</param>
+        /// <returns>Complete day summary including nutrition totals, target calories, and meals</returns>
         [HttpGet("day")]
         public async Task<ActionResult<DaySummaryDto>> GetDaySummary([FromQuery] DateTime date)
         {
@@ -34,6 +39,11 @@ namespace EatFitAI.API.Controllers
             }
         }
 
+        /// <summary>
+        /// Get week summary for nutrition totals
+        /// </summary>
+        /// <param name="date">Any date within the week to get summary for</param>
+        /// <returns>Week nutrition summary with daily calories breakdown</returns>
         [HttpGet("week")]
         public async Task<ActionResult<NutritionSummaryDto>> GetWeekSummary([FromQuery] DateTime date)
         {
