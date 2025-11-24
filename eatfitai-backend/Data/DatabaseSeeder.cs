@@ -1,6 +1,8 @@
 using EatFitAI.API.DbScaffold.Models;
 using EatFitAI.API.DbScaffold.Data;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Cryptography;
+using System.Text;
 
 namespace EatFitAI.API.Data
 {
@@ -16,6 +18,7 @@ namespace EatFitAI.API.Data
             await SeedMealTypesAsync(context);
             await SeedFoodItemsAsync(context);
             await SeedFoodServingsAsync(context);
+            await SeedDefaultUserPasswordsAsync(context);
         }
 
         private static async Task SeedActivityLevelsAsync(EatFitAIDbContext context)
@@ -284,6 +287,31 @@ namespace EatFitAI.API.Data
             }
 
             await context.FoodServings.AddRangeAsync(foodServings);
+            await context.SaveChangesAsync();
+        }
+
+        private static async Task SeedDefaultUserPasswordsAsync(EatFitAIDbContext context)
+        {
+            const string defaultPassword = "EatFit@123"; // default password for seeded users
+
+            using var sha256 = SHA256.Create();
+            var hashedBytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(defaultPassword));
+            var passwordHash = Convert.ToBase64String(hashedBytes);
+
+            var usersToUpdate = await context.Users
+                .Where(u => string.IsNullOrEmpty(u.PasswordHash))
+                .ToListAsync();
+
+            if (!usersToUpdate.Any())
+            {
+                return;
+            }
+
+            foreach (var user in usersToUpdate)
+            {
+                user.PasswordHash = passwordHash;
+            }
+
             await context.SaveChangesAsync();
         }
     }
