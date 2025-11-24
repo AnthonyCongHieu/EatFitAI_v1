@@ -4,6 +4,7 @@
 export type RootStackParamList = {
   Login: undefined;
   Register: undefined;
+  ForgotPassword: undefined;
   AppTabs: undefined;
   FoodSearch: undefined;
   FoodDetail: { foodId: string };

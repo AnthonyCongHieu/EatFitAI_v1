@@ -3,9 +3,12 @@ using EatFitAI.API.DTOs.Auth;
 using EatFitAI.API.DbScaffold.Models;
 using EatFitAI.API.Repositories.Interfaces;
 using EatFitAI.API.Services;
+using EatFitAI.API.Services.Interfaces;
 using AutoMapper;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Hosting;
 using Moq;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
@@ -19,6 +22,9 @@ namespace EatFitAI.API.Tests.Unit.Services
         private readonly EatFitAIDbContext _context;
         private readonly Mock<IMapper> _mapperMock;
         private readonly Mock<IConfiguration> _configurationMock;
+        private readonly IMemoryCache _memoryCache;
+        private readonly Mock<IEmailService> _emailServiceMock;
+        private readonly Mock<IHostEnvironment> _envMock;
         private readonly AuthService _authService;
 
         public AuthServiceTests()
@@ -26,6 +32,10 @@ namespace EatFitAI.API.Tests.Unit.Services
             _userRepositoryMock = new Mock<IUserRepository>();
             _mapperMock = new Mock<IMapper>();
             _configurationMock = new Mock<IConfiguration>();
+            _memoryCache = new MemoryCache(new MemoryCacheOptions());
+            _emailServiceMock = new Mock<IEmailService>();
+            _envMock = new Mock<IHostEnvironment>();
+            _envMock.Setup(e => e.IsDevelopment()).Returns(true);
 
             // Setup in-memory database
             var options = new DbContextOptionsBuilder<EatFitAIDbContext>()
@@ -35,7 +45,7 @@ namespace EatFitAI.API.Tests.Unit.Services
 
             _configurationMock.Setup(c => c["Jwt:Key"]).Returns("test-secret-key-for-testing-purposes");
 
-            _authService = new AuthService(_userRepositoryMock.Object, _context, _mapperMock.Object, _configurationMock.Object);
+            _authService = new AuthService(_userRepositoryMock.Object, _context, _mapperMock.Object, _configurationMock.Object, _memoryCache, _emailServiceMock.Object, _envMock.Object);
         }
 
         public void Dispose()

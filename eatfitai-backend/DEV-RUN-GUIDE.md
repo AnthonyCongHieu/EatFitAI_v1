@@ -128,6 +128,17 @@ Jwt__Key="your-production-jwt-key-here"
 AllowedOrigins="https://app.eatfitai.com"
 ```
 
+# SMTP (gửi mail quên mật khẩu - Production: dùng ENV)
+```
+Smtp__Host="smtp.gmail.com"
+Smtp__Port="587"
+Smtp__EnableSsl="true"
+Smtp__User="your-email@gmail.com"
+Smtp__Password="your-app-password-or-smtp-password"
+Smtp__FromEmail="your-email@gmail.com"
+Smtp__FromDisplayName="EatFitAI"
+```
+
 ### Reverse Proxy Setup:
 - Kestrel: `http://127.0.0.1:5000`
 - Nginx/Caddy: TLS termination + forward headers

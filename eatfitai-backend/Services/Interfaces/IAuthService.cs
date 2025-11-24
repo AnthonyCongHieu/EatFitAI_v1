@@ -11,5 +11,7 @@ namespace EatFitAI.API.Services.Interfaces
         Task LogoutAsync(string refreshToken);
         Task<AuthResponse> RefreshTokenAsync(string refreshToken);
         Task<AuthResponse> GoogleLoginAsync(string idToken);
+        Task<ForgotPasswordResponse> ForgotPasswordAsync(ForgotPasswordRequest request);
+        Task ResetPasswordAsync(ResetPasswordRequest request);
     }
 }

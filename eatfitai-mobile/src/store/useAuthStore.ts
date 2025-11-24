@@ -22,6 +22,8 @@ type AuthState = {
   register: (name: string, email: string, password: string) => Promise<void>;
   signInWithGoogle: () => Promise<void>;
   logout: () => Promise<void>;
+  forgotPassword: (email: string) => Promise<string | undefined>;
+  resetPassword: (email: string, code: string, newPassword: string) => Promise<void>;
 };
 
 const API_BASE = API_BASE_URL ?? '';
@@ -164,6 +166,14 @@ export const useAuthStore = create<AuthState>((set: any) => ({
       setAccessTokenMem(null);
       set({ isAuthenticated: false, user: null });
     }
+  },
+  forgotPassword: async (email) => {
+    const resp = await apiClient.post('/api/auth/forgot-password', { Email: email });
+    const data = resp.data as any;
+    return data?.resetCode as string | undefined;
+  },
+  resetPassword: async (email, code, newPassword) => {
+    await apiClient.post('/api/auth/reset-password', { Email: email, ResetCode: code, NewPassword: newPassword });
   },
 }));
 

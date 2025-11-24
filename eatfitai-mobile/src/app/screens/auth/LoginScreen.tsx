@@ -125,6 +125,16 @@ const LoginScreen = ({ navigation }: Props): JSX.Element => {
             />
           )}
         />
+        <View style={{ marginTop: theme.spacing.xs, alignItems: 'flex-end' }}>
+          <ThemedText
+            variant="bodySmall"
+            color="primary"
+            weight="600"
+            onPress={() => navigation.navigate('ForgotPassword')}
+          >
+            {t('auth.forgotPassword')}
+          </ThemedText>
+        </View>
 
         <View style={{ marginTop: theme.spacing.xl, gap: theme.spacing.md }}>
           <Button

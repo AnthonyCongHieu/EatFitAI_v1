@@ -6,6 +6,7 @@ using EatFitAI.API.Repositories;
 using EatFitAI.API.Repositories.Interfaces;
 using EatFitAI.API.Services;
 using EatFitAI.API.Services.Interfaces;
+using EatFitAI.API.Options;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.EntityFrameworkCore;
@@ -99,6 +100,13 @@ builder.Services.AddSwaggerGen(c =>
 // Add DbContext (scaffolded from DB)
 builder.Services.AddDbContext<EatFitAIDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+// Caching for features like password reset
+builder.Services.AddMemoryCache();
+
+// Mail settings & service
+builder.Services.Configure<MailSettings>(builder.Configuration.GetSection("Smtp"));
+builder.Services.AddScoped<IEmailService, EmailService>();
 
 // Add AutoMapper
 builder.Services.AddAutoMapper(typeof(MappingProfile));

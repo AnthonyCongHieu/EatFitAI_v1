@@ -51,6 +51,8 @@ apiClient.interceptors.request.use(async (config: InternalAxiosRequestConfig) =>
       '/api/auth/login',
       '/api/auth/register',
       '/api/auth/refresh',
+      '/api/auth/forgot-password',
+      '/api/auth/reset-password',
       '/api/search',
       '/api/food/search',
       '/api/food/search-all',

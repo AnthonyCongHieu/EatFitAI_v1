@@ -10,6 +10,8 @@ using EatFitAI.API.Repositories.Interfaces;
 using EatFitAI.API.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Hosting;
 
 namespace EatFitAI.API.Services
 {
@@ -19,17 +21,28 @@ namespace EatFitAI.API.Services
         private readonly EatFitAIDbContext _context;
         private readonly IMapper _mapper;
         private readonly IConfiguration _configuration;
+        private readonly IMemoryCache _memoryCache;
+        private readonly IEmailService _emailService;
+        private readonly IHostEnvironment _env;
+        private static readonly TimeSpan ResetCodeLifetime = TimeSpan.FromMinutes(10);
+        private const string ResetCacheKeyPrefix = "pwdreset_";
 
         public AuthService(
             IUserRepository userRepository,
             EatFitAIDbContext context,
             IMapper mapper,
-            IConfiguration configuration)
+            IConfiguration configuration,
+            IMemoryCache memoryCache,
+            IEmailService emailService,
+            IHostEnvironment env)
         {
             _userRepository = userRepository;
             _context = context;
             _mapper = mapper;
             _configuration = configuration;
+            _memoryCache = memoryCache;
+            _emailService = emailService;
+            _env = env;
         }
 
         public async Task<AuthResponse> RegisterAsync(RegisterRequest request)
@@ -255,6 +268,116 @@ namespace EatFitAI.API.Services
             // and create/login the user. For now, we'll throw an exception
             // as this requires Google OAuth integration
             throw new NotImplementedException("Google login functionality requires OAuth integration");
+        }
+
+        public async Task<ForgotPasswordResponse> ForgotPasswordAsync(ForgotPasswordRequest request)
+        {
+            var user = await _userRepository.GetByEmailAsync(request.Email);
+            // Always respond success to avoid leaking whether an email exists
+            if (user == null)
+            {
+                return new ForgotPasswordResponse
+                {
+                    Success = true,
+                    Message = "If the email exists, a reset code has been generated.",
+                    ExpiresAt = DateTime.UtcNow.Add(ResetCodeLifetime),
+                    ResetCode = string.Empty
+                };
+            }
+
+            var code = GenerateNumericCode(6);
+            var cacheEntry = new ResetCacheEntry
+            {
+                UserId = user.UserId,
+                CodeHash = HashResetCode(code),
+                ExpiresAt = DateTime.UtcNow.Add(ResetCodeLifetime)
+            };
+
+            _memoryCache.Set($"{ResetCacheKeyPrefix}{user.Email}", cacheEntry, cacheEntry.ExpiresAt);
+
+            Console.WriteLine($"[AuthService] Generated reset code for {user.Email} (expires {cacheEntry.ExpiresAt:O})");
+
+            try
+            {
+                await _emailService.SendResetCodeAsync(user.Email, code, cacheEntry.ExpiresAt);
+                Console.WriteLine($"[AuthService] Reset code emailed to {user.Email}.");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[AuthService] Failed to send reset code email: {ex.Message}");
+                throw new InvalidOperationException("Không gửi được email reset. Vui lòng thử lại hoặc kiểm tra cấu hình SMTP.");
+            }
+
+            var includeCodeInResponse = _env.IsDevelopment(); // hỗ trợ demo/dev, prod sẽ không trả mã
+
+            return new ForgotPasswordResponse
+            {
+                Success = true,
+                Message = includeCodeInResponse
+                    ? "Reset code generated (dev mode)."
+                    : "Reset code sent to your email.",
+                ExpiresAt = cacheEntry.ExpiresAt,
+                ResetCode = includeCodeInResponse ? code : string.Empty
+            };
+        }
+
+        public async Task ResetPasswordAsync(ResetPasswordRequest request)
+        {
+            var user = await _userRepository.GetByEmailAsync(request.Email);
+            if (user == null)
+            {
+                throw new UnauthorizedAccessException("Invalid reset code or email.");
+            }
+
+            if (!_memoryCache.TryGetValue($"{ResetCacheKeyPrefix}{user.Email}", out ResetCacheEntry? cached) || cached == null)
+            {
+                throw new UnauthorizedAccessException("Reset code expired or not found.");
+            }
+
+            if (cached.ExpiresAt < DateTime.UtcNow)
+            {
+                _memoryCache.Remove($"{ResetCacheKeyPrefix}{user.Email}");
+                throw new UnauthorizedAccessException("Reset code expired or not found.");
+            }
+
+            var hashedInput = HashResetCode(request.ResetCode);
+            if (!string.Equals(hashedInput, cached.CodeHash, StringComparison.Ordinal))
+            {
+                throw new UnauthorizedAccessException("Invalid reset code or email.");
+            }
+
+            user.PasswordHash = HashPassword(request.NewPassword);
+            await _context.SaveChangesAsync();
+            _memoryCache.Remove($"{ResetCacheKeyPrefix}{user.Email}");
+        }
+
+        private string GenerateNumericCode(int length)
+        {
+            var buffer = new byte[length];
+            using var rng = RandomNumberGenerator.Create();
+            rng.GetBytes(buffer);
+
+            var digits = new char[length];
+            for (int i = 0; i < length; i++)
+            {
+                digits[i] = (char)('0' + buffer[i] % 10);
+            }
+
+            return new string(digits);
+        }
+
+        private string HashResetCode(string code)
+        {
+            using var sha256 = SHA256.Create();
+            var hashedBytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(code));
+            return Convert.ToBase64String(hashedBytes);
+        }
+
+        private class ResetCacheEntry
+        {
+            public Guid UserId { get; set; }
+            public string CodeHash { get; set; } = string.Empty;
+            public DateTime ExpiresAt { get; set; }
         }
     }
 }

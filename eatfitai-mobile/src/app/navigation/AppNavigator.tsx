@@ -6,6 +6,7 @@ import { useAppTheme } from '../../theme/ThemeProvider';
 import { useAuthStore } from '../../store/useAuthStore';
 import LoginScreen from '../screens/auth/LoginScreen';
 import RegisterScreen from '../screens/auth/RegisterScreen';
+import ForgotPasswordScreen from '../screens/auth/ForgotPasswordScreen';
 import AppTabs from './AppTabs';
 import FoodSearchScreen from '../screens/diary/FoodSearchScreen';
 import FoodDetailScreen from '../screens/diary/FoodDetailScreen';
@@ -50,6 +51,7 @@ const AppNavigator = (): JSX.Element => {
             <>
               <Stack.Screen name="Login" component={LoginScreen} />
               <Stack.Screen name="Register" component={RegisterScreen} />
+              <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} options={{ headerShown: true, title: t('auth.forgotPasswordTitle') }} />
             </>
           ) : (
             // Đã đăng nhập: vào App Tabs
