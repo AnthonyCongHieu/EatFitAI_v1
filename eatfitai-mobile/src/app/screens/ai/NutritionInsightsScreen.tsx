@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, ScrollView, ActivityIndicator } from 'react-native';
+import { View, StyleSheet, ScrollView, ActivityIndicator, Dimensions } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
+import Svg, { Circle, G } from 'react-native-svg';
 
 import Screen from '../../../components/Screen';
 import { ScreenHeader } from '../../../components/ui/ScreenHeader';
@@ -15,6 +16,45 @@ import type { RootStackParamList } from '../../types';
 import type { NutritionInsight, NutritionRecommendation, AdaptiveTarget } from '../../../types/aiEnhanced';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
+
+const ScoreGauge = ({ score, size = 120, color }: { score: number; size?: number; color: string }) => {
+    const strokeWidth = 10;
+    const radius = (size - strokeWidth) / 2;
+    const circumference = radius * 2 * Math.PI;
+    const progress = (score / 100) * circumference;
+
+    return (
+        <View style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}>
+            <Svg width={size} height={size}>
+                <G rotation="-90" origin={`${size / 2}, ${size / 2}`}>
+                    <Circle
+                        cx={size / 2}
+                        cy={size / 2}
+                        r={radius}
+                        stroke="#E2E8F0"
+                        strokeWidth={strokeWidth}
+                        fill="transparent"
+                    />
+                    <Circle
+                        cx={size / 2}
+                        cy={size / 2}
+                        r={radius}
+                        stroke={color}
+                        strokeWidth={strokeWidth}
+                        fill="transparent"
+                        strokeDasharray={circumference}
+                        strokeDashoffset={circumference - progress}
+                        strokeLinecap="round"
+                    />
+                </G>
+            </Svg>
+            <View style={{ position: 'absolute', alignItems: 'center' }}>
+                <ThemedText variant="h2" style={{ color: color, fontSize: 32, lineHeight: 36 }}>{Math.round(score)}</ThemedText>
+                <ThemedText variant="caption" color="textSecondary">/100</ThemedText>
+            </View>
+        </View>
+    );
+};
 
 const NutritionInsightsScreen = (): JSX.Element => {
     const { theme } = useAppTheme();
@@ -69,25 +109,33 @@ const NutritionInsightsScreen = (): JSX.Element => {
         content: {
             padding: theme.spacing.md,
         },
-        scoreCard: {
+        headerCard: {
+            flexDirection: 'row',
             alignItems: 'center',
             padding: theme.spacing.lg,
             marginBottom: theme.spacing.lg,
-            backgroundColor: theme.colors.primaryLight,
+            backgroundColor: theme.colors.card,
             borderRadius: theme.borderRadius.card,
+            ...theme.shadows.sm,
         },
-        scoreValue: {
-            fontSize: 48,
-            fontWeight: 'bold',
-            color: theme.colors.primaryDark,
+        scoreContainer: {
+            marginRight: theme.spacing.lg,
+        },
+        trendContainer: {
+            flex: 1,
         },
         sectionTitle: {
             marginBottom: theme.spacing.md,
-            marginTop: theme.spacing.lg,
+            marginTop: theme.spacing.md,
+            marginLeft: theme.spacing.xs,
         },
         recommendationCard: {
             marginBottom: theme.spacing.md,
             borderLeftWidth: 4,
+            padding: theme.spacing.md,
+            backgroundColor: theme.colors.card,
+            borderRadius: theme.borderRadius.card,
+            ...theme.shadows.sm,
         },
         recHigh: { borderLeftColor: theme.colors.danger },
         recMedium: { borderLeftColor: theme.colors.warning },
@@ -95,20 +143,35 @@ const NutritionInsightsScreen = (): JSX.Element => {
         targetComparison: {
             flexDirection: 'row',
             justifyContent: 'space-between',
-            marginBottom: theme.spacing.md,
+            marginBottom: theme.spacing.lg,
+            marginTop: theme.spacing.sm,
         },
         targetCol: {
             flex: 1,
             alignItems: 'center',
             padding: theme.spacing.md,
-            backgroundColor: theme.colors.card,
+            backgroundColor: theme.colors.background,
             borderRadius: theme.borderRadius.card,
             marginHorizontal: theme.spacing.xs,
+            borderWidth: 1,
+            borderColor: theme.colors.border,
         },
         center: {
             flex: 1,
             alignItems: 'center',
             justifyContent: 'center',
+        },
+        progressBarBg: {
+            height: 8,
+            backgroundColor: theme.colors.border,
+            borderRadius: 4,
+            marginTop: 8,
+            overflow: 'hidden',
+        },
+        progressBarFill: {
+            height: '100%',
+            backgroundColor: theme.colors.primary,
+            borderRadius: 4,
         },
     });
 
@@ -122,7 +185,7 @@ const NutritionInsightsScreen = (): JSX.Element => {
     };
 
     const renderRecommendation = (rec: NutritionRecommendation, index: number) => (
-        <Card
+        <View
             key={index}
             style={[
                 styles.recommendationCard,
@@ -131,21 +194,20 @@ const NutritionInsightsScreen = (): JSX.Element => {
             ]}
         >
             <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: theme.spacing.xs }}>
-                <Ionicons name="bulb-outline" size={20} color={getPriorityColor(rec.priority)} style={{ marginRight: theme.spacing.sm }} />
-                <ThemedText variant="h4" style={{ flex: 1 }}>{rec.type.replace('_', ' ').toUpperCase()}</ThemedText>
+                <Ionicons name="bulb" size={20} color={getPriorityColor(rec.priority)} style={{ marginRight: theme.spacing.sm }} />
+                <ThemedText variant="h4" style={{ flex: 1, fontSize: 16 }}>{rec.type.replace(/_/g, ' ').toUpperCase()}</ThemedText>
             </View>
             <ThemedText variant="body" style={{ marginBottom: theme.spacing.sm }}>{rec.message}</ThemedText>
             <ThemedText variant="caption" color="textSecondary">{rec.reasoning}</ThemedText>
-        </Card>
+        </View>
     );
 
     if (loading) {
         return (
             <Screen style={styles.container}>
-                <ScreenHeader title="Phân tích dinh dưỡng" />
+                <ScreenHeader title="Phân tích dinh dưỡng" subtitle="Đang tải dữ liệu..." />
                 <View style={styles.center}>
                     <ActivityIndicator size="large" color={theme.colors.primary} />
-                    <ThemedText style={{ marginTop: theme.spacing.md }}>Đang phân tích dữ liệu...</ThemedText>
                 </View>
             </Screen>
         );
@@ -154,7 +216,7 @@ const NutritionInsightsScreen = (): JSX.Element => {
     if (error) {
         return (
             <Screen style={styles.container}>
-                <ScreenHeader title="Phân tích dinh dưỡng" />
+                <ScreenHeader title="Phân tích dinh dưỡng" subtitle="Có lỗi xảy ra" />
                 <View style={styles.center}>
                     <ThemedText color="danger">{error}</ThemedText>
                     <View style={{ marginTop: theme.spacing.md }}>
@@ -175,33 +237,59 @@ const NutritionInsightsScreen = (): JSX.Element => {
             <ScrollView contentContainerStyle={styles.content}>
                 {insights && (
                     <>
-                        <View style={styles.scoreCard}>
-                            <ThemedText variant="h3" style={{ color: theme.colors.primaryDark }}>Điểm tuân thủ</ThemedText>
-                            <ThemedText style={styles.scoreValue}>{Math.round(insights.adherenceScore)}</ThemedText>
-                            <ThemedText variant="bodySmall" style={{ color: theme.colors.primaryDark }}>
-                                Xu hướng: {insights.progressTrend === 'improving' ? '↗️ Đang cải thiện' :
-                                    insights.progressTrend === 'declining' ? '↘️ Đang giảm' : '➡️ Ổn định'}
-                            </ThemedText>
+                        <View style={styles.headerCard}>
+                            <View style={styles.scoreContainer}>
+                                <ScoreGauge score={insights.adherenceScore} color={theme.colors.primary} />
+                            </View>
+                            <View style={styles.trendContainer}>
+                                <ThemedText variant="h3" style={{ marginBottom: 4 }}>Điểm tuân thủ</ThemedText>
+                                <ThemedText variant="bodySmall" color="textSecondary" style={{ marginBottom: 8 }}>
+                                    Đánh giá mức độ bạn bám sát mục tiêu dinh dưỡng.
+                                </ThemedText>
+                                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                    <Ionicons
+                                        name={insights.progressTrend === 'improving' ? 'trending-up' : insights.progressTrend === 'declining' ? 'trending-down' : 'remove'}
+                                        size={20}
+                                        color={insights.progressTrend === 'improving' ? theme.colors.success : insights.progressTrend === 'declining' ? theme.colors.danger : theme.colors.warning}
+                                    />
+                                    <ThemedText variant="body" style={{ marginLeft: 6, fontWeight: '600' }}>
+                                        {insights.progressTrend === 'improving' ? 'Đang cải thiện' :
+                                            insights.progressTrend === 'declining' ? 'Cần cố gắng hơn' : 'Ổn định'}
+                                    </ThemedText>
+                                </View>
+                            </View>
                         </View>
 
                         <ThemedText variant="h3" style={styles.sectionTitle}>Đề xuất cho bạn</ThemedText>
                         {insights.recommendations.length > 0 ? (
                             insights.recommendations.map(renderRecommendation)
                         ) : (
-                            <ThemedText variant="body" color="textSecondary" style={{ fontStyle: 'italic' }}>
-                                Bạn đang làm rất tốt! Chưa có đề xuất nào cần thiết lúc này.
-                            </ThemedText>
+                            <Card>
+                                <View style={{ alignItems: 'center', padding: theme.spacing.md }}>
+                                    <Ionicons name="trophy-outline" size={40} color={theme.colors.warning} />
+                                    <ThemedText variant="body" style={{ marginTop: 8, textAlign: 'center' }}>
+                                        Tuyệt vời! Bạn đang làm rất tốt, chưa có đề xuất nào cần thiết lúc này.
+                                    </ThemedText>
+                                </View>
+                            </Card>
                         )}
 
                         {insights.mealTimingInsight && (
                             <>
-                                <ThemedText variant="h3" style={styles.sectionTitle}>Thời gian ăn uống</ThemedText>
+                                <ThemedText variant="h3" style={styles.sectionTitle}>Thói quen ăn uống</ThemedText>
                                 <Card>
-                                    <ThemedText variant="body">Trung bình: {insights.mealTimingInsight.averageMealsPerDay.toFixed(1)} bữa/ngày</ThemedText>
+                                    <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
+                                        <Ionicons name="time-outline" size={24} color={theme.colors.info} style={{ marginRight: 8 }} />
+                                        <ThemedText variant="h4">Thời gian ăn</ThemedText>
+                                    </View>
+                                    <ThemedText variant="body" style={{ marginBottom: 8 }}>
+                                        Trung bình: <ThemedText weight="700">{insights.mealTimingInsight.averageMealsPerDay.toFixed(1)} bữa/ngày</ThemedText>
+                                    </ThemedText>
                                     {insights.mealTimingInsight.insights.map((insight, idx) => (
-                                        <ThemedText key={idx} variant="caption" color="textSecondary" style={{ marginTop: theme.spacing.xs }}>
-                                            • {insight}
-                                        </ThemedText>
+                                        <View key={idx} style={{ flexDirection: 'row', marginTop: 4 }}>
+                                            <ThemedText color="textSecondary" style={{ marginRight: 6 }}>•</ThemedText>
+                                            <ThemedText variant="bodySmall" color="textSecondary" style={{ flex: 1 }}>{insight}</ThemedText>
+                                        </View>
                                     ))}
                                 </Card>
                             </>
@@ -213,28 +301,35 @@ const NutritionInsightsScreen = (): JSX.Element => {
                     <>
                         <ThemedText variant="h3" style={styles.sectionTitle}>Gợi ý điều chỉnh mục tiêu</ThemedText>
                         <Card>
+                            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16 }}>
+                                <Ionicons name="analytics" size={24} color={theme.colors.primary} style={{ marginRight: 8 }} />
+                                <ThemedText variant="h4">AI đề xuất thay đổi</ThemedText>
+                            </View>
+
                             <View style={styles.targetComparison}>
                                 <View style={styles.targetCol}>
-                                    <ThemedText variant="caption" color="textSecondary">Hiện tại</ThemedText>
-                                    <ThemedText variant="h3">{adaptiveTarget.currentTarget.targetCalories}</ThemedText>
-                                    <ThemedText variant="caption">kcal</ThemedText>
+                                    <ThemedText variant="caption" color="textSecondary" style={{ marginBottom: 4 }}>HIỆN TẠI</ThemedText>
+                                    <ThemedText variant="h2">{adaptiveTarget.currentTarget.targetCalories}</ThemedText>
+                                    <ThemedText variant="caption" color="textSecondary">kcal</ThemedText>
                                 </View>
                                 <View style={{ justifyContent: 'center' }}>
-                                    <Ionicons name="arrow-forward" size={24} color={theme.colors.textSecondary} />
+                                    <Ionicons name="arrow-forward-circle" size={32} color={theme.colors.primary} />
                                 </View>
-                                <View style={[styles.targetCol, { backgroundColor: theme.colors.primaryLight }]}>
-                                    <ThemedText variant="caption" style={{ color: theme.colors.primaryDark }}>Đề xuất</ThemedText>
-                                    <ThemedText variant="h3" style={{ color: theme.colors.primaryDark }}>{adaptiveTarget.suggestedTarget.targetCalories}</ThemedText>
-                                    <ThemedText variant="caption" style={{ color: theme.colors.primaryDark }}>kcal</ThemedText>
+                                <View style={[styles.targetCol, { borderColor: theme.colors.primary, backgroundColor: theme.colors.primaryLight }]}>
+                                    <ThemedText variant="caption" color="primary" style={{ marginBottom: 4, fontWeight: 'bold' }}>ĐỀ XUẤT</ThemedText>
+                                    <ThemedText variant="h2" color="primary">{adaptiveTarget.suggestedTarget.targetCalories}</ThemedText>
+                                    <ThemedText variant="caption" color="primary">kcal</ThemedText>
                                 </View>
                             </View>
 
-                            <ThemedText variant="bodySmall" style={{ marginBottom: theme.spacing.md }}>
-                                Lý do: {adaptiveTarget.adjustmentReasons.join('. ')}
-                            </ThemedText>
+                            <View style={{ backgroundColor: theme.colors.background, padding: 12, borderRadius: 8, marginBottom: 16 }}>
+                                <ThemedText variant="bodySmall" style={{ fontStyle: 'italic' }}>
+                                    "{adaptiveTarget.adjustmentReasons.join('. ')}"
+                                </ThemedText>
+                            </View>
 
                             <Button
-                                title={`Áp dụng thay đổi (Độ tin cậy: ${Math.round(adaptiveTarget.confidenceScore)}%)`}
+                                title={`Áp dụng thay đổi (Tin cậy: ${Math.round(adaptiveTarget.confidenceScore)}%)`}
                                 onPress={applyAdaptiveTarget}
                                 loading={applying}
                                 variant="primary"

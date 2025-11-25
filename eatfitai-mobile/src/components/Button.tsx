@@ -31,6 +31,7 @@ type ButtonProps = {
   hitSlop?: number | Insets;
   icon?: ReactNode;
   iconPosition?: 'left' | 'right';
+  style?: import('react-native').ViewStyle;
 };
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
@@ -48,6 +49,7 @@ export const Button = memo(({
   iconPosition = 'left',
   accessibilityLabel,
   accessibilityHint,
+  style,
 }: ButtonProps): JSX.Element => {
   const { theme } = useAppTheme();
 
@@ -113,7 +115,7 @@ export const Button = memo(({
   const handlePressIn = () => {
     scale.value = withSpring(0.97, { damping: 15, stiffness: 300 });
     opacity.value = withTiming(0.8, { duration: theme.animation.fast });
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => { });
   };
 
   const handlePressOut = () => {
@@ -165,7 +167,7 @@ export const Button = memo(({
 
   if (styles.useGradient) {
     return (
-      <Animated.View style={[animatedStyle, staticButtonStyle]}>
+      <Animated.View style={[animatedStyle, staticButtonStyle, style]}>
         <ExpoLinearGradient
           colors={[theme.colors.primary, theme.colors.primaryDark]}
           start={{ x: 0, y: 0 }}
@@ -211,6 +213,7 @@ export const Button = memo(({
       style={[
         animatedStyle,
         staticButtonStyle,
+        style,
         {
           backgroundColor: styles.bg,
         },

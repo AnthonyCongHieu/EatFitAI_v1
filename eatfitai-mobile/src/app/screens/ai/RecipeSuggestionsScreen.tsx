@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, FlatList, ActivityIndicator, TouchableOpacity } from 'react-native';
+import { View, StyleSheet, FlatList, ActivityIndicator, TouchableOpacity, ScrollView } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 
 import Screen from '../../../components/Screen';
 import { ScreenHeader } from '../../../components/ui/ScreenHeader';
@@ -17,6 +18,11 @@ import type { RecipeSuggestion } from '../../../types/aiEnhanced';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 type RouteProps = RouteProp<RootStackParamList, 'RecipeSuggestions'>;
+
+const POPULAR_INGREDIENTS = [
+    'Trứng', 'Thịt gà', 'Thịt bò', 'Cà chua', 'Khoai tây',
+    'Cà rốt', 'Hành tây', 'Tỏi', 'Gạo', 'Mì', 'Đậu phụ'
+];
 
 const RecipeSuggestionsScreen = (): JSX.Element => {
     const { theme } = useAppTheme();
@@ -35,13 +41,12 @@ const RecipeSuggestionsScreen = (): JSX.Element => {
         }
     }, [route.params?.ingredients]);
 
-    const addIngredient = () => {
-        if (newIngredient.trim()) {
-            if (!ingredients.includes(newIngredient.trim())) {
-                setIngredients([...ingredients, newIngredient.trim()]);
-            }
-            setNewIngredient('');
+    const addIngredient = (ing: string) => {
+        const trimmed = ing.trim();
+        if (trimmed && !ingredients.includes(trimmed)) {
+            setIngredients([...ingredients, trimmed]);
         }
+        setNewIngredient('');
     };
 
     const removeIngredient = (ing: string) => {
@@ -78,6 +83,13 @@ const RecipeSuggestionsScreen = (): JSX.Element => {
         content: {
             padding: theme.spacing.md,
         },
+        inputSection: {
+            backgroundColor: theme.colors.card,
+            padding: theme.spacing.md,
+            borderRadius: theme.borderRadius.card,
+            marginBottom: theme.spacing.md,
+            ...theme.shadows.sm,
+        },
         inputContainer: {
             flexDirection: 'row',
             marginBottom: theme.spacing.md,
@@ -86,23 +98,47 @@ const RecipeSuggestionsScreen = (): JSX.Element => {
         input: {
             flex: 1,
         },
+        sectionLabel: {
+            marginBottom: theme.spacing.sm,
+            color: theme.colors.textSecondary,
+            fontSize: 12,
+            fontWeight: '600',
+            textTransform: 'uppercase',
+        },
         chipsContainer: {
             flexDirection: 'row',
             flexWrap: 'wrap',
             gap: theme.spacing.sm,
-            marginBottom: theme.spacing.lg,
         },
         chip: {
             flexDirection: 'row',
             alignItems: 'center',
-            backgroundColor: theme.colors.secondaryLight,
+            backgroundColor: theme.colors.primaryLight,
             paddingHorizontal: theme.spacing.md,
-            paddingVertical: theme.spacing.xs,
+            paddingVertical: 6,
             borderRadius: theme.radius.full,
             gap: theme.spacing.xs,
+            borderWidth: 1,
+            borderColor: theme.colors.primary,
+        },
+        suggestionChip: {
+            backgroundColor: theme.colors.background,
+            paddingHorizontal: theme.spacing.md,
+            paddingVertical: 6,
+            borderRadius: theme.radius.full,
+            borderWidth: 1,
+            borderColor: theme.colors.border,
+            flexDirection: 'row',
+            alignItems: 'center',
         },
         recipeCard: {
             marginBottom: theme.spacing.md,
+            padding: 0, // Reset padding for custom layout
+            overflow: 'hidden',
+            borderWidth: 0,
+            ...theme.shadows.md,
+        },
+        cardContent: {
             padding: theme.spacing.md,
         },
         recipeHeader: {
@@ -112,16 +148,15 @@ const RecipeSuggestionsScreen = (): JSX.Element => {
             marginBottom: theme.spacing.sm,
         },
         matchBadge: {
-            backgroundColor: theme.colors.primaryLight,
             paddingHorizontal: theme.spacing.sm,
-            paddingVertical: 2,
+            paddingVertical: 4,
             borderRadius: theme.radius.sm,
         },
         nutritionRow: {
             flexDirection: 'row',
             justifyContent: 'space-between',
-            marginTop: theme.spacing.sm,
-            paddingTop: theme.spacing.sm,
+            marginTop: theme.spacing.md,
+            paddingTop: theme.spacing.md,
             borderTopWidth: 1,
             borderTopColor: theme.colors.border,
         },
@@ -131,6 +166,7 @@ const RecipeSuggestionsScreen = (): JSX.Element => {
         missingIngredients: {
             marginTop: theme.spacing.sm,
             fontStyle: 'italic',
+            fontSize: 13,
         },
         center: {
             alignItems: 'center',
@@ -147,42 +183,52 @@ const RecipeSuggestionsScreen = (): JSX.Element => {
                 recipeName: item.recipeName
             })}
         >
-            <View style={styles.recipeHeader}>
-                <View style={{ flex: 1, marginRight: theme.spacing.sm }}>
-                    <ThemedText variant="h3">{item.recipeName}</ThemedText>
-                    <ThemedText variant="caption" color="textSecondary">
-                        {item.matchedIngredientsCount}/{item.totalIngredientsCount} nguyên liệu
-                    </ThemedText>
+            <View style={styles.cardContent}>
+                <View style={styles.recipeHeader}>
+                    <View style={{ flex: 1, marginRight: theme.spacing.sm }}>
+                        <ThemedText variant="h3" color="primary">{item.recipeName}</ThemedText>
+                        <ThemedText variant="caption" color="textSecondary">
+                            Có {item.matchedIngredientsCount}/{item.totalIngredientsCount} nguyên liệu
+                        </ThemedText>
+                    </View>
+                    <LinearGradient
+                        colors={theme.gradients.primary}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 1 }}
+                        style={styles.matchBadge}
+                    >
+                        <ThemedText variant="caption" style={{ color: '#FFF', fontWeight: 'bold' }}>
+                            {Math.round(item.matchPercentage)}%
+                        </ThemedText>
+                    </LinearGradient>
                 </View>
-                <View style={styles.matchBadge}>
-                    <ThemedText variant="caption" color="primary" style={{ fontWeight: 'bold' }}>
-                        {Math.round(item.matchPercentage)}% Match
-                    </ThemedText>
-                </View>
-            </View>
 
-            {item.missingIngredients.length > 0 && (
-                <ThemedText variant="caption" color="textSecondary" style={styles.missingIngredients}>
-                    Thiếu: {item.missingIngredients.join(', ')}
-                </ThemedText>
-            )}
+                {item.missingIngredients.length > 0 && (
+                    <View style={{ flexDirection: 'row', gap: 4, marginTop: 4 }}>
+                        <Ionicons name="alert-circle-outline" size={14} color={theme.colors.warning} style={{ marginTop: 2 }} />
+                        <ThemedText variant="caption" color="textSecondary" style={{ flex: 1 }}>
+                            Thiếu: {item.missingIngredients.join(', ')}
+                        </ThemedText>
+                    </View>
+                )}
 
-            <View style={styles.nutritionRow}>
-                <View style={styles.nutritionItem}>
-                    <ThemedText variant="caption" color="textSecondary">Calo</ThemedText>
-                    <ThemedText variant="bodySmall" style={{ fontWeight: 'bold' }}>{Math.round(item.totalCalories)}</ThemedText>
-                </View>
-                <View style={styles.nutritionItem}>
-                    <ThemedText variant="caption" color="textSecondary">Đạm</ThemedText>
-                    <ThemedText variant="bodySmall" style={{ fontWeight: 'bold' }}>{Math.round(item.totalProtein)}g</ThemedText>
-                </View>
-                <View style={styles.nutritionItem}>
-                    <ThemedText variant="caption" color="textSecondary">Carb</ThemedText>
-                    <ThemedText variant="bodySmall" style={{ fontWeight: 'bold' }}>{Math.round(item.totalCarbs)}g</ThemedText>
-                </View>
-                <View style={styles.nutritionItem}>
-                    <ThemedText variant="caption" color="textSecondary">Béo</ThemedText>
-                    <ThemedText variant="bodySmall" style={{ fontWeight: 'bold' }}>{Math.round(item.totalFat)}g</ThemedText>
+                <View style={styles.nutritionRow}>
+                    <View style={styles.nutritionItem}>
+                        <ThemedText variant="caption" color="textSecondary">Calo</ThemedText>
+                        <ThemedText variant="bodySmall" weight="600">{Math.round(item.totalCalories)}</ThemedText>
+                    </View>
+                    <View style={styles.nutritionItem}>
+                        <ThemedText variant="caption" color="textSecondary">Đạm</ThemedText>
+                        <ThemedText variant="bodySmall" weight="600">{Math.round(item.totalProtein)}g</ThemedText>
+                    </View>
+                    <View style={styles.nutritionItem}>
+                        <ThemedText variant="caption" color="textSecondary">Carb</ThemedText>
+                        <ThemedText variant="bodySmall" weight="600">{Math.round(item.totalCarbs)}g</ThemedText>
+                    </View>
+                    <View style={styles.nutritionItem}>
+                        <ThemedText variant="caption" color="textSecondary">Béo</ThemedText>
+                        <ThemedText variant="bodySmall" weight="600">{Math.round(item.totalFat)}g</ThemedText>
+                    </View>
                 </View>
             </View>
         </Card>
@@ -192,61 +238,87 @@ const RecipeSuggestionsScreen = (): JSX.Element => {
         <Screen style={styles.container}>
             <ScreenHeader
                 title="Gợi ý món ăn"
-                subtitle="Tìm công thức dựa trên nguyên liệu bạn có"
+                subtitle="Tìm công thức từ nguyên liệu có sẵn"
+                onBackPress={() => navigation.goBack()}
             />
 
             <View style={styles.content}>
-                <View style={styles.inputContainer}>
-                    <View style={styles.input}>
-                        <ThemedTextInput
-                            placeholder="Thêm nguyên liệu (vd: gà, trứng...)"
-                            value={newIngredient}
-                            onChangeText={setNewIngredient}
-                            onSubmitEditing={addIngredient}
-                        />
+                <View style={styles.inputSection}>
+                    <View style={styles.inputContainer}>
+                        <View style={styles.input}>
+                            <ThemedTextInput
+                                placeholder="Nhập nguyên liệu..."
+                                value={newIngredient}
+                                onChangeText={setNewIngredient}
+                                onSubmitEditing={() => addIngredient(newIngredient)}
+                            />
+                        </View>
+                        <View style={{ width: 80 }}>
+                            <Button
+                                title="Thêm"
+                                onPress={() => addIngredient(newIngredient)}
+                                variant="secondary"
+                                size="sm"
+                            />
+                        </View>
                     </View>
-                    <View style={{ width: 80 }}>
-                        <Button
-                            title="Thêm"
-                            onPress={addIngredient}
-                            variant="secondary"
-                            size="sm"
-                        />
+
+                    {ingredients.length > 0 ? (
+                        <View style={{ marginBottom: theme.spacing.md }}>
+                            <ThemedText style={styles.sectionLabel}>Đã chọn:</ThemedText>
+                            <View style={styles.chipsContainer}>
+                                {ingredients.map((ing, index) => (
+                                    <TouchableOpacity
+                                        key={index}
+                                        style={styles.chip}
+                                        onPress={() => removeIngredient(ing)}
+                                    >
+                                        <ThemedText variant="caption" color="primary" weight="600">{ing}</ThemedText>
+                                        <Ionicons name="close-circle" size={16} color={theme.colors.primary} />
+                                    </TouchableOpacity>
+                                ))}
+                            </View>
+                        </View>
+                    ) : (
+                        <ThemedText variant="caption" color="textSecondary" style={{ marginBottom: theme.spacing.md, fontStyle: 'italic' }}>
+                            Chưa có nguyên liệu nào được chọn
+                        </ThemedText>
+                    )}
+
+                    <View>
+                        <ThemedText style={styles.sectionLabel}>Gợi ý nhanh:</ThemedText>
+                        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
+                            {POPULAR_INGREDIENTS.filter(i => !ingredients.includes(i)).map((ing, index) => (
+                                <TouchableOpacity
+                                    key={index}
+                                    style={styles.suggestionChip}
+                                    onPress={() => addIngredient(ing)}
+                                >
+                                    <ThemedText variant="caption">{ing}</ThemedText>
+                                    <Ionicons name="add" size={14} color={theme.colors.textSecondary} style={{ marginLeft: 4 }} />
+                                </TouchableOpacity>
+                            ))}
+                        </ScrollView>
                     </View>
                 </View>
 
-                {ingredients.length > 0 && (
-                    <View style={styles.chipsContainer}>
-                        {ingredients.map((ing, index) => (
-                            <TouchableOpacity
-                                key={index}
-                                style={styles.chip}
-                                onPress={() => removeIngredient(ing)}
-                            >
-                                <ThemedText variant="caption">{ing}</ThemedText>
-                                <Ionicons name="close-circle" size={16} color={theme.colors.textSecondary} />
-                            </TouchableOpacity>
-                        ))}
-                    </View>
-                )}
-
-                <View style={{ marginBottom: theme.spacing.lg }}>
-                    <Button
-                        title="Tìm công thức"
-                        onPress={searchRecipes}
-                        disabled={ingredients.length === 0 || loading}
-                        variant="primary"
-                    />
-                </View>
+                <Button
+                    title="Tìm công thức ngay"
+                    onPress={searchRecipes}
+                    disabled={ingredients.length === 0 || loading}
+                    variant="primary"
+                    style={{ marginBottom: theme.spacing.lg, ...theme.shadows.md }}
+                />
 
                 {loading ? (
                     <View style={styles.center}>
                         <ActivityIndicator size="large" color={theme.colors.primary} />
-                        <ThemedText style={{ marginTop: theme.spacing.sm }}>Đang tìm công thức...</ThemedText>
+                        <ThemedText style={{ marginTop: theme.spacing.sm }}>Đang tìm công thức phù hợp...</ThemedText>
                     </View>
                 ) : error ? (
                     <View style={styles.center}>
-                        <ThemedText color="danger">{error}</ThemedText>
+                        <Ionicons name="alert-circle" size={48} color={theme.colors.danger} />
+                        <ThemedText color="danger" style={{ marginTop: 8 }}>{error}</ThemedText>
                     </View>
                 ) : (
                     <FlatList
@@ -258,8 +330,9 @@ const RecipeSuggestionsScreen = (): JSX.Element => {
                         ListEmptyComponent={
                             recipes.length === 0 && !loading ? (
                                 <View style={styles.center}>
-                                    <ThemedText color="textSecondary">
-                                        Nhập nguyên liệu và nhấn tìm kiếm để xem gợi ý
+                                    <Ionicons name="restaurant-outline" size={64} color={theme.colors.border} />
+                                    <ThemedText color="textSecondary" style={{ marginTop: 16, textAlign: 'center' }}>
+                                        Hãy thêm nguyên liệu và nhấn tìm kiếm{'\n'}để nhận gợi ý món ăn ngon!
                                     </ThemedText>
                                 </View>
                             ) : null
