@@ -1,7 +1,10 @@
 // Màn AI Dinh dưỡng: xem mục tiêu hiện tại, gợi ý nhanh và áp dụng
 import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import Toast from 'react-native-toast-message';
+import type { RootStackParamList } from '../../types';
 
 import Screen from '../../../components/Screen';
 import { AppCard } from '../../../components/ui/AppCard';
@@ -17,6 +20,7 @@ const formatTarget = (t: NutritionTarget | null): NutritionTarget | null =>
 
 const AiNutritionScreen = (): JSX.Element => {
   const { theme } = useAppTheme();
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const refreshSummary = useDiaryStore((s) => s.refreshSummary);
 
   const styles = StyleSheet.create({
@@ -74,7 +78,7 @@ const AiNutritionScreen = (): JSX.Element => {
   }, []);
 
   useEffect(() => {
-    loadCurrent().catch(() => {});
+    loadCurrent().catch(() => { });
   }, [loadCurrent]);
 
   const handleRecalculate = useCallback(async () => {
@@ -102,7 +106,7 @@ const AiNutritionScreen = (): JSX.Element => {
       Toast.show({ type: 'success', text1: 'Đã áp dụng mục tiêu AI' });
       setCurrentTarget(target);
       setSuggestedTarget(null);
-      await refreshSummary().catch(() => {});
+      await refreshSummary().catch(() => { });
     } catch {
       Toast.show({ type: 'error', text1: 'Lưu mục tiêu thất bại' });
     } finally {
@@ -188,6 +192,7 @@ const AiNutritionScreen = (): JSX.Element => {
         <View style={styles.buttonContainer}>
           <Button variant="primary" loading={isRecalculating} disabled={isRecalculating} onPress={handleRecalculate} title={isRecalculating ? 'Đang tính...' : 'Gợi ý nhanh'} />
           <Button variant="secondary" loading={isApplying} disabled={isApplying} onPress={handleApply} title={isApplying ? 'Đang áp dụng...' : 'Áp dụng mục tiêu AI'} />
+          <Button variant="outline" onPress={() => navigation.navigate('NutritionInsights')} title="Xem phân tích chi tiết" />
         </View>
       </AppCard>
     </Screen>

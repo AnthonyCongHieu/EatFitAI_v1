@@ -71,8 +71,8 @@ export const aiService = {
     const results = Array.isArray(response.data?.ingredients)
       ? response.data.ingredients
       : Array.isArray(response.data)
-      ? response.data
-      : [];
+        ? response.data
+        : [];
     return results.map((item: any) => ({
       name: String(item?.name ?? item ?? 'Unknown'),
       confidence: toNumber(item?.confidence ?? item?.score),
@@ -85,8 +85,8 @@ export const aiService = {
     const results = Array.isArray(response.data?.recipes)
       ? response.data.recipes
       : Array.isArray(response.data)
-      ? response.data
-      : [];
+        ? response.data
+        : [];
     return results.map((item: any) => ({
       id: String(item?.id ?? item?.slug ?? item?.title ?? Math.random().toString(36).slice(2)),
       title: item?.title ?? item?.name ?? 'Cong thuc',
@@ -172,6 +172,63 @@ export const aiService = {
 
   async teachLabel(req: TeachLabelRequest): Promise<void> {
     await teachLabel(req);
+  },
+
+  // ============ RECIPE SUGGESTIONS ============
+  async suggestRecipesEnhanced(request: import('../types/aiEnhanced').RecipeSuggestionRequest): Promise<import('../types/aiEnhanced').RecipeSuggestion[]> {
+    const response = await apiClient.post('/api/ai/recipes/suggest', request);
+    return response.data;
+  },
+
+  async getRecipeDetail(recipeId: number): Promise<import('../types/aiEnhanced').RecipeDetail> {
+    const response = await apiClient.get(`/api/ai/recipes/${recipeId}`);
+    return response.data;
+  },
+
+  // ============ NUTRITION INSIGHTS ============
+  async getNutritionInsights(request: import('../types/aiEnhanced').NutritionInsightRequest = {}): Promise<import('../types/aiEnhanced').NutritionInsight> {
+    const response = await apiClient.post('/api/ai/nutrition/insights', {
+      analysisDays: request.analysisDays ?? 30,
+      includeMealTiming: request.includeMealTiming ?? true,
+      includeMacroAnalysis: request.includeMacroAnalysis ?? true,
+    });
+    return response.data;
+  },
+
+  async getAdaptiveTarget(request: import('../types/aiEnhanced').AdaptiveTargetRequest = {}): Promise<import('../types/aiEnhanced').AdaptiveTarget> {
+    const response = await apiClient.post('/api/ai/nutrition/adaptive-target', {
+      analysisDays: request.analysisDays ?? 14,
+      autoApply: request.autoApply ?? false,
+    });
+    return response.data;
+  },
+
+  async applyAdaptiveTarget(target: import('../types/aiEnhanced').NutritionTargetDto): Promise<void> {
+    await apiClient.post('/api/ai/nutrition/apply-target', target);
+  },
+
+  // ============ VISION DETECTION ENHANCEMENTS ============
+  async getDetectionHistory(request: import('../types/aiEnhanced').DetectionHistoryRequest = {}): Promise<import('../types/aiEnhanced').DetectionHistory[]> {
+    const response = await apiClient.post('/api/ai/vision/history', {
+      days: request.days ?? 30,
+      maxResults: request.maxResults ?? 50,
+      onlyUnmapped: request.onlyUnmapped ?? false,
+    });
+    return response.data;
+  },
+
+  async getUnmappedLabelsStats(days: number = 30): Promise<import('../types/aiEnhanced').UnmappedLabelsStats> {
+    const response = await apiClient.get(`/api/ai/vision/unmapped-stats?days=${days}`);
+    return response.data;
+  },
+
+  async suggestFoodItemsForLabel(label: string): Promise<import('../types/aiEnhanced').FoodItemSuggestion[]> {
+    const response = await apiClient.get(`/api/ai/vision/suggest-mapping/${encodeURIComponent(label)}`);
+    return response.data;
+  },
+
+  async teachLabelEnhanced(request: import('../types/aiEnhanced').EnhancedTeachLabelRequest): Promise<void> {
+    await apiClient.post('/api/ai/labels/teach', request);
   },
 };
 

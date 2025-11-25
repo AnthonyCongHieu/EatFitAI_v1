@@ -134,6 +134,7 @@ const AiVisionScreen = (): JSX.Element => {
         <View style={styles.buttonRow}>
           <Button title="Chọn ảnh" variant="primary" onPress={pickImage} />
           <Button title="Nhận diện" variant="secondary" onPress={runDetect} disabled={!imageUri || loading} />
+          <Button title="Lịch sử" variant="outline" onPress={() => navigation.navigate('VisionHistory')} />
         </View>
 
         {loading && (
@@ -210,6 +211,22 @@ const AiVisionScreen = (): JSX.Element => {
                   navigation.navigate('AddMealFromVision', { imageUri, result });
                 }}
                 disabled={!imageUri || !result || result.items.length === 0}
+              />
+            </View>
+
+            <View style={styles.buttonContainer}>
+              <Button
+                title="Gợi ý món ăn từ nguyên liệu này"
+                variant="secondary"
+                onPress={() => {
+                  if (!result) return;
+                  const ingredients = [
+                    ...result.items.map(i => i.label),
+                    ...result.unmappedLabels
+                  ];
+                  navigation.navigate('RecipeSuggestions', { ingredients });
+                }}
+                disabled={!result || (result.items.length === 0 && result.unmappedLabels.length === 0)}
               />
             </View>
           </View>
