@@ -10,11 +10,14 @@ export type UserProfile = {
   email?: string;
   heightCm?: number;
   weightKg?: number;
+  lastMeasuredDate?: string;
   createdAt?: string;
 };
 
 export type UpdateProfilePayload = {
   fullName?: string | null;
+  heightCm?: number | null;
+  weightKg?: number | null;
 };
 
 export type BodyMetricsPayload = {
@@ -24,12 +27,13 @@ export type BodyMetricsPayload = {
   note?: string | null;
 };
 
-const normalizeProfile = (data: UserDto): UserProfile => ({
+const normalizeProfile = (data: any): UserProfile => ({
   id: String(data?.userId ?? ''),
   fullName: data?.displayName ?? undefined,
   email: data?.email ?? undefined,
-  heightCm: undefined,
-  weightKg: undefined,
+  heightCm: data?.currentHeightCm ?? undefined,
+  weightKg: data?.currentWeightKg ?? undefined,
+  lastMeasuredDate: data?.lastMeasuredDate ?? undefined,
   createdAt: data?.createdAt ?? undefined,
 });
 
@@ -42,9 +46,10 @@ export const profileService = {
 
   // Cap nhat ho so (PUT /api/profile)
   async updateProfile(payload: UpdateProfilePayload): Promise<UserProfile> {
-    // Pick only fields supported by backend SP
-    const req: UserDto = {
+    const req: any = {
       displayName: payload.fullName ?? null,
+      currentHeightCm: payload.heightCm ?? null,
+      currentWeightKg: payload.weightKg ?? null,
     };
     const response = await apiClient.put('/api/profile', req);
     return normalizeProfile(response.data);
@@ -61,4 +66,4 @@ export const profileService = {
     };
     await apiClient.post('/api/body-metrics', req);
   },
-}; 
+};

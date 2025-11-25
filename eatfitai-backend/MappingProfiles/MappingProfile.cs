@@ -14,6 +14,7 @@ namespace EatFitAI.API.MappingProfiles
         {
             // User mappings
             CreateMap<User, UserDto>();
+            CreateMap<User, UserProfileDto>();
             CreateMap<BodyMetric, BodyMetricDto>()
                 .ForMember(dest => dest.MeasuredDate, opt => opt.MapFrom(src => src.MeasuredDate.ToDateTime(TimeOnly.MinValue)));
 

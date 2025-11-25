@@ -181,7 +181,7 @@ const HomeScreen = (): JSX.Element => {
               .deleteEntry(entryId)
               .then(() => {
                 Toast.show({ type: 'success', text1: t('common.removed'), text2: t('common.updated') });
-                refreshSummary().catch(() => {});
+                refreshSummary().catch(() => { });
               })
               .catch((error: any) => {
                 const status = error?.response?.status;
@@ -305,7 +305,7 @@ const HomeScreen = (): JSX.Element => {
               progress={carbsValue.value && summary?.targetCalories ? Math.min(1, (carbsValue.value * 4) / (summary.targetCalories * 0.5)) : 0}
             />
             <MetricCard
-              icon="local-dining"
+              icon="restaurant"
               value={fatValue}
               label="Fat"
               color="warning"

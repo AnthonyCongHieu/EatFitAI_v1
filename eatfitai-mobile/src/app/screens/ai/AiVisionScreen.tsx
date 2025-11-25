@@ -1,11 +1,11 @@
-import { useState } from 'react';
-import { ActivityIndicator, FlatList, StyleSheet, View } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { ActivityIndicator, FlatList, StyleSheet, View, Image, Dimensions } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import Animated, { useSharedValue, useAnimatedStyle, withRepeat, withTiming, Easing, FadeIn } from 'react-native-reanimated';
 
 import Screen from '../../../components/Screen';
-import Card from '../../../components/Card';
 import { AppCard } from '../../../components/ui/AppCard';
 import { ScreenHeader } from '../../../components/ui/ScreenHeader';
 import Button from '../../../components/Button';
@@ -17,22 +17,41 @@ import type { RootStackParamList } from '../../types';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
+const { width } = Dimensions.get('window');
+
 const AiVisionScreen = (): JSX.Element => {
   const { theme } = useAppTheme();
   const navigation = useNavigation<NavigationProp>();
+
+  const [imageUri, setImageUri] = useState<string | null>(null);
+  const [result, setResult] = useState<VisionDetectResult | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [teaching, setTeaching] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Animation values
+  const scanLineY = useSharedValue(0);
+
+  useEffect(() => {
+    if (loading) {
+      scanLineY.value = withRepeat(
+        withTiming(200, { duration: 1500, easing: Easing.linear }),
+        -1,
+        true
+      );
+    } else {
+      scanLineY.value = 0;
+    }
+  }, [loading]);
+
+  const scanLineStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: scanLineY.value }],
+  }));
 
   const styles = StyleSheet.create({
     screen: {
       flex: 1,
       backgroundColor: theme.colors.background,
-    },
-    header: {
-      paddingHorizontal: theme.spacing.lg,
-      paddingTop: theme.spacing.lg,
-      paddingBottom: theme.spacing.xl,
-    },
-    title: {
-      marginBottom: theme.spacing.sm,
     },
     card: {
       marginHorizontal: theme.spacing.lg,
@@ -62,13 +81,38 @@ const AiVisionScreen = (): JSX.Element => {
     buttonContainer: {
       marginTop: theme.spacing.lg,
     },
+    imageContainer: {
+      width: '100%',
+      height: 200,
+      backgroundColor: theme.colors.card,
+      borderRadius: theme.radius.md, // Fixed: use theme.radius.md instead of theme.borderRadius.md
+      marginBottom: theme.spacing.md,
+      overflow: 'hidden',
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+    },
+    image: {
+      width: '100%',
+      height: '100%',
+      resizeMode: 'cover',
+    },
+    scanLine: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      height: 2,
+      backgroundColor: theme.colors.primary,
+      shadowColor: theme.colors.primary,
+      shadowOffset: { width: 0, height: 0 },
+      shadowOpacity: 0.8,
+      shadowRadius: 10,
+      elevation: 5,
+      zIndex: 10,
+    }
   });
-
-  const [imageUri, setImageUri] = useState<string | null>(null);
-  const [result, setResult] = useState<VisionDetectResult | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [teaching, setTeaching] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   const pickImage = async (): Promise<void> => {
     const res = await ImagePicker.launchImageLibraryAsync({
@@ -131,6 +175,17 @@ const AiVisionScreen = (): JSX.Element => {
       />
 
       <AppCard style={styles.card}>
+        <View style={styles.imageContainer}>
+          {imageUri ? (
+            <>
+              <Image source={{ uri: imageUri }} style={styles.image} />
+              {loading && <Animated.View style={[styles.scanLine, scanLineStyle]} />}
+            </>
+          ) : (
+            <ThemedText color="textSecondary">Chưa chọn ảnh</ThemedText>
+          )}
+        </View>
+
         <View style={styles.buttonRow}>
           <Button title="Chọn ảnh" variant="primary" onPress={pickImage} />
           <Button title="Nhận diện" variant="secondary" onPress={runDetect} disabled={!imageUri || loading} />
@@ -141,7 +196,7 @@ const AiVisionScreen = (): JSX.Element => {
           <View style={styles.center}>
             <ActivityIndicator color={theme.colors.primary} />
             <ThemedText variant="bodySmall" color="textSecondary" style={{ marginTop: theme.spacing.xs }}>
-              Dang goi AI Vision...
+              Đang phân tích hình ảnh...
             </ThemedText>
           </View>
         )}
@@ -155,15 +210,13 @@ const AiVisionScreen = (): JSX.Element => {
         )}
 
         {result && (
-          <View style={styles.resultSection}>
+          <Animated.View entering={FadeIn.duration(500)} style={styles.resultSection}>
             <ThemedText variant="h2" style={{ marginBottom: theme.spacing.md }}>
               Kết quả nhận diện
             </ThemedText>
-            <FlatList
-              data={result.items}
-              keyExtractor={(_, idx) => String(idx)}
-              renderItem={({ item }) => (
-                <View style={styles.itemRow}>
+            <View>
+              {result.items.map((item, idx) => (
+                <View key={idx} style={styles.itemRow}>
                   <ThemedText variant="body">
                     • Label: {item.label} ({(item.confidence * 100).toFixed(1)}%)
                   </ThemedText>
@@ -182,8 +235,8 @@ const AiVisionScreen = (): JSX.Element => {
                     </ThemedText>
                   )}
                 </View>
-              )}
-            />
+              ))}
+            </View>
 
             {result.unmappedLabels.length > 0 && (
               <ThemedText variant="bodySmall" style={{ marginTop: theme.spacing.md }}>
@@ -231,7 +284,7 @@ const AiVisionScreen = (): JSX.Element => {
                 disabled={!result || (result.items.length === 0 && result.unmappedLabels.length === 0)}
               />
             </View>
-          </View>
+          </Animated.View>
         )}
       </AppCard>
     </Screen>

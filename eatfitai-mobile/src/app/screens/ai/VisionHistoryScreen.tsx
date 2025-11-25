@@ -3,6 +3,7 @@ import { View, StyleSheet, SectionList, ActivityIndicator } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
+import Animated, { FadeInRight, Layout } from 'react-native-reanimated';
 
 import Screen from '../../../components/Screen';
 import { ScreenHeader } from '../../../components/ui/ScreenHeader';
@@ -124,44 +125,49 @@ const VisionHistoryScreen = (): JSX.Element => {
         },
     });
 
-    const renderItem = ({ item }: { item: DetectionHistory }) => (
-        <Card style={styles.historyCard}>
-            <View style={styles.iconContainer}>
-                <Ionicons name="fast-food" size={24} color={theme.colors.primary} />
-            </View>
-
-            <View style={styles.cardContent}>
-                <View style={styles.row}>
-                    <ThemedText variant="body" weight="600" numberOfLines={1}>
-                        {item.mappedFoodNames.length > 0 ? item.mappedFoodNames[0] : item.detectedLabels[0]}
-                        {item.mappedFoodNames.length > 1 && ` +${item.mappedFoodNames.length - 1}`}
-                    </ThemedText>
-                    <ThemedText style={styles.time}>
-                        {new Date(item.detectedAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
-                    </ThemedText>
+    const renderItem = ({ item, index }: { item: DetectionHistory, index: number }) => (
+        <Animated.View
+            entering={FadeInRight.delay(index * 50).springify()}
+            layout={Layout.springify()}
+        >
+            <Card style={styles.historyCard}>
+                <View style={styles.iconContainer}>
+                    <Ionicons name="fast-food" size={24} color={theme.colors.primary} />
                 </View>
 
-                <View style={styles.row}>
-                    <ThemedText variant="caption" color="textSecondary" numberOfLines={1} style={{ flex: 1, marginRight: 8 }}>
-                        {item.detectedLabels.join(', ')}
-                    </ThemedText>
-                    <View style={[styles.confidenceBadge, { backgroundColor: item.averageConfidence > 0.8 ? theme.colors.success + '20' : theme.colors.warning + '20' }]}>
-                        <ThemedText variant="caption" style={{ color: item.averageConfidence > 0.8 ? theme.colors.success : theme.colors.warning, fontWeight: 'bold', fontSize: 10 }}>
-                            {Math.round(item.averageConfidence * 100)}%
+                <View style={styles.cardContent}>
+                    <View style={styles.row}>
+                        <ThemedText variant="body" weight="600" numberOfLines={1}>
+                            {item.mappedFoodNames.length > 0 ? item.mappedFoodNames[0] : item.detectedLabels[0]}
+                            {item.mappedFoodNames.length > 1 && ` +${item.mappedFoodNames.length - 1}`}
+                        </ThemedText>
+                        <ThemedText style={styles.time}>
+                            {new Date(item.detectedAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
                         </ThemedText>
                     </View>
-                </View>
 
-                {item.unmappedCount > 0 && (
-                    <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4 }}>
-                        <Ionicons name="alert-circle-outline" size={12} color={theme.colors.warning} style={{ marginRight: 4 }} />
-                        <ThemedText variant="caption" color="warning">
-                            {item.unmappedCount} món chưa nhận diện được
+                    <View style={styles.row}>
+                        <ThemedText variant="caption" color="textSecondary" numberOfLines={1} style={{ flex: 1, marginRight: 8 }}>
+                            {item.detectedLabels.join(', ')}
                         </ThemedText>
+                        <View style={[styles.confidenceBadge, { backgroundColor: item.averageConfidence > 0.8 ? theme.colors.success + '20' : theme.colors.warning + '20' }]}>
+                            <ThemedText variant="caption" style={{ color: item.averageConfidence > 0.8 ? theme.colors.success : theme.colors.warning, fontWeight: 'bold', fontSize: 10 }}>
+                                {Math.round(item.averageConfidence * 100)}%
+                            </ThemedText>
+                        </View>
                     </View>
-                )}
-            </View>
-        </Card>
+
+                    {item.unmappedCount > 0 && (
+                        <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4 }}>
+                            <Ionicons name="alert-circle-outline" size={12} color={theme.colors.warning} style={{ marginRight: 4 }} />
+                            <ThemedText variant="caption" color="warning">
+                                {item.unmappedCount} món chưa nhận diện được
+                            </ThemedText>
+                        </View>
+                    )}
+                </View>
+            </Card>
+        </Animated.View>
     );
 
     const renderSectionHeader = ({ section: { title } }: { section: { title: string } }) => (

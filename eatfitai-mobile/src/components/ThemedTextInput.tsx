@@ -49,13 +49,6 @@ export const ThemedTextInput = ({
 
   const effectiveSecure = secureToggle ? hidden : secureTextEntry;
 
-  const resolvedKeyboardType = (() => {
-    // Vietnamese IME (Telex/Laban Key) is most reliable with 'visible-password' on Android.
-    // Prefer any explicit keyboardType from callers; otherwise use 'visible-password' by default on Android.
-    if (rest.keyboardType) return rest.keyboardType;
-    if (Platform.OS === 'android') return 'visible-password';
-    return 'default';
-  })();
 
   const inputValue = useMemo(() => {
     // While focused, prefer internal value to avoid interrupting IME composition
@@ -86,7 +79,7 @@ export const ThemedTextInput = ({
       accessibilityLabel={label || rest.accessibilityLabel}
       accessibilityHint={helperText || rest.accessibilityHint}
       // Avoid props that can interfere with IME composition
-      keyboardType={resolvedKeyboardType}
+      keyboardType={rest.keyboardType}
       // Avoid Android full-screen editor which can break IME composition on some devices
       disableFullscreenUI={Platform.OS === 'android' ? true : undefined}
       autoCapitalize={rest.autoCapitalize || 'none'}

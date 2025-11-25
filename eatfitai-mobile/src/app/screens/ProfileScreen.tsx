@@ -7,10 +7,7 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
-  Pressable,
-  ScrollView,
   StyleSheet,
-  TextInput,
   View,
 } from 'react-native';
 import { Controller, useForm } from 'react-hook-form';
@@ -30,7 +27,9 @@ import { useProfileStore } from '../../store/useProfileStore';
 import { profileService } from '../../services/profileService';
 
 const ProfileSchema = z.object({
-  fullName: z.string().trim().min(2, 'Ten can it nhat 2 ky tu'),
+  fullName: z.string().trim().min(2, 'Tên cần ít nhất 2 ký tự'),
+  heightCm: z.string().optional(),
+  weightKg: z.string().optional(),
 });
 
 type ProfileFormValues = z.infer<typeof ProfileSchema>;
@@ -44,7 +43,7 @@ const BodyMetricsSchema = z.object({
       (value) =>
         !value || (!Number.isNaN(Number(value)) && Number(value) >= 100 && Number(value) <= 250),
       {
-        message: 'Chieu cao (cm) tu 100 - 250',
+        message: 'Chiều cao (cm) từ 100 - 250',
       },
     ),
   weightKg: z
@@ -55,7 +54,7 @@ const BodyMetricsSchema = z.object({
       (value) =>
         !value || (!Number.isNaN(Number(value)) && Number(value) >= 30 && Number(value) <= 300),
       {
-        message: 'Can nang (kg) tu 30 - 300',
+        message: 'Cân nặng (kg) từ 30 - 300',
       },
     ),
   measuredDate: z
@@ -63,7 +62,7 @@ const BodyMetricsSchema = z.object({
     .trim()
     .optional()
     .refine((value) => !value || /^\d{4}-\d{2}-\d{2}$/.test(value), {
-      message: 'Ngay do dinh dang YYYY-MM-DD',
+      message: 'Ngày đo định dạng YYYY-MM-DD',
     }),
   note: z.string().trim().optional(),
 });
@@ -135,6 +134,8 @@ const ProfileScreen = (): JSX.Element => {
     resolver: zodResolver(ProfileSchema),
     defaultValues: {
       fullName: '',
+      heightCm: '',
+      weightKg: '',
     },
   });
 
@@ -163,6 +164,8 @@ const ProfileScreen = (): JSX.Element => {
     if (profile) {
       reset({
         fullName: profile.fullName ?? '',
+        heightCm: profile.heightCm ? String(profile.heightCm) : '',
+        weightKg: profile.weightKg ? String(profile.weightKg) : '',
       });
     }
   }, [profile, reset]);
@@ -171,6 +174,8 @@ const ProfileScreen = (): JSX.Element => {
     try {
       await updateProfile({
         fullName: values.fullName.trim(),
+        heightCm: values.heightCm ? Number(values.heightCm) : null,
+        weightKg: values.weightKg ? Number(values.weightKg) : null,
       });
       Toast.show({ type: 'success', text1: 'Đã lưu thông tin hồ sơ' });
     } catch (error: any) {
@@ -178,8 +183,8 @@ const ProfileScreen = (): JSX.Element => {
       if (status === 422) {
         Toast.show({
           type: 'error',
-          text1: 'Du lieu khong hop le',
-          text2: 'Vui long kiem tra lai noi dung',
+          text1: 'Dữ liệu không hợp lệ',
+          text2: 'Vui lòng kiểm tra lại nội dung',
         });
         return;
       }
@@ -197,13 +202,15 @@ const ProfileScreen = (): JSX.Element => {
       });
       resetMetrics({ heightCm: '', weightKg: '', measuredDate: '', note: '' });
       Toast.show({ type: 'success', text1: 'Đã ghi nhận số đo mới' });
+      // Refresh profile to update current height/weight
+      fetchProfile();
     } catch (error: any) {
       const status = error?.response?.status;
       if (status === 422) {
         Toast.show({
           type: 'error',
           text1: 'Số đo không hợp lệ',
-          text2: 'Vui long kiem tra cac truong',
+          text2: 'Vui lòng kiểm tra các trường',
         });
         return;
       }
@@ -231,7 +238,7 @@ const ProfileScreen = (): JSX.Element => {
             <View style={{ flex: 1 }}>
               <ThemedText variant="h3">Thông tin cá nhân</ThemedText>
               <ThemedText variant="bodySmall" color="textSecondary">
-                Chỉnh sửa hồ sơ và lưu lại để cập nhật
+                {profile?.email}
               </ThemedText>
             </View>
           </View>
@@ -260,6 +267,46 @@ const ProfileScreen = (): JSX.Element => {
                 )}
               />
 
+              <View style={styles.row}>
+                <View style={styles.col}>
+                  <Controller
+                    control={control}
+                    name="heightCm"
+                    render={({ field: { value, onChange, onBlur } }) => (
+                      <ThemedTextInput
+                        label="Chiều cao (cm)"
+                        style={styles.input}
+                        value={value}
+                        onChangeText={onChange}
+                        onBlur={onBlur}
+                        placeholder="170"
+                        keyboardType="numeric"
+                        error={!!profileErrors.heightCm}
+                        helperText={profileErrors.heightCm?.message}
+                      />
+                    )}
+                  />
+                </View>
+                <View style={styles.col}>
+                  <Controller
+                    control={control}
+                    name="weightKg"
+                    render={({ field: { value, onChange, onBlur } }) => (
+                      <ThemedTextInput
+                        label="Cân nặng (kg)"
+                        style={styles.input}
+                        value={value}
+                        onChangeText={onChange}
+                        onBlur={onBlur}
+                        placeholder="60"
+                        keyboardType="numeric"
+                        error={!!profileErrors.weightKg}
+                        helperText={profileErrors.weightKg?.message}
+                      />
+                    )}
+                  />
+                </View>
+              </View>
 
               <View style={{ marginTop: theme.spacing.xl }}>
                 <Button
@@ -287,7 +334,7 @@ const ProfileScreen = (): JSX.Element => {
                       text: 'Đồng ý',
                       style: 'destructive',
                       onPress: () => {
-                        logout().catch(() => {});
+                        logout().catch(() => { });
                       },
                     },
                   ],
@@ -308,9 +355,9 @@ const ProfileScreen = (): JSX.Element => {
               </ThemedText>
             </View>
             <View style={{ flex: 1 }}>
-              <ThemedText variant="h3">Ghi nhận chỉ số cơ thể</ThemedText>
+              <ThemedText variant="h3">Ghi nhận lịch sử đo</ThemedText>
               <ThemedText variant="bodySmall" color="textSecondary">
-                Theo dõi tiến trình bằng cách lưu số đo mới
+                Thêm bản ghi mới vào lịch sử (nếu cần ghi chú hoặc ngày cũ)
               </ThemedText>
             </View>
           </View>
@@ -397,7 +444,7 @@ const ProfileScreen = (): JSX.Element => {
               loading={isSubmittingMetrics}
               disabled={isSubmittingMetrics}
               variant="secondary"
-              title={isSubmittingMetrics ? 'Đang lưu...' : 'Lưu số đo mới'}
+              title={isSubmittingMetrics ? 'Đang lưu...' : 'Lưu vào lịch sử'}
             />
           </View>
         </AppCard>
@@ -405,6 +452,5 @@ const ProfileScreen = (): JSX.Element => {
     </KeyboardAvoidingView>
   );
 };
-
 
 export default ProfileScreen;

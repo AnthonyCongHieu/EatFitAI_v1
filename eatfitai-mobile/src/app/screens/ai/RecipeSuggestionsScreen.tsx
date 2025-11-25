@@ -4,6 +4,7 @@ import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import Animated, { FadeInDown, Layout, FadeOut } from 'react-native-reanimated';
 
 import Screen from '../../../components/Screen';
 import { ScreenHeader } from '../../../components/ui/ScreenHeader';
@@ -58,6 +59,7 @@ const RecipeSuggestionsScreen = (): JSX.Element => {
 
         setLoading(true);
         setError(null);
+        setRecipes([]); // Clear previous results to show loading skeleton
         try {
             const results = await aiService.suggestRecipesEnhanced({
                 availableIngredients: ingredients,
@@ -173,65 +175,90 @@ const RecipeSuggestionsScreen = (): JSX.Element => {
             justifyContent: 'center',
             padding: theme.spacing.xl,
         },
+        skeletonCard: {
+            height: 160,
+            backgroundColor: theme.colors.card,
+            borderRadius: theme.borderRadius.card,
+            marginBottom: theme.spacing.md,
+            opacity: 0.5,
+        }
     });
 
-    const renderRecipeItem = ({ item }: { item: RecipeSuggestion }) => (
-        <Card
-            style={styles.recipeCard}
-            onPress={() => navigation.navigate('RecipeDetail', {
-                recipeId: item.recipeId,
-                recipeName: item.recipeName
-            })}
+    const renderRecipeItem = ({ item, index }: { item: RecipeSuggestion, index: number }) => (
+        <Animated.View
+            entering={FadeInDown.delay(index * 100).springify()}
+            layout={Layout.springify()}
         >
-            <View style={styles.cardContent}>
-                <View style={styles.recipeHeader}>
-                    <View style={{ flex: 1, marginRight: theme.spacing.sm }}>
-                        <ThemedText variant="h3" color="primary">{item.recipeName}</ThemedText>
-                        <ThemedText variant="caption" color="textSecondary">
-                            Có {item.matchedIngredientsCount}/{item.totalIngredientsCount} nguyên liệu
-                        </ThemedText>
+            <Card
+                style={styles.recipeCard}
+                onPress={() => navigation.navigate('RecipeDetail', {
+                    recipeId: item.recipeId,
+                    recipeName: item.recipeName
+                })}
+            >
+                <View style={styles.cardContent}>
+                    <View style={styles.recipeHeader}>
+                        <View style={{ flex: 1, marginRight: theme.spacing.sm }}>
+                            <ThemedText variant="h3" color="primary">{item.recipeName}</ThemedText>
+                            <ThemedText variant="caption" color="textSecondary">
+                                Có {item.matchedIngredientsCount}/{item.totalIngredientsCount} nguyên liệu
+                            </ThemedText>
+                        </View>
+                        <LinearGradient
+                            colors={theme.gradients.primary}
+                            start={{ x: 0, y: 0 }}
+                            end={{ x: 1, y: 1 }}
+                            style={styles.matchBadge}
+                        >
+                            <ThemedText variant="caption" style={{ color: '#FFF', fontWeight: 'bold' }}>
+                                {Math.round(item.matchPercentage)}%
+                            </ThemedText>
+                        </LinearGradient>
                     </View>
-                    <LinearGradient
-                        colors={theme.gradients.primary}
-                        start={{ x: 0, y: 0 }}
-                        end={{ x: 1, y: 1 }}
-                        style={styles.matchBadge}
-                    >
-                        <ThemedText variant="caption" style={{ color: '#FFF', fontWeight: 'bold' }}>
-                            {Math.round(item.matchPercentage)}%
-                        </ThemedText>
-                    </LinearGradient>
-                </View>
 
-                {item.missingIngredients.length > 0 && (
-                    <View style={{ flexDirection: 'row', gap: 4, marginTop: 4 }}>
-                        <Ionicons name="alert-circle-outline" size={14} color={theme.colors.warning} style={{ marginTop: 2 }} />
-                        <ThemedText variant="caption" color="textSecondary" style={{ flex: 1 }}>
-                            Thiếu: {item.missingIngredients.join(', ')}
-                        </ThemedText>
-                    </View>
-                )}
+                    {item.missingIngredients.length > 0 && (
+                        <View style={{ flexDirection: 'row', gap: 4, marginTop: 4 }}>
+                            <Ionicons name="alert-circle-outline" size={14} color={theme.colors.warning} style={{ marginTop: 2 }} />
+                            <ThemedText variant="caption" color="textSecondary" style={{ flex: 1 }}>
+                                Thiếu: {item.missingIngredients.join(', ')}
+                            </ThemedText>
+                        </View>
+                    )}
 
-                <View style={styles.nutritionRow}>
-                    <View style={styles.nutritionItem}>
-                        <ThemedText variant="caption" color="textSecondary">Calo</ThemedText>
-                        <ThemedText variant="bodySmall" weight="600">{Math.round(item.totalCalories)}</ThemedText>
-                    </View>
-                    <View style={styles.nutritionItem}>
-                        <ThemedText variant="caption" color="textSecondary">Đạm</ThemedText>
-                        <ThemedText variant="bodySmall" weight="600">{Math.round(item.totalProtein)}g</ThemedText>
-                    </View>
-                    <View style={styles.nutritionItem}>
-                        <ThemedText variant="caption" color="textSecondary">Carb</ThemedText>
-                        <ThemedText variant="bodySmall" weight="600">{Math.round(item.totalCarbs)}g</ThemedText>
-                    </View>
-                    <View style={styles.nutritionItem}>
-                        <ThemedText variant="caption" color="textSecondary">Béo</ThemedText>
-                        <ThemedText variant="bodySmall" weight="600">{Math.round(item.totalFat)}g</ThemedText>
+                    <View style={styles.nutritionRow}>
+                        <View style={styles.nutritionItem}>
+                            <ThemedText variant="caption" color="textSecondary">Calo</ThemedText>
+                            <ThemedText variant="bodySmall" weight="600">{Math.round(item.totalCalories)}</ThemedText>
+                        </View>
+                        <View style={styles.nutritionItem}>
+                            <ThemedText variant="caption" color="textSecondary">Đạm</ThemedText>
+                            <ThemedText variant="bodySmall" weight="600">{Math.round(item.totalProtein)}g</ThemedText>
+                        </View>
+                        <View style={styles.nutritionItem}>
+                            <ThemedText variant="caption" color="textSecondary">Carb</ThemedText>
+                            <ThemedText variant="bodySmall" weight="600">{Math.round(item.totalCarbs)}g</ThemedText>
+                        </View>
+                        <View style={styles.nutritionItem}>
+                            <ThemedText variant="caption" color="textSecondary">Béo</ThemedText>
+                            <ThemedText variant="bodySmall" weight="600">{Math.round(item.totalFat)}g</ThemedText>
+                        </View>
                     </View>
                 </View>
-            </View>
-        </Card>
+            </Card>
+        </Animated.View>
+    );
+
+    const renderSkeleton = () => (
+        <View>
+            {[1, 2, 3].map((key) => (
+                <Animated.View
+                    key={key}
+                    style={styles.skeletonCard}
+                    entering={FadeInDown.delay(key * 100)}
+                    exiting={FadeOut}
+                />
+            ))}
+        </View>
     );
 
     return (
@@ -311,10 +338,7 @@ const RecipeSuggestionsScreen = (): JSX.Element => {
                 />
 
                 {loading ? (
-                    <View style={styles.center}>
-                        <ActivityIndicator size="large" color={theme.colors.primary} />
-                        <ThemedText style={{ marginTop: theme.spacing.sm }}>Đang tìm công thức phù hợp...</ThemedText>
-                    </View>
+                    renderSkeleton()
                 ) : error ? (
                     <View style={styles.center}>
                         <Ionicons name="alert-circle" size={48} color={theme.colors.danger} />

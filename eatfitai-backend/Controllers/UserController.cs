@@ -19,12 +19,12 @@ namespace EatFitAI.API.Controllers
         }
 
         [HttpGet("profile")]
-        public async Task<ActionResult<UserDto>> GetProfile()
+        public async Task<ActionResult<UserProfileDto>> GetProfile()
         {
             try
             {
                 var userId = GetUserIdFromToken();
-                var user = await _userService.GetUserByIdAsync(userId);
+                var user = await _userService.GetUserProfileAsync(userId);
                 return Ok(user);
             }
             catch (KeyNotFoundException ex)
@@ -34,12 +34,12 @@ namespace EatFitAI.API.Controllers
         }
 
         [HttpPut("profile")]
-        public async Task<ActionResult<UserDto>> UpdateProfile([FromBody] UserDto userDto)
+        public async Task<ActionResult<UserProfileDto>> UpdateProfile([FromBody] UserProfileDto userDto)
         {
             try
             {
                 var userId = GetUserIdFromToken();
-                var updatedUser = await _userService.UpdateUserAsync(userId, userDto);
+                var updatedUser = await _userService.UpdateUserProfileAsync(userId, userDto);
                 return Ok(updatedUser);
             }
             catch (KeyNotFoundException ex)
