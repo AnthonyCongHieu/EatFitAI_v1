@@ -24,6 +24,7 @@ namespace EatFitAI.API.Controllers
         private readonly IAiFoodMapService _aiFoodMapService;
         private readonly IAiLogService _aiLog;
         private readonly IRecipeSuggestionService _recipeSuggestionService;
+        private readonly INutritionInsightService _nutritionInsightService;
 
         public AIController(
             IHttpClientFactory httpClientFactory,
@@ -31,7 +32,8 @@ namespace EatFitAI.API.Controllers
             ILogger<AIController> logger,
             IAiFoodMapService aiFoodMapService,
             IAiLogService aiLog,
-            IRecipeSuggestionService recipeSuggestionService)
+            IRecipeSuggestionService recipeSuggestionService,
+            INutritionInsightService nutritionInsightService)
         {
             _httpClientFactory = httpClientFactory;
             _configuration = configuration;
@@ -39,6 +41,7 @@ namespace EatFitAI.API.Controllers
             _aiFoodMapService = aiFoodMapService;
             _aiLog = aiLog;
             _recipeSuggestionService = recipeSuggestionService;
+            _nutritionInsightService = nutritionInsightService;
         }
 
         [HttpPost("vision/detect")]
@@ -268,6 +271,112 @@ namespace EatFitAI.API.Controllers
         {
             // Backward-compatible placeholder
             return StatusCode(501, new { message = "Use POST /api/ai/vision/detect (multipart/form-data)" });
+        }
+
+        /// <summary>
+        /// Get personalized nutrition insights based on eating history
+        /// </summary>
+        [HttpPost("nutrition/insights")]
+        [ProducesResponseType(typeof(NutritionInsightDto), StatusCodes.Status200OK)]
+        public async Task<ActionResult<NutritionInsightDto>> GetNutritionInsights(
+            [FromBody] NutritionInsightRequest request,
+            CancellationToken cancellationToken)
+        {
+            try
+            {
+                var userId = GetUserIdFromToken();
+                
+                _logger.LogInformation("User {UserId} requesting nutrition insights for {Days} days", 
+                    userId, request.AnalysisDays);
+
+                var insights = await _nutritionInsightService.GetPersonalizedInsightsAsync(
+                    userId, request, cancellationToken);
+
+                // Log AI activity
+                await _aiLog.LogAsync(userId, "NutritionInsight", request, new { 
+                    AdherenceScore = insights.AdherenceScore,
+                    RecommendationCount = insights.Recommendations.Count
+                }, 0);
+
+                return Ok(insights);
+            }
+            catch (InvalidOperationException ex)
+            {
+                _logger.LogWarning(ex, "No nutrition target found for user");
+                return BadRequest(new { message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error generating nutrition insights");
+                return StatusCode(500, new { message = "An error occurred while generating insights", error = ex.Message });
+            }
+        }
+
+        /// <summary>
+        /// Get adaptive nutrition target suggestions
+        /// </summary>
+        [HttpPost("nutrition/adaptive-target")]
+        [ProducesResponseType(typeof(AdaptiveTargetDto), StatusCodes.Status200OK)]
+        public async Task<ActionResult<AdaptiveTargetDto>> GetAdaptiveTarget(
+            [FromBody] AdaptiveTargetRequest request,
+            CancellationToken cancellationToken)
+        {
+            try
+            {
+                var userId = GetUserIdFromToken();
+                
+                _logger.LogInformation("User {UserId} requesting adaptive nutrition target", userId);
+
+                var adaptiveTarget = await _nutritionInsightService.GetAdaptiveTargetAsync(
+                    userId, request, cancellationToken);
+
+                // Log AI activity
+                await _aiLog.LogAsync(userId, "AdaptiveTarget", request, new {
+                    ConfidenceScore = adaptiveTarget.ConfidenceScore,
+                    Applied = adaptiveTarget.Applied
+                }, 0);
+
+                return Ok(adaptiveTarget);
+            }
+            catch (InvalidOperationException ex)
+            {
+                _logger.LogWarning(ex, "No nutrition target found for user");
+                return BadRequest(new { message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error calculating adaptive target");
+                return StatusCode(500, new { message = "An error occurred while calculating adaptive target", error = ex.Message });
+            }
+        }
+
+        /// <summary>
+        /// Apply adaptive nutrition target
+        /// </summary>
+        [HttpPost("nutrition/apply-target")]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        public async Task<IActionResult> ApplyAdaptiveTarget(
+            [FromBody] NutritionTargetDto newTarget,
+            CancellationToken cancellationToken)
+        {
+            try
+            {
+                var userId = GetUserIdFromToken();
+                
+                _logger.LogInformation("User {UserId} applying new nutrition target", userId);
+
+                await _nutritionInsightService.ApplyAdaptiveTargetAsync(userId, newTarget, cancellationToken);
+
+                // Log AI activity
+                await _aiLog.LogAsync(userId, "ApplyTarget", newTarget, new { Success = true }, 0);
+
+                return NoContent();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error applying nutrition target");
+                return StatusCode(500, new { message = "An error occurred while applying target", error = ex.Message });
+            }
         }
 
         private Guid GetUserIdFromToken()
