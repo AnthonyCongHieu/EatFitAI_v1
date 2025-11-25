@@ -11,7 +11,7 @@ import os
 
 app: Flask = Flask(__name__)
 os.makedirs("uploads", exist_ok=True)
-model: YOLO = YOLO("yolov8n.pt")  # Load YOLOv8n weights
+model: YOLO = YOLO("yolov8m.pt")  # Load YOLOv8m weights
 
 @app.get("/")
 def root() -> Dict[str, Any]:

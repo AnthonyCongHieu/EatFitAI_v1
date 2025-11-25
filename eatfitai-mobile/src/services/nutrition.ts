@@ -7,6 +7,7 @@ export type NutritionSuggestRequest = {
   weightKg: number;
   activityLevel: number; // 1.2, 1.38, 1.55, 1.73, 1.9
   goal: 'cut' | 'maintain' | 'bulk';
+  bodyFatPercentage?: number;
 };
 
 export type NutritionSuggestResponse = {

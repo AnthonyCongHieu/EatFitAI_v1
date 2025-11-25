@@ -127,12 +127,12 @@ const FoodSearchScreen = (): JSX.Element => {
     setTimeout(() => {
       searchGlow.value = withTiming(0, { duration: theme.animation.slow });
     }, 1000);
-    loadFoods(1, false).catch(() => {});
+    loadFoods(1, false).catch(() => { });
   }, [loadFoods, searchGlow, theme.animation.normal, theme.animation.slow]);
 
   const handleLoadMore = useCallback(() => {
     if (!hasMore || isLoading || isLoadingMore) return;
-    loadFoods(page + 1, true).catch(() => {});
+    loadFoods(page + 1, true).catch(() => { });
   }, [hasMore, isLoading, isLoadingMore, page, loadFoods]);
 
   const renderItem = useCallback(
@@ -145,7 +145,7 @@ const FoodSearchScreen = (): JSX.Element => {
           <Pressable
             accessibilityRole="button"
             hitSlop={8}
-            onPress={() => navigation.navigate('FoodDetail', { foodId: item.id })}
+            onPress={() => navigation.navigate('FoodDetail', { foodId: item.id, source: item.source })}
             style={styles.foodCardContent}
           >
             <View style={styles.foodInfo}>

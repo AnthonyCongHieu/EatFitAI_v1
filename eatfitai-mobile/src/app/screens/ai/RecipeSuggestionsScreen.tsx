@@ -266,7 +266,6 @@ const RecipeSuggestionsScreen = (): JSX.Element => {
             <ScreenHeader
                 title="Gợi ý món ăn"
                 subtitle="Tìm công thức từ nguyên liệu có sẵn"
-                onBackPress={() => navigation.goBack()}
             />
 
             <View style={styles.content}>
@@ -344,24 +343,21 @@ const RecipeSuggestionsScreen = (): JSX.Element => {
                         <Ionicons name="alert-circle" size={48} color={theme.colors.danger} />
                         <ThemedText color="danger" style={{ marginTop: 8 }}>{error}</ThemedText>
                     </View>
+                ) : recipes.length === 0 ? (
+                    <View style={styles.center}>
+                        <Ionicons name="restaurant-outline" size={64} color={theme.colors.border} />
+                        <ThemedText color="textSecondary" style={{ marginTop: 16, textAlign: 'center' }}>
+                            Hãy thêm nguyên liệu và nhấn tìm kiếm{'\n'}để nhận gợi ý món ăn ngon!
+                        </ThemedText>
+                    </View>
                 ) : (
-                    <FlatList
-                        data={recipes}
-                        renderItem={renderRecipeItem}
-                        keyExtractor={(item) => item.recipeId.toString()}
-                        contentContainerStyle={{ paddingBottom: theme.spacing.xl }}
-                        showsVerticalScrollIndicator={false}
-                        ListEmptyComponent={
-                            recipes.length === 0 && !loading ? (
-                                <View style={styles.center}>
-                                    <Ionicons name="restaurant-outline" size={64} color={theme.colors.border} />
-                                    <ThemedText color="textSecondary" style={{ marginTop: 16, textAlign: 'center' }}>
-                                        Hãy thêm nguyên liệu và nhấn tìm kiếm{'\n'}để nhận gợi ý món ăn ngon!
-                                    </ThemedText>
-                                </View>
-                            ) : null
-                        }
-                    />
+                    <ScrollView showsVerticalScrollIndicator={false}>
+                        {recipes.map((item, index) => (
+                            <View key={item.recipeId}>
+                                {renderRecipeItem({ item, index })}
+                            </View>
+                        ))}
+                    </ScrollView>
                 )}
             </View>
         </Screen>

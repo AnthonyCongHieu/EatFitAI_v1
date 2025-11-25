@@ -193,6 +193,9 @@ const AiNutritionScreen = (): JSX.Element => {
           <Button variant="primary" loading={isRecalculating} disabled={isRecalculating} onPress={handleRecalculate} title={isRecalculating ? 'Đang tính...' : 'Gợi ý nhanh'} />
           <Button variant="secondary" loading={isApplying} disabled={isApplying} onPress={handleApply} title={isApplying ? 'Đang áp dụng...' : 'Áp dụng mục tiêu AI'} />
           <Button variant="outline" onPress={() => navigation.navigate('NutritionInsights')} title="Xem phân tích chi tiết" />
+          <Button variant="outline" onPress={() => navigation.navigate('AdaptiveTarget')} title="Mục tiêu tự động (AI+)" />
+          <Button variant="outline" onPress={() => navigation.navigate('VisionHistory')} title="Lịch sử nhận diện Vision" />
+          <Button variant="outline" onPress={() => navigation.navigate('RecipeSuggestions', { ingredients: [] })} title="Gợi ý công thức (Thủ công)" />
         </View>
       </AppCard>
     </Screen>

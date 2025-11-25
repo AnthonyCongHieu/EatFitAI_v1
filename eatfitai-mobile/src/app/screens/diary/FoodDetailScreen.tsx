@@ -54,7 +54,8 @@ const FoodDetailScreen = (): JSX.Element | null => {
   const route = useRoute<RouteProps>();
   const refreshSummary = useDiaryStore((state) => state.refreshSummary);
 
-  const styles = StyleSheet.create({
+  // Move styles to useMemo to fix hooks order
+  const styles = useMemo(() => StyleSheet.create({
     loadingContainer: { flex: 1, alignItems: 'center', justifyContent: 'center' },
     content: { paddingHorizontal: theme.spacing.lg, paddingVertical: theme.spacing.xl, gap: theme.spacing.xxl, flexGrow: 1 },
     header: {
@@ -77,7 +78,7 @@ const FoodDetailScreen = (): JSX.Element | null => {
       fontFamily: theme.typography.bodyLarge.fontFamily,
       color: theme.colors.text,
     },
-  });
+  }), [theme]);
 
   const [detail, setDetail] = useState<FoodDetail | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -110,7 +111,7 @@ const FoodDetailScreen = (): JSX.Element | null => {
   useEffect(() => {
     setIsLoading(true);
     foodService
-      .getFoodDetail(route.params.foodId)
+      .getFoodDetail(route.params.foodId, route.params.source)
       .then((data) => {
         setDetail(data);
         if (data.servingSizeGram && data.servingSizeGram > 0) {
@@ -133,7 +134,7 @@ const FoodDetailScreen = (): JSX.Element | null => {
       .finally(() => {
         setIsLoading(false);
       });
-  }, [navigation, route.params.foodId, setValue]);
+  }, [navigation, route.params.foodId, route.params.source, setValue]);
 
   const multiplier = useMemo(() => {
     const gramsNumber = Number(gramsValue);
@@ -175,14 +176,23 @@ const FoodDetailScreen = (): JSX.Element | null => {
       if (!detail) return;
       setIsSubmitting(true);
       try {
-        await foodService.addDiaryEntry({
-          foodId: detail.id,
-          grams: Number(values.grams),
-          mealTypeId: values.mealType as MealTypeId,
-          note: values.note ?? undefined,
-        });
+        if (detail.source === 'user') {
+          await foodService.addDiaryEntryFromUserFoodItem({
+            userFoodItemId: detail.id,
+            grams: Number(values.grams),
+            mealTypeId: values.mealType as MealTypeId,
+            note: values.note ?? undefined,
+          });
+        } else {
+          await foodService.addDiaryEntry({
+            foodId: detail.id,
+            grams: Number(values.grams),
+            mealTypeId: values.mealType as MealTypeId,
+            note: values.note ?? undefined,
+          });
+        }
         Toast.show({ type: 'success', text1: 'Đã thêm món vào nhật ký', text2: 'Tiếp tục theo dõi dinh dưỡng của bạn!' });
-        await refreshSummary().catch(() => {});
+        await refreshSummary().catch(() => { });
         navigation.goBack();
       } catch (error: any) {
         const status = error?.response?.status;
@@ -203,6 +213,32 @@ const FoodDetailScreen = (): JSX.Element | null => {
     },
     [detail, navigation, refreshSummary],
   );
+
+  // Animated styles - MUST be at top level, NOT in JSX
+  const proteinBoxStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: interpolate(proteinValue.value, [0, 50], [1, 1.05]) }],
+  }));
+
+  const proteinTextStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: interpolate(proteinValue.value, [0, 50], [1, 1.1]) }],
+  }));
+
+  const carbsBoxStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: interpolate(carbsValue.value, [0, 100], [1, 1.05]) }],
+  }));
+
+  const carbsTextStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: interpolate(carbsValue.value, [0, 100], [1, 1.1]) }],
+  }));
+
+  const fatBoxStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: interpolate(fatValue.value, [0, 30], [1, 1.05]) }],
+  }));
+
+  const fatTextStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: interpolate(fatValue.value, [0, 30], [1, 1.1]) }],
+  }));
+
 
   if (isLoading) {
     return (
@@ -268,17 +304,13 @@ const FoodDetailScreen = (): JSX.Element | null => {
               style={[
                 styles.macroBox,
                 { backgroundColor: theme.colors.background },
-                useAnimatedStyle(() => ({
-                  transform: [{ scale: interpolate(proteinValue.value, [0, 50], [1, 1.05]) }],
-                })),
+                proteinBoxStyle,
               ]}
             >
               <ThemedText variant="caption" color="textSecondary" weight="600" style={{ textTransform: 'uppercase' }}>
                 Protein
               </ThemedText>
-              <Animated.Text style={[styles.animatedMacroValue, useAnimatedStyle(() => ({
-                transform: [{ scale: interpolate(proteinValue.value, [0, 50], [1, 1.1]) }],
-              }))]}>
+              <Animated.Text style={[styles.animatedMacroValue, proteinTextStyle]}>
                 {proteinValue.value > 0 ? `${proteinValue.value.toFixed(1).replace(/\.0$/, '')} g` : '--'}
               </Animated.Text>
             </Animated.View>
@@ -286,17 +318,13 @@ const FoodDetailScreen = (): JSX.Element | null => {
               style={[
                 styles.macroBox,
                 { backgroundColor: theme.colors.background },
-                useAnimatedStyle(() => ({
-                  transform: [{ scale: interpolate(carbsValue.value, [0, 100], [1, 1.05]) }],
-                })),
+                carbsBoxStyle,
               ]}
             >
               <ThemedText variant="caption" color="textSecondary" weight="600" style={{ textTransform: 'uppercase' }}>
                 Carb
               </ThemedText>
-              <Animated.Text style={[styles.animatedMacroValue, useAnimatedStyle(() => ({
-                transform: [{ scale: interpolate(carbsValue.value, [0, 100], [1, 1.1]) }],
-              }))]}>
+              <Animated.Text style={[styles.animatedMacroValue, carbsTextStyle]}>
                 {carbsValue.value > 0 ? `${carbsValue.value.toFixed(1).replace(/\.0$/, '')} g` : '--'}
               </Animated.Text>
             </Animated.View>
@@ -304,17 +332,13 @@ const FoodDetailScreen = (): JSX.Element | null => {
               style={[
                 styles.macroBox,
                 { backgroundColor: theme.colors.background },
-                useAnimatedStyle(() => ({
-                  transform: [{ scale: interpolate(fatValue.value, [0, 30], [1, 1.05]) }],
-                })),
+                fatBoxStyle,
               ]}
             >
               <ThemedText variant="caption" color="textSecondary" weight="600" style={{ textTransform: 'uppercase' }}>
                 Fat
               </ThemedText>
-              <Animated.Text style={[styles.animatedMacroValue, useAnimatedStyle(() => ({
-                transform: [{ scale: interpolate(fatValue.value, [0, 30], [1, 1.1]) }],
-              }))]}>
+              <Animated.Text style={[styles.animatedMacroValue, fatTextStyle]}>
                 {fatValue.value > 0 ? `${fatValue.value.toFixed(1).replace(/\.0$/, '')} g` : '--'}
               </Animated.Text>
             </Animated.View>

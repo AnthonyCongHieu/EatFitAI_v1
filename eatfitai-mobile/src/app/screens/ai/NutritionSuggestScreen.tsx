@@ -21,6 +21,7 @@ const NutritionSuggestScreen = (): JSX.Element => {
   const [heightCm, setHeightCm] = useState('170');
   const [weightKg, setWeightKg] = useState('65');
   const [activityLevel, setActivityLevel] = useState('1.38');
+  const [bodyFat, setBodyFat] = useState('');
   const [goal, setGoal] = useState<'cut' | 'maintain' | 'bulk'>('maintain');
 
   const [result, setResult] = useState<{ calories: number; protein: number; carb: number; fat: number } | null>(null);
@@ -36,6 +37,7 @@ const NutritionSuggestScreen = (): JSX.Element => {
         heightCm: Number(heightCm),
         weightKg: Number(weightKg),
         activityLevel: Number(activityLevel),
+        bodyFatPercentage: bodyFat ? Number(bodyFat) : undefined,
         goal,
       });
       setResult(out);
@@ -90,6 +92,7 @@ const NutritionSuggestScreen = (): JSX.Element => {
         <Input label="Tuổi" value={age} onChangeText={setAge} keyboardType="numeric" />
         <Input label="Chiều cao (cm)" value={heightCm} onChangeText={setHeightCm} keyboardType="numeric" />
         <Input label="Cân nặng (kg)" value={weightKg} onChangeText={setWeightKg} keyboardType="numeric" />
+        <Input label="% Mỡ cơ thể (Tùy chọn)" value={bodyFat} onChangeText={setBodyFat} keyboardType="numeric" />
         <Input label="Hoạt động (1.2,1.38,1.55,1.73,1.9)" value={activityLevel} onChangeText={setActivityLevel} keyboardType="numeric" />
 
         <View style={{ flexDirection: 'row', gap: 12, marginBottom: 12 }}>

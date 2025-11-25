@@ -14,6 +14,7 @@ import { useAppTheme } from '../../../theme/ThemeProvider';
 import { aiService } from '../../../services/aiService';
 import type { RootStackParamList } from '../../types';
 import type { NutritionInsight, NutritionRecommendation, AdaptiveTarget } from '../../../types/aiEnhanced';
+import { translateToVietnamese, translateRecommendationType } from '../../../utils/translate';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -195,10 +196,10 @@ const NutritionInsightsScreen = (): JSX.Element => {
         >
             <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: theme.spacing.xs }}>
                 <Ionicons name="bulb" size={20} color={getPriorityColor(rec.priority)} style={{ marginRight: theme.spacing.sm }} />
-                <ThemedText variant="h4" style={{ flex: 1, fontSize: 16 }}>{rec.type.replace(/_/g, ' ').toUpperCase()}</ThemedText>
+                <ThemedText variant="h4" style={{ flex: 1, fontSize: 16 }}>{translateRecommendationType(rec.type)}</ThemedText>
             </View>
-            <ThemedText variant="body" style={{ marginBottom: theme.spacing.sm }}>{rec.message}</ThemedText>
-            <ThemedText variant="caption" color="textSecondary">{rec.reasoning}</ThemedText>
+            <ThemedText variant="body" style={{ marginBottom: theme.spacing.sm }}>{translateToVietnamese(rec.message)}</ThemedText>
+            <ThemedText variant="caption" color="textSecondary">{translateToVietnamese(rec.reasoning)}</ThemedText>
         </View>
     );
 
@@ -288,7 +289,7 @@ const NutritionInsightsScreen = (): JSX.Element => {
                                     {insights.mealTimingInsight.insights.map((insight, idx) => (
                                         <View key={idx} style={{ flexDirection: 'row', marginTop: 4 }}>
                                             <ThemedText color="textSecondary" style={{ marginRight: 6 }}>•</ThemedText>
-                                            <ThemedText variant="bodySmall" color="textSecondary" style={{ flex: 1 }}>{insight}</ThemedText>
+                                            <ThemedText variant="bodySmall" color="textSecondary" style={{ flex: 1 }}>{translateToVietnamese(insight)}</ThemedText>
                                         </View>
                                     ))}
                                 </Card>
@@ -324,7 +325,7 @@ const NutritionInsightsScreen = (): JSX.Element => {
 
                             <View style={{ backgroundColor: theme.colors.background, padding: 12, borderRadius: 8, marginBottom: 16 }}>
                                 <ThemedText variant="bodySmall" style={{ fontStyle: 'italic' }}>
-                                    "{adaptiveTarget.adjustmentReasons.join('. ')}"
+                                    "{adaptiveTarget.adjustmentReasons.map(r => translateToVietnamese(r)).join('. ')}"
                                 </ThemedText>
                             </View>
 

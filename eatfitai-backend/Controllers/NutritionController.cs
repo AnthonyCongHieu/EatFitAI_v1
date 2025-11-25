@@ -44,7 +44,7 @@ namespace EatFitAI.API.Controllers
         public async Task<ActionResult<NutritionSuggestResponse>> Suggest([FromBody] NutritionSuggestRequest req)
         {
             var sw = Stopwatch.StartNew();
-            var (cal, p, c, f) = _calc.Suggest(req.Sex, req.Age, req.HeightCm, req.WeightKg, req.ActivityLevel, req.Goal);
+            var (cal, p, c, f) = _calc.Suggest(req.Sex, req.Age, req.HeightCm, req.WeightKg, req.ActivityLevel, req.Goal, req.BodyFatPercentage);
             var res = new NutritionSuggestResponse(cal, p, c, f);
             sw.Stop();
 
