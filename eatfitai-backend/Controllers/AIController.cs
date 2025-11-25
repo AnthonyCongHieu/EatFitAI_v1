@@ -25,6 +25,7 @@ namespace EatFitAI.API.Controllers
         private readonly IAiLogService _aiLog;
         private readonly IRecipeSuggestionService _recipeSuggestionService;
         private readonly INutritionInsightService _nutritionInsightService;
+        private readonly IVisionCacheService _visionCacheService;
 
         public AIController(
             IHttpClientFactory httpClientFactory,
@@ -33,7 +34,8 @@ namespace EatFitAI.API.Controllers
             IAiFoodMapService aiFoodMapService,
             IAiLogService aiLog,
             IRecipeSuggestionService recipeSuggestionService,
-            INutritionInsightService nutritionInsightService)
+            INutritionInsightService nutritionInsightService,
+            IVisionCacheService visionCacheService)
         {
             _httpClientFactory = httpClientFactory;
             _configuration = configuration;
@@ -42,6 +44,7 @@ namespace EatFitAI.API.Controllers
             _aiLog = aiLog;
             _recipeSuggestionService = recipeSuggestionService;
             _nutritionInsightService = nutritionInsightService;
+            _visionCacheService = visionCacheService;
         }
 
         [HttpPost("vision/detect")]
@@ -376,6 +379,87 @@ namespace EatFitAI.API.Controllers
             {
                 _logger.LogError(ex, "Error applying nutrition target");
                 return StatusCode(500, new { message = "An error occurred while applying target", error = ex.Message });
+            }
+        }
+
+        /// <summary>
+        /// Get detection history for current user
+        /// </summary>
+        [HttpPost("vision/history")]
+        [ProducesResponseType(typeof(List<DetectionHistoryDto>), StatusCodes.Status200OK)]
+        public async Task<ActionResult<List<DetectionHistoryDto>>> GetDetectionHistory(
+            [FromBody] DetectionHistoryRequest request,
+            CancellationToken cancellationToken)
+        {
+            try
+            {
+                var userId = GetUserIdFromToken();
+                
+                _logger.LogInformation("User {UserId} requesting detection history for {Days} days", 
+                    userId, request.Days);
+
+                var history = await _visionCacheService.GetDetectionHistoryAsync(
+                    userId, request, cancellationToken);
+
+                return Ok(history);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving detection history");
+                return StatusCode(500, new { message = "An error occurred while retrieving history", error = ex.Message });
+            }
+        }
+
+        /// <summary>
+        /// Get statistics about unmapped labels
+        /// </summary>
+        [HttpGet("vision/unmapped-stats")]
+        [ProducesResponseType(typeof(Dictionary<string, int>), StatusCodes.Status200OK)]
+        public async Task<ActionResult<Dictionary<string, int>>> GetUnmappedLabelsStats(
+            [FromQuery] int days = 30,
+            CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                var userId = GetUserIdFromToken();
+                
+                _logger.LogInformation("User {UserId} requesting unmapped labels stats for {Days} days", 
+                    userId, days);
+
+                var stats = await _visionCacheService.GetUnmappedLabelsStatsAsync(
+                    userId, days, cancellationToken);
+
+                return Ok(stats);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving unmapped labels stats");
+                return StatusCode(500, new { message = "An error occurred while retrieving stats", error = ex.Message });
+            }
+        }
+
+        /// <summary>
+        /// Get food item suggestions for an unmapped label
+        /// </summary>
+        [HttpGet("vision/suggest-mapping/{label}")]
+        [ProducesResponseType(typeof(List<FoodItemSuggestionDto>), StatusCodes.Status200OK)]
+        public async Task<ActionResult<List<FoodItemSuggestionDto>>> SuggestFoodItemsForLabel(
+            string label,
+            CancellationToken cancellationToken)
+        {
+            try
+            {
+                _logger.LogInformation("Suggesting food items for label: {Label}", label);
+
+                var suggestions = await _visionCacheService.SuggestFoodItemsForLabelAsync(
+                    label, cancellationToken);
+
+                return Ok(suggestions);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error suggesting food items for label");
+                return StatusCode(500, new { message = "An error occurred while suggesting items", error = ex.Message });
             }
         }
 

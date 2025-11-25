@@ -132,6 +132,7 @@ builder.Services.AddScoped<IUserFoodItemService, UserFoodItemService>();
 builder.Services.AddScoped<IAiFoodMapService, AiFoodMapService>();
 builder.Services.AddScoped<IRecipeSuggestionService, RecipeSuggestionService>();
 builder.Services.AddScoped<INutritionInsightService, NutritionInsightService>();
+builder.Services.AddScoped<IVisionCacheService, VisionCacheService>();
 
 // HttpClient for external AI provider proxy
 builder.Services.AddHttpClient();
