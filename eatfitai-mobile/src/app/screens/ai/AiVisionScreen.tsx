@@ -221,10 +221,12 @@ const AiVisionScreen = (): JSX.Element => {
                 onPress={() => {
                   if (!result) return;
                   const ingredients = [
-                    ...result.items.map(i => i.label),
+                    ...result.items.map(i => i.isMatched && i.foodName ? i.foodName : i.label),
                     ...result.unmappedLabels
                   ];
-                  navigation.navigate('RecipeSuggestions', { ingredients });
+                  // Remove duplicates and empty strings
+                  const uniqueIngredients = [...new Set(ingredients)].filter(Boolean);
+                  navigation.navigate('RecipeSuggestions', { ingredients: uniqueIngredients });
                 }}
                 disabled={!result || (result.items.length === 0 && result.unmappedLabels.length === 0)}
               />
