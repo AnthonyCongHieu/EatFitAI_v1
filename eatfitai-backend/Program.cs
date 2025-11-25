@@ -130,6 +130,7 @@ builder.Services.AddScoped<IFoodService, FoodService>();
 builder.Services.AddScoped<IAnalyticsService, AnalyticsService>();
 builder.Services.AddScoped<IUserFoodItemService, UserFoodItemService>();
 builder.Services.AddScoped<IAiFoodMapService, AiFoodMapService>();
+builder.Services.AddScoped<IRecipeSuggestionService, RecipeSuggestionService>();
 
 // HttpClient for external AI provider proxy
 builder.Services.AddHttpClient();

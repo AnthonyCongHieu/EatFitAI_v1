@@ -8,6 +8,7 @@ using Microsoft.Extensions.Logging;
 using System.Text.Json;
 using EatFitAI.API.DTOs.AI;
 using EatFitAI.API.Services;
+using EatFitAI.API.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
 namespace EatFitAI.API.Controllers
@@ -22,19 +23,22 @@ namespace EatFitAI.API.Controllers
         private readonly ILogger<AIController> _logger;
         private readonly IAiFoodMapService _aiFoodMapService;
         private readonly IAiLogService _aiLog;
+        private readonly IRecipeSuggestionService _recipeSuggestionService;
 
         public AIController(
             IHttpClientFactory httpClientFactory,
             IConfiguration configuration,
             ILogger<AIController> logger,
             IAiFoodMapService aiFoodMapService,
-            IAiLogService aiLog)
+            IAiLogService aiLog,
+            IRecipeSuggestionService recipeSuggestionService)
         {
             _httpClientFactory = httpClientFactory;
             _configuration = configuration;
             _logger = logger;
             _aiFoodMapService = aiFoodMapService;
             _aiLog = aiLog;
+            _recipeSuggestionService = recipeSuggestionService;
         }
 
         [HttpPost("vision/detect")]
@@ -124,11 +128,62 @@ namespace EatFitAI.API.Controllers
             return Ok(result);
         }
 
+        /// <summary>
+        /// Get recipe suggestions based on available ingredients (database-only)
+        /// </summary>
         [HttpPost("recipes/suggest")]
-        public async Task<IActionResult> SuggestRecipes([FromBody] object request)
+        [ProducesResponseType(typeof(List<RecipeSuggestionDto>), StatusCodes.Status200OK)]
+        public async Task<ActionResult<List<RecipeSuggestionDto>>> SuggestRecipes(
+            [FromBody] RecipeSuggestionRequest request,
+            CancellationToken cancellationToken)
         {
-            // TODO: Implement AI recipe suggestions based on available ingredients
-            return StatusCode(501, new { message = "AI recipe suggestions not yet implemented" });
+            try
+            {
+                var userId = GetUserIdFromToken();
+                
+                _logger.LogInformation("User {UserId} requesting recipe suggestions with {Count} ingredients",
+                    userId, request.AvailableIngredients?.Count ?? 0);
+
+                var recipes = await _recipeSuggestionService.SuggestRecipesAsync(request, cancellationToken);
+
+                // Log AI activity
+                await _aiLog.LogAsync(userId, "RecipeSuggestion", request, new { RecipeCount = recipes.Count }, 0);
+
+                return Ok(recipes);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error suggesting recipes");
+                return StatusCode(500, new { message = "An error occurred while suggesting recipes", error = ex.Message });
+            }
+        }
+
+        /// <summary>
+        /// Get detailed information about a specific recipe
+        /// </summary>
+        [HttpGet("recipes/{recipeId}")]
+        [ProducesResponseType(typeof(RecipeDetailDto), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<ActionResult<RecipeDetailDto>> GetRecipeDetail(
+            int recipeId,
+            CancellationToken cancellationToken)
+        {
+            try
+            {
+                var recipe = await _recipeSuggestionService.GetRecipeDetailAsync(recipeId, cancellationToken);
+
+                if (recipe == null)
+                {
+                    return NotFound(new { message = "Recipe not found" });
+                }
+
+                return Ok(recipe);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting recipe detail for RecipeId {RecipeId}", recipeId);
+                return StatusCode(500, new { message = "An error occurred while retrieving recipe detail", error = ex.Message });
+            }
         }
 
         [HttpGet("nutrition-targets/current")]
