@@ -44,13 +44,6 @@ namespace EatFitAI.API.Controllers
         {
             try
             {
-                Console.WriteLine($"[AuthController] Registration attempt for email: {request.Email}");
-                var result = await _authService.RegisterAsync(request);
-                Console.WriteLine($"[AuthController] Registration successful for email: {request.Email}");
-                Console.WriteLine($"[AuthController] Full AuthResponse: UserId={result.UserId}, Email={result.Email}, DisplayName={result.DisplayName}, Token={result.Token?.Substring(0, Math.Min(20, result.Token.Length))}..., ExpiresAt={result.ExpiresAt}, RefreshToken={result.RefreshToken?.Substring(0, Math.Min(20, result.RefreshToken.Length))}..., RefreshTokenExpiresAt={result.RefreshTokenExpiresAt}");
-                return Ok(result);
-            }
-            catch (InvalidOperationException ex)
             {
                 Console.WriteLine($"[AuthController] Registration failed for email: {request.Email}, error: {ex.Message}");
                 return BadRequest(new { message = ex.Message });

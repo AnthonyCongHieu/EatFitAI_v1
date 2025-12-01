@@ -9,6 +9,10 @@ public partial class FoodItem
 
     public string FoodName { get; set; } = null!;
 
+    public string? FoodNameEn { get; set; }
+
+    public string? FoodNameUnsigned { get; set; }
+
     public decimal CaloriesPer100g { get; set; }
 
     public decimal ProteinPer100g { get; set; }

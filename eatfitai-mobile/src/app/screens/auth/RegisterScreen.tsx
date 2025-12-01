@@ -1,10 +1,13 @@
-import { useCallback, useState } from 'react';
-import { Alert, StyleSheet, View } from 'react-native';
+import { useCallback, useState, useEffect } from 'react';
+import { Alert, StyleSheet, View, TouchableOpacity } from 'react-native';
 import { Controller, useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import Toast from 'react-native-toast-message';
+import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
+import Animated, { FadeInDown, Layout } from 'react-native-reanimated';
 
 import { useAppTheme } from '../../../theme/ThemeProvider';
 import { ThemedText } from '../../../components/ThemedText';
@@ -39,11 +42,40 @@ const RegisterScreen = ({ navigation }: Props): JSX.Element => {
   const { theme } = useAppTheme();
   const registerFn = useAuthStore((s) => s.register);
   const [loading, setLoading] = useState(false);
+  const [passwordStrength, setPasswordStrength] = useState(0); // 0-3
 
-  const { control, handleSubmit, formState: { errors } } = useForm<RegisterValues>({
+  const { control, handleSubmit, watch, formState: { errors } } = useForm<RegisterValues>({
     resolver: zodResolver(RegisterSchema),
     defaultValues: { name: '', email: '', password: '', confirmPassword: '' },
   });
+
+  const password = watch('password');
+
+  useEffect(() => {
+    if (!password) {
+      setPasswordStrength(0);
+      return;
+    }
+    let score = 0;
+    if (password.length >= 6) score++;
+    if (password.match(/[A-Z]/) && password.match(/[0-9]/)) score++;
+    if (password.length >= 8 && password.match(/[^A-Za-z0-9]/)) score++;
+    setPasswordStrength(score);
+  }, [password]);
+
+  const getStrengthColor = () => {
+    if (passwordStrength === 0) return theme.colors.border;
+    if (passwordStrength === 1) return theme.colors.danger;
+    if (passwordStrength === 2) return theme.colors.warning;
+    return theme.colors.success;
+  };
+
+  const getStrengthLabel = () => {
+    if (passwordStrength === 0) return '';
+    if (passwordStrength === 1) return 'Yếu';
+    if (passwordStrength === 2) return 'Trung bình';
+    return 'Mạnh';
+  };
 
   const onSubmit = useCallback(async (values: RegisterValues) => {
     try {
@@ -70,123 +102,155 @@ const RegisterScreen = ({ navigation }: Props): JSX.Element => {
   }, [registerFn, navigation]);
 
   return (
-    <Screen scroll={false} style={styles.container}>
-      <Card padding="lg" shadow="lg">
-        <View style={{ alignItems: 'center', marginBottom: theme.spacing.xl }}>
-          <ThemedText variant="h1" style={{ marginBottom: theme.spacing.sm }}>
-            EatFit AI
-          </ThemedText>
-          <ThemedText variant="bodySmall" color="textSecondary">
-            {t('auth.registerTitle')}
-          </ThemedText>
-        </View>
+    <Screen scroll={true} style={styles.container}>
+      <LinearGradient
+        colors={[theme.colors.background, theme.colors.primary + '10']}
+        style={StyleSheet.absoluteFill}
+      />
 
-        <Controller
-          control={control}
-          name="name"
-          render={({ field: { onChange, onBlur, value } }) => (
-            <ThemedTextInput
-              label={t('auth.displayName')}
-              placeholder="Nguyễn Văn A"
-              onBlur={onBlur}
-              onChangeText={onChange}
-              value={value}
-              error={!!errors.name}
-              helperText={errors.name?.message}
-              required
-            />
-          )}
-        />
-
-        <Controller
-          control={control}
-          name="email"
-          render={({ field: { onChange, onBlur, value } }) => (
-            <ThemedTextInput
-              label={t('auth.email')}
-              placeholder="you@example.com"
-              keyboardType="email-address"
-              autoCapitalize="none"
-              onBlur={onBlur}
-              onChangeText={onChange}
-              value={value}
-              error={!!errors.email}
-              helperText={errors.email?.message}
-              required
-            />
-          )}
-        />
-
-        <Controller
-          control={control}
-          name="password"
-          render={({ field: { onChange, onBlur, value } }) => (
-            <ThemedTextInput
-              label={t('auth.password')}
-              placeholder="••••••••"
-              secureTextEntry
-              secureToggle
-              onBlur={onBlur}
-              onChangeText={onChange}
-              value={value}
-              error={!!errors.password}
-              helperText={errors.password?.message}
-              required
-            />
-          )}
-        />
-
-        <Controller
-          control={control}
-          name="confirmPassword"
-          render={({ field: { onChange, onBlur, value } }) => (
-            <ThemedTextInput
-              label={t('auth.passwordConfirm')}
-              placeholder="••••••••"
-              secureTextEntry
-              secureToggle
-              onBlur={onBlur}
-              onChangeText={onChange}
-              value={value}
-              error={!!errors.confirmPassword}
-              helperText={errors.confirmPassword?.message}
-              required
-            />
-          )}
-        />
-
-        <View style={{ marginTop: theme.spacing.xl }}>
-          <Button
-            variant="primary"
-            loading={loading}
-            disabled={loading}
-            onPress={handleSubmit(onSubmit)}
-            title={loading ? t('auth.processing') : t('auth.createAccount')}
-            fullWidth
-          />
-        </View>
-
-        <View style={{ marginTop: theme.spacing.lg, alignItems: 'center' }}>
-          <ThemedText variant="body" color="textSecondary">
-            {t('auth.hasAccount')}{' '}
-            <ThemedText 
-              variant="body" 
-              color="primary" 
-              weight="600"
-              onPress={() => navigation.navigate('Login')}
-            >
-              Đăng nhập
+      <Animated.View entering={FadeInDown.duration(600).springify()} style={{ padding: 24 }}>
+        <Card padding="lg" shadow="lg" style={{ backgroundColor: theme.colors.card + 'F5' }}> {/* Slight transparency */}
+          <View style={{ alignItems: 'center', marginBottom: theme.spacing.xl }}>
+            <View style={{
+              width: 64, height: 64, borderRadius: 32,
+              backgroundColor: theme.colors.primary + '20',
+              alignItems: 'center', justifyContent: 'center',
+              marginBottom: theme.spacing.md
+            }}>
+              <Ionicons name="person-add" size={32} color={theme.colors.primary} />
+            </View>
+            <ThemedText variant="h2" style={{ marginBottom: theme.spacing.xs, textAlign: 'center' }}>
+              Tạo tài khoản
             </ThemedText>
-          </ThemedText>
-        </View>
-      </Card>
+            <ThemedText variant="bodySmall" color="textSecondary" style={{ textAlign: 'center' }}>
+              {t('auth.registerTitle')}
+            </ThemedText>
+          </View>
+
+          <Controller
+            control={control}
+            name="name"
+            render={({ field: { onChange, onBlur, value } }) => (
+              <ThemedTextInput
+                label={t('auth.displayName')}
+                placeholder="Nguyễn Văn A"
+                onBlur={onBlur}
+                onChangeText={onChange}
+                value={value}
+                error={!!errors.name}
+                helperText={errors.name?.message}
+                required
+              />
+            )}
+          />
+
+          <Controller
+            control={control}
+            name="email"
+            render={({ field: { onChange, onBlur, value } }) => (
+              <ThemedTextInput
+                label={t('auth.email')}
+                placeholder="you@example.com"
+                keyboardType="email-address"
+                autoCapitalize="none"
+                onBlur={onBlur}
+                onChangeText={onChange}
+                value={value}
+                error={!!errors.email}
+                helperText={errors.email?.message}
+                required
+              />
+            )}
+          />
+
+          <Controller
+            control={control}
+            name="password"
+            render={({ field: { onChange, onBlur, value } }) => (
+              <View>
+                <ThemedTextInput
+                  label={t('auth.password')}
+                  placeholder="••••••••"
+                  secureTextEntry
+                  secureToggle
+                  onBlur={onBlur}
+                  onChangeText={onChange}
+                  value={value}
+                  error={!!errors.password}
+                  helperText={errors.password?.message}
+                  required
+                />
+                {/* Password Strength Meter */}
+                {value && value.length > 0 && (
+                  <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: -8, marginBottom: 12, gap: 8 }}>
+                    <View style={{ flex: 1, height: 4, backgroundColor: theme.colors.border, borderRadius: 2, overflow: 'hidden' }}>
+                      <View style={{
+                        width: `${(passwordStrength / 3) * 100}%`,
+                        height: '100%',
+                        backgroundColor: getStrengthColor()
+                      }} />
+                    </View>
+                    <ThemedText variant="caption" style={{ color: getStrengthColor(), width: 60, textAlign: 'right' }}>
+                      {getStrengthLabel()}
+                    </ThemedText>
+                  </View>
+                )}
+              </View>
+            )}
+          />
+
+          <Controller
+            control={control}
+            name="confirmPassword"
+            render={({ field: { onChange, onBlur, value } }) => (
+              <ThemedTextInput
+                label={t('auth.passwordConfirm')}
+                placeholder="••••••••"
+                secureTextEntry
+                secureToggle
+                onBlur={onBlur}
+                onChangeText={onChange}
+                value={value}
+                error={!!errors.confirmPassword}
+                helperText={errors.confirmPassword?.message}
+                required
+              />
+            )}
+          />
+
+          <View style={{ marginTop: theme.spacing.lg }}>
+            <Button
+              variant="primary"
+              loading={loading}
+              disabled={loading}
+              onPress={handleSubmit(onSubmit)}
+              title={loading ? t('auth.processing') : t('auth.createAccount')}
+              fullWidth
+              size="lg"
+            />
+          </View>
+
+          <View style={{ marginTop: theme.spacing.xl, alignItems: 'center' }}>
+            <ThemedText variant="body" color="textSecondary">
+              {t('auth.hasAccount')}{' '}
+              <ThemedText
+                variant="body"
+                color="primary"
+                weight="600"
+                onPress={() => navigation.navigate('Login')}
+              >
+                Đăng nhập
+              </ThemedText>
+            </ThemedText>
+          </View>
+        </Card>
+      </Animated.View>
     </Screen>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 24, justifyContent: 'center' },
+  container: { flex: 1, justifyContent: 'center' },
 });
 
 export default RegisterScreen;
-
