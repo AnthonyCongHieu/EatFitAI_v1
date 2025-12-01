@@ -1,7 +1,7 @@
 ﻿// Màn hình tìm kiếm món ăn để thêm vào nhật ký
 
 import { useCallback, useState } from 'react';
-import { ActivityIndicator, FlatList, Pressable, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, FlatList, Pressable, StyleSheet, View, Image } from 'react-native';
 import Animated, { FadeIn, Layout, useSharedValue, useAnimatedStyle, withTiming } from 'react-native-reanimated';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useNavigation } from '@react-navigation/native';
@@ -18,6 +18,7 @@ import type { RootStackParamList } from '../../types';
 import { foodService, type FoodItem } from '../../../services/foodService';
 import Skeleton, { SkeletonList } from '../../../components/Skeleton';
 import { useDiaryStore } from '../../../store/useDiaryStore';
+import { getFoodImageUrl } from '../../../utils/imageHelpers';
 
 const PAGE_SIZE = 20;
 
@@ -141,15 +142,37 @@ const FoodSearchScreen = (): JSX.Element => {
         entering={FadeIn.delay(index * 50).duration(theme.animation.normal).springify()}
         layout={Layout.springify()}
       >
-        <AppCard style={{ marginBottom: theme.spacing.xs }}>
+        <AppCard style={{ marginBottom: theme.spacing.xs, padding: theme.spacing.sm }}>
           <Pressable
             accessibilityRole="button"
             hitSlop={8}
             onPress={() => navigation.navigate('FoodDetail', { foodId: item.id, source: item.source })}
             style={styles.foodCardContent}
           >
+            {/* Thumbnail Image */}
+            {item.thumbnail ? (
+              <Image
+                source={{ uri: getFoodImageUrl(item.thumbnail) }}
+                style={{ width: 48, height: 48, borderRadius: 24, marginRight: 12 }}
+                resizeMode="cover"
+              />
+            ) : (
+              <View style={{
+                width: 48,
+                height: 48,
+                borderRadius: 24,
+                backgroundColor: theme.colors.border + '30',
+                marginRight: 12,
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}>
+                <ThemedText variant="h3" color="textSecondary">🍽️</ThemedText>
+              </View>
+            )}
+
             <View style={styles.foodInfo}>
               <ThemedText variant="h4" style={styles.foodName}>{item.name}</ThemedText>
+              {item.nameEn ? <ThemedText variant="caption" color="textSecondary" style={{ fontStyle: 'italic' }}>{item.nameEn}</ThemedText> : null}
               {item.brand ? <ThemedText variant="bodySmall" color="textSecondary">{item.brand}</ThemedText> : null}
               <Animated.View entering={FadeIn.delay((index * 50) + 100).duration(theme.animation.fast)}>
                 <ThemedText variant="bodySmall" color="textSecondary">
@@ -167,7 +190,7 @@ const FoodSearchScreen = (): JSX.Element => {
         </AppCard>
       </Animated.View>
     ),
-    [navigation, theme.animation.normal, theme.animation.fast, theme.spacing.xs],
+    [navigation, theme.animation.normal, theme.animation.fast, theme.spacing.xs, theme.colors.border, getFoodImageUrl],
   );
 
   const renderSkeleton = () => (

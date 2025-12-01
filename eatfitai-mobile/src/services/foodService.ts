@@ -20,11 +20,13 @@ const toNumber = (value: unknown): number | null => {
 export type FoodItem = {
   id: string;
   name: string;
+  nameEn?: string | null;
   brand?: string | null;
   calories?: number | null;
   protein?: number | null;
   carbs?: number | null;
   fat?: number | null;
+  thumbnail?: string | null;
   isActive?: boolean | null;
   createdAt?: string | null;
   updatedAt?: string | null;
@@ -50,11 +52,13 @@ export type SearchFoodsResult = {
 const normalizeFoodItem = (data: FoodItemDto): FoodItem => ({
   id: String(data?.foodItemId ?? ''),
   name: data?.foodName ?? 'Mon an',
+  nameEn: (data as any)?.foodNameEn ?? null,
   brand: null,
   calories: data?.caloriesPer100g ?? null,
   protein: data?.proteinPer100g ?? null,
   carbs: data?.carbPer100g ?? null,
   fat: data?.fatPer100g ?? null,
+  thumbnail: (data as any)?.thumbNail ?? null,
   isActive: data?.isActive ?? null,
   createdAt: data?.createdAt ?? null,
   updatedAt: data?.updatedAt ?? null,

@@ -2,6 +2,7 @@
 // Supports local URLs and full Supabase URLs
 
 const FALLBACK_FOOD_IMAGE = 'https://placehold.co/200x200/16A34A/FFFFFF/png?text=Food';
+const SUPABASE_URL = 'https://ddgwaufaifqohcxbwfcm.supabase.co';
 
 export const getFoodImageUrl = (
     thumbnail: string | null | undefined,
@@ -14,10 +15,7 @@ export const getFoodImageUrl = (
         return thumbnail;
     }
 
-    // TODO: When Supabase is configured, construct the URL
-    // const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL;
-    // return `${SUPABASE_URL}/storage/v1/object/public/food-images/${size}/${thumbnail}`;
-
-    // For now, return fallback
-    return FALLBACK_FOOD_IMAGE;
+    // Construct Supabase URL
+    const folder = size === 'thumb' ? 'thumbnails' : 'original';
+    return `${SUPABASE_URL}/storage/v1/object/public/food-images/${folder}/${thumbnail}`;
 };
