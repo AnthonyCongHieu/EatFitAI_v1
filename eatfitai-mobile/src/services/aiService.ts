@@ -65,23 +65,17 @@ export async function teachLabel(req: TeachLabelRequest): Promise<void> {
 }
 
 export const aiService = {
-  // Gui anh (base64) de nhan dien nguyen lieu
+  // DEPRECATED: Use detectFoodByImage instead
+  // This method is kept for backward compatibility but should not be used
   async detectIngredients(imageBase64: string): Promise<IngredientItem[]> {
-    const response = await apiClient.post('/api/ai/vision/ingredients', { imageBase64 });
-    const results = Array.isArray(response.data?.ingredients)
-      ? response.data.ingredients
-      : Array.isArray(response.data)
-        ? response.data
-        : [];
-    return results.map((item: any) => ({
-      name: String(item?.name ?? item ?? 'Unknown'),
-      confidence: toNumber(item?.confidence ?? item?.score),
-    }));
+    console.warn('detectIngredients is deprecated. Use detectFoodByImage with imageUri instead.');
+    return [];
   },
 
   // Goi y cong thuc tu danh sach nguyen lieu
   async suggestRecipes(ingredients: string[]): Promise<SuggestedRecipe[]> {
-    const response = await apiClient.post('/api/ai/recipes/suggest', { ingredients });
+    // Backend expects 'availableIngredients' not 'ingredients'
+    const response = await apiClient.post('/api/ai/recipes/suggest', { availableIngredients: ingredients });
     const results = Array.isArray(response.data?.recipes)
       ? response.data.recipes
       : Array.isArray(response.data)
@@ -231,5 +225,3 @@ export const aiService = {
     await apiClient.post('/api/ai/labels/teach', request);
   },
 };
-
-

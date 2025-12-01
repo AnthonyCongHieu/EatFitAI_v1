@@ -1,0 +1,70 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+dist/
+build/
+
+# Virtual Environment
+venv/
+env/
+ENV/
+.venv
+
+# Models
+*.pt
+!yolov8s.pt
+best.pt
+last.pt
+*.onnx
+*.tflite
+*.torchscript
+*.mlmodel
+*.engine
+*_ncnn_model/
+*_saved_model/
+*_openvino_model/
+*_paddle_model/
+
+# Training runs
+runs/
+wandb/
+
+# Datasets
+datasets/
+data/
+*.zip
+*.tar
+*.tar.gz
+
+# Uploads and temp files
+uploads/*
+!uploads/.gitkeep
+temp/
+tmp/
+
+# Logs
+*.log
+logs/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb
+
+# TensorBoard
+events.out.tfevents.*
