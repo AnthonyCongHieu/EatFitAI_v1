@@ -3,6 +3,7 @@
 
 import apiClient from './apiClient';
 import type { FoodItemDto, MealTypeId } from '../types';
+import type { FoodItemDtoExtended } from '../types/food';
 
 // Helper to convert unknown to number or null
 const toNumber = (value: unknown): number | null => {
@@ -49,23 +50,23 @@ export type SearchFoodsResult = {
 };
 
 // Normalizers
-const normalizeFoodItem = (data: FoodItemDto): FoodItem => ({
+const normalizeFoodItem = (data: FoodItemDtoExtended): FoodItem => ({
   id: String(data?.foodItemId ?? ''),
   name: data?.foodName ?? 'Mon an',
-  nameEn: (data as any)?.foodNameEn ?? null,
+  nameEn: data?.foodNameEn ?? null,
   brand: null,
   calories: data?.caloriesPer100g ?? null,
   protein: data?.proteinPer100g ?? null,
   carbs: data?.carbPer100g ?? null,
   fat: data?.fatPer100g ?? null,
-  thumbnail: (data as any)?.thumbNail ?? null,
+  thumbnail: data?.thumbNail ?? null,
   isActive: data?.isActive ?? null,
   createdAt: data?.createdAt ?? null,
   updatedAt: data?.updatedAt ?? null,
   source: 'catalog',
 });
 
-const normalizeFoodDetail = (data: FoodItemDto): FoodDetail => ({
+const normalizeFoodDetail = (data: FoodItemDtoExtended): FoodDetail => ({
   ...normalizeFoodItem(data),
   description: null,
   servingSizeGram: 100,
@@ -108,7 +109,9 @@ export const foodService = {
 
   // Tìm kiếm tất cả (catalog + user food items)
   async searchAllFoods(query: string, limit = 50): Promise<SearchFoodsResult> {
-    const response = await apiClient.get('/api/food/search-all', { params: { q: query, limit } });
+    const response = await apiClient.get('/api/food/search-all', {
+      params: { q: query, limit },
+    });
     const rows = Array.isArray(response.data) ? response.data : [];
     const items: FoodItem[] = rows.map((x: any) => ({
       id: String(x?.id ?? ''),
@@ -139,9 +142,13 @@ export const foodService = {
     return normalizeFoodDetail(data);
   },
 
-
   // Thêm entry vào nhật ký từ catalog food
-  async addDiaryEntry(payload: { mealTypeId: MealTypeId; foodId: string; grams: number; note?: string }): Promise<void> {
+  async addDiaryEntry(payload: {
+    mealTypeId: MealTypeId;
+    foodId: string;
+    grams: number;
+    note?: string;
+  }): Promise<void> {
     const d = new Date();
     const eatenDate = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
     await apiClient.post('/api/meal-diary', {
@@ -154,7 +161,12 @@ export const foodService = {
   },
 
   // Thêm entry vào nhật ký từ user‑created food item
-  async addDiaryEntryFromUserFoodItem(payload: { mealTypeId: MealTypeId; userFoodItemId: string; grams: number; note?: string }): Promise<void> {
+  async addDiaryEntryFromUserFoodItem(payload: {
+    mealTypeId: MealTypeId;
+    userFoodItemId: string;
+    grams: number;
+    note?: string;
+  }): Promise<void> {
     const d = new Date();
     const eatenDate = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
     await apiClient.post('/api/meal-diary', {
@@ -167,7 +179,11 @@ export const foodService = {
   },
 
   // Tạo món ăn tự chế
-  async createCustomDish(payload: { dishName: string; description?: string | null; ingredients: Array<{ foodItemId: number; grams: number }> }): Promise<void> {
+  async createCustomDish(payload: {
+    dishName: string;
+    description?: string | null;
+    ingredients: { foodItemId: number; grams: number }[];
+  }): Promise<void> {
     await apiClient.post('/api/custom-dishes', {
       dishName: payload.dishName,
       description: payload.description ?? null,
@@ -176,20 +192,30 @@ export const foodService = {
   },
 
   // Lấy danh sách user food items (có pagination)
-  async getUserFoodItems(query?: string, page = 1, pageSize = 20): Promise<{ items: any[]; total: number }> {
-    const response = await apiClient.get('/api/user-food-items', { params: { q: query, page, pageSize } });
+  async getUserFoodItems(
+    query?: string,
+    page = 1,
+    pageSize = 20,
+  ): Promise<{ items: any[]; total: number }> {
+    const response = await apiClient.get('/api/user-food-items', {
+      params: { q: query, page, pageSize },
+    });
     return response.data as { items: any[]; total: number };
   },
 
   // Tạo user food item (multipart/form-data)
   async createUserFoodItem(payload: FormData): Promise<any> {
-    const response = await apiClient.post('/api/user-food-items', payload, { headers: { 'Content-Type': 'multipart/form-data' } });
+    const response = await apiClient.post('/api/user-food-items', payload, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
     return response.data;
   },
 
   // Cập nhật user food item
   async updateUserFoodItem(id: number, payload: FormData): Promise<any> {
-    const response = await apiClient.put(`/api/user-food-items/${id}`, payload, { headers: { 'Content-Type': 'multipart/form-data' } });
+    const response = await apiClient.put(`/api/user-food-items/${id}`, payload, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
     return response.data;
   },
 

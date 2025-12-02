@@ -5,7 +5,6 @@ import Animated, {
   useSharedValue,
   withTiming,
   interpolate,
-  runOnJS
 } from 'react-native-reanimated';
 
 import { ThemedText } from './ThemedText';
@@ -30,7 +29,7 @@ export const Collapsible = ({
   headerComponent,
   duration = 300,
   animated = true,
-  disabled = false
+  disabled = false,
 }: CollapsibleProps): JSX.Element => {
   const { theme } = useAppTheme();
 
@@ -92,7 +91,8 @@ export const Collapsible = ({
         style={({ pressed }) => [
           styles.headerContainer,
           {
-            backgroundColor: pressed && !disabled ? theme.colors.muted + '20' : 'transparent',
+            backgroundColor:
+              pressed && !disabled ? theme.colors.muted + '20' : 'transparent',
             opacity: disabled ? 0.6 : 1,
           },
         ]}
@@ -104,17 +104,12 @@ export const Collapsible = ({
       </Pressable>
 
       <Animated.View
-        style={[
-          styles.content,
-          contentAnimatedStyle,
-        ]}
+        style={[styles.content, contentAnimatedStyle]}
         onLayout={(event) => {
           contentHeight.value = event.nativeEvent.layout.height;
         }}
       >
-        <View style={styles.contentInner}>
-          {children}
-        </View>
+        <View style={styles.contentInner}>{children}</View>
       </Animated.View>
     </View>
   );

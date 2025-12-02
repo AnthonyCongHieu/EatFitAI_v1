@@ -7,4 +7,3 @@ export interface AddMealFromVisionParams {
   imageUri: string;
   result: VisionDetectResult;
 }
-

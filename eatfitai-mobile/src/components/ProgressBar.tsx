@@ -3,7 +3,6 @@ import Animated, {
   useAnimatedStyle,
   useSharedValue,
   withTiming,
-  withSpring
 } from 'react-native-reanimated';
 import { useEffect } from 'react';
 
@@ -28,7 +27,6 @@ export const ProgressBar = ({
   animated = true,
   showPercentage = false,
   rounded = true,
-  variant = 'linear'
 }: ProgressBarProps): JSX.Element => {
   const { theme } = useAppTheme();
 

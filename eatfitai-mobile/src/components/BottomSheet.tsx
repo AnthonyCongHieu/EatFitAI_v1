@@ -8,11 +8,9 @@ import Animated, {
   useAnimatedStyle,
   useSharedValue,
   withSpring,
-  withTiming,
-  runOnJS
+  runOnJS,
 } from 'react-native-reanimated';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
-import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from './ThemedText';
 import { useAppTheme } from '../theme/ThemeProvider';
@@ -27,7 +25,6 @@ type BottomSheetProps = {
   showCloseButton?: boolean;
   closeOnBackdropPress?: boolean;
   animated?: boolean;
-  snapPoints?: number[];
 };
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
@@ -42,7 +39,6 @@ export const BottomSheet = ({
   showCloseButton = true,
   closeOnBackdropPress = true,
   animated = true,
-  snapPoints = [0.5, 0.8]
 }: BottomSheetProps): JSX.Element => {
   const { theme } = useAppTheme();
 
@@ -120,7 +116,9 @@ export const BottomSheet = ({
             {/* Handle */}
             {showHandle && (
               <View style={styles.handle}>
-                <View style={[styles.handleBar, { backgroundColor: theme.colors.muted }]} />
+                <View
+                  style={[styles.handleBar, { backgroundColor: theme.colors.muted }]}
+                />
               </View>
             )}
 
@@ -133,21 +131,17 @@ export const BottomSheet = ({
                   </ThemedText>
                 )}
                 {showCloseButton && (
-                  <Pressable
-                    onPress={onClose}
-                    style={styles.closeButton}
-                    hitSlop={8}
-                  >
-                    <ThemedText style={{ color: theme.colors.muted, fontSize: 24 }}>×</ThemedText>
+                  <Pressable onPress={onClose} style={styles.closeButton} hitSlop={8}>
+                    <ThemedText style={{ color: theme.colors.muted, fontSize: 24 }}>
+                      ×
+                    </ThemedText>
                   </Pressable>
                 )}
               </View>
             )}
 
             {/* Body */}
-            <View style={styles.body}>
-              {children}
-            </View>
+            <View style={styles.body}>{children}</View>
           </Animated.View>
         </GestureDetector>
       </View>

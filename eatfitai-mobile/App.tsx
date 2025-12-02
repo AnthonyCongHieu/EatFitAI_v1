@@ -8,19 +8,25 @@ import * as SystemUI from 'expo-system-ui';
 import * as WebBrowser from 'expo-web-browser';
 import * as SplashScreen from 'expo-splash-screen';
 import Toast from 'react-native-toast-message';
-import { 
-  useFonts, 
+import {
+  useFonts,
   Inter_300Light,
-  Inter_400Regular, 
+  Inter_400Regular,
   Inter_500Medium,
   Inter_600SemiBold,
-  Inter_700Bold 
+  Inter_700Bold,
 } from '@expo-google-fonts/inter';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 import AppNavigator from './src/app/navigation/AppNavigator';
 import { ThemeProvider, useAppTheme } from './src/theme/ThemeProvider';
 import { healthService } from './src/services/healthService';
 import { t } from './src/i18n/vi';
+import ErrorBoundary from './src/components/ErrorBoundary';
+import { initAnalytics } from './src/services/analytics';
+import { initErrorTracking } from './src/services/errorTracking';
+
+const queryClient = new QueryClient();
 
 // Giu splash toi khi font duoc load day du
 void SplashScreen.preventAutoHideAsync();
@@ -32,6 +38,8 @@ const AppInner = () => {
 
   useEffect(() => {
     SystemUI.setBackgroundColorAsync(theme.colors.background).catch(() => {});
+    initErrorTracking().catch(() => {});
+    initAnalytics().catch(() => {});
   }, [theme.colors.background]);
 
   // Ping backend health on startup and notify if unreachable
@@ -92,7 +100,11 @@ export default function App(): JSX.Element | null {
       {/* Boc SafeArea de tranh che notch */}
       <SafeAreaProvider>
         <ThemeProvider>
-          <AppInner />
+          <QueryClientProvider client={queryClient}>
+            <ErrorBoundary>
+              <AppInner />
+            </ErrorBoundary>
+          </QueryClientProvider>
         </ThemeProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>

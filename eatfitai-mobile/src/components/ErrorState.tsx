@@ -26,11 +26,23 @@ export const ErrorState: React.FC<ErrorStateProps> = ({
   return (
     <View style={[styles.container, { paddingVertical: theme.spacing.xxl }, style]}>
       <View style={styles.content}>
-        <View style={[styles.iconContainer, { backgroundColor: theme.colors.danger ? `${theme.colors.danger}20` : '#ffebee' }]}>
+        <View
+          style={[
+            styles.iconContainer,
+            {
+              backgroundColor: theme.colors.danger
+                ? `${theme.colors.danger}20`
+                : '#ffebee',
+            },
+          ]}
+        >
           <Icon name={icon} size="xl" color="danger" />
         </View>
 
-        <ThemedText variant="h3" style={{ textAlign: 'center', marginTop: theme.spacing.lg }}>
+        <ThemedText
+          variant="h3"
+          style={{ textAlign: 'center', marginTop: theme.spacing.lg }}
+        >
           {title}
         </ThemedText>
 
@@ -48,11 +60,7 @@ export const ErrorState: React.FC<ErrorStateProps> = ({
 
         {onRetry && (
           <View style={{ marginTop: theme.spacing.xl }}>
-            <Button
-              variant="primary"
-              title={t('common.retry')}
-              onPress={onRetry}
-            />
+            <Button variant="primary" title={t('common.retry')} onPress={onRetry} />
           </View>
         )}
       </View>

@@ -6,7 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import Toast from 'react-native-toast-message';
 
 import Screen from '../../../components/Screen';
-import Card from '../../../components/Card';
+import { AppCard } from '../../../components/ui/AppCard';
 import Button from '../../../components/Button';
 import ThemedTextInput from '../../../components/ThemedTextInput';
 import { ThemedText } from '../../../components/ThemedText';
@@ -14,15 +14,17 @@ import { useAppTheme } from '../../../theme/ThemeProvider';
 import { useAuthStore } from '../../../store/useAuthStore';
 import { t } from '../../../i18n/vi';
 
-const ResetSchema = z.object({
-  email: z.string().email(t('auth.invalidEmail')),
-  resetCode: z.string().min(4, t('auth.resetCodeRequired')),
-  newPassword: z.string().min(6, t('auth.passwordTooShort')),
-  confirm: z.string().min(6, t('auth.passwordTooShort')),
-}).refine((data) => data.newPassword === data.confirm, {
-  path: ['confirm'],
-  message: t('auth.passwordMismatch'),
-});
+const ResetSchema = z
+  .object({
+    email: z.string().email(t('auth.invalidEmail')),
+    resetCode: z.string().min(4, t('auth.resetCodeRequired')),
+    newPassword: z.string().min(6, t('auth.passwordTooShort')),
+    confirm: z.string().min(6, t('auth.passwordTooShort')),
+  })
+  .refine((data) => data.newPassword === data.confirm, {
+    path: ['confirm'],
+    message: t('auth.passwordMismatch'),
+  });
 
 type ResetValues = z.infer<typeof ResetSchema>;
 
@@ -34,7 +36,13 @@ const ForgotPasswordScreen = (): JSX.Element => {
   const [resetting, setResetting] = useState(false);
   const [lastCode, setLastCode] = useState<string>('');
 
-  const { control, handleSubmit, formState: { errors }, setValue, watch } = useForm<ResetValues>({
+  const {
+    control,
+    handleSubmit,
+    formState: { errors },
+    setValue,
+    watch,
+  } = useForm<ResetValues>({
     resolver: zodResolver(ResetSchema),
     defaultValues: { email: '', resetCode: '', newPassword: '', confirm: '' },
   });
@@ -43,7 +51,11 @@ const ForgotPasswordScreen = (): JSX.Element => {
 
   const onSendCode = useCallback(async () => {
     if (!email) {
-      Toast.show({ type: 'error', text1: t('auth.invalidEmail'), text2: t('auth.checkEmailFormat') });
+      Toast.show({
+        type: 'error',
+        text1: t('auth.invalidEmail'),
+        text2: t('auth.checkEmailFormat'),
+      });
       return;
     }
     try {
@@ -52,41 +64,68 @@ const ForgotPasswordScreen = (): JSX.Element => {
       if (code) {
         setLastCode(code);
         setValue('resetCode', code);
-        Toast.show({ type: 'success', text1: t('auth.resetCodeReceived'), text2: t('auth.resetCodeAutofill') });
+        Toast.show({
+          type: 'success',
+          text1: t('auth.resetCodeReceived'),
+          text2: t('auth.resetCodeAutofill'),
+        });
       } else {
-        Toast.show({ type: 'info', text1: t('auth.resetCodeSent'), text2: t('auth.resetCheckEmail') });
+        Toast.show({
+          type: 'info',
+          text1: t('auth.resetCodeSent'),
+          text2: t('auth.resetCheckEmail'),
+        });
       }
     } catch (e: any) {
-      Toast.show({ type: 'error', text1: t('auth.resetFailed'), text2: e?.message ?? t('common.tryAgain') });
+      Toast.show({
+        type: 'error',
+        text1: t('auth.resetFailed'),
+        text2: e?.message ?? t('common.tryAgain'),
+      });
     } finally {
       setSending(false);
     }
   }, [email, forgotPassword, setValue]);
 
-  const onReset = useCallback(async (values: ResetValues) => {
-    try {
-      setResetting(true);
-      await resetPassword(values.email, values.resetCode, values.newPassword);
-      Toast.show({ type: 'success', text1: t('auth.passwordUpdated'), text2: t('auth.loginAgain') });
-    } catch (e: any) {
-      const msg = e?.response?.data?.message ?? e?.message ?? t('auth.resetFailed');
-      Alert.alert(t('common.error'), msg);
-    } finally {
-      setResetting(false);
-    }
-  }, [resetPassword]);
+  const onReset = useCallback(
+    async (values: ResetValues) => {
+      try {
+        setResetting(true);
+        await resetPassword(values.email, values.resetCode, values.newPassword);
+        Toast.show({
+          type: 'success',
+          text1: t('auth.passwordUpdated'),
+          text2: t('auth.loginAgain'),
+        });
+      } catch (e: any) {
+        const msg = e?.response?.data?.message ?? e?.message ?? t('auth.resetFailed');
+        Alert.alert(t('common.error'), msg);
+      } finally {
+        setResetting(false);
+      }
+    },
+    [resetPassword],
+  );
 
   return (
     <Screen scroll style={styles.container}>
-      <Card padding="lg" shadow="lg">
+      <AppCard padding="lg" shadow="lg">
         <ThemedText variant="h2" style={{ marginBottom: theme.spacing.md }}>
           {t('auth.forgotPasswordTitle')}
         </ThemedText>
-        <ThemedText variant="bodySmall" color="textSecondary" style={{ marginBottom: theme.spacing.md }}>
+        <ThemedText
+          variant="bodySmall"
+          color="textSecondary"
+          style={{ marginBottom: theme.spacing.md }}
+        >
           {t('auth.forgotPasswordDesc')}
         </ThemedText>
 
-        <ThemedText variant="bodySmall" color="textSecondary" style={{ marginBottom: theme.spacing.md }}>
+        <ThemedText
+          variant="bodySmall"
+          color="textSecondary"
+          style={{ marginBottom: theme.spacing.md }}
+        >
           {t('auth.forgotPasswordEmailHint')}
         </ThemedText>
 
@@ -121,7 +160,11 @@ const ForgotPasswordScreen = (): JSX.Element => {
 
         <View style={{ height: theme.spacing.md }} />
 
-        <ThemedText variant="bodySmall" color="textSecondary" style={{ marginBottom: theme.spacing.sm }}>
+        <ThemedText
+          variant="bodySmall"
+          color="textSecondary"
+          style={{ marginBottom: theme.spacing.sm }}
+        >
           {t('auth.resetCodeLabel')}
         </ThemedText>
         <Controller
@@ -135,7 +178,10 @@ const ForgotPasswordScreen = (): JSX.Element => {
               onChangeText={onChange}
               value={value}
               error={!!errors.resetCode}
-              helperText={errors.resetCode?.message || (lastCode ? `${t('auth.lastCode')}: ${lastCode}` : undefined)}
+              helperText={
+                errors.resetCode?.message ||
+                (lastCode ? `${t('auth.lastCode')}: ${lastCode}` : undefined)
+              }
               required
             />
           )}
@@ -188,7 +234,7 @@ const ForgotPasswordScreen = (): JSX.Element => {
           style={{ marginTop: theme.spacing.lg }}
           fullWidth
         />
-      </Card>
+      </AppCard>
     </Screen>
   );
 };

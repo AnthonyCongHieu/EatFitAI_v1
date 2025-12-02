@@ -2,7 +2,6 @@ import React from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '../ThemedText';
-import { Button } from '../Button';
 import Icon from '../Icon';
 import { useAppTheme } from '../../theme/ThemeProvider';
 
@@ -25,7 +24,9 @@ export const EmptyState = ({
     <View style={styles.container}>
       <View style={styles.content}>
         {icon && (
-          <View style={[styles.iconContainer, { backgroundColor: theme.colors.primaryLight }]}>
+          <View
+            style={[styles.iconContainer, { backgroundColor: theme.colors.primaryLight }]}
+          >
             <Icon name={icon} size="xl" color="primary" />
           </View>
         )}
@@ -38,11 +39,7 @@ export const EmptyState = ({
           {description}
         </ThemedText>
 
-        {action && (
-          <View style={styles.actionContainer}>
-            {action}
-          </View>
-        )}
+        {action && <View style={styles.actionContainer}>{action}</View>}
       </View>
     </View>
   );

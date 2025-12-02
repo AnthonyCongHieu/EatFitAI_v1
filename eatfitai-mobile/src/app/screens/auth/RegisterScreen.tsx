@@ -1,5 +1,5 @@
 import { useCallback, useState, useEffect } from 'react';
-import { Alert, StyleSheet, View, TouchableOpacity } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { Controller, useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -7,12 +7,12 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import Toast from 'react-native-toast-message';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import Animated, { FadeInDown, Layout } from 'react-native-reanimated';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 
 import { useAppTheme } from '../../../theme/ThemeProvider';
 import { ThemedText } from '../../../components/ThemedText';
 import Screen from '../../../components/Screen';
-import Card from '../../../components/Card';
+import { AppCard } from '../../../components/ui/AppCard';
 import Button from '../../../components/Button';
 import ThemedTextInput from '../../../components/ThemedTextInput';
 import { useAuthStore } from '../../../store/useAuthStore';
@@ -27,7 +27,10 @@ const RegisterSchema = z
     password: z
       .string()
       .min(6, 'Mật khẩu tối thiểu 6 ký tự')
-      .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$/, 'Mật khẩu phải có chữ hoa, chữ thường và số'),
+      .regex(
+        /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$/,
+        'Mật khẩu phải có chữ hoa, chữ thường và số',
+      ),
     confirmPassword: z.string().min(6, 'Nhập lại mật khẩu'),
     passwordHint: z.string().optional(),
   })
@@ -45,7 +48,12 @@ const RegisterScreen = ({ navigation }: Props): JSX.Element => {
   const [loading, setLoading] = useState(false);
   const [passwordStrength, setPasswordStrength] = useState(0); // 0-3
 
-  const { control, handleSubmit, watch, formState: { errors } } = useForm<RegisterValues>({
+  const {
+    control,
+    handleSubmit,
+    watch,
+    formState: { errors },
+  } = useForm<RegisterValues>({
     resolver: zodResolver(RegisterSchema),
     defaultValues: { name: '', email: '', password: '', confirmPassword: '' },
   });
@@ -78,18 +86,25 @@ const RegisterScreen = ({ navigation }: Props): JSX.Element => {
     return 'Mạnh';
   };
 
-  const onSubmit = useCallback(async (values: RegisterValues) => {
-    try {
-      setLoading(true);
-      await registerFn(values.name, values.email, values.password);
-      Toast.show({ type: 'success', text1: 'Đăng ký tài khoản thành công', text2: 'Bắt đầu hành trình ăn uống lành mạnh!' });
-      navigation.reset({ index: 0, routes: [{ name: 'AppTabs' }] });
-    } catch (e: any) {
-      handleApiError(e);
-    } finally {
-      setLoading(false);
-    }
-  }, [registerFn, navigation]);
+  const onSubmit = useCallback(
+    async (values: RegisterValues) => {
+      try {
+        setLoading(true);
+        await registerFn(values.name, values.email, values.password);
+        Toast.show({
+          type: 'success',
+          text1: 'Đăng ký tài khoản thành công',
+          text2: 'Bắt đầu hành trình ăn uống lành mạnh!',
+        });
+        navigation.reset({ index: 0, routes: [{ name: 'AppTabs' }] });
+      } catch (e: any) {
+        handleApiError(e);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [registerFn, navigation],
+  );
 
   return (
     <Screen scroll={true} style={styles.container}>
@@ -98,25 +113,45 @@ const RegisterScreen = ({ navigation }: Props): JSX.Element => {
         style={StyleSheet.absoluteFill}
       />
 
-      <Animated.View entering={FadeInDown.duration(600).springify()} style={{ padding: 24 }}>
-        <Card padding="lg" shadow="lg" style={{ backgroundColor: theme.colors.card + 'F5' }}> {/* Slight transparency */}
+      <Animated.View
+        entering={FadeInDown.duration(600).springify()}
+        style={{ padding: 24 }}
+      >
+        <AppCard
+          padding="lg"
+          shadow="lg"
+          style={{ backgroundColor: theme.colors.card + 'F5' }}
+        >
+          {' '}
+          {/* Slight transparency */}
           <View style={{ alignItems: 'center', marginBottom: theme.spacing.xl }}>
-            <View style={{
-              width: 64, height: 64, borderRadius: 32,
-              backgroundColor: theme.colors.primary + '20',
-              alignItems: 'center', justifyContent: 'center',
-              marginBottom: theme.spacing.md
-            }}>
+            <View
+              style={{
+                width: 64,
+                height: 64,
+                borderRadius: 32,
+                backgroundColor: theme.colors.primary + '20',
+                alignItems: 'center',
+                justifyContent: 'center',
+                marginBottom: theme.spacing.md,
+              }}
+            >
               <Ionicons name="person-add" size={32} color={theme.colors.primary} />
             </View>
-            <ThemedText variant="h2" style={{ marginBottom: theme.spacing.xs, textAlign: 'center' }}>
+            <ThemedText
+              variant="h2"
+              style={{ marginBottom: theme.spacing.xs, textAlign: 'center' }}
+            >
               Tạo tài khoản
             </ThemedText>
-            <ThemedText variant="bodySmall" color="textSecondary" style={{ textAlign: 'center' }}>
+            <ThemedText
+              variant="bodySmall"
+              color="textSecondary"
+              style={{ textAlign: 'center' }}
+            >
               {t('auth.registerTitle')}
             </ThemedText>
           </View>
-
           <Controller
             control={control}
             name="name"
@@ -133,7 +168,6 @@ const RegisterScreen = ({ navigation }: Props): JSX.Element => {
               />
             )}
           />
-
           <Controller
             control={control}
             name="email"
@@ -152,7 +186,6 @@ const RegisterScreen = ({ navigation }: Props): JSX.Element => {
               />
             )}
           />
-
           <Controller
             control={control}
             name="password"
@@ -172,15 +205,36 @@ const RegisterScreen = ({ navigation }: Props): JSX.Element => {
                 />
                 {/* Password Strength Meter */}
                 {value && value.length > 0 && (
-                  <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: -8, marginBottom: 12, gap: 8 }}>
-                    <View style={{ flex: 1, height: 4, backgroundColor: theme.colors.border, borderRadius: 2, overflow: 'hidden' }}>
-                      <View style={{
-                        width: `${(passwordStrength / 3) * 100}%`,
-                        height: '100%',
-                        backgroundColor: getStrengthColor()
-                      }} />
+                  <View
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      marginTop: -8,
+                      marginBottom: 12,
+                      gap: 8,
+                    }}
+                  >
+                    <View
+                      style={{
+                        flex: 1,
+                        height: 4,
+                        backgroundColor: theme.colors.border,
+                        borderRadius: 2,
+                        overflow: 'hidden',
+                      }}
+                    >
+                      <View
+                        style={{
+                          width: `${(passwordStrength / 3) * 100}%`,
+                          height: '100%',
+                          backgroundColor: getStrengthColor(),
+                        }}
+                      />
                     </View>
-                    <ThemedText variant="caption" style={{ color: getStrengthColor(), width: 60, textAlign: 'right' }}>
+                    <ThemedText
+                      variant="caption"
+                      style={{ color: getStrengthColor(), width: 60, textAlign: 'right' }}
+                    >
                       {getStrengthLabel()}
                     </ThemedText>
                   </View>
@@ -188,7 +242,6 @@ const RegisterScreen = ({ navigation }: Props): JSX.Element => {
               </View>
             )}
           />
-
           <Controller
             control={control}
             name="confirmPassword"
@@ -207,7 +260,6 @@ const RegisterScreen = ({ navigation }: Props): JSX.Element => {
               />
             )}
           />
-
           <View style={{ marginTop: theme.spacing.lg }}>
             <Button
               variant="primary"
@@ -219,7 +271,6 @@ const RegisterScreen = ({ navigation }: Props): JSX.Element => {
               size="lg"
             />
           </View>
-
           <View style={{ marginTop: theme.spacing.xl, alignItems: 'center' }}>
             <ThemedText variant="body" color="textSecondary">
               {t('auth.hasAccount')}{' '}
@@ -233,7 +284,7 @@ const RegisterScreen = ({ navigation }: Props): JSX.Element => {
               </ThemedText>
             </ThemedText>
           </View>
-        </Card>
+        </AppCard>
       </Animated.View>
     </Screen>
   );

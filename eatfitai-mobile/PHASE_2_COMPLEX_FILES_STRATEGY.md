@@ -1,6 +1,7 @@
 # Phase 2: Complex Files Migration Strategy
 
 ## 🎯 OBJECTIVE
+
 Safely migrate error handling in complex files (HomeScreen, ProfileScreen, FoodDetailScreen) without breaking functionality.
 
 ---
@@ -8,13 +9,15 @@ Safely migrate error handling in complex files (HomeScreen, ProfileScreen, FoodD
 ## 📋 STRATEGY OVERVIEW
 
 ### Core Principles
+
 1. **One handler at a time** - Never edit multiple error handlers simultaneously
-2. **Inspect before edit** - Always view exact code before making changes  
+2. **Inspect before edit** - Always view exact code before making changes
 3. **Test incrementally** - Run typecheck and manual test after each change
 4. **Commit frequently** - Git commit after each successful handler migration
 5. **Backup plan** - Always ready to revert if something goes wrong
 
 ### Risk Mitigation
+
 - ✅ Use `view_file` to inspect exact line numbers
 - ✅ Use `grep_search` to find all Toast.show instances
 - ✅ Match EXACT whitespace and formatting
@@ -26,6 +29,7 @@ Safely migrate error handling in complex files (HomeScreen, ProfileScreen, FoodD
 ## 🔴 PRIORITY 1: HomeScreen.tsx
 
 ### File Analysis
+
 - **Location**: `src/app/screens/HomeScreen.tsx`
 - **Size**: 421 lines
 - **Complexity**: ⚠️ Very High
@@ -35,8 +39,10 @@ Safely migrate error handling in complex files (HomeScreen, ProfileScreen, FoodD
 ### Identified Error Handlers
 
 #### Handler 1: fetchSummary (Line ~97-107)
+
 **Context**: Initial data loading  
 **Current code pattern**:
+
 ```typescript
 .catch((error: any) => {
   const status = error?.response?.status;
@@ -53,11 +59,13 @@ Safely migrate error handling in complex files (HomeScreen, ProfileScreen, FoodD
 ```
 
 **Target replacement**:
+
 ```typescript
 .catch(handleApiError);
 ```
 
 **Testing**:
+
 - Navigate to HomeScreen
 - Verify data loads correctly
 - Test offline mode
@@ -65,9 +73,11 @@ Safely migrate error handling in complex files (HomeScreen, ProfileScreen, FoodD
 
 ---
 
-#### Handler 2: handleRefresh (Line ~133-143)  
+#### Handler 2: handleRefresh (Line ~133-143)
+
 **Context**: Pull-to-refresh functionality  
 **Current code pattern**:
+
 ```typescript
 .catch((error: any) => {
   const status = error?.response?.status;
@@ -84,11 +94,13 @@ Safely migrate error handling in complex files (HomeScreen, ProfileScreen, FoodD
 ```
 
 **Target replacement**:
+
 ```typescript
 .catch(handleApiError);
 ```
 
 **Testing**:
+
 - Pull down to refresh
 - Verify error handling works
 - Check loading state
@@ -96,8 +108,10 @@ Safely migrate error handling in complex files (HomeScreen, ProfileScreen, FoodD
 ---
 
 #### Handler 3: handleDelete (Line ~186-198)
+
 **Context**: Deleting diary entries  
 **Current code pattern**:
+
 ```typescript
 .catch((error: any) => {
   const status = error?.response?.status;
@@ -116,11 +130,13 @@ Safely migrate error handling in complex files (HomeScreen, ProfileScreen, FoodD
 ```
 
 **Target replacement**:
+
 ```typescript
 .catch(handleApiError);
 ```
 
 **Testing**:
+
 - Create a diary entry
 - Delete it
 - Verify success
@@ -131,6 +147,7 @@ Safely migrate error handling in complex files (HomeScreen, ProfileScreen, FoodD
 ### Migration Workflow for HomeScreen.tsx
 
 #### Step 1: Preparation
+
 ```bash
 # Ensure clean state
 git status
@@ -143,17 +160,20 @@ grep_search "Toast.show" HomeScreen.tsx
 ```
 
 #### Step 2: Add Import
+
 ```typescript
 // At top of file (after other imports)
 import { handleApiError } from '../../utils/errorHandler';
 ```
 
 **Action**:
+
 - Edit ONLY the import section
 - Run `npm run typecheck`
 - Commit: "chore: add errorHandler import to HomeScreen"
 
 #### Step 3: Migrate fetchSummary Handler
+
 ```bash
 # View exact lines
 view_file HomeScreen.tsx --lines 90:110
@@ -174,7 +194,8 @@ git add src/app/screens/HomeScreen.tsx
 git commit -m "refactor(HomeScreen): migrate fetchSummary error handler"
 ```
 
-#### Step 4: Migrate handleRefresh Handler  
+#### Step 4: Migrate handleRefresh Handler
+
 ```bash
 # View exact lines
 view_file HomeScreen.tsx --lines 125:145
@@ -193,6 +214,7 @@ git commit -m "refactor(HomeScreen): migrate handleRefresh error handler"
 ```
 
 #### Step 5: Migrate handleDelete Handler
+
 ```bash
 # View exact lines
 view_file HomeScreen.tsx --lines 180:200
@@ -211,6 +233,7 @@ git commit -m "refactor(HomeScreen): migrate handleDelete error handler"
 ```
 
 #### Step 6: Final Verification
+
 ```bash
 # Run full typecheck
 npm run typecheck
@@ -232,6 +255,7 @@ npm start
 ## 🟡 PRIORITY 2: ProfileScreen.tsx
 
 ### File Analysis
+
 - **Location**: `src/app/screens/ProfileScreen.tsx`
 - **Size**: 457 lines
 - **Complexity**: ⚠️ Very High
@@ -241,10 +265,12 @@ npm start
 ### Identified Error Handlers
 
 #### Handler 1: fetchProfile (Line ~158-160)
+
 **Context**: Loading user profile data  
 **Difficulty**: ⭐ Easy
 
 **Current**:
+
 ```typescript
 useEffect(() => {
   fetchProfile().catch(() => {
@@ -254,6 +280,7 @@ useEffect(() => {
 ```
 
 **Target**:
+
 ```typescript
 useEffect(() => {
   fetchProfile().catch(handleApiError);
@@ -266,10 +293,12 @@ useEffect(() => {
 ---
 
 #### Handler 2: onSubmitProfile (Line ~181-192)
+
 **Context**: Saving profile changes  
 **Difficulty**: ⭐⭐ Medium
 
 **Current**:
+
 ```typescript
 } catch (error: any) {
   const status = error?.response?.status;
@@ -286,6 +315,7 @@ useEffect(() => {
 ```
 
 **Target**:
+
 ```typescript
 } catch (error: any) {
   handleApiError(error);
@@ -298,10 +328,12 @@ useEffect(() => {
 ---
 
 #### Handler 3: onSubmitBodyMetrics (Line ~207-218)
+
 **Context**: Saving body measurements  
 **Difficulty**: ⭐⭐ Medium
 
 **Current**:
+
 ```typescript
 } catch (error: any) {
   const status = error?.response?.status;
@@ -318,6 +350,7 @@ useEffect(() => {
 ```
 
 **Target**:
+
 ```typescript
 } catch (error: any) {
   handleApiError(error);
@@ -332,6 +365,7 @@ useEffect(() => {
 ### Migration Workflow for ProfileScreen.tsx
 
 #### Preparation
+
 ```bash
 # View file structure
 view_file ProfileScreen.tsx --lines 1:50
@@ -342,9 +376,10 @@ grep_search "Toast.show" ProfileScreen.tsx
 ```
 
 #### Step-by-Step Process
+
 1. **Add import** → typecheck → commit
 2. **Fix fetchProfile** → typecheck → test → commit
-3. **Fix onSubmitProfile** → typecheck → test → commit  
+3. **Fix onSubmitProfile** → typecheck → test → commit
 4. **Fix onSubmitBodyMetrics** → typecheck → test → commit
 5. **Final verification** → full app test
 
@@ -353,12 +388,14 @@ grep_search "Toast.show" ProfileScreen.tsx
 ## 🔴 PRIORITY 3: FoodDetailScreen.tsx
 
 ### File Analysis
+
 - **Location**: `src/app/screens/diary/FoodDetailScreen.tsx`
 - **Size**: Unknown (needs inspection)
 - **Complexity**: Medium-High
 - **Error Handlers**: 2-3 estimated
 
 ### Pre-Migration Tasks
+
 ```bash
 # Inspect file
 view_file FoodDetailScreen.tsx
@@ -374,6 +411,7 @@ grep_search "catch.*error" FoodDetailScreen.tsx
 ```
 
 ### Migration Approach
+
 1. Create detailed analysis document
 2. Identify each error handler with exact line numbers
 3. Categorize by difficulty (easy/medium/hard)
@@ -385,6 +423,7 @@ grep_search "catch.*error" FoodDetailScreen.tsx
 ## 🛠️ TOOLS & COMMANDS
 
 ### Inspection Commands
+
 ```bash
 # View specific lines
 view_file <path> --lines start:end
@@ -400,6 +439,7 @@ wc -l <path>
 ```
 
 ### Editing Commands
+
 ```typescript
 // Always use replace_file_content for single edits
 // Never use multi_replace_file_content for complex files
@@ -416,6 +456,7 @@ replace_file_content {
 ```
 
 ### Verification Commands
+
 ```bash
 # TypeScript check
 npm run typecheck
@@ -429,16 +470,19 @@ git diff src/app/screens/HomeScreen.tsx
 ```
 
 ### Testing Checklist Template
+
 ```markdown
 ## Testing: [ScreenName]
 
 ### Functional Tests
+
 - [ ] Screen loads without errors
 - [ ] Data displays correctly
 - [ ] User actions work (buttons, forms, etc.)
 - [ ] Navigation works
 
 ### Error Handling Tests
+
 - [ ] Network error (offline mode)
 - [ ] Server error (500)
 - [ ] Auth error (401)
@@ -447,6 +491,7 @@ git diff src/app/screens/HomeScreen.tsx
 - [ ] Error messages are user-friendly
 
 ### Edge Cases
+
 - [ ] Empty state
 - [ ] Loading state
 - [ ] Error state
@@ -479,22 +524,27 @@ git diff src/app/screens/HomeScreen.tsx
 ## ⚠️ COMMON PITFALLS & SOLUTIONS
 
 ### Pitfall 1: Whitespace Mismatch
+
 **Problem**: TargetContent doesn't match due to spaces/tabs  
 **Solution**: Copy exact code from view_file, including all whitespace
 
 ### Pitfall 2: Line Numbers Changed
+
 **Problem**: Previous edit shifted line numbers  
 **Solution**: Re-run view_file before each edit
 
 ### Pitfall 3: Missing Imports
+
 **Problem**: handleApiError not found  
 **Solution**: Always add import FIRST, test, then continue
 
 ### Pitfall 4: Breaking Other Functionality
+
 **Problem**: Edit affects unrelated code  
 **Solution**: Keep edits minimal, test after EACH change
 
 ### Pitfall 5: Forgetting to Test
+
 **Problem**: Multiple issues discovered later  
 **Solution**: Test after EVERY single handler migration
 
@@ -503,6 +553,7 @@ git diff src/app/screens/HomeScreen.tsx
 ## 🎯 SUCCESS CRITERIA
 
 ### For Each File
+
 - ✅ All error handlers migrated to handleApiError
 - ✅ TypeScript compilation passes
 - ✅ No runtime errors
@@ -511,6 +562,7 @@ git diff src/app/screens/HomeScreen.tsx
 - ✅ Git history clean with meaningful commits
 
 ### For Phase 2 Overall
+
 - ✅ All Priority 1 files migrated (Home, Profile, FoodDetail)
 - ✅ All Priority 2 files migrated (remaining screens)
 - ✅ Full app tested
@@ -523,18 +575,21 @@ git diff src/app/screens/HomeScreen.tsx
 ## 📅 RECOMMENDED TIMELINE
 
 ### Week 1
+
 - **Day 1**: HomeScreen.tsx migration (2-3 hours)
 - **Day 2**: Testing + fixes for HomeScreen
 - **Day 3**: ProfileScreen.tsx migration (2-3 hours)
 - **Day 4**: Testing + fixes for ProfileScreen
 
 ### Week 2
+
 - **Day 1**: FoodDetailScreen.tsx inspection + migration
 - **Day 2**: Testing + fixes
 - **Day 3**: Priority 2 files (start with easiest)
 - **Day 4**: Continue Priority 2 files
 
 ### Week 3
+
 - **Day 1**: Complete remaining Priority 2 files
 - **Day 2**: Full application testing
 - **Day 3**: Bug fixes + refinement
@@ -547,14 +602,16 @@ git diff src/app/screens/HomeScreen.tsx
 ## ✅ FINAL CHECKLIST
 
 Before starting Phase 2:
+
 - [ ] Phase 1 changes fully tested
 - [ ] All Phase 1 files committed
-- [  ] TypeScript passing for entire project
+- [ ] TypeScript passing for entire project
 - [ ] This strategy document reviewed
 - [ ] Time allocated for careful work
 - [ ] Backup plan ready (git revert knowledge)
 
 After completing Phase 2:
+
 - [ ] All files migrated
 - [ ] All tests passing
 - [ ] No regressions found

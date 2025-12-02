@@ -3,16 +3,19 @@
 ## ✅ COMPLETED (3 files)
 
 ### 1. errorHandler.ts ✅
+
 **Location**: `src/utils/errorHandler.ts`  
 **Status**: Created successfully  
 **Purpose**: Centralized error handling utility
 
 ### 2. LoginScreen.tsx ✅
+
 **Location**: `src/app/screens/auth/LoginScreen.tsx`  
 **Lines removed**: 12 lines  
 **Status**: Working, TypeScript passed
 
 **Changes made**:
+
 ```typescript
 // Before (lines 44-56):
 catch (e: any) {
@@ -37,20 +40,24 @@ catch (e: any) {
 ```
 
 **Import added**:
+
 ```typescript
 import { handleApiError } from '../../../utils/errorHandler';
 ```
 
 ### 3. WeekStatsScreen.tsx ✅
+
 **Location**: `src/app/screens/stats/WeekStatsScreen.tsx`  
 **Lines removed**: 20 lines  
 **Status**: Working
 
 **Changes made**:
+
 - Line 52-64: Replaced with `fetchWeekSummary().catch(handleApiError);`
 - Line 73-85: Replaced with `refreshWeekSummary().catch(handleApiError);`
 
 **Import added**:
+
 ```typescript
 import { handleApiError } from '../../../utils/errorHandler';
 ```
@@ -60,10 +67,12 @@ import { handleApiError } from '../../../utils/errorHandler';
 ## ❌ FAILED / REVERTED (2 files)
 
 ### 4. HomeScreen.tsx ❌
+
 **Status**: Reverted - File too complex
 **Reason**: Multiple import sections, complex structure
 
 ### 5. FoodSearchScreen.tsx ❌
+
 **Status**: Reverted - Match failed  
 **Reason**: Exact string match issues
 
@@ -74,6 +83,7 @@ import { handleApiError } from '../../../utils/errorHandler';
 For the remaining files, follow this pattern:
 
 ### Step 1: Add Import
+
 ```typescript
 import { handleApiError } from '../../../utils/errorHandler';
 // Or adjust path based on file location
@@ -82,6 +92,7 @@ import { handleApiError } from '../../../utils/errorHandler';
 ### Step 2: Replace Error Handling
 
 **Pattern to find**:
+
 ```typescript
 catch (error: any) {
   const status = error?.response?.status;
@@ -98,6 +109,7 @@ catch (error: any) {
 ```
 
 **Replace with**:
+
 ```typescript
 catch (error: any) {
   handleApiError(error);
@@ -111,11 +123,13 @@ catch (error: any) {
 ### Priority 1 (User-facing, frequently used)
 
 #### 1. FoodSearchScreen.tsx
+
 **Location**: `src/app/screens/diary/FoodSearchScreen.tsx`  
 **Instances**: 1 error handler (lines ~107-117)  
 **Import path**: `'../../../utils/errorHandler'`
 
 **Find this**:
+
 ```typescript
 } catch (error: any) {
   const status = error?.response?.status;
@@ -132,6 +146,7 @@ catch (error: any) {
 ```
 
 **Replace with**:
+
 ```typescript
 } catch (error: any) {
   handleApiError(error);
@@ -139,16 +154,19 @@ catch (error: any) {
 ```
 
 #### 2. FoodDetailScreen.tsx
+
 **Location**: `src/app/screens/diary/FoodDetailScreen.tsx`  
 **Instances**: Estimated 2-3 error handlers  
 **Import path**: `'../../../utils/errorHandler'`
 
 #### 3. ProfileScreen.tsx
+
 **Location**: `src/app/screens/ProfileScreen.tsx`  
 **Instances**: Estimated 5 error handlers  
 **Import path**: `'../../utils/errorHandler'`
 
 #### 4. HomeScreen.tsx
+
 **Location**: `src/app/screens/HomeScreen.tsx`  
 **Instances**: 3 error handlers  
 **Import path**: `'../../utils/errorHandler'`
@@ -158,31 +176,37 @@ catch (error: any) {
 ### Priority 2 (Less critical)
 
 #### 5. RegisterScreen.tsx
+
 **Location**: `src/app/screens/auth/RegisterScreen.tsx`  
 **Instances**: Estimated 2  
 **Import path**: `'../../../utils/errorHandler'`
 
 #### 6. AddMealFromVisionScreen.tsx
+
 **Location**: `src/app/screens/meals/AddMealFromVisionScreen.tsx`  
 **Instances**: Estimated 4  
 **Import path**: `'../../../utils/errorHandler'`
 
 #### 7. MealDiaryScreen.tsx
+
 **Location**: `src/app/screens/diary/MealDiaryScreen.tsx`  
 **Instances**: Estimated 2-3  
 **Import path**: `'../../../utils/errorHandler'`
 
 #### 8. CustomDishScreen.tsx
+
 **Location**: `src/app/screens/diary/CustomDishScreen.tsx`  
 **Instances**: Estimated 2  
 **Import path**: `'../../../utils/errorHandler'`
 
 #### 9. AiCameraScreen.tsx
+
 **Location**: `src/app/screens/ai/AiCameraScreen.tsx`  
 **Instances**: Estimated 2  
 **Import path**: `'../../../utils/errorHandler'`
 
 #### 10. AiVisionScreen.tsx
+
 **Location**: `src/app/screens/ai/AiVisionScreen.tsx`  
 **Instances**: Estimated 2  
 **Import path**: `'../../../utils/errorHandler'`
@@ -204,11 +228,13 @@ catch (error: any) {
 After each file migration:
 
 1. **TypeScript Check**:
+
    ```bash
    npm run typecheck
    ```
 
 2. **Run the app**:
+
    ```bash
    npm start
    ```
@@ -242,7 +268,7 @@ When all migrations are complete:
 
 - **Code reduction**: ~200 lines less
 - **Maintainability**: Error messages in one place
-- **Consistency**: All errors handled the same way  
+- **Consistency**: All errors handled the same way
 - **Extensibility**: Easy to add error tracking (Sentry, etc.)
 
 ---
@@ -250,6 +276,7 @@ When all migrations are complete:
 ## 📝 EXAMPLE: Complete Migration for One File
 
 ### Before (`FoodSearchScreen.tsx`):
+
 ```typescript
 // Line 1-22 (imports)
 import { useCallback, useState } from 'react';
@@ -259,7 +286,7 @@ import Toast from 'react-native-toast-message';
 
 const FoodSearchScreen = (): JSX.Element => {
   // ... component code ...
-  
+
   const loadFoods = useCallback(async () => {
     try {
       const result = await foodService.searchAllFoods(query);
@@ -277,12 +304,13 @@ const FoodSearchScreen = (): JSX.Element => {
       }
     }
   }, [query]);
-  
+
   // ... rest of component ...
 };
 ```
 
 ### After (`FoodSearchScreen.tsx`):
+
 ```typescript
 // Line 1-22 (imports)
 import { useCallback, useState } from 'react';
@@ -293,7 +321,7 @@ import { handleApiError } from '../../../utils/errorHandler'; // ← ADDED
 
 const FoodSearchScreen = (): JSX.Element => {
   // ... component code ...
-  
+
   const loadFoods = useCallback(async () => {
     try {
       const result = await foodService.searchAllFoods(query);
@@ -302,7 +330,7 @@ const FoodSearchScreen = (): JSX.Element => {
       handleApiError(error); // ← REPLACED (was 13 lines)
     }
   }, [query]);
-  
+
   // ... rest of component ...
 };
 ```

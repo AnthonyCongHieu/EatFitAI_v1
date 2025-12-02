@@ -2,7 +2,6 @@ import {
   createContext,
   useCallback,
   useContext,
-  useEffect,
   useMemo,
   useState,
   type ReactNode,
@@ -21,7 +20,7 @@ type ThemeContextValue = {
 const ThemeContext = createContext<ThemeContextValue | undefined>(undefined);
 
 export const ThemeProvider = ({ children }: { children: ReactNode }): JSX.Element => {
-  const systemScheme = useColorScheme();
+  useColorScheme();
   const [mode, setMode] = useState<AppTheme['mode']>('dark');
 
   const toggleTheme = useCallback(() => {

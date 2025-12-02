@@ -1,8 +1,13 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { FlatList, Pressable, ScrollView, StyleSheet, View } from 'react-native';
-import Animated, { FadeInUp, useSharedValue, useAnimatedStyle, withSpring, withTiming, interpolate } from 'react-native-reanimated';
+import Animated, {
+  FadeInUp,
+  useAnimatedStyle,
+  withSpring,
+} from 'react-native-reanimated';
 import { useNavigation } from '@react-navigation/native';
 import type { NavigationProp } from '@react-navigation/native';
+import { useQuery } from '@tanstack/react-query';
 
 import { Screen } from '../../../components/Screen';
 import { ThemedText } from '../../../components/ThemedText';
@@ -15,19 +20,15 @@ import { SectionHeader } from '../../../components/ui/SectionHeader';
 import { EmptyState } from '../../../components/ui/EmptyState';
 import { useAppTheme } from '../../../theme/ThemeProvider';
 import { useDiaryStore } from '../../../store/useDiaryStore';
-import { diaryService, type DiaryEntry, type DaySummary } from '../../../services/diaryService';
-import { MEAL_TYPES, MEAL_TYPE_LABELS, type MealTypeId } from '../../../types';
+import { diaryService, type DiaryEntry } from '../../../services/diaryService';
+import { MEAL_TYPE_LABELS, type MealTypeId } from '../../../types';
 import type { RootStackParamList } from '../../types';
 import { t } from '../../../i18n/vi';
-
-const DAYS_TO_SHOW = 7; // Show ±3 days from today
 
 const MealDiaryScreen = (): JSX.Element => {
   const { theme } = useAppTheme();
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
   const [selectedDate, setSelectedDate] = useState(new Date());
-  const [entries, setEntries] = useState<DiaryEntry[]>([]);
-  const [loading, setLoading] = useState(false);
   const [editingEntry, setEditingEntry] = useState<DiaryEntry | null>(null);
   const [editGrams, setEditGrams] = useState('');
   const [showEditSheet, setShowEditSheet] = useState(false);
@@ -161,7 +162,7 @@ const MealDiaryScreen = (): JSX.Element => {
     return date.toLocaleDateString('vi-VN', {
       weekday: 'short',
       day: 'numeric',
-      month: 'numeric'
+      month: 'numeric',
     });
   }, []);
 
@@ -173,26 +174,25 @@ const MealDiaryScreen = (): JSX.Element => {
     return `${y}-${m}-${d}`;
   }, []);
 
-  // Load entries for selected date
-  const loadEntries = useCallback(async (date: Date) => {
-    setLoading(true);
-    try {
-      const dateStr = formatDateForApi(date);
-      const data = await diaryService.getEntriesByDate(dateStr);
-      setEntries(data);
-    } catch (error) {
-      console.error('Failed to load diary entries:', error);
-      setEntries([]);
-    } finally {
-      setLoading(false);
-    }
-  }, [formatDateForApi]);
+  const dateKey = useMemo(
+    () => formatDateForApi(selectedDate),
+    [formatDateForApi, selectedDate],
+  );
+  const {
+    data: entriesData,
+    isLoading: isEntriesLoading,
+    refetch,
+  } = useQuery({
+    queryKey: ['diary-entries', dateKey],
+    queryFn: () => diaryService.getEntriesByDate(dateKey),
+  });
+  const entries = entriesData ?? [];
 
   // Group entries by meal type
   const groupedEntries = useMemo(() => {
     const groups = new Map<MealTypeId, DiaryEntry[]>();
 
-    entries.forEach(entry => {
+    entries.forEach((entry) => {
       const mealType = entry.mealType;
       if (!groups.has(mealType)) {
         groups.set(mealType, []);
@@ -200,18 +200,17 @@ const MealDiaryScreen = (): JSX.Element => {
       groups.get(mealType)!.push(entry);
     });
 
-    return Array.from(groups.entries()).map(([mealType, entries]) => ({
+    return Array.from(groups.entries()).map(([mealType, mealEntries]) => ({
       mealType,
       title: MEAL_TYPE_LABELS[mealType],
-      entries
+      entries: mealEntries,
     }));
   }, [entries]);
 
   // Handle date selection
   const handleDateSelect = useCallback((date: Date) => {
     setSelectedDate(date);
-    loadEntries(date);
-  }, [loadEntries]);
+  }, []);
 
   // Handle edit grams
   const handleEditGrams = useCallback((entry: DiaryEntry) => {
@@ -229,14 +228,14 @@ const MealDiaryScreen = (): JSX.Element => {
 
     try {
       await diaryService.updateEntry(editingEntry.id, { grams });
-      await loadEntries(selectedDate);
+      await refetch();
       await refreshSummary();
       setShowEditSheet(false);
       setEditingEntry(null);
     } catch (error) {
       console.error('Failed to update entry:', error);
     }
-  }, [editingEntry, editGrams, loadEntries, selectedDate, refreshSummary]);
+  }, [editingEntry, editGrams, refetch, refreshSummary]);
 
   // Handle add from AI
   const handleAddFromAI = useCallback(() => {
@@ -248,100 +247,111 @@ const MealDiaryScreen = (): JSX.Element => {
     navigation.navigate('FoodSearch');
   }, [navigation]);
 
-  // Load entries when date changes
-  useEffect(() => {
-    loadEntries(selectedDate);
-  }, [loadEntries, selectedDate]);
-
   // Render date selector item
-  const renderDateItem = useCallback(({ item: date }: { item: Date }) => {
-    const isSelected = date.toDateString() === selectedDate.toDateString();
+  const renderDateItem = useCallback(
+    ({ item: date }: { item: Date }) => {
+      const isSelected = date.toDateString() === selectedDate.toDateString();
 
-    return (
-      <Animated.View
-        style={[
-          styles.dateItem,
-          useAnimatedStyle(() => ({
-            transform: [{ scale: isSelected ? withSpring(1.05) : withSpring(1) }],
-          })),
-        ]}
-      >
-        <Pressable onPress={() => handleDateSelect(date)}>
-          <AppChip
-            label={formatDate(date)}
-            selected={isSelected}
-            variant="outline"
-          />
-        </Pressable>
-      </Animated.View>
-    );
-  }, [selectedDate, handleDateSelect, formatDate]);
+      return (
+        <Animated.View
+          style={[
+            styles.dateItem,
+            useAnimatedStyle(() => ({
+              transform: [{ scale: isSelected ? withSpring(1.05) : withSpring(1) }],
+            })),
+          ]}
+        >
+          <Pressable onPress={() => handleDateSelect(date)}>
+            <AppChip label={formatDate(date)} selected={isSelected} variant="outline" />
+          </Pressable>
+        </Animated.View>
+      );
+    },
+    [selectedDate, handleDateSelect, formatDate],
+  );
 
   // Render food card
-  const renderFoodCard = useCallback((entry: DiaryEntry) => (
-    <AppCard key={entry.id} style={styles.foodCard}>
-      <View style={styles.foodCardContent}>
-        <View style={styles.foodInfo}>
-          <ThemedText variant="body" numberOfLines={2}>
-            {entry.foodName}
-          </ThemedText>
-          <View style={styles.foodDetails}>
-            <ThemedText variant="caption" color="textSecondary">
-              {entry.calories ? `${entry.calories} kcal` : '--'}
+  const renderFoodCard = useCallback(
+    (entry: DiaryEntry) => (
+      <AppCard key={entry.id} style={styles.foodCard}>
+        <View style={styles.foodCardContent}>
+          <View style={styles.foodInfo}>
+            <ThemedText variant="body" numberOfLines={2}>
+              {entry.foodName}
             </ThemedText>
-            <ThemedText variant="caption" color="textSecondary">
-              •
-            </ThemedText>
-            <ThemedText variant="caption" color="textSecondary">
-              {entry.quantityText || '--'}
-            </ThemedText>
+            <View style={styles.foodDetails}>
+              <ThemedText variant="caption" color="textSecondary">
+                {entry.calories ? `${entry.calories} kcal` : '--'}
+              </ThemedText>
+              <ThemedText variant="caption" color="textSecondary">
+                •
+              </ThemedText>
+              <ThemedText variant="caption" color="textSecondary">
+                {entry.quantityText || '--'}
+              </ThemedText>
+            </View>
+          </View>
+
+          <View style={styles.foodActions}>
+            <AppChip
+              label={entry.sourceMethod === 'ai' ? 'AI' : 'Tự tạo'}
+              variant="solid"
+            />
+            <Pressable style={styles.editButton} onPress={() => handleEditGrams(entry)}>
+              <ThemedText variant="caption" color="primary">
+                Sửa
+              </ThemedText>
+            </Pressable>
           </View>
         </View>
-
-        <View style={styles.foodActions}>
-          <AppChip
-            label={entry.sourceMethod === 'ai' ? 'AI' : 'Tự tạo'}
-            variant="solid"
-          />
-          <Pressable
-            style={styles.editButton}
-            onPress={() => handleEditGrams(entry)}
-          >
-            <ThemedText variant="caption" color="primary">
-              Sửa
-            </ThemedText>
-          </Pressable>
-        </View>
-      </View>
-    </AppCard>
-  ), [handleEditGrams]);
+      </AppCard>
+    ),
+    [handleEditGrams],
+  );
 
   // Render meal section
-  const renderMealSection = useCallback(({ item, index }: { item: { mealType: MealTypeId; title: string; entries: DiaryEntry[] }; index: number }) => (
-    <Animated.View
-      key={item.mealType}
-      style={styles.mealSection}
-      entering={FadeInUp.delay(index * 100).duration(400).springify()}
-    >
-      <SectionHeader title={item.title} />
-      {item.entries.length > 0 ? (
-        item.entries.map((entry, entryIndex) => (
-          <Animated.View
-            key={entry.id}
-            entering={FadeInUp.delay((index * 100) + (entryIndex * 50)).duration(300).springify()}
-          >
-            {renderFoodCard(entry)}
-          </Animated.View>
-        ))
-      ) : (
-        <AppCard style={styles.emptyMealCard}>
-          <ThemedText variant="bodySmall" color="textSecondary" style={styles.emptyMealText}>
-            Chưa có món nào trong bữa ăn này
-          </ThemedText>
-        </AppCard>
-      )}
-    </Animated.View>
-  ), [renderFoodCard]);
+  const renderMealSection = useCallback(
+    ({
+      item,
+      index,
+    }: {
+      item: { mealType: MealTypeId; title: string; entries: DiaryEntry[] };
+      index: number;
+    }) => (
+      <Animated.View
+        key={item.mealType}
+        style={styles.mealSection}
+        entering={FadeInUp.delay(index * 100)
+          .duration(400)
+          .springify()}
+      >
+        <SectionHeader title={item.title} />
+        {item.entries.length > 0 ? (
+          item.entries.map((entry, entryIndex) => (
+            <Animated.View
+              key={entry.id}
+              entering={FadeInUp.delay(index * 100 + entryIndex * 50)
+                .duration(300)
+                .springify()}
+            >
+              {renderFoodCard(entry)}
+            </Animated.View>
+          ))
+        ) : (
+          <AppCard style={styles.emptyMealCard}>
+            <ThemedText
+              variant="bodySmall"
+              color="textSecondary"
+              style={styles.emptyMealText}
+            >
+              Chưa có món nào trong bữa ăn này
+            </ThemedText>
+          </AppCard>
+        )}
+      </Animated.View>
+    ),
+    [renderFoodCard],
+  );
 
   const isEmpty = entries.length === 0;
 
@@ -361,7 +371,7 @@ const MealDiaryScreen = (): JSX.Element => {
         </View>
 
         {/* Content */}
-        {loading ? (
+        {isEntriesLoading ? (
           <View style={styles.loadingContainer}>
             <ThemedText variant="body">{t('common.loading')}</ThemedText>
           </View>
@@ -373,10 +383,7 @@ const MealDiaryScreen = (): JSX.Element => {
             action={
               <View style={styles.emptyActions}>
                 <View style={styles.actionButton}>
-                  <Button
-                    title="+ Thêm từ AI"
-                    onPress={handleAddFromAI}
-                  />
+                  <Button title="+ Thêm từ AI" onPress={handleAddFromAI} />
                 </View>
                 <View style={styles.actionButton}>
                   <Button
@@ -390,7 +397,9 @@ const MealDiaryScreen = (): JSX.Element => {
           />
         ) : (
           <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-            {groupedEntries.map((group, index) => renderMealSection({ item: group, index }))}
+            {groupedEntries.map((group, index) =>
+              renderMealSection({ item: group, index }),
+            )}
           </ScrollView>
         )}
 
@@ -398,10 +407,7 @@ const MealDiaryScreen = (): JSX.Element => {
         {!isEmpty && (
           <View style={styles.actionButtons}>
             <View style={styles.actionButton}>
-              <Button
-                title="+ Thêm từ AI"
-                onPress={handleAddFromAI}
-              />
+              <Button title="+ Thêm từ AI" onPress={handleAddFromAI} />
             </View>
             <View style={styles.actionButton}>
               <Button
@@ -433,10 +439,7 @@ const MealDiaryScreen = (): JSX.Element => {
             style={styles.editInput}
           />
           <View style={styles.saveButton}>
-            <Button
-              title="Lưu"
-              onPress={handleSaveGrams}
-            />
+            <Button title="Lưu" onPress={handleSaveGrams} />
           </View>
         </View>
       </BottomSheet>

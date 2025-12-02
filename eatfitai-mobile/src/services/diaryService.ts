@@ -60,7 +60,9 @@ const normalizeEntry = (data: MealDiaryDto): DiaryEntry => ({
   mealType: (data?.mealTypeId as MealTypeId) ?? 1, // Default to breakfast if unknown
   foodName: data?.foodItemName ?? data?.userDishName ?? data?.recipeName ?? 'Mon an',
   note: data?.note ?? null,
-  quantityText: data?.portionQuantity ? `${data.portionQuantity} ${data.servingUnitName ?? 'serving'}` : `${data.grams}g`,
+  quantityText: data?.portionQuantity
+    ? `${data.portionQuantity} ${data.servingUnitName ?? 'serving'}`
+    : `${data.grams}g`,
   calories: data?.calories ?? null,
   protein: data?.protein ?? null,
   carbs: data?.carb ?? null,
@@ -75,7 +77,11 @@ const normalizeEntry = (data: MealDiaryDto): DiaryEntry => ({
 const normalizeMeal = (data: any): DiaryMealGroup => {
   const mealTypeId = data?.mealTypeId ?? data?.mealType ?? data?.meal ?? 'unknown';
   const mealType = typeof mealTypeId === 'number' ? (mealTypeId as MealTypeId) : 1; // Default to breakfast if unknown
-  const title = data?.title ?? (typeof mealTypeId === 'number' ? MEAL_TYPE_LABELS[mealTypeId as MealTypeId] : data?.mealType ?? 'Bua an');
+  const title =
+    data?.title ??
+    (typeof mealTypeId === 'number'
+      ? MEAL_TYPE_LABELS[mealTypeId as MealTypeId]
+      : (data?.mealType ?? 'Bua an'));
 
   return {
     mealType,
@@ -110,7 +116,15 @@ const groupByMeal = (entries: DiaryEntry[]): DiaryMealGroup[] => {
   const map = new Map<MealTypeId, DiaryMealGroup>();
   for (const e of entries) {
     const key = typeof e.mealType === 'number' ? e.mealType : 1; // Default to breakfast
-    const g = map.get(key) ?? { mealType: key, title: MEAL_TYPE_LABELS[key], totalCalories: 0, protein: 0, carbs: 0, fat: 0, entries: [] };
+    const g = map.get(key) ?? {
+      mealType: key,
+      title: MEAL_TYPE_LABELS[key],
+      totalCalories: 0,
+      protein: 0,
+      carbs: 0,
+      fat: 0,
+      entries: [],
+    };
     g.entries.push(e);
     g.totalCalories = (g.totalCalories ?? 0) + (e.calories ?? 0);
     g.protein = (g.protein ?? 0) + (e.protein ?? 0);
@@ -157,7 +171,10 @@ export const diaryService = {
   },
 
   // Cap nhat mot entry trong nhat ky
-  async updateEntry(entryId: string, updates: { grams?: number; note?: string }): Promise<void> {
+  async updateEntry(
+    entryId: string,
+    updates: { grams?: number; note?: string },
+  ): Promise<void> {
     await apiClient.put(`/api/meal-diary/${entryId}`, {
       grams: updates.grams,
       note: updates.note,

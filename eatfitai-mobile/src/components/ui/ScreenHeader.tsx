@@ -11,15 +11,21 @@ type ScreenHeaderProps = {
   onBackPress?: () => void;
 };
 
-export const ScreenHeader = ({ title, subtitle, onBackPress }: ScreenHeaderProps): JSX.Element => {
+export const ScreenHeader = ({
+  title,
+  subtitle,
+  onBackPress,
+}: ScreenHeaderProps): JSX.Element => {
   const { theme } = useAppTheme();
 
   return (
-    <View style={{
-      paddingHorizontal: theme.spacing.lg,
-      paddingTop: theme.spacing.lg,
-      paddingBottom: theme.spacing.xl
-    }}>
+    <View
+      style={{
+        paddingHorizontal: theme.spacing.lg,
+        paddingTop: theme.spacing.lg,
+        paddingBottom: theme.spacing.xl,
+      }}
+    >
       {onBackPress && (
         <TouchableOpacity
           onPress={onBackPress}

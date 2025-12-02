@@ -1,6 +1,5 @@
 // Core Components
 export { Button } from './Button';
-export { Card } from './Card';
 export { Screen } from './Screen';
 export { ThemedText } from './ThemedText';
 export { ThemedTextInput } from './ThemedTextInput';

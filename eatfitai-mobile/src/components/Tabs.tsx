@@ -4,7 +4,6 @@ import Animated, {
   useAnimatedStyle,
   useSharedValue,
   withSpring,
-  interpolate
 } from 'react-native-reanimated';
 
 import { ThemedText } from './ThemedText';
@@ -37,11 +36,11 @@ export const Tabs = ({
   size = 'md',
   scrollable = false,
   animated = true,
-  disabled = false
+  disabled = false,
 }: TabsProps): JSX.Element => {
   const { theme } = useAppTheme();
 
-  const activeIndex = tabs.findIndex(tab => tab.key === activeTab);
+  const activeIndex = tabs.findIndex((tab) => tab.key === activeTab);
   const indicatorPosition = useSharedValue(activeIndex);
 
   const getSizeConfig = () => {
@@ -60,7 +59,7 @@ export const Tabs = ({
 
   const handleTabPress = (tab: Tab) => {
     if (!tab.disabled && !disabled) {
-      const newIndex = tabs.findIndex(t => t.key === tab.key);
+      const newIndex = tabs.findIndex((t) => t.key === tab.key);
       if (animated) {
         indicatorPosition.value = withSpring(newIndex, { damping: 20, stiffness: 200 });
       } else {
@@ -75,7 +74,7 @@ export const Tabs = ({
       const translateX = interpolate(
         indicatorPosition.value,
         tabs.map((_, index) => index),
-        tabs.map((_, index) => (100 / tabs.length) * index)
+        tabs.map((_, index) => (100 / tabs.length) * index),
       );
 
       return {
@@ -87,18 +86,21 @@ export const Tabs = ({
     return {};
   });
 
-  const renderTab = (tab: Tab, index: number) => {
+  const renderTab = (tab: Tab) => {
     const isActive = tab.key === activeTab;
     const isDisabled = tab.disabled || disabled;
 
     const tabStyle = {
       opacity: isDisabled ? 0.5 : 1,
-      backgroundColor: variant === 'filled' && isActive ? theme.colors.primary : 'transparent',
+      backgroundColor:
+        variant === 'filled' && isActive ? theme.colors.primary : 'transparent',
       borderRadius: variant === 'pills' ? sizeConfig.height / 2 : 0,
     };
 
     const textColor = isActive
-      ? (variant === 'filled' ? '#fff' : theme.colors.primary)
+      ? variant === 'filled'
+        ? '#fff'
+        : theme.colors.primary
       : theme.colors.muted;
 
     return (
@@ -120,11 +122,7 @@ export const Tabs = ({
         accessibilityLabel={tab.label}
       >
         <View style={styles.tabContent}>
-          {tab.icon && (
-            <View style={styles.tabIcon}>
-              {tab.icon}
-            </View>
-          )}
+          {tab.icon && <View style={styles.tabIcon}>{tab.icon}</View>}
 
           <ThemedText
             style={[

@@ -4,9 +4,8 @@ import Animated, {
   useAnimatedStyle,
   useSharedValue,
   withSpring,
-  withSequence,
   withTiming,
-  withRepeat
+  withRepeat,
 } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 
@@ -38,7 +37,7 @@ export const FAB = ({
   disabled = false,
   loading = false,
   animated = true,
-  hapticFeedback = true
+  hapticFeedback = true,
 }: FABProps): JSX.Element => {
   const { theme } = useAppTheme();
 
@@ -103,25 +102,20 @@ export const FAB = ({
 
   // Loading animation
   if (loading && animated) {
-    rotate.value = withRepeat(
-      withTiming(360, { duration: 1000 }),
-      -1,
-      false
-    );
+    rotate.value = withRepeat(withTiming(360, { duration: 1000 }), -1, false);
   }
 
   const animatedStyle = useAnimatedStyle(() => ({
-    transform: [
-      { scale: scale.value },
-      { rotate: `${rotate.value}deg` },
-    ],
+    transform: [{ scale: scale.value }, { rotate: `${rotate.value}deg` }],
   }));
 
   const renderIcon = () => {
     if (loading) {
       return (
         <View style={styles.loadingIcon}>
-          <ThemedText style={[styles.iconText, { fontSize: sizeConfig.iconSize, color: '#fff' }]}>
+          <ThemedText
+            style={[styles.iconText, { fontSize: sizeConfig.iconSize, color: '#fff' }]}
+          >
             ⟳
           </ThemedText>
         </View>
@@ -134,7 +128,9 @@ export const FAB = ({
 
     return (
       <View style={styles.defaultIcon}>
-        <ThemedText style={[styles.iconText, { fontSize: sizeConfig.iconSize, color: '#fff' }]}>
+        <ThemedText
+          style={[styles.iconText, { fontSize: sizeConfig.iconSize, color: '#fff' }]}
+        >
           +
         </ThemedText>
       </View>
@@ -171,9 +167,11 @@ export const FAB = ({
         {
           width: variant === 'extended' && label ? undefined : sizeConfig.size,
           height: sizeConfig.size,
-          backgroundColor: variant === 'primary' ? theme.colors.primary : theme.colors.secondary,
+          backgroundColor:
+            variant === 'primary' ? theme.colors.primary : theme.colors.secondary,
           borderRadius: sizeConfig.size / 2,
-          paddingHorizontal: variant === 'extended' && label ? sizeConfig.paddingHorizontal : 0,
+          paddingHorizontal:
+            variant === 'extended' && label ? sizeConfig.paddingHorizontal : 0,
           opacity: disabled ? 0.6 : 1,
           shadowColor: '#000',
           shadowOffset: { width: 0, height: 4 },

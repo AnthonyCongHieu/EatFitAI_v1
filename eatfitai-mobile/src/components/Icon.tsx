@@ -5,10 +5,22 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useAppTheme } from '../theme/ThemeProvider';
 
 type IconSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl';
-type IconColor = 'text' | 'textSecondary' | 'primary' | 'secondary' | 'muted' | 'danger' | 'success' | 'warning' | 'info';
+type IconColor =
+  | 'text'
+  | 'textSecondary'
+  | 'primary'
+  | 'secondary'
+  | 'muted'
+  | 'danger'
+  | 'success'
+  | 'warning'
+  | 'info';
+type IoniconName = keyof typeof Ionicons.glyphMap;
+type MaterialIconName = keyof typeof MaterialIcons.glyphMap;
+type IconName = IoniconName | MaterialIconName | (string & {});
 
 interface IconProps {
-  name: string;
+  name: IconName;
   size?: IconSize | number;
   color?: IconColor | string;
   style?: StyleProp<ViewStyle>;
@@ -66,7 +78,7 @@ export const Icon: React.FC<IconProps> = ({
   if (type === 'material') {
     return (
       <MaterialIcons
-        name={name as any}
+        name={name as MaterialIconName}
         size={iconSize}
         color={iconColor}
         style={style}
@@ -76,7 +88,7 @@ export const Icon: React.FC<IconProps> = ({
 
   return (
     <Ionicons
-      name={name as any}
+      name={name as IoniconName}
       size={iconSize}
       color={iconColor}
       style={style}

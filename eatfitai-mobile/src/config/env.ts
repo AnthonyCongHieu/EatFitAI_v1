@@ -43,7 +43,8 @@ const resolveScheme = (): 'http' | 'https' => {
   return envScheme === 'https' ? 'https' : 'http';
 };
 
-const resolvePort = (): string | undefined => normalizeUrl(process.env.EXPO_PUBLIC_API_PORT);
+const resolvePort = (): string | undefined =>
+  normalizeUrl(process.env.EXPO_PUBLIC_API_PORT);
 
 export const API_BASE_URL: string | undefined = (() => {
   const explicit = normalizeUrl(process.env.EXPO_PUBLIC_API_BASE_URL);
@@ -73,17 +74,17 @@ export const API_BASE_URL: string | undefined = (() => {
 
 if (__DEV__) {
   if (!API_BASE_URL) {
-    // eslint-disable-next-line no-console
+    console.error('[EatFitAI] CRITICAL ERROR: API_BASE_URL is undefined!');
     console.error(
-      '[EatFitAI] CRITICAL ERROR: API_BASE_URL is undefined!',
+      '[EatFitAI] This will cause all API requests to fail with "undefined Network Error".',
     );
-    console.error('[EatFitAI] This will cause all API requests to fail with "undefined Network Error".');
     console.error('[EatFitAI] Solutions:');
     console.error('[EatFitAI] 1. Set EXPO_PUBLIC_API_BASE_URL environment variable');
-    console.error('[EatFitAI] 2. Ensure Expo development server is running and accessible');
+    console.error(
+      '[EatFitAI] 2. Ensure Expo development server is running and accessible',
+    );
     console.error('[EatFitAI] 3. Check network connectivity to backend server');
   } else {
-    // eslint-disable-next-line no-console
     console.log(`[EatFitAI] API_BASE_URL resolved to: ${API_BASE_URL}`);
   }
 }

@@ -1,10 +1,5 @@
 import type { ImageSourcePropType } from 'react-native';
 import { View, StyleSheet, Image } from 'react-native';
-import Animated, {
-  useAnimatedStyle,
-  useSharedValue,
-  withSpring
-} from 'react-native-reanimated';
 
 import { ThemedText } from './ThemedText';
 import { useAppTheme } from '../theme/ThemeProvider';
@@ -18,11 +13,7 @@ type AvatarProps = {
   borderColor?: string;
   backgroundColor?: string;
   textColor?: string;
-  animated?: boolean;
-  onPress?: () => void;
 };
-
-const AnimatedView = Animated.createAnimatedComponent(View);
 
 export const Avatar = ({
   source,
@@ -33,12 +24,8 @@ export const Avatar = ({
   borderColor,
   backgroundColor,
   textColor,
-  animated = true,
-  onPress
 }: AvatarProps): JSX.Element => {
   const { theme } = useAppTheme();
-
-  const scale = useSharedValue(1);
 
   const getSizeConfig = () => {
     switch (size) {
@@ -56,23 +43,23 @@ export const Avatar = ({
     }
   };
 
-  const getInitials = (name?: string) => {
-    if (!name) return '?';
-    return name
+  const getInitials = (fullName?: string) => {
+    if (!fullName) return '?';
+    return fullName
       .split(' ')
-      .map(word => word.charAt(0))
+      .map((word) => word.charAt(0))
       .join('')
       .toUpperCase()
       .slice(0, 2);
   };
 
   const getBorderRadius = () => {
-    const { size } = getSizeConfig();
+    const { size: finalSize } = getSizeConfig();
     switch (variant) {
       case 'circular':
-        return size / 2;
+        return finalSize / 2;
       case 'rounded':
-        return size * 0.2;
+        return finalSize * 0.2;
       case 'square':
       default:
         return 0;
@@ -85,22 +72,6 @@ export const Avatar = ({
   const finalBorderColor = borderColor || theme.colors.border;
   const finalBackgroundColor = backgroundColor || theme.colors.muted + '30';
   const finalTextColor = textColor || theme.colors.text;
-
-  const handlePressIn = () => {
-    if (animated && onPress) {
-      scale.value = withSpring(0.9, { damping: 15, stiffness: 300 });
-    }
-  };
-
-  const handlePressOut = () => {
-    if (animated && onPress) {
-      scale.value = withSpring(1, { damping: 15, stiffness: 300 });
-    }
-  };
-
-  const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value }],
-  }));
 
   const avatarContent = source ? (
     <Image
@@ -143,7 +114,7 @@ export const Avatar = ({
   );
 
   return (
-    <AnimatedView
+    <View
       style={[
         styles.container,
         {
@@ -154,11 +125,10 @@ export const Avatar = ({
           borderColor: finalBorderColor,
           padding: showBorder ? 1 : 0,
         },
-        animatedStyle,
       ]}
     >
       {avatarContent}
-    </AnimatedView>
+    </View>
   );
 };
 

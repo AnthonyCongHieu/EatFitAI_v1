@@ -25,6 +25,7 @@ import { useAppTheme } from '../../theme/ThemeProvider';
 import { useAuthStore } from '../../store/useAuthStore';
 import { useProfileStore } from '../../store/useProfileStore';
 import { profileService } from '../../services/profileService';
+import { handleApiErrorWithCustomMessage } from '../../utils/errorHandler';
 
 const ProfileSchema = z.object({
   fullName: z.string().trim().min(2, 'Tên cần ít nhất 2 ký tự'),
@@ -41,7 +42,8 @@ const BodyMetricsSchema = z.object({
     .optional()
     .refine(
       (value) =>
-        !value || (!Number.isNaN(Number(value)) && Number(value) >= 100 && Number(value) <= 250),
+        !value ||
+        (!Number.isNaN(Number(value)) && Number(value) >= 100 && Number(value) <= 250),
       {
         message: 'Chiều cao (cm) từ 100 - 250',
       },
@@ -52,7 +54,8 @@ const BodyMetricsSchema = z.object({
     .optional()
     .refine(
       (value) =>
-        !value || (!Number.isNaN(Number(value)) && Number(value) >= 30 && Number(value) <= 300),
+        !value ||
+        (!Number.isNaN(Number(value)) && Number(value) >= 30 && Number(value) <= 300),
       {
         message: 'Cân nặng (kg) từ 30 - 300',
       },
@@ -100,7 +103,10 @@ const ProfileScreen = (): JSX.Element => {
       borderWidth: 1,
       borderRadius: theme.borderRadius.input,
       paddingHorizontal: theme.spacing.md,
-      paddingVertical: Platform.select({ ios: theme.spacing.md, android: theme.spacing.sm }),
+      paddingVertical: Platform.select({
+        ios: theme.spacing.md,
+        android: theme.spacing.sm,
+      }),
       marginTop: theme.spacing.xs,
       fontFamily: 'Inter_400Regular',
     },
@@ -117,13 +123,16 @@ const ProfileScreen = (): JSX.Element => {
     },
   });
   const logout = useAuthStore((s) => s.logout);
-  const { profile, fetchProfile, isLoading, updateProfile, isSaving } = useProfileStore((state) => ({
-    profile: state.profile,
-    fetchProfile: state.fetchProfile,
-    isLoading: state.isLoading,
-    updateProfile: state.updateProfile,
-    isSaving: state.isSaving,
-  }));
+  const { profile, fetchProfile, isLoading, updateProfile, isSaving } = useProfileStore(
+    (state) => ({
+      profile: state.profile,
+      fetchProfile: state.fetchProfile,
+      isLoading: state.isLoading,
+      updateProfile: state.updateProfile,
+      isSaving: state.isSaving,
+    }),
+  );
+  const isProfileLoading = isLoading;
 
   const {
     control,
@@ -155,8 +164,10 @@ const ProfileScreen = (): JSX.Element => {
   });
 
   useEffect(() => {
-    fetchProfile().catch(() => {
-      Toast.show({ type: 'error', text1: 'Tải hồ sơ thất bại' });
+    fetchProfile().catch((error: any) => {
+      handleApiErrorWithCustomMessage(error, {
+        unknown: { text1: 'Tải hồ sơ thất bại', text2: 'Vui lòng thử lại' },
+      });
     });
   }, [fetchProfile]);
 
@@ -179,16 +190,13 @@ const ProfileScreen = (): JSX.Element => {
       });
       Toast.show({ type: 'success', text1: 'Đã lưu thông tin hồ sơ' });
     } catch (error: any) {
-      const status = error?.response?.status;
-      if (status === 422) {
-        Toast.show({
-          type: 'error',
-          text1: 'Dữ liệu không hợp lệ',
-          text2: 'Vui lòng kiểm tra lại nội dung',
-        });
-        return;
-      }
-      Toast.show({ type: 'error', text1: 'Không thể lưu hồ sơ' });
+      handleApiErrorWithCustomMessage(error, {
+        validation: {
+          text1: 'D? li?u kh?ng h?p l?',
+          text2: 'Vui l?ng ki?m tra n?i dung',
+        },
+        unknown: { text1: 'Kh?ng th? l?u h? s?', text2: 'Vui l?ng th? l?i' },
+      });
     }
   };
 
@@ -205,31 +213,33 @@ const ProfileScreen = (): JSX.Element => {
       // Refresh profile to update current height/weight
       fetchProfile();
     } catch (error: any) {
-      const status = error?.response?.status;
-      if (status === 422) {
-        Toast.show({
-          type: 'error',
-          text1: 'Số đo không hợp lệ',
-          text2: 'Vui lòng kiểm tra các trường',
-        });
-        return;
-      }
-      Toast.show({ type: 'error', text1: 'Không thể lưu số đo' });
+      handleApiErrorWithCustomMessage(error, {
+        validation: {
+          text1: 'S? ?o kh?ng h?p l?',
+          text2: 'Vui l?ng ki?m tra c?c tr??ng',
+        },
+        unknown: { text1: 'Kh?ng th? l?u s? ?o', text2: 'Vui l?ng th? l?i' },
+      });
     }
   };
 
   return (
     <KeyboardAvoidingView
       style={[styles.flex, { backgroundColor: theme.colors.background }]}
-      behavior={Platform.select({ ios: 'padding', android: undefined })}>
-      <ScreenHeader
-        title="Hồ sơ"
-        subtitle="Quản lý thông tin cá nhân và số đo"
-      />
+      behavior={Platform.select({ ios: 'padding', android: undefined })}
+    >
+      <ScreenHeader title="Hồ sơ" subtitle="Quản lý thông tin cá nhân và số đo" />
 
       <Screen contentContainerStyle={styles.scrollContent}>
         <AppCard>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: theme.spacing.sm, marginBottom: theme.spacing.sm }}>
+          <View
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: theme.spacing.sm,
+              marginBottom: theme.spacing.sm,
+            }}
+          >
             <View style={[styles.avatar, { backgroundColor: theme.colors.primaryLight }]}>
               <ThemedText variant="h2" color="primary">
                 {profile?.fullName?.charAt(0)?.toUpperCase() || '?'}
@@ -243,7 +253,7 @@ const ProfileScreen = (): JSX.Element => {
             </View>
           </View>
 
-          {isLoading ? (
+          {isProfileLoading ? (
             <View style={styles.loadingBox}>
               <ActivityIndicator color={theme.colors.primary} />
             </View>
@@ -325,20 +335,16 @@ const ProfileScreen = (): JSX.Element => {
             <Button
               accessibilityLabel="Đăng xuất"
               onPress={() =>
-                Alert.alert(
-                  'Đăng xuất',
-                  'Bạn có chắc chắn muốn đăng xuất không?',
-                  [
-                    { text: 'Huỷ', style: 'cancel' },
-                    {
-                      text: 'Đồng ý',
-                      style: 'destructive',
-                      onPress: () => {
-                        logout().catch(() => { });
-                      },
+                Alert.alert('Đăng xuất', 'Bạn có chắc chắn muốn đăng xuất không?', [
+                  { text: 'Huỷ', style: 'cancel' },
+                  {
+                    text: 'Đồng ý',
+                    style: 'destructive',
+                    onPress: () => {
+                      logout().catch(() => {});
                     },
-                  ],
-                )
+                  },
+                ])
               }
               variant="outline"
               title="Đăng xuất"
@@ -348,7 +354,14 @@ const ProfileScreen = (): JSX.Element => {
         </AppCard>
 
         <AppCard>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: theme.spacing.sm, marginBottom: theme.spacing.sm }}>
+          <View
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: theme.spacing.sm,
+              marginBottom: theme.spacing.sm,
+            }}
+          >
             <View style={[styles.icon, { backgroundColor: theme.colors.secondaryLight }]}>
               <ThemedText variant="h4" color="secondary">
                 📏

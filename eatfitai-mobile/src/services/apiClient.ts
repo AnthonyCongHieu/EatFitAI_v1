@@ -1,4 +1,9 @@
-import axios, { AxiosError, AxiosRequestConfig, InternalAxiosRequestConfig } from 'axios';
+import axios, {
+  AxiosError,
+  AxiosHeaders,
+  AxiosRequestConfig,
+  InternalAxiosRequestConfig,
+} from 'axios';
 import { API_BASE_URL } from '../config/env';
 import { tokenStorage } from './secureStore';
 import { getAccessTokenMem, setAccessTokenMem, clearAccessTokenMem } from './authTokens';
@@ -10,11 +15,13 @@ const apiClient = axios.create({ baseURL: API_BASE_URL, timeout: 10000 });
 
 if (__DEV__) {
   if (!API_BASE_URL) {
-    // eslint-disable-next-line no-console
-    console.error('[EatFitAI] CRITICAL: API_BASE_URL is undefined! Network requests will fail.');
-    console.error('[EatFitAI] Set EXPO_PUBLIC_API_BASE_URL environment variable or ensure Expo hostUri is available.');
+    console.error(
+      '[EatFitAI] CRITICAL: API_BASE_URL is undefined! Network requests will fail.',
+    );
+    console.error(
+      '[EatFitAI] Set EXPO_PUBLIC_API_BASE_URL environment variable or ensure Expo hostUri is available.',
+    );
   } else {
-    // eslint-disable-next-line no-console
     console.log(`[EatFitAI] API_BASE_URL configured: ${API_BASE_URL}`);
   }
 }
@@ -22,7 +29,11 @@ if (__DEV__) {
 // In-memory access token cache lives in authTokens module
 
 // Queue for 401 refresh handling
-type FailedQueueItem = { resolve: (value?: unknown) => void; reject: (reason?: unknown) => void; config: AxiosRequestConfig };
+type FailedQueueItem = {
+  resolve: (value?: unknown) => void;
+  reject: (reason?: unknown) => void;
+  config: AxiosRequestConfig;
+};
 let isRefreshing = false;
 const failedQueue: FailedQueueItem[] = [];
 const processQueue = (error: unknown, token: string | null): void => {
@@ -33,7 +44,12 @@ const processQueue = (error: unknown, token: string | null): void => {
       continue;
     }
     if (token && config.headers) {
-      (config.headers as Record<string, string>)['Authorization'] = `Bearer ${token}`;
+      const headers = config.headers as AxiosHeaders | Record<string, string>;
+      if (headers instanceof AxiosHeaders) {
+        headers.set('Authorization', `Bearer ${token}`);
+      } else {
+        headers.Authorization = `Bearer ${token}`;
+      }
     }
     resolve(apiClient(config));
   }
@@ -70,9 +86,15 @@ apiClient.interceptors.request.use(async (config: InternalAxiosRequestConfig) =>
     if (token) {
       // Validate token format before attaching
       if (typeof token === 'string' && token.trim().length > 0) {
-        config.headers = { ...(config.headers ?? {}), Authorization: `Bearer ${token}` } as InternalAxiosRequestConfig['headers'];
+        config.headers = {
+          ...(config.headers ?? {}),
+          Authorization: `Bearer ${token}`,
+        } as InternalAxiosRequestConfig['headers'];
         if (__DEV__) {
-          console.log('[EatFitAI] Authorization header attached:', config.headers.Authorization);
+          console.log(
+            '[EatFitAI] Authorization header attached:',
+            config.headers.Authorization,
+          );
         }
       } else {
         console.warn('[EatFitAI] Invalid token format, skipping authorization header');
@@ -108,10 +130,8 @@ apiClient.interceptors.response.use(
       } as const;
       // Reduce noise: don't warn for /health 404 (handled by fallback)
       if (urlPath === '/health' && safeError.status === 404) {
-        // eslint-disable-next-line no-console
         console.debug('EatFitAI health ping fallback:', safeError);
       } else {
-        // eslint-disable-next-line no-console
         console.warn('EatFitAI API warning:', safeError);
       }
     }
@@ -122,12 +142,12 @@ apiClient.interceptors.response.use(
       console.log('[EatFitAI] Response Interceptor - Status check:', {
         status,
         hasOriginalRequest: !!originalRequest,
-        isRetry: !!(originalRequest as any)?._retry,
+        isRetry: !!originalRequest?._retry,
         url: originalRequest?.url,
       });
     }
-    if (status === 401 && originalRequest && !(originalRequest as any)._retry) {
-      (originalRequest as any)._retry = true;
+    if (status === 401 && originalRequest && !originalRequest._retry) {
+      originalRequest._retry = true;
 
       if (isRefreshing) {
         return new Promise((resolve, reject) => {
@@ -166,33 +186,43 @@ apiClient.interceptors.response.use(
         const newAccessExp: string | undefined = data.accessTokenExpiresAt;
         const newRefreshExp: string | undefined = data.refreshTokenExpiresAt;
 
-        if (!newAccessToken || typeof newAccessToken !== 'string' || newAccessToken.trim().length === 0) {
+        if (
+          !newAccessToken ||
+          typeof newAccessToken !== 'string' ||
+          newAccessToken.trim().length === 0
+        ) {
           throw new Error('Refresh response missing or invalid accessToken');
         }
 
         // Validate token expiration dates if provided
         if (newAccessExp && isNaN(Date.parse(newAccessExp))) {
-          console.warn('[EatFitAI] Invalid access token expiration format:', newAccessExp);
+          console.warn(
+            '[EatFitAI] Invalid access token expiration format:',
+            newAccessExp,
+          );
         }
         if (newRefreshExp && isNaN(Date.parse(newRefreshExp))) {
-          console.warn('[EatFitAI] Invalid refresh token expiration format:', newRefreshExp);
+          console.warn(
+            '[EatFitAI] Invalid refresh token expiration format:',
+            newRefreshExp,
+          );
         }
 
         setAccessTokenMem(newAccessToken);
-        if ((tokenStorage as any).saveTokensFull) {
-          await (tokenStorage as any).saveTokensFull({
-            accessToken: newAccessToken,
-            accessTokenExpiresAt: newAccessExp,
-            refreshToken: newRefreshToken,
-            refreshTokenExpiresAt: newRefreshExp,
-          });
-        } else {
-          await tokenStorage.saveTokens(newAccessToken, newRefreshToken);
-        }
-        try { (updateSessionFromAuthResponse as any)?.(data); } catch {}
+        await tokenStorage.saveTokensFull({
+          accessToken: newAccessToken,
+          accessTokenExpiresAt: newAccessExp,
+          refreshToken: newRefreshToken,
+          refreshTokenExpiresAt: newRefreshExp,
+        });
+        try {
+          updateSessionFromAuthResponse?.(data);
+        } catch {}
 
         processQueue(null, newAccessToken);
-        (originalRequest as any).headers = { ...(originalRequest.headers ?? {}), Authorization: `Bearer ${newAccessToken}` } as any;
+        const retryHeaders = AxiosHeaders.from(originalRequest.headers ?? {});
+        retryHeaders.set('Authorization', `Bearer ${newAccessToken}`);
+        originalRequest.headers = retryHeaders;
         if (__DEV__) {
           console.log('[EatFitAI] Retrying original request with new token');
         }
@@ -217,7 +247,6 @@ apiClient.interceptors.response.use(
     // Handle network errors specifically
     if (!error.response && error.code) {
       if (__DEV__) {
-        // eslint-disable-next-line no-console
         console.error('[EatFitAI] Network Error Details:', {
           code: error.code,
           message: error.message,
@@ -226,15 +255,15 @@ apiClient.interceptors.response.use(
           config: {
             url: error.config?.url,
             method: error.config?.method,
-            timeout: error.config?.timeout
-          }
+            timeout: error.config?.timeout,
+          },
         });
       }
 
       // Create a more descriptive error for network issues
       const networkError = new Error(
         `Network Error: ${error.message || 'Unable to connect to server'}. ` +
-        `Please check your internet connection and ensure the API server is running at ${API_BASE_URL || 'undefined URL'}.`
+          `Please check your internet connection and ensure the API server is running at ${API_BASE_URL || 'undefined URL'}.`,
       );
       networkError.name = 'NetworkError';
       return Promise.reject(networkError);
@@ -245,4 +274,3 @@ apiClient.interceptors.response.use(
 );
 
 export default apiClient;
-

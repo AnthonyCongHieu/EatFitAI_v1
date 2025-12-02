@@ -2,6 +2,11 @@
 
 import { create } from 'zustand';
 import * as AuthSession from 'expo-auth-session';
+import {
+  makeRedirectUri,
+  type AuthSessionOptions,
+  type AuthSessionResult,
+} from 'expo-auth-session';
 
 import { API_BASE_URL } from '../config/env';
 import apiClient from '../services/apiClient';
@@ -9,6 +14,7 @@ import { setAccessTokenMem } from '../services/authTokens';
 import { tokenStorage } from '../services/secureStore';
 import { initAuthSession, updateSessionFromAuthResponse } from '../services/authSession';
 import type { AuthResponse } from '../types';
+import type { AuthSessionSuccessResult, AuthTokensResponse } from '../types/auth';
 import { t } from '../i18n/vi';
 
 type AuthUser = { id: string; email: string; name?: string };
@@ -69,19 +75,22 @@ export const useAuthStore = create<AuthState>((set: any) => ({
   },
 
   login: async (email, password) => {
-    const resp = await apiClient.post('/api/auth/login', { Email: email, Password: password });
-    const data = resp.data as any;
-    const accessToken = data?.token as string | undefined;
+    const resp = await apiClient.post<AuthTokensResponse>('/api/auth/login', {
+      Email: email,
+      Password: password,
+    });
+    const data = resp.data;
+    const accessToken = data?.token;
     if (!accessToken) throw new Error(t('auth.missingAccessToken'));
 
     await tokenStorage.saveTokensFull({
       accessToken,
-      accessTokenExpiresAt: data?.expiresAt,
-      refreshToken: data?.refreshToken,
-      refreshTokenExpiresAt: data?.refreshTokenExpiresAt,
+      accessTokenExpiresAt: data?.expiresAt ?? null,
+      refreshToken: data?.refreshToken ?? null,
+      refreshTokenExpiresAt: data?.refreshTokenExpiresAt ?? null,
     });
     setAccessTokenMem(accessToken);
-    await updateSessionFromAuthResponse(data);
+    await updateSessionFromAuthResponse(data as AuthResponse);
 
     set({ isAuthenticated: true, user: (data?.user as AuthUser | undefined) ?? null });
   },
@@ -89,20 +98,24 @@ export const useAuthStore = create<AuthState>((set: any) => ({
   register: async (name, email, password) => {
     try {
       console.log('[useAuthStore] Starting registration API call');
-      const resp = await apiClient.post('/api/auth/register', { DisplayName: name, Email: email, Password: password });
+      const resp = await apiClient.post<AuthTokensResponse>('/api/auth/register', {
+        DisplayName: name,
+        Email: email,
+        Password: password,
+      });
       console.log('[useAuthStore] Registration API response:', resp.data);
-      const data = resp.data as any;
-      const accessToken = data?.token as string | undefined;
+      const data = resp.data;
+      const accessToken = data?.token;
       if (!accessToken) throw new Error(t('auth.missingAccessToken'));
 
       await tokenStorage.saveTokensFull({
         accessToken,
-        accessTokenExpiresAt: data?.expiresAt,
-        refreshToken: data?.refreshToken,
-        refreshTokenExpiresAt: data?.refreshTokenExpiresAt,
+        accessTokenExpiresAt: data?.expiresAt ?? null,
+        refreshToken: data?.refreshToken ?? null,
+        refreshTokenExpiresAt: data?.refreshTokenExpiresAt ?? null,
       });
       setAccessTokenMem(accessToken);
-      await updateSessionFromAuthResponse(data);
+      await updateSessionFromAuthResponse(data as AuthResponse);
 
       set({ isAuthenticated: true, user: (data?.user as AuthUser | undefined) ?? null });
     } catch (err: any) {
@@ -112,7 +125,7 @@ export const useAuthStore = create<AuthState>((set: any) => ({
         response: err?.response,
         status: err?.response?.status,
         data: err?.response?.data,
-        isNetworkError: !err?.response
+        isNetworkError: !err?.response,
       });
       const message = extractRegisterErrorMessage(err);
       throw new Error(message);
@@ -121,34 +134,52 @@ export const useAuthStore = create<AuthState>((set: any) => ({
 
   signInWithGoogle: async () => {
     if (!API_BASE) {
-      throw new Error('API base URL is not configured. Set EXPO_PUBLIC_API_BASE_URL or provide a fallback.');
+      throw new Error(
+        'API base URL is not configured. Set EXPO_PUBLIC_API_BASE_URL or provide a fallback.',
+      );
     }
 
-    const redirectUri = (AuthSession as any).makeRedirectUri({ useProxy: true });
+    type StartAsyncFn = (options: AuthSessionOptions) => Promise<AuthSessionResult>;
+    const startAuthSessionAsync: StartAsyncFn = (
+      AuthSession as unknown as { startAsync: StartAsyncFn }
+    ).startAsync;
+
+    const redirectUri = makeRedirectUri();
     const authUrl = `${API_BASE}/api/auth/google?redirect_uri=${encodeURIComponent(redirectUri)}`;
 
-    const AS: any = AuthSession as any;
-    const result = await AS.startAsync({ authUrl });
+    const result = await startAuthSessionAsync({ authUrl });
     if (result.type !== 'success') {
       throw new Error(t('auth.googleLoginCancelled'));
     }
 
-    const params: Record<string, string | undefined> = (result as any).params ?? {};
+    const params: Record<string, string | undefined> = result.params ?? {};
     const accessToken =
-      params.accessToken || params.access_token || (result as any).accessToken || (result as any).access_token;
+      params.accessToken ||
+      params.access_token ||
+      (result as AuthSessionSuccessResult).accessToken ||
+      (result as AuthSessionSuccessResult).access_token;
     const refreshToken =
-      params.refreshToken || params.refresh_token || (result as any).refreshToken || (result as any).refresh_token;
+      params.refreshToken ||
+      params.refresh_token ||
+      (result as AuthSessionSuccessResult).refreshToken ||
+      (result as AuthSessionSuccessResult).refresh_token;
 
     if (!accessToken) throw new Error(t('auth.googleAccessTokenMissing'));
 
     await tokenStorage.saveTokensFull({
       accessToken,
-      accessTokenExpiresAt: (result as any).accessTokenExpiresAt || params.accessTokenExpiresAt,
+      accessTokenExpiresAt:
+        (result as AuthSessionSuccessResult).accessTokenExpiresAt ||
+        params.accessTokenExpiresAt,
       refreshToken,
-      refreshTokenExpiresAt: (result as any).refreshTokenExpiresAt || params.refreshTokenExpiresAt,
+      refreshTokenExpiresAt:
+        (result as AuthSessionSuccessResult).refreshTokenExpiresAt ||
+        params.refreshTokenExpiresAt,
     });
     setAccessTokenMem(accessToken);
-    try { await updateSessionFromAuthResponse(result); } catch {}
+    try {
+      await updateSessionFromAuthResponse(result as AuthResponse);
+    } catch {}
 
     set({ isAuthenticated: true });
   },
@@ -168,12 +199,18 @@ export const useAuthStore = create<AuthState>((set: any) => ({
     }
   },
   forgotPassword: async (email) => {
-    const resp = await apiClient.post('/api/auth/forgot-password', { Email: email });
-    const data = resp.data as any;
+    const resp = await apiClient.post<{ resetCode?: string }>(
+      '/api/auth/forgot-password',
+      { Email: email },
+    );
+    const data = resp.data;
     return data?.resetCode as string | undefined;
   },
   resetPassword: async (email, code, newPassword) => {
-    await apiClient.post('/api/auth/reset-password', { Email: email, ResetCode: code, NewPassword: newPassword });
+    await apiClient.post('/api/auth/reset-password', {
+      Email: email,
+      ResetCode: code,
+      NewPassword: newPassword,
+    });
   },
 }));
-

@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import type { ReactElement, ReactNode } from 'react';
 import type { RefreshControlProps, ScrollViewProps, ViewProps } from 'react-native';
 import { ScrollView, View } from 'react-native';
 
@@ -8,7 +8,7 @@ type ScreenProps = {
   children: ReactNode;
   contentContainerStyle?: ScrollViewProps['contentContainerStyle'];
   style?: ScrollViewProps['style'] & ViewProps['style'];
-  refreshControl?: ReactNode | RefreshControlProps;
+  refreshControl?: ReactElement<RefreshControlProps>;
   scroll?: boolean;
 };
 
@@ -26,15 +26,18 @@ export const Screen = ({
       <ScrollView
         style={[{ flex: 1, backgroundColor: theme.colors.background }, style]}
         contentContainerStyle={contentContainerStyle}
-        refreshControl={refreshControl as any}
+        refreshControl={refreshControl}
       >
         {children}
       </ScrollView>
     );
   }
 
-  return <View style={[{ flex: 1, backgroundColor: theme.colors.background }, style]}>{children}</View>;
+  return (
+    <View style={[{ flex: 1, backgroundColor: theme.colors.background }, style]}>
+      {children}
+    </View>
+  );
 };
 
 export default Screen;
-

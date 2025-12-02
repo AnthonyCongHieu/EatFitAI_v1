@@ -1,19 +1,34 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { ActivityIndicator, RefreshControl, StyleSheet, View, Pressable } from "react-native";
-import Animated, { FadeInUp, useSharedValue, useAnimatedStyle, withSpring, withTiming } from "react-native-reanimated";
-import { VictoryArea, VictoryChart, VictoryTheme, VictoryTooltip, VictoryAxis } from "victory-native";
-import Toast from "react-native-toast-message";
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import {
+  ActivityIndicator,
+  RefreshControl,
+  StyleSheet,
+  View,
+  Pressable,
+} from 'react-native';
+import Animated, {
+  FadeInUp,
+  useSharedValue,
+  useAnimatedStyle,
+  withSpring,
+} from 'react-native-reanimated';
+import {
+  VictoryArea,
+  VictoryChart,
+  VictoryTheme,
+  VictoryTooltip,
+  VictoryAxis,
+} from 'victory-native';
+import Toast from 'react-native-toast-message';
 
-import { ThemedText } from "../../../components/ThemedText";
-import Screen from "../../../components/Screen";
-import { AppCard } from "../../../components/ui/AppCard";
-import { SectionHeader } from "../../../components/ui/SectionHeader";
-import { EmptyState } from "../../../components/ui/EmptyState";
-import { ScreenHeader } from "../../../components/ui/ScreenHeader";
-import { useAppTheme } from "../../../theme/ThemeProvider";
-import { useStatsStore } from "../../../store/useStatsStore";
-import { summaryService } from "../../../services/summaryService";
-import { handleApiError } from "../../../utils/errorHandler";
+import { ThemedText } from '../../../components/ThemedText';
+import Screen from '../../../components/Screen';
+import { AppCard } from '../../../components/ui/AppCard';
+import { SectionHeader } from '../../../components/ui/SectionHeader';
+import { ScreenHeader } from '../../../components/ui/ScreenHeader';
+import { useAppTheme } from '../../../theme/ThemeProvider';
+import { useStatsStore } from '../../../store/useStatsStore';
+import { handleApiError } from '../../../utils/errorHandler';
 
 const WeekStatsScreen = (): JSX.Element => {
   const { theme } = useAppTheme();
@@ -24,7 +39,7 @@ const WeekStatsScreen = (): JSX.Element => {
     },
     loadingBox: {
       paddingVertical: theme.spacing.xl,
-      alignItems: "center",
+      alignItems: 'center',
     },
     summaryRow: {
       flexDirection: 'row',
@@ -48,7 +63,6 @@ const WeekStatsScreen = (): JSX.Element => {
   // Animation states
   const [highlightedCard, setHighlightedCard] = useState<number | null>(null);
   const cardScale = useSharedValue(1);
-  const tooltipOpacity = useSharedValue(0);
 
   useEffect(() => {
     fetchWeekSummary().catch(handleApiError);
@@ -56,7 +70,7 @@ const WeekStatsScreen = (): JSX.Element => {
 
   useEffect(() => {
     if (error) {
-      Toast.show({ type: "error", text1: "Không thể tải thống kê, vui lòng thử lại" });
+      Toast.show({ type: 'error', text1: 'Không thể tải thống kê, vui lòng thử lại' });
     }
   }, [error]);
 
@@ -64,14 +78,20 @@ const WeekStatsScreen = (): JSX.Element => {
     refreshWeekSummary().catch(handleApiError);
   }, [refreshWeekSummary]);
 
-  const handleCardPress = useCallback((index: number) => {
-    setHighlightedCard(highlightedCard === index ? null : index);
-    cardScale.value = withSpring(highlightedCard === index ? 1 : 1.02, { damping: 15, stiffness: 300 });
-  }, [highlightedCard, cardScale]);
+  const handleCardPress = useCallback(
+    (index: number) => {
+      setHighlightedCard(highlightedCard === index ? null : index);
+      cardScale.value = withSpring(highlightedCard === index ? 1 : 1.02, {
+        damping: 15,
+        stiffness: 300,
+      });
+    },
+    [highlightedCard, cardScale],
+  );
 
   const chartData = useMemo(() => {
     return (weekSummary?.days ?? []).map((day) => ({
-      x: new Date(day.date).toLocaleDateString("vi-VN", { weekday: "short" }),
+      x: new Date(day.date).toLocaleDateString('vi-VN', { weekday: 'short' }),
       y: day.calories,
       target: day.targetCalories ?? undefined,
     }));
@@ -79,32 +99,46 @@ const WeekStatsScreen = (): JSX.Element => {
 
   const targetLine = useMemo(() => {
     return chartData
-      .filter((day) => typeof day.target === "number")
+      .filter((day) => typeof day.target === 'number')
       .map((day) => ({ x: day.x, y: day.target as number }));
   }, [chartData]);
 
   return (
     <Screen
       contentContainerStyle={styles.content}
-      refreshControl={<RefreshControl refreshing={isLoading} onRefresh={handleRefresh} tintColor={theme.colors.primary} />}
+      refreshControl={
+        <RefreshControl
+          refreshing={isLoading}
+          onRefresh={handleRefresh}
+          tintColor={theme.colors.primary}
+        />
+      }
     >
-      <ScreenHeader
-        title="Thống kê tuần"
-        subtitle="Xem tiến độ dinh dưỡng 7 ngày qua"
-      />
+      <ScreenHeader title="Thống kê tuần" subtitle="Xem tiến độ dinh dưỡng 7 ngày qua" />
 
       <AppCard>
-        <SectionHeader title="Thống kê 7 ngày" subtitle="So sánh calo tiêu thụ với mục tiêu hằng ngày" />
+        <SectionHeader
+          title="Thống kê 7 ngày"
+          subtitle="So sánh calo tiêu thụ với mục tiêu hằng ngày"
+        />
 
         {isLoading && !weekSummary ? (
           <View style={styles.loadingBox}>
             <ActivityIndicator color={theme.colors.primary} size="large" />
-            <ThemedText variant="body" color="textSecondary" style={{ marginTop: theme.spacing.md }}>
+            <ThemedText
+              variant="body"
+              color="textSecondary"
+              style={{ marginTop: theme.spacing.md }}
+            >
               Đang tải...
             </ThemedText>
           </View>
         ) : chartData.length === 0 ? (
-          <ThemedText variant="body" color="textSecondary" style={{ textAlign: 'center', paddingVertical: theme.spacing.xl }}>
+          <ThemedText
+            variant="body"
+            color="textSecondary"
+            style={{ textAlign: 'center', paddingVertical: theme.spacing.xl }}
+          >
             Chưa có dữ liệu
           </ThemedText>
         ) : (
@@ -127,7 +161,11 @@ const WeekStatsScreen = (): JSX.Element => {
               style={{
                 axis: { stroke: theme.colors.border },
                 tickLabels: { fill: theme.colors.textSecondary, fontSize: 12 },
-                grid: { stroke: theme.colors.border, strokeDasharray: '4,4', opacity: 0.4 },
+                grid: {
+                  stroke: theme.colors.border,
+                  strokeDasharray: '4,4',
+                  opacity: 0.4,
+                },
               }}
             />
             <VictoryArea
@@ -135,9 +173,18 @@ const WeekStatsScreen = (): JSX.Element => {
               x="x"
               y="y"
               interpolation="monotoneX"
-              style={{ data: { fill: theme.colors.primary, fillOpacity: 0.3, stroke: theme.colors.primary, strokeWidth: 2 } }}
+              style={{
+                data: {
+                  fill: theme.colors.primary,
+                  fillOpacity: 0.3,
+                  stroke: theme.colors.primary,
+                  strokeWidth: 2,
+                },
+              }}
               labels={({ datum }) => `${datum.y} kcal`}
-              labelComponent={<VictoryTooltip renderInPortal={false} style={{ fontSize: 12 }} />}
+              labelComponent={
+                <VictoryTooltip renderInPortal={false} style={{ fontSize: 12 }} />
+              }
             />
             {targetLine.length > 0 ? (
               <VictoryArea
@@ -145,9 +192,18 @@ const WeekStatsScreen = (): JSX.Element => {
                 x="x"
                 y="y"
                 interpolation="monotoneX"
-                style={{ data: { stroke: theme.colors.secondary, strokeDasharray: "6,6", fillOpacity: 0, strokeWidth: 2 } }}
+                style={{
+                  data: {
+                    stroke: theme.colors.secondary,
+                    strokeDasharray: '6,6',
+                    fillOpacity: 0,
+                    strokeWidth: 2,
+                  },
+                }}
                 labels={({ datum }) => `Mục tiêu ${datum.y} kcal`}
-                labelComponent={<VictoryTooltip renderInPortal={false} style={{ fontSize: 10 }} />}
+                labelComponent={
+                  <VictoryTooltip renderInPortal={false} style={{ fontSize: 10 }} />
+                }
               />
             ) : null}
           </VictoryChart>
@@ -165,12 +221,19 @@ const WeekStatsScreen = (): JSX.Element => {
               ]}
               entering={FadeInUp.delay(200).duration(400).springify()}
             >
-              <Pressable onPress={() => handleCardPress(0)} style={{ alignItems: 'center' }}>
+              <Pressable
+                onPress={() => handleCardPress(0)}
+                style={{ alignItems: 'center' }}
+              >
                 <ThemedText variant="caption" color="textSecondary" weight="600">
                   Trung bình/ngày
                 </ThemedText>
                 <ThemedText variant="h4">
-                  {Math.round(weekSummary.days.reduce((sum, day) => sum + day.calories, 0) / weekSummary.days.length)} kcal
+                  {Math.round(
+                    weekSummary.days.reduce((sum, day) => sum + day.calories, 0) /
+                      weekSummary.days.length,
+                  )}{' '}
+                  kcal
                 </ThemedText>
               </Pressable>
             </Animated.View>
@@ -184,7 +247,10 @@ const WeekStatsScreen = (): JSX.Element => {
               ]}
               entering={FadeInUp.delay(300).duration(400).springify()}
             >
-              <Pressable onPress={() => handleCardPress(1)} style={{ alignItems: 'center' }}>
+              <Pressable
+                onPress={() => handleCardPress(1)}
+                style={{ alignItems: 'center' }}
+              >
                 <ThemedText variant="caption" color="textSecondary" weight="600">
                   Tổng tuần
                 </ThemedText>
@@ -203,12 +269,20 @@ const WeekStatsScreen = (): JSX.Element => {
               ]}
               entering={FadeInUp.delay(400).duration(400).springify()}
             >
-              <Pressable onPress={() => handleCardPress(2)} style={{ alignItems: 'center' }}>
+              <Pressable
+                onPress={() => handleCardPress(2)}
+                style={{ alignItems: 'center' }}
+              >
                 <ThemedText variant="caption" color="textSecondary" weight="600">
                   Đạt mục tiêu
                 </ThemedText>
                 <ThemedText variant="h4" color="success">
-                  {weekSummary.days.filter(day => day.targetCalories && day.calories >= day.targetCalories).length}/{weekSummary.days.length} ngày
+                  {
+                    weekSummary.days.filter(
+                      (day) => day.targetCalories && day.calories >= day.targetCalories,
+                    ).length
+                  }
+                  /{weekSummary.days.length} ngày
                 </ThemedText>
               </Pressable>
             </Animated.View>
@@ -218,6 +292,5 @@ const WeekStatsScreen = (): JSX.Element => {
     </Screen>
   );
 };
-
 
 export default WeekStatsScreen;

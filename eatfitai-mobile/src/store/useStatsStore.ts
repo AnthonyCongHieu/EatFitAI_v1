@@ -1,6 +1,5 @@
-import { create } from "zustand";
-import { summaryService, type WeekSummary } from "../services/summaryService";
-import type { NutritionSummaryDto } from '../types';
+import { create } from 'zustand';
+import { summaryService, type WeekSummary } from '../services/summaryService';
 
 export type StatsState = {
   weekSummary: WeekSummary | null;
@@ -24,7 +23,7 @@ export const useStatsStore = create<StatsState>((set: any, get: any) => ({
       const data = await summaryService.getWeekSummary();
       set({ weekSummary: data });
     } catch (error: any) {
-      set({ error: error?.message ?? "Khong the tai thong ke" });
+      set({ error: error?.message ?? 'Khong the tai thong ke' });
       throw error;
     } finally {
       set({ isLoading: false });
@@ -37,7 +36,7 @@ export const useStatsStore = create<StatsState>((set: any, get: any) => ({
       const data = await summaryService.getWeekSummary();
       set({ weekSummary: data });
     } catch (error: any) {
-      set({ error: error?.message ?? "Khong the tai thong ke" });
+      set({ error: error?.message ?? 'Khong the tai thong ke' });
       throw error;
     }
   },

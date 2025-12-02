@@ -3,21 +3,16 @@ import { Image, StyleSheet, View, FlatList, ListRenderItem } from 'react-native'
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import Animated, {
-  FadeInUp,
-  FadeIn,
   useAnimatedStyle,
   useSharedValue,
   withSpring,
   withTiming,
-  runOnJS,
-  interpolate,
 } from 'react-native-reanimated';
 import Toast from 'react-native-toast-message';
 
 import Screen from '../../../components/Screen';
 import { ThemedText } from '../../../components/ThemedText';
 import { SectionHeader } from '../../../components/ui/SectionHeader';
-import { EmptyState } from '../../../components/ui/EmptyState';
 import { Skeleton } from '../../../components/Skeleton';
 import { AiDetectionCard } from '../../../components/ui/AiDetectionCard';
 import { TeachLabelBottomSheet } from '../../../components/ui/TeachLabelBottomSheet';
@@ -26,11 +21,12 @@ import { AppCard } from '../../../components/ui/AppCard';
 import { useAppTheme } from '../../../theme/ThemeProvider';
 import type { RootStackParamList } from '../../types';
 import type { MealTypeId } from '../../../types';
-import type { VisionDetectResult, MappedFoodItem } from '../../../types/ai';
+import type { MappedFoodItem } from '../../../types/ai';
 import type { FoodItem } from '../../../services/foodService';
 import { aiService } from '../../../services/aiService';
 import { mealService } from '../../../services/mealService';
 import { useDiaryStore } from '../../../store/useDiaryStore';
+import { handleApiErrorWithCustomMessage } from '../../../utils/errorHandler';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 type RouteProps = RouteProp<RootStackParamList, 'AddMealFromVision'>;
@@ -113,14 +109,13 @@ const AddMealFromVisionScreen = (): JSX.Element => {
   const { imageUri, result } = route.params;
 
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [detectionItems, setDetectionItems] = useState<DetectionItem[]>(() =>
     result.items.map((item) => ({
       item,
       selected: item.isMatched,
       grams: 100,
       mealType: 2, // Default to lunch
-    }))
+    })),
   );
   const [teachLabelVisible, setTeachLabelVisible] = useState(false);
   const [currentTeachLabel, setCurrentTeachLabel] = useState<string>('');
@@ -133,17 +128,17 @@ const AddMealFromVisionScreen = (): JSX.Element => {
 
   const matchedItems = useMemo(
     () => detectionItems.filter((d) => d.item.isMatched),
-    [detectionItems]
+    [detectionItems],
   );
 
   const unmatchedItems = useMemo(
     () => detectionItems.filter((d) => !d.item.isMatched),
-    [detectionItems]
+    [detectionItems],
   );
 
   const selectedItems = useMemo(
     () => detectionItems.filter((d) => d.selected),
-    [detectionItems]
+    [detectionItems],
   );
 
   const totalCalories = useMemo(() => {
@@ -171,19 +166,19 @@ const AddMealFromVisionScreen = (): JSX.Element => {
 
   const handleSelectionChange = useCallback((index: number, selected: boolean) => {
     setDetectionItems((prev) =>
-      prev.map((item, i) => (i === index ? { ...item, selected } : item))
+      prev.map((item, i) => (i === index ? { ...item, selected } : item)),
     );
   }, []);
 
   const handleGramsChange = useCallback((index: number, grams: number) => {
     setDetectionItems((prev) =>
-      prev.map((item, i) => (i === index ? { ...item, grams } : item))
+      prev.map((item, i) => (i === index ? { ...item, grams } : item)),
     );
   }, []);
 
   const handleMealTypeChange = useCallback((index: number, mealType: MealTypeId) => {
     setDetectionItems((prev) =>
-      prev.map((item, i) => (i === index ? { ...item, mealType } : item))
+      prev.map((item, i) => (i === index ? { ...item, mealType } : item)),
     );
   }, []);
 
@@ -214,14 +209,17 @@ const AddMealFromVisionScreen = (): JSX.Element => {
           selected: item.isMatched,
           grams: 100,
           mealType: 2,
-        }))
+        })),
       );
       setLoading(false);
     } catch (err) {
-      Toast.show({
-        type: 'error',
-        text1: 'Lỗi',
-        text2: 'Không thể dạy AI. Vui lòng thử lại.',
+      handleApiErrorWithCustomMessage(err, {
+        server_error: {
+          text1: 'L?i',
+          text2: 'M?y ch? ?ang g?p s? c?. Vui l?ng th? l?i.',
+        },
+        network_error: { text1: 'Kh?ng c? k?t n?i', text2: 'Ki?m tra m?ng v? th? l?i' },
+        unknown: { text1: 'L?i', text2: 'Kh?ng th? d?y AI. Vui l?ng th? l?i.' },
       });
     }
   };
@@ -250,31 +248,39 @@ const AddMealFromVisionScreen = (): JSX.Element => {
       await refreshSummary();
       navigation.goBack();
     } catch (err) {
-      Toast.show({
-        type: 'error',
-        text1: 'Lỗi',
-        text2: 'Không thể thêm vào nhật ký. Vui lòng thử lại.',
+      handleApiErrorWithCustomMessage(err, {
+        server_error: {
+          text1: 'L?i',
+          text2: 'M?y ch? ?ang g?p s? c?. Vui l?ng th? l?i.',
+        },
+        network_error: { text1: 'Kh?ng c? k?t n?i', text2: 'Ki?m tra m?ng v? th? l?i' },
+        unknown: { text1: 'L?i', text2: 'Kh?ng th? th?m v?o nh?t k?. Vui l?ng th? l?i.' },
       });
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const renderDetectionCard: ListRenderItem<DetectionItem> = useCallback(({ item: detection, index }) => (
-    <AiDetectionCard
-      item={detection.item}
-      selected={detection.selected}
-      grams={detection.grams}
-      mealType={detection.mealType}
-      onSelectionChange={(selected) => handleSelectionChange(index, selected)}
-      onGramsChange={(grams) => handleGramsChange(index, grams)}
-      onMealTypeChange={(mealType) => handleMealTypeChange(index, mealType)}
-      onTeachLabel={() => handleTeachLabel(detection.item.label)}
-    />
-  ), [handleSelectionChange, handleGramsChange, handleMealTypeChange, handleTeachLabel]);
+  const renderDetectionCard: ListRenderItem<DetectionItem> = useCallback(
+    ({ item: detection, index }) => (
+      <AiDetectionCard
+        item={detection.item}
+        selected={detection.selected}
+        grams={detection.grams}
+        mealType={detection.mealType}
+        onSelectionChange={(selected) => handleSelectionChange(index, selected)}
+        onGramsChange={(grams) => handleGramsChange(index, grams)}
+        onMealTypeChange={(mealType) => handleMealTypeChange(index, mealType)}
+        onTeachLabel={() => handleTeachLabel(detection.item.label)}
+      />
+    ),
+    [handleSelectionChange, handleGramsChange, handleMealTypeChange, handleTeachLabel],
+  );
 
-  const keyExtractor = useCallback((item: DetectionItem, index: number) =>
-    `${item.item.label}-${index}`, []);
+  const keyExtractor = useCallback(
+    (item: DetectionItem, index: number) => `${item.item.label}-${index}`,
+    [],
+  );
 
   const renderSkeleton = () => (
     <View style={styles.skeletonContainer}>
@@ -285,23 +291,6 @@ const AddMealFromVisionScreen = (): JSX.Element => {
       ))}
     </View>
   );
-
-  if (error) {
-    return (
-      <Screen>
-        <EmptyState
-          title="Không thể tải kết quả từ AI. Thử lại."
-          description="Đã xảy ra lỗi khi xử lý ảnh. Vui lòng thử chụp lại hoặc liên hệ hỗ trợ."
-          icon="alert-triangle"
-          action={
-            <View style={styles.errorActions}>
-              {/* Add retry button if needed */}
-            </View>
-          }
-        />
-      </Screen>
-    );
-  }
 
   return (
     <Screen style={styles.container}>
@@ -326,9 +315,7 @@ const AddMealFromVisionScreen = (): JSX.Element => {
       </View>
 
       {loading ? (
-        <View style={styles.scrollView}>
-          {renderSkeleton()}
-        </View>
+        <View style={styles.scrollView}>{renderSkeleton()}</View>
       ) : (
         <FlatList
           style={styles.scrollView}
@@ -353,16 +340,22 @@ const AddMealFromVisionScreen = (): JSX.Element => {
               {unmatchedItems.length > 0 && (
                 <AppCard style={styles.section}>
                   <SectionHeader title="Cần xác nhận" />
-                  {unmatchedItems.map((detection, index) => (
+                  {unmatchedItems.map((detection, _index) => (
                     <AiDetectionCard
                       key={`${detection.item.label}-${detectionItems.indexOf(detection)}`}
                       item={detection.item}
                       selected={detection.selected}
                       grams={detection.grams}
                       mealType={detection.mealType}
-                      onSelectionChange={(selected) => handleSelectionChange(detectionItems.indexOf(detection), selected)}
-                      onGramsChange={(grams) => handleGramsChange(detectionItems.indexOf(detection), grams)}
-                      onMealTypeChange={(mealType) => handleMealTypeChange(detectionItems.indexOf(detection), mealType)}
+                      onSelectionChange={(selected) =>
+                        handleSelectionChange(detectionItems.indexOf(detection), selected)
+                      }
+                      onGramsChange={(grams) =>
+                        handleGramsChange(detectionItems.indexOf(detection), grams)
+                      }
+                      onMealTypeChange={(mealType) =>
+                        handleMealTypeChange(detectionItems.indexOf(detection), mealType)
+                      }
                       onTeachLabel={() => handleTeachLabel(detection.item.label)}
                     />
                   ))}
