@@ -5,6 +5,7 @@ import {
   ActivityIndicator,
   FlatList,
   Pressable,
+  RefreshControl,
   StyleSheet,
   View,
   Image,
@@ -139,12 +140,12 @@ const FoodSearchScreen = (): JSX.Element => {
     setTimeout(() => {
       searchGlow.value = withTiming(0, { duration: theme.animation.slow });
     }, 1000);
-    loadFoods(1, false).catch(() => {});
+    loadFoods(1, false).catch(() => { });
   }, [loadFoods, searchGlow, theme.animation.normal, theme.animation.slow]);
 
   const handleLoadMore = useCallback(() => {
     if (!hasMore || isLoading || isLoadingMore) return;
-    loadFoods(page + 1, true).catch(() => {});
+    loadFoods(page + 1, true).catch(() => { });
   }, [hasMore, isLoading, isLoadingMore, page, loadFoods]);
 
   const renderItem = useCallback(
@@ -328,6 +329,14 @@ const FoodSearchScreen = (): JSX.Element => {
           contentContainerStyle={styles.listContent}
           onEndReached={handleLoadMore}
           onEndReachedThreshold={0.3}
+          refreshControl={
+            <RefreshControl
+              refreshing={isLoading && page === 1}
+              onRefresh={() => loadFoods(1, false)}
+              colors={[theme.colors.primary]}
+              tintColor={theme.colors.primary}
+            />
+          }
           initialNumToRender={10}
           maxToRenderPerBatch={5}
           windowSize={10}

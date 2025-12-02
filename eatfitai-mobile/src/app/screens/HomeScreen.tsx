@@ -204,10 +204,8 @@ const HomeScreen = (): JSX.Element => {
 
   const handleQuickAction = useCallback(
     (_mealType: MealTypeId) => {
-      navigation.navigate('AddMealFromVision', {
-        imageUri: '', // Will be set by camera screen
-        result: { items: [], unmappedLabels: [] }, // Placeholder
-      });
+      // Redirect to AI Camera for proper flow
+      navigation.navigate('AiCamera');
     },
     [navigation],
   );
@@ -236,7 +234,7 @@ const HomeScreen = (): JSX.Element => {
                   text1: t('common.removed'),
                   text2: t('common.updated'),
                 });
-                refreshSummary().catch(() => {});
+                refreshSummary().catch(() => { });
               })
               .catch((err: any) => {
                 handleApiErrorWithCustomMessage(err, {

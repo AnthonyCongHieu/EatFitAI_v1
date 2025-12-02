@@ -4,6 +4,7 @@
 import apiClient from './apiClient';
 import type { FoodItemDto, MealTypeId } from '../types';
 import type { FoodItemDtoExtended } from '../types/food';
+import type { ApiFoodSearchItem, ApiUserFoodDetail, ApiSearchResponse } from '../types/api';
 
 // Helper to convert unknown to number or null
 const toNumber = (value: unknown): number | null => {
@@ -77,7 +78,7 @@ const normalizeFoodDetail = (data: FoodItemDtoExtended): FoodDetail => ({
   perServingFat: data?.fatPer100g ?? null,
 });
 
-const normalizeUserFoodDetail = (data: any): FoodDetail => ({
+const normalizeUserFoodDetail = (data: ApiUserFoodDetail): FoodDetail => ({
   id: String(data?.userFoodItemId ?? data?.id ?? ''),
   name: data?.foodName ?? 'Mon an',
   brand: null,
@@ -113,7 +114,7 @@ export const foodService = {
       params: { q: query, limit },
     });
     const rows = Array.isArray(response.data) ? response.data : [];
-    const items: FoodItem[] = rows.map((x: any) => ({
+    const items: FoodItem[] = rows.map((x: ApiFoodSearchItem) => ({
       id: String(x?.id ?? ''),
       name: x?.foodName ?? 'Mon an',
       brand: null,
@@ -196,11 +197,11 @@ export const foodService = {
     query?: string,
     page = 1,
     pageSize = 20,
-  ): Promise<{ items: any[]; total: number }> {
+  ): Promise<ApiSearchResponse<ApiUserFoodDetail>> {
     const response = await apiClient.get('/api/user-food-items', {
       params: { q: query, page, pageSize },
     });
-    return response.data as { items: any[]; total: number };
+    return response.data as ApiSearchResponse<ApiUserFoodDetail>;
   },
 
   // Tạo user food item (multipart/form-data)

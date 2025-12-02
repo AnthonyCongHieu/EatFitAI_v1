@@ -25,10 +25,15 @@ import {
 import type { MappedFoodItem } from '../../../types/ai';
 import { handleApiErrorWithCustomMessage } from '../../../utils/errorHandler';
 
+import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import type { RootStackParamList } from '../../types';
+
 type CameraViewInstance = InstanceType<typeof CameraView>;
 
 const AiCameraScreen = (): JSX.Element => {
   const { theme } = useAppTheme();
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const cameraRef = useRef<CameraViewInstance | null>(null);
   const [permission, requestPermission] = useCameraPermissions();
   const [galleryPermission, requestGalleryPermission] =
@@ -46,6 +51,10 @@ const AiCameraScreen = (): JSX.Element => {
   const [isDetecting, setIsDetecting] = useState(false);
   const [isSuggesting, setIsSuggesting] = useState(false);
   const [recipes, setRecipes] = useState<SuggestedRecipe[]>([]);
+  const [fullDetectionResult, setFullDetectionResult] = useState<{
+    items: MappedFoodItem[];
+    unmappedLabels: string[];
+  } | null>(null);
 
   const hasPermission = permission?.granted === true;
 
@@ -90,6 +99,8 @@ const AiCameraScreen = (): JSX.Element => {
     try {
       // Use detectFoodByImage with multipart/form-data
       const detected = await aiService.detectFoodByImage(uri);
+      setFullDetectionResult(detected);
+
       const ingredientItems: IngredientItem[] = detected.items.map(
         (item: MappedFoodItem) => ({
           name: item.label,
@@ -176,6 +187,19 @@ const AiCameraScreen = (): JSX.Element => {
       Toast.show({ type: 'error', text1: 'Không thể chọn ảnh' });
     }
   }, [galleryPermission, requestGalleryPermission, processImage]);
+
+  const handleAddToDiary = useCallback(() => {
+    if (!capturedUri || !fullDetectionResult) {
+      Toast.show({ type: 'error', text1: 'Chưa có dữ liệu ảnh' });
+      return;
+    }
+    // Filter items based on selection if needed, or pass all
+    // For now, pass all and let AddMealFromVision handle selection
+    navigation.navigate('AddMealFromVision', {
+      imageUri: capturedUri,
+      result: fullDetectionResult,
+    });
+  }, [capturedUri, fullDetectionResult, navigation]);
 
   const handleSuggestRecipes = useCallback(async () => {
     const activeIngredients = ingredients
@@ -360,9 +384,15 @@ const AiCameraScreen = (): JSX.Element => {
             />
           )}
 
-          <View style={{ marginTop: theme.spacing.xl }}>
+          <View style={{ marginTop: theme.spacing.xl, gap: 12 }}>
             <Button
               variant="primary"
+              onPress={handleAddToDiary}
+              title="Thêm vào nhật ký"
+              disabled={isSuggesting || ingredients.length === 0}
+            />
+            <Button
+              variant="secondary"
               loading={isSuggesting}
               disabled={isSuggesting || ingredients.length === 0}
               onPress={handleSuggestRecipes}
