@@ -19,6 +19,7 @@ import { foodService, type FoodItem } from '../../../services/foodService';
 import Skeleton, { SkeletonList } from '../../../components/Skeleton';
 import { useDiaryStore } from '../../../store/useDiaryStore';
 import { getFoodImageUrl } from '../../../utils/imageHelpers';
+import { handleApiError } from '../../../utils/errorHandler';
 
 const PAGE_SIZE = 20;
 
@@ -105,16 +106,7 @@ const FoodSearchScreen = (): JSX.Element => {
         setHasMore(result.items.length === PAGE_SIZE);
         setHasSearched(true);
       } catch (error: any) {
-        const status = error?.response?.status;
-        if (status === 422) {
-          Toast.show({ type: 'error', text1: 'Từ khóa tìm kiếm không hợp lệ', text2: 'Vui lòng sử dụng từ khóa khác' });
-        } else if (status >= 500) {
-          Toast.show({ type: 'error', text1: 'Lỗi máy chủ', text2: 'Vui lòng thử lại sau' });
-        } else if (!navigator.onLine) {
-          Toast.show({ type: 'error', text1: 'Không có kết nối mạng', text2: 'Kiểm tra kết nối và thử lại' });
-        } else {
-          Toast.show({ type: 'error', text1: 'Tìm kiếm thất bại', text2: 'Vui lòng thử lại với từ khóa khác' });
-        }
+        handleApiError(error);
       } finally {
         setIsLoading(false);
         setIsLoadingMore(false);

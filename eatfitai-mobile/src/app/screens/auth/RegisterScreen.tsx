@@ -18,6 +18,7 @@ import ThemedTextInput from '../../../components/ThemedTextInput';
 import { useAuthStore } from '../../../store/useAuthStore';
 import type { RootStackParamList } from '../../types';
 import { t } from '../../../i18n/vi';
+import { handleApiError } from '../../../utils/errorHandler';
 
 const RegisterSchema = z
   .object({
@@ -84,18 +85,7 @@ const RegisterScreen = ({ navigation }: Props): JSX.Element => {
       Toast.show({ type: 'success', text1: 'Đăng ký tài khoản thành công', text2: 'Bắt đầu hành trình ăn uống lành mạnh!' });
       navigation.reset({ index: 0, routes: [{ name: 'AppTabs' }] });
     } catch (e: any) {
-      const status = e?.response?.status;
-      if (status === 409) {
-        Toast.show({ type: 'error', text1: 'Email đã được sử dụng', text2: 'Vui lòng sử dụng email khác hoặc đăng nhập' });
-      } else if (status === 422) {
-        Toast.show({ type: 'error', text1: 'Dữ liệu không hợp lệ', text2: 'Vui lòng kiểm tra thông tin đã nhập' });
-      } else if (status >= 500) {
-        Toast.show({ type: 'error', text1: 'Lỗi máy chủ', text2: 'Vui lòng thử lại sau' });
-      } else if (!navigator.onLine) {
-        Toast.show({ type: 'error', text1: 'Không có kết nối mạng', text2: 'Kiểm tra kết nối và thử lại' });
-      } else {
-        Toast.show({ type: 'error', text1: 'Đăng ký thất bại', text2: 'Vui lòng thử lại hoặc liên hệ hỗ trợ' });
-      }
+      handleApiError(e);
     } finally {
       setLoading(false);
     }

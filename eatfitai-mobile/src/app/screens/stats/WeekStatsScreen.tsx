@@ -13,6 +13,7 @@ import { ScreenHeader } from "../../../components/ui/ScreenHeader";
 import { useAppTheme } from "../../../theme/ThemeProvider";
 import { useStatsStore } from "../../../store/useStatsStore";
 import { summaryService } from "../../../services/summaryService";
+import { handleApiError } from "../../../utils/errorHandler";
 
 const WeekStatsScreen = (): JSX.Element => {
   const { theme } = useAppTheme();
@@ -50,18 +51,7 @@ const WeekStatsScreen = (): JSX.Element => {
   const tooltipOpacity = useSharedValue(0);
 
   useEffect(() => {
-    fetchWeekSummary().catch((error: any) => {
-      const status = error?.response?.status;
-      if (status === 401) {
-        Toast.show({ type: 'error', text1: 'Phiên đăng nhập đã hết hạn', text2: 'Vui lòng đăng nhập lại' });
-      } else if (status >= 500) {
-        Toast.show({ type: 'error', text1: 'Lỗi máy chủ', text2: 'Vui lòng thử lại sau' });
-      } else if (!navigator.onLine) {
-        Toast.show({ type: 'error', text1: 'Không có kết nối mạng', text2: 'Kiểm tra kết nối và thử lại' });
-      } else {
-        Toast.show({ type: 'error', text1: 'Không thể tải thống kê', text2: 'Kéo xuống để thử lại' });
-      }
-    });
+    fetchWeekSummary().catch(handleApiError);
   }, [fetchWeekSummary]);
 
   useEffect(() => {
@@ -71,18 +61,7 @@ const WeekStatsScreen = (): JSX.Element => {
   }, [error]);
 
   const handleRefresh = useCallback(() => {
-    refreshWeekSummary().catch((error: any) => {
-      const status = error?.response?.status;
-      if (status === 401) {
-        Toast.show({ type: 'error', text1: 'Phiên đăng nhập đã hết hạn', text2: 'Vui lòng đăng nhập lại' });
-      } else if (status >= 500) {
-        Toast.show({ type: 'error', text1: 'Lỗi máy chủ', text2: 'Vui lòng thử lại sau' });
-      } else if (!navigator.onLine) {
-        Toast.show({ type: 'error', text1: 'Không có kết nối mạng', text2: 'Kiểm tra kết nối và thử lại' });
-      } else {
-        Toast.show({ type: 'error', text1: 'Tải lại thất bại', text2: 'Kéo xuống để thử lại' });
-      }
-    });
+    refreshWeekSummary().catch(handleApiError);
   }, [refreshWeekSummary]);
 
   const handleCardPress = useCallback((index: number) => {

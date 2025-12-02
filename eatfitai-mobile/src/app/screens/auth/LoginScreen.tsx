@@ -15,6 +15,7 @@ import ThemedTextInput from '../../../components/ThemedTextInput';
 import { useAuthStore } from '../../../store/useAuthStore';
 import type { RootStackParamList } from '../../types';
 import { t } from '../../../i18n/vi';
+import { handleApiError } from '../../../utils/errorHandler';
 
 const LoginSchema = z.object({
   email: z.string().email('Email không hợp lệ'),
@@ -42,18 +43,7 @@ const LoginScreen = ({ navigation }: Props): JSX.Element => {
       Toast.show({ type: 'success', text1: 'Đăng nhập thành công', text2: 'Chào mừng bạn quay trở lại!' });
       navigation.reset({ index: 0, routes: [{ name: 'AppTabs' }] });
     } catch (e: any) {
-      const status = e?.response?.status;
-      if (status === 401) {
-        Toast.show({ type: 'error', text1: 'Email hoặc mật khẩu không đúng', text2: 'Vui lòng kiểm tra lại thông tin đăng nhập' });
-      } else if (status === 422) {
-        Toast.show({ type: 'error', text1: 'Dữ liệu không hợp lệ', text2: 'Vui lòng kiểm tra định dạng email' });
-      } else if (status >= 500) {
-        Toast.show({ type: 'error', text1: 'Lỗi máy chủ', text2: 'Vui lòng thử lại sau' });
-      } else if (!navigator.onLine) {
-        Toast.show({ type: 'error', text1: 'Không có kết nối mạng', text2: 'Kiểm tra kết nối và thử lại' });
-      } else {
-        Toast.show({ type: 'error', text1: 'Đăng nhập thất bại', text2: 'Vui lòng thử lại hoặc liên hệ hỗ trợ' });
-      }
+      handleApiError(e);
     } finally {
       setLoading(false);
     }
@@ -162,9 +152,9 @@ const LoginScreen = ({ navigation }: Props): JSX.Element => {
         <View style={{ marginTop: theme.spacing.lg, alignItems: 'center' }}>
           <ThemedText variant="body" color="textSecondary">
             {t('auth.registerQuestion')}{' '}
-            <ThemedText 
-              variant="body" 
-              color="primary" 
+            <ThemedText
+              variant="body"
+              color="primary"
               weight="600"
               onPress={() => navigation.navigate('Register')}
             >
