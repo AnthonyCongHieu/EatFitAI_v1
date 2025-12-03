@@ -1,5 +1,5 @@
 flask==3.0.3
-ultralytics==8.3.41
+ultralytics==8.3.234
 pillow==10.4.0
 opencv-python==4.10.0.84
 werkzeug==3.0.3
