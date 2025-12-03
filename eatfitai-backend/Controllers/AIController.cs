@@ -60,6 +60,18 @@ namespace EatFitAI.API.Controllers
                 return BadRequest(new { error = "no file" });
             }
 
+            // Compute image hash for caching
+            var imageHash = await ComputeImageHashAsync(file);
+            var userId = GetUserIdFromToken();
+
+            // Check cache first
+            var cachedResult = await _visionCacheService.GetCachedDetectionAsync(imageHash);
+            if (cachedResult != null)
+            {
+                _logger.LogInformation("Returning cached detection for user {UserId}, hash: {Hash}", userId, imageHash);
+                return Ok(cachedResult);
+            }
+
             var baseUrl = _configuration["AIProvider:VisionBaseUrl"] ?? "http://127.0.0.1:5050";
             var url = $"{baseUrl.TrimEnd('/')}/detect";
 
@@ -89,7 +101,6 @@ namespace EatFitAI.API.Controllers
 
             try
             {
-                var userId = GetUserIdFromToken();
                 var summary = ExtractDetectionSummary(body);
                 _logger.LogInformation("AILog Detect vision: user={UserId} items={Items} rawCount={Count}", userId, string.Join(", ", summary.labelsWithConf), summary.count);
             }
@@ -109,9 +120,19 @@ namespace EatFitAI.API.Controllers
                     .ToList()
             };
 
+            // Cache the result
             try
             {
-                var userId = GetUserIdFromToken();
+                await _visionCacheService.CacheDetectionAsync(imageHash, result, userId);
+                _logger.LogDebug("Cached detection result for hash: {Hash}", imageHash);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to cache detection result");
+            }
+
+            try
+            {
                 var logPayload = new
                 {
                     Image = new
@@ -548,6 +569,17 @@ namespace EatFitAI.API.Controllers
             }
 
             return list;
+        }
+
+        /// <summary>
+        /// Compute MD5 hash of image content for caching
+        /// </summary>
+        private async Task<string> ComputeImageHashAsync(IFormFile file)
+        {
+            using var md5 = System.Security.Cryptography.MD5.Create();
+            using var stream = file.OpenReadStream();
+            var hashBytes = await Task.Run(() => md5.ComputeHash(stream));
+            return BitConverter.ToString(hashBytes).Replace("-", "").ToLowerInvariant();
         }
     }
 }
