@@ -19,7 +19,7 @@ namespace EatFitAI.API.Services
 
     public class LookupCacheService : ILookupCacheService
     {
-        private readonly EatFitAIDbContext _context;
+        private readonly IServiceScopeFactory _scopeFactory;
         private readonly IMemoryCache _cache;
         private readonly ILogger<LookupCacheService> _logger;
 
@@ -29,11 +29,11 @@ namespace EatFitAI.API.Services
         private static readonly TimeSpan CacheDuration = TimeSpan.FromHours(24);
 
         public LookupCacheService(
-            EatFitAIDbContext context,
+            IServiceScopeFactory scopeFactory,
             IMemoryCache cache,
             ILogger<LookupCacheService> logger)
         {
-            _context = context;
+            _scopeFactory = scopeFactory;
             _cache = cache;
             _logger = logger;
         }
@@ -45,7 +45,11 @@ namespace EatFitAI.API.Services
                 entry.AbsoluteExpirationRelativeToNow = CacheDuration;
                 _logger.LogInformation("Loading MealTypes into cache");
                 
-                return await _context.MealTypes
+                // Tạo scope riêng để lấy DbContext (vì service này là Singleton)
+                using var scope = _scopeFactory.CreateScope();
+                var context = scope.ServiceProvider.GetRequiredService<EatFitAIDbContext>();
+                
+                return await context.MealTypes
                     .AsNoTracking()
                     .ToListAsync();
             }) ?? Enumerable.Empty<MealType>();
@@ -58,7 +62,10 @@ namespace EatFitAI.API.Services
                 entry.AbsoluteExpirationRelativeToNow = CacheDuration;
                 _logger.LogInformation("Loading ActivityLevels into cache");
                 
-                return await _context.ActivityLevels
+                using var scope = _scopeFactory.CreateScope();
+                var context = scope.ServiceProvider.GetRequiredService<EatFitAIDbContext>();
+                
+                return await context.ActivityLevels
                     .AsNoTracking()
                     .ToListAsync();
             }) ?? Enumerable.Empty<ActivityLevel>();
@@ -71,7 +78,10 @@ namespace EatFitAI.API.Services
                 entry.AbsoluteExpirationRelativeToNow = CacheDuration;
                 _logger.LogInformation("Loading ServingUnits into cache");
                 
-                return await _context.ServingUnits
+                using var scope = _scopeFactory.CreateScope();
+                var context = scope.ServiceProvider.GetRequiredService<EatFitAIDbContext>();
+                
+                return await context.ServingUnits
                     .AsNoTracking()
                     .ToListAsync();
             }) ?? Enumerable.Empty<ServingUnit>();
