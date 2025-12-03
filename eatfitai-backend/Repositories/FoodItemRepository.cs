@@ -15,9 +15,7 @@ namespace EatFitAI.API.Repositories
         {
             return await _context.FoodItems
                 .Where(fi => fi.IsActive && !fi.IsDeleted &&
-                            (EF.Functions.Like(fi.FoodName, $"%{searchTerm}%") ||
-                             EF.Functions.Like(fi.FoodNameEn, $"%{searchTerm}%") ||
-                             EF.Functions.Like(fi.FoodNameUnsigned, $"%{searchTerm}%")))
+                            EF.Functions.Like(fi.FoodName, $"%{searchTerm}%"))
                 .OrderBy(fi => fi.FoodName)
                 .Take(limit)
                 .ToListAsync();

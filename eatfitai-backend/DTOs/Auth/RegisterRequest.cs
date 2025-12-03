@@ -6,14 +6,6 @@ namespace EatFitAI.API.DTOs.Auth
     {
         [Required]
         [EmailAddress]
-using System.ComponentModel.DataAnnotations;
-
-namespace EatFitAI.API.DTOs.Auth
-{
-    public class RegisterRequest
-    {
-        [Required]
-        [EmailAddress]
         public string Email { get; set; } = string.Empty;
 
         [Required]

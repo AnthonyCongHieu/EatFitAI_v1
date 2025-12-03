@@ -44,6 +44,10 @@ namespace EatFitAI.API.Controllers
         {
             try
             {
+                var result = await _authService.RegisterAsync(request);
+                return Ok(result);
+            }
+            catch (ArgumentException ex)
             {
                 Console.WriteLine($"[AuthController] Registration failed for email: {request.Email}, error: {ex.Message}");
                 return BadRequest(new { message = ex.Message });

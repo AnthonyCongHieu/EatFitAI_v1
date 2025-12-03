@@ -13,3 +13,13 @@ dotnet_style_prefer_auto_properties = true:suggestion
 indent_style = space
 indent_size = 2
 insert_final_newline = true
+
+# =============================================
+# SECURITY RULES - SQL Injection Prevention
+# =============================================
+
+# CA2100: Review SQL queries for security vulnerabilities
+dotnet_diagnostic.CA2100.severity = error
+
+# Warn on ExecuteSqlRaw usage (potential SQL injection)
+dotnet_diagnostic.EF1001.severity = warning
