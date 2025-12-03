@@ -6,7 +6,7 @@ import Animated, {
   withRepeat,
   withTiming,
   withSequence,
-  Easing
+  Easing,
 } from 'react-native-reanimated';
 
 import { ThemedText } from './ThemedText';
@@ -70,7 +70,7 @@ export const StatusIndicator = ({
   size = 'md',
   animated = true,
   showIcon = true,
-  customIcon
+  customIcon,
 }: StatusIndicatorProps): JSX.Element => {
   const { theme } = useAppTheme();
 
@@ -83,24 +83,21 @@ export const StatusIndicator = ({
     pulseValue.value = withRepeat(
       withSequence(
         withTiming(1.2, { duration: 600, easing: Easing.inOut(Easing.ease) }),
-        withTiming(1, { duration: 600, easing: Easing.inOut(Easing.ease) })
+        withTiming(1, { duration: 600, easing: Easing.inOut(Easing.ease) }),
       ),
       -1,
-      true
+      true,
     );
 
     rotateValue.value = withRepeat(
       withTiming(360, { duration: 2000, easing: Easing.linear }),
       -1,
-      false
+      false,
     );
   }
 
   const animatedStyle = useAnimatedStyle(() => ({
-    transform: [
-      { scale: pulseValue.value },
-      { rotate: `${rotateValue.value}deg` },
-    ],
+    transform: [{ scale: pulseValue.value }, { rotate: `${rotateValue.value}deg` }],
   }));
 
   const getSizeConfig = () => {

@@ -12,13 +12,21 @@ const todayDate = (): string => {
   return `${y}-${m}-${day}`;
 };
 
-export async function addMealItems(date: string, mealType: number, items: MealItemInput[]): Promise<void> {
+export async function addMealItems(
+  date: string,
+  mealType: number,
+  items: MealItemInput[],
+): Promise<void> {
   const payload: AddMealItemsPayload = { date, mealType, items };
   await apiClient.post('/api/meals', payload);
 }
 
 export const mealService = {
-  async addMealItems(date: string, mealType: number, items: MealItemInput[]): Promise<void> {
+  async addMealItems(
+    date: string,
+    mealType: number,
+    items: MealItemInput[],
+  ): Promise<void> {
     return addMealItems(date, mealType, items);
   },
 
@@ -33,4 +41,3 @@ export const mealService = {
     return response.data;
   },
 };
-

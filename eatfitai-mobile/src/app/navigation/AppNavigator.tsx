@@ -19,6 +19,8 @@ import AddMealFromVisionScreen from '../screens/meals/AddMealFromVisionScreen';
 import VisionHistoryScreen from '../screens/ai/VisionHistoryScreen';
 import RecipeSuggestionsScreen from '../screens/ai/RecipeSuggestionsScreen';
 import NutritionInsightsScreen from '../screens/ai/NutritionInsightsScreen';
+import AdaptiveTargetScreen from '../screens/ai/AdaptiveTargetScreen';
+import RecipeDetailScreen from '../screens/ai/RecipeDetailScreen';
 import { t } from '../../i18n/vi';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -54,7 +56,11 @@ const AppNavigator = (): JSX.Element => {
             <>
               <Stack.Screen name="Login" component={LoginScreen} />
               <Stack.Screen name="Register" component={RegisterScreen} />
-              <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} options={{ headerShown: true, title: t('auth.forgotPasswordTitle') }} />
+              <Stack.Screen
+                name="ForgotPassword"
+                component={ForgotPasswordScreen}
+                options={{ headerShown: true, title: t('auth.forgotPasswordTitle') }}
+              />
             </>
           ) : (
             // Đã đăng nhập: vào App Tabs
@@ -186,6 +192,30 @@ const AppNavigator = (): JSX.Element => {
                 options={{
                   headerShown: true,
                   title: 'Phân tích dinh dưỡng',
+                  headerStyle: { backgroundColor: theme.colors.card },
+                  headerTintColor: theme.colors.text,
+                  headerShadowVisible: false,
+                  headerTitleStyle: { fontFamily: 'Inter_600SemiBold' },
+                }}
+              />
+              <Stack.Screen
+                name="AdaptiveTarget"
+                component={AdaptiveTargetScreen}
+                options={{
+                  headerShown: true,
+                  title: 'Mục tiêu tự động',
+                  headerStyle: { backgroundColor: theme.colors.card },
+                  headerTintColor: theme.colors.text,
+                  headerShadowVisible: false,
+                  headerTitleStyle: { fontFamily: 'Inter_600SemiBold' },
+                }}
+              />
+              <Stack.Screen
+                name="RecipeDetail"
+                component={RecipeDetailScreen}
+                options={{
+                  headerShown: true,
+                  title: 'Chi tiết công thức',
                   headerStyle: { backgroundColor: theme.colors.card },
                   headerTintColor: theme.colors.text,
                   headerShadowVisible: false,

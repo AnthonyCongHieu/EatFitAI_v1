@@ -7,7 +7,7 @@ export type RootStackParamList = {
   ForgotPassword: undefined;
   AppTabs: undefined;
   FoodSearch: undefined;
-  FoodDetail: { foodId: string };
+  FoodDetail: { foodId: string; source?: 'catalog' | 'user' };
   CustomDish: undefined;
   AiCamera: undefined;
   AiNutrition: undefined;
@@ -18,4 +18,5 @@ export type RootStackParamList = {
   RecipeDetail: { recipeId: number; recipeName: string };
   NutritionInsights: undefined;
   VisionHistory: undefined;
+  AdaptiveTarget: undefined;
 };

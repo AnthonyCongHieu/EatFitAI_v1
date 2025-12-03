@@ -11,15 +11,15 @@ import { useNavigation } from '@react-navigation/native';
 
 import { ThemedText } from '../../../components/ThemedText';
 import Screen from '../../../components/Screen';
-import Card from '../../../components/Card';
+import { AppCard } from '../../../components/ui/AppCard';
 import Button from '../../../components/Button';
 import ThemedTextInput from '../../../components/ThemedTextInput';
 import { useAppTheme } from '../../../theme/ThemeProvider';
 import { foodService } from '../../../services/foodService';
 import type { RootStackParamList } from '../../types';
 import { useDiaryStore } from '../../../store/useDiaryStore';
-import { diaryService } from '../../../services/diaryService';
-import { MEAL_TYPES, type MealTypeId } from '../../../types';
+import { MEAL_TYPES } from '../../../types';
+import { handleApiError } from '../../../utils/errorHandler';
 
 const FormSchema = z.object({
   name: z.string().trim().min(3, 'Tên món tối thiểu 3 ký tự'),
@@ -28,45 +28,71 @@ const FormSchema = z.object({
     .string()
     .trim()
     .refine((value) => value !== '', { message: 'Vui lòng nhập khẩu phần (gram)' })
-    .refine((value) => !Number.isNaN(Number(value)) && Number(value) > 0 && Number(value) <= 2000, {
-      message: 'Khẩu phần phải > 0 và ≤ 2000',
-    }),
+    .refine(
+      (value) =>
+        !Number.isNaN(Number(value)) && Number(value) > 0 && Number(value) <= 2000,
+      {
+        message: 'Khẩu phần phải > 0 và ≤ 2000',
+      },
+    ),
   calories: z
     .string()
     .trim()
     .refine((value) => value !== '', { message: 'Vui lòng nhập calo' })
-    .refine((value) => !Number.isNaN(Number(value)) && Number(value) >= 0 && Number(value) <= 5000, {
-      message: 'Calo phải ≥ 0 và ≤ 5000',
-    }),
+    .refine(
+      (value) =>
+        !Number.isNaN(Number(value)) && Number(value) >= 0 && Number(value) <= 5000,
+      {
+        message: 'Calo phải ≥ 0 và ≤ 5000',
+      },
+    ),
   protein: z
     .string()
     .trim()
     .refine((value) => value !== '', { message: 'Vui lòng nhập protein' })
-    .refine((value) => !Number.isNaN(Number(value)) && Number(value) >= 0 && Number(value) <= 500, {
-      message: 'Protein phải ≥ 0 và ≤ 500',
-    }),
+    .refine(
+      (value) =>
+        !Number.isNaN(Number(value)) && Number(value) >= 0 && Number(value) <= 500,
+      {
+        message: 'Protein phải ≥ 0 và ≤ 500',
+      },
+    ),
   carbs: z
     .string()
     .trim()
     .refine((value) => value !== '', { message: 'Vui lòng nhập carb' })
-    .refine((value) => !Number.isNaN(Number(value)) && Number(value) >= 0 && Number(value) <= 500, {
-      message: 'Carb phải ≥ 0 và ≤ 500',
-    }),
+    .refine(
+      (value) =>
+        !Number.isNaN(Number(value)) && Number(value) >= 0 && Number(value) <= 500,
+      {
+        message: 'Carb phải ≥ 0 và ≤ 500',
+      },
+    ),
   fat: z
     .string()
     .trim()
     .refine((value) => value !== '', { message: 'Vui lòng nhập fat' })
-    .refine((value) => !Number.isNaN(Number(value)) && Number(value) >= 0 && Number(value) <= 300, {
-      message: 'Fat phải ≥ 0 và ≤ 300',
-    }),
+    .refine(
+      (value) =>
+        !Number.isNaN(Number(value)) && Number(value) >= 0 && Number(value) <= 300,
+      {
+        message: 'Fat phải ≥ 0 và ≤ 300',
+      },
+    ),
   grams: z
     .string()
     .trim()
     .refine((value) => value !== '', { message: 'Vui lòng nhập số gram' })
-    .refine((value) => !Number.isNaN(Number(value)) && Number(value) > 0 && Number(value) <= 2000, {
-      message: 'Số gram phải > 0 và ≤ 2000',
-    }),
-  mealType: z.number().refine((value) => [1, 2, 3, 4].includes(value), { message: 'Bữa ăn không hợp lệ' }),
+    .refine(
+      (value) =>
+        !Number.isNaN(Number(value)) && Number(value) > 0 && Number(value) <= 2000,
+      {
+        message: 'Số gram phải > 0 và ≤ 2000',
+      },
+    ),
+  mealType: z
+    .number()
+    .refine((value) => [1, 2, 3, 4].includes(value), { message: 'Bữa ăn không hợp lệ' }),
   note: z.string().trim().max(200, 'Ghi chú tối đa 200 ký tự').optional(),
 });
 
@@ -112,21 +138,16 @@ const CustomDishScreen = (): JSX.Element => {
           ingredients: [], // Empty for now, as this is a simple custom dish
         });
 
-        Toast.show({ type: 'success', text1: 'Đã tạo món thủ công thành công', text2: 'Món ăn đã được lưu vào thư viện cá nhân' });
+        Toast.show({
+          type: 'success',
+          text1: 'Đã tạo món thủ công thành công',
+          text2: 'Món ăn đã được lưu vào thư viện cá nhân',
+        });
         reset();
         await refreshSummary().catch(() => {});
         navigation.goBack();
       } catch (error: any) {
-        const status = error?.response?.status;
-        if (status === 422) {
-          Toast.show({ type: 'error', text1: 'Dữ liệu không hợp lệ', text2: 'Vui lòng kiểm tra thông tin dinh dưỡng' });
-        } else if (status >= 500) {
-          Toast.show({ type: 'error', text1: 'Lỗi máy chủ', text2: 'Vui lòng thử lại sau' });
-        } else if (!navigator.onLine) {
-          Toast.show({ type: 'error', text1: 'Không có kết nối mạng', text2: 'Kiểm tra kết nối và thử lại' });
-        } else {
-          Toast.show({ type: 'error', text1: 'Tạo món thất bại', text2: 'Vui lòng thử lại hoặc liên hệ hỗ trợ' });
-        }
+        handleApiError(error);
       } finally {
         setIsSubmitting(false);
       }
@@ -136,11 +157,15 @@ const CustomDishScreen = (): JSX.Element => {
 
   return (
     <Screen contentContainerStyle={styles.content}>
-      <Card padding="lg" shadow="md">
+      <AppCard padding="lg" shadow="md">
         <ThemedText variant="h2" style={{ marginBottom: theme.spacing.xs }}>
           Tạo món thủ công
         </ThemedText>
-        <ThemedText variant="bodySmall" color="textSecondary" style={{ marginBottom: theme.spacing.lg }}>
+        <ThemedText
+          variant="bodySmall"
+          color="textSecondary"
+          style={{ marginBottom: theme.spacing.lg }}
+        >
           Nhập thông tin dinh dưỡng cho món nhà làm để lưu vào thư viện cá nhân.
         </ThemedText>
 
@@ -180,7 +205,11 @@ const CustomDishScreen = (): JSX.Element => {
         />
 
         <View style={{ marginTop: theme.spacing.lg }}>
-          <ThemedText variant="bodySmall" weight="600" style={{ marginBottom: theme.spacing.sm }}>
+          <ThemedText
+            variant="bodySmall"
+            weight="600"
+            style={{ marginBottom: theme.spacing.sm }}
+          >
             Thông tin dinh dưỡng (cho 100g)
           </ThemedText>
           <View style={[styles.row]}>
@@ -289,7 +318,7 @@ const CustomDishScreen = (): JSX.Element => {
             title={isSubmitting ? 'Đang tạo...' : 'Tạo món ăn'}
           />
         </View>
-      </Card>
+      </AppCard>
     </Screen>
   );
 };

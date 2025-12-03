@@ -29,7 +29,8 @@ export const vi = {
     showPassword: 'Hiện mật khẩu',
     hidePassword: 'Ẩn mật khẩu',
     appError: 'Ứng dụng gặp lỗi',
-    appErrorDescription: 'Đã xảy ra lỗi không mong muốn. Vui lòng khởi động lại ứng dụng.',
+    appErrorDescription:
+      'Đã xảy ra lỗi không mong muốn. Vui lòng khởi động lại ứng dụng.',
     mayBeDeleted: 'Món này có thể đã bị xóa trước đó',
     onlyDeleteOwn: 'Chỉ có thể xóa món do bạn thêm',
     deleteFailed: 'Xóa thất bại',
@@ -98,8 +99,10 @@ export const vi = {
     googleAccessTokenMissing: 'Không nhận được accessToken từ Google callback',
     forgotPassword: 'Quên mật khẩu?',
     forgotPasswordTitle: 'Quên mật khẩu',
-    forgotPasswordDesc: 'Nhập email, hệ thống sẽ tạo mã đặt lại mật khẩu và gửi qua SMTP (Gmail hoặc dịch vụ email).',
-    forgotPasswordEmailHint: 'Khuyến nghị dùng SMTP App Password của Gmail hoặc dịch vụ SMTP như SendGrid/Mailgun.',
+    forgotPasswordDesc:
+      'Nhập email, hệ thống sẽ tạo mã đặt lại mật khẩu và gửi qua SMTP (Gmail hoặc dịch vụ email).',
+    forgotPasswordEmailHint:
+      'Khuyến nghị dùng SMTP App Password của Gmail hoặc dịch vụ SMTP như SendGrid/Mailgun.',
     sendResetCode: 'Gửi mã reset',
     resetCodeLabel: 'Mã reset (gửi vào email)',
     resetCode: 'Mã reset',
@@ -138,7 +141,8 @@ export const vi = {
     reloadFailed: 'Tải lại thất bại',
     today_summary: 'Tóm tắt hôm nay',
     remaining_calories: (kcal: number) => `Còn ${kcal} kcal`,
-    eaten_vs_target: (eaten: number, target: number) => `Đã ăn ${eaten} / Mục tiêu ${target} kcal`,
+    eaten_vs_target: (eaten: number, target: number) =>
+      `Đã ăn ${eaten} / Mục tiêu ${target} kcal`,
     quick_actions_title: 'Hành động nhanh',
     diary_today: 'Nhật ký hôm nay',
     see_all: 'Xem tất cả',
@@ -276,7 +280,8 @@ export const vi = {
   },
   nutrition: {
     title: 'Mục tiêu dinh dưỡng',
-    description: 'AI giúp cân bằng calo và macro theo trạng thái hiện tại. Bạn có thể đề xuất lại và áp dụng ngay.',
+    description:
+      'AI giúp cân bằng calo và macro theo trạng thái hiện tại. Bạn có thể đề xuất lại và áp dụng ngay.',
     loading: 'Đang tải...',
     currentTarget: 'Mục tiêu hiện tại',
     newSuggestion: 'Đề xuất mới',

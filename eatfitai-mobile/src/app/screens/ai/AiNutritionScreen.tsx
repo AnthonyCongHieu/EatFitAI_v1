@@ -5,6 +5,7 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import Toast from 'react-native-toast-message';
 import type { RootStackParamList } from '../../types';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import Screen from '../../../components/Screen';
 import { AppCard } from '../../../components/ui/AppCard';
@@ -14,9 +15,17 @@ import { ThemedText } from '../../../components/ThemedText';
 import { useAppTheme } from '../../../theme/ThemeProvider';
 import { aiService, type NutritionTarget } from '../../../services/aiService';
 import { useDiaryStore } from '../../../store/useDiaryStore';
+import { handleApiErrorWithCustomMessage } from '../../../utils/errorHandler';
 
 const formatTarget = (t: NutritionTarget | null): NutritionTarget | null =>
-  t ? { calories: Math.round(t.calories), protein: Math.round(t.protein), carbs: Math.round(t.carbs), fat: Math.round(t.fat) } : null;
+  t
+    ? {
+        calories: Math.round(t.calories),
+        protein: Math.round(t.protein),
+        carbs: Math.round(t.carbs),
+        fat: Math.round(t.fat),
+      }
+    : null;
 
 const AiNutritionScreen = (): JSX.Element => {
   const { theme } = useAppTheme();
@@ -59,66 +68,111 @@ const AiNutritionScreen = (): JSX.Element => {
     },
   });
 
-  const [isLoading, setIsLoading] = useState(true);
   const [currentTarget, setCurrentTarget] = useState<NutritionTarget | null>(null);
   const [suggestedTarget, setSuggestedTarget] = useState<NutritionTarget | null>(null);
-  const [isRecalculating, setIsRecalculating] = useState(false);
-  const [isApplying, setIsApplying] = useState(false);
+  const queryClient = useQueryClient();
 
-  const loadCurrent = useCallback(async () => {
-    setIsLoading(true);
-    try {
+  const {
+    data: currentTargetData,
+    isLoading,
+    error,
+  } = useQuery<NutritionTarget | null, unknown>({
+    queryKey: ['nutrition-target'],
+    queryFn: async () => {
       const t = await aiService.getCurrentNutritionTarget();
-      setCurrentTarget(formatTarget(t));
-    } catch {
-      Toast.show({ type: 'error', text1: 'Không tải được mục tiêu dinh dưỡng hiện tại' });
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
+      return formatTarget(t);
+    },
+  });
+  const current = currentTargetData ?? null;
 
   useEffect(() => {
-    loadCurrent().catch(() => { });
-  }, [loadCurrent]);
+    setCurrentTarget(current);
+  }, [current]);
 
-  const handleRecalculate = useCallback(async () => {
-    setIsRecalculating(true);
-    try {
-      const t = await aiService.recalculateNutritionTarget();
-      setSuggestedTarget(formatTarget(t));
-      Toast.show({ type: 'success', text1: 'Đã gợi ý mục tiêu mới' });
-    } catch {
-      Toast.show({ type: 'error', text1: 'Gợi ý mục tiêu thất bại' });
-    } finally {
-      setIsRecalculating(false);
+  useEffect(() => {
+    if (error) {
+      handleApiErrorWithCustomMessage(error, {
+        server_error: {
+          text1: 'L?i',
+          text2: 'M?y ch? ?ang g?p s? c?. Vui l?ng th? l?i.',
+        },
+        network_error: { text1: 'Kh?ng c? k?t n?i', text2: 'Ki?m tra m?ng v? th? l?i' },
+        unknown: {
+          text1: 'Kh?ng t?i ???c m?c ti?u dinh d??ng hi?n t?i',
+          text2: 'Vui l?ng th? l?i.',
+        },
+      });
     }
-  }, []);
+  }, [error]);
 
-  const handleApply = useCallback(async () => {
-    const target = suggestedTarget ?? currentTarget;
-    if (!target) {
-      Toast.show({ type: 'info', text1: 'Chưa có mục tiêu để áp dụng' });
-      return;
-    }
-    setIsApplying(true);
-    try {
-      await aiService.applyNutritionTarget(target);
-      Toast.show({ type: 'success', text1: 'Đã áp dụng mục tiêu AI' });
+  const recalcMutation = useMutation({
+    mutationFn: () => aiService.recalculateNutritionTarget(),
+    onSuccess: (data) => {
+      setSuggestedTarget(formatTarget(data));
+      Toast.show({ type: 'success', text1: '�?A� g���i A� m���c tiA�u m��>i' });
+    },
+    onError: (err) => {
+      handleApiErrorWithCustomMessage(err, {
+        server_error: {
+          text1: 'L?i',
+          text2: 'M?y ch? ?ang g?p s? c?. Vui l?ng th? l?i.',
+        },
+        network_error: { text1: 'Kh?ng c? k?t n?i', text2: 'Ki?m tra m?ng v? th? l?i' },
+        unknown: { text1: 'G?i ? m?c ti?u th?t b?i', text2: 'Vui l?ng th? l?i sau.' },
+      });
+    },
+  });
+
+  const applyMutation = useMutation({
+    mutationFn: (target: NutritionTarget) => aiService.applyNutritionTarget(target),
+    onSuccess: async (_, target) => {
+      Toast.show({ type: 'success', text1: '�?A� A�p d���ng m���c tiA�u AI' });
       setCurrentTarget(target);
       setSuggestedTarget(null);
-      await refreshSummary().catch(() => { });
-    } catch {
-      Toast.show({ type: 'error', text1: 'Lưu mục tiêu thất bại' });
-    } finally {
-      setIsApplying(false);
-    }
-  }, [currentTarget, suggestedTarget, refreshSummary]);
+      await refreshSummary().catch(() => {});
+      queryClient.invalidateQueries({ queryKey: ['nutrition-target'] }).catch(() => {});
+    },
+    onError: (err) => {
+      handleApiErrorWithCustomMessage(err, {
+        server_error: {
+          text1: 'L?i',
+          text2: 'M?y ch? ?ang g?p s? c?. Vui l?ng th? l?i.',
+        },
+        network_error: { text1: 'Kh?ng c? k?t n?i', text2: 'Ki?m tra m?ng v? th? l?i' },
+        unknown: { text1: 'L?u m?c ti?u th?t b?i', text2: 'Vui l?ng th? l?i.' },
+      });
+    },
+  });
 
-  const TargetBox = ({ title, target, highlight = false }: { title: string; target: NutritionTarget | null; highlight?: boolean }) => (
+  const handleRecalculate = useCallback(() => {
+    recalcMutation.mutate();
+  }, [recalcMutation]);
+
+  const handleApply = useCallback(() => {
+    const target = suggestedTarget ?? currentTarget;
+    if (!target) {
+      Toast.show({ type: 'info', text1: 'Ch��a cA3 m���c tiA�u �`��� A�p d���ng' });
+      return;
+    }
+    applyMutation.mutate(target);
+  }, [applyMutation, currentTarget, suggestedTarget]);
+
+  const TargetBox = ({
+    title,
+    target,
+    highlight = false,
+  }: {
+    title: string;
+    target: NutritionTarget | null;
+    highlight?: boolean;
+  }) => (
     <View
       style={[
         styles.targetBox,
-        highlight && { borderColor: theme.colors.primary, backgroundColor: theme.colors.primaryLight },
+        highlight && {
+          borderColor: theme.colors.primary,
+          backgroundColor: theme.colors.primaryLight,
+        },
       ]}
     >
       <ThemedText variant="h4" style={{ marginBottom: theme.spacing.sm }}>
@@ -126,7 +180,11 @@ const AiNutritionScreen = (): JSX.Element => {
       </ThemedText>
       {target ? (
         <>
-          <ThemedText variant="h2" color={highlight ? 'primary' : undefined} style={{ marginBottom: theme.spacing.sm }}>
+          <ThemedText
+            variant="h2"
+            color={highlight ? 'primary' : undefined}
+            style={{ marginBottom: theme.spacing.sm }}
+          >
             {target.calories} kcal
           </ThemedText>
           <View style={styles.macroRow}>
@@ -179,7 +237,11 @@ const AiNutritionScreen = (): JSX.Element => {
         {isLoading ? (
           <View style={styles.center}>
             <ActivityIndicator color={theme.colors.primary} size="large" />
-            <ThemedText variant="body" color="textSecondary" style={{ marginTop: theme.spacing.md }}>
+            <ThemedText
+              variant="body"
+              color="textSecondary"
+              style={{ marginTop: theme.spacing.md }}
+            >
               Đang tải...
             </ThemedText>
           </View>
@@ -187,12 +249,45 @@ const AiNutritionScreen = (): JSX.Element => {
           <TargetBox title="Mục tiêu hiện tại" target={currentTarget} />
         )}
 
-        {suggestedTarget ? <TargetBox title="Gợi ý mới" target={suggestedTarget} highlight /> : null}
+        {suggestedTarget ? (
+          <TargetBox title="Gợi ý mới" target={suggestedTarget} highlight />
+        ) : null}
 
         <View style={styles.buttonContainer}>
-          <Button variant="primary" loading={isRecalculating} disabled={isRecalculating} onPress={handleRecalculate} title={isRecalculating ? 'Đang tính...' : 'Gợi ý nhanh'} />
-          <Button variant="secondary" loading={isApplying} disabled={isApplying} onPress={handleApply} title={isApplying ? 'Đang áp dụng...' : 'Áp dụng mục tiêu AI'} />
-          <Button variant="outline" onPress={() => navigation.navigate('NutritionInsights')} title="Xem phân tích chi tiết" />
+          <Button
+            variant="primary"
+            loading={recalcMutation.isPending}
+            disabled={recalcMutation.isPending}
+            onPress={handleRecalculate}
+            title={recalcMutation.isPending ? 'Đang tính...' : 'Gợi ý nhanh'}
+          />
+          <Button
+            variant="secondary"
+            loading={applyMutation.isPending}
+            disabled={applyMutation.isPending}
+            onPress={handleApply}
+            title={applyMutation.isPending ? 'Đang áp dụng...' : 'Áp dụng mục tiêu AI'}
+          />
+          <Button
+            variant="outline"
+            onPress={() => navigation.navigate('NutritionInsights')}
+            title="Xem phân tích chi tiết"
+          />
+          <Button
+            variant="outline"
+            onPress={() => navigation.navigate('AdaptiveTarget')}
+            title="Mục tiêu tự động (AI+)"
+          />
+          <Button
+            variant="outline"
+            onPress={() => navigation.navigate('VisionHistory')}
+            title="Lịch sử nhận diện Vision"
+          />
+          <Button
+            variant="outline"
+            onPress={() => navigation.navigate('RecipeSuggestions', { ingredients: [] })}
+            title="Gợi ý công thức (Thủ công)"
+          />
         </View>
       </AppCard>
     </Screen>
@@ -200,4 +295,3 @@ const AiNutritionScreen = (): JSX.Element => {
 };
 
 export default AiNutritionScreen;
-

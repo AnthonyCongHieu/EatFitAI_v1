@@ -1,8 +1,7 @@
 import React, { Component, ReactNode } from 'react';
-import { View, StyleSheet } from 'react-native';
 import ErrorState from './ErrorState';
-import { useAppTheme } from '../theme/ThemeProvider';
 import { t } from '../i18n/vi';
+import { captureError } from '../services/errorTracking';
 
 interface Props {
   children: ReactNode;
@@ -27,6 +26,7 @@ class ErrorBoundaryClass extends Component<Props, State> {
 
   componentDidCatch(error: Error, errorInfo: any) {
     console.error('ErrorBoundary caught an error:', error, errorInfo);
+    captureError(error, 'ErrorBoundary');
     this.props.onError?.(error, errorInfo);
   }
 

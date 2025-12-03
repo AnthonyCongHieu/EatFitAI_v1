@@ -1,4 +1,9 @@
-flask>=3.0.0
-ultralytics>=8.0.0
-pillow>=10.0.0
-opencv-python>=4.8.0
+flask==3.0.3
+ultralytics==8.3.41
+pillow==10.4.0
+opencv-python==4.10.0.84
+werkzeug==3.0.3
+roboflow==1.1.40
+
+# Note: torch and torchvision will be installed separately with CUDA support
+# pip install torch torchvision --index-url https://download.pytorch.org/whl/cu121

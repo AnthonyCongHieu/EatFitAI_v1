@@ -3,8 +3,11 @@
 
 import { create } from 'zustand';
 
-import { profileService, type UpdateProfilePayload, type UserProfile } from '../services/profileService';
-import type { UserDto } from '../types';
+import {
+  profileService,
+  type UpdateProfilePayload,
+  type UserProfile,
+} from '../services/profileService';
 
 type ProfileState = {
   profile: UserProfile | null;

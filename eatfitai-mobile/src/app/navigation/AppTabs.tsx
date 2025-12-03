@@ -7,7 +7,6 @@ import HomeScreen from '../screens/HomeScreen';
 import FoodSearchScreen from '../screens/diary/FoodSearchScreen';
 import AiCameraScreen from '../screens/ai/AiCameraScreen';
 import AiNutritionScreen from '../screens/ai/AiNutritionScreen';
-import AiVisionScreen from '../screens/ai/AiVisionScreen';
 import WeekStatsScreen from '../screens/stats/WeekStatsScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import { useAppTheme } from '../../theme/ThemeProvider';
@@ -18,7 +17,6 @@ export type AppTabsParamList = {
   SearchTab: undefined;
   CameraTab: undefined;
   AITab: undefined;
-  AiVisionTab: undefined;
   StatsTab: undefined;
   ProfileTab: undefined;
 };
@@ -49,7 +47,9 @@ const AppTabs = (): JSX.Element => {
         component={HomeScreen}
         options={{
           title: t('navigation.home'),
-          tabBarIcon: ({ color, size }) => <Ionicons name="home" color={color} size={size} />,
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="home" color={color} size={size} />
+          ),
         }}
       />
       <Tab.Screen
@@ -57,7 +57,9 @@ const AppTabs = (): JSX.Element => {
         component={FoodSearchScreen}
         options={{
           title: t('navigation.search'),
-          tabBarIcon: ({ color, size }) => <Ionicons name="search" color={color} size={size} />,
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="search" color={color} size={size} />
+          ),
         }}
       />
       <Tab.Screen
@@ -65,7 +67,9 @@ const AppTabs = (): JSX.Element => {
         component={AiCameraScreen}
         options={{
           title: t('navigation.camera'),
-          tabBarIcon: ({ color, size }) => <Ionicons name="camera" color={color} size={size} />,
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="camera" color={color} size={size} />
+          ),
         }}
       />
       <Tab.Screen
@@ -73,15 +77,9 @@ const AppTabs = (): JSX.Element => {
         component={AiNutritionScreen}
         options={{
           title: t('navigation.ai'),
-          tabBarIcon: ({ color, size }) => <Ionicons name="bulb" color={color} size={size} />,
-        }}
-      />
-      <Tab.Screen
-        name="AiVisionTab"
-        component={AiVisionScreen}
-        options={{
-          title: 'AI Vision (test)',
-          tabBarIcon: ({ color, size }) => <Ionicons name="image" color={color} size={size} />,
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="bulb" color={color} size={size} />
+          ),
         }}
       />
       <Tab.Screen
@@ -99,7 +97,9 @@ const AppTabs = (): JSX.Element => {
         component={ProfileScreen}
         options={{
           title: t('navigation.profile'),
-          tabBarIcon: ({ color, size }) => <Ionicons name="person" color={color} size={size} />,
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="person" color={color} size={size} />
+          ),
         }}
       />
     </Tab.Navigator>
@@ -107,4 +107,3 @@ const AppTabs = (): JSX.Element => {
 };
 
 export default AppTabs;
-

@@ -1,7 +1,6 @@
-// Khai báo tối thiểu để TS không cảnh báo khi dùng process.env trong môi trường Expo
+// Khai bao toi thieu de TS khong canh bao khi dung process.env trong moi truong Expo
 
 declare global {
-  // eslint-disable-next-line @typescript-eslint/no-namespace
   namespace NodeJS {
     interface ProcessEnv {
       EXPO_PUBLIC_API_BASE_URL?: string;
@@ -10,10 +9,7 @@ declare global {
     }
   }
 
-  // process env chỉ cần dạng tối thiểu
-  // (Expo sẽ thay thế biến EXPO_PUBLIC_ tại runtime)
-  // eslint-disable-next-line no-var
-  var process: {
+  const process: {
     env: NodeJS.ProcessEnv;
   };
 }

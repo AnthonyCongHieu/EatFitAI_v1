@@ -11,4 +11,3 @@ export interface AddMealItemsPayload {
   mealType: number;
   items: MealItemInput[];
 }
-

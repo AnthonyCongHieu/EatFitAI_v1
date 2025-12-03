@@ -1,7 +1,14 @@
 import { useCallback, useState } from 'react';
-import { ActivityIndicator, FlatList, Modal, Pressable, StyleSheet, View } from 'react-native';
+import {
+  ActivityIndicator,
+  FlatList,
+  Modal,
+  Pressable,
+  StyleSheet,
+  View,
+} from 'react-native';
 
-import Card from '../../components/Card';
+import { AppCard } from '../../components/ui/AppCard';
 import Button from '../../components/Button';
 import ThemedTextInput from '../../components/ThemedTextInput';
 import { ThemedText } from '../../components/ThemedText';
@@ -43,15 +50,25 @@ const FoodItemPicker = ({ visible, onClose, onSelect }: Props): JSX.Element => {
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <View style={styles.backdrop}>
-        <Card padding="lg" shadow="md">
+        <AppCard padding="lg" shadow="md">
           <ThemedText variant="h3" style={{ marginBottom: theme.spacing.sm }}>
             Chon mon an
           </ThemedText>
-          <ThemedText variant="bodySmall" color="textSecondary" style={{ marginBottom: theme.spacing.md }}>
+          <ThemedText
+            variant="bodySmall"
+            color="textSecondary"
+            style={{ marginBottom: theme.spacing.md }}
+          >
             Tim kiem FoodItem de map voi label AI.
           </ThemedText>
 
-          <View style={{ flexDirection: 'row', gap: theme.spacing.sm, marginBottom: theme.spacing.sm }}>
+          <View
+            style={{
+              flexDirection: 'row',
+              gap: theme.spacing.sm,
+              marginBottom: theme.spacing.sm,
+            }}
+          >
             <View style={{ flex: 1 }}>
               <ThemedTextInput
                 value={query}
@@ -60,7 +77,13 @@ const FoodItemPicker = ({ visible, onClose, onSelect }: Props): JSX.Element => {
                 placeholder="Nhap ten mon an..."
               />
             </View>
-            <Button title="Tim" size="sm" variant="primary" onPress={handleSearch} disabled={isLoading} />
+            <Button
+              title="Tim"
+              size="sm"
+              variant="primary"
+              onPress={handleSearch}
+              disabled={isLoading}
+            />
           </View>
 
           {isLoading && (
@@ -78,14 +101,22 @@ const FoodItemPicker = ({ visible, onClose, onSelect }: Props): JSX.Element => {
               <Pressable
                 accessibilityRole="button"
                 onPress={() => handleSelect(item)}
-                style={[styles.row, { borderColor: theme.colors.border, backgroundColor: theme.colors.card }]}
+                style={[
+                  styles.row,
+                  {
+                    borderColor: theme.colors.border,
+                    backgroundColor: theme.colors.card,
+                  },
+                ]}
               >
                 <View style={{ flex: 1 }}>
                   <ThemedText variant="body" weight="600">
                     {item.name}
                   </ThemedText>
                   <ThemedText variant="bodySmall" color="textSecondary">
-                    {item.calories != null ? `${Math.round(item.calories)} kcal/100g` : '-- kcal'}
+                    {item.calories != null
+                      ? `${Math.round(item.calories)} kcal/100g`
+                      : '-- kcal'}
                   </ThemedText>
                 </View>
                 <ThemedText variant="button" color="primary">
@@ -98,14 +129,20 @@ const FoodItemPicker = ({ visible, onClose, onSelect }: Props): JSX.Element => {
           <View style={{ marginTop: theme.spacing.md }}>
             <Button variant="outline" title="Dong" onPress={onClose} />
           </View>
-        </Card>
+        </AppCard>
       </View>
     </Modal>
   );
 };
 
 const styles = StyleSheet.create({
-  backdrop: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.4)', padding: 24 },
+  backdrop: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    padding: 24,
+  },
   loadingRow: { paddingVertical: 8, alignItems: 'center' },
   row: {
     flexDirection: 'row',
@@ -119,4 +156,3 @@ const styles = StyleSheet.create({
 });
 
 export default FoodItemPicker;
-

@@ -20,6 +20,8 @@ namespace EatFitAI.API.Repositories
                 .Include(md => md.Recipe)
                 .Include(md => md.ServingUnit)
                 .Include(md => md.MealType)
+                .AsSplitQuery()  // ✅ Prevent Cartesian explosion
+                .AsNoTracking()  // ✅ Read-only optimization
                 .AsQueryable();
 
             if (date.HasValue)
@@ -43,6 +45,8 @@ namespace EatFitAI.API.Repositories
                 .Include(md => md.Recipe)
                 .Include(md => md.ServingUnit)
                 .Include(md => md.MealType)
+                .AsSplitQuery()  // ✅ Prevent Cartesian explosion
+                .AsNoTracking()  // ✅ Read-only optimization
                 .OrderByDescending(md => md.EatenDate)
                 .ToListAsync();
         }

@@ -17,7 +17,14 @@ type MetricCardProps = {
   onPress?: () => void;
 };
 
-const MetricCardComponent = ({ icon, value, label, color, progress, onPress }: MetricCardProps) => {
+const MetricCardComponent = ({
+  icon,
+  value,
+  label,
+  color,
+  progress,
+  onPress,
+}: MetricCardProps) => {
   const { theme } = useAppTheme();
 
   const animatedStyle = useAnimatedStyle(() => ({
@@ -28,24 +35,23 @@ const MetricCardComponent = ({ icon, value, label, color, progress, onPress }: M
     transform: [{ scale: interpolate(value.value, [0, 100], [1, 1.05]) }],
   }));
 
-  const styles = useMemo(() => ({
-    container: { flex: 1, alignItems: 'center' as const },
-    text: {
-      fontSize: theme.typography.h3.fontSize,
-      fontFamily: theme.typography.h3.fontFamily,
-      marginTop: theme.spacing.xs,
-      color: theme.colors.text,
-    },
-    progressContainer: { marginTop: theme.spacing.xs },
-  }), [theme]);
+  const styles = useMemo(
+    () => ({
+      container: { flex: 1, alignItems: 'center' as const },
+      text: {
+        fontSize: theme.typography.h3.fontSize,
+        fontFamily: theme.typography.h3.fontFamily,
+        marginTop: theme.spacing.xs,
+        color: theme.colors.text,
+      },
+      progressContainer: { marginTop: theme.spacing.xs },
+    }),
+    [theme],
+  );
 
   return (
     <Animated.View style={animatedStyle}>
-      <Pressable
-        style={styles.container}
-        onPress={onPress}
-        disabled={!onPress}
-      >
+      <Pressable style={styles.container} onPress={onPress} disabled={!onPress}>
         <Icon name={icon} size="lg" color={color} />
         <Animated.Text style={[styles.text, textAnimatedStyle]}>
           {Math.round(value.value)}

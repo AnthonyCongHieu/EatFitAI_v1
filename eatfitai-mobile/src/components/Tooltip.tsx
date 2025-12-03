@@ -1,12 +1,12 @@
 import type { ReactNode } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View, type ViewStyle } from 'react-native';
 import React from 'react';
 import Animated, {
   FadeIn,
   FadeOut,
   useAnimatedStyle,
   useSharedValue,
-  withTiming
+  withTiming,
 } from 'react-native-reanimated';
 
 import { ThemedText } from './ThemedText';
@@ -31,41 +31,39 @@ export const Tooltip = ({
   onClose,
   autoHide = false,
   autoHideDelay = 3000,
-  animated = true
+  animated = true,
 }: TooltipProps): JSX.Element => {
   const { theme } = useAppTheme();
 
   const opacity = useSharedValue(0);
 
-  const getPositionStyles = () => {
+  const getPositionStyles = (): ViewStyle => {
     switch (position) {
       case 'top':
         return {
           bottom: '100%',
-          left: '50%',
           marginBottom: 8,
-          transform: [{ translateX: '-50%' }],
+          alignSelf: 'center',
         };
       case 'bottom':
         return {
           top: '100%',
-          left: '50%',
           marginTop: 8,
-          transform: [{ translateX: '-50%' }],
+          alignSelf: 'center',
         };
       case 'left':
         return {
           right: '100%',
           top: '50%',
           marginRight: 8,
-          transform: [{ translateY: '-50%' }],
+          alignSelf: 'flex-end',
         };
       case 'right':
         return {
           left: '100%',
           top: '50%',
           marginLeft: 8,
-          transform: [{ translateY: '-50%' }],
+          alignSelf: 'flex-start',
         };
       default:
         return {};
@@ -160,10 +158,7 @@ export const Tooltip = ({
   return (
     <View style={styles.container}>
       {/* Backdrop for closing */}
-      <Pressable
-        style={StyleSheet.absoluteFill}
-        onPress={handleBackdropPress}
-      />
+      <Pressable style={StyleSheet.absoluteFill} onPress={handleBackdropPress} />
 
       {/* Tooltip */}
       <Animated.View
@@ -180,7 +175,7 @@ export const Tooltip = ({
             shadowRadius: 8,
             elevation: 4,
           },
-          getPositionStyles() as any,
+          getPositionStyles(),
           tooltipAnimatedStyle,
         ]}
         entering={animated ? FadeIn.duration(200) : undefined}
@@ -207,9 +202,7 @@ export const Tooltip = ({
       </Animated.View>
 
       {/* Children */}
-      <View style={styles.children}>
-        {children}
-      </View>
+      <View style={styles.children}>{children}</View>
     </View>
   );
 };

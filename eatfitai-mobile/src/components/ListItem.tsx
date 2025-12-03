@@ -3,7 +3,7 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
-  withSpring
+  withSpring,
 } from 'react-native-reanimated';
 
 import { ThemedText } from './ThemedText';
@@ -38,7 +38,7 @@ export const ListItem = ({
   variant = 'default',
   size = 'md',
   animated = true,
-  chevron = false
+  chevron = false,
 }: ListItemProps): JSX.Element => {
   const { theme } = useAppTheme();
 
@@ -47,12 +47,27 @@ export const ListItem = ({
   const getSizeConfig = () => {
     switch (size) {
       case 'sm':
-        return { paddingVertical: 8, paddingHorizontal: 12, titleSize: 14, subtitleSize: 12 };
+        return {
+          paddingVertical: 8,
+          paddingHorizontal: 12,
+          titleSize: 14,
+          subtitleSize: 12,
+        };
       case 'lg':
-        return { paddingVertical: 16, paddingHorizontal: 20, titleSize: 18, subtitleSize: 14 };
+        return {
+          paddingVertical: 16,
+          paddingHorizontal: 20,
+          titleSize: 18,
+          subtitleSize: 14,
+        };
       case 'md':
       default:
-        return { paddingVertical: 12, paddingHorizontal: 16, titleSize: 16, subtitleSize: 13 };
+        return {
+          paddingVertical: 12,
+          paddingHorizontal: 16,
+          titleSize: 16,
+          subtitleSize: 13,
+        };
     }
   };
 
@@ -112,9 +127,7 @@ export const ListItem = ({
 
     if (chevron) {
       return (
-        <ThemedText style={[styles.chevron, { color: theme.colors.muted }]}>
-          ›
-        </ThemedText>
+        <ThemedText style={[styles.chevron, { color: theme.colors.muted }]}>›</ThemedText>
       );
     }
 
@@ -143,11 +156,7 @@ export const ListItem = ({
     >
       <View style={styles.content}>
         {/* Left Component */}
-        {leftComponent && (
-          <View style={styles.leftComponent}>
-            {leftComponent}
-          </View>
-        )}
+        {leftComponent && <View style={styles.leftComponent}>{leftComponent}</View>}
 
         {/* Text Content */}
         <View style={styles.textContent}>
@@ -181,9 +190,7 @@ export const ListItem = ({
 
         {/* Right Component */}
         {renderRightComponent() && (
-          <View style={styles.rightComponent}>
-            {renderRightComponent()}
-          </View>
+          <View style={styles.rightComponent}>{renderRightComponent()}</View>
         )}
       </View>
     </AnimatedPressable>

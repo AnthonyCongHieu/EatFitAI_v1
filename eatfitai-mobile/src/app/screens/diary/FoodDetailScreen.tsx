@@ -8,13 +8,19 @@ import { Controller, useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import Toast from 'react-native-toast-message';
-import Animated, { FadeIn, useSharedValue, useAnimatedStyle, withTiming, interpolate } from 'react-native-reanimated';
+import Animated, {
+  FadeIn,
+  useSharedValue,
+  useAnimatedStyle,
+  withTiming,
+  interpolate,
+} from 'react-native-reanimated';
+import { useQuery } from '@tanstack/react-query';
 
 import { ThemedText } from '../../../components/ThemedText';
 import Screen from '../../../components/Screen';
 import { AppCard } from '../../../components/ui/AppCard';
 import { ScreenHeader } from '../../../components/ui/ScreenHeader';
-import { AppStepper } from '../../../components/ui/AppStepper';
 import Button from '../../../components/Button';
 import ThemedTextInput from '../../../components/ThemedTextInput';
 import { useAppTheme } from '../../../theme/ThemeProvider';
@@ -22,7 +28,7 @@ import type { RootStackParamList } from '../../types';
 import { foodService, type FoodDetail } from '../../../services/foodService';
 import { useDiaryStore } from '../../../store/useDiaryStore';
 import { MEAL_TYPES, MEAL_TYPE_LABELS, type MealTypeId } from '../../../types';
-import { diaryService } from '../../../services/diaryService';
+import { handleApiError } from '../../../utils/errorHandler';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 type RouteProps = RouteProp<RootStackParamList, 'FoodDetail'>;
@@ -39,10 +45,16 @@ const FormSchema = z.object({
     .string()
     .trim()
     .refine((value) => value !== '', { message: 'Vui lòng nhập số gram' })
-    .refine((value) => !Number.isNaN(Number(value)) && Number(value) > 0 && Number(value) <= 2000, {
-      message: 'Số gram phải > 0 và ≤ 2000',
-    }),
-  mealType: z.number().refine((value) => [1, 2, 3, 4].includes(value), { message: 'Bữa ăn không hợp lệ' }),
+    .refine(
+      (value) =>
+        !Number.isNaN(Number(value)) && Number(value) > 0 && Number(value) <= 2000,
+      {
+        message: 'Số gram phải > 0 và ≤ 2000',
+      },
+    ),
+  mealType: z
+    .number()
+    .refine((value) => [1, 2, 3, 4].includes(value), { message: 'Bữa ăn không hợp lệ' }),
   note: z.string().trim().max(200, 'Ghi chú tối đa 200 ký tự').optional(),
 });
 
@@ -54,34 +66,79 @@ const FoodDetailScreen = (): JSX.Element | null => {
   const route = useRoute<RouteProps>();
   const refreshSummary = useDiaryStore((state) => state.refreshSummary);
 
-  const styles = StyleSheet.create({
-    loadingContainer: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-    content: { paddingHorizontal: theme.spacing.lg, paddingVertical: theme.spacing.xl, gap: theme.spacing.xxl, flexGrow: 1 },
-    header: {
-      paddingHorizontal: theme.spacing.lg,
-      paddingTop: theme.spacing.lg,
-      paddingBottom: theme.spacing.xl,
-    },
-    title: {
-      marginBottom: theme.spacing.sm,
-    },
-    infoRow: { flexDirection: 'row', gap: theme.spacing.sm },
-    infoBox: { flex: 1, padding: theme.spacing.lg, borderRadius: theme.borderRadius.card, gap: theme.spacing.xs },
-    macroRow: { flexDirection: 'row', gap: theme.spacing.sm },
-    macroBox: { flex: 1, padding: theme.spacing.md, borderRadius: theme.borderRadius.card, gap: theme.spacing.xs },
-    mealRow: { flexDirection: 'row', flexWrap: 'wrap', gap: theme.spacing.xs },
-    mealChip: { borderWidth: 1.5, borderRadius: 999, paddingVertical: theme.spacing.sm, paddingHorizontal: theme.spacing.lg },
-    previewBox: { padding: theme.spacing.lg, borderRadius: theme.borderRadius.card },
-    animatedMacroValue: {
-      fontSize: theme.typography.bodyLarge.fontSize,
-      fontFamily: theme.typography.bodyLarge.fontFamily,
-      color: theme.colors.text,
+  // Move styles to useMemo to fix hooks order
+  const styles = useMemo(
+    () =>
+      StyleSheet.create({
+        loadingContainer: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+        content: {
+          paddingHorizontal: theme.spacing.lg,
+          paddingVertical: theme.spacing.xl,
+          gap: theme.spacing.xxl,
+          flexGrow: 1,
+        },
+        header: {
+          paddingHorizontal: theme.spacing.lg,
+          paddingTop: theme.spacing.lg,
+          paddingBottom: theme.spacing.xl,
+        },
+        title: {
+          marginBottom: theme.spacing.sm,
+        },
+        infoRow: { flexDirection: 'row', gap: theme.spacing.sm },
+        infoBox: {
+          flex: 1,
+          padding: theme.spacing.lg,
+          borderRadius: theme.borderRadius.card,
+          gap: theme.spacing.xs,
+        },
+        macroRow: { flexDirection: 'row', gap: theme.spacing.sm },
+        macroBox: {
+          flex: 1,
+          padding: theme.spacing.md,
+          borderRadius: theme.borderRadius.card,
+          gap: theme.spacing.xs,
+        },
+        mealRow: { flexDirection: 'row', flexWrap: 'wrap', gap: theme.spacing.xs },
+        mealChip: {
+          borderWidth: 1.5,
+          borderRadius: 999,
+          paddingVertical: theme.spacing.sm,
+          paddingHorizontal: theme.spacing.lg,
+        },
+        previewBox: { padding: theme.spacing.lg, borderRadius: theme.borderRadius.card },
+        animatedMacroValue: {
+          fontSize: theme.typography.bodyLarge.fontSize,
+          fontFamily: theme.typography.bodyLarge.fontFamily,
+          color: theme.colors.text,
+        },
+      }),
+    [theme],
+  );
+
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const {
+    data: detailData,
+    isLoading,
+    error,
+  } = useQuery<FoodDetail | null, unknown>({
+    queryKey: ['food-detail', route.params.foodId, route.params.source],
+    queryFn: async () => {
+      const data = await foodService.getFoodDetail(
+        route.params.foodId,
+        route.params.source,
+      );
+      return data ?? null;
     },
   });
+  const detail = detailData ?? null;
 
-  const [detail, setDetail] = useState<FoodDetail | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  useEffect(() => {
+    if (error) {
+      handleApiError(error);
+      navigation.goBack();
+    }
+  }, [error, navigation]);
 
   // Animation values
   const proteinValue = useSharedValue(0);
@@ -108,36 +165,17 @@ const FoodDetailScreen = (): JSX.Element | null => {
   const mealTypeValue = watch('mealType');
 
   useEffect(() => {
-    setIsLoading(true);
-    foodService
-      .getFoodDetail(route.params.foodId)
-      .then((data) => {
-        setDetail(data);
-        if (data.servingSizeGram && data.servingSizeGram > 0) {
-          setValue('grams', String(Math.round(data.servingSizeGram)));
-        }
-      })
-      .catch((error: any) => {
-        const status = error?.response?.status;
-        if (status === 404) {
-          Toast.show({ type: 'error', text1: 'Món ăn không tồn tại', text2: 'Món này có thể đã bị xóa' });
-        } else if (status >= 500) {
-          Toast.show({ type: 'error', text1: 'Lỗi máy chủ', text2: 'Vui lòng thử lại sau' });
-        } else if (!navigator.onLine) {
-          Toast.show({ type: 'error', text1: 'Không có kết nối mạng', text2: 'Kiểm tra kết nối và thử lại' });
-        } else {
-          Toast.show({ type: 'error', text1: 'Không tải được chi tiết món', text2: 'Vui lòng thử lại' });
-        }
-        navigation.goBack();
-      })
-      .finally(() => {
-        setIsLoading(false);
-      });
-  }, [navigation, route.params.foodId, setValue]);
+    if (detail?.servingSizeGram && detail.servingSizeGram > 0) {
+      setValue('grams', String(Math.round(detail.servingSizeGram)));
+    }
+  }, [detail?.servingSizeGram, setValue]);
 
   const multiplier = useMemo(() => {
     const gramsNumber = Number(gramsValue);
-    const base = detail?.servingSizeGram && detail.servingSizeGram > 0 ? detail.servingSizeGram : 100;
+    const base =
+      detail?.servingSizeGram && detail.servingSizeGram > 0
+        ? detail.servingSizeGram
+        : 100;
     if (!gramsNumber || !base) return 0;
     return gramsNumber / base;
   }, [detail?.servingSizeGram, gramsValue]);
@@ -175,28 +213,30 @@ const FoodDetailScreen = (): JSX.Element | null => {
       if (!detail) return;
       setIsSubmitting(true);
       try {
-        await foodService.addDiaryEntry({
-          foodId: detail.id,
-          grams: Number(values.grams),
-          mealTypeId: values.mealType as MealTypeId,
-          note: values.note ?? undefined,
+        if (detail.source === 'user') {
+          await foodService.addDiaryEntryFromUserFoodItem({
+            userFoodItemId: detail.id,
+            grams: Number(values.grams),
+            mealTypeId: values.mealType as MealTypeId,
+            note: values.note ?? undefined,
+          });
+        } else {
+          await foodService.addDiaryEntry({
+            foodId: detail.id,
+            grams: Number(values.grams),
+            mealTypeId: values.mealType as MealTypeId,
+            note: values.note ?? undefined,
+          });
+        }
+        Toast.show({
+          type: 'success',
+          text1: 'Đã thêm món vào nhật ký',
+          text2: 'Tiếp tục theo dõi dinh dưỡng của bạn!',
         });
-        Toast.show({ type: 'success', text1: 'Đã thêm món vào nhật ký', text2: 'Tiếp tục theo dõi dinh dưỡng của bạn!' });
         await refreshSummary().catch(() => {});
         navigation.goBack();
-      } catch (error: any) {
-        const status = error?.response?.status;
-        if (status === 422) {
-          Toast.show({ type: 'error', text1: 'Dữ liệu không hợp lệ', text2: 'Vui lòng kiểm tra số gram và bữa ăn' });
-        } else if (status === 404) {
-          Toast.show({ type: 'error', text1: 'Món ăn không tồn tại', text2: 'Món này có thể đã bị xóa' });
-        } else if (status >= 500) {
-          Toast.show({ type: 'error', text1: 'Lỗi máy chủ', text2: 'Vui lòng thử lại sau' });
-        } else if (!navigator.onLine) {
-          Toast.show({ type: 'error', text1: 'Không có kết nối mạng', text2: 'Kiểm tra kết nối và thử lại' });
-        } else {
-          Toast.show({ type: 'error', text1: 'Thêm món thất bại', text2: 'Vui lòng thử lại hoặc liên hệ hỗ trợ' });
-        }
+      } catch (err: any) {
+        handleApiError(err);
       } finally {
         setIsSubmitting(false);
       }
@@ -204,13 +244,42 @@ const FoodDetailScreen = (): JSX.Element | null => {
     [detail, navigation, refreshSummary],
   );
 
+  // Animated styles - MUST be at top level, NOT in JSX
+  const proteinBoxStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: interpolate(proteinValue.value, [0, 50], [1, 1.05]) }],
+  }));
+
+  const proteinTextStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: interpolate(proteinValue.value, [0, 50], [1, 1.1]) }],
+  }));
+
+  const carbsBoxStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: interpolate(carbsValue.value, [0, 100], [1, 1.05]) }],
+  }));
+
+  const carbsTextStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: interpolate(carbsValue.value, [0, 100], [1, 1.1]) }],
+  }));
+
+  const fatBoxStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: interpolate(fatValue.value, [0, 30], [1, 1.05]) }],
+  }));
+
+  const fatTextStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: interpolate(fatValue.value, [0, 30], [1, 1.1]) }],
+  }));
+
   if (isLoading) {
     return (
       <Screen contentContainerStyle={styles.loadingContainer}>
         <AppCard>
           <View style={{ alignItems: 'center', padding: theme.spacing.xl }}>
             <ActivityIndicator size="large" color={theme.colors.primary} />
-            <ThemedText variant="body" color="textSecondary" style={{ marginTop: theme.spacing.md }}>
+            <ThemedText
+              variant="body"
+              color="textSecondary"
+              style={{ marginTop: theme.spacing.md }}
+            >
               Đang tải chi tiết món ăn...
             </ThemedText>
           </View>
@@ -223,18 +292,22 @@ const FoodDetailScreen = (): JSX.Element | null => {
 
   return (
     <Screen>
-      <ScreenHeader
-        title="Chi tiết món ăn"
-        subtitle={detail.name}
-      />
+      <ScreenHeader title="Chi tiết món ăn" subtitle={detail.name} />
 
-      <Animated.View entering={FadeIn.duration(theme.animation.normal)} style={styles.content}>
+      <Animated.View
+        entering={FadeIn.duration(theme.animation.normal)}
+        style={styles.content}
+      >
         <AppCard>
           <ThemedText variant="h2" style={{ marginBottom: theme.spacing.xs }}>
             Thông tin dinh dưỡng
           </ThemedText>
           {detail.brand ? (
-            <ThemedText variant="bodySmall" color="textSecondary" style={{ marginBottom: theme.spacing.xs }}>
+            <ThemedText
+              variant="bodySmall"
+              color="textSecondary"
+              style={{ marginBottom: theme.spacing.xs }}
+            >
               {detail.brand}
             </ThemedText>
           ) : null}
@@ -245,16 +318,30 @@ const FoodDetailScreen = (): JSX.Element | null => {
           ) : null}
 
           <View style={[styles.infoRow, { marginTop: theme.spacing.lg }]}>
-            <View style={[styles.infoBox, { backgroundColor: theme.colors.primaryLight }]}>
-              <ThemedText variant="caption" color="primary" weight="600" style={{ textTransform: 'uppercase' }}>
+            <View
+              style={[styles.infoBox, { backgroundColor: theme.colors.primaryLight }]}
+            >
+              <ThemedText
+                variant="caption"
+                color="primary"
+                weight="600"
+                style={{ textTransform: 'uppercase' }}
+              >
                 Lượng tham chiếu
               </ThemedText>
               <ThemedText variant="h4" color="primary">
                 {detail.servingSizeGram ? `${detail.servingSizeGram} g` : '100 g'}
               </ThemedText>
             </View>
-            <View style={[styles.infoBox, { backgroundColor: theme.colors.secondaryLight }]}>
-              <ThemedText variant="caption" color="secondary" weight="600" style={{ textTransform: 'uppercase' }}>
+            <View
+              style={[styles.infoBox, { backgroundColor: theme.colors.secondaryLight }]}
+            >
+              <ThemedText
+                variant="caption"
+                color="secondary"
+                weight="600"
+                style={{ textTransform: 'uppercase' }}
+              >
                 Năng lượng
               </ThemedText>
               <ThemedText variant="h4" color="secondary">
@@ -268,54 +355,63 @@ const FoodDetailScreen = (): JSX.Element | null => {
               style={[
                 styles.macroBox,
                 { backgroundColor: theme.colors.background },
-                useAnimatedStyle(() => ({
-                  transform: [{ scale: interpolate(proteinValue.value, [0, 50], [1, 1.05]) }],
-                })),
+                proteinBoxStyle,
               ]}
             >
-              <ThemedText variant="caption" color="textSecondary" weight="600" style={{ textTransform: 'uppercase' }}>
+              <ThemedText
+                variant="caption"
+                color="textSecondary"
+                weight="600"
+                style={{ textTransform: 'uppercase' }}
+              >
                 Protein
               </ThemedText>
-              <Animated.Text style={[styles.animatedMacroValue, useAnimatedStyle(() => ({
-                transform: [{ scale: interpolate(proteinValue.value, [0, 50], [1, 1.1]) }],
-              }))]}>
-                {proteinValue.value > 0 ? `${proteinValue.value.toFixed(1).replace(/\.0$/, '')} g` : '--'}
+              <Animated.Text style={[styles.animatedMacroValue, proteinTextStyle]}>
+                {proteinValue.value > 0
+                  ? `${proteinValue.value.toFixed(1).replace(/\.0$/, '')} g`
+                  : '--'}
               </Animated.Text>
             </Animated.View>
             <Animated.View
               style={[
                 styles.macroBox,
                 { backgroundColor: theme.colors.background },
-                useAnimatedStyle(() => ({
-                  transform: [{ scale: interpolate(carbsValue.value, [0, 100], [1, 1.05]) }],
-                })),
+                carbsBoxStyle,
               ]}
             >
-              <ThemedText variant="caption" color="textSecondary" weight="600" style={{ textTransform: 'uppercase' }}>
+              <ThemedText
+                variant="caption"
+                color="textSecondary"
+                weight="600"
+                style={{ textTransform: 'uppercase' }}
+              >
                 Carb
               </ThemedText>
-              <Animated.Text style={[styles.animatedMacroValue, useAnimatedStyle(() => ({
-                transform: [{ scale: interpolate(carbsValue.value, [0, 100], [1, 1.1]) }],
-              }))]}>
-                {carbsValue.value > 0 ? `${carbsValue.value.toFixed(1).replace(/\.0$/, '')} g` : '--'}
+              <Animated.Text style={[styles.animatedMacroValue, carbsTextStyle]}>
+                {carbsValue.value > 0
+                  ? `${carbsValue.value.toFixed(1).replace(/\.0$/, '')} g`
+                  : '--'}
               </Animated.Text>
             </Animated.View>
             <Animated.View
               style={[
                 styles.macroBox,
                 { backgroundColor: theme.colors.background },
-                useAnimatedStyle(() => ({
-                  transform: [{ scale: interpolate(fatValue.value, [0, 30], [1, 1.05]) }],
-                })),
+                fatBoxStyle,
               ]}
             >
-              <ThemedText variant="caption" color="textSecondary" weight="600" style={{ textTransform: 'uppercase' }}>
+              <ThemedText
+                variant="caption"
+                color="textSecondary"
+                weight="600"
+                style={{ textTransform: 'uppercase' }}
+              >
                 Fat
               </ThemedText>
-              <Animated.Text style={[styles.animatedMacroValue, useAnimatedStyle(() => ({
-                transform: [{ scale: interpolate(fatValue.value, [0, 30], [1, 1.1]) }],
-              }))]}>
-                {fatValue.value > 0 ? `${fatValue.value.toFixed(1).replace(/\.0$/, '')} g` : '--'}
+              <Animated.Text style={[styles.animatedMacroValue, fatTextStyle]}>
+                {fatValue.value > 0
+                  ? `${fatValue.value.toFixed(1).replace(/\.0$/, '')} g`
+                  : '--'}
               </Animated.Text>
             </Animated.View>
           </View>
@@ -362,7 +458,10 @@ const FoodDetailScreen = (): JSX.Element | null => {
                   style={[
                     styles.mealChip,
                     {
-                      backgroundColor: mealTypeValue === option.value ? theme.colors.primary : 'transparent',
+                      backgroundColor:
+                        mealTypeValue === option.value
+                          ? theme.colors.primary
+                          : 'transparent',
                       borderColor: theme.colors.primary,
                     },
                   ]}
@@ -370,7 +469,10 @@ const FoodDetailScreen = (): JSX.Element | null => {
                   <ThemedText
                     variant="button"
                     style={{
-                      color: mealTypeValue === option.value ? theme.colors.card : theme.colors.text,
+                      color:
+                        mealTypeValue === option.value
+                          ? theme.colors.card
+                          : theme.colors.text,
                     }}
                   >
                     {option.label}
@@ -379,7 +481,11 @@ const FoodDetailScreen = (): JSX.Element | null => {
               ))}
             </View>
             {errors.mealType && (
-              <ThemedText variant="bodySmall" color="danger" style={{ marginTop: theme.spacing.xs }}>
+              <ThemedText
+                variant="bodySmall"
+                color="danger"
+                style={{ marginTop: theme.spacing.xs }}
+              >
                 {errors.mealType.message}
               </ThemedText>
             )}
@@ -403,11 +509,25 @@ const FoodDetailScreen = (): JSX.Element | null => {
             )}
           />
 
-          <View style={[styles.previewBox, { backgroundColor: theme.colors.primaryLight, marginTop: theme.spacing.lg }]}>
-            <ThemedText variant="body" weight="600" color="primary" style={{ marginBottom: theme.spacing.sm }}>
+          <View
+            style={[
+              styles.previewBox,
+              { backgroundColor: theme.colors.primaryLight, marginTop: theme.spacing.lg },
+            ]}
+          >
+            <ThemedText
+              variant="body"
+              weight="600"
+              color="primary"
+              style={{ marginBottom: theme.spacing.sm }}
+            >
               Tổng dinh dưỡng cho {gramsValue || '--'} g:
             </ThemedText>
-            <ThemedText variant="h3" color="primary" style={{ marginBottom: theme.spacing.xs }}>
+            <ThemedText
+              variant="h3"
+              color="primary"
+              style={{ marginBottom: theme.spacing.xs }}
+            >
               {calorieValue}
             </ThemedText>
             <View style={{ gap: theme.spacing.xs }}>

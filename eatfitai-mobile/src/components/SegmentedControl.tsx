@@ -4,9 +4,7 @@ import Animated, {
   useAnimatedStyle,
   useSharedValue,
   withSpring,
-  withTiming,
   interpolate,
-  interpolateColor
 } from 'react-native-reanimated';
 
 import { ThemedText } from './ThemedText';
@@ -36,11 +34,11 @@ export const SegmentedControl = ({
   size = 'md',
   variant = 'filled',
   animated = true,
-  disabled = false
+  disabled = false,
 }: SegmentedControlProps): JSX.Element => {
   const { theme } = useAppTheme();
 
-  const selectedIndex = segments.findIndex(segment => segment.key === selectedKey);
+  const selectedIndex = segments.findIndex((segment) => segment.key === selectedKey);
   const indicatorPosition = useSharedValue(selectedIndex);
 
   const getSizeConfig = () => {
@@ -56,11 +54,9 @@ export const SegmentedControl = ({
   };
 
   const sizeConfig = getSizeConfig();
-  const segmentWidth = `100%`; // Will be calculated dynamically
-
   const handleSegmentPress = (segment: Segment) => {
     if (!segment.disabled && !disabled) {
-      const newIndex = segments.findIndex(s => s.key === segment.key);
+      const newIndex = segments.findIndex((s) => s.key === segment.key);
       if (animated) {
         indicatorPosition.value = withSpring(newIndex, { damping: 20, stiffness: 200 });
       } else {
@@ -74,7 +70,7 @@ export const SegmentedControl = ({
     const translateX = interpolate(
       indicatorPosition.value,
       segments.map((_, index) => index),
-      segments.map((_, index) => (100 / segments.length) * index)
+      segments.map((_, index) => (100 / segments.length) * index),
     );
 
     return {
@@ -110,7 +106,8 @@ export const SegmentedControl = ({
         {
           height: sizeConfig.height,
           borderRadius: sizeConfig.borderRadius,
-          backgroundColor: variant === 'outlined' ? 'transparent' : theme.colors.muted + '20',
+          backgroundColor:
+            variant === 'outlined' ? 'transparent' : theme.colors.muted + '20',
           borderWidth: variant === 'outlined' ? 1 : 0,
           borderColor: theme.colors.border,
         },
@@ -133,7 +130,7 @@ export const SegmentedControl = ({
 
       {/* Segments */}
       <View style={styles.segments}>
-        {segments.map((segment, index) => {
+        {segments.map((segment, _index) => {
           const isSelected = segment.key === selectedKey;
           const isDisabled = segment.disabled || disabled;
 
@@ -148,19 +145,20 @@ export const SegmentedControl = ({
               accessibilityLabel={segment.label}
             >
               <View style={styles.segmentContent}>
-                {segment.icon && (
-                  <View style={styles.segmentIcon}>
-                    {segment.icon}
-                  </View>
-                )}
+                {segment.icon && <View style={styles.segmentIcon}>{segment.icon}</View>}
                 <ThemedText
                   style={[
                     styles.segmentLabel,
                     {
                       fontSize: sizeConfig.fontSize,
-                      color: variant === 'outlined'
-                        ? (isSelected ? '#fff' : theme.colors.text)
-                        : (isSelected ? '#fff' : theme.colors.text),
+                      color:
+                        variant === 'outlined'
+                          ? isSelected
+                            ? '#fff'
+                            : theme.colors.text
+                          : isSelected
+                            ? '#fff'
+                            : theme.colors.text,
                       fontFamily: 'Inter_600SemiBold',
                     },
                   ]}

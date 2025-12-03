@@ -6,7 +6,8 @@ public sealed record NutritionSuggestRequest(
     double HeightCm,
     double WeightKg,
     double ActivityLevel,
-    string Goal
+    string Goal,
+    double? BodyFatPercentage = null
 );
 
 public sealed record NutritionSuggestResponse(

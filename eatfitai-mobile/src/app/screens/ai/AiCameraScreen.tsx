@@ -1,31 +1,60 @@
 // AI Camera: Chụp ảnh -> nhận diện nguyên liệu -> gợi ý công thức
 import { useCallback, useRef, useState } from 'react';
-import { ActivityIndicator, FlatList, Image, Pressable, StyleSheet, View } from 'react-native';
+import {
+  ActivityIndicator,
+  FlatList,
+  Image,
+  Pressable,
+  StyleSheet,
+  TextInput,
+  View,
+} from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
+import * as ImagePicker from 'expo-image-picker';
 import Toast from 'react-native-toast-message';
 import { ThemedText } from '../../../components/ThemedText';
 import Screen from '../../../components/Screen';
-import Card from '../../../components/Card';
+import { AppCard } from '../../../components/ui/AppCard';
 import Button from '../../../components/Button';
 import { useAppTheme } from '../../../theme/ThemeProvider';
-import { aiService, type IngredientItem, type SuggestedRecipe } from '../../../services/aiService';
+import {
+  aiService,
+  type IngredientItem,
+  type SuggestedRecipe,
+} from '../../../services/aiService';
+import type { MappedFoodItem } from '../../../types/ai';
+import { handleApiErrorWithCustomMessage } from '../../../utils/errorHandler';
+
+import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import type { RootStackParamList } from '../../types';
 
 type CameraViewInstance = InstanceType<typeof CameraView>;
 
 const AiCameraScreen = (): JSX.Element => {
   const { theme } = useAppTheme();
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const cameraRef = useRef<CameraViewInstance | null>(null);
   const [permission, requestPermission] = useCameraPermissions();
+  const [galleryPermission, requestGalleryPermission] =
+    ImagePicker.useMediaLibraryPermissions();
 
   const [isCapturing, setIsCapturing] = useState(false);
   const [capturedUri, setCapturedUri] = useState<string | null>(null);
   const [capturedBase64, setCapturedBase64] = useState<string | null>(null);
 
   const [ingredients, setIngredients] = useState<IngredientItem[]>([]);
-  const [selectedIngredients, setSelectedIngredients] = useState<Record<string, boolean>>({});
+  const [selectedIngredients, setSelectedIngredients] = useState<Record<string, boolean>>(
+    {},
+  );
+  const [manualInput, setManualInput] = useState('');
   const [isDetecting, setIsDetecting] = useState(false);
   const [isSuggesting, setIsSuggesting] = useState(false);
   const [recipes, setRecipes] = useState<SuggestedRecipe[]>([]);
+  const [fullDetectionResult, setFullDetectionResult] = useState<{
+    items: MappedFoodItem[];
+    unmappedLabels: string[];
+  } | null>(null);
 
   const hasPermission = permission?.granted === true;
 
@@ -39,6 +68,74 @@ const AiCameraScreen = (): JSX.Element => {
     setIngredients([]);
     setSelectedIngredients({});
     setRecipes([]);
+    setManualInput('');
+  }, []);
+
+  const handleAddManualIngredient = useCallback(() => {
+    if (!manualInput.trim()) return;
+    const newIngredient = manualInput.trim();
+
+    // Check if already exists
+    if (ingredients.some((i) => i.name.toLowerCase() === newIngredient.toLowerCase())) {
+      Toast.show({ type: 'info', text1: 'Nguyên liệu đã có trong danh sách' });
+      setManualInput('');
+      return;
+    }
+
+    const newItem: IngredientItem = { name: newIngredient, confidence: 1.0 };
+    setIngredients((prev) => [...prev, newItem]);
+    setSelectedIngredients((prev) => ({ ...prev, [newIngredient]: true }));
+    setManualInput('');
+  }, [manualInput, ingredients]);
+
+  const processImage = useCallback(async (uri: string, base64: string | null) => {
+    setCapturedUri(uri);
+    setCapturedBase64(base64 || '');
+    setIsDetecting(true);
+    setIngredients([]);
+    setRecipes([]);
+    setSelectedIngredients({});
+
+    try {
+      // Use detectFoodByImage with multipart/form-data
+      const detected = await aiService.detectFoodByImage(uri);
+      setFullDetectionResult(detected);
+
+      const ingredientItems: IngredientItem[] = detected.items.map(
+        (item: MappedFoodItem) => ({
+          name: item.label,
+          confidence: item.confidence,
+        }),
+      );
+
+      if (ingredientItems.length === 0) {
+        Toast.show({
+          type: 'info',
+          text1: 'Không tìm thấy món ăn nào',
+          text2: 'Vui lòng thử lại với ảnh rõ nét hơn',
+        });
+      }
+
+      setIngredients(ingredientItems);
+      setSelectedIngredients(
+        ingredientItems.reduce<Record<string, boolean>>(
+          (acc, item) => ({ ...acc, [item.name]: true }),
+          {},
+        ),
+      );
+    } catch (error) {
+      handleApiErrorWithCustomMessage(error, {
+        server_error: {
+          text1: 'L?i',
+          text2: 'M?y ch? ?ang g?p s? c?. Vui l?ng th? l?i.',
+        },
+        network_error: { text1: 'Kh?ng c? k?t n?i', text2: 'Ki?m tra m?ng v? th? l?i' },
+        unknown: { text1: 'Kh?ng th? ph?n t?ch ?nh', text2: 'Vui l?ng th? l?i.' },
+      });
+    } finally {
+      setIsCapturing(false);
+      setIsDetecting(false);
+    }
   }, []);
 
   const handleCapture = useCallback(async () => {
@@ -47,31 +144,67 @@ const AiCameraScreen = (): JSX.Element => {
       return;
     }
     setIsCapturing(true);
-    setIsDetecting(true);
-    setIngredients([]);
-    setRecipes([]);
-    setSelectedIngredients({});
 
     try {
-      const result = await cameraRef.current.takePictureAsync({ base64: true, quality: 0.6 });
-      if (!result || !result.uri || !result.base64) throw new Error('Không đọc được dữ liệu ảnh');
+      const result = await cameraRef.current.takePictureAsync({
+        base64: true,
+        quality: 0.6,
+      });
+      if (!result || !result.uri) throw new Error('Không đọc được dữ liệu ảnh');
 
-      setCapturedUri(result.uri);
-      setCapturedBase64(result.base64);
-
-      const detected = await aiService.detectIngredients(result.base64);
-      setIngredients(detected);
-      setSelectedIngredients(detected.reduce<Record<string, boolean>>((acc, item) => ({ ...acc, [item.name]: true }), {}));
+      await processImage(result.uri, result.base64 || '');
     } catch (error) {
-      Toast.show({ type: 'error', text1: 'Không thể phân tích ảnh' });
-    } finally {
+      Toast.show({ type: 'error', text1: 'Không thể chụp ảnh' });
       setIsCapturing(false);
-      setIsDetecting(false);
     }
-  }, []);
+  }, [processImage]);
+
+  const handlePickImage = useCallback(async () => {
+    if (!galleryPermission?.granted) {
+      const mediaPermission = await requestGalleryPermission();
+      if (!mediaPermission.granted) {
+        Toast.show({ type: 'error', text1: 'Cần quyền truy cập thư viện ảnh' });
+        return;
+      }
+    }
+
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [3, 4],
+        quality: 0.6,
+        base64: true,
+      });
+
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        const asset = result.assets[0];
+        if (asset) {
+          await processImage(asset.uri, asset.base64 || '');
+        }
+      }
+    } catch (error) {
+      Toast.show({ type: 'error', text1: 'Không thể chọn ảnh' });
+    }
+  }, [galleryPermission, requestGalleryPermission, processImage]);
+
+  const handleAddToDiary = useCallback(() => {
+    if (!capturedUri || !fullDetectionResult) {
+      Toast.show({ type: 'error', text1: 'Chưa có dữ liệu ảnh' });
+      return;
+    }
+    // Filter items based on selection if needed, or pass all
+    // For now, pass all and let AddMealFromVision handle selection
+    navigation.navigate('AddMealFromVision', {
+      imageUri: capturedUri,
+      result: fullDetectionResult,
+    });
+  }, [capturedUri, fullDetectionResult, navigation]);
 
   const handleSuggestRecipes = useCallback(async () => {
-    const activeIngredients = ingredients.filter((i) => selectedIngredients[i.name]).map((i) => i.name);
+    const activeIngredients = ingredients
+      .filter((i) => selectedIngredients[i.name])
+      .map((i) => i.name);
     if (activeIngredients.length === 0) {
       Toast.show({ type: 'info', text1: 'Chọn ít nhất 1 nguyên liệu' });
       return;
@@ -81,15 +214,28 @@ const AiCameraScreen = (): JSX.Element => {
     try {
       const suggested = await aiService.suggestRecipes(activeIngredients);
       setRecipes(suggested);
-      if (suggested.length === 0) Toast.show({ type: 'info', text1: 'AI chưa có gợi ý phù hợp' });
-    } catch {
-      Toast.show({ type: 'error', text1: 'Gợi ý công thức thất bại' });
+      if (suggested.length === 0)
+        Toast.show({ type: 'info', text1: 'AI chưa có gợi ý phù hợp' });
+    } catch (error) {
+      handleApiErrorWithCustomMessage(error, {
+        server_error: {
+          text1: 'L?i',
+          text2: 'M?y ch? ?ang g?p s? c?. Vui l?ng th? l?i.',
+        },
+        network_error: { text1: 'Kh?ng c? k?t n?i', text2: 'Ki?m tra m?ng v? th? l?i' },
+        unknown: { text1: 'G?i ? c?ng th?c th?t b?i', text2: 'Vui l?ng th? l?i sau.' },
+      });
     } finally {
       setIsSuggesting(false);
     }
   }, [ingredients, selectedIngredients]);
 
-  if (!permission) return <View style={styles.center}><ActivityIndicator /></View>;
+  if (!permission)
+    return (
+      <View style={styles.center}>
+        <ActivityIndicator />
+      </View>
+    );
 
   if (!hasPermission) {
     return (
@@ -97,7 +243,11 @@ const AiCameraScreen = (): JSX.Element => {
         <ThemedText variant="h2" style={{ marginBottom: theme.spacing.md }}>
           Cần cấp quyền camera
         </ThemedText>
-        <ThemedText variant="body" color="textSecondary" style={{ marginBottom: theme.spacing.xl }}>
+        <ThemedText
+          variant="body"
+          color="textSecondary"
+          style={{ marginBottom: theme.spacing.xl }}
+        >
           Ứng dụng cần quyền truy cập camera để chụp ảnh nguyên liệu
         </ThemedText>
         <Button variant="primary" onPress={requestPermission} title="Cấp quyền camera" />
@@ -108,23 +258,36 @@ const AiCameraScreen = (): JSX.Element => {
   return (
     <Screen contentContainerStyle={styles.container}>
       {!capturedUri ? (
-        <Card padding="none" shadow="md">
+        <AppCard padding="none" shadow="md">
           <View style={styles.cameraWrapper}>
-            <CameraView ref={(ref) => (cameraRef.current = ref)} style={styles.camera} facing="back" />
+            <CameraView
+              ref={(ref) => (cameraRef.current = ref)}
+              style={styles.camera}
+              facing="back"
+            />
             <View style={styles.captureContainer}>
-              <Button
-                variant="primary"
-                size="lg"
-                loading={isCapturing}
-                disabled={isCapturing}
-                onPress={handleCapture}
-                title={isCapturing ? 'Đang chụp...' : 'Chụp ảnh'}
-              />
+              <View style={{ flexDirection: 'row', gap: 16 }}>
+                <Button
+                  variant="secondary"
+                  size="lg"
+                  onPress={handlePickImage}
+                  title="Chọn ảnh"
+                  disabled={isCapturing}
+                />
+                <Button
+                  variant="primary"
+                  size="lg"
+                  loading={isCapturing}
+                  disabled={isCapturing}
+                  onPress={handleCapture}
+                  title={isCapturing ? 'Đang chụp...' : 'Chụp ảnh'}
+                />
+              </View>
             </View>
           </View>
-        </Card>
+        </AppCard>
       ) : (
-        <Card padding="lg" shadow="md">
+        <AppCard padding="lg" shadow="md">
           <ThemedText variant="h3" style={{ marginBottom: theme.spacing.md }}>
             Ảnh đã chụp
           </ThemedText>
@@ -132,18 +295,22 @@ const AiCameraScreen = (): JSX.Element => {
           <View style={{ marginTop: theme.spacing.md }}>
             <Button variant="outline" onPress={handleRetake} title="Chụp lại" />
           </View>
-        </Card>
+        </AppCard>
       )}
 
       {capturedBase64 ? (
-        <Card padding="lg" shadow="md">
+        <AppCard padding="lg" shadow="md">
           <ThemedText variant="h3" style={{ marginBottom: theme.spacing.md }}>
             Danh sách nguyên liệu
           </ThemedText>
           {isDetecting ? (
             <View style={styles.center}>
               <ActivityIndicator color={theme.colors.primary} size="large" />
-              <ThemedText variant="body" color="textSecondary" style={{ marginTop: theme.spacing.md }}>
+              <ThemedText
+                variant="body"
+                color="textSecondary"
+                style={{ marginTop: theme.spacing.md }}
+              >
                 Đang phân tích ảnh...
               </ThemedText>
             </View>
@@ -164,58 +331,104 @@ const AiCameraScreen = (): JSX.Element => {
                   style={[
                     styles.ingredientRow,
                     {
-                      borderColor: selectedIngredients[item.name] ? theme.colors.primary : theme.colors.border,
-                      backgroundColor: selectedIngredients[item.name] ? theme.colors.primaryLight : 'transparent',
+                      borderColor: selectedIngredients[item.name]
+                        ? theme.colors.primary
+                        : theme.colors.border,
+                      backgroundColor: selectedIngredients[item.name]
+                        ? theme.colors.primaryLight
+                        : 'transparent',
                     },
                   ]}
                 >
                   <View style={{ flex: 1 }}>
-                    <ThemedText variant="body" weight="600">{item.name}</ThemedText>
+                    <ThemedText variant="body" weight="600">
+                      {item.name}
+                    </ThemedText>
                     {item.confidence != null ? (
                       <ThemedText variant="caption" color="textSecondary">
                         Độ tin cậy: {Math.round(item.confidence * 100)}%
                       </ThemedText>
                     ) : null}
                   </View>
-                  <ThemedText variant="bodySmall" color={selectedIngredients[item.name] ? 'primary' : 'textSecondary'}>
+                  <ThemedText
+                    variant="bodySmall"
+                    color={selectedIngredients[item.name] ? 'primary' : 'textSecondary'}
+                  >
                     {selectedIngredients[item.name] ? '✓ Đã chọn' : 'Chọn'}
                   </ThemedText>
                 </Pressable>
               )}
               ItemSeparatorComponent={() => <View style={{ height: theme.spacing.sm }} />}
+              ListFooterComponent={
+                <View
+                  style={{ marginTop: theme.spacing.md, flexDirection: 'row', gap: 8 }}
+                >
+                  <TextInput
+                    style={[
+                      styles.input,
+                      { borderColor: theme.colors.border, color: theme.colors.text },
+                    ]}
+                    placeholder="Thêm nguyên liệu khác..."
+                    placeholderTextColor={theme.colors.textSecondary}
+                    value={manualInput}
+                    onChangeText={setManualInput}
+                  />
+                  <Button
+                    variant="secondary"
+                    onPress={handleAddManualIngredient}
+                    title="Thêm"
+                    disabled={!manualInput.trim()}
+                  />
+                </View>
+              }
             />
           )}
 
-          <View style={{ marginTop: theme.spacing.xl }}>
+          <View style={{ marginTop: theme.spacing.xl, gap: 12 }}>
             <Button
               variant="primary"
+              onPress={handleAddToDiary}
+              title="Thêm vào nhật ký"
+              disabled={isSuggesting || ingredients.length === 0}
+            />
+            <Button
+              variant="secondary"
               loading={isSuggesting}
               disabled={isSuggesting || ingredients.length === 0}
               onPress={handleSuggestRecipes}
               title={isSuggesting ? 'Đang gợi ý...' : 'Gợi ý công thức'}
             />
           </View>
-        </Card>
+        </AppCard>
       ) : null}
 
       {recipes.length > 0 ? (
-        <Card padding="lg" shadow="md">
+        <AppCard padding="lg" shadow="md">
           <ThemedText variant="h3" style={{ marginBottom: theme.spacing.md }}>
             Công thức từ AI
           </ThemedText>
           {recipes.map((recipe) => (
-            <View key={recipe.id} style={[styles.recipeCard, { backgroundColor: theme.colors.primaryLight }]}>
+            <View
+              key={recipe.id}
+              style={[styles.recipeCard, { backgroundColor: theme.colors.primaryLight }]}
+            >
               <ThemedText variant="h4" style={{ marginBottom: theme.spacing.xs }}>
                 {recipe.title}
               </ThemedText>
               {recipe.description ? (
-                <ThemedText variant="bodySmall" color="textSecondary" style={{ marginBottom: theme.spacing.sm }}>
+                <ThemedText
+                  variant="bodySmall"
+                  color="textSecondary"
+                  style={{ marginBottom: theme.spacing.sm }}
+                >
                   {recipe.description}
                 </ThemedText>
               ) : null}
               <View style={[styles.nutritionRow, { marginBottom: theme.spacing.sm }]}>
                 <ThemedText variant="caption" color="primary" weight="600">
-                  {recipe.calories != null ? `${Math.round(recipe.calories)} kcal` : '-- kcal'}
+                  {recipe.calories != null
+                    ? `${Math.round(recipe.calories)} kcal`
+                    : '-- kcal'}
                 </ThemedText>
                 <ThemedText variant="caption" color="primary" weight="600">
                   P: {recipe.protein != null ? `${Math.round(recipe.protein)}g` : '--g'}
@@ -234,7 +447,7 @@ const AiCameraScreen = (): JSX.Element => {
               ) : null}
             </View>
           ))}
-        </Card>
+        </AppCard>
       ) : null}
     </Screen>
   );
@@ -243,14 +456,39 @@ const AiCameraScreen = (): JSX.Element => {
 const styles = StyleSheet.create({
   container: { padding: 16, gap: 16 },
   center: { alignItems: 'center', justifyContent: 'center', padding: 24, gap: 12 },
-  cameraWrapper: { borderRadius: 16, overflow: 'hidden', position: 'relative', aspectRatio: 3 / 4 },
+  cameraWrapper: {
+    borderRadius: 16,
+    overflow: 'hidden',
+    position: 'relative',
+    aspectRatio: 3 / 4,
+  },
   camera: { flex: 1 },
-  captureContainer: { position: 'absolute', bottom: 24, left: 0, right: 0, alignItems: 'center' },
+  captureContainer: {
+    position: 'absolute',
+    bottom: 24,
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+  },
   previewImage: { width: '100%', aspectRatio: 3 / 4, borderRadius: 12 },
-  ingredientRow: { borderWidth: 1.5, borderRadius: 12, padding: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  ingredientRow: {
+    borderWidth: 1.5,
+    borderRadius: 12,
+    padding: 16,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  input: {
+    flex: 1,
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    fontSize: 16,
+  },
   recipeCard: { borderRadius: 12, padding: 16, marginBottom: 12 },
   nutritionRow: { flexDirection: 'row', gap: 12 },
 });
 
 export default AiCameraScreen;
-

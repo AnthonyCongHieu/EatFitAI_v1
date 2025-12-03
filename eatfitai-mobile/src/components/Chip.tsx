@@ -4,7 +4,7 @@ import Animated, {
   useAnimatedStyle,
   useSharedValue,
   withSpring,
-  withTiming
+  withTiming,
 } from 'react-native-reanimated';
 
 import { ThemedText } from './ThemedText';
@@ -37,7 +37,7 @@ export const Chip = ({
   color = 'primary',
   icon,
   closeIcon,
-  animated = true
+  animated = true,
 }: ChipProps): JSX.Element => {
   const { theme } = useAppTheme();
 
@@ -47,12 +47,27 @@ export const Chip = ({
   const getSizeConfig = () => {
     switch (size) {
       case 'sm':
-        return { paddingVertical: 6, paddingHorizontal: 10, fontSize: 12, borderRadius: theme.borderRadius.chip };
+        return {
+          paddingVertical: 6,
+          paddingHorizontal: 10,
+          fontSize: 12,
+          borderRadius: theme.borderRadius.chip,
+        };
       case 'lg':
-        return { paddingVertical: 8, paddingHorizontal: 14, fontSize: 16, borderRadius: theme.borderRadius.chip };
+        return {
+          paddingVertical: 8,
+          paddingHorizontal: 14,
+          fontSize: 16,
+          borderRadius: theme.borderRadius.chip,
+        };
       case 'md':
       default:
-        return { paddingVertical: 6, paddingHorizontal: 12, fontSize: 14, borderRadius: theme.borderRadius.chip };
+        return {
+          paddingVertical: 6,
+          paddingHorizontal: 12,
+          fontSize: 14,
+          borderRadius: theme.borderRadius.chip,
+        };
     }
   };
 
@@ -147,11 +162,7 @@ export const Chip = ({
       accessibilityState={{ selected, disabled }}
     >
       <View style={styles.content}>
-        {icon && (
-          <View style={styles.icon}>
-            {icon}
-          </View>
-        )}
+        {icon && <View style={styles.icon}>{icon}</View>}
 
         <ThemedText
           style={[

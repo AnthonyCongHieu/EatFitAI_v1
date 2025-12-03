@@ -1,17 +1,15 @@
 import type { ReactNode } from 'react';
 import { View, StyleSheet } from 'react-native';
-import { PanGestureHandler, State } from 'react-native-gesture-handler';
+import { PanGestureHandler } from 'react-native-gesture-handler';
 import Animated, {
   useAnimatedGestureHandler,
   useAnimatedStyle,
   useSharedValue,
   withSpring,
-  withTiming,
-  runOnJS
+  runOnJS,
 } from 'react-native-reanimated';
 
 import { ThemedText } from './ThemedText';
-import { useAppTheme } from '../theme/ThemeProvider';
 
 type SwipeAction = {
   key: string;
@@ -38,10 +36,8 @@ export const Swipeable = ({
   onSwipeStart,
   onSwipeEnd,
   friction = 1,
-  threshold = 100
+  threshold = 100,
 }: SwipeableProps): JSX.Element => {
-  const { theme } = useAppTheme();
-
   const translateX = useSharedValue(0);
   const isSwiping = useSharedValue(false);
 
@@ -112,11 +108,7 @@ export const Swipeable = ({
 
       return (
         <Animated.View key={action.key} style={actionStyle}>
-          {action.icon && (
-            <View style={styles.actionIcon}>
-              {action.icon}
-            </View>
-          )}
+          {action.icon && <View style={styles.actionIcon}>{action.icon}</View>}
           <ThemedText
             style={[
               styles.actionLabel,
@@ -151,9 +143,7 @@ export const Swipeable = ({
         activeOffsetX={[-10, 10]}
         failOffsetY={[-5, 5]}
       >
-        <Animated.View style={[styles.content, animatedStyle]}>
-          {children}
-        </Animated.View>
+        <Animated.View style={[styles.content, animatedStyle]}>{children}</Animated.View>
       </PanGestureHandler>
     </View>
   );

@@ -140,6 +140,9 @@ builder.Services.AddHttpClient();
 builder.Services.AddScoped<INutritionCalcService, NutritionCalcService>();
 builder.Services.AddScoped<IAiLogService, AiLogService>();
 
+// Lookup cache service (Singleton for shared cache)
+builder.Services.AddSingleton<ILookupCacheService, LookupCacheService>();
+
 // Health checks (used by HealthController and readiness endpoints)
 builder.Services.AddHealthChecks()
     .AddSqlServer(

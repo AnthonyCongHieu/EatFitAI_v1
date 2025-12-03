@@ -9,8 +9,10 @@ export type UserDto = import('./api.d').components['schemas']['UserDto'];
 export type FoodItemDto = import('./api.d').components['schemas']['FoodItemDto'];
 export type FoodServingDto = import('./api.d').components['schemas']['FoodServingDto'];
 export type MealDiaryDto = import('./api.d').components['schemas']['MealDiaryDto'];
-export type CreateMealDiaryRequest = import('./api.d').components['schemas']['CreateMealDiaryRequest'];
-export type UpdateMealDiaryRequest = import('./api.d').components['schemas']['UpdateMealDiaryRequest'];
+export type CreateMealDiaryRequest =
+  import('./api.d').components['schemas']['CreateMealDiaryRequest'];
+export type UpdateMealDiaryRequest =
+  import('./api.d').components['schemas']['UpdateMealDiaryRequest'];
 // Meal type constants matching backend IDs
 export const MEAL_TYPES = {
   BREAKFAST: 1,
@@ -19,7 +21,7 @@ export const MEAL_TYPES = {
   SNACK: 4,
 } as const;
 
-export type MealTypeId = typeof MEAL_TYPES[keyof typeof MEAL_TYPES];
+export type MealTypeId = (typeof MEAL_TYPES)[keyof typeof MEAL_TYPES];
 
 export const MEAL_TYPE_LABELS: Record<MealTypeId, string> = {
   [MEAL_TYPES.BREAKFAST]: 'Bữa sáng',
@@ -34,4 +36,5 @@ export const MEAL_TYPE_NAMES: Record<MealTypeId, string> = {
   [MEAL_TYPES.DINNER]: 'dinner',
   [MEAL_TYPES.SNACK]: 'snack',
 } as const;
-export type NutritionSummaryDto = import('./api.d').components['schemas']['NutritionSummaryDto'];
+export type NutritionSummaryDto =
+  import('./api.d').components['schemas']['NutritionSummaryDto'];

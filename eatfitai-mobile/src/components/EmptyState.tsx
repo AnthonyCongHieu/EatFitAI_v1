@@ -1,7 +1,6 @@
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
 import { ThemedText } from './ThemedText';
-import { Button } from './Button';
 import Icon from './Icon';
 import { useAppTheme } from '../theme/ThemeProvider';
 
@@ -25,11 +24,16 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
   return (
     <View style={[styles.container, { paddingVertical: theme.spacing.xxl }, style]}>
       <View style={styles.content}>
-        <View style={[styles.iconContainer, { backgroundColor: theme.colors.primaryLight }]}>
+        <View
+          style={[styles.iconContainer, { backgroundColor: theme.colors.primaryLight }]}
+        >
           <Icon name={icon} size="xl" color="primary" />
         </View>
 
-        <ThemedText variant="h3" style={{ textAlign: 'center', marginTop: theme.spacing.lg }}>
+        <ThemedText
+          variant="h3"
+          style={{ textAlign: 'center', marginTop: theme.spacing.lg }}
+        >
           {title}
         </ThemedText>
 
@@ -47,11 +51,7 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
           </ThemedText>
         )}
 
-        {action && (
-          <View style={{ marginTop: theme.spacing.xl }}>
-            {action}
-          </View>
-        )}
+        {action && <View style={{ marginTop: theme.spacing.xl }}>{action}</View>}
       </View>
     </View>
   );

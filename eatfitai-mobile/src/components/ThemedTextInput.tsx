@@ -27,10 +27,12 @@ export const ThemedTextInput = ({
   ...rest
 }: Props): JSX.Element => {
   const { theme } = useAppTheme();
-  const { colors, radius, spacing, typography } = theme;
+  const { colors, spacing, typography } = theme;
   const [hidden, setHidden] = useState<boolean>(!!secureTextEntry);
   const [focused, setFocused] = useState<boolean>(false);
-  const [internalValue, setInternalValue] = useState<string>((rest.value as string) ?? '');
+  const [internalValue, setInternalValue] = useState<string>(
+    (rest.value as string) ?? '',
+  );
   const textInputRef = useRef<TextInput>(null);
 
   // Keep internal value in sync when external value changes while not focused
@@ -44,11 +46,9 @@ export const ThemedTextInput = ({
     if (focused && incoming === '' && internalValue !== '') {
       setInternalValue('');
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [rest.value, focused]);
+  }, [rest.value, focused, internalValue]);
 
   const effectiveSecure = secureToggle ? hidden : secureTextEntry;
-
 
   const inputValue = useMemo(() => {
     // While focused, prefer internal value to avoid interrupting IME composition
@@ -107,12 +107,19 @@ export const ThemedTextInput = ({
         accessibilityLabel={hidden ? t('common.showPassword') : t('common.hidePassword')}
         onPress={() => setHidden((v) => !v)}
         hitSlop={12}
-        style={{ position: 'absolute', right: spacing.sm, top: '50%', transform: [{ translateY: -9 }] }}
+        style={{
+          position: 'absolute',
+          right: spacing.sm,
+          top: '50%',
+          transform: [{ translateY: -9 }],
+        }}
       >
         <Ionicons name={hidden ? 'eye' : 'eye-off'} size={20} color={colors.muted} />
       </Pressable>
     </View>
-  ) : input;
+  ) : (
+    input
+  );
 
   if (!label && !helperText) return inputWithToggle;
 

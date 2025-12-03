@@ -2,7 +2,6 @@ import React from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '../ThemedText';
-import { useAppTheme } from '../../theme/ThemeProvider';
 
 type SectionHeaderProps = {
   title: string;
@@ -17,8 +16,6 @@ export const SectionHeader = ({
   action,
   actionText = 'Xem tất cả',
 }: SectionHeaderProps): JSX.Element => {
-  const { theme } = useAppTheme();
-
   return (
     <View style={styles.container}>
       <View style={styles.textContainer}>

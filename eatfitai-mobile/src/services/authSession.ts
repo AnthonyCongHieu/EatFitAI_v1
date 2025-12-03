@@ -100,4 +100,3 @@ export const updateSessionFromAuthResponse = async (data: any): Promise<void> =>
   });
   await scheduleRefresh(accessTokenExpiresAt);
 };
-

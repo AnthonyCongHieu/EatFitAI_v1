@@ -5,7 +5,6 @@ import Toast from 'react-native-toast-message';
 import { ThemedText } from '../ThemedText';
 import { ThemedTextInput } from '../ThemedTextInput';
 import { BottomSheet } from '../BottomSheet';
-import { useAppTheme } from '../../theme/ThemeProvider';
 import { foodService, type FoodItem } from '../../services/foodService';
 import { ListItem } from '../ListItem';
 import { Skeleton } from '../Skeleton';
@@ -23,7 +22,6 @@ export const TeachLabelBottomSheet = ({
   onSelectFood,
   currentLabel,
 }: TeachLabelBottomSheetProps): JSX.Element => {
-  const { theme } = useAppTheme();
   const [searchQuery, setSearchQuery] = useState('');
   const [foods, setFoods] = useState<FoodItem[]>([]);
   const [loading, setLoading] = useState(false);
@@ -57,53 +55,63 @@ export const TeachLabelBottomSheet = ({
     }
   }, []);
 
-  const handleSearchChange = useCallback((text: string) => {
-    setSearchQuery(text);
-    // Debounce search
-    const timeoutId = setTimeout(() => {
-      searchFoods(text);
-    }, 300);
-    return () => clearTimeout(timeoutId);
-  }, [searchFoods]);
+  const handleSearchChange = useCallback(
+    (text: string) => {
+      setSearchQuery(text);
+      // Debounce search
+      const timeoutId = setTimeout(() => {
+        searchFoods(text);
+      }, 300);
+      return () => clearTimeout(timeoutId);
+    },
+    [searchFoods],
+  );
 
-  const handleSelectFood = useCallback((food: FoodItem) => {
-    try {
-      onSelectFood(food);
-      onClose();
-    } catch (err) {
-      Toast.show({
-        type: 'error',
-        text1: 'Lỗi',
-        text2: 'Không thể chọn món ăn. Vui lòng thử lại.',
-      });
-    }
-  }, [onSelectFood, onClose]);
-
-  const renderFoodItem = useCallback(({ item }: { item: FoodItem }) => (
-    <ListItem
-      title={item.name}
-      subtitle={item.brand ? `Thương hiệu: ${item.brand}` : undefined}
-      onPress={() => handleSelectFood(item)}
-      rightComponent={
-        item.calories ? (
-          <ThemedText style={styles.calories}>
-            {item.calories} kcal/100g
-          </ThemedText>
-        ) : undefined
+  const handleSelectFood = useCallback(
+    (food: FoodItem) => {
+      try {
+        onSelectFood(food);
+        onClose();
+      } catch (err) {
+        Toast.show({
+          type: 'error',
+          text1: 'Lỗi',
+          text2: 'Không thể chọn món ăn. Vui lòng thử lại.',
+        });
       }
-    />
-  ), [handleSelectFood]);
+    },
+    [onSelectFood, onClose],
+  );
 
-  const renderSkeleton = useCallback(() => (
-    <View style={styles.skeletonContainer}>
-      {Array.from({ length: 5 }).map((_, index) => (
-        <View key={index} style={styles.skeletonItem}>
-          <Skeleton width="80%" height={20} />
-          <Skeleton width="60%" height={16} style={{ marginTop: 4 }} />
-        </View>
-      ))}
-    </View>
-  ), []);
+  const renderFoodItem = useCallback(
+    ({ item }: { item: FoodItem }) => (
+      <ListItem
+        title={item.name}
+        subtitle={item.brand ? `Thương hiệu: ${item.brand}` : undefined}
+        onPress={() => handleSelectFood(item)}
+        rightComponent={
+          item.calories ? (
+            <ThemedText style={styles.calories}>{item.calories} kcal/100g</ThemedText>
+          ) : undefined
+        }
+      />
+    ),
+    [handleSelectFood],
+  );
+
+  const renderSkeleton = useCallback(
+    () => (
+      <View style={styles.skeletonContainer}>
+        {Array.from({ length: 5 }).map((_, index) => (
+          <View key={index} style={styles.skeletonItem}>
+            <Skeleton width="80%" height={20} />
+            <Skeleton width="60%" height={16} style={{ marginTop: 4 }} />
+          </View>
+        ))}
+      </View>
+    ),
+    [],
+  );
 
   const keyExtractor = useCallback((item: FoodItem) => item.id, []);
 

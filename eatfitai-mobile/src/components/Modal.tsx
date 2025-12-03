@@ -1,5 +1,11 @@
 import type { ReactNode } from 'react';
-import { Modal as RNModal, Pressable, StyleSheet, View } from 'react-native';
+import {
+  Modal as RNModal,
+  Pressable,
+  StyleSheet,
+  View,
+  type ViewStyle,
+} from 'react-native';
 import Animated, {
   FadeIn,
   FadeOut,
@@ -8,7 +14,6 @@ import Animated, {
   useAnimatedStyle,
   useSharedValue,
   withSpring,
-  withTiming
 } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -38,14 +43,14 @@ export const Modal = ({
   position = 'center',
   showCloseButton = true,
   closeOnBackdropPress = true,
-  animated = true
+  animated = true,
 }: ModalProps): JSX.Element => {
   const { theme } = useAppTheme();
 
   const scale = useSharedValue(1);
   const opacity = useSharedValue(1);
 
-  const getSizeStyles = () => {
+  const getSizeStyles = (): ViewStyle => {
     switch (size) {
       case 'sm':
         return { maxWidth: 320, width: '90%' };
@@ -59,7 +64,7 @@ export const Modal = ({
     }
   };
 
-  const getPositionStyles = () => {
+  const getPositionStyles = (): ViewStyle => {
     switch (position) {
       case 'bottom':
         return {
@@ -139,7 +144,7 @@ export const Modal = ({
                 backgroundColor: theme.colors.card,
                 borderRadius: position === 'bottom' ? theme.radius.xl : theme.radius.lg,
                 ...getSizeStyles(),
-              } as any,
+              },
               contentAnimatedStyle,
             ]}
             entering={enteringAnimation}
@@ -161,16 +166,16 @@ export const Modal = ({
                     style={styles.closeButton}
                     hitSlop={8}
                   >
-                    <ThemedText style={{ color: theme.colors.muted, fontSize: 24 }}>×</ThemedText>
+                    <ThemedText style={{ color: theme.colors.muted, fontSize: 24 }}>
+                      ×
+                    </ThemedText>
                   </Pressable>
                 )}
               </View>
             )}
 
             {/* Body */}
-            <View style={styles.body}>
-              {children}
-            </View>
+            <View style={styles.body}>{children}</View>
           </Animated.View>
         </View>
       </SafeAreaView>

@@ -10,7 +10,9 @@ export type RefreshTokenResponse = {
 
 const refreshClient = axios.create({ baseURL: API_BASE_URL, timeout: 10000 });
 
-export const postRefreshToken = async (refreshToken: string): Promise<RefreshTokenResponse> => {
+export const postRefreshToken = async (
+  refreshToken: string,
+): Promise<RefreshTokenResponse> => {
   const response = await refreshClient.post('/api/auth/refresh', { refreshToken });
   return response.data as RefreshTokenResponse;
 };

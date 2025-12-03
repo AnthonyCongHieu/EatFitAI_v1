@@ -18,3 +18,34 @@ export interface VisionDetectResult {
   unmappedLabels: string[];
 }
 
+export interface NutritionTargetDto {
+  calories?: number | null;
+  protein?: number | null;
+  carbs?: number | null;
+  fat?: number | null;
+  caloriesKcal?: number | null;
+  proteinGrams?: number | null;
+  carbohydrateGrams?: number | null;
+  fatGrams?: number | null;
+}
+
+export interface NutritionTargetResponse {
+  calories?: number | null;
+  protein?: number | null;
+  carbs?: number | null;
+  fat?: number | null;
+}
+
+export interface RecipeSuggestionApiItem {
+  id?: string | number;
+  slug?: string;
+  title?: string;
+  name?: string;
+  description?: string | null;
+  summary?: string | null;
+  calories?: number | null;
+  protein?: number | null;
+  carbs?: number | null;
+  fat?: number | null;
+  ingredients?: (string | number)[];
+}

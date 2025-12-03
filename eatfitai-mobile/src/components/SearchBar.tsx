@@ -3,7 +3,7 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
-  withSpring
+  withSpring,
 } from 'react-native-reanimated';
 
 import { ThemedText } from './ThemedText';
@@ -42,7 +42,7 @@ export const SearchBar = ({
   disabled = false,
   autoFocus = false,
   showClearButton = true,
-  animated = true
+  animated = true,
 }: SearchBarProps): JSX.Element => {
   const { theme } = useAppTheme();
 
@@ -118,7 +118,12 @@ export const SearchBar = ({
 
     return (
       <View style={styles.searchIcon}>
-        <ThemedText style={[styles.iconText, { fontSize: sizeConfig.iconSize, color: theme.colors.muted }]}>
+        <ThemedText
+          style={[
+            styles.iconText,
+            { fontSize: sizeConfig.iconSize, color: theme.colors.muted },
+          ]}
+        >
           ðŸ”
         </ThemedText>
       </View>
@@ -141,7 +146,12 @@ export const SearchBar = ({
           accessibilityRole="button"
           accessibilityLabel="Clear search"
         >
-          <ThemedText style={[styles.iconText, { fontSize: sizeConfig.iconSize, color: theme.colors.muted }]}>
+          <ThemedText
+            style={[
+              styles.iconText,
+              { fontSize: sizeConfig.iconSize, color: theme.colors.muted },
+            ]}
+          >
             âœ•
           </ThemedText>
         </Pressable>
@@ -179,7 +189,7 @@ export const SearchBar = ({
           ].filter(Boolean)}
           value={value}
           onChangeText={onChangeText}
-          placeholder={t('search.placeholder')}
+          placeholder={placeholder}
           placeholderTextColor={theme.colors.muted}
           onSubmitEditing={onSubmit}
           autoFocus={autoFocus}

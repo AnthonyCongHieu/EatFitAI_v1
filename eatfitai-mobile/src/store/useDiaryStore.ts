@@ -3,8 +3,11 @@
 
 import { create } from 'zustand';
 
-import { diaryService, type DaySummary, type DiaryMealGroup } from '../services/diaryService';
-import type { MealDiaryDto } from '../types';
+import {
+  diaryService,
+  type DaySummary,
+  type DiaryMealGroup,
+} from '../services/diaryService';
 
 type DiaryState = {
   summary: DaySummary | null;
@@ -34,9 +37,15 @@ const removeEntryFromMeals = (meals: DiaryMealGroup[], entryId: string) => {
         ...meal,
         entries: filteredEntries,
         totalCalories:
-          typeof meal.totalCalories === 'number' ? Math.max(0, meal.totalCalories - calories) : meal.totalCalories,
-        protein: typeof meal.protein === 'number' ? Math.max(0, meal.protein - protein) : meal.protein,
-        carbs: typeof meal.carbs === 'number' ? Math.max(0, meal.carbs - carbs) : meal.carbs,
+          typeof meal.totalCalories === 'number'
+            ? Math.max(0, meal.totalCalories - calories)
+            : meal.totalCalories,
+        protein:
+          typeof meal.protein === 'number'
+            ? Math.max(0, meal.protein - protein)
+            : meal.protein,
+        carbs:
+          typeof meal.carbs === 'number' ? Math.max(0, meal.carbs - carbs) : meal.carbs,
         fat: typeof meal.fat === 'number' ? Math.max(0, meal.fat - fat) : meal.fat,
       };
     })

@@ -5,11 +5,9 @@ import Animated, {
   FadeOut,
   SlideInUp,
   SlideOutDown,
-  useAnimatedStyle,
   useSharedValue,
-  withSpring
+  withSpring,
 } from 'react-native-reanimated';
-import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from './ThemedText';
 import { useAppTheme } from '../theme/ThemeProvider';
@@ -40,7 +38,7 @@ export const ActionSheet = ({
   message,
   options,
   cancelText = t('common.cancel'),
-  animated = true
+  animated = true,
 }: ActionSheetProps): JSX.Element => {
   const { theme } = useAppTheme();
 
@@ -77,10 +75,7 @@ export const ActionSheet = ({
     >
       {/* Backdrop */}
       <Pressable
-        style={[
-          styles.backdrop,
-          { backgroundColor: 'rgba(0,0,0,0.6)' },
-        ]}
+        style={[styles.backdrop, { backgroundColor: 'rgba(0,0,0,0.6)' }]}
         onPress={onClose}
       />
 
@@ -133,11 +128,7 @@ export const ActionSheet = ({
                 ]}
               >
                 <View style={styles.optionContent}>
-                  {option.icon && (
-                    <View style={styles.optionIcon}>
-                      {option.icon}
-                    </View>
-                  )}
+                  {option.icon && <View style={styles.optionIcon}>{option.icon}</View>}
                   <ThemedText
                     style={[
                       styles.optionLabel,
@@ -145,8 +136,8 @@ export const ActionSheet = ({
                         color: option.destructive
                           ? theme.colors.danger
                           : option.disabled
-                          ? theme.colors.muted
-                          : theme.colors.text,
+                            ? theme.colors.muted
+                            : theme.colors.text,
                       },
                     ]}
                   >
@@ -172,7 +163,10 @@ export const ActionSheet = ({
                 },
               ]}
             >
-              <ThemedText variant="button" style={{ color: theme?.colors?.text || '#000' }}>
+              <ThemedText
+                variant="button"
+                style={{ color: theme?.colors?.text || '#000' }}
+              >
                 {cancelText}
               </ThemedText>
             </Pressable>

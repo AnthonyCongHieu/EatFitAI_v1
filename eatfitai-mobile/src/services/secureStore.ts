@@ -14,10 +14,17 @@ export const tokenStorage = {
   // Lưu access token và refresh token vào SecureStore (mã hoá bởi hệ điều hành)
   async saveTokens(accessToken: string, refreshToken?: string): Promise<void> {
     // Validate tokens before saving
-    if (!accessToken || typeof accessToken !== 'string' || accessToken.trim().length === 0) {
+    if (
+      !accessToken ||
+      typeof accessToken !== 'string' ||
+      accessToken.trim().length === 0
+    ) {
       throw new Error('Invalid access token provided to saveTokens');
     }
-    if (refreshToken && (typeof refreshToken !== 'string' || refreshToken.trim().length === 0)) {
+    if (
+      refreshToken &&
+      (typeof refreshToken !== 'string' || refreshToken.trim().length === 0)
+    ) {
       console.warn('[EatFitAI] Invalid refresh token provided to saveTokens, skipping');
       refreshToken = undefined;
     }
@@ -34,34 +41,68 @@ export const tokenStorage = {
     refreshToken?: string | null;
     refreshTokenExpiresAt?: string | null;
   }): Promise<void> {
-    const { accessToken, accessTokenExpiresAt, refreshToken, refreshTokenExpiresAt } = params;
+    const { accessToken, accessTokenExpiresAt, refreshToken, refreshTokenExpiresAt } =
+      params;
 
     // Validate access token
-    if (!accessToken || typeof accessToken !== 'string' || accessToken.trim().length === 0) {
+    if (
+      !accessToken ||
+      typeof accessToken !== 'string' ||
+      accessToken.trim().length === 0
+    ) {
       throw new Error('Invalid access token provided to saveTokensFull');
     }
 
     // Validate expiration dates if provided
-    if (accessTokenExpiresAt && typeof accessTokenExpiresAt === 'string' && isNaN(Date.parse(accessTokenExpiresAt))) {
-      console.warn('[EatFitAI] Invalid access token expiration date format:', accessTokenExpiresAt);
+    if (
+      accessTokenExpiresAt &&
+      typeof accessTokenExpiresAt === 'string' &&
+      isNaN(Date.parse(accessTokenExpiresAt))
+    ) {
+      console.warn(
+        '[EatFitAI] Invalid access token expiration date format:',
+        accessTokenExpiresAt,
+      );
     }
-    if (refreshTokenExpiresAt && typeof refreshTokenExpiresAt === 'string' && isNaN(Date.parse(refreshTokenExpiresAt))) {
-      console.warn('[EatFitAI] Invalid refresh token expiration date format:', refreshTokenExpiresAt);
+    if (
+      refreshTokenExpiresAt &&
+      typeof refreshTokenExpiresAt === 'string' &&
+      isNaN(Date.parse(refreshTokenExpiresAt))
+    ) {
+      console.warn(
+        '[EatFitAI] Invalid refresh token expiration date format:',
+        refreshTokenExpiresAt,
+      );
     }
 
     // Validate refresh token if provided
-    if (refreshToken && (typeof refreshToken !== 'string' || refreshToken.trim().length === 0)) {
-      console.warn('[EatFitAI] Invalid refresh token provided to saveTokensFull, skipping');
+    if (
+      refreshToken &&
+      (typeof refreshToken !== 'string' || refreshToken.trim().length === 0)
+    ) {
+      console.warn(
+        '[EatFitAI] Invalid refresh token provided to saveTokensFull, skipping',
+      );
     }
 
     await SecureStore.setItemAsync(ACCESS_TOKEN_KEY, accessToken);
-    if (typeof accessTokenExpiresAt === 'string' && !isNaN(Date.parse(accessTokenExpiresAt))) {
+    if (
+      typeof accessTokenExpiresAt === 'string' &&
+      !isNaN(Date.parse(accessTokenExpiresAt))
+    ) {
       await SecureStore.setItemAsync(ACCESS_EXP_KEY, accessTokenExpiresAt);
     }
-    if (refreshToken && typeof refreshToken === 'string' && refreshToken.trim().length > 0) {
+    if (
+      refreshToken &&
+      typeof refreshToken === 'string' &&
+      refreshToken.trim().length > 0
+    ) {
       await SecureStore.setItemAsync(REFRESH_TOKEN_KEY, refreshToken);
     }
-    if (typeof refreshTokenExpiresAt === 'string' && !isNaN(Date.parse(refreshTokenExpiresAt))) {
+    if (
+      typeof refreshTokenExpiresAt === 'string' &&
+      !isNaN(Date.parse(refreshTokenExpiresAt))
+    ) {
       await SecureStore.setItemAsync(REFRESH_EXP_KEY, refreshTokenExpiresAt);
     }
   },
@@ -113,4 +154,3 @@ export const SECURE_STORE_KEYS = {
   ACCESS_EXP_KEY,
   REFRESH_EXP_KEY,
 } as const;
-

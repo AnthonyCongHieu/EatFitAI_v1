@@ -1,6 +1,11 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
-import Animated, { useAnimatedStyle, useSharedValue, withRepeat, withTiming } from 'react-native-reanimated';
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withRepeat,
+  withTiming,
+} from 'react-native-reanimated';
 
 import { useAppTheme } from '../theme/ThemeProvider';
 
@@ -11,7 +16,12 @@ interface SkeletonProps {
   style?: any;
 }
 
-export const Skeleton = ({ width = '100%', height = 16, borderRadius = 8, style }: SkeletonProps): JSX.Element => {
+export const Skeleton = ({
+  width = '100%',
+  height = 16,
+  borderRadius = 8,
+  style,
+}: SkeletonProps): JSX.Element => {
   const { theme } = useAppTheme();
   const opacity = useSharedValue(0.3);
 
@@ -47,7 +57,12 @@ interface SkeletonListProps {
   style?: any;
 }
 
-export const SkeletonList = ({ count, itemHeight = 60, spacing = 8, style }: SkeletonListProps): JSX.Element => {
+export const SkeletonList = ({
+  count,
+  itemHeight = 60,
+  spacing = 8,
+  style,
+}: SkeletonListProps): JSX.Element => {
   const { theme } = useAppTheme();
 
   return (
