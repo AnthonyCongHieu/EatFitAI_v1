@@ -12,7 +12,7 @@ import FoodSearchScreen from '../screens/diary/FoodSearchScreen';
 import FoodDetailScreen from '../screens/diary/FoodDetailScreen';
 import CustomDishScreen from '../screens/diary/CustomDishScreen';
 import MealDiaryScreen from '../screens/diary/MealDiaryScreen';
-import AiCameraScreen from '../screens/ai/AiCameraScreen';
+import AIScanScreen from '../screens/ai/AIScanScreen';
 import AiNutritionScreen from '../screens/ai/AiNutritionScreen';
 import NutritionSuggestScreen from '../screens/ai/NutritionSuggestScreen';
 import AddMealFromVisionScreen from '../screens/meals/AddMealFromVisionScreen';
@@ -21,6 +21,8 @@ import RecipeSuggestionsScreen from '../screens/ai/RecipeSuggestionsScreen';
 import NutritionInsightsScreen from '../screens/ai/NutritionInsightsScreen';
 import AdaptiveTargetScreen from '../screens/ai/AdaptiveTargetScreen';
 import RecipeDetailScreen from '../screens/ai/RecipeDetailScreen';
+import NutritionSettingsScreen from '../screens/ai/NutritionSettingsScreen';
+import AchievementsScreen from '../screens/gamification/AchievementsScreen';
 import { t } from '../../i18n/vi';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -116,9 +118,9 @@ const AppNavigator = (): JSX.Element => {
               />
               <Stack.Screen
                 name="AiCamera"
-                component={AiCameraScreen}
+                component={AIScanScreen}
                 options={{
-                  headerShown: true,
+                  headerShown: false, // AIScanScreen has its own header
                   title: t('navigation.camera'),
                   headerStyle: { backgroundColor: theme.colors.card },
                   headerTintColor: theme.colors.text,
@@ -126,30 +128,9 @@ const AppNavigator = (): JSX.Element => {
                   headerTitleStyle: { fontFamily: 'Inter_600SemiBold' },
                 }}
               />
-              <Stack.Screen
-                name="AiNutrition"
-                component={AiNutritionScreen}
-                options={{
-                  headerShown: true,
-                  title: t('navigation.aiNutrition'),
-                  headerStyle: { backgroundColor: theme.colors.card },
-                  headerTintColor: theme.colors.text,
-                  headerShadowVisible: false,
-                  headerTitleStyle: { fontFamily: 'Inter_600SemiBold' },
-                }}
-              />
-              <Stack.Screen
-                name="NutritionSuggest"
-                component={NutritionSuggestScreen}
-                options={{
-                  headerShown: true,
-                  title: t('navigation.aiNutrition'),
-                  headerStyle: { backgroundColor: theme.colors.card },
-                  headerTintColor: theme.colors.text,
-                  headerShadowVisible: false,
-                  headerTitleStyle: { fontFamily: 'Inter_600SemiBold' },
-                }}
-              />
+              {/* Deprecated Screens: AiNutrition, NutritionSuggest */}
+              {/* <Stack.Screen name="AiNutrition" component={AiNutritionScreen} /> */}
+              {/* <Stack.Screen name="NutritionSuggest" component={NutritionSuggestScreen} /> */}
               <Stack.Screen
                 name="AddMealFromVision"
                 component={AddMealFromVisionScreen}
@@ -198,16 +179,13 @@ const AppNavigator = (): JSX.Element => {
                   headerTitleStyle: { fontFamily: 'Inter_600SemiBold' },
                 }}
               />
+              {/* Deprecated Screen: AdaptiveTarget */}
+              {/* <Stack.Screen name="AdaptiveTarget" component={AdaptiveTargetScreen} /> */}
               <Stack.Screen
-                name="AdaptiveTarget"
-                component={AdaptiveTargetScreen}
+                name="NutritionSettings"
+                component={NutritionSettingsScreen}
                 options={{
-                  headerShown: true,
-                  title: 'Mục tiêu tự động',
-                  headerStyle: { backgroundColor: theme.colors.card },
-                  headerTintColor: theme.colors.text,
-                  headerShadowVisible: false,
-                  headerTitleStyle: { fontFamily: 'Inter_600SemiBold' },
+                  headerShown: false, // Custom header in screen
                 }}
               />
               <Stack.Screen

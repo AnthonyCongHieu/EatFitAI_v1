@@ -10,6 +10,8 @@ import {
   StyleSheet,
   View,
 } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Controller, useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -26,6 +28,7 @@ import { useAuthStore } from '../../store/useAuthStore';
 import { useProfileStore } from '../../store/useProfileStore';
 import { profileService } from '../../services/profileService';
 import { handleApiErrorWithCustomMessage } from '../../utils/errorHandler';
+import type { RootStackParamList } from '../types';
 
 const ProfileSchema = z.object({
   fullName: z.string().trim().min(2, 'Tên cần ít nhất 2 ký tự'),
@@ -74,6 +77,7 @@ type BodyMetricsFormValues = z.infer<typeof BodyMetricsSchema>;
 
 const ProfileScreen = (): JSX.Element => {
   const { theme } = useAppTheme();
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const styles = StyleSheet.create({
     flex: { flex: 1 },
     scrollContent: {
@@ -341,7 +345,7 @@ const ProfileScreen = (): JSX.Element => {
                     text: 'Đồng ý',
                     style: 'destructive',
                     onPress: () => {
-                      logout().catch(() => {});
+                      logout().catch(() => { });
                     },
                   },
                 ])
@@ -349,6 +353,41 @@ const ProfileScreen = (): JSX.Element => {
               variant="outline"
               title="Đăng xuất"
               fullWidth
+            />
+          </View>
+        </AppCard>
+
+        <AppCard>
+          <View
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: theme.spacing.sm,
+              marginBottom: theme.spacing.md,
+            }}
+          >
+            <View style={[styles.icon, { backgroundColor: theme.colors.primaryLight }]}>
+              <ThemedText variant="h4" color="primary">🎯</ThemedText>
+            </View>
+            <View style={{ flex: 1 }}>
+              <ThemedText variant="h3">Mục tiêu dinh dưỡng</ThemedText>
+              <ThemedText variant="bodySmall" color="textSecondary">
+                Quản lý mục tiêu Calories, Macros và xem phân tích
+              </ThemedText>
+            </View>
+          </View>
+
+          <View style={{ gap: theme.spacing.md }}>
+            <Button
+              variant="outline"
+              title="Cài đặt mục tiêu (AI)"
+              onPress={() => navigation.navigate('NutritionSettings' as any)}
+              icon={<ThemedText>⚙️</ThemedText>}
+            />
+            <Button
+              variant="ghost"
+              title="Xem phân tích chi tiết"
+              onPress={() => navigation.navigate('NutritionInsights' as any)}
             />
           </View>
         </AppCard>

@@ -100,7 +100,7 @@ export const handleApiErrorWithCustomMessage = (
   error: any,
   customMessages?: Partial<Record<ApiErrorType, { text1: string; text2: string }>>,
 ): ApiError => {
-  const apiError = handleApiError(error);
+  const apiError = handleApiErrorSilent(error);
 
   // Override with custom message if provided
   if (customMessages && customMessages[apiError.type]) {
@@ -110,6 +110,9 @@ export const handleApiErrorWithCustomMessage = (
       text1: custom.text1,
       text2: custom.text2,
     });
+  } else {
+    // Fallback to default toast behavior if no custom message
+    handleApiError(error);
   }
 
   return apiError;

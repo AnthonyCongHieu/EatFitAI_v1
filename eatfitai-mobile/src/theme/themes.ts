@@ -105,28 +105,33 @@ export type AppTheme = {
 export const lightTheme: AppTheme = {
   mode: 'light',
   colors: {
-    background: '#F1F5F9',
+    // Base colors
+    background: '#F8FAFC',
     card: '#FFFFFF',
     text: '#0F172A',
-    textSecondary: '#475569',
-    border: 'rgba(15, 23, 42, 0.06)',
-    primary: '#4ADE80',
-    primaryLight: '#DBEAFE',
-    primaryDark: '#16A34A',
-    secondary: '#0A4D3C',
-    secondaryLight: '#E6F0ED',
-    muted: '#9FA6A3',
+    textSecondary: '#64748B',
+    border: 'rgba(15, 23, 42, 0.08)',
+    // Primary - Fresh emerald green
+    primary: '#10B981',
+    primaryLight: '#D1FAE5',
+    primaryDark: '#059669',
+    // Secondary - Deep teal
+    secondary: '#0D9488',
+    secondaryLight: '#CCFBF1',
+    // Muted
+    muted: '#94A3B8',
+    // Semantic colors
     danger: '#EF4444',
-    success: '#10B981',
+    success: '#22C55E',
     warning: '#F59E0B',
     info: '#3B82F6',
   },
   gradients: {
-    primary: ['#2563EB', '#3B82F6'],
-    secondary: ['#0A4D3C', '#1B8C68'],
-    accent: ['#F59E0B', '#FBBF24'],
-    danger: ['#EF4444', '#F87171'],
-    success: ['#10B981', '#34D399'],
+    primary: ['#10B981', '#059669'],
+    secondary: ['#0D9488', '#0F766E'],
+    accent: ['#8B5CF6', '#7C3AED'],  // Purple for AI features
+    danger: ['#EF4444', '#DC2626'],
+    success: ['#22C55E', '#16A34A'],
   },
   statusBarStyle: 'dark',
   spacing: { xs: 4, sm: 8, md: 12, lg: 16, xl: 20, xxl: 24 },

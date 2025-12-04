@@ -1,0 +1,391 @@
+// Màn hình Cài đặt dinh dưỡng hợp nhất
+// Cho phép xem, chỉnh sửa thủ công và sử dụng AI để gợi ý mục tiêu
+
+import React, { useCallback, useEffect, useState } from 'react';
+import { View, StyleSheet, ScrollView, ActivityIndicator, Alert } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { Controller, useForm } from 'react-hook-form';
+import { z } from 'zod';
+import { zodResolver } from '@hookform/resolvers/zod';
+import Animated, { FadeIn, FadeInDown, Layout } from 'react-native-reanimated';
+
+import Screen from '../../../components/Screen';
+import { AppCard } from '../../../components/ui/AppCard';
+import { ScreenHeader } from '../../../components/ui/ScreenHeader';
+import { SectionHeader } from '../../../components/ui/SectionHeader';
+import Button from '../../../components/Button';
+import { ThemedText } from '../../../components/ThemedText';
+import ThemedTextInput from '../../../components/ThemedTextInput';
+import { useAppTheme } from '../../../theme/ThemeProvider';
+import { aiService, type NutritionTarget } from '../../../services/aiService';
+import { useDiaryStore } from '../../../store/useDiaryStore';
+import { handleApiError, handleApiErrorWithCustomMessage } from '../../../utils/errorHandler';
+import type { RootStackParamList } from '../../types';
+
+type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
+
+const TargetSchema = z.object({
+    calories: z.string().refine((val) => !isNaN(Number(val)) && Number(val) >= 500 && Number(val) <= 10000, { message: 'Calories phải từ 500 - 10000' }),
+    protein: z.string().refine((val) => !isNaN(Number(val)) && Number(val) >= 10 && Number(val) <= 1000, { message: 'Protein phải từ 10 - 1000' }),
+    carbs: z.string().refine((val) => !isNaN(Number(val)) && Number(val) >= 10 && Number(val) <= 1000, { message: 'Carbs phải từ 10 - 1000' }),
+    fat: z.string().refine((val) => !isNaN(Number(val)) && Number(val) >= 10 && Number(val) <= 1000, { message: 'Fat phải từ 10 - 1000' }),
+});
+
+type TargetFormValues = z.infer<typeof TargetSchema>;
+
+const NutritionSettingsScreen = (): JSX.Element => {
+    const { theme } = useAppTheme();
+    const navigation = useNavigation<NavigationProp>();
+    const queryClient = useQueryClient();
+    const refreshSummary = useDiaryStore((s) => s.refreshSummary);
+
+    const [isEditing, setIsEditing] = useState(false);
+    const [suggestedTarget, setSuggestedTarget] = useState<NutritionTarget | null>(null);
+
+    const {
+        control,
+        handleSubmit,
+        reset,
+        setValue,
+        formState: { errors, isSubmitting },
+    } = useForm<TargetFormValues>({
+        resolver: zodResolver(TargetSchema),
+        defaultValues: {
+            calories: '2000',
+            protein: '150',
+            carbs: '200',
+            fat: '60',
+        },
+    });
+
+    // Fetch current target
+    const {
+        data: currentTarget,
+        isLoading,
+        error,
+    } = useQuery({
+        queryKey: ['nutrition-target'],
+        queryFn: aiService.getCurrentNutritionTarget,
+    });
+
+    // Update form when data loads
+    useEffect(() => {
+        if (currentTarget) {
+            reset({
+                calories: String(Math.round(currentTarget.calories)),
+                protein: String(Math.round(currentTarget.protein)),
+                carbs: String(Math.round(currentTarget.carbs)),
+                fat: String(Math.round(currentTarget.fat)),
+            });
+        }
+    }, [currentTarget, reset]);
+
+    // Handle load error
+    useEffect(() => {
+        if (error) handleApiError(error);
+    }, [error]);
+
+    // AI Suggestion Mutation
+    const suggestMutation = useMutation({
+        mutationFn: aiService.recalculateNutritionTarget,
+        onSuccess: (data) => {
+            setSuggestedTarget(data);
+        },
+        onError: (err) => {
+            handleApiErrorWithCustomMessage(err, {
+                unknown: { text1: 'Không thể tạo gợi ý', text2: 'Vui lòng thử lại sau' },
+            });
+        },
+    });
+
+    // Apply Target Mutation
+    const applyMutation = useMutation({
+        mutationFn: aiService.applyNutritionTarget,
+        onSuccess: async (_, variables) => {
+            await queryClient.invalidateQueries({ queryKey: ['nutrition-target'] });
+            await refreshSummary();
+            setIsEditing(false);
+            setSuggestedTarget(null);
+
+            // Update form values
+            reset({
+                calories: String(Math.round(variables.calories)),
+                protein: String(Math.round(variables.protein)),
+                carbs: String(Math.round(variables.carbs)),
+                fat: String(Math.round(variables.fat)),
+            });
+
+            Alert.alert('Thành công', 'Đã cập nhật mục tiêu dinh dưỡng');
+        },
+        onError: (err) => handleApiError(err),
+    });
+
+    const onSaveManual = (values: TargetFormValues) => {
+        applyMutation.mutate({
+            calories: Number(values.calories),
+            protein: Number(values.protein),
+            carbs: Number(values.carbs),
+            fat: Number(values.fat),
+        } as NutritionTarget);
+    };
+
+    const onApplySuggestion = () => {
+        if (suggestedTarget) {
+            applyMutation.mutate(suggestedTarget);
+        }
+    };
+
+    const styles = StyleSheet.create({
+        container: {
+            padding: theme.spacing.lg,
+            gap: theme.spacing.xl,
+        },
+        row: {
+            flexDirection: 'row',
+            gap: theme.spacing.md,
+        },
+        col: {
+            flex: 1,
+        },
+        macroCard: {
+            alignItems: 'center',
+            padding: theme.spacing.md,
+            backgroundColor: theme.colors.background,
+            borderRadius: theme.borderRadius.card,
+            borderWidth: 1,
+            borderColor: theme.colors.border,
+        },
+        divider: {
+            height: 1,
+            backgroundColor: theme.colors.border,
+            marginVertical: theme.spacing.lg,
+        },
+        suggestionBox: {
+            backgroundColor: theme.colors.primaryLight,
+            padding: theme.spacing.lg,
+            borderRadius: theme.borderRadius.card,
+            borderWidth: 1,
+            borderColor: theme.colors.primary,
+        },
+    });
+
+    const renderMacroInput = (
+        name: keyof TargetFormValues,
+        label: string,
+        placeholder: string
+    ) => (
+        <View style={styles.col}>
+            <Controller
+                control={control}
+                name={name}
+                render={({ field: { onChange, value, onBlur } }) => (
+                    <ThemedTextInput
+                        label={label}
+                        value={value}
+                        onChangeText={onChange}
+                        onBlur={onBlur}
+                        placeholder={placeholder}
+                        keyboardType="numeric"
+                        editable={isEditing}
+                        error={!!errors[name]}
+                        style={{ backgroundColor: isEditing ? theme.colors.background : theme.colors.card }}
+                    />
+                )}
+            />
+        </View>
+    );
+
+    const renderMacroDisplay = (label: string, value: number, unit: string = 'g') => (
+        <View style={styles.macroCard}>
+            <ThemedText variant="caption" color="textSecondary" weight="600">
+                {label}
+            </ThemedText>
+            <ThemedText variant="h4" color="primary">
+                {Math.round(value)}
+                <ThemedText variant="caption" color="textSecondary"> {unit}</ThemedText>
+            </ThemedText>
+        </View>
+    );
+
+    if (isLoading) {
+        return (
+            <Screen>
+                <ScreenHeader title="Cài đặt dinh dưỡng" />
+                <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+                    <ActivityIndicator size="large" color={theme.colors.primary} />
+                </View>
+            </Screen>
+        );
+    }
+
+    return (
+        <Screen>
+            <ScreenHeader title="Cài đặt dinh dưỡng" subtitle="Quản lý mục tiêu Calories & Macros" />
+
+            <ScrollView contentContainerStyle={styles.container}>
+                {/* Current Target Section */}
+                <AppCard>
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: theme.spacing.md }}>
+                        <SectionHeader title="Mục tiêu hiện tại" />
+                        {!isEditing && (
+                            <Button
+                                variant="ghost"
+                                title="Chỉnh sửa"
+                                size="sm"
+                                onPress={() => setIsEditing(true)}
+                            />
+                        )}
+                    </View>
+
+                    {isEditing ? (
+                        <Animated.View entering={FadeIn} layout={Layout.springify()}>
+                            <Controller
+                                control={control}
+                                name="calories"
+                                render={({ field: { onChange, value, onBlur } }) => (
+                                    <ThemedTextInput
+                                        label="Tổng Calories (kcal)"
+                                        value={value}
+                                        onChangeText={onChange}
+                                        onBlur={onBlur}
+                                        placeholder="2000"
+                                        keyboardType="numeric"
+                                        error={!!errors.calories}
+                                        helperText={errors.calories?.message}
+                                    />
+                                )}
+                            />
+
+                            <View style={[styles.row, { marginTop: theme.spacing.md }]}>
+                                {renderMacroInput('protein', 'Protein (g)', '150')}
+                                {renderMacroInput('carbs', 'Carbs (g)', '200')}
+                                {renderMacroInput('fat', 'Fat (g)', '60')}
+                            </View>
+
+                            <View style={[styles.row, { marginTop: theme.spacing.lg }]}>
+                                <Button
+                                    variant="outline"
+                                    title="Hủy"
+                                    onPress={() => {
+                                        setIsEditing(false);
+                                        reset();
+                                    }}
+                                    style={styles.col}
+                                />
+                                <Button
+                                    variant="primary"
+                                    title="Lưu thay đổi"
+                                    onPress={handleSubmit(onSaveManual)}
+                                    loading={applyMutation.isPending}
+                                    disabled={applyMutation.isPending}
+                                    style={styles.col}
+                                />
+                            </View>
+                        </Animated.View>
+                    ) : (
+                        <Animated.View entering={FadeIn} layout={Layout.springify()}>
+                            <View style={{ alignItems: 'center', marginBottom: theme.spacing.lg }}>
+                                <ThemedText variant="h1" color="primary">
+                                    {Math.round(currentTarget?.calories ?? 0)}
+                                </ThemedText>
+                                <ThemedText variant="body" color="textSecondary">kcal / ngày</ThemedText>
+                            </View>
+
+                            <View style={styles.row}>
+                                <View style={styles.col}>{renderMacroDisplay('Protein', currentTarget?.protein ?? 0)}</View>
+                                <View style={styles.col}>{renderMacroDisplay('Carbs', currentTarget?.carbs ?? 0)}</View>
+                                <View style={styles.col}>{renderMacroDisplay('Fat', currentTarget?.fat ?? 0)}</View>
+                            </View>
+                        </Animated.View>
+                    )}
+                </AppCard>
+
+                {/* AI Suggestion Section */}
+                <AppCard>
+                    <SectionHeader
+                        title="AI Đề xuất (Adaptive)"
+                        subtitle="Tự động tính toán dựa trên chỉ số cơ thể và mức độ vận động của bạn."
+                    />
+
+                    {!suggestedTarget ? (
+                        <View>
+                            <ThemedText variant="body" color="textSecondary" style={{ marginBottom: theme.spacing.lg }}>
+                                AI sẽ phân tích dữ liệu lịch sử và thông tin cá nhân để đề xuất mục tiêu tối ưu nhất cho bạn.
+                            </ThemedText>
+                            <Button
+                                variant="secondary"
+                                title="Phân tích & Đề xuất lại"
+                                onPress={() => suggestMutation.mutate()}
+                                loading={suggestMutation.isPending}
+                                disabled={suggestMutation.isPending}
+                                icon={<ThemedText>✨</ThemedText>}
+                            />
+                        </View>
+                    ) : (
+                        <Animated.View entering={FadeInDown} style={styles.suggestionBox}>
+                            <ThemedText variant="h3" color="primary" style={{ marginBottom: theme.spacing.sm }}>
+                                ✨ Đề xuất mới
+                            </ThemedText>
+
+                            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: theme.spacing.md }}>
+                                <View>
+                                    <ThemedText variant="caption" color="textSecondary">Calories</ThemedText>
+                                    <ThemedText variant="h2">{Math.round(suggestedTarget.calories)}</ThemedText>
+                                </View>
+                                <View style={{ alignItems: 'flex-end' }}>
+                                    <ThemedText variant="caption" color="textSecondary">Thay đổi</ThemedText>
+                                    <ThemedText variant="h3" color={suggestedTarget.calories > (currentTarget?.calories ?? 0) ? 'success' : 'warning'}>
+                                        {suggestedTarget.calories > (currentTarget?.calories ?? 0) ? '+' : ''}
+                                        {Math.round(suggestedTarget.calories - (currentTarget?.calories ?? 0))}
+                                    </ThemedText>
+                                </View>
+                            </View>
+
+                            <View style={styles.row}>
+                                <View style={styles.col}>
+                                    <ThemedText variant="caption">Protein</ThemedText>
+                                    <ThemedText variant="h4">{Math.round(suggestedTarget.protein)}g</ThemedText>
+                                </View>
+                                <View style={styles.col}>
+                                    <ThemedText variant="caption">Carbs</ThemedText>
+                                    <ThemedText variant="h4">{Math.round(suggestedTarget.carbs)}g</ThemedText>
+                                </View>
+                                <View style={styles.col}>
+                                    <ThemedText variant="caption">Fat</ThemedText>
+                                    <ThemedText variant="h4">{Math.round(suggestedTarget.fat)}g</ThemedText>
+                                </View>
+                            </View>
+
+                            <View style={[styles.row, { marginTop: theme.spacing.lg }]}>
+                                <Button
+                                    variant="outline"
+                                    title="Bỏ qua"
+                                    onPress={() => setSuggestedTarget(null)}
+                                    style={styles.col}
+                                />
+                                <Button
+                                    variant="primary"
+                                    title="Áp dụng"
+                                    onPress={onApplySuggestion}
+                                    loading={applyMutation.isPending}
+                                    style={styles.col}
+                                />
+                            </View>
+                        </Animated.View>
+                    )}
+                </AppCard>
+
+                {/* Info Link */}
+                <Button
+                    variant="ghost"
+                    title="Cập nhật thông tin cơ thể (Chiều cao/Cân nặng)"
+                    onPress={() => navigation.navigate('AppTabs' as any)}
+                />
+            </ScrollView>
+        </Screen>
+    );
+};
+
+export default NutritionSettingsScreen;

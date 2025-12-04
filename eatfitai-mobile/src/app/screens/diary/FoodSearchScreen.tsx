@@ -8,7 +8,6 @@ import {
   RefreshControl,
   StyleSheet,
   View,
-  Image,
 } from 'react-native';
 import Animated, {
   FadeIn,
@@ -28,6 +27,7 @@ import Button from '../../../components/Button';
 import { AppCard } from '../../../components/ui/AppCard';
 import { ScreenHeader } from '../../../components/ui/ScreenHeader';
 import { useAppTheme } from '../../../theme/ThemeProvider';
+import { AppImage } from '../../../components/ui/AppImage';
 import type { RootStackParamList } from '../../types';
 import { foodService, type FoodItem } from '../../../services/foodService';
 import { SkeletonList } from '../../../components/Skeleton';
@@ -147,11 +147,7 @@ const FoodSearchScreen = (): JSX.Element => {
         visibilityTime: 2000,
       });
     } catch (error) {
-      Toast.show({
-        type: 'error',
-        text1: 'Lỗi',
-        text2: 'Không thể cập nhật trạng thái yêu thích',
-      });
+      handleApiError(error);
     }
   };
 
@@ -235,10 +231,9 @@ const FoodSearchScreen = (): JSX.Element => {
               >
                 {/* Thumbnail Image */}
                 {item.thumbnail ? (
-                  <Image
+                  <AppImage
                     source={{ uri: getFoodImageUrl(item.thumbnail) }}
                     style={{ width: 48, height: 48, borderRadius: 24, marginRight: 12 }}
-                    resizeMode="cover"
                   />
                 ) : (
                   <View

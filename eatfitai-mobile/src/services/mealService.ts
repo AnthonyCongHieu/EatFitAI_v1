@@ -17,8 +17,18 @@ export async function addMealItems(
   mealType: number,
   items: MealItemInput[],
 ): Promise<void> {
-  const payload: AddMealItemsPayload = { date, mealType, items };
-  await apiClient.post('/api/meals', payload);
+  // Backend does not support batch insert (/api/meals), so we loop and insert individually
+  const promises = items.map((item) => {
+    return apiClient.post('/api/meal-diary', {
+      eatenDate: date,
+      mealTypeId: mealType,
+      foodItemId: item.foodItemId,
+      grams: item.grams,
+      note: null,
+    });
+  });
+
+  await Promise.all(promises);
 }
 
 export const mealService = {

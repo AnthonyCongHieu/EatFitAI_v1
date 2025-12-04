@@ -1,12 +1,17 @@
 // Bottom Tabs after authentication
+// Simplified from 6 tabs to 4 tabs for better UX
 
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import Ionicons from '@expo/vector-icons/Ionicons';
+import Animated, {
+  useAnimatedStyle,
+  withSpring,
+  useSharedValue,
+} from 'react-native-reanimated';
+import { Pressable, View, StyleSheet } from 'react-native';
 
 import HomeScreen from '../screens/HomeScreen';
-import FoodSearchScreen from '../screens/diary/FoodSearchScreen';
-import AiCameraScreen from '../screens/ai/AiCameraScreen';
-import AiNutritionScreen from '../screens/ai/AiNutritionScreen';
+import AIScanScreen from '../screens/ai/AIScanScreen';
 import WeekStatsScreen from '../screens/stats/WeekStatsScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import { useAppTheme } from '../../theme/ThemeProvider';
@@ -14,14 +19,51 @@ import { t } from '../../i18n/vi';
 
 export type AppTabsParamList = {
   HomeTab: undefined;
-  SearchTab: undefined;
-  CameraTab: undefined;
-  AITab: undefined;
+  AIScanTab: undefined;
   StatsTab: undefined;
   ProfileTab: undefined;
 };
 
 const Tab = createBottomTabNavigator<AppTabsParamList>();
+
+// Custom animated tab button with proper typing for react-navigation
+const AnimatedTabButton = ({
+  children,
+  onPress,
+  onLongPress,
+  accessibilityState,
+  ...rest
+}: any): JSX.Element => {
+  const scale = useSharedValue(1);
+  const isSelected = accessibilityState?.selected ?? false;
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+  }));
+
+  const handlePressIn = () => {
+    scale.value = withSpring(0.9, { damping: 15, stiffness: 400 });
+  };
+
+  const handlePressOut = () => {
+    scale.value = withSpring(1, { damping: 15, stiffness: 400 });
+  };
+
+  return (
+    <Pressable
+      onPress={onPress}
+      onLongPress={onLongPress}
+      onPressIn={handlePressIn}
+      onPressOut={handlePressOut}
+      style={styles.tabButton}
+      accessibilityRole="tab"
+      accessibilityState={{ selected: isSelected }}
+      {...rest}
+    >
+      <Animated.View style={animatedStyle}>{children}</Animated.View>
+    </Pressable>
+  );
+};
 
 const AppTabs = (): JSX.Element => {
   const { theme } = useAppTheme();
@@ -35,11 +77,17 @@ const AppTabs = (): JSX.Element => {
         tabBarStyle: {
           backgroundColor: theme.colors.card,
           borderTopColor: 'transparent',
-          height: 60,
-          paddingBottom: 6,
-          paddingTop: 6,
+          height: 70,
+          paddingBottom: 10,
+          paddingTop: 10,
+          ...theme.shadows.md,
         },
-        tabBarLabelStyle: { fontFamily: 'Inter_600SemiBold' },
+        tabBarLabelStyle: {
+          fontFamily: 'Inter_600SemiBold',
+          fontSize: 11,
+          marginTop: 4,
+        },
+        tabBarButton: (props) => <AnimatedTabButton {...props} />,
       }}
     >
       <Tab.Screen
@@ -47,38 +95,28 @@ const AppTabs = (): JSX.Element => {
         component={HomeScreen}
         options={{
           title: t('navigation.home'),
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="home" color={color} size={size} />
+          tabBarIcon: ({ color, size, focused }) => (
+            <Ionicons
+              name={focused ? 'home' : 'home-outline'}
+              color={color}
+              size={size}
+            />
           ),
         }}
       />
       <Tab.Screen
-        name="SearchTab"
-        component={FoodSearchScreen}
+        name="AIScanTab"
+        component={AIScanScreen}
         options={{
-          title: t('navigation.search'),
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="search" color={color} size={size} />
-          ),
-        }}
-      />
-      <Tab.Screen
-        name="CameraTab"
-        component={AiCameraScreen}
-        options={{
-          title: t('navigation.camera'),
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="camera" color={color} size={size} />
-          ),
-        }}
-      />
-      <Tab.Screen
-        name="AITab"
-        component={AiNutritionScreen}
-        options={{
-          title: t('navigation.ai'),
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="bulb" color={color} size={size} />
+          title: 'AI Scan',
+          tabBarIcon: ({ color, size, focused }) => (
+            <View style={focused ? [styles.scanIconActive, { backgroundColor: theme.colors.primary + '20' }] : undefined}>
+              <Ionicons
+                name={focused ? 'scan' : 'scan-outline'}
+                color={color}
+                size={size + 2}
+              />
+            </View>
           ),
         }}
       />
@@ -87,8 +125,12 @@ const AppTabs = (): JSX.Element => {
         component={WeekStatsScreen}
         options={{
           title: t('navigation.stats'),
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="stats-chart" color={color} size={size} />
+          tabBarIcon: ({ color, size, focused }) => (
+            <Ionicons
+              name={focused ? 'stats-chart' : 'stats-chart-outline'}
+              color={color}
+              size={size}
+            />
           ),
         }}
       />
@@ -97,8 +139,12 @@ const AppTabs = (): JSX.Element => {
         component={ProfileScreen}
         options={{
           title: t('navigation.profile'),
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="person" color={color} size={size} />
+          tabBarIcon: ({ color, size, focused }) => (
+            <Ionicons
+              name={focused ? 'person' : 'person-outline'}
+              color={color}
+              size={size}
+            />
           ),
         }}
       />
@@ -106,4 +152,17 @@ const AppTabs = (): JSX.Element => {
   );
 };
 
+const styles = StyleSheet.create({
+  tabButton: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  scanIconActive: {
+    padding: 8,
+    borderRadius: 12,
+  },
+});
+
 export default AppTabs;
+

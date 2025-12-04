@@ -19,4 +19,6 @@ export type RootStackParamList = {
   NutritionInsights: undefined;
   VisionHistory: undefined;
   AdaptiveTarget: undefined;
+  NutritionSettings: undefined;
+  Achievements: undefined;
 };

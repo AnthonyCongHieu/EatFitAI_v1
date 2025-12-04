@@ -36,12 +36,19 @@ import { handleApiErrorWithCustomMessage } from '../../utils/errorHandler';
 
 // New UI components
 import { AppCard } from '../../components/ui/AppCard';
-import { AppChip } from '../../components/ui/AppChip';
 import { SectionHeader } from '../../components/ui/SectionHeader';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { ScreenHeader } from '../../components/ui/ScreenHeader';
 import { MetricCard } from '../../components/ui/MetricCard';
 import { InsightsCard } from '../../components/ui/InsightsCard';
+import CircularProgress from '../../components/ui/CircularProgress';
+import SmartQuickActions from '../../components/SmartQuickActions';
+import FavoritesList from '../../components/FavoritesList';
+import { SmartAddSheet } from '../../components/ui/SmartAddSheet';
+import { useGamificationStore } from '../../store/useGamificationStore';
+import { StreakCard } from '../../components/gamification/StreakCard';
+import { HomeSkeleton } from '../../components/skeletons/HomeSkeleton';
+
 
 type AddOption = 'search' | 'custom' | 'ai';
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
@@ -58,50 +65,6 @@ const HomeScreen = (): JSX.Element => {
   const { theme } = useAppTheme();
   const styles = getStyles(theme);
 
-  const AddEntryModal = ({
-    visible,
-    onClose,
-    onSelect,
-  }: {
-    visible: boolean;
-    onClose: () => void;
-    onSelect: (option: AddOption) => void;
-  }): JSX.Element => {
-    return (
-      <Modal transparent visible={visible} animationType="fade" onRequestClose={onClose}>
-        <View style={styles.modalBackdrop}>
-          <AppCard>
-            <ThemedText variant="h3">{t('home.addDishTitle')}</ThemedText>
-            <ThemedText
-              variant="body"
-              color="textSecondary"
-              style={{ marginTop: theme.spacing.xs, marginBottom: theme.spacing.md }}
-            >
-              {t('home.chooseAddMethod')}
-            </ThemedText>
-            <Button title={t('home.searchExisting')} onPress={() => onSelect('search')} />
-            <View style={{ height: theme.spacing.sm }} />
-            <Button
-              variant="outline"
-              title={t('home.createCustom')}
-              onPress={() => onSelect('custom')}
-            />
-            <Pressable
-              accessibilityRole="button"
-              hitSlop={8}
-              onPress={onClose}
-              style={{ alignItems: 'center', marginTop: 8 }}
-            >
-              <ThemedText variant="body" color="muted">
-                {t('home.close')}
-              </ThemedText>
-            </Pressable>
-          </AppCard>
-        </View>
-      </Modal>
-    );
-  };
-
   const navigation = useNavigation<NavigationProp>();
   const summary = useDiaryStore((s) => s.summary);
   const fetchSummary = useDiaryStore((s) => s.fetchSummary);
@@ -116,6 +79,13 @@ const HomeScreen = (): JSX.Element => {
   });
   const [showAddModal, setShowAddModal] = useState(false);
   const [serverDown, setServerDown] = useState(false);
+  const { currentStreak, longestStreak, checkStreak } = useGamificationStore();
+
+  useFocusEffect(
+    useCallback(() => {
+      checkStreak();
+    }, [checkStreak])
+  );
 
   const showCommonErrors = useCallback(
     (error: any, fallback: { text1: string; text2: string }) => {
@@ -325,6 +295,10 @@ const HomeScreen = (): JSX.Element => {
     return summary.meals.flatMap((meal) => meal.entries).slice(0, 3);
   }, [summary]);
 
+  if (isLoading && !summary) {
+    return <HomeSkeleton />;
+  }
+
   return (
     <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
       <ScreenHeader title="Trang chủ" subtitle="Theo dõi dinh dưỡng hàng ngày" />
@@ -359,6 +333,14 @@ const HomeScreen = (): JSX.Element => {
             </ThemedText>
           </View>
         )}
+
+        <StreakCard
+          currentStreak={currentStreak}
+          longestStreak={longestStreak}
+          onPress={() => {
+            navigation.navigate('Achievements');
+          }}
+        />
 
         {/* Hero Card */}
         <Animated.View entering={FadeInUp.duration(theme.animation.slow).springify()}>
@@ -444,38 +426,21 @@ const HomeScreen = (): JSX.Element => {
         {/* AI Insights */}
         <InsightsCard />
 
-        {/* Quick Actions */}
-        <View>
-          <SectionHeader title={t('home.quick_actions_title')} />
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: theme.spacing.sm }}>
-            <Animated.View
-              style={useAnimatedStyle(() => ({ transform: [{ scale: 1 }] }))}
-            >
-              <AppChip
-                label={t('home.add_breakfast')}
-                onPress={() => handleQuickAction(1)}
-              />
-            </Animated.View>
-            <Animated.View
-              style={useAnimatedStyle(() => ({ transform: [{ scale: 1 }] }))}
-            >
-              <AppChip label={t('home.add_lunch')} onPress={() => handleQuickAction(2)} />
-            </Animated.View>
-            <Animated.View
-              style={useAnimatedStyle(() => ({ transform: [{ scale: 1 }] }))}
-            >
-              <AppChip
-                label={t('home.add_dinner')}
-                onPress={() => handleQuickAction(3)}
-              />
-            </Animated.View>
-            <Animated.View
-              style={useAnimatedStyle(() => ({ transform: [{ scale: 1 }] }))}
-            >
-              <AppChip label={t('home.add_snack')} onPress={() => handleQuickAction(4)} />
-            </Animated.View>
-          </View>
-        </View>
+        {/* Smart Quick Actions - based on time of day */}
+        <Animated.View entering={FadeInUp.delay(200).springify()}>
+          <AppCard>
+            <SmartQuickActions
+              onAddMeal={handleQuickAction}
+              onScanFood={handleAICamera}
+              onSearchFood={() => navigation.navigate('FoodSearch')}
+            />
+          </AppCard>
+        </Animated.View>
+
+        {/* Favorites Section */}
+        <Animated.View entering={FadeInUp.delay(300).springify()}>
+          <FavoritesList maxItems={6} />
+        </Animated.View>
 
         {/* Today's Diary */}
         <View>
@@ -576,17 +541,47 @@ const HomeScreen = (): JSX.Element => {
         </AppCard>
       </Screen>
 
-      <AddEntryModal
+
+
+      {/* Floating Action Button */}
+      <Animated.View
+        entering={FadeInUp.delay(500).springify()}
+        style={styles.fabContainer}
+      >
+        <Pressable
+          style={[styles.fab, { backgroundColor: theme.colors.primary, shadowColor: theme.colors.primary }]}
+          onPress={() => setShowAddModal(true)}
+        >
+          <Icon name="add" size="xl" color="card" />
+        </Pressable>
+      </Animated.View>
+
+      <SmartAddSheet
         visible={showAddModal}
         onClose={() => setShowAddModal(false)}
-        onSelect={handleAddOption}
       />
-    </View>
+    </View >
   );
 };
 
 const getStyles = (theme: any) =>
   StyleSheet.create({
+    fabContainer: {
+      position: 'absolute',
+      bottom: theme.spacing.xl,
+      right: theme.spacing.xl,
+    },
+    fab: {
+      width: 56,
+      height: 56,
+      borderRadius: 28,
+      alignItems: 'center',
+      justifyContent: 'center',
+      elevation: 5,
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.3,
+      shadowRadius: 8,
+    },
     entryRow: {
       flexDirection: 'row',
       alignItems: 'center',
