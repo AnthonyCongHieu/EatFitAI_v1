@@ -8,6 +8,8 @@ import { StyleSheet, View } from 'react-native';
 import Toast from 'react-native-toast-message';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useNavigation } from '@react-navigation/native';
+import { LinearGradient } from 'expo-linear-gradient';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 
 import { ThemedText } from '../../../components/ThemedText';
 import Screen from '../../../components/Screen';
@@ -20,6 +22,7 @@ import type { RootStackParamList } from '../../types';
 import { useDiaryStore } from '../../../store/useDiaryStore';
 import { MEAL_TYPES } from '../../../types';
 import { handleApiError } from '../../../utils/errorHandler';
+import { glassStyles } from '../../../components/ui/GlassCard';
 
 const FormSchema = z.object({
   name: z.string().trim().min(3, 'Tên món tối thiểu 3 ký tự'),
@@ -101,6 +104,8 @@ type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'CustomDish'
 
 const CustomDishScreen = (): JSX.Element => {
   const { theme } = useAppTheme();
+  const isDark = theme.mode === 'dark';
+  const glass = glassStyles(isDark);
   const navigation = useNavigation<NavigationProp>();
   const refreshSummary = useDiaryStore((state) => state.refreshSummary);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -144,7 +149,7 @@ const CustomDishScreen = (): JSX.Element => {
           text2: 'Món ăn đã được lưu vào thư viện cá nhân',
         });
         reset();
-        await refreshSummary().catch(() => {});
+        await refreshSummary().catch(() => { });
         navigation.goBack();
       } catch (error: any) {
         handleApiError(error);
@@ -156,170 +161,179 @@ const CustomDishScreen = (): JSX.Element => {
   );
 
   return (
-    <Screen contentContainerStyle={styles.content}>
-      <AppCard padding="lg" shadow="md">
-        <ThemedText variant="h2" style={{ marginBottom: theme.spacing.xs }}>
-          Tạo món thủ công
-        </ThemedText>
-        <ThemedText
-          variant="bodySmall"
-          color="textSecondary"
-          style={{ marginBottom: theme.spacing.lg }}
-        >
-          Nhập thông tin dinh dưỡng cho món nhà làm để lưu vào thư viện cá nhân.
-        </ThemedText>
+    <View style={{ flex: 1 }}>
+      <LinearGradient
+        colors={isDark ? ['#0A0A0F', '#1a1a2e'] : ['#f0f9ff', '#e0f2fe']}
+        style={StyleSheet.absoluteFill}
+      />
+      <Screen contentContainerStyle={styles.content}>
+        <Animated.View entering={FadeInDown.duration(500).springify()}>
+          <View style={glass.card}>
+            <ThemedText style={{ fontSize: 28, textAlign: 'center', marginBottom: 8 }}>🍳</ThemedText>
+            <ThemedText variant="h2" style={{ marginBottom: theme.spacing.xs, textAlign: 'center' }}>
+              Tạo món thủ công
+            </ThemedText>
+            <ThemedText
+              variant="bodySmall"
+              color="textSecondary"
+              style={{ marginBottom: theme.spacing.lg, textAlign: 'center' }}
+            >
+              Nhập thông tin dinh dưỡng cho món nhà làm
+            </ThemedText>
 
-        <Controller
-          control={control}
-          name="name"
-          render={({ field: { onChange, onBlur, value } }) => (
-            <ThemedTextInput
-              label="Tên món"
-              onBlur={onBlur}
-              onChangeText={onChange}
-              value={value}
-              placeholder="Ví dụ: Salad gà"
-              error={!!errors.name}
-              helperText={errors.name?.message}
-              required
+            <Controller
+              control={control}
+              name="name"
+              render={({ field: { onChange, onBlur, value } }) => (
+                <ThemedTextInput
+                  label="Tên món"
+                  onBlur={onBlur}
+                  onChangeText={onChange}
+                  value={value}
+                  placeholder="Ví dụ: Salad gà"
+                  error={!!errors.name}
+                  helperText={errors.name?.message}
+                  required
+                />
+              )}
             />
-          )}
-        />
 
-        <Controller
-          control={control}
-          name="description"
-          render={({ field: { onChange, onBlur, value } }) => (
-            <ThemedTextInput
-              label="Mô tả (tùy chọn)"
-              onBlur={onBlur}
-              onChangeText={onChange}
-              value={value}
-              placeholder="Nguyên liệu chính, ghi chú..."
-              multiline
-              numberOfLines={3}
-              error={!!errors.description}
-              helperText={errors.description?.message}
+            <Controller
+              control={control}
+              name="description"
+              render={({ field: { onChange, onBlur, value } }) => (
+                <ThemedTextInput
+                  label="Mô tả (tùy chọn)"
+                  onBlur={onBlur}
+                  onChangeText={onChange}
+                  value={value}
+                  placeholder="Nguyên liệu chính, ghi chú..."
+                  multiline
+                  numberOfLines={3}
+                  error={!!errors.description}
+                  helperText={errors.description?.message}
+                />
+              )}
             />
-          )}
-        />
 
-        <View style={{ marginTop: theme.spacing.lg }}>
-          <ThemedText
-            variant="bodySmall"
-            weight="600"
-            style={{ marginBottom: theme.spacing.sm }}
-          >
-            Thông tin dinh dưỡng (cho 100g)
-          </ThemedText>
-          <View style={[styles.row]}>
-            <View style={styles.col}>
-              <Controller
-                control={control}
-                name="servingSizeGram"
-                render={({ field: { onChange, onBlur, value } }) => (
-                  <ThemedTextInput
-                    label="Khẩu phần (gram)"
-                    keyboardType="numeric"
-                    value={value}
-                    onChangeText={onChange}
-                    onBlur={onBlur}
-                    placeholder="100"
-                    error={!!errors.servingSizeGram}
-                    helperText={errors.servingSizeGram?.message}
+            <View style={{ marginTop: theme.spacing.lg }}>
+              <ThemedText
+                variant="bodySmall"
+                weight="600"
+                style={{ marginBottom: theme.spacing.sm }}
+              >
+                Thông tin dinh dưỡng (cho 100g)
+              </ThemedText>
+              <View style={[styles.row]}>
+                <View style={styles.col}>
+                  <Controller
+                    control={control}
+                    name="servingSizeGram"
+                    render={({ field: { onChange, onBlur, value } }) => (
+                      <ThemedTextInput
+                        label="Khẩu phần (gram)"
+                        keyboardType="numeric"
+                        value={value}
+                        onChangeText={onChange}
+                        onBlur={onBlur}
+                        placeholder="100"
+                        error={!!errors.servingSizeGram}
+                        helperText={errors.servingSizeGram?.message}
+                      />
+                    )}
                   />
-                )}
-              />
+                </View>
+                <View style={styles.col}>
+                  <Controller
+                    control={control}
+                    name="calories"
+                    render={({ field: { onChange, onBlur, value } }) => (
+                      <ThemedTextInput
+                        label="Calo"
+                        keyboardType="numeric"
+                        value={value}
+                        onChangeText={onChange}
+                        onBlur={onBlur}
+                        placeholder="250"
+                        error={!!errors.calories}
+                        helperText={errors.calories?.message}
+                      />
+                    )}
+                  />
+                </View>
+              </View>
+
+              <View style={[styles.row, { marginTop: theme.spacing.md }]}>
+                <View style={styles.col}>
+                  <Controller
+                    control={control}
+                    name="protein"
+                    render={({ field: { onChange, onBlur, value } }) => (
+                      <ThemedTextInput
+                        label="Protein (g)"
+                        keyboardType="numeric"
+                        value={value}
+                        onChangeText={onChange}
+                        onBlur={onBlur}
+                        placeholder="20"
+                        error={!!errors.protein}
+                        helperText={errors.protein?.message}
+                      />
+                    )}
+                  />
+                </View>
+                <View style={styles.col}>
+                  <Controller
+                    control={control}
+                    name="carbs"
+                    render={({ field: { onChange, onBlur, value } }) => (
+                      <ThemedTextInput
+                        label="Carb (g)"
+                        keyboardType="numeric"
+                        value={value}
+                        onChangeText={onChange}
+                        onBlur={onBlur}
+                        placeholder="15"
+                        error={!!errors.carbs}
+                        helperText={errors.carbs?.message}
+                      />
+                    )}
+                  />
+                </View>
+                <View style={styles.col}>
+                  <Controller
+                    control={control}
+                    name="fat"
+                    render={({ field: { onChange, onBlur, value } }) => (
+                      <ThemedTextInput
+                        label="Fat (g)"
+                        keyboardType="numeric"
+                        value={value}
+                        onChangeText={onChange}
+                        onBlur={onBlur}
+                        placeholder="10"
+                        error={!!errors.fat}
+                        helperText={errors.fat?.message}
+                      />
+                    )}
+                  />
+                </View>
+              </View>
             </View>
-            <View style={styles.col}>
-              <Controller
-                control={control}
-                name="calories"
-                render={({ field: { onChange, onBlur, value } }) => (
-                  <ThemedTextInput
-                    label="Calo"
-                    keyboardType="numeric"
-                    value={value}
-                    onChangeText={onChange}
-                    onBlur={onBlur}
-                    placeholder="250"
-                    error={!!errors.calories}
-                    helperText={errors.calories?.message}
-                  />
-                )}
+
+            <View style={{ marginTop: theme.spacing.xl }}>
+              <Button
+                variant="primary"
+                loading={isSubmitting}
+                disabled={isSubmitting}
+                onPress={handleSubmit(onSubmit)}
+                title={isSubmitting ? 'Đang tạo...' : 'Tạo món ăn'}
               />
             </View>
           </View>
-
-          <View style={[styles.row, { marginTop: theme.spacing.md }]}>
-            <View style={styles.col}>
-              <Controller
-                control={control}
-                name="protein"
-                render={({ field: { onChange, onBlur, value } }) => (
-                  <ThemedTextInput
-                    label="Protein (g)"
-                    keyboardType="numeric"
-                    value={value}
-                    onChangeText={onChange}
-                    onBlur={onBlur}
-                    placeholder="20"
-                    error={!!errors.protein}
-                    helperText={errors.protein?.message}
-                  />
-                )}
-              />
-            </View>
-            <View style={styles.col}>
-              <Controller
-                control={control}
-                name="carbs"
-                render={({ field: { onChange, onBlur, value } }) => (
-                  <ThemedTextInput
-                    label="Carb (g)"
-                    keyboardType="numeric"
-                    value={value}
-                    onChangeText={onChange}
-                    onBlur={onBlur}
-                    placeholder="15"
-                    error={!!errors.carbs}
-                    helperText={errors.carbs?.message}
-                  />
-                )}
-              />
-            </View>
-            <View style={styles.col}>
-              <Controller
-                control={control}
-                name="fat"
-                render={({ field: { onChange, onBlur, value } }) => (
-                  <ThemedTextInput
-                    label="Fat (g)"
-                    keyboardType="numeric"
-                    value={value}
-                    onChangeText={onChange}
-                    onBlur={onBlur}
-                    placeholder="10"
-                    error={!!errors.fat}
-                    helperText={errors.fat?.message}
-                  />
-                )}
-              />
-            </View>
-          </View>
-        </View>
-
-        <View style={{ marginTop: theme.spacing.xl }}>
-          <Button
-            variant="primary"
-            loading={isSubmitting}
-            disabled={isSubmitting}
-            onPress={handleSubmit(onSubmit)}
-            title={isSubmitting ? 'Đang tạo...' : 'Tạo món ăn'}
-          />
-        </View>
-      </AppCard>
-    </Screen>
+        </Animated.View>
+      </Screen>
+    </View>
   );
 };
 

@@ -10,6 +10,7 @@ import { Controller, useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import Animated, { FadeIn, FadeInDown, Layout } from 'react-native-reanimated';
+import { LinearGradient } from 'expo-linear-gradient';
 
 import Screen from '../../../components/Screen';
 import { AppCard } from '../../../components/ui/AppCard';
@@ -23,6 +24,7 @@ import { aiService, type NutritionTarget } from '../../../services/aiService';
 import { useDiaryStore } from '../../../store/useDiaryStore';
 import { handleApiError, handleApiErrorWithCustomMessage } from '../../../utils/errorHandler';
 import type { RootStackParamList } from '../../types';
+import { glassStyles } from '../../../components/ui/GlassCard';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -37,6 +39,8 @@ type TargetFormValues = z.infer<typeof TargetSchema>;
 
 const NutritionSettingsScreen = (): JSX.Element => {
     const { theme } = useAppTheme();
+    const isDark = theme.mode === 'dark';
+    const glass = glassStyles(isDark);
     const navigation = useNavigation<NavigationProp>();
     const queryClient = useQueryClient();
     const refreshSummary = useDiaryStore((s) => s.refreshSummary);

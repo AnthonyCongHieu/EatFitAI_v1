@@ -20,6 +20,7 @@ import NutritionInsightsScreen from '../screens/ai/NutritionInsightsScreen';
 import RecipeDetailScreen from '../screens/ai/RecipeDetailScreen';
 import NutritionSettingsScreen from '../screens/ai/NutritionSettingsScreen';
 import AchievementsScreen from '../screens/gamification/AchievementsScreen';
+import OnboardingScreen from '../screens/auth/OnboardingScreen';
 import { t } from '../../i18n/vi';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -60,6 +61,7 @@ const AppNavigator = (): JSX.Element => {
                 component={ForgotPasswordScreen}
                 options={{ headerShown: true, title: t('auth.forgotPasswordTitle') }}
               />
+              <Stack.Screen name="Onboarding" component={OnboardingScreen} />
             </>
           ) : (
             // Đã đăng nhập: vào App Tabs

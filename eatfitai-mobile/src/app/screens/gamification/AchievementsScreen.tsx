@@ -2,6 +2,7 @@ import React, { useEffect, useRef } from 'react';
 import { View, StyleSheet, FlatList, TouchableOpacity } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import Screen from '../../../components/Screen';
 import { ScreenHeader } from '../../../components/ui/ScreenHeader';
 import { AppCard } from '../../../components/ui/AppCard';
@@ -9,9 +10,12 @@ import { ThemedText } from '../../../components/ThemedText';
 import { useAppTheme } from '../../../theme/ThemeProvider';
 import { useGamificationStore, Achievement } from '../../../store/useGamificationStore';
 import { shareService } from '../../../services/shareService';
+import { glassStyles } from '../../../components/ui/GlassCard';
 
 const AchievementsScreen = (): JSX.Element => {
     const { theme } = useAppTheme();
+    const isDark = theme.mode === 'dark';
+    const glass = glassStyles(isDark);
     const navigation = useNavigation();
     const { achievements, checkStreak } = useGamificationStore();
     const viewRef = useRef(null);

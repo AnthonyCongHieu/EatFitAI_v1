@@ -16,6 +16,7 @@ import { useAppTheme } from '../../../theme/ThemeProvider';
 import { aiService } from '../../../services/aiService';
 import type { RootStackParamList } from '../../types';
 import type { RecipeSuggestion } from '../../../types/aiEnhanced';
+import { glassStyles } from '../../../components/ui/GlassCard';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 type RouteProps = RouteProp<RootStackParamList, 'RecipeSuggestions'>;
@@ -36,6 +37,8 @@ const POPULAR_INGREDIENTS = [
 
 const RecipeSuggestionsScreen = (): JSX.Element => {
   const { theme } = useAppTheme();
+  const isDark = theme.mode === 'dark';
+  const glass = glassStyles(isDark);
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<RouteProps>();
 

@@ -19,6 +19,7 @@ import Animated, {
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useNavigation } from '@react-navigation/native';
 import Toast from 'react-native-toast-message';
+import { LinearGradient } from 'expo-linear-gradient';
 
 import { ThemedText } from '../../../components/ThemedText';
 import Screen from '../../../components/Screen';
@@ -35,6 +36,7 @@ import { getFoodImageUrl } from '../../../utils/imageHelpers';
 import { handleApiError } from '../../../utils/errorHandler';
 import { mealService } from '../../../services/mealService';
 import Icon from '../../../components/Icon';
+import { glassStyles } from '../../../components/ui/GlassCard';
 
 const PAGE_SIZE = 20;
 
@@ -42,6 +44,8 @@ type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'FoodSearch'
 
 const FoodSearchScreen = (): JSX.Element => {
   const { theme } = useAppTheme();
+  const isDark = theme.mode === 'dark';
+  const glass = glassStyles(isDark);
   const styles = StyleSheet.create({
     container: { flex: 1 },
     searchBar: {
@@ -49,10 +53,35 @@ const FoodSearchScreen = (): JSX.Element => {
       padding: theme.spacing.lg,
       gap: theme.spacing.md,
       marginHorizontal: theme.spacing.lg,
-      marginBottom: theme.spacing.xxl,
-      borderRadius: theme.borderRadius.card,
+      marginBottom: theme.spacing.lg,
+      borderRadius: 20,
       borderWidth: 1,
       alignItems: 'center',
+      backgroundColor: isDark ? 'rgba(40, 40, 60, 0.7)' : 'rgba(255, 255, 255, 0.9)',
+      borderColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)',
+    },
+    tabContainer: {
+      flexDirection: 'row',
+      paddingHorizontal: theme.spacing.lg,
+      marginBottom: theme.spacing.md,
+      gap: theme.spacing.sm,
+    },
+    tab: {
+      flex: 1,
+      paddingVertical: theme.spacing.sm,
+      alignItems: 'center',
+      borderRadius: 12,
+    },
+    tabActive: {
+      backgroundColor: isDark ? 'rgba(59, 130, 246, 0.2)' : 'rgba(59, 130, 246, 0.1)',
+    },
+    foodCard: {
+      marginBottom: theme.spacing.sm,
+      padding: theme.spacing.md,
+      borderRadius: 16,
+      backgroundColor: isDark ? 'rgba(40, 40, 60, 0.6)' : 'rgba(255, 255, 255, 0.9)',
+      borderWidth: 1,
+      borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.05)',
     },
     loadingCard: {
       padding: theme.spacing.xl,

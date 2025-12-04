@@ -39,6 +39,7 @@ import { AppImage } from '../../../components/ui/AppImage';
 import { AIResultEditModal } from '../../../components/ui/AIResultEditModal';
 import type { RootStackParamList } from '../../types';
 import type { MappedFoodItem } from '../../../types/ai';
+import { glassStyles } from '../../../components/ui/GlassCard';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 type CameraViewInstance = InstanceType<typeof CameraView>;
@@ -57,6 +58,8 @@ const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 const AIScanScreen: React.FC = () => {
     const { theme } = useAppTheme();
+    const isDark = theme.mode === 'dark';
+    const glass = glassStyles(isDark);
     const navigation = useNavigation<NavigationProp>();
     const cameraRef = useRef<CameraViewInstance | null>(null);
 
