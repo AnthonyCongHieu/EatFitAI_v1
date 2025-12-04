@@ -48,6 +48,7 @@ import { SmartAddSheet } from '../../components/ui/SmartAddSheet';
 import { useGamificationStore } from '../../store/useGamificationStore';
 import { StreakCard } from '../../components/gamification/StreakCard';
 import { HomeSkeleton } from '../../components/skeletons/HomeSkeleton';
+import { GlassCard, glassStyles } from '../../components/ui/GlassCard';
 
 
 type AddOption = 'search' | 'custom' | 'ai';
@@ -64,6 +65,8 @@ const formatNumber = (value?: number | null, suffix = '', decimals = 0): string 
 const HomeScreen = (): JSX.Element => {
   const { theme } = useAppTheme();
   const styles = getStyles(theme);
+  const isDark = theme.mode === 'dark';
+  const glass = glassStyles(isDark);
 
   const navigation = useNavigation<NavigationProp>();
   const summary = useDiaryStore((s) => s.summary);
@@ -345,9 +348,9 @@ const HomeScreen = (): JSX.Element => {
         {/* Favorites Quick Access */}
         <FavoritesList maxItems={6} />
 
-        {/* Hero Card */}
+        {/* Hero Card - Glassmorphism */}
         <Animated.View entering={FadeInUp.duration(theme.animation.slow).springify()}>
-          <AppCard style={{ backgroundColor: theme.colors.card }}>
+          <View style={glass.card}>
             <View style={{ alignItems: 'center', gap: theme.spacing.md }}>
               <Animated.Text
                 style={[
@@ -384,7 +387,7 @@ const HomeScreen = (): JSX.Element => {
                 animated
               />
             </View>
-          </AppCard>
+          </View>
         </Animated.View>
 
         {/* Macro Card */}

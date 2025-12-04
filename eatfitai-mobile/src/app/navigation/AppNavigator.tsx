@@ -13,13 +13,10 @@ import FoodDetailScreen from '../screens/diary/FoodDetailScreen';
 import CustomDishScreen from '../screens/diary/CustomDishScreen';
 import MealDiaryScreen from '../screens/diary/MealDiaryScreen';
 import AIScanScreen from '../screens/ai/AIScanScreen';
-import AiNutritionScreen from '../screens/ai/AiNutritionScreen';
-import NutritionSuggestScreen from '../screens/ai/NutritionSuggestScreen';
 import AddMealFromVisionScreen from '../screens/meals/AddMealFromVisionScreen';
 import VisionHistoryScreen from '../screens/ai/VisionHistoryScreen';
 import RecipeSuggestionsScreen from '../screens/ai/RecipeSuggestionsScreen';
 import NutritionInsightsScreen from '../screens/ai/NutritionInsightsScreen';
-import AdaptiveTargetScreen from '../screens/ai/AdaptiveTargetScreen';
 import RecipeDetailScreen from '../screens/ai/RecipeDetailScreen';
 import NutritionSettingsScreen from '../screens/ai/NutritionSettingsScreen';
 import AchievementsScreen from '../screens/gamification/AchievementsScreen';
@@ -128,9 +125,6 @@ const AppNavigator = (): JSX.Element => {
                   headerTitleStyle: { fontFamily: 'Inter_600SemiBold' },
                 }}
               />
-              {/* Deprecated Screens: AiNutrition, NutritionSuggest */}
-              {/* <Stack.Screen name="AiNutrition" component={AiNutritionScreen} /> */}
-              {/* <Stack.Screen name="NutritionSuggest" component={NutritionSuggestScreen} /> */}
               <Stack.Screen
                 name="AddMealFromVision"
                 component={AddMealFromVisionScreen}
@@ -179,8 +173,6 @@ const AppNavigator = (): JSX.Element => {
                   headerTitleStyle: { fontFamily: 'Inter_600SemiBold' },
                 }}
               />
-              {/* Deprecated Screen: AdaptiveTarget */}
-              {/* <Stack.Screen name="AdaptiveTarget" component={AdaptiveTargetScreen} /> */}
               <Stack.Screen
                 name="NutritionSettings"
                 component={NutritionSettingsScreen}

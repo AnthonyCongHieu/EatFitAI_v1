@@ -31,6 +31,7 @@ import { useStatsStore } from '../../../store/useStatsStore';
 import { handleApiError } from '../../../utils/errorHandler';
 import { StatsSkeleton } from '../../../components/skeletons/StatsSkeleton';
 import { MacroPieChart } from '../../../components/charts/MacroPieChart';
+import { glassStyles } from '../../../components/ui/GlassCard';
 
 const formatWeekRange = (dateStr: string): string => {
   const start = new Date(dateStr);
@@ -50,6 +51,8 @@ const isCurrentWeek = (dateStr: string): boolean => {
 
 const WeekStatsScreen = (): JSX.Element => {
   const { theme } = useAppTheme();
+  const isDark = theme.mode === 'dark';
+  const glass = glassStyles(isDark);
   const styles = StyleSheet.create({
     content: {
       paddingHorizontal: theme.spacing.lg,
@@ -68,8 +71,10 @@ const WeekStatsScreen = (): JSX.Element => {
       flex: 1,
       alignItems: 'center',
       padding: theme.spacing.md,
-      backgroundColor: theme.colors.card,
-      borderRadius: theme.borderRadius.card,
+      backgroundColor: isDark ? 'rgba(60, 60, 80, 0.6)' : 'rgba(255, 255, 255, 0.8)',
+      borderRadius: 20,
+      borderWidth: 1,
+      borderColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)',
     },
     weekNavigation: {
       flexDirection: 'row',
@@ -77,8 +82,10 @@ const WeekStatsScreen = (): JSX.Element => {
       justifyContent: 'space-between',
       paddingHorizontal: theme.spacing.md,
       paddingVertical: theme.spacing.sm,
-      backgroundColor: theme.colors.card,
-      borderRadius: theme.borderRadius.card,
+      backgroundColor: isDark ? 'rgba(40, 40, 60, 0.7)' : 'rgba(255, 255, 255, 0.9)',
+      borderRadius: 16,
+      borderWidth: 1,
+      borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.05)',
       marginBottom: theme.spacing.lg,
     },
     navButton: {
