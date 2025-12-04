@@ -12,7 +12,7 @@ import { Pressable, View, StyleSheet } from 'react-native';
 
 import HomeScreen from '../screens/HomeScreen';
 import AIScanScreen from '../screens/ai/AIScanScreen';
-import WeekStatsScreen from '../screens/stats/WeekStatsScreen';
+import StatsNavigator from './StatsNavigator';
 import ProfileScreen from '../screens/ProfileScreen';
 import { useAppTheme } from '../../theme/ThemeProvider';
 import { t } from '../../i18n/vi';
@@ -122,7 +122,7 @@ const AppTabs = (): JSX.Element => {
       />
       <Tab.Screen
         name="StatsTab"
-        component={WeekStatsScreen}
+        component={StatsNavigator}
         options={{
           title: t('navigation.stats'),
           tabBarIcon: ({ color, size, focused }) => (
