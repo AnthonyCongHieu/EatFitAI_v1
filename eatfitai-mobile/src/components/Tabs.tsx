@@ -4,6 +4,7 @@ import Animated, {
   useAnimatedStyle,
   useSharedValue,
   withSpring,
+  interpolate,
 } from 'react-native-reanimated';
 
 import { ThemedText } from './ThemedText';

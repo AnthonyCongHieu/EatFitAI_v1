@@ -41,6 +41,7 @@ import { SectionHeader } from '../../components/ui/SectionHeader';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { ScreenHeader } from '../../components/ui/ScreenHeader';
 import { MetricCard } from '../../components/ui/MetricCard';
+import { InsightsCard } from '../../components/ui/InsightsCard';
 
 type AddOption = 'search' | 'custom' | 'ai';
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
@@ -439,6 +440,9 @@ const HomeScreen = (): JSX.Element => {
             />
           </View>
         </AppCard>
+
+        {/* AI Insights */}
+        <InsightsCard />
 
         {/* Quick Actions */}
         <View>

@@ -224,4 +224,21 @@ export const foodService = {
   async deleteUserFoodItem(id: number): Promise<void> {
     await apiClient.delete(`/api/user-food-items/${id}`);
   },
+
+  // --- Favorites ---
+  async getFavorites(): Promise<FoodItem[]> {
+    const response = await apiClient.get('/api/favorites');
+    const data = response.data as FoodItemDto[];
+    return data.map(normalizeFoodItem);
+  },
+
+  async toggleFavorite(foodItemId: number): Promise<{ isFavorite: boolean }> {
+    const response = await apiClient.post('/api/favorites', { foodItemId });
+    return response.data;
+  },
+
+  async checkIsFavorite(foodItemId: number): Promise<boolean> {
+    const response = await apiClient.get(`/api/favorites/check/${foodItemId}`);
+    return response.data.isFavorite;
+  },
 };
