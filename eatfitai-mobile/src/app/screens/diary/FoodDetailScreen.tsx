@@ -16,6 +16,7 @@ import Animated, {
   interpolate,
 } from 'react-native-reanimated';
 import { useQuery } from '@tanstack/react-query';
+import { LinearGradient } from 'expo-linear-gradient';
 
 import { ThemedText } from '../../../components/ThemedText';
 import Screen from '../../../components/Screen';
@@ -29,6 +30,9 @@ import { foodService, type FoodDetail } from '../../../services/foodService';
 import { useDiaryStore } from '../../../store/useDiaryStore';
 import { MEAL_TYPES, MEAL_TYPE_LABELS, type MealTypeId } from '../../../types';
 import { handleApiError } from '../../../utils/errorHandler';
+import FavoriteButton from '../../../components/FavoriteButton';
+import { favoritesService } from '../../../services/favoritesService';
+import { glassStyles } from '../../../components/ui/GlassCard';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 type RouteProps = RouteProp<RootStackParamList, 'FoodDetail'>;
@@ -62,6 +66,8 @@ type FormValues = z.infer<typeof FormSchema>;
 
 const FoodDetailScreen = (): JSX.Element | null => {
   const { theme } = useAppTheme();
+  const isDark = theme.mode === 'dark';
+  const glass = glassStyles(isDark);
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<RouteProps>();
   const refreshSummary = useDiaryStore((state) => state.refreshSummary);
@@ -132,6 +138,18 @@ const FoodDetailScreen = (): JSX.Element | null => {
     },
   });
   const detail = detailData ?? null;
+
+  const { data: isFavorite = false, refetch: refetchFavorite } = useQuery({
+    queryKey: ['favorite', route.params.foodId],
+    queryFn: () => favoritesService.checkIsFavorite(Number(route.params.foodId)),
+    enabled: !!route.params.foodId,
+  });
+
+  const toggleFavorite = useCallback(async () => {
+    if (!route.params.foodId) return;
+    await favoritesService.toggleFavorite(Number(route.params.foodId));
+    refetchFavorite();
+  }, [route.params.foodId, refetchFavorite]);
 
   useEffect(() => {
     if (error) {
@@ -233,7 +251,7 @@ const FoodDetailScreen = (): JSX.Element | null => {
           text1: 'Đã thêm món vào nhật ký',
           text2: 'Tiếp tục theo dõi dinh dưỡng của bạn!',
         });
-        await refreshSummary().catch(() => {});
+        await refreshSummary().catch(() => { });
         navigation.goBack();
       } catch (err: any) {
         handleApiError(err);
@@ -292,7 +310,17 @@ const FoodDetailScreen = (): JSX.Element | null => {
 
   return (
     <Screen>
-      <ScreenHeader title="Chi tiết món ăn" subtitle={detail.name} />
+      <ScreenHeader
+        title="Chi tiết món ăn"
+        subtitle={detail.name}
+        action={
+          <FavoriteButton
+            isFavorite={isFavorite}
+            onToggle={toggleFavorite}
+            size="md"
+          />
+        }
+      />
 
       <Animated.View
         entering={FadeIn.duration(theme.animation.normal)}

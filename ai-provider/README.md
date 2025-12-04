@@ -90,6 +90,127 @@ Response:
 }
 ```
 
+### Nutrition Advice (Gemini AI)
+
+```bash
+POST /nutrition-advice
+Content-Type: application/json
+
+{
+  "gender": "male",
+  "age": 25,
+  "height": 175,
+  "weight": 70,
+  "activity": "moderate",
+  "goal": "maintain"
+}
+```
+
+Response:
+```json
+{
+  "calories": 2500,
+  "protein": 126,
+  "carbs": 312,
+  "fat": 83,
+  "explanation": "Dựa trên TDEE 2500 kcal cho người nam 25 tuổi, vận động vừa phải",
+  "source": "gemini"
+}
+```
+
+### Meal Insight (Gemini AI)
+
+```bash
+POST /meal-insight
+Content-Type: application/json
+
+{
+  "items": [{"name": "Cơm gà", "calories": 450}],
+  "totalCalories": 1200,
+  "targetCalories": 2000,
+  "currentMacros": {"protein": 45, "carbs": 120, "fat": 30},
+  "targetMacros": {"protein": 100, "carbs": 250, "fat": 65}
+}
+```
+
+Response:
+```json
+{
+  "insight": "Bữa ăn thiếu protein, nên bổ sung thêm thịt hoặc trứng",
+  "score": 7,
+  "suggestions": ["Thêm 2 quả trứng", "Ăn thêm rau xanh"],
+  "source": "gemini"
+}
+```
+
+## 🔑 Gemini API Setup
+
+To enable AI-powered nutrition advice:
+
+1. Get API Key from [Google AI Studio](https://aistudio.google.com/apikey)
+2. Create `.env` file in `ai-provider/` folder:
+   ```bash
+   GEMINI_API_KEY=your_api_key_here
+   ```
+3. Install new dependencies:
+   ```bash
+   pip install google-generativeai python-dotenv
+   ```
+4. Restart the service
+
+**Note**: Without Gemini API key, the service will use Mifflin-St Jeor formula as fallback.
+
+## 🏠 Ollama Local AI Setup (Recommended)
+
+For self-hosted AI without external API dependencies:
+
+### 1. Install Ollama
+
+```powershell
+# Windows
+winget install Ollama.Ollama
+
+# Or download from: https://ollama.com/download/windows
+```
+
+### 2. Download Model
+
+```powershell
+# Recommended for RTX 3050 6GB:
+ollama pull llama3.2:3b
+
+# Or for better quality (needs 8GB+ VRAM):
+ollama pull mistral:7b-instruct-q4_0
+```
+
+### 3. Start Ollama
+
+```powershell
+ollama serve
+# Runs on http://localhost:11434
+```
+
+### 4. Configure (Optional)
+
+Create `.env` file:
+```bash
+OLLAMA_URL=http://localhost:11434
+OLLAMA_MODEL=llama3.2:3b
+```
+
+### 5. Test
+
+```powershell
+curl -X POST http://localhost:5050/nutrition-advice ^
+  -H "Content-Type: application/json" ^
+  -d "{\"gender\":\"male\",\"age\":25,\"height\":175,\"weight\":70,\"activity\":\"moderate\",\"goal\":\"maintain\"}"
+```
+
+**Priority Order:**
+1. Ollama local (if available)
+2. Gemini API (if configured)
+3. Mifflin-St Jeor formula (fallback)
+
 ## 📋 Model File Location
 
 ⚠️ **IMPORTANT**: The model file `best.pt` is **NOT** included in Git (see `.gitignore` line 18-20).

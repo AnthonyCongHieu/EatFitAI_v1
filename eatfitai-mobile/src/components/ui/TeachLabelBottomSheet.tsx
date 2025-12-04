@@ -120,7 +120,6 @@ export const TeachLabelBottomSheet = ({
       visible={visible}
       onClose={onClose}
       title="Chọn món ăn đúng"
-      snapPoints={[0.5, 0.8]}
     >
       <View style={styles.container}>
         <ThemedTextInput

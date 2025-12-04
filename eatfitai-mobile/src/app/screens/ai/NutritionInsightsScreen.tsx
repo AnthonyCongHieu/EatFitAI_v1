@@ -4,6 +4,8 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 import Svg, { Circle, G } from 'react-native-svg';
+import { LinearGradient } from 'expo-linear-gradient';
+import Animated, { FadeInUp } from 'react-native-reanimated';
 
 import Screen from '../../../components/Screen';
 import { ScreenHeader } from '../../../components/ui/ScreenHeader';
@@ -22,6 +24,7 @@ import {
   translateToVietnamese,
   translateRecommendationType,
 } from '../../../utils/translate';
+import { glassStyles } from '../../../components/ui/GlassCard';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -85,6 +88,8 @@ const ScoreGauge = ({
 
 const NutritionInsightsScreen = (): JSX.Element => {
   const { theme } = useAppTheme();
+  const isDark = theme.mode === 'dark';
+  const glass = glassStyles(isDark);
   const navigation = useNavigation<NavigationProp>();
 
   const [insights, setInsights] = useState<NutritionInsight | null>(null);

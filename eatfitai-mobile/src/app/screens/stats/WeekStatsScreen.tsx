@@ -19,19 +19,40 @@ import {
   VictoryTooltip,
   VictoryAxis,
 } from 'victory-native';
-import Toast from 'react-native-toast-message';
 
 import { ThemedText } from '../../../components/ThemedText';
 import Screen from '../../../components/Screen';
 import { AppCard } from '../../../components/ui/AppCard';
 import { SectionHeader } from '../../../components/ui/SectionHeader';
 import { ScreenHeader } from '../../../components/ui/ScreenHeader';
+import Icon from '../../../components/Icon';
 import { useAppTheme } from '../../../theme/ThemeProvider';
 import { useStatsStore } from '../../../store/useStatsStore';
 import { handleApiError } from '../../../utils/errorHandler';
+import { StatsSkeleton } from '../../../components/skeletons/StatsSkeleton';
+import { MacroPieChart } from '../../../components/charts/MacroPieChart';
+import { glassStyles } from '../../../components/ui/GlassCard';
+
+const formatWeekRange = (dateStr: string): string => {
+  const start = new Date(dateStr);
+  const end = new Date(start);
+  end.setDate(end.getDate() + 6);
+  const formatOptions: Intl.DateTimeFormatOptions = { day: 'numeric', month: 'short' };
+  return `${start.toLocaleDateString('vi-VN', formatOptions)} - ${end.toLocaleDateString('vi-VN', formatOptions)}`;
+};
+
+const isCurrentWeek = (dateStr: string): boolean => {
+  const today = new Date();
+  const startOfWeek = new Date(dateStr);
+  const endOfWeek = new Date(startOfWeek);
+  endOfWeek.setDate(endOfWeek.getDate() + 6);
+  return today >= startOfWeek && today <= endOfWeek;
+};
 
 const WeekStatsScreen = (): JSX.Element => {
   const { theme } = useAppTheme();
+  const isDark = theme.mode === 'dark';
+  const glass = glassStyles(isDark);
   const styles = StyleSheet.create({
     content: {
       paddingHorizontal: theme.spacing.lg,
@@ -50,19 +71,51 @@ const WeekStatsScreen = (): JSX.Element => {
       flex: 1,
       alignItems: 'center',
       padding: theme.spacing.md,
-      backgroundColor: theme.colors.card,
-      borderRadius: theme.borderRadius.card,
+      backgroundColor: isDark ? 'rgba(60, 60, 80, 0.6)' : 'rgba(255, 255, 255, 0.8)',
+      borderRadius: 20,
+      borderWidth: 1,
+      borderColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)',
+    },
+    weekNavigation: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: theme.spacing.md,
+      paddingVertical: theme.spacing.sm,
+      backgroundColor: isDark ? 'rgba(40, 40, 60, 0.7)' : 'rgba(255, 255, 255, 0.9)',
+      borderRadius: 16,
+      borderWidth: 1,
+      borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.05)',
+      marginBottom: theme.spacing.lg,
+    },
+    navButton: {
+      padding: theme.spacing.sm,
+      borderRadius: theme.borderRadius.button,
+    },
+    navButtonDisabled: {
+      opacity: 0.3,
     },
   });
+
   const weekSummary = useStatsStore((state) => state.weekSummary);
+  const selectedDate = useStatsStore((state) => state.selectedDate);
   const isLoading = useStatsStore((state) => state.isLoading);
   const fetchWeekSummary = useStatsStore((state) => state.fetchWeekSummary);
   const refreshWeekSummary = useStatsStore((state) => state.refreshWeekSummary);
+  const goToPreviousWeek = useStatsStore((state) => state.goToPreviousWeek);
+  const goToNextWeek = useStatsStore((state) => state.goToNextWeek);
   const error = useStatsStore((state) => state.error);
 
   // Animation states
   const [highlightedCard, setHighlightedCard] = useState<number | null>(null);
   const cardScale = useSharedValue(1);
+
+  const isFutureWeek = useMemo(() => {
+    const startOfWeek = new Date(selectedDate);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return startOfWeek > today;
+  }, [selectedDate]);
 
   useEffect(() => {
     fetchWeekSummary().catch(handleApiError);
@@ -70,7 +123,7 @@ const WeekStatsScreen = (): JSX.Element => {
 
   useEffect(() => {
     if (error) {
-      Toast.show({ type: 'error', text1: 'Không thể tải thống kê, vui lòng thử lại' });
+      handleApiError(error);
     }
   }, [error]);
 
@@ -103,6 +156,10 @@ const WeekStatsScreen = (): JSX.Element => {
       .map((day) => ({ x: day.x, y: day.target as number }));
   }, [chartData]);
 
+  if (isLoading && !weekSummary) {
+    return <StatsSkeleton />;
+  }
+
   return (
     <Screen
       contentContainerStyle={styles.content}
@@ -114,7 +171,37 @@ const WeekStatsScreen = (): JSX.Element => {
         />
       }
     >
-      <ScreenHeader title="Thống kê tuần" subtitle="Xem tiến độ dinh dưỡng 7 ngày qua" />
+      <ScreenHeader title="Thống kê tuần" subtitle="Xem tiến độ dinh dưỡng theo tuần" />
+
+      {/* Week Navigation */}
+      <View style={styles.weekNavigation}>
+        <Pressable
+          onPress={goToPreviousWeek}
+          style={styles.navButton}
+          disabled={isLoading}
+          accessibilityLabel="Tuần trước"
+        >
+          <Icon name="chevron-back" size="md" color="primary" />
+        </Pressable>
+
+        <View style={{ alignItems: 'center' }}>
+          <ThemedText variant="h4" weight="600">
+            {formatWeekRange(selectedDate)}
+          </ThemedText>
+          {isCurrentWeek(selectedDate) && (
+            <ThemedText variant="caption" color="primary">Tuần này</ThemedText>
+          )}
+        </View>
+
+        <Pressable
+          onPress={goToNextWeek}
+          style={[styles.navButton, isFutureWeek && styles.navButtonDisabled]}
+          disabled={isLoading || isFutureWeek}
+          accessibilityLabel="Tuần sau"
+        >
+          <Icon name="chevron-forward" size="md" color={isFutureWeek ? 'textSecondary' : 'primary'} />
+        </Pressable>
+      </View>
 
       <AppCard>
         <SectionHeader
@@ -231,7 +318,7 @@ const WeekStatsScreen = (): JSX.Element => {
                 <ThemedText variant="h4">
                   {Math.round(
                     weekSummary.days.reduce((sum, day) => sum + day.calories, 0) /
-                      weekSummary.days.length,
+                    weekSummary.days.length,
                   )}{' '}
                   kcal
                 </ThemedText>
@@ -288,7 +375,18 @@ const WeekStatsScreen = (): JSX.Element => {
             </Animated.View>
           </View>
         )}
+
       </AppCard>
+
+      {weekSummary && (
+        <View style={{ marginTop: theme.spacing.lg }}>
+          <MacroPieChart
+            protein={weekSummary.totalProtein || 0}
+            carbs={weekSummary.totalCarbs || 0}
+            fat={weekSummary.totalFat || 0}
+          />
+        </View>
+      )}
     </Screen>
   );
 };

@@ -16,6 +16,10 @@ export type WeekDaySummary = {
 
 export type WeekSummary = {
   days: WeekDaySummary[];
+  totalProtein: number;
+  totalCarbs: number;
+  totalFat: number;
+  totalCalories: number;
 };
 
 const toNumber = (value: unknown, fallback = 0): number => {
@@ -87,14 +91,20 @@ const normalizeWeekData = (data: NutritionSummaryDto): WeekDaySummary[] => {
 };
 
 export const summaryService = {
-  async getWeekSummary(): Promise<WeekSummary> {
-    const today = new Date();
+  async getWeekSummary(date?: string): Promise<WeekSummary> {
+    const targetDate = date ?? new Date().toISOString().split('T')[0];
     const response = await apiClient.get('/api/summary/week', {
-      params: { date: today.toISOString().split('T')[0] },
+      params: { date: targetDate },
     });
     const raw = response.data as NutritionSummaryDto;
     const days = normalizeWeekData(raw);
-    return { days };
+    return {
+      days,
+      totalProtein: toNumber(raw.totalProtein),
+      totalCarbs: toNumber(raw.totalCarbs),
+      totalFat: toNumber(raw.totalFat),
+      totalCalories: toNumber(raw.totalCalories),
+    };
   },
 
   async getNutritionSummary(

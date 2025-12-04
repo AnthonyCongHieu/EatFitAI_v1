@@ -8,6 +8,7 @@ import Animated, {
 import { useNavigation } from '@react-navigation/native';
 import type { NavigationProp } from '@react-navigation/native';
 import { useQuery } from '@tanstack/react-query';
+import { LinearGradient } from 'expo-linear-gradient';
 
 import { Screen } from '../../../components/Screen';
 import { ThemedText } from '../../../components/ThemedText';
@@ -24,9 +25,12 @@ import { diaryService, type DiaryEntry } from '../../../services/diaryService';
 import { MEAL_TYPE_LABELS, type MealTypeId } from '../../../types';
 import type { RootStackParamList } from '../../types';
 import { t } from '../../../i18n/vi';
+import { glassStyles } from '../../../components/ui/GlassCard';
 
 const MealDiaryScreen = (): JSX.Element => {
   const { theme } = useAppTheme();
+  const isDark = theme.mode === 'dark';
+  const glass = glassStyles(isDark);
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [editingEntry, setEditingEntry] = useState<DiaryEntry | null>(null);
@@ -65,7 +69,12 @@ const MealDiaryScreen = (): JSX.Element => {
       marginBottom: theme.spacing.lg,
     },
     foodCard: {
-      marginBottom: theme.spacing.xs,
+      marginBottom: theme.spacing.sm,
+      padding: theme.spacing.md,
+      borderRadius: 16,
+      backgroundColor: isDark ? 'rgba(40, 40, 60, 0.6)' : 'rgba(255, 255, 255, 0.9)',
+      borderWidth: 1,
+      borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.05)',
     },
     foodCardContent: {
       flexDirection: 'row',

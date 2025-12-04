@@ -100,7 +100,7 @@ export const handleApiErrorWithCustomMessage = (
   error: any,
   customMessages?: Partial<Record<ApiErrorType, { text1: string; text2: string }>>,
 ): ApiError => {
-  const apiError = handleApiError(error);
+  const apiError = handleApiErrorSilent(error);
 
   // Override with custom message if provided
   if (customMessages && customMessages[apiError.type]) {
@@ -110,6 +110,9 @@ export const handleApiErrorWithCustomMessage = (
       text1: custom.text1,
       text2: custom.text2,
     });
+  } else {
+    // Fallback to default toast behavior if no custom message
+    handleApiError(error);
   }
 
   return apiError;
@@ -154,3 +157,95 @@ export const logError = (error: any, context?: string) => {
   }
   // TODO: Send to Sentry/LogRocket/etc.
 };
+
+// ============== SUCCESS MESSAGES ==============
+
+export type SuccessType =
+  | 'meal_added'
+  | 'meal_updated'
+  | 'meal_deleted'
+  | 'food_added'
+  | 'settings_saved'
+  | 'profile_updated'
+  | 'target_updated'
+  | 'favorite_added'
+  | 'favorite_removed'
+  | 'custom';
+
+const successMessages: Record<SuccessType, { text1: string; text2?: string }> = {
+  meal_added: { text1: '✅ Đã thêm vào nhật ký', text2: 'Bữa ăn đã được ghi nhận' },
+  meal_updated: { text1: '✅ Đã cập nhật', text2: 'Thay đổi đã được lưu' },
+  meal_deleted: { text1: '🗑️ Đã xóa', text2: 'Món ăn đã được xóa khỏi nhật ký' },
+  food_added: { text1: '✅ Đã thêm món ăn', text2: 'Món ăn mới đã được tạo' },
+  settings_saved: { text1: '✅ Đã lưu cài đặt' },
+  profile_updated: { text1: '✅ Đã cập nhật hồ sơ' },
+  target_updated: { text1: '🎯 Đã cập nhật mục tiêu', text2: 'Mục tiêu dinh dưỡng mới đã được áp dụng' },
+  favorite_added: { text1: '❤️ Đã thêm yêu thích' },
+  favorite_removed: { text1: '💔 Đã bỏ yêu thích' },
+  custom: { text1: 'Thành công' },
+};
+
+/**
+ * Show professional success toast
+ */
+export const showSuccess = (
+  type: SuccessType,
+  customMessage?: { text1?: string; text2?: string },
+) => {
+  const msg = successMessages[type];
+  Toast.show({
+    type: 'success',
+    text1: customMessage?.text1 ?? msg.text1,
+    text2: customMessage?.text2 ?? msg.text2,
+    visibilityTime: 2500,
+  });
+};
+
+// ============== INFO MESSAGES ==============
+
+/**
+ * Show info toast for neutral notifications
+ */
+export const showInfo = (text1: string, text2?: string) => {
+  Toast.show({
+    type: 'info',
+    text1,
+    text2,
+    visibilityTime: 3000,
+  });
+};
+
+// ============== WARNING MESSAGES ==============
+
+/**
+ * Show warning toast for non-critical issues
+ */
+export const showWarning = (text1: string, text2?: string) => {
+  Toast.show({
+    type: 'error', // Using error type with orange styling suggested
+    text1: `⚠️ ${text1}`,
+    text2,
+    visibilityTime: 3500,
+  });
+};
+
+// ============== LOADING STATES ==============
+
+/**
+ * Show loading indicator toast (auto-dismiss disabled)
+ */
+export const showLoading = (message: string = 'Đang xử lý...') => {
+  Toast.show({
+    type: 'info',
+    text1: '⏳ ' + message,
+    autoHide: false,
+  });
+};
+
+/**
+ * Hide loading toast
+ */
+export const hideLoading = () => {
+  Toast.hide();
+};
+

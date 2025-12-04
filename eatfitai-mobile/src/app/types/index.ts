@@ -5,18 +5,19 @@ export type RootStackParamList = {
   Login: undefined;
   Register: undefined;
   ForgotPassword: undefined;
+  Onboarding: undefined;
   AppTabs: undefined;
   FoodSearch: undefined;
   FoodDetail: { foodId: string; source?: 'catalog' | 'user' };
   CustomDish: undefined;
   AiCamera: undefined;
-  AiNutrition: undefined;
-  NutritionSuggest: undefined;
   AddMealFromVision: import('../../types/navigation').AddMealFromVisionParams;
   MealDiary: undefined;
   RecipeSuggestions: { ingredients?: string[] };
   RecipeDetail: { recipeId: number; recipeName: string };
   NutritionInsights: undefined;
   VisionHistory: undefined;
-  AdaptiveTarget: undefined;
+  NutritionSettings: undefined;
+  Achievements: undefined;
 };
+

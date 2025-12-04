@@ -22,9 +22,14 @@ export { FAB } from './FAB';
 export { Swipeable } from './Swipeable';
 export { RefreshControl } from './RefreshControl';
 
+// Smart Components
+export { default as SmartQuickActions } from './SmartQuickActions';
+export { default as VoiceInput } from './VoiceInput';
+
 // Utility Components
 export { Skeleton } from './Skeleton';
 export { Icon } from './Icon';
 export { EmptyState } from './EmptyState';
 export { ErrorState } from './ErrorState';
 export { ErrorBoundary } from './ErrorBoundary';
+

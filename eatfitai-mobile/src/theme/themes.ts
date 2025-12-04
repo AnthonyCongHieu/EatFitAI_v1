@@ -105,28 +105,33 @@ export type AppTheme = {
 export const lightTheme: AppTheme = {
   mode: 'light',
   colors: {
-    background: '#F1F5F9',
+    // Base colors
+    background: '#F8FAFC',
     card: '#FFFFFF',
     text: '#0F172A',
-    textSecondary: '#475569',
-    border: 'rgba(15, 23, 42, 0.06)',
-    primary: '#4ADE80',
-    primaryLight: '#DBEAFE',
-    primaryDark: '#16A34A',
-    secondary: '#0A4D3C',
-    secondaryLight: '#E6F0ED',
-    muted: '#9FA6A3',
+    textSecondary: '#64748B',
+    border: 'rgba(15, 23, 42, 0.08)',
+    // Primary - Fresh emerald green
+    primary: '#10B981',
+    primaryLight: '#D1FAE5',
+    primaryDark: '#059669',
+    // Secondary - Deep teal
+    secondary: '#0D9488',
+    secondaryLight: '#CCFBF1',
+    // Muted
+    muted: '#94A3B8',
+    // Semantic colors
     danger: '#EF4444',
-    success: '#10B981',
+    success: '#22C55E',
     warning: '#F59E0B',
     info: '#3B82F6',
   },
   gradients: {
-    primary: ['#2563EB', '#3B82F6'],
-    secondary: ['#0A4D3C', '#1B8C68'],
-    accent: ['#F59E0B', '#FBBF24'],
-    danger: ['#EF4444', '#F87171'],
-    success: ['#10B981', '#34D399'],
+    primary: ['#10B981', '#059669'],
+    secondary: ['#0D9488', '#0F766E'],
+    accent: ['#8B5CF6', '#7C3AED'],  // Purple for AI features
+    danger: ['#EF4444', '#DC2626'],
+    success: ['#22C55E', '#16A34A'],
   },
   statusBarStyle: 'dark',
   spacing: { xs: 4, sm: 8, md: 12, lg: 16, xl: 20, xxl: 24 },
@@ -244,28 +249,32 @@ export const lightTheme: AppTheme = {
 export const darkTheme: AppTheme = {
   mode: 'dark',
   colors: {
-    background: '#121212',
-    card: '#1E1E1E',
-    text: '#F5F7F6',
-    textSecondary: '#A8B0AD',
-    border: '#2A3432',
-    primary: '#16A34A',
-    primaryLight: '#1E40AF',
-    primaryDark: '#1D4ED8',
-    secondary: '#1B8C68',
-    secondaryLight: '#1A3D32',
-    muted: '#7D8884',
+    // Glassmorphism-friendly dark backgrounds
+    background: '#0A0A0F', // Deep dark blue-black
+    card: 'rgba(30, 30, 45, 0.8)', // Semi-transparent card
+    text: '#F5F7FA',
+    textSecondary: '#9CA3AF',
+    border: 'rgba(255, 255, 255, 0.1)',
+    // Primary - Vibrant blue like reference
+    primary: '#3B82F6',
+    primaryLight: 'rgba(59, 130, 246, 0.2)',
+    primaryDark: '#2563EB',
+    // Secondary - Teal accent
+    secondary: '#06B6D4',
+    secondaryLight: 'rgba(6, 182, 212, 0.2)',
+    muted: '#6B7280',
+    // Semantic colors
     danger: '#EF4444',
-    success: '#34D399',
-    warning: '#FBBF24',
-    info: '#60A5FA',
+    success: '#22C55E',
+    warning: '#F59E0B',
+    info: '#3B82F6',
   },
   gradients: {
-    primary: ['#3B82F6', '#2563EB'],
-    secondary: ['#1B8C68', '#0A4D3C'],
-    accent: ['#FBBF24', '#F59E0B'],
+    primary: ['#3B82F6', '#8B5CF6'], // Blue to purple gradient
+    secondary: ['#06B6D4', '#0891B2'],
+    accent: ['#8B5CF6', '#A855F7'], // Purple accent
     danger: ['#EF4444', '#F87171'],
-    success: ['#34D399', '#10B981'],
+    success: ['#22C55E', '#4ADE80'],
   },
   statusBarStyle: 'light',
   spacing: { xs: 4, sm: 8, md: 12, lg: 16, xl: 20, xxl: 24 },

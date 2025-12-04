@@ -2,7 +2,7 @@
   "expo": {
     "name": "EatFitAI",
     "slug": "eatfitai-mobile",
-    "version": "0.1.0",
+    "version": "1.0.0",
     "orientation": "portrait",
     "scheme": "eatfitai",
     "userInterfaceStyle": "automatic",
@@ -14,7 +14,12 @@
     },
     "assetBundlePatterns": ["**/*"],
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.eatfitai.app",
+      "infoPlist": {
+        "NSCameraUsageDescription": "EatFitAI cần truy cập camera để nhận diện thực phẩm",
+        "NSPhotoLibraryUsageDescription": "EatFitAI cần truy cập thư viện ảnh để chọn ảnh thực phẩm"
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -22,35 +27,18 @@
         "backgroundColor": "#0A4D3C"
       },
       "package": "com.eatfitai.app",
+      "versionCode": 1,
       "config": {
         "locales": ["vi", "en"]
       },
-      "intentFilters": [
-        {
-          "action": "MAIN",
-          "category": "LAUNCHER"
-        },
-        {
-          "action": "VIEW",
-          "data": {
-            "scheme": "eatfitai"
-          },
-          "categories": ["BROWSABLE", "DEFAULT"]
-        }
-      ],
       "softwareKeyboardLayoutMode": "pan",
       "permissions": [
         "android.permission.INTERNET",
-        "android.permission.ACCESS_NETWORK_STATE"
-      ],
-      "manifest": {
-        "application": {
-          "activity": {
-            "windowSoftInputMode": "adjustResize",
-            "configChanges": "keyboard|keyboardHidden|orientation|screenSize"
-          }
-        }
-      }
+        "android.permission.ACCESS_NETWORK_STATE",
+        "android.permission.CAMERA",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE"
+      ]
     },
     "web": {
       "bundler": "metro",
@@ -61,6 +49,28 @@
         "projectId": "00000000-0000-0000-0000-000000000000"
       }
     },
-    "plugins": ["expo-secure-store", "expo-localization"]
+    "plugins": [
+      "expo-secure-store",
+      "expo-localization",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "EatFitAI cần camera để nhận diện thực phẩm bằng AI"
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "EatFitAI cần truy cập thư viện ảnh để chọn ảnh thực phẩm"
+        }
+      ]
+    ],
+    "updates": {
+      "fallbackToCacheTimeout": 0
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    }
   }
 }
+

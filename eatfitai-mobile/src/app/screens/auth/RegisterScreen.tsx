@@ -93,10 +93,11 @@ const RegisterScreen = ({ navigation }: Props): JSX.Element => {
         await registerFn(values.name, values.email, values.password);
         Toast.show({
           type: 'success',
-          text1: 'Đăng ký tài khoản thành công',
-          text2: 'Bắt đầu hành trình ăn uống lành mạnh!',
+          text1: '🎉 Đăng ký thành công!',
+          text2: 'Hãy thiết lập hồ sơ của bạn',
         });
-        navigation.reset({ index: 0, routes: [{ name: 'AppTabs' }] });
+        // Navigate to Onboarding for first-time setup
+        navigation.reset({ index: 0, routes: [{ name: 'Onboarding' }] });
       } catch (e: any) {
         handleApiError(e);
       } finally {
