@@ -342,6 +342,9 @@ const HomeScreen = (): JSX.Element => {
           }}
         />
 
+        {/* Favorites Quick Access */}
+        <FavoritesList maxItems={6} />
+
         {/* Hero Card */}
         <Animated.View entering={FadeInUp.duration(theme.animation.slow).springify()}>
           <AppCard style={{ backgroundColor: theme.colors.card }}>

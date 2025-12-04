@@ -36,6 +36,7 @@ import { aiService } from '../../../services/aiService';
 import { mealService } from '../../../services/mealService';
 import { handleApiErrorWithCustomMessage } from '../../../utils/errorHandler';
 import { AppImage } from '../../../components/ui/AppImage';
+import { AIResultEditModal } from '../../../components/ui/AIResultEditModal';
 import type { RootStackParamList } from '../../types';
 import type { MappedFoodItem } from '../../../types/ai';
 
@@ -71,6 +72,8 @@ const AIScanScreen: React.FC = () => {
         items: MappedFoodItem[];
         unmappedLabels: string[];
     } | null>(null);
+    const [editingItem, setEditingItem] = useState<MappedFoodItem | null>(null);
+    const [showEditModal, setShowEditModal] = useState(false);
 
     // Animation values
     const captureScale = useSharedValue(1);
@@ -215,9 +218,45 @@ const AIScanScreen: React.FC = () => {
     }, [capturedUri, detectionResult, navigation]);
 
     const handleQuickAdd = useCallback((item: MappedFoodItem) => {
-        // Quick add single item to diary
-        navigation.navigate('FoodDetail', { foodId: item.foodItemId } as never);
-    }, [navigation]);
+        // Open edit modal for the item
+        setEditingItem(item);
+        setShowEditModal(true);
+    }, []);
+
+    const handleEditModalSave = useCallback(async (editedItem: MappedFoodItem & { grams: number }) => {
+        setShowEditModal(false);
+        setIsProcessing(true);
+        try {
+            const date = new Date().toISOString().split('T')[0]!;
+            const hour = new Date().getHours();
+            let mealType = 2; // Lunch default
+            if (hour < 10) mealType = 1; // Breakfast
+            else if (hour > 15) mealType = 3; // Dinner
+
+            // Calculate actual values based on grams (for display only, backend will recalculate from foodItem)
+            const ratio = editedItem.grams / 100;
+            const actualCalories = Math.round((editedItem.caloriesPer100g || 0) * ratio);
+
+            await mealService.addMealItems(date, mealType, [{
+                foodItemId: Number(editedItem.foodItemId || 0),
+                grams: editedItem.grams,
+            }]);
+
+            Toast.show({
+                type: 'success',
+                text1: 'Đã thêm',
+                text2: `${editedItem.label} - ${actualCalories} kcal`,
+            });
+
+            setEditingItem(null);
+        } catch (error) {
+            handleApiErrorWithCustomMessage(error, {
+                unknown: { text1: 'Lỗi thêm món', text2: 'Vui lòng thử lại' },
+            });
+        } finally {
+            setIsProcessing(false);
+        }
+    }, []);
 
     const handleQuickAddAll = useCallback(async () => {
         if (!detectionResult || !detectionResult.items.length) return;
@@ -489,6 +528,17 @@ const AIScanScreen: React.FC = () => {
                     </Animated.View>
                 )}
             </Screen>
+
+            {/* Edit Modal */}
+            <AIResultEditModal
+                visible={showEditModal}
+                item={editingItem}
+                onClose={() => {
+                    setShowEditModal(false);
+                    setEditingItem(null);
+                }}
+                onSave={handleEditModalSave}
+            />
         </View >
     );
 };

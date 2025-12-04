@@ -33,6 +33,8 @@ import { foodService, type FoodItem } from '../../../services/foodService';
 import { SkeletonList } from '../../../components/Skeleton';
 import { getFoodImageUrl } from '../../../utils/imageHelpers';
 import { handleApiError } from '../../../utils/errorHandler';
+import { mealService } from '../../../services/mealService';
+import Icon from '../../../components/Icon';
 
 const PAGE_SIZE = 20;
 
@@ -103,6 +105,7 @@ const FoodSearchScreen = (): JSX.Element => {
 
   const [activeTab, setActiveTab] = useState<'search' | 'favorites'>('search');
   const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set());
+  const [isQuickAdding, setIsQuickAdding] = useState<string | null>(null);
 
   // Animation values
   const searchGlow = useSharedValue(0);
@@ -148,6 +151,32 @@ const FoodSearchScreen = (): JSX.Element => {
       });
     } catch (error) {
       handleApiError(error);
+    }
+  };
+
+  const handleQuickAdd = async (item: FoodItem) => {
+    setIsQuickAdding(item.id);
+    try {
+      const date = new Date().toISOString().split('T')[0]!;
+      const hour = new Date().getHours();
+      let mealType = 2; // Lunch default
+      if (hour < 10) mealType = 1; // Breakfast
+      else if (hour > 15) mealType = 3; // Dinner
+
+      await mealService.addMealItems(date, mealType, [{
+        foodItemId: Number(item.id),
+        grams: 100,
+      }]);
+
+      Toast.show({
+        type: 'success',
+        text1: 'Đã thêm nhanh',
+        text2: `${item.name} (100g) - ${item.calories || 0} kcal`,
+      });
+    } catch (error) {
+      handleApiError(error);
+    } finally {
+      setIsQuickAdding(null);
     }
   };
 
@@ -303,6 +332,24 @@ const FoodSearchScreen = (): JSX.Element => {
                   style={{ padding: 4 }}
                 >
                   <ThemedText variant="h3">{isFav ? '❤️' : '🤍'}</ThemedText>
+                </Pressable>
+
+                {/* Quick Add Button */}
+                <Pressable
+                  hitSlop={8}
+                  onPress={() => handleQuickAdd(item)}
+                  disabled={isQuickAdding === item.id}
+                  style={{
+                    padding: 8,
+                    backgroundColor: theme.colors.primaryLight,
+                    borderRadius: 20,
+                  }}
+                >
+                  {isQuickAdding === item.id ? (
+                    <ActivityIndicator size="small" color={theme.colors.primary} />
+                  ) : (
+                    <Icon name="add" size="sm" color="primary" />
+                  )}
                 </Pressable>
 
                 <Pressable
