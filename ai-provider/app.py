@@ -153,9 +153,79 @@ def detect() -> Response | tuple[Dict[str, str], int]:
             except Exception as e:
                 logger.warning(f"Failed to cleanup {path}: {e}")
 
+# Import nutrition LLM service
+try:
+    from nutrition_llm import get_nutrition_advice_gemini, get_meal_insight_gemini
+    NUTRITION_LLM_AVAILABLE = True
+    logger.info("Nutrition LLM service loaded")
+except ImportError as e:
+    NUTRITION_LLM_AVAILABLE = False
+    logger.warning(f"Nutrition LLM service not available: {e}")
+
+
+@app.post("/nutrition-advice")
+def nutrition_advice():
+    """Get AI-powered nutrition target recommendations"""
+    try:
+        data = request.get_json()
+        if not data:
+            return {"error": "No JSON data provided"}, 400
+        
+        required_fields = ["gender", "age", "height", "weight", "activity", "goal"]
+        missing = [f for f in required_fields if f not in data]
+        if missing:
+            return {"error": f"Missing fields: {', '.join(missing)}"}, 400
+        
+        if not NUTRITION_LLM_AVAILABLE:
+            return {"error": "Nutrition LLM service not available"}, 503
+        
+        result = get_nutrition_advice_gemini(
+            gender=data["gender"],
+            age=int(data["age"]),
+            height_cm=float(data["height"]),
+            weight_kg=float(data["weight"]),
+            activity_level=data["activity"],
+            goal=data["goal"]
+        )
+        
+        logger.info(f"Nutrition advice generated: {result.get('source', 'unknown')}")
+        return jsonify(result)
+    
+    except Exception as e:
+        logger.error(f"Nutrition advice error: {e}", exc_info=True)
+        return {"error": str(e)}, 500
+
+
+@app.post("/meal-insight")
+def meal_insight():
+    """Get AI insights about a meal or daily intake"""
+    try:
+        data = request.get_json()
+        if not data:
+            return {"error": "No JSON data provided"}, 400
+        
+        if not NUTRITION_LLM_AVAILABLE:
+            return {"error": "Nutrition LLM service not available"}, 503
+        
+        result = get_meal_insight_gemini(
+            meal_items=data.get("items", []),
+            total_calories=data.get("totalCalories", 0),
+            target_calories=data.get("targetCalories", 2000),
+            current_macros=data.get("currentMacros", {}),
+            target_macros=data.get("targetMacros", {})
+        )
+        
+        return jsonify(result)
+    
+    except Exception as e:
+        logger.error(f"Meal insight error: {e}", exc_info=True)
+        return {"error": str(e)}, 500
+
+
 if __name__ == "__main__":
     logger.info(f"Starting AI Provider on port 5050")
     logger.info(f"Model: {model_file}")
+    logger.info(f"Nutrition LLM: {'Available' if NUTRITION_LLM_AVAILABLE else 'Not available'}")
     logger.info(f"Allowed file types: {ALLOWED_EXTENSIONS}")
     logger.info(f"Max file size: {MAX_FILE_SIZE / 1024 / 1024:.1f}MB")
     app.run(host="0.0.0.0", port=5050)
