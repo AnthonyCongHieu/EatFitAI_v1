@@ -60,6 +60,97 @@ namespace EatFitAI.API.Controllers
             }
         }
 
+        /// <summary>
+        /// Đăng ký với xác minh email - gửi mã 6 số qua email
+        /// </summary>
+        [AllowAnonymous]
+        [HttpPost("register-with-verification")]
+        public async Task<ActionResult<RegisterResponse>> RegisterWithVerification([FromBody] RegisterRequest request)
+        {
+            try
+            {
+                var result = await _authService.RegisterWithVerificationAsync(request);
+                return Ok(result);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[AuthController] Error during registration with verification: {ex.Message}");
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// Xác minh email bằng mã 6 số - trả về JWT token nếu đúng
+        /// </summary>
+        [AllowAnonymous]
+        [HttpPost("verify-email")]
+        public async Task<ActionResult<AuthResponse>> VerifyEmail([FromBody] VerifyEmailRequest request)
+        {
+            try
+            {
+                var result = await _authService.VerifyEmailAsync(request);
+                return Ok(result);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Unauthorized(new { message = ex.Message });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        /// <summary>
+        /// Gửi lại mã xác minh email
+        /// </summary>
+        [AllowAnonymous]
+        [HttpPost("resend-verification")]
+        public async Task<ActionResult<RegisterResponse>> ResendVerification([FromBody] ResendVerificationRequest request)
+        {
+            try
+            {
+                var result = await _authService.ResendVerificationAsync(request);
+                return Ok(result);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Unauthorized(new { message = ex.Message });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        /// <summary>
+        /// Đánh dấu user đã hoàn thành onboarding
+        /// </summary>
+        [Authorize]
+        [HttpPost("mark-onboarding-completed")]
+        public async Task<IActionResult> MarkOnboardingCompleted()
+        {
+            try
+            {
+                var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+                if (string.IsNullOrEmpty(userId) || !Guid.TryParse(userId, out var userGuid))
+                {
+                    return Unauthorized(new { message = "Invalid user" });
+                }
+
+                await _authService.MarkOnboardingCompletedAsync(userGuid);
+                return Ok(new { message = "Onboarding completed" });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = ex.Message });
+            }
+        }
+
         [HttpPost("login")]
         public async Task<ActionResult<AuthResponse>> Login([FromBody] LoginRequest request)
         {

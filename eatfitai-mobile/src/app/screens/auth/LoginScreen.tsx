@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet, View, Text } from 'react-native';
 import { Controller, useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -99,11 +99,11 @@ const LoginScreen = ({ navigation }: Props): JSX.Element => {
         colors={isDark ? ['#0A0A0F', '#1a1a2e'] : ['#f0f9ff', '#e0f2fe']}
         style={StyleSheet.absoluteFill}
       />
-      <Screen scroll={false} style={styles.container}>
+      <Screen scroll={true} contentContainerStyle={styles.container}>
         <Animated.View entering={FadeInDown.duration(500).springify()}>
-          <View style={glass.card}>
+          <View style={[glass.card, { marginTop: 40 }]}>
             <View style={{ alignItems: 'center', marginBottom: theme.spacing.xl }}>
-              <ThemedText style={{ fontSize: 40, marginBottom: 8 }}>🥗</ThemedText>
+              <Text style={{ fontSize: 48, marginBottom: 12 }}>🥗</Text>
               <ThemedText variant="h1" style={{ marginBottom: theme.spacing.sm }}>
                 EatFit AI
               </ThemedText>
@@ -204,7 +204,7 @@ const LoginScreen = ({ navigation }: Props): JSX.Element => {
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 24, justifyContent: 'center' },
+  container: { flexGrow: 1, padding: 24, paddingBottom: 48, justifyContent: 'center' },
 });
 
 export default LoginScreen;

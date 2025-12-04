@@ -253,7 +253,11 @@ const ForgotPasswordScreen = (): JSX.Element => {
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 24 },
+  container: {
+    flexGrow: 1,
+    padding: 24,
+    paddingVertical: 40, // Đảm bảo không bị cắt trên/dưới
+  },
 });
 
 export default ForgotPasswordScreen;

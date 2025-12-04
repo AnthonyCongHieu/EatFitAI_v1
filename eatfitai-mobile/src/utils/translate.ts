@@ -7,8 +7,19 @@ const TRANSLATIONS: Record<string, string> = {
   medium: 'trung bình',
   low: 'thấp',
 
-  // Recommendation types
-  CALORIE_ADJUSTMENT: 'ĐIỀU CHỈNH CALORIES',
+  // Recommendation types (từ backend NutritionInsightService)
+  reduce_calories: 'GIẢM CALO',
+  increase_calories: 'TĂNG CALO',
+  reduce_protein: 'GIẢM PROTEIN',
+  increase_protein: 'TĂNG PROTEIN',
+  reduce_carbs: 'GIẢM CARBS',
+  increase_carbs: 'TĂNG CARBS',
+  reduce_fat: 'GIẢM CHẤT BÉO',
+  increase_fat: 'TĂNG CHẤT BÉO',
+  improve_adherence: 'CẢI THIỆN TUÂN THỦ',
+
+  // Legacy recommendation types
+  CALORIE_ADJUSTMENT: 'ĐIỀU CHỈNH CALO',
   PROTEIN_INCREASE: 'TĂNG PROTEIN',
   PROTEIN_DECREASE: 'GIẢM PROTEIN',
   CARB_ADJUSTMENT: 'ĐIỀU CHỈNH CARBS',
@@ -17,37 +28,16 @@ const TRANSLATIONS: Record<string, string> = {
   MEAL_FREQUENCY: 'TẦN SUẤT BỮA ĂN',
   NUTRIENT_BALANCE: 'CÂN BẰNG DINH DƯỠNG',
 
-  // Common phrases
-  "You're consuming": 'Bạn đang tiêu thụ',
-  'calories below your target': 'calories thấp hơn mục tiêu',
-  'calories above your target': 'calories cao hơn mục tiêu',
-  'Consider adding nutrient-dense foods': 'Hãy thêm thực phẩm giàu dinh dưỡng',
-  'Consider reducing portion sizes': 'Hãy giảm khẩu phần ăn',
-  'Maintaining consistent calorie intake is crucial for achieving your goals':
-    'Duy trì lượng calories ổn định rất quan trọng để đạt mục tiêu',
-
-  'Increase protein by': 'Tăng protein thêm',
-  'Add lean meats, fish, eggs, or legumes': 'Thêm thịt nạc, cá, trứng hoặc đậu',
-  'Adequate protein supports muscle maintenance and satiety':
-    'Protein đầy đủ hỗ trợ duy trì cơ bắp và no lâu',
-
-  'Decrease protein by': 'Giảm protein',
-  'Reduce portions of high-protein foods': 'Giảm khẩu phần thực phẩm giàu protein',
-
-  'Adjust carbohydrate intake': 'Điều chỉnh lượng carbs',
-  'Focus on whole grains and vegetables': 'Tập trung vào ngũ cốc nguyên hạt và rau',
-  'Balanced carbs provide sustained energy':
-    'Carbs cân bằng cung cấp năng lượng bền vững',
-
-  'Adjust fat intake': 'Điều chỉnh lượng chất béo',
-  'Choose healthy fats from nuts, avocados, and olive oil':
-    'Chọn chất béo lành mạnh từ hạt, bơ và dầu ô liu',
-  'Healthy fats support hormone production and nutrient absorption':
-    'Chất béo lành mạnh hỗ trợ sản xuất hormone và hấp thu dinh dưỡng',
-
+  // Progress trends
   improving: 'đang cải thiện',
   declining: 'đang giảm',
   stable: 'ổn định',
+  insufficient_data: 'chưa đủ dữ liệu',
+
+  // Balance quality
+  excellent: 'xuất sắc',
+  good: 'tốt',
+  needs_improvement: 'cần cải thiện',
 };
 
 /**

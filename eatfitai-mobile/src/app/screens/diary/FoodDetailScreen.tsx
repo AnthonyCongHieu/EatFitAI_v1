@@ -379,11 +379,10 @@ const FoodDetailScreen = (): JSX.Element | null => {
           </View>
 
           <View style={[styles.macroRow, { marginTop: theme.spacing.md }]}>
-            <Animated.View
+            <View
               style={[
                 styles.macroBox,
                 { backgroundColor: theme.colors.background },
-                proteinBoxStyle,
               ]}
             >
               <ThemedText
@@ -394,17 +393,14 @@ const FoodDetailScreen = (): JSX.Element | null => {
               >
                 Protein
               </ThemedText>
-              <Animated.Text style={[styles.animatedMacroValue, proteinTextStyle]}>
-                {proteinValue.value > 0
-                  ? `${proteinValue.value.toFixed(1).replace(/\.0$/, '')} g`
-                  : '--'}
-              </Animated.Text>
-            </Animated.View>
-            <Animated.View
+              <ThemedText variant="h3">
+                {macroValue(detail.perServingProtein ?? detail.protein)}
+              </ThemedText>
+            </View>
+            <View
               style={[
                 styles.macroBox,
                 { backgroundColor: theme.colors.background },
-                carbsBoxStyle,
               ]}
             >
               <ThemedText
@@ -415,17 +411,14 @@ const FoodDetailScreen = (): JSX.Element | null => {
               >
                 Carb
               </ThemedText>
-              <Animated.Text style={[styles.animatedMacroValue, carbsTextStyle]}>
-                {carbsValue.value > 0
-                  ? `${carbsValue.value.toFixed(1).replace(/\.0$/, '')} g`
-                  : '--'}
-              </Animated.Text>
-            </Animated.View>
-            <Animated.View
+              <ThemedText variant="h3">
+                {macroValue(detail.perServingCarbs ?? detail.carbs)}
+              </ThemedText>
+            </View>
+            <View
               style={[
                 styles.macroBox,
                 { backgroundColor: theme.colors.background },
-                fatBoxStyle,
               ]}
             >
               <ThemedText
@@ -436,12 +429,10 @@ const FoodDetailScreen = (): JSX.Element | null => {
               >
                 Fat
               </ThemedText>
-              <Animated.Text style={[styles.animatedMacroValue, fatTextStyle]}>
-                {fatValue.value > 0
-                  ? `${fatValue.value.toFixed(1).replace(/\.0$/, '')} g`
-                  : '--'}
-              </Animated.Text>
-            </Animated.View>
+              <ThemedText variant="h3">
+                {macroValue(detail.perServingFat ?? detail.fat)}
+              </ThemedText>
+            </View>
           </View>
         </AppCard>
       </Animated.View>

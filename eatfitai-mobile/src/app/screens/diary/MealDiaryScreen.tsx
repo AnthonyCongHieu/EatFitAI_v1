@@ -209,11 +209,23 @@ const MealDiaryScreen = (): JSX.Element => {
       groups.get(mealType)!.push(entry);
     });
 
-    return Array.from(groups.entries()).map(([mealType, mealEntries]) => ({
-      mealType,
-      title: MEAL_TYPE_LABELS[mealType],
-      entries: mealEntries,
-    }));
+    // Sort by meal type: Breakfast(1) -> Lunch(2) -> Snack(4) -> Dinner(3)
+    return Array.from(groups.entries())
+      .sort((a, b) => {
+        // Custom sort order
+        const order: Record<number, number> = {
+          1: 1, // Breakfast
+          2: 2, // Lunch
+          4: 3, // Snack (Bữa xế - sau bữa trưa)
+          3: 4, // Dinner
+        };
+        return (order[a[0]] || 99) - (order[b[0]] || 99);
+      })
+      .map(([mealType, mealEntries]) => ({
+        mealType,
+        title: MEAL_TYPE_LABELS[mealType],
+        entries: mealEntries,
+      }));
   }, [entries]);
 
   // Handle date selection
@@ -245,11 +257,6 @@ const MealDiaryScreen = (): JSX.Element => {
       console.error('Failed to update entry:', error);
     }
   }, [editingEntry, editGrams, refetch, refreshSummary]);
-
-  // Handle add from AI
-  const handleAddFromAI = useCallback(() => {
-    navigation.navigate('AiCamera');
-  }, [navigation]);
 
   // Handle add manually
   const handleAddManual = useCallback(() => {
@@ -365,7 +372,7 @@ const MealDiaryScreen = (): JSX.Element => {
   const isEmpty = entries.length === 0;
 
   return (
-    <Screen>
+    <Screen scroll={false}>
       <View style={styles.container}>
         {/* Date Selector */}
         <View style={styles.dateSelector}>
@@ -387,17 +394,14 @@ const MealDiaryScreen = (): JSX.Element => {
         ) : isEmpty ? (
           <EmptyState
             title="Chưa có dữ liệu"
-            description="Thử thêm bữa bằng AI hoặc thủ công."
+            description="Hãy thêm món ăn vào nhật ký."
             icon="restaurant"
             action={
               <View style={styles.emptyActions}>
                 <View style={styles.actionButton}>
-                  <Button title="+ Thêm từ AI" onPress={handleAddFromAI} />
-                </View>
-                <View style={styles.actionButton}>
                   <Button
-                    title="+ Thêm thủ công"
-                    variant="outline"
+                    title="+ Thêm món ăn"
+                    variant="primary"
                     onPress={handleAddManual}
                   />
                 </View>
@@ -416,12 +420,9 @@ const MealDiaryScreen = (): JSX.Element => {
         {!isEmpty && (
           <View style={styles.actionButtons}>
             <View style={styles.actionButton}>
-              <Button title="+ Thêm từ AI" onPress={handleAddFromAI} />
-            </View>
-            <View style={styles.actionButton}>
               <Button
-                title="+ Thêm thủ công"
-                variant="outline"
+                title="+ Thêm món ăn"
+                variant="primary"
                 onPress={handleAddManual}
               />
             </View>

@@ -4,6 +4,16 @@ namespace EatFitAI.API.Services.Interfaces
 {
     public interface IAuthService
     {
+        // Registration với email verification (không cấp token ngay)
+        Task<RegisterResponse> RegisterWithVerificationAsync(RegisterRequest request);
+        
+        // Xác minh email bằng mã 6 số
+        Task<AuthResponse> VerifyEmailAsync(VerifyEmailRequest request);
+        
+        // Gửi lại mã xác minh
+        Task<RegisterResponse> ResendVerificationAsync(ResendVerificationRequest request);
+        
+        // Legacy - giữ lại cho backward compatibility
         Task<AuthResponse> RegisterAsync(RegisterRequest request);
         Task<AuthResponse> LoginAsync(LoginRequest request);
         Task<bool> ValidateTokenAsync(string token);
@@ -13,5 +23,8 @@ namespace EatFitAI.API.Services.Interfaces
         Task<AuthResponse> GoogleLoginAsync(string idToken);
         Task<ForgotPasswordResponse> ForgotPasswordAsync(ForgotPasswordRequest request);
         Task ResetPasswordAsync(ResetPasswordRequest request);
+        
+        // Mark onboarding as completed
+        Task MarkOnboardingCompletedAsync(Guid userId);
     }
 }

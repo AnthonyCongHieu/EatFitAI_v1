@@ -138,6 +138,12 @@ const FoodSearchScreen = (): JSX.Element => {
 
   // Animation values
   const searchGlow = useSharedValue(0);
+  const searchGlowStyle = useAnimatedStyle(() => ({
+    shadowColor: theme.colors.primary,
+    shadowOpacity: searchGlow.value * 0.3,
+    shadowRadius: searchGlow.value * 8,
+    elevation: searchGlow.value * 5,
+  }));
 
   // Load favorites on mount
   useEffect(() => {
@@ -466,12 +472,7 @@ const FoodSearchScreen = (): JSX.Element => {
           style={[
             styles.searchBar,
             { backgroundColor: theme.colors.card, borderColor: theme.colors.border },
-            useAnimatedStyle(() => ({
-              shadowColor: theme.colors.primary,
-              shadowOpacity: searchGlow.value * 0.3,
-              shadowRadius: searchGlow.value * 8,
-              elevation: searchGlow.value * 5,
-            })),
+            searchGlowStyle,
           ]}
         >
           <ThemedTextInput

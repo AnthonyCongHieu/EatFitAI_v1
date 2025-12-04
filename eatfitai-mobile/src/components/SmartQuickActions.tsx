@@ -123,9 +123,15 @@ const SmartQuickActions: React.FC<SmartQuickActionsProps> = ({
         return getMealSuggestion(hour);
     }, []);
 
-    const otherMeals = useMemo(() => {
-        return getAllMealOptions().filter((m) => m.type !== currentSuggestion.type);
-    }, [currentSuggestion]);
+    // Lấy 3 bữa chính (không bao gồm bữa xế/ăn vặt)
+    const mainMeals = useMemo(() => {
+        return getAllMealOptions().filter((m) => m.type !== 4); // 4 = snack
+    }, []);
+
+    // Bữa xế riêng
+    const snackMeal = useMemo(() => {
+        return getAllMealOptions().find((m) => m.type === 4);
+    }, []);
 
     return (
         <View style={styles.container}>
@@ -139,7 +145,7 @@ const SmartQuickActions: React.FC<SmartQuickActionsProps> = ({
                 </ThemedText>
             </View>
 
-            {/* Primary Action Row */}
+            {/* Primary Action Row - Bữa ăn theo thời gian + Tìm kiếm */}
             <View style={styles.primaryRow}>
                 <QuickActionButton
                     icon={currentSuggestion.icon}
@@ -148,27 +154,19 @@ const SmartQuickActions: React.FC<SmartQuickActionsProps> = ({
                     isPrimary
                     delay={0}
                 />
-                {onScanFood && (
-                    <QuickActionButton
-                        icon="📸"
-                        label="AI Scan"
-                        onPress={onScanFood}
-                        delay={100}
-                    />
-                )}
                 {onSearchFood && (
                     <QuickActionButton
                         icon="🔍"
                         label="Tìm kiếm"
                         onPress={onSearchFood}
-                        delay={200}
+                        delay={100}
                     />
                 )}
             </View>
 
-            {/* Other Meals Row */}
+            {/* Main Meals Row - Bữa sáng, trưa, tối */}
             <View style={styles.secondaryRow}>
-                {otherMeals.map((meal, index) => (
+                {mainMeals.map((meal, index) => (
                     <Pressable
                         key={meal.type}
                         onPress={() => onAddMeal(meal.type)}
@@ -189,6 +187,32 @@ const SmartQuickActions: React.FC<SmartQuickActionsProps> = ({
                     </Pressable>
                 ))}
             </View>
+
+            {/* Snack/Bữa xế Row - riêng ở dưới */}
+            {snackMeal && (
+                <View style={styles.secondaryRow}>
+                    <Pressable
+                        onPress={() => onAddMeal(snackMeal.type)}
+                        style={[
+                            styles.snackButton,
+                            {
+                                backgroundColor: theme.colors.warning + '10',
+                                borderColor: theme.colors.warning + '30',
+                            },
+                        ]}
+                        accessibilityRole="button"
+                        accessibilityLabel={`Thêm ${snackMeal.label}`}
+                    >
+                        <ThemedText style={styles.secondaryIcon}>{snackMeal.icon}</ThemedText>
+                        <ThemedText variant="bodySmall" weight="600" style={{ color: theme.colors.warning }}>
+                            {snackMeal.label}
+                        </ThemedText>
+                        <ThemedText variant="caption" color="textSecondary">
+                            Ăn vặt, đồ uống...
+                        </ThemedText>
+                    </Pressable>
+                </View>
+            )}
         </View>
     );
 };
@@ -236,6 +260,15 @@ const styles = StyleSheet.create({
     },
     secondaryIcon: {
         fontSize: 18,
+    },
+    snackButton: {
+        flex: 1,
+        alignItems: 'center',
+        paddingVertical: 16,
+        paddingHorizontal: 12,
+        borderRadius: 12,
+        borderWidth: 1,
+        gap: 4,
     },
 });
 

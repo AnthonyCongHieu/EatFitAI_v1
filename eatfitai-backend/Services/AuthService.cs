@@ -383,5 +383,198 @@ namespace EatFitAI.API.Services
             public string CodeHash { get; set; } = string.Empty;
             public DateTime ExpiresAt { get; set; }
         }
+
+        // ========= EMAIL VERIFICATION METHODS =========
+
+        private static readonly TimeSpan VerificationCodeLifetime = TimeSpan.FromMinutes(15);
+        private const string VerifyCacheKeyPrefix = "email_verify_";
+
+        /// <summary>
+        /// Đăng ký với xác minh email - không cấp token ngay, gửi mã 6 số
+        /// </summary>
+        public async Task<RegisterResponse> RegisterWithVerificationAsync(RegisterRequest request)
+        {
+            Console.WriteLine($"[AuthService] Starting registration with verification for email: {request.Email}");
+
+            // Check if email already exists
+            if (await _userRepository.EmailExistsAsync(request.Email))
+            {
+                Console.WriteLine($"[AuthService] Email already exists: {request.Email}");
+                throw new InvalidOperationException("Email đã được đăng ký");
+            }
+
+            // Tạo user mới nhưng chưa verified
+            var user = new User
+            {
+                UserId = Guid.NewGuid(),
+                Email = request.Email,
+                PasswordHash = HashPassword(request.Password),
+                DisplayName = request.DisplayName,
+                CreatedAt = DateTime.UtcNow,
+                EmailVerified = false,
+                OnboardingCompleted = false
+            };
+
+            // Tạo mã xác minh 6 số
+            var verificationCode = GenerateNumericCode(6);
+            user.VerificationCode = HashResetCode(verificationCode);
+            user.VerificationCodeExpiry = DateTime.UtcNow.Add(VerificationCodeLifetime);
+
+            await _userRepository.AddAsync(user);
+            await _context.SaveChangesAsync();
+
+            Console.WriteLine($"[AuthService] User created with ID: {user.UserId}, sending verification code");
+
+            // Gửi email xác minh
+            try
+            {
+                await _emailService.SendVerificationCodeAsync(user.Email, verificationCode, user.VerificationCodeExpiry.Value);
+                Console.WriteLine($"[AuthService] Verification code emailed to {user.Email}");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[AuthService] Failed to send verification email: {ex.Message}");
+                // Vẫn return success, user có thể request gửi lại
+            }
+
+            var includeCodeInResponse = _env.IsDevelopment();
+
+            return new RegisterResponse
+            {
+                Success = true,
+                Message = includeCodeInResponse 
+                    ? "Đăng ký thành công! Mã xác minh (dev mode)" 
+                    : "Đăng ký thành công! Kiểm tra email để lấy mã xác minh.",
+                Email = user.Email,
+                VerificationCodeExpiresAt = user.VerificationCodeExpiry.Value,
+                VerificationCode = includeCodeInResponse ? verificationCode : null
+            };
+        }
+
+        /// <summary>
+        /// Xác minh email bằng mã 6 số - nếu đúng thì cấp token
+        /// </summary>
+        public async Task<AuthResponse> VerifyEmailAsync(VerifyEmailRequest request)
+        {
+            Console.WriteLine($"[AuthService] Verifying email for: {request.Email}");
+
+            var user = await _userRepository.GetByEmailAsync(request.Email);
+            if (user == null)
+            {
+                throw new UnauthorizedAccessException("Email không tồn tại");
+            }
+
+            if (user.EmailVerified)
+            {
+                throw new InvalidOperationException("Email đã được xác minh trước đó");
+            }
+
+            if (user.VerificationCodeExpiry == null || user.VerificationCodeExpiry < DateTime.UtcNow)
+            {
+                throw new UnauthorizedAccessException("Mã xác minh đã hết hạn. Vui lòng yêu cầu gửi lại.");
+            }
+
+            var hashedInput = HashResetCode(request.VerificationCode);
+            if (!string.Equals(hashedInput, user.VerificationCode, StringComparison.Ordinal))
+            {
+                throw new UnauthorizedAccessException("Mã xác minh không đúng");
+            }
+
+            // Mark email as verified
+            user.EmailVerified = true;
+            user.VerificationCode = null;
+            user.VerificationCodeExpiry = null;
+            await _context.SaveChangesAsync();
+
+            Console.WriteLine($"[AuthService] Email verified successfully for: {request.Email}");
+
+            // Generate JWT token
+            var token = GenerateJwtToken(user);
+            var expiresAt = DateTime.UtcNow.AddHours(24);
+            var refreshToken = GenerateRefreshToken();
+            var refreshTokenExpiresAt = DateTime.UtcNow.AddDays(30);
+
+            return new AuthResponse
+            {
+                UserId = user.UserId,
+                Email = user.Email,
+                DisplayName = user.DisplayName ?? string.Empty,
+                Token = token,
+                ExpiresAt = expiresAt,
+                RefreshToken = refreshToken,
+                RefreshTokenExpiresAt = refreshTokenExpiresAt,
+                NeedsOnboarding = !user.OnboardingCompleted
+            };
+        }
+
+        /// <summary>
+        /// Gửi lại mã xác minh email
+        /// </summary>
+        public async Task<RegisterResponse> ResendVerificationAsync(ResendVerificationRequest request)
+        {
+            Console.WriteLine($"[AuthService] Resending verification code for: {request.Email}");
+
+            var user = await _userRepository.GetByEmailAsync(request.Email);
+            if (user == null)
+            {
+                throw new UnauthorizedAccessException("Email không tồn tại");
+            }
+
+            if (user.EmailVerified)
+            {
+                throw new InvalidOperationException("Email đã được xác minh trước đó");
+            }
+
+            // Tạo mã mới
+            var verificationCode = GenerateNumericCode(6);
+            user.VerificationCode = HashResetCode(verificationCode);
+            user.VerificationCodeExpiry = DateTime.UtcNow.Add(VerificationCodeLifetime);
+            await _context.SaveChangesAsync();
+
+            // Gửi email
+            try
+            {
+                await _emailService.SendVerificationCodeAsync(user.Email, verificationCode, user.VerificationCodeExpiry.Value);
+                Console.WriteLine($"[AuthService] Verification code re-sent to {user.Email}");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[AuthService] Failed to resend verification email: {ex.Message}");
+                throw new InvalidOperationException("Không gửi được email. Vui lòng thử lại sau.");
+            }
+
+            var includeCodeInResponse = _env.IsDevelopment();
+
+            return new RegisterResponse
+            {
+                Success = true,
+                Message = includeCodeInResponse 
+                    ? "Đã gửi lại mã xác minh (dev mode)" 
+                    : "Đã gửi lại mã xác minh. Kiểm tra email của bạn.",
+                Email = user.Email,
+                VerificationCodeExpiresAt = user.VerificationCodeExpiry.Value,
+                VerificationCode = includeCodeInResponse ? verificationCode : null
+            };
+        }
+
+        /// <summary>
+        /// Đánh dấu user đã hoàn thành onboarding
+        /// </summary>
+        public async Task MarkOnboardingCompletedAsync(Guid userId)
+        {
+            Console.WriteLine($"[AuthService] Marking onboarding completed for user: {userId}");
+
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.UserId == userId);
+            if (user == null)
+            {
+                throw new UnauthorizedAccessException("User không tồn tại");
+            }
+
+            user.OnboardingCompleted = true;
+            await _context.SaveChangesAsync();
+
+            Console.WriteLine($"[AuthService] Onboarding completed for user: {userId}");
+        }
     }
 }
+

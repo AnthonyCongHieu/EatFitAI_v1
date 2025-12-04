@@ -200,12 +200,14 @@ def get_nutrition_advice_gemini(
         except:
             pass
     
-    # Priority 3: Formula fallback
-    logger.info("Using Mifflin-St Jeor formula fallback")
-    result = calculate_nutrition_mifflin(gender, age, height_cm, weight_kg, activity_level, goal)
-    result["source"] = "formula"
-    result["explanation"] = "Sử dụng công thức Mifflin-St Jeor"
-    return result
+    # Priority 3: Formula fallback (DISABLED - STRICT MODE)
+    # logger.info("Using Mifflin-St Jeor formula fallback")
+    # result = calculate_nutrition_mifflin(gender, age, height_cm, weight_kg, activity_level, goal)
+    # result["source"] = "formula"
+    # result["explanation"] = "Sử dụng công thức Mifflin-St Jeor"
+    # return result
+    
+    raise Exception("Ollama (Nutrition LLM) is unavailable. Fallback is disabled in Strict Mode.")
 
 
 def get_meal_insight_gemini(
@@ -248,11 +250,12 @@ Trả lời JSON: {{"insight": "nhận xét 1 câu", "score": điểm_1_10, "sug
         except:
             pass
     
-    # Simple fallback
-    pct = (total_calories / target_calories * 100) if target_calories > 0 else 0
-    return {
-        "insight": f"Bạn đã ăn {pct:.0f}% mục tiêu calories hôm nay.",
-        "score": 7 if 80 <= pct <= 120 else 5,
-        "suggestions": ["Tiếp tục theo dõi để đạt mục tiêu"],
-        "source": "fallback"
-    }
+    # Simple fallback (DISABLED - STRICT MODE)
+    # pct = (total_calories / target_calories * 100) if target_calories > 0 else 0
+    # return {
+    #     "insight": f"Bạn đã ăn {pct:.0f}% mục tiêu calories hôm nay.",
+    #     "score": 7 if 80 <= pct <= 120 else 5,
+    #     "suggestions": ["Tiếp tục theo dõi để đạt mục tiêu"],
+    #     "source": "fallback"
+    # }
+    raise Exception("Ollama (Nutrition LLM) is unavailable. Fallback is disabled in Strict Mode.")

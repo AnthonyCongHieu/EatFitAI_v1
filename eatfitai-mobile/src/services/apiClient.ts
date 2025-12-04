@@ -66,6 +66,9 @@ apiClient.interceptors.request.use(async (config: InternalAxiosRequestConfig) =>
       '/api/Health/ready',
       '/api/auth/login',
       '/api/auth/register',
+      '/api/auth/register-with-verification',
+      '/api/auth/verify-email',
+      '/api/auth/resend-verification',
       '/api/auth/refresh',
       '/api/auth/forgot-password',
       '/api/auth/reset-password',
@@ -217,7 +220,7 @@ apiClient.interceptors.response.use(
         });
         try {
           updateSessionFromAuthResponse?.(data);
-        } catch {}
+        } catch { }
 
         processQueue(null, newAccessToken);
         const retryHeaders = AxiosHeaders.from(originalRequest.headers ?? {});
@@ -263,7 +266,7 @@ apiClient.interceptors.response.use(
       // Create a more descriptive error for network issues
       const networkError = new Error(
         `Network Error: ${error.message || 'Unable to connect to server'}. ` +
-          `Please check your internet connection and ensure the API server is running at ${API_BASE_URL || 'undefined URL'}.`,
+        `Please check your internet connection and ensure the API server is running at ${API_BASE_URL || 'undefined URL'}.`,
       );
       networkError.name = 'NetworkError';
       return Promise.reject(networkError);

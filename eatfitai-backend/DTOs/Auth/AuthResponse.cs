@@ -9,5 +9,8 @@ namespace EatFitAI.API.DTOs.Auth
         public DateTime ExpiresAt { get; set; }
         public string RefreshToken { get; set; } = string.Empty;
         public DateTime RefreshTokenExpiresAt { get; set; }
+        
+        // Cho frontend biết user cần vào Onboarding không
+        public bool NeedsOnboarding { get; set; } = false;
     }
 }

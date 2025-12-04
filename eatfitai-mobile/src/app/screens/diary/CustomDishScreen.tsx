@@ -135,13 +135,25 @@ const CustomDishScreen = (): JSX.Element => {
     async (values: FormValues) => {
       setIsSubmitting(true);
       try {
-        // For now, just create the custom dish and show success
-        // The backend API for custom dishes might need to be updated to support direct diary entry
-        await foodService.createCustomDish({
-          dishName: values.name.trim(),
-          description: values.description?.trim() ?? null,
-          ingredients: [], // Empty for now, as this is a simple custom dish
-        });
+        // Sử dụng UserFoodItems API để tạo món ăn với thông tin dinh dưỡng nhập tay
+        const formData = new FormData();
+        formData.append('FoodName', values.name.trim());
+        if (values.description) {
+          // UserFoodItemDto không có description, nhưng ta có thể append vào note nếu cần
+          // Hiện tại API không hỗ trợ description cho UserFoodItem, ta chấp nhận bỏ qua hoặc chờ update API
+        }
+        formData.append('UnitType', 'g'); // Mặc định là gram
+
+        // Chuẩn hóa về 100g
+        const servingSize = Number(values.servingSizeGram);
+        const factor = 100 / servingSize;
+
+        formData.append('CaloriesPer100', (Number(values.calories) * factor).toFixed(2));
+        formData.append('ProteinPer100', (Number(values.protein) * factor).toFixed(2));
+        formData.append('CarbPer100', (Number(values.carbs) * factor).toFixed(2));
+        formData.append('FatPer100', (Number(values.fat) * factor).toFixed(2));
+
+        await foodService.createUserFoodItem(formData);
 
         Toast.show({
           type: 'success',

@@ -235,7 +235,18 @@ const ProfileScreen = (): JSX.Element => {
     setIsCalculatingAi(true);
     try {
       // Try AI Provider first
-      const response = await fetch('http://127.0.0.1:5050/nutrition-advice', {
+      // Derive AI URL from API_BASE_URL (replace port 5247 with 5050)
+      // This ensures it works on Android Emulator (10.0.2.2) and LAN
+      const baseUrl = import('../../config/env').then(m => m.API_BASE_URL);
+      // Note: We can't verify async import here easily inside try block without top-level await or hook
+      // So we will use a simpler approach: assume localhost/10.0.2.2 based on Platform
+
+      let aiHost = 'http://127.0.0.1:5050';
+      if (Platform.OS === 'android') {
+        aiHost = 'http://10.0.2.2:5050';
+      }
+
+      const response = await fetch(`${aiHost}/nutrition-advice`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

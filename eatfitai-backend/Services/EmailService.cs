@@ -83,5 +83,63 @@ Thời hạn: {expiresAt:yyyy-MM-dd HH:mm:ss} (UTC)
 
 Nếu bạn không yêu cầu, hãy bỏ qua email này.";
         }
+
+        /// <summary>
+        /// Gửi mã xác minh email khi đăng ký
+        /// </summary>
+        public async Task SendVerificationCodeAsync(string email, string code, DateTime expiresAt)
+        {
+            Console.WriteLine($"[EmailService] Sending verification code to {email}");
+
+            if (string.IsNullOrWhiteSpace(_settings.Host) ||
+                string.IsNullOrWhiteSpace(_settings.User) ||
+                string.IsNullOrWhiteSpace(_settings.Password) ||
+                string.IsNullOrWhiteSpace(_settings.FromEmail))
+            {
+                Console.WriteLine("[EmailService] SMTP settings missing, skipping real send.");
+                return;
+            }
+
+            try
+            {
+                var cleanPassword = _settings.Password.Replace(" ", "");
+                
+                var message = new MimeMessage();
+                message.From.Add(new MailboxAddress(_settings.FromDisplayName, _settings.FromEmail));
+                message.To.Add(new MailboxAddress("", email));
+                message.Subject = "EatFitAI - Mã xác minh email";
+                message.Body = new TextPart("plain")
+                {
+                    Text = BuildVerificationBody(code, expiresAt)
+                };
+
+                using var client = new SmtpClient();
+                await client.ConnectAsync(_settings.Host, _settings.Port, SecureSocketOptions.StartTls);
+                await client.AuthenticateAsync(_settings.User, cleanPassword);
+                await client.SendAsync(message);
+                await client.DisconnectAsync(true);
+                
+                Console.WriteLine($"[EmailService] Verification code sent to {email}");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[EmailService] FAILED to send verification email: {ex.Message}");
+                throw;
+            }
+        }
+
+        private string BuildVerificationBody(string code, DateTime expiresAt)
+        {
+            return
+$@"Chào mừng bạn đến với EatFitAI! 🥗
+
+Mã xác minh email của bạn: {code}
+Thời hạn: {expiresAt:yyyy-MM-dd HH:mm:ss} (UTC)
+
+Nhập mã này vào ứng dụng để hoàn tất đăng ký.
+
+Nếu bạn không đăng ký tài khoản, hãy bỏ qua email này.";
+        }
     }
 }
+

@@ -102,8 +102,22 @@ const WeekStatsScreen = (): JSX.Element => {
   const isLoading = useStatsStore((state) => state.isLoading);
   const fetchWeekSummary = useStatsStore((state) => state.fetchWeekSummary);
   const refreshWeekSummary = useStatsStore((state) => state.refreshWeekSummary);
-  const goToPreviousWeek = useStatsStore((state) => state.goToPreviousWeek);
-  const goToNextWeek = useStatsStore((state) => state.goToNextWeek);
+  const goToPreviousWeek = useCallback(() => {
+    try {
+      useStatsStore.getState().goToPreviousWeek();
+    } catch (err) {
+      console.error('Error navigating to previous week:', err);
+    }
+  }, []);
+
+  const goToNextWeek = useCallback(() => {
+    try {
+      useStatsStore.getState().goToNextWeek();
+    } catch (err) {
+      console.error('Error navigating to next week:', err);
+    }
+  }, []);
+
   const error = useStatsStore((state) => state.error);
 
   // Animation states
@@ -159,6 +173,9 @@ const WeekStatsScreen = (): JSX.Element => {
   if (isLoading && !weekSummary) {
     return <StatsSkeleton />;
   }
+
+  // Kiểm tra trường hợp không có dữ liệu
+  const hasNoData = !weekSummary || !weekSummary.days || weekSummary.days.length === 0;
 
   return (
     <Screen
@@ -220,14 +237,24 @@ const WeekStatsScreen = (): JSX.Element => {
               Đang tải...
             </ThemedText>
           </View>
-        ) : chartData.length === 0 ? (
-          <ThemedText
-            variant="body"
-            color="textSecondary"
-            style={{ textAlign: 'center', paddingVertical: theme.spacing.xl }}
-          >
-            Chưa có dữ liệu
-          </ThemedText>
+        ) : hasNoData ? (
+          <View style={{ paddingVertical: theme.spacing.xl, alignItems: 'center', gap: theme.spacing.md }}>
+            <ThemedText variant="h4" color="textSecondary">📊</ThemedText>
+            <ThemedText
+              variant="body"
+              color="textSecondary"
+              style={{ textAlign: 'center' }}
+            >
+              Chưa có dữ liệu cho tuần này
+            </ThemedText>
+            <ThemedText
+              variant="caption"
+              color="textSecondary"
+              style={{ textAlign: 'center' }}
+            >
+              Hãy thêm món ăn vào nhật ký để xem thống kê
+            </ThemedText>
+          </View>
         ) : (
           <VictoryChart
             height={280}
@@ -270,7 +297,11 @@ const WeekStatsScreen = (): JSX.Element => {
               }}
               labels={({ datum }) => `${datum.y} kcal`}
               labelComponent={
-                <VictoryTooltip renderInPortal={false} style={{ fontSize: 12 }} />
+                <VictoryTooltip
+                  renderInPortal={false}
+                  style={{ fontSize: 12, fill: theme.colors.text }}
+                  flyoutStyle={{ fill: theme.colors.card, stroke: theme.colors.border }}
+                />
               }
             />
             {targetLine.length > 0 ? (
@@ -287,9 +318,13 @@ const WeekStatsScreen = (): JSX.Element => {
                     strokeWidth: 2,
                   },
                 }}
-                labels={({ datum }) => `Mục tiêu ${datum.y} kcal`}
+                labels={({ datum }) => `Mục tiêu ${datum.y}`}
                 labelComponent={
-                  <VictoryTooltip renderInPortal={false} style={{ fontSize: 10 }} />
+                  <VictoryTooltip
+                    renderInPortal={false}
+                    style={{ fontSize: 10, fill: theme.colors.text }}
+                    flyoutStyle={{ fill: theme.colors.card, stroke: theme.colors.border }}
+                  />
                 }
               />
             ) : null}

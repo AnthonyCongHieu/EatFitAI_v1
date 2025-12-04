@@ -284,7 +284,7 @@ const NutritionInsightsScreen = (): JSX.Element => {
   }
 
   return (
-    <Screen style={styles.container}>
+    <Screen style={styles.container} scroll={false}>
       <ScreenHeader
         title="Phân tích dinh dưỡng"
         subtitle="Thông tin chi tiết và đề xuất cá nhân hóa"

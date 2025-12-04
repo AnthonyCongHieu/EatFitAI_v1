@@ -90,28 +90,19 @@ export const SmartAddSheet: React.FC<SmartAddSheetProps> = ({ visible, onClose }
                     <ThemedText variant="h3" style={styles.title}>Thêm món ăn</ThemedText>
 
                     <View style={styles.grid}>
+                        {/* Tìm kiếm - Primary option */}
                         <Pressable
                             style={[styles.option, { backgroundColor: theme.colors.primary + '15' }]}
-                            onPress={() => handleOption('AiCamera')}
-                        >
-                            <View style={[styles.iconBox, { backgroundColor: theme.colors.primary }]}>
-                                <Icon name="camera" size="lg" color="card" />
-                            </View>
-                            <ThemedText variant="body" weight="600">AI Scan</ThemedText>
-                            <ThemedText variant="caption" color="textSecondary">Chụp ảnh món ăn</ThemedText>
-                        </Pressable>
-
-                        <Pressable
-                            style={[styles.option, { backgroundColor: theme.colors.secondary + '15' }]}
                             onPress={() => handleOption('FoodSearch')}
                         >
-                            <View style={[styles.iconBox, { backgroundColor: theme.colors.secondary }]}>
+                            <View style={[styles.iconBox, { backgroundColor: theme.colors.primary }]}>
                                 <Icon name="search" size="lg" color="card" />
                             </View>
                             <ThemedText variant="body" weight="600">Tìm kiếm</ThemedText>
-                            <ThemedText variant="caption" color="textSecondary">Nhập tên món</ThemedText>
+                            <ThemedText variant="caption" color="textSecondary">Nhập tên món ăn</ThemedText>
                         </Pressable>
 
+                        {/* Yêu thích */}
                         <Pressable
                             style={[styles.option, { backgroundColor: theme.colors.warning + '15' }]}
                             onPress={() => handleOption('FoodSearch' as any)} // Could pass params to open favorites tab
@@ -123,15 +114,28 @@ export const SmartAddSheet: React.FC<SmartAddSheetProps> = ({ visible, onClose }
                             <ThemedText variant="caption" color="textSecondary">Món đã lưu</ThemedText>
                         </Pressable>
 
+                        {/* Thêm nhanh */}
                         <Pressable
                             style={[styles.option, { backgroundColor: theme.colors.success + '15' }]}
-                            onPress={() => handleOption('AddMealFromVision')} // Or a dedicated Quick Add screen
+                            onPress={() => handleOption('CustomDish')}
                         >
                             <View style={[styles.iconBox, { backgroundColor: theme.colors.success }]}>
                                 <Icon name="flash" size="lg" color="card" />
                             </View>
                             <ThemedText variant="body" weight="600">Thêm nhanh</ThemedText>
-                            <ThemedText variant="caption" color="textSecondary">Nhập calo nhanh</ThemedText>
+                            <ThemedText variant="caption" color="textSecondary">Nhập calo thủ công</ThemedText>
+                        </Pressable>
+
+                        {/* Scan nguyên liệu - cho công thức */}
+                        <Pressable
+                            style={[styles.option, { backgroundColor: theme.colors.secondary + '15' }]}
+                            onPress={() => handleOption('AiCamera')}
+                        >
+                            <View style={[styles.iconBox, { backgroundColor: theme.colors.secondary }]}>
+                                <Icon name="camera" size="lg" color="card" />
+                            </View>
+                            <ThemedText variant="body" weight="600">Scan nguyên liệu</ThemedText>
+                            <ThemedText variant="caption" color="textSecondary">Gợi ý công thức</ThemedText>
                         </Pressable>
                     </View>
                 </Animated.View>

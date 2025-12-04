@@ -47,7 +47,7 @@ export const InsightsCard = () => {
     return (
         <AppCard style={styles.container}>
             <View style={styles.header}>
-                <ThemedText variant="h4" color="primary">✨ AI Insights</ThemedText>
+                <ThemedText variant="h4" color="primary">✨ Gợi ý AI</ThemedText>
             </View>
 
             {recommendations.map((rec, index) => (
