@@ -25,6 +25,8 @@ import Icon from '../../../components/Icon';
 import { glassStyles } from '../../../components/ui/GlassCard';
 import { useAppTheme } from '../../../theme/ThemeProvider';
 import { useProfileStore } from '../../../store/useProfileStore';
+import { useAuthStore } from '../../../store/useAuthStore';
+import apiClient from '../../../services/apiClient';
 import { showSuccess } from '../../../utils/errorHandler';
 import type { RootStackParamList } from '../../types';
 
@@ -205,23 +207,29 @@ const OnboardingScreen = (): JSX.Element => {
 
     const handleComplete = async () => {
         try {
-            // Save profile
+            // Save profile locally
             await updateProfile({
                 fullName: data.fullName,
                 heightCm: Number(data.heightCm),
                 weightKg: Number(data.weightKg),
             });
 
-            // Mark onboarding complete
+            // Mark onboarding complete in local storage
             await AsyncStorage.setItem('onboarding_complete', 'true');
+
+            // Gọi API đánh dấu onboarding hoàn tất trên server
+            try {
+                await apiClient.post('/api/auth/mark-onboarding-completed');
+                console.log('[Onboarding] Server onboarding status updated');
+            } catch (apiError) {
+                console.warn('[Onboarding] Failed to update server:', apiError);
+                // Vẫn tiếp tục vì đã lưu locally
+            }
 
             showSuccess('settings_saved', { text1: '🎉 Thiết lập hoàn tất!' });
 
-            // Navigate to main app
-            navigation.reset({
-                index: 0,
-                routes: [{ name: 'AppTabs' }],
-            });
+            // Đặt isAuthenticated = true để trigger navigation tự động
+            useAuthStore.setState({ isAuthenticated: true });
         } catch (error) {
             Alert.alert('Lỗi', 'Không thể lưu thông tin. Vui lòng thử lại.');
         }

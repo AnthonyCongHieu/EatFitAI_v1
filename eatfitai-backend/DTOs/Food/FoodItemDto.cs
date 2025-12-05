@@ -13,6 +13,10 @@ namespace EatFitAI.API.DTOs.Food
         public string? Barcode { get; set; }
         public bool IsVerified { get; set; }
         public bool IsDeleted { get; set; }
+        public string? ThumbNail { get; set; }
+        public bool IsActive { get; set; }
+        public DateTime CreatedAt { get; set; }
+        public DateTime UpdatedAt { get; set; }
     }
 
     public class FoodServingDto

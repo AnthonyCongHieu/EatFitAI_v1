@@ -15,7 +15,7 @@ import Screen from '../../../components/Screen';
 import { AppCard } from '../../../components/ui/AppCard';
 import Button from '../../../components/Button';
 import ThemedTextInput from '../../../components/ThemedTextInput';
-import { useAuthStore } from '../../../store/useAuthStore';
+import apiClient from '../../../services/apiClient';
 import type { RootStackParamList } from '../../types';
 import { t } from '../../../i18n/vi';
 import { handleApiError } from '../../../utils/errorHandler';
@@ -44,7 +44,6 @@ type Props = NativeStackScreenProps<RootStackParamList, 'Register'>;
 
 const RegisterScreen = ({ navigation }: Props): JSX.Element => {
   const { theme } = useAppTheme();
-  const registerFn = useAuthStore((s) => s.register);
   const [loading, setLoading] = useState(false);
   const [passwordStrength, setPasswordStrength] = useState(0); // 0-3
 
@@ -86,29 +85,71 @@ const RegisterScreen = ({ navigation }: Props): JSX.Element => {
     return 'Mạnh';
   };
 
+  // Response từ register-with-verification
+  interface RegisterResponse {
+    success: boolean;
+    message: string;
+    email: string;
+    verificationCodeExpiresAt: string;
+    verificationCode?: string; // Chỉ có trong dev mode
+  }
+
   const onSubmit = useCallback(
     async (values: RegisterValues) => {
       try {
         setLoading(true);
-        await registerFn(values.name, values.email, values.password);
+
+        // Gọi API đăng ký với xác minh email
+        const resp = await apiClient.post<RegisterResponse>('/api/auth/register-with-verification', {
+          DisplayName: values.name,
+          Email: values.email,
+          Password: values.password,
+        });
+
+        const data = resp.data;
+
         Toast.show({
           type: 'success',
           text1: '🎉 Đăng ký thành công!',
-          text2: 'Hãy thiết lập hồ sơ của bạn',
+          text2: 'Kiểm tra email để lấy mã xác minh',
         });
-        // Navigate to Onboarding for first-time setup
-        navigation.reset({ index: 0, routes: [{ name: 'Onboarding' }] });
+
+        // Navigate đến VerifyEmailScreen với email và mã (nếu dev mode)
+        navigation.navigate('VerifyEmail', {
+          email: values.email,
+          verificationCode: data.verificationCode, // undefined nếu production
+        });
       } catch (e: any) {
-        handleApiError(e);
+        console.error('Registration error:', e);
+        console.error('Response data:', e?.response?.data);
+
+        let message = t('auth.registerFailed');
+        if (e?.response?.data?.message) {
+          message = e.response.data.message;
+        } else if (e?.message) {
+          message = e.message;
+        }
+
+        // Handle specific error cases if needed
+        if (message.includes('Email')) {
+          message = 'Email này đã được sử dụng hoặc không hợp lệ.';
+        }
+
+        Toast.show({
+          type: 'error',
+          text1: 'Đăng ký thất bại',
+          text2: message,
+          visibilityTime: 4000
+        });
       } finally {
         setLoading(false);
       }
     },
-    [registerFn, navigation],
+    [navigation],
   );
 
   return (
-    <Screen scroll={true} style={styles.container}>
+    <Screen scroll={true} contentContainerStyle={styles.container}>
       <LinearGradient
         colors={[theme.colors.background, theme.colors.primary + '10']}
         style={StyleSheet.absoluteFill}
@@ -123,8 +164,7 @@ const RegisterScreen = ({ navigation }: Props): JSX.Element => {
           shadow="lg"
           style={{ backgroundColor: theme.colors.card + 'F5' }}
         >
-          {' '}
-          {/* Slight transparency */}
+          {/* Card content */}
           <View style={{ alignItems: 'center', marginBottom: theme.spacing.xl }}>
             <View
               style={{
@@ -292,7 +332,11 @@ const RegisterScreen = ({ navigation }: Props): JSX.Element => {
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, justifyContent: 'center' },
+  container: {
+    flexGrow: 1,
+    justifyContent: 'center',
+    paddingVertical: 40, // Đảm bảo không bị cắt trên/dưới
+  },
 });
 
 export default RegisterScreen;

@@ -178,14 +178,15 @@ const HomeScreen = (): JSX.Element => {
 
   const handleQuickAction = useCallback(
     (_mealType: MealTypeId) => {
-      // Redirect to AI Camera for proper flow
-      navigation.navigate('AiCamera');
+      // Redirect to Recipe Suggestions (Ingredient Scan) as per user request
+      navigation.navigate('RecipeSuggestions', {});
     },
     [navigation],
   );
 
   const handleAICamera = useCallback(() => {
-    navigation.navigate('AiCamera');
+    // Redirect to Recipe Suggestions (Ingredient Scan) as per user request
+    navigation.navigate('RecipeSuggestions', {});
   }, [navigation]);
 
   const handleViewAllDiary = useCallback(() => {
@@ -265,31 +266,36 @@ const HomeScreen = (): JSX.Element => {
 
   // Animate values when they change
   useEffect(() => {
-    remainingCaloriesValue.value = withTiming(remainingCalories, {
+    const safeValue = Number.isNaN(remainingCalories) ? 0 : remainingCalories;
+    remainingCaloriesValue.value = withTiming(safeValue, {
       duration: theme.animation.normal,
     });
   }, [remainingCalories, remainingCaloriesValue, theme.animation.normal]);
 
   useEffect(() => {
-    calorieProgressValue.value = withTiming(calorieProgress, {
+    const safeValue = Number.isNaN(calorieProgress) ? 0 : calorieProgress;
+    calorieProgressValue.value = withTiming(safeValue, {
       duration: theme.animation.slow,
     });
   }, [calorieProgress, calorieProgressValue, theme.animation.slow]);
 
   useEffect(() => {
-    proteinValue.value = withTiming(summary?.protein || 0, {
+    const newValue = summary?.protein ?? 0;
+    proteinValue.value = withTiming(Number.isNaN(newValue) ? 0 : newValue, {
       duration: theme.animation.normal,
     });
   }, [summary?.protein, proteinValue, theme.animation.normal]);
 
   useEffect(() => {
-    carbsValue.value = withTiming(summary?.carbs || 0, {
+    const newValue = summary?.carbs ?? 0;
+    carbsValue.value = withTiming(Number.isNaN(newValue) ? 0 : newValue, {
       duration: theme.animation.normal,
     });
   }, [summary?.carbs, carbsValue, theme.animation.normal]);
 
   useEffect(() => {
-    fatValue.value = withTiming(summary?.fat || 0, { duration: theme.animation.normal });
+    const newValue = summary?.fat ?? 0;
+    fatValue.value = withTiming(Number.isNaN(newValue) ? 0 : newValue, { duration: theme.animation.normal });
   }, [summary?.fat, fatValue, theme.animation.normal]);
 
   // Get today's entries for diary section (first 2-3)
@@ -297,6 +303,15 @@ const HomeScreen = (): JSX.Element => {
     if (!summary?.meals) return [];
     return summary.meals.flatMap((meal) => meal.entries).slice(0, 3);
   }, [summary]);
+
+  // Animated style for remaining calories text (phải đặt ở top-level, không trong JSX)
+  const remainingCaloriesAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [
+      {
+        scale: interpolate(remainingCaloriesValue.value, [0, 1000], [1, 1.05]),
+      },
+    ],
+  }));
 
   if (isLoading && !summary) {
     return <HomeSkeleton />;
@@ -355,17 +370,7 @@ const HomeScreen = (): JSX.Element => {
               <Animated.Text
                 style={[
                   styles.animatedNumber,
-                  useAnimatedStyle(() => ({
-                    transform: [
-                      {
-                        scale: interpolate(
-                          remainingCaloriesValue.value,
-                          [0, 1000],
-                          [1, 1.05],
-                        ),
-                      },
-                    ],
-                  })),
+                  remainingCaloriesAnimatedStyle,
                 ]}
               >
                 <ThemedText variant="h1" weight="700">
@@ -390,8 +395,8 @@ const HomeScreen = (): JSX.Element => {
           </View>
         </Animated.View>
 
-        {/* Macro Card */}
-        <AppCard title="Macros">
+        {/* Macro Card - Chất dinh dưỡng đa lượng */}
+        <AppCard title="Dinh dưỡng">
           <View style={{ flexDirection: 'row', gap: theme.spacing.md }}>
             <MetricCard
               icon="fitness"
@@ -399,7 +404,7 @@ const HomeScreen = (): JSX.Element => {
               label="Protein"
               color="primary"
               progress={
-                proteinValue.value && summary?.targetCalories
+                typeof proteinValue.value === 'number' && !Number.isNaN(proteinValue.value) && summary?.targetCalories
                   ? Math.min(1, (proteinValue.value * 4) / (summary.targetCalories * 0.3))
                   : 0
               }
@@ -407,21 +412,21 @@ const HomeScreen = (): JSX.Element => {
             <MetricCard
               icon="restaurant"
               value={carbsValue}
-              label="Carb"
+              label="Carbs"
               color="secondary"
               progress={
-                carbsValue.value && summary?.targetCalories
+                typeof carbsValue.value === 'number' && !Number.isNaN(carbsValue.value) && summary?.targetCalories
                   ? Math.min(1, (carbsValue.value * 4) / (summary.targetCalories * 0.5))
                   : 0
               }
             />
             <MetricCard
-              icon="restaurant"
+              icon="flame"
               value={fatValue}
-              label="Fat"
+              label="Chất béo"
               color="warning"
               progress={
-                fatValue.value && summary?.targetCalories
+                typeof fatValue.value === 'number' && !Number.isNaN(fatValue.value) && summary?.targetCalories
                   ? Math.min(1, (fatValue.value * 9) / (summary.targetCalories * 0.2))
                   : 0
               }
@@ -532,19 +537,6 @@ const HomeScreen = (): JSX.Element => {
             />
           )}
         </View>
-
-        {/* AI Highlight Card */}
-        <AppCard style={{ backgroundColor: theme.colors.primaryLight }}>
-          <Pressable
-            onPress={handleAICamera}
-            style={{ alignItems: 'center', gap: theme.spacing.md }}
-          >
-            <Icon name="camera" size="xl" color="primary" />
-            <ThemedText variant="h4" color="primary" weight="600">
-              {t('home.ai_quick_add')}
-            </ThemedText>
-          </Pressable>
-        </AppCard>
       </Screen>
 
 

@@ -6,6 +6,7 @@ import { useAppTheme } from '../../theme/ThemeProvider';
 import { useAuthStore } from '../../store/useAuthStore';
 import LoginScreen from '../screens/auth/LoginScreen';
 import RegisterScreen from '../screens/auth/RegisterScreen';
+import VerifyEmailScreen from '../screens/auth/VerifyEmailScreen';
 import ForgotPasswordScreen from '../screens/auth/ForgotPasswordScreen';
 import AppTabs from './AppTabs';
 import FoodSearchScreen from '../screens/diary/FoodSearchScreen';
@@ -56,6 +57,7 @@ const AppNavigator = (): JSX.Element => {
             <>
               <Stack.Screen name="Login" component={LoginScreen} />
               <Stack.Screen name="Register" component={RegisterScreen} />
+              <Stack.Screen name="VerifyEmail" component={VerifyEmailScreen} />
               <Stack.Screen
                 name="ForgotPassword"
                 component={ForgotPasswordScreen}

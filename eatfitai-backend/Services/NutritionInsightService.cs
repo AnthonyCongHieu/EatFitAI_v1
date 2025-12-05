@@ -283,11 +283,11 @@ namespace EatFitAI.API.Services
                 {
                     Type = calDiff > 0 ? "reduce_calories" : "increase_calories",
                     Message = calDiff > 0
-                        ? $"You're consuming {Math.Abs(calDiff):F0} calories above your target. Consider reducing portion sizes."
-                        : $"You're consuming {Math.Abs(calDiff):F0} calories below your target. Consider adding nutrient-dense foods.",
+                        ? $"Bạn đang tiêu thụ {Math.Abs(calDiff):F0} calo vượt mục tiêu. Hãy giảm khẩu phần ăn."
+                        : $"Bạn đang tiêu thụ ít hơn {Math.Abs(calDiff):F0} calo so với mục tiêu. Hãy bổ sung thực phẩm giàu dinh dưỡng.",
                     Priority = Math.Abs(calDiff) > targetCal * 0.2m ? "high" : "medium",
                     SuggestedValue = targetCal,
-                    Reasoning = "Maintaining consistent calorie intake is crucial for achieving your goals."
+                    Reasoning = "Duy trì lượng calo ổn định là chìa khóa để đạt mục tiêu."
                 });
             }
 
@@ -299,11 +299,11 @@ namespace EatFitAI.API.Services
                 {
                     Type = proDiff > 0 ? "reduce_protein" : "increase_protein",
                     Message = proDiff > 0
-                        ? $"Your protein intake is {Math.Abs(proDiff):F0}g above target."
-                        : $"Increase protein by {Math.Abs(proDiff):F0}g. Add lean meats, fish, eggs, or legumes.",
+                        ? $"Lượng protein của bạn cao hơn mục tiêu {Math.Abs(proDiff):F0}g."
+                        : $"Tăng thêm {Math.Abs(proDiff):F0}g protein. Bổ sung thịt nạc, cá, trứng hoặc đậu.",
                     Priority = proDiff < 0 ? "high" : "low",
                     SuggestedValue = targetPro,
-                    Reasoning = "Adequate protein supports muscle maintenance and satiety."
+                    Reasoning = "Protein đầy đủ giúp duy trì cơ bắp và cảm giác no."
                 });
             }
 
@@ -315,11 +315,11 @@ namespace EatFitAI.API.Services
                 {
                     Type = carbDiff > 0 ? "reduce_carbs" : "increase_carbs",
                     Message = carbDiff > 0
-                        ? $"Consider reducing carbs by {Math.Abs(carbDiff):F0}g. Focus on complex carbs."
-                        : $"Add {Math.Abs(carbDiff):F0}g of complex carbs like whole grains, fruits, vegetables.",
+                        ? $"Giảm {Math.Abs(carbDiff):F0}g carbs. Ưu tiên carbs phức hợp."
+                        : $"Bổ sung {Math.Abs(carbDiff):F0}g carbs phức hợp như ngũ cốc nguyên hạt, trái cây, rau củ.",
                     Priority = "medium",
                     SuggestedValue = targetCarb,
-                    Reasoning = "Balanced carb intake provides sustained energy throughout the day."
+                    Reasoning = "Carbs cân bằng cung cấp năng lượng bền vững cả ngày."
                 });
             }
 
@@ -331,11 +331,11 @@ namespace EatFitAI.API.Services
                 {
                     Type = fatDiff > 0 ? "reduce_fat" : "increase_fat",
                     Message = fatDiff > 0
-                        ? $"Reduce fat intake by {Math.Abs(fatDiff):F0}g. Choose lean proteins and limit oils."
-                        : $"Add {Math.Abs(fatDiff):F0}g of healthy fats from nuts, avocados, olive oil.",
+                        ? $"Giảm {Math.Abs(fatDiff):F0}g chất béo. Ưu tiên protein nạc và hạn chế dầu mỡ."
+                        : $"Bổ sung {Math.Abs(fatDiff):F0}g chất béo lành mạnh từ hạt, bơ, dầu olive.",
                     Priority = "medium",
                     SuggestedValue = targetFat,
-                    Reasoning = "Healthy fats support hormone production and nutrient absorption."
+                    Reasoning = "Chất béo lành mạnh hỗ trợ sản xuất hormone và hấp thu dinh dưỡng."
                 });
             }
 
@@ -345,9 +345,9 @@ namespace EatFitAI.API.Services
                 recommendations.Add(new NutritionRecommendationDto
                 {
                     Type = "improve_adherence",
-                    Message = "Your adherence score is below 70%. Consider meal prepping or using simpler recipes.",
+                    Message = "Điểm tuân thủ dưới 70%. Hãy chuẩn bị bữa ăn trước hoặc dùng công thức đơn giản hơn.",
                     Priority = "high",
-                    Reasoning = "Consistency is key to achieving your nutrition goals."
+                    Reasoning = "Sự nhất quán là chìa khóa để đạt mục tiêu dinh dưỡng."
                 });
             }
 
@@ -392,11 +392,11 @@ namespace EatFitAI.API.Services
             var insights = new List<string>();
             if (avgMealsPerDay < 3)
             {
-                insights.Add("You're averaging less than 3 meals per day. Consider adding snacks for better energy distribution.");
+                insights.Add("Trung bình bạn ăn ít hơn 3 bữa mỗi ngày. Hãy thêm bữa phụ để phân bổ năng lượng tốt hơn.");
             }
             else if (avgMealsPerDay > 5)
             {
-                insights.Add("You're eating frequently. This can be good for metabolism if portions are controlled.");
+                insights.Add("Bạn ăn khá thường xuyên. Điều này tốt cho trao đổi chất nếu kiểm soát được khẩu phần.");
             }
 
             return new MealTimingInsightDto
@@ -433,25 +433,25 @@ namespace EatFitAI.API.Services
 
             if (Math.Abs(proPct - recProPct) > 10)
             {
-                insights.Add($"Protein is {(proPct > recProPct ? "higher" : "lower")} than recommended.");
+                insights.Add($"Protein {(proPct > recProPct ? "cao hơn" : "thấp hơn")} khuyến nghị.");
                 balanceQuality = "needs_improvement";
             }
 
             if (Math.Abs(carbPct - recCarbPct) > 15)
             {
-                insights.Add($"Carbs are {(carbPct > recCarbPct ? "higher" : "lower")} than recommended.");
+                insights.Add($"Carbs {(carbPct > recCarbPct ? "cao hơn" : "thấp hơn")} khuyến nghị.");
                 balanceQuality = "needs_improvement";
             }
 
             if (Math.Abs(fatPct - recFatPct) > 10)
             {
-                insights.Add($"Fat is {(fatPct > recFatPct ? "higher" : "lower")} than recommended.");
+                insights.Add($"Chất béo {(fatPct > recFatPct ? "cao hơn" : "thấp hơn")} khuyến nghị.");
                 balanceQuality = "needs_improvement";
             }
 
             if (insights.Count == 0)
             {
-                insights.Add("Your macro distribution is well-balanced!");
+                insights.Add("Phân bổ macro của bạn rất cân bằng!");
                 balanceQuality = "excellent";
             }
 
@@ -488,7 +488,7 @@ namespace EatFitAI.API.Services
             if (Math.Abs(calDiff) > targetCal * 0.15m && daysWithData >= 10)
             {
                 newCal = (int)Math.Round(targetCal + calDiff * 0.2m);
-                reasons.Add($"Adjusted calories by {(int)(calDiff * 0.2m)} based on your consistent intake pattern.");
+                reasons.Add($"Đã điều chỉnh {(int)(calDiff * 0.2m)} calo dựa trên thói quen ăn uống của bạn.");
             }
 
             // Protein adjustment (ensure minimum 1.6g/kg if possible)
@@ -496,12 +496,12 @@ namespace EatFitAI.API.Services
             if (avgPro < targetPro * 0.85m && daysWithData >= 7)
             {
                 newPro = (int)Math.Round(targetPro * 0.9m); // Reduce target slightly to be more achievable
-                reasons.Add("Reduced protein target slightly to improve adherence.");
+                reasons.Add("Giảm nhẹ mục tiêu protein để dễ đạt hơn.");
             }
             else if (avgPro > targetPro * 1.15m)
             {
                 newPro = (int)Math.Round(avgPro * 0.95m); // Adjust upward if consistently exceeding
-                reasons.Add("Increased protein target based on your consistent higher intake.");
+                reasons.Add("Tăng mục tiêu protein dựa trên lượng tiêu thụ thực tế cao hơn.");
             }
 
             // Carb/Fat balance adjustment
@@ -511,12 +511,12 @@ namespace EatFitAI.API.Services
                 var remainingCal = newCal - (newPro * 4);
                 newCarb = (int)Math.Round(remainingCal * 0.5m / 4);
                 newFat = (int)Math.Round(remainingCal * 0.5m / 9);
-                reasons.Add("Rebalanced carbs and fats to match calorie target.");
+                reasons.Add("Đã cân bằng lại carbs và chất béo theo mục tiêu calo.");
             }
 
             if (reasons.Count == 0)
             {
-                reasons.Add("Your current targets are well-aligned with your intake. No adjustments needed.");
+                reasons.Add("Mục tiêu hiện tại phù hợp với thói quen ăn uống. Không cần điều chỉnh.");
                 confidence = Math.Max(confidence, 80);
             }
 

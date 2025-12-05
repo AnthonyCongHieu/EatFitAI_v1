@@ -15,6 +15,18 @@ public partial class User
 
     public DateTime CreatedAt { get; set; }
 
+    // Email verification - MÃ XÁC MINH 6 SỐ
+    public bool EmailVerified { get; set; } = false;
+    public string? VerificationCode { get; set; }
+    public DateTime? VerificationCodeExpiry { get; set; }
+    
+    // Onboarding status - đã hoàn thành setup profile chưa
+    public bool OnboardingCompleted { get; set; } = false;
+
+    // Refresh Token for Long-lived Sessions
+    public string? RefreshToken { get; set; }
+    public DateTime? RefreshTokenExpiryTime { get; set; }
+
     public virtual ICollection<AILog> AILogs { get; set; } = new List<AILog>();
 
     public virtual ICollection<BodyMetric> BodyMetrics { get; set; } = new List<BodyMetric>();

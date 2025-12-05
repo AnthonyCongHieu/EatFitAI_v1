@@ -49,7 +49,7 @@ namespace EatFitAI.API.Controllers
                     {
                         FoodItemId = f.FoodItem.FoodItemId,
                         FoodName = f.FoodItem.FoodName,
-                        FoodNameEn = f.FoodItem.FoodNameEn,
+
                         CaloriesPer100g = f.FoodItem.CaloriesPer100g,
                         ProteinPer100g = f.FoodItem.ProteinPer100g,
                         CarbPer100g = f.FoodItem.CarbPer100g,

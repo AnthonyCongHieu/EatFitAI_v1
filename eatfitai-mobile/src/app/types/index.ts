@@ -4,6 +4,7 @@
 export type RootStackParamList = {
   Login: undefined;
   Register: undefined;
+  VerifyEmail: { email: string; verificationCode?: string }; // verificationCode chỉ dùng cho dev mode
   ForgotPassword: undefined;
   Onboarding: undefined;
   AppTabs: undefined;
