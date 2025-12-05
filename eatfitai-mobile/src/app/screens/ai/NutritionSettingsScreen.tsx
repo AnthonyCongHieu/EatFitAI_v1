@@ -25,14 +25,15 @@ import { useDiaryStore } from '../../../store/useDiaryStore';
 import { handleApiError, handleApiErrorWithCustomMessage } from '../../../utils/errorHandler';
 import type { RootStackParamList } from '../../types';
 import { glassStyles } from '../../../components/ui/GlassCard';
+import { t } from '../../../i18n/vi';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
 const TargetSchema = z.object({
-    calories: z.string().refine((val) => !isNaN(Number(val)) && Number(val) >= 500 && Number(val) <= 10000, { message: 'Calories phải từ 500 - 10000' }),
-    protein: z.string().refine((val) => !isNaN(Number(val)) && Number(val) >= 10 && Number(val) <= 1000, { message: 'Protein phải từ 10 - 1000' }),
-    carbs: z.string().refine((val) => !isNaN(Number(val)) && Number(val) >= 10 && Number(val) <= 1000, { message: 'Carbs phải từ 10 - 1000' }),
-    fat: z.string().refine((val) => !isNaN(Number(val)) && Number(val) >= 10 && Number(val) <= 1000, { message: 'Fat phải từ 10 - 1000' }),
+    calories: z.string().refine((val) => !isNaN(Number(val)) && Number(val) >= 500 && Number(val) <= 10000, { message: t('nutrition_settings.validation_calories') }),
+    protein: z.string().refine((val) => !isNaN(Number(val)) && Number(val) >= 10 && Number(val) <= 1000, { message: t('nutrition_settings.validation_protein') }),
+    carbs: z.string().refine((val) => !isNaN(Number(val)) && Number(val) >= 10 && Number(val) <= 1000, { message: t('nutrition_settings.validation_carbs') }),
+    fat: z.string().refine((val) => !isNaN(Number(val)) && Number(val) >= 10 && Number(val) <= 1000, { message: t('nutrition_settings.validation_fat') }),
 });
 
 type TargetFormValues = z.infer<typeof TargetSchema>;
@@ -99,7 +100,7 @@ const NutritionSettingsScreen = (): JSX.Element => {
         },
         onError: (err) => {
             handleApiErrorWithCustomMessage(err, {
-                unknown: { text1: 'Không thể tạo gợi ý', text2: 'Vui lòng thử lại sau' },
+                unknown: { text1: t('nutrition_settings.error_suggest'), text2: t('nutrition_settings.error_suggest_msg') },
             });
         },
     });
@@ -121,7 +122,7 @@ const NutritionSettingsScreen = (): JSX.Element => {
                 fat: String(Math.round(variables.fat)),
             });
 
-            Alert.alert('Thành công', 'Đã cập nhật mục tiêu dinh dưỡng');
+            Alert.alert(t('nutrition_settings.success_title'), t('nutrition_settings.success_message'));
         },
         onError: (err) => handleApiError(err),
     });
@@ -216,7 +217,7 @@ const NutritionSettingsScreen = (): JSX.Element => {
     if (isLoading) {
         return (
             <Screen>
-                <ScreenHeader title="Cài đặt dinh dưỡng" />
+                <ScreenHeader title={t('nutrition_settings.title')} />
                 <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
                     <ActivityIndicator size="large" color={theme.colors.primary} />
                 </View>
@@ -226,17 +227,17 @@ const NutritionSettingsScreen = (): JSX.Element => {
 
     return (
         <Screen>
-            <ScreenHeader title="Cài đặt dinh dưỡng" subtitle="Quản lý mục tiêu Calories & Macros" />
+            <ScreenHeader title={t('nutrition_settings.title')} subtitle={t('nutrition_settings.subtitle')} />
 
             <ScrollView contentContainerStyle={styles.container}>
                 {/* Current Target Section */}
                 <AppCard>
                     <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: theme.spacing.md }}>
-                        <SectionHeader title="Mục tiêu hiện tại" />
+                        <SectionHeader title={t('nutrition_settings.current_target')} />
                         {!isEditing && (
                             <Button
                                 variant="ghost"
-                                title="Chỉnh sửa"
+                                title={t('nutrition_settings.edit')}
                                 size="sm"
                                 onPress={() => setIsEditing(true)}
                             />
@@ -250,7 +251,7 @@ const NutritionSettingsScreen = (): JSX.Element => {
                                 name="calories"
                                 render={({ field: { onChange, value, onBlur } }) => (
                                     <ThemedTextInput
-                                        label="Tổng Calories (kcal)"
+                                        label={t('nutrition_settings.calories_label')}
                                         value={value}
                                         onChangeText={onChange}
                                         onBlur={onBlur}
@@ -263,15 +264,15 @@ const NutritionSettingsScreen = (): JSX.Element => {
                             />
 
                             <View style={[styles.row, { marginTop: theme.spacing.md }]}>
-                                {renderMacroInput('protein', 'Protein (g)', '150')}
-                                {renderMacroInput('carbs', 'Carbs (g)', '200')}
-                                {renderMacroInput('fat', 'Fat (g)', '60')}
+                                {renderMacroInput('protein', t('nutrition_settings.protein_label'), '150')}
+                                {renderMacroInput('carbs', t('nutrition_settings.carbs_label'), '200')}
+                                {renderMacroInput('fat', t('nutrition_settings.fat_label'), '60')}
                             </View>
 
                             <View style={[styles.row, { marginTop: theme.spacing.lg }]}>
                                 <Button
                                     variant="outline"
-                                    title="Hủy"
+                                    title={t('nutrition_settings.cancel')}
                                     onPress={() => {
                                         setIsEditing(false);
                                         reset();
@@ -280,7 +281,7 @@ const NutritionSettingsScreen = (): JSX.Element => {
                                 />
                                 <Button
                                     variant="primary"
-                                    title="Lưu thay đổi"
+                                    title={t('nutrition_settings.save')}
                                     onPress={handleSubmit(onSaveManual)}
                                     loading={applyMutation.isPending}
                                     disabled={applyMutation.isPending}
@@ -309,18 +310,18 @@ const NutritionSettingsScreen = (): JSX.Element => {
                 {/* AI Suggestion Section */}
                 <AppCard>
                     <SectionHeader
-                        title="AI Đề xuất (Adaptive)"
-                        subtitle="Tự động tính toán dựa trên chỉ số cơ thể và mức độ vận động của bạn."
+                        title={t('nutrition_settings.ai_section_title')}
+                        subtitle={t('nutrition_settings.ai_section_subtitle')}
                     />
 
                     {!suggestedTarget ? (
                         <View>
                             <ThemedText variant="body" color="textSecondary" style={{ marginBottom: theme.spacing.lg }}>
-                                AI sẽ phân tích dữ liệu lịch sử và thông tin cá nhân để đề xuất mục tiêu tối ưu nhất cho bạn.
+                                {t('nutrition_settings.ai_desc')}
                             </ThemedText>
                             <Button
                                 variant="secondary"
-                                title="Phân tích & Đề xuất lại"
+                                title={t('nutrition_settings.analyze_btn')}
                                 onPress={() => suggestMutation.mutate()}
                                 loading={suggestMutation.isPending}
                                 disabled={suggestMutation.isPending}
@@ -330,7 +331,7 @@ const NutritionSettingsScreen = (): JSX.Element => {
                     ) : (
                         <Animated.View entering={FadeInDown} style={styles.suggestionBox}>
                             <ThemedText variant="h3" color="primary" style={{ marginBottom: theme.spacing.sm }}>
-                                ✨ Đề xuất mới
+                                {t('nutrition_settings.new_suggestion')}
                             </ThemedText>
 
                             <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: theme.spacing.md }}>
@@ -339,7 +340,7 @@ const NutritionSettingsScreen = (): JSX.Element => {
                                     <ThemedText variant="h2">{Math.round(suggestedTarget.calories)}</ThemedText>
                                 </View>
                                 <View style={{ alignItems: 'flex-end' }}>
-                                    <ThemedText variant="caption" color="textSecondary">Thay đổi</ThemedText>
+                                    <ThemedText variant="caption" color="textSecondary">{t('nutrition_settings.change_label')}</ThemedText>
                                     <ThemedText variant="h3" color={suggestedTarget.calories > (currentTarget?.calories ?? 0) ? 'success' : 'warning'}>
                                         {suggestedTarget.calories > (currentTarget?.calories ?? 0) ? '+' : ''}
                                         {Math.round(suggestedTarget.calories - (currentTarget?.calories ?? 0))}
@@ -365,13 +366,13 @@ const NutritionSettingsScreen = (): JSX.Element => {
                             <View style={[styles.row, { marginTop: theme.spacing.lg }]}>
                                 <Button
                                     variant="outline"
-                                    title="Bỏ qua"
+                                    title={t('nutrition_settings.skip')}
                                     onPress={() => setSuggestedTarget(null)}
                                     style={styles.col}
                                 />
                                 <Button
                                     variant="primary"
-                                    title="Áp dụng"
+                                    title={t('nutrition_settings.apply')}
                                     onPress={onApplySuggestion}
                                     loading={applyMutation.isPending}
                                     style={styles.col}
@@ -384,7 +385,7 @@ const NutritionSettingsScreen = (): JSX.Element => {
                 {/* Info Link */}
                 <Button
                     variant="ghost"
-                    title="Cập nhật thông tin cơ thể (Chiều cao/Cân nặng)"
+                    title={t('nutrition_settings.update_body_info')}
                     onPress={() => navigation.navigate('AppTabs' as any)}
                 />
             </ScrollView>

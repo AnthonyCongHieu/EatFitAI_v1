@@ -9,6 +9,7 @@ import { useNavigation } from '@react-navigation/native';
 import type { NavigationProp } from '@react-navigation/native';
 import { useQuery } from '@tanstack/react-query';
 import { LinearGradient } from 'expo-linear-gradient';
+import { FlashList } from '@shopify/flash-list';
 
 import { Screen } from '../../../components/Screen';
 import { ThemedText } from '../../../components/ThemedText';
@@ -162,10 +163,10 @@ const MealDiaryScreen = (): JSX.Element => {
       return t('common.today');
     }
     if (date.toDateString() === yesterday.toDateString()) {
-      return 'Hôm qua';
+      return t('common.yesterday');
     }
     if (date.toDateString() === tomorrow.toDateString()) {
-      return 'Ngày mai';
+      return t('common.tomorrow');
     }
 
     return date.toLocaleDateString('vi-VN', {
@@ -310,12 +311,12 @@ const MealDiaryScreen = (): JSX.Element => {
 
           <View style={styles.foodActions}>
             <AppChip
-              label={entry.sourceMethod === 'ai' ? 'AI' : 'Tự tạo'}
+              label={entry.sourceMethod === 'ai' ? t('home.source_ai') : t('home.source_manual')}
               variant="solid"
             />
             <Pressable style={styles.editButton} onPress={() => handleEditGrams(entry)}>
               <ThemedText variant="caption" color="primary">
-                Sửa
+                {t('common.edit')}
               </ThemedText>
             </Pressable>
           </View>
@@ -360,7 +361,7 @@ const MealDiaryScreen = (): JSX.Element => {
               color="textSecondary"
               style={styles.emptyMealText}
             >
-              Chưa có món nào trong bữa ăn này
+              {t('common.noMealsInPeriod')}
             </ThemedText>
           </AppCard>
         )}
@@ -393,14 +394,14 @@ const MealDiaryScreen = (): JSX.Element => {
           </View>
         ) : isEmpty ? (
           <EmptyState
-            title="Chưa có dữ liệu"
-            description="Hãy thêm món ăn vào nhật ký."
+            title={t('common.noDataTitle')}
+            description={t('common.noDataDesc')}
             icon="restaurant"
             action={
               <View style={styles.emptyActions}>
                 <View style={styles.actionButton}>
                   <Button
-                    title="+ Thêm món ăn"
+                    title={t('common.addFood')}
                     variant="primary"
                     onPress={handleAddManual}
                   />
@@ -409,11 +410,14 @@ const MealDiaryScreen = (): JSX.Element => {
             }
           />
         ) : (
-          <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-            {groupedEntries.map((group, index) =>
-              renderMealSection({ item: group, index }),
-            )}
-          </ScrollView>
+          <FlashList
+            data={groupedEntries}
+            renderItem={({ item, index }) => renderMealSection({ item, index })}
+            // @ts-ignore
+            estimatedItemSize={200}
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={{ paddingBottom: theme.spacing.xl, paddingHorizontal: theme.spacing.lg }}
+          />
         )}
 
         {/* Action Buttons */}
@@ -421,7 +425,7 @@ const MealDiaryScreen = (): JSX.Element => {
           <View style={styles.actionButtons}>
             <View style={styles.actionButton}>
               <Button
-                title="+ Thêm món ăn"
+                title={t('common.addFood')}
                 variant="primary"
                 onPress={handleAddManual}
               />
@@ -434,22 +438,22 @@ const MealDiaryScreen = (): JSX.Element => {
       <BottomSheet
         visible={showEditSheet}
         onClose={() => setShowEditSheet(false)}
-        title="Chỉnh sửa gram"
+        title={t('common.editGrams')}
         height={300}
       >
         <View style={styles.editSheetContent}>
           <ThemedText variant="body" style={styles.editLabel}>
-            Số gram mới:
+            {t('common.newGrams')}:
           </ThemedText>
           <ThemedTextInput
             value={editGrams}
             onChangeText={setEditGrams}
-            placeholder="Nhập số gram"
+            placeholder={t('common.enterGrams')}
             keyboardType="numeric"
             style={styles.editInput}
           />
           <View style={styles.saveButton}>
-            <Button title="Lưu" onPress={handleSaveGrams} />
+            <Button title={t('common.save')} onPress={handleSaveGrams} />
           </View>
         </View>
       </BottomSheet>

@@ -179,14 +179,14 @@ const HomeScreen = (): JSX.Element => {
   const handleQuickAction = useCallback(
     (_mealType: MealTypeId) => {
       // Redirect to Recipe Suggestions (Ingredient Scan) as per user request
-      navigation.navigate('RecipeSuggestions');
+      navigation.navigate('RecipeSuggestions', {});
     },
     [navigation],
   );
 
   const handleAICamera = useCallback(() => {
     // Redirect to Recipe Suggestions (Ingredient Scan) as per user request
-    navigation.navigate('RecipeSuggestions');
+    navigation.navigate('RecipeSuggestions', {});
   }, [navigation]);
 
   const handleViewAllDiary = useCallback(() => {

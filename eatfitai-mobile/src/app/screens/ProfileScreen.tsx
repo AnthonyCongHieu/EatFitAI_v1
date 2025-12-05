@@ -32,6 +32,7 @@ import { useProfileStore } from '../../store/useProfileStore';
 import { profileService } from '../../services/profileService';
 import { handleApiErrorWithCustomMessage, showSuccess } from '../../utils/errorHandler';
 import type { RootStackParamList } from '../types';
+import { t } from '../../i18n/vi';
 
 // Schema matching actual database fields
 const ProfileSchema = z.object({
@@ -85,23 +86,23 @@ interface AiCalcData {
 }
 
 const GENDER_OPTIONS = [
-  { value: 'male', label: 'Nam', icon: '👨' },
-  { value: 'female', label: 'Nữ', icon: '👩' },
-  { value: 'other', label: 'Khác', icon: '🧑' },
+  { value: 'male', label: t('common.male'), icon: '👨' },
+  { value: 'female', label: t('common.female'), icon: '👩' },
+  { value: 'other', label: t('common.other'), icon: '🧑' },
 ] as const;
 
 const ACTIVITY_OPTIONS = [
-  { value: 'sedentary', label: 'Ít vận động', multiplier: 1.2 },
-  { value: 'light', label: 'Nhẹ nhàng', multiplier: 1.375 },
-  { value: 'moderate', label: 'Vừa phải', multiplier: 1.55 },
-  { value: 'active', label: 'Tích cực', multiplier: 1.725 },
-  { value: 'very_active', label: 'Rất tích cực', multiplier: 1.9 },
+  { value: 'sedentary', label: t('common.sedentary'), multiplier: 1.2 },
+  { value: 'light', label: t('common.light'), multiplier: 1.375 },
+  { value: 'moderate', label: t('common.moderate'), multiplier: 1.55 },
+  { value: 'active', label: t('common.active'), multiplier: 1.725 },
+  { value: 'very_active', label: t('common.very_active'), multiplier: 1.9 },
 ] as const;
 
 const GOAL_OPTIONS = [
-  { value: 'lose', label: 'Giảm cân', icon: '📉', color: '#EF4444' },
-  { value: 'maintain', label: 'Duy trì', icon: '⚖️', color: '#3B82F6' },
-  { value: 'gain', label: 'Tăng cân', icon: '📈', color: '#22C55E' },
+  { value: 'lose', label: t('common.lose_weight'), icon: '📉', color: '#EF4444' },
+  { value: 'maintain', label: t('common.maintain_weight'), icon: '⚖️', color: '#3B82F6' },
+  { value: 'gain', label: t('common.gain_weight'), icon: '📈', color: '#22C55E' },
 ] as const;
 
 const ProfileScreen = (): JSX.Element => {
@@ -167,7 +168,7 @@ const ProfileScreen = (): JSX.Element => {
   useEffect(() => {
     fetchProfile().catch((error: any) => {
       handleApiErrorWithCustomMessage(error, {
-        unknown: { text1: 'Tải hồ sơ thất bại', text2: 'Vui lòng thử lại' },
+        unknown: { text1: t('common.profile_title'), text2: t('common.missing_info') },
       });
     });
   }, [fetchProfile]);
@@ -192,7 +193,7 @@ const ProfileScreen = (): JSX.Element => {
       showSuccess('profile_updated');
     } catch (error: any) {
       handleApiErrorWithCustomMessage(error, {
-        unknown: { text1: 'Không thể lưu hồ sơ', text2: 'Vui lòng thử lại' },
+        unknown: { text1: t('common.save_info'), text2: t('common.missing_info') },
       });
     }
   };
@@ -210,7 +211,7 @@ const ProfileScreen = (): JSX.Element => {
       fetchProfile();
     } catch (error: any) {
       handleApiErrorWithCustomMessage(error, {
-        unknown: { text1: 'Không thể lưu số đo', text2: 'Vui lòng thử lại' },
+        unknown: { text1: t('common.save_history'), text2: t('common.missing_info') },
       });
     }
   };
@@ -228,7 +229,7 @@ const ProfileScreen = (): JSX.Element => {
 
   const handleAiSuggestion = async () => {
     if (!currentHeight || !currentWeight) {
-      Alert.alert('Thiếu thông tin', 'Vui lòng nhập chiều cao và cân nặng trước khi tính toán.');
+      Alert.alert(t('common.missing_info'), t('common.missing_info_desc'));
       return;
     }
 
@@ -280,16 +281,16 @@ const ProfileScreen = (): JSX.Element => {
       }
 
       Alert.alert(
-        '🤖 AI Đề xuất dinh dưỡng',
-        `Mục tiêu hàng ngày:\n\n` +
+        t('common.ai_suggestion_title'),
+        `${t('common.daily_target')}:\n\n` +
         `🔥 Calories: ${result.calories} kcal\n` +
         `💪 Protein: ${result.protein}g\n` +
         `🍞 Carbs: ${result.carbs}g\n` +
         `🥑 Fat: ${result.fat}g`,
         [
-          { text: 'Đóng', style: 'cancel' },
+          { text: t('common.close'), style: 'cancel' },
           {
-            text: 'Áp dụng',
+            text: t('common.apply'),
             onPress: () => navigation.navigate('NutritionSettings'),
           },
         ]
@@ -304,8 +305,8 @@ const ProfileScreen = (): JSX.Element => {
       if (aiData.goal === 'gain') calories += 300;
 
       Alert.alert(
-        '📊 Kết quả tính toán',
-        `Mục tiêu hàng ngày:\n\n` +
+        t('common.calc_result'),
+        `${t('common.daily_target')}:\n\n` +
         `🔥 Calories: ${Math.round(calories)} kcal\n` +
         `💪 Protein: ${Math.round(Number(currentWeight) * 1.6)}g\n` +
         `🍞 Carbs: ${Math.round((calories * 0.45) / 4)}g\n` +
@@ -318,9 +319,9 @@ const ProfileScreen = (): JSX.Element => {
   };
 
   const handleLogout = () => {
-    Alert.alert('Đăng xuất', 'Bạn có chắc muốn đăng xuất?', [
-      { text: 'Hủy', style: 'cancel' },
-      { text: 'Đăng xuất', style: 'destructive', onPress: () => logout() },
+    Alert.alert(t('common.logout'), t('common.logout_confirm'), [
+      { text: t('common.cancel'), style: 'cancel' },
+      { text: t('common.logout'), style: 'destructive', onPress: () => logout() },
     ]);
   };
 
@@ -396,7 +397,7 @@ const ProfileScreen = (): JSX.Element => {
 
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
-      <ScreenHeader title="Hồ sơ" subtitle="Thông tin cá nhân" />
+      <ScreenHeader title={t('common.profile_title')} subtitle={t('common.profile_subtitle')} />
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
         {/* Personal Info Card - Synced with DB */}
@@ -404,7 +405,7 @@ const ProfileScreen = (): JSX.Element => {
           <View style={glass.card}>
             <View style={styles.sectionTitle}>
               <ThemedText style={{ fontSize: 20 }}>👤</ThemedText>
-              <ThemedText variant="h3">Thông tin cá nhân</ThemedText>
+              <ThemedText variant="h3">{t('common.personal_info')}</ThemedText>
             </View>
 
             {/* Avatar with initial */}
@@ -433,11 +434,11 @@ const ProfileScreen = (): JSX.Element => {
               name="fullName"
               render={({ field: { value, onChange, onBlur } }) => (
                 <ThemedTextInput
-                  label="Họ và tên"
+                  label={t('common.full_name')}
                   value={value}
                   onChangeText={onChange}
                   onBlur={onBlur}
-                  placeholder="Nhập họ tên"
+                  placeholder={t('common.enter_name')}
                   error={!!profileErrors.fullName}
                   helperText={profileErrors.fullName?.message}
                   required
@@ -452,7 +453,7 @@ const ProfileScreen = (): JSX.Element => {
                   name="heightCm"
                   render={({ field: { value, onChange, onBlur } }) => (
                     <ThemedTextInput
-                      label="Chiều cao (cm)"
+                      label={t('common.height')}
                       value={value}
                       onChangeText={onChange}
                       onBlur={onBlur}
@@ -468,7 +469,7 @@ const ProfileScreen = (): JSX.Element => {
                   name="weightKg"
                   render={({ field: { value, onChange, onBlur } }) => (
                     <ThemedTextInput
-                      label="Cân nặng (kg)"
+                      label={t('common.weight')}
                       value={value}
                       onChangeText={onChange}
                       onBlur={onBlur}
@@ -482,13 +483,13 @@ const ProfileScreen = (): JSX.Element => {
 
             {profile?.lastMeasuredDate && (
               <ThemedText variant="caption" color="textSecondary" style={{ marginTop: 8 }}>
-                📅 Cập nhật lần cuối: {new Date(profile.lastMeasuredDate).toLocaleDateString('vi-VN')}
+                📅 {t('common.last_updated')}: {new Date(profile.lastMeasuredDate).toLocaleDateString('vi-VN')}
               </ThemedText>
             )}
 
             <View style={{ marginTop: theme.spacing.lg }}>
               <Button
-                title={isSubmittingProfile ? 'Đang lưu...' : 'Lưu thông tin'}
+                title={isSubmittingProfile ? t('common.saving') : t('common.save_info')}
                 onPress={handleSubmit(onSubmitProfile)}
                 loading={isSubmittingProfile}
                 disabled={isSubmittingProfile}
@@ -505,7 +506,7 @@ const ProfileScreen = (): JSX.Element => {
               onPress={() => setShowAiSection(!showAiSection)}
             >
               <ThemedText style={{ fontSize: 20 }}>🤖</ThemedText>
-              <ThemedText variant="h3" style={{ flex: 1 }}>AI Tính toán dinh dưỡng</ThemedText>
+              <ThemedText variant="h3" style={{ flex: 1 }}>{t('common.ai_nutrition_calc')}</ThemedText>
               <Icon name={showAiSection ? 'chevron-up' : 'chevron-down'} size={20} color={theme.colors.textSecondary} />
             </Pressable>
 
@@ -513,7 +514,7 @@ const ProfileScreen = (): JSX.Element => {
               <View style={styles.infoCard}>
                 <Icon name="information-circle" size={20} color={theme.colors.primary} />
                 <ThemedText variant="bodySmall" color="textSecondary" style={{ flex: 1 }}>
-                  Nhấn để mở rộng và tính toán nhu cầu dinh dưỡng dựa trên thông tin cá nhân
+                  {t('common.ai_calc_desc')}
                 </ThemedText>
               </View>
             )}
@@ -523,7 +524,7 @@ const ProfileScreen = (): JSX.Element => {
                 {/* Gender */}
                 <View style={{ marginBottom: theme.spacing.md }}>
                   <ThemedText variant="bodySmall" color="textSecondary" style={{ marginBottom: 8 }}>
-                    Giới tính
+                    {t('common.gender')}
                   </ThemedText>
                   <View style={styles.optionRow}>
                     {GENDER_OPTIONS.map((opt) => (
@@ -550,7 +551,7 @@ const ProfileScreen = (): JSX.Element => {
 
                 {/* Age */}
                 <ThemedTextInput
-                  label="Tuổi"
+                  label={t('common.age')}
                   value={String(aiData.age)}
                   onChangeText={(text) => setAiData({ ...aiData, age: Number(text.replace(/[^0-9]/g, '')) || 0 })}
                   placeholder="25"
@@ -560,7 +561,7 @@ const ProfileScreen = (): JSX.Element => {
                 {/* Goal */}
                 <View style={{ marginTop: theme.spacing.md, marginBottom: theme.spacing.md }}>
                   <ThemedText variant="bodySmall" color="textSecondary" style={{ marginBottom: 8 }}>
-                    Mục tiêu
+                    {t('common.goal')}
                   </ThemedText>
                   <View style={styles.row}>
                     {GOAL_OPTIONS.map((goal) => (
@@ -593,7 +594,7 @@ const ProfileScreen = (): JSX.Element => {
                 {/* Activity Level */}
                 <View style={{ marginBottom: theme.spacing.md }}>
                   <ThemedText variant="bodySmall" color="textSecondary" style={{ marginBottom: 8 }}>
-                    Mức vận động
+                    {t('common.activity_level')}
                   </ThemedText>
                   <View style={styles.optionRow}>
                     {ACTIVITY_OPTIONS.map((act) => (
@@ -638,7 +639,7 @@ const ProfileScreen = (): JSX.Element => {
                       <>
                         <Icon name="sparkles" size={20} color="#fff" />
                         <ThemedText weight="600" style={{ color: '#fff' }}>
-                          Tính toán nhu cầu dinh dưỡng
+                          {t('common.calc_nutrition')}
                         </ThemedText>
                       </>
                     )}
@@ -654,11 +655,11 @@ const ProfileScreen = (): JSX.Element => {
           <View style={glass.card}>
             <View style={styles.sectionTitle}>
               <ThemedText style={{ fontSize: 20 }}>📏</ThemedText>
-              <ThemedText variant="h3">Ghi lịch sử số đo</ThemedText>
+              <ThemedText variant="h3">{t('common.history_metrics')}</ThemedText>
             </View>
 
             <ThemedText variant="bodySmall" color="textSecondary" style={{ marginBottom: theme.spacing.md }}>
-              Thêm bản ghi số đo mới vào lịch sử theo dõi
+              {t('common.add_metrics_desc')}
             </ThemedText>
 
             <View style={styles.row}>
@@ -668,7 +669,7 @@ const ProfileScreen = (): JSX.Element => {
                   name="heightCm"
                   render={({ field: { value, onChange, onBlur } }) => (
                     <ThemedTextInput
-                      label="Cao (cm)"
+                      label={t('common.height')}
                       value={value ?? ''}
                       onChangeText={onChange}
                       onBlur={onBlur}
@@ -686,7 +687,7 @@ const ProfileScreen = (): JSX.Element => {
                   name="weightKg"
                   render={({ field: { value, onChange, onBlur } }) => (
                     <ThemedTextInput
-                      label="Nặng (kg)"
+                      label={t('common.weight')}
                       value={value ?? ''}
                       onChangeText={onChange}
                       onBlur={onBlur}
@@ -705,7 +706,7 @@ const ProfileScreen = (): JSX.Element => {
               name="measuredDate"
               render={({ field: { value, onChange, onBlur } }) => (
                 <ThemedTextInput
-                  label="Ngày đo (YYYY-MM-DD)"
+                  label={t('common.measured_date')}
                   value={value ?? ''}
                   onChangeText={onChange}
                   onBlur={onBlur}
@@ -721,7 +722,7 @@ const ProfileScreen = (): JSX.Element => {
               name="note"
               render={({ field: { value, onChange, onBlur } }) => (
                 <ThemedTextInput
-                  label="Ghi chú (tùy chọn)"
+                  label={t('common.note')}
                   value={value ?? ''}
                   onChangeText={onChange}
                   onBlur={onBlur}
@@ -734,7 +735,7 @@ const ProfileScreen = (): JSX.Element => {
 
             <View style={{ marginTop: theme.spacing.md }}>
               <Button
-                title={isSubmittingMetrics ? 'Đang lưu...' : 'Lưu vào lịch sử'}
+                title={isSubmittingMetrics ? t('common.saving') : t('common.save_history')}
                 onPress={handleMetricsSubmit(onSubmitBodyMetrics)}
                 loading={isSubmittingMetrics}
                 disabled={isSubmittingMetrics}
@@ -748,19 +749,19 @@ const ProfileScreen = (): JSX.Element => {
         <Animated.View entering={FadeInUp.delay(400).duration(400)}>
           <View style={{ gap: theme.spacing.md }}>
             <Button
-              title="Cài đặt mục tiêu dinh dưỡng"
+              title={t('common.nutrition_settings')}
               variant="outline"
               onPress={() => navigation.navigate('NutritionSettings')}
             />
 
             <Button
-              title="Xem phân tích dinh dưỡng"
+              title={t('common.view_insights')}
               variant="outline"
               onPress={() => navigation.navigate('NutritionInsights')}
             />
 
             <Button
-              title="Đăng xuất"
+              title={t('common.logout')}
               variant="ghost"
               onPress={handleLogout}
             />

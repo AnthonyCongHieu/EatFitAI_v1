@@ -10,10 +10,12 @@ namespace EatFitAI.API.Controllers
     public class AuthController : ControllerBase
     {
         private readonly IAuthService _authService;
+        private readonly ILogger<AuthController> _logger;
 
-        public AuthController(IAuthService authService)
+        public AuthController(IAuthService authService, ILogger<AuthController> logger)
         {
             _authService = authService;
+            _logger = logger;
         }
 
         [AllowAnonymous]
@@ -50,12 +52,12 @@ namespace EatFitAI.API.Controllers
             }
             catch (ArgumentException ex)
             {
-                Console.WriteLine($"[AuthController] Registration failed for email: {request.Email}, error: {ex.Message}");
+                _logger.LogWarning("Registration failed for email: {Email}, error: {Error}", request.Email, ex.Message);
                 return BadRequest(new { message = ex.Message });
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[AuthController] Unexpected error during registration for email: {request.Email}, error: {ex.Message}");
+                _logger.LogError(ex, "Unexpected error during registration for email: {Email}", request.Email);
                 throw;
             }
         }
@@ -78,8 +80,11 @@ namespace EatFitAI.API.Controllers
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[AuthController] Error during registration with verification: {ex.Message}");
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error during registration with verification");
                 throw;
+            }
             }
         }
 

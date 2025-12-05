@@ -37,6 +37,7 @@ import { handleApiError } from '../../../utils/errorHandler';
 import { mealService } from '../../../services/mealService';
 import Icon from '../../../components/Icon';
 import { glassStyles } from '../../../components/ui/GlassCard';
+import { t } from '../../../i18n/vi';
 
 const PAGE_SIZE = 20;
 
@@ -181,7 +182,7 @@ const FoodSearchScreen = (): JSX.Element => {
 
       Toast.show({
         type: 'success',
-        text1: isFavorite ? 'Đã thêm vào yêu thích' : 'Đã xóa khỏi yêu thích',
+        text1: isFavorite ? t('food_search.added_favorite') : t('food_search.removed_favorite'),
         visibilityTime: 2000,
       });
     } catch (error) {
@@ -205,7 +206,7 @@ const FoodSearchScreen = (): JSX.Element => {
 
       Toast.show({
         type: 'success',
-        text1: 'Đã thêm nhanh',
+        text1: t('food_search.quick_add_success'),
         text2: `${item.name} (100g) - ${item.calories || 0} kcal`,
       });
     } catch (error) {
@@ -234,8 +235,8 @@ const FoodSearchScreen = (): JSX.Element => {
       if (!query.trim()) {
         Toast.show({
           type: 'info',
-          text1: 'Vui lòng nhập từ khóa tìm kiếm',
-          text2: 'Ví dụ: gà, cơm, salad...',
+          text1: t('food_search.empty_search'),
+          text2: t('food_search.empty_search_hint'),
         });
         return;
       }
@@ -393,7 +394,7 @@ const FoodSearchScreen = (): JSX.Element => {
                   }
                 >
                   <ThemedText variant="button" color="primary">
-                    Xem
+                    {t('food_search.view_details')}
                   </ThemedText>
                 </Pressable>
               </View>
@@ -425,8 +426,8 @@ const FoodSearchScreen = (): JSX.Element => {
   return (
     <Screen scroll={false} style={styles.container}>
       <ScreenHeader
-        title="Tìm kiếm món ăn"
-        subtitle="Tìm và thêm món ăn vào nhật ký dinh dưỡng"
+        title={t('food_search.title')}
+        subtitle={t('food_search.subtitle')}
       />
 
       {/* Tabs */}
@@ -445,7 +446,7 @@ const FoodSearchScreen = (): JSX.Element => {
             variant="h4"
             color={activeTab === 'search' ? 'primary' : 'textSecondary'}
           >
-            Tìm kiếm
+            {t('food_search.tab_search')}
           </ThemedText>
         </Pressable>
         <Pressable
@@ -462,7 +463,7 @@ const FoodSearchScreen = (): JSX.Element => {
             variant="h4"
             color={activeTab === 'favorites' ? 'primary' : 'textSecondary'}
           >
-            Yêu thích
+            {t('food_search.tab_favorites')}
           </ThemedText>
         </Pressable>
       </View>
@@ -479,12 +480,12 @@ const FoodSearchScreen = (): JSX.Element => {
             value={query}
             onChangeText={setQuery}
             onSubmitEditing={handleSearch}
-            placeholder="Nhập từ khóa tìm kiếm..."
+            placeholder={t('food_search.placeholder')}
             autoCapitalize="none"
             returnKeyType="search"
             style={{ flex: 1, borderWidth: 0, paddingHorizontal: 0, paddingVertical: 0 }}
-            accessibilityLabel="Tìm kiếm món ăn"
-            accessibilityHint="Nhập tên món ăn bạn muốn tìm"
+            accessibilityLabel={t('food_search.title')}
+            accessibilityHint={t('food_search.placeholder')}
           />
           <View style={{ width: 90 }}>
             <Button
@@ -492,8 +493,8 @@ const FoodSearchScreen = (): JSX.Element => {
               size="sm"
               onPress={handleSearch}
               fullWidth
-              title="Tìm"
-              accessibilityLabel="Bắt đầu tìm kiếm"
+              title={t('food_search.btn_search')}
+              accessibilityLabel={t('food_search.btn_search')}
             />
           </View>
         </Animated.View>
@@ -513,7 +514,7 @@ const FoodSearchScreen = (): JSX.Element => {
               color="textSecondary"
               style={{ marginTop: theme.spacing.md }}
             >
-              {activeTab === 'search' ? 'Đang tìm kiếm...' : 'Đang tải danh sách yêu thích...'}
+              {activeTab === 'search' ? t('food_search.loading_search') : t('food_search.loading_favorites')}
             </ThemedText>
           </View>
           {renderSkeleton()}
@@ -548,7 +549,7 @@ const FoodSearchScreen = (): JSX.Element => {
                   ]}
                 >
                   <ThemedText variant="h4" color="textSecondary">
-                    {activeTab === 'search' ? '🍽️ Không tìm thấy kết quả' : '❤️ Chưa có món yêu thích'}
+                    {activeTab === 'search' ? t('food_search.no_results') : t('food_search.no_favorites')}
                   </ThemedText>
                   <ThemedText
                     variant="bodySmall"
@@ -556,8 +557,8 @@ const FoodSearchScreen = (): JSX.Element => {
                     style={{ marginTop: theme.spacing.sm }}
                   >
                     {activeTab === 'search'
-                      ? 'Thử tìm kiếm với từ khóa khác hoặc kiểm tra chính tả'
-                      : 'Hãy thả tim các món ăn bạn thích để lưu vào đây nhé!'}
+                      ? t('food_search.no_results_hint')
+                      : t('food_search.no_favorites_hint')}
                   </ThemedText>
                 </View>
               </View>
@@ -581,7 +582,7 @@ const FoodSearchScreen = (): JSX.Element => {
           ]}
         >
           <ThemedText variant="bodySmall" color="textSecondary">
-            {activeTab === 'search' ? 'Tổng kết quả: ' : 'Tổng món yêu thích: '}
+            {activeTab === 'search' ? t('food_search.total_results') : t('food_search.total_favorites')}
             <ThemedText variant="bodySmall" weight="600">
               {total}
             </ThemedText>

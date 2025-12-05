@@ -25,6 +25,7 @@ import {
   translateRecommendationType,
 } from '../../../utils/translate';
 import { glassStyles } from '../../../components/ui/GlassCard';
+import { t } from '../../../i18n/vi';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -113,7 +114,7 @@ const NutritionInsightsScreen = (): JSX.Element => {
       setInsights(insightsData);
       setAdaptiveTarget(adaptiveData);
     } catch (err: any) {
-      setError(err?.message || 'Lỗi khi tải dữ liệu phân tích');
+      setError(err?.message || t('nutrition_insights.error_title'));
     } finally {
       setLoading(false);
     }
@@ -124,10 +125,10 @@ const NutritionInsightsScreen = (): JSX.Element => {
     setApplying(true);
     try {
       await aiService.applyAdaptiveTarget(adaptiveTarget.suggestedTarget);
-      alert('Đã áp dụng mục tiêu mới thành công!');
+      alert(t('nutrition_insights.apply_success'));
       navigation.goBack();
     } catch (err: any) {
-      alert('Lỗi khi áp dụng mục tiêu: ' + err?.message);
+      alert(t('nutrition_insights.apply_error') + ': ' + err?.message);
     } finally {
       setApplying(false);
     }
@@ -261,7 +262,7 @@ const NutritionInsightsScreen = (): JSX.Element => {
   if (loading) {
     return (
       <Screen style={styles.container}>
-        <ScreenHeader title="Phân tích dinh dưỡng" subtitle="Đang tải dữ liệu..." />
+        <ScreenHeader title={t('nutrition_insights.title')} subtitle={t('nutrition_insights.loading')} />
         <View style={styles.center}>
           <ActivityIndicator size="large" color={theme.colors.primary} />
         </View>
@@ -272,11 +273,11 @@ const NutritionInsightsScreen = (): JSX.Element => {
   if (error) {
     return (
       <Screen style={styles.container}>
-        <ScreenHeader title="Phân tích dinh dưỡng" subtitle="Có lỗi xảy ra" />
+        <ScreenHeader title={t('nutrition_insights.title')} subtitle={t('nutrition_insights.error_title')} />
         <View style={styles.center}>
           <ThemedText color="danger">{error}</ThemedText>
           <View style={{ marginTop: theme.spacing.md }}>
-            <Button title="Thử lại" onPress={loadData} variant="secondary" />
+            <Button title={t('nutrition_insights.retry')} onPress={loadData} variant="secondary" />
           </View>
         </View>
       </Screen>
@@ -286,8 +287,8 @@ const NutritionInsightsScreen = (): JSX.Element => {
   return (
     <Screen style={styles.container} scroll={false}>
       <ScreenHeader
-        title="Phân tích dinh dưỡng"
-        subtitle="Thông tin chi tiết và đề xuất cá nhân hóa"
+        title={t('nutrition_insights.title')}
+        subtitle={t('nutrition_insights.subtitle')}
       />
 
       <ScrollView contentContainerStyle={styles.content}>
@@ -302,14 +303,14 @@ const NutritionInsightsScreen = (): JSX.Element => {
               </View>
               <View style={styles.trendContainer}>
                 <ThemedText variant="h3" style={{ marginBottom: 4 }}>
-                  Điểm tuân thủ
+                  {t('nutrition_insights.adherence_score')}
                 </ThemedText>
                 <ThemedText
                   variant="bodySmall"
                   color="textSecondary"
                   style={{ marginBottom: 8 }}
                 >
-                  Đánh giá mức độ bạn bám sát mục tiêu dinh dưỡng.
+                  {t('nutrition_insights.adherence_desc')}
                 </ThemedText>
                 <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                   <Ionicons
@@ -331,17 +332,17 @@ const NutritionInsightsScreen = (): JSX.Element => {
                   />
                   <ThemedText variant="body" style={{ marginLeft: 6, fontWeight: '600' }}>
                     {insights.progressTrend === 'improving'
-                      ? 'Đang cải thiện'
+                      ? t('nutrition_insights.trend_improving')
                       : insights.progressTrend === 'declining'
-                        ? 'Cần cố gắng hơn'
-                        : 'Ổn định'}
+                        ? t('nutrition_insights.trend_declining')
+                        : t('nutrition_insights.trend_stable')}
                   </ThemedText>
                 </View>
               </View>
             </View>
 
             <ThemedText variant="h3" style={styles.sectionTitle}>
-              Đề xuất cho bạn
+              {t('nutrition_insights.recommendations_title')}
             </ThemedText>
             {insights.recommendations.length > 0 ? (
               insights.recommendations.map(renderRecommendation)
@@ -357,8 +358,7 @@ const NutritionInsightsScreen = (): JSX.Element => {
                     variant="body"
                     style={{ marginTop: 8, textAlign: 'center' }}
                   >
-                    Tuyệt vời! Bạn đang làm rất tốt, chưa có đề xuất nào cần thiết lúc
-                    này.
+                    {t('nutrition_insights.no_recommendations')}
                   </ThemedText>
                 </View>
               </AppCard>
@@ -367,7 +367,7 @@ const NutritionInsightsScreen = (): JSX.Element => {
             {insights.mealTimingInsight && (
               <>
                 <ThemedText variant="h3" style={styles.sectionTitle}>
-                  Thói quen ăn uống
+                  {t('nutrition_insights.meal_timing_title')}
                 </ThemedText>
                 <AppCard>
                   <View
@@ -383,12 +383,12 @@ const NutritionInsightsScreen = (): JSX.Element => {
                       color={theme.colors.info}
                       style={{ marginRight: 8 }}
                     />
-                    <ThemedText variant="h4">Thời gian ăn</ThemedText>
+                    <ThemedText variant="h4">{t('nutrition_insights.meal_timing_title')}</ThemedText>
                   </View>
                   <ThemedText variant="body" style={{ marginBottom: 8 }}>
-                    Trung bình:{' '}
+                    {t('nutrition_insights.meal_timing_avg')}:{' '}
                     <ThemedText weight="700">
-                      {insights.mealTimingInsight.averageMealsPerDay.toFixed(1)} bữa/ngày
+                      {insights.mealTimingInsight.averageMealsPerDay.toFixed(1)} {t('nutrition_insights.meals_per_day')}
                     </ThemedText>
                   </ThemedText>
                   {insights.mealTimingInsight.insights.map((insight, idx) => (
@@ -414,7 +414,7 @@ const NutritionInsightsScreen = (): JSX.Element => {
         {adaptiveTarget && adaptiveTarget.confidenceScore > 50 && (
           <>
             <ThemedText variant="h3" style={styles.sectionTitle}>
-              Gợi ý điều chỉnh mục tiêu
+              {t('nutrition_insights.adaptive_title')}
             </ThemedText>
             <AppCard>
               <View
@@ -426,7 +426,7 @@ const NutritionInsightsScreen = (): JSX.Element => {
                   color={theme.colors.primary}
                   style={{ marginRight: 8 }}
                 />
-                <ThemedText variant="h4">AI đề xuất thay đổi</ThemedText>
+                <ThemedText variant="h4">{t('nutrition_insights.ai_suggestion')}</ThemedText>
               </View>
 
               <View style={styles.targetComparison}>
@@ -436,7 +436,7 @@ const NutritionInsightsScreen = (): JSX.Element => {
                     color="textSecondary"
                     style={{ marginBottom: 4 }}
                   >
-                    HIỆN TẠI
+                    {t('nutrition_insights.current')}
                   </ThemedText>
                   <ThemedText variant="h2">
                     {adaptiveTarget.currentTarget.targetCalories}
@@ -466,7 +466,7 @@ const NutritionInsightsScreen = (): JSX.Element => {
                     color="primary"
                     style={{ marginBottom: 4, fontWeight: 'bold' }}
                   >
-                    ĐỀ XUẤT
+                    {t('nutrition_insights.suggested')}
                   </ThemedText>
                   <ThemedText variant="h2" color="primary">
                     {adaptiveTarget.suggestedTarget.targetCalories}
@@ -495,7 +495,7 @@ const NutritionInsightsScreen = (): JSX.Element => {
               </View>
 
               <Button
-                title={`Áp dụng thay đổi (Tin cậy: ${Math.round(adaptiveTarget.confidenceScore)}%)`}
+                title={`${t('nutrition_insights.apply_change')} (${t('nutrition_insights.confidence')}: ${Math.round(adaptiveTarget.confidenceScore)}%)`}
                 onPress={applyAdaptiveTarget}
                 loading={applying}
                 variant="primary"

@@ -229,72 +229,20 @@ namespace EatFitAI.API.Controllers
         }
 
         [HttpPost("nutrition/recalculate")]
-        public async Task<IActionResult> RecalculateNutritionTargets([FromBody] object request)
+        public async Task<IActionResult> RecalculateNutritionTargets([FromBody] RecalculateTargetRequest request)
         {
-            // Recalculate using provided payload or defaults
             using var scope = HttpContext.RequestServices.CreateScope();
             var calc = scope.ServiceProvider.GetRequiredService<EatFitAI.API.Services.INutritionCalcService>();
-            string sex = "male"; int age = 25; double heightCm = 170; double weightKg = 65; double activity = 1.38; string goal = "maintain";
-            try
-            {
-                if (request is JsonElement je && je.ValueKind == JsonValueKind.Object)
-                {
-                    if (je.TryGetProperty("sex", out var v) && v.ValueKind == JsonValueKind.String) sex = v.GetString() ?? sex;
-                    if (je.TryGetProperty("age", out v) && v.TryGetInt32(out var i)) age = i;
-                    if (je.TryGetProperty("heightCm", out v) && v.TryGetDouble(out var d)) heightCm = d;
-                    if (je.TryGetProperty("weightKg", out v) && v.TryGetDouble(out d)) weightKg = d;
-                    if (je.TryGetProperty("activityLevel", out v) && v.TryGetDouble(out d)) activity = d;
-                    if (je.TryGetProperty("goal", out v) && v.ValueKind == JsonValueKind.String) goal = v.GetString() ?? goal;
-                }
-            }
-            catch { }
-            var (cal, p, c, f) = calc.Suggest(sex, age, heightCm, weightKg, activity, goal);
+            
+            var (cal, p, c, f) = calc.Suggest(
+                request.Sex ?? "male", 
+                request.Age ?? 25, 
+                request.HeightCm ?? 170, 
+                request.WeightKg ?? 65, 
+                request.ActivityLevel ?? 1.38, 
+                request.Goal ?? "maintain");
+                
             return Ok(new { calories = cal, protein = p, carbs = c, fat = f });
-        }
-
-        [HttpPost("nutrition-targets")]
-        public async Task<IActionResult> SetNutritionTargets([FromBody] object request)
-        {
-            var userId = GetUserIdFromToken();
-            int? calories = null, protein = null, carbs = null, fat = null;
-            try
-            {
-                if (request is JsonElement je && je.ValueKind == JsonValueKind.Object)
-                {
-                    if (je.TryGetProperty("caloriesKcal", out var v) && v.TryGetInt32(out var i)) calories = i;
-                    if (je.TryGetProperty("proteinGrams", out v) && v.TryGetInt32(out i)) protein = i;
-                    if (je.TryGetProperty("carbohydrateGrams", out v) && v.TryGetInt32(out i)) carbs = i;
-                    if (je.TryGetProperty("fatGrams", out v) && v.TryGetInt32(out i)) fat = i;
-                }
-            }
-            catch { }
-            if (calories is null || protein is null || carbs is null || fat is null)
-            {
-                return BadRequest(new { message = "Invalid payload" });
-            }
-            using var scope = HttpContext.RequestServices.CreateScope();
-            var db = scope.ServiceProvider.GetRequiredService<EatFitAI.API.DbScaffold.Data.EatFitAIDbContext>();
-            var today = DateOnly.FromDateTime(DateTime.UtcNow.Date);
-            var entity = new EatFitAI.API.DbScaffold.Models.NutritionTarget
-            {
-                UserId = userId,
-                TargetCalories = calories.Value,
-                TargetProtein = protein.Value,
-                TargetCarb = carbs.Value,
-                TargetFat = fat.Value,
-                EffectiveFrom = today,
-                EffectiveTo = null
-            };
-            db.NutritionTargets.Add(entity);
-            await db.SaveChangesAsync();
-            return NoContent();
-        }
-
-        [HttpPost("vision/ingredients")]
-        public async Task<IActionResult> DetectIngredientsFromImage([FromBody] object request)
-        {
-            // Backward-compatible placeholder
-            return StatusCode(501, new { message = "Use POST /api/ai/vision/detect (multipart/form-data)" });
         }
 
         /// <summary>

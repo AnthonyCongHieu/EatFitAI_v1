@@ -87,7 +87,13 @@ namespace EatFitAI.API.Services
                 // Generate refresh token
                 var refreshToken = GenerateRefreshToken();
                 var refreshTokenExpiresAt = DateTime.UtcNow.AddDays(30); // 30 days
-                Console.WriteLine($"[AuthService] Refresh token generated: {refreshToken?.Substring(0, Math.Min(20, refreshToken.Length))}...");
+                
+                // Save Refresh Token to DB
+                user.RefreshToken = refreshToken;
+                user.RefreshTokenExpiryTime = refreshTokenExpiresAt;
+                await _context.SaveChangesAsync();
+                
+                Console.WriteLine($"[AuthService] Refresh token generated and saved: {refreshToken?.Substring(0, Math.Min(20, refreshToken.Length))}...");
 
                 var response = new AuthResponse
                 {
@@ -127,6 +133,11 @@ namespace EatFitAI.API.Services
             // Generate refresh token
             var refreshToken = GenerateRefreshToken();
             var refreshTokenExpiresAt = DateTime.UtcNow.AddDays(30); // 30 days
+
+            // Save Refresh Token to DB
+            user.RefreshToken = refreshToken;
+            user.RefreshTokenExpiryTime = refreshTokenExpiresAt;
+            await _context.SaveChangesAsync();
 
             return new AuthResponse
             {
@@ -237,10 +248,17 @@ namespace EatFitAI.API.Services
 
         public async Task LogoutAsync(string refreshToken)
         {
-            // In a real implementation, you would invalidate the refresh token
-            // For now, we'll just return as logout is typically handled client-side
-            // by discarding the tokens
-            await Task.CompletedTask;
+            if (string.IsNullOrEmpty(refreshToken)) return;
+
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.RefreshToken == refreshToken);
+            if (user != null)
+            {
+                // Revoke token
+                user.RefreshToken = null;
+                user.RefreshTokenExpiryTime = null;
+                await _context.SaveChangesAsync();
+                Console.WriteLine($"[AuthService] User {user.UserId} logged out, refresh token revoked.");
+            }
         }
 
         public async Task<AuthResponse> RefreshTokenAsync(string refreshToken)
@@ -251,15 +269,44 @@ namespace EatFitAI.API.Services
                 throw new UnauthorizedAccessException("Invalid refresh token");
             }
 
-            // For now, we'll implement a simple refresh token validation
-            // In a production system, you would store refresh tokens in the database
-            // and validate them properly. For this demo, we'll accept any non-empty token
-            // and generate new tokens.
+            // Find user by refresh token
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.RefreshToken == refreshToken);
 
-            // Generate new JWT token - we need a user context
-            // Since we don't have proper refresh token storage, we'll need to get user from somewhere
-            // For now, let's throw an exception indicating this needs proper implementation
-            throw new NotImplementedException("Refresh token functionality requires proper token storage. Please implement refresh token persistence in the database.");
+            if (user == null)
+            {
+                throw new UnauthorizedAccessException("Invalid refresh token or user not found");
+            }
+
+            if (user.RefreshTokenExpiryTime == null || user.RefreshTokenExpiryTime < DateTime.UtcNow)
+            {
+                // Token expired
+                throw new UnauthorizedAccessException("Refresh token has expired. Please login again.");
+            }
+
+            // Generate NEW tokens (Rotation)
+            var newToken = GenerateJwtToken(user);
+            var newExpiresAt = DateTime.UtcNow.AddHours(24);
+            
+            var newRefreshToken = GenerateRefreshToken();
+            var newRefreshTokenExpiresAt = DateTime.UtcNow.AddDays(30);
+
+            // Update DB with new refresh token (invalidate old one)
+            user.RefreshToken = newRefreshToken;
+            user.RefreshTokenExpiryTime = newRefreshTokenExpiresAt;
+            await _context.SaveChangesAsync();
+
+            Console.WriteLine($"[AuthService] Token refreshed for user {user.UserId}");
+
+            return new AuthResponse
+            {
+                UserId = user.UserId,
+                Email = user.Email,
+                DisplayName = user.DisplayName ?? string.Empty,
+                Token = newToken,
+                ExpiresAt = newExpiresAt,
+                RefreshToken = newRefreshToken,
+                RefreshTokenExpiresAt = newRefreshTokenExpiresAt
+            };
         }
 
         public async Task<AuthResponse> GoogleLoginAsync(string idToken)
@@ -493,6 +540,11 @@ namespace EatFitAI.API.Services
             var expiresAt = DateTime.UtcNow.AddHours(24);
             var refreshToken = GenerateRefreshToken();
             var refreshTokenExpiresAt = DateTime.UtcNow.AddDays(30);
+
+            // Save Refresh Token
+            user.RefreshToken = refreshToken;
+            user.RefreshTokenExpiryTime = refreshTokenExpiresAt;
+            await _context.SaveChangesAsync();
 
             return new AuthResponse
             {
