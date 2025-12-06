@@ -213,7 +213,8 @@ const FoodDetailScreen = (): JSX.Element | null => {
 
   const macroValue = useCallback(
     (base?: number | null) => {
-      if (!base || multiplier <= 0) return '--';
+      // Only show '--' when base is null/undefined, 0 is a valid value
+      if (base === null || base === undefined || multiplier <= 0) return '--';
       const value = base * multiplier;
       return `${value.toFixed(1).replace(/\.0$/, '')} g`;
     },

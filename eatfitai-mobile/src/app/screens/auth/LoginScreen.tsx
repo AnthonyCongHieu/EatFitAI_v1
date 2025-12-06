@@ -48,13 +48,19 @@ const LoginScreen = ({ navigation }: Props): JSX.Element => {
     async (values: LoginValues) => {
       try {
         setLoading(true);
-        await login(values.email, values.password);
+        const result = await login(values.email, values.password);
         Toast.show({
           type: 'success',
           text1: '👋 Chào mừng trở lại!',
           text2: 'Đăng nhập thành công',
         });
-        navigation.reset({ index: 0, routes: [{ name: 'AppTabs' }] });
+
+        // Navigate based on onboarding status
+        if (result.needsOnboarding) {
+          navigation.reset({ index: 0, routes: [{ name: 'Onboarding' }] });
+        } else {
+          navigation.reset({ index: 0, routes: [{ name: 'AppTabs' }] });
+        }
       } catch (e: any) {
         handleApiError(e);
       } finally {
