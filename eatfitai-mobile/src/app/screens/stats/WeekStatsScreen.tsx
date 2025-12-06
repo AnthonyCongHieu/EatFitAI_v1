@@ -156,6 +156,19 @@ const WeekStatsScreen = (): JSX.Element => {
     [highlightedCard, cardScale],
   );
 
+  // Animated styles for summary cards - moved to top level to follow React Hook rules
+  const card0AnimatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: highlightedCard === 0 ? cardScale.value : 1 }],
+  }));
+
+  const card1AnimatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: highlightedCard === 1 ? cardScale.value : 1 }],
+  }));
+
+  const card2AnimatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: highlightedCard === 2 ? cardScale.value : 1 }],
+  }));
+
   const chartData = useMemo(() => {
     return (weekSummary?.days ?? []).map((day) => ({
       x: new Date(day.date).toLocaleDateString('vi-VN', { weekday: 'short' }),
@@ -337,9 +350,7 @@ const WeekStatsScreen = (): JSX.Element => {
               style={[
                 styles.summaryItem,
                 highlightedCard === 0 && { backgroundColor: theme.colors.primaryLight },
-                useAnimatedStyle(() => ({
-                  transform: [{ scale: highlightedCard === 0 ? cardScale.value : 1 }],
-                })),
+                card0AnimatedStyle,
               ]}
               entering={FadeInUp.delay(200).duration(400).springify()}
             >
@@ -363,9 +374,7 @@ const WeekStatsScreen = (): JSX.Element => {
               style={[
                 styles.summaryItem,
                 highlightedCard === 1 && { backgroundColor: theme.colors.secondaryLight },
-                useAnimatedStyle(() => ({
-                  transform: [{ scale: highlightedCard === 1 ? cardScale.value : 1 }],
-                })),
+                card1AnimatedStyle,
               ]}
               entering={FadeInUp.delay(300).duration(400).springify()}
             >
@@ -385,9 +394,7 @@ const WeekStatsScreen = (): JSX.Element => {
               style={[
                 styles.summaryItem,
                 highlightedCard === 2 && { backgroundColor: theme.colors.success + '20' },
-                useAnimatedStyle(() => ({
-                  transform: [{ scale: highlightedCard === 2 ? cardScale.value : 1 }],
-                })),
+                card2AnimatedStyle,
               ]}
               entering={FadeInUp.delay(400).duration(400).springify()}
             >

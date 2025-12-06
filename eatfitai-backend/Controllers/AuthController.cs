@@ -80,11 +80,8 @@ namespace EatFitAI.API.Controllers
             }
             catch (Exception ex)
             {
-            catch (Exception ex)
-            {
                 _logger.LogError(ex, "Error during registration with verification");
                 throw;
-            }
             }
         }
 

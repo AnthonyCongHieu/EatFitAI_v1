@@ -24,7 +24,7 @@ type AuthState = {
   isAuthenticated: boolean;
   user: AuthUser | null;
   init: () => Promise<void>;
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<{ needsOnboarding: boolean }>;
   register: (name: string, email: string, password: string) => Promise<void>;
   signInWithGoogle: () => Promise<void>;
   logout: () => Promise<void>;
@@ -75,7 +75,7 @@ export const useAuthStore = create<AuthState>((set: any) => ({
   },
 
   login: async (email, password) => {
-    const resp = await apiClient.post<AuthTokensResponse>('/api/auth/login', {
+    const resp = await apiClient.post<AuthTokensResponse & { needsOnboarding?: boolean }>('/api/auth/login', {
       Email: email,
       Password: password,
     });
@@ -93,6 +93,9 @@ export const useAuthStore = create<AuthState>((set: any) => ({
     await updateSessionFromAuthResponse(data as AuthResponse);
 
     set({ isAuthenticated: true, user: (data?.user as AuthUser | undefined) ?? null });
+
+    // Return needsOnboarding flag for navigation decision
+    return { needsOnboarding: data?.needsOnboarding ?? false };
   },
 
   register: async (name, email, password) => {
@@ -179,7 +182,7 @@ export const useAuthStore = create<AuthState>((set: any) => ({
     setAccessTokenMem(accessToken);
     try {
       await updateSessionFromAuthResponse(result as AuthResponse);
-    } catch {}
+    } catch { }
 
     set({ isAuthenticated: true });
   },

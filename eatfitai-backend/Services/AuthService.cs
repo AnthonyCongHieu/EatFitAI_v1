@@ -147,7 +147,8 @@ namespace EatFitAI.API.Services
                 Token = token,
                 ExpiresAt = expiresAt,
                 RefreshToken = refreshToken,
-                RefreshTokenExpiresAt = refreshTokenExpiresAt
+                RefreshTokenExpiresAt = refreshTokenExpiresAt,
+                NeedsOnboarding = !user.OnboardingCompleted
             };
         }
 
@@ -444,12 +445,56 @@ namespace EatFitAI.API.Services
             Console.WriteLine($"[AuthService] Starting registration with verification for email: {request.Email}");
 
             // Check if email already exists
-            if (await _userRepository.EmailExistsAsync(request.Email))
+            var existingUser = await _userRepository.GetByEmailAsync(request.Email);
+            if (existingUser != null)
             {
-                Console.WriteLine($"[AuthService] Email already exists: {request.Email}");
+                // If email exists but NOT verified, allow re-registration by resetting verification code
+                if (!existingUser.EmailVerified)
+                {
+                    Console.WriteLine($"[AuthService] Email exists but unverified, resetting verification code: {request.Email}");
+                    
+                    // Update password and display name if provided
+                    existingUser.PasswordHash = HashPassword(request.Password);
+                    if (!string.IsNullOrEmpty(request.DisplayName))
+                    {
+                        existingUser.DisplayName = request.DisplayName;
+                    }
+                    
+                    // Generate new verification code
+                    var verificationCode = GenerateNumericCode(6);
+                    existingUser.VerificationCode = HashResetCode(verificationCode);
+                    existingUser.VerificationCodeExpiry = DateTime.UtcNow.Add(VerificationCodeLifetime);
+                    
+                    await _context.SaveChangesAsync();
+                    
+                    // Send email
+                    try
+                    {
+                        await _emailService.SendVerificationCodeAsync(existingUser.Email, verificationCode, existingUser.VerificationCodeExpiry.Value);
+                        Console.WriteLine($"[AuthService] Verification code re-sent to {existingUser.Email}");
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"[AuthService] Failed to send verification email: {ex.Message}");
+                    }
+                    
+                    var includeCodeInResponse = _env.IsDevelopment();
+                    return new RegisterResponse
+                    {
+                        Success = true,
+                        Message = includeCodeInResponse 
+                            ? "Đã gửi lại mã xác minh (dev mode)" 
+                            : "Đã gửi lại mã xác minh. Kiểm tra email của bạn.",
+                        Email = existingUser.Email,
+                        VerificationCodeExpiresAt = existingUser.VerificationCodeExpiry.Value,
+                        VerificationCode = includeCodeInResponse ? verificationCode : null
+                    };
+                }
+                
+                // Email exists and already verified
+                Console.WriteLine($"[AuthService] Email already exists and verified: {request.Email}");
                 throw new InvalidOperationException("Email đã được đăng ký");
             }
-
             // Tạo user mới nhưng chưa verified
             var user = new User
             {
