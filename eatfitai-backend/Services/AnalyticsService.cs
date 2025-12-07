@@ -54,7 +54,9 @@ namespace EatFitAI.API.Services
 
         public async Task<NutritionSummaryDto> GetWeekSummaryAsync(Guid userId, DateTime date)
         {
-            var startOfWeek = date.Date.AddDays(-(int)date.DayOfWeek);
+            // Tính start of week từ Thứ 2 (Monday) - phù hợp với chuẩn Việt Nam và frontend
+            var diff = (7 + (date.DayOfWeek - DayOfWeek.Monday)) % 7;
+            var startOfWeek = date.Date.AddDays(-diff);
             var endOfWeek = startOfWeek.AddDays(7).AddTicks(-1);
             return await GetNutritionSummaryAsync(userId, startOfWeek, endOfWeek);
         }

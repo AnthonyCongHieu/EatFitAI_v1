@@ -381,7 +381,10 @@ const AIScanScreen: React.FC = () => {
                                     </ThemedText>
                                 </View>
                             )}
-                            style={{ maxHeight: SCREEN_WIDTH * 0.8 }}
+                            style={{ flex: 1, maxHeight: Dimensions.get('window').height * 0.5 }}
+                            contentContainerStyle={{ flexGrow: 1 }}
+                            showsVerticalScrollIndicator={true}
+                            nestedScrollEnabled={true}
                         />
 
                         <View style={styles.actionButtons}>

@@ -40,14 +40,14 @@ const getMealSuggestion = (hour: number): MealSuggestion => {
     if (hour >= 18 && hour < 22) {
         return { type: 3, label: 'Bữa tối', icon: '🌙', greeting: 'Chào buổi tối!' };
     }
-    return { type: 4, label: 'Ăn đêm', icon: '🌃', greeting: 'Khuya rồi!' };
+    // Đêm khuya (22h - 5h) vẫn mặc định là Bữa tối
+    return { type: 3, label: 'Bữa tối', icon: '🌙', greeting: 'Khuya rồi!' };
 };
 
 const getAllMealOptions = (): MealSuggestion[] => [
     { type: 1, label: 'Bữa sáng', icon: '🌅', greeting: '' },
     { type: 2, label: 'Bữa trưa', icon: '☀️', greeting: '' },
     { type: 3, label: 'Bữa tối', icon: '🌙', greeting: '' },
-    { type: 4, label: 'Ăn vặt', icon: '🍪', greeting: '' },
 ];
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
@@ -118,51 +118,66 @@ const SmartQuickActions: React.FC<SmartQuickActionsProps> = ({
 }) => {
     const { theme } = useAppTheme();
 
-    const currentSuggestion = useMemo(() => {
+    const { currentSuggestion, isLateNight } = useMemo(() => {
         const hour = new Date().getHours();
-        return getMealSuggestion(hour);
+        // Đêm khuya: 22h - 5h sáng
+        const lateNight = hour >= 22 || hour < 5;
+        return {
+            currentSuggestion: getMealSuggestion(hour),
+            isLateNight: lateNight
+        };
     }, []);
 
-    // Lấy 3 bữa chính (không bao gồm bữa xế/ăn vặt)
-    const mainMeals = useMemo(() => {
-        return getAllMealOptions().filter((m) => m.type !== 4); // 4 = snack
-    }, []);
-
-    // Bữa xế riêng
-    const snackMeal = useMemo(() => {
-        return getAllMealOptions().find((m) => m.type === 4);
-    }, []);
+    // Chỉ hiển thị 3 bữa chính
+    const mainMeals = useMemo(() => getAllMealOptions(), []);
 
     return (
         <View style={styles.container}>
             {/* Greeting & Primary Suggestion */}
             <View style={styles.header}>
                 <ThemedText variant="bodySmall" color="textSecondary">
-                    {currentSuggestion.greeting}
+                    {isLateNight ? '🌃 Đêm khuya rồi!' : currentSuggestion.greeting}
                 </ThemedText>
                 <ThemedText variant="h3" weight="600" style={{ marginTop: theme.spacing.xs }}>
-                    Thêm món ăn
+                    {isLateNight ? 'Không nên ăn khuya!' : 'Thêm món ăn'}
                 </ThemedText>
             </View>
 
-            {/* Primary Action Row - Bữa ăn theo thời gian + Tìm kiếm */}
-            <View style={styles.primaryRow}>
-                <QuickActionButton
-                    icon={currentSuggestion.icon}
-                    label={`Thêm ${currentSuggestion.label}`}
-                    onPress={() => onAddMeal(currentSuggestion.type)}
-                    isPrimary
-                    delay={0}
-                />
-                {onSearchFood && (
-                    <QuickActionButton
-                        icon="🔍"
-                        label="Tìm kiếm"
-                        onPress={onSearchFood}
-                        delay={100}
-                    />
-                )}
-            </View>
+            {/* Late night warning */}
+            {isLateNight ? (
+                <View style={[styles.warningBox, {
+                    backgroundColor: theme.colors.warning + '15',
+                    borderColor: theme.colors.warning + '30'
+                }]}>
+                    <ThemedText variant="body" color="warning" weight="600">
+                        💡 Ăn khuya không tốt cho sức khỏe
+                    </ThemedText>
+                    <ThemedText variant="bodySmall" color="textSecondary" style={{ marginTop: 4 }}>
+                        Nên uống nước hoặc trà thảo mộc nếu đói. Hãy nghỉ ngơi sớm nhé!
+                    </ThemedText>
+                </View>
+            ) : (
+                <>
+                    {/* Primary Action Row - Bữa ăn theo thời gian + Tìm kiếm */}
+                    <View style={styles.primaryRow}>
+                        <QuickActionButton
+                            icon={currentSuggestion.icon}
+                            label={`Thêm ${currentSuggestion.label}`}
+                            onPress={() => onAddMeal(currentSuggestion.type)}
+                            isPrimary
+                            delay={0}
+                        />
+                        {onSearchFood && (
+                            <QuickActionButton
+                                icon="🔍"
+                                label="Tìm kiếm"
+                                onPress={onSearchFood}
+                                delay={100}
+                            />
+                        )}
+                    </View>
+                </>
+            )}
 
             {/* Main Meals Row - Bữa sáng, trưa, tối */}
             <View style={styles.secondaryRow}>
@@ -188,31 +203,6 @@ const SmartQuickActions: React.FC<SmartQuickActionsProps> = ({
                 ))}
             </View>
 
-            {/* Snack/Bữa xế Row - riêng ở dưới */}
-            {snackMeal && (
-                <View style={styles.secondaryRow}>
-                    <Pressable
-                        onPress={() => onAddMeal(snackMeal.type)}
-                        style={[
-                            styles.snackButton,
-                            {
-                                backgroundColor: theme.colors.warning + '10',
-                                borderColor: theme.colors.warning + '30',
-                            },
-                        ]}
-                        accessibilityRole="button"
-                        accessibilityLabel={`Thêm ${snackMeal.label}`}
-                    >
-                        <ThemedText style={styles.secondaryIcon}>{snackMeal.icon}</ThemedText>
-                        <ThemedText variant="bodySmall" weight="600" style={{ color: theme.colors.warning }}>
-                            {snackMeal.label}
-                        </ThemedText>
-                        <ThemedText variant="caption" color="textSecondary">
-                            Ăn vặt, đồ uống...
-                        </ThemedText>
-                    </Pressable>
-                </View>
-            )}
         </View>
     );
 };
@@ -261,12 +251,9 @@ const styles = StyleSheet.create({
     secondaryIcon: {
         fontSize: 18,
     },
-    snackButton: {
-        flex: 1,
-        alignItems: 'center',
-        paddingVertical: 16,
-        paddingHorizontal: 12,
-        borderRadius: 12,
+    warningBox: {
+        padding: 16,
+        borderRadius: 16,
         borderWidth: 1,
         gap: 4,
     },

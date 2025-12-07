@@ -2,6 +2,9 @@ from __future__ import annotations
 
 from typing import Any, Dict, List
 import logging
+import subprocess
+import time
+import requests
 
 from flask import Flask, Request, Response, jsonify, request
 from ultralytics import YOLO
@@ -16,6 +19,66 @@ logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
+
+# ============== AUTO-START OLLAMA ==============
+def start_ollama_if_needed():
+    """
+    Tự động khởi động Ollama nếu chưa chạy.
+    Ollama cần thiết cho AI nutrition suggestions.
+    """
+    OLLAMA_URL = os.getenv("OLLAMA_URL", "http://localhost:11434")
+    
+    # Kiểm tra Ollama đang chạy chưa
+    try:
+        response = requests.get(f"{OLLAMA_URL}/api/tags", timeout=2)
+        if response.status_code == 200:
+            logger.info("✅ Ollama đã chạy sẵn")
+            return True
+    except:
+        pass
+    
+    logger.info("🚀 Đang khởi động Ollama...")
+    
+    try:
+        # Start Ollama serve ở background
+        if os.name == 'nt':  # Windows
+            subprocess.Popen(
+                ["ollama", "serve"],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                creationflags=subprocess.CREATE_NO_WINDOW
+            )
+        else:  # Linux/Mac
+            subprocess.Popen(
+                ["ollama", "serve"],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                start_new_session=True
+            )
+        
+        # Đợi Ollama khởi động (tối đa 10 giây)
+        for i in range(10):
+            time.sleep(1)
+            try:
+                response = requests.get(f"{OLLAMA_URL}/api/tags", timeout=2)
+                if response.status_code == 200:
+                    logger.info("✅ Ollama đã khởi động thành công!")
+                    return True
+            except:
+                logger.info(f"   Đợi Ollama... ({i+1}/10)")
+        
+        logger.warning("⚠️ Ollama không khởi động được. Kiểm tra xem Ollama đã được cài đặt chưa.")
+        return False
+        
+    except FileNotFoundError:
+        logger.error("❌ Không tìm thấy Ollama. Hãy cài đặt từ: https://ollama.com/download")
+        return False
+    except Exception as e:
+        logger.error(f"❌ Lỗi khi khởi động Ollama: {e}")
+        return False
+
+# Khởi động Ollama khi app start
+start_ollama_if_needed()
 
 app: Flask = Flask(__name__)
 os.makedirs("uploads", exist_ok=True)

@@ -388,13 +388,6 @@ const NutritionSettingsScreen = (): JSX.Element => {
                         </Animated.View>
                     )}
                 </AppCard>
-
-                {/* Info Link */}
-                <Button
-                    variant="ghost"
-                    title={t('nutrition_settings.update_body_info')}
-                    onPress={() => navigation.navigate('AppTabs' as any)}
-                />
             </ScrollView>
         </Screen>
     );

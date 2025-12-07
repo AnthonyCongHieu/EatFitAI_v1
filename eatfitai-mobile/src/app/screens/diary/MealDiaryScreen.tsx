@@ -273,9 +273,7 @@ const MealDiaryScreen = (): JSX.Element => {
         <Animated.View
           style={[
             styles.dateItem,
-            useAnimatedStyle(() => ({
-              transform: [{ scale: isSelected ? withSpring(1.05) : withSpring(1) }],
-            })),
+            isSelected && { transform: [{ scale: 1.05 }] },
           ]}
         >
           <Pressable onPress={() => handleDateSelect(date)}>
@@ -284,7 +282,7 @@ const MealDiaryScreen = (): JSX.Element => {
         </Animated.View>
       );
     },
-    [selectedDate, handleDateSelect, formatDate],
+    [selectedDate, handleDateSelect, formatDate, styles.dateItem],
   );
 
   // Render food card

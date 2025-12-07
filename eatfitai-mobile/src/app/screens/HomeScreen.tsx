@@ -87,7 +87,9 @@ const HomeScreen = (): JSX.Element => {
   useFocusEffect(
     useCallback(() => {
       checkStreak();
-    }, [checkStreak])
+      // Refetch summary khi screen focus lại để đảm bảo dữ liệu mới nhất
+      refetch();
+    }, [checkStreak, refetch])
   );
 
   const showCommonErrors = useCallback(

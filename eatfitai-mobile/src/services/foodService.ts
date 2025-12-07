@@ -140,10 +140,11 @@ export const foodService = {
       const response = await apiClient.get(`/api/user-food-items/${foodId}`);
       return normalizeUserFoodDetail(response.data);
     }
-    // Mặc định là catalog
+    // Mặc định là catalog - Backend trả về { foodItem, servings }
     const response = await apiClient.get(`/api/${foodId}`);
-    const data = response.data as FoodItemDto;
-    return normalizeFoodDetail(data);
+    // Unwrap foodItem từ response vì backend trả về dạng { foodItem, servings }
+    const data = response.data?.foodItem ?? response.data;
+    return normalizeFoodDetail(data as FoodItemDtoExtended);
   },
 
   // Thêm entry vào nhật ký từ catalog food
