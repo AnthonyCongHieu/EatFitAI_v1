@@ -11,12 +11,24 @@ export type UserProfile = {
   weightKg?: number;
   lastMeasuredDate?: string;
   createdAt?: string;
+  // Profile fields for AI nutrition
+  gender?: string;
+  dateOfBirth?: string;
+  age?: number;
+  activityLevelId?: number;
+  activityFactor?: number;
+  goal?: string;
 };
 
 export type UpdateProfilePayload = {
   fullName?: string | null;
   heightCm?: number | null;
   weightKg?: number | null;
+  // Profile fields for AI nutrition
+  gender?: string | null;
+  dateOfBirth?: string | null;
+  activityLevelId?: number | null;
+  goal?: string | null;
 };
 
 export type BodyMetricsPayload = {
@@ -34,6 +46,13 @@ const normalizeProfile = (data: any): UserProfile => ({
   weightKg: data?.currentWeightKg ?? undefined,
   lastMeasuredDate: data?.lastMeasuredDate ?? undefined,
   createdAt: data?.createdAt ?? undefined,
+  // Profile fields for AI nutrition
+  gender: data?.gender ?? undefined,
+  dateOfBirth: data?.dateOfBirth ?? undefined,
+  age: data?.age ?? undefined,
+  activityLevelId: data?.activityLevelId ?? undefined,
+  activityFactor: data?.activityFactor ?? undefined,
+  goal: data?.goal ?? undefined,
 });
 
 export const profileService = {
@@ -49,6 +68,11 @@ export const profileService = {
       displayName: payload.fullName ?? null,
       currentHeightCm: payload.heightCm ?? null,
       currentWeightKg: payload.weightKg ?? null,
+      // Profile fields for AI nutrition
+      gender: payload.gender ?? null,
+      dateOfBirth: payload.dateOfBirth ?? null,
+      activityLevelId: payload.activityLevelId ?? null,
+      goal: payload.goal ?? null,
     };
     const response = await apiClient.put('/api/profile', req);
     return normalizeProfile(response.data);

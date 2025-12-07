@@ -231,18 +231,86 @@ namespace EatFitAI.API.Controllers
         [HttpPost("nutrition/recalculate")]
         public async Task<IActionResult> RecalculateNutritionTargets([FromBody] RecalculateTargetRequest request)
         {
-            using var scope = HttpContext.RequestServices.CreateScope();
-            var calc = scope.ServiceProvider.GetRequiredService<EatFitAI.API.Services.INutritionCalcService>();
-            
-            var (cal, p, c, f) = calc.Suggest(
-                request.Sex ?? "male", 
-                request.Age ?? 25, 
-                request.HeightCm ?? 170, 
-                request.WeightKg ?? 65, 
-                request.ActivityLevel ?? 1.38, 
-                request.Goal ?? "maintain");
+            try
+            {
+                // Gọi AI Provider để tính toán bằng Ollama (không dùng công thức local)
+                var aiProviderUrl = _configuration["AIProvider:VisionBaseUrl"] ?? "http://127.0.0.1:5050";
                 
-            return Ok(new { calories = cal, protein = p, carbs = c, fat = f });
+                using var client = _httpClientFactory.CreateClient();
+                client.Timeout = TimeSpan.FromSeconds(60); // Ollama có thể mất thời gian
+                
+                var payload = new
+                {
+                    gender = request.Sex ?? "male",
+                    age = request.Age ?? 25,
+                    height = request.HeightCm ?? 170,
+                    weight = request.WeightKg ?? 65,
+                    activity = request.Goal?.ToLower() == "cut" ? "moderate" : 
+                              request.Goal?.ToLower() == "bulk" ? "active" : "moderate",
+                    goal = request.Goal ?? "maintain"
+                };
+                
+                var json = System.Text.Json.JsonSerializer.Serialize(payload);
+                var content = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+                
+                _logger.LogInformation("Calling AI Provider for nutrition advice: {Url}", $"{aiProviderUrl}/nutrition-advice");
+                
+                var response = await client.PostAsync($"{aiProviderUrl}/nutrition-advice", content);
+                
+                if (response.IsSuccessStatusCode)
+                {
+                    var resultJson = await response.Content.ReadAsStringAsync();
+                    var result = System.Text.Json.JsonSerializer.Deserialize<System.Text.Json.JsonElement>(resultJson);
+                    
+                    var source = result.TryGetProperty("source", out var srcProp) ? srcProp.GetString() : "unknown";
+                    _logger.LogInformation("AI Provider returned nutrition advice from source: {Source}", source);
+                    
+                    // Helper function để parse số từ JSON (handle number, double, string)
+                    int ParseInt(System.Text.Json.JsonElement elem, string prop) {
+                        try {
+                            if (!elem.TryGetProperty(prop, out var val)) return 0;
+                            
+                            if (val.ValueKind == System.Text.Json.JsonValueKind.Number) {
+                                if (val.TryGetInt32(out var intVal)) return intVal;
+                                if (val.TryGetDouble(out var doubleVal)) return (int)Math.Round(doubleVal);
+                            }
+                            if (val.ValueKind == System.Text.Json.JsonValueKind.String) {
+                                var str = val.GetString()?.Replace("g", "").Replace("kcal", "").Trim();
+                                if (double.TryParse(str, out var d)) return (int)Math.Round(d);
+                            }
+                            return 0;
+                        } catch {
+                            return 0;
+                        }
+                    }
+                    
+                    return Ok(new 
+                    { 
+                        calories = ParseInt(result, "calories"),
+                        protein = ParseInt(result, "protein"),
+                        carbs = ParseInt(result, "carbs"),
+                        fat = ParseInt(result, "fat"),
+                        source = source,
+                        explanation = result.TryGetProperty("explanation", out var expProp) ? expProp.GetString() : null
+                    });
+                }
+                else
+                {
+                    var errorContent = await response.Content.ReadAsStringAsync();
+                    _logger.LogWarning("AI Provider returned error: {StatusCode} - {Error}", response.StatusCode, errorContent);
+                    return StatusCode(503, new { message = "AI Provider không khả dụng", error = errorContent });
+                }
+            }
+            catch (HttpRequestException ex)
+            {
+                _logger.LogError(ex, "Failed to connect to AI Provider");
+                return StatusCode(503, new { message = "Không thể kết nối đến AI Provider. Hãy đảm bảo Ollama đang chạy.", error = ex.Message });
+            }
+            catch (TaskCanceledException ex)
+            {
+                _logger.LogError(ex, "AI Provider request timed out");
+                return StatusCode(504, new { message = "AI Provider timeout", error = ex.Message });
+            }
         }
 
         /// <summary>

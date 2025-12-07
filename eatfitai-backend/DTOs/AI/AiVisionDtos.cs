@@ -20,6 +20,7 @@ namespace EatFitAI.API.DTOs.AI
         public decimal? ProteinPer100g { get; set; }
         public decimal? FatPer100g { get; set; }
         public decimal? CarbPer100g { get; set; }
+        public string? ThumbNail { get; set; }
 
         public bool IsMatched => FoodItemId.HasValue;
     }

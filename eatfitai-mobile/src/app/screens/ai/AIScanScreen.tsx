@@ -1,13 +1,11 @@
-// AIScanScreen - Unified AI scanning experience
-// Merges Camera + AI features into a single, streamlined screen
-
-import React, { useCallback, useRef, useState, useMemo } from 'react';
+import React, { useCallback, useRef, useState } from 'react';
 import {
     View,
     StyleSheet,
     Pressable,
     FlatList,
     ActivityIndicator,
+    Dimensions
 } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import * as ImagePicker from 'expo-image-picker';
@@ -23,14 +21,11 @@ import Animated, {
 import Toast from 'react-native-toast-message';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '../../../components/ThemedText';
-import Screen from '../../../components/Screen';
 import Button from '../../../components/Button';
 import Icon from '../../../components/Icon';
-import VoiceInput from '../../../components/VoiceInput';
-import { AppCard } from '../../../components/ui/AppCard';
-import { ScreenHeader } from '../../../components/ui/ScreenHeader';
 import { useAppTheme } from '../../../theme/ThemeProvider';
 import { aiService } from '../../../services/aiService';
 import { mealService } from '../../../services/mealService';
@@ -44,17 +39,10 @@ import { glassStyles } from '../../../components/ui/GlassCard';
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 type CameraViewInstance = InstanceType<typeof CameraView>;
 
-interface RecentScan {
-    id: string;
-    name: string;
-    calories: number;
-    timestamp: Date;
-    imageUri?: string;
-}
-
 type ScanMode = 'camera' | 'preview' | 'results';
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 const AIScanScreen: React.FC = () => {
     const { theme } = useAppTheme();
@@ -81,9 +69,6 @@ const AIScanScreen: React.FC = () => {
     // Animation values
     const captureScale = useSharedValue(1);
 
-    // Mock recent scans (in real app, this would come from local storage or API)
-    const recentScans: RecentScan[] = useMemo(() => [], []);
-
     const hasPermission = permission?.granted === true;
 
     // Handlers
@@ -99,14 +84,11 @@ const AIScanScreen: React.FC = () => {
             const filteredItems = result.items.filter(item => item.confidence > 0.4);
 
             if (filteredItems.length === 0) {
-                Toast.show({
-                    type: 'info',
-                    text1: 'Không tìm thấy món ăn rõ ràng',
-                    text2: 'Hãy thử chụp lại gần hơn hoặc góc khác',
+                // Keep result even if empty to show empty state, but notify user
+                setDetectionResult({
+                    ...result,
+                    items: []
                 });
-                // Still show raw results if nothing passes filter, or just show empty?
-                // Let's show raw results but warn user
-                setDetectionResult(result);
             } else {
                 setDetectionResult({
                     ...result,
@@ -117,18 +99,9 @@ const AIScanScreen: React.FC = () => {
             setMode('results');
         } catch (error) {
             handleApiErrorWithCustomMessage(error, {
-                server_error: {
-                    text1: 'Lỗi máy chủ',
-                    text2: 'Vui lòng thử lại sau',
-                },
-                network_error: {
-                    text1: 'Không có kết nối',
-                    text2: 'Kiểm tra mạng và thử lại',
-                },
-                unknown: {
-                    text1: 'Không thể phân tích ảnh',
-                    text2: 'Vui lòng thử lại',
-                },
+                server_error: { text1: 'Lỗi máy chủ', text2: 'Vui lòng thử lại sau' },
+                network_error: { text1: 'Không có kết nối', text2: 'Kiểm tra mạng và thử lại' },
+                unknown: { text1: 'Không thể phân tích ảnh', text2: 'Vui lòng thử lại' },
             });
             setMode('camera');
         } finally {
@@ -181,7 +154,7 @@ const AIScanScreen: React.FC = () => {
         try {
             const result = await ImagePicker.launchImageLibraryAsync({
                 mediaTypes: ImagePicker.MediaTypeOptions.Images,
-                allowsEditing: false, // User requested to disable cropping
+                allowsEditing: false,
                 quality: 0.7,
             });
 
@@ -194,11 +167,6 @@ const AIScanScreen: React.FC = () => {
             });
         }
     }, [galleryPermission, requestGalleryPermission, processImage]);
-
-    const handleVoiceResult = useCallback((text: string) => {
-        // Navigate to food search with voice input
-        navigation.navigate('FoodSearch', { query: text } as never);
-    }, [navigation]);
 
     const handleRetake = useCallback(() => {
         setCapturedUri(null);
@@ -221,7 +189,6 @@ const AIScanScreen: React.FC = () => {
     }, [capturedUri, detectionResult, navigation]);
 
     const handleQuickAdd = useCallback((item: MappedFoodItem) => {
-        // Open edit modal for the item
         setEditingItem(item);
         setShowEditModal(true);
     }, []);
@@ -261,57 +228,11 @@ const AIScanScreen: React.FC = () => {
         }
     }, []);
 
-    const handleQuickAddAll = useCallback(async () => {
-        if (!detectionResult || !detectionResult.items.length) return;
-
-        setIsProcessing(true);
-        try {
-            const date = new Date().toISOString().split('T')[0]!;
-            // Default to current time's meal type or ask user. For quick add, let's guess based on time.
-            const hour = new Date().getHours();
-            let mealType = 2; // Lunch default
-            if (hour < 10) mealType = 1; // Breakfast
-            else if (hour > 15) mealType = 3; // Dinner
-
-            const items = detectionResult.items
-                .filter(item => item.foodItemId != null)
-                .map((item) => ({
-                    foodItemId: Number(item.foodItemId),
-                    grams: 100, // Default 100g for quick add
-                }));
-
-            if (items.length === 0) return;
-
-            await mealService.addMealItems(date, mealType, items);
-
-            Toast.show({
-                type: 'success',
-                text1: 'Đã thêm nhanh',
-                text2: `Đã thêm ${items.length} món vào nhật ký`,
-            });
-
-            // Reset state
-            setCapturedUri(null);
-            setDetectionResult(null);
-            setMode('camera');
-        } catch (error) {
-            handleApiErrorWithCustomMessage(error, {
-                unknown: { text1: 'Lỗi thêm nhanh', text2: 'Vui lòng thử lại' },
-            });
-        } finally {
-            setIsProcessing(false);
-        }
-    }, [detectionResult]);
-
-    const canQuickAdd = useMemo(() => {
-        if (!detectionResult?.items.length) return false;
-        // Only allow quick add if all items have high confidence
-        return detectionResult.items.every(item => item.confidence > 0.8);
-    }, [detectionResult]);
-
     const captureButtonStyle = useAnimatedStyle(() => ({
         transform: [{ scale: captureScale.value }],
     }));
+
+    const isCameraMode = mode === 'camera';
 
     // Permission request screen
     if (!permission) {
@@ -345,192 +266,131 @@ const AIScanScreen: React.FC = () => {
     }
 
     return (
-        <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
-            <ScreenHeader
-                title="AI Scan"
-                subtitle="Chụp hoặc chọn ảnh món ăn"
-            />
+        <View style={styles.container}>
+            {/* Camera Layer - Always rendered to maintain ref, but hidden/paused if needed */}
+            {(isCameraMode || mode === 'preview') && (
+                <CameraView
+                    ref={(ref) => { cameraRef.current = ref; }}
+                    style={StyleSheet.absoluteFill}
+                    facing="back"
+                />
+            )}
 
-            <Screen contentContainerStyle={styles.content}>
-                {/* Camera / Preview Section */}
-                <Animated.View entering={FadeInUp.springify()} style={styles.cameraSection}>
-                    <AppCard padding="none" shadow="lg">
-                        <View style={styles.cameraWrapper}>
-                            {mode === 'camera' ? (
-                                <CameraView
-                                    ref={(ref) => { cameraRef.current = ref; }}
-                                    style={styles.camera}
-                                    facing="back"
-                                />
-                            ) : (
-                                <AppImage source={{ uri: capturedUri ?? '' }} style={styles.preview} />
-                            )}
+            {/* Preview Image Layer - Visible in preview AND results mode */}
+            {(mode === 'preview' || mode === 'results') && capturedUri && (
+                <AppImage source={{ uri: capturedUri }} style={StyleSheet.absoluteFill as any} resizeMode="cover" />
+            )}
 
-                            {/* Processing Overlay */}
-                            {isProcessing && (
-                                <View style={styles.processingOverlay}>
-                                    <ActivityIndicator size="large" color="#fff" />
-                                    <ThemedText variant="body" style={{ color: '#fff', marginTop: 12 }}>
-                                        Đang phân tích...
-                                    </ThemedText>
-                                </View>
-                            )}
-                        </View>
-                    </AppCard>
-                </Animated.View>
+            {/* Dark Overlay for UI contrast */}
+            <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.2)' }]} pointerEvents="none" />
 
-                {/* Action Buttons */}
-                {mode === 'camera' && (
-                    <Animated.View entering={FadeInDown.delay(200).springify()} style={styles.actionRow}>
+            {/* UI Overlay Layer */}
+            <SafeAreaView style={styles.uiOverlay} pointerEvents="box-none">
+
+                {/* Header (Floating) - Hide in results mode to show full image */}
+                {mode !== 'results' && (
+                    <View style={styles.headerFloating}>
+                        <ThemedText variant="h3" weight="700" style={{ color: '#fff', textShadowColor: 'rgba(0,0,0,0.5)', textShadowRadius: 4 }}>AI Scan</ThemedText>
+                        {isProcessing && <ActivityIndicator color="#fff" />}
+                    </View>
+                )}
+
+                <View style={styles.spacer} />
+
+                {/* Processing/Result Message */}
+                {isProcessing && (
+                    <Animated.View entering={FadeInUp} style={styles.processingBadge}>
+                        <ThemedText variant="body" style={{ color: '#fff' }}>Đang phân tích...</ThemedText>
+                    </Animated.View>
+                )}
+
+                {/* Modes & Controls */}
+                {/* CAMERA MODE */}
+                {isCameraMode && (
+                    <Animated.View entering={FadeInDown} style={styles.bottomControls}>
+                        {/* Search Wrapper */}
                         <Pressable
-                            onPress={handlePickImage}
-                            style={[styles.secondaryButton, { backgroundColor: theme.colors.card, ...theme.shadows.sm }]}
-                            accessibilityRole="button"
-                            accessibilityLabel="Chọn ảnh từ thư viện"
+                            style={glass.card}
+                            onPress={() => navigation.navigate('FoodSearch')}
                         >
-                            <Icon name="images-outline" size="md" color="text" />
-                            <ThemedText variant="bodySmall">Thư viện</ThemedText>
+                            <Icon name="search-outline" size="lg" color="text" />
                         </Pressable>
 
+                        {/* Capture Button */}
                         <AnimatedPressable
                             onPress={handleCapture}
                             disabled={isCapturing}
-                            style={[captureButtonStyle, styles.captureButton, { backgroundColor: theme.colors.primary }]}
-                            accessibilityRole="button"
-                            accessibilityLabel="Chụp ảnh"
+                            style={[captureButtonStyle, styles.captureButtonLarge]}
                         >
-                            <View style={[styles.captureInner, { borderColor: '#fff' }]}>
-                                {isCapturing ? (
-                                    <ActivityIndicator color="#fff" />
-                                ) : (
-                                    <Icon name="camera" size="lg" color="card" />
-                                )}
-                            </View>
+                            <View style={styles.captureInnerLarge} />
                         </AnimatedPressable>
 
+                        {/* Gallery Wrapper */}
                         <Pressable
-                            onPress={() => navigation.navigate('FoodSearch')}
-                            style={[styles.secondaryButton, { backgroundColor: theme.colors.card, ...theme.shadows.sm }]}
-                            accessibilityRole="button"
-                            accessibilityLabel="Tìm kiếm món ăn"
+                            style={glass.card}
+                            onPress={handlePickImage}
                         >
-                            <Icon name="search-outline" size="md" color="text" />
-                            <ThemedText variant="bodySmall">Tìm kiếm</ThemedText>
+                            <Icon name="images-outline" size="lg" color="text" />
                         </Pressable>
                     </Animated.View>
                 )}
 
-                {/* Preview mode buttons */}
-                {mode === 'preview' && !isProcessing && (
-                    <Animated.View entering={FadeIn} style={styles.previewActions}>
-                        <Button variant="outline" title="Chụp lại" onPress={handleRetake} />
-                    </Animated.View>
-                )}
-
-                {/* Results Section */}
+                {/* VISUAL RESULTS / PREVIEW MODE */}
                 {mode === 'results' && detectionResult && (
-                    <Animated.View entering={SlideInRight.springify()} style={styles.resultsSection}>
-                        <AppCard>
-                            <View style={styles.resultsHeader}>
-                                <ThemedText variant="h4" weight="600">
-                                    Món ăn nhận diện được
-                                </ThemedText>
-                                <ThemedText variant="caption" color="textSecondary">
-                                    {detectionResult.items.length} món
-                                </ThemedText>
-                            </View>
+                    <Animated.View entering={SlideInRight} style={[styles.resultsContainer, { backgroundColor: theme.colors.background }]}>
+                        <View style={[styles.resultsHandle, { backgroundColor: theme.colors.border }]} />
+                        <View style={styles.resultsHeader}>
+                            <ThemedText variant="h4" weight="700">Kết quả ({detectionResult.items.length})</ThemedText>
+                            <Pressable onPress={handleRetake} style={{ padding: 8 }}>
+                                <Icon name="close" size="md" color="text" />
+                            </Pressable>
+                        </View>
 
-                            {detectionResult.items.map((item, index) => (
-                                <Animated.View
-                                    key={item.foodItemId}
-                                    entering={FadeInDown.delay(index * 100).springify()}
+                        <FlatList
+                            data={detectionResult.items}
+                            keyExtractor={(item, index) => item.label + index}
+                            renderItem={({ item }) => (
+                                <Pressable
+                                    style={[styles.resultRow, { borderBottomColor: theme.colors.border }]}
+                                    onPress={() => handleQuickAdd(item)}
                                 >
-                                    <Pressable
-                                        onPress={() => handleQuickAdd(item)}
-                                        style={[styles.resultItem, { borderBottomColor: theme.colors.border }]}
-                                        accessibilityRole="button"
-                                    >
-                                        <View style={styles.resultInfo}>
-                                            <ThemedText variant="body" weight="600">{item.label}</ThemedText>
-                                            <View style={styles.resultMeta}>
-                                                <ThemedText variant="caption" color="textSecondary">
-                                                    {Math.round(item.confidence * 100)}% tin cậy
-                                                </ThemedText>
-                                                {item.caloriesPer100g && (
-                                                    <ThemedText variant="caption" color="primary">
-                                                        {item.caloriesPer100g} kcal/100g
-                                                    </ThemedText>
-                                                )}
-                                            </View>
+                                    {/* Thumbnail */}
+                                    {item.thumbNail ? (
+                                        <AppImage
+                                            source={{ uri: item.thumbNail }}
+                                            style={{ width: 48, height: 48, borderRadius: 12, marginRight: 12 }}
+                                        />
+                                    ) : (
+                                        <View style={{ width: 48, height: 48, borderRadius: 12, backgroundColor: theme.colors.card, alignItems: 'center', justifyContent: 'center', marginRight: 12, borderWidth: 1, borderColor: theme.colors.border }}>
+                                            <Icon name="restaurant-outline" size="md" color="textSecondary" />
                                         </View>
-                                        <Icon name="add-circle-outline" size="md" color="primary" />
-                                    </Pressable>
-                                </Animated.View>
-                            ))}
+                                    )}
 
-                            <View style={styles.resultActions}>
-                                <Button
-                                    variant="outline"
-                                    title="Chụp lại"
-                                    onPress={handleRetake}
-                                    style={{ flex: 1 }}
-                                />
-                                <Button
-                                    variant="primary"
-                                    title="Thêm tất cả"
-                                    onPress={handleAddToDiary}
-                                    style={{ flex: 1 }}
-                                />
-                            </View>
-
-                            {canQuickAdd && (
-                                <Button
-                                    variant="ghost"
-                                    title="⚡ Thêm nhanh ngay (100g)"
-                                    onPress={handleQuickAddAll}
-                                    style={{ marginTop: 8 }}
-                                />
+                                    <View style={{ flex: 1 }}>
+                                        <ThemedText variant="body" weight="600">{item.label}</ThemedText>
+                                        <ThemedText variant="caption" color="textSecondary">{item.caloriesPer100g ? `${item.caloriesPer100g} kcal/100g` : 'Chưa có thông tin calo'}</ThemedText>
+                                    </View>
+                                    <Icon name="add-circle" size="xl" color="primary" />
+                                </Pressable>
                             )}
-                        </AppCard>
-                    </Animated.View>
-                )}
+                            ListEmptyComponent={() => (
+                                <View style={{ padding: 20, alignItems: 'center' }}>
+                                    <ThemedText variant="body" color="textSecondary" style={{ textAlign: 'center' }}>
+                                        Không tìm thấy món ăn nào.
+                                        {'\n'}Thử chụp lại rõ hơn nhé! 📸
+                                    </ThemedText>
+                                </View>
+                            )}
+                            style={{ maxHeight: SCREEN_WIDTH * 0.8 }}
+                        />
 
-                {/* Voice Input Section */}
-                {mode === 'camera' && (
-                    <Animated.View entering={FadeInDown.delay(300).springify()}>
-                        <AppCard>
-                            <ThemedText variant="h4" weight="600" style={{ marginBottom: theme.spacing.md }}>
-                                Hoặc nói tên món ăn
-                            </ThemedText>
-                            <VoiceInput
-                                onResult={handleVoiceResult}
-                                placeholder="Nhấn giữ để nói..."
-                            />
-                        </AppCard>
+                        <View style={styles.actionButtons}>
+                            <Button variant="outline" title="Chụp lại" onPress={handleRetake} style={{ flex: 1 }} />
+                            <Button variant="primary" title="Thêm tất cả" onPress={handleAddToDiary} style={{ flex: 1 }} />
+                        </View>
                     </Animated.View>
                 )}
-
-                {/* Recent Scans (if any) */}
-                {mode === 'camera' && recentScans.length > 0 && (
-                    <Animated.View entering={FadeInDown.delay(400).springify()}>
-                        <AppCard title="Gần đây">
-                            <FlatList
-                                horizontal
-                                data={recentScans}
-                                keyExtractor={(item) => item.id}
-                                showsHorizontalScrollIndicator={false}
-                                renderItem={({ item }) => (
-                                    <Pressable style={[styles.recentItem, { backgroundColor: theme.colors.background }]}>
-                                        <ThemedText variant="bodySmall" weight="600">{item.name}</ThemedText>
-                                        <ThemedText variant="caption" color="textSecondary">{item.calories} kcal</ThemedText>
-                                    </Pressable>
-                                )}
-                                ItemSeparatorComponent={() => <View style={{ width: 8 }} />}
-                            />
-                        </AppCard>
-                    </Animated.View>
-                )}
-            </Screen>
+            </SafeAreaView>
 
             {/* Edit Modal */}
             <AIResultEditModal
@@ -542,17 +402,14 @@ const AIScanScreen: React.FC = () => {
                 }}
                 onSave={handleEditModalSave}
             />
-        </View >
+        </View>
     );
 };
 
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-    },
-    content: {
-        padding: 16,
-        gap: 16,
+        backgroundColor: '#000',
     },
     center: {
         flex: 1,
@@ -560,98 +417,90 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         padding: 24,
     },
-    cameraSection: {
-        marginBottom: 8,
-    },
-    cameraWrapper: {
-        borderRadius: 20,
-        overflow: 'hidden',
-        aspectRatio: 4 / 3,
-        position: 'relative',
-    },
-    camera: {
+    uiOverlay: {
         flex: 1,
+        justifyContent: 'space-between',
     },
-    preview: {
-        flex: 1,
-        resizeMode: 'cover',
-    },
-    processingOverlay: {
-        ...StyleSheet.absoluteFillObject,
-        backgroundColor: 'rgba(0,0,0,0.6)',
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    actionRow: {
+    headerFloating: {
         flexDirection: 'row',
+        justifyContent: 'space-between',
+        paddingHorizontal: 20,
+        paddingTop: 20,
         alignItems: 'center',
-        justifyContent: 'center',
-        gap: 24,
-        paddingVertical: 8,
     },
-    secondaryButton: {
+    spacer: {
+        flex: 1,
+    },
+    processingBadge: {
+        alignSelf: 'center',
+        backgroundColor: 'rgba(0,0,0,0.7)',
+        paddingHorizontal: 20,
+        paddingVertical: 10,
+        borderRadius: 20,
+        marginBottom: 20,
+    },
+    bottomControls: {
+        flexDirection: 'row',
+        justifyContent: 'space-evenly',
         alignItems: 'center',
-        justifyContent: 'center',
-        width: 72,
-        height: 72,
-        borderRadius: 16,
-        gap: 4,
+        paddingBottom: 40,
+        paddingHorizontal: 20,
     },
-    captureButton: {
+    captureButtonLarge: {
         width: 80,
         height: 80,
         borderRadius: 40,
+        backgroundColor: 'rgba(255,255,255,0.3)',
         alignItems: 'center',
         justifyContent: 'center',
     },
-    captureInner: {
-        width: 68,
-        height: 68,
-        borderRadius: 34,
-        borderWidth: 3,
-        alignItems: 'center',
-        justifyContent: 'center',
+    captureInnerLarge: {
+        width: 64,
+        height: 64,
+        borderRadius: 32,
+        backgroundColor: '#fff',
     },
-    previewActions: {
-        flexDirection: 'row',
-        gap: 12,
+    resultsContainer: {
+        position: 'absolute',
+        bottom: 0,
+        left: 0,
+        right: 0,
+        backgroundColor: '#fff',
+        borderTopLeftRadius: 24,
+        borderTopRightRadius: 24,
+        padding: 20,
+        paddingBottom: 40,
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: -2 },
+        shadowOpacity: 0.25,
+        shadowRadius: 3.84,
+        elevation: 5,
     },
-    resultsSection: {
-        gap: 16,
+    resultsHandle: {
+        width: 40,
+        height: 4,
+        backgroundColor: '#ccc',
+        borderRadius: 2,
+        alignSelf: 'center',
+        marginBottom: 10,
     },
     resultsHeader: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        marginBottom: 12,
+        marginBottom: 16,
     },
-    resultItem: {
+    resultRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        justifyContent: 'space-between',
         paddingVertical: 12,
         borderBottomWidth: 1,
     },
-    resultInfo: {
-        flex: 1,
-        gap: 4,
-    },
-    resultMeta: {
-        flexDirection: 'row',
-        gap: 12,
-    },
-    resultActions: {
+    actionButtons: {
         flexDirection: 'row',
         gap: 12,
         marginTop: 16,
-    },
-    recentItem: {
-        paddingVertical: 12,
-        paddingHorizontal: 16,
-        borderRadius: 12,
-        alignItems: 'center',
-        minWidth: 80,
-    },
+    }
 });
 
 export default AIScanScreen;

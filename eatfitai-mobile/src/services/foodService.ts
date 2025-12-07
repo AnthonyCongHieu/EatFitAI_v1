@@ -96,7 +96,9 @@ const normalizeUserFoodDetail = (data: ApiUserFoodDetail): FoodDetail => ({
   perServingCalories: data?.caloriesPer100 ?? null,
   perServingProtein: data?.proteinPer100 ?? null,
   perServingCarbs: data?.carbPer100 ?? null,
+
   perServingFat: data?.fatPer100 ?? null,
+  thumbnail: data?.thumbnailUrl ?? null,
 });
 
 export const foodService = {
@@ -122,6 +124,7 @@ export const foodService = {
       protein: toNumber(x?.proteinPer100),
       carbs: toNumber(x?.carbPer100),
       fat: toNumber(x?.fatPer100),
+      thumbnail: x?.thumbnailUrl ?? null,
       isActive: null,
       createdAt: null,
       updatedAt: null,

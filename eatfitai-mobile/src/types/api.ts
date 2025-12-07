@@ -13,6 +13,7 @@ export interface ApiFoodSearchItem {
     carbPer100: number;
     fatPer100: number;
     source?: 'catalog' | 'user';
+    thumbnailUrl?: string | null;
 }
 
 export interface ApiUserFoodDetail {
@@ -28,6 +29,7 @@ export interface ApiUserFoodDetail {
     createdAt?: string;
     updatedAt?: string;
     servingSizeGram?: number;
+    thumbnailUrl?: string | null;
 }
 
 export interface ApiFoodDetail {

@@ -9,6 +9,7 @@ export interface MappedFoodItem {
   proteinPer100g?: number | null;
   fatPer100g?: number | null;
   carbPer100g?: number | null;
+  thumbNail?: string | null;
 
   isMatched: boolean;
 }

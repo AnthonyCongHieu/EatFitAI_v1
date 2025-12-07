@@ -275,19 +275,46 @@ namespace EatFitAI.API.Services
         {
             var recommendations = new List<NutritionRecommendationDto>();
 
-            // Calorie recommendations
-            var calDiff = avgCal - targetCal;
-            if (Math.Abs(calDiff) > targetCal * 0.1m)
+            // Nếu không có dữ liệu ăn uống (avg = 0), nhắc nhở nhập liệu thay vì báo thiếu hụt
+            if (avgCal == 0 && avgPro == 0)
             {
                 recommendations.Add(new NutritionRecommendationDto
                 {
-                    Type = calDiff > 0 ? "reduce_calories" : "increase_calories",
-                    Message = calDiff > 0
-                        ? $"Bạn đang tiêu thụ {Math.Abs(calDiff):F0} calo vượt mục tiêu. Hãy giảm khẩu phần ăn."
-                        : $"Bạn đang tiêu thụ ít hơn {Math.Abs(calDiff):F0} calo so với mục tiêu. Hãy bổ sung thực phẩm giàu dinh dưỡng.",
+                    Type = "missing_data",
+                    Message = "Bạn chưa có dữ liệu ăn uống gần đây. Hãy nhập nhật ký bữa ăn để nhận phân tích chi tiết.",
+                    Priority = "high",
+                    SuggestedValue = targetCal,
+                    Reasoning = "AI cần dữ liệu ăn uống của bạn để đưa ra lời khuyên chính xác."
+                });
+                return recommendations;
+            }
+
+            // Calorie recommendations
+            var calDiff = avgCal - targetCal;
+            // Chỉ cảnh báo nếu lệch quá 10%
+            if (Math.Abs(calDiff) > targetCal * 0.1m)
+            {
+                var isSurplus = calDiff > 0;
+                // Randomize messages slightly for "real" feel
+                var messages = isSurplus
+                    ? new[] 
+                    { 
+                        $"Bạn đang nạp dư {Math.Abs(calDiff):F0} calo. Hãy thử giảm đồ ngọt hoặc chia nhỏ khẩu phần.",
+                        $"Lượng calo trung bình đang cao hơn {Math.Abs(calDiff):F0} so với mục tiêu. Tăng cường vận động hoặc ăn nhiều rau hơn."
+                    }
+                    : new[]
+                    {
+                        $"Bạn đang ăn dưới mức mục tiêu {Math.Abs(calDiff):F0} calo. Đừng để cơ thể thiếu năng lượng nhé.",
+                        $"Cần nạp thêm khoảng {Math.Abs(calDiff):F0} calo. Các loại hạt, quả bơ hoặc thêm bữa phụ sẽ giúp bạn đạt mục tiêu."
+                    };
+
+                recommendations.Add(new NutritionRecommendationDto
+                {
+                    Type = isSurplus ? "reduce_calories" : "increase_calories",
+                    Message = messages[new Random().Next(messages.Length)],
                     Priority = Math.Abs(calDiff) > targetCal * 0.2m ? "high" : "medium",
                     SuggestedValue = targetCal,
-                    Reasoning = "Duy trì lượng calo ổn định là chìa khóa để đạt mục tiêu."
+                    Reasoning = "Duy trì năng lượng ổn định giúp bạn đạt được cân nặng mong muốn."
                 });
             }
 
@@ -299,11 +326,11 @@ namespace EatFitAI.API.Services
                 {
                     Type = proDiff > 0 ? "reduce_protein" : "increase_protein",
                     Message = proDiff > 0
-                        ? $"Lượng protein của bạn cao hơn mục tiêu {Math.Abs(proDiff):F0}g."
-                        : $"Tăng thêm {Math.Abs(proDiff):F0}g protein. Bổ sung thịt nạc, cá, trứng hoặc đậu.",
-                    Priority = proDiff < 0 ? "high" : "low",
+                        ? $"Lượng protein dư {Math.Abs(proDiff):F0}g. Cân bằng lại với rau xanh và tinh bột tốt."
+                        : $"Thiếu {Math.Abs(proDiff):F0}g protein. Bổ sung ức gà, cá, đậu phụ hoặc trứng vào thực đơn.",
+                    Priority = proDiff < 0 ? "high" : "low", // Thiếu protein quan trọng hơn thừa
                     SuggestedValue = targetPro,
-                    Reasoning = "Protein đầy đủ giúp duy trì cơ bắp và cảm giác no."
+                    Reasoning = "Protein là nguyên liệu xây dựng cơ bắp và hỗ trợ giảm mỡ."
                 });
             }
 
@@ -315,11 +342,11 @@ namespace EatFitAI.API.Services
                 {
                     Type = carbDiff > 0 ? "reduce_carbs" : "increase_carbs",
                     Message = carbDiff > 0
-                        ? $"Giảm {Math.Abs(carbDiff):F0}g carbs. Ưu tiên carbs phức hợp."
-                        : $"Bổ sung {Math.Abs(carbDiff):F0}g carbs phức hợp như ngũ cốc nguyên hạt, trái cây, rau củ.",
+                        ? $"Giảm bớt {Math.Abs(carbDiff):F0}g carbs từ đồ ngọt/bánh kẹo. Thay bằng khoai lang hoặc gạo lứt."
+                        : $"Nên thêm {Math.Abs(carbDiff):F0}g carbs phức hợp (yến mạch, khoai) để có đủ năng lượng tập luyện.",
                     Priority = "medium",
                     SuggestedValue = targetCarb,
-                    Reasoning = "Carbs cân bằng cung cấp năng lượng bền vững cả ngày."
+                    Reasoning = "Carbs cung cấp năng lượng chính cho não bộ và vận động vận."
                 });
             }
 
@@ -331,23 +358,23 @@ namespace EatFitAI.API.Services
                 {
                     Type = fatDiff > 0 ? "reduce_fat" : "increase_fat",
                     Message = fatDiff > 0
-                        ? $"Giảm {Math.Abs(fatDiff):F0}g chất béo. Ưu tiên protein nạc và hạn chế dầu mỡ."
-                        : $"Bổ sung {Math.Abs(fatDiff):F0}g chất béo lành mạnh từ hạt, bơ, dầu olive.",
+                        ? $"Hạn chế đồ chiên xào. Bạn đang nạp dư {Math.Abs(fatDiff):F0}g chất béo."
+                        : $"Thêm {Math.Abs(fatDiff):F0}g chất béo tốt từ dầu ô liu, các loại hạt để hỗ trợ hấp thu vitamin.",
                     Priority = "medium",
                     SuggestedValue = targetFat,
-                    Reasoning = "Chất béo lành mạnh hỗ trợ sản xuất hormone và hấp thu dinh dưỡng."
+                    Reasoning = "Chất béo tốt cần thiết cho nội tiết tố và sức khỏe tim mạch."
                 });
             }
 
-            // Adherence-based recommendations
-            if (adherenceScore < 70)
+            // Adherence-based simple tip
+            if (adherenceScore < 60)
             {
                 recommendations.Add(new NutritionRecommendationDto
                 {
                     Type = "improve_adherence",
-                    Message = "Điểm tuân thủ dưới 70%. Hãy chuẩn bị bữa ăn trước hoặc dùng công thức đơn giản hơn.",
+                    Message = "Đừng quá khắt khe. Hãy bắt đầu bằng việc ghi chép đầy đủ 3 bữa chính mỗi ngày.",
                     Priority = "high",
-                    Reasoning = "Sự nhất quán là chìa khóa để đạt mục tiêu dinh dưỡng."
+                    Reasoning = "Ghi chép đều đặn quan trọng hơn là ăn hoàn hảo."
                 });
             }
 

@@ -15,6 +15,7 @@ import {
     KeyboardAvoidingView,
     Platform,
 } from 'react-native';
+import Toast from 'react-native-toast-message';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -159,27 +160,19 @@ const OnboardingScreen = (): JSX.Element => {
                 const result = await response.json();
                 setAiResult(result);
             } else {
-                // Fallback calculation if AI fails
-                const bmr = calculateBMR();
-                const tdee = bmr * getActivityMultiplier();
-                const calories = adjustForGoal(tdee);
-                setAiResult({
-                    calories: Math.round(calories),
-                    protein: Math.round(Number(data.weightKg) * 1.6),
-                    carbs: Math.round((calories * 0.45) / 4),
-                    fat: Math.round((calories * 0.25) / 9),
+                // KHÔNG fallback - hiển thị lỗi yêu cầu bật AI Provider
+                Toast.show({
+                    type: 'error',
+                    text1: 'AI Provider không khả dụng',
+                    text2: 'Hãy đảm bảo Ollama đang chạy và thử lại.',
                 });
             }
         } catch (error) {
-            // Fallback calculation
-            const bmr = calculateBMR();
-            const tdee = bmr * getActivityMultiplier();
-            const calories = adjustForGoal(tdee);
-            setAiResult({
-                calories: Math.round(calories),
-                protein: Math.round(Number(data.weightKg) * 1.6),
-                carbs: Math.round((calories * 0.45) / 4),
-                fat: Math.round((calories * 0.25) / 9),
+            // KHÔNG fallback - hiển thị lỗi kết nối
+            Toast.show({
+                type: 'error',
+                text1: 'Không thể kết nối AI',
+                text2: 'Kiểm tra AI Provider và Ollama đang chạy.',
             });
         } finally {
             setIsCalculating(false);
@@ -215,11 +208,29 @@ const OnboardingScreen = (): JSX.Element => {
 
     const handleComplete = async () => {
         try {
-            // Save profile locally
+            // Map activityLevel string sang activityLevelId
+            const activityLevelMap: Record<string, number> = {
+                'sedentary': 1,
+                'light': 2,
+                'moderate': 3,
+                'active': 4,
+                'very_active': 5,
+            };
+
+            // Tính dateOfBirth từ age
+            const currentYear = new Date().getFullYear();
+            const birthYear = currentYear - Number(data.age);
+            const dateOfBirth = `${birthYear}-01-01`; // Giả định ngày 1/1
+
+            // Save profile với đầy đủ thông tin
             await updateProfile({
                 fullName: data.fullName,
                 heightCm: Number(data.heightCm),
                 weightKg: Number(data.weightKg),
+                gender: data.gender || undefined,
+                dateOfBirth: dateOfBirth,
+                activityLevelId: activityLevelMap[data.activityLevel] || 3,
+                goal: data.goal || undefined,
             });
 
             // Lưu NutritionTarget từ aiResult vào backend

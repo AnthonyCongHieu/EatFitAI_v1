@@ -75,6 +75,7 @@ namespace EatFitAI.API.Services
                 targetCalories = await _dbContext.NutritionTargets
                     .Where(t => t.UserId == userId && t.EffectiveFrom <= d && (t.EffectiveTo == null || t.EffectiveTo >= d))
                     .OrderByDescending(t => t.EffectiveFrom)
+                    .ThenByDescending(t => t.NutritionTargetId) // Lấy record mới nhất nếu cùng ngày
                     .Select(t => (int?)t.TargetCalories)
                     .FirstOrDefaultAsync();
             }

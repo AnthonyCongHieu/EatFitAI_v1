@@ -101,7 +101,7 @@ def query_ollama(prompt: str, model: str = None) -> Optional[str]:
                 "prompt": prompt,
                 "stream": False,
                 "options": {
-                    "temperature": 0.7,
+                    "temperature": 0.1,  # Chút ngẫu nhiên để có sự đa dạng
                     "num_predict": 200  # Limit response length for speed
                 }
             },

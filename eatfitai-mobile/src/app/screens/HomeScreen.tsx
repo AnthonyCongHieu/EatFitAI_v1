@@ -360,8 +360,7 @@ const HomeScreen = (): JSX.Element => {
           }}
         />
 
-        {/* Favorites Quick Access */}
-        <FavoritesList maxItems={6} />
+
 
         {/* Hero Card - Glassmorphism */}
         <Animated.View entering={FadeInUp.duration(theme.animation.slow).springify()}>

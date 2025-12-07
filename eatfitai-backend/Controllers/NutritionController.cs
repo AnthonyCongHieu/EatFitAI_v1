@@ -1,5 +1,8 @@
 using System.Diagnostics;
 using System.Security.Claims;
+using System.Net.Http;
+using System.Text;
+using System.Text.Json;
 using EatFitAI.API.Contracts;
 using EatFitAI.API.DbScaffold.Data;
 using EatFitAI.API.DbScaffold.Models;
@@ -15,13 +18,22 @@ namespace EatFitAI.API.Controllers
     [Authorize]
     public sealed class NutritionController : ControllerBase
     {
-        private readonly INutritionCalcService _calc;
+        private readonly IHttpClientFactory _httpClientFactory;
+        private readonly IConfiguration _configuration;
+        private readonly ILogger<NutritionController> _logger;
         private readonly IAiLogService _aiLog;
         private readonly EatFitAIDbContext _db;
 
-        public NutritionController(INutritionCalcService calc, IAiLogService aiLog, EatFitAIDbContext db)
+        public NutritionController(
+            IHttpClientFactory httpClientFactory,
+            IConfiguration configuration,
+            ILogger<NutritionController> logger,
+            IAiLogService aiLog, 
+            EatFitAIDbContext db)
         {
-            _calc = calc;
+            _httpClientFactory = httpClientFactory;
+            _configuration = configuration;
+            _logger = logger;
             _aiLog = aiLog;
             _db = db;
         }
@@ -44,12 +56,100 @@ namespace EatFitAI.API.Controllers
         public async Task<ActionResult<NutritionSuggestResponse>> Suggest([FromBody] NutritionSuggestRequest req)
         {
             var sw = Stopwatch.StartNew();
-            var (cal, p, c, f) = _calc.Suggest(req.Sex, req.Age, req.HeightCm, req.WeightKg, req.ActivityLevel, req.Goal, req.BodyFatPercentage);
-            var res = new NutritionSuggestResponse(cal, p, c, f);
-            sw.Stop();
+            
+            try
+            {
+                // Gọi AI Provider để tính toán bằng Ollama (không dùng công thức local)
+                var aiProviderUrl = _configuration["AIProvider:VisionBaseUrl"] ?? "http://127.0.0.1:5050";
+                
+                using var client = _httpClientFactory.CreateClient();
+                client.Timeout = TimeSpan.FromSeconds(60);
+                
+                var payload = new
+                {
+                    gender = req.Sex,
+                    age = req.Age,
+                    height = req.HeightCm,
+                    weight = req.WeightKg,
+                    activity = req.ActivityLevel switch
+                    {
+                        <= 1.2 => "sedentary",
+                        <= 1.375 => "light",
+                        <= 1.55 => "moderate",
+                        <= 1.725 => "active",
+                        _ => "very_active"
+                    },
+                    goal = req.Goal
+                };
+                
+                var json = JsonSerializer.Serialize(payload);
+                var content = new StringContent(json, Encoding.UTF8, "application/json");
+                
+                _logger.LogInformation("Calling AI Provider for nutrition suggest: {Url}", $"{aiProviderUrl}/nutrition-advice");
+                
+                var response = await client.PostAsync($"{aiProviderUrl}/nutrition-advice", content);
+                
+                if (response.IsSuccessStatusCode)
+                {
+                    var resultJson = await response.Content.ReadAsStringAsync();
+                    var result = JsonSerializer.Deserialize<JsonElement>(resultJson);
+                    
+                    var source = result.TryGetProperty("source", out var srcProp) ? srcProp.GetString() : "unknown";
+                    _logger.LogInformation("AI Provider returned nutrition suggestion from source: {Source}", source);
+                    
+                    // Helper function để parse số từ JSON (handle number, double, string)
+                    int ParseInt(JsonElement elem, string prop) {
+                        try {
+                            if (!elem.TryGetProperty(prop, out var val)) return 0;
+                            
+                            if (val.ValueKind == JsonValueKind.Number) {
+                                // Handle cả int và double từ JSON
+                                if (val.TryGetInt32(out var intVal)) return intVal;
+                                if (val.TryGetDouble(out var doubleVal)) return (int)Math.Round(doubleVal);
+                            }
+                            if (val.ValueKind == JsonValueKind.String) {
+                                var str = val.GetString()?.Replace("g", "").Replace("kcal", "").Trim();
+                                if (double.TryParse(str, out var d)) return (int)Math.Round(d);
+                            }
+                            return 0;
+                        } catch {
+                            return 0;
+                        }
+                    }
+                    
+                    var cal = ParseInt(result, "calories");
+                    var p = ParseInt(result, "protein");
+                    var c = ParseInt(result, "carbs");
+                    var f = ParseInt(result, "fat");
+                    
+                    var res = new NutritionSuggestResponse(cal, p, c, f);
+                    sw.Stop();
 
-            try { await _aiLog.LogAsync(GetUserIdFromToken(), "NutritionSuggest", req, res, sw.ElapsedMilliseconds); } catch { }
-            return Ok(res);
+                    try { await _aiLog.LogAsync(GetUserIdFromToken(), "NutritionSuggest", req, res, sw.ElapsedMilliseconds); } catch { }
+                    return Ok(res);
+                }
+                else
+                {
+                    var errorContent = await response.Content.ReadAsStringAsync();
+                    _logger.LogWarning("AI Provider returned error: {StatusCode} - {Error}", response.StatusCode, errorContent);
+                    return StatusCode(503, new { message = "AI Provider không khả dụng", error = errorContent });
+                }
+            }
+            catch (HttpRequestException ex)
+            {
+                _logger.LogError(ex, "Failed to connect to AI Provider");
+                return StatusCode(503, new { message = "Không thể kết nối đến AI Provider. Hãy đảm bảo Ollama đang chạy.", error = ex.Message });
+            }
+            catch (TaskCanceledException ex)
+            {
+                _logger.LogError(ex, "AI Provider request timed out");
+                return StatusCode(504, new { message = "AI Provider timeout", error = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Unexpected error in nutrition suggest");
+                return StatusCode(500, new { message = "Lỗi không xác định", error = ex.Message });
+            }
         }
 
         [HttpPost("apply")]
@@ -86,6 +186,7 @@ namespace EatFitAI.API.Controllers
             var current = await _db.NutritionTargets
                 .Where(t => t.UserId == userId && t.EffectiveFrom <= today && (t.EffectiveTo == null || t.EffectiveTo >= today))
                 .OrderByDescending(t => t.EffectiveFrom)
+                .ThenByDescending(t => t.NutritionTargetId) // Lấy record mới nhất nếu cùng ngày
                 .FirstOrDefaultAsync();
 
             if (current == null)

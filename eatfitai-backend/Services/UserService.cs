@@ -77,10 +77,22 @@ namespace EatFitAI.API.Services
 
         public async Task<UserProfileDto> GetUserProfileAsync(Guid userId)
         {
-            var user = await _userRepository.GetByIdAsync(userId);
+            // Include ActivityLevel để lấy ActivityFactor
+            var user = await _context.Users
+                .Include(u => u.ActivityLevel)
+                .FirstOrDefaultAsync(u => u.UserId == userId);
             if (user == null) throw new KeyNotFoundException("User not found");
 
             var userProfile = _mapper.Map<UserProfileDto>(user);
+            
+            // Map thêm các profile fields mới
+            userProfile.Gender = user.Gender;
+            userProfile.DateOfBirth = user.DateOfBirth;
+            userProfile.ActivityLevelId = user.ActivityLevelId;
+            userProfile.ActivityFactor = user.ActivityLevel?.ActivityFactor != null 
+                ? (double)user.ActivityLevel.ActivityFactor 
+                : null;
+            userProfile.Goal = user.Goal;
 
             // Get latest body metrics
             var latestMetric = await _context.BodyMetrics
@@ -106,6 +118,17 @@ namespace EatFitAI.API.Services
 
             // Update User info
             user.DisplayName = userProfileDto.DisplayName;
+            
+            // Update profile fields for AI nutrition
+            if (userProfileDto.Gender != null)
+                user.Gender = userProfileDto.Gender;
+            if (userProfileDto.DateOfBirth.HasValue)
+                user.DateOfBirth = userProfileDto.DateOfBirth;
+            if (userProfileDto.ActivityLevelId.HasValue)
+                user.ActivityLevelId = userProfileDto.ActivityLevelId;
+            if (userProfileDto.Goal != null)
+                user.Goal = userProfileDto.Goal;
+            
             _userRepository.Update(user);
 
             // Check if metrics changed

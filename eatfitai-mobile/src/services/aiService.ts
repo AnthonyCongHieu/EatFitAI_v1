@@ -46,6 +46,10 @@ const toNumber = (value: unknown): number | null => {
   return null;
 };
 
+import { API_BASE_URL } from '../config/env';
+import { getAccessTokenMem } from './authTokens';
+import { tokenStorage } from './secureStore';
+
 export async function detectFoodByImage(imageUri: string): Promise<VisionDetectResult> {
   const formData = new FormData();
 
@@ -55,17 +59,31 @@ export async function detectFoodByImage(imageUri: string): Promise<VisionDetectR
     type: 'image/jpeg',
   } as unknown as Blob);
 
-  const response = await apiClient.post<VisionDetectResult>(
-    '/api/ai/vision/detect',
-    formData,
-    {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    },
-  );
+  // Use fetch instead of axios for FormData to avoid boundary issues in React Native
+  const token = getAccessTokenMem() ?? (await tokenStorage.getAccessToken());
+  const url = `${API_BASE_URL}/api/ai/vision/detect`;
+  console.log('[aiService] detectFoodByImage calling:', url);
+  console.log('[aiService] using token length:', token?.length);
+  console.log('[aiService] imageUri:', imageUri);
 
-  return response.data;
+  const response = await fetch(`${API_BASE_URL}/api/ai/vision/detect`, {
+    method: 'POST',
+    body: formData,
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Accept': 'application/json',
+      // DO NOT set Content-Type, let fetch/FormData handle boundary
+    },
+  });
+
+  if (!response.ok) {
+    const text = await response.text();
+    console.error('[aiService] detectFoodByImage failed:', response.status, text);
+    throw new Error(`Vision API failed: ${response.status} ${text}`);
+  }
+
+  const data = await response.json();
+  return data;
 }
 
 export async function teachLabel(req: TeachLabelRequest): Promise<void> {
@@ -141,12 +159,37 @@ export const aiService = {
     }
   },
 
-  // Tinh lai nhanh: POST {} tranh 415, fallback sang suggest default
+  // Tinh lai dựa trên profile user hiện tại
   async recalculateNutritionTarget(): Promise<NutritionTarget> {
     try {
+      // Lấy profile user từ API - API giờ đã trả về đầy đủ fields
+      const profileResponse = await apiClient.get<{
+        currentHeightCm?: number;
+        currentWeightKg?: number;
+        gender?: string;
+        age?: number;
+        activityFactor?: number;
+        goal?: string;
+      }>('/api/profile');
+
+      const profile = profileResponse.data ?? {};
+      console.log('[EatFitAI] Profile for nutrition:', profile);
+
+      // Gửi thông tin cơ thể đến AI để tính toán
+      const payload = {
+        sex: profile.gender || 'male',
+        age: profile.age || 25,
+        heightCm: profile.currentHeightCm || 170,
+        weightKg: profile.currentWeightKg || 65,
+        activityLevel: profile.activityFactor || 1.38,
+        goal: profile.goal || 'maintain',
+      };
+
+      console.log('[EatFitAI] Nutrition suggest payload:', payload);
+
       const response = await apiClient.post<NutritionTargetDto>(
-        '/api/ai/nutrition/recalculate',
-        {},
+        '/api/ai/nutrition/suggest',
+        payload,
       );
       const data = response.data ?? {};
       return {
@@ -155,7 +198,9 @@ export const aiService = {
         carbs: Number(data.carbs ?? 0),
         fat: Number(data.fat ?? 0),
       };
-    } catch {
+    } catch (error) {
+      console.log('[EatFitAI] Error in recalculateNutritionTarget:', error);
+      // Fallback với giá trị mặc định
       const payload = {
         sex: 'male',
         age: 25,

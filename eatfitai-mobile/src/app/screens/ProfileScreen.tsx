@@ -35,10 +35,15 @@ import type { RootStackParamList } from '../types';
 import { t } from '../../i18n/vi';
 
 // Schema matching actual database fields
+// Schema matching actual database fields
 const ProfileSchema = z.object({
   fullName: z.string().trim().min(2, 'Tên cần ít nhất 2 ký tự'),
   heightCm: z.string().optional(),
   weightKg: z.string().optional(),
+  gender: z.enum(['male', 'female', 'other']).optional(),
+  age: z.string().optional(), // Using string for input handling, convert to number/date later
+  activityLevel: z.enum(['sedentary', 'light', 'moderate', 'active', 'very_active']).optional(),
+  goal: z.enum(['lose', 'maintain', 'gain']).optional(),
 });
 
 type ProfileFormValues = z.infer<typeof ProfileSchema>;
@@ -120,15 +125,7 @@ const ProfileScreen = (): JSX.Element => {
     isSaving: state.isSaving,
   }));
 
-  // AI calculation state (local only)
-  const [aiData, setAiData] = useState<AiCalcData>({
-    gender: 'male',
-    age: 25,
-    activityLevel: 'moderate',
-    goal: 'maintain',
-  });
-  const [showAiSection, setShowAiSection] = useState(false);
-  const [isCalculatingAi, setIsCalculatingAi] = useState(false);
+  // Removed local aiData state as we now use the main form
 
   // Profile form (synced with DB)
   const {
@@ -137,12 +134,17 @@ const ProfileScreen = (): JSX.Element => {
     reset,
     watch,
     formState: { errors: profileErrors, isSubmitting: isSubmittingProfile },
+    setValue,
   } = useForm<ProfileFormValues>({
     resolver: zodResolver(ProfileSchema),
     defaultValues: {
       fullName: '',
       heightCm: '',
       weightKg: '',
+      gender: 'male',
+      age: '',
+      activityLevel: 'moderate',
+      goal: 'maintain',
     },
   });
 
@@ -175,20 +177,50 @@ const ProfileScreen = (): JSX.Element => {
 
   useEffect(() => {
     if (profile) {
+      const activityLevelMap: Record<number, 'sedentary' | 'light' | 'moderate' | 'active' | 'very_active'> = {
+        1: 'sedentary',
+        2: 'light',
+        3: 'moderate',
+        4: 'active',
+        5: 'very_active',
+      };
+
       reset({
         fullName: profile.fullName ?? '',
         heightCm: profile.heightCm ? String(profile.heightCm) : '',
         weightKg: profile.weightKg ? String(profile.weightKg) : '',
+        gender: (profile.gender as any) || 'male',
+        age: profile.age ? String(profile.age) : '25',
+        activityLevel: activityLevelMap[profile.activityLevelId || 3] || 'moderate',
+        goal: (profile.goal as any) || 'maintain',
       });
     }
   }, [profile, reset]);
 
   const onSubmitProfile = async (values: ProfileFormValues) => {
     try {
+      // Map activity level sang ID
+      const activityLevelMap: Record<string, number> = {
+        'sedentary': 1,
+        'light': 2,
+        'moderate': 3,
+        'active': 4,
+        'very_active': 5,
+      };
+
+      // Tính dateOfBirth từ age
+      const currentYear = new Date().getFullYear();
+      const birthYear = currentYear - (Number(values.age) || 25);
+      const dateOfBirth = `${birthYear}-01-01`;
+
       await updateProfile({
         fullName: values.fullName.trim(),
         heightCm: values.heightCm ? Number(values.heightCm) : null,
         weightKg: values.weightKg ? Number(values.weightKg) : null,
+        gender: values.gender,
+        dateOfBirth: dateOfBirth,
+        activityLevelId: activityLevelMap[values.activityLevel || 'moderate'] || 3,
+        goal: values.goal,
       });
       showSuccess('profile_updated');
     } catch (error: any) {
@@ -219,104 +251,17 @@ const ProfileScreen = (): JSX.Element => {
   const calculateBMR = (): number => {
     const weight = Number(currentWeight) || 65;
     const height = Number(currentHeight) || 170;
-    const age = aiData.age || 25;
+    const age = Number(watch('age')) || 25;
+    const gender = watch('gender') || 'male';
 
-    if (aiData.gender === 'male') {
+    if (gender === 'male') {
       return 10 * weight + 6.25 * height - 5 * age + 5;
     }
     return 10 * weight + 6.25 * height - 5 * age - 161;
   };
 
-  const handleAiSuggestion = async () => {
-    if (!currentHeight || !currentWeight) {
-      Alert.alert(t('common.missing_info'), t('common.missing_info_desc'));
-      return;
-    }
+  // Removed handleAiSuggestion as it's no longer needed in ProfileScreen
 
-    setIsCalculatingAi(true);
-    try {
-      // Try AI Provider first
-      // Derive AI URL from API_BASE_URL (replace port 5247 with 5050)
-      // This ensures it works on Android Emulator (10.0.2.2) and LAN
-      const baseUrl = import('../../config/env').then(m => m.API_BASE_URL);
-      // Note: We can't verify async import here easily inside try block without top-level await or hook
-      // So we will use a simpler approach: assume localhost/10.0.2.2 based on Platform
-
-      let aiHost = 'http://127.0.0.1:5050';
-      if (Platform.OS === 'android') {
-        aiHost = 'http://10.0.2.2:5050';
-      }
-
-      const response = await fetch(`${aiHost}/nutrition-advice`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          gender: aiData.gender,
-          age: aiData.age,
-          height: Number(currentHeight),
-          weight: Number(currentWeight),
-          activity: aiData.activityLevel,
-          goal: aiData.goal,
-        }),
-      });
-
-      let result;
-      if (response.ok) {
-        result = await response.json();
-      } else {
-        // Fallback to local Mifflin-St Jeor
-        const bmr = calculateBMR();
-        const activity = ACTIVITY_OPTIONS.find((a) => a.value === aiData.activityLevel);
-        const tdee = bmr * (activity?.multiplier || 1.55);
-        let calories = tdee;
-        if (aiData.goal === 'lose') calories -= 500;
-        if (aiData.goal === 'gain') calories += 300;
-
-        result = {
-          calories: Math.round(calories),
-          protein: Math.round(Number(currentWeight) * 1.6),
-          carbs: Math.round((calories * 0.45) / 4),
-          fat: Math.round((calories * 0.25) / 9),
-        };
-      }
-
-      Alert.alert(
-        t('common.ai_suggestion_title'),
-        `${t('common.daily_target')}:\n\n` +
-        `🔥 Calories: ${result.calories} kcal\n` +
-        `💪 Protein: ${result.protein}g\n` +
-        `🍞 Carbs: ${result.carbs}g\n` +
-        `🥑 Fat: ${result.fat}g`,
-        [
-          { text: t('common.close'), style: 'cancel' },
-          {
-            text: t('common.apply'),
-            onPress: () => navigation.navigate('NutritionSettings'),
-          },
-        ]
-      );
-    } catch (error) {
-      // Fallback calculation
-      const bmr = calculateBMR();
-      const activity = ACTIVITY_OPTIONS.find((a) => a.value === aiData.activityLevel);
-      const tdee = bmr * (activity?.multiplier || 1.55);
-      let calories = tdee;
-      if (aiData.goal === 'lose') calories -= 500;
-      if (aiData.goal === 'gain') calories += 300;
-
-      Alert.alert(
-        t('common.calc_result'),
-        `${t('common.daily_target')}:\n\n` +
-        `🔥 Calories: ${Math.round(calories)} kcal\n` +
-        `💪 Protein: ${Math.round(Number(currentWeight) * 1.6)}g\n` +
-        `🍞 Carbs: ${Math.round((calories * 0.45) / 4)}g\n` +
-        `🥑 Fat: ${Math.round((calories * 0.25) / 9)}g`,
-        [{ text: 'OK' }]
-      );
-    } finally {
-      setIsCalculatingAi(false);
-    }
-  };
 
   const handleLogout = () => {
     Alert.alert(t('common.logout'), t('common.logout_confirm'), [
@@ -481,6 +426,137 @@ const ProfileScreen = (): JSX.Element => {
               </View>
             </View>
 
+            {/* Gender Selection */}
+            <View style={{ marginTop: theme.spacing.md }}>
+              <ThemedText variant="bodySmall" color="textSecondary" style={{ marginBottom: 8 }}>
+                {t('common.gender')}
+              </ThemedText>
+              <Controller
+                control={control}
+                name="gender"
+                render={({ field: { onChange, value } }) => (
+                  <View style={styles.optionRow}>
+                    {GENDER_OPTIONS.map((opt) => (
+                      <Pressable
+                        key={opt.value}
+                        style={[
+                          styles.optionButton,
+                          {
+                            backgroundColor: value === opt.value
+                              ? theme.colors.primaryLight
+                              : isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)',
+                            borderColor: value === opt.value
+                              ? theme.colors.primary
+                              : 'transparent',
+                          },
+                        ]}
+                        onPress={() => onChange(opt.value)}
+                      >
+                        <ThemedText>{opt.icon} {opt.label}</ThemedText>
+                      </Pressable>
+                    ))}
+                  </View>
+                )}
+              />
+            </View>
+
+            {/* Age Input */}
+            <View style={{ marginTop: theme.spacing.md }}>
+              <Controller
+                control={control}
+                name="age"
+                render={({ field: { onChange, value, onBlur } }) => (
+                  <ThemedTextInput
+                    label={t('common.age')}
+                    value={value}
+                    onChangeText={(text) => onChange(text.replace(/[^0-9]/g, ''))}
+                    onBlur={onBlur}
+                    placeholder="25"
+                    keyboardType="numeric"
+                  />
+                )}
+              />
+            </View>
+
+            {/* Goal Selection */}
+            <View style={{ marginTop: theme.spacing.md }}>
+              <ThemedText variant="bodySmall" color="textSecondary" style={{ marginBottom: 8 }}>
+                {t('common.goal')}
+              </ThemedText>
+              <Controller
+                control={control}
+                name="goal"
+                render={({ field: { onChange, value } }) => (
+                  <View style={styles.row}>
+                    {GOAL_OPTIONS.map((goal) => (
+                      <Pressable
+                        key={goal.value}
+                        style={[
+                          styles.goalCard,
+                          {
+                            backgroundColor: value === goal.value
+                              ? `${goal.color}15`
+                              : isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.02)',
+                            borderColor: value === goal.value ? goal.color : 'transparent',
+                          },
+                        ]}
+                        onPress={() => onChange(goal.value)}
+                      >
+                        <ThemedText style={{ fontSize: 20 }}>{goal.icon}</ThemedText>
+                        <ThemedText
+                          variant="bodySmall"
+                          weight={value === goal.value ? '600' : '400'}
+                          style={{ color: value === goal.value ? goal.color : theme.colors.text }}
+                        >
+                          {goal.label}
+                        </ThemedText>
+                      </Pressable>
+                    ))}
+                  </View>
+                )}
+              />
+            </View>
+
+            {/* Activity Level */}
+            <View style={{ marginTop: theme.spacing.md }}>
+              <ThemedText variant="bodySmall" color="textSecondary" style={{ marginBottom: 8 }}>
+                {t('common.activity_level')}
+              </ThemedText>
+              <Controller
+                control={control}
+                name="activityLevel"
+                render={({ field: { onChange, value } }) => (
+                  <View style={styles.optionRow}>
+                    {ACTIVITY_OPTIONS.map((act) => (
+                      <Pressable
+                        key={act.value}
+                        style={[
+                          styles.optionButton,
+                          {
+                            backgroundColor: value === act.value
+                              ? theme.colors.primaryLight
+                              : isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)',
+                            borderColor: value === act.value
+                              ? theme.colors.primary
+                              : 'transparent',
+                          },
+                        ]}
+                        onPress={() => onChange(act.value)}
+                      >
+                        <ThemedText
+                          variant="bodySmall"
+                          weight={value === act.value ? '600' : '400'}
+                          color={value === act.value ? 'primary' : undefined}
+                        >
+                          {act.label}
+                        </ThemedText>
+                      </Pressable>
+                    ))}
+                  </View>
+                )}
+              />
+            </View>
+
             {profile?.lastMeasuredDate && (
               <ThemedText variant="caption" color="textSecondary" style={{ marginTop: 8 }}>
                 📅 {t('common.last_updated')}: {new Date(profile.lastMeasuredDate).toLocaleDateString('vi-VN')}
@@ -498,157 +574,9 @@ const ProfileScreen = (): JSX.Element => {
           </View>
         </Animated.View>
 
-        {/* AI Nutrition Calculator */}
-        <Animated.View entering={FadeInUp.delay(200).duration(400)}>
-          <View style={glass.card}>
-            <Pressable
-              style={styles.sectionTitle}
-              onPress={() => setShowAiSection(!showAiSection)}
-            >
-              <ThemedText style={{ fontSize: 20 }}>🤖</ThemedText>
-              <ThemedText variant="h3" style={{ flex: 1 }}>{t('common.ai_nutrition_calc')}</ThemedText>
-              <Icon name={showAiSection ? 'chevron-up' : 'chevron-down'} size={20} color={theme.colors.textSecondary} />
-            </Pressable>
 
-            {!showAiSection && (
-              <View style={styles.infoCard}>
-                <Icon name="information-circle" size={20} color={theme.colors.primary} />
-                <ThemedText variant="bodySmall" color="textSecondary" style={{ flex: 1 }}>
-                  {t('common.ai_calc_desc')}
-                </ThemedText>
-              </View>
-            )}
+        {/* Removed old AI section */}
 
-            {showAiSection && (
-              <>
-                {/* Gender */}
-                <View style={{ marginBottom: theme.spacing.md }}>
-                  <ThemedText variant="bodySmall" color="textSecondary" style={{ marginBottom: 8 }}>
-                    {t('common.gender')}
-                  </ThemedText>
-                  <View style={styles.optionRow}>
-                    {GENDER_OPTIONS.map((opt) => (
-                      <Pressable
-                        key={opt.value}
-                        style={[
-                          styles.optionButton,
-                          {
-                            backgroundColor: aiData.gender === opt.value
-                              ? theme.colors.primaryLight
-                              : isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)',
-                            borderColor: aiData.gender === opt.value
-                              ? theme.colors.primary
-                              : 'transparent',
-                          },
-                        ]}
-                        onPress={() => setAiData({ ...aiData, gender: opt.value })}
-                      >
-                        <ThemedText>{opt.icon} {opt.label}</ThemedText>
-                      </Pressable>
-                    ))}
-                  </View>
-                </View>
-
-                {/* Age */}
-                <ThemedTextInput
-                  label={t('common.age')}
-                  value={String(aiData.age)}
-                  onChangeText={(text) => setAiData({ ...aiData, age: Number(text.replace(/[^0-9]/g, '')) || 0 })}
-                  placeholder="25"
-                  keyboardType="numeric"
-                />
-
-                {/* Goal */}
-                <View style={{ marginTop: theme.spacing.md, marginBottom: theme.spacing.md }}>
-                  <ThemedText variant="bodySmall" color="textSecondary" style={{ marginBottom: 8 }}>
-                    {t('common.goal')}
-                  </ThemedText>
-                  <View style={styles.row}>
-                    {GOAL_OPTIONS.map((goal) => (
-                      <Pressable
-                        key={goal.value}
-                        style={[
-                          styles.goalCard,
-                          {
-                            backgroundColor: aiData.goal === goal.value
-                              ? `${goal.color}15`
-                              : isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.02)',
-                            borderColor: aiData.goal === goal.value ? goal.color : 'transparent',
-                          },
-                        ]}
-                        onPress={() => setAiData({ ...aiData, goal: goal.value })}
-                      >
-                        <ThemedText style={{ fontSize: 20 }}>{goal.icon}</ThemedText>
-                        <ThemedText
-                          variant="bodySmall"
-                          weight={aiData.goal === goal.value ? '600' : '400'}
-                          style={{ color: aiData.goal === goal.value ? goal.color : theme.colors.text }}
-                        >
-                          {goal.label}
-                        </ThemedText>
-                      </Pressable>
-                    ))}
-                  </View>
-                </View>
-
-                {/* Activity Level */}
-                <View style={{ marginBottom: theme.spacing.md }}>
-                  <ThemedText variant="bodySmall" color="textSecondary" style={{ marginBottom: 8 }}>
-                    {t('common.activity_level')}
-                  </ThemedText>
-                  <View style={styles.optionRow}>
-                    {ACTIVITY_OPTIONS.map((act) => (
-                      <Pressable
-                        key={act.value}
-                        style={[
-                          styles.optionButton,
-                          {
-                            backgroundColor: aiData.activityLevel === act.value
-                              ? theme.colors.primaryLight
-                              : isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)',
-                            borderColor: aiData.activityLevel === act.value
-                              ? theme.colors.primary
-                              : 'transparent',
-                          },
-                        ]}
-                        onPress={() => setAiData({ ...aiData, activityLevel: act.value })}
-                      >
-                        <ThemedText
-                          variant="bodySmall"
-                          weight={aiData.activityLevel === act.value ? '600' : '400'}
-                          color={aiData.activityLevel === act.value ? 'primary' : undefined}
-                        >
-                          {act.label}
-                        </ThemedText>
-                      </Pressable>
-                    ))}
-                  </View>
-                </View>
-
-                {/* Calculate Button */}
-                <Pressable style={styles.aiButton} onPress={handleAiSuggestion} disabled={isCalculatingAi}>
-                  <LinearGradient
-                    colors={['#8B5CF6', '#3B82F6']}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 0 }}
-                    style={styles.aiButtonInner}
-                  >
-                    {isCalculatingAi ? (
-                      <ActivityIndicator color="#fff" />
-                    ) : (
-                      <>
-                        <Icon name="sparkles" size={20} color="#fff" />
-                        <ThemedText weight="600" style={{ color: '#fff' }}>
-                          {t('common.calc_nutrition')}
-                        </ThemedText>
-                      </>
-                    )}
-                  </LinearGradient>
-                </Pressable>
-              </>
-            )}
-          </View>
-        </Animated.View>
 
         {/* Body Metrics History */}
         <Animated.View entering={FadeInUp.delay(300).duration(400)}>

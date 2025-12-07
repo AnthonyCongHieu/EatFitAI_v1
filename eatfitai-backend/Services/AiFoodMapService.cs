@@ -85,6 +85,28 @@ namespace EatFitAI.API.Services
                 });
             }
 
+            var mappedFoodIds = result
+                .Where(r => r.FoodItemId.HasValue)
+                .Select(r => r.FoodItemId.Value)
+                .Distinct()
+                .ToList();
+
+            if (mappedFoodIds.Any())
+            {
+                var thumbnails = await _db.FoodItems
+                    .Where(f => mappedFoodIds.Contains(f.FoodItemId))
+                    .Select(f => new { f.FoodItemId, f.ThumbNail })
+                    .ToDictionaryAsync(x => x.FoodItemId, x => x.ThumbNail, cancellationToken);
+
+                foreach (var item in result)
+                {
+                    if (item.FoodItemId.HasValue && thumbnails.TryGetValue(item.FoodItemId.Value, out var thumb))
+                    {
+                        item.ThumbNail = thumb;
+                    }
+                }
+            }
+
             return result;
         }
 

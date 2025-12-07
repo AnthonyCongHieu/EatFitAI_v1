@@ -27,6 +27,15 @@ public partial class User
     public string? RefreshToken { get; set; }
     public DateTime? RefreshTokenExpiryTime { get; set; }
 
+    // Profile fields for AI nutrition calculation
+    public string? Gender { get; set; } // 'male' or 'female'
+    public DateOnly? DateOfBirth { get; set; }
+    public int? ActivityLevelId { get; set; }
+    public string? Goal { get; set; } // 'lose', 'maintain', 'gain'
+
+    // Navigation property for ActivityLevel
+    public virtual ActivityLevel? ActivityLevel { get; set; }
+
     public virtual ICollection<AILog> AILogs { get; set; } = new List<AILog>();
 
     public virtual ICollection<BodyMetric> BodyMetrics { get; set; } = new List<BodyMetric>();
