@@ -65,13 +65,13 @@ const ForgotPasswordScreen = (): JSX.Element => {
     try {
       setSending(true);
       const code = await forgotPassword(email);
+      // Chỉ hiển thị toast thông báo, KHÔNG tự động điền mã
       if (code) {
         setLastCode(code);
-        setValue('resetCode', code);
         Toast.show({
           type: 'success',
           text1: t('auth.resetCodeReceived'),
-          text2: t('auth.resetCodeAutofill'),
+          text2: 'Mã xác minh đã được gửi qua email',
         });
       } else {
         Toast.show({
@@ -89,7 +89,7 @@ const ForgotPasswordScreen = (): JSX.Element => {
     } finally {
       setSending(false);
     }
-  }, [email, forgotPassword, setValue]);
+  }, [email, forgotPassword]);
 
   const onReset = useCallback(
     async (values: ResetValues) => {

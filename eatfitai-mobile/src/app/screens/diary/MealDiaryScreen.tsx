@@ -293,18 +293,37 @@ const MealDiaryScreen = (): JSX.Element => {
       <AppCard key={entry.id} style={styles.foodCard}>
         <View style={styles.foodCardContent}>
           <View style={styles.foodInfo}>
-            <ThemedText variant="body" numberOfLines={2}>
+            <ThemedText variant="body" weight="600" numberOfLines={2}>
               {entry.foodName}
             </ThemedText>
+            {/* Hiển thị calories và quantity */}
             <View style={styles.foodDetails}>
-              <ThemedText variant="caption" color="textSecondary">
-                {entry.calories ? `${entry.calories} kcal` : '--'}
+              <ThemedText variant="caption" color="primary" weight="600">
+                {entry.calories ? `${Math.round(entry.calories)} kcal` : '-- kcal'}
               </ThemedText>
               <ThemedText variant="caption" color="textSecondary">
                 •
               </ThemedText>
               <ThemedText variant="caption" color="textSecondary">
                 {entry.quantityText || '--'}
+              </ThemedText>
+            </View>
+            {/* Hiển thị macro nutrition */}
+            <View style={styles.foodDetails}>
+              <ThemedText variant="caption" color="textSecondary">
+                P: {entry.protein != null ? `${entry.protein.toFixed(1)}g` : '--'}
+              </ThemedText>
+              <ThemedText variant="caption" color="textSecondary">
+                •
+              </ThemedText>
+              <ThemedText variant="caption" color="textSecondary">
+                C: {entry.carbs != null ? `${entry.carbs.toFixed(1)}g` : '--'}
+              </ThemedText>
+              <ThemedText variant="caption" color="textSecondary">
+                •
+              </ThemedText>
+              <ThemedText variant="caption" color="textSecondary">
+                F: {entry.fat != null ? `${entry.fat.toFixed(1)}g` : '--'}
               </ThemedText>
             </View>
           </View>
@@ -325,6 +344,7 @@ const MealDiaryScreen = (): JSX.Element => {
     ),
     [handleEditGrams],
   );
+
 
   // Render meal section
   const renderMealSection = useCallback(

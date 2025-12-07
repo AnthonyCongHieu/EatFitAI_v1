@@ -349,7 +349,7 @@ const MonthStatsScreen = (): JSX.Element => {
                 </Animated.View>
 
                 {/* Monthly Summary */}
-                {monthData && (
+                {monthData && monthData.daysLogged > 0 ? (
                     <Animated.View entering={FadeInDown.delay(200).springify()}>
                         <AppCard>
                             <SectionHeader title="Tổng kết tháng" />
@@ -381,10 +381,24 @@ const MonthStatsScreen = (): JSX.Element => {
                             </View>
                         </AppCard>
                     </Animated.View>
+                ) : (
+                    <Animated.View entering={FadeInDown.delay(200).springify()}>
+                        <AppCard>
+                            <View style={{ paddingVertical: 24, alignItems: 'center', gap: 8 }}>
+                                <ThemedText variant="h4" color="textSecondary">📊</ThemedText>
+                                <ThemedText variant="body" color="textSecondary" style={{ textAlign: 'center' }}>
+                                    Chưa có dữ liệu cho tháng này
+                                </ThemedText>
+                                <ThemedText variant="caption" color="textSecondary" style={{ textAlign: 'center' }}>
+                                    Hãy thêm món ăn vào nhật ký để xem thống kê
+                                </ThemedText>
+                            </View>
+                        </AppCard>
+                    </Animated.View>
                 )}
 
                 {/* Macro Pie Chart */}
-                {monthData && (
+                {monthData && monthData.daysLogged > 0 && (
                     <Animated.View entering={FadeInDown.delay(300).springify()}>
                         <MacroPieChart
                             protein={monthData.totalProtein}

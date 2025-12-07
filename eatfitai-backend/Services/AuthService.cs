@@ -461,8 +461,8 @@ namespace EatFitAI.API.Services
                     }
                     
                     // Generate new verification code
-                    var verificationCode = GenerateNumericCode(6);
-                    existingUser.VerificationCode = HashResetCode(verificationCode);
+                    var newVerificationCode = GenerateNumericCode(6);
+                    existingUser.VerificationCode = HashResetCode(newVerificationCode);
                     existingUser.VerificationCodeExpiry = DateTime.UtcNow.Add(VerificationCodeLifetime);
                     
                     await _context.SaveChangesAsync();
@@ -470,7 +470,7 @@ namespace EatFitAI.API.Services
                     // Send email
                     try
                     {
-                        await _emailService.SendVerificationCodeAsync(existingUser.Email, verificationCode, existingUser.VerificationCodeExpiry.Value);
+                        await _emailService.SendVerificationCodeAsync(existingUser.Email, newVerificationCode, existingUser.VerificationCodeExpiry.Value);
                         Console.WriteLine($"[AuthService] Verification code re-sent to {existingUser.Email}");
                     }
                     catch (Exception ex)
@@ -478,16 +478,16 @@ namespace EatFitAI.API.Services
                         Console.WriteLine($"[AuthService] Failed to send verification email: {ex.Message}");
                     }
                     
-                    var includeCodeInResponse = _env.IsDevelopment();
+                    var includeCodeInDevResponse = _env.IsDevelopment();
                     return new RegisterResponse
                     {
                         Success = true,
-                        Message = includeCodeInResponse 
+                        Message = includeCodeInDevResponse 
                             ? "Đã gửi lại mã xác minh (dev mode)" 
                             : "Đã gửi lại mã xác minh. Kiểm tra email của bạn.",
                         Email = existingUser.Email,
                         VerificationCodeExpiresAt = existingUser.VerificationCodeExpiry.Value,
-                        VerificationCode = includeCodeInResponse ? verificationCode : null
+                        VerificationCode = includeCodeInDevResponse ? newVerificationCode : null
                     };
                 }
                 
