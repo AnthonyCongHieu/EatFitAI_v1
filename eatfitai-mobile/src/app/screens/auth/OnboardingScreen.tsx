@@ -137,7 +137,12 @@ const OnboardingScreen = (): JSX.Element => {
     const calculateNutrition = async () => {
         setIsCalculating(true);
         try {
-            const response = await fetch('http://127.0.0.1:5050/nutrition-advice', {
+            // Android Emulator cần dùng 10.0.2.2 thay vì 127.0.0.1
+            const aiProviderUrl = Platform.OS === 'android'
+                ? 'http://10.0.2.2:5050/nutrition-advice'
+                : 'http://127.0.0.1:5050/nutrition-advice';
+
+            const response = await fetch(aiProviderUrl, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -216,6 +221,22 @@ const OnboardingScreen = (): JSX.Element => {
                 heightCm: Number(data.heightCm),
                 weightKg: Number(data.weightKg),
             });
+
+            // Lưu NutritionTarget từ aiResult vào backend
+            if (aiResult) {
+                try {
+                    await apiClient.post('/api/ai/nutrition/apply', {
+                        calories: aiResult.calories,
+                        protein: aiResult.protein,
+                        carb: aiResult.carbs,
+                        fat: aiResult.fat,
+                    });
+                    console.log('[Onboarding] NutritionTarget created successfully');
+                } catch (nutritionError) {
+                    console.warn('[Onboarding] Failed to create NutritionTarget:', nutritionError);
+                    // Vẫn tiếp tục vì đây không phải critical error
+                }
+            }
 
             // Mark onboarding complete in local storage
             await AsyncStorage.setItem('onboarding_complete', 'true');

@@ -232,8 +232,15 @@ const NutritionSettingsScreen = (): JSX.Element => {
             <ScrollView contentContainerStyle={styles.container}>
                 {/* Current Target Section */}
                 <AppCard>
-                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: theme.spacing.md }}>
-                        <SectionHeader title={t('nutrition_settings.current_target')} />
+                    <View style={{
+                        flexDirection: 'row',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        marginBottom: theme.spacing.md,
+                    }}>
+                        <View style={{ flex: 1 }}>
+                            <SectionHeader title={t('nutrition_settings.current_target')} />
+                        </View>
                         {!isEditing && (
                             <Button
                                 variant="ghost"
