@@ -89,7 +89,10 @@ def detect() -> Response | tuple[Dict[str, str], int]:
             logger.warning("File uploaded without filename")
             filename = f"upload_{uuid4().hex}.jpg"
         else:
-            filename = f.filename
+            # Force unique filename to prevent overwriting during debug
+            import time
+            timestamp = int(time.time())
+            filename = f"{timestamp}_{f.filename}"
         
         # Validate file extension
         if not allowed_file(filename):
@@ -125,7 +128,7 @@ def detect() -> Response | tuple[Dict[str, str], int]:
         if model is None:
             return {"error": "model not loaded"}, 500
         
-        res: Any = model(path, conf=0.50)  # Optimized threshold based on training evaluation (mAP@0.5: 84.7%)
+        res: Any = model(path, conf=0.25)  # Lowered to 0.25 for debugging (was 0.50)
         names: Dict[int, str] = res[0].names  # type: ignore[assignment]
         
         out: List[Dict[str, float | str]] = [
@@ -148,8 +151,8 @@ def detect() -> Response | tuple[Dict[str, str], int]:
         # Cleanup uploaded file
         if path and os.path.exists(path):
             try:
-                os.remove(path)
-                logger.debug(f"Cleaned up file: {path}")
+                # os.remove(path)
+                logger.debug(f"Cleaned up file: {path} (SKIPPED FOR DEBUG)")
             except Exception as e:
                 logger.warning(f"Failed to cleanup {path}: {e}")
 

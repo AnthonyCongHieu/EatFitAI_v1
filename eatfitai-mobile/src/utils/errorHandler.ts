@@ -24,11 +24,14 @@ export interface ApiError {
  * Automatically shows user-friendly toast messages based on error type
  */
 export const handleApiError = (error: any): ApiError => {
-  const status = error?.response?.status;
-  const isOnline = typeof navigator !== 'undefined' ? navigator.onLine : true;
+  const rawStatus = error?.response?.status;
+  const status = rawStatus ? Number(rawStatus) : undefined;
+  // Network error detection (Relaxed for Emulator/Dev)
+  // Only report offline if the error message explicitly says so, or if request failed completely
+  // navigator.onLine is often flaky in emulators
+  const isNetworkError = error?.message === 'Network Error' || error?.message === 'Network request failed';
 
-  // Network error (offline)
-  if (!isOnline) {
+  if (isNetworkError) {
     Toast.show({
       type: 'error',
       text1: 'Không có kết nối mạng',
@@ -123,10 +126,13 @@ export const handleApiErrorWithCustomMessage = (
  * Use for background operations where you don't want to show errors to user
  */
 export const handleApiErrorSilent = (error: any): ApiError => {
-  const status = error?.response?.status;
-  const isOnline = typeof navigator !== 'undefined' ? navigator.onLine : true;
+  // Network error detection (Relaxed)
+  const isNetworkError = error?.message === 'Network Error' || error?.message === 'Network request failed';
 
-  if (!isOnline) return { type: 'network_error', status: 0 };
+  if (isNetworkError) return { type: 'network_error', status: 0 };
+
+  const rawStatus = error?.response?.status;
+  const status = rawStatus ? Number(rawStatus) : undefined;
 
   switch (status) {
     case 401:
