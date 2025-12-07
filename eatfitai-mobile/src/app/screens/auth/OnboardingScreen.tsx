@@ -11,6 +11,9 @@ import {
     ActivityIndicator,
     Alert,
     Dimensions,
+    ScrollView,
+    KeyboardAvoidingView,
+    Platform,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -569,9 +572,18 @@ const OnboardingScreen = (): JSX.Element => {
             </View>
 
             {/* Content */}
-            <View style={styles.content}>
-                {renderStep()}
-            </View>
+            <KeyboardAvoidingView
+                style={styles.content}
+                behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+                keyboardVerticalOffset={Platform.OS === 'ios' ? 100 : 0}
+            >
+                <ScrollView
+                    showsVerticalScrollIndicator={false}
+                    contentContainerStyle={{ paddingBottom: 20 }}
+                >
+                    {renderStep()}
+                </ScrollView>
+            </KeyboardAvoidingView>
 
             {/* Footer */}
             <View style={styles.footer}>
