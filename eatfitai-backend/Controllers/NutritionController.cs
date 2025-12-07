@@ -122,7 +122,14 @@ namespace EatFitAI.API.Controllers
                     var c = ParseInt(result, "carbs");
                     var f = ParseInt(result, "fat");
                     
-                    var res = new NutritionSuggestResponse(cal, p, c, f);
+                    // Parse explanation từ AI Provider
+                    string? explanation = null;
+                    if (result.TryGetProperty("explanation", out var explVal) && explVal.ValueKind == JsonValueKind.String)
+                    {
+                        explanation = explVal.GetString();
+                    }
+                    
+                    var res = new NutritionSuggestResponse(cal, p, c, f, explanation);
                     sw.Stop();
 
                     try { await _aiLog.LogAsync(GetUserIdFromToken(), "NutritionSuggest", req, res, sw.ElapsedMilliseconds); } catch { }

@@ -370,6 +370,14 @@ const NutritionSettingsScreen = (): JSX.Element => {
                                 </View>
                             </View>
 
+                            {suggestedTarget.explanation && (
+                                <View style={{ marginTop: theme.spacing.md, padding: theme.spacing.sm, backgroundColor: theme.colors.background, borderRadius: 8 }}>
+                                    <ThemedText variant="bodySmall" color="textSecondary">
+                                        💡 {suggestedTarget.explanation}
+                                    </ThemedText>
+                                </View>
+                            )}
+
                             <View style={[styles.row, { marginTop: theme.spacing.lg }]}>
                                 <Button
                                     variant="outline"

@@ -23,7 +23,9 @@ export interface NutritionTargetDto {
   calories?: number | null;
   protein?: number | null;
   carbs?: number | null;
+  carb?: number | null;  // Backend DTO dùng "Carb" không có 's'
   fat?: number | null;
+  explanation?: string | null;  // Lý do gợi ý từ AI
   caloriesKcal?: number | null;
   proteinGrams?: number | null;
   carbohydrateGrams?: number | null;

@@ -42,6 +42,7 @@ def calculate_nutrition_mifflin(
 ) -> Dict[str, int]:
     """
     Mifflin-St Jeor equation fallback
+    Đảm bảo các giá trị macro luôn hợp lý
     """
     # BMR calculation
     if gender.lower() in ["male", "nam"]:
@@ -70,16 +71,33 @@ def calculate_nutrition_mifflin(
     else:
         calories = int(tdee)
     
-    # Macro distribution
-    protein = int(weight_kg * 1.8)  # 1.8g per kg for active
-    fat = int(calories * 0.25 / 9)  # 25% from fat
-    carbs = int((calories - protein * 4 - fat * 9) / 4)
+    # Macro distribution theo tỷ lệ chuẩn
+    # Protein: 25%, Carbs: 50%, Fat: 25%
+    protein = int(calories * 0.25 / 4)  # 25% calories from protein (4 kcal/g)
+    carbs = int(calories * 0.50 / 4)    # 50% calories from carbs (4 kcal/g)
+    fat = int(calories * 0.25 / 9)      # 25% calories from fat (9 kcal/g)
+    
+    # Logging để debug
+    logger.info(f"Formula calculated: cal={calories}, p={protein}, c={carbs}, f={fat}")
+    
+    # Tạo explanation dựa trên goal
+    goal_explanations = {
+        "lose": f"Giảm 15% TDEE ({int(tdee)}→{calories}kcal) để giảm cân an toàn. Protein cao giữ cơ bắp.",
+        "weight_loss": f"Giảm 15% TDEE để giảm cân. Duy trì protein {protein}g/ngày để tránh mất cơ.",
+        "giam_can": f"Giảm 15% năng lượng hàng ngày. Carbs {carbs}g đủ cho hoạt động cơ bản.",
+        "gain": f"Tăng 15% TDEE ({int(tdee)}→{calories}kcal) để tăng cân. Carbs cao hỗ trợ tập luyện.",
+        "weight_gain": f"Tăng 15% TDEE để tăng cơ. Protein {protein}g, Carbs {carbs}g cho năng lượng.",
+        "tang_can": f"Tăng 15% năng lượng. Ưu tiên carbs {carbs}g để hỗ trợ phát triển cơ.",
+        "maintain": f"Duy trì TDEE {calories}kcal. Phân bổ chuẩn: 25% Protein, 50% Carbs, 25% Fat."
+    }
+    explanation = goal_explanations.get(goal.lower(), f"TDEE {calories}kcal. Macro ratio: P25% C50% F25%.")
     
     return {
         "calories": calories,
         "protein": protein,
         "carbs": carbs,
-        "fat": fat
+        "fat": fat,
+        "explanation": explanation
     }
 
 
@@ -133,38 +151,88 @@ def get_nutrition_advice_ollama(
 ) -> Dict[str, Any]:
     """
     Get nutrition advice from Ollama local LLM
+    Sử dụng Chain-of-Thought + Few-shot prompting để đảm bảo kết quả chính xác
     """
-    prompt = f"""Bạn là chuyên gia dinh dưỡng. Tính toán mục tiêu dinh dưỡng cho:
-- Giới tính: {gender}
-- Tuổi: {age}
-- Chiều cao: {height_cm}cm
-- Cân nặng: {weight_kg}kg
-- Mức vận động: {activity_level}
-- Mục tiêu: {goal}
+    # Prompt với hướng dẫn tính toán chi tiết
+    prompt = f"""Bạn là chuyên gia dinh dưỡng. Tính mục tiêu dinh dưỡng hàng ngày CHÍNH XÁC.
 
-Trả lời CHÍNH XÁC theo format JSON (không giải thích thêm):
-{{"calories": số, "protein": số, "carbs": số, "fat": số, "explanation": "giải thích ngắn"}}"""
+CÔNG THỨC TÍNH:
+1. BMR (Mifflin-St Jeor):
+   - Nam: BMR = 10 × cân_nặng + 6.25 × chiều_cao - 5 × tuổi + 5
+   - Nữ: BMR = 10 × cân_nặng + 6.25 × chiều_cao - 5 × tuổi - 161
+
+2. TDEE = BMR × Activity Multiplier:
+   - sedentary/Ít vận động: 1.2
+   - light/Nhẹ nhàng: 1.375
+   - moderate/Vừa phải: 1.55
+   - active/Tích cực: 1.725
+   - very_active/Rất tích cực: 1.9
+
+3. Điều chỉnh theo mục tiêu:
+   - lose/Giảm cân: TDEE × 0.85 (-15%)
+   - maintain/Duy trì: TDEE × 1.0
+   - gain/Tăng cân: TDEE × 1.15 (+15%)
+
+4. Phân bổ Macro (% calories):
+   - Protein: 25% (chia 4 để ra gram)
+   - Carbs: 50% (chia 4 để ra gram)
+   - Fat: 25% (chia 9 để ra gram)
+
+VÍ DỤ - Nam, 25 tuổi, 170cm, 65kg, moderate, maintain:
+Output: {{"calories": 2461, "protein": 154, "carbs": 307, "fat": 68, "explanation": "BMR của bạn là 1588kcal. Với mức vận động vừa phải (x1.55), TDEE = 2461kcal. Để duy trì cân nặng, bạn cần 2461kcal/ngày với 154g protein để duy trì cơ bắp."}}
+
+THÔNG TIN NGƯỜI DÙNG: {gender}, {age} tuổi, {height_cm}cm, {weight_kg}kg, mức vận động: {activity_level}, mục tiêu: {goal}
+
+TRẢ LỜI JSON VỚI explanation GIẢI THÍCH LÝ DO CỤ THỂ (tại sao set những con số đó, dựa vào thông tin gì):"""
 
     response = query_ollama(prompt)
     
     if response:
         try:
             # Try to extract JSON from response
-            # Find JSON in response (might have extra text)
             start = response.find("{")
             end = response.rfind("}") + 1
             if start != -1 and end > start:
                 json_str = response[start:end]
                 result = json.loads(json_str)
+                
+                # Validation: kiểm tra các giá trị có hợp lý không
+                calories = int(result.get("calories", 0))
+                protein = int(result.get("protein", 0))
+                carbs = int(result.get("carbs", 0))
+                fat = int(result.get("fat", 0))
+                
+                # Nếu carbs = 0 hoặc quá thấp -> tính lại bằng công thức
+                if carbs < 50 or calories < 1000 or protein < 30:
+                    logger.warning(f"Ollama trả về kết quả không hợp lý: cal={calories}, p={protein}, c={carbs}, f={fat}")
+                    logger.info("Sử dụng công thức Mifflin-St Jeor để đảm bảo chính xác")
+                    result = calculate_nutrition_mifflin(gender, age, height_cm, weight_kg, activity_level, goal)
+                    result["source"] = "formula_validated"
+                    result["explanation"] = "Sử dụng công thức Mifflin-St Jeor (chuẩn y khoa)"
+                    return result
+                
                 result["source"] = "ollama"
+                result["calories"] = calories
+                result["protein"] = protein
+                result["carbs"] = carbs
+                result["fat"] = fat
+                # Tạo explanation CỤ THỂ với lý do và số liệu
+                if not result.get("explanation"):
+                    goal_explanations = {
+                        "lose": f"Mục tiêu giảm cân: {calories}kcal/ngày (giảm 15% so với nhu cầu). Protein {protein}g để không mất cơ.",
+                        "gain": f"Mục tiêu tăng cân: {calories}kcal/ngày (tăng 15% so với nhu cầu). Carbs {carbs}g hỗ trợ tập luyện.",
+                        "maintain": f"Duy trì cân nặng: {calories}kcal/ngày. Macro cân bằng 25% Protein, 50% Carbs, 25% Fat."
+                    }
+                    result["explanation"] = goal_explanations.get(goal.lower(), f"Dựa trên thông tin cơ thể: {calories}kcal, P:{protein}g, C:{carbs}g, F:{fat}g.")
                 return result
+                
         except json.JSONDecodeError:
             logger.warning(f"Failed to parse Ollama response: {response[:100]}")
     
-    # Fallback to formula
+    # Fallback to formula - với explanation chi tiết
     result = calculate_nutrition_mifflin(gender, age, height_cm, weight_kg, activity_level, goal)
     result["source"] = "formula"
-    result["explanation"] = "Sử dụng công thức Mifflin-St Jeor"
+    # Giữ explanation từ formula (đã có chi tiết về TDEE, goal)
     return result
 
 

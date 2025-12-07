@@ -29,6 +29,7 @@ export type NutritionTarget = {
   protein: number;
   carbs: number;
   fat: number;
+  explanation?: string;
 };
 
 export interface TeachLabelRequest {
@@ -195,8 +196,9 @@ export const aiService = {
       return {
         calories: Number(data.calories ?? 0),
         protein: Number(data.protein ?? 0),
-        carbs: Number(data.carbs ?? 0),
+        carbs: Number(data.carbs ?? data.carb ?? 0),
         fat: Number(data.fat ?? 0),
+        explanation: data.explanation ?? undefined,
       };
     } catch (error) {
       console.log('[EatFitAI] Error in recalculateNutritionTarget:', error);
@@ -217,8 +219,9 @@ export const aiService = {
       return {
         calories: Number(data.calories ?? 0),
         protein: Number(data.protein ?? 0),
-        carbs: Number(data.carbs ?? 0),
+        carbs: Number(data.carbs ?? data.carb ?? 0),
         fat: Number(data.fat ?? 0),
+        explanation: data.explanation ?? undefined,
       };
     }
   },

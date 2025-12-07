@@ -14,7 +14,8 @@ public sealed record NutritionSuggestResponse(
     int Calories,
     int Protein,
     int Carb,
-    int Fat
+    int Fat,
+    string? Explanation = null
 );
 
 public sealed record NutritionApplyRequest(
