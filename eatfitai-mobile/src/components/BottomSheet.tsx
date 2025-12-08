@@ -39,7 +39,7 @@ export const BottomSheet = ({
   showCloseButton = true,
   closeOnBackdropPress = true,
   animated = true,
-}: BottomSheetProps): JSX.Element => {
+}: BottomSheetProps): JSX.Element | null => {
   const { theme } = useAppTheme();
 
   const translateY = useSharedValue(0);
@@ -79,11 +79,16 @@ export const BottomSheet = ({
     ? SlideOutDown.duration(theme.animation.normal)
     : undefined;
 
+  // Không render gì khi không visible - fix modal bị kẹt
+  if (!visible) {
+    return null;
+  }
+
   return (
     <Animated.View
       style={StyleSheet.absoluteFill}
-      entering={visible ? FadeIn.duration(theme.animation.fast) : undefined}
-      exiting={visible ? FadeOut.duration(theme.animation.fast) : undefined}
+      entering={FadeIn.duration(theme.animation.fast)}
+      exiting={FadeOut.duration(theme.animation.fast)}
     >
       {/* Backdrop */}
       <AnimatedPressable

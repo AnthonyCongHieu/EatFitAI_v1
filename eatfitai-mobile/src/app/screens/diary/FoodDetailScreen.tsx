@@ -104,6 +104,7 @@ const FoodDetailScreen = (): JSX.Element | null => {
           padding: theme.spacing.md,
           borderRadius: theme.borderRadius.card,
           gap: theme.spacing.xs,
+          alignItems: 'center',
         },
         mealRow: { flexDirection: 'row', flexWrap: 'wrap', gap: theme.spacing.xs },
         mealChip: {
@@ -516,7 +517,7 @@ const FoodDetailScreen = (): JSX.Element | null => {
             name="note"
             render={({ field: { onChange, onBlur, value } }) => (
               <ThemedTextInput
-                label="Ghi chú (tùy chọn)"
+                label="Ghi chú"
                 value={value}
                 onChangeText={onChange}
                 onBlur={onBlur}

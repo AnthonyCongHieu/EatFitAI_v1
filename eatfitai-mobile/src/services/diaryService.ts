@@ -98,9 +98,10 @@ const normalizeSummary = (data: any): DaySummary => ({
   date: data?.date ?? data?.mealDate ?? new Date().toISOString(),
   totalCalories: toNumberOrNull(data?.totalCalories),
   targetCalories: toNumberOrNull(data?.targetCalories),
-  protein: toNumberOrNull(data?.protein),
-  carbs: toNumberOrNull(data?.carbs),
-  fat: toNumberOrNull(data?.fat),
+  // Backend trả về TotalProtein, TotalCarbs, TotalFat (không phải protein, carbs, fat)
+  protein: toNumberOrNull(data?.totalProtein ?? data?.protein),
+  carbs: toNumberOrNull(data?.totalCarbs ?? data?.carbs),
+  fat: toNumberOrNull(data?.totalFat ?? data?.fat),
   meals: Array.isArray(data?.meals) ? data.meals.map(normalizeMeal) : [],
 });
 

@@ -70,7 +70,7 @@ const RecipeDetailScreen = (): JSX.Element => {
     <Screen>
       <ScreenHeader title={route.params.recipeName} subtitle="Chi tiết công thức" />
       <ScrollView contentContainerStyle={styles.content}>
-        <View style={styles.box}>
+        <View style={[styles.box, { backgroundColor: theme.colors.card }]}>
           <ThemedText variant="h4" style={{ marginBottom: theme.spacing.sm }}>
             Thông tin dinh dưỡng
           </ThemedText>
@@ -89,7 +89,7 @@ const RecipeDetailScreen = (): JSX.Element => {
         </View>
 
         {recipe.description && (
-          <View style={styles.box}>
+          <View style={[styles.box, { backgroundColor: theme.colors.card }]}>
             <ThemedText variant="h4" style={{ marginBottom: theme.spacing.sm }}>
               Mô tả
             </ThemedText>
@@ -98,7 +98,7 @@ const RecipeDetailScreen = (): JSX.Element => {
         )}
 
         {recipe.ingredients && recipe.ingredients.length > 0 && (
-          <View style={styles.box}>
+          <View style={[styles.box, { backgroundColor: theme.colors.card }]}>
             <ThemedText variant="h4" style={{ marginBottom: theme.spacing.sm }}>
               Nguyên liệu
             </ThemedText>
@@ -115,7 +115,7 @@ const RecipeDetailScreen = (): JSX.Element => {
         )}
 
         {recipe.instructions && recipe.instructions.length > 0 && (
-          <View style={styles.box}>
+          <View style={[styles.box, { backgroundColor: theme.colors.card }]}>
             <ThemedText variant="h4" style={{ marginBottom: theme.spacing.sm }}>
               Hướng dẫn
             </ThemedText>
@@ -148,8 +148,7 @@ const styles = StyleSheet.create({
   },
   box: {
     padding: 16,
-    borderRadius: 8,
-    backgroundColor: '#fff',
+    borderRadius: 12,
     marginBottom: 16,
   },
 });
