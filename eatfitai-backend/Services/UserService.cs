@@ -164,5 +164,53 @@ namespace EatFitAI.API.Services
             await _context.SaveChangesAsync();
             return await GetUserProfileAsync(userId);
         }
+
+        public async Task DeleteUserAsync(Guid userId)
+        {
+            var user = await _userRepository.GetByIdAsync(userId);
+            if (user == null)
+            {
+                throw new KeyNotFoundException("User not found");
+            }
+
+            // Delete all related records first (due to ClientSetNull delete behavior)
+            // Delete AILogs
+            var aiLogs = await _context.AILogs.Where(x => x.UserId == userId).ToListAsync();
+            _context.AILogs.RemoveRange(aiLogs);
+
+            // Delete BodyMetrics
+            var bodyMetrics = await _context.BodyMetrics.Where(x => x.UserId == userId).ToListAsync();
+            _context.BodyMetrics.RemoveRange(bodyMetrics);
+
+            // Delete MealDiaries
+            var mealDiaries = await _context.MealDiaries
+                .Where(x => x.UserId == userId)
+                .ToListAsync();
+            _context.MealDiaries.RemoveRange(mealDiaries);
+
+            // Delete NutritionTargets
+            var nutritionTargets = await _context.NutritionTargets.Where(x => x.UserId == userId).ToListAsync();
+            _context.NutritionTargets.RemoveRange(nutritionTargets);
+
+            // Delete UserDishes
+            var userDishes = await _context.UserDishes.Where(x => x.UserId == userId).ToListAsync();
+            _context.UserDishes.RemoveRange(userDishes);
+
+            // Delete UserFavoriteFoods
+            var userFavoriteFoods = await _context.UserFavoriteFoods.Where(x => x.UserId == userId).ToListAsync();
+            _context.UserFavoriteFoods.RemoveRange(userFavoriteFoods);
+
+            // Delete UserFoodItems
+            var userFoodItems = await _context.UserFoodItems.Where(x => x.UserId == userId).ToListAsync();
+            _context.UserFoodItems.RemoveRange(userFoodItems);
+
+            // Delete UserRecentFoods
+            var userRecentFoods = await _context.UserRecentFoods.Where(x => x.UserId == userId).ToListAsync();
+            _context.UserRecentFoods.RemoveRange(userRecentFoods);
+
+            // Finally, delete the user
+            _userRepository.Remove(user);
+            await _context.SaveChangesAsync();
+        }
     }
 }

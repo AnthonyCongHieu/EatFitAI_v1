@@ -67,6 +67,21 @@ namespace EatFitAI.API.Controllers
             }
         }
 
+        [HttpDelete("profile")]
+        public async Task<IActionResult> DeleteProfile()
+        {
+            try
+            {
+                var userId = GetUserIdFromToken();
+                await _userService.DeleteUserAsync(userId);
+                return Ok(new { message = "Tài khoản đã được xóa thành công" });
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(new { message = ex.Message });
+            }
+        }
+
         private Guid GetUserIdFromToken()
         {
             var userIdClaim = User.FindFirst("http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier")?.Value
