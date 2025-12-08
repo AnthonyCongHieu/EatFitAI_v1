@@ -105,8 +105,8 @@ describe('diaryService', () => {
                 params: { date: '2024-01-15' },
             });
             expect(result).toHaveLength(2);
-            expect(result[0].foodName).toBe('Cơm trắng');
-            expect(result[0].calories).toBe(260);
+            expect(result[0]!.foodName).toBe('Cơm trắng');
+            expect(result[0]!.calories).toBe(260);
         });
 
         it('should return empty array when no entries found', async () => {
@@ -135,12 +135,12 @@ describe('diaryService', () => {
 
             const result = await diaryService.getEntriesByDate('2024-01-15');
 
-            expect(result[0].id).toBe('1');
-            expect(result[0].mealType).toBe(1);
-            expect(result[0].foodName).toBe('Phở bò');
-            expect(result[0].note).toBe('Ít giá');
-            expect(result[0].carbs).toBe(55); // carb -> carbs
-            expect(result[0].sourceMethod).toBe('ai_vision');
+            expect(result[0]!.id).toBe('1');
+            expect(result[0]!.mealType).toBe(1);
+            expect(result[0]!.foodName).toBe('Phở bò');
+            expect(result[0]!.note).toBe('Ít giá');
+            expect(result[0]!.carbs).toBe(55); // carb -> carbs
+            expect(result[0]!.sourceMethod).toBe('ai_vision');
         });
     });
 
