@@ -67,6 +67,7 @@ const AnimatedTabButton = ({
 
 const AppTabs = (): JSX.Element => {
   const { theme } = useAppTheme();
+  const isDark = theme.mode === 'dark';
 
   return (
     <Tab.Navigator
@@ -75,17 +76,30 @@ const AppTabs = (): JSX.Element => {
         tabBarActiveTintColor: theme.colors.primary,
         tabBarInactiveTintColor: theme.colors.muted,
         tabBarStyle: {
-          backgroundColor: theme.colors.card,
-          borderTopColor: 'transparent',
-          height: 70,
-          paddingBottom: 10,
+          // Glassmorphism tab bar với bo góc trên
+          backgroundColor: isDark
+            ? 'rgba(20, 25, 23, 0.95)'
+            : 'rgba(255, 255, 255, 0.95)',
+          borderTopLeftRadius: 24,
+          borderTopRightRadius: 24,
+          borderTopWidth: 1,
+          borderTopColor: isDark
+            ? 'rgba(255, 255, 255, 0.08)'
+            : 'rgba(0, 0, 0, 0.05)',
+          height: 75,
+          paddingBottom: 12,
           paddingTop: 10,
-          ...theme.shadows.md,
+          // Shadow
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: -4 },
+          shadowOpacity: isDark ? 0.25 : 0.08,
+          shadowRadius: 16,
+          elevation: 15,
         },
         tabBarLabelStyle: {
           fontFamily: 'Inter_600SemiBold',
           fontSize: 11,
-          marginTop: 4,
+          marginTop: 2,
         },
         tabBarButton: (props) => <AnimatedTabButton {...props} />,
       }}
@@ -96,11 +110,13 @@ const AppTabs = (): JSX.Element => {
         options={{
           title: t('navigation.home'),
           tabBarIcon: ({ color, size, focused }) => (
-            <Ionicons
-              name={focused ? 'home' : 'home-outline'}
-              color={color}
-              size={size}
-            />
+            <View style={focused ? [styles.activeIconPill, { backgroundColor: theme.colors.primary + '20' }] : undefined}>
+              <Ionicons
+                name={focused ? 'home' : 'home-outline'}
+                color={color}
+                size={size}
+              />
+            </View>
           ),
         }}
       />
@@ -157,6 +173,10 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  activeIconPill: {
+    padding: 8,
+    borderRadius: 16,
   },
   scanIconActive: {
     padding: 8,

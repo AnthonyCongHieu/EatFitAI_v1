@@ -28,6 +28,7 @@ export const ThemedTextInput = ({
 }: Props): JSX.Element => {
   const { theme } = useAppTheme();
   const { colors, spacing, typography } = theme;
+  const isDark = theme.mode === 'dark';
   const [hidden, setHidden] = useState<boolean>(!!secureTextEntry);
   const [focused, setFocused] = useState<boolean>(false);
   const [internalValue, setInternalValue] = useState<string>(
@@ -64,12 +65,15 @@ export const ThemedTextInput = ({
       style={[
         styles.base,
         {
-          borderColor: error ? colors.danger : focused ? colors.primary : colors.border,
+          borderColor: error ? colors.danger : focused ? colors.primary : (isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.08)'),
           color: colors.text,
           borderRadius: theme.borderRadius.input,
           paddingHorizontal: spacing.md,
           paddingVertical: spacing.sm,
-          backgroundColor: colors.card,
+          // Glassmorphism background
+          backgroundColor: isDark
+            ? 'rgba(30, 35, 33, 0.8)'
+            : 'rgba(255, 255, 255, 0.9)',
           paddingRight: secureToggle ? spacing.lg + 20 : undefined,
           fontSize: typography.body.fontSize,
           minHeight: 48,

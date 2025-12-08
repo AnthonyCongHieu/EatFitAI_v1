@@ -102,7 +102,9 @@ const LoginScreen = ({ navigation }: Props): JSX.Element => {
   return (
     <View style={{ flex: 1 }}>
       <LinearGradient
-        colors={isDark ? ['#0A0A0F', '#1a1a2e'] : ['#f0f9ff', '#e0f2fe']}
+        colors={theme.colors.backgroundGradient as unknown as string[]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 0.5, y: 1 }}
         style={StyleSheet.absoluteFill}
       />
       <Screen scroll={true} contentContainerStyle={styles.container}>
@@ -175,21 +177,42 @@ const LoginScreen = ({ navigation }: Props): JSX.Element => {
                 title={loading ? t('auth.processing') : t('auth.login')}
                 fullWidth
               />
-              <View style={{ alignItems: 'center' }}>
-                <ThemedText variant="bodySmall" color="textSecondary">
-                  hoặc
+
+              {/* Improved Divider */}
+              <View style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                marginVertical: theme.spacing.sm,
+                gap: theme.spacing.md
+              }}>
+                <View style={{
+                  flex: 1,
+                  height: 1,
+                  backgroundColor: theme.colors.border
+                }} />
+                <ThemedText variant="caption" color="textSecondary">
+                  hoặc tiếp tục với
                 </ThemedText>
+                <View style={{
+                  flex: 1,
+                  height: 1,
+                  backgroundColor: theme.colors.border
+                }} />
               </View>
+
+              {/* Google Button with Icon */}
               <Button
                 variant="outline"
                 disabled={loading}
                 onPress={onGoogle}
-                title={t('auth.loginWithGoogle')}
+                title="Google"
+                icon="logo-google"
                 fullWidth
               />
             </View>
 
             <View style={{ marginTop: theme.spacing.lg, alignItems: 'center' }}>
+
               <ThemedText variant="body" color="textSecondary">
                 {t('auth.registerQuestion')}{' '}
                 <ThemedText

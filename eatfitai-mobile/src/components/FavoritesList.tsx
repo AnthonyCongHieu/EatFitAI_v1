@@ -2,7 +2,7 @@
 // Horizontal scrollable list for quick access
 
 import React from 'react';
-import { View, StyleSheet, FlatList, Pressable, ActivityIndicator } from 'react-native';
+import { View, StyleSheet, FlatList, Pressable, ActivityIndicator, Image } from 'react-native';
 import { useQuery } from '@tanstack/react-query';
 import Animated, { FadeInRight } from 'react-native-reanimated';
 import { useNavigation } from '@react-navigation/native';
@@ -32,6 +32,7 @@ const FavoriteCard = ({
     index: number;
 }) => {
     const { theme } = useAppTheme();
+    const isDark = theme.mode === 'dark';
 
     return (
         <Animated.View entering={FadeInRight.delay(index * 50).springify()}>
@@ -40,14 +41,40 @@ const FavoriteCard = ({
                 style={[
                     styles.card,
                     {
-                        backgroundColor: theme.colors.card,
-                        borderColor: theme.colors.border,
-                        ...theme.shadows.sm,
+                        // Glassmorphism effect
+                        backgroundColor: isDark
+                            ? 'rgba(30, 35, 33, 0.75)'
+                            : 'rgba(255, 255, 255, 0.85)',
+                        borderColor: isDark
+                            ? 'rgba(255, 255, 255, 0.1)'
+                            : 'rgba(0, 0, 0, 0.08)',
+                        // Shadow for depth
+                        shadowColor: '#000',
+                        shadowOffset: { width: 0, height: 4 },
+                        shadowOpacity: isDark ? 0.3 : 0.1,
+                        shadowRadius: 12,
+                        elevation: 6,
                     },
                 ]}
                 accessibilityRole="button"
                 accessibilityLabel={`${item.foodName}, ${item.caloriesPer100g} calories per 100g`}
             >
+                {/* Food image hoặc fallback emoji */}
+                <View style={[
+                    styles.imageContainer,
+                    { backgroundColor: isDark ? 'rgba(16, 185, 129, 0.15)' : 'rgba(16, 185, 129, 0.1)' }
+                ]}>
+                    {item.thumbNail ? (
+                        <Image
+                            source={{ uri: item.thumbNail }}
+                            style={styles.foodImage}
+                            resizeMode="cover"
+                        />
+                    ) : (
+                        <ThemedText style={{ fontSize: 28 }}>🍽️</ThemedText>
+                    )}
+                </View>
+
                 <View style={styles.cardContent}>
                     <ThemedText
                         variant="bodySmall"
@@ -57,25 +84,23 @@ const FavoriteCard = ({
                     >
                         {item.foodName}
                     </ThemedText>
-                    <View style={styles.macroRow}>
-                        <ThemedText variant="caption" color="primary" weight="600">
-                            {Math.round(item.caloriesPer100g)} kcal
-                        </ThemedText>
-                    </View>
-                    <View style={styles.macroDetails}>
-                        <ThemedText variant="caption" color="textSecondary">
-                            P: {Math.round(item.proteinPer100g)}g
-                        </ThemedText>
-                        <ThemedText variant="caption" color="textSecondary">
-                            C: {Math.round(item.carbPer100g)}g
-                        </ThemedText>
-                    </View>
+                    <ThemedText variant="caption" color="primary" weight="700">
+                        {Math.round(item.caloriesPer100g)} kcal
+                    </ThemedText>
                 </View>
-                <Icon name="add-circle" size="md" color="primary" />
+
+                {/* Add button */}
+                <View style={[
+                    styles.addButton,
+                    { backgroundColor: theme.colors.primary }
+                ]}>
+                    <Icon name="add" size="sm" color="#fff" />
+                </View>
             </Pressable>
         </Animated.View>
     );
 };
+
 
 const FavoritesList: React.FC<FavoritesListProps> = ({
     onItemPress,
@@ -157,21 +182,44 @@ const styles = StyleSheet.create({
         paddingVertical: 4,
     },
     card: {
-        width: 120,
+        width: 130,
         padding: 12,
-        borderRadius: 12,
+        borderRadius: 16,
         borderWidth: 1,
         flexDirection: 'column',
-        alignItems: 'flex-start',
+        alignItems: 'center',
+    },
+    imageContainer: {
+        width: 56,
+        height: 56,
+        borderRadius: 28,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginBottom: 10,
+        overflow: 'hidden',
+    },
+    foodImage: {
+        width: 56,
+        height: 56,
+        borderRadius: 28,
     },
     cardContent: {
-        flex: 1,
         width: '100%',
-        marginBottom: 8,
+        alignItems: 'center',
     },
     foodName: {
-        marginBottom: 6,
-        minHeight: 32,
+        marginBottom: 4,
+        textAlign: 'center',
+    },
+    addButton: {
+        position: 'absolute',
+        top: 8,
+        right: 8,
+        width: 24,
+        height: 24,
+        borderRadius: 12,
+        alignItems: 'center',
+        justifyContent: 'center',
     },
     macroRow: {
         marginBottom: 4,

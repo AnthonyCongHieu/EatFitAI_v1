@@ -49,7 +49,9 @@ import { useGamificationStore } from '../../store/useGamificationStore';
 import { StreakCard } from '../../components/gamification/StreakCard';
 import { HomeSkeleton } from '../../components/skeletons/HomeSkeleton';
 import { GlassCard, glassStyles } from '../../components/ui/GlassCard';
+import { GradientBackground } from '../../components/ui/GradientBackground';
 import { WelcomeHeader } from '../../components/home/WelcomeHeader';
+
 
 type AddOption = 'search' | 'custom' | 'ai';
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
@@ -320,13 +322,15 @@ const HomeScreen = (): JSX.Element => {
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
+    <GradientBackground>
       <Screen
+
         contentContainerStyle={{
           paddingHorizontal: theme.spacing.lg,
           paddingVertical: theme.spacing.xl,
           gap: theme.spacing.xxl,
         }}
+
         refreshControl={
           <RefreshControl
             refreshing={isFetching}
@@ -555,7 +559,7 @@ const HomeScreen = (): JSX.Element => {
         visible={showAddModal}
         onClose={() => setShowAddModal(false)}
       />
-    </View >
+    </GradientBackground>
   );
 };
 
@@ -566,6 +570,7 @@ const getStyles = (theme: any) =>
       bottom: theme.spacing.xl,
       right: theme.spacing.xl,
     },
+
     fab: {
       width: 56,
       height: 56,

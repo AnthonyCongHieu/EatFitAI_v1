@@ -14,6 +14,7 @@ export type AppTheme = {
   mode: ThemeMode;
   colors: {
     background: string;
+    backgroundGradient: readonly [string, string, string]; // Gradient background
     card: string;
     text: string;
     textSecondary: string;
@@ -29,6 +30,7 @@ export type AppTheme = {
     warning: string;
     info: string;
   };
+
   gradients: {
     primary: readonly [string, string];
     secondary: readonly [string, string];
@@ -107,6 +109,7 @@ export const lightTheme: AppTheme = {
   colors: {
     // Base colors
     background: '#F8FAFC',
+    backgroundGradient: ['#F8FAFC', '#E2E8F0', '#F1F5F9'] as const, // Light gradient
     card: '#FFFFFF',
     text: '#0F172A',
     textSecondary: '#64748B',
@@ -249,10 +252,14 @@ export const lightTheme: AppTheme = {
 export const darkTheme: AppTheme = {
   mode: 'dark',
   colors: {
-    // Glassmorphism-friendly dark backgrounds
-    background: '#0A0A0F', // Deep dark blue-black
-    card: 'rgba(30, 30, 45, 0.8)', // Semi-transparent card
+    // Premium dark gradient with subtle green tint (health theme)
+    background: '#080B0A', // Deep dark with green hint
+    backgroundGradient: ['#080B0A', '#0D1512', '#0A0F0D'] as const, // Dark green gradient
+    card: 'rgba(18, 25, 22, 0.95)', // Dark green tint card
+
     text: '#F5F7FA',
+
+
     textSecondary: '#9CA3AF',
     border: 'rgba(255, 255, 255, 0.1)',
     // Primary - Vibrant blue like reference

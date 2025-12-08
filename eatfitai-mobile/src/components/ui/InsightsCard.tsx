@@ -8,6 +8,7 @@ import { aiService } from '../../services/aiService';
 
 export const InsightsCard = () => {
     const { theme } = useAppTheme();
+    const isDark = theme.mode === 'dark';
 
     const { data, isLoading, error } = useQuery({
         queryKey: ['nutrition-insights'],
@@ -22,8 +23,13 @@ export const InsightsCard = () => {
         container: {
             marginBottom: theme.spacing.lg,
             padding: theme.spacing.md,
-            backgroundColor: theme.colors.primary + '10', // Light primary tint
-            borderColor: theme.colors.primary + '30',
+            // Glassmorphism với primary tint
+            backgroundColor: isDark
+                ? 'rgba(16, 185, 129, 0.1)'
+                : 'rgba(16, 185, 129, 0.08)',
+            borderColor: isDark
+                ? 'rgba(16, 185, 129, 0.25)'
+                : 'rgba(16, 185, 129, 0.2)',
             borderWidth: 1,
         },
         header: {

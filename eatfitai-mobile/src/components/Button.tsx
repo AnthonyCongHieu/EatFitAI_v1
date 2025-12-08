@@ -53,6 +53,7 @@ export const Button = memo(
     style,
   }: ButtonProps): JSX.Element => {
     const { theme } = useAppTheme();
+    const isDark = theme.mode === 'dark';
 
     // Memoize style calculations
     const styles = useMemo(() => {
@@ -68,16 +69,18 @@ export const Button = memo(
         textColor = '#FFFFFF';
         rippleColor = 'rgba(255,255,255,0.2)';
       } else if (variant === 'secondary') {
-        bg = theme.colors.card;
+        // Glassmorphism secondary
+        bg = isDark ? 'rgba(30, 35, 33, 0.8)' : 'rgba(255, 255, 255, 0.9)';
         borderColor = theme.colors.primary;
         textColor = theme.colors.primary;
       } else if (variant === 'ghost') {
         bg = 'transparent';
-        borderColor = theme.colors.border;
+        borderColor = isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.08)';
         textColor = theme.colors.primary;
       } else if (variant === 'outline') {
-        bg = 'transparent';
-        borderColor = theme.colors.border;
+        // Glassmorphism outline
+        bg = isDark ? 'rgba(30, 35, 33, 0.6)' : 'rgba(255, 255, 255, 0.8)';
+        borderColor = isDark ? 'rgba(255, 255, 255, 0.15)' : 'rgba(0, 0, 0, 0.12)';
         textColor = theme.colors.text;
         rippleColor = theme.colors.primary + '15';
       } else if (variant === 'danger') {

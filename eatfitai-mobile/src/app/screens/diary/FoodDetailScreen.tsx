@@ -1,7 +1,7 @@
 ﻿// Màn hình Chi tiết món ăn và thêm vào nhật ký
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, View, Image } from 'react-native';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Controller, useForm } from 'react-hook-form';
@@ -97,6 +97,26 @@ const FoodDetailScreen = (): JSX.Element | null => {
           padding: theme.spacing.lg,
           borderRadius: theme.borderRadius.card,
           gap: theme.spacing.xs,
+        },
+        // Hero image container
+        imageContainer: {
+          width: '100%',
+          height: 200,
+          borderRadius: theme.borderRadius.card,
+          overflow: 'hidden',
+          marginBottom: theme.spacing.lg,
+          backgroundColor: isDark
+            ? 'rgba(30, 35, 33, 0.6)'
+            : 'rgba(0, 0, 0, 0.05)',
+          justifyContent: 'center',
+          alignItems: 'center',
+        },
+        foodImage: {
+          width: '100%',
+          height: '100%',
+        },
+        placeholderImage: {
+          fontSize: 64,
         },
         macroRow: { flexDirection: 'row', gap: theme.spacing.sm },
         macroBox: {
@@ -329,6 +349,19 @@ const FoodDetailScreen = (): JSX.Element | null => {
         entering={FadeIn.duration(theme.animation.normal)}
         style={styles.content}
       >
+        {/* Hero Food Image */}
+        <View style={styles.imageContainer}>
+          {detail.thumbnail ? (
+            <Image
+              source={{ uri: detail.thumbnail }}
+              style={styles.foodImage}
+              resizeMode="cover"
+            />
+          ) : (
+            <ThemedText style={styles.placeholderImage}>🍽️</ThemedText>
+          )}
+        </View>
+
         <AppCard>
           <ThemedText variant="h2" style={{ marginBottom: theme.spacing.xs }}>
             Thông tin dinh dưỡng

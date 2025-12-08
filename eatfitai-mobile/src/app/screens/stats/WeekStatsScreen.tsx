@@ -13,11 +13,12 @@ import Animated, {
   withSpring,
 } from 'react-native-reanimated';
 import {
-  VictoryArea,
+  VictoryBar,
   VictoryChart,
   VictoryTheme,
   VictoryTooltip,
   VictoryAxis,
+  VictoryStack,
 } from 'victory-native';
 
 import { ThemedText } from '../../../components/ThemedText';
@@ -277,84 +278,77 @@ const WeekStatsScreen = (): JSX.Element => {
           </View>
         ) : (
           <VictoryChart
-            height={280}
+            height={220}
             theme={VictoryTheme.material}
-            padding={{ top: 40, bottom: 60, left: 60, right: 32 }}
-            domainPadding={{ x: 20, y: [10, 20] }}
-            style={{ background: { fill: theme.colors.background } }}
+            padding={{ top: 20, bottom: 40, left: 45, right: 15 }}
+            domainPadding={{ x: 20, y: [0, 10] }}
+            style={{ background: { fill: 'transparent' } }}
           >
             <VictoryAxis
               style={{
-                axis: { stroke: theme.colors.border },
-                tickLabels: { fill: theme.colors.textSecondary, fontSize: 12 },
+                axis: { stroke: 'transparent' },
+                tickLabels: {
+                  fill: theme.colors.textSecondary,
+                  fontSize: 10,
+                  fontWeight: '500',
+                },
                 grid: { stroke: 'transparent' },
               }}
             />
             <VictoryAxis
               dependentAxis
               style={{
-                axis: { stroke: theme.colors.border },
-                tickLabels: { fill: theme.colors.textSecondary, fontSize: 12 },
-                grid: {
-                  stroke: theme.colors.border,
-                  strokeDasharray: '4,4',
-                  opacity: 0.4,
-                },
+                axis: { stroke: 'transparent' },
+                tickLabels: { fill: theme.colors.textSecondary, fontSize: 9 },
+                grid: { stroke: 'transparent' },
               }}
-            />
-            <VictoryArea
-              data={chartData}
-              x="x"
-              y="y"
-              interpolation="monotoneX"
-              style={{
-                data: {
-                  fill: theme.colors.primary,
-                  fillOpacity: 0.5,
-                  stroke: theme.colors.primary,
-                  strokeWidth: 3,
-                },
-              }}
-              labels={({ datum }) => `${datum.y} kcal`}
-              labelComponent={
-                <VictoryTooltip
-                  renderInPortal={false}
-                  style={{ fontSize: 12, fill: theme.colors.text, fontWeight: '600' }}
-                  flyoutStyle={{
-                    fill: theme.colors.card,
-                    stroke: theme.colors.primary,
-                    strokeWidth: 1,
-                  }}
-                  cornerRadius={8}
-                  pointerLength={6}
-                />
-              }
             />
 
-            {targetLine.length > 0 ? (
-              <VictoryArea
-                data={targetLine}
+            {/* Stack để 2 bars cùng vị trí */}
+            <VictoryStack>
+              {/* Data bars - Xanh lá (vẽ trước, ở dưới) */}
+              <VictoryBar
+                data={chartData}
                 x="x"
                 y="y"
-                interpolation="monotoneX"
+                cornerRadius={{ top: 6 }}
+                barWidth={22}
                 style={{
                   data: {
-                    stroke: theme.colors.secondary,
-                    strokeDasharray: '6,6',
-                    fillOpacity: 0,
-                    strokeWidth: 2,
+                    fill: '#4ade80',
                   },
                 }}
-                labels={({ datum }) => `Mục tiêu ${datum.y}`}
+                labels={({ datum }) => `${datum.y}`}
                 labelComponent={
                   <VictoryTooltip
                     renderInPortal={false}
-                    style={{ fontSize: 10, fill: theme.colors.text }}
-                    flyoutStyle={{ fill: theme.colors.card, stroke: theme.colors.border }}
+                    style={{ fontSize: 10, fill: '#fff', fontWeight: '700' }}
+                    flyoutStyle={{
+                      fill: '#22c55e',
+                      stroke: 'transparent',
+                    }}
+                    cornerRadius={5}
+                    pointerLength={4}
                   />
                 }
               />
-            ) : null}
+              {/* Phần còn lại - Xám (vẽ sau, ở trên) */}
+              <VictoryBar
+                data={chartData.map((d: any) => {
+                  const maxVal = Math.max(...chartData.map((item: any) => item.y)) * 1.15;
+                  return { x: d.x, y: Math.max(0, maxVal - d.y) };
+                })}
+                x="x"
+                y="y"
+                cornerRadius={{ top: 6 }}
+                barWidth={22}
+                style={{
+                  data: {
+                    fill: isDark ? 'rgba(55, 65, 60, 0.7)' : 'rgba(180, 190, 185, 0.5)',
+                  },
+                }}
+              />
+            </VictoryStack>
           </VictoryChart>
         )}
 
