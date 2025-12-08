@@ -63,21 +63,51 @@ export const MacroPieChart: React.FC<MacroPieChartProps> = ({ protein, carbs, fa
                 </View>
             </View>
 
+            {/* Improved Legend */}
             <View style={styles.legendContainer}>
-                <View style={styles.legendItem}>
-                    <View style={[styles.dot, { backgroundColor: theme.colors.success }]} />
-                    <ThemedText variant="bodySmall">Protein</ThemedText>
-                    <ThemedText variant="bodySmall" weight="600">{Math.round((protein / total) * 100)}%</ThemedText>
+                {/* Protein */}
+                <View style={[styles.legendCard, {
+                    backgroundColor: theme.mode === 'dark' ? 'rgba(72, 187, 120, 0.12)' : 'rgba(72, 187, 120, 0.08)',
+                    borderColor: theme.mode === 'dark' ? 'rgba(72, 187, 120, 0.25)' : 'rgba(72, 187, 120, 0.15)',
+                }]}>
+                    <View style={styles.legendHeader}>
+                        <ThemedText style={{ fontSize: 16 }}>🥩</ThemedText>
+                        <ThemedText variant="bodySmall" weight="600">Protein</ThemedText>
+                    </View>
+                    <ThemedText variant="h4" weight="700" style={{ color: theme.colors.success }}>
+                        {Math.round((protein / total) * 100)}%
+                    </ThemedText>
+                    <ThemedText variant="caption" color="textSecondary">{Math.round(protein)}g</ThemedText>
                 </View>
-                <View style={styles.legendItem}>
-                    <View style={[styles.dot, { backgroundColor: theme.colors.warning }]} />
-                    <ThemedText variant="bodySmall">Carbs</ThemedText>
-                    <ThemedText variant="bodySmall" weight="600">{Math.round((carbs / total) * 100)}%</ThemedText>
+
+                {/* Carbs */}
+                <View style={[styles.legendCard, {
+                    backgroundColor: theme.mode === 'dark' ? 'rgba(237, 137, 54, 0.12)' : 'rgba(237, 137, 54, 0.08)',
+                    borderColor: theme.mode === 'dark' ? 'rgba(237, 137, 54, 0.25)' : 'rgba(237, 137, 54, 0.15)',
+                }]}>
+                    <View style={styles.legendHeader}>
+                        <ThemedText style={{ fontSize: 16 }}>🍞</ThemedText>
+                        <ThemedText variant="bodySmall" weight="600">Carbs</ThemedText>
+                    </View>
+                    <ThemedText variant="h4" weight="700" style={{ color: theme.colors.warning }}>
+                        {Math.round((carbs / total) * 100)}%
+                    </ThemedText>
+                    <ThemedText variant="caption" color="textSecondary">{Math.round(carbs)}g</ThemedText>
                 </View>
-                <View style={styles.legendItem}>
-                    <View style={[styles.dot, { backgroundColor: theme.colors.info }]} />
-                    <ThemedText variant="bodySmall">Fat</ThemedText>
-                    <ThemedText variant="bodySmall" weight="600">{Math.round((fat / total) * 100)}%</ThemedText>
+
+                {/* Fat */}
+                <View style={[styles.legendCard, {
+                    backgroundColor: theme.mode === 'dark' ? 'rgba(66, 153, 225, 0.12)' : 'rgba(66, 153, 225, 0.08)',
+                    borderColor: theme.mode === 'dark' ? 'rgba(66, 153, 225, 0.25)' : 'rgba(66, 153, 225, 0.15)',
+                }]}>
+                    <View style={styles.legendHeader}>
+                        <ThemedText style={{ fontSize: 16 }}>🧈</ThemedText>
+                        <ThemedText variant="bodySmall" weight="600">Fat</ThemedText>
+                    </View>
+                    <ThemedText variant="h4" weight="700" style={{ color: theme.colors.info }}>
+                        {Math.round((fat / total) * 100)}%
+                    </ThemedText>
+                    <ThemedText variant="caption" color="textSecondary">{Math.round(fat)}g</ThemedText>
                 </View>
             </View>
         </AppCard>
@@ -96,7 +126,7 @@ const styles = StyleSheet.create({
     chartContainer: {
         alignItems: 'center',
         justifyContent: 'center',
-        marginBottom: 20,
+        marginBottom: 16,
     },
     centerLabel: {
         position: 'absolute',
@@ -105,19 +135,24 @@ const styles = StyleSheet.create({
     },
     legendContainer: {
         flexDirection: 'row',
-        justifyContent: 'space-around',
-        paddingTop: 10,
-        borderTopWidth: 1,
-        borderTopColor: 'rgba(0,0,0,0.05)',
+        justifyContent: 'space-between',
+        gap: 8,
+        paddingTop: 12,
     },
-    legendItem: {
+    legendCard: {
+        flex: 1,
+        alignItems: 'center',
+        paddingVertical: 12,
+        paddingHorizontal: 8,
+        borderRadius: 16,
+        borderWidth: 1,
+        gap: 2,
+    },
+    legendHeader: {
+        flexDirection: 'row',
         alignItems: 'center',
         gap: 4,
-    },
-    dot: {
-        width: 12,
-        height: 12,
-        borderRadius: 6,
         marginBottom: 4,
     },
 });
+

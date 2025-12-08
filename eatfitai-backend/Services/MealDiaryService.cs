@@ -96,7 +96,7 @@ namespace EatFitAI.API.Services
 
         private async Task ComputeAndAssignMacrosAsync(MealDiary mealDiary, int? foodItemId, int? userFoodItemId, decimal grams)
         {
-            // Normalize: prefer UserFoodItem if provided; otherwise FoodItem; else leave as-is
+            // Normalize: prefer UserFoodItem if provided; otherwise FoodItem; else recalculate based on ratio
             if (userFoodItemId.HasValue)
             {
                 var ufi = await _context.UserFoodItems.FindAsync(userFoodItemId.Value);
@@ -132,7 +132,25 @@ namespace EatFitAI.API.Services
                     return;
                 }
             }
+
+            // Fallback: Tính lại macros dựa trên tỷ lệ gram mới / gram cũ
+            // Áp dụng cho UserDish, Recipe, hoặc các entry không có FoodItem source
+            if (mealDiary.Grams > 0 && grams != mealDiary.Grams)
+            {
+                var ratio = grams / mealDiary.Grams;
+                mealDiary.Calories = Math.Round(mealDiary.Calories * ratio, 2);
+                mealDiary.Protein = Math.Round(mealDiary.Protein * ratio, 2);
+                mealDiary.Carb = Math.Round(mealDiary.Carb * ratio, 2);
+                mealDiary.Fat = Math.Round(mealDiary.Fat * ratio, 2);
+                mealDiary.Grams = grams;
+            }
+            else if (mealDiary.Grams == 0)
+            {
+                // Trường hợp grams cũ là 0, chỉ update grams mà không tính lại
+                mealDiary.Grams = grams;
+            }
         }
+
 
         private async Task PopulateUserFoodNamesAsync(IEnumerable<MealDiary> entities, IEnumerable<MealDiaryDto> dtos)
         {

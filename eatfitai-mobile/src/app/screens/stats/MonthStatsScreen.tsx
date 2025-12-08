@@ -19,6 +19,8 @@ import { handleApiError } from '../../../utils/errorHandler';
 import { StatsSkeleton } from '../../../components/skeletons/StatsSkeleton';
 import { MacroPieChart } from '../../../components/charts/MacroPieChart';
 import { t } from '../../../i18n/vi';
+import { LinearGradient } from 'expo-linear-gradient';
+
 
 interface DayData {
     date: string;
@@ -355,34 +357,98 @@ const MonthStatsScreen = (): JSX.Element => {
                         <AppCard>
                             <SectionHeader title="Tổng kết tháng" />
                             <View style={styles.summaryGrid}>
-                                <View style={styles.summaryItem}>
-                                    <ThemedText variant="h3" weight="700" color="primary">
-                                        {Math.round(monthData.totalCalories).toLocaleString()}
+                                {/* Total Calories - Blue gradient */}
+                                <LinearGradient
+                                    colors={theme.mode === 'dark' ? ['#1e3a5f', '#2c5282'] : ['#ebf8ff', '#bee3f8']}
+                                    start={{ x: 0, y: 0 }}
+                                    end={{ x: 1, y: 1 }}
+                                    style={{
+                                        flex: 1,
+                                        minWidth: '45%',
+                                        padding: theme.spacing.md,
+                                        borderRadius: 16,
+                                        alignItems: 'center',
+                                        borderWidth: 1,
+                                        borderColor: theme.mode === 'dark' ? 'rgba(66, 153, 225, 0.3)' : 'rgba(66, 153, 225, 0.2)',
+                                    }}
+                                >
+                                    <ThemedText style={{ fontSize: 20, marginBottom: 4 }}>🔥</ThemedText>
+                                    <ThemedText variant="h3" weight="700" style={{ color: theme.mode === 'dark' ? '#63b3ed' : '#2b6cb0' }}>
+                                        {Math.round(monthData.totalCalories / 1000 * 10) / 10}k
                                     </ThemedText>
                                     <ThemedText variant="caption" color="textSecondary">Tổng Calories</ThemedText>
-                                </View>
-                                <View style={styles.summaryItem}>
-                                    <ThemedText variant="h3" weight="700">
+                                </LinearGradient>
+
+                                {/* Average per day - Purple gradient */}
+                                <LinearGradient
+                                    colors={theme.mode === 'dark' ? ['#44337a', '#553c9a'] : ['#faf5ff', '#e9d8fd']}
+                                    start={{ x: 0, y: 0 }}
+                                    end={{ x: 1, y: 1 }}
+                                    style={{
+                                        flex: 1,
+                                        minWidth: '45%',
+                                        padding: theme.spacing.md,
+                                        borderRadius: 16,
+                                        alignItems: 'center',
+                                        borderWidth: 1,
+                                        borderColor: theme.mode === 'dark' ? 'rgba(159, 122, 234, 0.3)' : 'rgba(159, 122, 234, 0.2)',
+                                    }}
+                                >
+                                    <ThemedText style={{ fontSize: 20, marginBottom: 4 }}>📊</ThemedText>
+                                    <ThemedText variant="h3" weight="700" style={{ color: theme.mode === 'dark' ? '#b794f4' : '#6b46c1' }}>
                                         {Math.round(monthData.averageCalories)}
                                     </ThemedText>
                                     <ThemedText variant="caption" color="textSecondary">TB/ngày</ThemedText>
-                                </View>
-                                <View style={styles.summaryItem}>
-                                    <ThemedText variant="h3" weight="700" color="success">
+                                </LinearGradient>
+
+                                {/* Days logged - Green gradient */}
+                                <LinearGradient
+                                    colors={theme.mode === 'dark' ? ['#22543d', '#276749'] : ['#f0fff4', '#c6f6d5']}
+                                    start={{ x: 0, y: 0 }}
+                                    end={{ x: 1, y: 1 }}
+                                    style={{
+                                        flex: 1,
+                                        minWidth: '45%',
+                                        padding: theme.spacing.md,
+                                        borderRadius: 16,
+                                        alignItems: 'center',
+                                        borderWidth: 1,
+                                        borderColor: theme.mode === 'dark' ? 'rgba(72, 187, 120, 0.3)' : 'rgba(72, 187, 120, 0.2)',
+                                    }}
+                                >
+                                    <ThemedText style={{ fontSize: 20, marginBottom: 4 }}>📅</ThemedText>
+                                    <ThemedText variant="h3" weight="700" style={{ color: theme.mode === 'dark' ? '#68d391' : '#276749' }}>
                                         {monthData.daysLogged}
                                     </ThemedText>
                                     <ThemedText variant="caption" color="textSecondary">Ngày đã log</ThemedText>
-                                </View>
-                                <View style={styles.summaryItem}>
-                                    <ThemedText variant="h3" weight="700">
+                                </LinearGradient>
+
+                                {/* Protein - Orange gradient */}
+                                <LinearGradient
+                                    colors={theme.mode === 'dark' ? ['#744210', '#975a16'] : ['#fffaf0', '#feebc8']}
+                                    start={{ x: 0, y: 0 }}
+                                    end={{ x: 1, y: 1 }}
+                                    style={{
+                                        flex: 1,
+                                        minWidth: '45%',
+                                        padding: theme.spacing.md,
+                                        borderRadius: 16,
+                                        alignItems: 'center',
+                                        borderWidth: 1,
+                                        borderColor: theme.mode === 'dark' ? 'rgba(237, 137, 54, 0.3)' : 'rgba(237, 137, 54, 0.2)',
+                                    }}
+                                >
+                                    <ThemedText style={{ fontSize: 20, marginBottom: 4 }}>💪</ThemedText>
+                                    <ThemedText variant="h3" weight="700" style={{ color: theme.mode === 'dark' ? '#f6ad55' : '#c05621' }}>
                                         {Math.round(monthData.totalProtein)}g
                                     </ThemedText>
                                     <ThemedText variant="caption" color="textSecondary">Protein</ThemedText>
-                                </View>
+                                </LinearGradient>
                             </View>
                         </AppCard>
                     </Animated.View>
                 ) : (
+
                     <Animated.View entering={FadeInDown.delay(200).springify()}>
                         <AppCard>
                             <View style={{ paddingVertical: 24, alignItems: 'center', gap: 8 }}>

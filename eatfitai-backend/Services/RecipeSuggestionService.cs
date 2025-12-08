@@ -28,6 +28,62 @@ namespace EatFitAI.API.Services
             _logger = logger;
         }
 
+        // Dictionary ánh xạ tên nguyên liệu tiếng Anh -> tiếng Việt (lowercase)
+        private static readonly Dictionary<string, List<string>> _ingredientMappings = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase)
+        {
+            // Thịt
+            { "chicken", new List<string> { "gà", "thịt gà", "ức gà", "đùi gà", "cánh gà" } },
+            { "pork", new List<string> { "heo", "thịt heo", "thịt lợn", "ba chỉ", "thịt ba chỉ" } },
+            { "beef", new List<string> { "bò", "thịt bò" } },
+            { "fish", new List<string> { "cá", "cá hồi", "cá thu", "cá basa" } },
+            { "shrimp", new List<string> { "tôm" } },
+            { "egg", new List<string> { "trứng", "trứng gà" } },
+            // Rau củ
+            { "tomato", new List<string> { "cà chua" } },
+            { "carrot", new List<string> { "cà rốt" } },
+            { "potato", new List<string> { "khoai tây" } },
+            { "onion", new List<string> { "hành", "hành tây" } },
+            { "garlic", new List<string> { "tỏi" } },
+            { "lettuce", new List<string> { "xà lách", "rau xà lách" } },
+            { "salad", new List<string> { "xà lách", "salad", "rau trộn" } },
+            { "cucumber", new List<string> { "dưa chuột", "dưa leo" } },
+            { "cabbage", new List<string> { "bắp cải", "cải bắp" } },
+            { "spinach", new List<string> { "rau bina", "rau chân vịt" } },
+            { "broccoli", new List<string> { "bông cải xanh", "súp lơ xanh" } },
+            { "mushroom", new List<string> { "nấm" } },
+            { "pepper", new List<string> { "ớt", "tiêu" } },
+            { "corn", new List<string> { "bắp", "ngô" } },
+            // Trái cây
+            { "apple", new List<string> { "táo" } },
+            { "banana", new List<string> { "chuối" } },
+            { "orange", new List<string> { "cam" } },
+            // Khác
+            { "rice", new List<string> { "gạo", "cơm" } },
+            { "noodle", new List<string> { "mì", "bún", "phở" } },
+            { "tofu", new List<string> { "đậu hũ", "đậu phụ" } },
+        };
+
+        /// <summary>
+        /// Mở rộng danh sách từ khóa tìm kiếm với các tên đồng nghĩa tiếng Việt
+        /// </summary>
+        private List<string> ExpandIngredientNames(List<string> ingredients)
+        {
+            var expanded = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var ingredient in ingredients)
+            {
+                expanded.Add(ingredient);
+                // Thêm các tên tiếng Việt tương ứng
+                if (_ingredientMappings.TryGetValue(ingredient, out var vietnameseNames))
+                {
+                    foreach (var viName in vietnameseNames)
+                    {
+                        expanded.Add(viName);
+                    }
+                }
+            }
+            return expanded.ToList();
+        }
+
         public async Task<List<RecipeSuggestionDto>> SuggestRecipesAsync(
             RecipeSuggestionRequest request,
             CancellationToken cancellationToken = default)
@@ -48,9 +104,13 @@ namespace EatFitAI.API.Services
                 return new List<RecipeSuggestionDto>();
             }
 
-            _logger.LogInformation("Searching recipes for {Count} ingredients: {Ingredients}",
+            // Mở rộng danh sách với các tên tiếng Việt tương ứng
+            var expandedIngredients = ExpandIngredientNames(normalizedIngredients);
+
+            _logger.LogInformation("Searching recipes for {Count} ingredients (expanded to {ExpandedCount}): {Ingredients}",
                 normalizedIngredients.Count,
-                string.Join(", ", normalizedIngredients));
+                expandedIngredients.Count,
+                string.Join(", ", expandedIngredients));
 
             // Query recipes with their ingredients
             var recipesWithIngredients = await _db.Recipes
@@ -74,9 +134,9 @@ namespace EatFitAI.API.Services
                     continue; // Skip recipes with no valid ingredients
                 }
 
-                // Find matches
+                // Find matches - sử dụng expandedIngredients thay vì normalizedIngredients
                 var matchedIngredients = recipeIngredientNames
-                    .Where(recipeName => normalizedIngredients.Any(available =>
+                    .Where(recipeName => expandedIngredients.Any(available =>
                         recipeName.Contains(available) || available.Contains(recipeName)))
                     .ToList();
 

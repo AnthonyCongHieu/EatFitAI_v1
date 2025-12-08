@@ -33,6 +33,8 @@ import { StatsSkeleton } from '../../../components/skeletons/StatsSkeleton';
 import { MacroPieChart } from '../../../components/charts/MacroPieChart';
 import { glassStyles } from '../../../components/ui/GlassCard';
 import { t } from '../../../i18n/vi';
+import { LinearGradient } from 'expo-linear-gradient';
+
 
 const formatWeekRange = (dateStr: string): string => {
   const start = new Date(dateStr);
@@ -308,20 +310,27 @@ const WeekStatsScreen = (): JSX.Element => {
               style={{
                 data: {
                   fill: theme.colors.primary,
-                  fillOpacity: 0.3,
+                  fillOpacity: 0.5,
                   stroke: theme.colors.primary,
-                  strokeWidth: 2,
+                  strokeWidth: 3,
                 },
               }}
               labels={({ datum }) => `${datum.y} kcal`}
               labelComponent={
                 <VictoryTooltip
                   renderInPortal={false}
-                  style={{ fontSize: 12, fill: theme.colors.text }}
-                  flyoutStyle={{ fill: theme.colors.card, stroke: theme.colors.border }}
+                  style={{ fontSize: 12, fill: theme.colors.text, fontWeight: '600' }}
+                  flyoutStyle={{
+                    fill: theme.colors.card,
+                    stroke: theme.colors.primary,
+                    strokeWidth: 1,
+                  }}
+                  cornerRadius={8}
+                  pointerLength={6}
                 />
               }
             />
+
             {targetLine.length > 0 ? (
               <VictoryArea
                 data={targetLine}
@@ -351,79 +360,105 @@ const WeekStatsScreen = (): JSX.Element => {
 
         {weekSummary && weekSummary.days.length > 0 && (
           <View style={styles.summaryRow}>
+            {/* Average per day card - Blue gradient */}
             <Animated.View
-              style={[
-                styles.summaryItem,
-                highlightedCard === 0 && { backgroundColor: theme.colors.primaryLight },
-                card0AnimatedStyle,
-              ]}
+              style={[{ flex: 1, borderRadius: 20, overflow: 'hidden' }, card0AnimatedStyle]}
               entering={FadeInUp.delay(200).duration(400).springify()}
             >
-              <Pressable
-                onPress={() => handleCardPress(0)}
-                style={{ alignItems: 'center' }}
-              >
-                <ThemedText variant="caption" color="textSecondary" weight="600">
-                  {t('stats.averagePerDay')}
-                </ThemedText>
-                <ThemedText variant="h4">
-                  {Math.round(
-                    weekSummary.days.reduce((sum, day) => sum + day.calories, 0) /
-                    weekSummary.days.length,
-                  )}{' '}
-                  kcal
-                </ThemedText>
+              <Pressable onPress={() => handleCardPress(0)}>
+                <LinearGradient
+                  colors={isDark ? ['#1e3a5f', '#2c5282'] : ['#ebf8ff', '#bee3f8']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={{
+                    padding: theme.spacing.md,
+                    alignItems: 'center',
+                    borderRadius: 20,
+                    borderWidth: 1,
+                    borderColor: isDark ? 'rgba(66, 153, 225, 0.3)' : 'rgba(66, 153, 225, 0.2)',
+                  }}
+                >
+                  <ThemedText style={{ fontSize: 24, marginBottom: 4 }}>📊</ThemedText>
+                  <ThemedText variant="caption" color="textSecondary" weight="600">
+                    {t('stats.averagePerDay')}
+                  </ThemedText>
+                  <ThemedText variant="h3" weight="700" style={{ color: isDark ? '#63b3ed' : '#2b6cb0' }}>
+                    {Math.round(
+                      weekSummary.days.reduce((sum, day) => sum + day.calories, 0) /
+                      weekSummary.days.length,
+                    )}
+                  </ThemedText>
+                  <ThemedText variant="caption" color="textSecondary">kcal</ThemedText>
+                </LinearGradient>
               </Pressable>
             </Animated.View>
+
+            {/* Total week card - Purple gradient */}
             <Animated.View
-              style={[
-                styles.summaryItem,
-                highlightedCard === 1 && { backgroundColor: theme.colors.secondaryLight },
-                card1AnimatedStyle,
-              ]}
+              style={[{ flex: 1, borderRadius: 20, overflow: 'hidden' }, card1AnimatedStyle]}
               entering={FadeInUp.delay(300).duration(400).springify()}
             >
-              <Pressable
-                onPress={() => handleCardPress(1)}
-                style={{ alignItems: 'center' }}
-              >
-                <ThemedText variant="caption" color="textSecondary" weight="600">
-                  {t('stats.totalWeek')}
-                </ThemedText>
-                <ThemedText variant="h4">
-                  {weekSummary.days.reduce((sum, day) => sum + day.calories, 0)} kcal
-                </ThemedText>
+              <Pressable onPress={() => handleCardPress(1)}>
+                <LinearGradient
+                  colors={isDark ? ['#44337a', '#553c9a'] : ['#faf5ff', '#e9d8fd']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={{
+                    padding: theme.spacing.md,
+                    alignItems: 'center',
+                    borderRadius: 20,
+                    borderWidth: 1,
+                    borderColor: isDark ? 'rgba(159, 122, 234, 0.3)' : 'rgba(159, 122, 234, 0.2)',
+                  }}
+                >
+                  <ThemedText style={{ fontSize: 24, marginBottom: 4 }}>🔥</ThemedText>
+                  <ThemedText variant="caption" color="textSecondary" weight="600">
+                    {t('stats.totalWeek')}
+                  </ThemedText>
+                  <ThemedText variant="h3" weight="700" style={{ color: isDark ? '#b794f4' : '#6b46c1' }}>
+                    {Math.round(weekSummary.days.reduce((sum, day) => sum + day.calories, 0) / 1000 * 10) / 10}k
+                  </ThemedText>
+                  <ThemedText variant="caption" color="textSecondary">kcal</ThemedText>
+                </LinearGradient>
               </Pressable>
             </Animated.View>
+
+            {/* Target achieved card - Green gradient */}
             <Animated.View
-              style={[
-                styles.summaryItem,
-                highlightedCard === 2 && { backgroundColor: theme.colors.success + '20' },
-                card2AnimatedStyle,
-              ]}
+              style={[{ flex: 1, borderRadius: 20, overflow: 'hidden' }, card2AnimatedStyle]}
               entering={FadeInUp.delay(400).duration(400).springify()}
             >
-              <Pressable
-                onPress={() => handleCardPress(2)}
-                style={{ alignItems: 'center' }}
-              >
-                <ThemedText variant="caption" color="textSecondary" weight="600">
-                  {t('stats.targetAchieved')}
-                </ThemedText>
-                <ThemedText variant="h4" color="success">
-                  {
-                    weekSummary.days.filter(
+              <Pressable onPress={() => handleCardPress(2)}>
+                <LinearGradient
+                  colors={isDark ? ['#22543d', '#276749'] : ['#f0fff4', '#c6f6d5']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={{
+                    padding: theme.spacing.md,
+                    alignItems: 'center',
+                    borderRadius: 20,
+                    borderWidth: 1,
+                    borderColor: isDark ? 'rgba(72, 187, 120, 0.3)' : 'rgba(72, 187, 120, 0.2)',
+                  }}
+                >
+                  <ThemedText style={{ fontSize: 24, marginBottom: 4 }}>🎯</ThemedText>
+                  <ThemedText variant="caption" color="textSecondary" weight="600">
+                    {t('stats.targetAchieved')}
+                  </ThemedText>
+                  <ThemedText variant="h3" weight="700" style={{ color: isDark ? '#68d391' : '#276749' }}>
+                    {weekSummary.days.filter(
                       (day) => day.targetCalories && day.calories >= day.targetCalories,
-                    ).length
-                  }
-                  /{weekSummary.days.length} ngày
-                </ThemedText>
+                    ).length}/{weekSummary.days.length}
+                  </ThemedText>
+                  <ThemedText variant="caption" color="textSecondary">ngày</ThemedText>
+                </LinearGradient>
               </Pressable>
             </Animated.View>
           </View>
         )}
 
       </AppCard>
+
 
       {weekSummary && (
         <View style={{ marginTop: theme.spacing.lg }}>

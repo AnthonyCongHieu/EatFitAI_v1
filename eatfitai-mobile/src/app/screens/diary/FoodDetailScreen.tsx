@@ -101,6 +101,7 @@ const FoodDetailScreen = (): JSX.Element | null => {
         macroRow: { flexDirection: 'row', gap: theme.spacing.sm },
         macroBox: {
           flex: 1,
+          minWidth: 80,
           padding: theme.spacing.md,
           borderRadius: theme.borderRadius.card,
           gap: theme.spacing.xs,
@@ -523,7 +524,7 @@ const FoodDetailScreen = (): JSX.Element | null => {
                 onBlur={onBlur}
                 placeholder="VD: giảm bớt nước sốt"
                 multiline
-                numberOfLines={3}
+                numberOfLines={2}
                 error={!!errors.note}
                 helperText={errors.note?.message}
               />

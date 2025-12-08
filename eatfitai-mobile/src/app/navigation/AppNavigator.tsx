@@ -196,6 +196,13 @@ const AppNavigator = (): JSX.Element => {
                   headerTitleStyle: { fontFamily: 'Inter_600SemiBold' },
                 }}
               />
+              <Stack.Screen
+                name="Achievements"
+                component={AchievementsScreen}
+                options={{
+                  headerShown: false, // Đã có ScreenHeader custom
+                }}
+              />
             </>
           )}
         </Stack.Navigator>

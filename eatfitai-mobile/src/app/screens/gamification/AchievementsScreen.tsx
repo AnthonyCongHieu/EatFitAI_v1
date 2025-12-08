@@ -123,7 +123,7 @@ const AchievementsScreen = (): JSX.Element => {
     });
 
     return (
-        <Screen>
+        <Screen scroll={false}>
             <ScreenHeader
                 title="Thành tích"
                 subtitle="Hành trình sức khỏe của bạn"
