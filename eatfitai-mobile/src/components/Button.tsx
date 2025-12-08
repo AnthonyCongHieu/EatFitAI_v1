@@ -123,13 +123,13 @@ export const Button = memo(
     }));
 
     const handlePressIn = () => {
-      scale.value = withSpring(0.97, { damping: 15, stiffness: 300 });
-      opacity.value = withTiming(0.8, { duration: theme.animation.fast });
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+      scale.value = withSpring(0.96, { damping: 10, stiffness: 300 });
+      opacity.value = withTiming(0.9, { duration: theme.animation.fast });
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => { });
     };
 
     const handlePressOut = () => {
-      scale.value = withSpring(1, { damping: 15, stiffness: 300 });
+      scale.value = withSpring(1, { damping: 12, stiffness: 300 });
       opacity.value = withTiming(1, { duration: theme.animation.fast });
     };
 

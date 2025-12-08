@@ -26,6 +26,7 @@ import { handleApiError, handleApiErrorWithCustomMessage } from '../../../utils/
 import type { RootStackParamList } from '../../types';
 import { glassStyles } from '../../../components/ui/GlassCard';
 import { t } from '../../../i18n/vi';
+import { AIExplanationCard } from '../../../components/ai/AIExplanationCard';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -276,6 +277,9 @@ const NutritionSettingsScreen = (): JSX.Element => {
                                 {renderMacroInput('fat', t('nutrition_settings.fat_label'), '60')}
                             </View>
 
+
+
+
                             <View style={[styles.row, { marginTop: theme.spacing.lg }]}>
                                 <Button
                                     variant="outline"
@@ -370,13 +374,7 @@ const NutritionSettingsScreen = (): JSX.Element => {
                                 </View>
                             </View>
 
-                            {suggestedTarget.explanation && (
-                                <View style={{ marginTop: theme.spacing.md, padding: theme.spacing.sm, backgroundColor: theme.colors.background, borderRadius: 8 }}>
-                                    <ThemedText variant="bodySmall" color="textSecondary">
-                                        💡 {suggestedTarget.explanation}
-                                    </ThemedText>
-                                </View>
-                            )}
+                            <AIExplanationCard explanation={suggestedTarget.explanation} />
 
                             <View style={[styles.row, { marginTop: theme.spacing.lg }]}>
                                 <Button

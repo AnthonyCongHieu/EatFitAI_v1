@@ -49,7 +49,7 @@ import { useGamificationStore } from '../../store/useGamificationStore';
 import { StreakCard } from '../../components/gamification/StreakCard';
 import { HomeSkeleton } from '../../components/skeletons/HomeSkeleton';
 import { GlassCard, glassStyles } from '../../components/ui/GlassCard';
-
+import { WelcomeHeader } from '../../components/home/WelcomeHeader';
 
 type AddOption = 'search' | 'custom' | 'ai';
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
@@ -321,8 +321,6 @@ const HomeScreen = (): JSX.Element => {
 
   return (
     <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
-      <ScreenHeader title="Trang chủ" subtitle="Theo dõi dinh dưỡng hàng ngày" />
-
       <Screen
         contentContainerStyle={{
           paddingHorizontal: theme.spacing.lg,
@@ -337,6 +335,8 @@ const HomeScreen = (): JSX.Element => {
           />
         }
       >
+        <WelcomeHeader />
+
         {serverDown && (
           <View
             style={{
@@ -361,8 +361,6 @@ const HomeScreen = (): JSX.Element => {
             navigation.navigate('Achievements');
           }}
         />
-
-
 
         {/* Hero Card - Glassmorphism */}
         <Animated.View entering={FadeInUp.duration(theme.animation.slow).springify()}>
@@ -539,8 +537,6 @@ const HomeScreen = (): JSX.Element => {
           )}
         </View>
       </Screen>
-
-
 
       {/* Floating Action Button */}
       <Animated.View
