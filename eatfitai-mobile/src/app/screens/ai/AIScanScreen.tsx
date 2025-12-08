@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import * as ImagePicker from 'expo-image-picker';
+import * as Haptics from 'expo-haptics';
 import Animated, {
     FadeIn,
     FadeInDown,
@@ -22,6 +23,7 @@ import Toast from 'react-native-toast-message';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
 
 import { ThemedText } from '../../../components/ThemedText';
 import Button from '../../../components/Button';
@@ -35,6 +37,10 @@ import { AIResultEditModal } from '../../../components/ui/AIResultEditModal';
 import type { RootStackParamList } from '../../types';
 import type { MappedFoodItem } from '../../../types/ai';
 import { glassStyles } from '../../../components/ui/GlassCard';
+import { ScanFrameOverlay } from '../../../components/scan/ScanFrameOverlay';
+import { IngredientBasketFab } from '../../../components/scan/IngredientBasketFab';
+import { IngredientBasketSheet } from '../../../components/scan/IngredientBasketSheet';
+import { useIngredientBasketStore } from '../../../store/useIngredientBasketStore';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 type CameraViewInstance = InstanceType<typeof CameraView>;
@@ -65,6 +71,10 @@ const AIScanScreen: React.FC = () => {
     } | null>(null);
     const [editingItem, setEditingItem] = useState<MappedFoodItem | null>(null);
     const [showEditModal, setShowEditModal] = useState(false);
+    const [showBasketSheet, setShowBasketSheet] = useState(false);
+
+    // Ingredient Basket
+    const addIngredient = useIngredientBasketStore((s) => s.addIngredient);
 
     // Animation values
     const captureScale = useSharedValue(1);
@@ -117,6 +127,9 @@ const AIScanScreen: React.FC = () => {
             return;
         }
 
+        // Haptic feedback khi bấm nút chụp
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+
         setIsCapturing(true);
         captureScale.value = withSpring(0.9, { damping: 10 });
 
@@ -127,6 +140,9 @@ const AIScanScreen: React.FC = () => {
             });
 
             if (!result?.uri) throw new Error('Không đọc được ảnh');
+
+            // Haptic success khi chụp thành công
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 
             captureScale.value = withSpring(1, { damping: 15 });
             await processImage(result.uri);
@@ -192,6 +208,22 @@ const AIScanScreen: React.FC = () => {
         setEditingItem(item);
         setShowEditModal(true);
     }, []);
+
+    // Thêm nguyên liệu vào giỏ (IMP-02)
+    const handleAddToBasket = useCallback((item: MappedFoodItem) => {
+        addIngredient({
+            name: item.label,
+            confidence: item.confidence,
+            imageUri: capturedUri || undefined,
+        });
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        Toast.show({
+            type: 'success',
+            text1: 'Đã thêm vào giỏ',
+            text2: item.label,
+            visibilityTime: 1500,
+        });
+    }, [addIngredient, capturedUri]);
 
     const handleEditModalSave = useCallback(async (editedItem: MappedFoodItem & { grams: number }) => {
         setShowEditModal(false);
@@ -281,8 +313,18 @@ const AIScanScreen: React.FC = () => {
                 <AppImage source={{ uri: capturedUri }} style={StyleSheet.absoluteFill as any} resizeMode="cover" />
             )}
 
-            {/* Dark Overlay for UI contrast */}
-            <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.2)' }]} pointerEvents="none" />
+            {/* Scan Frame Overlay - Chỉ hiển thị trong camera mode */}
+            {isCameraMode && (
+                <ScanFrameOverlay
+                    isScanning={!isCapturing && !isProcessing}
+                    isSuccess={false}
+                />
+            )}
+
+            {/* Dark Overlay for UI contrast - Chỉ khi không có scan frame */}
+            {!isCameraMode && (
+                <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.2)' }]} pointerEvents="none" />
+            )}
 
             {/* UI Overlay Layer */}
             <SafeAreaView style={styles.uiOverlay} pointerEvents="box-none">
@@ -304,30 +346,36 @@ const AIScanScreen: React.FC = () => {
                     </Animated.View>
                 )}
 
-                {/* Modes & Controls */}
                 {/* CAMERA MODE */}
                 {isCameraMode && (
                     <Animated.View entering={FadeInDown} style={styles.bottomControls}>
                         {/* Search Wrapper */}
                         <Pressable
-                            style={glass.card}
+                            style={[glass.card, styles.sideButton]}
                             onPress={() => navigation.navigate('FoodSearch')}
                         >
                             <Icon name="search-outline" size="lg" color="text" />
                         </Pressable>
 
-                        {/* Capture Button */}
+                        {/* Capture Button với Gradient Ring */}
                         <AnimatedPressable
                             onPress={handleCapture}
                             disabled={isCapturing}
-                            style={[captureButtonStyle, styles.captureButtonLarge]}
+                            style={[captureButtonStyle, styles.captureButtonOuter]}
                         >
-                            <View style={styles.captureInnerLarge} />
+                            <LinearGradient
+                                colors={[theme.colors.primary, theme.colors.secondary, theme.colors.primary]}
+                                start={{ x: 0, y: 0 }}
+                                end={{ x: 1, y: 1 }}
+                                style={styles.captureGradientRing}
+                            >
+                                <View style={[styles.captureInnerLarge, { backgroundColor: '#fff' }]} />
+                            </LinearGradient>
                         </AnimatedPressable>
 
                         {/* Gallery Wrapper */}
                         <Pressable
-                            style={glass.card}
+                            style={[glass.card, styles.sideButton]}
                             onPress={handlePickImage}
                         >
                             <Icon name="images-outline" size="lg" color="text" />
@@ -350,9 +398,8 @@ const AIScanScreen: React.FC = () => {
                             data={detectionResult.items}
                             keyExtractor={(item, index) => item.label + index}
                             renderItem={({ item }) => (
-                                <Pressable
+                                <View
                                     style={[styles.resultRow, { borderBottomColor: theme.colors.border }]}
-                                    onPress={() => handleQuickAdd(item)}
                                 >
                                     {/* Thumbnail */}
                                     {item.thumbNail ? (
@@ -362,16 +409,33 @@ const AIScanScreen: React.FC = () => {
                                         />
                                     ) : (
                                         <View style={{ width: 48, height: 48, borderRadius: 12, backgroundColor: theme.colors.card, alignItems: 'center', justifyContent: 'center', marginRight: 12, borderWidth: 1, borderColor: theme.colors.border }}>
-                                            <Icon name="restaurant-outline" size="md" color="textSecondary" />
+                                            <Icon name="leaf-outline" size="md" color="textSecondary" />
                                         </View>
                                     )}
 
                                     <View style={{ flex: 1 }}>
                                         <ThemedText variant="body" weight="600">{item.label}</ThemedText>
-                                        <ThemedText variant="caption" color="textSecondary">{item.caloriesPer100g ? `${item.caloriesPer100g} kcal/100g` : 'Chưa có thông tin calo'}</ThemedText>
+                                        <ThemedText variant="caption" color="textSecondary">{item.caloriesPer100g ? `${item.caloriesPer100g} kcal/100g` : 'Nguyên liệu'}</ThemedText>
                                     </View>
-                                    <Icon name="add-circle" size="xl" color="primary" />
-                                </Pressable>
+
+                                    {/* Thêm vào giỏ nguyên liệu */}
+                                    <Pressable
+                                        onPress={() => handleAddToBasket(item)}
+                                        style={{ padding: 8, marginRight: 4 }}
+                                        hitSlop={8}
+                                    >
+                                        <Icon name="basket-outline" size="lg" color="secondary" />
+                                    </Pressable>
+
+                                    {/* Thêm trực tiếp vào nhật ký */}
+                                    <Pressable
+                                        onPress={() => handleQuickAdd(item)}
+                                        style={{ padding: 8 }}
+                                        hitSlop={8}
+                                    >
+                                        <Icon name="add-circle" size="xl" color="primary" />
+                                    </Pressable>
+                                </View>
                             )}
                             ListEmptyComponent={() => (
                                 <View style={{ padding: 20, alignItems: 'center' }}>
@@ -404,6 +468,15 @@ const AIScanScreen: React.FC = () => {
                     setEditingItem(null);
                 }}
                 onSave={handleEditModalSave}
+            />
+
+            {/* Ingredient Basket FAB - Floating button hiển thị số nguyên liệu */}
+            <IngredientBasketFab onPress={() => setShowBasketSheet(true)} />
+
+            {/* Ingredient Basket Sheet - Danh sách nguyên liệu đã quét */}
+            <IngredientBasketSheet
+                visible={showBasketSheet}
+                onClose={() => setShowBasketSheet(false)}
             />
         </View>
     );
@@ -457,18 +530,41 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
     },
+    captureButtonOuter: {
+        width: 88,
+        height: 88,
+        borderRadius: 44,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    captureGradientRing: {
+        width: 84,
+        height: 84,
+        borderRadius: 42,
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: 4,
+    },
     captureInnerLarge: {
-        width: 64,
-        height: 64,
-        borderRadius: 32,
-        backgroundColor: '#fff',
+        width: 68,
+        height: 68,
+        borderRadius: 34,
+        // Giữ màu trắng cố định cho nút chụp vì cần tương phản với gradient ring
+        backgroundColor: '#FFFFFF',
+    },
+    sideButton: {
+        width: 52,
+        height: 52,
+        borderRadius: 26,
+        alignItems: 'center',
+        justifyContent: 'center',
     },
     resultsContainer: {
         position: 'absolute',
         bottom: 0,
         left: 0,
         right: 0,
-        backgroundColor: '#fff',
+        // Sử dụng theme color thay vì hardcode - sẽ được override inline với theme.colors.card
         borderTopLeftRadius: 24,
         borderTopRightRadius: 24,
         padding: 20,

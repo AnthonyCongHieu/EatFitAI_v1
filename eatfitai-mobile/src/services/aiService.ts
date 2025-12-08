@@ -63,9 +63,13 @@ export async function detectFoodByImage(imageUri: string): Promise<VisionDetectR
   // Use fetch instead of axios for FormData to avoid boundary issues in React Native
   const token = getAccessTokenMem() ?? (await tokenStorage.getAccessToken());
   const url = `${API_BASE_URL}/api/ai/vision/detect`;
-  console.log('[aiService] detectFoodByImage calling:', url);
-  console.log('[aiService] using token length:', token?.length);
-  console.log('[aiService] imageUri:', imageUri);
+
+  // Only log in development mode
+  if (__DEV__) {
+    console.log('[aiService] detectFoodByImage calling:', url);
+    console.log('[aiService] using token length:', token?.length);
+    console.log('[aiService] imageUri:', imageUri);
+  }
 
   const response = await fetch(`${API_BASE_URL}/api/ai/vision/detect`, {
     method: 'POST',
@@ -79,7 +83,9 @@ export async function detectFoodByImage(imageUri: string): Promise<VisionDetectR
 
   if (!response.ok) {
     const text = await response.text();
-    console.error('[aiService] detectFoodByImage failed:', response.status, text);
+    if (__DEV__) {
+      console.error('[aiService] detectFoodByImage failed:', response.status, text);
+    }
     throw new Error(`Vision API failed: ${response.status} ${text}`);
   }
 

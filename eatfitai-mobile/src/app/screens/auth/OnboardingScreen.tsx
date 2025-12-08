@@ -32,6 +32,7 @@ import { useProfileStore } from '../../../store/useProfileStore';
 import { useAuthStore } from '../../../store/useAuthStore';
 import apiClient from '../../../services/apiClient';
 import { showSuccess } from '../../../utils/errorHandler';
+import { t } from '../../../i18n/vi';
 import type { RootStackParamList } from '../../types';
 
 const { width } = Dimensions.get('window');
@@ -49,31 +50,31 @@ interface OnboardingData {
 }
 
 const STEPS = [
-    { title: 'Thông tin cơ bản', subtitle: 'Hãy cho chúng tôi biết về bạn', icon: '👋' },
-    { title: 'Số đo cơ thể', subtitle: 'Để tính toán nhu cầu dinh dưỡng', icon: '📏' },
-    { title: 'Mục tiêu của bạn', subtitle: 'Bạn muốn đạt được gì?', icon: '🎯' },
-    { title: 'Mức vận động', subtitle: 'Bạn hoạt động thế nào?', icon: '🏃' },
-    { title: 'Hoàn tất!', subtitle: 'AI đang tính toán cho bạn...', icon: '✨' },
+    { title: t('onboarding.step1_title'), subtitle: t('onboarding.step1_subtitle'), icon: '👋' },
+    { title: t('onboarding.step2_title'), subtitle: t('onboarding.step2_subtitle'), icon: '📏' },
+    { title: t('onboarding.step3_title'), subtitle: t('onboarding.step3_subtitle'), icon: '🎯' },
+    { title: t('onboarding.step4_title'), subtitle: t('onboarding.step4_subtitle'), icon: '🏃' },
+    { title: t('onboarding.step5_title'), subtitle: t('onboarding.step5_subtitle'), icon: '✨' },
 ];
 
 const GENDER_OPTIONS = [
-    { value: 'male', label: 'Nam', icon: '👨' },
-    { value: 'female', label: 'Nữ', icon: '👩' },
-    { value: 'other', label: 'Khác', icon: '🧑' },
+    { value: 'male', label: t('onboarding.gender_male'), icon: '👨' },
+    { value: 'female', label: t('onboarding.gender_female'), icon: '👩' },
+    { value: 'other', label: t('onboarding.gender_other'), icon: '🧑' },
 ];
 
 const GOAL_OPTIONS = [
-    { value: 'lose', label: 'Giảm cân', icon: '📉', desc: 'Giảm mỡ, gọn người', color: '#EF4444' },
-    { value: 'maintain', label: 'Duy trì', icon: '⚖️', desc: 'Giữ nguyên cân nặng', color: '#3B82F6' },
-    { value: 'gain', label: 'Tăng cân', icon: '📈', desc: 'Tăng cơ, tăng khối lượng', color: '#22C55E' },
+    { value: 'lose', label: t('onboarding.goal_lose'), icon: '📉', desc: t('onboarding.goal_lose_desc'), color: '#EF4444' },
+    { value: 'maintain', label: t('onboarding.goal_maintain'), icon: '⚖️', desc: t('onboarding.goal_maintain_desc'), color: '#3B82F6' },
+    { value: 'gain', label: t('onboarding.goal_gain'), icon: '📈', desc: t('onboarding.goal_gain_desc'), color: '#22C55E' },
 ];
 
 const ACTIVITY_OPTIONS = [
-    { value: 'sedentary', label: 'Ít vận động', desc: 'Ngồi văn phòng cả ngày', multiplier: 1.2 },
-    { value: 'light', label: 'Nhẹ nhàng', desc: 'Tập 1-2 lần/tuần', multiplier: 1.375 },
-    { value: 'moderate', label: 'Vừa phải', desc: 'Tập 3-5 lần/tuần', multiplier: 1.55 },
-    { value: 'active', label: 'Tích cực', desc: 'Tập 6-7 lần/tuần', multiplier: 1.725 },
-    { value: 'very_active', label: 'Rất tích cực', desc: 'Vận động viên', multiplier: 1.9 },
+    { value: 'sedentary', label: t('onboarding.activity_sedentary'), desc: t('onboarding.activity_sedentary_desc'), multiplier: 1.2 },
+    { value: 'light', label: t('onboarding.activity_light'), desc: t('onboarding.activity_light_desc'), multiplier: 1.375 },
+    { value: 'moderate', label: t('onboarding.activity_moderate'), desc: t('onboarding.activity_moderate_desc'), multiplier: 1.55 },
+    { value: 'active', label: t('onboarding.activity_active'), desc: t('onboarding.activity_active_desc'), multiplier: 1.725 },
+    { value: 'very_active', label: t('onboarding.activity_very_active'), desc: t('onboarding.activity_very_active_desc'), multiplier: 1.9 },
 ];
 
 const OnboardingScreen = (): JSX.Element => {
@@ -242,9 +243,14 @@ const OnboardingScreen = (): JSX.Element => {
                         carb: aiResult.carbs,
                         fat: aiResult.fat,
                     });
-                    console.log('[Onboarding] NutritionTarget created successfully');
+                    // Log only in development mode
+                    if (__DEV__) {
+                        console.log('[Onboarding] NutritionTarget created successfully');
+                    }
                 } catch (nutritionError) {
-                    console.warn('[Onboarding] Failed to create NutritionTarget:', nutritionError);
+                    if (__DEV__) {
+                        console.warn('[Onboarding] Failed to create NutritionTarget:', nutritionError);
+                    }
                     // Vẫn tiếp tục vì đây không phải critical error
                 }
             }
@@ -255,9 +261,13 @@ const OnboardingScreen = (): JSX.Element => {
             // Gọi API đánh dấu onboarding hoàn tất trên server
             try {
                 await apiClient.post('/api/auth/mark-onboarding-completed');
-                console.log('[Onboarding] Server onboarding status updated');
+                if (__DEV__) {
+                    console.log('[Onboarding] Server onboarding status updated');
+                }
             } catch (apiError) {
-                console.warn('[Onboarding] Failed to update server:', apiError);
+                if (__DEV__) {
+                    console.warn('[Onboarding] Failed to update server:', apiError);
+                }
                 // Vẫn tiếp tục vì đã lưu locally
             }
 
@@ -374,15 +384,15 @@ const OnboardingScreen = (): JSX.Element => {
                 return (
                     <Animated.View entering={FadeInRight} exiting={FadeOutLeft} key="step0">
                         <ThemedTextInput
-                            label="Tên của bạn"
+                            label={t('onboarding.your_name')}
                             value={data.fullName}
                             onChangeText={(text) => setData({ ...data, fullName: text })}
-                            placeholder="Nhập tên"
+                            placeholder={t('onboarding.enter_name')}
                             style={{ marginBottom: 20 }}
                         />
 
                         <ThemedText variant="bodySmall" color="textSecondary" style={{ marginBottom: 12 }}>
-                            Giới tính
+                            {t('onboarding.gender')}
                         </ThemedText>
                         <View style={styles.optionGrid}>
                             {GENDER_OPTIONS.map((opt) => (
@@ -408,7 +418,7 @@ const OnboardingScreen = (): JSX.Element => {
                         </View>
 
                         <ThemedTextInput
-                            label="Tuổi"
+                            label={t('onboarding.age')}
                             value={data.age}
                             onChangeText={(text) => setData({ ...data, age: text.replace(/[^0-9]/g, '') })}
                             placeholder="25"
@@ -424,7 +434,7 @@ const OnboardingScreen = (): JSX.Element => {
                         <View style={styles.inputRow}>
                             <View style={styles.inputCol}>
                                 <ThemedTextInput
-                                    label="Chiều cao (cm)"
+                                    label={t('onboarding.height_cm')}
                                     value={data.heightCm}
                                     onChangeText={(text) => setData({ ...data, heightCm: text.replace(/[^0-9]/g, '') })}
                                     placeholder="170"
@@ -433,7 +443,7 @@ const OnboardingScreen = (): JSX.Element => {
                             </View>
                             <View style={styles.inputCol}>
                                 <ThemedTextInput
-                                    label="Cân nặng (kg)"
+                                    label={t('onboarding.weight_kg')}
                                     value={data.weightKg}
                                     onChangeText={(text) => setData({ ...data, weightKg: text.replace(/[^0-9.]/g, '') })}
                                     placeholder="65"
@@ -444,7 +454,7 @@ const OnboardingScreen = (): JSX.Element => {
 
                         <View style={[glass.card, { marginTop: 20 }]}>
                             <ThemedText variant="bodySmall" color="textSecondary" style={{ textAlign: 'center' }}>
-                                💡 Thông tin này giúp AI tính toán lượng calories và macros phù hợp với bạn
+                                {t('onboarding.ai_calculation_tip')}
                             </ThemedText>
                         </View>
                     </Animated.View>
@@ -530,13 +540,13 @@ const OnboardingScreen = (): JSX.Element => {
                         {isCalculating ? (
                             <View style={{ alignItems: 'center', paddingVertical: 40 }}>
                                 <ActivityIndicator size="large" color={theme.colors.primary} />
-                                <ThemedText style={{ marginTop: 16 }}>Đang tính toán...</ThemedText>
+                                <ThemedText style={{ marginTop: 16 }}>{t('onboarding.calculating')}</ThemedText>
                             </View>
                         ) : aiResult ? (
                             <View style={[glass.card, styles.resultCard]}>
                                 <ThemedText style={{ fontSize: 48 }}>🎉</ThemedText>
                                 <ThemedText variant="h2" style={{ marginTop: 12 }}>
-                                    Mục tiêu hàng ngày
+                                    {t('onboarding.daily_goal')}
                                 </ThemedText>
 
                                 <View style={styles.resultRow}>

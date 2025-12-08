@@ -18,6 +18,7 @@ import { summaryService } from '../../../services/summaryService';
 import { handleApiError } from '../../../utils/errorHandler';
 import { StatsSkeleton } from '../../../components/skeletons/StatsSkeleton';
 import { MacroPieChart } from '../../../components/charts/MacroPieChart';
+import { t } from '../../../i18n/vi';
 
 interface DayData {
     date: string;
@@ -267,7 +268,7 @@ const MonthStatsScreen = (): JSX.Element => {
 
     return (
         <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
-            <ScreenHeader title="Thống kê tháng" subtitle="Xem tiến độ dinh dưỡng theo tháng" />
+            <ScreenHeader title={t('stats.monthTitle')} subtitle={t('stats.monthSubtitle')} />
 
             <Screen
                 contentContainerStyle={styles.content}
@@ -289,7 +290,7 @@ const MonthStatsScreen = (): JSX.Element => {
                             {formatMonth(currentDate)}
                         </ThemedText>
                         {isCurrentMonth && (
-                            <ThemedText variant="caption" color="primary">Tháng này</ThemedText>
+                            <ThemedText variant="caption" color="primary">{t('stats.thisMonth')}</ThemedText>
                         )}
                     </View>
                     <Pressable
@@ -308,7 +309,7 @@ const MonthStatsScreen = (): JSX.Element => {
                 {/* Calendar Heatmap */}
                 <Animated.View entering={FadeInUp.springify()}>
                     <AppCard>
-                        <SectionHeader title="Lịch dinh dưỡng" subtitle="Màu đậm = calories cao hơn" />
+                        <SectionHeader title={t('stats.calendarTitle')} subtitle={t('stats.calendarSubtitle')} />
 
                         {/* Weekday headers */}
                         <View style={styles.weekdayRow}>
@@ -390,7 +391,7 @@ const MonthStatsScreen = (): JSX.Element => {
                                     Chưa có dữ liệu cho tháng này
                                 </ThemedText>
                                 <ThemedText variant="caption" color="textSecondary" style={{ textAlign: 'center' }}>
-                                    Hãy thêm món ăn vào nhật ký để xem thống kê
+                                    {t('stats.addFoodPrompt')}
                                 </ThemedText>
                             </View>
                         </AppCard>

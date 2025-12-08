@@ -32,6 +32,7 @@ import { handleApiError } from '../../../utils/errorHandler';
 import { StatsSkeleton } from '../../../components/skeletons/StatsSkeleton';
 import { MacroPieChart } from '../../../components/charts/MacroPieChart';
 import { glassStyles } from '../../../components/ui/GlassCard';
+import { t } from '../../../i18n/vi';
 
 const formatWeekRange = (dateStr: string): string => {
   const start = new Date(dateStr);
@@ -106,7 +107,9 @@ const WeekStatsScreen = (): JSX.Element => {
     try {
       useStatsStore.getState().goToPreviousWeek();
     } catch (err) {
-      console.error('Error navigating to previous week:', err);
+      if (__DEV__) {
+        console.error('Error navigating to previous week:', err);
+      }
     }
   }, []);
 
@@ -114,7 +117,9 @@ const WeekStatsScreen = (): JSX.Element => {
     try {
       useStatsStore.getState().goToNextWeek();
     } catch (err) {
-      console.error('Error navigating to next week:', err);
+      if (__DEV__) {
+        console.error('Error navigating to next week:', err);
+      }
     }
   }, []);
 
@@ -201,7 +206,7 @@ const WeekStatsScreen = (): JSX.Element => {
         />
       }
     >
-      <ScreenHeader title="Thống kê tuần" subtitle="Xem tiến độ dinh dưỡng theo tuần" />
+      <ScreenHeader title={t('stats.weekTitle')} subtitle={t('stats.weekSubtitle')} />
 
       {/* Week Navigation */}
       <View style={styles.weekNavigation}>
@@ -209,7 +214,7 @@ const WeekStatsScreen = (): JSX.Element => {
           onPress={goToPreviousWeek}
           style={styles.navButton}
           disabled={isLoading}
-          accessibilityLabel="Tuần trước"
+          accessibilityLabel={t('stats.previousWeek')}
         >
           <Icon name="chevron-back" size="md" color="primary" />
         </Pressable>
@@ -219,7 +224,7 @@ const WeekStatsScreen = (): JSX.Element => {
             {formatWeekRange(selectedDate)}
           </ThemedText>
           {isCurrentWeek(selectedDate) && (
-            <ThemedText variant="caption" color="primary">Tuần này</ThemedText>
+            <ThemedText variant="caption" color="primary">{t('stats.thisWeek')}</ThemedText>
           )}
         </View>
 
@@ -227,7 +232,7 @@ const WeekStatsScreen = (): JSX.Element => {
           onPress={goToNextWeek}
           style={[styles.navButton, isFutureWeek && styles.navButtonDisabled]}
           disabled={isLoading || isFutureWeek}
-          accessibilityLabel="Tuần sau"
+          accessibilityLabel={t('stats.nextWeek')}
         >
           <Icon name="chevron-forward" size="md" color={isFutureWeek ? 'textSecondary' : 'primary'} />
         </Pressable>
@@ -235,8 +240,8 @@ const WeekStatsScreen = (): JSX.Element => {
 
       <AppCard>
         <SectionHeader
-          title="Thống kê 7 ngày"
-          subtitle="So sánh calo tiêu thụ với mục tiêu hằng ngày"
+          title={t('stats.weekTitle')}
+          subtitle={t('stats.calorieComparison')}
         />
 
         {isLoading && !weekSummary ? (
@@ -247,7 +252,7 @@ const WeekStatsScreen = (): JSX.Element => {
               color="textSecondary"
               style={{ marginTop: theme.spacing.md }}
             >
-              Đang tải...
+              {t('stats.loading')}
             </ThemedText>
           </View>
         ) : hasNoData ? (
@@ -258,14 +263,14 @@ const WeekStatsScreen = (): JSX.Element => {
               color="textSecondary"
               style={{ textAlign: 'center' }}
             >
-              Chưa có dữ liệu cho tuần này
+              {t('stats.noData')}
             </ThemedText>
             <ThemedText
               variant="caption"
               color="textSecondary"
               style={{ textAlign: 'center' }}
             >
-              Hãy thêm món ăn vào nhật ký để xem thống kê
+              {t('stats.addFoodPrompt')}
             </ThemedText>
           </View>
         ) : (
@@ -359,7 +364,7 @@ const WeekStatsScreen = (): JSX.Element => {
                 style={{ alignItems: 'center' }}
               >
                 <ThemedText variant="caption" color="textSecondary" weight="600">
-                  Trung bình/ngày
+                  {t('stats.averagePerDay')}
                 </ThemedText>
                 <ThemedText variant="h4">
                   {Math.round(
@@ -383,7 +388,7 @@ const WeekStatsScreen = (): JSX.Element => {
                 style={{ alignItems: 'center' }}
               >
                 <ThemedText variant="caption" color="textSecondary" weight="600">
-                  Tổng tuần
+                  {t('stats.totalWeek')}
                 </ThemedText>
                 <ThemedText variant="h4">
                   {weekSummary.days.reduce((sum, day) => sum + day.calories, 0)} kcal
@@ -403,7 +408,7 @@ const WeekStatsScreen = (): JSX.Element => {
                 style={{ alignItems: 'center' }}
               >
                 <ThemedText variant="caption" color="textSecondary" weight="600">
-                  Đạt mục tiêu
+                  {t('stats.targetAchieved')}
                 </ThemedText>
                 <ThemedText variant="h4" color="success">
                   {

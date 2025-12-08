@@ -21,14 +21,20 @@ const RecipeDetailScreen = (): JSX.Element => {
   const route = useRoute<RouteProps>();
   const [recipe, setRecipe] = useState<RecipeDetail | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const load = async () => {
       try {
+        setError(null);
         const data = await aiService.getRecipeDetail(route.params.recipeId);
         setRecipe(data);
       } catch (e) {
-        // ignore
+        // Log lỗi trong development mode
+        if (__DEV__) {
+          console.error('[RecipeDetailScreen] Error loading recipe:', e);
+        }
+        setError('Không thể tải chi tiết công thức. Vui lòng thử lại.');
       } finally {
         setLoading(false);
       }
@@ -47,6 +53,19 @@ const RecipeDetailScreen = (): JSX.Element => {
             style={{ marginTop: theme.spacing.md }}
           >
             Đang tải chi tiết công thức...
+          </ThemedText>
+        </View>
+      </Screen>
+    );
+  }
+
+  if (error) {
+    return (
+      <Screen>
+        <ScreenHeader title="Chi tiết công thức" subtitle="Có lỗi xảy ra" />
+        <View style={styles.center}>
+          <ThemedText variant="body" color="danger" style={{ textAlign: 'center' }}>
+            {error}
           </ThemedText>
         </View>
       </Screen>
