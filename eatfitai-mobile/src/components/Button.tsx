@@ -128,7 +128,7 @@ export const Button = memo(
     const handlePressIn = () => {
       scale.value = withSpring(0.96, { damping: 10, stiffness: 300 });
       opacity.value = withTiming(0.9, { duration: theme.animation.fast });
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => { });
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
     };
 
     const handlePressOut = () => {

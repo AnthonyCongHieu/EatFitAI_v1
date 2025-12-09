@@ -132,7 +132,7 @@ export const lightTheme: AppTheme = {
   gradients: {
     primary: ['#10B981', '#059669'],
     secondary: ['#0D9488', '#0F766E'],
-    accent: ['#8B5CF6', '#7C3AED'],  // Purple for AI features
+    accent: ['#8B5CF6', '#7C3AED'], // Purple for AI features
     danger: ['#EF4444', '#DC2626'],
     success: ['#22C55E', '#16A34A'],
   },
@@ -258,7 +258,6 @@ export const darkTheme: AppTheme = {
     card: 'rgba(18, 25, 22, 0.95)', // Dark green tint card
 
     text: '#F5F7FA',
-
 
     textSecondary: '#9CA3AF',
     border: 'rgba(255, 255, 255, 0.1)',

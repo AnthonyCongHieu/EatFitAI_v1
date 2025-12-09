@@ -4,7 +4,11 @@
 import apiClient from './apiClient';
 import type { FoodItemDto, MealTypeId } from '../types';
 import type { FoodItemDtoExtended } from '../types/food';
-import type { ApiFoodSearchItem, ApiUserFoodDetail, ApiSearchResponse } from '../types/api';
+import type {
+  ApiFoodSearchItem,
+  ApiUserFoodDetail,
+  ApiSearchResponse,
+} from '../types/api';
 
 // Helper to convert unknown to number or null
 const toNumber = (value: unknown): number | null => {
@@ -232,8 +236,31 @@ export const foodService = {
   // --- Favorites ---
   async getFavorites(): Promise<FoodItem[]> {
     const response = await apiClient.get('/api/favorites');
-    const data = response.data as FoodItemDto[];
-    return data.map(normalizeFoodItem);
+    // Defensive coding: Đảm bảo response.data là array
+    const data = Array.isArray(response.data) ? response.data : [];
+    console.log('[foodService] getFavorites response:', data.length, 'items');
+
+    // Map từng item, log nếu có field thiếu
+    return data.map((item: any) => {
+      if (!item?.foodItemId && !item?.id) {
+        console.warn('[foodService] Favorite item missing id:', item);
+      }
+      return {
+        id: String(item?.foodItemId ?? item?.id ?? ''),
+        name: item?.foodName ?? item?.name ?? 'Món ăn',
+        nameEn: item?.foodNameEn ?? null,
+        brand: null,
+        calories: item?.caloriesPer100g ?? item?.calories ?? null,
+        protein: item?.proteinPer100g ?? item?.protein ?? null,
+        carbs: item?.carbPer100g ?? item?.carbs ?? null,
+        fat: item?.fatPer100g ?? item?.fat ?? null,
+        thumbnail: item?.thumbNail ?? item?.thumbnail ?? null,
+        isActive: item?.isActive ?? null,
+        createdAt: item?.createdAt ?? null,
+        updatedAt: item?.updatedAt ?? null,
+        source: 'catalog' as const,
+      };
+    });
   },
 
   async toggleFavorite(foodItemId: number): Promise<{ isFavorite: boolean }> {

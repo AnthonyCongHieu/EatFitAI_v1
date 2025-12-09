@@ -29,7 +29,8 @@ export const handleApiError = (error: any): ApiError => {
   // Network error detection (Relaxed for Emulator/Dev)
   // Only report offline if the error message explicitly says so, or if request failed completely
   // navigator.onLine is often flaky in emulators
-  const isNetworkError = error?.message === 'Network Error' || error?.message === 'Network request failed';
+  const isNetworkError =
+    error?.message === 'Network Error' || error?.message === 'Network request failed';
 
   if (isNetworkError) {
     Toast.show({
@@ -127,7 +128,8 @@ export const handleApiErrorWithCustomMessage = (
  */
 export const handleApiErrorSilent = (error: any): ApiError => {
   // Network error detection (Relaxed)
-  const isNetworkError = error?.message === 'Network Error' || error?.message === 'Network request failed';
+  const isNetworkError =
+    error?.message === 'Network Error' || error?.message === 'Network request failed';
 
   if (isNetworkError) return { type: 'network_error', status: 0 };
 
@@ -185,7 +187,10 @@ const successMessages: Record<SuccessType, { text1: string; text2?: string }> = 
   food_added: { text1: '✅ Đã thêm món ăn', text2: 'Món ăn mới đã được tạo' },
   settings_saved: { text1: '✅ Đã lưu cài đặt' },
   profile_updated: { text1: '✅ Đã cập nhật hồ sơ' },
-  target_updated: { text1: '🎯 Đã cập nhật mục tiêu', text2: 'Mục tiêu dinh dưỡng mới đã được áp dụng' },
+  target_updated: {
+    text1: '🎯 Đã cập nhật mục tiêu',
+    text2: 'Mục tiêu dinh dưỡng mới đã được áp dụng',
+  },
   favorite_added: { text1: '❤️ Đã thêm yêu thích' },
   favorite_removed: { text1: '💔 Đã bỏ yêu thích' },
   custom: { text1: 'Thành công' },
@@ -254,4 +259,3 @@ export const showLoading = (message: string = 'Đang xử lý...') => {
 export const hideLoading = () => {
   Toast.hide();
 };
-

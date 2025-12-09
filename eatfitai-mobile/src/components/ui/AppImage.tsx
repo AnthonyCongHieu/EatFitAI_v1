@@ -3,19 +3,19 @@ import { StyleSheet, ImageStyle } from 'react-native';
 import { useAppTheme } from '../../theme/ThemeProvider';
 
 interface AppImageProps extends ImageProps {
-    style?: ImageStyle;
+  style?: ImageStyle;
 }
 
 export const AppImage = ({ style, ...props }: AppImageProps) => {
-    const { theme } = useAppTheme();
+  const { theme } = useAppTheme();
 
-    return (
-        <Image
-            style={style}
-            transition={200}
-            contentFit="cover"
-            cachePolicy="memory-disk"
-            {...props}
-        />
-    );
+  return (
+    <Image
+      style={style}
+      transition={200}
+      contentFit="cover"
+      cachePolicy="memory-disk"
+      {...props}
+    />
+  );
 };

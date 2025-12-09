@@ -84,7 +84,8 @@ export const vi = {
     last_updated: 'Cập nhật lần cuối',
     save_info: 'Lưu thông tin',
     ai_nutrition_calc: 'AI Tính toán dinh dưỡng',
-    ai_calc_desc: 'Nhấn để mở rộng và tính toán nhu cầu dinh dưỡng dựa trên thông tin cá nhân',
+    ai_calc_desc:
+      'Nhấn để mở rộng và tính toán nhu cầu dinh dưỡng dựa trên thông tin cá nhân',
     gender: 'Giới tính',
     age: 'Tuổi',
     goal: 'Mục tiêu',
@@ -212,7 +213,8 @@ export const vi = {
     age: 'Tuổi',
     height_cm: 'Chiều cao (cm)',
     weight_kg: 'Cân nặng (kg)',
-    ai_calculation_tip: '💡 Thông tin này giúp AI tính toán lượng calories và macros phù hợp với bạn',
+    ai_calculation_tip:
+      '💡 Thông tin này giúp AI tính toán lượng calories và macros phù hợp với bạn',
     // Buttons
     back: 'Quay lại',
     continue: 'Tiếp tục',
@@ -557,7 +559,8 @@ export const vi = {
     profile_updated: 'Đã cập nhật hồ sơ',
     settings_saved: 'Đã lưu cài đặt',
     ai_nutrition_calc: 'AI Tính toán dinh dưỡng',
-    ai_calc_desc: 'Nhấn để mở rộng và tính toán nhu cầu dinh dưỡng dựa trên thông tin cá nhân',
+    ai_calc_desc:
+      'Nhấn để mở rộng và tính toán nhu cầu dinh dưỡng dựa trên thông tin cá nhân',
     gender: 'Giới tính',
     age: 'Tuổi',
     goal: 'Mục tiêu',
@@ -605,7 +608,8 @@ export const vi = {
     trend_declining: 'Cần cố gắng hơn',
     trend_stable: 'Ổn định',
     recommendations_title: 'Đề xuất cho bạn',
-    no_recommendations: 'Tuyệt vời! Bạn đang làm rất tốt, chưa có đề xuất nào cần thiết lúc này.',
+    no_recommendations:
+      'Tuyệt vời! Bạn đang làm rất tốt, chưa có đề xuất nào cần thiết lúc này.',
     meal_timing_title: 'Thói quen ăn uống',
     meal_timing_avg: 'Trung bình',
     meals_per_day: 'bữa/ngày',
@@ -630,8 +634,10 @@ export const vi = {
     carbs_label: 'Carbs (g)',
     fat_label: 'Fat (g)',
     ai_section_title: 'AI Đề xuất (Adaptive)',
-    ai_section_subtitle: 'Tự động tính toán dựa trên chỉ số cơ thể và mức độ vận động của bạn.',
-    ai_desc: 'AI sẽ phân tích dữ liệu lịch sử và thông tin cá nhân để đề xuất mục tiêu tối ưu nhất cho bạn.',
+    ai_section_subtitle:
+      'Tự động tính toán dựa trên chỉ số cơ thể và mức độ vận động của bạn.',
+    ai_desc:
+      'AI sẽ phân tích dữ liệu lịch sử và thông tin cá nhân để đề xuất mục tiêu tối ưu nhất cho bạn.',
     analyze_btn: 'Phân tích & Đề xuất lại',
     new_suggestion: '✨ Đề xuất mới',
     change_label: 'Thay đổi',

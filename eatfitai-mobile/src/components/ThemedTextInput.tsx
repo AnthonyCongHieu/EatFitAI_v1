@@ -65,15 +65,19 @@ export const ThemedTextInput = ({
       style={[
         styles.base,
         {
-          borderColor: error ? colors.danger : focused ? colors.primary : (isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.08)'),
+          borderColor: error
+            ? colors.danger
+            : focused
+              ? colors.primary
+              : isDark
+                ? 'rgba(255, 255, 255, 0.1)'
+                : 'rgba(0, 0, 0, 0.08)',
           color: colors.text,
           borderRadius: theme.borderRadius.input,
           paddingHorizontal: spacing.md,
           paddingVertical: spacing.sm,
           // Glassmorphism background
-          backgroundColor: isDark
-            ? 'rgba(30, 35, 33, 0.8)'
-            : 'rgba(255, 255, 255, 0.9)',
+          backgroundColor: isDark ? 'rgba(30, 35, 33, 0.8)' : 'rgba(255, 255, 255, 0.9)',
           paddingRight: secureToggle ? spacing.lg + 20 : undefined,
           fontSize: typography.body.fontSize,
           minHeight: 48,

@@ -62,4 +62,3 @@ export const entryPresets = {
 export const getStaggerDelay = (index: number, baseDelay = 50): number => {
   return Math.min(index * baseDelay, 300); // Cap at 300ms
 };
-

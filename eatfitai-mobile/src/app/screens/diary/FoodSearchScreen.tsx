@@ -151,23 +151,33 @@ const FoodSearchScreen = (): JSX.Element => {
     loadFavorites();
   }, []);
 
-  const loadFavorites = async () => {
+  // Load favorites - setAsList dùng để xác định có nên update items list hay không
+  const loadFavorites = async (setAsList = false) => {
+    if (setAsList) {
+      setIsLoading(true);
+    }
     try {
       const favs = await foodService.getFavorites();
-      setFavoriteIds(new Set(favs.map(f => f.id)));
-      if (activeTab === 'favorites') {
+      console.log('[FoodSearch] Loaded favorites:', favs.length, 'items');
+      setFavoriteIds(new Set(favs.map((f) => f.id)));
+      // Nếu setAsList = true hoặc đang ở tab favorites, update items
+      if (setAsList || activeTab === 'favorites') {
         setItems(favs);
         setTotal(favs.length);
       }
     } catch (error) {
       console.error('Failed to load favorites', error);
+    } finally {
+      if (setAsList) {
+        setIsLoading(false);
+      }
     }
   };
 
   const handleToggleFavorite = async (item: FoodItem) => {
     try {
       const { isFavorite } = await foodService.toggleFavorite(Number(item.id));
-      setFavoriteIds(prev => {
+      setFavoriteIds((prev) => {
         const next = new Set(prev);
         if (isFavorite) next.add(item.id);
         else next.delete(item.id);
@@ -176,13 +186,15 @@ const FoodSearchScreen = (): JSX.Element => {
 
       // If in favorites tab and removed, refresh list
       if (activeTab === 'favorites' && !isFavorite) {
-        setItems(prev => prev.filter(i => i.id !== item.id));
-        setTotal(prev => prev - 1);
+        setItems((prev) => prev.filter((i) => i.id !== item.id));
+        setTotal((prev) => prev - 1);
       }
 
       Toast.show({
         type: 'success',
-        text1: isFavorite ? t('food_search.added_favorite') : t('food_search.removed_favorite'),
+        text1: isFavorite
+          ? t('food_search.added_favorite')
+          : t('food_search.removed_favorite'),
         visibilityTime: 2000,
       });
     } catch (error) {
@@ -196,13 +208,16 @@ const FoodSearchScreen = (): JSX.Element => {
       const date = new Date().toISOString().split('T')[0]!;
       const hour = new Date().getHours();
       let mealType = 2; // Lunch default
-      if (hour < 10) mealType = 1; // Breakfast
+      if (hour < 10)
+        mealType = 1; // Breakfast
       else if (hour > 15) mealType = 3; // Dinner
 
-      await mealService.addMealItems(date, mealType, [{
-        foodItemId: Number(item.id),
-        grams: 100,
-      }]);
+      await mealService.addMealItems(date, mealType, [
+        {
+          foodItemId: Number(item.id),
+          grams: 100,
+        },
+      ]);
 
       Toast.show({
         type: 'success',
@@ -224,7 +239,8 @@ const FoodSearchScreen = (): JSX.Element => {
     setHasSearched(false);
 
     if (tab === 'favorites') {
-      loadFavorites();
+      // Truyền true để xác định rằng cần set items list
+      loadFavorites(true);
     }
   };
 
@@ -270,6 +286,27 @@ const FoodSearchScreen = (): JSX.Element => {
     loadFoods(1, false).catch(() => { });
   }, [loadFoods, searchGlow, theme.animation.normal, theme.animation.slow, activeTab]);
 
+  // Tìm kiếm trực tiếp với keyword (không dùng state)
+  const searchWithKeyword = useCallback(async (keyword: string) => {
+    if (activeTab === 'favorites') return;
+
+    setQuery(keyword);
+    setIsLoading(true);
+    setHasSearched(true);
+
+    try {
+      const result = await foodService.searchAllFoods(keyword.trim(), PAGE_SIZE);
+      setItems(result.items);
+      setPage(1);
+      setTotal(result.totalCount ?? result.items.length);
+      setHasMore(result.items.length === PAGE_SIZE);
+    } catch (error: any) {
+      handleApiError(error);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [activeTab]);
+
   const handleLoadMore = useCallback(() => {
     if (activeTab === 'favorites') return;
     if (!hasMore || isLoading || isLoadingMore) return;
@@ -291,14 +328,21 @@ const FoodSearchScreen = (): JSX.Element => {
               <Pressable
                 style={{ flexDirection: 'row', flex: 1, alignItems: 'center' }}
                 onPress={() =>
-                  navigation.navigate('FoodDetail', { foodId: item.id, source: item.source })
+                  navigation.navigate('FoodDetail', {
+                    foodId: item.id,
+                    source: item.source,
+                  })
                 }
               >
-                {/* Thumbnail Image */}
-                {item.thumbnail ? (
+                {/* Thumbnail Image - Bug #4 fix: Check cả null và empty string */}
+                {item.thumbnail && item.thumbnail.trim() !== '' ? (
                   <AppImage
                     source={{ uri: getFoodImageUrl(item.thumbnail) }}
                     style={{ width: 48, height: 48, borderRadius: 24, marginRight: 12 }}
+                    // Fallback khi ảnh lỗi: hiển thị placeholder
+                    onError={() =>
+                      console.log('[FoodSearch] Image load error:', item.thumbnail)
+                    }
                   />
                 ) : (
                   <View
@@ -337,7 +381,9 @@ const FoodSearchScreen = (): JSX.Element => {
                     </ThemedText>
                   ) : null}
                   <Animated.View
-                    entering={FadeIn.delay(index * 50 + 100).duration(theme.animation.fast)}
+                    entering={FadeIn.delay(index * 50 + 100).duration(
+                      theme.animation.fast,
+                    )}
                   >
                     <ThemedText variant="bodySmall" color="textSecondary">
                       {item.calories != null
@@ -390,7 +436,10 @@ const FoodSearchScreen = (): JSX.Element => {
 
                 <Pressable
                   onPress={() =>
-                    navigation.navigate('FoodDetail', { foodId: item.id, source: item.source })
+                    navigation.navigate('FoodDetail', {
+                      foodId: item.id,
+                      source: item.source,
+                    })
                   }
                 >
                   <ThemedText variant="button" color="primary">
@@ -401,7 +450,7 @@ const FoodSearchScreen = (): JSX.Element => {
             </View>
           </AppCard>
         </Animated.View>
-      )
+      );
     },
     [
       navigation,
@@ -425,13 +474,17 @@ const FoodSearchScreen = (): JSX.Element => {
 
   return (
     <Screen scroll={false} style={styles.container}>
-      <ScreenHeader
-        title={t('food_search.title')}
-        subtitle={t('food_search.subtitle')}
-      />
+      <ScreenHeader title={t('food_search.title')} subtitle={t('food_search.subtitle')} />
 
       {/* Tabs */}
-      <View style={{ flexDirection: 'row', paddingHorizontal: theme.spacing.lg, marginBottom: theme.spacing.md, gap: theme.spacing.md }}>
+      <View
+        style={{
+          flexDirection: 'row',
+          paddingHorizontal: theme.spacing.lg,
+          marginBottom: theme.spacing.md,
+          gap: theme.spacing.md,
+        }}
+      >
         <Pressable
           onPress={() => handleTabChange('search')}
           style={{
@@ -439,7 +492,8 @@ const FoodSearchScreen = (): JSX.Element => {
             paddingVertical: theme.spacing.sm,
             alignItems: 'center',
             borderBottomWidth: 2,
-            borderBottomColor: activeTab === 'search' ? theme.colors.primary : 'transparent',
+            borderBottomColor:
+              activeTab === 'search' ? theme.colors.primary : 'transparent',
           }}
         >
           <ThemedText
@@ -456,7 +510,8 @@ const FoodSearchScreen = (): JSX.Element => {
             paddingVertical: theme.spacing.sm,
             alignItems: 'center',
             borderBottomWidth: 2,
-            borderBottomColor: activeTab === 'favorites' ? theme.colors.primary : 'transparent',
+            borderBottomColor:
+              activeTab === 'favorites' ? theme.colors.primary : 'transparent',
           }}
         >
           <ThemedText
@@ -514,7 +569,9 @@ const FoodSearchScreen = (): JSX.Element => {
               color="textSecondary"
               style={{ marginTop: theme.spacing.md }}
             >
-              {activeTab === 'search' ? t('food_search.loading_search') : t('food_search.loading_favorites')}
+              {activeTab === 'search'
+                ? t('food_search.loading_search')
+                : t('food_search.loading_favorites')}
             </ThemedText>
           </View>
           {renderSkeleton()}
@@ -530,7 +587,9 @@ const FoodSearchScreen = (): JSX.Element => {
           refreshControl={
             <RefreshControl
               refreshing={isLoading && page === 1}
-              onRefresh={() => activeTab === 'search' ? loadFoods(1, false) : loadFavorites()}
+              onRefresh={() =>
+                activeTab === 'search' ? loadFoods(1, false) : loadFavorites()
+              }
               colors={[theme.colors.primary]}
               tintColor={theme.colors.primary}
             />
@@ -540,7 +599,7 @@ const FoodSearchScreen = (): JSX.Element => {
           windowSize={10}
           removeClippedSubviews={true}
           ListEmptyComponent={
-            (hasSearched || activeTab === 'favorites') ? (
+            hasSearched || activeTab === 'favorites' ? (
               <View style={styles.centerBox}>
                 <View
                   style={[
@@ -549,7 +608,9 @@ const FoodSearchScreen = (): JSX.Element => {
                   ]}
                 >
                   <ThemedText variant="h4" color="textSecondary">
-                    {activeTab === 'search' ? t('food_search.no_results') : t('food_search.no_favorites')}
+                    {activeTab === 'search'
+                      ? t('food_search.no_results')
+                      : t('food_search.no_favorites')}
                   </ThemedText>
                   <ThemedText
                     variant="bodySmall"
@@ -559,6 +620,62 @@ const FoodSearchScreen = (): JSX.Element => {
                     {activeTab === 'search'
                       ? t('food_search.no_results_hint')
                       : t('food_search.no_favorites_hint')}
+                  </ThemedText>
+                </View>
+              </View>
+            ) : activeTab === 'search' ? (
+              /* Gợi ý khi chưa tìm kiếm */
+              <View style={{ paddingHorizontal: theme.spacing.md }}>
+                {/* Phần Yêu thích */}
+                {favoriteIds.size > 0 && (
+                  <View style={{ marginBottom: theme.spacing.lg }}>
+                    <ThemedText variant="h4" style={{ marginBottom: theme.spacing.sm }}>
+                      ❤️ Yêu thích của bạn
+                    </ThemedText>
+                    <ThemedText variant="caption" color="textSecondary" style={{ marginBottom: theme.spacing.md }}>
+                      Nhấn vào tab "Yêu thích" để xem tất cả
+                    </ThemedText>
+                  </View>
+                )}
+
+                {/* Gợi ý tìm kiếm nhanh */}
+                <View>
+                  <ThemedText variant="h4" style={{ marginBottom: theme.spacing.sm }}>
+                    🔥 Tìm kiếm nhanh
+                  </ThemedText>
+                  <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: theme.spacing.sm }}>
+                    {['Cơm', 'Phở', 'Gà', 'Trứng', 'Cá', 'Rau', 'Thịt bò', 'Bánh mì', 'Sữa', 'Chuối'].map((keyword) => (
+                      <Pressable
+                        key={keyword}
+                        onPress={() => searchWithKeyword(keyword)}
+                        style={{
+                          paddingHorizontal: theme.spacing.md,
+                          paddingVertical: theme.spacing.sm,
+                          backgroundColor: isDark ? 'rgba(59, 130, 246, 0.15)' : 'rgba(59, 130, 246, 0.1)',
+                          borderRadius: 20,
+                          borderWidth: 1,
+                          borderColor: isDark ? 'rgba(59, 130, 246, 0.3)' : 'rgba(59, 130, 246, 0.2)',
+                        }}
+                      >
+                        <ThemedText variant="bodySmall" color="primary" weight="600">
+                          {keyword}
+                        </ThemedText>
+                      </Pressable>
+                    ))}
+                  </View>
+                </View>
+
+                {/* Tip */}
+                <View style={{
+                  marginTop: theme.spacing.xl,
+                  padding: theme.spacing.md,
+                  backgroundColor: isDark ? 'rgba(34, 197, 94, 0.1)' : 'rgba(34, 197, 94, 0.08)',
+                  borderRadius: 12,
+                  borderWidth: 1,
+                  borderColor: isDark ? 'rgba(34, 197, 94, 0.2)' : 'rgba(34, 197, 94, 0.15)',
+                }}>
+                  <ThemedText variant="bodySmall" color="textSecondary">
+                    💡 <ThemedText variant="bodySmall" weight="600">Mẹo:</ThemedText> Nhập từ khóa và nhấn "Tìm" để tìm trong 5000+ món ăn Việt Nam
                   </ThemedText>
                 </View>
               </View>
@@ -574,7 +691,7 @@ const FoodSearchScreen = (): JSX.Element => {
         />
       )}
 
-      {(hasSearched || activeTab === 'favorites') ? (
+      {hasSearched || activeTab === 'favorites' ? (
         <View
           style={[
             styles.totalBar,
@@ -582,7 +699,9 @@ const FoodSearchScreen = (): JSX.Element => {
           ]}
         >
           <ThemedText variant="bodySmall" color="textSecondary">
-            {activeTab === 'search' ? t('food_search.total_results') : t('food_search.total_favorites')}
+            {activeTab === 'search'
+              ? t('food_search.total_results')
+              : t('food_search.total_favorites')}
             <ThemedText variant="bodySmall" weight="600">
               {total}
             </ThemedText>

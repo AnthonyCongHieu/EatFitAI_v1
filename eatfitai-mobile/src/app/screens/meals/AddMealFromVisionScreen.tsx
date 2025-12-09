@@ -215,11 +215,11 @@ const AddMealFromVisionScreen = (): JSX.Element => {
     } catch (err) {
       handleApiErrorWithCustomMessage(err, {
         server_error: {
-          text1: 'L?i',
-          text2: 'M?y ch? ?ang g?p s? c?. Vui l?ng th? l?i.',
+          text1: 'Lỗi',
+          text2: 'Máy chủ đang gặp sự cố. Vui lòng thử lại.',
         },
-        network_error: { text1: 'Kh?ng c? k?t n?i', text2: 'Ki?m tra m?ng v? th? l?i' },
-        unknown: { text1: 'L?i', text2: 'Kh?ng th? d?y AI. Vui l?ng th? l?i.' },
+        network_error: { text1: 'Không có kết nối', text2: 'Kiểm tra mạng và thử lại' },
+        unknown: { text1: 'Lỗi', text2: 'Không thể dạy AI. Vui lòng thử lại.' },
       });
     }
   };
@@ -250,11 +250,11 @@ const AddMealFromVisionScreen = (): JSX.Element => {
     } catch (err) {
       handleApiErrorWithCustomMessage(err, {
         server_error: {
-          text1: 'L?i',
-          text2: 'M?y ch? ?ang g?p s? c?. Vui l?ng th? l?i.',
+          text1: 'Lỗi',
+          text2: 'Máy chủ đang gặp sự cố. Vui lòng thử lại.',
         },
-        network_error: { text1: 'Kh?ng c? k?t n?i', text2: 'Ki?m tra m?ng v? th? l?i' },
-        unknown: { text1: 'L?i', text2: 'Kh?ng th? th?m v?o nh?t k?. Vui l?ng th? l?i.' },
+        network_error: { text1: 'Không có kết nối', text2: 'Kiểm tra mạng và thử lại' },
+        unknown: { text1: 'Lỗi', text2: 'Không thể thêm vào nhật ký. Vui lòng thử lại.' },
       });
     } finally {
       setIsSubmitting(false);
@@ -293,7 +293,7 @@ const AddMealFromVisionScreen = (): JSX.Element => {
   );
 
   return (
-    <Screen style={styles.container}>
+    <Screen style={styles.container} scroll={false}>
       {/* Header */}
       <View style={styles.header}>
         <ThemedText variant="h1" style={styles.title}>

@@ -116,11 +116,7 @@ export const TeachLabelBottomSheet = ({
   const keyExtractor = useCallback((item: FoodItem) => item.id, []);
 
   return (
-    <BottomSheet
-      visible={visible}
-      onClose={onClose}
-      title="Chọn món ăn đúng"
-    >
+    <BottomSheet visible={visible} onClose={onClose} title="Chọn món ăn đúng">
       <View style={styles.container}>
         <ThemedTextInput
           placeholder="Tìm kiếm món ăn..."

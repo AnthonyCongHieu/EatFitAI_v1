@@ -52,7 +52,6 @@ import { GlassCard, glassStyles } from '../../components/ui/GlassCard';
 import { GradientBackground } from '../../components/ui/GradientBackground';
 import { WelcomeHeader } from '../../components/home/WelcomeHeader';
 
-
 type AddOption = 'search' | 'custom' | 'ai';
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -91,7 +90,7 @@ const HomeScreen = (): JSX.Element => {
       checkStreak();
       // Refetch summary khi screen focus lại để đảm bảo dữ liệu mới nhất
       refetch();
-    }, [checkStreak, refetch])
+    }, [checkStreak, refetch]),
   );
 
   const showCommonErrors = useCallback(
@@ -213,7 +212,7 @@ const HomeScreen = (): JSX.Element => {
                   text1: t('common.removed'),
                   text2: t('common.updated'),
                 });
-                refreshSummary().catch(() => { });
+                refreshSummary().catch(() => {});
               })
               .catch((err: any) => {
                 handleApiErrorWithCustomMessage(err, {
@@ -299,7 +298,9 @@ const HomeScreen = (): JSX.Element => {
 
   useEffect(() => {
     const newValue = summary?.fat ?? 0;
-    fatValue.value = withTiming(Number.isNaN(newValue) ? 0 : newValue, { duration: theme.animation.normal });
+    fatValue.value = withTiming(Number.isNaN(newValue) ? 0 : newValue, {
+      duration: theme.animation.normal,
+    });
   }, [summary?.fat, fatValue, theme.animation.normal]);
 
   // Get today's entries for diary section (first 2-3)
@@ -324,13 +325,11 @@ const HomeScreen = (): JSX.Element => {
   return (
     <GradientBackground>
       <Screen
-
         contentContainerStyle={{
           paddingHorizontal: theme.spacing.lg,
           paddingVertical: theme.spacing.xl,
           gap: theme.spacing.xxl,
         }}
-
         refreshControl={
           <RefreshControl
             refreshing={isFetching}
@@ -371,10 +370,7 @@ const HomeScreen = (): JSX.Element => {
           <View style={glass.card}>
             <View style={{ alignItems: 'center', gap: theme.spacing.md }}>
               <Animated.Text
-                style={[
-                  styles.animatedNumber,
-                  remainingCaloriesAnimatedStyle,
-                ]}
+                style={[styles.animatedNumber, remainingCaloriesAnimatedStyle]}
               >
                 <ThemedText variant="h1" weight="700">
                   {t('home.remaining_calories', Math.round(remainingCaloriesValue.value))}
@@ -407,7 +403,9 @@ const HomeScreen = (): JSX.Element => {
               label="Protein"
               color="primary"
               progress={
-                typeof proteinValue.value === 'number' && !Number.isNaN(proteinValue.value) && summary?.targetCalories
+                typeof proteinValue.value === 'number' &&
+                !Number.isNaN(proteinValue.value) &&
+                summary?.targetCalories
                   ? Math.min(1, (proteinValue.value * 4) / (summary.targetCalories * 0.3))
                   : 0
               }
@@ -418,7 +416,9 @@ const HomeScreen = (): JSX.Element => {
               label="Carbs"
               color="secondary"
               progress={
-                typeof carbsValue.value === 'number' && !Number.isNaN(carbsValue.value) && summary?.targetCalories
+                typeof carbsValue.value === 'number' &&
+                !Number.isNaN(carbsValue.value) &&
+                summary?.targetCalories
                   ? Math.min(1, (carbsValue.value * 4) / (summary.targetCalories * 0.5))
                   : 0
               }
@@ -429,7 +429,9 @@ const HomeScreen = (): JSX.Element => {
               label="Chất béo"
               color="warning"
               progress={
-                typeof fatValue.value === 'number' && !Number.isNaN(fatValue.value) && summary?.targetCalories
+                typeof fatValue.value === 'number' &&
+                !Number.isNaN(fatValue.value) &&
+                summary?.targetCalories
                   ? Math.min(1, (fatValue.value * 9) / (summary.targetCalories * 0.2))
                   : 0
               }
@@ -548,17 +550,17 @@ const HomeScreen = (): JSX.Element => {
         style={styles.fabContainer}
       >
         <Pressable
-          style={[styles.fab, { backgroundColor: theme.colors.primary, shadowColor: theme.colors.primary }]}
+          style={[
+            styles.fab,
+            { backgroundColor: theme.colors.primary, shadowColor: theme.colors.primary },
+          ]}
           onPress={() => setShowAddModal(true)}
         >
           <Icon name="add" size="xl" color="card" />
         </Pressable>
       </Animated.View>
 
-      <SmartAddSheet
-        visible={showAddModal}
-        onClose={() => setShowAddModal(false)}
-      />
+      <SmartAddSheet visible={showAddModal} onClose={() => setShowAddModal(false)} />
     </GradientBackground>
   );
 };

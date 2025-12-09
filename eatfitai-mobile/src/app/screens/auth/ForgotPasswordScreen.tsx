@@ -120,8 +120,13 @@ const ForgotPasswordScreen = (): JSX.Element => {
       <Screen scroll style={styles.container}>
         <Animated.View entering={FadeInDown.duration(500).springify()}>
           <View style={glass.card}>
-            <ThemedText style={{ fontSize: 32, textAlign: 'center', marginBottom: 8 }}>🔐</ThemedText>
-            <ThemedText variant="h2" style={{ marginBottom: theme.spacing.md, textAlign: 'center' }}>
+            <ThemedText style={{ fontSize: 32, textAlign: 'center', marginBottom: 8 }}>
+              🔐
+            </ThemedText>
+            <ThemedText
+              variant="h2"
+              style={{ marginBottom: theme.spacing.md, textAlign: 'center' }}
+            >
               {t('auth.forgotPasswordTitle')}
             </ThemedText>
             <ThemedText
@@ -261,4 +266,3 @@ const styles = StyleSheet.create({
 });
 
 export default ForgotPasswordScreen;
-

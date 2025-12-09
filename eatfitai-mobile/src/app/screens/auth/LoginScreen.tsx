@@ -179,25 +179,31 @@ const LoginScreen = ({ navigation }: Props): JSX.Element => {
               />
 
               {/* Improved Divider */}
-              <View style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                marginVertical: theme.spacing.sm,
-                gap: theme.spacing.md
-              }}>
-                <View style={{
-                  flex: 1,
-                  height: 1,
-                  backgroundColor: theme.colors.border
-                }} />
+              <View
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  marginVertical: theme.spacing.sm,
+                  gap: theme.spacing.md,
+                }}
+              >
+                <View
+                  style={{
+                    flex: 1,
+                    height: 1,
+                    backgroundColor: theme.colors.border,
+                  }}
+                />
                 <ThemedText variant="caption" color="textSecondary">
                   hoặc tiếp tục với
                 </ThemedText>
-                <View style={{
-                  flex: 1,
-                  height: 1,
-                  backgroundColor: theme.colors.border
-                }} />
+                <View
+                  style={{
+                    flex: 1,
+                    height: 1,
+                    backgroundColor: theme.colors.border,
+                  }}
+                />
               </View>
 
               {/* Google Button with Icon */}
@@ -212,7 +218,6 @@ const LoginScreen = ({ navigation }: Props): JSX.Element => {
             </View>
 
             <View style={{ marginTop: theme.spacing.lg, alignItems: 'center' }}>
-
               <ThemedText variant="body" color="textSecondary">
                 {t('auth.registerQuestion')}{' '}
                 <ThemedText
@@ -237,4 +242,3 @@ const styles = StyleSheet.create({
 });
 
 export default LoginScreen;
-

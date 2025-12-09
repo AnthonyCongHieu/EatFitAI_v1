@@ -1,15 +1,20 @@
-import React, { useCallback, useMemo, useState } from 'react';
-import { FlatList, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+// Màn hình Nhật ký bữa ăn - Redesigned với UI/UX hiện đại
+// Features: Summary header, improved date selector, beautiful meal cards
+
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { FlatList, Pressable, StyleSheet, View, Dimensions } from 'react-native';
 import Animated, {
+  FadeIn,
+  FadeInDown,
   FadeInUp,
-  useAnimatedStyle,
-  withSpring,
+  Layout,
 } from 'react-native-reanimated';
 import { useNavigation } from '@react-navigation/native';
 import type { NavigationProp } from '@react-navigation/native';
 import { useQuery } from '@tanstack/react-query';
 import { LinearGradient } from 'expo-linear-gradient';
 import { FlashList } from '@shopify/flash-list';
+import { Ionicons } from '@expo/vector-icons';
 
 import { Screen } from '../../../components/Screen';
 import { ThemedText } from '../../../components/ThemedText';
@@ -17,21 +22,34 @@ import { Button } from '../../../components/Button';
 import { BottomSheet } from '../../../components/BottomSheet';
 import { ThemedTextInput } from '../../../components/ThemedTextInput';
 import { AppCard } from '../../../components/ui/AppCard';
-import { AppChip } from '../../../components/ui/AppChip';
-import { SectionHeader } from '../../../components/ui/SectionHeader';
-import { EmptyState } from '../../../components/ui/EmptyState';
 import { useAppTheme } from '../../../theme/ThemeProvider';
 import { useDiaryStore } from '../../../store/useDiaryStore';
 import { diaryService, type DiaryEntry } from '../../../services/diaryService';
 import { MEAL_TYPE_LABELS, type MealTypeId } from '../../../types';
 import type { RootStackParamList } from '../../types';
 import { t } from '../../../i18n/vi';
-import { glassStyles } from '../../../components/ui/GlassCard';
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+
+// Emoji cho từng loại bữa ăn
+const MEAL_EMOJIS: Record<MealTypeId, string> = {
+  1: '🌅', // Breakfast
+  2: '☀️', // Lunch
+  3: '🌙', // Dinner
+  4: '🍵', // Snack
+};
+
+// Gradient colors cho từng loại bữa ăn
+const MEAL_GRADIENTS: Record<MealTypeId, string[]> = {
+  1: ['#FF9A9E', '#FECFEF'], // Breakfast - Hồng nhạt
+  2: ['#A8EDEA', '#FED6E3'], // Lunch - Xanh mint
+  3: ['#667EEA', '#764BA2'], // Dinner - Tím
+  4: ['#FFECD2', '#FCB69F'], // Snack - Cam nhạt
+};
 
 const MealDiaryScreen = (): JSX.Element => {
   const { theme } = useAppTheme();
   const isDark = theme.mode === 'dark';
-  const glass = glassStyles(isDark);
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [editingEntry, setEditingEntry] = useState<DiaryEntry | null>(null);
@@ -39,117 +57,32 @@ const MealDiaryScreen = (): JSX.Element => {
   const [showEditSheet, setShowEditSheet] = useState(false);
 
   const refreshSummary = useDiaryStore((s) => s.refreshSummary);
+  const dateListRef = useRef<FlatList<Date>>(null);
 
-  const styles = StyleSheet.create({
-    container: {
-      flex: 1,
-      backgroundColor: theme.colors.background,
-    },
-    dateSelector: {
-      marginBottom: theme.spacing.lg,
-      paddingHorizontal: theme.spacing.lg,
-    },
-    dateList: {
-      paddingVertical: theme.spacing.sm,
-    },
-    dateItem: {
-      marginRight: theme.spacing.sm,
-    },
-    loadingContainer: {
-      flex: 1,
-      justifyContent: 'center',
-      alignItems: 'center',
-      paddingVertical: theme.spacing.xl,
-    },
-    content: {
-      flex: 1,
-      paddingHorizontal: theme.spacing.lg,
-      paddingBottom: theme.spacing.xl,
-    },
-    mealSection: {
-      marginBottom: theme.spacing.lg,
-    },
-    foodCard: {
-      marginBottom: theme.spacing.sm,
-      padding: theme.spacing.md,
-      borderRadius: 16,
-      backgroundColor: isDark ? 'rgba(40, 40, 60, 0.6)' : 'rgba(255, 255, 255, 0.9)',
-      borderWidth: 1,
-      borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.05)',
-    },
-    foodCardContent: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-    },
-    foodInfo: {
-      flex: 1,
-      marginRight: theme.spacing.md,
-    },
-    foodDetails: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      marginTop: theme.spacing.xs,
-      gap: theme.spacing.xs,
-    },
-    foodActions: {
-      alignItems: 'flex-end',
-      gap: theme.spacing.sm,
-    },
-    editButton: {
-      paddingVertical: theme.spacing.xs,
-      paddingHorizontal: theme.spacing.sm,
-    },
-    emptyMealCard: {
-      alignItems: 'center',
-      paddingVertical: theme.spacing.lg,
-    },
-    emptyMealText: {
-      textAlign: 'center',
-    },
-    emptyActions: {
-      gap: theme.spacing.md,
-      marginTop: theme.spacing.lg,
-    },
-    actionButtons: {
-      flexDirection: 'row',
-      padding: theme.spacing.lg,
-      gap: theme.spacing.md,
-      borderTopWidth: 1,
-      borderTopColor: theme.colors.border,
-    },
-    actionButton: {
-      flex: 1,
-    },
-    editSheetContent: {
-      gap: theme.spacing.lg,
-    },
-    editLabel: {
-      marginBottom: theme.spacing.sm,
-      ...theme.typography.body,
-      color: theme.colors.text,
-    },
-    editInput: {
-      marginBottom: theme.spacing.lg,
-    },
-    saveButton: {
-      marginTop: theme.spacing.sm,
-    },
-  });
-
-  // Generate date options for horizontal selector
+  // Date options: -14 to +3 days
   const dateOptions = useMemo(() => {
     const options = [];
     const today = new Date();
-
-    for (let i = -3; i <= 3; i++) {
+    for (let i = -14; i <= 3; i++) {
       const date = new Date(today);
       date.setDate(today.getDate() + i);
       options.push(date);
     }
-
     return options;
   }, []);
+
+  const todayIndex = 14;
+
+  // Auto-scroll to today
+  useEffect(() => {
+    setTimeout(() => {
+      dateListRef.current?.scrollToIndex({
+        index: todayIndex,
+        animated: false,
+        viewPosition: 0.5,
+      });
+    }, 100);
+  }, [todayIndex]);
 
   // Format date for display
   const formatDate = useCallback((date: Date) => {
@@ -159,15 +92,9 @@ const MealDiaryScreen = (): JSX.Element => {
     const yesterday = new Date(today);
     yesterday.setDate(today.getDate() - 1);
 
-    if (date.toDateString() === today.toDateString()) {
-      return t('common.today');
-    }
-    if (date.toDateString() === yesterday.toDateString()) {
-      return t('common.yesterday');
-    }
-    if (date.toDateString() === tomorrow.toDateString()) {
-      return t('common.tomorrow');
-    }
+    if (date.toDateString() === today.toDateString()) return 'Hôm nay';
+    if (date.toDateString() === yesterday.toDateString()) return 'Hôm qua';
+    if (date.toDateString() === tomorrow.toDateString()) return 'Ngày mai';
 
     return date.toLocaleDateString('vi-VN', {
       weekday: 'short',
@@ -184,10 +111,8 @@ const MealDiaryScreen = (): JSX.Element => {
     return `${y}-${m}-${d}`;
   }, []);
 
-  const dateKey = useMemo(
-    () => formatDateForApi(selectedDate),
-    [formatDateForApi, selectedDate],
-  );
+  const dateKey = useMemo(() => formatDateForApi(selectedDate), [formatDateForApi, selectedDate]);
+
   const {
     data: entriesData,
     isLoading: isEntriesLoading,
@@ -201,25 +126,15 @@ const MealDiaryScreen = (): JSX.Element => {
   // Group entries by meal type
   const groupedEntries = useMemo(() => {
     const groups = new Map<MealTypeId, DiaryEntry[]>();
-
     entries.forEach((entry) => {
       const mealType = entry.mealType;
-      if (!groups.has(mealType)) {
-        groups.set(mealType, []);
-      }
+      if (!groups.has(mealType)) groups.set(mealType, []);
       groups.get(mealType)!.push(entry);
     });
 
-    // Sort by meal type: Breakfast(1) -> Lunch(2) -> Snack(4) -> Dinner(3)
     return Array.from(groups.entries())
       .sort((a, b) => {
-        // Custom sort order
-        const order: Record<number, number> = {
-          1: 1, // Breakfast
-          2: 2, // Lunch
-          4: 3, // Snack (Bữa xế - sau bữa trưa)
-          3: 4, // Dinner
-        };
+        const order: Record<number, number> = { 1: 1, 2: 2, 4: 3, 3: 4 };
         return (order[a[0]] || 99) - (order[b[0]] || 99);
       })
       .map(([mealType, mealEntries]) => ({
@@ -229,23 +144,33 @@ const MealDiaryScreen = (): JSX.Element => {
       }));
   }, [entries]);
 
-  // Handle date selection
-  const handleDateSelect = useCallback((date: Date) => {
-    setSelectedDate(date);
-  }, []);
+  // Calculate totals
+  const totals = useMemo(() => {
+    return entries.reduce(
+      (acc, entry) => ({
+        calories: acc.calories + (entry.calories || 0),
+        protein: acc.protein + (entry.protein || 0),
+        carbs: acc.carbs + (entry.carbs || 0),
+        fat: acc.fat + (entry.fat || 0),
+      }),
+      { calories: 0, protein: 0, carbs: 0, fat: 0 },
+    );
+  }, [entries]);
 
-  // Handle edit grams
+  const handleDateSelect = useCallback((date: Date) => setSelectedDate(date), []);
+
   const handleEditGrams = useCallback((entry: DiaryEntry) => {
     setEditingEntry(entry);
-    setEditGrams(entry.quantityText?.split(' ')[0] || '');
+    const rawValue = entry.quantityText?.split(' ')[0] || '';
+    const numericOnly = rawValue.replace(/[^0-9.]/g, '');
+    setEditGrams(numericOnly);
     setShowEditSheet(true);
   }, []);
 
-  // Save edited grams
   const handleSaveGrams = useCallback(async () => {
     if (!editingEntry) return;
-
-    const grams = parseFloat(editGrams);
+    const cleanedValue = editGrams.replace(/[^0-9.]/g, '');
+    const grams = parseFloat(cleanedValue);
     if (isNaN(grams) || grams <= 0) return;
 
     try {
@@ -259,92 +184,155 @@ const MealDiaryScreen = (): JSX.Element => {
     }
   }, [editingEntry, editGrams, refetch, refreshSummary]);
 
-  // Handle add manually
   const handleAddManual = useCallback(() => {
     navigation.navigate('FoodSearch');
   }, [navigation]);
 
-  // Render date selector item
+  // Render date item với design đẹp hơn
   const renderDateItem = useCallback(
     ({ item: date }: { item: Date }) => {
       const isSelected = date.toDateString() === selectedDate.toDateString();
+      const isToday = date.toDateString() === new Date().toDateString();
+      const dayNum = date.getDate();
 
       return (
-        <Animated.View
-          style={[
-            styles.dateItem,
-            isSelected && { transform: [{ scale: 1.05 }] },
-          ]}
-        >
-          <Pressable onPress={() => handleDateSelect(date)}>
-            <AppChip label={formatDate(date)} selected={isSelected} variant="outline" />
-          </Pressable>
-        </Animated.View>
+        <Pressable onPress={() => handleDateSelect(date)} style={{ marginRight: 8 }}>
+          <Animated.View
+            style={[
+              styles.dateChip,
+              {
+                backgroundColor: isSelected
+                  ? theme.colors.primary
+                  : isDark
+                    ? 'rgba(255,255,255,0.08)'
+                    : 'rgba(0,0,0,0.05)',
+                borderColor: isToday && !isSelected ? theme.colors.primary : 'transparent',
+                borderWidth: isToday && !isSelected ? 1.5 : 0,
+              },
+            ]}
+          >
+            <ThemedText
+              variant="caption"
+              weight="600"
+              style={{ color: isSelected ? '#fff' : theme.colors.textSecondary }}
+            >
+              {formatDate(date).split(',')[0]}
+            </ThemedText>
+            <ThemedText
+              variant="h4"
+              weight="700"
+              style={{ color: isSelected ? '#fff' : theme.colors.text }}
+            >
+              {dayNum}
+            </ThemedText>
+          </Animated.View>
+        </Pressable>
       );
     },
-    [selectedDate, handleDateSelect, formatDate, styles.dateItem],
+    [selectedDate, handleDateSelect, formatDate, theme, isDark],
   );
 
-  // Render food card
+  // Render summary header
+  const renderSummaryHeader = () => {
+    if (entries.length === 0) return null;
+
+    return (
+      <Animated.View entering={FadeInDown.delay(100).springify()} style={{ marginBottom: 16 }}>
+        <LinearGradient
+          colors={isDark ? ['#1a1a2e', '#16213e'] : ['#667eea', '#764ba2']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.summaryCard}
+        >
+          <View style={styles.summaryMain}>
+            <ThemedText style={styles.summaryCalories}>{Math.round(totals.calories)}</ThemedText>
+            <ThemedText style={styles.summaryLabel}>kcal hôm nay</ThemedText>
+          </View>
+
+          <View style={styles.summaryMacros}>
+            <View style={styles.macroItem}>
+              <ThemedText style={styles.macroValue}>{totals.protein.toFixed(0)}g</ThemedText>
+              <ThemedText style={styles.macroLabel}>Protein</ThemedText>
+            </View>
+            <View style={styles.macroDivider} />
+            <View style={styles.macroItem}>
+              <ThemedText style={styles.macroValue}>{totals.carbs.toFixed(0)}g</ThemedText>
+              <ThemedText style={styles.macroLabel}>Carbs</ThemedText>
+            </View>
+            <View style={styles.macroDivider} />
+            <View style={styles.macroItem}>
+              <ThemedText style={styles.macroValue}>{totals.fat.toFixed(0)}g</ThemedText>
+              <ThemedText style={styles.macroLabel}>Fat</ThemedText>
+            </View>
+          </View>
+        </LinearGradient>
+      </Animated.View>
+    );
+  };
+
+  // Render food card đẹp hơn
   const renderFoodCard = useCallback(
-    (entry: DiaryEntry) => (
-      <AppCard key={entry.id} style={styles.foodCard}>
-        <View style={styles.foodCardContent}>
-          <View style={styles.foodInfo}>
-            <ThemedText variant="body" weight="600" numberOfLines={2}>
+    (entry: DiaryEntry, index: number) => (
+      <Animated.View
+        key={entry.id}
+        entering={FadeIn.delay(index * 50)}
+        layout={Layout.springify()}
+      >
+        <Pressable
+          onPress={() => handleEditGrams(entry)}
+          style={({ pressed }) => [
+            styles.foodCard,
+            {
+              backgroundColor: isDark ? theme.colors.card : '#fff',
+              borderColor: theme.colors.border,
+              opacity: pressed ? 0.9 : 1,
+              transform: [{ scale: pressed ? 0.98 : 1 }],
+            },
+          ]}
+        >
+          <View style={{ flex: 1 }}>
+            <ThemedText variant="body" weight="600" numberOfLines={1}>
               {entry.foodName}
             </ThemedText>
-            {/* Hiển thị calories và quantity */}
-            <View style={styles.foodDetails}>
-              <ThemedText variant="caption" color="primary" weight="600">
-                {entry.calories ? `${Math.round(entry.calories)} kcal` : '-- kcal'}
+            <View style={styles.foodMeta}>
+              <ThemedText variant="caption" color="primary" weight="700">
+                {Math.round(entry.calories || 0)} kcal
               </ThemedText>
               <ThemedText variant="caption" color="textSecondary">
-                •
-              </ThemedText>
-              <ThemedText variant="caption" color="textSecondary">
-                {entry.quantityText || '--'}
+                {' '}
+                • {entry.quantityText || '--'}
               </ThemedText>
             </View>
-            {/* Hiển thị macro nutrition */}
-            <View style={styles.foodDetails}>
+            <View style={styles.foodMacros}>
               <ThemedText variant="caption" color="textSecondary">
-                P: {entry.protein != null ? `${entry.protein.toFixed(1)}g` : '--'}
-              </ThemedText>
-              <ThemedText variant="caption" color="textSecondary">
-                •
-              </ThemedText>
-              <ThemedText variant="caption" color="textSecondary">
-                C: {entry.carbs != null ? `${entry.carbs.toFixed(1)}g` : '--'}
-              </ThemedText>
-              <ThemedText variant="caption" color="textSecondary">
-                •
-              </ThemedText>
-              <ThemedText variant="caption" color="textSecondary">
-                F: {entry.fat != null ? `${entry.fat.toFixed(1)}g` : '--'}
+                P {entry.protein?.toFixed(0) || 0}g • C {entry.carbs?.toFixed(0) || 0}g • F{' '}
+                {entry.fat?.toFixed(0) || 0}g
               </ThemedText>
             </View>
           </View>
 
-          <View style={styles.foodActions}>
-            <AppChip
-              label={entry.sourceMethod === 'ai' ? t('home.source_ai') : t('home.source_manual')}
-              variant="solid"
-            />
-            <Pressable style={styles.editButton} onPress={() => handleEditGrams(entry)}>
-              <ThemedText variant="caption" color="primary">
-                {t('common.edit')}
-              </ThemedText>
-            </Pressable>
+          <View style={styles.foodBadge}>
+            {entry.sourceMethod === 'ai' ? (
+              <View style={[styles.sourceBadge, { backgroundColor: theme.colors.primary + '20' }]}>
+                <ThemedText variant="caption" color="primary" weight="600">
+                  🤖 AI
+                </ThemedText>
+              </View>
+            ) : (
+              <View style={[styles.sourceBadge, { backgroundColor: theme.colors.border }]}>
+                <ThemedText variant="caption" color="textSecondary" weight="600">
+                  ✏️
+                </ThemedText>
+              </View>
+            )}
           </View>
-        </View>
-      </AppCard>
+        </Pressable>
+      </Animated.View>
     ),
-    [handleEditGrams],
+    [handleEditGrams, isDark, theme],
   );
 
-
-  // Render meal section
+  // Render meal section với design đẹp hơn
   const renderMealSection = useCallback(
     ({
       item,
@@ -352,103 +340,282 @@ const MealDiaryScreen = (): JSX.Element => {
     }: {
       item: { mealType: MealTypeId; title: string; entries: DiaryEntry[] };
       index: number;
-    }) => (
-      <Animated.View
-        key={item.mealType}
-        style={styles.mealSection}
-        entering={FadeInUp.delay(index * 100)
-          .duration(400)
-          .springify()}
-      >
-        <SectionHeader title={item.title} />
-        {item.entries.length > 0 ? (
-          item.entries.map((entry, entryIndex) => (
-            <Animated.View
-              key={entry.id}
-              entering={FadeInUp.delay(index * 100 + entryIndex * 50)
-                .duration(300)
-                .springify()}
-            >
-              {renderFoodCard(entry)}
-            </Animated.View>
-          ))
-        ) : (
-          <AppCard style={styles.emptyMealCard}>
-            <ThemedText
-              variant="bodySmall"
-              color="textSecondary"
-              style={styles.emptyMealText}
-            >
-              {t('common.noMealsInPeriod')}
-            </ThemedText>
-          </AppCard>
-        )}
-      </Animated.View>
-    ),
+    }) => {
+      const emoji = MEAL_EMOJIS[item.mealType];
+      const mealCalories = item.entries.reduce((sum, e) => sum + (e.calories || 0), 0);
+
+      return (
+        <Animated.View
+          entering={FadeInUp.delay(index * 100).springify()}
+          style={{ marginBottom: 20 }}
+        >
+          {/* Meal header */}
+          <View style={styles.mealHeader}>
+            <View style={styles.mealTitle}>
+              <ThemedText style={{ fontSize: 20, marginRight: 8 }}>{emoji}</ThemedText>
+              <ThemedText variant="h4" weight="700">
+                {item.title}
+              </ThemedText>
+            </View>
+            <View style={styles.mealCalories}>
+              <ThemedText variant="body" color="primary" weight="600">
+                {Math.round(mealCalories)} kcal
+              </ThemedText>
+            </View>
+          </View>
+
+          {/* Food cards */}
+          <View style={{ gap: 8 }}>
+            {item.entries.map((entry, idx) => renderFoodCard(entry, idx))}
+          </View>
+        </Animated.View>
+      );
+    },
     [renderFoodCard],
+  );
+
+  // Render empty state đẹp hơn
+  const renderEmptyState = () => (
+    <Animated.View entering={FadeIn.delay(200)} style={styles.emptyContainer}>
+      <View style={styles.emptyIcon}>
+        <Ionicons name="restaurant-outline" size={64} color={theme.colors.primary} />
+      </View>
+      <ThemedText variant="h3" weight="700" style={{ marginTop: 16, textAlign: 'center' }}>
+        Chưa có dữ liệu
+      </ThemedText>
+      <ThemedText
+        variant="body"
+        color="textSecondary"
+        style={{ marginTop: 8, textAlign: 'center' }}
+      >
+        Hãy thêm món ăn vào nhật ký.
+      </ThemedText>
+      <Button
+        title="➕ Thêm món ăn"
+        variant="primary"
+        onPress={handleAddManual}
+        style={{ marginTop: 24, minWidth: 180 }}
+      />
+    </Animated.View>
   );
 
   const isEmpty = entries.length === 0;
 
+  const styles = StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: theme.colors.background,
+    },
+    header: {
+      paddingHorizontal: 16,
+      paddingTop: 16,
+      paddingBottom: 8,
+    },
+    dateSelector: {
+      paddingLeft: 16,
+      marginBottom: 16,
+    },
+    dateChip: {
+      width: 56,
+      height: 64,
+      borderRadius: 16,
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 2,
+    },
+    content: {
+      flex: 1,
+      paddingHorizontal: 16,
+    },
+    summaryCard: {
+      borderRadius: 20,
+      padding: 20,
+      ...theme.shadows.lg,
+    },
+    summaryMain: {
+      alignItems: 'center',
+      marginBottom: 16,
+    },
+    summaryCalories: {
+      fontSize: 48,
+      fontWeight: '800',
+      color: '#fff',
+    },
+    summaryLabel: {
+      fontSize: 14,
+      color: 'rgba(255,255,255,0.8)',
+    },
+    summaryMacros: {
+      flexDirection: 'row',
+      justifyContent: 'space-around',
+    },
+    macroItem: {
+      alignItems: 'center',
+      flex: 1,
+    },
+    macroValue: {
+      fontSize: 18,
+      fontWeight: '700',
+      color: '#fff',
+    },
+    macroLabel: {
+      fontSize: 11,
+      color: 'rgba(255,255,255,0.7)',
+      marginTop: 2,
+    },
+    macroDivider: {
+      width: 1,
+      height: 30,
+      backgroundColor: 'rgba(255,255,255,0.2)',
+    },
+    mealHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: 12,
+    },
+    mealTitle: {
+      flexDirection: 'row',
+      alignItems: 'center',
+    },
+    mealCalories: {
+      backgroundColor: theme.colors.primaryLight,
+      paddingHorizontal: 12,
+      paddingVertical: 4,
+      borderRadius: 12,
+    },
+    foodCard: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      padding: 12,
+      borderRadius: 12,
+      borderWidth: 1,
+    },
+    foodMeta: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginTop: 4,
+    },
+    foodMacros: {
+      marginTop: 2,
+    },
+    foodBadge: {
+      marginLeft: 12,
+    },
+    sourceBadge: {
+      paddingHorizontal: 8,
+      paddingVertical: 4,
+      borderRadius: 8,
+    },
+    emptyContainer: {
+      flex: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingHorizontal: 32,
+    },
+    emptyIcon: {
+      width: 100,
+      height: 100,
+      borderRadius: 50,
+      backgroundColor: theme.colors.primaryLight,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    actionButtons: {
+      padding: 16,
+      borderTopWidth: 1,
+      borderTopColor: theme.colors.border,
+    },
+    editSheetContent: {
+      gap: 16,
+    },
+    editInput: {
+      marginBottom: 16,
+    },
+  });
+
   return (
     <Screen scroll={false}>
       <View style={styles.container}>
+        {/* Date label - hiển thị ngày đang xem */}
+        <View style={styles.header}>
+          <ThemedText variant="h4" color="textSecondary">
+            {formatDate(selectedDate) === 'Hôm nay'
+              ? '📅 Hôm nay'
+              : formatDate(selectedDate) === 'Hôm qua'
+                ? '📅 Hôm qua'
+                : `📅 ${formatDate(selectedDate)}`}
+          </ThemedText>
+        </View>
+
         {/* Date Selector */}
         <View style={styles.dateSelector}>
           <FlatList
+            ref={dateListRef}
             data={dateOptions}
             renderItem={renderDateItem}
             keyExtractor={(item) => item.toISOString()}
             horizontal
             showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.dateList}
+            getItemLayout={(_, index) => ({
+              length: 64,
+              offset: 64 * index,
+              index,
+            })}
+            onScrollToIndexFailed={(info) => {
+              setTimeout(() => {
+                dateListRef.current?.scrollToOffset({
+                  offset: info.averageItemLength * info.index,
+                  animated: false,
+                });
+              }, 100);
+            }}
           />
         </View>
 
         {/* Content */}
         {isEntriesLoading ? (
-          <View style={styles.loadingContainer}>
-            <ThemedText variant="body">{t('common.loading')}</ThemedText>
+          <View style={styles.emptyContainer}>
+            <ThemedText variant="body" color="textSecondary">
+              Đang tải...
+            </ThemedText>
           </View>
         ) : isEmpty ? (
-          <EmptyState
-            title={t('common.noDataTitle')}
-            description={t('common.noDataDesc')}
-            icon="restaurant"
-            action={
-              <View style={styles.emptyActions}>
-                <View style={styles.actionButton}>
-                  <Button
-                    title={t('common.addFood')}
-                    variant="primary"
-                    onPress={handleAddManual}
-                  />
-                </View>
-              </View>
-            }
-          />
+          renderEmptyState()
         ) : (
           <FlashList
             data={groupedEntries}
             renderItem={({ item, index }) => renderMealSection({ item, index })}
-            // @ts-ignore
             estimatedItemSize={200}
             showsVerticalScrollIndicator={false}
-            contentContainerStyle={{ paddingBottom: theme.spacing.xl, paddingHorizontal: theme.spacing.lg }}
+            contentContainerStyle={{ paddingBottom: 100, paddingHorizontal: 16 }}
+            ListHeaderComponent={renderSummaryHeader}
           />
         )}
 
-        {/* Action Buttons */}
+        {/* FAB Add Button */}
         {!isEmpty && (
-          <View style={styles.actionButtons}>
-            <View style={styles.actionButton}>
-              <Button
-                title={t('common.addFood')}
-                variant="primary"
-                onPress={handleAddManual}
-              />
-            </View>
-          </View>
+          <Pressable
+            onPress={handleAddManual}
+            style={({ pressed }) => [
+              {
+                position: 'absolute',
+                bottom: 24,
+                right: 24,
+                width: 56,
+                height: 56,
+                borderRadius: 28,
+                backgroundColor: theme.colors.primary,
+                alignItems: 'center',
+                justifyContent: 'center',
+                ...theme.shadows.lg,
+                opacity: pressed ? 0.9 : 1,
+                transform: [{ scale: pressed ? 0.95 : 1 }],
+              },
+            ]}
+          >
+            <Ionicons name="add" size={28} color="#fff" />
+          </Pressable>
         )}
       </View>
 
@@ -456,23 +623,24 @@ const MealDiaryScreen = (): JSX.Element => {
       <BottomSheet
         visible={showEditSheet}
         onClose={() => setShowEditSheet(false)}
-        title={t('common.editGrams')}
+        title="Chỉnh sửa khẩu phần"
         height={300}
       >
         <View style={styles.editSheetContent}>
-          <ThemedText variant="body" style={styles.editLabel}>
-            {t('common.newGrams')}:
+          <ThemedText variant="body" weight="600">
+            Nhập số gram mới:
           </ThemedText>
           <ThemedTextInput
             value={editGrams}
-            onChangeText={setEditGrams}
-            placeholder={t('common.enterGrams')}
-            keyboardType="numeric"
+            onChangeText={(text) => {
+              const numericOnly = text.replace(/[^0-9.]/g, '');
+              setEditGrams(numericOnly);
+            }}
+            placeholder="Ví dụ: 150"
+            keyboardType="decimal-pad"
             style={styles.editInput}
           />
-          <View style={styles.saveButton}>
-            <Button title={t('common.save')} onPress={handleSaveGrams} />
-          </View>
+          <Button title="💾 Lưu thay đổi" onPress={handleSaveGrams} />
         </View>
       </BottomSheet>
     </Screen>

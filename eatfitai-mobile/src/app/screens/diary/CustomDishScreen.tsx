@@ -161,7 +161,7 @@ const CustomDishScreen = (): JSX.Element => {
           text2: 'Món ăn đã được lưu vào thư viện cá nhân',
         });
         reset();
-        await refreshSummary().catch(() => { });
+        await refreshSummary().catch(() => {});
         navigation.goBack();
       } catch (error: any) {
         handleApiError(error);
@@ -181,8 +181,13 @@ const CustomDishScreen = (): JSX.Element => {
       <Screen contentContainerStyle={styles.content}>
         <Animated.View entering={FadeInDown.duration(500).springify()}>
           <View style={glass.card}>
-            <ThemedText style={{ fontSize: 28, textAlign: 'center', marginBottom: 8 }}>🍳</ThemedText>
-            <ThemedText variant="h2" style={{ marginBottom: theme.spacing.xs, textAlign: 'center' }}>
+            <ThemedText style={{ fontSize: 28, textAlign: 'center', marginBottom: 8 }}>
+              🍳
+            </ThemedText>
+            <ThemedText
+              variant="h2"
+              style={{ marginBottom: theme.spacing.xs, textAlign: 'center' }}
+            >
               Tạo món thủ công
             </ThemedText>
             <ThemedText

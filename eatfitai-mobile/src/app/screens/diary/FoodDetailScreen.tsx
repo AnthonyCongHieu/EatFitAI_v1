@@ -105,9 +105,7 @@ const FoodDetailScreen = (): JSX.Element | null => {
           borderRadius: theme.borderRadius.card,
           overflow: 'hidden',
           marginBottom: theme.spacing.lg,
-          backgroundColor: isDark
-            ? 'rgba(30, 35, 33, 0.6)'
-            : 'rgba(0, 0, 0, 0.05)',
+          backgroundColor: isDark ? 'rgba(30, 35, 33, 0.6)' : 'rgba(0, 0, 0, 0.05)',
           justifyContent: 'center',
           alignItems: 'center',
         },
@@ -118,14 +116,20 @@ const FoodDetailScreen = (): JSX.Element | null => {
         placeholderImage: {
           fontSize: 64,
         },
-        macroRow: { flexDirection: 'row', gap: theme.spacing.sm },
+        // Bug #6 fix: Cải thiện macro box để text không bị lệch
+        macroRow: {
+          flexDirection: 'row',
+          gap: theme.spacing.sm,
+          justifyContent: 'space-between',
+        },
         macroBox: {
           flex: 1,
-          minWidth: 80,
+          minWidth: 90, // Tăng minWidth để có đủ space
           padding: theme.spacing.md,
           borderRadius: theme.borderRadius.card,
           gap: theme.spacing.xs,
           alignItems: 'center',
+          justifyContent: 'center', // Center theo chiều dọc
         },
         mealRow: { flexDirection: 'row', flexWrap: 'wrap', gap: theme.spacing.xs },
         mealChip: {
@@ -274,7 +278,7 @@ const FoodDetailScreen = (): JSX.Element | null => {
           text1: 'Đã thêm món vào nhật ký',
           text2: 'Tiếp tục theo dõi dinh dưỡng của bạn!',
         });
-        await refreshSummary().catch(() => { });
+        await refreshSummary().catch(() => {});
         navigation.goBack();
       } catch (err: any) {
         handleApiError(err);
@@ -337,11 +341,7 @@ const FoodDetailScreen = (): JSX.Element | null => {
         title="Chi tiết món ăn"
         subtitle={detail.name}
         action={
-          <FavoriteButton
-            isFavorite={isFavorite}
-            onToggle={toggleFavorite}
-            size="md"
-          />
+          <FavoriteButton isFavorite={isFavorite} onToggle={toggleFavorite} size="md" />
         }
       />
 
@@ -415,12 +415,7 @@ const FoodDetailScreen = (): JSX.Element | null => {
           </View>
 
           <View style={[styles.macroRow, { marginTop: theme.spacing.md }]}>
-            <View
-              style={[
-                styles.macroBox,
-                { backgroundColor: theme.colors.background },
-              ]}
-            >
+            <View style={[styles.macroBox, { backgroundColor: theme.colors.background }]}>
               <ThemedText
                 variant="caption"
                 color="textSecondary"
@@ -433,12 +428,7 @@ const FoodDetailScreen = (): JSX.Element | null => {
                 {macroValue(detail.perServingProtein ?? detail.protein)}
               </ThemedText>
             </View>
-            <View
-              style={[
-                styles.macroBox,
-                { backgroundColor: theme.colors.background },
-              ]}
-            >
+            <View style={[styles.macroBox, { backgroundColor: theme.colors.background }]}>
               <ThemedText
                 variant="caption"
                 color="textSecondary"
@@ -451,12 +441,7 @@ const FoodDetailScreen = (): JSX.Element | null => {
                 {macroValue(detail.perServingCarbs ?? detail.carbs)}
               </ThemedText>
             </View>
-            <View
-              style={[
-                styles.macroBox,
-                { backgroundColor: theme.colors.background },
-              ]}
-            >
+            <View style={[styles.macroBox, { backgroundColor: theme.colors.background }]}>
               <ThemedText
                 variant="caption"
                 color="textSecondary"

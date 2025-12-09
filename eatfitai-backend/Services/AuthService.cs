@@ -126,6 +126,14 @@ namespace EatFitAI.API.Services
                 throw new UnauthorizedAccessException("Invalid email or password");
             }
 
+            // Bug #7 fix: Kiểm tra email đã được xác minh chưa
+            // Nếu user đăng ký qua RegisterWithVerificationAsync thì cần verify email trước
+            if (!user.EmailVerified)
+            {
+                Console.WriteLine($"[AuthService] Login denied - Email not verified: {request.Email}");
+                throw new UnauthorizedAccessException("Email chưa được xác minh. Vui lòng kiểm tra email và nhập mã xác minh.");
+            }
+
             // Generate JWT token
             var token = GenerateJwtToken(user);
             var expiresAt = DateTime.UtcNow.AddHours(24); // 24 hours

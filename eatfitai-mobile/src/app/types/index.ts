@@ -14,11 +14,13 @@ export type RootStackParamList = {
   AiCamera: undefined;
   AddMealFromVision: import('../../types/navigation').AddMealFromVisionParams;
   MealDiary: undefined;
-  RecipeSuggestions: { ingredients?: string[]; recipes?: import('../../services/aiService').SuggestedRecipe[] };
+  RecipeSuggestions: {
+    ingredients?: string[];
+    recipes?: import('../../services/aiService').SuggestedRecipe[];
+  };
   RecipeDetail: { recipeId: number; recipeName: string };
   NutritionInsights: undefined;
   VisionHistory: undefined;
   NutritionSettings: undefined;
   Achievements: undefined;
 };
-

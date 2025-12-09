@@ -1,5 +1,10 @@
 import type { ReactElement, ReactNode } from 'react';
-import type { RefreshControlProps, ScrollViewProps, ViewProps, ViewStyle } from 'react-native';
+import type {
+  RefreshControlProps,
+  ScrollViewProps,
+  ViewProps,
+  ViewStyle,
+} from 'react-native';
 import { ScrollView, View, StyleSheet, Platform, StatusBar } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -33,9 +38,13 @@ export const Screen = ({
   const insets = useSafeAreaInsets();
 
   // Tính padding dựa vào safe area
-  const paddingTop = useSafeArea && !hasHeader
-    ? Math.max(insets.top, Platform.OS === 'android' ? StatusBar.currentHeight || 24 : 0)
-    : 0;
+  const paddingTop =
+    useSafeArea && !hasHeader
+      ? Math.max(
+          insets.top,
+          Platform.OS === 'android' ? StatusBar.currentHeight || 24 : 0,
+        )
+      : 0;
   const paddingBottom = useSafeArea ? Math.max(insets.bottom, 16) : 0;
   const paddingHorizontal = horizontalPadding ? theme.spacing.lg : 0;
 
@@ -69,11 +78,7 @@ export const Screen = ({
     );
   }
 
-  return (
-    <View style={[containerStyle, contentStyle, style]}>
-      {children}
-    </View>
-  );
+  return <View style={[containerStyle, contentStyle, style]}>{children}</View>;
 };
 
 const styles = StyleSheet.create({

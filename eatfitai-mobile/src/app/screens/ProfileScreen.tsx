@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  Image,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -12,6 +13,7 @@ import {
   StyleSheet,
   View,
 } from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Controller, useForm } from 'react-hook-form';
@@ -25,6 +27,7 @@ import ThemedTextInput from '../../components/ThemedTextInput';
 import Button from '../../components/Button';
 import Icon from '../../components/Icon';
 import { ScreenHeader } from '../../components/ui/ScreenHeader';
+import { AvatarPicker } from '../../components/ui/AvatarPicker';
 import { glassStyles } from '../../components/ui/GlassCard';
 import { useAppTheme } from '../../theme/ThemeProvider';
 import { useAuthStore } from '../../store/useAuthStore';
@@ -40,9 +43,11 @@ const ProfileSchema = z.object({
   fullName: z.string().trim().min(2, 'Tên cần ít nhất 2 ký tự'),
   heightCm: z.string().optional(),
   weightKg: z.string().optional(),
-  gender: z.enum(['male', 'female', 'other']).optional(),
+  gender: z.enum(['male', 'female']).optional(), // Đã bỏ 'other'
   age: z.string().optional(), // Using string for input handling, convert to number/date later
-  activityLevel: z.enum(['sedentary', 'light', 'moderate', 'active', 'very_active']).optional(),
+  activityLevel: z
+    .enum(['sedentary', 'light', 'moderate', 'active', 'very_active'])
+    .optional(),
   goal: z.enum(['lose', 'maintain', 'gain']).optional(),
 });
 
@@ -58,7 +63,7 @@ const BodyMetricsSchema = z.object({
       (value) =>
         !value ||
         (!Number.isNaN(Number(value)) && Number(value) >= 100 && Number(value) <= 250),
-      { message: 'Chiều cao (cm) từ 100 - 250' }
+      { message: 'Chiều cao (cm) từ 100 - 250' },
     ),
   weightKg: z
     .string()
@@ -68,7 +73,7 @@ const BodyMetricsSchema = z.object({
       (value) =>
         !value ||
         (!Number.isNaN(Number(value)) && Number(value) >= 30 && Number(value) <= 300),
-      { message: 'Cân nặng (kg) từ 30 - 300' }
+      { message: 'Cân nặng (kg) từ 30 - 300' },
     ),
   measuredDate: z
     .string()
@@ -84,7 +89,7 @@ type BodyMetricsFormValues = z.infer<typeof BodyMetricsSchema>;
 
 // AI calculation fields (not saved to DB, only for local calculation)
 interface AiCalcData {
-  gender: 'male' | 'female' | 'other';
+  gender: 'male' | 'female'; // Đã bỏ 'other'
   age: number;
   activityLevel: 'sedentary' | 'light' | 'moderate' | 'active' | 'very_active';
   goal: 'lose' | 'maintain' | 'gain';
@@ -93,7 +98,7 @@ interface AiCalcData {
 const GENDER_OPTIONS = [
   { value: 'male', label: t('common.male'), icon: '👨' },
   { value: 'female', label: t('common.female'), icon: '👩' },
-  { value: 'other', label: t('common.other'), icon: '🧑' },
+  // Đã bỏ giới tính "Khác" theo yêu cầu
 ] as const;
 
 const ACTIVITY_OPTIONS = [
@@ -117,13 +122,15 @@ const ProfileScreen = (): JSX.Element => {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
   const logout = useAuthStore((s) => s.logout);
-  const { profile, fetchProfile, isLoading, updateProfile, isSaving } = useProfileStore((state) => ({
-    profile: state.profile,
-    fetchProfile: state.fetchProfile,
-    isLoading: state.isLoading,
-    updateProfile: state.updateProfile,
-    isSaving: state.isSaving,
-  }));
+  const { profile, fetchProfile, isLoading, updateProfile, isSaving } = useProfileStore(
+    (state) => ({
+      profile: state.profile,
+      fetchProfile: state.fetchProfile,
+      isLoading: state.isLoading,
+      updateProfile: state.updateProfile,
+      isSaving: state.isSaving,
+    }),
+  );
 
   // Removed local aiData state as we now use the main form
 
@@ -177,7 +184,10 @@ const ProfileScreen = (): JSX.Element => {
 
   useEffect(() => {
     if (profile) {
-      const activityLevelMap: Record<number, 'sedentary' | 'light' | 'moderate' | 'active' | 'very_active'> = {
+      const activityLevelMap: Record<
+        number,
+        'sedentary' | 'light' | 'moderate' | 'active' | 'very_active'
+      > = {
         1: 'sedentary',
         2: 'light',
         3: 'moderate',
@@ -201,11 +211,11 @@ const ProfileScreen = (): JSX.Element => {
     try {
       // Map activity level sang ID
       const activityLevelMap: Record<string, number> = {
-        'sedentary': 1,
-        'light': 2,
-        'moderate': 3,
-        'active': 4,
-        'very_active': 5,
+        sedentary: 1,
+        light: 2,
+        moderate: 3,
+        active: 4,
+        very_active: 5,
       };
 
       // Tính dateOfBirth từ age
@@ -261,7 +271,6 @@ const ProfileScreen = (): JSX.Element => {
   };
 
   // Removed handleAiSuggestion as it's no longer needed in ProfileScreen
-
 
   const handleLogout = () => {
     Alert.alert(t('common.logout'), t('common.logout_confirm'), [
@@ -334,7 +343,16 @@ const ProfileScreen = (): JSX.Element => {
 
   if (isLoading && !profile) {
     return (
-      <View style={[styles.container, { backgroundColor: theme.colors.background, justifyContent: 'center', alignItems: 'center' }]}>
+      <View
+        style={[
+          styles.container,
+          {
+            backgroundColor: theme.colors.background,
+            justifyContent: 'center',
+            alignItems: 'center',
+          },
+        ]}
+      >
         <ActivityIndicator size="large" color={theme.colors.primary} />
       </View>
     );
@@ -342,7 +360,10 @@ const ProfileScreen = (): JSX.Element => {
 
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
-      <ScreenHeader title={t('common.profile_title')} subtitle={t('common.profile_subtitle')} />
+      <ScreenHeader
+        title={t('common.profile_title')}
+        subtitle={t('common.profile_subtitle')}
+      />
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
         {/* Personal Info Card - Synced with DB */}
@@ -353,26 +374,25 @@ const ProfileScreen = (): JSX.Element => {
               <ThemedText variant="h3">{t('common.personal_info')}</ThemedText>
             </View>
 
-            {/* Avatar with initial */}
-            <View style={{ alignItems: 'center', marginBottom: theme.spacing.lg }}>
-              <View
-                style={{
-                  width: 80,
-                  height: 80,
-                  borderRadius: 40,
-                  backgroundColor: theme.colors.primaryLight,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-                <ThemedText variant="h1" color="primary">
-                  {profile?.fullName?.charAt(0)?.toUpperCase() || '?'}
-                </ThemedText>
-              </View>
-              <ThemedText variant="bodySmall" color="textSecondary" style={{ marginTop: 8 }}>
-                {profile?.email}
-              </ThemedText>
-            </View>
+            {/* Avatar with image picker */}
+            <AvatarPicker
+              avatarUrl={profile?.avatarUrl}
+              name={profile?.fullName}
+              email={profile?.email}
+              onUploadComplete={async (url: string) => {
+                try {
+                  await updateProfile({ avatarUrl: url });
+                  showSuccess('profile_updated');
+                } catch (error: any) {
+                  handleApiErrorWithCustomMessage(error, {
+                    unknown: {
+                      text1: 'Upload avatar',
+                      text2: 'Không thể cập nhật avatar',
+                    },
+                  });
+                }
+              }}
+            />
 
             <Controller
               control={control}
@@ -428,7 +448,11 @@ const ProfileScreen = (): JSX.Element => {
 
             {/* Gender Selection */}
             <View style={{ marginTop: theme.spacing.md }}>
-              <ThemedText variant="bodySmall" color="textSecondary" style={{ marginBottom: 8 }}>
+              <ThemedText
+                variant="bodySmall"
+                color="textSecondary"
+                style={{ marginBottom: 8 }}
+              >
                 {t('common.gender')}
               </ThemedText>
               <Controller
@@ -442,17 +466,21 @@ const ProfileScreen = (): JSX.Element => {
                         style={[
                           styles.optionButton,
                           {
-                            backgroundColor: value === opt.value
-                              ? theme.colors.primaryLight
-                              : isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)',
-                            borderColor: value === opt.value
-                              ? theme.colors.primary
-                              : 'transparent',
+                            backgroundColor:
+                              value === opt.value
+                                ? theme.colors.primaryLight
+                                : isDark
+                                  ? 'rgba(255,255,255,0.05)'
+                                  : 'rgba(0,0,0,0.03)',
+                            borderColor:
+                              value === opt.value ? theme.colors.primary : 'transparent',
                           },
                         ]}
                         onPress={() => onChange(opt.value)}
                       >
-                        <ThemedText>{opt.icon} {opt.label}</ThemedText>
+                        <ThemedText>
+                          {opt.icon} {opt.label}
+                        </ThemedText>
                       </Pressable>
                     ))}
                   </View>
@@ -480,7 +508,11 @@ const ProfileScreen = (): JSX.Element => {
 
             {/* Goal Selection */}
             <View style={{ marginTop: theme.spacing.md }}>
-              <ThemedText variant="bodySmall" color="textSecondary" style={{ marginBottom: 8 }}>
+              <ThemedText
+                variant="bodySmall"
+                color="textSecondary"
+                style={{ marginBottom: 8 }}
+              >
                 {t('common.goal')}
               </ThemedText>
               <Controller
@@ -494,10 +526,14 @@ const ProfileScreen = (): JSX.Element => {
                         style={[
                           styles.goalCard,
                           {
-                            backgroundColor: value === goal.value
-                              ? `${goal.color}15`
-                              : isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.02)',
-                            borderColor: value === goal.value ? goal.color : 'transparent',
+                            backgroundColor:
+                              value === goal.value
+                                ? `${goal.color}15`
+                                : isDark
+                                  ? 'rgba(255,255,255,0.05)'
+                                  : 'rgba(0,0,0,0.02)',
+                            borderColor:
+                              value === goal.value ? goal.color : 'transparent',
                           },
                         ]}
                         onPress={() => onChange(goal.value)}
@@ -506,7 +542,9 @@ const ProfileScreen = (): JSX.Element => {
                         <ThemedText
                           variant="bodySmall"
                           weight={value === goal.value ? '600' : '400'}
-                          style={{ color: value === goal.value ? goal.color : theme.colors.text }}
+                          style={{
+                            color: value === goal.value ? goal.color : theme.colors.text,
+                          }}
                         >
                           {goal.label}
                         </ThemedText>
@@ -519,7 +557,11 @@ const ProfileScreen = (): JSX.Element => {
 
             {/* Activity Level */}
             <View style={{ marginTop: theme.spacing.md }}>
-              <ThemedText variant="bodySmall" color="textSecondary" style={{ marginBottom: 8 }}>
+              <ThemedText
+                variant="bodySmall"
+                color="textSecondary"
+                style={{ marginBottom: 8 }}
+              >
                 {t('common.activity_level')}
               </ThemedText>
               <Controller
@@ -533,12 +575,14 @@ const ProfileScreen = (): JSX.Element => {
                         style={[
                           styles.optionButton,
                           {
-                            backgroundColor: value === act.value
-                              ? theme.colors.primaryLight
-                              : isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)',
-                            borderColor: value === act.value
-                              ? theme.colors.primary
-                              : 'transparent',
+                            backgroundColor:
+                              value === act.value
+                                ? theme.colors.primaryLight
+                                : isDark
+                                  ? 'rgba(255,255,255,0.05)'
+                                  : 'rgba(0,0,0,0.03)',
+                            borderColor:
+                              value === act.value ? theme.colors.primary : 'transparent',
                           },
                         ]}
                         onPress={() => onChange(act.value)}
@@ -558,8 +602,13 @@ const ProfileScreen = (): JSX.Element => {
             </View>
 
             {profile?.lastMeasuredDate && (
-              <ThemedText variant="caption" color="textSecondary" style={{ marginTop: 8 }}>
-                📅 {t('common.last_updated')}: {new Date(profile.lastMeasuredDate).toLocaleDateString('vi-VN')}
+              <ThemedText
+                variant="caption"
+                color="textSecondary"
+                style={{ marginTop: 8 }}
+              >
+                📅 {t('common.last_updated')}:{' '}
+                {new Date(profile.lastMeasuredDate).toLocaleDateString('vi-VN')}
               </ThemedText>
             )}
 
@@ -574,9 +623,7 @@ const ProfileScreen = (): JSX.Element => {
           </View>
         </Animated.View>
 
-
         {/* Removed old AI section */}
-
 
         {/* Body Metrics History */}
         <Animated.View entering={FadeInUp.delay(300).duration(400)}>
@@ -586,7 +633,11 @@ const ProfileScreen = (): JSX.Element => {
               <ThemedText variant="h3">{t('common.history_metrics')}</ThemedText>
             </View>
 
-            <ThemedText variant="bodySmall" color="textSecondary" style={{ marginBottom: theme.spacing.md }}>
+            <ThemedText
+              variant="bodySmall"
+              color="textSecondary"
+              style={{ marginBottom: theme.spacing.md }}
+            >
               {t('common.add_metrics_desc')}
             </ThemedText>
 
@@ -663,7 +714,9 @@ const ProfileScreen = (): JSX.Element => {
 
             <View style={{ marginTop: theme.spacing.md }}>
               <Button
-                title={isSubmittingMetrics ? t('common.saving') : t('common.save_history')}
+                title={
+                  isSubmittingMetrics ? t('common.saving') : t('common.save_history')
+                }
                 onPress={handleMetricsSubmit(onSubmitBodyMetrics)}
                 loading={isSubmittingMetrics}
                 disabled={isSubmittingMetrics}
@@ -688,11 +741,7 @@ const ProfileScreen = (): JSX.Element => {
               onPress={() => navigation.navigate('NutritionInsights')}
             />
 
-            <Button
-              title={t('common.logout')}
-              variant="ghost"
-              onPress={handleLogout}
-            />
+            <Button title={t('common.logout')} variant="ghost" onPress={handleLogout} />
           </View>
         </Animated.View>
       </ScrollView>

@@ -83,9 +83,7 @@ const AppTabs = (): JSX.Element => {
           borderTopLeftRadius: 24,
           borderTopRightRadius: 24,
           borderTopWidth: 1,
-          borderTopColor: isDark
-            ? 'rgba(255, 255, 255, 0.08)'
-            : 'rgba(0, 0, 0, 0.05)',
+          borderTopColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.05)',
           height: 75,
           paddingBottom: 12,
           paddingTop: 10,
@@ -110,7 +108,16 @@ const AppTabs = (): JSX.Element => {
         options={{
           title: t('navigation.home'),
           tabBarIcon: ({ color, size, focused }) => (
-            <View style={focused ? [styles.activeIconPill, { backgroundColor: theme.colors.primary + '20' }] : undefined}>
+            <View
+              style={
+                focused
+                  ? [
+                      styles.activeIconPill,
+                      { backgroundColor: theme.colors.primary + '20' },
+                    ]
+                  : undefined
+              }
+            >
               <Ionicons
                 name={focused ? 'home' : 'home-outline'}
                 color={color}
@@ -126,7 +133,16 @@ const AppTabs = (): JSX.Element => {
         options={{
           title: 'AI Scan',
           tabBarIcon: ({ color, size, focused }) => (
-            <View style={focused ? [styles.scanIconActive, { backgroundColor: theme.colors.primary + '20' }] : undefined}>
+            <View
+              style={
+                focused
+                  ? [
+                      styles.scanIconActive,
+                      { backgroundColor: theme.colors.primary + '20' },
+                    ]
+                  : undefined
+              }
+            >
               <Ionicons
                 name={focused ? 'scan' : 'scan-outline'}
                 color={color}
@@ -185,4 +201,3 @@ const styles = StyleSheet.create({
 });
 
 export default AppTabs;
-

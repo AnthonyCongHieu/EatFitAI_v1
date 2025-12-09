@@ -8,6 +8,10 @@ import type {
   VisionDetectResult,
 } from '../types/ai';
 
+import { API_BASE_URL } from '../config/env';
+import { getAccessTokenMem } from './authTokens';
+import { tokenStorage } from './secureStore';
+
 export type IngredientItem = {
   name: string;
   confidence?: number | null;
@@ -47,10 +51,6 @@ const toNumber = (value: unknown): number | null => {
   return null;
 };
 
-import { API_BASE_URL } from '../config/env';
-import { getAccessTokenMem } from './authTokens';
-import { tokenStorage } from './secureStore';
-
 export async function detectFoodByImage(imageUri: string): Promise<VisionDetectResult> {
   const formData = new FormData();
 
@@ -75,8 +75,8 @@ export async function detectFoodByImage(imageUri: string): Promise<VisionDetectR
     method: 'POST',
     body: formData,
     headers: {
-      'Authorization': `Bearer ${token}`,
-      'Accept': 'application/json',
+      Authorization: `Bearer ${token}`,
+      Accept: 'application/json',
       // DO NOT set Content-Type, let fetch/FormData handle boundary
     },
   });

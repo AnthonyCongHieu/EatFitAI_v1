@@ -75,10 +75,13 @@ export const useAuthStore = create<AuthState>((set: any) => ({
   },
 
   login: async (email, password) => {
-    const resp = await apiClient.post<AuthTokensResponse & { needsOnboarding?: boolean }>('/api/auth/login', {
-      Email: email,
-      Password: password,
-    });
+    const resp = await apiClient.post<AuthTokensResponse & { needsOnboarding?: boolean }>(
+      '/api/auth/login',
+      {
+        Email: email,
+        Password: password,
+      },
+    );
     const data = resp.data;
     const accessToken = data?.token;
     if (!accessToken) throw new Error(t('auth.missingAccessToken'));
@@ -182,7 +185,7 @@ export const useAuthStore = create<AuthState>((set: any) => ({
     setAccessTokenMem(accessToken);
     try {
       await updateSessionFromAuthResponse(result as AuthResponse);
-    } catch { }
+    } catch {}
 
     set({ isAuthenticated: true });
   },

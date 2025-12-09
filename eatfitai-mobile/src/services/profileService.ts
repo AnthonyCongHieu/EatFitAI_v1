@@ -7,6 +7,7 @@ export type UserProfile = {
   id: string;
   fullName?: string;
   email?: string;
+  avatarUrl?: string; // URL của avatar (từ Supabase Storage hoặc backend)
   heightCm?: number;
   weightKg?: number;
   lastMeasuredDate?: string;
@@ -24,6 +25,7 @@ export type UpdateProfilePayload = {
   fullName?: string | null;
   heightCm?: number | null;
   weightKg?: number | null;
+  avatarUrl?: string | null; // URL của avatar sau khi upload
   // Profile fields for AI nutrition
   gender?: string | null;
   dateOfBirth?: string | null;
@@ -42,6 +44,7 @@ const normalizeProfile = (data: any): UserProfile => ({
   id: String(data?.userId ?? ''),
   fullName: data?.displayName ?? undefined,
   email: data?.email ?? undefined,
+  avatarUrl: data?.avatarUrl ?? undefined,
   heightCm: data?.currentHeightCm ?? undefined,
   weightKg: data?.currentWeightKg ?? undefined,
   lastMeasuredDate: data?.lastMeasuredDate ?? undefined,
@@ -68,6 +71,7 @@ export const profileService = {
       displayName: payload.fullName ?? null,
       currentHeightCm: payload.heightCm ?? null,
       currentWeightKg: payload.weightKg ?? null,
+      avatarUrl: payload.avatarUrl ?? null,
       // Profile fields for AI nutrition
       gender: payload.gender ?? null,
       dateOfBirth: payload.dateOfBirth ?? null,
@@ -76,6 +80,30 @@ export const profileService = {
     };
     const response = await apiClient.put('/api/profile', req);
     return normalizeProfile(response.data);
+  },
+
+  // Upload avatar image (multipart/form-data)
+  // Trả về URL của avatar sau khi upload
+  async uploadAvatar(imageUri: string): Promise<string> {
+    const formData = new FormData();
+
+    // Tạo file object từ URI
+    const filename = imageUri.split('/').pop() || 'avatar.jpg';
+    const match = /\.(\w+)$/.exec(filename);
+    const type = match ? `image/${match[1]}` : 'image/jpeg';
+
+    formData.append('file', {
+      uri: imageUri,
+      name: filename,
+      type,
+    } as any);
+
+    const response = await apiClient.post('/api/profile/avatar', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+
+    // Backend trả về URL của avatar đã upload
+    return response.data?.avatarUrl ?? response.data?.url ?? '';
   },
 
   // Goi so do co the (POST /api/body-metrics)

@@ -14,6 +14,7 @@ type MetricCardProps = {
   label: string;
   color: 'primary' | 'secondary' | 'warning';
   progress?: number;
+  targetValue?: number; // Improvement: Thêm target để hiển thị format "consumed/target"
   onPress?: () => void;
 };
 
@@ -23,6 +24,7 @@ const MetricCardComponent = ({
   label,
   color,
   progress,
+  targetValue,
   onPress,
 }: MetricCardProps) => {
   const { theme } = useAppTheme();
@@ -44,6 +46,10 @@ const MetricCardComponent = ({
         marginTop: theme.spacing.xs,
         color: theme.colors.text,
       },
+      targetText: {
+        fontSize: theme.typography.caption.fontSize,
+        color: theme.colors.textSecondary,
+      },
       progressContainer: { marginTop: theme.spacing.xs },
     }),
     [theme],
@@ -56,9 +62,16 @@ const MetricCardComponent = ({
         <Animated.Text style={[styles.text, textAnimatedStyle]}>
           {Math.round(value.value)}
         </Animated.Text>
-        <ThemedText variant="caption" color="textSecondary">
-          {label}
-        </ThemedText>
+        {/* Improvement: Hiển thị target nếu có */}
+        {targetValue !== undefined && targetValue > 0 ? (
+          <ThemedText variant="caption" color="textSecondary">
+            {label} ({Math.round(targetValue)}g)
+          </ThemedText>
+        ) : (
+          <ThemedText variant="caption" color="textSecondary">
+            {label}
+          </ThemedText>
+        )}
         {progress !== undefined && (
           <View style={styles.progressContainer}>
             <ProgressBar

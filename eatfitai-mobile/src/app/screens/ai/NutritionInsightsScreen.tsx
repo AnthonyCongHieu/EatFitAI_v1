@@ -262,7 +262,10 @@ const NutritionInsightsScreen = (): JSX.Element => {
   if (loading) {
     return (
       <Screen style={styles.container}>
-        <ScreenHeader title={t('nutrition_insights.title')} subtitle={t('nutrition_insights.loading')} />
+        <ScreenHeader
+          title={t('nutrition_insights.title')}
+          subtitle={t('nutrition_insights.loading')}
+        />
         <View style={styles.center}>
           <ActivityIndicator size="large" color={theme.colors.primary} />
         </View>
@@ -272,15 +275,19 @@ const NutritionInsightsScreen = (): JSX.Element => {
 
   if (error) {
     // Kiểm tra nếu lỗi liên quan đến thiếu NutritionTarget
-    const isNoTargetError = error.toLowerCase().includes('nutrition target') ||
+    const isNoTargetError =
+      error.toLowerCase().includes('nutrition target') ||
       error.toLowerCase().includes('no active');
 
     return (
       <Screen style={styles.container}>
-        <ScreenHeader title={t('nutrition_insights.title')} subtitle={t('nutrition_insights.error_title')} />
+        <ScreenHeader
+          title={t('nutrition_insights.title')}
+          subtitle={t('nutrition_insights.error_title')}
+        />
         <View style={styles.center}>
           <Ionicons
-            name={isNoTargetError ? "nutrition-outline" : "alert-circle-outline"}
+            name={isNoTargetError ? 'nutrition-outline' : 'alert-circle-outline'}
             size={64}
             color={theme.colors.warning}
             style={{ marginBottom: theme.spacing.md }}
@@ -289,16 +296,21 @@ const NutritionInsightsScreen = (): JSX.Element => {
             variant="h4"
             style={{ textAlign: 'center', marginBottom: theme.spacing.sm }}
           >
-            {isNoTargetError ? 'Chưa thiết lập mục tiêu dinh dưỡng' : t('nutrition_insights.error_title')}
+            {isNoTargetError
+              ? 'Chưa thiết lập mục tiêu dinh dưỡng'
+              : t('nutrition_insights.error_title')}
           </ThemedText>
           <ThemedText
             color="textSecondary"
-            style={{ textAlign: 'center', marginBottom: theme.spacing.lg, paddingHorizontal: 24 }}
+            style={{
+              textAlign: 'center',
+              marginBottom: theme.spacing.lg,
+              paddingHorizontal: 24,
+            }}
           >
             {isNoTargetError
               ? 'Bạn cần thiết lập mục tiêu calories, protein, carbs và fat trước khi xem phân tích AI.'
-              : error
-            }
+              : error}
           </ThemedText>
           <View style={{ gap: theme.spacing.sm, width: '80%' }}>
             {isNoTargetError ? (
@@ -308,7 +320,11 @@ const NutritionInsightsScreen = (): JSX.Element => {
                 variant="primary"
               />
             ) : (
-              <Button title={t('nutrition_insights.retry')} onPress={loadData} variant="secondary" />
+              <Button
+                title={t('nutrition_insights.retry')}
+                onPress={loadData}
+                variant="secondary"
+              />
             )}
           </View>
         </View>
@@ -415,12 +431,15 @@ const NutritionInsightsScreen = (): JSX.Element => {
                       color={theme.colors.info}
                       style={{ marginRight: 8 }}
                     />
-                    <ThemedText variant="h4">{t('nutrition_insights.meal_timing_title')}</ThemedText>
+                    <ThemedText variant="h4">
+                      {t('nutrition_insights.meal_timing_title')}
+                    </ThemedText>
                   </View>
                   <ThemedText variant="body" style={{ marginBottom: 8 }}>
                     {t('nutrition_insights.meal_timing_avg')}:{' '}
                     <ThemedText weight="700">
-                      {insights.mealTimingInsight.averageMealsPerDay.toFixed(1)} {t('nutrition_insights.meals_per_day')}
+                      {insights.mealTimingInsight.averageMealsPerDay.toFixed(1)}{' '}
+                      {t('nutrition_insights.meals_per_day')}
                     </ThemedText>
                   </ThemedText>
                   {insights.mealTimingInsight.insights.map((insight, idx) => (
@@ -458,7 +477,9 @@ const NutritionInsightsScreen = (): JSX.Element => {
                   color={theme.colors.primary}
                   style={{ marginRight: 8 }}
                 />
-                <ThemedText variant="h4">{t('nutrition_insights.ai_suggestion')}</ThemedText>
+                <ThemedText variant="h4">
+                  {t('nutrition_insights.ai_suggestion')}
+                </ThemedText>
               </View>
 
               <View style={styles.targetComparison}>

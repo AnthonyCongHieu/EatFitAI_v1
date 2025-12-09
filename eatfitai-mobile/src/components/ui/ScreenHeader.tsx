@@ -28,7 +28,13 @@ export const ScreenHeader = ({
         paddingBottom: theme.spacing.xl,
       }}
     >
-      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+      <View
+        style={{
+          flexDirection: 'row',
+          justifyContent: 'space-between',
+          alignItems: 'flex-start',
+        }}
+      >
         <View style={{ flex: 1 }}>
           {onBackPress && (
             <TouchableOpacity

@@ -100,11 +100,14 @@ const RegisterScreen = ({ navigation }: Props): JSX.Element => {
         setLoading(true);
 
         // Gọi API đăng ký với xác minh email
-        const resp = await apiClient.post<RegisterResponse>('/api/auth/register-with-verification', {
-          DisplayName: values.name,
-          Email: values.email,
-          Password: values.password,
-        });
+        const resp = await apiClient.post<RegisterResponse>(
+          '/api/auth/register-with-verification',
+          {
+            DisplayName: values.name,
+            Email: values.email,
+            Password: values.password,
+          },
+        );
 
         const data = resp.data;
 
@@ -139,7 +142,7 @@ const RegisterScreen = ({ navigation }: Props): JSX.Element => {
           type: 'error',
           text1: 'Đăng ký thất bại',
           text2: message,
-          visibilityTime: 4000
+          visibilityTime: 4000,
         });
       } finally {
         setLoading(false);

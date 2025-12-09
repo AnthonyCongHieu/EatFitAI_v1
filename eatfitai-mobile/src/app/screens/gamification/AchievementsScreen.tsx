@@ -1,8 +1,20 @@
+// Màn hình Thành tích - Redesigned với UI/UX hiện đại
+// Inspired by Duolingo, Strava, và các fitness apps hàng đầu
+
 import React, { useEffect, useRef } from 'react';
-import { View, StyleSheet, FlatList, TouchableOpacity } from 'react-native';
+import { View, StyleSheet, FlatList, TouchableOpacity, Dimensions } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import Animated, {
+  FadeIn,
+  FadeInDown,
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+  withTiming,
+  interpolate,
+} from 'react-native-reanimated';
 import Screen from '../../../components/Screen';
 import { ScreenHeader } from '../../../components/ui/ScreenHeader';
 import { AppCard } from '../../../components/ui/AppCard';
@@ -10,141 +22,341 @@ import { ThemedText } from '../../../components/ThemedText';
 import { useAppTheme } from '../../../theme/ThemeProvider';
 import { useGamificationStore, Achievement } from '../../../store/useGamificationStore';
 import { shareService } from '../../../services/shareService';
-import { glassStyles } from '../../../components/ui/GlassCard';
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 const AchievementsScreen = (): JSX.Element => {
-    const { theme } = useAppTheme();
-    const isDark = theme.mode === 'dark';
-    const glass = glassStyles(isDark);
-    const navigation = useNavigation();
-    const { achievements, checkStreak } = useGamificationStore();
-    const viewRef = useRef(null);
+  const { theme } = useAppTheme();
+  const isDark = theme.mode === 'dark';
+  const navigation = useNavigation();
+  const { achievements, currentStreak, longestStreak, totalDaysLogged, checkStreak } =
+    useGamificationStore();
+  const viewRef = useRef(null);
 
-    useEffect(() => {
-        checkStreak();
-    }, [checkStreak]);
+  useEffect(() => {
+    checkStreak();
+  }, [checkStreak]);
 
-    const handleShare = async () => {
-        await shareService.shareScreenshot(viewRef);
-    };
+  const handleShare = async () => {
+    await shareService.shareScreenshot(viewRef);
+  };
 
-    const renderItem = ({ item }: { item: Achievement }) => {
-        const isUnlocked = !!item.unlockedAt;
-        const progressPercent = Math.min(100, (item.progress / item.target) * 100);
+  // Tính toán số thành tích đã mở khóa
+  const unlockedCount = achievements.filter((a) => a.unlockedAt).length;
+  const totalCount = achievements.length;
 
-        return (
-            <AppCard style={[styles.card, !isUnlocked ? styles.lockedCard : {}]}>
-                <View style={styles.iconContainer}>
-                    <View style={[styles.iconCircle, isUnlocked ? styles.unlockedIcon : styles.lockedIcon]}>
-                        <Ionicons
-                            name={item.icon as any}
-                            size={32}
-                            color={isUnlocked ? '#FFF' : theme.colors.textSecondary}
-                        />
-                    </View>
-                </View>
+  // Gradient colors cho các thành tích
+  const getGradientColors = (id: string, isUnlocked: boolean): string[] => {
+    if (!isUnlocked) return [theme.colors.card, theme.colors.card];
 
-                <View style={styles.contentContainer}>
-                    <ThemedText variant="h3" color={isUnlocked ? undefined : 'textSecondary'}>
-                        {item.title}
-                    </ThemedText>
-                    <ThemedText variant="bodySmall" color="textSecondary" style={{ marginBottom: 8 }}>
-                        {item.description}
-                    </ThemedText>
+    switch (id) {
+      case 'first_log':
+        return ['#FF6B6B', '#FF8E53']; // Đỏ-Cam (Khởi đầu)
+      case 'streak_3':
+        return ['#4ECDC4', '#44A08D']; // Xanh lá (Kiên trì)
+      case 'streak_7':
+        return ['#667EEA', '#764BA2']; // Tím (Thói quen)
+      case 'log_100_meals':
+        return ['#F093FB', '#F5576C']; // Hồng (Chuyên gia)
+      default:
+        return ['#FFD93D', '#FF6B6B']; // Vàng-Cam
+    }
+  };
 
-                    {/* Progress Bar */}
-                    <View style={styles.progressContainer}>
-                        <View style={[styles.progressBar, { width: `${progressPercent}%`, backgroundColor: isUnlocked ? theme.colors.success : theme.colors.primary }]} />
-                    </View>
-                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 4 }}>
-                        <ThemedText variant="caption" color="textSecondary">
-                            {Math.round(item.progress)} / {item.target}
-                        </ThemedText>
-                        {isUnlocked && (
-                            <ThemedText variant="caption" color="success" weight="600">
-                                Đã mở khóa!
-                            </ThemedText>
-                        )}
-                    </View>
-                </View>
-            </AppCard>
-        );
-    };
+  // Emoji cho từng thành tích
+  const getEmoji = (id: string): string => {
+    switch (id) {
+      case 'first_log':
+        return '🚀';
+      case 'streak_3':
+        return '🔥';
+      case 'streak_7':
+        return '📅';
+      case 'log_100_meals':
+        return '🏆';
+      default:
+        return '⭐';
+    }
+  };
 
-    const styles = StyleSheet.create({
-        container: {
-            padding: theme.spacing.lg,
-            gap: theme.spacing.md,
-        },
-        card: {
-            flexDirection: 'row',
-            alignItems: 'center',
-            padding: theme.spacing.md,
-            marginBottom: theme.spacing.md,
-        },
-        lockedCard: {
-            opacity: 0.7,
-            backgroundColor: theme.colors.background,
-        },
-        iconContainer: {
-            marginRight: theme.spacing.md,
-        },
-        iconCircle: {
-            width: 56,
-            height: 56,
-            borderRadius: 28,
-            justifyContent: 'center',
-            alignItems: 'center',
-        },
-        unlockedIcon: {
-            backgroundColor: theme.colors.warning, // Gold/Orange for achievement
-            shadowColor: theme.colors.warning,
-            shadowOffset: { width: 0, height: 4 },
-            shadowOpacity: 0.3,
-            shadowRadius: 8,
-            elevation: 5,
-        },
-        lockedIcon: {
-            backgroundColor: theme.colors.border,
-        },
-        contentContainer: {
-            flex: 1,
-        },
-        progressContainer: {
-            height: 6,
-            backgroundColor: theme.colors.border,
-            borderRadius: 3,
-            overflow: 'hidden',
-        },
-        progressBar: {
-            height: '100%',
-            borderRadius: 3,
-        },
-    });
+  const renderStreakHeader = () => (
+    <Animated.View entering={FadeInDown.delay(100).springify()}>
+      <LinearGradient
+        colors={isDark ? ['#1a1a2e', '#16213e'] : ['#667eea', '#764ba2']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.streakCard}
+      >
+        {/* Main streak display */}
+        <View style={styles.mainStreak}>
+          <ThemedText
+            style={[styles.streakNumber, { color: '#fff' }]}
+            variant="h1"
+            weight="700"
+          >
+            {currentStreak}
+          </ThemedText>
+          <ThemedText style={{ color: 'rgba(255,255,255,0.9)' }} variant="body" weight="600">
+            ngày liên tiếp 🔥
+          </ThemedText>
+        </View>
+
+        {/* Stats row */}
+        <View style={styles.statsRow}>
+          <View style={styles.statItem}>
+            <ThemedText style={styles.statValue}>{longestStreak}</ThemedText>
+            <ThemedText style={styles.statLabel}>Kỷ lục</ThemedText>
+          </View>
+          <View style={[styles.statDivider, { backgroundColor: 'rgba(255,255,255,0.2)' }]} />
+          <View style={styles.statItem}>
+            <ThemedText style={styles.statValue}>{totalDaysLogged}</ThemedText>
+            <ThemedText style={styles.statLabel}>Tổng ngày</ThemedText>
+          </View>
+          <View style={[styles.statDivider, { backgroundColor: 'rgba(255,255,255,0.2)' }]} />
+          <View style={styles.statItem}>
+            <ThemedText style={styles.statValue}>
+              {unlockedCount}/{totalCount}
+            </ThemedText>
+            <ThemedText style={styles.statLabel}>Thành tích</ThemedText>
+          </View>
+        </View>
+      </LinearGradient>
+    </Animated.View>
+  );
+
+  const renderAchievementCard = ({ item, index }: { item: Achievement; index: number }) => {
+    const isUnlocked = !!item.unlockedAt;
+    const progressPercent = Math.min(100, (item.progress / item.target) * 100);
+    const gradientColors = getGradientColors(item.id, isUnlocked);
+    const emoji = getEmoji(item.id);
 
     return (
-        <Screen scroll={false}>
-            <ScreenHeader
-                title="Thành tích"
-                subtitle="Hành trình sức khỏe của bạn"
-                onBackPress={() => navigation.goBack()}
-                action={
-                    <TouchableOpacity onPress={handleShare}>
-                        <Ionicons name="share-social-outline" size={24} color={theme.colors.primary} />
-                    </TouchableOpacity>
-                }
-            />
-            <View ref={viewRef} collapsable={false} style={{ flex: 1, backgroundColor: theme.colors.background }}>
-                <FlatList
-                    data={achievements}
-                    renderItem={renderItem}
-                    keyExtractor={(item) => item.id}
-                    contentContainerStyle={styles.container}
-                    showsVerticalScrollIndicator={false}
-                />
+      <Animated.View entering={FadeInDown.delay(200 + index * 100).springify()}>
+        <View style={[styles.achievementCard, !isUnlocked && styles.lockedCard]}>
+          {/* Left: Icon với gradient background */}
+          <View style={styles.iconWrapper}>
+            {isUnlocked ? (
+              <LinearGradient
+                colors={gradientColors}
+                style={styles.iconGradient}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+              >
+                <ThemedText style={styles.emoji}>{emoji}</ThemedText>
+              </LinearGradient>
+            ) : (
+              <View style={[styles.iconLocked, { backgroundColor: theme.colors.border }]}>
+                <Ionicons name="lock-closed" size={24} color={theme.colors.textSecondary} />
+              </View>
+            )}
+          </View>
+
+          {/* Right: Content */}
+          <View style={styles.contentWrapper}>
+            <View style={styles.titleRow}>
+              <ThemedText
+                variant="h4"
+                weight="700"
+                color={isUnlocked ? undefined : 'textSecondary'}
+              >
+                {item.title}
+              </ThemedText>
+              {isUnlocked && (
+                <View style={[styles.badge, { backgroundColor: theme.colors.success + '20' }]}>
+                  <ThemedText variant="caption" color="success" weight="600">
+                    ✓ Đạt
+                  </ThemedText>
+                </View>
+              )}
             </View>
-        </Screen>
+
+            <ThemedText
+              variant="bodySmall"
+              color="textSecondary"
+              style={{ marginTop: 2, marginBottom: 8 }}
+            >
+              {item.description}
+            </ThemedText>
+
+            {/* Progress bar */}
+            <View style={[styles.progressBg, { backgroundColor: theme.colors.border }]}>
+              <LinearGradient
+                colors={isUnlocked ? gradientColors : [theme.colors.primary, theme.colors.primary]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={[styles.progressFill, { width: `${progressPercent}%` }]}
+              />
+            </View>
+
+            <View style={styles.progressRow}>
+              <ThemedText variant="caption" color="textSecondary">
+                Tiến độ: {Math.round(item.progress)}/{item.target}
+              </ThemedText>
+              <ThemedText variant="caption" color={isUnlocked ? 'success' : 'textSecondary'}>
+                {Math.round(progressPercent)}%
+              </ThemedText>
+            </View>
+          </View>
+        </View>
+      </Animated.View>
     );
+  };
+
+  const renderSectionTitle = () => (
+    <Animated.View entering={FadeIn.delay(150)} style={styles.sectionHeader}>
+      <ThemedText variant="h3" weight="700">
+        🏅 Tất cả thành tích
+      </ThemedText>
+      <ThemedText variant="caption" color="textSecondary">
+        {unlockedCount} / {totalCount} đã đạt
+      </ThemedText>
+    </Animated.View>
+  );
+
+  const styles = StyleSheet.create({
+    container: {
+      flex: 1,
+    },
+    content: {
+      padding: theme.spacing.lg,
+      paddingBottom: 100,
+    },
+    streakCard: {
+      borderRadius: 20,
+      padding: theme.spacing.xl,
+      marginBottom: theme.spacing.xl,
+      ...theme.shadows.lg,
+    },
+    mainStreak: {
+      alignItems: 'center',
+      marginBottom: theme.spacing.lg,
+    },
+    streakNumber: {
+      fontSize: 64,
+      lineHeight: 72,
+    },
+    statsRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-around',
+      alignItems: 'center',
+    },
+    statItem: {
+      alignItems: 'center',
+      flex: 1,
+    },
+    statValue: {
+      fontSize: 20,
+      fontWeight: '700',
+      color: '#fff',
+    },
+    statLabel: {
+      fontSize: 12,
+      color: 'rgba(255,255,255,0.7)',
+      marginTop: 2,
+    },
+    statDivider: {
+      width: 1,
+      height: 30,
+    },
+    sectionHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: theme.spacing.md,
+    },
+    achievementCard: {
+      flexDirection: 'row',
+      backgroundColor: theme.colors.card,
+      borderRadius: 16,
+      padding: theme.spacing.md,
+      marginBottom: theme.spacing.md,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      ...theme.shadows.sm,
+    },
+    lockedCard: {
+      opacity: 0.6,
+    },
+    iconWrapper: {
+      marginRight: theme.spacing.md,
+    },
+    iconGradient: {
+      width: 56,
+      height: 56,
+      borderRadius: 16,
+      alignItems: 'center',
+      justifyContent: 'center',
+      ...theme.shadows.md,
+    },
+    iconLocked: {
+      width: 56,
+      height: 56,
+      borderRadius: 16,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    emoji: {
+      fontSize: 28,
+    },
+    contentWrapper: {
+      flex: 1,
+    },
+    titleRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+    },
+    badge: {
+      paddingHorizontal: 8,
+      paddingVertical: 2,
+      borderRadius: 8,
+    },
+    progressBg: {
+      height: 6,
+      borderRadius: 3,
+      overflow: 'hidden',
+    },
+    progressFill: {
+      height: '100%',
+      borderRadius: 3,
+    },
+    progressRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      marginTop: 4,
+    },
+  });
+
+  return (
+    <Screen scroll={false} style={styles.container}>
+      <ScreenHeader
+        title="Thành tích"
+        subtitle="Hành trình sức khỏe của bạn"
+        onBackPress={() => navigation.goBack()}
+        action={
+          <TouchableOpacity onPress={handleShare} style={{ padding: 8 }}>
+            <Ionicons name="share-social-outline" size={22} color={theme.colors.primary} />
+          </TouchableOpacity>
+        }
+      />
+
+      <View ref={viewRef} collapsable={false} style={{ flex: 1 }}>
+        <FlatList
+          data={achievements}
+          renderItem={renderAchievementCard}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={styles.content}
+          showsVerticalScrollIndicator={false}
+          ListHeaderComponent={
+            <>
+              {renderStreakHeader()}
+              {renderSectionTitle()}
+            </>
+          }
+        />
+      </View>
+    </Screen>
+  );
 };
 
 export default AchievementsScreen;
