@@ -217,18 +217,41 @@ const LoginScreen = ({ navigation }: Props): JSX.Element => {
               />
             </View>
 
-            <View style={{ marginTop: theme.spacing.lg, alignItems: 'center' }}>
-              <ThemedText variant="body" color="textSecondary">
-                {t('auth.registerQuestion')}{' '}
-                <ThemedText
-                  variant="body"
-                  color="primary"
-                  weight="600"
-                  onPress={() => navigation.navigate('Register')}
-                >
-                  Đăng ký
+            {/* Register Section - Improved UI */}
+            <View style={{ marginTop: theme.spacing.xl }}>
+              <View
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  marginBottom: theme.spacing.md,
+                  gap: theme.spacing.md,
+                }}
+              >
+                <View
+                  style={{
+                    flex: 1,
+                    height: 1,
+                    backgroundColor: theme.colors.border,
+                  }}
+                />
+                <ThemedText variant="caption" color="textSecondary">
+                  Người dùng mới?
                 </ThemedText>
-              </ThemedText>
+                <View
+                  style={{
+                    flex: 1,
+                    height: 1,
+                    backgroundColor: theme.colors.border,
+                  }}
+                />
+              </View>
+              <Button
+                variant="outline"
+                title="Tạo tài khoản miễn phí"
+                icon="person-add-outline"
+                onPress={() => navigation.navigate('Register')}
+                fullWidth
+              />
             </View>
           </View>
         </Animated.View>

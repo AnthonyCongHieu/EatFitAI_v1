@@ -407,8 +407,11 @@ namespace EatFitAI.API.Services
             }
 
             user.PasswordHash = HashPassword(request.NewPassword);
+            // Nếu user reset password thành công nghĩa là họ đã xác minh quyền sở hữu email
+            user.EmailVerified = true;
             await _context.SaveChangesAsync();
             _memoryCache.Remove($"{ResetCacheKeyPrefix}{user.Email}");
+            Console.WriteLine($"[AuthService] Password reset successful for {user.Email}, EmailVerified set to true");
         }
 
         private string GenerateNumericCode(int length)

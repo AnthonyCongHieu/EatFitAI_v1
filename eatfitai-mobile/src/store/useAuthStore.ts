@@ -83,12 +83,17 @@ export const useAuthStore = create<AuthState>((set: any) => ({
       },
     );
     const data = resp.data;
-    const accessToken = data?.token;
-    if (!accessToken) throw new Error(t('auth.missingAccessToken'));
+    // Backend trả accessToken (JsonPropertyName) không phải token
+    const accessToken = data?.accessToken || data?.token;
+    if (!accessToken) {
+      console.error('[useAuthStore] Login response missing token:', data);
+      throw new Error(t('auth.missingAccessToken'));
+    }
 
+    console.log('[useAuthStore] Login successful, saving tokens...');
     await tokenStorage.saveTokensFull({
       accessToken,
-      accessTokenExpiresAt: data?.expiresAt ?? null,
+      accessTokenExpiresAt: (data?.accessTokenExpiresAt || data?.expiresAt) ?? null,
       refreshToken: data?.refreshToken ?? null,
       refreshTokenExpiresAt: data?.refreshTokenExpiresAt ?? null,
     });
@@ -111,12 +116,13 @@ export const useAuthStore = create<AuthState>((set: any) => ({
       });
       console.log('[useAuthStore] Registration API response:', resp.data);
       const data = resp.data;
-      const accessToken = data?.token;
+      // Backend trả accessToken (JsonPropertyName) không phải token
+      const accessToken = data?.accessToken || data?.token;
       if (!accessToken) throw new Error(t('auth.missingAccessToken'));
 
       await tokenStorage.saveTokensFull({
         accessToken,
-        accessTokenExpiresAt: data?.expiresAt ?? null,
+        accessTokenExpiresAt: (data?.accessTokenExpiresAt || data?.expiresAt) ?? null,
         refreshToken: data?.refreshToken ?? null,
         refreshTokenExpiresAt: data?.refreshTokenExpiresAt ?? null,
       });
@@ -185,7 +191,7 @@ export const useAuthStore = create<AuthState>((set: any) => ({
     setAccessTokenMem(accessToken);
     try {
       await updateSessionFromAuthResponse(result as AuthResponse);
-    } catch {}
+    } catch { }
 
     set({ isAuthenticated: true });
   },

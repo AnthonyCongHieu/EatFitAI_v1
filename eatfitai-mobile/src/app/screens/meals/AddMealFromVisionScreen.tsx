@@ -84,7 +84,7 @@ const AddMealFromVisionScreen = (): JSX.Element => {
     },
     content: {
       paddingHorizontal: theme.spacing.lg,
-      paddingBottom: theme.spacing.xxl,
+      paddingBottom: 150, // Ensure enough space for summary bar
     },
     section: {
       marginBottom: theme.spacing.xxl,
@@ -164,21 +164,31 @@ const AddMealFromVisionScreen = (): JSX.Element => {
     totalCaloriesValue.value = withTiming(Math.round(totalCalories), { duration: 200 });
   }, [totalCalories, totalCaloriesValue]);
 
-  const handleSelectionChange = useCallback((index: number, selected: boolean) => {
+  const handleSelectionChange = useCallback((targetItem: DetectionItem, selected: boolean) => {
+    // Guard: Prevent selecting unmatched items
+    if (selected && !targetItem.item.isMatched) {
+      Toast.show({
+        type: 'info',
+        text1: 'Món ăn chưa được nhận diện',
+        text2: 'Vui lòng "Chọn món đúng" trước khi chọn',
+      });
+      return;
+    }
+
     setDetectionItems((prev) =>
-      prev.map((item, i) => (i === index ? { ...item, selected } : item)),
+      prev.map((item) => (item === targetItem ? { ...item, selected } : item)),
     );
   }, []);
 
-  const handleGramsChange = useCallback((index: number, grams: number) => {
+  const handleGramsChange = useCallback((targetItem: DetectionItem, grams: number) => {
     setDetectionItems((prev) =>
-      prev.map((item, i) => (i === index ? { ...item, grams } : item)),
+      prev.map((item) => (item === targetItem ? { ...item, grams } : item)),
     );
   }, []);
 
-  const handleMealTypeChange = useCallback((index: number, mealType: MealTypeId) => {
+  const handleMealTypeChange = useCallback((targetItem: DetectionItem, mealType: MealTypeId) => {
     setDetectionItems((prev) =>
-      prev.map((item, i) => (i === index ? { ...item, mealType } : item)),
+      prev.map((item) => (item === targetItem ? { ...item, mealType } : item)),
     );
   }, []);
 
@@ -262,15 +272,15 @@ const AddMealFromVisionScreen = (): JSX.Element => {
   };
 
   const renderDetectionCard: ListRenderItem<DetectionItem> = useCallback(
-    ({ item: detection, index }) => (
+    ({ item: detection }) => (
       <AiDetectionCard
         item={detection.item}
         selected={detection.selected}
         grams={detection.grams}
         mealType={detection.mealType}
-        onSelectionChange={(selected) => handleSelectionChange(index, selected)}
-        onGramsChange={(grams) => handleGramsChange(index, grams)}
-        onMealTypeChange={(mealType) => handleMealTypeChange(index, mealType)}
+        onSelectionChange={(selected) => handleSelectionChange(detection, selected)}
+        onGramsChange={(grams) => handleGramsChange(detection, grams)}
+        onMealTypeChange={(mealType) => handleMealTypeChange(detection, mealType)}
         onTeachLabel={() => handleTeachLabel(detection.item.label)}
       />
     ),
@@ -342,19 +352,19 @@ const AddMealFromVisionScreen = (): JSX.Element => {
                   <SectionHeader title="Cần xác nhận" />
                   {unmatchedItems.map((detection, _index) => (
                     <AiDetectionCard
-                      key={`${detection.item.label}-${detectionItems.indexOf(detection)}`}
+                      key={`${detection.item.label}-${_index}`}
                       item={detection.item}
                       selected={detection.selected}
                       grams={detection.grams}
                       mealType={detection.mealType}
                       onSelectionChange={(selected) =>
-                        handleSelectionChange(detectionItems.indexOf(detection), selected)
+                        handleSelectionChange(detection, selected)
                       }
                       onGramsChange={(grams) =>
-                        handleGramsChange(detectionItems.indexOf(detection), grams)
+                        handleGramsChange(detection, grams)
                       }
                       onMealTypeChange={(mealType) =>
-                        handleMealTypeChange(detectionItems.indexOf(detection), mealType)
+                        handleMealTypeChange(detection, mealType)
                       }
                       onTeachLabel={() => handleTeachLabel(detection.item.label)}
                     />

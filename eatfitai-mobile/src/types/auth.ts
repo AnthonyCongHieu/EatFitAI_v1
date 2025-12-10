@@ -5,11 +5,15 @@ export interface AuthUserDto {
 }
 
 export interface AuthTokensResponse {
-  token: string;
+  // Backend có thể trả accessToken hoặc token (JsonPropertyName)
+  token?: string;
+  accessToken?: string;
   refreshToken?: string | null;
   expiresAt?: string | null;
+  accessTokenExpiresAt?: string | null; // JsonPropertyName alias
   refreshTokenExpiresAt?: string | null;
   user?: AuthUserDto | null;
+  needsOnboarding?: boolean;
 }
 
 export interface AuthSessionSuccessResult {

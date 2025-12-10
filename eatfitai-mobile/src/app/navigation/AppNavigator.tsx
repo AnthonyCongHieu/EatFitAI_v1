@@ -8,6 +8,7 @@ import LoginScreen from '../screens/auth/LoginScreen';
 import RegisterScreen from '../screens/auth/RegisterScreen';
 import VerifyEmailScreen from '../screens/auth/VerifyEmailScreen';
 import ForgotPasswordScreen from '../screens/auth/ForgotPasswordScreen';
+import WelcomeScreen from '../screens/auth/WelcomeScreen';
 import AppTabs from './AppTabs';
 import FoodSearchScreen from '../screens/diary/FoodSearchScreen';
 import FoodDetailScreen from '../screens/diary/FoodDetailScreen';
@@ -55,6 +56,7 @@ const AppNavigator = (): JSX.Element => {
           {!isAuthenticated ? (
             // Chưa đăng nhập: Hiển thị stack đăng nhập/đăng ký
             <>
+              <Stack.Screen name="Welcome" component={WelcomeScreen} />
               <Stack.Screen name="Login" component={LoginScreen} />
               <Stack.Screen name="Register" component={RegisterScreen} />
               <Stack.Screen name="VerifyEmail" component={VerifyEmailScreen} />

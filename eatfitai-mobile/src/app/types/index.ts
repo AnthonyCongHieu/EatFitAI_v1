@@ -2,6 +2,7 @@
 // - Login, Register: màn hình xác thực
 // - AppTabs: nhóm Tab chính sau khi đăng nhập
 export type RootStackParamList = {
+  Welcome: undefined;
   Login: undefined;
   Register: undefined;
   VerifyEmail: { email: string; verificationCode?: string }; // verificationCode chỉ dùng cho dev mode

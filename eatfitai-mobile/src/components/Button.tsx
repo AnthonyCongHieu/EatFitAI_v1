@@ -9,6 +9,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
 
 import { ThemedText } from './ThemedText';
 import { useAppTheme } from '../theme/ThemeProvider';
@@ -29,7 +30,7 @@ type ButtonProps = {
   accessibilityLabel?: string;
   accessibilityHint?: string;
   hitSlop?: number | Insets;
-  icon?: ReactNode;
+  icon?: ReactNode | string;
   iconPosition?: 'left' | 'right';
   style?: import('react-native').ViewStyle;
 };
@@ -128,7 +129,7 @@ export const Button = memo(
     const handlePressIn = () => {
       scale.value = withSpring(0.96, { damping: 10, stiffness: 300 });
       opacity.value = withTiming(0.9, { duration: theme.animation.fast });
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => { });
     };
 
     const handlePressOut = () => {
@@ -158,13 +159,29 @@ export const Button = memo(
       minHeight: size === 'sm' ? 36 : size === 'lg' ? 56 : 48,
     };
 
+    // Hàm helper để render icon - xử lý cả string và ReactNode
+    const renderIcon = (iconProp: ReactNode) => {
+      if (typeof iconProp === 'string') {
+        // Nếu icon là string, dùng Ionicons
+        return (
+          <Ionicons
+            name={iconProp as any}
+            size={size === 'sm' ? 18 : size === 'lg' ? 24 : 20}
+            color={styles.textColor}
+          />
+        );
+      }
+      // Nếu là ReactNode, render trực tiếp
+      return iconProp;
+    };
+
     const buttonContent = (
       <>
         {loading ? (
           <ActivityIndicator color={styles.textColor} size="small" />
         ) : (
           <>
-            {icon && iconPosition === 'left' && icon}
+            {icon && iconPosition === 'left' && renderIcon(icon)}
             {children ?? (
               <ThemedText
                 variant="body"
@@ -177,7 +194,7 @@ export const Button = memo(
                 {title}
               </ThemedText>
             )}
-            {icon && iconPosition === 'right' && icon}
+            {icon && iconPosition === 'right' && renderIcon(icon)}
           </>
         )}
       </>

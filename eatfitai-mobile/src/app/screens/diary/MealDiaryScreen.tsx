@@ -2,7 +2,8 @@
 // Features: Summary header, improved date selector, beautiful meal cards
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { FlatList, Pressable, StyleSheet, View, Dimensions } from 'react-native';
+import { FlatList, Pressable, StyleSheet, View, Dimensions, Platform } from 'react-native';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import Animated, {
   FadeIn,
   FadeInDown,
@@ -55,15 +56,16 @@ const MealDiaryScreen = (): JSX.Element => {
   const [editingEntry, setEditingEntry] = useState<DiaryEntry | null>(null);
   const [editGrams, setEditGrams] = useState('');
   const [showEditSheet, setShowEditSheet] = useState(false);
+  const [showDatePicker, setShowDatePicker] = useState(false);
 
   const refreshSummary = useDiaryStore((s) => s.refreshSummary);
   const dateListRef = useRef<FlatList<Date>>(null);
 
-  // Date options: -14 to +3 days
+  // Date options: -30 to +7 days (mở rộng để xem xa hơn)
   const dateOptions = useMemo(() => {
     const options = [];
     const today = new Date();
-    for (let i = -14; i <= 3; i++) {
+    for (let i = -30; i <= 7; i++) {
       const date = new Date(today);
       date.setDate(today.getDate() + i);
       options.push(date);
@@ -71,7 +73,7 @@ const MealDiaryScreen = (): JSX.Element => {
     return options;
   }, []);
 
-  const todayIndex = 14;
+  const todayIndex = 30; // index của ngày hôm nay trong mảng (vị trí 0-indexed của ngày -30+30=0)
 
   // Auto-scroll to today
   useEffect(() => {
@@ -347,7 +349,7 @@ const MealDiaryScreen = (): JSX.Element => {
       return (
         <Animated.View
           entering={FadeInUp.delay(index * 100).springify()}
-          style={{ marginBottom: 20 }}
+          style={{ marginBottom: 20, paddingHorizontal: 16 }}
         >
           {/* Meal header */}
           <View style={styles.mealHeader}>
@@ -412,8 +414,18 @@ const MealDiaryScreen = (): JSX.Element => {
       paddingBottom: 8,
     },
     dateSelector: {
-      paddingLeft: 16,
+      position: 'relative',
       marginBottom: 16,
+    },
+    scrollArrow: {
+      position: 'absolute',
+      top: 16, // (64 height - 32 button) / 2 = 16
+      width: 32,
+      height: 32,
+      borderRadius: 16,
+      alignItems: 'center',
+      justifyContent: 'center',
+      zIndex: 10,
     },
     dateChip: {
       width: 56,
@@ -430,20 +442,27 @@ const MealDiaryScreen = (): JSX.Element => {
     summaryCard: {
       borderRadius: 20,
       padding: 20,
+      marginHorizontal: 16,
       ...theme.shadows.lg,
     },
     summaryMain: {
       alignItems: 'center',
       marginBottom: 16,
+      paddingTop: 8, // Thêm padding để số không bị cắt trên
     },
     summaryCalories: {
-      fontSize: 48,
-      fontWeight: '800',
+      fontSize: 36,
+      fontWeight: 'bold',
       color: '#fff',
+      textAlign: 'center',
+      letterSpacing: 1,
+      lineHeight: 48, // Đảm bảo lineHeight đủ lớn để không cắt số
+      includeFontPadding: true, // Bao gồm font padding
     },
     summaryLabel: {
       fontSize: 14,
       color: 'rgba(255,255,255,0.8)',
+      marginTop: 4,
     },
     summaryMacros: {
       flexDirection: 'row',
@@ -537,18 +556,60 @@ const MealDiaryScreen = (): JSX.Element => {
   return (
     <Screen scroll={false}>
       <View style={styles.container}>
-        {/* Date label - hiển thị ngày đang xem */}
+        {/* Date label với nút chọn lịch */}
         <View style={styles.header}>
-          <ThemedText variant="h4" color="textSecondary">
-            {formatDate(selectedDate) === 'Hôm nay'
-              ? '📅 Hôm nay'
-              : formatDate(selectedDate) === 'Hôm qua'
-                ? '📅 Hôm qua'
-                : `📅 ${formatDate(selectedDate)}`}
-          </ThemedText>
+          <Pressable
+            onPress={() => setShowDatePicker(true)}
+            style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}
+          >
+            <ThemedText variant="h4" color="textSecondary">
+              {formatDate(selectedDate) === 'Hôm nay'
+                ? '📅 Hôm nay'
+                : formatDate(selectedDate) === 'Hôm qua'
+                  ? '📅 Hôm qua'
+                  : `📅 ${formatDate(selectedDate)}`}
+            </ThemedText>
+            <View
+              style={{
+                backgroundColor: theme.colors.primaryLight,
+                borderRadius: 8,
+                padding: 6,
+              }}
+            >
+              <Ionicons name="calendar" size={18} color={theme.colors.primary} />
+            </View>
+          </Pressable>
         </View>
 
-        {/* Date Selector */}
+        {/* Native Date Picker Modal */}
+        {showDatePicker && (
+          <DateTimePicker
+            value={selectedDate}
+            mode="date"
+            display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+            onChange={(event, date) => {
+              setShowDatePicker(Platform.OS === 'ios');
+              if (date) {
+                setSelectedDate(date);
+                // Cuộn đến ngày được chọn nếu nằm trong range
+                const idx = dateOptions.findIndex(
+                  (d) => d.toDateString() === date.toDateString()
+                );
+                if (idx >= 0) {
+                  dateListRef.current?.scrollToIndex({
+                    index: idx,
+                    animated: true,
+                    viewPosition: 0.5,
+                  });
+                }
+              }
+            }}
+            maximumDate={new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)}
+            minimumDate={new Date(Date.now() - 365 * 24 * 60 * 60 * 1000)}
+          />
+        )}
+
+        {/* Date Selector - scroll để xem thêm ngày */}
         <View style={styles.dateSelector}>
           <FlatList
             ref={dateListRef}
@@ -556,7 +617,8 @@ const MealDiaryScreen = (): JSX.Element => {
             renderItem={renderDateItem}
             keyExtractor={(item) => item.toISOString()}
             horizontal
-            showsHorizontalScrollIndicator={false}
+            showsHorizontalScrollIndicator={true}
+            contentContainerStyle={{ paddingHorizontal: 16 }}
             getItemLayout={(_, index) => ({
               length: 64,
               offset: 64 * index,
@@ -588,7 +650,7 @@ const MealDiaryScreen = (): JSX.Element => {
             renderItem={({ item, index }) => renderMealSection({ item, index })}
             estimatedItemSize={200}
             showsVerticalScrollIndicator={false}
-            contentContainerStyle={{ paddingBottom: 100, paddingHorizontal: 16 }}
+            contentContainerStyle={{ paddingBottom: 100 }}
             ListHeaderComponent={renderSummaryHeader}
           />
         )}
