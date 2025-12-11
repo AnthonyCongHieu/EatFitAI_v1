@@ -5,7 +5,15 @@
  */
 
 import React, { useState } from 'react';
-import { View, Image, StyleSheet, Pressable, Modal, ScrollView, Dimensions } from 'react-native';
+import {
+  View,
+  Image,
+  StyleSheet,
+  Pressable,
+  Modal,
+  ScrollView,
+  Dimensions,
+} from 'react-native';
 import Toast from 'react-native-toast-message';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -45,11 +53,13 @@ interface AvatarPickerProps {
 }
 
 // Helper để lấy emoji từ avatarUrl/ID
-const getAvatarDisplay = (avatarUrl?: string | null): { emoji?: string; isPreset: boolean } => {
+const getAvatarDisplay = (
+  avatarUrl?: string | null,
+): { emoji?: string; isPreset: boolean } => {
   if (!avatarUrl) return { isPreset: false };
 
   // Nếu là preset avatar ID
-  const preset = PRESET_AVATARS.find(a => a.id === avatarUrl);
+  const preset = PRESET_AVATARS.find((a) => a.id === avatarUrl);
   if (preset) return { emoji: preset.emoji, isPreset: true };
 
   // Nếu là direct emoji (legacy support)
@@ -120,9 +130,7 @@ export const AvatarPicker: React.FC<AvatarPickerProps> = ({
           )}
 
           {/* Edit icon overlay */}
-          <View
-            style={[styles.editButton, { backgroundColor: theme.colors.primary }]}
-          >
+          <View style={[styles.editButton, { backgroundColor: theme.colors.primary }]}>
             <Icon name="pencil" size="sm" color="card" />
           </View>
         </View>
@@ -149,7 +157,11 @@ export const AvatarPicker: React.FC<AvatarPickerProps> = ({
                 Chọn Avatar
               </ThemedText>
               <Pressable onPress={() => setShowPicker(false)} hitSlop={10}>
-                <Ionicons name="close-circle" size={28} color={theme.colors.textSecondary} />
+                <Ionicons
+                  name="close-circle"
+                  size={28}
+                  color={theme.colors.textSecondary}
+                />
               </Pressable>
             </View>
 

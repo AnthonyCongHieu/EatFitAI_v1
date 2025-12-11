@@ -72,9 +72,7 @@ export const BottomSheet = ({
     opacity: backdropOpacity.value,
   }));
 
-  const enteringAnimation = animated
-    ? SlideInDown.duration(200)
-    : undefined;
+  const enteringAnimation = animated ? SlideInDown.duration(200) : undefined;
 
   const exitingAnimation = animated
     ? SlideOutDown.duration(theme.animation.normal)

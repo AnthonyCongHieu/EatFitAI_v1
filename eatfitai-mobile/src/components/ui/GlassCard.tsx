@@ -203,4 +203,3 @@ export const glassStyles = (isDark: boolean) =>
   });
 
 export default GlassCard;
-

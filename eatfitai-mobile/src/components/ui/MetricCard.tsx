@@ -63,17 +63,13 @@ const MetricCardComponent = ({
         <Animated.View style={[{ alignItems: 'center' }, textAnimatedStyle]}>
           {targetValue !== undefined && targetValue > 0 ? (
             <View style={{ flexDirection: 'row', alignItems: 'baseline' }}>
-              <Animated.Text style={styles.text}>
-                {Math.round(value.value)}
-              </Animated.Text>
+              <Animated.Text style={styles.text}>{Math.round(value.value)}</Animated.Text>
               <ThemedText variant="bodySmall" color="textSecondary">
                 /{Math.round(targetValue)}g
               </ThemedText>
             </View>
           ) : (
-            <Animated.Text style={styles.text}>
-              {Math.round(value.value)}g
-            </Animated.Text>
+            <Animated.Text style={styles.text}>{Math.round(value.value)}g</Animated.Text>
           )}
         </Animated.View>
         <ThemedText variant="caption" color="textSecondary">

@@ -161,7 +161,7 @@ const CustomDishScreen = (): JSX.Element => {
           text2: 'Món ăn đã được lưu vào thư viện cá nhân',
         });
         reset();
-        await refreshSummary().catch(() => { });
+        await refreshSummary().catch(() => {});
         navigation.goBack();
       } catch (error: any) {
         handleApiError(error);

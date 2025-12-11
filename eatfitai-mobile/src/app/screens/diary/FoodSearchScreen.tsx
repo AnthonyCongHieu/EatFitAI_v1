@@ -284,34 +284,37 @@ const FoodSearchScreen = (): JSX.Element => {
     setTimeout(() => {
       searchGlow.value = withTiming(0, { duration: theme.animation.slow });
     }, 1000);
-    loadFoods(1, false).catch(() => { });
+    loadFoods(1, false).catch(() => {});
   }, [loadFoods, searchGlow, theme.animation.normal, theme.animation.slow, activeTab]);
 
   // Tìm kiếm trực tiếp với keyword (không dùng state)
-  const searchWithKeyword = useCallback(async (keyword: string) => {
-    if (activeTab === 'favorites') return;
+  const searchWithKeyword = useCallback(
+    async (keyword: string) => {
+      if (activeTab === 'favorites') return;
 
-    setQuery(keyword);
-    setIsLoading(true);
-    setHasSearched(true);
+      setQuery(keyword);
+      setIsLoading(true);
+      setHasSearched(true);
 
-    try {
-      const result = await foodService.searchAllFoods(keyword.trim(), PAGE_SIZE);
-      setItems(result.items);
-      setPage(1);
-      setTotal(result.totalCount ?? result.items.length);
-      setHasMore(result.items.length === PAGE_SIZE);
-    } catch (error: any) {
-      handleApiError(error);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [activeTab]);
+      try {
+        const result = await foodService.searchAllFoods(keyword.trim(), PAGE_SIZE);
+        setItems(result.items);
+        setPage(1);
+        setTotal(result.totalCount ?? result.items.length);
+        setHasMore(result.items.length === PAGE_SIZE);
+      } catch (error: any) {
+        handleApiError(error);
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [activeTab],
+  );
 
   const handleLoadMore = useCallback(() => {
     if (activeTab === 'favorites') return;
     if (!hasMore || isLoading || isLoadingMore) return;
-    loadFoods(page + 1, true).catch(() => { });
+    loadFoods(page + 1, true).catch(() => {});
   }, [hasMore, isLoading, isLoadingMore, page, loadFoods, activeTab]);
 
   const renderItem = useCallback(
@@ -603,15 +606,27 @@ const FoodSearchScreen = (): JSX.Element => {
             hasSearched || activeTab === 'favorites' ? (
               <AnimatedEmptyState
                 variant={activeTab === 'search' ? 'no-search-results' : 'no-favorites'}
-                title={activeTab === 'search' ? t('food_search.no_results') : t('food_search.no_favorites')}
-                description={activeTab === 'search' ? t('food_search.no_results_hint') : t('food_search.no_favorites_hint')}
-                primaryAction={activeTab === 'search' ? {
-                  label: 'Thử từ khóa khác',
-                  onPress: () => setQuery(''),
-                } : {
-                  label: 'Tìm món ăn',
-                  onPress: () => handleTabChange('search'),
-                }}
+                title={
+                  activeTab === 'search'
+                    ? t('food_search.no_results')
+                    : t('food_search.no_favorites')
+                }
+                description={
+                  activeTab === 'search'
+                    ? t('food_search.no_results_hint')
+                    : t('food_search.no_favorites_hint')
+                }
+                primaryAction={
+                  activeTab === 'search'
+                    ? {
+                        label: 'Thử từ khóa khác',
+                        onPress: () => setQuery(''),
+                      }
+                    : {
+                        label: 'Tìm món ăn',
+                        onPress: () => handleTabChange('search'),
+                      }
+                }
               />
             ) : activeTab === 'search' ? (
               /* Gợi ý khi chưa tìm kiếm */
@@ -622,7 +637,11 @@ const FoodSearchScreen = (): JSX.Element => {
                     <ThemedText variant="h4" style={{ marginBottom: theme.spacing.sm }}>
                       ❤️ Yêu thích của bạn
                     </ThemedText>
-                    <ThemedText variant="caption" color="textSecondary" style={{ marginBottom: theme.spacing.md }}>
+                    <ThemedText
+                      variant="caption"
+                      color="textSecondary"
+                      style={{ marginBottom: theme.spacing.md }}
+                    >
                       Nhấn vào tab "Yêu thích" để xem tất cả
                     </ThemedText>
                   </View>
@@ -633,18 +652,39 @@ const FoodSearchScreen = (): JSX.Element => {
                   <ThemedText variant="h4" style={{ marginBottom: theme.spacing.sm }}>
                     🔥 Tìm kiếm nhanh
                   </ThemedText>
-                  <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: theme.spacing.sm }}>
-                    {['Cơm', 'Phở', 'Gà', 'Trứng', 'Cá', 'Rau', 'Thịt bò', 'Bánh mì', 'Sữa', 'Chuối'].map((keyword) => (
+                  <View
+                    style={{
+                      flexDirection: 'row',
+                      flexWrap: 'wrap',
+                      gap: theme.spacing.sm,
+                    }}
+                  >
+                    {[
+                      'Cơm',
+                      'Phở',
+                      'Gà',
+                      'Trứng',
+                      'Cá',
+                      'Rau',
+                      'Thịt bò',
+                      'Bánh mì',
+                      'Sữa',
+                      'Chuối',
+                    ].map((keyword) => (
                       <Pressable
                         key={keyword}
                         onPress={() => searchWithKeyword(keyword)}
                         style={{
                           paddingHorizontal: theme.spacing.md,
                           paddingVertical: theme.spacing.sm,
-                          backgroundColor: isDark ? 'rgba(59, 130, 246, 0.15)' : 'rgba(59, 130, 246, 0.1)',
+                          backgroundColor: isDark
+                            ? 'rgba(59, 130, 246, 0.15)'
+                            : 'rgba(59, 130, 246, 0.1)',
                           borderRadius: 20,
                           borderWidth: 1,
-                          borderColor: isDark ? 'rgba(59, 130, 246, 0.3)' : 'rgba(59, 130, 246, 0.2)',
+                          borderColor: isDark
+                            ? 'rgba(59, 130, 246, 0.3)'
+                            : 'rgba(59, 130, 246, 0.2)',
                         }}
                       >
                         <ThemedText variant="bodySmall" color="primary" weight="600">
@@ -656,16 +696,26 @@ const FoodSearchScreen = (): JSX.Element => {
                 </View>
 
                 {/* Tip */}
-                <View style={{
-                  marginTop: theme.spacing.xl,
-                  padding: theme.spacing.md,
-                  backgroundColor: isDark ? 'rgba(34, 197, 94, 0.1)' : 'rgba(34, 197, 94, 0.08)',
-                  borderRadius: 12,
-                  borderWidth: 1,
-                  borderColor: isDark ? 'rgba(34, 197, 94, 0.2)' : 'rgba(34, 197, 94, 0.15)',
-                }}>
+                <View
+                  style={{
+                    marginTop: theme.spacing.xl,
+                    padding: theme.spacing.md,
+                    backgroundColor: isDark
+                      ? 'rgba(34, 197, 94, 0.1)'
+                      : 'rgba(34, 197, 94, 0.08)',
+                    borderRadius: 12,
+                    borderWidth: 1,
+                    borderColor: isDark
+                      ? 'rgba(34, 197, 94, 0.2)'
+                      : 'rgba(34, 197, 94, 0.15)',
+                  }}
+                >
                   <ThemedText variant="bodySmall" color="textSecondary">
-                    💡 <ThemedText variant="bodySmall" weight="600">Mẹo:</ThemedText> Nhập từ khóa và nhấn "Tìm" để tìm trong 5000+ món ăn Việt Nam
+                    💡{' '}
+                    <ThemedText variant="bodySmall" weight="600">
+                      Mẹo:
+                    </ThemedText>{' '}
+                    Nhập từ khóa và nhấn "Tìm" để tìm trong 5000+ món ăn Việt Nam
                   </ThemedText>
                 </View>
               </View>

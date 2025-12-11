@@ -1,4 +1,4 @@
-import apiClient from './apiClient';
+import { aiApiClient } from './apiClient';
 
 export type NutritionSuggestRequest = {
   sex: 'male' | 'female';
@@ -18,7 +18,7 @@ export type NutritionSuggestResponse = {
 };
 
 export async function suggestNutrition(payload: NutritionSuggestRequest) {
-  const { data } = await apiClient.post<NutritionSuggestResponse>(
+  const { data } = await aiApiClient.post<NutritionSuggestResponse>(
     '/api/ai/nutrition/suggest',
     payload,
   );
@@ -29,7 +29,7 @@ export async function applyNutrition(
   target: NutritionSuggestResponse,
   effectiveFrom: string | null = null,
 ) {
-  await apiClient.post('/api/ai/nutrition/apply', {
+  await aiApiClient.post('/api/ai/nutrition/apply', {
     calories: target.calories,
     protein: target.protein,
     carb: target.carb,

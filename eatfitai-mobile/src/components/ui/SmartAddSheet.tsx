@@ -1,11 +1,6 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { View, StyleSheet, Pressable, Dimensions, Modal, Platform } from 'react-native';
 import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withSpring,
-  withTiming,
-  runOnJS,
   SlideInDown,
   SlideOutDown,
   FadeIn,
@@ -61,7 +56,10 @@ export const SmartAddSheet: React.FC<SmartAddSheetProps> = ({ visible, onClose }
         <Animated.View
           entering={FadeIn}
           exiting={FadeOut}
-          style={[StyleSheet.absoluteFill, { backgroundColor: theme.colors.overlay.medium }]}
+          style={[
+            StyleSheet.absoluteFill,
+            { backgroundColor: theme.colors.overlay.medium },
+          ]}
         >
           <Pressable
             style={StyleSheet.absoluteFill}
@@ -73,7 +71,7 @@ export const SmartAddSheet: React.FC<SmartAddSheetProps> = ({ visible, onClose }
 
         {/* Sheet */}
         <Animated.View
-          entering={SlideInDown.duration(200)}
+          entering={SlideInDown.springify().damping(30).stiffness(300)}
           exiting={SlideOutDown.duration(150)}
           style={[
             styles.sheet,

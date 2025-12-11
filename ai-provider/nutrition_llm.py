@@ -30,6 +30,55 @@ OLLAMA_AVAILABLE = check_ollama_available()
 logger.info(f"Ollama available: {OLLAMA_AVAILABLE}")
 
 
+# ============== LLM RESPONSE CACHE ==============
+import hashlib
+from functools import lru_cache
+from collections import OrderedDict
+import threading
+
+class LLMCache:
+    """Thread-safe LRU cache for LLM responses"""
+    def __init__(self, maxsize: int = 100):
+        self.cache: OrderedDict[str, Dict] = OrderedDict()
+        self.maxsize = maxsize
+        self.lock = threading.Lock()
+        self.hits = 0
+        self.misses = 0
+    
+    def _make_key(self, *args) -> str:
+        """Tạo cache key từ input parameters"""
+        key_str = "|".join(str(arg) for arg in args)
+        return hashlib.md5(key_str.encode()).hexdigest()
+    
+    def get(self, key: str) -> Optional[Dict]:
+        with self.lock:
+            if key in self.cache:
+                self.hits += 1
+                # Move to end (most recently used)
+                self.cache.move_to_end(key)
+                logger.debug(f"Cache HIT: {key[:8]}... (hits: {self.hits})")
+                return self.cache[key]
+            self.misses += 1
+            return None
+    
+    def set(self, key: str, value: Dict) -> None:
+        with self.lock:
+            if key in self.cache:
+                self.cache.move_to_end(key)
+            else:
+                if len(self.cache) >= self.maxsize:
+                    # Remove oldest item
+                    self.cache.popitem(last=False)
+                self.cache[key] = value
+    
+    def stats(self) -> Dict[str, int]:
+        return {"hits": self.hits, "misses": self.misses, "size": len(self.cache)}
+
+# Global cache instances
+nutrition_cache = LLMCache(maxsize=100)
+cooking_cache = LLMCache(maxsize=50)
+
+
 # ============== FALLBACK: Mifflin-St Jeor Formula ==============
 
 def calculate_nutrition_mifflin(
@@ -249,14 +298,28 @@ def get_nutrition_advice_gemini(
     """
     Main function: Try Ollama first, then fallback
     (Named _gemini for backward compatibility)
+    With caching for improved response time
     """
+    
+    # Tạo cache key từ input params
+    cache_key = nutrition_cache._make_key(gender, age, height_cm, weight_kg, activity_level, goal)
+    
+    # Check cache first
+    cached_result = nutrition_cache.get(cache_key)
+    if cached_result:
+        logger.info(f"Nutrition advice served from cache (stats: {nutrition_cache.stats()})")
+        cached_result["source"] = cached_result.get("source", "unknown") + "_cached"
+        return cached_result
     
     # Priority 1: Ollama local
     if OLLAMA_AVAILABLE:
         logger.info("Using Ollama local LLM")
-        return get_nutrition_advice_ollama(
+        result = get_nutrition_advice_ollama(
             gender, age, height_cm, weight_kg, activity_level, goal
         )
+        # Cache the result
+        nutrition_cache.set(cache_key, result)
+        return result
     
     # Priority 2: Gemini API (if configured)
     if GEMINI_API_KEY:

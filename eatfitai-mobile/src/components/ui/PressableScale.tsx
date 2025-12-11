@@ -41,7 +41,7 @@ export const PressableScale: React.FC<PressableScaleProps> = ({
       stiffness: 300,
     });
     if (enableHaptic) {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => { });
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
     }
     onPressIn?.(event);
   };

@@ -417,7 +417,14 @@ const MonthStatsScreen = (): JSX.Element => {
                     borderColor: theme.statsCards.calories.borderColor,
                   }}
                 >
-                  <ThemedText style={{ fontSize: theme.typography.h3.fontSize, marginBottom: theme.spacing.xs }}>🔥</ThemedText>
+                  <ThemedText
+                    style={{
+                      fontSize: theme.typography.h3.fontSize,
+                      marginBottom: theme.spacing.xs,
+                    }}
+                  >
+                    🔥
+                  </ThemedText>
                   <ThemedText
                     variant="h3"
                     weight="700"
@@ -445,7 +452,14 @@ const MonthStatsScreen = (): JSX.Element => {
                     borderColor: theme.statsCards.average.borderColor,
                   }}
                 >
-                  <ThemedText style={{ fontSize: theme.typography.h3.fontSize, marginBottom: theme.spacing.xs }}>📊</ThemedText>
+                  <ThemedText
+                    style={{
+                      fontSize: theme.typography.h3.fontSize,
+                      marginBottom: theme.spacing.xs,
+                    }}
+                  >
+                    📊
+                  </ThemedText>
                   <ThemedText
                     variant="h3"
                     weight="700"
@@ -473,7 +487,14 @@ const MonthStatsScreen = (): JSX.Element => {
                     borderColor: theme.statsCards.daysLogged.borderColor,
                   }}
                 >
-                  <ThemedText style={{ fontSize: theme.typography.h3.fontSize, marginBottom: theme.spacing.xs }}>📅</ThemedText>
+                  <ThemedText
+                    style={{
+                      fontSize: theme.typography.h3.fontSize,
+                      marginBottom: theme.spacing.xs,
+                    }}
+                  >
+                    📅
+                  </ThemedText>
                   <ThemedText
                     variant="h3"
                     weight="700"
@@ -501,16 +522,26 @@ const MonthStatsScreen = (): JSX.Element => {
                     borderColor: theme.statsCards.target.borderColor,
                   }}
                 >
-                  <ThemedText style={{ fontSize: theme.typography.h3.fontSize, marginBottom: theme.spacing.xs }}>🎯</ThemedText>
+                  <ThemedText
+                    style={{
+                      fontSize: theme.typography.h3.fontSize,
+                      marginBottom: theme.spacing.xs,
+                    }}
+                  >
+                    🎯
+                  </ThemedText>
                   <ThemedText
                     variant="h3"
                     weight="700"
                     style={{ color: theme.statsCards.target.textColor }}
                   >
-                    {monthData.days.filter(d => {
-                      const target = d.targetCalories || 2000;
-                      return d.calories >= target * 0.9;
-                    }).length}/{monthData.daysLogged}
+                    {
+                      monthData.days.filter((d) => {
+                        const target = d.targetCalories || 2000;
+                        return d.calories >= target * 0.9;
+                      }).length
+                    }
+                    /{monthData.daysLogged}
                   </ThemedText>
                   <ThemedText variant="caption" color="textSecondary">
                     Đạt mục tiêu

@@ -28,13 +28,15 @@ const VerifySchema = z.object({
   resetCode: z.string().min(4, t('auth.resetCodeRequired')),
 });
 
-const NewPasswordSchema = z.object({
-  newPassword: z.string().min(6, t('auth.passwordTooShort')),
-  confirm: z.string().min(6, t('auth.passwordTooShort')),
-}).refine((data) => data.newPassword === data.confirm, {
-  path: ['confirm'],
-  message: t('auth.passwordMismatch'),
-});
+const NewPasswordSchema = z
+  .object({
+    newPassword: z.string().min(6, t('auth.passwordTooShort')),
+    confirm: z.string().min(6, t('auth.passwordTooShort')),
+  })
+  .refine((data) => data.newPassword === data.confirm, {
+    path: ['confirm'],
+    message: t('auth.passwordMismatch'),
+  });
 
 type Props = NativeStackScreenProps<RootStackParamList, 'ForgotPassword'>;
 
@@ -80,28 +82,31 @@ const ForgotPasswordScreen = ({ navigation }: Props): JSX.Element => {
   });
 
   // Step 1: Gửi mã xác minh
-  const onSendCode = useCallback(async (values: { email: string }) => {
-    try {
-      setLoading(true);
-      await forgotPassword(values.email);
-      setEmail(values.email);
-      Toast.show({
-        type: 'success',
-        text1: '📧 Đã gửi mã xác minh!',
-        text2: 'Kiểm tra email của bạn',
-      });
-      setStep('verify');
-    } catch (e: any) {
-      const msg = e?.response?.data?.message || e?.message || 'Không thể gửi mã';
-      Toast.show({
-        type: 'error',
-        text1: 'Gửi mã thất bại',
-        text2: msg,
-      });
-    } finally {
-      setLoading(false);
-    }
-  }, [forgotPassword]);
+  const onSendCode = useCallback(
+    async (values: { email: string }) => {
+      try {
+        setLoading(true);
+        await forgotPassword(values.email);
+        setEmail(values.email);
+        Toast.show({
+          type: 'success',
+          text1: '📧 Đã gửi mã xác minh!',
+          text2: 'Kiểm tra email của bạn',
+        });
+        setStep('verify');
+      } catch (e: any) {
+        const msg = e?.response?.data?.message || e?.message || 'Không thể gửi mã';
+        Toast.show({
+          type: 'error',
+          text1: 'Gửi mã thất bại',
+          text2: msg,
+        });
+      } finally {
+        setLoading(false);
+      }
+    },
+    [forgotPassword],
+  );
 
   // Step 2: Xác minh mã
   const onVerifyCode = useCallback(async (values: { resetCode: string }) => {
@@ -116,27 +121,30 @@ const ForgotPasswordScreen = ({ navigation }: Props): JSX.Element => {
   }, []);
 
   // Step 3: Đổi mật khẩu
-  const onResetPassword = useCallback(async (values: { newPassword: string; confirm: string }) => {
-    try {
-      setLoading(true);
-      await resetPassword(email, resetCode, values.newPassword);
-      setStep('success');
-      Toast.show({
-        type: 'success',
-        text1: '🎉 Đổi mật khẩu thành công!',
-        text2: 'Bạn có thể đăng nhập với mật khẩu mới',
-      });
-    } catch (e: any) {
-      const msg = e?.response?.data?.message || e?.message || 'Không thể đổi mật khẩu';
-      Toast.show({
-        type: 'error',
-        text1: 'Đổi mật khẩu thất bại',
-        text2: msg,
-      });
-    } finally {
-      setLoading(false);
-    }
-  }, [email, resetCode, resetPassword]);
+  const onResetPassword = useCallback(
+    async (values: { newPassword: string; confirm: string }) => {
+      try {
+        setLoading(true);
+        await resetPassword(email, resetCode, values.newPassword);
+        setStep('success');
+        Toast.show({
+          type: 'success',
+          text1: '🎉 Đổi mật khẩu thành công!',
+          text2: 'Bạn có thể đăng nhập với mật khẩu mới',
+        });
+      } catch (e: any) {
+        const msg = e?.response?.data?.message || e?.message || 'Không thể đổi mật khẩu';
+        Toast.show({
+          type: 'error',
+          text1: 'Đổi mật khẩu thất bại',
+          text2: msg,
+        });
+      } finally {
+        setLoading(false);
+      }
+    },
+    [email, resetCode, resetPassword],
+  );
 
   // Quay về đăng nhập
   const goToLogin = useCallback(() => {
@@ -161,15 +169,16 @@ const ForgotPasswordScreen = ({ navigation }: Props): JSX.Element => {
                 },
               ]}
             >
-              {i < stepIndex && (
-                <Ionicons name="checkmark" size={12} color="#FFFFFF" />
-              )}
+              {i < stepIndex && <Ionicons name="checkmark" size={12} color="#FFFFFF" />}
             </View>
             {i < 2 && (
               <View
                 style={[
                   styles.stepLine,
-                  { backgroundColor: i < stepIndex ? theme.colors.primary : theme.colors.border },
+                  {
+                    backgroundColor:
+                      i < stepIndex ? theme.colors.primary : theme.colors.border,
+                  },
                 ]}
               />
             )}
@@ -361,7 +370,10 @@ const ForgotPasswordScreen = ({ navigation }: Props): JSX.Element => {
 
             {/* Step 4: Success */}
             {step === 'success' && (
-              <Animated.View entering={FadeInRight.duration(400)} style={{ alignItems: 'center' }}>
+              <Animated.View
+                entering={FadeInRight.duration(400)}
+                style={{ alignItems: 'center' }}
+              >
                 <View
                   style={{
                     width: 80,
@@ -373,7 +385,11 @@ const ForgotPasswordScreen = ({ navigation }: Props): JSX.Element => {
                     marginBottom: theme.spacing.lg,
                   }}
                 >
-                  <Ionicons name="checkmark-circle" size={48} color={theme.colors.success} />
+                  <Ionicons
+                    name="checkmark-circle"
+                    size={48}
+                    color={theme.colors.success}
+                  />
                 </View>
 
                 <ThemedText

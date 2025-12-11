@@ -82,7 +82,9 @@ export const StreakCard: React.FC<StreakCardProps> = ({
       onPress={onPress}
       activeOpacity={0.9}
       accessibilityRole="button"
-      accessibilityLabel={isActive ? `Chuỗi ${currentStreak} ngày liên tiếp` : 'Bắt đầu chuỗi mới'}
+      accessibilityLabel={
+        isActive ? `Chuỗi ${currentStreak} ngày liên tiếp` : 'Bắt đầu chuỗi mới'
+      }
       accessibilityHint="Nhấn để xem thành tựu"
     >
       <View style={styles.content}>
@@ -110,4 +112,3 @@ export const StreakCard: React.FC<StreakCardProps> = ({
     </TouchableOpacity>
   );
 };
-

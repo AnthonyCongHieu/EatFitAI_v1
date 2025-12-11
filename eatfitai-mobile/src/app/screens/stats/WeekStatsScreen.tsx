@@ -145,15 +145,12 @@ const WeekStatsScreen = (): JSX.Element => {
   }, [refreshWeekSummary]);
 
   // Handle date picker change - navigate đến tuần chứa ngày được chọn
-  const handleDateChange = useCallback(
-    (event: any, date?: Date) => {
-      setShowDatePicker(Platform.OS === 'ios'); // iOS giữ picker mở
-      if (date) {
-        useStatsStore.getState().setSelectedDate(date.toISOString().split('T')[0]!);
-      }
-    },
-    [],
-  );
+  const handleDateChange = useCallback((event: any, date?: Date) => {
+    setShowDatePicker(Platform.OS === 'ios'); // iOS giữ picker mở
+    if (date) {
+      useStatsStore.getState().setSelectedDate(date.toISOString().split('T')[0]!);
+    }
+  }, []);
 
   const chartData = useMemo(() => {
     return (weekSummary?.days ?? []).map((day) => ({
@@ -232,19 +229,41 @@ const WeekStatsScreen = (): JSX.Element => {
         />
 
         {/* Legend */}
-        <View style={{
-          flexDirection: 'row',
-          justifyContent: 'center',
-          gap: theme.spacing.lg,
-          marginBottom: theme.spacing.sm,
-        }}>
+        <View
+          style={{
+            flexDirection: 'row',
+            justifyContent: 'center',
+            gap: theme.spacing.lg,
+            marginBottom: theme.spacing.sm,
+          }}
+        >
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-            <View style={{ width: 12, height: 12, borderRadius: 3, backgroundColor: '#4ade80' }} />
-            <ThemedText variant="caption" color="textSecondary">Đã tiêu thụ</ThemedText>
+            <View
+              style={{
+                width: 12,
+                height: 12,
+                borderRadius: 3,
+                backgroundColor: '#4ade80',
+              }}
+            />
+            <ThemedText variant="caption" color="textSecondary">
+              Đã tiêu thụ
+            </ThemedText>
           </View>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-            <View style={{ width: 12, height: 12, borderRadius: 3, backgroundColor: isDark ? 'rgba(55, 65, 60, 0.7)' : 'rgba(180, 190, 185, 0.5)' }} />
-            <ThemedText variant="caption" color="textSecondary">Còn lại</ThemedText>
+            <View
+              style={{
+                width: 12,
+                height: 12,
+                borderRadius: 3,
+                backgroundColor: isDark
+                  ? 'rgba(55, 65, 60, 0.7)'
+                  : 'rgba(180, 190, 185, 0.5)',
+              }}
+            />
+            <ThemedText variant="caption" color="textSecondary">
+              Còn lại
+            </ThemedText>
           </View>
         </View>
 
@@ -363,22 +382,28 @@ const WeekStatsScreen = (): JSX.Element => {
 
         {/* Compact Summary Cards */}
         {weekSummary && weekSummary.days.length > 0 && (
-          <View style={{
-            flexDirection: 'row',
-            gap: theme.spacing.sm,
-            marginTop: theme.spacing.md,
-            paddingTop: theme.spacing.md,
-            borderTopWidth: 1,
-            borderTopColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)',
-          }}>
+          <View
+            style={{
+              flexDirection: 'row',
+              gap: theme.spacing.sm,
+              marginTop: theme.spacing.md,
+              paddingTop: theme.spacing.md,
+              borderTopWidth: 1,
+              borderTopColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)',
+            }}
+          >
             {/* Average per day */}
-            <View style={{
-              flex: 1,
-              alignItems: 'center',
-              padding: theme.spacing.sm,
-              backgroundColor: isDark ? 'rgba(59, 130, 246, 0.15)' : 'rgba(59, 130, 246, 0.08)',
-              borderRadius: 12,
-            }}>
+            <View
+              style={{
+                flex: 1,
+                alignItems: 'center',
+                padding: theme.spacing.sm,
+                backgroundColor: isDark
+                  ? 'rgba(59, 130, 246, 0.15)'
+                  : 'rgba(59, 130, 246, 0.08)',
+                borderRadius: 12,
+              }}
+            >
               <ThemedText style={{ fontSize: 16 }}>📊</ThemedText>
               <ThemedText
                 variant="h4"
@@ -387,7 +412,7 @@ const WeekStatsScreen = (): JSX.Element => {
               >
                 {Math.round(
                   weekSummary.days.reduce((sum, day) => sum + day.calories, 0) /
-                  weekSummary.days.length,
+                    weekSummary.days.length,
                 )}
               </ThemedText>
               <ThemedText variant="caption" color="textSecondary">
@@ -396,13 +421,17 @@ const WeekStatsScreen = (): JSX.Element => {
             </View>
 
             {/* Total week */}
-            <View style={{
-              flex: 1,
-              alignItems: 'center',
-              padding: theme.spacing.sm,
-              backgroundColor: isDark ? 'rgba(139, 92, 246, 0.15)' : 'rgba(139, 92, 246, 0.08)',
-              borderRadius: 12,
-            }}>
+            <View
+              style={{
+                flex: 1,
+                alignItems: 'center',
+                padding: theme.spacing.sm,
+                backgroundColor: isDark
+                  ? 'rgba(139, 92, 246, 0.15)'
+                  : 'rgba(139, 92, 246, 0.08)',
+                borderRadius: 12,
+              }}
+            >
               <ThemedText style={{ fontSize: 16 }}>🔥</ThemedText>
               <ThemedText
                 variant="h4"
@@ -410,8 +439,10 @@ const WeekStatsScreen = (): JSX.Element => {
                 style={{ color: '#8b5cf6', marginTop: 2 }}
               >
                 {Math.round(
-                  weekSummary.days.reduce((sum, day) => sum + day.calories, 0) / 1000 * 10
-                ) / 10}k
+                  (weekSummary.days.reduce((sum, day) => sum + day.calories, 0) / 1000) *
+                    10,
+                ) / 10}
+                k
               </ThemedText>
               <ThemedText variant="caption" color="textSecondary">
                 Tổng tuần
@@ -419,22 +450,30 @@ const WeekStatsScreen = (): JSX.Element => {
             </View>
 
             {/* Target achieved */}
-            <View style={{
-              flex: 1,
-              alignItems: 'center',
-              padding: theme.spacing.sm,
-              backgroundColor: isDark ? 'rgba(34, 197, 94, 0.15)' : 'rgba(34, 197, 94, 0.08)',
-              borderRadius: 12,
-            }}>
+            <View
+              style={{
+                flex: 1,
+                alignItems: 'center',
+                padding: theme.spacing.sm,
+                backgroundColor: isDark
+                  ? 'rgba(34, 197, 94, 0.15)'
+                  : 'rgba(34, 197, 94, 0.08)',
+                borderRadius: 12,
+              }}
+            >
               <ThemedText style={{ fontSize: 16 }}>🎯</ThemedText>
               <ThemedText
                 variant="h4"
                 weight="700"
                 style={{ color: '#22c55e', marginTop: 2 }}
               >
-                {weekSummary.days.filter(
-                  (day) => day.targetCalories && day.calories >= day.targetCalories * 0.9,
-                ).length}/{weekSummary.days.length}
+                {
+                  weekSummary.days.filter(
+                    (day) =>
+                      day.targetCalories && day.calories >= day.targetCalories * 0.9,
+                  ).length
+                }
+                /{weekSummary.days.length}
               </ThemedText>
               <ThemedText variant="caption" color="textSecondary">
                 Đạt mục tiêu

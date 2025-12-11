@@ -2,14 +2,16 @@
 // Features: Summary header, improved date selector, beautiful meal cards
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { FlatList, Pressable, StyleSheet, View, Dimensions, Platform } from 'react-native';
+import {
+  FlatList,
+  Pressable,
+  StyleSheet,
+  View,
+  Dimensions,
+  Platform,
+} from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import Animated, {
-  FadeIn,
-  FadeInDown,
-  FadeInUp,
-  Layout,
-} from 'react-native-reanimated';
+import Animated, { FadeIn, FadeInDown, FadeInUp, Layout } from 'react-native-reanimated';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import type { NavigationProp } from '@react-navigation/native';
 import { useQuery } from '@tanstack/react-query';
@@ -132,7 +134,10 @@ const MealDiaryScreen = (): JSX.Element => {
     return `${y}-${m}-${d}`;
   }, []);
 
-  const dateKey = useMemo(() => formatDateForApi(selectedDate), [formatDateForApi, selectedDate]);
+  const dateKey = useMemo(
+    () => formatDateForApi(selectedDate),
+    [formatDateForApi, selectedDate],
+  );
 
   const {
     data: entriesData,
@@ -251,7 +256,8 @@ const MealDiaryScreen = (): JSX.Element => {
                   : isDark
                     ? 'rgba(255,255,255,0.08)'
                     : 'rgba(0,0,0,0.05)',
-                borderColor: isToday && !isSelected ? theme.colors.primary : 'transparent',
+                borderColor:
+                  isToday && !isSelected ? theme.colors.primary : 'transparent',
                 borderWidth: isToday && !isSelected ? 1.5 : 0,
               },
             ]}
@@ -282,7 +288,10 @@ const MealDiaryScreen = (): JSX.Element => {
     if (entries.length === 0) return null;
 
     return (
-      <Animated.View entering={FadeInDown.delay(100).springify()} style={{ marginBottom: 16 }}>
+      <Animated.View
+        entering={FadeInDown.delay(100).springify()}
+        style={{ marginBottom: 16 }}
+      >
         <LinearGradient
           colors={isDark ? ['#1a1a2e', '#16213e'] : ['#667eea', '#764ba2']}
           start={{ x: 0, y: 0 }}
@@ -290,18 +299,24 @@ const MealDiaryScreen = (): JSX.Element => {
           style={styles.summaryCard}
         >
           <View style={styles.summaryMain}>
-            <ThemedText style={styles.summaryCalories}>{Math.round(totals.calories)}</ThemedText>
+            <ThemedText style={styles.summaryCalories}>
+              {Math.round(totals.calories)}
+            </ThemedText>
             <ThemedText style={styles.summaryLabel}>kcal hôm nay</ThemedText>
           </View>
 
           <View style={styles.summaryMacros}>
             <View style={styles.macroItem}>
-              <ThemedText style={styles.macroValue}>{totals.protein.toFixed(0)}g</ThemedText>
+              <ThemedText style={styles.macroValue}>
+                {totals.protein.toFixed(0)}g
+              </ThemedText>
               <ThemedText style={styles.macroLabel}>Protein</ThemedText>
             </View>
             <View style={styles.macroDivider} />
             <View style={styles.macroItem}>
-              <ThemedText style={styles.macroValue}>{totals.carbs.toFixed(0)}g</ThemedText>
+              <ThemedText style={styles.macroValue}>
+                {totals.carbs.toFixed(0)}g
+              </ThemedText>
               <ThemedText style={styles.macroLabel}>Carbs</ThemedText>
             </View>
             <View style={styles.macroDivider} />
@@ -350,21 +365,28 @@ const MealDiaryScreen = (): JSX.Element => {
             </View>
             <View style={styles.foodMacros}>
               <ThemedText variant="caption" color="textSecondary">
-                P {entry.protein?.toFixed(0) || 0}g • C {entry.carbs?.toFixed(0) || 0}g • F{' '}
-                {entry.fat?.toFixed(0) || 0}g
+                P {entry.protein?.toFixed(0) || 0}g • C {entry.carbs?.toFixed(0) || 0}g •
+                F {entry.fat?.toFixed(0) || 0}g
               </ThemedText>
             </View>
           </View>
 
           <View style={styles.foodBadge}>
             {entry.sourceMethod === 'ai' ? (
-              <View style={[styles.sourceBadge, { backgroundColor: theme.colors.primary + '20' }]}>
+              <View
+                style={[
+                  styles.sourceBadge,
+                  { backgroundColor: theme.colors.primary + '20' },
+                ]}
+              >
                 <ThemedText variant="caption" color="primary" weight="600">
                   🤖 AI
                 </ThemedText>
               </View>
             ) : (
-              <View style={[styles.sourceBadge, { backgroundColor: theme.colors.border }]}>
+              <View
+                style={[styles.sourceBadge, { backgroundColor: theme.colors.border }]}
+              >
                 <ThemedText variant="caption" color="textSecondary" weight="600">
                   ✏️
                 </ThemedText>
@@ -630,7 +652,7 @@ const MealDiaryScreen = (): JSX.Element => {
                 setSelectedDate(date);
                 // Cuộn đến ngày được chọn nếu nằm trong range
                 const idx = dateOptions.findIndex(
-                  (d) => d.toDateString() === date.toDateString()
+                  (d) => d.toDateString() === date.toDateString(),
                 );
                 if (idx >= 0) {
                   dateListRef.current?.scrollToIndex({

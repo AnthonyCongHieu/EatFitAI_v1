@@ -212,7 +212,7 @@ const HomeScreen = (): JSX.Element => {
                   text1: t('common.removed'),
                   text2: t('common.updated'),
                 });
-                refreshSummary().catch(() => { });
+                refreshSummary().catch(() => {});
               })
               .catch((err: any) => {
                 handleApiErrorWithCustomMessage(err, {
@@ -410,8 +410,8 @@ const HomeScreen = (): JSX.Element => {
               targetValue={summary?.targetProtein ?? undefined}
               progress={
                 typeof proteinValue.value === 'number' &&
-                  !Number.isNaN(proteinValue.value) &&
-                  summary?.targetProtein
+                !Number.isNaN(proteinValue.value) &&
+                summary?.targetProtein
                   ? Math.min(1, proteinValue.value / summary.targetProtein)
                   : 0
               }
@@ -424,8 +424,8 @@ const HomeScreen = (): JSX.Element => {
               targetValue={summary?.targetCarbs ?? undefined}
               progress={
                 typeof carbsValue.value === 'number' &&
-                  !Number.isNaN(carbsValue.value) &&
-                  summary?.targetCarbs
+                !Number.isNaN(carbsValue.value) &&
+                summary?.targetCarbs
                   ? Math.min(1, carbsValue.value / summary.targetCarbs)
                   : 0
               }
@@ -438,8 +438,8 @@ const HomeScreen = (): JSX.Element => {
               targetValue={summary?.targetFat ?? undefined}
               progress={
                 typeof fatValue.value === 'number' &&
-                  !Number.isNaN(fatValue.value) &&
-                  summary?.targetFat
+                !Number.isNaN(fatValue.value) &&
+                summary?.targetFat
                   ? Math.min(1, fatValue.value / summary.targetFat)
                   : 0
               }

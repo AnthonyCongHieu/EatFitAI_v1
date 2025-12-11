@@ -110,7 +110,7 @@ export const aiService = {
   // Goi y cong thuc tu danh sach nguyen lieu
   async suggestRecipes(ingredients: string[]): Promise<SuggestedRecipe[]> {
     // Backend expects 'availableIngredients' not 'ingredients'
-    const response = await apiClient.post<
+    const response = await aiApiClient.post<
       { recipes?: RecipeSuggestionApiItem[] } | RecipeSuggestionApiItem[]
     >('/api/ai/recipes/suggest', { availableIngredients: ingredients });
     const payload = response.data;
@@ -264,7 +264,7 @@ export const aiService = {
   async suggestRecipesEnhanced(
     request: import('../types/aiEnhanced').RecipeSuggestionRequest,
   ): Promise<import('../types/aiEnhanced').RecipeSuggestion[]> {
-    const response = await apiClient.post('/api/ai/recipes/suggest', request);
+    const response = await aiApiClient.post('/api/ai/recipes/suggest', request);
     return response.data;
   },
 
@@ -345,26 +345,14 @@ export const aiService = {
   ): Promise<{ steps: string[]; cookingTime?: string; difficulty?: string }> {
     // Gọi qua backend API thay vì AI provider trực tiếp
     // Backend sẽ proxy đến AI Provider (port 5050)
-    const token = getAccessTokenMem() ?? (await tokenStorage.getAccessToken());
-    const response = await fetch(`${API_BASE_URL}/api/ai/cooking-instructions`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({
-        recipeName,
-        ingredients,
-        description: description || '',
-      }),
+    // SỬ DỤNG aiApiClient để có timeout 60s và tự động gắn token
+    const response = await aiApiClient.post('/api/ai/cooking-instructions', {
+      recipeName,
+      ingredients,
+      description: description || '',
     });
 
-    if (!response.ok) {
-      const text = await response.text();
-      throw new Error(`Không thể tạo hướng dẫn nấu: ${text}`);
-    }
-
-    const data = await response.json();
+    const data = response.data;
     return {
       steps: data.steps || [],
       cookingTime: data.cookingTime,

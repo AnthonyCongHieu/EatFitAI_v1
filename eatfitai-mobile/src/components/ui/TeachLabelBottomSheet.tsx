@@ -34,11 +34,13 @@ export const TeachLabelBottomSheet = ({
   const dynamicStyles = {
     errorContainer: {
       padding: theme.spacing.md,
-      backgroundColor: theme.mode === 'dark' ? 'rgba(239, 68, 68, 0.15)' : 'rgba(239, 68, 68, 0.1)',
+      backgroundColor:
+        theme.mode === 'dark' ? 'rgba(239, 68, 68, 0.15)' : 'rgba(239, 68, 68, 0.1)',
       borderRadius: theme.radius.sm,
       marginBottom: theme.spacing.lg,
       borderWidth: 1,
-      borderColor: theme.mode === 'dark' ? 'rgba(239, 68, 68, 0.3)' : 'rgba(239, 68, 68, 0.2)',
+      borderColor:
+        theme.mode === 'dark' ? 'rgba(239, 68, 68, 0.3)' : 'rgba(239, 68, 68, 0.2)',
     },
     errorText: {
       color: theme.colors.danger,
@@ -122,7 +124,9 @@ export const TeachLabelBottomSheet = ({
         onPress={() => handleSelectFood(item)}
         rightComponent={
           item.calories ? (
-            <ThemedText style={dynamicStyles.calories}>{item.calories} kcal/100g</ThemedText>
+            <ThemedText style={dynamicStyles.calories}>
+              {item.calories} kcal/100g
+            </ThemedText>
           ) : undefined
         }
       />
@@ -220,4 +224,3 @@ const styles = StyleSheet.create({
 });
 
 export default TeachLabelBottomSheet;
-
