@@ -161,7 +161,7 @@ const CustomDishScreen = (): JSX.Element => {
           text2: 'Món ăn đã được lưu vào thư viện cá nhân',
         });
         reset();
-        await refreshSummary().catch(() => {});
+        await refreshSummary().catch(() => { });
         navigation.goBack();
       } catch (error: any) {
         handleApiError(error);
@@ -175,7 +175,7 @@ const CustomDishScreen = (): JSX.Element => {
   return (
     <View style={{ flex: 1 }}>
       <LinearGradient
-        colors={isDark ? ['#0A0A0F', '#1a1a2e'] : ['#f0f9ff', '#e0f2fe']}
+        colors={theme.colors.screenGradient}
         style={StyleSheet.absoluteFill}
       />
       <Screen contentContainerStyle={styles.content}>

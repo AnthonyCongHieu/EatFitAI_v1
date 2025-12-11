@@ -182,7 +182,7 @@ const ForgotPasswordScreen = ({ navigation }: Props): JSX.Element => {
   return (
     <View style={{ flex: 1 }}>
       <LinearGradient
-        colors={isDark ? ['#0A0A0F', '#1a1a2e'] : ['#f0f9ff', '#e0f2fe']}
+        colors={theme.colors.screenGradient}
         style={StyleSheet.absoluteFill}
       />
       <Screen scroll style={styles.container}>

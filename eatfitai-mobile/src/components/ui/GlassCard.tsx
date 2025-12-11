@@ -9,6 +9,7 @@ import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { FadeIn } from 'react-native-reanimated';
 import { useAppTheme } from '../../theme/ThemeProvider';
+import type { AppTheme } from '../../theme/themes';
 
 interface GlassCardProps {
   children: React.ReactNode;
@@ -41,7 +42,7 @@ export const GlassCard: React.FC<GlassCardProps> = ({
     padding,
     borderRadius,
     borderWidth: 1,
-    borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.3)',
+    borderColor: theme.colors.glass.border,
   };
 
   const content = (
@@ -50,8 +51,8 @@ export const GlassCard: React.FC<GlassCardProps> = ({
         <LinearGradient
           colors={
             isDark
-              ? ['rgba(255,255,255,0.08)', 'rgba(255,255,255,0.02)']
-              : ['rgba(255,255,255,0.9)', 'rgba(255,255,255,0.7)']
+              ? [theme.colors.glass.border, theme.colors.glass.borderAlt]
+              : [theme.colors.glass.background, theme.colors.glass.backgroundAlt]
           }
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
@@ -83,19 +84,16 @@ export const GlassSurface: React.FC<{
   style?: StyleProp<ViewStyle>;
 }> = ({ children, style }) => {
   const { theme } = useAppTheme();
-  const isDark = theme.mode === 'dark';
 
   return (
     <View
       style={[
         {
-          backgroundColor: isDark
-            ? 'rgba(255, 255, 255, 0.08)'
-            : 'rgba(255, 255, 255, 0.6)',
-          borderRadius: 16,
+          backgroundColor: theme.colors.glass.backgroundAlt,
+          borderRadius: theme.radius.lg,
           borderWidth: 1,
-          borderColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)',
-          padding: 12,
+          borderColor: theme.colors.glass.borderAlt,
+          padding: theme.spacing.md,
         },
         style,
       ]}
@@ -106,7 +104,58 @@ export const GlassSurface: React.FC<{
 };
 
 /**
- * GlassButton - Glassmorphism button
+ * createGlassStyles - Modern glassmorphism styles using theme colors
+ * @param theme - AppTheme object for centralized, consistent colors
+ * Recommended for new code
+ */
+export const createGlassStyles = (theme: AppTheme) => {
+  const isDark = theme.mode === 'dark';
+  return StyleSheet.create({
+    card: {
+      backgroundColor: theme.colors.glass.background,
+      borderRadius: theme.borderRadius.card,
+      borderWidth: 1,
+      borderColor: theme.colors.glass.border,
+      padding: theme.spacing.lg,
+      // Shadow for depth
+      ...theme.shadows.lg,
+    },
+    cardSmall: {
+      backgroundColor: theme.colors.glass.backgroundAlt,
+      borderRadius: theme.radius.lg,
+      borderWidth: 1,
+      borderColor: theme.colors.glass.borderAlt,
+      padding: theme.spacing.md,
+    },
+    pill: {
+      backgroundColor: isDark ? theme.colors.glass.border : theme.colors.glass.borderAlt,
+      borderRadius: theme.radius.xl,
+      paddingHorizontal: theme.spacing.lg,
+      paddingVertical: theme.spacing.sm,
+    },
+    statCard: {
+      backgroundColor: theme.colors.glass.background,
+      borderRadius: theme.radius.xl,
+      borderWidth: 1,
+      borderColor: theme.colors.glass.border,
+      padding: theme.spacing.lg,
+      alignItems: 'center',
+    },
+    iconContainer: {
+      width: 48,
+      height: 48,
+      borderRadius: theme.radius.md,
+      backgroundColor: theme.colors.glass.borderAlt,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+  });
+};
+
+/**
+ * glassStyles - Glassmorphism styles (backward compatible)
+ * @param isDark - Boolean for dark mode detection
+ * For new code, prefer createGlassStyles(theme) instead
  */
 export const glassStyles = (isDark: boolean) =>
   StyleSheet.create({
@@ -116,8 +165,7 @@ export const glassStyles = (isDark: boolean) =>
       borderWidth: 1,
       borderColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(255, 255, 255, 0.5)',
       padding: 16,
-      // Shadow for depth
-      shadowColor: isDark ? '#000' : '#000',
+      shadowColor: '#000',
       shadowOffset: { width: 0, height: 8 },
       shadowOpacity: isDark ? 0.3 : 0.1,
       shadowRadius: 24,
@@ -155,3 +203,4 @@ export const glassStyles = (isDark: boolean) =>
   });
 
 export default GlassCard;
+

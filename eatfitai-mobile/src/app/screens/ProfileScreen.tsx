@@ -35,6 +35,7 @@ import { profileService } from '../../services/profileService';
 import { handleApiErrorWithCustomMessage, showSuccess } from '../../utils/errorHandler';
 import type { RootStackParamList } from '../types';
 import { t } from '../../i18n/vi';
+import { WeeklyCheckInCard, WeeklyCheckInSheet } from '../../components/profile';
 
 // Schema matching actual database fields
 // Schema matching actual database fields
@@ -109,9 +110,9 @@ const ACTIVITY_OPTIONS = [
 ] as const;
 
 const GOAL_OPTIONS = [
-  { value: 'lose', label: t('common.lose_weight'), icon: '📉', color: '#EF4444' },
-  { value: 'maintain', label: t('common.maintain_weight'), icon: '⚖️', color: '#3B82F6' },
-  { value: 'gain', label: t('common.gain_weight'), icon: '📈', color: '#22C55E' },
+  { value: 'lose', label: t('common.lose_weight'), icon: '📉', colorKey: 'danger' },
+  { value: 'maintain', label: t('common.maintain_weight'), icon: '⚖️', colorKey: 'info' },
+  { value: 'gain', label: t('common.gain_weight'), icon: '📈', colorKey: 'success' },
 ] as const;
 
 const ProfileScreen = (): JSX.Element => {
@@ -119,6 +120,9 @@ const ProfileScreen = (): JSX.Element => {
   const isDark = theme.mode === 'dark';
   const glass = glassStyles(isDark);
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+
+  // Weekly check-in sheet state
+  const [showCheckInSheet, setShowCheckInSheet] = useState(false);
 
   const logout = useAuthStore((s) => s.logout);
   const { profile, fetchProfile, isLoading, updateProfile, isSaving } = useProfileStore(
@@ -365,6 +369,12 @@ const ProfileScreen = (): JSX.Element => {
       />
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
+        {/* Weekly Check-in Card */}
+        <WeeklyCheckInCard
+          onCheckIn={() => setShowCheckInSheet(true)}
+          onViewHistory={() => navigation.navigate('WeeklyHistory')}
+        />
+
         {/* Personal Info Card - Synced with DB */}
         <Animated.View entering={FadeInUp.delay(100).duration(400)}>
           <View style={glass.card}>
@@ -458,7 +468,7 @@ const ProfileScreen = (): JSX.Element => {
                 control={control}
                 name="gender"
                 render={({ field: { onChange, value } }) => (
-                  <View style={styles.optionRow}>
+                  <View style={styles.optionRow} accessibilityRole="radiogroup" accessibilityLabel="Chọn giới tính">
                     {GENDER_OPTIONS.map((opt) => (
                       <Pressable
                         key={opt.value}
@@ -476,6 +486,9 @@ const ProfileScreen = (): JSX.Element => {
                           },
                         ]}
                         onPress={() => onChange(opt.value)}
+                        accessibilityRole="radio"
+                        accessibilityLabel={opt.label}
+                        accessibilityState={{ checked: value === opt.value }}
                       >
                         <ThemedText>
                           {opt.icon} {opt.label}
@@ -518,37 +531,43 @@ const ProfileScreen = (): JSX.Element => {
                 control={control}
                 name="goal"
                 render={({ field: { onChange, value } }) => (
-                  <View style={styles.row}>
-                    {GOAL_OPTIONS.map((goal) => (
-                      <Pressable
-                        key={goal.value}
-                        style={[
-                          styles.goalCard,
-                          {
-                            backgroundColor:
-                              value === goal.value
-                                ? `${goal.color}15`
-                                : isDark
-                                  ? 'rgba(255,255,255,0.05)'
-                                  : 'rgba(0,0,0,0.02)',
-                            borderColor:
-                              value === goal.value ? goal.color : 'transparent',
-                          },
-                        ]}
-                        onPress={() => onChange(goal.value)}
-                      >
-                        <ThemedText style={{ fontSize: 20 }}>{goal.icon}</ThemedText>
-                        <ThemedText
-                          variant="bodySmall"
-                          weight={value === goal.value ? '600' : '400'}
-                          style={{
-                            color: value === goal.value ? goal.color : theme.colors.text,
-                          }}
+                  <View style={styles.row} accessibilityRole="radiogroup" accessibilityLabel="Chọn mục tiêu">
+                    {GOAL_OPTIONS.map((goal) => {
+                      const goalColor = theme.colors[goal.colorKey];
+                      return (
+                        <Pressable
+                          key={goal.value}
+                          style={[
+                            styles.goalCard,
+                            {
+                              backgroundColor:
+                                value === goal.value
+                                  ? `${goalColor}15`
+                                  : isDark
+                                    ? 'rgba(255,255,255,0.05)'
+                                    : 'rgba(0,0,0,0.02)',
+                              borderColor:
+                                value === goal.value ? goalColor : 'transparent',
+                            },
+                          ]}
+                          onPress={() => onChange(goal.value)}
+                          accessibilityRole="radio"
+                          accessibilityLabel={goal.label}
+                          accessibilityState={{ checked: value === goal.value }}
                         >
-                          {goal.label}
-                        </ThemedText>
-                      </Pressable>
-                    ))}
+                          <ThemedText style={{ fontSize: theme.typography.h3.fontSize }}>{goal.icon}</ThemedText>
+                          <ThemedText
+                            variant="bodySmall"
+                            weight={value === goal.value ? '600' : '400'}
+                            style={{
+                              color: value === goal.value ? goalColor : theme.colors.text,
+                            }}
+                          >
+                            {goal.label}
+                          </ThemedText>
+                        </Pressable>
+                      );
+                    })}
                   </View>
                 )}
               />
@@ -567,7 +586,7 @@ const ProfileScreen = (): JSX.Element => {
                 control={control}
                 name="activityLevel"
                 render={({ field: { onChange, value } }) => (
-                  <View style={styles.optionRow}>
+                  <View style={styles.optionRow} accessibilityRole="radiogroup" accessibilityLabel="Chọn mức độ vận động">
                     {ACTIVITY_OPTIONS.map((act) => (
                       <Pressable
                         key={act.value}
@@ -585,6 +604,9 @@ const ProfileScreen = (): JSX.Element => {
                           },
                         ]}
                         onPress={() => onChange(act.value)}
+                        accessibilityRole="radio"
+                        accessibilityLabel={act.label}
+                        accessibilityState={{ checked: value === act.value }}
                       >
                         <ThemedText
                           variant="bodySmall"
@@ -744,6 +766,15 @@ const ProfileScreen = (): JSX.Element => {
           </View>
         </Animated.View>
       </ScrollView>
+
+      {/* Weekly Check-in Sheet */}
+      <WeeklyCheckInSheet
+        visible={showCheckInSheet}
+        onClose={() => setShowCheckInSheet(false)}
+        onSuccess={() => {
+          // Optionally refresh profile or show success message
+        }}
+      />
     </View>
   );
 };

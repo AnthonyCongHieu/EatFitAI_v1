@@ -1,11 +1,14 @@
 import React from 'react';
-import { View, StyleSheet } from 'react-native';
+import { View, StyleSheet, Dimensions } from 'react-native';
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
   withRepeat,
   withTiming,
+  Easing,
+  interpolate,
 } from 'react-native-reanimated';
+import { LinearGradient } from 'expo-linear-gradient';
 
 import { useAppTheme } from '../theme/ThemeProvider';
 
@@ -50,11 +53,78 @@ export const Skeleton = ({
   );
 };
 
+/**
+ * ShimmerSkeleton - Enhanced skeleton with shimmer gradient effect
+ */
+interface ShimmerSkeletonProps {
+  width?: number | string;
+  height?: number;
+  borderRadius?: number;
+  style?: any;
+}
+
+const SCREEN_WIDTH = Dimensions.get('window').width;
+
+export const ShimmerSkeleton = ({
+  width = '100%',
+  height = 16,
+  borderRadius = 8,
+  style,
+}: ShimmerSkeletonProps): JSX.Element => {
+  const { theme } = useAppTheme();
+  const isDark = theme.mode === 'dark';
+  const translateX = useSharedValue(-SCREEN_WIDTH);
+
+  React.useEffect(() => {
+    translateX.value = withRepeat(
+      withTiming(SCREEN_WIDTH, {
+        duration: 1500,
+        easing: Easing.linear,
+      }),
+      -1,
+      false
+    );
+  }, []);
+
+  const shimmerStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: translateX.value }],
+  }));
+
+  const baseColor = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)';
+  const shimmerColor = isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.12)';
+
+  return (
+    <View
+      style={[
+        styles.shimmerContainer,
+        {
+          width,
+          height,
+          borderRadius,
+          backgroundColor: baseColor,
+        },
+        style,
+      ]}
+    >
+      <Animated.View style={[styles.shimmerGradient, shimmerStyle]}>
+        <LinearGradient
+          colors={['transparent', shimmerColor, 'transparent']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          style={{ width: SCREEN_WIDTH, height: '100%' }}
+        />
+      </Animated.View>
+    </View>
+  );
+};
+
 interface SkeletonListProps {
   count: number;
   itemHeight?: number;
   spacing?: number;
   style?: any;
+  /** Use shimmer effect instead of opacity pulse */
+  shimmer?: boolean;
 }
 
 export const SkeletonList = ({
@@ -62,8 +132,10 @@ export const SkeletonList = ({
   itemHeight = 60,
   spacing = 8,
   style,
+  shimmer = false,
 }: SkeletonListProps): JSX.Element => {
   const { theme } = useAppTheme();
+  const SkeletonComponent = shimmer ? ShimmerSkeleton : Skeleton;
 
   return (
     <View style={style}>
@@ -81,9 +153,9 @@ export const SkeletonList = ({
             },
           ]}
         >
-          <Skeleton width="60%" height={14} style={{ marginBottom: 8 }} />
-          <Skeleton width="40%" height={12} />
-          <Skeleton width="80%" height={12} />
+          <SkeletonComponent width="60%" height={14} style={{ marginBottom: 8 }} />
+          <SkeletonComponent width="40%" height={12} />
+          <SkeletonComponent width="80%" height={12} />
         </View>
       ))}
     </View>
@@ -92,7 +164,13 @@ export const SkeletonList = ({
 
 const styles = StyleSheet.create({
   skeleton: {
-    // Base skeleton styles
+    overflow: 'hidden',
+  },
+  shimmerContainer: {
+    overflow: 'hidden',
+  },
+  shimmerGradient: {
+    ...StyleSheet.absoluteFillObject,
   },
   skeletonItem: {
     borderWidth: 1,
@@ -102,3 +180,4 @@ const styles = StyleSheet.create({
 });
 
 export default Skeleton;
+

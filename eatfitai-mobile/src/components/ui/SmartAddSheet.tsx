@@ -61,9 +61,14 @@ export const SmartAddSheet: React.FC<SmartAddSheetProps> = ({ visible, onClose }
         <Animated.View
           entering={FadeIn}
           exiting={FadeOut}
-          style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.5)' }]}
+          style={[StyleSheet.absoluteFill, { backgroundColor: theme.colors.overlay.medium }]}
         >
-          <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
+          <Pressable
+            style={StyleSheet.absoluteFill}
+            onPress={onClose}
+            accessibilityRole="button"
+            accessibilityLabel="Đóng menu"
+          />
         </Animated.View>
 
         {/* Sheet */}
@@ -78,7 +83,7 @@ export const SmartAddSheet: React.FC<SmartAddSheetProps> = ({ visible, onClose }
             },
           ]}
         >
-          <View style={styles.handle} />
+          <View style={[styles.handle, { backgroundColor: theme.colors.border }]} />
 
           <ThemedText variant="h3" style={styles.title}>
             Thêm món ăn

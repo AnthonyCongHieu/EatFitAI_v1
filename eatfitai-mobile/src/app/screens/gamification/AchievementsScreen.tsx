@@ -45,21 +45,21 @@ const AchievementsScreen = (): JSX.Element => {
   const unlockedCount = achievements.filter((a) => a.unlockedAt).length;
   const totalCount = achievements.length;
 
-  // Gradient colors cho các thành tích
-  const getGradientColors = (id: string, isUnlocked: boolean): string[] => {
-    if (!isUnlocked) return [theme.colors.card, theme.colors.card];
+  // Gradient colors cho các thành tích - sử dụng theme
+  const getGradientColors = (id: string, isUnlocked: boolean): readonly [string, string] => {
+    if (!isUnlocked) return [theme.colors.card, theme.colors.card] as const;
 
     switch (id) {
       case 'first_log':
-        return ['#FF6B6B', '#FF8E53']; // Đỏ-Cam (Khởi đầu)
+        return theme.achievementGradients.first_log;
       case 'streak_3':
-        return ['#4ECDC4', '#44A08D']; // Xanh lá (Kiên trì)
+        return theme.achievementGradients.streak_3;
       case 'streak_7':
-        return ['#667EEA', '#764BA2']; // Tím (Thói quen)
+        return theme.achievementGradients.streak_7;
       case 'log_100_meals':
-        return ['#F093FB', '#F5576C']; // Hồng (Chuyên gia)
+        return theme.achievementGradients.log_100_meals;
       default:
-        return ['#FFD93D', '#FF6B6B']; // Vàng-Cam
+        return theme.achievementGradients.default;
     }
   };
 
@@ -82,7 +82,7 @@ const AchievementsScreen = (): JSX.Element => {
   const renderStreakHeader = () => (
     <Animated.View entering={FadeInDown.delay(100).springify()}>
       <LinearGradient
-        colors={isDark ? ['#1a1a2e', '#16213e'] : ['#667eea', '#764ba2']}
+        colors={theme.achievementGradients.header}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={styles.streakCard}

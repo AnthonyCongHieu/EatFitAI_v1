@@ -37,7 +37,7 @@ import { handleApiErrorWithCustomMessage } from '../../utils/errorHandler';
 // New UI components
 import { AppCard } from '../../components/ui/AppCard';
 import { SectionHeader } from '../../components/ui/SectionHeader';
-import { EmptyState } from '../../components/ui/EmptyState';
+import { AnimatedEmptyState } from '../../components/ui/AnimatedEmptyState';
 import { ScreenHeader } from '../../components/ui/ScreenHeader';
 import { MetricCard } from '../../components/ui/MetricCard';
 import { InsightsCard } from '../../components/ui/InsightsCard';
@@ -367,7 +367,12 @@ const HomeScreen = (): JSX.Element => {
 
         {/* Hero Card - Glassmorphism */}
         <Animated.View entering={FadeInUp.duration(theme.animation.slow).springify()}>
-          <View style={glass.card}>
+          <View
+            style={glass.card}
+            accessible={true}
+            accessibilityRole="summary"
+            accessibilityLabel={`Còn ${Math.round(remainingCalories)} calo. Đã ăn ${summary?.totalCalories || 0} trong ${summary?.targetCalories || 0} calo mục tiêu.`}
+          >
             <View style={{ alignItems: 'center', gap: theme.spacing.md }}>
               <Animated.Text
                 style={[styles.animatedNumber, remainingCaloriesAnimatedStyle]}
@@ -538,10 +543,19 @@ const HomeScreen = (): JSX.Element => {
               ))}
             </AppCard>
           ) : (
-            <EmptyState
+            <AnimatedEmptyState
+              variant="no-food"
               title={t('home.empty')}
-              description="Hãy bắt đầu thêm món ăn đầu tiên của bạn!"
-              icon="restaurant"
+              description="Hãy chụp ảnh hoặc tìm kiếm để thêm món ăn đầu tiên!"
+              primaryAction={{
+                label: 'Chụp ảnh món ăn',
+                onPress: () => navigation.navigate('AiCamera'),
+                icon: 'camera-outline',
+              }}
+              secondaryAction={{
+                label: 'Tìm kiếm thực phẩm',
+                onPress: () => navigation.navigate('FoodSearch'),
+              }}
             />
           )}
         </View>
@@ -558,6 +572,9 @@ const HomeScreen = (): JSX.Element => {
             { backgroundColor: theme.colors.primary, shadowColor: theme.colors.primary },
           ]}
           onPress={() => setShowAddModal(true)}
+          accessibilityRole="button"
+          accessibilityLabel="Thêm món ăn vào nhật ký"
+          accessibilityHint="Mở menu để chọn cách thêm món ăn"
         >
           <Icon name="add" size="xl" color="card" />
         </Pressable>

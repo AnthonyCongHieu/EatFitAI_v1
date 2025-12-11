@@ -393,6 +393,9 @@ const AIScanScreen: React.FC = () => {
             <Pressable
               style={[glass.card, styles.sideButton]}
               onPress={() => navigation.navigate('FoodSearch')}
+              accessibilityRole="button"
+              accessibilityLabel="Tìm kiếm món ăn"
+              accessibilityHint="Chuyển sang màn hình tìm kiếm"
             >
               <Icon name="search-outline" size="lg" color="text" />
             </Pressable>
@@ -402,6 +405,10 @@ const AIScanScreen: React.FC = () => {
               onPress={handleCapture}
               disabled={isCapturing}
               style={[captureButtonStyle, styles.captureButtonOuter]}
+              accessibilityRole="button"
+              accessibilityLabel="Chụp ảnh"
+              accessibilityHint="Chụp ảnh món ăn để AI nhận diện"
+              accessibilityState={{ disabled: isCapturing }}
             >
               <LinearGradient
                 colors={[
@@ -418,7 +425,13 @@ const AIScanScreen: React.FC = () => {
             </AnimatedPressable>
 
             {/* Gallery Wrapper */}
-            <Pressable style={[glass.card, styles.sideButton]} onPress={handlePickImage}>
+            <Pressable
+              style={[glass.card, styles.sideButton]}
+              onPress={handlePickImage}
+              accessibilityRole="button"
+              accessibilityLabel="Chọn từ thư viện"
+              accessibilityHint="Chọn ảnh có sẵn từ thư viện"
+            >
               <Icon name="images-outline" size="lg" color="text" />
             </Pressable>
           </Animated.View>
@@ -440,7 +453,13 @@ const AIScanScreen: React.FC = () => {
               <ThemedText variant="h4" weight="700">
                 Kết quả ({detectionResult.items.length})
               </ThemedText>
-              <Pressable onPress={handleRetake} style={{ padding: 8 }}>
+              <Pressable
+                onPress={handleRetake}
+                style={{ padding: 8 }}
+                accessibilityRole="button"
+                accessibilityLabel="Đóng kết quả"
+                accessibilityHint="Quay lại chế độ camera"
+              >
                 <Icon name="close" size="md" color="text" />
               </Pressable>
             </View>

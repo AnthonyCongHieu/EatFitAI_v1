@@ -324,7 +324,7 @@ const WeekStatsScreen = (): JSX.Element => {
                 barWidth={14}
                 style={{
                   data: {
-                    fill: '#4ade80',
+                    fill: theme.colors.chart.bar,
                   },
                 }}
                 labels={({ datum }) => `${datum.y}`}
@@ -333,7 +333,7 @@ const WeekStatsScreen = (): JSX.Element => {
                     renderInPortal={false}
                     style={{ fontSize: 10, fill: '#fff', fontWeight: '700' }}
                     flyoutStyle={{
-                      fill: '#22c55e',
+                      fill: theme.colors.success,
                       stroke: 'transparent',
                     }}
                     cornerRadius={5}
@@ -353,7 +353,7 @@ const WeekStatsScreen = (): JSX.Element => {
                 barWidth={14}
                 style={{
                   data: {
-                    fill: isDark ? 'rgba(55, 65, 60, 0.7)' : 'rgba(180, 190, 185, 0.5)',
+                    fill: theme.colors.chart.barRemaining,
                   },
                 }}
               />

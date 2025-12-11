@@ -8,6 +8,7 @@ import { BottomSheet } from '../BottomSheet';
 import { foodService, type FoodItem } from '../../services/foodService';
 import { ListItem } from '../ListItem';
 import { Skeleton } from '../Skeleton';
+import { useAppTheme } from '../../theme/ThemeProvider';
 
 type TeachLabelBottomSheetProps = {
   visible: boolean;
@@ -22,11 +23,41 @@ export const TeachLabelBottomSheet = ({
   onSelectFood,
   currentLabel,
 }: TeachLabelBottomSheetProps): JSX.Element => {
+  const { theme } = useAppTheme();
   const [searchQuery, setSearchQuery] = useState('');
   const [foods, setFoods] = useState<FoodItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const flatListRef = useRef<FlatList>(null);
+
+  // Dynamic styles using theme
+  const dynamicStyles = {
+    errorContainer: {
+      padding: theme.spacing.md,
+      backgroundColor: theme.mode === 'dark' ? 'rgba(239, 68, 68, 0.15)' : 'rgba(239, 68, 68, 0.1)',
+      borderRadius: theme.radius.sm,
+      marginBottom: theme.spacing.lg,
+      borderWidth: 1,
+      borderColor: theme.mode === 'dark' ? 'rgba(239, 68, 68, 0.3)' : 'rgba(239, 68, 68, 0.2)',
+    },
+    errorText: {
+      color: theme.colors.danger,
+      textAlign: 'center' as const,
+    },
+    skeletonItem: {
+      paddingVertical: theme.spacing.md,
+      borderBottomWidth: 1,
+      borderBottomColor: theme.colors.border,
+    },
+    emptySubtext: {
+      fontSize: 14,
+      color: theme.colors.textSecondary,
+    },
+    calories: {
+      fontSize: 12,
+      color: theme.colors.textSecondary,
+    },
+  };
 
   useEffect(() => {
     if (visible && currentLabel) {
@@ -91,33 +122,33 @@ export const TeachLabelBottomSheet = ({
         onPress={() => handleSelectFood(item)}
         rightComponent={
           item.calories ? (
-            <ThemedText style={styles.calories}>{item.calories} kcal/100g</ThemedText>
+            <ThemedText style={dynamicStyles.calories}>{item.calories} kcal/100g</ThemedText>
           ) : undefined
         }
       />
     ),
-    [handleSelectFood],
+    [handleSelectFood, dynamicStyles.calories],
   );
 
   const renderSkeleton = useCallback(
     () => (
       <View style={styles.skeletonContainer}>
         {Array.from({ length: 5 }).map((_, index) => (
-          <View key={index} style={styles.skeletonItem}>
+          <View key={index} style={dynamicStyles.skeletonItem}>
             <Skeleton width="80%" height={20} />
             <Skeleton width="60%" height={16} style={{ marginTop: 4 }} />
           </View>
         ))}
       </View>
     ),
-    [],
+    [dynamicStyles.skeletonItem],
   );
 
   const keyExtractor = useCallback((item: FoodItem) => item.id, []);
 
   return (
     <BottomSheet visible={visible} onClose={onClose} title="Chọn món ăn đúng">
-      <View style={styles.container}>
+      <View style={[styles.container, { paddingHorizontal: theme.spacing.lg }]}>
         <ThemedTextInput
           placeholder="Tìm kiếm món ăn..."
           value={searchQuery}
@@ -127,8 +158,8 @@ export const TeachLabelBottomSheet = ({
         />
 
         {error && (
-          <View style={styles.errorContainer}>
-            <ThemedText style={styles.errorText}>{error}</ThemedText>
+          <View style={dynamicStyles.errorContainer}>
+            <ThemedText style={dynamicStyles.errorText}>{error}</ThemedText>
           </View>
         )}
 
@@ -148,7 +179,7 @@ export const TeachLabelBottomSheet = ({
                   <ThemedText style={styles.emptyText}>
                     Không tìm thấy món ăn nào
                   </ThemedText>
-                  <ThemedText style={styles.emptySubtext}>
+                  <ThemedText style={dynamicStyles.emptySubtext}>
                     Thử tìm với từ khóa khác
                   </ThemedText>
                 </View>
@@ -167,28 +198,12 @@ export const TeachLabelBottomSheet = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingHorizontal: 16,
   },
   searchInput: {
     marginBottom: 16,
   },
-  errorContainer: {
-    padding: 12,
-    backgroundColor: '#ffebee',
-    borderRadius: 8,
-    marginBottom: 16,
-  },
-  errorText: {
-    color: '#d32f2f',
-    textAlign: 'center',
-  },
   skeletonContainer: {
     paddingVertical: 8,
-  },
-  skeletonItem: {
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
   },
   emptyContainer: {
     flexGrow: 1,
@@ -202,14 +217,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     marginBottom: 8,
   },
-  emptySubtext: {
-    fontSize: 14,
-    color: '#666',
-  },
-  calories: {
-    fontSize: 12,
-    color: '#666',
-  },
 });
 
 export default TeachLabelBottomSheet;
+

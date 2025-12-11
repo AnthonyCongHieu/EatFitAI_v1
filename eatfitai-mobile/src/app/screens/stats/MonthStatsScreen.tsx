@@ -294,7 +294,12 @@ const MonthStatsScreen = (): JSX.Element => {
       >
         {/* Month Navigation */}
         <View style={styles.navigation}>
-          <Pressable onPress={goToPreviousMonth} style={styles.navButton}>
+          <Pressable
+            onPress={goToPreviousMonth}
+            style={styles.navButton}
+            accessibilityRole="button"
+            accessibilityLabel="Xem tháng trước"
+          >
             <Icon name="chevron-back" size="md" color="primary" />
           </Pressable>
           <View style={{ alignItems: 'center' }}>
@@ -311,6 +316,9 @@ const MonthStatsScreen = (): JSX.Element => {
             onPress={goToNextMonth}
             style={styles.navButton}
             disabled={isCurrentMonth || isFutureMonth}
+            accessibilityRole="button"
+            accessibilityLabel="Xem tháng sau"
+            accessibilityState={{ disabled: isCurrentMonth || isFutureMonth }}
           >
             <Icon
               name="chevron-forward"
@@ -396,31 +404,24 @@ const MonthStatsScreen = (): JSX.Element => {
               <View style={styles.summaryGrid}>
                 {/* Total Calories - Blue gradient */}
                 <LinearGradient
-                  colors={
-                    theme.mode === 'dark'
-                      ? ['#1e3a5f', '#2c5282']
-                      : ['#ebf8ff', '#bee3f8']
-                  }
+                  colors={theme.statsCards.calories.gradient}
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 1 }}
                   style={{
                     flex: 1,
                     minWidth: '45%',
                     padding: theme.spacing.md,
-                    borderRadius: 16,
+                    borderRadius: theme.radius.lg,
                     alignItems: 'center',
                     borderWidth: 1,
-                    borderColor:
-                      theme.mode === 'dark'
-                        ? 'rgba(66, 153, 225, 0.3)'
-                        : 'rgba(66, 153, 225, 0.2)',
+                    borderColor: theme.statsCards.calories.borderColor,
                   }}
                 >
-                  <ThemedText style={{ fontSize: 20, marginBottom: 4 }}>🔥</ThemedText>
+                  <ThemedText style={{ fontSize: theme.typography.h3.fontSize, marginBottom: theme.spacing.xs }}>🔥</ThemedText>
                   <ThemedText
                     variant="h3"
                     weight="700"
-                    style={{ color: theme.mode === 'dark' ? '#63b3ed' : '#2b6cb0' }}
+                    style={{ color: theme.statsCards.calories.textColor }}
                   >
                     {Math.round((monthData.totalCalories / 1000) * 10) / 10}k
                   </ThemedText>
@@ -431,31 +432,24 @@ const MonthStatsScreen = (): JSX.Element => {
 
                 {/* Average per day - Purple gradient */}
                 <LinearGradient
-                  colors={
-                    theme.mode === 'dark'
-                      ? ['#44337a', '#553c9a']
-                      : ['#faf5ff', '#e9d8fd']
-                  }
+                  colors={theme.statsCards.average.gradient}
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 1 }}
                   style={{
                     flex: 1,
                     minWidth: '45%',
                     padding: theme.spacing.md,
-                    borderRadius: 16,
+                    borderRadius: theme.radius.lg,
                     alignItems: 'center',
                     borderWidth: 1,
-                    borderColor:
-                      theme.mode === 'dark'
-                        ? 'rgba(159, 122, 234, 0.3)'
-                        : 'rgba(159, 122, 234, 0.2)',
+                    borderColor: theme.statsCards.average.borderColor,
                   }}
                 >
-                  <ThemedText style={{ fontSize: 20, marginBottom: 4 }}>📊</ThemedText>
+                  <ThemedText style={{ fontSize: theme.typography.h3.fontSize, marginBottom: theme.spacing.xs }}>📊</ThemedText>
                   <ThemedText
                     variant="h3"
                     weight="700"
-                    style={{ color: theme.mode === 'dark' ? '#b794f4' : '#6b46c1' }}
+                    style={{ color: theme.statsCards.average.textColor }}
                   >
                     {Math.round(monthData.averageCalories)}
                   </ThemedText>
@@ -466,31 +460,24 @@ const MonthStatsScreen = (): JSX.Element => {
 
                 {/* Days logged - Green gradient */}
                 <LinearGradient
-                  colors={
-                    theme.mode === 'dark'
-                      ? ['#22543d', '#276749']
-                      : ['#f0fff4', '#c6f6d5']
-                  }
+                  colors={theme.statsCards.daysLogged.gradient}
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 1 }}
                   style={{
                     flex: 1,
                     minWidth: '45%',
                     padding: theme.spacing.md,
-                    borderRadius: 16,
+                    borderRadius: theme.radius.lg,
                     alignItems: 'center',
                     borderWidth: 1,
-                    borderColor:
-                      theme.mode === 'dark'
-                        ? 'rgba(72, 187, 120, 0.3)'
-                        : 'rgba(72, 187, 120, 0.2)',
+                    borderColor: theme.statsCards.daysLogged.borderColor,
                   }}
                 >
-                  <ThemedText style={{ fontSize: 20, marginBottom: 4 }}>📅</ThemedText>
+                  <ThemedText style={{ fontSize: theme.typography.h3.fontSize, marginBottom: theme.spacing.xs }}>📅</ThemedText>
                   <ThemedText
                     variant="h3"
                     weight="700"
-                    style={{ color: theme.mode === 'dark' ? '#68d391' : '#276749' }}
+                    style={{ color: theme.statsCards.daysLogged.textColor }}
                   >
                     {monthData.daysLogged}
                   </ThemedText>
@@ -499,35 +486,27 @@ const MonthStatsScreen = (): JSX.Element => {
                   </ThemedText>
                 </LinearGradient>
 
-                {/* Đạt mục tiêu - Orange gradient (thay cho Protein) */}
+                {/* Đạt mục tiêu - Orange gradient */}
                 <LinearGradient
-                  colors={
-                    theme.mode === 'dark'
-                      ? ['#744210', '#975a16']
-                      : ['#fffaf0', '#feebc8']
-                  }
+                  colors={theme.statsCards.target.gradient}
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 1 }}
                   style={{
                     flex: 1,
                     minWidth: '45%',
                     padding: theme.spacing.md,
-                    borderRadius: 16,
+                    borderRadius: theme.radius.lg,
                     alignItems: 'center',
                     borderWidth: 1,
-                    borderColor:
-                      theme.mode === 'dark'
-                        ? 'rgba(237, 137, 54, 0.3)'
-                        : 'rgba(237, 137, 54, 0.2)',
+                    borderColor: theme.statsCards.target.borderColor,
                   }}
                 >
-                  <ThemedText style={{ fontSize: 20, marginBottom: 4 }}>🎯</ThemedText>
+                  <ThemedText style={{ fontSize: theme.typography.h3.fontSize, marginBottom: theme.spacing.xs }}>🎯</ThemedText>
                   <ThemedText
                     variant="h3"
                     weight="700"
-                    style={{ color: theme.mode === 'dark' ? '#f6ad55' : '#c05621' }}
+                    style={{ color: theme.statsCards.target.textColor }}
                   >
-                    {/* Tính số ngày đạt >= 90% target calories */}
                     {monthData.days.filter(d => {
                       const target = d.targetCalories || 2000;
                       return d.calories >= target * 0.9;

@@ -23,6 +23,7 @@ import RecipeDetailScreen from '../screens/ai/RecipeDetailScreen';
 import NutritionSettingsScreen from '../screens/ai/NutritionSettingsScreen';
 import AchievementsScreen from '../screens/gamification/AchievementsScreen';
 import OnboardingScreen from '../screens/auth/OnboardingScreen';
+import WeeklyHistoryScreen from '../screens/profile/WeeklyHistoryScreen';
 import { t } from '../../i18n/vi';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -203,6 +204,18 @@ const AppNavigator = (): JSX.Element => {
                 component={AchievementsScreen}
                 options={{
                   headerShown: false, // Đã có ScreenHeader custom
+                }}
+              />
+              <Stack.Screen
+                name="WeeklyHistory"
+                component={WeeklyHistoryScreen}
+                options={{
+                  headerShown: true,
+                  title: 'Lịch sử Check-in',
+                  headerStyle: { backgroundColor: theme.colors.card },
+                  headerTintColor: theme.colors.text,
+                  headerShadowVisible: false,
+                  headerTitleStyle: { fontFamily: 'Inter_600SemiBold' },
                 }}
               />
             </>

@@ -37,6 +37,7 @@ import { handleApiError } from '../../../utils/errorHandler';
 import { mealService } from '../../../services/mealService';
 import Icon from '../../../components/Icon';
 import { glassStyles } from '../../../components/ui/GlassCard';
+import { AnimatedEmptyState } from '../../../components/ui/AnimatedEmptyState';
 import { t } from '../../../i18n/vi';
 
 const PAGE_SIZE = 20;
@@ -600,29 +601,18 @@ const FoodSearchScreen = (): JSX.Element => {
           removeClippedSubviews={true}
           ListEmptyComponent={
             hasSearched || activeTab === 'favorites' ? (
-              <View style={styles.centerBox}>
-                <View
-                  style={[
-                    styles.emptyCard,
-                    { backgroundColor: theme.colors.card, ...theme.shadows.md },
-                  ]}
-                >
-                  <ThemedText variant="h4" color="textSecondary">
-                    {activeTab === 'search'
-                      ? t('food_search.no_results')
-                      : t('food_search.no_favorites')}
-                  </ThemedText>
-                  <ThemedText
-                    variant="bodySmall"
-                    color="muted"
-                    style={{ marginTop: theme.spacing.sm }}
-                  >
-                    {activeTab === 'search'
-                      ? t('food_search.no_results_hint')
-                      : t('food_search.no_favorites_hint')}
-                  </ThemedText>
-                </View>
-              </View>
+              <AnimatedEmptyState
+                variant={activeTab === 'search' ? 'no-search-results' : 'no-favorites'}
+                title={activeTab === 'search' ? t('food_search.no_results') : t('food_search.no_favorites')}
+                description={activeTab === 'search' ? t('food_search.no_results_hint') : t('food_search.no_favorites_hint')}
+                primaryAction={activeTab === 'search' ? {
+                  label: 'Thử từ khóa khác',
+                  onPress: () => setQuery(''),
+                } : {
+                  label: 'Tìm món ăn',
+                  onPress: () => handleTabChange('search'),
+                }}
+              />
             ) : activeTab === 'search' ? (
               /* Gợi ý khi chưa tìm kiếm */
               <View style={{ paddingHorizontal: theme.spacing.md }}>

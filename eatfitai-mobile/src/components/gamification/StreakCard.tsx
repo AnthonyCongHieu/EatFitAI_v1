@@ -1,12 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { lightTheme } from '../../theme/themes';
-
-const COLORS = lightTheme.colors;
-const SHADOWS = lightTheme.shadows;
-const SPACING = lightTheme.spacing;
-const TYPOGRAPHY = lightTheme.typography;
+import { useAppTheme } from '../../theme/ThemeProvider';
 
 interface StreakCardProps {
   currentStreak: number;
@@ -19,7 +14,64 @@ export const StreakCard: React.FC<StreakCardProps> = ({
   longestStreak,
   onPress,
 }) => {
+  const { theme } = useAppTheme();
   const isActive = currentStreak > 0;
+
+  const styles = StyleSheet.create({
+    container: {
+      borderRadius: theme.radius.lg,
+      padding: theme.spacing.md,
+      marginHorizontal: theme.spacing.lg,
+      marginVertical: theme.spacing.sm,
+      ...theme.shadows.sm,
+    },
+    activeContainer: {
+      backgroundColor: theme.colors.streak.background,
+      borderWidth: 1,
+      borderColor: theme.colors.streak.border,
+    },
+    inactiveContainer: {
+      backgroundColor: theme.colors.card,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+    },
+    content: {
+      flexDirection: 'row',
+      alignItems: 'center',
+    },
+    iconContainer: {
+      width: 48,
+      height: 48,
+      borderRadius: 24,
+      backgroundColor: theme.colors.glass.backgroundAlt,
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginRight: theme.spacing.md,
+    },
+    textContainer: {
+      flex: 1,
+    },
+    title: {
+      ...theme.typography.h3,
+      color: theme.colors.text,
+      marginBottom: 2,
+    },
+    subtitle: {
+      ...theme.typography.bodySmall,
+      color: theme.colors.textSecondary,
+    },
+    badge: {
+      backgroundColor: theme.colors.streak.active,
+      paddingHorizontal: theme.spacing.sm,
+      paddingVertical: 4,
+      borderRadius: theme.radius.md,
+    },
+    badgeText: {
+      color: '#FFF',
+      fontWeight: 'bold',
+      fontSize: 10,
+    },
+  });
 
   return (
     <TouchableOpacity
@@ -29,13 +81,16 @@ export const StreakCard: React.FC<StreakCardProps> = ({
       ]}
       onPress={onPress}
       activeOpacity={0.9}
+      accessibilityRole="button"
+      accessibilityLabel={isActive ? `Chuỗi ${currentStreak} ngày liên tiếp` : 'Bắt đầu chuỗi mới'}
+      accessibilityHint="Nhấn để xem thành tựu"
     >
       <View style={styles.content}>
         <View style={styles.iconContainer}>
           <Ionicons
             name="flame"
             size={32}
-            color={isActive ? '#FF9500' : COLORS.textSecondary}
+            color={isActive ? theme.colors.streak.active : theme.colors.textSecondary}
           />
         </View>
 
@@ -56,58 +111,3 @@ export const StreakCard: React.FC<StreakCardProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    borderRadius: 16,
-    padding: SPACING.md,
-    marginHorizontal: SPACING.lg,
-    marginVertical: SPACING.sm,
-    ...SHADOWS.sm,
-  },
-  activeContainer: {
-    backgroundColor: '#FFF5E6', // Light orange bg
-    borderWidth: 1,
-    borderColor: '#FF9500',
-  },
-  inactiveContainer: {
-    backgroundColor: COLORS.card,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-  },
-  content: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  iconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: 'rgba(255, 255, 255, 0.8)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: SPACING.md,
-  },
-  textContainer: {
-    flex: 1,
-  },
-  title: {
-    ...TYPOGRAPHY.h3,
-    color: COLORS.text,
-    marginBottom: 2,
-  },
-  subtitle: {
-    ...TYPOGRAPHY.bodySmall,
-    color: COLORS.textSecondary,
-  },
-  badge: {
-    backgroundColor: '#FF9500',
-    paddingHorizontal: SPACING.sm,
-    paddingVertical: 4,
-    borderRadius: 12,
-  },
-  badgeText: {
-    color: '#FFF',
-    fontWeight: 'bold',
-    fontSize: 10,
-  },
-});

@@ -30,6 +30,36 @@ export const AiSummaryBar = ({
 
   const mealTypeName = MEAL_TYPE_LABELS[mealType];
 
+  // Dynamic styles using theme
+  const dynamicStyles = {
+    container: {
+      borderTopWidth: 1,
+      borderTopColor: theme.colors.border,
+      paddingHorizontal: theme.spacing.lg,
+      paddingVertical: theme.spacing.md,
+      paddingBottom: theme.spacing.xxl, // Extra padding for safe area
+      backgroundColor: theme.colors.card,
+    },
+    button: {
+      paddingHorizontal: theme.spacing.lg,
+      paddingVertical: 10,
+      borderRadius: theme.borderRadius.button,
+      minWidth: 120,
+      alignItems: 'center' as const,
+      backgroundColor: disabled ? theme.colors.muted : theme.colors.primary,
+    },
+    buttonText: {
+      fontSize: 14,
+      fontFamily: 'Inter_600SemiBold',
+      color: disabled ? theme.colors.textSecondary : '#fff',
+    },
+    animatedNumber: {
+      fontSize: 14,
+      fontFamily: 'Inter_600SemiBold',
+      color: theme.colors.primary,
+    },
+  };
+
   const animatedCountStyle = useAnimatedStyle(() => ({
     transform: [{ scale: interpolate(selectedCount.value, [0, 10], [1, 1.1]) }],
   }));
@@ -39,16 +69,16 @@ export const AiSummaryBar = ({
   }));
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.colors.card }]}>
+    <View style={dynamicStyles.container}>
       <View style={styles.content}>
         <View style={styles.summary}>
           <ThemedText style={styles.summaryText}>
             Sẽ thêm:{' '}
-            <Animated.Text style={[styles.animatedNumber, animatedCountStyle]}>
+            <Animated.Text style={[dynamicStyles.animatedNumber, animatedCountStyle]}>
               {selectedCount.value}
             </Animated.Text>
             {' món · '}
-            <Animated.Text style={[styles.animatedNumber, animatedCaloriesStyle]}>
+            <Animated.Text style={[dynamicStyles.animatedNumber, animatedCaloriesStyle]}>
               {totalCalories.value}
             </Animated.Text>
             {' kcal'}
@@ -56,18 +86,14 @@ export const AiSummaryBar = ({
         </View>
 
         <Pressable
-          style={[
-            styles.button,
-            {
-              backgroundColor: disabled ? theme.colors.muted : theme.colors.primary,
-            },
-          ]}
+          style={dynamicStyles.button}
           onPress={onAddToDiary}
           disabled={disabled}
           accessibilityRole="button"
           accessibilityState={{ disabled }}
+          accessibilityLabel={`Thêm ${selectedCount.value} món vào bữa ${mealTypeName}`}
         >
-          <ThemedText style={[styles.buttonText, { color: disabled ? '#999' : '#fff' }]}>
+          <ThemedText style={dynamicStyles.buttonText}>
             Thêm vào nhật ký bữa {mealTypeName}
           </ThemedText>
         </Pressable>
@@ -77,13 +103,6 @@ export const AiSummaryBar = ({
 };
 
 const styles = StyleSheet.create({
-  container: {
-    borderTopWidth: 1,
-    borderTopColor: '#e0e0e0',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    paddingBottom: 24, // Extra padding for safe area
-  },
   content: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -96,22 +115,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontFamily: 'Inter_600SemiBold',
   },
-  button: {
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 8,
-    minWidth: 120,
-    alignItems: 'center',
-  },
-  buttonText: {
-    fontSize: 14,
-    fontFamily: 'Inter_600SemiBold',
-  },
-  animatedNumber: {
-    fontSize: 14,
-    fontFamily: 'Inter_600SemiBold',
-    color: '#007AFF',
-  },
 });
 
 export default AiSummaryBar;
+

@@ -30,6 +30,7 @@ import { MEAL_TYPE_LABELS, type MealTypeId } from '../../../types';
 import type { RootStackParamList } from '../../types';
 import { t } from '../../../i18n/vi';
 import Toast from 'react-native-toast-message';
+import { AnimatedEmptyState } from '../../../components/ui/AnimatedEmptyState';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -41,12 +42,18 @@ const MEAL_EMOJIS: Record<MealTypeId, string> = {
   4: '🍵', // Snack
 };
 
-// Gradient colors cho từng loại bữa ăn
-const MEAL_GRADIENTS: Record<MealTypeId, string[]> = {
-  1: ['#FF9A9E', '#FECFEF'], // Breakfast - Hồng nhạt
-  2: ['#A8EDEA', '#FED6E3'], // Lunch - Xanh mint
-  3: ['#667EEA', '#764BA2'], // Dinner - Tím
-  4: ['#FFECD2', '#FCB69F'], // Snack - Cam nhạt
+// Helper function to get meal gradient from theme
+const getMealGradient = (
+  mealType: MealTypeId,
+  mealGradients: typeof import('../../../theme/themes').lightTheme.mealGradients,
+): readonly [string, string] => {
+  const gradientMap: Record<MealTypeId, readonly [string, string]> = {
+    1: mealGradients.breakfast,
+    2: mealGradients.lunch,
+    3: mealGradients.dinner,
+    4: mealGradients.snack,
+  };
+  return gradientMap[mealType] || mealGradients.lunch;
 };
 
 const MealDiaryScreen = (): JSX.Element => {
@@ -225,9 +232,16 @@ const MealDiaryScreen = (): JSX.Element => {
       const isSelected = date.toDateString() === selectedDate.toDateString();
       const isToday = date.toDateString() === new Date().toDateString();
       const dayNum = date.getDate();
+      const dayName = formatDate(date).split(',')[0];
 
       return (
-        <Pressable onPress={() => handleDateSelect(date)} style={{ marginRight: 8 }}>
+        <Pressable
+          onPress={() => handleDateSelect(date)}
+          style={{ marginRight: 8 }}
+          accessibilityRole="button"
+          accessibilityLabel={`${dayName} ngày ${dayNum}${isToday ? ', hôm nay' : ''}${isSelected ? ', đang chọn' : ''}`}
+          accessibilityState={{ selected: isSelected }}
+        >
           <Animated.View
             style={[
               styles.dateChip,
@@ -247,7 +261,7 @@ const MealDiaryScreen = (): JSX.Element => {
               weight="600"
               style={{ color: isSelected ? '#fff' : theme.colors.textSecondary }}
             >
-              {formatDate(date).split(',')[0]}
+              {dayName}
             </ThemedText>
             <ThemedText
               variant="h4"
@@ -405,29 +419,23 @@ const MealDiaryScreen = (): JSX.Element => {
     [renderFoodCard],
   );
 
-  // Render empty state đẹp hơn
+  // Render empty state đẹp hơn với AnimatedEmptyState
   const renderEmptyState = () => (
-    <Animated.View entering={FadeIn.delay(200)} style={styles.emptyContainer}>
-      <View style={styles.emptyIcon}>
-        <Ionicons name="restaurant-outline" size={64} color={theme.colors.primary} />
-      </View>
-      <ThemedText variant="h3" weight="700" style={{ marginTop: 16, textAlign: 'center' }}>
-        Chưa có dữ liệu
-      </ThemedText>
-      <ThemedText
-        variant="body"
-        color="textSecondary"
-        style={{ marginTop: 8, textAlign: 'center' }}
-      >
-        Hãy thêm món ăn vào nhật ký.
-      </ThemedText>
-      <Button
-        title="➕ Thêm món ăn"
-        variant="primary"
-        onPress={handleAddManual}
-        style={{ marginTop: 24, minWidth: 180 }}
-      />
-    </Animated.View>
+    <AnimatedEmptyState
+      variant="no-food"
+      title="Chưa có dữ liệu hôm nay"
+      description="Hãy chụp ảnh hoặc tìm kiếm để thêm món ăn vào nhật ký."
+      primaryAction={{
+        label: 'Thêm món ăn',
+        onPress: handleAddManual,
+        icon: 'add-circle-outline',
+      }}
+      secondaryAction={{
+        label: 'Chụp ảnh món ăn',
+        onPress: () => navigation.navigate('AiCamera'),
+      }}
+      compact
+    />
   );
 
   const isEmpty = entries.length === 0;
@@ -616,7 +624,7 @@ const MealDiaryScreen = (): JSX.Element => {
             value={selectedDate}
             mode="date"
             display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-            onChange={(event, date) => {
+            onChange={(event: any, date?: Date) => {
               setShowDatePicker(Platform.OS === 'ios');
               if (date) {
                 setSelectedDate(date);

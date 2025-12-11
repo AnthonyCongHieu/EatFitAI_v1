@@ -89,21 +89,21 @@ const GOAL_OPTIONS = [
     label: t('onboarding.goal_lose'),
     icon: '📉',
     desc: t('onboarding.goal_lose_desc'),
-    color: '#EF4444',
+    colorKey: 'danger' as const,
   },
   {
     value: 'maintain',
     label: t('onboarding.goal_maintain'),
     icon: '⚖️',
     desc: t('onboarding.goal_maintain_desc'),
-    color: '#3B82F6',
+    colorKey: 'info' as const,
   },
   {
     value: 'gain',
     label: t('onboarding.goal_gain'),
     icon: '📈',
     desc: t('onboarding.goal_gain_desc'),
-    color: '#22C55E',
+    colorKey: 'success' as const,
   },
 ];
 
@@ -472,7 +472,7 @@ const OnboardingScreen = (): JSX.Element => {
             >
               {t('onboarding.gender')}
             </ThemedText>
-            <View style={styles.optionGrid}>
+            <View style={styles.optionGrid} accessibilityRole="radiogroup" accessibilityLabel="Chọn giới tính">
               {GENDER_OPTIONS.map((opt) => (
                 <Pressable
                   key={opt.value}
@@ -490,8 +490,11 @@ const OnboardingScreen = (): JSX.Element => {
                     },
                   ]}
                   onPress={() => setData({ ...data, gender: opt.value as any })}
+                  accessibilityRole="radio"
+                  accessibilityLabel={opt.label}
+                  accessibilityState={{ checked: data.gender === opt.value }}
                 >
-                  <ThemedText style={{ fontSize: 24 }}>{opt.icon}</ThemedText>
+                  <ThemedText style={{ fontSize: theme.typography.h2.fontSize }}>{opt.icon}</ThemedText>
                   <ThemedText weight="500">{opt.label}</ThemedText>
                 </Pressable>
               ))}
@@ -553,50 +556,56 @@ const OnboardingScreen = (): JSX.Element => {
       case 2: // Goal
         return (
           <Animated.View entering={FadeInRight} exiting={FadeOutLeft} key="step2">
-            <View style={styles.optionGrid}>
-              {GOAL_OPTIONS.map((goal) => (
-                <Pressable
-                  key={goal.value}
-                  style={[
-                    styles.goalCard,
-                    {
-                      backgroundColor:
-                        data.goal === goal.value
-                          ? `${goal.color}20`
-                          : isDark
-                            ? 'rgba(255,255,255,0.05)'
-                            : 'rgba(0,0,0,0.03)',
-                      borderColor: data.goal === goal.value ? goal.color : 'transparent',
-                    },
-                  ]}
-                  onPress={() => setData({ ...data, goal: goal.value as any })}
-                >
-                  <ThemedText style={{ fontSize: 32 }}>{goal.icon}</ThemedText>
-                  <ThemedText
-                    weight="600"
-                    style={{
-                      marginTop: 8,
-                      color: data.goal === goal.value ? goal.color : theme.colors.text,
-                    }}
+            <View style={styles.optionGrid} accessibilityRole="radiogroup" accessibilityLabel="Chọn mục tiêu">
+              {GOAL_OPTIONS.map((goal) => {
+                const goalColor = theme.colors[goal.colorKey];
+                return (
+                  <Pressable
+                    key={goal.value}
+                    style={[
+                      styles.goalCard,
+                      {
+                        backgroundColor:
+                          data.goal === goal.value
+                            ? `${goalColor}20`
+                            : isDark
+                              ? 'rgba(255,255,255,0.05)'
+                              : 'rgba(0,0,0,0.03)',
+                        borderColor: data.goal === goal.value ? goalColor : 'transparent',
+                      },
+                    ]}
+                    onPress={() => setData({ ...data, goal: goal.value as any })}
+                    accessibilityRole="radio"
+                    accessibilityLabel={`${goal.label}: ${goal.desc}`}
+                    accessibilityState={{ checked: data.goal === goal.value }}
                   >
-                    {goal.label}
-                  </ThemedText>
-                  <ThemedText
-                    variant="caption"
-                    color="textSecondary"
-                    style={{ textAlign: 'center', marginTop: 4 }}
-                  >
-                    {goal.desc}
-                  </ThemedText>
-                </Pressable>
-              ))}
+                    <ThemedText style={{ fontSize: theme.typography.h1.fontSize }}>{goal.icon}</ThemedText>
+                    <ThemedText
+                      weight="600"
+                      style={{
+                        marginTop: theme.spacing.sm,
+                        color: data.goal === goal.value ? goalColor : theme.colors.text,
+                      }}
+                    >
+                      {goal.label}
+                    </ThemedText>
+                    <ThemedText
+                      variant="caption"
+                      color="textSecondary"
+                      style={{ textAlign: 'center', marginTop: theme.spacing.xs }}
+                    >
+                      {goal.desc}
+                    </ThemedText>
+                  </Pressable>
+                );
+              })}
             </View>
           </Animated.View>
         );
 
       case 3: // Activity Level
         return (
-          <Animated.View entering={FadeInRight} exiting={FadeOutLeft} key="step3">
+          <Animated.View entering={FadeInRight} exiting={FadeOutLeft} key="step3" accessibilityRole="radiogroup" accessibilityLabel="Chọn mức độ vận động">
             {ACTIVITY_OPTIONS.map((act) => (
               <Pressable
                 key={act.value}
@@ -616,6 +625,9 @@ const OnboardingScreen = (): JSX.Element => {
                   },
                 ]}
                 onPress={() => setData({ ...data, activityLevel: act.value as any })}
+                accessibilityRole="radio"
+                accessibilityLabel={`${act.label}: ${act.desc}`}
+                accessibilityState={{ checked: data.activityLevel === act.value }}
               >
                 <ThemedText
                   weight={data.activityLevel === act.value ? '600' : '400'}
@@ -692,7 +704,7 @@ const OnboardingScreen = (): JSX.Element => {
 
   return (
     <LinearGradient
-      colors={isDark ? ['#0A0A0F', '#1a1a2e'] : ['#f0f9ff', '#e0f2fe']}
+      colors={theme.colors.screenGradient}
       style={styles.container}
     >
       {/* Header */}

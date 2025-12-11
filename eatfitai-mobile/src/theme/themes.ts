@@ -15,6 +15,7 @@ export type AppTheme = {
   colors: {
     background: string;
     backgroundGradient: readonly [string, string, string]; // Gradient background
+    screenGradient: readonly [string, string]; // 2-color screen gradient
     card: string;
     text: string;
     textSecondary: string;
@@ -29,6 +30,40 @@ export type AppTheme = {
     success: string;
     warning: string;
     info: string;
+    // Overlay colors for modals/sheets
+    overlay: {
+      light: string;
+      medium: string;
+      heavy: string;
+    };
+    // Glassmorphism colors
+    glass: {
+      background: string;
+      border: string;
+      backgroundAlt: string;
+      borderAlt: string;
+    };
+    // Chart colors
+    chart: {
+      bar: string;
+      barSecondary: string;
+      barRemaining: string;
+      line: string;
+    };
+    // Gamification/Streak colors
+    streak: {
+      active: string;
+      background: string;
+      border: string;
+    };
+  };
+
+  // Meal type gradients
+  mealGradients: {
+    breakfast: readonly [string, string];
+    lunch: readonly [string, string];
+    dinner: readonly [string, string];
+    snack: readonly [string, string];
   };
 
   gradients: {
@@ -37,6 +72,40 @@ export type AppTheme = {
     accent: readonly [string, string];
     danger: readonly [string, string];
     success: readonly [string, string];
+  };
+
+  // Stats card gradients and colors
+  statsCards: {
+    calories: {
+      gradient: readonly [string, string];
+      textColor: string;
+      borderColor: string;
+    };
+    average: {
+      gradient: readonly [string, string];
+      textColor: string;
+      borderColor: string;
+    };
+    daysLogged: {
+      gradient: readonly [string, string];
+      textColor: string;
+      borderColor: string;
+    };
+    target: {
+      gradient: readonly [string, string];
+      textColor: string;
+      borderColor: string;
+    };
+  };
+
+  // Achievement/Gamification gradients
+  achievementGradients: {
+    first_log: readonly [string, string];
+    streak_3: readonly [string, string];
+    streak_7: readonly [string, string];
+    log_100_meals: readonly [string, string];
+    default: readonly [string, string];
+    header: readonly [string, string];
   };
   statusBarStyle: 'light' | 'dark';
   spacing: {
@@ -73,6 +142,8 @@ export type AppTheme = {
     button: Typography;
     heading1: Typography;
     heading2: Typography;
+    display: Typography; // 48px for large hero elements
+    emoji: Typography; // 28-32px for emoji display
   };
   shadows: {
     sm: {
@@ -110,6 +181,7 @@ export const lightTheme: AppTheme = {
     // Base colors
     background: '#F8FAFC',
     backgroundGradient: ['#F8FAFC', '#E2E8F0', '#F1F5F9'] as const, // Light gradient
+    screenGradient: ['#f0f9ff', '#e0f2fe'] as const, // Light screen gradient
     card: '#FFFFFF',
     text: '#0F172A',
     textSecondary: '#64748B',
@@ -128,6 +200,38 @@ export const lightTheme: AppTheme = {
     success: '#22C55E',
     warning: '#F59E0B',
     info: '#3B82F6',
+    // Overlay colors for modals/sheets
+    overlay: {
+      light: 'rgba(0, 0, 0, 0.4)',
+      medium: 'rgba(0, 0, 0, 0.5)',
+      heavy: 'rgba(0, 0, 0, 0.6)',
+    },
+    // Glassmorphism colors
+    glass: {
+      background: 'rgba(255, 255, 255, 0.85)',
+      border: 'rgba(0, 0, 0, 0.06)',
+      backgroundAlt: 'rgba(255, 255, 255, 0.7)',
+      borderAlt: 'rgba(0, 0, 0, 0.05)',
+    },
+    // Chart colors
+    chart: {
+      bar: '#4ade80',
+      barSecondary: '#8b5cf6',
+      barRemaining: 'rgba(180, 190, 185, 0.5)',
+      line: '#3b82f6',
+    },
+    // Gamification/Streak colors
+    streak: {
+      active: '#FF9500',
+      background: '#FFF5E6',
+      border: '#FF9500',
+    },
+  },
+  mealGradients: {
+    breakfast: ['#FF9A9E', '#FECFEF'] as const,
+    lunch: ['#A8EDEA', '#FED6E3'] as const,
+    dinner: ['#667EEA', '#764BA2'] as const,
+    snack: ['#FFECD2', '#FCB69F'] as const,
   },
   gradients: {
     primary: ['#10B981', '#059669'],
@@ -135,6 +239,36 @@ export const lightTheme: AppTheme = {
     accent: ['#8B5CF6', '#7C3AED'], // Purple for AI features
     danger: ['#EF4444', '#DC2626'],
     success: ['#22C55E', '#16A34A'],
+  },
+  statsCards: {
+    calories: {
+      gradient: ['#ebf8ff', '#bee3f8'] as const,
+      textColor: '#2b6cb0',
+      borderColor: 'rgba(66, 153, 225, 0.2)',
+    },
+    average: {
+      gradient: ['#faf5ff', '#e9d8fd'] as const,
+      textColor: '#6b46c1',
+      borderColor: 'rgba(159, 122, 234, 0.2)',
+    },
+    daysLogged: {
+      gradient: ['#f0fff4', '#c6f6d5'] as const,
+      textColor: '#276749',
+      borderColor: 'rgba(72, 187, 120, 0.2)',
+    },
+    target: {
+      gradient: ['#fffaf0', '#feebc8'] as const,
+      textColor: '#c05621',
+      borderColor: 'rgba(237, 137, 54, 0.2)',
+    },
+  },
+  achievementGradients: {
+    first_log: ['#FF6B6B', '#FF8E53'] as const,    // Red-Orange (Start)
+    streak_3: ['#4ECDC4', '#44A08D'] as const,     // Green (Persistence)
+    streak_7: ['#667EEA', '#764BA2'] as const,     // Purple (Habit)
+    log_100_meals: ['#F093FB', '#F5576C'] as const, // Pink (Expert)
+    default: ['#FFD93D', '#FF6B6B'] as const,       // Yellow-Orange
+    header: ['#667eea', '#764ba2'] as const,        // Purple header
   },
   statusBarStyle: 'dark',
   spacing: { xs: 4, sm: 8, md: 12, lg: 16, xl: 20, xxl: 24 },
@@ -218,6 +352,20 @@ export const lightTheme: AppTheme = {
       letterSpacing: -0.1,
       fontWeight: '600',
     },
+    display: {
+      fontFamily: 'Inter_700Bold',
+      fontSize: 48,
+      lineHeight: 56,
+      letterSpacing: -0.5,
+      fontWeight: '700',
+    },
+    emoji: {
+      fontFamily: 'System',
+      fontSize: 28,
+      lineHeight: 36,
+      letterSpacing: 0,
+      fontWeight: '400',
+    },
   },
   shadows: {
     sm: {
@@ -255,6 +403,7 @@ export const darkTheme: AppTheme = {
     // Premium dark gradient with subtle green tint (health theme)
     background: '#080B0A', // Deep dark with green hint
     backgroundGradient: ['#080B0A', '#0D1512', '#0A0F0D'] as const, // Dark green gradient
+    screenGradient: ['#0A0A0F', '#1a1a2e'] as const, // Dark screen gradient
     card: 'rgba(18, 25, 22, 0.95)', // Dark green tint card
 
     text: '#F5F7FA',
@@ -274,6 +423,38 @@ export const darkTheme: AppTheme = {
     success: '#22C55E',
     warning: '#F59E0B',
     info: '#3B82F6',
+    // Overlay colors for modals/sheets (darker for dark mode)
+    overlay: {
+      light: 'rgba(0, 0, 0, 0.5)',
+      medium: 'rgba(0, 0, 0, 0.6)',
+      heavy: 'rgba(0, 0, 0, 0.8)',
+    },
+    // Glassmorphism colors (dark mode optimized)
+    glass: {
+      background: 'rgba(25, 30, 28, 0.75)',
+      border: 'rgba(255, 255, 255, 0.1)',
+      backgroundAlt: 'rgba(40, 40, 40, 0.7)',
+      borderAlt: 'rgba(255, 255, 255, 0.08)',
+    },
+    // Chart colors (same as light for consistency)
+    chart: {
+      bar: '#4ade80',
+      barSecondary: '#8b5cf6',
+      barRemaining: 'rgba(55, 65, 60, 0.7)',
+      line: '#3b82f6',
+    },
+    // Gamification/Streak colors
+    streak: {
+      active: '#FF9500',
+      background: 'rgba(255, 149, 0, 0.15)',
+      border: '#FF9500',
+    },
+  },
+  mealGradients: {
+    breakfast: ['#FF9A9E', '#FECFEF'] as const,
+    lunch: ['#A8EDEA', '#FED6E3'] as const,
+    dinner: ['#667EEA', '#764BA2'] as const,
+    snack: ['#FFECD2', '#FCB69F'] as const,
   },
   gradients: {
     primary: ['#3B82F6', '#8B5CF6'], // Blue to purple gradient
@@ -281,6 +462,36 @@ export const darkTheme: AppTheme = {
     accent: ['#8B5CF6', '#A855F7'], // Purple accent
     danger: ['#EF4444', '#F87171'],
     success: ['#22C55E', '#4ADE80'],
+  },
+  statsCards: {
+    calories: {
+      gradient: ['#1e3a5f', '#2c5282'] as const,
+      textColor: '#63b3ed',
+      borderColor: 'rgba(66, 153, 225, 0.3)',
+    },
+    average: {
+      gradient: ['#44337a', '#553c9a'] as const,
+      textColor: '#b794f4',
+      borderColor: 'rgba(159, 122, 234, 0.3)',
+    },
+    daysLogged: {
+      gradient: ['#22543d', '#276749'] as const,
+      textColor: '#68d391',
+      borderColor: 'rgba(72, 187, 120, 0.3)',
+    },
+    target: {
+      gradient: ['#744210', '#975a16'] as const,
+      textColor: '#f6ad55',
+      borderColor: 'rgba(237, 137, 54, 0.3)',
+    },
+  },
+  achievementGradients: {
+    first_log: ['#FF6B6B', '#FF8E53'] as const,
+    streak_3: ['#4ECDC4', '#44A08D'] as const,
+    streak_7: ['#667EEA', '#764BA2'] as const,
+    log_100_meals: ['#F093FB', '#F5576C'] as const,
+    default: ['#FFD93D', '#FF6B6B'] as const,
+    header: ['#1a1a2e', '#16213e'] as const,  // Dark header
   },
   statusBarStyle: 'light',
   spacing: { xs: 4, sm: 8, md: 12, lg: 16, xl: 20, xxl: 24 },
@@ -363,6 +574,20 @@ export const darkTheme: AppTheme = {
       lineHeight: 28,
       letterSpacing: -0.1,
       fontWeight: '600',
+    },
+    display: {
+      fontFamily: 'Inter_700Bold',
+      fontSize: 48,
+      lineHeight: 56,
+      letterSpacing: -0.5,
+      fontWeight: '700',
+    },
+    emoji: {
+      fontFamily: 'System',
+      fontSize: 28,
+      lineHeight: 36,
+      letterSpacing: 0,
+      fontWeight: '400',
     },
   },
   shadows: {
