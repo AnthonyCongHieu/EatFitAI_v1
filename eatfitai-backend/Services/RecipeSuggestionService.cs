@@ -247,6 +247,14 @@ namespace EatFitAI.API.Services
                 TotalProtein = totalProtein,
                 TotalCarbs = totalCarbs,
                 TotalFat = totalFat,
+                // TODO: Uncomment sau khi chạy migration SQL
+                // Instructions = !string.IsNullOrEmpty(recipe.Instructions) 
+                //     ? recipe.Instructions.Split('\n', StringSplitOptions.RemoveEmptyEntries)
+                //         .Select(s => s.Trim())
+                //         .Where(s => !string.IsNullOrEmpty(s))
+                //         .ToList()
+                //     : null,
+                // VideoUrl = recipe.VideoUrl,
                 Ingredients = ingredientDetails
             };
         }

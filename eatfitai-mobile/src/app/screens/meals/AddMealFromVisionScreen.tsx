@@ -1,23 +1,16 @@
 import React, { useState, useMemo, useCallback } from 'react';
-import { Image, StyleSheet, View, FlatList, ListRenderItem } from 'react-native';
+import { Image, StyleSheet, View, ScrollView, Pressable, Dimensions } from 'react-native';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import Animated, {
-  useAnimatedStyle,
-  useSharedValue,
-  withSpring,
-  withTiming,
-} from 'react-native-reanimated';
 import Toast from 'react-native-toast-message';
 
 import Screen from '../../../components/Screen';
 import { ThemedText } from '../../../components/ThemedText';
-import { SectionHeader } from '../../../components/ui/SectionHeader';
 import { Skeleton } from '../../../components/Skeleton';
-import { AiDetectionCard } from '../../../components/ui/AiDetectionCard';
 import { TeachLabelBottomSheet } from '../../../components/ui/TeachLabelBottomSheet';
-import { AiSummaryBar } from '../../../components/ui/AiSummaryBar';
 import { AppCard } from '../../../components/ui/AppCard';
+import Button from '../../../components/Button';
+import Icon from '../../../components/Icon';
 import { useAppTheme } from '../../../theme/ThemeProvider';
 import type { RootStackParamList } from '../../types';
 import type { MealTypeId } from '../../../types';
@@ -27,9 +20,12 @@ import { aiService } from '../../../services/aiService';
 import { mealService } from '../../../services/mealService';
 import { useDiaryStore } from '../../../store/useDiaryStore';
 import { handleApiErrorWithCustomMessage } from '../../../utils/errorHandler';
+import { translateIngredient } from '../../../utils/translate';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 type RouteProps = RouteProp<RootStackParamList, 'AddMealFromVision'>;
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 type DetectionItem = {
   item: MappedFoodItem;
@@ -44,68 +40,6 @@ const AddMealFromVisionScreen = (): JSX.Element => {
   const route = useRoute<RouteProps>();
   const refreshSummary = useDiaryStore((s) => s.refreshSummary);
 
-  const styles = StyleSheet.create({
-    container: {
-      flex: 1,
-      backgroundColor: theme.colors.background,
-    },
-    header: {
-      paddingHorizontal: theme.spacing.lg,
-      paddingTop: theme.spacing.lg,
-      paddingBottom: theme.spacing.xl,
-    },
-    title: {
-      marginBottom: theme.spacing.sm,
-    },
-    imageContainer: {
-      position: 'relative',
-      width: '100%',
-      height: 200,
-      marginBottom: theme.spacing.xl,
-    },
-    image: {
-      width: '100%',
-      height: '100%',
-      borderRadius: theme.borderRadius.card,
-    },
-    overlay: {
-      position: 'absolute',
-      bottom: 0,
-      left: 0,
-      right: 0,
-      backgroundColor: 'rgba(0,0,0,0.6)',
-      paddingVertical: theme.spacing.sm,
-      paddingHorizontal: theme.spacing.lg,
-      borderBottomLeftRadius: theme.borderRadius.card,
-      borderBottomRightRadius: theme.borderRadius.card,
-    },
-    scrollView: {
-      flex: 1,
-    },
-    content: {
-      paddingHorizontal: theme.spacing.lg,
-      paddingBottom: 150, // Ensure enough space for summary bar
-    },
-    section: {
-      marginBottom: theme.spacing.xxl,
-    },
-    skeletonContainer: {
-      paddingHorizontal: theme.spacing.lg,
-    },
-    skeletonCard: {
-      marginBottom: theme.spacing.sm,
-    },
-    errorActions: {
-      // Add error action buttons if needed
-    },
-    summaryBarContainer: {
-      position: 'absolute',
-      bottom: 0,
-      left: 0,
-      right: 0,
-    },
-  });
-
   const { imageUri, result } = route.params;
 
   const [loading, setLoading] = useState(false);
@@ -114,27 +48,12 @@ const AddMealFromVisionScreen = (): JSX.Element => {
       item,
       selected: item.isMatched,
       grams: 100,
-      mealType: 2, // Default to lunch
+      mealType: 2, // Mặc định bữa trưa
     })),
   );
   const [teachLabelVisible, setTeachLabelVisible] = useState(false);
   const [currentTeachLabel, setCurrentTeachLabel] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-
-  // Animation values
-  const summaryBarTranslateY = useSharedValue(100);
-  const selectedCountValue = useSharedValue(0);
-  const totalCaloriesValue = useSharedValue(0);
-
-  const matchedItems = useMemo(
-    () => detectionItems.filter((d) => d.item.isMatched),
-    [detectionItems],
-  );
-
-  const unmatchedItems = useMemo(
-    () => detectionItems.filter((d) => !d.item.isMatched),
-    [detectionItems],
-  );
 
   const selectedItems = useMemo(
     () => detectionItems.filter((d) => d.selected),
@@ -148,47 +67,20 @@ const AddMealFromVisionScreen = (): JSX.Element => {
     }, 0);
   }, [selectedItems]);
 
-  // Animate summary bar when data loads
-  React.useEffect(() => {
-    if (detectionItems.length > 0) {
-      summaryBarTranslateY.value = withSpring(0, { damping: 20, stiffness: 200 });
-    }
-  }, [detectionItems.length, summaryBarTranslateY]);
-
-  // Animate count and calories changes
-  React.useEffect(() => {
-    selectedCountValue.value = withTiming(selectedItems.length, { duration: 200 });
-  }, [selectedItems.length, selectedCountValue]);
-
-  React.useEffect(() => {
-    totalCaloriesValue.value = withTiming(Math.round(totalCalories), { duration: 200 });
-  }, [totalCalories, totalCaloriesValue]);
-
-  const handleSelectionChange = useCallback((targetItem: DetectionItem, selected: boolean) => {
-    // Guard: Prevent selecting unmatched items
-    if (selected && !targetItem.item.isMatched) {
+  const handleToggleSelect = useCallback((targetItem: DetectionItem) => {
+    // Cảnh báo nếu chưa matched nhưng vẫn cho phép chọn
+    if (!targetItem.item.isMatched && !targetItem.selected) {
       Toast.show({
         type: 'info',
-        text1: 'Món ăn chưa được nhận diện',
-        text2: 'Vui lòng "Chọn món đúng" trước khi chọn',
+        text1: 'Lưu ý',
+        text2: 'Món này chưa được xác nhận, có thể thiếu thông tin dinh dưỡng',
+        visibilityTime: 2000,
       });
-      return;
     }
-
     setDetectionItems((prev) =>
-      prev.map((item) => (item === targetItem ? { ...item, selected } : item)),
-    );
-  }, []);
-
-  const handleGramsChange = useCallback((targetItem: DetectionItem, grams: number) => {
-    setDetectionItems((prev) =>
-      prev.map((item) => (item === targetItem ? { ...item, grams } : item)),
-    );
-  }, []);
-
-  const handleMealTypeChange = useCallback((targetItem: DetectionItem, mealType: MealTypeId) => {
-    setDetectionItems((prev) =>
-      prev.map((item) => (item === targetItem ? { ...item, mealType } : item)),
+      prev.map((item) =>
+        item === targetItem ? { ...item, selected: !item.selected } : item,
+      ),
     );
   }, []);
 
@@ -210,7 +102,7 @@ const AddMealFromVisionScreen = (): JSX.Element => {
         text2: `"${currentTeachLabel}" → ${foodItem.name}`,
       });
 
-      // Refresh detection results
+      // Refresh lại kết quả
       setLoading(true);
       const refreshedResult = await aiService.detectFoodByImage(imageUri);
       setDetectionItems(
@@ -224,12 +116,9 @@ const AddMealFromVisionScreen = (): JSX.Element => {
       setLoading(false);
     } catch (err) {
       handleApiErrorWithCustomMessage(err, {
-        server_error: {
-          text1: 'Lỗi',
-          text2: 'Máy chủ đang gặp sự cố. Vui lòng thử lại.',
-        },
-        network_error: { text1: 'Không có kết nối', text2: 'Kiểm tra mạng và thử lại' },
-        unknown: { text1: 'Lỗi', text2: 'Không thể dạy AI. Vui lòng thử lại.' },
+        server_error: { text1: 'Lỗi', text2: 'Máy chủ gặp sự cố' },
+        network_error: { text1: 'Không có kết nối', text2: 'Kiểm tra mạng' },
+        unknown: { text1: 'Lỗi', text2: 'Không thể dạy AI' },
       });
     }
   };
@@ -240,7 +129,7 @@ const AddMealFromVisionScreen = (): JSX.Element => {
     setIsSubmitting(true);
     try {
       const date = new Date().toISOString().split('T')[0]!;
-      const mealType = selectedItems[0]?.mealType ?? 2; // Use meal type from first selected item, default to lunch
+      const mealType = selectedItems[0]?.mealType ?? 2;
 
       const items = selectedItems.map((d) => ({
         foodItemId: d.item.foodItemId!,
@@ -259,140 +148,262 @@ const AddMealFromVisionScreen = (): JSX.Element => {
       navigation.goBack();
     } catch (err) {
       handleApiErrorWithCustomMessage(err, {
-        server_error: {
-          text1: 'Lỗi',
-          text2: 'Máy chủ đang gặp sự cố. Vui lòng thử lại.',
-        },
-        network_error: { text1: 'Không có kết nối', text2: 'Kiểm tra mạng và thử lại' },
-        unknown: { text1: 'Lỗi', text2: 'Không thể thêm vào nhật ký. Vui lòng thử lại.' },
+        server_error: { text1: 'Lỗi', text2: 'Máy chủ gặp sự cố' },
+        network_error: { text1: 'Không có kết nối', text2: 'Kiểm tra mạng' },
+        unknown: { text1: 'Lỗi', text2: 'Không thể thêm vào nhật ký' },
       });
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const renderDetectionCard: ListRenderItem<DetectionItem> = useCallback(
-    ({ item: detection }) => (
-      <AiDetectionCard
-        item={detection.item}
-        selected={detection.selected}
-        grams={detection.grams}
-        mealType={detection.mealType}
-        onSelectionChange={(selected) => handleSelectionChange(detection, selected)}
-        onGramsChange={(grams) => handleGramsChange(detection, grams)}
-        onMealTypeChange={(mealType) => handleMealTypeChange(detection, mealType)}
-        onTeachLabel={() => handleTeachLabel(detection.item.label)}
-      />
-    ),
-    [handleSelectionChange, handleGramsChange, handleMealTypeChange, handleTeachLabel],
-  );
+  // Lấy tên hiển thị tiếng Việt
+  const getDisplayName = (item: MappedFoodItem) => {
+    return item.foodName || translateIngredient(item.label);
+  };
 
-  const keyExtractor = useCallback(
-    (item: DetectionItem, index: number) => `${item.item.label}-${index}`,
-    [],
-  );
+  const renderFoodItem = (detection: DetectionItem, index: number) => {
+    const item = detection.item;
+    const displayName = getDisplayName(item);
+    const calories = item.caloriesPer100g ?? 0;
+    const isMatched = item.isMatched;
+
+    return (
+      <Pressable
+        key={`${item.label}-${index}`}
+        onPress={() => handleToggleSelect(detection)}
+        style={[
+          styles.foodRow,
+          {
+            backgroundColor: detection.selected
+              ? theme.colors.primary + '15'
+              : theme.colors.card,
+            borderColor: detection.selected
+              ? theme.colors.primary
+              : theme.colors.border,
+          },
+        ]}
+      >
+        {/* Checkbox */}
+        <View
+          style={[
+            styles.checkbox,
+            {
+              backgroundColor: detection.selected
+                ? theme.colors.primary
+                : 'transparent',
+              borderColor: detection.selected
+                ? theme.colors.primary
+                : theme.colors.border,
+            },
+          ]}
+        >
+          {detection.selected && (
+            <Icon name="checkmark" size="sm" color="card" />
+          )}
+        </View>
+
+        {/* Info */}
+        <View style={styles.foodInfo}>
+          <ThemedText variant="body" weight="600" numberOfLines={1}>
+            {displayName}
+          </ThemedText>
+          <ThemedText variant="caption" color="textSecondary">
+            {calories} kcal / 100 g
+          </ThemedText>
+        </View>
+
+        {/* Action button */}
+        {!isMatched && (
+          <Pressable
+            onPress={() => handleTeachLabel(item.label)}
+            style={[styles.teachBtn, { backgroundColor: theme.colors.primary + '20' }]}
+          >
+            <ThemedText variant="caption" color="primary">
+              Chọn món đúng
+            </ThemedText>
+          </Pressable>
+        )}
+      </Pressable>
+    );
+  };
 
   const renderSkeleton = () => (
     <View style={styles.skeletonContainer}>
       {Array.from({ length: 3 }).map((_, index) => (
         <View key={index} style={styles.skeletonCard}>
-          <Skeleton height={120} style={{ borderRadius: 12 }} />
+          <Skeleton height={60} style={{ borderRadius: 12 }} />
         </View>
       ))}
     </View>
   );
 
+  const styles = StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: theme.colors.background,
+    },
+    scrollContent: {
+      paddingBottom: 100,
+    },
+    imageSection: {
+      position: 'relative',
+      width: SCREEN_WIDTH - 32,
+      height: 140,
+      marginHorizontal: 16,
+      marginTop: 8,
+      borderRadius: 16,
+      overflow: 'hidden',
+    },
+    image: {
+      width: '100%',
+      height: '100%',
+    },
+    imageOverlay: {
+      position: 'absolute',
+      bottom: 0,
+      left: 0,
+      right: 0,
+      backgroundColor: 'rgba(0,0,0,0.5)',
+      paddingVertical: 8,
+      paddingHorizontal: 12,
+      flexDirection: 'row',
+      alignItems: 'center',
+    },
+    sectionTitle: {
+      paddingHorizontal: 16,
+      paddingTop: 16,
+      paddingBottom: 8,
+    },
+    foodRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      padding: 12,
+      marginHorizontal: 16,
+      marginBottom: 8,
+      borderRadius: 12,
+      borderWidth: 1,
+    },
+    checkbox: {
+      width: 22,
+      height: 22,
+      borderRadius: 6,
+      borderWidth: 2,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginRight: 12,
+    },
+    foodInfo: {
+      flex: 1,
+    },
+    teachBtn: {
+      paddingHorizontal: 10,
+      paddingVertical: 6,
+      borderRadius: 8,
+    },
+    skeletonContainer: {
+      paddingHorizontal: 16,
+    },
+    skeletonCard: {
+      marginBottom: 8,
+    },
+    bottomBar: {
+      position: 'absolute',
+      bottom: 0,
+      left: 0,
+      right: 0,
+      backgroundColor: theme.colors.card,
+      borderTopWidth: 1,
+      borderTopColor: theme.colors.border,
+      paddingHorizontal: 16,
+      paddingVertical: 12,
+      paddingBottom: 24,
+    },
+    summaryRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: 12,
+    },
+    addButton: {
+      flex: 1,
+    },
+  });
+
+  const matchedItems = detectionItems.filter((d) => d.item.isMatched);
+  const unmatchedItems = detectionItems.filter((d) => !d.item.isMatched);
+
   return (
     <Screen style={styles.container} scroll={false}>
-      {/* Header */}
-      <View style={styles.header}>
-        <ThemedText variant="h1" style={styles.title}>
-          Thêm bữa ăn từ ảnh
-        </ThemedText>
-        <ThemedText variant="body" color="textSecondary">
-          AI đã nhận diện {detectionItems.length} món ăn trong ảnh
-        </ThemedText>
-      </View>
+      <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Image Preview - Compact */}
+        <View style={styles.imageSection}>
+          <Image source={{ uri: imageUri }} style={styles.image} resizeMode="cover" />
+          <View style={styles.imageOverlay}>
+            <Icon name="scan-outline" size="sm" color="card" />
+            <ThemedText
+              variant="bodySmall"
+              style={{ color: '#fff', marginLeft: 6 }}
+            >
+              AI nhận diện {detectionItems.length} món
+            </ThemedText>
+          </View>
+        </View>
 
-      {/* Image Preview */}
-      <View style={styles.imageContainer}>
-        <Image source={{ uri: imageUri }} style={styles.image} resizeMode="cover" />
-        <View style={styles.overlay}>
-          <ThemedText variant="h2" style={{ color: '#fff' }}>
-            AI nhận diện {detectionItems.length} món
+        {loading ? (
+          renderSkeleton()
+        ) : (
+          <>
+            {/* Matched Items */}
+            {matchedItems.length > 0 && (
+              <>
+                <View style={styles.sectionTitle}>
+                  <ThemedText variant="h4" weight="600">
+                    Đã nhận diện ({matchedItems.length})
+                  </ThemedText>
+                </View>
+                {matchedItems.map((d, i) => renderFoodItem(d, i))}
+              </>
+            )}
+
+            {/* Unmatched Items */}
+            {unmatchedItems.length > 0 && (
+              <>
+                <View style={styles.sectionTitle}>
+                  <ThemedText variant="h4" weight="600" color="warning">
+                    Cần xác nhận ({unmatchedItems.length})
+                  </ThemedText>
+                </View>
+                {unmatchedItems.map((d, i) => renderFoodItem(d, i + matchedItems.length))}
+              </>
+            )}
+          </>
+        )}
+      </ScrollView>
+
+      {/* Bottom Summary Bar */}
+      <View style={styles.bottomBar}>
+        <View style={styles.summaryRow}>
+          <ThemedText variant="body" color="textSecondary">
+            Sẽ thêm: <ThemedText variant="body" weight="700" color="primary">{selectedItems.length}</ThemedText> món
+          </ThemedText>
+          <ThemedText variant="body" color="textSecondary">
+            <ThemedText variant="body" weight="700">{Math.round(totalCalories)}</ThemedText> kcal
           </ThemedText>
         </View>
-      </View>
-
-      {loading ? (
-        <View style={styles.scrollView}>{renderSkeleton()}</View>
-      ) : (
-        <FlatList
-          style={styles.scrollView}
-          contentContainerStyle={styles.content}
-          showsVerticalScrollIndicator={false}
-          ListHeaderComponent={
-            <>
-              {/* Gợi ý của AI */}
-              {matchedItems.length > 0 && (
-                <AppCard style={styles.section}>
-                  <SectionHeader title="Gợi ý của AI" />
-                </AppCard>
-              )}
-            </>
-          }
-          data={matchedItems}
-          keyExtractor={keyExtractor}
-          renderItem={renderDetectionCard}
-          ListFooterComponent={
-            <>
-              {/* Cần xác nhận */}
-              {unmatchedItems.length > 0 && (
-                <AppCard style={styles.section}>
-                  <SectionHeader title="Cần xác nhận" />
-                  {unmatchedItems.map((detection, _index) => (
-                    <AiDetectionCard
-                      key={`${detection.item.label}-${_index}`}
-                      item={detection.item}
-                      selected={detection.selected}
-                      grams={detection.grams}
-                      mealType={detection.mealType}
-                      onSelectionChange={(selected) =>
-                        handleSelectionChange(detection, selected)
-                      }
-                      onGramsChange={(grams) =>
-                        handleGramsChange(detection, grams)
-                      }
-                      onMealTypeChange={(mealType) =>
-                        handleMealTypeChange(detection, mealType)
-                      }
-                      onTeachLabel={() => handleTeachLabel(detection.item.label)}
-                    />
-                  ))}
-                </AppCard>
-              )}
-            </>
-          }
-        />
-      )}
-
-      {/* Summary Bar */}
-      <Animated.View
-        style={[
-          styles.summaryBarContainer,
-          useAnimatedStyle(() => ({
-            transform: [{ translateY: summaryBarTranslateY.value }],
-          })),
-        ]}
-      >
-        <AiSummaryBar
-          selectedCount={selectedCountValue}
-          totalCalories={totalCaloriesValue}
-          mealType={selectedItems[0]?.mealType ?? 2}
-          onAddToDiary={handleAddToDiary}
+        <Button
+          variant="primary"
+          title={isSubmitting ? 'Đang thêm...' : 'Thêm vào nhật ký Bữa trưa'}
+          onPress={handleAddToDiary}
           disabled={selectedItems.length === 0 || isSubmitting}
+          loading={isSubmitting}
+          style={styles.addButton}
         />
-      </Animated.View>
+      </View>
 
       {/* Teach Label Bottom Sheet */}
       <TeachLabelBottomSheet

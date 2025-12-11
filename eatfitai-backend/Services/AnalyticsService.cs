@@ -69,17 +69,27 @@ namespace EatFitAI.API.Services
             // Get nutrition summary
             var summary = await GetDaySummaryAsync(userId, date);
 
-            // Get target calories from NutritionTarget table
+            // Get target calories and macros from NutritionTarget table
             int? targetCalories = null;
+            int? targetProtein = null;
+            int? targetCarbs = null;
+            int? targetFat = null;
             try
             {
                 var d = DateOnly.FromDateTime(date.Date);
-                targetCalories = await _dbContext.NutritionTargets
+                var nutritionTarget = await _dbContext.NutritionTargets
                     .Where(t => t.UserId == userId && t.EffectiveFrom <= d && (t.EffectiveTo == null || t.EffectiveTo >= d))
                     .OrderByDescending(t => t.EffectiveFrom)
                     .ThenByDescending(t => t.NutritionTargetId) // Lấy record mới nhất nếu cùng ngày
-                    .Select(t => (int?)t.TargetCalories)
                     .FirstOrDefaultAsync();
+                
+                if (nutritionTarget != null)
+                {
+                    targetCalories = nutritionTarget.TargetCalories;
+                    targetProtein = nutritionTarget.TargetProtein;
+                    targetCarbs = nutritionTarget.TargetCarb; // Model dùng TargetCarb (singular)
+                    targetFat = nutritionTarget.TargetFat;
+                }
             }
             catch { /* ignore target lookup errors */ }
 
@@ -110,6 +120,10 @@ namespace EatFitAI.API.Services
                 TotalProtein = summary.TotalProtein,
                 TotalCarbs = summary.TotalCarbs,
                 TotalFat = summary.TotalFat,
+                // Target macros để hiển thị consumed/target
+                TargetProtein = targetProtein,
+                TargetCarbs = targetCarbs,
+                TargetFat = targetFat,
                 CaloriesByMealType = summary.CaloriesByMealType,
                 Meals = mealGroups
             };

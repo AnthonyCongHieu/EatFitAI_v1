@@ -1,31 +1,68 @@
 /**
- * AvatarPicker - Component cho phép chọn và upload avatar
- * Sử dụng expo-image-picker để chọn ảnh từ thư viện
+ * AvatarPicker - Component cho phép chọn avatar từ bộ hình có sẵn
+ * Không cần upload - dùng preset avatars để đơn giản hóa
  * Hiển thị initial letter nếu chưa có avatar
  */
 
 import React, { useState } from 'react';
-import { View, Image, StyleSheet, Pressable, ActivityIndicator } from 'react-native';
-import * as ImagePicker from 'expo-image-picker';
+import { View, Image, StyleSheet, Pressable, Modal, ScrollView, Dimensions } from 'react-native';
 import Toast from 'react-native-toast-message';
+import { Ionicons } from '@expo/vector-icons';
 
 import { ThemedText } from '../ThemedText';
 import Icon from '../Icon';
 import { useAppTheme } from '../../theme/ThemeProvider';
-import { profileService } from '../../services/profileService';
+import { glassStyles } from './GlassCard';
+
+// Preset avatars - sử dụng các emoji hoặc icon có sẵn
+// Lưu dưới dạng ID để lưu vào database, frontend sẽ map sang hình thực tế
+const PRESET_AVATARS = [
+  { id: 'avatar_1', emoji: '👨', label: 'Nam 1' },
+  { id: 'avatar_2', emoji: '👩', label: 'Nữ 1' },
+  { id: 'avatar_3', emoji: '👨‍🦱', label: 'Nam 2' },
+  { id: 'avatar_4', emoji: '👩‍🦰', label: 'Nữ 2' },
+  { id: 'avatar_5', emoji: '🧑', label: 'Trung tính' },
+  { id: 'avatar_6', emoji: '👴', label: 'Lớn tuổi 1' },
+  { id: 'avatar_7', emoji: '👵', label: 'Lớn tuổi 2' },
+  { id: 'avatar_8', emoji: '🧑‍🍳', label: 'Đầu bếp' },
+  { id: 'avatar_9', emoji: '🏃', label: 'Thể thao' },
+  { id: 'avatar_10', emoji: '🧘', label: 'Yoga' },
+  { id: 'avatar_11', emoji: '💪', label: 'Gym' },
+  { id: 'avatar_12', emoji: '🍎', label: 'Healthy' },
+] as const;
 
 interface AvatarPickerProps {
-  // URL hiện tại của avatar (nếu có)
+  // URL hoặc ID hiện tại của avatar (nếu có)
   avatarUrl?: string | null;
   // Tên để lấy initial letter
   name?: string | null;
   // Email hiển thị dưới avatar
   email?: string | null;
-  // Callback khi upload thành công, trả về URL mới
-  onUploadComplete?: (url: string) => void;
+  // Callback khi chọn avatar, trả về ID hoặc emoji
+  onUploadComplete?: (avatarId: string) => void;
   // Kích thước avatar (default: 100)
   size?: number;
 }
+
+// Helper để lấy emoji từ avatarUrl/ID
+const getAvatarDisplay = (avatarUrl?: string | null): { emoji?: string; isPreset: boolean } => {
+  if (!avatarUrl) return { isPreset: false };
+
+  // Nếu là preset avatar ID
+  const preset = PRESET_AVATARS.find(a => a.id === avatarUrl);
+  if (preset) return { emoji: preset.emoji, isPreset: true };
+
+  // Nếu là direct emoji (legacy support)
+  if (avatarUrl.length <= 4 && /\p{Emoji}/u.test(avatarUrl)) {
+    return { emoji: avatarUrl, isPreset: true };
+  }
+
+  return { isPreset: false };
+};
+
+const { width: screenWidth } = Dimensions.get('window');
+const MODAL_PADDING = 24;
+const AVATAR_SIZE = (screenWidth - MODAL_PADDING * 4 - 24) / 4; // 4 avatars per row
 
 export const AvatarPicker: React.FC<AvatarPickerProps> = ({
   avatarUrl,
@@ -35,75 +72,30 @@ export const AvatarPicker: React.FC<AvatarPickerProps> = ({
   size = 100,
 }) => {
   const { theme } = useAppTheme();
-  const [localUri, setLocalUri] = useState<string | null>(null);
-  const [isUploading, setIsUploading] = useState(false);
+  const isDark = theme.mode === 'dark';
+  const glass = glassStyles(isDark);
+  const [showPicker, setShowPicker] = useState(false);
+  const [selectedAvatar, setSelectedAvatar] = useState<string | null>(avatarUrl || null);
 
-  // Avatar URL: ưu tiên localUri (vừa chọn) > avatarUrl (từ server)
-  const displayUri = localUri || avatarUrl;
-
-  // Initial letter từ tên
+  // Display info
+  const avatarDisplay = getAvatarDisplay(selectedAvatar || avatarUrl);
   const initial = name?.charAt(0)?.toUpperCase() || '?';
 
-  const handlePickAvatar = async () => {
-    try {
-      // Xin quyền truy cập thư viện ảnh
-      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (status !== 'granted') {
-        Toast.show({
-          type: 'error',
-          text1: 'Cần quyền truy cập',
-          text2: 'Vui lòng cấp quyền truy cập thư viện ảnh trong cài đặt',
-        });
-        return;
-      }
-
-      // Mở image picker
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: true,
-        aspect: [1, 1], // Cắt vuông cho avatar
-        quality: 0.8,
-      });
-
-      if (!result.canceled && result.assets?.[0]?.uri) {
-        const uri = result.assets[0].uri;
-        setLocalUri(uri);
-
-        // Upload lên server
-        setIsUploading(true);
-        try {
-          const uploadedUrl = await profileService.uploadAvatar(uri);
-          onUploadComplete?.(uploadedUrl);
-          Toast.show({
-            type: 'success',
-            text1: 'Thành công',
-            text2: 'Đã cập nhật avatar',
-          });
-        } catch (uploadError: any) {
-          // Nếu upload lỗi, vẫn giữ ảnh local để xem
-          console.error('Avatar upload failed:', uploadError);
-          Toast.show({
-            type: 'error',
-            text1: 'Upload thất bại',
-            text2: uploadError?.message || 'Không thể upload avatar. Vui lòng thử lại.',
-          });
-        } finally {
-          setIsUploading(false);
-        }
-      }
-    } catch (error: any) {
-      console.error('Image picker error:', error);
-      Toast.show({
-        type: 'error',
-        text1: 'Lỗi',
-        text2: 'Không thể chọn ảnh. Vui lòng thử lại.',
-      });
-    }
+  const handleSelectAvatar = (avatarId: string, emoji: string) => {
+    setSelectedAvatar(avatarId);
+    onUploadComplete?.(avatarId);
+    setShowPicker(false);
+    Toast.show({
+      type: 'success',
+      text1: 'Đã cập nhật avatar',
+      text2: `Chọn: ${emoji}`,
+    });
   };
 
   return (
     <View style={styles.container}>
-      <Pressable onPress={handlePickAvatar} disabled={isUploading}>
+      {/* Avatar Display */}
+      <Pressable onPress={() => setShowPicker(true)}>
         <View
           style={[
             styles.avatarContainer,
@@ -115,48 +107,24 @@ export const AvatarPicker: React.FC<AvatarPickerProps> = ({
             },
           ]}
         >
-          {displayUri ? (
-            <Image
-              source={{ uri: displayUri }}
-              style={[
-                styles.avatarImage,
-                {
-                  width: size,
-                  height: size,
-                  borderRadius: size / 2,
-                },
-              ]}
-            />
+          {avatarDisplay.emoji ? (
+            // Hiển thị emoji
+            <ThemedText style={{ fontSize: size * 0.5 }}>
+              {avatarDisplay.emoji}
+            </ThemedText>
           ) : (
+            // Hiển thị initial letter
             <ThemedText variant="h1" color="primary" style={{ fontSize: size * 0.4 }}>
               {initial}
             </ThemedText>
           )}
 
-          {/* Overlay khi uploading */}
-          {isUploading && (
-            <View
-              style={[
-                styles.uploadingOverlay,
-                {
-                  width: size,
-                  height: size,
-                  borderRadius: size / 2,
-                },
-              ]}
-            >
-              <ActivityIndicator size="small" color="#fff" />
-            </View>
-          )}
-
-          {/* Camera icon overlay */}
-          {!isUploading && (
-            <View
-              style={[styles.cameraButton, { backgroundColor: theme.colors.primary }]}
-            >
-              <Icon name="camera" size="sm" color="card" />
-            </View>
-          )}
+          {/* Edit icon overlay */}
+          <View
+            style={[styles.editButton, { backgroundColor: theme.colors.primary }]}
+          >
+            <Icon name="pencil" size="sm" color="card" />
+          </View>
         </View>
       </Pressable>
 
@@ -166,6 +134,68 @@ export const AvatarPicker: React.FC<AvatarPickerProps> = ({
           {email}
         </ThemedText>
       )}
+
+      {/* Avatar Picker Modal */}
+      <Modal
+        visible={showPicker}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowPicker(false)}
+      >
+        <View style={styles.modalBackdrop}>
+          <View style={[glass.card, styles.modalContent]}>
+            <View style={styles.modalHeader}>
+              <ThemedText variant="h3" weight="600">
+                Chọn Avatar
+              </ThemedText>
+              <Pressable onPress={() => setShowPicker(false)} hitSlop={10}>
+                <Ionicons name="close-circle" size={28} color={theme.colors.textSecondary} />
+              </Pressable>
+            </View>
+
+            <ScrollView
+              contentContainerStyle={styles.avatarGrid}
+              showsVerticalScrollIndicator={false}
+            >
+              {PRESET_AVATARS.map((avatar) => (
+                <Pressable
+                  key={avatar.id}
+                  onPress={() => handleSelectAvatar(avatar.id, avatar.emoji)}
+                  style={[
+                    styles.avatarOption,
+                    {
+                      width: AVATAR_SIZE,
+                      height: AVATAR_SIZE,
+                      backgroundColor:
+                        (selectedAvatar || avatarUrl) === avatar.id
+                          ? theme.colors.primaryLight
+                          : isDark
+                            ? 'rgba(255,255,255,0.05)'
+                            : 'rgba(0,0,0,0.03)',
+                      borderColor:
+                        (selectedAvatar || avatarUrl) === avatar.id
+                          ? theme.colors.primary
+                          : 'transparent',
+                    },
+                  ]}
+                >
+                  <ThemedText style={{ fontSize: AVATAR_SIZE * 0.5 }}>
+                    {avatar.emoji}
+                  </ThemedText>
+                </Pressable>
+              ))}
+            </ScrollView>
+
+            <ThemedText
+              variant="caption"
+              color="textSecondary"
+              style={{ textAlign: 'center', marginTop: theme.spacing.md }}
+            >
+              Chọn avatar phù hợp với bạn
+            </ThemedText>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 };
@@ -180,18 +210,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     position: 'relative',
   },
-  avatarImage: {
-    resizeMode: 'cover',
-  },
-  uploadingOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  cameraButton: {
+  editButton: {
     position: 'absolute',
     bottom: 0,
     right: 0,
@@ -205,6 +224,37 @@ const styles = StyleSheet.create({
   },
   email: {
     marginTop: 8,
+  },
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: MODAL_PADDING,
+  },
+  modalContent: {
+    width: '100%',
+    maxWidth: 340,
+    maxHeight: 420,
+    padding: 20,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  avatarGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  avatarOption: {
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
   },
 });
 

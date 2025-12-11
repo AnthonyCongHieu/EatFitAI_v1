@@ -55,6 +55,12 @@ namespace EatFitAI.API.DTOs.AI
         public decimal TotalCarbs { get; set; }
         public decimal TotalFat { get; set; }
         
+        // Hướng dẫn nấu ăn (các bước)
+        public List<string>? Instructions { get; set; }
+        
+        // URL video hướng dẫn (YouTube)
+        public string? VideoUrl { get; set; }
+        
         // Detailed ingredients
         public List<RecipeIngredientDetailDto> Ingredients { get; set; } = new();
     }

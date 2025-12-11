@@ -28,6 +28,7 @@ export interface RecipeSuggestion {
 export interface RecipeDetail extends RecipeSuggestion {
   ingredients: RecipeIngredientDetail[];
   instructions?: string[];
+  videoUrl?: string; // URL video YouTube để embed
   tags?: string[];
 }
 

@@ -336,4 +336,34 @@ export const aiService = {
   ): Promise<void> {
     await apiClient.post('/api/ai/labels/teach', request);
   },
+
+  // ============ COOKING INSTRUCTIONS (AI GENERATED) ============
+  async getCookingInstructions(
+    recipeName: string,
+    ingredients: { foodName: string; grams: number }[],
+    description?: string,
+  ): Promise<{ steps: string[]; cookingTime?: string; difficulty?: string }> {
+    // Gọi AI provider trực tiếp (port 5050)
+    const response = await fetch('http://10.0.2.2:5050/cooking-instructions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        recipeName,
+        ingredients,
+        description: description || '',
+      }),
+    });
+
+    if (!response.ok) {
+      const text = await response.text();
+      throw new Error(`Không thể tạo hướng dẫn nấu: ${text}`);
+    }
+
+    const data = await response.json();
+    return {
+      steps: data.steps || [],
+      cookingTime: data.cookingTime,
+      difficulty: data.difficulty,
+    };
+  },
 };

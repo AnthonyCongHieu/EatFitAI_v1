@@ -217,8 +217,10 @@ const AIScanScreen: React.FC = () => {
   // Thêm nguyên liệu vào giỏ (IMP-02)
   const handleAddToBasket = useCallback(
     (item: MappedFoodItem) => {
+      // Ưu tiên foodName (tiếng Việt từ DB), fallback dịch từ label
+      const displayName = item.foodName || translateIngredient(item.label);
       addIngredient({
-        name: item.label,
+        name: displayName,
         confidence: item.confidence,
         imageUri: capturedUri || undefined,
       });
@@ -226,7 +228,7 @@ const AIScanScreen: React.FC = () => {
       Toast.show({
         type: 'success',
         text1: 'Đã thêm vào giỏ',
-        text2: item.label,
+        text2: displayName,
         visibilityTime: 1500,
       });
     },

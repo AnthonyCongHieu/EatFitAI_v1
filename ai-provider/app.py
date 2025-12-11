@@ -288,10 +288,53 @@ def meal_insight():
         return {"error": str(e)}, 500
 
 
+# Import cooking instructions generator
+try:
+    from nutrition_llm import get_cooking_instructions
+    COOKING_INSTRUCTIONS_AVAILABLE = True
+    logger.info("Cooking instructions generator loaded")
+except ImportError as e:
+    COOKING_INSTRUCTIONS_AVAILABLE = False
+    logger.warning(f"Cooking instructions generator not available: {e}")
+
+
+@app.route("/cooking-instructions", methods=["POST"])
+def cooking_instructions():
+    """Generate cooking instructions using Ollama AI"""
+    if not COOKING_INSTRUCTIONS_AVAILABLE:
+        return {"error": "Cooking instructions service not available"}, 503
+    
+    try:
+        data = request.get_json()
+        if not data:
+            return {"error": "Missing JSON body"}, 400
+        
+        recipe_name = data.get("recipeName", "")
+        ingredients = data.get("ingredients", [])
+        description = data.get("description", "")
+        
+        if not recipe_name:
+            return {"error": "recipeName is required"}, 400
+        
+        result = get_cooking_instructions(
+            recipe_name=recipe_name,
+            ingredients=ingredients,
+            description=description
+        )
+        
+        return jsonify(result)
+    
+    except Exception as e:
+        logger.error(f"Cooking instructions error: {e}", exc_info=True)
+        return {"error": str(e)}, 500
+
+
 if __name__ == "__main__":
     logger.info(f"Starting AI Provider on port 5050")
     logger.info(f"Model: {model_file}")
     logger.info(f"Nutrition LLM: {'Available' if NUTRITION_LLM_AVAILABLE else 'Not available'}")
+    logger.info(f"Cooking Instructions: {'Available' if COOKING_INSTRUCTIONS_AVAILABLE else 'Not available'}")
     logger.info(f"Allowed file types: {ALLOWED_EXTENSIONS}")
     logger.info(f"Max file size: {MAX_FILE_SIZE / 1024 / 1024:.1f}MB")
     app.run(host="0.0.0.0", port=5050)
+

@@ -212,7 +212,7 @@ const HomeScreen = (): JSX.Element => {
                   text1: t('common.removed'),
                   text2: t('common.updated'),
                 });
-                refreshSummary().catch(() => {});
+                refreshSummary().catch(() => { });
               })
               .catch((err: any) => {
                 handleApiErrorWithCustomMessage(err, {
@@ -402,11 +402,12 @@ const HomeScreen = (): JSX.Element => {
               value={proteinValue}
               label="Protein"
               color="primary"
+              targetValue={summary?.targetProtein ?? undefined}
               progress={
                 typeof proteinValue.value === 'number' &&
-                !Number.isNaN(proteinValue.value) &&
-                summary?.targetCalories
-                  ? Math.min(1, (proteinValue.value * 4) / (summary.targetCalories * 0.3))
+                  !Number.isNaN(proteinValue.value) &&
+                  summary?.targetProtein
+                  ? Math.min(1, proteinValue.value / summary.targetProtein)
                   : 0
               }
             />
@@ -415,11 +416,12 @@ const HomeScreen = (): JSX.Element => {
               value={carbsValue}
               label="Carbs"
               color="secondary"
+              targetValue={summary?.targetCarbs ?? undefined}
               progress={
                 typeof carbsValue.value === 'number' &&
-                !Number.isNaN(carbsValue.value) &&
-                summary?.targetCalories
-                  ? Math.min(1, (carbsValue.value * 4) / (summary.targetCalories * 0.5))
+                  !Number.isNaN(carbsValue.value) &&
+                  summary?.targetCarbs
+                  ? Math.min(1, carbsValue.value / summary.targetCarbs)
                   : 0
               }
             />
@@ -428,11 +430,12 @@ const HomeScreen = (): JSX.Element => {
               value={fatValue}
               label="Chất béo"
               color="warning"
+              targetValue={summary?.targetFat ?? undefined}
               progress={
                 typeof fatValue.value === 'number' &&
-                !Number.isNaN(fatValue.value) &&
-                summary?.targetCalories
-                  ? Math.min(1, (fatValue.value * 9) / (summary.targetCalories * 0.2))
+                  !Number.isNaN(fatValue.value) &&
+                  summary?.targetFat
+                  ? Math.min(1, fatValue.value / summary.targetFat)
                   : 0
               }
             />

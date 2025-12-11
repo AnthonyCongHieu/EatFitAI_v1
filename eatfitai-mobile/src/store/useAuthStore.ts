@@ -106,42 +106,15 @@ export const useAuthStore = create<AuthState>((set: any) => ({
     return { needsOnboarding: data?.needsOnboarding ?? false };
   },
 
+  /**
+   * @deprecated KHÔNG SỬ DỤNG - Hàm này bypass email verification!
+   * Đăng ký mới nên thông qua RegisterScreen → VerifyEmailScreen flow.
+   * Endpoint đúng là /api/auth/register-with-verification
+   */
   register: async (name, email, password) => {
-    try {
-      console.log('[useAuthStore] Starting registration API call');
-      const resp = await apiClient.post<AuthTokensResponse>('/api/auth/register', {
-        DisplayName: name,
-        Email: email,
-        Password: password,
-      });
-      console.log('[useAuthStore] Registration API response:', resp.data);
-      const data = resp.data;
-      // Backend trả accessToken (JsonPropertyName) không phải token
-      const accessToken = data?.accessToken || data?.token;
-      if (!accessToken) throw new Error(t('auth.missingAccessToken'));
-
-      await tokenStorage.saveTokensFull({
-        accessToken,
-        accessTokenExpiresAt: (data?.accessTokenExpiresAt || data?.expiresAt) ?? null,
-        refreshToken: data?.refreshToken ?? null,
-        refreshTokenExpiresAt: data?.refreshTokenExpiresAt ?? null,
-      });
-      setAccessTokenMem(accessToken);
-      await updateSessionFromAuthResponse(data as AuthResponse);
-
-      set({ isAuthenticated: true, user: (data?.user as AuthUser | undefined) ?? null });
-    } catch (err: any) {
-      console.error('[useAuthStore] Registration failed:', {
-        error: err,
-        message: err?.message,
-        response: err?.response,
-        status: err?.response?.status,
-        data: err?.response?.data,
-        isNetworkError: !err?.response,
-      });
-      const message = extractRegisterErrorMessage(err);
-      throw new Error(message);
-    }
+    console.warn('[useAuthStore] DEPRECATED: register() bypasses email verification!');
+    console.warn('[useAuthStore] Use RegisterScreen → VerifyEmailScreen flow instead.');
+    throw new Error('Register function is deprecated. Use RegisterScreen for proper email verification flow.');
   },
 
   signInWithGoogle: async () => {

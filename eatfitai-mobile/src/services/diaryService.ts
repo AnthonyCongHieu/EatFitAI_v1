@@ -41,6 +41,10 @@ export type DaySummary = {
   protein?: number | null;
   carbs?: number | null;
   fat?: number | null;
+  // Target macros để hiển thị consumed/target (ví dụ: 166/190g Protein)
+  targetProtein?: number | null;
+  targetCarbs?: number | null;
+  targetFat?: number | null;
   meals: DiaryMealGroup[];
 };
 

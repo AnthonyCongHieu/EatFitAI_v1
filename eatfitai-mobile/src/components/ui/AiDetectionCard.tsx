@@ -13,6 +13,7 @@ import { AppChip } from './AppChip';
 import { AppStepper } from './AppStepper';
 import type { MappedFoodItem } from '../../types/ai';
 import type { MealTypeId } from '../../types';
+import { translateIngredient } from '../../utils/translate';
 
 type AiDetectionCardProps = {
   item: MappedFoodItem;
@@ -148,7 +149,7 @@ const AiDetectionCardComponent = ({
 
           <View style={styles.titleContainer}>
             <ThemedText variant="h4" style={styles.title}>
-              {item.foodName || item.label}
+              {item.foodName || translateIngredient(item.label)}
             </ThemedText>
             {!item.isMatched && onTeachLabel && (
               <Pressable onPress={onTeachLabel}>

@@ -13,7 +13,6 @@ import {
   StyleSheet,
   View,
 } from 'react-native';
-import * as ImagePicker from 'expo-image-picker';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Controller, useForm } from 'react-hook-form';

@@ -1,6 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { RefreshControl, StyleSheet, View, Pressable } from 'react-native';
 import Animated, { FadeInUp, FadeInDown } from 'react-native-reanimated';
+import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import type { RootStackParamList } from '../../types';
 
 import { ThemedText } from '../../../components/ThemedText';
 import Screen from '../../../components/Screen';
@@ -60,6 +63,7 @@ const getMonthDays = (year: number, month: number): Date[] => {
 
 const MonthStatsScreen = (): JSX.Element => {
   const { theme } = useAppTheme();
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
   const [currentDate, setCurrentDate] = useState(() => new Date());
   const [monthData, setMonthData] = useState<MonthSummary | null>(null);
@@ -162,9 +166,17 @@ const MonthStatsScreen = (): JSX.Element => {
     const dayData = dayDataMap[dateStr];
     const calories = dayData?.calories || 0;
 
+    const handleDayPress = () => {
+      if (isCurrentMonthDay && calories > 0) {
+        // Navigate đến MealDiary với ngày được chọn
+        navigation.navigate('MealDiary', { selectedDate: dateStr });
+      }
+    };
+
     return (
-      <View
+      <Pressable
         key={index}
+        onPress={handleDayPress}
         style={[
           styles.calendarCell,
           {
@@ -187,7 +199,7 @@ const MonthStatsScreen = (): JSX.Element => {
             {Math.round(calories / 100)}
           </ThemedText>
         )}
-      </View>
+      </Pressable>
     );
   };
 
@@ -487,7 +499,7 @@ const MonthStatsScreen = (): JSX.Element => {
                   </ThemedText>
                 </LinearGradient>
 
-                {/* Protein - Orange gradient */}
+                {/* Đạt mục tiêu - Orange gradient (thay cho Protein) */}
                 <LinearGradient
                   colors={
                     theme.mode === 'dark'
@@ -509,16 +521,20 @@ const MonthStatsScreen = (): JSX.Element => {
                         : 'rgba(237, 137, 54, 0.2)',
                   }}
                 >
-                  <ThemedText style={{ fontSize: 20, marginBottom: 4 }}>💪</ThemedText>
+                  <ThemedText style={{ fontSize: 20, marginBottom: 4 }}>🎯</ThemedText>
                   <ThemedText
                     variant="h3"
                     weight="700"
                     style={{ color: theme.mode === 'dark' ? '#f6ad55' : '#c05621' }}
                   >
-                    {Math.round(monthData.totalProtein)}g
+                    {/* Tính số ngày đạt >= 90% target calories */}
+                    {monthData.days.filter(d => {
+                      const target = d.targetCalories || 2000;
+                      return d.calories >= target * 0.9;
+                    }).length}/{monthData.daysLogged}
                   </ThemedText>
                   <ThemedText variant="caption" color="textSecondary">
-                    Protein
+                    Đạt mục tiêu
                   </ThemedText>
                 </LinearGradient>
               </View>

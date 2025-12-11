@@ -10,7 +10,7 @@ import Animated, {
   FadeInUp,
   Layout,
 } from 'react-native-reanimated';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import type { NavigationProp } from '@react-navigation/native';
 import { useQuery } from '@tanstack/react-query';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -29,6 +29,7 @@ import { diaryService, type DiaryEntry } from '../../../services/diaryService';
 import { MEAL_TYPE_LABELS, type MealTypeId } from '../../../types';
 import type { RootStackParamList } from '../../types';
 import { t } from '../../../i18n/vi';
+import Toast from 'react-native-toast-message';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -52,7 +53,18 @@ const MealDiaryScreen = (): JSX.Element => {
   const { theme } = useAppTheme();
   const isDark = theme.mode === 'dark';
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
-  const [selectedDate, setSelectedDate] = useState(new Date());
+  const route = useRoute<RouteProp<RootStackParamList, 'MealDiary'>>();
+
+  // Nếu có selectedDate từ params (từ MonthStats), parse và set
+  const initialDate = useMemo(() => {
+    const paramDate = route.params?.selectedDate;
+    if (paramDate) {
+      return new Date(paramDate);
+    }
+    return new Date();
+  }, [route.params?.selectedDate]);
+
+  const [selectedDate, setSelectedDate] = useState(initialDate);
   const [editingEntry, setEditingEntry] = useState<DiaryEntry | null>(null);
   const [editGrams, setEditGrams] = useState('');
   const [showEditSheet, setShowEditSheet] = useState(false);
@@ -173,7 +185,14 @@ const MealDiaryScreen = (): JSX.Element => {
     if (!editingEntry) return;
     const cleanedValue = editGrams.replace(/[^0-9.]/g, '');
     const grams = parseFloat(cleanedValue);
-    if (isNaN(grams) || grams <= 0) return;
+    if (isNaN(grams) || grams <= 0) {
+      Toast.show({
+        type: 'error',
+        text1: 'Số gram không hợp lệ',
+        text2: 'Vui lòng nhập số lớn hơn 0',
+      });
+      return;
+    }
 
     try {
       await diaryService.updateEntry(editingEntry.id, { grams });
@@ -181,8 +200,18 @@ const MealDiaryScreen = (): JSX.Element => {
       await refreshSummary();
       setShowEditSheet(false);
       setEditingEntry(null);
-    } catch (error) {
+      Toast.show({
+        type: 'success',
+        text1: 'Đã cập nhật',
+        text2: `Khẩu phần: ${grams}g`,
+      });
+    } catch (error: any) {
       console.error('Failed to update entry:', error);
+      Toast.show({
+        type: 'error',
+        text1: 'Lỗi cập nhật',
+        text2: error?.message || 'Không thể cập nhật khẩu phần. Thử lại sau.',
+      });
     }
   }, [editingEntry, editGrams, refetch, refreshSummary]);
 

@@ -327,3 +327,53 @@ Trả lời JSON: {{"insight": "nhận xét 1 câu", "score": điểm_1_10, "sug
     #     "source": "fallback"
     # }
     raise Exception("Ollama (Nutrition LLM) is unavailable. Fallback is disabled in Strict Mode.")
+
+
+# ============== COOKING INSTRUCTIONS GENERATOR ==============
+
+def get_cooking_instructions(
+    recipe_name: str,
+    ingredients: list[dict],
+    description: str = ""
+) -> Dict[str, Any]:
+    """
+    Gọi Ollama AI để generate hướng dẫn nấu ăn chi tiết
+    
+    Args:
+        recipe_name: Tên món ăn
+        ingredients: List các nguyên liệu [{foodName, grams}, ...]
+        description: Mô tả món ăn (optional)
+    
+    Returns:
+        Dict với steps: list các bước nấu
+    """
+    # Format ingredients list
+    ingredients_str = ", ".join([
+        f"{ing.get('foodName', 'Unknown')} ({ing.get('grams', 100)}g)"
+        for ing in ingredients
+    ])
+    
+    prompt = f"""Hướng dẫn nấu món "{recipe_name}" với: {ingredients_str}.
+{f"Mô tả: {description}" if description else ""}
+
+Viết 4-6 bước nấu ngắn gọn bằng tiếng Việt.
+
+Trả lời JSON: {{"steps": ["bước 1", "bước 2", ...], "cookingTime": "XX phút", "difficulty": "Dễ/Trung bình/Khó"}}"""
+
+    response = query_ollama(prompt)
+    
+    if response:
+        try:
+            start = response.find("{")
+            end = response.rfind("}") + 1
+            if start != -1 and end > start:
+                result = json.loads(response[start:end])
+                result["source"] = "ollama"
+                logger.info(f"Generated cooking instructions for {recipe_name}")
+                return result
+        except Exception as e:
+            logger.error(f"Error parsing cooking instructions: {e}")
+    
+    raise Exception("Ollama không khả dụng để tạo hướng dẫn nấu")
+
+

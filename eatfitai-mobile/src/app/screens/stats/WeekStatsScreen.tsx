@@ -1,11 +1,13 @@
-import { useCallback, useEffect, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
-  ActivityIndicator,
   RefreshControl,
   StyleSheet,
   View,
   Pressable,
+  Platform,
+  ActivityIndicator,
 } from 'react-native';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import {
   VictoryBar,
   VictoryChart,
@@ -49,6 +51,7 @@ const WeekStatsScreen = (): JSX.Element => {
   const { theme } = useAppTheme();
   const isDark = theme.mode === 'dark';
   const glass = glassStyles(isDark);
+  const [showDatePicker, setShowDatePicker] = useState(false);
   const styles = StyleSheet.create({
     content: {
       paddingHorizontal: theme.spacing.lg,
@@ -140,6 +143,17 @@ const WeekStatsScreen = (): JSX.Element => {
   const handleRefresh = useCallback(() => {
     refreshWeekSummary().catch(handleApiError);
   }, [refreshWeekSummary]);
+
+  // Handle date picker change - navigate đến tuần chứa ngày được chọn
+  const handleDateChange = useCallback(
+    (event: any, date?: Date) => {
+      setShowDatePicker(Platform.OS === 'ios'); // iOS giữ picker mở
+      if (date) {
+        useStatsStore.getState().setSelectedDate(date.toISOString().split('T')[0]!);
+      }
+    },
+    [],
+  );
 
   const chartData = useMemo(() => {
     return (weekSummary?.days ?? []).map((day) => ({
@@ -275,8 +289,8 @@ const WeekStatsScreen = (): JSX.Element => {
           <VictoryChart
             height={220}
             theme={VictoryTheme.material}
-            padding={{ top: 20, bottom: 40, left: 40, right: 30 }}
-            domainPadding={{ x: 25, y: [0, 10] }}
+            padding={{ top: 20, bottom: 40, left: 45, right: 45 }}
+            domainPadding={{ x: 20, y: [0, 10] }}
             style={{ background: { fill: 'transparent' } }}
           >
             <VictoryAxis
@@ -307,7 +321,7 @@ const WeekStatsScreen = (): JSX.Element => {
                 x="x"
                 y="y"
                 cornerRadius={{ top: 6 }}
-                barWidth={18}
+                barWidth={14}
                 style={{
                   data: {
                     fill: '#4ade80',
@@ -336,7 +350,7 @@ const WeekStatsScreen = (): JSX.Element => {
                 x="x"
                 y="y"
                 cornerRadius={{ top: 6 }}
-                barWidth={18}
+                barWidth={14}
                 style={{
                   data: {
                     fill: isDark ? 'rgba(55, 65, 60, 0.7)' : 'rgba(180, 190, 185, 0.5)',

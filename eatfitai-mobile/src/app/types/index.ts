@@ -14,7 +14,7 @@ export type RootStackParamList = {
   CustomDish: undefined;
   AiCamera: undefined;
   AddMealFromVision: import('../../types/navigation').AddMealFromVisionParams;
-  MealDiary: undefined;
+  MealDiary: { selectedDate?: string } | undefined;
   RecipeSuggestions: {
     ingredients?: string[];
     recipes?: import('../../services/aiService').SuggestedRecipe[];

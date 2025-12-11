@@ -59,19 +59,26 @@ const MetricCardComponent = ({
     <Animated.View style={animatedStyle}>
       <Pressable style={styles.container} onPress={onPress} disabled={!onPress}>
         <Icon name={icon} size="lg" color={color} />
-        <Animated.Text style={[styles.text, textAnimatedStyle]}>
-          {Math.round(value.value)}
-        </Animated.Text>
-        {/* Improvement: Hiển thị target nếu có */}
-        {targetValue !== undefined && targetValue > 0 ? (
-          <ThemedText variant="caption" color="textSecondary">
-            {label} ({Math.round(targetValue)}g)
-          </ThemedText>
-        ) : (
-          <ThemedText variant="caption" color="textSecondary">
-            {label}
-          </ThemedText>
-        )}
+        {/* Hiển thị giá trị: consumed hoặc consumed/target */}
+        <Animated.View style={[{ alignItems: 'center' }, textAnimatedStyle]}>
+          {targetValue !== undefined && targetValue > 0 ? (
+            <View style={{ flexDirection: 'row', alignItems: 'baseline' }}>
+              <Animated.Text style={styles.text}>
+                {Math.round(value.value)}
+              </Animated.Text>
+              <ThemedText variant="bodySmall" color="textSecondary">
+                /{Math.round(targetValue)}g
+              </ThemedText>
+            </View>
+          ) : (
+            <Animated.Text style={styles.text}>
+              {Math.round(value.value)}g
+            </Animated.Text>
+          )}
+        </Animated.View>
+        <ThemedText variant="caption" color="textSecondary">
+          {label}
+        </ThemedText>
         {progress !== undefined && (
           <View style={styles.progressContainer}>
             <ProgressBar
