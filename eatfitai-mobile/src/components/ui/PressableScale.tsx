@@ -37,18 +37,18 @@ export const PressableScale: React.FC<PressableScaleProps> = ({
 
   const handlePressIn = (event: any) => {
     scale.value = withSpring(scaleTo, {
-      damping: 10,
+      damping: 18,
       stiffness: 300,
     });
     if (enableHaptic) {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => { });
     }
     onPressIn?.(event);
   };
 
   const handlePressOut = (event: any) => {
     scale.value = withSpring(1, {
-      damping: 10,
+      damping: 18,
       stiffness: 300,
     });
     onPressOut?.(event);

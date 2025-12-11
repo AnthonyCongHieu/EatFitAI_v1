@@ -202,30 +202,19 @@ const OnboardingScreen = (): JSX.Element => {
   const calculateNutrition = async () => {
     setIsCalculating(true);
     try {
-      // Android Emulator cần dùng 10.0.2.2 thay vì 127.0.0.1
-      const aiProviderUrl =
-        Platform.OS === 'android'
-          ? 'http://10.0.2.2:5050/nutrition-advice'
-          : 'http://127.0.0.1:5050/nutrition-advice';
-
-      const response = await fetch(aiProviderUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          gender: data.gender,
-          age: Number(data.age),
-          height: Number(data.heightCm),
-          weight: Number(data.weightKg),
-          activity: data.activityLevel,
-          goal: data.goal,
-        }),
+      // Gọi qua backend API thay vì AI provider trực tiếp
+      // Backend sẽ proxy đến AI Provider (Ollama)
+      const response = await apiClient.post('/api/ai/nutrition/recalculate', {
+        sex: data.gender,
+        age: Number(data.age),
+        heightCm: Number(data.heightCm),
+        weightKg: Number(data.weightKg),
+        goal: data.goal,
       });
 
-      if (response.ok) {
-        const result = await response.json();
-        setAiResult(result);
+      if (response.data) {
+        setAiResult(response.data);
       } else {
-        // KHÔNG fallback - hiển thị lỗi yêu cầu bật AI Provider
         Toast.show({
           type: 'error',
           text1: 'AI Provider không khả dụng',

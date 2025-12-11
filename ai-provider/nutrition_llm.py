@@ -347,6 +347,11 @@ def get_cooking_instructions(
     Returns:
         Dict với steps: list các bước nấu
     """
+    # Check Ollama availability first
+    if not OLLAMA_AVAILABLE:
+        logger.warning("Ollama not available for cooking instructions, using fallback")
+        return _generate_fallback_instructions(recipe_name, ingredients)
+    
     # Format ingredients list
     ingredients_str = ", ".join([
         f"{ing.get('foodName', 'Unknown')} ({ing.get('grams', 100)}g)"
@@ -374,6 +379,32 @@ Trả lời JSON: {{"steps": ["bước 1", "bước 2", ...], "cookingTime": "XX
         except Exception as e:
             logger.error(f"Error parsing cooking instructions: {e}")
     
-    raise Exception("Ollama không khả dụng để tạo hướng dẫn nấu")
+    # Fallback khi Ollama không trả về kết quả hợp lệ
+    logger.warning(f"Ollama failed for cooking instructions, using fallback for {recipe_name}")
+    return _generate_fallback_instructions(recipe_name, ingredients)
 
+
+def _generate_fallback_instructions(recipe_name: str, ingredients: list[dict]) -> Dict[str, Any]:
+    """
+    Tạo hướng dẫn nấu ăn mặc định khi Ollama không khả dụng
+    """
+    # Lấy tên các nguyên liệu
+    ing_names = [ing.get('foodName', 'nguyên liệu') for ing in ingredients[:5]]
+    
+    steps = [
+        f"Sơ chế và rửa sạch các nguyên liệu: {', '.join(ing_names)}",
+        "Cắt hoặc thái nguyên liệu theo kích thước phù hợp",
+        f"Cho dầu ăn vào chảo, đun nóng ở lửa vừa",
+        f"Cho các nguyên liệu vào chảo theo thứ tự, đảo đều",
+        "Nêm gia vị theo khẩu vị (muối, tiêu, nước mắm)",
+        f"Trang trí và thưởng thức món {recipe_name}"
+    ]
+    
+    return {
+        "steps": steps,
+        "cookingTime": "20-30 phút",
+        "difficulty": "Trung bình",
+        "source": "fallback",
+        "note": "Hướng dẫn cơ bản - AI đang bận, vui lòng thử lại sau để có hướng dẫn chi tiết hơn"
+    }
 

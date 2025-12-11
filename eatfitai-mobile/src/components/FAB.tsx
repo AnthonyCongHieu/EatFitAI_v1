@@ -80,13 +80,13 @@ export const FAB = ({
 
   const handlePressIn = () => {
     if (animated && !disabled && !loading) {
-      scale.value = withSpring(0.9, { damping: 15, stiffness: 300 });
+      scale.value = withSpring(0.9, { damping: 20, stiffness: 300 });
     }
   };
 
   const handlePressOut = () => {
     if (animated && !disabled && !loading) {
-      scale.value = withSpring(1, { damping: 15, stiffness: 300 });
+      scale.value = withSpring(1, { damping: 20, stiffness: 300 });
     }
   };
 

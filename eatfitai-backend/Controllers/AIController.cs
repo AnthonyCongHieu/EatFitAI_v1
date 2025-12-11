@@ -513,6 +513,67 @@ namespace EatFitAI.API.Controllers
             return userId;
         }
 
+        /// <summary>
+        /// Get AI-generated cooking instructions for a recipe
+        /// Proxy to AI Provider (Ollama)
+        /// </summary>
+        [HttpPost("cooking-instructions")]
+        [ProducesResponseType(typeof(CookingInstructionsDto), StatusCodes.Status200OK)]
+        public async Task<ActionResult<CookingInstructionsDto>> GetCookingInstructions(
+            [FromBody] CookingInstructionsRequest request,
+            CancellationToken cancellationToken)
+        {
+            try
+            {
+                var userId = GetUserIdFromToken();
+                _logger.LogInformation("User {UserId} requesting cooking instructions for: {Recipe}", 
+                    userId, request.RecipeName);
+
+                var aiProviderUrl = _configuration["AIProvider:VisionBaseUrl"] ?? "http://127.0.0.1:5050";
+                
+                using var client = _httpClientFactory.CreateClient();
+                client.Timeout = TimeSpan.FromSeconds(60);
+                
+                var payload = new
+                {
+                    recipeName = request.RecipeName,
+                    ingredients = request.Ingredients,
+                    description = request.Description ?? ""
+                };
+                
+                var json = System.Text.Json.JsonSerializer.Serialize(payload);
+                var content = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+                
+                var response = await client.PostAsync($"{aiProviderUrl}/cooking-instructions", content, cancellationToken);
+                
+                if (response.IsSuccessStatusCode)
+                {
+                    var resultJson = await response.Content.ReadAsStringAsync(cancellationToken);
+                    var result = System.Text.Json.JsonSerializer.Deserialize<CookingInstructionsDto>(resultJson,
+                        new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                    
+                    return Ok(result ?? new CookingInstructionsDto());
+                }
+                else
+                {
+                    var errorContent = await response.Content.ReadAsStringAsync(cancellationToken);
+                    _logger.LogWarning("AI Provider cooking-instructions error: {StatusCode} - {Error}", 
+                        response.StatusCode, errorContent);
+                    return StatusCode(503, new { message = "AI Provider không khả dụng", error = errorContent });
+                }
+            }
+            catch (HttpRequestException ex)
+            {
+                _logger.LogError(ex, "Failed to connect to AI Provider for cooking instructions");
+                return StatusCode(503, new { message = "Không thể kết nối đến AI Provider", error = ex.Message });
+            }
+            catch (TaskCanceledException ex)
+            {
+                _logger.LogError(ex, "AI Provider cooking-instructions request timed out");
+                return StatusCode(504, new { message = "AI Provider timeout", error = ex.Message });
+            }
+        }
+
         [HttpPost("labels/teach")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         public async Task<IActionResult> TeachLabel([FromBody] TeachLabelRequestDto request, CancellationToken cancellationToken)

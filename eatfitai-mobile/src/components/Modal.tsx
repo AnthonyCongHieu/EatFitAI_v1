@@ -95,16 +95,16 @@ export const Modal = ({
   };
 
   const handlePressIn = () => {
-    scale.value = withSpring(0.98, { damping: 15, stiffness: 300 });
+    scale.value = withSpring(0.98, { damping: 18, stiffness: 400 });
   };
 
   const handlePressOut = () => {
-    scale.value = withSpring(1, { damping: 15, stiffness: 300 });
+    scale.value = withSpring(1, { damping: 18, stiffness: 400 });
   };
 
   const enteringAnimation = animated
     ? position === 'bottom'
-      ? SlideInDown.springify().damping(20).stiffness(200)
+      ? SlideInDown.duration(200)
       : FadeIn.duration(theme.animation.normal)
     : undefined;
 

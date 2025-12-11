@@ -73,8 +73,8 @@ export const SmartAddSheet: React.FC<SmartAddSheetProps> = ({ visible, onClose }
 
         {/* Sheet */}
         <Animated.View
-          entering={SlideInDown.springify().damping(15)}
-          exiting={SlideOutDown}
+          entering={SlideInDown.duration(200)}
+          exiting={SlideOutDown.duration(150)}
           style={[
             styles.sheet,
             {

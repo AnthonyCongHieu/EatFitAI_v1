@@ -8,6 +8,7 @@ import Animated, {
   useAnimatedStyle,
   useSharedValue,
   withSpring,
+  withTiming,
   runOnJS,
 } from 'react-native-reanimated';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
@@ -59,7 +60,7 @@ export const BottomSheet = ({
       if (event.translationY > 100 || event.velocityY > 500) {
         runOnJS(onClose)();
       } else {
-        translateY.value = withSpring(0, { damping: 20, stiffness: 200 });
+        translateY.value = withTiming(0, { duration: 200 });
       }
     });
 
@@ -72,7 +73,7 @@ export const BottomSheet = ({
   }));
 
   const enteringAnimation = animated
-    ? SlideInDown.springify().damping(20).stiffness(200)
+    ? SlideInDown.duration(200)
     : undefined;
 
   const exitingAnimation = animated

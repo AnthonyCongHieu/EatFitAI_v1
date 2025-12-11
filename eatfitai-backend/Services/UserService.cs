@@ -140,8 +140,8 @@ namespace EatFitAI.API.Services
                     .ThenByDescending(bm => bm.BodyMetricId)
                     .FirstOrDefaultAsync();
                 
-                decimal newHeight = userProfileDto.CurrentHeightCm ?? latestMetric?.HeightCm ?? 0;
-                decimal newWeight = userProfileDto.CurrentWeightKg ?? latestMetric?.WeightKg ?? 0;
+                decimal newHeight = userProfileDto.CurrentHeightCm ?? latestMetric?.HeightCm ?? 0m;
+                decimal newWeight = userProfileDto.CurrentWeightKg ?? latestMetric?.WeightKg ?? 0m;
 
                 bool isChanged = latestMetric == null ||
                                  latestMetric.HeightCm != newHeight ||

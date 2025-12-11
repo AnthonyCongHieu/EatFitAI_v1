@@ -1,7 +1,7 @@
 // Service lam viec voi cac API AI (vision, recipe, nutrition)
 // Chu thich bang tieng Viet khong dau
 
-import apiClient from './apiClient';
+import apiClient, { aiApiClient } from './apiClient';
 import type {
   NutritionTargetDto,
   RecipeSuggestionApiItem,
@@ -194,7 +194,7 @@ export const aiService = {
 
       console.log('[EatFitAI] Nutrition suggest payload:', payload);
 
-      const response = await apiClient.post<NutritionTargetDto>(
+      const response = await aiApiClient.post<NutritionTargetDto>(
         '/api/ai/nutrition/suggest',
         payload,
       );
@@ -217,7 +217,7 @@ export const aiService = {
         activityLevel: 1.38,
         goal: 'maintain',
       } as const;
-      const response = await apiClient.post<NutritionTargetDto>(
+      const response = await aiApiClient.post<NutritionTargetDto>(
         '/api/ai/nutrition/suggest',
         payload,
       );
@@ -343,10 +343,15 @@ export const aiService = {
     ingredients: { foodName: string; grams: number }[],
     description?: string,
   ): Promise<{ steps: string[]; cookingTime?: string; difficulty?: string }> {
-    // Gọi AI provider trực tiếp (port 5050)
-    const response = await fetch('http://10.0.2.2:5050/cooking-instructions', {
+    // Gọi qua backend API thay vì AI provider trực tiếp
+    // Backend sẽ proxy đến AI Provider (port 5050)
+    const token = getAccessTokenMem() ?? (await tokenStorage.getAccessToken());
+    const response = await fetch(`${API_BASE_URL}/api/ai/cooking-instructions`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
       body: JSON.stringify({
         recipeName,
         ingredients,

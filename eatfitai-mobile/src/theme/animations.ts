@@ -4,19 +4,20 @@
 export const animations = {
   // Duration presets (ms)
   fast: 150,
-  normal: 300,
-  slow: 500,
+  normal: 250,
+  slow: 400,
 
   // Spring configuration presets for react-native-reanimated
+  // Higher stiffness = faster, higher damping = less bounce
   spring: {
-    // Gentle spring - for subtle movements
-    gentle: { damping: 20, stiffness: 100, mass: 1 },
-    // Bouncy spring - for playful interactions
-    bouncy: { damping: 10, stiffness: 180, mass: 1 },
+    // Gentle spring - for subtle, smooth movements
+    gentle: { damping: 18, stiffness: 200, mass: 1 },
+    // Bouncy spring - for playful but controlled interactions
+    bouncy: { damping: 16, stiffness: 350, mass: 1 },
     // Snappy spring - for quick, responsive feedback
-    snappy: { damping: 20, stiffness: 300, mass: 0.8 },
+    snappy: { damping: 18, stiffness: 400, mass: 0.8 },
     // Soft spring - for smooth transitions
-    soft: { damping: 15, stiffness: 120, mass: 1 },
+    soft: { damping: 20, stiffness: 300, mass: 1 },
   },
 } as const;
 

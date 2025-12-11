@@ -36,9 +36,9 @@ export const IngredientBasketFab: React.FC<IngredientBasketFabProps> = ({ onPres
 
   const handlePress = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    scale.value = withSpring(0.9, { damping: 10 });
+    scale.value = withSpring(0.9, { damping: 18, stiffness: 400 });
     setTimeout(() => {
-      scale.value = withSpring(1, { damping: 15 });
+      scale.value = withSpring(1, { damping: 18, stiffness: 400 });
     }, 100);
     onPress();
   };

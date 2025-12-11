@@ -7,6 +7,7 @@ using EatFitAI.API.Repositories.Interfaces;
 using EatFitAI.API.Services;
 using EatFitAI.API.Services.Interfaces;
 using EatFitAI.API.Options;
+using EatFitAI.Services; // Voice processing service
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.EntityFrameworkCore;
@@ -133,6 +134,9 @@ builder.Services.AddScoped<IAiFoodMapService, AiFoodMapService>();
 builder.Services.AddScoped<IRecipeSuggestionService, RecipeSuggestionService>();
 builder.Services.AddScoped<INutritionInsightService, NutritionInsightService>();
 builder.Services.AddScoped<IVisionCacheService, VisionCacheService>();
+
+// Voice AI service
+builder.Services.AddScoped<IVoiceProcessingService, VoiceProcessingService>();
 
 // HttpClient for external AI provider proxy
 builder.Services.AddHttpClient();

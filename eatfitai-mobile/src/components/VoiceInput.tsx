@@ -45,7 +45,7 @@ const VoiceInput: React.FC<VoiceInputProps> = ({
     if (disabled) return;
 
     setRecordingState('recording');
-    scale.value = withSpring(1.1, { damping: 10, stiffness: 200 });
+    scale.value = withSpring(1.1, { damping: 18, stiffness: 400 });
 
     // Pulse animation while recording
     pulseScale.value = withRepeat(
@@ -64,7 +64,7 @@ const VoiceInput: React.FC<VoiceInputProps> = ({
     if (recordingState !== 'recording') return;
 
     setRecordingState('processing');
-    scale.value = withSpring(1, { damping: 15, stiffness: 200 });
+    scale.value = withSpring(1, { damping: 18, stiffness: 400 });
     cancelAnimation(pulseScale);
     pulseScale.value = withTiming(1, { duration: 200 });
 

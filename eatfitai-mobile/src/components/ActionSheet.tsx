@@ -52,15 +52,15 @@ export const ActionSheet = ({
   };
 
   const handlePressIn = () => {
-    scale.value = withSpring(0.98, { damping: 15, stiffness: 300 });
+    scale.value = withSpring(0.98, { damping: 18, stiffness: 400 });
   };
 
   const handlePressOut = () => {
-    scale.value = withSpring(1, { damping: 15, stiffness: 300 });
+    scale.value = withSpring(1, { damping: 18, stiffness: 400 });
   };
 
   const enteringAnimation = animated
-    ? SlideInUp.springify().damping(20).stiffness(200)
+    ? SlideInUp.duration(200)
     : undefined;
 
   const exitingAnimation = animated

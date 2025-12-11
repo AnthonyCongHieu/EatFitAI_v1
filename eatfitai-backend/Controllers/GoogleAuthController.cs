@@ -8,23 +8,26 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Google.Apis.Auth;
-using EatFitAI.Data;
-using EatFitAI.Models;
-using EatFitAI.Utils;
+using EatFitAI.API.DbScaffold.Data;
+using EatFitAI.API.DbScaffold.Models;
 using System.Security.Claims;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Cryptography;
+using System.Text;
+using Microsoft.IdentityModel.Tokens;
 
-namespace EatFitAI.Controllers
+namespace EatFitAI.API.Controllers
 {
     [ApiController]
     [Route("api/auth/google")]
     public class GoogleAuthController : ControllerBase
     {
-        private readonly ApplicationDbContext _context;
+        private readonly EatFitAIDbContext _context;
         private readonly IConfiguration _configuration;
         private readonly ILogger<GoogleAuthController> _logger;
 
         public GoogleAuthController(
-            ApplicationDbContext context,
+            EatFitAIDbContext context,
             IConfiguration configuration,
             ILogger<GoogleAuthController> logger)
         {
@@ -44,21 +47,22 @@ namespace EatFitAI.Controllers
         /// <summary>
         /// Auth response with JWT tokens
         /// </summary>
-        public class AuthResponse
+        public class GoogleAuthResponse
         {
             public bool Success { get; set; }
             public string? AccessToken { get; set; }
             public string? RefreshToken { get; set; }
-            public UserDto? User { get; set; }
+            public GoogleUserDto? User { get; set; }
             public string? Error { get; set; }
             public bool IsNewUser { get; set; }
+            public DateTime? ExpiresAt { get; set; }
         }
 
-        public class UserDto
+        public class GoogleUserDto
         {
-            public int UserId { get; set; }
+            public Guid UserId { get; set; }
             public string Email { get; set; } = string.Empty;
-            public string? FullName { get; set; }
+            public string? DisplayName { get; set; }
             public string? AvatarUrl { get; set; }
             public bool NeedsOnboarding { get; set; }
         }
@@ -69,13 +73,13 @@ namespace EatFitAI.Controllers
         /// </summary>
         [HttpPost("signin")]
         [AllowAnonymous]
-        public async Task<ActionResult<AuthResponse>> SignInWithGoogle([FromBody] GoogleSignInRequest request)
+        public async Task<ActionResult<GoogleAuthResponse>> SignInWithGoogle([FromBody] GoogleSignInRequest request)
         {
             try
             {
                 if (string.IsNullOrEmpty(request.IdToken))
                 {
-                    return BadRequest(new AuthResponse
+                    return BadRequest(new GoogleAuthResponse
                     {
                         Success = false,
                         Error = "ID Token không được để trống"
@@ -101,7 +105,7 @@ namespace EatFitAI.Controllers
                 catch (InvalidJwtException ex)
                 {
                     _logger.LogWarning("Invalid Google token: {Message}", ex.Message);
-                    return Unauthorized(new AuthResponse
+                    return Unauthorized(new GoogleAuthResponse
                     {
                         Success = false,
                         Error = "Token Google không hợp lệ"
@@ -111,7 +115,7 @@ namespace EatFitAI.Controllers
                 // Check if email is verified
                 if (!payload.EmailVerified)
                 {
-                    return BadRequest(new AuthResponse
+                    return BadRequest(new GoogleAuthResponse
                     {
                         Success = false,
                         Error = "Email chưa được xác thực với Google"
@@ -130,15 +134,14 @@ namespace EatFitAI.Controllers
                     isNewUser = true;
                     user = new User
                     {
+                        UserId = Guid.NewGuid(),
                         Email = payload.Email,
-                        FullName = payload.Name ?? payload.Email.Split('@')[0],
-                        AvatarUrl = payload.Picture,
-                        IsEmailVerified = true, // Google already verified
-                        AuthProvider = "google",
-                        GoogleId = payload.Subject,
+                        DisplayName = payload.Name ?? payload.Email.Split('@')[0],
+                        EmailVerified = true, // Google already verified
                         CreatedAt = DateTime.UtcNow,
+                        OnboardingCompleted = false,
                         // No password for Google users
-                        Password = null,
+                        PasswordHash = null,
                     };
 
                     _context.Users.Add(user);
@@ -148,24 +151,16 @@ namespace EatFitAI.Controllers
                 }
                 else
                 {
-                    // Update existing user
-                    if (user.AuthProvider != "google")
+                    // Update existing user - mark email as verified
+                    if (!user.EmailVerified)
                     {
-                        // Link Google account to existing email/password account
-                        user.GoogleId = payload.Subject;
-                        user.AuthProvider = "google"; // or "both" if you want to support both
-                    }
-
-                    // Update avatar if changed
-                    if (!string.IsNullOrEmpty(payload.Picture) && user.AvatarUrl != payload.Picture)
-                    {
-                        user.AvatarUrl = payload.Picture;
+                        user.EmailVerified = true;
                     }
 
                     // Update name if not set
-                    if (string.IsNullOrEmpty(user.FullName) && !string.IsNullOrEmpty(payload.Name))
+                    if (string.IsNullOrEmpty(user.DisplayName) && !string.IsNullOrEmpty(payload.Name))
                     {
-                        user.FullName = payload.Name;
+                        user.DisplayName = payload.Name;
                     }
 
                     await _context.SaveChangesAsync();
@@ -173,15 +168,9 @@ namespace EatFitAI.Controllers
                 }
 
                 // Generate JWT tokens
-                var accessToken = JwtHelper.GenerateToken(
-                    user.UserId,
-                    user.Email,
-                    _configuration["Jwt:Key"]!,
-                    _configuration["Jwt:Issuer"]!,
-                    _configuration["Jwt:Audience"]!
-                );
-
-                var refreshToken = JwtHelper.GenerateRefreshToken();
+                var accessToken = GenerateJwtToken(user);
+                var refreshToken = GenerateRefreshToken();
+                var expiresAt = DateTime.UtcNow.AddHours(24);
 
                 // Save refresh token
                 user.RefreshToken = refreshToken;
@@ -189,20 +178,21 @@ namespace EatFitAI.Controllers
                 await _context.SaveChangesAsync();
 
                 // Check if user needs onboarding
-                bool needsOnboarding = !user.HeightCm.HasValue || !user.WeightKg.HasValue;
+                bool needsOnboarding = !user.OnboardingCompleted;
 
-                return Ok(new AuthResponse
+                return Ok(new GoogleAuthResponse
                 {
                     Success = true,
                     AccessToken = accessToken,
                     RefreshToken = refreshToken,
                     IsNewUser = isNewUser,
-                    User = new UserDto
+                    ExpiresAt = expiresAt,
+                    User = new GoogleUserDto
                     {
                         UserId = user.UserId,
                         Email = user.Email,
-                        FullName = user.FullName,
-                        AvatarUrl = user.AvatarUrl,
+                        DisplayName = user.DisplayName,
+                        AvatarUrl = null, // TODO: Add AvatarUrl field to User model
                         NeedsOnboarding = needsOnboarding,
                     }
                 });
@@ -210,7 +200,7 @@ namespace EatFitAI.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error during Google sign-in");
-                return StatusCode(500, new AuthResponse
+                return StatusCode(500, new GoogleAuthResponse
                 {
                     Success = false,
                     Error = "Lỗi server khi đăng nhập"
@@ -224,10 +214,10 @@ namespace EatFitAI.Controllers
         /// </summary>
         [HttpPost("link")]
         [Authorize]
-        public async Task<ActionResult<AuthResponse>> LinkGoogleAccount([FromBody] GoogleSignInRequest request)
+        public async Task<ActionResult<GoogleAuthResponse>> LinkGoogleAccount([FromBody] GoogleSignInRequest request)
         {
             var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (!int.TryParse(userIdClaim, out var userId))
+            if (!Guid.TryParse(userIdClaim, out var userId))
             {
                 return Unauthorized();
             }
@@ -241,52 +231,80 @@ namespace EatFitAI.Controllers
                 var user = await _context.Users.FindAsync(userId);
                 if (user == null)
                 {
-                    return NotFound(new AuthResponse { Success = false, Error = "User not found" });
+                    return NotFound(new GoogleAuthResponse { Success = false, Error = "User not found" });
                 }
 
-                // Check if Google account is already linked to another user
-                var existingUser = await _context.Users
-                    .FirstOrDefaultAsync(u => u.GoogleId == payload.Subject && u.UserId != userId);
-
-                if (existingUser != null)
+                // Check if Google email matches user email
+                if (user.Email != payload.Email)
                 {
-                    return BadRequest(new AuthResponse
+                    return BadRequest(new GoogleAuthResponse
                     {
                         Success = false,
-                        Error = "Tài khoản Google này đã được liên kết với tài khoản khác"
+                        Error = "Email Google không khớp với email tài khoản"
                     });
                 }
 
-                // Link Google account
-                user.GoogleId = payload.Subject;
-                if (string.IsNullOrEmpty(user.AvatarUrl))
-                {
-                    user.AvatarUrl = payload.Picture;
-                }
-
+                // Mark email as verified
+                user.EmailVerified = true;
                 await _context.SaveChangesAsync();
 
-                return Ok(new AuthResponse
+                return Ok(new GoogleAuthResponse
                 {
                     Success = true,
-                    User = new UserDto
+                    User = new GoogleUserDto
                     {
                         UserId = user.UserId,
                         Email = user.Email,
-                        FullName = user.FullName,
-                        AvatarUrl = user.AvatarUrl,
+                        DisplayName = user.DisplayName,
+                        AvatarUrl = null,
                     }
                 });
             }
             catch (InvalidJwtException)
             {
-                return Unauthorized(new AuthResponse { Success = false, Error = "Token không hợp lệ" });
+                return Unauthorized(new GoogleAuthResponse { Success = false, Error = "Token không hợp lệ" });
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error linking Google account");
-                return StatusCode(500, new AuthResponse { Success = false, Error = "Lỗi server" });
+                return StatusCode(500, new GoogleAuthResponse { Success = false, Error = "Lỗi server" });
             }
         }
+
+        #region Private Helpers
+
+        // Copy từ AuthService để tránh circular dependency
+        private string GenerateJwtToken(User user)
+        {
+            var tokenHandler = new JwtSecurityTokenHandler();
+            var key = Encoding.ASCII.GetBytes(_configuration["Jwt:Key"] ?? "default-secret-key");
+
+            var tokenDescriptor = new SecurityTokenDescriptor
+            {
+                Subject = new ClaimsIdentity(new[]
+                {
+                    new Claim(ClaimTypes.NameIdentifier, user.UserId.ToString()),
+                    new Claim(ClaimTypes.Email, user.Email),
+                    new Claim(ClaimTypes.Name, user.DisplayName ?? user.Email)
+                }),
+                Expires = DateTime.UtcNow.AddHours(24),
+                SigningCredentials = new SigningCredentials(
+                    new SymmetricSecurityKey(key),
+                    SecurityAlgorithms.HmacSha256Signature)
+            };
+
+            var token = tokenHandler.CreateToken(tokenDescriptor);
+            return tokenHandler.WriteToken(token);
+        }
+
+        private string GenerateRefreshToken()
+        {
+            var randomBytes = new byte[32];
+            using var rng = RandomNumberGenerator.Create();
+            rng.GetBytes(randomBytes);
+            return Convert.ToBase64String(randomBytes);
+        }
+
+        #endregion
     }
 }

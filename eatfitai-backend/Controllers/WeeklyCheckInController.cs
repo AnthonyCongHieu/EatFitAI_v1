@@ -351,10 +351,10 @@ public class WeeklyCheckInController : ControllerBase
         return new WeeklyStats
         {
             DaysLogged = daysLogged,
-            AvgCalories = daysLogged > 0 ? entries.Average(e => e.Calories ?? 0) : 0,
-            AvgProtein = daysLogged > 0 ? entries.Average(e => e.Protein ?? 0) : 0,
-            AvgCarbs = daysLogged > 0 ? entries.Average(e => e.Carbs ?? 0) : 0,
-            AvgFat = daysLogged > 0 ? entries.Average(e => e.Fat ?? 0) : 0
+            AvgCalories = daysLogged > 0 ? entries.Average(e => e.Calories) : 0m,
+            AvgProtein = daysLogged > 0 ? entries.Average(e => e.Protein) : 0m,
+            AvgCarbs = daysLogged > 0 ? entries.Average(e => e.Carbs) : 0m,
+            AvgFat = daysLogged > 0 ? entries.Average(e => e.Fat) : 0m
         };
     }
 

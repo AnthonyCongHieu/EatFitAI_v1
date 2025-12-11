@@ -10,8 +10,11 @@ import { getAccessTokenMem, setAccessTokenMem, clearAccessTokenMem } from './aut
 import { postRefreshToken } from './tokenService';
 import { updateSessionFromAuthResponse } from './authSession';
 
-// Axios client
+// Axios client - default timeout 10s cho các request thông thường
 const apiClient = axios.create({ baseURL: API_BASE_URL, timeout: 10000 });
+
+// Axios client cho AI endpoints - timeout 60s vì Ollama/LLM mất nhiều thời gian
+export const aiApiClient = axios.create({ baseURL: API_BASE_URL, timeout: 60000 });
 
 if (__DEV__) {
   if (!API_BASE_URL) {
@@ -220,7 +223,7 @@ apiClient.interceptors.response.use(
         });
         try {
           updateSessionFromAuthResponse?.(data);
-        } catch {}
+        } catch { }
 
         processQueue(null, newAccessToken);
         const retryHeaders = AxiosHeaders.from(originalRequest.headers ?? {});
@@ -266,7 +269,7 @@ apiClient.interceptors.response.use(
       // Create a more descriptive error for network issues
       const networkError = new Error(
         `Network Error: ${error.message || 'Unable to connect to server'}. ` +
-          `Please check your internet connection and ensure the API server is running at ${API_BASE_URL || 'undefined URL'}.`,
+        `Please check your internet connection and ensure the API server is running at ${API_BASE_URL || 'undefined URL'}.`,
       );
       networkError.name = 'NetworkError';
       return Promise.reject(networkError);
@@ -275,5 +278,23 @@ apiClient.interceptors.response.use(
     return Promise.reject(error);
   },
 );
+
+// Thêm interceptors cho aiApiClient (tương tự apiClient nhưng đơn giản hơn)
+aiApiClient.interceptors.request.use(async (config: InternalAxiosRequestConfig) => {
+  try {
+    const token = getAccessTokenMem() ?? (await tokenStorage.getAccessToken());
+    if (token && typeof token === 'string' && token.trim().length > 0) {
+      config.headers = {
+        ...(config.headers ?? {}),
+        Authorization: `Bearer ${token}`,
+      } as InternalAxiosRequestConfig['headers'];
+    }
+  } catch (error) {
+    if (__DEV__) {
+      console.error('[EatFitAI] AI Client Interceptor Error:', error);
+    }
+  }
+  return config;
+});
 
 export default apiClient;
