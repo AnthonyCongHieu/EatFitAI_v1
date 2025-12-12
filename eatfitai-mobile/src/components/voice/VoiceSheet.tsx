@@ -118,19 +118,19 @@ export const VoiceSheet = ({ visible, onClose }: VoiceSheetProps): JSX.Element =
     const getStatusText = (): string => {
         switch (status) {
             case 'listening':
-                return 'Đang nghe...';
+                return '🎤 Đang ghi âm...';
             case 'processing':
-                return 'Đang xử lý giọng nói...';
+                return '✍️ Đang chuyển giọng nói thành chữ...';
             case 'parsing':
-                return 'Đang phân tích lệnh...';
+                return '🤖 AI đang phân tích lệnh...';
             case 'executing':
-                return 'Đang thực hiện...';
+                return '⚡ Đang thực hiện lệnh...';
             case 'success':
-                return 'Hoàn thành!';
+                return '✅ Thành công!';
             case 'error':
-                return 'Có lỗi xảy ra';
+                return '❌ Có lỗi xảy ra';
             default:
-                return 'Nhấn micro để bắt đầu';
+                return '💬 Nhấn micro để ghi âm hoặc gõ lệnh bên dưới';
         }
     };
 
@@ -201,7 +201,7 @@ export const VoiceSheet = ({ visible, onClose }: VoiceSheetProps): JSX.Element =
     });
 
     return (
-        <BottomSheet visible={visible} onClose={handleClose} height={550}>
+        <BottomSheet visible={visible} onClose={handleClose} height={580}>
             <ScrollView
                 showsVerticalScrollIndicator={true}
                 contentContainerStyle={{ padding: theme.spacing.lg, paddingBottom: 40 }}

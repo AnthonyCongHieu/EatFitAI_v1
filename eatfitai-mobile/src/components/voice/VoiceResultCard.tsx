@@ -107,7 +107,9 @@ export const VoiceResultCard = ({
         entityRow: {
             flexDirection: 'row',
             justifyContent: 'space-between',
-            marginBottom: theme.spacing.xs,
+            paddingVertical: 10,
+            borderBottomWidth: 1,
+            borderBottomColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)',
         },
         entityLabel: {
             color: theme.colors.textSecondary,
@@ -193,13 +195,17 @@ export const VoiceResultCard = ({
                 {/* Execute Button */}
                 {command.intent !== 'UNKNOWN' && (
                     <Button
-                        title={isExecuting ? 'Đang thực hiện...' : 'Xác nhận'}
+                        title={isExecuting ? 'Đang thực hiện...' : '✔️ Xác nhận thực hiện'}
                         variant="primary"
                         onPress={onExecute}
                         loading={isExecuting}
                         disabled={isExecuting}
                         fullWidth
                         icon="checkmark-circle"
+                        style={{
+                            marginTop: theme.spacing.md,
+                            minHeight: 52,
+                        }}
                     />
                 )}
             </AppCard>

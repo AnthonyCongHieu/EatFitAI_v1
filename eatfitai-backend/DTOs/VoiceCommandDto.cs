@@ -3,6 +3,8 @@
  * Data Transfer Objects for Voice AI feature
  */
 
+using System.Text.Json.Serialization;
+
 namespace EatFitAI.DTOs
 {
     /// <summary>
@@ -17,6 +19,7 @@ namespace EatFitAI.DTOs
     /// <summary>
     /// Types of voice intents
     /// </summary>
+    [JsonConverter(typeof(JsonStringEnumConverter))]
     public enum VoiceIntent
     {
         ADD_FOOD,       // Thêm món ăn
@@ -29,6 +32,7 @@ namespace EatFitAI.DTOs
     /// <summary>
     /// Meal type enum
     /// </summary>
+    [JsonConverter(typeof(JsonStringEnumConverter))]
     public enum MealType
     {
         Breakfast = 1,
