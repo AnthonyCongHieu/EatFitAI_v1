@@ -1,8 +1,7 @@
 import type { ReactNode } from 'react';
 import { View, StyleSheet } from 'react-native';
-import { PanGestureHandler } from 'react-native-gesture-handler';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
-  useAnimatedGestureHandler,
   useAnimatedStyle,
   useSharedValue,
   withSpring,
@@ -39,19 +38,18 @@ export const Swipeable = ({
   threshold = 100,
 }: SwipeableProps): JSX.Element => {
   const translateX = useSharedValue(0);
-  const isSwiping = useSharedValue(false);
 
   const maxLeftSwipe = leftActions.length * 80;
   const maxRightSwipe = rightActions.length * 80;
 
-  const gestureHandler = useAnimatedGestureHandler({
-    onStart: () => {
+  // Dùng Gesture API mới (react-native-gesture-handler v2+)
+  const panGesture = Gesture.Pan()
+    .onStart(() => {
       if (onSwipeStart) {
         runOnJS(onSwipeStart)();
       }
-      isSwiping.value = true;
-    },
-    onActive: (event) => {
+    })
+    .onUpdate((event) => {
       const translationX = event.translationX / friction;
 
       if (leftActions.length > 0 && translationX > 0) {
@@ -59,8 +57,8 @@ export const Swipeable = ({
       } else if (rightActions.length > 0 && translationX < 0) {
         translateX.value = Math.max(translationX, -maxRightSwipe);
       }
-    },
-    onEnd: (event) => {
+    })
+    .onEnd((event) => {
       const velocityX = event.velocityX;
 
       if (Math.abs(translateX.value) > threshold || Math.abs(velocityX) > 500) {
@@ -75,19 +73,15 @@ export const Swipeable = ({
         translateX.value = withSpring(0, { damping: 20, stiffness: 200 });
       }
 
-      isSwiping.value = false;
       if (onSwipeEnd) {
         runOnJS(onSwipeEnd)();
       }
-    },
-    onFail: () => {
-      translateX.value = withSpring(0, { damping: 20, stiffness: 200 });
-      isSwiping.value = false;
-      if (onSwipeEnd) {
-        runOnJS(onSwipeEnd)();
-      }
-    },
-  });
+    })
+    .onFinalize(() => {
+      // Cleanup if needed
+    })
+    .activeOffsetX([-10, 10])
+    .failOffsetY([-5, 5]);
 
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [{ translateX: translateX.value }],
@@ -137,14 +131,10 @@ export const Swipeable = ({
         {renderActions(rightActions, false)}
       </View>
 
-      {/* Foreground Content */}
-      <PanGestureHandler
-        onGestureEvent={gestureHandler}
-        activeOffsetX={[-10, 10]}
-        failOffsetY={[-5, 5]}
-      >
+      {/* Foreground Content - dùng GestureDetector thay vì PanGestureHandler */}
+      <GestureDetector gesture={panGesture}>
         <Animated.View style={[styles.content, animatedStyle]}>{children}</Animated.View>
-      </PanGestureHandler>
+      </GestureDetector>
     </View>
   );
 };

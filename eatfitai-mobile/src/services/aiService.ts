@@ -110,7 +110,7 @@ export const aiService = {
   // Goi y cong thuc tu danh sach nguyen lieu
   async suggestRecipes(ingredients: string[]): Promise<SuggestedRecipe[]> {
     // Backend expects 'availableIngredients' not 'ingredients'
-    const response = await aiApiClient.post<
+    const response = await apiClient.post<
       { recipes?: RecipeSuggestionApiItem[] } | RecipeSuggestionApiItem[]
     >('/api/ai/recipes/suggest', { availableIngredients: ingredients });
     const payload = response.data;
@@ -141,7 +141,7 @@ export const aiService = {
   async getCurrentNutritionTarget(): Promise<NutritionTarget | null> {
     try {
       const response = await apiClient.get<NutritionTargetDto>(
-        '/api/ai/nutrition/current',
+        '/api/ai/nutrition-targets/current',
       );
       const data = response.data ?? {};
       const calories = toNumber(data.calories);
@@ -195,7 +195,7 @@ export const aiService = {
       console.log('[EatFitAI] Nutrition suggest payload:', payload);
 
       const response = await aiApiClient.post<NutritionTargetDto>(
-        '/api/ai/nutrition/suggest',
+        '/api/ai/nutrition/recalculate',
         payload,
       );
       const data = response.data ?? {};
@@ -218,7 +218,7 @@ export const aiService = {
         goal: 'maintain',
       } as const;
       const response = await aiApiClient.post<NutritionTargetDto>(
-        '/api/ai/nutrition/suggest',
+        '/api/ai/nutrition/recalculate',
         payload,
       );
       const data = response.data ?? {};
@@ -235,7 +235,7 @@ export const aiService = {
   // Ap dung target moi (thu route moi, fallback route cu)
   async applyNutritionTarget(target: NutritionTarget): Promise<void> {
     try {
-      await apiClient.post('/api/ai/nutrition/apply', {
+      await apiClient.post('/api/ai/nutrition/apply-target', {
         calories: target.calories,
         protein: target.protein,
         carb: target.carbs,
@@ -264,7 +264,7 @@ export const aiService = {
   async suggestRecipesEnhanced(
     request: import('../types/aiEnhanced').RecipeSuggestionRequest,
   ): Promise<import('../types/aiEnhanced').RecipeSuggestion[]> {
-    const response = await aiApiClient.post('/api/ai/recipes/suggest', request);
+    const response = await apiClient.post('/api/ai/recipes/suggest', request);
     return response.data;
   },
 
@@ -345,14 +345,26 @@ export const aiService = {
   ): Promise<{ steps: string[]; cookingTime?: string; difficulty?: string }> {
     // Gọi qua backend API thay vì AI provider trực tiếp
     // Backend sẽ proxy đến AI Provider (port 5050)
-    // SỬ DỤNG aiApiClient để có timeout 60s và tự động gắn token
-    const response = await aiApiClient.post('/api/ai/cooking-instructions', {
-      recipeName,
-      ingredients,
-      description: description || '',
+    const token = getAccessTokenMem() ?? (await tokenStorage.getAccessToken());
+    const response = await fetch(`${API_BASE_URL}/api/ai/cooking-instructions`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        recipeName,
+        ingredients,
+        description: description || '',
+      }),
     });
 
-    const data = response.data;
+    if (!response.ok) {
+      const text = await response.text();
+      throw new Error(`Không thể tạo hướng dẫn nấu: ${text}`);
+    }
+
+    const data = await response.json();
     return {
       steps: data.steps || [],
       cookingTime: data.cookingTime,

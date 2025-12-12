@@ -1,17 +1,29 @@
 /**
  * Voice Service - API client for Voice AI Assistant
- * Handles speech-to-text and intent parsing
+ * Uses Ollama AI for intelligent voice command parsing
  */
 
-import api from './api';
+import axios from 'axios';
+import { aiApiClient } from './apiClient';
+import { API_BASE_URL } from '../config/env';
+
+// AI Provider URL (Flask server with Ollama)
+// Uses same base but port 5050 for AI Provider
+const AI_PROVIDER_URL = API_BASE_URL?.replace(':5247', ':5050') || 'http://10.0.2.2:5050';
+
+// Axios client for AI Provider with long timeout for Ollama
+const aiProviderClient = axios.create({
+  baseURL: AI_PROVIDER_URL,
+  timeout: 30000, // 30s for Ollama processing
+});
 
 // Intent types supported
 export type VoiceIntent =
-  | 'ADD_FOOD' // Thêm món ăn vào nhật ký
-  | 'LOG_WEIGHT' // Ghi cân nặng
-  | 'ASK_CALORIES' // Hỏi số calories hôm nay
+  | 'ADD_FOOD'      // Thêm món ăn vào nhật ký
+  | 'LOG_WEIGHT'    // Ghi cân nặng
+  | 'ASK_CALORIES'  // Hỏi số calories hôm nay
   | 'ASK_NUTRITION' // Hỏi thông tin dinh dưỡng
-  | 'UNKNOWN'; // Không hiểu lệnh
+  | 'UNKNOWN';      // Không hiểu lệnh
 
 // Meal type mapping
 export type MealType = 'breakfast' | 'lunch' | 'dinner' | 'snack';
@@ -29,13 +41,8 @@ export interface ParsedVoiceCommand {
   };
   confidence: number;
   rawText: string;
+  source?: string; // 'ollama' | 'fallback'
   suggestedAction?: string;
-}
-
-// Voice processing request
-export interface VoiceProcessRequest {
-  text: string;
-  language?: string; // 'vi' | 'en'
 }
 
 // Voice processing response
@@ -57,52 +64,132 @@ export const MEAL_TYPE_MAP: Record<MealType, number> = {
   snack: 4,
 };
 
-// Vietnamese meal keywords
-export const MEAL_KEYWORDS: Record<string, MealType> = {
-  sáng: 'breakfast',
-  'bữa sáng': 'breakfast',
-  'ăn sáng': 'breakfast',
-  trưa: 'lunch',
-  'bữa trưa': 'lunch',
-  'ăn trưa': 'lunch',
-  tối: 'dinner',
-  'bữa tối': 'dinner',
-  'ăn tối': 'dinner',
-  chiều: 'snack',
-  'bữa phụ': 'snack',
-  'ăn vặt': 'snack',
-};
+/**
+ * Transcription response from Whisper
+ */
+export interface TranscriptionResponse {
+  text: string;
+  language: string;
+  duration: number;
+  success: boolean;
+  error?: string;
+}
 
 /**
- * Voice Service API
+ * Voice Service API - Uses Ollama AI for parsing, Whisper for STT
  */
 export const voiceService = {
   /**
-   * Process voice text and parse intent
-   * @param request Voice processing request with text
-   * @returns Parsed command with intent and entities
+   * Transcribe audio file to Vietnamese text using Whisper
+   * @param audioUri Local URI of recorded audio file
+   * @returns Transcribed text
    */
-  async processVoiceText(request: VoiceProcessRequest): Promise<VoiceProcessResponse> {
+  async transcribeAudio(audioUri: string): Promise<TranscriptionResponse> {
     try {
-      const response = await api.post<VoiceProcessResponse>('/voice/process', request);
+      console.log('[VoiceService] Transcribing audio:', audioUri);
+
+      // Create form data with audio file
+      const formData = new FormData();
+
+      // Get file extension
+      const ext = audioUri.split('.').pop() || 'm4a';
+
+      // Append file to form data
+      formData.append('audio', {
+        uri: audioUri,
+        type: `audio/${ext}`,
+        name: `recording.${ext}`,
+      } as any);
+
+      const response = await aiProviderClient.post<TranscriptionResponse>(
+        '/voice/transcribe',
+        formData,
+        {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+          timeout: 60000, // 60s for long audio
+        }
+      );
+
+      console.log('[VoiceService] Whisper response:', response.data);
       return response.data;
     } catch (error: any) {
-      console.error('[VoiceService] Process error:', error);
+      console.error('[VoiceService] Transcription error:', error?.message);
       return {
+        text: '',
+        language: 'vi',
+        duration: 0,
         success: false,
-        error: error?.response?.data?.message || 'Không thể xử lý lệnh giọng nói',
+        error: error?.message || 'Transcription failed',
       };
     }
   },
 
   /**
-   * Execute parsed command (add food, log weight, etc.)
+   * Parse voice text using Ollama AI (via AI Provider)
+   * @param text Voice/text input from user
+   * @returns Parsed command with intent and entities
+   */
+  async parseWithOllama(text: string): Promise<ParsedVoiceCommand> {
+    try {
+      console.log('[VoiceService] Parsing with Ollama:', text);
+
+      const response = await aiProviderClient.post('/voice/parse', { text });
+      const data = response.data;
+
+      console.log('[VoiceService] Ollama response:', data);
+
+      return {
+        intent: data.intent || 'UNKNOWN',
+        entities: data.entities || {},
+        confidence: data.confidence || 0,
+        rawText: data.rawText || text,
+        source: data.source || 'ollama',
+      };
+    } catch (error: any) {
+      console.error('[VoiceService] Ollama parse error:', error?.message);
+
+      // Fallback khi Ollama không khả dụng
+      return {
+        intent: 'UNKNOWN',
+        entities: {},
+        confidence: 0,
+        rawText: text,
+        source: 'error',
+        suggestedAction: 'Không thể kết nối AI. Vui lòng thử lại.',
+      };
+    }
+  },
+
+  /**
+   * Execute parsed command (add food, log weight, etc.) via Backend
    * @param command Parsed voice command
    * @returns Execution result
    */
   async executeCommand(command: ParsedVoiceCommand): Promise<VoiceProcessResponse> {
     try {
-      const response = await api.post<VoiceProcessResponse>('/voice/execute', command);
+      // Map mealType string to enum NAME for Backend
+      // Backend uses JsonStringEnumConverter: Breakfast, Lunch, Dinner, Snack
+      const mealTypeMapping: Record<string, string> = {
+        'breakfast': 'Breakfast', 'sáng': 'Breakfast',
+        'lunch': 'Lunch', 'trưa': 'Lunch',
+        'dinner': 'Dinner', 'tối': 'Dinner',
+        'snack': 'Snack', 'phụ': 'Snack',
+      };
+
+      // Transform command for Backend
+      const backendCommand = {
+        ...command,
+        entities: {
+          ...command.entities,
+          // Convert mealType string to enum name, default to Lunch
+          mealType: mealTypeMapping[command.entities.mealType?.toLowerCase() || ''] || 'Lunch',
+        },
+      };
+
+      console.log('[VoiceService] Sending to backend:', JSON.stringify(backendCommand));
+      const response = await aiApiClient.post<VoiceProcessResponse>('/api/voice/execute', backendCommand);
       return response.data;
     } catch (error: any) {
       console.error('[VoiceService] Execute error:', error);
@@ -114,72 +201,16 @@ export const voiceService = {
   },
 
   /**
-   * Local intent parsing (fallback when offline)
-   * Basic NLU without AI - just pattern matching
+   * Main function: Parse voice text with Ollama AI
+   * (Legacy processVoiceText kept for compatibility)
    */
-  parseLocalIntent(text: string): ParsedVoiceCommand {
-    const lowerText = text.toLowerCase().trim();
+  async processVoiceText(request: { text: string }): Promise<VoiceProcessResponse> {
+    const command = await this.parseWithOllama(request.text);
 
-    // Default command
-    const command: ParsedVoiceCommand = {
-      intent: 'UNKNOWN',
-      entities: {},
-      confidence: 0,
-      rawText: text,
+    return {
+      success: command.intent !== 'UNKNOWN',
+      command,
     };
-
-    // Pattern: "ghi X vào bữa Y" hoặc "thêm X vào bữa Y"
-    const addFoodPattern =
-      /(?:ghi|thêm|ăn|log)\s+(.+?)\s+(?:vào\s+)?(?:bữa\s+)?(sáng|trưa|tối|chiều)/i;
-    const addFoodMatch = lowerText.match(addFoodPattern);
-
-    if (addFoodMatch) {
-      command.intent = 'ADD_FOOD';
-      command.confidence = 0.8;
-
-      // Parse food name and quantity
-      const foodPart = addFoodMatch[1] || '';
-      const mealPart = addFoodMatch[2] || '';
-
-      // Extract quantity (e.g., "1 bát phở" → qty: 1, food: "bát phở")
-      const qtyMatch = foodPart.match(/^(\d+)\s*(.+)/);
-      if (qtyMatch) {
-        command.entities.quantity = parseInt(qtyMatch[1], 10);
-        command.entities.foodName = qtyMatch[2]?.trim();
-      } else {
-        command.entities.quantity = 1;
-        command.entities.foodName = foodPart.trim();
-      }
-
-      // Map meal type
-      command.entities.mealType = MEAL_KEYWORDS[mealPart] || 'lunch';
-      command.entities.date = new Date().toISOString().split('T')[0];
-
-      return command;
-    }
-
-    // Pattern: "cân nặng X kg/ký"
-    const weightPattern = /(?:cân nặng|cân)\s+(?:là\s+)?(\d+(?:\.\d+)?)\s*(?:kg|ký|kí)?/i;
-    const weightMatch = lowerText.match(weightPattern);
-
-    if (weightMatch) {
-      command.intent = 'LOG_WEIGHT';
-      command.entities.weight = parseFloat(weightMatch[1]);
-      command.confidence = 0.9;
-      command.entities.date = new Date().toISOString().split('T')[0];
-      return command;
-    }
-
-    // Pattern: "bao nhiêu calo" or "calories"
-    const caloriesPattern = /(?:bao nhiêu|tổng)\s*(?:calo|calories|kcal)/i;
-    if (caloriesPattern.test(lowerText)) {
-      command.intent = 'ASK_CALORIES';
-      command.confidence = 0.85;
-      command.entities.date = new Date().toISOString().split('T')[0];
-      return command;
-    }
-
-    return command;
   },
 };
 

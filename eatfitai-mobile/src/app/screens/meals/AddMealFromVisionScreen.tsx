@@ -178,7 +178,9 @@ const AddMealFromVisionScreen = (): JSX.Element => {
             backgroundColor: detection.selected
               ? theme.colors.primary + '15'
               : theme.colors.card,
-            borderColor: detection.selected ? theme.colors.primary : theme.colors.border,
+            borderColor: detection.selected
+              ? theme.colors.primary
+              : theme.colors.border,
           },
         ]}
       >
@@ -187,14 +189,18 @@ const AddMealFromVisionScreen = (): JSX.Element => {
           style={[
             styles.checkbox,
             {
-              backgroundColor: detection.selected ? theme.colors.primary : 'transparent',
+              backgroundColor: detection.selected
+                ? theme.colors.primary
+                : 'transparent',
               borderColor: detection.selected
                 ? theme.colors.primary
                 : theme.colors.border,
             },
           ]}
         >
-          {detection.selected && <Icon name="checkmark" size="sm" color="card" />}
+          {detection.selected && (
+            <Icon name="checkmark" size="sm" color="card" />
+          )}
         </View>
 
         {/* Info */}
@@ -339,7 +345,10 @@ const AddMealFromVisionScreen = (): JSX.Element => {
           <Image source={{ uri: imageUri }} style={styles.image} resizeMode="cover" />
           <View style={styles.imageOverlay}>
             <Icon name="scan-outline" size="sm" color="card" />
-            <ThemedText variant="bodySmall" style={{ color: '#fff', marginLeft: 6 }}>
+            <ThemedText
+              variant="bodySmall"
+              style={{ color: '#fff', marginLeft: 6 }}
+            >
               AI nhận diện {detectionItems.length} món
             </ThemedText>
           </View>
@@ -380,17 +389,10 @@ const AddMealFromVisionScreen = (): JSX.Element => {
       <View style={styles.bottomBar}>
         <View style={styles.summaryRow}>
           <ThemedText variant="body" color="textSecondary">
-            Sẽ thêm:{' '}
-            <ThemedText variant="body" weight="700" color="primary">
-              {selectedItems.length}
-            </ThemedText>{' '}
-            món
+            Sẽ thêm: <ThemedText variant="body" weight="700" color="primary">{selectedItems.length}</ThemedText> món
           </ThemedText>
           <ThemedText variant="body" color="textSecondary">
-            <ThemedText variant="body" weight="700">
-              {Math.round(totalCalories)}
-            </ThemedText>{' '}
-            kcal
+            <ThemedText variant="body" weight="700">{Math.round(totalCalories)}</ThemedText> kcal
           </ThemedText>
         </View>
         <Button

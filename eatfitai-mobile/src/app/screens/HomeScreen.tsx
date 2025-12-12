@@ -51,6 +51,8 @@ import { HomeSkeleton } from '../../components/skeletons/HomeSkeleton';
 import { GlassCard, glassStyles } from '../../components/ui/GlassCard';
 import { GradientBackground } from '../../components/ui/GradientBackground';
 import { WelcomeHeader } from '../../components/home/WelcomeHeader';
+import { VoiceButton } from '../../components/voice/VoiceButton';
+import { VoiceSheet } from '../../components/voice/VoiceSheet';
 
 type AddOption = 'search' | 'custom' | 'ai';
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
@@ -83,6 +85,7 @@ const HomeScreen = (): JSX.Element => {
   });
   const [showAddModal, setShowAddModal] = useState(false);
   const [serverDown, setServerDown] = useState(false);
+  const [showVoiceSheet, setShowVoiceSheet] = useState(false);
   const { currentStreak, longestStreak, checkStreak } = useGamificationStore();
 
   useFocusEffect(
@@ -212,7 +215,7 @@ const HomeScreen = (): JSX.Element => {
                   text1: t('common.removed'),
                   text2: t('common.updated'),
                 });
-                refreshSummary().catch(() => {});
+                refreshSummary().catch(() => { });
               })
               .catch((err: any) => {
                 handleApiErrorWithCustomMessage(err, {
@@ -410,8 +413,8 @@ const HomeScreen = (): JSX.Element => {
               targetValue={summary?.targetProtein ?? undefined}
               progress={
                 typeof proteinValue.value === 'number' &&
-                !Number.isNaN(proteinValue.value) &&
-                summary?.targetProtein
+                  !Number.isNaN(proteinValue.value) &&
+                  summary?.targetProtein
                   ? Math.min(1, proteinValue.value / summary.targetProtein)
                   : 0
               }
@@ -424,8 +427,8 @@ const HomeScreen = (): JSX.Element => {
               targetValue={summary?.targetCarbs ?? undefined}
               progress={
                 typeof carbsValue.value === 'number' &&
-                !Number.isNaN(carbsValue.value) &&
-                summary?.targetCarbs
+                  !Number.isNaN(carbsValue.value) &&
+                  summary?.targetCarbs
                   ? Math.min(1, carbsValue.value / summary.targetCarbs)
                   : 0
               }
@@ -438,8 +441,8 @@ const HomeScreen = (): JSX.Element => {
               targetValue={summary?.targetFat ?? undefined}
               progress={
                 typeof fatValue.value === 'number' &&
-                !Number.isNaN(fatValue.value) &&
-                summary?.targetFat
+                  !Number.isNaN(fatValue.value) &&
+                  summary?.targetFat
                   ? Math.min(1, fatValue.value / summary.targetFat)
                   : 0
               }
@@ -581,6 +584,23 @@ const HomeScreen = (): JSX.Element => {
       </Animated.View>
 
       <SmartAddSheet visible={showAddModal} onClose={() => setShowAddModal(false)} />
+
+      {/* Voice FAB - góc dưới trái */}
+      <Animated.View
+        entering={FadeInUp.delay(600).springify()}
+        style={styles.voiceFabContainer}
+      >
+        <VoiceButton
+          onPress={() => setShowVoiceSheet(true)}
+          size={56}
+        />
+      </Animated.View>
+
+      {/* Voice Sheet */}
+      <VoiceSheet
+        visible={showVoiceSheet}
+        onClose={() => setShowVoiceSheet(false)}
+      />
     </GradientBackground>
   );
 };
@@ -603,6 +623,11 @@ const getStyles = (theme: any) =>
       shadowOffset: { width: 0, height: 4 },
       shadowOpacity: 0.3,
       shadowRadius: 8,
+    },
+    voiceFabContainer: {
+      position: 'absolute',
+      bottom: theme.spacing.xl,
+      left: theme.spacing.xl,
     },
     entryRow: {
       flexDirection: 'row',

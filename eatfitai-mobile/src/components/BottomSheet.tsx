@@ -72,7 +72,9 @@ export const BottomSheet = ({
     opacity: backdropOpacity.value,
   }));
 
-  const enteringAnimation = animated ? SlideInDown.duration(200) : undefined;
+  const enteringAnimation = animated
+    ? SlideInDown.duration(200)
+    : undefined;
 
   const exitingAnimation = animated
     ? SlideOutDown.duration(theme.animation.normal)
@@ -101,53 +103,55 @@ export const BottomSheet = ({
 
       {/* Bottom Sheet Content */}
       <View style={styles.container}>
-        <GestureDetector gesture={panGesture}>
-          <Animated.View
-            style={[
-              styles.content,
-              {
-                backgroundColor: theme.colors.card,
-                borderTopLeftRadius: theme.radius.xl,
-                borderTopRightRadius: theme.radius.xl,
-                height: height === 'auto' ? undefined : height,
-                maxHeight: '90%',
-              },
-              animatedStyle,
-            ]}
-            entering={enteringAnimation}
-            exiting={exitingAnimation}
-          >
-            {/* Handle */}
-            {showHandle && (
-              <View style={styles.handle}>
-                <View
-                  style={[styles.handleBar, { backgroundColor: theme.colors.muted }]}
-                />
-              </View>
-            )}
+        <Animated.View
+          style={[
+            styles.content,
+            {
+              backgroundColor: theme.colors.card,
+              borderTopLeftRadius: theme.radius.xl,
+              borderTopRightRadius: theme.radius.xl,
+              height: height === 'auto' ? undefined : height,
+              maxHeight: '90%',
+            },
+            animatedStyle,
+          ]}
+          entering={enteringAnimation}
+          exiting={exitingAnimation}
+        >
+          {/* Handle - only this is draggable */}
+          <GestureDetector gesture={panGesture}>
+            <View>
+              {showHandle && (
+                <View style={styles.handle}>
+                  <View
+                    style={[styles.handleBar, { backgroundColor: theme.colors.muted }]}
+                  />
+                </View>
+              )}
 
-            {/* Header */}
-            {(title || showCloseButton) && (
-              <View style={styles.header}>
-                {title && (
-                  <ThemedText variant="h4" style={styles.title}>
-                    {title}
-                  </ThemedText>
-                )}
-                {showCloseButton && (
-                  <Pressable onPress={onClose} style={styles.closeButton} hitSlop={8}>
-                    <ThemedText style={{ color: theme.colors.muted, fontSize: 24 }}>
-                      ×
+              {/* Header */}
+              {(title || showCloseButton) && (
+                <View style={styles.header}>
+                  {title && (
+                    <ThemedText variant="h4" style={styles.title}>
+                      {title}
                     </ThemedText>
-                  </Pressable>
-                )}
-              </View>
-            )}
+                  )}
+                  {showCloseButton && (
+                    <Pressable onPress={onClose} style={styles.closeButton} hitSlop={8}>
+                      <ThemedText style={{ color: theme.colors.muted, fontSize: 24 }}>
+                        ×
+                      </ThemedText>
+                    </Pressable>
+                  )}
+                </View>
+              )}
+            </View>
+          </GestureDetector>
 
-            {/* Body */}
-            <View style={styles.body}>{children}</View>
-          </Animated.View>
-        </GestureDetector>
+          {/* Body - can contain ScrollView */}
+          <View style={styles.body}>{children}</View>
+        </Animated.View>
       </View>
     </Animated.View>
   );

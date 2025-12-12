@@ -1,13 +1,6 @@
 // Recipe Detail Screen - hiển thị chi tiết công thức
 import React, { useEffect, useState } from 'react';
-import {
-  View,
-  StyleSheet,
-  ScrollView,
-  ActivityIndicator,
-  Pressable,
-  Linking,
-} from 'react-native';
+import { View, StyleSheet, ScrollView, ActivityIndicator, Pressable, Linking } from 'react-native';
 import { useRoute, RouteProp } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -192,20 +185,10 @@ const RecipeDetailScreen = (): JSX.Element => {
 
         {/* Hướng dẫn nấu - hiển thị từ DB hoặc AI-generated */}
         <View style={[styles.box, { backgroundColor: theme.colors.card }]}>
-          <View
-            style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              marginBottom: theme.spacing.sm,
-            }}
-          >
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: theme.spacing.sm }}>
             <ThemedText variant="h4">👨‍🍳 Hướng dẫn nấu</ThemedText>
             {aiInstructions.cookingTime && (
-              <ThemedText
-                variant="caption"
-                color="textSecondary"
-                style={{ marginLeft: theme.spacing.sm }}
-              >
+              <ThemedText variant="caption" color="textSecondary" style={{ marginLeft: theme.spacing.sm }}>
                 ⏱️ {aiInstructions.cookingTime}
               </ThemedText>
             )}
@@ -213,19 +196,9 @@ const RecipeDetailScreen = (): JSX.Element => {
 
           {/* Loading state */}
           {aiInstructions.isLoading && (
-            <View
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                padding: theme.spacing.md,
-              }}
-            >
+            <View style={{ flexDirection: 'row', alignItems: 'center', padding: theme.spacing.md }}>
               <ActivityIndicator size="small" color={theme.colors.primary} />
-              <ThemedText
-                variant="body"
-                color="textSecondary"
-                style={{ marginLeft: theme.spacing.sm }}
-              >
+              <ThemedText variant="body" color="textSecondary" style={{ marginLeft: theme.spacing.sm }}>
                 AI đang tạo hướng dẫn nấu...
               </ThemedText>
             </View>
@@ -239,7 +212,7 @@ const RecipeDetailScreen = (): JSX.Element => {
           )}
 
           {/* Render steps */}
-          {(recipe.instructions && recipe.instructions.length > 0
+          {((recipe.instructions && recipe.instructions.length > 0)
             ? recipe.instructions
             : aiInstructions.steps
           ).map((step: string, i: number) => (
@@ -263,7 +236,11 @@ const RecipeDetailScreen = (): JSX.Element => {
                   marginTop: 2,
                 }}
               >
-                <ThemedText variant="caption" weight="700" style={{ color: '#fff' }}>
+                <ThemedText
+                  variant="caption"
+                  weight="700"
+                  style={{ color: '#fff' }}
+                >
                   {i + 1}
                 </ThemedText>
               </View>
@@ -289,9 +266,7 @@ const RecipeDetailScreen = (): JSX.Element => {
               style={({ pressed }) => [
                 styles.videoSearchButton,
                 {
-                  backgroundColor: isDark
-                    ? 'rgba(255, 0, 0, 0.15)'
-                    : 'rgba(255, 0, 0, 0.08)',
+                  backgroundColor: isDark ? 'rgba(255, 0, 0, 0.15)' : 'rgba(255, 0, 0, 0.08)',
                   opacity: pressed ? 0.8 : 1,
                 },
               ]}
@@ -320,16 +295,12 @@ const RecipeDetailScreen = (): JSX.Element => {
             <Pressable
               onPress={() => {
                 const searchQuery = encodeURIComponent(`cách nấu ${recipe.recipeName}`);
-                Linking.openURL(
-                  `https://www.youtube.com/results?search_query=${searchQuery}`,
-                );
+                Linking.openURL(`https://www.youtube.com/results?search_query=${searchQuery}`);
               }}
               style={({ pressed }) => [
                 styles.videoSearchButton,
                 {
-                  backgroundColor: isDark
-                    ? 'rgba(255, 0, 0, 0.15)'
-                    : 'rgba(255, 0, 0, 0.08)',
+                  backgroundColor: isDark ? 'rgba(255, 0, 0, 0.15)' : 'rgba(255, 0, 0, 0.08)',
                   opacity: pressed ? 0.8 : 1,
                 },
               ]}

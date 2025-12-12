@@ -1,8 +1,8 @@
-// VoiceInput component - Voice logging for meals
-// Inspired by FoodBuddy and Welling AI
+// VoiceInput component - Voice logging for meals with real STT
+// Sử dụng Native Device Speech-to-Text (Google/Apple)
 
-import React, { useState, useCallback } from 'react';
-import { View, StyleSheet, Pressable, Platform } from 'react-native';
+import React, { useState, useCallback, useEffect } from 'react';
+import { View, StyleSheet, Pressable, Platform, Alert } from 'react-native';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -15,9 +15,10 @@ import Animated, {
 import { useAppTheme } from '../theme/ThemeProvider';
 import { ThemedText } from './ThemedText';
 import Icon from './Icon';
+import voiceService, { ParsedVoiceCommand } from '../services/voiceService';
 
 interface VoiceInputProps {
-  onResult: (text: string) => void;
+  onResult: (text: string, command?: ParsedVoiceCommand) => void;
   onError?: (error: string) => void;
   placeholder?: string;
   disabled?: boolean;
@@ -27,6 +28,14 @@ type RecordingState = 'idle' | 'recording' | 'processing';
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
+/**
+ * VoiceInput Component
+ * 
+ * Hiện tại sử dụng simulation cho Expo Go.
+ * Khi build production với EAS, có thể tích hợp:
+ * - @jamsch/expo-speech-recognition
+ * - @react-native-voice/voice
+ */
 const VoiceInput: React.FC<VoiceInputProps> = ({
   onResult,
   onError,
@@ -35,32 +44,40 @@ const VoiceInput: React.FC<VoiceInputProps> = ({
 }) => {
   const { theme } = useAppTheme();
   const [recordingState, setRecordingState] = useState<RecordingState>('idle');
+  const [recognizedText, setRecognizedText] = useState<string>('');
 
   // Animation values
   const scale = useSharedValue(1);
   const pulseScale = useSharedValue(1);
   const opacity = useSharedValue(1);
 
-  const startRecording = useCallback(() => {
+  // Start recording/listening
+  const startRecording = useCallback(async () => {
     if (disabled) return;
 
     setRecordingState('recording');
+    setRecognizedText('');
     scale.value = withSpring(1.1, { damping: 18, stiffness: 400 });
 
     // Pulse animation while recording
     pulseScale.value = withRepeat(
       withSequence(withTiming(1.3, { duration: 600 }), withTiming(1, { duration: 600 })),
-      -1, // Infinite repeat
+      -1,
       false,
     );
 
-    // Note: In a real implementation, you would use expo-speech or
-    // @react-native-voice/voice here
-    // For now, this is a placeholder for the voice recognition logic
-    console.log('Started recording...');
+    console.log('[VoiceInput] Started recording...');
+
+    // TODO: Khi không dùng Expo Go, uncomment để dùng real STT:
+    // try {
+    //   await ExpoSpeechRecognition.start({ language: 'vi-VN' });
+    // } catch (err) {
+    //   console.error('STT start failed:', err);
+    // }
   }, [disabled, scale, pulseScale]);
 
-  const stopRecording = useCallback(() => {
+  // Stop recording and process
+  const stopRecording = useCallback(async () => {
     if (recordingState !== 'recording') return;
 
     setRecordingState('processing');
@@ -68,15 +85,43 @@ const VoiceInput: React.FC<VoiceInputProps> = ({
     cancelAnimation(pulseScale);
     pulseScale.value = withTiming(1, { duration: 200 });
 
-    // Simulate processing
-    // In real implementation: stop voice recognition and process result
-    setTimeout(() => {
+    console.log('[VoiceInput] Stopped recording, processing...');
+
+    // TODO: Khi không dùng Expo Go, uncomment:
+    // await ExpoSpeechRecognition.stop();
+
+    // SIMULATION: Dùng text giả để demo
+    // Trong production, text này sẽ từ STT engine
+    const simulatedText = getSimulatedText();
+    setRecognizedText(simulatedText);
+
+    try {
+      // Parse intent using Ollama AI
+      const command = await voiceService.parseWithOllama(simulatedText);
+
+      console.log('[VoiceInput] Parsed command:', command);
+
       setRecordingState('idle');
-      // Simulated result - in real app this would come from voice recognition
-      // onResult('Phở bò');
-      console.log('Stopped recording...');
-    }, 500);
-  }, [recordingState, scale, pulseScale]);
+      onResult(simulatedText, command);
+
+    } catch (error) {
+      console.error('[VoiceInput] Parse error:', error);
+      setRecordingState('idle');
+      onError?.('Không thể xử lý lệnh giọng nói');
+    }
+  }, [recordingState, scale, pulseScale, onResult, onError]);
+
+  // Demo: Simulation text cho testing
+  const getSimulatedText = (): string => {
+    const samples: string[] = [
+      'Thêm 1 bát phở bò vào bữa trưa',
+      'Ghi 2 quả trứng bữa sáng',
+      'Cân nặng 65 kg',
+      'Hôm nay bao nhiêu calo',
+    ];
+    const index = Math.floor(Math.random() * samples.length);
+    return samples[index] as string;
+  };
 
   const handleLongPress = useCallback(() => {
     startRecording();
@@ -87,6 +132,17 @@ const VoiceInput: React.FC<VoiceInputProps> = ({
       stopRecording();
     }
   }, [recordingState, stopRecording]);
+
+  // Quick tap - show instructions
+  const handlePress = useCallback(() => {
+    if (recordingState === 'idle') {
+      Alert.alert(
+        '🎤 Hướng dẫn Voice',
+        'Nhấn và GIỮ nút mic để nói lệnh.\n\nVí dụ:\n• "Thêm 1 phở bò bữa trưa"\n• "Cân nặng 65 kg"\n• "Hôm nay bao nhiêu calo"',
+        [{ text: 'Đã hiểu' }]
+      );
+    }
+  }, [recordingState]);
 
   const buttonStyle = useAnimatedStyle(() => ({
     transform: [{ scale: scale.value }],
@@ -136,6 +192,7 @@ const VoiceInput: React.FC<VoiceInputProps> = ({
         )}
 
         <AnimatedPressable
+          onPress={handlePress}
           onLongPress={handleLongPress}
           onPressOut={handlePressOut}
           delayLongPress={200}
@@ -165,11 +222,20 @@ const VoiceInput: React.FC<VoiceInputProps> = ({
         {getStateText()}
       </ThemedText>
 
+      {/* Show recognized text */}
+      {recognizedText && recordingState === 'idle' && (
+        <View style={[styles.resultBox, { backgroundColor: theme.colors.success + '20' }]}>
+          <ThemedText variant="bodySmall" color="success">
+            "{recognizedText}"
+          </ThemedText>
+        </View>
+      )}
+
       {/* Instructions */}
-      {recordingState === 'idle' && (
+      {recordingState === 'idle' && !recognizedText && (
         <View style={styles.instructions}>
           <ThemedText variant="caption" color="muted">
-            Ví dụ: "Tôi ăn 1 bát phở bò"
+            Ví dụ: "Thêm 1 bát phở bò bữa trưa"
           </ThemedText>
         </View>
       )}
@@ -216,6 +282,12 @@ const styles = StyleSheet.create({
   },
   instructions: {
     paddingHorizontal: 16,
+  },
+  resultBox: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+    marginTop: 4,
   },
   indicator: {
     flexDirection: 'row',

@@ -82,7 +82,7 @@ export const ShimmerSkeleton = ({
         easing: Easing.linear,
       }),
       -1,
-      false,
+      false
     );
   }, []);
 
@@ -180,3 +180,4 @@ const styles = StyleSheet.create({
 });
 
 export default Skeleton;
+

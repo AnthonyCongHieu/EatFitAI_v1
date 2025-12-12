@@ -59,7 +59,9 @@ export const ActionSheet = ({
     scale.value = withSpring(1, { damping: 18, stiffness: 400 });
   };
 
-  const enteringAnimation = animated ? SlideInUp.duration(200) : undefined;
+  const enteringAnimation = animated
+    ? SlideInUp.duration(200)
+    : undefined;
 
   const exitingAnimation = animated
     ? SlideOutDown.duration(theme.animation.normal)

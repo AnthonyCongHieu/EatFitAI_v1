@@ -1,6 +1,6 @@
 """
-Nutrition LLM Service - Powered by Ollama (Local) or Gemini (Cloud)
-Provides AI-powered nutrition advice and meal insights
+Nutrition LLM Service - Powered by Ollama (Local)
+Provides AI-powered nutrition advice, meal insights, and voice command parsing
 """
 
 from __future__ import annotations
@@ -12,10 +12,9 @@ from typing import Any, Dict, Optional
 
 logger = logging.getLogger(__name__)
 
-# Configuration
+# Configuration - Ollama only (Gemini removed)
 OLLAMA_URL = os.getenv("OLLAMA_URL", "http://localhost:11434")
 OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "llama3.2:3b")
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
 
 # Check which LLM is available
 def check_ollama_available() -> bool:
@@ -28,55 +27,6 @@ def check_ollama_available() -> bool:
 
 OLLAMA_AVAILABLE = check_ollama_available()
 logger.info(f"Ollama available: {OLLAMA_AVAILABLE}")
-
-
-# ============== LLM RESPONSE CACHE ==============
-import hashlib
-from functools import lru_cache
-from collections import OrderedDict
-import threading
-
-class LLMCache:
-    """Thread-safe LRU cache for LLM responses"""
-    def __init__(self, maxsize: int = 100):
-        self.cache: OrderedDict[str, Dict] = OrderedDict()
-        self.maxsize = maxsize
-        self.lock = threading.Lock()
-        self.hits = 0
-        self.misses = 0
-    
-    def _make_key(self, *args) -> str:
-        """Tạo cache key từ input parameters"""
-        key_str = "|".join(str(arg) for arg in args)
-        return hashlib.md5(key_str.encode()).hexdigest()
-    
-    def get(self, key: str) -> Optional[Dict]:
-        with self.lock:
-            if key in self.cache:
-                self.hits += 1
-                # Move to end (most recently used)
-                self.cache.move_to_end(key)
-                logger.debug(f"Cache HIT: {key[:8]}... (hits: {self.hits})")
-                return self.cache[key]
-            self.misses += 1
-            return None
-    
-    def set(self, key: str, value: Dict) -> None:
-        with self.lock:
-            if key in self.cache:
-                self.cache.move_to_end(key)
-            else:
-                if len(self.cache) >= self.maxsize:
-                    # Remove oldest item
-                    self.cache.popitem(last=False)
-                self.cache[key] = value
-    
-    def stats(self) -> Dict[str, int]:
-        return {"hits": self.hits, "misses": self.misses, "size": len(self.cache)}
-
-# Global cache instances
-nutrition_cache = LLMCache(maxsize=100)
-cooking_cache = LLMCache(maxsize=50)
 
 
 # ============== FALLBACK: Mifflin-St Jeor Formula ==============
@@ -152,9 +102,13 @@ def calculate_nutrition_mifflin(
 
 # ============== OLLAMA LOCAL LLM ==============
 
-def query_ollama(prompt: str, model: str = None) -> Optional[str]:
+def query_ollama(prompt: str, model: str = None, stream: bool = False) -> Optional[str]:
     """
     Query Ollama local LLM
+    Args:
+        prompt: The prompt to send
+        model: Model name (default: OLLAMA_MODEL)
+        stream: If True, returns generator for streaming
     Returns None if failed
     """
     if not OLLAMA_AVAILABLE:
@@ -166,18 +120,33 @@ def query_ollama(prompt: str, model: str = None) -> Optional[str]:
             json={
                 "model": model or OLLAMA_MODEL,
                 "prompt": prompt,
-                "stream": False,
+                "stream": stream,
                 "options": {
-                    "temperature": 0.1,  # Chút ngẫu nhiên để có sự đa dạng
-                    "num_predict": 200  # Limit response length for speed
+                    "temperature": 0.1,
+                    "num_predict": 200
                 }
             },
-            timeout=30  # 30 second timeout
+            timeout=30,
+            stream=stream
         )
         
         if response.status_code == 200:
-            result = response.json()
-            return result.get("response", "")
+            if stream:
+                # Return streaming content
+                full_response = ""
+                for line in response.iter_lines():
+                    if line:
+                        try:
+                            chunk = json.loads(line)
+                            full_response += chunk.get("response", "")
+                            if chunk.get("done", False):
+                                break
+                        except:
+                            pass
+                return full_response
+            else:
+                result = response.json()
+                return result.get("response", "")
         else:
             logger.error(f"Ollama error: {response.status_code}")
             return None
@@ -188,6 +157,49 @@ def query_ollama(prompt: str, model: str = None) -> Optional[str]:
     except Exception as e:
         logger.error(f"Ollama query failed: {e}")
         return None
+
+
+def query_ollama_streaming(prompt: str, model: str = None):
+    """
+    Query Ollama with streaming - returns generator for real-time response
+    Use this for long responses like cooking instructions
+    """
+    if not OLLAMA_AVAILABLE:
+        return None
+    
+    try:
+        response = requests.post(
+            f"{OLLAMA_URL}/api/generate",
+            json={
+                "model": model or OLLAMA_MODEL,
+                "prompt": prompt,
+                "stream": True,
+                "options": {
+                    "temperature": 0.3,
+                    "num_predict": 500  # Longer for cooking instructions
+                }
+            },
+            timeout=60,
+            stream=True
+        )
+        
+        if response.status_code == 200:
+            for line in response.iter_lines():
+                if line:
+                    try:
+                        chunk = json.loads(line)
+                        text = chunk.get("response", "")
+                        if text:
+                            yield text
+                        if chunk.get("done", False):
+                            break
+                    except:
+                        pass
+        else:
+            logger.error(f"Ollama streaming error: {response.status_code}")
+            
+    except Exception as e:
+        logger.error(f"Ollama streaming failed: {e}")
 
 
 def get_nutrition_advice_ollama(
@@ -298,28 +310,14 @@ def get_nutrition_advice_gemini(
     """
     Main function: Try Ollama first, then fallback
     (Named _gemini for backward compatibility)
-    With caching for improved response time
     """
-    
-    # Tạo cache key từ input params
-    cache_key = nutrition_cache._make_key(gender, age, height_cm, weight_kg, activity_level, goal)
-    
-    # Check cache first
-    cached_result = nutrition_cache.get(cache_key)
-    if cached_result:
-        logger.info(f"Nutrition advice served from cache (stats: {nutrition_cache.stats()})")
-        cached_result["source"] = cached_result.get("source", "unknown") + "_cached"
-        return cached_result
     
     # Priority 1: Ollama local
     if OLLAMA_AVAILABLE:
         logger.info("Using Ollama local LLM")
-        result = get_nutrition_advice_ollama(
+        return get_nutrition_advice_ollama(
             gender, age, height_cm, weight_kg, activity_level, goal
         )
-        # Cache the result
-        nutrition_cache.set(cache_key, result)
-        return result
     
     # Priority 2: Gemini API (if configured)
     if GEMINI_API_KEY:
@@ -331,14 +329,12 @@ def get_nutrition_advice_gemini(
         except:
             pass
     
-    # Priority 3: Formula fallback (DISABLED - STRICT MODE)
-    # logger.info("Using Mifflin-St Jeor formula fallback")
-    # result = calculate_nutrition_mifflin(gender, age, height_cm, weight_kg, activity_level, goal)
-    # result["source"] = "formula"
-    # result["explanation"] = "Sử dụng công thức Mifflin-St Jeor"
-    # return result
-    
-    raise Exception("Ollama (Nutrition LLM) is unavailable. Fallback is disabled in Strict Mode.")
+    # Priority 3: Formula fallback (enabled for production stability)
+    logger.info("LLM not available, using Mifflin-St Jeor formula fallback")
+    result = calculate_nutrition_mifflin(gender, age, height_cm, weight_kg, activity_level, goal)
+    result["source"] = "formula"
+    result["explanation"] = "Sử dụng công thức Mifflin-St Jeor (chuẩn y khoa) - AI tạm thời không khả dụng"
+    return result
 
 
 def get_meal_insight_gemini(
@@ -381,15 +377,14 @@ Trả lời JSON: {{"insight": "nhận xét 1 câu", "score": điểm_1_10, "sug
         except:
             pass
     
-    # Simple fallback (DISABLED - STRICT MODE)
-    # pct = (total_calories / target_calories * 100) if target_calories > 0 else 0
-    # return {
-    #     "insight": f"Bạn đã ăn {pct:.0f}% mục tiêu calories hôm nay.",
-    #     "score": 7 if 80 <= pct <= 120 else 5,
-    #     "suggestions": ["Tiếp tục theo dõi để đạt mục tiêu"],
-    #     "source": "fallback"
-    # }
-    raise Exception("Ollama (Nutrition LLM) is unavailable. Fallback is disabled in Strict Mode.")
+    # Simple fallback (enabled for production stability)
+    pct = (total_calories / target_calories * 100) if target_calories > 0 else 0
+    return {
+        "insight": f"Bạn đã ăn {pct:.0f}% mục tiêu calories hôm nay.",
+        "score": 7 if 80 <= pct <= 120 else 5,
+        "suggestions": ["Tiếp tục theo dõi để đạt mục tiêu"],
+        "source": "fallback"
+    }
 
 
 # ============== COOKING INSTRUCTIONS GENERATOR ==============
@@ -471,3 +466,99 @@ def _generate_fallback_instructions(recipe_name: str, ingredients: list[dict]) -
         "note": "Hướng dẫn cơ bản - AI đang bận, vui lòng thử lại sau để có hướng dẫn chi tiết hơn"
     }
 
+
+# ============== VOICE COMMAND PARSING ==============
+
+def parse_voice_command_ollama(text: str) -> Dict[str, Any]:
+    """
+    Parse Vietnamese voice command using Ollama LLM.
+    
+    Input examples:
+    - "thêm 1 bát phở 300g bữa trưa"
+    - "ghi cân nặng 65 kg"
+    - "hôm nay ăn bao nhiêu calo"
+    
+    Returns:
+        Dict with intent, entities, confidence, rawText
+    """
+    if not OLLAMA_AVAILABLE:
+        logger.warning("Ollama not available for voice parsing")
+        return {
+            "intent": "UNKNOWN",
+            "entities": {},
+            "confidence": 0.0,
+            "rawText": text,
+            "source": "fallback",
+            "error": "Ollama không khả dụng"
+        }
+    
+    prompt = f"""Bạn là AI phân tích lệnh giọng nói tiếng Việt cho app theo dõi dinh dưỡng.
+
+Phân tích lệnh sau: "{text}"
+
+QUAN TRỌNG - Trích xuất foodName:
+- foodName là TÊN MÓN ĂN CHÍNH (vd: "cơm", "phở", "bún bò", "trứng", "bánh mì")
+- Ví dụ: "thêm 1 bát cơm 100g" → foodName = "cơm"
+- Ví dụ: "ăn 2 quả trứng" → foodName = "trứng"
+- Ví dụ: "ghi phở bò bữa trưa" → foodName = "phở bò"
+
+Các intent:
+- ADD_FOOD: thêm/ghi/ăn món ăn
+- LOG_WEIGHT: ghi cân nặng  
+- ASK_CALORIES: hỏi calories
+- ASK_NUTRITION: hỏi dinh dưỡng
+- UNKNOWN: không hiểu
+
+Các mealType: breakfast (sáng), lunch (trưa), dinner (tối), snack (phụ)
+
+CHỈ TRẢ VỀ JSON, không giải thích:
+{{
+  "intent": "ADD_FOOD",
+  "entities": {{
+    "foodName": "tên món ăn chính (bắt buộc nếu ADD_FOOD)",
+    "quantity": 1,
+    "unit": "bát/đĩa/quả/cái/phần",
+    "weight": 100,
+    "mealType": "lunch"
+  }},
+  "confidence": 0.95
+}}"""
+
+    try:
+        response = query_ollama(prompt)
+        
+        if response:
+            # Parse JSON from response
+            start = response.find("{")
+            end = response.rfind("}") + 1
+            
+            if start != -1 and end > start:
+                result = json.loads(response[start:end])
+                result["rawText"] = text
+                result["source"] = "ollama"
+                
+                # Validate and set defaults
+                if "intent" not in result:
+                    result["intent"] = "UNKNOWN"
+                if "entities" not in result:
+                    result["entities"] = {}
+                if "confidence" not in result:
+                    result["confidence"] = 0.5
+                    
+                logger.info(f"Voice parsed: intent={result['intent']}, entities={result.get('entities', {})}")
+                return result
+                
+    except json.JSONDecodeError as e:
+        logger.error(f"JSON parse error in voice parsing: {e}")
+    except Exception as e:
+        logger.error(f"Voice parsing error: {e}")
+    
+    # Fallback response
+    return {
+        "intent": "UNKNOWN",
+        "entities": {},
+        "confidence": 0.0,
+        "rawText": text,
+        "source": "fallback",
+        "error": "Không thể phân tích lệnh"
+    }

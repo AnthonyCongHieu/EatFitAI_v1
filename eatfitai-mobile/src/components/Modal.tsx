@@ -95,11 +95,11 @@ export const Modal = ({
   };
 
   const handlePressIn = () => {
-    scale.value = withSpring(0.98, { damping: 30, stiffness: 300 });
+    scale.value = withSpring(0.98, { damping: 18, stiffness: 400 });
   };
 
   const handlePressOut = () => {
-    scale.value = withSpring(1, { damping: 30, stiffness: 300 });
+    scale.value = withSpring(1, { damping: 18, stiffness: 400 });
   };
 
   const enteringAnimation = animated

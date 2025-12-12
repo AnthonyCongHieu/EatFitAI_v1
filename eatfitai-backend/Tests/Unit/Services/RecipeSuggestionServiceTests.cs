@@ -4,6 +4,7 @@ using EatFitAI.API.Services;
 using EatFitAI.API.DTOs.AI;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Caching.Memory;
 using Moq;
 using Xunit;
 using System;
@@ -16,6 +17,7 @@ namespace EatFitAI.API.Tests.Unit.Services
     {
         private readonly EatFitAIDbContext _context;
         private readonly Mock<ILogger<RecipeSuggestionService>> _loggerMock;
+        private readonly IMemoryCache _cache;
         private readonly RecipeSuggestionService _service;
 
         public RecipeSuggestionServiceTests()
@@ -27,8 +29,9 @@ namespace EatFitAI.API.Tests.Unit.Services
             _context = new EatFitAIDbContext(options);
 
             _loggerMock = new Mock<ILogger<RecipeSuggestionService>>();
+            _cache = new MemoryCache(new MemoryCacheOptions());
 
-            _service = new RecipeSuggestionService(_context, _loggerMock.Object);
+            _service = new RecipeSuggestionService(_context, _loggerMock.Object, _cache);
         }
 
         public void Dispose()

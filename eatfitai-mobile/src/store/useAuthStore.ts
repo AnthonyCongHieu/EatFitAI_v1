@@ -114,9 +114,7 @@ export const useAuthStore = create<AuthState>((set: any) => ({
   register: async (name, email, password) => {
     console.warn('[useAuthStore] DEPRECATED: register() bypasses email verification!');
     console.warn('[useAuthStore] Use RegisterScreen → VerifyEmailScreen flow instead.');
-    throw new Error(
-      'Register function is deprecated. Use RegisterScreen for proper email verification flow.',
-    );
+    throw new Error('Register function is deprecated. Use RegisterScreen for proper email verification flow.');
   },
 
   signInWithGoogle: async () => {
@@ -166,7 +164,7 @@ export const useAuthStore = create<AuthState>((set: any) => ({
     setAccessTokenMem(accessToken);
     try {
       await updateSessionFromAuthResponse(result as AuthResponse);
-    } catch {}
+    } catch { }
 
     set({ isAuthenticated: true });
   },

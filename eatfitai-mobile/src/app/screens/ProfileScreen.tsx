@@ -468,11 +468,7 @@ const ProfileScreen = (): JSX.Element => {
                 control={control}
                 name="gender"
                 render={({ field: { onChange, value } }) => (
-                  <View
-                    style={styles.optionRow}
-                    accessibilityRole="radiogroup"
-                    accessibilityLabel="Chọn giới tính"
-                  >
+                  <View style={styles.optionRow} accessibilityRole="radiogroup" accessibilityLabel="Chọn giới tính">
                     {GENDER_OPTIONS.map((opt) => (
                       <Pressable
                         key={opt.value}
@@ -535,11 +531,7 @@ const ProfileScreen = (): JSX.Element => {
                 control={control}
                 name="goal"
                 render={({ field: { onChange, value } }) => (
-                  <View
-                    style={styles.row}
-                    accessibilityRole="radiogroup"
-                    accessibilityLabel="Chọn mục tiêu"
-                  >
+                  <View style={styles.row} accessibilityRole="radiogroup" accessibilityLabel="Chọn mục tiêu">
                     {GOAL_OPTIONS.map((goal) => {
                       const goalColor = theme.colors[goal.colorKey];
                       return (
@@ -563,9 +555,7 @@ const ProfileScreen = (): JSX.Element => {
                           accessibilityLabel={goal.label}
                           accessibilityState={{ checked: value === goal.value }}
                         >
-                          <ThemedText style={{ fontSize: theme.typography.h3.fontSize }}>
-                            {goal.icon}
-                          </ThemedText>
+                          <ThemedText style={{ fontSize: theme.typography.h3.fontSize }}>{goal.icon}</ThemedText>
                           <ThemedText
                             variant="bodySmall"
                             weight={value === goal.value ? '600' : '400'}
@@ -596,11 +586,7 @@ const ProfileScreen = (): JSX.Element => {
                 control={control}
                 name="activityLevel"
                 render={({ field: { onChange, value } }) => (
-                  <View
-                    style={styles.optionRow}
-                    accessibilityRole="radiogroup"
-                    accessibilityLabel="Chọn mức độ vận động"
-                  >
+                  <View style={styles.optionRow} accessibilityRole="radiogroup" accessibilityLabel="Chọn mức độ vận động">
                     {ACTIVITY_OPTIONS.map((act) => (
                       <Pressable
                         key={act.value}

@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Caching.Memory;
 using System.Text.Json;
 using EatFitAI.API.DTOs.AI;
 using EatFitAI.API.Services;
@@ -26,6 +27,7 @@ namespace EatFitAI.API.Controllers
         private readonly IRecipeSuggestionService _recipeSuggestionService;
         private readonly INutritionInsightService _nutritionInsightService;
         private readonly IVisionCacheService _visionCacheService;
+        private readonly IMemoryCache _cache;
 
         public AIController(
             IHttpClientFactory httpClientFactory,
@@ -35,7 +37,8 @@ namespace EatFitAI.API.Controllers
             IAiLogService aiLog,
             IRecipeSuggestionService recipeSuggestionService,
             INutritionInsightService nutritionInsightService,
-            IVisionCacheService visionCacheService)
+            IVisionCacheService visionCacheService,
+            IMemoryCache cache)
         {
             _httpClientFactory = httpClientFactory;
             _configuration = configuration;
@@ -45,6 +48,7 @@ namespace EatFitAI.API.Controllers
             _recipeSuggestionService = recipeSuggestionService;
             _nutritionInsightService = nutritionInsightService;
             _visionCacheService = visionCacheService;
+            _cache = cache;
         }
 
         [HttpPost("vision/detect")]
@@ -515,7 +519,7 @@ namespace EatFitAI.API.Controllers
 
         /// <summary>
         /// Get AI-generated cooking instructions for a recipe
-        /// Proxy to AI Provider (Ollama)
+        /// Proxy to AI Provider (Ollama) with caching
         /// </summary>
         [HttpPost("cooking-instructions")]
         [ProducesResponseType(typeof(CookingInstructionsDto), StatusCodes.Status200OK)]
@@ -528,6 +532,14 @@ namespace EatFitAI.API.Controllers
                 var userId = GetUserIdFromToken();
                 _logger.LogInformation("User {UserId} requesting cooking instructions for: {Recipe}", 
                     userId, request.RecipeName);
+
+                // Check cache first (cache key based on recipe name)
+                var cacheKey = $"CookingInstructions:{request.RecipeName?.ToLowerInvariant()}";
+                if (_cache.TryGetValue(cacheKey, out CookingInstructionsDto? cachedResult) && cachedResult != null)
+                {
+                    _logger.LogInformation("Cache HIT for cooking instructions: {Recipe}", request.RecipeName);
+                    return Ok(cachedResult);
+                }
 
                 var aiProviderUrl = _configuration["AIProvider:VisionBaseUrl"] ?? "http://127.0.0.1:5050";
                 
@@ -551,6 +563,13 @@ namespace EatFitAI.API.Controllers
                     var resultJson = await response.Content.ReadAsStringAsync(cancellationToken);
                     var result = System.Text.Json.JsonSerializer.Deserialize<CookingInstructionsDto>(resultJson,
                         new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                    
+                    // Cache for 1 hour (cooking instructions don't change)
+                    if (result != null)
+                    {
+                        _cache.Set(cacheKey, result, TimeSpan.FromHours(1));
+                        _logger.LogInformation("Cached cooking instructions for: {Recipe}", request.RecipeName);
+                    }
                     
                     return Ok(result ?? new CookingInstructionsDto());
                 }

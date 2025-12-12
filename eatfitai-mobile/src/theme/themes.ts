@@ -263,12 +263,12 @@ export const lightTheme: AppTheme = {
     },
   },
   achievementGradients: {
-    first_log: ['#FF6B6B', '#FF8E53'] as const, // Red-Orange (Start)
-    streak_3: ['#4ECDC4', '#44A08D'] as const, // Green (Persistence)
-    streak_7: ['#667EEA', '#764BA2'] as const, // Purple (Habit)
+    first_log: ['#FF6B6B', '#FF8E53'] as const,    // Red-Orange (Start)
+    streak_3: ['#4ECDC4', '#44A08D'] as const,     // Green (Persistence)
+    streak_7: ['#667EEA', '#764BA2'] as const,     // Purple (Habit)
     log_100_meals: ['#F093FB', '#F5576C'] as const, // Pink (Expert)
-    default: ['#FFD93D', '#FF6B6B'] as const, // Yellow-Orange
-    header: ['#667eea', '#764ba2'] as const, // Purple header
+    default: ['#FFD93D', '#FF6B6B'] as const,       // Yellow-Orange
+    header: ['#667eea', '#764ba2'] as const,        // Purple header
   },
   statusBarStyle: 'dark',
   spacing: { xs: 4, sm: 8, md: 12, lg: 16, xl: 20, xxl: 24 },
@@ -491,7 +491,7 @@ export const darkTheme: AppTheme = {
     streak_7: ['#667EEA', '#764BA2'] as const,
     log_100_meals: ['#F093FB', '#F5576C'] as const,
     default: ['#FFD93D', '#FF6B6B'] as const,
-    header: ['#1a1a2e', '#16213e'] as const, // Dark header
+    header: ['#1a1a2e', '#16213e'] as const,  // Dark header
   },
   statusBarStyle: 'light',
   spacing: { xs: 4, sm: 8, md: 12, lg: 16, xl: 20, xxl: 24 },

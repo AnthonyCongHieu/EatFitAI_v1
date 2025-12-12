@@ -96,6 +96,27 @@ def allowed_file(filename: str) -> bool:
 model: YOLO | None = None
 model_file: str = ""
 
+# ============== GPU CONFIGURATION ==============
+import torch
+
+def get_optimal_device():
+    """
+    Chọn device tối ưu: GPU (CUDA) nếu có, fallback về CPU
+    Ưu tiên GPU để tăng tốc YOLO inference 5-10x
+    """
+    if torch.cuda.is_available():
+        device = "cuda:0"
+        gpu_name = torch.cuda.get_device_name(0)
+        vram = torch.cuda.get_device_properties(0).total_memory / (1024**3)
+        logger.info(f"✅ GPU detected: {gpu_name} ({vram:.1f}GB VRAM)")
+        logger.info(f"🚀 Using CUDA for acceleration")
+        return device
+    else:
+        logger.warning("⚠️ CUDA not available, using CPU (slower inference)")
+        return "cpu"
+
+DEVICE = get_optimal_device()
+
 try:
     if os.path.exists("best.pt"):
         logger.info("Loading custom trained model: best.pt")
@@ -103,9 +124,15 @@ try:
         model_file = "best.pt"
     else:
         logger.info("Loading default model: yolov8s.pt")
-        model = YOLO("yolov8s.pt")  # Changed from yolov8x to yolov8s (lighter, faster)
+        model = YOLO("yolov8s.pt")
         model_file = "yolov8s.pt"
-    logger.info(f"Model loaded successfully: {model_file}")
+    
+    # Force model to optimal device (GPU if available)
+    if model and DEVICE != "cpu":
+        model.to(DEVICE)
+        logger.info(f"✅ Model moved to {DEVICE}")
+    
+    logger.info(f"Model loaded successfully: {model_file} on {DEVICE}")
 except Exception as e:
     logger.error(f"Failed to load model: {e}", exc_info=True)
     raise
@@ -191,7 +218,7 @@ def detect() -> Response | tuple[Dict[str, str], int]:
         if model is None:
             return {"error": "model not loaded"}, 500
         
-        res: Any = model(path, conf=0.25)  # Lowered to 0.25 for debugging (was 0.50)
+        res: Any = model(path, conf=0.50)  # Production threshold (was 0.25 for debugging)
         names: Dict[int, str] = res[0].names  # type: ignore[assignment]
         
         out: List[Dict[str, float | str]] = [
@@ -221,11 +248,17 @@ def detect() -> Response | tuple[Dict[str, str], int]:
 
 # Import nutrition LLM service
 try:
-    from nutrition_llm import get_nutrition_advice_gemini, get_meal_insight_gemini
+    from nutrition_llm import (
+        get_nutrition_advice_gemini as get_nutrition_advice,
+        get_meal_insight_gemini as get_meal_insight,
+        parse_voice_command_ollama
+    )
     NUTRITION_LLM_AVAILABLE = True
-    logger.info("Nutrition LLM service loaded")
+    VOICE_PARSE_AVAILABLE = True
+    logger.info("Nutrition LLM service loaded (Ollama)")
 except ImportError as e:
     NUTRITION_LLM_AVAILABLE = False
+    VOICE_PARSE_AVAILABLE = False
     logger.warning(f"Nutrition LLM service not available: {e}")
 
 
@@ -329,12 +362,161 @@ def cooking_instructions():
         return {"error": str(e)}, 500
 
 
+# ============== VOICE COMMAND PARSING ==============
+
+@app.post("/voice/parse")
+def voice_parse():
+    """
+    Parse Vietnamese voice command using Ollama AI.
+    
+    Expected JSON body:
+    {
+        "text": "thêm 1 bát phở 300g bữa trưa"
+    }
+    
+    Returns:
+    {
+        "intent": "ADD_FOOD",
+        "entities": {
+            "foodName": "phở",
+            "quantity": 1,
+            "unit": "bát",
+            "weight": 300,
+            "mealType": "lunch"
+        },
+        "confidence": 0.95,
+        "rawText": "thêm 1 bát phở 300g bữa trưa",
+        "source": "ollama"
+    }
+    """
+    if not VOICE_PARSE_AVAILABLE:
+        return {"error": "Voice parsing service not available"}, 503
+    
+    try:
+        data = request.get_json()
+        if not data or "text" not in data:
+            return {"error": "Missing 'text' field in request body"}, 400
+        
+        text = data["text"].strip()
+        if not text:
+            return {"error": "Empty text provided"}, 400
+        
+        logger.info(f"Parsing voice command: {text[:50]}...")
+        result = parse_voice_command_ollama(text)
+        
+        return jsonify(result)
+        
+    except Exception as e:
+        logger.error(f"Voice parsing error: {e}", exc_info=True)
+        return {"error": str(e)}, 500
+
+
+# ============== WHISPER STT (Speech-to-Text) ==============
+# Load Whisper model for Vietnamese transcription
+WHISPER_MODEL = None
+WHISPER_AVAILABLE = False
+ALLOWED_AUDIO_EXTENSIONS = {'m4a', 'mp3', 'wav', 'webm', 'ogg', 'flac'}
+
+try:
+    import whisper
+    # Use 'medium' model for BEST Vietnamese accuracy (769MB)
+    # Larger model = much better for tonal languages like Vietnamese
+    logger.info("Loading Whisper model (medium) for Vietnamese STT...")
+    WHISPER_MODEL = whisper.load_model("medium", device=DEVICE)
+    WHISPER_AVAILABLE = True
+    logger.info(f"✅ Whisper (medium) loaded on {DEVICE} - Best Vietnamese accuracy")
+except ImportError:
+    logger.warning("⚠️ openai-whisper not installed. Run: pip install openai-whisper")
+except Exception as e:
+    logger.error(f"Failed to load Whisper: {e}")
+
+def allowed_audio_file(filename: str) -> bool:
+    """Check if audio file extension is allowed"""
+    return '.' in filename and \
+           filename.rsplit('.', 1)[1].lower() in ALLOWED_AUDIO_EXTENSIONS
+
+@app.route('/voice/transcribe', methods=['POST'])
+def transcribe_audio():
+    """
+    Transcribe audio file to Vietnamese text using Whisper.
+    
+    Expected: multipart/form-data with 'audio' file
+    Supported formats: m4a, mp3, wav, webm, ogg, flac
+    
+    Returns:
+    {
+        "text": "thêm 1 bát phở 300g bữa trưa",
+        "language": "vi",
+        "duration": 2.5,
+        "success": true
+    }
+    """
+    if not WHISPER_AVAILABLE:
+        return {"error": "Whisper STT not available", "success": False}, 503
+    
+    if 'audio' not in request.files:
+        return {"error": "No audio file provided", "success": False}, 400
+    
+    audio_file = request.files['audio']
+    if audio_file.filename == '':
+        return {"error": "Empty filename", "success": False}, 400
+    
+    if not allowed_audio_file(audio_file.filename):
+        return {
+            "error": f"File type not allowed. Use: {ALLOWED_AUDIO_EXTENSIONS}",
+            "success": False
+        }, 400
+    
+    try:
+        import tempfile
+        import time
+        
+        # Save to temp file
+        ext = audio_file.filename.rsplit('.', 1)[1].lower()
+        temp_path = os.path.join(tempfile.gettempdir(), f"whisper_{uuid4()}.{ext}")
+        audio_file.save(temp_path)
+        
+        logger.info(f"Transcribing audio: {temp_path}")
+        start_time = time.time()
+        
+        # Transcribe with Whisper
+        result = WHISPER_MODEL.transcribe(
+            temp_path,
+            language="vi",  # Force Vietnamese
+            task="transcribe",
+            fp16=(DEVICE != "cpu")  # Use FP16 on GPU for speed
+        )
+        
+        duration = time.time() - start_time
+        text = result.get("text", "").strip()
+        
+        # Cleanup temp file
+        try:
+            os.remove(temp_path)
+        except:
+            pass
+        
+        logger.info(f"Transcribed ({duration:.2f}s): {text[:50]}...")
+        
+        return jsonify({
+            "text": text,
+            "language": result.get("language", "vi"),
+            "duration": round(duration, 2),
+            "success": True
+        })
+        
+    except Exception as e:
+        logger.error(f"Transcription error: {e}", exc_info=True)
+        return {"error": str(e), "success": False}, 500
+
+
 if __name__ == "__main__":
     logger.info(f"Starting AI Provider on port 5050")
     logger.info(f"Model: {model_file}")
     logger.info(f"Nutrition LLM: {'Available' if NUTRITION_LLM_AVAILABLE else 'Not available'}")
+    logger.info(f"Voice Parsing: {'Available' if VOICE_PARSE_AVAILABLE else 'Not available'}")
+    logger.info(f"Whisper STT: {'Available' if WHISPER_AVAILABLE else 'Not available'}")
     logger.info(f"Cooking Instructions: {'Available' if COOKING_INSTRUCTIONS_AVAILABLE else 'Not available'}")
     logger.info(f"Allowed file types: {ALLOWED_EXTENSIONS}")
     logger.info(f"Max file size: {MAX_FILE_SIZE / 1024 / 1024:.1f}MB")
     app.run(host="0.0.0.0", port=5050)
-

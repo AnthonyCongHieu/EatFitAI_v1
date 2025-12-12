@@ -7,25 +7,33 @@ using EatFitAI.API.DbScaffold.Data;
 using EatFitAI.API.DTOs.AI;
 using EatFitAI.API.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 
 namespace EatFitAI.API.Services
 {
     /// <summary>
-    /// Database-only recipe suggestion service
+    /// Database-only recipe suggestion service with caching
     /// Finds recipes that match available ingredients
     /// </summary>
     public class RecipeSuggestionService : IRecipeSuggestionService
     {
         private readonly EatFitAIDbContext _db;
         private readonly ILogger<RecipeSuggestionService> _logger;
+        private readonly IMemoryCache _cache;
+        
+        // Cache configuration
+        private static readonly TimeSpan CacheDuration = TimeSpan.FromMinutes(10);
+        private const string AllRecipesCacheKey = "AllRecipesWithIngredients";
 
         public RecipeSuggestionService(
             EatFitAIDbContext db,
-            ILogger<RecipeSuggestionService> logger)
+            ILogger<RecipeSuggestionService> logger,
+            IMemoryCache cache)
         {
             _db = db;
             _logger = logger;
+            _cache = cache;
         }
 
         // Dictionary ánh xạ tên nguyên liệu tiếng Anh -> tiếng Việt (lowercase)
@@ -112,12 +120,20 @@ namespace EatFitAI.API.Services
                 expandedIngredients.Count,
                 string.Join(", ", expandedIngredients));
 
-            // Query recipes with their ingredients
-            var recipesWithIngredients = await _db.Recipes
-                .Where(r => !r.IsDeleted)
-                .Include(r => r.RecipeIngredients)
-                .ThenInclude(ri => ri.FoodItem)
-                .ToListAsync(cancellationToken);
+            // Query recipes with caching
+            var recipesWithIngredients = await _cache.GetOrCreateAsync(
+                AllRecipesCacheKey,
+                async entry =>
+                {
+                    entry.AbsoluteExpirationRelativeToNow = CacheDuration;
+                    _logger.LogInformation("Cache miss - loading all recipes from database");
+                    return await _db.Recipes
+                        .Where(r => !r.IsDeleted)
+                        .Include(r => r.RecipeIngredients)
+                        .ThenInclude(ri => ri.FoodItem)
+                        .AsNoTracking()
+                        .ToListAsync(cancellationToken);
+                }) ?? new List<EatFitAI.API.DbScaffold.Models.Recipe>();
 
             // Calculate match for each recipe
             var recipeSuggestions = new List<RecipeSuggestionDto>();

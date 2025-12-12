@@ -30,7 +30,7 @@ import { glassStyles } from '../../../components/ui/GlassCard';
 import { useAppTheme } from '../../../theme/ThemeProvider';
 import { useProfileStore } from '../../../store/useProfileStore';
 import { useAuthStore } from '../../../store/useAuthStore';
-import apiClient, { aiApiClient } from '../../../services/apiClient';
+import apiClient from '../../../services/apiClient';
 import { showSuccess } from '../../../utils/errorHandler';
 import { t } from '../../../i18n/vi';
 import type { RootStackParamList } from '../../types';
@@ -204,7 +204,7 @@ const OnboardingScreen = (): JSX.Element => {
     try {
       // Gọi qua backend API thay vì AI provider trực tiếp
       // Backend sẽ proxy đến AI Provider (Ollama)
-      const response = await aiApiClient.post('/api/ai/nutrition/recalculate', {
+      const response = await apiClient.post('/api/ai/nutrition/recalculate', {
         sex: data.gender,
         age: Number(data.age),
         heightCm: Number(data.heightCm),
@@ -461,11 +461,7 @@ const OnboardingScreen = (): JSX.Element => {
             >
               {t('onboarding.gender')}
             </ThemedText>
-            <View
-              style={styles.optionGrid}
-              accessibilityRole="radiogroup"
-              accessibilityLabel="Chọn giới tính"
-            >
+            <View style={styles.optionGrid} accessibilityRole="radiogroup" accessibilityLabel="Chọn giới tính">
               {GENDER_OPTIONS.map((opt) => (
                 <Pressable
                   key={opt.value}
@@ -487,9 +483,7 @@ const OnboardingScreen = (): JSX.Element => {
                   accessibilityLabel={opt.label}
                   accessibilityState={{ checked: data.gender === opt.value }}
                 >
-                  <ThemedText style={{ fontSize: theme.typography.h2.fontSize }}>
-                    {opt.icon}
-                  </ThemedText>
+                  <ThemedText style={{ fontSize: theme.typography.h2.fontSize }}>{opt.icon}</ThemedText>
                   <ThemedText weight="500">{opt.label}</ThemedText>
                 </Pressable>
               ))}
@@ -551,11 +545,7 @@ const OnboardingScreen = (): JSX.Element => {
       case 2: // Goal
         return (
           <Animated.View entering={FadeInRight} exiting={FadeOutLeft} key="step2">
-            <View
-              style={styles.optionGrid}
-              accessibilityRole="radiogroup"
-              accessibilityLabel="Chọn mục tiêu"
-            >
+            <View style={styles.optionGrid} accessibilityRole="radiogroup" accessibilityLabel="Chọn mục tiêu">
               {GOAL_OPTIONS.map((goal) => {
                 const goalColor = theme.colors[goal.colorKey];
                 return (
@@ -578,9 +568,7 @@ const OnboardingScreen = (): JSX.Element => {
                     accessibilityLabel={`${goal.label}: ${goal.desc}`}
                     accessibilityState={{ checked: data.goal === goal.value }}
                   >
-                    <ThemedText style={{ fontSize: theme.typography.h1.fontSize }}>
-                      {goal.icon}
-                    </ThemedText>
+                    <ThemedText style={{ fontSize: theme.typography.h1.fontSize }}>{goal.icon}</ThemedText>
                     <ThemedText
                       weight="600"
                       style={{
@@ -606,13 +594,7 @@ const OnboardingScreen = (): JSX.Element => {
 
       case 3: // Activity Level
         return (
-          <Animated.View
-            entering={FadeInRight}
-            exiting={FadeOutLeft}
-            key="step3"
-            accessibilityRole="radiogroup"
-            accessibilityLabel="Chọn mức độ vận động"
-          >
+          <Animated.View entering={FadeInRight} exiting={FadeOutLeft} key="step3" accessibilityRole="radiogroup" accessibilityLabel="Chọn mức độ vận động">
             {ACTIVITY_OPTIONS.map((act) => (
               <Pressable
                 key={act.value}
@@ -710,7 +692,10 @@ const OnboardingScreen = (): JSX.Element => {
   };
 
   return (
-    <LinearGradient colors={theme.colors.screenGradient} style={styles.container}>
+    <LinearGradient
+      colors={theme.colors.screenGradient}
+      style={styles.container}
+    >
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.progressContainer}>
