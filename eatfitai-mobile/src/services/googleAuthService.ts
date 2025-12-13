@@ -157,20 +157,35 @@ export const googleAuthService = {
             await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
 
             // Sign in
-            const userInfo = await GoogleSignin.signIn();
+            const response = await GoogleSignin.signIn();
 
-            console.log('[GoogleAuth] Sign in success:', userInfo.user.email);
+            // Debug log để xem data structure
+            console.log('[GoogleAuth] Raw response:', JSON.stringify(response, null, 2));
+
+            // API mới có thể trả về data ở response.data thay vì response.user
+            const userInfo = response.data || response;
+            const user = userInfo.user || userInfo;
+
+            if (!user || !user.email) {
+                console.error('[GoogleAuth] No user email in response:', response);
+                return {
+                    success: false,
+                    error: 'Không thể lấy thông tin email từ Google. Vui lòng thử lại.',
+                };
+            }
+
+            console.log('[GoogleAuth] Sign in success:', user.email);
 
             return {
                 success: true,
                 user: {
-                    id: userInfo.user.id,
-                    email: userInfo.user.email,
-                    name: userInfo.user.name,
-                    photo: userInfo.user.photo,
+                    id: user.id || user.userId || '',
+                    email: user.email,
+                    name: user.name || user.displayName || null,
+                    photo: user.photo || user.photoUrl || null,
                 },
-                idToken: userInfo.idToken || undefined,
-                serverAuthCode: userInfo.serverAuthCode || undefined,
+                idToken: userInfo.idToken || response.idToken || undefined,
+                serverAuthCode: userInfo.serverAuthCode || response.serverAuthCode || undefined,
             };
         } catch (error: any) {
             console.error('[GoogleAuth] Sign in error:', error);
