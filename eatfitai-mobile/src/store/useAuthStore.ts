@@ -1,12 +1,6 @@
 // Auth store (Zustand) quản lý session: login/register/google + silent refresh
 
 import { create } from 'zustand';
-import * as AuthSession from 'expo-auth-session';
-import {
-  makeRedirectUri,
-  type AuthSessionOptions,
-  type AuthSessionResult,
-} from 'expo-auth-session';
 
 import { API_BASE_URL } from '../config/env';
 import apiClient from '../services/apiClient';
@@ -14,7 +8,7 @@ import { setAccessTokenMem } from '../services/authTokens';
 import { tokenStorage } from '../services/secureStore';
 import { initAuthSession, updateSessionFromAuthResponse } from '../services/authSession';
 import type { AuthResponse } from '../types';
-import type { AuthSessionSuccessResult, AuthTokensResponse } from '../types/auth';
+import type { AuthTokensResponse } from '../types/auth';
 import { t } from '../i18n/vi';
 
 type AuthUser = { id: string; email: string; name?: string };
@@ -118,55 +112,48 @@ export const useAuthStore = create<AuthState>((set: any) => ({
   },
 
   signInWithGoogle: async () => {
-    if (!API_BASE) {
-      throw new Error(
-        'API base URL is not configured. Set EXPO_PUBLIC_API_BASE_URL or provide a fallback.',
-      );
+    // Import googleAuthService for native Google Sign-In
+    const { googleAuthService } = await import('../services/googleAuthService');
+
+    // Configure và sign in với native module
+    const configured = await googleAuthService.configure();
+    if (!configured) {
+      throw new Error('Không thể khởi tạo Google Sign-In. Kiểm tra cấu hình trong google.config.ts');
     }
 
-    type StartAsyncFn = (options: AuthSessionOptions) => Promise<AuthSessionResult>;
-    const startAuthSessionAsync: StartAsyncFn = (
-      AuthSession as unknown as { startAsync: StartAsyncFn }
-    ).startAsync;
-
-    const redirectUri = makeRedirectUri();
-    const authUrl = `${API_BASE}/api/auth/google?redirect_uri=${encodeURIComponent(redirectUri)}`;
-
-    const result = await startAuthSessionAsync({ authUrl });
-    if (result.type !== 'success') {
-      throw new Error(t('auth.googleLoginCancelled'));
+    // Sign in với Google
+    const result = await googleAuthService.signIn();
+    if (!result.success) {
+      throw new Error(result.error || 'Đăng nhập Google thất bại');
     }
 
-    const params: Record<string, string | undefined> = result.params ?? {};
-    const accessToken =
-      params.accessToken ||
-      params.access_token ||
-      (result as AuthSessionSuccessResult).accessToken ||
-      (result as AuthSessionSuccessResult).access_token;
-    const refreshToken =
-      params.refreshToken ||
-      params.refresh_token ||
-      (result as AuthSessionSuccessResult).refreshToken ||
-      (result as AuthSessionSuccessResult).refresh_token;
+    if (!result.idToken) {
+      throw new Error('Không nhận được ID Token từ Google');
+    }
 
-    if (!accessToken) throw new Error(t('auth.googleAccessTokenMissing'));
+    // Gửi idToken lên backend để xác thực và lấy JWT
+    const resp = await apiClient.post<AuthTokensResponse & { user?: AuthUser }>('/api/auth/google/signin', {
+      idToken: result.idToken,
+    });
 
+    const data = resp.data;
+    const accessToken = data?.accessToken || data?.token;
+
+    if (!accessToken) {
+      console.error('[useAuthStore] Google signin response missing token:', data);
+      throw new Error(t('auth.missingAccessToken'));
+    }
+
+    console.log('[useAuthStore] Google Sign-In successful, saving tokens...');
     await tokenStorage.saveTokensFull({
       accessToken,
-      accessTokenExpiresAt:
-        (result as AuthSessionSuccessResult).accessTokenExpiresAt ||
-        params.accessTokenExpiresAt,
-      refreshToken,
-      refreshTokenExpiresAt:
-        (result as AuthSessionSuccessResult).refreshTokenExpiresAt ||
-        params.refreshTokenExpiresAt,
+      accessTokenExpiresAt: data?.accessTokenExpiresAt ?? null,
+      refreshToken: data?.refreshToken ?? null,
+      refreshTokenExpiresAt: data?.refreshTokenExpiresAt ?? null,
     });
     setAccessTokenMem(accessToken);
-    try {
-      await updateSessionFromAuthResponse(result as AuthResponse);
-    } catch { }
 
-    set({ isAuthenticated: true });
+    set({ isAuthenticated: true, user: data?.user ?? null });
   },
 
   logout: async () => {

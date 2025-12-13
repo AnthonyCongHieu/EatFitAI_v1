@@ -13,41 +13,41 @@
  */
 
 export const GOOGLE_CONFIG = {
-    // Web Client ID (used for all platforms in Expo)
-    // Replace with your actual Web Client ID from Google Cloud Console
-    webClientId: 'YOUR_WEB_CLIENT_ID.apps.googleusercontent.com',
+   // Web Client ID (used for all platforms in Expo)
+   // Replace with your actual Web Client ID from Google Cloud Console
+   webClientId: '766747382187-50qb5i1dnpaq49npk909g61ubgtfev7f.apps.googleusercontent.com',
 
-    // iOS Client ID (optional, for iOS-specific features)
-    iosClientId: 'YOUR_IOS_CLIENT_ID.apps.googleusercontent.com',
+   // iOS Client ID (optional, for iOS-specific features)
+   iosClientId: 'YOUR_IOS_CLIENT_ID.apps.googleusercontent.com',
 
-    // Scopes to request from Google
-    scopes: [
-        'profile',
-        'email',
-        // 'openid', // Included by default
-    ],
+   // Scopes to request from Google
+   scopes: [
+      'profile',
+      'email',
+      // 'openid', // Included by default
+   ],
 
-    // Whether to request server auth code
-    offlineAccess: true,
+   // Whether to request server auth code
+   offlineAccess: true,
 
-    // Force account selection even if only one account
-    forceCodeForRefreshToken: true,
+   // Force account selection even if only one account
+   forceCodeForRefreshToken: true,
 };
 
 /**
  * Validate Google config is set up correctly
  */
 export const validateGoogleConfig = (): { valid: boolean; errors: string[] } => {
-    const errors: string[] = [];
+   const errors: string[] = [];
 
-    if (GOOGLE_CONFIG.webClientId.includes('YOUR_')) {
-        errors.push('Web Client ID chưa được cấu hình. Vui lòng cập nhật trong google.config.ts');
-    }
+   if (GOOGLE_CONFIG.webClientId.includes('YOUR_')) {
+      errors.push('Web Client ID chưa được cấu hình. Vui lòng cập nhật trong google.config.ts');
+   }
 
-    return {
-        valid: errors.length === 0,
-        errors,
-    };
+   return {
+      valid: errors.length === 0,
+      errors,
+   };
 };
 
 /**

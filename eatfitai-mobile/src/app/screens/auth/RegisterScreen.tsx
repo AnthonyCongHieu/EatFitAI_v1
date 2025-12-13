@@ -16,6 +16,7 @@ import { AppCard } from '../../../components/ui/AppCard';
 import Button from '../../../components/Button';
 import ThemedTextInput from '../../../components/ThemedTextInput';
 import apiClient from '../../../services/apiClient';
+import { useAuthStore } from '../../../store/useAuthStore';
 import type { RootStackParamList } from '../../types';
 import { t } from '../../../i18n/vi';
 import { handleApiError } from '../../../utils/errorHandler';
@@ -44,7 +45,9 @@ type Props = NativeStackScreenProps<RootStackParamList, 'Register'>;
 
 const RegisterScreen = ({ navigation }: Props): JSX.Element => {
   const { theme } = useAppTheme();
+  const signInWithGoogle = useAuthStore((s) => s.signInWithGoogle);
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const [passwordStrength, setPasswordStrength] = useState(0); // 0-3
 
   const {
@@ -150,6 +153,29 @@ const RegisterScreen = ({ navigation }: Props): JSX.Element => {
     },
     [navigation],
   );
+
+  // Google Sign-In handler
+  const onGoogle = useCallback(async () => {
+    try {
+      setGoogleLoading(true);
+      await signInWithGoogle();
+      Toast.show({
+        type: 'success',
+        text1: 'Đăng ký với Google thành công',
+        text2: 'Chào mừng bạn!',
+      });
+      navigation.reset({ index: 0, routes: [{ name: 'AppTabs' }] });
+    } catch (e: any) {
+      console.error('[RegisterScreen] Google Sign-In error:', e);
+      Toast.show({
+        type: 'error',
+        text1: 'Đăng ký Google thất bại',
+        text2: e?.message || 'Vui lòng thử lại',
+      });
+    } finally {
+      setGoogleLoading(false);
+    }
+  }, [signInWithGoogle, navigation]);
 
   return (
     <Screen scroll={true} contentContainerStyle={styles.container}>
@@ -304,15 +330,54 @@ const RegisterScreen = ({ navigation }: Props): JSX.Element => {
               />
             )}
           />
-          <View style={{ marginTop: theme.spacing.lg }}>
+          <View style={{ marginTop: theme.spacing.lg, gap: theme.spacing.md }}>
             <Button
               variant="primary"
               loading={loading}
-              disabled={loading}
+              disabled={loading || googleLoading}
               onPress={handleSubmit(onSubmit)}
               title={loading ? t('auth.processing') : t('auth.createAccount')}
               fullWidth
               size="lg"
+            />
+
+            {/* Divider */}
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                marginVertical: theme.spacing.xs,
+                gap: theme.spacing.md,
+              }}
+            >
+              <View
+                style={{
+                  flex: 1,
+                  height: 1,
+                  backgroundColor: theme.colors.border,
+                }}
+              />
+              <ThemedText variant="caption" color="textSecondary">
+                hoặc đăng ký với
+              </ThemedText>
+              <View
+                style={{
+                  flex: 1,
+                  height: 1,
+                  backgroundColor: theme.colors.border,
+                }}
+              />
+            </View>
+
+            {/* Google Sign-In Button */}
+            <Button
+              variant="outline"
+              loading={googleLoading}
+              disabled={loading || googleLoading}
+              onPress={onGoogle}
+              title="Google"
+              icon="logo-google"
+              fullWidth
             />
           </View>
 

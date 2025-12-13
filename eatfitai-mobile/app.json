@@ -57,6 +57,7 @@
     "plugins": [
       "expo-secure-store",
       "expo-localization",
+      "@react-native-google-signin/google-signin",
       [
         "expo-camera",
         {

@@ -73,6 +73,7 @@ const LoginScreen = ({ navigation }: Props): JSX.Element => {
   const onGoogle = useCallback(async () => {
     try {
       setLoading(true);
+      console.log('[LoginScreen] Starting Google Sign-In...');
       await signInWithGoogle();
       Toast.show({
         type: 'success',
@@ -81,19 +82,16 @@ const LoginScreen = ({ navigation }: Props): JSX.Element => {
       });
       navigation.reset({ index: 0, routes: [{ name: 'AppTabs' }] });
     } catch (e: any) {
-      if (!navigator.onLine) {
-        Toast.show({
-          type: 'error',
-          text1: 'Không có kết nối mạng',
-          text2: 'Kiểm tra kết nối và thử lại',
-        });
-      } else {
-        Toast.show({
-          type: 'error',
-          text1: 'Đăng nhập Google thất bại',
-          text2: 'Vui lòng thử lại hoặc sử dụng đăng nhập thông thường',
-        });
-      }
+      console.error('[LoginScreen] Google Sign-In error:', e);
+      console.error('[LoginScreen] Error message:', e?.message);
+
+      // Hiển thị lỗi thực tế thay vì check navigator.onLine (Web API không hoạt động trong RN)
+      Toast.show({
+        type: 'error',
+        text1: 'Đăng nhập Google thất bại',
+        text2: e?.message || 'Vui lòng thử lại',
+        visibilityTime: 4000,
+      });
     } finally {
       setLoading(false);
     }
@@ -102,7 +100,7 @@ const LoginScreen = ({ navigation }: Props): JSX.Element => {
   return (
     <View style={{ flex: 1 }}>
       <LinearGradient
-        colors={theme.colors.backgroundGradient as unknown as string[]}
+        colors={theme.colors.backgroundGradient as readonly [string, string, ...string[]]}
         start={{ x: 0, y: 0 }}
         end={{ x: 0.5, y: 1 }}
         style={StyleSheet.absoluteFill}
