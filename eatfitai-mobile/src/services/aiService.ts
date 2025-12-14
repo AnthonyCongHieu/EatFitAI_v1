@@ -137,34 +137,42 @@ export const aiService = {
     }));
   },
 
-  // Lay target dinh duong hien tai (thu endpoint moi, fallback endpoint cu)
-  async getCurrentNutritionTarget(): Promise<NutritionTarget | null> {
+  // Lay target dinh duong hien tai
+  // Tra ve defaults neu user chua co target (2000kcal, 50g protein, 250g carbs, 65g fat)
+  async getCurrentNutritionTarget(): Promise<NutritionTarget> {
+    const defaults: NutritionTarget = { calories: 2000, protein: 50, carbs: 250, fat: 65 };
     try {
       const response = await apiClient.get<NutritionTargetDto>(
         '/api/ai/nutrition-targets/current',
       );
       const data = response.data ?? {};
-      const calories = toNumber(data.calories);
-      const protein = toNumber(data.protein);
-      const carbs = toNumber(data.carbs);
-      const fat = toNumber(data.fat);
-      if (calories == null || protein == null || carbs == null || fat == null)
-        return null;
-      return { calories, protein, carbs, fat };
-    } catch {
-      const resp = await apiClient.get<NutritionTargetDto>(
-        '/api/ai/nutrition-targets/current',
-      );
-      const data = resp.data ?? {};
+
+      // Backend trả về caloriesKcal/proteinGrams/carbohydrateGrams/fatGrams
+      // hoặc calories/protein/carbs/fat (tùy endpoint)
       const calories = toNumber(data.caloriesKcal ?? data.calories);
       const protein = toNumber(data.proteinGrams ?? data.protein);
       const carbs = toNumber(data.carbohydrateGrams ?? data.carbs);
       const fat = toNumber(data.fatGrams ?? data.fat);
-      if (calories == null || protein == null || carbs == null || fat == null)
-        return null;
+
+      if (calories == null || protein == null || carbs == null || fat == null) {
+        console.warn('[EatFitAI] Nutrition target has null values, using defaults:', data);
+        return defaults;
+      }
       return { calories, protein, carbs, fat };
+    } catch (error: unknown) {
+      // 404 = User chưa có target -> trả về defaults
+      if (error && typeof error === 'object' && 'response' in error) {
+        const axiosError = error as { response?: { status?: number } };
+        if (axiosError.response?.status === 404) {
+          console.log('[EatFitAI] No nutrition target found for user (404), using defaults');
+          return defaults;
+        }
+      }
+      console.error('[EatFitAI] Error fetching nutrition target, using defaults:', error);
+      return defaults;
     }
   },
+
 
   // Tinh lai dựa trên profile user hiện tại
   async recalculateNutritionTarget(): Promise<NutritionTarget> {
@@ -235,12 +243,12 @@ export const aiService = {
   // Ap dung target moi (thu route moi, fallback route cu)
   async applyNutritionTarget(target: NutritionTarget): Promise<void> {
     try {
+      // Fix: Backend DTO expects TargetCalories, TargetProtein, TargetCarbs, TargetFat
       await apiClient.post('/api/ai/nutrition/apply-target', {
-        calories: target.calories,
-        protein: target.protein,
-        carb: target.carbs,
-        fat: target.fat,
-        effectiveFrom: null,
+        targetCalories: target.calories,
+        targetProtein: target.protein,
+        targetCarbs: target.carbs,
+        targetFat: target.fat,
       });
     } catch {
       await apiClient.post('/api/ai/nutrition-targets', {

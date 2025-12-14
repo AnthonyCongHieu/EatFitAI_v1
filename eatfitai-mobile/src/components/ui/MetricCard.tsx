@@ -76,7 +76,7 @@ const MetricCardComponent = ({
             </Animated.Text>
           )}
         </Animated.View>
-        <ThemedText variant="caption" color="textSecondary">
+        <ThemedText variant="caption" color="textSecondary" shrink ellipsis>
           {label}
         </ThemedText>
         {progress !== undefined && (

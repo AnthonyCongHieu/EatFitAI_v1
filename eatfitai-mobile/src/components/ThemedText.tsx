@@ -6,26 +6,30 @@ import { useAppTheme } from '../theme/ThemeProvider';
 
 type ThemedTextProps = TextProps & {
   variant?:
-    | 'h1'
-    | 'h2'
-    | 'h3'
-    | 'h4'
-    | 'body'
-    | 'bodyLarge'
-    | 'bodySmall'
-    | 'caption'
-    | 'button';
+  | 'h1'
+  | 'h2'
+  | 'h3'
+  | 'h4'
+  | 'body'
+  | 'bodyLarge'
+  | 'bodySmall'
+  | 'caption'
+  | 'button';
   color?:
-    | 'primary'
-    | 'secondary'
-    | 'muted'
-    | 'danger'
-    | 'success'
-    | 'warning'
-    | 'info'
-    | 'textSecondary';
+  | 'primary'
+  | 'secondary'
+  | 'muted'
+  | 'danger'
+  | 'success'
+  | 'warning'
+  | 'info'
+  | 'textSecondary';
   weight?: '300' | '400' | '500' | '600' | '700';
   align?: 'left' | 'center' | 'right' | 'justify';
+  // Props mới để xử lý text wrap và ellipsis
+  shrink?: boolean; // Cho phép text co lại trong flex row (flexShrink: 1)
+  ellipsis?: boolean; // Hiển thị "..." khi text quá dài
+  lines?: number; // Giới hạn số dòng (1, 2, 3...)
 };
 
 export const ThemedText = memo(
@@ -34,6 +38,9 @@ export const ThemedText = memo(
     color,
     weight,
     align,
+    shrink,
+    ellipsis,
+    lines,
     style,
     ...rest
   }: ThemedTextProps): JSX.Element => {
@@ -60,8 +67,13 @@ export const ThemedText = memo(
     else if (weight === '600') fontFamily = 'Inter_600SemiBold';
     else if (weight === '700') fontFamily = 'Inter_700Bold';
 
+    // Xác định numberOfLines: ưu tiên lines prop, nếu chỉ có ellipsis thì mặc định 1 dòng
+    const numberOfLines = lines ?? (ellipsis ? 1 : undefined);
+
     return (
       <Text
+        numberOfLines={numberOfLines}
+        ellipsizeMode={ellipsis || lines ? 'tail' : undefined}
         style={[
           {
             fontFamily,
@@ -70,6 +82,8 @@ export const ThemedText = memo(
             letterSpacing: typography.letterSpacing,
             color: textColor,
             textAlign: align,
+            // flexShrink: 1 giúp text co lại trong row layout, tránh tràn
+            ...(shrink && { flexShrink: 1 }),
           },
           style,
         ]}

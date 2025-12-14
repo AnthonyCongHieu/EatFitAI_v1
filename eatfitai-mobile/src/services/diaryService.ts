@@ -102,10 +102,14 @@ const normalizeSummary = (data: any): DaySummary => ({
   date: data?.date ?? data?.mealDate ?? new Date().toISOString(),
   totalCalories: toNumberOrNull(data?.totalCalories),
   targetCalories: toNumberOrNull(data?.targetCalories),
-  // Backend trả về TotalProtein, TotalCarbs, TotalFat (không phải protein, carbs, fat)
+  // Backend trả về TotalProtein, TotalCarbs, TotalFat
   protein: toNumberOrNull(data?.totalProtein ?? data?.protein),
   carbs: toNumberOrNull(data?.totalCarbs ?? data?.carbs),
   fat: toNumberOrNull(data?.totalFat ?? data?.fat),
+  // Target macros để hiển thị consumed/target (ví dụ: 166/190g Protein)
+  targetProtein: toNumberOrNull(data?.targetProtein),
+  targetCarbs: toNumberOrNull(data?.targetCarbs),
+  targetFat: toNumberOrNull(data?.targetFat),
   meals: Array.isArray(data?.meals) ? data.meals.map(normalizeMeal) : [],
 });
 
@@ -145,7 +149,10 @@ export const diaryService = {
   async getTodaySummary(): Promise<DaySummary> {
     const date = todayDate();
     const response = await apiClient.get('/api/summary/day', { params: { date } });
-    return normalizeSummary(response.data);
+    console.log('[EatFitAI DEBUG] Raw API response:', JSON.stringify(response.data));
+    const normalized = normalizeSummary(response.data);
+    console.log('[EatFitAI DEBUG] Normalized summary:', JSON.stringify(normalized));
+    return normalized;
   },
 
   // Lay tong quan nhat ky tuan

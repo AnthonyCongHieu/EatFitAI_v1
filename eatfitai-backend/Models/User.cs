@@ -13,6 +13,9 @@ public partial class User
 
     public string? DisplayName { get; set; }
 
+    // Avatar URL - lưu ID của preset avatar hoặc URL từ storage
+    public string? AvatarUrl { get; set; }
+
     public DateTime CreatedAt { get; set; }
 
     // Email verification - MÃ XÁC MINH 6 SỐ

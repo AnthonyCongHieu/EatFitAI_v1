@@ -505,6 +505,7 @@ export const vi = {
     search: 'Search',
     camera: 'Camera',
     ai: 'AI',
+    voice: 'Voice', // [NEW]
     stats: 'Stats',
     profile: 'Profile',
     foodSearch: 'Tìm món',

@@ -37,71 +37,87 @@ public class WeeklyCheckInController : ControllerBase
     [HttpGet("current")]
     public async Task<IActionResult> GetCurrentWeek()
     {
-        var userId = GetUserId();
-        if (userId == Guid.Empty) return Unauthorized();
-
-        var today = DateOnly.FromDateTime(DateTime.UtcNow);
-        var weekStart = GetWeekStart(today);
-        var weekEnd = weekStart.AddDays(6);
-
-        // Get existing check-in for this week
-        var checkIn = await _db.WeeklyCheckIns
-            .Where(w => w.UserId == userId && w.WeekStartDate == weekStart)
-            .FirstOrDefaultAsync();
-
-        // Calculate week number (weeks since user started)
-        var firstCheckIn = await _db.WeeklyCheckIns
-            .Where(w => w.UserId == userId)
-            .OrderBy(w => w.WeekStartDate)
-            .FirstOrDefaultAsync();
-
-        var weekNumber = firstCheckIn != null
-            ? ((today.DayNumber - firstCheckIn.WeekStartDate.DayNumber) / 7) + 1
-            : 1;
-
-        // Get weekly nutrition averages from diary
-        var weeklyStats = await GetWeeklyNutritionStats(userId, weekStart, weekEnd);
-
-        // Get previous week's weight for comparison
-        var prevWeekStart = weekStart.AddDays(-7);
-        var prevCheckIn = await _db.WeeklyCheckIns
-            .Where(w => w.UserId == userId && w.WeekStartDate == prevWeekStart)
-            .FirstOrDefaultAsync();
-
-        // Get user's current target
-        var target = await _db.NutritionTargets
-            .Where(t => t.UserId == userId)
-            .OrderByDescending(t => t.NutritionTargetId)
-            .FirstOrDefaultAsync();
-
-        return Ok(new
+        try 
         {
-            weekNumber,
-            weekStart = weekStart.ToString("yyyy-MM-dd"),
-            weekEnd = weekEnd.ToString("yyyy-MM-dd"),
-            hasCheckedIn = checkIn != null,
-            checkIn = checkIn != null ? new
+            var userId = GetUserId();
+            _logger.LogInformation("[WeeklyCheckIn] GetCurrentWeek called for user: {UserId}", userId);
+            
+            if (userId == Guid.Empty) return Unauthorized();
+
+            var today = DateOnly.FromDateTime(DateTime.UtcNow);
+            var weekStart = GetWeekStart(today);
+            var weekEnd = weekStart.AddDays(6);
+            
+            _logger.LogInformation("[WeeklyCheckIn] Week: {Start} to {End}", weekStart, weekEnd);
+
+            // Get existing check-in for this week
+            var checkIn = await _db.WeeklyCheckIns
+                .Where(w => w.UserId == userId && w.WeekStartDate == weekStart)
+                .FirstOrDefaultAsync();
+            
+            _logger.LogInformation("[WeeklyCheckIn] CheckIn found: {Found}", checkIn != null);
+
+            // Calculate week number (weeks since user started)
+            var firstCheckIn = await _db.WeeklyCheckIns
+                .Where(w => w.UserId == userId)
+                .OrderBy(w => w.WeekStartDate)
+                .FirstOrDefaultAsync();
+
+            var weekNumber = firstCheckIn != null
+                ? ((today.DayNumber - firstCheckIn.WeekStartDate.DayNumber) / 7) + 1
+                : 1;
+
+            // Get weekly nutrition averages from diary
+            var weeklyStats = await GetWeeklyNutritionStats(userId, weekStart, weekEnd);
+            
+            _logger.LogInformation("[WeeklyCheckIn] WeeklyStats retrieved");
+
+            // Get previous week's weight for comparison
+            var prevWeekStart = weekStart.AddDays(-7);
+            var prevCheckIn = await _db.WeeklyCheckIns
+                .Where(w => w.UserId == userId && w.WeekStartDate == prevWeekStart)
+                .FirstOrDefaultAsync();
+
+            // Get user's current target
+            var target = await _db.NutritionTargets
+                .Where(t => t.UserId == userId)
+                .OrderByDescending(t => t.NutritionTargetId)
+                .FirstOrDefaultAsync();
+
+            return Ok(new
             {
-                checkIn.WeeklyCheckInId,
-                checkIn.WeightKg,
-                checkIn.WeightChange,
-                checkIn.AvgCalories,
-                checkIn.TargetCalories,
-                checkIn.AvgProtein,
-                checkIn.AvgCarbs,
-                checkIn.AvgFat,
-                checkIn.DaysLogged,
-                checkIn.Goal,
-                checkIn.AiSuggestion,
-                checkIn.IsOnTrack,
-                checkIn.SuggestedCalories,
-                checkIn.Notes,
-                checkIn.CreatedAt
-            } : null,
-            previousWeight = prevCheckIn?.WeightKg,
-            weeklyStats,
-            targetCalories = target?.TargetCalories
-        });
+                weekNumber,
+                weekStart = weekStart.ToString("yyyy-MM-dd"),
+                weekEnd = weekEnd.ToString("yyyy-MM-dd"),
+                hasCheckedIn = checkIn != null,
+                checkIn = checkIn != null ? new
+                {
+                    checkIn.WeeklyCheckInId,
+                    checkIn.WeightKg,
+                    checkIn.WeightChange,
+                    checkIn.AvgCalories,
+                    checkIn.TargetCalories,
+                    checkIn.AvgProtein,
+                    checkIn.AvgCarbs,
+                    checkIn.AvgFat,
+                    checkIn.DaysLogged,
+                    checkIn.Goal,
+                    checkIn.AiSuggestion,
+                    checkIn.IsOnTrack,
+                    checkIn.SuggestedCalories,
+                    checkIn.Notes,
+                    checkIn.CreatedAt
+                } : null,
+                previousWeight = prevCheckIn?.WeightKg,
+                weeklyStats,
+                targetCalories = target?.TargetCalories
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "[WeeklyCheckIn] GetCurrentWeek EXCEPTION: {Message}", ex.Message);
+            return StatusCode(500, new { error = ex.Message, stackTrace = ex.StackTrace });
+        }
     }
 
     /// <summary>

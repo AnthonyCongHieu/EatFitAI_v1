@@ -1,5 +1,5 @@
 // Bottom Tabs after authentication
-// Simplified from 6 tabs to 4 tabs for better UX
+// 5 tabs: Home, AI Scan, Voice, Stats, Profile
 
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import Ionicons from '@expo/vector-icons/Ionicons';
@@ -12,6 +12,7 @@ import { Pressable, View, StyleSheet } from 'react-native';
 
 import HomeScreen from '../screens/HomeScreen';
 import AIScanScreen from '../screens/ai/AIScanScreen';
+import VoiceScreen from '../screens/VoiceScreen';
 import StatsNavigator from './StatsNavigator';
 import ProfileScreen from '../screens/ProfileScreen';
 import { useAppTheme } from '../../theme/ThemeProvider';
@@ -20,13 +21,14 @@ import { t } from '../../i18n/vi';
 export type AppTabsParamList = {
   HomeTab: undefined;
   AIScanTab: undefined;
+  VoiceTab: undefined;
   StatsTab: undefined;
   ProfileTab: undefined;
 };
 
 const Tab = createBottomTabNavigator<AppTabsParamList>();
 
-// Custom animated tab button with proper typing for react-navigation
+// Custom animated tab button
 const AnimatedTabButton = ({
   children,
   onPress,
@@ -76,7 +78,6 @@ const AppTabs = (): JSX.Element => {
         tabBarActiveTintColor: theme.colors.primary,
         tabBarInactiveTintColor: theme.colors.muted,
         tabBarStyle: {
-          // Glassmorphism tab bar với bo góc trên
           backgroundColor: isDark
             ? 'rgba(20, 25, 23, 0.95)'
             : 'rgba(255, 255, 255, 0.95)',
@@ -87,7 +88,6 @@ const AppTabs = (): JSX.Element => {
           height: 75,
           paddingBottom: 12,
           paddingTop: 10,
-          // Shadow
           shadowColor: '#000',
           shadowOffset: { width: 0, height: -4 },
           shadowOpacity: isDark ? 0.25 : 0.08,
@@ -112,9 +112,9 @@ const AppTabs = (): JSX.Element => {
               style={
                 focused
                   ? [
-                      styles.activeIconPill,
-                      { backgroundColor: theme.colors.primary + '20' },
-                    ]
+                    styles.activeIconPill,
+                    { backgroundColor: theme.colors.primary + '20' },
+                  ]
                   : undefined
               }
             >
@@ -137,9 +137,9 @@ const AppTabs = (): JSX.Element => {
               style={
                 focused
                   ? [
-                      styles.scanIconActive,
-                      { backgroundColor: theme.colors.primary + '20' },
-                    ]
+                    styles.scanIconActive,
+                    { backgroundColor: theme.colors.primary + '20' },
+                  ]
                   : undefined
               }
             >
@@ -147,6 +147,31 @@ const AppTabs = (): JSX.Element => {
                 name={focused ? 'scan' : 'scan-outline'}
                 color={color}
                 size={size + 2}
+              />
+            </View>
+          ),
+        }}
+      />
+      <Tab.Screen
+        name="VoiceTab"
+        component={VoiceScreen}
+        options={{
+          title: t('navigation.voice'),
+          tabBarIcon: ({ color, size, focused }) => (
+            <View
+              style={
+                focused
+                  ? [
+                    styles.activeIconPill,
+                    { backgroundColor: theme.colors.secondary + '20' },
+                  ]
+                  : undefined
+              }
+            >
+              <Ionicons
+                name={focused ? 'mic' : 'mic-outline'}
+                color={color}
+                size={size}
               />
             </View>
           ),

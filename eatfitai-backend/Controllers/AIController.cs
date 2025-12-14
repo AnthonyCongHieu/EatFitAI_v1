@@ -218,19 +218,34 @@ namespace EatFitAI.API.Controllers
         }
 
         [HttpGet("nutrition-targets/current")]
-        public async Task<IActionResult> GetCurrentNutritionTargets()
+    public async Task<IActionResult> GetCurrentNutritionTargets()
+    {
+        var userId = GetUserIdFromToken();
+        using var scope = HttpContext.RequestServices.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<EatFitAI.API.DbScaffold.Data.EatFitAIDbContext>();
+        var today = DateOnly.FromDateTime(DateTime.UtcNow.Date);
+        var current = await db.NutritionTargets
+            .Where(t => t.UserId == userId && t.EffectiveFrom <= today && (t.EffectiveTo == null || t.EffectiveTo >= today))
+            .OrderByDescending(t => t.EffectiveFrom)
+            .FirstOrDefaultAsync();
+        
+        // Defaults based on standard nutrition guidelines
+        int caloriesKcal = 2000;
+        int proteinGrams = 50;
+        int carbohydrateGrams = 250;
+        int fatGrams = 65;
+        
+        // CHỈ sử dụng giá trị từ DB nếu record tồn tại VÀ có giá trị khác 0
+        if (current != null && current.TargetCalories > 0)
         {
-            var userId = GetUserIdFromToken();
-            using var scope = HttpContext.RequestServices.CreateScope();
-            var db = scope.ServiceProvider.GetRequiredService<EatFitAI.API.DbScaffold.Data.EatFitAIDbContext>();
-            var today = DateOnly.FromDateTime(DateTime.UtcNow.Date);
-            var current = await db.NutritionTargets
-                .Where(t => t.UserId == userId && t.EffectiveFrom <= today && (t.EffectiveTo == null || t.EffectiveTo >= today))
-                .OrderByDescending(t => t.EffectiveFrom)
-                .FirstOrDefaultAsync();
-            if (current == null) return NotFound();
-            return Ok(new { caloriesKcal = current.TargetCalories, proteinGrams = current.TargetProtein, carbohydrateGrams = current.TargetCarb, fatGrams = current.TargetFat });
+            caloriesKcal = current.TargetCalories;
+            proteinGrams = current.TargetProtein > 0 ? current.TargetProtein : proteinGrams;
+            carbohydrateGrams = current.TargetCarb > 0 ? current.TargetCarb : carbohydrateGrams;
+            fatGrams = current.TargetFat > 0 ? current.TargetFat : fatGrams;
         }
+        
+        return Ok(new { caloriesKcal, proteinGrams, carbohydrateGrams, fatGrams });
+    }    
 
         [HttpPost("nutrition/recalculate")]
         public async Task<IActionResult> RecalculateNutritionTargets([FromBody] RecalculateTargetRequest request)

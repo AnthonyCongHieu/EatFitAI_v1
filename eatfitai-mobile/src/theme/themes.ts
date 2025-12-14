@@ -172,6 +172,12 @@ export type AppTheme = {
     fast: number;
     normal: number;
     slow: number;
+    // Spring configs cho micro-interactions mượt hơn
+    spring: {
+      gentle: { damping: number; stiffness: number };
+      bouncy: { damping: number; stiffness: number };
+      snappy: { damping: number; stiffness: number };
+    };
   };
 };
 
@@ -394,6 +400,11 @@ export const lightTheme: AppTheme = {
     fast: 150,
     normal: 250,
     slow: 400,
+    spring: {
+      gentle: { damping: 20, stiffness: 100 },
+      bouncy: { damping: 12, stiffness: 200 },
+      snappy: { damping: 18, stiffness: 300 },
+    },
   },
 };
 
@@ -617,6 +628,11 @@ export const darkTheme: AppTheme = {
     fast: 150,
     normal: 250,
     slow: 400,
+    spring: {
+      gentle: { damping: 20, stiffness: 100 },
+      bouncy: { damping: 12, stiffness: 200 },
+      snappy: { damping: 18, stiffness: 300 },
+    },
   },
 };
 

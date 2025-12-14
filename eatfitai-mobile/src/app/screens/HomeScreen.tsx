@@ -51,7 +51,6 @@ import { HomeSkeleton } from '../../components/skeletons/HomeSkeleton';
 import { GlassCard, glassStyles } from '../../components/ui/GlassCard';
 import { GradientBackground } from '../../components/ui/GradientBackground';
 import { WelcomeHeader } from '../../components/home/WelcomeHeader';
-import { VoiceButton } from '../../components/voice/VoiceButton';
 import { VoiceSheet } from '../../components/voice/VoiceSheet';
 
 type AddOption = 'search' | 'custom' | 'ai';
@@ -332,6 +331,7 @@ const HomeScreen = (): JSX.Element => {
           paddingHorizontal: theme.spacing.lg,
           paddingVertical: theme.spacing.xl,
           gap: theme.spacing.xxl,
+          paddingBottom: 100, // Thêm padding để FAB không che diary
         }}
         refreshControl={
           <RefreshControl
@@ -380,11 +380,11 @@ const HomeScreen = (): JSX.Element => {
               <Animated.Text
                 style={[styles.animatedNumber, remainingCaloriesAnimatedStyle]}
               >
-                <ThemedText variant="h1" weight="700">
+                <ThemedText variant="h1" weight="700" shrink>
                   {t('home.remaining_calories', Math.round(remainingCaloriesValue.value))}
                 </ThemedText>
               </Animated.Text>
-              <ThemedText variant="body" color="textSecondary">
+              <ThemedText variant="body" color="textSecondary" shrink>
                 {t(
                   'home.eaten_vs_target',
                   summary?.totalCalories || 0,
@@ -493,7 +493,7 @@ const HomeScreen = (): JSX.Element => {
                   style={[styles.entryRow, { borderColor: theme.colors.border }]}
                 >
                   <View style={styles.entryInfo}>
-                    <ThemedText variant="body" weight="600">
+                    <ThemedText variant="body" weight="600" shrink ellipsis>
                       {entry.foodName}
                     </ThemedText>
                     <View
@@ -507,7 +507,7 @@ const HomeScreen = (): JSX.Element => {
                       <ThemedText variant="bodySmall" color="textSecondary">
                         {formatNumber(entry.calories, ' kcal')}
                       </ThemedText>
-                      <ThemedText variant="bodySmall" color="textSecondary">
+                      <ThemedText variant="bodySmall" color="textSecondary" shrink ellipsis>
                         {entry.quantityText ?? t('home.noPortionInfo')}
                       </ThemedText>
                       <View
@@ -585,16 +585,7 @@ const HomeScreen = (): JSX.Element => {
 
       <SmartAddSheet visible={showAddModal} onClose={() => setShowAddModal(false)} />
 
-      {/* Voice FAB - góc dưới trái */}
-      <Animated.View
-        entering={FadeInUp.delay(600).springify()}
-        style={styles.voiceFabContainer}
-      >
-        <VoiceButton
-          onPress={() => setShowVoiceSheet(true)}
-          size={56}
-        />
-      </Animated.View>
+
 
       {/* Voice Sheet */}
       <VoiceSheet
@@ -624,11 +615,7 @@ const getStyles = (theme: any) =>
       shadowOpacity: 0.3,
       shadowRadius: 8,
     },
-    voiceFabContainer: {
-      position: 'absolute',
-      bottom: theme.spacing.xl,
-      left: theme.spacing.xl,
-    },
+
     entryRow: {
       flexDirection: 'row',
       alignItems: 'center',

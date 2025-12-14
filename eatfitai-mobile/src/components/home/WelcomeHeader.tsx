@@ -63,6 +63,8 @@ export const WelcomeHeader = () => {
           <ThemedText
             variant="h2"
             style={{ color: theme.colors.text, fontWeight: '700' }}
+            shrink
+            ellipsis
           >
             {user?.name || 'Bạn mới'}
           </ThemedText>

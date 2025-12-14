@@ -9,9 +9,15 @@ import Screen from '../../../components/Screen';
 import { ScreenHeader } from '../../../components/ui/ScreenHeader';
 import { useAppTheme } from '../../../theme/ThemeProvider';
 import { aiService } from '../../../services/aiService';
+import { foodService } from '../../../services/foodService'; // [NEW]
+import { useDiaryStore } from '../../../store/useDiaryStore'; // [NEW]
 import type { RootStackParamList } from '../../types';
 import type { RecipeDetail } from '../../../types/aiEnhanced';
+import type { MealTypeId } from '../../../types'; // [NEW]
 import { glassStyles } from '../../../components/ui/GlassCard';
+import { AddRecipeToDiarySheet } from '../../../components/recipe/AddRecipeToDiarySheet'; // [NEW]
+import Toast from 'react-native-toast-message'; // [NEW]
+import Button from '../../../components/Button'; // [NEW]
 
 type RouteProps = RouteProp<RootStackParamList, 'RecipeDetail'>;
 
@@ -38,6 +44,11 @@ const RecipeDetailScreen = (): JSX.Element => {
     steps: [],
     isLoading: false,
   });
+
+  // State cho Add to Diary sheet [NEW]
+  const [showAddToDiarySheet, setShowAddToDiarySheet] = useState(false);
+  const [isAddingToDiary, setIsAddingToDiary] = useState(false);
+  const refreshSummary = useDiaryStore((s) => s.refreshSummary);
 
   // Load recipe detail
   useEffect(() => {
@@ -91,6 +102,54 @@ const RecipeDetailScreen = (): JSX.Element => {
     };
     fetchAiInstructions();
   }, [recipe]);
+
+  // Handler thêm recipe vào diary [NEW]
+  const handleAddToDiary = async (mealTypeId: MealTypeId, servings: number) => {
+    if (!recipe) return;
+
+    try {
+      setIsAddingToDiary(true);
+
+      // Tạo user food item từ recipe
+      const formData = new FormData();
+      formData.append('foodName', recipe.recipeName);
+      formData.append('description', recipe.description || `Công thức: ${recipe.recipeName}`);
+      formData.append('caloriesPer100', String(recipe.totalCalories));
+      formData.append('proteinPer100', String(recipe.totalProtein));
+      formData.append('carbPer100', String(recipe.totalCarbs));
+      formData.append('fatPer100', String(recipe.totalFat));
+      formData.append('unitType', 'khẩu phần');
+
+      const createdItem = await foodService.createUserFoodItem(formData);
+
+      // Thêm vào diary với servings
+      const gramsPerServing = 100; // Mặc định 1 serving = 100g
+      await foodService.addDiaryEntryFromUserFoodItem({
+        mealTypeId,
+        userFoodItemId: String(createdItem.userFoodItemId),
+        grams: gramsPerServing * servings,
+        note: `Từ công thức: ${recipe.recipeName}`,
+      });
+
+      // Refresh summary
+      await refreshSummary();
+
+      Toast.show({
+        type: 'success',
+        text1: 'Đã thêm vào nhật ký',
+        text2: `${recipe.recipeName} (${servings} khẩu phần)`,
+      });
+    } catch (error) {
+      console.error('[RecipeDetailScreen] Error adding to diary:', error);
+      Toast.show({
+        type: 'error',
+        text1: 'Thêm thất bại',
+        text2: 'Vui lòng thử lại',
+      });
+    } finally {
+      setIsAddingToDiary(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -326,7 +385,34 @@ const RecipeDetailScreen = (): JSX.Element => {
             </Pressable>
           )}
         </View>
+
+        {/* Add to Diary Button [NEW] */}
+        <View style={{ paddingHorizontal: theme.spacing.md, marginTop: theme.spacing.lg }}>
+          <Button
+            title="➕ Thêm vào nhật ký hôm nay"
+            variant="primary"
+            onPress={() => setShowAddToDiarySheet(true)}
+            loading={isAddingToDiary}
+            style={{ width: '100%' }}
+          />
+        </View>
       </ScrollView>
+
+      {/* Add to Diary Sheet [NEW] */}
+      {recipe && (
+        <AddRecipeToDiarySheet
+          visible={showAddToDiarySheet}
+          onClose={() => setShowAddToDiarySheet(false)}
+          recipeName={recipe.recipeName}
+          nutrition={{
+            calories: recipe.totalCalories,
+            protein: recipe.totalProtein,
+            carbs: recipe.totalCarbs,
+            fat: recipe.totalFat,
+          }}
+          onConfirm={handleAddToDiary}
+        />
+      )}
     </Screen>
   );
 };

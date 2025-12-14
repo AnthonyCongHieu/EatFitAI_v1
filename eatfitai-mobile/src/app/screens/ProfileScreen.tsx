@@ -390,9 +390,12 @@ const ProfileScreen = (): JSX.Element => {
               email={profile?.email}
               onUploadComplete={async (url: string) => {
                 try {
+                  console.log('[ProfileScreen] Avatar selected:', url);
                   await updateProfile({ avatarUrl: url });
+                  console.log('[ProfileScreen] Avatar updated successfully');
                   showSuccess('profile_updated');
                 } catch (error: any) {
+                  console.error('[ProfileScreen] Avatar update failed:', error);
                   handleApiErrorWithCustomMessage(error, {
                     unknown: {
                       text1: 'Upload avatar',

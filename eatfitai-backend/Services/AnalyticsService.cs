@@ -70,10 +70,11 @@ namespace EatFitAI.API.Services
             var summary = await GetDaySummaryAsync(userId, date);
 
             // Get target calories and macros from NutritionTarget table
-            int? targetCalories = null;
-            int? targetProtein = null;
-            int? targetCarbs = null;
-            int? targetFat = null;
+            // Default values based on standard nutrition guidelines for adults
+            int targetCalories = 2000;  // Default 2000 kcal/day
+            int targetProtein = 50;     // Default 50g protein/day
+            int targetCarbs = 250;      // Default 250g carbs/day
+            int targetFat = 65;         // Default 65g fat/day
             try
             {
                 var d = DateOnly.FromDateTime(date.Date);
@@ -83,15 +84,17 @@ namespace EatFitAI.API.Services
                     .ThenByDescending(t => t.NutritionTargetId) // Lấy record mới nhất nếu cùng ngày
                     .FirstOrDefaultAsync();
                 
-                if (nutritionTarget != null)
+                // CHỈ sử dụng giá trị từ DB nếu record tồn tại VÀ có giá trị khác 0
+                if (nutritionTarget != null && nutritionTarget.TargetCalories > 0)
                 {
                     targetCalories = nutritionTarget.TargetCalories;
-                    targetProtein = nutritionTarget.TargetProtein;
-                    targetCarbs = nutritionTarget.TargetCarb; // Model dùng TargetCarb (singular)
-                    targetFat = nutritionTarget.TargetFat;
+                    targetProtein = nutritionTarget.TargetProtein > 0 ? nutritionTarget.TargetProtein : targetProtein;
+                    targetCarbs = nutritionTarget.TargetCarb > 0 ? nutritionTarget.TargetCarb : targetCarbs;
+                    targetFat = nutritionTarget.TargetFat > 0 ? nutritionTarget.TargetFat : targetFat;
                 }
             }
-            catch { /* ignore target lookup errors */ }
+            catch { /* ignore target lookup errors, use defaults */ }
+
 
             // Get meal diary entries for the day
             var mealEntries = await _mealDiaryService.GetUserMealDiariesAsync(userId, date);
@@ -111,6 +114,9 @@ namespace EatFitAI.API.Services
                 })
                 .OrderBy(g => g.MealTypeId)
                 .ToList();
+
+            // DEBUG: Log target values
+            Console.WriteLine($"[DEBUG] DaySummary - User: {userId}, TargetCalories: {targetCalories}, TargetProtein: {targetProtein}, TargetCarbs: {targetCarbs}, TargetFat: {targetFat}");
 
             return new DaySummaryDto
             {
