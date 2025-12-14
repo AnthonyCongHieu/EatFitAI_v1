@@ -90,7 +90,7 @@ Response:
 }
 ```
 
-### Nutrition Advice (Gemini AI)
+### Nutrition Advice (Ollama AI)
 
 ```bash
 POST /nutrition-advice
@@ -114,11 +114,11 @@ Response:
   "carbs": 312,
   "fat": 83,
   "explanation": "Dựa trên TDEE 2500 kcal cho người nam 25 tuổi, vận động vừa phải",
-  "source": "gemini"
+  "source": "ollama"
 }
 ```
 
-### Meal Insight (Gemini AI)
+### Meal Insight (Ollama AI)
 
 ```bash
 POST /meal-insight
@@ -139,28 +139,11 @@ Response:
   "insight": "Bữa ăn thiếu protein, nên bổ sung thêm thịt hoặc trứng",
   "score": 7,
   "suggestions": ["Thêm 2 quả trứng", "Ăn thêm rau xanh"],
-  "source": "gemini"
+  "source": "ollama"
 }
 ```
 
-## 🔑 Gemini API Setup
-
-To enable AI-powered nutrition advice:
-
-1. Get API Key from [Google AI Studio](https://aistudio.google.com/apikey)
-2. Create `.env` file in `ai-provider/` folder:
-   ```bash
-   GEMINI_API_KEY=your_api_key_here
-   ```
-3. Install new dependencies:
-   ```bash
-   pip install google-generativeai python-dotenv
-   ```
-4. Restart the service
-
-**Note**: Without Gemini API key, the service will use Mifflin-St Jeor formula as fallback.
-
-## 🏠 Ollama Local AI Setup (Recommended)
+## 🏠 Ollama Local AI Setup
 
 For self-hosted AI without external API dependencies:
 
@@ -208,8 +191,7 @@ curl -X POST http://localhost:5050/nutrition-advice ^
 
 **Priority Order:**
 1. Ollama local (if available)
-2. Gemini API (if configured)
-3. Mifflin-St Jeor formula (fallback)
+2. Mifflin-St Jeor formula (fallback)
 
 ## 📋 Model File Location
 

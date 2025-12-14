@@ -226,55 +226,34 @@ Response:
 1. **Phụ thuộc Ollama local** - Cần chạy service riêng
 2. **Response time chậm** - 3-10s per request
 3. **Không có caching** - Tính lại mỗi lần
-4. **Chưa có Gemini fallback** - Chỉ có formula fallback
 
 #### Hướng Dẫn Cải Thiện
 
-**Cải thiện 1: Thêm Gemini API Fallback** (6 giờ)
+**Cải thiện 1: Thêm Response Caching** (4 giờ)
 
 ```python
 # nutrition_llm.py
-import google.generativeai as genai
+from functools import lru_cache
+import hashlib
 
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+@lru_cache(maxsize=100)
+def get_nutrition_advice_cached(gender, age, height_cm, weight_kg, activity_level, goal):
+    return get_nutrition_advice(gender, age, height_cm, weight_kg, activity_level, goal)
 
-def get_nutrition_advice_gemini_api(gender, age, height_cm, weight_kg, activity_level, goal):
-    """Fallback to Gemini when Ollama fails"""
-    if not GEMINI_API_KEY:
-        return None
-    
-    genai.configure(api_key=GEMINI_API_KEY)
-    model = genai.GenerativeModel('gemini-pro')
-    
-    prompt = f"""
-    Tính toán nhu cầu dinh dưỡng cho:
-    - Giới tính: {gender}
-    - Tuổi: {age}
-    - Chiều cao: {height_cm}cm
-    - Cân nặng: {weight_kg}kg
-    - Mức hoạt động: {activity_level}
-    - Mục tiêu: {goal}
-    
-    Trả về JSON: {{"calories": int, "protein": int, "carbs": int, "fat": int}}
-    """
-    
-    response = model.generate_content(prompt)
-    return parse_json_response(response.text)
+# Hoặc dùng Redis cho multi-instance
+import redis
+redis_client = redis.Redis()
 
-# Main function với 3-tier fallback
-def get_nutrition_advice(gender, age, height_cm, weight_kg, activity_level, goal):
-    # Try 1: Ollama
-    result = get_nutrition_advice_ollama(...)
-    if result:
-        return result
+def get_nutrition_advice_redis(gender, age, height_cm, weight_kg, activity_level, goal):
+    cache_key = f"nutrition:{gender}:{age}:{height_cm}:{weight_kg}:{activity_level}:{goal}"
     
-    # Try 2: Gemini API
-    result = get_nutrition_advice_gemini_api(...)
-    if result:
-        return result
+    cached = redis_client.get(cache_key)
+    if cached:
+        return json.loads(cached)
     
-    # Try 3: Formula fallback
-    return calculate_nutrition_mifflin(...)
+    result = get_nutrition_advice(...)
+    redis_client.set(cache_key, json.dumps(result), ex=86400)  # 24h
+    return result
 ```
 
 **Cải thiện 2: Thêm Response Caching** (4 giờ)
@@ -608,9 +587,9 @@ def parse_voice_command_ollama(text: str):
 
 | Task | Effort | Impact | Priority |
 |------|--------|--------|----------|
-| Gemini API fallback | 6h | HIGH | P0 |
-| Response caching | 4h | MEDIUM | P1 |
-| Confidence tuning | 4h | LOW | P2 |
+| Response caching | 4h | HIGH | P0 |
+| Confidence tuning | 4h | MEDIUM | P1 |
+| Batch image processing | 8h | LOW | P2 |
 
 ### 3.2 Trung Hạn (1-2 Tháng)
 
@@ -694,9 +673,9 @@ logging.basicConfig(
 ### Ưu Tiên Cải Thiện
 
 1. **🔴 CRITICAL**: Train YOLOv8 cho món Việt (40h)
-2. **🟡 HIGH**: Thêm Gemini API fallback (6h)
-3. **🟡 HIGH**: Response caching (4h)
-4. **🟢 MEDIUM**: Vosk offline STT (12h)
+2. **🟡 HIGH**: Response caching (4h)
+3. **🟡 HIGH**: Vosk offline STT (12h)
+4. **🟢 MEDIUM**: Recipe nutrition info (8h)
 
 ---
 

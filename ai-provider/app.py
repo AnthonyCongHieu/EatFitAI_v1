@@ -249,8 +249,8 @@ def detect() -> Response | tuple[Dict[str, str], int]:
 # Import nutrition LLM service
 try:
     from nutrition_llm import (
-        get_nutrition_advice_gemini as get_nutrition_advice,
-        get_meal_insight_gemini as get_meal_insight,
+        get_nutrition_advice,
+        get_meal_insight,
         parse_voice_command_ollama
     )
     NUTRITION_LLM_AVAILABLE = True
@@ -278,7 +278,7 @@ def nutrition_advice():
         if not NUTRITION_LLM_AVAILABLE:
             return {"error": "Nutrition LLM service not available"}, 503
         
-        result = get_nutrition_advice_gemini(
+        result = get_nutrition_advice(
             gender=data["gender"],
             age=int(data["age"]),
             height_cm=float(data["height"]),
@@ -306,7 +306,7 @@ def meal_insight():
         if not NUTRITION_LLM_AVAILABLE:
             return {"error": "Nutrition LLM service not available"}, 503
         
-        result = get_meal_insight_gemini(
+        result = get_meal_insight(
             meal_items=data.get("items", []),
             total_calories=data.get("totalCalories", 0),
             target_calories=data.get("targetCalories", 2000),

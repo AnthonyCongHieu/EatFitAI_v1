@@ -12,7 +12,7 @@ from typing import Any, Dict, Optional
 
 logger = logging.getLogger(__name__)
 
-# Configuration - Ollama only (Gemini removed)
+# Configuration - Ollama LLM
 OLLAMA_URL = os.getenv("OLLAMA_URL", "http://localhost:11434")
 OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "llama3.2:3b")
 
@@ -299,7 +299,7 @@ TRẢ LỜI JSON VỚI explanation GIẢI THÍCH LÝ DO CỤ THỂ (tại sao se
 
 # ============== MAIN FUNCTION ==============
 
-def get_nutrition_advice_gemini(
+def get_nutrition_advice(
     gender: str,
     age: int,
     height_cm: float,
@@ -308,8 +308,7 @@ def get_nutrition_advice_gemini(
     goal: str
 ) -> Dict[str, Any]:
     """
-    Main function: Try Ollama first, then fallback
-    (Named _gemini for backward compatibility)
+    Main function: Try Ollama first, then fallback to formula
     """
     
     # Priority 1: Ollama local
@@ -319,25 +318,15 @@ def get_nutrition_advice_gemini(
             gender, age, height_cm, weight_kg, activity_level, goal
         )
     
-    # Priority 2: Gemini API (if configured)
-    if GEMINI_API_KEY:
-        logger.info("Ollama not available, trying Gemini")
-        try:
-            import google.generativeai as genai
-            genai.configure(api_key=GEMINI_API_KEY)
-            # ... Gemini implementation (keeping for backup)
-        except:
-            pass
-    
-    # Priority 3: Formula fallback (enabled for production stability)
-    logger.info("LLM not available, using Mifflin-St Jeor formula fallback")
+    # Priority 2: Formula fallback (Mifflin-St Jeor - chuẩn y khoa)
+    logger.info("Ollama not available, using Mifflin-St Jeor formula fallback")
     result = calculate_nutrition_mifflin(gender, age, height_cm, weight_kg, activity_level, goal)
     result["source"] = "formula"
     result["explanation"] = "Sử dụng công thức Mifflin-St Jeor (chuẩn y khoa) - AI tạm thời không khả dụng"
     return result
 
 
-def get_meal_insight_gemini(
+def get_meal_insight(
     meal_items: list,
     total_calories: int,
     target_calories: int,
