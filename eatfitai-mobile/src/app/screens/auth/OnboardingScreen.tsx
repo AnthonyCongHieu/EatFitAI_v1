@@ -113,30 +113,35 @@ const ACTIVITY_OPTIONS = [
     label: t('onboarding.activity_sedentary'),
     desc: t('onboarding.activity_sedentary_desc'),
     multiplier: 1.2,
+    icon: '🪑',
   },
   {
     value: 'light',
     label: t('onboarding.activity_light'),
     desc: t('onboarding.activity_light_desc'),
     multiplier: 1.375,
+    icon: '🚶',
   },
   {
     value: 'moderate',
     label: t('onboarding.activity_moderate'),
     desc: t('onboarding.activity_moderate_desc'),
     multiplier: 1.55,
+    icon: '🏃',
   },
   {
     value: 'active',
     label: t('onboarding.activity_active'),
     desc: t('onboarding.activity_active_desc'),
     multiplier: 1.725,
+    icon: '🏋️',
   },
   {
     value: 'very_active',
     label: t('onboarding.activity_very_active'),
     desc: t('onboarding.activity_very_active_desc'),
     multiplier: 1.9,
+    icon: '🏆',
   },
 ];
 
@@ -359,9 +364,9 @@ const OnboardingScreen = (): JSX.Element => {
       marginBottom: 20,
     },
     progressDot: {
-      height: 4,
+      height: 6,
       flex: 1,
-      borderRadius: 2,
+      borderRadius: 3,
     },
     content: {
       flex: 1,
@@ -387,12 +392,13 @@ const OnboardingScreen = (): JSX.Element => {
       justifyContent: 'center',
     },
     optionButton: {
-      paddingHorizontal: 20,
-      paddingVertical: 12,
-      borderRadius: 16,
+      paddingHorizontal: 24,
+      paddingVertical: 16,
+      borderRadius: 20,
       borderWidth: 2,
-      minWidth: 100,
+      minWidth: 120,
       alignItems: 'center',
+      gap: 8,
     },
     goalCard: {
       width: (width - 72) / 3,
@@ -403,10 +409,13 @@ const OnboardingScreen = (): JSX.Element => {
     },
     activityCard: {
       width: '100%',
-      padding: 16,
+      padding: 18,
       borderRadius: 16,
       marginBottom: 12,
       borderWidth: 2,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 16,
     },
     inputRow: {
       flexDirection: 'row',
@@ -618,15 +627,18 @@ const OnboardingScreen = (): JSX.Element => {
                 accessibilityLabel={`${act.label}: ${act.desc}`}
                 accessibilityState={{ checked: data.activityLevel === act.value }}
               >
-                <ThemedText
-                  weight={data.activityLevel === act.value ? '600' : '400'}
-                  color={data.activityLevel === act.value ? 'primary' : undefined}
-                >
-                  {act.label}
-                </ThemedText>
-                <ThemedText variant="caption" color="textSecondary">
-                  {act.desc}
-                </ThemedText>
+                <ThemedText style={{ fontSize: 28 }}>{act.icon}</ThemedText>
+                <View style={{ flex: 1 }}>
+                  <ThemedText
+                    weight={data.activityLevel === act.value ? '600' : '400'}
+                    color={data.activityLevel === act.value ? 'primary' : undefined}
+                  >
+                    {act.label}
+                  </ThemedText>
+                  <ThemedText variant="caption" color="textSecondary">
+                    {act.desc}
+                  </ThemedText>
+                </View>
               </Pressable>
             ))}
           </Animated.View>

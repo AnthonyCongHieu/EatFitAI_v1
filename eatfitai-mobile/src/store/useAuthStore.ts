@@ -20,7 +20,7 @@ type AuthState = {
   init: () => Promise<void>;
   login: (email: string, password: string) => Promise<{ needsOnboarding: boolean }>;
   register: (name: string, email: string, password: string) => Promise<void>;
-  signInWithGoogle: () => Promise<void>;
+  signInWithGoogle: () => Promise<{ needsOnboarding: boolean }>;
   logout: () => Promise<void>;
   forgotPassword: (email: string) => Promise<string | undefined>;
   resetPassword: (email: string, code: string, newPassword: string) => Promise<void>;
@@ -165,6 +165,9 @@ export const useAuthStore = create<AuthState>((set: any) => ({
     setAccessTokenMem(accessToken);
 
     set({ isAuthenticated: true, user: data?.user ?? null });
+
+    // Return needsOnboarding flag for navigation decision
+    return { needsOnboarding: data?.needsOnboarding ?? false };
   },
 
   logout: async () => {

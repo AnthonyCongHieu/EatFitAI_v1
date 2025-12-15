@@ -1,0 +1,99 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "🤖 AI Provider (Python Flask)",
+            "type": "shell",
+            "command": ".\\venv\\Scripts\\python.exe app.py",
+            "options": {
+                "cwd": "${workspaceFolder}/ai-provider"
+            },
+            "presentation": {
+                "reveal": "always",
+                "panel": "dedicated",
+                "group": "EatFitAI",
+                "echo": true,
+                "focus": false
+            },
+            "problemMatcher": [],
+            "icon": {
+                "id": "robot",
+                "color": "terminal.ansiMagenta"
+            },
+            "isBackground": true
+        },
+        {
+            "label": "🔧 Backend API (.NET Core)",
+            "type": "shell",
+            "command": "dotnet run",
+            "options": {
+                "cwd": "${workspaceFolder}/eatfitai-backend"
+            },
+            "presentation": {
+                "reveal": "always",
+                "panel": "dedicated",
+                "group": "EatFitAI",
+                "echo": true,
+                "focus": false
+            },
+            "problemMatcher": [],
+            "icon": {
+                "id": "server",
+                "color": "terminal.ansiBlue"
+            },
+            "isBackground": true
+        },
+        {
+            "label": "📱 Mobile App (Expo)",
+            "type": "shell",
+            "command": "npx expo start --clear",
+            "options": {
+                "cwd": "${workspaceFolder}/eatfitai-mobile"
+            },
+            "presentation": {
+                "reveal": "always",
+                "panel": "dedicated",
+                "group": "EatFitAI",
+                "echo": true,
+                "focus": true
+            },
+            "problemMatcher": [],
+            "icon": {
+                "id": "device-mobile",
+                "color": "terminal.ansiGreen"
+            },
+            "isBackground": true
+        },
+        {
+            "label": "🚀 Start All Services",
+            "dependsOn": [
+                "🤖 AI Provider (Python Flask)",
+                "🔧 Backend API (.NET Core)",
+                "📱 Mobile App (Expo)"
+            ],
+            "dependsOrder": "parallel",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "runOptions": {
+                "runOn": "default"
+            },
+            "problemMatcher": [],
+            "icon": {
+                "id": "rocket",
+                "color": "terminal.ansiYellow"
+            }
+        },
+        {
+            "type": "typescript",
+            "tsconfig": "eatfitai-mobile/tsconfig.json",
+            "option": "watch",
+            "problemMatcher": [
+                "$tsc-watch"
+            ],
+            "group": "build",
+            "label": "tsc: watch - eatfitai-mobile/tsconfig.json"
+        }
+    ]
+}

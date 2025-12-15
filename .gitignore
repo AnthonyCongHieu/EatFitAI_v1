@@ -3,7 +3,8 @@ node_modules/
 bin/
 obj/
 .vs/
-.vscode/
+.vscode/*
+!.vscode/tasks.json
 .env
 .env.*
 ios/Pods/

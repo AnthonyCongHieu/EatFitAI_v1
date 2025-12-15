@@ -74,13 +74,19 @@ const LoginScreen = ({ navigation }: Props): JSX.Element => {
     try {
       setLoading(true);
       console.log('[LoginScreen] Starting Google Sign-In...');
-      await signInWithGoogle();
+      const result = await signInWithGoogle();
       Toast.show({
         type: 'success',
         text1: 'Đăng nhập với Google thành công',
         text2: 'Chào mừng bạn!',
       });
-      navigation.reset({ index: 0, routes: [{ name: 'AppTabs' }] });
+
+      // Check onboarding status - user mới cần hoàn tất onboarding
+      if (result.needsOnboarding) {
+        navigation.reset({ index: 0, routes: [{ name: 'Onboarding' }] });
+      } else {
+        navigation.reset({ index: 0, routes: [{ name: 'AppTabs' }] });
+      }
     } catch (e: any) {
       console.error('[LoginScreen] Google Sign-In error:', e);
       console.error('[LoginScreen] Error message:', e?.message);

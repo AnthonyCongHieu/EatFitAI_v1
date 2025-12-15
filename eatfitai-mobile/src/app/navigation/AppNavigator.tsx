@@ -54,9 +54,6 @@ const AppNavigator = (): JSX.Element => {
             statusBarStyle: theme.statusBarStyle,
           }}
         >
-          {/* Onboarding - Available in both authenticated and unauthenticated states */}
-          <Stack.Screen name="Onboarding" component={OnboardingScreen} />
-
           {!isAuthenticated ? (
             // Chưa đăng nhập: Hiển thị stack đăng nhập/đăng ký
             <>
@@ -64,6 +61,7 @@ const AppNavigator = (): JSX.Element => {
               <Stack.Screen name="Login" component={LoginScreen} />
               <Stack.Screen name="Register" component={RegisterScreen} />
               <Stack.Screen name="VerifyEmail" component={VerifyEmailScreen} />
+              <Stack.Screen name="Onboarding" component={OnboardingScreen} />
               <Stack.Screen
                 name="ForgotPassword"
                 component={ForgotPasswordScreen}

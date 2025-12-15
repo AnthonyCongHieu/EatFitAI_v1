@@ -158,13 +158,19 @@ const RegisterScreen = ({ navigation }: Props): JSX.Element => {
   const onGoogle = useCallback(async () => {
     try {
       setGoogleLoading(true);
-      await signInWithGoogle();
+      const result = await signInWithGoogle();
       Toast.show({
         type: 'success',
         text1: 'Đăng ký với Google thành công',
         text2: 'Chào mừng bạn!',
       });
-      navigation.reset({ index: 0, routes: [{ name: 'AppTabs' }] });
+
+      // Check onboarding status - user mới từ Google cần hoàn tất onboarding
+      if (result.needsOnboarding) {
+        navigation.reset({ index: 0, routes: [{ name: 'Onboarding' }] });
+      } else {
+        navigation.reset({ index: 0, routes: [{ name: 'AppTabs' }] });
+      }
     } catch (e: any) {
       console.error('[RegisterScreen] Google Sign-In error:', e);
       Toast.show({
