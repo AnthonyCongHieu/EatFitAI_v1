@@ -31,6 +31,7 @@ import type { RootStackParamList } from '../../types';
 import { t } from '../../../i18n/vi';
 import Toast from 'react-native-toast-message';
 import { AnimatedEmptyState } from '../../../components/ui/AnimatedEmptyState';
+import { FoodEntryCard } from '../../../components/ui/FoodEntryCard';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -315,66 +316,46 @@ const MealDiaryScreen = (): JSX.Element => {
     );
   };
 
-  // Render food card đẹp hơn
+  // Render food card dẹp hơn với FoodEntryCard
   const renderFoodCard = useCallback(
-    (entry: DiaryEntry, index: number) => (
-      <Animated.View
-        key={entry.id}
-        entering={FadeIn.delay(index * 50)}
-        layout={Layout.springify()}
-      >
-        <Pressable
-          onPress={() => handleEditGrams(entry)}
-          style={({ pressed }) => [
-            styles.foodCard,
-            {
-              backgroundColor: isDark ? theme.colors.card : '#fff',
-              borderColor: theme.colors.border,
-              opacity: pressed ? 0.9 : 1,
-              transform: [{ scale: pressed ? 0.98 : 1 }],
-            },
-          ]}
-        >
-          <View style={{ flex: 1 }}>
-            <ThemedText variant="body" weight="600" numberOfLines={1}>
-              {entry.foodName}
-            </ThemedText>
-            <View style={styles.foodMeta}>
-              <ThemedText variant="caption" color="primary" weight="700">
-                {Math.round(entry.calories || 0)} kcal
-              </ThemedText>
-              <ThemedText variant="caption" color="textSecondary">
-                {' '}
-                • {entry.quantityText || '--'}
-              </ThemedText>
-            </View>
-            <View style={styles.foodMacros}>
-              <ThemedText variant="caption" color="textSecondary">
-                P {entry.protein?.toFixed(0) || 0}g • C {entry.carbs?.toFixed(0) || 0}g • F{' '}
-                {entry.fat?.toFixed(0) || 0}g
-              </ThemedText>
-            </View>
-          </View>
+    (entry: DiaryEntry, index: number) => {
+      const handleDelete = async () => {
+        try {
+          await diaryService.deleteEntry(entry.id);
+          await refetch();
+          await refreshSummary();
+          Toast.show({
+            type: 'success',
+            text1: 'Đã xóa',
+            text2: `Đã xóa ${entry.foodName}`,
+          });
+        } catch (error: any) {
+          console.error('Failed to delete entry:', error);
+          Toast.show({
+            type: 'error',
+            text1: 'Lỗi xóa',
+            text2: error?.message || 'Không thể xóa món ăn. Thử lại sau.',
+          });
+        }
+      };
 
-          <View style={styles.foodBadge}>
-            {entry.sourceMethod === 'ai' ? (
-              <View style={[styles.sourceBadge, { backgroundColor: theme.colors.primary + '20' }]}>
-                <ThemedText variant="caption" color="primary" weight="600">
-                  🤖 AI
-                </ThemedText>
-              </View>
-            ) : (
-              <View style={[styles.sourceBadge, { backgroundColor: theme.colors.border }]}>
-                <ThemedText variant="caption" color="textSecondary" weight="600">
-                  ✏️
-                </ThemedText>
-              </View>
-            )}
-          </View>
-        </Pressable>
-      </Animated.View>
-    ),
-    [handleEditGrams, isDark, theme],
+      return (
+        <FoodEntryCard
+          key={entry.id}
+          id={entry.id}
+          foodName={entry.foodName}
+          calories={entry.calories || 0}
+          protein={entry.protein || 0}
+          carbs={entry.carbs || 0}
+          fat={entry.fat || 0}
+          quantityText={entry.quantityText ?? undefined}
+          sourceMethod={entry.sourceMethod as 'ai' | 'manual' | 'search'}
+          onPress={() => handleEditGrams(entry)}
+          onDelete={handleDelete}
+        />
+      );
+    },
+    [handleEditGrams, refetch, refreshSummary],
   );
 
   // Render meal section với design đẹp hơn
@@ -390,8 +371,7 @@ const MealDiaryScreen = (): JSX.Element => {
       const mealCalories = item.entries.reduce((sum, e) => sum + (e.calories || 0), 0);
 
       return (
-        <Animated.View
-          entering={FadeInUp.delay(index * 100).springify()}
+        <View
           style={{ marginBottom: 20, paddingHorizontal: 16 }}
         >
           {/* Meal header */}
@@ -413,7 +393,7 @@ const MealDiaryScreen = (): JSX.Element => {
           <View style={{ gap: 8 }}>
             {item.entries.map((entry, idx) => renderFoodCard(entry, idx))}
           </View>
-        </Animated.View>
+        </View>
       );
     },
     [renderFoodCard],
@@ -685,7 +665,6 @@ const MealDiaryScreen = (): JSX.Element => {
           <FlashList
             data={groupedEntries}
             renderItem={({ item, index }) => renderMealSection({ item, index })}
-            estimatedItemSize={200}
             showsVerticalScrollIndicator={false}
             contentContainerStyle={{ paddingBottom: 100 }}
             ListHeaderComponent={renderSummaryHeader}

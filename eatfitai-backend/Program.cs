@@ -105,6 +105,10 @@ builder.Services.AddSwaggerGen(c =>
 builder.Services.AddDbContext<EatFitAIDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
+// Add ApplicationDbContext (custom with WeeklyCheckIns)
+builder.Services.AddDbContext<ApplicationDbContext>(options =>
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+
 // Caching for features like password reset
 builder.Services.AddMemoryCache();
 
@@ -133,6 +137,7 @@ builder.Services.AddScoped<IUserFoodItemService, UserFoodItemService>();
 builder.Services.AddScoped<IAiFoodMapService, AiFoodMapService>();
 builder.Services.AddScoped<IRecipeSuggestionService, RecipeSuggestionService>();
 builder.Services.AddScoped<INutritionInsightService, NutritionInsightService>();
+builder.Services.AddScoped<AIReviewService>(); // AI Weekly Review
 builder.Services.AddScoped<IVisionCacheService, VisionCacheService>();
 
 // Voice AI service

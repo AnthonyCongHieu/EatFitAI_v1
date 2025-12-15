@@ -26,6 +26,7 @@ import {
 } from '../../../utils/translate';
 import { glassStyles } from '../../../components/ui/GlassCard';
 import { t } from '../../../i18n/vi';
+import Toast from 'react-native-toast-message';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -125,10 +126,18 @@ const NutritionInsightsScreen = (): JSX.Element => {
     setApplying(true);
     try {
       await aiService.applyAdaptiveTarget(adaptiveTarget.suggestedTarget);
-      alert(t('nutrition_insights.apply_success'));
+      Toast.show({
+        type: 'success',
+        text1: t('nutrition_insights.apply_success'),
+        visibilityTime: 2000,
+      });
       navigation.goBack();
     } catch (err: any) {
-      alert(t('nutrition_insights.apply_error') + ': ' + err?.message);
+      Toast.show({
+        type: 'error',
+        text1: t('nutrition_insights.apply_error'),
+        text2: err?.message,
+      });
     } finally {
       setApplying(false);
     }

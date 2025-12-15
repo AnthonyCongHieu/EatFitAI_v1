@@ -86,6 +86,12 @@ export const tokenStorage = {
     }
 
     await SecureStore.setItemAsync(ACCESS_TOKEN_KEY, accessToken);
+    if (__DEV__) {
+      console.log('[SecureStore] Saved access token:', {
+        tokenLength: accessToken.length,
+        hasExpiry: !!accessTokenExpiresAt,
+      });
+    }
     if (
       typeof accessTokenExpiresAt === 'string' &&
       !isNaN(Date.parse(accessTokenExpiresAt))
@@ -98,6 +104,14 @@ export const tokenStorage = {
       refreshToken.trim().length > 0
     ) {
       await SecureStore.setItemAsync(REFRESH_TOKEN_KEY, refreshToken);
+      if (__DEV__) {
+        console.log('[SecureStore] Saved refresh token:', {
+          tokenLength: refreshToken.length,
+          hasExpiry: !!refreshTokenExpiresAt,
+        });
+      }
+    } else if (__DEV__) {
+      console.warn('[SecureStore] No valid refresh token to save - this will cause auth issues later!');
     }
     if (
       typeof refreshTokenExpiresAt === 'string' &&

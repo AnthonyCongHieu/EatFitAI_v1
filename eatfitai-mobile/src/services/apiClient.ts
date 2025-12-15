@@ -31,6 +31,17 @@ if (__DEV__) {
 
 // In-memory access token cache lives in authTokens module
 
+// Callback khi auth expired (để tránh circular dependency với useAuthStore)
+let onAuthExpiredCallback: (() => void) | null = null;
+
+/**
+ * Register callback sẽ được gọi khi refresh token fails
+ * Được dùng bởi useAuthStore để trigger logout
+ */
+export const setAuthExpiredCallback = (callback: (() => void) | null): void => {
+  onAuthExpiredCallback = callback;
+};
+
 // Queue for 401 refresh handling
 type FailedQueueItem = {
   resolve: (value?: unknown) => void;
@@ -244,6 +255,20 @@ apiClient.interceptors.response.use(
         } catch (clearError) {
           console.warn('[EatFitAI] Failed to clear tokens on refresh error:', clearError);
         }
+        processQueue(err, null);
+
+        // Trigger auto-logout callback để redirect về Login
+        if (onAuthExpiredCallback) {
+          if (__DEV__) {
+            console.log('[EatFitAI] Triggering auth expired callback (auto-logout)...');
+          }
+          try {
+            onAuthExpiredCallback();
+          } catch (callbackError) {
+            console.error('[EatFitAI] Auth expired callback error:', callbackError);
+          }
+        }
+
         processQueue(err, null);
         return Promise.reject(err);
       } finally {

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { View, StyleSheet } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { ThemedText } from '../ThemedText';
@@ -7,19 +7,35 @@ import { useAppTheme } from '../../theme/ThemeProvider';
 
 const TypingText = ({ text, style }: { text: string; style?: any }) => {
   const [displayedText, setDisplayedText] = useState('');
+  const indexRef = useRef(0);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
-    let index = 0;
+    // Reset khi text thay đổi
+    indexRef.current = 0;
     setDisplayedText('');
-    const intervalId = setInterval(() => {
-      setDisplayedText((prev) => prev + text.charAt(index));
-      index++;
-      if (index === text.length) {
-        clearInterval(intervalId);
-      }
-    }, 50); // Typing speed
 
-    return () => clearInterval(intervalId);
+    // Clear interval cũ nếu có
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+    }
+
+    intervalRef.current = setInterval(() => {
+      if (indexRef.current < text.length) {
+        setDisplayedText(text.slice(0, indexRef.current + 1));
+        indexRef.current++;
+      } else {
+        if (intervalRef.current) {
+          clearInterval(intervalRef.current);
+        }
+      }
+    }, 50);
+
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+      }
+    };
   }, [text]);
 
   return <ThemedText style={style}>{displayedText}</ThemedText>;
@@ -29,11 +45,12 @@ export const WelcomeHeader = () => {
   const { user } = useAuthStore();
   const { theme } = useAppTheme();
 
-  const getGreeting = () => {
+  const getGreeting = (): { emoji: string; text: string } => {
     const hour = new Date().getHours();
-    if (hour < 12) return 'Chào buổi sáng';
-    if (hour < 18) return 'Chào buổi chiều';
-    return 'Chào buổi tối';
+    if (hour >= 5 && hour < 12) return { emoji: '🌅', text: 'Chào buổi sáng' };
+    if (hour >= 12 && hour < 17) return { emoji: '☀️', text: 'Chào buổi chiều' };
+    if (hour >= 17 && hour < 22) return { emoji: '🌙', text: 'Chào buổi tối' };
+    return { emoji: '🌃', text: 'Khuya rồi' }; // Late night
   };
 
   const getInsight = () => {
@@ -50,15 +67,22 @@ export const WelcomeHeader = () => {
     return insights[day % insights.length];
   };
 
+  const greeting = getGreeting();
+
   return (
     <View style={styles.container}>
       <Animated.View entering={FadeInDown.delay(100).springify()}>
-        <ThemedText
-          variant="body"
-          style={{ color: theme.colors.textSecondary, marginBottom: 4 }}
-        >
-          {getGreeting()},
-        </ThemedText>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+          <ThemedText variant="body" style={{ fontSize: 20 }}>
+            {greeting.emoji}
+          </ThemedText>
+          <ThemedText
+            variant="body"
+            style={{ color: theme.colors.textSecondary }}
+          >
+            {greeting.text},
+          </ThemedText>
+        </View>
         <TView style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap' }}>
           <ThemedText
             variant="h2"

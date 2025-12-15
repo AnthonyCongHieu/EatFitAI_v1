@@ -87,6 +87,13 @@ public class WeeklyCheckIn
     public decimal? SuggestedCalories { get; set; }
     
     /// <summary>
+    /// Physical & Mental State - Subjective metrics
+    /// </summary>
+    public int? SleepQuality { get; set; }   // 1-5: poor to excellent
+    public int? HungerLevel { get; set; }    // 1-5: always full to very hungry
+    public int? StressLevel { get; set; }    // 1-5: low to very high
+    
+    /// <summary>
     /// User's personal notes for the week
     /// </summary>
     public string? Notes { get; set; }

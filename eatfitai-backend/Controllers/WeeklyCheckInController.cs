@@ -195,9 +195,13 @@ public class WeeklyCheckInController : ControllerBase
             AvgFat = weeklyStats.AvgFat,
             DaysLogged = weeklyStats.DaysLogged,
             Goal = goal,
-            AiSuggestion = aiSuggestion,
+           AiSuggestion = aiSuggestion,
             IsOnTrack = isOnTrack,
             SuggestedCalories = suggestedCalories,
+            // Physical & Mental State
+            SleepQuality = request.SleepQuality,
+            HungerLevel = request.HungerLevel,
+            StressLevel = request.StressLevel,
             Notes = request.Notes
         };
 
@@ -445,6 +449,12 @@ public class WeeklyCheckInController : ControllerBase
     {
         public decimal WeightKg { get; set; }
         public string? Goal { get; set; }
+        
+        // Physical & Mental State (subjective metrics only)
+        public int? SleepQuality { get; set; }  // 1-5
+        public int? HungerLevel { get; set; }   // 1-5
+        public int? StressLevel { get; set; }   // 1-5 (optional)
+        
         public string? Notes { get; set; }
     }
 

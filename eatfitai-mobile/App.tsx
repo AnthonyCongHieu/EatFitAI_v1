@@ -26,7 +26,25 @@ import ErrorBoundary from './src/components/ErrorBoundary';
 import { initAnalytics } from './src/services/analytics';
 import { initErrorTracking } from './src/services/errorTracking';
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: (failureCount, error: any) => {
+        // Stop retry on 401 Unauthorized để tránh infinite loop
+        // Auth interceptor sẽ tự động logout user
+        if (error?.response?.status === 401) {
+          if (__DEV__) {
+            console.log('[QueryClient] Skipping retry for 401 Unauthorized');
+          }
+          return false;
+        }
+        // Default retry logic (max 3 lần)
+        return failureCount < 3;
+      },
+    },
+  },
+});
+
 
 // Giu splash toi khi font duoc load day du
 void SplashScreen.preventAutoHideAsync();
@@ -37,9 +55,9 @@ const AppInner = () => {
   const { theme } = useAppTheme();
 
   useEffect(() => {
-    SystemUI.setBackgroundColorAsync(theme.colors.background).catch(() => {});
-    initErrorTracking().catch(() => {});
-    initAnalytics().catch(() => {});
+    SystemUI.setBackgroundColorAsync(theme.colors.background).catch(() => { });
+    initErrorTracking().catch(() => { });
+    initAnalytics().catch(() => { });
   }, [theme.colors.background]);
 
   // Ping backend health on startup and notify if unreachable

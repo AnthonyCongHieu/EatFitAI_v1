@@ -3,7 +3,7 @@
 import { create } from 'zustand';
 
 import { API_BASE_URL } from '../config/env';
-import apiClient from '../services/apiClient';
+import apiClient, { setAuthExpiredCallback } from '../services/apiClient';
 import { setAccessTokenMem } from '../services/authTokens';
 import { tokenStorage } from '../services/secureStore';
 import { initAuthSession, updateSessionFromAuthResponse } from '../services/authSession';
@@ -57,6 +57,17 @@ export const useAuthStore = create<AuthState>((set: any) => ({
 
   init: async () => {
     try {
+      // Register callback để auto-logout khi refresh token fails
+      setAuthExpiredCallback(() => {
+        if (__DEV__) {
+          console.log('[useAuthStore] Auth expired callback triggered - logging out');
+        }
+        // Gọi getState() để access store actions từ bên ngoài component
+        useAuthStore.getState().logout().catch((err) => {
+          console.error('[useAuthStore] Auto-logout failed:', err);
+        });
+      });
+
       const token = await tokenStorage.getAccessToken();
       if (token) {
         setAccessTokenMem(token);

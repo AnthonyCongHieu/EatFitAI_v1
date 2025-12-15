@@ -30,14 +30,14 @@ interface GoogleUser {
 }
 
 interface GoogleSignInModule {
-    configure: (config: any) => void;
-    hasPlayServices: (options?: { showPlayServicesUpdateDialog?: boolean }) => Promise<boolean>;
-    signIn: () => Promise<GoogleUser>;
-    signInSilently: () => Promise<GoogleUser | null>;
-    signOut: () => Promise<void>;
-    revokeAccess: () => Promise<void>;
-    getCurrentUser: () => Promise<GoogleUser | null>;
-    isSignedIn: () => Promise<boolean>;
+    configure: (config?: any) => void;
+    hasPlayServices: (options?: any) => Promise<boolean>;
+    signIn: () => Promise<any>; // Changed to any to match actual library
+    signInSilently: () => Promise<any | null>;
+    signOut: () => Promise<any>;
+    revokeAccess: () => Promise<any>;
+    getCurrentUser: () => Promise<any | null>;
+    isSignedIn?: () => Promise<boolean>;
 }
 
 // Placeholder - will be replaced with actual import when package is installed
@@ -51,7 +51,7 @@ const loadGoogleModule = async (): Promise<boolean> => {
     try {
         // @ts-ignore - Package may not be installed yet
         const module = await import('@react-native-google-signin/google-signin');
-        GoogleSignin = module.GoogleSignin;
+        GoogleSignin = module.GoogleSignin as any as GoogleSignInModule;
         statusCodes = module.statusCodes;
         return true;
     } catch (error) {
@@ -163,7 +163,7 @@ export const googleAuthService = {
             console.log('[GoogleAuth] Raw response:', JSON.stringify(response, null, 2));
 
             // API mới có thể trả về data ở response.data thay vì response.user
-            const userInfo = response.data || response;
+            const userInfo = (response as any).data || response;
             const user = userInfo.user || userInfo;
 
             if (!user || !user.email) {
@@ -275,7 +275,7 @@ export const googleAuthService = {
      */
     isSignedIn: async (): Promise<boolean> => {
         try {
-            if (!GoogleSignin) return false;
+            if (!GoogleSignin || !GoogleSignin.isSignedIn) return false;
             return await GoogleSignin.isSignedIn();
         } catch (error) {
             return false;

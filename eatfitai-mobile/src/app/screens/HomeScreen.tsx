@@ -15,6 +15,7 @@ import Animated, {
   useAnimatedStyle,
   withTiming,
   interpolate,
+  useAnimatedScrollHandler,
 } from 'react-native-reanimated';
 import Toast from 'react-native-toast-message';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
@@ -42,6 +43,8 @@ import { ScreenHeader } from '../../components/ui/ScreenHeader';
 import { MetricCard } from '../../components/ui/MetricCard';
 import { InsightsCard } from '../../components/ui/InsightsCard';
 import CircularProgress from '../../components/ui/CircularProgress';
+import CalorieRing from '../../components/ui/CalorieRing';
+import { FoodEntryCard } from '../../components/ui/FoodEntryCard';
 import SmartQuickActions from '../../components/SmartQuickActions';
 import FavoritesList from '../../components/FavoritesList';
 import { SmartAddSheet } from '../../components/ui/SmartAddSheet';
@@ -52,6 +55,8 @@ import { GlassCard, glassStyles } from '../../components/ui/GlassCard';
 import { GradientBackground } from '../../components/ui/GradientBackground';
 import { WelcomeHeader } from '../../components/home/WelcomeHeader';
 import { VoiceSheet } from '../../components/voice/VoiceSheet';
+import { useSmartContext } from '../../hooks/useSmartContext';
+import * as Haptics from 'expo-haptics';
 
 type AddOption = 'search' | 'custom' | 'ai';
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
@@ -85,14 +90,18 @@ const HomeScreen = (): JSX.Element => {
   const [showAddModal, setShowAddModal] = useState(false);
   const [serverDown, setServerDown] = useState(false);
   const [showVoiceSheet, setShowVoiceSheet] = useState(false);
-  const { currentStreak, longestStreak, checkStreak } = useGamificationStore();
+  const { currentStreak, longestStreak, weeklyLogs, checkStreak, fetchWeeklyLogs } = useGamificationStore();
+
+  // AI-driven context awareness (2026 trend)
+  const smartContext = useSmartContext(summary);
 
   useFocusEffect(
     useCallback(() => {
       checkStreak();
+      fetchWeeklyLogs();
       // Refetch summary khi screen focus lại để đảm bảo dữ liệu mới nhất
       refetch();
-    }, [checkStreak, refetch]),
+    }, [checkStreak, fetchWeeklyLogs, refetch]),
   );
 
   const showCommonErrors = useCallback(
@@ -122,6 +131,15 @@ const HomeScreen = (): JSX.Element => {
   const proteinValue = useSharedValue(0);
   const carbsValue = useSharedValue(0);
   const fatValue = useSharedValue(0);
+
+  // Parallax scroll effect (Phase 3)
+  const scrollY = useSharedValue(0);
+
+  const scrollHandler = useAnimatedScrollHandler({
+    onScroll: (event) => {
+      scrollY.value = event.contentOffset.y;
+    },
+  });
 
   useEffect(() => {
     fetchSummary()
@@ -331,7 +349,7 @@ const HomeScreen = (): JSX.Element => {
           paddingHorizontal: theme.spacing.lg,
           paddingVertical: theme.spacing.xl,
           gap: theme.spacing.xxl,
-          paddingBottom: 100, // Thêm padding để FAB không che diary
+          paddingBottom: 140, // 80 (FAB bottom) + 60 (FAB size + margin) để không bị che
         }}
         refreshControl={
           <RefreshControl
@@ -360,15 +378,18 @@ const HomeScreen = (): JSX.Element => {
           </View>
         )}
 
-        <StreakCard
-          currentStreak={currentStreak}
-          longestStreak={longestStreak}
-          onPress={() => {
-            navigation.navigate('Achievements');
-          }}
-        />
+        <Animated.View entering={FadeInUp.delay(150).springify().damping(15).stiffness(100)}>
+          <StreakCard
+            currentStreak={currentStreak}
+            longestStreak={longestStreak}
+            weeklyLogs={weeklyLogs}
+            onPress={() => {
+              navigation.navigate('Achievements');
+            }}
+          />
+        </Animated.View>
 
-        {/* Hero Card - Glassmorphism */}
+        {/* Hero Card - CalorieRing với macro bar tích hợp */}
         <Animated.View entering={FadeInUp.duration(theme.animation.slow).springify()}>
           <View
             style={glass.card}
@@ -376,79 +397,42 @@ const HomeScreen = (): JSX.Element => {
             accessibilityRole="summary"
             accessibilityLabel={`Còn ${Math.round(remainingCalories)} calo. Đã ăn ${summary?.totalCalories || 0} trong ${summary?.targetCalories || 0} calo mục tiêu.`}
           >
-            <View style={{ alignItems: 'center', gap: theme.spacing.md }}>
-              <Animated.Text
-                style={[styles.animatedNumber, remainingCaloriesAnimatedStyle]}
-              >
-                <ThemedText variant="h1" weight="700" shrink>
-                  {t('home.remaining_calories', Math.round(remainingCaloriesValue.value))}
-                </ThemedText>
-              </Animated.Text>
-              <ThemedText variant="body" color="textSecondary" shrink>
-                {t(
-                  'home.eaten_vs_target',
-                  summary?.totalCalories || 0,
-                  summary?.targetCalories || 0,
-                )}
-              </ThemedText>
-              <ProgressBar
-                progress={calorieProgressValue.value}
-                height={8}
-                color={theme.colors.primary}
-                backgroundColor={theme.colors.muted + '30'}
-                animated
-              />
-            </View>
+            <CalorieRing
+              consumed={summary?.totalCalories || 0}
+              target={summary?.targetCalories || 2000}
+              protein={summary?.protein || 0}
+              carbs={summary?.carbs || 0}
+              fat={summary?.fat || 0}
+              showMacros={true}
+              size={180}
+            />
           </View>
         </Animated.View>
 
-        {/* Macro Card - Chất dinh dưỡng đa lượng */}
-        <AppCard title="Dinh dưỡng">
-          <View style={{ flexDirection: 'row', gap: theme.spacing.md }}>
-            <MetricCard
-              icon="fitness"
-              value={proteinValue}
-              label="Protein"
-              color="primary"
-              targetValue={summary?.targetProtein ?? undefined}
-              progress={
-                typeof proteinValue.value === 'number' &&
-                  !Number.isNaN(proteinValue.value) &&
-                  summary?.targetProtein
-                  ? Math.min(1, proteinValue.value / summary.targetProtein)
-                  : 0
-              }
-            />
-            <MetricCard
-              icon="restaurant"
-              value={carbsValue}
-              label="Carbs"
-              color="secondary"
-              targetValue={summary?.targetCarbs ?? undefined}
-              progress={
-                typeof carbsValue.value === 'number' &&
-                  !Number.isNaN(carbsValue.value) &&
-                  summary?.targetCarbs
-                  ? Math.min(1, carbsValue.value / summary.targetCarbs)
-                  : 0
-              }
-            />
-            <MetricCard
-              icon="flame"
-              value={fatValue}
-              label="Chất béo"
-              color="warning"
-              targetValue={summary?.targetFat ?? undefined}
-              progress={
-                typeof fatValue.value === 'number' &&
-                  !Number.isNaN(fatValue.value) &&
-                  summary?.targetFat
-                  ? Math.min(1, fatValue.value / summary.targetFat)
-                  : 0
-              }
-            />
-          </View>
-        </AppCard>
+        {/* Smart Context Banner (AI Suggestion) */}
+        {smartContext.priority >= 2 && (
+          <Animated.View entering={FadeInUp.delay(250).springify()}>
+            <Pressable
+              style={[
+                glass.card,
+                {
+                  padding: theme.spacing.md,
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: theme.spacing.sm,
+                  borderLeftWidth: 3,
+                  borderLeftColor: smartContext.fabAction.color || theme.colors.primary,
+                }
+              ]}
+              onPress={() => setShowAddModal(true)}
+            >
+              <ThemedText style={{ fontSize: 20 }}>💡</ThemedText>
+              <ThemedText variant="bodySmall" style={{ flex: 1, fontWeight: '500' }}>
+                {smartContext.quickSuggestion}
+              </ThemedText>
+            </Pressable>
+          </Animated.View>
+        )}
 
         {/* AI Insights */}
         <InsightsCard />
@@ -488,61 +472,18 @@ const HomeScreen = (): JSX.Element => {
           ) : todayEntries.length > 0 ? (
             <AppCard>
               {todayEntries.map((entry) => (
-                <View
+                <FoodEntryCard
                   key={entry.id}
-                  style={[styles.entryRow, { borderColor: theme.colors.border }]}
-                >
-                  <View style={styles.entryInfo}>
-                    <ThemedText variant="body" weight="600" shrink ellipsis>
-                      {entry.foodName}
-                    </ThemedText>
-                    <View
-                      style={{
-                        flexDirection: 'row',
-                        alignItems: 'center',
-                        gap: theme.spacing.sm,
-                        marginTop: theme.spacing.xs,
-                      }}
-                    >
-                      <ThemedText variant="bodySmall" color="textSecondary">
-                        {formatNumber(entry.calories, ' kcal')}
-                      </ThemedText>
-                      <ThemedText variant="bodySmall" color="textSecondary" shrink ellipsis>
-                        {entry.quantityText ?? t('home.noPortionInfo')}
-                      </ThemedText>
-                      <View
-                        style={[
-                          styles.badge,
-                          {
-                            backgroundColor:
-                              entry.sourceMethod === 'ai'
-                                ? theme.colors.primaryLight
-                                : theme.colors.secondaryLight,
-                          },
-                        ]}
-                      >
-                        <ThemedText
-                          variant="caption"
-                          color={entry.sourceMethod === 'ai' ? 'primary' : 'secondary'}
-                        >
-                          {entry.sourceMethod === 'ai'
-                            ? t('home.source_ai')
-                            : t('home.source_manual')}
-                        </ThemedText>
-                      </View>
-                    </View>
-                  </View>
-                  <Pressable
-                    accessibilityRole="button"
-                    hitSlop={8}
-                    onPress={() => handleDelete(entry.id, entry.foodName)}
-                    style={styles.deleteChip}
-                  >
-                    <ThemedText variant="button" color="danger">
-                      {t('common.delete')}
-                    </ThemedText>
-                  </Pressable>
-                </View>
+                  id={entry.id}
+                  foodName={entry.foodName}
+                  calories={entry.calories || 0}
+                  protein={entry.protein || 0}
+                  carbs={entry.carbs || 0}
+                  fat={entry.fat || 0}
+                  quantityText={entry.quantityText ?? undefined}
+                  sourceMethod={entry.sourceMethod as 'ai' | 'manual' | 'search'}
+                  onDelete={() => handleDelete(entry.id, entry.foodName)}
+                />
               ))}
             </AppCard>
           ) : (
@@ -564,7 +505,7 @@ const HomeScreen = (): JSX.Element => {
         </View>
       </Screen>
 
-      {/* Floating Action Button */}
+      {/* Context-Aware Floating Action Button (2026 AI Trend) */}
       <Animated.View
         entering={FadeInUp.delay(500).springify()}
         style={styles.fabContainer}
@@ -572,15 +513,37 @@ const HomeScreen = (): JSX.Element => {
         <Pressable
           style={[
             styles.fab,
-            { backgroundColor: theme.colors.primary, shadowColor: theme.colors.primary },
+            {
+              backgroundColor: smartContext.fabAction.color || theme.colors.primary,
+              shadowColor: smartContext.fabAction.color || theme.colors.primary
+            },
           ]}
           onPress={() => setShowAddModal(true)}
+          onLongPress={() => {
+            // Voice integration (Phase 3 - Zero UI trend)
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+            setShowVoiceSheet(true);
+          }}
           accessibilityRole="button"
-          accessibilityLabel="Thêm món ăn vào nhật ký"
-          accessibilityHint="Mở menu để chọn cách thêm món ăn"
+          accessibilityLabel={smartContext.fabAction.label}
+          accessibilityHint={`${smartContext.fabAction.hint}. Nhấn giữ để dùng giọng nói`}
         >
-          <Icon name="add" size="xl" color="card" />
+          <Icon name={smartContext.fabAction.icon as any} size="xl" color="card" />
         </Pressable>
+
+        {/* Smart badge cho high-priority suggestions */}
+        {smartContext.priority >= 3 && (
+          <Animated.View
+            entering={FadeInUp.delay(700).springify()}
+            style={styles.fabBadge}
+          >
+            <ThemedText variant="caption" style={{ color: '#FFF', fontWeight: '700', fontSize: 10 }}>
+              {smartContext.suggestedMeal === 'breakfast' ? 'Sáng' :
+                smartContext.suggestedMeal === 'lunch' ? 'Trưa' :
+                  smartContext.suggestedMeal === 'dinner' ? 'Tối' : 'HOT'}
+            </ThemedText>
+          </Animated.View>
+        )}
       </Animated.View>
 
       <SmartAddSheet visible={showAddModal} onClose={() => setShowAddModal(false)} />
@@ -600,8 +563,9 @@ const getStyles = (theme: any) =>
   StyleSheet.create({
     fabContainer: {
       position: 'absolute',
-      bottom: theme.spacing.xl,
+      bottom: 80, // Tab bar (56px) + safe margin (24px) = không đè lên tabs
       right: theme.spacing.xl,
+      zIndex: 999, // Ensure FAB stays on top
     },
 
     fab: {
@@ -616,43 +580,30 @@ const getStyles = (theme: any) =>
       shadowRadius: 8,
     },
 
-    entryRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      paddingVertical: theme.spacing.sm,
-      borderBottomWidth: 1,
-    },
-    entryInfo: { flex: 1, paddingRight: theme.spacing.md },
-    deleteChip: {
-      paddingHorizontal: theme.spacing.sm,
-      paddingVertical: theme.spacing.xs,
-      borderRadius: 999,
-      borderWidth: 1,
-      borderColor: 'transparent',
-      backgroundColor: 'transparent',
-    },
-    badge: {
-      paddingHorizontal: theme.spacing.xs,
+    fabBadge: {
+      position: 'absolute',
+      top: -4,
+      right: -4,
+      backgroundColor: '#EF4444', // Bright red
+      paddingHorizontal: 6,
       paddingVertical: 2,
-      borderRadius: theme.radius.sm,
+      borderRadius: 10,
+      minWidth: 32,
+      alignItems: 'center',
+      justifyContent: 'center',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.3,
+      shadowRadius: 4,
+      shadowColor: '#000',
+      elevation: 3,
     },
+
     modalBackdrop: {
       flex: 1,
       backgroundColor: 'rgba(0,0,0,0.4)',
       justifyContent: 'center',
       alignItems: 'center',
       padding: theme.spacing.xl,
-    },
-    animatedNumber: {
-      fontSize: theme.typography.h1.fontSize,
-      fontFamily: theme.typography.h1.fontFamily,
-      color: theme.colors.primary,
-    },
-    macroValue: {
-      fontSize: theme.typography.h3.fontSize,
-      fontFamily: theme.typography.h3.fontFamily,
-      marginTop: theme.spacing.xs,
     },
   });
 

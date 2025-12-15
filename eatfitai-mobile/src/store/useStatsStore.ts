@@ -6,6 +6,8 @@ export type StatsState = {
   selectedDate: string; // ISO date string (YYYY-MM-DD)
   isLoading: boolean;
   error: string | null;
+  // Cache để lưu data các tuần đã fetch
+  weekCache: Map<string, WeekSummary>;
   setSelectedDate: (date: string) => void;
   fetchWeekSummary: (date?: string) => Promise<void>;
   refreshWeekSummary: () => Promise<void>;
@@ -27,6 +29,7 @@ export const useStatsStore = create<StatsState>((set: any, get: any) => ({
   selectedDate: formatDate(getStartOfWeek(new Date())),
   isLoading: false,
   error: null,
+  weekCache: new Map<string, WeekSummary>(),
 
   setSelectedDate(date: string) {
     set({ selectedDate: date });
@@ -50,14 +53,31 @@ export const useStatsStore = create<StatsState>((set: any, get: any) => ({
   },
 
   async fetchWeekSummary(date?: string) {
+    const targetDate = date ?? get().selectedDate;
+    const cache = get().weekCache;
+
+    // Kiểm tra cache trước - nếu có thì hiển ngay (optimistic UI)
+    if (cache.has(targetDate)) {
+      const cachedData = cache.get(targetDate);
+      set({ weekSummary: cachedData, selectedDate: targetDate });
+      // Vẫn fetch mới nhưng không block UI
+      summaryService.getWeekSummary(targetDate)
+        .then(data => {
+          cache.set(targetDate, data);
+          set({ weekSummary: data, weekCache: new Map(cache) });
+        })
+        .catch(() => { }); // Silent refresh
+      return;
+    }
+
     if (get().isLoading) {
       return;
     }
     set({ isLoading: true, error: null });
     try {
-      const targetDate = date ?? get().selectedDate;
       const data = await summaryService.getWeekSummary(targetDate);
-      set({ weekSummary: data });
+      cache.set(targetDate, data);
+      set({ weekSummary: data, weekCache: new Map(cache) });
     } catch (error: any) {
       set({ error: error?.message ?? 'Khong the tai thong ke' });
       throw error;

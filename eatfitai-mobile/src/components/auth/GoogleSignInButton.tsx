@@ -14,9 +14,9 @@ import Animated, {
 } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 
-import { ThemedText } from '../../ThemedText';
-import { useAppTheme } from '../../../theme/ThemeProvider';
-import { googleAuthService, GoogleAuthResult } from '../../../services/googleAuthService';
+import { ThemedText } from '../ThemedText';
+import { useAppTheme } from '../../theme/ThemeProvider';
+import { googleAuthService, GoogleAuthResult } from '../../services/googleAuthService';
 
 interface GoogleSignInButtonProps {
     onSuccess: (result: GoogleAuthResult) => void;

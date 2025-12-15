@@ -13,19 +13,72 @@ const normalizeUrl = (value: string | undefined | null): string | undefined => {
 const resolveHostUri = (): string | undefined => {
   const expoConfig: any = Constants;
 
-  const hostCandidate =
-    normalizeUrl(expoConfig?.expoConfig?.hostUri) ??
-    normalizeUrl(expoConfig?.expoGoConfig?.hostUri) ??
-    normalizeUrl(expoConfig?.manifest2?.extra?.expoClient?.hostUri) ??
-    normalizeUrl(expoConfig?.manifest?.hostUri) ??
-    normalizeUrl(expoConfig?.manifest?.debuggerHost) ??
-    normalizeUrl(expoConfig?.manifest?.bundleUrl);
+  // Thử lấy từ nhiều nguồn khác nhau - hỗ trợ cả Expo Go và Development Build
+  const possibleSources: (string | undefined | null)[] = [
+    // Expo SDK 49+ structure
+    expoConfig?.expoConfig?.hostUri,
+    // Expo Go specific
+    expoConfig?.expoGoConfig?.hostUri,
+    // manifest2 structure (OTA updates)
+    expoConfig?.manifest2?.extra?.expoClient?.hostUri,
+    // Classic manifest
+    expoConfig?.manifest?.hostUri,
+    expoConfig?.manifest?.debuggerHost,
+    expoConfig?.manifest?.bundleUrl,
+    // Development client specific
+    expoConfig?.debuggerHost,
+    // Fallback to experienceUrl
+    expoConfig?.experienceUrl,
+    expoConfig?.linkingUri,
+  ];
+
+  // Thử lấy từ global Metro bundler URL (dev client specific)
+  try {
+    const g = globalThis as any;
+    if (g?.__METRO_GLOBAL_PREFIX__) {
+      possibleSources.push(g.__METRO_GLOBAL_PREFIX__);
+    }
+    if (g?.__DEV_SERVER_URL__) {
+      possibleSources.push(g.__DEV_SERVER_URL__);
+    }
+  } catch {
+    // globalThis không khả dụng
+  }
+
+  // DEBUG: Log tất cả các nguồn có thể lấy hostUri
+  if (__DEV__) {
+    console.log('[EatFitAI] DEBUG Constants keys:', Object.keys(expoConfig || {}));
+    console.log('[EatFitAI] DEBUG executionEnvironment:', expoConfig?.executionEnvironment);
+    console.log('[EatFitAI] DEBUG expoConfig.hostUri:', expoConfig?.expoConfig?.hostUri);
+    console.log('[EatFitAI] DEBUG expoGoConfig.hostUri:', expoConfig?.expoGoConfig?.hostUri);
+    console.log('[EatFitAI] DEBUG manifest2.extra.expoClient.hostUri:', expoConfig?.manifest2?.extra?.expoClient?.hostUri);
+    console.log('[EatFitAI] DEBUG manifest.hostUri:', expoConfig?.manifest?.hostUri);
+    console.log('[EatFitAI] DEBUG manifest.debuggerHost:', expoConfig?.manifest?.debuggerHost);
+    console.log('[EatFitAI] DEBUG manifest.bundleUrl:', expoConfig?.manifest?.bundleUrl);
+    console.log('[EatFitAI] DEBUG debuggerHost:', expoConfig?.debuggerHost);
+    console.log('[EatFitAI] DEBUG experienceUrl:', expoConfig?.experienceUrl);
+    console.log('[EatFitAI] DEBUG linkingUri:', expoConfig?.linkingUri);
+  }
+
+  // Tìm hostCandidate từ các nguồn
+  let hostCandidate: string | undefined;
+  for (const source of possibleSources) {
+    const normalized = normalizeUrl(source);
+    if (normalized) {
+      hostCandidate = normalized;
+      break;
+    }
+  }
+
+  if (__DEV__) {
+    console.log('[EatFitAI] DEBUG hostCandidate:', hostCandidate);
+  }
 
   if (!hostCandidate) {
     return undefined;
   }
 
-  // Bỏ scheme và path nếu có (ví dụ exp://192.168.1.10:19000)
+  // Bỏ scheme và path nếu có (ví dụ exp://192.168.1.10:19000 hoặc http://192.168.1.10:8081)
   const withoutScheme = hostCandidate.split('://').pop() ?? hostCandidate;
   const withoutPathParts = withoutScheme.split('/');
   const hostWithPort = withoutPathParts.length > 0 ? withoutPathParts[0] : undefined;
@@ -47,9 +100,37 @@ const resolvePort = (): string | undefined =>
   normalizeUrl(process.env.EXPO_PUBLIC_API_PORT);
 
 export const API_BASE_URL: string | undefined = (() => {
+  // 1. Ưu tiên cao nhất: Biến môi trường EXPO_PUBLIC_API_BASE_URL
   const explicit = normalizeUrl(process.env.EXPO_PUBLIC_API_BASE_URL);
   if (explicit) {
     return explicit;
+  }
+
+  // 2. Từ app.config.js extra (auto-detected IP khi Metro start)
+  // Thử nhiều đường dẫn khác nhau vì Expo trả về cấu trúc khác nhau tùy context
+  const expoConfig: any = Constants;
+  const possibleExtras = [
+    expoConfig?.expoConfig?.extra?.apiBaseUrl,
+    expoConfig?.manifest?.extra?.apiBaseUrl,
+    expoConfig?.manifest2?.extra?.expoClient?.extra?.apiBaseUrl,
+    expoConfig?.manifest2?.extra?.expoGo?.extra?.apiBaseUrl,
+  ];
+
+  if (__DEV__) {
+    console.log('[EatFitAI] DEBUG - Looking for apiBaseUrl in extra:');
+    console.log('  expoConfig.extra:', expoConfig?.expoConfig?.extra);
+    console.log('  manifest.extra:', expoConfig?.manifest?.extra);
+    console.log('  manifest2.extra.expoClient.extra:', expoConfig?.manifest2?.extra?.expoClient?.extra);
+  }
+
+  for (const extraUrl of possibleExtras) {
+    const fromExtra = normalizeUrl(extraUrl);
+    if (fromExtra) {
+      if (__DEV__) {
+        console.log('[EatFitAI] Using API URL from app.config.js extra:', fromExtra);
+      }
+      return fromExtra;
+    }
   }
 
   let host = resolveHostUri();
@@ -57,7 +138,10 @@ export const API_BASE_URL: string | undefined = (() => {
     if (Platform.OS === 'web') {
       host = 'localhost';
     } else {
-      return undefined;
+      // Fallback cho physical device khi không detect được IP
+      // Sửa IP này khi đổi WiFi
+      console.warn('[EatFitAI] Auto-detect failed, using fallback IP: 192.168.1.7');
+      host = '192.168.1.7';
     }
   }
 

@@ -32,9 +32,12 @@ interface GamificationState {
   lastLogDate: string | null;
   totalDaysLogged: number;
   achievements: Achievement[];
+  /** 7 ngày gần nhất: true = đã log, false = chưa log (index 0 = 6 ngày trước, index 6 = hôm nay) */
+  weeklyLogs: boolean[];
 
   // Actions
   checkStreak: () => Promise<void>;
+  fetchWeeklyLogs: () => Promise<void>;
   unlockAchievement: (id: string) => void;
   reset: () => void;
 }
@@ -82,6 +85,32 @@ export const useGamificationStore = create<GamificationState>()(
       lastLogDate: null,
       totalDaysLogged: 0,
       achievements: INITIAL_ACHIEVEMENTS,
+      weeklyLogs: [false, false, false, false, false, false, false],
+
+      fetchWeeklyLogs: async () => {
+        try {
+          const logs: boolean[] = [];
+          const today = new Date();
+
+          // Check 7 ngày gần nhất (index 0 = 6 ngày trước, index 6 = hôm nay)
+          for (let i = 6; i >= 0; i--) {
+            const date = new Date(today);
+            date.setDate(today.getDate() - i);
+            const dateStr = date.toISOString().split('T')[0] ?? '';
+
+            try {
+              const entries = await diaryService.getEntriesByDate(dateStr);
+              logs.push(entries.length > 0);
+            } catch {
+              logs.push(false);
+            }
+          }
+
+          set({ weeklyLogs: logs });
+        } catch (error) {
+          console.error('Error fetching weekly logs:', error);
+        }
+      },
 
       checkStreak: async () => {
         try {
@@ -176,6 +205,7 @@ export const useGamificationStore = create<GamificationState>()(
           lastLogDate: null,
           totalDaysLogged: 0,
           achievements: INITIAL_ACHIEVEMENTS,
+          weeklyLogs: [false, false, false, false, false, false, false],
         });
       },
     }),

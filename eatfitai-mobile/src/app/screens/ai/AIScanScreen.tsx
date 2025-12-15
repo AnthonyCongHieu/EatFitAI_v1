@@ -18,6 +18,7 @@ import Animated, {
   useAnimatedStyle,
   useSharedValue,
   withSpring,
+  withSequence,
 } from 'react-native-reanimated';
 import Toast from 'react-native-toast-message';
 import { useNavigation } from '@react-navigation/native';
@@ -80,6 +81,7 @@ const AIScanScreen: React.FC = () => {
 
   // Animation values
   const captureScale = useSharedValue(1);
+  const basketIconScale = useSharedValue(1);
 
   const hasPermission = permission?.granted === true;
 
@@ -217,6 +219,12 @@ const AIScanScreen: React.FC = () => {
   // Thêm nguyên liệu vào giỏ (IMP-02)
   const handleAddToBasket = useCallback(
     (item: MappedFoodItem) => {
+      // Animate basket icon
+      basketIconScale.value = withSequence(
+        withSpring(1.3, { damping: 10 }),
+        withSpring(1, { damping: 15 })
+      );
+
       // Ưu tiên foodName (tiếng Việt từ DB), fallback dịch từ label
       const displayName = item.foodName || translateIngredient(item.label);
       addIngredient({
@@ -232,7 +240,7 @@ const AIScanScreen: React.FC = () => {
         visibilityTime: 1500,
       });
     },
-    [addIngredient, capturedUri],
+    [addIngredient, capturedUri, basketIconScale],
   );
 
   const handleEditModalSave = useCallback(
@@ -278,6 +286,10 @@ const AIScanScreen: React.FC = () => {
 
   const captureButtonStyle = useAnimatedStyle(() => ({
     transform: [{ scale: captureScale.value }],
+  }));
+
+  const basketIconStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: basketIconScale.value }],
   }));
 
   const isCameraMode = mode === 'camera';
@@ -451,7 +463,7 @@ const AIScanScreen: React.FC = () => {
             />
             <View style={styles.resultsHeader}>
               <ThemedText variant="h4" weight="700">
-                Kết quả ({detectionResult.items.length})
+                Top 2 kết quả
               </ThemedText>
               <Pressable
                 onPress={handleRetake}
@@ -465,12 +477,40 @@ const AIScanScreen: React.FC = () => {
             </View>
 
             <FlatList
-              data={detectionResult.items}
+              data={detectionResult.items.sort((a, b) => b.confidence - a.confidence).slice(0, 2)}
               keyExtractor={(item, index) => item.label + index}
-              renderItem={({ item }) => (
+              renderItem={({ item, index }) => (
                 <View
-                  style={[styles.resultRow, { borderBottomColor: theme.colors.border }]}
+                  style={[
+                    styles.resultRow,
+                    { borderBottomColor: theme.colors.border },
+                    index === 0 && {
+                      backgroundColor: theme.colors.primaryLight + '15',
+                      borderWidth: 2,
+                      borderColor: theme.colors.primary + '40',
+                      borderRadius: 12,
+                      marginBottom: 8,
+                      paddingVertical: 16,
+                    },
+                  ]}
                 >
+                  {/* Best Match Badge for #1 */}
+                  {index === 0 && (
+                    <View style={{
+                      position: 'absolute',
+                      top: 4,
+                      right: 4,
+                      backgroundColor: theme.colors.primary,
+                      paddingHorizontal: 8,
+                      paddingVertical: 2,
+                      borderRadius: 8,
+                    }}>
+                      <ThemedText variant="caption" style={{ color: '#fff', fontSize: 10, fontWeight: '700' }}>
+                        BEST MATCH
+                      </ThemedText>
+                    </View>
+                  )}
+
                   {/* Thumbnail */}
                   {item.thumbNail ? (
                     <AppImage
@@ -499,11 +539,32 @@ const AIScanScreen: React.FC = () => {
                     <ThemedText variant="body" weight="600">
                       {translateIngredient(item.label)}
                     </ThemedText>
-                    <ThemedText variant="caption" color="textSecondary">
-                      {item.caloriesPer100g
-                        ? `${item.caloriesPer100g} kcal/100g`
-                        : 'Nguyên liệu'}
-                    </ThemedText>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4 }}>
+                      {/* Confidence Bar */}
+                      <View style={{
+                        width: 60,
+                        height: 4,
+                        backgroundColor: theme.colors.border,
+                        borderRadius: 2,
+                        overflow: 'hidden',
+                      }}>
+                        <View style={{
+                          width: `${item.confidence * 100}%`,
+                          height: '100%',
+                          backgroundColor: item.confidence > 0.7 ? theme.colors.success :
+                            item.confidence > 0.5 ? theme.colors.warning :
+                              theme.colors.danger,
+                        }} />
+                      </View>
+                      {/* Confidence Percentage */}
+                      <ThemedText variant="caption" color="textSecondary" style={{ fontSize: 11 }}>
+                        {Math.round(item.confidence * 100)}%
+                      </ThemedText>
+                      {/* Calories */}
+                      <ThemedText variant="caption" color="textSecondary" style={{ marginLeft: 4 }}>
+                        {item.caloriesPer100g ? `• ${item.caloriesPer100g} kcal/100g` : '• Nguyên liệu'}
+                      </ThemedText>
+                    </View>
                   </View>
 
                   {/* Thêm vào giỏ nguyên liệu */}
@@ -512,7 +573,9 @@ const AIScanScreen: React.FC = () => {
                     style={{ padding: 8, marginRight: 4 }}
                     hitSlop={8}
                   >
-                    <Icon name="basket-outline" size="lg" color="secondary" />
+                    <Animated.View style={basketIconStyle}>
+                      <Icon name="basket-outline" size="lg" color="secondary" />
+                    </Animated.View>
                   </Pressable>
 
                   {/* Thêm trực tiếp vào nhật ký */}
@@ -552,7 +615,7 @@ const AIScanScreen: React.FC = () => {
               />
               <Button
                 variant="primary"
-                title="Thêm tất cả"
+                title="Thêm vào nhật ký"
                 onPress={handleAddToDiary}
                 style={{ flex: 1 }}
               />

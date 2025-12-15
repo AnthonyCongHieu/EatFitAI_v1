@@ -66,6 +66,12 @@ export interface WeeklyHistoryResponse {
 export interface CheckInRequest {
     weightKg: number;
     goal?: string;
+    
+    // Physical & Mental State (subjective metrics only)
+    sleepQuality?: number;  // 1-5
+    hungerLevel?: number;   // 1-5
+    stressLevel?: number;   // 1-5 (optional)
+    
     notes?: string;
 }
 

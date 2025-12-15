@@ -7,6 +7,7 @@ import {
   Platform,
   ActivityIndicator,
 } from 'react-native';
+import * as Haptics from 'expo-haptics';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import {
   VictoryBar,
@@ -103,6 +104,7 @@ const WeekStatsScreen = (): JSX.Element => {
   const refreshWeekSummary = useStatsStore((state) => state.refreshWeekSummary);
   const goToPreviousWeek = useCallback(() => {
     try {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       useStatsStore.getState().goToPreviousWeek();
     } catch (err) {
       if (__DEV__) {
@@ -113,6 +115,7 @@ const WeekStatsScreen = (): JSX.Element => {
 
   const goToNextWeek = useCallback(() => {
     try {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       useStatsStore.getState().goToNextWeek();
     } catch (err) {
       if (__DEV__) {
@@ -326,6 +329,10 @@ const WeekStatsScreen = (): JSX.Element => {
                   data: {
                     fill: theme.colors.chart.bar,
                   },
+                }}
+                animate={{
+                  duration: 600,
+                  onLoad: { duration: 400 },
                 }}
                 labels={({ datum }) => `${datum.y}`}
                 labelComponent={

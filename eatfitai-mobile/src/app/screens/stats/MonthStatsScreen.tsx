@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { RefreshControl, StyleSheet, View, Pressable } from 'react-native';
+import * as Haptics from 'expo-haptics';
 import Animated, { FadeInUp, FadeInDown } from 'react-native-reanimated';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -69,10 +70,43 @@ const MonthStatsScreen = (): JSX.Element => {
   const [monthData, setMonthData] = useState<MonthSummary | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  // Cache để lưu data các tháng đã fetch - tránh fetch lại
+  const monthCacheRef = React.useRef<Map<string, MonthSummary>>(new Map());
+
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
+  const monthKey = `${year}-${month}`;
 
   const fetchMonthData = useCallback(async () => {
+    // Kiểm tra cache trước
+    const cached = monthCacheRef.current.get(monthKey);
+    if (cached) {
+      setMonthData(cached);
+      setIsLoading(false);
+      // Silent refresh in background
+      summaryService.getNutritionSummary(
+        new Date(year, month, 1).toISOString().split('T')[0]!,
+        new Date(year, month + 1, 0).toISOString().split('T')[0]!
+      ).then(result => {
+        const days: DayData[] = Object.entries(result.dailyCalories || {}).map(([date, calories]) => ({
+          date, calories: Number(calories) || 0,
+        }));
+        const daysLogged = days.filter(d => d.calories > 0).length;
+        const newData: MonthSummary = {
+          days,
+          totalCalories: result.totalCalories || 0,
+          totalProtein: result.totalProtein || 0,
+          totalCarbs: result.totalCarbs || 0,
+          totalFat: result.totalFat || 0,
+          averageCalories: daysLogged > 0 ? (result.totalCalories || 0) / daysLogged : 0,
+          daysLogged,
+        };
+        monthCacheRef.current.set(monthKey, newData);
+        setMonthData(newData);
+      }).catch(() => { });
+      return;
+    }
+
     setIsLoading(true);
     try {
       const startDate = new Date(year, month, 1);
@@ -93,7 +127,7 @@ const MonthStatsScreen = (): JSX.Element => {
       const daysLogged = days.filter((d) => d.calories > 0).length;
       const totalCalories = result.totalCalories || 0;
 
-      setMonthData({
+      const newData: MonthSummary = {
         days,
         totalCalories,
         totalProtein: result.totalProtein || 0,
@@ -101,25 +135,30 @@ const MonthStatsScreen = (): JSX.Element => {
         totalFat: result.totalFat || 0,
         averageCalories: daysLogged > 0 ? totalCalories / daysLogged : 0,
         daysLogged,
-      });
+      };
+
+      monthCacheRef.current.set(monthKey, newData);
+      setMonthData(newData);
     } catch (error) {
       handleApiError(error);
     } finally {
       setIsLoading(false);
     }
-  }, [year, month]);
+  }, [year, month, monthKey]);
 
   useEffect(() => {
     fetchMonthData();
   }, [fetchMonthData]);
 
   const goToPreviousMonth = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setCurrentDate(new Date(year, month - 1, 1));
   };
 
   const goToNextMonth = () => {
     const nextMonth = new Date(year, month + 1, 1);
     if (nextMonth <= new Date()) {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       setCurrentDate(nextMonth);
     }
   };
@@ -168,6 +207,7 @@ const MonthStatsScreen = (): JSX.Element => {
 
     const handleDayPress = () => {
       if (isCurrentMonthDay && calories > 0) {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
         // Navigate đến MealDiary với ngày được chọn
         navigation.navigate('MealDiary', { selectedDate: dateStr });
       }
@@ -177,13 +217,17 @@ const MonthStatsScreen = (): JSX.Element => {
       <Pressable
         key={index}
         onPress={handleDayPress}
-        style={[
+        style={({ pressed }) => [
           styles.calendarCell,
           {
             backgroundColor: isCurrentMonthDay
               ? getHeatmapColor(calories)
               : 'transparent',
             opacity: isCurrentMonthDay ? 1 : 0.3,
+          },
+          pressed && isCurrentMonthDay && calories > 0 && {
+            transform: [{ scale: 0.92 }],
+            opacity: 0.7,
           },
         ]}
       >

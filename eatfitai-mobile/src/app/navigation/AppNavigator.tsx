@@ -54,6 +54,9 @@ const AppNavigator = (): JSX.Element => {
             statusBarStyle: theme.statusBarStyle,
           }}
         >
+          {/* Onboarding - Available in both authenticated and unauthenticated states */}
+          <Stack.Screen name="Onboarding" component={OnboardingScreen} />
+
           {!isAuthenticated ? (
             // Chưa đăng nhập: Hiển thị stack đăng nhập/đăng ký
             <>
@@ -66,7 +69,6 @@ const AppNavigator = (): JSX.Element => {
                 component={ForgotPasswordScreen}
                 options={{ headerShown: true, title: t('auth.forgotPasswordTitle') }}
               />
-              <Stack.Screen name="Onboarding" component={OnboardingScreen} />
             </>
           ) : (
             // Đã đăng nhập: vào App Tabs
