@@ -161,6 +161,7 @@ export const WeeklyCheckInSheet = ({
                                 label="Cân nặng (kg)"
                                 placeholder="Ví dụ: 65.5"
                                 keyboardType="decimal-pad"
+                                returnKeyType="done"
                                 value={weight}
                                 onChangeText={(text) => {
                                     setWeight(text);

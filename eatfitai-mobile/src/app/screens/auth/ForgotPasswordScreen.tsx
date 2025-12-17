@@ -267,6 +267,7 @@ const ForgotPasswordScreen = ({ navigation }: Props): JSX.Element => {
                       label="Mã xác minh"
                       placeholder="123456"
                       keyboardType="number-pad"
+                      returnKeyType="done"
                       onBlur={onBlur}
                       onChangeText={onChange}
                       value={value}

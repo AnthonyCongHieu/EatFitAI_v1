@@ -506,6 +506,7 @@ const OnboardingScreen = (): JSX.Element => {
               }
               placeholder="25"
               keyboardType="numeric"
+              returnKeyType="done"
               style={{ marginTop: 20 }}
             />
           </Animated.View>
@@ -524,6 +525,7 @@ const OnboardingScreen = (): JSX.Element => {
                   }
                   placeholder="170"
                   keyboardType="numeric"
+                  returnKeyType="done"
                 />
               </View>
               <View style={styles.inputCol}>
@@ -535,6 +537,7 @@ const OnboardingScreen = (): JSX.Element => {
                   }
                   placeholder="65"
                   keyboardType="numeric"
+                  returnKeyType="done"
                 />
               </View>
             </View>

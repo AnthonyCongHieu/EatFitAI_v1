@@ -716,6 +716,8 @@ const MealDiaryScreen = (): JSX.Element => {
             }}
             placeholder="Ví dụ: 150"
             keyboardType="decimal-pad"
+            returnKeyType="done"
+            onSubmitEditing={handleSaveGrams}
             style={styles.editInput}
           />
           <Button title="💾 Lưu thay đổi" onPress={handleSaveGrams} />

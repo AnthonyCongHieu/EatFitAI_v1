@@ -436,6 +436,7 @@ const ProfileScreen = (): JSX.Element => {
                       onBlur={onBlur}
                       placeholder="170"
                       keyboardType="numeric"
+                      returnKeyType="done"
                     />
                   )}
                 />
@@ -452,6 +453,7 @@ const ProfileScreen = (): JSX.Element => {
                       onBlur={onBlur}
                       placeholder="65"
                       keyboardType="numeric"
+                      returnKeyType="done"
                     />
                   )}
                 />
@@ -516,6 +518,7 @@ const ProfileScreen = (): JSX.Element => {
                     onBlur={onBlur}
                     placeholder="25"
                     keyboardType="numeric"
+                    returnKeyType="done"
                   />
                 )}
               />
@@ -678,6 +681,7 @@ const ProfileScreen = (): JSX.Element => {
                       onBlur={onBlur}
                       placeholder="170"
                       keyboardType="numeric"
+                      returnKeyType="done"
                       error={!!metricsErrors.heightCm}
                       helperText={metricsErrors.heightCm?.message}
                     />
@@ -696,6 +700,7 @@ const ProfileScreen = (): JSX.Element => {
                       onBlur={onBlur}
                       placeholder="65"
                       keyboardType="numeric"
+                      returnKeyType="done"
                       error={!!metricsErrors.weightKg}
                       helperText={metricsErrors.weightKg?.message}
                     />

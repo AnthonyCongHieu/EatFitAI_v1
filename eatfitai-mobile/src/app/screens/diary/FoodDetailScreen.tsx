@@ -278,7 +278,7 @@ const FoodDetailScreen = (): JSX.Element | null => {
           text1: 'Đã thêm món vào nhật ký',
           text2: 'Tiếp tục theo dõi dinh dưỡng của bạn!',
         });
-        await refreshSummary().catch(() => {});
+        await refreshSummary().catch(() => { });
         navigation.goBack();
       } catch (err: any) {
         handleApiError(err);
@@ -471,6 +471,7 @@ const FoodDetailScreen = (): JSX.Element | null => {
               <ThemedTextInput
                 label="Số gram"
                 keyboardType="numeric"
+                returnKeyType="done"
                 value={value}
                 onChangeText={onChange}
                 onBlur={onBlur}

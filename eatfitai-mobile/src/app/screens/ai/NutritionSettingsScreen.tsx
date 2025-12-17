@@ -219,6 +219,7 @@ const NutritionSettingsScreen = (): JSX.Element => {
             onBlur={onBlur}
             placeholder={placeholder}
             keyboardType="numeric"
+            returnKeyType="done"
             editable={isEditing}
             error={!!errors[name]}
             style={{
@@ -300,6 +301,7 @@ const NutritionSettingsScreen = (): JSX.Element => {
                     onBlur={onBlur}
                     placeholder="2000"
                     keyboardType="numeric"
+                    returnKeyType="done"
                     error={!!errors.calories}
                     helperText={errors.calories?.message}
                   />

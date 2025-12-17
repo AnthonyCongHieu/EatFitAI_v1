@@ -250,6 +250,7 @@ const CustomDishScreen = (): JSX.Element => {
                       <ThemedTextInput
                         label="Khẩu phần (gram)"
                         keyboardType="numeric"
+                        returnKeyType="done"
                         value={value}
                         onChangeText={onChange}
                         onBlur={onBlur}
@@ -268,6 +269,7 @@ const CustomDishScreen = (): JSX.Element => {
                       <ThemedTextInput
                         label="Calo"
                         keyboardType="numeric"
+                        returnKeyType="done"
                         value={value}
                         onChangeText={onChange}
                         onBlur={onBlur}
@@ -289,6 +291,7 @@ const CustomDishScreen = (): JSX.Element => {
                       <ThemedTextInput
                         label="Protein (g)"
                         keyboardType="numeric"
+                        returnKeyType="done"
                         value={value}
                         onChangeText={onChange}
                         onBlur={onBlur}
@@ -307,6 +310,7 @@ const CustomDishScreen = (): JSX.Element => {
                       <ThemedTextInput
                         label="Carb (g)"
                         keyboardType="numeric"
+                        returnKeyType="done"
                         value={value}
                         onChangeText={onChange}
                         onBlur={onBlur}
@@ -325,6 +329,7 @@ const CustomDishScreen = (): JSX.Element => {
                       <ThemedTextInput
                         label="Fat (g)"
                         keyboardType="numeric"
+                        returnKeyType="done"
                         value={value}
                         onChangeText={onChange}
                         onBlur={onBlur}

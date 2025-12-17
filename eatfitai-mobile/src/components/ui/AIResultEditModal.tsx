@@ -108,6 +108,7 @@ export const AIResultEditModal: React.FC<AIResultEditModalProps> = ({
               value={grams}
               onChangeText={setGrams}
               keyboardType="numeric"
+              returnKeyType="done"
               placeholder="100"
               placeholderTextColor={theme.colors.textSecondary}
             />
@@ -141,6 +142,7 @@ export const AIResultEditModal: React.FC<AIResultEditModalProps> = ({
                 value={calories}
                 onChangeText={setCalories}
                 keyboardType="numeric"
+                returnKeyType="done"
                 placeholderTextColor={theme.colors.textSecondary}
               />
             </View>
@@ -160,6 +162,7 @@ export const AIResultEditModal: React.FC<AIResultEditModalProps> = ({
                 value={protein}
                 onChangeText={setProtein}
                 keyboardType="numeric"
+                returnKeyType="done"
                 placeholderTextColor={theme.colors.textSecondary}
               />
             </View>
@@ -179,6 +182,7 @@ export const AIResultEditModal: React.FC<AIResultEditModalProps> = ({
                 value={carbs}
                 onChangeText={setCarbs}
                 keyboardType="numeric"
+                returnKeyType="done"
                 placeholderTextColor={theme.colors.textSecondary}
               />
             </View>
@@ -198,6 +202,7 @@ export const AIResultEditModal: React.FC<AIResultEditModalProps> = ({
                 value={fat}
                 onChangeText={setFat}
                 keyboardType="numeric"
+                returnKeyType="done"
                 placeholderTextColor={theme.colors.textSecondary}
               />
             </View>
