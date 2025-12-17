@@ -156,12 +156,8 @@ const AppNavigator = (): JSX.Element => {
                 name="RecipeSuggestions"
                 component={RecipeSuggestionsScreen}
                 options={{
-                  headerShown: true,
+                  headerShown: false,
                   title: 'Gợi ý công thức',
-                  headerStyle: { backgroundColor: theme.colors.card },
-                  headerTintColor: theme.colors.text,
-                  headerShadowVisible: false,
-                  headerTitleStyle: { fontFamily: 'Inter_600SemiBold' },
                 }}
               />
               <Stack.Screen

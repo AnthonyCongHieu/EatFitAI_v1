@@ -13,7 +13,6 @@ import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { FadeInDown, Layout, FadeOut } from 'react-native-reanimated';
 
 import Screen from '../../../components/Screen';
-import { ScreenHeader } from '../../../components/ui/ScreenHeader';
 import { ThemedText } from '../../../components/ThemedText';
 import { ThemedTextInput } from '../../../components/ThemedTextInput';
 import Button from '../../../components/Button';
@@ -23,6 +22,7 @@ import { aiService } from '../../../services/aiService';
 import type { RootStackParamList } from '../../types';
 import type { RecipeSuggestion } from '../../../types/aiEnhanced';
 import { glassStyles } from '../../../components/ui/GlassCard';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 type RouteProps = RouteProp<RootStackParamList, 'RecipeSuggestions'>;
@@ -47,6 +47,7 @@ const RecipeSuggestionsScreen = (): JSX.Element => {
   const glass = glassStyles(isDark);
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<RouteProps>();
+  const insets = useSafeAreaInsets();
 
   const [ingredients, setIngredients] = useState<string[]>([]);
   const [newIngredient, setNewIngredient] = useState('');
@@ -100,7 +101,28 @@ const RecipeSuggestionsScreen = (): JSX.Element => {
       flex: 1,
       backgroundColor: theme.colors.background,
     },
+    screenHeader: {
+      paddingHorizontal: 16,
+      paddingBottom: 8,
+    },
+    headerRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 12,
+    },
+    backButton: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)',
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    headerTitles: {
+      flex: 1,
+    },
     content: {
+      flex: 1,
       padding: theme.spacing.md,
     },
     inputSection: {
@@ -153,32 +175,49 @@ const RecipeSuggestionsScreen = (): JSX.Element => {
     },
     recipeCard: {
       marginBottom: theme.spacing.md,
-      padding: 0, // Reset padding for custom layout
+      padding: 0,
       overflow: 'hidden',
-      borderWidth: 0,
+      borderWidth: 1,
+      borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)',
+      borderRadius: 20,
+      backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : theme.colors.card,
       ...theme.shadows.md,
     },
     cardContent: {
-      padding: theme.spacing.md,
+      padding: 16,
     },
     recipeHeader: {
       flexDirection: 'row',
       justifyContent: 'space-between',
       alignItems: 'flex-start',
-      marginBottom: theme.spacing.sm,
+      marginBottom: 8,
+    },
+    recipeTitleRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+      marginBottom: 4,
+    },
+    recipeEmoji: {
+      fontSize: 24,
     },
     matchBadge: {
-      paddingHorizontal: theme.spacing.sm,
-      paddingVertical: 4,
-      borderRadius: theme.radius.sm,
+      paddingHorizontal: 12,
+      paddingVertical: 6,
+      borderRadius: 12,
     },
     nutritionRow: {
       flexDirection: 'row',
       justifyContent: 'space-between',
-      marginTop: theme.spacing.md,
-      paddingTop: theme.spacing.md,
-      borderTopWidth: 1,
-      borderTopColor: theme.colors.border,
+      marginTop: 16,
+      gap: 8,
+    },
+    nutritionPill: {
+      flex: 1,
+      alignItems: 'center',
+      paddingVertical: 10,
+      paddingHorizontal: 8,
+      borderRadius: 12,
     },
     nutritionItem: {
       alignItems: 'center',
@@ -224,10 +263,13 @@ const RecipeSuggestionsScreen = (): JSX.Element => {
       >
         <View style={styles.cardContent}>
           <View style={styles.recipeHeader}>
-            <View style={{ flex: 1, marginRight: theme.spacing.sm }}>
-              <ThemedText variant="h3" color="primary">
-                {item.recipeName}
-              </ThemedText>
+            <View style={{ flex: 1, marginRight: 8 }}>
+              <View style={styles.recipeTitleRow}>
+                <ThemedText style={styles.recipeEmoji}>🍲</ThemedText>
+                <ThemedText variant="h4" weight="700" numberOfLines={2} style={{ flex: 1 }}>
+                  {item.recipeName}
+                </ThemedText>
+              </View>
               <ThemedText variant="caption" color="textSecondary">
                 Có {item.matchedIngredientsCount}/{item.totalIngredientsCount} nguyên liệu
               </ThemedText>
@@ -245,12 +287,11 @@ const RecipeSuggestionsScreen = (): JSX.Element => {
           </View>
 
           {item.missingIngredients.length > 0 && (
-            <View style={{ flexDirection: 'row', gap: 4, marginTop: 4 }}>
+            <View style={{ flexDirection: 'row', gap: 6, marginTop: 8, backgroundColor: isDark ? 'rgba(251, 191, 36, 0.1)' : 'rgba(251, 191, 36, 0.15)', padding: 10, borderRadius: 10 }}>
               <Ionicons
-                name="alert-circle-outline"
-                size={14}
+                name="alert-circle"
+                size={16}
                 color={theme.colors.warning}
-                style={{ marginTop: 2 }}
               />
               <ThemedText variant="caption" color="textSecondary" style={{ flex: 1 }}>
                 Thiếu: {item.missingIngredients.join(', ')}
@@ -259,36 +300,36 @@ const RecipeSuggestionsScreen = (): JSX.Element => {
           )}
 
           <View style={styles.nutritionRow}>
-            <View style={styles.nutritionItem}>
-              <ThemedText variant="caption" color="textSecondary">
-                Calo
-              </ThemedText>
-              <ThemedText variant="bodySmall" weight="600">
+            <View style={[styles.nutritionPill, { backgroundColor: 'rgba(239, 68, 68, 0.15)' }]}>
+              <ThemedText variant="caption" style={{ color: '#EF4444', fontWeight: '600' }}>
                 {Math.round(item.totalCalories)}
               </ThemedText>
-            </View>
-            <View style={styles.nutritionItem}>
-              <ThemedText variant="caption" color="textSecondary">
-                Đạm
+              <ThemedText variant="caption" color="textSecondary" style={{ fontSize: 10 }}>
+                kcal
               </ThemedText>
-              <ThemedText variant="bodySmall" weight="600">
+            </View>
+            <View style={[styles.nutritionPill, { backgroundColor: 'rgba(59, 130, 246, 0.15)' }]}>
+              <ThemedText variant="caption" style={{ color: '#3B82F6', fontWeight: '600' }}>
                 {Math.round(item.totalProtein)}g
               </ThemedText>
-            </View>
-            <View style={styles.nutritionItem}>
-              <ThemedText variant="caption" color="textSecondary">
-                Carb
+              <ThemedText variant="caption" color="textSecondary" style={{ fontSize: 10 }}>
+                Đạm
               </ThemedText>
-              <ThemedText variant="bodySmall" weight="600">
+            </View>
+            <View style={[styles.nutritionPill, { backgroundColor: 'rgba(251, 191, 36, 0.15)' }]}>
+              <ThemedText variant="caption" style={{ color: '#D97706', fontWeight: '600' }}>
                 {Math.round(item.totalCarbs)}g
               </ThemedText>
-            </View>
-            <View style={styles.nutritionItem}>
-              <ThemedText variant="caption" color="textSecondary">
-                Béo
+              <ThemedText variant="caption" color="textSecondary" style={{ fontSize: 10 }}>
+                Carb
               </ThemedText>
-              <ThemedText variant="bodySmall" weight="600">
+            </View>
+            <View style={[styles.nutritionPill, { backgroundColor: 'rgba(236, 72, 153, 0.15)' }]}>
+              <ThemedText variant="caption" style={{ color: '#DB2777', fontWeight: '600' }}>
                 {Math.round(item.totalFat)}g
+              </ThemedText>
+              <ThemedText variant="caption" color="textSecondary" style={{ fontSize: 10 }}>
+                Béo
               </ThemedText>
             </View>
           </View>
@@ -311,10 +352,32 @@ const RecipeSuggestionsScreen = (): JSX.Element => {
   );
 
   return (
-    <Screen style={styles.container}>
-      <ScreenHeader title="Gợi ý món ăn" subtitle="Tìm công thức từ nguyên liệu có sẵn" />
+    <Screen style={styles.container} scroll={false}>
+      {/* Custom Header */}
+      <View style={[styles.screenHeader, { paddingTop: insets.top }]}>
+        <View style={styles.headerRow}>
+          <TouchableOpacity
+            onPress={() => navigation.goBack()}
+            style={styles.backButton}
+          >
+            <Ionicons name="chevron-back" size={24} color={theme.colors.text} />
+          </TouchableOpacity>
+          <View style={styles.headerTitles}>
+            <ThemedText variant="h3" weight="700">
+              🍳 Gợi ý món ăn
+            </ThemedText>
+            <ThemedText variant="caption" color="textSecondary">
+              Tìm công thức từ nguyên liệu có sẵn
+            </ThemedText>
+          </View>
+        </View>
+      </View>
 
-      <View style={styles.content}>
+      <ScrollView
+        style={styles.content}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+      >
         <View style={styles.inputSection}>
           <View style={styles.inputContainer}>
             <View style={styles.input}>
@@ -439,7 +502,7 @@ const RecipeSuggestionsScreen = (): JSX.Element => {
             ))}
           </ScrollView>
         )}
-      </View>
+      </ScrollView>
     </Screen>
   );
 };
