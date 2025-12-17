@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ThemedText } from '../ThemedText';
 import { useAppTheme } from '../../theme/ThemeProvider';
@@ -19,12 +20,13 @@ export const ScreenHeader = ({
   action,
 }: ScreenHeaderProps): JSX.Element => {
   const { theme } = useAppTheme();
+  const insets = useSafeAreaInsets();
 
   return (
     <View
       style={{
         paddingHorizontal: theme.spacing.lg,
-        paddingTop: theme.spacing.lg,
+        paddingTop: insets.top + theme.spacing.md,
         paddingBottom: theme.spacing.xl,
       }}
     >
@@ -64,3 +66,4 @@ export const ScreenHeader = ({
 };
 
 export default ScreenHeader;
+
