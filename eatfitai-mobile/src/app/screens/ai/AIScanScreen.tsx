@@ -401,15 +401,25 @@ const AIScanScreen: React.FC = () => {
         {/* CAMERA MODE */}
         {isCameraMode && (
           <Animated.View entering={FadeInDown} style={styles.bottomControls}>
-            {/* Search Wrapper */}
+            {/* Search Button */}
             <Pressable
-              style={[glass.card, styles.sideButton]}
+              style={[
+                styles.sideButton,
+                {
+                  backgroundColor: 'rgba(255,255,255,0.95)',
+                  shadowColor: '#000',
+                  shadowOffset: { width: 0, height: 2 },
+                  shadowOpacity: 0.25,
+                  shadowRadius: 4,
+                  elevation: 5,
+                },
+              ]}
               onPress={() => navigation.navigate('FoodSearch')}
               accessibilityRole="button"
               accessibilityLabel="Tìm kiếm món ăn"
               accessibilityHint="Chuyển sang màn hình tìm kiếm"
             >
-              <Icon name="search-outline" size="lg" color="text" />
+              <Icon name="search-outline" size="lg" color="primary" />
             </Pressable>
 
             {/* Capture Button với Gradient Ring */}
@@ -436,15 +446,25 @@ const AIScanScreen: React.FC = () => {
               </LinearGradient>
             </AnimatedPressable>
 
-            {/* Gallery Wrapper */}
+            {/* Gallery Button */}
             <Pressable
-              style={[glass.card, styles.sideButton]}
+              style={[
+                styles.sideButton,
+                {
+                  backgroundColor: 'rgba(255,255,255,0.95)',
+                  shadowColor: '#000',
+                  shadowOffset: { width: 0, height: 2 },
+                  shadowOpacity: 0.25,
+                  shadowRadius: 4,
+                  elevation: 5,
+                },
+              ]}
               onPress={handlePickImage}
               accessibilityRole="button"
               accessibilityLabel="Chọn từ thư viện"
               accessibilityHint="Chọn ảnh có sẵn từ thư viện"
             >
-              <Icon name="images-outline" size="lg" color="text" />
+              <Icon name="images-outline" size="lg" color="primary" />
             </Pressable>
           </Animated.View>
         )}
