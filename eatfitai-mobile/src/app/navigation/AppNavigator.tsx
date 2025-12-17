@@ -112,12 +112,8 @@ const AppNavigator = (): JSX.Element => {
                 name="MealDiary"
                 component={MealDiaryScreen}
                 options={{
-                  headerShown: true,
+                  headerShown: false,
                   title: 'Nhật ký bữa ăn',
-                  headerStyle: { backgroundColor: theme.colors.card },
-                  headerTintColor: theme.colors.text,
-                  headerShadowVisible: false,
-                  headerTitleStyle: { fontFamily: 'Inter_600SemiBold' },
                 }}
               />
               <Stack.Screen

@@ -129,29 +129,29 @@ export const FoodEntryCard: React.FC<FoodEntryCardProps> = ({
     const translateX = useSharedValue(0);
     const isSwipedOpen = useSharedValue(false);
 
-    const DELETE_THRESHOLD = -80;
-    const SWIPE_OPEN_THRESHOLD = -60;
+    const ACTION_THRESHOLD = -60;
+    const SWIPE_OPEN_THRESHOLD = -50;
 
     // Swipe gesture
     const panGesture = Gesture.Pan()
         .onUpdate((event) => {
             // Chỉ cho phép swipe sang trái
             if (event.translationX < 0) {
-                translateX.value = Math.max(event.translationX, DELETE_THRESHOLD);
+                translateX.value = Math.max(event.translationX, ACTION_THRESHOLD);
             } else if (isSwipedOpen.value) {
                 translateX.value = Math.min(0, SWIPE_OPEN_THRESHOLD + event.translationX);
             }
         })
         .onEnd((event) => {
-            if (translateX.value < SWIPE_OPEN_THRESHOLD) {
-                // Open delete button
+            if (translateX.value < SWIPE_OPEN_THRESHOLD / 2) {
+                // Open action buttons
                 translateX.value = withSpring(SWIPE_OPEN_THRESHOLD, {
                     damping: 20,
                     stiffness: 200,
                 });
                 isSwipedOpen.value = true;
             } else {
-                // Close delete button
+                // Close action buttons
                 translateX.value = withSpring(0, {
                     damping: 20,
                     stiffness: 200,
@@ -165,126 +165,95 @@ export const FoodEntryCard: React.FC<FoodEntryCardProps> = ({
     }));
 
     const handleDelete = useCallback(() => {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
         translateX.value = withSpring(0);
         isSwipedOpen.value = false;
         onDelete?.();
     }, [onDelete, translateX, isSwipedOpen]);
 
-    const getSourceBadgeStyle = () => {
-        switch (sourceMethod) {
-            case 'ai':
-                return {
-                    backgroundColor: isDark ? 'rgba(139, 92, 246, 0.2)' : '#F3E8FF',
-                    textColor: isDark ? '#A78BFA' : '#7C3AED',
-                    label: '✨ AI',
-                };
-            case 'search':
-                return {
-                    backgroundColor: isDark ? 'rgba(59, 130, 246, 0.2)' : '#DBEAFE',
-                    textColor: isDark ? '#60A5FA' : '#2563EB',
-                    label: '🔍',
-                };
-            default:
-                return {
-                    backgroundColor: isDark ? 'rgba(156, 163, 175, 0.2)' : '#F3F4F6',
-                    textColor: isDark ? '#9CA3AF' : '#6B7280',
-                    label: '✏️',
-                };
-        }
-    };
+    const handleEdit = useCallback(() => {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        translateX.value = withSpring(0);
+        isSwipedOpen.value = false;
+        onEdit?.();
+    }, [onEdit, translateX, isSwipedOpen]);
 
-    const badge = getSourceBadgeStyle();
     const foodEmoji = getFoodEmoji(foodName);
 
     const styles = getStyles(theme, isDark);
 
     return (
         <View style={styles.container}>
-            {/* Delete action background */}
-            <View style={styles.deleteBackground}>
-                <Pressable style={styles.deleteButton} onPress={handleDelete}>
-                    <Ionicons name="trash-outline" size={22} color="#FFF" />
-                    <ThemedText variant="caption" style={{
-                        color: '#FFF',
-                        fontWeight: '600',
-                        fontSize: 13,
-                    }}>
-                        Xóa
+            {/* Main card */}
+            <Pressable
+                style={styles.card}
+                onPress={onPress}
+            >
+                {/* Food image / emoji */}
+                <View style={styles.imageContainer}>
+                    {imageUrl ? (
+                        <Image source={{ uri: imageUrl }} style={styles.foodImage} />
+                    ) : (
+                        <View style={styles.emojiContainer}>
+                            <ThemedText style={styles.emoji}>{foodEmoji}</ThemedText>
+                        </View>
+                    )}
+                </View>
+
+                {/* Content */}
+                <View style={styles.content}>
+                    <ThemedText
+                        variant="body"
+                        weight="600"
+                        numberOfLines={1}
+                        style={styles.foodName}
+                    >
+                        {foodName}
                     </ThemedText>
-                </Pressable>
-            </View>
 
-            {/* Main card với swipe */}
-            <GestureDetector gesture={panGesture}>
-                <AnimatedPressable
-                    style={[styles.card, cardStyle]}
-                    onPress={onPress}
-                    entering={FadeIn.duration(200)}
-                    exiting={FadeOut.duration(150)}
-                >
-                    {/* Food image / emoji */}
-                    <View style={styles.imageContainer}>
-                        {imageUrl ? (
-                            <Image source={{ uri: imageUrl }} style={styles.foodImage} />
-                        ) : (
-                            <View style={styles.emojiContainer}>
-                                <ThemedText style={styles.emoji}>{foodEmoji}</ThemedText>
-                            </View>
+                    {/* Quantity + Calories */}
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                        {quantityText && (
+                            <ThemedText variant="caption" color="textSecondary" numberOfLines={1}>
+                                {quantityText}
+                            </ThemedText>
                         )}
+                        <ThemedText variant="caption" color="textSecondary">·</ThemedText>
+                        <ThemedText variant="caption" weight="600" color="primary">
+                            {Math.round(calories)} kcal
+                        </ThemedText>
                     </View>
 
-                    {/* Content */}
-                    <View style={styles.content}>
-                        <View style={styles.titleRow}>
-                            <ThemedText
-                                variant="body"
-                                weight="600"
-                                numberOfLines={1}
-                                style={styles.foodName}
-                            >
-                                {foodName}
-                            </ThemedText>
-                            <View style={[styles.badge, { backgroundColor: badge.backgroundColor }]}>
-                                <ThemedText variant="caption" style={{ color: badge.textColor }}>
-                                    {badge.label}
-                                </ThemedText>
-                            </View>
-                        </View>
-
-                        {/* Quantity + Calories */}
-                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                            {quantityText && (
-                                <ThemedText variant="caption" color="textSecondary" numberOfLines={1}>
-                                    {quantityText}
-                                </ThemedText>
-                            )}
-                            <ThemedText variant="caption" color="textSecondary">·</ThemedText>
-                            <ThemedText variant="caption" weight="600" color="primary">
-                                {Math.round(calories)} kcal
+                    {/* Macro chips */}
+                    <View style={styles.macroRow}>
+                        <View style={[styles.macroChip, { backgroundColor: 'rgba(59, 130, 246, 0.15)' }]}>
+                            <ThemedText variant="caption" style={{ color: '#3B82F6' }}>
+                                P {Math.round(protein)}g
                             </ThemedText>
                         </View>
-
-                        {/* Macro chips */}
-                        <View style={styles.macroRow}>
-                            <View style={[styles.macroChip, { backgroundColor: 'rgba(59, 130, 246, 0.15)' }]}>
-                                <ThemedText variant="caption" style={{ color: '#3B82F6' }}>
-                                    P {Math.round(protein)}g
-                                </ThemedText>
-                            </View>
-                            <View style={[styles.macroChip, { backgroundColor: 'rgba(251, 191, 36, 0.15)' }]}>
-                                <ThemedText variant="caption" style={{ color: '#D97706' }}>
-                                    C {Math.round(carbs)}g
-                                </ThemedText>
-                            </View>
-                            <View style={[styles.macroChip, { backgroundColor: 'rgba(236, 72, 153, 0.15)' }]}>
-                                <ThemedText variant="caption" style={{ color: '#DB2777' }}>
-                                    F {Math.round(fat)}g
-                                </ThemedText>
-                            </View>
+                        <View style={[styles.macroChip, { backgroundColor: 'rgba(251, 191, 36, 0.15)' }]}>
+                            <ThemedText variant="caption" style={{ color: '#D97706' }}>
+                                C {Math.round(carbs)}g
+                            </ThemedText>
+                        </View>
+                        <View style={[styles.macroChip, { backgroundColor: 'rgba(236, 72, 153, 0.15)' }]}>
+                            <ThemedText variant="caption" style={{ color: '#DB2777' }}>
+                                F {Math.round(fat)}g
+                            </ThemedText>
                         </View>
                     </View>
-                </AnimatedPressable>
-            </GestureDetector>
+                </View>
+
+                {/* Action buttons */}
+                <View style={styles.actionsColumn}>
+                    <Pressable style={styles.editButton} onPress={handleEdit}>
+                        <Ionicons name="pencil" size={16} color="#FFF" />
+                    </Pressable>
+                    <Pressable style={styles.deleteButton} onPress={handleDelete}>
+                        <Ionicons name="trash" size={16} color="#FFF" />
+                    </Pressable>
+                </View>
+            </Pressable>
         </View>
     );
 };
@@ -295,21 +264,36 @@ const getStyles = (theme: any, isDark: boolean) =>
             position: 'relative',
             marginBottom: theme.spacing.sm,
         },
-        deleteBackground: {
+        actionsBackground: {
             position: 'absolute',
             right: 0,
             top: 0,
             bottom: 0,
-            width: 80,
-            backgroundColor: '#EF4444', // Hardcoded bright red cho visibility tốt
+            width: 50,
+            flexDirection: 'column',
             borderRadius: theme.radius.lg,
-            justifyContent: 'center',
+            overflow: 'hidden',
+        },
+        actionsColumn: {
+            flexDirection: 'column',
+            gap: 4,
+            marginLeft: 'auto',
+        },
+        editButton: {
+            width: 32,
+            height: 32,
+            borderRadius: 8,
+            backgroundColor: '#3B82F6',
             alignItems: 'center',
+            justifyContent: 'center',
         },
         deleteButton: {
+            width: 32,
+            height: 32,
+            borderRadius: 8,
+            backgroundColor: '#EF4444',
             alignItems: 'center',
             justifyContent: 'center',
-            gap: 2,
         },
         card: {
             flexDirection: 'row',

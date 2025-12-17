@@ -32,6 +32,7 @@ import { t } from '../../../i18n/vi';
 import Toast from 'react-native-toast-message';
 import { AnimatedEmptyState } from '../../../components/ui/AnimatedEmptyState';
 import { FoodEntryCard } from '../../../components/ui/FoodEntryCard';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -62,6 +63,7 @@ const MealDiaryScreen = (): JSX.Element => {
   const isDark = theme.mode === 'dark';
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
   const route = useRoute<RouteProp<RootStackParamList, 'MealDiary'>>();
+  const insets = useSafeAreaInsets();
 
   // Nếu có selectedDate từ params (từ MonthStats), parse và set
   const initialDate = useMemo(() => {
@@ -106,8 +108,14 @@ const MealDiaryScreen = (): JSX.Element => {
     }, 100);
   }, [todayIndex]);
 
-  // Format date for display
-  const formatDate = useCallback((date: Date) => {
+  // Format date for display (date chips - only weekday name)
+  const formatDateChip = useCallback((date: Date) => {
+    const weekdays = ['CN', 'Th 2', 'Th 3', 'Th 4', 'Th 5', 'Th 6', 'Th 7'];
+    return weekdays[date.getDay()];
+  }, []);
+
+  // Format date for date picker button (with Hôm nay/Hôm qua)
+  const formatDateLabel = useCallback((date: Date) => {
     const today = new Date();
     const tomorrow = new Date(today);
     tomorrow.setDate(today.getDate() + 1);
@@ -233,12 +241,12 @@ const MealDiaryScreen = (): JSX.Element => {
       const isSelected = date.toDateString() === selectedDate.toDateString();
       const isToday = date.toDateString() === new Date().toDateString();
       const dayNum = date.getDate();
-      const dayName = formatDate(date).split(',')[0];
+      const dayName = formatDateChip(date);
 
       return (
         <Pressable
           onPress={() => handleDateSelect(date)}
-          style={{ marginRight: 8 }}
+          style={{ marginRight: 10 }}
           accessibilityRole="button"
           accessibilityLabel={`${dayName} ngày ${dayNum}${isToday ? ', hôm nay' : ''}${isSelected ? ', đang chọn' : ''}`}
           accessibilityState={{ selected: isSelected }}
@@ -246,36 +254,34 @@ const MealDiaryScreen = (): JSX.Element => {
           <Animated.View
             style={[
               styles.dateChip,
-              {
-                backgroundColor: isSelected
-                  ? theme.colors.primary
-                  : isDark
-                    ? 'rgba(255,255,255,0.08)'
-                    : 'rgba(0,0,0,0.05)',
-                borderColor: isToday && !isSelected ? theme.colors.primary : 'transparent',
-                borderWidth: isToday && !isSelected ? 1.5 : 0,
-              },
+              isSelected && styles.dateChipSelected,
+              isToday && !isSelected && styles.dateChipToday,
             ]}
           >
             <ThemedText
               variant="caption"
-              weight="600"
-              style={{ color: isSelected ? '#fff' : theme.colors.textSecondary }}
+              weight="500"
+              style={[styles.dateChipLabel, isSelected && { color: '#fff' }]}
             >
               {dayName}
             </ThemedText>
-            <ThemedText
-              variant="h4"
-              weight="700"
-              style={{ color: isSelected ? '#fff' : theme.colors.text }}
-            >
-              {dayNum}
-            </ThemedText>
+            <View style={[
+              styles.dateChipNumber,
+              isSelected && { backgroundColor: 'rgba(255,255,255,0.2)' }
+            ]}>
+              <ThemedText
+                variant="h4"
+                weight="700"
+                style={{ color: isSelected ? '#fff' : theme.colors.text, textAlign: 'center' }}
+              >
+                {dayNum}
+              </ThemedText>
+            </View>
           </Animated.View>
         </Pressable>
       );
     },
-    [selectedDate, handleDateSelect, formatDate, theme, isDark],
+    [selectedDate, handleDateSelect, formatDateChip, theme, isDark],
   );
 
   // Render summary header
@@ -283,31 +289,40 @@ const MealDiaryScreen = (): JSX.Element => {
     if (entries.length === 0) return null;
 
     return (
-      <Animated.View entering={FadeInDown.delay(100).springify()} style={{ marginBottom: 16 }}>
+      <Animated.View entering={FadeInDown.delay(100).springify()} style={{ marginBottom: 20 }}>
         <LinearGradient
-          colors={isDark ? ['#1a1a2e', '#16213e'] : ['#667eea', '#764ba2']}
+          colors={isDark
+            ? ['rgba(102, 126, 234, 0.15)', 'rgba(118, 75, 162, 0.15)']
+            : ['#667eea', '#764ba2']
+          }
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={styles.summaryCard}
         >
+          {/* Calories main */}
           <View style={styles.summaryMain}>
             <ThemedText style={styles.summaryCalories}>{Math.round(totals.calories)}</ThemedText>
             <ThemedText style={styles.summaryLabel}>kcal hôm nay</ThemedText>
           </View>
 
+          {/* Macro pills */}
           <View style={styles.summaryMacros}>
-            <View style={styles.macroItem}>
-              <ThemedText style={styles.macroValue}>{totals.protein.toFixed(0)}g</ThemedText>
+            <View style={[styles.macroPill, { backgroundColor: 'rgba(239, 68, 68, 0.2)' }]}>
+              <ThemedText style={[styles.macroValue, { color: isDark ? '#fca5a5' : '#fff' }]}>
+                {totals.protein.toFixed(0)}g
+              </ThemedText>
               <ThemedText style={styles.macroLabel}>Protein</ThemedText>
             </View>
-            <View style={styles.macroDivider} />
-            <View style={styles.macroItem}>
-              <ThemedText style={styles.macroValue}>{totals.carbs.toFixed(0)}g</ThemedText>
+            <View style={[styles.macroPill, { backgroundColor: 'rgba(59, 130, 246, 0.2)' }]}>
+              <ThemedText style={[styles.macroValue, { color: isDark ? '#93c5fd' : '#fff' }]}>
+                {totals.carbs.toFixed(0)}g
+              </ThemedText>
               <ThemedText style={styles.macroLabel}>Carbs</ThemedText>
             </View>
-            <View style={styles.macroDivider} />
-            <View style={styles.macroItem}>
-              <ThemedText style={styles.macroValue}>{totals.fat.toFixed(0)}g</ThemedText>
+            <View style={[styles.macroPill, { backgroundColor: 'rgba(234, 179, 8, 0.2)' }]}>
+              <ThemedText style={[styles.macroValue, { color: isDark ? '#fde047' : '#fff' }]}>
+                {totals.fat.toFixed(0)}g
+              </ThemedText>
               <ThemedText style={styles.macroLabel}>Fat</ThemedText>
             </View>
           </View>
@@ -351,6 +366,7 @@ const MealDiaryScreen = (): JSX.Element => {
           quantityText={entry.quantityText ?? undefined}
           sourceMethod={entry.sourceMethod as 'ai' | 'manual' | 'search'}
           onPress={() => handleEditGrams(entry)}
+          onEdit={() => handleEditGrams(entry)}
           onDelete={handleDelete}
         />
       );
@@ -425,10 +441,68 @@ const MealDiaryScreen = (): JSX.Element => {
       flex: 1,
       backgroundColor: theme.colors.background,
     },
+    screenHeader: {
+      paddingHorizontal: 16,
+      paddingBottom: 4,
+    },
+    headerRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+    },
+    backButton: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)',
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    headerCenter: {
+      flex: 1,
+      alignItems: 'center',
+    },
     header: {
       paddingHorizontal: 16,
-      paddingTop: 16,
-      paddingBottom: 8,
+      paddingTop: 8,
+      paddingBottom: 12,
+    },
+    datePickerButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 10,
+      backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.04)',
+      paddingHorizontal: 16,
+      paddingVertical: 10,
+      borderRadius: 14,
+      alignSelf: 'flex-start',
+    },
+    dateIconWrapper: {
+      width: 32,
+      height: 32,
+      borderRadius: 10,
+      backgroundColor: theme.colors.primaryLight,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    datePickerContainer: {
+      backgroundColor: isDark ? theme.colors.card : '#fff',
+      borderRadius: 16,
+      marginHorizontal: 16,
+      marginBottom: 12,
+      overflow: 'hidden',
+    },
+    datePickerHeader: {
+      flexDirection: 'row',
+      justifyContent: 'flex-end',
+      paddingHorizontal: 16,
+      paddingVertical: 12,
+      borderBottomWidth: 1,
+      borderBottomColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)',
+    },
+    datePickerDoneBtn: {
+      paddingHorizontal: 16,
+      paddingVertical: 6,
     },
     dateSelector: {
       position: 'relative',
@@ -446,44 +520,83 @@ const MealDiaryScreen = (): JSX.Element => {
     },
     dateChip: {
       width: 56,
-      height: 64,
+      height: 76,
       borderRadius: 16,
       alignItems: 'center',
+      justifyContent: 'flex-start',
+      paddingTop: 10,
+      paddingHorizontal: 4,
+      backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.03)',
+    },
+    dateChipSelected: {
+      backgroundColor: theme.colors.primary,
+    },
+    dateChipToday: {
+      borderWidth: 2,
+      borderColor: theme.colors.primary,
+      backgroundColor: theme.colors.primary + '15',
+    },
+    dateChipLabel: {
+      color: theme.colors.textSecondary,
+      fontSize: 11,
+      marginBottom: 4,
+    },
+    dateChipNumber: {
+      width: 36,
+      height: 36,
+      borderRadius: 12,
+      alignItems: 'center',
       justifyContent: 'center',
-      gap: 2,
+      backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.04)',
     },
     content: {
       flex: 1,
       paddingHorizontal: 16,
     },
     summaryCard: {
-      borderRadius: 20,
-      padding: 20,
+      borderRadius: 24,
+      padding: 24,
       marginHorizontal: 16,
+      borderWidth: isDark ? 1 : 0,
+      borderColor: 'rgba(255,255,255,0.1)',
       ...theme.shadows.lg,
     },
     summaryMain: {
       alignItems: 'center',
-      marginBottom: 16,
-      paddingTop: 8, // Thêm padding để số không bị cắt trên
+      marginBottom: 20,
+    },
+    caloriesRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+    },
+    fireEmoji: {
+      fontSize: 32,
     },
     summaryCalories: {
-      fontSize: 36,
-      fontWeight: 'bold',
-      color: '#fff',
-      textAlign: 'center',
-      letterSpacing: 1,
-      lineHeight: 48, // Đảm bảo lineHeight đủ lớn để không cắt số
-      includeFontPadding: true, // Bao gồm font padding
+      fontSize: 48,
+      fontWeight: '800',
+      color: isDark ? theme.colors.text : '#fff',
+      letterSpacing: -1,
+      lineHeight: 56,
     },
     summaryLabel: {
       fontSize: 14,
-      color: 'rgba(255,255,255,0.8)',
+      color: isDark ? theme.colors.textSecondary : 'rgba(255,255,255,0.85)',
       marginTop: 4,
+      fontWeight: '500',
     },
     summaryMacros: {
       flexDirection: 'row',
-      justifyContent: 'space-around',
+      justifyContent: 'space-between',
+      gap: 10,
+    },
+    macroPill: {
+      flex: 1,
+      alignItems: 'center',
+      paddingVertical: 12,
+      paddingHorizontal: 8,
+      borderRadius: 14,
     },
     macroItem: {
       alignItems: 'center',
@@ -496,8 +609,9 @@ const MealDiaryScreen = (): JSX.Element => {
     },
     macroLabel: {
       fontSize: 11,
-      color: 'rgba(255,255,255,0.7)',
+      color: isDark ? 'rgba(255,255,255,0.6)' : 'rgba(255,255,255,0.8)',
       marginTop: 2,
+      fontWeight: '500',
     },
     macroDivider: {
       width: 1,
@@ -573,57 +687,77 @@ const MealDiaryScreen = (): JSX.Element => {
   return (
     <Screen scroll={false}>
       <View style={styles.container}>
+        {/* Custom Header với Back button */}
+        <View style={[styles.screenHeader, { paddingTop: insets.top }]}>
+          <View style={styles.headerRow}>
+            <Pressable
+              onPress={() => navigation.goBack()}
+              style={styles.backButton}
+              hitSlop={8}
+            >
+              <Ionicons name="chevron-back" size={24} color={theme.colors.text} />
+            </Pressable>
+            <View style={styles.headerCenter}>
+              <ThemedText variant="h3" weight="700">
+                📔 Nhật ký bữa ăn
+              </ThemedText>
+            </View>
+            <View style={{ width: 40 }} />
+          </View>
+        </View>
+
         {/* Date label với nút chọn lịch */}
         <View style={styles.header}>
           <Pressable
             onPress={() => setShowDatePicker(true)}
-            style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}
+            style={styles.datePickerButton}
           >
-            <ThemedText variant="h4" color="textSecondary">
-              {formatDate(selectedDate) === 'Hôm nay'
-                ? '📅 Hôm nay'
-                : formatDate(selectedDate) === 'Hôm qua'
-                  ? '📅 Hôm qua'
-                  : `📅 ${formatDate(selectedDate)}`}
-            </ThemedText>
-            <View
-              style={{
-                backgroundColor: theme.colors.primaryLight,
-                borderRadius: 8,
-                padding: 6,
-              }}
-            >
+            <View style={styles.dateIconWrapper}>
               <Ionicons name="calendar" size={18} color={theme.colors.primary} />
             </View>
+            <ThemedText variant="h4" weight="600">
+              {formatDateLabel(selectedDate)}
+            </ThemedText>
+            <Ionicons name="chevron-down" size={18} color={theme.colors.textSecondary} />
           </Pressable>
         </View>
 
         {/* Native Date Picker Modal */}
         {showDatePicker && (
-          <DateTimePicker
-            value={selectedDate}
-            mode="date"
-            display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-            onChange={(event: any, date?: Date) => {
-              setShowDatePicker(Platform.OS === 'ios');
-              if (date) {
-                setSelectedDate(date);
-                // Cuộn đến ngày được chọn nếu nằm trong range
-                const idx = dateOptions.findIndex(
-                  (d) => d.toDateString() === date.toDateString()
-                );
-                if (idx >= 0) {
-                  dateListRef.current?.scrollToIndex({
-                    index: idx,
-                    animated: true,
-                    viewPosition: 0.5,
-                  });
+          <View style={styles.datePickerContainer}>
+            {Platform.OS === 'ios' && (
+              <View style={styles.datePickerHeader}>
+                <Pressable onPress={() => setShowDatePicker(false)} style={styles.datePickerDoneBtn}>
+                  <ThemedText variant="body" weight="600" color="primary">Xong</ThemedText>
+                </Pressable>
+              </View>
+            )}
+            <DateTimePicker
+              value={selectedDate}
+              mode="date"
+              display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+              onChange={(event: any, date?: Date) => {
+                if (Platform.OS !== 'ios') {
+                  setShowDatePicker(false);
                 }
-              }
-            }}
-            maximumDate={new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)}
-            minimumDate={new Date(Date.now() - 365 * 24 * 60 * 60 * 1000)}
-          />
+                if (date) {
+                  setSelectedDate(date);
+                  const idx = dateOptions.findIndex(
+                    (d) => d.toDateString() === date.toDateString()
+                  );
+                  if (idx >= 0) {
+                    dateListRef.current?.scrollToIndex({
+                      index: idx,
+                      animated: true,
+                      viewPosition: 0.5,
+                    });
+                  }
+                }
+              }}
+              maximumDate={new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)}
+              minimumDate={new Date(Date.now() - 365 * 24 * 60 * 60 * 1000)}
+            />
+          </View>
         )}
 
         {/* Date Selector - scroll để xem thêm ngày */}
