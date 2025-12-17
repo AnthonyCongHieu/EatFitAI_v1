@@ -49,13 +49,16 @@ export const MacroPieChart: React.FC<MacroPieChartProps> = ({ protein, carbs, fa
           data={data}
           colorScale={colorScale}
           innerRadius={70}
-          radius={120}
+          radius={100}
           padAngle={2}
           labels={({ datum }) => (datum.y > 0 ? datum.label : '')}
+          labelRadius={120}
           style={{
             labels: { fill: theme.colors.text, fontSize: 14, fontWeight: '600' },
           }}
-          height={260}
+          width={300}
+          height={300}
+          padding={{ top: 40, bottom: 40, left: 40, right: 40 }}
         />
         <View style={styles.centerLabel}>
           <ThemedText variant="h2" weight="700">
