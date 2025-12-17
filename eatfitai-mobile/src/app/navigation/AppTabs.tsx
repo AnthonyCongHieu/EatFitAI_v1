@@ -108,22 +108,11 @@ const AppTabs = (): JSX.Element => {
         options={{
           title: t('navigation.home'),
           tabBarIcon: ({ color, size, focused }) => (
-            <View
-              style={
-                focused
-                  ? [
-                    styles.activeIconPill,
-                    { backgroundColor: theme.colors.primary + '20' },
-                  ]
-                  : undefined
-              }
-            >
-              <Ionicons
-                name={focused ? 'home' : 'home-outline'}
-                color={color}
-                size={size}
-              />
-            </View>
+            <Ionicons
+              name={focused ? 'home' : 'home-outline'}
+              color={color}
+              size={size}
+            />
           ),
         }}
       />
@@ -133,22 +122,11 @@ const AppTabs = (): JSX.Element => {
         options={{
           title: 'AI Scan',
           tabBarIcon: ({ color, size, focused }) => (
-            <View
-              style={
-                focused
-                  ? [
-                    styles.scanIconActive,
-                    { backgroundColor: theme.colors.primary + '20' },
-                  ]
-                  : undefined
-              }
-            >
-              <Ionicons
-                name={focused ? 'scan' : 'scan-outline'}
-                color={color}
-                size={size + 2}
-              />
-            </View>
+            <Ionicons
+              name={focused ? 'scan' : 'scan-outline'}
+              color={color}
+              size={size}
+            />
           ),
         }}
       />
@@ -158,22 +136,11 @@ const AppTabs = (): JSX.Element => {
         options={{
           title: t('navigation.voice'),
           tabBarIcon: ({ color, size, focused }) => (
-            <View
-              style={
-                focused
-                  ? [
-                    styles.activeIconPill,
-                    { backgroundColor: theme.colors.secondary + '20' },
-                  ]
-                  : undefined
-              }
-            >
-              <Ionicons
-                name={focused ? 'mic' : 'mic-outline'}
-                color={color}
-                size={size}
-              />
-            </View>
+            <Ionicons
+              name={focused ? 'mic' : 'mic-outline'}
+              color={color}
+              size={size}
+            />
           ),
         }}
       />
@@ -216,12 +183,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   activeIconPill: {
-    padding: 8,
-    borderRadius: 16,
+    padding: 10,
+    borderRadius: 14,
   },
   scanIconActive: {
-    padding: 8,
-    borderRadius: 12,
+    padding: 10,
+    borderRadius: 14,
   },
 });
 
