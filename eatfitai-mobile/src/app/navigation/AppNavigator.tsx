@@ -76,12 +76,7 @@ const AppNavigator = (): JSX.Element => {
                 name="FoodSearch"
                 component={FoodSearchScreen}
                 options={{
-                  headerShown: true,
-                  title: t('navigation.foodSearch'),
-                  headerStyle: { backgroundColor: theme.colors.card },
-                  headerTintColor: theme.colors.text,
-                  headerShadowVisible: false,
-                  headerTitleStyle: { fontFamily: 'Inter_600SemiBold' },
+                  headerShown: false, // Custom header in screen
                 }}
               />
               <Stack.Screen

@@ -59,12 +59,12 @@ interface AnimatedEmptyStateProps {
 const VARIANT_EMOJIS: Record<EmptyStateVariant, string> = {
     'no-food': '🍽️',
     'no-search-results': '🔍',
-    'no-favorites': '⭐',
+    'no-favorites': '❤️',
     'no-history': '📅',
     'no-achievements': '🏆',
-    'error': '😅',
-    'offline': '📡',
-    'custom': '📭',
+    error: '😅',
+    offline: '📡',
+    custom: '📭',
 };
 
 export const AnimatedEmptyState = ({
@@ -80,60 +80,43 @@ export const AnimatedEmptyState = ({
     const { theme } = useAppTheme();
 
     // Animation values
-    const bounce = useSharedValue(0);
     const scale = useSharedValue(1);
 
     useEffect(() => {
-        // Subtle bounce animation for the emoji
-        bounce.value = withRepeat(
-            withSequence(
-                withTiming(-8, { duration: 1000 }),
-                withTiming(0, { duration: 1000 })
-            ),
-            -1,
-            true
-        );
-
         // Subtle pulse for the container
         scale.value = withRepeat(
             withSequence(
                 withTiming(1.02, { duration: 2000 }),
-                withTiming(1, { duration: 2000 })
+                withTiming(1, { duration: 2000 }),
             ),
             -1,
-            true
+            true,
         );
     }, []);
-
-    const emojiStyle = useAnimatedStyle(() => ({
-        transform: [{ translateY: bounce.value }],
-    }));
 
     const containerAnimStyle = useAnimatedStyle(() => ({
         transform: [{ scale: scale.value }],
     }));
 
-    const displayEmoji = emoji || VARIANT_EMOJIS[variant];
-
     const styles = StyleSheet.create({
         container: {
             alignItems: 'center',
             justifyContent: 'center',
-            paddingVertical: compact ? theme.spacing.xl : theme.spacing.xxl * 2,
+            paddingTop: compact ? theme.spacing.xl : 60,
+            paddingBottom: compact ? theme.spacing.xl : theme.spacing.xxl,
             paddingHorizontal: theme.spacing.lg,
         },
         emojiContainer: {
-            width: compact ? 80 : 120,
-            height: compact ? 80 : 120,
-            borderRadius: compact ? 40 : 60,
+            width: compact ? 80 : 100,
+            height: compact ? 80 : 100,
+            borderRadius: compact ? 40 : 50,
             backgroundColor: theme.colors.primaryLight,
             alignItems: 'center',
             justifyContent: 'center',
-            marginBottom: theme.spacing.xl,
-            ...theme.shadows.md,
+            marginBottom: theme.spacing.lg,
         },
         emoji: {
-            fontSize: compact ? 36 : 56,
+            fontSize: compact ? 36 : 44,
         },
         textContainer: {
             alignItems: 'center',
@@ -162,23 +145,14 @@ export const AnimatedEmptyState = ({
             entering={FadeInUp.springify()}
             style={[styles.container, containerAnimStyle, style]}
         >
-            {/* Animated Emoji */}
-            <Animated.View style={[styles.emojiContainer, emojiStyle]}>
-                <ThemedText style={styles.emoji}>{displayEmoji}</ThemedText>
-            </Animated.View>
-
-            {/* Text Content */}
+            {/* Text Content - no emoji */}
             <View style={styles.textContainer}>
                 <ThemedText variant="h3" weight="600" style={styles.title}>
                     {title}
                 </ThemedText>
 
                 {description && (
-                    <ThemedText
-                        variant="body"
-                        color="textSecondary"
-                        style={styles.description}
-                    >
+                    <ThemedText variant="body" color="textSecondary" style={styles.description}>
                         {description}
                     </ThemedText>
                 )}
