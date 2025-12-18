@@ -3,6 +3,8 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "prestart": "node scripts/generate-local-ip.js",
+    "predev": "node scripts/generate-local-ip.js",
     "dev": "env-cmd -f .env.development expo start",
     "start": "env-cmd -f .env expo start",
     "android": "expo run:android",

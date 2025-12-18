@@ -1,6 +1,23 @@
 import Constants from 'expo-constants';
 import { Platform } from 'react-native';
 
+// Import config được generate tự động khi chạy 'npm run start'
+// File này chứa IP local được detect tại thời điểm Metro start
+let GENERATED_API_BASE_URL: string | undefined;
+try {
+  // Dynamic import để tránh lỗi nếu file chưa được generate
+  const generatedConfig = require('./generated-api-config');
+  GENERATED_API_BASE_URL = generatedConfig.GENERATED_API_BASE_URL;
+  if (__DEV__ && GENERATED_API_BASE_URL) {
+    console.log('[EatFitAI] Using generated API config:', GENERATED_API_BASE_URL);
+  }
+} catch {
+  // File chưa được generate - sẽ dùng fallback logic
+  if (__DEV__) {
+    console.log('[EatFitAI] generated-api-config.ts not found, using fallback detection');
+  }
+}
+
 const normalizeUrl = (value: string | undefined | null): string | undefined => {
   if (!value) {
     return undefined;
@@ -104,6 +121,11 @@ export const API_BASE_URL: string | undefined = (() => {
   const explicit = normalizeUrl(process.env.EXPO_PUBLIC_API_BASE_URL);
   if (explicit) {
     return explicit;
+  }
+
+  // 2. Ưu tiên thứ 2: Generated config từ script pre-start (đáng tin cậy nhất)
+  if (GENERATED_API_BASE_URL) {
+    return GENERATED_API_BASE_URL;
   }
 
   // 2. Từ app.config.js extra (auto-detected IP khi Metro start)
