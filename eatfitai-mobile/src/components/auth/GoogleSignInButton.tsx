@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Google Sign-in Button Component
  * Beautiful Google Sign-in button for login screen
  * 
@@ -30,7 +30,7 @@ export const GoogleSignInButton = ({
     onError,
     disabled = false,
     style,
-}: GoogleSignInButtonProps): JSX.Element => {
+}: GoogleSignInButtonProps): React.ReactElement => {
     const { theme } = useAppTheme();
     const isDark = theme.mode === 'dark';
     const [isLoading, setIsLoading] = useState(false);

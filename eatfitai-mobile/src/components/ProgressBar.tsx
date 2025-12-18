@@ -1,4 +1,4 @@
-import { View, StyleSheet } from 'react-native';
+﻿import { View, StyleSheet } from 'react-native';
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
@@ -27,7 +27,7 @@ export const ProgressBar = ({
   animated = true,
   showPercentage = false,
   rounded = true,
-}: ProgressBarProps): JSX.Element => {
+}: ProgressBarProps): React.ReactElement => {
   const { theme } = useAppTheme();
 
   const animatedProgress = useSharedValue(0);

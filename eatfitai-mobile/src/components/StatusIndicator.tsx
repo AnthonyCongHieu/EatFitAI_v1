@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+﻿import type { ReactNode } from 'react';
 import { View, StyleSheet } from 'react-native';
 import Animated, {
   useAnimatedStyle,
@@ -71,7 +71,7 @@ export const StatusIndicator = ({
   animated = true,
   showIcon = true,
   customIcon,
-}: StatusIndicatorProps): JSX.Element => {
+}: StatusIndicatorProps): React.ReactElement => {
   const { theme } = useAppTheme();
 
   const config = getStatusConfig(type, theme);

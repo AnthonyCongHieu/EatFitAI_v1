@@ -1,4 +1,4 @@
-// Bottom Tabs after authentication
+﻿// Bottom Tabs after authentication
 // 5 tabs: Home, AI Scan, Voice, Stats, Profile
 
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -35,7 +35,7 @@ const AnimatedTabButton = ({
   onLongPress,
   accessibilityState,
   ...rest
-}: any): JSX.Element => {
+}: any): React.ReactElement => {
   const scale = useSharedValue(1);
   const isSelected = accessibilityState?.selected ?? false;
 
@@ -67,7 +67,7 @@ const AnimatedTabButton = ({
   );
 };
 
-const AppTabs = (): JSX.Element => {
+const AppTabs = (): React.ReactElement => {
   const { theme } = useAppTheme();
   const isDark = theme.mode === 'dark';
 

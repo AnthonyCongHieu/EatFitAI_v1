@@ -1,4 +1,4 @@
-import { useCallback, useState, useEffect } from 'react';
+﻿import { useCallback, useState, useEffect } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Controller, useForm } from 'react-hook-form';
 import { z } from 'zod';
@@ -43,7 +43,7 @@ const RegisterSchema = z
 type RegisterValues = z.infer<typeof RegisterSchema>;
 type Props = NativeStackScreenProps<RootStackParamList, 'Register'>;
 
-const RegisterScreen = ({ navigation }: Props): JSX.Element => {
+const RegisterScreen = ({ navigation }: Props): React.ReactElement => {
   const { theme } = useAppTheme();
   const signInWithGoogle = useAuthStore((s) => s.signInWithGoogle);
   const [loading, setLoading] = useState(false);

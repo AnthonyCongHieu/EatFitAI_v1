@@ -1,4 +1,4 @@
-/**
+﻿/**
  * AnimatedEmptyState - Enhanced empty state with animated illustrations
  * Provides engaging, actionable empty states for better UX
  */
@@ -76,7 +76,7 @@ export const AnimatedEmptyState = ({
     secondaryAction,
     style,
     compact = false,
-}: AnimatedEmptyStateProps): JSX.Element => {
+}: AnimatedEmptyStateProps): React.ReactElement => {
     const { theme } = useAppTheme();
 
     // Animation values

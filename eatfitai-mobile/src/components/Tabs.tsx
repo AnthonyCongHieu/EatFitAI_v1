@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+﻿import type { ReactNode } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import Animated, {
   useAnimatedStyle,
@@ -38,7 +38,7 @@ export const Tabs = ({
   scrollable = false,
   animated = true,
   disabled = false,
-}: TabsProps): JSX.Element => {
+}: TabsProps): React.ReactElement => {
   const { theme } = useAppTheme();
 
   const activeIndex = tabs.findIndex((tab) => tab.key === activeTab);

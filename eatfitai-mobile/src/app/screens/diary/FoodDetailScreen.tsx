@@ -15,7 +15,7 @@ import Animated, {
   withTiming,
   interpolate,
 } from 'react-native-reanimated';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { LinearGradient } from 'expo-linear-gradient';
 
 import { ThemedText } from '../../../components/ThemedText';
@@ -64,13 +64,13 @@ const FormSchema = z.object({
 
 type FormValues = z.infer<typeof FormSchema>;
 
-const FoodDetailScreen = (): JSX.Element | null => {
+const FoodDetailScreen = (): React.ReactElement | null => {
   const { theme } = useAppTheme();
   const isDark = theme.mode === 'dark';
   const glass = glassStyles(isDark);
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<RouteProps>();
-  const refreshSummary = useDiaryStore((state) => state.refreshSummary);
+  const queryClient = useQueryClient();
 
   // Move styles to useMemo to fix hooks order
   const styles = useMemo(
@@ -278,7 +278,9 @@ const FoodDetailScreen = (): JSX.Element | null => {
           text1: 'Đã thêm món vào nhật ký',
           text2: 'Tiếp tục theo dõi dinh dưỡng của bạn!',
         });
-        await refreshSummary().catch(() => { });
+        // ⚡ Invalidate cache để HomeScreen/MealDiary tự động cập nhật
+        queryClient.invalidateQueries({ queryKey: ['home-summary'] });
+        queryClient.invalidateQueries({ queryKey: ['diary-entries'] });
         navigation.goBack();
       } catch (err: any) {
         handleApiError(err);
@@ -286,7 +288,7 @@ const FoodDetailScreen = (): JSX.Element | null => {
         setIsSubmitting(false);
       }
     },
-    [detail, navigation, refreshSummary],
+    [detail, navigation, queryClient],
   );
 
   // Animated styles - MUST be at top level, NOT in JSX

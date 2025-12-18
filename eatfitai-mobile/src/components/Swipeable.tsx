@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+﻿import type { ReactNode } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
@@ -36,7 +36,7 @@ export const Swipeable = ({
   onSwipeEnd,
   friction = 1,
   threshold = 100,
-}: SwipeableProps): JSX.Element => {
+}: SwipeableProps): React.ReactElement => {
   const translateX = useSharedValue(0);
 
   const maxLeftSwipe = leftActions.length * 80;

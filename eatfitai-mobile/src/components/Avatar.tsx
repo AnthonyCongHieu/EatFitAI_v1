@@ -1,4 +1,4 @@
-import type { ImageSourcePropType } from 'react-native';
+﻿import type { ImageSourcePropType } from 'react-native';
 import { View, StyleSheet, Image } from 'react-native';
 
 import { ThemedText } from './ThemedText';
@@ -24,7 +24,7 @@ export const Avatar = ({
   borderColor,
   backgroundColor,
   textColor,
-}: AvatarProps): JSX.Element => {
+}: AvatarProps): React.ReactElement => {
   const { theme } = useAppTheme();
 
   const getSizeConfig = () => {

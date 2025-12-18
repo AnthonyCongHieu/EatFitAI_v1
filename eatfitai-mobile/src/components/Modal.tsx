@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+﻿import type { ReactNode } from 'react';
 import {
   Modal as RNModal,
   Pressable,
@@ -44,7 +44,7 @@ export const Modal = ({
   showCloseButton = true,
   closeOnBackdropPress = true,
   animated = true,
-}: ModalProps): JSX.Element => {
+}: ModalProps): React.ReactElement => {
   const { theme } = useAppTheme();
 
   const scale = useSharedValue(1);

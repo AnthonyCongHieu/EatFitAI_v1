@@ -1,5 +1,5 @@
 ﻿import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   ActivityIndicator,
   Alert,
@@ -69,7 +69,7 @@ const formatNumber = (value?: number | null, suffix = '', decimals = 0): string 
   return `${value.toFixed(decimals)}${suffix}`;
 };
 
-const HomeScreen = (): JSX.Element => {
+const HomeScreen = (): React.ReactElement => {
   const { theme } = useAppTheme();
   const styles = getStyles(theme);
   const isDark = theme.mode === 'dark';
@@ -78,14 +78,14 @@ const HomeScreen = (): JSX.Element => {
   const navigation = useNavigation<NavigationProp>();
   const summary = useDiaryStore((s) => s.summary);
   const fetchSummary = useDiaryStore((s) => s.fetchSummary);
-  const refreshSummary = useDiaryStore((s) => s.refreshSummary);
+  const queryClient = useQueryClient();
   const { isLoading, isFetching, refetch } = useQuery<DaySummary | null>({
     queryKey: ['home-summary'],
     queryFn: async () => {
       await fetchSummary();
       return useDiaryStore.getState().summary ?? null;
     },
-    staleTime: 60000,
+    // staleTime từ global config (2 phút)
   });
   const [showAddModal, setShowAddModal] = useState(false);
   const [serverDown, setServerDown] = useState(false);
@@ -99,9 +99,9 @@ const HomeScreen = (): JSX.Element => {
     useCallback(() => {
       checkStreak();
       fetchWeeklyLogs();
-      // Refetch summary khi screen focus lại để đảm bảo dữ liệu mới nhất
-      refetch();
-    }, [checkStreak, fetchWeeklyLogs, refetch]),
+      // ⚡ Không refetch() ở đây nữa - dùng cache từ React Query
+      // Data sẽ tự động refresh sau staleTime (2 phút) hoặc sau CRUD operations
+    }, [checkStreak, fetchWeeklyLogs]),
   );
 
   const showCommonErrors = useCallback(
@@ -232,7 +232,9 @@ const HomeScreen = (): JSX.Element => {
                   text1: t('common.removed'),
                   text2: t('common.updated'),
                 });
-                refreshSummary().catch(() => { });
+                // ⚡ Invalidate cache để load lại data mới
+                queryClient.invalidateQueries({ queryKey: ['home-summary'] });
+                queryClient.invalidateQueries({ queryKey: ['diary-entries'] });
               })
               .catch((err: any) => {
                 handleApiErrorWithCustomMessage(err, {
@@ -262,7 +264,7 @@ const HomeScreen = (): JSX.Element => {
         },
       ]);
     },
-    [refreshSummary],
+    [queryClient],
   );
 
   // Calculate remaining calories

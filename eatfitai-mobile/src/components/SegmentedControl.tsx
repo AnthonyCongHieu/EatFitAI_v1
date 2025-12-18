@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+﻿import type { ReactNode } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import Animated, {
   useAnimatedStyle,
@@ -35,7 +35,7 @@ export const SegmentedControl = ({
   variant = 'filled',
   animated = true,
   disabled = false,
-}: SegmentedControlProps): JSX.Element => {
+}: SegmentedControlProps): React.ReactElement => {
   const { theme } = useAppTheme();
 
   const selectedIndex = segments.findIndex((segment) => segment.key === selectedKey);

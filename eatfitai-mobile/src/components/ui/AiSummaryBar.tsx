@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import Animated, {
   useAnimatedStyle,
@@ -25,7 +25,7 @@ export const AiSummaryBar = ({
   mealType,
   onAddToDiary,
   disabled = false,
-}: AiSummaryBarProps): JSX.Element => {
+}: AiSummaryBarProps): React.ReactElement => {
   const { theme } = useAppTheme();
 
   const mealTypeName = MEAL_TYPE_LABELS[mealType];

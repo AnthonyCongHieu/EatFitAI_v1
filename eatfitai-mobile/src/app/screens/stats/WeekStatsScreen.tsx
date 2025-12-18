@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+﻿import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   RefreshControl,
   StyleSheet,
@@ -48,7 +48,7 @@ const isCurrentWeek = (dateStr: string): boolean => {
   return today >= startOfWeek && today <= endOfWeek;
 };
 
-const WeekStatsScreen = (): JSX.Element => {
+const WeekStatsScreen = (): React.ReactElement => {
   const { theme } = useAppTheme();
   const isDark = theme.mode === 'dark';
   const glass = glassStyles(isDark);

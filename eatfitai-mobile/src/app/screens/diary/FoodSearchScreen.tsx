@@ -2,6 +2,7 @@
 // Redesigned với UI/UX hiện đại - matching MealDiaryScreen style
 
 import { useCallback, useState, useEffect } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import {
   ActivityIndicator,
   FlatList,
@@ -45,11 +46,12 @@ const PAGE_SIZE = 20;
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'FoodSearch'>;
 
-const FoodSearchScreen = (): JSX.Element => {
+const FoodSearchScreen = (): React.ReactElement => {
   const { theme } = useAppTheme();
   const isDark = theme.mode === 'dark';
 
   const navigation = useNavigation<NavigationProp>();
+  const queryClient = useQueryClient();
   const insets = useSafeAreaInsets();
 
   const styles = StyleSheet.create({
@@ -408,6 +410,9 @@ const FoodSearchScreen = (): JSX.Element => {
         text1: t('food_search.quick_add_success'),
         text2: `${item.name} (100g) - ${item.calories || 0} kcal`,
       });
+      // ⚡ Invalidate cache để HomeScreen tự động cập nhật
+      queryClient.invalidateQueries({ queryKey: ['home-summary'] });
+      queryClient.invalidateQueries({ queryKey: ['diary-entries'] });
     } catch (error) {
       handleApiError(error);
     } finally {
@@ -467,7 +472,7 @@ const FoodSearchScreen = (): JSX.Element => {
     setTimeout(() => {
       searchGlow.value = withTiming(0, { duration: theme.animation.slow });
     }, 1000);
-    loadFoods(1, false).catch(() => {});
+    loadFoods(1, false).catch(() => { });
   }, [loadFoods, searchGlow, theme.animation.normal, theme.animation.slow, activeTab]);
 
   // Tìm kiếm trực tiếp với keyword (không dùng state)
@@ -497,7 +502,7 @@ const FoodSearchScreen = (): JSX.Element => {
   const handleLoadMore = useCallback(() => {
     if (activeTab === 'favorites') return;
     if (!hasMore || isLoading || isLoadingMore) return;
-    loadFoods(page + 1, true).catch(() => {});
+    loadFoods(page + 1, true).catch(() => { });
   }, [hasMore, isLoading, isLoadingMore, page, loadFoods, activeTab]);
 
   const renderItem = useCallback(
@@ -776,13 +781,13 @@ const FoodSearchScreen = (): JSX.Element => {
                 primaryAction={
                   activeTab === 'search'
                     ? {
-                        label: 'Thử từ khóa khác',
-                        onPress: () => setQuery(''),
-                      }
+                      label: 'Thử từ khóa khác',
+                      onPress: () => setQuery(''),
+                    }
                     : {
-                        label: 'Tìm món ăn',
-                        onPress: () => handleTabChange('search'),
-                      }
+                      label: 'Tìm món ăn',
+                      onPress: () => handleTabChange('search'),
+                    }
                 }
               />
             ) : activeTab === 'search' ? (

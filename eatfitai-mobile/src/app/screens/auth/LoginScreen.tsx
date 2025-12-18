@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+﻿import { useCallback, useState } from 'react';
 import { StyleSheet, View, Text } from 'react-native';
 import { Controller, useForm } from 'react-hook-form';
 import { z } from 'zod';
@@ -27,7 +27,7 @@ const LoginSchema = z.object({
 type LoginValues = z.infer<typeof LoginSchema>;
 type Props = NativeStackScreenProps<RootStackParamList, 'Login'>;
 
-const LoginScreen = ({ navigation }: Props): JSX.Element => {
+const LoginScreen = ({ navigation }: Props): React.ReactElement => {
   const { theme } = useAppTheme();
   const isDark = theme.mode === 'dark';
   const glass = glassStyles(isDark);

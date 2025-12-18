@@ -1,5 +1,5 @@
 import 'react-native-gesture-handler';
-import { useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { StyleSheet } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -29,6 +29,11 @@ import { initErrorTracking } from './src/services/errorTracking';
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
+      // ⚡ CACHING STRATEGY: staleTime 2 phút để giảm API calls thừa
+      staleTime: 2 * 60 * 1000,       // 2 phút - data được coi là "fresh", không refetch
+      gcTime: 10 * 60 * 1000,         // 10 phút - giữ cache trong memory dù không dùng
+      refetchOnWindowFocus: false,    // Không refetch khi focus app lại
+      refetchOnReconnect: 'always',   // Refetch khi có lại mạng sau khi mất kết nối
       retry: (failureCount, error: any) => {
         // Stop retry on 401 Unauthorized để tránh infinite loop
         // Auth interceptor sẽ tự động logout user
@@ -89,7 +94,7 @@ const AppInner = () => {
   );
 };
 
-export default function App(): JSX.Element | null {
+export default function App(): React.ReactElement | null {
   const [fontsLoaded] = useFonts({
     Inter_300Light,
     Inter_400Regular,

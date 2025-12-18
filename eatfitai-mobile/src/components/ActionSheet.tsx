@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+﻿import type { ReactNode } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import Animated, {
   FadeIn,
@@ -39,7 +39,7 @@ export const ActionSheet = ({
   options,
   cancelText = t('common.cancel'),
   animated = true,
-}: ActionSheetProps): JSX.Element => {
+}: ActionSheetProps): React.ReactElement => {
   const { theme } = useAppTheme();
 
   const scale = useSharedValue(1);

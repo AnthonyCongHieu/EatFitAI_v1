@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+﻿import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { FlatList, StyleSheet, View } from 'react-native';
 import Toast from 'react-native-toast-message';
 
@@ -22,7 +22,7 @@ export const TeachLabelBottomSheet = ({
   onClose,
   onSelectFood,
   currentLabel,
-}: TeachLabelBottomSheetProps): JSX.Element => {
+}: TeachLabelBottomSheetProps): React.ReactElement => {
   const { theme } = useAppTheme();
   const [searchQuery, setSearchQuery] = useState('');
   const [foods, setFoods] = useState<FoodItem[]>([]);

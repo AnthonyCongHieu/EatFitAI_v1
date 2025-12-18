@@ -1,4 +1,4 @@
-/**
+﻿/**
  * MealDiarySkeleton - Loading skeleton cho MealDiary screen
  * Hiển thị khi đang tải danh sách nhật ký bữa ăn
  */
@@ -10,7 +10,7 @@ import { useAppTheme } from '../../theme/ThemeProvider';
 import Screen from '../Screen';
 import { GradientBackground } from '../GradientBackground';
 
-export const MealDiarySkeleton = (): JSX.Element => {
+export const MealDiarySkeleton = (): React.ReactElement => {
     const { theme } = useAppTheme();
 
     // Tạo skeleton cho một meal section

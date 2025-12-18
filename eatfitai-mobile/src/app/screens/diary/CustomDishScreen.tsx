@@ -1,6 +1,7 @@
-// Màn hình tạo món ăn thủ công
+﻿// Màn hình tạo món ăn thủ công
 
 import { useCallback, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { Controller, useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -102,12 +103,12 @@ const FormSchema = z.object({
 type FormValues = z.infer<typeof FormSchema>;
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'CustomDish'>;
 
-const CustomDishScreen = (): JSX.Element => {
+const CustomDishScreen = (): React.ReactElement => {
   const { theme } = useAppTheme();
   const isDark = theme.mode === 'dark';
   const glass = glassStyles(isDark);
   const navigation = useNavigation<NavigationProp>();
-  const refreshSummary = useDiaryStore((state) => state.refreshSummary);
+  const queryClient = useQueryClient();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const {
@@ -161,7 +162,9 @@ const CustomDishScreen = (): JSX.Element => {
           text2: 'Món ăn đã được lưu vào thư viện cá nhân',
         });
         reset();
-        await refreshSummary().catch(() => { });
+        // ⚡ Invalidate cache để HomeScreen tự động cập nhật
+        queryClient.invalidateQueries({ queryKey: ['home-summary'] });
+        queryClient.invalidateQueries({ queryKey: ['diary-entries'] });
         navigation.goBack();
       } catch (error: any) {
         handleApiError(error);
@@ -169,7 +172,7 @@ const CustomDishScreen = (): JSX.Element => {
         setIsSubmitting(false);
       }
     },
-    [navigation, refreshSummary, reset],
+    [navigation, queryClient, reset],
   );
 
   return (

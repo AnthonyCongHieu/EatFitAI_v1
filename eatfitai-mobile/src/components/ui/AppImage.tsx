@@ -1,4 +1,4 @@
-/**
+﻿/**
  * AppImage - Enhanced image component with lazy loading and placeholder
  * Features:
  * - Blur placeholder while loading
@@ -33,7 +33,7 @@ export const AppImage = ({
   onLoad,
   onError,
   ...props
-}: AppImageProps): JSX.Element => {
+}: AppImageProps): React.ReactElement => {
   const { theme } = useAppTheme();
   const isDark = theme.mode === 'dark';
 

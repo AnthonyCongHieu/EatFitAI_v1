@@ -1,4 +1,4 @@
-import { RefreshControl as RNRefreshControl } from 'react-native';
+﻿import { RefreshControl as RNRefreshControl } from 'react-native';
 import { useAppTheme } from '../theme/ThemeProvider';
 
 type RefreshControlProps = {
@@ -19,7 +19,7 @@ export const RefreshControl = ({
   titleColor,
   progressBackgroundColor,
   size = 'large',
-}: RefreshControlProps): JSX.Element => {
+}: RefreshControlProps): React.ReactElement => {
   const { theme } = useAppTheme();
 
   const finalTintColor = tintColor || theme.colors.primary;

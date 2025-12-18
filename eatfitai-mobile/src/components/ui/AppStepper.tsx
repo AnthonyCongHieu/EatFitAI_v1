@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '../ThemedText';
@@ -18,7 +18,7 @@ export const AppStepper = ({
   min = 0,
   max = 100,
   step = 1,
-}: AppStepperProps): JSX.Element => {
+}: AppStepperProps): React.ReactElement => {
   const { theme } = useAppTheme();
 
   const handleDecrement = () => {

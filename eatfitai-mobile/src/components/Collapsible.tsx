@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+﻿import type { ReactNode } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import Animated, {
   useAnimatedStyle,
@@ -30,7 +30,7 @@ export const Collapsible = ({
   duration = 300,
   animated = true,
   disabled = false,
-}: CollapsibleProps): JSX.Element => {
+}: CollapsibleProps): React.ReactElement => {
   const { theme } = useAppTheme();
 
   const animationProgress = useSharedValue(expanded ? 1 : 0);

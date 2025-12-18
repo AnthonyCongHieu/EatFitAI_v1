@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '../ThemedText';
@@ -17,7 +17,7 @@ export const EmptyState = ({
   description,
   icon,
   action,
-}: EmptyStateProps): JSX.Element => {
+}: EmptyStateProps): React.ReactElement => {
   const { theme } = useAppTheme();
 
   return (

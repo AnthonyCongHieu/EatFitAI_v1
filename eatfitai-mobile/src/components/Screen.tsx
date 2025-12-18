@@ -1,4 +1,4 @@
-import type { ReactElement, ReactNode } from 'react';
+﻿import type { ReactElement, ReactNode } from 'react';
 import type {
   RefreshControlProps,
   ScrollViewProps,
@@ -33,7 +33,7 @@ export const Screen = ({
   useSafeArea = true,
   horizontalPadding = true,
   hasHeader = false,
-}: ScreenProps): JSX.Element => {
+}: ScreenProps): React.ReactElement => {
   const { theme } = useAppTheme();
   const insets = useSafeAreaInsets();
 

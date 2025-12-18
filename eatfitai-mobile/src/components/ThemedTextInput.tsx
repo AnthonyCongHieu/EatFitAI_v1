@@ -1,4 +1,4 @@
-import type { TextInputProps, ViewStyle } from 'react-native';
+﻿import type { TextInputProps, ViewStyle } from 'react-native';
 import { TextInput, StyleSheet, View, Pressable, Platform } from 'react-native';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import Ionicons from '@expo/vector-icons/Ionicons';
@@ -25,7 +25,7 @@ export const ThemedTextInput = ({
   helperText,
   required,
   ...rest
-}: Props): JSX.Element => {
+}: Props): React.ReactElement => {
   const { theme } = useAppTheme();
   const { colors, spacing, typography } = theme;
   const isDark = theme.mode === 'dark';

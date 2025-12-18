@@ -1,4 +1,4 @@
-import type { TextProps } from 'react-native';
+﻿import type { TextProps } from 'react-native';
 import { Text } from 'react-native';
 import { memo } from 'react';
 
@@ -43,7 +43,7 @@ export const ThemedText = memo(
     lines,
     style,
     ...rest
-  }: ThemedTextProps): JSX.Element => {
+  }: ThemedTextProps): React.ReactElement => {
     const { theme } = useAppTheme();
 
     const typography = theme.typography[variant];

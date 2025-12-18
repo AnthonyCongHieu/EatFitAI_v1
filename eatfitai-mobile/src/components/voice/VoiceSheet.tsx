@@ -1,4 +1,4 @@
-/**
+﻿/**
  * VoiceSheet - Premium Bottom sheet for voice recording UI
  * Features: Animated pulse rings, gradient mic button, glassmorphism, premium typography
  */
@@ -36,7 +36,7 @@ interface VoiceSheetProps {
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
-export const VoiceSheet = ({ visible, onClose }: VoiceSheetProps): JSX.Element => {
+export const VoiceSheet = ({ visible, onClose }: VoiceSheetProps): React.ReactElement => {
     const { theme } = useAppTheme();
     const isDark = theme.mode === 'dark';
 

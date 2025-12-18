@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+﻿import { useCallback, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Controller, useForm } from 'react-hook-form';
 import { z } from 'zod';
@@ -48,7 +48,7 @@ type Step = 'email' | 'verify' | 'newPassword' | 'success';
  * 3. Đặt mật khẩu mới
  * 4. Thành công -> quay về Login
  */
-const ForgotPasswordScreen = ({ navigation }: Props): JSX.Element => {
+const ForgotPasswordScreen = ({ navigation }: Props): React.ReactElement => {
   const { theme } = useAppTheme();
   const isDark = theme.mode === 'dark';
   const glass = glassStyles(isDark);

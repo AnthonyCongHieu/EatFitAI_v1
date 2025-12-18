@@ -1,4 +1,4 @@
-// ProfileScreen v4: Aligned with actual database fields
+﻿// ProfileScreen v4: Aligned with actual database fields
 // Chu thich bang tieng Viet khong dau de tranh loi ma hoa
 
 import { useEffect, useState } from 'react';
@@ -114,7 +114,7 @@ const GOAL_OPTIONS = [
   { value: 'gain', label: t('common.gain_weight'), icon: '📈', colorKey: 'success' },
 ] as const;
 
-const ProfileScreen = (): JSX.Element => {
+const ProfileScreen = (): React.ReactElement => {
   const { theme } = useAppTheme();
   const isDark = theme.mode === 'dark';
   const glass = glassStyles(isDark);

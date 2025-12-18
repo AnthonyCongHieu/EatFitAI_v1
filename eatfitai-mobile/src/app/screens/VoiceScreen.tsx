@@ -1,4 +1,4 @@
-/**
+﻿/**
  * VoiceScreen - Full screen Voice Assistant
  * Premium UI with animated pulse rings, gradient buttons
  */
@@ -29,7 +29,7 @@ import VoiceResultCard from '../../components/voice/VoiceResultCard';
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
-const VoiceScreen = (): JSX.Element => {
+const VoiceScreen = (): React.ReactElement => {
     const { theme } = useAppTheme();
     const isDark = theme.mode === 'dark';
     const insets = useSafeAreaInsets();

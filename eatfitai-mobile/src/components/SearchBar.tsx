@@ -43,7 +43,7 @@ export const SearchBar = ({
   autoFocus = false,
   showClearButton = true,
   animated = true,
-}: SearchBarProps): JSX.Element => {
+}: SearchBarProps): React.ReactElement => {
   const { theme } = useAppTheme();
 
   const scale = useSharedValue(1);

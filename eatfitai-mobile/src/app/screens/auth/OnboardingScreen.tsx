@@ -1,4 +1,4 @@
-/**
+﻿/**
  * OnboardingScreen - First-time user setup wizard
  * 5 steps: Basic Info → Body Metrics → Goal → Activity → AI Calculate
  */
@@ -145,7 +145,7 @@ const ACTIVITY_OPTIONS = [
   },
 ];
 
-const OnboardingScreen = (): JSX.Element => {
+const OnboardingScreen = (): React.ReactElement => {
   const { theme } = useAppTheme();
   const isDark = theme.mode === 'dark';
   const glass = glassStyles(isDark);

@@ -1,4 +1,4 @@
-/**
+﻿/**
  * RecipeSkeleton - Loading skeleton cho Recipe screens
  * Dùng cho RecipeSuggestionsScreen và RecipeDetailScreen
  */
@@ -9,7 +9,7 @@ import { Skeleton } from '../ui/Skeleton';
 import { useAppTheme } from '../../theme/ThemeProvider';
 import Screen from '../Screen';
 
-export const RecipeSkeleton = (): JSX.Element => {
+export const RecipeSkeleton = (): React.ReactElement => {
   const { theme } = useAppTheme();
 
   return (
@@ -70,7 +70,7 @@ export const RecipeSkeleton = (): JSX.Element => {
   );
 };
 
-export const RecipeDetailSkeleton = (): JSX.Element => {
+export const RecipeDetailSkeleton = (): React.ReactElement => {
   const { theme } = useAppTheme();
 
   return (

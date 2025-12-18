@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+﻿import type { ReactNode } from 'react';
 import { Pressable, StyleSheet, View, type ViewStyle } from 'react-native';
 import React from 'react';
 import Animated, {
@@ -32,7 +32,7 @@ export const Tooltip = ({
   autoHide = false,
   autoHideDelay = 3000,
   animated = true,
-}: TooltipProps): JSX.Element => {
+}: TooltipProps): React.ReactElement => {
   const { theme } = useAppTheme();
 
   const opacity = useSharedValue(0);

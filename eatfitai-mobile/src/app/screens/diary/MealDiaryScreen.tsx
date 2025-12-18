@@ -1,4 +1,4 @@
-// Màn hình Nhật ký bữa ăn - Redesigned với UI/UX hiện đại
+﻿// Màn hình Nhật ký bữa ăn - Redesigned với UI/UX hiện đại
 // Features: Summary header, improved date selector, beautiful meal cards
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -12,7 +12,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import type { NavigationProp } from '@react-navigation/native';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { LinearGradient } from 'expo-linear-gradient';
 import { FlashList } from '@shopify/flash-list';
 import { Ionicons } from '@expo/vector-icons';
@@ -58,7 +58,7 @@ const getMealGradient = (
   return gradientMap[mealType] || mealGradients.lunch;
 };
 
-const MealDiaryScreen = (): JSX.Element => {
+const MealDiaryScreen = (): React.ReactElement => {
   const { theme } = useAppTheme();
   const isDark = theme.mode === 'dark';
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
@@ -80,7 +80,7 @@ const MealDiaryScreen = (): JSX.Element => {
   const [showEditSheet, setShowEditSheet] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
 
-  const refreshSummary = useDiaryStore((s) => s.refreshSummary);
+  const queryClient = useQueryClient();
   const dateListRef = useRef<FlatList<Date>>(null);
 
   // Date options: -30 to +7 days (mở rộng để xem xa hơn)
@@ -212,8 +212,9 @@ const MealDiaryScreen = (): JSX.Element => {
 
     try {
       await diaryService.updateEntry(editingEntry.id, { grams });
-      await refetch();
-      await refreshSummary();
+      // ⚡ Invalidate cache thay vì refetch trực tiếp
+      queryClient.invalidateQueries({ queryKey: ['diary-entries'] });
+      queryClient.invalidateQueries({ queryKey: ['home-summary'] });
       setShowEditSheet(false);
       setEditingEntry(null);
       Toast.show({
@@ -229,7 +230,7 @@ const MealDiaryScreen = (): JSX.Element => {
         text2: error?.message || 'Không thể cập nhật khẩu phần. Thử lại sau.',
       });
     }
-  }, [editingEntry, editGrams, refetch, refreshSummary]);
+  }, [editingEntry, editGrams, queryClient]);
 
   const handleAddManual = useCallback(() => {
     navigation.navigate('FoodSearch');
@@ -337,8 +338,9 @@ const MealDiaryScreen = (): JSX.Element => {
       const handleDelete = async () => {
         try {
           await diaryService.deleteEntry(entry.id);
-          await refetch();
-          await refreshSummary();
+          // ⚡ Invalidate cache thay vì refetch trực tiếp
+          queryClient.invalidateQueries({ queryKey: ['diary-entries'] });
+          queryClient.invalidateQueries({ queryKey: ['home-summary'] });
           Toast.show({
             type: 'success',
             text1: 'Đã xóa',
@@ -371,7 +373,7 @@ const MealDiaryScreen = (): JSX.Element => {
         />
       );
     },
-    [handleEditGrams, refetch, refreshSummary],
+    [handleEditGrams, queryClient],
   );
 
   // Render meal section với design đẹp hơn

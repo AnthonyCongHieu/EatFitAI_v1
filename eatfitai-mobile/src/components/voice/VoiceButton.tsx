@@ -1,4 +1,4 @@
-/**
+﻿/**
  * VoiceButton - Floating Action Button for Voice AI
  * Displays microphone icon, triggers voice recording
  */
@@ -29,7 +29,7 @@ export const VoiceButton = ({
     onPress,
     size = 56,
     style,
-}: VoiceButtonProps): JSX.Element => {
+}: VoiceButtonProps): React.ReactElement => {
     const { theme } = useAppTheme();
     const isDark = theme.mode === 'dark';
     const { status } = useVoiceStore();

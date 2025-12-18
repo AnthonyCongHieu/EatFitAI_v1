@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { View, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -18,7 +18,7 @@ export const ScreenHeader = ({
   subtitle,
   onBackPress,
   action,
-}: ScreenHeaderProps): JSX.Element => {
+}: ScreenHeaderProps): React.ReactElement => {
   const { theme } = useAppTheme();
   const insets = useSafeAreaInsets();
 

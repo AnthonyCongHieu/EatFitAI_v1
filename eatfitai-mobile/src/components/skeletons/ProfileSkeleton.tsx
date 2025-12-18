@@ -1,4 +1,4 @@
-/**
+﻿/**
  * ProfileSkeleton - Loading skeleton cho Profile screen
  * Hiển thị khi đang tải thông tin profile người dùng
  */
@@ -9,7 +9,7 @@ import { Skeleton } from '../ui/Skeleton';
 import { useAppTheme } from '../../theme/ThemeProvider';
 import Screen from '../Screen';
 
-export const ProfileSkeleton = (): JSX.Element => {
+export const ProfileSkeleton = (): React.ReactElement => {
   const { theme } = useAppTheme();
 
   return (

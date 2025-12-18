@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '../ThemedText';
@@ -15,7 +15,7 @@ export const SectionHeader = ({
   subtitle,
   action,
   actionText = 'Xem tất cả',
-}: SectionHeaderProps): JSX.Element => {
+}: SectionHeaderProps): React.ReactElement => {
   return (
     <View style={styles.container}>
       <View style={styles.textContainer}>

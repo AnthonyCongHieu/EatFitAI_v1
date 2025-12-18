@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+﻿import { useCallback } from 'react';
 import { View, StyleSheet, Dimensions, ScrollView } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -22,7 +22,7 @@ type Props = NativeStackScreenProps<RootStackParamList, 'Welcome'>;
  * WelcomeScreen - Màn hình chào mừng đầu tiên khi mở app
  * Hiển thị branding, tagline và các options để đăng nhập/đăng ký
  */
-const WelcomeScreen = ({ navigation }: Props): JSX.Element => {
+const WelcomeScreen = ({ navigation }: Props): React.ReactElement => {
     const { theme } = useAppTheme();
     const isDark = theme.mode === 'dark';
 

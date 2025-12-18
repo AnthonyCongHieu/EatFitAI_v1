@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+﻿import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { View, StyleSheet, RefreshControl } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import Animated, { FadeInDown, FadeInUp, SlideInRight, SlideInLeft } from 'react-native-reanimated';
@@ -47,7 +47,7 @@ interface MonthSummary {
  * StatsScreen - Unified stats screen với tabs
  * 2026 UI/UX: Scrollytelling, Hero metrics, Liquid glass, Micro-interactions
  */
-const StatsScreen = (): JSX.Element => {
+const StatsScreen = (): React.ReactElement => {
     const { theme } = useAppTheme();
     const isDark = theme.mode === 'dark';
     const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();

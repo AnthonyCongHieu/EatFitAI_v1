@@ -1,4 +1,4 @@
-// Màn hình Cài đặt dinh dưỡng hợp nhất
+﻿// Màn hình Cài đặt dinh dưỡng hợp nhất
 // Cho phép xem, chỉnh sửa thủ công và sử dụng AI để gợi ý mục tiêu
 
 import React, { useCallback, useEffect, useState } from 'react';
@@ -58,13 +58,12 @@ const TargetSchema = z.object({
 
 type TargetFormValues = z.infer<typeof TargetSchema>;
 
-const NutritionSettingsScreen = (): JSX.Element => {
+const NutritionSettingsScreen = (): React.ReactElement => {
   const { theme } = useAppTheme();
   const isDark = theme.mode === 'dark';
   const glass = glassStyles(isDark);
   const navigation = useNavigation<NavigationProp>();
   const queryClient = useQueryClient();
-  const refreshSummary = useDiaryStore((s) => s.refreshSummary);
 
   const [isEditing, setIsEditing] = useState(false);
   const [suggestedTarget, setSuggestedTarget] = useState<NutritionTarget | null>(null);
@@ -133,7 +132,8 @@ const NutritionSettingsScreen = (): JSX.Element => {
     mutationFn: aiService.applyNutritionTarget,
     onSuccess: async (_, variables) => {
       await queryClient.invalidateQueries({ queryKey: ['nutrition-target'] });
-      await refreshSummary();
+      // ⚡ Invalidate home-summary để HomeScreen hiện target mới
+      queryClient.invalidateQueries({ queryKey: ['home-summary'] });
       setIsEditing(false);
       setSuggestedTarget(null);
 

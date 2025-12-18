@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+﻿import type { ReactNode } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import Animated, {
   useAnimatedStyle,
@@ -39,7 +39,7 @@ export const ListItem = ({
   size = 'md',
   animated = true,
   chevron = false,
-}: ListItemProps): JSX.Element => {
+}: ListItemProps): React.ReactElement => {
   const { theme } = useAppTheme();
 
   const scale = useSharedValue(1);

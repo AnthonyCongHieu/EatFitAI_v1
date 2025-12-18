@@ -1,4 +1,4 @@
-import React, { memo } from 'react';
+﻿import React, { memo } from 'react';
 
 import { Chip } from '../Chip';
 
@@ -14,7 +14,7 @@ const AppChipComponent = ({
   selected = false,
   variant = 'solid',
   onPress,
-}: AppChipProps): JSX.Element => {
+}: AppChipProps): React.ReactElement => {
   return (
     <Chip
       label={label}

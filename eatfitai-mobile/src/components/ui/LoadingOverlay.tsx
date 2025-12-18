@@ -1,4 +1,4 @@
-/**
+﻿/**
  * LoadingOverlay - Full screen loading overlay with blur effect
  * Used for blocking operations like form submission
  */
@@ -22,7 +22,7 @@ export const LoadingOverlay = ({
     visible,
     message = 'Đang xử lý...',
     transparent = false,
-}: LoadingOverlayProps): JSX.Element | null => {
+}: LoadingOverlayProps): React.ReactElement | null => {
     const { theme } = useAppTheme();
     const isDark = theme.mode === 'dark';
 

@@ -1,4 +1,4 @@
-/**
+﻿/**
  * FoodSearchSkeleton - Loading skeleton cho FoodSearch screen
  * Hiển thị khi đang tải kết quả tìm kiếm món ăn
  */
@@ -10,7 +10,7 @@ import { useAppTheme } from '../../theme/ThemeProvider';
 import Screen from '../Screen';
 import { GradientBackground } from '../GradientBackground';
 
-export const FoodSearchSkeleton = (): JSX.Element => {
+export const FoodSearchSkeleton = (): React.ReactElement => {
     const { theme } = useAppTheme();
 
     // Tạo skeleton cho một food item

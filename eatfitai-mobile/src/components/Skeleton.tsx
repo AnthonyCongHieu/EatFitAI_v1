@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { View, StyleSheet, Dimensions } from 'react-native';
 import Animated, {
   useAnimatedStyle,
@@ -24,7 +24,7 @@ export const Skeleton = ({
   height = 16,
   borderRadius = 8,
   style,
-}: SkeletonProps): JSX.Element => {
+}: SkeletonProps): React.ReactElement => {
   const { theme } = useAppTheme();
   const opacity = useSharedValue(0.3);
 
@@ -70,7 +70,7 @@ export const ShimmerSkeleton = ({
   height = 16,
   borderRadius = 8,
   style,
-}: ShimmerSkeletonProps): JSX.Element => {
+}: ShimmerSkeletonProps): React.ReactElement => {
   const { theme } = useAppTheme();
   const isDark = theme.mode === 'dark';
   const translateX = useSharedValue(-SCREEN_WIDTH);
@@ -133,7 +133,7 @@ export const SkeletonList = ({
   spacing = 8,
   style,
   shimmer = false,
-}: SkeletonListProps): JSX.Element => {
+}: SkeletonListProps): React.ReactElement => {
   const { theme } = useAppTheme();
   const SkeletonComponent = shimmer ? ShimmerSkeleton : Skeleton;
 

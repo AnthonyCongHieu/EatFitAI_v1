@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+﻿import type { ReactNode } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import Animated, {
   FadeIn,
@@ -40,7 +40,7 @@ export const BottomSheet = ({
   showCloseButton = true,
   closeOnBackdropPress = true,
   animated = true,
-}: BottomSheetProps): JSX.Element | null => {
+}: BottomSheetProps): React.ReactElement | null => {
   const { theme } = useAppTheme();
 
   const translateY = useSharedValue(0);

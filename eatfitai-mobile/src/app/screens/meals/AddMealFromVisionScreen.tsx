@@ -1,4 +1,5 @@
-import React, { useState, useMemo, useCallback } from 'react';
+﻿import React, { useState, useMemo, useCallback } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { Image, StyleSheet, View, ScrollView, Pressable, Dimensions } from 'react-native';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -34,11 +35,11 @@ type DetectionItem = {
   mealType: MealTypeId;
 };
 
-const AddMealFromVisionScreen = (): JSX.Element => {
+const AddMealFromVisionScreen = (): React.ReactElement => {
   const { theme } = useAppTheme();
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<RouteProps>();
-  const refreshSummary = useDiaryStore((s) => s.refreshSummary);
+  const queryClient = useQueryClient();
 
   const { imageUri, result } = route.params;
 
@@ -144,7 +145,9 @@ const AddMealFromVisionScreen = (): JSX.Element => {
         text2: `Đã thêm ${selectedItems.length} món vào nhật ký`,
       });
 
-      await refreshSummary();
+      // ⚡ Invalidate cache để HomeScreen/MealDiary tự động cập nhật
+      queryClient.invalidateQueries({ queryKey: ['home-summary'] });
+      queryClient.invalidateQueries({ queryKey: ['diary-entries'] });
       navigation.goBack();
     } catch (err) {
       handleApiErrorWithCustomMessage(err, {

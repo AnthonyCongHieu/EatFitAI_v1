@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+﻿import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { RefreshControl, StyleSheet, View, Pressable } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import Animated, { FadeInUp, FadeInDown } from 'react-native-reanimated';
@@ -62,7 +62,7 @@ const getMonthDays = (year: number, month: number): Date[] => {
   return days;
 };
 
-const MonthStatsScreen = (): JSX.Element => {
+const MonthStatsScreen = (): React.ReactElement => {
   const { theme } = useAppTheme();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 

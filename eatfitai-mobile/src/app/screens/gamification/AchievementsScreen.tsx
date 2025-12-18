@@ -1,4 +1,4 @@
-// Màn hình Thành tích - Redesigned với UI/UX hiện đại
+﻿// Màn hình Thành tích - Redesigned với UI/UX hiện đại
 // Inspired by Duolingo, Strava, và các fitness apps hàng đầu
 
 import React, { useEffect, useRef } from 'react';
@@ -25,7 +25,7 @@ import { shareService } from '../../../services/shareService';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
-const AchievementsScreen = (): JSX.Element => {
+const AchievementsScreen = (): React.ReactElement => {
   const { theme } = useAppTheme();
   const isDark = theme.mode === 'dark';
   const navigation = useNavigation();

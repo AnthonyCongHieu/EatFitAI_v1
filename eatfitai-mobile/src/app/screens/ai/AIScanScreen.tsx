@@ -1,4 +1,5 @@
 import React, { useCallback, useRef, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import {
   View,
   StyleSheet,
@@ -57,6 +58,7 @@ const AIScanScreen: React.FC = () => {
   const isDark = theme.mode === 'dark';
   const glass = glassStyles(isDark);
   const navigation = useNavigation<NavigationProp>();
+  const queryClient = useQueryClient();
   const cameraRef = useRef<CameraViewInstance | null>(null);
 
   const [permission, requestPermission] = useCameraPermissions();
@@ -271,6 +273,9 @@ const AIScanScreen: React.FC = () => {
           text1: 'Đã thêm',
           text2: `${editedItem.label} - ${actualCalories} kcal`,
         });
+        // ⚡ Invalidate cache để HomeScreen tự động cập nhật
+        queryClient.invalidateQueries({ queryKey: ['home-summary'] });
+        queryClient.invalidateQueries({ queryKey: ['diary-entries'] });
 
         setEditingItem(null);
       } catch (error) {
@@ -281,7 +286,7 @@ const AIScanScreen: React.FC = () => {
         setIsProcessing(false);
       }
     },
-    [],
+    [queryClient],
   );
 
   const captureButtonStyle = useAnimatedStyle(() => ({

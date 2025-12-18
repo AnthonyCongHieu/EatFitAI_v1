@@ -1,4 +1,4 @@
-import { useCallback, useState, useRef, useEffect } from 'react';
+﻿import { useCallback, useState, useRef, useEffect } from 'react';
 import { StyleSheet, View, TextInput, Pressable, Keyboard } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import Toast from 'react-native-toast-message';
@@ -34,7 +34,7 @@ interface VerifyEmailResponse {
   needsOnboarding: boolean;
 }
 
-const VerifyEmailScreen = ({ navigation, route }: Props): JSX.Element => {
+const VerifyEmailScreen = ({ navigation, route }: Props): React.ReactElement => {
   const { theme } = useAppTheme();
   const isDark = theme.mode === 'dark';
   const glass = glassStyles(isDark);
@@ -284,7 +284,7 @@ const VerifyEmailScreen = ({ navigation, route }: Props): JSX.Element => {
         {code.map((digit, index) => (
           <TextInput
             key={index}
-            ref={(ref) => (inputRefs.current[index] = ref)}
+            ref={(ref) => { inputRefs.current[index] = ref; }}
             style={[styles.codeInput, digit ? styles.codeInputFilled : null]}
             value={digit}
             onChangeText={(value) => handleCodeChange(value, index)}

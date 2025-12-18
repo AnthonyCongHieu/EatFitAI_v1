@@ -1,4 +1,4 @@
-import React, { memo, useEffect, useMemo } from 'react';
+﻿import React, { memo, useEffect, useMemo } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import Animated, {
   useSharedValue,
@@ -35,7 +35,7 @@ const AiDetectionCardComponent = ({
   onGramsChange,
   onMealTypeChange,
   onTeachLabel,
-}: AiDetectionCardProps): JSX.Element => {
+}: AiDetectionCardProps): React.ReactElement => {
   const { theme } = useAppTheme();
 
   const styles = useMemo(

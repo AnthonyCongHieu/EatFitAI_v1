@@ -1,4 +1,4 @@
-// FilterChip component - Pill-shaped filter buttons
+﻿// FilterChip component - Pill-shaped filter buttons
 // Theo style Eat Up UI Kit từ Dribbble
 
 import React from 'react';
@@ -24,7 +24,7 @@ export const FilterChip = ({
   isActive = false,
   onPress,
   icon,
-}: FilterChipProps): JSX.Element => {
+}: FilterChipProps): React.ReactElement => {
   const { theme } = useAppTheme();
   const isDark = theme.mode === 'dark';
   const scale = useSharedValue(1);

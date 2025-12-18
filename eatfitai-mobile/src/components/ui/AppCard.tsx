@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import type { ReactNode } from 'react';
 import { Pressable, View, type ViewStyle } from 'react-native';
 import Animated, {
@@ -51,7 +51,7 @@ export const AppCard = ({
   accessibilityLabel,
   accessibilityHint,
   disableAnimation = false,
-}: AppCardProps): JSX.Element => {
+}: AppCardProps): React.ReactElement => {
   const { theme } = useAppTheme();
   const isDark = theme.mode === 'dark';
 

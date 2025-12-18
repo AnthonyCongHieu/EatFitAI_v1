@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+﻿import type { ReactNode } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import Animated, {
   useAnimatedStyle,
@@ -38,7 +38,7 @@ export const Chip = ({
   icon,
   closeIcon,
   animated = true,
-}: ChipProps): JSX.Element => {
+}: ChipProps): React.ReactElement => {
   const { theme } = useAppTheme();
 
   const scale = useSharedValue(1);

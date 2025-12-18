@@ -1,5 +1,6 @@
-// Recipe Detail Screen - hiển thị chi tiết công thức
+﻿// Recipe Detail Screen - hiển thị chi tiết công thức
 import React, { useEffect, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { View, StyleSheet, ScrollView, ActivityIndicator, Pressable, Linking } from 'react-native';
 import { useRoute, RouteProp } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
@@ -30,7 +31,7 @@ type AiCookingInstructions = {
   error?: string;
 };
 
-const RecipeDetailScreen = (): JSX.Element => {
+const RecipeDetailScreen = (): React.ReactElement => {
   const { theme } = useAppTheme();
   const isDark = theme.mode === 'dark';
   const glass = glassStyles(isDark);
@@ -48,7 +49,7 @@ const RecipeDetailScreen = (): JSX.Element => {
   // State cho Add to Diary sheet [NEW]
   const [showAddToDiarySheet, setShowAddToDiarySheet] = useState(false);
   const [isAddingToDiary, setIsAddingToDiary] = useState(false);
-  const refreshSummary = useDiaryStore((s) => s.refreshSummary);
+  const queryClient = useQueryClient();
 
   // Load recipe detail
   useEffect(() => {
@@ -132,7 +133,9 @@ const RecipeDetailScreen = (): JSX.Element => {
       });
 
       // Refresh summary
-      await refreshSummary();
+      // ⚡ Invalidate cache để HomeScreen tự động cập nhật
+      queryClient.invalidateQueries({ queryKey: ['home-summary'] });
+      queryClient.invalidateQueries({ queryKey: ['diary-entries'] });
 
       Toast.show({
         type: 'success',

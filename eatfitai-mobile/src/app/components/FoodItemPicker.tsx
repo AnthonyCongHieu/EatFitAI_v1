@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+﻿import { useCallback, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
@@ -21,7 +21,7 @@ type Props = {
   onSelect: (item: FoodItem) => void;
 };
 
-const FoodItemPicker = ({ visible, onClose, onSelect }: Props): JSX.Element => {
+const FoodItemPicker = ({ visible, onClose, onSelect }: Props): React.ReactElement => {
   const { theme } = useAppTheme();
 
   const [query, setQuery] = useState('');

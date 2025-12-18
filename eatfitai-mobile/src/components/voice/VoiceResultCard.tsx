@@ -1,4 +1,4 @@
-/**
+﻿/**
  * VoiceResultCard - Displays parsed voice command result
  * Shows intent, entities, and execute button
  */
@@ -64,7 +64,7 @@ export const VoiceResultCard = ({
     command,
     onExecute,
     isExecuting = false,
-}: VoiceResultCardProps): JSX.Element => {
+}: VoiceResultCardProps): React.ReactElement => {
     const { theme } = useAppTheme();
     const isDark = theme.mode === 'dark';
 

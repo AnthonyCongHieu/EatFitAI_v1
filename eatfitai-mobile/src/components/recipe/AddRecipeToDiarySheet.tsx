@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { View, StyleSheet, Pressable } from 'react-native';
 import { ThemedText } from '../ThemedText';
 import { BottomSheet } from '../BottomSheet';
@@ -34,7 +34,7 @@ export const AddRecipeToDiarySheet = ({
     recipeName,
     nutrition,
     onConfirm,
-}: AddRecipeToDiarySheetProps): JSX.Element => {
+}: AddRecipeToDiarySheetProps): React.ReactElement => {
     const { theme } = useAppTheme();
     const [selectedMealType, setSelectedMealType] = useState<MealTypeId>(2); // Default: lunch
     const [selectedServings, setSelectedServings] = useState(1);

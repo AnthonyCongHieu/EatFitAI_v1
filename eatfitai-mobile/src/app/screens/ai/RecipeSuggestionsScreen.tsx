@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import {
   View,
   StyleSheet,
@@ -41,7 +41,7 @@ const POPULAR_INGREDIENTS = [
   'Đậu phụ',
 ];
 
-const RecipeSuggestionsScreen = (): JSX.Element => {
+const RecipeSuggestionsScreen = (): React.ReactElement => {
   const { theme } = useAppTheme();
   const isDark = theme.mode === 'dark';
   const glass = glassStyles(isDark);
