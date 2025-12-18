@@ -77,8 +77,6 @@ public class UserWeekDataDto
     public int? StressLevel { get; set; }
     
     public string Goal { get; set; } = "maintain";
-    public bool HasWeeklyCheckIn { get; set; }
-    public int WeeklyCheckInCount { get; set; }
     
     public DateTime? LastReviewDate { get; set; }
 }

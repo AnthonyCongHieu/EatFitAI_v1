@@ -24,5 +24,4 @@ export type RootStackParamList = {
   VisionHistory: undefined;
   NutritionSettings: undefined;
   Achievements: undefined;
-  WeeklyHistory: undefined;
 };

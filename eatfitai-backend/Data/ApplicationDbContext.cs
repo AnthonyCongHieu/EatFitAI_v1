@@ -50,7 +50,6 @@ public partial class ApplicationDbContext : DbContext
 
     public virtual DbSet<UserRecentFood> UserRecentFoods { get; set; }
     public virtual DbSet<AiLabelMap> AiLabelMaps { get; set; }
-    public virtual DbSet<WeeklyCheckIn> WeeklyCheckIns { get; set; }
 
     public virtual DbSet<vw_DailyMacroShare> vw_DailyMacroShares { get; set; }
 
@@ -502,33 +501,6 @@ public partial class ApplicationDbContext : DbContext
             entity.Property(e => e.CreatedAt)
                 .HasPrecision(3)
                 .HasDefaultValueSql("(sysutcdatetime())");
-        });
-
-        modelBuilder.Entity<WeeklyCheckIn>(entity =>
-        {
-            entity.ToTable("WeeklyCheckIn");
-
-            entity.HasIndex(e => new { e.UserId, e.WeekStartDate }, "UQ_WeeklyCheckIn_UserWeek").IsUnique();
-
-            entity.Property(e => e.WeightKg).HasColumnType("decimal(5, 2)");
-            entity.Property(e => e.WeightChange).HasColumnType("decimal(5, 2)");
-            entity.Property(e => e.AvgCalories).HasColumnType("decimal(10, 2)");
-            entity.Property(e => e.TargetCalories).HasColumnType("decimal(10, 2)");
-            entity.Property(e => e.AvgProtein).HasColumnType("decimal(10, 2)");
-            entity.Property(e => e.AvgCarbs).HasColumnType("decimal(10, 2)");
-            entity.Property(e => e.AvgFat).HasColumnType("decimal(10, 2)");
-            entity.Property(e => e.SuggestedCalories).HasColumnType("decimal(10, 2)");
-            entity.Property(e => e.Goal).HasMaxLength(20);
-            entity.Property(e => e.AiSuggestion).HasMaxLength(1000);
-            entity.Property(e => e.Notes).HasMaxLength(500);
-            entity.Property(e => e.CreatedAt)
-                .HasPrecision(3)
-                .HasDefaultValueSql("(sysutcdatetime())");
-
-            entity.HasOne(d => d.User).WithMany(p => p.WeeklyCheckIns)
-                .HasForeignKey(d => d.UserId)
-                .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK_WeeklyCheckIn_User");
         });
 
         OnModelCreatingPartial(modelBuilder);

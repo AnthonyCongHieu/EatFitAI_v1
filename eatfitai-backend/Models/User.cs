@@ -41,6 +41,4 @@ public partial class User
     public virtual ICollection<UserFoodItem> UserFoodItems { get; set; } = new List<UserFoodItem>();
 
     public virtual ICollection<UserRecentFood> UserRecentFoods { get; set; } = new List<UserRecentFood>();
-    
-    public virtual ICollection<WeeklyCheckIn> WeeklyCheckIns { get; set; } = new List<WeeklyCheckIn>();
 }

@@ -35,7 +35,6 @@ import { profileService } from '../../services/profileService';
 import { handleApiErrorWithCustomMessage, showSuccess } from '../../utils/errorHandler';
 import type { RootStackParamList } from '../types';
 import { t } from '../../i18n/vi';
-import { WeeklyCheckInCard, WeeklyCheckInSheet } from '../../components/profile';
 
 // Schema matching actual database fields
 // Schema matching actual database fields
@@ -120,9 +119,6 @@ const ProfileScreen = (): JSX.Element => {
   const isDark = theme.mode === 'dark';
   const glass = glassStyles(isDark);
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
-
-  // Weekly check-in sheet state
-  const [showCheckInSheet, setShowCheckInSheet] = useState(false);
 
   const logout = useAuthStore((s) => s.logout);
   const { profile, fetchProfile, isLoading, updateProfile, isSaving } = useProfileStore(
@@ -369,12 +365,6 @@ const ProfileScreen = (): JSX.Element => {
       />
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        {/* Weekly Check-in Card */}
-        <WeeklyCheckInCard
-          onCheckIn={() => setShowCheckInSheet(true)}
-          onViewHistory={() => navigation.navigate('WeeklyHistory')}
-        />
-
         {/* Personal Info Card - Synced with DB */}
         <Animated.View entering={FadeInUp.delay(100).duration(400)}>
           <View style={glass.card}>
@@ -774,15 +764,6 @@ const ProfileScreen = (): JSX.Element => {
           </View>
         </Animated.View>
       </ScrollView>
-
-      {/* Weekly Check-in Sheet */}
-      <WeeklyCheckInSheet
-        visible={showCheckInSheet}
-        onClose={() => setShowCheckInSheet(false)}
-        onSuccess={() => {
-          // Optionally refresh profile or show success message
-        }}
-      />
     </View>
   );
 };

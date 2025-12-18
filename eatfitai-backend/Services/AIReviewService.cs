@@ -77,7 +77,7 @@ public class AIReviewService
         {
             var daysSinceLastReview = (DateTime.UtcNow - lastReviewDate.Value).Days;
             
-            if (daysSinceLastReview >= 14 && daysLogged >= 10 && userData.WeeklyCheckInCount >= 2)
+            if (daysSinceLastReview >= 14 && daysLogged >= 10)
             {
                 return new ReviewTriggerDto
                 {
@@ -89,30 +89,6 @@ public class AIReviewService
                 };
             }
         }
-        
-        // Alternative: Post check-in trigger
-        var latestCheckIn = await _db.WeeklyCheckIns
-            .Where(w => w.UserId == userId)
-            .OrderByDescending(w => w.CreatedAt)
-            .FirstOrDefaultAsync();
-            
-        if (latestCheckIn != null)
-        {
-            var hoursSinceCheckIn = (DateTime.UtcNow - latestCheckIn.CreatedAt).TotalHours;
-            
-            if (hoursSinceCheckIn < 24 && daysLogged >= 5)
-            {
-                return new ReviewTriggerDto
-                {
-                    Level = 2,
-                    Type = "POST_CHECKIN",
-                    Enabled = true,
-                    Priority = "high",
-                    Reason = "Fresh weekly check-in data available!"
-                };
-            }
-        }
-        
         // Not ready yet
         return new ReviewTriggerDto
         {
@@ -306,7 +282,7 @@ public class AIReviewService
         return new WeeklyReviewDto
         {
             Status = "CONTINUE",
-            Message = "Tiếp tục theo dõi và check-in tuần sau!",
+            Message = "Tiếp tục theo dõi tiến độ!",
             Confidence = 0.7m,
             DataQuality = quality,
             Insights = CreateInsights(data, "stable")
@@ -392,15 +368,8 @@ public class AIReviewService
             .OrderByDescending(t => t.EffectiveFrom)
             .FirstOrDefaultAsync();
         
-        // Get latest weekly check-in
-        var checkIn = await _db.WeeklyCheckIns
-            .Where(w => w.UserId == userId)
-            .OrderByDescending(w => w.CreatedAt)
-            .FirstOrDefaultAsync();
-        
-        var checkInCount = await _db.WeeklyCheckIns
-            .Where(w => w.UserId == userId)
-            .CountAsync();
+        // Goal mac dinh - NutritionTarget khong co Goal field
+        var goal = "maintain";
         
         return new UserWeekDataDto
         {
@@ -418,13 +387,12 @@ public class AIReviewService
             AvgCarbs = daysLogged > 0 ? mealData.Average(m => m.Carbs) : 0,
             AvgFat = daysLogged > 0 ? mealData.Average(m => m.Fat) : 0,
             
-            SleepQuality = checkIn?.SleepQuality,
-            HungerLevel = checkIn?.HungerLevel,
-            StressLevel = checkIn?.StressLevel,
+            // Khong con lay tu check-in
+            SleepQuality = null,
+            HungerLevel = null,
+            StressLevel = null,
             
-            Goal = checkIn?.Goal ?? "maintain",
-            HasWeeklyCheckIn = checkIn != null,
-            WeeklyCheckInCount = checkInCount,
+            Goal = goal,
             
             LastReviewDate = null // TODO: Track in DB
         };
@@ -434,17 +402,14 @@ public class AIReviewService
     {
         int score = 0;
         
-        // Logging consistency (40%)
-        score += (int)((data.DaysLogged / 7m) * 40);
-        
-        // Complete check-in (30%)
-        if (data.HasWeeklyCheckIn) score += 30;
+        // Logging consistency (60% - tang tu 40 vi khong con check-in)
+        score += (int)((data.DaysLogged / 7m) * 60);
         
         // Physical state data (20%)
         if (data.SleepQuality.HasValue && data.HungerLevel.HasValue) score += 20;
         
-        // Body metrics (10%)
-        if (data.WeightChange.HasValue) score += 10;
+        // Body metrics (20% - tang tu 10)
+        if (data.WeightChange.HasValue) score += 20;
         
         return score;
     }
