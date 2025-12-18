@@ -20,7 +20,8 @@
       "bundleIdentifier": "com.eatfitai.app",
       "infoPlist": {
         "NSCameraUsageDescription": "EatFitAI cần truy cập camera để nhận diện thực phẩm",
-        "NSPhotoLibraryUsageDescription": "EatFitAI cần truy cập thư viện ảnh để chọn ảnh thực phẩm"
+        "NSPhotoLibraryUsageDescription": "EatFitAI cần truy cập thư viện ảnh để chọn ảnh thực phẩm",
+        "UIViewControllerBasedStatusBarAppearance": true
       }
     },
     "android": {
