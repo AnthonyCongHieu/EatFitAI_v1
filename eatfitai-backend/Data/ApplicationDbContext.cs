@@ -50,6 +50,7 @@ public partial class ApplicationDbContext : DbContext
 
     public virtual DbSet<UserRecentFood> UserRecentFoods { get; set; }
     public virtual DbSet<AiLabelMap> AiLabelMaps { get; set; }
+    public virtual DbSet<UserPreference> UserPreferences { get; set; }
 
     public virtual DbSet<vw_DailyMacroShare> vw_DailyMacroShares { get; set; }
 
@@ -501,6 +502,29 @@ public partial class ApplicationDbContext : DbContext
             entity.Property(e => e.CreatedAt)
                 .HasPrecision(3)
                 .HasDefaultValueSql("(sysutcdatetime())");
+        });
+
+        modelBuilder.Entity<UserPreference>(entity =>
+        {
+            entity.ToTable("UserPreference");
+
+            entity.HasKey(e => e.UserPreferenceId);
+
+            entity.Property(e => e.DietaryRestrictions).IsUnicode(true);
+            entity.Property(e => e.Allergies).IsUnicode(true);
+            entity.Property(e => e.PreferredCuisine).HasMaxLength(100);
+
+            entity.Property(e => e.CreatedAt)
+                .HasPrecision(3)
+                .HasDefaultValueSql("(sysutcdatetime())");
+
+            entity.Property(e => e.UpdatedAt)
+                .HasPrecision(3)
+                .HasDefaultValueSql("(sysutcdatetime())");
+
+            entity.HasOne(d => d.User).WithOne(p => p.UserPreference)
+                .HasForeignKey<UserPreference>(d => d.UserId)
+                .HasConstraintName("FK_UserPreference_User");
         });
 
         OnModelCreatingPartial(modelBuilder);

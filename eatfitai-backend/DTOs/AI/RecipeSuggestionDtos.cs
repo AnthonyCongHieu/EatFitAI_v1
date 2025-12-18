@@ -12,6 +12,7 @@ namespace EatFitAI.API.DTOs.AI
         public int? MaxCookingTimeMinutes { get; set; }
         public int? MinMatchedIngredients { get; set; } = 1;
         public int MaxResults { get; set; } = 10;
+        public Guid? UserId { get; set; }
     }
 
     /// <summary>

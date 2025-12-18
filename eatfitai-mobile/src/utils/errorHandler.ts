@@ -178,6 +178,7 @@ export type SuccessType =
   | 'target_updated'
   | 'favorite_added'
   | 'favorite_removed'
+  | 'password_changed'
   | 'custom';
 
 const successMessages: Record<SuccessType, { text1: string; text2?: string }> = {
@@ -193,6 +194,7 @@ const successMessages: Record<SuccessType, { text1: string; text2?: string }> = 
   },
   favorite_added: { text1: '❤️ Đã thêm yêu thích' },
   favorite_removed: { text1: '💔 Đã bỏ yêu thích' },
+  password_changed: { text1: '🔐 Đã đổi mật khẩu', text2: 'Mật khẩu mới đã được lưu' },
   custom: { text1: 'Thành công' },
 };
 

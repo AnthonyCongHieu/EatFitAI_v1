@@ -117,4 +117,15 @@ export const profileService = {
     };
     await apiClient.post('/api/body-metrics', req);
   },
+
+  // --- User Preferences (Dietary Restrictions) ---
+
+  async getUserPreferences(): Promise<any> {
+    const response = await apiClient.get('/api/user/preferences');
+    return response.data;
+  },
+
+  async updateUserPreferences(prefs: any): Promise<void> {
+    await apiClient.post('/api/user/preferences', prefs);
+  },
 };

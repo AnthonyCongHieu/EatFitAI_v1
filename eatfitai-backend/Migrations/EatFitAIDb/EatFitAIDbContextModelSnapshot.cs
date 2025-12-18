@@ -561,7 +561,7 @@ namespace EatFitAI.API.Migrations.EatFitAIDb
                     b.HasIndex(new[] { "Email" }, "UQ_Users_Email")
                         .IsUnique();
 
-                    b.ToTable("Users");
+                    b.ToTable("Users", (string)null);
                 });
 
             modelBuilder.Entity("EatFitAI.API.DbScaffold.Models.UserDish", b =>

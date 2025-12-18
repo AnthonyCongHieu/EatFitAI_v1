@@ -18,6 +18,7 @@ public partial class NutritionTarget
     public int TargetCarb { get; set; }
 
     public int TargetFat { get; set; }
+    public string? Goal { get; set; }
 
     public DateOnly EffectiveFrom { get; set; }
 

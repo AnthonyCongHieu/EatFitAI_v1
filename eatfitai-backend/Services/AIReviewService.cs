@@ -1,6 +1,8 @@
 using EatFitAI.API.Data;
 using EatFitAI.API.DTOs;
+using EatFitAI.API.Models;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace EatFitAI.API.Services;
 
@@ -368,8 +370,8 @@ public class AIReviewService
             .OrderByDescending(t => t.EffectiveFrom)
             .FirstOrDefaultAsync();
         
-        // Goal mac dinh - NutritionTarget khong co Goal field
-        var goal = "maintain";
+        // Lấy goal từ target
+        var goal = target?.Goal ?? "maintain";
         
         return new UserWeekDataDto
         {

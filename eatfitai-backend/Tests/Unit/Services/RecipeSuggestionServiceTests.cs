@@ -1,7 +1,8 @@
-using EatFitAI.API.DbScaffold.Data;
-using EatFitAI.API.DbScaffold.Models;
+using EatFitAI.API.Data;
+using EatFitAI.API.Models;
 using EatFitAI.API.Services;
 using EatFitAI.API.DTOs.AI;
+using EatFitAI.API.DTOs.User;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Caching.Memory;
@@ -9,29 +10,40 @@ using Moq;
 using Xunit;
 using System;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace EatFitAI.API.Tests.Unit.Services
 {
     public class RecipeSuggestionServiceTests : IDisposable
     {
-        private readonly EatFitAIDbContext _context;
+        private readonly ApplicationDbContext _context;
         private readonly Mock<ILogger<RecipeSuggestionService>> _loggerMock;
         private readonly IMemoryCache _cache;
+        private readonly Mock<IUserPreferenceService> _userPreferenceMock;
         private readonly RecipeSuggestionService _service;
 
         public RecipeSuggestionServiceTests()
         {
             // Setup In-Memory Database
-            var options = new DbContextOptionsBuilder<EatFitAIDbContext>()
+            var options = new DbContextOptionsBuilder<ApplicationDbContext>()
                 .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
                 .Options;
-            _context = new EatFitAIDbContext(options);
+            _context = new ApplicationDbContext(options);
 
             _loggerMock = new Mock<ILogger<RecipeSuggestionService>>();
             _cache = new MemoryCache(new MemoryCacheOptions());
+            _userPreferenceMock = new Mock<IUserPreferenceService>();
 
-            _service = new RecipeSuggestionService(_context, _loggerMock.Object, _cache);
+            // Mock default response for user preference
+            _userPreferenceMock.Setup(s => s.GetUserPreferenceAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new UserPreferenceDto 
+                { 
+                    DietaryRestrictions = new List<string>(), 
+                    Allergies = new List<string>() 
+                });
+
+            _service = new RecipeSuggestionService(_context, _loggerMock.Object, _cache, _userPreferenceMock.Object);
         }
 
         public void Dispose()

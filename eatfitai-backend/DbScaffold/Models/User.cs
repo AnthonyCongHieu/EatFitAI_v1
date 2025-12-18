@@ -36,6 +36,15 @@ public partial class User
     // Navigation property for ActivityLevel
     public virtual ActivityLevel? ActivityLevel { get; set; }
 
+    // Profile 2026 - Gamification & Goal Tracking
+    // Cân nặng mục tiêu (kg)
+    public decimal? TargetWeightKg { get; set; }
+    
+    // Streak tracking - chuỗi ngày liên tiếp ghi nhật ký
+    public int CurrentStreak { get; set; } = 0;
+    public int LongestStreak { get; set; } = 0;
+    public DateTime? LastLogDate { get; set; }  // Ngày cuối cùng ghi nhật ký
+
     public virtual ICollection<AILog> AILogs { get; set; } = new List<AILog>();
 
     public virtual ICollection<BodyMetric> BodyMetrics { get; set; } = new List<BodyMetric>();

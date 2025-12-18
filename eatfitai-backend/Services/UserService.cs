@@ -108,6 +108,11 @@ namespace EatFitAI.API.Services
                 userProfile.LastMeasuredDate = latestMetric.MeasuredDate;
             }
 
+            // Map streak và target weight fields (Profile 2026)
+            userProfile.TargetWeightKg = user.TargetWeightKg;
+            userProfile.CurrentStreak = user.CurrentStreak;
+            userProfile.LongestStreak = user.LongestStreak;
+
             return userProfile;
         }
 
@@ -128,6 +133,10 @@ namespace EatFitAI.API.Services
                 user.ActivityLevelId = userProfileDto.ActivityLevelId;
             if (userProfileDto.Goal != null)
                 user.Goal = userProfileDto.Goal;
+            
+            // Update target weight (Profile 2026)
+            if (userProfileDto.TargetWeightKg.HasValue)
+                user.TargetWeightKg = userProfileDto.TargetWeightKg;
             
             _userRepository.Update(user);
 

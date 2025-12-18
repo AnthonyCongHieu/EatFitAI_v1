@@ -65,7 +65,7 @@ namespace EatFitAI.API.Controllers
             }
 
             // Compute image hash for caching
-            var imageHash = await ComputeImageHashAsync(file);
+            var imageHash = ComputeImageHash(file);
             var userId = GetUserIdFromToken();
 
             // Check cache first
@@ -175,6 +175,7 @@ namespace EatFitAI.API.Controllers
                 _logger.LogInformation("User {UserId} requesting recipe suggestions with {Count} ingredients",
                     userId, request.AvailableIngredients?.Count ?? 0);
 
+                request.UserId = userId; // Gán UserId để service lấy sở thích
                 var recipes = await _recipeSuggestionService.SuggestRecipesAsync(request, cancellationToken);
 
                 // Log AI activity
@@ -685,11 +686,11 @@ namespace EatFitAI.API.Controllers
         /// <summary>
         /// Compute MD5 hash of image content for caching
         /// </summary>
-        private async Task<string> ComputeImageHashAsync(IFormFile file)
+        private string ComputeImageHash(IFormFile file)
         {
             using var md5 = System.Security.Cryptography.MD5.Create();
             using var stream = file.OpenReadStream();
-            var hashBytes = await Task.Run(() => md5.ComputeHash(stream));
+            var hashBytes = md5.ComputeHash(stream);
             return BitConverter.ToString(hashBytes).Replace("-", "").ToLowerInvariant();
         }
     }

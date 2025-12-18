@@ -23,6 +23,15 @@ import RecipeDetailScreen from '../screens/ai/RecipeDetailScreen';
 import NutritionSettingsScreen from '../screens/ai/NutritionSettingsScreen';
 import AchievementsScreen from '../screens/gamification/AchievementsScreen';
 import OnboardingScreen from '../screens/auth/OnboardingScreen';
+// Profile screens - mới thêm
+import EditProfileScreen from '../screens/profile/EditProfileScreen';
+import BodyMetricsScreen from '../screens/profile/BodyMetricsScreen';
+import GoalSettingsScreen from '../screens/profile/GoalSettingsScreen';
+import WeightHistoryScreen from '../screens/profile/WeightHistoryScreen';
+import ChangePasswordScreen from '../screens/profile/ChangePasswordScreen';
+import AboutScreen from '../screens/profile/AboutScreen';
+import NotificationsScreen from '../screens/profile/NotificationsScreen';
+import DietaryRestrictionsScreen from '../screens/ai/DietaryRestrictionsScreen';
 import { t } from '../../i18n/vi';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -192,6 +201,47 @@ const AppNavigator = (): React.ReactElement => {
                   headerShown: false, // Đã có ScreenHeader custom
                 }}
               />
+              {/* Profile screens */}
+              <Stack.Screen
+                name="EditProfile"
+                component={EditProfileScreen}
+                options={{ headerShown: false }}
+              />
+              <Stack.Screen
+                name="BodyMetrics"
+                component={BodyMetricsScreen}
+                options={{ headerShown: false }}
+              />
+              <Stack.Screen
+                name="GoalSettings"
+                component={GoalSettingsScreen}
+                options={{ headerShown: false }}
+              />
+              <Stack.Screen
+                name="WeightHistory"
+                component={WeightHistoryScreen}
+                options={{ headerShown: false }}
+              />
+              <Stack.Screen
+                name="ChangePassword"
+                component={ChangePasswordScreen}
+                options={{ headerShown: false }}
+              />
+              <Stack.Screen
+                name="About"
+                component={AboutScreen}
+                options={{ headerShown: false }}
+              />
+              <Stack.Screen
+                name="DietaryRestrictions"
+                component={DietaryRestrictionsScreen}
+                options={{ headerShown: false }}
+              />
+              <Stack.Screen
+                name="NotificationsSettings"
+                component={NotificationsScreen}
+                options={{ headerShown: false }}
+              />
             </>
           )}
         </Stack.Navigator>
@@ -201,3 +251,4 @@ const AppNavigator = (): React.ReactElement => {
 };
 
 export default AppNavigator;
+

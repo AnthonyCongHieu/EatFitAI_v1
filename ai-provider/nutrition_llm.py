@@ -126,7 +126,7 @@ def query_ollama(prompt: str, model: str = None, stream: bool = False) -> Option
                     "num_predict": 200
                 }
             },
-            timeout=30,
+            timeout=60,  # Increased for slower CPU inference
             stream=stream
         )
         

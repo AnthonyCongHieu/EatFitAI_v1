@@ -135,6 +135,7 @@ builder.Services.AddScoped<IFoodService, FoodService>();
 builder.Services.AddScoped<IAnalyticsService, AnalyticsService>();
 builder.Services.AddScoped<IUserFoodItemService, UserFoodItemService>();
 builder.Services.AddScoped<IAiFoodMapService, AiFoodMapService>();
+builder.Services.AddScoped<IUserPreferenceService, UserPreferenceService>();
 builder.Services.AddScoped<IRecipeSuggestionService, RecipeSuggestionService>();
 builder.Services.AddScoped<INutritionInsightService, NutritionInsightService>();
 builder.Services.AddScoped<AIReviewService>(); // AI Weekly Review

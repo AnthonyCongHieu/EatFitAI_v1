@@ -12,6 +12,7 @@ from werkzeug.datastructures import FileStorage
 from werkzeug.utils import secure_filename
 from uuid import uuid4
 import os
+import stt_service
 
 # Configure logging
 logging.basicConfig(
@@ -412,23 +413,9 @@ def voice_parse():
 
 
 # ============== WHISPER STT (Speech-to-Text) ==============
-# Load Whisper model for Vietnamese transcription
-WHISPER_MODEL = None
-WHISPER_AVAILABLE = False
-ALLOWED_AUDIO_EXTENSIONS = {'m4a', 'mp3', 'wav', 'webm', 'ogg', 'flac'}
-
-try:
-    import whisper
-    # Use 'medium' model for BEST Vietnamese accuracy (769MB)
-    # Larger model = much better for tonal languages like Vietnamese
-    logger.info("Loading Whisper model (medium) for Vietnamese STT...")
-    WHISPER_MODEL = whisper.load_model("medium", device=DEVICE)
-    WHISPER_AVAILABLE = True
-    logger.info(f"✅ Whisper (medium) loaded on {DEVICE} - Best Vietnamese accuracy")
-except ImportError:
-    logger.warning("⚠️ openai-whisper not installed. Run: pip install openai-whisper")
-except Exception as e:
-    logger.error(f"Failed to load Whisper: {e}")
+# Initialize PhoWhisper from stt_service
+stt_service.init_stt()
+WHISPER_AVAILABLE = True # PhoWhisper acts as the new Whisper service
 
 def allowed_audio_file(filename: str) -> bool:
     """Check if audio file extension is allowed"""
@@ -479,13 +466,11 @@ def transcribe_audio():
         logger.info(f"Transcribing audio: {temp_path}")
         start_time = time.time()
         
-        # Transcribe with Whisper
-        result = WHISPER_MODEL.transcribe(
-            temp_path,
-            language="vi",  # Force Vietnamese
-            task="transcribe",
-            fp16=(DEVICE != "cpu")  # Use FP16 on GPU for speed
-        )
+        # Transcribe with PhoWhisper
+        text = stt_service.transcribe_audio(temp_path)
+        
+        if not text:
+            return jsonify({"error": "Transcription failed", "success": False}), 500
         
         duration = time.time() - start_time
         text = result.get("text", "").strip()

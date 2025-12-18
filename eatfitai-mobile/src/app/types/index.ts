@@ -24,4 +24,21 @@ export type RootStackParamList = {
   VisionHistory: undefined;
   NutritionSettings: undefined;
   Achievements: undefined;
+  // Profile screens - mới thêm
+  EditProfile: undefined;
+  BodyMetrics: undefined;
+  GoalSettings: undefined;
+  WeightHistory: undefined;
+  ChangePassword: undefined;
+  About: undefined;
+  NotificationsSettings: undefined;
+  DietaryRestrictions: undefined;
 };
+
+export interface UserPreference {
+  dietaryRestrictions: string[];
+  allergies: string[];
+  preferredMealsPerDay: number;
+  preferredCuisine: string | null;
+}
+
