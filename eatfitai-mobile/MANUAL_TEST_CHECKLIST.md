@@ -117,3 +117,35 @@
 - [ ] App không crash khi navigate
 - [ ] Dữ liệu persist sau reload app
 - [ ] Logout/Login lại vẫn giữ data
+
+---
+
+## Phase 6: AI Provider (19/12/2025)
+
+### GPU Verification
+- [ ] Healthz endpoint: `curl http://127.0.0.1:5050/healthz`
+  - Expected: `"cuda_available": true`, `"device": "cuda:0"`
+- [ ] Log startup: `✅ GPU detected: NVIDIA GeForce RTX 3050`
+- [ ] Model loaded on `cuda:0` (not `cpu`)
+
+### AI Vision (YOLOv8)
+- [ ] Mở Camera → Chụp ảnh thức ăn
+- [ ] Nhận diện đúng (cà chua, trứng, cơm, etc.)
+- [ ] Hiển thị 63 classes trong healthz
+
+### AI Nutrition (Ollama qwen2:1.5b)
+- [ ] Profile → Nutrition Settings → Nhập thông tin
+- [ ] Response có `"source": "ollama"` (không phải "formula")
+- [ ] Thời gian response < 5 giây
+- [ ] JSON trả về đúng: calories, protein, carbs, fat
+
+### AI Voice (Whisper STT)
+- [ ] Voice Input → Nói "Thêm một bát phở"
+- [ ] Transcript tiếng Việt chính xác
+- [ ] Log: `STT initialized on cuda:0`
+
+### Recipe Filtering (Dietary Preferences)
+- [ ] Profile → Dietary Restrictions → Chọn "Vegetarian"
+- [ ] Recipe Suggestions → KHÔNG có món thịt (bò, gà, heo)
+- [ ] Thử Allergy "Seafood" → KHÔNG có tôm/cá/mực
+- [ ] Clear preferences → Hiển thị đầy đủ món

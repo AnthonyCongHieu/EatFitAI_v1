@@ -10,15 +10,20 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 const NOTIFICATIONS_SETTINGS_KEY = '@eatfitai_notifications';
 
 // Config hiển thị notification khi app đang foreground
-Notifications.setNotificationHandler({
-    handleNotification: async () => ({
-        shouldShowAlert: true,
-        shouldPlaySound: true,
-        shouldSetBadge: false,
-        shouldShowBanner: true,
-        shouldShowList: true,
-    }),
-});
+// Wrap trong try-catch để không crash trong Expo Go (native module không available)
+try {
+    Notifications.setNotificationHandler({
+        handleNotification: async () => ({
+            shouldShowAlert: true,
+            shouldPlaySound: true,
+            shouldSetBadge: false,
+            shouldShowBanner: true,
+            shouldShowList: true,
+        }),
+    });
+} catch (error) {
+    console.log('[NotificationService] Native module không available, skip handler setup');
+}
 
 // Types
 export interface NotificationSettings {
@@ -73,37 +78,43 @@ const MEAL_MESSAGES = {
  * @returns true nếu được cấp quyền
  */
 export async function requestNotificationPermissions(): Promise<boolean> {
-    // Kiểm tra thiết bị vật lý (notifications không hoạt động trên simulator)
-    if (!Device.isDevice) {
-        console.log('[NotificationService] Notifications không hoạt động trên simulator');
+    try {
+        // Kiểm tra thiết bị vật lý (notifications không hoạt động trên simulator/Expo Go)
+        if (!Device.isDevice) {
+            console.log('[NotificationService] Notifications không hoạt động trên simulator/Expo Go');
+            return false;
+        }
+
+        const { status: existingStatus } = await Notifications.getPermissionsAsync();
+        let finalStatus = existingStatus;
+
+        if (existingStatus !== 'granted') {
+            const { status } = await Notifications.requestPermissionsAsync();
+            finalStatus = status;
+        }
+
+        if (finalStatus !== 'granted') {
+            console.log('[NotificationService] Không được cấp quyền notification');
+            return false;
+        }
+
+        // Android cần notification channel
+        if (Platform.OS === 'android') {
+            await Notifications.setNotificationChannelAsync('meal-reminders', {
+                name: 'Nhắc nhở bữa ăn',
+                importance: Notifications.AndroidImportance.HIGH,
+                vibrationPattern: [0, 250, 250, 250],
+                lightColor: '#FF6B00',
+            });
+        }
+
+        console.log('[NotificationService] Đã được cấp quyền notification');
+        return true;
+    } catch (error) {
+        // Handle gracefully khi native module không available (Expo Go)
+        console.log('[NotificationService] Native module không available:', error);
         return false;
     }
-
-    const { status: existingStatus } = await Notifications.getPermissionsAsync();
-    let finalStatus = existingStatus;
-
-    if (existingStatus !== 'granted') {
-        const { status } = await Notifications.requestPermissionsAsync();
-        finalStatus = status;
-    }
-
-    if (finalStatus !== 'granted') {
-        console.log('[NotificationService] Không được cấp quyền notification');
-        return false;
-    }
-
-    // Android cần notification channel
-    if (Platform.OS === 'android') {
-        await Notifications.setNotificationChannelAsync('meal-reminders', {
-            name: 'Nhắc nhở bữa ăn',
-            importance: Notifications.AndroidImportance.HIGH,
-            vibrationPattern: [0, 250, 250, 250],
-            lightColor: '#FF6B00',
-        });
-    }
-
-    console.log('[NotificationService] Đã được cấp quyền notification');
-    return true;
 }
 
 /**
