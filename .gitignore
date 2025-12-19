@@ -9,4 +9,6 @@ obj/
 .env.*
 ios/Pods/
 android/app/build/
+android/.kotlin/
+.jdk17/
 .DS_Store
