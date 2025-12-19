@@ -29,7 +29,8 @@ namespace EatFitAI.Services
             { "tối", MealType.Dinner },
             { "bữa tối", MealType.Dinner },
             { "ăn tối", MealType.Dinner },
-            { "chiều", MealType.Snack },
+            { "chiều", MealType.Snack },  // Thêm chiều → Snack
+            { "xế", MealType.Snack },      // Thêm xế → Snack
             { "bữa phụ", MealType.Snack },
             { "ăn vặt", MealType.Snack },
         };
@@ -125,7 +126,7 @@ namespace EatFitAI.Services
                         FoodName = foodName,
                         Quantity = quantity,
                         MealType = mealType,
-                        Date = DateTime.UtcNow.Date,
+                        Date = DateTime.Now.Date,  // Dùng local time thay vì UTC
                     },
                     SuggestedAction = $"Thêm {quantity} {foodName} vào {GetMealLabel(mealType)}",
                 };
@@ -155,7 +156,7 @@ namespace EatFitAI.Services
                     Entities = new VoiceCommandEntities
                     {
                         Weight = weight,
-                        Date = DateTime.UtcNow.Date,
+                        Date = DateTime.Now.Date,  // Dùng local time
                     },
                     SuggestedAction = $"Ghi cân nặng {weight} kg",
                 };
@@ -182,7 +183,7 @@ namespace EatFitAI.Services
                     Confidence = 0.85,
                     Entities = new VoiceCommandEntities
                     {
-                        Date = DateTime.UtcNow.Date,
+                        Date = DateTime.Now.Date,  // Dùng local time
                     },
                     SuggestedAction = "Xem tổng calories hôm nay",
                 };

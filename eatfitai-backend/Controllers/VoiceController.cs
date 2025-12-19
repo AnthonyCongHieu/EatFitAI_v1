@@ -119,6 +119,12 @@ namespace EatFitAI.API.Controllers
                 switch (command.Intent)
                 {
                     case VoiceIntent.ADD_FOOD:
+                        // Kiểm tra confidence trước khi thực thi
+                        if (command.Confidence < 0.5)
+                        {
+                            error = "Độ tin cậy thấp. Vui lòng nói rõ hơn.";
+                            break;
+                        }
                         (executedAction, error) = await ExecuteAddFoodAsync(userId, command);
                         break;
 
@@ -220,7 +226,7 @@ namespace EatFitAI.API.Controllers
                 Carb = Math.Round(carbs, 1),
                 Fat = Math.Round(fat, 1),
                 Note = $"Voice AI: {command.RawText}",
-                SourceMethod = "VoiceAI"
+                SourceMethod = "voice"  // Consistent với các source khác
             };
 
             var mealDiary = await _mealDiaryService.CreateMealDiaryAsync(userId, createRequest);

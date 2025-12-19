@@ -86,6 +86,7 @@ os.makedirs("uploads", exist_ok=True)
 
 # File validation constants
 ALLOWED_EXTENSIONS = {'jpg', 'jpeg', 'png', 'webp', 'bmp'}
+ALLOWED_AUDIO_EXTENSIONS = {'m4a', 'mp3', 'wav', 'webm', 'ogg', 'flac'}  # Audio cho STT
 MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB
 
 def allowed_file(filename: str) -> bool:
@@ -466,14 +467,15 @@ def transcribe_audio():
         logger.info(f"Transcribing audio: {temp_path}")
         start_time = time.time()
         
-        # Transcribe with PhoWhisper
+        # Transcribe with PhoWhisper (trả về string)
         text = stt_service.transcribe_audio(temp_path)
         
         if not text:
             return jsonify({"error": "Transcription failed", "success": False}), 500
         
         duration = time.time() - start_time
-        text = result.get("text", "").strip()
+        # text đã là string từ stt_service.transcribe_audio()
+        text = text.strip()
         
         # Cleanup temp file
         try:
@@ -485,7 +487,7 @@ def transcribe_audio():
         
         return jsonify({
             "text": text,
-            "language": result.get("language", "vi"),
+            "language": "vi",  # PhoWhisper luôn dùng tiếng Việt
             "duration": round(duration, 2),
             "success": True
         })

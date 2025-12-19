@@ -175,7 +175,7 @@ export const voiceService = {
         'breakfast': 'Breakfast', 'sáng': 'Breakfast',
         'lunch': 'Lunch', 'trưa': 'Lunch',
         'dinner': 'Dinner', 'tối': 'Dinner',
-        'snack': 'Snack', 'phụ': 'Snack',
+        'snack': 'Snack', 'phụ': 'Snack', 'chiều': 'Snack', // Thêm 'chiều' → Snack
       };
 
       // Transform command for Backend
