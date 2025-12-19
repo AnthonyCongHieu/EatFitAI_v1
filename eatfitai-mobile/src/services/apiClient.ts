@@ -4,17 +4,83 @@ import axios, {
   AxiosRequestConfig,
   InternalAxiosRequestConfig,
 } from 'axios';
+
+// Extend axios types để support custom retry flags
+declare module 'axios' {
+  interface InternalAxiosRequestConfig {
+    _retry?: boolean;
+    _networkRetried?: boolean;
+  }
+}
 import { API_BASE_URL } from '../config/env';
 import { tokenStorage } from './secureStore';
 import { getAccessTokenMem, setAccessTokenMem, clearAccessTokenMem } from './authTokens';
 import { postRefreshToken } from './tokenService';
 import { updateSessionFromAuthResponse } from './authSession';
+import { getApiUrl, forceRescan, getCachedApiUrl } from './ipScanner';
+
+// Flag để track đã init chưa
+let isApiInitialized = false;
+let initializationPromise: Promise<void> | null = null;
 
 // Axios client - default timeout 10s cho các request thông thường
+// BaseURL sẽ được set động khi init
 const apiClient = axios.create({ baseURL: API_BASE_URL, timeout: 10000 });
 
 // Axios client cho AI endpoints - timeout 60s vì Ollama/LLM mất nhiều thời gian
 export const aiApiClient = axios.create({ baseURL: API_BASE_URL, timeout: 60000 });
+
+/**
+ * Initialize API client với dynamic IP discovery
+ * Gọi function này khi app start
+ */
+export const initializeApiClient = async (): Promise<boolean> => {
+  // Tránh init nhiều lần
+  if (isApiInitialized) return true;
+  if (initializationPromise) {
+    await initializationPromise;
+    return isApiInitialized;
+  }
+
+  initializationPromise = (async () => {
+    try {
+      // Nếu đã có URL từ env, dùng luôn
+      if (API_BASE_URL) {
+        console.log('[APIClient] Dùng URL từ env:', API_BASE_URL);
+        isApiInitialized = true;
+        return;
+      }
+
+      // Không có env URL -> scan tìm backend
+      console.log('[APIClient] Không có URL từ env, đang scan mạng...');
+      const discoveredUrl = await getApiUrl();
+
+      if (discoveredUrl) {
+        apiClient.defaults.baseURL = discoveredUrl;
+        aiApiClient.defaults.baseURL = discoveredUrl;
+        console.log('[APIClient] ✅ Đã set baseURL:', discoveredUrl);
+        isApiInitialized = true;
+      } else {
+        console.error('[APIClient] ❌ Không tìm thấy backend!');
+        isApiInitialized = false;
+      }
+    } catch (error) {
+      console.error('[APIClient] Init error:', error);
+      isApiInitialized = false;
+    }
+  })();
+
+  await initializationPromise;
+  initializationPromise = null;
+  return isApiInitialized;
+};
+
+/**
+ * Lấy baseURL hiện tại (sync)
+ */
+export const getCurrentApiUrl = (): string | undefined => {
+  return apiClient.defaults.baseURL ?? getCachedApiUrl() ?? undefined;
+};
 
 if (__DEV__) {
   if (!API_BASE_URL) {
@@ -275,26 +341,35 @@ apiClient.interceptors.response.use(
         isRefreshing = false;
       }
     }
-    // Handle network errors specifically
-    if (!error.response && error.code) {
+    // Handle network errors specifically - thử re-scan và retry 1 lần
+    if (!error.response && error.code && originalRequest && !originalRequest._networkRetried) {
       if (__DEV__) {
-        console.error('[EatFitAI] Network Error Details:', {
-          code: error.code,
-          message: error.message,
-          baseURL: API_BASE_URL,
-          request: error.request ? 'Request object exists' : 'No request object',
-          config: {
-            url: error.config?.url,
-            method: error.config?.method,
-            timeout: error.config?.timeout,
-          },
-        });
+        console.warn('[EatFitAI] Network Error, đang thử tìm lại backend...');
       }
 
-      // Create a more descriptive error for network issues
+      originalRequest._networkRetried = true;
+
+      try {
+        // Force re-scan để tìm IP mới
+        const newUrl = await forceRescan();
+        if (newUrl) {
+          // Cập nhật baseURL cho cả 2 client
+          apiClient.defaults.baseURL = newUrl;
+          aiApiClient.defaults.baseURL = newUrl;
+
+          // Retry request với URL mới
+          originalRequest.baseURL = newUrl;
+          console.log('[EatFitAI] Retry với URL mới:', newUrl);
+          return apiClient(originalRequest);
+        }
+      } catch (rescanError) {
+        console.error('[EatFitAI] Re-scan failed:', rescanError);
+      }
+
+      // Re-scan thất bại, return lỗi gốc
       const networkError = new Error(
-        `Network Error: ${error.message || 'Unable to connect to server'}. ` +
-        `Please check your internet connection and ensure the API server is running at ${API_BASE_URL || 'undefined URL'}.`,
+        `Network Error: ${error.message || 'Không kết nối được server'}. ` +
+        `Kiểm tra kết nối mạng và đảm bảo backend đang chạy.`,
       );
       networkError.name = 'NetworkError';
       return Promise.reject(networkError);

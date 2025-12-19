@@ -240,6 +240,13 @@ app.MapGet("/health/ready", async (EatFitAI.API.DbScaffold.Data.EatFitAIDbContex
 // Simple health endpoint for mobile ping
 app.MapGet("/health", () => Results.Ok(new { status = "ok" }));
 
+// Discovery endpoint - cho mobile app tự động tìm backend trong LAN
+app.MapGet("/discovery", () => Results.Ok(new { 
+    appId = "eatfitai", 
+    version = "1.0", 
+    apiPort = 5247 
+}));
+
 await app.RunAsync();
     }
 }

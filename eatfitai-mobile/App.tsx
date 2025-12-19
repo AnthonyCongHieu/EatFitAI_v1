@@ -26,6 +26,8 @@ import ErrorBoundary from './src/components/ErrorBoundary';
 import { initAnalytics } from './src/services/analytics';
 import { initErrorTracking } from './src/services/errorTracking';
 
+import { initializeApiClient } from './src/services/apiClient';
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -65,10 +67,25 @@ const AppInner = () => {
     initAnalytics().catch(() => { });
   }, [theme.colors.background]);
 
-  // Ping backend health on startup and notify if unreachable
+  // Initialize API client với IP discovery + ping health
   useEffect(() => {
     let cancelled = false;
     (async () => {
+      // Bước 1: Khởi tạo API client (scan IP nếu cần)
+      const initialized = await initializeApiClient();
+      if (!initialized) {
+        if (!cancelled) {
+          Toast.show({
+            type: 'error',
+            text1: 'Không tìm thấy server',
+            text2: 'Đảm bảo backend đang chạy cùng mạng WiFi',
+            visibilityTime: 5000,
+          });
+        }
+        return;
+      }
+
+      // Bước 2: Ping health để verify kết nối
       const res = await healthService.pingRoot();
       if (!cancelled && !res.ok) {
         Toast.show({
