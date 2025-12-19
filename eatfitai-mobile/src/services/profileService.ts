@@ -19,6 +19,10 @@ export type UserProfile = {
   activityLevelId?: number;
   activityFactor?: number;
   goal?: string;
+  // Profile 2026 - Gamification & Goal Tracking
+  targetWeightKg?: number;
+  currentStreak?: number;
+  longestStreak?: number;
 };
 
 export type UpdateProfilePayload = {

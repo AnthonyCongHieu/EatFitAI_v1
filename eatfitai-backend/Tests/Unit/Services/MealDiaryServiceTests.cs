@@ -18,6 +18,7 @@ namespace EatFitAI.API.Tests.Unit.Services
         private readonly Mock<IMealDiaryRepository> _mealDiaryRepositoryMock;
         private readonly EatFitAIDbContext _context;
         private readonly Mock<IMapper> _mapperMock;
+        private readonly Mock<IStreakService> _streakServiceMock;  // Profile 2026 - Streak tracking
         private readonly MealDiaryService _mealDiaryService;
         private readonly Guid _testUserId = Guid.NewGuid();
 
@@ -25,6 +26,7 @@ namespace EatFitAI.API.Tests.Unit.Services
         {
             _mealDiaryRepositoryMock = new Mock<IMealDiaryRepository>();
             _mapperMock = new Mock<IMapper>();
+            _streakServiceMock = new Mock<IStreakService>();  // Mock streak service
 
             // Setup in-memory database cho việc test CRUD và macro computation
             var options = new DbContextOptionsBuilder<EatFitAIDbContext>()
@@ -35,7 +37,8 @@ namespace EatFitAI.API.Tests.Unit.Services
             _mealDiaryService = new MealDiaryService(
                 _mealDiaryRepositoryMock.Object,
                 _context,
-                _mapperMock.Object);
+                _mapperMock.Object,
+                _streakServiceMock.Object);  // Truyền streak service mock
 
             // Seed test data cho context
             SeedTestData();

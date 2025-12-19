@@ -13,15 +13,18 @@ namespace EatFitAI.API.Services
         private readonly IMealDiaryRepository _mealDiaryRepository;
         private readonly EatFitAIDbContext _context;
         private readonly IMapper _mapper;
+        private readonly IStreakService _streakService;  // Profile 2026 - Streak tracking
 
         public MealDiaryService(
             IMealDiaryRepository mealDiaryRepository,
             EatFitAIDbContext context,
-            IMapper mapper)
+            IMapper mapper,
+            IStreakService streakService)  // Profile 2026 - Streak tracking
         {
             _mealDiaryRepository = mealDiaryRepository;
             _context = context;
             _mapper = mapper;
+            _streakService = streakService;
         }
 
         public async Task<IEnumerable<MealDiaryDto>> GetUserMealDiariesAsync(Guid userId, DateTime? date = null)
@@ -53,6 +56,9 @@ namespace EatFitAI.API.Services
 
             await _mealDiaryRepository.AddAsync(mealDiary);
             await _context.SaveChangesAsync();
+
+            // Update streak sau khi log meal thành công (Profile 2026)
+            await _streakService.UpdateStreakOnMealLogAsync(userId);
 
             // Fetch with includes for the response
             var createdMealDiary = await _mealDiaryRepository.GetByIdWithIncludesAsync(mealDiary.MealDiaryId);

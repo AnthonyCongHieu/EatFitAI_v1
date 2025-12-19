@@ -209,10 +209,14 @@ const ProfileScreen = (): React.ReactElement => {
             />
           </View>
 
-          {/* Streak Badge (placeholder - will be dynamic later) */}
+          {/* Streak Badge - hiển thị streak từ API */}
           <View style={styles.streakBadge}>
             <ThemedText>🔥</ThemedText>
-            <ThemedText style={styles.streakText}>0 ngày streak</ThemedText>
+            <ThemedText style={styles.streakText}>
+              {(profile?.currentStreak ?? 0) > 0
+                ? `${profile?.currentStreak} ngày streak`
+                : 'Bắt đầu streak hôm nay!'}
+            </ThemedText>
           </View>
 
           {/* Edit Profile Button */}

@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 # Configuration - Ollama LLM
 OLLAMA_URL = os.getenv("OLLAMA_URL", "http://localhost:11434")
-OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "llama3.2:3b")
+OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "qwen2:1.5b")
 
 # Check which LLM is available
 def check_ollama_available() -> bool:

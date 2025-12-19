@@ -21,6 +21,7 @@ import { SettingsMenuItem } from '../../../components/ui/SettingsMenuItem';
 import { glassStyles } from '../../../components/ui/GlassCard';
 import { useAppTheme } from '../../../theme/ThemeProvider';
 import { showSuccess, showInfo } from '../../../utils/errorHandler';
+import { scheduleNotifications, requestNotificationPermissions, cancelAllMealNotifications } from '../../../services/notificationService';
 
 // Storage key
 const NOTIFICATIONS_SETTINGS_KEY = '@eatfitai_notifications';
@@ -89,10 +90,20 @@ const NotificationsScreen = (): React.ReactElement => {
             setIsSaving(true);
             await AsyncStorage.setItem(NOTIFICATIONS_SETTINGS_KEY, JSON.stringify(settings));
 
-            // TODO: Schedule actual notifications with expo-notifications
+            // Schedule notifications với expo-notifications
             if (settings.enabled) {
-                showSuccess('settings_saved', { text2: 'Thông báo đã được bật' });
+                // Yêu cầu quyền và schedule
+                const hasPermission = await requestNotificationPermissions();
+                if (hasPermission) {
+                    await scheduleNotifications(settings);
+                    showSuccess('settings_saved', { text2: 'Thông báo đã được bật' });
+                } else {
+                    // Không được cấp quyền - tắt lại settings
+                    showInfo('Cần cấp quyền thông báo để bật nhắc nhở');
+                }
             } else {
+                // Tắt thông báo - cancel tất cả
+                await cancelAllMealNotifications();
                 showInfo('Thông báo đã tắt');
             }
 
