@@ -21,7 +21,6 @@ import { getApiUrl, forceRescan, getCachedApiUrl } from './ipScanner';
 
 // Flag để track đã init chưa
 let isApiInitialized = false;
-let initializationPromise: Promise<void> | null = null;
 
 // Axios client - default timeout 10s cho các request thông thường
 // BaseURL sẽ được set động khi init
@@ -35,44 +34,42 @@ export const aiApiClient = axios.create({ baseURL: API_BASE_URL, timeout: 60000 
  * Gọi function này khi app start
  */
 export const initializeApiClient = async (): Promise<boolean> => {
+  console.log('[APIClient] initializeApiClient started');
+
   // Tránh init nhiều lần
-  if (isApiInitialized) return true;
-  if (initializationPromise) {
-    await initializationPromise;
-    return isApiInitialized;
+  if (isApiInitialized) {
+    console.log('[APIClient] Already initialized, skipping');
+    return true;
   }
 
-  initializationPromise = (async () => {
-    try {
-      // Nếu đã có URL từ env, dùng luôn
-      if (API_BASE_URL) {
-        console.log('[APIClient] Dùng URL từ env:', API_BASE_URL);
-        isApiInitialized = true;
-        return;
-      }
-
-      // Không có env URL -> scan tìm backend
-      console.log('[APIClient] Không có URL từ env, đang scan mạng...');
-      const discoveredUrl = await getApiUrl();
-
-      if (discoveredUrl) {
-        apiClient.defaults.baseURL = discoveredUrl;
-        aiApiClient.defaults.baseURL = discoveredUrl;
-        console.log('[APIClient] ✅ Đã set baseURL:', discoveredUrl);
-        isApiInitialized = true;
-      } else {
-        console.error('[APIClient] ❌ Không tìm thấy backend!');
-        isApiInitialized = false;
-      }
-    } catch (error) {
-      console.error('[APIClient] Init error:', error);
-      isApiInitialized = false;
+  try {
+    // Nếu đã có URL từ env (dev mode với Metro), dùng luôn
+    if (API_BASE_URL) {
+      console.log('[APIClient] ✅ Dùng URL từ env:', API_BASE_URL);
+      isApiInitialized = true;
+      return true;
     }
-  })();
 
-  await initializationPromise;
-  initializationPromise = null;
-  return isApiInitialized;
+    // Production mode: Không có env URL -> scan tìm backend
+    console.log('[APIClient] Không có URL từ env, đang scan mạng...');
+    const discoveredUrl = await getApiUrl();
+
+    if (discoveredUrl) {
+      apiClient.defaults.baseURL = discoveredUrl;
+      aiApiClient.defaults.baseURL = discoveredUrl;
+      console.log('[APIClient] ✅ Đã set baseURL:', discoveredUrl);
+      isApiInitialized = true;
+      return true;
+    } else {
+      console.error('[APIClient] ❌ Không tìm thấy backend!');
+      isApiInitialized = false;
+      return false;
+    }
+  } catch (error) {
+    console.error('[APIClient] Init error:', error);
+    isApiInitialized = false;
+    return false;
+  }
 };
 
 /**

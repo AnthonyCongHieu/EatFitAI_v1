@@ -25,7 +25,6 @@ import { t } from './src/i18n/vi';
 import ErrorBoundary from './src/components/ErrorBoundary';
 import { initAnalytics } from './src/services/analytics';
 import { initErrorTracking } from './src/services/errorTracking';
-
 import { initializeApiClient } from './src/services/apiClient';
 
 const queryClient = new QueryClient({
@@ -67,25 +66,19 @@ const AppInner = () => {
     initAnalytics().catch(() => { });
   }, [theme.colors.background]);
 
-  // Initialize API client với IP discovery + ping health
+  // Background: Initialize API client (IP discovery nếu cần)
+  // Chạy background, không block app startup
+  useEffect(() => {
+    initializeApiClient().catch(() => { });
+  }, []);
+
+  // Ping backend health on startup and notify if unreachable
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      // Bước 1: Khởi tạo API client (scan IP nếu cần)
-      const initialized = await initializeApiClient();
-      if (!initialized) {
-        if (!cancelled) {
-          Toast.show({
-            type: 'error',
-            text1: 'Không tìm thấy server',
-            text2: 'Đảm bảo backend đang chạy cùng mạng WiFi',
-            visibilityTime: 5000,
-          });
-        }
-        return;
-      }
+      // Đợi 1s để initializeApiClient có thời gian chạy
+      await new Promise<void>(resolve => setTimeout(resolve, 1000));
 
-      // Bước 2: Ping health để verify kết nối
       const res = await healthService.pingRoot();
       if (!cancelled && !res.ok) {
         Toast.show({
@@ -120,16 +113,19 @@ export default function App(): React.ReactElement | null {
     Inter_700Bold,
   });
 
+  // Fallback: Hide splash sau 5s dù fonts có load hay không
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      SplashScreen.hideAsync().catch(() => { });
+    }, 5000);
+    return () => clearTimeout(timeout);
+  }, []);
+
   useEffect(() => {
     if (fontsLoaded) {
-      // Tat splash ngay khi font san sang de tranh nhay man hinh
-      SplashScreen.hideAsync().catch(() => {
-        // swallow error intentionally
-      });
+      SplashScreen.hideAsync().catch(() => { });
     }
   }, [fontsLoaded]);
-
-  // Nen he thong se duoc cap nhat theo theme trong AppInner
 
   if (!fontsLoaded) {
     return null;
