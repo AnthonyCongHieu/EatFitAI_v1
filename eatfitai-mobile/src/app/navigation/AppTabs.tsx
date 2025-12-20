@@ -81,8 +81,6 @@ const AppTabs = (): React.ReactElement => {
           backgroundColor: isDark
             ? 'rgba(20, 25, 23, 0.95)'
             : 'rgba(255, 255, 255, 0.95)',
-          borderTopLeftRadius: 24,
-          borderTopRightRadius: 24,
           borderTopWidth: 1,
           borderTopColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.05)',
           height: 75,

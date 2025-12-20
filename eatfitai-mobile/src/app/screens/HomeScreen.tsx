@@ -342,7 +342,7 @@ const HomeScreen = (): React.ReactElement => {
           paddingHorizontal: theme.spacing.lg,
           paddingVertical: theme.spacing.xl,
           gap: theme.spacing.xxl,
-          paddingBottom: 140, // 80 (FAB bottom) + 60 (FAB size + margin) để không bị che
+          paddingBottom: 50,
         }}
         refreshControl={
           <RefreshControl
