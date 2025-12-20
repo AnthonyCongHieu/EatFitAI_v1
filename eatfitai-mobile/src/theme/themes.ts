@@ -411,48 +411,48 @@ export const lightTheme: AppTheme = {
 export const darkTheme: AppTheme = {
   mode: 'dark',
   colors: {
-    // Premium dark gradient with subtle green tint (health theme)
-    background: '#080B0A', // Deep dark with green hint
-    backgroundGradient: ['#080B0A', '#0D1512', '#0A0F0D'] as const, // Dark green gradient
-    screenGradient: ['#0A0A0F', '#1a1a2e'] as const, // Dark screen gradient
-    card: 'rgba(18, 25, 22, 0.95)', // Dark green tint card
+    // Premium dark gradient - Navy Blue like Welcome screen
+    background: '#0A0E1A', // Deep navy black
+    backgroundGradient: ['#0A0E1A', '#141B2D', '#0D1321'] as const, // Navy blue gradient
+    screenGradient: ['#0D1321', '#1A2744'] as const, // Navy blue screen gradient (like Welcome)
+    card: 'rgba(20, 27, 45, 0.95)', // Navy blue tint card
 
-    text: '#F5F7FA',
+    text: '#F5F7FA', // White text
 
-    textSecondary: '#9CA3AF',
-    border: 'rgba(255, 255, 255, 0.1)',
-    // Primary - Vibrant blue like reference
-    primary: '#3B82F6',
-    primaryLight: 'rgba(59, 130, 246, 0.2)',
-    primaryDark: '#2563EB',
-    // Secondary - Teal accent
-    secondary: '#06B6D4',
-    secondaryLight: 'rgba(6, 182, 212, 0.2)',
+    textSecondary: '#9CA3AF', // Muted gray
+    border: 'rgba(74, 144, 226, 0.15)', // Blue border tint
+    // Primary - Bright Blue (like Welcome button)
+    primary: '#4A90D9',
+    primaryLight: 'rgba(74, 144, 226, 0.25)',
+    primaryDark: '#3B7BC8',
+    // Secondary - Lighter blue accent  
+    secondary: '#64B5F6',
+    secondaryLight: 'rgba(100, 181, 246, 0.2)',
     muted: '#6B7280',
     // Semantic colors
     danger: '#EF4444',
     success: '#22C55E',
     warning: '#F59E0B',
-    info: '#3B82F6',
-    // Overlay colors for modals/sheets (darker for dark mode)
+    info: '#4A90D9',
+    // Overlay colors for modals/sheets (darker navy)
     overlay: {
-      light: 'rgba(0, 0, 0, 0.5)',
-      medium: 'rgba(0, 0, 0, 0.6)',
-      heavy: 'rgba(0, 0, 0, 0.8)',
+      light: 'rgba(10, 14, 26, 0.5)',
+      medium: 'rgba(10, 14, 26, 0.7)',
+      heavy: 'rgba(10, 14, 26, 0.85)',
     },
-    // Glassmorphism colors (dark mode optimized)
+    // Glassmorphism colors (navy blue tint)
     glass: {
-      background: 'rgba(25, 30, 28, 0.75)',
-      border: 'rgba(255, 255, 255, 0.1)',
-      backgroundAlt: 'rgba(40, 40, 40, 0.7)',
-      borderAlt: 'rgba(255, 255, 255, 0.08)',
+      background: 'rgba(20, 27, 45, 0.78)',
+      border: 'rgba(74, 144, 226, 0.12)',
+      backgroundAlt: 'rgba(26, 39, 68, 0.7)',
+      borderAlt: 'rgba(100, 181, 246, 0.1)',
     },
-    // Chart colors (same as light for consistency)
+    // Chart colors (blue theme)
     chart: {
-      bar: '#4ade80',
-      barSecondary: '#8b5cf6',
-      barRemaining: 'rgba(55, 65, 60, 0.7)',
-      line: '#3b82f6',
+      bar: '#4A90D9', // Primary blue
+      barSecondary: '#64B5F6', // Light blue
+      barRemaining: 'rgba(20, 27, 45, 0.7)',
+      line: '#4A90D9',
     },
     // Gamification/Streak colors
     streak: {
@@ -462,47 +462,47 @@ export const darkTheme: AppTheme = {
     },
   },
   mealGradients: {
-    breakfast: ['#FF9A9E', '#FECFEF'] as const,
-    lunch: ['#A8EDEA', '#FED6E3'] as const,
-    dinner: ['#667EEA', '#764BA2'] as const,
-    snack: ['#FFECD2', '#FCB69F'] as const,
+    breakfast: ['#FF9A9E', '#FECFEF'] as const, // Warm pink
+    lunch: ['#4A90D9', '#64B5F6'] as const, // Blue gradient
+    dinner: ['#1A2744', '#3B7BC8'] as const, // Deep navy to blue
+    snack: ['#64B5F6', '#90CAF9'] as const, // Light blue gradient
   },
   gradients: {
-    primary: ['#3B82F6', '#8B5CF6'], // Blue to purple gradient
-    secondary: ['#06B6D4', '#0891B2'],
-    accent: ['#8B5CF6', '#A855F7'], // Purple accent
-    danger: ['#EF4444', '#F87171'],
-    success: ['#22C55E', '#4ADE80'],
+    primary: ['#4A90D9', '#3B7BC8'], // Blue gradient
+    secondary: ['#64B5F6', '#42A5F5'], // Light blue gradient
+    accent: ['#1A2744', '#4A90D9'], // Navy to bright blue
+    danger: ['#EF4444', '#F87171'], // Red gradient
+    success: ['#22C55E', '#4ADE80'], // Green success
   },
   statsCards: {
     calories: {
-      gradient: ['#1e3a5f', '#2c5282'] as const,
-      textColor: '#63b3ed',
-      borderColor: 'rgba(66, 153, 225, 0.3)',
+      gradient: ['#1A2744', '#2A3F68'] as const, // Navy blue
+      textColor: '#64B5F6',
+      borderColor: 'rgba(74, 144, 226, 0.3)',
     },
     average: {
-      gradient: ['#44337a', '#553c9a'] as const,
-      textColor: '#b794f4',
-      borderColor: 'rgba(159, 122, 234, 0.3)',
+      gradient: ['#1E3A5F', '#2C5282'] as const, // Deep blue
+      textColor: '#90CAF9',
+      borderColor: 'rgba(100, 181, 246, 0.3)',
     },
     daysLogged: {
-      gradient: ['#22543d', '#276749'] as const,
+      gradient: ['#22543d', '#276749'] as const, // Green
       textColor: '#68d391',
       borderColor: 'rgba(72, 187, 120, 0.3)',
     },
     target: {
-      gradient: ['#744210', '#975a16'] as const,
+      gradient: ['#744210', '#975a16'] as const, // Orange
       textColor: '#f6ad55',
       borderColor: 'rgba(237, 137, 54, 0.3)',
     },
   },
   achievementGradients: {
-    first_log: ['#FF6B6B', '#FF8E53'] as const,
-    streak_3: ['#4ECDC4', '#44A08D'] as const,
-    streak_7: ['#667EEA', '#764BA2'] as const,
-    log_100_meals: ['#F093FB', '#F5576C'] as const,
-    default: ['#FFD93D', '#FF6B6B'] as const,
-    header: ['#1a1a2e', '#16213e'] as const,  // Dark header
+    first_log: ['#FF6B6B', '#FF8E53'] as const, // Red-orange
+    streak_3: ['#4ECDC4', '#44A08D'] as const, // Teal
+    streak_7: ['#4A90D9', '#64B5F6'] as const, // Blue (updated)
+    log_100_meals: ['#1A2744', '#4A90D9'] as const, // Navy to blue
+    default: ['#4A90D9', '#64B5F6'] as const, // Blue gradient
+    header: ['#0D1321', '#1A2744'] as const, // Dark navy header
   },
   statusBarStyle: 'light',
   spacing: { xs: 4, sm: 8, md: 12, lg: 16, xl: 20, xxl: 24 },

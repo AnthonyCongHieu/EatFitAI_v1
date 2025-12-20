@@ -7,6 +7,7 @@ import type {
 } from 'react-native';
 import { ScrollView, View, StyleSheet, Platform, StatusBar } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
 
 import { useAppTheme } from '../theme/ThemeProvider';
 
@@ -22,6 +23,8 @@ type ScreenProps = {
   horizontalPadding?: boolean;
   // Header có sẵn (bỏ padding top)
   hasHeader?: boolean;
+  // Sử dụng gradient background - mặc định true
+  useGradient?: boolean;
 };
 
 export const Screen = ({
@@ -33,6 +36,7 @@ export const Screen = ({
   useSafeArea = true,
   horizontalPadding = true,
   hasHeader = false,
+  useGradient = true,
 }: ScreenProps): React.ReactElement => {
   const { theme } = useAppTheme();
   const insets = useSafeAreaInsets();
@@ -41,9 +45,9 @@ export const Screen = ({
   const paddingTop =
     useSafeArea && !hasHeader
       ? Math.max(
-          insets.top,
-          Platform.OS === 'android' ? StatusBar.currentHeight || 24 : 0,
-        )
+        insets.top,
+        Platform.OS === 'android' ? StatusBar.currentHeight || 24 : 0,
+      )
       : 0;
   const paddingBottom = useSafeArea ? Math.max(insets.bottom, 16) : 0;
   const paddingHorizontal = horizontalPadding ? theme.spacing.lg : 0;
@@ -62,9 +66,25 @@ export const Screen = ({
     flexGrow: 1,
   };
 
+  // Wrapper component - dùng LinearGradient nếu useGradient = true
+  const BackgroundWrapper = useGradient
+    ? ({ children: wrapperChildren, wrapperStyle }: { children: ReactNode; wrapperStyle?: ViewStyle }) => (
+      <LinearGradient
+        colors={theme.colors.screenGradient}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 0.5, y: 1 }}
+        style={[styles.gradient, wrapperStyle]}
+      >
+        {wrapperChildren}
+      </LinearGradient>
+    )
+    : ({ children: wrapperChildren, wrapperStyle }: { children: ReactNode; wrapperStyle?: ViewStyle }) => (
+      <View style={[containerStyle, wrapperStyle]}>{wrapperChildren}</View>
+    );
+
   if (scroll) {
     return (
-      <View style={[containerStyle, style]}>
+      <BackgroundWrapper wrapperStyle={style as ViewStyle}>
         <ScrollView
           style={styles.scrollView}
           contentContainerStyle={[contentStyle, contentContainerStyle]}
@@ -74,15 +94,22 @@ export const Screen = ({
         >
           {children}
         </ScrollView>
-      </View>
+      </BackgroundWrapper>
     );
   }
 
-  return <View style={[containerStyle, contentStyle, style]}>{children}</View>;
+  return (
+    <BackgroundWrapper wrapperStyle={style as ViewStyle}>
+      <View style={contentStyle}>{children}</View>
+    </BackgroundWrapper>
+  );
 };
 
 const styles = StyleSheet.create({
   scrollView: {
+    flex: 1,
+  },
+  gradient: {
     flex: 1,
   },
 });
