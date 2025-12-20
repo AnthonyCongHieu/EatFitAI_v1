@@ -1,4 +1,4 @@
-// M�n h�nh Chi ti?t m�n an v� th�m v�o nh?t k�
+// Màn hình Chi tiết món ăn và thêm vào nhật ký
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, View, Image } from 'react-native';
@@ -48,18 +48,18 @@ const FormSchema = z.object({
   grams: z
     .string()
     .trim()
-    .refine((value) => value !== '', { message: 'Vui l�ng nh?p s? gram' })
+    .refine((value) => value !== '', { message: 'Vui lòng nhập số gram' })
     .refine(
       (value) =>
         !Number.isNaN(Number(value)) && Number(value) > 0 && Number(value) <= 2000,
       {
-        message: 'S? gram ph?i > 0 v� = 2000',
+        message: 'Số gram phải > 0 và <= 2000',
       },
     ),
   mealType: z
     .number()
-    .refine((value) => [1, 2, 3, 4].includes(value), { message: 'B?a an kh�ng h?p l?' }),
-  note: z.string().trim().max(200, 'Ghi ch� t?i da 200 k� t?').optional(),
+    .refine((value) => [1, 2, 3, 4].includes(value), { message: 'Bữa ăn không hợp lệ' }),
+  note: z.string().trim().max(200, 'Ghi chú tối đa 200 ký tự').optional(),
 });
 
 type FormValues = z.infer<typeof FormSchema>;
@@ -116,7 +116,7 @@ const FoodDetailScreen = (): React.ReactElement | null => {
         placeholderImage: {
           fontSize: 64,
         },
-        // Bug #6 fix: C?i thi?n macro box d? text kh�ng b? l?ch
+        // Bug #6 fix: Cải thiện macro box để text không bị lệch
         macroRow: {
           flexDirection: 'row',
           gap: theme.spacing.sm,
@@ -124,12 +124,12 @@ const FoodDetailScreen = (): React.ReactElement | null => {
         },
         macroBox: {
           flex: 1,
-          minWidth: 90, // Tang minWidth d? c� d? space
+          minWidth: 90, // Tăng minWidth để có đủ space
           padding: theme.spacing.md,
           borderRadius: theme.borderRadius.card,
           gap: theme.spacing.xs,
           alignItems: 'center',
-          justifyContent: 'center', // Center theo chi?u d?c
+          justifyContent: 'center', // Center theo chiều dọc
         },
         mealRow: { flexDirection: 'row', flexWrap: 'wrap', gap: theme.spacing.xs },
         mealChip: {
@@ -275,10 +275,10 @@ const FoodDetailScreen = (): React.ReactElement | null => {
         }
         Toast.show({
           type: 'success',
-          text1: '�� th�m m�n v�o nh?t k�',
-          text2: 'Ti?p t?c theo d�i dinh du?ng c?a b?n!',
+          text1: 'Đã thêm món vào nhật ký',
+          text2: 'Tiếp tục theo dõi dinh dưỡng của bạn!',
         });
-        // ? Invalidate cache d? HomeScreen/MealDiary t? d?ng c?p nh?t
+        // ⚡ Invalidate cache để HomeScreen/MealDiary tự động cập nhật
         queryClient.invalidateQueries({ queryKey: ['home-summary'] });
         queryClient.invalidateQueries({ queryKey: ['diary-entries'] });
         navigation.goBack();
@@ -327,7 +327,7 @@ const FoodDetailScreen = (): React.ReactElement | null => {
               color="textSecondary"
               style={{ marginTop: theme.spacing.md }}
             >
-              �ang t?i chi ti?t m�n an...
+              Đang tải chi tiết món ăn...
             </ThemedText>
           </View>
         </AppCard>
@@ -340,7 +340,7 @@ const FoodDetailScreen = (): React.ReactElement | null => {
   return (
     <Screen>
       <AppHeader
-        title="Chi ti?t m�n an"
+        title="Chi tiết món ăn"
         subtitle={detail.name}
         action={
           <FavoriteButton isFavorite={isFavorite} onToggle={toggleFavorite} size="md" />
@@ -366,7 +366,7 @@ const FoodDetailScreen = (): React.ReactElement | null => {
 
         <AppCard>
           <ThemedText variant="h2" style={{ marginBottom: theme.spacing.xs }}>
-            Th�ng tin dinh du?ng
+            Thông tin dinh dưỡng
           </ThemedText>
           {detail.brand ? (
             <ThemedText
@@ -393,7 +393,7 @@ const FoodDetailScreen = (): React.ReactElement | null => {
                 weight="600"
                 style={{ textTransform: 'uppercase' }}
               >
-                Lu?ng tham chi?u
+                Lượng tham chiếu
               </ThemedText>
               <ThemedText variant="h4" color="primary">
                 {detail.servingSizeGram ? `${detail.servingSizeGram} g` : '100 g'}
@@ -408,7 +408,7 @@ const FoodDetailScreen = (): React.ReactElement | null => {
                 weight="600"
                 style={{ textTransform: 'uppercase' }}
               >
-                Nang lu?ng
+                Năng lượng
               </ThemedText>
               <ThemedText variant="h4" color="secondary">
                 {detail.perServingCalories ?? detail.calories ?? '--'} kcal
@@ -463,7 +463,7 @@ const FoodDetailScreen = (): React.ReactElement | null => {
       <Animated.View entering={FadeIn.duration(theme.animation.normal).delay(100)}>
         <AppCard>
           <ThemedText variant="h3" style={{ marginBottom: theme.spacing.lg }}>
-            Th�m v�o nh?t k�
+            Thêm vào nhật ký
           </ThemedText>
 
           <Controller
@@ -471,13 +471,13 @@ const FoodDetailScreen = (): React.ReactElement | null => {
             name="grams"
             render={({ field: { onChange, onBlur, value } }) => (
               <ThemedTextInput
-                label="S? gram"
+                label="Số gram"
                 keyboardType="numeric"
                 returnKeyType="done"
                 value={value}
                 onChangeText={onChange}
                 onBlur={onBlur}
-                placeholder="V� d?: 150"
+                placeholder="Ví dụ: 150"
                 error={!!errors.grams}
                 helperText={errors.grams?.message}
                 required
@@ -487,14 +487,14 @@ const FoodDetailScreen = (): React.ReactElement | null => {
 
           <View style={{ marginTop: theme.spacing.md }}>
             <ThemedText variant="bodySmall" weight="600">
-              B?a an
+              Bữa ăn
             </ThemedText>
             <View style={[styles.mealRow, { marginTop: theme.spacing.sm }]}>
               {MEAL_OPTIONS.map((option) => (
                 <Pressable
                   key={option.value}
                   accessibilityRole="button"
-                  accessibilityLabel={`Ch?n b?a an ${option.label}`}
+                  accessibilityLabel={`Chọn bữa ăn ${option.label}`}
                   accessibilityState={{ selected: mealTypeValue === option.value }}
                   hitSlop={8}
                   onPress={() => setValue('mealType', option.value)}
@@ -539,11 +539,11 @@ const FoodDetailScreen = (): React.ReactElement | null => {
             name="note"
             render={({ field: { onChange, onBlur, value } }) => (
               <ThemedTextInput
-                label="Ghi ch�"
+                label="Ghi chú"
                 value={value}
                 onChangeText={onChange}
                 onBlur={onBlur}
-                placeholder="VD: gi?m b?t nu?c s?t"
+                placeholder="VD: giảm bớt nước sốt"
                 multiline
                 numberOfLines={2}
                 error={!!errors.note}
@@ -564,7 +564,7 @@ const FoodDetailScreen = (): React.ReactElement | null => {
               color="primary"
               style={{ marginBottom: theme.spacing.sm }}
             >
-              T?ng dinh du?ng cho {gramsValue || '--'} g:
+              Tổng dinh dưỡng cho {gramsValue || '--'} g:
             </ThemedText>
             <ThemedText
               variant="h3"
@@ -592,7 +592,7 @@ const FoodDetailScreen = (): React.ReactElement | null => {
               loading={isSubmitting}
               disabled={isSubmitting}
               onPress={handleSubmit(submit)}
-              title={isSubmitting ? '�ang th�m...' : 'Th�m v�o nh?t k�'}
+              title={isSubmitting ? 'Đang thêm...' : 'Thêm vào nhật ký'}
             />
           </View>
         </AppCard>

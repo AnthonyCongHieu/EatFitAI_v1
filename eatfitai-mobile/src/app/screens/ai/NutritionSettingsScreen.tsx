@@ -1,5 +1,5 @@
-// M�n h�nh C�i d?t dinh du?ng h?p nh?t
-// Cho ph�p xem, ch?nh s?a th? c�ng v� s? d?ng AI d? g?i � m?c ti�u
+// Màn hình Cài đặt dinh dưỡng hợp nhất
+// Cho phép xem, chỉnh sửa thủ công và sử dụng AI để gợi ý mục tiêu
 
 import React, { useCallback, useEffect, useState } from 'react';
 import { View, StyleSheet, ScrollView, ActivityIndicator, Alert } from 'react-native';
@@ -132,7 +132,7 @@ const NutritionSettingsScreen = (): React.ReactElement => {
     mutationFn: aiService.applyNutritionTarget,
     onSuccess: async (_, variables) => {
       await queryClient.invalidateQueries({ queryKey: ['nutrition-target'] });
-      // ? Invalidate home-summary d? HomeScreen hi?n target m?i
+      // ⚡ Invalidate home-summary để HomeScreen hiển thị target mới
       queryClient.invalidateQueries({ queryKey: ['home-summary'] });
       setIsEditing(false);
       setSuggestedTarget(null);
@@ -345,7 +345,7 @@ const NutritionSettingsScreen = (): React.ReactElement => {
                   {Math.round(currentTarget?.calories ?? 0)}
                 </ThemedText>
                 <ThemedText variant="body" color="textSecondary">
-                  kcal / ng�y
+                  kcal / ngày
                 </ThemedText>
               </View>
 
@@ -386,7 +386,7 @@ const NutritionSettingsScreen = (): React.ReactElement => {
                 onPress={() => suggestMutation.mutate()}
                 loading={suggestMutation.isPending}
                 disabled={suggestMutation.isPending}
-                icon={<ThemedText>?</ThemedText>}
+                icon={<ThemedText>✨</ThemedText>}
               />
             </View>
           ) : (

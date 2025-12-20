@@ -283,7 +283,7 @@ const NutritionInsightsScreen = (): React.ReactElement => {
   }
 
   if (error) {
-    // Ki?m tra n?u l?i li�n quan d?n thi?u NutritionTarget
+    // Kiểm tra nếu lỗi liên quan đến thiếu NutritionTarget
     const isNoTargetError =
       error.toLowerCase().includes('nutrition target') ||
       error.toLowerCase().includes('no active');
@@ -306,7 +306,7 @@ const NutritionInsightsScreen = (): React.ReactElement => {
             style={{ textAlign: 'center', marginBottom: theme.spacing.sm }}
           >
             {isNoTargetError
-              ? 'Chua thi?t l?p m?c ti�u dinh du?ng'
+              ? 'Chưa thiết lập mục tiêu dinh dưỡng'
               : t('nutrition_insights.error_title')}
           </ThemedText>
           <ThemedText
@@ -318,13 +318,13 @@ const NutritionInsightsScreen = (): React.ReactElement => {
             }}
           >
             {isNoTargetError
-              ? 'B?n c?n thi?t l?p m?c ti�u calories, protein, carbs v� fat tru?c khi xem ph�n t�ch AI.'
+              ? 'Bạn cần thiết lập mục tiêu calories, protein, carbs và fat trước khi xem phân tích AI.'
               : error}
           </ThemedText>
           <View style={{ gap: theme.spacing.sm, width: '80%' }}>
             {isNoTargetError ? (
               <Button
-                title="Thi?t l?p m?c ti�u ngay"
+                title="Thiết lập mục tiêu ngay"
                 onPress={() => navigation.navigate('NutritionSettings' as any)}
                 variant="primary"
               />
@@ -454,7 +454,7 @@ const NutritionInsightsScreen = (): React.ReactElement => {
                   {insights.mealTimingInsight.insights.map((insight, idx) => (
                     <View key={idx} style={{ flexDirection: 'row', marginTop: 4 }}>
                       <ThemedText color="textSecondary" style={{ marginRight: 6 }}>
-                        �
+                        •
                       </ThemedText>
                       <ThemedText
                         variant="bodySmall"
