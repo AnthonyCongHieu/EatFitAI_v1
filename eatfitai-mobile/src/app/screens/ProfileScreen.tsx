@@ -16,7 +16,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 
 import { ThemedText } from '../../components/ThemedText';
-import { ScreenHeader } from '../../components/ui/ScreenHeader';
+import { AppHeader } from '../../components/ui/AppHeader';
 import { SettingsMenuItem } from '../../components/ui/SettingsMenuItem';
 import { SettingsSection } from '../../components/ui/SettingsSection';
 import { BMIIndicator } from '../../components/ui/BMIIndicator';
@@ -184,9 +184,11 @@ const ProfileScreen = (): React.ReactElement => {
 
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
-      <ScreenHeader
+      <AppHeader
         title={t('common.profile_title')}
         subtitle={t('common.profile_subtitle')}
+        showBack={false}
+        variant="hero"
       />
 
       <ScrollView contentContainerStyle={styles.scrollContent}>

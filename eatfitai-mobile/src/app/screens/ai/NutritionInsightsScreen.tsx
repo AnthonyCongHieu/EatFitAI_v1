@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, ScrollView, ActivityIndicator } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -8,7 +8,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { FadeInUp } from 'react-native-reanimated';
 
 import Screen from '../../../components/Screen';
-import { ScreenHeader } from '../../../components/ui/ScreenHeader';
+import { AppHeader } from '../../../components/ui/AppHeader';
 import { ThemedText } from '../../../components/ThemedText';
 import Button from '../../../components/Button';
 import { AppCard } from '../../../components/ui/AppCard';
@@ -271,7 +271,7 @@ const NutritionInsightsScreen = (): React.ReactElement => {
   if (loading) {
     return (
       <Screen style={styles.container}>
-        <ScreenHeader
+        <AppHeader
           title={t('nutrition_insights.title')}
           subtitle={t('nutrition_insights.loading')}
         />
@@ -283,14 +283,14 @@ const NutritionInsightsScreen = (): React.ReactElement => {
   }
 
   if (error) {
-    // Kiểm tra nếu lỗi liên quan đến thiếu NutritionTarget
+    // Ki?m tra n?u l?i li�n quan d?n thi?u NutritionTarget
     const isNoTargetError =
       error.toLowerCase().includes('nutrition target') ||
       error.toLowerCase().includes('no active');
 
     return (
       <Screen style={styles.container}>
-        <ScreenHeader
+        <AppHeader
           title={t('nutrition_insights.title')}
           subtitle={t('nutrition_insights.error_title')}
         />
@@ -306,7 +306,7 @@ const NutritionInsightsScreen = (): React.ReactElement => {
             style={{ textAlign: 'center', marginBottom: theme.spacing.sm }}
           >
             {isNoTargetError
-              ? 'Chưa thiết lập mục tiêu dinh dưỡng'
+              ? 'Chua thi?t l?p m?c ti�u dinh du?ng'
               : t('nutrition_insights.error_title')}
           </ThemedText>
           <ThemedText
@@ -318,13 +318,13 @@ const NutritionInsightsScreen = (): React.ReactElement => {
             }}
           >
             {isNoTargetError
-              ? 'Bạn cần thiết lập mục tiêu calories, protein, carbs và fat trước khi xem phân tích AI.'
+              ? 'B?n c?n thi?t l?p m?c ti�u calories, protein, carbs v� fat tru?c khi xem ph�n t�ch AI.'
               : error}
           </ThemedText>
           <View style={{ gap: theme.spacing.sm, width: '80%' }}>
             {isNoTargetError ? (
               <Button
-                title="Thiết lập mục tiêu ngay"
+                title="Thi?t l?p m?c ti�u ngay"
                 onPress={() => navigation.navigate('NutritionSettings' as any)}
                 variant="primary"
               />
@@ -343,7 +343,7 @@ const NutritionInsightsScreen = (): React.ReactElement => {
 
   return (
     <Screen style={styles.container} scroll={false}>
-      <ScreenHeader
+      <AppHeader
         title={t('nutrition_insights.title')}
         subtitle={t('nutrition_insights.subtitle')}
       />
@@ -454,7 +454,7 @@ const NutritionInsightsScreen = (): React.ReactElement => {
                   {insights.mealTimingInsight.insights.map((insight, idx) => (
                     <View key={idx} style={{ flexDirection: 'row', marginTop: 4 }}>
                       <ThemedText color="textSecondary" style={{ marginRight: 6 }}>
-                        •
+                        �
                       </ThemedText>
                       <ThemedText
                         variant="bodySmall"

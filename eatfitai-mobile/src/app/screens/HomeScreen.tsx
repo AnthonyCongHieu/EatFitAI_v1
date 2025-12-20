@@ -39,7 +39,7 @@ import { handleApiErrorWithCustomMessage } from '../../utils/errorHandler';
 import { AppCard } from '../../components/ui/AppCard';
 import { SectionHeader } from '../../components/ui/SectionHeader';
 import { AnimatedEmptyState } from '../../components/ui/AnimatedEmptyState';
-import { ScreenHeader } from '../../components/ui/ScreenHeader';
+
 import { MetricCard } from '../../components/ui/MetricCard';
 import { InsightsCard } from '../../components/ui/InsightsCard';
 import CircularProgress from '../../components/ui/CircularProgress';

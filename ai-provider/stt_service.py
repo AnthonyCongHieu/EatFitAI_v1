@@ -1,7 +1,8 @@
 import torch
 import os
 import logging
-from transformers import AutoModelForSpeechSeq2Seq, AutoProcessor, pipeline
+from transformers import WhisperForConditionalGeneration, WhisperProcessor, pipeline
+import warnings
 
 logger = logging.getLogger(__name__)
 
@@ -24,23 +25,32 @@ def _try_load_model(model_id: str, use_token: bool = False):
     try:
         logger.info(f"Trying to load model: {model_id}")
         
+        # Suppress deprecation warnings
+        warnings.filterwarnings("ignore", message=".*torch_dtype.*")
+        
+        # Base kwargs
         kwargs = {
             "torch_dtype": TORCH_DTYPE,
             "low_cpu_mem_usage": True,
-            "use_safetensors": True
         }
         
         # Thêm token nếu có và cần thiết
-        if use_token and HF_TOKEN:
-            kwargs["token"] = HF_TOKEN
+        token_to_use = HF_TOKEN if (use_token and HF_TOKEN) else None
+        if token_to_use:
+            kwargs["token"] = token_to_use
             logger.info("Using HuggingFace token for authentication")
         
-        model = AutoModelForSpeechSeq2Seq.from_pretrained(model_id, **kwargs)
+        # Sử dụng Whisper classes cụ thể thay vì Auto để tránh lỗi metadata
+        try:
+            kwargs["use_safetensors"] = True
+            model = WhisperForConditionalGeneration.from_pretrained(model_id, **kwargs)
+        except Exception as e1:
+            logger.warning(f"Failed with safetensors, trying without: {e1}")
+            kwargs.pop("use_safetensors", None)
+            model = WhisperForConditionalGeneration.from_pretrained(model_id, **kwargs)
+        
         model.to(DEVICE)
-        processor = AutoProcessor.from_pretrained(
-            model_id, 
-            token=HF_TOKEN if (use_token and HF_TOKEN) else None
-        )
+        processor = WhisperProcessor.from_pretrained(model_id, token=token_to_use)
         
         logger.info(f"✅ Successfully loaded: {model_id}")
         return model, processor
@@ -54,8 +64,10 @@ def init_stt():
     global _pipe, _current_model
     
     # Thử các model theo thứ tự ưu tiên
+    # PhoWhisper là public model nên thử không token trước
     models_to_try = [
-        (PHOWHISPER_MODEL_ID, True),   # PhoWhisper với token
+        (PHOWHISPER_MODEL_ID, False),  # PhoWhisper không token (public)
+        (PHOWHISPER_MODEL_ID, True),   # PhoWhisper với token (nếu cần)
         (WHISPER_FALLBACK_MODEL_ID, False),  # Whisper public
     ]
     

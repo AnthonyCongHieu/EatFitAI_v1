@@ -1,4 +1,4 @@
-﻿// Màn hình Chi tiết món ăn và thêm vào nhật ký
+// M�n h�nh Chi ti?t m�n an v� th�m v�o nh?t k�
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, View, Image } from 'react-native';
@@ -21,7 +21,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { ThemedText } from '../../../components/ThemedText';
 import Screen from '../../../components/Screen';
 import { AppCard } from '../../../components/ui/AppCard';
-import { ScreenHeader } from '../../../components/ui/ScreenHeader';
+import { AppHeader } from '../../../components/ui/AppHeader';
 import Button from '../../../components/Button';
 import ThemedTextInput from '../../../components/ThemedTextInput';
 import { useAppTheme } from '../../../theme/ThemeProvider';
@@ -48,18 +48,18 @@ const FormSchema = z.object({
   grams: z
     .string()
     .trim()
-    .refine((value) => value !== '', { message: 'Vui lòng nhập số gram' })
+    .refine((value) => value !== '', { message: 'Vui l�ng nh?p s? gram' })
     .refine(
       (value) =>
         !Number.isNaN(Number(value)) && Number(value) > 0 && Number(value) <= 2000,
       {
-        message: 'Số gram phải > 0 và ≤ 2000',
+        message: 'S? gram ph?i > 0 v� = 2000',
       },
     ),
   mealType: z
     .number()
-    .refine((value) => [1, 2, 3, 4].includes(value), { message: 'Bữa ăn không hợp lệ' }),
-  note: z.string().trim().max(200, 'Ghi chú tối đa 200 ký tự').optional(),
+    .refine((value) => [1, 2, 3, 4].includes(value), { message: 'B?a an kh�ng h?p l?' }),
+  note: z.string().trim().max(200, 'Ghi ch� t?i da 200 k� t?').optional(),
 });
 
 type FormValues = z.infer<typeof FormSchema>;
@@ -116,7 +116,7 @@ const FoodDetailScreen = (): React.ReactElement | null => {
         placeholderImage: {
           fontSize: 64,
         },
-        // Bug #6 fix: Cải thiện macro box để text không bị lệch
+        // Bug #6 fix: C?i thi?n macro box d? text kh�ng b? l?ch
         macroRow: {
           flexDirection: 'row',
           gap: theme.spacing.sm,
@@ -124,12 +124,12 @@ const FoodDetailScreen = (): React.ReactElement | null => {
         },
         macroBox: {
           flex: 1,
-          minWidth: 90, // Tăng minWidth để có đủ space
+          minWidth: 90, // Tang minWidth d? c� d? space
           padding: theme.spacing.md,
           borderRadius: theme.borderRadius.card,
           gap: theme.spacing.xs,
           alignItems: 'center',
-          justifyContent: 'center', // Center theo chiều dọc
+          justifyContent: 'center', // Center theo chi?u d?c
         },
         mealRow: { flexDirection: 'row', flexWrap: 'wrap', gap: theme.spacing.xs },
         mealChip: {
@@ -275,10 +275,10 @@ const FoodDetailScreen = (): React.ReactElement | null => {
         }
         Toast.show({
           type: 'success',
-          text1: 'Đã thêm món vào nhật ký',
-          text2: 'Tiếp tục theo dõi dinh dưỡng của bạn!',
+          text1: '�� th�m m�n v�o nh?t k�',
+          text2: 'Ti?p t?c theo d�i dinh du?ng c?a b?n!',
         });
-        // ⚡ Invalidate cache để HomeScreen/MealDiary tự động cập nhật
+        // ? Invalidate cache d? HomeScreen/MealDiary t? d?ng c?p nh?t
         queryClient.invalidateQueries({ queryKey: ['home-summary'] });
         queryClient.invalidateQueries({ queryKey: ['diary-entries'] });
         navigation.goBack();
@@ -327,7 +327,7 @@ const FoodDetailScreen = (): React.ReactElement | null => {
               color="textSecondary"
               style={{ marginTop: theme.spacing.md }}
             >
-              Đang tải chi tiết món ăn...
+              �ang t?i chi ti?t m�n an...
             </ThemedText>
           </View>
         </AppCard>
@@ -339,8 +339,8 @@ const FoodDetailScreen = (): React.ReactElement | null => {
 
   return (
     <Screen>
-      <ScreenHeader
-        title="Chi tiết món ăn"
+      <AppHeader
+        title="Chi ti?t m�n an"
         subtitle={detail.name}
         action={
           <FavoriteButton isFavorite={isFavorite} onToggle={toggleFavorite} size="md" />
@@ -360,13 +360,13 @@ const FoodDetailScreen = (): React.ReactElement | null => {
               resizeMode="cover"
             />
           ) : (
-            <ThemedText style={styles.placeholderImage}>🍽️</ThemedText>
+            <ThemedText style={styles.placeholderImage}>???</ThemedText>
           )}
         </View>
 
         <AppCard>
           <ThemedText variant="h2" style={{ marginBottom: theme.spacing.xs }}>
-            Thông tin dinh dưỡng
+            Th�ng tin dinh du?ng
           </ThemedText>
           {detail.brand ? (
             <ThemedText
@@ -393,7 +393,7 @@ const FoodDetailScreen = (): React.ReactElement | null => {
                 weight="600"
                 style={{ textTransform: 'uppercase' }}
               >
-                Lượng tham chiếu
+                Lu?ng tham chi?u
               </ThemedText>
               <ThemedText variant="h4" color="primary">
                 {detail.servingSizeGram ? `${detail.servingSizeGram} g` : '100 g'}
@@ -408,7 +408,7 @@ const FoodDetailScreen = (): React.ReactElement | null => {
                 weight="600"
                 style={{ textTransform: 'uppercase' }}
               >
-                Năng lượng
+                Nang lu?ng
               </ThemedText>
               <ThemedText variant="h4" color="secondary">
                 {detail.perServingCalories ?? detail.calories ?? '--'} kcal
@@ -463,7 +463,7 @@ const FoodDetailScreen = (): React.ReactElement | null => {
       <Animated.View entering={FadeIn.duration(theme.animation.normal).delay(100)}>
         <AppCard>
           <ThemedText variant="h3" style={{ marginBottom: theme.spacing.lg }}>
-            Thêm vào nhật ký
+            Th�m v�o nh?t k�
           </ThemedText>
 
           <Controller
@@ -471,13 +471,13 @@ const FoodDetailScreen = (): React.ReactElement | null => {
             name="grams"
             render={({ field: { onChange, onBlur, value } }) => (
               <ThemedTextInput
-                label="Số gram"
+                label="S? gram"
                 keyboardType="numeric"
                 returnKeyType="done"
                 value={value}
                 onChangeText={onChange}
                 onBlur={onBlur}
-                placeholder="Ví dụ: 150"
+                placeholder="V� d?: 150"
                 error={!!errors.grams}
                 helperText={errors.grams?.message}
                 required
@@ -487,14 +487,14 @@ const FoodDetailScreen = (): React.ReactElement | null => {
 
           <View style={{ marginTop: theme.spacing.md }}>
             <ThemedText variant="bodySmall" weight="600">
-              Bữa ăn
+              B?a an
             </ThemedText>
             <View style={[styles.mealRow, { marginTop: theme.spacing.sm }]}>
               {MEAL_OPTIONS.map((option) => (
                 <Pressable
                   key={option.value}
                   accessibilityRole="button"
-                  accessibilityLabel={`Chọn bữa ăn ${option.label}`}
+                  accessibilityLabel={`Ch?n b?a an ${option.label}`}
                   accessibilityState={{ selected: mealTypeValue === option.value }}
                   hitSlop={8}
                   onPress={() => setValue('mealType', option.value)}
@@ -539,11 +539,11 @@ const FoodDetailScreen = (): React.ReactElement | null => {
             name="note"
             render={({ field: { onChange, onBlur, value } }) => (
               <ThemedTextInput
-                label="Ghi chú"
+                label="Ghi ch�"
                 value={value}
                 onChangeText={onChange}
                 onBlur={onBlur}
-                placeholder="VD: giảm bớt nước sốt"
+                placeholder="VD: gi?m b?t nu?c s?t"
                 multiline
                 numberOfLines={2}
                 error={!!errors.note}
@@ -564,7 +564,7 @@ const FoodDetailScreen = (): React.ReactElement | null => {
               color="primary"
               style={{ marginBottom: theme.spacing.sm }}
             >
-              Tổng dinh dưỡng cho {gramsValue || '--'} g:
+              T?ng dinh du?ng cho {gramsValue || '--'} g:
             </ThemedText>
             <ThemedText
               variant="h3"
@@ -592,7 +592,7 @@ const FoodDetailScreen = (): React.ReactElement | null => {
               loading={isSubmitting}
               disabled={isSubmitting}
               onPress={handleSubmit(submit)}
-              title={isSubmitting ? 'Đang thêm...' : 'Thêm vào nhật ký'}
+              title={isSubmitting ? '�ang th�m...' : 'Th�m v�o nh?t k�'}
             />
           </View>
         </AppCard>

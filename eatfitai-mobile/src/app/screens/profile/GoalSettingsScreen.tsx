@@ -13,7 +13,7 @@ import Animated, { FadeInDown } from 'react-native-reanimated';
 
 import { ThemedText } from '../../../components/ThemedText';
 import Button from '../../../components/Button';
-import { ScreenHeader } from '../../../components/ui/ScreenHeader';
+import { AppHeader } from '../../../components/ui/AppHeader';
 import { glassStyles } from '../../../components/ui/GlassCard';
 import { useAppTheme } from '../../../theme/ThemeProvider';
 import { useProfileStore } from '../../../store/useProfileStore';
@@ -126,7 +126,7 @@ const GoalSettingsScreen = (): React.ReactElement => {
 
     return (
         <View style={styles.container}>
-            <ScreenHeader
+            <AppHeader
                 title="Mục tiêu & Hoạt động"
                 subtitle="Thiết lập mục tiêu dinh dưỡng"
                 onBackPress={() => navigation.goBack()}

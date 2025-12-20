@@ -14,7 +14,7 @@ import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useQuery } from '@tanstack/react-query';
 
 import { ThemedText } from '../../../components/ThemedText';
-import { ScreenHeader } from '../../../components/ui/ScreenHeader';
+import { AppHeader } from '../../../components/ui/AppHeader';
 import { glassStyles } from '../../../components/ui/GlassCard';
 import { useAppTheme } from '../../../theme/ThemeProvider';
 
@@ -207,7 +207,7 @@ const WeightHistoryScreen = (): React.ReactElement => {
     if (isLoading) {
         return (
             <View style={styles.container}>
-                <ScreenHeader
+                <AppHeader
                     title="Lịch sử cân đo"
                     onBackPress={() => navigation.goBack()}
                 />
@@ -221,7 +221,7 @@ const WeightHistoryScreen = (): React.ReactElement => {
     if (!records?.length) {
         return (
             <View style={styles.container}>
-                <ScreenHeader
+                <AppHeader
                     title="Lịch sử cân đo"
                     onBackPress={() => navigation.goBack()}
                 />
@@ -237,7 +237,7 @@ const WeightHistoryScreen = (): React.ReactElement => {
 
     return (
         <View style={styles.container}>
-            <ScreenHeader
+            <AppHeader
                 title="Lịch sử cân đo"
                 subtitle="Theo dõi tiến trình"
                 onBackPress={() => navigation.goBack()}

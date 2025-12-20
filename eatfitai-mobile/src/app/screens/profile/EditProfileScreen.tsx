@@ -19,7 +19,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { ThemedText } from '../../../components/ThemedText';
 import ThemedTextInput from '../../../components/ThemedTextInput';
 import Button from '../../../components/Button';
-import { ScreenHeader } from '../../../components/ui/ScreenHeader';
+import { AppHeader } from '../../../components/ui/AppHeader';
 import { glassStyles } from '../../../components/ui/GlassCard';
 import { useAppTheme } from '../../../theme/ThemeProvider';
 import { useProfileStore } from '../../../store/useProfileStore';
@@ -140,10 +140,9 @@ const EditProfileScreen = (): React.ReactElement => {
 
     return (
         <View style={styles.container}>
-            <ScreenHeader
+            <AppHeader
                 title="Chỉnh sửa hồ sơ"
                 subtitle="Thông tin cá nhân"
-                onBackPress={() => navigation.goBack()}
             />
 
             <KeyboardAvoidingView

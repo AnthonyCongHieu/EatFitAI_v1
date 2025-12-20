@@ -1,17 +1,22 @@
 // notificationService.ts - Quản lý local notifications cho meal reminders
 // Sử dụng expo-notifications để schedule thông báo
+// LƯU Ý: Expo Go không hỗ trợ native modules, cần development build để test
 
-import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
 import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-// Key lưu trữ cài đặt notifications
-const NOTIFICATIONS_SETTINGS_KEY = '@eatfitai_notifications';
+// Lazy import để tránh crash trong Expo Go
+let Notifications: typeof import('expo-notifications') | null = null;
+let notificationsAvailable = false;
 
-// Config hiển thị notification khi app đang foreground
-// Wrap trong try-catch để không crash trong Expo Go (native module không available)
+// Try load notifications module
 try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    Notifications = require('expo-notifications');
+    notificationsAvailable = true;
+
+    // Config hiển thị notification khi app đang foreground
     Notifications.setNotificationHandler({
         handleNotification: async () => ({
             shouldShowAlert: true,
@@ -21,9 +26,14 @@ try {
             shouldShowList: true,
         }),
     });
+    console.log('[NotificationService] Native module loaded successfully');
 } catch (error) {
-    console.log('[NotificationService] Native module không available, skip handler setup');
+    console.log('[NotificationService] Native module không available (Expo Go mode)');
+    notificationsAvailable = false;
 }
+
+// Key lưu trữ cài đặt notifications
+const NOTIFICATIONS_SETTINGS_KEY = '@eatfitai_notifications';
 
 // Types
 export interface NotificationSettings {
@@ -79,6 +89,12 @@ const MEAL_MESSAGES = {
  */
 export async function requestNotificationPermissions(): Promise<boolean> {
     try {
+        // Check nếu native module không available (Expo Go)
+        if (!notificationsAvailable || !Notifications) {
+            console.log('[NotificationService] Native module không available (Expo Go mode)');
+            return false;
+        }
+
         // Kiểm tra thiết bị vật lý (notifications không hoạt động trên simulator/Expo Go)
         if (!Device.isDevice) {
             console.log('[NotificationService] Notifications không hoạt động trên simulator/Expo Go');
@@ -137,6 +153,8 @@ async function scheduleDailyNotification(
     title: string,
     body: string
 ): Promise<string | null> {
+    if (!Notifications) return null;
+
     try {
         // Cancel notification cũ với identifier này
         await Notifications.cancelScheduledNotificationAsync(identifier);
@@ -170,6 +188,8 @@ async function scheduleDailyNotification(
  * Cancel một notification đã schedule
  */
 async function cancelNotification(identifier: string): Promise<void> {
+    if (!Notifications) return;
+
     try {
         await Notifications.cancelScheduledNotificationAsync(identifier);
         console.log(`[NotificationService] Đã cancel ${identifier}`);
@@ -258,7 +278,8 @@ export async function cancelAllMealNotifications(): Promise<void> {
 /**
  * Lấy danh sách notifications đã schedule
  */
-export async function getScheduledNotifications(): Promise<Notifications.NotificationRequest[]> {
+export async function getScheduledNotifications(): Promise<any[]> {
+    if (!Notifications) return [];
     return await Notifications.getAllScheduledNotificationsAsync();
 }
 

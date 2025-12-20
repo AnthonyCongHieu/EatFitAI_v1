@@ -1,60 +1,128 @@
-# EatFitAI (Mobile + Backend)
-Mobile: Expo (React Native) | Backend: .NET (sẽ setup lại)
+# 🍎 EatFitAI
 
-Trang thái: Đã xóa mã nguồn Backend để chuẩn bị setup lại. Ứng dụng mobile vẫn chạy bình thường và có thể trỏ tới API bên ngoài qua biến môi trường.
+**Ứng dụng theo dõi dinh dưỡng cá nhân với tích hợp AI Vision**
 
-## Features
-- User authentication (JWT, Google OAuth)
-- Profile management
-- Food search and custom dishes
-- Diary entries for meals
-- Body metrics tracking
-- Nutrition targets
-- Summary reports (daily/weekly)
+---
 
-## API tích hợp từ Mobile
-- Cấu hình base URL qua biến `EXPO_PUBLIC_API_BASE_URL` (xem `eatfitai-mobile/src/config/env.ts`).
-- Ví dụ khi dùng API local: đặt `EXPO_PUBLIC_API_BASE_URL=http://localhost:5100` trong `.env` của mobile.
+## 📋 Tổng quan
 
-## Setup
+EatFitAI giúp người dùng:
+- 📸 Chụp ảnh món ăn → AI nhận diện thực phẩm tự động
+- 📊 Theo dõi calories, protein, carbs, fat hàng ngày
+- 🎯 Đặt mục tiêu dinh dưỡng cá nhân hóa
+- 📈 Xem thống kê tuần/tháng với biểu đồ trực quan
+- 🗣️ Điều khiển bằng giọng nói (tiếng Việt)
 
-### Mobile
-1) Sao chép `.env.example` -> `.env` và thiết lập `EXPO_PUBLIC_API_BASE_URL` nếu có API có sẵn
-2) `npm install`
-3) `npx expo start`
+---
 
-### Backend (setup lại)
-1) Cài .NET SDK 9 (Windows/macOS/Linux)
-2) Tạo skeleton Web API (ví dụ cấu trúc lại thư mục `eatfitai-backend/`):
-   - `mkdir eatfitai-backend && cd eatfitai-backend`
-   - `dotnet new webapi -n EatFitAI.Api`
-   - `dotnet run --project EatFitAI.Api`
-3) Swagger/OpenAPI: `http://localhost:5247/swagger/v1/swagger.json`
-4) Cập nhật Mobile `.env.development` trỏ tới `http://10.0.2.2:5247` (emulator) hoặc `http://<HOST_IPV4>:5247` (thiết bị thật)
+## 🛠️ Tech Stack
 
-### Generate Type (từ OpenAPI)
-- Từ URL: `OPENAPI_URL="http://localhost:5247/swagger/v1/swagger.json" npm run -w eatfitai-mobile typegen`
-- Từ file: `OPENAPI_PATH="C:\\path\\to\\openapi.json" npm run -w eatfitai-mobile typegen`
-- Hoặc truyền trực tiếp tham số: `npm run -w eatfitai-mobile typegen -- https://server.example.com/openapi.json`
+| Component | Công nghệ |
+|-----------|-----------|
+| **Mobile** | Expo SDK 54, React Native, TypeScript |
+| **Backend** | .NET 9, ASP.NET Core Web API |
+| **Database** | SQL Server / Supabase |
+| **AI Vision** | YOLOv8 (trained on Vietnamese food) |
+| **AI LLM** | Ollama (local) - llama3.2:3b |
+| **AI Voice** | PhoWhisper (Vietnamese STT) |
 
-### Demo account
-login: demo@eatfit.ai / demo123
+---
 
-## Single-Dev Run (Quickstart)
+## ⚡ Quick Start (3 Terminals)
 
-- Backend
-  - `cd eatfitai-backend`
-  - `dotnet run`
-  - API: `http://localhost:5247` (Swagger at `/swagger`)
+### Prerequisites
 
-- Mobile
-  - `cd eatfitai-mobile`
-  - Copy `.env.development.example` → `.env.development`
-  - For Android emulator: `EXPO_PUBLIC_API_BASE_URL=http://10.0.2.2:5247`
-  - Or for device on LAN: `EXPO_PUBLIC_API_BASE_URL=http://<HOST_IPV4>:5247`
-  - `npm run dev`
+Cài đặt sẵn:
+- Python 3.10+
+- .NET SDK 9.0+
+- Node.js 18+
+- SQL Server (hoặc Supabase account)
+- [Ollama](https://ollama.com/download) (optional, cho AI features)
 
-Health check: `http://localhost:5247/health`
+### 1️⃣ Terminal 1: AI Provider
 
-## Testing
-- Build verification: Mobile app compile cleanly
+```powershell
+cd ai-provider
+python -m venv venv
+.\venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+python app.py
+```
+
+✅ Chạy trên `http://localhost:5050`
+
+### 2️⃣ Terminal 2: Backend API
+
+```powershell
+cd eatfitai-backend
+dotnet restore
+dotnet run
+```
+
+✅ Chạy trên `http://localhost:5247` | Swagger: `/swagger`
+
+### 3️⃣ Terminal 3: Mobile App
+
+```powershell
+cd eatfitai-mobile
+npm install
+npm run dev
+```
+
+✅ Scan QR bằng Expo Go app trên điện thoại
+
+---
+
+## 📖 Documentation
+
+| Doc | Mô tả |
+|-----|-------|
+| [SETUP_GUIDE.md](./SETUP_GUIDE.md) | Hướng dẫn chi tiết từng bước |
+| [JWT_CONFIGURATION.md](./JWT_CONFIGURATION.md) | Cấu hình JWT và User Secrets |
+| [ai-provider/README.md](./ai-provider/README.md) | API endpoints AI Provider |
+| [docs/](./docs/) | Báo cáo đánh giá, kiến trúc |
+
+---
+
+## 🔐 Demo Account
+
+```
+Email: demo@eatfit.ai
+Password: demo123
+```
+
+---
+
+## 📁 Cấu trúc Project
+
+```
+EatFitAI_v1/
+├── ai-provider/          # 🤖 Python Flask - YOLO + Ollama
+├── eatfitai-backend/     # 🔧 .NET Core Web API
+├── eatfitai-mobile/      # 📱 Expo React Native
+├── docs/                 # 📚 Tài liệu đánh giá
+└── *.sql                 # 🗃️ Database scripts
+```
+
+---
+
+## 🧪 Testing
+
+```powershell
+# Backend
+cd eatfitai-backend && dotnet test
+
+# Mobile
+cd eatfitai-mobile && npm test
+```
+
+---
+
+## 📞 Health Check
+
+- AI Provider: `http://localhost:5050/healthz`
+- Backend: `http://localhost:5247/health`
+
+---
+
+**Made with ❤️ by EatFitAI Team**

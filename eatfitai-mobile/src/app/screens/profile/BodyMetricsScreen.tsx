@@ -18,7 +18,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { ThemedText } from '../../../components/ThemedText';
 import ThemedTextInput from '../../../components/ThemedTextInput';
 import Button from '../../../components/Button';
-import { ScreenHeader } from '../../../components/ui/ScreenHeader';
+import { AppHeader } from '../../../components/ui/AppHeader';
 import { BMIIndicator } from '../../../components/ui/BMIIndicator';
 import { glassStyles } from '../../../components/ui/GlassCard';
 import { useAppTheme } from '../../../theme/ThemeProvider';
@@ -177,7 +177,7 @@ const BodyMetricsScreen = (): React.ReactElement => {
 
     return (
         <View style={styles.container}>
-            <ScreenHeader
+            <AppHeader
                 title="Số đo cơ thể"
                 subtitle="Cập nhật chiều cao và cân nặng"
                 onBackPress={() => navigation.goBack()}

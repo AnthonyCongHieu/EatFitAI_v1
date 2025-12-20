@@ -16,7 +16,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { ThemedText } from '../../../components/ThemedText';
 import Button from '../../../components/Button';
-import { ScreenHeader } from '../../../components/ui/ScreenHeader';
+import { AppHeader } from '../../../components/ui/AppHeader';
 import { SettingsMenuItem } from '../../../components/ui/SettingsMenuItem';
 import { glassStyles } from '../../../components/ui/GlassCard';
 import { useAppTheme } from '../../../theme/ThemeProvider';
@@ -239,7 +239,7 @@ const NotificationsScreen = (): React.ReactElement => {
 
     return (
         <View style={styles.container}>
-            <ScreenHeader
+            <AppHeader
                 title="Thông báo"
                 subtitle="Nhắc nhở bữa ăn"
                 onBackPress={() => navigation.goBack()}

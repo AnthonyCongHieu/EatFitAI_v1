@@ -1,5 +1,5 @@
-﻿// Màn hình Cài đặt dinh dưỡng hợp nhất
-// Cho phép xem, chỉnh sửa thủ công và sử dụng AI để gợi ý mục tiêu
+// M�n h�nh C�i d?t dinh du?ng h?p nh?t
+// Cho ph�p xem, ch?nh s?a th? c�ng v� s? d?ng AI d? g?i � m?c ti�u
 
 import React, { useCallback, useEffect, useState } from 'react';
 import { View, StyleSheet, ScrollView, ActivityIndicator, Alert } from 'react-native';
@@ -14,7 +14,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 
 import Screen from '../../../components/Screen';
 import { AppCard } from '../../../components/ui/AppCard';
-import { ScreenHeader } from '../../../components/ui/ScreenHeader';
+import { AppHeader } from '../../../components/ui/AppHeader';
 import { SectionHeader } from '../../../components/ui/SectionHeader';
 import Button from '../../../components/Button';
 import { ThemedText } from '../../../components/ThemedText';
@@ -132,7 +132,7 @@ const NutritionSettingsScreen = (): React.ReactElement => {
     mutationFn: aiService.applyNutritionTarget,
     onSuccess: async (_, variables) => {
       await queryClient.invalidateQueries({ queryKey: ['nutrition-target'] });
-      // ⚡ Invalidate home-summary để HomeScreen hiện target mới
+      // ? Invalidate home-summary d? HomeScreen hi?n target m?i
       queryClient.invalidateQueries({ queryKey: ['home-summary'] });
       setIsEditing(false);
       setSuggestedTarget(null);
@@ -249,7 +249,7 @@ const NutritionSettingsScreen = (): React.ReactElement => {
   if (isLoading) {
     return (
       <Screen>
-        <ScreenHeader title={t('nutrition_settings.title')} />
+        <AppHeader title={t('nutrition_settings.title')} />
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
           <ActivityIndicator size="large" color={theme.colors.primary} />
         </View>
@@ -259,7 +259,7 @@ const NutritionSettingsScreen = (): React.ReactElement => {
 
   return (
     <Screen>
-      <ScreenHeader
+      <AppHeader
         title={t('nutrition_settings.title')}
         subtitle={t('nutrition_settings.subtitle')}
       />
@@ -345,7 +345,7 @@ const NutritionSettingsScreen = (): React.ReactElement => {
                   {Math.round(currentTarget?.calories ?? 0)}
                 </ThemedText>
                 <ThemedText variant="body" color="textSecondary">
-                  kcal / ngày
+                  kcal / ng�y
                 </ThemedText>
               </View>
 
@@ -386,7 +386,7 @@ const NutritionSettingsScreen = (): React.ReactElement => {
                 onPress={() => suggestMutation.mutate()}
                 loading={suggestMutation.isPending}
                 disabled={suggestMutation.isPending}
-                icon={<ThemedText>✨</ThemedText>}
+                icon={<ThemedText>?</ThemedText>}
               />
             </View>
           ) : (

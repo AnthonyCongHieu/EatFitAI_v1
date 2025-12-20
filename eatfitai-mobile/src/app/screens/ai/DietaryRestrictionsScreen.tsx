@@ -10,7 +10,7 @@ import { useNavigation } from '@react-navigation/native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 
 import { ThemedText } from '../../../components/ThemedText';
-import { ScreenHeader } from '../../../components/ui/ScreenHeader';
+import { AppHeader } from '../../../components/ui/AppHeader';
 import Button from '../../../components/Button';
 import { glassStyles } from '../../../components/ui/GlassCard';
 import { useAppTheme } from '../../../theme/ThemeProvider';
@@ -102,7 +102,7 @@ export const DietaryRestrictionsScreen = () => {
 
     return (
         <View style={styles.container}>
-            <ScreenHeader title="Chế độ ăn & Dị ứng" onBackPress={() => navigation.goBack()} />
+            <AppHeader title="Chế độ ăn & Dị ứng" onBackPress={() => navigation.goBack()} />
             <ScrollView contentContainerStyle={styles.content}>
                 <Animated.View entering={FadeInDown.delay(100)} style={styles.section}>
                     <ThemedText style={styles.title}>🥗 Chế độ ăn</ThemedText>

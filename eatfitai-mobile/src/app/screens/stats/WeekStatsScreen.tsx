@@ -1,4 +1,4 @@
-﻿import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   RefreshControl,
   StyleSheet,
@@ -22,7 +22,7 @@ import { ThemedText } from '../../../components/ThemedText';
 import Screen from '../../../components/Screen';
 import { AppCard } from '../../../components/ui/AppCard';
 import { SectionHeader } from '../../../components/ui/SectionHeader';
-import { ScreenHeader } from '../../../components/ui/ScreenHeader';
+import { AppHeader } from '../../../components/ui/AppHeader';
 import Icon from '../../../components/Icon';
 import { useAppTheme } from '../../../theme/ThemeProvider';
 import { useStatsStore } from '../../../store/useStatsStore';
@@ -147,10 +147,10 @@ const WeekStatsScreen = (): React.ReactElement => {
     refreshWeekSummary().catch(handleApiError);
   }, [refreshWeekSummary]);
 
-  // Handle date picker change - navigate đến tuần chứa ngày được chọn
+  // Handle date picker change - navigate d?n tu?n ch?a ng�y du?c ch?n
   const handleDateChange = useCallback(
     (event: any, date?: Date) => {
-      setShowDatePicker(Platform.OS === 'ios'); // iOS giữ picker mở
+      setShowDatePicker(Platform.OS === 'ios'); // iOS gi? picker m?
       if (date) {
         useStatsStore.getState().setSelectedDate(date.toISOString().split('T')[0]!);
       }
@@ -176,7 +176,7 @@ const WeekStatsScreen = (): React.ReactElement => {
     return <StatsSkeleton />;
   }
 
-  // Kiểm tra trường hợp không có dữ liệu
+  // Ki?m tra tru?ng h?p kh�ng c� d? li?u
   const hasNoData = !weekSummary || !weekSummary.days || weekSummary.days.length === 0;
 
   return (
@@ -190,7 +190,7 @@ const WeekStatsScreen = (): React.ReactElement => {
         />
       }
     >
-      <ScreenHeader title={t('stats.weekTitle')} subtitle={t('stats.weekSubtitle')} />
+      <AppHeader title={t('stats.weekTitle')} subtitle={t('stats.weekSubtitle')} />
 
       {/* Week Navigation */}
       <View style={styles.weekNavigation}>
@@ -243,11 +243,11 @@ const WeekStatsScreen = (): React.ReactElement => {
         }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
             <View style={{ width: 12, height: 12, borderRadius: 3, backgroundColor: '#4ade80' }} />
-            <ThemedText variant="caption" color="textSecondary">Đã tiêu thụ</ThemedText>
+            <ThemedText variant="caption" color="textSecondary">�� ti�u th?</ThemedText>
           </View>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
             <View style={{ width: 12, height: 12, borderRadius: 3, backgroundColor: isDark ? 'rgba(55, 65, 60, 0.7)' : 'rgba(180, 190, 185, 0.5)' }} />
-            <ThemedText variant="caption" color="textSecondary">Còn lại</ThemedText>
+            <ThemedText variant="caption" color="textSecondary">C�n l?i</ThemedText>
           </View>
         </View>
 
@@ -271,7 +271,7 @@ const WeekStatsScreen = (): React.ReactElement => {
             }}
           >
             <ThemedText variant="h4" color="textSecondary">
-              📊
+              ??
             </ThemedText>
             <ThemedText
               variant="body"
@@ -316,9 +316,9 @@ const WeekStatsScreen = (): React.ReactElement => {
               }}
             />
 
-            {/* Stack để 2 bars cùng vị trí */}
+            {/* Stack d? 2 bars c�ng v? tr� */}
             <VictoryStack>
-              {/* Data bars - Xanh lá (vẽ trước, ở dưới) */}
+              {/* Data bars - Xanh l� (v? tru?c, ? du?i) */}
               <VictoryBar
                 data={chartData}
                 x="x"
@@ -348,7 +348,7 @@ const WeekStatsScreen = (): React.ReactElement => {
                   />
                 }
               />
-              {/* Phần còn lại - Xám (vẽ sau, ở trên) */}
+              {/* Ph?n c�n l?i - X�m (v? sau, ? tr�n) */}
               <VictoryBar
                 data={chartData.map((d: any) => {
                   const maxVal = Math.max(...chartData.map((item: any) => item.y)) * 1.15;
@@ -386,7 +386,7 @@ const WeekStatsScreen = (): React.ReactElement => {
               backgroundColor: isDark ? 'rgba(59, 130, 246, 0.15)' : 'rgba(59, 130, 246, 0.08)',
               borderRadius: 12,
             }}>
-              <ThemedText style={{ fontSize: 16 }}>📊</ThemedText>
+              <ThemedText style={{ fontSize: 16 }}>??</ThemedText>
               <ThemedText
                 variant="h4"
                 weight="700"
@@ -398,7 +398,7 @@ const WeekStatsScreen = (): React.ReactElement => {
                 )}
               </ThemedText>
               <ThemedText variant="caption" color="textSecondary">
-                TB/ngày
+                TB/ng�y
               </ThemedText>
             </View>
 
@@ -410,7 +410,7 @@ const WeekStatsScreen = (): React.ReactElement => {
               backgroundColor: isDark ? 'rgba(139, 92, 246, 0.15)' : 'rgba(139, 92, 246, 0.08)',
               borderRadius: 12,
             }}>
-              <ThemedText style={{ fontSize: 16 }}>🔥</ThemedText>
+              <ThemedText style={{ fontSize: 16 }}>??</ThemedText>
               <ThemedText
                 variant="h4"
                 weight="700"
@@ -421,7 +421,7 @@ const WeekStatsScreen = (): React.ReactElement => {
                 ) / 10}k
               </ThemedText>
               <ThemedText variant="caption" color="textSecondary">
-                Tổng tuần
+                T?ng tu?n
               </ThemedText>
             </View>
 
@@ -433,7 +433,7 @@ const WeekStatsScreen = (): React.ReactElement => {
               backgroundColor: isDark ? 'rgba(34, 197, 94, 0.15)' : 'rgba(34, 197, 94, 0.08)',
               borderRadius: 12,
             }}>
-              <ThemedText style={{ fontSize: 16 }}>🎯</ThemedText>
+              <ThemedText style={{ fontSize: 16 }}>??</ThemedText>
               <ThemedText
                 variant="h4"
                 weight="700"
@@ -444,7 +444,7 @@ const WeekStatsScreen = (): React.ReactElement => {
                 ).length}/{weekSummary.days.length}
               </ThemedText>
               <ThemedText variant="caption" color="textSecondary">
-                Đạt mục tiêu
+                �?t m?c ti�u
               </ThemedText>
             </View>
           </View>

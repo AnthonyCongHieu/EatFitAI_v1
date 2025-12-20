@@ -90,26 +90,12 @@ const AppNavigator = (): React.ReactElement => {
               <Stack.Screen
                 name="FoodDetail"
                 component={FoodDetailScreen}
-                options={{
-                  headerShown: true,
-                  title: t('navigation.foodDetail'),
-                  headerStyle: { backgroundColor: theme.colors.card },
-                  headerTintColor: theme.colors.text,
-                  headerShadowVisible: false,
-                  headerTitleStyle: { fontFamily: 'Inter_600SemiBold' },
-                }}
+                options={{ headerShown: false }}
               />
               <Stack.Screen
                 name="CustomDish"
                 component={CustomDishScreen}
-                options={{
-                  headerShown: true,
-                  title: t('navigation.customDish'),
-                  headerStyle: { backgroundColor: theme.colors.card },
-                  headerTintColor: theme.colors.text,
-                  headerShadowVisible: false,
-                  headerTitleStyle: { fontFamily: 'Inter_600SemiBold' },
-                }}
+                options={{ headerShown: false }}
               />
               <Stack.Screen
                 name="MealDiary"
@@ -134,26 +120,12 @@ const AppNavigator = (): React.ReactElement => {
               <Stack.Screen
                 name="AddMealFromVision"
                 component={AddMealFromVisionScreen}
-                options={{
-                  headerShown: true,
-                  title: 'Thêm từ AI Vision',
-                  headerStyle: { backgroundColor: theme.colors.card },
-                  headerTintColor: theme.colors.text,
-                  headerShadowVisible: false,
-                  headerTitleStyle: { fontFamily: 'Inter_600SemiBold' },
-                }}
+                options={{ headerShown: false }}
               />
               <Stack.Screen
                 name="VisionHistory"
                 component={VisionHistoryScreen}
-                options={{
-                  headerShown: true,
-                  title: 'Lịch sử nhận diện',
-                  headerStyle: { backgroundColor: theme.colors.card },
-                  headerTintColor: theme.colors.text,
-                  headerShadowVisible: false,
-                  headerTitleStyle: { fontFamily: 'Inter_600SemiBold' },
-                }}
+                options={{ headerShown: false }}
               />
               <Stack.Screen
                 name="RecipeSuggestions"
@@ -166,14 +138,7 @@ const AppNavigator = (): React.ReactElement => {
               <Stack.Screen
                 name="NutritionInsights"
                 component={NutritionInsightsScreen}
-                options={{
-                  headerShown: true,
-                  title: 'Phân tích dinh dưỡng',
-                  headerStyle: { backgroundColor: theme.colors.card },
-                  headerTintColor: theme.colors.text,
-                  headerShadowVisible: false,
-                  headerTitleStyle: { fontFamily: 'Inter_600SemiBold' },
-                }}
+                options={{ headerShown: false }}
               />
               <Stack.Screen
                 name="NutritionSettings"
@@ -185,14 +150,7 @@ const AppNavigator = (): React.ReactElement => {
               <Stack.Screen
                 name="RecipeDetail"
                 component={RecipeDetailScreen}
-                options={{
-                  headerShown: true,
-                  title: 'Chi tiết công thức',
-                  headerStyle: { backgroundColor: theme.colors.card },
-                  headerTintColor: theme.colors.text,
-                  headerShadowVisible: false,
-                  headerTitleStyle: { fontFamily: 'Inter_600SemiBold' },
-                }}
+                options={{ headerShown: false }}
               />
               <Stack.Screen
                 name="Achievements"

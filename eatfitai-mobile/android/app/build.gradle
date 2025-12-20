@@ -130,17 +130,6 @@ android {
     androidResources {
         ignoreAssetsPattern '!.svn:!.git:!.ds_store:!*.scc:!CVS:!thumbs.db:!picasa.ini:!*~'
     }
-
-    // Java Toolchain - Sử dụng JDK 17 cho build, giữ nguyên Java 25 của hệ thống
-    compileOptions {
-        sourceCompatibility JavaVersion.VERSION_17
-        targetCompatibility JavaVersion.VERSION_17
-    }
-}
-
-// Kotlin Toolchain - Sử dụng JDK 17
-kotlin {
-    jvmToolchain(17)
 }
 
 // Apply static values from `gradle.properties` to the `android.packagingOptions`

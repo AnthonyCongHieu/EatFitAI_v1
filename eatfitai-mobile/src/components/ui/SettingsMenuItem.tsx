@@ -59,7 +59,8 @@ export const SettingsMenuItem: React.FC<SettingsMenuItemProps> = ({
     };
 
     // Kiểm tra icon là emoji hay Ionicons name
-    const isEmoji = /[\u{1F300}-\u{1F6FF}]|[\u{2600}-\u{26FF}]/u.test(icon);
+    // Mở rộng regex để bắt nhiều Unicode emoji ranges hơn
+    const isEmoji = /[\u{1F300}-\u{1F9FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]|[\u{1F000}-\u{1F02F}]|[\u{1F0A0}-\u{1F0FF}]|[\u{2139}\u{24C2}\u{3297}\u{3299}]|[\u{231A}-\u{231B}]|[\u{23E9}-\u{23F3}]|[\u{23F8}-\u{23FA}]|[\u{25AA}-\u{25AB}]|[\u{25B6}\u{25C0}]|[\u{25FB}-\u{25FE}]/u.test(icon);
 
     const styles = StyleSheet.create({
         container: {

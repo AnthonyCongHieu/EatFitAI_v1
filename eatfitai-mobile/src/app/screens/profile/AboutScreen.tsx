@@ -15,7 +15,7 @@ import Constants from 'expo-constants';
 import { Ionicons } from '@expo/vector-icons';
 
 import { ThemedText } from '../../../components/ThemedText';
-import { ScreenHeader } from '../../../components/ui/ScreenHeader';
+import { AppHeader } from '../../../components/ui/AppHeader';
 import { SettingsMenuItem } from '../../../components/ui/SettingsMenuItem';
 import { glassStyles } from '../../../components/ui/GlassCard';
 import { useAppTheme } from '../../../theme/ThemeProvider';
@@ -85,7 +85,7 @@ const AboutScreen = (): React.ReactElement => {
 
     return (
         <View style={styles.container}>
-            <ScreenHeader
+            <AppHeader
                 title="Về ứng dụng"
                 subtitle="Thông tin và hỗ trợ"
                 onBackPress={() => navigation.goBack()}

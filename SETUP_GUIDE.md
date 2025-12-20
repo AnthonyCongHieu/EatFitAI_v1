@@ -1,472 +1,380 @@
-# 📦 HƯỚNG DẪN SETUP EATFITAI YOLO MODEL - CHO ĐỒNG NGHIỆP
+# 📦 SETUP GUIDE - EatFitAI (Chi tiết)
 
-**Dành cho**: Đồng nghiệp cần setup project EatFitAI và YOLO model trên máy mới  
-**Thời gian ước tính**: 30-45 phút  
-**Yêu cầu**: Kết nối internet tốt (cần download ~150MB model + dependencies)
-
----
-
-## 🎯 MỤC TIÊU
-
-Sau khi hoàn thành hướng dẫn này, bạn sẽ có:
-- ✅ Full source code EatFitAI từ Git
-- ✅ YOLO model (`best.pt` - 22.5MB) đã train xong
-- ✅ AI Provider chạy được trên port 5050
-- ✅ Backend API chạy được trên port 5000
-- ✅ Mobile app có thể kết nối và sử dụng AI detection
+> **Thời gian ước tính**: 30-45 phút  
+> **Yêu cầu**: Kết nối internet tốt
 
 ---
 
 ## 📋 YÊU CẦU HỆ THỐNG
 
-### Phần Mềm Cần Có
+### Phần mềm bắt buộc
 
-| Phần mềm | Version tối thiểu | Link download |
-|----------|-------------------|---------------|
+| Phần mềm | Version | Download |
+|----------|---------|----------|
 | **Git** | 2.30+ | https://git-scm.com/downloads |
-| **Python** | 3.8+ (khuyến nghị 3.10) | https://www.python.org/downloads/ |
-| **.NET SDK** | 8.0+ | https://dotnet.microsoft.com/download |
-| **Node.js** | 18+ | https://nodejs.org/ |
+| **Python** | 3.10+ | https://www.python.org/downloads |
+| **.NET SDK** | 9.0+ | https://dotnet.microsoft.com/download |
+| **Node.js** | 18+ | https://nodejs.org |
+| **SQL Server** | 2019+ | Hoặc dùng Supabase |
 
-### Phần Cứng Khuyến Nghị
+### Phần mềm khuyến nghị (cho AI features)
 
-- **RAM**: Tối thiểu 8GB (khuyến nghị 16GB)
-- **Disk**: 5GB trống
-- **GPU** (Optional): NVIDIA GPU với CUDA 11.8+ (cho training/inference nhanh hơn)
+| Phần mềm | Mục đích | Download |
+|----------|----------|----------|
+| **Ollama** | Local LLM | https://ollama.com/download |
+| **CUDA Toolkit** | GPU acceleration | https://developer.nvidia.com/cuda-downloads |
+
+### Phần cứng khuyến nghị
+
+- **RAM**: 16GB (tối thiểu 8GB)
+- **Disk**: 10GB trống
+- **GPU** (Optional): NVIDIA với 6GB+ VRAM
 
 ---
 
-## 🚀 BƯỚC 1: CLONE SOURCE CODE
+## 🚀 BƯỚC 1: CLONE PROJECT
 
-### 1.1. Clone Repository
-
-```bash
-# Clone project
-git clone <REPO_URL_CỦA_BẠN>
+```powershell
+git clone <REPO_URL>
 cd EatFitAI_v1
 ```
 
-> **Lưu ý**: Thay `<REPO_URL_CỦA_BẠN>` bằng URL repo thực tế (GitHub/GitLab/Bitbucket)
-
-### 1.2. Verify Structure
-
-Kiểm tra xem các folder quan trọng đã có chưa:
-
-```bash
-ls -la
+Verify cấu trúc:
 ```
-
-Bạn phải thấy:
-```
-eatfitai-backend/    # Backend API (.NET Core)
-eatfitai-mobile/     # Mobile app (React Native)
-ai-provider/         # AI service (Flask + YOLO)
+EatFitAI_v1/
+├── ai-provider/          # ✅
+├── eatfitai-backend/     # ✅
+├── eatfitai-mobile/      # ✅
 ```
 
 ---
 
-## 📥 BƯỚC 2: DOWNLOAD YOLO MODEL
+## 🗃️ BƯỚC 2: SETUP DATABASE
 
-**⚠️ QUAN TRỌNG**: File `best.pt` (22.5MB) **KHÔNG** có trong Git vì nó bị ignore. Bạn cần download riêng.
+### Option A: SQL Server (Local)
 
-### Option 1: Google Drive (Khuyến nghị)
+1. **Tạo database EatFitAI** trong SQL Server Management Studio
 
-1. **Download model từ link này**:
-   ```
-   https://drive.google.com/file/d/<FILE_ID>/view?usp=sharing
-   ```
-
-2. **Di chuyển file vào đúng folder**:
-   ```bash
-   # Windows
-   move best.pt ai-provider\best.pt
-
-   # Linux/Mac
-   mv best.pt ai-provider/best.pt
+2. **Import data** từ file SQL:
+   ```powershell
+   sqlcmd -S localhost -d EatFitAI -i "EatFitAI_14_12 tuong fix.sql"
    ```
 
-3. **Verify file size**:
-   ```bash
-   # Windows (PowerShell)
-   (Get-Item ai-provider\best.pt).length / 1MB
-
-   # Linux/Mac
-   ls -lh ai-provider/best.pt
+3. **Update connection string** trong `eatfitai-backend/appsettings.json`:
+   ```json
+   {
+     "ConnectionStrings": {
+       "DefaultConnection": "Server=YOUR_SERVER;Database=EatFitAI;Trusted_Connection=True;TrustServerCertificate=True;"
+     }
+   }
    ```
 
-   Expected: ~22.5 MB
+### Option B: Supabase (Cloud)
 
-### Option 2: OneDrive/Dropbox
-
-Nếu team dùng OneDrive/Dropbox:
-
-```bash
-# Download từ link share của OneDrive/Dropbox
-curl -L "<LINK_SHARE>" -o ai-provider/best.pt
-```
-
-### Option 3: Copy Trực Tiếp (LAN)
-
-Nếu bạn ở cùng văn phòng với người đã train model:
-
-```bash
-# Copy từ USB hoặc shared folder
-cp /path/to/best.pt ai-provider/best.pt
-```
+1. Tạo project tại https://supabase.com
+2. Lấy **Connection String** từ Settings → Database
+3. Update `appsettings.json` với connection string của Supabase
 
 ---
 
-## ⚙️ BƯỚC 3: SETUP AI PROVIDER (Python Flask)
+## 🤖 BƯỚC 3: SETUP AI PROVIDER (Python)
 
-### 3.1. Di chuyển vào folder
+### 3.1. Tạo Virtual Environment
 
-```bash
+```powershell
 cd ai-provider
-```
-
-### 3.2. Tạo Virtual Environment
-
-```bash
-# Windows
 python -m venv venv
-venv\Scripts\activate
-
-# Linux/Mac
-python3 -m venv venv
-source venv/bin/activate
+.\venv\Scripts\Activate.ps1
 ```
 
-### 3.3. Cài đặt Dependencies
+### 3.2. Cài đặt Dependencies
 
-```bash
+```powershell
 pip install -r requirements.txt
 ```
 
-**Thời gian**: ~5-10 phút (tùy tốc độ mạng)
+### 3.3. Cài PyTorch với CUDA (Optional - cho GPU)
 
-### 3.4. Verify Installation
+```powershell
+pip install torch torchvision --index-url https://download.pytorch.org/whl/cu121
+```
 
+### 3.4. Download YOLO Model
+
+⚠️ **File `best.pt` (~22.5MB) KHÔNG có trong Git!**
+
+**Cách lấy:**
+1. Download từ Google Drive/OneDrive của team
+2. Đặt vào folder `ai-provider/`
+3. Verify: `(Get-Item best.pt).length / 1MB` → ~22.5 MB
+
+### 3.5. Setup Ollama (cho AI features)
+
+```powershell
+# Cài Ollama
+winget install Ollama.Ollama
+
+# Download model (chọn 1)
+ollama pull llama3.2:3b          # Nhẹ, nhanh
+ollama pull mistral:7b-instruct  # Chất lượng cao hơn
+
+# Start Ollama server
+ollama serve
+```
+
+### 3.6. Tạo file .env
+
+```powershell
+# Tạo file ai-provider/.env
+Copy-Item .env.example .env
+```
+
+Nội dung `.env`:
 ```bash
-python -c "import torch; from ultralytics import YOLO; print('OK')"
+OLLAMA_URL=http://localhost:11434
+OLLAMA_MODEL=llama3.2:3b
 ```
 
-Expected output: `OK`
+### 3.7. Test AI Provider
 
-### 3.5. Test Model Loading
-
-```bash
-python -c "from ultralytics import YOLO; m = YOLO('best.pt'); print('Model loaded:', m.names)"
-```
-
-Expected: In ra danh sách classes (ingredients) model detect được.
-
----
-
-## 🔧 BƯỚC 4: SETUP BACKEND API (.NET Core)
-
-### 4.1. Di chuyển vào folder
-
-```bash
-cd ../eatfitai-backend
-```
-
-### 4.2. Restore Dependencies
-
-```bash
-dotnet restore
-```
-
-### 4.3. Update Connection String
-
-**File**: `appsettings.Development.json`
-
-```json
-{
-  "ConnectionStrings": {
-    "DefaultConnection": "Server=localhost;Database=EatFitAI;Trusted_Connection=True;TrustServerCertificate=True;"
-  }
-}
-```
-
-> **Lưu ý**: Điều chỉnh connection string theo setup SQL Server của bạn.
-
-### 4.4. Run Migrations (Tạo Database)
-
-```bash
-# Chỉ chạy nếu database chưa có
-dotnet ef database update
-```
-
-### 4.5. Build & Test
-
-```bash
-dotnet build
-```
-
-Expected: `Build succeeded` (có thể có warnings, OK)
-
----
-
-## 📱 BƯỚC 5: SETUP MOBILE APP (React Native)
-
-### 5.1. Di chuyển vào folder
-
-```bash
-cd ../eatfitai-mobile
-```
-
-### 5.2. Install Dependencies
-
-```bash
-npm install
-# hoặc
-yarn install
-```
-
-**Thời gian**: ~5-10 phút
-
-### 5.3. Update API Base URL
-
-**File**: `src/config/env.ts`
-
-```typescript
-export const API_BASE_URL = 'http://192.168.1.XXX:5000';  // Thay bằng IP máy chạy backend
-```
-
----
-
-## ▶️ BƯỚC 6: CHẠY TOÀN BỘ HỆ THỐNG
-
-### 6.1. Start AI Provider (Terminal 1)
-
-```bash
-cd ai-provider
-venv\Scripts\activate  # Windows
-# source venv/bin/activate  # Linux/Mac
-
+```powershell
 python app.py
 ```
 
-**Expected output**:
+✅ **Thành công khi thấy:**
 ```
 Starting AI Provider on port 5050
-Model: best.pt
 Model loaded successfully: best.pt
  * Running on http://0.0.0.0:5050
 ```
 
-✅ **Verify**: Mở browser: `http://localhost:5050/healthz`  
-Expected JSON:
-```json
-{
-  "status": "ok",
-  "model_loaded": true,
-  "model_file": "best.pt",
-  "model_type": "yolov8-custom-eatfitai",
-  "model_classes_count": 45
-}
+🔗 **Verify**: http://localhost:5050/healthz
+
+---
+
+## 🔧 BƯỚC 4: SETUP BACKEND (.NET)
+
+### 4.1. Restore Dependencies
+
+```powershell
+cd eatfitai-backend
+dotnet restore
 ```
 
-### 6.2. Start Backend API (Terminal 2)
+### 4.2. Setup User Secrets
 
-```bash
-cd eatfitai-backend
+.NET sử dụng User Secrets thay vì `.env` file:
+
+```powershell
+# 1. Generate JWT Key
+$bytes = New-Object byte[] 32
+[Security.Cryptography.RandomNumberGenerator]::Create().GetBytes($bytes)
+$jwtKey = [Convert]::ToBase64String($bytes)
+
+# 2. Set secrets
+dotnet user-secrets set "Jwt:Key" "$jwtKey"
+dotnet user-secrets set "Smtp:Host" "smtp.gmail.com"
+dotnet user-secrets set "Smtp:Port" "587"
+dotnet user-secrets set "Smtp:User" "your-email@gmail.com"
+dotnet user-secrets set "Smtp:Password" "your-app-password"
+dotnet user-secrets set "Smtp:FromEmail" "your-email@gmail.com"
+
+# 3. Verify
+dotnet user-secrets list
+```
+
+> 📝 **Lưu ý**: Xem chi tiết tại [JWT_CONFIGURATION.md](./JWT_CONFIGURATION.md)
+
+### 4.3. Build & Run
+
+```powershell
+dotnet build
 dotnet run
 ```
 
-**Expected output**:
+✅ **Thành công khi thấy:**
 ```
-Now listening on: http://localhost:5000
+Now listening on: http://0.0.0.0:5247
 Application started.
 ```
 
-✅ **Verify**: `http://localhost:5000/api/Health/live`  
-Expected JSON: `{"status":"live"}`
+🔗 **Verify**: 
+- Health: http://localhost:5247/health
+- Swagger: http://localhost:5247/swagger
 
-### 6.3. Start Mobile App (Terminal 3)
+---
 
-```bash
+## 📱 BƯỚC 5: SETUP MOBILE (React Native)
+
+### 5.1. Install Dependencies
+
+```powershell
 cd eatfitai-mobile
-npm start
-```
-
-Sau đó:
-- Press `a` để chạy trên Android emulator
-- Press `i` để chạy trên iOS simulator
-- Hoặc scan QR code bằng Expo Go app trên điện thoại
-
----
-
-## ✅ BƯỚC 7: TEST INTEGRATION
-
-### Test 1: AI Provider Detection
-
-```bash
-# Upload ảnh test
-curl -X POST http://localhost:5050/detect \
-  -F "file=@test_image.jpg"
-```
-
-Expected: JSON với `detections` array
-
-### Test 2: Backend Integration
-
-```bash
-# Cần auth token (lấy từ login)
-curl -X POST http://localhost:5000/api/ai/vision/detect \
-  -H "Authorization: Bearer <YOUR_TOKEN>" \
-  -F "file=@test_image.jpg"
-```
-
-Expected: JSON với `items` array (mapped food items)
-
-### Test 3: Mobile App
-
-1. Mở app trên emulator/device
-2. Login với tài khoản test
-3. Chụp ảnh món ăn
-4. Xem kết quả detection
-
----
-
-## ⚠️ TROUBLESHOOTING (XỬ LÝ LỖI)
-
-### Lỗi 1: "Model file not found"
-
-**Nguyên nhân**: `best.pt` chưa có trong folder `ai-provider/`
-
-**Giải pháp**:
-```bash
-# Verify file exists
-ls -la ai-provider/best.pt
-
-# Re-download nếu file không tồn tại (see Bước 2)
-```
-
-### Lỗi 2: "CUDA not available" (GPU không hoạt động)
-
-**Nguyên nhân**: PyTorch không phát hiện NVIDIA GPU
-
-**Giải pháp**: Model vẫn chạy được trên CPU (chậm hơn), hoặc cài CUDA:
-
-```bash
-# Check GPU status
-python -c "import torch; print('CUDA:', torch.cuda.is_available())"
-
-# Nếu False, model sẽ dùng CPU (OK cho testing)
-```
-
-### Lỗi 3: Port 5050 đã bị chiếm
-
-**Giải pháp**: Đổi port trong `app.py` dòng 157:
-
-```python
-app.run(host="0.0.0.0", port=5051)  # Đổi thành port khác
-```
-
-Và update `appsettings.json` trong backend:
-```json
-{
-  "AIProvider": {
-    "VisionBaseUrl": "http://127.0.0.1:5051"
-  }
-}
-```
-
-### Lỗi 4: Backend không kết nối được SQL Server
-
-**Giải pháp**:
-1. Verify SQL Server đang chạy
-2. Update connection string trong `appsettings.Development.json`
-3. Test connection:
-   ```bash
-   dotnet ef database update
-   ```
-
----
-
-## 📞 LIÊN HỆ HỖ TRỢ
-
-Nếu vẫn gặp vấn đề:
-
-1. **Check logs**:
-   - AI Provider: Console terminal 1
-   - Backend: Console terminal 2
-   - Mobile: Metro bundler terminal 3
-
-2. **Contact team**:
-   - Slack: #eatfitai-dev
-   - Email: tech-lead@example.com
-
----
-
-## 📚 TÀI LIỆU THAM KHẢO
-
-- [YOLO Training Evaluation](./yolo-training-evaluation.md) - Hiệu suất model
-- [YOLO Integration Plan](./yolo-integration-plan.md) - Kiến trúc tích hợp
-- [Walkthrough](./walkthrough.md) - Chi tiết các thay đổi code
-
----
-
-## ✨ BONUS: SCRIPT TỰ ĐỘNG (Optional)
-
-Tạo file `setup.sh` (Linux/Mac) hoặc `setup.ps1` (Windows):
-
-```bash
-#!/bin/bash
-# setup.sh - Auto setup script
-
-echo "🚀 EatFitAI Setup Script"
-
-# Check Python
-if ! command -v python3 &> /dev/null; then
-    echo "❌ Python not found. Please install Python 3.8+"
-    exit 1
-fi
-
-# Check .NET
-if ! command -v dotnet &> /dev/null; then
-    echo "❌ .NET SDK not found. Please install .NET 8.0+"
-    exit 1
-fi
-
-# Setup AI Provider
-echo "📦 Setting up AI Provider..."
-cd ai-provider
-python3 -m venv venv
-source venv/bin/activate
-pip install -r requirements.txt
-
-# Verify model
-if [ ! -f "best.pt" ]; then
-    echo "⚠️  WARNING: best.pt not found!"
-    echo "Please download model from shared drive"
-    exit 1
-fi
-
-# Setup Backend
-echo "🔧 Setting up Backend..."
-cd ../eatfitai-backend
-dotnet restore
-dotnet build
-
-# Setup Mobile
-echo "📱 Setting up Mobile..."
-cd ../eatfitai-mobile
 npm install
-
-echo "✅ Setup complete!"
-echo "Run: ./start-all.sh to start all services"
 ```
 
-Chạy:
+### 5.2. Tạo file .env
+
+```powershell
+Copy-Item .env.example .env.development
+```
+
+### 5.3. Cấu hình API URL
+
+Sửa `.env.development`:
+
 ```bash
-chmod +x setup.sh
-./setup.sh
+# Cho Android Emulator
+EXPO_PUBLIC_API_BASE_URL=http://10.0.2.2:5247
+
+# Cho Physical Device (thay YOUR_IP bằng IP máy bạn)
+EXPO_PUBLIC_API_BASE_URL=http://YOUR_IP:5247
+```
+
+**Cách lấy IP máy:**
+```powershell
+ipconfig | findstr "IPv4"
+```
+
+### 5.4. Run Mobile App
+
+```powershell
+npm run dev
+```
+
+**Chọn platform:**
+- Press `a` → Android Emulator
+- Scan QR → Expo Go app trên điện thoại
+
+---
+
+## ✅ BƯỚC 6: VERIFY TOÀN BỘ HỆ THỐNG
+
+### Checklist
+
+| Component | URL | Expected |
+|-----------|-----|----------|
+| AI Provider | http://localhost:5050/healthz | `{"status": "ok", "model_loaded": true}` |
+| Backend | http://localhost:5247/health | `{"status": "Healthy"}` |
+| Mobile | Expo Go app | App loads |
+
+### Test Login
+
+```
+Email: demo@eatfit.ai
+Password: demo123
 ```
 
 ---
 
-**END OF GUIDE**
+## 📱 BƯỚC 7: BUILD ANDROID PHYSICAL DEVICE (Optional)
 
-Chúc bạn setup thành công! 🎉
+> ⚠️ **Lưu ý**: Chỉ cần nếu muốn chạy native app thay vì Expo Go
+
+### 7.1. Cài đặt JDK 17
+
+```powershell
+# Download và cài JDK 17 từ:
+# https://adoptium.net/temurin/releases/?version=17
+
+# Hoặc dùng winget
+winget install EclipseAdoptium.Temurin.17.JDK
+```
+
+### 7.2. Cấu hình Gradle dùng JDK 17
+
+Tạo file `eatfitai-mobile/android/gradle.properties` (nếu chưa có):
+
+```properties
+# Java 17 path (Windows)
+org.gradle.java.home=C:\\Program Files\\Eclipse Adoptium\\jdk-17.0.x-hotspot
+
+# Performance
+org.gradle.jvmargs=-Xmx4096m -XX:MaxMetaspaceSize=512m
+org.gradle.parallel=true
+org.gradle.caching=true
+```
+
+### 7.3. Build và Run
+
+```powershell
+cd eatfitai-mobile
+
+# Kết nối device qua USB (bật USB Debugging)
+adb devices
+
+# Build và run
+npx expo run:android
+```
+
+### 7.4. Mở Firewall ports
+
+Mobile app cần kết nối đến Backend API:
+
+```powershell
+# Mở port 5247 cho Backend
+netsh advfirewall firewall add rule name="EatFitAI Backend" dir=in action=allow protocol=TCP localport=5247
+
+# Mở port 5050 cho AI Provider (nếu cần)
+netsh advfirewall firewall add rule name="EatFitAI AI Provider" dir=in action=allow protocol=TCP localport=5050
+```
+
+### 7.5. Cấu hình .env cho Physical Device
+
+```bash
+# Lấy IP máy: ipconfig | findstr "IPv4"
+EXPO_PUBLIC_API_BASE_URL=http://192.168.1.XXX:5247
+```
+
+---
+
+## ⚠️ TROUBLESHOOTING
+
+### Lỗi: "Model file not found"
+→ Download `best.pt` từ link bên dưới và đặt vào `ai-provider/`
+
+### Lỗi: "CUDA not available"  
+→ OK, model sẽ dùng CPU (chậm hơn nhưng vẫn hoạt động)
+
+### Lỗi: "Cannot connect to API" (Mobile)
+→ Check IP trong `.env.development` khớp với IP máy chạy backend
+→ Đảm bảo firewall đã mở port 5247
+
+### Lỗi: "Database connection failed"
+→ Verify connection string trong `appsettings.json`
+→ Check SQL Server đang chạy
+
+### Lỗi: "JWT Key invalid"
+→ Chạy lại `dotnet user-secrets set "Jwt:Key" "..."`
+
+### Lỗi: "Unsupported class file major version 69" (Android build)
+→ Cài JDK 17 và cấu hình trong `gradle.properties` (xem Bước 7)
+
+### Lỗi: "Filename longer than 260 characters" (Android build)
+→ Di chuyển project ra đường dẫn ngắn hơn (ví dụ: `D:\EatFitAI`)
+
+---
+
+## 📥 DOWNLOAD YOLO MODEL
+
+File `best.pt` (~22.5MB) không có trong Git. Download từ:
+
+| Source | Link |
+|--------|------|
+| **Google Drive** | [EatFitAI YOLO Model](https://drive.google.com/drive/folders/YOUR_FOLDER_ID) |
+| **OneDrive** | Liên hệ team leader |
+
+Sau khi download, đặt vào: `ai-provider/best.pt`
+
+---
+
+## 📚 TÀI LIỆU LIÊN QUAN
+
+- [JWT_CONFIGURATION.md](./JWT_CONFIGURATION.md) - Chi tiết cấu hình JWT
+- [ai-provider/README.md](./ai-provider/README.md) - API endpoints AI
+- [ai-provider/TRAINING_GUIDE.md](./ai-provider/TRAINING_GUIDE.md) - Hướng dẫn train YOLO
+- [docs/](./docs/) - Báo cáo đánh giá codebase
+
+---
+
+**Chúc bạn setup thành công! 🎉**

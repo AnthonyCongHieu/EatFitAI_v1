@@ -18,7 +18,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { ThemedText } from '../../../components/ThemedText';
 import ThemedTextInput from '../../../components/ThemedTextInput';
 import Button from '../../../components/Button';
-import { ScreenHeader } from '../../../components/ui/ScreenHeader';
+import { AppHeader } from '../../../components/ui/AppHeader';
 import { glassStyles } from '../../../components/ui/GlassCard';
 import { useAppTheme } from '../../../theme/ThemeProvider';
 import { showSuccess, handleApiErrorWithCustomMessage } from '../../../utils/errorHandler';
@@ -117,7 +117,7 @@ const ChangePasswordScreen = (): React.ReactElement => {
 
     return (
         <View style={styles.container}>
-            <ScreenHeader
+            <AppHeader
                 title="Đổi mật khẩu"
                 subtitle="Cập nhật mật khẩu mới"
                 onBackPress={() => navigation.goBack()}

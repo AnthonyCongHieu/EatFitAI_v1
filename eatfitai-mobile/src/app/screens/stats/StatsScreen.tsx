@@ -7,7 +7,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../../types';
 
 import Screen from '../../../components/Screen';
-import { ScreenHeader } from '../../../components/ui/ScreenHeader';
+import { AppHeader } from '../../../components/ui/AppHeader';
 import { AppCard } from '../../../components/ui/AppCard';
 import { ThemedText } from '../../../components/ThemedText';
 import { useAppTheme } from '../../../theme/ThemeProvider';
@@ -210,7 +210,7 @@ const StatsScreen = (): React.ReactElement => {
 
     return (
         <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
-            <ScreenHeader title="Thống kê" subtitle="Theo dõi tiến độ dinh dưỡng" />
+            <AppHeader title="Thống kê" subtitle="Theo dõi tiến độ dinh dưỡng" showBack={false} />
 
             <Screen
                 contentContainerStyle={styles.content}
