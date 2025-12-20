@@ -328,17 +328,41 @@ const AchievementsScreen = (): React.ReactElement => {
   });
 
   return (
-    <Screen scroll={false} style={styles.container}>
-      <AppHeader
-        title="Thành tích"
-        subtitle="Hành trình sức khỏe của bạn"
-        onBackPress={() => navigation.goBack()}
-        action={
+    <LinearGradient
+      colors={theme.colors.screenGradient}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 0.5, y: 1 }}
+      style={{ flex: 1 }}
+    >
+      {/* Custom Header matching RecipeSuggestionsScreen */}
+      <View style={{ paddingTop: 70, paddingHorizontal: theme.spacing.lg, paddingBottom: theme.spacing.md }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: theme.spacing.md }}>
+          <TouchableOpacity
+            onPress={() => navigation.goBack()}
+            style={{
+              width: 40,
+              height: 40,
+              borderRadius: 12,
+              backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <Ionicons name="chevron-back" size={24} color={theme.colors.text} />
+          </TouchableOpacity>
+          <View style={{ flex: 1 }}>
+            <ThemedText variant="h3" weight="700">
+              🏆 Thành tích
+            </ThemedText>
+            <ThemedText variant="caption" color="textSecondary">
+              Hành trình sức khỏe của bạn
+            </ThemedText>
+          </View>
           <TouchableOpacity onPress={handleShare} style={{ padding: 8 }}>
             <Ionicons name="share-social-outline" size={22} color={theme.colors.primary} />
           </TouchableOpacity>
-        }
-      />
+        </View>
+      </View>
 
       <View ref={viewRef} collapsable={false} style={{ flex: 1 }}>
         <FlatList
@@ -355,7 +379,7 @@ const AchievementsScreen = (): React.ReactElement => {
           }
         />
       </View>
-    </Screen>
+    </LinearGradient>
   );
 };
 

@@ -173,7 +173,7 @@ const VoiceScreen = (): React.ReactElement => {
             case 'error':
                 return { emoji: '❌', text: 'Có lỗi xảy ra', color: theme.colors.danger };
             default:
-                return { emoji: '🎤', text: 'Chạm vào micro để bắt đầu', color: theme.colors.primary };
+                return { emoji: '', text: 'Chạm vào micro để bắt đầu', color: theme.colors.primary };
         }
     };
 
@@ -191,19 +191,13 @@ const VoiceScreen = (): React.ReactElement => {
                 contentContainerStyle={[styles.scrollContent, { paddingTop: insets.top + 20 }]}
                 keyboardShouldPersistTaps="handled"
             >
-                {/* Header */}
+                {/* Header - Compact 2025 Style */}
                 <Animated.View entering={FadeInUp.delay(100)} style={styles.header}>
-                    <LinearGradient
-                        colors={[theme.colors.primary, theme.colors.secondary]}
-                        style={styles.headerIcon}
-                    >
-                        <ThemedText style={{ fontSize: 24 }}>🎙️</ThemedText>
-                    </LinearGradient>
                     <ThemedText variant="h2" weight="700" style={styles.headerTitle}>
-                        Trợ lý Giọng nói
+                        🎙️ Trợ lý Giọng nói
                     </ThemedText>
-                    <ThemedText variant="body" color="textSecondary" style={styles.headerSubtitle}>
-                        Nói hoặc gõ lệnh để thêm bữa ăn nhanh chóng
+                    <ThemedText variant="bodySmall" color="textSecondary" style={styles.headerSubtitle}>
+                        Nói hoặc gõ lệnh để thêm bữa ăn
                     </ThemedText>
                 </Animated.View>
 
@@ -376,11 +370,11 @@ const styles = StyleSheet.create({
     },
     scrollContent: {
         paddingHorizontal: 20,
-        paddingBottom: 120,
+        paddingBottom: 50,
     },
     header: {
         alignItems: 'center',
-        marginBottom: 24,
+        marginBottom: 12,
     },
     headerIcon: {
         width: 64,
@@ -392,7 +386,7 @@ const styles = StyleSheet.create({
     },
     headerTitle: {
         textAlign: 'center',
-        marginBottom: 8,
+        marginBottom: 4,
     },
     headerSubtitle: {
         textAlign: 'center',
@@ -400,8 +394,8 @@ const styles = StyleSheet.create({
     micContainer: {
         alignItems: 'center',
         justifyContent: 'center',
-        height: 220,
-        marginVertical: 16,
+        height: 180,
+        marginVertical: 8,
     },
     ring: {
         position: 'absolute',
@@ -459,12 +453,12 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
-        gap: 12,
-        paddingVertical: 16,
-        paddingHorizontal: 24,
-        borderRadius: 20,
+        gap: 10,
+        paddingVertical: 12,
+        paddingHorizontal: 20,
+        borderRadius: 16,
         borderWidth: 1.5,
-        marginBottom: 20,
+        marginBottom: 16,
     },
     errorCard: {
         flexDirection: 'row',
@@ -475,27 +469,27 @@ const styles = StyleSheet.create({
         marginBottom: 16,
     },
     inputSection: {
-        marginBottom: 20,
+        marginBottom: 16,
     },
     inputLabel: {
-        marginBottom: 12,
+        marginBottom: 8,
     },
     inputWrapper: {
-        borderRadius: 20,
+        borderRadius: 16,
         borderWidth: 1.5,
         overflow: 'hidden',
     },
     textInput: {
-        padding: 18,
-        fontSize: 16,
-        minHeight: 90,
+        padding: 14,
+        fontSize: 15,
+        minHeight: 70,
         textAlignVertical: 'top',
     },
     examplesContainer: {
         flexDirection: 'row',
         flexWrap: 'wrap',
-        gap: 10,
-        marginTop: 14,
+        gap: 8,
+        marginTop: 10,
     },
     exampleChip: {
         paddingHorizontal: 14,

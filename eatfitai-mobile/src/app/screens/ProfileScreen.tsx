@@ -102,7 +102,7 @@ const ProfileScreen = (): React.ReactElement => {
     scrollContent: {
       paddingHorizontal: theme.spacing.lg,
       paddingVertical: theme.spacing.xl,
-      paddingBottom: 100,
+      paddingBottom: 50,
     },
     // Hero Section
     heroCard: {

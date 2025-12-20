@@ -108,29 +108,29 @@ const GlassButton: React.FC<{
             onPressOut={handlePressOut}
             style={[
                 {
-                    width: 42,
-                    height: 42,
-                    borderRadius: 14,
+                    width: 44,
+                    height: 44,
+                    borderRadius: 16, // 2025 Trend: Softer edges
                     alignItems: 'center',
                     justifyContent: 'center',
                     backgroundColor: isDark
-                        ? 'rgba(255, 255, 255, 0.1)'
-                        : 'rgba(0, 0, 0, 0.05)',
-                    // Glass border
-                    borderWidth: 1,
+                        ? 'rgba(255, 255, 255, 0.12)'
+                        : 'rgba(0, 0, 0, 0.04)',
+                    // Glass border with glow
+                    borderWidth: 1.5,
                     borderColor: isDark
-                        ? 'rgba(255, 255, 255, 0.15)'
-                        : 'rgba(0, 0, 0, 0.08)',
-                    // Shadow for depth
+                        ? 'rgba(74, 144, 226, 0.25)' // Primary blue glow
+                        : 'rgba(59, 130, 246, 0.15)',
+                    // Enhanced shadow with primary color glow
                     ...Platform.select({
                         ios: {
-                            shadowColor: isDark ? '#fff' : '#000',
-                            shadowOffset: { width: 0, height: 2 },
-                            shadowOpacity: isDark ? 0.1 : 0.08,
-                            shadowRadius: 4,
+                            shadowColor: isDark ? '#4A90D9' : '#3B82F6',
+                            shadowOffset: { width: 0, height: 3 },
+                            shadowOpacity: isDark ? 0.25 : 0.15,
+                            shadowRadius: 8,
                         },
                         android: {
-                            elevation: 2,
+                            elevation: 4,
                         },
                     }),
                 },
@@ -207,22 +207,22 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
             case 'hero':
                 return {
                     backgroundColor: isDark
-                        ? 'rgba(10, 15, 13, 0.92)'
-                        : 'rgba(255, 255, 255, 0.95)',
-                    // Glow border effect
-                    borderBottomWidth: 1,
+                        ? 'rgba(10, 22, 40, 0.94)' // Navy blue tint
+                        : 'rgba(248, 250, 255, 0.96)',
+                    // Enhanced glow border - 2025 trend
+                    borderBottomWidth: 1.5,
                     borderBottomColor: isDark
-                        ? 'rgba(34, 197, 94, 0.2)' // green glow
-                        : 'rgba(34, 197, 94, 0.15)',
+                        ? 'rgba(74, 144, 226, 0.35)' // Primary blue glow
+                        : 'rgba(59, 130, 246, 0.2)',
                     ...Platform.select({
                         ios: {
-                            shadowColor: isDark ? '#22C55E' : '#16A34A',
-                            shadowOffset: { width: 0, height: 4 },
-                            shadowOpacity: 0.15,
-                            shadowRadius: 12,
+                            shadowColor: isDark ? '#4A90D9' : '#3B82F6',
+                            shadowOffset: { width: 0, height: 6 },
+                            shadowOpacity: 0.25,
+                            shadowRadius: 16,
                         },
                         android: {
-                            elevation: 8,
+                            elevation: 10,
                         },
                     }),
                 };
@@ -268,8 +268,8 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
                 };
             default:
                 return {
-                    paddingTop: insets.top + theme.spacing.md,
-                    paddingBottom: theme.spacing.md + 2,
+                    paddingTop: insets.top + theme.spacing.sm + 4, // Compact: 2025 trend
+                    paddingBottom: theme.spacing.sm + 4,
                     paddingHorizontal: theme.spacing.lg,
                 };
         }
@@ -441,7 +441,7 @@ const createStyles = (theme: any, isDark: boolean) =>
         },
         title: {
             textAlign: 'center',
-            letterSpacing: -0.5, // Tighter letter spacing cho modern look
+            letterSpacing: -0.8, // 2025: Extra tight for modern look
         },
         gradientTitleContainer: {
             // Container cho gradient title effect
@@ -451,16 +451,21 @@ const createStyles = (theme: any, isDark: boolean) =>
             alignItems: 'center',
         },
         subtitleBadge: {
-            paddingHorizontal: 12,
-            paddingVertical: 4,
-            borderRadius: 12,
+            paddingHorizontal: 14,
+            paddingVertical: 6,
+            borderRadius: 14, // Softer
             backgroundColor: isDark
-                ? 'rgba(255, 255, 255, 0.06)'
-                : 'rgba(0, 0, 0, 0.03)',
+                ? 'rgba(74, 144, 226, 0.12)' // Primary tint
+                : 'rgba(59, 130, 246, 0.08)',
+            borderWidth: 1,
+            borderColor: isDark
+                ? 'rgba(74, 144, 226, 0.15)'
+                : 'rgba(59, 130, 246, 0.1)',
         },
         subtitle: {
             textAlign: 'center',
             fontSize: 13,
+            fontWeight: '500', // Better readability
         },
         iconButtonPlaceholder: {
             width: 42,

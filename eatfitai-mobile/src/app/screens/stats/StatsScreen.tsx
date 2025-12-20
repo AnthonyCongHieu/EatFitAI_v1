@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { View, StyleSheet, RefreshControl } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
 import Animated, { FadeInDown, FadeInUp, SlideInRight, SlideInLeft } from 'react-native-reanimated';
 import { useNavigation } from '@react-navigation/native';
@@ -7,7 +8,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../../types';
 
 import Screen from '../../../components/Screen';
-import { AppHeader } from '../../../components/ui/AppHeader';
+import { LinearGradient } from 'expo-linear-gradient';
 import { AppCard } from '../../../components/ui/AppCard';
 import { ThemedText } from '../../../components/ThemedText';
 import { useAppTheme } from '../../../theme/ThemeProvider';
@@ -21,6 +22,7 @@ import {
 } from '../../../components/stats';
 import { summaryService } from '../../../services/summaryService';
 import { useStatsStore } from '../../../store/useStatsStore';
+import { useDiaryStore } from '../../../store/useDiaryStore';
 import { handleApiError } from '../../../utils/errorHandler';
 import { StatsSkeleton } from '../../../components/skeletons/StatsSkeleton';
 import { MacroPieChart } from '../../../components/charts/MacroPieChart';
@@ -53,13 +55,16 @@ const StatsScreen = (): React.ReactElement => {
     const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
     // Tab state
-    const [activeTab, setActiveTab] = useState<TabOption>('week');
+    const [activeTab, setActiveTab] = useState<TabOption>('today');
     const [slideDirection, setSlideDirection] = useState<'left' | 'right'>('right');
 
     // Data states
     const weekSummary = useStatsStore((state) => state.weekSummary);
     const isLoadingWeek = useStatsStore((state) => state.isLoading);
     const fetchWeekSummary = useStatsStore((state) => state.fetchWeekSummary);
+
+    // Get targetCalories from diary summary
+    const summary = useDiaryStore((state) => state.summary);
 
     const [monthData, setMonthData] = useState<MonthSummary | null>(null);
     const [isLoadingMonth, setIsLoadingMonth] = useState(false);
@@ -194,11 +199,11 @@ const StatsScreen = (): React.ReactElement => {
         summaryCard: {
             flex: 1,
             padding: theme.spacing.md,
-            backgroundColor: isDark ? 'rgba(60, 60, 80, 0.6)' : 'rgba(255, 255, 255, 0.9)',
+            backgroundColor: isDark ? 'rgba(74, 144, 226, 0.1)' : 'rgba(59, 130, 246, 0.06)',
             borderRadius: theme.radius.lg,
             alignItems: 'center',
             borderWidth: 1,
-            borderColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.03)',
+            borderColor: isDark ? 'rgba(74, 144, 226, 0.2)' : 'rgba(59, 130, 246, 0.1)',
         },
     });
 
@@ -209,11 +214,14 @@ const StatsScreen = (): React.ReactElement => {
     }
 
     return (
-        <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
-            <AppHeader title="Thống kê" subtitle="Theo dõi tiến độ dinh dưỡng" showBack={false} />
-
+        <LinearGradient
+            colors={theme.colors.screenGradient}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 0.5, y: 1 }}
+            style={{ flex: 1 }}
+        >
             <Screen
-                contentContainerStyle={styles.content}
+                contentContainerStyle={[styles.content, { paddingTop: theme.spacing.xl }]}
                 refreshControl={
                     <RefreshControl
                         refreshing={isLoading}
@@ -222,16 +230,17 @@ const StatsScreen = (): React.ReactElement => {
                     />
                 }
             >
-                {/* Hero Card */}
-                <StatsHeroCard
-                    value={todayData?.calories || 0}
-                    target={todayData?.targetCalories || 2000}
-                    unit="kcal"
-                    label="Hôm nay"
-                    insight={insight.text}
-                />
+                {/* Custom Header */}
+                <View style={{ alignItems: 'center', marginBottom: theme.spacing.lg, paddingTop: 50 }}>
+                    <ThemedText variant="h2" weight="700">
+                        📊 Thống kê
+                    </ThemedText>
+                    <ThemedText variant="bodySmall" color="textSecondary">
+                        Theo dõi tiến độ dinh dưỡng
+                    </ThemedText>
+                </View>
 
-                {/* Tab Switcher */}
+                {/* Tab Switcher - moved to top */}
                 <View style={styles.tabContainer}>
                     <TabSwitcher activeTab={activeTab} onTabChange={handleTabChange} />
                 </View>
@@ -242,32 +251,24 @@ const StatsScreen = (): React.ReactElement => {
                         key="today"
                         entering={slideDirection === 'right' ? SlideInRight.springify() : SlideInLeft.springify()}
                     >
-                        <AppCard>
-                            <ThemedText variant="h4" weight="700" style={styles.sectionTitle}>
-                                Chi tiết hôm nay
-                            </ThemedText>
+                        {/* Hero Card - only on Today tab */}
+                        <StatsHeroCard
+                            value={todayData?.calories || 0}
+                            target={summary?.targetCalories || 2000}
+                            unit="kcal"
+                            label="Hôm nay"
+                        />
 
-                            {todayData?.calories ? (
-                                <>
-                                    {/* Macro breakdown */}
-                                    <MacroPieChart
-                                        protein={weekSummary.totalProtein / 7}
-                                        carbs={weekSummary.totalCarbs / 7}
-                                        fat={weekSummary.totalFat / 7}
-                                    />
-                                </>
-                            ) : (
-                                <View style={{ paddingVertical: theme.spacing.xl, alignItems: 'center' }}>
-                                    <ThemedText style={{ fontSize: 48, marginBottom: theme.spacing.md }}>📝</ThemedText>
-                                    <ThemedText variant="body" color="textSecondary">
-                                        Chưa có dữ liệu hôm nay
-                                    </ThemedText>
-                                    <ThemedText variant="caption" color="textSecondary">
-                                        Thêm bữa ăn để bắt đầu theo dõi
-                                    </ThemedText>
-                                </View>
-                            )}
-                        </AppCard>
+                        {/* Macro Chart without title */}
+                        {todayData?.calories ? (
+                            <View style={{ marginTop: theme.spacing.lg }}>
+                                <MacroPieChart
+                                    protein={summary?.protein || 0}
+                                    carbs={summary?.carbs || 0}
+                                    fat={summary?.fat || 0}
+                                />
+                            </View>
+                        ) : null}
                     </Animated.View>
                 )}
 
@@ -277,16 +278,8 @@ const StatsScreen = (): React.ReactElement => {
                         key="week"
                         entering={slideDirection === 'right' ? SlideInRight.springify() : SlideInLeft.springify()}
                     >
-                        {/* Insight */}
-                        <InsightBubble
-                            icon="💡"
-                            text={insight.text}
-                            type={insight.trend?.isPositive ? 'success' : 'info'}
-                            trend={insight.trend}
-                        />
-
                         {/* Trend Chart */}
-                        <AppCard style={{ marginTop: theme.spacing.lg }}>
+                        <AppCard>
                             <ThemedText variant="h4" weight="700" style={styles.sectionTitle}>
                                 Tuần này
                             </ThemedText>
@@ -426,7 +419,7 @@ const StatsScreen = (): React.ReactElement => {
                     </Animated.View>
                 )}
             </Screen>
-        </View>
+        </LinearGradient>
     );
 };
 
