@@ -1,4 +1,4 @@
-﻿/**
+/**
  * VoiceResultCard - Displays parsed voice command result
  * Shows intent, entities, and execute button
  */

@@ -1,4 +1,4 @@
-﻿/**
+/**
  * VoiceScreen - Full screen Voice Assistant
  * Premium UI with animated pulse rings, gradient buttons
  */

@@ -1,4 +1,4 @@
-﻿/**
+/**
  * RecipeSkeleton - Loading skeleton cho Recipe screens
  * Dùng cho RecipeSuggestionsScreen và RecipeDetailScreen
  */

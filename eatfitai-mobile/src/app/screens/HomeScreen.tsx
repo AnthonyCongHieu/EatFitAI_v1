@@ -1,4 +1,4 @@
-﻿import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   ActivityIndicator,
@@ -79,7 +79,7 @@ const HomeScreen = (): React.ReactElement => {
   const summary = useDiaryStore((s) => s.summary);
   const fetchSummary = useDiaryStore((s) => s.fetchSummary);
   const queryClient = useQueryClient();
-  const { isLoading, isFetching, refetch } = useQuery<DaySummary | null>({
+  const { isLoading, isFetching, isError, refetch } = useQuery<DaySummary | null>({
     queryKey: ['home-summary'],
     queryFn: async () => {
       await fetchSummary();
@@ -95,14 +95,12 @@ const HomeScreen = (): React.ReactElement => {
   // AI-driven context awareness (2026 trend)
   const smartContext = useSmartContext(summary);
 
-  useFocusEffect(
-    useCallback(() => {
-      checkStreak();
-      fetchWeeklyLogs();
-      // ⚡ Không refetch() ở đây nữa - dùng cache từ React Query
-      // Data sẽ tự động refresh sau staleTime (2 phút) hoặc sau CRUD operations
-    }, [checkStreak, fetchWeeklyLogs]),
-  );
+  useEffect(() => {
+    checkStreak();
+    fetchWeeklyLogs();
+    // ⚡ Chỉ chạy 1 lần khi mount - không refetch khi chuyển tab
+    // Store nội bộ đã có caching để tránh spam API kể cả khi mount lại
+  }, [checkStreak, fetchWeeklyLogs]);
 
   const showCommonErrors = useCallback(
     (error: any, fallback: { text1: string; text2: string }) => {
@@ -141,19 +139,12 @@ const HomeScreen = (): React.ReactElement => {
     },
   });
 
+  // Tự động set status server dựa trên useQuery
   useEffect(() => {
-    fetchSummary()
-      .then(() => {
-        // Nếu load summary thành công, coi như server đang ổn
-        setServerDown(false);
-      })
-      .catch((err: any) => {
-        showCommonErrors(err, {
-          text1: t('home.loadDiaryFailed'),
-          text2: t('home.pullToRetry'),
-        });
-      });
-  }, [fetchSummary, showCommonErrors]);
+    if (!isLoading && !isFetching) {
+      setServerDown(!!(isError || !summary));
+    }
+  }, [isError, summary, isLoading, isFetching]);
 
   useEffect(() => {
     let cancelled = false;

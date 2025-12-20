@@ -1,4 +1,4 @@
-﻿/**
+/**
  * AnimatedEmptyState - Enhanced empty state with animated illustrations
  * Provides engaging, actionable empty states for better UX
  */

@@ -1,4 +1,4 @@
-﻿/**
+/**
  * VoiceButton - Floating Action Button for Voice AI
  * Displays microphone icon, triggers voice recording
  */

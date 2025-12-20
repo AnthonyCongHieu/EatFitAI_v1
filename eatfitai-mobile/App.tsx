@@ -10,12 +10,12 @@ import * as SplashScreen from 'expo-splash-screen';
 import Toast from 'react-native-toast-message';
 import {
   useFonts,
-  Inter_300Light,
-  Inter_400Regular,
-  Inter_500Medium,
-  Inter_600SemiBold,
-  Inter_700Bold,
-} from '@expo-google-fonts/inter';
+  BeVietnamPro_300Light,
+  BeVietnamPro_400Regular,
+  BeVietnamPro_500Medium,
+  BeVietnamPro_600SemiBold,
+  BeVietnamPro_700Bold,
+} from '@expo-google-fonts/be-vietnam-pro';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 import AppNavigator from './src/app/navigation/AppNavigator';
@@ -30,11 +30,11 @@ import { initializeApiClient } from './src/services/apiClient';
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      // ⚡ CACHING STRATEGY: staleTime 2 phút để giảm API calls thừa
-      staleTime: 2 * 60 * 1000,       // 2 phút - data được coi là "fresh", không refetch
-      gcTime: 10 * 60 * 1000,         // 10 phút - giữ cache trong memory dù không dùng
+      // ⚡ CACHING STRATEGY: Giảm thiểu API calls thừa
+      staleTime: 5 * 60 * 1000,       // 5 phút - coi là fresh, chỉ refetch nếu cực kỳ cần thiết
+      gcTime: 30 * 60 * 1000,         // 30 phút - giữ cache lâu hơn trong memory
       refetchOnWindowFocus: false,    // Không refetch khi focus app lại
-      refetchOnReconnect: 'always',   // Refetch khi có lại mạng sau khi mất kết nối
+      refetchOnReconnect: false,      // Không refetch tự động khi có mạng lại (để user tự pull-to-refresh)
       retry: (failureCount, error: any) => {
         // Stop retry on 401 Unauthorized để tránh infinite loop
         // Auth interceptor sẽ tự động logout user
@@ -106,11 +106,11 @@ const AppInner = () => {
 
 export default function App(): React.ReactElement | null {
   const [fontsLoaded] = useFonts({
-    Inter_300Light,
-    Inter_400Regular,
-    Inter_500Medium,
-    Inter_600SemiBold,
-    Inter_700Bold,
+    BeVietnamPro_300Light,
+    BeVietnamPro_400Regular,
+    BeVietnamPro_500Medium,
+    BeVietnamPro_600SemiBold,
+    BeVietnamPro_700Bold,
   });
 
   // Fallback: Hide splash sau 5s dù fonts có load hay không

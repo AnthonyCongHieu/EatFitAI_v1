@@ -1,4 +1,4 @@
-﻿/**
+/**
  * ProfileSkeleton - Loading skeleton cho Profile screen
  * Hiển thị khi đang tải thông tin profile người dùng
  */

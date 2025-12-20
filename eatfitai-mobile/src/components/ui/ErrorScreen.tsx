@@ -1,4 +1,4 @@
-﻿/**
+/**
  * ErrorScreen - Full screen error state with retry action
  * Used when API calls fail or network is unavailable
  */

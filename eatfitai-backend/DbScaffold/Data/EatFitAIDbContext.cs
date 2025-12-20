@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using EatFitAI.API.DbScaffold.Models;
 using Microsoft.EntityFrameworkCore;

@@ -1,4 +1,4 @@
-﻿import { RefreshControl as RNRefreshControl } from 'react-native';
+import { RefreshControl as RNRefreshControl } from 'react-native';
 import { useAppTheme } from '../theme/ThemeProvider';
 
 type RefreshControlProps = {

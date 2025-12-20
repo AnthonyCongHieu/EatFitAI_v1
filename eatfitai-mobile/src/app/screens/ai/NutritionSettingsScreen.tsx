@@ -1,5 +1,5 @@
-// Màn hình Cài d?t dinh du?ng h?p nh?t
-// Cho phép xem, ch?nh s?a th? công và s? d?ng AI d? g?i ý m?c tiêu
+// Mï¿½n hï¿½nh Cï¿½i d?t dinh du?ng h?p nh?t
+// Cho phï¿½p xem, ch?nh s?a th? cï¿½ng vï¿½ s? d?ng AI d? g?i ï¿½ m?c tiï¿½u
 
 import React, { useCallback, useEffect, useState } from 'react';
 import { View, StyleSheet, ScrollView, ActivityIndicator, Alert } from 'react-native';
@@ -345,7 +345,7 @@ const NutritionSettingsScreen = (): React.ReactElement => {
                   {Math.round(currentTarget?.calories ?? 0)}
                 </ThemedText>
                 <ThemedText variant="body" color="textSecondary">
-                  kcal / ngày
+                  kcal / ngï¿½y
                 </ThemedText>
               </View>
 

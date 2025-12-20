@@ -1,4 +1,4 @@
-﻿/**
+/**
  * FoodSearchSkeleton - Loading skeleton cho FoodSearch screen
  * Hiển thị khi đang tải kết quả tìm kiếm món ăn
  */

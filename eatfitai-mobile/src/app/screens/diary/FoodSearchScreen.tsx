@@ -1,4 +1,4 @@
-﻿// Màn hình tìm kiếm món ăn để thêm vào nhật ký
+// Màn hình tìm kiếm món ăn để thêm vào nhật ký
 // Redesigned với UI/UX hiện đại - matching MealDiaryScreen style
 
 import { useCallback, useState, useEffect } from 'react';

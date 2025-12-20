@@ -1,4 +1,4 @@
-﻿// FilterChip component - Pill-shaped filter buttons
+// FilterChip component - Pill-shaped filter buttons
 // Theo style Eat Up UI Kit từ Dribbble
 
 import React from 'react';

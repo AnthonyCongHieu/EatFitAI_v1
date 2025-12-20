@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { FlatList, StyleSheet, View } from 'react-native';
 import Toast from 'react-native-toast-message';
 

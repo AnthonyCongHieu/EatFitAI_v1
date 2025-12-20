@@ -70,7 +70,7 @@ const MonthStatsScreen = (): React.ReactElement => {
   const [monthData, setMonthData] = useState<MonthSummary | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Cache d? luu data các tháng dã fetch - tránh fetch l?i
+  // Cache d? luu data cï¿½c thï¿½ng dï¿½ fetch - trï¿½nh fetch l?i
   const monthCacheRef = React.useRef<Map<string, MonthSummary>>(new Map());
 
   const year = currentDate.getFullYear();
@@ -208,7 +208,7 @@ const MonthStatsScreen = (): React.ReactElement => {
     const handleDayPress = () => {
       if (isCurrentMonthDay && calories > 0) {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-        // Navigate d?n MealDiary v?i ngày du?c ch?n
+        // Navigate d?n MealDiary v?i ngï¿½y du?c ch?n
         navigation.navigate('MealDiary', { selectedDate: dateStr });
       }
     };
@@ -342,7 +342,7 @@ const MonthStatsScreen = (): React.ReactElement => {
             onPress={goToPreviousMonth}
             style={styles.navButton}
             accessibilityRole="button"
-            accessibilityLabel="Xem tháng tru?c"
+            accessibilityLabel="Xem thï¿½ng tru?c"
           >
             <Icon name="chevron-back" size="md" color="primary" />
           </Pressable>
@@ -361,7 +361,7 @@ const MonthStatsScreen = (): React.ReactElement => {
             style={styles.navButton}
             disabled={isCurrentMonth || isFutureMonth}
             accessibilityRole="button"
-            accessibilityLabel="Xem tháng sau"
+            accessibilityLabel="Xem thï¿½ng sau"
             accessibilityState={{ disabled: isCurrentMonth || isFutureMonth }}
           >
             <Icon
@@ -417,7 +417,7 @@ const MonthStatsScreen = (): React.ReactElement => {
                   ]}
                 />
                 <ThemedText variant="caption" color="textSecondary">
-                  Ít
+                  ï¿½t
                 </ThemedText>
               </View>
               <View style={styles.legendItem}>
@@ -444,7 +444,7 @@ const MonthStatsScreen = (): React.ReactElement => {
         {monthData && monthData.daysLogged > 0 ? (
           <Animated.View entering={FadeInDown.delay(200).springify()}>
             <AppCard>
-              <SectionHeader title="T?ng k?t tháng" />
+              <SectionHeader title="T?ng k?t thï¿½ng" />
               <View style={styles.summaryGrid}>
                 {/* Total Calories - Blue gradient */}
                 <LinearGradient
@@ -498,7 +498,7 @@ const MonthStatsScreen = (): React.ReactElement => {
                     {Math.round(monthData.averageCalories)}
                   </ThemedText>
                   <ThemedText variant="caption" color="textSecondary">
-                    TB/ngày
+                    TB/ngï¿½y
                   </ThemedText>
                 </LinearGradient>
 
@@ -526,11 +526,11 @@ const MonthStatsScreen = (): React.ReactElement => {
                     {monthData.daysLogged}
                   </ThemedText>
                   <ThemedText variant="caption" color="textSecondary">
-                    Ngày dã log
+                    Ngï¿½y dï¿½ log
                   </ThemedText>
                 </LinearGradient>
 
-                {/* Ð?t m?c tiêu - Orange gradient */}
+                {/* ï¿½?t m?c tiï¿½u - Orange gradient */}
                 <LinearGradient
                   colors={theme.statsCards.target.gradient}
                   start={{ x: 0, y: 0 }}
@@ -557,7 +557,7 @@ const MonthStatsScreen = (): React.ReactElement => {
                     }).length}/{monthData.daysLogged}
                   </ThemedText>
                   <ThemedText variant="caption" color="textSecondary">
-                    Ð?t m?c tiêu
+                    ï¿½?t m?c tiï¿½u
                   </ThemedText>
                 </LinearGradient>
               </View>
@@ -575,7 +575,7 @@ const MonthStatsScreen = (): React.ReactElement => {
                   color="textSecondary"
                   style={{ textAlign: 'center' }}
                 >
-                  Chua có d? li?u cho tháng này
+                  Chua cï¿½ d? li?u cho thï¿½ng nï¿½y
                 </ThemedText>
                 <ThemedText
                   variant="caption"

@@ -48,6 +48,14 @@ export type DaySummary = {
   meals: DiaryMealGroup[];
 };
 
+export type WeekSummary = {
+  totalCalories: number;
+  totalProtein: number;
+  totalCarbs: number;
+  totalFat: number;
+  dailyCalories: Record<string, number>; // yyyy-MM-dd -> calories
+};
+
 const toNumberOrNull = (value: unknown): number | null => {
   if (typeof value === 'number' && !Number.isNaN(value)) {
     return value;
@@ -113,6 +121,14 @@ const normalizeSummary = (data: any): DaySummary => ({
   meals: Array.isArray(data?.meals) ? data.meals.map(normalizeMeal) : [],
 });
 
+const normalizeWeekSummary = (data: any): WeekSummary => ({
+  totalCalories: toNumberOrNull(data?.totalCalories) ?? 0,
+  totalProtein: toNumberOrNull(data?.totalProtein) ?? 0,
+  totalCarbs: toNumberOrNull(data?.totalCarbs) ?? 0,
+  totalFat: toNumberOrNull(data?.totalFat) ?? 0,
+  dailyCalories: data?.dailyCalories ?? {},
+});
+
 const todayDate = (): string => {
   const d = new Date();
   const y = d.getFullYear();
@@ -156,9 +172,9 @@ export const diaryService = {
   },
 
   // Lay tong quan nhat ky tuan
-  async getWeekSummary(date: string): Promise<DaySummary> {
+  async getWeekSummary(date: string): Promise<WeekSummary> {
     const response = await apiClient.get('/api/summary/week', { params: { date } });
-    return normalizeSummary(response.data);
+    return normalizeWeekSummary(response.data);
   },
 
   async getEntriesByDate(date: string): Promise<DiaryEntry[]> {

@@ -147,7 +147,7 @@ const WeekStatsScreen = (): React.ReactElement => {
     refreshWeekSummary().catch(handleApiError);
   }, [refreshWeekSummary]);
 
-  // Handle date picker change - navigate d?n tu?n ch?a ngày du?c ch?n
+  // Handle date picker change - navigate d?n tu?n ch?a ngï¿½y du?c ch?n
   const handleDateChange = useCallback(
     (event: any, date?: Date) => {
       setShowDatePicker(Platform.OS === 'ios'); // iOS gi? picker m?
@@ -176,7 +176,7 @@ const WeekStatsScreen = (): React.ReactElement => {
     return <StatsSkeleton />;
   }
 
-  // Ki?m tra tru?ng h?p không có d? li?u
+  // Ki?m tra tru?ng h?p khï¿½ng cï¿½ d? li?u
   const hasNoData = !weekSummary || !weekSummary.days || weekSummary.days.length === 0;
 
   return (
@@ -243,11 +243,11 @@ const WeekStatsScreen = (): React.ReactElement => {
         }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
             <View style={{ width: 12, height: 12, borderRadius: 3, backgroundColor: '#4ade80' }} />
-            <ThemedText variant="caption" color="textSecondary">Ðã tiêu th?</ThemedText>
+            <ThemedText variant="caption" color="textSecondary">ï¿½ï¿½ tiï¿½u th?</ThemedText>
           </View>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
             <View style={{ width: 12, height: 12, borderRadius: 3, backgroundColor: isDark ? 'rgba(55, 65, 60, 0.7)' : 'rgba(180, 190, 185, 0.5)' }} />
-            <ThemedText variant="caption" color="textSecondary">Còn l?i</ThemedText>
+            <ThemedText variant="caption" color="textSecondary">Cï¿½n l?i</ThemedText>
           </View>
         </View>
 
@@ -316,9 +316,9 @@ const WeekStatsScreen = (): React.ReactElement => {
               }}
             />
 
-            {/* Stack d? 2 bars cùng v? trí */}
+            {/* Stack d? 2 bars cï¿½ng v? trï¿½ */}
             <VictoryStack>
-              {/* Data bars - Xanh lá (v? tru?c, ? du?i) */}
+              {/* Data bars - Xanh lï¿½ (v? tru?c, ? du?i) */}
               <VictoryBar
                 data={chartData}
                 x="x"
@@ -348,7 +348,7 @@ const WeekStatsScreen = (): React.ReactElement => {
                   />
                 }
               />
-              {/* Ph?n còn l?i - Xám (v? sau, ? trên) */}
+              {/* Ph?n cï¿½n l?i - Xï¿½m (v? sau, ? trï¿½n) */}
               <VictoryBar
                 data={chartData.map((d: any) => {
                   const maxVal = Math.max(...chartData.map((item: any) => item.y)) * 1.15;
@@ -398,7 +398,7 @@ const WeekStatsScreen = (): React.ReactElement => {
                 )}
               </ThemedText>
               <ThemedText variant="caption" color="textSecondary">
-                TB/ngày
+                TB/ngï¿½y
               </ThemedText>
             </View>
 
@@ -444,7 +444,7 @@ const WeekStatsScreen = (): React.ReactElement => {
                 ).length}/{weekSummary.days.length}
               </ThemedText>
               <ThemedText variant="caption" color="textSecondary">
-                Ð?t m?c tiêu
+                ï¿½?t m?c tiï¿½u
               </ThemedText>
             </View>
           </View>

@@ -62,8 +62,8 @@ const VisionHistoryScreen = (): React.ReactElement => {
       yesterday.setDate(yesterday.getDate() - 1);
 
       let title = date.toLocaleDateString('vi-VN');
-      if (date.toDateString() === today.toDateString()) title = 'Hôm nay';
-      else if (date.toDateString() === yesterday.toDateString()) title = 'Hôm qua';
+      if (date.toDateString() === today.toDateString()) title = 'Hï¿½m nay';
+      else if (date.toDateString() === yesterday.toDateString()) title = 'Hï¿½m qua';
 
       if (!groups[title]) groups[title] = [];
       groups[title]!.push(item);
@@ -200,7 +200,7 @@ const VisionHistoryScreen = (): React.ReactElement => {
                 style={{ marginRight: 4 }}
               />
               <ThemedText variant="caption" color="warning">
-                {item.unmappedCount} món chua nh?n di?n du?c
+                {item.unmappedCount} mï¿½n chua nh?n di?n du?c
               </ThemedText>
             </View>
           )}
@@ -229,7 +229,7 @@ const VisionHistoryScreen = (): React.ReactElement => {
     <Screen style={styles.container}>
       <AppHeader
         title="L?ch s? nh?n di?n"
-        subtitle="Các món an b?n dã quét g?n dây"
+        subtitle="Cï¿½c mï¿½n an b?n dï¿½ quï¿½t g?n dï¿½y"
         onBackPress={() => navigation.goBack()}
       />
 
@@ -259,7 +259,7 @@ const VisionHistoryScreen = (): React.ReactElement => {
             <View style={styles.center}>
               <Ionicons name="images-outline" size={64} color={theme.colors.border} />
               <ThemedText color="textSecondary" style={{ marginTop: 16 }}>
-                Chua có l?ch s? nh?n di?n nào
+                Chua cï¿½ l?ch s? nh?n di?n nï¿½o
               </ThemedText>
             </View>
           }

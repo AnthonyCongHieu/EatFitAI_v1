@@ -1,4 +1,4 @@
-﻿// Màn hình Nhật ký bữa ăn - Redesigned với UI/UX hiện đại
+// Màn hình Nhật ký bữa ăn - Redesigned với UI/UX hiện đại
 // Features: Summary header, improved date selector, beautiful meal cards
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';

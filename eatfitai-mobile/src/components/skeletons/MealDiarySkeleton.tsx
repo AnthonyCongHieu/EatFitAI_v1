@@ -1,4 +1,4 @@
-﻿/**
+/**
  * MealDiarySkeleton - Loading skeleton cho MealDiary screen
  * Hiển thị khi đang tải danh sách nhật ký bữa ăn
  */

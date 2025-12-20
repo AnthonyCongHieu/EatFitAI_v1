@@ -1,4 +1,4 @@
-﻿import type { TextProps } from 'react-native';
+import type { TextProps } from 'react-native';
 import { Text } from 'react-native';
 import { memo } from 'react';
 

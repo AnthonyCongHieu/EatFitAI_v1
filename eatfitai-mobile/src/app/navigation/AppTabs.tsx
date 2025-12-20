@@ -1,4 +1,4 @@
-﻿// Bottom Tabs after authentication
+// Bottom Tabs after authentication
 // 5 tabs: Home, AI Scan, Voice, Stats, Profile
 
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';

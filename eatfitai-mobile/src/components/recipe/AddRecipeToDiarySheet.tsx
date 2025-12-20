@@ -1,4 +1,4 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 import { View, StyleSheet, Pressable } from 'react-native';
 import { ThemedText } from '../ThemedText';
 import { BottomSheet } from '../BottomSheet';

@@ -17,7 +17,11 @@ import { tokenStorage } from './secureStore';
 import { getAccessTokenMem, setAccessTokenMem, clearAccessTokenMem } from './authTokens';
 import { postRefreshToken } from './tokenService';
 import { updateSessionFromAuthResponse } from './authSession';
-import { getApiUrl, forceRescan, getCachedApiUrl, verifyApiUrl } from './ipScanner';
+import { getApiUrl, forceRescan, getCachedApiUrl, verifyApiUrl, preloadCachedUrl } from './ipScanner';
+
+// Quản lý thời gian rescan để tránh spam
+let lastRescanTime = 0;
+const RESCAN_COOLDOWN = 120000; // 2 phút
 
 // Flag để track đã init chưa
 let isApiInitialized = false;
@@ -36,58 +40,39 @@ export const aiApiClient = axios.create({ baseURL: API_BASE_URL, timeout: 60000 
 export const initializeApiClient = async (): Promise<boolean> => {
   console.log('[APIClient] initializeApiClient started');
 
-  // Tránh init nhiều lần
-  if (isApiInitialized) {
-    console.log('[APIClient] Already initialized, skipping');
-    return true;
-  }
+  if (isApiInitialized) return true;
 
   try {
-    // Bước 1: Thử URL từ env (dev mode với Metro)
-    if (API_BASE_URL) {
-      console.log('[APIClient] Kiểm tra URL từ env:', API_BASE_URL);
+    // 0. Load cache từ storage trước
+    await preloadCachedUrl();
 
-      // Verify URL có hoạt động không
-      const isValid = await verifyApiUrl(API_BASE_URL);
-      if (isValid) {
-        console.log('[APIClient] ✅ URL từ env hoạt động:', API_BASE_URL);
-        isApiInitialized = true;
-        return true;
-      }
-
-      console.log('[APIClient] ⚠️ URL từ env không kết nối được, thử scan...');
-    }
-
-    // Bước 2: Scan tìm backend trong mạng LAN
-    console.log('[APIClient] Đang scan mạng tìm backend...');
+    // 1. Ưu tiên URL tìm thấy qua scan (hoặc từ cache)
+    // getApiUrl() sẽ tự động verify cachedUrl trước khi scan
     const discoveredUrl = await getApiUrl();
-
     if (discoveredUrl) {
       apiClient.defaults.baseURL = discoveredUrl;
       aiApiClient.defaults.baseURL = discoveredUrl;
-      console.log('[APIClient] ✅ Đã tìm thấy và set baseURL:', discoveredUrl);
+      console.log('[APIClient] ✅ Đã dùng URL từ scan/cache:', discoveredUrl);
       isApiInitialized = true;
       return true;
     }
 
-    // Bước 3: Fallback - dùng URL từ env dù không verify được
+    // 2. Fallback sang URL từ env nếu scan thất bại
     if (API_BASE_URL) {
-      console.warn('[APIClient] ⚠️ Scan thất bại, dùng URL từ env làm fallback');
-      isApiInitialized = true;
-      return true;
+      console.log('[APIClient] Scan thất bại, thử URL từ env:', API_BASE_URL);
+      const isValid = await verifyApiUrl(API_BASE_URL);
+      if (isValid) {
+        apiClient.defaults.baseURL = API_BASE_URL;
+        aiApiClient.defaults.baseURL = API_BASE_URL;
+        isApiInitialized = true;
+        return true;
+      }
     }
 
     console.error('[APIClient] ❌ Không tìm thấy backend!');
-    isApiInitialized = false;
     return false;
   } catch (error) {
     console.error('[APIClient] Init error:', error);
-    // Fallback nếu có lỗi
-    if (API_BASE_URL) {
-      isApiInitialized = true;
-      return true;
-    }
-    isApiInitialized = false;
     return false;
   }
 };
@@ -366,6 +351,13 @@ apiClient.interceptors.response.use(
 
       originalRequest._networkRetried = true;
 
+      const now = Date.now();
+      if (now - lastRescanTime < RESCAN_COOLDOWN) {
+        console.log('[APIClient] Bỏ qua re-scan do đang trong cooldown');
+        return Promise.reject(error);
+      }
+
+      lastRescanTime = now;
       try {
         // Force re-scan để tìm IP mới
         const newUrl = await forceRescan();

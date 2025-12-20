@@ -1,4 +1,4 @@
-// Recipe Detail Screen - hi?n th? chi ti?t công th?c
+// Recipe Detail Screen - hi?n th? chi ti?t cï¿½ng th?c
 import React, { useEffect, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { View, StyleSheet, ScrollView, ActivityIndicator, Pressable, Linking } from 'react-native';
@@ -62,7 +62,7 @@ const RecipeDetailScreen = (): React.ReactElement => {
         if (__DEV__) {
           console.error('[RecipeDetailScreen] Error loading recipe:', e);
         }
-        setError('Không th? t?i chi ti?t công th?c. Vui lòng th? l?i.');
+        setError('Khï¿½ng th? t?i chi ti?t cï¿½ng th?c. Vui lï¿½ng th? l?i.');
       } finally {
         setLoading(false);
       }
@@ -73,7 +73,7 @@ const RecipeDetailScreen = (): React.ReactElement => {
   // Fetch AI-generated cooking instructions khi recipe load xong
   useEffect(() => {
     if (!recipe || (recipe.instructions && recipe.instructions.length > 0)) {
-      return; // Skip n?u dã có instructions t? DB
+      return; // Skip n?u dï¿½ cï¿½ instructions t? DB
     }
 
     const fetchAiInstructions = async () => {
@@ -97,14 +97,14 @@ const RecipeDetailScreen = (): React.ReactElement => {
         setAiInstructions({
           steps: [],
           isLoading: false,
-          error: 'Không th? t?o hu?ng d?n n?u',
+          error: 'Khï¿½ng th? t?o hu?ng d?n n?u',
         });
       }
     };
     fetchAiInstructions();
   }, [recipe]);
 
-  // Handler thêm recipe vào diary [NEW]
+  // Handler thï¿½m recipe vï¿½o diary [NEW]
   const handleAddToDiary = async (mealTypeId: MealTypeId, servings: number) => {
     if (!recipe) return;
 
@@ -114,7 +114,7 @@ const RecipeDetailScreen = (): React.ReactElement => {
       // T?o user food item t? recipe
       const formData = new FormData();
       formData.append('foodName', recipe.recipeName);
-      formData.append('description', recipe.description || `Công th?c: ${recipe.recipeName}`);
+      formData.append('description', recipe.description || `Cï¿½ng th?c: ${recipe.recipeName}`);
       formData.append('caloriesPer100', String(recipe.totalCalories));
       formData.append('proteinPer100', String(recipe.totalProtein));
       formData.append('carbPer100', String(recipe.totalCarbs));
@@ -123,13 +123,13 @@ const RecipeDetailScreen = (): React.ReactElement => {
 
       const createdItem = await foodService.createUserFoodItem(formData);
 
-      // Thêm vào diary v?i servings
+      // Thï¿½m vï¿½o diary v?i servings
       const gramsPerServing = 100; // M?c d?nh 1 serving = 100g
       await foodService.addDiaryEntryFromUserFoodItem({
         mealTypeId,
         userFoodItemId: String(createdItem.userFoodItemId),
         grams: gramsPerServing * servings,
-        note: `T? công th?c: ${recipe.recipeName}`,
+        note: `T? cï¿½ng th?c: ${recipe.recipeName}`,
       });
 
       // Refresh summary
@@ -139,15 +139,15 @@ const RecipeDetailScreen = (): React.ReactElement => {
 
       Toast.show({
         type: 'success',
-        text1: 'Ðã thêm vào nh?t ký',
+        text1: 'ï¿½ï¿½ thï¿½m vï¿½o nh?t kï¿½',
         text2: `${recipe.recipeName} (${servings} kh?u ph?n)`,
       });
     } catch (error) {
       console.error('[RecipeDetailScreen] Error adding to diary:', error);
       Toast.show({
         type: 'error',
-        text1: 'Thêm th?t b?i',
-        text2: 'Vui lòng th? l?i',
+        text1: 'Thï¿½m th?t b?i',
+        text2: 'Vui lï¿½ng th? l?i',
       });
     } finally {
       setIsAddingToDiary(false);
@@ -164,7 +164,7 @@ const RecipeDetailScreen = (): React.ReactElement => {
             color="textSecondary"
             style={{ marginTop: theme.spacing.md }}
           >
-            Ðang t?i chi ti?t công th?c...
+            ï¿½ang t?i chi ti?t cï¿½ng th?c...
           </ThemedText>
         </View>
       </Screen>
@@ -174,7 +174,7 @@ const RecipeDetailScreen = (): React.ReactElement => {
   if (error) {
     return (
       <Screen>
-        <AppHeader title="Chi ti?t công th?c" subtitle="Có l?i x?y ra" />
+        <AppHeader title="Chi ti?t cï¿½ng th?c" subtitle="Cï¿½ l?i x?y ra" />
         <View style={styles.center}>
           <ThemedText variant="body" color="danger" style={{ textAlign: 'center' }}>
             {error}
@@ -187,10 +187,10 @@ const RecipeDetailScreen = (): React.ReactElement => {
   if (!recipe) {
     return (
       <Screen>
-        <AppHeader title="Chi ti?t công th?c" subtitle="Không có d? li?u" />
+        <AppHeader title="Chi ti?t cï¿½ng th?c" subtitle="Khï¿½ng cï¿½ d? li?u" />
         <View style={styles.center}>
           <ThemedText variant="body" color="textSecondary">
-            Không tìm th?y công th?c.
+            Khï¿½ng tï¿½m th?y cï¿½ng th?c.
           </ThemedText>
         </View>
       </Screen>
@@ -199,11 +199,11 @@ const RecipeDetailScreen = (): React.ReactElement => {
 
   return (
     <Screen>
-      <AppHeader title={route.params.recipeName} subtitle="Chi ti?t công th?c" />
+      <AppHeader title={route.params.recipeName} subtitle="Chi ti?t cï¿½ng th?c" />
       <ScrollView contentContainerStyle={styles.content}>
         <View style={[styles.box, { backgroundColor: theme.colors.card }]}>
           <ThemedText variant="h4" style={{ marginBottom: theme.spacing.sm }}>
-            Thông tin dinh du?ng
+            Thï¿½ng tin dinh du?ng
           </ThemedText>
           <ThemedText variant="body" style={{ marginBottom: theme.spacing.xs }}>
             Calories: {recipe.totalCalories} kcal
@@ -222,7 +222,7 @@ const RecipeDetailScreen = (): React.ReactElement => {
         {recipe.description && (
           <View style={[styles.box, { backgroundColor: theme.colors.card }]}>
             <ThemedText variant="h4" style={{ marginBottom: theme.spacing.sm }}>
-              Mô t?
+              Mï¿½ t?
             </ThemedText>
             <ThemedText variant="body">{recipe.description}</ThemedText>
           </View>
@@ -231,7 +231,7 @@ const RecipeDetailScreen = (): React.ReactElement => {
         {recipe.ingredients && recipe.ingredients.length > 0 && (
           <View style={[styles.box, { backgroundColor: theme.colors.card }]}>
             <ThemedText variant="h4" style={{ marginBottom: theme.spacing.sm }}>
-              Nguyên li?u
+              Nguyï¿½n li?u
             </ThemedText>
             {recipe.ingredients.map((ing, i) => (
               <ThemedText
@@ -239,7 +239,7 @@ const RecipeDetailScreen = (): React.ReactElement => {
                 variant="body"
                 style={{ marginBottom: theme.spacing.xs }}
               >
-                • {ing.foodName}: {ing.grams}g ({ing.calories} kcal)
+                ï¿½ {ing.foodName}: {ing.grams}g ({ing.calories} kcal)
               </ThemedText>
             ))}
           </View>
@@ -320,7 +320,7 @@ const RecipeDetailScreen = (): React.ReactElement => {
           </ThemedText>
 
           {recipe.videoUrl ? (
-            // Có video URL t? database -> m? tr?c ti?p trong browser
+            // Cï¿½ video URL t? database -> m? tr?c ti?p trong browser
             <Pressable
               onPress={() => {
                 Linking.openURL(recipe.videoUrl!);
@@ -342,7 +342,7 @@ const RecipeDetailScreen = (): React.ReactElement => {
                     Xem video hu?ng d?n
                   </ThemedText>
                   <ThemedText variant="caption" color="textSecondary">
-                    Nh?n d? xem video n?u món này
+                    Nh?n d? xem video n?u mï¿½n nï¿½y
                   </ThemedText>
                 </View>
                 <Ionicons
@@ -353,10 +353,10 @@ const RecipeDetailScreen = (): React.ReactElement => {
               </View>
             </Pressable>
           ) : (
-            // Không có video URL -> hi?n th? nút tìm trên YouTube
+            // Khï¿½ng cï¿½ video URL -> hi?n th? nï¿½t tï¿½m trï¿½n YouTube
             <Pressable
               onPress={() => {
-                const searchQuery = encodeURIComponent(`cách n?u ${recipe.recipeName}`);
+                const searchQuery = encodeURIComponent(`cï¿½ch n?u ${recipe.recipeName}`);
                 Linking.openURL(`https://www.youtube.com/results?search_query=${searchQuery}`);
               }}
               style={({ pressed }) => [
@@ -373,10 +373,10 @@ const RecipeDetailScreen = (): React.ReactElement => {
                 </View>
                 <View style={styles.videoTextContainer}>
                   <ThemedText variant="bodySmall" weight="600">
-                    Tìm video trên YouTube
+                    Tï¿½m video trï¿½n YouTube
                   </ThemedText>
                   <ThemedText variant="caption" color="textSecondary">
-                    Nh?n d? tìm video "{recipe.recipeName}"
+                    Nh?n d? tï¿½m video "{recipe.recipeName}"
                   </ThemedText>
                 </View>
                 <Ionicons
@@ -392,7 +392,7 @@ const RecipeDetailScreen = (): React.ReactElement => {
         {/* Add to Diary Button [NEW] */}
         <View style={{ paddingHorizontal: theme.spacing.md, marginTop: theme.spacing.lg }}>
           <Button
-            title="? Thêm vào nh?t ký hôm nay"
+            title="? Thï¿½m vï¿½o nh?t kï¿½ hï¿½m nay"
             variant="primary"
             onPress={() => setShowAddToDiarySheet(true)}
             loading={isAddingToDiary}
@@ -442,7 +442,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     overflow: 'hidden',
   },
-  // Video search button khi không có videoUrl
+  // Video search button khi khï¿½ng cï¿½ videoUrl
   videoSearchButton: {
     padding: 12,
     borderRadius: 12,

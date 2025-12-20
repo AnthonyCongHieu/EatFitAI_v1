@@ -1,4 +1,4 @@
-﻿import type { TextInputProps, ViewStyle } from 'react-native';
+import type { TextInputProps, ViewStyle } from 'react-native';
 import { TextInput, StyleSheet, View, Pressable, Platform } from 'react-native';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import Ionicons from '@expo/vector-icons/Ionicons';

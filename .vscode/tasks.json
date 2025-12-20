@@ -25,7 +25,7 @@
         {
             "label": "🔧 Backend API (.NET Core)",
             "type": "shell",
-            "command": "dotnet run",
+            "command": "dotnet run --launch-profile http",
             "options": {
                 "cwd": "${workspaceFolder}/eatfitai-backend"
             },

@@ -1,4 +1,4 @@
-﻿/**
+/**
  * AppImage - Enhanced image component with lazy loading and placeholder
  * Features:
  * - Blur placeholder while loading

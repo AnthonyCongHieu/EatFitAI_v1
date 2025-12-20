@@ -1,4 +1,4 @@
-﻿/**
+/**
  * VoiceSheet - Premium Bottom sheet for voice recording UI
  * Features: Animated pulse rings, gradient mic button, glassmorphism, premium typography
  */

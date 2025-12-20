@@ -1,4 +1,4 @@
-﻿import React from 'react';
+import React from 'react';
 import { ActivityIndicator, View, StyleSheet } from 'react-native';
 
 import { ThemedText } from './ThemedText';

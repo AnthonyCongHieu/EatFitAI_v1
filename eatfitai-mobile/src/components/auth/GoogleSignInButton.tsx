@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Google Sign-in Button Component
  * Beautiful Google Sign-in button for login screen
  * 

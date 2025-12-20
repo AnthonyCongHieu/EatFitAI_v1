@@ -1,5 +1,5 @@
-// M�n h�nh Th�nh t�ch - Redesigned v?i UI/UX hi?n d?i
-// Inspired by Duolingo, Strava, v� c�c fitness apps h�ng d?u
+// Màn hình Thành tích - Redesigned với UI/UX hiện đại
+// Inspired by Duolingo, Strava, và các fitness apps hàng đầu
 
 import React, { useEffect, useRef } from 'react';
 import { View, StyleSheet, FlatList, TouchableOpacity, Dimensions } from 'react-native';
@@ -41,11 +41,11 @@ const AchievementsScreen = (): React.ReactElement => {
     await shareService.shareScreenshot(viewRef);
   };
 
-  // T�nh to�n s? th�nh t�ch d� m? kh�a
+  // Tính toán số thành tích đã mở khóa
   const unlockedCount = achievements.filter((a) => a.unlockedAt).length;
   const totalCount = achievements.length;
 
-  // Gradient colors cho c�c th�nh t�ch - s? d?ng theme
+  // Gradient colors cho các thành tích - sử dụng theme
   const getGradientColors = (id: string, isUnlocked: boolean): readonly [string, string] => {
     if (!isUnlocked) return [theme.colors.card, theme.colors.card] as const;
 
@@ -63,19 +63,19 @@ const AchievementsScreen = (): React.ReactElement => {
     }
   };
 
-  // Emoji cho t?ng th�nh t�ch
+  // Emoji cho từng thành tích
   const getEmoji = (id: string): string => {
     switch (id) {
       case 'first_log':
-        return '??';
+        return '🚀';
       case 'streak_3':
-        return '??';
+        return '🔥';
       case 'streak_7':
-        return '??';
+        return '📅';
       case 'log_100_meals':
-        return '??';
+        return '🍽️';
       default:
-        return '?';
+        return '🏆';
     }
   };
 
@@ -97,7 +97,7 @@ const AchievementsScreen = (): React.ReactElement => {
             {currentStreak}
           </ThemedText>
           <ThemedText style={{ color: 'rgba(255,255,255,0.9)' }} variant="body" weight="600">
-            ng�y li�n ti?p ??
+            ngày liên tiếp 🔥
           </ThemedText>
         </View>
 
@@ -105,19 +105,19 @@ const AchievementsScreen = (): React.ReactElement => {
         <View style={styles.statsRow}>
           <View style={styles.statItem}>
             <ThemedText style={styles.statValue}>{longestStreak}</ThemedText>
-            <ThemedText style={styles.statLabel}>K? l?c</ThemedText>
+            <ThemedText style={styles.statLabel}>Kỷ lục</ThemedText>
           </View>
           <View style={[styles.statDivider, { backgroundColor: 'rgba(255,255,255,0.2)' }]} />
           <View style={styles.statItem}>
             <ThemedText style={styles.statValue}>{totalDaysLogged}</ThemedText>
-            <ThemedText style={styles.statLabel}>T?ng ng�y</ThemedText>
+            <ThemedText style={styles.statLabel}>Tổng ngày</ThemedText>
           </View>
           <View style={[styles.statDivider, { backgroundColor: 'rgba(255,255,255,0.2)' }]} />
           <View style={styles.statItem}>
             <ThemedText style={styles.statValue}>
               {unlockedCount}/{totalCount}
             </ThemedText>
-            <ThemedText style={styles.statLabel}>Th�nh t�ch</ThemedText>
+            <ThemedText style={styles.statLabel}>Thành tích</ThemedText>
           </View>
         </View>
       </LinearGradient>
@@ -133,7 +133,7 @@ const AchievementsScreen = (): React.ReactElement => {
     return (
       <Animated.View entering={FadeInDown.delay(200 + index * 100).springify()}>
         <View style={[styles.achievementCard, !isUnlocked && styles.lockedCard]}>
-          {/* Left: Icon v?i gradient background */}
+          {/* Left: Icon với gradient background */}
           <View style={styles.iconWrapper}>
             {isUnlocked ? (
               <LinearGradient
@@ -164,7 +164,7 @@ const AchievementsScreen = (): React.ReactElement => {
               {isUnlocked && (
                 <View style={[styles.badge, { backgroundColor: theme.colors.success + '20' }]}>
                   <ThemedText variant="caption" color="success" weight="600">
-                    ? �?t
+                    🏆 Đã đạt
                   </ThemedText>
                 </View>
               )}
@@ -190,7 +190,7 @@ const AchievementsScreen = (): React.ReactElement => {
 
             <View style={styles.progressRow}>
               <ThemedText variant="caption" color="textSecondary">
-                Ti?n d?: {Math.round(item.progress)}/{item.target}
+                Tiến độ: {Math.round(item.progress)}/{item.target}
               </ThemedText>
               <ThemedText variant="caption" color={isUnlocked ? 'success' : 'textSecondary'}>
                 {Math.round(progressPercent)}%
@@ -205,10 +205,10 @@ const AchievementsScreen = (): React.ReactElement => {
   const renderSectionTitle = () => (
     <Animated.View entering={FadeIn.delay(150)} style={styles.sectionHeader}>
       <ThemedText variant="h3" weight="700">
-        ?? T?t c? th�nh t�ch
+        🎯 Tất cả thành tích
       </ThemedText>
       <ThemedText variant="caption" color="textSecondary">
-        {unlockedCount} / {totalCount} d� d?t
+        {unlockedCount} / {totalCount} đã đạt
       </ThemedText>
     </Animated.View>
   );
@@ -330,8 +330,8 @@ const AchievementsScreen = (): React.ReactElement => {
   return (
     <Screen scroll={false} style={styles.container}>
       <AppHeader
-        title="Th�nh t�ch"
-        subtitle="H�nh tr�nh s?c kh?e c?a b?n"
+        title="Thành tích"
+        subtitle="Hành trình sức khỏe của bạn"
         onBackPress={() => navigation.goBack()}
         action={
           <TouchableOpacity onPress={handleShare} style={{ padding: 8 }}>

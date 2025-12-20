@@ -1,4 +1,4 @@
-﻿import type { ImageSourcePropType } from 'react-native';
+import type { ImageSourcePropType } from 'react-native';
 import { View, StyleSheet, Image } from 'react-native';
 
 import { ThemedText } from './ThemedText';

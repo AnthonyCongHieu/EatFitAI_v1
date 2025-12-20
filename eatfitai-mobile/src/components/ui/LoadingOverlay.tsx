@@ -1,4 +1,4 @@
-﻿/**
+/**
  * LoadingOverlay - Full screen loading overlay with blur effect
  * Used for blocking operations like form submission
  */

@@ -1,4 +1,4 @@
-﻿// StatsNavigator - Now just renders the unified StatsScreen
+// StatsNavigator - Now just renders the unified StatsScreen
 // The tabs are built into StatsScreen itself
 import React from 'react';
 import StatsScreen from '../screens/stats/StatsScreen';

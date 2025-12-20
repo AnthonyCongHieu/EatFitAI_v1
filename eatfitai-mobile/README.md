@@ -1,4 +1,4 @@
-﻿# EatFitAI Mobile
+# EatFitAI Mobile
 
 Ứng dụng di động (Expo + React Native) cho EatFitAI với TypeScript strict, lint chuẩn và Husky/Lint-Staged.
 

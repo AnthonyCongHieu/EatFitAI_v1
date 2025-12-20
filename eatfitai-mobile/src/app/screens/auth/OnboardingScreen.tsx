@@ -1,4 +1,4 @@
-﻿/**
+/**
  * OnboardingScreen - First-time user setup wizard
  * 5 steps: Basic Info → Body Metrics → Goal → Activity → AI Calculate
  */

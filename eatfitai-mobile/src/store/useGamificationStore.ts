@@ -34,6 +34,8 @@ interface GamificationState {
   achievements: Achievement[];
   /** 7 ngày gần nhất: true = đã log, false = chưa log (index 0 = 6 ngày trước, index 6 = hôm nay) */
   weeklyLogs: boolean[];
+  lastWeeklyFetch: number; // timestamp
+  lastStreakCheck: string | null; // date string yyyy-MM-dd
 
   // Actions
   checkStreak: () => Promise<void>;
@@ -86,27 +88,35 @@ export const useGamificationStore = create<GamificationState>()(
       totalDaysLogged: 0,
       achievements: INITIAL_ACHIEVEMENTS,
       weeklyLogs: [false, false, false, false, false, false, false],
+      lastWeeklyFetch: 0,
+      lastStreakCheck: null,
 
       fetchWeeklyLogs: async () => {
         try {
-          const logs: boolean[] = [];
-          const today = new Date();
+          const now = Date.now();
+          const { lastWeeklyFetch } = get();
 
-          // Check 7 ngày gần nhất (index 0 = 6 ngày trước, index 6 = hôm nay)
+          // Cooldown 2 phút cho weekly logs
+          if (now - lastWeeklyFetch < 2 * 60 * 1000) {
+            console.log('[GamificationStore] Weekly logs fresh, skipping fetch');
+            return;
+          }
+
+          const today = new Date();
+          const todayStr = today.toISOString().split('T')[0] ?? '';
+          const summary = await diaryService.getWeekSummary(todayStr);
+
+          const logs: boolean[] = [];
           for (let i = 6; i >= 0; i--) {
             const date = new Date(today);
             date.setDate(today.getDate() - i);
             const dateStr = date.toISOString().split('T')[0] ?? '';
-
-            try {
-              const entries = await diaryService.getEntriesByDate(dateStr);
-              logs.push(entries.length > 0);
-            } catch {
-              logs.push(false);
-            }
+            // Nếu có calories > 0 thì coi là đã log
+            const hasLog = (summary.dailyCalories[dateStr] ?? 0) > 0;
+            logs.push(hasLog);
           }
 
-          set({ weeklyLogs: logs });
+          set({ weeklyLogs: logs, lastWeeklyFetch: now });
         } catch (error) {
           console.error('Error fetching weekly logs:', error);
         }
@@ -115,16 +125,21 @@ export const useGamificationStore = create<GamificationState>()(
       checkStreak: async () => {
         try {
           const today = new Date().toISOString().split('T')[0];
-          const { lastLogDate, currentStreak, longestStreak, totalDaysLogged } = get();
+          const { lastStreakCheck, lastLogDate, currentStreak, longestStreak, totalDaysLogged } = get();
+
+          // Nếu đã check streak hôm nay và đã ghi nhận log hôm nay thì không cần gọi API nữa
+          if (lastStreakCheck === today && lastLogDate === today) {
+            console.log('[GamificationStore] Streak already checked today');
+            return;
+          }
 
           // Check if user logged today by fetching summary
           const summary = await diaryService.getTodaySummary();
           const hasLoggedToday = summary.meals.some((m) => m.entries.length > 0);
 
+          let nextState: Partial<GamificationState> = { lastStreakCheck: today };
+
           if (!hasLoggedToday) {
-            // If haven't logged today, we don't break streak yet (streak breaks if missed yesterday)
-            // But we don't increment either.
-            // However, we need to check if yesterday was missed.
             const yesterday = new Date();
             yesterday.setDate(yesterday.getDate() - 1);
             const yesterdayStr = yesterday.toISOString().split('T')[0];
@@ -134,37 +149,34 @@ export const useGamificationStore = create<GamificationState>()(
               lastLogDate !== yesterdayStr &&
               lastLogDate !== null
             ) {
-              // Missed yesterday, reset streak
-              set({ currentStreak: 0 });
+              nextState.currentStreak = 0;
             }
+            set(nextState as GamificationState);
             return;
           }
 
           // User has logged today
           if (lastLogDate === today) {
-            // Already counted for today
+            set(nextState as GamificationState);
             return;
           }
 
-          // New day logged
+          // New day logged logic...
           const yesterday = new Date();
           yesterday.setDate(yesterday.getDate() - 1);
           const yesterdayStr = yesterday.toISOString().split('T')[0];
 
           let newStreak = currentStreak;
-
           if (lastLogDate === yesterdayStr) {
-            // Consecutive day
             newStreak += 1;
           } else if (lastLogDate === null) {
-            // First day ever
             newStreak = 1;
           } else {
-            // Broken streak, restart
             newStreak = 1;
           }
 
           set({
+            ...nextState,
             currentStreak: newStreak,
             longestStreak: Math.max(longestStreak, newStreak),
             lastLogDate: today,
