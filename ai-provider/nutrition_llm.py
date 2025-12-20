@@ -481,37 +481,50 @@ def parse_voice_command_ollama(text: str) -> Dict[str, Any]:
             "error": "Ollama không khả dụng"
         }
     
-    prompt = f"""Bạn là AI phân tích lệnh giọng nói tiếng Việt cho app theo dõi dinh dưỡng.
+    # Prompt với Chain-of-Thought và nhiều examples
+    # Giúp AI hiểu rõ hơn cách parse các lệnh tiếng Việt
+    prompt = f"""Bạn là AI phân tích lệnh giọng nói tiếng Việt. Hãy suy nghĩ THEO TỪNG BƯỚC:
 
-Phân tích lệnh sau: "{text}"
+LỆNH CẦN PHÂN TÍCH: "{text}"
 
-QUAN TRỌNG - Trích xuất foodName:
-- foodName là TÊN MÓN ĂN CHÍNH (vd: "cơm", "phở", "bún bò", "trứng", "bánh mì")
-- Ví dụ: "thêm 1 bát cơm 100g" → foodName = "cơm"
-- Ví dụ: "ăn 2 quả trứng" → foodName = "trứng"
-- Ví dụ: "ghi phở bò bữa trưa" → foodName = "phở bò"
+━━━ BƯỚC 1: XÁC ĐỊNH INTENT ━━━
+Tìm từ khóa trong lệnh:
+• "thêm/ghi/ăn/log" + tên món → ADD_FOOD
+• "cân nặng/cân/kg" + số → LOG_WEIGHT  
+• "bao nhiêu calo/calories/kcal" → ASK_CALORIES
+• Không rõ ràng → UNKNOWN
 
-Các intent:
-- ADD_FOOD: thêm/ghi/ăn món ăn
-- LOG_WEIGHT: ghi cân nặng  
-- ASK_CALORIES: hỏi calories
-- ASK_NUTRITION: hỏi dinh dưỡng
-- UNKNOWN: không hiểu
+━━━ BƯỚC 2: TRÍCH XUẤT ENTITIES ━━━
 
-Các mealType: breakfast (sáng), lunch (trưa), dinner (tối), snack (phụ)
+Với ADD_FOOD:
+• foodName: CHỈ tên món (không có số/đơn vị). VD: "phở", "cơm", "trứng"
+• quantity: số lượng (mặc định 1)
+• unit: đơn vị (bát/đĩa/quả/cái/phần/ly)
+• weight: gram nếu có (vd: 100g, 200g)
+• mealType: breakfast/lunch/dinner/snack
 
-CHỈ TRẢ VỀ JSON, không giải thích:
-{{
-  "intent": "ADD_FOOD",
-  "entities": {{
-    "foodName": "tên món ăn chính (bắt buộc nếu ADD_FOOD)",
-    "quantity": 1,
-    "unit": "bát/đĩa/quả/cái/phần",
-    "weight": 100,
-    "mealType": "lunch"
-  }},
-  "confidence": 0.95
-}}"""
+Với LOG_WEIGHT:
+• weight: số kg
+
+━━━ VÍ DỤ THAM KHẢO ━━━
+
+Input: "thêm 2 quả trứng bữa sáng"
+→ {{"intent":"ADD_FOOD","entities":{{"foodName":"trứng","quantity":2,"unit":"quả","mealType":"breakfast"}},"confidence":0.95}}
+
+Input: "ghi 1 bát phở 300g bữa trưa"  
+→ {{"intent":"ADD_FOOD","entities":{{"foodName":"phở","quantity":1,"unit":"bát","weight":300,"mealType":"lunch"}},"confidence":0.95}}
+
+Input: "ăn bánh mì bữa sáng"
+→ {{"intent":"ADD_FOOD","entities":{{"foodName":"bánh mì","quantity":1,"mealType":"breakfast"}},"confidence":0.9}}
+
+Input: "cân nặng 65 kg"
+→ {{"intent":"LOG_WEIGHT","entities":{{"weight":65}},"confidence":0.95}}
+
+Input: "hôm nay ăn bao nhiêu calo"
+→ {{"intent":"ASK_CALORIES","entities":{{}},"confidence":0.9}}
+
+━━━ TRẢ LỜI ━━━
+CHỈ trả về JSON, KHÔNG giải thích:"""
 
     try:
         response = query_ollama(prompt)

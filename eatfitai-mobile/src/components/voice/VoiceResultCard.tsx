@@ -127,19 +127,33 @@ export const VoiceResultCard = ({
         const { entities } = command;
         const rows: { label: string; value: string }[] = [];
 
-        if (entities.foodName) {
+        // Hiển thị thông minh: gộp số lượng + đơn vị + món ăn
+        if (command.intent === 'ADD_FOOD' && entities.foodName) {
+            const qty = entities.quantity || 1;
+            const unit = entities.unit || '';
+            // Ví dụ: "2 quả trứng" hoặc "1 bát phở"
+            const foodDisplay = unit ? `${qty} ${unit} ${entities.foodName}` : `${qty} ${entities.foodName}`;
+            rows.push({ label: 'Món ăn', value: foodDisplay });
+        } else if (entities.foodName) {
             rows.push({ label: 'Món ăn', value: entities.foodName });
         }
-        if (entities.quantity) {
-            const unit = entities.unit || '';
-            rows.push({ label: 'Số lượng', value: `${entities.quantity} ${unit}`.trim() });
-        }
+
+        // Bữa ăn
         if (entities.mealType) {
             rows.push({ label: 'Bữa ăn', value: MEAL_LABELS[entities.mealType] || entities.mealType });
         }
-        if (entities.weight) {
+
+        // Khối lượng (gram) - chỉ hiện nếu có và là ADD_FOOD
+        if (entities.weight && command.intent === 'ADD_FOOD') {
             rows.push({ label: 'Khối lượng', value: `${entities.weight}g` });
         }
+
+        // LOG_WEIGHT: hiển thị cân nặng kg
+        if (command.intent === 'LOG_WEIGHT' && entities.weight) {
+            rows.push({ label: 'Cân nặng', value: `${entities.weight} kg` });
+        }
+
+        // Ngày
         if (entities.date) {
             const dateObj = new Date(entities.date);
             const isToday = dateObj.toDateString() === new Date().toDateString();

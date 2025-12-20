@@ -22,17 +22,20 @@ namespace EatFitAI.API.Controllers
         private readonly IVoiceProcessingService _voiceService;
         private readonly IFoodService _foodService;
         private readonly IMealDiaryService _mealDiaryService;
+        private readonly IUserService _userService;
         private readonly ILogger<VoiceController> _logger;
 
         public VoiceController(
             IVoiceProcessingService voiceService,
             IFoodService foodService,
             IMealDiaryService mealDiaryService,
+            IUserService userService,
             ILogger<VoiceController> logger)
         {
             _voiceService = voiceService;
             _foodService = foodService;
             _mealDiaryService = mealDiaryService;
+            _userService = userService;
             _logger = logger;
         }
 
@@ -129,21 +132,56 @@ namespace EatFitAI.API.Controllers
                         break;
 
                     case VoiceIntent.LOG_WEIGHT:
-                        // TODO: Integrate with UserService
-                        executedAction = new ExecutedAction
+                        // Ghi cân nặng thực sự vào database
+                        if (command.Entities.Weight.HasValue && command.Entities.Weight > 0)
                         {
-                            Type = "LOG_WEIGHT",
-                            Details = $"Đã ghi cân nặng {command.Entities.Weight} kg"
-                        };
+                            try
+                            {
+                                var bodyMetric = new EatFitAI.API.DTOs.User.BodyMetricDto
+                                {
+                                    WeightKg = command.Entities.Weight.Value,
+                                    MeasuredDate = command.Entities.Date ?? DateTime.Now
+                                };
+                                await _userService.RecordBodyMetricsAsync(userId, bodyMetric);
+                                executedAction = new ExecutedAction
+                                {
+                                    Type = "LOG_WEIGHT",
+                                    Details = $"Đã ghi cân nặng {command.Entities.Weight} kg vào hệ thống"
+                                };
+                                _logger.LogInformation("Logged weight {Weight}kg for user {UserId}", command.Entities.Weight, userId);
+                            }
+                            catch (Exception ex)
+                            {
+                                _logger.LogError(ex, "Failed to log weight");
+                                error = "Không thể ghi cân nặng. Vui lòng thử lại.";
+                            }
+                        }
+                        else
+                        {
+                            error = "Không tìm thấy số cân nặng trong lệnh";
+                        }
                         break;
 
                     case VoiceIntent.ASK_CALORIES:
-                        // TODO: Integrate with SummaryService
-                        executedAction = new ExecutedAction
+                        // Query MealDiary để tính tổng calories hôm nay
+                        try
                         {
-                            Type = "ASK_CALORIES",
-                            Details = "Hôm nay bạn đã tiêu thụ khoảng 1500 kcal"
-                        };
+                            var today = command.Entities.Date ?? DateTime.Today;
+                            var mealDiaries = await _mealDiaryService.GetUserMealDiariesAsync(userId, today);
+                            var totalCalories = mealDiaries?.Sum(m => m.Calories) ?? 0;
+                            
+                            executedAction = new ExecutedAction
+                            {
+                                Type = "ASK_CALORIES",
+                                Details = $"Hôm nay bạn đã tiêu thụ {totalCalories:N0} kcal"
+                            };
+                            _logger.LogInformation("User {UserId} asked calories: {Total}kcal", userId, totalCalories);
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.LogError(ex, "Failed to get calories");
+                            error = "Không thể lấy thông tin calories. Vui lòng thử lại.";
+                        }
                         break;
 
                     default:

@@ -320,7 +320,7 @@ export const VoiceSheet = ({ visible, onClose }: VoiceSheetProps): React.ReactEl
                     {/* Example commands */}
                     {/* Example commands - khớp với pattern parser */}
                     <View style={styles.examplesContainer}>
-                        {['Thêm 1 bát cơm bữa trưa', 'Ghi 1 ly cà phê bữa sáng', 'Ăn 2 quả trứng bữa tối'].map((example, index) => (
+                        {['Thêm 1 bát cơm bữa trưa', 'Cân nặng 65 kg', 'Hôm nay bao nhiêu calo'].map((example, index) => (
                             <Pressable
                                 key={index}
                                 style={[styles.exampleChip, { backgroundColor: theme.colors.primary + '15' }]}
