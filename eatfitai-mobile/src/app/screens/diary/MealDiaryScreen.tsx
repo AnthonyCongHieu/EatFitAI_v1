@@ -143,6 +143,12 @@ const MealDiaryScreen = (): React.ReactElement => {
 
   const dateKey = useMemo(() => formatDateForApi(selectedDate), [formatDateForApi, selectedDate]);
 
+  // Check if selected date is today
+  const isToday = useMemo(() => {
+    const today = new Date();
+    return selectedDate.toDateString() === today.toDateString();
+  }, [selectedDate]);
+
   const {
     data: entriesData,
     isLoading: isEntriesLoading,
@@ -690,7 +696,7 @@ const MealDiaryScreen = (): React.ReactElement => {
     <Screen scroll={false}>
       <View style={styles.container}>
         {/* Custom Header với Back button */}
-        <View style={[styles.screenHeader, { paddingTop: insets.top }]}>
+        <View style={[styles.screenHeader, { paddingTop: 10 }]}>
           <View style={styles.headerRow}>
             <Pressable
               onPress={() => navigation.goBack()}
@@ -830,6 +836,35 @@ const MealDiaryScreen = (): React.ReactElement => {
             ]}
           >
             <Ionicons name="add" size={28} color="#fff" />
+          </Pressable>
+        )}
+
+        {/* Back to Today button - bottom center */}
+        {!isToday && (
+          <Pressable
+            onPress={() => setSelectedDate(new Date())}
+            style={({ pressed }) => [
+              {
+                position: 'absolute',
+                bottom: 90,
+                left: '50%',
+                transform: [{ translateX: -70 }, { scale: pressed ? 0.95 : 1 }],
+                flexDirection: 'row',
+                alignItems: 'center',
+                backgroundColor: theme.colors.primary,
+                paddingHorizontal: 16,
+                paddingVertical: 10,
+                borderRadius: 24,
+                gap: 6,
+                ...theme.shadows.md,
+                opacity: pressed ? 0.9 : 1,
+              },
+            ]}
+          >
+            <Ionicons name="today-outline" size={16} color="#fff" />
+            <ThemedText variant="bodySmall" weight="600" style={{ color: '#fff' }}>
+              Quay lại hôm nay
+            </ThemedText>
           </Pressable>
         )}
       </View>
