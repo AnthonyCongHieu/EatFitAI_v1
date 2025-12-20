@@ -14,6 +14,7 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
+import { LinearGradient } from 'expo-linear-gradient';
 
 import { ThemedText } from '../../components/ThemedText';
 import { AppHeader } from '../../components/ui/AppHeader';
@@ -167,23 +168,30 @@ const ProfileScreen = (): React.ReactElement => {
 
   if (isLoading && !profile) {
     return (
-      <View
+      <LinearGradient
+        colors={theme.colors.screenGradient}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 0.5, y: 1 }}
         style={[
           styles.container,
           {
-            backgroundColor: theme.colors.background,
             justifyContent: 'center',
             alignItems: 'center',
           },
         ]}
       >
         <ActivityIndicator size="large" color={theme.colors.primary} />
-      </View>
+      </LinearGradient>
     );
   }
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+    <LinearGradient
+      colors={theme.colors.screenGradient}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 0.5, y: 1 }}
+      style={styles.container}
+    >
       <AppHeader
         title={t('common.profile_title')}
         subtitle={t('common.profile_subtitle')}
@@ -332,7 +340,7 @@ const ProfileScreen = (): React.ReactElement => {
           />
         </Animated.View>
       </ScrollView>
-    </View>
+    </LinearGradient>
   );
 };
 

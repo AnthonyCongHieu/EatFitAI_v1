@@ -180,7 +180,12 @@ const VoiceScreen = (): React.ReactElement => {
     const statusConfig = getStatusConfig();
 
     return (
-        <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+        <LinearGradient
+            colors={theme.colors.screenGradient}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 0.5, y: 1 }}
+            style={styles.container}
+        >
             <ScrollView
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={[styles.scrollContent, { paddingTop: insets.top + 20 }]}
@@ -361,7 +366,7 @@ const VoiceScreen = (): React.ReactElement => {
                     </Animated.View>
                 )}
             </ScrollView>
-        </View>
+        </LinearGradient>
     );
 };
 
