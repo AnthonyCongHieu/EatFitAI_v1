@@ -90,16 +90,16 @@ export const TrendChart: React.FC<TrendChartProps> = ({
     });
 
     const getBarColor = (index: number, calories: number, target?: number) => {
-        if (highlightBest && index === bestDayIndex) {
+        // Highest day = blue (primary)
+        if (highlightBest && index === bestDayIndex && calories > 0) {
             return theme.colors.primary;
         }
-        if (target && calories >= target * 0.9) {
-            return theme.colors.success;
-        }
+        // No data = dim gray
         if (calories === 0) {
             return isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)';
         }
-        return theme.colors.chart?.bar || theme.colors.primary + '90';
+        // Normal days = green
+        return '#22C55E';
     };
 
     const handleBarPress = (day: DayData) => {
@@ -156,8 +156,8 @@ export const TrendChart: React.FC<TrendChartProps> = ({
             {/* Legend */}
             <View style={styles.legendRow}>
                 <View style={styles.legendItem}>
-                    <View style={[styles.legendDot, { backgroundColor: theme.colors.success }]} />
-                    <ThemedText variant="caption" color="textSecondary">Đạt mục tiêu</ThemedText>
+                    <View style={[styles.legendDot, { backgroundColor: '#22C55E' }]} />
+                    <ThemedText variant="caption" color="textSecondary">Bình thường</ThemedText>
                 </View>
                 <View style={styles.legendItem}>
                     <View style={[styles.legendDot, { backgroundColor: theme.colors.primary }]} />

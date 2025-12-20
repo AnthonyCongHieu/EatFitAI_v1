@@ -33,10 +33,11 @@ export const StatsHeroCard: React.FC<StatsHeroCardProps> = ({
     // Tính progress
     const progress = Math.min(value / target, 1);
     const percentage = Math.round(progress * 100);
+    const remaining = Math.max(target - value, 0);
 
-    // SVG circle dimensions
-    const size = 140;
-    const strokeWidth = 10;
+    // SVG circle dimensions - LARGER ring
+    const size = 180;
+    const strokeWidth = 14;
     const radius = (size - strokeWidth) / 2;
     const circumference = 2 * Math.PI * radius;
     const strokeDashoffset = circumference * (1 - progress);
@@ -47,17 +48,11 @@ export const StatsHeroCard: React.FC<StatsHeroCardProps> = ({
             paddingVertical: theme.spacing.xl,
             paddingHorizontal: theme.spacing.lg,
             backgroundColor: isDark
-                ? 'rgba(40, 40, 60, 0.8)'
-                : 'rgba(255, 255, 255, 0.9)',
+                ? 'rgba(74, 144, 226, 0.08)'
+                : 'rgba(59, 130, 246, 0.05)',
             borderRadius: theme.radius.xl,
             borderWidth: 1,
-            borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)',
-            // Glass effect
-            shadowColor: theme.colors.primary,
-            shadowOffset: { width: 0, height: 8 },
-            shadowOpacity: 0.15,
-            shadowRadius: 24,
-            elevation: 8,
+            borderColor: isDark ? 'rgba(74, 144, 226, 0.2)' : 'rgba(59, 130, 246, 0.1)',
         },
         progressContainer: {
             position: 'relative',
@@ -72,7 +67,7 @@ export const StatsHeroCard: React.FC<StatsHeroCardProps> = ({
             justifyContent: 'center',
         },
         icon: {
-            fontSize: 28,
+            fontSize: 32,
             marginBottom: 4,
         },
         valueRow: {
@@ -82,31 +77,17 @@ export const StatsHeroCard: React.FC<StatsHeroCardProps> = ({
         unit: {
             marginLeft: 4,
         },
-        labelRow: {
+        statsRow: {
             flexDirection: 'row',
+            justifyContent: 'space-around',
+            width: '100%',
+            marginTop: theme.spacing.lg,
+            paddingTop: theme.spacing.md,
+            borderTopWidth: 1,
+            borderTopColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)',
+        },
+        statItem: {
             alignItems: 'center',
-            marginTop: theme.spacing.md,
-            gap: theme.spacing.sm,
-        },
-        progressBar: {
-            flex: 1,
-            height: 6,
-            backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)',
-            borderRadius: 3,
-            overflow: 'hidden',
-        },
-        progressFill: {
-            height: '100%',
-            borderRadius: 3,
-        },
-        insightContainer: {
-            marginTop: theme.spacing.md,
-            paddingHorizontal: theme.spacing.lg,
-            paddingVertical: theme.spacing.sm,
-            backgroundColor: isDark
-                ? 'rgba(255,255,255,0.05)'
-                : 'rgba(0,0,0,0.03)',
-            borderRadius: theme.radius.md,
         },
     });
 
@@ -148,56 +129,44 @@ export const StatsHeroCard: React.FC<StatsHeroCardProps> = ({
                     />
                 </Svg>
 
-                {/* Center content */}
+                {/* Center content - shows "Calo còn lại" */}
                 <View style={styles.centerContent}>
-                    <ThemedText style={styles.icon}>{icon}</ThemedText>
-                    <View style={styles.valueRow}>
-                        <SimpleAnimatedCounter
-                            value={value}
-                            variant="h2"
-                            weight="700"
-                            duration={1000}
-                        />
-                        <ThemedText variant="body" color="textSecondary" style={styles.unit}>
-                            {unit}
-                        </ThemedText>
+                    <SimpleAnimatedCounter
+                        value={remaining}
+                        variant="h1"
+                        weight="700"
+                        duration={1000}
+                    />
+                    <ThemedText variant="body" color="textSecondary">
+                        Calo còn lại
+                    </ThemedText>
+                </View>
+            </View>
+
+            {/* Stats Row - with icons like reference */}
+            <View style={styles.statsRow}>
+                <View style={styles.statItem}>
+                    <ThemedText variant="h4" weight="700">{Math.round(target).toLocaleString()}</ThemedText>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                        <ThemedText style={{ fontSize: 14 }}>🚩</ThemedText>
+                        <ThemedText variant="caption" color="textSecondary">Mục tiêu</ThemedText>
+                    </View>
+                </View>
+                <View style={styles.statItem}>
+                    <ThemedText variant="h4" weight="700" color="primary">{Math.round(value).toLocaleString()}</ThemedText>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                        <ThemedText style={{ fontSize: 14 }}>🍴</ThemedText>
+                        <ThemedText variant="caption" color="textSecondary">Đã nạp</ThemedText>
+                    </View>
+                </View>
+                <View style={styles.statItem}>
+                    <ThemedText variant="h4" weight="700" color="success">{percentage}%</ThemedText>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                        <ThemedText style={{ fontSize: 14 }}>🔥</ThemedText>
+                        <ThemedText variant="caption" color="textSecondary">Đạt được</ThemedText>
                     </View>
                 </View>
             </View>
-
-            {/* Label + percentage */}
-            <View style={styles.labelRow}>
-                <ThemedText variant="body" color="textSecondary">
-                    {label}
-                </ThemedText>
-                <View style={styles.progressBar}>
-                    <Animated.View
-                        style={[
-                            styles.progressFill,
-                            {
-                                width: `${percentage}%`,
-                                backgroundColor: progress >= 1
-                                    ? theme.colors.success
-                                    : progress >= 0.8
-                                        ? theme.colors.primary
-                                        : theme.colors.warning,
-                            },
-                        ]}
-                    />
-                </View>
-                <ThemedText variant="bodySmall" weight="600" color="primary">
-                    {percentage}%
-                </ThemedText>
-            </View>
-
-            {/* AI Insight */}
-            {insight && (
-                <View style={styles.insightContainer}>
-                    <ThemedText variant="bodySmall" color="textSecondary" style={{ textAlign: 'center' }}>
-                        💡 {insight}
-                    </ThemedText>
-                </View>
-            )}
         </Animated.View>
     );
 };
