@@ -1,13 +1,14 @@
 // Recipe Detail Screen - hiển thị chi tiết công thức
 import React, { useEffect, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { View, StyleSheet, ScrollView, ActivityIndicator, Pressable, Linking } from 'react-native';
-import { useRoute, RouteProp } from '@react-navigation/native';
+import { View, StyleSheet, ScrollView, ActivityIndicator, Pressable, Linking, TouchableOpacity } from 'react-native';
+import { useRoute, useNavigation, RouteProp } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ThemedText } from '../../../components/ThemedText';
 import Screen from '../../../components/Screen';
-import { AppHeader } from '../../../components/ui/AppHeader';
 import { useAppTheme } from '../../../theme/ThemeProvider';
 import { aiService } from '../../../services/aiService';
 import { foodService } from '../../../services/foodService'; // [NEW]
@@ -20,6 +21,8 @@ import { AddRecipeToDiarySheet } from '../../../components/recipe/AddRecipeToDia
 import Toast from 'react-native-toast-message'; // [NEW]
 import Button from '../../../components/Button'; // [NEW]
 
+
+type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 type RouteProps = RouteProp<RootStackParamList, 'RecipeDetail'>;
 
 // Type cho AI-generated instructions
@@ -36,6 +39,8 @@ const RecipeDetailScreen = (): React.ReactElement => {
   const isDark = theme.mode === 'dark';
   const glass = glassStyles(isDark);
   const route = useRoute<RouteProps>();
+  const navigation = useNavigation<NavigationProp>();
+  const insets = useSafeAreaInsets();
   const [recipe, setRecipe] = useState<RecipeDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -171,10 +176,58 @@ const RecipeDetailScreen = (): React.ReactElement => {
     );
   }
 
+  // Custom header component (matching RecipeSuggestionsScreen)
+  const renderHeader = (title: string, subtitle: string) => (
+    <View style={[customStyles.screenHeader, { paddingTop: insets.top }]}>
+      <View style={customStyles.headerRow}>
+        <TouchableOpacity
+          onPress={() => navigation.goBack()}
+          style={customStyles.backButton}
+        >
+          <Ionicons name="chevron-back" size={24} color={theme.colors.text} />
+        </TouchableOpacity>
+        <View style={customStyles.headerTitles}>
+          <ThemedText variant="h3" weight="700" numberOfLines={1}>
+            {title}
+          </ThemedText>
+          <ThemedText variant="caption" color="textSecondary">
+            {subtitle}
+          </ThemedText>
+        </View>
+      </View>
+    </View>
+  );
+
+  // Custom styles for header
+  const customStyles = StyleSheet.create({
+    screenHeader: {
+      paddingHorizontal: 16,
+      paddingBottom: 12,
+    },
+    headerRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 12,
+    },
+    backButton: {
+      width: 44,
+      height: 44,
+      borderRadius: 16,
+      backgroundColor: isDark ? 'rgba(74, 144, 226, 0.15)' : 'rgba(59, 130, 246, 0.08)',
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderWidth: 1.5,
+      borderColor: isDark ? 'rgba(74, 144, 226, 0.25)' : 'rgba(59, 130, 246, 0.15)',
+    },
+    headerTitles: {
+      flex: 1,
+    },
+  });
+
   if (error) {
     return (
-      <Screen>
-        <AppHeader title="Chi tiết công thức" subtitle="Có lỗi xảy ra" />
+      <Screen scroll={false}>
+        {renderHeader('Chi tiết công thức', 'Có lỗi xảy ra')}
         <View style={styles.center}>
           <ThemedText variant="body" color="danger" style={{ textAlign: 'center' }}>
             {error}
@@ -186,8 +239,8 @@ const RecipeDetailScreen = (): React.ReactElement => {
 
   if (!recipe) {
     return (
-      <Screen>
-        <AppHeader title="Chi tiết công thức" subtitle="Không có dữ liệu" />
+      <Screen scroll={false}>
+        {renderHeader('Chi tiết công thức', 'Không có dữ liệu')}
         <View style={styles.center}>
           <ThemedText variant="body" color="textSecondary">
             Không tìm thấy công thức.
@@ -198,8 +251,8 @@ const RecipeDetailScreen = (): React.ReactElement => {
   }
 
   return (
-    <Screen>
-      <AppHeader title={route.params.recipeName} subtitle="Chi tiết công thức" />
+    <Screen scroll={false}>
+      {renderHeader(route.params.recipeName, 'Chi tiết công thức')}
       <ScrollView contentContainerStyle={styles.content}>
         <View style={[styles.box, { backgroundColor: theme.colors.card }]}>
           <ThemedText variant="h4" style={{ marginBottom: theme.spacing.sm }}>
@@ -432,7 +485,7 @@ const styles = StyleSheet.create({
   content: {
     padding: 16,
     gap: 16,
-    paddingBottom: 32,
+    paddingBottom: 120, // Extra space to scroll past the button
   },
   box: {
     padding: 16,

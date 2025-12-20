@@ -1,7 +1,7 @@
 // Màn hình Chi tiết món ăn và thêm vào nhật ký
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, View, Image } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, View, Image, TouchableOpacity } from 'react-native';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Controller, useForm } from 'react-hook-form';
@@ -10,6 +10,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import Toast from 'react-native-toast-message';
 import Animated, {
   FadeIn,
+  FadeInDown,
   useSharedValue,
   useAnimatedStyle,
   withTiming,
@@ -17,11 +18,12 @@ import Animated, {
 } from 'react-native-reanimated';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ThemedText } from '../../../components/ThemedText';
 import Screen from '../../../components/Screen';
 import { AppCard } from '../../../components/ui/AppCard';
-import { AppHeader } from '../../../components/ui/AppHeader';
 import Button from '../../../components/Button';
 import ThemedTextInput from '../../../components/ThemedTextInput';
 import { useAppTheme } from '../../../theme/ThemeProvider';
@@ -33,6 +35,7 @@ import { handleApiError } from '../../../utils/errorHandler';
 import FavoriteButton from '../../../components/FavoriteButton';
 import { favoritesService } from '../../../services/favoritesService';
 import { glassStyles } from '../../../components/ui/GlassCard';
+
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 type RouteProps = RouteProp<RootStackParamList, 'FoodDetail'>;
@@ -71,6 +74,7 @@ const FoodDetailScreen = (): React.ReactElement | null => {
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<RouteProps>();
   const queryClient = useQueryClient();
+  const insets = useSafeAreaInsets();
 
   // Move styles to useMemo to fix hooks order
   const styles = useMemo(
@@ -144,8 +148,52 @@ const FoodDetailScreen = (): React.ReactElement | null => {
           fontFamily: theme.typography.bodyLarge.fontFamily,
           color: theme.colors.text,
         },
+        // Custom header styles (2025 design)
+        screenHeader: {
+          paddingHorizontal: 16,
+          paddingBottom: 12,
+        },
+        headerRow: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: 12,
+        },
+        backButton: {
+          width: 44,
+          height: 44,
+          borderRadius: 16,
+          backgroundColor: isDark ? 'rgba(74, 144, 226, 0.15)' : 'rgba(59, 130, 246, 0.08)',
+          alignItems: 'center',
+          justifyContent: 'center',
+          borderWidth: 1.5,
+          borderColor: isDark ? 'rgba(74, 144, 226, 0.25)' : 'rgba(59, 130, 246, 0.15)',
+        },
+        headerTitles: {
+          flex: 1,
+        },
+        headerActions: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: 8,
+        },
+        // Enhanced nutrition cards
+        nutritionCard: {
+          borderRadius: 20,
+          padding: theme.spacing.lg,
+          backgroundColor: isDark ? 'rgba(20, 27, 45, 0.95)' : 'rgba(255, 255, 255, 0.98)',
+          borderWidth: 1,
+          borderColor: isDark ? 'rgba(74, 144, 226, 0.15)' : 'rgba(59, 130, 246, 0.08)',
+        },
+        macroCard: {
+          flex: 1,
+          padding: theme.spacing.md,
+          borderRadius: 16,
+          alignItems: 'center',
+          justifyContent: 'center',
+          minHeight: 80,
+        },
       }),
-    [theme],
+    [theme.mode], // Only depend on theme mode to prevent re-renders on form changes
   );
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -337,18 +385,37 @@ const FoodDetailScreen = (): React.ReactElement | null => {
 
   if (!detail) return null;
 
-  return (
-    <Screen>
-      <AppHeader
-        title="Chi tiết món ăn"
-        subtitle={detail.name}
-        action={
+  // Custom header component (matching RecipeSuggestionsScreen)
+  const renderHeader = () => (
+    <View style={[styles.screenHeader, { paddingTop: insets.top }]}>
+      <View style={styles.headerRow}>
+        <TouchableOpacity
+          onPress={() => navigation.goBack()}
+          style={styles.backButton}
+        >
+          <Ionicons name="chevron-back" size={24} color={theme.colors.text} />
+        </TouchableOpacity>
+        <View style={styles.headerTitles}>
+          <ThemedText variant="h3" weight="700" numberOfLines={1}>
+            🍽️ Chi tiết món ăn
+          </ThemedText>
+          <ThemedText variant="caption" color="textSecondary" numberOfLines={1}>
+            {detail.name}
+          </ThemedText>
+        </View>
+        <View style={styles.headerActions}>
           <FavoriteButton isFavorite={isFavorite} onToggle={toggleFavorite} size="md" />
-        }
-      />
+        </View>
+      </View>
+    </View>
+  );
+
+  return (
+    <Screen scroll={true}>
+      {renderHeader()}
 
       <Animated.View
-        entering={FadeIn.duration(theme.animation.normal)}
+        entering={FadeInDown.duration(theme.animation.normal)}
         style={styles.content}
       >
         {/* Hero Food Image */}
@@ -364,10 +431,16 @@ const FoodDetailScreen = (): React.ReactElement | null => {
           )}
         </View>
 
-        <AppCard>
-          <ThemedText variant="h2" style={{ marginBottom: theme.spacing.xs }}>
-            Thông tin dinh dưỡng
-          </ThemedText>
+        {/* Nutrition Info Card - 2025 Design */}
+        <View style={styles.nutritionCard}>
+          {/* Header with emoji */}
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: theme.spacing.md }}>
+            <ThemedText style={{ fontSize: 24 }}>📊</ThemedText>
+            <ThemedText variant="h3" weight="700">
+              Thông tin dinh dưỡng
+            </ThemedText>
+          </View>
+
           {detail.brand ? (
             <ThemedText
               variant="bodySmall"
@@ -378,93 +451,114 @@ const FoodDetailScreen = (): React.ReactElement | null => {
             </ThemedText>
           ) : null}
           {detail.description ? (
-            <ThemedText variant="bodySmall" color="textSecondary">
+            <ThemedText variant="bodySmall" color="textSecondary" style={{ marginBottom: theme.spacing.md }}>
               {detail.description}
             </ThemedText>
           ) : null}
 
-          <View style={[styles.infoRow, { marginTop: theme.spacing.lg }]}>
+          {/* Serving & Calories Row */}
+          <View style={[styles.infoRow, { marginTop: theme.spacing.sm }]}>
             <View
-              style={[styles.infoBox, { backgroundColor: theme.colors.primaryLight }]}
+              style={[
+                styles.infoBox,
+                {
+                  backgroundColor: isDark ? 'rgba(74, 144, 226, 0.12)' : 'rgba(59, 130, 246, 0.08)',
+                  borderWidth: 1,
+                  borderColor: isDark ? 'rgba(74, 144, 226, 0.25)' : 'rgba(59, 130, 246, 0.15)',
+                }
+              ]}
             >
               <ThemedText
                 variant="caption"
-                color="primary"
                 weight="600"
-                style={{ textTransform: 'uppercase' }}
+                style={{ textTransform: 'uppercase', color: isDark ? '#64B5F6' : '#3B82F6', fontSize: 10 }}
               >
-                Lượng tham chiếu
+                Khẩu phần
               </ThemedText>
-              <ThemedText variant="h4" color="primary">
+              <ThemedText variant="h4" style={{ color: isDark ? '#64B5F6' : '#3B82F6' }}>
                 {detail.servingSizeGram ? `${detail.servingSizeGram} g` : '100 g'}
               </ThemedText>
             </View>
             <View
-              style={[styles.infoBox, { backgroundColor: theme.colors.secondaryLight }]}
+              style={[
+                styles.infoBox,
+                {
+                  backgroundColor: isDark ? 'rgba(239, 68, 68, 0.12)' : 'rgba(239, 68, 68, 0.08)',
+                  borderWidth: 1,
+                  borderColor: isDark ? 'rgba(239, 68, 68, 0.25)' : 'rgba(239, 68, 68, 0.15)',
+                }
+              ]}
             >
               <ThemedText
                 variant="caption"
-                color="secondary"
                 weight="600"
-                style={{ textTransform: 'uppercase' }}
+                style={{ textTransform: 'uppercase', color: '#EF4444', fontSize: 10 }}
               >
                 Năng lượng
               </ThemedText>
-              <ThemedText variant="h4" color="secondary">
+              <ThemedText variant="h4" style={{ color: '#EF4444' }}>
                 {detail.perServingCalories ?? detail.calories ?? '--'} kcal
               </ThemedText>
             </View>
           </View>
 
+          {/* Macro Pills Row */}
           <View style={[styles.macroRow, { marginTop: theme.spacing.md }]}>
-            <View style={[styles.macroBox, { backgroundColor: theme.colors.background }]}>
+            <View style={[styles.macroCard, { backgroundColor: 'rgba(59, 130, 246, 0.12)', borderWidth: 1, borderColor: 'rgba(59, 130, 246, 0.2)' }]}>
               <ThemedText
                 variant="caption"
-                color="textSecondary"
                 weight="600"
-                style={{ textTransform: 'uppercase' }}
+                style={{ textTransform: 'uppercase', color: '#3B82F6', fontSize: 10 }}
               >
-                Protein
+                Đạm
               </ThemedText>
-              <ThemedText variant="h3">
+              <ThemedText variant="h4" style={{ color: '#3B82F6' }}>
                 {macroValue(detail.perServingProtein ?? detail.protein)}
               </ThemedText>
             </View>
-            <View style={[styles.macroBox, { backgroundColor: theme.colors.background }]}>
+            <View style={[styles.macroCard, { backgroundColor: 'rgba(251, 191, 36, 0.12)', borderWidth: 1, borderColor: 'rgba(251, 191, 36, 0.2)' }]}>
               <ThemedText
                 variant="caption"
-                color="textSecondary"
                 weight="600"
-                style={{ textTransform: 'uppercase' }}
+                style={{ textTransform: 'uppercase', color: '#D97706', fontSize: 10 }}
               >
-                Carb
+                Tinh bột
               </ThemedText>
-              <ThemedText variant="h3">
+              <ThemedText variant="h4" style={{ color: '#D97706' }}>
                 {macroValue(detail.perServingCarbs ?? detail.carbs)}
               </ThemedText>
             </View>
-            <View style={[styles.macroBox, { backgroundColor: theme.colors.background }]}>
+            <View style={[styles.macroCard, { backgroundColor: 'rgba(236, 72, 153, 0.12)', borderWidth: 1, borderColor: 'rgba(236, 72, 153, 0.2)' }]}>
               <ThemedText
                 variant="caption"
-                color="textSecondary"
                 weight="600"
-                style={{ textTransform: 'uppercase' }}
+                style={{ textTransform: 'uppercase', color: '#DB2777', fontSize: 10 }}
               >
-                Fat
+                Chất béo
               </ThemedText>
-              <ThemedText variant="h3">
+              <ThemedText variant="h4" style={{ color: '#DB2777' }}>
                 {macroValue(detail.perServingFat ?? detail.fat)}
               </ThemedText>
             </View>
           </View>
-        </AppCard>
+        </View>
       </Animated.View>
 
-      <Animated.View entering={FadeIn.duration(theme.animation.normal).delay(100)}>
-        <AppCard>
-          <ThemedText variant="h3" style={{ marginBottom: theme.spacing.lg }}>
-            Thêm vào nhật ký
-          </ThemedText>
+      <Animated.View
+        entering={FadeInDown.duration(theme.animation.normal).delay(100)}
+        style={{ paddingHorizontal: theme.spacing.lg, paddingBottom: 40 }}
+      >
+        <View style={[
+          styles.nutritionCard,
+          { marginBottom: theme.spacing.lg }
+        ]}>
+          {/* Header with emoji */}
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: theme.spacing.lg }}>
+            <ThemedText style={{ fontSize: 24 }}>📝</ThemedText>
+            <ThemedText variant="h3" weight="700">
+              Thêm vào nhật ký
+            </ThemedText>
+          </View>
 
           <Controller
             control={control}
@@ -485,117 +579,121 @@ const FoodDetailScreen = (): React.ReactElement | null => {
             )}
           />
 
-          <View style={{ marginTop: theme.spacing.md }}>
-            <ThemedText variant="bodySmall" weight="600">
-              Bữa ăn
+          {/* Meal Type Selection - Grid Layout */}
+          <View style={{ marginTop: theme.spacing.lg }}>
+            <ThemedText variant="bodySmall" weight="600" style={{ marginBottom: theme.spacing.sm }}>
+              Chọn bữa ăn
             </ThemedText>
-            <View style={[styles.mealRow, { marginTop: theme.spacing.sm }]}>
-              {MEAL_OPTIONS.map((option) => (
-                <Pressable
-                  key={option.value}
-                  accessibilityRole="button"
-                  accessibilityLabel={`Chọn bữa ăn ${option.label}`}
-                  accessibilityState={{ selected: mealTypeValue === option.value }}
-                  hitSlop={8}
-                  onPress={() => setValue('mealType', option.value)}
-                  style={[
-                    styles.mealChip,
-                    {
-                      backgroundColor:
-                        mealTypeValue === option.value
-                          ? theme.colors.primary
-                          : 'transparent',
-                      borderColor: theme.colors.primary,
-                    },
-                  ]}
-                >
-                  <ThemedText
-                    variant="button"
+            <View style={{
+              flexDirection: 'row',
+              flexWrap: 'wrap',
+              gap: 10,
+            }}>
+              {MEAL_OPTIONS.map((option) => {
+                const isSelected = mealTypeValue === option.value;
+                return (
+                  <Pressable
+                    key={option.value}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Chọn bữa ăn ${option.label}`}
+                    accessibilityState={{ selected: isSelected }}
+                    hitSlop={8}
+                    onPress={() => setValue('mealType', option.value)}
                     style={{
-                      color:
-                        mealTypeValue === option.value
-                          ? theme.colors.card
-                          : theme.colors.text,
+                      paddingVertical: 10,
+                      paddingHorizontal: 20,
+                      borderRadius: 12,
+                      borderWidth: 1.5,
+                      backgroundColor: isSelected
+                        ? theme.colors.primary
+                        : isDark ? 'rgba(74, 144, 226, 0.08)' : 'rgba(59, 130, 246, 0.05)',
+                      borderColor: isSelected
+                        ? theme.colors.primary
+                        : isDark ? 'rgba(74, 144, 226, 0.3)' : 'rgba(59, 130, 246, 0.2)',
                     }}
                   >
-                    {option.label}
-                  </ThemedText>
-                </Pressable>
-              ))}
+                    <ThemedText
+                      variant="button"
+                      weight={isSelected ? '700' : '500'}
+                      style={{ color: isSelected ? '#FFFFFF' : theme.colors.text }}
+                    >
+                      {option.label}
+                    </ThemedText>
+                  </Pressable>
+                );
+              })}
             </View>
             {errors.mealType && (
-              <ThemedText
-                variant="bodySmall"
-                color="danger"
-                style={{ marginTop: theme.spacing.xs }}
-              >
+              <ThemedText variant="bodySmall" color="danger" style={{ marginTop: theme.spacing.xs }}>
                 {errors.mealType.message}
               </ThemedText>
             )}
           </View>
 
-          <Controller
-            control={control}
-            name="note"
-            render={({ field: { onChange, onBlur, value } }) => (
-              <ThemedTextInput
-                label="Ghi chú"
-                value={value}
-                onChangeText={onChange}
-                onBlur={onBlur}
-                placeholder="VD: giảm bớt nước sốt"
-                multiline
-                numberOfLines={2}
-                error={!!errors.note}
-                helperText={errors.note?.message}
-              />
-            )}
-          />
+          {/* Note Field */}
+          <View style={{ marginTop: theme.spacing.lg }}>
+            <Controller
+              control={control}
+              name="note"
+              render={({ field: { onChange, onBlur, value } }) => (
+                <ThemedTextInput
+                  label="Ghi chú (tùy chọn)"
+                  value={value}
+                  onChangeText={onChange}
+                  onBlur={onBlur}
+                  placeholder="VD: giảm bớt nước sốt"
+                  multiline
+                  numberOfLines={2}
+                  error={!!errors.note}
+                  helperText={errors.note?.message}
+                />
+              )}
+            />
+          </View>
 
+          {/* Compact Preview Box */}
           <View
-            style={[
-              styles.previewBox,
-              { backgroundColor: theme.colors.primaryLight, marginTop: theme.spacing.lg },
-            ]}
+            style={{
+              backgroundColor: isDark ? 'rgba(74, 144, 226, 0.12)' : 'rgba(59, 130, 246, 0.08)',
+              marginTop: theme.spacing.lg,
+              borderWidth: 1,
+              borderColor: isDark ? 'rgba(74, 144, 226, 0.2)' : 'rgba(59, 130, 246, 0.12)',
+              borderRadius: 16,
+              padding: theme.spacing.md,
+            }}
           >
-            <ThemedText
-              variant="body"
-              weight="600"
-              color="primary"
-              style={{ marginBottom: theme.spacing.sm }}
-            >
-              Tổng dinh dưỡng cho {gramsValue || '--'} g:
-            </ThemedText>
-            <ThemedText
-              variant="h3"
-              color="primary"
-              style={{ marginBottom: theme.spacing.xs }}
-            >
-              {calorieValue}
-            </ThemedText>
-            <View style={{ gap: theme.spacing.xs }}>
-              <ThemedText variant="body" color="primary">
-                Protein: {macroValue(detail.perServingProtein ?? detail.protein)}
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+              <ThemedText variant="bodySmall" weight="600" color="primary">
+                Tổng ({gramsValue || '--'}g)
               </ThemedText>
-              <ThemedText variant="body" color="primary">
-                Carb: {macroValue(detail.perServingCarbs ?? detail.carbs)}
+              <ThemedText variant="h4" weight="700" color="primary">
+                {calorieValue}
               </ThemedText>
-              <ThemedText variant="body" color="primary">
-                Fat: {macroValue(detail.perServingFat ?? detail.fat)}
+            </View>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+              <ThemedText variant="caption" style={{ color: '#3B82F6' }}>
+                Đạm: {macroValue(detail.perServingProtein ?? detail.protein)}
+              </ThemedText>
+              <ThemedText variant="caption" style={{ color: '#D97706' }}>
+                Tinh bột: {macroValue(detail.perServingCarbs ?? detail.carbs)}
+              </ThemedText>
+              <ThemedText variant="caption" style={{ color: '#DB2777' }}>
+                Béo: {macroValue(detail.perServingFat ?? detail.fat)}
               </ThemedText>
             </View>
           </View>
 
-          <View style={{ marginTop: theme.spacing.xl }}>
+          {/* Submit Button */}
+          <View style={{ marginTop: theme.spacing.lg }}>
             <Button
               variant="primary"
               loading={isSubmitting}
               disabled={isSubmitting}
               onPress={handleSubmit(submit)}
-              title={isSubmitting ? 'Đang thêm...' : 'Thêm vào nhật ký'}
+              title={isSubmitting ? 'Đang thêm...' : '✅ Thêm vào nhật ký'}
             />
           </View>
-        </AppCard>
+        </View>
       </Animated.View>
     </Screen>
   );

@@ -111,12 +111,14 @@ const RecipeSuggestionsScreen = (): React.ReactElement => {
       gap: 12,
     },
     backButton: {
-      width: 40,
-      height: 40,
-      borderRadius: 20,
-      backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)',
+      width: 44,
+      height: 44,
+      borderRadius: 16,
+      backgroundColor: isDark ? 'rgba(74, 144, 226, 0.15)' : 'rgba(59, 130, 246, 0.08)',
       alignItems: 'center',
       justifyContent: 'center',
+      borderWidth: 1.5,
+      borderColor: isDark ? 'rgba(74, 144, 226, 0.25)' : 'rgba(59, 130, 246, 0.15)',
     },
     headerTitles: {
       flex: 1,
