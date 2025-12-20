@@ -247,7 +247,7 @@ const MealDiaryScreen = (): React.ReactElement => {
       return (
         <Pressable
           onPress={() => handleDateSelect(date)}
-          style={{ marginRight: 10 }}
+          style={{ width: (SCREEN_WIDTH - 32) / 5 }}
           accessibilityRole="button"
           accessibilityLabel={`${dayName} ngày ${dayNum}${isToday ? ', hôm nay' : ''}${isSelected ? ', đang chọn' : ''}`}
           accessibilityState={{ selected: isSelected }}
@@ -441,7 +441,6 @@ const MealDiaryScreen = (): React.ReactElement => {
   const styles = StyleSheet.create({
     container: {
       flex: 1,
-      backgroundColor: theme.colors.background,
     },
     screenHeader: {
       paddingHorizontal: 16,
@@ -453,12 +452,14 @@ const MealDiaryScreen = (): React.ReactElement => {
       justifyContent: 'space-between',
     },
     backButton: {
-      width: 40,
-      height: 40,
-      borderRadius: 20,
-      backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)',
+      width: 44,
+      height: 44,
+      borderRadius: 16,
+      backgroundColor: isDark ? 'rgba(74, 144, 226, 0.15)' : 'rgba(59, 130, 246, 0.08)',
       alignItems: 'center',
       justifyContent: 'center',
+      borderWidth: 1.5,
+      borderColor: isDark ? 'rgba(74, 144, 226, 0.25)' : 'rgba(59, 130, 246, 0.15)',
     },
     headerCenter: {
       flex: 1,
@@ -521,14 +522,13 @@ const MealDiaryScreen = (): React.ReactElement => {
       zIndex: 10,
     },
     dateChip: {
-      width: 56,
-      height: 76,
-      borderRadius: 16,
+      width: '90%',
+      height: 72,
+      borderRadius: 14,
       alignItems: 'center',
-      justifyContent: 'flex-start',
-      paddingTop: 10,
-      paddingHorizontal: 4,
-      backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.03)',
+      justifyContent: 'center',
+      paddingVertical: 8,
+      backgroundColor: isDark ? 'rgba(74, 144, 226, 0.08)' : 'rgba(59, 130, 246, 0.05)',
     },
     dateChipSelected: {
       backgroundColor: theme.colors.primary,
@@ -699,12 +699,11 @@ const MealDiaryScreen = (): React.ReactElement => {
             >
               <Ionicons name="chevron-back" size={24} color={theme.colors.text} />
             </Pressable>
-            <View style={styles.headerCenter}>
+            <View style={{ flex: 1, marginLeft: 12 }}>
               <ThemedText variant="h3" weight="700">
                 📔 Nhật ký bữa ăn
               </ThemedText>
             </View>
-            <View style={{ width: 40 }} />
           </View>
         </View>
 
@@ -770,11 +769,13 @@ const MealDiaryScreen = (): React.ReactElement => {
             renderItem={renderDateItem}
             keyExtractor={(item) => item.toISOString()}
             horizontal
-            showsHorizontalScrollIndicator={true}
+            showsHorizontalScrollIndicator={false}
             contentContainerStyle={{ paddingHorizontal: 16 }}
+            snapToInterval={(SCREEN_WIDTH - 32) / 5}
+            decelerationRate="fast"
             getItemLayout={(_, index) => ({
-              length: 64,
-              offset: 64 * index,
+              length: (SCREEN_WIDTH - 32) / 5,
+              offset: ((SCREEN_WIDTH - 32) / 5) * index,
               index,
             })}
             onScrollToIndexFailed={(info) => {
