@@ -9,7 +9,7 @@ export type RootStackParamList = {
   ForgotPassword: undefined;
   Onboarding: undefined;
   AppTabs: undefined;
-  FoodSearch: undefined;
+  FoodSearch: { initialTab?: 'search' | 'favorites' } | undefined;
   FoodDetail: { foodId: string; source?: 'catalog' | 'user' };
   CustomDish: undefined;
   AiCamera: undefined;

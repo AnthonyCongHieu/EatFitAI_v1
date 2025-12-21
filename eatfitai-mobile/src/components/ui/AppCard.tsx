@@ -110,12 +110,12 @@ export const AppCard = ({
           borderColor: isDark ? 'rgba(16, 185, 129, 0.3)' : 'rgba(16, 185, 129, 0.2)',
         }
         : {
-          // Default elevated - glassmorphism
+          // Default elevated - glassmorphism with blue tint
           backgroundColor: isDark
-            ? 'rgba(25, 30, 28, 0.85)'
-            : 'rgba(255, 255, 255, 0.9)',
+            ? 'rgba(74, 144, 226, 0.15)'
+            : 'rgba(59, 130, 246, 0.08)',
           borderWidth: 1,
-          borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.05)',
+          borderColor: isDark ? 'rgba(74, 144, 226, 0.2)' : 'rgba(59, 130, 246, 0.1)',
         };
 
   const cardStyle: ViewStyle = {

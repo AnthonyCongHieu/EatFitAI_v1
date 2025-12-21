@@ -48,11 +48,11 @@ const FavoriteCard = ({
         style={[
           styles.card,
           {
-            // Glassmorphism effect
+            // Blue tint glassmorphism effect
             backgroundColor: isDark
-              ? 'rgba(30, 35, 33, 0.75)'
-              : 'rgba(255, 255, 255, 0.85)',
-            borderColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.08)',
+              ? 'rgba(74, 144, 226, 0.12)'
+              : 'rgba(59, 130, 246, 0.06)',
+            borderColor: isDark ? 'rgba(74, 144, 226, 0.2)' : 'rgba(59, 130, 246, 0.1)',
             // Shadow for depth
             shadowColor: '#000',
             shadowOffset: { width: 0, height: 4 },
@@ -139,7 +139,7 @@ const FavoritesList: React.FC<FavoritesListProps> = ({ onItemPress, maxItems = 1
   const displayedFavorites = favorites.slice(0, maxItems);
 
   return (
-    <AppCard title="❤️ Yêu thích của bạn" padding="sm">
+    <AppCard title="❤️ Món ăn yêu thích của bạn" padding="sm">
       {isLoading ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator color={theme.colors.primary} size="small" />

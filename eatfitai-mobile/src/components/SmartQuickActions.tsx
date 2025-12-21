@@ -92,8 +92,12 @@ const QuickActionButton = ({
             animatedStyle,
             styles.actionButton,
             {
-              backgroundColor: isPrimary ? theme.colors.primary : theme.colors.card,
-              borderColor: isPrimary ? theme.colors.primary : theme.colors.border,
+              backgroundColor: isPrimary
+                ? theme.colors.primary
+                : theme.mode === 'dark' ? 'rgba(74, 144, 226, 0.12)' : 'rgba(59, 130, 246, 0.06)',
+              borderColor: isPrimary
+                ? theme.colors.primary
+                : theme.mode === 'dark' ? 'rgba(74, 144, 226, 0.2)' : 'rgba(59, 130, 246, 0.1)',
               ...theme.shadows.sm,
             },
           ]}
@@ -194,8 +198,8 @@ const SmartQuickActions: React.FC<SmartQuickActionsProps> = ({
             style={[
               styles.secondaryButton,
               {
-                backgroundColor: theme.colors.background,
-                borderColor: theme.colors.border,
+                backgroundColor: theme.mode === 'dark' ? 'rgba(74, 144, 226, 0.12)' : 'rgba(59, 130, 246, 0.06)',
+                borderColor: theme.mode === 'dark' ? 'rgba(74, 144, 226, 0.2)' : 'rgba(59, 130, 246, 0.1)',
               },
             ]}
             accessibilityRole="button"

@@ -117,7 +117,7 @@ export const SmartAddSheet: React.FC<SmartAddSheetProps> = ({ visible, onClose }
             {/* Yêu thích */}
             <Pressable
               style={[styles.option, { backgroundColor: theme.colors.warning + '15' }]}
-              onPress={() => handleOption('FoodSearch' as any)}
+              onPress={() => handleOption('FoodSearch', { initialTab: 'favorites' })}
             >
               <View style={[styles.iconBox, { backgroundColor: theme.colors.warning }]}>
                 <Icon name="heart" size="lg" color="card" />
@@ -126,7 +126,7 @@ export const SmartAddSheet: React.FC<SmartAddSheetProps> = ({ visible, onClose }
                 Yêu thích
               </ThemedText>
               <ThemedText variant="caption" color="textSecondary">
-                Món đã lưu
+                Món yêu thích
               </ThemedText>
             </Pressable>
 
@@ -139,10 +139,10 @@ export const SmartAddSheet: React.FC<SmartAddSheetProps> = ({ visible, onClose }
                 <Icon name="flash" size="lg" color="card" />
               </View>
               <ThemedText variant="body" weight="600">
-                Nhập thủ công
+                Tự tạo
               </ThemedText>
               <ThemedText variant="caption" color="textSecondary">
-                Calo tùy chỉnh
+                Món của riêng bạn
               </ThemedText>
             </Pressable>
 
@@ -155,10 +155,10 @@ export const SmartAddSheet: React.FC<SmartAddSheetProps> = ({ visible, onClose }
                 <Icon name="camera" size="lg" color="card" />
               </View>
               <ThemedText variant="body" weight="600">
-                AI Scan 🤖
+                Nhận diện
               </ThemedText>
               <ThemedText variant="caption" color="textSecondary">
-                Nhận diện nguyên liệu
+                Gợi ý công thức
               </ThemedText>
             </Pressable>
           </View>

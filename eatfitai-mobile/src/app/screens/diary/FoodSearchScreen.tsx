@@ -332,10 +332,17 @@ const FoodSearchScreen = (): React.ReactElement => {
     elevation: searchGlow.value * 5,
   }));
 
-  // Load favorites on mount
+  // Read initialTab from route params
+  const route = navigation.getState().routes.find(r => r.name === 'FoodSearch');
+  const initialTab = (route?.params as any)?.initialTab;
+
+  // Load favorites on mount and handle initialTab
   useEffect(() => {
-    loadFavorites();
-  }, []);
+    loadFavorites(initialTab === 'favorites');
+    if (initialTab === 'favorites') {
+      setActiveTab('favorites');
+    }
+  }, [initialTab]);
 
   // Load favorites - setAsList dùng để xác định có nên update items list hay không
   const loadFavorites = async (setAsList = false) => {

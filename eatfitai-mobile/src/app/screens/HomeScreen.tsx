@@ -41,7 +41,7 @@ import { SectionHeader } from '../../components/ui/SectionHeader';
 import { AnimatedEmptyState } from '../../components/ui/AnimatedEmptyState';
 
 import { MetricCard } from '../../components/ui/MetricCard';
-import { InsightsCard } from '../../components/ui/InsightsCard';
+// InsightsCard removed per user request
 import CircularProgress from '../../components/ui/CircularProgress';
 import CalorieRing from '../../components/ui/CalorieRing';
 import { FoodEntryCard } from '../../components/ui/FoodEntryCard';
@@ -427,8 +427,7 @@ const HomeScreen = (): React.ReactElement => {
           </Animated.View>
         )}
 
-        {/* AI Insights */}
-        <InsightsCard />
+        {/* AI Insights - removed */}
 
         {/* Smart Quick Actions - based on time of day */}
         <Animated.View entering={FadeInUp.delay(200).springify()}>

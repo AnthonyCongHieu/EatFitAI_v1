@@ -48,8 +48,8 @@ export const StatsHeroCard: React.FC<StatsHeroCardProps> = ({
             paddingVertical: theme.spacing.xl,
             paddingHorizontal: theme.spacing.lg,
             backgroundColor: isDark
-                ? 'rgba(74, 144, 226, 0.08)'
-                : 'rgba(59, 130, 246, 0.05)',
+                ? 'rgba(74, 144, 226, 0.15)'
+                : 'rgba(59, 130, 246, 0.08)',
             borderRadius: theme.radius.xl,
             borderWidth: 1,
             borderColor: isDark ? 'rgba(74, 144, 226, 0.2)' : 'rgba(59, 130, 246, 0.1)',

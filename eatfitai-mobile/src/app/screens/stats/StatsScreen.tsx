@@ -199,7 +199,7 @@ const StatsScreen = (): React.ReactElement => {
         summaryCard: {
             flex: 1,
             padding: theme.spacing.md,
-            backgroundColor: isDark ? 'rgba(74, 144, 226, 0.1)' : 'rgba(59, 130, 246, 0.06)',
+            backgroundColor: isDark ? 'rgba(74, 144, 226, 0.15)' : 'rgba(59, 130, 246, 0.08)',
             borderRadius: theme.radius.lg,
             alignItems: 'center',
             borderWidth: 1,
