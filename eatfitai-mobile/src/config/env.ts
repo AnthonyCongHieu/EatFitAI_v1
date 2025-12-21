@@ -162,7 +162,7 @@ export const API_BASE_URL: string | undefined = (() => {
     } else {
       // Fallback cho physical device khi không detect được IP
       // ⚠️ Đổi IP này khi đổi WiFi hoặc router!
-      const FALLBACK_IP = '192.168.100.126';
+      const FALLBACK_IP = '172.16.3.206';
       console.warn(`[EatFitAI] Auto-detect failed, using fallback IP: ${FALLBACK_IP}`);
       host = FALLBACK_IP;
     }

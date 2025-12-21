@@ -14,10 +14,23 @@ import { AppCard } from '../ui/AppCard';
 import { useAppTheme } from '../../theme/ThemeProvider';
 import type { ParsedVoiceCommand, VoiceIntent } from '../../services/voiceService';
 
+interface ExecutedData {
+    type?: string;
+    details?: string;
+    totalCalories?: number;
+    targetCalories?: number;
+    remaining?: number;
+    currentWeight?: number;
+    newWeight?: number;
+    requireConfirm?: boolean;
+}
+
 interface VoiceResultCardProps {
     command: ParsedVoiceCommand;
     onExecute: () => void;
+    onConfirmWeight?: (weight: number) => void;
     isExecuting?: boolean;
+    executedData?: ExecutedData | null;
 }
 
 const INTENT_CONFIG: Record<VoiceIntent, { icon: string; emoji: string; label: string; color: string }> = {
@@ -63,13 +76,18 @@ const MEAL_LABELS: Record<string, string> = {
 export const VoiceResultCard = ({
     command,
     onExecute,
+    onConfirmWeight,
     isExecuting = false,
+    executedData,
 }: VoiceResultCardProps): React.ReactElement => {
     const { theme } = useAppTheme();
     const isDark = theme.mode === 'dark';
 
     // Fallback nếu intent không match với INTENT_CONFIG
     const config = INTENT_CONFIG[command.intent] || INTENT_CONFIG.UNKNOWN;
+
+    // Check nếu đây là LOG_WEIGHT cần confirm
+    const needsWeightConfirm = executedData?.type === 'LOG_WEIGHT_CONFIRM' && executedData?.requireConfirm;
 
     const styles = StyleSheet.create({
         card: {
@@ -127,13 +145,28 @@ export const VoiceResultCard = ({
         const { entities } = command;
         const rows: { label: string; value: string }[] = [];
 
-        // Hiển thị thông minh: gộp số lượng + đơn vị + món ăn
-        if (command.intent === 'ADD_FOOD' && entities.foodName) {
-            const qty = entities.quantity || 1;
-            const unit = entities.unit || '';
-            // Ví dụ: "2 quả trứng" hoặc "1 bát phở"
-            const foodDisplay = unit ? `${qty} ${unit} ${entities.foodName}` : `${qty} ${entities.foodName}`;
-            rows.push({ label: 'Món ăn', value: foodDisplay });
+        // ADD_FOOD: Kiểm tra nếu có nhiều món (foods array)
+        if (command.intent === 'ADD_FOOD') {
+            if (entities.foods && entities.foods.length > 0) {
+                // Nhiều món - hiển thị từng món
+                entities.foods.forEach((food, index) => {
+                    const qty = food.quantity || 1;
+                    const unit = food.unit || '';
+                    const weight = food.weight ? `${food.weight}g` : '';
+                    const display = weight
+                        ? `${weight} ${food.foodName || ''}`.trim()
+                        : unit
+                            ? `${qty} ${unit} ${food.foodName || ''}`.trim()
+                            : `${qty} ${food.foodName || ''}`.trim();
+                    rows.push({ label: `Món ${index + 1}`, value: display });
+                });
+            } else if (entities.foodName) {
+                // 1 món - hiển thị như cũ
+                const qty = entities.quantity || 1;
+                const unit = entities.unit || '';
+                const foodDisplay = unit ? `${qty} ${unit} ${entities.foodName}` : `${qty} ${entities.foodName}`;
+                rows.push({ label: 'Món ăn', value: foodDisplay });
+            }
         } else if (entities.foodName) {
             rows.push({ label: 'Món ăn', value: entities.foodName });
         }
@@ -143,14 +176,21 @@ export const VoiceResultCard = ({
             rows.push({ label: 'Bữa ăn', value: MEAL_LABELS[entities.mealType] || entities.mealType });
         }
 
-        // Khối lượng (gram) - chỉ hiện nếu có và là ADD_FOOD
-        if (entities.weight && command.intent === 'ADD_FOOD') {
+        // Khối lượng (gram) - chỉ hiện nếu có, là ADD_FOOD 1 món, và không có foods array
+        if (entities.weight && command.intent === 'ADD_FOOD' && !entities.foods) {
             rows.push({ label: 'Khối lượng', value: `${entities.weight}g` });
         }
 
-        // LOG_WEIGHT: hiển thị cân nặng kg
-        if (command.intent === 'LOG_WEIGHT' && entities.weight) {
-            rows.push({ label: 'Cân nặng', value: `${entities.weight} kg` });
+        // LOG_WEIGHT: hiển thị so sánh cân nặng từ backend
+        if (command.intent === 'LOG_WEIGHT') {
+            if (executedData?.currentWeight && executedData?.newWeight) {
+                // Đã có data từ backend - hiển thị so sánh
+                rows.push({ label: 'Cân hiện tại', value: `${executedData.currentWeight} kg` });
+                rows.push({ label: 'Cân mới', value: `${executedData.newWeight} kg` });
+            } else if (entities.weight) {
+                // Chưa execute - hiển thị từ parsed entities
+                rows.push({ label: 'Cân nặng', value: `${entities.weight} kg` });
+            }
         }
 
         // Ngày
@@ -158,6 +198,32 @@ export const VoiceResultCard = ({
             const dateObj = new Date(entities.date);
             const isToday = dateObj.toDateString() === new Date().toDateString();
             rows.push({ label: 'Ngày', value: isToday ? 'Hôm nay' : entities.date });
+        }
+
+        // ASK_CALORIES: hiển thị data thực từ backend
+        if (command.intent === 'ASK_CALORIES') {
+            if (executedData?.totalCalories !== undefined) {
+                // Đã có data từ backend
+                rows.push({
+                    label: 'Đã tiêu thụ',
+                    value: `${Math.round(executedData.totalCalories)} / ${Math.round(executedData.targetCalories || 0)} kcal`
+                });
+                if (executedData.remaining !== undefined) {
+                    const remaining = Math.round(executedData.remaining);
+                    rows.push({
+                        label: remaining >= 0 ? 'Còn lại' : 'Vượt quá',
+                        value: `${Math.abs(remaining)} kcal`
+                    });
+                }
+            } else {
+                // Chưa execute - hiển thị hướng dẫn
+                rows.push({ label: 'Thao tác', value: 'Nhấn xác nhận để xem calories' });
+            }
+        }
+
+        // ASK_NUTRITION: hiển thị thông báo  
+        if (command.intent === 'ASK_NUTRITION') {
+            rows.push({ label: 'Thông tin', value: 'Sẽ hiển thị thông tin dinh dưỡng' });
         }
 
         if (rows.length === 0) return null;
@@ -206,21 +272,54 @@ export const VoiceResultCard = ({
                 {/* Entities */}
                 {renderEntities()}
 
-                {/* Execute Button */}
+                {/* Execute Button - Logic phụ thuộc vào loại command */}
                 {command.intent !== 'UNKNOWN' && (
-                    <Button
-                        title={isExecuting ? 'Đang thực hiện...' : '✔️ Xác nhận thực hiện'}
-                        variant="primary"
-                        onPress={onExecute}
-                        loading={isExecuting}
-                        disabled={isExecuting}
-                        fullWidth
-                        icon="checkmark-circle"
-                        style={{
-                            marginTop: theme.spacing.md,
-                            minHeight: 52,
-                        }}
-                    />
+                    <>
+                        {/* ASK_CALORIES: Không cần button vì đã auto-execute */}
+                        {command.intent === 'ASK_CALORIES' && executedData?.totalCalories !== undefined && (
+                            <ThemedText
+                                variant="caption"
+                                color="success"
+                                style={{ textAlign: 'center', marginTop: theme.spacing.md }}
+                            >
+                                ✅ Đã lấy thông tin thành công
+                            </ThemedText>
+                        )}
+
+                        {/* LOG_WEIGHT cần confirm - hiện button xác nhận lưu */}
+                        {needsWeightConfirm && executedData?.newWeight && onConfirmWeight && (
+                            <Button
+                                title={isExecuting ? 'Đang lưu...' : `✔️ Xác nhận thay đổi: ${executedData.newWeight} kg`}
+                                variant="primary"
+                                onPress={() => onConfirmWeight(executedData.newWeight!)}
+                                loading={isExecuting}
+                                disabled={isExecuting}
+                                fullWidth
+                                icon="checkmark-circle"
+                                style={{
+                                    marginTop: theme.spacing.md,
+                                    minHeight: 52,
+                                }}
+                            />
+                        )}
+
+                        {/* ADD_FOOD và các intent khác: Button execute thông thường */}
+                        {command.intent !== 'ASK_CALORIES' && command.intent !== 'LOG_WEIGHT' && (
+                            <Button
+                                title={isExecuting ? 'Đang thực hiện...' : '✔️ Xác nhận thực hiện'}
+                                variant="primary"
+                                onPress={onExecute}
+                                loading={isExecuting}
+                                disabled={isExecuting}
+                                fullWidth
+                                icon="checkmark-circle"
+                                style={{
+                                    marginTop: theme.spacing.md,
+                                    minHeight: 52,
+                                }}
+                            />
+                        )}
+                    </>
                 )}
             </AppCard>
         </Animated.View>

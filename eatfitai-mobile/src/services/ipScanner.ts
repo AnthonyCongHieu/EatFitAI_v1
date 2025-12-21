@@ -9,16 +9,21 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const PORT = 5247;
 const CACHE_KEY = '@eatfitai_api_url';
-const DISCOVERY_TIMEOUT = 500; // ms cho mỗi IP
-const VERIFY_TIMEOUT = 1500; // ms cho verify cached IP
+const DISCOVERY_TIMEOUT = 1500; // ms cho mỗi IP (tăng lên để mạng chậm vẫn tìm được)
+const VERIFY_TIMEOUT = 2000; // ms cho verify cached IP
 
 // Các dải IP phổ biến trong mạng LAN gia đình/văn phòng
 const COMMON_SUBNETS = [
+    '10.68.11',    // Mạng hiện tại (ưu tiên)
+    '172.16.3',    // Mạng công ty/trường học (Class B private)
     '192.168.100', // Viettel, FPT modem thường dùng
     '192.168.1',   // Router phổ biến
     '192.168.0',   // TP-Link, D-Link
     '10.0.0',      // Một số mạng doanh nghiệp
     '192.168.2',   // Backup subnet
+    '172.16.0',    // Class B private range
+    '172.16.1',    // Class B private range
+    '172.16.2',    // Class B private range
 ];
 
 const SCAN_COOLDOWN_MS = 120000; // 2 phút cooldown giữa các lần scan toàn bộ
@@ -54,7 +59,10 @@ const tryIp = async (ip: string): Promise<boolean> => {
         const res = await fetchWithTimeout(`http://${ip}:${PORT}/discovery`, DISCOVERY_TIMEOUT);
         if (res.ok) {
             const data = await res.json();
-            return data.appId === 'eatfitai';
+            if (data.appId === 'eatfitai') {
+                console.log(`[IPScanner] ✅ Found backend at ${ip}:${PORT}`);
+                return true;
+            }
         }
     } catch {
         // IP không có server hoặc không phải EatFitAI - bỏ qua

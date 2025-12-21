@@ -23,6 +23,7 @@ namespace EatFitAI.API.Controllers
         private readonly IFoodService _foodService;
         private readonly IMealDiaryService _mealDiaryService;
         private readonly IUserService _userService;
+        private readonly IAnalyticsService _analyticsService;
         private readonly ILogger<VoiceController> _logger;
 
         public VoiceController(
@@ -30,12 +31,14 @@ namespace EatFitAI.API.Controllers
             IFoodService foodService,
             IMealDiaryService mealDiaryService,
             IUserService userService,
+            IAnalyticsService analyticsService,
             ILogger<VoiceController> logger)
         {
             _voiceService = voiceService;
             _foodService = foodService;
             _mealDiaryService = mealDiaryService;
             _userService = userService;
+            _analyticsService = analyticsService;
             _logger = logger;
         }
 
@@ -132,28 +135,37 @@ namespace EatFitAI.API.Controllers
                         break;
 
                     case VoiceIntent.LOG_WEIGHT:
-                        // Ghi cân nặng thực sự vào database
+                        // Lấy cân nặng hiện tại và trả về để FE confirm
                         if (command.Entities.Weight.HasValue && command.Entities.Weight > 0)
                         {
                             try
                             {
-                                var bodyMetric = new EatFitAI.API.DTOs.User.BodyMetricDto
-                                {
-                                    WeightKg = command.Entities.Weight.Value,
-                                    MeasuredDate = command.Entities.Date ?? DateTime.Now
-                                };
-                                await _userService.RecordBodyMetricsAsync(userId, bodyMetric);
+                                // Lấy cân nặng hiện tại của user
+                                var userProfile = await _userService.GetUserProfileAsync(userId);
+                                var currentWeight = userProfile?.CurrentWeightKg;
+                                var newWeight = command.Entities.Weight.Value;
+                                
+                                // Trả về data để FE hiển thị confirm, chưa lưu
                                 executedAction = new ExecutedAction
                                 {
-                                    Type = "LOG_WEIGHT",
-                                    Details = $"Đã ghi cân nặng {command.Entities.Weight} kg vào hệ thống"
+                                    Type = "LOG_WEIGHT_CONFIRM",
+                                    Details = currentWeight.HasValue 
+                                        ? $"Cân hiện tại: {currentWeight}kg. Cập nhật thành {newWeight}kg?"
+                                        : $"Ghi cân nặng mới: {newWeight}kg?",
+                                    Data = new Dictionary<string, object>
+                                    {
+                                        ["currentWeight"] = currentWeight ?? 0,
+                                        ["newWeight"] = newWeight,
+                                        ["requireConfirm"] = true
+                                    }
                                 };
-                                _logger.LogInformation("Logged weight {Weight}kg for user {UserId}", command.Entities.Weight, userId);
+                                _logger.LogInformation("LOG_WEIGHT confirm: current={Current}, new={New} for user {UserId}", 
+                                    currentWeight, newWeight, userId);
                             }
                             catch (Exception ex)
                             {
-                                _logger.LogError(ex, "Failed to log weight");
-                                error = "Không thể ghi cân nặng. Vui lòng thử lại.";
+                                _logger.LogError(ex, "Failed to get current weight");
+                                error = "Không thể lấy thông tin cân nặng. Vui lòng thử lại.";
                             }
                         }
                         else
@@ -163,19 +175,27 @@ namespace EatFitAI.API.Controllers
                         break;
 
                     case VoiceIntent.ASK_CALORIES:
-                        // Query MealDiary để tính tổng calories hôm nay
+                        // Query DaySummary để lấy cả calories và target
                         try
                         {
                             var today = command.Entities.Date ?? DateTime.Today;
-                            var mealDiaries = await _mealDiaryService.GetUserMealDiariesAsync(userId, today);
-                            var totalCalories = mealDiaries?.Sum(m => m.Calories) ?? 0;
+                            var daySummary = await _analyticsService.GetDaySummaryWithMealsAsync(userId, today);
+                            var totalCalories = daySummary.TotalCalories;
+                            var targetCalories = daySummary.TargetCalories ?? 2000;
                             
                             executedAction = new ExecutedAction
                             {
                                 Type = "ASK_CALORIES",
-                                Details = $"Hôm nay bạn đã tiêu thụ {totalCalories:N0} kcal"
+                                Details = $"Hôm nay bạn đã tiêu thụ {totalCalories:N0} / {targetCalories:N0} kcal",
+                                Data = new Dictionary<string, object>
+                                {
+                                    ["totalCalories"] = totalCalories,
+                                    ["targetCalories"] = targetCalories,
+                                    ["remaining"] = targetCalories - totalCalories,
+                                    ["date"] = today.ToString("yyyy-MM-dd")
+                                }
                             };
-                            _logger.LogInformation("User {UserId} asked calories: {Total}kcal", userId, totalCalories);
+                            _logger.LogInformation("User {UserId} asked calories: {Total}/{Target}kcal", userId, totalCalories, targetCalories);
                         }
                         catch (Exception ex)
                         {
@@ -201,6 +221,51 @@ namespace EatFitAI.API.Controllers
             {
                 _logger.LogError(ex, "Error executing voice command");
                 return StatusCode(500, new VoiceProcessResponse { Success = false, Error = "Lỗi thực thi lệnh giọng nói" });
+            }
+        }
+
+        /// <summary>
+        /// Confirm and save weight after user confirmation
+        /// </summary>
+        [HttpPost("confirm-weight")]
+        public async Task<ActionResult<VoiceProcessResponse>> ConfirmWeight([FromBody] ConfirmWeightRequest request)
+        {
+            var userId = GetUserId();
+            if (userId == Guid.Empty)
+            {
+                return Unauthorized(new VoiceProcessResponse { Success = false, Error = "Unauthorized" });
+            }
+
+            try
+            {
+                var bodyMetric = new EatFitAI.API.DTOs.User.BodyMetricDto
+                {
+                    WeightKg = request.NewWeight,
+                    MeasuredDate = DateTime.Now
+                };
+                await _userService.RecordBodyMetricsAsync(userId, bodyMetric);
+                
+                _logger.LogInformation("Confirmed weight {Weight}kg for user {UserId}", request.NewWeight, userId);
+                
+                return Ok(new VoiceProcessResponse
+                {
+                    Success = true,
+                    ExecutedAction = new ExecutedAction
+                    {
+                        Type = "LOG_WEIGHT",
+                        Details = $"Đã cập nhật cân nặng: {request.NewWeight} kg",
+                        Data = new Dictionary<string, object>
+                        {
+                            ["savedWeight"] = request.NewWeight,
+                            ["savedAt"] = DateTime.Now.ToString("yyyy-MM-dd HH:mm")
+                        }
+                    }
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error confirming weight");
+                return StatusCode(500, new VoiceProcessResponse { Success = false, Error = "Không thể lưu cân nặng" });
             }
         }
 

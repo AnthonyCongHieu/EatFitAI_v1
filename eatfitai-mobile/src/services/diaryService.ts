@@ -121,13 +121,19 @@ const normalizeSummary = (data: any): DaySummary => ({
   meals: Array.isArray(data?.meals) ? data.meals.map(normalizeMeal) : [],
 });
 
-const normalizeWeekSummary = (data: any): WeekSummary => ({
-  totalCalories: toNumberOrNull(data?.totalCalories) ?? 0,
-  totalProtein: toNumberOrNull(data?.totalProtein) ?? 0,
-  totalCarbs: toNumberOrNull(data?.totalCarbs) ?? 0,
-  totalFat: toNumberOrNull(data?.totalFat) ?? 0,
-  dailyCalories: data?.dailyCalories ?? {},
-});
+const normalizeWeekSummary = (data: any): WeekSummary => {
+  // Log để debug
+  console.log('[diaryService] Raw week summary:', JSON.stringify(data));
+
+  return {
+    totalCalories: toNumberOrNull(data?.totalCalories ?? data?.TotalCalories) ?? 0,
+    totalProtein: toNumberOrNull(data?.totalProtein ?? data?.TotalProtein) ?? 0,
+    totalCarbs: toNumberOrNull(data?.totalCarbs ?? data?.TotalCarbs) ?? 0,
+    totalFat: toNumberOrNull(data?.totalFat ?? data?.TotalFat) ?? 0,
+    // Handle cả dailyCalories (camelCase) và DailyCalories (PascalCase)
+    dailyCalories: data?.dailyCalories ?? data?.DailyCalories ?? {},
+  };
+};
 
 const todayDate = (): string => {
   const d = new Date();

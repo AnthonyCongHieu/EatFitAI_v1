@@ -49,25 +49,28 @@ namespace EatFitAI.Services
 
             var lowerText = text.ToLower().Trim();
 
-            // Try to match ADD_FOOD pattern
-            var addFoodCommand = TryParseAddFood(lowerText, text);
-            if (addFoodCommand.Intent == VoiceIntent.ADD_FOOD)
+            // THỨ TỰ QUAN TRỌNG: ASK_CALORIES trước ADD_FOOD
+            // Vì "ăn bao nhiêu calo" có từ "ăn" nhưng là ASK_CALORIES, không phải ADD_FOOD
+            
+            // 1. Try to match ASK_CALORIES pattern FIRST
+            var caloriesCommand = TryParseAskCalories(lowerText, text);
+            if (caloriesCommand.Intent == VoiceIntent.ASK_CALORIES)
             {
-                return addFoodCommand;
+                return caloriesCommand;
             }
 
-            // Try to match LOG_WEIGHT pattern
+            // 2. Try to match LOG_WEIGHT pattern
             var weightCommand = TryParseLogWeight(lowerText, text);
             if (weightCommand.Intent == VoiceIntent.LOG_WEIGHT)
             {
                 return weightCommand;
             }
 
-            // Try to match ASK_CALORIES pattern
-            var caloriesCommand = TryParseAskCalories(lowerText, text);
-            if (caloriesCommand.Intent == VoiceIntent.ASK_CALORIES)
+            // 3. Try to match ADD_FOOD pattern
+            var addFoodCommand = TryParseAddFood(lowerText, text);
+            if (addFoodCommand.Intent == VoiceIntent.ADD_FOOD)
             {
-                return caloriesCommand;
+                return addFoodCommand;
             }
 
             // Unknown intent
@@ -167,11 +170,12 @@ namespace EatFitAI.Services
 
         /// <summary>
         /// Try to parse ASK_CALORIES intent
-        /// Pattern: "bao nhiêu calo"
+        /// Pattern: "ăn bao nhiêu calo", "hôm nay ăn được bao nhiêu calo"
         /// </summary>
         private ParsedVoiceCommand TryParseAskCalories(string lowerText, string originalText)
         {
-            var pattern = @"(?:bao nhiêu|tổng)\s*(?:calo|calories|kcal)";
+            // Pattern mở rộng: match "ăn bao nhiêu calo", "tiêu thụ bao nhiêu", "tổng calo"...
+            var pattern = @"(?:ăn|tiêu thụ|nạp|uống)?\s*(?:được\s+|đã\s+)?(?:bao nhiêu|tổng|hết|mấy)\s*(?:calo|calories|kcal|năng lượng)";
             var match = Regex.Match(lowerText, pattern, RegexOptions.IgnoreCase);
 
             if (match.Success)

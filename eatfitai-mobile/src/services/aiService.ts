@@ -1,7 +1,7 @@
 // Service lam viec voi cac API AI (vision, recipe, nutrition)
 // Chu thich bang tieng Viet khong dau
 
-import apiClient, { aiApiClient } from './apiClient';
+import apiClient, { aiApiClient, getCurrentApiUrl } from './apiClient';
 import type {
   NutritionTargetDto,
   RecipeSuggestionApiItem,
@@ -11,6 +11,11 @@ import type {
 import { API_BASE_URL } from '../config/env';
 import { getAccessTokenMem } from './authTokens';
 import { tokenStorage } from './secureStore';
+
+// Helper để lấy API URL động (tránh dùng static API_BASE_URL bị cache lúc load module)
+const getApiBaseUrl = (): string => {
+  return getCurrentApiUrl() || API_BASE_URL;
+};
 
 export type IngredientItem = {
   name: string;
@@ -62,7 +67,9 @@ export async function detectFoodByImage(imageUri: string): Promise<VisionDetectR
 
   // Use fetch instead of axios for FormData to avoid boundary issues in React Native
   const token = getAccessTokenMem() ?? (await tokenStorage.getAccessToken());
-  const url = `${API_BASE_URL}/api/ai/vision/detect`;
+  // Lấy URL động thay vì dùng API_BASE_URL static bị cache
+  const baseUrl = getApiBaseUrl();
+  const url = `${baseUrl}/api/ai/vision/detect`;
 
   // Only log in development mode
   if (__DEV__) {
@@ -71,7 +78,7 @@ export async function detectFoodByImage(imageUri: string): Promise<VisionDetectR
     console.log('[aiService] imageUri:', imageUri);
   }
 
-  const response = await fetch(`${API_BASE_URL}/api/ai/vision/detect`, {
+  const response = await fetch(url, {
     method: 'POST',
     body: formData,
     headers: {
@@ -354,7 +361,8 @@ export const aiService = {
     // Gọi qua backend API thay vì AI provider trực tiếp
     // Backend sẽ proxy đến AI Provider (port 5050)
     const token = getAccessTokenMem() ?? (await tokenStorage.getAccessToken());
-    const response = await fetch(`${API_BASE_URL}/api/ai/cooking-instructions`, {
+    const baseUrl = getApiBaseUrl();  // Dùng URL động
+    const response = await fetch(`${baseUrl}/api/ai/cooking-instructions`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

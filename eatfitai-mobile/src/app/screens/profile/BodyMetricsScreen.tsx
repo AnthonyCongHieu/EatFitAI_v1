@@ -92,7 +92,7 @@ const BodyMetricsScreen = (): React.ReactElement => {
             reset({
                 heightCm: profile.heightCm ? String(profile.heightCm) : '',
                 weightKg: profile.weightKg ? String(profile.weightKg) : '',
-                targetWeightKg: '', // TODO: Load from backend when field exists
+                targetWeightKg: profile.targetWeightKg ? String(profile.targetWeightKg) : '',
             });
         }
     }, [profile, reset]);
@@ -119,7 +119,7 @@ const BodyMetricsScreen = (): React.ReactElement => {
             await updateProfile({
                 heightCm: values.heightCm ? Number(values.heightCm) : null,
                 weightKg: values.weightKg ? Number(values.weightKg) : null,
-                // TODO: Add targetWeightKg to backend
+                targetWeightKg: values.targetWeightKg ? Number(values.targetWeightKg) : null,
             });
             showSuccess('profile_updated');
             navigation.goBack();

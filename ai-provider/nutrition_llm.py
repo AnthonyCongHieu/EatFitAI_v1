@@ -8,13 +8,58 @@ import os
 import json
 import logging
 import requests
+import hashlib
+import time
 from typing import Any, Dict, Optional
+from functools import lru_cache
 
 logger = logging.getLogger(__name__)
 
 # Configuration - Ollama LLM
 OLLAMA_URL = os.getenv("OLLAMA_URL", "http://localhost:11434")
 OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "qwen2:1.5b")
+
+# ============== SIMPLE CACHE SYSTEM ==============
+# In-memory cache với TTL để giảm latency cho repeated queries
+
+class SimpleCache:
+    """Simple in-memory cache với TTL (Time To Live)"""
+    def __init__(self, default_ttl: int = 300):  # 5 phút mặc định
+        self._cache: Dict[str, tuple] = {}  # {key: (value, expire_time)}
+        self._default_ttl = default_ttl
+    
+    def _make_key(self, prompt: str) -> str:
+        """Tạo cache key từ prompt"""
+        return hashlib.md5(prompt.encode()).hexdigest()
+    
+    def get(self, prompt: str) -> Optional[str]:
+        """Lấy giá trị từ cache nếu còn hợp lệ"""
+        key = self._make_key(prompt)
+        if key in self._cache:
+            value, expire_time = self._cache[key]
+            if time.time() < expire_time:
+                logger.debug(f"Cache hit for key {key[:8]}...")
+                return value
+            else:
+                # Expired - xóa khỏi cache
+                del self._cache[key]
+        return None
+    
+    def set(self, prompt: str, value: str, ttl: int = None):
+        """Lưu giá trị vào cache"""
+        key = self._make_key(prompt)
+        expire_time = time.time() + (ttl or self._default_ttl)
+        self._cache[key] = (value, expire_time)
+        logger.debug(f"Cached response for key {key[:8]}... (TTL: {ttl or self._default_ttl}s)")
+    
+    def clear(self):
+        """Xóa toàn bộ cache"""
+        self._cache.clear()
+        logger.info("Cache cleared")
+
+# Global cache instances
+_nutrition_cache = SimpleCache(default_ttl=600)   # 10 phút cho nutrition advice
+_meal_insight_cache = SimpleCache(default_ttl=120)  # 2 phút cho meal insight (data thay đổi nhanh hơn)
 
 # Check which LLM is available
 def check_ollama_available() -> bool:
@@ -102,17 +147,29 @@ def calculate_nutrition_mifflin(
 
 # ============== OLLAMA LOCAL LLM ==============
 
-def query_ollama(prompt: str, model: str = None, stream: bool = False) -> Optional[str]:
+# General cache cho tất cả Ollama queries
+_general_cache = SimpleCache(default_ttl=300)  # 5 phút mặc định
+
+def query_ollama(prompt: str, model: str = None, stream: bool = False, use_cache: bool = True, cache_ttl: int = None) -> Optional[str]:
     """
-    Query Ollama local LLM
+    Query Ollama local LLM with optional caching
     Args:
         prompt: The prompt to send
         model: Model name (default: OLLAMA_MODEL)
         stream: If True, returns generator for streaming
+        use_cache: If True, check/store cache (default: True)
+        cache_ttl: Custom TTL for cache in seconds
     Returns None if failed
     """
     if not OLLAMA_AVAILABLE:
         return None
+    
+    # Check cache first (only for non-streaming)
+    if use_cache and not stream:
+        cached = _general_cache.get(prompt)
+        if cached:
+            logger.info("Ollama cache hit - returning cached response")
+            return cached
     
     try:
         response = requests.post(
@@ -146,7 +203,13 @@ def query_ollama(prompt: str, model: str = None, stream: bool = False) -> Option
                 return full_response
             else:
                 result = response.json()
-                return result.get("response", "")
+                response_text = result.get("response", "")
+                
+                # Store in cache
+                if use_cache and response_text:
+                    _general_cache.set(prompt, response_text, cache_ttl)
+                
+                return response_text
         else:
             logger.error(f"Ollama error: {response.status_code}")
             return None
@@ -331,10 +394,19 @@ def get_meal_insight(
     total_calories: int,
     target_calories: int,
     current_macros: Dict[str, int],
-    target_macros: Dict[str, int]
+    target_macros: Dict[str, int],
+    user_history: Optional[Dict[str, Any]] = None  # Thêm user history cho personalization
 ) -> Dict[str, Any]:
     """
     Get AI insight about a meal (Ollama or fallback)
+    Improved với few-shot examples, context analysis, và personalization
+    
+    Args:
+        user_history: Optional dict chứa:
+            - favorite_foods: list các món hay ăn
+            - avg_calories_7d: calories trung bình 7 ngày
+            - consistency_score: điểm consistency (0-100)
+            - common_deficit: thiếu gì thường xuyên (protein/carbs/fat)
     """
     if not OLLAMA_AVAILABLE:
         return {
@@ -346,14 +418,59 @@ def get_meal_insight(
     
     items_str = ", ".join([f"{item.get('name', 'Unknown')}" for item in meal_items[:5]])
     
-    prompt = f"""Phân tích bữa ăn ngắn gọn:
-Món: {items_str}
-Đã ăn: {total_calories}/{target_calories} kcal
-Protein: {current_macros.get('protein', 0)}/{target_macros.get('protein', 0)}g
+    # Tính toán context
+    cal_pct = (total_calories / target_calories * 100) if target_calories > 0 else 0
+    protein_current = current_macros.get('protein', 0)
+    protein_target = target_macros.get('protein', 0)
+    protein_pct = (protein_current / protein_target * 100) if protein_target > 0 else 0
+    
+    cal_status = "đủ" if 85 <= cal_pct <= 115 else ("thiếu" if cal_pct < 85 else "thừa")
+    protein_status = "đủ" if 85 <= protein_pct <= 115 else ("thiếu" if protein_pct < 85 else "thừa")
+    
+    # Build personalization context từ user history
+    personalization_context = ""
+    if user_history:
+        if user_history.get('favorite_foods'):
+            fav_foods = ", ".join(user_history['favorite_foods'][:3])
+            personalization_context += f"\n- Món hay ăn: {fav_foods}"
+        if user_history.get('avg_calories_7d'):
+            personalization_context += f"\n- Calories trung bình 7 ngày: {user_history['avg_calories_7d']:.0f}kcal"
+        if user_history.get('common_deficit'):
+            personalization_context += f"\n- Thường thiếu: {user_history['common_deficit']}"
+        if user_history.get('consistency_score'):
+            personalization_context += f"\n- Điểm consistency: {user_history['consistency_score']:.0f}%"
+    
+    prompt = f"""Phân tích dinh dưỡng ngày hôm nay. Trả lời ngắn gọn và thực tế.
 
-Trả lời JSON: {{"insight": "nhận xét 1 câu", "score": điểm_1_10, "suggestions": ["gợi ý 1"]}}"""
+THÔNG TIN HÔM NAY:
+- Món đã ăn: {items_str}
+- Calories: {total_calories}/{target_calories} kcal ({cal_pct:.0f}%) → {cal_status}
+- Protein: {protein_current}/{protein_target}g ({protein_pct:.0f}%) → {protein_status}
+- Carbs: {current_macros.get('carbs', 0)}g, Fat: {current_macros.get('fat', 0)}g
+{personalization_context}
 
-    response = query_ollama(prompt)
+QUY TẮC:
+- Nếu calories < 85%: gợi ý ăn thêm (ưu tiên món user hay ăn nếu có)
+- Nếu calories > 115%: gợi ý giảm bữa còn lại
+- Nếu protein thấp: gợi ý thêm thịt/trứng/cá
+- Nếu có món hay ăn: gợi ý món đó để tăng adherence
+- Score 8-10: rất tốt, 6-7: ổn, 3-5: cần cải thiện
+
+VÍ DỤ 1 (đạt mục tiêu):
+Input: Calories 1800/2000 (90%), Protein 100/120g (83%)
+→ {{"insight": "Bạn đang theo dõi tốt! Còn 200kcal và 20g protein cho bữa còn lại.", "score": 8, "suggestions": ["Thêm 100g ức gà hoặc 2 quả trứng"]}}
+
+VÍ DỤ 2 (thiếu nhiều, có món hay ăn):
+Input: Calories 600/2000 (30%), Protein 30/120g (25%), Món hay ăn: phở bò, cơm gà
+→ {{"insight": "Bạn mới ăn 30% mục tiêu. Thử ăn phở bò hoặc cơm gà bạn hay thích!", "score": 5, "suggestions": ["Ăn phở bò (500kcal)", "Hoặc cơm gà (600kcal)"]}}
+
+VÍ DỤ 3 (thừa):
+Input: Calories 2500/2000 (125%), Protein 150/120g (125%)
+→ {{"insight": "Bạn đã vượt mục tiêu 500kcal. Hạn chế ăn thêm hôm nay.", "score": 6, "suggestions": ["Bỏ qua bữa phụ hôm nay", "Uống nhiều nước"]}}
+
+TRẢ LỜI JSON (chỉ JSON, không giải thích):"""
+
+    response = query_ollama(prompt, use_cache=True, cache_ttl=120)  # Cache 2 phút
     
     if response:
         try:
@@ -362,16 +479,38 @@ Trả lời JSON: {{"insight": "nhận xét 1 câu", "score": điểm_1_10, "sug
             if start != -1 and end > start:
                 result = json.loads(response[start:end])
                 result["source"] = "ollama"
+                # Validate score
+                if "score" not in result or not isinstance(result.get("score"), (int, float)):
+                    result["score"] = 7
                 return result
         except:
             pass
     
-    # Simple fallback (enabled for production stability)
-    pct = (total_calories / target_calories * 100) if target_calories > 0 else 0
+    # Smart fallback với logic cụ thể
+    if cal_pct >= 115:
+        insight = f"Bạn đã vượt {cal_pct - 100:.0f}% mục tiêu. Hạn chế ăn thêm."
+        suggestions = ["Uống nước thay đồ uống có đường", "Tập nhẹ 20-30 phút"]
+        score = 6
+    elif cal_pct < 50:
+        insight = f"Mới ăn {cal_pct:.0f}% mục tiêu. Đừng quên ăn đủ bữa!"
+        suggestions = ["Ăn thêm bữa chính đầy đủ", "Bổ sung rau xanh và protein"]
+        score = 5
+    elif cal_pct < 85:
+        remaining = target_calories - total_calories
+        suggestions = [f"Cần thêm khoảng {remaining}kcal"]
+        if protein_pct < 80:
+            suggestions.append("Ưu tiên thêm protein (thịt, trứng, cá)")
+        insight = f"Còn {remaining}kcal để đạt mục tiêu."
+        score = 6
+    else:
+        insight = f"Tuyệt vời! Bạn đang theo dõi tốt ({cal_pct:.0f}% mục tiêu)."
+        suggestions = ["Giữ vững nhịp này!"]
+        score = 8
+        
     return {
-        "insight": f"Bạn đã ăn {pct:.0f}% mục tiêu calories hôm nay.",
-        "score": 7 if 80 <= pct <= 120 else 5,
-        "suggestions": ["Tiếp tục theo dõi để đạt mục tiêu"],
+        "insight": insight,
+        "score": score,
+        "suggestions": suggestions,
         "source": "fallback"
     }
 
@@ -385,6 +524,7 @@ def get_cooking_instructions(
 ) -> Dict[str, Any]:
     """
     Gọi Ollama AI để generate hướng dẫn nấu ăn chi tiết
+    Improved với few-shot examples và cooking tips
     
     Args:
         recipe_name: Tên món ăn
@@ -392,27 +532,98 @@ def get_cooking_instructions(
         description: Mô tả món ăn (optional)
     
     Returns:
-        Dict với steps: list các bước nấu
+        Dict với steps: list các bước nấu, cookingTime, difficulty, tips
     """
     # Check Ollama availability first
     if not OLLAMA_AVAILABLE:
         logger.warning("Ollama not available for cooking instructions, using fallback")
         return _generate_fallback_instructions(recipe_name, ingredients)
     
-    # Format ingredients list
+    # Format ingredients list với thông tin chi tiết
     ingredients_str = ", ".join([
         f"{ing.get('foodName', 'Unknown')} ({ing.get('grams', 100)}g)"
         for ing in ingredients
     ])
     
-    prompt = f"""Hướng dẫn nấu món "{recipe_name}" với: {ingredients_str}.
-{f"Mô tả: {description}" if description else ""}
+    # Calculate approximate macros for context
+    total_protein = sum(ing.get('protein', 0) for ing in ingredients)
+    total_cals = sum(ing.get('calories', 0) for ing in ingredients)
+    
+    prompt = f"""Bạn là đầu bếp chuyên nghiệp người Việt với 15 năm kinh nghiệm. Hướng dẫn nấu món ăn CỰC KỲ CHI TIẾT.
 
-Viết 4-6 bước nấu ngắn gọn bằng tiếng Việt.
+MÓN ĂN: "{recipe_name}"
+NGUYÊN LIỆU: {ingredients_str}
+{f"MÔ TẢ: {description}" if description else ""}
 
-Trả lời JSON: {{"steps": ["bước 1", "bước 2", ...], "cookingTime": "XX phút", "difficulty": "Dễ/Trung bình/Khó"}}"""
+━━━ YÊU CẦU BẮT BUỘC ━━━
 
-    response = query_ollama(prompt)
+1. **CHI TIẾT TUYỆT ĐỐI**: Mỗi bước phải có:
+   • Thời gian cụ thể (phút/giây)
+   • Nhiệt độ/mức lửa (lớn/vừa/nhỏ, số độ C nếu nướng)
+   • Kỹ thuật nấu rõ ràng (xào/luộc/hấp/chiên)
+   • Dấu hiệu nhận biết (vàng/chín/mềm/giòn)
+   • Lượng gia vị CỤ THỂ (muỗng cà phê/canh, gram)
+
+2. **CẤU TRÚC**: 7-10 bước, mỗi bước 2-3 câu
+   • Bước 1-2: Sơ chế nguyên liệu (rửa, thái, ướp)
+   • Bước 3-7: Nấu chính (chi tiết từng công đoạn)
+   • Bước 8-10: Hoàn thiện và trang trí
+
+3. **TIPS THỰC CHIẾN**: 3-4 tips hữu ích:
+   • Mẹo để món ngon hơn
+   • Cách tránh lỗi thường gặp
+   • Biến tấu cho người bận rộn
+   • Bảo quản và hâm nóng
+
+4. **THÔNG TIN BỔ SUNG**:
+   • Thời gian nấu THỰC TẾ (tính cả sơ chế)
+   • Độ khó (Rất dễ/Dễ/Trung bình/Khó)
+   • Lưu ý quan trọng (nếu có)
+
+━━━ VÍ DỤ CHUẨN (PHẢI CHI TIẾT NHƯ VẬY) ━━━
+
+Input: Cơm gà xào rau củ - Gà(150g), Cơm(200g), Bông cải xanh(100g)
+
+Output:
+{{
+  "steps": [
+    "Rửa sạch 150g ức gà, thấm khô bằng giấy ăn. Thái miếng vuông 2x2cm (khoảng 10-12 miếng). Ướp với 1/2 muỗng cà phê muối, 1/2 muỗng cà phê hạt nêm, 1 muỗng cà phê dầu ăn. Trộn đều, để yên 10-15 phút cho thấm gia vị.",
+    
+    "Rửa 100g bông cải xanh, cắt thành từng bông nhỏ (khoảng 3-4cm). Đun sôi 500ml nước + 1/4 muỗng cà phê muối. Chần bông cải đúng 2 phút (đếm từ khi nước sôi lại), vớt ra ngâm ngay vào bát nước đá 1 phút để giữ màu xanh giòn.",
+    
+    "Bắc chảo chống dính lên bếp, cho 2 muỗng canh dầu ăn. Đun ở lửa vừa đến khi dầu nóng (thử bằng đũa thấy sủi bọt nhỏ xung quanh). Tăng lửa lớn.",
+    
+    "Cho gà đã ướp vào chảo, xếp thành 1 lớp đều. KHÔNG đảo ngay! Để yên 1.5 phút cho gà chín vàng mặt dưới. Sau đó đảo đều, xào thêm 2-3 phút đến khi gà chín vàng đều, không còn hồng bên trong. Vớt gà ra đĩa riêng.",
+    
+    "Giữ nguyên chảo (không rửa), cho thêm 1 muỗng cà phê dầu nếu khô. Cho bông cải đã chần vào, xào nhanh trên lửa lớn 1.5 phút. Thêm 2 muỗng canh nước lọc để tạo hơi nước.",
+    
+    "Cho gà đã xào trở lại chảo cùng bông cải. Nêm 1 muỗng canh nước mắm, 1/2 muỗng cà phê đường, 1/4 muỗng cà phê tiêu. Đảo đều trong 1 phút cho gia vị thấm. Nếm thử và điều chỉnh.",
+    
+    "Tắt bếp. Xúc 200g cơm nóng ra đĩa, xếp gà xào rau lên trên. Rắc thêm 1 nhúm tiêu đen xay và rau mùi tươi (tùy chọn). Ăn nóng ngay để giữ độ giòn của rau."
+  ],
+  
+  "cookingTime": "25-30 phút (sơ chế 10 phút, nấu 15-20 phút)",
+  
+  "difficulty": "Dễ",
+  
+  "tips": [
+    "Bí quyết gà mềm: Ướp ít dầu ăn giúp khóa nước, không bị khô. Xào lửa lớn và NHANH (tối đa 5 phút) để gà không dai.",
+    
+    "Rau giòn xanh: Chần qua nước sôi rồi ngâm nước đá là bước QUAN TRỌNG. Bỏ qua sẽ làm rau nhũn và xỉn màu.",
+    
+    "Biến tấu nhanh: Không có thời gian? Dùng gà xé sẵn từ siêu thị, rau đông lạnh. Thời gian giảm còn 10 phút.",
+    
+    "Bảo quản: Để riêng cơm và gà xào. Bảo quản tủ lạnh 2 ngày. Hâm nóng: Vi sóng 2 phút hoặc chảo 3 phút."
+  ],
+  
+  "notes": "Món này cung cấp khoảng 450kcal, 35g protein - phù hợp cho bữa trưa/tối. Có thể thay gà bằng tôm (giảm thời gian xào xuống 2 phút) hoặc đậu hũ (cho người ăn chay)."
+}}
+
+━━━ BẮT ĐẦU TẠO HƯỚNG DẪN ━━━
+
+TRẢ LỜI JSON hợp lệ, KHÔNG giải thích thêm. Phải CHI TIẾT như ví dụ trên:"""
+
+    response = query_ollama(prompt, use_cache=True, cache_ttl=600)  # Cache 10 phút cho recipe
     
     if response:
         try:
@@ -421,8 +632,10 @@ Trả lời JSON: {{"steps": ["bước 1", "bước 2", ...], "cookingTime": "XX
             if start != -1 and end > start:
                 result = json.loads(response[start:end])
                 result["source"] = "ollama"
-                logger.info(f"Generated cooking instructions for {recipe_name}")
-                return result
+                # Validate steps
+                if "steps" in result and len(result["steps"]) >= 3:
+                    logger.info(f"Generated cooking instructions for {recipe_name}")
+                    return result
         except Exception as e:
             logger.error(f"Error parsing cooking instructions: {e}")
     
@@ -458,9 +671,109 @@ def _generate_fallback_instructions(recipe_name: str, ingredients: list[dict]) -
 
 # ============== VOICE COMMAND PARSING ==============
 
+import re
+
+# Mapping số chữ sang số
+VIETNAMESE_NUMBERS = {
+    "không": 0, "một": 1, "hai": 2, "ba": 3, "bốn": 4, "năm": 5, "sáu": 6, "bảy": 7, "tám": 8, "chín": 9,
+    "mười": 10, "mười một": 11, "mười hai": 12, "mười ba": 13, "mười bốn": 14, "mười lăm": 15,
+    "hai mươi": 20, "ba mươi": 30, "bốn mươi": 40, "năm mươi": 50, "sáu mươi": 60, "bảy mươi": 70, "tám mươi": 80, "chín mươi": 90,
+    "một trăm": 100, "hai trăm": 200, "ba trăm": 300,
+}
+
+def parse_vietnamese_number(text: str) -> int:
+    """Parse số tiếng Việt sang int. VD: 'bảy mươi lăm' -> 75"""
+    text = text.lower().strip()
+    
+    # Nếu đã là số
+    if text.isdigit():
+        return int(text)
+    
+    # Parse số phức tạp: "bảy mươi lăm" = 70 + 5
+    result = 0
+    
+    # Tìm hàng chục
+    for word, val in VIETNAMESE_NUMBERS.items():
+        if word in text and val >= 10 and val < 100:
+            result += val
+            text = text.replace(word, "").strip()
+            break
+    
+    # Tìm hàng đơn vị (chú ý "lăm" = 5)
+    text = text.replace("lăm", "năm").replace("mốt", "một")
+    for word, val in VIETNAMESE_NUMBERS.items():
+        if word in text and val < 10:
+            result += val
+            break
+    
+    return result if result > 0 else 0
+
+
+def try_parse_weight_regex(text: str) -> Dict[str, Any] | None:
+    """Regex để parse LOG_WEIGHT. Trả về None nếu không match."""
+    lower = text.lower().strip()
+    
+    # Pattern: số + ký/kg/kilogram (không có "calo/calories")
+    # VD: "hôm nay tôi 70 ký", "cân nặng 65 kg", "tôi bảy mươi lăm ký"
+    
+    # Không match nếu có "calo"
+    if "calo" in lower or "calories" in lower or "kcal" in lower:
+        return None
+    
+    # Pattern với số
+    pattern_number = r"(?:cân nặng|tôi|nặng)\s*(?:là\s+)?(\d+(?:\.\d+)?)\s*(?:ký|kg|kilogram)?"
+    match = re.search(pattern_number, lower, re.IGNORECASE)
+    if match:
+        weight = float(match.group(1))
+        if 30 <= weight <= 200:  # Valid weight range
+            return {
+                "intent": "LOG_WEIGHT",
+                "entities": {"weight": weight},
+                "confidence": 0.95,
+                "rawText": text,
+                "source": "regex"
+            }
+    
+    # Pattern với số chữ: "tôi bảy mươi lăm ký"
+    pattern_text = r"(?:cân nặng|tôi|nặng)\s*((?:một|hai|ba|bốn|năm|sáu|bảy|tám|chín|mười|mươi|lăm|mốt|\s)+)\s*(?:ký|kg|kilogram)"
+    match = re.search(pattern_text, lower, re.IGNORECASE)
+    if match:
+        weight = parse_vietnamese_number(match.group(1))
+        if 30 <= weight <= 200:
+            return {
+                "intent": "LOG_WEIGHT",
+                "entities": {"weight": weight},
+                "confidence": 0.9,
+                "rawText": text,
+                "source": "regex"
+            }
+    
+    return None
+
+
+def try_parse_ask_calories_regex(text: str) -> Dict[str, Any] | None:
+    """Regex để parse ASK_CALORIES. Trả về None nếu không match."""
+    lower = text.lower().strip()
+    
+    # Pattern: "bao nhiêu calo", "ăn bao nhiêu calo", "tiêu thụ mấy calo"
+    # QUAN TRỌNG: Phải có từ "calo/calories/kcal/năng lượng"
+    pattern = r"(?:ăn|tiêu thụ|nạp|uống)?\s*(?:được\s+|đã\s+)?(?:bao nhiêu|tổng|hết|mấy)\s*(?:calo|calories|kcal|năng lượng)"
+    
+    if re.search(pattern, lower, re.IGNORECASE):
+        return {
+            "intent": "ASK_CALORIES",
+            "entities": {},
+            "confidence": 0.95,
+            "rawText": text,
+            "source": "regex"
+        }
+    
+    return None
+
+
 def parse_voice_command_ollama(text: str) -> Dict[str, Any]:
     """
-    Parse Vietnamese voice command using Ollama LLM.
+    Parse Vietnamese voice command using regex first, then Ollama LLM as fallback.
     
     Input examples:
     - "thêm 1 bát phở 300g bữa trưa"
@@ -470,6 +783,23 @@ def parse_voice_command_ollama(text: str) -> Dict[str, Any]:
     Returns:
         Dict with intent, entities, confidence, rawText
     """
+    
+    # ========== BƯỚC 1: REGEX PRE-PROCESSING ==========
+    # Thử match các pattern rõ ràng trước khi gọi Ollama
+    
+    # 1.1 Thử parse LOG_WEIGHT
+    weight_result = try_parse_weight_regex(text)
+    if weight_result:
+        logger.info(f"Voice parsed by REGEX: LOG_WEIGHT, weight={weight_result['entities'].get('weight')}")
+        return weight_result
+    
+    # 1.2 Thử parse ASK_CALORIES
+    calories_result = try_parse_ask_calories_regex(text)
+    if calories_result:
+        logger.info(f"Voice parsed by REGEX: ASK_CALORIES")
+        return calories_result
+    
+    # ========== BƯỚC 2: OLLAMA LLM (cho ADD_FOOD và complex cases) ==========
     if not OLLAMA_AVAILABLE:
         logger.warning("Ollama not available for voice parsing")
         return {
@@ -481,50 +811,83 @@ def parse_voice_command_ollama(text: str) -> Dict[str, Any]:
             "error": "Ollama không khả dụng"
         }
     
-    # Prompt với Chain-of-Thought và nhiều examples
-    # Giúp AI hiểu rõ hơn cách parse các lệnh tiếng Việt
-    prompt = f"""Bạn là AI phân tích lệnh giọng nói tiếng Việt. Hãy suy nghĩ THEO TỪNG BƯỚC:
+    # Prompt cải tiến: Nhận input đa dạng, support nhiều món, fix pattern recognition
+    prompt = f"""Bạn là AI phân tích lệnh giọng nói tiếng Việt cho app theo dõi calories.
 
 LỆNH CẦN PHÂN TÍCH: "{text}"
 
 ━━━ BƯỚC 1: XÁC ĐỊNH INTENT ━━━
-Tìm từ khóa trong lệnh:
-• "thêm/ghi/ăn/log" + tên món → ADD_FOOD
-• "cân nặng/cân/kg" + số → LOG_WEIGHT  
-• "bao nhiêu calo/calories/kcal" → ASK_CALORIES
-• Không rõ ràng → UNKNOWN
+
+⚠️ QUAN TRỌNG - THỨ TỰ ƯU TIÊN:
+
+1. LOG_WEIGHT: Nếu có SỐ + đơn vị cân nặng (ký/kg/kilogram)
+   Patterns: "tôi X ký", "hôm nay X kg", "cân nặng X", "nặng X"
+   VD: "hôm nay tôi 70 ký" → LOG_WEIGHT (KHÔNG PHẢI ASK_CALORIES!)
+
+2. ASK_CALORIES: CHỈ KHI hỏi "bao nhiêu calo" và KHÔNG có tên món cụ thể
+   Patterns: "ăn bao nhiêu calo?", "đã ăn bao nhiêu kcal?"
+   
+3. ADD_FOOD: Nếu có TÊN MÓN ĂN cụ thể (dù có "ăn" hay không)
+   Patterns: "thêm/ghi/ăn [món]", "tôi ăn [món]", "hôm nay ăn [món]"
+   VD: "tôi ăn 100g cơm" → ADD_FOOD (KHÔNG PHẢI ASK_CALORIES!)
+   VD: "thêm 100g cơm và 200g gà" → ADD_FOOD với 2 món
+
+4. UNKNOWN: Không khớp pattern nào
 
 ━━━ BƯỚC 2: TRÍCH XUẤT ENTITIES ━━━
 
-Với ADD_FOOD:
-• foodName: CHỈ tên món (không có số/đơn vị). VD: "phở", "cơm", "trứng"
-• quantity: số lượng (mặc định 1)
-• unit: đơn vị (bát/đĩa/quả/cái/phần/ly)
-• weight: gram nếu có (vd: 100g, 200g)
+LOG_WEIGHT:
+• weight: số kg (chuyển chữ → số!)
+• Mapping: "bảy mươi"=70, "sáu mươi lăm"=65, "năm lăm"=55, "bốn lăm"=45
+
+ADD_FOOD (1 món):
+• foodName: tên món (chỉ tên, không số/đơn vị)  
+• quantity: số lượng (1,2,3...) - cho bát/đĩa/quả
+• weight: số gram nếu có "g/gam/gram"
+• unit: đơn vị đếm (bát/đĩa/quả/cái/ly)
 • mealType: breakfast/lunch/dinner/snack
 
-Với LOG_WEIGHT:
-• weight: số kg
+ADD_FOOD (NHIỀU MÓN - dùng khi có "và/với/cùng"):
+• foods: ARRAY các món, mỗi món có {{foodName, weight/quantity, unit}}
+• mealType: bữa ăn chung
+
+ASK_CALORIES: entities rỗng {{}}
 
 ━━━ VÍ DỤ THAM KHẢO ━━━
 
-Input: "thêm 2 quả trứng bữa sáng"
+--- LOG_WEIGHT ---
+Input: "hôm nay tôi 70 ký"
+→ {{"intent":"LOG_WEIGHT","entities":{{"weight":70}},"confidence":0.95}}
+
+Input: "tôi bảy mươi kg"
+→ {{"intent":"LOG_WEIGHT","entities":{{"weight":70}},"confidence":0.9}}
+
+Input: "cân nặng sáu mươi lăm"
+→ {{"intent":"LOG_WEIGHT","entities":{{"weight":65}},"confidence":0.9}}
+
+--- ADD_FOOD (1 món) ---
+Input: "tôi ăn 100g cơm bữa trưa"
+→ {{"intent":"ADD_FOOD","entities":{{"foodName":"cơm","weight":100,"mealType":"lunch"}},"confidence":0.95}}
+
+Input: "thêm 2 quả trứng sáng nay"
 → {{"intent":"ADD_FOOD","entities":{{"foodName":"trứng","quantity":2,"unit":"quả","mealType":"breakfast"}},"confidence":0.95}}
 
-Input: "ghi 1 bát phở 300g bữa trưa"  
-→ {{"intent":"ADD_FOOD","entities":{{"foodName":"phở","quantity":1,"unit":"bát","weight":300,"mealType":"lunch"}},"confidence":0.95}}
+--- ADD_FOOD (NHIỀU MÓN) ---
+Input: "thêm 100g cơm và 200g gà bữa trưa"
+→ {{"intent":"ADD_FOOD","entities":{{"foods":[{{"foodName":"cơm","weight":100}},{{"foodName":"gà","weight":200}}],"mealType":"lunch"}},"confidence":0.9}}
 
-Input: "ăn bánh mì bữa sáng"
-→ {{"intent":"ADD_FOOD","entities":{{"foodName":"bánh mì","quantity":1,"mealType":"breakfast"}},"confidence":0.9}}
+Input: "ăn 1 bát phở và 1 ly trà đá"
+→ {{"intent":"ADD_FOOD","entities":{{"foods":[{{"foodName":"phở","quantity":1,"unit":"bát"}},{{"foodName":"trà đá","quantity":1,"unit":"ly"}}]}},"confidence":0.9}}
 
-Input: "cân nặng 65 kg"
-→ {{"intent":"LOG_WEIGHT","entities":{{"weight":65}},"confidence":0.95}}
+--- ASK_CALORIES ---
+Input: "hôm nay ăn bao nhiêu calo"  
+→ {{"intent":"ASK_CALORIES","entities":{{}},"confidence":0.9}}
 
-Input: "hôm nay ăn bao nhiêu calo"
+Input: "tôi đã tiêu thụ bao nhiêu calories"
 → {{"intent":"ASK_CALORIES","entities":{{}},"confidence":0.9}}
 
 ━━━ TRẢ LỜI ━━━
-CHỈ trả về JSON, KHÔNG giải thích:"""
+CHỈ trả về JSON hợp lệ, KHÔNG giải thích:"""
 
     try:
         response = query_ollama(prompt)

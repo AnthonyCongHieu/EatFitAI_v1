@@ -42,6 +42,17 @@ namespace EatFitAI.DTOs
     }
 
     /// <summary>
+    /// Single food item for multi-food commands
+    /// </summary>
+    public class FoodItem
+    {
+        public string? FoodName { get; set; }
+        public decimal? Quantity { get; set; }
+        public string? Unit { get; set; }
+        public decimal? Weight { get; set; }
+    }
+
+    /// <summary>
     /// Entities extracted from voice command
     /// </summary>
     public class VoiceCommandEntities
@@ -52,6 +63,11 @@ namespace EatFitAI.DTOs
         public MealType? MealType { get; set; }
         public DateTime? Date { get; set; }
         public decimal? Weight { get; set; }
+        
+        /// <summary>
+        /// Nhiều món ăn (khi user nói "thêm 100g cơm và 200g gà")
+        /// </summary>
+        public List<FoodItem>? Foods { get; set; }
     }
 
     /// <summary>
@@ -73,6 +89,10 @@ namespace EatFitAI.DTOs
     {
         public string Type { get; set; } = string.Empty;
         public string Details { get; set; } = string.Empty;
+        /// <summary>
+        /// Data thực sự (calories, weight hiện tại, etc.)
+        /// </summary>
+        public Dictionary<string, object>? Data { get; set; }
     }
 
     /// <summary>
@@ -84,5 +104,13 @@ namespace EatFitAI.DTOs
         public ParsedVoiceCommand? Command { get; set; }
         public string? Error { get; set; }
         public ExecutedAction? ExecutedAction { get; set; }
+    }
+
+    /// <summary>
+    /// Request to confirm weight change
+    /// </summary>
+    public class ConfirmWeightRequest
+    {
+        public decimal NewWeight { get; set; }
     }
 }

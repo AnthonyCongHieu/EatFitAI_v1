@@ -18,6 +18,7 @@ namespace EatFitAI.API.Data
             await SeedMealTypesAsync(context);
             await SeedFoodItemsAsync(context);
             await SeedFoodServingsAsync(context);
+            await SeedRecipesAsync(context);  // Thêm seed recipes
             await SeedDefaultUserPasswordsAsync(context);
         }
 
@@ -310,6 +311,145 @@ namespace EatFitAI.API.Data
             foreach (var user in usersToUpdate)
             {
                 user.PasswordHash = passwordHash;
+            }
+
+            await context.SaveChangesAsync();
+        }
+
+        /// <summary>
+        /// Seed sample recipes với món Việt Nam phổ biến
+        /// </summary>
+        private static async Task SeedRecipesAsync(EatFitAIDbContext context)
+        {
+            if (await context.Recipes.AnyAsync()) return;
+
+            var foodItems = await context.FoodItems.ToListAsync();
+            
+            // Helper để tìm food item
+            FoodItem? FindFood(string name) => foodItems.FirstOrDefault(f => 
+                f.FoodName.Contains(name, StringComparison.OrdinalIgnoreCase));
+
+            var chicken = FindFood("Chicken");
+            var rice = FindFood("Rice");
+            var egg = FindFood("Egg");
+            var broccoli = FindFood("Broccoli");
+            var spinach = FindFood("Spinach");
+            var salmon = FindFood("Salmon");
+            var sweetPotato = FindFood("Sweet Potato");
+            var yogurt = FindFood("Yogurt");
+            var banana = FindFood("Banana");
+            var almonds = FindFood("Almonds");
+
+            var now = DateTime.UtcNow;
+
+            // Recipe 1: Cơm gà xào rau củ
+            var recipe1 = new Recipe
+            {
+                RecipeName = "Cơm gà xào rau củ",
+                Description = "Bữa ăn cân bằng với protein từ gà, carbs từ cơm và vitamin từ rau",
+                CreatedAt = now,
+                UpdatedAt = now,
+                IsDeleted = false
+            };
+            context.Recipes.Add(recipe1);
+            await context.SaveChangesAsync();
+
+            if (chicken != null && rice != null && broccoli != null)
+            {
+                context.RecipeIngredients.AddRange(new[]
+                {
+                    new RecipeIngredient { RecipeId = recipe1.RecipeId, FoodItemId = chicken.FoodItemId, Grams = 150 },
+                    new RecipeIngredient { RecipeId = recipe1.RecipeId, FoodItemId = rice.FoodItemId, Grams = 200 },
+                    new RecipeIngredient { RecipeId = recipe1.RecipeId, FoodItemId = broccoli.FoodItemId, Grams = 100 }
+                });
+            }
+
+            // Recipe 2: Cá hồi nướng với khoai lang
+            var recipe2 = new Recipe
+            {
+                RecipeName = "Cá hồi nướng với khoai lang",
+                Description = "Giàu omega-3 và carbs phức hợp, tốt cho sức khỏe tim mạch",
+                CreatedAt = now,
+                UpdatedAt = now,
+                IsDeleted = false
+            };
+            context.Recipes.Add(recipe2);
+            await context.SaveChangesAsync();
+
+            if (salmon != null && sweetPotato != null && spinach != null)
+            {
+                context.RecipeIngredients.AddRange(new[]
+                {
+                    new RecipeIngredient { RecipeId = recipe2.RecipeId, FoodItemId = salmon.FoodItemId, Grams = 180 },
+                    new RecipeIngredient { RecipeId = recipe2.RecipeId, FoodItemId = sweetPotato.FoodItemId, Grams = 200 },
+                    new RecipeIngredient { RecipeId = recipe2.RecipeId, FoodItemId = spinach.FoodItemId, Grams = 50 }
+                });
+            }
+
+            // Recipe 3: Salad trứng healthy
+            var recipe3 = new Recipe
+            {
+                RecipeName = "Salad trứng healthy",
+                Description = "Bữa sáng hoặc bữa phụ giàu protein và chất xơ",
+                CreatedAt = now,
+                UpdatedAt = now,
+                IsDeleted = false
+            };
+            context.Recipes.Add(recipe3);
+            await context.SaveChangesAsync();
+
+            if (egg != null && spinach != null && broccoli != null)
+            {
+                context.RecipeIngredients.AddRange(new[]
+                {
+                    new RecipeIngredient { RecipeId = recipe3.RecipeId, FoodItemId = egg.FoodItemId, Grams = 100 }, // 2 eggs
+                    new RecipeIngredient { RecipeId = recipe3.RecipeId, FoodItemId = spinach.FoodItemId, Grams = 80 },
+                    new RecipeIngredient { RecipeId = recipe3.RecipeId, FoodItemId = broccoli.FoodItemId, Grams = 60 }
+                });
+            }
+
+            // Recipe 4: Smoothie bowl bổ dưỡng
+            var recipe4 = new Recipe
+            {
+                RecipeName = "Smoothie bowl bổ dưỡng",
+                Description = "Bữa sáng nhẹ nhàng với sữa chua, chuối và hạnh nhân",
+                CreatedAt = now,
+                UpdatedAt = now,
+                IsDeleted = false
+            };
+            context.Recipes.Add(recipe4);
+            await context.SaveChangesAsync();
+
+            if (yogurt != null && banana != null && almonds != null)
+            {
+                context.RecipeIngredients.AddRange(new[]
+                {
+                    new RecipeIngredient { RecipeId = recipe4.RecipeId, FoodItemId = yogurt.FoodItemId, Grams = 200 },
+                    new RecipeIngredient { RecipeId = recipe4.RecipeId, FoodItemId = banana.FoodItemId, Grams = 120 },
+                    new RecipeIngredient { RecipeId = recipe4.RecipeId, FoodItemId = almonds.FoodItemId, Grams = 20 }
+                });
+            }
+
+            // Recipe 5: Gà nướng cùng rau xanh
+            var recipe5 = new Recipe
+            {
+                RecipeName = "Gà nướng cùng rau xanh",
+                Description = "Bữa tối low-carb giàu protein, phù hợp giảm cân",
+                CreatedAt = now,
+                UpdatedAt = now,
+                IsDeleted = false
+            };
+            context.Recipes.Add(recipe5);
+            await context.SaveChangesAsync();
+
+            if (chicken != null && spinach != null && broccoli != null)
+            {
+                context.RecipeIngredients.AddRange(new[]
+                {
+                    new RecipeIngredient { RecipeId = recipe5.RecipeId, FoodItemId = chicken.FoodItemId, Grams = 200 },
+                    new RecipeIngredient { RecipeId = recipe5.RecipeId, FoodItemId = spinach.FoodItemId, Grams = 100 },
+                    new RecipeIngredient { RecipeId = recipe5.RecipeId, FoodItemId = broccoli.FoodItemId, Grams = 100 }
+                });
             }
 
             await context.SaveChangesAsync();

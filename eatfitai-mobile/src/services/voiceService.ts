@@ -4,16 +4,19 @@
  */
 
 import axios from 'axios';
-import { aiApiClient } from './apiClient';
+import { aiApiClient, getCurrentApiUrl } from './apiClient';
 import { API_BASE_URL } from '../config/env';
 
 // AI Provider URL (Flask server with Ollama)
-// Uses same base but port 5050 for AI Provider
-const AI_PROVIDER_URL = API_BASE_URL?.replace(':5247', ':5050') || 'http://10.0.2.2:5050';
+// Lấy dynamic từ apiClient khi cần, không fix cứng lúc khởi động
+const getAiProviderUrl = (): string => {
+  const currentUrl = getCurrentApiUrl() || API_BASE_URL;
+  return currentUrl?.replace(':5247', ':5050') || 'http://10.0.2.2:5050';
+};
 
 // Axios client for AI Provider with long timeout for Ollama
+// baseURL sẽ được set động mỗi request
 const aiProviderClient = axios.create({
-  baseURL: AI_PROVIDER_URL,
   timeout: 30000, // 30s for Ollama processing
 });
 
@@ -28,6 +31,14 @@ export type VoiceIntent =
 // Meal type mapping
 export type MealType = 'breakfast' | 'lunch' | 'dinner' | 'snack';
 
+// Single food item for multi-food commands
+export interface FoodItemEntity {
+  foodName?: string;
+  quantity?: number;
+  unit?: string;
+  weight?: number;
+}
+
 // Parsed command from voice input
 export interface ParsedVoiceCommand {
   intent: VoiceIntent;
@@ -38,6 +49,8 @@ export interface ParsedVoiceCommand {
     mealType?: MealType;
     date?: string; // ISO date string
     weight?: number;
+    // Nhiều món ăn (khi user nói "thêm 100g cơm và 200g gà")
+    foods?: FoodItemEntity[];
   };
   confidence: number;
   rawText: string;
@@ -53,6 +66,17 @@ export interface VoiceProcessResponse {
   executedAction?: {
     type: string;
     details: string;
+    data?: {
+      // ASK_CALORIES
+      totalCalories?: number;
+      targetCalories?: number;
+      remaining?: number;
+      // LOG_WEIGHT
+      currentWeight?: number;
+      newWeight?: number;
+      requireConfirm?: boolean;
+      savedWeight?: number;
+    };
   };
 }
 
@@ -86,7 +110,8 @@ export const voiceService = {
    */
   async transcribeAudio(audioUri: string): Promise<TranscriptionResponse> {
     try {
-      console.log('[VoiceService] Transcribing audio:', audioUri);
+      const aiProviderUrl = getAiProviderUrl();
+      console.log('[VoiceService] Transcribing audio:', audioUri, 'via', aiProviderUrl);
 
       // Create form data with audio file
       const formData = new FormData();
@@ -102,7 +127,7 @@ export const voiceService = {
       } as any);
 
       const response = await aiProviderClient.post<TranscriptionResponse>(
-        '/voice/transcribe',
+        `${aiProviderUrl}/voice/transcribe`,
         formData,
         {
           headers: {
@@ -133,9 +158,10 @@ export const voiceService = {
    */
   async parseWithOllama(text: string): Promise<ParsedVoiceCommand> {
     try {
-      console.log('[VoiceService] Parsing with Ollama:', text);
+      const aiProviderUrl = getAiProviderUrl();
+      console.log('[VoiceService] Parsing with Ollama:', text, 'via', aiProviderUrl);
 
-      const response = await aiProviderClient.post('/voice/parse', { text });
+      const response = await aiProviderClient.post(`${aiProviderUrl}/voice/parse`, { text });
       const data = response.data;
 
       console.log('[VoiceService] Ollama response:', data);
@@ -211,6 +237,24 @@ export const voiceService = {
       success: command.intent !== 'UNKNOWN',
       command,
     };
+  },
+
+  /**
+   * Confirm and save weight after user confirmation
+   * @param newWeight Weight in kg to save
+   */
+  async confirmWeight(newWeight: number): Promise<VoiceProcessResponse> {
+    try {
+      console.log('[VoiceService] Confirming weight:', newWeight);
+      const response = await aiApiClient.post<VoiceProcessResponse>('/api/voice/confirm-weight', { newWeight });
+      return response.data;
+    } catch (error: any) {
+      console.error('[VoiceService] Confirm weight error:', error);
+      return {
+        success: false,
+        error: error?.response?.data?.message || 'Không thể lưu cân nặng',
+      };
+    }
   },
 };
 

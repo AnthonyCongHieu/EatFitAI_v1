@@ -45,9 +45,11 @@ export const VoiceSheet = ({ visible, onClose }: VoiceSheetProps): React.ReactEl
         recognizedText,
         parsedCommand,
         error,
+        executedData,
         setRecognizedText,
         processText,
         executeCommand,
+        confirmWeight,
         reset,
         closeSheet,
     } = useVoiceStore();
@@ -257,7 +259,7 @@ export const VoiceSheet = ({ visible, onClose }: VoiceSheetProps): React.ReactEl
                     {isRecording && (
                         <Animated.View
                             entering={FadeIn}
-                            style={[styles.durationBadge, { backgroundColor: theme.colors.danger }]}
+                            style={styles.durationBadge}
                         >
                             <View style={styles.recordingDot} />
                             <ThemedText variant="bodySmall" weight="600" style={{ color: '#fff' }}>
@@ -266,6 +268,24 @@ export const VoiceSheet = ({ visible, onClose }: VoiceSheetProps): React.ReactEl
                         </Animated.View>
                     )}
                 </Animated.View>
+
+                {/* NÚT HỦY RECORDING - Lớn, rõ ràng, bên dưới nút mic */}
+                {isRecording && (
+                    <Animated.View entering={FadeIn} style={styles.cancelRecordingContainer}>
+                        <Pressable
+                            onPress={() => {
+                                cancelRecording();
+                                reset();
+                            }}
+                            style={[styles.cancelRecordingButton, { backgroundColor: theme.colors.danger + '20' }]}
+                        >
+                            <Ionicons name="close-circle" size={24} color={theme.colors.danger} />
+                            <ThemedText variant="body" weight="600" style={{ marginLeft: 8, color: theme.colors.danger }}>
+                                Hủy ghi âm
+                            </ThemedText>
+                        </Pressable>
+                    </Animated.View>
+                )}
 
                 {/* Status indicator */}
                 <Animated.View
@@ -339,7 +359,9 @@ export const VoiceSheet = ({ visible, onClose }: VoiceSheetProps): React.ReactEl
                     <VoiceResultCard
                         command={parsedCommand}
                         onExecute={handleExecute}
+                        onConfirmWeight={confirmWeight}
                         isExecuting={status === 'executing'}
+                        executedData={executedData}
                     />
                 )}
 
@@ -380,7 +402,7 @@ export const VoiceSheet = ({ visible, onClose }: VoiceSheetProps): React.ReactEl
                     </Animated.View>
                 )}
             </ScrollView>
-        </BottomSheet>
+        </BottomSheet >
     );
 };
 
@@ -452,16 +474,30 @@ const styles = StyleSheet.create({
         bottom: 10,
         flexDirection: 'row',
         alignItems: 'center',
-        paddingHorizontal: 12,
-        paddingVertical: 6,
+        paddingHorizontal: 14,
+        paddingVertical: 8,
         borderRadius: 20,
-        gap: 6,
+        gap: 8,
+        backgroundColor: '#EF4444',
     },
     recordingDot: {
-        width: 8,
-        height: 8,
-        borderRadius: 4,
+        width: 10,
+        height: 10,
+        borderRadius: 5,
         backgroundColor: '#fff',
+    },
+    cancelRecordingContainer: {
+        alignItems: 'center',
+        marginTop: -12,
+        marginBottom: 8,
+    },
+    cancelRecordingButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingHorizontal: 24,
+        paddingVertical: 14,
+        borderRadius: 28,
     },
     statusCard: {
         flexDirection: 'row',

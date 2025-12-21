@@ -1,8 +1,9 @@
-using EatFitAI.API.Data;
-using EatFitAI.API.Models;
+using EatFitAI.API.DbScaffold.Data; // FIX: Đổi sang EatFitAIDbContext
+using EatFitAI.API.DbScaffold.Models; // FIX: Đổi sang scaffolded Models
 using EatFitAI.API.Services;
 using EatFitAI.API.DTOs.AI;
 using EatFitAI.API.DTOs.User;
+using EatFitAI.API.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Caching.Memory;
@@ -17,7 +18,7 @@ namespace EatFitAI.API.Tests.Unit.Services
 {
     public class RecipeSuggestionServiceTests : IDisposable
     {
-        private readonly ApplicationDbContext _context;
+        private readonly EatFitAIDbContext _context; // FIX: Đổi sang EatFitAIDbContext
         private readonly Mock<ILogger<RecipeSuggestionService>> _loggerMock;
         private readonly IMemoryCache _cache;
         private readonly Mock<IUserPreferenceService> _userPreferenceMock;
@@ -26,10 +27,10 @@ namespace EatFitAI.API.Tests.Unit.Services
         public RecipeSuggestionServiceTests()
         {
             // Setup In-Memory Database
-            var options = new DbContextOptionsBuilder<ApplicationDbContext>()
+            var options = new DbContextOptionsBuilder<EatFitAIDbContext>() // FIX: Đổi sang EatFitAIDbContext
                 .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
                 .Options;
-            _context = new ApplicationDbContext(options);
+            _context = new EatFitAIDbContext(options); // FIX: Đổi sang EatFitAIDbContext
 
             _loggerMock = new Mock<ILogger<RecipeSuggestionService>>();
             _cache = new MemoryCache(new MemoryCacheOptions());

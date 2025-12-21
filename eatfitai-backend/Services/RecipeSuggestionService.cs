@@ -3,11 +3,11 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using EatFitAI.API.Data; // Using ApplicationDbContext
+using EatFitAI.API.DbScaffold.Data; // FIX: Using EatFitAIDbContext (scaffolded)
+using EatFitAI.API.DbScaffold.Models; // FIX: Using scaffolded Models
 using EatFitAI.API.DTOs.AI;
 using EatFitAI.API.Services.Interfaces;
 using EatFitAI.API.DTOs.User;
-using EatFitAI.API.Models; // Using standard Models
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
@@ -20,7 +20,7 @@ namespace EatFitAI.API.Services
     /// </summary>
     public class RecipeSuggestionService : IRecipeSuggestionService
     {
-        private readonly ApplicationDbContext _db;
+        private readonly EatFitAIDbContext _db; // FIX: Đổi sang EatFitAIDbContext
         private readonly ILogger<RecipeSuggestionService> _logger;
         private readonly IMemoryCache _cache;
         private readonly IUserPreferenceService _userPreferenceService;
@@ -30,7 +30,7 @@ namespace EatFitAI.API.Services
         private const string AllRecipesCacheKey = "AllRecipesWithIngredients";
 
         public RecipeSuggestionService(
-            ApplicationDbContext db,
+            EatFitAIDbContext db, // FIX: Đổi sang EatFitAIDbContext
             ILogger<RecipeSuggestionService> logger,
             IMemoryCache cache,
             IUserPreferenceService userPreferenceService)
@@ -112,11 +112,20 @@ namespace EatFitAI.API.Services
                 return new List<RecipeSuggestionDto>();
             }
 
-            // Get user preferences for filtering
+            // Get user preferences for filtering (with error handling)
+            // NOTE: UserPreferenceService dùng ApplicationDbContext, có thể fail
             UserPreferenceDto? userPrefs = null;
             if (request.UserId.HasValue)
             {
-                userPrefs = await _userPreferenceService.GetUserPreferenceAsync(request.UserId.Value, cancellationToken);
+                try
+                {
+                    userPrefs = await _userPreferenceService.GetUserPreferenceAsync(request.UserId.Value, cancellationToken);
+                }
+                catch (Exception ex)
+                {
+                    // Log warning nhưng không crash - recipe suggestion vẫn hoạt động
+                    _logger.LogWarning(ex, "Failed to get user preferences for UserId {UserId}, continuing without dietary restrictions", request.UserId.Value);
+                }
             }
 
             var forbiddenKeywords = GetForbiddenKeywords(userPrefs);

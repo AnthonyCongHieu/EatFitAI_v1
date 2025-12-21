@@ -35,6 +35,8 @@ export type UpdateProfilePayload = {
   dateOfBirth?: string | null;
   activityLevelId?: number | null;
   goal?: string | null;
+  // Profile 2026 - Target weight
+  targetWeightKg?: number | null;
 };
 
 export type BodyMetricsPayload = {
@@ -60,6 +62,10 @@ const normalizeProfile = (data: any): UserProfile => ({
   activityLevelId: data?.activityLevelId ?? undefined,
   activityFactor: data?.activityFactor ?? undefined,
   goal: data?.goal ?? undefined,
+  // Profile 2026 - Gamification & Goal Tracking
+  targetWeightKg: data?.targetWeightKg ?? undefined,
+  currentStreak: data?.currentStreak ?? undefined,
+  longestStreak: data?.longestStreak ?? undefined,
 });
 
 export const profileService = {
@@ -81,6 +87,8 @@ export const profileService = {
       dateOfBirth: payload.dateOfBirth ?? null,
       activityLevelId: payload.activityLevelId ?? null,
       goal: payload.goal ?? null,
+      // Profile 2026 - Target weight
+      targetWeightKg: payload.targetWeightKg ?? null,
     };
     const response = await apiClient.put('/api/profile', req);
     return normalizeProfile(response.data);
