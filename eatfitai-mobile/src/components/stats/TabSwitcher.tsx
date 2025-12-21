@@ -83,7 +83,7 @@ export const TabSwitcher: React.FC<TabSwitcherProps> = ({
             top: 4,
             left: 4,
             width: tabWidth > 0 ? tabWidth : '31%',
-            height: 36,
+            height: 32,
             backgroundColor: isDark
                 ? 'rgba(255, 255, 255, 0.15)'
                 : '#fff',
@@ -96,7 +96,7 @@ export const TabSwitcher: React.FC<TabSwitcherProps> = ({
         },
         tab: {
             flex: 1,
-            paddingVertical: theme.spacing.sm,
+            paddingVertical: 6,
             alignItems: 'center',
             justifyContent: 'center',
             zIndex: 1,

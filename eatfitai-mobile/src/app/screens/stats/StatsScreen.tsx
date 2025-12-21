@@ -188,6 +188,7 @@ const StatsScreen = (): React.ReactElement => {
         },
         tabContainer: {
             marginBottom: theme.spacing.sm,
+            paddingHorizontal: theme.spacing.lg,
         },
         sectionTitle: {
             marginBottom: theme.spacing.sm,
@@ -220,8 +221,23 @@ const StatsScreen = (): React.ReactElement => {
             end={{ x: 0.5, y: 1 }}
             style={{ flex: 1 }}
         >
+            {/* Fixed Custom Header - matching ProfileScreen */}
+            <View style={{ alignItems: 'center', paddingTop: 70, paddingBottom: theme.spacing.lg }}>
+                <ThemedText variant="h2" weight="700">
+                    Thống kê
+                </ThemedText>
+                <ThemedText variant="bodySmall" color="textSecondary">
+                    Theo dõi tiến độ dinh dưỡng
+                </ThemedText>
+            </View>
+
+            {/* Fixed Tab Switcher - with header */}
+            <View style={styles.tabContainer}>
+                <TabSwitcher activeTab={activeTab} onTabChange={handleTabChange} />
+            </View>
+
             <Screen
-                contentContainerStyle={[styles.content, { paddingTop: theme.spacing.xl }]}
+                contentContainerStyle={[styles.content, { paddingTop: theme.spacing.md }]}
                 refreshControl={
                     <RefreshControl
                         refreshing={isLoading}
@@ -230,20 +246,6 @@ const StatsScreen = (): React.ReactElement => {
                     />
                 }
             >
-                {/* Custom Header */}
-                <View style={{ alignItems: 'center', marginBottom: theme.spacing.lg, paddingTop: 50 }}>
-                    <ThemedText variant="h2" weight="700">
-                        📊 Thống kê
-                    </ThemedText>
-                    <ThemedText variant="bodySmall" color="textSecondary">
-                        Theo dõi tiến độ dinh dưỡng
-                    </ThemedText>
-                </View>
-
-                {/* Tab Switcher - moved to top */}
-                <View style={styles.tabContainer}>
-                    <TabSwitcher activeTab={activeTab} onTabChange={handleTabChange} />
-                </View>
 
                 {/* Today View */}
                 {activeTab === 'today' && weekSummary && (
@@ -305,6 +307,7 @@ const StatsScreen = (): React.ReactElement => {
                                     )}
                                     variant="h4"
                                     weight="700"
+                                    suffix=" kcal"
                                 />
                                 <ThemedText variant="caption" color="textSecondary">
                                     TB/ngày
@@ -344,7 +347,7 @@ const StatsScreen = (): React.ReactElement => {
                     >
                         <AppCard>
                             <ThemedText variant="h4" weight="700" style={styles.sectionTitle}>
-                                {currentMonth.toLocaleDateString('vi-VN', { month: 'long', year: 'numeric' })}
+                                {`Tháng ${currentMonth.getMonth() + 1} năm ${currentMonth.getFullYear()}`}
                             </ThemedText>
 
                             {monthData ? (
@@ -379,7 +382,7 @@ const StatsScreen = (): React.ReactElement => {
                                                 weight="700"
                                             />
                                             <ThemedText variant="caption" color="textSecondary">
-                                                Ngày log
+                                                Ngày HĐ
                                             </ThemedText>
                                         </View>
 
@@ -389,6 +392,7 @@ const StatsScreen = (): React.ReactElement => {
                                                 value={Math.round(monthData.averageCalories)}
                                                 variant="h4"
                                                 weight="700"
+                                                suffix=" kcal"
                                             />
                                             <ThemedText variant="caption" color="textSecondary">
                                                 TB/ngày
