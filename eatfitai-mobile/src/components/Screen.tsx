@@ -66,42 +66,37 @@ export const Screen = ({
     flexGrow: 1,
   };
 
-  // Wrapper component - dùng LinearGradient nếu useGradient = true
-  const BackgroundWrapper = useGradient
-    ? ({ children: wrapperChildren, wrapperStyle }: { children: ReactNode; wrapperStyle?: ViewStyle }) => (
+  // Render content based on scroll prop
+  const content = scroll ? (
+    <ScrollView
+      style={styles.scrollView}
+      contentContainerStyle={[contentStyle, contentContainerStyle]}
+      refreshControl={refreshControl}
+      showsVerticalScrollIndicator={false}
+      keyboardShouldPersistTaps="handled"
+    >
+      {children}
+    </ScrollView>
+  ) : (
+    <View style={contentStyle}>{children}</View>
+  );
+
+  // Render with or without gradient - NO inline component to prevent remounts
+  if (useGradient) {
+    return (
       <LinearGradient
         colors={theme.colors.screenGradient}
         start={{ x: 0, y: 0 }}
         end={{ x: 0.5, y: 1 }}
-        style={[styles.gradient, wrapperStyle]}
+        style={[styles.gradient, style as ViewStyle]}
       >
-        {wrapperChildren}
+        {content}
       </LinearGradient>
-    )
-    : ({ children: wrapperChildren, wrapperStyle }: { children: ReactNode; wrapperStyle?: ViewStyle }) => (
-      <View style={[containerStyle, wrapperStyle]}>{wrapperChildren}</View>
-    );
-
-  if (scroll) {
-    return (
-      <BackgroundWrapper wrapperStyle={style as ViewStyle}>
-        <ScrollView
-          style={styles.scrollView}
-          contentContainerStyle={[contentStyle, contentContainerStyle]}
-          refreshControl={refreshControl}
-          showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled"
-        >
-          {children}
-        </ScrollView>
-      </BackgroundWrapper>
     );
   }
 
   return (
-    <BackgroundWrapper wrapperStyle={style as ViewStyle}>
-      <View style={contentStyle}>{children}</View>
-    </BackgroundWrapper>
+    <View style={[containerStyle, style as ViewStyle]}>{content}</View>
   );
 };
 

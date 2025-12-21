@@ -210,6 +210,8 @@ const FoodDetailScreen = (): React.ReactElement | null => {
       );
       return data ?? null;
     },
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    refetchOnWindowFocus: false,
   });
   const detail = detailData ?? null;
 
@@ -285,6 +287,16 @@ const FoodDetailScreen = (): React.ReactElement | null => {
     caloriesValue.value = withTiming(calories, { duration: theme.animation.normal });
   }, [multiplier, detail, proteinValue, carbsValue, fatValue, caloriesValue]);
 
+  // For nutrition info section - show base values (no multiplier)
+  const baseMacroValue = useCallback(
+    (base?: number | null) => {
+      if (base === null || base === undefined) return '--';
+      return `${base.toFixed(1).replace(/\.0$/, '')} g`;
+    },
+    [],
+  );
+
+  // For diary preview section - show calculated values with multiplier
   const macroValue = useCallback(
     (base?: number | null) => {
       // Only show '--' when base is null/undefined, 0 is a valid value
@@ -414,8 +426,7 @@ const FoodDetailScreen = (): React.ReactElement | null => {
     <Screen scroll={true}>
       {renderHeader()}
 
-      <Animated.View
-        entering={FadeInDown.duration(theme.animation.normal)}
+      <View
         style={styles.content}
       >
         {/* Hero Food Image */}
@@ -513,7 +524,7 @@ const FoodDetailScreen = (): React.ReactElement | null => {
                 Đạm
               </ThemedText>
               <ThemedText variant="h4" style={{ color: '#3B82F6' }}>
-                {macroValue(detail.perServingProtein ?? detail.protein)}
+                {baseMacroValue(detail.perServingProtein ?? detail.protein)}
               </ThemedText>
             </View>
             <View style={[styles.macroCard, { backgroundColor: 'rgba(251, 191, 36, 0.12)', borderWidth: 1, borderColor: 'rgba(251, 191, 36, 0.2)' }]}>
@@ -525,7 +536,7 @@ const FoodDetailScreen = (): React.ReactElement | null => {
                 Tinh bột
               </ThemedText>
               <ThemedText variant="h4" style={{ color: '#D97706' }}>
-                {macroValue(detail.perServingCarbs ?? detail.carbs)}
+                {baseMacroValue(detail.perServingCarbs ?? detail.carbs)}
               </ThemedText>
             </View>
             <View style={[styles.macroCard, { backgroundColor: 'rgba(236, 72, 153, 0.12)', borderWidth: 1, borderColor: 'rgba(236, 72, 153, 0.2)' }]}>
@@ -537,15 +548,14 @@ const FoodDetailScreen = (): React.ReactElement | null => {
                 Chất béo
               </ThemedText>
               <ThemedText variant="h4" style={{ color: '#DB2777' }}>
-                {macroValue(detail.perServingFat ?? detail.fat)}
+                {baseMacroValue(detail.perServingFat ?? detail.fat)}
               </ThemedText>
             </View>
           </View>
         </View>
-      </Animated.View>
+      </View>
 
-      <Animated.View
-        entering={FadeInDown.duration(theme.animation.normal).delay(100)}
+      <View
         style={{ paddingHorizontal: theme.spacing.lg, paddingBottom: 40 }}
       >
         <View style={[
@@ -651,35 +661,99 @@ const FoodDetailScreen = (): React.ReactElement | null => {
             />
           </View>
 
-          {/* Compact Preview Box */}
+          {/* Preview Box - Premium Design */}
           <View
             style={{
-              backgroundColor: isDark ? 'rgba(74, 144, 226, 0.12)' : 'rgba(59, 130, 246, 0.08)',
               marginTop: theme.spacing.lg,
+              borderRadius: 20,
+              overflow: 'hidden',
               borderWidth: 1,
-              borderColor: isDark ? 'rgba(74, 144, 226, 0.2)' : 'rgba(59, 130, 246, 0.12)',
-              borderRadius: 16,
-              padding: theme.spacing.md,
+              borderColor: isDark ? 'rgba(74, 144, 226, 0.25)' : 'rgba(59, 130, 246, 0.15)',
             }}
           >
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-              <ThemedText variant="bodySmall" weight="600" color="primary">
-                Tổng ({gramsValue || '--'}g)
-              </ThemedText>
-              <ThemedText variant="h4" weight="700" color="primary">
-                {calorieValue}
-              </ThemedText>
-            </View>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-              <ThemedText variant="caption" style={{ color: '#3B82F6' }}>
-                Đạm: {macroValue(detail.perServingProtein ?? detail.protein)}
-              </ThemedText>
-              <ThemedText variant="caption" style={{ color: '#D97706' }}>
-                Tinh bột: {macroValue(detail.perServingCarbs ?? detail.carbs)}
-              </ThemedText>
-              <ThemedText variant="caption" style={{ color: '#DB2777' }}>
-                Béo: {macroValue(detail.perServingFat ?? detail.fat)}
-              </ThemedText>
+            {/* Header with gradient */}
+            <LinearGradient
+              colors={isDark
+                ? ['rgba(74, 144, 226, 0.25)', 'rgba(118, 75, 162, 0.2)']
+                : ['rgba(59, 130, 246, 0.15)', 'rgba(139, 92, 246, 0.1)']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={{
+                padding: theme.spacing.md,
+                flexDirection: 'row',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+              }}
+            >
+              <View>
+                <ThemedText variant="caption" weight="500" color="textSecondary">
+                  Khẩu phần bạn chọn
+                </ThemedText>
+                <ThemedText variant="h4" weight="700" color="primary">
+                  {gramsValue || '--'} gram
+                </ThemedText>
+              </View>
+              <View style={{ alignItems: 'flex-end' }}>
+                <ThemedText variant="caption" weight="500" color="textSecondary">
+                  Năng lượng
+                </ThemedText>
+                <ThemedText variant="h3" weight="700" style={{ color: '#EF4444' }}>
+                  {calorieValue}
+                </ThemedText>
+              </View>
+            </LinearGradient>
+
+            {/* Macro pills */}
+            <View
+              style={{
+                flexDirection: 'row',
+                padding: theme.spacing.md,
+                gap: 8,
+                backgroundColor: isDark ? 'rgba(20, 27, 45, 0.6)' : 'rgba(255, 255, 255, 0.8)',
+              }}
+            >
+              <View style={{
+                flex: 1,
+                backgroundColor: 'rgba(59, 130, 246, 0.12)',
+                borderRadius: 12,
+                padding: 10,
+                alignItems: 'center',
+              }}>
+                <ThemedText variant="caption" weight="600" style={{ color: '#3B82F6', fontSize: 10 }}>
+                  ĐẠM
+                </ThemedText>
+                <ThemedText variant="body" weight="700" style={{ color: '#3B82F6' }}>
+                  {macroValue(detail.perServingProtein ?? detail.protein)}
+                </ThemedText>
+              </View>
+              <View style={{
+                flex: 1,
+                backgroundColor: 'rgba(251, 191, 36, 0.12)',
+                borderRadius: 12,
+                padding: 10,
+                alignItems: 'center',
+              }}>
+                <ThemedText variant="caption" weight="600" style={{ color: '#D97706', fontSize: 10 }}>
+                  TINH BỘT
+                </ThemedText>
+                <ThemedText variant="body" weight="700" style={{ color: '#D97706' }}>
+                  {macroValue(detail.perServingCarbs ?? detail.carbs)}
+                </ThemedText>
+              </View>
+              <View style={{
+                flex: 1,
+                backgroundColor: 'rgba(236, 72, 153, 0.12)',
+                borderRadius: 12,
+                padding: 10,
+                alignItems: 'center',
+              }}>
+                <ThemedText variant="caption" weight="600" style={{ color: '#DB2777', fontSize: 10 }}>
+                  CHẤT BÉO
+                </ThemedText>
+                <ThemedText variant="body" weight="700" style={{ color: '#DB2777' }}>
+                  {macroValue(detail.perServingFat ?? detail.fat)}
+                </ThemedText>
+              </View>
             </View>
           </View>
 
@@ -694,7 +768,7 @@ const FoodDetailScreen = (): React.ReactElement | null => {
             />
           </View>
         </View>
-      </Animated.View>
+      </View>
     </Screen>
   );
 };
