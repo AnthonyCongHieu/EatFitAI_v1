@@ -1,8 +1,8 @@
 // Màn hình Thành tích - Redesigned với UI/UX hiện đại
 // Inspired by Duolingo, Strava, và các fitness apps hàng đầu
 
-import React, { useEffect, useRef } from 'react';
-import { View, StyleSheet, FlatList, TouchableOpacity, Dimensions } from 'react-native';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
+import { View, StyleSheet, FlatList, TouchableOpacity, Dimensions, RefreshControl } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -29,13 +29,25 @@ const AchievementsScreen = (): React.ReactElement => {
   const { theme } = useAppTheme();
   const isDark = theme.mode === 'dark';
   const navigation = useNavigation();
-  const { achievements, currentStreak, longestStreak, totalDaysLogged, checkStreak } =
+  const { achievements, currentStreak, longestStreak, totalDaysLogged, checkStreak, syncAchievementProgress } =
     useGamificationStore();
   const viewRef = useRef(null);
 
   useEffect(() => {
     checkStreak();
-  }, [checkStreak]);
+    // Sync progress achievements với state hiện tại (fix bug progress không cập nhật)
+    syncAchievementProgress();
+  }, [checkStreak, syncAchievementProgress]);
+
+  // Pull-to-refresh
+  const [refreshing, setRefreshing] = useState(false);
+
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await checkStreak(); // Force recalculate streak from API
+    syncAchievementProgress();
+    setRefreshing(false);
+  }, [checkStreak, syncAchievementProgress]);
 
   const handleShare = async () => {
     await shareService.shareScreenshot(viewRef);
@@ -376,6 +388,14 @@ const AchievementsScreen = (): React.ReactElement => {
           keyExtractor={(item) => item.id}
           contentContainerStyle={styles.content}
           showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={handleRefresh}
+              colors={[theme.colors.primary]}
+              tintColor={theme.colors.primary}
+            />
+          }
           ListHeaderComponent={
             <>
               {renderStreakHeader()}

@@ -6,6 +6,7 @@ import {
   ActivityIndicator,
   Alert,
   Pressable,
+  RefreshControl,
   ScrollView,
   StyleSheet,
   Switch,
@@ -96,6 +97,15 @@ const ProfileScreen = (): React.ReactElement => {
       { text: t('common.logout'), style: 'destructive', onPress: () => logout() },
     ]);
   }, [logout]);
+
+  // Pull-to-refresh state
+  const [refreshing, setRefreshing] = useState(false);
+
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await fetchProfile();
+    setRefreshing(false);
+  }, [fetchProfile]);
 
   const styles = StyleSheet.create({
     container: { flex: 1 },
@@ -202,7 +212,17 @@ const ProfileScreen = (): React.ReactElement => {
         </ThemedText>
       </View>
 
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+            colors={[theme.colors.primary]}
+            tintColor={theme.colors.primary}
+          />
+        }
+      >
         {/* Hero Section - Matching Reference Image */}
         <Animated.View entering={FadeIn.duration(400)} style={styles.heroCard}>
           {/* Name - Centered */}

@@ -41,6 +41,7 @@ interface GamificationState {
   checkStreak: () => Promise<void>;
   fetchWeeklyLogs: () => Promise<void>;
   unlockAchievement: (id: string) => void;
+  syncAchievementProgress: () => void;
   reset: () => void;
 }
 
@@ -124,70 +125,92 @@ export const useGamificationStore = create<GamificationState>()(
 
       checkStreak: async () => {
         try {
-          const today = new Date().toISOString().split('T')[0];
-          const { lastStreakCheck, lastLogDate, currentStreak, longestStreak, totalDaysLogged } = get();
+          const today = new Date();
+          const todayStr = today.toISOString().split('T')[0] ?? '';
+          const { longestStreak } = get();
 
-          // Nếu đã check streak hôm nay và đã ghi nhận log hôm nay thì không cần gọi API nữa
-          if (lastStreakCheck === today && lastLogDate === today) {
-            console.log('[GamificationStore] Streak already checked today');
-            return;
+          // Lấy dữ liệu 14 ngày gần nhất để tính streak chính xác hơn
+          const summary = await diaryService.getWeekSummary(todayStr);
+
+          // Tính currentStreak từ dữ liệu thực tế (đếm ngược từ hôm nay)
+          let calculatedStreak = 0;
+          let totalDays = 0;
+
+          // Tạo danh sách 14 ngày gần nhất
+          const dates: string[] = [];
+          for (let i = 0; i < 14; i++) {
+            const date = new Date(today);
+            date.setDate(today.getDate() - i);
+            dates.push(date.toISOString().split('T')[0] ?? '');
           }
 
-          // Check if user logged today by fetching summary
-          const summary = await diaryService.getTodaySummary();
-          const hasLoggedToday = summary.meals.some((m) => m.entries.length > 0);
+          // Đếm streak (ngày liên tiếp từ hôm nay hoặc hôm qua)
+          let foundFirstLog = false;
+          for (let i = 0; i < dates.length; i++) {
+            const dateStr = dates[i] ?? '';
+            const hasLog = (summary.dailyCalories[dateStr] ?? 0) > 0;
 
-          let nextState: Partial<GamificationState> = { lastStreakCheck: today };
-
-          if (!hasLoggedToday) {
-            const yesterday = new Date();
-            yesterday.setDate(yesterday.getDate() - 1);
-            const yesterdayStr = yesterday.toISOString().split('T')[0];
-
-            if (
-              lastLogDate !== today &&
-              lastLogDate !== yesterdayStr &&
-              lastLogDate !== null
-            ) {
-              nextState.currentStreak = 0;
+            if (hasLog) {
+              totalDays++;
+              if (!foundFirstLog) {
+                foundFirstLog = true;
+                calculatedStreak = 1;
+              } else {
+                calculatedStreak++;
+              }
+            } else {
+              // Nếu hôm nay chưa log nhưng hôm qua có log thì vẫn tiếp tục đếm
+              if (i === 0) {
+                continue; // Bỏ qua hôm nay nếu chưa log
+              }
+              // Gặp ngày không log thì dừng streak
+              if (foundFirstLog) break;
             }
-            set(nextState as GamificationState);
-            return;
           }
 
-          // User has logged today
-          if (lastLogDate === today) {
-            set(nextState as GamificationState);
-            return;
+          // Update weeklyLogs (7 ngày gần nhất cho UI)
+          const weeklyLogs: boolean[] = [];
+          for (let i = 6; i >= 0; i--) {
+            const date = new Date(today);
+            date.setDate(today.getDate() - i);
+            const dateStr = date.toISOString().split('T')[0] ?? '';
+            const hasLog = (summary.dailyCalories[dateStr] ?? 0) > 0;
+            weeklyLogs.push(hasLog);
           }
 
-          // New day logged logic...
-          const yesterday = new Date();
-          yesterday.setDate(yesterday.getDate() - 1);
-          const yesterdayStr = yesterday.toISOString().split('T')[0];
-
-          let newStreak = currentStreak;
-          if (lastLogDate === yesterdayStr) {
-            newStreak += 1;
-          } else if (lastLogDate === null) {
-            newStreak = 1;
-          } else {
-            newStreak = 1;
-          }
+          // Cập nhật state
+          const newLongestStreak = Math.max(longestStreak, calculatedStreak);
 
           set({
-            ...nextState,
-            currentStreak: newStreak,
-            longestStreak: Math.max(longestStreak, newStreak),
-            lastLogDate: today,
-            totalDaysLogged: totalDaysLogged + 1,
+            currentStreak: calculatedStreak,
+            longestStreak: newLongestStreak,
+            totalDaysLogged: totalDays,
+            weeklyLogs,
+            lastWeeklyFetch: Date.now(),
+            lastStreakCheck: todayStr,
+            lastLogDate: weeklyLogs[6] ? todayStr : null, // Hôm nay đã log?
+            // Sync progress cho achievements
+            achievements: get().achievements.map((a) => {
+              if (a.id === 'streak_3') {
+                return { ...a, progress: Math.min(calculatedStreak, a.target) };
+              }
+              if (a.id === 'streak_7') {
+                return { ...a, progress: Math.min(calculatedStreak, a.target) };
+              }
+              if (a.id === 'first_log') {
+                return { ...a, progress: Math.min(totalDays, a.target) };
+              }
+              return a;
+            }),
           });
 
-          // Check achievements
+          // Unlock achievements nếu đạt target
           const { unlockAchievement } = get();
-          if (newStreak >= 3) unlockAchievement('streak_3');
-          if (newStreak >= 7) unlockAchievement('streak_7');
-          if (totalDaysLogged + 1 >= 1) unlockAchievement('first_log');
+          if (calculatedStreak >= 3) unlockAchievement('streak_3');
+          if (calculatedStreak >= 7) unlockAchievement('streak_7');
+          if (totalDays >= 1) unlockAchievement('first_log');
+
+          console.log('[GamificationStore] Streak calculated:', { calculatedStreak, totalDays, newLongestStreak });
         } catch (error) {
           console.error('Error checking streak:', error);
         }
@@ -208,6 +231,32 @@ export const useGamificationStore = create<GamificationState>()(
           }
           return state;
         });
+      },
+
+      // Sync progress của achievements với state hiện tại (gọi khi vào AchievementsScreen)
+      syncAchievementProgress: () => {
+        const { currentStreak, totalDaysLogged, achievements } = get();
+
+        const updatedAchievements = achievements.map((a) => {
+          // Không cập nhật nếu đã unlock
+          if (a.unlockedAt) return a;
+
+          let newProgress = a.progress;
+          if (a.id === 'streak_3' || a.id === 'streak_7') {
+            newProgress = Math.min(currentStreak, a.target);
+          } else if (a.id === 'first_log') {
+            newProgress = Math.min(totalDaysLogged, a.target);
+          }
+
+          // Auto unlock nếu đạt target
+          if (newProgress >= a.target) {
+            return { ...a, progress: a.target, unlockedAt: new Date().toISOString() };
+          }
+
+          return { ...a, progress: newProgress };
+        });
+
+        set({ achievements: updatedAchievements });
       },
 
       reset: () => {

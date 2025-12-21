@@ -2,7 +2,7 @@
 // Features: Summary header, improved date selector, beautiful meal cards
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { FlatList, Pressable, StyleSheet, View, Dimensions, Platform } from 'react-native';
+import { FlatList, Pressable, StyleSheet, View, Dimensions, Platform, RefreshControl } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import Animated, {
   FadeIn,
@@ -158,6 +158,15 @@ const MealDiaryScreen = (): React.ReactElement => {
     queryFn: () => diaryService.getEntriesByDate(dateKey),
   });
   const entries = entriesData ?? [];
+
+  // Pull-to-refresh state
+  const [refreshing, setRefreshing] = useState(false);
+
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await refetch();
+    setRefreshing(false);
+  }, [refetch]);
 
   // Group entries by meal type
   const groupedEntries = useMemo(() => {
@@ -810,6 +819,14 @@ const MealDiaryScreen = (): React.ReactElement => {
             showsVerticalScrollIndicator={false}
             contentContainerStyle={{ paddingBottom: 100 }}
             ListHeaderComponent={renderSummaryHeader}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={handleRefresh}
+                colors={[theme.colors.primary]}
+                tintColor={theme.colors.primary}
+              />
+            }
           />
         )}
 
