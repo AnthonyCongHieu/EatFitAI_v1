@@ -9,22 +9,26 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const PORT = 5247;
 const CACHE_KEY = '@eatfitai_api_url';
-const DISCOVERY_TIMEOUT = 1500; // ms cho mỗi IP (tăng lên để mạng chậm vẫn tìm được)
-const VERIFY_TIMEOUT = 2000; // ms cho verify cached IP
+const DISCOVERY_TIMEOUT = 800; // ms - giảm xuống để scan nhanh hơn
+const VERIFY_TIMEOUT = 1500; // ms cho verify cached IP
 
 // Các dải IP phổ biến trong mạng LAN gia đình/văn phòng
 const COMMON_SUBNETS = [
-    '10.68.11',    // Mạng hiện tại (ưu tiên)
-    '172.16.3',    // Mạng công ty/trường học (Class B private)
-    '192.168.100', // Viettel, FPT modem thường dùng
-    '192.168.1',   // Router phổ biến
+    '192.168.1',   // Router phổ biến nhất (ưu tiên cao)
     '192.168.0',   // TP-Link, D-Link
+    '192.168.100', // Viettel, FPT modem thường dùng
+    '10.68.11',    // Mạng trường học
+    '172.16.3',    // Mạng công ty/trường học (Class B private)
     '10.0.0',      // Một số mạng doanh nghiệp
     '192.168.2',   // Backup subnet
     '172.16.0',    // Class B private range
     '172.16.1',    // Class B private range
     '172.16.2',    // Class B private range
 ];
+
+// IP cuối phổ biến nhất (router thường gán 1-20 cho thiết bị)
+// Scan các IP này trước để tìm nhanh hơn
+const PRIORITY_LAST_OCTETS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 100, 101, 254];
 
 const SCAN_COOLDOWN_MS = 120000; // 2 phút cooldown giữa các lần scan toàn bộ
 
@@ -123,13 +127,54 @@ export const preloadCachedUrl = async (): Promise<void> => {
 };
 
 /**
+ * Scan nhanh: thử các IP phổ biến nhất trước
+ * Ví dụ: 192.168.1.1, 192.168.1.6, 192.168.0.1, ...
+ */
+const quickScan = async (): Promise<string | null> => {
+    console.log('[IPScanner] ⚡ Quick scan các IP phổ biến...');
+
+    // Tạo danh sách IP ưu tiên từ tất cả subnet
+    const priorityIps: string[] = [];
+    for (const subnet of COMMON_SUBNETS) {
+        for (const lastOctet of PRIORITY_LAST_OCTETS) {
+            priorityIps.push(`${subnet}.${lastOctet}`);
+        }
+    }
+
+    // Scan TẤT CẢ IP ưu tiên cùng lúc (khoảng 130 IP, rất nhanh)
+    const results = await Promise.all(
+        priorityIps.map(async (ip) => ((await tryIp(ip)) ? ip : null))
+    );
+
+    const foundIp = results.find((ip) => ip !== null);
+    if (foundIp) {
+        const url = `http://${foundIp}:${PORT}`;
+        console.log(`[IPScanner] ⚡ Quick scan tìm thấy: ${url}`);
+        return url;
+    }
+
+    return null;
+};
+
+/**
  * Scan tất cả subnet để tìm backend (chạy song song các subnet)
  */
 const doScan = async (): Promise<string | null> => {
-    console.log('[IPScanner] Bắt đầu scan song song các subnet...');
+    console.log('[IPScanner] Bắt đầu scan...');
 
     try {
-        // Scan tất cả subnets cùng lúc
+        // BƯỚC 1: Quick scan các IP phổ biến trước (< 1 giây)
+        const quickResult = await quickScan();
+        if (quickResult) {
+            await AsyncStorage.setItem(CACHE_KEY, quickResult);
+            cachedUrl = quickResult;
+            hasFoundBackend = true;
+            console.log(`[IPScanner] ✅ Tìm thấy EatFitAI backend: ${quickResult}`);
+            return quickResult;
+        }
+
+        // BƯỚC 2: Full scan nếu quick scan không tìm thấy
+        console.log('[IPScanner] Quick scan không tìm thấy, full scan...');
         const results = await Promise.all(
             COMMON_SUBNETS.map(async (subnet) => {
                 const ip = await scanSubnet(subnet);
