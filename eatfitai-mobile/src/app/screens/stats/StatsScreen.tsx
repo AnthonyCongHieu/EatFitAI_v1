@@ -63,16 +63,18 @@ const StatsScreen = (): React.ReactElement => {
     const isLoadingWeek = useStatsStore((state) => state.isLoading);
     const fetchWeekSummary = useStatsStore((state) => state.fetchWeekSummary);
 
-    // Get targetCalories from diary summary
+    // Get data from diary summary (same source as HomeScreen)
     const summary = useDiaryStore((state) => state.summary);
+    const fetchSummary = useDiaryStore((state) => state.fetchSummary);
 
     const [monthData, setMonthData] = useState<MonthSummary | null>(null);
     const [isLoadingMonth, setIsLoadingMonth] = useState(false);
     const [currentMonth, setCurrentMonth] = useState(() => new Date());
 
-    // Fetch data on mount
+    // Fetch data on mount - both week summary and diary summary for today tab
     useEffect(() => {
         fetchWeekSummary();
+        fetchSummary(); // Đồng bộ với HomeScreen
     }, []);
 
     // Fetch month data when tab changes to month
@@ -254,8 +256,9 @@ const StatsScreen = (): React.ReactElement => {
                         entering={slideDirection === 'right' ? SlideInRight.springify() : SlideInLeft.springify()}
                     >
                         {/* Hero Card - only on Today tab */}
+                        {/* Sử dụng summary từ useDiaryStore để đồng bộ với HomeScreen */}
                         <StatsHeroCard
-                            value={todayData?.calories || 0}
+                            value={summary?.totalCalories || 0}
                             target={summary?.targetCalories || 2000}
                             unit="kcal"
                             label="Hôm nay"
