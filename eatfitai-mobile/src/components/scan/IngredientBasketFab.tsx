@@ -2,7 +2,7 @@
  * IngredientBasketFab - Floating Action Button hiển thị giỏ nguyên liệu
  * Có thể kéo thả tự do, hiển thị số lượng nguyên liệu và mở BottomSheet khi tap
  */
-import React from 'react';
+import React, { useCallback } from 'react';
 import { View, StyleSheet, Dimensions } from 'react-native';
 import Animated, {
   FadeIn,
@@ -10,6 +10,8 @@ import Animated, {
   useAnimatedStyle,
   useSharedValue,
   withSpring,
+  withSequence,
+  runOnJS,
 } from 'react-native-reanimated';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import * as Haptics from 'expo-haptics';
@@ -39,16 +41,24 @@ export const IngredientBasketFab: React.FC<IngredientBasketFabProps> = ({ onPres
   const contextY = useSharedValue(0);
   const isDragging = useSharedValue(false);
 
+  // Callback để xử lý tap - chạy trên JS thread
+  const handleTap = useCallback(() => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    onPress();
+  }, [onPress]);
+
   // Tap gesture for opening sheet
   const tapGesture = Gesture.Tap()
     .onEnd(() => {
+      'worklet';
       if (!isDragging.value) {
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-        scale.value = withSpring(0.9, { damping: 18, stiffness: 400 });
-        setTimeout(() => {
-          scale.value = withSpring(1, { damping: 18, stiffness: 400 });
-        }, 100);
-        onPress();
+        // Animate: scale down rồi scale up
+        scale.value = withSequence(
+          withSpring(0.9, { damping: 18, stiffness: 400 }),
+          withSpring(1, { damping: 18, stiffness: 400 })
+        );
+        // Gọi JS function qua runOnJS
+        runOnJS(handleTap)();
       }
     });
 
