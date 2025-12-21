@@ -193,7 +193,7 @@ export const CalendarHeatmap: React.FC<CalendarHeatmapProps> = ({
             <View style={styles.legend}>
                 <View style={styles.legendItem}>
                     <View style={[styles.legendDot, { backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)' }]} />
-                    <ThemedText variant="caption" color="textSecondary">Chưa log</ThemedText>
+                    <ThemedText variant="caption" color="textSecondary">Chưa có</ThemedText>
                 </View>
                 <View style={styles.legendItem}>
                     <View style={[styles.legendDot, { backgroundColor: theme.colors.success + '60' }]} />

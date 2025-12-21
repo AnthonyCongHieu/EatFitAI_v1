@@ -36,31 +36,31 @@ interface VoiceResultCardProps {
 const INTENT_CONFIG: Record<VoiceIntent, { icon: string; emoji: string; label: string; color: string }> = {
     ADD_FOOD: {
         icon: 'restaurant',
-        emoji: '🍽️',
+        emoji: '',
         label: 'Thêm món ăn',
         color: '#10B981',
     },
     LOG_WEIGHT: {
         icon: 'scale',
-        emoji: '⚖️',
+        emoji: '',
         label: 'Ghi cân nặng',
         color: '#3B82F6',
     },
     ASK_CALORIES: {
         icon: 'flame',
-        emoji: '🔥',
+        emoji: '',
         label: 'Xem calories',
         color: '#F59E0B',
     },
     ASK_NUTRITION: {
         icon: 'nutrition',
-        emoji: '📊',
+        emoji: '',
         label: 'Xem dinh dưỡng',
         color: '#8B5CF6',
     },
     UNKNOWN: {
         icon: 'help-circle',
-        emoji: '❓',
+        emoji: '',
         label: 'Không hiểu',
         color: '#6B7280',
     },
@@ -249,9 +249,6 @@ export const VoiceResultCard = ({
             <AppCard style={styles.card}>
                 {/* Header */}
                 <View style={styles.header}>
-                    <View style={styles.iconContainer}>
-                        <ThemedText style={{ fontSize: 20 }}>{config.emoji}</ThemedText>
-                    </View>
                     <View style={styles.headerText}>
                         <ThemedText variant="h4" weight="600">
                             {config.label}
@@ -289,13 +286,12 @@ export const VoiceResultCard = ({
                         {/* LOG_WEIGHT cần confirm - hiện button xác nhận lưu */}
                         {needsWeightConfirm && executedData?.newWeight && onConfirmWeight && (
                             <Button
-                                title={isExecuting ? 'Đang lưu...' : `✔️ Xác nhận thay đổi: ${executedData.newWeight} kg`}
+                                title={isExecuting ? 'Đang lưu...' : `Xác nhận: ${executedData.newWeight} kg`}
                                 variant="primary"
                                 onPress={() => onConfirmWeight(executedData.newWeight!)}
                                 loading={isExecuting}
                                 disabled={isExecuting}
                                 fullWidth
-                                icon="checkmark-circle"
                                 style={{
                                     marginTop: theme.spacing.md,
                                     minHeight: 52,
@@ -306,13 +302,12 @@ export const VoiceResultCard = ({
                         {/* ADD_FOOD và các intent khác: Button execute thông thường */}
                         {command.intent !== 'ASK_CALORIES' && command.intent !== 'LOG_WEIGHT' && (
                             <Button
-                                title={isExecuting ? 'Đang thực hiện...' : '✔️ Xác nhận thực hiện'}
+                                title={isExecuting ? 'Đang thực hiện...' : 'Xác nhận thực hiện'}
                                 variant="primary"
                                 onPress={onExecute}
                                 loading={isExecuting}
                                 disabled={isExecuting}
                                 fullWidth
-                                icon="checkmark-circle"
                                 style={{
                                     marginTop: theme.spacing.md,
                                     minHeight: 52,

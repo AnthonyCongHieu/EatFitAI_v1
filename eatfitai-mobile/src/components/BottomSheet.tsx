@@ -54,12 +54,17 @@ export const BottomSheet = ({
 
   const panGesture = Gesture.Pan()
     .onUpdate((event) => {
-      translateY.value = Math.max(0, event.translationY);
+      // Only allow drag down to close (positive values)
+      if (event.translationY > 0) {
+        translateY.value = event.translationY;
+      }
     })
     .onEnd((event) => {
       if (event.translationY > 100 || event.velocityY > 500) {
+        // Drag down - close sheet
         runOnJS(onClose)();
       } else {
+        // Return to original position
         translateY.value = withTiming(0, { duration: 200 });
       }
     });

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, Pressable } from 'react-native';
+import { View, StyleSheet, Pressable, ScrollView } from 'react-native';
 import { ThemedText } from '../ThemedText';
 import { BottomSheet } from '../BottomSheet';
 import Button from '../Button';
@@ -52,8 +52,12 @@ export const AddRecipeToDiarySheet = ({
     };
 
     return (
-        <BottomSheet visible={visible} onClose={onClose} height={520}>
-            <View style={{ padding: theme.spacing.lg }}>
+        <BottomSheet visible={visible} onClose={onClose} height={650}>
+            <ScrollView
+                style={{ flex: 1 }}
+                contentContainerStyle={{ padding: theme.spacing.lg, paddingBottom: 40 }}
+                showsVerticalScrollIndicator={false}
+            >
                 {/* Header */}
                 <ThemedText variant="h3" weight="600" style={{ marginBottom: theme.spacing.sm }}>
                     ➕ Thêm vào nhật ký
@@ -128,54 +132,72 @@ export const AddRecipeToDiarySheet = ({
                                 variant="body"
                                 weight={selectedServings === servings ? '700' : '400'}
                             >
-                                {servings}x
+                                {servings}
                             </ThemedText>
                         </Pressable>
                     ))}
                 </View>
 
-                {/* Nutrition Preview */}
-                <View
-                    style={[
-                        styles.nutritionPreview,
-                        {
-                            backgroundColor: theme.colors.primaryLight + '20',
-                            borderColor: theme.colors.primary + '30',
-                        },
-                    ]}
-                >
-                    <ThemedText variant="bodySmall" weight="600" style={{ marginBottom: theme.spacing.xs }}>
-                        📊 Dinh dưỡng ({selectedServings} khẩu phần)
+                {/* Nutrition Preview - Clean horizontal layout */}
+                <View style={[
+                    styles.nutritionPreview,
+                    { backgroundColor: theme.colors.card, borderColor: theme.colors.border }
+                ]}>
+                    <ThemedText variant="bodySmall" weight="600" style={{ marginBottom: 12 }}>
+                        Dinh dưỡng ({selectedServings} khẩu phần)
                     </ThemedText>
-                    <View style={styles.nutritionRow}>
-                        <ThemedText variant="caption" color="textSecondary">
-                            Calories: {calculatedNutrition.calories} kcal
-                        </ThemedText>
-                        <ThemedText variant="caption" color="textSecondary">
-                            Protein: {calculatedNutrition.protein}g
-                        </ThemedText>
-                    </View>
-                    <View style={styles.nutritionRow}>
-                        <ThemedText variant="caption" color="textSecondary">
-                            Carbs: {calculatedNutrition.carbs}g
-                        </ThemedText>
-                        <ThemedText variant="caption" color="textSecondary">
-                            Fat: {calculatedNutrition.fat}g
-                        </ThemedText>
+
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                        {/* Calories */}
+                        <View style={{ alignItems: 'center' }}>
+                            <ThemedText variant="h4" weight="700" color="primary">
+                                {calculatedNutrition.calories}
+                            </ThemedText>
+                            <ThemedText variant="caption" color="textSecondary">kcal</ThemedText>
+                        </View>
+
+                        {/* Protein */}
+                        <View style={{ alignItems: 'center' }}>
+                            <ThemedText variant="h4" weight="700" style={{ color: '#EF4444' }}>
+                                {calculatedNutrition.protein}g
+                            </ThemedText>
+                            <ThemedText variant="caption" color="textSecondary">Protein</ThemedText>
+                        </View>
+
+                        {/* Carbs */}
+                        <View style={{ alignItems: 'center' }}>
+                            <ThemedText variant="h4" weight="700" style={{ color: '#3B82F6' }}>
+                                {calculatedNutrition.carbs}g
+                            </ThemedText>
+                            <ThemedText variant="caption" color="textSecondary">Carbs</ThemedText>
+                        </View>
+
+                        {/* Fat */}
+                        <View style={{ alignItems: 'center' }}>
+                            <ThemedText variant="h4" weight="700" style={{ color: '#F59E0B' }}>
+                                {calculatedNutrition.fat}g
+                            </ThemedText>
+                            <ThemedText variant="caption" color="textSecondary">Fat</ThemedText>
+                        </View>
                     </View>
                 </View>
 
                 {/* Actions */}
                 <View style={styles.actions}>
-                    <Button title="Hủy" variant="ghost" onPress={onClose} style={{ flex: 1 }} />
                     <Button
-                        title="Thêm vào nhật ký"
+                        title="Hủy"
+                        variant="outline"
+                        onPress={onClose}
+                        style={{ flex: 1, marginRight: 8 }}
+                    />
+                    <Button
+                        title="Thêm"
                         variant="primary"
                         onPress={handleConfirm}
-                        style={{ flex: 1 }}
+                        style={{ flex: 1.5 }}
                     />
                 </View>
-            </View>
+            </ScrollView>
         </BottomSheet>
     );
 };
@@ -184,33 +206,49 @@ const styles = StyleSheet.create({
     mealTypeGrid: {
         flexDirection: 'row',
         flexWrap: 'wrap',
-        gap: 8,
+        gap: 10,
     },
     mealTypeButton: {
-        width: '48%',
-        padding: 12,
-        borderRadius: 12,
+        width: '47%',
+        padding: 14,
+        borderRadius: 16,
         borderWidth: 2,
         alignItems: 'center',
-        gap: 4,
+        gap: 6,
     },
     servingsGrid: {
         flexDirection: 'row',
-        flexWrap: 'wrap',
-        gap: 8,
+        gap: 10,
     },
     servingsButton: {
-        width: '30%',
-        padding: 12,
-        borderRadius: 12,
+        flex: 1,
+        paddingVertical: 14,
+        paddingHorizontal: 8,
+        borderRadius: 14,
         borderWidth: 2,
         alignItems: 'center',
+        justifyContent: 'center',
     },
     nutritionPreview: {
-        marginTop: 16,
-        padding: 12,
-        borderRadius: 12,
+        marginTop: 20,
+        padding: 16,
+        borderRadius: 16,
         borderWidth: 1,
+    },
+    nutritionGrid: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: 10,
+        marginTop: 12,
+    },
+    nutritionItem: {
+        width: '47%',
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+        paddingVertical: 8,
+        paddingHorizontal: 12,
+        borderRadius: 12,
     },
     nutritionRow: {
         flexDirection: 'row',
@@ -220,6 +258,6 @@ const styles = StyleSheet.create({
     actions: {
         flexDirection: 'row',
         gap: 12,
-        marginTop: 16,
+        marginTop: 20,
     },
 });

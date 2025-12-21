@@ -43,6 +43,7 @@ import { AnimatedEmptyState } from '../../components/ui/AnimatedEmptyState';
 import { MetricCard } from '../../components/ui/MetricCard';
 // InsightsCard removed per user request
 import CircularProgress from '../../components/ui/CircularProgress';
+import { MacroProgressCard } from '../../components/ui/MacroProgressCard';
 import CalorieRing from '../../components/ui/CalorieRing';
 import { FoodEntryCard } from '../../components/ui/FoodEntryCard';
 import SmartQuickActions from '../../components/SmartQuickActions';
@@ -380,7 +381,7 @@ const HomeScreen = (): React.ReactElement => {
           />
         </Animated.View>
 
-        {/* Hero Card - CalorieRing với macro bar tích hợp */}
+        {/* Hero Card - CalorieRing (macro display removed) */}
         <Animated.View entering={FadeInUp.duration(theme.animation.slow).springify()}>
           <View
             style={glass.card}
@@ -394,15 +395,27 @@ const HomeScreen = (): React.ReactElement => {
               protein={summary?.protein || 0}
               carbs={summary?.carbs || 0}
               fat={summary?.fat || 0}
-              showMacros={true}
+              showMacros={false}
               size={180}
             />
           </View>
         </Animated.View>
 
-        {/* Smart Context Banner (AI Suggestion) */}
+        {/* Macro Progress Card - right below CalorieRing */}
+        <Animated.View entering={FadeInUp.delay(150).springify()}>
+          <MacroProgressCard
+            protein={summary?.protein || 0}
+            carbs={summary?.carbs || 0}
+            fat={summary?.fat || 0}
+            targetProtein={summary?.targetProtein || 155}
+            targetCarbs={summary?.targetCarbs || 220}
+            targetFat={summary?.targetFat || 71}
+          />
+        </Animated.View>
+
+        {/* Smart Context Banner (AI Suggestion) - between CalorieRing and QuickActions */}
         {smartContext.priority >= 2 && (
-          <Animated.View entering={FadeInUp.delay(250).springify()}>
+          <Animated.View entering={FadeInUp.delay(200).springify()}>
             <Pressable
               style={[
                 glass.card,
@@ -425,10 +438,10 @@ const HomeScreen = (): React.ReactElement => {
           </Animated.View>
         )}
 
-        {/* AI Insights - removed */}
+
 
         {/* Smart Quick Actions - based on time of day */}
-        <Animated.View entering={FadeInUp.delay(200).springify()}>
+        <Animated.View entering={FadeInUp.delay(250).springify()}>
           <AppCard>
             <SmartQuickActions
               onAddMeal={handleQuickAction}
@@ -436,11 +449,6 @@ const HomeScreen = (): React.ReactElement => {
               onSearchFood={() => navigation.navigate('FoodSearch')}
             />
           </AppCard>
-        </Animated.View>
-
-        {/* Favorites Section */}
-        <Animated.View entering={FadeInUp.delay(300).springify()}>
-          <FavoritesList maxItems={6} />
         </Animated.View>
 
         {/* Today's Diary */}

@@ -326,7 +326,7 @@ const VoiceScreen = (): React.ReactElement => {
                         {/* Premium Text Input */}
                         <Animated.View entering={FadeInUp.delay(400)} style={styles.inputSection}>
                             <ThemedText variant="bodySmall" weight="600" color="textSecondary" style={styles.inputLabel}>
-                                ✍️ Hoặc gõ lệnh trực tiếp
+                                Hoặc gõ lệnh trực tiếp
                             </ThemedText>
                             <View style={[
                                 styles.inputWrapper,
