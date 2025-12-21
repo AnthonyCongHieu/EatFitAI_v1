@@ -707,7 +707,7 @@ const MealDiaryScreen = (): React.ReactElement => {
             </Pressable>
             <View style={{ flex: 1, marginLeft: 12 }}>
               <ThemedText variant="h3" weight="700">
-                📔 Nhật ký bữa ăn
+                Nhật ký bữa ăn
               </ThemedText>
             </View>
           </View>

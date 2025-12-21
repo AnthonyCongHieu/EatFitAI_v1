@@ -195,7 +195,7 @@ const ProfileScreen = (): React.ReactElement => {
       {/* Custom Header - matching StatsScreen */}
       <View style={{ alignItems: 'center', paddingTop: 70, paddingBottom: theme.spacing.lg }}>
         <ThemedText variant="h2" weight="700">
-          👤 Hồ sơ
+          Hồ sơ
         </ThemedText>
         <ThemedText variant="bodySmall" color="textSecondary">
           Thông tin cá nhân của bạn
