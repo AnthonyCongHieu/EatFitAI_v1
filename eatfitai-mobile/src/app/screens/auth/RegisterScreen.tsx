@@ -1,25 +1,23 @@
 import { useCallback, useState, useEffect } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet, View, Image, KeyboardAvoidingView, Platform } from 'react-native';
 import { Controller, useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import Toast from 'react-native-toast-message';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Ionicons } from '@expo/vector-icons';
-import Animated, { FadeInDown } from 'react-native-reanimated';
+import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
 
 import { useAppTheme } from '../../../theme/ThemeProvider';
 import { ThemedText } from '../../../components/ThemedText';
 import Screen from '../../../components/Screen';
-import { AppCard } from '../../../components/ui/AppCard';
+import { glassStyles } from '../../../components/ui/GlassCard';
 import Button from '../../../components/Button';
 import ThemedTextInput from '../../../components/ThemedTextInput';
 import apiClient from '../../../services/apiClient';
 import { useAuthStore } from '../../../store/useAuthStore';
 import type { RootStackParamList } from '../../types';
 import { t } from '../../../i18n/vi';
-import { handleApiError } from '../../../utils/errorHandler';
 
 const RegisterSchema = z
   .object({
@@ -33,7 +31,6 @@ const RegisterSchema = z
         'Mật khẩu phải có chữ hoa, chữ thường và số',
       ),
     confirmPassword: z.string().min(6, 'Nhập lại mật khẩu'),
-    passwordHint: z.string().optional(),
   })
   .refine((data) => data.password === data.confirmPassword, {
     message: 'Mật khẩu nhập lại không khớp',
@@ -45,10 +42,12 @@ type Props = NativeStackScreenProps<RootStackParamList, 'Register'>;
 
 const RegisterScreen = ({ navigation }: Props): React.ReactElement => {
   const { theme } = useAppTheme();
+  const isDark = theme.mode === 'dark';
+  const glass = glassStyles(isDark);
   const signInWithGoogle = useAuthStore((s) => s.signInWithGoogle);
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
-  const [passwordStrength, setPasswordStrength] = useState(0); // 0-3
+  const [passwordStrength, setPasswordStrength] = useState(0);
 
   const {
     control,
@@ -88,21 +87,18 @@ const RegisterScreen = ({ navigation }: Props): React.ReactElement => {
     return 'Mạnh';
   };
 
-  // Response từ register-with-verification
   interface RegisterResponse {
     success: boolean;
     message: string;
     email: string;
     verificationCodeExpiresAt: string;
-    verificationCode?: string; // Chỉ có trong dev mode
+    verificationCode?: string;
   }
 
   const onSubmit = useCallback(
     async (values: RegisterValues) => {
       try {
         setLoading(true);
-
-        // Gọi API đăng ký với xác minh email
         const resp = await apiClient.post<RegisterResponse>(
           '/api/auth/register-with-verification',
           {
@@ -120,27 +116,21 @@ const RegisterScreen = ({ navigation }: Props): React.ReactElement => {
           text2: 'Kiểm tra email để lấy mã xác minh',
         });
 
-        // Navigate đến VerifyEmailScreen với email và mã (nếu dev mode)
         navigation.navigate('VerifyEmail', {
           email: values.email,
-          verificationCode: data.verificationCode, // undefined nếu production
+          verificationCode: data.verificationCode,
         });
       } catch (e: any) {
         console.error('Registration error:', e);
-        console.error('Response data:', e?.response?.data);
-
         let message = t('auth.registerFailed');
         if (e?.response?.data?.message) {
           message = e.response.data.message;
         } else if (e?.message) {
           message = e.message;
         }
-
-        // Handle specific error cases if needed
         if (message.includes('Email')) {
           message = 'Email này đã được sử dụng hoặc không hợp lệ.';
         }
-
         Toast.show({
           type: 'error',
           text1: 'Đăng ký thất bại',
@@ -154,7 +144,6 @@ const RegisterScreen = ({ navigation }: Props): React.ReactElement => {
     [navigation],
   );
 
-  // Google Sign-In handler
   const onGoogle = useCallback(async () => {
     try {
       setGoogleLoading(true);
@@ -165,7 +154,6 @@ const RegisterScreen = ({ navigation }: Props): React.ReactElement => {
         text2: 'Chào mừng bạn!',
       });
 
-      // Check onboarding status - user mới từ Google cần hoàn tất onboarding
       if (result.needsOnboarding) {
         navigation.reset({ index: 0, routes: [{ name: 'Onboarding' }] });
       } else {
@@ -183,160 +171,196 @@ const RegisterScreen = ({ navigation }: Props): React.ReactElement => {
     }
   }, [signInWithGoogle, navigation]);
 
-  return (
-    <Screen scroll={true} contentContainerStyle={styles.container}>
-      <LinearGradient
-        colors={[theme.colors.background, theme.colors.primary + '10']}
-        style={StyleSheet.absoluteFill}
-      />
+  const styles = StyleSheet.create({
+    container: {
+      flex: 1,
+    },
+    scrollContent: {
+      flexGrow: 1,
+      paddingHorizontal: 24,
+      paddingTop: 80,
+      paddingBottom: 40,
+    },
+    logoContainer: {
+      alignItems: 'center',
+      marginBottom: 24,
+    },
+    logo: {
+      width: 80,
+      height: 80,
+      borderRadius: 20,
+    },
+    formCard: {
+      ...glass.card,
+      padding: 24,
+      marginBottom: 24,
+    },
+    inputGroup: {
+      gap: 12,
+      marginBottom: 16,
+    },
+    dividerRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginVertical: 16,
+    },
+    dividerLine: {
+      flex: 1,
+      height: 1,
+      backgroundColor: theme.colors.border,
+    },
+    dividerText: {
+      marginHorizontal: 16,
+    },
+    loginSection: {
+      alignItems: 'center',
+      marginTop: 16,
+    },
+  });
 
-      <Animated.View
-        entering={FadeInDown.duration(600).springify()}
-        style={{ padding: 24 }}
+  return (
+    <LinearGradient
+      colors={theme.colors.screenGradient}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 0.5, y: 1 }}
+      style={styles.container}
+    >
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
-        <AppCard
-          padding="lg"
-          shadow="lg"
-          style={{ backgroundColor: theme.colors.card + 'F5' }}
-        >
-          {/* Card content */}
-          <View style={{ alignItems: 'center', marginBottom: theme.spacing.xl }}>
-            <View
-              style={{
-                width: 64,
-                height: 64,
-                borderRadius: 32,
-                backgroundColor: theme.colors.primary + '20',
-                alignItems: 'center',
-                justifyContent: 'center',
-                marginBottom: theme.spacing.md,
-              }}
-            >
-              <Ionicons name="person-add" size={32} color={theme.colors.primary} />
-            </View>
-            <ThemedText
-              variant="h2"
-              style={{ marginBottom: theme.spacing.xs, textAlign: 'center' }}
-            >
-              Tạo tài khoản
-            </ThemedText>
-            <ThemedText
-              variant="bodySmall"
-              color="textSecondary"
-              style={{ textAlign: 'center' }}
-            >
-              {t('auth.registerTitle')}
-            </ThemedText>
-          </View>
-          <Controller
-            control={control}
-            name="name"
-            render={({ field: { onChange, onBlur, value } }) => (
-              <ThemedTextInput
-                label={t('auth.displayName')}
-                placeholder="Nguyễn Văn A"
-                onBlur={onBlur}
-                onChangeText={onChange}
-                value={value}
-                error={!!errors.name}
-                helperText={errors.name?.message}
-                required
+        <Screen scroll={true} contentContainerStyle={styles.scrollContent}>
+          {/* Logo */}
+          <Animated.View
+            entering={FadeInDown.delay(100).springify()}
+            style={styles.logoContainer}
+          >
+            <Image
+              source={require('../../../assets/icon.png')}
+              style={styles.logo}
+            />
+          </Animated.View>
+
+          {/* Register Form Card */}
+          <Animated.View
+            entering={FadeInDown.delay(200).springify()}
+            style={styles.formCard}
+          >
+            <View style={styles.inputGroup}>
+              <Controller
+                control={control}
+                name="name"
+                render={({ field: { onChange, onBlur, value } }) => (
+                  <ThemedTextInput
+                    label={t('auth.displayName')}
+                    placeholder="Nguyễn Văn A"
+                    onBlur={onBlur}
+                    onChangeText={onChange}
+                    value={value}
+                    error={!!errors.name}
+                    helperText={errors.name?.message}
+                    required
+                  />
+                )}
               />
-            )}
-          />
-          <Controller
-            control={control}
-            name="email"
-            render={({ field: { onChange, onBlur, value } }) => (
-              <ThemedTextInput
-                label={t('auth.email')}
-                placeholder="you@example.com"
-                keyboardType="email-address"
-                autoCapitalize="none"
-                onBlur={onBlur}
-                onChangeText={onChange}
-                value={value}
-                error={!!errors.email}
-                helperText={errors.email?.message}
-                required
+
+              <Controller
+                control={control}
+                name="email"
+                render={({ field: { onChange, onBlur, value } }) => (
+                  <ThemedTextInput
+                    label={t('auth.email')}
+                    placeholder="you@example.com"
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                    onBlur={onBlur}
+                    onChangeText={onChange}
+                    value={value}
+                    error={!!errors.email}
+                    helperText={errors.email?.message}
+                    required
+                  />
+                )}
               />
-            )}
-          />
-          <Controller
-            control={control}
-            name="password"
-            render={({ field: { onChange, onBlur, value } }) => (
-              <View>
-                <ThemedTextInput
-                  label={t('auth.password')}
-                  placeholder="••••••••"
-                  secureTextEntry
-                  secureToggle
-                  onBlur={onBlur}
-                  onChangeText={onChange}
-                  value={value}
-                  error={!!errors.password}
-                  helperText={errors.password?.message}
-                  required
-                />
-                {/* Password Strength Meter */}
-                {value && value.length > 0 && (
-                  <View
-                    style={{
-                      flexDirection: 'row',
-                      alignItems: 'center',
-                      marginTop: -8,
-                      marginBottom: 12,
-                      gap: 8,
-                    }}
-                  >
-                    <View
-                      style={{
-                        flex: 1,
-                        height: 4,
-                        backgroundColor: theme.colors.border,
-                        borderRadius: 2,
-                        overflow: 'hidden',
-                      }}
-                    >
+
+              <Controller
+                control={control}
+                name="password"
+                render={({ field: { onChange, onBlur, value } }) => (
+                  <View>
+                    <ThemedTextInput
+                      label={t('auth.password')}
+                      placeholder="••••••••"
+                      secureTextEntry
+                      secureToggle
+                      onBlur={onBlur}
+                      onChangeText={onChange}
+                      value={value}
+                      error={!!errors.password}
+                      helperText={errors.password?.message}
+                      required
+                    />
+                    {/* Password Strength Meter */}
+                    {value && value.length > 0 && (
                       <View
                         style={{
-                          width: `${(passwordStrength / 3) * 100}%`,
-                          height: '100%',
-                          backgroundColor: getStrengthColor(),
+                          flexDirection: 'row',
+                          alignItems: 'center',
+                          justifyContent: 'flex-end',
+                          marginTop: 4,
+                          gap: 8,
                         }}
-                      />
-                    </View>
-                    <ThemedText
-                      variant="caption"
-                      style={{ color: getStrengthColor(), width: 60, textAlign: 'right' }}
-                    >
-                      {getStrengthLabel()}
-                    </ThemedText>
+                      >
+                        <View
+                          style={{
+                            width: 80,
+                            height: 3,
+                            backgroundColor: theme.colors.border,
+                            borderRadius: 2,
+                            overflow: 'hidden',
+                          }}
+                        >
+                          <View
+                            style={{
+                              width: `${(passwordStrength / 3) * 100}%`,
+                              height: '100%',
+                              backgroundColor: getStrengthColor(),
+                            }}
+                          />
+                        </View>
+                        <ThemedText
+                          variant="caption"
+                          style={{ color: getStrengthColor(), fontSize: 11 }}
+                        >
+                          {getStrengthLabel()}
+                        </ThemedText>
+                      </View>
+                    )}
                   </View>
                 )}
-              </View>
-            )}
-          />
-          <Controller
-            control={control}
-            name="confirmPassword"
-            render={({ field: { onChange, onBlur, value } }) => (
-              <ThemedTextInput
-                label={t('auth.passwordConfirm')}
-                placeholder="••••••••"
-                secureTextEntry
-                secureToggle
-                onBlur={onBlur}
-                onChangeText={onChange}
-                value={value}
-                error={!!errors.confirmPassword}
-                helperText={errors.confirmPassword?.message}
-                required
               />
-            )}
-          />
-          <View style={{ marginTop: theme.spacing.lg, gap: theme.spacing.md }}>
+
+              <Controller
+                control={control}
+                name="confirmPassword"
+                render={({ field: { onChange, onBlur, value } }) => (
+                  <ThemedTextInput
+                    label={t('auth.passwordConfirm')}
+                    placeholder="••••••••"
+                    secureTextEntry
+                    secureToggle
+                    onBlur={onBlur}
+                    onChangeText={onChange}
+                    value={value}
+                    error={!!errors.confirmPassword}
+                    helperText={errors.confirmPassword?.message}
+                    required
+                  />
+                )}
+              />
+            </View>
+
+            {/* Register Button */}
             <Button
               variant="primary"
               loading={loading}
@@ -344,97 +368,52 @@ const RegisterScreen = ({ navigation }: Props): React.ReactElement => {
               onPress={handleSubmit(onSubmit)}
               title={loading ? t('auth.processing') : t('auth.createAccount')}
               fullWidth
-              size="lg"
             />
 
             {/* Divider */}
-            <View
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                marginVertical: theme.spacing.xs,
-                gap: theme.spacing.md,
-              }}
-            >
-              <View
-                style={{
-                  flex: 1,
-                  height: 1,
-                  backgroundColor: theme.colors.border,
-                }}
-              />
-              <ThemedText variant="caption" color="textSecondary">
-                hoặc đăng ký với
+            <View style={styles.dividerRow}>
+              <View style={styles.dividerLine} />
+              <ThemedText
+                variant="caption"
+                color="textSecondary"
+                style={styles.dividerText}
+              >
+                hoặc
               </ThemedText>
-              <View
-                style={{
-                  flex: 1,
-                  height: 1,
-                  backgroundColor: theme.colors.border,
-                }}
-              />
+              <View style={styles.dividerLine} />
             </View>
 
-            {/* Google Sign-In Button */}
+            {/* Google Button */}
             <Button
               variant="outline"
               loading={googleLoading}
               disabled={loading || googleLoading}
               onPress={onGoogle}
-              title="Google"
+              title="Tiếp tục với Google"
               icon="logo-google"
               fullWidth
             />
-          </View>
+          </Animated.View>
 
-          {/* Login Section - Improved UI */}
-          <View style={{ marginTop: theme.spacing.xl }}>
-            <View
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                marginBottom: theme.spacing.md,
-                gap: theme.spacing.md,
-              }}
-            >
-              <View
-                style={{
-                  flex: 1,
-                  height: 1,
-                  backgroundColor: theme.colors.border,
-                }}
-              />
-              <ThemedText variant="caption" color="textSecondary">
-                Đã có tài khoản?
-              </ThemedText>
-              <View
-                style={{
-                  flex: 1,
-                  height: 1,
-                  backgroundColor: theme.colors.border,
-                }}
-              />
-            </View>
+          {/* Login Section */}
+          <Animated.View
+            entering={FadeInUp.delay(300).springify()}
+            style={styles.loginSection}
+          >
+            <ThemedText variant="body" color="textSecondary" style={{ marginBottom: 12 }}>
+              Đã có tài khoản?
+            </ThemedText>
             <Button
-              variant="outline"
-              title="Đăng nhập ngay"
-              icon="log-in-outline"
+              variant="ghost"
+              title="Đăng nhập"
               onPress={() => navigation.navigate('Login')}
               fullWidth
             />
-          </View>
-        </AppCard>
-      </Animated.View>
-    </Screen>
+          </Animated.View>
+        </Screen>
+      </KeyboardAvoidingView>
+    </LinearGradient>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flexGrow: 1,
-    justifyContent: 'center',
-    paddingVertical: 40, // Đảm bảo không bị cắt trên/dưới
-  },
-});
 
 export default RegisterScreen;

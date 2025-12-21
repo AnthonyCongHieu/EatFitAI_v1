@@ -1,12 +1,12 @@
 import { useCallback, useState } from 'react';
-import { StyleSheet, View, Text } from 'react-native';
+import { StyleSheet, View, Image, KeyboardAvoidingView, Platform } from 'react-native';
 import { Controller, useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import Toast from 'react-native-toast-message';
 import { LinearGradient } from 'expo-linear-gradient';
-import Animated, { FadeInDown } from 'react-native-reanimated';
+import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
 
 import { useAppTheme } from '../../../theme/ThemeProvider';
 import { ThemedText } from '../../../components/ThemedText';
@@ -103,65 +103,141 @@ const LoginScreen = ({ navigation }: Props): React.ReactElement => {
     }
   }, [signInWithGoogle, navigation]);
 
+  const styles = StyleSheet.create({
+    container: {
+      flex: 1,
+    },
+    scrollContent: {
+      flexGrow: 1,
+      paddingHorizontal: 24,
+      paddingTop: 100,
+      paddingBottom: 40,
+    },
+    logoContainer: {
+      alignItems: 'center',
+      marginBottom: 24,
+    },
+    logo: {
+      width: 100,
+      height: 100,
+      borderRadius: 24,
+    },
+    appName: {
+      fontSize: 28,
+      fontWeight: '700',
+      color: theme.colors.text,
+      letterSpacing: -0.3,
+    },
+    tagline: {
+      fontSize: 14,
+      color: theme.colors.textSecondary,
+      marginTop: 4,
+    },
+    formCard: {
+      ...glass.card,
+      padding: 24,
+      marginBottom: 24,
+    },
+    inputGroup: {
+      gap: 16,
+      marginBottom: 8,
+    },
+    forgotPassword: {
+      alignSelf: 'flex-end',
+      marginTop: 4,
+      marginBottom: 24,
+    },
+    dividerRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginVertical: 20,
+    },
+    dividerLine: {
+      flex: 1,
+      height: 1,
+      backgroundColor: theme.colors.border,
+    },
+    dividerText: {
+      marginHorizontal: 16,
+    },
+    registerSection: {
+      alignItems: 'center',
+      marginTop: 16,
+    },
+    registerText: {
+      marginBottom: 12,
+    },
+  });
+
   return (
-    <View style={{ flex: 1 }}>
-      <LinearGradient
-        colors={theme.colors.backgroundGradient as readonly [string, string, ...string[]]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 0.5, y: 1 }}
-        style={StyleSheet.absoluteFill}
-      />
-      <Screen scroll={true} contentContainerStyle={styles.container}>
-        <Animated.View entering={FadeInDown.duration(500).springify()}>
-          <View style={[glass.card, { marginTop: 40 }]}>
-            <View style={{ alignItems: 'center', marginBottom: theme.spacing.xl }}>
-              <Text style={{ fontSize: 48, marginBottom: 12 }}>🥗</Text>
-              <ThemedText variant="h1" style={{ marginBottom: theme.spacing.sm }}>
-                EatFit AI
-              </ThemedText>
-              <ThemedText variant="bodySmall" color="textSecondary">
-                {t('auth.loginTitle')}
-              </ThemedText>
+    <LinearGradient
+      colors={theme.colors.screenGradient}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 0.5, y: 1 }}
+      style={styles.container}
+    >
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
+        <Screen scroll={true} contentContainerStyle={styles.scrollContent}>
+          {/* Logo */}
+          <Animated.View
+            entering={FadeInDown.delay(100).springify()}
+            style={styles.logoContainer}
+          >
+            <Image
+              source={require('../../../assets/icon.png')}
+              style={styles.logo}
+            />
+          </Animated.View>
+
+          {/* Login Form Card */}
+          <Animated.View
+            entering={FadeInDown.delay(200).springify()}
+            style={styles.formCard}
+          >
+            <View style={styles.inputGroup}>
+              <Controller
+                control={control}
+                name="email"
+                render={({ field: { onChange, onBlur, value } }) => (
+                  <ThemedTextInput
+                    label={t('auth.email')}
+                    placeholder="you@example.com"
+                    autoCapitalize="none"
+                    keyboardType="email-address"
+                    onBlur={onBlur}
+                    onChangeText={onChange}
+                    value={value}
+                    error={!!errors.email}
+                    helperText={errors.email?.message}
+                    required
+                  />
+                )}
+              />
+
+              <Controller
+                control={control}
+                name="password"
+                render={({ field: { onChange, onBlur, value } }) => (
+                  <ThemedTextInput
+                    label={t('auth.password')}
+                    placeholder="••••••••"
+                    secureTextEntry
+                    secureToggle
+                    onBlur={onBlur}
+                    onChangeText={onChange}
+                    value={value}
+                    error={!!errors.password}
+                    helperText={errors.password?.message}
+                    required
+                  />
+                )}
+              />
             </View>
 
-            <Controller
-              control={control}
-              name="email"
-              render={({ field: { onChange, onBlur, value } }) => (
-                <ThemedTextInput
-                  label={t('auth.email')}
-                  placeholder="you@example.com"
-                  autoCapitalize="none"
-                  keyboardType="email-address"
-                  onBlur={onBlur}
-                  onChangeText={onChange}
-                  value={value}
-                  error={!!errors.email}
-                  helperText={errors.email?.message}
-                  required
-                />
-              )}
-            />
-
-            <Controller
-              control={control}
-              name="password"
-              render={({ field: { onChange, onBlur, value } }) => (
-                <ThemedTextInput
-                  label={t('auth.password')}
-                  placeholder="••••••••"
-                  secureTextEntry
-                  secureToggle
-                  onBlur={onBlur}
-                  onChangeText={onChange}
-                  value={value}
-                  error={!!errors.password}
-                  helperText={errors.password?.message}
-                  required
-                />
-              )}
-            />
-            <View style={{ marginTop: theme.spacing.xs, alignItems: 'flex-end' }}>
+            <View style={styles.forgotPassword}>
               <ThemedText
                 variant="bodySmall"
                 color="primary"
@@ -172,100 +248,63 @@ const LoginScreen = ({ navigation }: Props): React.ReactElement => {
               </ThemedText>
             </View>
 
-            <View style={{ marginTop: theme.spacing.xl, gap: theme.spacing.md }}>
-              <Button
-                variant="primary"
-                loading={loading}
-                disabled={loading}
-                onPress={handleSubmit(onSubmit)}
-                title={loading ? t('auth.processing') : t('auth.login')}
-                fullWidth
-              />
+            {/* Login Button */}
+            <Button
+              variant="primary"
+              loading={loading}
+              disabled={loading}
+              onPress={handleSubmit(onSubmit)}
+              title={loading ? t('auth.processing') : t('auth.login')}
+              fullWidth
+            />
 
-              {/* Improved Divider */}
-              <View
-                style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  marginVertical: theme.spacing.sm,
-                  gap: theme.spacing.md,
-                }}
+            {/* Divider */}
+            <View style={styles.dividerRow}>
+              <View style={styles.dividerLine} />
+              <ThemedText
+                variant="caption"
+                color="textSecondary"
+                style={styles.dividerText}
               >
-                <View
-                  style={{
-                    flex: 1,
-                    height: 1,
-                    backgroundColor: theme.colors.border,
-                  }}
-                />
-                <ThemedText variant="caption" color="textSecondary">
-                  hoặc tiếp tục với
-                </ThemedText>
-                <View
-                  style={{
-                    flex: 1,
-                    height: 1,
-                    backgroundColor: theme.colors.border,
-                  }}
-                />
-              </View>
-
-              {/* Google Button with Icon */}
-              <Button
-                variant="outline"
-                disabled={loading}
-                onPress={onGoogle}
-                title="Google"
-                icon="logo-google"
-                fullWidth
-              />
+                hoặc
+              </ThemedText>
+              <View style={styles.dividerLine} />
             </View>
 
-            {/* Register Section - Improved UI */}
-            <View style={{ marginTop: theme.spacing.xl }}>
-              <View
-                style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  marginBottom: theme.spacing.md,
-                  gap: theme.spacing.md,
-                }}
-              >
-                <View
-                  style={{
-                    flex: 1,
-                    height: 1,
-                    backgroundColor: theme.colors.border,
-                  }}
-                />
-                <ThemedText variant="caption" color="textSecondary">
-                  Người dùng mới?
-                </ThemedText>
-                <View
-                  style={{
-                    flex: 1,
-                    height: 1,
-                    backgroundColor: theme.colors.border,
-                  }}
-                />
-              </View>
-              <Button
-                variant="outline"
-                title="Tạo tài khoản miễn phí"
-                icon="person-add-outline"
-                onPress={() => navigation.navigate('Register')}
-                fullWidth
-              />
-            </View>
-          </View>
-        </Animated.View>
-      </Screen>
-    </View>
+            {/* Google Button */}
+            <Button
+              variant="outline"
+              disabled={loading}
+              onPress={onGoogle}
+              title="Tiếp tục với Google"
+              icon="logo-google"
+              fullWidth
+            />
+          </Animated.View>
+
+          {/* Register Section */}
+          <Animated.View
+            entering={FadeInUp.delay(300).springify()}
+            style={styles.registerSection}
+          >
+            <ThemedText
+              variant="body"
+              color="textSecondary"
+              style={styles.registerText}
+            >
+              Chưa có tài khoản?
+            </ThemedText>
+            <Button
+              variant="ghost"
+              title="Đăng ký miễn phí"
+              onPress={() => navigation.navigate('Register')}
+              fullWidth
+            />
+          </Animated.View>
+        </Screen>
+      </KeyboardAvoidingView>
+    </LinearGradient>
   );
 };
-
-const styles = StyleSheet.create({
-  container: { flexGrow: 1, padding: 24, paddingBottom: 48, justifyContent: 'center' },
-});
 
 export default LoginScreen;
