@@ -89,19 +89,21 @@ export const BMIIndicator: React.FC<BMIIndicatorProps> = ({
         },
         valueRow: {
             flexDirection: 'row',
-            alignItems: 'baseline',
+            alignItems: 'center',
             justifyContent: 'center',
             marginBottom: 16,
+            gap: 4,
         },
         bigValue: {
             fontSize: 36,
             fontWeight: '800',
             color: category?.color || theme.colors.text,
+            lineHeight: 44,
+            includeFontPadding: false,
         },
         unit: {
             fontSize: 16,
             color: theme.colors.textSecondary,
-            marginLeft: 4,
         },
         categoryBadge: {
             paddingHorizontal: 12,

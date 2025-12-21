@@ -1,17 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, ScrollView, ActivityIndicator } from 'react-native';
+import { View, StyleSheet, ScrollView, ActivityIndicator, Pressable } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 import Svg, { Circle, G } from 'react-native-svg';
 import { LinearGradient } from 'expo-linear-gradient';
-import Animated, { FadeInUp } from 'react-native-reanimated';
+import Animated, { FadeInUp, FadeInDown } from 'react-native-reanimated';
 
-import Screen from '../../../components/Screen';
-import { AppHeader } from '../../../components/ui/AppHeader';
 import { ThemedText } from '../../../components/ThemedText';
 import Button from '../../../components/Button';
-import { AppCard } from '../../../components/ui/AppCard';
 import { useAppTheme } from '../../../theme/ThemeProvider';
 import { aiService } from '../../../services/aiService';
 import type { RootStackParamList } from '../../types';
@@ -146,19 +143,21 @@ const NutritionInsightsScreen = (): React.ReactElement => {
   const styles = StyleSheet.create({
     container: {
       flex: 1,
-      backgroundColor: theme.colors.background,
     },
     content: {
       padding: theme.spacing.md,
     },
+    card: {
+      ...glass.card,
+      padding: 20,
+      marginBottom: theme.spacing.md,
+    },
     headerCard: {
+      ...glass.card,
       flexDirection: 'row',
       alignItems: 'center',
       padding: theme.spacing.lg,
       marginBottom: theme.spacing.lg,
-      backgroundColor: theme.colors.card,
-      borderRadius: theme.borderRadius.card,
-      ...theme.shadows.sm,
     },
     scoreContainer: {
       marginRight: theme.spacing.lg,
@@ -172,12 +171,10 @@ const NutritionInsightsScreen = (): React.ReactElement => {
       marginLeft: theme.spacing.xs,
     },
     recommendationCard: {
+      ...glass.card,
       marginBottom: theme.spacing.md,
       borderLeftWidth: 4,
       padding: theme.spacing.md,
-      backgroundColor: theme.colors.card,
-      borderRadius: theme.borderRadius.card,
-      ...theme.shadows.sm,
     },
     recHigh: { borderLeftColor: theme.colors.danger },
     recMedium: { borderLeftColor: theme.colors.warning },

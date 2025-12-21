@@ -6,6 +6,7 @@ import {
     ScrollView,
     StyleSheet,
     View,
+    Pressable,
     KeyboardAvoidingView,
     Platform,
 } from 'react-native';
@@ -14,11 +15,11 @@ import Animated, { FadeInDown } from 'react-native-reanimated';
 import { Controller, useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { LinearGradient } from 'expo-linear-gradient';
 
 import { ThemedText } from '../../../components/ThemedText';
 import ThemedTextInput from '../../../components/ThemedTextInput';
 import Button from '../../../components/Button';
-import { AppHeader } from '../../../components/ui/AppHeader';
 import { BMIIndicator } from '../../../components/ui/BMIIndicator';
 import { glassStyles } from '../../../components/ui/GlassCard';
 import { useAppTheme } from '../../../theme/ThemeProvider';
@@ -131,7 +132,7 @@ const BodyMetricsScreen = (): React.ReactElement => {
     };
 
     const styles = StyleSheet.create({
-        container: { flex: 1, backgroundColor: theme.colors.background },
+        container: { flex: 1 },
         content: {
             paddingHorizontal: theme.spacing.lg,
             paddingVertical: theme.spacing.xl,
@@ -176,12 +177,42 @@ const BodyMetricsScreen = (): React.ReactElement => {
     });
 
     return (
-        <View style={styles.container}>
-            <AppHeader
-                title="Số đo cơ thể"
-                subtitle="Cập nhật chiều cao và cân nặng"
-                onBackPress={() => navigation.goBack()}
-            />
+        <LinearGradient
+            colors={theme.colors.screenGradient}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 0.5, y: 1 }}
+            style={styles.container}
+        >
+            {/* Custom Header - Back button + Title on same row */}
+            <View style={{ paddingTop: 60, paddingBottom: theme.spacing.sm, paddingHorizontal: theme.spacing.lg }}>
+                {/* Row: Back button + Title */}
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    <Pressable
+                        onPress={() => navigation.goBack()}
+                        style={{
+                            width: 40,
+                            height: 40,
+                            borderRadius: 12,
+                            backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                        }}
+                    >
+                        <ThemedText style={{ fontSize: 18 }}>←</ThemedText>
+                    </Pressable>
+
+                    <View style={{ flex: 1, alignItems: 'center', marginRight: 40 }}>
+                        <ThemedText variant="h3" weight="700">
+                            Số đo cơ thể
+                        </ThemedText>
+                    </View>
+                </View>
+
+                {/* Subtitle below */}
+                <ThemedText variant="bodySmall" color="textSecondary" style={{ textAlign: 'center', marginTop: 8 }}>
+                    Cập nhật chiều cao và cân nặng
+                </ThemedText>
+            </View>
 
             <KeyboardAvoidingView
                 style={{ flex: 1 }}
@@ -287,7 +318,7 @@ const BodyMetricsScreen = (): React.ReactElement => {
                     </Animated.View>
                 </ScrollView>
             </KeyboardAvoidingView>
-        </View>
+        </LinearGradient>
     );
 };
 

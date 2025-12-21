@@ -165,7 +165,7 @@ const EditProfileScreen = (): React.ReactElement => {
 
                     <View style={{ flex: 1, alignItems: 'center', marginRight: 40 }}>
                         <ThemedText variant="h3" weight="700">
-                            ✏️ Chỉnh sửa hồ sơ
+                            Chỉnh sửa hồ sơ
                         </ThemedText>
                     </View>
                 </View>
@@ -184,7 +184,7 @@ const EditProfileScreen = (): React.ReactElement => {
                     {/* Personal Info */}
                     <Animated.View entering={FadeInDown.delay(100)} style={styles.card}>
                         <View style={styles.sectionTitle}>
-                            <ThemedText style={{ fontSize: 20 }}>👤</ThemedText>
+                            <ThemedText style={{ fontSize: 20 }}></ThemedText>
                             <ThemedText variant="h3">Thông tin cá nhân</ThemedText>
                         </View>
 
