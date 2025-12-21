@@ -175,32 +175,56 @@ const CustomDishScreen = (): React.ReactElement => {
     [navigation, queryClient, reset],
   );
 
+  // Get safe area insets for header
+  const { useSafeAreaInsets } = require('react-native-safe-area-context');
+  const { Pressable } = require('react-native');
+  const { Ionicons } = require('@expo/vector-icons');
+  const insets = useSafeAreaInsets();
+
   return (
     <View style={{ flex: 1 }}>
       <LinearGradient
         colors={theme.colors.screenGradient}
         style={StyleSheet.absoluteFill}
       />
-      <Screen contentContainerStyle={styles.content}>
-        <Animated.View entering={FadeInDown.duration(500).springify()}>
-          <View style={glass.card}>
-            <ThemedText style={{ fontSize: 28, textAlign: 'center', marginBottom: 8 }}>
-              🍳
-            </ThemedText>
-            <ThemedText
-              variant="h2"
-              style={{ marginBottom: theme.spacing.xs, textAlign: 'center' }}
-            >
-              Tạo món thủ công
-            </ThemedText>
-            <ThemedText
-              variant="bodySmall"
-              color="textSecondary"
-              style={{ marginBottom: theme.spacing.lg, textAlign: 'center' }}
-            >
-              Nhập thông tin dinh dưỡng cho món nhà làm
-            </ThemedText>
 
+      {/* Header - back button aligned with title */}
+      <View style={{
+        paddingTop: insets.top + 8,
+        paddingHorizontal: 20,
+        paddingBottom: 4
+      }}>
+        <View style={{ flexDirection: 'row', alignItems: 'flex-start' }}>
+          <Pressable
+            onPress={() => navigation.goBack()}
+            style={{
+              width: 40,
+              height: 40,
+              borderRadius: 20,
+              backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)',
+              alignItems: 'center',
+              justifyContent: 'center',
+              marginRight: 12,
+              marginTop: 2,
+            }}
+            hitSlop={8}
+          >
+            <Ionicons name="chevron-back" size={24} color={theme.colors.text} />
+          </Pressable>
+          <View style={{ flex: 1 }}>
+            <ThemedText style={{ fontSize: 20, fontWeight: '700', letterSpacing: -0.3, lineHeight: 28 }}>
+              Món ăn của bạn
+            </ThemedText>
+            <ThemedText variant="caption" color="textSecondary" style={{ marginTop: 4 }}>
+              Nhập thông tin dinh dưỡng cho món ăn của bạn
+            </ThemedText>
+          </View>
+        </View>
+      </View>
+
+      <Screen contentContainerStyle={styles.content}>
+        <Animated.View entering={FadeInDown.duration(400).springify()}>
+          <View style={[glass.card, { padding: 16 }]}>
             <Controller
               control={control}
               name="name"
@@ -229,29 +253,38 @@ const CustomDishScreen = (): React.ReactElement => {
                   value={value}
                   placeholder="Nguyên liệu chính, ghi chú..."
                   multiline
-                  numberOfLines={3}
+                  numberOfLines={2}
                   error={!!errors.description}
                   helperText={errors.description?.message}
                 />
               )}
             />
 
-            <View style={{ marginTop: theme.spacing.lg }}>
-              <ThemedText
-                variant="bodySmall"
-                weight="600"
-                style={{ marginBottom: theme.spacing.sm }}
-              >
-                Thông tin dinh dưỡng (cho 100g)
-              </ThemedText>
-              <View style={[styles.row]}>
+            {/* Nutrition Section with modern card style */}
+            <View style={{
+              marginTop: theme.spacing.md,
+              backgroundColor: isDark ? 'rgba(74, 144, 226, 0.08)' : 'rgba(59, 130, 246, 0.04)',
+              borderRadius: 16,
+              padding: 14,
+              borderWidth: 1,
+              borderColor: isDark ? 'rgba(74, 144, 226, 0.15)' : 'rgba(59, 130, 246, 0.08)',
+            }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12, gap: 8 }}>
+                <ThemedText style={{ fontSize: 16 }}>📊</ThemedText>
+                <ThemedText variant="body" weight="600">
+                  Thông tin dinh dưỡng
+                </ThemedText>
+              </View>
+
+              {/* Serving + Calories row */}
+              <View style={[styles.row, { marginBottom: 12 }]}>
                 <View style={styles.col}>
                   <Controller
                     control={control}
                     name="servingSizeGram"
                     render={({ field: { onChange, onBlur, value } }) => (
                       <ThemedTextInput
-                        label="Khẩu phần (gram)"
+                        label="⚖️ Khẩu phần (g)"
                         keyboardType="numeric"
                         returnKeyType="done"
                         value={value}
@@ -270,7 +303,7 @@ const CustomDishScreen = (): React.ReactElement => {
                     name="calories"
                     render={({ field: { onChange, onBlur, value } }) => (
                       <ThemedTextInput
-                        label="Calo"
+                        label="🔥 Calo"
                         keyboardType="numeric"
                         returnKeyType="done"
                         value={value}
@@ -285,14 +318,15 @@ const CustomDishScreen = (): React.ReactElement => {
                 </View>
               </View>
 
-              <View style={[styles.row, { marginTop: theme.spacing.md }]}>
+              {/* Macros row */}
+              <View style={styles.row}>
                 <View style={styles.col}>
                   <Controller
                     control={control}
                     name="protein"
                     render={({ field: { onChange, onBlur, value } }) => (
                       <ThemedTextInput
-                        label="Protein (g)"
+                        label="💪 Protein"
                         keyboardType="numeric"
                         returnKeyType="done"
                         value={value}
@@ -311,7 +345,7 @@ const CustomDishScreen = (): React.ReactElement => {
                     name="carbs"
                     render={({ field: { onChange, onBlur, value } }) => (
                       <ThemedTextInput
-                        label="Carb (g)"
+                        label="🌾 Carb"
                         keyboardType="numeric"
                         returnKeyType="done"
                         value={value}
@@ -330,7 +364,7 @@ const CustomDishScreen = (): React.ReactElement => {
                     name="fat"
                     render={({ field: { onChange, onBlur, value } }) => (
                       <ThemedTextInput
-                        label="Fat (g)"
+                        label="🧈 Fat"
                         keyboardType="numeric"
                         returnKeyType="done"
                         value={value}
@@ -346,7 +380,7 @@ const CustomDishScreen = (): React.ReactElement => {
               </View>
             </View>
 
-            <View style={{ marginTop: theme.spacing.xl }}>
+            <View style={{ marginTop: theme.spacing.lg }}>
               <Button
                 variant="primary"
                 loading={isSubmitting}
@@ -363,8 +397,8 @@ const CustomDishScreen = (): React.ReactElement => {
 };
 
 const styles = StyleSheet.create({
-  content: { padding: 16, gap: 16 },
-  row: { flexDirection: 'row', gap: 12 },
+  content: { padding: 12, paddingTop: 12, gap: 12 },
+  row: { flexDirection: 'row', gap: 10 },
   col: { flex: 1 },
 });
 
