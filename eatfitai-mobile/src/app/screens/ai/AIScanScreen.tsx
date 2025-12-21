@@ -488,7 +488,7 @@ const AIScanScreen: React.FC = () => {
             />
             <View style={styles.resultsHeader}>
               <ThemedText variant="h4" weight="700">
-                Top 2 kết quả
+                Kết quả
               </ThemedText>
               <Pressable
                 onPress={handleRetake}
@@ -507,110 +507,121 @@ const AIScanScreen: React.FC = () => {
               renderItem={({ item, index }) => (
                 <View
                   style={[
-                    styles.resultRow,
-                    { borderBottomColor: theme.colors.border },
-                    index === 0 && {
-                      backgroundColor: theme.colors.primaryLight + '15',
-                      borderWidth: 2,
-                      borderColor: theme.colors.primary + '40',
-                      borderRadius: 12,
-                      marginBottom: 8,
-                      paddingVertical: 16,
+                    styles.resultCard,
+                    {
+                      backgroundColor: index === 0
+                        ? (theme.mode === 'dark' ? 'rgba(59, 130, 246, 0.15)' : 'rgba(59, 130, 246, 0.08)')
+                        : theme.colors.card,
+                      borderColor: index === 0 ? theme.colors.primary + '50' : theme.colors.border,
                     },
                   ]}
                 >
-                  {/* Best Match Badge for #1 */}
-                  {index === 0 && (
-                    <View style={{
-                      position: 'absolute',
-                      top: 4,
-                      right: 4,
-                      backgroundColor: theme.colors.primary,
-                      paddingHorizontal: 8,
-                      paddingVertical: 2,
-                      borderRadius: 8,
-                    }}>
-                      <ThemedText variant="caption" style={{ color: '#fff', fontSize: 10, fontWeight: '700' }}>
-                        BEST MATCH
-                      </ThemedText>
-                    </View>
-                  )}
-
-                  {/* Thumbnail */}
-                  {item.thumbNail ? (
-                    <AppImage
-                      source={{ uri: item.thumbNail }}
-                      style={{ width: 48, height: 48, borderRadius: 12, marginRight: 12 }}
-                    />
-                  ) : (
-                    <View
-                      style={{
-                        width: 48,
-                        height: 48,
-                        borderRadius: 12,
-                        backgroundColor: theme.colors.card,
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        marginRight: 12,
-                        borderWidth: 1,
-                        borderColor: theme.colors.border,
-                      }}
-                    >
-                      <Icon name="leaf-outline" size="md" color="textSecondary" />
-                    </View>
-                  )}
-
-                  <View style={{ flex: 1 }}>
-                    <ThemedText variant="body" weight="600">
-                      {translateIngredient(item.label)}
-                    </ThemedText>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4 }}>
-                      {/* Confidence Bar */}
+                  {/* Left: Thumbnail */}
+                  <View style={styles.resultThumbnail}>
+                    {item.thumbNail ? (
+                      <AppImage
+                        source={{ uri: item.thumbNail }}
+                        style={{ width: 56, height: 56, borderRadius: 12 }}
+                      />
+                    ) : (
+                      <View
+                        style={{
+                          width: 56,
+                          height: 56,
+                          borderRadius: 12,
+                          backgroundColor: theme.colors.background,
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          borderWidth: 1,
+                          borderColor: theme.colors.border,
+                        }}
+                      >
+                        <Icon name="leaf-outline" size="lg" color="textSecondary" />
+                      </View>
+                    )}
+                    {/* Best match indicator */}
+                    {index === 0 && (
                       <View style={{
-                        width: 60,
-                        height: 4,
-                        backgroundColor: theme.colors.border,
-                        borderRadius: 2,
-                        overflow: 'hidden',
+                        position: 'absolute',
+                        bottom: -4,
+                        left: '50%',
+                        marginLeft: -20,
+                        backgroundColor: theme.colors.success,
+                        paddingHorizontal: 6,
+                        paddingVertical: 2,
+                        borderRadius: 6,
+                      }}>
+                        <ThemedText variant="caption" style={{ color: '#fff', fontSize: 8, fontWeight: '700' }}>
+                          TOP 1
+                        </ThemedText>
+                      </View>
+                    )}
+                  </View>
+
+                  {/* Center: Name & Info */}
+                  <View style={styles.resultContent}>
+                    <ThemedText variant="body" weight="700" numberOfLines={1}>
+                      {item.foodName || translateIngredient(item.label)}
+                    </ThemedText>
+
+                    <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 6, gap: 8 }}>
+                      {/* Confidence */}
+                      <View style={{
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        backgroundColor: theme.mode === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)',
+                        paddingHorizontal: 8,
+                        paddingVertical: 4,
+                        borderRadius: 6,
                       }}>
                         <View style={{
-                          width: `${item.confidence * 100}%`,
-                          height: '100%',
-                          backgroundColor: item.confidence > 0.7 ? theme.colors.success :
-                            item.confidence > 0.5 ? theme.colors.warning :
-                              theme.colors.danger,
-                        }} />
+                          width: 32,
+                          height: 3,
+                          backgroundColor: theme.colors.border,
+                          borderRadius: 2,
+                          overflow: 'hidden',
+                          marginRight: 4,
+                        }}>
+                          <View style={{
+                            width: `${item.confidence * 100}%`,
+                            height: '100%',
+                            backgroundColor: item.confidence > 0.7 ? theme.colors.success :
+                              item.confidence > 0.5 ? theme.colors.warning : theme.colors.danger,
+                          }} />
+                        </View>
+                        <ThemedText variant="caption" weight="600" style={{ fontSize: 11 }}>
+                          {Math.round(item.confidence * 100)}%
+                        </ThemedText>
                       </View>
-                      {/* Confidence Percentage */}
-                      <ThemedText variant="caption" color="textSecondary" style={{ fontSize: 11 }}>
-                        {Math.round(item.confidence * 100)}%
-                      </ThemedText>
+
                       {/* Calories */}
-                      <ThemedText variant="caption" color="textSecondary" style={{ marginLeft: 4 }}>
-                        {item.caloriesPer100g ? `• ${item.caloriesPer100g} kcal/100g` : '• Nguyên liệu'}
+                      <ThemedText variant="caption" color="textSecondary" style={{ fontSize: 12 }}>
+                        {item.caloriesPer100g ? `${item.caloriesPer100g} kcal` : '—'}
                       </ThemedText>
                     </View>
                   </View>
 
-                  {/* Thêm vào giỏ nguyên liệu */}
-                  <Pressable
-                    onPress={() => handleAddToBasket(item)}
-                    style={{ padding: 8, marginRight: 4 }}
-                    hitSlop={8}
-                  >
-                    <Animated.View style={basketIconStyle}>
-                      <Icon name="basket-outline" size="lg" color="secondary" />
-                    </Animated.View>
-                  </Pressable>
-
-                  {/* Thêm trực tiếp vào nhật ký */}
-                  <Pressable
-                    onPress={() => handleQuickAdd(item)}
-                    style={{ padding: 8 }}
-                    hitSlop={8}
-                  >
-                    <Icon name="add-circle" size="xl" color="primary" />
-                  </Pressable>
+                  {/* Right: Actions */}
+                  <View style={styles.resultActions}>
+                    <Pressable
+                      onPress={() => handleQuickAdd(item)}
+                      style={[styles.resultActionBtn, { backgroundColor: theme.colors.primary }]}
+                      hitSlop={4}
+                    >
+                      <Icon name="add" size="md" color="background" />
+                    </Pressable>
+                    <Pressable
+                      onPress={() => handleAddToBasket(item)}
+                      style={[styles.resultActionBtn, {
+                        backgroundColor: theme.mode === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)',
+                      }]}
+                      hitSlop={4}
+                    >
+                      <Animated.View style={basketIconStyle}>
+                        <Icon name="basket-outline" size="sm" color="textSecondary" />
+                      </Animated.View>
+                    </Pressable>
+                  </View>
                 </View>
               )}
               ListEmptyComponent={() => (
@@ -632,18 +643,20 @@ const AIScanScreen: React.FC = () => {
             />
 
             <View style={styles.actionButtons}>
-              <Button
-                variant="outline"
-                title="Chụp lại"
+              <Pressable
                 onPress={handleRetake}
-                style={{ flex: 1 }}
-              />
-              <Button
-                variant="primary"
-                title="Thêm vào nhật ký"
+                style={[styles.compactButton, { borderColor: theme.colors.border, borderWidth: 1 }]}
+              >
+                <Icon name="refresh" size="sm" color="text" />
+                <ThemedText variant="bodySmall" weight="600" style={{ marginLeft: 6 }}>Chụp lại</ThemedText>
+              </Pressable>
+              <Pressable
                 onPress={handleAddToDiary}
-                style={{ flex: 1 }}
-              />
+                style={[styles.compactButton, { backgroundColor: theme.colors.primary }]}
+              >
+                <Icon name="add" size="sm" color="background" />
+                <ThemedText variant="bodySmall" weight="600" style={{ marginLeft: 6, color: '#fff' }}>Thêm</ThemedText>
+              </Pressable>
             </View>
           </Animated.View>
         )}
@@ -779,16 +792,46 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 16,
   },
-  resultRow: {
+  resultCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 12,
-    borderBottomWidth: 1,
+    padding: 12,
+    borderRadius: 16,
+    borderWidth: 1,
+    marginBottom: 10,
+  },
+  resultThumbnail: {
+    position: 'relative',
+    marginRight: 12,
+  },
+  resultContent: {
+    flex: 1,
+    marginRight: 8,
+  },
+  resultActions: {
+    flexDirection: 'column',
+    gap: 6,
+  },
+  resultActionBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   actionButtons: {
     flexDirection: 'row',
     gap: 12,
     marginTop: 16,
+  },
+  compactButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flex: 1,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 12,
   },
 });
 

@@ -1,9 +1,9 @@
 /**
  * IngredientBasketFab - Floating Action Button hiển thị giỏ nguyên liệu
- * Hiển thị số lượng nguyên liệu và mở BottomSheet khi tap
+ * Có thể kéo thả tự do, hiển thị số lượng nguyên liệu và mở BottomSheet khi tap
  */
 import React from 'react';
-import { View, StyleSheet, Pressable } from 'react-native';
+import { View, StyleSheet, Dimensions } from 'react-native';
 import Animated, {
   FadeIn,
   FadeOut,
@@ -11,6 +11,7 @@ import Animated, {
   useSharedValue,
   withSpring,
 } from 'react-native-reanimated';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
 
@@ -19,7 +20,8 @@ import Icon from '../Icon';
 import { useAppTheme } from '../../theme/ThemeProvider';
 import { useIngredientBasketStore } from '../../store/useIngredientBasketStore';
 
-const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
+const FAB_SIZE = 52;
 
 interface IngredientBasketFabProps {
   onPress: () => void;
@@ -30,18 +32,68 @@ export const IngredientBasketFab: React.FC<IngredientBasketFabProps> = ({ onPres
   const count = useIngredientBasketStore((s) => s.getCount());
   const scale = useSharedValue(1);
 
-  const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value }],
-  }));
+  // Position values for dragging
+  const translateX = useSharedValue(0);
+  const translateY = useSharedValue(0);
+  const contextX = useSharedValue(0);
+  const contextY = useSharedValue(0);
+  const isDragging = useSharedValue(false);
 
-  const handlePress = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    scale.value = withSpring(0.9, { damping: 18, stiffness: 400 });
-    setTimeout(() => {
-      scale.value = withSpring(1, { damping: 18, stiffness: 400 });
-    }, 100);
-    onPress();
-  };
+  // Tap gesture for opening sheet
+  const tapGesture = Gesture.Tap()
+    .onEnd(() => {
+      if (!isDragging.value) {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        scale.value = withSpring(0.9, { damping: 18, stiffness: 400 });
+        setTimeout(() => {
+          scale.value = withSpring(1, { damping: 18, stiffness: 400 });
+        }, 100);
+        onPress();
+      }
+    });
+
+  // Pan gesture for dragging
+  const panGesture = Gesture.Pan()
+    .onStart(() => {
+      contextX.value = translateX.value;
+      contextY.value = translateY.value;
+      isDragging.value = false;
+    })
+    .onUpdate((event) => {
+      if (Math.abs(event.translationX) > 5 || Math.abs(event.translationY) > 5) {
+        isDragging.value = true;
+      }
+
+      // Calculate new position with boundaries
+      const newX = contextX.value + event.translationX;
+      const newY = contextY.value + event.translationY;
+
+      // Limit to screen bounds (FAB starts at bottom-right)
+      // Container is positioned at bottom: 175, right: 20
+      const maxX = 20; // Can go left up to SCREEN_WIDTH - FAB_SIZE - 20
+      const minX = -(SCREEN_WIDTH - FAB_SIZE - 40);
+      const maxY = 175 - FAB_SIZE; // Can go down
+      const minY = -(SCREEN_HEIGHT - 175 - FAB_SIZE - 100); // Can go up
+
+      translateX.value = Math.max(minX, Math.min(maxX, newX));
+      translateY.value = Math.max(minY, Math.min(maxY, newY));
+    })
+    .onEnd(() => {
+      // Snap to edges
+      const snapToRight = translateX.value > -(SCREEN_WIDTH / 2 - FAB_SIZE);
+      translateX.value = withSpring(snapToRight ? 0 : -(SCREEN_WIDTH - FAB_SIZE - 40));
+      isDragging.value = false;
+    });
+
+  const composedGesture = Gesture.Simultaneous(tapGesture, panGesture);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [
+      { translateX: translateX.value },
+      { translateY: translateY.value },
+      { scale: scale.value },
+    ],
+  }));
 
   // Không hiển thị nếu không có nguyên liệu
   if (count === 0) {
@@ -52,29 +104,31 @@ export const IngredientBasketFab: React.FC<IngredientBasketFabProps> = ({ onPres
     <Animated.View
       entering={FadeIn.duration(300)}
       exiting={FadeOut.duration(200)}
-      style={styles.container}
+      style={[styles.container, animatedStyle]}
     >
-      <AnimatedPressable onPress={handlePress} style={animatedStyle}>
-        <LinearGradient
-          colors={[theme.colors.primary, theme.colors.secondary]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.fab}
-        >
-          <Icon name="basket-outline" size="lg" color="card" />
+      <GestureDetector gesture={composedGesture}>
+        <Animated.View>
+          <LinearGradient
+            colors={[theme.colors.primary, theme.colors.secondary]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.fab}
+          >
+            <Icon name="basket-outline" size="lg" color="card" />
 
-          {/* Badge count */}
-          <View style={[styles.badge, { backgroundColor: theme.colors.danger }]}>
-            <ThemedText
-              variant="caption"
-              weight="700"
-              style={{ color: '#fff', fontSize: 11 }}
-            >
-              {count > 9 ? '9+' : count}
-            </ThemedText>
-          </View>
-        </LinearGradient>
-      </AnimatedPressable>
+            {/* Badge count */}
+            <View style={[styles.badge, { backgroundColor: theme.colors.danger }]}>
+              <ThemedText
+                variant="caption"
+                weight="700"
+                style={{ color: '#fff', fontSize: 11 }}
+              >
+                {count > 9 ? '9+' : count}
+              </ThemedText>
+            </View>
+          </LinearGradient>
+        </Animated.View>
+      </GestureDetector>
     </Animated.View>
   );
 };
@@ -83,13 +137,13 @@ const styles = StyleSheet.create({
   container: {
     position: 'absolute',
     bottom: 175,
-    right: 44,
+    right: 20,
     zIndex: 100,
   },
   fab: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
+    width: FAB_SIZE,
+    height: FAB_SIZE,
+    borderRadius: FAB_SIZE / 2,
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#000',
@@ -116,3 +170,4 @@ const styles = StyleSheet.create({
 });
 
 export default IngredientBasketFab;
+

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   View,
   StyleSheet,
@@ -8,12 +8,12 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useAppTheme } from '../../theme/ThemeProvider';
 import { ThemedText } from '../ThemedText';
-import { AppCard } from './AppCard';
-import Button from '../Button';
 import Icon from '../Icon';
 import type { MappedFoodItem } from '../../types/ai';
+import { translateIngredient } from '../../utils/translate';
 
 interface AIResultEditModalProps {
   visible: boolean;
@@ -29,22 +29,27 @@ export const AIResultEditModal: React.FC<AIResultEditModalProps> = ({
   onSave,
 }) => {
   const { theme } = useAppTheme();
+  const isDark = theme.mode === 'dark';
 
   const [grams, setGrams] = useState('100');
-  const [calories, setCalories] = useState('');
-  const [protein, setProtein] = useState('');
-  const [carbs, setCarbs] = useState('');
-  const [fat, setFat] = useState('');
 
   useEffect(() => {
     if (item) {
       setGrams('100');
-      setCalories(String(item.caloriesPer100g || 0));
-      setProtein(String(item.proteinPer100g || 0));
-      setCarbs(String(item.carbPer100g || 0));
-      setFat(String(item.fatPer100g || 0));
     }
   }, [item]);
+
+  // Auto-calculate nutrition based on grams
+  const calculatedNutrition = useMemo(() => {
+    const gramsNum = parseFloat(grams) || 100;
+    const ratio = gramsNum / 100;
+    return {
+      calories: Math.round((item?.caloriesPer100g || 0) * ratio),
+      protein: Math.round((item?.proteinPer100g || 0) * ratio * 10) / 10,
+      carbs: Math.round((item?.carbPer100g || 0) * ratio * 10) / 10,
+      fat: Math.round((item?.fatPer100g || 0) * ratio * 10) / 10,
+    };
+  }, [grams, item]);
 
   const handleSave = () => {
     if (!item) return;
@@ -52,20 +57,15 @@ export const AIResultEditModal: React.FC<AIResultEditModalProps> = ({
     const gramsNum = parseFloat(grams) || 100;
     const editedItem: MappedFoodItem & { grams: number } = {
       ...item,
-      caloriesPer100g: parseFloat(calories) || 0,
-      proteinPer100g: parseFloat(protein) || 0,
-      carbPer100g: parseFloat(carbs) || 0,
-      fatPer100g: parseFloat(fat) || 0,
       grams: gramsNum,
     };
 
     onSave(editedItem);
   };
 
-  const calculatedCalories =
-    ((parseFloat(calories) || 0) * (parseFloat(grams) || 100)) / 100;
-
   if (!item) return null;
+
+  const displayName = item.foodName || translateIngredient(item.label);
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
@@ -74,35 +74,48 @@ export const AIResultEditModal: React.FC<AIResultEditModalProps> = ({
         style={styles.overlay}
       >
         <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+          {/* Handle bar */}
+          <View style={[styles.handle, { backgroundColor: theme.colors.border }]} />
+
+          {/* Header */}
           <View style={styles.header}>
-            <ThemedText variant="h3" weight="700">
-              {item.label}
-            </ThemedText>
-            <Pressable onPress={onClose} hitSlop={10}>
-              <Icon name="close" size="md" color="textSecondary" />
+            <View style={{ flex: 1 }}>
+              <ThemedText variant="h3" weight="700" numberOfLines={1}>
+                {displayName}
+              </ThemedText>
+              <ThemedText variant="caption" color="textSecondary">
+                Độ tin cậy: {Math.round(item.confidence * 100)}%
+              </ThemedText>
+            </View>
+            <Pressable
+              onPress={onClose}
+              hitSlop={10}
+              style={[styles.closeButton, { backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)' }]}
+            >
+              <Icon name="close" size="sm" color="textSecondary" />
             </Pressable>
           </View>
 
-          <ThemedText
-            variant="caption"
-            color="textSecondary"
-            style={{ marginBottom: theme.spacing.lg }}
-          >
-            Độ tin cậy: {Math.round(item.confidence * 100)}%
-          </ThemedText>
-
-          {/* Amount Input */}
-          <View style={styles.inputRow}>
-            <ThemedText variant="body" weight="600" style={styles.inputLabel}>
-              Khối lượng (g)
-            </ThemedText>
+          {/* Grams Input - Prominent */}
+          <View style={[styles.gramsCard, {
+            backgroundColor: isDark ? 'rgba(59, 130, 246, 0.15)' : 'rgba(59, 130, 246, 0.08)',
+            borderColor: theme.colors.primary + '30',
+          }]}>
+            <View>
+              <ThemedText variant="bodySmall" weight="600" color="primary">
+                Khối lượng
+              </ThemedText>
+              <ThemedText variant="caption" color="textSecondary">
+                gram
+              </ThemedText>
+            </View>
             <TextInput
               style={[
-                styles.input,
+                styles.gramsInput,
                 {
-                  backgroundColor: theme.colors.card,
+                  backgroundColor: theme.colors.background,
                   color: theme.colors.text,
-                  borderColor: theme.colors.border,
+                  borderColor: theme.colors.primary,
                 },
               ]}
               value={grams}
@@ -111,122 +124,75 @@ export const AIResultEditModal: React.FC<AIResultEditModalProps> = ({
               returnKeyType="done"
               placeholder="100"
               placeholderTextColor={theme.colors.textSecondary}
+              selectTextOnFocus
             />
           </View>
 
-          <View style={[styles.divider, { backgroundColor: theme.colors.border }]} />
+          {/* Nutrition Display - Clean horizontal layout */}
+          <View style={[styles.nutritionCard, {
+            backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)',
+            borderColor: theme.colors.border,
+          }]}>
+            {/* Calories */}
+            <View style={styles.nutritionItem}>
+              <ThemedText variant="h3" weight="700" style={{ color: '#EF4444' }}>
+                {calculatedNutrition.calories}
+              </ThemedText>
+              <ThemedText variant="caption" color="textSecondary">kcal</ThemedText>
+            </View>
 
-          <ThemedText
-            variant="bodySmall"
-            color="textSecondary"
-            style={{ marginBottom: theme.spacing.sm }}
-          >
-            Giá trị dinh dưỡng (trên 100g)
-          </ThemedText>
+            <View style={[styles.divider, { backgroundColor: theme.colors.border }]} />
 
-          {/* Nutrition Inputs */}
-          <View style={styles.nutritionGrid}>
+            {/* Protein */}
             <View style={styles.nutritionItem}>
-              <ThemedText variant="caption" color="textSecondary">
-                Calories
+              <ThemedText variant="body" weight="700" style={{ color: '#3B82F6' }}>
+                {calculatedNutrition.protein}g
               </ThemedText>
-              <TextInput
-                style={[
-                  styles.smallInput,
-                  {
-                    backgroundColor: theme.colors.card,
-                    color: theme.colors.text,
-                    borderColor: theme.colors.border,
-                  },
-                ]}
-                value={calories}
-                onChangeText={setCalories}
-                keyboardType="numeric"
-                returnKeyType="done"
-                placeholderTextColor={theme.colors.textSecondary}
-              />
+              <ThemedText variant="caption" color="textSecondary">Protein</ThemedText>
             </View>
-            <View style={styles.nutritionItem}>
-              <ThemedText variant="caption" color="textSecondary">
-                Protein (g)
-              </ThemedText>
-              <TextInput
-                style={[
-                  styles.smallInput,
-                  {
-                    backgroundColor: theme.colors.card,
-                    color: theme.colors.text,
-                    borderColor: theme.colors.border,
-                  },
-                ]}
-                value={protein}
-                onChangeText={setProtein}
-                keyboardType="numeric"
-                returnKeyType="done"
-                placeholderTextColor={theme.colors.textSecondary}
-              />
-            </View>
-            <View style={styles.nutritionItem}>
-              <ThemedText variant="caption" color="textSecondary">
-                Carbs (g)
-              </ThemedText>
-              <TextInput
-                style={[
-                  styles.smallInput,
-                  {
-                    backgroundColor: theme.colors.card,
-                    color: theme.colors.text,
-                    borderColor: theme.colors.border,
-                  },
-                ]}
-                value={carbs}
-                onChangeText={setCarbs}
-                keyboardType="numeric"
-                returnKeyType="done"
-                placeholderTextColor={theme.colors.textSecondary}
-              />
-            </View>
-            <View style={styles.nutritionItem}>
-              <ThemedText variant="caption" color="textSecondary">
-                Fat (g)
-              </ThemedText>
-              <TextInput
-                style={[
-                  styles.smallInput,
-                  {
-                    backgroundColor: theme.colors.card,
-                    color: theme.colors.text,
-                    borderColor: theme.colors.border,
-                  },
-                ]}
-                value={fat}
-                onChangeText={setFat}
-                keyboardType="numeric"
-                returnKeyType="done"
-                placeholderTextColor={theme.colors.textSecondary}
-              />
-            </View>
-          </View>
 
-          {/* Calculated Total */}
-          <View style={[styles.totalRow, { backgroundColor: theme.colors.primaryLight }]}>
-            <ThemedText variant="body" weight="600">
-              Tổng calories
-            </ThemedText>
-            <ThemedText variant="h3" weight="700" color="primary">
-              {Math.round(calculatedCalories)} kcal
-            </ThemedText>
+            <View style={[styles.divider, { backgroundColor: theme.colors.border }]} />
+
+            {/* Carbs */}
+            <View style={styles.nutritionItem}>
+              <ThemedText variant="body" weight="700" style={{ color: '#F59E0B' }}>
+                {calculatedNutrition.carbs}g
+              </ThemedText>
+              <ThemedText variant="caption" color="textSecondary">Carbs</ThemedText>
+            </View>
+
+            <View style={[styles.divider, { backgroundColor: theme.colors.border }]} />
+
+            {/* Fat */}
+            <View style={styles.nutritionItem}>
+              <ThemedText variant="body" weight="700" style={{ color: '#EC4899' }}>
+                {calculatedNutrition.fat}g
+              </ThemedText>
+              <ThemedText variant="caption" color="textSecondary">Fat</ThemedText>
+            </View>
           </View>
 
           {/* Actions */}
           <View style={styles.actions}>
-            <Button variant="outline" title="Hủy" onPress={onClose} style={{ flex: 1 }} />
-            <Button
-              variant="primary"
-              title="Thêm vào nhật ký"
-              onPress={handleSave}
-              style={{ flex: 1 }}
-            />
+            <Pressable
+              onPress={onClose}
+              style={[styles.actionButton, { borderColor: theme.colors.border, borderWidth: 1 }]}
+            >
+              <ThemedText variant="body" weight="600">Hủy</ThemedText>
+            </Pressable>
+            <Pressable onPress={handleSave} style={styles.actionButton}>
+              <LinearGradient
+                colors={[theme.colors.primary, theme.colors.secondary]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={styles.gradientButton}
+              >
+                <Icon name="add" size="sm" color="background" />
+                <ThemedText variant="body" weight="600" style={{ color: '#fff', marginLeft: 6 }}>
+                  Thêm
+                </ThemedText>
+              </LinearGradient>
+            </Pressable>
           </View>
         </View>
       </KeyboardAvoidingView>
@@ -246,61 +212,79 @@ const styles = StyleSheet.create({
     padding: 20,
     paddingBottom: 40,
   },
+  handle: {
+    width: 40,
+    height: 4,
+    borderRadius: 2,
+    alignSelf: 'center',
+    marginBottom: 16,
+  },
   header: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  inputRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 16,
-  },
-  inputLabel: {
-    flex: 1,
-  },
-  input: {
-    width: 100,
-    height: 44,
-    borderRadius: 8,
-    borderWidth: 1,
-    paddingHorizontal: 12,
-    fontSize: 16,
-    textAlign: 'center',
-  },
-  divider: {
-    height: 1,
-    marginVertical: 16,
-  },
-  nutritionGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+    alignItems: 'flex-start',
+    marginBottom: 20,
     gap: 12,
-    marginBottom: 16,
   },
-  nutritionItem: {
-    width: '48%',
+  closeButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  smallInput: {
-    height: 40,
-    borderRadius: 8,
-    borderWidth: 1,
-    paddingHorizontal: 12,
-    marginTop: 4,
-    fontSize: 14,
-  },
-  totalRow: {
+  gramsCard: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     padding: 16,
-    borderRadius: 12,
+    borderRadius: 16,
+    borderWidth: 1,
     marginBottom: 20,
+  },
+  gramsInput: {
+    width: 100,
+    height: 48,
+    borderRadius: 12,
+    borderWidth: 2,
+    paddingHorizontal: 16,
+    fontSize: 20,
+    fontWeight: '700',
+    textAlign: 'center',
+  },
+  nutritionCard: {
+    flexDirection: 'row',
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 24,
+    borderWidth: 1,
+  },
+  nutritionItem: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  divider: {
+    width: 1,
+    height: '100%',
+    marginHorizontal: 8,
   },
   actions: {
     flexDirection: 'row',
     gap: 12,
   },
+  actionButton: {
+    flex: 1,
+    height: 52,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  gradientButton: {
+    flex: 1,
+    width: '100%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
 });
+
