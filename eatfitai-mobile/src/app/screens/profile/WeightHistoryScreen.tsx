@@ -12,17 +12,18 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useQuery } from '@tanstack/react-query';
+import Svg, { Path, Circle, Line, Defs, LinearGradient, Stop } from 'react-native-svg';
 
 import { ThemedText } from '../../../components/ThemedText';
 import { AppHeader } from '../../../components/ui/AppHeader';
 import { glassStyles } from '../../../components/ui/GlassCard';
 import { useAppTheme } from '../../../theme/ThemeProvider';
+import { profileService } from '../../../services/profileService';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CHART_HEIGHT = 200;
 const CHART_PADDING = 16;
 
-// Mock data for now - will be replaced with real API
 interface WeightRecord {
     date: string;
     weight: number;
@@ -35,20 +36,17 @@ const WeightHistoryScreen = (): React.ReactElement => {
     const glass = glassStyles(isDark);
     const navigation = useNavigation();
 
-    // Fetch weight history
-    // TODO: Add API endpoint for weight history
+    // Fetch weight history from real API
     const { data: records, isLoading } = useQuery({
         queryKey: ['weight-history'],
         queryFn: async () => {
-            // Mock data for now
-            const mockData: WeightRecord[] = [
-                { date: '2024-12-01', weight: 68.5 },
-                { date: '2024-12-05', weight: 68.2 },
-                { date: '2024-12-10', weight: 67.8 },
-                { date: '2024-12-15', weight: 67.5 },
-                { date: '2024-12-18', weight: 67.2 },
-            ];
-            return mockData;
+            const data = await profileService.getBodyMetricsHistory(30);
+            // Map backend data to WeightRecord format
+            return data.map((item): WeightRecord => ({
+                date: item.measuredDate || new Date().toISOString(),
+                weight: item.weightKg || 0,
+                note: item.note || undefined,
+            }));
         },
         staleTime: 5 * 60 * 1000, // 5 minutes
     });
@@ -135,15 +133,6 @@ const WeightHistoryScreen = (): React.ReactElement => {
             height: CHART_HEIGHT + 40,
             paddingTop: 20,
         },
-        chartPoint: {
-            position: 'absolute',
-            width: 12,
-            height: 12,
-            borderRadius: 6,
-            backgroundColor: theme.colors.primary,
-            borderWidth: 2,
-            borderColor: isDark ? '#1a1a1a' : '#fff',
-        },
         // Records list
         recordItem: {
             flexDirection: 'row',
@@ -183,22 +172,130 @@ const WeightHistoryScreen = (): React.ReactElement => {
     const renderChart = () => {
         if (!chartData) return null;
 
+        const { points, minWeight, maxWeight } = chartData;
+        const chartWidth = SCREEN_WIDTH - CHART_PADDING * 4;
+
+        // Create SVG path for line chart
+        const linePath = points
+            .map((point, i) => {
+                const command = i === 0 ? 'M' : 'L';
+                return `${command} ${point.x + CHART_PADDING} ${point.y}`;
+            })
+            .join(' ');
+
+        // Create area path for gradient fill
+        const areaPath = `${linePath} L ${points[points.length - 1]!.x + CHART_PADDING} ${CHART_HEIGHT} L ${CHART_PADDING} ${CHART_HEIGHT} Z`;
+
+        // Y-axis labels (weight values)
+        const yLabels = [maxWeight, (maxWeight + minWeight) / 2, minWeight].map(
+            (val) => Math.round(val * 10) / 10
+        );
+
         return (
             <View style={styles.chartContainer}>
-                {/* Simple line chart using View elements */}
-                <View style={{ position: 'relative', height: CHART_HEIGHT }}>
-                    {chartData.points.map((point, i) => (
+                <View style={{ flexDirection: 'row' }}>
+                    {/* Y-axis labels */}
+                    <View style={{ width: 40, justifyContent: 'space-between', paddingRight: 8 }}>
+                        {yLabels.map((label, i) => (
+                            <ThemedText
+                                key={i}
+                                style={{
+                                    fontSize: 10,
+                                    color: theme.colors.textSecondary,
+                                    textAlign: 'right',
+                                }}
+                            >
+                                {label}
+                            </ThemedText>
+                        ))}
+                    </View>
+
+                    {/* Chart area */}
+                    <View style={{ flex: 1 }}>
+                        <Svg width={chartWidth + CHART_PADDING * 2} height={CHART_HEIGHT}>
+                            {/* Gradient definition */}
+                            <Defs>
+                                <LinearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
+                                    <Stop
+                                        offset="0"
+                                        stopColor={theme.colors.primary}
+                                        stopOpacity="0.3"
+                                    />
+                                    <Stop
+                                        offset="1"
+                                        stopColor={theme.colors.primary}
+                                        stopOpacity="0"
+                                    />
+                                </LinearGradient>
+                            </Defs>
+
+                            {/* Grid lines */}
+                            {[0, 0.5, 1].map((ratio, i) => (
+                                <Line
+                                    key={i}
+                                    x1={CHART_PADDING}
+                                    y1={CHART_HEIGHT * ratio}
+                                    x2={chartWidth + CHART_PADDING}
+                                    y2={CHART_HEIGHT * ratio}
+                                    stroke={isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'}
+                                    strokeWidth="1"
+                                />
+                            ))}
+
+                            {/* Area fill with gradient */}
+                            <Path d={areaPath} fill="url(#chartGradient)" />
+
+                            {/* Line path */}
+                            <Path
+                                d={linePath}
+                                stroke={theme.colors.primary}
+                                strokeWidth="3"
+                                fill="none"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                            />
+
+                            {/* Data points */}
+                            {points.map((point, i) => (
+                                <Circle
+                                    key={i}
+                                    cx={point.x + CHART_PADDING}
+                                    cy={point.y}
+                                    r="5"
+                                    fill={theme.colors.primary}
+                                    stroke={isDark ? '#1a1a1a' : '#fff'}
+                                    strokeWidth="2"
+                                />
+                            ))}
+                        </Svg>
+
+                        {/* X-axis labels (dates) */}
                         <View
-                            key={i}
-                            style={[
-                                styles.chartPoint,
-                                {
-                                    left: point.x + CHART_PADDING - 6,
-                                    top: point.y - 6,
-                                },
-                            ]}
-                        />
-                    ))}
+                            style={{
+                                flexDirection: 'row',
+                                justifyContent: 'space-between',
+                                marginTop: 8,
+                                paddingHorizontal: CHART_PADDING,
+                            }}
+                        >
+                            {points
+                                .filter((_, i) => i === 0 || i === points.length - 1)
+                                .map((point, i) => (
+                                    <ThemedText
+                                        key={i}
+                                        style={{
+                                            fontSize: 10,
+                                            color: theme.colors.textSecondary,
+                                        }}
+                                    >
+                                        {new Date(point.date).toLocaleDateString('vi-VN', {
+                                            day: '2-digit',
+                                            month: '2-digit',
+                                        })}
+                                    </ThemedText>
+                                ))}
+                        </View>
+                    </View>
                 </View>
             </View>
         );

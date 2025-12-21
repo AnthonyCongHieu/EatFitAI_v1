@@ -130,6 +130,19 @@ export const profileService = {
     await apiClient.post('/api/body-metrics', req);
   },
 
+  // Lay lich su can do (GET /api/body-metrics/history)
+  async getBodyMetricsHistory(limit: number = 30): Promise<BodyMetricsPayload[]> {
+    const response = await apiClient.get(`/api/body-metrics/history?limit=${limit}`);
+    // Backend tra ve array cua BodyMetricDto
+    return (response.data || []).map((item: any) => ({
+      heightCm: item.heightCm,
+      weightKg: item.weightKg,
+      measuredDate: item.measuredDate,
+      note: item.note,
+    }));
+  },
+
+
   // --- User Preferences (Dietary Restrictions) ---
 
   async getUserPreferences(): Promise<any> {

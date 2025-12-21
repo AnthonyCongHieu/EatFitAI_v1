@@ -54,7 +54,6 @@ import { HomeSkeleton } from '../../components/skeletons/HomeSkeleton';
 import { GlassCard, glassStyles } from '../../components/ui/GlassCard';
 import { GradientBackground } from '../../components/ui/GradientBackground';
 import { WelcomeHeader } from '../../components/home/WelcomeHeader';
-import { VoiceSheet } from '../../components/voice/VoiceSheet';
 import { useSmartContext } from '../../hooks/useSmartContext';
 import * as Haptics from 'expo-haptics';
 
@@ -89,7 +88,6 @@ const HomeScreen = (): React.ReactElement => {
   });
   const [showAddModal, setShowAddModal] = useState(false);
   const [serverDown, setServerDown] = useState(false);
-  const [showVoiceSheet, setShowVoiceSheet] = useState(false);
   const { currentStreak, longestStreak, weeklyLogs, checkStreak, fetchWeeklyLogs } = useGamificationStore();
 
   // AI-driven context awareness (2026 trend)
@@ -512,9 +510,9 @@ const HomeScreen = (): React.ReactElement => {
           ]}
           onPress={() => setShowAddModal(true)}
           onLongPress={() => {
-            // Voice integration (Phase 3 - Zero UI trend)
+            // Voice integration - chuyển đến VoiceScreen tab
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-            setShowVoiceSheet(true);
+            navigation.navigate('VoiceTab' as any); // Navigate to Voice tab
           }}
           accessibilityRole="button"
           accessibilityLabel={smartContext.fabAction.label}
@@ -539,14 +537,6 @@ const HomeScreen = (): React.ReactElement => {
       </Animated.View>
 
       <SmartAddSheet visible={showAddModal} onClose={() => setShowAddModal(false)} />
-
-
-
-      {/* Voice Sheet */}
-      <VoiceSheet
-        visible={showVoiceSheet}
-        onClose={() => setShowVoiceSheet(false)}
-      />
     </GradientBackground>
   );
 };
