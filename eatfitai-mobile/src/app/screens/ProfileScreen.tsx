@@ -192,51 +192,94 @@ const ProfileScreen = (): React.ReactElement => {
       end={{ x: 0.5, y: 1 }}
       style={styles.container}
     >
-      <AppHeader
-        title={t('common.profile_title')}
-        subtitle={t('common.profile_subtitle')}
-        showBack={false}
-        variant="hero"
-      />
+      {/* Custom Header - matching StatsScreen */}
+      <View style={{ alignItems: 'center', paddingTop: 70, paddingBottom: theme.spacing.lg }}>
+        <ThemedText variant="h2" weight="700">
+          👤 Hồ sơ
+        </ThemedText>
+        <ThemedText variant="bodySmall" color="textSecondary">
+          Thông tin cá nhân của bạn
+        </ThemedText>
+      </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        {/* Hero Section - Name, BMI */}
+        {/* Hero Section - Matching Reference Image */}
         <Animated.View entering={FadeIn.duration(400)} style={styles.heroCard}>
-
-          <ThemedText style={styles.name}>
+          {/* Name - Centered */}
+          <ThemedText variant="h2" weight="700" style={{ textAlign: 'center' }}>
             {profile?.fullName || 'Chưa cập nhật'}
           </ThemedText>
-          <ThemedText style={styles.email}>
-            {profile?.email || ''}
+
+          {/* Join Date - Subtitle */}
+          <ThemedText variant="bodySmall" color="textSecondary" style={{ textAlign: 'center', marginTop: 6 }}>
+            {profile?.createdAt
+              ? `Đã tham gia từ ${new Date(profile.createdAt).toLocaleDateString('vi-VN', { day: '2-digit', month: 'short', year: 'numeric' })}`
+              : 'Thành viên mới'}
           </ThemedText>
 
-          {/* BMI Indicator */}
-          <View style={styles.bmiSection}>
-            <BMIIndicator
-              heightCm={profile?.heightCm}
-              weightKg={profile?.weightKg}
-              variant="compact"
-            />
-          </View>
+          {/* Stats Row - 3 columns with dividers */}
+          <View style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'center',
+            marginTop: 24,
+            marginBottom: 20,
+            paddingVertical: 16,
+            paddingHorizontal: 20,
+            backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)',
+            borderRadius: 16,
+          }}>
+            {/* Age */}
+            <View style={{ flex: 1, alignItems: 'center' }}>
+              <ThemedText style={{ fontSize: 20, marginBottom: 4 }}>🎂</ThemedText>
+              <ThemedText variant="h4" weight="700">
+                {profile?.age ? `${profile.age} tuổi` : '--'}
+              </ThemedText>
+            </View>
 
-          {/* Streak Badge - hiển thị streak từ API */}
-          <View style={styles.streakBadge}>
-            <ThemedText>🔥</ThemedText>
-            <ThemedText style={styles.streakText}>
-              {(profile?.currentStreak ?? 0) > 0
-                ? `${profile?.currentStreak} ngày streak`
-                : 'Bắt đầu streak hôm nay!'}
-            </ThemedText>
+            {/* Divider */}
+            <View style={{ width: 1, height: 40, backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)' }} />
+
+            {/* Height */}
+            <View style={{ flex: 1, alignItems: 'center' }}>
+              <ThemedText style={{ fontSize: 20, marginBottom: 4 }}>📏</ThemedText>
+              <ThemedText variant="h4" weight="700">
+                {profile?.heightCm ? `${profile.heightCm} cm` : '--'}
+              </ThemedText>
+            </View>
+
+            {/* Divider */}
+            <View style={{ width: 1, height: 40, backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)' }} />
+
+            {/* Weight */}
+            <View style={{ flex: 1, alignItems: 'center' }}>
+              <ThemedText style={{ fontSize: 20, marginBottom: 4 }}>⚖️</ThemedText>
+              <ThemedText variant="h4" weight="700">
+                {profile?.weightKg ? `${profile.weightKg} kg` : '--'}
+              </ThemedText>
+            </View>
           </View>
 
           {/* Edit Profile Button */}
           <Pressable
-            style={styles.editButton}
+            style={({ pressed }) => [
+              {
+                width: '100%',
+                paddingVertical: 16,
+                borderRadius: 16,
+                backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)',
+                alignItems: 'center',
+                opacity: pressed ? 0.8 : 1,
+                transform: [{ scale: pressed ? 0.98 : 1 }],
+              }
+            ]}
             onPress={() => navigation.navigate('EditProfile' as any)}
             accessibilityRole="button"
             accessibilityLabel="Chỉnh sửa hồ sơ"
           >
-            <ThemedText style={styles.editButtonText}>✏️ Chỉnh sửa hồ sơ</ThemedText>
+            <ThemedText variant="body" weight="600">
+              Chỉnh sửa hồ sơ
+            </ThemedText>
           </Pressable>
         </Animated.View>
 
@@ -340,7 +383,7 @@ const ProfileScreen = (): React.ReactElement => {
           />
         </Animated.View>
       </ScrollView>
-    </LinearGradient>
+    </LinearGradient >
   );
 };
 
