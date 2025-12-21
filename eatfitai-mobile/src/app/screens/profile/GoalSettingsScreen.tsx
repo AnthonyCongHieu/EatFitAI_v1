@@ -10,10 +10,10 @@ import {
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
+import { LinearGradient } from 'expo-linear-gradient';
 
 import { ThemedText } from '../../../components/ThemedText';
 import Button from '../../../components/Button';
-import { AppHeader } from '../../../components/ui/AppHeader';
 import { glassStyles } from '../../../components/ui/GlassCard';
 import { useAppTheme } from '../../../theme/ThemeProvider';
 import { useProfileStore } from '../../../store/useProfileStore';
@@ -74,7 +74,7 @@ const GoalSettingsScreen = (): React.ReactElement => {
     };
 
     const styles = StyleSheet.create({
-        container: { flex: 1, backgroundColor: theme.colors.background },
+        container: { flex: 1 },
         content: {
             paddingHorizontal: theme.spacing.lg,
             paddingVertical: theme.spacing.xl,
@@ -125,18 +125,48 @@ const GoalSettingsScreen = (): React.ReactElement => {
     });
 
     return (
-        <View style={styles.container}>
-            <AppHeader
-                title="Mục tiêu & Hoạt động"
-                subtitle="Thiết lập mục tiêu dinh dưỡng"
-                onBackPress={() => navigation.goBack()}
-            />
+        <LinearGradient
+            colors={theme.colors.screenGradient}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 0.5, y: 1 }}
+            style={styles.container}
+        >
+            {/* Custom Header - Back button + Title on same row */}
+            <View style={{ paddingTop: 60, paddingBottom: theme.spacing.sm, paddingHorizontal: theme.spacing.lg }}>
+                {/* Row: Back button + Title */}
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    <Pressable
+                        onPress={() => navigation.goBack()}
+                        style={{
+                            width: 40,
+                            height: 40,
+                            borderRadius: 12,
+                            backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                        }}
+                    >
+                        <ThemedText style={{ fontSize: 18 }}>←</ThemedText>
+                    </Pressable>
+
+                    <View style={{ flex: 1, alignItems: 'center', marginRight: 40 }}>
+                        <ThemedText variant="h3" weight="700">
+                            Mục tiêu & Hoạt động
+                        </ThemedText>
+                    </View>
+                </View>
+
+                {/* Subtitle below */}
+                <ThemedText variant="bodySmall" color="textSecondary" style={{ textAlign: 'center', marginTop: 8 }}>
+                    Thiết lập mục tiêu dinh dưỡng
+                </ThemedText>
+            </View>
 
             <ScrollView contentContainerStyle={styles.content}>
                 {/* Goal Selection */}
                 <Animated.View entering={FadeInDown.delay(100)} style={styles.card}>
                     <View style={styles.sectionTitle}>
-                        <ThemedText style={{ fontSize: 20 }}>🎯</ThemedText>
+                        <ThemedText style={{ fontSize: 20 }}></ThemedText>
                         <ThemedText variant="h3">Mục tiêu của bạn</ThemedText>
                     </View>
 
@@ -194,7 +224,7 @@ const GoalSettingsScreen = (): React.ReactElement => {
                 {/* Activity Level Selection */}
                 <Animated.View entering={FadeInDown.delay(200)} style={styles.card}>
                     <View style={styles.sectionTitle}>
-                        <ThemedText style={{ fontSize: 20 }}>🏃</ThemedText>
+                        <ThemedText style={{ fontSize: 20 }}></ThemedText>
                         <ThemedText variant="h3">Mức độ vận động</ThemedText>
                     </View>
 
@@ -257,7 +287,7 @@ const GoalSettingsScreen = (): React.ReactElement => {
                     />
                 </Animated.View>
             </ScrollView>
-        </View>
+        </LinearGradient>
     );
 };
 

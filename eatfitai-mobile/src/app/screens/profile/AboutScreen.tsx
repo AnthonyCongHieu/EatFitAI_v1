@@ -8,14 +8,14 @@ import {
     View,
     Linking,
     Pressable,
+    Image,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import Constants from 'expo-constants';
-import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 
 import { ThemedText } from '../../../components/ThemedText';
-import { AppHeader } from '../../../components/ui/AppHeader';
 import { SettingsMenuItem } from '../../../components/ui/SettingsMenuItem';
 import { glassStyles } from '../../../components/ui/GlassCard';
 import { useAppTheme } from '../../../theme/ThemeProvider';
@@ -44,13 +44,14 @@ const AboutScreen = (): React.ReactElement => {
     };
 
     const styles = StyleSheet.create({
-        container: { flex: 1, backgroundColor: theme.colors.background },
+        container: { flex: 1 },
         content: {
             paddingHorizontal: theme.spacing.lg,
             paddingVertical: theme.spacing.xl,
             gap: theme.spacing.lg,
         },
         logoSection: {
+            ...glass.card,
             alignItems: 'center',
             paddingVertical: 32,
         },
@@ -84,17 +85,50 @@ const AboutScreen = (): React.ReactElement => {
     });
 
     return (
-        <View style={styles.container}>
-            <AppHeader
-                title="Về ứng dụng"
-                subtitle="Thông tin và hỗ trợ"
-                onBackPress={() => navigation.goBack()}
-            />
+        <LinearGradient
+            colors={theme.colors.screenGradient}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 0.5, y: 1 }}
+            style={styles.container}
+        >
+            {/* Custom Header - Back button + Title on same row */}
+            <View style={{ paddingTop: 60, paddingBottom: theme.spacing.sm, paddingHorizontal: theme.spacing.lg }}>
+                {/* Row: Back button + Title */}
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    <Pressable
+                        onPress={() => navigation.goBack()}
+                        style={{
+                            width: 40,
+                            height: 40,
+                            borderRadius: 12,
+                            backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                        }}
+                    >
+                        <ThemedText style={{ fontSize: 18 }}>←</ThemedText>
+                    </Pressable>
+
+                    <View style={{ flex: 1, alignItems: 'center', marginRight: 40 }}>
+                        <ThemedText variant="h3" weight="700">
+                            Về ứng dụng
+                        </ThemedText>
+                    </View>
+                </View>
+
+                {/* Subtitle below */}
+                <ThemedText variant="bodySmall" color="textSecondary" style={{ textAlign: 'center', marginTop: 8 }}>
+                    Thông tin và hỗ trợ
+                </ThemedText>
+            </View>
 
             <ScrollView contentContainerStyle={styles.content}>
                 {/* Logo Section */}
                 <Animated.View entering={FadeInDown.delay(100)} style={styles.logoSection}>
-                    <ThemedText style={styles.logoIcon}>🥗</ThemedText>
+                    <Image
+                        source={require('../../../assets/icon.png')}
+                        style={{ width: 80, height: 80, borderRadius: 20, marginBottom: 16 }}
+                    />
                     <ThemedText style={styles.appName}>EatFitAI</ThemedText>
                     <ThemedText style={styles.version}>
                         Phiên bản {appVersion} (Build {buildNumber})
@@ -153,7 +187,7 @@ const AboutScreen = (): React.ReactElement => {
                     </ThemedText>
                 </Animated.View>
             </ScrollView>
-        </View>
+        </LinearGradient>
     );
 };
 

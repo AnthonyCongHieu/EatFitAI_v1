@@ -205,7 +205,7 @@ const AchievementsScreen = (): React.ReactElement => {
   const renderSectionTitle = () => (
     <Animated.View entering={FadeIn.delay(150)} style={styles.sectionHeader}>
       <ThemedText variant="h3" weight="700">
-        🎯 Tất cả thành tích
+        Tất cả thành tích
       </ThemedText>
       <ThemedText variant="caption" color="textSecondary">
         {unlockedCount} / {totalCount} đã đạt
@@ -334,34 +334,39 @@ const AchievementsScreen = (): React.ReactElement => {
       end={{ x: 0.5, y: 1 }}
       style={{ flex: 1 }}
     >
-      {/* Custom Header matching RecipeSuggestionsScreen */}
-      <View style={{ paddingTop: 70, paddingHorizontal: theme.spacing.lg, paddingBottom: theme.spacing.md }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: theme.spacing.md }}>
+      {/* Custom Header matching EditProfileScreen */}
+      <View style={{ paddingTop: 60, paddingBottom: theme.spacing.sm, paddingHorizontal: theme.spacing.lg }}>
+        {/* Row: Back button + Title */}
+        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
           <TouchableOpacity
             onPress={() => navigation.goBack()}
             style={{
               width: 40,
               height: 40,
               borderRadius: 12,
-              backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)',
+              backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)',
               alignItems: 'center',
               justifyContent: 'center',
             }}
           >
-            <Ionicons name="chevron-back" size={24} color={theme.colors.text} />
+            <ThemedText style={{ fontSize: 18 }}>←</ThemedText>
           </TouchableOpacity>
-          <View style={{ flex: 1 }}>
+
+          <View style={{ flex: 1, alignItems: 'center' }}>
             <ThemedText variant="h3" weight="700">
-              🏆 Thành tích
-            </ThemedText>
-            <ThemedText variant="caption" color="textSecondary">
-              Hành trình sức khỏe của bạn
+              Thành tích
             </ThemedText>
           </View>
-          <TouchableOpacity onPress={handleShare} style={{ padding: 8 }}>
+
+          <TouchableOpacity onPress={handleShare} style={{ width: 40, height: 40, alignItems: 'center', justifyContent: 'center' }}>
             <Ionicons name="share-social-outline" size={22} color={theme.colors.primary} />
           </TouchableOpacity>
         </View>
+
+        {/* Subtitle below */}
+        <ThemedText variant="bodySmall" color="textSecondary" style={{ textAlign: 'center', marginTop: 8 }}>
+          Hành trình sức khỏe của bạn
+        </ThemedText>
       </View>
 
       <View ref={viewRef} collapsable={false} style={{ flex: 1 }}>

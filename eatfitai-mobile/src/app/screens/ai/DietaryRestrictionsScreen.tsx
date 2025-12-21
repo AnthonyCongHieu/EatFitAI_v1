@@ -5,12 +5,13 @@ import {
     View,
     ActivityIndicator,
     Alert,
+    Pressable,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
+import { LinearGradient } from 'expo-linear-gradient';
 
 import { ThemedText } from '../../../components/ThemedText';
-import { AppHeader } from '../../../components/ui/AppHeader';
 import Button from '../../../components/Button';
 import { glassStyles } from '../../../components/ui/GlassCard';
 import { useAppTheme } from '../../../theme/ThemeProvider';
@@ -84,28 +85,79 @@ export const DietaryRestrictionsScreen = () => {
     };
 
     const styles = StyleSheet.create({
-        container: { flex: 1, backgroundColor: theme.colors.background },
+        container: { flex: 1 },
         content: { padding: 20, gap: 24, paddingBottom: 100 },
-        section: { gap: 12 },
-        title: { fontSize: 18, fontWeight: '700', marginBottom: 4 },
-        subtitle: { fontSize: 14, color: theme.colors.textSecondary, marginBottom: 8 },
+        card: {
+            ...glass.card,
+            padding: 20,
+        },
+        sectionTitle: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 8,
+            marginBottom: 8,
+        },
+        subtitle: { fontSize: 14, color: theme.colors.textSecondary, marginBottom: 12 },
         chipsContainer: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
     });
 
     if (isLoading && !preferences) {
         return (
-            <View style={[styles.container, { justifyContent: 'center' }]}>
+            <LinearGradient
+                colors={theme.colors.screenGradient}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 0.5, y: 1 }}
+                style={[styles.container, { justifyContent: 'center' }]}
+            >
                 <ActivityIndicator size="large" color={theme.colors.primary} />
-            </View>
+            </LinearGradient>
         );
     }
 
     return (
-        <View style={styles.container}>
-            <AppHeader title="Chế độ ăn & Dị ứng" onBackPress={() => navigation.goBack()} />
+        <LinearGradient
+            colors={theme.colors.screenGradient}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 0.5, y: 1 }}
+            style={styles.container}
+        >
+            {/* Custom Header - Back button + Title on same row */}
+            <View style={{ paddingTop: 60, paddingBottom: theme.spacing.sm, paddingHorizontal: theme.spacing.lg }}>
+                {/* Row: Back button + Title */}
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    <Pressable
+                        onPress={() => navigation.goBack()}
+                        style={{
+                            width: 40,
+                            height: 40,
+                            borderRadius: 12,
+                            backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                        }}
+                    >
+                        <ThemedText style={{ fontSize: 18 }}>←</ThemedText>
+                    </Pressable>
+
+                    <View style={{ flex: 1, alignItems: 'center', marginRight: 40 }}>
+                        <ThemedText variant="h3" weight="700">
+                            Chế độ ăn & Dị ứng
+                        </ThemedText>
+                    </View>
+                </View>
+
+                {/* Subtitle below */}
+                <ThemedText variant="bodySmall" color="textSecondary" style={{ textAlign: 'center', marginTop: 8 }}>
+                    Thiết lập hạn chế thực phẩm
+                </ThemedText>
+            </View>
+
             <ScrollView contentContainerStyle={styles.content}>
-                <Animated.View entering={FadeInDown.delay(100)} style={styles.section}>
-                    <ThemedText style={styles.title}>🥗 Chế độ ăn</ThemedText>
+                {/* Chế độ ăn */}
+                <Animated.View entering={FadeInDown.delay(100)} style={styles.card}>
+                    <View style={styles.sectionTitle}>
+                        <ThemedText variant="h3">Chế độ ăn</ThemedText>
+                    </View>
                     <ThemedText style={styles.subtitle}>Chọn các hạn chế hoặc chế độ ăn bạn đang theo đuổi.</ThemedText>
                     <View style={styles.chipsContainer}>
                         {DIETARY_OPTIONS.map((opt) => (
@@ -119,8 +171,11 @@ export const DietaryRestrictionsScreen = () => {
                     </View>
                 </Animated.View>
 
-                <Animated.View entering={FadeInDown.delay(200)} style={styles.section}>
-                    <ThemedText style={styles.title}>🚫 Dị ứng thực phẩm</ThemedText>
+                {/* Dị ứng thực phẩm */}
+                <Animated.View entering={FadeInDown.delay(200)} style={styles.card}>
+                    <View style={styles.sectionTitle}>
+                        <ThemedText variant="h3">Dị ứng thực phẩm</ThemedText>
+                    </View>
                     <ThemedText style={styles.subtitle}>Chúng tôi sẽ cảnh báo hoặc loại bỏ các món chứa thành phần này.</ThemedText>
                     <View style={styles.chipsContainer}>
                         {ALLERGY_OPTIONS.map((opt) => (
@@ -143,7 +198,7 @@ export const DietaryRestrictionsScreen = () => {
                     />
                 </Animated.View>
             </ScrollView>
-        </View>
+        </LinearGradient>
     );
 };
 

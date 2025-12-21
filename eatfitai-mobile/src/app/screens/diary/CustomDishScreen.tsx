@@ -188,35 +188,30 @@ const CustomDishScreen = (): React.ReactElement => {
         style={StyleSheet.absoluteFill}
       />
 
-      {/* Header - back button aligned with title */}
+      {/* Header - centered title like EditProfileScreen */}
       <View style={{
         paddingTop: insets.top + 8,
         paddingHorizontal: 20,
         paddingBottom: 4
       }}>
-        <View style={{ flexDirection: 'row', alignItems: 'flex-start' }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
           <Pressable
             onPress={() => navigation.goBack()}
             style={{
               width: 40,
               height: 40,
-              borderRadius: 20,
-              backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)',
+              borderRadius: 12,
+              backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)',
               alignItems: 'center',
               justifyContent: 'center',
-              marginRight: 12,
-              marginTop: 2,
             }}
             hitSlop={8}
           >
-            <Ionicons name="chevron-back" size={24} color={theme.colors.text} />
+            <ThemedText style={{ fontSize: 18 }}>←</ThemedText>
           </Pressable>
-          <View style={{ flex: 1 }}>
+          <View style={{ flex: 1, alignItems: 'center', marginRight: 40 }}>
             <ThemedText style={{ fontSize: 20, fontWeight: '700', letterSpacing: -0.3, lineHeight: 28 }}>
               Món ăn của bạn
-            </ThemedText>
-            <ThemedText variant="caption" color="textSecondary" style={{ marginTop: 4 }}>
-              Nhập thông tin dinh dưỡng cho món ăn của bạn
             </ThemedText>
           </View>
         </View>

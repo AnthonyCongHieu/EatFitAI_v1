@@ -1,17 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, ScrollView, ActivityIndicator } from 'react-native';
+import { View, StyleSheet, ScrollView, ActivityIndicator, Pressable } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 import Svg, { Circle, G } from 'react-native-svg';
 import { LinearGradient } from 'expo-linear-gradient';
-import Animated, { FadeInUp } from 'react-native-reanimated';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 
-import Screen from '../../../components/Screen';
-import { AppHeader } from '../../../components/ui/AppHeader';
 import { ThemedText } from '../../../components/ThemedText';
 import Button from '../../../components/Button';
-import { AppCard } from '../../../components/ui/AppCard';
 import { useAppTheme } from '../../../theme/ThemeProvider';
 import { aiService } from '../../../services/aiService';
 import type { RootStackParamList } from '../../types';
@@ -146,19 +143,22 @@ const NutritionInsightsScreen = (): React.ReactElement => {
   const styles = StyleSheet.create({
     container: {
       flex: 1,
-      backgroundColor: theme.colors.background,
     },
     content: {
       padding: theme.spacing.md,
+      paddingBottom: 100,
+    },
+    card: {
+      ...glass.card,
+      padding: 20,
+      marginBottom: theme.spacing.md,
     },
     headerCard: {
+      ...glass.card,
       flexDirection: 'row',
       alignItems: 'center',
       padding: theme.spacing.lg,
       marginBottom: theme.spacing.lg,
-      backgroundColor: theme.colors.card,
-      borderRadius: theme.borderRadius.card,
-      ...theme.shadows.sm,
     },
     scoreContainer: {
       marginRight: theme.spacing.lg,
@@ -172,12 +172,10 @@ const NutritionInsightsScreen = (): React.ReactElement => {
       marginLeft: theme.spacing.xs,
     },
     recommendationCard: {
+      ...glass.card,
       marginBottom: theme.spacing.md,
       borderLeftWidth: 4,
       padding: theme.spacing.md,
-      backgroundColor: theme.colors.card,
-      borderRadius: theme.borderRadius.card,
-      ...theme.shadows.sm,
     },
     recHigh: { borderLeftColor: theme.colors.danger },
     recMedium: { borderLeftColor: theme.colors.warning },
@@ -192,7 +190,7 @@ const NutritionInsightsScreen = (): React.ReactElement => {
       flex: 1,
       alignItems: 'center',
       padding: theme.spacing.md,
-      backgroundColor: theme.colors.background,
+      backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)',
       borderRadius: theme.borderRadius.card,
       marginHorizontal: theme.spacing.xs,
       borderWidth: 1,
@@ -202,18 +200,6 @@ const NutritionInsightsScreen = (): React.ReactElement => {
       flex: 1,
       alignItems: 'center',
       justifyContent: 'center',
-    },
-    progressBarBg: {
-      height: 8,
-      backgroundColor: theme.colors.border,
-      borderRadius: 4,
-      marginTop: 8,
-      overflow: 'hidden',
-    },
-    progressBarFill: {
-      height: '100%',
-      backgroundColor: theme.colors.primary,
-      borderRadius: 4,
     },
   });
 
@@ -229,6 +215,39 @@ const NutritionInsightsScreen = (): React.ReactElement => {
         return theme.colors.text;
     }
   };
+
+  // Custom Header Component
+  const renderHeader = () => (
+    <View style={{ paddingTop: 60, paddingBottom: theme.spacing.sm, paddingHorizontal: theme.spacing.lg }}>
+      {/* Row: Back button + Title */}
+      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+        <Pressable
+          onPress={() => navigation.goBack()}
+          style={{
+            width: 40,
+            height: 40,
+            borderRadius: 12,
+            backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          <ThemedText style={{ fontSize: 18 }}>←</ThemedText>
+        </Pressable>
+
+        <View style={{ flex: 1, alignItems: 'center', marginRight: 40 }}>
+          <ThemedText variant="h3" weight="700">
+            {t('nutrition_insights.title')}
+          </ThemedText>
+        </View>
+      </View>
+
+      {/* Subtitle below */}
+      <ThemedText variant="bodySmall" color="textSecondary" style={{ textAlign: 'center', marginTop: 8 }}>
+        {t('nutrition_insights.subtitle')}
+      </ThemedText>
+    </View>
+  );
 
   const renderRecommendation = (rec: NutritionRecommendation, index: number) => (
     <View
@@ -270,30 +289,33 @@ const NutritionInsightsScreen = (): React.ReactElement => {
 
   if (loading) {
     return (
-      <Screen style={styles.container}>
-        <AppHeader
-          title={t('nutrition_insights.title')}
-          subtitle={t('nutrition_insights.loading')}
-        />
+      <LinearGradient
+        colors={theme.colors.screenGradient}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 0.5, y: 1 }}
+        style={styles.container}
+      >
+        {renderHeader()}
         <View style={styles.center}>
           <ActivityIndicator size="large" color={theme.colors.primary} />
         </View>
-      </Screen>
+      </LinearGradient>
     );
   }
 
   if (error) {
-    // Kiểm tra nếu lỗi liên quan đến thiếu NutritionTarget
     const isNoTargetError =
       error.toLowerCase().includes('nutrition target') ||
       error.toLowerCase().includes('no active');
 
     return (
-      <Screen style={styles.container}>
-        <AppHeader
-          title={t('nutrition_insights.title')}
-          subtitle={t('nutrition_insights.error_title')}
-        />
+      <LinearGradient
+        colors={theme.colors.screenGradient}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 0.5, y: 1 }}
+        style={styles.container}
+      >
+        {renderHeader()}
         <View style={styles.center}>
           <Ionicons
             name={isNoTargetError ? 'nutrition-outline' : 'alert-circle-outline'}
@@ -337,21 +359,23 @@ const NutritionInsightsScreen = (): React.ReactElement => {
             )}
           </View>
         </View>
-      </Screen>
+      </LinearGradient>
     );
   }
 
   return (
-    <Screen style={styles.container} scroll={false}>
-      <AppHeader
-        title={t('nutrition_insights.title')}
-        subtitle={t('nutrition_insights.subtitle')}
-      />
+    <LinearGradient
+      colors={theme.colors.screenGradient}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 0.5, y: 1 }}
+      style={styles.container}
+    >
+      {renderHeader()}
 
       <ScrollView contentContainerStyle={styles.content}>
         {insights && (
           <>
-            <View style={styles.headerCard}>
+            <Animated.View entering={FadeInDown.delay(100)} style={styles.headerCard}>
               <View style={styles.scoreContainer}>
                 <ScoreGauge
                   score={insights.adherenceScore}
@@ -396,7 +420,7 @@ const NutritionInsightsScreen = (): React.ReactElement => {
                   </ThemedText>
                 </View>
               </View>
-            </View>
+            </Animated.View>
 
             <ThemedText variant="h3" style={styles.sectionTitle}>
               {t('nutrition_insights.recommendations_title')}
@@ -404,7 +428,7 @@ const NutritionInsightsScreen = (): React.ReactElement => {
             {insights.recommendations.length > 0 ? (
               insights.recommendations.map(renderRecommendation)
             ) : (
-              <AppCard>
+              <View style={styles.card}>
                 <View style={{ alignItems: 'center', padding: theme.spacing.md }}>
                   <Ionicons
                     name="trophy-outline"
@@ -418,7 +442,7 @@ const NutritionInsightsScreen = (): React.ReactElement => {
                     {t('nutrition_insights.no_recommendations')}
                   </ThemedText>
                 </View>
-              </AppCard>
+              </View>
             )}
 
             {insights.mealTimingInsight && (
@@ -426,7 +450,7 @@ const NutritionInsightsScreen = (): React.ReactElement => {
                 <ThemedText variant="h3" style={styles.sectionTitle}>
                   {t('nutrition_insights.meal_timing_title')}
                 </ThemedText>
-                <AppCard>
+                <Animated.View entering={FadeInDown.delay(200)} style={styles.card}>
                   <View
                     style={{
                       flexDirection: 'row',
@@ -465,7 +489,7 @@ const NutritionInsightsScreen = (): React.ReactElement => {
                       </ThemedText>
                     </View>
                   ))}
-                </AppCard>
+                </Animated.View>
               </>
             )}
           </>
@@ -476,7 +500,7 @@ const NutritionInsightsScreen = (): React.ReactElement => {
             <ThemedText variant="h3" style={styles.sectionTitle}>
               {t('nutrition_insights.adaptive_title')}
             </ThemedText>
-            <AppCard>
+            <Animated.View entering={FadeInDown.delay(300)} style={styles.card}>
               <View
                 style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16 }}
               >
@@ -541,7 +565,7 @@ const NutritionInsightsScreen = (): React.ReactElement => {
 
               <View
                 style={{
-                  backgroundColor: theme.colors.background,
+                  backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)',
                   padding: 12,
                   borderRadius: 8,
                   marginBottom: 16,
@@ -562,11 +586,11 @@ const NutritionInsightsScreen = (): React.ReactElement => {
                 loading={applying}
                 variant="primary"
               />
-            </AppCard>
+            </Animated.View>
           </>
         )}
       </ScrollView>
-    </Screen>
+    </LinearGradient>
   );
 };
 

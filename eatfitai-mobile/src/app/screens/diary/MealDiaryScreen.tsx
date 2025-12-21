@@ -458,18 +458,17 @@ const MealDiaryScreen = (): React.ReactElement => {
       justifyContent: 'space-between',
     },
     backButton: {
-      width: 44,
-      height: 44,
-      borderRadius: 16,
-      backgroundColor: isDark ? 'rgba(74, 144, 226, 0.15)' : 'rgba(59, 130, 246, 0.08)',
+      width: 40,
+      height: 40,
+      borderRadius: 12,
+      backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)',
       alignItems: 'center',
       justifyContent: 'center',
-      borderWidth: 1.5,
-      borderColor: isDark ? 'rgba(74, 144, 226, 0.25)' : 'rgba(59, 130, 246, 0.15)',
     },
     headerCenter: {
       flex: 1,
       alignItems: 'center',
+      marginRight: 40,
     },
     header: {
       paddingHorizontal: 16,
@@ -695,7 +694,7 @@ const MealDiaryScreen = (): React.ReactElement => {
   return (
     <Screen scroll={false}>
       <View style={styles.container}>
-        {/* Custom Header với Back button */}
+        {/* Custom Header với Back button - centered like EditProfileScreen */}
         <View style={[styles.screenHeader, { paddingTop: 10 }]}>
           <View style={styles.headerRow}>
             <Pressable
@@ -703,9 +702,9 @@ const MealDiaryScreen = (): React.ReactElement => {
               style={styles.backButton}
               hitSlop={8}
             >
-              <Ionicons name="chevron-back" size={24} color={theme.colors.text} />
+              <ThemedText style={{ fontSize: 18 }}>←</ThemedText>
             </Pressable>
-            <View style={{ flex: 1, marginLeft: 12 }}>
+            <View style={styles.headerCenter}>
               <ThemedText variant="h3" weight="700">
                 Nhật ký bữa ăn
               </ThemedText>
