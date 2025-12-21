@@ -301,7 +301,7 @@ const RecipeDetailScreen = (): React.ReactElement => {
         {/* Hướng dẫn nấu - hiển thị từ DB hoặc AI-generated */}
         <View style={[styles.box, { backgroundColor: theme.colors.card }]}>
           <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: theme.spacing.sm }}>
-            <ThemedText variant="h4">👨‍🍳 Hướng dẫn nấu</ThemedText>
+            <ThemedText variant="h4">Hướng dẫn nấu</ThemedText>
             {aiInstructions.cookingTime && (
               <ThemedText variant="caption" color="textSecondary" style={{ marginLeft: theme.spacing.sm }}>
                 ⏱️ {aiInstructions.cookingTime}
@@ -369,7 +369,7 @@ const RecipeDetailScreen = (): React.ReactElement => {
         {/* Video Tutorial Section */}
         <View style={[styles.box, { backgroundColor: theme.colors.card }]}>
           <ThemedText variant="h4" style={{ marginBottom: theme.spacing.sm }}>
-            📺 Video Hướng Dẫn
+            Video Hướng Dẫn
           </ThemedText>
 
           {recipe.videoUrl ? (
@@ -445,7 +445,7 @@ const RecipeDetailScreen = (): React.ReactElement => {
         {/* Add to Diary Button [NEW] */}
         < View style={{ paddingHorizontal: theme.spacing.md, marginTop: theme.spacing.lg }}>
           <Button
-            title="📝 Thêm vào nhật ký hôm nay"
+            title="Thêm vào nhật ký hôm nay"
             variant="primary"
             onPress={() => setShowAddToDiarySheet(true)}
             loading={isAddingToDiary}
