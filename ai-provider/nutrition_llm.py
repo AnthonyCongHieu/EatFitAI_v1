@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 
 # Configuration - Ollama LLM
 OLLAMA_URL = os.getenv("OLLAMA_URL", "http://localhost:11434")
-OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "qwen2:1.5b")
+OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "qwen2.5:3b")
 
 # ============== SIMPLE CACHE SYSTEM ==============
 # In-memory cache với TTL để giảm latency cho repeated queries
@@ -682,31 +682,95 @@ VIETNAMESE_NUMBERS = {
 }
 
 def parse_vietnamese_number(text: str) -> int:
-    """Parse số tiếng Việt sang int. VD: 'bảy mươi lăm' -> 75"""
+    """
+    Parse số tiếng Việt sang int. VD: 'hai nghìn sáu trăm' -> 2600
+    Hỗ trợ: đơn vị (0-9), chục (10-90), trăm (100-900), nghìn (1000-9000)
+    """
     text = text.lower().strip()
     
     # Nếu đã là số
     if text.isdigit():
         return int(text)
     
-    # Parse số phức tạp: "bảy mươi lăm" = 70 + 5
     result = 0
     
-    # Tìm hàng chục
-    for word, val in VIETNAMESE_NUMBERS.items():
-        if word in text and val >= 10 and val < 100:
+    # Bước 0: Tìm NGHÌN/NGÀN (1000-9000)
+    thousands_map = {
+        "một nghìn": 1000, "hai nghìn": 2000, "ba nghìn": 3000, "bốn nghìn": 4000,
+        "năm nghìn": 5000, "sáu nghìn": 6000, "bảy nghìn": 7000, "tám nghìn": 8000, "chín nghìn": 9000,
+        "một ngàn": 1000, "hai ngàn": 2000, "ba ngàn": 3000, "bốn ngàn": 4000,
+        "năm ngàn": 5000, "sáu ngàn": 6000, "bảy ngàn": 7000, "tám ngàn": 8000, "chín ngàn": 9000,
+    }
+    for word, val in thousands_map.items():
+        if word in text:
             result += val
             text = text.replace(word, "").strip()
             break
     
-    # Tìm hàng đơn vị (chú ý "lăm" = 5)
+    # Bước 1: Tìm TRĂM (100-900)
+    hundreds_map = {
+        "một trăm": 100, "hai trăm": 200, "ba trăm": 300, "bốn trăm": 400,
+        "năm trăm": 500, "sáu trăm": 600, "bảy trăm": 700, "tám trăm": 800, "chín trăm": 900
+    }
+    for word, val in hundreds_map.items():
+        if word in text:
+            result += val
+            text = text.replace(word, "").strip()
+            break
+    
+    # Bước 2: Tìm CHỤC (10-90)
+    tens_map = {
+        "mười": 10, "hai mươi": 20, "ba mươi": 30, "bốn mươi": 40,
+        "năm mươi": 50, "sáu mươi": 60, "bảy mươi": 70, "tám mươi": 80, "chín mươi": 90
+    }
+    for word, val in tens_map.items():
+        if word in text:
+            result += val
+            text = text.replace(word, "").strip()
+            break
+    
+    # Bước 3: Tìm ĐƠN VỊ (1-9)
     text = text.replace("lăm", "năm").replace("mốt", "một")
-    for word, val in VIETNAMESE_NUMBERS.items():
-        if word in text and val < 10:
+    text = text.replace("linh", "").replace("lẻ", "").strip()
+    
+    units_map = {
+        "một": 1, "hai": 2, "ba": 3, "bốn": 4, "năm": 5,
+        "sáu": 6, "bảy": 7, "tám": 8, "chín": 9
+    }
+    for word, val in units_map.items():
+        if word in text:
             result += val
             break
     
     return result if result > 0 else 0
+
+
+def preprocess_vietnamese_numbers(text: str) -> str:
+    """
+    Tiền xử lý: Chuyển số tiếng Việt thành số digit.
+    VD: "thêm sáu trăm gam gà" -> "thêm 600gam gà"
+    VD: "hai nghìn calo" -> "2000 calo"
+    """
+    import re
+    
+    # Pattern để tìm số tiếng Việt + đơn vị (gam/g/gram/ký/kg/calo)
+    # Hỗ trợ: nghìn/ngàn, trăm, chục, đơn vị
+    number_words = r"((?:một|hai|ba|bốn|năm|sáu|bảy|tám|chín)\s*(?:nghìn|ngàn)(?:\s*(?:một|hai|ba|bốn|năm|sáu|bảy|tám|chín)\s*trăm)?(?:\s*(?:linh|lẻ)?\s*(?:một|hai|ba|bốn|năm|sáu|bảy|tám|chín|mười|mươi|lăm|mốt))*|(?:một|hai|ba|bốn|năm|sáu|bảy|tám|chín)\s*trăm(?:\s*(?:linh|lẻ)?\s*(?:một|hai|ba|bốn|năm|sáu|bảy|tám|chín|mười|mươi|lăm|mốt))*|(?:một|hai|ba|bốn|năm|sáu|bảy|tám|chín|mười)\s*(?:mươi|mười)?(?:\s*(?:một|hai|ba|bốn|năm|sáu|bảy|tám|chín|lăm|mốt))?)"
+    unit_words = r"\s*(gam|g|gram|ký|kg|kilogram|calo|calories|kcal)"
+    
+    pattern = number_words + unit_words
+    
+    def replace_number(match):
+        number_text = match.group(1)
+        unit = match.group(2)
+        parsed = parse_vietnamese_number(number_text)
+        if parsed > 0:
+            return f"{parsed}{unit}"
+        return match.group(0)
+    
+    result = re.sub(pattern, replace_number, text.lower(), flags=re.IGNORECASE)
+    logger.info(f"Preprocessed: '{text}' -> '{result}'")
+    return result
 
 
 def try_parse_weight_regex(text: str) -> Dict[str, Any] | None:
@@ -734,11 +798,16 @@ def try_parse_weight_regex(text: str) -> Dict[str, Any] | None:
                 "source": "regex"
             }
     
-    # Pattern với số chữ: "tôi bảy mươi lăm ký"
-    pattern_text = r"(?:cân nặng|tôi|nặng)\s*((?:một|hai|ba|bốn|năm|sáu|bảy|tám|chín|mười|mươi|lăm|mốt|\s)+)\s*(?:ký|kg|kilogram)"
+    # Pattern với số chữ: "tôi bảy mươi lăm ký", "một trăm ký"
+    # Thêm "trăm", "linh", "lẻ" vào pattern
+    pattern_text = r"(?:cân nặng|tôi|nặng)\s*((?:một|hai|ba|bốn|năm|sáu|bảy|tám|chín|mười|mươi|lăm|mốt|trăm|linh|lẻ|\s)+)\s*(?:ký|kg|kilogram)"
     match = re.search(pattern_text, lower, re.IGNORECASE)
     if match:
         weight = parse_vietnamese_number(match.group(1))
+        # Nếu parse ra 0 (failed) nhưng text có "một trăm" -> thủ công fix
+        if weight == 0 and "một trăm" in lower:
+            weight = 100
+        
         if 30 <= weight <= 200:
             return {
                 "intent": "LOG_WEIGHT",
@@ -811,10 +880,15 @@ def parse_voice_command_ollama(text: str) -> Dict[str, Any]:
             "error": "Ollama không khả dụng"
         }
     
+    # TIỀN XỬ LÝ: Chuyển số tiếng Việt thành số digit
+    # VD: "sáu trăm gam gà" -> "600gam gà"
+    processed_text = preprocess_vietnamese_numbers(text)
+    logger.info(f"Preprocessed text: '{text}' -> '{processed_text}'")
+    
     # Prompt cải tiến: Nhận input đa dạng, support nhiều món, fix pattern recognition
     prompt = f"""Bạn là AI phân tích lệnh giọng nói tiếng Việt cho app theo dõi calories.
 
-LỆNH CẦN PHÂN TÍCH: "{text}"
+LỆNH CẦN PHÂN TÍCH: "{processed_text}"
 
 ━━━ BƯỚC 1: XÁC ĐỊNH INTENT ━━━
 
@@ -865,19 +939,39 @@ Input: "tôi bảy mươi kg"
 Input: "cân nặng sáu mươi lăm"
 → {{"intent":"LOG_WEIGHT","entities":{{"weight":65}},"confidence":0.9}}
 
+Input: "hôm nay tôi một trăm hai mươi ký"
+→ {{"intent":"LOG_WEIGHT","entities":{{"weight":120}},"confidence":0.9}}
+
+⚠️ CHUYỂN ĐỔI SỐ TIẾNG VIỆT:
+- "một trăm" = 100, "một trăm hai mươi" = 120, "một trăm linh năm" = 105
+- "bảy mươi lăm" = 75, "sáu mươi lăm" = 65, "tám mươi mốt" = 81
+
 --- ADD_FOOD (1 món) ---
-Input: "tôi ăn 100g cơm bữa trưa"
-→ {{"intent":"ADD_FOOD","entities":{{"foodName":"cơm","weight":100,"mealType":"lunch"}},"confidence":0.95}}
+Input: "tôi ăn 150g thịt heo bữa trưa"
+→ {{"intent":"ADD_FOOD","entities":{{"foodName":"thịt heo","weight":150,"mealType":"lunch"}},"confidence":0.95}}
 
 Input: "thêm 2 quả trứng sáng nay"
 → {{"intent":"ADD_FOOD","entities":{{"foodName":"trứng","quantity":2,"unit":"quả","mealType":"breakfast"}},"confidence":0.95}}
 
 --- ADD_FOOD (NHIỀU MÓN) ---
-Input: "thêm 100g cơm và 200g gà bữa trưa"
-→ {{"intent":"ADD_FOOD","entities":{{"foods":[{{"foodName":"cơm","weight":100}},{{"foodName":"gà","weight":200}}],"mealType":"lunch"}},"confidence":0.9}}
+Input: "thêm 200g cá và 150g rau bữa tối"
+→ {{"intent":"ADD_FOOD","entities":{{"foods":[{{"foodName":"cá","weight":200}},{{"foodName":"rau","weight":150}}],"mealType":"dinner"}},"confidence":0.9}}
 
 Input: "ăn 1 bát phở và 1 ly trà đá"
 → {{"intent":"ADD_FOOD","entities":{{"foods":[{{"foodName":"phở","quantity":1,"unit":"bát"}},{{"foodName":"trà đá","quantity":1,"unit":"ly"}}]}},"confidence":0.9}}
+
+Input: "thêm 50g đậu và 100g khoai và 75g ngô"
+→ {{"intent":"ADD_FOOD","entities":{{"foods":[{{"foodName":"đậu","weight":50}},{{"foodName":"khoai","weight":100}},{{"foodName":"ngô","weight":75}}]}},"confidence":0.85}}
+
+🚫 QUY TẮC TUYỆT ĐỐI - KHÔNG ĐƯỢC VI PHẠM:
+1. CHỈ PARSE NHỮNG MÓN CÓ TRONG INPUT! Nếu input nói "gà" thì CHỈ có "gà", KHÔNG thêm "cơm" hay món khác!
+2. COPY CHÍNH XÁC tên món từ input: "gà" → "gà", "bò" → "bò", "cơm" → "cơm"
+3. COPY CHÍNH XÁC số gram từ input: "100g" → 100, KHÔNG tự đổi thành 200
+4. ĐẾM ĐỦ số món: nếu input có 1 món thì output 1, có 2 món thì output 2, có 3 món thì output 3
+
+🚫 VÍ DỤ SAI (KHÔNG LÀM THẾ NÀY):
+❌ Input: "thêm 100g gà" → Output có thêm "cơm" (SAI! Input không có cơm)
+❌ Input: "100g bò" → Output: weight:200 (SAI! Phải là 100)
 
 --- ASK_CALORIES ---
 Input: "hôm nay ăn bao nhiêu calo"  
@@ -890,7 +984,7 @@ Input: "tôi đã tiêu thụ bao nhiêu calories"
 CHỈ trả về JSON hợp lệ, KHÔNG giải thích:"""
 
     try:
-        response = query_ollama(prompt)
+        response = query_ollama(prompt, use_cache=False)  # Không cache voice commands
         
         if response:
             # Parse JSON from response
@@ -909,6 +1003,38 @@ CHỈ trả về JSON hợp lệ, KHÔNG giải thích:"""
                     result["entities"] = {}
                 if "confidence" not in result:
                     result["confidence"] = 0.5
+                
+                # POST-PROCESSING: Validate ADD_FOOD entities
+                # Loại bỏ các món ăn không có trong input (chống hallucination)
+                if result["intent"] == "ADD_FOOD":
+                    text_lower = text.lower()
+                    
+                    # Nếu có nhiều món (foods array)
+                    if "foods" in result.get("entities", {}):
+                        valid_foods = []
+                        for food in result["entities"]["foods"]:
+                            food_name = food.get("foodName", "").lower()
+                            # Chỉ giữ lại món có trong input
+                            if food_name and food_name in text_lower:
+                                valid_foods.append(food)
+                            else:
+                                logger.warning(f"Filtered hallucinated food: {food_name} (not in input)")
+                        
+                        if valid_foods:
+                            result["entities"]["foods"] = valid_foods
+                        else:
+                            # Không còn food nào valid -> UNKNOWN
+                            result["intent"] = "UNKNOWN"
+                            result["confidence"] = 0.3
+                            logger.warning("All foods filtered - returning UNKNOWN")
+                    
+                    # Nếu chỉ 1 món (foodName)
+                    elif "foodName" in result.get("entities", {}):
+                        food_name = result["entities"]["foodName"].lower()
+                        if food_name not in text_lower:
+                            logger.warning(f"Filtered hallucinated food: {food_name}")
+                            result["intent"] = "UNKNOWN"
+                            result["confidence"] = 0.3
                     
                 logger.info(f"Voice parsed: intent={result['intent']}, entities={result.get('entities', {})}")
                 return result
