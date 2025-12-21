@@ -79,10 +79,8 @@ export const CalendarHeatmap: React.FC<CalendarHeatmapProps> = ({
     };
 
     const handleDayPress = (date: Date, calories: number) => {
-        if (calories > 0) {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            onDayPress?.(date.toISOString().split('T')[0]!, calories);
-        }
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        onDayPress?.(date.toISOString().split('T')[0]!, calories);
     };
 
     const styles = StyleSheet.create({

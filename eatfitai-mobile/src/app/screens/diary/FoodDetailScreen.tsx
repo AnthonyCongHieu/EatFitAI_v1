@@ -409,7 +409,7 @@ const FoodDetailScreen = (): React.ReactElement | null => {
         </TouchableOpacity>
         <View style={styles.headerTitles}>
           <ThemedText variant="h3" weight="700" numberOfLines={1}>
-            🍽️ Chi tiết món ăn
+            Chi tiết món ăn
           </ThemedText>
           <ThemedText variant="caption" color="textSecondary" numberOfLines={1}>
             {detail.name}
@@ -444,9 +444,8 @@ const FoodDetailScreen = (): React.ReactElement | null => {
 
         {/* Nutrition Info Card - 2025 Design */}
         <View style={styles.nutritionCard}>
-          {/* Header with emoji */}
+          {/* Header */}
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: theme.spacing.md }}>
-            <ThemedText style={{ fontSize: 24 }}>📊</ThemedText>
             <ThemedText variant="h3" weight="700">
               Thông tin dinh dưỡng
             </ThemedText>
@@ -562,9 +561,8 @@ const FoodDetailScreen = (): React.ReactElement | null => {
           styles.nutritionCard,
           { marginBottom: theme.spacing.lg }
         ]}>
-          {/* Header with emoji */}
+          {/* Header */}
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: theme.spacing.lg }}>
-            <ThemedText style={{ fontSize: 24 }}>📝</ThemedText>
             <ThemedText variant="h3" weight="700">
               Thêm vào nhật ký
             </ThemedText>
@@ -764,7 +762,7 @@ const FoodDetailScreen = (): React.ReactElement | null => {
               loading={isSubmitting}
               disabled={isSubmitting}
               onPress={handleSubmit(submit)}
-              title={isSubmitting ? 'Đang thêm...' : '✅ Thêm vào nhật ký'}
+              title={isSubmitting ? 'Đang thêm...' : 'Thêm vào nhật ký'}
             />
           </View>
         </View>

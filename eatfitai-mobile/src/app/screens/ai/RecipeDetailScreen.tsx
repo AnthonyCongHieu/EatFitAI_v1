@@ -120,22 +120,41 @@ const RecipeDetailScreen = (): React.ReactElement => {
       const formData = new FormData();
       formData.append('foodName', recipe.recipeName);
       formData.append('description', recipe.description || `Công thức: ${recipe.recipeName}`);
-      formData.append('caloriesPer100', String(recipe.totalCalories));
-      formData.append('proteinPer100', String(recipe.totalProtein));
-      formData.append('carbPer100', String(recipe.totalCarbs));
-      formData.append('fatPer100', String(recipe.totalFat));
-      formData.append('unitType', 'khẩu phần');
+      formData.append('caloriesPer100', String(recipe.totalCalories ?? 0));
+      formData.append('proteinPer100', String(recipe.totalProtein ?? 0));
+      formData.append('carbPer100', String(recipe.totalCarbs ?? 0));
+      formData.append('fatPer100', String(recipe.totalFat ?? 0));
+      formData.append('unitType', 'g');
+
+      console.log('[RecipeDetailScreen] Creating UserFoodItem with:', {
+        foodName: recipe.recipeName,
+        calories: recipe.totalCalories,
+        protein: recipe.totalProtein,
+        carbs: recipe.totalCarbs,
+        fat: recipe.totalFat,
+      });
 
       const createdItem = await foodService.createUserFoodItem(formData);
+      console.log('[RecipeDetailScreen] Created UserFoodItem:', createdItem);
 
       // Thêm vào diary với servings
       const gramsPerServing = 100; // Mặc định 1 serving = 100g
-      await foodService.addDiaryEntryFromUserFoodItem({
+      const totalGrams = gramsPerServing * servings;
+      const ratio = totalGrams / 100; // Tính toán theo gram
+
+      const diaryPayload = {
         mealTypeId,
         userFoodItemId: String(createdItem.userFoodItemId),
-        grams: gramsPerServing * servings,
+        grams: totalGrams,
+        calories: Number((recipe.totalCalories ?? 0) * ratio) || 0,
+        protein: Number((recipe.totalProtein ?? 0) * ratio) || 0,
+        carb: Number((recipe.totalCarbs ?? 0) * ratio) || 0,
+        fat: Number((recipe.totalFat ?? 0) * ratio) || 0,
         note: `Từ công thức: ${recipe.recipeName}`,
-      });
+      };
+      console.log('[RecipeDetailScreen] Adding to diary with:', diaryPayload);
+
+      await foodService.addDiaryEntryFromUserFoodItem(diaryPayload);
 
       // Refresh summary
       // ⚡ Invalidate cache để HomeScreen tự động cập nhật
@@ -147,12 +166,13 @@ const RecipeDetailScreen = (): React.ReactElement => {
         text1: 'Đã thêm vào nhật ký',
         text2: `${recipe.recipeName} (${servings} khẩu phần)`,
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('[RecipeDetailScreen] Error adding to diary:', error);
+      console.error('[RecipeDetailScreen] Error details:', error?.response?.data);
       Toast.show({
         type: 'error',
         text1: 'Thêm thất bại',
-        text2: 'Vui lòng thử lại',
+        text2: error?.response?.data?.message || 'Vui lòng thử lại',
       });
     } finally {
       setIsAddingToDiary(false);
@@ -301,7 +321,7 @@ const RecipeDetailScreen = (): React.ReactElement => {
         {/* Hướng dẫn nấu - hiển thị từ DB hoặc AI-generated */}
         <View style={[styles.box, { backgroundColor: theme.colors.card }]}>
           <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: theme.spacing.sm }}>
-            <ThemedText variant="h4">👨‍🍳 Hướng dẫn nấu</ThemedText>
+            <ThemedText variant="h4">Hướng dẫn nấu</ThemedText>
             {aiInstructions.cookingTime && (
               <ThemedText variant="caption" color="textSecondary" style={{ marginLeft: theme.spacing.sm }}>
                 ⏱️ {aiInstructions.cookingTime}
@@ -369,7 +389,7 @@ const RecipeDetailScreen = (): React.ReactElement => {
         {/* Video Tutorial Section */}
         <View style={[styles.box, { backgroundColor: theme.colors.card }]}>
           <ThemedText variant="h4" style={{ marginBottom: theme.spacing.sm }}>
-            📺 Video Hướng Dẫn
+            Video Hướng Dẫn
           </ThemedText>
 
           {recipe.videoUrl ? (
@@ -445,7 +465,7 @@ const RecipeDetailScreen = (): React.ReactElement => {
         {/* Add to Diary Button [NEW] */}
         < View style={{ paddingHorizontal: theme.spacing.md, marginTop: theme.spacing.lg }}>
           <Button
-            title="📝 Thêm vào nhật ký hôm nay"
+            title="Thêm vào nhật ký hôm nay"
             variant="primary"
             onPress={() => setShowAddToDiarySheet(true)}
             loading={isAddingToDiary}
