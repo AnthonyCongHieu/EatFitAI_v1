@@ -143,7 +143,7 @@ const StatsScreen = (): React.ReactElement => {
     };
 
     // Navigate to day detail
-    const handleDayPress = (date: string) => {
+    const handleDayPress = (date: string, _calories?: number) => {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
         navigation.navigate('MealDiary', { selectedDate: date });
     };
