@@ -228,37 +228,54 @@ export const scanForBackend = async (): Promise<string | null> => {
     return scanPromise;
 };
 
+// Flag đánh dấu đã verify trong session này chưa
+let hasVerifiedThisSession = false;
+
 /**
- * Lấy API URL - verify cached trước, scan nếu cần
+ * Lấy API URL - ưu tiên cache, verify 1 lần khi khởi động
+ * Sau khi verify thành công, không cần verify lại trong session
  */
 export const getApiUrl = async (): Promise<string | null> => {
-    // 1. Nếu đã tìm thấy trong session này và có cachedUrl, dùng luôn không cần verify (nhanh nhất)
+    // 1. Nếu đã verify thành công trong session này, dùng luôn
     if (hasFoundBackend && cachedUrl) {
         return cachedUrl;
     }
 
-    // 2. Thử cached trong memory (cần verify)
-    if (cachedUrl) {
-        if (await verifyApiUrl(cachedUrl)) {
-            hasFoundBackend = true;
-            return cachedUrl;
-        }
-        console.log('[IPScanner] Cached URL không còn valid, sẽ scan lại...');
-        cachedUrl = null;
+    // 2. Nếu có cachedUrl trong memory và đã verify rồi, dùng luôn
+    if (cachedUrl && hasVerifiedThisSession) {
+        hasFoundBackend = true;
+        return cachedUrl;
     }
 
-    // 3. Thử từ AsyncStorage
-    const saved = await AsyncStorage.getItem(CACHE_KEY);
-    if (saved) {
-        if (await verifyApiUrl(saved)) {
-            cachedUrl = saved;
+    // 3. Thử từ memory hoặc AsyncStorage, verify 1 lần
+    const urlToCheck = cachedUrl || (await AsyncStorage.getItem(CACHE_KEY));
+
+    if (urlToCheck) {
+        // Verify 1 lần duy nhất trong session
+        if (!hasVerifiedThisSession) {
+            hasVerifiedThisSession = true;
+            const isValid = await verifyApiUrl(urlToCheck);
+
+            if (isValid) {
+                cachedUrl = urlToCheck;
+                hasFoundBackend = true;
+                console.log(`[IPScanner] ✅ URL verified successfully: ${urlToCheck}`);
+                return urlToCheck;
+            } else {
+                console.log('[IPScanner] ⚠️ Cached URL invalid, scanning for new backend...');
+                cachedUrl = null;
+                // Continue to scan below
+            }
+        } else {
+            // Đã verify trước đó trong session, tin tưởng cache
+            cachedUrl = urlToCheck;
             hasFoundBackend = true;
-            console.log(`[IPScanner] Dùng URL từ storage: ${saved}`);
-            return saved;
+            return urlToCheck;
         }
     }
 
-    // 4. Scan mạng tìm backend
+    // 4. Không có cache hoặc cache invalid, scan mạng
+    console.log('[IPScanner] Bắt đầu scan mạng...');
     return scanForBackend();
 };
 
