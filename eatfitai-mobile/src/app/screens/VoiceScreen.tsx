@@ -390,45 +390,54 @@ const VoiceScreen = (): React.ReactElement => {
                             </View>
                         )}
 
-                        {/* Action Buttons */}
-                        {!parsedCommand && (
-                            <Animated.View entering={FadeInUp.delay(500)} style={styles.actions}>
-                                <Pressable
-                                    onPress={handleReset}
-                                    style={[
-                                        styles.actionButton,
-                                        styles.cancelButton,
-                                        { backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)' }
-                                    ]}
+                        {/* Action Buttons - LUÔN HIỂN THỊ */}
+                        <Animated.View entering={FadeInUp.delay(500)} style={[styles.actions, { marginTop: 20, marginBottom: 20 }]}>
+                            <Pressable
+                                onPress={() => {
+                                    reset();
+                                    setRecognizedText('');
+                                }}
+                                style={[
+                                    styles.actionButton,
+                                    styles.cancelButton,
+                                    { backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)' }
+                                ]}
+                            >
+                                <Ionicons name="refresh" size={20} color={theme.colors.textSecondary} />
+                                <ThemedText variant="button" color="textSecondary" style={{ marginLeft: 8 }}>
+                                    Đặt lại
+                                </ThemedText>
+                            </Pressable>
+                            <Pressable
+                                onPress={async () => {
+                                    if (recognizedText.trim()) {
+                                        // Clear kết quả cũ trước khi phân tích mới
+                                        const textToProcess = recognizedText.trim();
+                                        reset();
+                                        setRecognizedText(textToProcess);
+                                        await processText(textToProcess);
+                                    }
+                                }}
+                                disabled={!recognizedText.trim() || status === 'parsing'}
+                                style={[
+                                    styles.actionButton,
+                                    styles.processButton,
+                                    { opacity: (!recognizedText.trim() || status === 'parsing') ? 0.5 : 1 }
+                                ]}
+                            >
+                                <LinearGradient
+                                    colors={[theme.colors.primary, theme.colors.secondary]}
+                                    start={{ x: 0, y: 0 }}
+                                    end={{ x: 1, y: 0 }}
+                                    style={styles.gradientButton}
                                 >
-                                    <Ionicons name="refresh" size={20} color={theme.colors.textSecondary} />
-                                    <ThemedText variant="button" color="textSecondary" style={{ marginLeft: 8 }}>
-                                        Đặt lại
+                                    <Ionicons name="sparkles" size={20} color="#fff" />
+                                    <ThemedText variant="button" style={{ color: '#fff', marginLeft: 8 }}>
+                                        {status === 'parsing' ? 'Đang xử lý...' : 'Phân tích'}
                                     </ThemedText>
-                                </Pressable>
-                                <Pressable
-                                    onPress={handleManualProcess}
-                                    disabled={!recognizedText.trim() || status === 'parsing'}
-                                    style={[
-                                        styles.actionButton,
-                                        styles.processButton,
-                                        { opacity: (!recognizedText.trim() || status === 'parsing') ? 0.5 : 1 }
-                                    ]}
-                                >
-                                    <LinearGradient
-                                        colors={[theme.colors.primary, theme.colors.secondary]}
-                                        start={{ x: 0, y: 0 }}
-                                        end={{ x: 1, y: 0 }}
-                                        style={styles.gradientButton}
-                                    >
-                                        <Ionicons name="sparkles" size={20} color="#fff" />
-                                        <ThemedText variant="button" style={{ color: '#fff', marginLeft: 8 }}>
-                                            {status === 'parsing' ? 'Đang xử lý...' : 'Phân tích'}
-                                        </ThemedText>
-                                    </LinearGradient>
-                                </Pressable>
-                            </Animated.View>
-                        )}
+                                </LinearGradient>
+                            </Pressable>
+                        </Animated.View>
                     </>
                 )}
             </ScrollView>

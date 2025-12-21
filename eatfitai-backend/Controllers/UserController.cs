@@ -67,6 +67,26 @@ namespace EatFitAI.API.Controllers
             }
         }
 
+        [HttpGet("body-metrics/history")]
+        public async Task<ActionResult<List<BodyMetricDto>>> GetBodyMetricsHistory([FromQuery] int limit = 30)
+        {
+            try
+            {
+                var userId = GetUserIdFromToken();
+                var history = await _userService.GetBodyMetricsHistoryAsync(userId, limit);
+                return Ok(history);
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(new { message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "An error occurred while fetching body metrics history", error = ex.Message });
+            }
+        }
+
+
         [HttpDelete("profile")]
         public async Task<IActionResult> DeleteProfile()
         {
