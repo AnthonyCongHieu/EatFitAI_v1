@@ -177,19 +177,19 @@ export const VoiceSheet = ({ visible, onClose }: VoiceSheetProps): React.ReactEl
     const getStatusConfig = (): { emoji: string; text: string; color: string } => {
         switch (status) {
             case 'listening':
-                return { emoji: '🎙️', text: 'Đang lắng nghe...', color: theme.colors.danger };
+                return { emoji: '', text: 'Đang lắng nghe...', color: theme.colors.danger };
             case 'processing':
-                return { emoji: '✨', text: 'Đang xử lý giọng nói...', color: theme.colors.warning };
+                return { emoji: '', text: 'Đang xử lý giọng nói...', color: theme.colors.warning };
             case 'parsing':
-                return { emoji: '🤖', text: 'AI đang phân tích...', color: theme.colors.info };
+                return { emoji: '', text: 'AI đang phân tích...', color: theme.colors.info };
             case 'executing':
-                return { emoji: '⚡', text: 'Đang thực hiện...', color: theme.colors.primary };
+                return { emoji: '', text: 'Đang thực hiện...', color: theme.colors.primary };
             case 'success':
-                return { emoji: '✅', text: 'Hoàn thành!', color: theme.colors.success };
+                return { emoji: '', text: 'Hoàn thành!', color: theme.colors.success };
             case 'error':
-                return { emoji: '❌', text: 'Có lỗi xảy ra', color: theme.colors.danger };
+                return { emoji: '', text: 'Có lỗi xảy ra', color: theme.colors.danger };
             default:
-                return { emoji: '🎤', text: 'Chạm để bắt đầu ghi âm', color: theme.colors.primary };
+                return { emoji: '', text: 'Chạm để bắt đầu ghi âm', color: theme.colors.primary };
         }
     };
 
@@ -317,7 +317,7 @@ export const VoiceSheet = ({ visible, onClose }: VoiceSheetProps): React.ReactEl
                 {/* Premium Text Input */}
                 <Animated.View entering={FadeInUp.delay(300)} style={styles.inputSection}>
                     <ThemedText variant="bodySmall" weight="600" color="textSecondary" style={styles.inputLabel}>
-                        ✍️ Hoặc gõ lệnh trực tiếp
+                        Hoặc gõ lệnh trực tiếp
                     </ThemedText>
                     <View style={[
                         styles.inputWrapper,

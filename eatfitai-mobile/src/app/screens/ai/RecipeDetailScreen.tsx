@@ -178,7 +178,7 @@ const RecipeDetailScreen = (): React.ReactElement => {
 
   // Custom header component (matching RecipeSuggestionsScreen)
   const renderHeader = (title: string, subtitle: string) => (
-    <View style={[customStyles.screenHeader, { paddingTop: insets.top }]}>
+    <View style={customStyles.screenHeader}>
       <View style={customStyles.headerRow}>
         <TouchableOpacity
           onPress={() => navigation.goBack()}
@@ -202,7 +202,7 @@ const RecipeDetailScreen = (): React.ReactElement => {
   const customStyles = StyleSheet.create({
     screenHeader: {
       paddingHorizontal: 16,
-      paddingBottom: 12,
+      paddingBottom: 8,
     },
     headerRow: {
       flexDirection: 'row',
