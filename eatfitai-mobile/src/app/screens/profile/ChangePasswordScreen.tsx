@@ -8,17 +8,19 @@ import {
     View,
     KeyboardAvoidingView,
     Platform,
+    Pressable,
+    TextInput,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { Controller, useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
 
 import { ThemedText } from '../../../components/ThemedText';
-import ThemedTextInput from '../../../components/ThemedTextInput';
 import Button from '../../../components/Button';
-import { AppHeader } from '../../../components/ui/AppHeader';
 import { glassStyles } from '../../../components/ui/GlassCard';
 import { useAppTheme } from '../../../theme/ThemeProvider';
 import { showSuccess, handleApiErrorWithCustomMessage } from '../../../utils/errorHandler';
@@ -43,6 +45,9 @@ const ChangePasswordScreen = (): React.ReactElement => {
     const navigation = useNavigation();
 
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+    const [showNewPassword, setShowNewPassword] = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
     const {
         control,
@@ -81,7 +86,7 @@ const ChangePasswordScreen = (): React.ReactElement => {
     };
 
     const styles = StyleSheet.create({
-        container: { flex: 1, backgroundColor: theme.colors.background },
+        container: { flex: 1 },
         content: {
             paddingHorizontal: theme.spacing.lg,
             paddingVertical: theme.spacing.xl,
@@ -98,15 +103,51 @@ const ChangePasswordScreen = (): React.ReactElement => {
             marginBottom: 16,
         },
         inputGroup: {
-            gap: 12,
+            gap: 16,
+        },
+        inputWrapper: {
+            gap: 6,
+        },
+        label: {
+            fontSize: 14,
+            fontWeight: '500',
+            color: theme.colors.text,
+        },
+        required: {
+            color: theme.colors.danger,
+        },
+        inputContainer: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)',
+            borderRadius: 12,
+            borderWidth: 1,
+            borderColor: theme.colors.border,
+            paddingHorizontal: 16,
+        },
+        inputError: {
+            borderColor: theme.colors.danger,
+        },
+        input: {
+            flex: 1,
+            height: 50,
+            fontSize: 16,
+            color: theme.colors.text,
+        },
+        eyeButton: {
+            padding: 8,
+        },
+        errorText: {
+            fontSize: 12,
+            color: theme.colors.danger,
+            marginTop: 4,
         },
         hint: {
+            ...glass.card,
             flexDirection: 'row',
             alignItems: 'flex-start',
             gap: 8,
-            padding: 12,
-            borderRadius: 12,
-            backgroundColor: isDark ? 'rgba(59, 130, 246, 0.1)' : 'rgba(59, 130, 246, 0.08)',
+            padding: 16,
         },
         hintText: {
             flex: 1,
@@ -115,13 +156,94 @@ const ChangePasswordScreen = (): React.ReactElement => {
         },
     });
 
+    // Password Input Component with Eye Icon
+    const PasswordInput = ({
+        label,
+        value,
+        onChange,
+        onBlur,
+        placeholder,
+        error,
+        errorMessage,
+        showPassword,
+        toggleShowPassword,
+    }: {
+        label: string;
+        value: string;
+        onChange: (text: string) => void;
+        onBlur: () => void;
+        placeholder: string;
+        error: boolean;
+        errorMessage?: string;
+        showPassword: boolean;
+        toggleShowPassword: () => void;
+    }) => (
+        <View style={styles.inputWrapper}>
+            <ThemedText style={styles.label}>
+                {label} <ThemedText style={styles.required}>*</ThemedText>
+            </ThemedText>
+            <View style={[styles.inputContainer, error && styles.inputError]}>
+                <TextInput
+                    style={styles.input}
+                    value={value}
+                    onChangeText={onChange}
+                    onBlur={onBlur}
+                    placeholder={placeholder}
+                    placeholderTextColor={theme.colors.textSecondary}
+                    secureTextEntry={!showPassword}
+                    autoCapitalize="none"
+                />
+                <Pressable onPress={toggleShowPassword} style={styles.eyeButton}>
+                    <Ionicons
+                        name={showPassword ? 'eye-off-outline' : 'eye-outline'}
+                        size={22}
+                        color={theme.colors.textSecondary}
+                    />
+                </Pressable>
+            </View>
+            {error && errorMessage && (
+                <ThemedText style={styles.errorText}>{errorMessage}</ThemedText>
+            )}
+        </View>
+    );
+
     return (
-        <View style={styles.container}>
-            <AppHeader
-                title="Đổi mật khẩu"
-                subtitle="Cập nhật mật khẩu mới"
-                onBackPress={() => navigation.goBack()}
-            />
+        <LinearGradient
+            colors={theme.colors.screenGradient}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 0.5, y: 1 }}
+            style={styles.container}
+        >
+            {/* Custom Header - Back button + Title on same row */}
+            <View style={{ paddingTop: 60, paddingBottom: theme.spacing.sm, paddingHorizontal: theme.spacing.lg }}>
+                {/* Row: Back button + Title */}
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    <Pressable
+                        onPress={() => navigation.goBack()}
+                        style={{
+                            width: 40,
+                            height: 40,
+                            borderRadius: 12,
+                            backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                        }}
+                    >
+                        <ThemedText style={{ fontSize: 18 }}>←</ThemedText>
+                    </Pressable>
+
+                    <View style={{ flex: 1, alignItems: 'center', marginRight: 40 }}>
+                        <ThemedText variant="h3" weight="700">
+                            Đổi mật khẩu
+                        </ThemedText>
+                    </View>
+                </View>
+
+                {/* Subtitle below */}
+                <ThemedText variant="bodySmall" color="textSecondary" style={{ textAlign: 'center', marginTop: 8 }}>
+                    Cập nhật mật khẩu mới
+                </ThemedText>
+            </View>
 
             <KeyboardAvoidingView
                 style={{ flex: 1 }}
@@ -131,7 +253,6 @@ const ChangePasswordScreen = (): React.ReactElement => {
                     {/* Password Form */}
                     <Animated.View entering={FadeInDown.delay(100)} style={styles.card}>
                         <View style={styles.sectionTitle}>
-                            <ThemedText style={{ fontSize: 20 }}>🔐</ThemedText>
                             <ThemedText variant="h3">Thay đổi mật khẩu</ThemedText>
                         </View>
 
@@ -140,16 +261,16 @@ const ChangePasswordScreen = (): React.ReactElement => {
                                 control={control}
                                 name="currentPassword"
                                 render={({ field: { value, onChange, onBlur } }) => (
-                                    <ThemedTextInput
+                                    <PasswordInput
                                         label="Mật khẩu hiện tại"
                                         value={value}
-                                        onChangeText={onChange}
+                                        onChange={onChange}
                                         onBlur={onBlur}
                                         placeholder="••••••••"
-                                        secureTextEntry
                                         error={!!errors.currentPassword}
-                                        helperText={errors.currentPassword?.message}
-                                        required
+                                        errorMessage={errors.currentPassword?.message}
+                                        showPassword={showCurrentPassword}
+                                        toggleShowPassword={() => setShowCurrentPassword(!showCurrentPassword)}
                                     />
                                 )}
                             />
@@ -158,16 +279,16 @@ const ChangePasswordScreen = (): React.ReactElement => {
                                 control={control}
                                 name="newPassword"
                                 render={({ field: { value, onChange, onBlur } }) => (
-                                    <ThemedTextInput
+                                    <PasswordInput
                                         label="Mật khẩu mới"
                                         value={value}
-                                        onChangeText={onChange}
+                                        onChange={onChange}
                                         onBlur={onBlur}
                                         placeholder="••••••••"
-                                        secureTextEntry
                                         error={!!errors.newPassword}
-                                        helperText={errors.newPassword?.message}
-                                        required
+                                        errorMessage={errors.newPassword?.message}
+                                        showPassword={showNewPassword}
+                                        toggleShowPassword={() => setShowNewPassword(!showNewPassword)}
                                     />
                                 )}
                             />
@@ -176,16 +297,16 @@ const ChangePasswordScreen = (): React.ReactElement => {
                                 control={control}
                                 name="confirmPassword"
                                 render={({ field: { value, onChange, onBlur } }) => (
-                                    <ThemedTextInput
+                                    <PasswordInput
                                         label="Xác nhận mật khẩu mới"
                                         value={value}
-                                        onChangeText={onChange}
+                                        onChange={onChange}
                                         onBlur={onBlur}
                                         placeholder="••••••••"
-                                        secureTextEntry
                                         error={!!errors.confirmPassword}
-                                        helperText={errors.confirmPassword?.message}
-                                        required
+                                        errorMessage={errors.confirmPassword?.message}
+                                        showPassword={showConfirmPassword}
+                                        toggleShowPassword={() => setShowConfirmPassword(!showConfirmPassword)}
                                     />
                                 )}
                             />
@@ -211,7 +332,7 @@ const ChangePasswordScreen = (): React.ReactElement => {
                     </Animated.View>
                 </ScrollView>
             </KeyboardAvoidingView>
-        </View>
+        </LinearGradient>
     );
 };
 

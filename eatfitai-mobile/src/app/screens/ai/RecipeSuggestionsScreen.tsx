@@ -108,20 +108,19 @@ const RecipeSuggestionsScreen = (): React.ReactElement => {
     headerRow: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: 12,
     },
     backButton: {
-      width: 44,
-      height: 44,
-      borderRadius: 16,
-      backgroundColor: isDark ? 'rgba(74, 144, 226, 0.15)' : 'rgba(59, 130, 246, 0.08)',
+      width: 40,
+      height: 40,
+      borderRadius: 12,
+      backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)',
       alignItems: 'center',
       justifyContent: 'center',
-      borderWidth: 1.5,
-      borderColor: isDark ? 'rgba(74, 144, 226, 0.25)' : 'rgba(59, 130, 246, 0.15)',
     },
     headerTitles: {
       flex: 1,
+      alignItems: 'center',
+      marginRight: 40,
     },
     content: {
       flex: 1,
@@ -362,14 +361,11 @@ const RecipeSuggestionsScreen = (): React.ReactElement => {
             onPress={() => navigation.goBack()}
             style={styles.backButton}
           >
-            <Ionicons name="chevron-back" size={24} color={theme.colors.text} />
+            <ThemedText style={{ fontSize: 18 }}>←</ThemedText>
           </TouchableOpacity>
           <View style={styles.headerTitles}>
             <ThemedText variant="h3" weight="700">
-              🍳 Gợi ý món ăn
-            </ThemedText>
-            <ThemedText variant="caption" color="textSecondary">
-              Tìm công thức từ nguyên liệu có sẵn
+              Gợi ý món ăn
             </ThemedText>
           </View>
         </View>

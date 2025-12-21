@@ -2,7 +2,7 @@
 // Cho phép xem, chỉnh sửa thủ công và sử dụng AI để gợi ý mục tiêu
 
 import React, { useCallback, useEffect, useState } from 'react';
-import { View, StyleSheet, ScrollView, ActivityIndicator, Alert } from 'react-native';
+import { View, StyleSheet, ScrollView, ActivityIndicator, Alert, Pressable } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -14,7 +14,6 @@ import { LinearGradient } from 'expo-linear-gradient';
 
 import Screen from '../../../components/Screen';
 import { AppCard } from '../../../components/ui/AppCard';
-import { AppHeader } from '../../../components/ui/AppHeader';
 import { SectionHeader } from '../../../components/ui/SectionHeader';
 import Button from '../../../components/Button';
 import { ThemedText } from '../../../components/ThemedText';
@@ -170,8 +169,15 @@ const NutritionSettingsScreen = (): React.ReactElement => {
 
   const styles = StyleSheet.create({
     container: {
+      flex: 1,
+    },
+    content: {
       padding: theme.spacing.lg,
       gap: theme.spacing.xl,
+    },
+    card: {
+      ...glass.card,
+      padding: 20,
     },
     row: {
       flexDirection: 'row',
@@ -183,7 +189,7 @@ const NutritionSettingsScreen = (): React.ReactElement => {
     macroCard: {
       alignItems: 'center',
       padding: theme.spacing.md,
-      backgroundColor: theme.colors.background,
+      backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)',
       borderRadius: theme.borderRadius.card,
       borderWidth: 1,
       borderColor: theme.colors.border,
@@ -248,25 +254,76 @@ const NutritionSettingsScreen = (): React.ReactElement => {
 
   if (isLoading) {
     return (
-      <Screen>
-        <AppHeader title={t('nutrition_settings.title')} />
+      <LinearGradient
+        colors={theme.colors.screenGradient}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 0.5, y: 1 }}
+        style={styles.container}
+      >
+        {/* Custom Header */}
+        <View style={{ paddingTop: 60, paddingBottom: theme.spacing.sm, paddingHorizontal: theme.spacing.lg }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <Pressable
+              onPress={() => navigation.goBack()}
+              style={{
+                width: 40,
+                height: 40,
+                borderRadius: 12,
+                backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <ThemedText style={{ fontSize: 18 }}>←</ThemedText>
+            </Pressable>
+            <View style={{ flex: 1, alignItems: 'center', marginRight: 40 }}>
+              <ThemedText variant="h3" weight="700">
+                {t('nutrition_settings.title')}
+              </ThemedText>
+            </View>
+          </View>
+        </View>
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
           <ActivityIndicator size="large" color={theme.colors.primary} />
         </View>
-      </Screen>
+      </LinearGradient>
     );
   }
 
   return (
-    <Screen>
-      <AppHeader
-        title={t('nutrition_settings.title')}
-        subtitle={t('nutrition_settings.subtitle')}
-      />
+    <LinearGradient
+      colors={theme.colors.screenGradient}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 0.5, y: 1 }}
+      style={styles.container}
+    >
+      {/* Custom Header - centered like EditProfileScreen */}
+      <View style={{ paddingTop: 60, paddingBottom: theme.spacing.sm, paddingHorizontal: theme.spacing.lg }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+          <Pressable
+            onPress={() => navigation.goBack()}
+            style={{
+              width: 40,
+              height: 40,
+              borderRadius: 12,
+              backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <ThemedText style={{ fontSize: 18 }}>←</ThemedText>
+          </Pressable>
+          <View style={{ flex: 1, alignItems: 'center', marginRight: 40 }}>
+            <ThemedText variant="h3" weight="700">
+              {t('nutrition_settings.title')}
+            </ThemedText>
+          </View>
+        </View>
+      </View>
 
-      <ScrollView contentContainerStyle={styles.container}>
+      <ScrollView contentContainerStyle={styles.content}>
         {/* Current Target Section */}
-        <AppCard>
+        <Animated.View entering={FadeInDown.delay(100)} style={styles.card}>
           <View
             style={{
               flexDirection: 'row',
@@ -276,7 +333,7 @@ const NutritionSettingsScreen = (): React.ReactElement => {
             }}
           >
             <View style={{ flex: 1 }}>
-              <SectionHeader title={t('nutrition_settings.current_target')} />
+              <ThemedText variant="h3">{t('nutrition_settings.current_target')}</ThemedText>
             </View>
             {!isEditing && (
               <Button
@@ -362,14 +419,16 @@ const NutritionSettingsScreen = (): React.ReactElement => {
               </View>
             </Animated.View>
           )}
-        </AppCard>
+        </Animated.View>
 
         {/* AI Suggestion Section */}
-        <AppCard>
-          <SectionHeader
-            title={t('nutrition_settings.ai_section_title')}
-            subtitle={t('nutrition_settings.ai_section_subtitle')}
-          />
+        <Animated.View entering={FadeInDown.delay(200)} style={styles.card}>
+          <ThemedText variant="h3" style={{ marginBottom: theme.spacing.sm }}>
+            {t('nutrition_settings.ai_section_title')}
+          </ThemedText>
+          <ThemedText variant="bodySmall" color="textSecondary" style={{ marginBottom: theme.spacing.md }}>
+            {t('nutrition_settings.ai_section_subtitle')}
+          </ThemedText>
 
           {!suggestedTarget ? (
             <View>
@@ -472,9 +531,9 @@ const NutritionSettingsScreen = (): React.ReactElement => {
               </View>
             </Animated.View>
           )}
-        </AppCard>
+        </Animated.View>
       </ScrollView>
-    </Screen>
+    </LinearGradient>
   );
 };
 

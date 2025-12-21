@@ -66,7 +66,7 @@ const FoodSearchScreen = (): React.ReactElement => {
       paddingHorizontal: 20,
       paddingBottom: 4,
     },
-    // Header row - back button aligned with title (like CustomDishScreen)
+    // Header row - back button aligned with title (like EditProfileScreen)
     headerRow: {
       flexDirection: 'row',
       alignItems: 'flex-start',
@@ -75,16 +75,17 @@ const FoodSearchScreen = (): React.ReactElement => {
     backButton: {
       width: 40,
       height: 40,
-      borderRadius: 20,
-      backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)',
+      borderRadius: 12,
+      backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)',
       alignItems: 'center',
       justifyContent: 'center',
-      marginRight: 12,
       marginTop: 2,
     },
-    // Title section - next to back button
+    // Title section - centered
     titleSection: {
       flex: 1,
+      alignItems: 'center',
+      marginRight: 40,
     },
     headerTitle: {
       fontSize: 20,
@@ -637,18 +638,11 @@ const FoodSearchScreen = (): React.ReactElement => {
       <View style={styles.headerSection}>
         {/* Back button + Title in same row */}
         <View style={styles.headerRow}>
-          <Pressable
-            onPress={() => navigation.goBack()}
-            style={styles.backButton}
-            hitSlop={8}
-          >
-            <Ionicons name="chevron-back" size={24} color={theme.colors.text} />
+          <Pressable onPress={() => navigation.goBack()} style={styles.backButton}>
+            <ThemedText style={{ fontSize: 18 }}>←</ThemedText>
           </Pressable>
           <View style={styles.titleSection}>
             <ThemedText style={styles.headerTitle}>Tìm kiếm món ăn</ThemedText>
-            <ThemedText style={styles.headerSubtitle}>
-              Tìm và thêm món ăn vào nhật ký dinh dưỡng
-            </ThemedText>
           </View>
         </View>
 

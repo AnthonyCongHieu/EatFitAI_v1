@@ -166,7 +166,7 @@ const GoalSettingsScreen = (): React.ReactElement => {
                 {/* Goal Selection */}
                 <Animated.View entering={FadeInDown.delay(100)} style={styles.card}>
                     <View style={styles.sectionTitle}>
-                        <ThemedText style={{ fontSize: 20 }}>🎯</ThemedText>
+                        <ThemedText style={{ fontSize: 20 }}></ThemedText>
                         <ThemedText variant="h3">Mục tiêu của bạn</ThemedText>
                     </View>
 
@@ -224,7 +224,7 @@ const GoalSettingsScreen = (): React.ReactElement => {
                 {/* Activity Level Selection */}
                 <Animated.View entering={FadeInDown.delay(200)} style={styles.card}>
                     <View style={styles.sectionTitle}>
-                        <ThemedText style={{ fontSize: 20 }}>🏃</ThemedText>
+                        <ThemedText style={{ fontSize: 20 }}></ThemedText>
                         <ThemedText variant="h3">Mức độ vận động</ThemedText>
                     </View>
 

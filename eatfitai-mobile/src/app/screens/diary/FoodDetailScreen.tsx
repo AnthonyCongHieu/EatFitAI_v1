@@ -156,20 +156,18 @@ const FoodDetailScreen = (): React.ReactElement | null => {
         headerRow: {
           flexDirection: 'row',
           alignItems: 'center',
-          gap: 12,
         },
         backButton: {
-          width: 44,
-          height: 44,
-          borderRadius: 16,
-          backgroundColor: isDark ? 'rgba(74, 144, 226, 0.15)' : 'rgba(59, 130, 246, 0.08)',
+          width: 40,
+          height: 40,
+          borderRadius: 12,
+          backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)',
           alignItems: 'center',
           justifyContent: 'center',
-          borderWidth: 1.5,
-          borderColor: isDark ? 'rgba(74, 144, 226, 0.25)' : 'rgba(59, 130, 246, 0.15)',
         },
         headerTitles: {
           flex: 1,
+          alignItems: 'center',
         },
         headerActions: {
           flexDirection: 'row',
@@ -397,7 +395,7 @@ const FoodDetailScreen = (): React.ReactElement | null => {
 
   if (!detail) return null;
 
-  // Custom header component (matching RecipeSuggestionsScreen)
+  // Custom header component (matching EditProfileScreen)
   const renderHeader = () => (
     <View style={[styles.screenHeader, { paddingTop: insets.top }]}>
       <View style={styles.headerRow}>
@@ -405,14 +403,11 @@ const FoodDetailScreen = (): React.ReactElement | null => {
           onPress={() => navigation.goBack()}
           style={styles.backButton}
         >
-          <Ionicons name="chevron-back" size={24} color={theme.colors.text} />
+          <ThemedText style={{ fontSize: 18 }}>←</ThemedText>
         </TouchableOpacity>
         <View style={styles.headerTitles}>
           <ThemedText variant="h3" weight="700" numberOfLines={1}>
             Chi tiết món ăn
-          </ThemedText>
-          <ThemedText variant="caption" color="textSecondary" numberOfLines={1}>
-            {detail.name}
           </ThemedText>
         </View>
         <View style={styles.headerActions}>

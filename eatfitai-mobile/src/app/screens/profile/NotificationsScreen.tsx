@@ -13,10 +13,10 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { LinearGradient } from 'expo-linear-gradient';
 
 import { ThemedText } from '../../../components/ThemedText';
 import Button from '../../../components/Button';
-import { AppHeader } from '../../../components/ui/AppHeader';
 import { SettingsMenuItem } from '../../../components/ui/SettingsMenuItem';
 import { glassStyles } from '../../../components/ui/GlassCard';
 import { useAppTheme } from '../../../theme/ThemeProvider';
@@ -133,7 +133,7 @@ const NotificationsScreen = (): React.ReactElement => {
     };
 
     const styles = StyleSheet.create({
-        container: { flex: 1, backgroundColor: theme.colors.background },
+        container: { flex: 1 },
         content: {
             paddingHorizontal: theme.spacing.lg,
             paddingVertical: theme.spacing.xl,
@@ -152,16 +152,11 @@ const NotificationsScreen = (): React.ReactElement => {
             paddingBottom: 8,
         },
         masterToggle: {
+            ...glass.card,
             flexDirection: 'row',
             alignItems: 'center',
             justifyContent: 'space-between',
             padding: 20,
-            borderRadius: 16,
-            backgroundColor: settings.enabled
-                ? `${theme.colors.primary}15`
-                : isDark
-                    ? 'rgba(255,255,255,0.03)'
-                    : 'rgba(0,0,0,0.02)',
             borderWidth: 2,
             borderColor: settings.enabled ? theme.colors.primary : 'transparent',
         },
@@ -197,12 +192,11 @@ const NotificationsScreen = (): React.ReactElement => {
             opacity: 0.5,
         },
         infoBox: {
+            ...glass.card,
             flexDirection: 'row',
             alignItems: 'flex-start',
             gap: 10,
             padding: 16,
-            borderRadius: 12,
-            backgroundColor: isDark ? 'rgba(59, 130, 246, 0.1)' : 'rgba(59, 130, 246, 0.08)',
         },
     });
 
@@ -238,12 +232,42 @@ const NotificationsScreen = (): React.ReactElement => {
     );
 
     return (
-        <View style={styles.container}>
-            <AppHeader
-                title="Thông báo"
-                subtitle="Nhắc nhở bữa ăn"
-                onBackPress={() => navigation.goBack()}
-            />
+        <LinearGradient
+            colors={theme.colors.screenGradient}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 0.5, y: 1 }}
+            style={styles.container}
+        >
+            {/* Custom Header - Back button + Title on same row */}
+            <View style={{ paddingTop: 60, paddingBottom: theme.spacing.sm, paddingHorizontal: theme.spacing.lg }}>
+                {/* Row: Back button + Title */}
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    <Pressable
+                        onPress={() => navigation.goBack()}
+                        style={{
+                            width: 40,
+                            height: 40,
+                            borderRadius: 12,
+                            backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                        }}
+                    >
+                        <ThemedText style={{ fontSize: 18 }}>←</ThemedText>
+                    </Pressable>
+
+                    <View style={{ flex: 1, alignItems: 'center', marginRight: 40 }}>
+                        <ThemedText variant="h3" weight="700">
+                            Thông báo
+                        </ThemedText>
+                    </View>
+                </View>
+
+                {/* Subtitle below */}
+                <ThemedText variant="bodySmall" color="textSecondary" style={{ textAlign: 'center', marginTop: 8 }}>
+                    Nhắc nhở bữa ăn
+                </ThemedText>
+            </View>
 
             <ScrollView contentContainerStyle={styles.content}>
                 {/* Master Toggle */}
@@ -272,7 +296,6 @@ const NotificationsScreen = (): React.ReactElement => {
                 {/* Meal Reminders */}
                 <Animated.View entering={FadeInDown.delay(200)} style={styles.card}>
                     <View style={styles.sectionTitle}>
-                        <ThemedText style={{ fontSize: 20 }}>🍽️</ThemedText>
                         <ThemedText variant="h3">Nhắc nhở bữa ăn</ThemedText>
                     </View>
 
@@ -347,7 +370,7 @@ const NotificationsScreen = (): React.ReactElement => {
                     />
                 </Animated.View>
             </ScrollView>
-        </View>
+        </LinearGradient>
     );
 };
 
