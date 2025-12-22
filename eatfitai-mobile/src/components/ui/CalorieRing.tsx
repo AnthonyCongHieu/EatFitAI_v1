@@ -152,7 +152,7 @@ const CalorieRing: React.FC<CalorieRingProps> = ({
                         cx={center}
                         cy={center}
                         r={radius}
-                        stroke={isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)'}
+                        stroke={isDark ? '#2A3F68' : '#E0E0E0'}
                         strokeWidth={strokeWidth}
                         fill="none"
                     />
@@ -330,7 +330,8 @@ const getStyles = (theme: any, size: number, isDark: boolean) =>
             borderRadius: 4,
             flexDirection: 'row',
             overflow: 'hidden',
-            backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)',
+            // Solid colors để fix 2 màu trên Android
+            backgroundColor: isDark ? '#1E3050' : '#F0F0F0',
         },
         macroSegment: {
             height: '100%',

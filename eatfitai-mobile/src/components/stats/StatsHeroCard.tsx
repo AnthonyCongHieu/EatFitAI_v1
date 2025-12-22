@@ -47,12 +47,11 @@ export const StatsHeroCard: React.FC<StatsHeroCardProps> = ({
             alignItems: 'center',
             paddingVertical: theme.spacing.xl,
             paddingHorizontal: theme.spacing.lg,
-            backgroundColor: isDark
-                ? 'rgba(74, 144, 226, 0.15)'
-                : 'rgba(59, 130, 246, 0.08)',
+            // Solid colors để fix 2 màu trên Android
+            backgroundColor: isDark ? '#1A2744' : '#EEF4FF',
             borderRadius: theme.radius.xl,
             borderWidth: 1,
-            borderColor: isDark ? 'rgba(74, 144, 226, 0.2)' : 'rgba(59, 130, 246, 0.1)',
+            borderColor: isDark ? '#2A3F68' : '#D0E4FF',
         },
         progressContainer: {
             position: 'relative',
@@ -84,7 +83,8 @@ export const StatsHeroCard: React.FC<StatsHeroCardProps> = ({
             marginTop: theme.spacing.lg,
             paddingTop: theme.spacing.md,
             borderTopWidth: 1,
-            borderTopColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)',
+            // Solid colors để fix 2 màu trên Android
+            borderTopColor: isDark ? '#2A3F68' : '#E0E0E0',
         },
         statItem: {
             alignItems: 'center',
@@ -108,7 +108,7 @@ export const StatsHeroCard: React.FC<StatsHeroCardProps> = ({
                         cx={size / 2}
                         cy={size / 2}
                         r={radius}
-                        stroke={isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)'}
+                        stroke={isDark ? '#2A3F68' : '#E0E0E0'}
                         strokeWidth={strokeWidth}
                         fill="transparent"
                     />
