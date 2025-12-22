@@ -271,41 +271,110 @@ namespace EatFitAI.API.Controllers
 
         /// <summary>
         /// Execute ADD_FOOD: Search food in DB, calculate nutrition, save to MealDiary
+        /// Hỗ trợ cả 1 món (FoodName) và nhiều món (Foods array)
         /// </summary>
         private async Task<(ExecutedAction? action, string? error)> ExecuteAddFoodAsync(Guid userId, ParsedVoiceCommand command)
         {
-            var foodName = command.Entities.FoodName;
-            if (string.IsNullOrWhiteSpace(foodName))
-            {
-                return (null, "Không tìm thấy tên món ăn trong lệnh");
-            }
-
             try
             {
+                var mealTypeId = ParseMealTypeEnum(command.Entities.MealType);
+                var eatenDate = command.Entities.Date ?? DateTime.UtcNow;
+                var addedFoods = new List<string>();
+                decimal totalCalories = 0;
+
+                // Case 1: Nhiều món ăn (Foods array)
+                if (command.Entities.Foods != null && command.Entities.Foods.Count > 0)
+                {
+                    _logger.LogInformation("Processing {Count} foods from voice command", command.Entities.Foods.Count);
+                    
+                    foreach (var foodItem in command.Entities.Foods)
+                    {
+                        if (string.IsNullOrWhiteSpace(foodItem.FoodName))
+                            continue;
+
+                        var result = await AddSingleFoodAsync(userId, foodItem.FoodName, 
+                            foodItem.Weight ?? foodItem.Quantity ?? 100m, 
+                            mealTypeId, eatenDate, command.RawText);
+                        
+                        if (result.success)
+                        {
+                            addedFoods.Add($"{result.foodName} ({result.grams}g)");
+                            totalCalories += result.calories;
+                        }
+                        else
+                        {
+                            _logger.LogWarning("Could not find food: {FoodName}", foodItem.FoodName);
+                        }
+                    }
+                }
+                // Case 2: Một món ăn (FoodName đơn lẻ)
+                else if (!string.IsNullOrWhiteSpace(command.Entities.FoodName))
+                {
+                    var grams = command.Entities.Weight ?? (command.Entities.Quantity ?? 1) * 100m;
+                    var result = await AddSingleFoodAsync(userId, command.Entities.FoodName, 
+                        grams, mealTypeId, eatenDate, command.RawText);
+                    
+                    if (result.success)
+                    {
+                        addedFoods.Add($"{result.foodName} ({result.grams}g)");
+                        totalCalories = result.calories;
+                    }
+                    else
+                    {
+                        return (null, $"Không tìm thấy món '{command.Entities.FoodName}' trong cơ sở dữ liệu.");
+                    }
+                }
+                else
+                {
+                    return (null, "Không tìm thấy tên món ăn trong lệnh");
+                }
+
+                if (addedFoods.Count == 0)
+                {
+                    return (null, "Không tìm thấy món ăn nào trong cơ sở dữ liệu. Hãy thử với tên khác.");
+                }
+
+                var details = addedFoods.Count == 1
+                    ? $"Đã thêm {addedFoods[0]} ({Math.Round(totalCalories)}kcal) vào {GetMealLabel(command.Entities.MealType)}"
+                    : $"Đã thêm {addedFoods.Count} món ({Math.Round(totalCalories)}kcal) vào {GetMealLabel(command.Entities.MealType)}: {string.Join(", ", addedFoods)}";
+
+                return (new ExecutedAction
+                {
+                    Type = "ADD_FOOD",
+                    Details = details,
+                    Data = new Dictionary<string, object>
+                    {
+                        ["addedCount"] = addedFoods.Count,
+                        ["totalCalories"] = totalCalories,
+                        ["foods"] = addedFoods
+                    }
+                }, null);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error adding food via voice");
+                return (null, $"Lỗi khi thêm món ăn: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Helper: Thêm 1 món ăn vào MealDiary
+        /// </summary>
+        private async Task<(bool success, string foodName, decimal grams, decimal calories)> AddSingleFoodAsync(
+            Guid userId, string foodName, decimal grams, int mealTypeId, DateTime eatenDate, string rawText)
+        {
             // Search for food by name
             _logger.LogInformation("Searching food: {FoodName}", foodName);
             var searchResults = await _foodService.SearchAllAsync(foodName, null, 5);
             
             if (searchResults == null || !searchResults.Any())
             {
-                return (null, $"Không tìm thấy món '{foodName}' trong cơ sở dữ liệu. Hãy thử với tên khác.");
+                return (false, foodName, 0, 0);
             }
 
             // Get best match (first result)
             var food = searchResults.First();
             
-            // Calculate grams from weight or quantity
-            decimal grams = 100m; // Default 100g
-            if (command.Entities.Weight.HasValue && command.Entities.Weight > 0)
-            {
-                grams = command.Entities.Weight.Value;
-            }
-            else if (command.Entities.Quantity.HasValue && command.Entities.Quantity > 0)
-            {
-                // Assume 1 portion = 100g default
-                grams = command.Entities.Quantity.Value * 100m;
-            }
-
             // Calculate nutrition based on portion
             var factor = grams / 100m;
             var calories = food.CaloriesPer100 * factor;
@@ -313,13 +382,10 @@ namespace EatFitAI.API.Controllers
             var carbs = food.CarbPer100 * factor;
             var fat = food.FatPer100 * factor;
 
-            // Get meal type ID from enum
-            var mealTypeId = ParseMealTypeEnum(command.Entities.MealType);
-
             // Create MealDiary entry
             var createRequest = new CreateMealDiaryRequest
             {
-                EatenDate = command.Entities.Date ?? DateTime.UtcNow,
+                EatenDate = eatenDate,
                 MealTypeId = mealTypeId,
                 FoodItemId = food.Source == "catalog" ? food.Id : (int?)null,
                 UserFoodItemId = food.Source == "user" ? food.Id : (int?)null,
@@ -328,26 +394,16 @@ namespace EatFitAI.API.Controllers
                 Protein = Math.Round(protein, 1),
                 Carb = Math.Round(carbs, 1),
                 Fat = Math.Round(fat, 1),
-                Note = $"Voice AI: {command.RawText}",
-                SourceMethod = "voice"  // Consistent với các source khác
+                Note = $"Voice AI: {rawText}",
+                SourceMethod = "voice"
             };
 
-            var mealDiary = await _mealDiaryService.CreateMealDiaryAsync(userId, createRequest);
+            await _mealDiaryService.CreateMealDiaryAsync(userId, createRequest);
+            
+            _logger.LogInformation("Added food via Voice AI: {Food} ({Grams}g, {Calories}kcal)", 
+                food.FoodName, grams, Math.Round(calories));
 
-            _logger.LogInformation("Added food via Voice AI: {Food} ({Grams}g) to {Meal}", 
-                food.FoodName, grams, GetMealLabel(command.Entities.MealType));
-
-            return (new ExecutedAction
-            {
-                Type = "ADD_FOOD",
-                Details = $"Đã thêm {food.FoodName} ({grams}g, {Math.Round(calories)}kcal) vào {GetMealLabel(command.Entities.MealType)}"
-            }, null);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error adding food via voice");
-            return (null, $"Lỗi khi thêm món ăn: {ex.Message}");
-            }
+            return (true, food.FoodName, grams, calories);
         }
 
         /// <summary>

@@ -26,5 +26,8 @@ namespace EatFitAI.API.Services.Interfaces
         
         // Mark onboarding as completed
         Task MarkOnboardingCompletedAsync(Guid userId);
+        
+        // Change password
+        Task ChangePasswordAsync(Guid userId, string currentPassword, string newPassword);
     }
 }

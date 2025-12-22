@@ -21,6 +21,8 @@ import Animated, {
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import Toast from 'react-native-toast-message';
+import { useQueryClient } from '@tanstack/react-query';
 
 import { ThemedText } from '../../components/ThemedText';
 import { useAppTheme } from '../../theme/ThemeProvider';
@@ -35,6 +37,7 @@ const VoiceScreen = (): React.ReactElement => {
     const { theme } = useAppTheme();
     const isDark = theme.mode === 'dark';
     const insets = useSafeAreaInsets();
+    const queryClient = useQueryClient();
 
     const {
         status,
@@ -158,8 +161,30 @@ const VoiceScreen = (): React.ReactElement => {
 
     const handleExecute = async () => {
         await executeCommand();
-        if (status === 'success') {
+        // Lấy status mới từ store sau khi execute xong
+        const { status: newStatus, lastExecutedAction, error: execError } = useVoiceStore.getState();
+
+        if (newStatus === 'success') {
+            // Hiển thị toast thành công
+            Toast.show({
+                type: 'success',
+                text1: 'Thành công!',
+                text2: lastExecutedAction || 'Đã thực hiện lệnh',
+                visibilityTime: 3000,
+            });
+
+            // Invalidate cache để HomeScreen/MealDiary cập nhật
+            queryClient.invalidateQueries({ queryKey: ['home-summary'] });
+            queryClient.invalidateQueries({ queryKey: ['diary-entries'] });
+
+            // Reset sau 2s
             setTimeout(() => reset(), 2000);
+        } else if (newStatus === 'error' && execError) {
+            Toast.show({
+                type: 'error',
+                text1: 'Lỗi',
+                text2: execError,
+            });
         }
     };
 

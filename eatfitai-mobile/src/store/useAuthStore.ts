@@ -57,7 +57,12 @@ export const useAuthStore = create<AuthState>((set: any) => ({
 
   init: async () => {
     try {
-      // Register callback để auto-logout khi refresh token fails
+      // 1. Khởi tạo API client với đúng URL (scan IP nếu cần)
+      // Phải chạy TRƯỚC mọi API calls khác
+      const { initializeApiClient } = await import('../services/apiClient');
+      await initializeApiClient();
+
+      // 2. Register callback để auto-logout khi refresh token fails
       setAuthExpiredCallback(() => {
         if (__DEV__) {
           console.log('[useAuthStore] Auth expired callback triggered - logging out');
@@ -68,6 +73,7 @@ export const useAuthStore = create<AuthState>((set: any) => ({
         });
       });
 
+      // 3. Load token từ storage nếu có
       const token = await tokenStorage.getAccessToken();
       if (token) {
         setAccessTokenMem(token);

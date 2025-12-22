@@ -217,6 +217,35 @@ namespace EatFitAI.API.Controllers
                 return StatusCode(500, new { message = "An error occurred during Google login", error = ex.Message });
             }
         }
+
+        /// <summary>
+        /// Đổi mật khẩu cho user đã đăng nhập
+        /// </summary>
+        [Authorize]
+        [HttpPost("change-password")]
+        public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequest request)
+        {
+            try
+            {
+                var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+                if (string.IsNullOrEmpty(userId) || !Guid.TryParse(userId, out var userGuid))
+                {
+                    return Unauthorized(new { message = "Invalid user" });
+                }
+
+                await _authService.ChangePasswordAsync(userGuid, request.CurrentPassword, request.NewPassword);
+                return Ok(new { message = "Password changed successfully" });
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Unauthorized(new { message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error changing password");
+                return StatusCode(500, new { message = "An error occurred while changing password" });
+            }
+        }
     }
 
     public class LogoutRequest

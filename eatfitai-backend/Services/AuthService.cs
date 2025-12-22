@@ -683,6 +683,32 @@ namespace EatFitAI.API.Services
 
             Console.WriteLine($"[AuthService] Onboarding completed for user: {userId}");
         }
+
+        /// <summary>
+        /// Đổi mật khẩu cho user đã đăng nhập
+        /// </summary>
+        public async Task ChangePasswordAsync(Guid userId, string currentPassword, string newPassword)
+        {
+            Console.WriteLine($"[AuthService] Changing password for user: {userId}");
+
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.UserId == userId);
+            if (user == null)
+            {
+                throw new UnauthorizedAccessException("User không tồn tại");
+            }
+
+            // Verify current password
+            if (!VerifyPassword(currentPassword, user.PasswordHash))
+            {
+                throw new UnauthorizedAccessException("Mật khẩu hiện tại không đúng");
+            }
+
+            // Update password
+            user.PasswordHash = HashPassword(newPassword);
+            await _context.SaveChangesAsync();
+
+            Console.WriteLine($"[AuthService] Password changed successfully for user: {userId}");
+        }
     }
 }
 
