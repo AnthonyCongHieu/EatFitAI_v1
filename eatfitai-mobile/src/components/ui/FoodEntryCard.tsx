@@ -226,17 +226,18 @@ export const FoodEntryCard: React.FC<FoodEntryCardProps> = ({
 
                     {/* Macro chips */}
                     <View style={styles.macroRow}>
-                        <View style={[styles.macroChip, { backgroundColor: 'rgba(59, 130, 246, 0.15)' }]}>
+                        {/* Solid colors để fix 2 màu trên Android */}
+                        <View style={[styles.macroChip, { backgroundColor: isDark ? '#1A2A50' : '#E0F2FE' }]}>
                             <ThemedText variant="caption" style={{ color: '#3B82F6' }}>
                                 P {Math.round(protein)}g
                             </ThemedText>
                         </View>
-                        <View style={[styles.macroChip, { backgroundColor: 'rgba(251, 191, 36, 0.15)' }]}>
+                        <View style={[styles.macroChip, { backgroundColor: isDark ? '#2A2818' : '#FEF3C7' }]}>
                             <ThemedText variant="caption" style={{ color: '#D97706' }}>
                                 C {Math.round(carbs)}g
                             </ThemedText>
                         </View>
-                        <View style={[styles.macroChip, { backgroundColor: 'rgba(236, 72, 153, 0.15)' }]}>
+                        <View style={[styles.macroChip, { backgroundColor: isDark ? '#2A1A28' : '#FCE7F3' }]}>
                             <ThemedText variant="caption" style={{ color: '#DB2777' }}>
                                 F {Math.round(fat)}g
                             </ThemedText>
@@ -299,10 +300,11 @@ const getStyles = (theme: any, isDark: boolean) =>
             flexDirection: 'row',
             alignItems: 'center',
             padding: theme.spacing.md,
-            backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#FFF',
+            // Solid colors để fix 2 màu trên Android
+            backgroundColor: isDark ? '#1A2744' : '#FFF',
             borderRadius: theme.radius.lg,
             borderWidth: 1,
-            borderColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)',
+            borderColor: isDark ? '#2A3F68' : 'rgba(0,0,0,0.05)',
             gap: theme.spacing.md,
             ...theme.shadows.sm,
         },
@@ -320,7 +322,8 @@ const getStyles = (theme: any, isDark: boolean) =>
         emojiContainer: {
             width: '100%',
             height: '100%',
-            backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.03)',
+            // Solid colors để fix 2 màu trên Android
+            backgroundColor: isDark ? '#1E3050' : '#F5F5F5',
             alignItems: 'center',
             justifyContent: 'center',
             borderRadius: theme.radius.md,

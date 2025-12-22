@@ -75,7 +75,8 @@ export const TrendChart: React.FC<TrendChartProps> = ({
             marginTop: theme.spacing.md,
             paddingTop: theme.spacing.md,
             borderTopWidth: 1,
-            borderTopColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)',
+            // Solid colors để fix 2 màu trên Android
+            borderTopColor: isDark ? '#2A3F68' : '#E0E0E0',
         },
         legendItem: {
             flexDirection: 'row',
@@ -94,9 +95,10 @@ export const TrendChart: React.FC<TrendChartProps> = ({
         if (highlightBest && index === bestDayIndex && calories > 0) {
             return theme.colors.primary;
         }
-        // No data = dim gray
+        // No data = solid dim color
         if (calories === 0) {
-            return isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)';
+            // Solid colors để fix 2 màu trên Android
+            return isDark ? '#1E3050' : '#E0E0E0';
         }
         // Normal days = green
         return '#22C55E';

@@ -71,10 +71,11 @@ const WeekStatsScreen = (): React.ReactElement => {
       flex: 1,
       alignItems: 'center',
       padding: theme.spacing.md,
-      backgroundColor: isDark ? 'rgba(60, 60, 80, 0.6)' : 'rgba(255, 255, 255, 0.8)',
+      // Solid colors để fix 2 màu trên Android
+      backgroundColor: isDark ? '#1A2744' : '#F8FAFF',
       borderRadius: 20,
       borderWidth: 1,
-      borderColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)',
+      borderColor: isDark ? '#2A3F68' : '#E0E0E0',
     },
     weekNavigation: {
       flexDirection: 'row',
@@ -82,10 +83,11 @@ const WeekStatsScreen = (): React.ReactElement => {
       justifyContent: 'space-between',
       paddingHorizontal: theme.spacing.md,
       paddingVertical: theme.spacing.sm,
-      backgroundColor: isDark ? 'rgba(40, 40, 60, 0.7)' : 'rgba(255, 255, 255, 0.9)',
+      // Solid colors để fix 2 màu trên Android
+      backgroundColor: isDark ? '#1A2744' : '#F8FAFF',
       borderRadius: 16,
       borderWidth: 1,
-      borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.05)',
+      borderColor: isDark ? '#2A3F68' : '#E0E0E0',
       marginBottom: theme.spacing.lg,
     },
     navButton: {
@@ -246,7 +248,8 @@ const WeekStatsScreen = (): React.ReactElement => {
             <ThemedText variant="caption" color="textSecondary">�� ti�u th?</ThemedText>
           </View>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-            <View style={{ width: 12, height: 12, borderRadius: 3, backgroundColor: isDark ? 'rgba(55, 65, 60, 0.7)' : 'rgba(180, 190, 185, 0.5)' }} />
+            {/* Solid colors để fix 2 màu trên Android */}
+            <View style={{ width: 12, height: 12, borderRadius: 3, backgroundColor: isDark ? '#1E3050' : '#D0D0D5' }} />
             <ThemedText variant="caption" color="textSecondary">C�n l?i</ThemedText>
           </View>
         </View>
@@ -376,14 +379,16 @@ const WeekStatsScreen = (): React.ReactElement => {
             marginTop: theme.spacing.md,
             paddingTop: theme.spacing.md,
             borderTopWidth: 1,
-            borderTopColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)',
+            // Solid colors để fix 2 màu trên Android
+            borderTopColor: isDark ? '#2A3F68' : '#E0E0E0',
           }}>
             {/* Average per day */}
             <View style={{
               flex: 1,
               alignItems: 'center',
               padding: theme.spacing.sm,
-              backgroundColor: isDark ? 'rgba(59, 130, 246, 0.15)' : 'rgba(59, 130, 246, 0.08)',
+              // Solid navy blue
+              backgroundColor: isDark ? '#1A2744' : '#EEF4FF',
               borderRadius: 12,
             }}>
               <ThemedText style={{ fontSize: 16 }}>??</ThemedText>
@@ -407,7 +412,8 @@ const WeekStatsScreen = (): React.ReactElement => {
               flex: 1,
               alignItems: 'center',
               padding: theme.spacing.sm,
-              backgroundColor: isDark ? 'rgba(139, 92, 246, 0.15)' : 'rgba(139, 92, 246, 0.08)',
+              // Solid purple
+              backgroundColor: isDark ? '#1E1A40' : '#F3E8FF',
               borderRadius: 12,
             }}>
               <ThemedText style={{ fontSize: 16 }}>??</ThemedText>
@@ -430,7 +436,8 @@ const WeekStatsScreen = (): React.ReactElement => {
               flex: 1,
               alignItems: 'center',
               padding: theme.spacing.sm,
-              backgroundColor: isDark ? 'rgba(34, 197, 94, 0.15)' : 'rgba(34, 197, 94, 0.08)',
+              // Solid green
+              backgroundColor: isDark ? '#1A3028' : '#E8F5E9',
               borderRadius: 12,
             }}>
               <ThemedText style={{ fontSize: 16 }}>??</ThemedText>

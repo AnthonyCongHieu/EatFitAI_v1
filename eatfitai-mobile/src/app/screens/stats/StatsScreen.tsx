@@ -202,11 +202,12 @@ const StatsScreen = (): React.ReactElement => {
         summaryCard: {
             flex: 1,
             padding: theme.spacing.md,
-            backgroundColor: isDark ? 'rgba(74, 144, 226, 0.15)' : 'rgba(59, 130, 246, 0.08)',
+            // Solid colors để fix 2 màu trên Android
+            backgroundColor: isDark ? '#1A2744' : '#EEF4FF',
             borderRadius: theme.radius.lg,
             alignItems: 'center',
             borderWidth: 1,
-            borderColor: isDark ? 'rgba(74, 144, 226, 0.2)' : 'rgba(59, 130, 246, 0.1)',
+            borderColor: isDark ? '#2A3F68' : '#D0E4FF',
         },
     });
 

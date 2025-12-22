@@ -70,7 +70,7 @@ export const MacroPieChart: React.FC<MacroPieChartProps> = ({ protein, carbs, fa
         </View>
       </View>
 
-      {/* Improved Legend */}
+      {/* Improved Legend - Solid colors để fix 2 màu trên Android */}
       <View style={styles.legendContainer}>
         {/* Protein */}
         <View
@@ -78,13 +78,9 @@ export const MacroPieChart: React.FC<MacroPieChartProps> = ({ protein, carbs, fa
             styles.legendCard,
             {
               backgroundColor:
-                theme.mode === 'dark'
-                  ? 'rgba(72, 187, 120, 0.12)'
-                  : 'rgba(72, 187, 120, 0.08)',
+                theme.mode === 'dark' ? '#1A3028' : '#E8F5E9',
               borderColor:
-                theme.mode === 'dark'
-                  ? 'rgba(72, 187, 120, 0.25)'
-                  : 'rgba(72, 187, 120, 0.15)',
+                theme.mode === 'dark' ? '#2A4A3A' : '#C8E6C9',
             },
           ]}
         >
@@ -108,13 +104,9 @@ export const MacroPieChart: React.FC<MacroPieChartProps> = ({ protein, carbs, fa
             styles.legendCard,
             {
               backgroundColor:
-                theme.mode === 'dark'
-                  ? 'rgba(237, 137, 54, 0.12)'
-                  : 'rgba(237, 137, 54, 0.08)',
+                theme.mode === 'dark' ? '#2A2818' : '#FFF8E1',
               borderColor:
-                theme.mode === 'dark'
-                  ? 'rgba(237, 137, 54, 0.25)'
-                  : 'rgba(237, 137, 54, 0.15)',
+                theme.mode === 'dark' ? '#4A4828' : '#FFE0B2',
             },
           ]}
         >
@@ -138,13 +130,9 @@ export const MacroPieChart: React.FC<MacroPieChartProps> = ({ protein, carbs, fa
             styles.legendCard,
             {
               backgroundColor:
-                theme.mode === 'dark'
-                  ? 'rgba(66, 153, 225, 0.12)'
-                  : 'rgba(66, 153, 225, 0.08)',
+                theme.mode === 'dark' ? '#1A2540' : '#E3F2FD',
               borderColor:
-                theme.mode === 'dark'
-                  ? 'rgba(66, 153, 225, 0.25)'
-                  : 'rgba(66, 153, 225, 0.15)',
+                theme.mode === 'dark' ? '#2A3F68' : '#BBDEFB',
             },
           ]}
         >

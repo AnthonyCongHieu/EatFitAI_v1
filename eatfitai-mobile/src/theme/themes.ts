@@ -250,22 +250,23 @@ export const lightTheme: AppTheme = {
     calories: {
       gradient: ['#DBEAFE', '#BFDBFE'] as const, // Blue
       textColor: '#1D4ED8',
-      borderColor: 'rgba(59, 130, 246, 0.2)',
+      // Solid colors để fix 2 màu trên Android
+      borderColor: '#93C5FD',
     },
     average: {
       gradient: ['#E0F2FE', '#BAE6FD'] as const, // Sky blue
       textColor: '#0369A1',
-      borderColor: 'rgba(14, 165, 233, 0.2)',
+      borderColor: '#7DD3FC',
     },
     daysLogged: {
       gradient: ['#DCFCE7', '#BBF7D0'] as const, // Green
       textColor: '#15803D',
-      borderColor: 'rgba(34, 197, 94, 0.2)',
+      borderColor: '#86EFAC',
     },
     target: {
       gradient: ['#FEF3C7', '#FDE68A'] as const, // Amber
       textColor: '#B45309',
-      borderColor: 'rgba(245, 158, 11, 0.2)',
+      borderColor: '#FCD34D',
     },
   },
   achievementGradients: {
@@ -440,24 +441,24 @@ export const darkTheme: AppTheme = {
       medium: 'rgba(10, 14, 26, 0.7)',
       heavy: 'rgba(10, 14, 26, 0.85)',
     },
-    // Glassmorphism colors (navy blue tint)
+    // Glassmorphism colors - Solid colors để tránh lỗi 2 màu trên Android
     glass: {
-      background: 'rgba(20, 27, 45, 0.78)',
-      border: 'rgba(74, 144, 226, 0.12)',
-      backgroundAlt: 'rgba(26, 39, 68, 0.7)',
-      borderAlt: 'rgba(100, 181, 246, 0.1)',
+      background: '#1A2744',      // Solid navy thay vì rgba
+      border: '#2A3F68',          // Solid border
+      backgroundAlt: '#1E3050',   // Solid alt background
+      borderAlt: '#3A5080',       // Solid alt border
     },
     // Chart colors (blue theme)
     chart: {
       bar: '#4A90D9', // Primary blue
       barSecondary: '#64B5F6', // Light blue
-      barRemaining: 'rgba(20, 27, 45, 0.7)',
+      barRemaining: '#0F1828', // Solid dark navy
       line: '#4A90D9',
     },
     // Gamification/Streak colors
     streak: {
       active: '#FF9500',
-      background: 'rgba(255, 149, 0, 0.15)',
+      background: '#2A2A1A',      // Solid warm dark thay vì rgba
       border: '#FF9500',
     },
   },
@@ -478,22 +479,23 @@ export const darkTheme: AppTheme = {
     calories: {
       gradient: ['#1A2744', '#2A3F68'] as const, // Navy blue
       textColor: '#64B5F6',
-      borderColor: 'rgba(74, 144, 226, 0.3)',
+      // Solid colors để fix 2 màu trên Android
+      borderColor: '#3A5080',
     },
     average: {
       gradient: ['#1E3A5F', '#2C5282'] as const, // Deep blue
       textColor: '#90CAF9',
-      borderColor: 'rgba(100, 181, 246, 0.3)',
+      borderColor: '#4A6A98',
     },
     daysLogged: {
       gradient: ['#22543d', '#276749'] as const, // Green
       textColor: '#68d391',
-      borderColor: 'rgba(72, 187, 120, 0.3)',
+      borderColor: '#3A7A5A',
     },
     target: {
       gradient: ['#744210', '#975a16'] as const, // Orange
       textColor: '#f6ad55',
-      borderColor: 'rgba(237, 137, 54, 0.3)',
+      borderColor: '#B07A30',
     },
   },
   achievementGradients: {

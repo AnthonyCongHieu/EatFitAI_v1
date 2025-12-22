@@ -132,11 +132,12 @@ export const StreakCard: React.FC<StreakCardProps> = ({
         colors={
           isActive
             ? isDark
-              ? ['rgba(255, 149, 0, 0.15)', 'rgba(255, 100, 0, 0.1)']
-              : ['#FFF7ED', '#FFEDD5']
+              // Solid colors thay vì rgba để tránh lỗi 2 màu trên Android
+              ? ['#1A2A4A', '#152238'] as const
+              : ['#FFF7ED', '#FFEDD5'] as const
             : isDark
-              ? ['rgba(255,255,255,0.05)', 'rgba(255,255,255,0.02)']
-              : ['#FAFAFA', '#F5F5F5']
+              ? ['#1A2744', '#152238'] as const
+              : ['#FAFAFA', '#F5F5F5'] as const
         }
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}

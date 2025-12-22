@@ -29,6 +29,7 @@ export const MacroProgressCard: React.FC<MacroProgressCardProps> = ({
     const { theme } = useAppTheme();
     const isDark = theme.mode === 'dark';
 
+    // Solid colors để fix 2 màu trên Android
     const macros = [
         {
             label: 'Chất đạm',
@@ -36,7 +37,7 @@ export const MacroProgressCard: React.FC<MacroProgressCardProps> = ({
             current: protein,
             target: targetProtein,
             color: '#F43F5E', // red/pink
-            bgColor: isDark ? 'rgba(244, 63, 94, 0.15)' : 'rgba(244, 63, 94, 0.1)',
+            bgColor: isDark ? '#2A1A28' : '#FEE2E2',
         },
         {
             label: 'Đường bột',
@@ -44,7 +45,7 @@ export const MacroProgressCard: React.FC<MacroProgressCardProps> = ({
             current: carbs,
             target: targetCarbs,
             color: '#3B82F6', // blue
-            bgColor: isDark ? 'rgba(59, 130, 246, 0.15)' : 'rgba(59, 130, 246, 0.1)',
+            bgColor: isDark ? '#1A2744' : '#DBEAFE',
         },
         {
             label: 'Chất béo',
@@ -52,18 +53,18 @@ export const MacroProgressCard: React.FC<MacroProgressCardProps> = ({
             current: fat,
             target: targetFat,
             color: '#F59E0B', // amber/orange
-            bgColor: isDark ? 'rgba(245, 158, 11, 0.15)' : 'rgba(245, 158, 11, 0.1)',
+            bgColor: isDark ? '#2A2818' : '#FEF3C7',
         },
     ];
 
     const styles = StyleSheet.create({
         container: {
-            // Match glass.card style - blue tint
-            backgroundColor: isDark ? 'rgba(74, 144, 226, 0.15)' : 'rgba(59, 130, 246, 0.08)',
+            // Solid colors để fix 2 màu trên Android
+            backgroundColor: isDark ? '#1A2744' : '#EEF4FF',
             borderRadius: 24,
             padding: theme.spacing.lg,
             borderWidth: 1,
-            borderColor: isDark ? 'rgba(74, 144, 226, 0.2)' : 'rgba(59, 130, 246, 0.1)',
+            borderColor: isDark ? '#2A3F68' : '#D0E4FF',
         },
         row: {
             flexDirection: 'row',
