@@ -50,12 +50,29 @@ const normalizeDay = (
   caloriesByMealType: null,
 });
 
-const normalizeWeekData = (data: NutritionSummaryDto): WeekDaySummary[] => {
-  if (!data?.dailyCalories) {
-    return [];
+const normalizeWeekData = (data: NutritionSummaryDto, targetDate?: string): WeekDaySummary[] => {
+  // Tính ngày đầu tuần (Thứ 2) từ targetDate hoặc ngày hiện tại
+  const refDate = targetDate ? new Date(targetDate) : new Date();
+  const dayOfWeek = refDate.getDay();
+  // Chuyển về Thứ 2 (day=1), nếu là Chủ nhật (day=0) thì lùi 6 ngày
+  const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+  const monday = new Date(refDate);
+  monday.setDate(refDate.getDate() + mondayOffset);
+
+  // Tạo mảng 7 ngày trong tuần (T2 → CN) với calories = 0
+  const weekDays: WeekDaySummary[] = [];
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(monday);
+    d.setDate(monday.getDate() + i);
+    const dateStr = d.toISOString().split('T')[0]!;
+    weekDays.push(normalizeDay(dateStr, 0, undefined));
   }
 
-  // Handle dailyCalories as array or object for backward compatibility
+  if (!data?.dailyCalories) {
+    return weekDays;
+  }
+
+  // Parse data từ backend
   let dailyCaloriesArray: {
     date: string;
     calories: number;
@@ -80,14 +97,15 @@ const normalizeWeekData = (data: NutritionSummaryDto): WeekDaySummary[] => {
     );
   }
 
-  // Sort by date chronologically
-  dailyCaloriesArray.sort(
-    (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
-  );
+  // Map data vào đúng ngày trong tuần
+  for (const item of dailyCaloriesArray) {
+    const idx = weekDays.findIndex((d) => d.date === item.date);
+    if (idx !== -1) {
+      weekDays[idx] = normalizeDay(item.date, item.calories, item.targetCalories);
+    }
+  }
 
-  return dailyCaloriesArray.map((item) =>
-    normalizeDay(item.date, item.calories, item.targetCalories),
-  );
+  return weekDays;
 };
 
 export const summaryService = {
@@ -97,7 +115,7 @@ export const summaryService = {
       params: { date: targetDate },
     });
     const raw = response.data as NutritionSummaryDto;
-    const days = normalizeWeekData(raw);
+    const days = normalizeWeekData(raw, targetDate);
     return {
       days,
       totalProtein: toNumber(raw.totalProtein),

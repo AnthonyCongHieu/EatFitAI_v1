@@ -60,14 +60,16 @@ namespace EatFitAI.API.Services
                 }
                 Console.WriteLine($"[AuthService] Email check passed for: {request.Email}");
 
-                // Create new user
+                // Create new user - legacy register: set EmailVerified = true để bypass verification
                 var user = new User
                 {
                     UserId = Guid.NewGuid(),
                     Email = request.Email,
                     PasswordHash = HashPassword(request.Password),
                     DisplayName = request.DisplayName,
-                    CreatedAt = DateTime.UtcNow
+                    CreatedAt = DateTime.UtcNow,
+                    EmailVerified = true, // Legacy register: bypass email verification
+                    OnboardingCompleted = false
                 };
 
                 Console.WriteLine($"[AuthService] Creating user with ID: {user.UserId}");

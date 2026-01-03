@@ -205,10 +205,16 @@ const doScan = async (): Promise<string | null> => {
 export const scanForBackend = async (): Promise<string | null> => {
     const now = Date.now();
 
-    // 1. Kiểm tra cooldown
-    if (now - lastScanTime < SCAN_COOLDOWN_MS && !isScanning) {
+    // 1. Kiểm tra cooldown - BYPASS nếu chưa tìm thấy backend
+    // Điều này cho phép app tự động quét lại khi IP thay đổi
+    if (now - lastScanTime < SCAN_COOLDOWN_MS && !isScanning && hasFoundBackend) {
         console.log('[IPScanner] Scan đang trong thời gian cooldown, trả về cached...');
         return cachedUrl;
+    }
+
+    // Nếu chưa tìm thấy backend, log và tiếp tục scan
+    if (!hasFoundBackend) {
+        console.log('[IPScanner] Backend chưa được tìm thấy, bypass cooldown và scan lại...');
     }
 
     // 2. Nếu đang scan, trả về promise hiện tại
@@ -262,8 +268,12 @@ export const getApiUrl = async (): Promise<string | null> => {
                 console.log(`[IPScanner] ✅ URL verified successfully: ${urlToCheck}`);
                 return urlToCheck;
             } else {
-                console.log('[IPScanner] ⚠️ Cached URL invalid, scanning for new backend...');
+                console.log('[IPScanner] ⚠️ Cached URL invalid, resetting state và scan lại...');
+                // Reset TẤT CẢ state để cho phép scan lại ngay lập tức
                 cachedUrl = null;
+                hasFoundBackend = false;
+                lastScanTime = 0; // Reset cooldown
+                await AsyncStorage.removeItem(CACHE_KEY);
                 // Continue to scan below
             }
         } else {
@@ -280,12 +290,23 @@ export const getApiUrl = async (): Promise<string | null> => {
 };
 
 /**
+ * Reset toàn bộ state scan - gọi khi network thay đổi hoặc IP máy chủ thay đổi
+ */
+export const resetScanState = async (): Promise<void> => {
+    console.log('[IPScanner] Đang reset toàn bộ scan state...');
+    cachedUrl = null;
+    hasFoundBackend = false;
+    hasVerifiedThisSession = false;
+    lastScanTime = 0;
+    await AsyncStorage.removeItem(CACHE_KEY);
+};
+
+/**
  * Force re-scan - dùng khi user muốn tìm lại
  */
 export const forceRescan = async (): Promise<string | null> => {
     console.log('[IPScanner] Force re-scan...');
-    cachedUrl = null;
-    await AsyncStorage.removeItem(CACHE_KEY);
+    await resetScanState();
     return scanForBackend();
 };
 

@@ -46,6 +46,15 @@ namespace EatFitAI.API.Repositories
             return await _context.UserFoodItems
                 .FirstOrDefaultAsync(x => x.UserFoodItemId == id && x.UserId == userId && !x.IsDeleted);
         }
+
+        /// <summary>
+        /// Tìm UserFoodItem theo UserId và FoodName (bao gồm cả đã xóa mềm để có thể khôi phục)
+        /// </summary>
+        public async Task<UserFoodItem?> GetByUserAndNameAsync(Guid userId, string foodName)
+        {
+            return await _context.UserFoodItems
+                .FirstOrDefaultAsync(x => x.UserId == userId && x.FoodName == foodName);
+        }
     }
 }
 

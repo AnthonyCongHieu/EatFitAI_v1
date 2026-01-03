@@ -17,7 +17,7 @@ import { tokenStorage } from './secureStore';
 import { getAccessTokenMem, setAccessTokenMem, clearAccessTokenMem } from './authTokens';
 import { postRefreshToken } from './tokenService';
 import { updateSessionFromAuthResponse } from './authSession';
-import { getApiUrl, forceRescan, getCachedApiUrl, verifyApiUrl, preloadCachedUrl } from './ipScanner';
+import { getApiUrl, forceRescan, getCachedApiUrl, verifyApiUrl, preloadCachedUrl, resetScanState } from './ipScanner';
 
 // Quản lý thời gian rescan để tránh spam
 let lastRescanTime = 0;
@@ -25,6 +25,16 @@ const RESCAN_COOLDOWN = 120000; // 2 phút
 
 // Flag để track đã init chưa
 let isApiInitialized = false;
+
+/**
+ * Reset toàn bộ API state - gọi khi IP thay đổi hoặc cần kết nối lại
+ */
+export const resetApiState = async (): Promise<void> => {
+  console.log('[APIClient] Đang reset toàn bộ API state...');
+  lastRescanTime = 0;
+  isApiInitialized = false;
+  await resetScanState();
+};
 
 // Axios client - default timeout 10s cho các request thông thường
 // BaseURL sẽ được set động khi init

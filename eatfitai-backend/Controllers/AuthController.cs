@@ -50,6 +50,12 @@ namespace EatFitAI.API.Controllers
                 var result = await _authService.RegisterAsync(request);
                 return Ok(result);
             }
+            catch (InvalidOperationException ex)
+            {
+                // Email đã tồn tại - trả về 400 thay vì 500
+                _logger.LogWarning("Registration failed for email: {Email}, error: {Error}", request.Email, ex.Message);
+                return BadRequest(new { message = ex.Message });
+            }
             catch (ArgumentException ex)
             {
                 _logger.LogWarning("Registration failed for email: {Email}, error: {Error}", request.Email, ex.Message);

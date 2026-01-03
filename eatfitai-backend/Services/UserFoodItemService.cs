@@ -46,12 +46,38 @@ namespace EatFitAI.API.Services
 
             var now = DateTime.UtcNow;
 
+            // Kiểm tra xem món ăn với cùng tên đã tồn tại chưa (bao gồm cả đã xóa mềm)
+            var existingItem = await _repo.GetByUserAndNameAsync(userId, request.FoodName);
+
             string? thumbnailUrl = null;
             if (request.Thumbnail != null && request.Thumbnail.Length > 0)
             {
                 thumbnailUrl = await SaveImageAsync(request.Thumbnail, uploadsRoot);
             }
 
+            if (existingItem != null)
+            {
+                // Đã tồn tại → cập nhật thông tin dinh dưỡng và khôi phục nếu đã bị xóa mềm
+                existingItem.UnitType = request.UnitType;
+                existingItem.CaloriesPer100 = request.CaloriesPer100;
+                existingItem.ProteinPer100 = request.ProteinPer100;
+                existingItem.CarbPer100 = request.CarbPer100;
+                existingItem.FatPer100 = request.FatPer100;
+                existingItem.IsDeleted = false; // Khôi phục nếu đã bị soft-delete
+                existingItem.UpdatedAt = now;
+
+                if (thumbnailUrl != null)
+                {
+                    existingItem.ThumbnailUrl = thumbnailUrl;
+                }
+
+                _context.UserFoodItems.Update(existingItem);
+                await _context.SaveChangesAsync();
+
+                return _mapper.Map<UserFoodItemDto>(existingItem);
+            }
+
+            // Chưa tồn tại → tạo mới
             var entity = new UserFoodItem
             {
                 UserId = userId,
