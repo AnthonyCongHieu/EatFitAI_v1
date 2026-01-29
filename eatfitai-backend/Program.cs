@@ -15,6 +15,8 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Text;
 using System.Text.Json;
+using System.Threading.RateLimiting;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Extensions.Configuration;
 
 public partial class Program
@@ -41,16 +43,60 @@ builder.Services.AddControllers()
 builder.Services.AddEndpointsApiExplorer();
 
 
-// CORS from config
+// CORS - Environment-aware configuration
 var allowedOrigins = builder.Configuration
     .GetSection("AllowedOrigins")
     .Get<string[]>() ?? Array.Empty<string>();
 
-builder.Services.AddCors(o => o.AddPolicy("DevCors",
-    p => p.SetIsOriginAllowed(_ => true)
-          .AllowAnyHeader()
-          .AllowAnyMethod()
-          .AllowCredentials()));
+builder.Services.AddCors(o =>
+{
+    // Development: Allow all origins for easier testing
+    o.AddPolicy("DevCors", p => p
+        .SetIsOriginAllowed(_ => true)
+        .AllowAnyHeader()
+        .AllowAnyMethod()
+        .AllowCredentials());
+
+    // Production: Strict whitelist
+    o.AddPolicy("ProdCors", p => p
+        .WithOrigins(allowedOrigins)
+        .AllowAnyHeader()
+        .AllowAnyMethod()
+        .AllowCredentials());
+});
+
+// Rate Limiting - Prevent brute force and abuse
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+
+    // Auth endpoints: 10 requests per minute (prevent brute force)
+    options.AddFixedWindowLimiter("AuthPolicy", opt =>
+    {
+        opt.Window = TimeSpan.FromMinutes(1);
+        opt.PermitLimit = 10;
+        opt.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
+        opt.QueueLimit = 2;
+    });
+
+    // AI endpoints: 20 requests per minute (expensive operations)
+    options.AddFixedWindowLimiter("AIPolicy", opt =>
+    {
+        opt.Window = TimeSpan.FromMinutes(1);
+        opt.PermitLimit = 20;
+        opt.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
+        opt.QueueLimit = 5;
+    });
+
+    // General API: 100 requests per minute
+    options.AddFixedWindowLimiter("GeneralPolicy", opt =>
+    {
+        opt.Window = TimeSpan.FromMinutes(1);
+        opt.PermitLimit = 100;
+        opt.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
+        opt.QueueLimit = 10;
+    });
+});
 
 // Add Swagger
 builder.Services.AddSwaggerGen(c =>
@@ -224,7 +270,18 @@ else
 // Add routing
 app.UseRouting();
 
-app.UseCors("DevCors");
+// Rate Limiting middleware (must be before CORS and Auth)
+app.UseRateLimiter();
+
+// CORS - Use environment-appropriate policy
+if (app.Environment.IsDevelopment())
+{
+    app.UseCors("DevCors");
+}
+else
+{
+    app.UseCors("ProdCors");
+}
 
 // Add authentication and authorization middleware
 app.UseAuthentication();

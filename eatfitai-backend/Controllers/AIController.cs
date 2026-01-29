@@ -3,6 +3,7 @@ using System.Net.Http.Headers;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Caching.Memory;
@@ -17,6 +18,7 @@ namespace EatFitAI.API.Controllers
     [ApiController]
     [Route("api/ai")]
     [Authorize]
+    [EnableRateLimiting("AIPolicy")]
     public class AIController : ControllerBase
     {
         private readonly IHttpClientFactory _httpClientFactory;

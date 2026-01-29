@@ -12,6 +12,9 @@ namespace EatFitAI.API.DTOs.Food
         public string? Brand { get; set; }
         public string? Barcode { get; set; }
         public bool IsVerified { get; set; }
+        public string? Source { get; set; }
+        public string? VerifiedBy { get; set; }
+        public double ReliabilityScore { get; set; }
         public bool IsDeleted { get; set; }
         public string? ThumbNail { get; set; }
         public bool IsActive { get; set; }
