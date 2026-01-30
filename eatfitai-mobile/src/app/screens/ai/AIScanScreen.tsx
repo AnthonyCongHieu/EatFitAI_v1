@@ -11,6 +11,7 @@ import {
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import * as ImagePicker from 'expo-image-picker';
 import * as Haptics from 'expo-haptics';
+import * as ImageManipulator from 'expo-image-manipulator';
 import Animated, {
   FadeIn,
   FadeInDown,
@@ -89,13 +90,27 @@ const AIScanScreen: React.FC = () => {
 
   // Handlers
   const processImage = useCallback(async (uri: string) => {
-    setCapturedUri(uri);
     setMode('preview');
     setIsProcessing(true);
     setDetectionResult(null);
 
+    // Compress image before processing
+    let processedUri = uri;
     try {
-      const result = await aiService.detectFoodByImage(uri);
+      const manipulatedResult = await ImageManipulator.manipulateAsync(
+        uri,
+        [{ resize: { width: 800 } }],
+        { compress: 0.7, format: ImageManipulator.SaveFormat.JPEG }
+      );
+      processedUri = manipulatedResult.uri;
+      setCapturedUri(processedUri); // Show compressed image in preview
+    } catch (compressError) {
+      console.warn('Image compression failed, using original:', compressError);
+      setCapturedUri(uri);
+    }
+
+    try {
+      const result = await aiService.detectFoodByImage(processedUri);
       // Filter low confidence results
       const filteredItems = result.items.filter((item) => item.confidence > 0.4);
 

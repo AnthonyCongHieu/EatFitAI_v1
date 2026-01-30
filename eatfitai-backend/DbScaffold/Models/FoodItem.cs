@@ -27,6 +27,12 @@ public partial class FoodItem
 
     public bool IsDeleted { get; set; }
 
+    // Credibility Fields (2026 Strategy)
+    public string? Source { get; set; } // e.g., "NIN 2019", "USDA"
+    public bool IsVerified { get; set; } // Green checkmark for trusted data
+    public string? VerifiedBy { get; set; } // e.g., "Admin", "Community", "NIN"
+    public double ReliabilityScore { get; set; } = 0.0; // 0.0 - 1.0 (confidence)
+
     public virtual ICollection<AISuggestion> AISuggestions { get; set; } = new List<AISuggestion>();
 
     public virtual ICollection<FoodServing> FoodServings { get; set; } = new List<FoodServing>();

@@ -2,11 +2,13 @@ using EatFitAI.API.DTOs.Auth;
 using EatFitAI.API.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace EatFitAI.API.Controllers
 {
     [ApiController]
     [Route("api/auth")]
+    [EnableRateLimiting("AuthPolicy")]
     public class AuthController : ControllerBase
     {
         private readonly IAuthService _authService;
