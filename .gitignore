@@ -16,3 +16,26 @@ android/.kotlin/
 # AI Configuration
 .agent/
 .claude/
+
+# Python
+__pycache__/
+*.pyc
+venv/
+.venv/
+
+# Training outputs
+ai-provider/runs/
+ai-provider/uploads/*.jpg
+ai-provider/uploads/*.png
+ai-provider/training.log
+*.pt
+
+# Build outputs
+TestRunner/bin/
+TestRunner/obj/
+
+# IDE
+tsconfig.tsbuildinfo
+
+# Misc
+%ProgramData%/
