@@ -43,11 +43,7 @@ builder.Services.AddControllers()
 builder.Services.AddEndpointsApiExplorer();
 
 
-<<<<<<< Updated upstream
-// CORS - Environment-aware configuration
-=======
 // CORS from config (supports exact match and simple wildcard suffix/prefix, e.g. exp://* or http://localhost:*)
->>>>>>> Stashed changes
 var allowedOrigins = builder.Configuration
     .GetSection("AllowedOrigins")
     .Get<string[]>()?
@@ -56,19 +52,76 @@ var allowedOrigins = builder.Configuration
     .ToArray()
     ?? Array.Empty<string>();
 
-<<<<<<< Updated upstream
+var devAllowedOrigins = builder.Configuration
+    .GetSection("DevAllowedOrigins")
+    .Get<string[]>()?
+    .Where(x => !string.IsNullOrWhiteSpace(x))
+    .Select(x => x.Trim())
+    .ToArray()
+    ?? Array.Empty<string>();
+
+if (devAllowedOrigins.Length == 0)
+{
+    devAllowedOrigins = new[]
+    {
+        "http://localhost:*",
+        "http://127.0.0.1:*",
+        "http://10.0.2.2:*",
+        "exp://*",
+    };
+}
+
+if (allowedOrigins.Length == 0)
+{
+    // If production whitelist isn't configured yet, fallback to dev list to avoid startup break.
+    // Team should set strict AllowedOrigins in appsettings.Production.json before public release.
+    allowedOrigins = devAllowedOrigins;
+}
+
+static bool IsOriginAllowed(string origin, string[] rules)
+{
+    if (string.IsNullOrWhiteSpace(origin))
+    {
+        return false;
+    }
+
+    foreach (var rule in rules)
+    {
+        if (string.IsNullOrWhiteSpace(rule))
+        {
+            continue;
+        }
+
+        if (string.Equals(origin, rule, StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+
+        if (rule.EndsWith("*", StringComparison.Ordinal))
+        {
+            var prefix = rule[..^1];
+            if (origin.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+        }
+    }
+
+    return false;
+}
+
 builder.Services.AddCors(o =>
 {
-    // Development: Allow all origins for easier testing
+    // Development: controlled allow-list for local/dev clients
     o.AddPolicy("DevCors", p => p
-        .SetIsOriginAllowed(_ => true)
+        .SetIsOriginAllowed(origin => IsOriginAllowed(origin, devAllowedOrigins))
         .AllowAnyHeader()
         .AllowAnyMethod()
         .AllowCredentials());
 
     // Production: Strict whitelist
     o.AddPolicy("ProdCors", p => p
-        .WithOrigins(allowedOrigins)
+        .SetIsOriginAllowed(origin => IsOriginAllowed(origin, allowedOrigins))
         .AllowAnyHeader()
         .AllowAnyMethod()
         .AllowCredentials());
@@ -106,55 +159,6 @@ builder.Services.AddRateLimiter(options =>
         opt.QueueLimit = 10;
     });
 });
-=======
-if (allowedOrigins.Length == 0 && builder.Environment.IsDevelopment())
-{
-    allowedOrigins = new[]
-    {
-        "http://localhost:*",
-        "http://10.0.2.2:*",
-        "exp://*",
-    };
-}
-
-static bool IsOriginAllowed(string origin, string[] rules)
-{
-    if (string.IsNullOrWhiteSpace(origin))
-    {
-        return false;
-    }
-
-    foreach (var rule in rules)
-    {
-        if (string.IsNullOrWhiteSpace(rule))
-        {
-            continue;
-        }
-
-        if (string.Equals(origin, rule, StringComparison.OrdinalIgnoreCase))
-        {
-            return true;
-        }
-
-        if (rule.EndsWith("*", StringComparison.Ordinal))
-        {
-            var prefix = rule[..^1];
-            if (origin.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
-            {
-                return true;
-            }
-        }
-    }
-
-    return false;
-}
-
-builder.Services.AddCors(o => o.AddPolicy("AppCors",
-    p => p.SetIsOriginAllowed(origin => IsOriginAllowed(origin, allowedOrigins))
-          .AllowAnyHeader()
-          .AllowAnyMethod()
-          .AllowCredentials()));
->>>>>>> Stashed changes
 
 // Add Swagger
 builder.Services.AddSwaggerGen(c =>
@@ -337,7 +341,6 @@ else
 // Add routing
 app.UseRouting();
 
-<<<<<<< Updated upstream
 // Rate Limiting middleware (must be before CORS and Auth)
 app.UseRateLimiter();
 
@@ -350,9 +353,6 @@ else
 {
     app.UseCors("ProdCors");
 }
-=======
-app.UseCors("AppCors");
->>>>>>> Stashed changes
 
 // Add authentication and authorization middleware
 app.UseAuthentication();

@@ -765,7 +765,7 @@ namespace EatFitAI.API.Services
             }
 
             // Verify current password
-            if (!VerifyPassword(currentPassword, user.PasswordHash))
+            if (!VerifyPassword(currentPassword, user.PasswordHash, out _))
             {
                 throw new UnauthorizedAccessException("Mật khẩu hiện tại không đúng");
             }

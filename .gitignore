@@ -12,7 +12,6 @@ android/app/build/
 android/.kotlin/
 .jdk17/
 .DS_Store
-<<<<<<< Updated upstream
 
 # AI Configuration
 .agent/
@@ -40,11 +39,8 @@ tsconfig.tsbuildinfo
 
 # Misc
 %ProgramData%/
-=======
-.agent/
 *.log
 *.sarif
 *.tsbuildinfo
 build_*.txt
 errors.txt
->>>>>>> Stashed changes

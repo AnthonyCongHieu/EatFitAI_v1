@@ -233,11 +233,11 @@ def detect() -> Response | tuple[Dict[str, str], int]:
     
     except ImportError as e:
         logger.error(f"Import error: {e}", exc_info=True)
-        return {"error": "dependency error", "detail": str(e)}, 500
+        return {"error": "dependency error", "detail": "Required dependency is missing"}, 500
     
     except Exception as e:
         logger.error(f"Detection failed: {e}", exc_info=True)
-        return {"error": "detection failed", "detail": str(e)}, 500
+        return {"error": "detection failed", "detail": "Unexpected server error"}, 500
     
     finally:
         # Cleanup uploaded file
@@ -294,7 +294,7 @@ def nutrition_advice():
     
     except Exception as e:
         logger.error(f"Nutrition advice error: {e}", exc_info=True)
-        return {"error": str(e)}, 500
+        return {"error": "Internal server error"}, 500
 
 
 @app.post("/meal-insight")
@@ -320,7 +320,7 @@ def meal_insight():
     
     except Exception as e:
         logger.error(f"Meal insight error: {e}", exc_info=True)
-        return {"error": str(e)}, 500
+        return {"error": "Internal server error"}, 500
 
 
 # Import cooking instructions generator
@@ -361,7 +361,7 @@ def cooking_instructions():
     
     except Exception as e:
         logger.error(f"Cooking instructions error: {e}", exc_info=True)
-        return {"error": str(e)}, 500
+        return {"error": "Internal server error"}, 500
 
 
 # ============== VOICE COMMAND PARSING ==============
@@ -410,7 +410,7 @@ def voice_parse():
         
     except Exception as e:
         logger.error(f"Voice parsing error: {e}", exc_info=True)
-        return {"error": str(e)}, 500
+        return {"error": "Internal server error"}, 500
 
 
 # ============== WHISPER STT (Speech-to-Text) ==============
@@ -494,7 +494,7 @@ def transcribe_audio():
         
     except Exception as e:
         logger.error(f"Transcription error: {e}", exc_info=True)
-        return {"error": str(e), "success": False}, 500
+        return {"error": "Internal server error", "success": False}, 500
 
 
 if __name__ == "__main__":

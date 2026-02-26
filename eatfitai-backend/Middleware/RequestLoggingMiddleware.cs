@@ -13,21 +13,16 @@ namespace EatFitAI.API.Middleware
 
         public async Task InvokeAsync(HttpContext context)
         {
+            var traceId = context.TraceIdentifier;
+            context.Response.Headers["X-Trace-Id"] = traceId;
+
             // Log request
             _logger.LogInformation(
-                "Request: {Method} {Path} from {RemoteIpAddress}",
+                "Request {TraceId}: {Method} {Path} from {RemoteIpAddress}",
+                traceId,
                 context.Request.Method,
                 context.Request.Path,
                 context.Connection.RemoteIpAddress);
-
-            // Log request headers (sensitive headers excluded)
-            foreach (var header in context.Request.Headers)
-            {
-                if (!IsSensitiveHeader(header.Key))
-                {
-                    _logger.LogDebug("Request Header: {Key} = {Value}", header.Key, header.Value);
-                }
-            }
 
             // Capture response details
             var originalBodyStream = context.Response.Body;
@@ -38,7 +33,8 @@ namespace EatFitAI.API.Middleware
 
             // Log response
             _logger.LogInformation(
-                "Response: {StatusCode} for {Method} {Path}",
+                "Response {TraceId}: {StatusCode} for {Method} {Path}",
+                traceId,
                 context.Response.StatusCode,
                 context.Request.Method,
                 context.Request.Path);
@@ -47,12 +43,6 @@ namespace EatFitAI.API.Middleware
             responseBody.Seek(0, SeekOrigin.Begin);
             await responseBody.CopyToAsync(originalBodyStream);
             context.Response.Body = originalBodyStream;
-        }
-
-        private static bool IsSensitiveHeader(string headerName)
-        {
-            var sensitiveHeaders = new[] { "authorization", "cookie", "x-api-key" };
-            return sensitiveHeaders.Contains(headerName.ToLower());
         }
     }
 }

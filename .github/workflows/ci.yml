@@ -1,0 +1,76 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main, dev_UI_New]
+  push:
+    branches: [main, dev_UI_New]
+
+jobs:
+  backend:
+    name: Backend Build & Test
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: eatfitai-backend
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 9.0.x
+
+      - name: Restore
+        run: dotnet restore
+
+      - name: Build API
+        run: dotnet build EatFitAI.API.csproj --no-restore --configuration Release
+
+      - name: Test
+        run: dotnet test EatFitAI.API.Tests.csproj --no-build --configuration Release --logger "trx;LogFileName=test-results.trx"
+
+  mobile:
+    name: Mobile Typecheck & Test
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: eatfitai-mobile
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: eatfitai-mobile/package-lock.json
+
+      - name: Install
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Test
+        run: npm run test -- --ci
+
+  ai_provider:
+    name: AI Provider Syntax Check
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ai-provider
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Compile Check
+        run: python -m py_compile app.py nutrition_llm.py stt_service.py

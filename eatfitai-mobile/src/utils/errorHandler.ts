@@ -26,6 +26,10 @@ export interface ApiError {
 export const handleApiError = (error: any): ApiError => {
   const rawStatus = error?.response?.status;
   const status = rawStatus ? Number(rawStatus) : undefined;
+  const serverMessage =
+    error?.response?.data?.detail ??
+    error?.response?.data?.title ??
+    error?.response?.data?.message;
   // Network error detection (Relaxed for Emulator/Dev)
   // Only report offline if the error message explicitly says so, or if request failed completely
   // navigator.onLine is often flaky in emulators
@@ -38,7 +42,7 @@ export const handleApiError = (error: any): ApiError => {
       text1: 'Không có kết nối mạng',
       text2: 'Kiểm tra kết nối và thử lại',
     });
-    return { type: 'network_error', status: 0 };
+    return { type: 'network_error', status: 0, message: error?.message };
   }
 
   // HTTP status-based errors
@@ -49,7 +53,7 @@ export const handleApiError = (error: any): ApiError => {
         text1: 'Phiên đăng nhập đã hết hạn',
         text2: 'Vui lòng đăng nhập lại',
       });
-      return { type: 'unauthorized', status };
+      return { type: 'unauthorized', status, message: serverMessage };
 
     case 403:
       Toast.show({
@@ -57,7 +61,7 @@ export const handleApiError = (error: any): ApiError => {
         text1: 'Không có quyền',
         text2: 'Bạn không có quyền thực hiện thao tác này',
       });
-      return { type: 'forbidden', status };
+      return { type: 'forbidden', status, message: serverMessage };
 
     case 404:
       Toast.show({
@@ -65,7 +69,7 @@ export const handleApiError = (error: any): ApiError => {
         text1: 'Không tìm thấy',
         text2: 'Dữ liệu không tồn tại hoặc đã bị xóa',
       });
-      return { type: 'not_found', status };
+      return { type: 'not_found', status, message: serverMessage };
 
     case 422:
       Toast.show({
@@ -73,7 +77,7 @@ export const handleApiError = (error: any): ApiError => {
         text1: 'Dữ liệu không hợp lệ',
         text2: 'Vui lòng kiểm tra lại thông tin',
       });
-      return { type: 'validation', status };
+      return { type: 'validation', status, message: serverMessage };
 
     case 500:
     case 502:
@@ -84,7 +88,7 @@ export const handleApiError = (error: any): ApiError => {
         text1: 'Lỗi máy chủ',
         text2: 'Vui lòng thử lại sau',
       });
-      return { type: 'server_error', status };
+      return { type: 'server_error', status, message: serverMessage };
 
     default:
       Toast.show({
@@ -92,7 +96,7 @@ export const handleApiError = (error: any): ApiError => {
         text1: 'Có lỗi xảy ra',
         text2: 'Vui lòng thử lại hoặc liên hệ hỗ trợ',
       });
-      return { type: 'unknown', status };
+      return { type: 'unknown', status, message: serverMessage };
   }
 };
 
@@ -130,28 +134,32 @@ export const handleApiErrorSilent = (error: any): ApiError => {
   // Network error detection (Relaxed)
   const isNetworkError =
     error?.message === 'Network Error' || error?.message === 'Network request failed';
+  const serverMessage =
+    error?.response?.data?.detail ??
+    error?.response?.data?.title ??
+    error?.response?.data?.message;
 
-  if (isNetworkError) return { type: 'network_error', status: 0 };
+  if (isNetworkError) return { type: 'network_error', status: 0, message: error?.message };
 
   const rawStatus = error?.response?.status;
   const status = rawStatus ? Number(rawStatus) : undefined;
 
   switch (status) {
     case 401:
-      return { type: 'unauthorized', status };
+      return { type: 'unauthorized', status, message: serverMessage };
     case 403:
-      return { type: 'forbidden', status };
+      return { type: 'forbidden', status, message: serverMessage };
     case 404:
-      return { type: 'not_found', status };
+      return { type: 'not_found', status, message: serverMessage };
     case 422:
-      return { type: 'validation', status };
+      return { type: 'validation', status, message: serverMessage };
     case 500:
     case 502:
     case 503:
     case 504:
-      return { type: 'server_error', status };
+      return { type: 'server_error', status, message: serverMessage };
     default:
-      return { type: 'unknown', status };
+      return { type: 'unknown', status, message: serverMessage };
   }
 };
 

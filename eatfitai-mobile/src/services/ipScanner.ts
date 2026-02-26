@@ -203,6 +203,10 @@ const doScan = async (): Promise<string | null> => {
  * Singleton scan wrapper để tránh chạy nhiều scan cùng lúc
  */
 export const scanForBackend = async (): Promise<string | null> => {
+    if (!__DEV__) {
+        return null;
+    }
+
     const now = Date.now();
 
     // 1. Kiểm tra cooldown - BYPASS nếu chưa tìm thấy backend
@@ -242,6 +246,10 @@ let hasVerifiedThisSession = false;
  * Sau khi verify thành công, không cần verify lại trong session
  */
 export const getApiUrl = async (): Promise<string | null> => {
+    if (!__DEV__) {
+        return null;
+    }
+
     // 1. Nếu đã verify thành công trong session này, dùng luôn
     if (hasFoundBackend && cachedUrl) {
         return cachedUrl;
@@ -293,6 +301,10 @@ export const getApiUrl = async (): Promise<string | null> => {
  * Reset toàn bộ state scan - gọi khi network thay đổi hoặc IP máy chủ thay đổi
  */
 export const resetScanState = async (): Promise<void> => {
+    if (!__DEV__) {
+        return;
+    }
+
     console.log('[IPScanner] Đang reset toàn bộ scan state...');
     cachedUrl = null;
     hasFoundBackend = false;
@@ -305,6 +317,10 @@ export const resetScanState = async (): Promise<void> => {
  * Force re-scan - dùng khi user muốn tìm lại
  */
 export const forceRescan = async (): Promise<string | null> => {
+    if (!__DEV__) {
+        return null;
+    }
+
     console.log('[IPScanner] Force re-scan...');
     await resetScanState();
     return scanForBackend();

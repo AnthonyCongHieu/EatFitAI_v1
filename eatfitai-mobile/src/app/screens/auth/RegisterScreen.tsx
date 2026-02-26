@@ -123,8 +123,13 @@ const RegisterScreen = ({ navigation }: Props): React.ReactElement => {
       } catch (e: any) {
         console.error('Registration error:', e);
         let message = t('auth.registerFailed');
-        if (e?.response?.data?.message) {
-          message = e.response.data.message;
+        const responseData = e?.response?.data;
+        if (responseData?.detail) {
+          message = responseData.detail;
+        } else if (responseData?.title) {
+          message = responseData.title;
+        } else if (responseData?.message) {
+          message = responseData.message;
         } else if (e?.message) {
           message = e.message;
         }

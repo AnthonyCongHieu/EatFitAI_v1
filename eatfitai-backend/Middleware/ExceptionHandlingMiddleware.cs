@@ -1,5 +1,6 @@
 using System.Net;
 using System.Text.Json;
+using Microsoft.AspNetCore.Mvc;
 
 namespace EatFitAI.API.Middleware
 {
@@ -34,33 +35,42 @@ namespace EatFitAI.API.Middleware
                 return;
             }
 
-            context.Response.ContentType = "application/json";
-
-            var response = new
-            {
-                message = "An error occurred while processing your request",
-                error = exception.Message,
-                timestamp = DateTime.UtcNow
-            };
+            context.Response.ContentType = "application/problem+json";
+            var statusCode = (int)HttpStatusCode.InternalServerError;
+            var title = "Internal Server Error";
+            var detail = "An unexpected error occurred while processing your request.";
 
             switch (exception)
             {
                 case KeyNotFoundException:
-                    context.Response.StatusCode = (int)HttpStatusCode.NotFound;
+                    statusCode = (int)HttpStatusCode.NotFound;
+                    title = "Not Found";
+                    detail = "The requested resource was not found.";
                     break;
                 case UnauthorizedAccessException:
-                    context.Response.StatusCode = (int)HttpStatusCode.Unauthorized;
+                    statusCode = (int)HttpStatusCode.Unauthorized;
+                    title = "Unauthorized";
+                    detail = "You are not authorized to perform this action.";
                     break;
                 case InvalidOperationException:
-                    context.Response.StatusCode = (int)HttpStatusCode.BadRequest;
-                    break;
                 case ArgumentException:
-                    context.Response.StatusCode = (int)HttpStatusCode.BadRequest;
-                    break;
-                default:
-                    context.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
+                    statusCode = (int)HttpStatusCode.BadRequest;
+                    title = "Bad Request";
+                    detail = "The request data is invalid.";
                     break;
             }
+
+            context.Response.StatusCode = statusCode;
+
+            var response = new ProblemDetails
+            {
+                Type = $"https://httpstatuses.com/{statusCode}",
+                Title = title,
+                Status = statusCode,
+                Detail = detail,
+                Instance = context.Request.Path,
+            };
+            response.Extensions["traceId"] = context.TraceIdentifier;
 
             await context.Response.WriteAsync(JsonSerializer.Serialize(response));
         }

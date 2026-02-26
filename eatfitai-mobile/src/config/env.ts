@@ -1,18 +1,18 @@
-import Constants from 'expo-constants';
+﻿import Constants from 'expo-constants';
 import { Platform } from 'react-native';
 
-// Import config được generate tự động khi chạy 'npm run start'
-// File này chứa IP local được detect tại thời điểm Metro start
+// Import config Ä‘Æ°á»£c generate tá»± Ä‘á»™ng khi cháº¡y 'npm run start'
+// File nÃ y chá»©a IP local Ä‘Æ°á»£c detect táº¡i thá»i Ä‘iá»ƒm Metro start
 let GENERATED_API_BASE_URL: string | undefined;
 try {
-  // Dynamic import để tránh lỗi nếu file chưa được generate
+  // Dynamic import Ä‘á»ƒ trÃ¡nh lá»—i náº¿u file chÆ°a Ä‘Æ°á»£c generate
   const generatedConfig = require('./generated-api-config');
   GENERATED_API_BASE_URL = generatedConfig.GENERATED_API_BASE_URL;
   if (__DEV__ && GENERATED_API_BASE_URL) {
     console.log('[EatFitAI] Using generated API config:', GENERATED_API_BASE_URL);
   }
 } catch {
-  // File chưa được generate - sẽ dùng fallback logic
+  // File chÆ°a Ä‘Æ°á»£c generate - sáº½ dÃ¹ng fallback logic
   if (__DEV__) {
     console.log('[EatFitAI] generated-api-config.ts not found, using fallback detection');
   }
@@ -30,7 +30,7 @@ const normalizeUrl = (value: string | undefined | null): string | undefined => {
 const resolveHostUri = (): string | undefined => {
   const expoConfig: any = Constants;
 
-  // Thử lấy từ nhiều nguồn khác nhau - hỗ trợ cả Expo Go và Development Build
+  // Thá»­ láº¥y tá»« nhiá»u nguá»“n khÃ¡c nhau - há»— trá»£ cáº£ Expo Go vÃ  Development Build
   const possibleSources: (string | undefined | null)[] = [
     // Expo SDK 49+ structure
     expoConfig?.expoConfig?.hostUri,
@@ -49,7 +49,7 @@ const resolveHostUri = (): string | undefined => {
     expoConfig?.linkingUri,
   ];
 
-  // Thử lấy từ global Metro bundler URL (dev client specific)
+  // Thá»­ láº¥y tá»« global Metro bundler URL (dev client specific)
   try {
     const g = globalThis as any;
     if (g?.__METRO_GLOBAL_PREFIX__) {
@@ -59,10 +59,10 @@ const resolveHostUri = (): string | undefined => {
       possibleSources.push(g.__DEV_SERVER_URL__);
     }
   } catch {
-    // globalThis không khả dụng
+    // globalThis khÃ´ng kháº£ dá»¥ng
   }
 
-  // DEBUG: Log tất cả các nguồn có thể lấy hostUri
+  // DEBUG: Log táº¥t cáº£ cÃ¡c nguá»“n cÃ³ thá»ƒ láº¥y hostUri
   if (__DEV__) {
     console.log('[EatFitAI] DEBUG Constants keys:', Object.keys(expoConfig || {}));
     console.log('[EatFitAI] DEBUG executionEnvironment:', expoConfig?.executionEnvironment);
@@ -77,7 +77,7 @@ const resolveHostUri = (): string | undefined => {
     console.log('[EatFitAI] DEBUG linkingUri:', expoConfig?.linkingUri);
   }
 
-  // Tìm hostCandidate từ các nguồn
+  // TÃ¬m hostCandidate tá»« cÃ¡c nguá»“n
   let hostCandidate: string | undefined;
   for (const source of possibleSources) {
     const normalized = normalizeUrl(source);
@@ -95,7 +95,7 @@ const resolveHostUri = (): string | undefined => {
     return undefined;
   }
 
-  // Bỏ scheme và path nếu có (ví dụ exp://192.168.1.10:19000 hoặc http://192.168.1.10:8081)
+  // Bá» scheme vÃ  path náº¿u cÃ³ (vÃ­ dá»¥ exp://192.168.1.10:19000 hoáº·c http://192.168.1.10:8081)
   const withoutScheme = hostCandidate.split('://').pop() ?? hostCandidate;
   const withoutPathParts = withoutScheme.split('/');
   const hostWithPort = withoutPathParts.length > 0 ? withoutPathParts[0] : undefined;
@@ -117,19 +117,19 @@ const resolvePort = (): string | undefined =>
   normalizeUrl(process.env.EXPO_PUBLIC_API_PORT);
 
 export const API_BASE_URL: string | undefined = (() => {
-  // 1. Ưu tiên cao nhất: Biến môi trường EXPO_PUBLIC_API_BASE_URL
+  // 1. Æ¯u tiÃªn cao nháº¥t: Biáº¿n mÃ´i trÆ°á»ng EXPO_PUBLIC_API_BASE_URL
   const explicit = normalizeUrl(process.env.EXPO_PUBLIC_API_BASE_URL);
   if (explicit) {
     return explicit;
   }
 
-  // 2. Ưu tiên thứ 2: Generated config từ script pre-start (đáng tin cậy nhất)
+  // 2. Æ¯u tiÃªn thá»© 2: Generated config tá»« script pre-start (Ä‘Ã¡ng tin cáº­y nháº¥t)
   if (GENERATED_API_BASE_URL) {
     return GENERATED_API_BASE_URL;
   }
 
-  // 2. Từ app.config.js extra (auto-detected IP khi Metro start)
-  // Thử nhiều đường dẫn khác nhau vì Expo trả về cấu trúc khác nhau tùy context
+  // 2. Tá»« app.config.js extra (auto-detected IP khi Metro start)
+  // Thá»­ nhiá»u Ä‘Æ°á»ng dáº«n khÃ¡c nhau vÃ¬ Expo tráº£ vá» cáº¥u trÃºc khÃ¡c nhau tÃ¹y context
   const expoConfig: any = Constants;
   const possibleExtras = [
     expoConfig?.expoConfig?.extra?.apiBaseUrl,
@@ -159,16 +159,17 @@ export const API_BASE_URL: string | undefined = (() => {
   if (!host) {
     if (Platform.OS === 'web') {
       host = 'localhost';
+    } else if (!__DEV__) {
+      // Production build: require explicit API base URL/config, do not guess LAN IP.
+      return undefined;
     } else {
-      // Fallback cho physical device khi không detect được IP
-      // ⚠️ Đổi IP này khi đổi WiFi hoặc router!
+      // Fallback cho physical device khi khong detect duoc IP
       const FALLBACK_IP = '172.16.3.206';
       console.warn(`[EatFitAI] Auto-detect failed, using fallback IP: ${FALLBACK_IP}`);
       host = FALLBACK_IP;
     }
   }
-
-  // Android emulator can't reach host via localhost/127.0.0.1 -> use 10.0.2.2
+// Android emulator can't reach host via localhost/127.0.0.1 -> use 10.0.2.2
   if (Platform.OS === 'android' && (host === 'localhost' || host === '127.0.0.1')) {
     host = '10.0.2.2';
   }
@@ -195,3 +196,4 @@ if (__DEV__) {
     console.log(`[EatFitAI] API_BASE_URL resolved to: ${API_BASE_URL}`);
   }
 }
+
