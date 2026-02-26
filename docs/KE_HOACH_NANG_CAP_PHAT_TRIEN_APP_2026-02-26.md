@@ -142,3 +142,237 @@ Chi tiết backlog đầy đủ 30 hạng mục, dependencies, effort, KPI:
 1. 14 ngày đầu chỉ tập trung P0 và không mở thêm scope mới.
 2. Sau khi khóa P0, chuyển ngay sang P1 để ổn định pipeline và store readiness.
 3. P2 chỉ bắt đầu khi P0/P1 đạt exit criteria.
+
+## Phụ lục: Kế hoạch nâng cấp bản đơn giản cho team 2 sinh viên
+
+### 0) Chốt phạm vi
+1. Kế hoạch này chỉ để **đọc code + phân tích + lên plan**, **không sửa code ngay**.
+2. Mục tiêu: app vẫn chạy ổn, nhưng nâng lên mức dễ debug, tin cậy hơn, đẹp hơn, và sẵn sàng Store.
+3. Cách làm: chia nhỏ theo sprint, mỗi sprint có kết quả đo được, tránh “đập đi làm lại”.
+
+### 1) Tóm tắt hiện trạng (fact-based)
+1. Có lỗi Unicode/mojibake ở nhiều file mobile/backend (ký tự `�`, chữ tiếng Việt vỡ).
+2. Mobile hiện có lỗi typecheck/test env (xung đột dependency + lỗi type thực tế), nên “chạy được” nhưng chưa “green” về kỹ thuật.
+3. Backend có nhiều chỗ xử lý lỗi chưa thống nhất (vừa middleware chuẩn, vừa trả `ex.Message` thủ công ở controller).
+4. Auth/Google flow đang bị chồng 2 luồng endpoint, dễ drift.
+5. Workflow onboarding/auth có nguy cơ lệch stack điều hướng (auth state và màn onboarding chưa thống nhất).
+6. DB đang có dấu hiệu 2 context + model trùng tên, khó debug/migration về sau.
+7. UI có nhiều màn hình quá dài (700+ dòng), khó bảo trì, khó sửa nhanh.
+8. Store readiness chưa đủ chắc (Sign in with Apple, policy, metadata, checklist phát hành).
+
+### 2) Mục tiêu kỹ thuật sau nâng cấp
+1. Repo “xanh”: backend build/test cơ bản pass, mobile typecheck pass, test quan trọng pass.
+2. Không còn lỗi Unicode trong text hiển thị và code comment quan trọng.
+3. Lỗi API trả về một chuẩn duy nhất, mobile parse ổn định.
+4. Workflow user rõ ràng: đăng ký/login/verify/onboarding/AI scan/save diary không vòng lặp lỗi.
+5. AI output có mức tin cậy (confidence) + fallback khi AI không chắc.
+6. Có checklist đầy đủ để nộp iOS + Android.
+7. Source code gọn, chia lớp rõ, dễ debug cho team 2 người.
+
+### 3) Quyết định kiến trúc (đã chốt để khỏi phải chọn lại)
+1. **Giữ kiến trúc hiện tại**: Mobile (Expo RN) + Backend (.NET) + AI Provider (Flask), không tách microservice thêm.
+2. **Backend contract-first nhẹ**: OpenAPI làm chuẩn giao tiếp, mobile dùng client thống nhất.
+3. **Một chuẩn lỗi API**: `application/problem+json` cho 4xx/5xx.
+4. **Một nguồn logic dinh dưỡng chính**: backend quyết định final nutrition; AI chỉ gợi ý + confidence.
+5. **Một DB context chuẩn** (chốt 1 context làm “owner”), context còn lại đưa vào lộ trình gom.
+6. **Dev/prod tách rõ**: discovery LAN chỉ dùng dev, production không phụ thuộc scan IP.
+
+### 4) Thay đổi public API / interface / type (bắt buộc)
+1. Chuẩn lỗi API:
+   - Trả về: `type`, `title`, `status`, `detail`, `instance`, `traceId`.
+   - Mobile phải parse theo schema này trước.
+2. AI response chuẩn:
+   - Thêm/giữ rõ: `label`, `confidence`, `source`, `modelVersion`.
+   - Nếu `confidence` thấp: backend trả cờ yêu cầu người dùng xác nhận.
+3. Auth contract:
+   - Giữ format token hiện tại để không phá app.
+   - Chỉ đổi xử lý nội bộ và error message.
+4. Discovery:
+   - `/discovery` giữ cho dev.
+   - Build production không gọi flow này.
+5. Food endpoints:
+   - Giữ endpoint cũ trong 1 sprint (compat).
+   - Thêm nhãn deprecated, sau đó gom về route chuẩn.
+
+### 5) Kế hoạch triển khai theo sprint (team 2 người)
+
+### Sprint 0 (2-3 ngày) — “Làm sạch nền”
+1. Unicode cleanup:
+   - Quét toàn repo lỗi `�` và mojibake.
+   - Chuyển file text/code về UTF-8 thống nhất.
+   - Ưu tiên các file đang ảnh hưởng UI và message.
+2. Build baseline:
+   - Chốt 1 cách cài mobile dependency ổn định (lockfile + version pin).
+   - Backend test project restore/build ổn định.
+3. Kết quả cần đạt:
+   - Không còn text vỡ ở màn hình chính.
+   - Có tài liệu “cách chạy local 1 lệnh” cho 2 bạn.
+
+Phân công:
+1. Bạn A: backend/test env.
+2. Bạn B: mobile dependency + unicode UI.
+3. Cả hai: review chéo.
+
+### Sprint 1 (1 tuần) — “Ổn định lỗi và debug”
+1. Backend:
+   - Chuẩn hóa error handling, bỏ trả `ex.Message` trực tiếp ở controller.
+   - Log có `traceId`, mask token/PII, giảm log rác.
+2. Mobile:
+   - Chuẩn adapter parse lỗi mới (vẫn tương thích lỗi cũ trong 1 sprint).
+   - Hiển thị lỗi thân thiện khi backend/AI down.
+3. Kết quả cần đạt:
+   - Lỗi 4xx/5xx trả cùng 1 schema.
+   - Có thể tra 1 lỗi từ mobile sang backend bằng `traceId`.
+
+### Sprint 2 (1 tuần) — “Workflow và Userflow chuẩn”
+1. Rà toàn bộ flow:
+   - Register -> Verify -> Onboarding -> Home.
+   - Login/Google -> Onboarding nếu chưa hoàn thành.
+   - AI Scan -> Confirm -> Save Diary.
+2. Sửa các điểm chồng luồng:
+   - Một nguồn sự thật cho auth state.
+   - Onboarding route rõ ở stack phù hợp.
+3. Kết quả cần đạt:
+   - Không còn loop điều hướng.
+   - 6 flow chính chạy liên tục không crash.
+
+### Sprint 3 (1 tuần) — “Tăng độ tin cậy AI”
+1. Confidence policy:
+   - Đặt ngưỡng chung (ví dụ: high/medium/low).
+   - Low confidence thì bắt buộc user confirm.
+2. Telemetry AI:
+   - Ghi `latency`, `confidence`, `fallback`, `user correction`.
+3. Fallback khi AI lỗi:
+   - AI provider down -> app vẫn cho nhập tay/search.
+4. Kết quả cần đạt:
+   - Không có tình huống AI lỗi làm chặn ghi meal.
+   - Bắt đầu đo được “AI đúng đến đâu”.
+
+### Sprint 4 (1 tuần) — “UI/UX chuyên nghiệp hơn”
+1. Design system nhẹ:
+   - Màu, font, spacing, radius, shadow thống nhất.
+2. Tách màn hình quá dài:
+   - Mỗi màn >700 dòng tách thành container + hook + component.
+3. Tối ưu hiệu năng:
+   - Giảm re-render, tối ưu list, loading/skeleton nhất quán.
+4. Kết quả cần đạt:
+   - UI đồng bộ, nhìn gọn.
+   - Màn chính mượt hơn (đo bằng thời gian mở màn và FPS tương đối).
+
+### Sprint 5 (1 tuần) — “Store readiness”
+1. iOS:
+   - Nếu giữ Google login => thêm Sign in with Apple.
+   - ATS/HTTPS đúng chuẩn.
+   - Privacy Policy/Terms link hoạt động.
+2. Android:
+   - Data Safety khai đúng.
+   - Quyền camera/mic/storage tối thiểu cần thiết.
+3. Kết quả cần đạt:
+   - Checklist pre-submit đầy đủ cho cả 2 store.
+   - Có build thử nội bộ (TestFlight/Internal testing).
+
+### Sprint 6 (1 tuần) — “DB + CI + docs canonical”
+1. DB:
+   - Chốt 1 DbContext chính.
+   - Lập kế hoạch gom context/model trùng, không làm gãy runtime.
+   - Thêm index cho truy vấn thường dùng (meal diary, user, date).
+2. CI tối thiểu:
+   - Backend: restore/build/test.
+   - Mobile: install/typecheck/test.
+   - AI: syntax/lint check.
+3. Docs:
+   - Giữ 2 file canonical:
+     - [BAO_CAO_DANH_GIA_CONG_NGHE_VA_CACH_LAM_HIEN_TAI_2026-02-26.md](./BAO_CAO_DANH_GIA_CONG_NGHE_VA_CACH_LAM_HIEN_TAI_2026-02-26.md)
+     - [KE_HOACH_NANG_CAP_PHAT_TRIEN_APP_2026-02-26.md](./KE_HOACH_NANG_CAP_PHAT_TRIEN_APP_2026-02-26.md)
+4. Kết quả cần đạt:
+   - PR nào cũng qua quality gate cơ bản.
+   - Người mới vào team đọc 2 file là nắm được toàn dự án.
+
+### 6) Kế hoạch xử lý Unicode (chi tiết, dễ làm)
+1. Quét lỗi:
+   - Tìm ký tự `�` và chuỗi tiếng Việt vỡ trong repo.
+2. Chốt chuẩn:
+   - Toàn bộ code/docs dùng UTF-8.
+3. Sửa theo mức ưu tiên:
+   - Ưu tiên text hiển thị người dùng thấy trước.
+   - Sau đó comment/dev docs.
+4. Chặn tái phát:
+   - Thêm rule editorconfig/gitattributes về encoding.
+   - PR checklist có mục “Unicode/encoding”.
+5. Acceptance:
+   - Không còn text vỡ ở màn chính/auth/stats/settings.
+   - Snapshot UI không còn ký tự lỗi.
+
+### 7) Kế hoạch tối ưu database (thực tế cho team 2 người)
+1. Chọn context owner:
+   - Dùng context nào hiện đang bao phủ nghiệp vụ chính làm chuẩn.
+2. Lập bảng mapping:
+   - Model nào trùng tên, model nào chỉ dùng tạm.
+3. Gom dần:
+   - Sprint 6 chỉ gom lớp truy cập trước.
+   - Migration dữ liệu lớn làm sau khi app ổn định.
+4. Quy tắc mới:
+   - Mỗi bảng có owner rõ.
+   - Không tạo model trùng tên khác namespace nếu không bắt buộc.
+5. Acceptance:
+   - Tài liệu ERD đơn giản có thật.
+   - Query chính có index, API không chậm đi.
+
+### 8) Checklist App Store + Google Play (bắt buộc)
+1. iOS:
+   - Sign in with Apple (nếu có Google sign-in).
+   - ATS/HTTPS.
+   - Privacy policy URL.
+   - Mô tả quyền camera/mic rõ, không text lỗi Unicode.
+2. Android:
+   - Data Safety form đầy đủ.
+   - Privacy policy URL public.
+   - Permission tối thiểu.
+3. Cả hai:
+   - Ảnh screenshot chuẩn.
+   - Điều khoản sử dụng/riêng tư truy cập được.
+   - Build release chạy qua smoke test 10 phút.
+
+### 9) Test cases bắt buộc trước mỗi release
+1. Auth:
+   - Register, verify OTP, login, logout, refresh token.
+2. Workflow:
+   - Login mới có onboarding.
+   - User cũ vào thẳng Home.
+3. AI:
+   - Scan thành công.
+   - Scan confidence thấp -> bắt xác nhận.
+   - AI down -> nhập tay vẫn lưu được meal.
+4. Data:
+   - Save meal, sửa meal, xóa meal, stats cập nhật đúng.
+5. Error:
+   - 400/401/404/500 đúng schema.
+   - Mobile hiển thị lỗi dễ hiểu.
+6. Store smoke:
+   - iOS/Android release build mở app, login, scan, save meal không crash.
+
+### 10) KPI kỹ thuật cho team 2 người (dễ đo)
+1. Build pass rate CI >= 90%.
+2. Mobile typecheck pass 100% trước merge.
+3. Lỗi 5xx có traceId: 100%.
+4. Lỗi Unicode còn lại: 0 ở màn người dùng nhìn thấy.
+5. AI correction rate giảm theo sprint (mục tiêu ban đầu < 35%).
+6. Tỷ lệ hoàn thành log meal > 75% trong test nội bộ.
+
+### 11) Rủi ro chính và cách giảm
+1. Rủi ro: sửa error schema làm mobile lỗi parse.
+   - Giảm: hỗ trợ parse 2 schema trong 1 sprint.
+2. Rủi ro: refactor màn lớn gây bug.
+   - Giảm: tách nhỏ theo PR, giữ behavior cũ, có test flow chính.
+3. Rủi ro: siết log quá chặt khó debug.
+   - Giảm: giữ log level theo môi trường, có debug flag dev.
+4. Rủi ro: gom DB quá sớm làm gãy dữ liệu.
+   - Giảm: chỉ gom access layer trước, migration dữ liệu làm sau.
+
+### 12) Assumptions và default đã chốt
+1. Team 2 người, ưu tiên tốc độ + an toàn, không làm kiến trúc quá nặng.
+2. App hiện chạy được; mục tiêu là tăng độ ổn định và chất lượng.
+3. Không microservice hóa trong giai đoạn này.
+4. Không đổi nghiệp vụ cốt lõi trong Sprint 0-2.
+5. Mọi thay đổi đi theo PR nhỏ, rollback được.
+6. Tất cả triển khai dựa trên nhánh mới nhất bạn đang dùng, không dùng `main` cũ làm chuẩn.
