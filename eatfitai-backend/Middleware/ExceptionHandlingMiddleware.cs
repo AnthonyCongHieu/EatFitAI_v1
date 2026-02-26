@@ -40,23 +40,31 @@ namespace EatFitAI.API.Middleware
             var title = "Internal Server Error";
             var detail = "An unexpected error occurred while processing your request.";
 
+            // Trả message gốc cho business exceptions để client hiểu lý do cụ thể
+            // Chỉ giữ message generic cho unhandled exceptions (500) để tránh leak thông tin
             switch (exception)
             {
                 case KeyNotFoundException:
                     statusCode = (int)HttpStatusCode.NotFound;
                     title = "Not Found";
-                    detail = "The requested resource was not found.";
+                    detail = !string.IsNullOrEmpty(exception.Message) 
+                        ? exception.Message 
+                        : "The requested resource was not found.";
                     break;
                 case UnauthorizedAccessException:
                     statusCode = (int)HttpStatusCode.Unauthorized;
                     title = "Unauthorized";
-                    detail = "You are not authorized to perform this action.";
+                    detail = !string.IsNullOrEmpty(exception.Message) 
+                        ? exception.Message 
+                        : "You are not authorized to perform this action.";
                     break;
                 case InvalidOperationException:
                 case ArgumentException:
                     statusCode = (int)HttpStatusCode.BadRequest;
                     title = "Bad Request";
-                    detail = "The request data is invalid.";
+                    detail = !string.IsNullOrEmpty(exception.Message) 
+                        ? exception.Message 
+                        : "The request data is invalid.";
                     break;
             }
 

@@ -12,6 +12,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 
 namespace EatFitAI.API.Services
 {
@@ -24,6 +25,7 @@ namespace EatFitAI.API.Services
         private readonly IMemoryCache _memoryCache;
         private readonly IEmailService _emailService;
         private readonly IHostEnvironment _env;
+        private readonly ILogger<AuthService> _logger;
         private static readonly TimeSpan ResetCodeLifetime = TimeSpan.FromMinutes(10);
         private const string ResetCacheKeyPrefix = "pwdreset_";
         private const string PasswordHashPrefix = "PBKDF2";
@@ -38,7 +40,8 @@ namespace EatFitAI.API.Services
             IConfiguration configuration,
             IMemoryCache memoryCache,
             IEmailService emailService,
-            IHostEnvironment env)
+            IHostEnvironment env,
+            ILogger<AuthService> logger)
         {
             _userRepository = userRepository;
             _context = context;
@@ -47,24 +50,23 @@ namespace EatFitAI.API.Services
             _memoryCache = memoryCache;
             _emailService = emailService;
             _env = env;
+            _logger = logger;
         }
 
         public async Task<AuthResponse> RegisterAsync(RegisterRequest request)
         {
-            Console.WriteLine($"[AuthService] Starting registration for email: {request.Email}");
+            _logger.LogInformation("Bắt đầu đăng ký cho email: {Email}", request.Email);
 
             try
             {
-                // Check if email already exists
-                Console.WriteLine($"[AuthService] Checking if email exists: {request.Email}");
+                // Kiểm tra email đã tồn tại chưa
                 if (await _userRepository.EmailExistsAsync(request.Email))
                 {
-                    Console.WriteLine($"[AuthService] Email already exists: {request.Email}");
+                    _logger.LogWarning("Email đã tồn tại: {Email}", request.Email);
                     throw new InvalidOperationException("Email already exists");
                 }
-                Console.WriteLine($"[AuthService] Email check passed for: {request.Email}");
 
-                // Create new user - legacy register: set EmailVerified = true để bypass verification
+                // Tạo user mới - legacy register: set EmailVerified = true để bypass verification
                 var user = new User
                 {
                     UserId = Guid.NewGuid(),
@@ -76,32 +78,23 @@ namespace EatFitAI.API.Services
                     OnboardingCompleted = false
                 };
 
-                Console.WriteLine($"[AuthService] Creating user with ID: {user.UserId}");
                 await _userRepository.AddAsync(user);
-                Console.WriteLine($"[AuthService] User added to repository");
-
-                Console.WriteLine($"[AuthService] Saving changes to database");
                 await _context.SaveChangesAsync();
-                Console.WriteLine($"[AuthService] User saved to database");
 
-                // Generate JWT token
-                Console.WriteLine($"[AuthService] Generating JWT token");
+                // Tạo JWT + refresh token
                 var token = GenerateJwtToken(user);
-                var expiresAt = DateTime.UtcNow.AddHours(24); // 24 hours
-                Console.WriteLine($"[AuthService] JWT token generated: {token?.Substring(0, Math.Min(20, token.Length))}...");
-
-                // Generate refresh token
+                var expiresAt = DateTime.UtcNow.AddHours(24);
                 var refreshToken = GenerateRefreshToken();
-                var refreshTokenExpiresAt = DateTime.UtcNow.AddDays(30); // 30 days
-                
-                // Save Refresh Token to DB
+                var refreshTokenExpiresAt = DateTime.UtcNow.AddDays(30);
+
+                // Lưu Refresh Token vào DB
                 user.RefreshToken = refreshToken;
                 user.RefreshTokenExpiryTime = refreshTokenExpiresAt;
                 await _context.SaveChangesAsync();
-                
-                Console.WriteLine($"[AuthService] Refresh token generated and saved: {refreshToken?.Substring(0, Math.Min(20, refreshToken.Length))}...");
 
-                var response = new AuthResponse
+                _logger.LogInformation("Đăng ký thành công cho user {UserId}", user.UserId);
+
+                return new AuthResponse
                 {
                     UserId = user.UserId,
                     Email = user.Email,
@@ -111,15 +104,10 @@ namespace EatFitAI.API.Services
                     RefreshToken = refreshToken,
                     RefreshTokenExpiresAt = refreshTokenExpiresAt
                 };
-
-                Console.WriteLine($"[AuthService] AuthResponse created: UserId={response.UserId}, Email={response.Email}, DisplayName={response.DisplayName}, Token present={!string.IsNullOrEmpty(response.Token)}, ExpiresAt={response.ExpiresAt}, RefreshToken present={!string.IsNullOrEmpty(response.RefreshToken)}, RefreshTokenExpiresAt={response.RefreshTokenExpiresAt}");
-
-                Console.WriteLine($"[AuthService] Registration completed successfully for email: {request.Email}");
-                return response;
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[AuthService] Error during registration for email: {request.Email}, Exception: {ex.Message}, StackTrace: {ex.StackTrace}");
+                _logger.LogError(ex, "Lỗi đăng ký cho email: {Email}", request.Email);
                 throw;
             }
         }
@@ -142,11 +130,10 @@ namespace EatFitAI.API.Services
                 user.PasswordHash = HashPassword(request.Password);
             }
 
-            // Bug #7 fix: Kiểm tra email đã được xác minh chưa
-            // Nếu user đăng ký qua RegisterWithVerificationAsync thì cần verify email trước
+            // Kiểm tra email đã được xác minh chưa
             if (!user.EmailVerified)
             {
-                Console.WriteLine($"[AuthService] Login denied - Email not verified: {request.Email}");
+                _logger.LogWarning("Login bị từ chối - Email chưa verify: {Email}", request.Email);
                 throw new UnauthorizedAccessException("Email chưa được xác minh. Vui lòng kiểm tra email và nhập mã xác minh.");
             }
 
@@ -333,7 +320,7 @@ namespace EatFitAI.API.Services
                 user.RefreshToken = null;
                 user.RefreshTokenExpiryTime = null;
                 await _context.SaveChangesAsync();
-                Console.WriteLine($"[AuthService] User {user.UserId} logged out, refresh token revoked.");
+                _logger.LogInformation("User {UserId} đã logout, refresh token đã revoke", user.UserId);
             }
         }
 
@@ -371,7 +358,7 @@ namespace EatFitAI.API.Services
             user.RefreshTokenExpiryTime = newRefreshTokenExpiresAt;
             await _context.SaveChangesAsync();
 
-            Console.WriteLine($"[AuthService] Token refreshed for user {user.UserId}");
+            _logger.LogInformation("Token refreshed cho user {UserId}", user.UserId);
 
             return new AuthResponse
             {
@@ -395,12 +382,12 @@ namespace EatFitAI.API.Services
 
         public async Task<ForgotPasswordResponse> ForgotPasswordAsync(ForgotPasswordRequest request)
         {
-            Console.WriteLine($"[AuthService] ForgotPassword called for email: {request.Email}");
+            _logger.LogInformation("ForgotPassword cho email: {Email}", request.Email);
             var user = await _userRepository.GetByEmailAsync(request.Email);
             
             if (user == null)
             {
-                Console.WriteLine($"[AuthService] Email NOT found in database: {request.Email}");
+                _logger.LogDebug("ForgotPassword - Email không tồn tại: {Email}", request.Email);
                 return new ForgotPasswordResponse
                 {
                     Success = true,
@@ -410,7 +397,7 @@ namespace EatFitAI.API.Services
                 };
             }
 
-            Console.WriteLine($"[AuthService] Email found in database: {user.Email} (UserId: {user.UserId})");
+            _logger.LogDebug("ForgotPassword - Tìm thấy user {UserId}", user.UserId);
 
             var code = GenerateNumericCode(6);
             var cacheEntry = new ResetCacheEntry
@@ -422,16 +409,16 @@ namespace EatFitAI.API.Services
 
             _memoryCache.Set($"{ResetCacheKeyPrefix}{user.Email}", cacheEntry, cacheEntry.ExpiresAt);
 
-            Console.WriteLine($"[AuthService] Generated reset code for {user.Email} (expires {cacheEntry.ExpiresAt:O})");
+            _logger.LogInformation("Đã tạo reset code cho user {UserId}, hết hạn {ExpiresAt:O}", user.UserId, cacheEntry.ExpiresAt);
 
             try
             {
                 await _emailService.SendResetCodeAsync(user.Email, code, cacheEntry.ExpiresAt);
-                Console.WriteLine($"[AuthService] Reset code emailed to {user.Email}.");
+                _logger.LogInformation("Đã gửi email reset code cho user {UserId}", user.UserId);
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[AuthService] Failed to send reset code email: {ex.Message}");
+                _logger.LogError(ex, "Không gửi được email reset code cho user {UserId}", user.UserId);
                 throw new InvalidOperationException("Không gửi được email reset. Vui lòng thử lại hoặc kiểm tra cấu hình SMTP.");
             }
 
@@ -478,7 +465,7 @@ namespace EatFitAI.API.Services
             user.EmailVerified = true;
             await _context.SaveChangesAsync();
             _memoryCache.Remove($"{ResetCacheKeyPrefix}{user.Email}");
-            Console.WriteLine($"[AuthService] Password reset successful for {user.Email}, EmailVerified set to true");
+            _logger.LogInformation("Reset password thành công cho user {UserId}", user.UserId);
         }
 
         private string GenerateNumericCode(int length)
@@ -520,7 +507,7 @@ namespace EatFitAI.API.Services
         /// </summary>
         public async Task<RegisterResponse> RegisterWithVerificationAsync(RegisterRequest request)
         {
-            Console.WriteLine($"[AuthService] Starting registration with verification for email: {request.Email}");
+            _logger.LogInformation("Đăng ký với email verification cho: {Email}", request.Email);
 
             // Check if email already exists
             var existingUser = await _userRepository.GetByEmailAsync(request.Email);
@@ -529,7 +516,7 @@ namespace EatFitAI.API.Services
                 // If email exists but NOT verified, allow re-registration by resetting verification code
                 if (!existingUser.EmailVerified)
                 {
-                    Console.WriteLine($"[AuthService] Email exists but unverified, resetting verification code: {request.Email}");
+                    _logger.LogInformation("Email tồn tại nhưng chưa verify, gửi lại mã: {Email}", request.Email);
                     
                     // Update password and display name if provided
                     existingUser.PasswordHash = HashPassword(request.Password);
@@ -549,11 +536,11 @@ namespace EatFitAI.API.Services
                     try
                     {
                         await _emailService.SendVerificationCodeAsync(existingUser.Email, newVerificationCode, existingUser.VerificationCodeExpiry.Value);
-                        Console.WriteLine($"[AuthService] Verification code re-sent to {existingUser.Email}");
+                        _logger.LogInformation("Đã gửi lại mã xác minh cho user {UserId}", existingUser.UserId);
                     }
                     catch (Exception ex)
                     {
-                        Console.WriteLine($"[AuthService] Failed to send verification email: {ex.Message}");
+                        _logger.LogError(ex, "Không gửi được email xác minh cho user {UserId}", existingUser.UserId);
                     }
                     
                     var includeCodeInDevResponse = _env.IsDevelopment();
@@ -570,7 +557,7 @@ namespace EatFitAI.API.Services
                 }
                 
                 // Email exists and already verified
-                Console.WriteLine($"[AuthService] Email already exists and verified: {request.Email}");
+                _logger.LogWarning("Email đã được đăng ký và verify: {Email}", request.Email);
                 throw new InvalidOperationException("Email đã được đăng ký");
             }
             // Tạo user mới nhưng chưa verified
@@ -593,17 +580,17 @@ namespace EatFitAI.API.Services
             await _userRepository.AddAsync(user);
             await _context.SaveChangesAsync();
 
-            Console.WriteLine($"[AuthService] User created with ID: {user.UserId}, sending verification code");
+            _logger.LogInformation("Tạo user mới {UserId}, đang gửi mã xác minh", user.UserId);
 
             // Gửi email xác minh
             try
             {
                 await _emailService.SendVerificationCodeAsync(user.Email, verificationCode, user.VerificationCodeExpiry.Value);
-                Console.WriteLine($"[AuthService] Verification code emailed to {user.Email}");
+                _logger.LogInformation("Đã gửi mã xác minh cho user {UserId}", user.UserId);
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[AuthService] Failed to send verification email: {ex.Message}");
+                _logger.LogError(ex, "Không gửi được email xác minh cho user {UserId}", user.UserId);
                 // Vẫn return success, user có thể request gửi lại
             }
 
@@ -626,7 +613,7 @@ namespace EatFitAI.API.Services
         /// </summary>
         public async Task<AuthResponse> VerifyEmailAsync(VerifyEmailRequest request)
         {
-            Console.WriteLine($"[AuthService] Verifying email for: {request.Email}");
+            _logger.LogInformation("Xác minh email cho: {Email}", request.Email);
 
             var user = await _userRepository.GetByEmailAsync(request.Email);
             if (user == null)
@@ -656,7 +643,7 @@ namespace EatFitAI.API.Services
             user.VerificationCodeExpiry = null;
             await _context.SaveChangesAsync();
 
-            Console.WriteLine($"[AuthService] Email verified successfully for: {request.Email}");
+            _logger.LogInformation("Email đã xác minh thành công cho: {Email}", request.Email);
 
             // Generate JWT token
             var token = GenerateJwtToken(user);
@@ -687,7 +674,7 @@ namespace EatFitAI.API.Services
         /// </summary>
         public async Task<RegisterResponse> ResendVerificationAsync(ResendVerificationRequest request)
         {
-            Console.WriteLine($"[AuthService] Resending verification code for: {request.Email}");
+            _logger.LogInformation("Gửi lại mã xác minh cho: {Email}", request.Email);
 
             var user = await _userRepository.GetByEmailAsync(request.Email);
             if (user == null)
@@ -710,11 +697,11 @@ namespace EatFitAI.API.Services
             try
             {
                 await _emailService.SendVerificationCodeAsync(user.Email, verificationCode, user.VerificationCodeExpiry.Value);
-                Console.WriteLine($"[AuthService] Verification code re-sent to {user.Email}");
+                _logger.LogInformation("Đã gửi lại mã xác minh cho user {UserId}", user.UserId);
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[AuthService] Failed to resend verification email: {ex.Message}");
+                _logger.LogError(ex, "Không gửi lại được email xác minh cho user {UserId}", user.UserId);
                 throw new InvalidOperationException("Không gửi được email. Vui lòng thử lại sau.");
             }
 
@@ -737,7 +724,7 @@ namespace EatFitAI.API.Services
         /// </summary>
         public async Task MarkOnboardingCompletedAsync(Guid userId)
         {
-            Console.WriteLine($"[AuthService] Marking onboarding completed for user: {userId}");
+            _logger.LogInformation("Đánh dấu onboarding hoàn thành cho user: {UserId}", userId);
 
             var user = await _context.Users.FirstOrDefaultAsync(u => u.UserId == userId);
             if (user == null)
@@ -748,7 +735,7 @@ namespace EatFitAI.API.Services
             user.OnboardingCompleted = true;
             await _context.SaveChangesAsync();
 
-            Console.WriteLine($"[AuthService] Onboarding completed for user: {userId}");
+            _logger.LogInformation("Onboarding hoàn thành cho user: {UserId}", userId);
         }
 
         /// <summary>
@@ -756,7 +743,7 @@ namespace EatFitAI.API.Services
         /// </summary>
         public async Task ChangePasswordAsync(Guid userId, string currentPassword, string newPassword)
         {
-            Console.WriteLine($"[AuthService] Changing password for user: {userId}");
+            _logger.LogInformation("Đổi mật khẩu cho user: {UserId}", userId);
 
             var user = await _context.Users.FirstOrDefaultAsync(u => u.UserId == userId);
             if (user == null)
@@ -774,7 +761,7 @@ namespace EatFitAI.API.Services
             user.PasswordHash = HashPassword(newPassword);
             await _context.SaveChangesAsync();
 
-            Console.WriteLine($"[AuthService] Password changed successfully for user: {userId}");
+            _logger.LogInformation("Đổi mật khẩu thành công cho user: {UserId}", userId);
         }
     }
 }

@@ -287,8 +287,11 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidateIssuerSigningKey = true,
             IssuerSigningKey = new SymmetricSecurityKey(
                 Encoding.ASCII.GetBytes(jwtKey)),
-            ValidateIssuer = false,
-            ValidateAudience = false,
+            // Bật validate Issuer/Audience để chặn token từ app khác
+            ValidateIssuer = true,
+            ValidIssuer = builder.Configuration["Jwt:Issuer"] ?? "EatFitAI",
+            ValidateAudience = true,
+            ValidAudience = builder.Configuration["Jwt:Audience"] ?? "EatFitAI",
             ClockSkew = TimeSpan.Zero
         };
     });
