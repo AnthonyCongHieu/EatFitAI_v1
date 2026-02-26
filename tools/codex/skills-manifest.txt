@@ -1,0 +1,17 @@
+# Codex curated skills used by EatFitAI workflow
+# One entry per line: path inside openai/skills repo
+
+skills/.curated/security-best-practices
+skills/.curated/security-threat-model
+skills/.curated/security-ownership-map
+skills/.curated/gh-fix-ci
+skills/.curated/doc
+skills/.curated/sentry
+skills/.curated/render-deploy
+skills/.curated/cloudflare-deploy
+skills/.curated/vercel-deploy
+skills/.curated/netlify-deploy
+skills/.curated/notion-spec-to-implementation
+skills/.curated/notion-knowledge-capture
+skills/.curated/linear
+skills/.curated/playwright

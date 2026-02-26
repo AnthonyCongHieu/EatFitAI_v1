@@ -1,4 +1,4 @@
-"""
+﻿"""
 Nutrition LLM Service - Powered by Ollama (Local)
 Provides AI-powered nutrition advice, meal insights, and voice command parsing
 """
@@ -11,29 +11,29 @@ import requests
 import hashlib
 import time
 from typing import Any, Dict, Optional
-from functools import lru_cache
 
 logger = logging.getLogger(__name__)
 
 # Configuration - Ollama LLM
 OLLAMA_URL = os.getenv("OLLAMA_URL", "http://localhost:11434")
 OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "qwen2.5:3b")
+OLLAMA_HEALTHCHECK_TTL_SECONDS = int(os.getenv("OLLAMA_HEALTHCHECK_TTL_SECONDS", "10"))
 
 # ============== SIMPLE CACHE SYSTEM ==============
-# In-memory cache với TTL để giảm latency cho repeated queries
+# In-memory cache vá»›i TTL Ä‘á»ƒ giáº£m latency cho repeated queries
 
 class SimpleCache:
-    """Simple in-memory cache với TTL (Time To Live)"""
-    def __init__(self, default_ttl: int = 300):  # 5 phút mặc định
+    """Simple in-memory cache vá»›i TTL (Time To Live)"""
+    def __init__(self, default_ttl: int = 300):  # 5 phÃºt máº·c Ä‘á»‹nh
         self._cache: Dict[str, tuple] = {}  # {key: (value, expire_time)}
         self._default_ttl = default_ttl
     
     def _make_key(self, prompt: str) -> str:
-        """Tạo cache key từ prompt"""
+        """Táº¡o cache key tá»« prompt"""
         return hashlib.md5(prompt.encode()).hexdigest()
     
     def get(self, prompt: str) -> Optional[str]:
-        """Lấy giá trị từ cache nếu còn hợp lệ"""
+        """Láº¥y giÃ¡ trá»‹ tá»« cache náº¿u cÃ²n há»£p lá»‡"""
         key = self._make_key(prompt)
         if key in self._cache:
             value, expire_time = self._cache[key]
@@ -41,25 +41,25 @@ class SimpleCache:
                 logger.debug(f"Cache hit for key {key[:8]}...")
                 return value
             else:
-                # Expired - xóa khỏi cache
+                # Expired - xÃ³a khá»i cache
                 del self._cache[key]
         return None
     
     def set(self, prompt: str, value: str, ttl: int = None):
-        """Lưu giá trị vào cache"""
+        """LÆ°u giÃ¡ trá»‹ vÃ o cache"""
         key = self._make_key(prompt)
         expire_time = time.time() + (ttl or self._default_ttl)
         self._cache[key] = (value, expire_time)
         logger.debug(f"Cached response for key {key[:8]}... (TTL: {ttl or self._default_ttl}s)")
     
     def clear(self):
-        """Xóa toàn bộ cache"""
+        """XÃ³a toÃ n bá»™ cache"""
         self._cache.clear()
         logger.info("Cache cleared")
 
 # Global cache instances
-_nutrition_cache = SimpleCache(default_ttl=600)   # 10 phút cho nutrition advice
-_meal_insight_cache = SimpleCache(default_ttl=120)  # 2 phút cho meal insight (data thay đổi nhanh hơn)
+_nutrition_cache = SimpleCache(default_ttl=600)   # 10 phÃºt cho nutrition advice
+_meal_insight_cache = SimpleCache(default_ttl=120)  # 2 phÃºt cho meal insight (data thay Ä‘á»•i nhanh hÆ¡n)
 
 # Check which LLM is available
 def check_ollama_available() -> bool:
@@ -70,8 +70,25 @@ def check_ollama_available() -> bool:
     except:
         return False
 
-OLLAMA_AVAILABLE = check_ollama_available()
-logger.info(f"Ollama available: {OLLAMA_AVAILABLE}")
+_last_ollama_healthcheck_at = 0.0
+_last_ollama_healthcheck_result = False
+
+def is_ollama_available(force_refresh: bool = False) -> bool:
+    """
+    Runtime availability check with short TTL cache.
+    Prevents stale startup-only status and reduces health-check spam.
+    """
+    global _last_ollama_healthcheck_at, _last_ollama_healthcheck_result
+
+    now = time.time()
+    if not force_refresh and (now - _last_ollama_healthcheck_at) < OLLAMA_HEALTHCHECK_TTL_SECONDS:
+        return _last_ollama_healthcheck_result
+
+    _last_ollama_healthcheck_result = check_ollama_available()
+    _last_ollama_healthcheck_at = now
+    return _last_ollama_healthcheck_result
+
+logger.info(f"Ollama available at startup: {is_ollama_available(force_refresh=True)}")
 
 
 # ============== FALLBACK: Mifflin-St Jeor Formula ==============
@@ -86,7 +103,7 @@ def calculate_nutrition_mifflin(
 ) -> Dict[str, int]:
     """
     Mifflin-St Jeor equation fallback
-    Đảm bảo các giá trị macro luôn hợp lý
+    Äáº£m báº£o cÃ¡c giÃ¡ trá»‹ macro luÃ´n há»£p lÃ½
     """
     # BMR calculation
     if gender.lower() in ["male", "nam"]:
@@ -108,31 +125,31 @@ def calculate_nutrition_mifflin(
     tdee = bmr * multiplier
     
     # Goal adjustment
-    if goal.lower() in ["lose", "weight_loss", "giam_can", "giảm cân"]:
+    if goal.lower() in ["lose", "weight_loss", "giam_can", "giáº£m cÃ¢n"]:
         calories = int(tdee * 0.85)  # 15% deficit
-    elif goal.lower() in ["gain", "weight_gain", "tang_can", "tăng cân"]:
+    elif goal.lower() in ["gain", "weight_gain", "tang_can", "tÄƒng cÃ¢n"]:
         calories = int(tdee * 1.15)  # 15% surplus
     else:
         calories = int(tdee)
     
-    # Macro distribution theo tỷ lệ chuẩn
+    # Macro distribution theo tá»· lá»‡ chuáº©n
     # Protein: 25%, Carbs: 50%, Fat: 25%
     protein = int(calories * 0.25 / 4)  # 25% calories from protein (4 kcal/g)
     carbs = int(calories * 0.50 / 4)    # 50% calories from carbs (4 kcal/g)
     fat = int(calories * 0.25 / 9)      # 25% calories from fat (9 kcal/g)
     
-    # Logging để debug
+    # Logging Ä‘á»ƒ debug
     logger.info(f"Formula calculated: cal={calories}, p={protein}, c={carbs}, f={fat}")
     
-    # Tạo explanation dựa trên goal
+    # Táº¡o explanation dá»±a trÃªn goal
     goal_explanations = {
-        "lose": f"Giảm 15% TDEE ({int(tdee)}→{calories}kcal) để giảm cân an toàn. Protein cao giữ cơ bắp.",
-        "weight_loss": f"Giảm 15% TDEE để giảm cân. Duy trì protein {protein}g/ngày để tránh mất cơ.",
-        "giam_can": f"Giảm 15% năng lượng hàng ngày. Carbs {carbs}g đủ cho hoạt động cơ bản.",
-        "gain": f"Tăng 15% TDEE ({int(tdee)}→{calories}kcal) để tăng cân. Carbs cao hỗ trợ tập luyện.",
-        "weight_gain": f"Tăng 15% TDEE để tăng cơ. Protein {protein}g, Carbs {carbs}g cho năng lượng.",
-        "tang_can": f"Tăng 15% năng lượng. Ưu tiên carbs {carbs}g để hỗ trợ phát triển cơ.",
-        "maintain": f"Duy trì TDEE {calories}kcal. Phân bổ chuẩn: 25% Protein, 50% Carbs, 25% Fat."
+        "lose": f"Giáº£m 15% TDEE ({int(tdee)}â†’{calories}kcal) Ä‘á»ƒ giáº£m cÃ¢n an toÃ n. Protein cao giá»¯ cÆ¡ báº¯p.",
+        "weight_loss": f"Giáº£m 15% TDEE Ä‘á»ƒ giáº£m cÃ¢n. Duy trÃ¬ protein {protein}g/ngÃ y Ä‘á»ƒ trÃ¡nh máº¥t cÆ¡.",
+        "giam_can": f"Giáº£m 15% nÄƒng lÆ°á»£ng hÃ ng ngÃ y. Carbs {carbs}g Ä‘á»§ cho hoáº¡t Ä‘á»™ng cÆ¡ báº£n.",
+        "gain": f"TÄƒng 15% TDEE ({int(tdee)}â†’{calories}kcal) Ä‘á»ƒ tÄƒng cÃ¢n. Carbs cao há»— trá»£ táº­p luyá»‡n.",
+        "weight_gain": f"TÄƒng 15% TDEE Ä‘á»ƒ tÄƒng cÆ¡. Protein {protein}g, Carbs {carbs}g cho nÄƒng lÆ°á»£ng.",
+        "tang_can": f"TÄƒng 15% nÄƒng lÆ°á»£ng. Æ¯u tiÃªn carbs {carbs}g Ä‘á»ƒ há»— trá»£ phÃ¡t triá»ƒn cÆ¡.",
+        "maintain": f"Duy trÃ¬ TDEE {calories}kcal. PhÃ¢n bá»• chuáº©n: 25% Protein, 50% Carbs, 25% Fat."
     }
     explanation = goal_explanations.get(goal.lower(), f"TDEE {calories}kcal. Macro ratio: P25% C50% F25%.")
     
@@ -147,8 +164,8 @@ def calculate_nutrition_mifflin(
 
 # ============== OLLAMA LOCAL LLM ==============
 
-# General cache cho tất cả Ollama queries
-_general_cache = SimpleCache(default_ttl=300)  # 5 phút mặc định
+# General cache cho táº¥t cáº£ Ollama queries
+_general_cache = SimpleCache(default_ttl=300)  # 5 phÃºt máº·c Ä‘á»‹nh
 
 def query_ollama(prompt: str, model: str = None, stream: bool = False, use_cache: bool = True, cache_ttl: int = None) -> Optional[str]:
     """
@@ -161,7 +178,7 @@ def query_ollama(prompt: str, model: str = None, stream: bool = False, use_cache
         cache_ttl: Custom TTL for cache in seconds
     Returns None if failed
     """
-    if not OLLAMA_AVAILABLE:
+    if not is_ollama_available():
         return None
     
     # Check cache first (only for non-streaming)
@@ -227,7 +244,7 @@ def query_ollama_streaming(prompt: str, model: str = None):
     Query Ollama with streaming - returns generator for real-time response
     Use this for long responses like cooking instructions
     """
-    if not OLLAMA_AVAILABLE:
+    if not is_ollama_available():
         return None
     
     try:
@@ -275,39 +292,39 @@ def get_nutrition_advice_ollama(
 ) -> Dict[str, Any]:
     """
     Get nutrition advice from Ollama local LLM
-    Sử dụng Chain-of-Thought + Few-shot prompting để đảm bảo kết quả chính xác
+    Sá»­ dá»¥ng Chain-of-Thought + Few-shot prompting Ä‘á»ƒ Ä‘áº£m báº£o káº¿t quáº£ chÃ­nh xÃ¡c
     """
-    # Prompt với hướng dẫn tính toán chi tiết
-    prompt = f"""Bạn là chuyên gia dinh dưỡng. Tính mục tiêu dinh dưỡng hàng ngày CHÍNH XÁC.
+    # Prompt vá»›i hÆ°á»›ng dáº«n tÃ­nh toÃ¡n chi tiáº¿t
+    prompt = f"""Báº¡n lÃ  chuyÃªn gia dinh dÆ°á»¡ng. TÃ­nh má»¥c tiÃªu dinh dÆ°á»¡ng hÃ ng ngÃ y CHÃNH XÃC.
 
-CÔNG THỨC TÍNH:
+CÃ”NG THá»¨C TÃNH:
 1. BMR (Mifflin-St Jeor):
-   - Nam: BMR = 10 × cân_nặng + 6.25 × chiều_cao - 5 × tuổi + 5
-   - Nữ: BMR = 10 × cân_nặng + 6.25 × chiều_cao - 5 × tuổi - 161
+   - Nam: BMR = 10 Ã— cÃ¢n_náº·ng + 6.25 Ã— chiá»u_cao - 5 Ã— tuá»•i + 5
+   - Ná»¯: BMR = 10 Ã— cÃ¢n_náº·ng + 6.25 Ã— chiá»u_cao - 5 Ã— tuá»•i - 161
 
-2. TDEE = BMR × Activity Multiplier:
-   - sedentary/Ít vận động: 1.2
-   - light/Nhẹ nhàng: 1.375
-   - moderate/Vừa phải: 1.55
-   - active/Tích cực: 1.725
-   - very_active/Rất tích cực: 1.9
+2. TDEE = BMR Ã— Activity Multiplier:
+   - sedentary/Ãt váº­n Ä‘á»™ng: 1.2
+   - light/Nháº¹ nhÃ ng: 1.375
+   - moderate/Vá»«a pháº£i: 1.55
+   - active/TÃ­ch cá»±c: 1.725
+   - very_active/Ráº¥t tÃ­ch cá»±c: 1.9
 
-3. Điều chỉnh theo mục tiêu:
-   - lose/Giảm cân: TDEE × 0.85 (-15%)
-   - maintain/Duy trì: TDEE × 1.0
-   - gain/Tăng cân: TDEE × 1.15 (+15%)
+3. Äiá»u chá»‰nh theo má»¥c tiÃªu:
+   - lose/Giáº£m cÃ¢n: TDEE Ã— 0.85 (-15%)
+   - maintain/Duy trÃ¬: TDEE Ã— 1.0
+   - gain/TÄƒng cÃ¢n: TDEE Ã— 1.15 (+15%)
 
-4. Phân bổ Macro (% calories):
-   - Protein: 25% (chia 4 để ra gram)
-   - Carbs: 50% (chia 4 để ra gram)
-   - Fat: 25% (chia 9 để ra gram)
+4. PhÃ¢n bá»• Macro (% calories):
+   - Protein: 25% (chia 4 Ä‘á»ƒ ra gram)
+   - Carbs: 50% (chia 4 Ä‘á»ƒ ra gram)
+   - Fat: 25% (chia 9 Ä‘á»ƒ ra gram)
 
-VÍ DỤ - Nam, 25 tuổi, 170cm, 65kg, moderate, maintain:
-Output: {{"calories": 2461, "protein": 154, "carbs": 307, "fat": 68, "explanation": "BMR của bạn là 1588kcal. Với mức vận động vừa phải (x1.55), TDEE = 2461kcal. Để duy trì cân nặng, bạn cần 2461kcal/ngày với 154g protein để duy trì cơ bắp."}}
+VÃ Dá»¤ - Nam, 25 tuá»•i, 170cm, 65kg, moderate, maintain:
+Output: {{"calories": 2461, "protein": 154, "carbs": 307, "fat": 68, "explanation": "BMR cá»§a báº¡n lÃ  1588kcal. Vá»›i má»©c váº­n Ä‘á»™ng vá»«a pháº£i (x1.55), TDEE = 2461kcal. Äá»ƒ duy trÃ¬ cÃ¢n náº·ng, báº¡n cáº§n 2461kcal/ngÃ y vá»›i 154g protein Ä‘á»ƒ duy trÃ¬ cÆ¡ báº¯p."}}
 
-THÔNG TIN NGƯỜI DÙNG: {gender}, {age} tuổi, {height_cm}cm, {weight_kg}kg, mức vận động: {activity_level}, mục tiêu: {goal}
+THÃ”NG TIN NGÆ¯á»œI DÃ™NG: {gender}, {age} tuá»•i, {height_cm}cm, {weight_kg}kg, má»©c váº­n Ä‘á»™ng: {activity_level}, má»¥c tiÃªu: {goal}
 
-TRẢ LỜI JSON VỚI explanation GIẢI THÍCH LÝ DO CỤ THỂ (tại sao set những con số đó, dựa vào thông tin gì):"""
+TRáº¢ Lá»œI JSON Vá»šI explanation GIáº¢I THÃCH LÃ DO Cá»¤ THá»‚ (táº¡i sao set nhá»¯ng con sá»‘ Ä‘Ã³, dá»±a vÃ o thÃ´ng tin gÃ¬):"""
 
     response = query_ollama(prompt)
     
@@ -320,19 +337,19 @@ TRẢ LỜI JSON VỚI explanation GIẢI THÍCH LÝ DO CỤ THỂ (tại sao se
                 json_str = response[start:end]
                 result = json.loads(json_str)
                 
-                # Validation: kiểm tra các giá trị có hợp lý không
+                # Validation: kiá»ƒm tra cÃ¡c giÃ¡ trá»‹ cÃ³ há»£p lÃ½ khÃ´ng
                 calories = int(result.get("calories", 0))
                 protein = int(result.get("protein", 0))
                 carbs = int(result.get("carbs", 0))
                 fat = int(result.get("fat", 0))
                 
-                # Nếu carbs = 0 hoặc quá thấp -> tính lại bằng công thức
+                # Náº¿u carbs = 0 hoáº·c quÃ¡ tháº¥p -> tÃ­nh láº¡i báº±ng cÃ´ng thá»©c
                 if carbs < 50 or calories < 1000 or protein < 30:
-                    logger.warning(f"Ollama trả về kết quả không hợp lý: cal={calories}, p={protein}, c={carbs}, f={fat}")
-                    logger.info("Sử dụng công thức Mifflin-St Jeor để đảm bảo chính xác")
+                    logger.warning(f"Ollama tráº£ vá» káº¿t quáº£ khÃ´ng há»£p lÃ½: cal={calories}, p={protein}, c={carbs}, f={fat}")
+                    logger.info("Sá»­ dá»¥ng cÃ´ng thá»©c Mifflin-St Jeor Ä‘á»ƒ Ä‘áº£m báº£o chÃ­nh xÃ¡c")
                     result = calculate_nutrition_mifflin(gender, age, height_cm, weight_kg, activity_level, goal)
                     result["source"] = "formula_validated"
-                    result["explanation"] = "Sử dụng công thức Mifflin-St Jeor (chuẩn y khoa)"
+                    result["explanation"] = "Sá»­ dá»¥ng cÃ´ng thá»©c Mifflin-St Jeor (chuáº©n y khoa)"
                     return result
                 
                 result["source"] = "ollama"
@@ -340,23 +357,23 @@ TRẢ LỜI JSON VỚI explanation GIẢI THÍCH LÝ DO CỤ THỂ (tại sao se
                 result["protein"] = protein
                 result["carbs"] = carbs
                 result["fat"] = fat
-                # Tạo explanation CỤ THỂ với lý do và số liệu
+                # Táº¡o explanation Cá»¤ THá»‚ vá»›i lÃ½ do vÃ  sá»‘ liá»‡u
                 if not result.get("explanation"):
                     goal_explanations = {
-                        "lose": f"Mục tiêu giảm cân: {calories}kcal/ngày (giảm 15% so với nhu cầu). Protein {protein}g để không mất cơ.",
-                        "gain": f"Mục tiêu tăng cân: {calories}kcal/ngày (tăng 15% so với nhu cầu). Carbs {carbs}g hỗ trợ tập luyện.",
-                        "maintain": f"Duy trì cân nặng: {calories}kcal/ngày. Macro cân bằng 25% Protein, 50% Carbs, 25% Fat."
+                        "lose": f"Má»¥c tiÃªu giáº£m cÃ¢n: {calories}kcal/ngÃ y (giáº£m 15% so vá»›i nhu cáº§u). Protein {protein}g Ä‘á»ƒ khÃ´ng máº¥t cÆ¡.",
+                        "gain": f"Má»¥c tiÃªu tÄƒng cÃ¢n: {calories}kcal/ngÃ y (tÄƒng 15% so vá»›i nhu cáº§u). Carbs {carbs}g há»— trá»£ táº­p luyá»‡n.",
+                        "maintain": f"Duy trÃ¬ cÃ¢n náº·ng: {calories}kcal/ngÃ y. Macro cÃ¢n báº±ng 25% Protein, 50% Carbs, 25% Fat."
                     }
-                    result["explanation"] = goal_explanations.get(goal.lower(), f"Dựa trên thông tin cơ thể: {calories}kcal, P:{protein}g, C:{carbs}g, F:{fat}g.")
+                    result["explanation"] = goal_explanations.get(goal.lower(), f"Dá»±a trÃªn thÃ´ng tin cÆ¡ thá»ƒ: {calories}kcal, P:{protein}g, C:{carbs}g, F:{fat}g.")
                 return result
                 
         except json.JSONDecodeError:
             logger.warning(f"Failed to parse Ollama response: {response[:100]}")
     
-    # Fallback to formula - với explanation chi tiết
+    # Fallback to formula - vá»›i explanation chi tiáº¿t
     result = calculate_nutrition_mifflin(gender, age, height_cm, weight_kg, activity_level, goal)
     result["source"] = "formula"
-    # Giữ explanation từ formula (đã có chi tiết về TDEE, goal)
+    # Giá»¯ explanation tá»« formula (Ä‘Ã£ cÃ³ chi tiáº¿t vá» TDEE, goal)
     return result
 
 
@@ -375,17 +392,17 @@ def get_nutrition_advice(
     """
     
     # Priority 1: Ollama local
-    if OLLAMA_AVAILABLE:
+    if is_ollama_available():
         logger.info("Using Ollama local LLM")
         return get_nutrition_advice_ollama(
             gender, age, height_cm, weight_kg, activity_level, goal
         )
     
-    # Priority 2: Formula fallback (Mifflin-St Jeor - chuẩn y khoa)
+    # Priority 2: Formula fallback (Mifflin-St Jeor - chuáº©n y khoa)
     logger.info("Ollama not available, using Mifflin-St Jeor formula fallback")
     result = calculate_nutrition_mifflin(gender, age, height_cm, weight_kg, activity_level, goal)
     result["source"] = "formula"
-    result["explanation"] = "Sử dụng công thức Mifflin-St Jeor (chuẩn y khoa) - AI tạm thời không khả dụng"
+    result["explanation"] = "Sá»­ dá»¥ng cÃ´ng thá»©c Mifflin-St Jeor (chuáº©n y khoa) - AI táº¡m thá»i khÃ´ng kháº£ dá»¥ng"
     return result
 
 
@@ -395,22 +412,22 @@ def get_meal_insight(
     target_calories: int,
     current_macros: Dict[str, int],
     target_macros: Dict[str, int],
-    user_history: Optional[Dict[str, Any]] = None  # Thêm user history cho personalization
+    user_history: Optional[Dict[str, Any]] = None  # ThÃªm user history cho personalization
 ) -> Dict[str, Any]:
     """
     Get AI insight about a meal (Ollama or fallback)
-    Improved với few-shot examples, context analysis, và personalization
+    Improved vá»›i few-shot examples, context analysis, vÃ  personalization
     
     Args:
-        user_history: Optional dict chứa:
-            - favorite_foods: list các món hay ăn
-            - avg_calories_7d: calories trung bình 7 ngày
-            - consistency_score: điểm consistency (0-100)
-            - common_deficit: thiếu gì thường xuyên (protein/carbs/fat)
+        user_history: Optional dict chá»©a:
+            - favorite_foods: list cÃ¡c mÃ³n hay Äƒn
+            - avg_calories_7d: calories trung bÃ¬nh 7 ngÃ y
+            - consistency_score: Ä‘iá»ƒm consistency (0-100)
+            - common_deficit: thiáº¿u gÃ¬ thÆ°á»ng xuyÃªn (protein/carbs/fat)
     """
-    if not OLLAMA_AVAILABLE:
+    if not is_ollama_available():
         return {
-            "insight": "AI chưa được cấu hình. Hãy cài đặt Ollama để nhận phân tích.",
+            "insight": "AI chÆ°a Ä‘Æ°á»£c cáº¥u hÃ¬nh. HÃ£y cÃ i Ä‘áº·t Ollama Ä‘á»ƒ nháº­n phÃ¢n tÃ­ch.",
             "suggestions": [],
             "score": 5,
             "source": "none"
@@ -418,59 +435,59 @@ def get_meal_insight(
     
     items_str = ", ".join([f"{item.get('name', 'Unknown')}" for item in meal_items[:5]])
     
-    # Tính toán context
+    # TÃ­nh toÃ¡n context
     cal_pct = (total_calories / target_calories * 100) if target_calories > 0 else 0
     protein_current = current_macros.get('protein', 0)
     protein_target = target_macros.get('protein', 0)
     protein_pct = (protein_current / protein_target * 100) if protein_target > 0 else 0
     
-    cal_status = "đủ" if 85 <= cal_pct <= 115 else ("thiếu" if cal_pct < 85 else "thừa")
-    protein_status = "đủ" if 85 <= protein_pct <= 115 else ("thiếu" if protein_pct < 85 else "thừa")
+    cal_status = "Ä‘á»§" if 85 <= cal_pct <= 115 else ("thiáº¿u" if cal_pct < 85 else "thá»«a")
+    protein_status = "Ä‘á»§" if 85 <= protein_pct <= 115 else ("thiáº¿u" if protein_pct < 85 else "thá»«a")
     
-    # Build personalization context từ user history
+    # Build personalization context tá»« user history
     personalization_context = ""
     if user_history:
         if user_history.get('favorite_foods'):
             fav_foods = ", ".join(user_history['favorite_foods'][:3])
-            personalization_context += f"\n- Món hay ăn: {fav_foods}"
+            personalization_context += f"\n- MÃ³n hay Äƒn: {fav_foods}"
         if user_history.get('avg_calories_7d'):
-            personalization_context += f"\n- Calories trung bình 7 ngày: {user_history['avg_calories_7d']:.0f}kcal"
+            personalization_context += f"\n- Calories trung bÃ¬nh 7 ngÃ y: {user_history['avg_calories_7d']:.0f}kcal"
         if user_history.get('common_deficit'):
-            personalization_context += f"\n- Thường thiếu: {user_history['common_deficit']}"
+            personalization_context += f"\n- ThÆ°á»ng thiáº¿u: {user_history['common_deficit']}"
         if user_history.get('consistency_score'):
-            personalization_context += f"\n- Điểm consistency: {user_history['consistency_score']:.0f}%"
+            personalization_context += f"\n- Äiá»ƒm consistency: {user_history['consistency_score']:.0f}%"
     
-    prompt = f"""Phân tích dinh dưỡng ngày hôm nay. Trả lời ngắn gọn và thực tế.
+    prompt = f"""PhÃ¢n tÃ­ch dinh dÆ°á»¡ng ngÃ y hÃ´m nay. Tráº£ lá»i ngáº¯n gá»n vÃ  thá»±c táº¿.
 
-THÔNG TIN HÔM NAY:
-- Món đã ăn: {items_str}
-- Calories: {total_calories}/{target_calories} kcal ({cal_pct:.0f}%) → {cal_status}
-- Protein: {protein_current}/{protein_target}g ({protein_pct:.0f}%) → {protein_status}
+THÃ”NG TIN HÃ”M NAY:
+- MÃ³n Ä‘Ã£ Äƒn: {items_str}
+- Calories: {total_calories}/{target_calories} kcal ({cal_pct:.0f}%) â†’ {cal_status}
+- Protein: {protein_current}/{protein_target}g ({protein_pct:.0f}%) â†’ {protein_status}
 - Carbs: {current_macros.get('carbs', 0)}g, Fat: {current_macros.get('fat', 0)}g
 {personalization_context}
 
-QUY TẮC:
-- Nếu calories < 85%: gợi ý ăn thêm (ưu tiên món user hay ăn nếu có)
-- Nếu calories > 115%: gợi ý giảm bữa còn lại
-- Nếu protein thấp: gợi ý thêm thịt/trứng/cá
-- Nếu có món hay ăn: gợi ý món đó để tăng adherence
-- Score 8-10: rất tốt, 6-7: ổn, 3-5: cần cải thiện
+QUY Táº®C:
+- Náº¿u calories < 85%: gá»£i Ã½ Äƒn thÃªm (Æ°u tiÃªn mÃ³n user hay Äƒn náº¿u cÃ³)
+- Náº¿u calories > 115%: gá»£i Ã½ giáº£m bá»¯a cÃ²n láº¡i
+- Náº¿u protein tháº¥p: gá»£i Ã½ thÃªm thá»‹t/trá»©ng/cÃ¡
+- Náº¿u cÃ³ mÃ³n hay Äƒn: gá»£i Ã½ mÃ³n Ä‘Ã³ Ä‘á»ƒ tÄƒng adherence
+- Score 8-10: ráº¥t tá»‘t, 6-7: á»•n, 3-5: cáº§n cáº£i thiá»‡n
 
-VÍ DỤ 1 (đạt mục tiêu):
+VÃ Dá»¤ 1 (Ä‘áº¡t má»¥c tiÃªu):
 Input: Calories 1800/2000 (90%), Protein 100/120g (83%)
-→ {{"insight": "Bạn đang theo dõi tốt! Còn 200kcal và 20g protein cho bữa còn lại.", "score": 8, "suggestions": ["Thêm 100g ức gà hoặc 2 quả trứng"]}}
+â†’ {{"insight": "Báº¡n Ä‘ang theo dÃµi tá»‘t! CÃ²n 200kcal vÃ  20g protein cho bá»¯a cÃ²n láº¡i.", "score": 8, "suggestions": ["ThÃªm 100g á»©c gÃ  hoáº·c 2 quáº£ trá»©ng"]}}
 
-VÍ DỤ 2 (thiếu nhiều, có món hay ăn):
-Input: Calories 600/2000 (30%), Protein 30/120g (25%), Món hay ăn: phở bò, cơm gà
-→ {{"insight": "Bạn mới ăn 30% mục tiêu. Thử ăn phở bò hoặc cơm gà bạn hay thích!", "score": 5, "suggestions": ["Ăn phở bò (500kcal)", "Hoặc cơm gà (600kcal)"]}}
+VÃ Dá»¤ 2 (thiáº¿u nhiá»u, cÃ³ mÃ³n hay Äƒn):
+Input: Calories 600/2000 (30%), Protein 30/120g (25%), MÃ³n hay Äƒn: phá»Ÿ bÃ², cÆ¡m gÃ 
+â†’ {{"insight": "Báº¡n má»›i Äƒn 30% má»¥c tiÃªu. Thá»­ Äƒn phá»Ÿ bÃ² hoáº·c cÆ¡m gÃ  báº¡n hay thÃ­ch!", "score": 5, "suggestions": ["Ä‚n phá»Ÿ bÃ² (500kcal)", "Hoáº·c cÆ¡m gÃ  (600kcal)"]}}
 
-VÍ DỤ 3 (thừa):
+VÃ Dá»¤ 3 (thá»«a):
 Input: Calories 2500/2000 (125%), Protein 150/120g (125%)
-→ {{"insight": "Bạn đã vượt mục tiêu 500kcal. Hạn chế ăn thêm hôm nay.", "score": 6, "suggestions": ["Bỏ qua bữa phụ hôm nay", "Uống nhiều nước"]}}
+â†’ {{"insight": "Báº¡n Ä‘Ã£ vÆ°á»£t má»¥c tiÃªu 500kcal. Háº¡n cháº¿ Äƒn thÃªm hÃ´m nay.", "score": 6, "suggestions": ["Bá» qua bá»¯a phá»¥ hÃ´m nay", "Uá»‘ng nhiá»u nÆ°á»›c"]}}
 
-TRẢ LỜI JSON (chỉ JSON, không giải thích):"""
+TRáº¢ Lá»œI JSON (chá»‰ JSON, khÃ´ng giáº£i thÃ­ch):"""
 
-    response = query_ollama(prompt, use_cache=True, cache_ttl=120)  # Cache 2 phút
+    response = query_ollama(prompt, use_cache=True, cache_ttl=120)  # Cache 2 phÃºt
     
     if response:
         try:
@@ -486,25 +503,25 @@ TRẢ LỜI JSON (chỉ JSON, không giải thích):"""
         except:
             pass
     
-    # Smart fallback với logic cụ thể
+    # Smart fallback vá»›i logic cá»¥ thá»ƒ
     if cal_pct >= 115:
-        insight = f"Bạn đã vượt {cal_pct - 100:.0f}% mục tiêu. Hạn chế ăn thêm."
-        suggestions = ["Uống nước thay đồ uống có đường", "Tập nhẹ 20-30 phút"]
+        insight = f"Báº¡n Ä‘Ã£ vÆ°á»£t {cal_pct - 100:.0f}% má»¥c tiÃªu. Háº¡n cháº¿ Äƒn thÃªm."
+        suggestions = ["Uá»‘ng nÆ°á»›c thay Ä‘á»“ uá»‘ng cÃ³ Ä‘Æ°á»ng", "Táº­p nháº¹ 20-30 phÃºt"]
         score = 6
     elif cal_pct < 50:
-        insight = f"Mới ăn {cal_pct:.0f}% mục tiêu. Đừng quên ăn đủ bữa!"
-        suggestions = ["Ăn thêm bữa chính đầy đủ", "Bổ sung rau xanh và protein"]
+        insight = f"Má»›i Äƒn {cal_pct:.0f}% má»¥c tiÃªu. Äá»«ng quÃªn Äƒn Ä‘á»§ bá»¯a!"
+        suggestions = ["Ä‚n thÃªm bá»¯a chÃ­nh Ä‘áº§y Ä‘á»§", "Bá»• sung rau xanh vÃ  protein"]
         score = 5
     elif cal_pct < 85:
         remaining = target_calories - total_calories
-        suggestions = [f"Cần thêm khoảng {remaining}kcal"]
+        suggestions = [f"Cáº§n thÃªm khoáº£ng {remaining}kcal"]
         if protein_pct < 80:
-            suggestions.append("Ưu tiên thêm protein (thịt, trứng, cá)")
-        insight = f"Còn {remaining}kcal để đạt mục tiêu."
+            suggestions.append("Æ¯u tiÃªn thÃªm protein (thá»‹t, trá»©ng, cÃ¡)")
+        insight = f"CÃ²n {remaining}kcal Ä‘á»ƒ Ä‘áº¡t má»¥c tiÃªu."
         score = 6
     else:
-        insight = f"Tuyệt vời! Bạn đang theo dõi tốt ({cal_pct:.0f}% mục tiêu)."
-        suggestions = ["Giữ vững nhịp này!"]
+        insight = f"Tuyá»‡t vá»i! Báº¡n Ä‘ang theo dÃµi tá»‘t ({cal_pct:.0f}% má»¥c tiÃªu)."
+        suggestions = ["Giá»¯ vá»¯ng nhá»‹p nÃ y!"]
         score = 8
         
     return {
@@ -523,23 +540,23 @@ def get_cooking_instructions(
     description: str = ""
 ) -> Dict[str, Any]:
     """
-    Gọi Ollama AI để generate hướng dẫn nấu ăn chi tiết
-    Improved với few-shot examples và cooking tips
+    Gá»i Ollama AI Ä‘á»ƒ generate hÆ°á»›ng dáº«n náº¥u Äƒn chi tiáº¿t
+    Improved vá»›i few-shot examples vÃ  cooking tips
     
     Args:
-        recipe_name: Tên món ăn
-        ingredients: List các nguyên liệu [{foodName, grams}, ...]
-        description: Mô tả món ăn (optional)
+        recipe_name: TÃªn mÃ³n Äƒn
+        ingredients: List cÃ¡c nguyÃªn liá»‡u [{foodName, grams}, ...]
+        description: MÃ´ táº£ mÃ³n Äƒn (optional)
     
     Returns:
-        Dict với steps: list các bước nấu, cookingTime, difficulty, tips
+        Dict vá»›i steps: list cÃ¡c bÆ°á»›c náº¥u, cookingTime, difficulty, tips
     """
     # Check Ollama availability first
-    if not OLLAMA_AVAILABLE:
+    if not is_ollama_available():
         logger.warning("Ollama not available for cooking instructions, using fallback")
         return _generate_fallback_instructions(recipe_name, ingredients)
     
-    # Format ingredients list với thông tin chi tiết
+    # Format ingredients list vá»›i thÃ´ng tin chi tiáº¿t
     ingredients_str = ", ".join([
         f"{ing.get('foodName', 'Unknown')} ({ing.get('grams', 100)}g)"
         for ing in ingredients
@@ -549,81 +566,81 @@ def get_cooking_instructions(
     total_protein = sum(ing.get('protein', 0) for ing in ingredients)
     total_cals = sum(ing.get('calories', 0) for ing in ingredients)
     
-    prompt = f"""Bạn là đầu bếp chuyên nghiệp người Việt với 15 năm kinh nghiệm. Hướng dẫn nấu món ăn CỰC KỲ CHI TIẾT.
+    prompt = f"""Báº¡n lÃ  Ä‘áº§u báº¿p chuyÃªn nghiá»‡p ngÆ°á»i Viá»‡t vá»›i 15 nÄƒm kinh nghiá»‡m. HÆ°á»›ng dáº«n náº¥u mÃ³n Äƒn Cá»°C Ká»² CHI TIáº¾T.
 
-MÓN ĂN: "{recipe_name}"
-NGUYÊN LIỆU: {ingredients_str}
-{f"MÔ TẢ: {description}" if description else ""}
+MÃ“N Ä‚N: "{recipe_name}"
+NGUYÃŠN LIá»†U: {ingredients_str}
+{f"MÃ” Táº¢: {description}" if description else ""}
 
-━━━ YÊU CẦU BẮT BUỘC ━━━
+â”â”â” YÃŠU Cáº¦U Báº®T BUá»˜C â”â”â”
 
-1. **CHI TIẾT TUYỆT ĐỐI**: Mỗi bước phải có:
-   • Thời gian cụ thể (phút/giây)
-   • Nhiệt độ/mức lửa (lớn/vừa/nhỏ, số độ C nếu nướng)
-   • Kỹ thuật nấu rõ ràng (xào/luộc/hấp/chiên)
-   • Dấu hiệu nhận biết (vàng/chín/mềm/giòn)
-   • Lượng gia vị CỤ THỂ (muỗng cà phê/canh, gram)
+1. **CHI TIáº¾T TUYá»†T Äá»I**: Má»—i bÆ°á»›c pháº£i cÃ³:
+   â€¢ Thá»i gian cá»¥ thá»ƒ (phÃºt/giÃ¢y)
+   â€¢ Nhiá»‡t Ä‘á»™/má»©c lá»­a (lá»›n/vá»«a/nhá», sá»‘ Ä‘á»™ C náº¿u nÆ°á»›ng)
+   â€¢ Ká»¹ thuáº­t náº¥u rÃµ rÃ ng (xÃ o/luá»™c/háº¥p/chiÃªn)
+   â€¢ Dáº¥u hiá»‡u nháº­n biáº¿t (vÃ ng/chÃ­n/má»m/giÃ²n)
+   â€¢ LÆ°á»£ng gia vá»‹ Cá»¤ THá»‚ (muá»—ng cÃ  phÃª/canh, gram)
 
-2. **CẤU TRÚC**: 7-10 bước, mỗi bước 2-3 câu
-   • Bước 1-2: Sơ chế nguyên liệu (rửa, thái, ướp)
-   • Bước 3-7: Nấu chính (chi tiết từng công đoạn)
-   • Bước 8-10: Hoàn thiện và trang trí
+2. **Cáº¤U TRÃšC**: 7-10 bÆ°á»›c, má»—i bÆ°á»›c 2-3 cÃ¢u
+   â€¢ BÆ°á»›c 1-2: SÆ¡ cháº¿ nguyÃªn liá»‡u (rá»­a, thÃ¡i, Æ°á»›p)
+   â€¢ BÆ°á»›c 3-7: Náº¥u chÃ­nh (chi tiáº¿t tá»«ng cÃ´ng Ä‘oáº¡n)
+   â€¢ BÆ°á»›c 8-10: HoÃ n thiá»‡n vÃ  trang trÃ­
 
-3. **TIPS THỰC CHIẾN**: 3-4 tips hữu ích:
-   • Mẹo để món ngon hơn
-   • Cách tránh lỗi thường gặp
-   • Biến tấu cho người bận rộn
-   • Bảo quản và hâm nóng
+3. **TIPS THá»°C CHIáº¾N**: 3-4 tips há»¯u Ã­ch:
+   â€¢ Máº¹o Ä‘á»ƒ mÃ³n ngon hÆ¡n
+   â€¢ CÃ¡ch trÃ¡nh lá»—i thÆ°á»ng gáº·p
+   â€¢ Biáº¿n táº¥u cho ngÆ°á»i báº­n rá»™n
+   â€¢ Báº£o quáº£n vÃ  hÃ¢m nÃ³ng
 
-4. **THÔNG TIN BỔ SUNG**:
-   • Thời gian nấu THỰC TẾ (tính cả sơ chế)
-   • Độ khó (Rất dễ/Dễ/Trung bình/Khó)
-   • Lưu ý quan trọng (nếu có)
+4. **THÃ”NG TIN Bá»” SUNG**:
+   â€¢ Thá»i gian náº¥u THá»°C Táº¾ (tÃ­nh cáº£ sÆ¡ cháº¿)
+   â€¢ Äá»™ khÃ³ (Ráº¥t dá»…/Dá»…/Trung bÃ¬nh/KhÃ³)
+   â€¢ LÆ°u Ã½ quan trá»ng (náº¿u cÃ³)
 
-━━━ VÍ DỤ CHUẨN (PHẢI CHI TIẾT NHƯ VẬY) ━━━
+â”â”â” VÃ Dá»¤ CHUáº¨N (PHáº¢I CHI TIáº¾T NHÆ¯ Váº¬Y) â”â”â”
 
-Input: Cơm gà xào rau củ - Gà(150g), Cơm(200g), Bông cải xanh(100g)
+Input: CÆ¡m gÃ  xÃ o rau cá»§ - GÃ (150g), CÆ¡m(200g), BÃ´ng cáº£i xanh(100g)
 
 Output:
 {{
   "steps": [
-    "Rửa sạch 150g ức gà, thấm khô bằng giấy ăn. Thái miếng vuông 2x2cm (khoảng 10-12 miếng). Ướp với 1/2 muỗng cà phê muối, 1/2 muỗng cà phê hạt nêm, 1 muỗng cà phê dầu ăn. Trộn đều, để yên 10-15 phút cho thấm gia vị.",
+    "Rá»­a sáº¡ch 150g á»©c gÃ , tháº¥m khÃ´ báº±ng giáº¥y Äƒn. ThÃ¡i miáº¿ng vuÃ´ng 2x2cm (khoáº£ng 10-12 miáº¿ng). Æ¯á»›p vá»›i 1/2 muá»—ng cÃ  phÃª muá»‘i, 1/2 muá»—ng cÃ  phÃª háº¡t nÃªm, 1 muá»—ng cÃ  phÃª dáº§u Äƒn. Trá»™n Ä‘á»u, Ä‘á»ƒ yÃªn 10-15 phÃºt cho tháº¥m gia vá»‹.",
     
-    "Rửa 100g bông cải xanh, cắt thành từng bông nhỏ (khoảng 3-4cm). Đun sôi 500ml nước + 1/4 muỗng cà phê muối. Chần bông cải đúng 2 phút (đếm từ khi nước sôi lại), vớt ra ngâm ngay vào bát nước đá 1 phút để giữ màu xanh giòn.",
+    "Rá»­a 100g bÃ´ng cáº£i xanh, cáº¯t thÃ nh tá»«ng bÃ´ng nhá» (khoáº£ng 3-4cm). Äun sÃ´i 500ml nÆ°á»›c + 1/4 muá»—ng cÃ  phÃª muá»‘i. Cháº§n bÃ´ng cáº£i Ä‘Ãºng 2 phÃºt (Ä‘áº¿m tá»« khi nÆ°á»›c sÃ´i láº¡i), vá»›t ra ngÃ¢m ngay vÃ o bÃ¡t nÆ°á»›c Ä‘Ã¡ 1 phÃºt Ä‘á»ƒ giá»¯ mÃ u xanh giÃ²n.",
     
-    "Bắc chảo chống dính lên bếp, cho 2 muỗng canh dầu ăn. Đun ở lửa vừa đến khi dầu nóng (thử bằng đũa thấy sủi bọt nhỏ xung quanh). Tăng lửa lớn.",
+    "Báº¯c cháº£o chá»‘ng dÃ­nh lÃªn báº¿p, cho 2 muá»—ng canh dáº§u Äƒn. Äun á»Ÿ lá»­a vá»«a Ä‘áº¿n khi dáº§u nÃ³ng (thá»­ báº±ng Ä‘Å©a tháº¥y sá»§i bá»t nhá» xung quanh). TÄƒng lá»­a lá»›n.",
     
-    "Cho gà đã ướp vào chảo, xếp thành 1 lớp đều. KHÔNG đảo ngay! Để yên 1.5 phút cho gà chín vàng mặt dưới. Sau đó đảo đều, xào thêm 2-3 phút đến khi gà chín vàng đều, không còn hồng bên trong. Vớt gà ra đĩa riêng.",
+    "Cho gÃ  Ä‘Ã£ Æ°á»›p vÃ o cháº£o, xáº¿p thÃ nh 1 lá»›p Ä‘á»u. KHÃ”NG Ä‘áº£o ngay! Äá»ƒ yÃªn 1.5 phÃºt cho gÃ  chÃ­n vÃ ng máº·t dÆ°á»›i. Sau Ä‘Ã³ Ä‘áº£o Ä‘á»u, xÃ o thÃªm 2-3 phÃºt Ä‘áº¿n khi gÃ  chÃ­n vÃ ng Ä‘á»u, khÃ´ng cÃ²n há»“ng bÃªn trong. Vá»›t gÃ  ra Ä‘Ä©a riÃªng.",
     
-    "Giữ nguyên chảo (không rửa), cho thêm 1 muỗng cà phê dầu nếu khô. Cho bông cải đã chần vào, xào nhanh trên lửa lớn 1.5 phút. Thêm 2 muỗng canh nước lọc để tạo hơi nước.",
+    "Giá»¯ nguyÃªn cháº£o (khÃ´ng rá»­a), cho thÃªm 1 muá»—ng cÃ  phÃª dáº§u náº¿u khÃ´. Cho bÃ´ng cáº£i Ä‘Ã£ cháº§n vÃ o, xÃ o nhanh trÃªn lá»­a lá»›n 1.5 phÃºt. ThÃªm 2 muá»—ng canh nÆ°á»›c lá»c Ä‘á»ƒ táº¡o hÆ¡i nÆ°á»›c.",
     
-    "Cho gà đã xào trở lại chảo cùng bông cải. Nêm 1 muỗng canh nước mắm, 1/2 muỗng cà phê đường, 1/4 muỗng cà phê tiêu. Đảo đều trong 1 phút cho gia vị thấm. Nếm thử và điều chỉnh.",
+    "Cho gÃ  Ä‘Ã£ xÃ o trá»Ÿ láº¡i cháº£o cÃ¹ng bÃ´ng cáº£i. NÃªm 1 muá»—ng canh nÆ°á»›c máº¯m, 1/2 muá»—ng cÃ  phÃª Ä‘Æ°á»ng, 1/4 muá»—ng cÃ  phÃª tiÃªu. Äáº£o Ä‘á»u trong 1 phÃºt cho gia vá»‹ tháº¥m. Náº¿m thá»­ vÃ  Ä‘iá»u chá»‰nh.",
     
-    "Tắt bếp. Xúc 200g cơm nóng ra đĩa, xếp gà xào rau lên trên. Rắc thêm 1 nhúm tiêu đen xay và rau mùi tươi (tùy chọn). Ăn nóng ngay để giữ độ giòn của rau."
+    "Táº¯t báº¿p. XÃºc 200g cÆ¡m nÃ³ng ra Ä‘Ä©a, xáº¿p gÃ  xÃ o rau lÃªn trÃªn. Ráº¯c thÃªm 1 nhÃºm tiÃªu Ä‘en xay vÃ  rau mÃ¹i tÆ°Æ¡i (tÃ¹y chá»n). Ä‚n nÃ³ng ngay Ä‘á»ƒ giá»¯ Ä‘á»™ giÃ²n cá»§a rau."
   ],
   
-  "cookingTime": "25-30 phút (sơ chế 10 phút, nấu 15-20 phút)",
+  "cookingTime": "25-30 phÃºt (sÆ¡ cháº¿ 10 phÃºt, náº¥u 15-20 phÃºt)",
   
-  "difficulty": "Dễ",
+  "difficulty": "Dá»…",
   
   "tips": [
-    "Bí quyết gà mềm: Ướp ít dầu ăn giúp khóa nước, không bị khô. Xào lửa lớn và NHANH (tối đa 5 phút) để gà không dai.",
+    "BÃ­ quyáº¿t gÃ  má»m: Æ¯á»›p Ã­t dáº§u Äƒn giÃºp khÃ³a nÆ°á»›c, khÃ´ng bá»‹ khÃ´. XÃ o lá»­a lá»›n vÃ  NHANH (tá»‘i Ä‘a 5 phÃºt) Ä‘á»ƒ gÃ  khÃ´ng dai.",
     
-    "Rau giòn xanh: Chần qua nước sôi rồi ngâm nước đá là bước QUAN TRỌNG. Bỏ qua sẽ làm rau nhũn và xỉn màu.",
+    "Rau giÃ²n xanh: Cháº§n qua nÆ°á»›c sÃ´i rá»“i ngÃ¢m nÆ°á»›c Ä‘Ã¡ lÃ  bÆ°á»›c QUAN TRá»ŒNG. Bá» qua sáº½ lÃ m rau nhÅ©n vÃ  xá»‰n mÃ u.",
     
-    "Biến tấu nhanh: Không có thời gian? Dùng gà xé sẵn từ siêu thị, rau đông lạnh. Thời gian giảm còn 10 phút.",
+    "Biáº¿n táº¥u nhanh: KhÃ´ng cÃ³ thá»i gian? DÃ¹ng gÃ  xÃ© sáºµn tá»« siÃªu thá»‹, rau Ä‘Ã´ng láº¡nh. Thá»i gian giáº£m cÃ²n 10 phÃºt.",
     
-    "Bảo quản: Để riêng cơm và gà xào. Bảo quản tủ lạnh 2 ngày. Hâm nóng: Vi sóng 2 phút hoặc chảo 3 phút."
+    "Báº£o quáº£n: Äá»ƒ riÃªng cÆ¡m vÃ  gÃ  xÃ o. Báº£o quáº£n tá»§ láº¡nh 2 ngÃ y. HÃ¢m nÃ³ng: Vi sÃ³ng 2 phÃºt hoáº·c cháº£o 3 phÃºt."
   ],
   
-  "notes": "Món này cung cấp khoảng 450kcal, 35g protein - phù hợp cho bữa trưa/tối. Có thể thay gà bằng tôm (giảm thời gian xào xuống 2 phút) hoặc đậu hũ (cho người ăn chay)."
+  "notes": "MÃ³n nÃ y cung cáº¥p khoáº£ng 450kcal, 35g protein - phÃ¹ há»£p cho bá»¯a trÆ°a/tá»‘i. CÃ³ thá»ƒ thay gÃ  báº±ng tÃ´m (giáº£m thá»i gian xÃ o xuá»‘ng 2 phÃºt) hoáº·c Ä‘áº­u hÅ© (cho ngÆ°á»i Äƒn chay)."
 }}
 
-━━━ BẮT ĐẦU TẠO HƯỚNG DẪN ━━━
+â”â”â” Báº®T Äáº¦U Táº O HÆ¯á»šNG DáºªN â”â”â”
 
-TRẢ LỜI JSON hợp lệ, KHÔNG giải thích thêm. Phải CHI TIẾT như ví dụ trên:"""
+TRáº¢ Lá»œI JSON há»£p lá»‡, KHÃ”NG giáº£i thÃ­ch thÃªm. Pháº£i CHI TIáº¾T nhÆ° vÃ­ dá»¥ trÃªn:"""
 
-    response = query_ollama(prompt, use_cache=True, cache_ttl=600)  # Cache 10 phút cho recipe
+    response = query_ollama(prompt, use_cache=True, cache_ttl=600)  # Cache 10 phÃºt cho recipe
     
     if response:
         try:
@@ -639,33 +656,33 @@ TRẢ LỜI JSON hợp lệ, KHÔNG giải thích thêm. Phải CHI TIẾT như 
         except Exception as e:
             logger.error(f"Error parsing cooking instructions: {e}")
     
-    # Fallback khi Ollama không trả về kết quả hợp lệ
+    # Fallback khi Ollama khÃ´ng tráº£ vá» káº¿t quáº£ há»£p lá»‡
     logger.warning(f"Ollama failed for cooking instructions, using fallback for {recipe_name}")
     return _generate_fallback_instructions(recipe_name, ingredients)
 
 
 def _generate_fallback_instructions(recipe_name: str, ingredients: list[dict]) -> Dict[str, Any]:
     """
-    Tạo hướng dẫn nấu ăn mặc định khi Ollama không khả dụng
+    Táº¡o hÆ°á»›ng dáº«n náº¥u Äƒn máº·c Ä‘á»‹nh khi Ollama khÃ´ng kháº£ dá»¥ng
     """
-    # Lấy tên các nguyên liệu
-    ing_names = [ing.get('foodName', 'nguyên liệu') for ing in ingredients[:5]]
+    # Láº¥y tÃªn cÃ¡c nguyÃªn liá»‡u
+    ing_names = [ing.get('foodName', 'nguyÃªn liá»‡u') for ing in ingredients[:5]]
     
     steps = [
-        f"Sơ chế và rửa sạch các nguyên liệu: {', '.join(ing_names)}",
-        "Cắt hoặc thái nguyên liệu theo kích thước phù hợp",
-        f"Cho dầu ăn vào chảo, đun nóng ở lửa vừa",
-        f"Cho các nguyên liệu vào chảo theo thứ tự, đảo đều",
-        "Nêm gia vị theo khẩu vị (muối, tiêu, nước mắm)",
-        f"Trang trí và thưởng thức món {recipe_name}"
+        f"SÆ¡ cháº¿ vÃ  rá»­a sáº¡ch cÃ¡c nguyÃªn liá»‡u: {', '.join(ing_names)}",
+        "Cáº¯t hoáº·c thÃ¡i nguyÃªn liá»‡u theo kÃ­ch thÆ°á»›c phÃ¹ há»£p",
+        f"Cho dáº§u Äƒn vÃ o cháº£o, Ä‘un nÃ³ng á»Ÿ lá»­a vá»«a",
+        f"Cho cÃ¡c nguyÃªn liá»‡u vÃ o cháº£o theo thá»© tá»±, Ä‘áº£o Ä‘á»u",
+        "NÃªm gia vá»‹ theo kháº©u vá»‹ (muá»‘i, tiÃªu, nÆ°á»›c máº¯m)",
+        f"Trang trÃ­ vÃ  thÆ°á»Ÿng thá»©c mÃ³n {recipe_name}"
     ]
     
     return {
         "steps": steps,
-        "cookingTime": "20-30 phút",
-        "difficulty": "Trung bình",
+        "cookingTime": "20-30 phÃºt",
+        "difficulty": "Trung bÃ¬nh",
         "source": "fallback",
-        "note": "Hướng dẫn cơ bản - AI đang bận, vui lòng thử lại sau để có hướng dẫn chi tiết hơn"
+        "note": "HÆ°á»›ng dáº«n cÆ¡ báº£n - AI Ä‘ang báº­n, vui lÃ²ng thá»­ láº¡i sau Ä‘á»ƒ cÃ³ hÆ°á»›ng dáº«n chi tiáº¿t hÆ¡n"
     }
 
 
@@ -673,33 +690,33 @@ def _generate_fallback_instructions(recipe_name: str, ingredients: list[dict]) -
 
 import re
 
-# Mapping số chữ sang số
+# Mapping sá»‘ chá»¯ sang sá»‘
 VIETNAMESE_NUMBERS = {
-    "không": 0, "một": 1, "hai": 2, "ba": 3, "bốn": 4, "năm": 5, "sáu": 6, "bảy": 7, "tám": 8, "chín": 9,
-    "mười": 10, "mười một": 11, "mười hai": 12, "mười ba": 13, "mười bốn": 14, "mười lăm": 15,
-    "hai mươi": 20, "ba mươi": 30, "bốn mươi": 40, "năm mươi": 50, "sáu mươi": 60, "bảy mươi": 70, "tám mươi": 80, "chín mươi": 90,
-    "một trăm": 100, "hai trăm": 200, "ba trăm": 300,
+    "khÃ´ng": 0, "má»™t": 1, "hai": 2, "ba": 3, "bá»‘n": 4, "nÄƒm": 5, "sÃ¡u": 6, "báº£y": 7, "tÃ¡m": 8, "chÃ­n": 9,
+    "mÆ°á»i": 10, "mÆ°á»i má»™t": 11, "mÆ°á»i hai": 12, "mÆ°á»i ba": 13, "mÆ°á»i bá»‘n": 14, "mÆ°á»i lÄƒm": 15,
+    "hai mÆ°Æ¡i": 20, "ba mÆ°Æ¡i": 30, "bá»‘n mÆ°Æ¡i": 40, "nÄƒm mÆ°Æ¡i": 50, "sÃ¡u mÆ°Æ¡i": 60, "báº£y mÆ°Æ¡i": 70, "tÃ¡m mÆ°Æ¡i": 80, "chÃ­n mÆ°Æ¡i": 90,
+    "má»™t trÄƒm": 100, "hai trÄƒm": 200, "ba trÄƒm": 300,
 }
 
 def parse_vietnamese_number(text: str) -> int:
     """
-    Parse số tiếng Việt sang int. VD: 'hai nghìn sáu trăm' -> 2600
-    Hỗ trợ: đơn vị (0-9), chục (10-90), trăm (100-900), nghìn (1000-9000)
+    Parse sá»‘ tiáº¿ng Viá»‡t sang int. VD: 'hai nghÃ¬n sÃ¡u trÄƒm' -> 2600
+    Há»— trá»£: Ä‘Æ¡n vá»‹ (0-9), chá»¥c (10-90), trÄƒm (100-900), nghÃ¬n (1000-9000)
     """
     text = text.lower().strip()
     
-    # Nếu đã là số
+    # Náº¿u Ä‘Ã£ lÃ  sá»‘
     if text.isdigit():
         return int(text)
     
     result = 0
     
-    # Bước 0: Tìm NGHÌN/NGÀN (1000-9000)
+    # BÆ°á»›c 0: TÃ¬m NGHÃŒN/NGÃ€N (1000-9000)
     thousands_map = {
-        "một nghìn": 1000, "hai nghìn": 2000, "ba nghìn": 3000, "bốn nghìn": 4000,
-        "năm nghìn": 5000, "sáu nghìn": 6000, "bảy nghìn": 7000, "tám nghìn": 8000, "chín nghìn": 9000,
-        "một ngàn": 1000, "hai ngàn": 2000, "ba ngàn": 3000, "bốn ngàn": 4000,
-        "năm ngàn": 5000, "sáu ngàn": 6000, "bảy ngàn": 7000, "tám ngàn": 8000, "chín ngàn": 9000,
+        "má»™t nghÃ¬n": 1000, "hai nghÃ¬n": 2000, "ba nghÃ¬n": 3000, "bá»‘n nghÃ¬n": 4000,
+        "nÄƒm nghÃ¬n": 5000, "sÃ¡u nghÃ¬n": 6000, "báº£y nghÃ¬n": 7000, "tÃ¡m nghÃ¬n": 8000, "chÃ­n nghÃ¬n": 9000,
+        "má»™t ngÃ n": 1000, "hai ngÃ n": 2000, "ba ngÃ n": 3000, "bá»‘n ngÃ n": 4000,
+        "nÄƒm ngÃ n": 5000, "sÃ¡u ngÃ n": 6000, "báº£y ngÃ n": 7000, "tÃ¡m ngÃ n": 8000, "chÃ­n ngÃ n": 9000,
     }
     for word, val in thousands_map.items():
         if word in text:
@@ -707,10 +724,10 @@ def parse_vietnamese_number(text: str) -> int:
             text = text.replace(word, "").strip()
             break
     
-    # Bước 1: Tìm TRĂM (100-900)
+    # BÆ°á»›c 1: TÃ¬m TRÄ‚M (100-900)
     hundreds_map = {
-        "một trăm": 100, "hai trăm": 200, "ba trăm": 300, "bốn trăm": 400,
-        "năm trăm": 500, "sáu trăm": 600, "bảy trăm": 700, "tám trăm": 800, "chín trăm": 900
+        "má»™t trÄƒm": 100, "hai trÄƒm": 200, "ba trÄƒm": 300, "bá»‘n trÄƒm": 400,
+        "nÄƒm trÄƒm": 500, "sÃ¡u trÄƒm": 600, "báº£y trÄƒm": 700, "tÃ¡m trÄƒm": 800, "chÃ­n trÄƒm": 900
     }
     for word, val in hundreds_map.items():
         if word in text:
@@ -718,10 +735,10 @@ def parse_vietnamese_number(text: str) -> int:
             text = text.replace(word, "").strip()
             break
     
-    # Bước 2: Tìm CHỤC (10-90)
+    # BÆ°á»›c 2: TÃ¬m CHá»¤C (10-90)
     tens_map = {
-        "mười": 10, "hai mươi": 20, "ba mươi": 30, "bốn mươi": 40,
-        "năm mươi": 50, "sáu mươi": 60, "bảy mươi": 70, "tám mươi": 80, "chín mươi": 90
+        "mÆ°á»i": 10, "hai mÆ°Æ¡i": 20, "ba mÆ°Æ¡i": 30, "bá»‘n mÆ°Æ¡i": 40,
+        "nÄƒm mÆ°Æ¡i": 50, "sÃ¡u mÆ°Æ¡i": 60, "báº£y mÆ°Æ¡i": 70, "tÃ¡m mÆ°Æ¡i": 80, "chÃ­n mÆ°Æ¡i": 90
     }
     for word, val in tens_map.items():
         if word in text:
@@ -729,13 +746,13 @@ def parse_vietnamese_number(text: str) -> int:
             text = text.replace(word, "").strip()
             break
     
-    # Bước 3: Tìm ĐƠN VỊ (1-9)
-    text = text.replace("lăm", "năm").replace("mốt", "một")
-    text = text.replace("linh", "").replace("lẻ", "").strip()
+    # BÆ°á»›c 3: TÃ¬m ÄÆ N Vá»Š (1-9)
+    text = text.replace("lÄƒm", "nÄƒm").replace("má»‘t", "má»™t")
+    text = text.replace("linh", "").replace("láº»", "").strip()
     
     units_map = {
-        "một": 1, "hai": 2, "ba": 3, "bốn": 4, "năm": 5,
-        "sáu": 6, "bảy": 7, "tám": 8, "chín": 9
+        "má»™t": 1, "hai": 2, "ba": 3, "bá»‘n": 4, "nÄƒm": 5,
+        "sÃ¡u": 6, "báº£y": 7, "tÃ¡m": 8, "chÃ­n": 9
     }
     for word, val in units_map.items():
         if word in text:
@@ -747,16 +764,16 @@ def parse_vietnamese_number(text: str) -> int:
 
 def preprocess_vietnamese_numbers(text: str) -> str:
     """
-    Tiền xử lý: Chuyển số tiếng Việt thành số digit.
-    VD: "thêm sáu trăm gam gà" -> "thêm 600gam gà"
-    VD: "hai nghìn calo" -> "2000 calo"
+    Tiá»n xá»­ lÃ½: Chuyá»ƒn sá»‘ tiáº¿ng Viá»‡t thÃ nh sá»‘ digit.
+    VD: "thÃªm sÃ¡u trÄƒm gam gÃ " -> "thÃªm 600gam gÃ "
+    VD: "hai nghÃ¬n calo" -> "2000 calo"
     """
     import re
     
-    # Pattern để tìm số tiếng Việt + đơn vị (gam/g/gram/ký/kg/calo)
-    # Hỗ trợ: nghìn/ngàn, trăm, chục, đơn vị
-    number_words = r"((?:một|hai|ba|bốn|năm|sáu|bảy|tám|chín)\s*(?:nghìn|ngàn)(?:\s*(?:một|hai|ba|bốn|năm|sáu|bảy|tám|chín)\s*trăm)?(?:\s*(?:linh|lẻ)?\s*(?:một|hai|ba|bốn|năm|sáu|bảy|tám|chín|mười|mươi|lăm|mốt))*|(?:một|hai|ba|bốn|năm|sáu|bảy|tám|chín)\s*trăm(?:\s*(?:linh|lẻ)?\s*(?:một|hai|ba|bốn|năm|sáu|bảy|tám|chín|mười|mươi|lăm|mốt))*|(?:một|hai|ba|bốn|năm|sáu|bảy|tám|chín|mười)\s*(?:mươi|mười)?(?:\s*(?:một|hai|ba|bốn|năm|sáu|bảy|tám|chín|lăm|mốt))?)"
-    unit_words = r"\s*(gam|g|gram|ký|kg|kilogram|calo|calories|kcal)"
+    # Pattern Ä‘á»ƒ tÃ¬m sá»‘ tiáº¿ng Viá»‡t + Ä‘Æ¡n vá»‹ (gam/g/gram/kÃ½/kg/calo)
+    # Há»— trá»£: nghÃ¬n/ngÃ n, trÄƒm, chá»¥c, Ä‘Æ¡n vá»‹
+    number_words = r"((?:má»™t|hai|ba|bá»‘n|nÄƒm|sÃ¡u|báº£y|tÃ¡m|chÃ­n)\s*(?:nghÃ¬n|ngÃ n)(?:\s*(?:má»™t|hai|ba|bá»‘n|nÄƒm|sÃ¡u|báº£y|tÃ¡m|chÃ­n)\s*trÄƒm)?(?:\s*(?:linh|láº»)?\s*(?:má»™t|hai|ba|bá»‘n|nÄƒm|sÃ¡u|báº£y|tÃ¡m|chÃ­n|mÆ°á»i|mÆ°Æ¡i|lÄƒm|má»‘t))*|(?:má»™t|hai|ba|bá»‘n|nÄƒm|sÃ¡u|báº£y|tÃ¡m|chÃ­n)\s*trÄƒm(?:\s*(?:linh|láº»)?\s*(?:má»™t|hai|ba|bá»‘n|nÄƒm|sÃ¡u|báº£y|tÃ¡m|chÃ­n|mÆ°á»i|mÆ°Æ¡i|lÄƒm|má»‘t))*|(?:má»™t|hai|ba|bá»‘n|nÄƒm|sÃ¡u|báº£y|tÃ¡m|chÃ­n|mÆ°á»i)\s*(?:mÆ°Æ¡i|mÆ°á»i)?(?:\s*(?:má»™t|hai|ba|bá»‘n|nÄƒm|sÃ¡u|báº£y|tÃ¡m|chÃ­n|lÄƒm|má»‘t))?)"
+    unit_words = r"\s*(gam|g|gram|kÃ½|kg|kilogram|calo|calories|kcal)"
     
     pattern = number_words + unit_words
     
@@ -774,18 +791,18 @@ def preprocess_vietnamese_numbers(text: str) -> str:
 
 
 def try_parse_weight_regex(text: str) -> Dict[str, Any] | None:
-    """Regex để parse LOG_WEIGHT. Trả về None nếu không match."""
+    """Regex Ä‘á»ƒ parse LOG_WEIGHT. Tráº£ vá» None náº¿u khÃ´ng match."""
     lower = text.lower().strip()
     
-    # Pattern: số + ký/kg/kilogram (không có "calo/calories")
-    # VD: "hôm nay tôi 70 ký", "cân nặng 65 kg", "tôi bảy mươi lăm ký"
+    # Pattern: sá»‘ + kÃ½/kg/kilogram (khÃ´ng cÃ³ "calo/calories")
+    # VD: "hÃ´m nay tÃ´i 70 kÃ½", "cÃ¢n náº·ng 65 kg", "tÃ´i báº£y mÆ°Æ¡i lÄƒm kÃ½"
     
-    # Không match nếu có "calo"
+    # KhÃ´ng match náº¿u cÃ³ "calo"
     if "calo" in lower or "calories" in lower or "kcal" in lower:
         return None
     
-    # Pattern với số
-    pattern_number = r"(?:cân nặng|tôi|nặng)\s*(?:là\s+)?(\d+(?:\.\d+)?)\s*(?:ký|kg|kilogram)?"
+    # Pattern vá»›i sá»‘
+    pattern_number = r"(?:cÃ¢n náº·ng|tÃ´i|náº·ng)\s*(?:lÃ \s+)?(\d+(?:\.\d+)?)\s*(?:kÃ½|kg|kilogram)?"
     match = re.search(pattern_number, lower, re.IGNORECASE)
     if match:
         weight = float(match.group(1))
@@ -798,14 +815,14 @@ def try_parse_weight_regex(text: str) -> Dict[str, Any] | None:
                 "source": "regex"
             }
     
-    # Pattern với số chữ: "tôi bảy mươi lăm ký", "một trăm ký"
-    # Thêm "trăm", "linh", "lẻ" vào pattern
-    pattern_text = r"(?:cân nặng|tôi|nặng)\s*((?:một|hai|ba|bốn|năm|sáu|bảy|tám|chín|mười|mươi|lăm|mốt|trăm|linh|lẻ|\s)+)\s*(?:ký|kg|kilogram)"
+    # Pattern vá»›i sá»‘ chá»¯: "tÃ´i báº£y mÆ°Æ¡i lÄƒm kÃ½", "má»™t trÄƒm kÃ½"
+    # ThÃªm "trÄƒm", "linh", "láº»" vÃ o pattern
+    pattern_text = r"(?:cÃ¢n náº·ng|tÃ´i|náº·ng)\s*((?:má»™t|hai|ba|bá»‘n|nÄƒm|sÃ¡u|báº£y|tÃ¡m|chÃ­n|mÆ°á»i|mÆ°Æ¡i|lÄƒm|má»‘t|trÄƒm|linh|láº»|\s)+)\s*(?:kÃ½|kg|kilogram)"
     match = re.search(pattern_text, lower, re.IGNORECASE)
     if match:
         weight = parse_vietnamese_number(match.group(1))
-        # Nếu parse ra 0 (failed) nhưng text có "một trăm" -> thủ công fix
-        if weight == 0 and "một trăm" in lower:
+        # Náº¿u parse ra 0 (failed) nhÆ°ng text cÃ³ "má»™t trÄƒm" -> thá»§ cÃ´ng fix
+        if weight == 0 and "má»™t trÄƒm" in lower:
             weight = 100
         
         if 30 <= weight <= 200:
@@ -821,12 +838,12 @@ def try_parse_weight_regex(text: str) -> Dict[str, Any] | None:
 
 
 def try_parse_ask_calories_regex(text: str) -> Dict[str, Any] | None:
-    """Regex để parse ASK_CALORIES. Trả về None nếu không match."""
+    """Regex Ä‘á»ƒ parse ASK_CALORIES. Tráº£ vá» None náº¿u khÃ´ng match."""
     lower = text.lower().strip()
     
-    # Pattern: "bao nhiêu calo", "ăn bao nhiêu calo", "tiêu thụ mấy calo"
-    # QUAN TRỌNG: Phải có từ "calo/calories/kcal/năng lượng"
-    pattern = r"(?:ăn|tiêu thụ|nạp|uống)?\s*(?:được\s+|đã\s+)?(?:bao nhiêu|tổng|hết|mấy)\s*(?:calo|calories|kcal|năng lượng)"
+    # Pattern: "bao nhiÃªu calo", "Äƒn bao nhiÃªu calo", "tiÃªu thá»¥ máº¥y calo"
+    # QUAN TRá»ŒNG: Pháº£i cÃ³ tá»« "calo/calories/kcal/nÄƒng lÆ°á»£ng"
+    pattern = r"(?:Äƒn|tiÃªu thá»¥|náº¡p|uá»‘ng)?\s*(?:Ä‘Æ°á»£c\s+|Ä‘Ã£\s+)?(?:bao nhiÃªu|tá»•ng|háº¿t|máº¥y)\s*(?:calo|calories|kcal|nÄƒng lÆ°á»£ng)"
     
     if re.search(pattern, lower, re.IGNORECASE):
         return {
@@ -845,31 +862,31 @@ def parse_voice_command_ollama(text: str) -> Dict[str, Any]:
     Parse Vietnamese voice command using regex first, then Ollama LLM as fallback.
     
     Input examples:
-    - "thêm 1 bát phở 300g bữa trưa"
-    - "ghi cân nặng 65 kg"
-    - "hôm nay ăn bao nhiêu calo"
+    - "thÃªm 1 bÃ¡t phá»Ÿ 300g bá»¯a trÆ°a"
+    - "ghi cÃ¢n náº·ng 65 kg"
+    - "hÃ´m nay Äƒn bao nhiÃªu calo"
     
     Returns:
         Dict with intent, entities, confidence, rawText
     """
     
-    # ========== BƯỚC 1: REGEX PRE-PROCESSING ==========
-    # Thử match các pattern rõ ràng trước khi gọi Ollama
+    # ========== BÆ¯á»šC 1: REGEX PRE-PROCESSING ==========
+    # Thá»­ match cÃ¡c pattern rÃµ rÃ ng trÆ°á»›c khi gá»i Ollama
     
-    # 1.1 Thử parse LOG_WEIGHT
+    # 1.1 Thá»­ parse LOG_WEIGHT
     weight_result = try_parse_weight_regex(text)
     if weight_result:
         logger.info(f"Voice parsed by REGEX: LOG_WEIGHT, weight={weight_result['entities'].get('weight')}")
         return weight_result
     
-    # 1.2 Thử parse ASK_CALORIES
+    # 1.2 Thá»­ parse ASK_CALORIES
     calories_result = try_parse_ask_calories_regex(text)
     if calories_result:
         logger.info(f"Voice parsed by REGEX: ASK_CALORIES")
         return calories_result
     
-    # ========== BƯỚC 2: OLLAMA LLM (cho ADD_FOOD và complex cases) ==========
-    if not OLLAMA_AVAILABLE:
+    # ========== BÆ¯á»šC 2: OLLAMA LLM (cho ADD_FOOD vÃ  complex cases) ==========
+    if not is_ollama_available():
         logger.warning("Ollama not available for voice parsing")
         return {
             "intent": "UNKNOWN",
@@ -877,114 +894,114 @@ def parse_voice_command_ollama(text: str) -> Dict[str, Any]:
             "confidence": 0.0,
             "rawText": text,
             "source": "fallback",
-            "error": "Ollama không khả dụng"
+            "error": "Ollama khÃ´ng kháº£ dá»¥ng"
         }
     
-    # TIỀN XỬ LÝ: Chuyển số tiếng Việt thành số digit
-    # VD: "sáu trăm gam gà" -> "600gam gà"
+    # TIá»€N Xá»¬ LÃ: Chuyá»ƒn sá»‘ tiáº¿ng Viá»‡t thÃ nh sá»‘ digit
+    # VD: "sÃ¡u trÄƒm gam gÃ " -> "600gam gÃ "
     processed_text = preprocess_vietnamese_numbers(text)
     logger.info(f"Preprocessed text: '{text}' -> '{processed_text}'")
     
-    # Prompt cải tiến: Nhận input đa dạng, support nhiều món, fix pattern recognition
-    prompt = f"""Bạn là AI phân tích lệnh giọng nói tiếng Việt cho app theo dõi calories.
+    # Prompt cáº£i tiáº¿n: Nháº­n input Ä‘a dáº¡ng, support nhiá»u mÃ³n, fix pattern recognition
+    prompt = f"""Báº¡n lÃ  AI phÃ¢n tÃ­ch lá»‡nh giá»ng nÃ³i tiáº¿ng Viá»‡t cho app theo dÃµi calories.
 
-LỆNH CẦN PHÂN TÍCH: "{processed_text}"
+Lá»†NH Cáº¦N PHÃ‚N TÃCH: "{processed_text}"
 
-━━━ BƯỚC 1: XÁC ĐỊNH INTENT ━━━
+â”â”â” BÆ¯á»šC 1: XÃC Äá»ŠNH INTENT â”â”â”
 
-⚠️ QUAN TRỌNG - THỨ TỰ ƯU TIÊN:
+âš ï¸ QUAN TRá»ŒNG - THá»¨ Tá»° Æ¯U TIÃŠN:
 
-1. LOG_WEIGHT: Nếu có SỐ + đơn vị cân nặng (ký/kg/kilogram)
-   Patterns: "tôi X ký", "hôm nay X kg", "cân nặng X", "nặng X"
-   VD: "hôm nay tôi 70 ký" → LOG_WEIGHT (KHÔNG PHẢI ASK_CALORIES!)
+1. LOG_WEIGHT: Náº¿u cÃ³ Sá» + Ä‘Æ¡n vá»‹ cÃ¢n náº·ng (kÃ½/kg/kilogram)
+   Patterns: "tÃ´i X kÃ½", "hÃ´m nay X kg", "cÃ¢n náº·ng X", "náº·ng X"
+   VD: "hÃ´m nay tÃ´i 70 kÃ½" â†’ LOG_WEIGHT (KHÃ”NG PHáº¢I ASK_CALORIES!)
 
-2. ASK_CALORIES: CHỈ KHI hỏi "bao nhiêu calo" và KHÔNG có tên món cụ thể
-   Patterns: "ăn bao nhiêu calo?", "đã ăn bao nhiêu kcal?"
+2. ASK_CALORIES: CHá»ˆ KHI há»i "bao nhiÃªu calo" vÃ  KHÃ”NG cÃ³ tÃªn mÃ³n cá»¥ thá»ƒ
+   Patterns: "Äƒn bao nhiÃªu calo?", "Ä‘Ã£ Äƒn bao nhiÃªu kcal?"
    
-3. ADD_FOOD: Nếu có TÊN MÓN ĂN cụ thể (dù có "ăn" hay không)
-   Patterns: "thêm/ghi/ăn [món]", "tôi ăn [món]", "hôm nay ăn [món]"
-   VD: "tôi ăn 100g cơm" → ADD_FOOD (KHÔNG PHẢI ASK_CALORIES!)
-   VD: "thêm 100g cơm và 200g gà" → ADD_FOOD với 2 món
+3. ADD_FOOD: Náº¿u cÃ³ TÃŠN MÃ“N Ä‚N cá»¥ thá»ƒ (dÃ¹ cÃ³ "Äƒn" hay khÃ´ng)
+   Patterns: "thÃªm/ghi/Äƒn [mÃ³n]", "tÃ´i Äƒn [mÃ³n]", "hÃ´m nay Äƒn [mÃ³n]"
+   VD: "tÃ´i Äƒn 100g cÆ¡m" â†’ ADD_FOOD (KHÃ”NG PHáº¢I ASK_CALORIES!)
+   VD: "thÃªm 100g cÆ¡m vÃ  200g gÃ " â†’ ADD_FOOD vá»›i 2 mÃ³n
 
-4. UNKNOWN: Không khớp pattern nào
+4. UNKNOWN: KhÃ´ng khá»›p pattern nÃ o
 
-━━━ BƯỚC 2: TRÍCH XUẤT ENTITIES ━━━
+â”â”â” BÆ¯á»šC 2: TRÃCH XUáº¤T ENTITIES â”â”â”
 
 LOG_WEIGHT:
-• weight: số kg (chuyển chữ → số!)
-• Mapping: "bảy mươi"=70, "sáu mươi lăm"=65, "năm lăm"=55, "bốn lăm"=45
+â€¢ weight: sá»‘ kg (chuyá»ƒn chá»¯ â†’ sá»‘!)
+â€¢ Mapping: "báº£y mÆ°Æ¡i"=70, "sÃ¡u mÆ°Æ¡i lÄƒm"=65, "nÄƒm lÄƒm"=55, "bá»‘n lÄƒm"=45
 
-ADD_FOOD (1 món):
-• foodName: tên món (chỉ tên, không số/đơn vị)  
-• quantity: số lượng (1,2,3...) - cho bát/đĩa/quả
-• weight: số gram nếu có "g/gam/gram"
-• unit: đơn vị đếm (bát/đĩa/quả/cái/ly)
-• mealType: breakfast/lunch/dinner/snack
+ADD_FOOD (1 mÃ³n):
+â€¢ foodName: tÃªn mÃ³n (chá»‰ tÃªn, khÃ´ng sá»‘/Ä‘Æ¡n vá»‹)  
+â€¢ quantity: sá»‘ lÆ°á»£ng (1,2,3...) - cho bÃ¡t/Ä‘Ä©a/quáº£
+â€¢ weight: sá»‘ gram náº¿u cÃ³ "g/gam/gram"
+â€¢ unit: Ä‘Æ¡n vá»‹ Ä‘áº¿m (bÃ¡t/Ä‘Ä©a/quáº£/cÃ¡i/ly)
+â€¢ mealType: breakfast/lunch/dinner/snack
 
-ADD_FOOD (NHIỀU MÓN - dùng khi có "và/với/cùng"):
-• foods: ARRAY các món, mỗi món có {{foodName, weight/quantity, unit}}
-• mealType: bữa ăn chung
+ADD_FOOD (NHIá»€U MÃ“N - dÃ¹ng khi cÃ³ "vÃ /vá»›i/cÃ¹ng"):
+â€¢ foods: ARRAY cÃ¡c mÃ³n, má»—i mÃ³n cÃ³ {{foodName, weight/quantity, unit}}
+â€¢ mealType: bá»¯a Äƒn chung
 
-ASK_CALORIES: entities rỗng {{}}
+ASK_CALORIES: entities rá»—ng {{}}
 
-━━━ VÍ DỤ THAM KHẢO ━━━
+â”â”â” VÃ Dá»¤ THAM KHáº¢O â”â”â”
 
 --- LOG_WEIGHT ---
-Input: "hôm nay tôi 70 ký"
-→ {{"intent":"LOG_WEIGHT","entities":{{"weight":70}},"confidence":0.95}}
+Input: "hÃ´m nay tÃ´i 70 kÃ½"
+â†’ {{"intent":"LOG_WEIGHT","entities":{{"weight":70}},"confidence":0.95}}
 
-Input: "tôi bảy mươi kg"
-→ {{"intent":"LOG_WEIGHT","entities":{{"weight":70}},"confidence":0.9}}
+Input: "tÃ´i báº£y mÆ°Æ¡i kg"
+â†’ {{"intent":"LOG_WEIGHT","entities":{{"weight":70}},"confidence":0.9}}
 
-Input: "cân nặng sáu mươi lăm"
-→ {{"intent":"LOG_WEIGHT","entities":{{"weight":65}},"confidence":0.9}}
+Input: "cÃ¢n náº·ng sÃ¡u mÆ°Æ¡i lÄƒm"
+â†’ {{"intent":"LOG_WEIGHT","entities":{{"weight":65}},"confidence":0.9}}
 
-Input: "hôm nay tôi một trăm hai mươi ký"
-→ {{"intent":"LOG_WEIGHT","entities":{{"weight":120}},"confidence":0.9}}
+Input: "hÃ´m nay tÃ´i má»™t trÄƒm hai mÆ°Æ¡i kÃ½"
+â†’ {{"intent":"LOG_WEIGHT","entities":{{"weight":120}},"confidence":0.9}}
 
-⚠️ CHUYỂN ĐỔI SỐ TIẾNG VIỆT:
-- "một trăm" = 100, "một trăm hai mươi" = 120, "một trăm linh năm" = 105
-- "bảy mươi lăm" = 75, "sáu mươi lăm" = 65, "tám mươi mốt" = 81
+âš ï¸ CHUYá»‚N Äá»”I Sá» TIáº¾NG VIá»†T:
+- "má»™t trÄƒm" = 100, "má»™t trÄƒm hai mÆ°Æ¡i" = 120, "má»™t trÄƒm linh nÄƒm" = 105
+- "báº£y mÆ°Æ¡i lÄƒm" = 75, "sÃ¡u mÆ°Æ¡i lÄƒm" = 65, "tÃ¡m mÆ°Æ¡i má»‘t" = 81
 
---- ADD_FOOD (1 món) ---
-Input: "tôi ăn 150g thịt heo bữa trưa"
-→ {{"intent":"ADD_FOOD","entities":{{"foodName":"thịt heo","weight":150,"mealType":"lunch"}},"confidence":0.95}}
+--- ADD_FOOD (1 mÃ³n) ---
+Input: "tÃ´i Äƒn 150g thá»‹t heo bá»¯a trÆ°a"
+â†’ {{"intent":"ADD_FOOD","entities":{{"foodName":"thá»‹t heo","weight":150,"mealType":"lunch"}},"confidence":0.95}}
 
-Input: "thêm 2 quả trứng sáng nay"
-→ {{"intent":"ADD_FOOD","entities":{{"foodName":"trứng","quantity":2,"unit":"quả","mealType":"breakfast"}},"confidence":0.95}}
+Input: "thÃªm 2 quáº£ trá»©ng sÃ¡ng nay"
+â†’ {{"intent":"ADD_FOOD","entities":{{"foodName":"trá»©ng","quantity":2,"unit":"quáº£","mealType":"breakfast"}},"confidence":0.95}}
 
---- ADD_FOOD (NHIỀU MÓN) ---
-Input: "thêm 200g cá và 150g rau bữa tối"
-→ {{"intent":"ADD_FOOD","entities":{{"foods":[{{"foodName":"cá","weight":200}},{{"foodName":"rau","weight":150}}],"mealType":"dinner"}},"confidence":0.9}}
+--- ADD_FOOD (NHIá»€U MÃ“N) ---
+Input: "thÃªm 200g cÃ¡ vÃ  150g rau bá»¯a tá»‘i"
+â†’ {{"intent":"ADD_FOOD","entities":{{"foods":[{{"foodName":"cÃ¡","weight":200}},{{"foodName":"rau","weight":150}}],"mealType":"dinner"}},"confidence":0.9}}
 
-Input: "ăn 1 bát phở và 1 ly trà đá"
-→ {{"intent":"ADD_FOOD","entities":{{"foods":[{{"foodName":"phở","quantity":1,"unit":"bát"}},{{"foodName":"trà đá","quantity":1,"unit":"ly"}}]}},"confidence":0.9}}
+Input: "Äƒn 1 bÃ¡t phá»Ÿ vÃ  1 ly trÃ  Ä‘Ã¡"
+â†’ {{"intent":"ADD_FOOD","entities":{{"foods":[{{"foodName":"phá»Ÿ","quantity":1,"unit":"bÃ¡t"}},{{"foodName":"trÃ  Ä‘Ã¡","quantity":1,"unit":"ly"}}]}},"confidence":0.9}}
 
-Input: "thêm 50g đậu và 100g khoai và 75g ngô"
-→ {{"intent":"ADD_FOOD","entities":{{"foods":[{{"foodName":"đậu","weight":50}},{{"foodName":"khoai","weight":100}},{{"foodName":"ngô","weight":75}}]}},"confidence":0.85}}
+Input: "thÃªm 50g Ä‘áº­u vÃ  100g khoai vÃ  75g ngÃ´"
+â†’ {{"intent":"ADD_FOOD","entities":{{"foods":[{{"foodName":"Ä‘áº­u","weight":50}},{{"foodName":"khoai","weight":100}},{{"foodName":"ngÃ´","weight":75}}]}},"confidence":0.85}}
 
-🚫 QUY TẮC TUYỆT ĐỐI - KHÔNG ĐƯỢC VI PHẠM:
-1. CHỈ PARSE NHỮNG MÓN CÓ TRONG INPUT! Nếu input nói "gà" thì CHỈ có "gà", KHÔNG thêm "cơm" hay món khác!
-2. COPY CHÍNH XÁC tên món từ input: "gà" → "gà", "bò" → "bò", "cơm" → "cơm"
-3. COPY CHÍNH XÁC số gram từ input: "100g" → 100, KHÔNG tự đổi thành 200
-4. ĐẾM ĐỦ số món: nếu input có 1 món thì output 1, có 2 món thì output 2, có 3 món thì output 3
+ðŸš« QUY Táº®C TUYá»†T Äá»I - KHÃ”NG ÄÆ¯á»¢C VI PHáº M:
+1. CHá»ˆ PARSE NHá»®NG MÃ“N CÃ“ TRONG INPUT! Náº¿u input nÃ³i "gÃ " thÃ¬ CHá»ˆ cÃ³ "gÃ ", KHÃ”NG thÃªm "cÆ¡m" hay mÃ³n khÃ¡c!
+2. COPY CHÃNH XÃC tÃªn mÃ³n tá»« input: "gÃ " â†’ "gÃ ", "bÃ²" â†’ "bÃ²", "cÆ¡m" â†’ "cÆ¡m"
+3. COPY CHÃNH XÃC sá»‘ gram tá»« input: "100g" â†’ 100, KHÃ”NG tá»± Ä‘á»•i thÃ nh 200
+4. Äáº¾M Äá»¦ sá»‘ mÃ³n: náº¿u input cÃ³ 1 mÃ³n thÃ¬ output 1, cÃ³ 2 mÃ³n thÃ¬ output 2, cÃ³ 3 mÃ³n thÃ¬ output 3
 
-🚫 VÍ DỤ SAI (KHÔNG LÀM THẾ NÀY):
-❌ Input: "thêm 100g gà" → Output có thêm "cơm" (SAI! Input không có cơm)
-❌ Input: "100g bò" → Output: weight:200 (SAI! Phải là 100)
+ðŸš« VÃ Dá»¤ SAI (KHÃ”NG LÃ€M THáº¾ NÃ€Y):
+âŒ Input: "thÃªm 100g gÃ " â†’ Output cÃ³ thÃªm "cÆ¡m" (SAI! Input khÃ´ng cÃ³ cÆ¡m)
+âŒ Input: "100g bÃ²" â†’ Output: weight:200 (SAI! Pháº£i lÃ  100)
 
 --- ASK_CALORIES ---
-Input: "hôm nay ăn bao nhiêu calo"  
-→ {{"intent":"ASK_CALORIES","entities":{{}},"confidence":0.9}}
+Input: "hÃ´m nay Äƒn bao nhiÃªu calo"  
+â†’ {{"intent":"ASK_CALORIES","entities":{{}},"confidence":0.9}}
 
-Input: "tôi đã tiêu thụ bao nhiêu calories"
-→ {{"intent":"ASK_CALORIES","entities":{{}},"confidence":0.9}}
+Input: "tÃ´i Ä‘Ã£ tiÃªu thá»¥ bao nhiÃªu calories"
+â†’ {{"intent":"ASK_CALORIES","entities":{{}},"confidence":0.9}}
 
-━━━ TRẢ LỜI ━━━
-CHỈ trả về JSON hợp lệ, KHÔNG giải thích:"""
+â”â”â” TRáº¢ Lá»œI â”â”â”
+CHá»ˆ tráº£ vá» JSON há»£p lá»‡, KHÃ”NG giáº£i thÃ­ch:"""
 
     try:
-        response = query_ollama(prompt, use_cache=False)  # Không cache voice commands
+        response = query_ollama(prompt, use_cache=False)  # KhÃ´ng cache voice commands
         
         if response:
             # Parse JSON from response
@@ -1005,16 +1022,16 @@ CHỈ trả về JSON hợp lệ, KHÔNG giải thích:"""
                     result["confidence"] = 0.5
                 
                 # POST-PROCESSING: Validate ADD_FOOD entities
-                # Loại bỏ các món ăn không có trong input (chống hallucination)
+                # Loáº¡i bá» cÃ¡c mÃ³n Äƒn khÃ´ng cÃ³ trong input (chá»‘ng hallucination)
                 if result["intent"] == "ADD_FOOD":
                     text_lower = text.lower()
                     
-                    # Nếu có nhiều món (foods array)
+                    # Náº¿u cÃ³ nhiá»u mÃ³n (foods array)
                     if "foods" in result.get("entities", {}):
                         valid_foods = []
                         for food in result["entities"]["foods"]:
                             food_name = food.get("foodName", "").lower()
-                            # Chỉ giữ lại món có trong input
+                            # Chá»‰ giá»¯ láº¡i mÃ³n cÃ³ trong input
                             if food_name and food_name in text_lower:
                                 valid_foods.append(food)
                             else:
@@ -1023,12 +1040,12 @@ CHỈ trả về JSON hợp lệ, KHÔNG giải thích:"""
                         if valid_foods:
                             result["entities"]["foods"] = valid_foods
                         else:
-                            # Không còn food nào valid -> UNKNOWN
+                            # KhÃ´ng cÃ²n food nÃ o valid -> UNKNOWN
                             result["intent"] = "UNKNOWN"
                             result["confidence"] = 0.3
                             logger.warning("All foods filtered - returning UNKNOWN")
                     
-                    # Nếu chỉ 1 món (foodName)
+                    # Náº¿u chá»‰ 1 mÃ³n (foodName)
                     elif "foodName" in result.get("entities", {}):
                         food_name = result["entities"]["foodName"].lower()
                         if food_name not in text_lower:
@@ -1051,5 +1068,6 @@ CHỈ trả về JSON hợp lệ, KHÔNG giải thích:"""
         "confidence": 0.0,
         "rawText": text,
         "source": "fallback",
-        "error": "Không thể phân tích lệnh"
+        "error": "KhÃ´ng thá»ƒ phÃ¢n tÃ­ch lá»‡nh"
     }
+

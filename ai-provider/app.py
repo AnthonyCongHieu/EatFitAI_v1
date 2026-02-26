@@ -243,8 +243,8 @@ def detect() -> Response | tuple[Dict[str, str], int]:
         # Cleanup uploaded file
         if path and os.path.exists(path):
             try:
-                # os.remove(path)
-                logger.debug(f"Cleaned up file: {path} (SKIPPED FOR DEBUG)")
+                os.remove(path)
+                logger.debug(f"Cleaned up file: {path}")
             except Exception as e:
                 logger.warning(f"Failed to cleanup {path}: {e}")
 

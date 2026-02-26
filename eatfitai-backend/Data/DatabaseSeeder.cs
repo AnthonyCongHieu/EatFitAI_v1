@@ -1,8 +1,8 @@
 using EatFitAI.API.DbScaffold.Models;
 using EatFitAI.API.DbScaffold.Data;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Hosting;
 using System.Security.Cryptography;
-using System.Text;
 
 namespace EatFitAI.API.Data
 {
@@ -12,6 +12,7 @@ namespace EatFitAI.API.Data
         {
             using var scope = serviceProvider.CreateScope();
             var context = scope.ServiceProvider.GetRequiredService<EatFitAIDbContext>();
+            var env = scope.ServiceProvider.GetRequiredService<IHostEnvironment>();
 
             await SeedActivityLevelsAsync(context);
             await SeedServingUnitsAsync(context);
@@ -19,7 +20,7 @@ namespace EatFitAI.API.Data
             await SeedFoodItemsAsync(context);
             await SeedFoodServingsAsync(context);
             await SeedRecipesAsync(context);  // Thêm seed recipes
-            await SeedDefaultUserPasswordsAsync(context);
+            await SeedDefaultUserPasswordsAsync(context, env);
         }
 
         private static async Task SeedActivityLevelsAsync(EatFitAIDbContext context)
@@ -291,13 +292,20 @@ namespace EatFitAI.API.Data
             await context.SaveChangesAsync();
         }
 
-        private static async Task SeedDefaultUserPasswordsAsync(EatFitAIDbContext context)
+        private static async Task SeedDefaultUserPasswordsAsync(EatFitAIDbContext context, IHostEnvironment env)
         {
-            const string defaultPassword = "EatFit@123"; // default password for seeded users
+            var defaultPassword = Environment.GetEnvironmentVariable("EATFITAI_SEED_DEFAULT_PASSWORD");
+            if (string.IsNullOrWhiteSpace(defaultPassword))
+            {
+                if (!env.IsDevelopment())
+                {
+                    return;
+                }
 
-            using var sha256 = SHA256.Create();
-            var hashedBytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(defaultPassword));
-            var passwordHash = Convert.ToBase64String(hashedBytes);
+                defaultPassword = "EatFit@123";
+            }
+
+            var passwordHash = HashPassword(defaultPassword);
 
             var usersToUpdate = await context.Users
                 .Where(u => string.IsNullOrEmpty(u.PasswordHash))
@@ -314,6 +322,23 @@ namespace EatFitAI.API.Data
             }
 
             await context.SaveChangesAsync();
+        }
+
+        private static string HashPassword(string password)
+        {
+            const int iterations = 100_000;
+            const int saltSize = 16;
+            const int keySize = 32;
+
+            var salt = RandomNumberGenerator.GetBytes(saltSize);
+            var hash = Rfc2898DeriveBytes.Pbkdf2(
+                password,
+                salt,
+                iterations,
+                HashAlgorithmName.SHA256,
+                keySize);
+
+            return $"PBKDF2${iterations}${Convert.ToBase64String(salt)}${Convert.ToBase64String(hash)}";
         }
 
         /// <summary>

@@ -2,7 +2,6 @@ using EatFitAI.API.DbScaffold.Models;
 using EatFitAI.API.DbScaffold.Data;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Cryptography;
-using System.Text;
 
 namespace EatFitAI.API.Data
 {
@@ -315,9 +314,19 @@ namespace EatFitAI.API.Data
 
         private static string HashPassword(string password)
         {
-            using var sha256 = SHA256.Create();
-            var hashedBytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(password));
-            return Convert.ToBase64String(hashedBytes);
+            const int iterations = 100_000;
+            const int saltSize = 16;
+            const int keySize = 32;
+
+            var salt = RandomNumberGenerator.GetBytes(saltSize);
+            var hash = Rfc2898DeriveBytes.Pbkdf2(
+                password,
+                salt,
+                iterations,
+                HashAlgorithmName.SHA256,
+                keySize);
+
+            return $"PBKDF2${iterations}${Convert.ToBase64String(salt)}${Convert.ToBase64String(hash)}";
         }
     }
 }

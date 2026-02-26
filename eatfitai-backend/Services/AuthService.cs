@@ -26,6 +26,10 @@ namespace EatFitAI.API.Services
         private readonly IHostEnvironment _env;
         private static readonly TimeSpan ResetCodeLifetime = TimeSpan.FromMinutes(10);
         private const string ResetCacheKeyPrefix = "pwdreset_";
+        private const string PasswordHashPrefix = "PBKDF2";
+        private const int PasswordHashIterations = 100_000;
+        private const int PasswordSaltSize = 16;
+        private const int PasswordKeySize = 32;
 
         public AuthService(
             IUserRepository userRepository,
@@ -123,9 +127,19 @@ namespace EatFitAI.API.Services
         public async Task<AuthResponse> LoginAsync(LoginRequest request)
         {
             var user = await _userRepository.GetByEmailAsync(request.Email);
-            if (user == null || !VerifyPassword(request.Password, user.PasswordHash))
+            if (user == null)
             {
                 throw new UnauthorizedAccessException("Invalid email or password");
+            }
+
+            if (!VerifyPassword(request.Password, user.PasswordHash, out var needsRehash))
+            {
+                throw new UnauthorizedAccessException("Invalid email or password");
+            }
+
+            if (needsRehash)
+            {
+                user.PasswordHash = HashPassword(request.Password);
             }
 
             // Bug #7 fix: Kiểm tra email đã được xác minh chưa
@@ -167,7 +181,7 @@ namespace EatFitAI.API.Services
             try
             {
                 var tokenHandler = new JwtSecurityTokenHandler();
-                var key = Encoding.ASCII.GetBytes(_configuration["Jwt:Key"] ?? "default-secret-key");
+                var key = GetJwtSigningKey();
 
                 tokenHandler.ValidateToken(token, new TokenValidationParameters
                 {
@@ -210,7 +224,7 @@ namespace EatFitAI.API.Services
         private string GenerateJwtToken(User user)
         {
             var tokenHandler = new JwtSecurityTokenHandler();
-            var key = Encoding.ASCII.GetBytes(_configuration["Jwt:Key"] ?? "default-secret-key");
+            var key = GetJwtSigningKey();
 
             var tokenDescriptor = new SecurityTokenDescriptor
             {
@@ -240,21 +254,72 @@ namespace EatFitAI.API.Services
 
         private string HashPassword(string password)
         {
-            using var sha256 = SHA256.Create();
-            var hashedBytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(password));
-            return Convert.ToBase64String(hashedBytes);
+            var salt = RandomNumberGenerator.GetBytes(PasswordSaltSize);
+            var hash = Rfc2898DeriveBytes.Pbkdf2(
+                password,
+                salt,
+                PasswordHashIterations,
+                HashAlgorithmName.SHA256,
+                PasswordKeySize);
+
+            return $"{PasswordHashPrefix}${PasswordHashIterations}${Convert.ToBase64String(salt)}${Convert.ToBase64String(hash)}";
         }
 
-        private bool VerifyPassword(string password, string? hashedPassword)
+        private bool VerifyPassword(string password, string? hashedPassword, out bool needsRehash)
         {
-            if (string.IsNullOrEmpty(hashedPassword))
-                return false;
+            needsRehash = false;
 
+            if (string.IsNullOrEmpty(hashedPassword))
+            {
+                return false;
+            }
+
+            if (hashedPassword.StartsWith($"{PasswordHashPrefix}$", StringComparison.Ordinal))
+            {
+                try
+                {
+                    var parts = hashedPassword.Split('$', StringSplitOptions.RemoveEmptyEntries);
+                    if (parts.Length != 4 || !int.TryParse(parts[1], out var iterations))
+                    {
+                        return false;
+                    }
+
+                    var salt = Convert.FromBase64String(parts[2]);
+                    var expectedHash = Convert.FromBase64String(parts[3]);
+                    var computedHash = Rfc2898DeriveBytes.Pbkdf2(
+                        password,
+                        salt,
+                        iterations,
+                        HashAlgorithmName.SHA256,
+                        expectedHash.Length);
+
+                    return CryptographicOperations.FixedTimeEquals(computedHash, expectedHash);
+                }
+                catch (FormatException)
+                {
+                    return false;
+                }
+            }
+
+            // Legacy SHA-256 fallback for old accounts; upgraded on successful login.
             using var sha256 = SHA256.Create();
             var hashedBytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(password));
-            var hashedInput = Convert.ToBase64String(hashedBytes);
+            var legacyHash = Convert.ToBase64String(hashedBytes);
+            var isLegacyMatch = string.Equals(legacyHash, hashedPassword, StringComparison.Ordinal);
+            needsRehash = isLegacyMatch;
+            return isLegacyMatch;
+        }
 
-            return hashedInput == hashedPassword;
+        private byte[] GetJwtSigningKey()
+        {
+            var key = _configuration["Jwt:Key"];
+            if (string.IsNullOrWhiteSpace(key) ||
+                string.Equals(key, "default-secret-key", StringComparison.OrdinalIgnoreCase))
+            {
+                throw new InvalidOperationException("Jwt:Key is missing or insecure.");
+            }
+
+            return Encoding.ASCII.GetBytes(key);
         }
 
         public async Task LogoutAsync(string refreshToken)

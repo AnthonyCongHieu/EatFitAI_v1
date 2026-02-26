@@ -277,7 +277,7 @@ namespace EatFitAI.API.Controllers
         private string GenerateJwtToken(User user)
         {
             var tokenHandler = new JwtSecurityTokenHandler();
-            var key = Encoding.ASCII.GetBytes(_configuration["Jwt:Key"] ?? "default-secret-key");
+            var key = GetJwtSigningKey();
 
             var tokenDescriptor = new SecurityTokenDescriptor
             {
@@ -295,6 +295,18 @@ namespace EatFitAI.API.Controllers
 
             var token = tokenHandler.CreateToken(tokenDescriptor);
             return tokenHandler.WriteToken(token);
+        }
+
+        private byte[] GetJwtSigningKey()
+        {
+            var key = _configuration["Jwt:Key"];
+            if (string.IsNullOrWhiteSpace(key) ||
+                string.Equals(key, "default-secret-key", StringComparison.OrdinalIgnoreCase))
+            {
+                throw new InvalidOperationException("Jwt:Key is missing or insecure.");
+            }
+
+            return Encoding.ASCII.GetBytes(key);
         }
 
         private string GenerateRefreshToken()

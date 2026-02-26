@@ -1,5 +1,5 @@
-// Service xử lý tìm kiếm thực phẩm và thao tác nhật ký
-// Chú thích bằng tiếng Việt không dấu
+﻿// Service xá»­ lÃ½ tÃ¬m kiáº¿m thá»±c pháº©m vÃ  thao tÃ¡c nháº­t kÃ½
+// ChÃº thÃ­ch báº±ng tiáº¿ng Viá»‡t khÃ´ng dáº¥u
 
 import apiClient from './apiClient';
 import type { FoodItemDto, MealTypeId } from '../types';
@@ -106,7 +106,7 @@ const normalizeUserFoodDetail = (data: ApiUserFoodDetail): FoodDetail => ({
 });
 
 export const foodService = {
-  // Tìm kiếm thực phẩm theo từ khóa
+  // TÃ¬m kiáº¿m thá»±c pháº©m theo tá»« khÃ³a
   async searchFoods(query: string, limit = 50): Promise<SearchFoodsResult> {
     const response = await apiClient.get('/api/search', { params: { q: query, limit } });
     const data = response.data as FoodItemDto[];
@@ -114,7 +114,7 @@ export const foodService = {
     return { items, totalCount: data.length };
   },
 
-  // Tìm kiếm tất cả (catalog + user food items)
+  // TÃ¬m kiáº¿m táº¥t cáº£ (catalog + user food items)
   async searchAllFoods(query: string, limit = 50): Promise<SearchFoodsResult> {
     const response = await apiClient.get('/api/food/search-all', {
       params: { q: query, limit },
@@ -137,21 +137,29 @@ export const foodService = {
     return { items, totalCount: rows.length };
   },
 
-  // Lấy chi tiết món ăn (tự động chọn endpoint dựa trên source)
+  // Láº¥y chi tiáº¿t mÃ³n Äƒn (tá»± Ä‘á»™ng chá»n endpoint dá»±a trÃªn source)
   async getFoodDetail(foodId: string, source?: 'catalog' | 'user'): Promise<FoodDetail> {
-    // Nếu source là 'user', gọi endpoint user-food-items
+    // Náº¿u source lÃ  'user', gá»i endpoint user-food-items
     if (source === 'user') {
       const response = await apiClient.get(`/api/user-food-items/${foodId}`);
       return normalizeUserFoodDetail(response.data);
     }
-    // Mặc định là catalog - Backend trả về { foodItem, servings }
-    const response = await apiClient.get(`/api/${foodId}`);
-    // Unwrap foodItem từ response vì backend trả về dạng { foodItem, servings }
-    const data = response.data?.foodItem ?? response.data;
-    return normalizeFoodDetail(data as FoodItemDtoExtended);
+    // Máº·c Ä‘á»‹nh lÃ  catalog - Backend tráº£ vá» { foodItem, servings }
+    try {
+      const response = await apiClient.get(`/api/food/${foodId}`);
+      const data = response.data?.foodItem ?? response.data;
+      return normalizeFoodDetail(data as FoodItemDtoExtended);
+    } catch (error: any) {
+      if (error?.response?.status !== 404) {
+        throw error;
+      }
+      const response = await apiClient.get(`/api/${foodId}`);
+      const data = response.data?.foodItem ?? response.data;
+      return normalizeFoodDetail(data as FoodItemDtoExtended);
+    }
   },
 
-  // Thêm entry vào nhật ký từ catalog food
+  // ThÃªm entry vÃ o nháº­t kÃ½ tá»« catalog food
   async addDiaryEntry(payload: {
     mealTypeId: MealTypeId;
     foodId: string;
@@ -169,7 +177,7 @@ export const foodService = {
     });
   },
 
-  // Thêm entry vào nhật ký từ user‑created food item
+  // ThÃªm entry vÃ o nháº­t kÃ½ tá»« userâ€‘created food item
   async addDiaryEntryFromUserFoodItem(payload: {
     mealTypeId: MealTypeId;
     userFoodItemId: string;
@@ -195,7 +203,7 @@ export const foodService = {
     });
   },
 
-  // Tạo món ăn tự chế
+  // Táº¡o mÃ³n Äƒn tá»± cháº¿
   async createCustomDish(payload: {
     dishName: string;
     description?: string | null;
@@ -208,7 +216,7 @@ export const foodService = {
     });
   },
 
-  // Lấy danh sách user food items (có pagination)
+  // Láº¥y danh sÃ¡ch user food items (cÃ³ pagination)
   async getUserFoodItems(
     query?: string,
     page = 1,
@@ -220,7 +228,7 @@ export const foodService = {
     return response.data as ApiSearchResponse<ApiUserFoodDetail>;
   },
 
-  // Tạo user food item (multipart/form-data)
+  // Táº¡o user food item (multipart/form-data)
   async createUserFoodItem(payload: FormData): Promise<any> {
     const response = await apiClient.post('/api/user-food-items', payload, {
       headers: { 'Content-Type': 'multipart/form-data' },
@@ -228,7 +236,7 @@ export const foodService = {
     return response.data;
   },
 
-  // Cập nhật user food item
+  // Cáº­p nháº­t user food item
   async updateUserFoodItem(id: number, payload: FormData): Promise<any> {
     const response = await apiClient.put(`/api/user-food-items/${id}`, payload, {
       headers: { 'Content-Type': 'multipart/form-data' },
@@ -236,7 +244,7 @@ export const foodService = {
     return response.data;
   },
 
-  // Xóa user food item
+  // XÃ³a user food item
   async deleteUserFoodItem(id: number): Promise<void> {
     await apiClient.delete(`/api/user-food-items/${id}`);
   },
@@ -244,18 +252,14 @@ export const foodService = {
   // --- Favorites ---
   async getFavorites(): Promise<FoodItem[]> {
     const response = await apiClient.get('/api/favorites');
-    // Defensive coding: Đảm bảo response.data là array
+    // Defensive coding: Äáº£m báº£o response.data lÃ  array
     const data = Array.isArray(response.data) ? response.data : [];
-    console.log('[foodService] getFavorites response:', data.length, 'items');
 
-    // Map từng item, log nếu có field thiếu
+    // Map tá»«ng item
     return data.map((item: any) => {
-      if (!item?.foodItemId && !item?.id) {
-        console.warn('[foodService] Favorite item missing id:', item);
-      }
       return {
         id: String(item?.foodItemId ?? item?.id ?? ''),
-        name: item?.foodName ?? item?.name ?? 'Món ăn',
+        name: item?.foodName ?? item?.name ?? 'MÃ³n Äƒn',
         nameEn: item?.foodNameEn ?? null,
         brand: null,
         calories: item?.caloriesPer100g ?? item?.calories ?? null,
@@ -281,3 +285,4 @@ export const foodService = {
     return response.data.isFavorite;
   },
 };
+

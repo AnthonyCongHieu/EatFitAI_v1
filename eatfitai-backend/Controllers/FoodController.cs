@@ -68,7 +68,8 @@ namespace EatFitAI.API.Controllers
             }
         }
 
-        [HttpGet("{id}")]
+        [HttpGet("{id:int}")]
+        [HttpGet("food/{id:int}")]
         public async Task<ActionResult<dynamic>> GetFoodItem(int id)
         {
             try

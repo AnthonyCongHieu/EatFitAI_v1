@@ -33,7 +33,7 @@ namespace EatFitAI.API.Middleware
             try
             {
                 var tokenHandler = new JwtSecurityTokenHandler();
-                var key = Encoding.ASCII.GetBytes(_configuration["Jwt:Key"] ?? "default-secret-key");
+                var key = GetJwtSigningKey();
 
                 tokenHandler.ValidateToken(token, new TokenValidationParameters
                 {
@@ -55,6 +55,18 @@ namespace EatFitAI.API.Middleware
                 // Do nothing if jwt validation fails
                 // User is not attached to context so request won't have access to secure routes
             }
+        }
+
+        private byte[] GetJwtSigningKey()
+        {
+            var key = _configuration["Jwt:Key"];
+            if (string.IsNullOrWhiteSpace(key) ||
+                string.Equals(key, "default-secret-key", StringComparison.OrdinalIgnoreCase))
+            {
+                throw new InvalidOperationException("Jwt:Key is missing or insecure.");
+            }
+
+            return Encoding.ASCII.GetBytes(key);
         }
     }
 }

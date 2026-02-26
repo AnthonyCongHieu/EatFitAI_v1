@@ -43,11 +43,20 @@ builder.Services.AddControllers()
 builder.Services.AddEndpointsApiExplorer();
 
 
+<<<<<<< Updated upstream
 // CORS - Environment-aware configuration
+=======
+// CORS from config (supports exact match and simple wildcard suffix/prefix, e.g. exp://* or http://localhost:*)
+>>>>>>> Stashed changes
 var allowedOrigins = builder.Configuration
     .GetSection("AllowedOrigins")
-    .Get<string[]>() ?? Array.Empty<string>();
+    .Get<string[]>()?
+    .Where(x => !string.IsNullOrWhiteSpace(x))
+    .Select(x => x.Trim())
+    .ToArray()
+    ?? Array.Empty<string>();
 
+<<<<<<< Updated upstream
 builder.Services.AddCors(o =>
 {
     // Development: Allow all origins for easier testing
@@ -97,6 +106,55 @@ builder.Services.AddRateLimiter(options =>
         opt.QueueLimit = 10;
     });
 });
+=======
+if (allowedOrigins.Length == 0 && builder.Environment.IsDevelopment())
+{
+    allowedOrigins = new[]
+    {
+        "http://localhost:*",
+        "http://10.0.2.2:*",
+        "exp://*",
+    };
+}
+
+static bool IsOriginAllowed(string origin, string[] rules)
+{
+    if (string.IsNullOrWhiteSpace(origin))
+    {
+        return false;
+    }
+
+    foreach (var rule in rules)
+    {
+        if (string.IsNullOrWhiteSpace(rule))
+        {
+            continue;
+        }
+
+        if (string.Equals(origin, rule, StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+
+        if (rule.EndsWith("*", StringComparison.Ordinal))
+        {
+            var prefix = rule[..^1];
+            if (origin.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+        }
+    }
+
+    return false;
+}
+
+builder.Services.AddCors(o => o.AddPolicy("AppCors",
+    p => p.SetIsOriginAllowed(origin => IsOriginAllowed(origin, allowedOrigins))
+          .AllowAnyHeader()
+          .AllowAnyMethod()
+          .AllowCredentials()));
+>>>>>>> Stashed changes
 
 // Add Swagger
 builder.Services.AddSwaggerGen(c =>
@@ -207,6 +265,15 @@ builder.Services.AddHealthChecks()
         name: "sql",
         timeout: TimeSpan.FromSeconds(3));
 
+var jwtKey = builder.Configuration["Jwt:Key"];
+if (string.IsNullOrWhiteSpace(jwtKey) ||
+    string.Equals(jwtKey, "default-secret-key", StringComparison.OrdinalIgnoreCase) ||
+    string.Equals(jwtKey, "REPLACE_WITH_USER_SECRET", StringComparison.OrdinalIgnoreCase))
+{
+    throw new InvalidOperationException(
+        "Jwt:Key is missing or insecure. Configure a strong secret via appsettings or user-secrets.");
+}
+
 // Add JWT Authentication
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
@@ -215,7 +282,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         {
             ValidateIssuerSigningKey = true,
             IssuerSigningKey = new SymmetricSecurityKey(
-                Encoding.ASCII.GetBytes(builder.Configuration["Jwt:Key"] ?? "default-secret-key")),
+                Encoding.ASCII.GetBytes(jwtKey)),
             ValidateIssuer = false,
             ValidateAudience = false,
             ClockSkew = TimeSpan.Zero
@@ -270,6 +337,7 @@ else
 // Add routing
 app.UseRouting();
 
+<<<<<<< Updated upstream
 // Rate Limiting middleware (must be before CORS and Auth)
 app.UseRateLimiter();
 
@@ -282,6 +350,9 @@ else
 {
     app.UseCors("ProdCors");
 }
+=======
+app.UseCors("AppCors");
+>>>>>>> Stashed changes
 
 // Add authentication and authorization middleware
 app.UseAuthentication();
@@ -293,7 +364,18 @@ app.UseStaticFiles();
 app.MapControllers();
 
 app.MapGet("/health/live", () => Results.Ok(new { status = "live" }));
-app.MapGet("/health/ready", async (EatFitAI.API.DbScaffold.Data.EatFitAIDbContext db) => { try { await db.Database.ExecuteSqlRawAsync("SELECT 1"); return Results.Ok(new { status = "ready" }); } catch (Exception ex) { return Results.Problem(title: "DB not ready", detail: ex.Message, statusCode: 503); } });
+app.MapGet("/health/ready", async (EatFitAI.API.DbScaffold.Data.EatFitAIDbContext db) =>
+{
+    try
+    {
+        await db.Database.ExecuteSqlRawAsync("SELECT 1");
+        return Results.Ok(new { status = "ready" });
+    }
+    catch
+    {
+        return Results.Problem(title: "DB not ready", statusCode: 503);
+    }
+});
 // Simple health endpoint for mobile ping
 app.MapGet("/health", () => Results.Ok(new { status = "ok" }));
 
