@@ -6,6 +6,8 @@
     "prestart": "node scripts/generate-local-ip.js",
     "predev": "node scripts/generate-local-ip.js",
     "dev": "env-cmd -f .env.development expo start",
+    "dev:emulator": "env-cmd -f .env.development expo start",
+    "dev:device": "env-cmd -f .env.development expo start --host lan",
     "start": "env-cmd -f .env expo start",
     "android": "expo run:android",
     "ios": "expo run:ios",
@@ -15,7 +17,8 @@
     "format": "prettier --write .",
     "prepare": "husky install",
     "typegen": "node scripts/generate-types.js",
-    "test": "jest --runInBand"
+    "test": "jest --runInBand",
+    "appium:smoke": "npm --prefix ../tools/appium run smoke:android"
   },
   "lint-staged": {
     "*.{ts,tsx,js,jsx}": [
@@ -108,6 +111,6 @@
     "typescript": "~5.3.3"
   },
   "engines": {
-    "node": ">=18.0.0"
+    "node": "20.x"
   }
 }
