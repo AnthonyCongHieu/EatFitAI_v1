@@ -12,6 +12,7 @@ $backendProject = Join-Path $repoRoot "eatfitai-backend\EatFitAI.API.csproj"
 $mobileEnvFile = Join-Path $repoRoot "eatfitai-mobile\.env.development"
 $aiHealthUrl = "http://127.0.0.1:5050/healthz"
 $backendHealthUrl = "http://127.0.0.1:5247/health"
+$androidSdkRoot = if ($env:ANDROID_SDK_ROOT) { $env:ANDROID_SDK_ROOT } else { Join-Path $env:LOCALAPPDATA "Android\Sdk" }
 
 $failures = New-Object System.Collections.Generic.List[string]
 $warnings = New-Object System.Collections.Generic.List[string]
@@ -68,6 +69,33 @@ function Resolve-ExternalCommandPath {
     return $CommandPath
 }
 
+function Get-PreferredCommandInfo {
+    param(
+        [string]$Command
+    )
+
+    $resolved = Get-Command $Command -ErrorAction SilentlyContinue
+    if ($resolved) {
+        return $resolved
+    }
+
+    $fallbackCandidates = switch ($Command) {
+        "adb" { @((Join-Path $androidSdkRoot "platform-tools\adb.exe")) }
+        "emulator" { @((Join-Path $androidSdkRoot "emulator\emulator.exe")) }
+        "ollama" { @((Join-Path $env:LOCALAPPDATA "Programs\Ollama\ollama.exe")) }
+        "appium" { @((Join-Path $env:APPDATA "npm\appium.cmd"), (Join-Path $env:APPDATA "npm\appium.ps1")) }
+        default { @() }
+    }
+
+    foreach ($candidate in $fallbackCandidates) {
+        if (Test-Path $candidate) {
+            return Get-Command $candidate -ErrorAction SilentlyContinue
+        }
+    }
+
+    return $null
+}
+
 function Test-CommandVersion {
     param(
         [string]$Name,
@@ -76,7 +104,7 @@ function Test-CommandVersion {
         [string]$ExpectedContains = ""
     )
 
-    $cmd = Get-Command $Command -ErrorAction SilentlyContinue
+    $cmd = Get-PreferredCommandInfo -Command $Command
     if (-not $cmd) {
         $failures.Add("$Name is missing.")
         Write-CheckResult -Name $Name -Ok $false -Details "command not found"
@@ -119,7 +147,7 @@ Test-CommandVersion -Name "sqlcmd" -Command "sqlcmd" -Arguments @("-?")
 Test-CommandVersion -Name "ollama" -Command "ollama" -Arguments @("--version")
 
 foreach ($tool in @("adb", "emulator", "appium")) {
-    $cmd = Get-Command $tool -ErrorAction SilentlyContinue
+    $cmd = Get-PreferredCommandInfo -Command $tool
     if ($cmd) {
         Write-CheckResult -Name $tool -Ok $true -Details (Get-CommandPathSafe -CommandInfo $cmd -Fallback $tool)
     } else {
@@ -128,7 +156,6 @@ foreach ($tool in @("adb", "emulator", "appium")) {
     }
 }
 
-$androidSdkRoot = if ($env:ANDROID_SDK_ROOT) { $env:ANDROID_SDK_ROOT } else { Join-Path $env:LOCALAPPDATA "Android\Sdk" }
 if (Test-Path $androidSdkRoot) {
     Write-CheckResult -Name "ANDROID_SDK_ROOT" -Ok $true -Details $androidSdkRoot
 } else {
@@ -136,7 +163,7 @@ if (Test-Path $androidSdkRoot) {
     Write-CheckResult -Name "ANDROID_SDK_ROOT" -Ok $false -Details $androidSdkRoot
 }
 
-$emulatorCmd = Get-Command emulator -ErrorAction SilentlyContinue
+$emulatorCmd = Get-PreferredCommandInfo -Command "emulator"
 if ($emulatorCmd) {
     $emulatorPath = Resolve-ExternalCommandPath -CommandPath (Get-CommandPathSafe -CommandInfo $emulatorCmd -Fallback "emulator")
     $emulatorList = & cmd.exe /c ('"{0}" -list-avds 2>&1' -f $emulatorPath) | Out-String

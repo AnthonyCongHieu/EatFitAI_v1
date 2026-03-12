@@ -4,6 +4,7 @@ param(
     [string]$AvdName = "EatFitAI_API_34",
     [string]$SystemImagePackage = "system-images;android-34;google_apis_playstore;x86_64",
     [string]$CmdlineToolsUrl = "https://dl.google.com/android/repository/commandlinetools-win-14742923_latest.zip",
+    [string]$CmdlineToolsArchivePath = "",
     [switch]$PersistUserEnvironment
 )
 
@@ -66,16 +67,42 @@ $sdkManager = Get-FirstFile -Root $SdkRoot -Filter "sdkmanager.bat"
 $avdManager = Get-FirstFile -Root $SdkRoot -Filter "avdmanager.bat"
 
 if (-not $sdkManager -or -not $avdManager) {
-    Write-Host "Android cmdline-tools were not found. Bootstrapping from $CmdlineToolsUrl"
+    if ($CmdlineToolsArchivePath -and -not (Test-Path $CmdlineToolsArchivePath)) {
+        throw "The provided cmdline-tools archive path does not exist: $CmdlineToolsArchivePath"
+    }
+
+    if ($CmdlineToolsArchivePath) {
+        Write-Host "Android cmdline-tools were not found. Bootstrapping from local archive: $CmdlineToolsArchivePath"
+    } else {
+        Write-Host "Android cmdline-tools were not found. Bootstrapping from $CmdlineToolsUrl"
+    }
     New-Item -ItemType Directory -Path $cmdlineToolsRoot -Force | Out-Null
 
-    $tempZip = Join-Path $env:TEMP "eatfitai-android-cmdline-tools.zip"
-    $tempExtractRoot = Join-Path $env:TEMP "eatfitai-android-cmdline-tools"
+    $tempId = [Guid]::NewGuid().ToString("N")
+    $tempZip = if ($CmdlineToolsArchivePath) {
+        $CmdlineToolsArchivePath
+    } else {
+        Join-Path $env:TEMP ("eatfitai-android-cmdline-tools-{0}.zip" -f $tempId)
+    }
+    $tempExtractRoot = Join-Path $env:TEMP ("eatfitai-android-cmdline-tools-{0}" -f $tempId)
     if (Test-Path $tempExtractRoot) {
         Remove-Item -Path $tempExtractRoot -Recurse -Force
     }
 
-    Invoke-WebRequest -Uri $CmdlineToolsUrl -OutFile $tempZip
+    if (-not $CmdlineToolsArchivePath) {
+        Write-Host "Downloading Android command-line tools archive..."
+        $curl = Get-Command curl.exe -ErrorAction SilentlyContinue
+        if ($curl) {
+            & $curl.Source -L $CmdlineToolsUrl -o $tempZip
+            if ($LASTEXITCODE -ne 0) {
+                throw "curl.exe failed to download the Android command-line tools archive."
+            }
+        } else {
+            Invoke-WebRequest -Uri $CmdlineToolsUrl -OutFile $tempZip
+        }
+    }
+
+    Write-Host "Extracting Android command-line tools archive..."
     Expand-Archive -Path $tempZip -DestinationPath $tempExtractRoot -Force
 
     $nestedRoot = Join-Path $tempExtractRoot "cmdline-tools"
@@ -94,7 +121,9 @@ if (-not $sdkManager -or -not $avdManager) {
     New-Item -ItemType Directory -Path $cmdlineToolsRoot -Force | Out-Null
     Move-Item -Path $nestedRoot -Destination $latestCmdlineToolsRoot -Force
 
-    Remove-Item -Path $tempZip -Force -ErrorAction SilentlyContinue
+    if (-not $CmdlineToolsArchivePath) {
+        Remove-Item -Path $tempZip -Force -ErrorAction SilentlyContinue
+    }
     Remove-Item -Path $tempExtractRoot -Recurse -Force -ErrorAction SilentlyContinue
 
     $sdkManager = Get-FirstFile -Root $SdkRoot -Filter "sdkmanager.bat"
@@ -120,8 +149,9 @@ $packages = @(
 )
 
 Write-Host "Accepting Android SDK licenses"
-cmd.exe /c ('(for /l %i in (1,1,50) do @echo y) | "{0}" --sdk_root="{1}" --licenses' -f $sdkManager, $SdkRoot)
-if ($LASTEXITCODE -ne 0) {
+$licenseOutput = (1..50 | ForEach-Object { "y" }) | & $sdkManager --sdk_root=$SdkRoot --licenses 2>&1 | Out-String
+Write-Host $licenseOutput
+if ($LASTEXITCODE -ne 0 -or $licenseOutput -notmatch "All SDK package licenses accepted") {
     throw "sdkmanager failed while accepting Android SDK licenses."
 }
 
