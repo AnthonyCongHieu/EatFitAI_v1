@@ -1,128 +1,56 @@
-# 🍎 EatFitAI
+# EatFitAI
 
-**Ứng dụng theo dõi dinh dưỡng cá nhân với tích hợp AI Vision**
+EatFitAI is a Windows-first development workspace for a nutrition tracking app with:
 
----
+- `eatfitai-mobile`: Expo / React Native client
+- `eatfitai-backend`: ASP.NET Core 9 Web API
+- `ai-provider`: local Python AI service for vision + Ollama-backed AI flows
 
-## 📋 Tổng quan
+## Canonical local setup
 
-EatFitAI giúp người dùng:
-- 📸 Chụp ảnh món ăn → AI nhận diện thực phẩm tự động
-- 📊 Theo dõi calories, protein, carbs, fat hàng ngày
-- 🎯 Đặt mục tiêu dinh dưỡng cá nhân hóa
-- 📈 Xem thống kê tuần/tháng với biểu đồ trực quan
-- 🗣️ Điều khiển bằng giọng nói (tiếng Việt)
+Use [SETUP_GUIDE.md](/D:/EatFitAI_v1/SETUP_GUIDE.md) as the single source of truth for local environment setup.
 
----
+Key defaults:
 
-## 🛠️ Tech Stack
+- Node `20.x`
+- .NET SDK `9.0.306`
+- Python `3.11`
+- Java `17`
+- SQL Server 2022 Developer (local instance)
+- Android emulator first, physical device as fallback
+- Backend secrets stored in `dotnet user-secrets`
 
-| Component | Công nghệ |
-|-----------|-----------|
-| **Mobile** | Expo SDK 54, React Native, TypeScript |
-| **Backend** | .NET 9, ASP.NET Core Web API |
-| **Database** | SQL Server / Supabase |
-| **AI Vision** | YOLOv8 (trained on Vietnamese food) |
-| **AI LLM** | Ollama (local) - llama3.2:3b |
-| **AI Voice** | PhoWhisper (Vietnamese STT) |
+## Quick local profile
 
----
+1. Restore or verify the local SQL Server database.
+2. Configure backend `user-secrets`.
+3. Start `ai-provider` on `http://127.0.0.1:5050`.
+4. Start backend on `http://localhost:5247`.
+5. Start mobile with `.env.development` pointing to `http://10.0.2.2:5247`.
 
-## ⚡ Quick Start (3 Terminals)
+## Environment helper docs
 
-### Prerequisites
+- [SETUP_GUIDE.md](/D:/EatFitAI_v1/SETUP_GUIDE.md)
+- [JWT_CONFIGURATION.md](/D:/EatFitAI_v1/JWT_CONFIGURATION.md)
+- [ai-provider/README.md](/D:/EatFitAI_v1/ai-provider/README.md)
+- [tools/appium/README.md](/D:/EatFitAI_v1/tools/appium/README.md)
 
-Cài đặt sẵn:
-- Python 3.10+
-- .NET SDK 9.0+
-- Node.js 18+
-- SQL Server (hoặc Supabase account)
-- [Ollama](https://ollama.com/download) (optional, cho AI features)
+## Local verification
 
-### 1️⃣ Terminal 1: AI Provider
+Run the Windows preflight after the basic tools are installed:
 
 ```powershell
-cd ai-provider
-python -m venv venv
-.\venv\Scripts\Activate.ps1
-pip install -r requirements.txt
-python app.py
+powershell -ExecutionPolicy Bypass -File .\tools\dev\Invoke-DevPreflight.ps1
 ```
 
-✅ Chạy trên `http://localhost:5050`
-
-### 2️⃣ Terminal 2: Backend API
+To restore the SQL snapshot in a portable way:
 
 ```powershell
-cd eatfitai-backend
-dotnet restore
-dotnet run
+powershell -ExecutionPolicy Bypass -File .\tools\dev\Restore-EatFitAI-PortableSnapshot.ps1
 ```
 
-✅ Chạy trên `http://localhost:5247` | Swagger: `/swagger`
+## Notes
 
-### 3️⃣ Terminal 3: Mobile App
-
-```powershell
-cd eatfitai-mobile
-npm install
-npm run dev
-```
-
-✅ Scan QR bằng Expo Go app trên điện thoại
-
----
-
-## 📖 Documentation
-
-| Doc | Mô tả |
-|-----|-------|
-| [SETUP_GUIDE.md](./SETUP_GUIDE.md) | Hướng dẫn chi tiết từng bước |
-| [JWT_CONFIGURATION.md](./JWT_CONFIGURATION.md) | Cấu hình JWT và User Secrets |
-| [ai-provider/README.md](./ai-provider/README.md) | API endpoints AI Provider |
-| [docs/](./docs/) | Báo cáo đánh giá, kiến trúc |
-
----
-
-## 🔐 Demo Account
-
-```
-Email: demo@eatfit.ai
-Password: demo123
-```
-
----
-
-## 📁 Cấu trúc Project
-
-```
-EatFitAI_v1/
-├── ai-provider/          # 🤖 Python Flask - YOLO + Ollama
-├── eatfitai-backend/     # 🔧 .NET Core Web API
-├── eatfitai-mobile/      # 📱 Expo React Native
-├── docs/                 # 📚 Tài liệu đánh giá
-└── *.sql                 # 🗃️ Database scripts
-```
-
----
-
-## 🧪 Testing
-
-```powershell
-# Backend
-cd eatfitai-backend && dotnet test
-
-# Mobile
-cd eatfitai-mobile && npm test
-```
-
----
-
-## 📞 Health Check
-
-- AI Provider: `http://localhost:5050/healthz`
-- Backend: `http://localhost:5247/health`
-
----
-
-**Made with ❤️ by EatFitAI Team**
+- `sqdate13thang3t.sql` is kept as a snapshot reference, not as the canonical bootstrap flow.
+- Backend machine-specific values must stay in `user-secrets`, not in tracked JSON files.
+- Appium + MCP is supported through the emulator-first lane described in `tools/appium`.
