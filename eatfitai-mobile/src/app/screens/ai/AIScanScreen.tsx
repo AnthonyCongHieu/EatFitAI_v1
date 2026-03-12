@@ -45,6 +45,7 @@ import { IngredientBasketFab } from '../../../components/scan/IngredientBasketFa
 import { IngredientBasketSheet } from '../../../components/scan/IngredientBasketSheet';
 import { useIngredientBasketStore } from '../../../store/useIngredientBasketStore';
 import { translateIngredient } from '../../../utils/translate';
+import { TEST_IDS } from '../../../testing/testIds';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 type CameraViewInstance = InstanceType<typeof CameraView>;
@@ -353,7 +354,7 @@ const AIScanScreen: React.FC = () => {
   }
 
   return (
-    <View style={styles.container}>
+    <View style={styles.container} testID={TEST_IDS.aiScan.screen}>
       {/* Camera Layer - Always rendered to maintain ref, but hidden/paused if needed */}
       {(isCameraMode || mode === 'preview') && (
         <CameraView
@@ -451,6 +452,7 @@ const AIScanScreen: React.FC = () => {
               accessibilityLabel="Chụp ảnh"
               accessibilityHint="Chụp ảnh món ăn để AI nhận diện"
               accessibilityState={{ disabled: isCapturing }}
+              testID={TEST_IDS.aiScan.captureButton}
             >
               <LinearGradient
                 colors={[
@@ -483,6 +485,7 @@ const AIScanScreen: React.FC = () => {
               accessibilityRole="button"
               accessibilityLabel="Chọn từ thư viện"
               accessibilityHint="Chọn ảnh có sẵn từ thư viện"
+              testID={TEST_IDS.aiScan.galleryButton}
             >
               <Icon name="images-outline" size="lg" color="primary" />
             </Pressable>
@@ -505,13 +508,14 @@ const AIScanScreen: React.FC = () => {
               <ThemedText variant="h4" weight="700">
                 Kết quả
               </ThemedText>
-              <Pressable
-                onPress={handleRetake}
-                style={{ padding: 8 }}
-                accessibilityRole="button"
-                accessibilityLabel="Đóng kết quả"
-                accessibilityHint="Quay lại chế độ camera"
-              >
+                <Pressable
+                  onPress={handleRetake}
+                  style={{ padding: 8 }}
+                  accessibilityRole="button"
+                  accessibilityLabel="Đóng kết quả"
+                  accessibilityHint="Quay lại chế độ camera"
+                  testID={TEST_IDS.aiScan.retakeButton}
+                >
                 <Icon name="close" size="md" color="text" />
               </Pressable>
             </View>
@@ -622,6 +626,7 @@ const AIScanScreen: React.FC = () => {
                       onPress={() => handleQuickAdd(item)}
                       style={[styles.resultActionBtn, { backgroundColor: theme.colors.primary }]}
                       hitSlop={4}
+                      testID={index === 0 ? TEST_IDS.aiScan.quickAddTopResultButton : `ai-scan-quick-add-${index}`}
                     >
                       <Icon name="add" size="md" color="background" />
                     </Pressable>
@@ -661,6 +666,7 @@ const AIScanScreen: React.FC = () => {
               <Pressable
                 onPress={handleRetake}
                 style={[styles.compactButton, { borderColor: theme.colors.border, borderWidth: 1 }]}
+                testID={TEST_IDS.aiScan.retakeButton}
               >
                 <Icon name="refresh" size="sm" color="text" />
                 <ThemedText variant="bodySmall" weight="600" style={{ marginLeft: 6 }}>Chụp lại</ThemedText>
@@ -668,6 +674,7 @@ const AIScanScreen: React.FC = () => {
               <Pressable
                 onPress={handleAddToDiary}
                 style={[styles.compactButton, { backgroundColor: theme.colors.primary }]}
+                testID={TEST_IDS.aiScan.addToDiaryButton}
               >
                 <Icon name="add" size="sm" color="background" />
                 <ThemedText variant="bodySmall" weight="600" style={{ marginLeft: 6, color: '#fff' }}>Thêm</ThemedText>

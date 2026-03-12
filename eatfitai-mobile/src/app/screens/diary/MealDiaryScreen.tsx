@@ -33,6 +33,7 @@ import Toast from 'react-native-toast-message';
 import { AnimatedEmptyState } from '../../../components/ui/AnimatedEmptyState';
 import { FoodEntryCard } from '../../../components/ui/FoodEntryCard';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { TEST_IDS } from '../../../testing/testIds';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -701,7 +702,7 @@ const MealDiaryScreen = (): React.ReactElement => {
   });
 
   return (
-    <Screen scroll={false}>
+    <Screen scroll={false} testID={TEST_IDS.mealDiary.screen}>
       <View style={styles.container}>
         {/* Custom Header với Back button - centered like EditProfileScreen */}
         <View style={[styles.screenHeader, { paddingTop: 10 }]}>
@@ -850,6 +851,7 @@ const MealDiaryScreen = (): React.ReactElement => {
                 transform: [{ scale: pressed ? 0.95 : 1 }],
               },
             ]}
+            testID={TEST_IDS.mealDiary.addManualButton}
           >
             <Ionicons name="add" size={28} color="#fff" />
           </Pressable>

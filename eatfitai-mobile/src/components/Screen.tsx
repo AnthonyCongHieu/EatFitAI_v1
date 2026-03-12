@@ -25,6 +25,7 @@ type ScreenProps = {
   hasHeader?: boolean;
   // Sử dụng gradient background - mặc định true
   useGradient?: boolean;
+  testID?: string;
 };
 
 export const Screen = ({
@@ -37,6 +38,7 @@ export const Screen = ({
   horizontalPadding = true,
   hasHeader = false,
   useGradient = true,
+  testID,
 }: ScreenProps): React.ReactElement => {
   const { theme } = useAppTheme();
   const insets = useSafeAreaInsets();
@@ -69,6 +71,7 @@ export const Screen = ({
   // Render content based on scroll prop
   const content = scroll ? (
     <ScrollView
+      testID={testID}
       style={styles.scrollView}
       contentContainerStyle={[contentStyle, contentContainerStyle]}
       refreshControl={refreshControl}
@@ -78,7 +81,7 @@ export const Screen = ({
       {children}
     </ScrollView>
   ) : (
-    <View style={contentStyle}>{children}</View>
+    <View testID={testID} style={contentStyle}>{children}</View>
   );
 
   // Render with or without gradient - NO inline component to prevent remounts

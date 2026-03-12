@@ -29,6 +29,7 @@ type ButtonProps = {
   fullWidth?: boolean;
   accessibilityLabel?: string;
   accessibilityHint?: string;
+  testID?: string;
   hitSlop?: number | Insets;
   icon?: ReactNode | string;
   iconPosition?: 'left' | 'right';
@@ -51,6 +52,7 @@ export const Button = memo(
     iconPosition = 'left',
     accessibilityLabel,
     accessibilityHint,
+    testID,
     style,
   }: ButtonProps): React.ReactElement => {
     const { theme } = useAppTheme();
@@ -233,6 +235,7 @@ export const Button = memo(
             accessibilityLabel={accessibilityLabel ?? title ?? undefined}
             accessibilityHint={accessibilityHint}
             accessibilityState={{ disabled: isDisabled }}
+            testID={testID}
             hitSlop={8}
           >
             {buttonContent}
@@ -260,6 +263,7 @@ export const Button = memo(
         accessibilityLabel={accessibilityLabel ?? title ?? undefined}
         accessibilityHint={accessibilityHint}
         accessibilityState={{ disabled: isDisabled }}
+        testID={testID}
         hitSlop={8}
       >
         {buttonContent}

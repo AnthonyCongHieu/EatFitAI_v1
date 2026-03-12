@@ -18,6 +18,7 @@ import { useAuthStore } from '../../../store/useAuthStore';
 import type { RootStackParamList } from '../../types';
 import { t } from '../../../i18n/vi';
 import { handleApiError } from '../../../utils/errorHandler';
+import { TEST_IDS } from '../../../testing/testIds';
 
 const LoginSchema = z.object({
   email: z.string().email('Email không hợp lệ'),
@@ -180,7 +181,11 @@ const LoginScreen = ({ navigation }: Props): React.ReactElement => {
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
-        <Screen scroll={true} contentContainerStyle={styles.scrollContent}>
+        <Screen
+          scroll={true}
+          contentContainerStyle={styles.scrollContent}
+          testID={TEST_IDS.auth.loginScreen}
+        >
           {/* Logo */}
           <Animated.View
             entering={FadeInDown.delay(100).springify()}
@@ -203,6 +208,7 @@ const LoginScreen = ({ navigation }: Props): React.ReactElement => {
                 name="email"
                 render={({ field: { onChange, onBlur, value } }) => (
                   <ThemedTextInput
+                    testID={TEST_IDS.auth.emailInput}
                     label={t('auth.email')}
                     placeholder="you@example.com"
                     autoCapitalize="none"
@@ -222,6 +228,7 @@ const LoginScreen = ({ navigation }: Props): React.ReactElement => {
                 name="password"
                 render={({ field: { onChange, onBlur, value } }) => (
                   <ThemedTextInput
+                    testID={TEST_IDS.auth.passwordInput}
                     label={t('auth.password')}
                     placeholder="••••••••"
                     secureTextEntry
@@ -256,6 +263,7 @@ const LoginScreen = ({ navigation }: Props): React.ReactElement => {
               onPress={handleSubmit(onSubmit)}
               title={loading ? t('auth.processing') : t('auth.login')}
               fullWidth
+              testID={TEST_IDS.auth.submitButton}
             />
 
             {/* Divider */}

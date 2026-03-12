@@ -8,6 +8,7 @@ type SectionHeaderProps = {
   subtitle?: string;
   action?: () => void;
   actionText?: string;
+  actionTestID?: string;
 };
 
 export const SectionHeader = ({
@@ -15,6 +16,7 @@ export const SectionHeader = ({
   subtitle,
   action,
   actionText = 'Xem tất cả',
+  actionTestID,
 }: SectionHeaderProps): React.ReactElement => {
   return (
     <View style={styles.container}>
@@ -29,7 +31,7 @@ export const SectionHeader = ({
         )}
       </View>
       {action && (
-        <Pressable onPress={action} accessibilityRole="button">
+        <Pressable onPress={action} accessibilityRole="button" testID={actionTestID}>
           <ThemedText color="primary" weight="600">
             {actionText}
           </ThemedText>

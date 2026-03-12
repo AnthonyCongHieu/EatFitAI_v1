@@ -1,0 +1,39 @@
+export const TEST_IDS = {
+  auth: {
+    loginScreen: 'auth-login-screen',
+    emailInput: 'auth-login-email-input',
+    passwordInput: 'auth-login-password-input',
+    submitButton: 'auth-login-submit-button',
+  },
+  home: {
+    screen: 'home-screen',
+    searchButton: 'home-search-food-button',
+    diaryButton: 'home-view-diary-button',
+    fabButton: 'home-smart-add-fab',
+  },
+  foodSearch: {
+    screen: 'food-search-screen',
+    queryInput: 'food-search-query-input',
+    submitButton: 'food-search-submit-button',
+    firstAddButton: 'food-search-add-first-item-button',
+  },
+  mealDiary: {
+    screen: 'meal-diary-screen',
+    addManualButton: 'meal-diary-add-manual-button',
+  },
+  aiScan: {
+    screen: 'ai-scan-screen',
+    captureButton: 'ai-scan-capture-button',
+    galleryButton: 'ai-scan-gallery-button',
+    retakeButton: 'ai-scan-retake-button',
+    addToDiaryButton: 'ai-scan-add-to-diary-button',
+    quickAddTopResultButton: 'ai-scan-quick-add-top-result-button',
+  },
+  visionAddMeal: {
+    screen: 'vision-add-meal-screen',
+    confirmButton: 'vision-add-meal-confirm-button',
+  },
+  error: {
+    retryButton: 'app-error-retry-button',
+  },
+} as const;

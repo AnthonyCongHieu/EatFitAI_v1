@@ -42,6 +42,7 @@ import { mealService } from '../../../services/mealService';
 
 import { AnimatedEmptyState } from '../../../components/ui/AnimatedEmptyState';
 import { t } from '../../../i18n/vi';
+import { TEST_IDS } from '../../../testing/testIds';
 
 const PAGE_SIZE = 20;
 
@@ -608,6 +609,7 @@ const FoodSearchScreen = (): React.ReactElement => {
                 onPress={() => handleQuickAdd(item)}
                 disabled={isQuickAdding === item.id}
                 style={styles.addButtonCircle}
+                testID={index === 0 ? TEST_IDS.foodSearch.firstAddButton : `food-search-add-item-${item.id}`}
               >
                 {isQuickAdding === item.id ? (
                   <ActivityIndicator size="small" color={theme.colors.textSecondary} />
@@ -633,7 +635,7 @@ const FoodSearchScreen = (): React.ReactElement => {
   );
 
   return (
-    <Screen scroll={false} style={styles.container}>
+    <Screen scroll={false} style={styles.container} testID={TEST_IDS.foodSearch.screen}>
       {/* Header Section */}
       <View style={styles.headerSection}>
         {/* Back button + Title in same row */}
@@ -714,6 +716,7 @@ const FoodSearchScreen = (): React.ReactElement => {
                   color={theme.colors.textSecondary}
                 />
                 <ThemedTextInput
+                  testID={TEST_IDS.foodSearch.queryInput}
                   value={query}
                   onChangeText={setQuery}
                   onSubmitEditing={handleSearch}
@@ -732,7 +735,11 @@ const FoodSearchScreen = (): React.ReactElement => {
                 />
               </View>
               {/* Custom search button */}
-              <Pressable onPress={handleSearch} style={styles.searchButton}>
+              <Pressable
+                onPress={handleSearch}
+                style={styles.searchButton}
+                testID={TEST_IDS.foodSearch.submitButton}
+              >
                 <ThemedText variant="body" weight="600" style={{ color: '#fff' }}>
                   {t('food_search.btn_search')}
                 </ThemedText>

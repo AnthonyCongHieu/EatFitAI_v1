@@ -18,6 +18,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { ThemedText } from '../ThemedText';
 import Button from '../Button';
 import { useAppTheme } from '../../theme/ThemeProvider';
+import { TEST_IDS } from '../../testing/testIds';
 
 export type ErrorType = 'network' | 'server' | 'auth' | 'generic';
 
@@ -159,6 +160,7 @@ export const ErrorScreen = ({
                         variant="primary"
                         icon="refresh-outline"
                         fullWidth
+                        testID={TEST_IDS.error.retryButton}
                     />
                 )}
                 {onGoBack && (

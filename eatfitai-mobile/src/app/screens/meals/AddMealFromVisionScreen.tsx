@@ -22,6 +22,7 @@ import { mealService } from '../../../services/mealService';
 import { useDiaryStore } from '../../../store/useDiaryStore';
 import { handleApiErrorWithCustomMessage } from '../../../utils/errorHandler';
 import { translateIngredient } from '../../../utils/translate';
+import { TEST_IDS } from '../../../testing/testIds';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 type RouteProps = RouteProp<RootStackParamList, 'AddMealFromVision'>;
@@ -337,7 +338,7 @@ const AddMealFromVisionScreen = (): React.ReactElement => {
   const unmatchedItems = detectionItems.filter((d) => !d.item.isMatched);
 
   return (
-    <Screen style={styles.container} scroll={false}>
+    <Screen style={styles.container} scroll={false} testID={TEST_IDS.visionAddMeal.screen}>
       <ScrollView
         style={{ flex: 1 }}
         contentContainerStyle={styles.scrollContent}
@@ -405,6 +406,7 @@ const AddMealFromVisionScreen = (): React.ReactElement => {
           disabled={selectedItems.length === 0 || isSubmitting}
           loading={isSubmitting}
           style={styles.addButton}
+          testID={TEST_IDS.visionAddMeal.confirmButton}
         />
       </View>
 

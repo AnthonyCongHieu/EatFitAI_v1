@@ -57,6 +57,7 @@ import { GradientBackground } from '../../components/ui/GradientBackground';
 import { WelcomeHeader } from '../../components/home/WelcomeHeader';
 import { useSmartContext } from '../../hooks/useSmartContext';
 import * as Haptics from 'expo-haptics';
+import { TEST_IDS } from '../../testing/testIds';
 
 type AddOption = 'search' | 'custom' | 'ai';
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
@@ -337,6 +338,7 @@ const HomeScreen = (): React.ReactElement => {
   return (
     <GradientBackground>
       <Screen
+        testID={TEST_IDS.home.screen}
         contentContainerStyle={{
           paddingHorizontal: theme.spacing.lg,
           paddingVertical: theme.spacing.xl,
@@ -457,6 +459,7 @@ const HomeScreen = (): React.ReactElement => {
             title={t('home.diary_today')}
             action={handleViewAllDiary}
             actionText={t('home.see_all')}
+            actionTestID={TEST_IDS.home.diaryButton}
           />
           {isLoading ? (
             <AppCard>
@@ -525,6 +528,7 @@ const HomeScreen = (): React.ReactElement => {
           accessibilityRole="button"
           accessibilityLabel={smartContext.fabAction.label}
           accessibilityHint={`${smartContext.fabAction.hint}. Nhấn giữ để dùng giọng nói`}
+          testID={TEST_IDS.home.fabButton}
         >
           <Icon name={smartContext.fabAction.icon as any} size="xl" color="card" />
         </Pressable>

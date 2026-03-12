@@ -56,12 +56,14 @@ const QuickActionButton = ({
   onPress,
   isPrimary = false,
   delay = 0,
+  testID,
 }: {
   icon: string;
   label: string;
   onPress: () => void;
   isPrimary?: boolean;
   delay?: number;
+  testID?: string;
 }) => {
   const { theme } = useAppTheme();
   const scale = useSharedValue(1);
@@ -86,6 +88,7 @@ const QuickActionButton = ({
         onPressOut={handlePressOut}
         accessibilityRole="button"
         accessibilityLabel={label}
+        testID={testID}
       >
         <Animated.View
           style={[
@@ -177,6 +180,7 @@ const SmartQuickActions: React.FC<SmartQuickActionsProps> = ({
               onPress={() => onAddMeal(currentSuggestion.type)}
               isPrimary
               delay={0}
+              testID="home-primary-meal-button"
             />
             {onSearchFood && (
               <QuickActionButton
@@ -184,6 +188,7 @@ const SmartQuickActions: React.FC<SmartQuickActionsProps> = ({
                 label="Tìm kiếm"
                 onPress={onSearchFood}
                 delay={100}
+                testID="home-search-food-button"
               />
             )}
           </View>
@@ -206,6 +211,7 @@ const SmartQuickActions: React.FC<SmartQuickActionsProps> = ({
             ]}
             accessibilityRole="button"
             accessibilityLabel={`Thêm ${meal.label}`}
+            testID={`home-meal-option-${meal.type}`}
           >
             <ThemedText style={styles.secondaryIcon}>{meal.icon}</ThemedText>
             <ThemedText variant="caption" color="textSecondary">
