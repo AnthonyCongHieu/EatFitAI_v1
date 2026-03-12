@@ -12,10 +12,30 @@ $backendProject = Join-Path $repoRoot "eatfitai-backend\EatFitAI.API.csproj"
 $mobileEnvFile = Join-Path $repoRoot "eatfitai-mobile\.env.development"
 $aiHealthUrl = "http://127.0.0.1:5050/healthz"
 $backendHealthUrl = "http://127.0.0.1:5247/health"
-$androidSdkRoot = if ($env:ANDROID_SDK_ROOT) { $env:ANDROID_SDK_ROOT } else { Join-Path $env:LOCALAPPDATA "Android\Sdk" }
 
 $failures = New-Object System.Collections.Generic.List[string]
 $warnings = New-Object System.Collections.Generic.List[string]
+
+function Get-EffectiveUserEnvironmentVariable {
+    param(
+        [string]$Name,
+        [string]$Fallback = ""
+    )
+
+    $userValue = [Environment]::GetEnvironmentVariable($Name, "User")
+    if (-not [string]::IsNullOrWhiteSpace($userValue)) {
+        return $userValue
+    }
+
+    $processValue = [Environment]::GetEnvironmentVariable($Name, "Process")
+    if (-not [string]::IsNullOrWhiteSpace($processValue)) {
+        return $processValue
+    }
+
+    return $Fallback
+}
+
+$androidSdkRoot = Get-EffectiveUserEnvironmentVariable -Name "ANDROID_SDK_ROOT" -Fallback (Join-Path $env:LOCALAPPDATA "Android\Sdk")
 
 function Write-CheckResult {
     param(

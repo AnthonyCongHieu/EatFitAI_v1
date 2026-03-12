@@ -12,6 +12,18 @@ powershell -ExecutionPolicy Bypass -File .\tools\dev\Setup-WindowsPortableDevEnv
 
 This provisions the Appium lane, repairs the Android SDK command-line toolchain, creates the standard AVD, and runs the repo preflight.
 
+To move heavy Android/Ollama storage from `C:` to `D:` after the initial install:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\tools\dev\Relocate-WindowsDevStorage.ps1
+```
+
+This relocates:
+
+- Android SDK
+- Android AVD storage
+- Ollama model storage
+
 ## 1. Required versions
 
 - Node `20.x`
@@ -86,6 +98,7 @@ Expected local defaults:
 
 - `OLLAMA_URL=http://localhost:11434`
 - `OLLAMA_MODEL=qwen2.5:3b`
+- `ENABLE_STT=false`
 
 `best.pt` should live in `ai-provider\` and is not committed to git.
 
