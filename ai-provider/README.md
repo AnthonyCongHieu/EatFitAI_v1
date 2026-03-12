@@ -28,7 +28,10 @@ Tracked example values:
 HF_TOKEN=SET_ONLY_IF_YOU_DOWNLOAD_MODELS_FROM_HUGGING_FACE
 OLLAMA_URL=http://localhost:11434
 OLLAMA_MODEL=qwen2.5:3b
+ENABLE_STT=false
 ```
+
+`ENABLE_STT=false` is the recommended local default for the emulator/Appium lane so the service can boot quickly without downloading the PhoWhisper model. Set it to `true` only when you are explicitly validating voice transcription.
 
 ## Start locally
 

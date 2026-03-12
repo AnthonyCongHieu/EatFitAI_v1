@@ -21,6 +21,12 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+def env_flag(name: str, default: bool = False) -> bool:
+    raw = os.getenv(name)
+    if raw is None:
+        return default
+    return raw.strip().lower() in {"1", "true", "yes", "on"}
+
 # ============== AUTO-START OLLAMA ==============
 def start_ollama_if_needed():
     """
@@ -414,9 +420,12 @@ def voice_parse():
 
 
 # ============== WHISPER STT (Speech-to-Text) ==============
-# Initialize PhoWhisper from stt_service
-stt_service.init_stt()
-WHISPER_AVAILABLE = True # PhoWhisper acts as the new Whisper service
+ENABLE_STT = env_flag("ENABLE_STT", default=False)
+if ENABLE_STT:
+    WHISPER_AVAILABLE = stt_service.init_stt()
+else:
+    WHISPER_AVAILABLE = False
+    logger.info("Whisper STT disabled via ENABLE_STT=false")
 
 def allowed_audio_file(filename: str) -> bool:
     """Check if audio file extension is allowed"""

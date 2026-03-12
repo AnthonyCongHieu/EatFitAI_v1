@@ -6,6 +6,35 @@ const os = require('os');
 const fs = require('fs');
 const path = require('path');
 
+function readEnvFileValue(envFilePath, key) {
+    if (!fs.existsSync(envFilePath)) {
+        return undefined;
+    }
+
+    const lines = fs.readFileSync(envFilePath, 'utf-8').split(/\r?\n/);
+    for (const line of lines) {
+        const trimmed = line.trim();
+        if (!trimmed || trimmed.startsWith('#')) {
+            continue;
+        }
+
+        const separatorIndex = trimmed.indexOf('=');
+        if (separatorIndex === -1) {
+            continue;
+        }
+
+        const currentKey = trimmed.slice(0, separatorIndex).trim();
+        if (currentKey !== key) {
+            continue;
+        }
+
+        const rawValue = trimmed.slice(separatorIndex + 1).trim();
+        return rawValue.replace(/^['"]|['"]$/g, '');
+    }
+
+    return undefined;
+}
+
 function getLocalIpAddress() {
     const interfaces = os.networkInterfaces();
     const candidates = [];
@@ -57,9 +86,13 @@ function getLocalIpAddress() {
 
 // Lấy IP và các config
 const localIp = getLocalIpAddress();
+const developmentEnvPath = path.join(__dirname, '..', '.env.development');
+const explicitBaseUrl =
+    process.env.EXPO_PUBLIC_API_BASE_URL ||
+    readEnvFileValue(developmentEnvPath, 'EXPO_PUBLIC_API_BASE_URL');
 const apiPort = process.env.EXPO_PUBLIC_API_PORT || '5247';
 const apiScheme = process.env.EXPO_PUBLIC_API_SCHEME || 'http';
-const apiBaseUrl = process.env.EXPO_PUBLIC_API_BASE_URL || `${apiScheme}://${localIp}:${apiPort}`;
+const apiBaseUrl = explicitBaseUrl || `${apiScheme}://${localIp}:${apiPort}`;
 
 // Generate file TypeScript
 const outputPath = path.join(__dirname, '..', 'src', 'config', 'generated-api-config.ts');
