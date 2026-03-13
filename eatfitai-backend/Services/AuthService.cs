@@ -212,6 +212,8 @@ namespace EatFitAI.API.Services
         {
             var tokenHandler = new JwtSecurityTokenHandler();
             var key = GetJwtSigningKey();
+            var issuer = _configuration["Jwt:Issuer"] ?? "EatFitAI";
+            var audience = _configuration["Jwt:Audience"] ?? "EatFitAI";
 
             var tokenDescriptor = new SecurityTokenDescriptor
             {
@@ -221,6 +223,8 @@ namespace EatFitAI.API.Services
                     new Claim(ClaimTypes.Email, user.Email),
                     new Claim(ClaimTypes.Name, user.DisplayName ?? user.Email)
                 }),
+                Issuer = issuer,
+                Audience = audience,
                 Expires = DateTime.UtcNow.AddHours(24),
                 SigningCredentials = new SigningCredentials(
                     new SymmetricSecurityKey(key),
