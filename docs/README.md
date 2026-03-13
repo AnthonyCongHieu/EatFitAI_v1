@@ -1,31 +1,52 @@
-# 📚 EatFitAI Documentation
+# EatFitAI Documentation Index
 
-Thư mục này chứa các tài liệu thiết kế hệ thống và luồng hoạt động chính của EatFitAI. Nhằm duy trì tính gọn gàng và tránh phân mảnh thông tin, tài liệu được tổ chức theo cấu trúc Canonical dưới đây.
+Cap nhat: `2026-03-14`
 
-Lưu ý: Kế hoạch thực thi đồ án (Master Plan / Tasks) hiện được quản lý tập trung trên **Notion** (và các file `.md` trong thư mục `brain/` của AI Assistant), không còn đặt trong repo source code.
+Thu muc `docs/` la noi tap trung cac tai lieu ky thuat, runtime audit, va tai lieu doi chieu de phuc vu coding, demo, va bao ve.
 
-## 🌟 Core System Documents
+## Tai lieu nen doc truoc
 
 1. `01_ARCHITECTURE_OVERVIEW.md`
-   - **Nội dung:** Hiện trạng toàn bộ app EatFitAI (Snapshot).
-   - **Vai trò:** Bản đồ tổng quan về công nghệ hiện tại (.NET, React Native, Python, SQL), module chức năng, luồng network và danh sách API endpoints.
+   - Snapshot hien trang he thong mobile, backend, AI provider, SQL.
+   - Dung khi can nam nhanh kien truc va boundary hien tai.
 
 2. `02_USERFLOW.md`
-   - **Nội dung:** Bản đồ luồng người dùng (User flows) & UI/UX Navigation.
-   - **Vai trò:** Hướng dẫn luồng đi của User từ Auth, Onboarding, Meal Diary đến AI Features. Hỗ trợ việc mapping màn hình và API calls.
+   - Ban do user flow va man hinh chinh cua app.
+   - Dung khi can doi chieu mot flow UI voi backend/API.
 
 3. `03_AI_FLOW.md`
-   - **Nội dung:** Tài liệu luồng tích hợp LLM & AI Vision.
-   - **Vai trò:** Chi tiết hóa luồng hoạt động của AI (YOLOv8 + Ollama + Whisper), sơ đồ sequence hoạt động và cách fallback.
+   - Luong AI vision, nutrition, voice, fallback.
+   - Dung khi can hieu lane AI va cac diem trust/risk.
 
-## 📂 Subdirectories
+## Tai lieu moi nhat phuc vu thuc thi
 
-1. `analysis_reports/`
-   - Chứa các báo cáo phân tích tĩnh, dùng để tra cứu lịch sử quyết định (Ví dụ: báo cáo đánh giá hiện trạng, đánh giá thị trường, phân tích sâu flow nhập liệu...).
-   - Các file trong này là dạng "point-in-time" và ít khi cần cập nhật.
+4. `04_ENVIRONMENT_EXECUTION_PLAN.md`
+   - Ke hoach va quy uoc setup moi truong Windows, emulator-first, Appium lane.
+   - Dung khi dung lai local stack, bo tri storage, va preflight.
 
-## 📝 Nguyên tắc duy trì tài liệu
+5. `06_RUNTIME_AUDIT_SNAPSHOT_2026-03-14.md`
+   - Snapshot runtime audit moi nhat tren native Android build.
+   - Dung khi can biet app hien tai chay duoc flow nao, flow nao vo, blocker nao dang ton tai.
 
-1. **Code is Truth**: Tránh viết tài liệu thiết kế lặp lại logic code. Document chỉ tập trung vào Architecture, Integration boundaries và User Flows.
-2. **Không lưu kế hoạch trong Repo**: Kế hoạch đồ án, tracking task (Todo, Progress) được đặt ở Notion. Nơi đây chỉ lưu "How the system works".
-3. **Keep it minimal**: Xóa các file cũ, lỗi thời. Sửa trực tiếp vào 3 file Core thay vì sinh thêm file con rác.
+6. `07_NOTION_PLAN_GAP_AND_2PERSON_RESTRUCTURE_2026-03-14.md`
+   - Ban doi chieu giua runtime audit, Notion task hien tai, va SQL truth.
+   - Dung khi can co cau lai backlog, chia viec cho 2 nguoi, va quyet dinh scope.
+
+## Thu muc phu
+
+- `analysis_reports/`
+  - Luu cac bao cao phan tich point-in-time.
+  - Dung de tham khao bo sung, khong phai nguon su that chinh cho execution hang ngay.
+
+## Cach dung bo tai lieu nay
+
+- Neu can dung moi truong va test app: doc `04` truoc.
+- Neu can biet app hien tai dung o dau: doc `06`.
+- Neu can chia viec, cat scope, va sap lai Notion: doc `07`.
+- Neu can biet he thong duoc xay nhu the nao: doc `01`, `02`, `03`.
+
+## Nguyen tac cap nhat
+
+1. Runtime va database truth uu tien hon cam giac demo.
+2. Tai lieu moi phai noi ro pham vi va ngay cap nhat.
+3. Khong tao them file trung muc dich neu co the cap nhat vao `04`, `06`, `07`.

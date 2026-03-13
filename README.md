@@ -31,10 +31,19 @@ Key defaults:
 ## Environment helper docs
 
 - [SETUP_GUIDE.md](/D:/EatFitAI_v1/SETUP_GUIDE.md)
+- [docs/README.md](/D:/EatFitAI_v1/docs/README.md)
 - [docs/04_ENVIRONMENT_EXECUTION_PLAN.md](/D:/EatFitAI_v1/docs/04_ENVIRONMENT_EXECUTION_PLAN.md)
+- [docs/06_RUNTIME_AUDIT_SNAPSHOT_2026-03-14.md](/D:/EatFitAI_v1/docs/06_RUNTIME_AUDIT_SNAPSHOT_2026-03-14.md)
+- [docs/07_NOTION_PLAN_GAP_AND_2PERSON_RESTRUCTURE_2026-03-14.md](/D:/EatFitAI_v1/docs/07_NOTION_PLAN_GAP_AND_2PERSON_RESTRUCTURE_2026-03-14.md)
 - [JWT_CONFIGURATION.md](/D:/EatFitAI_v1/JWT_CONFIGURATION.md)
 - [ai-provider/README.md](/D:/EatFitAI_v1/ai-provider/README.md)
 - [tools/appium/README.md](/D:/EatFitAI_v1/tools/appium/README.md)
+
+## Current planning and audit docs
+
+- Runtime truth snapshot: [docs/06_RUNTIME_AUDIT_SNAPSHOT_2026-03-14.md](/D:/EatFitAI_v1/docs/06_RUNTIME_AUDIT_SNAPSHOT_2026-03-14.md)
+- Notion gap analysis and 2-person restructure proposal: [docs/07_NOTION_PLAN_GAP_AND_2PERSON_RESTRUCTURE_2026-03-14.md](/D:/EatFitAI_v1/docs/07_NOTION_PLAN_GAP_AND_2PERSON_RESTRUCTURE_2026-03-14.md)
+- Documentation index: [docs/README.md](/D:/EatFitAI_v1/docs/README.md)
 
 ## Local verification
 
