@@ -31,6 +31,7 @@ Key defaults:
 ## Environment helper docs
 
 - [SETUP_GUIDE.md](/D:/EatFitAI_v1/SETUP_GUIDE.md)
+- [docs/04_ENVIRONMENT_EXECUTION_PLAN.md](/D:/EatFitAI_v1/docs/04_ENVIRONMENT_EXECUTION_PLAN.md)
 - [JWT_CONFIGURATION.md](/D:/EatFitAI_v1/JWT_CONFIGURATION.md)
 - [ai-provider/README.md](/D:/EatFitAI_v1/ai-provider/README.md)
 - [tools/appium/README.md](/D:/EatFitAI_v1/tools/appium/README.md)
