@@ -276,7 +276,7 @@ const WeightHistoryScreen = (): React.ReactElement => {
 
         // Y-axis labels (weight values)
         const yLabels = [maxWeight, (maxWeight + minWeight) / 2, minWeight].map(
-            (val) => Math.round(val * 10) / 10
+            (val) => Math.round(val * 10) / 10,
         );
 
         return (

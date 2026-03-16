@@ -55,21 +55,9 @@ interface AnimatedEmptyStateProps {
     compact?: boolean;
 }
 
-// Emoji presets for each variant
-const VARIANT_EMOJIS: Record<EmptyStateVariant, string> = {
-    'no-food': '🍽️',
-    'no-search-results': '🔍',
-    'no-favorites': '❤️',
-    'no-history': '📅',
-    'no-achievements': '🏆',
-    error: '😅',
-    offline: '📡',
-    custom: '📭',
-};
-
 export const AnimatedEmptyState = ({
-    variant = 'custom',
-    emoji,
+    variant: _variant = 'custom',
+    emoji: _emoji,
     title,
     description,
     primaryAction,

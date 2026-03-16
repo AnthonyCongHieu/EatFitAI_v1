@@ -1,5 +1,5 @@
-﻿// Service xá»­ lÃ½ tÃ¬m kiáº¿m thá»±c pháº©m vÃ  thao tÃ¡c nháº­t kÃ½
-// ChÃº thÃ­ch báº±ng tiáº¿ng Viá»‡t khÃ´ng dáº¥u
+// Food service for searching foods and writing diary entries
+// Comments kept ASCII-safe to avoid mojibake in this environment
 
 import apiClient from './apiClient';
 import type { FoodItemDto, MealTypeId } from '../types';
@@ -106,7 +106,7 @@ const normalizeUserFoodDetail = (data: ApiUserFoodDetail): FoodDetail => ({
 });
 
 export const foodService = {
-  // TÃ¬m kiáº¿m thá»±c pháº©m theo tá»« khÃ³a
+  // Search catalog foods by keyword
   async searchFoods(query: string, limit = 50): Promise<SearchFoodsResult> {
     const response = await apiClient.get('/api/search', { params: { q: query, limit } });
     const data = response.data as FoodItemDto[];
@@ -114,7 +114,7 @@ export const foodService = {
     return { items, totalCount: data.length };
   },
 
-  // TÃ¬m kiáº¿m táº¥t cáº£ (catalog + user food items)
+  // Search across both catalog and user-created foods
   async searchAllFoods(query: string, limit = 50): Promise<SearchFoodsResult> {
     const response = await apiClient.get('/api/food/search-all', {
       params: { q: query, limit },
@@ -137,14 +137,14 @@ export const foodService = {
     return { items, totalCount: rows.length };
   },
 
-  // Láº¥y chi tiáº¿t mÃ³n Äƒn (tá»± Ä‘á»™ng chá»n endpoint dá»±a trÃªn source)
+  // Get food details and choose endpoint based on source
   async getFoodDetail(foodId: string, source?: 'catalog' | 'user'): Promise<FoodDetail> {
-    // Náº¿u source lÃ  'user', gá»i endpoint user-food-items
+    // If source is user, call the user-food-items endpoint
     if (source === 'user') {
       const response = await apiClient.get(`/api/user-food-items/${foodId}`);
       return normalizeUserFoodDetail(response.data);
     }
-    // Máº·c Ä‘á»‹nh lÃ  catalog - Backend tráº£ vá» { foodItem, servings }
+    // Default to catalog; backend returns { foodItem, servings }
     try {
       const response = await apiClient.get(`/api/food/${foodId}`);
       const data = response.data?.foodItem ?? response.data;
@@ -159,7 +159,7 @@ export const foodService = {
     }
   },
 
-  // ThÃªm entry vÃ o nháº­t kÃ½ tá»« catalog food
+  // Add a diary entry from a catalog food
   async addDiaryEntry(payload: {
     mealTypeId: MealTypeId;
     foodId: string;
@@ -177,15 +177,15 @@ export const foodService = {
     });
   },
 
-  // ThÃªm entry vÃ o nháº­t kÃ½ tá»« userâ€‘created food item
+  // Add a diary entry from a user-created food item
   async addDiaryEntryFromUserFoodItem(payload: {
     mealTypeId: MealTypeId;
     userFoodItemId: string;
     grams: number;
-    calories: number;
-    protein: number;
-    carb: number;
-    fat: number;
+    calories?: number;
+    protein?: number;
+    carb?: number;
+    fat?: number;
     note?: string;
   }): Promise<void> {
     const d = new Date();
@@ -195,15 +195,15 @@ export const foodService = {
       mealTypeId: payload.mealTypeId,
       userFoodItemId: parseInt(payload.userFoodItemId, 10),
       grams: payload.grams,
-      calories: payload.calories,
-      protein: payload.protein,
-      carb: payload.carb,
-      fat: payload.fat,
+      calories: payload.calories ?? 0,
+      protein: payload.protein ?? 0,
+      carb: payload.carb ?? 0,
+      fat: payload.fat ?? 0,
       note: payload.note ?? null,
     });
   },
 
-  // Táº¡o mÃ³n Äƒn tá»± cháº¿
+  // Create a custom dish
   async createCustomDish(payload: {
     dishName: string;
     description?: string | null;
@@ -216,7 +216,7 @@ export const foodService = {
     });
   },
 
-  // Láº¥y danh sÃ¡ch user food items (cÃ³ pagination)
+  // Get paginated user food items
   async getUserFoodItems(
     query?: string,
     page = 1,
@@ -228,7 +228,7 @@ export const foodService = {
     return response.data as ApiSearchResponse<ApiUserFoodDetail>;
   },
 
-  // Táº¡o user food item (multipart/form-data)
+  // Create a user food item (multipart/form-data)
   async createUserFoodItem(payload: FormData): Promise<any> {
     const response = await apiClient.post('/api/user-food-items', payload, {
       headers: { 'Content-Type': 'multipart/form-data' },
@@ -236,7 +236,7 @@ export const foodService = {
     return response.data;
   },
 
-  // Cáº­p nháº­t user food item
+  // Update a user food item
   async updateUserFoodItem(id: number, payload: FormData): Promise<any> {
     const response = await apiClient.put(`/api/user-food-items/${id}`, payload, {
       headers: { 'Content-Type': 'multipart/form-data' },
@@ -244,7 +244,7 @@ export const foodService = {
     return response.data;
   },
 
-  // XÃ³a user food item
+  // Delete a user food item
   async deleteUserFoodItem(id: number): Promise<void> {
     await apiClient.delete(`/api/user-food-items/${id}`);
   },
@@ -252,14 +252,14 @@ export const foodService = {
   // --- Favorites ---
   async getFavorites(): Promise<FoodItem[]> {
     const response = await apiClient.get('/api/favorites');
-    // Defensive coding: Äáº£m báº£o response.data lÃ  array
+    // Defensive coding: ensure response.data is an array
     const data = Array.isArray(response.data) ? response.data : [];
 
-    // Map tá»«ng item
+    // Map each favorite item into the shared FoodItem shape
     return data.map((item: any) => {
       return {
         id: String(item?.foodItemId ?? item?.id ?? ''),
-        name: item?.foodName ?? item?.name ?? 'MÃ³n Äƒn',
+        name: item?.foodName ?? item?.name ?? 'Mon an',
         nameEn: item?.foodNameEn ?? null,
         brand: null,
         calories: item?.caloriesPer100g ?? item?.calories ?? null,

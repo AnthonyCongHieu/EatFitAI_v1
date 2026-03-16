@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
-import { VictoryPie, VictoryLabel } from 'victory-native';
+import { VictoryPie } from 'victory-native';
 import { useAppTheme } from '../../theme/ThemeProvider';
 import { ThemedText } from '../ThemedText';
 import { AppCard } from '../ui/AppCard';

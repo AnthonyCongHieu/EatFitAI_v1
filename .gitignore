@@ -9,6 +9,8 @@ obj/
 .env.*
 !.env.example
 !.env*.example
+!**/.env.example
+!**/.env*.example
 ios/Pods/
 android/app/build/
 android/.kotlin/

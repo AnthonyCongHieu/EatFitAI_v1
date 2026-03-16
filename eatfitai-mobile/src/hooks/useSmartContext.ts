@@ -54,7 +54,7 @@ export const useSmartContext = (summary?: DaySummary | null): SmartContext => {
         // Analyze nutrition gaps
         let nutritionGap: NutritionGap | null = null;
         if (summary) {
-            const { protein = 0, carbs = 0, fat = 0, targetCalories = 2000 } = summary;
+            const { protein = 0, carbs = 0, fat = 0, targetCalories: _targetCalories = 2000 } = summary;
             const totalCalories = summary.totalCalories || 0;
 
             // Rough macro targets (example: 30% protein, 40% carbs, 30% fat in calories)

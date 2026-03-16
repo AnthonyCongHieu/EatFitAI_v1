@@ -6,7 +6,6 @@
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
 import Animated, { FadeInUp } from 'react-native-reanimated';
-import { Ionicons } from '@expo/vector-icons';
 
 import { ThemedText } from '../ThemedText';
 import Button from '../Button';
@@ -206,13 +205,13 @@ export const VoiceResultCard = ({
                 // Đã có data từ backend
                 rows.push({
                     label: 'Đã tiêu thụ',
-                    value: `${Math.round(executedData.totalCalories)} / ${Math.round(executedData.targetCalories || 0)} kcal`
+                    value: `${Math.round(executedData.totalCalories)} / ${Math.round(executedData.targetCalories || 0)} kcal`,
                 });
                 if (executedData.remaining !== undefined) {
                     const remaining = Math.round(executedData.remaining);
                     rows.push({
                         label: remaining >= 0 ? 'Còn lại' : 'Vượt quá',
-                        value: `${Math.abs(remaining)} kcal`
+                        value: `${Math.abs(remaining)} kcal`,
                     });
                 }
             } else {
@@ -221,7 +220,7 @@ export const VoiceResultCard = ({
             }
         }
 
-        // ASK_NUTRITION: hiển thị thông báo  
+        // ASK_NUTRITION: hiển thị thông báo
         if (command.intent === 'ASK_NUTRITION') {
             rows.push({ label: 'Thông tin', value: 'Sẽ hiển thị thông tin dinh dưỡng' });
         }

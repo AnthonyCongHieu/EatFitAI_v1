@@ -35,7 +35,7 @@ export const TrendChart: React.FC<TrendChartProps> = ({
     const maxCalories = Math.max(...data.map(d => d.calories), 1);
     const bestDayIndex = data.reduce(
         (maxIdx, day, idx, arr) => day.calories > arr[maxIdx]!.calories ? idx : maxIdx,
-        0
+        0,
     );
 
     const styles = StyleSheet.create({
@@ -90,7 +90,7 @@ export const TrendChart: React.FC<TrendChartProps> = ({
         },
     });
 
-    const getBarColor = (index: number, calories: number, target?: number) => {
+    const getBarColor = (index: number, calories: number, _target?: number) => {
         // Highest day = blue (primary)
         if (highlightBest && index === bestDayIndex && calories > 0) {
             return theme.colors.primary;

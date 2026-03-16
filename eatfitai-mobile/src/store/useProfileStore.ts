@@ -99,6 +99,6 @@ export const useProfileStore = create<ProfileState>()(
         profile: state.profile,
         lastFetched: state.lastFetched,
       }),
-    }
-  )
+    },
+  ),
 );

@@ -141,7 +141,7 @@ export const AddRecipeToDiarySheet = ({
                 {/* Nutrition Preview - Clean horizontal layout */}
                 <View style={[
                     styles.nutritionPreview,
-                    { backgroundColor: theme.colors.card, borderColor: theme.colors.border }
+                    { backgroundColor: theme.colors.card, borderColor: theme.colors.border },
                 ]}>
                     <ThemedText variant="bodySmall" weight="600" style={{ marginBottom: 12 }}>
                         Dinh dưỡng ({selectedServings} khẩu phần)

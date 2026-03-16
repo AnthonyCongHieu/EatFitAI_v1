@@ -1,7 +1,7 @@
 // EditProfileScreen: Chỉnh sửa thông tin cá nhân
 // Name, Gender, Age, Avatar
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import {
     ScrollView,
     StyleSheet,
@@ -31,7 +31,7 @@ const ProfileSchema = z.object({
     gender: z.enum(['male', 'female']),
     age: z.string().refine(
         (val) => !val || (!isNaN(Number(val)) && Number(val) >= 10 && Number(val) <= 120),
-        { message: 'Tuổi từ 10 - 120' }
+        { message: 'Tuổi từ 10 - 120' },
     ),
 });
 
@@ -59,7 +59,6 @@ const EditProfileScreen = (): React.ReactElement => {
         handleSubmit,
         formState: { errors },
         reset,
-        setValue,
     } = useForm<ProfileForm>({
         resolver: zodResolver(ProfileSchema),
         defaultValues: {
@@ -184,7 +183,7 @@ const EditProfileScreen = (): React.ReactElement => {
                     {/* Personal Info */}
                     <Animated.View entering={FadeInDown.delay(100)} style={styles.card}>
                         <View style={styles.sectionTitle}>
-                            <ThemedText style={{ fontSize: 20 }}></ThemedText>
+                            <ThemedText style={{ fontSize: 20 }} />
                             <ThemedText variant="h3">Thông tin cá nhân</ThemedText>
                         </View>
 

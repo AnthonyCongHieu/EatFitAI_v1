@@ -1,14 +1,11 @@
-// Màn hình Nhật ký bữa ăn - Redesigned với UI/UX hiện đại
+// Meal diary screen with a modernized layout.
 // Features: Summary header, improved date selector, beautiful meal cards
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { FlatList, Pressable, StyleSheet, View, Dimensions, Platform, RefreshControl } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import Animated, {
-  FadeIn,
   FadeInDown,
-  FadeInUp,
-  Layout,
 } from 'react-native-reanimated';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import type { NavigationProp } from '@react-navigation/native';
@@ -22,51 +19,35 @@ import { ThemedText } from '../../../components/ThemedText';
 import { Button } from '../../../components/Button';
 import { BottomSheet } from '../../../components/BottomSheet';
 import { ThemedTextInput } from '../../../components/ThemedTextInput';
-import { AppCard } from '../../../components/ui/AppCard';
 import { useAppTheme } from '../../../theme/ThemeProvider';
-import { useDiaryStore } from '../../../store/useDiaryStore';
 import { diaryService, type DiaryEntry } from '../../../services/diaryService';
+import { invalidateDiaryQueries } from '../../../services/diaryFlowService';
+import { formatDateChipLabel, formatRelativeDateLabel, isSameCalendarDay } from '../../../utils/dateDisplay';
 import { MEAL_TYPE_LABELS, type MealTypeId } from '../../../types';
 import type { RootStackParamList } from '../../types';
-import { t } from '../../../i18n/vi';
 import Toast from 'react-native-toast-message';
 import { AnimatedEmptyState } from '../../../components/ui/AnimatedEmptyState';
 import { FoodEntryCard } from '../../../components/ui/FoodEntryCard';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { TEST_IDS } from '../../../testing/testIds';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
-// Emoji cho từng loại bữa ăn
+// Emoji for each meal type.
 const MEAL_EMOJIS: Record<MealTypeId, string> = {
-  1: '🌅', // Breakfast
-  2: '☀️', // Lunch
-  3: '🌙', // Dinner
-  4: '🍵', // Snack
+  1: '\uD83C\uDF05', // Breakfast
+  2: '\u2600\uFE0F', // Lunch
+  3: '\uD83C\uDF19', // Dinner
+  4: '\uD83C\uDF75', // Snack
 };
 
-// Helper function to get meal gradient from theme
-const getMealGradient = (
-  mealType: MealTypeId,
-  mealGradients: typeof import('../../../theme/themes').lightTheme.mealGradients,
-): readonly [string, string] => {
-  const gradientMap: Record<MealTypeId, readonly [string, string]> = {
-    1: mealGradients.breakfast,
-    2: mealGradients.lunch,
-    3: mealGradients.dinner,
-    4: mealGradients.snack,
-  };
-  return gradientMap[mealType] || mealGradients.lunch;
-};
 
 const MealDiaryScreen = (): React.ReactElement => {
   const { theme } = useAppTheme();
   const isDark = theme.mode === 'dark';
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
   const route = useRoute<RouteProp<RootStackParamList, 'MealDiary'>>();
-  const insets = useSafeAreaInsets();
 
-  // Nếu có selectedDate từ params (từ MonthStats), parse và set
+// If MonthStats passes a selected date, use it as the initial value.
   const initialDate = useMemo(() => {
     const paramDate = route.params?.selectedDate;
     if (paramDate) {
@@ -84,7 +65,7 @@ const MealDiaryScreen = (): React.ReactElement => {
   const queryClient = useQueryClient();
   const dateListRef = useRef<FlatList<Date>>(null);
 
-  // Date options: -30 to +7 days (mở rộng để xem xa hơn)
+// Date options: from 30 days ago to 7 days ahead.
   const dateOptions = useMemo(() => {
     const options = [];
     const today = new Date();
@@ -96,7 +77,7 @@ const MealDiaryScreen = (): React.ReactElement => {
     return options;
   }, []);
 
-  const todayIndex = 30; // index của ngày hôm nay trong mảng (vị trí 0-indexed của ngày -30+30=0)
+  const todayIndex = 30; // Today's index in the generated date range.
 
   // Auto-scroll to today
   useEffect(() => {
@@ -109,31 +90,6 @@ const MealDiaryScreen = (): React.ReactElement => {
     }, 100);
   }, [todayIndex]);
 
-  // Format date for display (date chips - only weekday name)
-  const formatDateChip = useCallback((date: Date) => {
-    const weekdays = ['CN', 'Th 2', 'Th 3', 'Th 4', 'Th 5', 'Th 6', 'Th 7'];
-    return weekdays[date.getDay()];
-  }, []);
-
-  // Format date for date picker button (with Hôm nay/Hôm qua)
-  const formatDateLabel = useCallback((date: Date) => {
-    const today = new Date();
-    const tomorrow = new Date(today);
-    tomorrow.setDate(today.getDate() + 1);
-    const yesterday = new Date(today);
-    yesterday.setDate(today.getDate() - 1);
-
-    if (date.toDateString() === today.toDateString()) return 'Hôm nay';
-    if (date.toDateString() === yesterday.toDateString()) return 'Hôm qua';
-    if (date.toDateString() === tomorrow.toDateString()) return 'Ngày mai';
-
-    return date.toLocaleDateString('vi-VN', {
-      weekday: 'short',
-      day: 'numeric',
-      month: 'numeric',
-    });
-  }, []);
-
   // Format date for API
   const formatDateForApi = useCallback((date: Date) => {
     const y = date.getFullYear();
@@ -145,10 +101,7 @@ const MealDiaryScreen = (): React.ReactElement => {
   const dateKey = useMemo(() => formatDateForApi(selectedDate), [formatDateForApi, selectedDate]);
 
   // Check if selected date is today
-  const isToday = useMemo(() => {
-    const today = new Date();
-    return selectedDate.toDateString() === today.toDateString();
-  }, [selectedDate]);
+  const isToday = useMemo(() => isSameCalendarDay(selectedDate, new Date()), [selectedDate]);
 
   const {
     data: entriesData,
@@ -220,30 +173,28 @@ const MealDiaryScreen = (): React.ReactElement => {
     if (isNaN(grams) || grams <= 0) {
       Toast.show({
         type: 'error',
-        text1: 'Số gram không hợp lệ',
-        text2: 'Vui lòng nhập số lớn hơn 0',
+        text1: 'S\u1ed1 gram kh\u00f4ng h\u1ee3p l\u1ec7',
+        text2: 'Vui l\u00f2ng nh\u1eadp s\u1ed1 l\u1edbn h\u01a1n 0',
       });
       return;
     }
 
     try {
       await diaryService.updateEntry(editingEntry.id, { grams });
-      // ⚡ Invalidate cache thay vì refetch trực tiếp
-      queryClient.invalidateQueries({ queryKey: ['diary-entries'] });
-      queryClient.invalidateQueries({ queryKey: ['home-summary'] });
+      await invalidateDiaryQueries(queryClient);
       setShowEditSheet(false);
       setEditingEntry(null);
       Toast.show({
         type: 'success',
-        text1: 'Đã cập nhật',
-        text2: `Khẩu phần: ${grams}g`,
+        text1: '\u0110\u00e3 c\u1eadp nh\u1eadt',
+        text2: `Kh\u1ea9u ph\u1ea7n: ${grams}g`,
       });
     } catch (error: any) {
       console.error('Failed to update entry:', error);
       Toast.show({
         type: 'error',
-        text1: 'Lỗi cập nhật',
-        text2: error?.message || 'Không thể cập nhật khẩu phần. Thử lại sau.',
+        text1: 'L\u1ed7i c\u1eadp nh\u1eadt',
+        text2: error?.message || 'Kh\u00f4ng th\u1ec3 c\u1eadp nh\u1eadt kh\u1ea9u ph\u1ea7n. Th\u1eed l\u1ea1i sau.',
       });
     }
   }, [editingEntry, editGrams, queryClient]);
@@ -252,27 +203,27 @@ const MealDiaryScreen = (): React.ReactElement => {
     navigation.navigate('FoodSearch');
   }, [navigation]);
 
-  // Render date item với design đẹp hơn
+// Render each date chip.
   const renderDateItem = useCallback(
     ({ item: date }: { item: Date }) => {
-      const isSelected = date.toDateString() === selectedDate.toDateString();
-      const isToday = date.toDateString() === new Date().toDateString();
+      const isSelected = isSameCalendarDay(date, selectedDate);
+      const isCurrentDate = isSameCalendarDay(date, new Date());
       const dayNum = date.getDate();
-      const dayName = formatDateChip(date);
+      const dayName = formatDateChipLabel(date);
 
       return (
         <Pressable
           onPress={() => handleDateSelect(date)}
           style={{ width: (SCREEN_WIDTH - 32) / 5 }}
           accessibilityRole="button"
-          accessibilityLabel={`${dayName} ngày ${dayNum}${isToday ? ', hôm nay' : ''}${isSelected ? ', đang chọn' : ''}`}
+          accessibilityLabel={`${dayName} ngay ${dayNum}${isCurrentDate ? ', hom nay' : ''}${isSelected ? ', dang chon' : ''}`}
           accessibilityState={{ selected: isSelected }}
         >
           <Animated.View
             style={[
               styles.dateChip,
               isSelected && styles.dateChipSelected,
-              isToday && !isSelected && styles.dateChipToday,
+              isCurrentDate && !isSelected && styles.dateChipToday,
             ]}
           >
             <ThemedText
@@ -284,7 +235,7 @@ const MealDiaryScreen = (): React.ReactElement => {
             </ThemedText>
             <View style={[
               styles.dateChipNumber,
-              isSelected && { backgroundColor: 'rgba(255,255,255,0.2)' }
+              isSelected && { backgroundColor: 'rgba(255,255,255,0.2)' },
             ]}>
               <ThemedText
                 variant="h4"
@@ -298,7 +249,7 @@ const MealDiaryScreen = (): React.ReactElement => {
         </Pressable>
       );
     },
-    [selectedDate, handleDateSelect, formatDateChip, theme, isDark],
+    [selectedDate, handleDateSelect, theme, isDark],
   );
 
   // Render summary header
@@ -319,7 +270,7 @@ const MealDiaryScreen = (): React.ReactElement => {
           {/* Calories main */}
           <View style={styles.summaryMain}>
             <ThemedText style={styles.summaryCalories}>{Math.round(totals.calories)}</ThemedText>
-            <ThemedText style={styles.summaryLabel}>kcal hôm nay</ThemedText>
+            <ThemedText style={styles.summaryLabel}>{'kcal h\u00f4m nay'}</ThemedText>
           </View>
 
           {/* Macro pills */}
@@ -348,26 +299,25 @@ const MealDiaryScreen = (): React.ReactElement => {
     );
   };
 
-  // Render food card dẹp hơn với FoodEntryCard
+// Render each food entry card.
+
   const renderFoodCard = useCallback(
-    (entry: DiaryEntry, index: number) => {
+    (entry: DiaryEntry) => {
       const handleDelete = async () => {
         try {
           await diaryService.deleteEntry(entry.id);
-          // ⚡ Invalidate cache thay vì refetch trực tiếp
-          queryClient.invalidateQueries({ queryKey: ['diary-entries'] });
-          queryClient.invalidateQueries({ queryKey: ['home-summary'] });
+          await invalidateDiaryQueries(queryClient);
           Toast.show({
             type: 'success',
-            text1: 'Đã xóa',
-            text2: `Đã xóa ${entry.foodName}`,
+            text1: '\u0110\u00e3 x\u00f3a',
+            text2: `\u0110\u00e3 x\u00f3a ${entry.foodName}`,
           });
         } catch (error: any) {
           console.error('Failed to delete entry:', error);
           Toast.show({
             type: 'error',
-            text1: 'Lỗi xóa',
-            text2: error?.message || 'Không thể xóa món ăn. Thử lại sau.',
+            text1: 'L\u1ed7i x\u00f3a',
+            text2: error?.message || 'Kh\u00f4ng th\u1ec3 x\u00f3a m\u00f3n \u0103n. Th\u1eed l\u1ea1i sau.',
           });
         }
       };
@@ -392,14 +342,12 @@ const MealDiaryScreen = (): React.ReactElement => {
     [handleEditGrams, queryClient],
   );
 
-  // Render meal section với design đẹp hơn
+// Render each meal section.
   const renderMealSection = useCallback(
     ({
       item,
-      index,
     }: {
       item: { mealType: MealTypeId; title: string; entries: DiaryEntry[] };
-      index: number;
     }) => {
       const emoji = MEAL_EMOJIS[item.mealType];
       const mealCalories = item.entries.reduce((sum, e) => sum + (e.calories || 0), 0);
@@ -425,7 +373,7 @@ const MealDiaryScreen = (): React.ReactElement => {
 
           {/* Food cards */}
           <View style={{ gap: 8 }}>
-            {item.entries.map((entry, idx) => renderFoodCard(entry, idx))}
+            {item.entries.map((entry) => renderFoodCard(entry))}
           </View>
         </View>
       );
@@ -433,19 +381,19 @@ const MealDiaryScreen = (): React.ReactElement => {
     [renderFoodCard],
   );
 
-  // Render empty state đẹp hơn với AnimatedEmptyState
+// Render the empty state.
   const renderEmptyState = () => (
     <AnimatedEmptyState
       variant="no-food"
-      title="Chưa có dữ liệu hôm nay"
-      description="Hãy chụp ảnh hoặc tìm kiếm để thêm món ăn vào nhật ký."
+      title={'Ch\u01b0a c\u00f3 d\u1eef li\u1ec7u h\u00f4m nay'}
+      description={'H\u00e3y ch\u1ee5p \u1ea3nh ho\u1eb7c t\u00ecm ki\u1ebfm \u0111\u1ec3 th\u00eam m\u00f3n \u0103n v\u00e0o nh\u1eadt k\u00fd.'}
       primaryAction={{
-        label: 'Thêm món ăn',
+        label: 'Th\u00eam m\u00f3n \u0103n',
         onPress: handleAddManual,
         icon: 'add-circle-outline',
       }}
       secondaryAction={{
-        label: 'Chụp ảnh món ăn',
+        label: 'Ch\u1ee5p \u1ea3nh m\u00f3n \u0103n',
         onPress: () => navigation.navigate('AiCamera'),
       }}
       compact
@@ -704,7 +652,7 @@ const MealDiaryScreen = (): React.ReactElement => {
   return (
     <Screen scroll={false} testID={TEST_IDS.mealDiary.screen}>
       <View style={styles.container}>
-        {/* Custom Header với Back button - centered like EditProfileScreen */}
+        {/* Centered header with back button. */}
         <View style={[styles.screenHeader, { paddingTop: 10 }]}>
           <View style={styles.headerRow}>
             <Pressable
@@ -712,17 +660,17 @@ const MealDiaryScreen = (): React.ReactElement => {
               style={styles.backButton}
               hitSlop={8}
             >
-              <ThemedText style={{ fontSize: 18 }}>←</ThemedText>
+              <ThemedText style={{ fontSize: 18 }}>{'\u2190'}</ThemedText>
             </Pressable>
             <View style={styles.headerCenter}>
               <ThemedText variant="h3" weight="700">
-                Nhật ký bữa ăn
+                {'Nh\u1eadt k\u00fd b\u1eefa \u0103n'}
               </ThemedText>
             </View>
           </View>
         </View>
 
-        {/* Date label với nút chọn lịch */}
+        {/* Selected date label with date picker button. */}
         <View style={styles.header}>
           <Pressable
             onPress={() => setShowDatePicker(true)}
@@ -732,7 +680,7 @@ const MealDiaryScreen = (): React.ReactElement => {
               <Ionicons name="calendar" size={18} color={theme.colors.primary} />
             </View>
             <ThemedText variant="h4" weight="600">
-              {formatDateLabel(selectedDate)}
+              {formatRelativeDateLabel(selectedDate, { includeTomorrow: true })}
             </ThemedText>
             <Ionicons name="chevron-down" size={18} color={theme.colors.textSecondary} />
           </Pressable>
@@ -759,7 +707,7 @@ const MealDiaryScreen = (): React.ReactElement => {
                 if (date) {
                   setSelectedDate(date);
                   const idx = dateOptions.findIndex(
-                    (d) => d.toDateString() === date.toDateString()
+                    (d) => d.toDateString() === date.toDateString(),
                   );
                   if (idx >= 0) {
                     dateListRef.current?.scrollToIndex({
@@ -776,7 +724,7 @@ const MealDiaryScreen = (): React.ReactElement => {
           </View>
         )}
 
-        {/* Date Selector - scroll để xem thêm ngày */}
+        {/* Horizontal date selector. */}
         <View style={styles.dateSelector}>
           <FlatList
             ref={dateListRef}
@@ -808,7 +756,7 @@ const MealDiaryScreen = (): React.ReactElement => {
         {isEntriesLoading ? (
           <View style={styles.emptyContainer}>
             <ThemedText variant="body" color="textSecondary">
-              Đang tải...
+              {'\u0110ang t\u1ea3i...'}
             </ThemedText>
           </View>
         ) : isEmpty ? (
@@ -816,7 +764,7 @@ const MealDiaryScreen = (): React.ReactElement => {
         ) : (
           <FlashList
             data={groupedEntries}
-            renderItem={({ item, index }) => renderMealSection({ item, index })}
+            renderItem={({ item }) => renderMealSection({ item })}
             showsVerticalScrollIndicator={false}
             contentContainerStyle={{ paddingBottom: 100 }}
             ListHeaderComponent={renderSummaryHeader}
@@ -881,7 +829,7 @@ const MealDiaryScreen = (): React.ReactElement => {
           >
             <Ionicons name="today-outline" size={16} color="#fff" />
             <ThemedText variant="bodySmall" weight="600" style={{ color: '#fff' }}>
-              Quay lại hôm nay
+              {'Quay l\u1ea1i h\u00f4m nay'}
             </ThemedText>
           </Pressable>
         )}
@@ -891,12 +839,12 @@ const MealDiaryScreen = (): React.ReactElement => {
       <BottomSheet
         visible={showEditSheet}
         onClose={() => setShowEditSheet(false)}
-        title="Chỉnh sửa khẩu phần"
+        title={'Ch\u1ec9nh s\u1eeda kh\u1ea9u ph\u1ea7n'}
         height={300}
       >
         <View style={styles.editSheetContent}>
           <ThemedText variant="body" weight="600">
-            Nhập số gram mới:
+            {'Nh\u1eadp s\u1ed1 gram m\u1edbi:'}
           </ThemedText>
           <ThemedTextInput
             value={editGrams}
@@ -904,13 +852,13 @@ const MealDiaryScreen = (): React.ReactElement => {
               const numericOnly = text.replace(/[^0-9.]/g, '');
               setEditGrams(numericOnly);
             }}
-            placeholder="Ví dụ: 150"
+            placeholder={'V\u00ed d\u1ee5: 150'}
             keyboardType="decimal-pad"
             returnKeyType="done"
             onSubmitEditing={handleSaveGrams}
             style={styles.editInput}
           />
-          <Button title="💾 Lưu thay đổi" onPress={handleSaveGrams} />
+          <Button title={'L\u01b0u thay \u0111\u1ed5i'} onPress={handleSaveGrams} />
         </View>
       </BottomSheet>
     </Screen>

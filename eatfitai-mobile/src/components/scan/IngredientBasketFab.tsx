@@ -55,7 +55,7 @@ export const IngredientBasketFab: React.FC<IngredientBasketFabProps> = ({ onPres
         // Animate: scale down rồi scale up
         scale.value = withSequence(
           withSpring(0.9, { damping: 18, stiffness: 400 }),
-          withSpring(1, { damping: 18, stiffness: 400 })
+          withSpring(1, { damping: 18, stiffness: 400 }),
         );
         // Gọi JS function qua runOnJS
         runOnJS(handleTap)();

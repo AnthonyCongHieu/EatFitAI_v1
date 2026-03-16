@@ -31,7 +31,7 @@ OLLAMA_MODEL=qwen2.5:3b
 ENABLE_STT=false
 ```
 
-`ENABLE_STT=false` is the recommended local default for the emulator/Appium lane so the service can boot quickly without downloading the PhoWhisper model. Set it to `true` only when you are explicitly validating voice transcription.
+`ENABLE_STT=false` is the recommended local default for the emulator/Appium lane so the service can boot quickly without downloading the PhoWhisper model. Set it to `true` only when you are explicitly validating voice transcription. `ROBOFLOW_API_KEY` is only required when you run `download_dataset.py`.
 
 ## Start locally
 

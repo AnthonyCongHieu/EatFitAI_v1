@@ -1,8 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { View, StyleSheet, RefreshControl } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
-import Animated, { FadeInDown, FadeInUp, SlideInRight, SlideInLeft } from 'react-native-reanimated';
+import Animated, { SlideInRight, SlideInLeft } from 'react-native-reanimated';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../../types';
@@ -17,7 +16,6 @@ import {
     TabSwitcher,
     TrendChart,
     CalendarHeatmap,
-    InsightBubble,
     SimpleAnimatedCounter,
 } from '../../../components/stats';
 import { summaryService } from '../../../services/summaryService';
@@ -69,7 +67,7 @@ const StatsScreen = (): React.ReactElement => {
 
     const [monthData, setMonthData] = useState<MonthSummary | null>(null);
     const [isLoadingMonth, setIsLoadingMonth] = useState(false);
-    const [currentMonth, setCurrentMonth] = useState(() => new Date());
+    const [currentMonth] = useState(() => new Date());
 
     // Fetch data on mount - both week summary and diary summary for today tab
     useEffect(() => {
@@ -98,7 +96,7 @@ const StatsScreen = (): React.ReactElement => {
                 ([date, calories]) => ({
                     date,
                     calories: Number(calories) || 0,
-                })
+                }),
             );
 
             const daysLogged = days.filter((d) => d.calories > 0).length;
@@ -150,37 +148,6 @@ const StatsScreen = (): React.ReactElement => {
         navigation.navigate('MealDiary', { selectedDate: date });
     };
 
-    // Generate insight based on data
-    const getInsight = (): { text: string; trend?: { value: number; isPositive: boolean } } => {
-        if (!weekSummary?.days.length) {
-            return { text: 'Bắt đầu ghi nhận bữa ăn để xem thống kê!' };
-        }
-
-        const avgCalories = weekSummary.days.reduce((sum, d) => sum + d.calories, 0) /
-            Math.max(weekSummary.days.filter(d => d.calories > 0).length, 1);
-
-        const target = todayData?.targetCalories || 2000;
-        const percentage = Math.round((avgCalories / target) * 100);
-
-        if (percentage >= 90 && percentage <= 110) {
-            return {
-                text: 'Tuyệt vời! Bạn đang duy trì tốt mục tiêu dinh dưỡng.',
-                trend: { value: 5, isPositive: true }
-            };
-        } else if (percentage < 90) {
-            return {
-                text: 'Bạn đang ăn ít hơn mục tiêu. Hãy bổ sung thêm bữa phụ!',
-                trend: { value: 100 - percentage, isPositive: false }
-            };
-        } else {
-            return {
-                text: 'Bạn đang vượt mục tiêu. Cân nhắc điều chỉnh khẩu phần.',
-                trend: { value: percentage - 100, isPositive: false }
-            };
-        }
-    };
-
-    const insight = getInsight();
 
     const styles = StyleSheet.create({
         content: {
@@ -293,7 +260,7 @@ const StatsScreen = (): React.ReactElement => {
                                 data={weekSummary.days.map(d => ({
                                     date: d.date,
                                     calories: d.calories,
-                                    targetCalories: d.targetCalories ?? undefined
+                                    targetCalories: d.targetCalories ?? undefined,
                                 }))}
                                 highlightBest
                                 onBarPress={(day) => handleDayPress(day.date)}
@@ -307,7 +274,7 @@ const StatsScreen = (): React.ReactElement => {
                                 <SimpleAnimatedCounter
                                     value={Math.round(
                                         weekSummary.days.reduce((sum, d) => sum + d.calories, 0) /
-                                        Math.max(weekSummary.days.filter(d => d.calories > 0).length, 1)
+                                        Math.max(weekSummary.days.filter(d => d.calories > 0).length, 1),
                                     )}
                                     variant="h4"
                                     weight="700"

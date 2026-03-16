@@ -134,7 +134,7 @@ export const voiceService = {
             'Content-Type': 'multipart/form-data',
           },
           timeout: 60000, // 60s for long audio
-        }
+        },
       );
 
       console.log('[VoiceService] Whisper response:', response.data);

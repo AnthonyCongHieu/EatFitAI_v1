@@ -4,7 +4,6 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, { FadeInRight, Layout } from 'react-native-reanimated';
-import { LinearGradient } from 'expo-linear-gradient';
 
 import Screen from '../../../components/Screen';
 import { AppHeader } from '../../../components/ui/AppHeader';
@@ -13,9 +12,9 @@ import Button from '../../../components/Button';
 import { AppCard } from '../../../components/ui/AppCard';
 import { useAppTheme } from '../../../theme/ThemeProvider';
 import { aiService } from '../../../services/aiService';
+import { formatRelativeDateLabel, formatShortTime } from '../../../utils/dateDisplay';
 import type { RootStackParamList } from '../../types';
 import type { DetectionHistory } from '../../../types/aiEnhanced';
-import { glassStyles } from '../../../components/ui/GlassCard';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -26,8 +25,6 @@ interface SectionData {
 
 const VisionHistoryScreen = (): React.ReactElement => {
   const { theme } = useAppTheme();
-  const isDark = theme.mode === 'dark';
-  const glass = glassStyles(isDark);
   const navigation = useNavigation<NavigationProp>();
 
   const [sections, setSections] = useState<SectionData[]>([]);
@@ -46,7 +43,7 @@ const VisionHistoryScreen = (): React.ReactElement => {
       const grouped = groupHistoryByDate(data);
       setSections(grouped);
     } catch (err: any) {
-      setError(err?.message || 'L?i khi t?i l?ch s? nh?n di?n');
+      setError(err?.message || 'Lỗi khi tải lịch sử nhận diện');
     } finally {
       setLoading(false);
     }
@@ -57,13 +54,9 @@ const VisionHistoryScreen = (): React.ReactElement => {
 
     history.forEach((item) => {
       const date = new Date(item.detectedAt);
-      const today = new Date();
-      const yesterday = new Date(today);
-      yesterday.setDate(yesterday.getDate() - 1);
-
-      let title = date.toLocaleDateString('vi-VN');
-      if (date.toDateString() === today.toDateString()) title = 'H�m nay';
-      else if (date.toDateString() === yesterday.toDateString()) title = 'H�m qua';
+      const title = formatRelativeDateLabel(date, {
+        fallbackOptions: { day: 'numeric', month: 'numeric', year: 'numeric' },
+      });
 
       if (!groups[title]) groups[title] = [];
       groups[title]!.push(item);
@@ -148,10 +141,7 @@ const VisionHistoryScreen = (): React.ReactElement => {
               {item.mappedFoodNames.length > 1 && ` +${item.mappedFoodNames.length - 1}`}
             </ThemedText>
             <ThemedText style={styles.time}>
-              {new Date(item.detectedAt).toLocaleTimeString('vi-VN', {
-                hour: '2-digit',
-                minute: '2-digit',
-              })}
+              {formatShortTime(new Date(item.detectedAt))}
             </ThemedText>
           </View>
 
@@ -200,7 +190,7 @@ const VisionHistoryScreen = (): React.ReactElement => {
                 style={{ marginRight: 4 }}
               />
               <ThemedText variant="caption" color="warning">
-                {item.unmappedCount} m�n chua nh?n di?n du?c
+                {item.unmappedCount} món chưa nhận diện được
               </ThemedText>
             </View>
           )}
@@ -228,8 +218,8 @@ const VisionHistoryScreen = (): React.ReactElement => {
   return (
     <Screen style={styles.container}>
       <AppHeader
-        title="L?ch s? nh?n di?n"
-        subtitle="C�c m�n an b?n d� qu�t g?n d�y"
+        title="Lịch sử nhận diện"
+        subtitle="Các món ăn bạn đã quét gần đây"
         onBackPress={() => navigation.goBack()}
       />
 
@@ -241,7 +231,7 @@ const VisionHistoryScreen = (): React.ReactElement => {
         <View style={styles.center}>
           <ThemedText color="danger">{error}</ThemedText>
           <Button
-            title="Th? l?i"
+            title="Thử lại"
             onPress={loadHistory}
             variant="secondary"
             style={{ marginTop: 16 }}
@@ -259,7 +249,7 @@ const VisionHistoryScreen = (): React.ReactElement => {
             <View style={styles.center}>
               <Ionicons name="images-outline" size={64} color={theme.colors.border} />
               <ThemedText color="textSecondary" style={{ marginTop: 16 }}>
-                Chua c� l?ch s? nh?n di?n n�o
+                Chưa có lịch sử nhận diện nào
               </ThemedText>
             </View>
           }

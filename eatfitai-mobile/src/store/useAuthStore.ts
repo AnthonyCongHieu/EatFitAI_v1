@@ -2,7 +2,6 @@
 
 import { create } from 'zustand';
 
-import { API_BASE_URL } from '../config/env';
 import apiClient, { setAuthExpiredCallback } from '../services/apiClient';
 import { setAccessTokenMem } from '../services/authTokens';
 import { tokenStorage } from '../services/secureStore';
@@ -26,29 +25,6 @@ type AuthState = {
   resetPassword: (email: string, code: string, newPassword: string) => Promise<void>;
 };
 
-const API_BASE = API_BASE_URL ?? '';
-
-const extractRegisterErrorMessage = (err: any): string => {
-  const fallback = t('auth.registerFailed');
-  if (!err) return fallback;
-
-  const responseData = err?.response?.data ?? err?.data;
-  if (!responseData) return err?.message ?? fallback;
-
-  const errors = responseData.errors as Record<string, string[]> | undefined;
-  if (errors && typeof errors === 'object') {
-    const allMessages = Object.values(errors).flat().filter(Boolean);
-    if (allMessages.length > 0) {
-      return allMessages.join('\n');
-    }
-  }
-
-  if (typeof responseData.title === 'string' && responseData.title.trim().length > 0) {
-    return responseData.title;
-  }
-
-  return err?.message ?? fallback;
-};
 
 export const useAuthStore = create<AuthState>((set: any) => ({
   isInitializing: true,
@@ -122,7 +98,7 @@ export const useAuthStore = create<AuthState>((set: any) => ({
    * Đăng ký mới nên thông qua RegisterScreen → VerifyEmailScreen flow.
    * Endpoint đúng là /api/auth/register-with-verification
    */
-  register: async (name, email, password) => {
+  register: async (_name, _email, _password) => {
     console.warn('[useAuthStore] DEPRECATED: register() bypasses email verification!');
     console.warn('[useAuthStore] Use RegisterScreen → VerifyEmailScreen flow instead.');
     throw new Error('Register function is deprecated. Use RegisterScreen for proper email verification flow.');
@@ -135,7 +111,7 @@ export const useAuthStore = create<AuthState>((set: any) => ({
     // Configure và sign in với native module
     const configured = await googleAuthService.configure();
     if (!configured) {
-      throw new Error('Không thể khởi tạo Google Sign-In. Kiểm tra cấu hình trong google.config.ts');
+      throw new Error('Không thể khởi tạo Google Sign-In. Kiểm tra EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID và env mobile.');
     }
 
     // Sign in với Google

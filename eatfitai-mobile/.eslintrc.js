@@ -16,9 +16,12 @@ module.exports = {
     'jest/globals': true,
   },
   plugins: ['@typescript-eslint', 'prettier', 'jest'],
+  settings: {
+    'import/core-modules': ['expo-image-manipulator'],
+  },
   rules: {
-    // A?p ch?y Prettier song song lint ?? gi? code style th?ng nh?t
-    'prettier/prettier': 'error',
+    // Formatting duoc chay bang npm run format; lint tap trung vao code issues.
+    'prettier/prettier': 'off',
     'no-void': 'off',
     'unicode-bom': 'off',
     curly: 'off',

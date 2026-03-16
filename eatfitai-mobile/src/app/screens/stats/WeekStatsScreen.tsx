@@ -1,14 +1,12 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
 import {
   RefreshControl,
   StyleSheet,
   View,
   Pressable,
-  Platform,
   ActivityIndicator,
 } from 'react-native';
 import * as Haptics from 'expo-haptics';
-import DateTimePicker from '@react-native-community/datetimepicker';
 import {
   VictoryBar,
   VictoryChart,
@@ -27,18 +25,10 @@ import Icon from '../../../components/Icon';
 import { useAppTheme } from '../../../theme/ThemeProvider';
 import { useStatsStore } from '../../../store/useStatsStore';
 import { handleApiError } from '../../../utils/errorHandler';
+import { formatShortWeekdayLabel, formatWeekRangeLabel } from '../../../utils/dateDisplay';
 import { StatsSkeleton } from '../../../components/skeletons/StatsSkeleton';
 import { MacroPieChart } from '../../../components/charts/MacroPieChart';
-import { glassStyles } from '../../../components/ui/GlassCard';
 import { t } from '../../../i18n/vi';
-
-const formatWeekRange = (dateStr: string): string => {
-  const start = new Date(dateStr);
-  const end = new Date(start);
-  end.setDate(end.getDate() + 6);
-  const formatOptions: Intl.DateTimeFormatOptions = { day: 'numeric', month: 'short' };
-  return `${start.toLocaleDateString('vi-VN', formatOptions)} - ${end.toLocaleDateString('vi-VN', formatOptions)}`;
-};
 
 const isCurrentWeek = (dateStr: string): boolean => {
   const today = new Date();
@@ -51,8 +41,6 @@ const isCurrentWeek = (dateStr: string): boolean => {
 const WeekStatsScreen = (): React.ReactElement => {
   const { theme } = useAppTheme();
   const isDark = theme.mode === 'dark';
-  const glass = glassStyles(isDark);
-  const [showDatePicker, setShowDatePicker] = useState(false);
   const styles = StyleSheet.create({
     content: {
       paddingHorizontal: theme.spacing.lg,
@@ -71,7 +59,7 @@ const WeekStatsScreen = (): React.ReactElement => {
       flex: 1,
       alignItems: 'center',
       padding: theme.spacing.md,
-      // Solid colors để fix 2 màu trên Android
+      // Solid colors avoid Android gradient banding artifacts
       backgroundColor: isDark ? '#1A2744' : '#F8FAFF',
       borderRadius: 20,
       borderWidth: 1,
@@ -83,7 +71,7 @@ const WeekStatsScreen = (): React.ReactElement => {
       justifyContent: 'space-between',
       paddingHorizontal: theme.spacing.md,
       paddingVertical: theme.spacing.sm,
-      // Solid colors để fix 2 màu trên Android
+      // Solid colors avoid Android gradient banding artifacts
       backgroundColor: isDark ? '#1A2744' : '#F8FAFF',
       borderRadius: 16,
       borderWidth: 1,
@@ -149,36 +137,21 @@ const WeekStatsScreen = (): React.ReactElement => {
     refreshWeekSummary().catch(handleApiError);
   }, [refreshWeekSummary]);
 
-  // Handle date picker change - navigate d?n tu?n ch?a ng�y du?c ch?n
-  const handleDateChange = useCallback(
-    (event: any, date?: Date) => {
-      setShowDatePicker(Platform.OS === 'ios'); // iOS gi? picker m?
-      if (date) {
-        useStatsStore.getState().setSelectedDate(date.toISOString().split('T')[0]!);
-      }
-    },
-    [],
-  );
 
   const chartData = useMemo(() => {
     return (weekSummary?.days ?? []).map((day) => ({
-      x: new Date(day.date).toLocaleDateString('vi-VN', { weekday: 'short' }),
+      x: formatShortWeekdayLabel(new Date(day.date)),
       y: day.calories,
       target: day.targetCalories ?? undefined,
     }));
   }, [weekSummary]);
 
-  const targetLine = useMemo(() => {
-    return chartData
-      .filter((day) => typeof day.target === 'number')
-      .map((day) => ({ x: day.x, y: day.target as number }));
-  }, [chartData]);
 
   if (isLoading && !weekSummary) {
     return <StatsSkeleton />;
   }
 
-  // Ki?m tra tru?ng h?p kh�ng c� d? li?u
+  // Handle the empty-state case
   const hasNoData = !weekSummary || !weekSummary.days || weekSummary.days.length === 0;
 
   return (
@@ -207,7 +180,7 @@ const WeekStatsScreen = (): React.ReactElement => {
 
         <View style={{ alignItems: 'center' }}>
           <ThemedText variant="h4" weight="600">
-            {formatWeekRange(selectedDate)}
+            {formatWeekRangeLabel(selectedDate)}
           </ThemedText>
           {isCurrentWeek(selectedDate) && (
             <ThemedText variant="caption" color="primary">
@@ -245,12 +218,12 @@ const WeekStatsScreen = (): React.ReactElement => {
         }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
             <View style={{ width: 12, height: 12, borderRadius: 3, backgroundColor: '#4ade80' }} />
-            <ThemedText variant="caption" color="textSecondary">�� ti�u th?</ThemedText>
+            <ThemedText variant="caption" color="textSecondary">{'\u0110\u00e3 ti\u00eau th\u1ee5'}</ThemedText>
           </View>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-            {/* Solid colors để fix 2 màu trên Android */}
+            {/* Solid colors avoid Android gradient banding artifacts */}
             <View style={{ width: 12, height: 12, borderRadius: 3, backgroundColor: isDark ? '#1E3050' : '#D0D0D5' }} />
-            <ThemedText variant="caption" color="textSecondary">C�n l?i</ThemedText>
+            <ThemedText variant="caption" color="textSecondary">{'C\u00f2n l\u1ea1i'}</ThemedText>
           </View>
         </View>
 
@@ -274,7 +247,7 @@ const WeekStatsScreen = (): React.ReactElement => {
             }}
           >
             <ThemedText variant="h4" color="textSecondary">
-              ??
+              {'\uD83D\uDCC5'}
             </ThemedText>
             <ThemedText
               variant="body"
@@ -319,9 +292,9 @@ const WeekStatsScreen = (): React.ReactElement => {
               }}
             />
 
-            {/* Stack d? 2 bars c�ng v? tr� */}
+            {/* Stack the two bar series at the same x-position */}
             <VictoryStack>
-              {/* Data bars - Xanh l� (v? tru?c, ? du?i) */}
+              {/* Consumed calories bar */}
               <VictoryBar
                 data={chartData}
                 x="x"
@@ -351,7 +324,7 @@ const WeekStatsScreen = (): React.ReactElement => {
                   />
                 }
               />
-              {/* Ph?n c�n l?i - X�m (v? sau, ? tr�n) */}
+              {/* Remaining capacity bar */}
               <VictoryBar
                 data={chartData.map((d: any) => {
                   const maxVal = Math.max(...chartData.map((item: any) => item.y)) * 1.15;
@@ -379,7 +352,7 @@ const WeekStatsScreen = (): React.ReactElement => {
             marginTop: theme.spacing.md,
             paddingTop: theme.spacing.md,
             borderTopWidth: 1,
-            // Solid colors để fix 2 màu trên Android
+            // Solid colors avoid Android gradient banding artifacts
             borderTopColor: isDark ? '#2A3F68' : '#E0E0E0',
           }}>
             {/* Average per day */}
@@ -391,7 +364,7 @@ const WeekStatsScreen = (): React.ReactElement => {
               backgroundColor: isDark ? '#1A2744' : '#EEF4FF',
               borderRadius: 12,
             }}>
-              <ThemedText style={{ fontSize: 16 }}>??</ThemedText>
+              <ThemedText style={{ fontSize: 16 }}>{'\uD83D\uDCCA'}</ThemedText>
               <ThemedText
                 variant="h4"
                 weight="700"
@@ -403,7 +376,7 @@ const WeekStatsScreen = (): React.ReactElement => {
                 )}
               </ThemedText>
               <ThemedText variant="caption" color="textSecondary">
-                TB/ng�y
+                {'TB/ng\u00e0y'}
               </ThemedText>
             </View>
 
@@ -416,18 +389,18 @@ const WeekStatsScreen = (): React.ReactElement => {
               backgroundColor: isDark ? '#1E1A40' : '#F3E8FF',
               borderRadius: 12,
             }}>
-              <ThemedText style={{ fontSize: 16 }}>??</ThemedText>
+              <ThemedText style={{ fontSize: 16 }}>{'\u26A1'}</ThemedText>
               <ThemedText
                 variant="h4"
                 weight="700"
                 style={{ color: '#8b5cf6', marginTop: 2 }}
               >
                 {Math.round(
-                  weekSummary.days.reduce((sum, day) => sum + day.calories, 0) / 1000 * 10
+                  weekSummary.days.reduce((sum, day) => sum + day.calories, 0) / 1000 * 10,
                 ) / 10}k
               </ThemedText>
               <ThemedText variant="caption" color="textSecondary">
-                T?ng tu?n
+                {'T\u1ed5ng tu\u1ea7n'}
               </ThemedText>
             </View>
 
@@ -440,7 +413,7 @@ const WeekStatsScreen = (): React.ReactElement => {
               backgroundColor: isDark ? '#1A3028' : '#E8F5E9',
               borderRadius: 12,
             }}>
-              <ThemedText style={{ fontSize: 16 }}>??</ThemedText>
+              <ThemedText style={{ fontSize: 16 }}>{'\uD83C\uDFAF'}</ThemedText>
               <ThemedText
                 variant="h4"
                 weight="700"
@@ -451,7 +424,7 @@ const WeekStatsScreen = (): React.ReactElement => {
                 ).length}/{weekSummary.days.length}
               </ThemedText>
               <ThemedText variant="caption" color="textSecondary">
-                �?t m?c ti�u
+                {'\u0110\u1ea1t m\u1ee5c ti\u00eau'}
               </ThemedText>
             </View>
           </View>

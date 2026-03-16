@@ -9,7 +9,6 @@ import Screen from '../../../components/Screen';
 import { ThemedText } from '../../../components/ThemedText';
 import { Skeleton } from '../../../components/Skeleton';
 import { TeachLabelBottomSheet } from '../../../components/ui/TeachLabelBottomSheet';
-import { AppCard } from '../../../components/ui/AppCard';
 import Button from '../../../components/Button';
 import Icon from '../../../components/Icon';
 import { useAppTheme } from '../../../theme/ThemeProvider';
@@ -18,8 +17,10 @@ import type { MealTypeId } from '../../../types';
 import type { MappedFoodItem } from '../../../types/ai';
 import type { FoodItem } from '../../../services/foodService';
 import { aiService } from '../../../services/aiService';
-import { mealService } from '../../../services/mealService';
-import { useDiaryStore } from '../../../store/useDiaryStore';
+import {
+  addItemsToTodayDiary,
+  invalidateDiaryQueries,
+} from '../../../services/diaryFlowService';
 import { handleApiErrorWithCustomMessage } from '../../../utils/errorHandler';
 import { translateIngredient } from '../../../utils/translate';
 import { TEST_IDS } from '../../../testing/testIds';
@@ -50,7 +51,7 @@ const AddMealFromVisionScreen = (): React.ReactElement => {
       item,
       selected: item.isMatched,
       grams: 100,
-      mealType: 2, // Mặc định bữa trưa
+      mealType: 2, // Default to lunch
     })),
   );
   const [teachLabelVisible, setTeachLabelVisible] = useState(false);
@@ -70,12 +71,12 @@ const AddMealFromVisionScreen = (): React.ReactElement => {
   }, [selectedItems]);
 
   const handleToggleSelect = useCallback((targetItem: DetectionItem) => {
-    // Cảnh báo nếu chưa matched nhưng vẫn cho phép chọn
+    // Warn if an item is not matched yet, but still allow selection
     if (!targetItem.item.isMatched && !targetItem.selected) {
       Toast.show({
         type: 'info',
-        text1: 'Lưu ý',
-        text2: 'Món này chưa được xác nhận, có thể thiếu thông tin dinh dưỡng',
+        text1: 'L\u01b0u \u00fd',
+        text2: 'M\u00f3n n\u00e0y ch\u01b0a \u0111\u01b0\u1ee3c x\u00e1c nh\u1eadn, c\u00f3 th\u1ec3 thi\u1ebfu th\u00f4ng tin dinh d\u01b0\u1ee1ng',
         visibilityTime: 2000,
       });
     }
@@ -100,11 +101,11 @@ const AddMealFromVisionScreen = (): React.ReactElement => {
 
       Toast.show({
         type: 'success',
-        text1: 'Đã dạy AI',
-        text2: `"${currentTeachLabel}" → ${foodItem.name}`,
+        text1: '\u0110\u00e3 d\u1ea1y AI',
+        text2: `"${currentTeachLabel}" -> ${foodItem.name}`,
       });
 
-      // Refresh lại kết quả
+      // Refresh the detection result after teaching the label
       setLoading(true);
       const refreshedResult = await aiService.detectFoodByImage(imageUri);
       setDetectionItems(
@@ -118,9 +119,9 @@ const AddMealFromVisionScreen = (): React.ReactElement => {
       setLoading(false);
     } catch (err) {
       handleApiErrorWithCustomMessage(err, {
-        server_error: { text1: 'Lỗi', text2: 'Máy chủ gặp sự cố' },
-        network_error: { text1: 'Không có kết nối', text2: 'Kiểm tra mạng' },
-        unknown: { text1: 'Lỗi', text2: 'Không thể dạy AI' },
+        server_error: { text1: 'L\u1ed7i', text2: 'M\u00e1y ch\u1ee7 g\u1eb7p s\u1ef1 c\u1ed1' },
+        network_error: { text1: 'Kh\u00f4ng c\u00f3 k\u1ebft n\u1ed1i', text2: 'Ki\u1ec3m tra m\u1ea1ng' },
+        unknown: { text1: 'L\u1ed7i', text2: 'Kh\u00f4ng th\u1ec3 d\u1ea1y AI' },
       });
     }
   };
@@ -130,7 +131,6 @@ const AddMealFromVisionScreen = (): React.ReactElement => {
 
     setIsSubmitting(true);
     try {
-      const date = new Date().toISOString().split('T')[0]!;
       const mealType = selectedItems[0]?.mealType ?? 2;
 
       const items = selectedItems.map((d) => ({
@@ -138,30 +138,27 @@ const AddMealFromVisionScreen = (): React.ReactElement => {
         grams: d.grams,
       }));
 
-      await mealService.addMealItems(date, mealType, items);
+      await addItemsToTodayDiary(items, { mealTypeId: mealType });
 
       Toast.show({
         type: 'success',
-        text1: 'Thành công',
-        text2: `Đã thêm ${selectedItems.length} món vào nhật ký`,
+        text1: 'Th\u00e0nh c\u00f4ng',
+        text2: `\u0110\u00e3 th\u00eam ${selectedItems.length} m\u00f3n v\u00e0o nh\u1eadt k\u00fd`,
       });
-
-      // ⚡ Invalidate cache để HomeScreen/MealDiary tự động cập nhật
-      queryClient.invalidateQueries({ queryKey: ['home-summary'] });
-      queryClient.invalidateQueries({ queryKey: ['diary-entries'] });
+      await invalidateDiaryQueries(queryClient);
       navigation.goBack();
     } catch (err) {
       handleApiErrorWithCustomMessage(err, {
-        server_error: { text1: 'Lỗi', text2: 'Máy chủ gặp sự cố' },
-        network_error: { text1: 'Không có kết nối', text2: 'Kiểm tra mạng' },
-        unknown: { text1: 'Lỗi', text2: 'Không thể thêm vào nhật ký' },
+        server_error: { text1: 'L\u1ed7i', text2: 'M\u00e1y ch\u1ee7 g\u1eb7p s\u1ef1 c\u1ed1' },
+        network_error: { text1: 'Kh\u00f4ng c\u00f3 k\u1ebft n\u1ed1i', text2: 'Ki\u1ec3m tra m\u1ea1ng' },
+        unknown: { text1: 'L\u1ed7i', text2: 'Kh\u00f4ng th\u1ec3 th\u00eam v\u00e0o nh\u1eadt k\u00fd' },
       });
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  // Lấy tên hiển thị tiếng Việt
+  // Get the best Vietnamese display name
   const getDisplayName = (item: MappedFoodItem) => {
     return item.foodName || translateIngredient(item.label);
   };
@@ -224,7 +221,7 @@ const AddMealFromVisionScreen = (): React.ReactElement => {
             style={[styles.teachBtn, { backgroundColor: theme.colors.primary + '20' }]}
           >
             <ThemedText variant="caption" color="primary">
-              Chọn món đúng
+              {'Ch\u1ecdn m\u00f3n \u0111\u00fang'}
             </ThemedText>
           </Pressable>
         )}
@@ -353,7 +350,7 @@ const AddMealFromVisionScreen = (): React.ReactElement => {
               variant="bodySmall"
               style={{ color: '#fff', marginLeft: 6 }}
             >
-              AI nhận diện {detectionItems.length} món
+              {'AI nh\u1eadn di\u1ec7n '}{detectionItems.length}{' m\u00f3n'}
             </ThemedText>
           </View>
         </View>
@@ -367,7 +364,7 @@ const AddMealFromVisionScreen = (): React.ReactElement => {
               <>
                 <View style={styles.sectionTitle}>
                   <ThemedText variant="h4" weight="600">
-                    Đã nhận diện ({matchedItems.length})
+                    {'\u0110\u00e3 nh\u1eadn di\u1ec7n ('}{matchedItems.length}{')'}
                   </ThemedText>
                 </View>
                 {matchedItems.map((d, i) => renderFoodItem(d, i))}
@@ -379,7 +376,7 @@ const AddMealFromVisionScreen = (): React.ReactElement => {
               <>
                 <View style={styles.sectionTitle}>
                   <ThemedText variant="h4" weight="600" color="warning">
-                    Cần xác nhận ({unmatchedItems.length})
+                    {'C\u1ea7n x\u00e1c nh\u1eadn ('}{unmatchedItems.length}{')'}
                   </ThemedText>
                 </View>
                 {unmatchedItems.map((d, i) => renderFoodItem(d, i + matchedItems.length))}
@@ -393,7 +390,7 @@ const AddMealFromVisionScreen = (): React.ReactElement => {
       <View style={styles.bottomBar}>
         <View style={styles.summaryRow}>
           <ThemedText variant="body" color="textSecondary">
-            Sẽ thêm: <ThemedText variant="body" weight="700" color="primary">{selectedItems.length}</ThemedText> món
+            {'S\u1ebd th\u00eam: '}<ThemedText variant="body" weight="700" color="primary">{selectedItems.length}</ThemedText> {'m\u00f3n'}
           </ThemedText>
           <ThemedText variant="body" color="textSecondary">
             <ThemedText variant="body" weight="700">{Math.round(totalCalories)}</ThemedText> kcal
@@ -401,7 +398,7 @@ const AddMealFromVisionScreen = (): React.ReactElement => {
         </View>
         <Button
           variant="primary"
-          title={isSubmitting ? 'Đang thêm...' : 'Thêm vào nhật ký Bữa trưa'}
+          title={isSubmitting ? '\u0110ang th\u00eam...' : 'Th\u00eam v\u00e0o nh\u1eadt k\u00fd'}
           onPress={handleAddToDiary}
           disabled={selectedItems.length === 0 || isSubmitting}
           loading={isSubmitting}

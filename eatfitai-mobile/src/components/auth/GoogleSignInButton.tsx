@@ -1,7 +1,7 @@
 /**
  * Google Sign-in Button Component
  * Beautiful Google Sign-in button for login screen
- * 
+ *
  * SETUP: Requires @react-native-google-signin/google-signin
  */
 
@@ -10,7 +10,7 @@ import { StyleSheet, View, Pressable, ActivityIndicator } from 'react-native';
 import Animated, {
     useAnimatedStyle,
     useSharedValue,
-    withSpring
+    withSpring,
 } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 

@@ -7,7 +7,6 @@ import Animated, { FadeInDown } from 'react-native-reanimated';
 
 import { ThemedText } from '../ThemedText';
 import { useAppTheme } from '../../theme/ThemeProvider';
-import { glassStyles } from './GlassCard';
 
 interface SettingsSectionProps {
     // Tiêu đề section
@@ -25,7 +24,6 @@ export const SettingsSection: React.FC<SettingsSectionProps> = ({
 }) => {
     const { theme } = useAppTheme();
     const isDark = theme.mode === 'dark';
-    const glass = glassStyles(isDark);
 
     const styles = StyleSheet.create({
         container: {

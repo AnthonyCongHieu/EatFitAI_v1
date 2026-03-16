@@ -11,7 +11,6 @@ import Animated, {
 } from 'react-native-reanimated';
 import { useAppTheme } from '../theme/ThemeProvider';
 import { ThemedText } from './ThemedText';
-import Icon from './Icon';
 import type { MealTypeId } from '../types';
 
 interface MealSuggestion {
@@ -122,7 +121,7 @@ const QuickActionButton = ({
 
 const SmartQuickActions: React.FC<SmartQuickActionsProps> = ({
   onAddMeal,
-  onScanFood,
+  onScanFood: _onScanFood,
   onSearchFood,
 }) => {
   const { theme } = useAppTheme();
@@ -197,7 +196,7 @@ const SmartQuickActions: React.FC<SmartQuickActionsProps> = ({
 
       {/* Main Meals Row - Bữa sáng, trưa, tối */}
       <View style={styles.secondaryRow}>
-        {mainMeals.map((meal, index) => (
+        {mainMeals.map((meal) => (
           <Pressable
             key={meal.type}
             onPress={() => onAddMeal(meal.type)}

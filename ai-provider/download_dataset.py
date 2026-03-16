@@ -1,56 +1,57 @@
-from roboflow import Roboflow
+from pathlib import Path
 import os
 
-print("="*60)
-print("DOWNLOADING EATFITAI INGREDIENTS DATASET FROM ROBOFLOW")
-print("="*60)
+from roboflow import Roboflow
 
-# Initialize Roboflow with your API key
-rf = Roboflow(api_key="fwe0I8XwhVhUhj22LiXr")
+print('=' * 60)
+print('DOWNLOADING EATFITAI INGREDIENTS DATASET FROM ROBOFLOW')
+print('=' * 60)
 
-# Get your project
-project = rf.workspace("conghieu").project("eatfitai-ingredients-v1-wfulm")
+api_key = os.getenv('ROBOFLOW_API_KEY')
+workspace_name = os.getenv('ROBOFLOW_WORKSPACE', 'conghieu')
+project_name = os.getenv('ROBOFLOW_PROJECT', 'eatfitai-ingredients-v1-wfulm')
+download_format = os.getenv('ROBOFLOW_FORMAT', 'yolov8')
+download_location = os.getenv('ROBOFLOW_DOWNLOAD_DIR', 'D:/datasets')
+version_number = int(os.getenv('ROBOFLOW_VERSION', '4'))
 
-# Get version 4
-version = project.version(4)
+if not api_key or api_key.startswith('SET_'):
+    raise RuntimeError(
+        'Missing ROBOFLOW_API_KEY. Set it in your shell or ai-provider/.env before running download_dataset.py.'
+    )
 
-# Download dataset in YOLOv8 format to a shorter path
-print("\nDownloading dataset to D:/datasets...")
+rf = Roboflow(api_key=api_key)
+project = rf.workspace(workspace_name).project(project_name)
+version = project.version(version_number)
+
+download_path = Path(download_location)
+print(f'\nDownloading dataset to {download_path}...')
+
 try:
-    dataset = version.download("yolov8", location="D:/datasets")
-    
-    print(f"\n✅ Download complete!")
-    print(f"📁 Dataset location: {dataset.location}")
-    
-    # Copy data.yaml to our ai-provider/datasets folder
-    import shutil
-    os.makedirs("datasets", exist_ok=True)
-    
-    # Create softlink or copy
-    data_yaml_source = os.path.join(dataset.location, "data.yaml")
-    data_yaml_dest = "datasets/data.yaml"
-    
-    if os.path.exists(data_yaml_source):
-        # Modify data.yaml to use absolute paths
-        with open(data_yaml_source, 'r') as f:
-            content = f.read()
-        
-        # Update paths in data.yaml to absolute paths
-        dataset_dir = os.path.abspath(dataset.location).replace('\\', '/')
+    dataset = version.download(download_format, location=str(download_path))
+
+    print('\nDownload complete!')
+    print(f'Dataset location: {dataset.location}')
+
+    datasets_dir = Path('datasets')
+    datasets_dir.mkdir(exist_ok=True)
+
+    data_yaml_source = Path(dataset.location) / 'data.yaml'
+    data_yaml_dest = datasets_dir / 'data.yaml'
+
+    if data_yaml_source.exists():
+        content = data_yaml_source.read_text(encoding='utf-8')
+        dataset_dir = Path(dataset.location).resolve().as_posix()
         content = content.replace('../train/images', f'{dataset_dir}/train/images')
-        content = content.replace('../valid/images', f'{dataset_dir}/valid/images')  
+        content = content.replace('../valid/images', f'{dataset_dir}/valid/images')
         content = content.replace('../test/images', f'{dataset_dir}/test/images')
-        
-        with open(data_yaml_dest, 'w') as f:
-            f.write(content)
-        
-        print(f"\n✅ Created data.yaml with absolute paths!")
-        print(f"   Location: {os.path.abspath(data_yaml_dest)}")
-        print(f"\n🎯 Dataset ready for training!")
-        
-except Exception as e:
-    print(f"\n❌ Error: {e}")
-    print("\nPlease check:")
-    print("  1. Internet connection")
-    print("  2. Roboflow API key")
-    print("  3. Disk space on D: drive")
+        data_yaml_dest.write_text(content, encoding='utf-8')
+
+        print('\nCreated data.yaml with absolute paths!')
+        print(f'Location: {data_yaml_dest.resolve()}')
+        print('\nDataset ready for training!')
+except Exception as error:
+    print(f'\nError: {error}')
+    print('\nPlease check:')
+    print('  1. Internet connection')
+    print('  2. Roboflow API key')
+    print('  3. Disk space on the configured download directory')

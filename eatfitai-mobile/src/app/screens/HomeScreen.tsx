@@ -3,7 +3,6 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   ActivityIndicator,
   Alert,
-  Modal,
   Pressable,
   RefreshControl,
   StyleSheet,
@@ -12,10 +11,7 @@ import {
 import Animated, {
   FadeInUp,
   useSharedValue,
-  useAnimatedStyle,
   withTiming,
-  interpolate,
-  useAnimatedScrollHandler,
 } from 'react-native-reanimated';
 import Toast from 'react-native-toast-message';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
@@ -23,9 +19,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
 import { ThemedText } from '../../components/ThemedText';
 import Screen from '../../components/Screen';
-import Button from '../../components/Button';
 import Icon from '../../components/Icon';
-import ProgressBar from '../../components/ProgressBar';
 import { useDiaryStore } from '../../store/useDiaryStore';
 import { useAppTheme } from '../../theme/ThemeProvider';
 import type { RootStackParamList } from '../types';
@@ -40,35 +34,23 @@ import { AppCard } from '../../components/ui/AppCard';
 import { SectionHeader } from '../../components/ui/SectionHeader';
 import { AnimatedEmptyState } from '../../components/ui/AnimatedEmptyState';
 
-import { MetricCard } from '../../components/ui/MetricCard';
 // InsightsCard removed per user request
-import CircularProgress from '../../components/ui/CircularProgress';
 import { MacroProgressCard } from '../../components/ui/MacroProgressCard';
 import CalorieRing from '../../components/ui/CalorieRing';
 import { FoodEntryCard } from '../../components/ui/FoodEntryCard';
 import SmartQuickActions from '../../components/SmartQuickActions';
-import FavoritesList from '../../components/FavoritesList';
 import { SmartAddSheet } from '../../components/ui/SmartAddSheet';
 import { useGamificationStore } from '../../store/useGamificationStore';
 import { StreakCard } from '../../components/gamification/StreakCard';
 import { HomeSkeleton } from '../../components/skeletons/HomeSkeleton';
-import { GlassCard, glassStyles } from '../../components/ui/GlassCard';
+import { glassStyles } from '../../components/ui/GlassCard';
 import { GradientBackground } from '../../components/ui/GradientBackground';
 import { WelcomeHeader } from '../../components/home/WelcomeHeader';
 import { useSmartContext } from '../../hooks/useSmartContext';
 import * as Haptics from 'expo-haptics';
 import { TEST_IDS } from '../../testing/testIds';
 
-type AddOption = 'search' | 'custom' | 'ai';
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
-
-const formatNumber = (value?: number | null, suffix = '', decimals = 0): string => {
-  if (typeof value !== 'number' || Number.isNaN(value)) return '--';
-  if (decimals === 0) {
-    return `${Math.round(value)}${suffix}`;
-  }
-  return `${value.toFixed(decimals)}${suffix}`;
-};
 
 const HomeScreen = (): React.ReactElement => {
   const { theme } = useAppTheme();
@@ -130,14 +112,7 @@ const HomeScreen = (): React.ReactElement => {
   const carbsValue = useSharedValue(0);
   const fatValue = useSharedValue(0);
 
-  // Parallax scroll effect (Phase 3)
-  const scrollY = useSharedValue(0);
 
-  const scrollHandler = useAnimatedScrollHandler({
-    onScroll: (event) => {
-      scrollY.value = event.contentOffset.y;
-    },
-  });
 
   // Tự động set status server dựa trên useQuery
   useEffect(() => {
@@ -180,15 +155,6 @@ const HomeScreen = (): React.ReactElement => {
     });
   }, [refetch, showCommonErrors]);
 
-  const handleAddOption = useCallback(
-    (option: AddOption) => {
-      setShowAddModal(false);
-      if (option === 'search') return navigation.navigate('FoodSearch');
-      if (option === 'custom') return navigation.navigate('CustomDish');
-      // Skip AI option as per task requirements
-    },
-    [navigation],
-  );
 
   const handleQuickAction = useCallback(
     (_mealType: MealTypeId) => {
@@ -322,14 +288,6 @@ const HomeScreen = (): React.ReactElement => {
     return summary.meals.flatMap((meal) => meal.entries).slice(0, 3);
   }, [summary]);
 
-  // Animated style for remaining calories text (phải đặt ở top-level, không trong JSX)
-  const remainingCaloriesAnimatedStyle = useAnimatedStyle(() => ({
-    transform: [
-      {
-        scale: interpolate(remainingCaloriesValue.value, [0, 1000], [1, 1.05]),
-      },
-    ],
-  }));
 
   if (isLoading && !summary) {
     return <HomeSkeleton />;
@@ -428,7 +386,7 @@ const HomeScreen = (): React.ReactElement => {
                   gap: theme.spacing.sm,
                   borderLeftWidth: 3,
                   borderLeftColor: smartContext.fabAction.color || theme.colors.primary,
-                }
+                },
               ]}
               onPress={() => setShowAddModal(true)}
             >
@@ -516,7 +474,7 @@ const HomeScreen = (): React.ReactElement => {
             styles.fab,
             {
               backgroundColor: smartContext.fabAction.color || theme.colors.primary,
-              shadowColor: smartContext.fabAction.color || theme.colors.primary
+              shadowColor: smartContext.fabAction.color || theme.colors.primary,
             },
           ]}
           onPress={() => setShowAddModal(true)}

@@ -19,7 +19,7 @@ import { useAuthStore } from '../../store/useAuthStore';
  */
 
 // Helper: Get user's nutrition goal context
-const getUserGoalContext = (user: any) => {
+const getUserGoalContext = (_user: any) => {
   // TODO: Get from user profile when available
   // For now, infer from BMI or default to maintain
   return {
@@ -32,7 +32,7 @@ const getUserGoalContext = (user: any) => {
 // Smart client-side recommendation generator
 const generateSmartRecommendations = (
   summary: any,
-  userContext: ReturnType<typeof getUserGoalContext>
+  userContext: ReturnType<typeof getUserGoalContext>,
 ): string[] => {
   const recommendations: string[] = [];
 
@@ -166,9 +166,9 @@ export const InsightsCard = () => {
     queryKey: ['nutrition-insights'],
     queryFn: () => aiService.getNutritionInsights({ analysisDays: 7 }),
     staleTime: 1000 * 60 * 60, // 1 hour
-    retry: (failureCount, error: any) => {
+    retry: (failureCount, retryError: any) => {
       // Stop retry on auth errors
-      if (error?.response?.status === 401) return false;
+      if (retryError?.response?.status === 401) return false;
       // Retry once for other errors
       return failureCount < 1;
     },

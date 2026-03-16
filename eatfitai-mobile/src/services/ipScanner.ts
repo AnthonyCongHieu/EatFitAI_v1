@@ -1,6 +1,6 @@
 /**
  * ipScanner.ts - Tự động tìm backend API trong mạng LAN
- * 
+ *
  * Scan các dải IP phổ biến và tìm EatFitAI backend qua endpoint /discovery.
  * Hoạt động cả Expo Go và Production build (không cần native module).
  */
@@ -48,7 +48,7 @@ const fetchWithTimeout = async (url: string, timeoutMs: number): Promise<Respons
     try {
         return await fetch(url, {
             signal: controller.signal,
-            headers: { 'Accept': 'application/json' }
+            headers: { 'Accept': 'application/json' },
         });
     } finally {
         clearTimeout(timeoutId);
@@ -84,11 +84,11 @@ const scanSubnet = async (subnet: string): Promise<string | null> => {
     for (let start = 1; start <= 254; start += batchSize) {
         const batch = Array.from(
             { length: Math.min(batchSize, 255 - start) },
-            (_, i) => `${subnet}.${start + i}`
+            (_, i) => `${subnet}.${start + i}`,
         );
 
         const results = await Promise.all(
-            batch.map(async (ip) => ((await tryIp(ip)) ? ip : null))
+            batch.map(async (ip) => ((await tryIp(ip)) ? ip : null)),
         );
 
         const foundIp = results.find((ip) => ip !== null);
@@ -143,7 +143,7 @@ const quickScan = async (): Promise<string | null> => {
 
     // Scan TẤT CẢ IP ưu tiên cùng lúc (khoảng 130 IP, rất nhanh)
     const results = await Promise.all(
-        priorityIps.map(async (ip) => ((await tryIp(ip)) ? ip : null))
+        priorityIps.map(async (ip) => ((await tryIp(ip)) ? ip : null)),
     );
 
     const foundIp = results.find((ip) => ip !== null);
@@ -179,7 +179,7 @@ const doScan = async (): Promise<string | null> => {
             COMMON_SUBNETS.map(async (subnet) => {
                 const ip = await scanSubnet(subnet);
                 return ip ? `http://${ip}:${PORT}` : null;
-            })
+            }),
         );
 
         const foundUrl = results.find((url) => url !== null);

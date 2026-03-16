@@ -4,7 +4,7 @@
  */
 
 import { aiService } from '../src/services/aiService';
-import apiClient, { aiApiClient } from '../src/services/apiClient';
+import { aiApiClient } from '../src/services/apiClient';
 
 // Mock apiClient
 jest.mock('../src/services/apiClient', () => ({
@@ -137,7 +137,7 @@ describe('aiService', () => {
             const result = await aiService.getCookingInstructions(
                 'Cơm gà xối mỡ',
                 [{ foodName: 'Gà', grams: 200 }, { foodName: 'Cơm', grams: 300 }],
-                'Món cơm gà đặc sản'
+                'Món cơm gà đặc sản',
             );
 
             // Assert

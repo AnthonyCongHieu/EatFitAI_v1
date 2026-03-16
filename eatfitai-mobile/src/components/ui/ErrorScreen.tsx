@@ -4,16 +4,15 @@
  */
 
 import React from 'react';
-import { StyleSheet, View, Pressable } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import Animated, {
     FadeInUp,
     useAnimatedStyle,
     useSharedValue,
     withRepeat,
     withSequence,
-    withTiming
+    withTiming,
 } from 'react-native-reanimated';
-import { Ionicons } from '@expo/vector-icons';
 
 import { ThemedText } from '../ThemedText';
 import Button from '../Button';
@@ -84,10 +83,10 @@ export const ErrorScreen = ({
                 withTiming(-5, { duration: 100 }),
                 withTiming(5, { duration: 100 }),
                 withTiming(-5, { duration: 100 }),
-                withTiming(0, { duration: 100 })
+                withTiming(0, { duration: 100 }),
             ),
             2,
-            false
+            false,
         );
     }, []);
 

@@ -16,7 +16,6 @@ import Button from '../../../components/Button';
 import { glassStyles } from '../../../components/ui/GlassCard';
 import { useAppTheme } from '../../../theme/ThemeProvider';
 import { useUserPreferenceStore } from '../../../store/useUserPreferenceStore';
-import { t } from '../../../i18n/vi';
 import { SelectionChip } from '../../../components/ui/SelectionChip';
 
 const DIETARY_OPTIONS = [

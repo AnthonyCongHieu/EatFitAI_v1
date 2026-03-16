@@ -1,7 +1,7 @@
 // Màn hình Cài đặt dinh dưỡng hợp nhất
 // Cho phép xem, chỉnh sửa thủ công và sử dụng AI để gợi ý mục tiêu
 
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, StyleSheet, ScrollView, ActivityIndicator, Alert, Pressable } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -12,15 +12,11 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import Animated, { FadeIn, FadeInDown, Layout } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
 
-import Screen from '../../../components/Screen';
-import { AppCard } from '../../../components/ui/AppCard';
-import { SectionHeader } from '../../../components/ui/SectionHeader';
 import Button from '../../../components/Button';
 import { ThemedText } from '../../../components/ThemedText';
 import ThemedTextInput from '../../../components/ThemedTextInput';
 import { useAppTheme } from '../../../theme/ThemeProvider';
 import { aiService, type NutritionTarget } from '../../../services/aiService';
-import { useDiaryStore } from '../../../store/useDiaryStore';
 import {
   handleApiError,
   handleApiErrorWithCustomMessage,
@@ -71,8 +67,7 @@ const NutritionSettingsScreen = (): React.ReactElement => {
     control,
     handleSubmit,
     reset,
-    setValue,
-    formState: { errors, isSubmitting },
+    formState: { errors },
   } = useForm<TargetFormValues>({
     resolver: zodResolver(TargetSchema),
     defaultValues: {

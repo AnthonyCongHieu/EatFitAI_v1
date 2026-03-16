@@ -8,7 +8,6 @@ import Animated, {
   useAnimatedProps,
   withTiming,
   Easing,
-  interpolate,
 } from 'react-native-reanimated';
 import Svg, { Circle, Defs, LinearGradient, Stop } from 'react-native-svg';
 import { useAppTheme } from '../../theme/ThemeProvider';

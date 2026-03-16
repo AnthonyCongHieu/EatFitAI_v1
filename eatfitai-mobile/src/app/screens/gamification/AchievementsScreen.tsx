@@ -2,28 +2,19 @@
 // Inspired by Duolingo, Strava, và các fitness apps hàng đầu
 
 import React, { useEffect, useRef, useState, useCallback } from 'react';
-import { View, StyleSheet, FlatList, TouchableOpacity, Dimensions, RefreshControl } from 'react-native';
+import { View, StyleSheet, FlatList, TouchableOpacity, RefreshControl } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, {
   FadeIn,
   FadeInDown,
-  useAnimatedStyle,
-  useSharedValue,
-  withSpring,
-  withTiming,
-  interpolate,
 } from 'react-native-reanimated';
-import Screen from '../../../components/Screen';
-import { AppHeader } from '../../../components/ui/AppHeader';
-import { AppCard } from '../../../components/ui/AppCard';
 import { ThemedText } from '../../../components/ThemedText';
 import { useAppTheme } from '../../../theme/ThemeProvider';
 import { useGamificationStore, Achievement } from '../../../store/useGamificationStore';
 import { shareService } from '../../../services/shareService';
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 const AchievementsScreen = (): React.ReactElement => {
   const { theme } = useAppTheme();

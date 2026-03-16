@@ -4,19 +4,16 @@
  */
 
 import React, { useEffect } from 'react';
-import { StyleSheet, View, Pressable, TextInput, ScrollView, Dimensions } from 'react-native';
+import { StyleSheet, View, Pressable, TextInput, ScrollView } from 'react-native';
 import Animated, {
     useAnimatedStyle,
     useSharedValue,
-    withRepeat,
     withSequence,
     withTiming,
     withSpring,
     Easing,
     FadeIn,
     FadeInUp,
-    FadeOut,
-    Layout,
 } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -30,7 +27,6 @@ import { useVoiceStore } from '../../store/useVoiceStore';
 import { useVoiceRecognition } from '../../hooks/useVoiceRecognition';
 import VoiceResultCard from '../../components/voice/VoiceResultCard';
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 const VoiceScreen = (): React.ReactElement => {
@@ -123,13 +119,13 @@ const VoiceScreen = (): React.ReactElement => {
             // Di chuyển xuống giữa màn hình với curve mượt
             micTranslateY.value = withTiming(100, {
                 duration: 400,
-                easing: Easing.bezier(0.25, 0.1, 0.25, 1) // ease-out curve
+                easing: Easing.bezier(0.25, 0.1, 0.25, 1), // ease-out curve
             });
         } else {
             // Quay lại vị trí ban đầu
             micTranslateY.value = withTiming(0, {
                 duration: 350,
-                easing: Easing.bezier(0.25, 0.1, 0.25, 1)
+                easing: Easing.bezier(0.25, 0.1, 0.25, 1),
             });
         }
     }, [isRecording]);
@@ -137,7 +133,7 @@ const VoiceScreen = (): React.ReactElement => {
     const handleToggleRecording = async () => {
         buttonScale.value = withSequence(
             withSpring(0.9, { damping: 10 }),
-            withSpring(1, { damping: 15 })
+            withSpring(1, { damping: 15 }),
         );
         if (isRecording) {
             // BẤM LẦN 2 = STOP & GỬi (xác nhận)
@@ -153,11 +149,6 @@ const VoiceScreen = (): React.ReactElement => {
         reset();
     };
 
-    const handleManualProcess = async () => {
-        if (recognizedText.trim()) {
-            await processText(recognizedText.trim());
-        }
-    };
 
     const handleExecute = async () => {
         await executeCommand();
@@ -188,10 +179,6 @@ const VoiceScreen = (): React.ReactElement => {
         }
     };
 
-    const handleReset = () => {
-        cancelRecording();
-        reset();
-    };
 
     const formatDuration = (seconds: number): string => {
         const mins = Math.floor(seconds / 60);
@@ -232,7 +219,7 @@ const VoiceScreen = (): React.ReactElement => {
                 contentContainerStyle={[
                     styles.scrollContent,
                     { paddingTop: insets.top + 20 },
-                    isRecording && styles.scrollContentRecording
+                    isRecording && styles.scrollContentRecording,
                 ]}
                 keyboardShouldPersistTaps="handled"
             >
@@ -303,7 +290,7 @@ const VoiceScreen = (): React.ReactElement => {
                                 onPress={handleCancelRecording}
                                 style={[styles.recordingCancelBtn, {
                                     backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)',
-                                    borderColor: isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.1)'
+                                    borderColor: isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.1)',
                                 }]}
                             >
                                 <ThemedText variant="bodySmall" weight="500" color="textSecondary">
@@ -326,7 +313,7 @@ const VoiceScreen = (): React.ReactElement => {
                                     {
                                         backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.03)',
                                         borderColor: statusConfig.color + '40',
-                                    }
+                                    },
                                 ]}
                             >
                                 <View style={styles.statusContent}>
@@ -358,7 +345,7 @@ const VoiceScreen = (): React.ReactElement => {
                                 {
                                     backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.03)',
                                     borderColor: isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.08)',
-                                }
+                                },
                             ]}>
                                 <TextInput
                                     style={[styles.textInput, { color: theme.colors.text }]}
@@ -390,7 +377,7 @@ const VoiceScreen = (): React.ReactElement => {
                         {/* Voice Guide - Hướng dẫn sử dụng */}
                         <Animated.View entering={FadeInUp.delay(450)} style={[styles.voiceGuide, {
                             backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.02)',
-                            borderColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)'
+                            borderColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)',
                         }]}>
                             <ThemedText variant="bodySmall" weight="600" color="textSecondary" style={{ marginBottom: 12 }}>
                                 💡 Bạn có thể nói:
@@ -425,7 +412,7 @@ const VoiceScreen = (): React.ReactElement => {
                                 style={[
                                     styles.actionButton,
                                     styles.cancelButton,
-                                    { backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)' }
+                                    { backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)' },
                                 ]}
                             >
                                 <Ionicons name="refresh" size={20} color={theme.colors.textSecondary} />
@@ -447,7 +434,7 @@ const VoiceScreen = (): React.ReactElement => {
                                 style={[
                                     styles.actionButton,
                                     styles.processButton,
-                                    { opacity: (!recognizedText.trim() || status === 'parsing') ? 0.5 : 1 }
+                                    { opacity: (!recognizedText.trim() || status === 'parsing') ? 0.5 : 1 },
                                 ]}
                             >
                                 <LinearGradient

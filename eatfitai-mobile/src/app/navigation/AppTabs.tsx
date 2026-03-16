@@ -8,7 +8,7 @@ import Animated, {
   withSpring,
   useSharedValue,
 } from 'react-native-reanimated';
-import { Pressable, View, StyleSheet } from 'react-native';
+import { Pressable, StyleSheet } from 'react-native';
 
 import HomeScreen from '../screens/HomeScreen';
 import AIScanScreen from '../screens/ai/AIScanScreen';

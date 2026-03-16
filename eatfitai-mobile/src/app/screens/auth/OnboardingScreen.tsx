@@ -25,7 +25,6 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ThemedText } from '../../../components/ThemedText';
 import ThemedTextInput from '../../../components/ThemedTextInput';
 import Button from '../../../components/Button';
-import Icon from '../../../components/Icon';
 import { glassStyles } from '../../../components/ui/GlassCard';
 import { useAppTheme } from '../../../theme/ThemeProvider';
 import { useProfileStore } from '../../../store/useProfileStore';
@@ -238,32 +237,6 @@ const OnboardingScreen = (): React.ReactElement => {
     }
   };
 
-  const calculateBMR = (): number => {
-    const weight = Number(data.weightKg);
-    const height = Number(data.heightCm);
-    const age = Number(data.age);
-
-    if (data.gender === 'male') {
-      return 10 * weight + 6.25 * height - 5 * age + 5;
-    }
-    return 10 * weight + 6.25 * height - 5 * age - 161;
-  };
-
-  const getActivityMultiplier = (): number => {
-    const activity = ACTIVITY_OPTIONS.find((a) => a.value === data.activityLevel);
-    return activity?.multiplier || 1.55;
-  };
-
-  const adjustForGoal = (tdee: number): number => {
-    switch (data.goal) {
-      case 'lose':
-        return tdee - 500;
-      case 'gain':
-        return tdee + 300;
-      default:
-        return tdee;
-    }
-  };
 
   const handleComplete = async () => {
     try {

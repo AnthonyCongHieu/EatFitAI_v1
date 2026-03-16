@@ -3,12 +3,17 @@
     "strict": true,
     "target": "esnext",
     "module": "esnext",
+    "moduleResolution": "bundler",
+    "moduleDetection": "force",
+    "customConditions": [
+      "react-native"
+    ],
     "lib": [
-      "esnext"
+      "DOM",
+      "ESNext"
     ],
     "jsx": "react-jsx",
     "jsxImportSource": "react",
-    "moduleResolution": "bundler",
     "allowSyntheticDefaultImports": true,
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
@@ -57,7 +62,8 @@
     "__tests__"
   ],
   "exclude": [
-    "node_modules"
-  ],
-  "extends": "expo/tsconfig.base"
+    "node_modules",
+    "android",
+    "ios"
+  ]
 }

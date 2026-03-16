@@ -1,13 +1,11 @@
-// Màn hình tìm kiếm món ăn để thêm vào nhật ký
-// Redesigned với UI/UX hiện đại - matching MealDiaryScreen style
+// Food search screen for adding foods to the diary
+// Styled to match the MealDiaryScreen visual language
 
 import { useCallback, useState, useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import {
   ActivityIndicator,
-  FlatList,
   Pressable,
-  RefreshControl,
   ScrollView,
   StyleSheet,
   View,
@@ -23,22 +21,22 @@ import Animated, {
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useNavigation } from '@react-navigation/native';
 import Toast from 'react-native-toast-message';
-import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ThemedText } from '../../../components/ThemedText';
 import Screen from '../../../components/Screen';
 import ThemedTextInput from '../../../components/ThemedTextInput';
-import { AppCard } from '../../../components/ui/AppCard';
 import { useAppTheme } from '../../../theme/ThemeProvider';
 import { AppImage } from '../../../components/ui/AppImage';
 import type { RootStackParamList } from '../../types';
 import { foodService, type FoodItem } from '../../../services/foodService';
-import { SkeletonList } from '../../../components/Skeleton';
 import { getFoodImageUrl } from '../../../utils/imageHelpers';
 import { handleApiError } from '../../../utils/errorHandler';
-import { mealService } from '../../../services/mealService';
+import {
+  addItemsToTodayDiary,
+  invalidateDiaryQueries,
+} from '../../../services/diaryFlowService';
 
 import { AnimatedEmptyState } from '../../../components/ui/AnimatedEmptyState';
 import { t } from '../../../i18n/vi';
@@ -316,11 +314,7 @@ const FoodSearchScreen = (): React.ReactElement => {
 
   const [query, setQuery] = useState('');
   const [items, setItems] = useState<FoodItem[]>([]);
-  const [page, setPage] = useState(1);
-  const [total, setTotal] = useState(0);
-  const [hasMore, setHasMore] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
 
   const [activeTab, setActiveTab] = useState<'search' | 'favorites'>('search');
@@ -348,7 +342,7 @@ const FoodSearchScreen = (): React.ReactElement => {
     }
   }, [initialTab]);
 
-  // Load favorites - setAsList dùng để xác định có nên update items list hay không
+  // Load favorites and optionally sync them into the visible list
   const loadFavorites = async (setAsList = false) => {
     if (setAsList) {
       setIsLoading(true);
@@ -357,11 +351,10 @@ const FoodSearchScreen = (): React.ReactElement => {
       const favs = await foodService.getFavorites();
       console.log('[FoodSearch] Loaded favorites:', favs.length, 'items');
       setFavoriteIds(new Set(favs.map((f) => f.id)));
-      // Nếu setAsList = true hoặc đang ở tab favorites, update items
+      // If setAsList is true, or we are already on the favorites tab, refresh items
       if (setAsList || activeTab === 'favorites') {
         setItems(favs);
-        setTotal(favs.length);
-      }
+        }
     } catch (error) {
       console.error('Failed to load favorites', error);
     } finally {
@@ -384,7 +377,6 @@ const FoodSearchScreen = (): React.ReactElement => {
       // If in favorites tab and removed, refresh list
       if (activeTab === 'favorites' && !isFavorite) {
         setItems((prev) => prev.filter((i) => i.id !== item.id));
-        setTotal((prev) => prev - 1);
       }
 
       Toast.show({
@@ -402,14 +394,7 @@ const FoodSearchScreen = (): React.ReactElement => {
   const handleQuickAdd = async (item: FoodItem) => {
     setIsQuickAdding(item.id);
     try {
-      const date = new Date().toISOString().split('T')[0]!;
-      const hour = new Date().getHours();
-      let mealType = 2; // Lunch default
-      if (hour < 10)
-        mealType = 1; // Breakfast
-      else if (hour > 15) mealType = 3; // Dinner
-
-      await mealService.addMealItems(date, mealType, [
+      await addItemsToTodayDiary([
         {
           foodItemId: Number(item.id),
           grams: 100,
@@ -421,9 +406,7 @@ const FoodSearchScreen = (): React.ReactElement => {
         text1: t('food_search.quick_add_success'),
         text2: `${item.name} (100g) - ${item.calories || 0} kcal`,
       });
-      // ⚡ Invalidate cache để HomeScreen tự động cập nhật
-      queryClient.invalidateQueries({ queryKey: ['home-summary'] });
-      queryClient.invalidateQueries({ queryKey: ['diary-entries'] });
+      await invalidateDiaryQueries(queryClient);
     } catch (error) {
       handleApiError(error);
     } finally {
@@ -434,18 +417,16 @@ const FoodSearchScreen = (): React.ReactElement => {
   const handleTabChange = (tab: 'search' | 'favorites') => {
     setActiveTab(tab);
     setItems([]);
-    setPage(1);
-    setTotal(0);
     setHasSearched(false);
 
     if (tab === 'favorites') {
-      // Truyền true để xác định rằng cần set items list
+      // Pass true so favorites are also copied into the current items list
       loadFavorites(true);
     }
   };
 
   const loadFoods = useCallback(
-    async (pageToLoad: number, append: boolean) => {
+    async (_pageToLoad: number, append: boolean) => {
       if (activeTab === 'favorites') return; // Favorites are loaded differently
 
       if (!query.trim()) {
@@ -457,21 +438,16 @@ const FoodSearchScreen = (): React.ReactElement => {
         return;
       }
 
-      if (append) setIsLoadingMore(true);
-      else setIsLoading(true);
+      setIsLoading(true);
 
       try {
         const result = await foodService.searchAllFoods(query.trim(), PAGE_SIZE);
         setItems((prev) => (append ? [...prev, ...result.items] : result.items));
-        setPage(pageToLoad);
-        setTotal(result.totalCount ?? result.items.length);
-        setHasMore(result.items.length === PAGE_SIZE);
         setHasSearched(true);
       } catch (error: any) {
         handleApiError(error);
       } finally {
         setIsLoading(false);
-        setIsLoadingMore(false);
       }
     },
     [query, activeTab],
@@ -486,154 +462,102 @@ const FoodSearchScreen = (): React.ReactElement => {
     loadFoods(1, false).catch(() => { });
   }, [loadFoods, searchGlow, theme.animation.normal, theme.animation.slow, activeTab]);
 
-  // Tìm kiếm trực tiếp với keyword (không dùng state)
-  const searchWithKeyword = useCallback(
-    async (keyword: string) => {
-      if (activeTab === 'favorites') return;
+  // Render a food result card
+  const renderItem = ({ item, index }: { item: FoodItem; index: number }) => {
+    const isFav = favoriteIds.has(item.id);
 
-      setQuery(keyword);
-      setIsLoading(true);
-      setHasSearched(true);
-
-      try {
-        const result = await foodService.searchAllFoods(keyword.trim(), PAGE_SIZE);
-        setItems(result.items);
-        setPage(1);
-        setTotal(result.totalCount ?? result.items.length);
-        setHasMore(result.items.length === PAGE_SIZE);
-      } catch (error: any) {
-        handleApiError(error);
-      } finally {
-        setIsLoading(false);
-      }
-    },
-    [activeTab],
-  );
-
-  const handleLoadMore = useCallback(() => {
-    if (activeTab === 'favorites') return;
-    if (!hasMore || isLoading || isLoadingMore) return;
-    loadFoods(page + 1, true).catch(() => { });
-  }, [hasMore, isLoading, isLoadingMore, page, loadFoods, activeTab]);
-
-  const renderItem = useCallback(
-    ({ item, index }: { item: FoodItem; index: number }) => {
-      const isFav = favoriteIds.has(item.id);
-      return (
-        <Animated.View
-          entering={FadeIn.delay(index * 40).duration(300)}
-          layout={Layout.springify()}
+    return (
+      <Animated.View
+        entering={FadeIn.delay(index * 40).duration(300)}
+        layout={Layout.springify()}
+      >
+        <Pressable
+          onPress={() =>
+            navigation.navigate('FoodDetail', {
+              foodId: item.id,
+              source: item.source,
+            })
+          }
+          style={({ pressed }) => [
+            styles.foodCard,
+            pressed && { opacity: 0.85, transform: [{ scale: 0.99 }] },
+          ]}
         >
-          <Pressable
-            onPress={() =>
-              navigation.navigate('FoodDetail', {
-                foodId: item.id,
-                source: item.source,
-              })
-            }
-            style={({ pressed }) => [
-              styles.foodCard,
-              pressed && { opacity: 0.85, transform: [{ scale: 0.99 }] },
-            ]}
-          >
-            <View style={styles.foodCardRow}>
-              {/* Square Image */}
-              {item.thumbnail && item.thumbnail.trim() !== '' ? (
-                <AppImage
-                  source={{ uri: getFoodImageUrl(item.thumbnail) }}
-                  style={styles.foodImage}
-                  onError={() =>
-                    console.log('[FoodSearch] Image load error:', item.thumbnail)
-                  }
-                />
-              ) : (
-                <View style={styles.foodImagePlaceholder}>
-                  <ThemedText style={{ fontSize: 24 }}>🍽️</ThemedText>
-                </View>
-              )}
-
-              {/* Food Info */}
-              <View style={styles.foodInfo}>
-                {/* Title row with favorite */}
-                <View style={styles.foodTitleRow}>
-                  <ThemedText weight="600" style={styles.foodName} numberOfLines={1}>
-                    {item.name}
-                  </ThemedText>
-                  <Pressable
-                    hitSlop={8}
-                    onPress={() => handleToggleFavorite(item)}
-                    style={styles.favButton}
-                  >
-                    <ThemedText style={{ fontSize: 16 }}>
-                      {isFav ? '❤️' : '🤍'}
-                    </ThemedText>
-                  </Pressable>
-                </View>
-
-                {/* Portion & Calories */}
-                <ThemedText
-                  variant="bodySmall"
-                  color="textSecondary"
-                  style={{ marginBottom: 6 }}
-                >
-                  100g •{' '}
-                  {item.calories != null ? `${Math.round(item.calories)} cal` : '-- cal'}
+          <View style={styles.foodCardRow}>
+            {item.thumbnail && item.thumbnail.trim() !== '' ? (
+              <AppImage
+                source={{ uri: getFoodImageUrl(item.thumbnail) }}
+                style={styles.foodImage}
+                onError={() =>
+                  console.log('[FoodSearch] Image load error:', item.thumbnail)
+                }
+              />
+            ) : (
+              <View style={styles.foodImagePlaceholder}>
+                <ThemedText style={{ fontSize: 24 }}>?</ThemedText>
+              </View>
+            )}
+            <View style={styles.foodInfo}>
+              <View style={styles.foodTitleRow}>
+                <ThemedText weight="600" style={styles.foodName} numberOfLines={1}>
+                  {item.name}
                 </ThemedText>
-
-                {/* Macros with colored icons */}
-                <View style={styles.macroRow}>
-                  <View style={styles.macroItem}>
-                    <ThemedText style={styles.macroIcon}>⚡</ThemedText>
-                    <ThemedText style={styles.macroValue}>
-                      {item.protein != null ? `${item.protein.toFixed(1)}g` : '--g'}
-                    </ThemedText>
-                  </View>
-                  <View style={styles.macroItem}>
-                    <ThemedText style={styles.macroIcon}>🌿</ThemedText>
-                    <ThemedText style={styles.macroValue}>
-                      {item.carbs != null ? `${item.carbs.toFixed(1)}g` : '--g'}
-                    </ThemedText>
-                  </View>
-                  <View style={styles.macroItem}>
-                    <ThemedText style={styles.macroIcon}>🔥</ThemedText>
-                    <ThemedText style={styles.macroValue}>
-                      {item.fat != null ? `${item.fat.toFixed(1)}g` : '--g'}
-                    </ThemedText>
-                  </View>
+                <Pressable
+                  hitSlop={8}
+                  onPress={() => handleToggleFavorite(item)}
+                  style={styles.favButton}
+                >
+                  <ThemedText style={{ fontSize: 16 }}>
+                    {isFav ? '*' : '+'}
+                  </ThemedText>
+                </Pressable>
+              </View>
+              <ThemedText
+                variant="bodySmall"
+                color="textSecondary"
+                style={{ marginBottom: 6 }}
+              >
+                {'100g | ' + (item.calories != null ? Math.round(item.calories) + ' cal' : '-- cal')}
+              </ThemedText>
+              <View style={styles.macroRow}>
+                <View style={styles.macroItem}>
+                  <ThemedText style={styles.macroIcon}>P</ThemedText>
+                  <ThemedText style={styles.macroValue}>
+                    {item.protein != null ? item.protein.toFixed(1) + 'g' : '--g'}
+                  </ThemedText>
+                </View>
+                <View style={styles.macroItem}>
+                  <ThemedText style={styles.macroIcon}>C</ThemedText>
+                  <ThemedText style={styles.macroValue}>
+                    {item.carbs != null ? item.carbs.toFixed(1) + 'g' : '--g'}
+                  </ThemedText>
+                </View>
+                <View style={styles.macroItem}>
+                  <ThemedText style={styles.macroIcon}>F</ThemedText>
+                  <ThemedText style={styles.macroValue}>
+                    {item.fat != null ? item.fat.toFixed(1) + 'g' : '--g'}
+                  </ThemedText>
                 </View>
               </View>
-
-              {/* Add Button */}
-              <Pressable
-                hitSlop={8}
-                onPress={() => handleQuickAdd(item)}
-                disabled={isQuickAdding === item.id}
-                style={styles.addButtonCircle}
-                testID={index === 0 ? TEST_IDS.foodSearch.firstAddButton : `food-search-add-item-${item.id}`}
-              >
-                {isQuickAdding === item.id ? (
-                  <ActivityIndicator size="small" color={theme.colors.textSecondary} />
-                ) : (
-                  <Ionicons name="add" size={24} color={theme.colors.textSecondary} />
-                )}
-              </Pressable>
             </View>
-          </Pressable>
-        </Animated.View>
-      );
-    },
-    [navigation, getFoodImageUrl, favoriteIds, theme.colors.textSecondary],
-  );
-
-  const renderSkeleton = () => (
-    <SkeletonList
-      count={4}
-      itemHeight={80}
-      spacing={12}
-      style={{ marginTop: theme.spacing.lg, paddingHorizontal: theme.spacing.md }}
-    />
-  );
-
+            <Pressable
+              hitSlop={8}
+              onPress={() => handleQuickAdd(item)}
+              disabled={isQuickAdding === item.id}
+              style={styles.addButtonCircle}
+              testID={index === 0 ? TEST_IDS.foodSearch.firstAddButton : 'food-search-add-item-' + item.id}
+            >
+              {isQuickAdding === item.id ? (
+                <ActivityIndicator size="small" color={theme.colors.textSecondary} />
+              ) : (
+                <Ionicons name="add" size={24} color={theme.colors.textSecondary} />
+              )}
+            </Pressable>
+          </View>
+        </Pressable>
+      </Animated.View>
+    );
+  };
   return (
     <Screen scroll={false} style={styles.container} testID={TEST_IDS.foodSearch.screen}>
       {/* Header Section */}
@@ -641,10 +565,10 @@ const FoodSearchScreen = (): React.ReactElement => {
         {/* Back button + Title in same row */}
         <View style={styles.headerRow}>
           <Pressable onPress={() => navigation.goBack()} style={styles.backButton}>
-            <ThemedText style={{ fontSize: 18 }}>←</ThemedText>
+            <ThemedText style={{ fontSize: 18 }}>{'<'}</ThemedText>
           </Pressable>
           <View style={styles.titleSection}>
-            <ThemedText style={styles.headerTitle}>Tìm kiếm món ăn</ThemedText>
+            <ThemedText style={styles.headerTitle}>{t('food_search.title')}</ThemedText>
           </View>
         </View>
 
@@ -768,11 +692,6 @@ const FoodSearchScreen = (): React.ReactElement => {
                   {renderItem({ item, index })}
                 </View>
               ))}
-              {isLoadingMore && (
-                <View style={styles.footerLoading}>
-                  <ActivityIndicator color={theme.colors.primary} />
-                </View>
-              )}
             </View>
           ) : hasSearched || activeTab === 'favorites' ? (
             <AnimatedEmptyState
@@ -790,11 +709,11 @@ const FoodSearchScreen = (): React.ReactElement => {
               primaryAction={
                 activeTab === 'search'
                   ? {
-                    label: 'Thử từ khóa khác',
+                    label: 'Thu tu khoa khac',
                     onPress: () => setQuery(''),
                   }
                   : {
-                    label: 'Tìm món ăn',
+                    label: 'Tim mon an',
                     onPress: () => handleTabChange('search'),
                   }
               }
@@ -802,7 +721,7 @@ const FoodSearchScreen = (): React.ReactElement => {
           ) : (
             <View style={{ alignItems: 'center', padding: 20 }}>
               <ThemedText variant="body" color="textSecondary">
-                Nhập từ khóa để tìm kiếm
+                Nhap tu khoa de tim kiem
               </ThemedText>
             </View>
           )}

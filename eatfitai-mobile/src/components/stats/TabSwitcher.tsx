@@ -46,7 +46,7 @@ export const TabSwitcher: React.FC<TabSwitcherProps> = ({
         if (tabWidth > 0) {
             indicatorX.value = withSpring(index * tabWidth, {
                 damping: 18,
-                stiffness: 200
+                stiffness: 200,
             });
         }
     }, [activeTab, tabWidth]);
@@ -59,7 +59,7 @@ export const TabSwitcher: React.FC<TabSwitcherProps> = ({
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
         indicatorX.value = withSpring(index * tabWidth, {
             damping: 18,
-            stiffness: 200
+            stiffness: 200,
         });
         onTabChange(tab);
     };

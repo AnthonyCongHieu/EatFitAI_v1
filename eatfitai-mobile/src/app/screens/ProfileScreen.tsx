@@ -18,11 +18,8 @@ import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
 
 import { ThemedText } from '../../components/ThemedText';
-import { AppHeader } from '../../components/ui/AppHeader';
 import { SettingsMenuItem } from '../../components/ui/SettingsMenuItem';
 import { SettingsSection } from '../../components/ui/SettingsSection';
-import { BMIIndicator } from '../../components/ui/BMIIndicator';
-import { glassStyles } from '../../components/ui/GlassCard';
 import { useAppTheme } from '../../theme/ThemeProvider';
 import { useAuthStore } from '../../store/useAuthStore';
 import { useProfileStore } from '../../store/useProfileStore';
@@ -58,7 +55,6 @@ const getActivityLabel = (levelId?: number): string => {
 const ProfileScreen = (): React.ReactElement => {
   const { theme, toggleTheme } = useAppTheme();
   const isDark = theme.mode === 'dark';
-  const glass = glassStyles(isDark);
   const navigation = useNavigation<NavigationProp>();
 
   const logout = useAuthStore((s) => s.logout);
@@ -291,7 +287,7 @@ const ProfileScreen = (): React.ReactElement => {
                 alignItems: 'center',
                 opacity: pressed ? 0.8 : 1,
                 transform: [{ scale: pressed ? 0.98 : 1 }],
-              }
+              },
             ]}
             onPress={() => navigation.navigate('EditProfile' as any)}
             accessibilityRole="button"

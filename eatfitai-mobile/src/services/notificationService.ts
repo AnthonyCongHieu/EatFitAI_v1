@@ -12,12 +12,13 @@ let notificationsAvailable = false;
 
 // Try load notifications module
 try {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    Notifications = require('expo-notifications');
+    // eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-require-imports
+    const notificationsModule = require('expo-notifications') as typeof import('expo-notifications');
+    Notifications = notificationsModule;
     notificationsAvailable = true;
 
     // Config hiển thị notification khi app đang foreground
-    Notifications.setNotificationHandler({
+    notificationsModule.setNotificationHandler({
         handleNotification: async () => ({
             shouldShowAlert: true,
             shouldPlaySound: true,
@@ -151,7 +152,7 @@ async function scheduleDailyNotification(
     identifier: string,
     time: string,
     title: string,
-    body: string
+    body: string,
 ): Promise<string | null> {
     if (!Notifications) return null;
 
@@ -221,7 +222,7 @@ export async function scheduleNotifications(settings: NotificationSettings): Pro
             NOTIFICATION_IDS.breakfast,
             settings.breakfastTime,
             MEAL_MESSAGES.breakfast.title,
-            MEAL_MESSAGES.breakfast.body
+            MEAL_MESSAGES.breakfast.body,
         );
     } else {
         await cancelNotification(NOTIFICATION_IDS.breakfast);
@@ -232,7 +233,7 @@ export async function scheduleNotifications(settings: NotificationSettings): Pro
             NOTIFICATION_IDS.lunch,
             settings.lunchTime,
             MEAL_MESSAGES.lunch.title,
-            MEAL_MESSAGES.lunch.body
+            MEAL_MESSAGES.lunch.body,
         );
     } else {
         await cancelNotification(NOTIFICATION_IDS.lunch);
@@ -243,7 +244,7 @@ export async function scheduleNotifications(settings: NotificationSettings): Pro
             NOTIFICATION_IDS.dinner,
             settings.dinnerTime,
             MEAL_MESSAGES.dinner.title,
-            MEAL_MESSAGES.dinner.body
+            MEAL_MESSAGES.dinner.body,
         );
     } else {
         await cancelNotification(NOTIFICATION_IDS.dinner);
@@ -254,7 +255,7 @@ export async function scheduleNotifications(settings: NotificationSettings): Pro
             NOTIFICATION_IDS.snack,
             settings.snackTime,
             MEAL_MESSAGES.snack.title,
-            MEAL_MESSAGES.snack.body
+            MEAL_MESSAGES.snack.body,
         );
     } else {
         await cancelNotification(NOTIFICATION_IDS.snack);

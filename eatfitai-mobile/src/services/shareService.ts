@@ -1,6 +1,6 @@
 import { captureRef } from 'react-native-view-shot';
 import * as Sharing from 'expo-sharing';
-import { Alert, Platform } from 'react-native';
+import { Alert } from 'react-native';
 
 export const shareService = {
   /**

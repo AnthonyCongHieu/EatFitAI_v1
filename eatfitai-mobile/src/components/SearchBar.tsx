@@ -124,7 +124,7 @@ export const SearchBar = ({
             { fontSize: sizeConfig.iconSize, color: theme.colors.muted },
           ]}
         >
-          ðŸ”
+          {'\uD83D\uDD0D'}
         </ThemedText>
       </View>
     );
@@ -152,7 +152,7 @@ export const SearchBar = ({
               { fontSize: sizeConfig.iconSize, color: theme.colors.muted },
             ]}
           >
-            âœ•
+            {'\u2715'}
           </ThemedText>
         </Pressable>
       );

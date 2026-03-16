@@ -1,14 +1,14 @@
 /**
  * Google Auth Service - Google Sign-in for React Native
  * Wrapper for @react-native-google-signin/google-signin
- * 
+ *
  * IMPORTANT: This file is PREPARED CODE.
  * Package must be installed before use.
- * 
+ *
  * SETUP:
  * 1. npx expo install @react-native-google-signin/google-signin
  * 2. Configure Google Cloud Console
- * 3. Update google.config.ts with your Client IDs
+ * 3. Set EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID / EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID
  * 4. Add google-services.json (Android) and GoogleService-Info.plist (iOS)
  * 5. npx expo prebuild
  */
@@ -16,7 +16,7 @@
 import { GOOGLE_CONFIG, validateGoogleConfig } from '../config/google.config';
 
 // Type definitions for Google Sign-in
-interface GoogleUser {
+interface _GoogleUser {
     user: {
         id: string;
         name: string | null;
@@ -49,7 +49,6 @@ let statusCodes: any = null;
  */
 const loadGoogleModule = async (): Promise<boolean> => {
     try {
-        // @ts-ignore - Package may not be installed yet
         const module = await import('@react-native-google-signin/google-signin');
         GoogleSignin = module.GoogleSignin as any as GoogleSignInModule;
         statusCodes = module.statusCodes;
@@ -149,7 +148,7 @@ export const googleAuthService = {
             if (!available || !GoogleSignin) {
                 return {
                     success: false,
-                    error: 'Google Sign-in không khả dụng. Hãy cài đặt package trước.',
+                    error: 'Google Sign-in kh\u00f4ng kh\u1ea3 d\u1ee5ng. H\u00e3y c\u00e0i \u0111\u1eb7t package tr\u01b0\u1edbc.',
                 };
             }
 
@@ -159,10 +158,10 @@ export const googleAuthService = {
             // Sign in
             const response = await GoogleSignin.signIn();
 
-            // Debug log để xem data structure
+            // Debug log to inspect the response shape
             console.log('[GoogleAuth] Raw response:', JSON.stringify(response, null, 2));
 
-            // API mới có thể trả về data ở response.data thay vì response.user
+            // Newer APIs may return data in response.data instead of response.user
             const userInfo = (response as any).data || response;
             const user = userInfo.user || userInfo;
 
@@ -170,7 +169,7 @@ export const googleAuthService = {
                 console.error('[GoogleAuth] No user email in response:', response);
                 return {
                     success: false,
-                    error: 'Không thể lấy thông tin email từ Google. Vui lòng thử lại.',
+                    error: 'Kh\u00f4ng th\u1ec3 l\u1ea5y th\u00f4ng tin email t\u1eeb Google. Vui l\u00f2ng th\u1eed l\u1ea1i.',
                 };
             }
 
@@ -193,19 +192,19 @@ export const googleAuthService = {
             // Handle specific error codes
             if (statusCodes) {
                 if (error.code === statusCodes.SIGN_IN_CANCELLED) {
-                    return { success: false, error: 'Đã hủy đăng nhập' };
+                    return { success: false, error: '\u0110\u00e3 h\u1ee7y \u0111\u0103ng nh\u1eadp' };
                 }
                 if (error.code === statusCodes.IN_PROGRESS) {
-                    return { success: false, error: 'Đang xử lý đăng nhập...' };
+                    return { success: false, error: '\u0110ang x\u1eed l\u00fd \u0111\u0103ng nh\u1eadp...' };
                 }
                 if (error.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
-                    return { success: false, error: 'Google Play Services không khả dụng' };
+                    return { success: false, error: 'Google Play Services kh\u00f4ng kh\u1ea3 d\u1ee5ng' };
                 }
             }
 
             return {
                 success: false,
-                error: error?.message || 'Đăng nhập Google thất bại',
+                error: error?.message || '\u0110\u0103ng nh\u1eadp Google th\u1ea5t b\u1ea1i',
             };
         }
     },

@@ -110,6 +110,21 @@ static bool IsOriginAllowed(string origin, string[] rules)
     return false;
 }
 
+static bool IsPlaceholderSecret(string? value)
+{
+    if (string.IsNullOrWhiteSpace(value))
+    {
+        return true;
+    }
+
+    return string.Equals(value, "default-secret-key", StringComparison.OrdinalIgnoreCase)
+        || string.Equals(value, "REPLACE_WITH_USER_SECRET", StringComparison.OrdinalIgnoreCase)
+        || string.Equals(value, "SET_IN_USER_SECRETS", StringComparison.OrdinalIgnoreCase)
+        || string.Equals(value, "SET_IN_ENV_OR_SECRET_STORE", StringComparison.OrdinalIgnoreCase)
+        || string.Equals(value, "YourSuperSecretKeyHereThatIsAtLeast32CharactersLongForProductionUse", StringComparison.OrdinalIgnoreCase)
+        || string.Equals(value, "YourSuperSecretKeyHereThatIsAtLeast32CharactersLongForDevelopmentUse", StringComparison.OrdinalIgnoreCase);
+}
+
 builder.Services.AddCors(o =>
 {
     // Development: controlled allow-list for local/dev clients
@@ -270,9 +285,7 @@ builder.Services.AddHealthChecks()
         timeout: TimeSpan.FromSeconds(3));
 
 var jwtKey = builder.Configuration["Jwt:Key"];
-if (string.IsNullOrWhiteSpace(jwtKey) ||
-    string.Equals(jwtKey, "default-secret-key", StringComparison.OrdinalIgnoreCase) ||
-    string.Equals(jwtKey, "REPLACE_WITH_USER_SECRET", StringComparison.OrdinalIgnoreCase))
+if (IsPlaceholderSecret(jwtKey))
 {
     throw new InvalidOperationException(
         "Jwt:Key is missing or insecure. Configure a strong secret via appsettings or user-secrets.");

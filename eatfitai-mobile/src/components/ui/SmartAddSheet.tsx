@@ -1,11 +1,6 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { View, StyleSheet, Pressable, Dimensions, Modal, Platform } from 'react-native';
 import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withSpring,
-  withTiming,
-  runOnJS,
   SlideInDown,
   SlideOutDown,
   FadeIn,

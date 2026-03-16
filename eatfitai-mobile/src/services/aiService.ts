@@ -14,7 +14,12 @@ import { tokenStorage } from './secureStore';
 
 // Helper để lấy API URL động (tránh dùng static API_BASE_URL bị cache lúc load module)
 const getApiBaseUrl = (): string => {
-  return getCurrentApiUrl() || API_BASE_URL;
+  const baseUrl = getCurrentApiUrl() ?? API_BASE_URL;
+  if (!baseUrl) {
+    throw new Error('API base URL is not configured. Set EXPO_PUBLIC_API_BASE_URL before using AI services.');
+  }
+
+  return baseUrl;
 };
 
 export type IngredientItem = {

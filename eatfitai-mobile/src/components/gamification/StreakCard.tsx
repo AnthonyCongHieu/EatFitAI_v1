@@ -15,8 +15,6 @@ import Animated, {
   withRepeat,
   withSequence,
   withTiming,
-  withSpring,
-  interpolateColor,
   Easing,
 } from 'react-native-reanimated';
 import { useAppTheme } from '../../theme/ThemeProvider';
@@ -56,10 +54,10 @@ export const StreakCard: React.FC<StreakCardProps> = ({
       fireScale.value = withRepeat(
         withSequence(
           withTiming(1.15, { duration: 600, easing: Easing.inOut(Easing.ease) }),
-          withTiming(1, { duration: 600, easing: Easing.inOut(Easing.ease) })
+          withTiming(1, { duration: 600, easing: Easing.inOut(Easing.ease) }),
         ),
         -1,
-        true
+        true,
       );
 
       // Subtle rotate
@@ -67,30 +65,30 @@ export const StreakCard: React.FC<StreakCardProps> = ({
         withSequence(
           withTiming(5, { duration: 300 }),
           withTiming(-5, { duration: 300 }),
-          withTiming(0, { duration: 300 })
+          withTiming(0, { duration: 300 }),
         ),
         -1,
-        true
+        true,
       );
 
       // Glow pulse
       glowOpacity.value = withRepeat(
         withSequence(
           withTiming(0.6, { duration: 800 }),
-          withTiming(0.3, { duration: 800 })
+          withTiming(0.3, { duration: 800 }),
         ),
         -1,
-        true
+        true,
       );
 
       // Badge pulse
       badgePulse.value = withRepeat(
         withSequence(
           withTiming(1.05, { duration: 500 }),
-          withTiming(1, { duration: 500 })
+          withTiming(1, { duration: 500 }),
         ),
         -1,
-        true
+        true,
       );
     } else {
       fireScale.value = withTiming(1);
@@ -193,7 +191,7 @@ export const StreakCard: React.FC<StreakCardProps> = ({
                     styles.dot,
                     isLogged && styles.dotActive,
                     isToday && styles.dotToday,
-                    { borderColor: isToday ? '#FF9500' : 'transparent' }
+                    { borderColor: isToday ? '#FF9500' : 'transparent' },
                   ]}
                 >
                   {isLogged && (

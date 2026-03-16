@@ -8,7 +8,6 @@ import {
     View,
     Switch,
     Pressable,
-    Platform,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
@@ -117,7 +116,7 @@ const NotificationsScreen = (): React.ReactElement => {
 
     const updateSetting = <K extends keyof NotificationSettings>(
         key: K,
-        value: NotificationSettings[K]
+        value: NotificationSettings[K],
     ) => {
         setSettings((prev) => ({ ...prev, [key]: value }));
     };
@@ -204,7 +203,7 @@ const NotificationsScreen = (): React.ReactElement => {
         icon,
         label,
         enabledKey,
-        timeKey,
+        timeKey: _timeKey,
         enabled,
         time,
     }: {

@@ -1,7 +1,7 @@
 // BodyMetricsScreen: Màn hình nhập số đo cơ thể
 // Cho phép nhập chiều cao, cân nặng, cân nặng mục tiêu
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import {
     ScrollView,
     StyleSheet,
@@ -35,7 +35,7 @@ const BodyMetricsSchema = z.object({
             (value) =>
                 !value ||
                 (!Number.isNaN(Number(value)) && Number(value) >= 100 && Number(value) <= 250),
-            { message: 'Chiều cao từ 100 - 250 cm' }
+            { message: 'Chiều cao từ 100 - 250 cm' },
         ),
     weightKg: z
         .string()
@@ -44,7 +44,7 @@ const BodyMetricsSchema = z.object({
             (value) =>
                 !value ||
                 (!Number.isNaN(Number(value)) && Number(value) >= 30 && Number(value) <= 300),
-            { message: 'Cân nặng từ 30 - 300 kg' }
+            { message: 'Cân nặng từ 30 - 300 kg' },
         ),
     targetWeightKg: z
         .string()
@@ -54,7 +54,7 @@ const BodyMetricsSchema = z.object({
             (value) =>
                 !value ||
                 (!Number.isNaN(Number(value)) && Number(value) >= 30 && Number(value) <= 300),
-            { message: 'Cân nặng mục tiêu từ 30 - 300 kg' }
+            { message: 'Cân nặng mục tiêu từ 30 - 300 kg' },
         ),
 });
 
@@ -222,7 +222,7 @@ const BodyMetricsScreen = (): React.ReactElement => {
                     {/* Current Metrics */}
                     <Animated.View entering={FadeInDown.delay(100)} style={styles.card}>
                         <View style={styles.sectionTitle}>
-                            <ThemedText style={{ fontSize: 20 }}></ThemedText>
+                            <ThemedText style={{ fontSize: 20 }} />
                             <ThemedText variant="h3">Số đo hiện tại</ThemedText>
                         </View>
 
@@ -278,7 +278,7 @@ const BodyMetricsScreen = (): React.ReactElement => {
                     {/* Target Weight */}
                     <Animated.View entering={FadeInDown.delay(200)} style={styles.card}>
                         <View style={styles.sectionTitle}>
-                            <ThemedText style={{ fontSize: 20 }}></ThemedText>
+                            <ThemedText style={{ fontSize: 20 }} />
                             <ThemedText variant="h3">Cân nặng mục tiêu</ThemedText>
                         </View>
 

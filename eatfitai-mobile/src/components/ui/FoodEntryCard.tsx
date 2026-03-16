@@ -10,20 +10,10 @@
 import React, { useCallback } from 'react';
 import { View, StyleSheet, Pressable, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import Animated, {
-    FadeIn,
-    FadeOut,
-    Layout,
-    useAnimatedStyle,
-    useSharedValue,
-    withSpring,
-} from 'react-native-reanimated';
-import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { useAppTheme } from '../../theme/ThemeProvider';
 import { ThemedText } from '../ThemedText';
 import * as Haptics from 'expo-haptics';
 
-const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 interface FoodEntryCardProps {
     id: string;
@@ -111,14 +101,12 @@ const getFoodEmoji = (foodName: string): string => {
 };
 
 export const FoodEntryCard: React.FC<FoodEntryCardProps> = ({
-    id,
     foodName,
     calories,
     protein = 0,
     carbs = 0,
     fat = 0,
     quantityText,
-    sourceMethod = 'manual',
     imageUrl,
     onPress,
     onDelete,
@@ -126,57 +114,15 @@ export const FoodEntryCard: React.FC<FoodEntryCardProps> = ({
 }) => {
     const { theme } = useAppTheme();
     const isDark = theme.mode === 'dark';
-    const translateX = useSharedValue(0);
-    const isSwipedOpen = useSharedValue(false);
-
-    const ACTION_THRESHOLD = -60;
-    const SWIPE_OPEN_THRESHOLD = -50;
-
-    // Swipe gesture
-    const panGesture = Gesture.Pan()
-        .onUpdate((event) => {
-            // Chỉ cho phép swipe sang trái
-            if (event.translationX < 0) {
-                translateX.value = Math.max(event.translationX, ACTION_THRESHOLD);
-            } else if (isSwipedOpen.value) {
-                translateX.value = Math.min(0, SWIPE_OPEN_THRESHOLD + event.translationX);
-            }
-        })
-        .onEnd((event) => {
-            if (translateX.value < SWIPE_OPEN_THRESHOLD / 2) {
-                // Open action buttons
-                translateX.value = withSpring(SWIPE_OPEN_THRESHOLD, {
-                    damping: 20,
-                    stiffness: 200,
-                });
-                isSwipedOpen.value = true;
-            } else {
-                // Close action buttons
-                translateX.value = withSpring(0, {
-                    damping: 20,
-                    stiffness: 200,
-                });
-                isSwipedOpen.value = false;
-            }
-        });
-
-    const cardStyle = useAnimatedStyle(() => ({
-        transform: [{ translateX: translateX.value }],
-    }));
-
     const handleDelete = useCallback(() => {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-        translateX.value = withSpring(0);
-        isSwipedOpen.value = false;
         onDelete?.();
-    }, [onDelete, translateX, isSwipedOpen]);
+    }, [onDelete]);
 
     const handleEdit = useCallback(() => {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-        translateX.value = withSpring(0);
-        isSwipedOpen.value = false;
         onEdit?.();
-    }, [onEdit, translateX, isSwipedOpen]);
+    }, [onEdit]);
 
     const foodEmoji = getFoodEmoji(foodName);
 

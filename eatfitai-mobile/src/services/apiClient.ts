@@ -4,6 +4,12 @@ import axios, {
   AxiosRequestConfig,
   InternalAxiosRequestConfig,
 } from 'axios';
+import { API_BASE_URL } from '../config/env';
+import { tokenStorage } from './secureStore';
+import { getAccessTokenMem, setAccessTokenMem, clearAccessTokenMem } from './authTokens';
+import { postRefreshToken } from './tokenService';
+import { updateSessionFromAuthResponse } from './authSession';
+import { getApiUrl, forceRescan, getCachedApiUrl, verifyApiUrl, preloadCachedUrl, resetScanState } from './ipScanner';
 
 // Extend axios types để support custom retry flags
 declare module 'axios' {
@@ -12,12 +18,6 @@ declare module 'axios' {
     _networkRetried?: boolean;
   }
 }
-import { API_BASE_URL } from '../config/env';
-import { tokenStorage } from './secureStore';
-import { getAccessTokenMem, setAccessTokenMem, clearAccessTokenMem } from './authTokens';
-import { postRefreshToken } from './tokenService';
-import { updateSessionFromAuthResponse } from './authSession';
-import { getApiUrl, forceRescan, getCachedApiUrl, verifyApiUrl, preloadCachedUrl, resetScanState } from './ipScanner';
 
 // Quản lý thời gian rescan để tránh spam
 let lastRescanTime = 0;
@@ -388,7 +388,7 @@ apiClient.interceptors.response.use(
       // Re-scan thất bại, return lỗi gốc
       const networkError = new Error(
         `Network Error: ${error.message || 'Không kết nối được server'}. ` +
-        `Kiểm tra kết nối mạng và đảm bảo backend đang chạy.`,
+        'Kiểm tra kết nối mạng và đảm bảo backend đang chạy.',
       );
       networkError.name = 'NetworkError';
       return Promise.reject(networkError);

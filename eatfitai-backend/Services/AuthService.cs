@@ -301,11 +301,25 @@ namespace EatFitAI.API.Services
             return isLegacyMatch;
         }
 
+        private static bool IsPlaceholderSecret(string? value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return true;
+            }
+
+            return string.Equals(value, "default-secret-key", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(value, "REPLACE_WITH_USER_SECRET", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(value, "SET_IN_USER_SECRETS", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(value, "SET_IN_ENV_OR_SECRET_STORE", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(value, "YourSuperSecretKeyHereThatIsAtLeast32CharactersLongForProductionUse", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(value, "YourSuperSecretKeyHereThatIsAtLeast32CharactersLongForDevelopmentUse", StringComparison.OrdinalIgnoreCase);
+        }
+
         private byte[] GetJwtSigningKey()
         {
             var key = _configuration["Jwt:Key"];
-            if (string.IsNullOrWhiteSpace(key) ||
-                string.Equals(key, "default-secret-key", StringComparison.OrdinalIgnoreCase))
+            if (IsPlaceholderSecret(key))
             {
                 throw new InvalidOperationException("Jwt:Key is missing or insecure.");
             }

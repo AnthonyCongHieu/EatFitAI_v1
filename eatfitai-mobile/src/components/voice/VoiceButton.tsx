@@ -31,7 +31,6 @@ export const VoiceButton = ({
     style,
 }: VoiceButtonProps): React.ReactElement => {
     const { theme } = useAppTheme();
-    const isDark = theme.mode === 'dark';
     const { status } = useVoiceStore();
 
     const isActive = status === 'listening';
@@ -45,18 +44,18 @@ export const VoiceButton = ({
             pulseScale.value = withRepeat(
                 withSequence(
                     withTiming(1.5, { duration: 800 }),
-                    withTiming(1, { duration: 800 })
+                    withTiming(1, { duration: 800 }),
                 ),
                 -1,
-                false
+                false,
             );
             pulseOpacity.value = withRepeat(
                 withSequence(
                     withTiming(0.3, { duration: 800 }),
-                    withTiming(0, { duration: 800 })
+                    withTiming(0, { duration: 800 }),
                 ),
                 -1,
-                false
+                false,
             );
         } else {
             pulseScale.value = withSpring(1);

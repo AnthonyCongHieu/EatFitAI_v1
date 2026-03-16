@@ -5,8 +5,6 @@
 import { create } from 'zustand';
 import voiceService, {
     ParsedVoiceCommand,
-    VoiceProcessResponse,
-    VoiceIntent,
 } from '../services/voiceService';
 
 type VoiceStatus =

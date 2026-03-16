@@ -6,7 +6,6 @@ import Animated, {
   withRepeat,
   withTiming,
   Easing,
-  interpolate,
 } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
 
@@ -82,7 +81,7 @@ export const ShimmerSkeleton = ({
         easing: Easing.linear,
       }),
       -1,
-      false
+      false,
     );
   }, []);
 

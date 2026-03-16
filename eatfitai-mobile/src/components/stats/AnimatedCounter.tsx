@@ -1,5 +1,4 @@
 import React, { useEffect } from 'react';
-import { StyleSheet } from 'react-native';
 import Animated, {
     useSharedValue,
     useAnimatedProps,
@@ -63,7 +62,6 @@ export const AnimatedCounter: React.FC<AnimatedCounterProps> = ({
 
         return {
             text: `${prefix}${displayValue}${suffix}`,
-            // @ts-ignore - animated text needs this
             children: `${prefix}${displayValue}${suffix}`,
         };
     });

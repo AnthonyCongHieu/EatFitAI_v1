@@ -5,7 +5,7 @@
  */
 
 import React, { useState } from 'react';
-import { View, Image, StyleSheet, Pressable, Modal, ScrollView, Dimensions } from 'react-native';
+import { View, StyleSheet, Pressable, Modal, ScrollView, Dimensions } from 'react-native';
 import Toast from 'react-native-toast-message';
 import { Ionicons } from '@expo/vector-icons';
 

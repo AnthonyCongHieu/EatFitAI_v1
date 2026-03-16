@@ -3,7 +3,7 @@
  * Cho phép xóa nguyên liệu và gợi ý công thức
  */
 import React, { useCallback, useState } from 'react';
-import { View, StyleSheet, FlatList, Pressable, ActivityIndicator } from 'react-native';
+import { View, StyleSheet, FlatList, Pressable } from 'react-native';
 import Animated, { FadeInRight, FadeOutLeft } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import { useNavigation } from '@react-navigation/native';

@@ -426,7 +426,7 @@ export const darkTheme: AppTheme = {
     primary: '#4A90D9',
     primaryLight: 'rgba(74, 144, 226, 0.25)',
     primaryDark: '#3B7BC8',
-    // Secondary - Lighter blue accent  
+    // Secondary - Lighter blue accent
     secondary: '#64B5F6',
     secondaryLight: 'rgba(100, 181, 246, 0.2)',
     muted: '#6B7280',

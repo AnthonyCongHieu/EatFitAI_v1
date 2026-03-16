@@ -7,7 +7,6 @@ import Animated, {
   SlideOutDown,
   useAnimatedStyle,
   useSharedValue,
-  withSpring,
   withTiming,
   runOnJS,
 } from 'react-native-reanimated';

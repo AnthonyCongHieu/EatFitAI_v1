@@ -2,7 +2,7 @@
 // Chu thich bang tieng Viet khong dau
 
 import apiClient from './apiClient';
-import type { AddMealItemsPayload, MealItemInput } from '../types/meals';
+import type { MealItemInput } from '../types/meals';
 
 const todayDate = (): string => {
   const d = new Date();

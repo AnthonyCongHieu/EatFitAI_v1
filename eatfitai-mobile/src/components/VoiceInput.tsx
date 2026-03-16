@@ -1,8 +1,8 @@
 // VoiceInput component - Voice logging for meals with real STT
 // Sử dụng Native Device Speech-to-Text (Google/Apple)
 
-import React, { useState, useCallback, useEffect } from 'react';
-import { View, StyleSheet, Pressable, Platform, Alert } from 'react-native';
+import React, { useState, useCallback } from 'react';
+import { View, StyleSheet, Pressable, Alert } from 'react-native';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -30,7 +30,7 @@ const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 /**
  * VoiceInput Component
- * 
+ *
  * Hiện tại sử dụng simulation cho Expo Go.
  * Khi build production với EAS, có thể tích hợp:
  * - @jamsch/expo-speech-recognition
@@ -139,7 +139,7 @@ const VoiceInput: React.FC<VoiceInputProps> = ({
       Alert.alert(
         '🎤 Hướng dẫn Voice',
         'Nhấn và GIỮ nút mic để nói lệnh.\n\nVí dụ:\n• "Thêm 1 phở bò bữa trưa"\n• "Cân nặng 65 kg"\n• "Hôm nay bao nhiêu calo"',
-        [{ text: 'Đã hiểu' }]
+        [{ text: 'Đã hiểu' }],
       );
     }
   }, [recordingState]);

@@ -22,10 +22,10 @@ interface StatsHeroCardProps {
 export const StatsHeroCard: React.FC<StatsHeroCardProps> = ({
     value,
     target,
-    unit = 'kcal',
-    label = 'Hôm nay',
-    insight,
-    icon = '🔥',
+    unit: _unit = 'kcal',
+    label: _label = 'Hom nay',
+    insight: _insight,
+    icon: _icon = '',
 }) => {
     const { theme } = useAppTheme();
     const isDark = theme.mode === 'dark';

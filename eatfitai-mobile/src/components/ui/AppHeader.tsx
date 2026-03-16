@@ -1,12 +1,12 @@
 /**
  * AppHeader - Unified Header Component (Trend 2026)
- * 
- * Design: Glassmorphism với semi-transparent background, subtle border glow
+ *
+ * Design: glassmorphism with a semi-transparent background and subtle border glow
  * Features: Gradient title, animated glow border, modern glass buttons
  * Layout: [Back] | [Title Center] | [Actions]
- * 
+ *
  * @usage
- * <AppHeader title="Profile" subtitle="Quản lý tài khoản" />
+ * <AppHeader title="Profile" subtitle="Quan ly tai khoan" />
  * <AppHeader title="Settings" showBack onBackPress={() => nav.goBack()} />
  * <AppHeader title="Stats" rightIcon="settings-outline" onRightPress={...} />
  */
@@ -29,10 +29,8 @@ import Animated, {
     useAnimatedStyle,
     useSharedValue,
     withSpring,
-    interpolateColor,
 } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
-import { LinearGradient } from 'expo-linear-gradient';
 
 import { ThemedText } from '../ThemedText';
 import { useAppTheme } from '../../theme/ThemeProvider';
@@ -45,7 +43,7 @@ export type AppHeaderVariant = 'default' | 'transparent' | 'hero';
 export type AppHeaderSize = 'compact' | 'default' | 'large';
 
 export interface AppHeaderProps {
-    // Nội dung
+    // Content
     title?: string;
     subtitle?: string;
 
@@ -53,9 +51,9 @@ export interface AppHeaderProps {
     showBack?: boolean;
     onBackPress?: () => void;
 
-    // Actions (phía bên phải)
+    // Actions (right side)
     rightAction?: React.ReactNode;
-    action?: React.ReactNode; // Alias cho rightAction (để tương thích ngược)
+    action?: React.ReactNode; // Alias for rightAction to keep backward compatibility
     rightIcon?: keyof typeof Ionicons.glyphMap;
     onRightPress?: () => void;
 
@@ -171,14 +169,14 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
     const navigation = useNavigation();
     const isDark = theme.mode === 'dark';
 
-    // Kiểm tra có thể goBack không
+    // Check whether navigation can go back
     const canGoBack = navigation.canGoBack();
     const shouldShowBack = showBack && canGoBack;
 
-    // Merge action props (rightAction uu tiên hơn action)
+    // Merge action props (rightAction takes priority over action)
     const actionContent = rightAction || action;
 
-    // Handler cho nút back với haptic feedback
+    // Back button handler with haptic feedback
     const handleBackPress = () => {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
         if (onBackPress) {
@@ -195,7 +193,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
     };
 
     // ============================================================================
-    // Styles dựa trên variant và size
+    // Styles based on variant and size
     // ============================================================================
 
     const getBackgroundStyle = (): ViewStyle => {
@@ -286,10 +284,6 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
         }
     };
 
-    // Gradient colors cho title
-    const gradientColors = isDark
-        ? ['#22C55E', '#10B981', '#34D399'] // green gradient
-        : ['#16A34A', '#22C55E', '#4ADE80'];
 
     // ============================================================================
     // Render
@@ -299,7 +293,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
     const Wrapper = animated ? Animated.View : View;
     const enteringAnimation = animated ? FadeIn.duration(250) : undefined;
 
-    // Render gradient title hoặc title thường
+    // Render gradient title or regular title
     const renderTitle = () => {
         if (!title) return null;
 
@@ -329,7 +323,6 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
 
     return (
         <Wrapper
-            // @ts-ignore - entering chỉ có trên Animated.View
             entering={enteringAnimation}
             style={[
                 styles.container,
@@ -346,8 +339,8 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
                         <GlassButton
                             onPress={handleBackPress}
                             isDark={isDark}
-                            accessibilityLabel="Quay lại"
-                            accessibilityHint="Nhấn để quay về màn hình trước"
+                            accessibilityLabel="Quay lai"
+                            accessibilityHint="Nhan de quay ve man hinh truoc"
                         >
                             <Ionicons
                                 name="chevron-back"
@@ -380,13 +373,13 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
                             />
                         </GlassButton>
                     ) : (
-                        // Placeholder để cân bằng layout
+                        // Placeholder to keep layout balanced
                         <View style={styles.iconButtonPlaceholder} />
                     )}
                 </View>
             </View>
 
-            {/* Subtitle Row - nếu có */}
+            {/* Subtitle row - only when present */}
             {subtitle && (
                 <Animated.View
                     entering={animated ? FadeInDown.delay(100).duration(200) : undefined}

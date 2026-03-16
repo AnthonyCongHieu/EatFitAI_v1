@@ -17,12 +17,10 @@ import Animated, {
     withRepeat,
     withSequence,
     Easing,
-    interpolateColor,
 } from 'react-native-reanimated';
-import Svg, { Circle, Defs, LinearGradient, Stop, G } from 'react-native-svg';
+import Svg, { Circle, Defs, LinearGradient, Stop } from 'react-native-svg';
 import { useAppTheme } from '../../theme/ThemeProvider';
 import { ThemedText } from '../ThemedText';
-import { t } from '../../i18n/vi';
 
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
@@ -110,10 +108,10 @@ const CalorieRing: React.FC<CalorieRingProps> = ({
             pulseScale.value = withRepeat(
                 withSequence(
                     withTiming(1.02, { duration: 800 }),
-                    withTiming(1, { duration: 800 })
+                    withTiming(1, { duration: 800 }),
                 ),
                 -1,
-                true
+                true,
             );
         } else {
             pulseScale.value = withTiming(1, { duration: 300 });
@@ -179,7 +177,7 @@ const CalorieRing: React.FC<CalorieRingProps> = ({
                         weight="700"
                         style={[
                             styles.mainValue,
-                            isOverTarget && { color: theme.colors.danger }
+                            isOverTarget && { color: theme.colors.danger },
                         ]}
                     >
                         {Math.round(remaining)}
@@ -239,13 +237,13 @@ const CalorieRing: React.FC<CalorieRingProps> = ({
                                     backgroundColor: '#3B82F6',
                                     borderTopLeftRadius: 4,
                                     borderBottomLeftRadius: 4,
-                                }
+                                },
                             ]}
                         />
                         <View
                             style={[
                                 styles.macroSegment,
-                                { width: `${carbsPct}%`, backgroundColor: '#FBBF24' }
+                                { width: `${carbsPct}%`, backgroundColor: '#FBBF24' },
                             ]}
                         />
                         <View
@@ -256,7 +254,7 @@ const CalorieRing: React.FC<CalorieRingProps> = ({
                                     backgroundColor: '#EC4899',
                                     borderTopRightRadius: 4,
                                     borderBottomRightRadius: 4,
-                                }
+                                },
                             ]}
                         />
                     </View>

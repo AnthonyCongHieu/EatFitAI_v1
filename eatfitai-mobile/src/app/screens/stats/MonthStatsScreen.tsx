@@ -15,6 +15,7 @@ import Icon from '../../../components/Icon';
 import { useAppTheme } from '../../../theme/ThemeProvider';
 import { summaryService } from '../../../services/summaryService';
 import { handleApiError } from '../../../utils/errorHandler';
+import { formatMonthYearLabel } from '../../../utils/dateDisplay';
 import { StatsSkeleton } from '../../../components/skeletons/StatsSkeleton';
 import { MacroPieChart } from '../../../components/charts/MacroPieChart';
 import { t } from '../../../i18n/vi';
@@ -37,10 +38,6 @@ interface MonthSummary {
 }
 
 const WEEKDAYS = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
-
-const formatMonth = (date: Date): string => {
-  return date.toLocaleDateString('vi-VN', { month: 'long', year: 'numeric' });
-};
 
 const getMonthDays = (year: number, month: number): Date[] => {
   const days: Date[] = [];
@@ -70,7 +67,7 @@ const MonthStatsScreen = (): React.ReactElement => {
   const [monthData, setMonthData] = useState<MonthSummary | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Cache d? luu data c�c th�ng d� fetch - tr�nh fetch l?i
+  // Cache fetched months to avoid unnecessary reloads
   const monthCacheRef = React.useRef<Map<string, MonthSummary>>(new Map());
 
   const year = currentDate.getFullYear();
@@ -78,7 +75,7 @@ const MonthStatsScreen = (): React.ReactElement => {
   const monthKey = `${year}-${month}`;
 
   const fetchMonthData = useCallback(async () => {
-    // Ki?m tra cache tru?c
+    // Check the cache first.
     const cached = monthCacheRef.current.get(monthKey);
     if (cached) {
       setMonthData(cached);
@@ -86,7 +83,7 @@ const MonthStatsScreen = (): React.ReactElement => {
       // Silent refresh in background
       summaryService.getNutritionSummary(
         new Date(year, month, 1).toISOString().split('T')[0]!,
-        new Date(year, month + 1, 0).toISOString().split('T')[0]!
+        new Date(year, month + 1, 0).toISOString().split('T')[0]!,
       ).then(result => {
         const days: DayData[] = Object.entries(result.dailyCalories || {}).map(([date, calories]) => ({
           date, calories: Number(calories) || 0,
@@ -208,7 +205,7 @@ const MonthStatsScreen = (): React.ReactElement => {
     const handleDayPress = () => {
       if (isCurrentMonthDay && calories > 0) {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-        // Navigate d?n MealDiary v?i ng�y du?c ch?n
+        // Navigate to MealDiary for the selected date
         navigation.navigate('MealDiary', { selectedDate: dateStr });
       }
     };
@@ -342,13 +339,13 @@ const MonthStatsScreen = (): React.ReactElement => {
             onPress={goToPreviousMonth}
             style={styles.navButton}
             accessibilityRole="button"
-            accessibilityLabel="Xem th�ng tru?c"
+            accessibilityLabel="Xem th\u00e1ng tr\u01b0\u1edbc"
           >
             <Icon name="chevron-back" size="md" color="primary" />
           </Pressable>
           <View style={{ alignItems: 'center' }}>
             <ThemedText variant="h4" weight="600">
-              {formatMonth(currentDate)}
+              {formatMonthYearLabel(currentDate)}
             </ThemedText>
             {isCurrentMonth && (
               <ThemedText variant="caption" color="primary">
@@ -361,7 +358,7 @@ const MonthStatsScreen = (): React.ReactElement => {
             style={styles.navButton}
             disabled={isCurrentMonth || isFutureMonth}
             accessibilityRole="button"
-            accessibilityLabel="Xem th�ng sau"
+            accessibilityLabel="Xem th\u00e1ng sau"
             accessibilityState={{ disabled: isCurrentMonth || isFutureMonth }}
           >
             <Icon
@@ -406,7 +403,7 @@ const MonthStatsScreen = (): React.ReactElement => {
                   ]}
                 />
                 <ThemedText variant="caption" color="textSecondary">
-                  Chua log
+                  {'Ch\u01b0a log'}
                 </ThemedText>
               </View>
               <View style={styles.legendItem}>
@@ -417,7 +414,7 @@ const MonthStatsScreen = (): React.ReactElement => {
                   ]}
                 />
                 <ThemedText variant="caption" color="textSecondary">
-                  �t
+                  {'\u00cdt'}
                 </ThemedText>
               </View>
               <View style={styles.legendItem}>
@@ -425,7 +422,7 @@ const MonthStatsScreen = (): React.ReactElement => {
                   style={[styles.legendDot, { backgroundColor: theme.colors.success }]}
                 />
                 <ThemedText variant="caption" color="textSecondary">
-                  Nhi?u
+                  {'Nhi\u1ec1u'}
                 </ThemedText>
               </View>
               <View style={styles.legendItem}>
@@ -433,7 +430,7 @@ const MonthStatsScreen = (): React.ReactElement => {
                   style={[styles.legendDot, { backgroundColor: theme.colors.warning }]}
                 />
                 <ThemedText variant="caption" color="textSecondary">
-                  Vu?t
+                  {'V\u01b0\u1ee3t'}
                 </ThemedText>
               </View>
             </View>
@@ -444,7 +441,7 @@ const MonthStatsScreen = (): React.ReactElement => {
         {monthData && monthData.daysLogged > 0 ? (
           <Animated.View entering={FadeInDown.delay(200).springify()}>
             <AppCard>
-              <SectionHeader title="T?ng k?t th�ng" />
+              <SectionHeader title={'T\u1ed5ng k\u1ebft th\u00e1ng'} />
               <View style={styles.summaryGrid}>
                 {/* Total Calories - Blue gradient */}
                 <LinearGradient
@@ -461,7 +458,7 @@ const MonthStatsScreen = (): React.ReactElement => {
                     borderColor: theme.statsCards.calories.borderColor,
                   }}
                 >
-                  <ThemedText style={{ fontSize: theme.typography.h3.fontSize, marginBottom: theme.spacing.xs }}>??</ThemedText>
+                  <ThemedText style={{ fontSize: theme.typography.h3.fontSize, marginBottom: theme.spacing.xs }}>{'\uD83D\uDD25'}</ThemedText>
                   <ThemedText
                     variant="h3"
                     weight="700"
@@ -470,7 +467,7 @@ const MonthStatsScreen = (): React.ReactElement => {
                     {Math.round((monthData.totalCalories / 1000) * 10) / 10}k
                   </ThemedText>
                   <ThemedText variant="caption" color="textSecondary">
-                    T?ng Calories
+                    {'T\u1ed5ng Calories'}
                   </ThemedText>
                 </LinearGradient>
 
@@ -489,7 +486,7 @@ const MonthStatsScreen = (): React.ReactElement => {
                     borderColor: theme.statsCards.average.borderColor,
                   }}
                 >
-                  <ThemedText style={{ fontSize: theme.typography.h3.fontSize, marginBottom: theme.spacing.xs }}>??</ThemedText>
+                  <ThemedText style={{ fontSize: theme.typography.h3.fontSize, marginBottom: theme.spacing.xs }}>{'\uD83D\uDCCA'}</ThemedText>
                   <ThemedText
                     variant="h3"
                     weight="700"
@@ -498,7 +495,7 @@ const MonthStatsScreen = (): React.ReactElement => {
                     {Math.round(monthData.averageCalories)}
                   </ThemedText>
                   <ThemedText variant="caption" color="textSecondary">
-                    TB/ng�y
+                    {'TB/ng\u00e0y'}
                   </ThemedText>
                 </LinearGradient>
 
@@ -517,7 +514,7 @@ const MonthStatsScreen = (): React.ReactElement => {
                     borderColor: theme.statsCards.daysLogged.borderColor,
                   }}
                 >
-                  <ThemedText style={{ fontSize: theme.typography.h3.fontSize, marginBottom: theme.spacing.xs }}>??</ThemedText>
+                  <ThemedText style={{ fontSize: theme.typography.h3.fontSize, marginBottom: theme.spacing.xs }}>{'\uD83D\uDCC6'}</ThemedText>
                   <ThemedText
                     variant="h3"
                     weight="700"
@@ -526,11 +523,11 @@ const MonthStatsScreen = (): React.ReactElement => {
                     {monthData.daysLogged}
                   </ThemedText>
                   <ThemedText variant="caption" color="textSecondary">
-                    Ng�y d� log
+                    {'Ng\u00e0y \u0111\u00e3 log'}
                   </ThemedText>
                 </LinearGradient>
 
-                {/* �?t m?c ti�u - Orange gradient */}
+                {/* Target hit card. */}
                 <LinearGradient
                   colors={theme.statsCards.target.gradient}
                   start={{ x: 0, y: 0 }}
@@ -545,7 +542,7 @@ const MonthStatsScreen = (): React.ReactElement => {
                     borderColor: theme.statsCards.target.borderColor,
                   }}
                 >
-                  <ThemedText style={{ fontSize: theme.typography.h3.fontSize, marginBottom: theme.spacing.xs }}>??</ThemedText>
+                  <ThemedText style={{ fontSize: theme.typography.h3.fontSize, marginBottom: theme.spacing.xs }}>{'\uD83C\uDFAF'}</ThemedText>
                   <ThemedText
                     variant="h3"
                     weight="700"
@@ -557,7 +554,7 @@ const MonthStatsScreen = (): React.ReactElement => {
                     }).length}/{monthData.daysLogged}
                   </ThemedText>
                   <ThemedText variant="caption" color="textSecondary">
-                    �?t m?c ti�u
+                    {'\u0110\u1ea1t m\u1ee5c ti\u00eau'}
                   </ThemedText>
                 </LinearGradient>
               </View>
@@ -568,14 +565,14 @@ const MonthStatsScreen = (): React.ReactElement => {
             <AppCard>
               <View style={{ paddingVertical: 24, alignItems: 'center', gap: 8 }}>
                 <ThemedText variant="h4" color="textSecondary">
-                  ??
+                  {'\uD83D\uDCC5'}
                 </ThemedText>
                 <ThemedText
                   variant="body"
                   color="textSecondary"
                   style={{ textAlign: 'center' }}
                 >
-                  Chua c� d? li?u cho th�ng n�y
+                  {'Ch\u01b0a c\u00f3 d\u1eef li\u1ec7u cho th\u00e1ng n\u00e0y'}
                 </ThemedText>
                 <ThemedText
                   variant="caption"

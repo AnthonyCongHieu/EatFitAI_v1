@@ -28,7 +28,7 @@ interface UseVoiceRecognitionReturn {
 }
 
 export const useVoiceRecognition = (
-    options: UseVoiceRecognitionOptions = {}
+    options: UseVoiceRecognitionOptions = {},
 ): UseVoiceRecognitionReturn => {
     const { maxDuration = 30 } = options;
 
@@ -78,7 +78,7 @@ export const useVoiceRecognition = (
 
             // Create and start recording
             const { recording } = await Audio.Recording.createAsync(
-                Audio.RecordingOptionsPresets.HIGH_QUALITY
+                Audio.RecordingOptionsPresets.HIGH_QUALITY,
             );
 
             recordingRef.current = recording;

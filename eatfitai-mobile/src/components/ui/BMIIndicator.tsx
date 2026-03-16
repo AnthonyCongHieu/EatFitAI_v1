@@ -52,7 +52,6 @@ export const BMIIndicator: React.FC<BMIIndicatorProps> = ({
     variant = 'compact',
 }) => {
     const { theme } = useAppTheme();
-    const isDark = theme.mode === 'dark';
 
     const bmi = useMemo(() => calculateBMI(heightCm, weightKg), [heightCm, weightKg]);
     const category = useMemo(() => (bmi ? getBMICategory(bmi) : null), [bmi]);
