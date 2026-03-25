@@ -21,13 +21,15 @@ namespace EatFitAI.API.Data
         {
             if (await context.Users.AnyAsync()) return;
 
+            // Sample accounts are for local data seeding only.
+            // Each one gets a random unknown password so no shared credential is committed.
             var sampleUsers = new[]
             {
                 new User
                 {
                     UserId = Guid.NewGuid(),
                     Email = "john.doe@example.com",
-                    PasswordHash = HashPassword("password123"),
+                    PasswordHash = CreateRandomPasswordHash(),
                     DisplayName = "John Doe",
                     CreatedAt = DateTime.UtcNow
                 },
@@ -35,7 +37,7 @@ namespace EatFitAI.API.Data
                 {
                     UserId = Guid.NewGuid(),
                     Email = "jane.smith@example.com",
-                    PasswordHash = HashPassword("password123"),
+                    PasswordHash = CreateRandomPasswordHash(),
                     DisplayName = "Jane Smith",
                     CreatedAt = DateTime.UtcNow
                 },
@@ -43,7 +45,7 @@ namespace EatFitAI.API.Data
                 {
                     UserId = Guid.NewGuid(),
                     Email = "mike.johnson@example.com",
-                    PasswordHash = HashPassword("password123"),
+                    PasswordHash = CreateRandomPasswordHash(),
                     DisplayName = "Mike Johnson",
                     CreatedAt = DateTime.UtcNow
                 },
@@ -51,7 +53,7 @@ namespace EatFitAI.API.Data
                 {
                     UserId = Guid.NewGuid(),
                     Email = "sarah.wilson@example.com",
-                    PasswordHash = HashPassword("password123"),
+                    PasswordHash = CreateRandomPasswordHash(),
                     DisplayName = "Sarah Wilson",
                     CreatedAt = DateTime.UtcNow
                 },
@@ -59,7 +61,7 @@ namespace EatFitAI.API.Data
                 {
                     UserId = Guid.NewGuid(),
                     Email = "alex.brown@example.com",
-                    PasswordHash = HashPassword("password123"),
+                    PasswordHash = CreateRandomPasswordHash(),
                     DisplayName = "Alex Brown",
                     CreatedAt = DateTime.UtcNow
                 }
@@ -310,6 +312,12 @@ namespace EatFitAI.API.Data
                 UpdatedAt = DateTime.UtcNow,
                 IsDeleted = false
             };
+        }
+
+        private static string CreateRandomPasswordHash()
+        {
+            var randomPassword = Convert.ToBase64String(RandomNumberGenerator.GetBytes(32));
+            return HashPassword(randomPassword);
         }
 
         private static string HashPassword(string password)
