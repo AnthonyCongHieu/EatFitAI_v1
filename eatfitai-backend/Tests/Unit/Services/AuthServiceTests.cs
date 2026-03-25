@@ -1,24 +1,26 @@
+using System.Security.Cryptography;
+using System.Text;
+using AutoMapper;
 using EatFitAI.API.DbScaffold.Data;
-using EatFitAI.API.DTOs.Auth;
 using EatFitAI.API.DbScaffold.Models;
+using EatFitAI.API.DTOs.Auth;
 using EatFitAI.API.Repositories.Interfaces;
 using EatFitAI.API.Services;
 using EatFitAI.API.Services.Interfaces;
-using AutoMapper;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Moq;
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
 using Xunit;
 
 namespace EatFitAI.API.Tests.Unit.Services
 {
     public class AuthServiceTests : IDisposable
     {
+        private const string TestJwtKey = "test-secret-key-for-unit-tests-12345";
+
         private readonly Mock<IUserRepository> _userRepositoryMock;
         private readonly EatFitAIDbContext _context;
         private readonly Mock<IMapper> _mapperMock;
@@ -38,28 +40,37 @@ namespace EatFitAI.API.Tests.Unit.Services
             _emailServiceMock = new Mock<IEmailService>();
             _envMock = new Mock<IHostEnvironment>();
             _loggerMock = new Mock<ILogger<AuthService>>();
-            _envMock.Setup(e => e.IsDevelopment()).Returns(true);
 
-            // Setup in-memory database
+            _envMock.SetupGet(e => e.EnvironmentName).Returns(Environments.Development);
+            _configurationMock.Setup(c => c["Jwt:Key"]).Returns(TestJwtKey);
+            _configurationMock.Setup(c => c["Jwt:Issuer"]).Returns("EatFitAI");
+            _configurationMock.Setup(c => c["Jwt:Audience"]).Returns("EatFitAI");
+
             var options = new DbContextOptionsBuilder<EatFitAIDbContext>()
-                .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
+                .UseInMemoryDatabase(Guid.NewGuid().ToString())
                 .Options;
             _context = new EatFitAIDbContext(options);
 
-            _configurationMock.Setup(c => c["Jwt:Key"]).Returns("test-secret-key-for-testing-purposes");
-
-            _authService = new AuthService(_userRepositoryMock.Object, _context, _mapperMock.Object, _configurationMock.Object, _memoryCache, _emailServiceMock.Object, _envMock.Object, _loggerMock.Object);
+            _authService = new AuthService(
+                _userRepositoryMock.Object,
+                _context,
+                _mapperMock.Object,
+                _configurationMock.Object,
+                _memoryCache,
+                _emailServiceMock.Object,
+                _envMock.Object,
+                _loggerMock.Object);
         }
 
         public void Dispose()
         {
             _context.Dispose();
+            _memoryCache.Dispose();
         }
 
         [Fact]
         public async Task RegisterAsync_ValidUser_ReturnsSuccess()
         {
-            // Arrange
             var request = new RegisterRequest
             {
                 Email = "test@example.com",
@@ -67,32 +78,21 @@ namespace EatFitAI.API.Tests.Unit.Services
                 DisplayName = "Test User"
             };
 
-            var user = new User
-            {
-                UserId = Guid.NewGuid(),
-                Email = request.Email,
-                PasswordHash = "hashedpassword",
-                DisplayName = request.DisplayName,
-                CreatedAt = DateTime.UtcNow
-            };
-
             _userRepositoryMock.Setup(r => r.EmailExistsAsync(request.Email)).ReturnsAsync(false);
             _userRepositoryMock.Setup(r => r.AddAsync(It.IsAny<User>())).Returns(Task.CompletedTask);
 
-            // Act
             var result = await _authService.RegisterAsync(request);
 
-            // Assert
             Assert.NotNull(result);
             Assert.Equal(request.Email, result.Email);
             Assert.Equal(request.DisplayName, result.DisplayName);
-            Assert.NotNull(result.Token);
+            Assert.False(string.IsNullOrWhiteSpace(result.Token));
+            Assert.False(string.IsNullOrWhiteSpace(result.RefreshToken));
         }
 
         [Fact]
         public async Task RegisterAsync_ExistingEmail_ThrowsException()
         {
-            // Arrange
             var request = new RegisterRequest
             {
                 Email = "existing@example.com",
@@ -102,14 +102,12 @@ namespace EatFitAI.API.Tests.Unit.Services
 
             _userRepositoryMock.Setup(r => r.EmailExistsAsync(request.Email)).ReturnsAsync(true);
 
-            // Act & Assert
             await Assert.ThrowsAsync<InvalidOperationException>(() => _authService.RegisterAsync(request));
         }
 
         [Fact]
         public async Task LoginAsync_ValidCredentials_ReturnsSuccess()
         {
-            // Arrange
             var request = new LoginRequest
             {
                 Email = "test@example.com",
@@ -120,43 +118,41 @@ namespace EatFitAI.API.Tests.Unit.Services
             {
                 UserId = Guid.NewGuid(),
                 Email = request.Email,
-                PasswordHash = "hashedpassword", // Mock hashed password
+                PasswordHash = HashLegacyPassword(request.Password),
                 DisplayName = "Test User",
-                CreatedAt = DateTime.UtcNow
+                CreatedAt = DateTime.UtcNow,
+                EmailVerified = true,
+                OnboardingCompleted = false
             };
 
             _userRepositoryMock.Setup(r => r.GetByEmailAsync(request.Email)).ReturnsAsync(user);
 
-            // Act
             var result = await _authService.LoginAsync(request);
 
-            // Assert
             Assert.NotNull(result);
             Assert.Equal(request.Email, result.Email);
             Assert.Equal(user.DisplayName, result.DisplayName);
-            Assert.NotNull(result.Token);
+            Assert.False(string.IsNullOrWhiteSpace(result.Token));
+            Assert.True(result.NeedsOnboarding);
         }
 
         [Fact]
         public async Task LoginAsync_InvalidEmail_ThrowsException()
         {
-            // Arrange
             var request = new LoginRequest
             {
                 Email = "invalid@example.com",
                 Password = "password123"
             };
 
-            _userRepositoryMock.Setup(r => r.GetByEmailAsync(request.Email)).ReturnsAsync(() => null);
+            _userRepositoryMock.Setup(r => r.GetByEmailAsync(request.Email)).ReturnsAsync((User?)null);
 
-            // Act & Assert
             await Assert.ThrowsAsync<UnauthorizedAccessException>(() => _authService.LoginAsync(request));
         }
 
         [Fact]
         public async Task LoginAsync_InvalidPassword_ThrowsException()
         {
-            // Arrange
             var request = new LoginRequest
             {
                 Email = "test@example.com",
@@ -167,21 +163,20 @@ namespace EatFitAI.API.Tests.Unit.Services
             {
                 UserId = Guid.NewGuid(),
                 Email = request.Email,
-                PasswordHash = "differenthash", // Different hash than what would be generated
+                PasswordHash = HashLegacyPassword("password123"),
                 DisplayName = "Test User",
-                CreatedAt = DateTime.UtcNow
+                CreatedAt = DateTime.UtcNow,
+                EmailVerified = true
             };
 
             _userRepositoryMock.Setup(r => r.GetByEmailAsync(request.Email)).ReturnsAsync(user);
 
-            // Act & Assert
             await Assert.ThrowsAsync<UnauthorizedAccessException>(() => _authService.LoginAsync(request));
         }
 
         [Fact]
         public async Task ValidateTokenAsync_ValidToken_ReturnsTrue()
         {
-            // Arrange
             var user = new User
             {
                 UserId = Guid.NewGuid(),
@@ -190,28 +185,29 @@ namespace EatFitAI.API.Tests.Unit.Services
                 CreatedAt = DateTime.UtcNow
             };
 
-            // Generate a valid token using reflection to access private method
-            var method = typeof(AuthService).GetMethod("GenerateJwtToken", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            var method = typeof(AuthService).GetMethod(
+                "GenerateJwtToken",
+                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
             var token = method?.Invoke(_authService, new object[] { user }) as string;
 
-            // Act
             var isValid = await _authService.ValidateTokenAsync(token!);
 
-            // Assert
             Assert.True(isValid);
         }
 
         [Fact]
         public async Task ValidateTokenAsync_InvalidToken_ReturnsFalse()
         {
-            // Arrange
-            var invalidToken = "invalid.jwt.token";
+            var isValid = await _authService.ValidateTokenAsync("invalid.jwt.token");
 
-            // Act
-            var isValid = await _authService.ValidateTokenAsync(invalidToken);
-
-            // Assert
             Assert.False(isValid);
+        }
+
+        private static string HashLegacyPassword(string password)
+        {
+            using var sha256 = SHA256.Create();
+            var hashedBytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(password));
+            return Convert.ToBase64String(hashedBytes);
         }
     }
 }

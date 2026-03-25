@@ -1,9 +1,10 @@
 using System.Net;
+using System.Net.Http.Headers;
 using System.Net.Http.Json;
-using System.Text.Json;
 using EatFitAI.API.DbScaffold.Data;
-using EatFitAI.API.DTOs.Auth;
+using EatFitAI.API.DbScaffold.Models;
 using EatFitAI.API.DTOs.MealDiary;
+using EatFitAI.API.Tests.Integration;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -11,78 +12,24 @@ using Xunit;
 
 namespace EatFitAI.API.Tests.Integration.Controllers
 {
-    /// <summary>
-    /// Integration tests cho MealDiaryController - Test toàn bộ flow CRUD thông qua HTTP
-    /// </summary>
     public class MealDiaryControllerTests : IClassFixture<WebApplicationFactory<Program>>
     {
         private readonly WebApplicationFactory<Program> _factory;
-        private readonly JsonSerializerOptions _jsonOptions;
-        private string? _authToken;
 
         public MealDiaryControllerTests(WebApplicationFactory<Program> factory)
         {
-            _factory = factory.WithWebHostBuilder(builder =>
-            {
-                builder.ConfigureServices(services =>
-                {
-                    // Thay thế database bằng in-memory cho testing
-                    var descriptor = services.SingleOrDefault(
-                        d => d.ServiceType == typeof(DbContextOptions<EatFitAIDbContext>));
-
-                    if (descriptor != null)
-                    {
-                        services.Remove(descriptor);
-                    }
-
-                    services.AddDbContext<EatFitAIDbContext>(options =>
-                    {
-                        options.UseInMemoryDatabase("MealDiaryTestDb");
-                    });
-                });
-            });
-
-            _jsonOptions = new JsonSerializerOptions
-            {
-                PropertyNamingPolicy = JsonNamingPolicy.CamelCase
-            };
+            _factory = IntegrationTestHost.CreateFactory(
+                factory,
+                $"MealDiaryControllerTests_{Guid.NewGuid():N}");
         }
-
-        /// <summary>
-        /// Helper method để đăng ký user và lấy auth token
-        /// </summary>
-        private async Task<string> GetAuthTokenAsync(HttpClient client)
-        {
-            if (_authToken != null) return _authToken;
-
-            var registerRequest = new RegisterRequest
-            {
-                Email = $"mealtest_{Guid.NewGuid()}@example.com",
-                Password = "password123",
-                DisplayName = "Meal Test User"
-            };
-
-            var response = await client.PostAsJsonAsync("/api/auth/register", registerRequest);
-            var authResponse = await response.Content.ReadFromJsonAsync<AuthResponse>();
-            _authToken = authResponse?.Token ?? throw new Exception("Failed to get auth token");
-            return _authToken;
-        }
-
-        #region GET /api/meal-diary Tests
 
         [Fact]
         public async Task GetMealDiaries_WithValidToken_ReturnsOk()
         {
-            // Arrange
-            var client = _factory.CreateClient();
-            var token = await GetAuthTokenAsync(client);
-            client.DefaultRequestHeaders.Authorization = 
-                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+            var client = await CreateAuthenticatedClientAsync();
 
-            // Act
             var response = await client.GetAsync("/api/meal-diary");
 
-            // Assert
             response.EnsureSuccessStatusCode();
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         }
@@ -90,162 +37,194 @@ namespace EatFitAI.API.Tests.Integration.Controllers
         [Fact]
         public async Task GetMealDiaries_WithoutToken_ReturnsUnauthorized()
         {
-            // Arrange - Không có token
             var client = _factory.CreateClient();
 
-            // Act
             var response = await client.GetAsync("/api/meal-diary");
 
-            // Assert - Yêu cầu authentication
             Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
         }
 
         [Fact]
         public async Task GetMealDiaries_WithDateFilter_ReturnsFilteredResults()
         {
-            // Arrange
-            var client = _factory.CreateClient();
-            var token = await GetAuthTokenAsync(client);
-            client.DefaultRequestHeaders.Authorization = 
-                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+            var userId = Guid.NewGuid();
+            var client = await CreateAuthenticatedClientAsync(userId);
+            var targetDate = new DateTime(2026, 3, 20);
 
-            var today = DateTime.Today.ToString("yyyy-MM-dd");
+            await SeedMealDiaryAsync(userId, targetDate, 1);
+            await SeedMealDiaryAsync(userId, targetDate.AddDays(-1), 2);
 
-            // Act
-            var response = await client.GetAsync($"/api/meal-diary?date={today}");
+            var response = await client.GetAsync($"/api/meal-diary?date={targetDate:yyyy-MM-dd}");
 
-            // Assert
             response.EnsureSuccessStatusCode();
+            var result = await response.Content.ReadFromJsonAsync<List<MealDiaryDto>>();
+            Assert.NotNull(result);
+            Assert.Single(result);
+            Assert.All(result, item => Assert.Equal(targetDate.Date, item.EatenDate.Date));
         }
-
-        #endregion
-
-        #region POST /api/meal-diary Tests
 
         [Fact]
         public async Task CreateMealDiary_ValidRequest_ReturnsCreated()
         {
-            // Arrange
-            var client = _factory.CreateClient();
-            var token = await GetAuthTokenAsync(client);
-            client.DefaultRequestHeaders.Authorization = 
-                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
-
+            var client = await CreateAuthenticatedClientAsync();
             var createRequest = new CreateMealDiaryRequest
             {
                 EatenDate = DateTime.Today,
-                MealTypeId = 2, // Lunch
-                FoodItemId = 1,
+                MealTypeId = await GetAnyMealTypeIdAsync(),
+                FoodItemId = await GetAnyFoodItemIdAsync(),
                 Grams = 200
             };
 
-            // Act
             var response = await client.PostAsJsonAsync("/api/meal-diary", createRequest);
 
-            // Assert - Trả về Created (201) hoặc OK (200) tùy implementation
-            Assert.True(
-                response.StatusCode == HttpStatusCode.Created || 
-                response.StatusCode == HttpStatusCode.OK,
-                $"Expected Created or OK, got {response.StatusCode}");
+            Assert.Equal(HttpStatusCode.Created, response.StatusCode);
         }
 
         [Fact]
-        public async Task CreateMealDiary_InvalidRequest_ReturnsBadRequest()
+        public async Task GetMealDiaries_InvalidDate_ReturnsBadRequest()
         {
-            // Arrange
-            var client = _factory.CreateClient();
-            var token = await GetAuthTokenAsync(client);
-            client.DefaultRequestHeaders.Authorization = 
-                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+            var client = await CreateAuthenticatedClientAsync();
 
-            // Request không hợp lệ - thiếu các field bắt buộc
-            var invalidRequest = new { };
+            var response = await client.GetAsync("/api/meal-diary?date=not-a-date");
 
-            // Act
-            var response = await client.PostAsJsonAsync("/api/meal-diary", invalidRequest);
-
-            // Assert - Trả về BadRequest do validation fail
             Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
         }
 
         [Fact]
         public async Task CreateMealDiary_WithoutAuth_ReturnsUnauthorized()
         {
-            // Arrange
             var client = _factory.CreateClient();
             var createRequest = new CreateMealDiaryRequest
             {
                 EatenDate = DateTime.Today,
-                MealTypeId = 1,
-                FoodItemId = 1,
+                MealTypeId = await GetAnyMealTypeIdAsync(),
+                FoodItemId = await GetAnyFoodItemIdAsync(),
                 Grams = 100
             };
 
-            // Act
             var response = await client.PostAsJsonAsync("/api/meal-diary", createRequest);
 
-            // Assert
             Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
         }
-
-        #endregion
-
-        #region PUT /api/meal-diary/{id} Tests
 
         [Fact]
         public async Task UpdateMealDiary_NonExistentId_ReturnsNotFound()
         {
-            // Arrange
-            var client = _factory.CreateClient();
-            var token = await GetAuthTokenAsync(client);
-            client.DefaultRequestHeaders.Authorization = 
-                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
-
+            var client = await CreateAuthenticatedClientAsync();
             var updateRequest = new UpdateMealDiaryRequest
             {
                 Grams = 300
             };
 
-            // Act - Update entry không tồn tại
             var response = await client.PutAsJsonAsync("/api/meal-diary/99999", updateRequest);
 
-            // Assert
             Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
         }
-
-        #endregion
-
-        #region DELETE /api/meal-diary/{id} Tests
 
         [Fact]
         public async Task DeleteMealDiary_NonExistentId_ReturnsNotFound()
         {
-            // Arrange
-            var client = _factory.CreateClient();
-            var token = await GetAuthTokenAsync(client);
-            client.DefaultRequestHeaders.Authorization = 
-                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+            var client = await CreateAuthenticatedClientAsync();
 
-            // Act - Delete entry không tồn tại
             var response = await client.DeleteAsync("/api/meal-diary/99999");
 
-            // Assert
             Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
         }
 
         [Fact]
         public async Task DeleteMealDiary_WithoutAuth_ReturnsUnauthorized()
         {
-            // Arrange
             var client = _factory.CreateClient();
 
-            // Act
             var response = await client.DeleteAsync("/api/meal-diary/1");
 
-            // Assert
             Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
         }
 
-        #endregion
+        private async Task<HttpClient> CreateAuthenticatedClientAsync(Guid? userId = null)
+        {
+            var effectiveUserId = userId ?? Guid.NewGuid();
+            await EnsureUserExistsAsync(effectiveUserId);
+
+            var client = _factory.CreateClient();
+            var token = IntegrationTestHost.CreateJwtToken(
+                _factory.Services,
+                effectiveUserId,
+                $"mealtest_{effectiveUserId:N}@example.com",
+                "Meal Diary Test User");
+            client.DefaultRequestHeaders.Authorization =
+                new AuthenticationHeaderValue("Bearer", token);
+
+            return client;
+        }
+
+        private async Task EnsureUserExistsAsync(Guid userId)
+        {
+            using var scope = _factory.Services.CreateScope();
+            var context = scope.ServiceProvider.GetRequiredService<EatFitAIDbContext>();
+
+            if (await context.Users.AnyAsync(x => x.UserId == userId))
+            {
+                return;
+            }
+
+            await context.Users.AddAsync(new User
+            {
+                UserId = userId,
+                Email = $"mealtest_{userId:N}@example.com",
+                DisplayName = "Meal Diary Test User",
+                PasswordHash = "test",
+                CreatedAt = DateTime.UtcNow,
+                EmailVerified = true
+            });
+            await context.SaveChangesAsync();
+        }
+
+        private async Task<int> GetAnyFoodItemIdAsync()
+        {
+            using var scope = _factory.Services.CreateScope();
+            var context = scope.ServiceProvider.GetRequiredService<EatFitAIDbContext>();
+            return await context.FoodItems
+                .Where(x => x.IsActive && !x.IsDeleted)
+                .Select(x => x.FoodItemId)
+                .FirstAsync();
+        }
+
+        private async Task<int> GetAnyMealTypeIdAsync()
+        {
+            using var scope = _factory.Services.CreateScope();
+            var context = scope.ServiceProvider.GetRequiredService<EatFitAIDbContext>();
+            return await context.MealTypes
+                .Select(x => x.MealTypeId)
+                .FirstAsync();
+        }
+
+        private async Task SeedMealDiaryAsync(Guid userId, DateTime eatenDate, int mealTypeId)
+        {
+            using var scope = _factory.Services.CreateScope();
+            var context = scope.ServiceProvider.GetRequiredService<EatFitAIDbContext>();
+            var foodItemId = await context.FoodItems
+                .Where(x => x.IsActive && !x.IsDeleted)
+                .Select(x => x.FoodItemId)
+                .FirstAsync();
+
+            await context.MealDiaries.AddAsync(new MealDiary
+            {
+                UserId = userId,
+                EatenDate = DateOnly.FromDateTime(eatenDate),
+                MealTypeId = mealTypeId,
+                FoodItemId = foodItemId,
+                Grams = 100,
+                Calories = 120,
+                Protein = 10,
+                Carb = 10,
+                Fat = 2,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow,
+                IsDeleted = false,
+                SourceMethod = "catalog"
+            });
+            await context.SaveChangesAsync();
+        }
     }
 }
