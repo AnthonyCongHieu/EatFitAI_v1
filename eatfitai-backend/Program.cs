@@ -240,7 +240,7 @@ builder.Services.Configure<MailSettings>(builder.Configuration.GetSection("Smtp"
 builder.Services.AddScoped<IEmailService, EmailService>();
 
 // Add AutoMapper
-builder.Services.AddAutoMapper(typeof(MappingProfile));
+builder.Services.AddAutoMapper(_ => { }, typeof(MappingProfile));
 
 // Add Repositories
 builder.Services.AddScoped(typeof(IRepository<>), typeof(BaseRepository<>));
@@ -300,7 +300,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidateIssuerSigningKey = true,
             IssuerSigningKey = new SymmetricSecurityKey(
                 Encoding.ASCII.GetBytes(jwtKey)),
-            // Bật validate Issuer/Audience để chặn token từ app khác
+            // Báº­t validate Issuer/Audience Ä‘á»ƒ cháº·n token tá»« app khÃ¡c
             ValidateIssuer = true,
             ValidIssuer = builder.Configuration["Jwt:Issuer"] ?? "EatFitAI",
             ValidateAudience = true,
@@ -340,7 +340,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI(o =>
     {
         o.SwaggerEndpoint("/swagger/v1/swagger.json", "EatFitAI v1");
-        o.RoutePrefix = "swagger"; // -> /swagger và /swagger/index.html
+        o.RoutePrefix = "swagger"; // -> /swagger vÃ  /swagger/index.html
     });
 }
 else if (app.Environment.IsStaging())
@@ -395,7 +395,7 @@ app.MapGet("/health/ready", async (EatFitAI.API.DbScaffold.Data.EatFitAIDbContex
 // Simple health endpoint for mobile ping
 app.MapGet("/health", () => Results.Ok(new { status = "ok" }));
 
-// Discovery endpoint - cho mobile app tự động tìm backend trong LAN
+// Discovery endpoint - cho mobile app tá»± Ä‘á»™ng tÃ¬m backend trong LAN
 app.MapGet("/discovery", () => Results.Ok(new { 
     appId = "eatfitai", 
     version = "1.0", 

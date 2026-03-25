@@ -7,8 +7,6 @@
     <IsPackable>false</IsPackable>
     <IsTestProject>true</IsTestProject>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
-    <BaseOutputPath>bin\Tests\</BaseOutputPath>
-    <BaseIntermediateOutputPath>obj\Tests\</BaseIntermediateOutputPath>
   </PropertyGroup>
 
   <ItemGroup>

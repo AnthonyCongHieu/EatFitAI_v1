@@ -9,6 +9,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using Moq;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
@@ -25,6 +26,7 @@ namespace EatFitAI.API.Tests.Unit.Services
         private readonly IMemoryCache _memoryCache;
         private readonly Mock<IEmailService> _emailServiceMock;
         private readonly Mock<IHostEnvironment> _envMock;
+        private readonly Mock<ILogger<AuthService>> _loggerMock;
         private readonly AuthService _authService;
 
         public AuthServiceTests()
@@ -35,6 +37,7 @@ namespace EatFitAI.API.Tests.Unit.Services
             _memoryCache = new MemoryCache(new MemoryCacheOptions());
             _emailServiceMock = new Mock<IEmailService>();
             _envMock = new Mock<IHostEnvironment>();
+            _loggerMock = new Mock<ILogger<AuthService>>();
             _envMock.Setup(e => e.IsDevelopment()).Returns(true);
 
             // Setup in-memory database
@@ -45,7 +48,7 @@ namespace EatFitAI.API.Tests.Unit.Services
 
             _configurationMock.Setup(c => c["Jwt:Key"]).Returns("test-secret-key-for-testing-purposes");
 
-            _authService = new AuthService(_userRepositoryMock.Object, _context, _mapperMock.Object, _configurationMock.Object, _memoryCache, _emailServiceMock.Object, _envMock.Object);
+            _authService = new AuthService(_userRepositoryMock.Object, _context, _mapperMock.Object, _configurationMock.Object, _memoryCache, _emailServiceMock.Object, _envMock.Object, _loggerMock.Object);
         }
 
         public void Dispose()

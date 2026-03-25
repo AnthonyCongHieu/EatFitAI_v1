@@ -16,7 +16,6 @@ namespace EatFitAI.API.Middleware
             var traceId = context.TraceIdentifier;
             context.Response.Headers["X-Trace-Id"] = traceId;
 
-            // Log request
             _logger.LogInformation(
                 "Request {TraceId}: {Method} {Path} from {RemoteIpAddress}",
                 traceId,
@@ -24,25 +23,29 @@ namespace EatFitAI.API.Middleware
                 context.Request.Path,
                 context.Connection.RemoteIpAddress);
 
-            // Capture response details
             var originalBodyStream = context.Response.Body;
-            using var responseBody = new MemoryStream();
+            await using var responseBody = new MemoryStream();
             context.Response.Body = responseBody;
 
-            await _next(context);
+            try
+            {
+                await _next(context);
 
-            // Log response
-            _logger.LogInformation(
-                "Response {TraceId}: {StatusCode} for {Method} {Path}",
-                traceId,
-                context.Response.StatusCode,
-                context.Request.Method,
-                context.Request.Path);
+                _logger.LogInformation(
+                    "Response {TraceId}: {StatusCode} for {Method} {Path}",
+                    traceId,
+                    context.Response.StatusCode,
+                    context.Request.Method,
+                    context.Request.Path);
 
-            // Reset response body
-            responseBody.Seek(0, SeekOrigin.Begin);
-            await responseBody.CopyToAsync(originalBodyStream);
-            context.Response.Body = originalBodyStream;
+                responseBody.Seek(0, SeekOrigin.Begin);
+                context.Response.Body = originalBodyStream;
+                await responseBody.CopyToAsync(originalBodyStream);
+            }
+            finally
+            {
+                context.Response.Body = originalBodyStream;
+            }
         }
     }
 }
