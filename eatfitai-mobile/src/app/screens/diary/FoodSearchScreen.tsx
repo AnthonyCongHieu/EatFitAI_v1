@@ -709,11 +709,11 @@ const FoodSearchScreen = (): React.ReactElement => {
               primaryAction={
                 activeTab === 'search'
                   ? {
-                    label: 'Thu tu khoa khac',
+                    label: 'Thử từ khóa khác',
                     onPress: () => setQuery(''),
                   }
                   : {
-                    label: 'Tim mon an',
+                    label: 'Tìm món ăn',
                     onPress: () => handleTabChange('search'),
                   }
               }
@@ -721,7 +721,7 @@ const FoodSearchScreen = (): React.ReactElement => {
           ) : (
             <View style={{ alignItems: 'center', padding: 20 }}>
               <ThemedText variant="body" color="textSecondary">
-                Nhap tu khoa de tim kiem
+                Nhập từ khóa để tìm kiếm
               </ThemedText>
             </View>
           )}

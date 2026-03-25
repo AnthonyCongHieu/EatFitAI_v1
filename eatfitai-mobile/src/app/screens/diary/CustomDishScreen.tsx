@@ -158,8 +158,8 @@ const CustomDishScreen = (): React.ReactElement => {
 
         Toast.show({
           type: 'success',
-          text1: 'Da tao mon thu cong thanh cong',
-          text2: 'Mon an da duoc luu vao thu vien ca nhan',
+          text1: 'Đã tạo món thủ công thành công',
+          text2: 'Món ăn đã được lưu vào thư viện cá nhân',
         });
         reset();
         await invalidateDiaryQueries(queryClient);

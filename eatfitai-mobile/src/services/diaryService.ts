@@ -1,5 +1,5 @@
-// Service lam viec voi API nhat ky an uong trong ngay
-// Chu thich bang tieng Viet khong dau
+// Service làm việc với API nhật ký ăn uống trong ngày
+// Chú thích bằng tiếng Việt
 
 import apiClient from './apiClient';
 import type { MealDiaryDto, MealTypeId } from '../types';
@@ -70,7 +70,7 @@ const toNumberOrNull = (value: unknown): number | null => {
 const normalizeEntry = (data: MealDiaryDto): DiaryEntry => ({
   id: String(data?.mealDiaryId ?? ''),
   mealType: (data?.mealTypeId as MealTypeId) ?? 1, // Default to breakfast if unknown
-  foodName: data?.foodItemName ?? data?.userDishName ?? data?.recipeName ?? 'Mon an',
+  foodName: data?.foodItemName ?? data?.userDishName ?? data?.recipeName ?? 'Món ăn',
   note: data?.note ?? null,
   quantityText: data?.portionQuantity
     ? `${data.portionQuantity} ${data.servingUnitName ?? 'serving'}`
@@ -93,7 +93,7 @@ const normalizeMeal = (data: any): DiaryMealGroup => {
     data?.title ??
     (typeof mealTypeId === 'number'
       ? MEAL_TYPE_LABELS[mealTypeId as MealTypeId]
-      : (data?.mealType ?? 'Bua an'));
+      : (data?.mealType ?? 'Bữa ăn'));
 
   return {
     mealType,
@@ -167,7 +167,7 @@ const groupByMeal = (entries: DiaryEntry[]): DiaryMealGroup[] => {
 };
 
 export const diaryService = {
-  // Lay tong quan nhat ky ngay (mặc định hôm nay)
+  // Lấy tổng quan nhật ký ngày (mặc định hôm nay)
   async getTodaySummary(): Promise<DaySummary> {
     const date = todayDate();
     const response = await apiClient.get('/api/summary/day', { params: { date } });
@@ -177,7 +177,7 @@ export const diaryService = {
     return normalized;
   },
 
-  // Lay tong quan nhat ky tuan
+  // Lấy tổng quan nhật ký tuần
   async getWeekSummary(date: string): Promise<WeekSummary> {
     const response = await apiClient.get('/api/summary/week', { params: { date } });
     return normalizeWeekSummary(response.data);
@@ -199,12 +199,12 @@ export const diaryService = {
     return { ...summary, meals };
   },
 
-  // Xoa mot entry khoi nhat ky
+  // Xóa một entry khỏi nhật ký
   async deleteEntry(entryId: string): Promise<void> {
     await apiClient.delete(`/api/meal-diary/${entryId}`);
   },
 
-  // Cap nhat mot entry trong nhat ky
+  // Cập nhật một entry trong nhật ký
   async updateEntry(
     entryId: string,
     updates: { grams?: number; note?: string },

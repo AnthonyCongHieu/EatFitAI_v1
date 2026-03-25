@@ -1,5 +1,5 @@
-// Service lam viec voi cac API AI (vision, recipe, nutrition)
-// Chu thich bang tieng Viet khong dau
+// Service làm việc với các API AI (vision, recipe, nutrition)
+// Chú thích bằng tiếng Việt
 
 import apiClient, { aiApiClient, getCurrentApiUrl } from './apiClient';
 import type {
@@ -119,7 +119,7 @@ export const aiService = {
     return [];
   },
 
-  // Goi y cong thuc tu danh sach nguyen lieu
+  // Gợi ý công thức từ danh sách nguyên liệu
   async suggestRecipes(ingredients: string[]): Promise<SuggestedRecipe[]> {
     // Backend expects 'availableIngredients' not 'ingredients'
     const response = await apiClient.post<
@@ -137,7 +137,7 @@ export const aiService = {
       id: String(
         item?.id ?? item?.slug ?? item?.title ?? Math.random().toString(36).slice(2),
       ),
-      title: item?.title ?? item?.name ?? 'Cong thuc',
+      title: item?.title ?? item?.name ?? 'Công thức',
       description: item?.description ?? item?.summary ?? null,
       calories: toNumber(item?.calories),
       protein: toNumber(item?.protein),
@@ -149,8 +149,8 @@ export const aiService = {
     }));
   },
 
-  // Lay target dinh duong hien tai
-  // Tra ve defaults neu user chua co target (2000kcal, 50g protein, 250g carbs, 65g fat)
+  // Lấy target dinh dưỡng hiện tại
+  // Trả về defaults nếu user chưa có target (2000kcal, 50g protein, 250g carbs, 65g fat)
   async getCurrentNutritionTarget(): Promise<NutritionTarget> {
     const defaults: NutritionTarget = { calories: 2000, protein: 50, carbs: 250, fat: 65 };
     try {

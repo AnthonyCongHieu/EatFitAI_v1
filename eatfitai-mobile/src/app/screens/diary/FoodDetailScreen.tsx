@@ -323,8 +323,8 @@ const FoodDetailScreen = (): React.ReactElement | null => {
         }
         Toast.show({
           type: 'success',
-          text1: 'Da them mon vao nhat ky',
-          text2: 'Tiep tuc theo doi dinh duong cua ban!',
+          text1: 'Đã thêm món vào nhật ký',
+          text2: 'Tiếp tục theo dõi dinh dưỡng của bạn!',
         });
         await invalidateDiaryQueries(queryClient);
         navigation.goBack();

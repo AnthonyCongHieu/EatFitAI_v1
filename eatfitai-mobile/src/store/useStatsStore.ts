@@ -6,7 +6,7 @@ export type StatsState = {
   selectedDate: string; // ISO date string (YYYY-MM-DD)
   isLoading: boolean;
   error: string | null;
-  // Cache để lưu data các tuần đã fetch
+  // Cache để lưu dữ liệu các tuần đã fetch
   weekCache: Map<string, WeekSummary>;
   setSelectedDate: (date: string) => void;
   fetchWeekSummary: (date?: string) => Promise<void>;
@@ -79,7 +79,7 @@ export const useStatsStore = create<StatsState>((set: any, get: any) => ({
       cache.set(targetDate, data);
       set({ weekSummary: data, weekCache: new Map(cache) });
     } catch (error: any) {
-      set({ error: error?.message ?? 'Khong the tai thong ke' });
+      set({ error: error?.message ?? 'Không thể tải thống kê' });
       throw error;
     } finally {
       set({ isLoading: false });
@@ -92,7 +92,7 @@ export const useStatsStore = create<StatsState>((set: any, get: any) => ({
       const data = await summaryService.getWeekSummary(get().selectedDate);
       set({ weekSummary: data });
     } catch (error: any) {
-      set({ error: error?.message ?? 'Khong the tai thong ke' });
+      set({ error: error?.message ?? 'Không thể tải thống kê' });
       throw error;
     }
   },

@@ -1,5 +1,5 @@
-// Store quan ly nhat ky hom nay
-// Chu thich bang tieng Viet khong dau
+// Store quản lý nhật ký hôm nay
+// Chú thích bằng tiếng Việt
 
 import { create } from 'zustand';
 
@@ -67,7 +67,7 @@ export const useDiaryStore = create<DiaryState>((set: any, get: any) => ({
       const summary = await diaryService.getTodayCombined();
       set({ summary });
     } catch (error: any) {
-      set({ error: error?.message ?? 'Khong the tai du lieu' });
+      set({ error: error?.message ?? 'Không thể tải dữ liệu' });
       throw error;
     } finally {
       set({ isLoading: false });
@@ -83,7 +83,7 @@ export const useDiaryStore = create<DiaryState>((set: any, get: any) => ({
       const summary = await diaryService.getTodayCombined();
       set({ summary });
     } catch (error: any) {
-      set({ error: error?.message ?? 'Khong the tai du lieu' });
+      set({ error: error?.message ?? 'Không thể tải dữ liệu' });
       throw error;
     } finally {
       set({ isRefreshing: false });
@@ -96,7 +96,7 @@ export const useDiaryStore = create<DiaryState>((set: any, get: any) => ({
       return;
     }
 
-    // Luu tam de rollback khi delete that bai
+    // Lưu tạm để rollback khi delete thất bại
     const previousSummary = currentSummary;
     const removedEntry = currentSummary.meals
       .flatMap((meal: any) => meal.entries)
@@ -127,7 +127,7 @@ export const useDiaryStore = create<DiaryState>((set: any, get: any) => ({
     try {
       await diaryService.deleteEntry(entryId);
     } catch (error) {
-      // Rollback neu co loi
+      // Rollback nếu có lỗi
       set({ summary: previousSummary });
       throw error;
     }
