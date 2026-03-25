@@ -11,6 +11,9 @@ using EatFitAI.API.DTOs.MealDiary;
 using EatFitAI.Services;
 using EatFitAI.API.Services.Interfaces;
 using System.Security.Claims;
+using System.Net.Http.Headers;
+using System.Text;
+using System.Text.Json;
 
 namespace EatFitAI.API.Controllers
 {
@@ -24,6 +27,8 @@ namespace EatFitAI.API.Controllers
         private readonly IMealDiaryService _mealDiaryService;
         private readonly IUserService _userService;
         private readonly IAnalyticsService _analyticsService;
+        private readonly IHttpClientFactory _httpClientFactory;
+        private readonly IConfiguration _configuration;
         private readonly ILogger<VoiceController> _logger;
 
         public VoiceController(
@@ -32,6 +37,8 @@ namespace EatFitAI.API.Controllers
             IMealDiaryService mealDiaryService,
             IUserService userService,
             IAnalyticsService analyticsService,
+            IHttpClientFactory httpClientFactory,
+            IConfiguration configuration,
             ILogger<VoiceController> logger)
         {
             _voiceService = voiceService;
@@ -39,6 +46,8 @@ namespace EatFitAI.API.Controllers
             _mealDiaryService = mealDiaryService;
             _userService = userService;
             _analyticsService = analyticsService;
+            _httpClientFactory = httpClientFactory;
+            _configuration = configuration;
             _logger = logger;
         }
 
@@ -46,6 +55,176 @@ namespace EatFitAI.API.Controllers
         {
             var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             return Guid.TryParse(userIdClaim, out var userId) ? userId : Guid.Empty;
+        }
+
+        private string GetVoiceProviderBaseUrl()
+        {
+            return _configuration["AIProvider:VoiceBaseUrl"]
+                ?? _configuration["AIProvider:VisionBaseUrl"]
+                ?? "http://127.0.0.1:5050";
+        }
+
+        /// <summary>
+        /// Proxy voice text parsing to external AI provider.
+        /// </summary>
+        [HttpPost("parse")]
+        public async Task<IActionResult> ParseWithProvider(
+            [FromBody] VoiceProcessRequest request,
+            CancellationToken cancellationToken)
+        {
+            var userId = GetUserId();
+            if (userId == Guid.Empty)
+            {
+                return Unauthorized(new { error = "Unauthorized" });
+            }
+
+            if (string.IsNullOrWhiteSpace(request.Text))
+            {
+                return BadRequest(new { error = "Text is required" });
+            }
+
+            try
+            {
+                var providerUrl = $"{GetVoiceProviderBaseUrl().TrimEnd('/')}/voice/parse";
+                using var client = _httpClientFactory.CreateClient();
+                client.Timeout = TimeSpan.FromSeconds(60);
+
+                var payload = JsonSerializer.Serialize(new
+                {
+                    text = request.Text,
+                    language = string.IsNullOrWhiteSpace(request.Language) ? "vi" : request.Language
+                });
+
+                using var content = new StringContent(payload, Encoding.UTF8, "application/json");
+                using var response = await client.PostAsync(providerUrl, content, cancellationToken);
+                var responseBody = await response.Content.ReadAsStringAsync(cancellationToken);
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    _logger.LogWarning(
+                        "Voice parse proxy failed for user {UserId}. Status={StatusCode}, Body={Body}",
+                        userId,
+                        (int)response.StatusCode,
+                        responseBody);
+
+                    return StatusCode((int)response.StatusCode, new
+                    {
+                        error = "voice_provider_error",
+                        detail = responseBody
+                    });
+                }
+
+                _logger.LogInformation("Voice parse proxy succeeded for user {UserId}", userId);
+                return Content(
+                    responseBody,
+                    response.Content.Headers.ContentType?.ToString() ?? "application/json");
+            }
+            catch (HttpRequestException ex)
+            {
+                _logger.LogError(ex, "Voice parse proxy could not reach AI provider");
+                return StatusCode(503, new
+                {
+                    error = "voice_provider_unavailable",
+                    detail = ex.Message
+                });
+            }
+            catch (TaskCanceledException ex)
+            {
+                _logger.LogError(ex, "Voice parse proxy timed out");
+                return StatusCode(504, new
+                {
+                    error = "voice_provider_timeout",
+                    detail = ex.Message
+                });
+            }
+        }
+
+        /// <summary>
+        /// Proxy audio transcription to external AI provider.
+        /// </summary>
+        [HttpPost("transcribe")]
+        [RequestSizeLimit(25_000_000)]
+        [Consumes("multipart/form-data")]
+        public async Task<IActionResult> TranscribeWithProvider(
+            [FromForm] IFormFile? audio,
+            CancellationToken cancellationToken)
+        {
+            var userId = GetUserId();
+            if (userId == Guid.Empty)
+            {
+                return Unauthorized(new { error = "Unauthorized" });
+            }
+
+            if (audio == null || audio.Length == 0)
+            {
+                return BadRequest(new
+                {
+                    success = false,
+                    error = "Audio file is required"
+                });
+            }
+
+            try
+            {
+                var providerUrl = $"{GetVoiceProviderBaseUrl().TrimEnd('/')}/voice/transcribe";
+                using var client = _httpClientFactory.CreateClient();
+                client.Timeout = TimeSpan.FromSeconds(120);
+
+                using var content = new MultipartFormDataContent();
+                await using var stream = audio.OpenReadStream();
+                using var streamContent = new StreamContent(stream);
+                streamContent.Headers.ContentType = new MediaTypeHeaderValue(
+                    audio.ContentType ?? "application/octet-stream");
+                content.Add(streamContent, "audio", audio.FileName);
+
+                using var response = await client.PostAsync(providerUrl, content, cancellationToken);
+                var responseBody = await response.Content.ReadAsStringAsync(cancellationToken);
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    _logger.LogWarning(
+                        "Voice transcribe proxy failed for user {UserId}. Status={StatusCode}, Body={Body}",
+                        userId,
+                        (int)response.StatusCode,
+                        responseBody);
+
+                    return StatusCode((int)response.StatusCode, new
+                    {
+                        success = false,
+                        error = "voice_provider_error",
+                        detail = responseBody
+                    });
+                }
+
+                _logger.LogInformation(
+                    "Voice transcribe proxy succeeded for user {UserId} with file {FileName}",
+                    userId,
+                    audio.FileName);
+
+                return Content(
+                    responseBody,
+                    response.Content.Headers.ContentType?.ToString() ?? "application/json");
+            }
+            catch (HttpRequestException ex)
+            {
+                _logger.LogError(ex, "Voice transcribe proxy could not reach AI provider");
+                return StatusCode(503, new
+                {
+                    success = false,
+                    error = "voice_provider_unavailable",
+                    detail = ex.Message
+                });
+            }
+            catch (TaskCanceledException ex)
+            {
+                _logger.LogError(ex, "Voice transcribe proxy timed out");
+                return StatusCode(504, new
+                {
+                    success = false,
+                    error = "voice_provider_timeout",
+                    detail = ex.Message
+                });
+            }
         }
 
         /// <summary>
@@ -64,7 +243,7 @@ namespace EatFitAI.API.Controllers
             {
                 if (string.IsNullOrWhiteSpace(request.Text))
                 {
-                    return BadRequest(new VoiceProcessResponse { Success = false, Error = "Văn bản không được để trống" });
+                    return BadRequest(new VoiceProcessResponse { Success = false, Error = "VÃ„Æ’n bÃ¡ÂºÂ£n khÃƒÂ´ng Ã„â€˜Ã†Â°Ã¡Â»Â£c Ã„â€˜Ã¡Â»Æ’ trÃ¡Â»â€˜ng" });
                 }
 
                 _logger.LogInformation("Processing voice text for user {UserId}: {Text}", userId, request.Text);
@@ -74,13 +253,13 @@ namespace EatFitAI.API.Controllers
                 {
                     Success = command.Intent != VoiceIntent.UNKNOWN,
                     Command = command,
-                    Error = command.Intent == VoiceIntent.UNKNOWN ? "Không hiểu lệnh. Hãy thử lại với cách nói khác." : null
+                    Error = command.Intent == VoiceIntent.UNKNOWN ? "KhÃƒÂ´ng hiÃ¡Â»Æ’u lÃ¡Â»â€¡nh. HÃƒÂ£y thÃ¡Â»Â­ lÃ¡ÂºÂ¡i vÃ¡Â»â€ºi cÃƒÂ¡ch nÃƒÂ³i khÃƒÂ¡c." : null
                 });
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error processing voice text");
-                return StatusCode(500, new VoiceProcessResponse { Success = false, Error = "Lỗi xử lý lệnh giọng nói" });
+                return StatusCode(500, new VoiceProcessResponse { Success = false, Error = "LÃ¡Â»â€”i xÃ¡Â»Â­ lÃƒÂ½ lÃ¡Â»â€¡nh giÃ¡Â»Âng nÃƒÂ³i" });
             }
         }
 
@@ -95,9 +274,9 @@ namespace EatFitAI.API.Controllers
             {
                 supportedIntents = new[]
                 {
-                    new { intent = "ADD_FOOD", description = "Thêm món ăn", examples = new[] { "thêm 1 bát cơm 100g bữa trưa", "ghi phở bò bữa sáng" } },
-                    new { intent = "LOG_WEIGHT", description = "Ghi cân nặng", examples = new[] { "cân nặng 65 kg" } },
-                    new { intent = "ASK_CALORIES", description = "Hỏi calories", examples = new[] { "hôm nay bao nhiêu calo" } }
+                    new { intent = "ADD_FOOD", description = "ThÃƒÂªm mÃƒÂ³n Ã„Æ’n", examples = new[] { "thÃƒÂªm 1 bÃƒÂ¡t cÃ†Â¡m 100g bÃ¡Â»Â¯a trÃ†Â°a", "ghi phÃ¡Â»Å¸ bÃƒÂ² bÃ¡Â»Â¯a sÃƒÂ¡ng" } },
+                    new { intent = "LOG_WEIGHT", description = "Ghi cÃƒÂ¢n nÃ¡ÂºÂ·ng", examples = new[] { "cÃƒÂ¢n nÃ¡ÂºÂ·ng 65 kg" } },
+                    new { intent = "ASK_CALORIES", description = "HÃ¡Â»Âi calories", examples = new[] { "hÃƒÂ´m nay bao nhiÃƒÂªu calo" } }
                 },
                 supportedLanguages = new[] { "vi" }
             });
@@ -125,33 +304,33 @@ namespace EatFitAI.API.Controllers
                 switch (command.Intent)
                 {
                     case VoiceIntent.ADD_FOOD:
-                        // Kiểm tra confidence trước khi thực thi
+                        // KiÃ¡Â»Æ’m tra confidence trÃ†Â°Ã¡Â»â€ºc khi thÃ¡Â»Â±c thi
                         if (command.Confidence < 0.5)
                         {
-                            error = "Độ tin cậy thấp. Vui lòng nói rõ hơn.";
+                            error = "Ã„ÂÃ¡Â»â„¢ tin cÃ¡ÂºÂ­y thÃ¡ÂºÂ¥p. Vui lÃƒÂ²ng nÃƒÂ³i rÃƒÂµ hÃ†Â¡n.";
                             break;
                         }
                         (executedAction, error) = await ExecuteAddFoodAsync(userId, command);
                         break;
 
                     case VoiceIntent.LOG_WEIGHT:
-                        // Lấy cân nặng hiện tại và trả về để FE confirm
+                        // LÃ¡ÂºÂ¥y cÃƒÂ¢n nÃ¡ÂºÂ·ng hiÃ¡Â»â€¡n tÃ¡ÂºÂ¡i vÃƒÂ  trÃ¡ÂºÂ£ vÃ¡Â»Â Ã„â€˜Ã¡Â»Æ’ FE confirm
                         if (command.Entities.Weight.HasValue && command.Entities.Weight > 0)
                         {
                             try
                             {
-                                // Lấy cân nặng hiện tại của user
+                                // LÃ¡ÂºÂ¥y cÃƒÂ¢n nÃ¡ÂºÂ·ng hiÃ¡Â»â€¡n tÃ¡ÂºÂ¡i cÃ¡Â»Â§a user
                                 var userProfile = await _userService.GetUserProfileAsync(userId);
                                 var currentWeight = userProfile?.CurrentWeightKg;
                                 var newWeight = command.Entities.Weight.Value;
                                 
-                                // Trả về data để FE hiển thị confirm, chưa lưu
+                                // TrÃ¡ÂºÂ£ vÃ¡Â»Â data Ã„â€˜Ã¡Â»Æ’ FE hiÃ¡Â»Æ’n thÃ¡Â»â€¹ confirm, chÃ†Â°a lÃ†Â°u
                                 executedAction = new ExecutedAction
                                 {
                                     Type = "LOG_WEIGHT_CONFIRM",
                                     Details = currentWeight.HasValue 
-                                        ? $"Cân hiện tại: {currentWeight}kg. Cập nhật thành {newWeight}kg?"
-                                        : $"Ghi cân nặng mới: {newWeight}kg?",
+                                        ? $"CÃƒÂ¢n hiÃ¡Â»â€¡n tÃ¡ÂºÂ¡i: {currentWeight}kg. CÃ¡ÂºÂ­p nhÃ¡ÂºÂ­t thÃƒÂ nh {newWeight}kg?"
+                                        : $"Ghi cÃƒÂ¢n nÃ¡ÂºÂ·ng mÃ¡Â»â€ºi: {newWeight}kg?",
                                     Data = new Dictionary<string, object>
                                     {
                                         ["currentWeight"] = currentWeight ?? 0,
@@ -165,17 +344,17 @@ namespace EatFitAI.API.Controllers
                             catch (Exception ex)
                             {
                                 _logger.LogError(ex, "Failed to get current weight");
-                                error = "Không thể lấy thông tin cân nặng. Vui lòng thử lại.";
+                                error = "KhÃƒÂ´ng thÃ¡Â»Æ’ lÃ¡ÂºÂ¥y thÃƒÂ´ng tin cÃƒÂ¢n nÃ¡ÂºÂ·ng. Vui lÃƒÂ²ng thÃ¡Â»Â­ lÃ¡ÂºÂ¡i.";
                             }
                         }
                         else
                         {
-                            error = "Không tìm thấy số cân nặng trong lệnh";
+                            error = "KhÃƒÂ´ng tÃƒÂ¬m thÃ¡ÂºÂ¥y sÃ¡Â»â€˜ cÃƒÂ¢n nÃ¡ÂºÂ·ng trong lÃ¡Â»â€¡nh";
                         }
                         break;
 
                     case VoiceIntent.ASK_CALORIES:
-                        // Query DaySummary để lấy cả calories và target
+                        // Query DaySummary Ã„â€˜Ã¡Â»Æ’ lÃ¡ÂºÂ¥y cÃ¡ÂºÂ£ calories vÃƒÂ  target
                         try
                         {
                             var today = command.Entities.Date ?? DateTime.Today;
@@ -186,7 +365,7 @@ namespace EatFitAI.API.Controllers
                             executedAction = new ExecutedAction
                             {
                                 Type = "ASK_CALORIES",
-                                Details = $"Hôm nay bạn đã tiêu thụ {totalCalories:N0} / {targetCalories:N0} kcal",
+                                Details = $"HÃƒÂ´m nay bÃ¡ÂºÂ¡n Ã„â€˜ÃƒÂ£ tiÃƒÂªu thÃ¡Â»Â¥ {totalCalories:N0} / {targetCalories:N0} kcal",
                                 Data = new Dictionary<string, object>
                                 {
                                     ["totalCalories"] = totalCalories,
@@ -200,12 +379,12 @@ namespace EatFitAI.API.Controllers
                         catch (Exception ex)
                         {
                             _logger.LogError(ex, "Failed to get calories");
-                            error = "Không thể lấy thông tin calories. Vui lòng thử lại.";
+                            error = "KhÃƒÂ´ng thÃ¡Â»Æ’ lÃ¡ÂºÂ¥y thÃƒÂ´ng tin calories. Vui lÃƒÂ²ng thÃ¡Â»Â­ lÃ¡ÂºÂ¡i.";
                         }
                         break;
 
                     default:
-                        error = "Không hỗ trợ lệnh này";
+                        error = "KhÃƒÂ´ng hÃ¡Â»â€” trÃ¡Â»Â£ lÃ¡Â»â€¡nh nÃƒÂ y";
                         break;
                 }
 
@@ -220,7 +399,7 @@ namespace EatFitAI.API.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error executing voice command");
-                return StatusCode(500, new VoiceProcessResponse { Success = false, Error = "Lỗi thực thi lệnh giọng nói" });
+                return StatusCode(500, new VoiceProcessResponse { Success = false, Error = "LÃ¡Â»â€”i thÃ¡Â»Â±c thi lÃ¡Â»â€¡nh giÃ¡Â»Âng nÃƒÂ³i" });
             }
         }
 
@@ -253,7 +432,7 @@ namespace EatFitAI.API.Controllers
                     ExecutedAction = new ExecutedAction
                     {
                         Type = "LOG_WEIGHT",
-                        Details = $"Đã cập nhật cân nặng: {request.NewWeight} kg",
+                        Details = $"Ã„ÂÃƒÂ£ cÃ¡ÂºÂ­p nhÃ¡ÂºÂ­t cÃƒÂ¢n nÃ¡ÂºÂ·ng: {request.NewWeight} kg",
                         Data = new Dictionary<string, object>
                         {
                             ["savedWeight"] = request.NewWeight,
@@ -265,13 +444,13 @@ namespace EatFitAI.API.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error confirming weight");
-                return StatusCode(500, new VoiceProcessResponse { Success = false, Error = "Không thể lưu cân nặng" });
+                return StatusCode(500, new VoiceProcessResponse { Success = false, Error = "KhÃƒÂ´ng thÃ¡Â»Æ’ lÃ†Â°u cÃƒÂ¢n nÃ¡ÂºÂ·ng" });
             }
         }
 
         /// <summary>
         /// Execute ADD_FOOD: Search food in DB, calculate nutrition, save to MealDiary
-        /// Hỗ trợ cả 1 món (FoodName) và nhiều món (Foods array)
+        /// HÃ¡Â»â€” trÃ¡Â»Â£ cÃ¡ÂºÂ£ 1 mÃƒÂ³n (FoodName) vÃƒÂ  nhiÃ¡Â»Âu mÃƒÂ³n (Foods array)
         /// </summary>
         private async Task<(ExecutedAction? action, string? error)> ExecuteAddFoodAsync(Guid userId, ParsedVoiceCommand command)
         {
@@ -282,7 +461,7 @@ namespace EatFitAI.API.Controllers
                 var addedFoods = new List<string>();
                 decimal totalCalories = 0;
 
-                // Case 1: Nhiều món ăn (Foods array)
+                // Case 1: NhiÃ¡Â»Âu mÃƒÂ³n Ã„Æ’n (Foods array)
                 if (command.Entities.Foods != null && command.Entities.Foods.Count > 0)
                 {
                     _logger.LogInformation("Processing {Count} foods from voice command", command.Entities.Foods.Count);
@@ -307,7 +486,7 @@ namespace EatFitAI.API.Controllers
                         }
                     }
                 }
-                // Case 2: Một món ăn (FoodName đơn lẻ)
+                // Case 2: MÃ¡Â»â„¢t mÃƒÂ³n Ã„Æ’n (FoodName Ã„â€˜Ã†Â¡n lÃ¡ÂºÂ»)
                 else if (!string.IsNullOrWhiteSpace(command.Entities.FoodName))
                 {
                     var grams = command.Entities.Weight ?? (command.Entities.Quantity ?? 1) * 100m;
@@ -321,22 +500,22 @@ namespace EatFitAI.API.Controllers
                     }
                     else
                     {
-                        return (null, $"Không tìm thấy món '{command.Entities.FoodName}' trong cơ sở dữ liệu.");
+                        return (null, $"KhÃƒÂ´ng tÃƒÂ¬m thÃ¡ÂºÂ¥y mÃƒÂ³n '{command.Entities.FoodName}' trong cÃ†Â¡ sÃ¡Â»Å¸ dÃ¡Â»Â¯ liÃ¡Â»â€¡u.");
                     }
                 }
                 else
                 {
-                    return (null, "Không tìm thấy tên món ăn trong lệnh");
+                    return (null, "KhÃƒÂ´ng tÃƒÂ¬m thÃ¡ÂºÂ¥y tÃƒÂªn mÃƒÂ³n Ã„Æ’n trong lÃ¡Â»â€¡nh");
                 }
 
                 if (addedFoods.Count == 0)
                 {
-                    return (null, "Không tìm thấy món ăn nào trong cơ sở dữ liệu. Hãy thử với tên khác.");
+                    return (null, "KhÃƒÂ´ng tÃƒÂ¬m thÃ¡ÂºÂ¥y mÃƒÂ³n Ã„Æ’n nÃƒÂ o trong cÃ†Â¡ sÃ¡Â»Å¸ dÃ¡Â»Â¯ liÃ¡Â»â€¡u. HÃƒÂ£y thÃ¡Â»Â­ vÃ¡Â»â€ºi tÃƒÂªn khÃƒÂ¡c.");
                 }
 
                 var details = addedFoods.Count == 1
-                    ? $"Đã thêm {addedFoods[0]} ({Math.Round(totalCalories)}kcal) vào {GetMealLabel(command.Entities.MealType)}"
-                    : $"Đã thêm {addedFoods.Count} món ({Math.Round(totalCalories)}kcal) vào {GetMealLabel(command.Entities.MealType)}: {string.Join(", ", addedFoods)}";
+                    ? $"Ã„ÂÃƒÂ£ thÃƒÂªm {addedFoods[0]} ({Math.Round(totalCalories)}kcal) vÃƒÂ o {GetMealLabel(command.Entities.MealType)}"
+                    : $"Ã„ÂÃƒÂ£ thÃƒÂªm {addedFoods.Count} mÃƒÂ³n ({Math.Round(totalCalories)}kcal) vÃƒÂ o {GetMealLabel(command.Entities.MealType)}: {string.Join(", ", addedFoods)}";
 
                 return (new ExecutedAction
                 {
@@ -353,12 +532,12 @@ namespace EatFitAI.API.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error adding food via voice");
-                return (null, $"Lỗi khi thêm món ăn: {ex.Message}");
+                return (null, $"LÃ¡Â»â€”i khi thÃƒÂªm mÃƒÂ³n Ã„Æ’n: {ex.Message}");
             }
         }
 
         /// <summary>
-        /// Helper: Thêm 1 món ăn vào MealDiary
+        /// Helper: ThÃƒÂªm 1 mÃƒÂ³n Ã„Æ’n vÃƒÂ o MealDiary
         /// </summary>
         private async Task<(bool success, string foodName, decimal grams, decimal calories)> AddSingleFoodAsync(
             Guid userId, string foodName, decimal grams, int mealTypeId, DateTime eatenDate, string rawText)
@@ -425,12 +604,13 @@ namespace EatFitAI.API.Controllers
         {
             return mealType switch
             {
-                MealType.Breakfast => "Bữa sáng",
-                MealType.Lunch => "Bữa trưa",
-                MealType.Dinner => "Bữa tối",
-                MealType.Snack => "Bữa phụ",
-                _ => "Bữa ăn"
+                MealType.Breakfast => "BÃ¡Â»Â¯a sÃƒÂ¡ng",
+                MealType.Lunch => "BÃ¡Â»Â¯a trÃ†Â°a",
+                MealType.Dinner => "BÃ¡Â»Â¯a tÃ¡Â»â€˜i",
+                MealType.Snack => "BÃ¡Â»Â¯a phÃ¡Â»Â¥",
+                _ => "BÃ¡Â»Â¯a Ã„Æ’n"
             };
         }
     }
 }
+
