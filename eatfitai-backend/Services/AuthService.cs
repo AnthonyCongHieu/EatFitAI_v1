@@ -55,18 +55,18 @@ namespace EatFitAI.API.Services
 
         public async Task<AuthResponse> RegisterAsync(RegisterRequest request)
         {
-            _logger.LogInformation("Báº¯t Ä‘áº§u Ä‘Äƒng kÃ½ cho email: {Email}", request.Email);
+            _logger.LogInformation("Bắt đầu đăng ký cho email: {Email}", request.Email);
 
             try
             {
-                // Kiá»ƒm tra email Ä‘Ã£ tá»“n táº¡i chÆ°a
+                // Kiểm tra email đã tồn tại chưa
                 if (await _userRepository.EmailExistsAsync(request.Email))
                 {
-                    _logger.LogWarning("Email Ä‘Ã£ tá»“n táº¡i: {Email}", request.Email);
+                    _logger.LogWarning("Email đã tồn tại: {Email}", request.Email);
                     throw new InvalidOperationException("Email already exists");
                 }
 
-                // Táº¡o user má»›i - legacy register: set EmailVerified = true Ä‘á»ƒ bypass verification
+                // Tạo user mới - legacy register: set EmailVerified = true để bypass verification
                 var user = new User
                 {
                     UserId = Guid.NewGuid(),
@@ -81,18 +81,18 @@ namespace EatFitAI.API.Services
                 await _userRepository.AddAsync(user);
                 await _context.SaveChangesAsync();
 
-                // Táº¡o JWT + refresh token
+                // Tạo JWT + refresh token
                 var token = GenerateJwtToken(user);
                 var expiresAt = DateTime.UtcNow.AddHours(24);
                 var refreshToken = GenerateRefreshToken();
                 var refreshTokenExpiresAt = DateTime.UtcNow.AddDays(30);
 
-                // LÆ°u Refresh Token vÃ o DB
+                // Lưu Refresh Token vào DB
                 user.RefreshToken = refreshToken;
                 user.RefreshTokenExpiryTime = refreshTokenExpiresAt;
                 await _context.SaveChangesAsync();
 
-                _logger.LogInformation("ÄÄƒng kÃ½ thÃ nh cÃ´ng cho user {UserId}", user.UserId);
+                _logger.LogInformation("Đăng ký thành công cho user {UserId}", user.UserId);
 
                 return new AuthResponse
                 {
@@ -107,7 +107,7 @@ namespace EatFitAI.API.Services
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Lá»—i Ä‘Äƒng kÃ½ cho email: {Email}", request.Email);
+                _logger.LogError(ex, "Lỗi đăng ký cho email: {Email}", request.Email);
                 throw;
             }
         }
@@ -130,11 +130,11 @@ namespace EatFitAI.API.Services
                 user.PasswordHash = HashPassword(request.Password);
             }
 
-            // Kiá»ƒm tra email Ä‘Ã£ Ä‘Æ°á»£c xÃ¡c minh chÆ°a
+            // Kiểm tra email đã được xác minh chưa
             if (!user.EmailVerified)
             {
-                _logger.LogWarning("Login bá»‹ tá»« chá»‘i - Email chÆ°a verify: {Email}", request.Email);
-                throw new UnauthorizedAccessException("Email chÆ°a Ä‘Æ°á»£c xÃ¡c minh. Vui lÃ²ng kiá»ƒm tra email vÃ  nháº­p mÃ£ xÃ¡c minh.");
+                _logger.LogWarning("Login bị từ chối - Email chưa verify: {Email}", request.Email);
+                throw new UnauthorizedAccessException("Email chưa được xác minh. Vui lòng kiểm tra email và nhập mã xác minh.");
             }
 
             // Generate JWT token
@@ -338,7 +338,7 @@ namespace EatFitAI.API.Services
                 user.RefreshToken = null;
                 user.RefreshTokenExpiryTime = null;
                 await _context.SaveChangesAsync();
-                _logger.LogInformation("User {UserId} Ä‘Ã£ logout, refresh token Ä‘Ã£ revoke", user.UserId);
+                _logger.LogInformation("User {UserId} đã logout, refresh token đã revoke", user.UserId);
             }
         }
 
@@ -405,7 +405,7 @@ namespace EatFitAI.API.Services
             
             if (user == null)
             {
-                _logger.LogDebug("ForgotPassword - Email khÃ´ng tá»“n táº¡i: {Email}", request.Email);
+                _logger.LogDebug("ForgotPassword - Email không tồn tại: {Email}", request.Email);
                 return new ForgotPasswordResponse
                 {
                     Success = true,
@@ -415,7 +415,7 @@ namespace EatFitAI.API.Services
                 };
             }
 
-            _logger.LogDebug("ForgotPassword - TÃ¬m tháº¥y user {UserId}", user.UserId);
+            _logger.LogDebug("ForgotPassword - Tìm thấy user {UserId}", user.UserId);
 
             var code = GenerateNumericCode(6);
             var cacheEntry = new ResetCacheEntry
@@ -427,20 +427,20 @@ namespace EatFitAI.API.Services
 
             _memoryCache.Set($"{ResetCacheKeyPrefix}{user.Email}", cacheEntry, cacheEntry.ExpiresAt);
 
-            _logger.LogInformation("ÄÃ£ táº¡o reset code cho user {UserId}, háº¿t háº¡n {ExpiresAt:O}", user.UserId, cacheEntry.ExpiresAt);
+            _logger.LogInformation("Đã tạo reset code cho user {UserId}, hết hạn {ExpiresAt:O}", user.UserId, cacheEntry.ExpiresAt);
 
             try
             {
                 await _emailService.SendResetCodeAsync(user.Email, code, cacheEntry.ExpiresAt);
-                _logger.LogInformation("ÄÃ£ gá»­i email reset code cho user {UserId}", user.UserId);
+                _logger.LogInformation("Đã gửi email reset code cho user {UserId}", user.UserId);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "KhÃ´ng gá»­i Ä‘Æ°á»£c email reset code cho user {UserId}", user.UserId);
-                throw new InvalidOperationException("KhÃ´ng gá»­i Ä‘Æ°á»£c email reset. Vui lÃ²ng thá»­ láº¡i hoáº·c kiá»ƒm tra cáº¥u hÃ¬nh SMTP.");
+                _logger.LogError(ex, "Không gửi được email reset code cho user {UserId}", user.UserId);
+                throw new InvalidOperationException("Không gửi được email reset. Vui lòng thử lại hoặc kiểm tra cấu hình SMTP.");
             }
 
-            var includeCodeInResponse = _env.IsDevelopment(); // há»— trá»£ demo/dev, prod sáº½ khÃ´ng tráº£ mÃ£
+            var includeCodeInResponse = _env.IsDevelopment(); // hỗ trợ demo/dev, prod sẽ không trả mã
 
             return new ForgotPasswordResponse
             {
@@ -479,11 +479,11 @@ namespace EatFitAI.API.Services
             }
 
             user.PasswordHash = HashPassword(request.NewPassword);
-            // Náº¿u user reset password thÃ nh cÃ´ng nghÄ©a lÃ  há» Ä‘Ã£ xÃ¡c minh quyá»n sá»Ÿ há»¯u email
+            // Nếu user reset password thành công nghĩa là họ đã xác minh quyền sở hữu email
             user.EmailVerified = true;
             await _context.SaveChangesAsync();
             _memoryCache.Remove($"{ResetCacheKeyPrefix}{user.Email}");
-            _logger.LogInformation("Reset password thÃ nh cÃ´ng cho user {UserId}", user.UserId);
+            _logger.LogInformation("Reset password thành công cho user {UserId}", user.UserId);
         }
 
         private string GenerateNumericCode(int length)
@@ -521,11 +521,11 @@ namespace EatFitAI.API.Services
         private const string VerifyCacheKeyPrefix = "email_verify_";
 
         /// <summary>
-        /// ÄÄƒng kÃ½ vá»›i xÃ¡c minh email - khÃ´ng cáº¥p token ngay, gá»­i mÃ£ 6 sá»‘
+        /// Đăng ký với xác minh email - không cấp token ngay, gửi mã 6 số
         /// </summary>
         public async Task<RegisterResponse> RegisterWithVerificationAsync(RegisterRequest request)
         {
-            _logger.LogInformation("ÄÄƒng kÃ½ vá»›i email verification cho: {Email}", request.Email);
+            _logger.LogInformation("Đăng ký với email verification cho: {Email}", request.Email);
 
             // Check if email already exists
             var existingUser = await _userRepository.GetByEmailAsync(request.Email);
@@ -534,7 +534,7 @@ namespace EatFitAI.API.Services
                 // If email exists but NOT verified, allow re-registration by resetting verification code
                 if (!existingUser.EmailVerified)
                 {
-                    _logger.LogInformation("Email tá»“n táº¡i nhÆ°ng chÆ°a verify, gá»­i láº¡i mÃ£: {Email}", request.Email);
+                    _logger.LogInformation("Email tồn tại nhưng chưa verify, gửi lại mã: {Email}", request.Email);
                     
                     // Update password and display name if provided
                     existingUser.PasswordHash = HashPassword(request.Password);
@@ -554,11 +554,11 @@ namespace EatFitAI.API.Services
                     try
                     {
                         await _emailService.SendVerificationCodeAsync(existingUser.Email, newVerificationCode, existingUser.VerificationCodeExpiry.Value);
-                        _logger.LogInformation("ÄÃ£ gá»­i láº¡i mÃ£ xÃ¡c minh cho user {UserId}", existingUser.UserId);
+                        _logger.LogInformation("Đã gửi lại mã xác minh cho user {UserId}", existingUser.UserId);
                     }
                     catch (Exception ex)
                     {
-                        _logger.LogError(ex, "KhÃ´ng gá»­i Ä‘Æ°á»£c email xÃ¡c minh cho user {UserId}", existingUser.UserId);
+                        _logger.LogError(ex, "Không gửi được email xác minh cho user {UserId}", existingUser.UserId);
                     }
                     
                     var includeCodeInDevResponse = _env.IsDevelopment();
@@ -566,8 +566,8 @@ namespace EatFitAI.API.Services
                     {
                         Success = true,
                         Message = includeCodeInDevResponse 
-                            ? "ÄÃ£ gá»­i láº¡i mÃ£ xÃ¡c minh (dev mode)" 
-                            : "ÄÃ£ gá»­i láº¡i mÃ£ xÃ¡c minh. Kiá»ƒm tra email cá»§a báº¡n.",
+                            ? "Đã gửi lại mã xác minh (dev mode)" 
+                            : "Đã gửi lại mã xác minh. Kiểm tra email của bạn.",
                         Email = existingUser.Email,
                         VerificationCodeExpiresAt = existingUser.VerificationCodeExpiry.Value,
                         VerificationCode = includeCodeInDevResponse ? newVerificationCode : null
@@ -575,10 +575,10 @@ namespace EatFitAI.API.Services
                 }
                 
                 // Email exists and already verified
-                _logger.LogWarning("Email Ä‘Ã£ Ä‘Æ°á»£c Ä‘Äƒng kÃ½ vÃ  verify: {Email}", request.Email);
-                throw new InvalidOperationException("Email Ä‘Ã£ Ä‘Æ°á»£c Ä‘Äƒng kÃ½");
+                _logger.LogWarning("Email đã được đăng ký và verify: {Email}", request.Email);
+                throw new InvalidOperationException("Email đã được đăng ký");
             }
-            // Táº¡o user má»›i nhÆ°ng chÆ°a verified
+            // Tạo user mới nhưng chưa verified
             var user = new User
             {
                 UserId = Guid.NewGuid(),
@@ -590,7 +590,7 @@ namespace EatFitAI.API.Services
                 OnboardingCompleted = false
             };
 
-            // Táº¡o mÃ£ xÃ¡c minh 6 sá»‘
+            // Tạo mã xác minh 6 số
             var verificationCode = GenerateNumericCode(6);
             user.VerificationCode = HashResetCode(verificationCode);
             user.VerificationCodeExpiry = DateTime.UtcNow.Add(VerificationCodeLifetime);
@@ -598,18 +598,18 @@ namespace EatFitAI.API.Services
             await _userRepository.AddAsync(user);
             await _context.SaveChangesAsync();
 
-            _logger.LogInformation("Táº¡o user má»›i {UserId}, Ä‘ang gá»­i mÃ£ xÃ¡c minh", user.UserId);
+            _logger.LogInformation("Tạo user mới {UserId}, đang gửi mã xác minh", user.UserId);
 
-            // Gá»­i email xÃ¡c minh
+            // Gửi email xác minh
             try
             {
                 await _emailService.SendVerificationCodeAsync(user.Email, verificationCode, user.VerificationCodeExpiry.Value);
-                _logger.LogInformation("ÄÃ£ gá»­i mÃ£ xÃ¡c minh cho user {UserId}", user.UserId);
+                _logger.LogInformation("Đã gửi mã xác minh cho user {UserId}", user.UserId);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "KhÃ´ng gá»­i Ä‘Æ°á»£c email xÃ¡c minh cho user {UserId}", user.UserId);
-                // Váº«n return success, user cÃ³ thá»ƒ request gá»­i láº¡i
+                _logger.LogError(ex, "Không gửi được email xác minh cho user {UserId}", user.UserId);
+                // Vẫn return success, user có thể request gửi lại
             }
 
             var includeCodeInResponse = _env.IsDevelopment();
@@ -618,8 +618,8 @@ namespace EatFitAI.API.Services
             {
                 Success = true,
                 Message = includeCodeInResponse 
-                    ? "ÄÄƒng kÃ½ thÃ nh cÃ´ng! MÃ£ xÃ¡c minh (dev mode)" 
-                    : "ÄÄƒng kÃ½ thÃ nh cÃ´ng! Kiá»ƒm tra email Ä‘á»ƒ láº¥y mÃ£ xÃ¡c minh.",
+                    ? "Đăng ký thành công! Mã xác minh (dev mode)" 
+                    : "Đăng ký thành công! Kiểm tra email để lấy mã xác minh.",
                 Email = user.Email,
                 VerificationCodeExpiresAt = user.VerificationCodeExpiry.Value,
                 VerificationCode = includeCodeInResponse ? verificationCode : null
@@ -627,32 +627,32 @@ namespace EatFitAI.API.Services
         }
 
         /// <summary>
-        /// XÃ¡c minh email báº±ng mÃ£ 6 sá»‘ - náº¿u Ä‘Ãºng thÃ¬ cáº¥p token
+        /// Xác minh email bằng mã 6 số - nếu đúng thì cấp token
         /// </summary>
         public async Task<AuthResponse> VerifyEmailAsync(VerifyEmailRequest request)
         {
-            _logger.LogInformation("XÃ¡c minh email cho: {Email}", request.Email);
+            _logger.LogInformation("Xác minh email cho: {Email}", request.Email);
 
             var user = await _userRepository.GetByEmailAsync(request.Email);
             if (user == null)
             {
-                throw new UnauthorizedAccessException("Email khÃ´ng tá»“n táº¡i");
+                throw new UnauthorizedAccessException("Email không tồn tại");
             }
 
             if (user.EmailVerified)
             {
-                throw new InvalidOperationException("Email Ä‘Ã£ Ä‘Æ°á»£c xÃ¡c minh trÆ°á»›c Ä‘Ã³");
+                throw new InvalidOperationException("Email đã được xác minh trước đó");
             }
 
             if (user.VerificationCodeExpiry == null || user.VerificationCodeExpiry < DateTime.UtcNow)
             {
-                throw new UnauthorizedAccessException("MÃ£ xÃ¡c minh Ä‘Ã£ háº¿t háº¡n. Vui lÃ²ng yÃªu cáº§u gá»­i láº¡i.");
+                throw new UnauthorizedAccessException("Mã xác minh đã hết hạn. Vui lòng yêu cầu gửi lại.");
             }
 
             var hashedInput = HashResetCode(request.VerificationCode);
             if (!string.Equals(hashedInput, user.VerificationCode, StringComparison.Ordinal))
             {
-                throw new UnauthorizedAccessException("MÃ£ xÃ¡c minh khÃ´ng Ä‘Ãºng");
+                throw new UnauthorizedAccessException("Mã xác minh không đúng");
             }
 
             // Mark email as verified
@@ -661,7 +661,7 @@ namespace EatFitAI.API.Services
             user.VerificationCodeExpiry = null;
             await _context.SaveChangesAsync();
 
-            _logger.LogInformation("Email Ä‘Ã£ xÃ¡c minh thÃ nh cÃ´ng cho: {Email}", request.Email);
+            _logger.LogInformation("Email đã xác minh thành công cho: {Email}", request.Email);
 
             // Generate JWT token
             var token = GenerateJwtToken(user);
@@ -688,39 +688,39 @@ namespace EatFitAI.API.Services
         }
 
         /// <summary>
-        /// Gá»­i láº¡i mÃ£ xÃ¡c minh email
+        /// Gửi lại mã xác minh email
         /// </summary>
         public async Task<RegisterResponse> ResendVerificationAsync(ResendVerificationRequest request)
         {
-            _logger.LogInformation("Gá»­i láº¡i mÃ£ xÃ¡c minh cho: {Email}", request.Email);
+            _logger.LogInformation("Gửi lại mã xác minh cho: {Email}", request.Email);
 
             var user = await _userRepository.GetByEmailAsync(request.Email);
             if (user == null)
             {
-                throw new UnauthorizedAccessException("Email khÃ´ng tá»“n táº¡i");
+                throw new UnauthorizedAccessException("Email không tồn tại");
             }
 
             if (user.EmailVerified)
             {
-                throw new InvalidOperationException("Email Ä‘Ã£ Ä‘Æ°á»£c xÃ¡c minh trÆ°á»›c Ä‘Ã³");
+                throw new InvalidOperationException("Email đã được xác minh trước đó");
             }
 
-            // Táº¡o mÃ£ má»›i
+            // Tạo mã mới
             var verificationCode = GenerateNumericCode(6);
             user.VerificationCode = HashResetCode(verificationCode);
             user.VerificationCodeExpiry = DateTime.UtcNow.Add(VerificationCodeLifetime);
             await _context.SaveChangesAsync();
 
-            // Gá»­i email
+            // Gửi email
             try
             {
                 await _emailService.SendVerificationCodeAsync(user.Email, verificationCode, user.VerificationCodeExpiry.Value);
-                _logger.LogInformation("ÄÃ£ gá»­i láº¡i mÃ£ xÃ¡c minh cho user {UserId}", user.UserId);
+                _logger.LogInformation("Đã gửi lại mã xác minh cho user {UserId}", user.UserId);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "KhÃ´ng gá»­i láº¡i Ä‘Æ°á»£c email xÃ¡c minh cho user {UserId}", user.UserId);
-                throw new InvalidOperationException("KhÃ´ng gá»­i Ä‘Æ°á»£c email. Vui lÃ²ng thá»­ láº¡i sau.");
+                _logger.LogError(ex, "Không gửi lại được email xác minh cho user {UserId}", user.UserId);
+                throw new InvalidOperationException("Không gửi được email. Vui lòng thử lại sau.");
             }
 
             var includeCodeInResponse = _env.IsDevelopment();
@@ -729,8 +729,8 @@ namespace EatFitAI.API.Services
             {
                 Success = true,
                 Message = includeCodeInResponse 
-                    ? "ÄÃ£ gá»­i láº¡i mÃ£ xÃ¡c minh (dev mode)" 
-                    : "ÄÃ£ gá»­i láº¡i mÃ£ xÃ¡c minh. Kiá»ƒm tra email cá»§a báº¡n.",
+                    ? "Đã gửi lại mã xác minh (dev mode)" 
+                    : "Đã gửi lại mã xác minh. Kiểm tra email của bạn.",
                 Email = user.Email,
                 VerificationCodeExpiresAt = user.VerificationCodeExpiry.Value,
                 VerificationCode = includeCodeInResponse ? verificationCode : null
@@ -738,48 +738,48 @@ namespace EatFitAI.API.Services
         }
 
         /// <summary>
-        /// ÄÃ¡nh dáº¥u user Ä‘Ã£ hoÃ n thÃ nh onboarding
+        /// Đánh dấu user đã hoàn thành onboarding
         /// </summary>
         public async Task MarkOnboardingCompletedAsync(Guid userId)
         {
-            _logger.LogInformation("ÄÃ¡nh dáº¥u onboarding hoÃ n thÃ nh cho user: {UserId}", userId);
+            _logger.LogInformation("Đánh dấu onboarding hoàn thành cho user: {UserId}", userId);
 
             var user = await _context.Users.FirstOrDefaultAsync(u => u.UserId == userId);
             if (user == null)
             {
-                throw new UnauthorizedAccessException("User khÃ´ng tá»“n táº¡i");
+                throw new UnauthorizedAccessException("User không tồn tại");
             }
 
             user.OnboardingCompleted = true;
             await _context.SaveChangesAsync();
 
-            _logger.LogInformation("Onboarding hoÃ n thÃ nh cho user: {UserId}", userId);
+            _logger.LogInformation("Onboarding hoàn thành cho user: {UserId}", userId);
         }
 
         /// <summary>
-        /// Äá»•i máº­t kháº©u cho user Ä‘Ã£ Ä‘Äƒng nháº­p
+        /// Đổi mật khẩu cho user đã đăng nhập
         /// </summary>
         public async Task ChangePasswordAsync(Guid userId, string currentPassword, string newPassword)
         {
-            _logger.LogInformation("Äá»•i máº­t kháº©u cho user: {UserId}", userId);
+            _logger.LogInformation("Đổi mật khẩu cho user: {UserId}", userId);
 
             var user = await _context.Users.FirstOrDefaultAsync(u => u.UserId == userId);
             if (user == null)
             {
-                throw new UnauthorizedAccessException("User khÃ´ng tá»“n táº¡i");
+                throw new UnauthorizedAccessException("User không tồn tại");
             }
 
             // Verify current password
             if (!VerifyPassword(currentPassword, user.PasswordHash, out _))
             {
-                throw new UnauthorizedAccessException("Máº­t kháº©u hiá»‡n táº¡i khÃ´ng Ä‘Ãºng");
+                throw new UnauthorizedAccessException("Mật khẩu hiện tại không đúng");
             }
 
             // Update password
             user.PasswordHash = HashPassword(newPassword);
             await _context.SaveChangesAsync();
 
-            _logger.LogInformation("Äá»•i máº­t kháº©u thÃ nh cÃ´ng cho user: {UserId}", userId);
+            _logger.LogInformation("Đổi mật khẩu thành công cho user: {UserId}", userId);
         }
     }
 }

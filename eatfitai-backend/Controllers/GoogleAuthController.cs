@@ -82,7 +82,7 @@ namespace EatFitAI.API.Controllers
                     return BadRequest(new GoogleAuthResponse
                     {
                         Success = false,
-                        Error = "ID Token khÃ´ng Ä‘Æ°á»£c Ä‘á»ƒ trá»‘ng"
+                        Error = "ID Token không được để trống"
                     });
                 }
 
@@ -108,7 +108,7 @@ namespace EatFitAI.API.Controllers
                     return Unauthorized(new GoogleAuthResponse
                     {
                         Success = false,
-                        Error = "Token Google khÃ´ng há»£p lá»‡"
+                        Error = "Token Google không hợp lệ"
                     });
                 }
 
@@ -118,7 +118,7 @@ namespace EatFitAI.API.Controllers
                     return BadRequest(new GoogleAuthResponse
                     {
                         Success = false,
-                        Error = "Email chÆ°a Ä‘Æ°á»£c xÃ¡c thá»±c vá»›i Google"
+                        Error = "Email chưa được xác thực với Google"
                     });
                 }
 
@@ -203,7 +203,7 @@ namespace EatFitAI.API.Controllers
                 return StatusCode(500, new GoogleAuthResponse
                 {
                     Success = false,
-                    Error = "Lá»—i server khi Ä‘Äƒng nháº­p"
+                    Error = "Lỗi server khi đăng nhập"
                 });
             }
         }
@@ -240,7 +240,7 @@ namespace EatFitAI.API.Controllers
                     return BadRequest(new GoogleAuthResponse
                     {
                         Success = false,
-                        Error = "Email Google khÃ´ng khá»›p vá»›i email tÃ i khoáº£n"
+                        Error = "Email Google không khớp với email tài khoản"
                     });
                 }
 
@@ -262,18 +262,18 @@ namespace EatFitAI.API.Controllers
             }
             catch (InvalidJwtException)
             {
-                return Unauthorized(new GoogleAuthResponse { Success = false, Error = "Token khÃ´ng há»£p lá»‡" });
+                return Unauthorized(new GoogleAuthResponse { Success = false, Error = "Token không hợp lệ" });
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error linking Google account");
-                return StatusCode(500, new GoogleAuthResponse { Success = false, Error = "Lá»—i server" });
+                return StatusCode(500, new GoogleAuthResponse { Success = false, Error = "Lỗi server" });
             }
         }
 
         #region Private Helpers
 
-        // Copy tá»« AuthService Ä‘á»ƒ trÃ¡nh circular dependency
+        // Copy từ AuthService để tránh circular dependency
         private string GenerateJwtToken(User user)
         {
             var tokenHandler = new JwtSecurityTokenHandler();
