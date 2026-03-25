@@ -82,7 +82,7 @@ namespace EatFitAI.API.Controllers
                     return BadRequest(new GoogleAuthResponse
                     {
                         Success = false,
-                        Error = "ID Token không được để trống"
+                        Error = "ID Token khÃ´ng Ä‘Æ°á»£c Ä‘á»ƒ trá»‘ng"
                     });
                 }
 
@@ -108,7 +108,7 @@ namespace EatFitAI.API.Controllers
                     return Unauthorized(new GoogleAuthResponse
                     {
                         Success = false,
-                        Error = "Token Google không hợp lệ"
+                        Error = "Token Google khÃ´ng há»£p lá»‡"
                     });
                 }
 
@@ -118,7 +118,7 @@ namespace EatFitAI.API.Controllers
                     return BadRequest(new GoogleAuthResponse
                     {
                         Success = false,
-                        Error = "Email chưa được xác thực với Google"
+                        Error = "Email chÆ°a Ä‘Æ°á»£c xÃ¡c thá»±c vá»›i Google"
                     });
                 }
 
@@ -203,7 +203,7 @@ namespace EatFitAI.API.Controllers
                 return StatusCode(500, new GoogleAuthResponse
                 {
                     Success = false,
-                    Error = "Lỗi server khi đăng nhập"
+                    Error = "Lá»—i server khi Ä‘Äƒng nháº­p"
                 });
             }
         }
@@ -240,7 +240,7 @@ namespace EatFitAI.API.Controllers
                     return BadRequest(new GoogleAuthResponse
                     {
                         Success = false,
-                        Error = "Email Google không khớp với email tài khoản"
+                        Error = "Email Google khÃ´ng khá»›p vá»›i email tÃ i khoáº£n"
                     });
                 }
 
@@ -262,18 +262,18 @@ namespace EatFitAI.API.Controllers
             }
             catch (InvalidJwtException)
             {
-                return Unauthorized(new GoogleAuthResponse { Success = false, Error = "Token không hợp lệ" });
+                return Unauthorized(new GoogleAuthResponse { Success = false, Error = "Token khÃ´ng há»£p lá»‡" });
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error linking Google account");
-                return StatusCode(500, new GoogleAuthResponse { Success = false, Error = "Lỗi server" });
+                return StatusCode(500, new GoogleAuthResponse { Success = false, Error = "Lá»—i server" });
             }
         }
 
         #region Private Helpers
 
-        // Copy từ AuthService để tránh circular dependency
+        // Copy tá»« AuthService Ä‘á»ƒ trÃ¡nh circular dependency
         private string GenerateJwtToken(User user)
         {
             var tokenHandler = new JwtSecurityTokenHandler();
@@ -324,7 +324,7 @@ namespace EatFitAI.API.Controllers
                 throw new InvalidOperationException("Jwt:Key is missing or insecure.");
             }
 
-            return Encoding.ASCII.GetBytes(key);
+            return Encoding.ASCII.GetBytes(key!);
         }
 
         private string GenerateRefreshToken()

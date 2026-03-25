@@ -299,8 +299,8 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         {
             ValidateIssuerSigningKey = true,
             IssuerSigningKey = new SymmetricSecurityKey(
-                Encoding.ASCII.GetBytes(jwtKey)),
-            // Báº­t validate Issuer/Audience Ä‘á»ƒ cháº·n token tá»« app khÃ¡c
+                Encoding.ASCII.GetBytes(jwtKey!)),
+            // BÃ¡ÂºÂ­t validate Issuer/Audience Ã„â€˜Ã¡Â»Æ’ chÃ¡ÂºÂ·n token tÃ¡Â»Â« app khÃƒÂ¡c
             ValidateIssuer = true,
             ValidIssuer = builder.Configuration["Jwt:Issuer"] ?? "EatFitAI",
             ValidateAudience = true,
@@ -340,7 +340,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI(o =>
     {
         o.SwaggerEndpoint("/swagger/v1/swagger.json", "EatFitAI v1");
-        o.RoutePrefix = "swagger"; // -> /swagger vÃ  /swagger/index.html
+        o.RoutePrefix = "swagger"; // -> /swagger vÃƒÂ  /swagger/index.html
     });
 }
 else if (app.Environment.IsStaging())
@@ -395,7 +395,7 @@ app.MapGet("/health/ready", async (EatFitAI.API.DbScaffold.Data.EatFitAIDbContex
 // Simple health endpoint for mobile ping
 app.MapGet("/health", () => Results.Ok(new { status = "ok" }));
 
-// Discovery endpoint - cho mobile app tá»± Ä‘á»™ng tÃ¬m backend trong LAN
+// Discovery endpoint - cho mobile app tÃ¡Â»Â± Ã„â€˜Ã¡Â»â„¢ng tÃƒÂ¬m backend trong LAN
 app.MapGet("/discovery", () => Results.Ok(new { 
     appId = "eatfitai", 
     version = "1.0", 

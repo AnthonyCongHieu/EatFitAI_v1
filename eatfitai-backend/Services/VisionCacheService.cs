@@ -36,7 +36,7 @@ namespace EatFitAI.API.Services
             _logger = logger;
         }
 
-        public async Task<VisionDetectResultDto?> GetCachedDetectionAsync(
+        public Task<VisionDetectResultDto?> GetCachedDetectionAsync(
             string imageHash,
             CancellationToken cancellationToken = default)
         {
@@ -44,15 +44,15 @@ namespace EatFitAI.API.Services
             if (_cache.TryGetValue($"vision_{imageHash}", out VisionDetectResultDto? cached))
             {
                 _logger.LogInformation("Vision detection served from memory cache: {Hash}", imageHash);
-                return cached;
+                return Task.FromResult<VisionDetectResultDto?>(cached);
             }
 
             // Fallback to database (if we had a VisionDetectionCache table)
             // For now, return null
-            return null;
+            return Task.FromResult<VisionDetectResultDto?>(null);
         }
 
-        public async Task CacheDetectionAsync(
+        public Task CacheDetectionAsync(
             string imageHash,
             VisionDetectResultDto result,
             Guid userId,
@@ -70,7 +70,7 @@ namespace EatFitAI.API.Services
             _logger.LogInformation("Cached vision detection result: {Hash}", imageHash);
 
             // Could also save to database here for persistent cache
-            await Task.CompletedTask;
+            return Task.CompletedTask;
         }
 
         public async Task<List<DetectionHistoryDto>> GetDetectionHistoryAsync(

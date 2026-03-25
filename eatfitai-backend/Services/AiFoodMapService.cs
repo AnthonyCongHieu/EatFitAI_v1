@@ -87,7 +87,7 @@ namespace EatFitAI.API.Services
 
             var mappedFoodIds = result
                 .Where(r => r.FoodItemId.HasValue)
-                .Select(r => r.FoodItemId.Value)
+                .Select(r => r.FoodItemId!.Value)
                 .Distinct()
                 .ToList();
 
