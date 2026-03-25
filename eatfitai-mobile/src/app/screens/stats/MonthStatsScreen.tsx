@@ -339,7 +339,7 @@ const MonthStatsScreen = (): React.ReactElement => {
             onPress={goToPreviousMonth}
             style={styles.navButton}
             accessibilityRole="button"
-            accessibilityLabel="Xem th\u00e1ng tr\u01b0\u1edbc"
+            accessibilityLabel="Xem tháng trước"
           >
             <Icon name="chevron-back" size="md" color="primary" />
           </Pressable>
@@ -358,7 +358,7 @@ const MonthStatsScreen = (): React.ReactElement => {
             style={styles.navButton}
             disabled={isCurrentMonth || isFutureMonth}
             accessibilityRole="button"
-            accessibilityLabel="Xem th\u00e1ng sau"
+            accessibilityLabel="Xem tháng sau"
             accessibilityState={{ disabled: isCurrentMonth || isFutureMonth }}
           >
             <Icon
@@ -403,7 +403,7 @@ const MonthStatsScreen = (): React.ReactElement => {
                   ]}
                 />
                 <ThemedText variant="caption" color="textSecondary">
-                  {'Ch\u01b0a log'}
+                  {'Chưa log'}
                 </ThemedText>
               </View>
               <View style={styles.legendItem}>
@@ -414,7 +414,7 @@ const MonthStatsScreen = (): React.ReactElement => {
                   ]}
                 />
                 <ThemedText variant="caption" color="textSecondary">
-                  {'\u00cdt'}
+                  {'Ít'}
                 </ThemedText>
               </View>
               <View style={styles.legendItem}>
@@ -422,7 +422,7 @@ const MonthStatsScreen = (): React.ReactElement => {
                   style={[styles.legendDot, { backgroundColor: theme.colors.success }]}
                 />
                 <ThemedText variant="caption" color="textSecondary">
-                  {'Nhi\u1ec1u'}
+                  {'Nhiều'}
                 </ThemedText>
               </View>
               <View style={styles.legendItem}>
@@ -430,7 +430,7 @@ const MonthStatsScreen = (): React.ReactElement => {
                   style={[styles.legendDot, { backgroundColor: theme.colors.warning }]}
                 />
                 <ThemedText variant="caption" color="textSecondary">
-                  {'V\u01b0\u1ee3t'}
+                  {'Vượt'}
                 </ThemedText>
               </View>
             </View>
@@ -441,7 +441,7 @@ const MonthStatsScreen = (): React.ReactElement => {
         {monthData && monthData.daysLogged > 0 ? (
           <Animated.View entering={FadeInDown.delay(200).springify()}>
             <AppCard>
-              <SectionHeader title={'T\u1ed5ng k\u1ebft th\u00e1ng'} />
+              <SectionHeader title={'Tổng kết tháng'} />
               <View style={styles.summaryGrid}>
                 {/* Total Calories - Blue gradient */}
                 <LinearGradient
@@ -458,7 +458,7 @@ const MonthStatsScreen = (): React.ReactElement => {
                     borderColor: theme.statsCards.calories.borderColor,
                   }}
                 >
-                  <ThemedText style={{ fontSize: theme.typography.h3.fontSize, marginBottom: theme.spacing.xs }}>{'\uD83D\uDD25'}</ThemedText>
+                  <ThemedText style={{ fontSize: theme.typography.h3.fontSize, marginBottom: theme.spacing.xs }}>{'🔥'}</ThemedText>
                   <ThemedText
                     variant="h3"
                     weight="700"
@@ -467,7 +467,7 @@ const MonthStatsScreen = (): React.ReactElement => {
                     {Math.round((monthData.totalCalories / 1000) * 10) / 10}k
                   </ThemedText>
                   <ThemedText variant="caption" color="textSecondary">
-                    {'T\u1ed5ng Calories'}
+                    {'Tổng Calories'}
                   </ThemedText>
                 </LinearGradient>
 
@@ -486,7 +486,7 @@ const MonthStatsScreen = (): React.ReactElement => {
                     borderColor: theme.statsCards.average.borderColor,
                   }}
                 >
-                  <ThemedText style={{ fontSize: theme.typography.h3.fontSize, marginBottom: theme.spacing.xs }}>{'\uD83D\uDCCA'}</ThemedText>
+                  <ThemedText style={{ fontSize: theme.typography.h3.fontSize, marginBottom: theme.spacing.xs }}>{'📊'}</ThemedText>
                   <ThemedText
                     variant="h3"
                     weight="700"
@@ -495,7 +495,7 @@ const MonthStatsScreen = (): React.ReactElement => {
                     {Math.round(monthData.averageCalories)}
                   </ThemedText>
                   <ThemedText variant="caption" color="textSecondary">
-                    {'TB/ng\u00e0y'}
+                    {'TB/ngày'}
                   </ThemedText>
                 </LinearGradient>
 
@@ -514,7 +514,7 @@ const MonthStatsScreen = (): React.ReactElement => {
                     borderColor: theme.statsCards.daysLogged.borderColor,
                   }}
                 >
-                  <ThemedText style={{ fontSize: theme.typography.h3.fontSize, marginBottom: theme.spacing.xs }}>{'\uD83D\uDCC6'}</ThemedText>
+                  <ThemedText style={{ fontSize: theme.typography.h3.fontSize, marginBottom: theme.spacing.xs }}>{'📆'}</ThemedText>
                   <ThemedText
                     variant="h3"
                     weight="700"
@@ -523,7 +523,7 @@ const MonthStatsScreen = (): React.ReactElement => {
                     {monthData.daysLogged}
                   </ThemedText>
                   <ThemedText variant="caption" color="textSecondary">
-                    {'Ng\u00e0y \u0111\u00e3 log'}
+                    {'Ngày đã log'}
                   </ThemedText>
                 </LinearGradient>
 
@@ -542,7 +542,7 @@ const MonthStatsScreen = (): React.ReactElement => {
                     borderColor: theme.statsCards.target.borderColor,
                   }}
                 >
-                  <ThemedText style={{ fontSize: theme.typography.h3.fontSize, marginBottom: theme.spacing.xs }}>{'\uD83C\uDFAF'}</ThemedText>
+                  <ThemedText style={{ fontSize: theme.typography.h3.fontSize, marginBottom: theme.spacing.xs }}>{'🎯'}</ThemedText>
                   <ThemedText
                     variant="h3"
                     weight="700"
@@ -554,7 +554,7 @@ const MonthStatsScreen = (): React.ReactElement => {
                     }).length}/{monthData.daysLogged}
                   </ThemedText>
                   <ThemedText variant="caption" color="textSecondary">
-                    {'\u0110\u1ea1t m\u1ee5c ti\u00eau'}
+                    {'Đạt mục tiêu'}
                   </ThemedText>
                 </LinearGradient>
               </View>
@@ -565,14 +565,14 @@ const MonthStatsScreen = (): React.ReactElement => {
             <AppCard>
               <View style={{ paddingVertical: 24, alignItems: 'center', gap: 8 }}>
                 <ThemedText variant="h4" color="textSecondary">
-                  {'\uD83D\uDCC5'}
+                  {'📅'}
                 </ThemedText>
                 <ThemedText
                   variant="body"
                   color="textSecondary"
                   style={{ textAlign: 'center' }}
                 >
-                  {'Ch\u01b0a c\u00f3 d\u1eef li\u1ec7u cho th\u00e1ng n\u00e0y'}
+                  {'Chưa có dữ liệu cho tháng này'}
                 </ThemedText>
                 <ThemedText
                   variant="caption"

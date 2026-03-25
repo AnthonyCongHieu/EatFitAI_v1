@@ -130,9 +130,9 @@ const AIScanScreen: React.FC = () => {
       setMode('results');
     } catch (error) {
       handleApiErrorWithCustomMessage(error, {
-        server_error: { text1: '\u004c\u1ed7i m\u00e1y ch\u1ee7', text2: 'Vui l\u00f2ng th\u1eed l\u1ea1i sau' },
-        network_error: { text1: 'Kh\u00f4ng c\u00f3 k\u1ebft n\u1ed1i', text2: 'Ki\u1ec3m tra m\u1ea1ng v\u00e0 th\u1eed l\u1ea1i' },
-        unknown: { text1: 'Kh\u00f4ng th\u1ec3 ph\u00e2n t\u00edch \u1ea3nh', text2: 'Vui l\u00f2ng th\u1eed l\u1ea1i' },
+        server_error: { text1: 'Lỗi máy chủ', text2: 'Vui lòng thử lại sau' },
+        network_error: { text1: 'Không có kết nối', text2: 'Kiểm tra mạng và thử lại' },
+        unknown: { text1: 'Không thể phân tích ảnh', text2: 'Vui lòng thử lại' },
       });
       setMode('camera');
     } finally {
@@ -143,7 +143,7 @@ const AIScanScreen: React.FC = () => {
   const handleCapture = useCallback(async () => {
     if (!cameraRef.current) {
       handleApiErrorWithCustomMessage(new Error('Camera not ready'), {
-        unknown: { text1: 'Camera ch\u01b0a s\u1eb5n s\u00e0ng', text2: 'Vui l\u00f2ng th\u1eed l\u1ea1i' },
+        unknown: { text1: 'Camera chưa sẵn sàng', text2: 'Vui lòng thử lại' },
       });
       return;
     }
@@ -160,7 +160,7 @@ const AIScanScreen: React.FC = () => {
         quality: 0.7,
       });
 
-      if (!result?.uri) throw new Error('Kh\u00f4ng \u0111\u1ecdc \u0111\u01b0\u1ee3c \u1ea3nh');
+      if (!result?.uri) throw new Error('Không đọc được ảnh');
 
       // Haptic success when capture completes
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -169,7 +169,7 @@ const AIScanScreen: React.FC = () => {
       await processImage(result.uri);
     } catch (error) {
       handleApiErrorWithCustomMessage(error, {
-        unknown: { text1: 'Kh\u00f4ng th\u1ec3 ch\u1ee5p \u1ea3nh', text2: 'Vui l\u00f2ng th\u1eed l\u1ea1i' },
+        unknown: { text1: 'Không thể chụp ảnh', text2: 'Vui lòng thử lại' },
       });
       captureScale.value = withSpring(1, { damping: 15 });
     } finally {
@@ -183,8 +183,8 @@ const AIScanScreen: React.FC = () => {
       if (!result.granted) {
         handleApiErrorWithCustomMessage(new Error('Permission denied'), {
           unknown: {
-            text1: 'C\u1ea7n quy\u1ec1n truy c\u1eadp th\u01b0 vi\u1ec7n \u1ea3nh',
-            text2: 'Vui l\u00f2ng c\u1ea5p quy\u1ec1n trong c\u00e0i \u0111\u1eb7t',
+            text1: 'Cần quyền truy cập thư viện ảnh',
+            text2: 'Vui lòng cấp quyền trong cài đặt',
           },
         });
         return;
@@ -203,7 +203,7 @@ const AIScanScreen: React.FC = () => {
       }
     } catch (error) {
       handleApiErrorWithCustomMessage(error, {
-        unknown: { text1: 'Kh\u00f4ng th\u1ec3 ch\u1ecdn \u1ea3nh', text2: 'Vui l\u00f2ng th\u1eed l\u1ea1i' },
+        unknown: { text1: 'Không thể chọn ảnh', text2: 'Vui lòng thử lại' },
       });
     }
   }, [galleryPermission, requestGalleryPermission, processImage]);
@@ -217,7 +217,7 @@ const AIScanScreen: React.FC = () => {
   const handleAddToDiary = useCallback(() => {
     if (!capturedUri || !detectionResult) {
       handleApiErrorWithCustomMessage(new Error('No data'), {
-        unknown: { text1: 'Ch\u01b0a c\u00f3 d\u1eef li\u1ec7u', text2: 'Vui l\u00f2ng ch\u1ee5p ho\u1eb7c ch\u1ecdn \u1ea3nh' },
+        unknown: { text1: 'Chưa có dữ liệu', text2: 'Vui lòng chụp hoặc chọn ảnh' },
       });
       return;
     }
@@ -252,7 +252,7 @@ const AIScanScreen: React.FC = () => {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       Toast.show({
         type: 'success',
-        text1: '\u0110\u00e3 th\u00eam v\u00e0o gi\u1ecf',
+        text1: 'Đã thêm vào giỏ',
         text2: displayName,
         visibilityTime: 1500,
       });
@@ -278,7 +278,7 @@ const AIScanScreen: React.FC = () => {
 
         Toast.show({
           type: 'success',
-          text1: '\u0110\u00e3 th\u00eam',
+          text1: 'Đã thêm',
           text2: `${editedItem.label} - ${actualCalories} kcal`,
         });
         await invalidateDiaryQueries(queryClient);
@@ -286,7 +286,7 @@ const AIScanScreen: React.FC = () => {
         setEditingItem(null);
       } catch (error) {
         handleApiErrorWithCustomMessage(error, {
-          unknown: { text1: 'L\u1ed7i th\u00eam m\u00f3n', text2: 'Vui l\u00f2ng th\u1eed l\u1ea1i' },
+          unknown: { text1: 'Lỗi thêm món', text2: 'Vui lòng thử lại' },
         });
       } finally {
         setIsProcessing(false);
@@ -324,18 +324,18 @@ const AIScanScreen: React.FC = () => {
           variant="h3"
           style={{ marginTop: theme.spacing.lg, marginBottom: theme.spacing.sm }}
         >
-          {'C\u1ea7n quy\u1ec1n camera'}
+          {'Cần quyền camera'}
         </ThemedText>
         <ThemedText
           variant="body"
           color="textSecondary"
           style={{ textAlign: 'center', paddingHorizontal: 32 }}
         >
-          {'Cho ph\u00e9p truy c\u1eadp camera \u0111\u1ec3 qu\u00e9t m\u00f3n \u0103n b\u1eb1ng AI'}
+          {'Cho phép truy cập camera để quét món ăn bằng AI'}
         </ThemedText>
         <Button
           variant="primary"
-          title="C\u1ea5p quy\u1ec1n camera"
+          title="Cấp quyền camera"
           onPress={requestPermission}
           style={{ marginTop: theme.spacing.xl }}
         />
@@ -404,7 +404,7 @@ const AIScanScreen: React.FC = () => {
         {isProcessing && (
           <Animated.View entering={FadeInUp} style={styles.processingBadge}>
             <ThemedText variant="body" style={{ color: '#fff' }}>
-              {'\u0110ang ph\u00e2n t\u00edch...'}
+              {'Đang phân tích...'}
             </ThemedText>
           </Animated.View>
         )}
@@ -427,8 +427,8 @@ const AIScanScreen: React.FC = () => {
               ]}
               onPress={() => navigation.navigate('FoodSearch')}
               accessibilityRole="button"
-              accessibilityLabel="T\u00ecm ki\u1ebfm m\u00f3n \u0103n"
-              accessibilityHint="Chuy\u1ec3n sang m\u00e0n h\u00ecnh t\u00ecm ki\u1ebfm"
+              accessibilityLabel="Tìm kiếm món ăn"
+              accessibilityHint="Chuyển sang màn hình tìm kiếm"
             >
               <Icon name="search-outline" size="lg" color="primary" />
             </Pressable>
@@ -439,8 +439,8 @@ const AIScanScreen: React.FC = () => {
               disabled={isCapturing}
               style={[captureButtonStyle, styles.captureButtonOuter]}
               accessibilityRole="button"
-              accessibilityLabel="Ch\u1ee5p \u1ea3nh"
-              accessibilityHint="Ch\u1ee5p \u1ea3nh m\u00f3n \u0103n \u0111\u1ec3 AI nh\u1eadn di\u1ec7n"
+              accessibilityLabel="Chụp ảnh"
+              accessibilityHint="Chụp ảnh món ăn để AI nhận diện"
               accessibilityState={{ disabled: isCapturing }}
               testID={TEST_IDS.aiScan.captureButton}
             >
@@ -473,8 +473,8 @@ const AIScanScreen: React.FC = () => {
               ]}
               onPress={handlePickImage}
               accessibilityRole="button"
-              accessibilityLabel="Ch\u1ecdn t\u1eeb th\u01b0 vi\u1ec7n"
-              accessibilityHint="Ch\u1ecdn \u1ea3nh c\u00f3 s\u1eb5n t\u1eeb th\u01b0 vi\u1ec7n"
+              accessibilityLabel="Chọn từ thư viện"
+              accessibilityHint="Chọn ảnh có sẵn từ thư viện"
               testID={TEST_IDS.aiScan.galleryButton}
             >
               <Icon name="images-outline" size="lg" color="primary" />
@@ -496,14 +496,14 @@ const AIScanScreen: React.FC = () => {
             />
             <View style={styles.resultsHeader}>
               <ThemedText variant="h4" weight="700">
-                {'K\u1ebft qu\u1ea3'}
+                {'Kết quả'}
               </ThemedText>
                 <Pressable
                   onPress={handleRetake}
                   style={{ padding: 8 }}
                   accessibilityRole="button"
-                  accessibilityLabel="\u0110\u00f3ng k\u1ebft qu\u1ea3"
-                  accessibilityHint="Quay l\u1ea1i ch\u1ebf \u0111\u1ed9 camera"
+                  accessibilityLabel="Đóng kết quả"
+                  accessibilityHint="Quay lại chế độ camera"
                   testID={TEST_IDS.aiScan.retakeButton}
                 >
                 <Icon name="close" size="md" color="text" />
@@ -641,8 +641,8 @@ const AIScanScreen: React.FC = () => {
                     color="textSecondary"
                     style={{ textAlign: 'center' }}
                   >
-                    {'Kh\u00f4ng t\u00ecm th\u1ea5y m\u00f3n \u0103n n\u00e0o.'}
-                    {'\nTh\u1eed ch\u1ee5p l\u1ea1i r\u00f5 h\u01a1n nh\u00e9!'}
+                    {'Không tìm thấy món ăn nào.'}
+                    {'\nThử chụp lại rõ hơn nhé!'}
                   </ThemedText>
                 </View>
               )}
@@ -659,7 +659,7 @@ const AIScanScreen: React.FC = () => {
                 testID={TEST_IDS.aiScan.retakeButton}
               >
                 <Icon name="refresh" size="sm" color="text" />
-                <ThemedText variant="bodySmall" weight="600" style={{ marginLeft: 6 }}>{'Ch\u1ee5p l\u1ea1i'}</ThemedText>
+                <ThemedText variant="bodySmall" weight="600" style={{ marginLeft: 6 }}>{'Chụp lại'}</ThemedText>
               </Pressable>
               <Pressable
                 onPress={handleAddToDiary}
@@ -667,7 +667,7 @@ const AIScanScreen: React.FC = () => {
                 testID={TEST_IDS.aiScan.addToDiaryButton}
               >
                 <Icon name="add" size="sm" color="background" />
-                <ThemedText variant="bodySmall" weight="600" style={{ marginLeft: 6, color: '#fff' }}>{'Th\u00eam'}</ThemedText>
+                <ThemedText variant="bodySmall" weight="600" style={{ marginLeft: 6, color: '#fff' }}>{'Thêm'}</ThemedText>
               </Pressable>
             </View>
           </Animated.View>
