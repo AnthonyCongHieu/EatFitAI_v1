@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, StyleSheet, ScrollView, ActivityIndicator, Pressable } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -9,8 +9,9 @@ import Animated, { FadeInDown } from 'react-native-reanimated';
 
 import { ThemedText } from '../../../components/ThemedText';
 import Button from '../../../components/Button';
+import { AnimatedEmptyState } from '../../../components/ui/AnimatedEmptyState';
 import { useAppTheme } from '../../../theme/ThemeProvider';
-import { aiService } from '../../../services/aiService';
+import { aiService, isAiOfflineError } from '../../../services/aiService';
 import type { RootStackParamList } from '../../types';
 import type {
   NutritionInsight,
@@ -74,7 +75,7 @@ const ScoreGauge = ({
         </G>
       </Svg>
       <View style={{ position: 'absolute', alignItems: 'center' }}>
-        <ThemedText variant="h2" style={{ color: color, fontSize: 32, lineHeight: 36 }}>
+        <ThemedText variant="h2" style={{ color, fontSize: 32, lineHeight: 36 }}>
           {Math.round(score)}
         </ThemedText>
         <ThemedText variant="caption" color="textSecondary">
@@ -96,23 +97,67 @@ const NutritionInsightsScreen = (): React.ReactElement => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [applying, setApplying] = useState(false);
+  const [notice, setNotice] = useState<string | null>(null);
+  const [aiOffline, setAiOffline] = useState(false);
 
   useEffect(() => {
-    loadData();
+    void loadData();
   }, []);
 
   const loadData = async () => {
     setLoading(true);
     setError(null);
+    setNotice(null);
+    setAiOffline(false);
+
     try {
-      const [insightsData, adaptiveData] = await Promise.all([
+      const [insightsResult, adaptiveResult] = await Promise.allSettled([
         aiService.getNutritionInsights({ analysisDays: 30 }),
         aiService.getAdaptiveTarget({ analysisDays: 14 }),
       ]);
-      setInsights(insightsData);
-      setAdaptiveTarget(adaptiveData);
-    } catch (err: any) {
-      setError(err?.message || t('nutrition_insights.error_title'));
+
+      let nextInsights: NutritionInsight | null = null;
+      let nextAdaptiveTarget: AdaptiveTarget | null = null;
+      const errorMessages: string[] = [];
+      let hasAiOfflineFailure = false;
+
+      if (insightsResult.status === 'fulfilled') {
+        nextInsights = insightsResult.value;
+      } else if (isAiOfflineError(insightsResult.reason)) {
+        hasAiOfflineFailure = true;
+      } else {
+        errorMessages.push(
+          insightsResult.reason?.message || t('nutrition_insights.error_title'),
+        );
+      }
+
+      if (adaptiveResult.status === 'fulfilled') {
+        nextAdaptiveTarget = adaptiveResult.value;
+      } else if (isAiOfflineError(adaptiveResult.reason)) {
+        hasAiOfflineFailure = true;
+      } else {
+        errorMessages.push(
+          adaptiveResult.reason?.message || t('nutrition_insights.error_title'),
+        );
+      }
+
+      setInsights(nextInsights);
+      setAdaptiveTarget(nextAdaptiveTarget);
+
+      if (!nextInsights && !nextAdaptiveTarget) {
+        if (hasAiOfflineFailure) {
+          setAiOffline(true);
+          setError('AI tam khong kha dung luc nay.');
+        } else {
+          setError(errorMessages[0] || t('nutrition_insights.error_title'));
+        }
+      } else if (hasAiOfflineFailure || errorMessages.length > 0) {
+        setNotice(
+          hasAiOfflineFailure
+            ? 'Mot vai phan tich AI dang tam offline. Ung dung dang hien phan du lieu kha dung.'
+            : 'Khong tai du mot phan du lieu AI. Dang hien phan kha dung.',
+        );
+      }
     } finally {
       setLoading(false);
     }
@@ -201,6 +246,17 @@ const NutritionInsightsScreen = (): React.ReactElement => {
       alignItems: 'center',
       justifyContent: 'center',
     },
+    noticeCard: {
+      ...glass.card,
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      gap: theme.spacing.sm,
+      padding: theme.spacing.md,
+      marginBottom: theme.spacing.md,
+      borderWidth: 1,
+      borderColor: theme.colors.warning + '40',
+      backgroundColor: isDark ? 'rgba(245, 158, 11, 0.12)' : 'rgba(245, 158, 11, 0.12)',
+    },
   });
 
   const getPriorityColor = (priority: string) => {
@@ -216,10 +272,8 @@ const NutritionInsightsScreen = (): React.ReactElement => {
     }
   };
 
-  // Custom Header Component
   const renderHeader = () => (
     <View style={{ paddingTop: 60, paddingBottom: theme.spacing.sm, paddingHorizontal: theme.spacing.lg }}>
-      {/* Row: Back button + Title */}
       <View style={{ flexDirection: 'row', alignItems: 'center' }}>
         <Pressable
           onPress={() => navigation.goBack()}
@@ -232,7 +286,7 @@ const NutritionInsightsScreen = (): React.ReactElement => {
             justifyContent: 'center',
           }}
         >
-          <ThemedText style={{ fontSize: 18 }}>←</ThemedText>
+          <ThemedText style={{ fontSize: 18 }}>{'<'}</ThemedText>
         </Pressable>
 
         <View style={{ flex: 1, alignItems: 'center', marginRight: 40 }}>
@@ -242,7 +296,6 @@ const NutritionInsightsScreen = (): React.ReactElement => {
         </View>
       </View>
 
-      {/* Subtitle below */}
       <ThemedText variant="bodySmall" color="textSecondary" style={{ textAlign: 'center', marginTop: 8 }}>
         {t('nutrition_insights.subtitle')}
       </ThemedText>
@@ -304,9 +357,9 @@ const NutritionInsightsScreen = (): React.ReactElement => {
   }
 
   if (error) {
+    const normalizedError = error.toLowerCase();
     const isNoTargetError =
-      error.toLowerCase().includes('nutrition target') ||
-      error.toLowerCase().includes('no active');
+      normalizedError.includes('nutrition target') || normalizedError.includes('no active');
 
     return (
       <LinearGradient
@@ -317,47 +370,44 @@ const NutritionInsightsScreen = (): React.ReactElement => {
       >
         {renderHeader()}
         <View style={styles.center}>
-          <Ionicons
-            name={isNoTargetError ? 'nutrition-outline' : 'alert-circle-outline'}
-            size={64}
-            color={theme.colors.warning}
-            style={{ marginBottom: theme.spacing.md }}
-          />
-          <ThemedText
-            variant="h4"
-            style={{ textAlign: 'center', marginBottom: theme.spacing.sm }}
-          >
-            {isNoTargetError
-              ? 'Chưa thiết lập mục tiêu dinh dưỡng'
-              : t('nutrition_insights.error_title')}
-          </ThemedText>
-          <ThemedText
-            color="textSecondary"
-            style={{
-              textAlign: 'center',
-              marginBottom: theme.spacing.lg,
-              paddingHorizontal: 24,
-            }}
-          >
-            {isNoTargetError
-              ? 'Bạn cần thiết lập mục tiêu calories, protein, carbs và fat trước khi xem phân tích AI.'
-              : error}
-          </ThemedText>
-          <View style={{ gap: theme.spacing.sm, width: '80%' }}>
-            {isNoTargetError ? (
-              <Button
-                title="Thiết lập mục tiêu ngay"
-                onPress={() => navigation.navigate('NutritionSettings' as any)}
-                variant="primary"
-              />
-            ) : (
-              <Button
-                title={t('nutrition_insights.retry')}
-                onPress={loadData}
-                variant="secondary"
-              />
-            )}
-          </View>
+          {isNoTargetError ? (
+            <AnimatedEmptyState
+              title="Chua thiet lap muc tieu dinh duong"
+              description="Ban can tao muc tieu calories, protein, carbs va fat truoc khi xem phan tich AI."
+              primaryAction={{
+                label: 'Thiet lap ngay',
+                onPress: () => navigation.navigate('NutritionSettings' as never),
+              }}
+              secondaryAction={{
+                label: t('nutrition_insights.retry'),
+                onPress: loadData,
+              }}
+            />
+          ) : aiOffline ? (
+            <AnimatedEmptyState
+              variant="offline"
+              title="AI tam offline"
+              description="Ung dung van an toan va ban co the thu lai sau. Cac tinh nang co AI se quay lai khi backend AI san sang."
+              primaryAction={{
+                label: t('nutrition_insights.retry'),
+                onPress: loadData,
+              }}
+              secondaryAction={{
+                label: 'Mo cai dat muc tieu',
+                onPress: () => navigation.navigate('NutritionSettings' as never),
+              }}
+            />
+          ) : (
+            <AnimatedEmptyState
+              variant="error"
+              title={t('nutrition_insights.error_title')}
+              description={error}
+              primaryAction={{
+                label: t('nutrition_insights.retry'),
+                onPress: loadData,
+              }}
+            />
+          )}
         </View>
       </LinearGradient>
     );
@@ -373,14 +423,20 @@ const NutritionInsightsScreen = (): React.ReactElement => {
       {renderHeader()}
 
       <ScrollView contentContainerStyle={styles.content}>
+        {notice && (
+          <View style={styles.noticeCard}>
+            <Ionicons name="cloud-offline-outline" size={20} color={theme.colors.warning} />
+            <ThemedText variant="bodySmall" style={{ flex: 1 }}>
+              {notice}
+            </ThemedText>
+          </View>
+        )}
+
         {insights && (
           <>
             <Animated.View entering={FadeInDown.delay(100)} style={styles.headerCard}>
               <View style={styles.scoreContainer}>
-                <ScoreGauge
-                  score={insights.adherenceScore}
-                  color={theme.colors.primary}
-                />
+                <ScoreGauge score={insights.adherenceScore} color={theme.colors.primary} />
               </View>
               <View style={styles.trendContainer}>
                 <ThemedText variant="h3" style={{ marginBottom: 4 }}>
@@ -478,7 +534,7 @@ const NutritionInsightsScreen = (): React.ReactElement => {
                   {insights.mealTimingInsight.insights.map((insight, idx) => (
                     <View key={idx} style={{ flexDirection: 'row', marginTop: 4 }}>
                       <ThemedText color="textSecondary" style={{ marginRight: 6 }}>
-                        •
+                        {'-'}
                       </ThemedText>
                       <ThemedText
                         variant="bodySmall"
@@ -574,7 +630,7 @@ const NutritionInsightsScreen = (): React.ReactElement => {
                 <ThemedText variant="bodySmall" style={{ fontStyle: 'italic' }}>
                   "
                   {adaptiveTarget.adjustmentReasons
-                    .map((r) => translateToVietnamese(r))
+                    .map((reason) => translateToVietnamese(reason))
                     .join('. ')}
                   "
                 </ThemedText>

@@ -19,8 +19,8 @@ import Animated, {
   SlideInRight,
   useAnimatedStyle,
   useSharedValue,
-  withSpring,
   withSequence,
+  withSpring,
 } from 'react-native-reanimated';
 import Toast from 'react-native-toast-message';
 import { useNavigation } from '@react-navigation/native';
@@ -32,13 +32,14 @@ import { ThemedText } from '../../../components/ThemedText';
 import Button from '../../../components/Button';
 import Icon from '../../../components/Icon';
 import { useAppTheme } from '../../../theme/ThemeProvider';
-import { aiService } from '../../../services/aiService';
+import { aiService, isAiOfflineError } from '../../../services/aiService';
 import {
   addItemsToTodayDiary,
   invalidateDiaryQueries,
 } from '../../../services/diaryFlowService';
 import { handleApiErrorWithCustomMessage } from '../../../utils/errorHandler';
 import { AppImage } from '../../../components/ui/AppImage';
+import { AnimatedEmptyState } from '../../../components/ui/AnimatedEmptyState';
 import { AIResultEditModal } from '../../../components/ui/AIResultEditModal';
 import type { RootStackParamList } from '../../types';
 import type { MappedFoodItem } from '../../../types/ai';
@@ -51,8 +52,11 @@ import { TEST_IDS } from '../../../testing/testIds';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 type CameraViewInstance = InstanceType<typeof CameraView>;
-
 type ScanMode = 'camera' | 'preview' | 'results';
+type ScanResultNotice = {
+  title: string;
+  description: string;
+};
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
@@ -66,7 +70,6 @@ const AIScanScreen: React.FC = () => {
   const [galleryPermission, requestGalleryPermission] =
     ImagePicker.useMediaLibraryPermissions();
 
-  // State
   const [mode, setMode] = useState<ScanMode>('camera');
   const [isCapturing, setIsCapturing] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -78,23 +81,21 @@ const AIScanScreen: React.FC = () => {
   const [editingItem, setEditingItem] = useState<MappedFoodItem | null>(null);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showBasketSheet, setShowBasketSheet] = useState(false);
+  const [resultNotice, setResultNotice] = useState<ScanResultNotice | null>(null);
 
-  // Ingredient Basket
   const addIngredient = useIngredientBasketStore((s) => s.addIngredient);
 
-  // Animation values
   const captureScale = useSharedValue(1);
   const basketIconScale = useSharedValue(1);
 
   const hasPermission = permission?.granted === true;
 
-  // Handlers
   const processImage = useCallback(async (uri: string) => {
     setMode('preview');
     setIsProcessing(true);
     setDetectionResult(null);
+    setResultNotice(null);
 
-    // Compress image before processing
     let processedUri = uri;
     try {
       const manipulatedResult = await ImageManipulator.manipulateAsync(
@@ -103,7 +104,7 @@ const AIScanScreen: React.FC = () => {
         { compress: 0.7, format: ImageManipulator.SaveFormat.JPEG },
       );
       processedUri = manipulatedResult.uri;
-      setCapturedUri(processedUri); // Show compressed image in preview
+      setCapturedUri(processedUri);
     } catch (compressError) {
       console.warn('Image compression failed, using original:', compressError);
       setCapturedUri(uri);
@@ -111,30 +112,37 @@ const AIScanScreen: React.FC = () => {
 
     try {
       const result = await aiService.detectFoodByImage(processedUri);
-      // Filter low confidence results
       const filteredItems = result.items.filter((item) => item.confidence > 0.4);
 
-      if (filteredItems.length === 0) {
-        // Keep result even if empty to show empty state, but notify user
-        setDetectionResult({
-          ...result,
-          items: [],
-        });
-      } else {
-        setDetectionResult({
-          ...result,
-          items: filteredItems,
-        });
-      }
-
+      setDetectionResult({
+        ...result,
+        items: filteredItems,
+      });
+      setResultNotice(
+        filteredItems.length === 0
+          ? {
+              title: 'Chua tim thay mon an phu hop',
+              description: 'Thu chup lai ro hon hoac dung tim kiem thu cong.',
+            }
+          : null,
+      );
       setMode('results');
     } catch (error) {
-      handleApiErrorWithCustomMessage(error, {
-        server_error: { text1: 'Lỗi máy chủ', text2: 'Vui lòng thử lại sau' },
-        network_error: { text1: 'Không có kết nối', text2: 'Kiểm tra mạng và thử lại' },
-        unknown: { text1: 'Không thể phân tích ảnh', text2: 'Vui lòng thử lại' },
-      });
-      setMode('camera');
+      if (isAiOfflineError(error)) {
+        setDetectionResult({ items: [], unmappedLabels: [] });
+        setResultNotice({
+          title: 'AI tam offline',
+          description: 'Ban van co the tim mon thu cong hoac thu lai sau.',
+        });
+        setMode('results');
+      } else {
+        handleApiErrorWithCustomMessage(error, {
+          server_error: { text1: 'Loi may chu', text2: 'Vui long thu lai sau' },
+          network_error: { text1: 'Khong co ket noi', text2: 'Kiem tra mang va thu lai' },
+          unknown: { text1: 'Khong the phan tich anh', text2: 'Vui long thu lai' },
+        });
+        setMode('camera');
+      }
     } finally {
       setIsProcessing(false);
     }
@@ -143,14 +151,12 @@ const AIScanScreen: React.FC = () => {
   const handleCapture = useCallback(async () => {
     if (!cameraRef.current) {
       handleApiErrorWithCustomMessage(new Error('Camera not ready'), {
-        unknown: { text1: 'Camera chưa sẵn sàng', text2: 'Vui lòng thử lại' },
+        unknown: { text1: 'Camera chua san sang', text2: 'Vui long thu lai' },
       });
       return;
     }
 
-    // Haptic feedback when the capture button is pressed
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-
     setIsCapturing(true);
     captureScale.value = withSpring(0.9, { damping: 10 });
 
@@ -160,16 +166,14 @@ const AIScanScreen: React.FC = () => {
         quality: 0.7,
       });
 
-      if (!result?.uri) throw new Error('Không đọc được ảnh');
+      if (!result?.uri) throw new Error('Khong doc duoc anh');
 
-      // Haptic success when capture completes
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-
       captureScale.value = withSpring(1, { damping: 15 });
       await processImage(result.uri);
     } catch (error) {
       handleApiErrorWithCustomMessage(error, {
-        unknown: { text1: 'Không thể chụp ảnh', text2: 'Vui lòng thử lại' },
+        unknown: { text1: 'Khong the chup anh', text2: 'Vui long thu lai' },
       });
       captureScale.value = withSpring(1, { damping: 15 });
     } finally {
@@ -183,8 +187,8 @@ const AIScanScreen: React.FC = () => {
       if (!result.granted) {
         handleApiErrorWithCustomMessage(new Error('Permission denied'), {
           unknown: {
-            text1: 'Cần quyền truy cập thư viện ảnh',
-            text2: 'Vui lòng cấp quyền trong cài đặt',
+            text1: 'Can quyen truy cap thu vien anh',
+            text2: 'Vui long cap quyen trong cai dat',
           },
         });
         return;
@@ -203,21 +207,22 @@ const AIScanScreen: React.FC = () => {
       }
     } catch (error) {
       handleApiErrorWithCustomMessage(error, {
-        unknown: { text1: 'Không thể chọn ảnh', text2: 'Vui lòng thử lại' },
+        unknown: { text1: 'Khong the chon anh', text2: 'Vui long thu lai' },
       });
     }
-  }, [galleryPermission, requestGalleryPermission, processImage]);
+  }, [galleryPermission, processImage, requestGalleryPermission]);
 
   const handleRetake = useCallback(() => {
     setCapturedUri(null);
     setDetectionResult(null);
+    setResultNotice(null);
     setMode('camera');
   }, []);
 
   const handleAddToDiary = useCallback(() => {
     if (!capturedUri || !detectionResult) {
       handleApiErrorWithCustomMessage(new Error('No data'), {
-        unknown: { text1: 'Chưa có dữ liệu', text2: 'Vui lòng chụp hoặc chọn ảnh' },
+        unknown: { text1: 'Chua co du lieu', text2: 'Vui long chup hoac chon anh' },
       });
       return;
     }
@@ -233,16 +238,13 @@ const AIScanScreen: React.FC = () => {
     setShowEditModal(true);
   }, []);
 
-  // Add an ingredient to the basket
   const handleAddToBasket = useCallback(
     (item: MappedFoodItem) => {
-      // Animate basket icon
       basketIconScale.value = withSequence(
         withSpring(1.3, { damping: 10 }),
         withSpring(1, { damping: 15 }),
       );
 
-      // Prefer the Vietnamese foodName from DB, then fall back to translated label
       const displayName = item.foodName || translateIngredient(item.label);
       addIngredient({
         name: displayName,
@@ -252,12 +254,12 @@ const AIScanScreen: React.FC = () => {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       Toast.show({
         type: 'success',
-        text1: 'Đã thêm vào giỏ',
+        text1: 'Da them vao gio',
         text2: displayName,
         visibilityTime: 1500,
       });
     },
-    [addIngredient, capturedUri, basketIconScale],
+    [addIngredient, basketIconScale, capturedUri],
   );
 
   const handleEditModalSave = useCallback(
@@ -265,7 +267,6 @@ const AIScanScreen: React.FC = () => {
       setShowEditModal(false);
       setIsProcessing(true);
       try {
-        // Calculate actual values based on grams (for display only, backend will recalculate from foodItem)
         const ratio = editedItem.grams / 100;
         const actualCalories = Math.round((editedItem.caloriesPer100g || 0) * ratio);
 
@@ -278,15 +279,14 @@ const AIScanScreen: React.FC = () => {
 
         Toast.show({
           type: 'success',
-          text1: 'Đã thêm',
+          text1: 'Da them',
           text2: `${editedItem.label} - ${actualCalories} kcal`,
         });
         await invalidateDiaryQueries(queryClient);
-
         setEditingItem(null);
       } catch (error) {
         handleApiErrorWithCustomMessage(error, {
-          unknown: { text1: 'Lỗi thêm món', text2: 'Vui lòng thử lại' },
+          unknown: { text1: 'Loi them mon', text2: 'Vui long thu lai' },
         });
       } finally {
         setIsProcessing(false);
@@ -304,8 +304,11 @@ const AIScanScreen: React.FC = () => {
   }));
 
   const isCameraMode = mode === 'camera';
+  const topResults = detectionResult
+    ? [...detectionResult.items].sort((a, b) => b.confidence - a.confidence).slice(0, 2)
+    : [];
+  const hasDetectedItems = topResults.length > 0;
 
-  // Permission request screen
   if (!permission) {
     return (
       <View style={[styles.center, { backgroundColor: theme.colors.background }]}>
@@ -324,18 +327,18 @@ const AIScanScreen: React.FC = () => {
           variant="h3"
           style={{ marginTop: theme.spacing.lg, marginBottom: theme.spacing.sm }}
         >
-          {'Cần quyền camera'}
+          {'Can quyen camera'}
         </ThemedText>
         <ThemedText
           variant="body"
           color="textSecondary"
           style={{ textAlign: 'center', paddingHorizontal: 32 }}
         >
-          {'Cho phép truy cập camera để quét món ăn bằng AI'}
+          {'Cho phep truy cap camera de quet mon an bang AI'}
         </ThemedText>
         <Button
           variant="primary"
-          title="Cấp quyền camera"
+          title="Cap quyen camera"
           onPress={requestPermission}
           style={{ marginTop: theme.spacing.xl }}
         />
@@ -345,7 +348,6 @@ const AIScanScreen: React.FC = () => {
 
   return (
     <View style={styles.container} testID={TEST_IDS.aiScan.screen}>
-      {/* Camera Layer - Always rendered to maintain ref, but hidden/paused if needed */}
       {(isCameraMode || mode === 'preview') && (
         <CameraView
           ref={(ref) => {
@@ -356,7 +358,6 @@ const AIScanScreen: React.FC = () => {
         />
       )}
 
-      {/* Preview Image Layer - Visible in preview AND results mode */}
       {(mode === 'preview' || mode === 'results') && capturedUri && (
         <AppImage
           source={{ uri: capturedUri }}
@@ -365,12 +366,10 @@ const AIScanScreen: React.FC = () => {
         />
       )}
 
-      {/* Scan frame overlay, only visible in camera mode */}
       {isCameraMode && (
         <ScanFrameOverlay isScanning={!isCapturing && !isProcessing} isSuccess={false} />
       )}
 
-      {/* Dark overlay for UI contrast, only when the scan frame is hidden */}
       {!isCameraMode && (
         <View
           style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.2)' }]}
@@ -378,9 +377,7 @@ const AIScanScreen: React.FC = () => {
         />
       )}
 
-      {/* UI Overlay Layer */}
       <SafeAreaView style={styles.uiOverlay} pointerEvents="box-none">
-        {/* Header (Floating) - Hide in results mode to show full image */}
         {mode !== 'results' && (
           <View style={styles.headerFloating}>
             <ThemedText
@@ -400,19 +397,16 @@ const AIScanScreen: React.FC = () => {
 
         <View style={styles.spacer} />
 
-        {/* Processing/Result Message */}
         {isProcessing && (
           <Animated.View entering={FadeInUp} style={styles.processingBadge}>
             <ThemedText variant="body" style={{ color: '#fff' }}>
-              {'Đang phân tích...'}
+              {'Dang phan tich...'}
             </ThemedText>
           </Animated.View>
         )}
 
-        {/* CAMERA MODE */}
         {isCameraMode && (
           <Animated.View entering={FadeInDown} style={styles.bottomControls}>
-            {/* Search Button */}
             <Pressable
               style={[
                 styles.sideButton,
@@ -427,20 +421,19 @@ const AIScanScreen: React.FC = () => {
               ]}
               onPress={() => navigation.navigate('FoodSearch')}
               accessibilityRole="button"
-              accessibilityLabel="Tìm kiếm món ăn"
-              accessibilityHint="Chuyển sang màn hình tìm kiếm"
+              accessibilityLabel="Tim kiem mon an"
+              accessibilityHint="Chuyen sang man hinh tim kiem"
             >
               <Icon name="search-outline" size="lg" color="primary" />
             </Pressable>
 
-            {/* Capture button with gradient ring */}
             <AnimatedPressable
               onPress={handleCapture}
               disabled={isCapturing}
               style={[captureButtonStyle, styles.captureButtonOuter]}
               accessibilityRole="button"
-              accessibilityLabel="Chụp ảnh"
-              accessibilityHint="Chụp ảnh món ăn để AI nhận diện"
+              accessibilityLabel="Chup anh"
+              accessibilityHint="Chup anh mon an de AI nhan dien"
               accessibilityState={{ disabled: isCapturing }}
               testID={TEST_IDS.aiScan.captureButton}
             >
@@ -458,7 +451,6 @@ const AIScanScreen: React.FC = () => {
               </LinearGradient>
             </AnimatedPressable>
 
-            {/* Gallery Button */}
             <Pressable
               style={[
                 styles.sideButton,
@@ -473,8 +465,8 @@ const AIScanScreen: React.FC = () => {
               ]}
               onPress={handlePickImage}
               accessibilityRole="button"
-              accessibilityLabel="Chọn từ thư viện"
-              accessibilityHint="Chọn ảnh có sẵn từ thư viện"
+              accessibilityLabel="Chon tu thu vien"
+              accessibilityHint="Chon anh co san tu thu vien"
               testID={TEST_IDS.aiScan.galleryButton}
             >
               <Icon name="images-outline" size="lg" color="primary" />
@@ -482,50 +474,47 @@ const AIScanScreen: React.FC = () => {
           </Animated.View>
         )}
 
-        {/* VISUAL RESULTS / PREVIEW MODE */}
         {mode === 'results' && detectionResult && (
           <Animated.View
             entering={SlideInRight}
-            style={[
-              styles.resultsContainer,
-              { backgroundColor: theme.colors.background },
-            ]}
+            style={[styles.resultsContainer, { backgroundColor: theme.colors.background }]}
           >
-            <View
-              style={[styles.resultsHandle, { backgroundColor: theme.colors.border }]}
-            />
+            <View style={[styles.resultsHandle, { backgroundColor: theme.colors.border }]} />
             <View style={styles.resultsHeader}>
               <ThemedText variant="h4" weight="700">
-                {'Kết quả'}
+                {'Ket qua'}
               </ThemedText>
-                <Pressable
-                  onPress={handleRetake}
-                  style={{ padding: 8 }}
-                  accessibilityRole="button"
-                  accessibilityLabel="Đóng kết quả"
-                  accessibilityHint="Quay lại chế độ camera"
-                  testID={TEST_IDS.aiScan.retakeButton}
-                >
+              <Pressable
+                onPress={handleRetake}
+                style={{ padding: 8 }}
+                accessibilityRole="button"
+                accessibilityLabel="Dong ket qua"
+                accessibilityHint="Quay lai che do camera"
+                testID={TEST_IDS.aiScan.retakeButton}
+              >
                 <Icon name="close" size="md" color="text" />
               </Pressable>
             </View>
 
             <FlatList
-              data={detectionResult.items.sort((a, b) => b.confidence - a.confidence).slice(0, 2)}
+              data={topResults}
               keyExtractor={(item, index) => item.label + index}
               renderItem={({ item, index }) => (
                 <View
                   style={[
                     styles.resultCard,
                     {
-                      backgroundColor: index === 0
-                        ? (theme.mode === 'dark' ? 'rgba(59, 130, 246, 0.15)' : 'rgba(59, 130, 246, 0.08)')
-                        : theme.colors.card,
-                      borderColor: index === 0 ? theme.colors.primary + '50' : theme.colors.border,
+                      backgroundColor:
+                        index === 0
+                          ? theme.mode === 'dark'
+                            ? 'rgba(59, 130, 246, 0.15)'
+                            : 'rgba(59, 130, 246, 0.08)'
+                          : theme.colors.card,
+                      borderColor:
+                        index === 0 ? theme.colors.primary + '50' : theme.colors.border,
                     },
                   ]}
                 >
-                  {/* Left: Thumbnail */}
                   <View style={styles.resultThumbnail}>
                     {item.thumbNail ? (
                       <AppImage
@@ -548,83 +537,112 @@ const AIScanScreen: React.FC = () => {
                         <Icon name="leaf-outline" size="lg" color="textSecondary" />
                       </View>
                     )}
-                    {/* Best match indicator */}
                     {index === 0 && (
-                      <View style={{
-                        position: 'absolute',
-                        bottom: -4,
-                        left: '50%',
-                        marginLeft: -20,
-                        backgroundColor: theme.colors.success,
-                        paddingHorizontal: 6,
-                        paddingVertical: 2,
-                        borderRadius: 6,
-                      }}>
-                        <ThemedText variant="caption" style={{ color: '#fff', fontSize: 8, fontWeight: '700' }}>
+                      <View
+                        style={{
+                          position: 'absolute',
+                          bottom: -4,
+                          left: '50%',
+                          marginLeft: -20,
+                          backgroundColor: theme.colors.success,
+                          paddingHorizontal: 6,
+                          paddingVertical: 2,
+                          borderRadius: 6,
+                        }}
+                      >
+                        <ThemedText
+                          variant="caption"
+                          style={{ color: '#fff', fontSize: 8, fontWeight: '700' }}
+                        >
                           TOP 1
                         </ThemedText>
                       </View>
                     )}
                   </View>
 
-                  {/* Center: Name & Info */}
                   <View style={styles.resultContent}>
                     <ThemedText variant="body" weight="700" numberOfLines={1}>
                       {item.foodName || translateIngredient(item.label)}
                     </ThemedText>
 
-                    <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 6, gap: 8 }}>
-                      {/* Confidence */}
-                      <View style={{
-                        flexDirection: 'row',
-                        alignItems: 'center',
-                        backgroundColor: theme.mode === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)',
-                        paddingHorizontal: 8,
-                        paddingVertical: 4,
-                        borderRadius: 6,
-                      }}>
-                        <View style={{
-                          width: 32,
-                          height: 3,
-                          backgroundColor: theme.colors.border,
-                          borderRadius: 2,
-                          overflow: 'hidden',
-                          marginRight: 4,
-                        }}>
-                          <View style={{
-                            width: `${item.confidence * 100}%`,
-                            height: '100%',
-                            backgroundColor: item.confidence > 0.7 ? theme.colors.success :
-                              item.confidence > 0.5 ? theme.colors.warning : theme.colors.danger,
-                          }} />
+                    <View
+                      style={{ flexDirection: 'row', alignItems: 'center', marginTop: 6, gap: 8 }}
+                    >
+                      <View
+                        style={{
+                          flexDirection: 'row',
+                          alignItems: 'center',
+                          backgroundColor:
+                            theme.mode === 'dark'
+                              ? 'rgba(255,255,255,0.1)'
+                              : 'rgba(0,0,0,0.05)',
+                          paddingHorizontal: 8,
+                          paddingVertical: 4,
+                          borderRadius: 6,
+                        }}
+                      >
+                        <View
+                          style={{
+                            width: 32,
+                            height: 3,
+                            backgroundColor: theme.colors.border,
+                            borderRadius: 2,
+                            overflow: 'hidden',
+                            marginRight: 4,
+                          }}
+                        >
+                          <View
+                            style={{
+                              width: `${item.confidence * 100}%`,
+                              height: '100%',
+                              backgroundColor:
+                                item.confidence > 0.7
+                                  ? theme.colors.success
+                                  : item.confidence > 0.5
+                                    ? theme.colors.warning
+                                    : theme.colors.danger,
+                            }}
+                          />
                         </View>
                         <ThemedText variant="caption" weight="600" style={{ fontSize: 11 }}>
                           {Math.round(item.confidence * 100)}%
                         </ThemedText>
                       </View>
 
-                      {/* Calories */}
-                      <ThemedText variant="caption" color="textSecondary" style={{ fontSize: 12 }}>
+                      <ThemedText
+                        variant="caption"
+                        color="textSecondary"
+                        style={{ fontSize: 12 }}
+                      >
                         {item.caloriesPer100g ? `${item.caloriesPer100g} kcal` : '--'}
                       </ThemedText>
                     </View>
                   </View>
 
-                  {/* Right: Actions */}
                   <View style={styles.resultActions}>
                     <Pressable
                       onPress={() => handleQuickAdd(item)}
                       style={[styles.resultActionBtn, { backgroundColor: theme.colors.primary }]}
                       hitSlop={4}
-                      testID={index === 0 ? TEST_IDS.aiScan.quickAddTopResultButton : `ai-scan-quick-add-${index}`}
+                      testID={
+                        index === 0
+                          ? TEST_IDS.aiScan.quickAddTopResultButton
+                          : `ai-scan-quick-add-${index}`
+                      }
                     >
                       <Icon name="add" size="md" color="background" />
                     </Pressable>
                     <Pressable
                       onPress={() => handleAddToBasket(item)}
-                      style={[styles.resultActionBtn, {
-                        backgroundColor: theme.mode === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)',
-                      }]}
+                      style={[
+                        styles.resultActionBtn,
+                        {
+                          backgroundColor:
+                            theme.mode === 'dark'
+                              ? 'rgba(255,255,255,0.1)'
+                              : 'rgba(0,0,0,0.05)',
+                        },
+                      ]}
                       hitSlop={4}
                     >
                       <Animated.View style={basketIconStyle}>
@@ -634,22 +652,38 @@ const AIScanScreen: React.FC = () => {
                   </View>
                 </View>
               )}
-              ListEmptyComponent={() => (
-                <View style={{ padding: 20, alignItems: 'center' }}>
-                  <ThemedText
-                    variant="body"
-                    color="textSecondary"
-                    style={{ textAlign: 'center' }}
-                  >
-                    {'Không tìm thấy món ăn nào.'}
-                    {'\nThử chụp lại rõ hơn nhé!'}
-                  </ThemedText>
-                </View>
-              )}
+              ListEmptyComponent={() =>
+                resultNotice ? (
+                  <AnimatedEmptyState
+                    title={resultNotice.title}
+                    description={resultNotice.description}
+                    compact
+                    primaryAction={{
+                      label: 'Tim thu cong',
+                      onPress: () => navigation.navigate('FoodSearch'),
+                    }}
+                    secondaryAction={{
+                      label: 'Chup lai',
+                      onPress: handleRetake,
+                    }}
+                  />
+                ) : (
+                  <View style={{ padding: 20, alignItems: 'center' }}>
+                    <ThemedText
+                      variant="body"
+                      color="textSecondary"
+                      style={{ textAlign: 'center' }}
+                    >
+                      {'Khong tim thay mon an nao.'}
+                      {'\nThu chup lai ro hon nhe!'}
+                    </ThemedText>
+                  </View>
+                )
+              }
               style={{ flex: 1, maxHeight: Dimensions.get('window').height * 0.5 }}
               contentContainerStyle={{ flexGrow: 1 }}
-              showsVerticalScrollIndicator={true}
-              nestedScrollEnabled={true}
+              showsVerticalScrollIndicator
+              nestedScrollEnabled
             />
 
             <View style={styles.actionButtons}>
@@ -659,22 +693,45 @@ const AIScanScreen: React.FC = () => {
                 testID={TEST_IDS.aiScan.retakeButton}
               >
                 <Icon name="refresh" size="sm" color="text" />
-                <ThemedText variant="bodySmall" weight="600" style={{ marginLeft: 6 }}>{'Chụp lại'}</ThemedText>
+                <ThemedText variant="bodySmall" weight="600" style={{ marginLeft: 6 }}>
+                  {'Chup lai'}
+                </ThemedText>
               </Pressable>
-              <Pressable
-                onPress={handleAddToDiary}
-                style={[styles.compactButton, { backgroundColor: theme.colors.primary }]}
-                testID={TEST_IDS.aiScan.addToDiaryButton}
-              >
-                <Icon name="add" size="sm" color="background" />
-                <ThemedText variant="bodySmall" weight="600" style={{ marginLeft: 6, color: '#fff' }}>{'Thêm'}</ThemedText>
-              </Pressable>
+              {hasDetectedItems ? (
+                <Pressable
+                  onPress={handleAddToDiary}
+                  style={[styles.compactButton, { backgroundColor: theme.colors.primary }]}
+                  testID={TEST_IDS.aiScan.addToDiaryButton}
+                >
+                  <Icon name="add" size="sm" color="background" />
+                  <ThemedText
+                    variant="bodySmall"
+                    weight="600"
+                    style={{ marginLeft: 6, color: '#fff' }}
+                  >
+                    {'Them'}
+                  </ThemedText>
+                </Pressable>
+              ) : (
+                <Pressable
+                  onPress={() => navigation.navigate('FoodSearch')}
+                  style={[styles.compactButton, { backgroundColor: theme.colors.primary }]}
+                >
+                  <Icon name="search-outline" size="sm" color="background" />
+                  <ThemedText
+                    variant="bodySmall"
+                    weight="600"
+                    style={{ marginLeft: 6, color: '#fff' }}
+                  >
+                    {'Tim thu cong'}
+                  </ThemedText>
+                </Pressable>
+              )}
             </View>
           </Animated.View>
         )}
       </SafeAreaView>
 
-      {/* Edit Modal */}
       <AIResultEditModal
         visible={showEditModal}
         item={editingItem}
@@ -685,10 +742,8 @@ const AIScanScreen: React.FC = () => {
         onSave={handleEditModalSave}
       />
 
-      {/* Ingredient basket FAB */}
       <IngredientBasketFab onPress={() => setShowBasketSheet(true)} />
 
-      {/* Ingredient basket sheet */}
       <IngredientBasketSheet
         visible={showBasketSheet}
         onClose={() => setShowBasketSheet(false)}
@@ -737,14 +792,6 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
     paddingHorizontal: 20,
   },
-  captureButtonLarge: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: 'rgba(255,255,255,0.3)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   captureButtonOuter: {
     width: 88,
     height: 88,
@@ -764,7 +811,6 @@ const styles = StyleSheet.create({
     width: 68,
     height: 68,
     borderRadius: 34,
-    // Keep the shutter button white for strong contrast with the gradient ring
     backgroundColor: '#FFFFFF',
   },
   sideButton: {
@@ -779,7 +825,6 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    // Use theme colors instead of hardcoded values where possible
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     padding: 20,
