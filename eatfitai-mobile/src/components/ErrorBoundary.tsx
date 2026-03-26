@@ -1,5 +1,5 @@
 import React, { Component, ReactNode } from 'react';
-import ErrorState from './ErrorState';
+import ErrorScreen from './ui/ErrorScreen';
 import { t } from '../i18n/vi';
 import { captureError } from '../services/errorTracking';
 
@@ -7,27 +7,41 @@ interface Props {
   children: ReactNode;
   fallback?: ReactNode;
   onError?: (error: Error, errorInfo: any) => void;
+  onRetry?: (error?: Error) => void;
 }
 
 interface State {
   hasError: boolean;
   error?: Error;
+  recoveryKey: number;
 }
 
 class ErrorBoundaryClass extends Component<Props, State> {
   constructor(props: Props) {
     super(props);
-    this.state = { hasError: false };
+    this.state = { hasError: false, recoveryKey: 0 };
   }
 
-  static getDerivedStateFromError(error: Error): State {
+  static getDerivedStateFromError(error: Error): Pick<State, 'hasError' | 'error'> {
     return { hasError: true, error };
   }
+
+  private handleRetry = () => {
+    const { error } = this.state;
+
+    this.props.onRetry?.(error);
+    this.setState((prevState) => ({
+      hasError: false,
+      error: undefined,
+      recoveryKey: prevState.recoveryKey + 1,
+    }));
+  };
 
   componentDidCatch(error: Error, errorInfo: any) {
     if (__DEV__) {
       console.error('ErrorBoundary caught an error:', error, errorInfo);
     }
+
     captureError(error, 'ErrorBoundary');
     this.props.onError?.(error, errorInfo);
   }
@@ -39,17 +53,16 @@ class ErrorBoundaryClass extends Component<Props, State> {
       }
 
       return (
-        <ErrorState
+        <ErrorScreen
+          type="generic"
           title={t('common.appError')}
-          description={t('common.appErrorDescription')}
-          onRetry={() => {
-            this.setState({ hasError: false, error: undefined });
-          }}
+          message={t('common.appErrorDescription')}
+          onRetry={this.handleRetry}
         />
       );
     }
 
-    return this.props.children;
+    return <React.Fragment key={this.state.recoveryKey}>{this.props.children}</React.Fragment>;
   }
 }
 
