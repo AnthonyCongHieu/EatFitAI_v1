@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+﻿import { useEffect } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../types';
@@ -23,13 +23,14 @@ import RecipeDetailScreen from '../screens/ai/RecipeDetailScreen';
 import NutritionSettingsScreen from '../screens/ai/NutritionSettingsScreen';
 import AchievementsScreen from '../screens/gamification/AchievementsScreen';
 import OnboardingScreen from '../screens/auth/OnboardingScreen';
-// Profile screens - mới thêm
+// Profile screens - má»›i thÃªm
 import EditProfileScreen from '../screens/profile/EditProfileScreen';
 import BodyMetricsScreen from '../screens/profile/BodyMetricsScreen';
 import GoalSettingsScreen from '../screens/profile/GoalSettingsScreen';
 import WeightHistoryScreen from '../screens/profile/WeightHistoryScreen';
 import ChangePasswordScreen from '../screens/profile/ChangePasswordScreen';
 import AboutScreen from '../screens/profile/AboutScreen';
+import PrivacyPolicyScreen from '../screens/profile/PrivacyPolicyScreen';
 import NotificationsScreen from '../screens/profile/NotificationsScreen';
 import DietaryRestrictionsScreen from '../screens/ai/DietaryRestrictionsScreen';
 import { t } from '../../i18n/vi';
@@ -42,16 +43,16 @@ const AppNavigator = (): React.ReactElement => {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const init = useAuthStore((s) => s.init);
 
-  // Khởi tạo auth store khi app mount
+  // Khá»Ÿi táº¡o auth store khi app mount
   useEffect(() => {
     init().catch(() => {
-      // bỏ qua lỗi init (ví dụ chưa có token)
+      // bá» qua lá»—i init (vÃ­ dá»¥ chÆ°a cÃ³ token)
     });
   }, [init]);
 
   return (
     <NavigationContainer theme={navigationTheme}>
-      {/* Điều hướng: nếu đang init => hiển thị màn hình trắng đơn giản */}
+      {/* Äiá»u hÆ°á»›ng: náº¿u Ä‘ang init => hiá»ƒn thá»‹ mÃ n hÃ¬nh tráº¯ng Ä‘Æ¡n giáº£n */}
       {isInitializing ? (
         <></>
       ) : (
@@ -63,7 +64,7 @@ const AppNavigator = (): React.ReactElement => {
           }}
         >
           {!isAuthenticated ? (
-            // Chưa đăng nhập: Hiển thị stack đăng nhập/đăng ký
+            // ChÆ°a Ä‘Äƒng nháº­p: Hiá»ƒn thá»‹ stack Ä‘Äƒng nháº­p/Ä‘Äƒng kÃ½
             <>
               <Stack.Screen name="Welcome" component={WelcomeScreen} />
               <Stack.Screen name="Login" component={LoginScreen} />
@@ -77,7 +78,7 @@ const AppNavigator = (): React.ReactElement => {
               />
             </>
           ) : (
-            // Đã đăng nhập: vào App Tabs
+            // ÄÃ£ Ä‘Äƒng nháº­p: vÃ o App Tabs
             <>
               <Stack.Screen name="AppTabs" component={AppTabs} />
               <Stack.Screen
@@ -102,7 +103,7 @@ const AppNavigator = (): React.ReactElement => {
                 component={MealDiaryScreen}
                 options={{
                   headerShown: false,
-                  title: 'Nhật ký bữa ăn',
+                  title: 'Nháº­t kÃ½ bá»¯a Äƒn',
                 }}
               />
               <Stack.Screen
@@ -132,7 +133,7 @@ const AppNavigator = (): React.ReactElement => {
                 component={RecipeSuggestionsScreen}
                 options={{
                   headerShown: false,
-                  title: 'Gợi ý công thức',
+                  title: 'Gá»£i Ã½ cÃ´ng thá»©c',
                 }}
               />
               <Stack.Screen
@@ -156,7 +157,7 @@ const AppNavigator = (): React.ReactElement => {
                 name="Achievements"
                 component={AchievementsScreen}
                 options={{
-                  headerShown: false, // Đã có ScreenHeader custom
+                  headerShown: false, // ÄÃ£ cÃ³ ScreenHeader custom
                 }}
               />
               {/* Profile screens */}
@@ -191,6 +192,11 @@ const AppNavigator = (): React.ReactElement => {
                 options={{ headerShown: false }}
               />
               <Stack.Screen
+                name="PrivacyPolicy"
+                component={PrivacyPolicyScreen}
+                options={{ headerShown: false }}
+              />
+              <Stack.Screen
                 name="DietaryRestrictions"
                 component={DietaryRestrictionsScreen}
                 options={{ headerShown: false }}
@@ -209,4 +215,3 @@ const AppNavigator = (): React.ReactElement => {
 };
 
 export default AppNavigator;
-

@@ -1,11 +1,11 @@
-// Khai báo các screen của Stack gốc
-// - Login, Register: màn hình xác thực
-// - AppTabs: nhóm Tab chính sau khi đăng nhập
+﻿// Khai bÃ¡o cÃ¡c screen cá»§a Stack gá»‘c
+// - Login, Register: mÃ n hÃ¬nh xÃ¡c thá»±c
+// - AppTabs: nhÃ³m Tab chÃ­nh sau khi Ä‘Äƒng nháº­p
 export type RootStackParamList = {
   Welcome: undefined;
   Login: undefined;
   Register: undefined;
-  VerifyEmail: { email: string; verificationCode?: string }; // verificationCode chỉ dùng cho dev mode
+  VerifyEmail: { email: string; verificationCode?: string }; // verificationCode chá»‰ dÃ¹ng cho dev mode
   ForgotPassword: undefined;
   Onboarding: undefined;
   AppTabs: undefined;
@@ -24,13 +24,14 @@ export type RootStackParamList = {
   VisionHistory: undefined;
   NutritionSettings: undefined;
   Achievements: undefined;
-  // Profile screens - mới thêm
+  // Profile screens - má»›i thÃªm
   EditProfile: undefined;
   BodyMetrics: undefined;
   GoalSettings: undefined;
   WeightHistory: undefined;
   ChangePassword: undefined;
   About: undefined;
+  PrivacyPolicy: undefined;
   NotificationsSettings: undefined;
   DietaryRestrictions: undefined;
 };
@@ -41,4 +42,3 @@ export interface UserPreference {
   preferredMealsPerDay: number;
   preferredCuisine: string | null;
 }
-
