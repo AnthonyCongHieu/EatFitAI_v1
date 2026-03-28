@@ -50,6 +50,10 @@ export interface TeachLabelRequest {
   label: string;
   foodItemId: number;
   minConfidence?: number;
+  detectedConfidence?: number;
+  selectedFoodName?: string;
+  source?: string;
+  clientTimestamp?: string;
 }
 
 const toNumber = (value: unknown): number | null => {

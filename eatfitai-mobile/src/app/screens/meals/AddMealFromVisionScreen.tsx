@@ -16,7 +16,7 @@ import type { RootStackParamList } from '../../types';
 import type { MealTypeId } from '../../../types';
 import type { MappedFoodItem } from '../../../types/ai';
 import type { FoodItem } from '../../../services/foodService';
-import { aiService } from '../../../services/aiService';
+import { aiService, type TeachLabelRequest } from '../../../services/aiService';
 import {
   addItemsToTodayDiary,
   invalidateDiaryQueries,
@@ -55,7 +55,7 @@ const AddMealFromVisionScreen = (): React.ReactElement => {
     })),
   );
   const [teachLabelVisible, setTeachLabelVisible] = useState(false);
-  const [currentTeachLabel, setCurrentTeachLabel] = useState<string>('');
+  const [currentTeachItem, setCurrentTeachItem] = useState<MappedFoodItem | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const selectedItems = useMemo(
@@ -87,36 +87,68 @@ const AddMealFromVisionScreen = (): React.ReactElement => {
     );
   }, []);
 
-  const handleTeachLabel = useCallback((label: string) => {
-    setCurrentTeachLabel(label);
+  const closeTeachLabelSheet = useCallback(() => {
+    setTeachLabelVisible(false);
+    setCurrentTeachItem(null);
+  }, []);
+
+  const handleTeachLabel = useCallback((item: MappedFoodItem) => {
+    setCurrentTeachItem(item);
     setTeachLabelVisible(true);
   }, []);
 
   const handleSelectFood = async (foodItem: FoodItem) => {
+    if (!currentTeachItem) {
+      throw new Error('No teach label item selected');
+    }
+
+    const teachItem = currentTeachItem;
+
+    const foodItemId = Number.parseInt(foodItem.id, 10);
+    if (Number.isNaN(foodItemId)) {
+      throw new Error('Invalid food item id');
+    }
+
     try {
-      await aiService.teachLabel({
-        label: currentTeachLabel,
-        foodItemId: parseInt(foodItem.id),
-      });
+      const request: TeachLabelRequest = {
+        label: teachItem.label,
+        foodItemId,
+        detectedConfidence: teachItem.confidence,
+        selectedFoodName: foodItem.name,
+        source: 'vision_add_meal',
+        clientTimestamp: new Date().toISOString(),
+      };
+
+      await aiService.teachLabel(request);
+
+      closeTeachLabelSheet();
 
       Toast.show({
         type: 'success',
         text1: 'Đã dạy AI',
-        text2: `"${currentTeachLabel}" -> ${foodItem.name}`,
+        text2: `"${teachItem.label}" -> ${foodItem.name}`,
       });
 
-      // Refresh the detection result after teaching the label
       setLoading(true);
-      const refreshedResult = await aiService.detectFoodByImage(imageUri);
-      setDetectionItems(
-        refreshedResult.items.map((item) => ({
-          item,
-          selected: item.isMatched,
-          grams: 100,
-          mealType: 2,
-        })),
-      );
-      setLoading(false);
+      try {
+        const refreshedResult = await aiService.detectFoodByImage(imageUri);
+        setDetectionItems(
+          refreshedResult.items.map((item) => ({
+            item,
+            selected: item.isMatched,
+            grams: 100,
+            mealType: 2,
+          })),
+        );
+      } catch {
+        Toast.show({
+          type: 'info',
+          text1: 'Đã lưu chỉnh sửa',
+          text2: 'Chưa thể tải lại kết quả AI ngay bây giờ',
+        });
+      } finally {
+        setLoading(false);
+      }
     } catch (err) {
       handleApiErrorWithCustomMessage(err, {
         server_error: { text1: 'Lỗi', text2: 'Máy chủ gặp sự cố' },
@@ -217,7 +249,10 @@ const AddMealFromVisionScreen = (): React.ReactElement => {
         {/* Action button */}
         {!isMatched && (
           <Pressable
-            onPress={() => handleTeachLabel(item.label)}
+            onPress={(event) => {
+              event.stopPropagation();
+              handleTeachLabel(item);
+            }}
             style={[styles.teachBtn, { backgroundColor: theme.colors.primary + '20' }]}
           >
             <ThemedText variant="caption" color="primary">
@@ -410,9 +445,9 @@ const AddMealFromVisionScreen = (): React.ReactElement => {
       {/* Teach Label Bottom Sheet */}
       <TeachLabelBottomSheet
         visible={teachLabelVisible}
-        onClose={() => setTeachLabelVisible(false)}
+        onClose={closeTeachLabelSheet}
         onSelectFood={handleSelectFood}
-        currentLabel={currentTeachLabel}
+        currentLabel={currentTeachItem?.label ?? ''}
       />
     </Screen>
   );
