@@ -7,7 +7,7 @@ import type {
 } from '../types/ai';
 import type { AdaptiveTarget, NutritionInsight } from '../types/aiEnhanced';
 
-import { API_BASE_URL } from '../config/env';
+import { API_BASE_URL, assertBackendApiBaseUrl } from '../config/env';
 import { getAccessTokenMem } from './authTokens';
 import { tokenStorage } from './secureStore';
 
@@ -19,7 +19,7 @@ const getApiBaseUrl = (): string => {
     );
   }
 
-  return baseUrl;
+  return assertBackendApiBaseUrl(baseUrl, 'AI API base URL');
 };
 
 export type IngredientItem = {

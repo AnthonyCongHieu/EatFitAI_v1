@@ -28,6 +28,48 @@ const normalizeUrl = (value: string | undefined | null): string | undefined => {
   return trimmed.length > 0 ? trimmed : undefined;
 };
 
+const isAiProviderPort = (value: string): boolean => {
+  try {
+    const parsed = new URL(value);
+    return parsed.port === '5050';
+  } catch {
+    return /:5050(?:\/|$)/.test(value);
+  }
+};
+
+const toSafeBackendApiUrl = (
+  value: string | undefined | null,
+  source: string,
+): string | undefined => {
+  const normalized = normalizeUrl(value);
+  if (!normalized) {
+    return undefined;
+  }
+
+  if (!isAiProviderPort(normalized)) {
+    return normalized;
+  }
+
+  console.error(
+    `[EatFitAI] ${source} points to AI provider port 5050. Mobile must call the backend proxy instead.`,
+  );
+  return undefined;
+};
+
+export const assertBackendApiBaseUrl = (
+  value: string | undefined | null,
+  source: string,
+): string => {
+  const safeUrl = toSafeBackendApiUrl(value, source);
+  if (!safeUrl) {
+    throw new Error(
+      `${source} is not configured to a backend URL. Use the backend API lane instead of the AI provider.`,
+    );
+  }
+
+  return safeUrl;
+};
+
 const resolveHostUri = (): string | undefined => {
   const expoConfig: any = Constants;
 
@@ -136,14 +178,23 @@ const resolveDevFallbackHost = (): string | undefined => {
 
 export const API_BASE_URL: string | undefined = (() => {
   // 1. Highest priority: EXPO_PUBLIC_API_BASE_URL environment variable
-  const explicit = normalizeUrl(process.env.EXPO_PUBLIC_API_BASE_URL);
+  const explicit = toSafeBackendApiUrl(
+    process.env.EXPO_PUBLIC_API_BASE_URL,
+    'EXPO_PUBLIC_API_BASE_URL',
+  );
   if (explicit) {
     return explicit;
   }
 
   // 2. Next priority: generated config from the pre-start script
   if (GENERATED_API_BASE_URL) {
-    return GENERATED_API_BASE_URL;
+    const generated = toSafeBackendApiUrl(
+      GENERATED_API_BASE_URL,
+      'generated API base URL',
+    );
+    if (generated) {
+      return generated;
+    }
   }
 
   // 3. app.config.js extra values (auto-detected IP when Metro starts)
@@ -164,7 +215,7 @@ export const API_BASE_URL: string | undefined = (() => {
   }
 
   for (const extraUrl of possibleExtras) {
-    const fromExtra = normalizeUrl(extraUrl);
+    const fromExtra = toSafeBackendApiUrl(extraUrl, 'Expo extra apiBaseUrl');
     if (fromExtra) {
       if (__DEV__) {
         console.log('[EatFitAI] Using API URL from app.config.js extra:', fromExtra);
@@ -199,7 +250,7 @@ export const API_BASE_URL: string | undefined = (() => {
   // Default dev API port simplified to match backend launch profile
   const port = resolvePort() ?? '5247';
   const scheme = resolveScheme();
-  return `${scheme}://${host}:${port}`;
+  return toSafeBackendApiUrl(`${scheme}://${host}:${port}`, 'resolved API base URL');
 })();
 
 if (__DEV__) {
@@ -218,4 +269,3 @@ if (__DEV__) {
     console.log(`[EatFitAI] API_BASE_URL resolved to: ${API_BASE_URL}`);
   }
 }
-
