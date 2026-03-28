@@ -163,7 +163,7 @@ namespace EatFitAI.API.Services
             };
         }
 
-        public async Task<bool> ValidateTokenAsync(string token)
+        public Task<bool> ValidateTokenAsync(string token)
         {
             try
             {
@@ -179,15 +179,15 @@ namespace EatFitAI.API.Services
                     ClockSkew = TimeSpan.Zero
                 }, out SecurityToken validatedToken);
 
-                return true;
+                return Task.FromResult(true);
             }
             catch
             {
-                return false;
+                return Task.FromResult(false);
             }
         }
 
-        public async Task<Guid?> GetUserIdFromTokenAsync(string token)
+        public Task<Guid?> GetUserIdFromTokenAsync(string token)
         {
             try
             {
@@ -197,14 +197,14 @@ namespace EatFitAI.API.Services
                 var userIdClaim = jwtToken?.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier);
                 if (userIdClaim != null && Guid.TryParse(userIdClaim.Value, out var userId))
                 {
-                    return userId;
+                    return Task.FromResult<Guid?>(userId);
                 }
 
-                return null;
+                return Task.FromResult<Guid?>(null);
             }
             catch
             {
-                return null;
+                return Task.FromResult<Guid?>(null);
             }
         }
 
@@ -324,7 +324,7 @@ namespace EatFitAI.API.Services
                 throw new InvalidOperationException("Jwt:Key is missing or insecure.");
             }
 
-            return Encoding.ASCII.GetBytes(key);
+            return Encoding.ASCII.GetBytes(key!);
         }
 
         public async Task LogoutAsync(string refreshToken)
@@ -390,12 +390,12 @@ namespace EatFitAI.API.Services
             };
         }
 
-        public async Task<AuthResponse> GoogleLoginAsync(string idToken)
+        public Task<AuthResponse> GoogleLoginAsync(string idToken)
         {
             // In a real implementation, you would validate the Google ID token
             // and create/login the user. For now, we'll throw an exception
             // as this requires Google OAuth integration
-            throw new NotImplementedException("Google login functionality requires OAuth integration");
+            return Task.FromException<AuthResponse>(new NotImplementedException("Google login functionality requires OAuth integration"));
         }
 
         public async Task<ForgotPasswordResponse> ForgotPasswordAsync(ForgotPasswordRequest request)

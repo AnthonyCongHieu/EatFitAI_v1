@@ -57,7 +57,7 @@ export type SearchFoodsResult = {
 // Normalizers
 const normalizeFoodItem = (data: FoodItemDtoExtended): FoodItem => ({
   id: String(data?.foodItemId ?? ''),
-  name: data?.foodName ?? 'Mon an',
+  name: data?.foodName ?? 'Món ăn',
   nameEn: data?.foodNameEn ?? null,
   brand: null,
   calories: data?.caloriesPer100g ?? null,
@@ -84,7 +84,7 @@ const normalizeFoodDetail = (data: FoodItemDtoExtended): FoodDetail => ({
 
 const normalizeUserFoodDetail = (data: ApiUserFoodDetail): FoodDetail => ({
   id: String(data?.userFoodItemId ?? data?.id ?? ''),
-  name: data?.foodName ?? 'Mon an',
+  name: data?.foodName ?? 'Món ăn',
   brand: null,
   calories: data?.caloriesPer100 ?? null,
   protein: data?.proteinPer100 ?? null,
@@ -122,7 +122,7 @@ export const foodService = {
     const rows = Array.isArray(response.data) ? response.data : [];
     const items: FoodItem[] = rows.map((x: ApiFoodSearchItem) => ({
       id: String(x?.id ?? ''),
-      name: x?.foodName ?? 'Mon an',
+      name: x?.foodName ?? 'Món ăn',
       brand: null,
       calories: toNumber(x?.caloriesPer100),
       protein: toNumber(x?.proteinPer100),
@@ -259,7 +259,7 @@ export const foodService = {
     return data.map((item: any) => {
       return {
         id: String(item?.foodItemId ?? item?.id ?? ''),
-        name: item?.foodName ?? item?.name ?? 'Mon an',
+        name: item?.foodName ?? item?.name ?? 'Món ăn',
         nameEn: item?.foodNameEn ?? null,
         brand: null,
         calories: item?.caloriesPer100g ?? item?.calories ?? null,

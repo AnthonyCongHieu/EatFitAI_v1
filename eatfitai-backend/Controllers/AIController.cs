@@ -616,6 +616,37 @@ namespace EatFitAI.API.Controllers
         public async Task<IActionResult> TeachLabel([FromBody] TeachLabelRequestDto request, CancellationToken cancellationToken)
         {
             await _aiFoodMapService.TeachLabelAsync(request, cancellationToken);
+
+            try
+            {
+                var userId = GetUserIdFromToken();
+                var normalizedLabel = request.Label.Trim().ToLowerInvariant();
+                var minConfidence = request.MinConfidence ?? 0.60m;
+
+                await _aiLog.LogAsync(
+                    userId,
+                    "TeachLabelCorrection",
+                    request,
+                    new
+                    {
+                        request.Label,
+                        NormalizedLabel = normalizedLabel,
+                        request.FoodItemId,
+                        MinConfidence = minConfidence,
+                        request.DetectedConfidence,
+                        request.SelectedFoodName,
+                        request.Source,
+                        request.ClientTimestamp,
+                        SavedAtUtc = DateTime.UtcNow,
+                        Success = true
+                    },
+                    0);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to persist teach-label correction log");
+            }
+
             return NoContent();
         }
 

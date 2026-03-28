@@ -19,7 +19,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { useNavigation } from '@react-navigation/native';
+import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import Toast from 'react-native-toast-message';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -43,14 +43,17 @@ import { t } from '../../../i18n/vi';
 import { TEST_IDS } from '../../../testing/testIds';
 
 const PAGE_SIZE = 20;
+const QUICK_SEARCHES = ['com', 'pho bo', 'trung', 'sua chua', 'ca phe'];
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'FoodSearch'>;
+type FoodSearchRouteProp = RouteProp<RootStackParamList, 'FoodSearch'>;
 
 const FoodSearchScreen = (): React.ReactElement => {
   const { theme } = useAppTheme();
   const isDark = theme.mode === 'dark';
 
   const navigation = useNavigation<NavigationProp>();
+  const route = useRoute<FoodSearchRouteProp>();
   const queryClient = useQueryClient();
   const insets = useSafeAreaInsets();
 
@@ -330,9 +333,10 @@ const FoodSearchScreen = (): React.ReactElement => {
     elevation: searchGlow.value * 5,
   }));
 
-  // Read initialTab from route params
-  const route = navigation.getState().routes.find(r => r.name === 'FoodSearch');
-  const initialTab = (route?.params as any)?.initialTab;
+  // Read quick-add preferences from route params
+  const initialTab = route.params?.initialTab;
+  const autoFocus = route.params?.autoFocus ?? false;
+  const showQuickSuggestions = route.params?.showQuickSuggestions ?? true;
 
   // Load favorites on mount and handle initialTab
   useEffect(() => {
@@ -425,11 +429,11 @@ const FoodSearchScreen = (): React.ReactElement => {
     }
   };
 
-  const loadFoods = useCallback(
-    async (_pageToLoad: number, append: boolean) => {
-      if (activeTab === 'favorites') return; // Favorites are loaded differently
+  const runSearch = useCallback(
+    async (searchTerm: string, append = false) => {
+      if (activeTab === 'favorites') return;
 
-      if (!query.trim()) {
+      if (!searchTerm.trim()) {
         Toast.show({
           type: 'info',
           text1: t('food_search.empty_search'),
@@ -441,7 +445,7 @@ const FoodSearchScreen = (): React.ReactElement => {
       setIsLoading(true);
 
       try {
-        const result = await foodService.searchAllFoods(query.trim(), PAGE_SIZE);
+        const result = await foodService.searchAllFoods(searchTerm.trim(), PAGE_SIZE);
         setItems((prev) => (append ? [...prev, ...result.items] : result.items));
         setHasSearched(true);
       } catch (error: any) {
@@ -450,17 +454,27 @@ const FoodSearchScreen = (): React.ReactElement => {
         setIsLoading(false);
       }
     },
-    [query, activeTab],
+    [activeTab],
   );
 
-  const handleSearch = useCallback(() => {
-    if (activeTab === 'favorites') return;
+  const triggerSearchGlow = useCallback(() => {
     searchGlow.value = withTiming(1, { duration: theme.animation.normal });
     setTimeout(() => {
       searchGlow.value = withTiming(0, { duration: theme.animation.slow });
     }, 1000);
-    loadFoods(1, false).catch(() => { });
-  }, [loadFoods, searchGlow, theme.animation.normal, theme.animation.slow, activeTab]);
+  }, [searchGlow, theme.animation.normal, theme.animation.slow]);
+
+  const handleSearch = useCallback(() => {
+    if (activeTab === 'favorites') return;
+    triggerSearchGlow();
+    runSearch(query, false).catch(() => { });
+  }, [activeTab, query, runSearch, triggerSearchGlow]);
+
+  const handleQuickSuggestion = useCallback((nextQuery: string) => {
+    setQuery(nextQuery);
+    triggerSearchGlow();
+    runSearch(nextQuery, false).catch(() => { });
+  }, [runSearch, triggerSearchGlow]);
 
   // Render a food result card
   const renderItem = ({ item, index }: { item: FoodItem; index: number }) => {
@@ -646,6 +660,7 @@ const FoodSearchScreen = (): React.ReactElement => {
                   onSubmitEditing={handleSearch}
                   placeholder={t('food_search.placeholder')}
                   autoCapitalize="none"
+                  autoFocus={autoFocus && activeTab === 'search'}
                   returnKeyType="search"
                   style={{
                     flex: 1,
@@ -669,6 +684,35 @@ const FoodSearchScreen = (): React.ReactElement => {
                 </ThemedText>
               </Pressable>
             </Animated.View>
+          )}
+
+          {activeTab === 'search' && showQuickSuggestions && (
+            <View style={styles.quickSearchContainer}>
+              <View style={styles.quickSearchTitle}>
+                <Ionicons name="flash-outline" size={18} color={theme.colors.primary} />
+                <ThemedText variant="bodySmall" weight="600">
+                  Quick add tu Home
+                </ThemedText>
+              </View>
+              <View style={styles.quickSearchChips}>
+                {QUICK_SEARCHES.map((chip) => (
+                  <Pressable
+                    key={chip}
+                    style={styles.quickSearchChip}
+                    onPress={() => handleQuickSuggestion(chip)}
+                  >
+                    <ThemedText variant="bodySmall" weight="600" style={{ color: theme.colors.primary }}>
+                      {chip}
+                    </ThemedText>
+                  </Pressable>
+                ))}
+              </View>
+              <View style={styles.tipBox}>
+                <ThemedText variant="bodySmall" color="textSecondary">
+                  Tap 1 tu khoa, xem ket qua, roi bam + de save nhanh vao diary.
+                </ThemedText>
+              </View>
+            </View>
           )}
 
           {/* Results inside card */}
@@ -709,11 +753,11 @@ const FoodSearchScreen = (): React.ReactElement => {
               primaryAction={
                 activeTab === 'search'
                   ? {
-                    label: 'Thu tu khoa khac',
+                    label: 'Thử từ khóa khác',
                     onPress: () => setQuery(''),
                   }
                   : {
-                    label: 'Tim mon an',
+                    label: 'Tìm món ăn',
                     onPress: () => handleTabChange('search'),
                   }
               }
@@ -721,7 +765,7 @@ const FoodSearchScreen = (): React.ReactElement => {
           ) : (
             <View style={{ alignItems: 'center', padding: 20 }}>
               <ThemedText variant="body" color="textSecondary">
-                Nhap tu khoa de tim kiem
+                Nhập từ khóa để tìm kiếm
               </ThemedText>
             </View>
           )}

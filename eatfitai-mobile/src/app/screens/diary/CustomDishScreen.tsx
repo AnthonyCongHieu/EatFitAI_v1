@@ -1,4 +1,4 @@
-// MÃƒÂ n hÃƒÂ¬nh tÃ¡ÂºÂ¡o mÃƒÂ³n Ã„Æ’n thÃ¡Â»Â§ cÃƒÂ´ng
+// Màn hình tạo món ăn thủ công
 
 import { useCallback, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
@@ -26,78 +26,78 @@ import { handleApiError } from '../../../utils/errorHandler';
 import { glassStyles } from '../../../components/ui/GlassCard';
 
 const FormSchema = z.object({
-  name: z.string().trim().min(3, 'TÃƒÂªn mÃƒÂ³n tÃ¡Â»â€˜i thiÃ¡Â»Æ’u 3 kÃƒÂ½ tÃ¡Â»Â±'),
-  description: z.string().trim().max(200, 'MÃƒÂ´ tÃ¡ÂºÂ£ tÃ¡Â»â€˜i Ã„â€˜a 200 kÃƒÂ½ tÃ¡Â»Â±').optional(),
+  name: z.string().trim().min(3, 'Tên món tối thiểu 3 ký tự'),
+  description: z.string().trim().max(200, 'Mô tả tối đa 200 ký tự').optional(),
   servingSizeGram: z
     .string()
     .trim()
-    .refine((value) => value !== '', { message: 'Vui lÃƒÂ²ng nhÃ¡ÂºÂ­p khÃ¡ÂºÂ©u phÃ¡ÂºÂ§n (gram)' })
+    .refine((value) => value !== '', { message: 'Vui lòng nhập khẩu phần (gram)' })
     .refine(
       (value) =>
         !Number.isNaN(Number(value)) && Number(value) > 0 && Number(value) <= 2000,
       {
-        message: 'KhÃ¡ÂºÂ©u phÃ¡ÂºÂ§n phÃ¡ÂºÂ£i > 0 vÃƒÂ  Ã¢â€°Â¤ 2000',
+        message: 'Khẩu phần phải > 0 và ≤ 2000',
       },
     ),
   calories: z
     .string()
     .trim()
-    .refine((value) => value !== '', { message: 'Vui lÃƒÂ²ng nhÃ¡ÂºÂ­p calo' })
+    .refine((value) => value !== '', { message: 'Vui lòng nhập calo' })
     .refine(
       (value) =>
         !Number.isNaN(Number(value)) && Number(value) >= 0 && Number(value) <= 5000,
       {
-        message: 'Calo phÃ¡ÂºÂ£i Ã¢â€°Â¥ 0 vÃƒÂ  Ã¢â€°Â¤ 5000',
+        message: 'Calo phải ≥ 0 và ≤ 5000',
       },
     ),
   protein: z
     .string()
     .trim()
-    .refine((value) => value !== '', { message: 'Vui lÃƒÂ²ng nhÃ¡ÂºÂ­p protein' })
+    .refine((value) => value !== '', { message: 'Vui lòng nhập protein' })
     .refine(
       (value) =>
         !Number.isNaN(Number(value)) && Number(value) >= 0 && Number(value) <= 500,
       {
-        message: 'Protein phÃ¡ÂºÂ£i Ã¢â€°Â¥ 0 vÃƒÂ  Ã¢â€°Â¤ 500',
+        message: 'Protein phải ≥ 0 và ≤ 500',
       },
     ),
   carbs: z
     .string()
     .trim()
-    .refine((value) => value !== '', { message: 'Vui lÃƒÂ²ng nhÃ¡ÂºÂ­p carb' })
+    .refine((value) => value !== '', { message: 'Vui lòng nhập carb' })
     .refine(
       (value) =>
         !Number.isNaN(Number(value)) && Number(value) >= 0 && Number(value) <= 500,
       {
-        message: 'Carb phÃ¡ÂºÂ£i Ã¢â€°Â¥ 0 vÃƒÂ  Ã¢â€°Â¤ 500',
+        message: 'Carb phải ≥ 0 và ≤ 500',
       },
     ),
   fat: z
     .string()
     .trim()
-    .refine((value) => value !== '', { message: 'Vui lÃƒÂ²ng nhÃ¡ÂºÂ­p fat' })
+    .refine((value) => value !== '', { message: 'Vui lòng nhập fat' })
     .refine(
       (value) =>
         !Number.isNaN(Number(value)) && Number(value) >= 0 && Number(value) <= 300,
       {
-        message: 'Fat phÃ¡ÂºÂ£i Ã¢â€°Â¥ 0 vÃƒÂ  Ã¢â€°Â¤ 300',
+        message: 'Fat phải ≥ 0 và ≤ 300',
       },
     ),
   grams: z
     .string()
     .trim()
-    .refine((value) => value !== '', { message: 'Vui lÃƒÂ²ng nhÃ¡ÂºÂ­p sÃ¡Â»â€˜ gram' })
+    .refine((value) => value !== '', { message: 'Vui lòng nhập số gram' })
     .refine(
       (value) =>
         !Number.isNaN(Number(value)) && Number(value) > 0 && Number(value) <= 2000,
       {
-        message: 'SÃ¡Â»â€˜ gram phÃ¡ÂºÂ£i > 0 vÃƒÂ  Ã¢â€°Â¤ 2000',
+        message: 'Số gram phải > 0 và ≤ 2000',
       },
     ),
   mealType: z
     .number()
-    .refine((value) => [1, 2, 3, 4].includes(value), { message: 'BÃ¡Â»Â¯a Ã„Æ’n khÃƒÂ´ng hÃ¡Â»Â£p lÃ¡Â»â€¡' }),
-  note: z.string().trim().max(200, 'Ghi chÃƒÂº tÃ¡Â»â€˜i Ã„â€˜a 200 kÃƒÂ½ tÃ¡Â»Â±').optional(),
+    .refine((value) => [1, 2, 3, 4].includes(value), { message: 'Bữa ăn không hợp lệ' }),
+  note: z.string().trim().max(200, 'Ghi chú tối đa 200 ký tự').optional(),
 });
 
 type FormValues = z.infer<typeof FormSchema>;
@@ -136,16 +136,16 @@ const CustomDishScreen = (): React.ReactElement => {
     async (values: FormValues) => {
       setIsSubmitting(true);
       try {
-        // SÃ¡Â»Â­ dÃ¡Â»Â¥ng UserFoodItems API Ã„â€˜Ã¡Â»Æ’ tÃ¡ÂºÂ¡o mÃƒÂ³n Ã„Æ’n vÃ¡Â»â€ºi thÃƒÂ´ng tin dinh dÃ†Â°Ã¡Â»Â¡ng nhÃ¡ÂºÂ­p tay
+        // Sử dụng UserFoodItems API để tạo món ăn với thông tin dinh dưỡng nhập tay
         const formData = new FormData();
         formData.append('FoodName', values.name.trim());
         if (values.description) {
-          // UserFoodItemDto khÃƒÂ´ng cÃƒÂ³ description, nhÃ†Â°ng ta cÃƒÂ³ thÃ¡Â»Æ’ append vÃƒÂ o note nÃ¡ÂºÂ¿u cÃ¡ÂºÂ§n
-          // HiÃ¡Â»â€¡n tÃ¡ÂºÂ¡i API khÃƒÂ´ng hÃ¡Â»â€” trÃ¡Â»Â£ description cho UserFoodItem, ta chÃ¡ÂºÂ¥p nhÃ¡ÂºÂ­n bÃ¡Â»Â qua hoÃ¡ÂºÂ·c chÃ¡Â»Â update API
+          // UserFoodItemDto không có description, nhưng ta có thể append vào note nếu cần
+          // Hiện tại API không hỗ trợ description cho UserFoodItem, ta chấp nhận bỏ qua hoặc chờ update API
         }
-        formData.append('UnitType', 'g'); // MÃ¡ÂºÂ·c Ã„â€˜Ã¡Â»â€¹nh lÃƒÂ  gram
+        formData.append('UnitType', 'g'); // Mặc định là gram
 
-        // ChuÃ¡ÂºÂ©n hÃƒÂ³a vÃ¡Â»Â 100g
+        // Chuẩn hóa về 100g
         const servingSize = Number(values.servingSizeGram);
         const factor = 100 / servingSize;
 
@@ -158,8 +158,8 @@ const CustomDishScreen = (): React.ReactElement => {
 
         Toast.show({
           type: 'success',
-          text1: 'Da tao mon thu cong thanh cong',
-          text2: 'Mon an da duoc luu vao thu vien ca nhan',
+          text1: 'Đã tạo món thủ công thành công',
+          text2: 'Món ăn đã được lưu vào thư viện cá nhân',
         });
         reset();
         await invalidateDiaryQueries(queryClient);
@@ -201,11 +201,11 @@ const CustomDishScreen = (): React.ReactElement => {
             }}
             hitSlop={8}
           >
-            <ThemedText style={{ fontSize: 18 }}>Ã¢â€ Â</ThemedText>
+            <ThemedText style={{ fontSize: 18 }}>←</ThemedText>
           </Pressable>
           <View style={{ flex: 1, alignItems: 'center', marginRight: 40 }}>
             <ThemedText style={{ fontSize: 20, fontWeight: '700', letterSpacing: -0.3, lineHeight: 28 }}>
-              MÃƒÂ³n Ã„Æ’n cÃ¡Â»Â§a bÃ¡ÂºÂ¡n
+              Món ăn của bạn
             </ThemedText>
           </View>
         </View>
@@ -219,11 +219,11 @@ const CustomDishScreen = (): React.ReactElement => {
               name="name"
               render={({ field: { onChange, onBlur, value } }) => (
                 <ThemedTextInput
-                  label="TÃƒÂªn mÃƒÂ³n"
+                  label="Tên món"
                   onBlur={onBlur}
                   onChangeText={onChange}
                   value={value}
-                  placeholder="VÃƒÂ­ dÃ¡Â»Â¥: Salad gÃƒÂ "
+                  placeholder="Ví dụ: Salad gà"
                   error={!!errors.name}
                   helperText={errors.name?.message}
                   required
@@ -236,11 +236,11 @@ const CustomDishScreen = (): React.ReactElement => {
               name="description"
               render={({ field: { onChange, onBlur, value } }) => (
                 <ThemedTextInput
-                  label="MÃƒÂ´ tÃ¡ÂºÂ£ (tÃƒÂ¹y chÃ¡Â»Ân)"
+                  label="Mô tả (tùy chọn)"
                   onBlur={onBlur}
                   onChangeText={onChange}
                   value={value}
-                  placeholder="NguyÃƒÂªn liÃ¡Â»â€¡u chÃƒÂ­nh, ghi chÃƒÂº..."
+                  placeholder="Nguyên liệu chính, ghi chú..."
                   multiline
                   numberOfLines={2}
                   error={!!errors.description}
@@ -259,9 +259,9 @@ const CustomDishScreen = (): React.ReactElement => {
               borderColor: isDark ? 'rgba(74, 144, 226, 0.15)' : 'rgba(59, 130, 246, 0.08)',
             }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12, gap: 8 }}>
-                <ThemedText style={{ fontSize: 16 }}>Ã°Å¸â€œÅ </ThemedText>
+                <ThemedText style={{ fontSize: 16 }}>📊</ThemedText>
                 <ThemedText variant="body" weight="600">
-                  ThÃƒÂ´ng tin dinh dÃ†Â°Ã¡Â»Â¡ng
+                  Thông tin dinh dưỡng
                 </ThemedText>
               </View>
 
@@ -273,7 +273,7 @@ const CustomDishScreen = (): React.ReactElement => {
                     name="servingSizeGram"
                     render={({ field: { onChange, onBlur, value } }) => (
                       <ThemedTextInput
-                        label="Ã¢Å¡â€“Ã¯Â¸Â KhÃ¡ÂºÂ©u phÃ¡ÂºÂ§n (g)"
+                        label="⚖️ Khẩu phần (g)"
                         keyboardType="numeric"
                         returnKeyType="done"
                         value={value}
@@ -292,7 +292,7 @@ const CustomDishScreen = (): React.ReactElement => {
                     name="calories"
                     render={({ field: { onChange, onBlur, value } }) => (
                       <ThemedTextInput
-                        label="Ã°Å¸â€Â¥ Calo"
+                        label="🔥 Calo"
                         keyboardType="numeric"
                         returnKeyType="done"
                         value={value}
@@ -315,7 +315,7 @@ const CustomDishScreen = (): React.ReactElement => {
                     name="protein"
                     render={({ field: { onChange, onBlur, value } }) => (
                       <ThemedTextInput
-                        label="Ã°Å¸â€™Âª Protein"
+                        label="💪 Protein"
                         keyboardType="numeric"
                         returnKeyType="done"
                         value={value}
@@ -334,7 +334,7 @@ const CustomDishScreen = (): React.ReactElement => {
                     name="carbs"
                     render={({ field: { onChange, onBlur, value } }) => (
                       <ThemedTextInput
-                        label="Ã°Å¸Å’Â¾ Carb"
+                        label="🌾 Carb"
                         keyboardType="numeric"
                         returnKeyType="done"
                         value={value}
@@ -353,7 +353,7 @@ const CustomDishScreen = (): React.ReactElement => {
                     name="fat"
                     render={({ field: { onChange, onBlur, value } }) => (
                       <ThemedTextInput
-                        label="Ã°Å¸Â§Ë† Fat"
+                        label="🧈 Fat"
                         keyboardType="numeric"
                         returnKeyType="done"
                         value={value}
@@ -375,7 +375,7 @@ const CustomDishScreen = (): React.ReactElement => {
                 loading={isSubmitting}
                 disabled={isSubmitting}
                 onPress={handleSubmit(onSubmit)}
-                title={isSubmitting ? 'Ã„Âang tÃ¡ÂºÂ¡o...' : 'TÃ¡ÂºÂ¡o mÃƒÂ³n Ã„Æ’n'}
+                title={isSubmitting ? 'Đang tạo...' : 'Tạo món ăn'}
               />
             </View>
           </View>

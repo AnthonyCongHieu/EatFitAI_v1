@@ -16,7 +16,7 @@ import type { RootStackParamList } from '../../types';
 import type { MealTypeId } from '../../../types';
 import type { MappedFoodItem } from '../../../types/ai';
 import type { FoodItem } from '../../../services/foodService';
-import { aiService } from '../../../services/aiService';
+import { aiService, type TeachLabelRequest } from '../../../services/aiService';
 import {
   addItemsToTodayDiary,
   invalidateDiaryQueries,
@@ -55,7 +55,7 @@ const AddMealFromVisionScreen = (): React.ReactElement => {
     })),
   );
   const [teachLabelVisible, setTeachLabelVisible] = useState(false);
-  const [currentTeachLabel, setCurrentTeachLabel] = useState<string>('');
+  const [currentTeachItem, setCurrentTeachItem] = useState<MappedFoodItem | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const selectedItems = useMemo(
@@ -75,8 +75,8 @@ const AddMealFromVisionScreen = (): React.ReactElement => {
     if (!targetItem.item.isMatched && !targetItem.selected) {
       Toast.show({
         type: 'info',
-        text1: 'L\u01b0u \u00fd',
-        text2: 'M\u00f3n n\u00e0y ch\u01b0a \u0111\u01b0\u1ee3c x\u00e1c nh\u1eadn, c\u00f3 th\u1ec3 thi\u1ebfu th\u00f4ng tin dinh d\u01b0\u1ee1ng',
+        text1: 'Lưu ý',
+        text2: 'Món này chưa được xác nhận, có thể thiếu thông tin dinh dưỡng',
         visibilityTime: 2000,
       });
     }
@@ -87,41 +87,73 @@ const AddMealFromVisionScreen = (): React.ReactElement => {
     );
   }, []);
 
-  const handleTeachLabel = useCallback((label: string) => {
-    setCurrentTeachLabel(label);
+  const closeTeachLabelSheet = useCallback(() => {
+    setTeachLabelVisible(false);
+    setCurrentTeachItem(null);
+  }, []);
+
+  const handleTeachLabel = useCallback((item: MappedFoodItem) => {
+    setCurrentTeachItem(item);
     setTeachLabelVisible(true);
   }, []);
 
   const handleSelectFood = async (foodItem: FoodItem) => {
+    if (!currentTeachItem) {
+      throw new Error('No teach label item selected');
+    }
+
+    const teachItem = currentTeachItem;
+
+    const foodItemId = Number.parseInt(foodItem.id, 10);
+    if (Number.isNaN(foodItemId)) {
+      throw new Error('Invalid food item id');
+    }
+
     try {
-      await aiService.teachLabel({
-        label: currentTeachLabel,
-        foodItemId: parseInt(foodItem.id),
-      });
+      const request: TeachLabelRequest = {
+        label: teachItem.label,
+        foodItemId,
+        detectedConfidence: teachItem.confidence,
+        selectedFoodName: foodItem.name,
+        source: 'vision_add_meal',
+        clientTimestamp: new Date().toISOString(),
+      };
+
+      await aiService.teachLabel(request);
+
+      closeTeachLabelSheet();
 
       Toast.show({
         type: 'success',
-        text1: '\u0110\u00e3 d\u1ea1y AI',
-        text2: `"${currentTeachLabel}" -> ${foodItem.name}`,
+        text1: 'Đã dạy AI',
+        text2: `"${teachItem.label}" -> ${foodItem.name}`,
       });
 
-      // Refresh the detection result after teaching the label
       setLoading(true);
-      const refreshedResult = await aiService.detectFoodByImage(imageUri);
-      setDetectionItems(
-        refreshedResult.items.map((item) => ({
-          item,
-          selected: item.isMatched,
-          grams: 100,
-          mealType: 2,
-        })),
-      );
-      setLoading(false);
+      try {
+        const refreshedResult = await aiService.detectFoodByImage(imageUri);
+        setDetectionItems(
+          refreshedResult.items.map((item) => ({
+            item,
+            selected: item.isMatched,
+            grams: 100,
+            mealType: 2,
+          })),
+        );
+      } catch {
+        Toast.show({
+          type: 'info',
+          text1: 'Đã lưu chỉnh sửa',
+          text2: 'Chưa thể tải lại kết quả AI ngay bây giờ',
+        });
+      } finally {
+        setLoading(false);
+      }
     } catch (err) {
       handleApiErrorWithCustomMessage(err, {
-        server_error: { text1: 'L\u1ed7i', text2: 'M\u00e1y ch\u1ee7 g\u1eb7p s\u1ef1 c\u1ed1' },
-        network_error: { text1: 'Kh\u00f4ng c\u00f3 k\u1ebft n\u1ed1i', text2: 'Ki\u1ec3m tra m\u1ea1ng' },
-        unknown: { text1: 'L\u1ed7i', text2: 'Kh\u00f4ng th\u1ec3 d\u1ea1y AI' },
+        server_error: { text1: 'Lỗi', text2: 'Máy chủ gặp sự cố' },
+        network_error: { text1: 'Không có kết nối', text2: 'Kiểm tra mạng' },
+        unknown: { text1: 'Lỗi', text2: 'Không thể dạy AI' },
       });
     }
   };
@@ -142,16 +174,16 @@ const AddMealFromVisionScreen = (): React.ReactElement => {
 
       Toast.show({
         type: 'success',
-        text1: 'Th\u00e0nh c\u00f4ng',
-        text2: `\u0110\u00e3 th\u00eam ${selectedItems.length} m\u00f3n v\u00e0o nh\u1eadt k\u00fd`,
+        text1: 'Thành công',
+        text2: `Đã thêm ${selectedItems.length} món vào nhật ký`,
       });
       await invalidateDiaryQueries(queryClient);
       navigation.goBack();
     } catch (err) {
       handleApiErrorWithCustomMessage(err, {
-        server_error: { text1: 'L\u1ed7i', text2: 'M\u00e1y ch\u1ee7 g\u1eb7p s\u1ef1 c\u1ed1' },
-        network_error: { text1: 'Kh\u00f4ng c\u00f3 k\u1ebft n\u1ed1i', text2: 'Ki\u1ec3m tra m\u1ea1ng' },
-        unknown: { text1: 'L\u1ed7i', text2: 'Kh\u00f4ng th\u1ec3 th\u00eam v\u00e0o nh\u1eadt k\u00fd' },
+        server_error: { text1: 'Lỗi', text2: 'Máy chủ gặp sự cố' },
+        network_error: { text1: 'Không có kết nối', text2: 'Kiểm tra mạng' },
+        unknown: { text1: 'Lỗi', text2: 'Không thể thêm vào nhật ký' },
       });
     } finally {
       setIsSubmitting(false);
@@ -217,11 +249,14 @@ const AddMealFromVisionScreen = (): React.ReactElement => {
         {/* Action button */}
         {!isMatched && (
           <Pressable
-            onPress={() => handleTeachLabel(item.label)}
+            onPress={(event) => {
+              event.stopPropagation();
+              handleTeachLabel(item);
+            }}
             style={[styles.teachBtn, { backgroundColor: theme.colors.primary + '20' }]}
           >
             <ThemedText variant="caption" color="primary">
-              {'Ch\u1ecdn m\u00f3n \u0111\u00fang'}
+              {'Chọn món đúng'}
             </ThemedText>
           </Pressable>
         )}
@@ -350,7 +385,7 @@ const AddMealFromVisionScreen = (): React.ReactElement => {
               variant="bodySmall"
               style={{ color: '#fff', marginLeft: 6 }}
             >
-              {'AI nh\u1eadn di\u1ec7n '}{detectionItems.length}{' m\u00f3n'}
+              {'AI nhận diện '}{detectionItems.length}{' món'}
             </ThemedText>
           </View>
         </View>
@@ -364,7 +399,7 @@ const AddMealFromVisionScreen = (): React.ReactElement => {
               <>
                 <View style={styles.sectionTitle}>
                   <ThemedText variant="h4" weight="600">
-                    {'\u0110\u00e3 nh\u1eadn di\u1ec7n ('}{matchedItems.length}{')'}
+                    {'Đã nhận diện ('}{matchedItems.length}{')'}
                   </ThemedText>
                 </View>
                 {matchedItems.map((d, i) => renderFoodItem(d, i))}
@@ -376,7 +411,7 @@ const AddMealFromVisionScreen = (): React.ReactElement => {
               <>
                 <View style={styles.sectionTitle}>
                   <ThemedText variant="h4" weight="600" color="warning">
-                    {'C\u1ea7n x\u00e1c nh\u1eadn ('}{unmatchedItems.length}{')'}
+                    {'Cần xác nhận ('}{unmatchedItems.length}{')'}
                   </ThemedText>
                 </View>
                 {unmatchedItems.map((d, i) => renderFoodItem(d, i + matchedItems.length))}
@@ -390,7 +425,7 @@ const AddMealFromVisionScreen = (): React.ReactElement => {
       <View style={styles.bottomBar}>
         <View style={styles.summaryRow}>
           <ThemedText variant="body" color="textSecondary">
-            {'S\u1ebd th\u00eam: '}<ThemedText variant="body" weight="700" color="primary">{selectedItems.length}</ThemedText> {'m\u00f3n'}
+            {'Sẽ thêm: '}<ThemedText variant="body" weight="700" color="primary">{selectedItems.length}</ThemedText> {'món'}
           </ThemedText>
           <ThemedText variant="body" color="textSecondary">
             <ThemedText variant="body" weight="700">{Math.round(totalCalories)}</ThemedText> kcal
@@ -398,7 +433,7 @@ const AddMealFromVisionScreen = (): React.ReactElement => {
         </View>
         <Button
           variant="primary"
-          title={isSubmitting ? '\u0110ang th\u00eam...' : 'Th\u00eam v\u00e0o nh\u1eadt k\u00fd'}
+          title={isSubmitting ? 'Đang thêm...' : 'Thêm vào nhật ký'}
           onPress={handleAddToDiary}
           disabled={selectedItems.length === 0 || isSubmitting}
           loading={isSubmitting}
@@ -410,9 +445,9 @@ const AddMealFromVisionScreen = (): React.ReactElement => {
       {/* Teach Label Bottom Sheet */}
       <TeachLabelBottomSheet
         visible={teachLabelVisible}
-        onClose={() => setTeachLabelVisible(false)}
+        onClose={closeTeachLabelSheet}
         onSelectFood={handleSelectFood}
-        currentLabel={currentTeachLabel}
+        currentLabel={currentTeachItem?.label ?? ''}
       />
     </Screen>
   );

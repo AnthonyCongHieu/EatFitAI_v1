@@ -34,10 +34,10 @@ const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 // Emoji for each meal type.
 const MEAL_EMOJIS: Record<MealTypeId, string> = {
-  1: '\uD83C\uDF05', // Breakfast
-  2: '\u2600\uFE0F', // Lunch
-  3: '\uD83C\uDF19', // Dinner
-  4: '\uD83C\uDF75', // Snack
+  1: '🌅', // Breakfast
+  2: '☀️', // Lunch
+  3: '🌙', // Dinner
+  4: '🍵', // Snack
 };
 
 
@@ -173,8 +173,8 @@ const MealDiaryScreen = (): React.ReactElement => {
     if (isNaN(grams) || grams <= 0) {
       Toast.show({
         type: 'error',
-        text1: 'S\u1ed1 gram kh\u00f4ng h\u1ee3p l\u1ec7',
-        text2: 'Vui l\u00f2ng nh\u1eadp s\u1ed1 l\u1edbn h\u01a1n 0',
+        text1: 'Số gram không hợp lệ',
+        text2: 'Vui lòng nhập số lớn hơn 0',
       });
       return;
     }
@@ -186,15 +186,15 @@ const MealDiaryScreen = (): React.ReactElement => {
       setEditingEntry(null);
       Toast.show({
         type: 'success',
-        text1: '\u0110\u00e3 c\u1eadp nh\u1eadt',
-        text2: `Kh\u1ea9u ph\u1ea7n: ${grams}g`,
+        text1: 'Đã cập nhật',
+        text2: `Khẩu phần: ${grams}g`,
       });
     } catch (error: any) {
       console.error('Failed to update entry:', error);
       Toast.show({
         type: 'error',
-        text1: 'L\u1ed7i c\u1eadp nh\u1eadt',
-        text2: error?.message || 'Kh\u00f4ng th\u1ec3 c\u1eadp nh\u1eadt kh\u1ea9u ph\u1ea7n. Th\u1eed l\u1ea1i sau.',
+        text1: 'Lỗi cập nhật',
+        text2: error?.message || 'Không thể cập nhật khẩu phần. Thử lại sau.',
       });
     }
   }, [editingEntry, editGrams, queryClient]);
@@ -270,7 +270,7 @@ const MealDiaryScreen = (): React.ReactElement => {
           {/* Calories main */}
           <View style={styles.summaryMain}>
             <ThemedText style={styles.summaryCalories}>{Math.round(totals.calories)}</ThemedText>
-            <ThemedText style={styles.summaryLabel}>{'kcal h\u00f4m nay'}</ThemedText>
+            <ThemedText style={styles.summaryLabel}>{'kcal hôm nay'}</ThemedText>
           </View>
 
           {/* Macro pills */}
@@ -309,15 +309,15 @@ const MealDiaryScreen = (): React.ReactElement => {
           await invalidateDiaryQueries(queryClient);
           Toast.show({
             type: 'success',
-            text1: '\u0110\u00e3 x\u00f3a',
-            text2: `\u0110\u00e3 x\u00f3a ${entry.foodName}`,
+            text1: 'Đã xóa',
+            text2: `Đã xóa ${entry.foodName}`,
           });
         } catch (error: any) {
           console.error('Failed to delete entry:', error);
           Toast.show({
             type: 'error',
-            text1: 'L\u1ed7i x\u00f3a',
-            text2: error?.message || 'Kh\u00f4ng th\u1ec3 x\u00f3a m\u00f3n \u0103n. Th\u1eed l\u1ea1i sau.',
+            text1: 'Lỗi xóa',
+            text2: error?.message || 'Không thể xóa món ăn. Thử lại sau.',
           });
         }
       };
@@ -385,15 +385,15 @@ const MealDiaryScreen = (): React.ReactElement => {
   const renderEmptyState = () => (
     <AnimatedEmptyState
       variant="no-food"
-      title={'Ch\u01b0a c\u00f3 d\u1eef li\u1ec7u h\u00f4m nay'}
-      description={'H\u00e3y ch\u1ee5p \u1ea3nh ho\u1eb7c t\u00ecm ki\u1ebfm \u0111\u1ec3 th\u00eam m\u00f3n \u0103n v\u00e0o nh\u1eadt k\u00fd.'}
+      title={'Chưa có dữ liệu hôm nay'}
+      description={'Hãy chụp ảnh hoặc tìm kiếm để thêm món ăn vào nhật ký.'}
       primaryAction={{
-        label: 'Th\u00eam m\u00f3n \u0103n',
+        label: 'Thêm món ăn',
         onPress: handleAddManual,
         icon: 'add-circle-outline',
       }}
       secondaryAction={{
-        label: 'Ch\u1ee5p \u1ea3nh m\u00f3n \u0103n',
+        label: 'Chụp ảnh món ăn',
         onPress: () => navigation.navigate('AiCamera'),
       }}
       compact
@@ -660,11 +660,11 @@ const MealDiaryScreen = (): React.ReactElement => {
               style={styles.backButton}
               hitSlop={8}
             >
-              <ThemedText style={{ fontSize: 18 }}>{'\u2190'}</ThemedText>
+              <ThemedText style={{ fontSize: 18 }}>{'←'}</ThemedText>
             </Pressable>
             <View style={styles.headerCenter}>
               <ThemedText variant="h3" weight="700">
-                {'Nh\u1eadt k\u00fd b\u1eefa \u0103n'}
+                {'Nhật ký bữa ăn'}
               </ThemedText>
             </View>
           </View>
@@ -756,7 +756,7 @@ const MealDiaryScreen = (): React.ReactElement => {
         {isEntriesLoading ? (
           <View style={styles.emptyContainer}>
             <ThemedText variant="body" color="textSecondary">
-              {'\u0110ang t\u1ea3i...'}
+              {'Đang tải...'}
             </ThemedText>
           </View>
         ) : isEmpty ? (
@@ -829,7 +829,7 @@ const MealDiaryScreen = (): React.ReactElement => {
           >
             <Ionicons name="today-outline" size={16} color="#fff" />
             <ThemedText variant="bodySmall" weight="600" style={{ color: '#fff' }}>
-              {'Quay l\u1ea1i h\u00f4m nay'}
+              {'Quay lại hôm nay'}
             </ThemedText>
           </Pressable>
         )}
@@ -839,12 +839,12 @@ const MealDiaryScreen = (): React.ReactElement => {
       <BottomSheet
         visible={showEditSheet}
         onClose={() => setShowEditSheet(false)}
-        title={'Ch\u1ec9nh s\u1eeda kh\u1ea9u ph\u1ea7n'}
+        title={'Chỉnh sửa khẩu phần'}
         height={300}
       >
         <View style={styles.editSheetContent}>
           <ThemedText variant="body" weight="600">
-            {'Nh\u1eadp s\u1ed1 gram m\u1edbi:'}
+            {'Nhập số gram mới:'}
           </ThemedText>
           <ThemedTextInput
             value={editGrams}
@@ -852,13 +852,13 @@ const MealDiaryScreen = (): React.ReactElement => {
               const numericOnly = text.replace(/[^0-9.]/g, '');
               setEditGrams(numericOnly);
             }}
-            placeholder={'V\u00ed d\u1ee5: 150'}
+            placeholder={'Ví dụ: 150'}
             keyboardType="decimal-pad"
             returnKeyType="done"
             onSubmitEditing={handleSaveGrams}
             style={styles.editInput}
           />
-          <Button title={'L\u01b0u thay \u0111\u1ed5i'} onPress={handleSaveGrams} />
+          <Button title={'Lưu thay đổi'} onPress={handleSaveGrams} />
         </View>
       </BottomSheet>
     </Screen>

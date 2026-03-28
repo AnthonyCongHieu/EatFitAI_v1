@@ -15,7 +15,7 @@ public partial class User
 
     public DateTime CreatedAt { get; set; }
 
-    // Email verification - MÃ XÁC MINH 6 SỐ
+    // Email verification - Mã xác minh 6 số
     public bool EmailVerified { get; set; } = false;
     public string? VerificationCode { get; set; }
     public DateTime? VerificationCodeExpiry { get; set; }

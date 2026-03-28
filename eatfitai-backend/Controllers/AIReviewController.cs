@@ -80,7 +80,7 @@ public class AIReviewController : ControllerBase
     /// Apply AI suggestions (auto-update targets)
     /// </summary>
     [HttpPost("apply-suggestions")]
-    public async Task<ActionResult> ApplySuggestions([FromBody] ApplySuggestionsRequest request)
+    public ActionResult ApplySuggestions([FromBody] ApplySuggestionsRequest request)
     {
         try
         {

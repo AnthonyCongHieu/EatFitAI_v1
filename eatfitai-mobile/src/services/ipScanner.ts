@@ -6,6 +6,7 @@
  */
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { assertBackendApiBaseUrl } from '../config/env';
 
 const PORT = 5247;
 const CACHE_KEY = '@eatfitai_api_url';
@@ -335,7 +336,8 @@ export const getCachedApiUrl = (): string | null => cachedUrl;
  * Set URL thủ công (bypass scan)
  */
 export const setManualApiUrl = async (url: string): Promise<void> => {
-    cachedUrl = url;
-    await AsyncStorage.setItem(CACHE_KEY, url);
-    console.log(`[IPScanner] URL đặt thủ công: ${url}`);
+    const safeUrl = assertBackendApiBaseUrl(url, 'Manual API URL');
+    cachedUrl = safeUrl;
+    await AsyncStorage.setItem(CACHE_KEY, safeUrl);
+    console.log(`[IPScanner] Manual URL set: ${safeUrl}`);
 };

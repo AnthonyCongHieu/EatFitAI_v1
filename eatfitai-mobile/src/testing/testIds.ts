@@ -8,6 +8,9 @@ export const TEST_IDS = {
   home: {
     screen: 'home-screen',
     searchButton: 'home-search-food-button',
+    quickAddSearchButton: 'home-quick-add-search-button',
+    quickAddScanButton: 'home-quick-add-scan-button',
+    quickAddVoiceButton: 'home-quick-add-voice-button',
     diaryButton: 'home-view-diary-button',
     fabButton: 'home-smart-add-fab',
   },
@@ -27,6 +30,7 @@ export const TEST_IDS = {
     galleryButton: 'ai-scan-gallery-button',
     retakeButton: 'ai-scan-retake-button',
     addToDiaryButton: 'ai-scan-add-to-diary-button',
+    quickAddButton: 'ai-scan-quick-save-button',
     quickAddTopResultButton: 'ai-scan-quick-add-top-result-button',
   },
   visionAddMeal: {
@@ -37,3 +41,4 @@ export const TEST_IDS = {
     retryButton: 'app-error-retry-button',
   },
 } as const;
+

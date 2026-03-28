@@ -9,7 +9,7 @@ Tài liệu này đã được tinh gọn để đơn giản hóa quy trình dev
 - **Secrets**: User Secrets (không commit vào repo)
 - **CORS**: Đọc từ config (Development = open, Production = locked)
 - **Health Check**: Endpoint `/health` để kiểm tra trạng thái
-- **Database**: Mỗi dev dùng server riêng (MSI ↔ LAPTOP-U9R2KGG0)
+- **Database**: Moi dev dung server local hoac SQL instance rieng cua may minh
 
 ### Mobile (Expo React Native)
 - **Environment**: Một file `.env.development` (không commit)
@@ -18,25 +18,25 @@ Tài liệu này đã được tinh gọn để đơn giản hóa quy trình dev
 
 ## Cấu hình Backend
 
-## 1. Thiết lập Backend (1 lần cho mỗi máy)
+## 1. Backend setup (one time per machine)
 
-### Chuẩn bị Connection String (mặc định 1-dev)
+### Connection string
 
-Mặc định trong `appsettings.Development.json` đã cấu hình:
+Default in `appsettings.Development.json`:
 
 ```
 "ConnectionStrings": {
-  "DefaultConnection": "Server=LAPTOP-U9R2KGG0;Database=EatFitAI;Trusted_Connection=True;TrustServerCertificate=True;"
+  "DefaultConnection": "Server=localhost;Database=EatFitAI;Trusted_Connection=True;TrustServerCertificate=True;"
 }
 ```
 
-Tùy chọn (nếu muốn override bằng User Secrets):
+Optional override with User Secrets:
 
 ```powershell
 cd eatfitai-backend
 dotnet user-secrets init
-dotnet user-secrets set "ConnectionStrings:DefaultConnection" "Server=LAPTOP-U9R2KGG0;Database=EatFitAI;Trusted_Connection=True;TrustServerCertificate=True;"
-dotnet user-secrets set "Jwt:Key" "YourSuperSecretKeyHereThatIsAtLeast32CharactersLongForDevelopmentUse"
+dotnet user-secrets set "ConnectionStrings:DefaultConnection" "Server=localhost;Database=EatFitAI;Trusted_Connection=True;TrustServerCertificate=True;"
+dotnet user-secrets set "Jwt:Key" "REPLACE_WITH_BASE64_OR_LONG_RANDOM_SECRET"
 dotnet user-secrets list
 ```
 
@@ -161,7 +161,7 @@ npm run dev
 ## 7. Ghi chú Quan trọng
 
 - **User Secrets**: Chỉ lưu local, không commit
-- **Database**: Mỗi dev dùng server riêng (MSI ↔ LAPTOP-U9R2KGG0)
+- **Database**: Moi dev dung server local hoac SQL instance rieng cua may minh
 - **LAN Testing**: Backend bind `0.0.0.0` cho device access
 - **CORS**: Development open, Production locked
 - **Environment**: `.env` files ignored by git

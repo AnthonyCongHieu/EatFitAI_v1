@@ -23,7 +23,6 @@ import Icon from '../../components/Icon';
 import { useDiaryStore } from '../../store/useDiaryStore';
 import { useAppTheme } from '../../theme/ThemeProvider';
 import type { RootStackParamList } from '../types';
-import { type MealTypeId } from '../../types';
 import { diaryService, type DaySummary } from '../../services/diaryService';
 import { healthService } from '../../services/healthService';
 import { t } from '../../i18n/vi';
@@ -38,7 +37,7 @@ import { AnimatedEmptyState } from '../../components/ui/AnimatedEmptyState';
 import { MacroProgressCard } from '../../components/ui/MacroProgressCard';
 import CalorieRing from '../../components/ui/CalorieRing';
 import { FoodEntryCard } from '../../components/ui/FoodEntryCard';
-import SmartQuickActions from '../../components/SmartQuickActions';
+import QuickAddHub from '../../components/home/QuickAddHub';
 import { SmartAddSheet } from '../../components/ui/SmartAddSheet';
 import { useGamificationStore } from '../../store/useGamificationStore';
 import { StreakCard } from '../../components/gamification/StreakCard';
@@ -156,17 +155,25 @@ const HomeScreen = (): React.ReactElement => {
   }, [refetch, showCommonErrors]);
 
 
-  const handleQuickAction = useCallback(
-    (_mealType: MealTypeId) => {
-      // Redirect to Recipe Suggestions (Ingredient Scan) as per user request
-      navigation.navigate('RecipeSuggestions', {});
-    },
-    [navigation],
-  );
+  const handleQuickAddSearch = useCallback(() => {
+    navigation.navigate('FoodSearch', {
+      autoFocus: true,
+      showQuickSuggestions: true,
+    });
+  }, [navigation]);
 
-  const handleAICamera = useCallback(() => {
-    // Redirect to Recipe Suggestions (Ingredient Scan) as per user request
-    navigation.navigate('RecipeSuggestions', {});
+  const handleQuickAddScan = useCallback(() => {
+    navigation.navigate('AiCamera');
+  }, [navigation]);
+
+  const handleQuickAddVoice = useCallback(() => {
+    navigation.navigate('AppTabs', {
+      screen: 'VoiceTab',
+      params: {
+        autoStart: true,
+        source: 'home-hub',
+      },
+    });
   }, [navigation]);
 
   const handleViewAllDiary = useCallback(() => {
@@ -400,13 +407,16 @@ const HomeScreen = (): React.ReactElement => {
 
 
 
-        {/* Smart Quick Actions - based on time of day */}
+        {/* Quick Add Hub */}
         <Animated.View entering={FadeInUp.delay(250).springify()}>
           <AppCard>
-            <SmartQuickActions
-              onAddMeal={handleQuickAction}
-              onScanFood={handleAICamera}
-              onSearchFood={() => navigation.navigate('FoodSearch')}
+            <QuickAddHub
+              onSearch={handleQuickAddSearch}
+              onScan={handleQuickAddScan}
+              onVoice={handleQuickAddVoice}
+              searchTestID={TEST_IDS.home.quickAddSearchButton}
+              scanTestID={TEST_IDS.home.quickAddScanButton}
+              voiceTestID={TEST_IDS.home.quickAddVoiceButton}
             />
           </AppCard>
         </Animated.View>
@@ -481,7 +491,13 @@ const HomeScreen = (): React.ReactElement => {
           onLongPress={() => {
             // Voice integration - chuyển đến VoiceScreen tab
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-            navigation.navigate('VoiceTab' as any); // Navigate to Voice tab
+            navigation.navigate('AppTabs', {
+              screen: 'VoiceTab',
+              params: {
+                autoStart: true,
+                source: 'home-fab',
+              },
+            });
           }}
           accessibilityRole="button"
           accessibilityLabel={smartContext.fabAction.label}

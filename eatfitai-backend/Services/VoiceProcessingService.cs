@@ -23,9 +23,9 @@ namespace EatFitAI.Services
             { "sáng", MealType.Breakfast },
             { "bữa sáng", MealType.Breakfast },
             { "ăn sáng", MealType.Breakfast },
-            { "trưa", MealType.Lunch },
+            { "trua", MealType.Lunch },
             { "bữa trưa", MealType.Lunch },
-            { "ăn trưa", MealType.Lunch },
+            { "an trua", MealType.Lunch },
             { "tối", MealType.Dinner },
             { "bữa tối", MealType.Dinner },
             { "ăn tối", MealType.Dinner },
@@ -43,7 +43,7 @@ namespace EatFitAI.Services
         /// <summary>
         /// Parse voice text into structured command
         /// </summary>
-        public async Task<ParsedVoiceCommand> ParseCommandAsync(string text, string language = "vi")
+        public Task<ParsedVoiceCommand> ParseCommandAsync(string text, string language = "vi")
         {
             _logger.LogInformation("Parsing voice command: {Text}", text);
 
@@ -56,30 +56,30 @@ namespace EatFitAI.Services
             var caloriesCommand = TryParseAskCalories(lowerText, text);
             if (caloriesCommand.Intent == VoiceIntent.ASK_CALORIES)
             {
-                return caloriesCommand;
+                return Task.FromResult(caloriesCommand);
             }
 
             // 2. Try to match LOG_WEIGHT pattern
             var weightCommand = TryParseLogWeight(lowerText, text);
             if (weightCommand.Intent == VoiceIntent.LOG_WEIGHT)
             {
-                return weightCommand;
+                return Task.FromResult(weightCommand);
             }
 
             // 3. Try to match ADD_FOOD pattern
             var addFoodCommand = TryParseAddFood(lowerText, text);
             if (addFoodCommand.Intent == VoiceIntent.ADD_FOOD)
             {
-                return addFoodCommand;
+                return Task.FromResult(addFoodCommand);
             }
 
             // Unknown intent
-            return new ParsedVoiceCommand
+            return Task.FromResult(new ParsedVoiceCommand
             {
                 Intent = VoiceIntent.UNKNOWN,
                 RawText = text,
                 Confidence = 0,
-            };
+            });
         }
 
         /// <summary>

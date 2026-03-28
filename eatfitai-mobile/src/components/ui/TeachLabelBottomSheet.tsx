@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { FlatList, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, FlatList, StyleSheet, View } from 'react-native';
 import Toast from 'react-native-toast-message';
 
 import { ThemedText } from '../ThemedText';
@@ -13,7 +13,7 @@ import { useAppTheme } from '../../theme/ThemeProvider';
 type TeachLabelBottomSheetProps = {
   visible: boolean;
   onClose: () => void;
-  onSelectFood: (foodItem: FoodItem) => void;
+  onSelectFood: (foodItem: FoodItem) => Promise<void> | void;
   currentLabel: string;
 };
 
@@ -28,7 +28,9 @@ export const TeachLabelBottomSheet = ({
   const [foods, setFoods] = useState<FoodItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [submittingFoodId, setSubmittingFoodId] = useState<string | null>(null);
   const flatListRef = useRef<FlatList>(null);
+  const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Dynamic styles using theme
   const dynamicStyles = {
@@ -58,14 +60,6 @@ export const TeachLabelBottomSheet = ({
       color: theme.colors.textSecondary,
     },
   };
-
-  useEffect(() => {
-    if (visible && currentLabel) {
-      setSearchQuery(currentLabel);
-      searchFoods(currentLabel);
-    }
-  }, [visible, currentLabel]);
-
   const searchFoods = useCallback(async (query: string) => {
     if (!query.trim()) {
       setFoods([]);
@@ -86,48 +80,76 @@ export const TeachLabelBottomSheet = ({
     }
   }, []);
 
+  useEffect(() => {
+    if (visible && currentLabel) {
+      setSearchQuery(currentLabel);
+      searchFoods(currentLabel);
+    }
+  }, [visible, currentLabel, searchFoods]);
+
+  useEffect(() => {
+    return () => {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+    };
+  }, []);
+
   const handleSearchChange = useCallback(
     (text: string) => {
       setSearchQuery(text);
-      // Debounce search
-      const timeoutId = setTimeout(() => {
+
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+
+      searchTimeoutRef.current = setTimeout(() => {
         searchFoods(text);
       }, 300);
-      return () => clearTimeout(timeoutId);
     },
     [searchFoods],
   );
 
   const handleSelectFood = useCallback(
-    (food: FoodItem) => {
+    async (food: FoodItem) => {
+      setSubmittingFoodId(food.id);
+
       try {
-        onSelectFood(food);
-        onClose();
+        await Promise.resolve(onSelectFood(food));
       } catch (err) {
         Toast.show({
           type: 'error',
           text1: 'Lỗi',
           text2: 'Không thể chọn món ăn. Vui lòng thử lại.',
         });
+      } finally {
+        setSubmittingFoodId(null);
       }
     },
-    [onSelectFood, onClose],
+    [onSelectFood],
   );
 
   const renderFoodItem = useCallback(
-    ({ item }: { item: FoodItem }) => (
-      <ListItem
-        title={item.name}
-        subtitle={item.brand ? `Thương hiệu: ${item.brand}` : undefined}
-        onPress={() => handleSelectFood(item)}
-        rightComponent={
-          item.calories ? (
-            <ThemedText style={dynamicStyles.calories}>{item.calories} kcal/100g</ThemedText>
-          ) : undefined
-        }
-      />
-    ),
-    [handleSelectFood, dynamicStyles.calories],
+    ({ item }: { item: FoodItem }) => {
+      const isSubmitting = submittingFoodId === item.id;
+
+      return (
+        <ListItem
+          title={item.name}
+          subtitle={item.brand ? `Thương hiệu: ${item.brand}` : undefined}
+          onPress={() => handleSelectFood(item)}
+          disabled={Boolean(submittingFoodId)}
+          rightComponent={
+            isSubmitting ? (
+              <ActivityIndicator size="small" color={theme.colors.primary} />
+            ) : item.calories ? (
+              <ThemedText style={dynamicStyles.calories}>{item.calories} kcal/100g</ThemedText>
+            ) : undefined
+          }
+        />
+      );
+    },
+    [dynamicStyles.calories, handleSelectFood, submittingFoodId, theme.colors.primary],
   );
 
   const renderSkeleton = useCallback(

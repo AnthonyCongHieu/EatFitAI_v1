@@ -23,12 +23,28 @@ namespace EatFitAI.API.Controllers
             [FromQuery] DateTime startDate,
             [FromQuery] DateTime? endDate = null)
         {
+            if (startDate == default)
+            {
+                return BadRequest(new { message = "startDate is required and must be a valid date." });
+            }
+
+            var normalizedStartDate = startDate.Date;
+            var effectiveEndDate = (endDate ?? DateTime.UtcNow.Date).Date;
+
+            if (effectiveEndDate < normalizedStartDate)
+            {
+                return BadRequest(new { message = "endDate must be greater than or equal to startDate." });
+            }
+
             try
             {
                 var userId = GetUserIdFromToken();
-                var effectiveEndDate = endDate ?? DateTime.UtcNow.Date;
-                var summary = await _analyticsService.GetNutritionSummaryAsync(userId, startDate, effectiveEndDate);
+                var summary = await _analyticsService.GetNutritionSummaryAsync(userId, normalizedStartDate, effectiveEndDate);
                 return Ok(summary);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Unauthorized(new { message = ex.Message });
             }
             catch (Exception ex)
             {

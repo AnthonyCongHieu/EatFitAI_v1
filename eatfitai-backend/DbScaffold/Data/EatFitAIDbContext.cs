@@ -67,6 +67,8 @@ public partial class EatFitAIDbContext : DbContext
         {
             entity.ToTable("AILog");
 
+            entity.HasIndex(e => new { e.UserId, e.Action, e.CreatedAt }, "IX_AILog_User_Action_CreatedAt");
+
             entity.Property(e => e.Action).HasMaxLength(50);
             entity.Property(e => e.CreatedAt)
                 .HasPrecision(3)
@@ -112,6 +114,8 @@ public partial class EatFitAIDbContext : DbContext
         modelBuilder.Entity<BodyMetric>(entity =>
         {
             entity.ToTable("BodyMetric");
+
+            entity.HasIndex(e => new { e.UserId, e.MeasuredDate }, "IX_BodyMetric_User_MeasuredDate");
 
             entity.Property(e => e.HeightCm).HasColumnType("decimal(5, 2)");
             entity.Property(e => e.Note).HasMaxLength(200);
@@ -241,6 +245,8 @@ public partial class EatFitAIDbContext : DbContext
         {
             entity.ToTable("NutritionTarget");
 
+            entity.HasIndex(e => new { e.UserId, e.EffectiveFrom, e.EffectiveTo }, "IX_NutritionTarget_User_EffectiveWindow");
+
             entity.HasOne(d => d.ActivityLevel).WithMany(p => p.NutritionTargets)
                 .HasForeignKey(d => d.ActivityLevelId)
                 .HasConstraintName("FK_NutritionTarget_ActivityLevel");
@@ -350,6 +356,8 @@ public partial class EatFitAIDbContext : DbContext
             entity.ToTable("UserFavoriteFood");
 
             entity.HasIndex(e => e.UserId, "IX_UserFavoriteFood_User");
+
+            entity.HasIndex(e => new { e.UserId, e.CreatedAt }, "IX_UserFavoriteFood_User_CreatedAt");
 
             entity.HasIndex(e => new { e.UserId, e.FoodItemId }, "UQ_UserFavoriteFood").IsUnique();
 
@@ -503,3 +511,4 @@ public partial class EatFitAIDbContext : DbContext
 
     partial void OnModelCreatingPartial(ModelBuilder modelBuilder);
 }
+

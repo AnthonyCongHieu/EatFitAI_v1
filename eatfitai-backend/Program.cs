@@ -240,7 +240,7 @@ builder.Services.Configure<MailSettings>(builder.Configuration.GetSection("Smtp"
 builder.Services.AddScoped<IEmailService, EmailService>();
 
 // Add AutoMapper
-builder.Services.AddAutoMapper(typeof(MappingProfile));
+builder.Services.AddAutoMapper(_ => { }, typeof(MappingProfile));
 
 // Add Repositories
 builder.Services.AddScoped(typeof(IRepository<>), typeof(BaseRepository<>));
@@ -299,7 +299,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         {
             ValidateIssuerSigningKey = true,
             IssuerSigningKey = new SymmetricSecurityKey(
-                Encoding.ASCII.GetBytes(jwtKey)),
+                Encoding.ASCII.GetBytes(jwtKey!)),
             // Bật validate Issuer/Audience để chặn token từ app khác
             ValidateIssuer = true,
             ValidIssuer = builder.Configuration["Jwt:Issuer"] ?? "EatFitAI",

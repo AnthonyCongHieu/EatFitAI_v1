@@ -1,15 +1,21 @@
-// Khai báo các screen của Stack gốc
-// - Login, Register: màn hình xác thực
-// - AppTabs: nhóm Tab chính sau khi đăng nhập
+import type { NavigatorScreenParams } from '@react-navigation/native';
+import type { AppTabsParamList } from '../navigation/AppTabs';
+
 export type RootStackParamList = {
   Welcome: undefined;
   Login: undefined;
   Register: undefined;
-  VerifyEmail: { email: string; verificationCode?: string }; // verificationCode chỉ dùng cho dev mode
+  VerifyEmail: { email: string; verificationCode?: string };
   ForgotPassword: undefined;
   Onboarding: undefined;
-  AppTabs: undefined;
-  FoodSearch: { initialTab?: 'search' | 'favorites' } | undefined;
+  AppTabs: NavigatorScreenParams<AppTabsParamList> | undefined;
+  FoodSearch:
+    | {
+        initialTab?: 'search' | 'favorites';
+        autoFocus?: boolean;
+        showQuickSuggestions?: boolean;
+      }
+    | undefined;
   FoodDetail: { foodId: string; source?: 'catalog' | 'user' };
   CustomDish: undefined;
   AiCamera: undefined;
@@ -24,13 +30,13 @@ export type RootStackParamList = {
   VisionHistory: undefined;
   NutritionSettings: undefined;
   Achievements: undefined;
-  // Profile screens - mới thêm
   EditProfile: undefined;
   BodyMetrics: undefined;
   GoalSettings: undefined;
   WeightHistory: undefined;
   ChangePassword: undefined;
   About: undefined;
+  PrivacyPolicy: undefined;
   NotificationsSettings: undefined;
   DietaryRestrictions: undefined;
 };
@@ -41,4 +47,3 @@ export interface UserPreference {
   preferredMealsPerDay: number;
   preferredCuisine: string | null;
 }
-

@@ -324,7 +324,7 @@ namespace EatFitAI.API.Controllers
                 throw new InvalidOperationException("Jwt:Key is missing or insecure.");
             }
 
-            return Encoding.ASCII.GetBytes(key);
+            return Encoding.ASCII.GetBytes(key!);
         }
 
         private string GenerateRefreshToken()

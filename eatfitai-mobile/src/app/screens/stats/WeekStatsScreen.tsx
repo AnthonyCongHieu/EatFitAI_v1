@@ -218,12 +218,12 @@ const WeekStatsScreen = (): React.ReactElement => {
         }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
             <View style={{ width: 12, height: 12, borderRadius: 3, backgroundColor: '#4ade80' }} />
-            <ThemedText variant="caption" color="textSecondary">{'\u0110\u00e3 ti\u00eau th\u1ee5'}</ThemedText>
+            <ThemedText variant="caption" color="textSecondary">{'Đã tiêu thụ'}</ThemedText>
           </View>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
             {/* Solid colors avoid Android gradient banding artifacts */}
             <View style={{ width: 12, height: 12, borderRadius: 3, backgroundColor: isDark ? '#1E3050' : '#D0D0D5' }} />
-            <ThemedText variant="caption" color="textSecondary">{'C\u00f2n l\u1ea1i'}</ThemedText>
+            <ThemedText variant="caption" color="textSecondary">{'Còn lại'}</ThemedText>
           </View>
         </View>
 
@@ -247,7 +247,7 @@ const WeekStatsScreen = (): React.ReactElement => {
             }}
           >
             <ThemedText variant="h4" color="textSecondary">
-              {'\uD83D\uDCC5'}
+              {'📅'}
             </ThemedText>
             <ThemedText
               variant="body"
@@ -364,7 +364,7 @@ const WeekStatsScreen = (): React.ReactElement => {
               backgroundColor: isDark ? '#1A2744' : '#EEF4FF',
               borderRadius: 12,
             }}>
-              <ThemedText style={{ fontSize: 16 }}>{'\uD83D\uDCCA'}</ThemedText>
+              <ThemedText style={{ fontSize: 16 }}>{'📊'}</ThemedText>
               <ThemedText
                 variant="h4"
                 weight="700"
@@ -376,7 +376,7 @@ const WeekStatsScreen = (): React.ReactElement => {
                 )}
               </ThemedText>
               <ThemedText variant="caption" color="textSecondary">
-                {'TB/ng\u00e0y'}
+                {'TB/ngày'}
               </ThemedText>
             </View>
 
@@ -389,7 +389,7 @@ const WeekStatsScreen = (): React.ReactElement => {
               backgroundColor: isDark ? '#1E1A40' : '#F3E8FF',
               borderRadius: 12,
             }}>
-              <ThemedText style={{ fontSize: 16 }}>{'\u26A1'}</ThemedText>
+              <ThemedText style={{ fontSize: 16 }}>{'⚡'}</ThemedText>
               <ThemedText
                 variant="h4"
                 weight="700"
@@ -400,7 +400,7 @@ const WeekStatsScreen = (): React.ReactElement => {
                 ) / 10}k
               </ThemedText>
               <ThemedText variant="caption" color="textSecondary">
-                {'T\u1ed5ng tu\u1ea7n'}
+                {'Tổng tuần'}
               </ThemedText>
             </View>
 
@@ -413,7 +413,7 @@ const WeekStatsScreen = (): React.ReactElement => {
               backgroundColor: isDark ? '#1A3028' : '#E8F5E9',
               borderRadius: 12,
             }}>
-              <ThemedText style={{ fontSize: 16 }}>{'\uD83C\uDFAF'}</ThemedText>
+              <ThemedText style={{ fontSize: 16 }}>{'🎯'}</ThemedText>
               <ThemedText
                 variant="h4"
                 weight="700"
@@ -424,7 +424,7 @@ const WeekStatsScreen = (): React.ReactElement => {
                 ).length}/{weekSummary.days.length}
               </ThemedText>
               <ThemedText variant="caption" color="textSecondary">
-                {'\u0110\u1ea1t m\u1ee5c ti\u00eau'}
+                {'Đạt mục tiêu'}
               </ThemedText>
             </View>
           </View>
