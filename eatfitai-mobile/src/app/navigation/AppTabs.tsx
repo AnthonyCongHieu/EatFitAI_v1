@@ -21,7 +21,12 @@ import { t } from '../../i18n/vi';
 export type AppTabsParamList = {
   HomeTab: undefined;
   AIScanTab: undefined;
-  VoiceTab: undefined;
+  VoiceTab:
+    | {
+        autoStart?: boolean;
+        source?: 'home-hub' | 'sheet-hub' | 'home-fab';
+      }
+    | undefined;
   StatsTab: undefined;
   ProfileTab: undefined;
 };
@@ -191,3 +196,4 @@ const styles = StyleSheet.create({
 });
 
 export default AppTabs;
+

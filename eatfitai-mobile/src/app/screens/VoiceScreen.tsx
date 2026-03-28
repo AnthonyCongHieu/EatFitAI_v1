@@ -3,7 +3,7 @@
  * Premium UI with animated pulse rings, gradient buttons
  */
 
-import React, { useEffect } from 'react';
+import React, { useCallback, useEffect } from 'react';
 import { StyleSheet, View, Pressable, TextInput, ScrollView } from 'react-native';
 import Animated, {
     useAnimatedStyle,
@@ -20,20 +20,28 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Toast from 'react-native-toast-message';
 import { useQueryClient } from '@tanstack/react-query';
+import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
+import { RouteProp, useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
 
 import { ThemedText } from '../../components/ThemedText';
 import { useAppTheme } from '../../theme/ThemeProvider';
 import { useVoiceStore } from '../../store/useVoiceStore';
 import { useVoiceRecognition } from '../../hooks/useVoiceRecognition';
 import VoiceResultCard from '../../components/voice/VoiceResultCard';
+import type { AppTabsParamList } from '../navigation/AppTabs';
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
+
+type VoiceNavigationProp = BottomTabNavigationProp<AppTabsParamList, 'VoiceTab'>;
+type VoiceRouteProp = RouteProp<AppTabsParamList, 'VoiceTab'>;
 
 const VoiceScreen = (): React.ReactElement => {
     const { theme } = useAppTheme();
     const isDark = theme.mode === 'dark';
     const insets = useSafeAreaInsets();
     const queryClient = useQueryClient();
+    const navigation = useNavigation<VoiceNavigationProp>();
+    const route = useRoute<VoiceRouteProp>();
 
     const {
         status,
@@ -56,6 +64,28 @@ const VoiceScreen = (): React.ReactElement => {
         stopRecording,
         cancelRecording,
     } = useVoiceRecognition();
+
+    useFocusEffect(
+        useCallback(() => {
+            if (!route.params?.autoStart || isRecording) {
+                return undefined;
+            }
+
+            let active = true;
+            const timer = setTimeout(() => {
+                if (!active) return;
+                reset();
+                startRecording().catch(() => { });
+            }, 180);
+
+            navigation.setParams({ autoStart: undefined, source: undefined });
+
+            return () => {
+                active = false;
+                clearTimeout(timer);
+            };
+        }, [isRecording, navigation, reset, route.params?.autoStart, startRecording]),
+    );
 
     // Animated pulse rings
     const ring1Scale = useSharedValue(1);

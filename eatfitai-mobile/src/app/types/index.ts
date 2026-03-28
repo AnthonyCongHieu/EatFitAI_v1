@@ -1,15 +1,21 @@
-﻿// Khai bÃ¡o cÃ¡c screen cá»§a Stack gá»‘c
-// - Login, Register: mÃ n hÃ¬nh xÃ¡c thá»±c
-// - AppTabs: nhÃ³m Tab chÃ­nh sau khi Ä‘Äƒng nháº­p
+import type { NavigatorScreenParams } from '@react-navigation/native';
+import type { AppTabsParamList } from '../navigation/AppTabs';
+
 export type RootStackParamList = {
   Welcome: undefined;
   Login: undefined;
   Register: undefined;
-  VerifyEmail: { email: string; verificationCode?: string }; // verificationCode chá»‰ dÃ¹ng cho dev mode
+  VerifyEmail: { email: string; verificationCode?: string };
   ForgotPassword: undefined;
   Onboarding: undefined;
-  AppTabs: undefined;
-  FoodSearch: { initialTab?: 'search' | 'favorites' } | undefined;
+  AppTabs: NavigatorScreenParams<AppTabsParamList> | undefined;
+  FoodSearch:
+    | {
+        initialTab?: 'search' | 'favorites';
+        autoFocus?: boolean;
+        showQuickSuggestions?: boolean;
+      }
+    | undefined;
   FoodDetail: { foodId: string; source?: 'catalog' | 'user' };
   CustomDish: undefined;
   AiCamera: undefined;
@@ -24,7 +30,6 @@ export type RootStackParamList = {
   VisionHistory: undefined;
   NutritionSettings: undefined;
   Achievements: undefined;
-  // Profile screens - má»›i thÃªm
   EditProfile: undefined;
   BodyMetrics: undefined;
   GoalSettings: undefined;

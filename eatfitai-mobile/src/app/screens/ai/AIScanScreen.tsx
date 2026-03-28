@@ -82,6 +82,7 @@ const AIScanScreen: React.FC = () => {
   const [showEditModal, setShowEditModal] = useState(false);
   const [showBasketSheet, setShowBasketSheet] = useState(false);
   const [resultNotice, setResultNotice] = useState<ScanResultNotice | null>(null);
+  const [isQuickSaving, setIsQuickSaving] = useState(false);
 
   const addIngredient = useIngredientBasketStore((s) => s.addIngredient);
 
@@ -307,7 +308,43 @@ const AIScanScreen: React.FC = () => {
   const topResults = detectionResult
     ? [...detectionResult.items].sort((a, b) => b.confidence - a.confidence).slice(0, 2)
     : [];
+  const quickSaveItem = topResults.find(
+    (item) => typeof item.foodItemId === 'number' && Number(item.foodItemId) > 0,
+  );
   const hasDetectedItems = topResults.length > 0;
+
+  const handleQuickSave = useCallback(async () => {
+    if (!quickSaveItem?.foodItemId) {
+      if (topResults[0]) {
+        handleQuickAdd(topResults[0]);
+      }
+      return;
+    }
+
+    setIsQuickSaving(true);
+    try {
+      await addItemsToTodayDiary([
+        {
+          foodItemId: Number(quickSaveItem.foodItemId),
+          grams: 100,
+        },
+      ]);
+
+      Toast.show({
+        type: 'success',
+        text1: 'Luu nhanh thanh cong',
+        text2: `${quickSaveItem.foodName || translateIngredient(quickSaveItem.label)} - 100g`,
+      });
+      await invalidateDiaryQueries(queryClient);
+      handleRetake();
+    } catch (error) {
+      handleApiErrorWithCustomMessage(error, {
+        unknown: { text1: 'Khong the luu nhanh', text2: 'Vui long thu lai hoac chinh tay' },
+      });
+    } finally {
+      setIsQuickSaving(false);
+    }
+  }, [handleQuickAdd, handleRetake, queryClient, quickSaveItem, topResults]);
 
   if (!permission) {
     return (
@@ -698,20 +735,39 @@ const AIScanScreen: React.FC = () => {
                 </ThemedText>
               </Pressable>
               {hasDetectedItems ? (
-                <Pressable
-                  onPress={handleAddToDiary}
-                  style={[styles.compactButton, { backgroundColor: theme.colors.primary }]}
-                  testID={TEST_IDS.aiScan.addToDiaryButton}
-                >
-                  <Icon name="add" size="sm" color="background" />
-                  <ThemedText
-                    variant="bodySmall"
-                    weight="600"
-                    style={{ marginLeft: 6, color: '#fff' }}
+                <>
+                  <Pressable
+                    onPress={handleQuickSave}
+                    disabled={isQuickSaving}
+                    style={[styles.compactButton, { backgroundColor: theme.colors.primary, opacity: isQuickSaving ? 0.7 : 1 }]}
+                    testID={TEST_IDS.aiScan.quickAddButton}
                   >
-                    {'Them'}
-                  </ThemedText>
-                </Pressable>
+                    {isQuickSaving ? (
+                      <ActivityIndicator size="small" color="#fff" />
+                    ) : (
+                      <>
+                        <Icon name="flash" size="sm" color="background" />
+                        <ThemedText
+                          variant="bodySmall"
+                          weight="600"
+                          style={{ marginLeft: 6, color: '#fff' }}
+                        >
+                          {quickSaveItem ? 'Luu nhanh' : 'Sua top 1'}
+                        </ThemedText>
+                      </>
+                    )}
+                  </Pressable>
+                  <Pressable
+                    onPress={handleAddToDiary}
+                    style={[styles.compactButton, { borderColor: theme.colors.border, borderWidth: 1 }]}
+                    testID={TEST_IDS.aiScan.addToDiaryButton}
+                  >
+                    <Icon name="options-outline" size="sm" color="text" />
+                    <ThemedText variant="bodySmall" weight="600" style={{ marginLeft: 6 }}>
+                      {'Chi tiet'}
+                    </ThemedText>
+                  </Pressable>
+                </>
               ) : (
                 <Pressable
                   onPress={() => navigation.navigate('FoodSearch')}
@@ -893,3 +949,4 @@ const styles = StyleSheet.create({
 });
 
 export default AIScanScreen;
+

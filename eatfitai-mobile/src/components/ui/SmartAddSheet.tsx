@@ -1,18 +1,18 @@
 import React from 'react';
-import { View, StyleSheet, Pressable, Dimensions, Modal, Platform } from 'react-native';
+import { Modal, Platform, Pressable, StyleSheet, View } from 'react-native';
 import Animated, {
-  SlideInDown,
-  SlideOutDown,
   FadeIn,
   FadeOut,
+  SlideInDown,
+  SlideOutDown,
 } from 'react-native-reanimated';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
 import { ThemedText } from '../ThemedText';
-import Icon from '../Icon';
 import { useAppTheme } from '../../theme/ThemeProvider';
 import type { RootStackParamList } from '../../app/types';
+import QuickAddHub from '../home/QuickAddHub';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -21,24 +21,18 @@ interface SmartAddSheetProps {
   onClose: () => void;
 }
 
-const { height: SCREEN_HEIGHT } = Dimensions.get('window');
-
 export const SmartAddSheet: React.FC<SmartAddSheetProps> = ({ visible, onClose }) => {
   const { theme } = useAppTheme();
   const navigation = useNavigation<NavigationProp>();
 
-  const handleOption = (route: keyof RootStackParamList | 'QuickAdd', params?: any) => {
+  const navigateAfterClose = (
+    route: keyof RootStackParamList,
+    params?: RootStackParamList[keyof RootStackParamList],
+  ) => {
     onClose();
-    // Small delay to allow sheet to close first
     setTimeout(() => {
-      if (route === 'QuickAdd') {
-        // Handle quick add specific logic if needed, or navigate to a specific quick add screen
-        // For now, let's go to FoodSearch with a focus or specific tab
-        navigation.navigate('FoodSearch');
-      } else {
-        navigation.navigate(route as any, params);
-      }
-    }, 300);
+      (navigation as any).navigate(route, params);
+    }, 220);
   };
 
   if (!visible) return null;
@@ -52,7 +46,6 @@ export const SmartAddSheet: React.FC<SmartAddSheetProps> = ({ visible, onClose }
       statusBarTranslucent
     >
       <View style={styles.overlay}>
-        {/* Backdrop */}
         <Animated.View
           entering={FadeIn}
           exiting={FadeOut}
@@ -62,14 +55,13 @@ export const SmartAddSheet: React.FC<SmartAddSheetProps> = ({ visible, onClose }
             style={StyleSheet.absoluteFill}
             onPress={onClose}
             accessibilityRole="button"
-            accessibilityLabel="Đóng menu"
+            accessibilityLabel="Dong quick add hub"
           />
         </Animated.View>
 
-        {/* Sheet */}
         <Animated.View
-          entering={SlideInDown.duration(200)}
-          exiting={SlideOutDown.duration(150)}
+          entering={SlideInDown.duration(220)}
+          exiting={SlideOutDown.duration(180)}
           style={[
             styles.sheet,
             {
@@ -80,82 +72,46 @@ export const SmartAddSheet: React.FC<SmartAddSheetProps> = ({ visible, onClose }
         >
           <View style={[styles.handle, { backgroundColor: theme.colors.border }]} />
 
-          <ThemedText variant="h3" style={styles.title}>
-            Thêm món ăn
-          </ThemedText>
+          <QuickAddHub
+            compact
+            onSearch={() =>
+              navigateAfterClose('FoodSearch', {
+                autoFocus: true,
+                showQuickSuggestions: true,
+              })
+            }
+            onScan={() => navigateAfterClose('AiCamera')}
+            onVoice={() =>
+              navigateAfterClose('AppTabs', {
+                screen: 'VoiceTab',
+                params: { autoStart: true, source: 'sheet-hub' },
+              })
+            }
+          />
 
-          {/* Section 1: Tra cứu từ Database */}
-          <ThemedText
-            variant="bodySmall"
-            color="textSecondary"
-            style={styles.sectionTitle}
-          >
-            📚 Tra cứu từ cơ sở dữ liệu
-          </ThemedText>
-          <View style={styles.grid}>
-            {/* Tìm kiếm - Primary option */}
-            <Pressable
-              style={[styles.option, { backgroundColor: theme.colors.primary + '15' }]}
-              onPress={() => handleOption('FoodSearch')}
-            >
-              <View style={[styles.iconBox, { backgroundColor: theme.colors.primary }]}>
-                <Icon name="search" size="lg" color="card" />
-              </View>
-              <ThemedText variant="body" weight="600">
-                Tìm kiếm
-              </ThemedText>
-              <ThemedText variant="caption" color="textSecondary">
-                Tra cứu 5000+ món
-              </ThemedText>
-            </Pressable>
+          <View style={styles.utilitySection}>
+            <ThemedText variant="bodySmall" color="textSecondary">
+              More ways
+            </ThemedText>
 
-            {/* Yêu thích */}
-            <Pressable
-              style={[styles.option, { backgroundColor: theme.colors.warning + '15' }]}
-              onPress={() => handleOption('FoodSearch', { initialTab: 'favorites' })}
-            >
-              <View style={[styles.iconBox, { backgroundColor: theme.colors.warning }]}>
-                <Icon name="heart" size="lg" color="card" />
-              </View>
-              <ThemedText variant="body" weight="600">
-                Yêu thích
-              </ThemedText>
-              <ThemedText variant="caption" color="textSecondary">
-                Món yêu thích
-              </ThemedText>
-            </Pressable>
-
-            {/* Thêm nhanh */}
-            <Pressable
-              style={[styles.option, { backgroundColor: theme.colors.success + '15' }]}
-              onPress={() => handleOption('CustomDish')}
-            >
-              <View style={[styles.iconBox, { backgroundColor: theme.colors.success }]}>
-                <Icon name="flash" size="lg" color="card" />
-              </View>
-              <ThemedText variant="body" weight="600">
-                Tự tạo
-              </ThemedText>
-              <ThemedText variant="caption" color="textSecondary">
-                Món của riêng bạn
-              </ThemedText>
-            </Pressable>
-
-            {/* AI Camera - Gợi ý thông minh */}
-            <Pressable
-              style={[styles.option, { backgroundColor: theme.colors.secondary + '15' }]}
-              onPress={() => handleOption('AiCamera')}
-            >
-              <View style={[styles.iconBox, { backgroundColor: theme.colors.secondary }]}>
-                <Icon name="camera" size="lg" color="card" />
-              </View>
-              <ThemedText variant="body" weight="600">
-                Nhận diện
-              </ThemedText>
-              <ThemedText variant="caption" color="textSecondary">
-                Gợi ý công thức
-              </ThemedText>
-            </Pressable>
+            <View style={styles.utilityRow}>
+              <Pressable
+                style={[styles.utilityButton, { borderColor: theme.colors.border }]}
+                onPress={() => navigateAfterClose('FoodSearch', { initialTab: 'favorites' })}
+              >
+                <ThemedText variant="bodySmall" weight="600">
+                  Favorites
+                </ThemedText>
+              </Pressable>
+              <Pressable
+                style={[styles.utilityButton, { borderColor: theme.colors.border }]}
+                onPress={() => navigateAfterClose('CustomDish')}
+              >
+                <ThemedText variant="bodySmall" weight="600">
+                  Custom dish
+                </ThemedText>
+              </Pressable>
+            </View>
           </View>
         </Animated.View>
       </View>
@@ -173,42 +129,30 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 24,
     padding: 24,
     width: '100%',
-    maxHeight: SCREEN_HEIGHT * 0.8,
+    gap: 20,
   },
   handle: {
     width: 40,
     height: 4,
-    backgroundColor: '#E0E0E0',
     borderRadius: 2,
     alignSelf: 'center',
-    marginBottom: 24,
   },
-  title: {
-    textAlign: 'center',
-    marginBottom: 24,
+  utilitySection: {
+    gap: 12,
   },
-  grid: {
+  utilityRow: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 16,
+    gap: 12,
   },
-  option: {
-    width: '47%', // roughly half minus gap
-    padding: 16,
-    borderRadius: 16,
-    alignItems: 'center',
-    gap: 8,
-  },
-  iconBox: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+  utilityButton: {
+    flex: 1,
+    borderWidth: 1,
+    borderRadius: 14,
+    paddingVertical: 12,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 4,
-  },
-  sectionTitle: {
-    marginBottom: 12,
-    marginTop: 4,
   },
 });
+
+export default SmartAddSheet;
+
