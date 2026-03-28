@@ -1,0 +1,31 @@
+# Style and conventions
+
+- Follow the repo instruction set from AGENTS.md/user guidance: understand architecture first, prefer minimal safe changes, avoid rewrites, and minimize regressions.
+- For bug fixes: identify root cause first, apply the smallest safe fix, then verify adjacent flows.
+- Preserve existing architecture boundaries unless a change is clearly required.
+- Encoding safety is important in this repo:
+  - preserve Vietnamese user-facing text exactly
+  - watch for mojibake, mixed encodings, invisible characters, and newline inconsistencies
+  - do not “fix” Vietnamese text unless you are sure the source encoding is correct
+- `.editorconfig`:
+  - C#: 4-space indentation, final newline, nullable enabled in project, security analyzers matter
+  - TS/JS: 2-space indentation, final newline
+- C# backend conventions:
+  - ASP.NET Core 9 / EF Core 9
+  - nullable and implicit usings enabled
+  - `CA2100` is set to error and `EF1001` to warning, so raw SQL and EF warnings need care
+  - keep secrets in `dotnet user-secrets`, not in tracked config files
+- Mobile conventions:
+  - TypeScript + Expo/React Native
+  - Prettier: single quotes, trailing commas `all`, print width 90, semicolons on, `endOfLine: auto`
+  - ESLint is intentionally relaxed in some areas (`any` allowed, inline styles allowed, hook dependency rules off); do not tighten rules casually
+  - formatting is handled by `npm run format`, lint is mainly for code issues
+- Repo behavior/preferences from docs and setup:
+  - emulator-first Android lane is the default
+  - AI provider local default is `http://127.0.0.1:5050`
+  - backend local default is `http://localhost:5247`
+  - mobile emulator default points to `http://10.0.2.2:5247`
+- Documentation policy from `docs/README.md`:
+  - use `04_ENVIRONMENT_EXECUTION_PLAN` for environment/runtime setup
+  - use `06_RUNTIME_AUDIT_SNAPSHOT_2026-03-14` for current runtime truth
+  - use `07_NOTION_PLAN_GAP_AND_2PERSON_RESTRUCTURE_2026-03-14` for planning/backlog context

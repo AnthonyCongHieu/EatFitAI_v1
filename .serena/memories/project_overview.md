@@ -1,0 +1,25 @@
+# EatFitAI project overview
+
+- Purpose: Windows-first local development workspace for a nutrition tracking app.
+- Main runtime pieces:
+  - `eatfitai-mobile`: Expo / React Native mobile client in TypeScript.
+  - `eatfitai-backend`: ASP.NET Core 9 Web API in C# with SQL Server.
+  - `ai-provider`: local Python Flask AI service for vision, nutrition, and optional voice/STT.
+  - `tools/dev`: Windows setup, restore, preflight, Android/Appium bootstrap scripts.
+  - `tools/appium`: emulator-first smoke automation lane.
+- Runtime topology:
+  - Normal flow: Mobile -> Backend -> SQL Server.
+  - AI flow: Mobile -> Backend -> AI Provider.
+  - Docs mention some voice/STT paths may still call the AI provider directly from mobile; treat that boundary as potentially fragile.
+- Canonical setup doc: `SETUP_GUIDE.md`.
+- Architecture/runtime docs worth checking before larger changes:
+  - `docs/01_ARCHITECTURE_OVERVIEW.md`
+  - `docs/04_ENVIRONMENT_EXECUTION_PLAN.md`
+  - `docs/06_RUNTIME_AUDIT_SNAPSHOT_2026-03-14.md`
+  - `docs/07_NOTION_PLAN_GAP_AND_2PERSON_RESTRUCTURE_2026-03-14.md`
+- Rough codebase structure:
+  - root solution: `EatFitAI_v1.sln`
+  - backend folders: `Controllers`, `Services`, `Repositories`, `Data`, `Models`, `DTOs`, `Middleware`, `Migrations`
+  - mobile folders: `src`, `scripts`, `__tests__`, native `android`
+  - AI provider files: `app.py`, `nutrition_llm.py`, `stt_service.py`, training/download scripts
+- Important repo note: some older markdown files already show mojibake/encoding corruption (for example `eatfitai-backend/DEV-RUN-GUIDE.md`). Preserve user-facing Vietnamese text carefully and do not spread encoding damage.
