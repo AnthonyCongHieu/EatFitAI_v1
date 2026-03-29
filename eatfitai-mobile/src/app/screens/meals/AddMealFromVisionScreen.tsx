@@ -1,19 +1,28 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { Image, StyleSheet, View, ScrollView, Pressable, Dimensions } from 'react-native';
+import {
+  Dimensions,
+  Image,
+  InteractionManager,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  View,
+} from 'react-native';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import Toast from 'react-native-toast-message';
 
-import Screen from '../../../components/Screen';
-import { ThemedText } from '../../../components/ThemedText';
-import { Skeleton } from '../../../components/Skeleton';
-import { TeachLabelBottomSheet } from '../../../components/ui/TeachLabelBottomSheet';
 import Button from '../../../components/Button';
 import Icon from '../../../components/Icon';
+import Screen from '../../../components/Screen';
+import { Skeleton } from '../../../components/Skeleton';
+import { ThemedText } from '../../../components/ThemedText';
+import { FoodPickerBottomSheet } from '../../../components/ui/FoodPickerBottomSheet';
+import { TeachLabelBottomSheet } from '../../../components/ui/TeachLabelBottomSheet';
 import { useAppTheme } from '../../../theme/ThemeProvider';
 import type { RootStackParamList } from '../../types';
-import type { MealTypeId } from '../../../types';
+import { MEAL_TYPES, type MealTypeId } from '../../../types';
 import type { MappedFoodItem } from '../../../types/ai';
 import type { FoodItem } from '../../../services/foodService';
 import { aiService, type TeachLabelRequest } from '../../../services/aiService';
@@ -30,12 +39,25 @@ type RouteProps = RouteProp<RootStackParamList, 'AddMealFromVision'>;
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
+const MEAL_TYPE_OPTIONS: { id: MealTypeId; label: string }[] = [
+  { id: MEAL_TYPES.BREAKFAST, label: 'Sang' },
+  { id: MEAL_TYPES.LUNCH, label: 'Trua' },
+  { id: MEAL_TYPES.DINNER, label: 'Toi' },
+  { id: MEAL_TYPES.SNACK, label: 'Snack' },
+];
+
 type DetectionItem = {
   item: MappedFoodItem;
   selected: boolean;
   grams: number;
-  mealType: MealTypeId;
 };
+
+const toDetectionItems = (items: MappedFoodItem[]): DetectionItem[] =>
+  items.map((item) => ({
+    item,
+    selected: item.isMatched,
+    grams: 100,
+  }));
 
 const AddMealFromVisionScreen = (): React.ReactElement => {
   const { theme } = useAppTheme();
@@ -47,44 +69,96 @@ const AddMealFromVisionScreen = (): React.ReactElement => {
 
   const [loading, setLoading] = useState(false);
   const [detectionItems, setDetectionItems] = useState<DetectionItem[]>(() =>
-    result.items.map((item) => ({
-      item,
-      selected: item.isMatched,
-      grams: 100,
-      mealType: 2, // Default to lunch
-    })),
+    toDetectionItems(result.items),
   );
+  const [selectedMealType, setSelectedMealType] = useState<MealTypeId>(MEAL_TYPES.LUNCH);
   const [teachLabelVisible, setTeachLabelVisible] = useState(false);
   const [currentTeachItem, setCurrentTeachItem] = useState<MappedFoodItem | null>(null);
+  const [replacePickerVisible, setReplacePickerVisible] = useState(false);
+  const [replaceTargetIndex, setReplaceTargetIndex] = useState<number | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const selectedItems = useMemo(
-    () => detectionItems.filter((d) => d.selected),
+    () => detectionItems.filter((detection) => detection.selected),
     [detectionItems],
   );
 
-  const totalCalories = useMemo(() => {
-    return selectedItems.reduce((sum, d) => {
-      const caloriesPer100g = d.item.caloriesPer100g ?? 0;
-      return sum + (caloriesPer100g * d.grams) / 100;
-    }, 0);
-  }, [selectedItems]);
+  const totalCalories = useMemo(
+    () =>
+      selectedItems.reduce((sum, detection) => {
+        const caloriesPer100g = detection.item.caloriesPer100g ?? 0;
+        return sum + (caloriesPer100g * detection.grams) / 100;
+      }, 0),
+    [selectedItems],
+  );
 
-  const handleToggleSelect = useCallback((targetItem: DetectionItem) => {
-    // Warn if an item is not matched yet, but still allow selection
-    if (!targetItem.item.isMatched && !targetItem.selected) {
+  const matchedItems = detectionItems.filter((detection) => detection.item.isMatched);
+  const unmatchedItems = detectionItems.filter((detection) => !detection.item.isMatched);
+
+  const currentReplaceQuery = useMemo(() => {
+    if (replaceTargetIndex === null) {
+      return '';
+    }
+
+    const target = detectionItems[replaceTargetIndex];
+    if (!target) {
+      return '';
+    }
+
+    return target.item.foodName || translateIngredient(target.item.label);
+  }, [detectionItems, replaceTargetIndex]);
+
+  const getDisplayName = useCallback((item: MappedFoodItem) => {
+    return item.foodName || translateIngredient(item.label);
+  }, []);
+
+  const updateDetectionItem = useCallback(
+    (index: number, updater: (current: DetectionItem) => DetectionItem) => {
+      setDetectionItems((previous) =>
+        previous.map((item, currentIndex) =>
+          currentIndex === index ? updater(item) : item,
+        ),
+      );
+    },
+    [],
+  );
+
+  const handleToggleSelect = useCallback((index: number) => {
+    const target = detectionItems[index];
+    if (!target) {
+      return;
+    }
+
+    if (!target.item.isMatched && !target.selected) {
       Toast.show({
         type: 'info',
-        text1: 'Lưu ý',
-        text2: 'Món này chưa được xác nhận, có thể thiếu thông tin dinh dưỡng',
-        visibilityTime: 2000,
+        text1: 'Can xac nhan mon',
+        text2: 'Hay doi mon bang Search hoac day AI truoc khi luu.',
+        visibilityTime: 2200,
       });
     }
-    setDetectionItems((prev) =>
-      prev.map((item) =>
-        item === targetItem ? { ...item, selected: !item.selected } : item,
-      ),
-    );
+
+    updateDetectionItem(index, (current) => ({
+      ...current,
+      selected: !current.selected,
+    }));
+  }, [detectionItems, updateDetectionItem]);
+
+  const handleAdjustGrams = useCallback(
+    (index: number, delta: number) => {
+      updateDetectionItem(index, (current) => ({
+        ...current,
+        grams: Math.min(1000, Math.max(25, current.grams + delta)),
+      }));
+    },
+    [updateDetectionItem],
+  );
+
+  const openTeachLabelSheet = useCallback((item: MappedFoodItem) => {
+    setCurrentTeachItem(item);
+    InteractionManager.runAfterInteractions(() => {
+      setTeachLabelVisible(true);
+    });
   }, []);
 
   const closeTeachLabelSheet = useCallback(() => {
@@ -92,175 +166,302 @@ const AddMealFromVisionScreen = (): React.ReactElement => {
     setCurrentTeachItem(null);
   }, []);
 
-  const handleTeachLabel = useCallback((item: MappedFoodItem) => {
-    setCurrentTeachItem(item);
-    setTeachLabelVisible(true);
+  const openReplacePicker = useCallback((index: number) => {
+    setReplaceTargetIndex(index);
+    InteractionManager.runAfterInteractions(() => {
+      setReplacePickerVisible(true);
+    });
   }, []);
 
-  const handleSelectFood = async (foodItem: FoodItem) => {
-    if (!currentTeachItem) {
-      throw new Error('No teach label item selected');
-    }
+  const closeReplacePicker = useCallback(() => {
+    setReplacePickerVisible(false);
+    setReplaceTargetIndex(null);
+  }, []);
 
-    const teachItem = currentTeachItem;
+  const handleTeachLabel = useCallback(
+    async (foodItem: FoodItem) => {
+      if (!currentTeachItem) {
+        throw new Error('No teach label item selected');
+      }
 
-    const foodItemId = Number.parseInt(foodItem.id, 10);
-    if (Number.isNaN(foodItemId)) {
-      throw new Error('Invalid food item id');
-    }
+      const foodItemId = Number.parseInt(foodItem.id, 10);
+      if (Number.isNaN(foodItemId)) {
+        throw new Error('Invalid food item id');
+      }
 
-    try {
-      const request: TeachLabelRequest = {
-        label: teachItem.label,
-        foodItemId,
-        detectedConfidence: teachItem.confidence,
-        selectedFoodName: foodItem.name,
-        source: 'vision_add_meal',
-        clientTimestamp: new Date().toISOString(),
-      };
+      try {
+        const request: TeachLabelRequest = {
+          label: currentTeachItem.label,
+          foodItemId,
+          detectedConfidence: currentTeachItem.confidence,
+          selectedFoodName: foodItem.name,
+          source: 'vision_add_meal',
+          clientTimestamp: new Date().toISOString(),
+        };
 
-      await aiService.teachLabel(request);
+        await aiService.teachLabel(request);
+        closeTeachLabelSheet();
 
-      closeTeachLabelSheet();
+        Toast.show({
+          type: 'success',
+          text1: 'Da day AI',
+          text2: `"${currentTeachItem.label}" -> ${foodItem.name}`,
+        });
 
+        setLoading(true);
+        try {
+          const refreshedResult = await aiService.detectFoodByImage(imageUri);
+          setDetectionItems(toDetectionItems(refreshedResult.items));
+        } catch {
+          Toast.show({
+            type: 'info',
+            text1: 'Da luu chinh sua',
+            text2: 'Chua the tai lai ket qua AI ngay bay gio.',
+          });
+        } finally {
+          setLoading(false);
+        }
+      } catch (error) {
+        handleApiErrorWithCustomMessage(error, {
+          server_error: { text1: 'Loi', text2: 'May chu gap su co' },
+          network_error: { text1: 'Khong co ket noi', text2: 'Kiem tra mang va thu lai' },
+          unknown: { text1: 'Loi', text2: 'Khong the day AI luc nay' },
+        });
+      }
+    },
+    [closeTeachLabelSheet, currentTeachItem, imageUri],
+  );
+
+  const handleReplaceFood = useCallback(
+    async (foodItem: FoodItem) => {
+      if (replaceTargetIndex === null) {
+        throw new Error('No replace target selected');
+      }
+
+      const foodItemId = Number.parseInt(foodItem.id, 10);
+      if (Number.isNaN(foodItemId)) {
+        throw new Error('Invalid food item id');
+      }
+
+      updateDetectionItem(replaceTargetIndex, (current) => ({
+        ...current,
+        selected: true,
+        item: {
+          ...current.item,
+          foodItemId,
+          foodName: foodItem.name,
+          caloriesPer100g: foodItem.calories ?? current.item.caloriesPer100g ?? 0,
+          proteinPer100g: foodItem.protein ?? current.item.proteinPer100g ?? 0,
+          carbPer100g: foodItem.carbs ?? current.item.carbPer100g ?? 0,
+          fatPer100g: foodItem.fat ?? current.item.fatPer100g ?? 0,
+          thumbNail: foodItem.thumbnail ?? current.item.thumbNail ?? null,
+          isMatched: true,
+        },
+      }));
+
+      closeReplacePicker();
       Toast.show({
         type: 'success',
-        text1: 'Đã dạy AI',
-        text2: `"${teachItem.label}" -> ${foodItem.name}`,
+        text1: 'Da thay mon',
+        text2: foodItem.name,
       });
+    },
+    [closeReplacePicker, replaceTargetIndex, updateDetectionItem],
+  );
 
-      setLoading(true);
-      try {
-        const refreshedResult = await aiService.detectFoodByImage(imageUri);
-        setDetectionItems(
-          refreshedResult.items.map((item) => ({
-            item,
-            selected: item.isMatched,
-            grams: 100,
-            mealType: 2,
-          })),
-        );
-      } catch {
-        Toast.show({
-          type: 'info',
-          text1: 'Đã lưu chỉnh sửa',
-          text2: 'Chưa thể tải lại kết quả AI ngay bây giờ',
-        });
-      } finally {
-        setLoading(false);
-      }
-    } catch (err) {
-      handleApiErrorWithCustomMessage(err, {
-        server_error: { text1: 'Lỗi', text2: 'Máy chủ gặp sự cố' },
-        network_error: { text1: 'Không có kết nối', text2: 'Kiểm tra mạng' },
-        unknown: { text1: 'Lỗi', text2: 'Không thể dạy AI' },
-      });
+  const handleAddToDiary = useCallback(async () => {
+    if (selectedItems.length === 0) {
+      return;
     }
-  };
 
-  const handleAddToDiary = async () => {
-    if (selectedItems.length === 0) return;
+    const hasUnresolvedItem = selectedItems.some(
+      (detection) => !detection.item.foodItemId || Number(detection.item.foodItemId) <= 0,
+    );
+
+    if (hasUnresolvedItem) {
+      Toast.show({
+        type: 'info',
+        text1: 'Con mon can sua',
+        text2: 'Hay doi mon bang Search hoac bo chon mon chua duoc map.',
+      });
+      return;
+    }
 
     setIsSubmitting(true);
     try {
-      const mealType = selectedItems[0]?.mealType ?? 2;
-
-      const items = selectedItems.map((d) => ({
-        foodItemId: d.item.foodItemId!,
-        grams: d.grams,
-      }));
-
-      await addItemsToTodayDiary(items, { mealTypeId: mealType });
+      await addItemsToTodayDiary(
+        selectedItems.map((detection) => ({
+          foodItemId: Number(detection.item.foodItemId),
+          grams: detection.grams,
+        })),
+        { mealTypeId: selectedMealType },
+      );
 
       Toast.show({
         type: 'success',
-        text1: 'Thành công',
-        text2: `Đã thêm ${selectedItems.length} món vào nhật ký`,
+        text1: 'Da them vao diary',
+        text2: `${selectedItems.length} mon - ${Math.round(totalCalories)} kcal`,
       });
+
       await invalidateDiaryQueries(queryClient);
       navigation.goBack();
-    } catch (err) {
-      handleApiErrorWithCustomMessage(err, {
-        server_error: { text1: 'Lỗi', text2: 'Máy chủ gặp sự cố' },
-        network_error: { text1: 'Không có kết nối', text2: 'Kiểm tra mạng' },
-        unknown: { text1: 'Lỗi', text2: 'Không thể thêm vào nhật ký' },
+    } catch (error) {
+      handleApiErrorWithCustomMessage(error, {
+        server_error: { text1: 'Loi', text2: 'May chu gap su co' },
+        network_error: { text1: 'Khong co ket noi', text2: 'Kiem tra mang va thu lai' },
+        unknown: { text1: 'Loi', text2: 'Khong the them vao nhat ky' },
       });
     } finally {
       setIsSubmitting(false);
     }
-  };
-
-  // Get the best Vietnamese display name
-  const getDisplayName = (item: MappedFoodItem) => {
-    return item.foodName || translateIngredient(item.label);
-  };
+  }, [navigation, queryClient, selectedItems, selectedMealType, totalCalories]);
 
   const renderFoodItem = (detection: DetectionItem, index: number) => {
-    const item = detection.item;
-    const displayName = getDisplayName(item);
-    const calories = item.caloriesPer100g ?? 0;
-    const isMatched = item.isMatched;
+    const displayName = getDisplayName(detection.item);
+    const calories = Math.round(((detection.item.caloriesPer100g ?? 0) * detection.grams) / 100);
+    const confidence = Math.round((detection.item.confidence ?? 0) * 100);
+    const isMatched = detection.item.isMatched;
 
     return (
-      <Pressable
-        key={`${item.label}-${index}`}
-        onPress={() => handleToggleSelect(detection)}
+      <View
+        key={`${detection.item.label}-${index}`}
         style={[
-          styles.foodRow,
+          styles.foodCard,
           {
-            backgroundColor: detection.selected
-              ? theme.colors.primary + '15'
-              : theme.colors.card,
-            borderColor: detection.selected
-              ? theme.colors.primary
-              : theme.colors.border,
+            backgroundColor: detection.selected ? theme.colors.primary + '12' : theme.colors.card,
+            borderColor: detection.selected ? theme.colors.primary : theme.colors.border,
           },
         ]}
       >
-        {/* Checkbox */}
-        <View
-          style={[
-            styles.checkbox,
-            {
-              backgroundColor: detection.selected
-                ? theme.colors.primary
-                : 'transparent',
-              borderColor: detection.selected
-                ? theme.colors.primary
-                : theme.colors.border,
-            },
-          ]}
-        >
-          {detection.selected && (
-            <Icon name="checkmark" size="sm" color="card" />
-          )}
-        </View>
-
-        {/* Info */}
-        <View style={styles.foodInfo}>
-          <ThemedText variant="body" weight="600" numberOfLines={1}>
-            {displayName}
-          </ThemedText>
-          <ThemedText variant="caption" color="textSecondary">
-            {calories} kcal / 100 g
-          </ThemedText>
-        </View>
-
-        {/* Action button */}
-        {!isMatched && (
-          <Pressable
-            onPress={(event) => {
-              event.stopPropagation();
-              handleTeachLabel(item);
-            }}
-            style={[styles.teachBtn, { backgroundColor: theme.colors.primary + '20' }]}
+        <Pressable style={styles.foodHeader} onPress={() => handleToggleSelect(index)}>
+          <View
+            style={[
+              styles.checkbox,
+              {
+                backgroundColor: detection.selected ? theme.colors.primary : 'transparent',
+                borderColor: detection.selected ? theme.colors.primary : theme.colors.border,
+              },
+            ]}
           >
-            <ThemedText variant="caption" color="primary">
-              {'Chọn món đúng'}
+            {detection.selected ? <Icon name="checkmark" size="sm" color="card" /> : null}
+          </View>
+
+          <View style={styles.foodInfo}>
+            <ThemedText variant="body" weight="700" numberOfLines={1}>
+              {displayName}
             </ThemedText>
-          </Pressable>
-        )}
-      </Pressable>
+            <View style={styles.metaRow}>
+              <ThemedText variant="caption" color="textSecondary">
+                {calories} kcal / {detection.grams}g
+              </ThemedText>
+              <View
+                style={[
+                  styles.metaBadge,
+                  {
+                    backgroundColor: isMatched
+                      ? theme.colors.success + '18'
+                      : theme.colors.warning + '18',
+                  },
+                ]}
+              >
+                <ThemedText
+                  variant="caption"
+                  weight="600"
+                  style={{ color: isMatched ? theme.colors.success : theme.colors.warning }}
+                >
+                  {isMatched ? `${confidence}%` : 'Can review'}
+                </ThemedText>
+              </View>
+            </View>
+            </View>
+        </Pressable>
+
+        <View style={styles.controlsRow}>
+          <View style={[styles.gramsControl, { borderColor: theme.colors.border }]}>
+            <Pressable
+              onPressIn={(event) => {
+                event.stopPropagation();
+              }}
+              onPress={(event) => {
+                event.stopPropagation();
+                handleAdjustGrams(index, -25);
+              }}
+              style={styles.gramsButton}
+              testID={`${TEST_IDS.visionAddMeal.decreaseGramsButton}-${index}`}
+            >
+              <ThemedText variant="body" weight="700">
+                -
+              </ThemedText>
+            </Pressable>
+            <ThemedText variant="bodySmall" weight="700">
+              {detection.grams}g
+            </ThemedText>
+            <Pressable
+              onPressIn={(event) => {
+                event.stopPropagation();
+              }}
+              onPress={(event) => {
+                event.stopPropagation();
+                handleAdjustGrams(index, 25);
+              }}
+              style={styles.gramsButton}
+              testID={`${TEST_IDS.visionAddMeal.increaseGramsButton}-${index}`}
+            >
+              <ThemedText variant="body" weight="700">
+                +
+              </ThemedText>
+            </Pressable>
+          </View>
+
+          <View style={styles.actionRow}>
+            <Pressable
+              onPressIn={(event) => {
+                event.stopPropagation();
+              }}
+              onPress={(event) => {
+                event.stopPropagation();
+                openReplacePicker(index);
+              }}
+              style={[
+                styles.actionChip,
+                { backgroundColor: theme.colors.primary + '14', borderColor: theme.colors.primary + '35' },
+              ]}
+              testID={`${TEST_IDS.visionAddMeal.replaceButton}-${index}`}
+            >
+              <Icon name="search-outline" size="xs" color="primary" />
+              <ThemedText variant="caption" weight="600" color="primary" style={{ marginLeft: 4 }}>
+                Doi mon
+              </ThemedText>
+            </Pressable>
+
+            {!isMatched ? (
+              <Pressable
+                onPressIn={(event) => {
+                  event.stopPropagation();
+                }}
+                onPress={(event) => {
+                  event.stopPropagation();
+                  openTeachLabelSheet(detection.item);
+                }}
+                style={[
+                  styles.actionChip,
+                  { backgroundColor: theme.colors.warning + '14', borderColor: theme.colors.warning + '35' },
+                ]}
+              >
+                <Icon name="school-outline" size="xs" color="warning" />
+                <ThemedText
+                  variant="caption"
+                  weight="600"
+                  color="warning"
+                  style={{ marginLeft: 4 }}
+                >
+                  Day AI
+                </ThemedText>
+              </Pressable>
+            ) : null}
+          </View>
+        </View>
+      </View>
     );
   };
 
@@ -268,106 +469,11 @@ const AddMealFromVisionScreen = (): React.ReactElement => {
     <View style={styles.skeletonContainer}>
       {Array.from({ length: 3 }).map((_, index) => (
         <View key={index} style={styles.skeletonCard}>
-          <Skeleton height={60} style={{ borderRadius: 12 }} />
+          <Skeleton height={108} style={{ borderRadius: 16 }} />
         </View>
       ))}
     </View>
   );
-
-  const styles = StyleSheet.create({
-    container: {
-      flex: 1,
-      backgroundColor: theme.colors.background,
-    },
-    scrollContent: {
-      paddingBottom: 100,
-    },
-    imageSection: {
-      position: 'relative',
-      width: SCREEN_WIDTH - 32,
-      height: 140,
-      marginHorizontal: 16,
-      marginTop: 8,
-      borderRadius: 16,
-      overflow: 'hidden',
-    },
-    image: {
-      width: '100%',
-      height: '100%',
-    },
-    imageOverlay: {
-      position: 'absolute',
-      bottom: 0,
-      left: 0,
-      right: 0,
-      backgroundColor: 'rgba(0,0,0,0.5)',
-      paddingVertical: 8,
-      paddingHorizontal: 12,
-      flexDirection: 'row',
-      alignItems: 'center',
-    },
-    sectionTitle: {
-      paddingHorizontal: 16,
-      paddingTop: 16,
-      paddingBottom: 8,
-    },
-    foodRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      padding: 12,
-      marginHorizontal: 16,
-      marginBottom: 8,
-      borderRadius: 12,
-      borderWidth: 1,
-    },
-    checkbox: {
-      width: 22,
-      height: 22,
-      borderRadius: 6,
-      borderWidth: 2,
-      alignItems: 'center',
-      justifyContent: 'center',
-      marginRight: 12,
-    },
-    foodInfo: {
-      flex: 1,
-    },
-    teachBtn: {
-      paddingHorizontal: 10,
-      paddingVertical: 6,
-      borderRadius: 8,
-    },
-    skeletonContainer: {
-      paddingHorizontal: 16,
-    },
-    skeletonCard: {
-      marginBottom: 8,
-    },
-    bottomBar: {
-      position: 'absolute',
-      bottom: 0,
-      left: 0,
-      right: 0,
-      backgroundColor: theme.colors.card,
-      borderTopWidth: 1,
-      borderTopColor: theme.colors.border,
-      paddingHorizontal: 16,
-      paddingVertical: 12,
-      paddingBottom: 24,
-    },
-    summaryRow: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      marginBottom: 12,
-    },
-    addButton: {
-      flex: 1,
-    },
-  });
-
-  const matchedItems = detectionItems.filter((d) => d.item.isMatched);
-  const unmatchedItems = detectionItems.filter((d) => !d.item.isMatched);
 
   return (
     <Screen style={styles.container} scroll={false} testID={TEST_IDS.visionAddMeal.screen}>
@@ -376,64 +482,127 @@ const AddMealFromVisionScreen = (): React.ReactElement => {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {/* Image Preview - Compact */}
         <View style={styles.imageSection}>
           <Image source={{ uri: imageUri }} style={styles.image} resizeMode="cover" />
           <View style={styles.imageOverlay}>
             <Icon name="scan-outline" size="sm" color="card" />
-            <ThemedText
-              variant="bodySmall"
-              style={{ color: '#fff', marginLeft: 6 }}
-            >
-              {'AI nhận diện '}{detectionItems.length}{' món'}
+            <ThemedText variant="bodySmall" style={{ color: '#fff', marginLeft: 6 }}>
+              Review truoc khi luu · {detectionItems.length} mon
             </ThemedText>
           </View>
+        </View>
+
+        <View
+          style={[
+            styles.reviewHint,
+            {
+              backgroundColor:
+                theme.mode === 'dark' ? 'rgba(59, 130, 246, 0.12)' : 'rgba(59, 130, 246, 0.08)',
+              borderColor:
+                theme.mode === 'dark' ? 'rgba(59, 130, 246, 0.28)' : 'rgba(59, 130, 246, 0.16)',
+            },
+          ]}
+        >
+          <ThemedText variant="bodySmall" color="textSecondary">
+            Neu AI doan chua dung, hay doi mon bang Search, chinh gram va chon bua an truoc khi luu.
+          </ThemedText>
         </View>
 
         {loading ? (
           renderSkeleton()
         ) : (
           <>
-            {/* Matched Items */}
-            {matchedItems.length > 0 && (
+            {matchedItems.length > 0 ? (
               <>
                 <View style={styles.sectionTitle}>
-                  <ThemedText variant="h4" weight="600">
-                    {'Đã nhận diện ('}{matchedItems.length}{')'}
+                  <ThemedText variant="h4" weight="700">
+                    Da map duoc ({matchedItems.length})
                   </ThemedText>
                 </View>
-                {matchedItems.map((d, i) => renderFoodItem(d, i))}
+                {matchedItems.map((detection, index) => renderFoodItem(detection, index))}
               </>
-            )}
+            ) : null}
 
-            {/* Unmatched Items */}
-            {unmatchedItems.length > 0 && (
+            {unmatchedItems.length > 0 ? (
               <>
                 <View style={styles.sectionTitle}>
-                  <ThemedText variant="h4" weight="600" color="warning">
-                    {'Cần xác nhận ('}{unmatchedItems.length}{')'}
+                  <ThemedText variant="h4" weight="700" color="warning">
+                    Can xac nhan ({unmatchedItems.length})
                   </ThemedText>
                 </View>
-                {unmatchedItems.map((d, i) => renderFoodItem(d, i + matchedItems.length))}
+                {unmatchedItems.map((detection, index) =>
+                  renderFoodItem(detection, index + matchedItems.length),
+                )}
               </>
-            )}
+            ) : null}
           </>
         )}
       </ScrollView>
 
-      {/* Bottom Summary Bar */}
-      <View style={styles.bottomBar}>
+      <View
+        style={[
+          styles.bottomBar,
+          {
+            backgroundColor: theme.colors.card,
+            borderTopColor: theme.colors.border,
+          },
+        ]}
+      >
+        <View style={styles.mealTypeRow}>
+          {MEAL_TYPE_OPTIONS.map((option) => {
+            const selected = option.id === selectedMealType;
+            return (
+              <Pressable
+                key={option.id}
+                onPress={() => setSelectedMealType(option.id)}
+                style={[
+                  styles.mealTypeChip,
+                  {
+                    backgroundColor: selected ? theme.colors.primary : theme.colors.background,
+                    borderColor: selected ? theme.colors.primary : theme.colors.border,
+                  },
+                ]}
+                testID={
+                  option.id === MEAL_TYPES.BREAKFAST
+                    ? TEST_IDS.visionAddMeal.mealTypeBreakfastButton
+                    : option.id === MEAL_TYPES.LUNCH
+                      ? TEST_IDS.visionAddMeal.mealTypeLunchButton
+                      : option.id === MEAL_TYPES.DINNER
+                        ? TEST_IDS.visionAddMeal.mealTypeDinnerButton
+                        : TEST_IDS.visionAddMeal.mealTypeSnackButton
+                }
+              >
+                <ThemedText
+                  variant="caption"
+                  weight="700"
+                  style={{ color: selected ? '#fff' : theme.colors.textSecondary }}
+                >
+                  {option.label}
+                </ThemedText>
+              </Pressable>
+            );
+          })}
+        </View>
+
         <View style={styles.summaryRow}>
           <ThemedText variant="body" color="textSecondary">
-            {'Sẽ thêm: '}<ThemedText variant="body" weight="700" color="primary">{selectedItems.length}</ThemedText> {'món'}
+            Se them{' '}
+            <ThemedText variant="body" weight="700" color="primary">
+              {selectedItems.length}
+            </ThemedText>{' '}
+            mon
           </ThemedText>
           <ThemedText variant="body" color="textSecondary">
-            <ThemedText variant="body" weight="700">{Math.round(totalCalories)}</ThemedText> kcal
+            <ThemedText variant="body" weight="700">
+              {Math.round(totalCalories)}
+            </ThemedText>{' '}
+            kcal
           </ThemedText>
         </View>
+
         <Button
           variant="primary"
-          title={isSubmitting ? 'Đang thêm...' : 'Thêm vào nhật ký'}
+          title={isSubmitting ? 'Dang luu...' : 'Luu vao nhat ky'}
           onPress={handleAddToDiary}
           disabled={selectedItems.length === 0 || isSubmitting}
           loading={isSubmitting}
@@ -442,15 +611,183 @@ const AddMealFromVisionScreen = (): React.ReactElement => {
         />
       </View>
 
-      {/* Teach Label Bottom Sheet */}
       <TeachLabelBottomSheet
         visible={teachLabelVisible}
         onClose={closeTeachLabelSheet}
-        onSelectFood={handleSelectFood}
+        onSelectFood={handleTeachLabel}
         currentLabel={currentTeachItem?.label ?? ''}
+      />
+
+      <FoodPickerBottomSheet
+        visible={replacePickerVisible}
+        onClose={closeReplacePicker}
+        onSelectFood={handleReplaceFood}
+        initialQuery={currentReplaceQuery}
+        title="Doi mon bang Search"
       />
     </Screen>
   );
 };
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  scrollContent: {
+    paddingBottom: 170,
+  },
+  imageSection: {
+    position: 'relative',
+    width: SCREEN_WIDTH - 32,
+    height: 150,
+    marginHorizontal: 16,
+    marginTop: 10,
+    borderRadius: 16,
+    overflow: 'hidden',
+  },
+  image: {
+    width: '100%',
+    height: '100%',
+  },
+  imageOverlay: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: 'rgba(0,0,0,0.55)',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  reviewHint: {
+    marginHorizontal: 16,
+    marginTop: 12,
+    borderRadius: 14,
+    borderWidth: 1,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+  },
+  sectionTitle: {
+    paddingHorizontal: 16,
+    paddingTop: 18,
+    paddingBottom: 10,
+  },
+  foodCard: {
+    marginHorizontal: 16,
+    marginBottom: 10,
+    borderRadius: 16,
+    borderWidth: 1,
+    padding: 14,
+  },
+  foodHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+  },
+  checkbox: {
+    width: 22,
+    height: 22,
+    borderRadius: 6,
+    borderWidth: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+    marginTop: 2,
+  },
+  foodInfo: {
+    flex: 1,
+  },
+  metaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 6,
+  },
+  metaBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 999,
+  },
+  controlsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 14,
+    gap: 10,
+  },
+  gramsControl: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingHorizontal: 4,
+    paddingVertical: 4,
+    minWidth: 118,
+    justifyContent: 'space-between',
+  },
+  gramsButton: {
+    width: 28,
+    height: 28,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  actionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    flexWrap: 'wrap',
+    justifyContent: 'flex-end',
+    flex: 1,
+  },
+  actionChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    borderRadius: 12,
+    borderWidth: 1,
+  },
+  skeletonContainer: {
+    paddingHorizontal: 16,
+  },
+  skeletonCard: {
+    marginBottom: 10,
+  },
+  bottomBar: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: '#fff',
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(148, 163, 184, 0.22)',
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 24,
+  },
+  mealTypeRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 12,
+  },
+  mealTypeChip: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 12,
+    borderWidth: 1,
+    paddingVertical: 10,
+  },
+  summaryRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  addButton: {
+    flex: 1,
+  },
+});
 
 export default AddMealFromVisionScreen;

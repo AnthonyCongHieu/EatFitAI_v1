@@ -22,6 +22,7 @@ type ListItemProps = {
   size?: 'sm' | 'md' | 'lg';
   animated?: boolean;
   chevron?: boolean;
+  testID?: string;
 };
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
@@ -39,6 +40,7 @@ export const ListItem = ({
   size = 'md',
   animated = true,
   chevron = false,
+  testID,
 }: ListItemProps): React.ReactElement => {
   const { theme } = useAppTheme();
 
@@ -153,6 +155,7 @@ export const ListItem = ({
       disabled={disabled}
       accessibilityRole={onPress ? 'button' : undefined}
       accessibilityState={{ selected, disabled }}
+      testID={testID}
     >
       <View style={styles.content}>
         {/* Left Component */}

@@ -36,6 +36,17 @@ export const TEST_IDS = {
   visionAddMeal: {
     screen: 'vision-add-meal-screen',
     confirmButton: 'vision-add-meal-confirm-button',
+    decreaseGramsButton: 'vision-add-meal-decrease-grams-button',
+    increaseGramsButton: 'vision-add-meal-increase-grams-button',
+    replaceButton: 'vision-add-meal-replace-button',
+    mealTypeBreakfastButton: 'vision-add-meal-mealtype-breakfast-button',
+    mealTypeLunchButton: 'vision-add-meal-mealtype-lunch-button',
+    mealTypeDinnerButton: 'vision-add-meal-mealtype-dinner-button',
+    mealTypeSnackButton: 'vision-add-meal-mealtype-snack-button',
+  },
+  foodPicker: {
+    searchInput: 'food-picker-search-input',
+    firstResult: 'food-picker-first-result',
   },
   error: {
     retryButton: 'app-error-retry-button',

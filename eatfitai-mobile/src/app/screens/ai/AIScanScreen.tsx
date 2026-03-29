@@ -443,71 +443,93 @@ const AIScanScreen: React.FC = () => {
         )}
 
         {isCameraMode && (
-          <Animated.View entering={FadeInDown} style={styles.bottomControls}>
-            <Pressable
-              style={[
-                styles.sideButton,
-                {
-                  backgroundColor: 'rgba(255,255,255,0.95)',
-                  shadowColor: '#000',
-                  shadowOffset: { width: 0, height: 2 },
-                  shadowOpacity: 0.25,
-                  shadowRadius: 4,
-                  elevation: 5,
-                },
-              ]}
-              onPress={() => navigation.navigate('FoodSearch')}
-              accessibilityRole="button"
-              accessibilityLabel="Tim kiem mon an"
-              accessibilityHint="Chuyen sang man hinh tim kiem"
-            >
-              <Icon name="search-outline" size="lg" color="primary" />
-            </Pressable>
-
-            <AnimatedPressable
-              onPress={handleCapture}
-              disabled={isCapturing}
-              style={[captureButtonStyle, styles.captureButtonOuter]}
-              accessibilityRole="button"
-              accessibilityLabel="Chup anh"
-              accessibilityHint="Chup anh mon an de AI nhan dien"
-              accessibilityState={{ disabled: isCapturing }}
-              testID={TEST_IDS.aiScan.captureButton}
-            >
-              <LinearGradient
-                colors={[
-                  theme.colors.primary,
-                  theme.colors.secondary,
-                  theme.colors.primary,
-                ]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.captureGradientRing}
-              >
-                <View style={[styles.captureInnerLarge, { backgroundColor: '#fff' }]} />
-              </LinearGradient>
-            </AnimatedPressable>
-
-            <Pressable
-              style={[
-                styles.sideButton,
-                {
-                  backgroundColor: 'rgba(255,255,255,0.95)',
-                  shadowColor: '#000',
-                  shadowOffset: { width: 0, height: 2 },
-                  shadowOpacity: 0.25,
-                  shadowRadius: 4,
-                  elevation: 5,
-                },
-              ]}
+          <Animated.View entering={FadeInDown} style={styles.cameraActionGroup}>
+            <Button
+              title="Chon tu thu vien"
               onPress={handlePickImage}
-              accessibilityRole="button"
+              variant="secondary"
+              size="sm"
+              fullWidth={false}
+              icon="images-outline"
               accessibilityLabel="Chon tu thu vien"
               accessibilityHint="Chon anh co san tu thu vien"
               testID={TEST_IDS.aiScan.galleryButton}
-            >
-              <Icon name="images-outline" size="lg" color="primary" />
-            </Pressable>
+              style={styles.galleryCtaButton}
+            />
+
+            <Animated.View style={styles.bottomControls}>
+              <AnimatedPressable
+                style={[
+                  styles.sideButton,
+                  {
+                    backgroundColor: 'rgba(255,255,255,0.95)',
+                    shadowColor: '#000',
+                    shadowOffset: { width: 0, height: 2 },
+                    shadowOpacity: 0.25,
+                    shadowRadius: 4,
+                    elevation: 5,
+                  },
+                ]}
+                onPress={() => navigation.navigate('FoodSearch')}
+                hitSlop={16}
+                accessible
+                collapsable={false}
+                importantForAccessibility="yes"
+                accessibilityRole="button"
+                accessibilityLabel="Tim kiem mon an"
+                accessibilityHint="Chuyen sang man hinh tim kiem"
+              >
+                <Icon name="search-outline" size="lg" color="primary" />
+              </AnimatedPressable>
+
+              <AnimatedPressable
+                onPress={handleCapture}
+                disabled={isCapturing}
+                style={[captureButtonStyle, styles.captureButtonOuter]}
+                accessibilityRole="button"
+                accessibilityLabel="Chup anh"
+                accessibilityHint="Chup anh mon an de AI nhan dien"
+                accessibilityState={{ disabled: isCapturing }}
+                testID={TEST_IDS.aiScan.captureButton}
+              >
+                <LinearGradient
+                  colors={[
+                    theme.colors.primary,
+                    theme.colors.secondary,
+                    theme.colors.primary,
+                  ]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={styles.captureGradientRing}
+                >
+                  <View style={[styles.captureInnerLarge, { backgroundColor: '#fff' }]} />
+                </LinearGradient>
+              </AnimatedPressable>
+
+              <AnimatedPressable
+                style={[
+                  styles.sideButton,
+                  {
+                    backgroundColor: 'rgba(255,255,255,0.95)',
+                    shadowColor: '#000',
+                    shadowOffset: { width: 0, height: 2 },
+                    shadowOpacity: 0.25,
+                    shadowRadius: 4,
+                    elevation: 5,
+                  },
+                ]}
+                onPress={handlePickImage}
+                hitSlop={16}
+                accessible
+                collapsable={false}
+                importantForAccessibility="yes"
+                accessibilityRole="button"
+                accessibilityLabel="Chon tu thu vien"
+                accessibilityHint="Chon anh co san tu thu vien"
+              >
+                <Icon name="images-outline" size="lg" color="primary" />
+              </AnimatedPressable>
+            </Animated.View>
           </Animated.View>
         )}
 
@@ -764,7 +786,7 @@ const AIScanScreen: React.FC = () => {
                   >
                     <Icon name="options-outline" size="sm" color="text" />
                     <ThemedText variant="bodySmall" weight="600" style={{ marginLeft: 6 }}>
-                      {'Chi tiet'}
+                      {'Sua truoc khi luu'}
                     </ThemedText>
                   </Pressable>
                 </>
@@ -841,12 +863,21 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     marginBottom: 20,
   },
+  cameraActionGroup: {
+    paddingHorizontal: 20,
+    paddingBottom: 28,
+    gap: 14,
+  },
+  galleryCtaButton: {
+    alignSelf: 'center',
+    minWidth: 190,
+  },
   bottomControls: {
     flexDirection: 'row',
     justifyContent: 'space-evenly',
     alignItems: 'center',
-    paddingBottom: 40,
-    paddingHorizontal: 20,
+    paddingBottom: 12,
+    paddingHorizontal: 0,
   },
   captureButtonOuter: {
     width: 88,
