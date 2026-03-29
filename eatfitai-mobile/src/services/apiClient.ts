@@ -56,6 +56,17 @@ export const initializeApiClient = async (): Promise<boolean> => {
     // 0. Load cache từ storage trước
     await preloadCachedUrl();
 
+    if (API_BASE_URL) {
+      console.log('[APIClient] Trying configured API URL first:', API_BASE_URL);
+      const isConfiguredUrlValid = await verifyApiUrl(API_BASE_URL);
+      if (isConfiguredUrlValid) {
+        apiClient.defaults.baseURL = API_BASE_URL;
+        aiApiClient.defaults.baseURL = API_BASE_URL;
+        isApiInitialized = true;
+        return true;
+      }
+    }
+
     // 1. Ưu tiên URL tìm thấy qua scan (hoặc từ cache)
     // getApiUrl() sẽ tự động verify cachedUrl trước khi scan
     const discoveredUrl = await getApiUrl();
