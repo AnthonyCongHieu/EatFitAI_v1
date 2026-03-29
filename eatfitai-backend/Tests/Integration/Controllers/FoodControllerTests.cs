@@ -70,6 +70,34 @@ namespace EatFitAI.API.Tests.Integration.Controllers
         }
 
         [Fact]
+        public async Task SearchFood_AccentInsensitiveQuery_ReturnsVietnameseResults()
+        {
+            await SeedCatalogFoodAsync("Cơm trắng kiểm thử");
+            var client = _factory.CreateClient();
+
+            var response = await client.GetAsync("/api/food/search?q=com");
+
+            response.EnsureSuccessStatusCode();
+            var result = await response.Content.ReadFromJsonAsync<List<FoodItemDto>>();
+            Assert.NotNull(result);
+            Assert.Contains(result, item => item.FoodName.Contains("Cơm trắng kiểm thử", StringComparison.OrdinalIgnoreCase));
+        }
+
+        [Fact]
+        public async Task SearchFood_EnglishQuery_ReturnsTranslatedResults()
+        {
+            await SeedCatalogFoodAsync("Ức gà kiểm thử", "Chicken breast test");
+            var client = _factory.CreateClient();
+
+            var response = await client.GetAsync("/api/food/search?q=chicken");
+
+            response.EnsureSuccessStatusCode();
+            var result = await response.Content.ReadFromJsonAsync<List<FoodItemDto>>();
+            Assert.NotNull(result);
+            Assert.Contains(result, item => item.FoodName.Contains("Ức gà kiểm thử", StringComparison.OrdinalIgnoreCase));
+        }
+
+        [Fact]
         public async Task GetFoodById_ValidId_ReturnsFood()
         {
             var client = _factory.CreateClient();
@@ -164,6 +192,32 @@ namespace EatFitAI.API.Tests.Integration.Controllers
                 IsDeleted = false,
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow
+            });
+            await context.SaveChangesAsync();
+        }
+
+        private async Task SeedCatalogFoodAsync(string foodName, string? foodNameEn = null)
+        {
+            using var scope = _factory.Services.CreateScope();
+            var context = scope.ServiceProvider.GetRequiredService<EatFitAIDbContext>();
+
+            if (await context.FoodItems.AnyAsync(x => x.FoodName == foodName))
+            {
+                return;
+            }
+
+            await context.FoodItems.AddAsync(new FoodItem
+            {
+                FoodName = foodName,
+                FoodNameEn = foodNameEn,
+                CaloriesPer100g = 120,
+                ProteinPer100g = 10,
+                CarbPer100g = 15,
+                FatPer100g = 2,
+                IsActive = true,
+                IsDeleted = false,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow,
             });
             await context.SaveChangesAsync();
         }

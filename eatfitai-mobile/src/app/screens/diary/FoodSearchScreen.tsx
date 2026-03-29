@@ -43,7 +43,7 @@ import { t } from '../../../i18n/vi';
 import { TEST_IDS } from '../../../testing/testIds';
 
 const PAGE_SIZE = 20;
-const QUICK_SEARCHES = ['com', 'pho bo', 'trung', 'sua chua', 'ca phe'];
+const QUICK_SEARCHES = ['com', 'rice', 'chicken', 'trung', 'sua chua'];
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'FoodSearch'>;
 type FoodSearchRouteProp = RouteProp<RootStackParamList, 'FoodSearch'>;
