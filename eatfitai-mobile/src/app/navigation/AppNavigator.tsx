@@ -1,5 +1,6 @@
 ﻿import { useEffect } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
+import { ActivityIndicator, View } from 'react-native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../types';
 import { useAppTheme } from '../../theme/ThemeProvider';
@@ -41,6 +42,7 @@ const AppNavigator = (): React.ReactElement => {
   const { navigationTheme, theme } = useAppTheme();
   const isInitializing = useAuthStore((s) => s.isInitializing);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const needsOnboarding = useAuthStore((s) => s.needsOnboarding);
   const init = useAuthStore((s) => s.init);
 
   // Khá»Ÿi táº¡o auth store khi app mount
@@ -54,7 +56,16 @@ const AppNavigator = (): React.ReactElement => {
     <NavigationContainer theme={navigationTheme}>
       {/* Äiá»u hÆ°á»›ng: náº¿u Ä‘ang init => hiá»ƒn thá»‹ mÃ n hÃ¬nh tráº¯ng Ä‘Æ¡n giáº£n */}
       {isInitializing ? (
-        <></>
+        <View
+          style={{
+            flex: 1,
+            alignItems: 'center',
+            justifyContent: 'center',
+            backgroundColor: theme.colors.background,
+          }}
+        >
+          <ActivityIndicator size="large" color={theme.colors.primary} />
+        </View>
       ) : (
         <Stack.Navigator
           screenOptions={{
@@ -76,6 +87,10 @@ const AppNavigator = (): React.ReactElement => {
                 component={ForgotPasswordScreen}
                 options={{ headerShown: true, title: t('auth.forgotPasswordTitle') }}
               />
+            </>
+          ) : needsOnboarding ? (
+            <>
+              <Stack.Screen name="Onboarding" component={OnboardingScreen} />
             </>
           ) : (
             // ÄÃ£ Ä‘Äƒng nháº­p: vÃ o App Tabs

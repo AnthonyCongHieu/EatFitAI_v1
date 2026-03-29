@@ -1,4 +1,5 @@
-import { useCallback, useState, useRef, useEffect } from 'react';
+﻿import { useCallback, useState, useRef, useEffect } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { StyleSheet, View, TextInput, Pressable, Keyboard } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import Toast from 'react-native-toast-message';
@@ -15,7 +16,7 @@ import type { RootStackParamList } from '../../types';
 import apiClient from '../../../services/apiClient';
 import { tokenStorage } from '../../../services/secureStore';
 import { setAccessTokenMem } from '../../../services/authTokens';
-import { useAuthStore } from '../../../store/useAuthStore';
+import { AUTH_NEEDS_ONBOARDING_KEY, useAuthStore } from '../../../store/useAuthStore';
 import { handleApiError } from '../../../utils/errorHandler';
 
 const CODE_LENGTH = 6;
@@ -27,7 +28,9 @@ interface VerifyEmailResponse {
   userId: string;
   email: string;
   displayName: string;
+  accessToken?: string;
   token: string;
+  accessTokenExpiresAt?: string;
   expiresAt: string;
   refreshToken: string;
   refreshTokenExpiresAt: string;
@@ -109,13 +112,24 @@ const VerifyEmailScreen = ({ navigation, route }: Props): React.ReactElement => 
       const data = resp.data;
 
       // Lưu tokens vào secure storage
+      const accessToken = data.accessToken || data.token;
+      const accessTokenExpiresAt = data.accessTokenExpiresAt || data.expiresAt;
+
       await tokenStorage.saveTokensFull({
-        accessToken: data.token,
-        accessTokenExpiresAt: data.expiresAt,
+        accessToken,
+        accessTokenExpiresAt,
         refreshToken: data.refreshToken,
         refreshTokenExpiresAt: data.refreshTokenExpiresAt,
       });
-      setAccessTokenMem(data.token);
+      await AsyncStorage.setItem(
+        AUTH_NEEDS_ONBOARDING_KEY,
+        data.needsOnboarding ? 'true' : 'false',
+      );
+      setAccessTokenMem(accessToken);
+      useAuthStore.setState({
+        isAuthenticated: true,
+        needsOnboarding: data.needsOnboarding,
+      });
 
       Toast.show({
         type: 'success',
@@ -123,16 +137,6 @@ const VerifyEmailScreen = ({ navigation, route }: Props): React.ReactElement => 
         text2: 'Chào mừng bạn đến với EatFitAI',
       });
 
-      // Navigate dựa vào needsOnboarding
-      if (data.needsOnboarding) {
-        navigation.reset({
-          index: 0,
-          routes: [{ name: 'Onboarding' }],
-        });
-      } else {
-        // Đặt authenticated để trigger navigation tự động
-        useAuthStore.setState({ isAuthenticated: true });
-      }
     } catch (err: any) {
       const message = err?.response?.data?.message || handleApiError(err);
       Toast.show({ type: 'error', text1: 'Xác minh thất bại', text2: message });

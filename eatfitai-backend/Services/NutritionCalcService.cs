@@ -35,7 +35,14 @@ namespace EatFitAI.API.Services
 
             var tdee = bmr * activityLevel;
 
-            var adj = goal.ToLowerInvariant() switch
+            var normalizedGoal = goal.ToLowerInvariant() switch
+            {
+                "lose" => "cut",
+                "gain" => "bulk",
+                _ => goal.ToLowerInvariant()
+            };
+
+            var adj = normalizedGoal switch
             {
                 "cut" => 0.80,      // Aggressive cut (-20%)
                 "maintain" => 1.00,
@@ -47,7 +54,7 @@ namespace EatFitAI.API.Services
 
             // Macro Split Logic
             // Protein: Higher when cutting to preserve muscle (2.2g/kg), standard otherwise (1.8g/kg)
-            var proteinPerKg = goal.ToLowerInvariant() == "cut" ? 2.2 : 1.8;
+            var proteinPerKg = normalizedGoal == "cut" ? 2.2 : 1.8;
             var proteinG = (int)Math.Round(proteinPerKg * weightKg);
 
             // Fat: 25% of calories usually good minimum

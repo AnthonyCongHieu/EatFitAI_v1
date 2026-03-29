@@ -28,6 +28,7 @@ namespace EatFitAI.API.Controllers
         private readonly IAiLogService _aiLog;
         private readonly IRecipeSuggestionService _recipeSuggestionService;
         private readonly INutritionInsightService _nutritionInsightService;
+        private readonly INutritionCalcService _nutritionCalcService;
         private readonly IVisionCacheService _visionCacheService;
         private readonly IMemoryCache _cache;
 
@@ -39,6 +40,7 @@ namespace EatFitAI.API.Controllers
             IAiLogService aiLog,
             IRecipeSuggestionService recipeSuggestionService,
             INutritionInsightService nutritionInsightService,
+            INutritionCalcService nutritionCalcService,
             IVisionCacheService visionCacheService,
             IMemoryCache cache)
         {
@@ -49,6 +51,7 @@ namespace EatFitAI.API.Controllers
             _aiLog = aiLog;
             _recipeSuggestionService = recipeSuggestionService;
             _nutritionInsightService = nutritionInsightService;
+            _nutritionCalcService = nutritionCalcService;
             _visionCacheService = visionCacheService;
             _cache = cache;
         }
@@ -253,6 +256,35 @@ namespace EatFitAI.API.Controllers
         [HttpPost("nutrition/recalculate")]
         public async Task<IActionResult> RecalculateNutritionTargets([FromBody] RecalculateTargetRequest request)
         {
+            IActionResult BuildOfflineFallback(string reason)
+            {
+                var activityLevel = request.ActivityLevel is > 0 ? request.ActivityLevel.Value : 1.55;
+                var (calories, protein, carbs, fat) = _nutritionCalcService.Suggest(
+                    request.Sex ?? "male",
+                    request.Age ?? 25,
+                    request.HeightCm ?? 170,
+                    request.WeightKg ?? 65,
+                    activityLevel,
+                    request.Goal ?? "maintain");
+
+                _logger.LogWarning(
+                    "Nutrition recalculate fallback activated. Reason: {Reason}, ActivityLevel: {ActivityLevel}",
+                    reason,
+                    activityLevel);
+
+                return Ok(new
+                {
+                    calories,
+                    protein,
+                    carbs,
+                    fat,
+                    source = "formula",
+                    offlineMode = true,
+                    explanation = "AI tạm thời không khả dụng. EatFitAI đã dùng công thức Mifflin-St Jeor để tính mục tiêu tạm thời.",
+                    message = reason,
+                });
+            }
+
             try
             {
                 // Gọi AI Provider để tính toán bằng Ollama (không dùng công thức local)
@@ -277,7 +309,26 @@ namespace EatFitAI.API.Controllers
                 
                 _logger.LogInformation("Calling AI Provider for nutrition advice: {Url}", $"{aiProviderUrl}/nutrition-advice");
                 
-                var response = await client.PostAsync($"{aiProviderUrl}/nutrition-advice", content);
+                HttpResponseMessage response;
+                try
+                {
+                    response = await client.PostAsync($"{aiProviderUrl}/nutrition-advice", content);
+                }
+                catch (HttpRequestException ex)
+                {
+                    _logger.LogError(ex, "Failed to connect to AI Provider");
+                    return BuildOfflineFallback("Không thể kết nối đến AI Provider. Đã chuyển sang công thức offline.");
+                }
+                catch (TaskCanceledException ex)
+                {
+                    _logger.LogError(ex, "AI Provider request timed out");
+                    return BuildOfflineFallback("AI Provider timeout. Đã chuyển sang công thức offline.");
+                }
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    return BuildOfflineFallback("AI Provider không khả dụng, đã chuyển sang công thức offline.");
+                }
                 
                 if (response.IsSuccessStatusCode)
                 {
@@ -306,13 +357,24 @@ namespace EatFitAI.API.Controllers
                         }
                     }
                     
-                    return Ok(new 
-                    { 
-                        calories = ParseInt(result, "calories"),
-                        protein = ParseInt(result, "protein"),
-                        carbs = ParseInt(result, "carbs"),
-                        fat = ParseInt(result, "fat"),
+                    var calories = ParseInt(result, "calories");
+                    var protein = ParseInt(result, "protein");
+                    var carbs = ParseInt(result, "carbs");
+                    var fat = ParseInt(result, "fat");
+
+                    if (calories <= 0 || protein <= 0 || carbs < 0 || fat <= 0)
+                    {
+                        return BuildOfflineFallback("AI trả dữ liệu không hợp lệ, đã chuyển sang công thức offline.");
+                    }
+
+                    return Ok(new
+                    {
+                        calories,
+                        protein,
+                        carbs,
+                        fat,
                         source = source,
+                        offlineMode = false,
                         explanation = result.TryGetProperty("explanation", out var expProp) ? expProp.GetString() : null
                     });
                 }

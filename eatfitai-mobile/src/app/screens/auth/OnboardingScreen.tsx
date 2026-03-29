@@ -16,8 +16,6 @@ import {
   Platform,
 } from 'react-native';
 import Toast from 'react-native-toast-message';
-import { useNavigation } from '@react-navigation/native';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { FadeInRight, FadeOutLeft } from 'react-native-reanimated';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -28,15 +26,11 @@ import Button from '../../../components/Button';
 import { glassStyles } from '../../../components/ui/GlassCard';
 import { useAppTheme } from '../../../theme/ThemeProvider';
 import { useProfileStore } from '../../../store/useProfileStore';
-import { useAuthStore } from '../../../store/useAuthStore';
+import { AUTH_NEEDS_ONBOARDING_KEY, useAuthStore } from '../../../store/useAuthStore';
 import apiClient from '../../../services/apiClient';
 import { showSuccess } from '../../../utils/errorHandler';
 import { t } from '../../../i18n/vi';
-import type { RootStackParamList } from '../../types';
-
 const { width } = Dimensions.get('window');
-
-type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
 interface OnboardingData {
   fullName: string;
@@ -46,6 +40,17 @@ interface OnboardingData {
   weightKg: string;
   goal: 'lose' | 'maintain' | 'gain' | null;
   activityLevel: 'sedentary' | 'light' | 'moderate' | 'active' | 'very_active';
+}
+
+interface NutritionCalculationResult {
+  calories: number;
+  protein: number;
+  carbs: number;
+  fat: number;
+  source?: string;
+  offlineMode?: boolean;
+  explanation?: string | null;
+  message?: string | null;
 }
 
 const STEPS = [
@@ -148,7 +153,6 @@ const OnboardingScreen = (): React.ReactElement => {
   const { theme } = useAppTheme();
   const isDark = theme.mode === 'dark';
   const glass = glassStyles(isDark);
-  const navigation = useNavigation<NavigationProp>();
   const updateProfile = useProfileStore((s) => s.updateProfile);
 
   const [currentStep, setCurrentStep] = useState(0);
@@ -163,12 +167,7 @@ const OnboardingScreen = (): React.ReactElement => {
     activityLevel: 'moderate',
   });
 
-  const [aiResult, setAiResult] = useState<{
-    calories: number;
-    protein: number;
-    carbs: number;
-    fat: number;
-  } | null>(null);
+  const [aiResult, setAiResult] = useState<NutritionCalculationResult | null>(null);
 
   const canProceed = (): boolean => {
     switch (currentStep) {
@@ -208,16 +207,27 @@ const OnboardingScreen = (): React.ReactElement => {
     try {
       // Gọi qua backend API thay vì AI provider trực tiếp
       // Backend sẽ proxy đến AI Provider (Ollama)
-      const response = await apiClient.post('/api/ai/nutrition/recalculate', {
+      const activityMultiplier =
+        ACTIVITY_OPTIONS.find((option) => option.value === data.activityLevel)?.multiplier ?? 1.55;
+
+      const response = await apiClient.post<NutritionCalculationResult>('/api/ai/nutrition/recalculate', {
         sex: data.gender,
         age: Number(data.age),
         heightCm: Number(data.heightCm),
         weightKg: Number(data.weightKg),
+        activityLevel: activityMultiplier,
         goal: data.goal,
       });
 
-      if (response.data) {
+      if (response.data?.calories > 0) {
         setAiResult(response.data);
+        if (response.data.offlineMode) {
+          Toast.show({
+            type: 'info',
+            text1: 'Offline mode',
+            text2: 'AI đang tạm thời không khả dụng. App dùng công thức chuẩn để hoàn tất onboarding.',
+          });
+        }
       } else {
         Toast.show({
           type: 'error',
@@ -290,7 +300,10 @@ const OnboardingScreen = (): React.ReactElement => {
       }
 
       // Mark onboarding complete in local storage
-      await AsyncStorage.setItem('onboarding_complete', 'true');
+      await AsyncStorage.multiSet([
+        ['onboarding_complete', 'true'],
+        [AUTH_NEEDS_ONBOARDING_KEY, 'false'],
+      ]);
 
       // Gọi API đánh dấu onboarding hoàn tất trên server
       try {
@@ -307,15 +320,8 @@ const OnboardingScreen = (): React.ReactElement => {
 
       showSuccess('settings_saved', { text1: '🎉 Thiết lập hoàn tất!' });
 
-      // Đặt isAuthenticated = true để trigger navigation tự động
-      useAuthStore.setState({ isAuthenticated: true });
-
-      // Bug #8 fix: Reset navigation stack và chuyển về màn hình chính
-      // Đảm bảo user không bị kẹt ở onboarding screen
-      navigation.reset({
-        index: 0,
-        routes: [{ name: 'AppTabs' }],
-      });
+      // Auth state change will cause AppNavigator to swap from onboarding to AppTabs.
+      useAuthStore.setState({ isAuthenticated: true, needsOnboarding: false });
     } catch (error) {
       Alert.alert('Lỗi', 'Không thể lưu thông tin. Vui lòng thử lại.');
     }
@@ -420,6 +426,19 @@ const OnboardingScreen = (): React.ReactElement => {
     resultItem: {
       alignItems: 'center',
       minWidth: 80,
+    },
+    offlineBadge: {
+      paddingHorizontal: 12,
+      paddingVertical: 6,
+      borderRadius: 999,
+      borderWidth: 1,
+      backgroundColor: isDark ? 'rgba(251, 191, 36, 0.16)' : 'rgba(245, 158, 11, 0.12)',
+      borderColor: isDark ? 'rgba(251, 191, 36, 0.45)' : 'rgba(245, 158, 11, 0.35)',
+      marginTop: 12,
+    },
+    offlineNote: {
+      textAlign: 'center',
+      marginTop: 16,
     },
   });
 
@@ -636,6 +655,13 @@ const OnboardingScreen = (): React.ReactElement => {
                 <ThemedText variant="h2" style={{ marginTop: 12 }}>
                   {t('onboarding.daily_goal')}
                 </ThemedText>
+                {aiResult.offlineMode ? (
+                  <View style={styles.offlineBadge}>
+                    <ThemedText variant="caption" weight="600">
+                      Offline mode
+                    </ThemedText>
+                  </View>
+                ) : null}
 
                 <View style={styles.resultRow}>
                   <View style={styles.resultItem}>
@@ -669,6 +695,11 @@ const OnboardingScreen = (): React.ReactElement => {
                     </ThemedText>
                   </View>
                 </View>
+                {aiResult.offlineMode ? (
+                  <ThemedText variant="caption" color="textSecondary" style={styles.offlineNote}>
+                    {aiResult.explanation ?? 'Đang dùng công thức chuẩn để hoàn tất onboarding.'}
+                  </ThemedText>
+                ) : null}
               </View>
             ) : null}
           </Animated.View>

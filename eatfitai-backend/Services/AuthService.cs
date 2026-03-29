@@ -611,9 +611,7 @@ namespace EatFitAI.API.Services
                 _logger.LogError(ex, "Không gửi được email xác minh cho user {UserId}", user.UserId);
                 // Vẫn return success, user có thể request gửi lại
             }
-
             var includeCodeInResponse = _env.IsDevelopment();
-
             return new RegisterResponse
             {
                 Success = true,
@@ -711,6 +709,8 @@ namespace EatFitAI.API.Services
             user.VerificationCodeExpiry = DateTime.UtcNow.Add(VerificationCodeLifetime);
             await _context.SaveChangesAsync();
 
+            var includeCodeInResponse = _env.IsDevelopment();
+
             // Gửi email
             try
             {
@@ -720,10 +720,15 @@ namespace EatFitAI.API.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Không gửi lại được email xác minh cho user {UserId}", user.UserId);
-                throw new InvalidOperationException("Không gửi được email. Vui lòng thử lại sau.");
-            }
+                if (!includeCodeInResponse)
+                {
+                    throw new InvalidOperationException("Không gửi được email. Vui lòng thử lại sau.");
+                }
 
-            var includeCodeInResponse = _env.IsDevelopment();
+                _logger.LogWarning(
+                    "Dev mode: trả mã xác minh trong response cho {Email} do email service thất bại",
+                    user.Email);
+            }
 
             return new RegisterResponse
             {

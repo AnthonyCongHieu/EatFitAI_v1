@@ -1,5 +1,6 @@
 // Auth store (Zustand) quản lý session: login/register/google + silent refresh
 
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { create } from 'zustand';
 
 import apiClient, { setAuthExpiredCallback } from '../services/apiClient';
@@ -12,9 +13,17 @@ import { t } from '../i18n/vi';
 
 type AuthUser = { id: string; email: string; name?: string };
 
+export const AUTH_NEEDS_ONBOARDING_KEY = 'auth_needs_onboarding';
+const ONBOARDING_COMPLETE_KEY = 'onboarding_complete';
+
+const persistNeedsOnboarding = async (needsOnboarding: boolean): Promise<void> => {
+  await AsyncStorage.setItem(AUTH_NEEDS_ONBOARDING_KEY, needsOnboarding ? 'true' : 'false');
+};
+
 type AuthState = {
   isInitializing: boolean;
   isAuthenticated: boolean;
+  needsOnboarding: boolean;
   user: AuthUser | null;
   init: () => Promise<void>;
   login: (email: string, password: string) => Promise<{ needsOnboarding: boolean }>;
@@ -29,6 +38,7 @@ type AuthState = {
 export const useAuthStore = create<AuthState>((set: any) => ({
   isInitializing: true,
   isAuthenticated: false,
+  needsOnboarding: false,
   user: null,
 
   init: async () => {
@@ -52,8 +62,12 @@ export const useAuthStore = create<AuthState>((set: any) => ({
       // 3. Load token từ storage nếu có
       const token = await tokenStorage.getAccessToken();
       if (token) {
+        const persistedNeedsOnboarding =
+          (await AsyncStorage.getItem(AUTH_NEEDS_ONBOARDING_KEY)) === 'true';
         setAccessTokenMem(token);
-        set({ isAuthenticated: true });
+        set({ isAuthenticated: true, needsOnboarding: persistedNeedsOnboarding });
+      } else {
+        await AsyncStorage.multiRemove([AUTH_NEEDS_ONBOARDING_KEY, ONBOARDING_COMPLETE_KEY]);
       }
       await initAuthSession();
     } finally {
@@ -87,10 +101,16 @@ export const useAuthStore = create<AuthState>((set: any) => ({
     setAccessTokenMem(accessToken);
     await updateSessionFromAuthResponse(data as AuthResponse);
 
-    set({ isAuthenticated: true, user: (data?.user as AuthUser | undefined) ?? null });
+    const needsOnboarding = data?.needsOnboarding ?? false;
+    await persistNeedsOnboarding(needsOnboarding);
+    set({
+      isAuthenticated: true,
+      needsOnboarding,
+      user: (data?.user as AuthUser | undefined) ?? null,
+    });
 
     // Return needsOnboarding flag for navigation decision
-    return { needsOnboarding: data?.needsOnboarding ?? false };
+    return { needsOnboarding };
   },
 
   /**
@@ -146,10 +166,12 @@ export const useAuthStore = create<AuthState>((set: any) => ({
     });
     setAccessTokenMem(accessToken);
 
-    set({ isAuthenticated: true, user: data?.user ?? null });
+    const needsOnboarding = data?.needsOnboarding ?? false;
+    await persistNeedsOnboarding(needsOnboarding);
+    set({ isAuthenticated: true, needsOnboarding, user: data?.user ?? null });
 
     // Return needsOnboarding flag for navigation decision
-    return { needsOnboarding: data?.needsOnboarding ?? false };
+    return { needsOnboarding };
   },
 
   logout: async () => {
@@ -162,8 +184,9 @@ export const useAuthStore = create<AuthState>((set: any) => ({
       // ignore logout API failure; proceed to clear local session
     } finally {
       await tokenStorage.clearAll();
+      await AsyncStorage.multiRemove([AUTH_NEEDS_ONBOARDING_KEY, ONBOARDING_COMPLETE_KEY]);
       setAccessTokenMem(null);
-      set({ isAuthenticated: false, user: null });
+      set({ isAuthenticated: false, needsOnboarding: false, user: null });
     }
   },
   forgotPassword: async (email) => {
