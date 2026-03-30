@@ -502,13 +502,13 @@ export const vi = {
     mealSummary: 'Tóm tắt bữa ăn',
   },
   navigation: {
-    home: 'Home',
-    search: 'Search',
-    camera: 'Camera',
+    home: 'Trang chủ',
+    search: 'Tìm kiếm',
+    camera: 'Quét AI',
     ai: 'AI',
-    voice: 'Voice', // [NEW]
-    stats: 'Stats',
-    profile: 'Profile',
+    voice: 'Giọng nói', // [NEW]
+    stats: 'Thống kê',
+    profile: 'Cá nhân',
     foodSearch: 'Tìm món',
     foodDetail: 'Chi tiết món',
     customDish: 'Món thủ công',

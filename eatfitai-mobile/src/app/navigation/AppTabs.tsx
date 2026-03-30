@@ -123,7 +123,7 @@ const AppTabs = (): React.ReactElement => {
         name="AIScanTab"
         component={AIScanScreen}
         options={{
-          title: 'AI Scan',
+          title: t('navigation.camera'),
           tabBarIcon: ({ color, size, focused }) => (
             <Ionicons
               name={focused ? 'scan' : 'scan-outline'}

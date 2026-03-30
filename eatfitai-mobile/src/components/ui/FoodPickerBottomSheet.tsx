@@ -23,7 +23,7 @@ export const FoodPickerBottomSheet = ({
   onClose,
   onSelectFood,
   initialQuery = '',
-  title = 'Tim mon thay the',
+  title = 'Tìm món thay thế',
 }: FoodPickerBottomSheetProps): React.ReactElement => {
   const { theme } = useAppTheme();
   const [searchQuery, setSearchQuery] = useState('');
@@ -49,7 +49,7 @@ export const FoodPickerBottomSheet = ({
       setFoods(result.items);
     } catch {
       setFoods([]);
-      setError('Khong the tim mon an. Thu lai nhe.');
+      setError('Không thể tìm món ăn. Thử lại nhé.');
     } finally {
       setLoading(false);
     }
@@ -103,7 +103,7 @@ export const FoodPickerBottomSheet = ({
     <BottomSheet visible={visible} onClose={onClose} title={title} height={620}>
       <View style={styles.container}>
         <ThemedTextInput
-          placeholder="Nhap ten mon, vi du: com, rice, chicken"
+          placeholder="Nhập tên món, ví dụ: cơm, rice, chicken"
           value={searchQuery}
           onChangeText={handleSearchChange}
           style={styles.searchInput}
@@ -170,10 +170,10 @@ export const FoodPickerBottomSheet = ({
               searchQuery.trim() ? (
                 <View style={styles.emptyState}>
                   <ThemedText variant="body" weight="600">
-                    Khong tim thay mon phu hop
+                    Không tìm thấy món phù hợp
                   </ThemedText>
                   <ThemedText variant="bodySmall" color="textSecondary" style={styles.emptySubtext}>
-                    Thu doi tu khoa hoac tim bang ten tieng Anh.
+                    Thử đổi từ khóa hoặc tìm bằng tên tiếng Anh.
                   </ThemedText>
                 </View>
               ) : null

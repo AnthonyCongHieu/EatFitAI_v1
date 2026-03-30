@@ -147,15 +147,15 @@ const NutritionInsightsScreen = (): React.ReactElement => {
       if (!nextInsights && !nextAdaptiveTarget) {
         if (hasAiOfflineFailure) {
           setAiOffline(true);
-          setError('AI tam khong kha dung luc nay.');
+          setError('AI tạm không khả dụng lúc này.');
         } else {
           setError(errorMessages[0] || t('nutrition_insights.error_title'));
         }
       } else if (hasAiOfflineFailure || errorMessages.length > 0) {
         setNotice(
           hasAiOfflineFailure
-            ? 'Mot vai phan tich AI dang tam offline. Ung dung dang hien phan du lieu kha dung.'
-            : 'Khong tai du mot phan du lieu AI. Dang hien phan kha dung.',
+            ? 'Một vài phân tích AI đang tạm offline. Ứng dụng đang hiện phần dữ liệu khả dụng.'
+            : 'Không tải đủ một phần dữ liệu AI. Đang hiện phần khả dụng.',
         );
       }
     } finally {
@@ -372,10 +372,10 @@ const NutritionInsightsScreen = (): React.ReactElement => {
         <View style={styles.center}>
           {isNoTargetError ? (
             <AnimatedEmptyState
-              title="Chua thiet lap muc tieu dinh duong"
-              description="Ban can tao muc tieu calories, protein, carbs va fat truoc khi xem phan tich AI."
+              title="Chưa thiết lập mục tiêu dinh dưỡng"
+              description="Bạn cần tạo mục tiêu calories, protein, carbs và fat trước khi xem phân tích AI."
               primaryAction={{
-                label: 'Thiet lap ngay',
+                label: 'Thiết lập ngay',
                 onPress: () => navigation.navigate('NutritionSettings' as never),
               }}
               secondaryAction={{
@@ -386,14 +386,14 @@ const NutritionInsightsScreen = (): React.ReactElement => {
           ) : aiOffline ? (
             <AnimatedEmptyState
               variant="offline"
-              title="AI tam offline"
-              description="Ung dung van an toan va ban co the thu lai sau. Cac tinh nang co AI se quay lai khi backend AI san sang."
+              title="AI tạm offline"
+              description="Ứng dụng vẫn an toàn và bạn có thể thử lại sau. Các tính năng có AI sẽ quay lại khi backend AI sẵn sàng."
               primaryAction={{
                 label: t('nutrition_insights.retry'),
                 onPress: loadData,
               }}
               secondaryAction={{
-                label: 'Mo cai dat muc tieu',
+                label: 'Mở cài đặt mục tiêu',
                 onPress: () => navigation.navigate('NutritionSettings' as never),
               }}
             />
