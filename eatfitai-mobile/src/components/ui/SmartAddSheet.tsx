@@ -55,7 +55,7 @@ export const SmartAddSheet: React.FC<SmartAddSheetProps> = ({ visible, onClose }
             style={StyleSheet.absoluteFill}
             onPress={onClose}
             accessibilityRole="button"
-            accessibilityLabel="Dong quick add hub"
+            accessibilityLabel="Đóng quick add hub"
           />
         </Animated.View>
 
@@ -91,7 +91,7 @@ export const SmartAddSheet: React.FC<SmartAddSheetProps> = ({ visible, onClose }
 
           <View style={styles.utilitySection}>
             <ThemedText variant="bodySmall" color="textSecondary">
-              More ways
+              Cách thêm khác
             </ThemedText>
 
             <View style={styles.utilityRow}>
@@ -100,7 +100,7 @@ export const SmartAddSheet: React.FC<SmartAddSheetProps> = ({ visible, onClose }
                 onPress={() => navigateAfterClose('FoodSearch', { initialTab: 'favorites' })}
               >
                 <ThemedText variant="bodySmall" weight="600">
-                  Favorites
+                  Yêu thích
                 </ThemedText>
               </Pressable>
               <Pressable
@@ -108,7 +108,7 @@ export const SmartAddSheet: React.FC<SmartAddSheetProps> = ({ visible, onClose }
                 onPress={() => navigateAfterClose('CustomDish')}
               >
                 <ThemedText variant="bodySmall" weight="600">
-                  Custom dish
+                  Món tự tạo
                 </ThemedText>
               </Pressable>
             </View>

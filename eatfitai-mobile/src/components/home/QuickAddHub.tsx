@@ -40,8 +40,8 @@ export const QuickAddHub = ({
   const actions: QuickAddAction[] = [
     {
       key: 'search',
-      title: 'Search',
-      description: 'Tim nhanh va save ngay tu ket qua',
+      title: 'Tìm kiếm',
+      description: 'Tìm nhanh và lưu ngay từ kết quả',
       icon: 'search-outline',
       accent: theme.colors.primary,
       onPress: onSearch,
@@ -49,8 +49,8 @@ export const QuickAddHub = ({
     },
     {
       key: 'scan',
-      title: 'Scan',
-      description: 'Chup anh, AI goi y, luu nhanh top result',
+      title: 'Quét ảnh',
+      description: 'Chụp ảnh, AI gợi ý, lưu nhanh kết quả',
       icon: 'scan-outline',
       accent: theme.colors.secondary,
       onPress: onScan,
@@ -58,8 +58,8 @@ export const QuickAddHub = ({
     },
     {
       key: 'voice',
-      title: 'Voice',
-      description: 'Mo micro va ghi bua an bang giong noi',
+      title: 'Giọng nói',
+      description: 'Mở micro và ghi bữa ăn bằng giọng nói',
       icon: 'mic-outline',
       accent: theme.colors.success,
       onPress: onVoice,
@@ -72,10 +72,10 @@ export const QuickAddHub = ({
       <View style={styles.header}>
         <View style={styles.headerCopy}>
           <ThemedText variant={compact ? 'body' : 'h4'} weight="700">
-            Quick Add Hub
+            Thêm nhanh
           </ThemedText>
           <ThemedText variant="bodySmall" color="textSecondary">
-            Search / Scan / Voice in 3 buoc hoac it hon tu Home den Save.
+            Tìm kiếm / Quét ảnh / Giọng nói - nhanh chóng và tiện lợi.
           </ThemedText>
         </View>
         <View

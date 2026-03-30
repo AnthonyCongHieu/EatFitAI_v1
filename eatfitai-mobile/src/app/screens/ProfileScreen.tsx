@@ -1,5 +1,5 @@
 // ProfileScreen v5: Redesigned with menu-based layout
-// Xu huong 2026: Progressive Disclosure, Glassmorphism, Menu Navigation
+// Xu hướng 2026: Progressive Disclosure, Glassmorphism, Menu Navigation
 
 import { useEffect, useState, useCallback } from 'react';
 import {

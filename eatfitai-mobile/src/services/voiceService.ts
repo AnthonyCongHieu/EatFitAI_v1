@@ -175,7 +175,7 @@ export const voiceService = {
         confidence: 0,
         rawText: text,
         source: 'error',
-        suggestedAction: 'Khong the ket noi AI. Vui long thu lai.',
+        suggestedAction: 'Không thể kết nối AI. Vui lòng thử lại.',
       };
     }
   },
@@ -207,7 +207,7 @@ export const voiceService = {
       console.error('[VoiceService] Execute error:', error);
       return {
         success: false,
-        error: error?.response?.data?.message || 'Khong the thuc hien lenh',
+        error: error?.response?.data?.message || 'Không thể thực hiện lệnh',
       };
     }
   },
@@ -236,7 +236,7 @@ export const voiceService = {
       console.error('[VoiceService] Confirm weight error:', error);
       return {
         success: false,
-        error: error?.response?.data?.message || 'Khong the luu can nang',
+        error: error?.response?.data?.message || 'Không thể lưu cân nặng',
       };
     }
   },

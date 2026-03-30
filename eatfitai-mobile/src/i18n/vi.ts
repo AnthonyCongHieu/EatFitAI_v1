@@ -268,6 +268,7 @@ export const vi = {
     ai_quick_add: 'Thêm bữa nhanh bằng AI từ ảnh',
     source_ai: 'AI',
     source_manual: 'Tự tạo',
+    loadingDiary: 'Đang tải nhật ký...',
   },
   search: {
     placeholder: 'Nhập từ khóa tìm kiếm...',

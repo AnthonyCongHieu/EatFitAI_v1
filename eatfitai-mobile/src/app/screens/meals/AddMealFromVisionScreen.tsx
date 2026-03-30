@@ -40,9 +40,9 @@ type RouteProps = RouteProp<RootStackParamList, 'AddMealFromVision'>;
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 const MEAL_TYPE_OPTIONS: { id: MealTypeId; label: string }[] = [
-  { id: MEAL_TYPES.BREAKFAST, label: 'Sang' },
-  { id: MEAL_TYPES.LUNCH, label: 'Trua' },
-  { id: MEAL_TYPES.DINNER, label: 'Toi' },
+  { id: MEAL_TYPES.BREAKFAST, label: 'Sáng' },
+  { id: MEAL_TYPES.LUNCH, label: 'Trưa' },
+  { id: MEAL_TYPES.DINNER, label: 'Tối' },
   { id: MEAL_TYPES.SNACK, label: 'Snack' },
 ];
 
@@ -132,8 +132,8 @@ const AddMealFromVisionScreen = (): React.ReactElement => {
     if (!target.item.isMatched && !target.selected) {
       Toast.show({
         type: 'info',
-        text1: 'Can xac nhan mon',
-        text2: 'Hay doi mon bang Search hoac day AI truoc khi luu.',
+        text1: 'Cần xác nhận món',
+        text2: 'Hãy đổi món bằng Search hoặc dạy AI trước khi lưu.',
         visibilityTime: 2200,
       });
     }
@@ -204,7 +204,7 @@ const AddMealFromVisionScreen = (): React.ReactElement => {
 
         Toast.show({
           type: 'success',
-          text1: 'Da day AI',
+          text1: 'Đã dạy AI',
           text2: `"${currentTeachItem.label}" -> ${foodItem.name}`,
         });
 
@@ -215,17 +215,17 @@ const AddMealFromVisionScreen = (): React.ReactElement => {
         } catch {
           Toast.show({
             type: 'info',
-            text1: 'Da luu chinh sua',
-            text2: 'Chua the tai lai ket qua AI ngay bay gio.',
+            text1: 'Đã lưu chỉnh sửa',
+            text2: 'Chưa thể tải lại kết quả AI ngay bây giờ.',
           });
         } finally {
           setLoading(false);
         }
       } catch (error) {
         handleApiErrorWithCustomMessage(error, {
-          server_error: { text1: 'Loi', text2: 'May chu gap su co' },
-          network_error: { text1: 'Khong co ket noi', text2: 'Kiem tra mang va thu lai' },
-          unknown: { text1: 'Loi', text2: 'Khong the day AI luc nay' },
+          server_error: { text1: 'Lỗi', text2: 'Máy chủ gặp sự cố' },
+          network_error: { text1: 'Không có kết nối', text2: 'Kiểm tra mạng và thử lại' },
+          unknown: { text1: 'Lỗi', text2: 'Không thể dạy AI lúc này' },
         });
       }
     },
@@ -262,7 +262,7 @@ const AddMealFromVisionScreen = (): React.ReactElement => {
       closeReplacePicker();
       Toast.show({
         type: 'success',
-        text1: 'Da thay mon',
+        text1: 'Đã thay món',
         text2: foodItem.name,
       });
     },
@@ -281,8 +281,8 @@ const AddMealFromVisionScreen = (): React.ReactElement => {
     if (hasUnresolvedItem) {
       Toast.show({
         type: 'info',
-        text1: 'Con mon can sua',
-        text2: 'Hay doi mon bang Search hoac bo chon mon chua duoc map.',
+        text1: 'Còn món cần sửa',
+        text2: 'Hãy đổi món bằng Search hoặc bỏ chọn món chưa được map.',
       });
       return;
     }
@@ -299,17 +299,17 @@ const AddMealFromVisionScreen = (): React.ReactElement => {
 
       Toast.show({
         type: 'success',
-        text1: 'Da them vao diary',
-        text2: `${selectedItems.length} mon - ${Math.round(totalCalories)} kcal`,
+        text1: 'Đã thêm vào nhật ký',
+        text2: `${selectedItems.length} món - ${Math.round(totalCalories)} kcal`,
       });
 
       await invalidateDiaryQueries(queryClient);
       navigation.goBack();
     } catch (error) {
       handleApiErrorWithCustomMessage(error, {
-        server_error: { text1: 'Loi', text2: 'May chu gap su co' },
-        network_error: { text1: 'Khong co ket noi', text2: 'Kiem tra mang va thu lai' },
-        unknown: { text1: 'Loi', text2: 'Khong the them vao nhat ky' },
+        server_error: { text1: 'Lỗi', text2: 'Máy chủ gặp sự cố' },
+        network_error: { text1: 'Không có kết nối', text2: 'Kiểm tra mạng và thử lại' },
+        unknown: { text1: 'Lỗi', text2: 'Không thể thêm vào nhật ký' },
       });
     } finally {
       setIsSubmitting(false);
@@ -369,7 +369,7 @@ const AddMealFromVisionScreen = (): React.ReactElement => {
                   weight="600"
                   style={{ color: isMatched ? theme.colors.success : theme.colors.warning }}
                 >
-                  {isMatched ? `${confidence}%` : 'Can review'}
+                  {isMatched ? `${confidence}%` : 'Cần review'}
                 </ThemedText>
               </View>
             </View>
@@ -430,7 +430,7 @@ const AddMealFromVisionScreen = (): React.ReactElement => {
             >
               <Icon name="search-outline" size="xs" color="primary" />
               <ThemedText variant="caption" weight="600" color="primary" style={{ marginLeft: 4 }}>
-                Doi mon
+                Đổi món
               </ThemedText>
             </Pressable>
 
@@ -455,7 +455,7 @@ const AddMealFromVisionScreen = (): React.ReactElement => {
                   color="warning"
                   style={{ marginLeft: 4 }}
                 >
-                  Day AI
+                  Dạy AI
                 </ThemedText>
               </Pressable>
             ) : null}
@@ -487,7 +487,7 @@ const AddMealFromVisionScreen = (): React.ReactElement => {
           <View style={styles.imageOverlay}>
             <Icon name="scan-outline" size="sm" color="card" />
             <ThemedText variant="bodySmall" style={{ color: '#fff', marginLeft: 6 }}>
-              Review truoc khi luu · {detectionItems.length} mon
+              Review trước khi lưu · {detectionItems.length} món
             </ThemedText>
           </View>
         </View>
@@ -504,7 +504,7 @@ const AddMealFromVisionScreen = (): React.ReactElement => {
           ]}
         >
           <ThemedText variant="bodySmall" color="textSecondary">
-            Neu AI doan chua dung, hay doi mon bang Search, chinh gram va chon bua an truoc khi luu.
+            Nếu AI đoán chưa đúng, hãy đổi món bằng Search, chỉnh gram và chọn bữa ăn trước khi lưu.
           </ThemedText>
         </View>
 
@@ -516,7 +516,7 @@ const AddMealFromVisionScreen = (): React.ReactElement => {
               <>
                 <View style={styles.sectionTitle}>
                   <ThemedText variant="h4" weight="700">
-                    Da map duoc ({matchedItems.length})
+                    Đã map được ({matchedItems.length})
                   </ThemedText>
                 </View>
                 {matchedItems.map((detection, index) => renderFoodItem(detection, index))}
@@ -527,7 +527,7 @@ const AddMealFromVisionScreen = (): React.ReactElement => {
               <>
                 <View style={styles.sectionTitle}>
                   <ThemedText variant="h4" weight="700" color="warning">
-                    Can xac nhan ({unmatchedItems.length})
+                    Cần xác nhận ({unmatchedItems.length})
                   </ThemedText>
                 </View>
                 {unmatchedItems.map((detection, index) =>
@@ -586,11 +586,11 @@ const AddMealFromVisionScreen = (): React.ReactElement => {
 
         <View style={styles.summaryRow}>
           <ThemedText variant="body" color="textSecondary">
-            Se them{' '}
+            Sẽ thêm{' '}
             <ThemedText variant="body" weight="700" color="primary">
               {selectedItems.length}
             </ThemedText>{' '}
-            mon
+            món
           </ThemedText>
           <ThemedText variant="body" color="textSecondary">
             <ThemedText variant="body" weight="700">
@@ -602,7 +602,7 @@ const AddMealFromVisionScreen = (): React.ReactElement => {
 
         <Button
           variant="primary"
-          title={isSubmitting ? 'Dang luu...' : 'Luu vao nhat ky'}
+          title={isSubmitting ? 'Đang lưu...' : 'Lưu vào nhật ký'}
           onPress={handleAddToDiary}
           disabled={selectedItems.length === 0 || isSubmitting}
           loading={isSubmitting}
@@ -623,7 +623,7 @@ const AddMealFromVisionScreen = (): React.ReactElement => {
         onClose={closeReplacePicker}
         onSelectFood={handleReplaceFood}
         initialQuery={currentReplaceQuery}
-        title="Doi mon bang Search"
+        title="Đổi món bằng Search"
       />
     </Screen>
   );

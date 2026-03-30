@@ -6,7 +6,7 @@
  * Layout: [Back] | [Title Center] | [Actions]
  *
  * @usage
- * <AppHeader title="Profile" subtitle="Quan ly tai khoan" />
+ * <AppHeader title="Profile" subtitle="Quản lý tài khoản" />
  * <AppHeader title="Settings" showBack onBackPress={() => nav.goBack()} />
  * <AppHeader title="Stats" rightIcon="settings-outline" onRightPress={...} />
  */
@@ -339,8 +339,8 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
                         <GlassButton
                             onPress={handleBackPress}
                             isDark={isDark}
-                            accessibilityLabel="Quay lai"
-                            accessibilityHint="Nhan de quay ve man hinh truoc"
+                            accessibilityLabel="Quay lại"
+                            accessibilityHint="Nhấn để quay về màn hình trước"
                         >
                             <Ionicons
                                 name="chevron-back"

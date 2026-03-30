@@ -254,7 +254,7 @@ const buildLocalNutritionTarget = (
     carbs,
     fat,
     explanation:
-      'AI tam offline. Day la muc tieu uoc tinh tu profile hien tai, ban co the sua thu cong neu can.',
+      'AI tạm offline. Đây là mục tiêu ước tính từ profile hiện tại, bạn có thể sửa thủ công nếu cần.',
   };
 };
 
@@ -267,17 +267,17 @@ const buildFallbackCookingInstructions = (
     .filter(Boolean)
     .slice(0, 4);
   const ingredientText =
-    ingredientNames.length > 0 ? ingredientNames.join(', ') : 'cac nguyen lieu da chuan bi';
+    ingredientNames.length > 0 ? ingredientNames.join(', ') : 'các nguyên liệu đã chuẩn bị';
 
   return {
     steps: [
-      `So che va can dinh luong ${ingredientText}.`,
-      `Lam nong chao hoac noi, sau do cho nguyen lieu vao theo thu tu de nau mon ${recipeName}.`,
-      'Niem lai vua an, dao deu den khi mon an dat do chin mong muon.',
-      'Trinh bay ra dia va thuong thuc khi con nong.',
+      `Sơ chế và cân định lượng ${ingredientText}.`,
+      `Làm nóng chảo hoặc nồi, sau đó cho nguyên liệu vào theo thứ tự để nấu món ${recipeName}.`,
+      'Nếm lại vừa ăn, đảo đều đến khi món ăn đạt độ chín mong muốn.',
+      'Trình bày ra đĩa và thưởng thức khi còn nóng.',
     ],
-    cookingTime: '15-20 phut',
-    difficulty: 'De',
+    cookingTime: '15-20 phút',
+    difficulty: 'Dễ',
   };
 };
 
@@ -321,7 +321,7 @@ export async function detectFoodByImage(imageUri: string): Promise<VisionDetectR
       if ([502, 503, 504].includes(response.status)) {
         throw toAiOfflineError(
           httpError,
-          'AI tam offline. Ban co the thu lai hoac tim mon thu cong.',
+          'AI tạm offline. Bạn có thể thử lại hoặc tìm món thủ công.',
         );
       }
       throw httpError;
@@ -333,7 +333,7 @@ export async function detectFoodByImage(imageUri: string): Promise<VisionDetectR
     if (isAiOfflineError(error)) {
       throw toAiOfflineError(
         error,
-        'AI tam offline. Ban co the thu lai hoac tim mon thu cong.',
+        'AI tạm offline. Bạn có thể thử lại hoặc tìm món thủ công.',
       );
     }
 
@@ -369,7 +369,7 @@ export const aiService = {
       id: String(
         item?.id ?? item?.slug ?? item?.title ?? Math.random().toString(36).slice(2),
       ),
-      title: item?.title ?? item?.name ?? 'Cong thuc',
+      title: item?.title ?? item?.name ?? 'Công thức',
       description: item?.description ?? item?.summary ?? null,
       calories: toNumber(item?.calories),
       protein: toNumber(item?.protein),
@@ -502,7 +502,7 @@ export const aiService = {
       return normalizeNutritionInsight(response.data);
     } catch (error) {
       if (isAiOfflineError(error)) {
-        throw toAiOfflineError(error, 'AI insights tam khong kha dung.');
+        throw toAiOfflineError(error, 'AI insights tạm không khả dụng.');
       }
       throw error;
     }
@@ -519,7 +519,7 @@ export const aiService = {
       return normalizeAdaptiveTarget(response.data);
     } catch (error) {
       if (isAiOfflineError(error)) {
-        throw toAiOfflineError(error, 'AI adaptive target tam khong kha dung.');
+        throw toAiOfflineError(error, 'AI adaptive target tạm không khả dụng.');
       }
       throw error;
     }
@@ -591,7 +591,7 @@ export const aiService = {
           return buildFallbackCookingInstructions(recipeName, ingredients);
         }
 
-        const httpError = new Error(`Khong the tao huong dan nau: ${text}`) as AiOfflineError;
+        const httpError = new Error(`Không thể tạo hướng dẫn nấu: ${text}`) as AiOfflineError;
         httpError.status = response.status;
         throw httpError;
       }
