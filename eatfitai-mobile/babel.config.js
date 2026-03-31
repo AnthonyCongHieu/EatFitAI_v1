@@ -4,8 +4,8 @@ module.exports = function (api) {
   return {
     presets: ['babel-preset-expo'],
     plugins: [
-      // Bật plugin Reanimated để tránh lỗi runtime khi dùng gesture/animation
-      'react-native-reanimated/plugin',
+      // Reanimated 4.x uses the Worklets Babel plugin directly.
+      'react-native-worklets/plugin',
     ],
   };
 };

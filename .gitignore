@@ -48,3 +48,6 @@ tsconfig.tsbuildinfo
 *.tsbuildinfo
 build_*.txt
 errors.txt
+tools/dev/logs/
+tools/dev/device-app-logcat.txt
+tools/dev/device-current.png

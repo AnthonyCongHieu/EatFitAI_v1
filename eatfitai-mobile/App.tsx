@@ -1,5 +1,5 @@
 import 'react-native-gesture-handler';
-import React, { useEffect } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { StyleSheet } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -99,34 +99,55 @@ const AppInner = () => {
 };
 
 export default function App(): React.ReactElement | null {
-  const [fontsLoaded] = useFonts({
+  const [fontsLoaded, fontError] = useFonts({
     BeVietnamPro_300Light,
     BeVietnamPro_400Regular,
     BeVietnamPro_500Medium,
     BeVietnamPro_600SemiBold,
     BeVietnamPro_700Bold,
   });
+  const [fontLoadTimedOut, setFontLoadTimedOut] = useState(false);
+  const canRenderApp = fontsLoaded || !!fontError || fontLoadTimedOut;
+  const splashHiddenRef = useRef(false);
 
   useEffect(() => {
     const timeout = setTimeout(() => {
-      SplashScreen.hideAsync().catch(() => {});
-    }, 5000);
+      if (!fontsLoaded) {
+        console.warn('[App] Font loading timed out. Rendering with fallback fonts.');
+        setFontLoadTimedOut(true);
+      }
+    }, 4000);
 
     return () => clearTimeout(timeout);
-  }, []);
-
-  useEffect(() => {
-    if (fontsLoaded) {
-      SplashScreen.hideAsync().catch(() => {});
-    }
   }, [fontsLoaded]);
 
-  if (!fontsLoaded) {
+  const hideSplashScreen = useCallback(async () => {
+    if (!canRenderApp || splashHiddenRef.current) {
+      return;
+    }
+
+    splashHiddenRef.current = true;
+    try {
+      await SplashScreen.hideAsync();
+    } catch {
+      splashHiddenRef.current = false;
+    }
+  }, [canRenderApp]);
+
+  useEffect(() => {
+    if (!canRenderApp) {
+      return;
+    }
+
+    void hideSplashScreen();
+  }, [canRenderApp, hideSplashScreen]);
+
+  if (!canRenderApp) {
     return null;
   }
 
   return (
-    <GestureHandlerRootView style={styles.root}>
+    <GestureHandlerRootView style={styles.root} onLayout={() => void hideSplashScreen()}>
       <SafeAreaProvider>
         <ThemeProvider>
           <QueryClientProvider client={queryClient}>

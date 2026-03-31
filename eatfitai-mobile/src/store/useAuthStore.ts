@@ -7,6 +7,7 @@ import apiClient, { setAuthExpiredCallback } from '../services/apiClient';
 import { setAccessTokenMem } from '../services/authTokens';
 import { tokenStorage } from '../services/secureStore';
 import { initAuthSession, updateSessionFromAuthResponse } from '../services/authSession';
+import { postRefreshToken } from '../services/tokenService';
 import type { AuthResponse } from '../types';
 import type { AuthTokensResponse } from '../types/auth';
 import { t } from '../i18n/vi';
@@ -18,6 +19,20 @@ const ONBOARDING_COMPLETE_KEY = 'onboarding_complete';
 
 const persistNeedsOnboarding = async (needsOnboarding: boolean): Promise<void> => {
   await AsyncStorage.setItem(AUTH_NEEDS_ONBOARDING_KEY, needsOnboarding ? 'true' : 'false');
+};
+
+const parseDateMs = (value?: string | null): number | null => {
+  if (!value) {
+    return null;
+  }
+
+  const parsed = Date.parse(value);
+  return Number.isNaN(parsed) ? null : parsed;
+};
+
+const isTokenStillValid = (value?: string | null): boolean => {
+  const expMs = parseDateMs(value);
+  return expMs === null || expMs > Date.now();
 };
 
 type AuthState = {
@@ -60,12 +75,50 @@ export const useAuthStore = create<AuthState>((set: any) => ({
       });
 
       // 3. Load token từ storage nếu có
-      const token = await tokenStorage.getAccessToken();
+      const [token, refreshToken, accessTokenExpiresAt, refreshTokenExpiresAt] =
+        await Promise.all([
+          tokenStorage.getAccessToken(),
+          tokenStorage.getRefreshToken(),
+          tokenStorage.getAccessTokenExpiresAt(),
+          tokenStorage.getRefreshTokenExpiresAt(),
+        ]);
+
       if (token) {
         const persistedNeedsOnboarding =
           (await AsyncStorage.getItem(AUTH_NEEDS_ONBOARDING_KEY)) === 'true';
-        setAccessTokenMem(token);
-        set({ isAuthenticated: true, needsOnboarding: persistedNeedsOnboarding });
+
+        if (isTokenStillValid(accessTokenExpiresAt)) {
+          setAccessTokenMem(token);
+          set({ isAuthenticated: true, needsOnboarding: persistedNeedsOnboarding });
+        } else if (refreshToken && isTokenStillValid(refreshTokenExpiresAt)) {
+          try {
+            const refreshed = await postRefreshToken(refreshToken);
+            const refreshedAccessToken = refreshed?.accessToken;
+            if (!refreshedAccessToken) {
+              throw new Error(t('auth.missingAccessToken'));
+            }
+
+            setAccessTokenMem(refreshedAccessToken);
+            await updateSessionFromAuthResponse(refreshed as AuthResponse);
+            set({ isAuthenticated: true, needsOnboarding: persistedNeedsOnboarding });
+          } catch (error) {
+            if (__DEV__) {
+              console.warn('[useAuthStore] Session refresh during init failed, clearing stale auth state:', error);
+            }
+            await tokenStorage.clearAll();
+            await AsyncStorage.multiRemove([AUTH_NEEDS_ONBOARDING_KEY, ONBOARDING_COMPLETE_KEY]);
+            setAccessTokenMem(null);
+            set({ isAuthenticated: false, needsOnboarding: false, user: null });
+          }
+        } else {
+          if (__DEV__) {
+            console.log('[useAuthStore] Stored access token is expired and no valid refresh token remains. Clearing session.');
+          }
+          await tokenStorage.clearAll();
+          await AsyncStorage.multiRemove([AUTH_NEEDS_ONBOARDING_KEY, ONBOARDING_COMPLETE_KEY]);
+          setAccessTokenMem(null);
+          set({ isAuthenticated: false, needsOnboarding: false, user: null });
+        }
       } else {
         await AsyncStorage.multiRemove([AUTH_NEEDS_ONBOARDING_KEY, ONBOARDING_COMPLETE_KEY]);
       }
