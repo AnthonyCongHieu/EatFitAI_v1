@@ -1,0 +1,407 @@
+[CmdletBinding()]
+param(
+    [string]$AvdName = "EatFitAI_API_34",
+    [switch]$SkipEmulator
+)
+
+Set-StrictMode -Version Latest
+$ErrorActionPreference = "Stop"
+
+$repoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..\..")).Path
+$mobileEnvFile = Join-Path $repoRoot "eatfitai-mobile\.env.development"
+$aiProviderDir = Join-Path $repoRoot "ai-provider"
+$backendDir = Join-Path $repoRoot "eatfitai-backend"
+$backendProject = Join-Path $backendDir "EatFitAI.API.csproj"
+$mobileDir = Join-Path $repoRoot "eatfitai-mobile"
+$logsDir = Join-Path $repoRoot "tools\dev\logs"
+$aiHealthUrl = "http://127.0.0.1:5050/healthz"
+$backendHealthUrl = "http://127.0.0.1:5247/health"
+$androidPackage = "com.eatfitai.app"
+
+function Assert-PathExists {
+    param(
+        [string]$PathValue,
+        [string]$Label
+    )
+
+    if (-not (Test-Path $PathValue)) {
+        throw "$Label not found: $PathValue"
+    }
+}
+
+function Assert-CommandExists {
+    param(
+        [string]$CommandName,
+        [string]$InstallHint
+    )
+
+    $commandInfo = Get-Command $CommandName -ErrorAction SilentlyContinue
+    if (-not $commandInfo) {
+        throw "$CommandName was not found in PATH. $InstallHint"
+    }
+}
+
+function Set-MobileApiBaseUrl {
+    param(
+        [string]$EnvFile,
+        [string]$ApiBaseUrl
+    )
+
+    $lines = @()
+    if (Test-Path $EnvFile) {
+        $lines = @(Get-Content $EnvFile -Encoding utf8)
+    }
+
+    $updated = $false
+    for ($i = 0; $i -lt $lines.Count; $i++) {
+        if ($lines[$i] -match '^EXPO_PUBLIC_API_BASE_URL=') {
+            $lines[$i] = "EXPO_PUBLIC_API_BASE_URL=$ApiBaseUrl"
+            $updated = $true
+        }
+    }
+
+    if (-not $updated) {
+        $lines = @("EXPO_PUBLIC_API_BASE_URL=$ApiBaseUrl") + $lines
+    }
+
+    Set-Content -Path $EnvFile -Value $lines -Encoding utf8
+}
+
+function Start-PowerShellWindow {
+    param(
+        [string]$Title,
+        [string]$Command,
+        [string]$LogFilePath = ""
+    )
+
+    $loggedCommand = $Command
+    if (-not [string]::IsNullOrWhiteSpace($LogFilePath)) {
+        Set-Content -Path $LogFilePath -Value @() -Encoding utf8
+        $escapedLogPath = $LogFilePath.Replace("'", "''")
+        $loggedCommand = @"
+& {
+$Command
+} *>&1 | Tee-Object -FilePath '$escapedLogPath' -Append
+"@
+    }
+
+$wrappedCommand = @"
+$Host.UI.RawUI.WindowTitle = '$Title'
+try {
+if (Get-Variable PSNativeCommandUseErrorActionPreference -ErrorAction SilentlyContinue) {
+    `$PSNativeCommandUseErrorActionPreference = `$false
+}
+$loggedCommand
+} catch {
+    Write-Host ''
+    Write-Host '[FAIL]' -ForegroundColor Red
+    Write-Host `$_.Exception.Message -ForegroundColor Red
+}
+"@
+
+    Start-Process powershell.exe -ArgumentList @(
+        "-NoExit",
+        "-ExecutionPolicy", "Bypass",
+        "-Command", $wrappedCommand
+    ) | Out-Null
+}
+
+function Get-AvailablePort {
+    param(
+        [int[]]$Candidates = @(8081, 8082, 8083, 8084, 8085)
+    )
+
+    foreach ($candidate in $Candidates) {
+        $listener = Get-NetTCPConnection -State Listen -LocalPort $candidate -ErrorAction SilentlyContinue
+        if (-not $listener) {
+            return $candidate
+        }
+    }
+
+    throw "No free Metro port found in candidates: $($Candidates -join ', '). Close the existing Expo/Metro process first."
+}
+
+function Test-HttpEndpointHealthy {
+    param(
+        [string]$Url
+    )
+
+    try {
+        $null = Invoke-RestMethod -Uri $Url -Method Get -TimeoutSec 5
+        return $true
+    } catch {
+        return $false
+    }
+}
+
+function Wait-ForHttpEndpoint {
+    param(
+        [string]$Url,
+        [int]$TimeoutSeconds,
+        [string]$FailureMessage
+    )
+
+    $deadline = (Get-Date).AddSeconds($TimeoutSeconds)
+    while ((Get-Date) -lt $deadline) {
+        try {
+            $null = Invoke-RestMethod -Uri $Url -Method Get -TimeoutSec 5
+            return
+        } catch {
+            Start-Sleep -Seconds 2
+        }
+    }
+
+    throw $FailureMessage
+}
+
+function Wait-ForMetroPort {
+    param(
+        [int]$Port,
+        [int]$TimeoutSeconds
+    )
+
+    $deadline = (Get-Date).AddSeconds($TimeoutSeconds)
+    while ((Get-Date) -lt $deadline) {
+        $listener = Get-NetTCPConnection -State Listen -LocalPort $Port -ErrorAction SilentlyContinue
+        if ($listener) {
+            return
+        }
+
+        Start-Sleep -Seconds 2
+    }
+
+    throw "Metro did not start on port $Port within $TimeoutSeconds seconds. Check the 'EatFitAI Mobile (Emulator)' terminal."
+}
+
+function Get-ProcessCommandLine {
+    param(
+        [int]$ProcessId
+    )
+
+    try {
+        $process = Get-CimInstance Win32_Process -Filter "ProcessId = $ProcessId"
+        return $process.CommandLine
+    } catch {
+        return $null
+    }
+}
+
+function Stop-ExistingMetroProcesses {
+    param(
+        [string]$ProjectPath,
+        [int[]]$CandidatePorts = @(8081, 8082, 8083, 8084, 8085)
+    )
+
+    $processIds = @(
+        Get-NetTCPConnection -State Listen -LocalPort $CandidatePorts -ErrorAction SilentlyContinue |
+        Select-Object -ExpandProperty OwningProcess -Unique
+    )
+
+    foreach ($processId in $processIds) {
+        Stop-Process -Id $processId -Force -ErrorAction SilentlyContinue
+    }
+}
+
+function Wait-ForPortsToBeFree {
+    param(
+        [int[]]$Ports,
+        [int]$TimeoutSeconds = 20
+    )
+
+    $deadline = (Get-Date).AddSeconds($TimeoutSeconds)
+    while ((Get-Date) -lt $deadline) {
+        $listeners = Get-NetTCPConnection -State Listen -LocalPort $Ports -ErrorAction SilentlyContinue
+        if (-not $listeners) {
+            return
+        }
+
+        Start-Sleep -Seconds 1
+    }
+
+    throw "Existing Metro ports did not become free within $TimeoutSeconds seconds. Close lingering Expo processes and retry."
+}
+
+function Assert-AvdExists {
+    param(
+        [string]$Name
+    )
+
+    $avds = @(emulator -list-avds)
+    if ($avds -notcontains $Name) {
+        throw "AVD '$Name' was not found. Run Install-AndroidSdkComponents.ps1 or create the AVD before rerunning."
+    }
+}
+
+function Get-RunningEmulatorSerial {
+    $emulatorDevices = @(
+        (& adb devices | Select-Object -Skip 1) |
+        Where-Object { $_ -match '^emulator-\d+\s+device$' } |
+        ForEach-Object { ($_ -split '\s+')[0] }
+    )
+
+    if ($emulatorDevices.Count -gt 0) {
+        return $emulatorDevices[0]
+    }
+
+    return $null
+}
+
+function Wait-ForEmulatorDevice {
+    param(
+        [int]$TimeoutSeconds = 120
+    )
+
+    $deadline = (Get-Date).AddSeconds($TimeoutSeconds)
+    while ((Get-Date) -lt $deadline) {
+        $emulatorDevices = @(
+            (& adb devices | Select-Object -Skip 1) |
+            Where-Object { $_ -match '^emulator-\d+\s+device$' } |
+            ForEach-Object { ($_ -split '\s+')[0] }
+        )
+
+        if ($emulatorDevices.Count -gt 0) {
+            return $emulatorDevices[0]
+        }
+
+        Start-Sleep -Seconds 3
+    }
+
+    throw "Emulator did not become available in adb within $TimeoutSeconds seconds. Check the emulator window for boot or AVD errors."
+}
+
+function Wait-ForAndroidBootComplete {
+    param(
+        [string]$Serial,
+        [int]$TimeoutSeconds = 120
+    )
+
+    $deadline = (Get-Date).AddSeconds($TimeoutSeconds)
+    while ((Get-Date) -lt $deadline) {
+        $bootState = (& adb -s $Serial shell getprop sys.boot_completed 2>$null).Trim()
+        if ($bootState -eq "1") {
+            return
+        }
+
+        Start-Sleep -Seconds 3
+    }
+
+    throw "Android on $Serial did not report sys.boot_completed=1 within $TimeoutSeconds seconds."
+}
+
+function Launch-AppOnDevice {
+    param(
+        [string]$Serial,
+        [string]$PackageName
+    )
+
+    & adb -s $Serial shell am start -n "$PackageName/.MainActivity" | Out-Null
+}
+
+function Test-AppInForeground {
+    param(
+        [string]$Serial,
+        [string]$PackageName
+    )
+
+    $windowDump = & adb -s $Serial shell dumpsys window
+    return ($windowDump | Select-String "mCurrentFocus=.*$PackageName|mFocusedApp=.*$PackageName" -Quiet)
+}
+
+function Ensure-AppForeground {
+    param(
+        [string]$Serial,
+        [string]$PackageName,
+        [int]$Attempts = 3
+    )
+
+    for ($attempt = 1; $attempt -le $Attempts; $attempt++) {
+        Launch-AppOnDevice -Serial $Serial -PackageName $PackageName
+        Start-Sleep -Seconds 3
+
+        if (Test-AppInForeground -Serial $Serial -PackageName $PackageName) {
+            return
+        }
+    }
+
+    throw "App $PackageName did not reach foreground on $Serial after $Attempts launch attempts."
+}
+
+Assert-PathExists -PathValue $aiProviderDir -Label "AI provider directory"
+Assert-PathExists -PathValue $backendDir -Label "Backend directory"
+Assert-PathExists -PathValue $backendProject -Label "Backend project"
+Assert-PathExists -PathValue $mobileDir -Label "Mobile directory"
+
+Assert-CommandExists -CommandName "powershell.exe" -InstallHint "Windows PowerShell is required."
+Assert-CommandExists -CommandName "dotnet.exe" -InstallHint "Install .NET SDK 9 and ensure dotnet is on PATH."
+Assert-CommandExists -CommandName "npm.cmd" -InstallHint "Install Node 20.x and ensure npm is on PATH."
+Assert-CommandExists -CommandName "adb.exe" -InstallHint "Install Android platform-tools and ensure adb is on PATH."
+New-Item -ItemType Directory -Path $logsDir -Force | Out-Null
+
+if (-not $SkipEmulator) {
+    Assert-CommandExists -CommandName "emulator.exe" -InstallHint "Run Install-AndroidSdkComponents.ps1 first."
+    Assert-AvdExists -Name $AvdName
+}
+
+Set-MobileApiBaseUrl -EnvFile $mobileEnvFile -ApiBaseUrl "http://10.0.2.2:5247"
+
+if (-not $SkipEmulator) {
+    $existingEmulatorSerial = Get-RunningEmulatorSerial
+    if ($existingEmulatorSerial) {
+        $emulatorSerial = $existingEmulatorSerial
+    } else {
+    Start-PowerShellWindow -Title "EatFitAI Emulator" -Command @"
+emulator -avd $AvdName
+"@
+
+    $emulatorSerial = Wait-ForEmulatorDevice -TimeoutSeconds 120
+    }
+} else {
+    $emulatorSerial = Wait-ForEmulatorDevice -TimeoutSeconds 30
+}
+
+Wait-ForAndroidBootComplete -Serial $emulatorSerial -TimeoutSeconds 120
+
+if (-not (Test-HttpEndpointHealthy -Url $aiHealthUrl)) {
+    Start-PowerShellWindow -Title "EatFitAI AI Provider" -Command @"
+Set-Location '$aiProviderDir'
+if (-not (Test-Path '.\venv\Scripts\python.exe')) {
+    throw 'Missing ai-provider virtual environment at .\venv\Scripts\python.exe'
+}
+.\venv\Scripts\python.exe app.py
+"@
+
+    Wait-ForHttpEndpoint `
+        -Url $aiHealthUrl `
+        -TimeoutSeconds 45 `
+        -FailureMessage "AI provider did not become healthy at $aiHealthUrl within 45 seconds. Check the 'EatFitAI AI Provider' terminal."
+}
+
+if (-not (Test-HttpEndpointHealthy -Url $backendHealthUrl)) {
+    Start-PowerShellWindow -Title "EatFitAI Backend" -Command @"
+Set-Location '$backendDir'
+dotnet run --project '$backendProject'
+"@
+
+    Wait-ForHttpEndpoint `
+        -Url $backendHealthUrl `
+        -TimeoutSeconds 60 `
+        -FailureMessage "Backend did not become healthy at $backendHealthUrl within 60 seconds. Check the 'EatFitAI Backend' terminal."
+}
+
+Stop-ExistingMetroProcesses -ProjectPath $mobileDir
+Wait-ForPortsToBeFree -Ports @(8081, 8082, 8083, 8084, 8085)
+$metroPort = Get-AvailablePort
+
+Start-PowerShellWindow -Title "EatFitAI Mobile (Emulator)" -Command @"
+Set-Location '$mobileDir'
+cmd /c "npm run dev -- --clear --port $metroPort 2>&1"
+"@ -LogFilePath (Join-Path $logsDir "mobile-emulator.log")
+
+Wait-ForMetroPort -Port $metroPort -TimeoutSeconds 45
+Ensure-AppForeground -Serial $emulatorSerial -PackageName $androidPackage
+
+Write-Host "EatFitAI emulator lane started."
+Write-Host "Mobile API base URL set to http://10.0.2.2:5247 in $mobileEnvFile"
+Write-Host "Mobile Metro port: $metroPort"
+Write-Host "Emulator serial: $emulatorSerial"
+Write-Host "If the emulator was already running, you can rerun this script with -SkipEmulator."
