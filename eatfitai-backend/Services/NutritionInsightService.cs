@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
@@ -63,7 +63,7 @@ namespace EatFitAI.API.Services
 
             if (currentTarget == null)
             {
-                throw new InvalidOperationException("No active nutrition target found for user");
+                throw new InvalidOperationException("Không tìm thấy mục tiêu dinh dưỡng đang áp dụng cho người dùng");
             }
 
             // Calculate daily averages
@@ -153,7 +153,7 @@ namespace EatFitAI.API.Services
 
             if (currentTarget == null)
             {
-                throw new InvalidOperationException("No active nutrition target found for user");
+                throw new InvalidOperationException("Không tìm thấy mục tiêu dinh dưỡng đang áp dụng cho người dùng");
             }
 
             // Get meal history
@@ -553,3 +553,4 @@ namespace EatFitAI.API.Services
         #endregion
     }
 }
+

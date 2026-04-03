@@ -1,4 +1,4 @@
-using System.Security.Claims;
+﻿using System.Security.Claims;
 using EatFitAI.API.DbScaffold.Data;
 using EatFitAI.API.DbScaffold.Models;
 using EatFitAI.API.DTOs.Food;
@@ -29,7 +29,7 @@ namespace EatFitAI.API.Controllers
 
             if (string.IsNullOrEmpty(userIdClaim) || !Guid.TryParse(userIdClaim, out var userId))
             {
-                throw new UnauthorizedAccessException("Invalid user token");
+                throw new UnauthorizedAccessException("Token người dùng không hợp lệ");
             }
 
             return userId;
@@ -66,7 +66,7 @@ namespace EatFitAI.API.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error retrieving favorites");
-                return StatusCode(500, new { message = "An error occurred while retrieving favorites" });
+                return StatusCode(500, new { message = "Đã xảy ra lỗi khi lấy danh sách yêu thích" });
             }
         }
 
@@ -100,7 +100,7 @@ namespace EatFitAI.API.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error toggling favorite");
-                return StatusCode(500, new { message = "An error occurred while updating favorites" });
+                return StatusCode(500, new { message = "Đã xảy ra lỗi khi cập nhật yêu thích" });
             }
         }
 
@@ -117,8 +117,9 @@ namespace EatFitAI.API.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error checking favorite status");
-                return StatusCode(500, new { message = "An error occurred" });
+                return StatusCode(500, new { message = "Đã xảy ra lỗi" });
             }
         }
     }
 }
+

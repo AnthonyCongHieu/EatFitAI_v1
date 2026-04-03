@@ -1,4 +1,4 @@
-import axios, {
+﻿import axios, {
   AxiosError,
   AxiosHeaders,
   AxiosRequestConfig,
@@ -273,7 +273,7 @@ apiClient.interceptors.response.use(
 
         // Validate refresh token format (basic check)
         if (typeof refreshToken !== 'string' || refreshToken.trim().length === 0) {
-          throw new Error('Invalid refresh token format');
+      throw new Error('Định dạng refresh token không hợp lệ');
         }
 
         const data = await postRefreshToken(refreshToken);
@@ -309,7 +309,7 @@ apiClient.interceptors.response.use(
         }
         if (newRefreshExp && isNaN(Date.parse(newRefreshExp))) {
           console.warn(
-            '[EatFitAI] Invalid refresh token expiration format:',
+            '[EatFitAI] Định dạng thời hạn refresh token không hợp lệ:',
             newRefreshExp,
           );
         }
@@ -428,3 +428,4 @@ aiApiClient.interceptors.request.use(async (config: InternalAxiosRequestConfig) 
 });
 
 export default apiClient;
+

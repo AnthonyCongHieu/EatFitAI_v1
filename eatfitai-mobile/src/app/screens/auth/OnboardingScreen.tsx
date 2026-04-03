@@ -1,4 +1,4 @@
-/**
+﻿/**
  * OnboardingScreen - First-time user setup wizard
  * 5 steps: Basic Info → Body Metrics → Goal → Activity → AI Calculate
  */
@@ -231,7 +231,7 @@ const OnboardingScreen = (): React.ReactElement => {
       } else {
         Toast.show({
           type: 'error',
-          text1: 'AI Provider không khả dụng',
+          text1: 'Dịch vụ AI hiện không khả dụng',
           text2: 'Hãy đảm bảo Ollama đang chạy và thử lại.',
         });
       }
@@ -796,3 +796,4 @@ const OnboardingScreen = (): React.ReactElement => {
 };
 
 export default OnboardingScreen;
+

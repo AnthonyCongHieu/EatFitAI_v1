@@ -1,4 +1,4 @@
-using System.Security.Claims;
+﻿using System.Security.Claims;
 using EatFitAI.API.DTOs.Analytics;
 using EatFitAI.API.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
@@ -35,7 +35,7 @@ namespace EatFitAI.API.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { message = "An error occurred while retrieving day summary", error = ex.Message });
+                return StatusCode(500, new { message = "Đã xảy ra lỗi khi lấy tổng quan ngày", error = ex.Message });
             }
         }
 
@@ -55,7 +55,7 @@ namespace EatFitAI.API.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { message = "An error occurred while retrieving week summary", error = ex.Message });
+                return StatusCode(500, new { message = "Đã xảy ra lỗi khi lấy tổng quan tuần", error = ex.Message });
             }
         }
 
@@ -66,10 +66,11 @@ namespace EatFitAI.API.Controllers
 
             if (string.IsNullOrEmpty(userIdClaim) || !Guid.TryParse(userIdClaim, out var userId))
             {
-                throw new UnauthorizedAccessException("Invalid user token");
+                throw new UnauthorizedAccessException("Token người dùng không hợp lệ");
             }
 
             return userId;
         }
     }
 }
+

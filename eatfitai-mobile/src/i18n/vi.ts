@@ -1,4 +1,4 @@
-export const vi = {
+﻿export const vi = {
   common: {
     close: 'Đóng',
     loading: 'Đang tải...',
@@ -224,7 +224,7 @@ export const vi = {
     // Result screen
     daily_goal: 'Mục tiêu hàng ngày',
     // Errors
-    ai_unavailable: 'AI Provider không khả dụng',
+    ai_unavailable: 'Dịch vụ AI hiện không khả dụng',
     ai_unavailable_desc: 'Hãy đảm bảo Ollama đang chạy và thử lại.',
     connection_error: 'Không thể kết nối AI',
     connection_error_desc: 'Kiểm tra AI Provider và Ollama đang chạy.',
@@ -692,3 +692,4 @@ export function t<K extends string>(key: K, ...args: any[]): string {
   if (typeof cur === 'string') return cur;
   return key;
 }
+

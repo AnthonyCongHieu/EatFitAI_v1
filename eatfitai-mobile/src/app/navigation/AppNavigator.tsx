@@ -24,7 +24,7 @@ import RecipeDetailScreen from '../screens/ai/RecipeDetailScreen';
 import NutritionSettingsScreen from '../screens/ai/NutritionSettingsScreen';
 import AchievementsScreen from '../screens/gamification/AchievementsScreen';
 import OnboardingScreen from '../screens/auth/OnboardingScreen';
-// Profile screens - má»›i thÃªm
+// Profile screens - mới thêm
 import EditProfileScreen from '../screens/profile/EditProfileScreen';
 import BodyMetricsScreen from '../screens/profile/BodyMetricsScreen';
 import GoalSettingsScreen from '../screens/profile/GoalSettingsScreen';
@@ -45,16 +45,16 @@ const AppNavigator = (): React.ReactElement => {
   const needsOnboarding = useAuthStore((s) => s.needsOnboarding);
   const init = useAuthStore((s) => s.init);
 
-  // Khá»Ÿi táº¡o auth store khi app mount
+  // Khởi tạo auth store khi app mount
   useEffect(() => {
     init().catch(() => {
-      // bá» qua lá»—i init (vÃ­ dá»¥ chÆ°a cÃ³ token)
+      // bỏ qua lỗi init (ví dụ chưa có token)
     });
   }, [init]);
 
   return (
     <NavigationContainer theme={navigationTheme}>
-      {/* Äiá»u hÆ°á»›ng: náº¿u Ä‘ang init => hiá»ƒn thá»‹ mÃ n hÃ¬nh tráº¯ng Ä‘Æ¡n giáº£n */}
+      {/* Điều hướng: nếu đang init thì hiển thị màn hình trắng đơn giản */}
       {isInitializing ? (
         <View
           style={{
@@ -75,7 +75,7 @@ const AppNavigator = (): React.ReactElement => {
           }}
         >
           {!isAuthenticated ? (
-            // ChÆ°a Ä‘Äƒng nháº­p: Hiá»ƒn thá»‹ stack Ä‘Äƒng nháº­p/Ä‘Äƒng kÃ½
+            // Chưa đăng nhập: hiển thị stack đăng nhập/đăng ký
             <>
               <Stack.Screen name="Welcome" component={WelcomeScreen} />
               <Stack.Screen name="Login" component={LoginScreen} />
@@ -93,7 +93,7 @@ const AppNavigator = (): React.ReactElement => {
               <Stack.Screen name="Onboarding" component={OnboardingScreen} />
             </>
           ) : (
-            // ÄÃ£ Ä‘Äƒng nháº­p: vÃ o App Tabs
+            // Đã đăng nhập: vào App Tabs
             <>
               <Stack.Screen name="AppTabs" component={AppTabs} />
               <Stack.Screen
@@ -118,7 +118,7 @@ const AppNavigator = (): React.ReactElement => {
                 component={MealDiaryScreen}
                 options={{
                   headerShown: false,
-                  title: 'Nháº­t kÃ½ bá»¯a Äƒn',
+                  title: 'Nhật ký bữa ăn',
                 }}
               />
               <Stack.Screen
@@ -148,7 +148,7 @@ const AppNavigator = (): React.ReactElement => {
                 component={RecipeSuggestionsScreen}
                 options={{
                   headerShown: false,
-                  title: 'Gá»£i Ã½ cÃ´ng thá»©c',
+                  title: 'Gợi ý công thức',
                 }}
               />
               <Stack.Screen
@@ -172,7 +172,7 @@ const AppNavigator = (): React.ReactElement => {
                 name="Achievements"
                 component={AchievementsScreen}
                 options={{
-                  headerShown: false, // ÄÃ£ cÃ³ ScreenHeader custom
+                  headerShown: false, // Đã có ScreenHeader custom
                 }}
               />
               {/* Profile screens */}

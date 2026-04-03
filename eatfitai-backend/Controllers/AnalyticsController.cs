@@ -1,4 +1,4 @@
-using System.Security.Claims;
+﻿using System.Security.Claims;
 using EatFitAI.API.DTOs.Analytics;
 using EatFitAI.API.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
@@ -25,7 +25,7 @@ namespace EatFitAI.API.Controllers
         {
             if (startDate == default)
             {
-                return BadRequest(new { message = "startDate is required and must be a valid date." });
+                return BadRequest(new { message = "startDate là bắt buộc và phải là ngày hợp lệ." });
             }
 
             var normalizedStartDate = startDate.Date;
@@ -33,7 +33,7 @@ namespace EatFitAI.API.Controllers
 
             if (effectiveEndDate < normalizedStartDate)
             {
-                return BadRequest(new { message = "endDate must be greater than or equal to startDate." });
+                return BadRequest(new { message = "endDate phải lớn hơn hoặc bằng startDate." });
             }
 
             try
@@ -48,7 +48,7 @@ namespace EatFitAI.API.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { message = "An error occurred while retrieving nutrition summary", error = ex.Message });
+                return StatusCode(500, new { message = "Đã xảy ra lỗi khi lấy tổng hợp dinh dưỡng", error = ex.Message });
             }
         }
 
@@ -59,7 +59,7 @@ namespace EatFitAI.API.Controllers
 
             if (string.IsNullOrEmpty(userIdClaim) || !Guid.TryParse(userIdClaim, out var userId))
             {
-                throw new UnauthorizedAccessException("Invalid user token");
+                throw new UnauthorizedAccessException("Token người dùng không hợp lệ");
             }
 
             return userId;

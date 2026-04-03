@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using EatFitAI.API.DTOs;
 using EatFitAI.API.Services;
@@ -92,7 +92,7 @@ public class AIReviewController : ControllerBase
             // TODO: Implement auto-apply logic
             // Update nutrition targets based on suggestions
             
-            return Ok(new { message = "Suggestions applied successfully" });
+            return Ok(new { message = "Đã áp dụng gợi ý thành công" });
         }
         catch (Exception ex)
         {
@@ -107,3 +107,4 @@ public class ApplySuggestionsRequest
     public int? NewTargetCalories { get; set; }
     public Dictionary<string, int>? NewMacros { get; set; }
 }
+

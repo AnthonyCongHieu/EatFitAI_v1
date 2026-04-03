@@ -1,4 +1,4 @@
-using EatFitAI.API.DTOs.Auth;
+﻿using EatFitAI.API.DTOs.Auth;
 using EatFitAI.API.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -35,7 +35,7 @@ namespace EatFitAI.API.Controllers
             try
             {
                 await _authService.ResetPasswordAsync(request);
-                return Ok(new { message = "Password reset successfully" });
+                return Ok(new { message = "Đặt lại mật khẩu thành công" });
             }
             catch (UnauthorizedAccessException ex)
             {
@@ -149,11 +149,11 @@ namespace EatFitAI.API.Controllers
                 var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
                 if (string.IsNullOrEmpty(userId) || !Guid.TryParse(userId, out var userGuid))
                 {
-                    return Unauthorized(new { message = "Invalid user" });
+                    return Unauthorized(new { message = "Người dùng không hợp lệ" });
                 }
 
                 await _authService.MarkOnboardingCompletedAsync(userGuid);
-                return Ok(new { message = "Onboarding completed" });
+                return Ok(new { message = "Đã hoàn tất onboarding" });
             }
             catch (Exception ex)
             {
@@ -181,11 +181,11 @@ namespace EatFitAI.API.Controllers
             try
             {
                 await _authService.LogoutAsync(request.MaRefreshToken);
-                return Ok(new { message = "Logged out successfully" });
+                return Ok(new { message = "Đăng xuất thành công" });
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { message = "An error occurred during logout", error = ex.Message });
+                return StatusCode(500, new { message = "Đã xảy ra lỗi khi đăng xuất", error = ex.Message });
             }
         }
 
@@ -204,7 +204,7 @@ namespace EatFitAI.API.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { message = "An error occurred during token refresh", error = ex.Message });
+                return StatusCode(500, new { message = "Đã xảy ra lỗi khi làm mới token", error = ex.Message });
             }
         }
 
@@ -222,7 +222,7 @@ namespace EatFitAI.API.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { message = "An error occurred during Google login", error = ex.Message });
+                return StatusCode(500, new { message = "Đã xảy ra lỗi khi đăng nhập bằng Google", error = ex.Message });
             }
         }
 
@@ -238,11 +238,11 @@ namespace EatFitAI.API.Controllers
                 var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
                 if (string.IsNullOrEmpty(userId) || !Guid.TryParse(userId, out var userGuid))
                 {
-                    return Unauthorized(new { message = "Invalid user" });
+                    return Unauthorized(new { message = "Người dùng không hợp lệ" });
                 }
 
                 await _authService.ChangePasswordAsync(userGuid, request.CurrentPassword, request.NewPassword);
-                return Ok(new { message = "Password changed successfully" });
+                return Ok(new { message = "Đổi mật khẩu thành công" });
             }
             catch (UnauthorizedAccessException ex)
             {
@@ -251,7 +251,7 @@ namespace EatFitAI.API.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error changing password");
-                return StatusCode(500, new { message = "An error occurred while changing password" });
+                return StatusCode(500, new { message = "Đã xảy ra lỗi khi đổi mật khẩu" });
             }
         }
     }
@@ -266,3 +266,4 @@ namespace EatFitAI.API.Controllers
         public string RefreshToken { get; set; } = string.Empty;
     }
 }
+

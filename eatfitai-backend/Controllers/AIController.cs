@@ -1,4 +1,4 @@
-using System.Net.Http;
+﻿using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
@@ -191,7 +191,7 @@ namespace EatFitAI.API.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error suggesting recipes");
-                return StatusCode(500, new { message = "An error occurred while suggesting recipes", error = ex.Message });
+                return StatusCode(500, new { message = "Đã xảy ra lỗi khi gợi ý công thức", error = ex.Message });
             }
         }
 
@@ -211,7 +211,7 @@ namespace EatFitAI.API.Controllers
 
                 if (recipe == null)
                 {
-                    return NotFound(new { message = "Recipe not found" });
+                    return NotFound(new { message = "Không tìm thấy công thức" });
                 }
 
                 return Ok(recipe);
@@ -219,7 +219,7 @@ namespace EatFitAI.API.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error getting recipe detail for RecipeId {RecipeId}", recipeId);
-                return StatusCode(500, new { message = "An error occurred while retrieving recipe detail", error = ex.Message });
+                return StatusCode(500, new { message = "Đã xảy ra lỗi khi lấy chi tiết công thức", error = ex.Message });
             }
         }
 
@@ -317,17 +317,17 @@ namespace EatFitAI.API.Controllers
                 catch (HttpRequestException ex)
                 {
                     _logger.LogError(ex, "Failed to connect to AI Provider");
-                    return BuildOfflineFallback("Không thể kết nối đến AI Provider. Đã chuyển sang công thức offline.");
+                    return BuildOfflineFallback("Không thể kết nối đến dịch vụ AI. Đã chuyển sang công thức offline.");
                 }
                 catch (TaskCanceledException ex)
                 {
                     _logger.LogError(ex, "AI Provider request timed out");
-                    return BuildOfflineFallback("AI Provider timeout. Đã chuyển sang công thức offline.");
+                    return BuildOfflineFallback("Dịch vụ AI phản hồi quá chậm. Đã chuyển sang công thức offline.");
                 }
 
                 if (!response.IsSuccessStatusCode)
                 {
-                    return BuildOfflineFallback("AI Provider không khả dụng, đã chuyển sang công thức offline.");
+                    return BuildOfflineFallback("Dịch vụ AI hiện không khả dụng, đã chuyển sang công thức offline.");
                 }
                 
                 if (response.IsSuccessStatusCode)
@@ -382,18 +382,18 @@ namespace EatFitAI.API.Controllers
                 {
                     var errorContent = await response.Content.ReadAsStringAsync();
                     _logger.LogWarning("AI Provider returned error: {StatusCode} - {Error}", response.StatusCode, errorContent);
-                    return StatusCode(503, new { message = "AI Provider không khả dụng", error = errorContent });
+                    return StatusCode(503, new { message = "Dịch vụ AI hiện không khả dụng", error = errorContent });
                 }
             }
             catch (HttpRequestException ex)
             {
                 _logger.LogError(ex, "Failed to connect to AI Provider");
-                return StatusCode(503, new { message = "Không thể kết nối đến AI Provider. Hãy đảm bảo Ollama đang chạy.", error = ex.Message });
+                return StatusCode(503, new { message = "Không thể kết nối đến dịch vụ AI. Hãy đảm bảo Ollama đang chạy.", error = ex.Message });
             }
             catch (TaskCanceledException ex)
             {
                 _logger.LogError(ex, "AI Provider request timed out");
-                return StatusCode(504, new { message = "AI Provider timeout", error = ex.Message });
+                return StatusCode(504, new { message = "Dịch vụ AI phản hồi quá chậm", error = ex.Message });
             }
         }
 
@@ -432,7 +432,7 @@ namespace EatFitAI.API.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error generating nutrition insights");
-                return StatusCode(500, new { message = "An error occurred while generating insights", error = ex.Message });
+                return StatusCode(500, new { message = "Đã xảy ra lỗi khi tạo phân tích dinh dưỡng", error = ex.Message });
             }
         }
 
@@ -470,7 +470,7 @@ namespace EatFitAI.API.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error calculating adaptive target");
-                return StatusCode(500, new { message = "An error occurred while calculating adaptive target", error = ex.Message });
+                return StatusCode(500, new { message = "Đã xảy ra lỗi khi tính mục tiêu thích ứng", error = ex.Message });
             }
         }
 
@@ -499,7 +499,7 @@ namespace EatFitAI.API.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error applying nutrition target");
-                return StatusCode(500, new { message = "An error occurred while applying target", error = ex.Message });
+                return StatusCode(500, new { message = "Đã xảy ra lỗi khi áp dụng mục tiêu", error = ex.Message });
             }
         }
 
@@ -527,7 +527,7 @@ namespace EatFitAI.API.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error retrieving detection history");
-                return StatusCode(500, new { message = "An error occurred while retrieving history", error = ex.Message });
+                return StatusCode(500, new { message = "Đã xảy ra lỗi khi lấy lịch sử", error = ex.Message });
             }
         }
 
@@ -555,7 +555,7 @@ namespace EatFitAI.API.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error retrieving unmapped labels stats");
-                return StatusCode(500, new { message = "An error occurred while retrieving stats", error = ex.Message });
+                return StatusCode(500, new { message = "Đã xảy ra lỗi khi lấy thống kê", error = ex.Message });
             }
         }
 
@@ -580,7 +580,7 @@ namespace EatFitAI.API.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error suggesting food items for label");
-                return StatusCode(500, new { message = "An error occurred while suggesting items", error = ex.Message });
+                return StatusCode(500, new { message = "Đã xảy ra lỗi khi gợi ý món ăn", error = ex.Message });
             }
         }
 
@@ -591,7 +591,7 @@ namespace EatFitAI.API.Controllers
 
             if (string.IsNullOrEmpty(userIdClaim) || !Guid.TryParse(userIdClaim, out var userId))
             {
-                throw new UnauthorizedAccessException("Invalid user token");
+                throw new UnauthorizedAccessException("Token người dùng không hợp lệ");
             }
 
             return userId;
@@ -658,18 +658,18 @@ namespace EatFitAI.API.Controllers
                     var errorContent = await response.Content.ReadAsStringAsync(cancellationToken);
                     _logger.LogWarning("AI Provider cooking-instructions error: {StatusCode} - {Error}", 
                         response.StatusCode, errorContent);
-                    return StatusCode(503, new { message = "AI Provider không khả dụng", error = errorContent });
+                    return StatusCode(503, new { message = "Dịch vụ AI hiện không khả dụng", error = errorContent });
                 }
             }
             catch (HttpRequestException ex)
             {
                 _logger.LogError(ex, "Failed to connect to AI Provider for cooking instructions");
-                return StatusCode(503, new { message = "Không thể kết nối đến AI Provider", error = ex.Message });
+                return StatusCode(503, new { message = "Không thể kết nối đến dịch vụ AI", error = ex.Message });
             }
             catch (TaskCanceledException ex)
             {
                 _logger.LogError(ex, "AI Provider cooking-instructions request timed out");
-                return StatusCode(504, new { message = "AI Provider timeout", error = ex.Message });
+                return StatusCode(504, new { message = "Dịch vụ AI phản hồi quá chậm", error = ex.Message });
             }
         }
 
@@ -790,3 +790,4 @@ namespace EatFitAI.API.Controllers
         }
     }
 }
+

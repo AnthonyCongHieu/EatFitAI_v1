@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Voice Controller
  * API endpoints for Voice AI feature
  * Supports voice parsing and executing commands (ADD_FOOD to MealDiary)
@@ -75,12 +75,12 @@ namespace EatFitAI.API.Controllers
             var userId = GetUserId();
             if (userId == Guid.Empty)
             {
-                return Unauthorized(new { error = "Unauthorized" });
+                return Unauthorized(new { error = "Bạn chưa đăng nhập" });
             }
 
             if (string.IsNullOrWhiteSpace(request.Text))
             {
-                return BadRequest(new { error = "Text is required" });
+                return BadRequest(new { error = "Vui lòng nhập văn bản" });
             }
 
             try
@@ -152,7 +152,7 @@ namespace EatFitAI.API.Controllers
             var userId = GetUserId();
             if (userId == Guid.Empty)
             {
-                return Unauthorized(new { error = "Unauthorized" });
+                return Unauthorized(new { error = "Bạn chưa đăng nhập" });
             }
 
             if (audio == null || audio.Length == 0)
@@ -160,7 +160,7 @@ namespace EatFitAI.API.Controllers
                 return BadRequest(new
                 {
                     success = false,
-                    error = "Audio file is required"
+                    error = "Tệp âm thanh là bắt buộc"
                 });
             }
 
@@ -236,14 +236,14 @@ namespace EatFitAI.API.Controllers
             var userId = GetUserId();
             if (userId == Guid.Empty)
             {
-                return Unauthorized(new VoiceProcessResponse { Success = false, Error = "Unauthorized" });
+                return Unauthorized(new VoiceProcessResponse { Success = false, Error = "Bạn chưa đăng nhập" });
             }
 
             try
             {
                 if (string.IsNullOrWhiteSpace(request.Text))
                 {
-                    return BadRequest(new VoiceProcessResponse { Success = false, Error = "VÃ„Æ’n bÃ¡ÂºÂ£n khÃƒÂ´ng Ã„â€˜Ã†Â°Ã¡Â»Â£c Ã„â€˜Ã¡Â»Æ’ trÃ¡Â»â€˜ng" });
+                    return BadRequest(new VoiceProcessResponse { Success = false, Error = "Văn bản không được để trống" });
                 }
 
                 _logger.LogInformation("Processing voice text for user {UserId}: {Text}", userId, request.Text);
@@ -253,13 +253,13 @@ namespace EatFitAI.API.Controllers
                 {
                     Success = command.Intent != VoiceIntent.UNKNOWN,
                     Command = command,
-                    Error = command.Intent == VoiceIntent.UNKNOWN ? "KhÃƒÂ´ng hiÃ¡Â»Æ’u lÃ¡Â»â€¡nh. HÃƒÂ£y thÃ¡Â»Â­ lÃ¡ÂºÂ¡i vÃ¡Â»â€ºi cÃƒÂ¡ch nÃƒÂ³i khÃƒÂ¡c." : null
+                    Error = command.Intent == VoiceIntent.UNKNOWN ? "Không hiểu lệnh. Hãy thử lại với cách nói khác." : null
                 });
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error processing voice text");
-                return StatusCode(500, new VoiceProcessResponse { Success = false, Error = "LÃ¡Â»â€”i xÃ¡Â»Â­ lÃƒÂ½ lÃ¡Â»â€¡nh giÃ¡Â»Âng nÃƒÂ³i" });
+                return StatusCode(500, new VoiceProcessResponse { Success = false, Error = "Lỗi xử lý lệnh giọng nói" });
             }
         }
 
@@ -274,9 +274,9 @@ namespace EatFitAI.API.Controllers
             {
                 supportedIntents = new[]
                 {
-                    new { intent = "ADD_FOOD", description = "ThÃƒÂªm mÃƒÂ³n Ã„Æ’n", examples = new[] { "thÃƒÂªm 1 bÃƒÂ¡t cÃ†Â¡m 100g bÃ¡Â»Â¯a trÃ†Â°a", "ghi phÃ¡Â»Å¸ bÃƒÂ² bÃ¡Â»Â¯a sÃƒÂ¡ng" } },
-                    new { intent = "LOG_WEIGHT", description = "Ghi cÃƒÂ¢n nÃ¡ÂºÂ·ng", examples = new[] { "cÃƒÂ¢n nÃ¡ÂºÂ·ng 65 kg" } },
-                    new { intent = "ASK_CALORIES", description = "HÃ¡Â»Âi calories", examples = new[] { "hÃƒÂ´m nay bao nhiÃƒÂªu calo" } }
+                    new { intent = "ADD_FOOD", description = "Thêm món ăn", examples = new[] { "thêm 1 bát cơm 100g bữa trưa", "ghi phở bò bữa sáng" } },
+                    new { intent = "LOG_WEIGHT", description = "Ghi cân nặng", examples = new[] { "cân nặng 65 kg" } },
+                    new { intent = "ASK_CALORIES", description = "Hỏi calo", examples = new[] { "hôm nay bao nhiêu calo" } }
                 },
                 supportedLanguages = new[] { "vi" }
             });
@@ -291,7 +291,7 @@ namespace EatFitAI.API.Controllers
             var userId = GetUserId();
             if (userId == Guid.Empty)
             {
-                return Unauthorized(new VoiceProcessResponse { Success = false, Error = "Unauthorized" });
+                return Unauthorized(new VoiceProcessResponse { Success = false, Error = "Bạn chưa đăng nhập" });
             }
 
             try
@@ -304,33 +304,33 @@ namespace EatFitAI.API.Controllers
                 switch (command.Intent)
                 {
                     case VoiceIntent.ADD_FOOD:
-                        // KiÃ¡Â»Æ’m tra confidence trÃ†Â°Ã¡Â»â€ºc khi thÃ¡Â»Â±c thi
+                        // Kiểm tra confidence trước khi thực thi
                         if (command.Confidence < 0.5)
                         {
-                            error = "Ã„ÂÃ¡Â»â„¢ tin cÃ¡ÂºÂ­y thÃ¡ÂºÂ¥p. Vui lÃƒÂ²ng nÃƒÂ³i rÃƒÂµ hÃ†Â¡n.";
+                            error = "Độ tin cậy thấp. Vui lòng nói rõ hơn.";
                             break;
                         }
                         (executedAction, error) = await ExecuteAddFoodAsync(userId, command);
                         break;
 
                     case VoiceIntent.LOG_WEIGHT:
-                        // LÃ¡ÂºÂ¥y cÃƒÂ¢n nÃ¡ÂºÂ·ng hiÃ¡Â»â€¡n tÃ¡ÂºÂ¡i vÃƒÂ  trÃ¡ÂºÂ£ vÃ¡Â»Â Ã„â€˜Ã¡Â»Æ’ FE confirm
+                        // Lấy cân nặng hiện tại và trả về để FE xác nhận
                         if (command.Entities.Weight.HasValue && command.Entities.Weight > 0)
                         {
                             try
                             {
-                                // LÃ¡ÂºÂ¥y cÃƒÂ¢n nÃ¡ÂºÂ·ng hiÃ¡Â»â€¡n tÃ¡ÂºÂ¡i cÃ¡Â»Â§a user
+                                // Lấy cân nặng hiện tại của người dùng
                                 var userProfile = await _userService.GetUserProfileAsync(userId);
                                 var currentWeight = userProfile?.CurrentWeightKg;
                                 var newWeight = command.Entities.Weight.Value;
                                 
-                                // TrÃ¡ÂºÂ£ vÃ¡Â»Â data Ã„â€˜Ã¡Â»Æ’ FE hiÃ¡Â»Æ’n thÃ¡Â»â€¹ confirm, chÃ†Â°a lÃ†Â°u
+                                // Trả về dữ liệu để FE hiển thị xác nhận, chưa lưu
                                 executedAction = new ExecutedAction
                                 {
                                     Type = "LOG_WEIGHT_CONFIRM",
                                     Details = currentWeight.HasValue 
-                                        ? $"CÃƒÂ¢n hiÃ¡Â»â€¡n tÃ¡ÂºÂ¡i: {currentWeight}kg. CÃ¡ÂºÂ­p nhÃ¡ÂºÂ­t thÃƒÂ nh {newWeight}kg?"
-                                        : $"Ghi cÃƒÂ¢n nÃ¡ÂºÂ·ng mÃ¡Â»â€ºi: {newWeight}kg?",
+                                        ? $"Cân hiện tại: {currentWeight}kg. Cập nhật thành {newWeight}kg?"
+                                        : $"Ghi cân nặng mới: {newWeight}kg?",
                                     Data = new Dictionary<string, object>
                                     {
                                         ["currentWeight"] = currentWeight ?? 0,
@@ -344,17 +344,17 @@ namespace EatFitAI.API.Controllers
                             catch (Exception ex)
                             {
                                 _logger.LogError(ex, "Failed to get current weight");
-                                error = "KhÃƒÂ´ng thÃ¡Â»Æ’ lÃ¡ÂºÂ¥y thÃƒÂ´ng tin cÃƒÂ¢n nÃ¡ÂºÂ·ng. Vui lÃƒÂ²ng thÃ¡Â»Â­ lÃ¡ÂºÂ¡i.";
+                                error = "Không thể lấy thông tin cân nặng. Vui lòng thử lại.";
                             }
                         }
                         else
                         {
-                            error = "KhÃƒÂ´ng tÃƒÂ¬m thÃ¡ÂºÂ¥y sÃ¡Â»â€˜ cÃƒÂ¢n nÃ¡ÂºÂ·ng trong lÃ¡Â»â€¡nh";
+                            error = "Không tìm thấy số cân nặng trong lệnh";
                         }
                         break;
 
                     case VoiceIntent.ASK_CALORIES:
-                        // Query DaySummary Ã„â€˜Ã¡Â»Æ’ lÃ¡ÂºÂ¥y cÃ¡ÂºÂ£ calories vÃƒÂ  target
+                        // Query DaySummary để lấy cả calo và mục tiêu
                         try
                         {
                             var today = command.Entities.Date ?? DateTime.Today;
@@ -365,7 +365,7 @@ namespace EatFitAI.API.Controllers
                             executedAction = new ExecutedAction
                             {
                                 Type = "ASK_CALORIES",
-                                Details = $"HÃƒÂ´m nay bÃ¡ÂºÂ¡n Ã„â€˜ÃƒÂ£ tiÃƒÂªu thÃ¡Â»Â¥ {totalCalories:N0} / {targetCalories:N0} kcal",
+                                Details = $"Hôm nay bạn đã tiêu thụ {totalCalories:N0} / {targetCalories:N0} kcal",
                                 Data = new Dictionary<string, object>
                                 {
                                     ["totalCalories"] = totalCalories,
@@ -379,12 +379,12 @@ namespace EatFitAI.API.Controllers
                         catch (Exception ex)
                         {
                             _logger.LogError(ex, "Failed to get calories");
-                            error = "KhÃƒÂ´ng thÃ¡Â»Æ’ lÃ¡ÂºÂ¥y thÃƒÂ´ng tin calories. Vui lÃƒÂ²ng thÃ¡Â»Â­ lÃ¡ÂºÂ¡i.";
+                            error = "Không thể lấy thông tin calo. Vui lòng thử lại.";
                         }
                         break;
 
                     default:
-                        error = "KhÃƒÂ´ng hÃ¡Â»â€” trÃ¡Â»Â£ lÃ¡Â»â€¡nh nÃƒÂ y";
+                        error = "Không hỗ trợ lệnh này";
                         break;
                 }
 
@@ -399,7 +399,7 @@ namespace EatFitAI.API.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error executing voice command");
-                return StatusCode(500, new VoiceProcessResponse { Success = false, Error = "LÃ¡Â»â€”i thÃ¡Â»Â±c thi lÃ¡Â»â€¡nh giÃ¡Â»Âng nÃƒÂ³i" });
+                return StatusCode(500, new VoiceProcessResponse { Success = false, Error = "Lỗi thực thi lệnh giọng nói" });
             }
         }
 
@@ -412,7 +412,7 @@ namespace EatFitAI.API.Controllers
             var userId = GetUserId();
             if (userId == Guid.Empty)
             {
-                return Unauthorized(new VoiceProcessResponse { Success = false, Error = "Unauthorized" });
+                return Unauthorized(new VoiceProcessResponse { Success = false, Error = "Bạn chưa đăng nhập" });
             }
 
             try
@@ -432,7 +432,7 @@ namespace EatFitAI.API.Controllers
                     ExecutedAction = new ExecutedAction
                     {
                         Type = "LOG_WEIGHT",
-                        Details = $"Ã„ÂÃƒÂ£ cÃ¡ÂºÂ­p nhÃ¡ÂºÂ­t cÃƒÂ¢n nÃ¡ÂºÂ·ng: {request.NewWeight} kg",
+                        Details = $"Đã cập nhật cân nặng: {request.NewWeight} kg",
                         Data = new Dictionary<string, object>
                         {
                             ["savedWeight"] = request.NewWeight,
@@ -444,13 +444,13 @@ namespace EatFitAI.API.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error confirming weight");
-                return StatusCode(500, new VoiceProcessResponse { Success = false, Error = "KhÃƒÂ´ng thÃ¡Â»Æ’ lÃ†Â°u cÃƒÂ¢n nÃ¡ÂºÂ·ng" });
+                return StatusCode(500, new VoiceProcessResponse { Success = false, Error = "Không thể lưu cân nặng" });
             }
         }
 
         /// <summary>
         /// Execute ADD_FOOD: Search food in DB, calculate nutrition, save to MealDiary
-        /// HÃ¡Â»â€” trÃ¡Â»Â£ cÃ¡ÂºÂ£ 1 mÃƒÂ³n (FoodName) vÃƒÂ  nhiÃ¡Â»Âu mÃƒÂ³n (Foods array)
+        /// Hỗ trợ cả 1 món (FoodName) và nhiều món (Foods array)
         /// </summary>
         private async Task<(ExecutedAction? action, string? error)> ExecuteAddFoodAsync(Guid userId, ParsedVoiceCommand command)
         {
@@ -461,7 +461,7 @@ namespace EatFitAI.API.Controllers
                 var addedFoods = new List<string>();
                 decimal totalCalories = 0;
 
-                // Case 1: NhiÃ¡Â»Âu mÃƒÂ³n Ã„Æ’n (Foods array)
+                // Trường hợp 1: Nhiều món ăn (Foods array)
                 if (command.Entities.Foods != null && command.Entities.Foods.Count > 0)
                 {
                     _logger.LogInformation("Processing {Count} foods from voice command", command.Entities.Foods.Count);
@@ -486,7 +486,7 @@ namespace EatFitAI.API.Controllers
                         }
                     }
                 }
-                // Case 2: MÃ¡Â»â„¢t mÃƒÂ³n Ã„Æ’n (FoodName Ã„â€˜Ã†Â¡n lÃ¡ÂºÂ»)
+                // Trường hợp 2: Một món ăn (FoodName đơn lẻ)
                 else if (!string.IsNullOrWhiteSpace(command.Entities.FoodName))
                 {
                     var grams = command.Entities.Weight ?? (command.Entities.Quantity ?? 1) * 100m;
@@ -500,22 +500,22 @@ namespace EatFitAI.API.Controllers
                     }
                     else
                     {
-                        return (null, $"KhÃƒÂ´ng tÃƒÂ¬m thÃ¡ÂºÂ¥y mÃƒÂ³n '{command.Entities.FoodName}' trong cÃ†Â¡ sÃ¡Â»Å¸ dÃ¡Â»Â¯ liÃ¡Â»â€¡u.");
+                        return (null, $"Không tìm thấy món '{command.Entities.FoodName}' trong cơ sở dữ liệu.");
                     }
                 }
                 else
                 {
-                    return (null, "KhÃƒÂ´ng tÃƒÂ¬m thÃ¡ÂºÂ¥y tÃƒÂªn mÃƒÂ³n Ã„Æ’n trong lÃ¡Â»â€¡nh");
+                    return (null, "Không tìm thấy tên món ăn trong lệnh");
                 }
 
                 if (addedFoods.Count == 0)
                 {
-                    return (null, "KhÃƒÂ´ng tÃƒÂ¬m thÃ¡ÂºÂ¥y mÃƒÂ³n Ã„Æ’n nÃƒÂ o trong cÃ†Â¡ sÃ¡Â»Å¸ dÃ¡Â»Â¯ liÃ¡Â»â€¡u. HÃƒÂ£y thÃ¡Â»Â­ vÃ¡Â»â€ºi tÃƒÂªn khÃƒÂ¡c.");
+                    return (null, "Không tìm thấy món ăn nào trong cơ sở dữ liệu. Hãy thử với tên khác.");
                 }
 
                 var details = addedFoods.Count == 1
-                    ? $"Ã„ÂÃƒÂ£ thÃƒÂªm {addedFoods[0]} ({Math.Round(totalCalories)}kcal) vÃƒÂ o {GetMealLabel(command.Entities.MealType)}"
-                    : $"Ã„ÂÃƒÂ£ thÃƒÂªm {addedFoods.Count} mÃƒÂ³n ({Math.Round(totalCalories)}kcal) vÃƒÂ o {GetMealLabel(command.Entities.MealType)}: {string.Join(", ", addedFoods)}";
+                    ? $"Đã thêm {addedFoods[0]} ({Math.Round(totalCalories)}kcal) vào {GetMealLabel(command.Entities.MealType)}"
+                    : $"Đã thêm {addedFoods.Count} món ({Math.Round(totalCalories)}kcal) vào {GetMealLabel(command.Entities.MealType)}: {string.Join(", ", addedFoods)}";
 
                 return (new ExecutedAction
                 {
@@ -532,12 +532,12 @@ namespace EatFitAI.API.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error adding food via voice");
-                return (null, $"LÃ¡Â»â€”i khi thÃƒÂªm mÃƒÂ³n Ã„Æ’n: {ex.Message}");
+                return (null, $"Lỗi khi thêm món ăn: {ex.Message}");
             }
         }
 
         /// <summary>
-        /// Helper: ThÃƒÂªm 1 mÃƒÂ³n Ã„Æ’n vÃƒÂ o MealDiary
+        /// Helper: Thêm 1 món ăn vào MealDiary
         /// </summary>
         private async Task<(bool success, string foodName, decimal grams, decimal calories)> AddSingleFoodAsync(
             Guid userId, string foodName, decimal grams, int mealTypeId, DateTime eatenDate, string rawText)
@@ -604,11 +604,11 @@ namespace EatFitAI.API.Controllers
         {
             return mealType switch
             {
-                MealType.Breakfast => "BÃ¡Â»Â¯a sÃƒÂ¡ng",
-                MealType.Lunch => "BÃ¡Â»Â¯a trÃ†Â°a",
-                MealType.Dinner => "BÃ¡Â»Â¯a tÃ¡Â»â€˜i",
-                MealType.Snack => "BÃ¡Â»Â¯a phÃ¡Â»Â¥",
-                _ => "BÃ¡Â»Â¯a Ã„Æ’n"
+                MealType.Breakfast => "Bữa sáng",
+                MealType.Lunch => "Bữa trưa",
+                MealType.Dinner => "Bữa tối",
+                MealType.Snack => "Bữa phụ",
+                _ => "Bữa ăn"
             };
         }
     }

@@ -1,4 +1,4 @@
-using System.Security.Claims;
+﻿using System.Security.Claims;
 using EatFitAI.API.DTOs.MealDiary;
 using EatFitAI.API.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
@@ -29,7 +29,7 @@ namespace EatFitAI.API.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { message = "An error occurred while retrieving meal diaries", error = ex.Message });
+                return StatusCode(500, new { message = "Đã xảy ra lỗi khi lấy nhật ký bữa ăn", error = ex.Message });
             }
         }
 
@@ -48,7 +48,7 @@ namespace EatFitAI.API.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { message = "An error occurred while retrieving meal diary", error = ex.Message });
+                return StatusCode(500, new { message = "Đã xảy ra lỗi khi lấy chi tiết nhật ký bữa ăn", error = ex.Message });
             }
         }
 
@@ -63,7 +63,7 @@ namespace EatFitAI.API.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { message = "An error occurred while creating meal diary", error = ex.Message });
+                return StatusCode(500, new { message = "Đã xảy ra lỗi khi tạo nhật ký bữa ăn", error = ex.Message });
             }
         }
 
@@ -82,7 +82,7 @@ namespace EatFitAI.API.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { message = "An error occurred while updating meal diary", error = ex.Message });
+                return StatusCode(500, new { message = "Đã xảy ra lỗi khi cập nhật nhật ký bữa ăn", error = ex.Message });
             }
         }
 
@@ -101,7 +101,7 @@ namespace EatFitAI.API.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { message = "An error occurred while deleting meal diary", error = ex.Message });
+                return StatusCode(500, new { message = "Đã xảy ra lỗi khi xóa nhật ký bữa ăn", error = ex.Message });
             }
         }
 
@@ -112,7 +112,7 @@ namespace EatFitAI.API.Controllers
 
             if (string.IsNullOrEmpty(userIdClaim) || !Guid.TryParse(userIdClaim, out var userId))
             {
-                throw new UnauthorizedAccessException("Invalid user token");
+                throw new UnauthorizedAccessException("Token người dùng không hợp lệ");
             }
 
             return userId;

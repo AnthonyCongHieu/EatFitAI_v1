@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+﻿import type { ReactNode } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import Animated, {
   useAnimatedStyle,
@@ -183,7 +183,7 @@ export const Chip = ({
             hitSlop={8}
             style={styles.closeButton}
             accessibilityRole="button"
-            accessibilityLabel={`Remove ${label}`}
+            accessibilityLabel={`Xóa ${label}`}
           >
             {closeIcon || (
               <ThemedText style={[styles.closeIcon, { color: colorConfig.textColor }]}>
@@ -223,3 +223,4 @@ const styles = StyleSheet.create({
 });
 
 export default Chip;
+

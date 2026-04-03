@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Threading.Tasks;
 using EatFitAI.API.DTOs.User;
 using EatFitAI.API.Services;
@@ -44,7 +44,8 @@ namespace EatFitAI.API.Controllers
             if (userId == Guid.Empty) return Unauthorized();
 
             await _prefService.UpdateUserPreferenceAsync(userId, dto);
-            return Ok(new { message = "Preferences updated successfully" });
+            return Ok(new { message = "Đã cập nhật tùy chọn thành công" });
         }
     }
 }
+

@@ -1,4 +1,4 @@
-// Food search screen for adding foods to the diary
+﻿// Food search screen for adding foods to the diary
 // Styled to match the MealDiaryScreen visual language
 
 import { useCallback, useState, useEffect } from 'react';
@@ -709,7 +709,7 @@ const FoodSearchScreen = (): React.ReactElement => {
               </View>
               <View style={styles.tipBox}>
                 <ThemedText variant="bodySmall" color="textSecondary">
-                  Tap 1 tu khoa, xem ket qua, roi bam + de save nhanh vao diary.
+                  Chạm 1 từ khóa, xem kết quả rồi bấm + để lưu nhanh vào nhật ký.
                 </ThemedText>
               </View>
             </View>
@@ -776,3 +776,4 @@ const FoodSearchScreen = (): React.ReactElement => {
 };
 
 export default FoodSearchScreen;
+

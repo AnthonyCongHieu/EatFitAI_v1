@@ -1,4 +1,4 @@
-import React, { useCallback, useRef, useState } from 'react';
+﻿import React, { useCallback, useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import {
   View,
@@ -774,7 +774,7 @@ const AIScanScreen: React.FC = () => {
                           weight="600"
                           style={{ marginLeft: 6, color: '#fff' }}
                         >
-                          {quickSaveItem ? 'Lưu nhanh' : 'Sửa top 1'}
+                          {quickSaveItem ? 'Lưu nhanh' : 'Sửa món đầu tiên'}
                         </ThemedText>
                       </>
                     )}
@@ -801,7 +801,7 @@ const AIScanScreen: React.FC = () => {
                     weight="600"
                     style={{ marginLeft: 6, color: '#fff' }}
                   >
-                    {'Tim thu cong'}
+                    {'Tìm thủ công'}
                   </ThemedText>
                 </Pressable>
               )}
@@ -980,4 +980,6 @@ const styles = StyleSheet.create({
 });
 
 export default AIScanScreen;
+
+
 
