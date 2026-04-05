@@ -1,6 +1,8 @@
 [CmdletBinding()]
 param(
-    [string]$DeviceSerial = ""
+    [string]$DeviceSerial = "",
+    [bool]$EnableStt = $true,
+    [switch]$SkipExpoInstall
 )
 
 Set-StrictMode -Version Latest
@@ -323,6 +325,24 @@ function Ensure-AppForeground {
     throw "App $PackageName did not reach foreground on $Serial after $Attempts launch attempts."
 }
 
+function Ensure-MobileDependencies {
+    if ($SkipExpoInstall) {
+        return
+    }
+
+    if (Test-Path (Join-Path $mobileDir "node_modules")) {
+        return
+    }
+
+    Write-Host "Installing mobile dependencies because node_modules is missing..."
+    Push-Location $mobileDir
+    try {
+        & npm.cmd install
+    } finally {
+        Pop-Location
+    }
+}
+
 Assert-PathExists -PathValue $aiProviderDir -Label "AI provider directory"
 Assert-PathExists -PathValue $backendDir -Label "Backend directory"
 Assert-PathExists -PathValue $backendProject -Label "Backend project"
@@ -341,17 +361,26 @@ Set-MobileApiBaseUrl -EnvFile $mobileEnvFile -ApiBaseUrl "http://127.0.0.1:5247"
 & adb -s $resolvedDeviceSerial reverse tcp:5247 tcp:5247 | Out-Null
 
 if (-not (Test-HttpEndpointHealthy -Url $aiHealthUrl)) {
+    $enableSttValue = if ($EnableStt) { "true" } else { "false" }
     Start-PowerShellWindow -Title "EatFitAI AI Provider" -Command @"
 Set-Location '$aiProviderDir'
 if (-not (Test-Path '.\venv\Scripts\python.exe')) {
     throw 'Missing ai-provider virtual environment at .\venv\Scripts\python.exe'
 }
+if (Test-Path '.\.env') {
+    Get-Content '.\.env' | ForEach-Object {
+        if (`$_ -match '^(.*?)=(.*)$') {
+            [System.Environment]::SetEnvironmentVariable(`$matches[1], `$matches[2])
+        }
+    }
+}
+`$env:ENABLE_STT = '$enableSttValue'
 .\venv\Scripts\python.exe app.py
 "@
 
     Wait-ForHttpEndpoint `
         -Url $aiHealthUrl `
-        -TimeoutSeconds 45 `
+        -TimeoutSeconds 180 `
         -FailureMessage "AI provider did not become healthy at $aiHealthUrl within 45 seconds. Check the 'EatFitAI AI Provider' terminal."
 }
 
@@ -367,6 +396,8 @@ dotnet run --project '$backendProject'
         -FailureMessage "Backend did not become healthy at $backendHealthUrl within 60 seconds. Check the 'EatFitAI Backend' terminal."
 }
 
+Ensure-MobileDependencies
+
 Stop-ExistingMetroProcesses -ProjectPath $mobileDir
 Wait-ForPortsToBeFree -Ports @(8081, 8082, 8083, 8084, 8085)
 $metroPort = Get-AvailablePort
@@ -374,7 +405,7 @@ $metroPort = Get-AvailablePort
 
 Start-PowerShellWindow -Title "EatFitAI Mobile (USB Device)" -Command @"
 Set-Location '$mobileDir'
-cmd /c "npm run dev -- --clear --port $metroPort 2>&1"
+cmd /c "npm run dev:device -- --clear --port $metroPort 2>&1"
 "@ -LogFilePath (Join-Path $logsDir "mobile-usb.log")
 
 Wait-ForMetroPort -Port $metroPort -TimeoutSeconds 45
@@ -384,3 +415,4 @@ Write-Host "EatFitAI USB device lane started."
 Write-Host "Device serial: $resolvedDeviceSerial"
 Write-Host "Mobile API base URL set to http://127.0.0.1:5247 in $mobileEnvFile"
 Write-Host "adb reverse has been configured for ports 5247 and $metroPort."
+Write-Host "STT enabled: $EnableStt"

@@ -5,6 +5,7 @@ import logging
 import subprocess
 import time
 import requests
+import threading
 
 from flask import Flask, Request, Response, jsonify, request
 from ultralytics import YOLO
@@ -13,6 +14,7 @@ from werkzeug.utils import secure_filename
 from uuid import uuid4
 import os
 import stt_service
+from dotenv import load_dotenv
 
 # Configure logging
 logging.basicConfig(
@@ -20,6 +22,7 @@ logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
+load_dotenv()
 
 def env_flag(name: str, default: bool = False) -> bool:
     raw = os.getenv(name)
@@ -168,7 +171,11 @@ def healthz() -> Dict[str, Any]:
         "model_type": "yolov8-custom-eatfitai" if "best.pt" in model_file else "yolov8-pretrained",
         "cuda_available": torch.cuda.is_available(),
         "device": str(model.device) if model else "unknown",
-        "gpu_name": torch.cuda.get_device_name(0) if torch.cuda.is_available() else None
+        "gpu_name": torch.cuda.get_device_name(0) if torch.cuda.is_available() else None,
+        "stt_enabled": ENABLE_STT,
+        "stt_available": WHISPER_AVAILABLE,
+        "stt_warmup_started": _stt_init_started,
+        "stt_error": _stt_error,
     }
 
 @app.post("/detect")
@@ -421,10 +428,57 @@ def voice_parse():
 
 # ============== WHISPER STT (Speech-to-Text) ==============
 ENABLE_STT = env_flag("ENABLE_STT", default=False)
+_stt_lock = threading.Lock()
+_stt_init_started = False
+_stt_init_failed = False
+_stt_error: str | None = None
+WHISPER_AVAILABLE = False
+
+def _initialize_stt() -> bool:
+    global WHISPER_AVAILABLE, _stt_init_started, _stt_init_failed, _stt_error
+
+    if not ENABLE_STT:
+        return False
+
+    with _stt_lock:
+        if WHISPER_AVAILABLE:
+            return True
+
+        _stt_init_started = True
+        _stt_init_failed = False
+        _stt_error = None
+
+    try:
+        initialized = stt_service.init_stt()
+        with _stt_lock:
+            WHISPER_AVAILABLE = initialized
+            _stt_init_failed = not initialized
+            _stt_error = None if initialized else "STT model initialization failed"
+        return initialized
+    except Exception as e:
+        with _stt_lock:
+            WHISPER_AVAILABLE = False
+            _stt_init_failed = True
+            _stt_error = str(e)
+        logger.error(f"Whisper STT initialization failed: {e}", exc_info=True)
+        return False
+
+def ensure_stt_ready() -> bool:
+    if not ENABLE_STT:
+        return False
+
+    if WHISPER_AVAILABLE:
+        return True
+
+    return _initialize_stt()
+
+def _warmup_stt_in_background() -> None:
+    _initialize_stt()
+
 if ENABLE_STT:
-    WHISPER_AVAILABLE = stt_service.init_stt()
+    threading.Thread(target=_warmup_stt_in_background, name="stt-warmup", daemon=True).start()
+    logger.info("Whisper STT warm-up started in background")
 else:
-    WHISPER_AVAILABLE = False
     logger.info("Whisper STT disabled via ENABLE_STT=false")
 
 def allowed_audio_file(filename: str) -> bool:
@@ -448,8 +502,11 @@ def transcribe_audio():
         "success": true
     }
     """
-    if not WHISPER_AVAILABLE:
-        return {"error": "Whisper STT not available", "success": False}, 503
+    if not ENABLE_STT:
+        return {"error": "Whisper STT disabled", "success": False}, 503
+
+    if not ensure_stt_ready():
+        return {"error": _stt_error or "Whisper STT not available", "success": False}, 503
     
     if 'audio' not in request.files:
         return {"error": "No audio file provided", "success": False}, 400

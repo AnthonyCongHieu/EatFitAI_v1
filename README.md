@@ -28,6 +28,28 @@ Key defaults:
 4. Start backend on `http://localhost:5247`.
 5. Start mobile with `.env.development` pointing to `http://10.0.2.2:5247`.
 
+## One-command physical device start
+
+For Android physical device on the same LAN, use:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\tools\dev\Start-EatFitAI-PhysicalDeviceLane.ps1
+```
+
+Disable voice STT warm-up if you only need non-voice flows:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\tools\dev\Start-EatFitAI-PhysicalDeviceLane.ps1 -EnableStt:$false
+```
+
+This script:
+
+- detects the current LAN IPv4
+- rewrites `eatfitai-mobile\.env.development` to the current backend LAN URL
+- starts `ai-provider`
+- starts backend with `EatFitAI.API.csproj`
+- starts Expo LAN mode for the phone
+
 ## Environment helper docs
 
 - [SETUP_GUIDE.md](/D:/EatFitAI_v1/SETUP_GUIDE.md)
