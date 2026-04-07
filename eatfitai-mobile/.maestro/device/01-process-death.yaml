@@ -1,0 +1,19 @@
+appId: com.eatfitai.app
+name: process-death-device
+tags:
+  - device
+  - android
+---
+- runFlow:
+    file: ../subflows/start-authenticated.yaml
+- pressKey: home
+- killApp
+- launchApp:
+    stopApp: false
+- runFlow:
+    when:
+      visible:
+        id: auth-login-screen
+    file: ../subflows/login.yaml
+- assertVisible:
+    id: home-screen

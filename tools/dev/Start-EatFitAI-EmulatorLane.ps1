@@ -394,6 +394,7 @@ $metroPort = Get-AvailablePort
 
 Start-PowerShellWindow -Title "EatFitAI Mobile (Emulator)" -Command @"
 Set-Location '$mobileDir'
+$env:EXPO_PUBLIC_E2E_AUTOMATION = '1'
 cmd /c "npm run dev -- --clear --port $metroPort 2>&1"
 "@ -LogFilePath (Join-Path $logsDir "mobile-emulator.log")
 

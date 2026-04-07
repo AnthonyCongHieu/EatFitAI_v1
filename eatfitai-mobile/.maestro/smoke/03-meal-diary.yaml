@@ -1,0 +1,14 @@
+appId: com.eatfitai.app
+name: meal-diary-smoke
+tags:
+  - smoke
+  - android
+---
+- runFlow:
+    file: ../subflows/start-authenticated.yaml
+- tapOn:
+    id: home-view-diary-button
+- assertVisible:
+    id: meal-diary-screen
+- assertVisible:
+    id: meal-diary-add-manual-button

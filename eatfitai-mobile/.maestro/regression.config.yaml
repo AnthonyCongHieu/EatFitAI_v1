@@ -1,0 +1,10 @@
+flows:
+  - "regression/*.yaml"
+includeTags:
+  - regression
+excludeTags:
+  - device
+testOutputDir: artifacts/regression
+platform:
+  android:
+    disableAnimations: true

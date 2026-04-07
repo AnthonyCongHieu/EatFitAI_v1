@@ -1,0 +1,16 @@
+appId: com.eatfitai.app
+name: ai-scan-entry-regression
+tags:
+  - regression
+  - android
+---
+- runFlow:
+    file: ../subflows/start-authenticated.yaml
+- tapOn:
+    id: home-quick-add-scan-button
+- assertVisible:
+    id: ai-scan-screen
+- assertVisible:
+    id: ai-scan-gallery-button
+- assertVisible:
+    id: ai-scan-capture-button

@@ -20,3 +20,6 @@ Thumbs.db
 
 # Generated files (auto-generated, do not commit)
 src/config/generated-api-config.ts
+
+# Local automation artifacts
+.maestro/artifacts/

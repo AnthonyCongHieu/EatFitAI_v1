@@ -4,6 +4,7 @@ import { ActivityIndicator, View } from 'react-native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../types';
 import { useAppTheme } from '../../theme/ThemeProvider';
+import { E2E_AUTOMATION_ENABLED } from '../../config/automation';
 import { useAuthStore } from '../../store/useAuthStore';
 import LoginScreen from '../screens/auth/LoginScreen';
 import RegisterScreen from '../screens/auth/RegisterScreen';
@@ -68,6 +69,7 @@ const AppNavigator = (): React.ReactElement => {
         </View>
       ) : (
         <Stack.Navigator
+          initialRouteName={!isAuthenticated && E2E_AUTOMATION_ENABLED ? 'Login' : 'Welcome'}
           screenOptions={{
             headerShown: false,
             contentStyle: { backgroundColor: theme.colors.background },
@@ -77,7 +79,9 @@ const AppNavigator = (): React.ReactElement => {
           {!isAuthenticated ? (
             // ChÆ°a Ä‘Äƒng nháº­p: Hiá»ƒn thá»‹ stack Ä‘Äƒng nháº­p/Ä‘Äƒng kÃ½
             <>
-              <Stack.Screen name="Welcome" component={WelcomeScreen} />
+              {!E2E_AUTOMATION_ENABLED && (
+                <Stack.Screen name="Welcome" component={WelcomeScreen} />
+              )}
               <Stack.Screen name="Login" component={LoginScreen} />
               <Stack.Screen name="Register" component={RegisterScreen} />
               <Stack.Screen name="VerifyEmail" component={VerifyEmailScreen} />

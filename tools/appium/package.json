@@ -2,7 +2,9 @@
   "name": "eatfitai-appium-tools",
   "private": true,
   "scripts": {
-    "smoke:android": "node smoke.android.js"
+    "sanity:android": "node sanity.android.js",
+    "edge:android": "node edge.android.js",
+    "smoke:android": "node sanity.android.js"
   },
   "dependencies": {
     "webdriverio": "^9.17.0"

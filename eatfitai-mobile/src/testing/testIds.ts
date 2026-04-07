@@ -1,5 +1,8 @@
 export const TEST_IDS = {
   auth: {
+    welcomeScreen: 'auth-welcome-screen',
+    welcomeLoginButton: 'auth-welcome-login-button',
+    welcomeRegisterButton: 'auth-welcome-register-button',
     loginScreen: 'auth-login-screen',
     emailInput: 'auth-login-email-input',
     passwordInput: 'auth-login-password-input',

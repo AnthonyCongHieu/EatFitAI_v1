@@ -1,0 +1,28 @@
+appId: com.eatfitai.app
+name: error-retry-contract
+tags:
+  - smoke
+  - android
+---
+- launchApp
+- runFlow:
+    when:
+      visible:
+        id: app-error-retry-button
+    commands:
+      - tapOn:
+          id: app-error-retry-button
+- runFlow:
+    when:
+      visible:
+        id: auth-login-screen
+    commands:
+      - assertVisible:
+          id: auth-login-screen
+- runFlow:
+    when:
+      visible:
+        id: home-screen
+    commands:
+      - assertVisible:
+          id: home-screen

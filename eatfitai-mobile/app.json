@@ -52,8 +52,12 @@
     },
     "extra": {
       "eas": {
-        "projectId": "00000000-0000-0000-0000-000000000000"
-      }
+        "projectId": "7c107e36-3e2a-4c77-8447-b0fa5713e0e0"
+      },
+      "apiHost": "192.168.1.7",
+      "apiPort": "5247",
+      "apiScheme": "http",
+      "apiBaseUrl": "http://192.168.1.7:5247"
     },
     "plugins": [
       "expo-secure-store",
@@ -77,6 +81,7 @@
     },
     "runtimeVersion": {
       "policy": "appVersion"
-    }
+    },
+    "owner": "anthonyconghieu"
   }
 }

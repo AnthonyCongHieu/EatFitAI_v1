@@ -1,0 +1,22 @@
+appId: com.eatfitai.app
+name: food-search-smoke
+tags:
+  - smoke
+  - android
+---
+- runFlow:
+    file: ../subflows/start-authenticated.yaml
+- tapOn:
+    id: home-search-food-button
+- assertVisible:
+    id: food-search-screen
+- assertVisible:
+    id: food-search-query-input
+- tapOn:
+    id: food-search-query-input
+- setClipboard: rice
+- pasteText
+- tapOn:
+    id: food-search-submit-button
+- assertVisible:
+    id: food-search-screen

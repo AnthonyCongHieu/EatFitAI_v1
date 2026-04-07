@@ -13,6 +13,7 @@ import { ThemedText } from '../ThemedText';
 import { useAppTheme } from '../../theme/ThemeProvider';
 import type { RootStackParamList } from '../../app/types';
 import QuickAddHub from '../home/QuickAddHub';
+import { TEST_IDS } from '../../testing/testIds';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -87,6 +88,9 @@ export const SmartAddSheet: React.FC<SmartAddSheetProps> = ({ visible, onClose }
                 params: { autoStart: true, source: 'sheet-hub' },
               })
             }
+            searchTestID={TEST_IDS.home.quickAddSearchButton}
+            scanTestID={TEST_IDS.home.quickAddScanButton}
+            voiceTestID={TEST_IDS.home.quickAddVoiceButton}
           />
 
           <View style={styles.utilitySection}>

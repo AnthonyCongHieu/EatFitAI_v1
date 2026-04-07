@@ -1,0 +1,16 @@
+appId: com.eatfitai.app
+name: home-actions-contract
+tags:
+  - regression
+  - android
+---
+- runFlow:
+    file: ../subflows/start-authenticated.yaml
+- assertVisible:
+    id: home-screen
+- assertVisible:
+    id: home-quick-add-search-button
+- assertVisible:
+    id: home-quick-add-scan-button
+- assertVisible:
+    id: home-smart-add-fab

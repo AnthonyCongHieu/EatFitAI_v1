@@ -1,0 +1,10 @@
+appId: com.eatfitai.app
+---
+- extendedWaitUntil:
+    timeout: 30000
+    visible:
+      id: home-screen
+- waitForAnimationToEnd:
+    timeout: 5000
+- assertVisible:
+    id: home-screen

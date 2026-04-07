@@ -13,6 +13,7 @@ import { useAppTheme } from '../../../theme/ThemeProvider';
 import { ThemedText } from '../../../components/ThemedText';
 import Button from '../../../components/Button';
 import type { RootStackParamList } from '../../types';
+import { TEST_IDS } from '../../../testing/testIds';
 
 const { width, height } = Dimensions.get('window');
 
@@ -76,6 +77,7 @@ const WelcomeScreen = ({ navigation }: Props): React.ReactElement => {
 
             {/* Content - Scrollable */}
             <ScrollView
+                testID={TEST_IDS.auth.welcomeScreen}
                 contentContainerStyle={styles.content}
                 showsVerticalScrollIndicator={false}
                 bounces={true}
@@ -164,6 +166,7 @@ const WelcomeScreen = ({ navigation }: Props): React.ReactElement => {
                         size="lg"
                         icon="rocket-outline"
                         iconPosition="left"
+                        testID={TEST_IDS.auth.welcomeRegisterButton}
                     />
 
                     {/* Divider */}
@@ -203,6 +206,7 @@ const WelcomeScreen = ({ navigation }: Props): React.ReactElement => {
                         size="lg"
                         icon="log-in-outline"
                         iconPosition="left"
+                        testID={TEST_IDS.auth.welcomeLoginButton}
                     />
 
                     {/* Footer hint */}

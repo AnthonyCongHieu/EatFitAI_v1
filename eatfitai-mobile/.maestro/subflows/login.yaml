@@ -1,0 +1,16 @@
+appId: com.eatfitai.app
+---
+- tapOn:
+    id: auth-login-email-input
+- setClipboard: ${EATFITAI_DEMO_EMAIL}
+- pasteText
+- tapOn:
+    id: auth-login-password-input
+- setClipboard: ${EATFITAI_DEMO_PASSWORD}
+- pasteText
+- hideKeyboard
+- tapOn:
+    id: auth-login-submit-button
+    retryTapIfNoChange: true
+- assertVisible:
+    id: home-screen

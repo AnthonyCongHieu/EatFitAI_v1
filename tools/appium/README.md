@@ -1,6 +1,6 @@
 # EatFitAI Appium Lane
 
-This folder contains the emulator-first smoke lane used for Appium and Codex MCP.
+This folder contains the secondary Appium lane used for edge-case validation and device diagnostics.
 
 ## Prerequisites
 
@@ -44,20 +44,31 @@ appium
 - `ANDROID_DEVICE_NAME`
 - `ANDROID_PLATFORM_VERSION`
 
-## Run smoke flow
+## Run Appium flows
 
 ```powershell
 cd .\tools\appium
-npm run smoke:android
+npm run sanity:android
+npm run edge:android
 ```
 
-Current smoke path:
+Current Appium responsibilities:
 
 1. attach to the running Android app
-2. detect login or home screen
+2. verify the lane can still locate selectors from `eatfitai-mobile/src/testing/testIds.ts`
 3. login if credentials are provided
-4. verify home
-5. navigate to food search and back
-6. navigate to meal diary and back when available
+4. verify app resume / process-death recovery
+5. keep a very short sanity path alive for device debugging
 
-The repo now also exposes stable `testID` values for the core flow used by Appium/Codex.
+Appium is no longer the primary smoke gate. Maestro owns the default happy-path smoke suite under `eatfitai-mobile/.maestro`.
+
+Selector contract:
+
+- source of truth is `eatfitai-mobile/src/testing/testIds.ts`
+- Appium reads selectors from that file at runtime to avoid hardcoded duplicate IDs
+
+Recommended order:
+
+1. `npm --prefix eatfitai-mobile run automation:doctor`
+2. `npm --prefix eatfitai-mobile run maestro:smoke:android`
+3. `npm run edge:android` only for device/system cases Maestro does not cover well

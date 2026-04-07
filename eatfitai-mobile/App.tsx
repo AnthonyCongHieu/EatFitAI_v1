@@ -1,6 +1,6 @@
 import 'react-native-gesture-handler';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { StyleSheet } from 'react-native';
+import { LogBox, StyleSheet } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
@@ -20,6 +20,7 @@ import Toast from 'react-native-toast-message';
 
 import AppNavigator from './src/app/navigation/AppNavigator';
 import ErrorBoundary from './src/components/ErrorBoundary';
+import { E2E_AUTOMATION_ENABLED } from './src/config/automation';
 import { t } from './src/i18n/vi';
 import { initAnalytics } from './src/services/analytics';
 import { initializeApiClient } from './src/services/apiClient';
@@ -54,6 +55,16 @@ const queryClient = createQueryClient();
 void SplashScreen.preventAutoHideAsync();
 WebBrowser.maybeCompleteAuthSession();
 
+if (__DEV__) {
+  if (E2E_AUTOMATION_ENABLED) {
+    LogBox.ignoreAllLogs();
+  } else {
+    LogBox.ignoreLogs([
+      '[expo-av]: Expo AV has been deprecated and will be removed in SDK 54.',
+    ]);
+  }
+}
+
 const AppInner = () => {
   const { theme } = useAppTheme();
 
@@ -68,6 +79,10 @@ const AppInner = () => {
   }, []);
 
   useEffect(() => {
+    if (E2E_AUTOMATION_ENABLED) {
+      return;
+    }
+
     let cancelled = false;
 
     (async () => {
@@ -113,7 +128,6 @@ export default function App(): React.ReactElement | null {
   useEffect(() => {
     const timeout = setTimeout(() => {
       if (!fontsLoaded) {
-        console.warn('[App] Font loading timed out. Rendering with fallback fonts.');
         setFontLoadTimedOut(true);
       }
     }, 4000);

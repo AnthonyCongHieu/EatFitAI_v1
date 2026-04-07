@@ -1,0 +1,17 @@
+{
+  "cli": {
+    "version": ">= 16.18.0"
+  },
+  "build": {
+    "e2e-test": {
+      "withoutCredentials": true,
+      "distribution": "internal",
+      "android": {
+        "buildType": "apk"
+      },
+      "ios": {
+        "simulator": true
+      }
+    }
+  }
+}

@@ -1,0 +1,11 @@
+flows:
+  - "smoke/00-suite.yaml"
+includeTags:
+  - smoke
+excludeTags:
+  - regression
+  - device
+testOutputDir: artifacts/smoke
+platform:
+  android:
+    disableAnimations: true

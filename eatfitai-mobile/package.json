@@ -19,7 +19,12 @@
     "prepare": "husky install",
     "typegen": "node scripts/generate-types.js",
     "test": "jest --runInBand",
-    "appium:smoke": "npm --prefix ../tools/appium run smoke:android"
+    "appium:smoke": "npm --prefix ../tools/appium run sanity:android",
+    "appium:edge:android": "npm --prefix ../tools/appium run edge:android",
+    "maestro:smoke:android": "node scripts/run-maestro.js smoke",
+    "maestro:regression:android": "node scripts/run-maestro.js regression",
+    "maestro:studio": "maestro studio",
+    "automation:doctor": "node scripts/automation-doctor.js"
   },
   "lint-staged": {
     "*.{ts,tsx,js,jsx}": [
