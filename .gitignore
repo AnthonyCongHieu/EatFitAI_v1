@@ -17,6 +17,12 @@ android/.kotlin/
 .jdk17/
 .DS_Store
 
+# Local tooling and generated state
+_tooling/
+_state/
+_logs/
+eatfitai-mobile/src/config/generated-api-config.ts
+
 # AI Configuration
 .agent/
 .claude/
