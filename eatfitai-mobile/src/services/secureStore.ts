@@ -1,4 +1,4 @@
-// Lưu ý: file tiện ích dùng Expo SecureStore để lưu token một cách an toàn
+﻿// Lưu ý: file tiện ích dùng Expo SecureStore để lưu token một cách an toàn
 // Tất cả chú thích bằng tiếng Việt theo yêu cầu
 
 import * as SecureStore from 'expo-secure-store';
@@ -25,7 +25,7 @@ export const tokenStorage = {
       refreshToken &&
       (typeof refreshToken !== 'string' || refreshToken.trim().length === 0)
     ) {
-      console.warn('[EatFitAI] Invalid refresh token provided to saveTokens, skipping');
+      console.warn('[EatFitAI] Refresh token đưa vào saveTokens không hợp lệ, bỏ qua');
       refreshToken = undefined;
     }
     await SecureStore.setItemAsync(ACCESS_TOKEN_KEY, accessToken);
@@ -70,7 +70,7 @@ export const tokenStorage = {
       isNaN(Date.parse(refreshTokenExpiresAt))
     ) {
       console.warn(
-        '[EatFitAI] Invalid refresh token expiration date format:',
+        '[EatFitAI] Định dạng ngày hết hạn refresh token không hợp lệ:',
         refreshTokenExpiresAt,
       );
     }
@@ -81,7 +81,7 @@ export const tokenStorage = {
       (typeof refreshToken !== 'string' || refreshToken.trim().length === 0)
     ) {
       console.warn(
-        '[EatFitAI] Invalid refresh token provided to saveTokensFull, skipping',
+        '[EatFitAI] Refresh token đưa vào saveTokensFull không hợp lệ, bỏ qua',
       );
     }
 
@@ -168,3 +168,4 @@ export const SECURE_STORE_KEYS = {
   ACCESS_EXP_KEY,
   REFRESH_EXP_KEY,
 } as const;
+

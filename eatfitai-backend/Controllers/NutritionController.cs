@@ -1,4 +1,4 @@
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using System.Security.Claims;
 using System.Net.Http;
 using System.Text;
@@ -45,7 +45,7 @@ namespace EatFitAI.API.Controllers
 
             if (string.IsNullOrEmpty(userIdClaim) || !Guid.TryParse(userIdClaim, out var userId))
             {
-                throw new UnauthorizedAccessException("Invalid user token");
+                throw new UnauthorizedAccessException("Token người dùng không hợp lệ");
             }
 
             return userId;
@@ -139,18 +139,18 @@ namespace EatFitAI.API.Controllers
                 {
                     var errorContent = await response.Content.ReadAsStringAsync();
                     _logger.LogWarning("AI Provider returned error: {StatusCode} - {Error}", response.StatusCode, errorContent);
-                    return StatusCode(503, new { message = "AI Provider không khả dụng", error = errorContent });
+                    return StatusCode(503, new { message = "Dịch vụ AI hiện không khả dụng", error = errorContent });
                 }
             }
             catch (HttpRequestException ex)
             {
                 _logger.LogError(ex, "Failed to connect to AI Provider");
-                return StatusCode(503, new { message = "Không thể kết nối đến AI Provider. Hãy đảm bảo Ollama đang chạy.", error = ex.Message });
+                return StatusCode(503, new { message = "Không thể kết nối đến dịch vụ AI. Hãy đảm bảo Ollama đang chạy.", error = ex.Message });
             }
             catch (TaskCanceledException ex)
             {
                 _logger.LogError(ex, "AI Provider request timed out");
-                return StatusCode(504, new { message = "AI Provider timeout", error = ex.Message });
+                return StatusCode(504, new { message = "Dịch vụ AI phản hồi quá chậm", error = ex.Message });
             }
             catch (Exception ex)
             {
@@ -212,3 +212,4 @@ namespace EatFitAI.API.Controllers
         }
     }
 }
+

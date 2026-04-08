@@ -1,4 +1,4 @@
-// ProfileScreen v5: Redesigned with menu-based layout
+﻿// ProfileScreen v5: Redesigned with menu-based layout
 // Xu hướng 2026: Progressive Disclosure, Glassmorphism, Menu Navigation
 
 import { useEffect, useState, useCallback } from 'react';
@@ -347,7 +347,7 @@ const ProfileScreen = (): React.ReactElement => {
           />
           <SettingsMenuItem
             icon="💡"
-            label="AI Insights"
+            label="Phân tích AI"
             subtitle="Phân tích và gợi ý"
             onPress={() => navigation.navigate('NutritionInsights')}
           />
@@ -404,3 +404,4 @@ const ProfileScreen = (): React.ReactElement => {
 };
 
 export default ProfileScreen;
+

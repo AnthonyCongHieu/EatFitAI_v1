@@ -1,4 +1,4 @@
-using System.IdentityModel.Tokens.Jwt;
+﻿using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
@@ -117,12 +117,12 @@ namespace EatFitAI.API.Services
             var user = await _userRepository.GetByEmailAsync(request.Email);
             if (user == null)
             {
-                throw new UnauthorizedAccessException("Invalid email or password");
+                throw new UnauthorizedAccessException("Email hoặc mật khẩu không đúng");
             }
 
             if (!VerifyPassword(request.Password, user.PasswordHash, out var needsRehash))
             {
-                throw new UnauthorizedAccessException("Invalid email or password");
+                throw new UnauthorizedAccessException("Email hoặc mật khẩu không đúng");
             }
 
             if (needsRehash)
@@ -347,7 +347,7 @@ namespace EatFitAI.API.Services
             // Validate refresh token format
             if (string.IsNullOrWhiteSpace(refreshToken))
             {
-                throw new UnauthorizedAccessException("Invalid refresh token");
+                throw new UnauthorizedAccessException("Refresh token không hợp lệ");
             }
 
             // Find user by refresh token
@@ -355,13 +355,13 @@ namespace EatFitAI.API.Services
 
             if (user == null)
             {
-                throw new UnauthorizedAccessException("Invalid refresh token or user not found");
+                throw new UnauthorizedAccessException("Refresh token không hợp lệ hoặc không tìm thấy người dùng");
             }
 
             if (user.RefreshTokenExpiryTime == null || user.RefreshTokenExpiryTime < DateTime.UtcNow)
             {
                 // Token expired
-                throw new UnauthorizedAccessException("Refresh token has expired. Please login again.");
+                throw new UnauthorizedAccessException("Refresh token đã hết hạn. Vui lòng đăng nhập lại.");
             }
 
             // Generate NEW tokens (Rotation)
@@ -395,7 +395,7 @@ namespace EatFitAI.API.Services
             // In a real implementation, you would validate the Google ID token
             // and create/login the user. For now, we'll throw an exception
             // as this requires Google OAuth integration
-            return Task.FromException<AuthResponse>(new NotImplementedException("Google login functionality requires OAuth integration"));
+            return Task.FromException<AuthResponse>(new NotImplementedException("Tính năng đăng nhập Google cần tích hợp OAuth"));
         }
 
         public async Task<ForgotPasswordResponse> ForgotPasswordAsync(ForgotPasswordRequest request)
@@ -409,7 +409,7 @@ namespace EatFitAI.API.Services
                 return new ForgotPasswordResponse
                 {
                     Success = true,
-                    Message = "If the email exists, a reset code has been generated.",
+                    Message = "Nếu email tồn tại, mã đặt lại đã được tạo.",
                     ExpiresAt = DateTime.UtcNow.Add(ResetCodeLifetime),
                     ResetCode = string.Empty
                 };
@@ -446,8 +446,8 @@ namespace EatFitAI.API.Services
             {
                 Success = true,
                 Message = includeCodeInResponse
-                    ? "Reset code generated (dev mode)."
-                    : "Reset code sent to your email.",
+                    ? "Đã tạo mã đặt lại (chế độ dev)."
+                    : "Mã đặt lại đã được gửi tới email của bạn.",
                 ExpiresAt = cacheEntry.ExpiresAt,
                 ResetCode = includeCodeInResponse ? code : string.Empty
             };
@@ -458,24 +458,24 @@ namespace EatFitAI.API.Services
             var user = await _userRepository.GetByEmailAsync(request.Email);
             if (user == null)
             {
-                throw new UnauthorizedAccessException("Invalid reset code or email.");
+                throw new UnauthorizedAccessException("Mã đặt lại hoặc email không hợp lệ.");
             }
 
             if (!_memoryCache.TryGetValue($"{ResetCacheKeyPrefix}{user.Email}", out ResetCacheEntry? cached) || cached == null)
             {
-                throw new UnauthorizedAccessException("Reset code expired or not found.");
+                throw new UnauthorizedAccessException("Mã đặt lại đã hết hạn hoặc không tồn tại.");
             }
 
             if (cached.ExpiresAt < DateTime.UtcNow)
             {
                 _memoryCache.Remove($"{ResetCacheKeyPrefix}{user.Email}");
-                throw new UnauthorizedAccessException("Reset code expired or not found.");
+                throw new UnauthorizedAccessException("Mã đặt lại đã hết hạn hoặc không tồn tại.");
             }
 
             var hashedInput = HashResetCode(request.ResetCode);
             if (!string.Equals(hashedInput, cached.CodeHash, StringComparison.Ordinal))
             {
-                throw new UnauthorizedAccessException("Invalid reset code or email.");
+                throw new UnauthorizedAccessException("Mã đặt lại hoặc email không hợp lệ.");
             }
 
             user.PasswordHash = HashPassword(request.NewPassword);
@@ -752,7 +752,7 @@ namespace EatFitAI.API.Services
             var user = await _context.Users.FirstOrDefaultAsync(u => u.UserId == userId);
             if (user == null)
             {
-                throw new UnauthorizedAccessException("User không tồn tại");
+                throw new UnauthorizedAccessException("Người dùng không tồn tại");
             }
 
             user.OnboardingCompleted = true;
@@ -771,7 +771,7 @@ namespace EatFitAI.API.Services
             var user = await _context.Users.FirstOrDefaultAsync(u => u.UserId == userId);
             if (user == null)
             {
-                throw new UnauthorizedAccessException("User không tồn tại");
+                throw new UnauthorizedAccessException("Người dùng không tồn tại");
             }
 
             // Verify current password
@@ -788,4 +788,5 @@ namespace EatFitAI.API.Services
         }
     }
 }
+
 

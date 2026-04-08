@@ -1,9 +1,9 @@
-/**
+﻿/**
  * OnboardingScreen - First-time user setup wizard
  * 5 steps: Basic Info → Body Metrics → Goal → Activity → AI Calculate
  */
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   StyleSheet,
@@ -13,12 +13,14 @@ import {
   Dimensions,
   ScrollView,
   KeyboardAvoidingView,
+  Keyboard,
   Platform,
 } from 'react-native';
 import Toast from 'react-native-toast-message';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { FadeInRight, FadeOutLeft } from 'react-native-reanimated';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ThemedText } from '../../../components/ThemedText';
 import ThemedTextInput from '../../../components/ThemedTextInput';
@@ -153,10 +155,12 @@ const OnboardingScreen = (): React.ReactElement => {
   const { theme } = useAppTheme();
   const isDark = theme.mode === 'dark';
   const glass = glassStyles(isDark);
+  const insets = useSafeAreaInsets();
   const updateProfile = useProfileStore((s) => s.updateProfile);
 
   const [currentStep, setCurrentStep] = useState(0);
   const [isCalculating, setIsCalculating] = useState(false);
+  const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
   const [data, setData] = useState<OnboardingData>({
     fullName: '',
     gender: null,
@@ -168,6 +172,23 @@ const OnboardingScreen = (): React.ReactElement => {
   });
 
   const [aiResult, setAiResult] = useState<NutritionCalculationResult | null>(null);
+
+  useEffect(() => {
+    const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+
+    const showSubscription = Keyboard.addListener(showEvent, () => {
+      setIsKeyboardVisible(true);
+    });
+    const hideSubscription = Keyboard.addListener(hideEvent, () => {
+      setIsKeyboardVisible(false);
+    });
+
+    return () => {
+      showSubscription.remove();
+      hideSubscription.remove();
+    };
+  }, []);
 
   const canProceed = (): boolean => {
     switch (currentStep) {
@@ -231,7 +252,7 @@ const OnboardingScreen = (): React.ReactElement => {
       } else {
         Toast.show({
           type: 'error',
-          text1: 'AI Provider không khả dụng',
+          text1: 'Dịch vụ AI hiện không khả dụng',
           text2: 'Hãy đảm bảo Ollama đang chạy và thử lại.',
         });
       }
@@ -330,17 +351,16 @@ const OnboardingScreen = (): React.ReactElement => {
   const styles = StyleSheet.create({
     container: {
       flex: 1,
-      backgroundColor: theme.colors.background,
     },
     header: {
-      paddingTop: 60,
+      paddingTop: Math.max(insets.top + 12, 28),
       paddingHorizontal: 24,
-      paddingBottom: 20,
+      paddingBottom: 16,
     },
     progressContainer: {
       flexDirection: 'row',
       gap: 8,
-      marginBottom: 20,
+      marginBottom: 16,
     },
     progressDot: {
       height: 6,
@@ -351,18 +371,26 @@ const OnboardingScreen = (): React.ReactElement => {
       flex: 1,
       paddingHorizontal: 24,
     },
+    scrollArea: {
+      flex: 1,
+    },
+    scrollContent: {
+      flexGrow: 1,
+      paddingBottom: 24,
+    },
     stepIcon: {
-      fontSize: 48,
+      fontSize: 44,
+      lineHeight: 52,
       textAlign: 'center',
-      marginBottom: 16,
+      marginBottom: 12,
     },
     stepTitle: {
       textAlign: 'center',
-      marginBottom: 8,
+      marginBottom: 10,
     },
     stepSubtitle: {
       textAlign: 'center',
-      marginBottom: 32,
+      marginBottom: 24,
     },
     optionGrid: {
       flexDirection: 'row',
@@ -405,10 +433,21 @@ const OnboardingScreen = (): React.ReactElement => {
       flex: 1,
     },
     footer: {
-      padding: 24,
-      paddingBottom: 40,
+      paddingHorizontal: 24,
+      paddingTop: isKeyboardVisible ? 12 : 16,
+      paddingBottom: isKeyboardVisible ? 10 : Math.max(insets.bottom + 12, 24),
       flexDirection: 'row',
+      alignItems: 'center',
       gap: 12,
+    },
+    footerBackButtonWrap: {
+      width: 112,
+    },
+    footerPrimaryButtonWrap: {
+      flex: 1,
+    },
+    footerSingleButtonWrap: {
+      width: '100%',
     },
     resultCard: {
       padding: 24,
@@ -484,7 +523,14 @@ const OnboardingScreen = (): React.ReactElement => {
                   accessibilityLabel={opt.label}
                   accessibilityState={{ checked: data.gender === opt.value }}
                 >
-                  <ThemedText style={{ fontSize: theme.typography.h2.fontSize }}>{opt.icon}</ThemedText>
+                  <ThemedText
+                    style={{
+                      fontSize: theme.typography.h2.fontSize,
+                      lineHeight: theme.typography.h2.lineHeight,
+                    }}
+                  >
+                    {opt.icon}
+                  </ThemedText>
                   <ThemedText weight="500">{opt.label}</ThemedText>
                 </Pressable>
               ))}
@@ -497,8 +543,7 @@ const OnboardingScreen = (): React.ReactElement => {
                 setData({ ...data, age: text.replace(/[^0-9]/g, '') })
               }
               placeholder="25"
-              keyboardType="numeric"
-              returnKeyType="done"
+              keyboardType={Platform.OS === 'ios' ? 'number-pad' : 'numeric'}
               style={{ marginTop: 20 }}
             />
           </Animated.View>
@@ -516,8 +561,7 @@ const OnboardingScreen = (): React.ReactElement => {
                     setData({ ...data, heightCm: text.replace(/[^0-9]/g, '') })
                   }
                   placeholder="170"
-                  keyboardType="numeric"
-                  returnKeyType="done"
+                  keyboardType={Platform.OS === 'ios' ? 'number-pad' : 'numeric'}
                 />
               </View>
               <View style={styles.inputCol}>
@@ -528,8 +572,7 @@ const OnboardingScreen = (): React.ReactElement => {
                     setData({ ...data, weightKg: text.replace(/[^0-9.]/g, '') })
                   }
                   placeholder="65"
-                  keyboardType="numeric"
-                  returnKeyType="done"
+                  keyboardType={Platform.OS === 'ios' ? 'decimal-pad' : 'numeric'}
                 />
               </View>
             </View>
@@ -572,7 +615,14 @@ const OnboardingScreen = (): React.ReactElement => {
                     accessibilityLabel={`${goal.label}: ${goal.desc}`}
                     accessibilityState={{ checked: data.goal === goal.value }}
                   >
-                    <ThemedText style={{ fontSize: theme.typography.h1.fontSize }}>{goal.icon}</ThemedText>
+                    <ThemedText
+                      style={{
+                        fontSize: theme.typography.h1.fontSize,
+                        lineHeight: theme.typography.h1.lineHeight,
+                      }}
+                    >
+                      {goal.icon}
+                    </ThemedText>
                     <ThemedText
                       weight="600"
                       style={{
@@ -622,7 +672,7 @@ const OnboardingScreen = (): React.ReactElement => {
                 accessibilityLabel={`${act.label}: ${act.desc}`}
                 accessibilityState={{ checked: data.activityLevel === act.value }}
               >
-                <ThemedText style={{ fontSize: 28 }}>{act.icon}</ThemedText>
+                <ThemedText style={{ fontSize: 28, lineHeight: 32 }}>{act.icon}</ThemedText>
                 <View style={{ flex: 1 }}>
                   <ThemedText
                     weight={data.activityLevel === act.value ? '600' : '400'}
@@ -711,88 +761,102 @@ const OnboardingScreen = (): React.ReactElement => {
   };
 
   return (
-    <LinearGradient
-      colors={theme.colors.screenGradient}
+    <KeyboardAvoidingView
       style={styles.container}
+      behavior={Platform.OS === 'ios' ? 'position' : undefined}
+      keyboardVerticalOffset={0}
     >
-      {/* Header */}
-      <View style={styles.header}>
-        <View style={styles.progressContainer}>
-          {STEPS.map((_, index) => (
-            <View
-              key={index}
-              style={[
-                styles.progressDot,
-                {
-                  backgroundColor:
-                    index <= currentStep
-                      ? theme.colors.primary
-                      : isDark
-                        ? 'rgba(255,255,255,0.1)'
-                        : 'rgba(0,0,0,0.1)',
-                },
-              ]}
-            />
-          ))}
+      <LinearGradient
+        colors={theme.colors.screenGradient}
+        style={styles.container}
+      >
+        {/* Header */}
+        <View style={styles.header}>
+          <View style={styles.progressContainer}>
+            {STEPS.map((_, index) => (
+              <View
+                key={index}
+                style={[
+                  styles.progressDot,
+                  {
+                    backgroundColor:
+                      index <= currentStep
+                        ? theme.colors.primary
+                        : isDark
+                          ? 'rgba(255,255,255,0.1)'
+                          : 'rgba(0,0,0,0.1)',
+                  },
+                ]}
+              />
+            ))}
+          </View>
+
+          <ThemedText style={styles.stepIcon}>
+            {STEPS[currentStep]?.icon ?? '👋'}
+          </ThemedText>
+          <ThemedText variant="h2" style={styles.stepTitle}>
+            {STEPS[currentStep]?.title ?? ''}
+          </ThemedText>
+          <ThemedText
+            variant="body"
+            color="textSecondary"
+            style={styles.stepSubtitle}
+          >
+            {STEPS[currentStep]?.subtitle ?? ''}
+          </ThemedText>
         </View>
 
-        <ThemedText style={styles.stepIcon}>
-          {STEPS[currentStep]?.icon ?? '👋'}
-        </ThemedText>
-        <ThemedText variant="h2" style={styles.stepTitle}>
-          {STEPS[currentStep]?.title ?? ''}
-        </ThemedText>
-        <ThemedText variant="body" color="textSecondary" style={styles.stepSubtitle}>
-          {STEPS[currentStep]?.subtitle ?? ''}
-        </ThemedText>
-      </View>
+        {/* Content */}
+        <View style={styles.content}>
+          <ScrollView
+            style={styles.scrollArea}
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={styles.scrollContent}
+            keyboardShouldPersistTaps="handled"
+            keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
+          >
+            {renderStep()}
+          </ScrollView>
+        </View>
 
-      {/* Content */}
-      <KeyboardAvoidingView
-        style={styles.content}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 100 : 0}
-      >
-        <ScrollView
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ paddingBottom: 20 }}
-        >
-          {renderStep()}
-        </ScrollView>
-      </KeyboardAvoidingView>
+        {/* Footer */}
+        <View style={styles.footer}>
+          {currentStep > 0 && currentStep < 4 && (
+            <View style={styles.footerBackButtonWrap}>
+              <Button
+                title="Quay lại"
+                variant="outline"
+                onPress={handleBack}
+              />
+            </View>
+          )}
 
-      {/* Footer */}
-      <View style={styles.footer}>
-        {currentStep > 0 && currentStep < 4 && (
-          <Button
-            title="Quay lại"
-            variant="outline"
-            onPress={handleBack}
-            style={{ flex: 1 }}
-          />
-        )}
-
-        {currentStep < 4 ? (
-          <Button
-            title={currentStep === 3 ? 'Hoàn tất' : 'Tiếp tục'}
-            onPress={handleNext}
-            disabled={!canProceed()}
-            style={{
-              flex: currentStep > 0 ? 1 : undefined,
-              width: currentStep === 0 ? '100%' : undefined,
-            }}
-          />
-        ) : (
-          <Button
-            title="Bắt đầu sử dụng"
-            onPress={handleComplete}
-            disabled={isCalculating}
-            style={{ width: '100%' }}
-          />
-        )}
-      </View>
-    </LinearGradient>
+          {currentStep < 4 ? (
+            <View
+              style={
+                currentStep > 0 ? styles.footerPrimaryButtonWrap : styles.footerSingleButtonWrap
+              }
+            >
+              <Button
+                title={currentStep === 3 ? 'Hoàn tất' : 'Tiếp tục'}
+                onPress={handleNext}
+                disabled={!canProceed()}
+              />
+            </View>
+          ) : (
+            <View style={styles.footerSingleButtonWrap}>
+              <Button
+                title="Bắt đầu sử dụng"
+                onPress={handleComplete}
+                disabled={isCalculating}
+              />
+            </View>
+          )}
+        </View>
+      </LinearGradient>
+    </KeyboardAvoidingView>
   );
 };
 
 export default OnboardingScreen;
+

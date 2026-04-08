@@ -1,4 +1,4 @@
-using EatFitAI.API.Data;
+﻿using EatFitAI.API.Data;
 using EatFitAI.API.DTOs;
 using EatFitAI.API.Models;
 using Microsoft.EntityFrameworkCore;
@@ -336,7 +336,7 @@ public class AIReviewService
     private async Task<UserWeekDataDto> AggregateUserData(Guid userId)
     {
         var user = await _db.Users.FindAsync(userId);
-        if (user == null) throw new Exception("User not found");
+        if (user == null) throw new Exception("Không tìm thấy người dùng");
         
         var daysSinceStart = (DateTime.UtcNow - user.CreatedAt).Days;
         
@@ -424,3 +424,4 @@ public class AIReviewService
 
     #endregion
 }
+

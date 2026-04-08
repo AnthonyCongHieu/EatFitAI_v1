@@ -1,4 +1,4 @@
-using AutoMapper;
+﻿using AutoMapper;
 using EatFitAI.API.DbScaffold.Data;
 using EatFitAI.API.DTOs.User;
 using EatFitAI.API.DbScaffold.Models;
@@ -29,7 +29,7 @@ namespace EatFitAI.API.Services
             var user = await _userRepository.GetByIdAsync(userId);
             if (user == null)
             {
-                throw new KeyNotFoundException("User not found");
+                throw new KeyNotFoundException("Không tìm thấy người dùng");
             }
 
             return _mapper.Map<UserDto>(user);
@@ -40,7 +40,7 @@ namespace EatFitAI.API.Services
             var user = await _userRepository.GetByIdAsync(userId);
             if (user == null)
             {
-                throw new KeyNotFoundException("User not found");
+                throw new KeyNotFoundException("Không tìm thấy người dùng");
             }
 
             // Update only allowed fields
@@ -57,7 +57,7 @@ namespace EatFitAI.API.Services
             var user = await _userRepository.GetByIdAsync(userId);
             if (user == null)
             {
-                throw new KeyNotFoundException("User not found");
+                throw new KeyNotFoundException("Không tìm thấy người dùng");
             }
 
             var bodyMetric = new BodyMetric
@@ -80,7 +80,7 @@ namespace EatFitAI.API.Services
             var user = await _userRepository.GetByIdAsync(userId);
             if (user == null)
             {
-                throw new KeyNotFoundException("User not found");
+                throw new KeyNotFoundException("Không tìm thấy người dùng");
             }
 
             var bodyMetrics = await _context.BodyMetrics
@@ -100,7 +100,7 @@ namespace EatFitAI.API.Services
             var user = await _context.Users
                 .Include(u => u.ActivityLevel)
                 .FirstOrDefaultAsync(u => u.UserId == userId);
-            if (user == null) throw new KeyNotFoundException("User not found");
+            if (user == null) throw new KeyNotFoundException("Không tìm thấy người dùng");
 
             var userProfile = _mapper.Map<UserProfileDto>(user);
             
@@ -138,7 +138,7 @@ namespace EatFitAI.API.Services
         public async Task<UserProfileDto> UpdateUserProfileAsync(Guid userId, UserProfileDto userProfileDto)
         {
             var user = await _userRepository.GetByIdAsync(userId);
-            if (user == null) throw new KeyNotFoundException("User not found");
+            if (user == null) throw new KeyNotFoundException("Không tìm thấy người dùng");
 
             // Update User info
             user.DisplayName = userProfileDto.DisplayName;
@@ -198,7 +198,7 @@ namespace EatFitAI.API.Services
             var user = await _userRepository.GetByIdAsync(userId);
             if (user == null)
             {
-                throw new KeyNotFoundException("User not found");
+                throw new KeyNotFoundException("Không tìm thấy người dùng");
             }
 
             // Delete all related records first (due to ClientSetNull delete behavior)
@@ -242,3 +242,4 @@ namespace EatFitAI.API.Services
         }
     }
 }
+

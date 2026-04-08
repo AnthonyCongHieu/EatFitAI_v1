@@ -1,4 +1,4 @@
-﻿import { useEffect } from 'react';
+import { useEffect, type ComponentType } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { ActivityIndicator, View } from 'react-native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -10,34 +10,63 @@ import LoginScreen from '../screens/auth/LoginScreen';
 import RegisterScreen from '../screens/auth/RegisterScreen';
 import VerifyEmailScreen from '../screens/auth/VerifyEmailScreen';
 import ForgotPasswordScreen from '../screens/auth/ForgotPasswordScreen';
+import IntroCarouselScreen from '../screens/auth/IntroCarouselScreen';
 import WelcomeScreen from '../screens/auth/WelcomeScreen';
-import AppTabs from './AppTabs';
-import FoodSearchScreen from '../screens/diary/FoodSearchScreen';
-import FoodDetailScreen from '../screens/diary/FoodDetailScreen';
-import CustomDishScreen from '../screens/diary/CustomDishScreen';
-import MealDiaryScreen from '../screens/diary/MealDiaryScreen';
-import AIScanScreen from '../screens/ai/AIScanScreen';
-import AddMealFromVisionScreen from '../screens/meals/AddMealFromVisionScreen';
-import VisionHistoryScreen from '../screens/ai/VisionHistoryScreen';
-import RecipeSuggestionsScreen from '../screens/ai/RecipeSuggestionsScreen';
-import NutritionInsightsScreen from '../screens/ai/NutritionInsightsScreen';
-import RecipeDetailScreen from '../screens/ai/RecipeDetailScreen';
-import NutritionSettingsScreen from '../screens/ai/NutritionSettingsScreen';
-import AchievementsScreen from '../screens/gamification/AchievementsScreen';
 import OnboardingScreen from '../screens/auth/OnboardingScreen';
-// Profile screens - mới thêm
-import EditProfileScreen from '../screens/profile/EditProfileScreen';
-import BodyMetricsScreen from '../screens/profile/BodyMetricsScreen';
-import GoalSettingsScreen from '../screens/profile/GoalSettingsScreen';
-import WeightHistoryScreen from '../screens/profile/WeightHistoryScreen';
-import ChangePasswordScreen from '../screens/profile/ChangePasswordScreen';
-import AboutScreen from '../screens/profile/AboutScreen';
-import PrivacyPolicyScreen from '../screens/profile/PrivacyPolicyScreen';
-import NotificationsScreen from '../screens/profile/NotificationsScreen';
-import DietaryRestrictionsScreen from '../screens/ai/DietaryRestrictionsScreen';
 import { t } from '../../i18n/vi';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
+
+const lazyScreen = (
+  loader: () => { default: ComponentType<any> },
+): (() => ComponentType<any>) => {
+  return () => loader().default;
+};
+
+/* eslint-disable @typescript-eslint/no-require-imports */
+const getAppTabs = lazyScreen(() => require('./AppTabs'));
+const getFoodSearchScreen = lazyScreen(() => require('../screens/diary/FoodSearchScreen'));
+const getFoodDetailScreen = lazyScreen(() => require('../screens/diary/FoodDetailScreen'));
+const getCustomDishScreen = lazyScreen(() => require('../screens/diary/CustomDishScreen'));
+const getMealDiaryScreen = lazyScreen(() => require('../screens/diary/MealDiaryScreen'));
+const getAIScanScreen = lazyScreen(() => require('../screens/ai/AIScanScreen'));
+const getAddMealFromVisionScreen = lazyScreen(
+  () => require('../screens/meals/AddMealFromVisionScreen'),
+);
+const getVisionHistoryScreen = lazyScreen(() => require('../screens/ai/VisionHistoryScreen'));
+const getRecipeSuggestionsScreen = lazyScreen(
+  () => require('../screens/ai/RecipeSuggestionsScreen'),
+);
+const getNutritionInsightsScreen = lazyScreen(
+  () => require('../screens/ai/NutritionInsightsScreen'),
+);
+const getRecipeDetailScreen = lazyScreen(() => require('../screens/ai/RecipeDetailScreen'));
+const getNutritionSettingsScreen = lazyScreen(
+  () => require('../screens/ai/NutritionSettingsScreen'),
+);
+const getAchievementsScreen = lazyScreen(
+  () => require('../screens/gamification/AchievementsScreen'),
+);
+const getEditProfileScreen = lazyScreen(() => require('../screens/profile/EditProfileScreen'));
+const getBodyMetricsScreen = lazyScreen(() => require('../screens/profile/BodyMetricsScreen'));
+const getGoalSettingsScreen = lazyScreen(() => require('../screens/profile/GoalSettingsScreen'));
+const getWeightHistoryScreen = lazyScreen(
+  () => require('../screens/profile/WeightHistoryScreen'),
+);
+const getChangePasswordScreen = lazyScreen(
+  () => require('../screens/profile/ChangePasswordScreen'),
+);
+const getAboutScreen = lazyScreen(() => require('../screens/profile/AboutScreen'));
+const getPrivacyPolicyScreen = lazyScreen(
+  () => require('../screens/profile/PrivacyPolicyScreen'),
+);
+const getNotificationsScreen = lazyScreen(
+  () => require('../screens/profile/NotificationsScreen'),
+);
+const getDietaryRestrictionsScreen = lazyScreen(
+  () => require('../screens/ai/DietaryRestrictionsScreen'),
+);
+/* eslint-enable @typescript-eslint/no-require-imports */
 
 const AppNavigator = (): React.ReactElement => {
   const { navigationTheme, theme } = useAppTheme();
@@ -46,16 +75,28 @@ const AppNavigator = (): React.ReactElement => {
   const needsOnboarding = useAuthStore((s) => s.needsOnboarding);
   const init = useAuthStore((s) => s.init);
 
-  // Khởi tạo auth store khi app mount
+  const isInAuthFlow = !isAuthenticated || needsOnboarding;
+  const navigatorKey = isInitializing
+    ? 'initializing'
+    : isInAuthFlow
+      ? 'auth-flow'
+      : 'authenticated';
+  const initialRouteName: keyof RootStackParamList = isInAuthFlow
+    ? needsOnboarding
+      ? 'Onboarding'
+      : E2E_AUTOMATION_ENABLED
+        ? 'Login'
+        : 'IntroCarousel'
+    : 'AppTabs';
+
   useEffect(() => {
     init().catch(() => {
-      // bỏ qua lỗi init (ví dụ chưa có token)
+      // Ignore auth bootstrap errors and keep the guest flow usable.
     });
   }, [init]);
 
   return (
-    <NavigationContainer theme={navigationTheme}>
-      {/* Điều hướng: nếu đang init => hiển thị màn hình trắng đơn giản */}
+    <NavigationContainer key={navigatorKey} theme={navigationTheme}>
       {isInitializing ? (
         <View
           style={{
@@ -69,19 +110,20 @@ const AppNavigator = (): React.ReactElement => {
         </View>
       ) : (
         <Stack.Navigator
-          initialRouteName={!isAuthenticated && E2E_AUTOMATION_ENABLED ? 'Login' : 'Welcome'}
+          key={navigatorKey}
+          initialRouteName={initialRouteName}
           screenOptions={{
             headerShown: false,
             contentStyle: { backgroundColor: theme.colors.background },
             statusBarStyle: theme.statusBarStyle,
           }}
         >
-          {!isAuthenticated ? (
-            // Chưa đăng nhập: Hiển thị stack đăng nhập/đăng ký
-            <>
+          {isInAuthFlow ? (
+            <Stack.Group navigationKey="auth-flow">
               {!E2E_AUTOMATION_ENABLED && (
-                <Stack.Screen name="Welcome" component={WelcomeScreen} />
+                <Stack.Screen name="IntroCarousel" component={IntroCarouselScreen} />
               )}
+              <Stack.Screen name="Welcome" component={WelcomeScreen} />
               <Stack.Screen name="Login" component={LoginScreen} />
               <Stack.Screen name="Register" component={RegisterScreen} />
               <Stack.Screen name="VerifyEmail" component={VerifyEmailScreen} />
@@ -89,37 +131,33 @@ const AppNavigator = (): React.ReactElement => {
               <Stack.Screen
                 name="ForgotPassword"
                 component={ForgotPasswordScreen}
-                options={{ headerShown: true, title: t('auth.forgotPasswordTitle') }}
+                options={{
+                  headerShown: false,
+                  title: t('auth.forgotPasswordTitle'),
+                }}
               />
-            </>
-          ) : needsOnboarding ? (
-            <>
-              <Stack.Screen name="Onboarding" component={OnboardingScreen} />
-            </>
+            </Stack.Group>
           ) : (
-            // Đã đăng nhập: vào App Tabs
-            <>
-              <Stack.Screen name="AppTabs" component={AppTabs} />
+            <Stack.Group navigationKey="authenticated">
+              <Stack.Screen name="AppTabs" getComponent={getAppTabs} />
               <Stack.Screen
                 name="FoodSearch"
-                component={FoodSearchScreen}
-                options={{
-                  headerShown: false, // Custom header in screen
-                }}
+                getComponent={getFoodSearchScreen}
+                options={{ headerShown: false }}
               />
               <Stack.Screen
                 name="FoodDetail"
-                component={FoodDetailScreen}
+                getComponent={getFoodDetailScreen}
                 options={{ headerShown: false }}
               />
               <Stack.Screen
                 name="CustomDish"
-                component={CustomDishScreen}
+                getComponent={getCustomDishScreen}
                 options={{ headerShown: false }}
               />
               <Stack.Screen
                 name="MealDiary"
-                component={MealDiaryScreen}
+                getComponent={getMealDiaryScreen}
                 options={{
                   headerShown: false,
                   title: 'Nhật ký bữa ăn',
@@ -127,9 +165,9 @@ const AppNavigator = (): React.ReactElement => {
               />
               <Stack.Screen
                 name="AiCamera"
-                component={AIScanScreen}
+                getComponent={getAIScanScreen}
                 options={{
-                  headerShown: false, // AIScanScreen has its own header
+                  headerShown: false,
                   title: t('navigation.camera'),
                   headerStyle: { backgroundColor: theme.colors.card },
                   headerTintColor: theme.colors.text,
@@ -139,17 +177,17 @@ const AppNavigator = (): React.ReactElement => {
               />
               <Stack.Screen
                 name="AddMealFromVision"
-                component={AddMealFromVisionScreen}
+                getComponent={getAddMealFromVisionScreen}
                 options={{ headerShown: false }}
               />
               <Stack.Screen
                 name="VisionHistory"
-                component={VisionHistoryScreen}
+                getComponent={getVisionHistoryScreen}
                 options={{ headerShown: false }}
               />
               <Stack.Screen
                 name="RecipeSuggestions"
-                component={RecipeSuggestionsScreen}
+                getComponent={getRecipeSuggestionsScreen}
                 options={{
                   headerShown: false,
                   title: 'Gợi ý công thức',
@@ -157,75 +195,70 @@ const AppNavigator = (): React.ReactElement => {
               />
               <Stack.Screen
                 name="NutritionInsights"
-                component={NutritionInsightsScreen}
+                getComponent={getNutritionInsightsScreen}
                 options={{ headerShown: false }}
               />
               <Stack.Screen
                 name="NutritionSettings"
-                component={NutritionSettingsScreen}
-                options={{
-                  headerShown: false, // Custom header in screen
-                }}
+                getComponent={getNutritionSettingsScreen}
+                options={{ headerShown: false }}
               />
               <Stack.Screen
                 name="RecipeDetail"
-                component={RecipeDetailScreen}
+                getComponent={getRecipeDetailScreen}
                 options={{ headerShown: false }}
               />
               <Stack.Screen
                 name="Achievements"
-                component={AchievementsScreen}
-                options={{
-                  headerShown: false, // Đã có ScreenHeader custom
-                }}
+                getComponent={getAchievementsScreen}
+                options={{ headerShown: false }}
               />
-              {/* Profile screens */}
               <Stack.Screen
                 name="EditProfile"
-                component={EditProfileScreen}
+                getComponent={getEditProfileScreen}
                 options={{ headerShown: false }}
               />
               <Stack.Screen
                 name="BodyMetrics"
-                component={BodyMetricsScreen}
+                getComponent={getBodyMetricsScreen}
                 options={{ headerShown: false }}
               />
               <Stack.Screen
                 name="GoalSettings"
-                component={GoalSettingsScreen}
+                getComponent={getGoalSettingsScreen}
                 options={{ headerShown: false }}
               />
               <Stack.Screen
                 name="WeightHistory"
-                component={WeightHistoryScreen}
+                getComponent={getWeightHistoryScreen}
                 options={{ headerShown: false }}
               />
               <Stack.Screen
                 name="ChangePassword"
-                component={ChangePasswordScreen}
+                getComponent={getChangePasswordScreen}
                 options={{ headerShown: false }}
               />
               <Stack.Screen
                 name="About"
-                component={AboutScreen}
+                getComponent={getAboutScreen}
                 options={{ headerShown: false }}
               />
               <Stack.Screen
                 name="PrivacyPolicy"
-                component={PrivacyPolicyScreen}
+                getComponent={getPrivacyPolicyScreen}
                 options={{ headerShown: false }}
               />
               <Stack.Screen
                 name="DietaryRestrictions"
-                component={DietaryRestrictionsScreen}
+                getComponent={getDietaryRestrictionsScreen}
                 options={{ headerShown: false }}
               />
               <Stack.Screen
                 name="NotificationsSettings"
-                component={NotificationsScreen}
+                getComponent={getNotificationsScreen}
                 options={{ headerShown: false }}
               />
-            </>
+            </Stack.Group>
           )}
         </Stack.Navigator>
       )}

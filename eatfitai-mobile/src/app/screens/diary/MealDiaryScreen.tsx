@@ -1,4 +1,4 @@
-// Meal diary screen with a modernized layout.
+﻿// Meal diary screen with a modernized layout.
 // Features: Summary header, improved date selector, beautiful meal cards
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -220,7 +220,7 @@ const MealDiaryScreen = (): React.ReactElement => {
           onPress={() => handleDateSelect(date)}
           style={{ width: (SCREEN_WIDTH - 32) / 5 }}
           accessibilityRole="button"
-          accessibilityLabel={`${dayName} ngay ${dayNum}${isCurrentDate ? ', hom nay' : ''}${isSelected ? ', dang chon' : ''}`}
+          accessibilityLabel={`${dayName} ngày ${dayNum}${isCurrentDate ? ', hôm nay' : ''}${isSelected ? ', đang chọn' : ''}`}
           accessibilityState={{ selected: isSelected }}
           testID={`${TEST_IDS.mealDiary.dateChipPrefix}-${chipDateKey}`}
         >
@@ -874,3 +874,4 @@ const MealDiaryScreen = (): React.ReactElement => {
 };
 
 export default MealDiaryScreen;
+

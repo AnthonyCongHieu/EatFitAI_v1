@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 import { ThemedText } from '../ThemedText';
@@ -36,7 +36,7 @@ export const AIExplanationCard = ({ explanation, style }: AIExplanationCardProps
           variant="caption"
           style={{ color: theme.colors.textSecondary, marginBottom: 4 }}
         >
-          AI Insight
+          Gợi ý từ AI
         </ThemedText>
         <ThemedText
           variant="bodySmall"
@@ -71,3 +71,4 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
 });
+

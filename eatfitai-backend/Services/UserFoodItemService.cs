@@ -1,4 +1,4 @@
-using AutoMapper;
+﻿using AutoMapper;
 using EatFitAI.API.DbScaffold.Data;
 using EatFitAI.API.DbScaffold.Models;
 using EatFitAI.API.DTOs.Food;
@@ -52,7 +52,7 @@ namespace EatFitAI.API.Services
         {
             var entity = await _repo.GetByIdForUserAsync(userId, id);
             if (entity == null)
-                throw new KeyNotFoundException("User food item not found");
+                throw new KeyNotFoundException("Không tìm thấy món ăn tự tạo");
 
             return _mapper.Map<UserFoodItemDto>(entity);
         }
@@ -120,7 +120,7 @@ namespace EatFitAI.API.Services
         {
             var entity = await _repo.GetByIdForUserAsync(userId, id);
             if (entity == null)
-                throw new KeyNotFoundException("User food item not found");
+                throw new KeyNotFoundException("Không tìm thấy món ăn tự tạo");
 
             if (request.UnitType != null)
                 ValidateUnitType(request.UnitType);
@@ -150,7 +150,7 @@ namespace EatFitAI.API.Services
         {
             var entity = await _repo.GetByIdForUserAsync(userId, id);
             if (entity == null)
-                throw new KeyNotFoundException("User food item not found");
+                throw new KeyNotFoundException("Không tìm thấy món ăn tự tạo");
 
             entity.IsDeleted = true;
             entity.UpdatedAt = DateTime.UtcNow;
@@ -163,7 +163,7 @@ namespace EatFitAI.API.Services
             var normalized = unitType?.Trim().ToLowerInvariant();
             if (normalized != "g" && normalized != "ml")
             {
-                throw new ArgumentException("UnitType must be 'g' or 'ml'");
+                throw new ArgumentException("Đơn vị phải là 'g' hoặc 'ml'");
             }
         }
 
@@ -171,7 +171,7 @@ namespace EatFitAI.API.Services
         {
             if (!AllowedImageContentTypes.Contains(file.ContentType))
             {
-                throw new ArgumentException("Unsupported image type. Allowed: jpeg, png, webp.");
+                throw new ArgumentException("Loại ảnh không được hỗ trợ. Chỉ chấp nhận: jpeg, png, webp.");
             }
 
             var ext = Path.GetExtension(file.FileName);
@@ -223,4 +223,5 @@ namespace EatFitAI.API.Services
         }
     }
 }
+
 

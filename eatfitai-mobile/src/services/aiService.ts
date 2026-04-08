@@ -1,4 +1,4 @@
-import apiClient, { aiApiClient, getCurrentApiUrl } from './apiClient';
+﻿import apiClient, { aiApiClient, getCurrentApiUrl } from './apiClient';
 import type {
   AiHealthStatus,
   MappedFoodItem,
@@ -545,7 +545,7 @@ export const aiService = {
       return normalizeNutritionInsight(response.data);
     } catch (error) {
       if (isAiOfflineError(error)) {
-        throw toAiOfflineError(error, 'AI insights tạm không khả dụng.');
+        throw toAiOfflineError(error, 'Tính năng phân tích AI tạm không khả dụng.');
       }
       throw error;
     }

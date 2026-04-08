@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+﻿import { useCallback, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
@@ -52,14 +52,14 @@ const FoodItemPicker = ({ visible, onClose, onSelect }: Props): React.ReactEleme
       <View style={styles.backdrop}>
         <AppCard padding="lg" shadow="md">
           <ThemedText variant="h3" style={{ marginBottom: theme.spacing.sm }}>
-            Chon mon an
+            Chọn món ăn
           </ThemedText>
           <ThemedText
             variant="bodySmall"
             color="textSecondary"
             style={{ marginBottom: theme.spacing.md }}
           >
-            Tim kiem FoodItem de map voi label AI.
+            Tìm kiếm món ăn để ghép với nhãn AI.
           </ThemedText>
 
           <View
@@ -74,11 +74,11 @@ const FoodItemPicker = ({ visible, onClose, onSelect }: Props): React.ReactEleme
                 value={query}
                 onChangeText={setQuery}
                 onSubmitEditing={handleSearch}
-                placeholder="Nhap ten mon an..."
+                placeholder="Nhập tên món ăn..."
               />
             </View>
             <Button
-              title="Tim"
+              title="Tìm"
               size="sm"
               variant="primary"
               onPress={handleSearch}
@@ -120,14 +120,14 @@ const FoodItemPicker = ({ visible, onClose, onSelect }: Props): React.ReactEleme
                   </ThemedText>
                 </View>
                 <ThemedText variant="button" color="primary">
-                  Chon
+                  Chọn
                 </ThemedText>
               </Pressable>
             )}
           />
 
           <View style={{ marginTop: theme.spacing.md }}>
-            <Button variant="outline" title="Dong" onPress={onClose} />
+            <Button variant="outline" title="Đóng" onPress={onClose} />
           </View>
         </AppCard>
       </View>
@@ -156,3 +156,9 @@ const styles = StyleSheet.create({
 });
 
 export default FoodItemPicker;
+
+
+
+
+
+

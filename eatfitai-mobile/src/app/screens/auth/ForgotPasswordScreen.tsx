@@ -1,8 +1,14 @@
 import { useCallback, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
-import { Controller, useForm } from 'react-hook-form';
+import {
+  StyleSheet,
+  View,
+  Image,
+  KeyboardAvoidingView,
+  Platform,
+} from 'react-native';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { Controller, useForm } from 'react-hook-form';
 import Toast from 'react-native-toast-message';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -19,7 +25,6 @@ import { glassStyles } from '../../../components/ui/GlassCard';
 import { t } from '../../../i18n/vi';
 import type { RootStackParamList } from '../../types';
 
-// Schema cho từng step
 const EmailSchema = z.object({
   email: z.string().email(t('auth.invalidEmail')),
 });
@@ -28,26 +33,19 @@ const VerifySchema = z.object({
   resetCode: z.string().min(4, t('auth.resetCodeRequired')),
 });
 
-const NewPasswordSchema = z.object({
-  newPassword: z.string().min(6, t('auth.passwordTooShort')),
-  confirm: z.string().min(6, t('auth.passwordTooShort')),
-}).refine((data) => data.newPassword === data.confirm, {
-  path: ['confirm'],
-  message: t('auth.passwordMismatch'),
-});
+const NewPasswordSchema = z
+  .object({
+    newPassword: z.string().min(6, t('auth.passwordTooShort')),
+    confirm: z.string().min(6, t('auth.passwordTooShort')),
+  })
+  .refine((data) => data.newPassword === data.confirm, {
+    path: ['confirm'],
+    message: t('auth.passwordMismatch'),
+  });
 
 type Props = NativeStackScreenProps<RootStackParamList, 'ForgotPassword'>;
-
-// Các bước trong flow
 type Step = 'email' | 'verify' | 'newPassword' | 'success';
 
-/**
- * ForgotPasswordScreen - Multi-step flow:
- * 1. Nhập email
- * 2. Xác minh mã từ email
- * 3. Đặt mật khẩu mới
- * 4. Thành công -> quay về Login
- */
 const ForgotPasswordScreen = ({ navigation }: Props): React.ReactElement => {
   const { theme } = useAppTheme();
   const isDark = theme.mode === 'dark';
@@ -55,160 +53,249 @@ const ForgotPasswordScreen = ({ navigation }: Props): React.ReactElement => {
   const forgotPassword = useAuthStore((s) => s.forgotPassword);
   const resetPassword = useAuthStore((s) => s.resetPassword);
 
-  // State cho multi-step
   const [step, setStep] = useState<Step>('email');
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState('');
   const [resetCode, setResetCode] = useState('');
 
-  // Form cho step 1: Email
   const emailForm = useForm({
     resolver: zodResolver(EmailSchema),
     defaultValues: { email: '' },
   });
 
-  // Form cho step 2: Verify code
   const verifyForm = useForm({
     resolver: zodResolver(VerifySchema),
     defaultValues: { resetCode: '' },
   });
 
-  // Form cho step 3: New password
   const passwordForm = useForm({
     resolver: zodResolver(NewPasswordSchema),
     defaultValues: { newPassword: '', confirm: '' },
   });
 
-  // Step 1: Gửi mã xác minh
-  const onSendCode = useCallback(async (values: { email: string }) => {
-    try {
-      setLoading(true);
-      await forgotPassword(values.email);
-      setEmail(values.email);
-      Toast.show({
-        type: 'success',
-        text1: '📧 Đã gửi mã xác minh!',
-        text2: 'Kiểm tra email của bạn',
-      });
-      setStep('verify');
-    } catch (e: any) {
-      const msg = e?.response?.data?.message || e?.message || 'Không thể gửi mã';
-      Toast.show({
-        type: 'error',
-        text1: 'Gửi mã thất bại',
-        text2: msg,
-      });
-    } finally {
-      setLoading(false);
-    }
-  }, [forgotPassword]);
+  const onSendCode = useCallback(
+    async (values: { email: string }) => {
+      try {
+        setLoading(true);
+        await forgotPassword(values.email);
+        setEmail(values.email);
+        Toast.show({
+          type: 'success',
+          text1: 'Đã gửi mã xác minh',
+          text2: 'Kiểm tra email của bạn để tiếp tục',
+        });
+        setStep('verify');
+      } catch (e: any) {
+        const msg = e?.response?.data?.message || e?.message || 'Không thể gửi mã';
+        Toast.show({
+          type: 'error',
+          text1: 'Gửi mã thất bại',
+          text2: msg,
+        });
+      } finally {
+        setLoading(false);
+      }
+    },
+    [forgotPassword],
+  );
 
-  // Step 2: Xác minh mã
-  const onVerifyCode = useCallback(async (values: { resetCode: string }) => {
-    // Lưu mã để dùng ở step 3
+  const onVerifyCode = useCallback((values: { resetCode: string }) => {
     setResetCode(values.resetCode);
     setStep('newPassword');
     Toast.show({
       type: 'info',
-      text1: '✅ Mã hợp lệ',
-      text2: 'Nhập mật khẩu mới của bạn',
+      text1: 'Mã hợp lệ',
+      text2: 'Tiếp tục tạo mật khẩu mới',
     });
   }, []);
 
-  // Step 3: Đổi mật khẩu
-  const onResetPassword = useCallback(async (values: { newPassword: string; confirm: string }) => {
-    try {
-      setLoading(true);
-      await resetPassword(email, resetCode, values.newPassword);
-      setStep('success');
-      Toast.show({
-        type: 'success',
-        text1: '🎉 Đổi mật khẩu thành công!',
-        text2: 'Bạn có thể đăng nhập với mật khẩu mới',
-      });
-    } catch (e: any) {
-      const msg = e?.response?.data?.message || e?.message || 'Không thể đổi mật khẩu';
-      Toast.show({
-        type: 'error',
-        text1: 'Đổi mật khẩu thất bại',
-        text2: msg,
-      });
-    } finally {
-      setLoading(false);
-    }
-  }, [email, resetCode, resetPassword]);
+  const onResetPassword = useCallback(
+    async (values: { newPassword: string; confirm: string }) => {
+      try {
+        setLoading(true);
+        await resetPassword(email, resetCode, values.newPassword);
+        setStep('success');
+        Toast.show({
+          type: 'success',
+          text1: 'Đổi mật khẩu thành công',
+          text2: 'Bạn có thể đăng nhập với mật khẩu mới',
+        });
+      } catch (e: any) {
+        const msg =
+          e?.response?.data?.message || e?.message || 'Không thể đổi mật khẩu';
+        Toast.show({
+          type: 'error',
+          text1: 'Đổi mật khẩu thất bại',
+          text2: msg,
+        });
+      } finally {
+        setLoading(false);
+      }
+    },
+    [email, resetCode, resetPassword],
+  );
 
-  // Quay về đăng nhập
   const goToLogin = useCallback(() => {
     navigation.navigate('Login');
   }, [navigation]);
 
-  // Progress indicator
-  const StepIndicator = () => (
-    <View style={styles.stepIndicator}>
-      {['email', 'verify', 'newPassword'].map((s, i) => {
-        const stepIndex = ['email', 'verify', 'newPassword'].indexOf(step);
-        const isActive = i <= stepIndex;
-        const isCurrent = s === step;
-        return (
-          <View key={s} style={styles.stepItem}>
-            <View
-              style={[
-                styles.stepDot,
-                {
-                  backgroundColor: isActive ? theme.colors.primary : theme.colors.border,
-                  transform: [{ scale: isCurrent ? 1.2 : 1 }],
-                },
-              ]}
-            >
-              {i < stepIndex && (
-                <Ionicons name="checkmark" size={12} color="#FFFFFF" />
-              )}
-            </View>
-            {i < 2 && (
+  const StepIndicator = () => {
+    const currentIndex = ['email', 'verify', 'newPassword'].indexOf(step);
+
+    return (
+      <View style={styles.stepIndicator}>
+        {['email', 'verify', 'newPassword'].map((item, index) => {
+          const isActive = index <= currentIndex;
+          const isCurrent = item === step;
+
+          return (
+            <View key={item} style={styles.stepItem}>
               <View
                 style={[
-                  styles.stepLine,
-                  { backgroundColor: i < stepIndex ? theme.colors.primary : theme.colors.border },
+                  styles.stepDot,
+                  {
+                    backgroundColor: isActive
+                      ? theme.colors.primary
+                      : theme.colors.border,
+                    transform: [{ scale: isCurrent ? 1.15 : 1 }],
+                  },
                 ]}
-              />
-            )}
-          </View>
-        );
-      })}
-    </View>
-  );
+              >
+                {index < currentIndex && (
+                  <Ionicons name="checkmark" size={12} color="#FFFFFF" />
+                )}
+              </View>
+              {index < 2 && (
+                <View
+                  style={[
+                    styles.stepLine,
+                    {
+                      backgroundColor:
+                        index < currentIndex
+                          ? theme.colors.primary
+                          : theme.colors.border,
+                    },
+                  ]}
+                />
+              )}
+            </View>
+          );
+        })}
+      </View>
+    );
+  };
+
+  const styles = StyleSheet.create({
+    container: {
+      flex: 1,
+    },
+    scrollContent: {
+      flexGrow: 1,
+      paddingHorizontal: 24,
+      paddingTop: 100,
+      paddingBottom: 40,
+    },
+    logoContainer: {
+      alignItems: 'center',
+      marginBottom: 24,
+    },
+    logo: {
+      width: 100,
+      height: 100,
+      borderRadius: 24,
+    },
+    formCard: {
+      ...glass.card,
+      padding: 24,
+    },
+    title: {
+      textAlign: 'center',
+      marginBottom: theme.spacing.sm,
+    },
+    subtitle: {
+      textAlign: 'center',
+      marginBottom: theme.spacing.lg,
+      lineHeight: 30,
+    },
+    stepIndicator: {
+      flexDirection: 'row',
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginBottom: 24,
+      marginTop: 4,
+    },
+    stepItem: {
+      flexDirection: 'row',
+      alignItems: 'center',
+    },
+    stepDot: {
+      width: 24,
+      height: 24,
+      borderRadius: 12,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    stepLine: {
+      width: 44,
+      height: 2,
+      marginHorizontal: 4,
+    },
+    successIconWrap: {
+      width: 80,
+      height: 80,
+      borderRadius: 40,
+      backgroundColor: theme.colors.success + '20',
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginBottom: theme.spacing.lg,
+      alignSelf: 'center',
+    },
+    secondaryButton: {
+      marginTop: theme.spacing.lg,
+    },
+    resendButton: {
+      marginTop: theme.spacing.md,
+    },
+  });
 
   return (
-    <View style={{ flex: 1 }}>
-      <LinearGradient
-        colors={theme.colors.screenGradient}
-        style={StyleSheet.absoluteFill}
-      />
-      <Screen scroll style={styles.container}>
-        <Animated.View entering={FadeInDown.duration(500).springify()}>
-          <View style={glass.card}>
-            {/* Header */}
-            <ThemedText style={{ fontSize: 32, textAlign: 'center', marginBottom: 8 }}>
-              🔐
-            </ThemedText>
-            <ThemedText
-              variant="h2"
-              style={{ marginBottom: theme.spacing.sm, textAlign: 'center' }}
-            >
+    <LinearGradient
+      colors={theme.colors.screenGradient}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 0.5, y: 1 }}
+      style={styles.container}
+    >
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
+        <Screen scroll={true} contentContainerStyle={styles.scrollContent}>
+          <Animated.View
+            entering={FadeInDown.delay(100).springify()}
+            style={styles.logoContainer}
+          >
+            <Image
+              source={require('../../../assets/icon.png')}
+              style={styles.logo}
+            />
+          </Animated.View>
+
+          <Animated.View
+            entering={FadeInDown.delay(200).springify()}
+            style={styles.formCard}
+          >
+            <ThemedText variant="h2" style={styles.title}>
               {step === 'success' ? 'Thành công!' : t('auth.forgotPasswordTitle')}
             </ThemedText>
 
-            {/* Step Indicator */}
             {step !== 'success' && <StepIndicator />}
 
-            {/* Step 1: Email */}
             {step === 'email' && (
               <Animated.View entering={FadeInRight.duration(400)}>
                 <ThemedText
                   variant="bodySmall"
                   color="textSecondary"
-                  style={{ marginBottom: theme.spacing.lg, textAlign: 'center' }}
+                  style={styles.subtitle}
                 >
                   Nhập email đã đăng ký để nhận mã xác minh
                 </ThemedText>
@@ -239,21 +326,29 @@ const ForgotPasswordScreen = ({ navigation }: Props): React.ReactElement => {
                   disabled={loading}
                   variant="primary"
                   icon="mail-outline"
-                  style={{ marginTop: theme.spacing.lg }}
+                  style={styles.secondaryButton}
+                  fullWidth
+                />
+
+                <Button
+                  title="Quay lại đăng nhập"
+                  onPress={goToLogin}
+                  variant="outline"
+                  icon="log-in-outline"
+                  style={styles.secondaryButton}
                   fullWidth
                 />
               </Animated.View>
             )}
 
-            {/* Step 2: Verify Code */}
             {step === 'verify' && (
               <Animated.View entering={FadeInRight.duration(400)}>
                 <ThemedText
                   variant="bodySmall"
                   color="textSecondary"
-                  style={{ marginBottom: theme.spacing.lg, textAlign: 'center' }}
+                  style={styles.subtitle}
                 >
-                  Nhập mã 6 số đã gửi đến{'\n'}
+                  Nhập mã xác minh đã gửi đến{'\n'}
                   <ThemedText variant="bodySmall" color="primary" weight="600">
                     {email}
                   </ThemedText>
@@ -283,7 +378,7 @@ const ForgotPasswordScreen = ({ navigation }: Props): React.ReactElement => {
                   onPress={verifyForm.handleSubmit(onVerifyCode)}
                   variant="primary"
                   icon="checkmark-circle-outline"
-                  style={{ marginTop: theme.spacing.lg }}
+                  style={styles.secondaryButton}
                   fullWidth
                 />
 
@@ -292,19 +387,27 @@ const ForgotPasswordScreen = ({ navigation }: Props): React.ReactElement => {
                   onPress={() => onSendCode({ email })}
                   loading={loading}
                   variant="ghost"
-                  style={{ marginTop: theme.spacing.md }}
+                  style={styles.resendButton}
+                  fullWidth
+                />
+
+                <Button
+                  title="Quay lại đăng nhập"
+                  onPress={goToLogin}
+                  variant="outline"
+                  icon="log-in-outline"
+                  style={styles.secondaryButton}
                   fullWidth
                 />
               </Animated.View>
             )}
 
-            {/* Step 3: New Password */}
             {step === 'newPassword' && (
               <Animated.View entering={FadeInRight.duration(400)}>
                 <ThemedText
                   variant="bodySmall"
                   color="textSecondary"
-                  style={{ marginBottom: theme.spacing.lg, textAlign: 'center' }}
+                  style={styles.subtitle}
                 >
                   Tạo mật khẩu mới cho tài khoản của bạn
                 </ThemedText>
@@ -354,33 +457,35 @@ const ForgotPasswordScreen = ({ navigation }: Props): React.ReactElement => {
                   disabled={loading}
                   variant="primary"
                   icon="lock-closed-outline"
-                  style={{ marginTop: theme.spacing.lg }}
+                  style={styles.secondaryButton}
+                  fullWidth
+                />
+
+                <Button
+                  title="Quay lại đăng nhập"
+                  onPress={goToLogin}
+                  variant="outline"
+                  icon="log-in-outline"
+                  style={styles.secondaryButton}
                   fullWidth
                 />
               </Animated.View>
             )}
 
-            {/* Step 4: Success */}
             {step === 'success' && (
-              <Animated.View entering={FadeInRight.duration(400)} style={{ alignItems: 'center' }}>
-                <View
-                  style={{
-                    width: 80,
-                    height: 80,
-                    borderRadius: 40,
-                    backgroundColor: theme.colors.success + '20',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    marginBottom: theme.spacing.lg,
-                  }}
-                >
-                  <Ionicons name="checkmark-circle" size={48} color={theme.colors.success} />
+              <Animated.View entering={FadeInRight.duration(400)}>
+                <View style={styles.successIconWrap}>
+                  <Ionicons
+                    name="checkmark-circle"
+                    size={48}
+                    color={theme.colors.success}
+                  />
                 </View>
 
                 <ThemedText
                   variant="body"
                   color="textSecondary"
-                  style={{ textAlign: 'center', marginBottom: theme.spacing.xl }}
+                  style={styles.subtitle}
                 >
                   Mật khẩu của bạn đã được đổi thành công.{'\n'}
                   Hãy đăng nhập với mật khẩu mới.
@@ -395,53 +500,11 @@ const ForgotPasswordScreen = ({ navigation }: Props): React.ReactElement => {
                 />
               </Animated.View>
             )}
-
-            {/* Back button */}
-            {step !== 'success' && (
-              <Button
-                title="Quay lại đăng nhập"
-                onPress={goToLogin}
-                variant="ghost"
-                style={{ marginTop: theme.spacing.lg }}
-                fullWidth
-              />
-            )}
-          </View>
-        </Animated.View>
-      </Screen>
-    </View>
+          </Animated.View>
+        </Screen>
+      </KeyboardAvoidingView>
+    </LinearGradient>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flexGrow: 1,
-    padding: 24,
-    paddingVertical: 40,
-  },
-  stepIndicator: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 24,
-    marginTop: 8,
-  },
-  stepItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  stepDot: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  stepLine: {
-    width: 40,
-    height: 2,
-    marginHorizontal: 4,
-  },
-});
 
 export default ForgotPasswordScreen;

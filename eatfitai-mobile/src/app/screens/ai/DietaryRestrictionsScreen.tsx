@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+﻿import React, { useEffect, useState } from 'react';
 import {
     ScrollView,
     StyleSheet,
@@ -24,8 +24,8 @@ const DIETARY_OPTIONS = [
     { id: 'halal', label: 'Halal (Không heo)' },
     { id: 'no-pork', label: 'Không ăn heo' },
     { id: 'no-beef', label: 'Không ăn bò' },
-    { id: 'low-carb', label: 'Low carb' },
-    { id: 'high-protein', label: 'High protein' },
+    { id: 'low-carb', label: 'Ít tinh bột' },
+    { id: 'high-protein', label: 'Giàu protein' },
 ];
 
 const ALLERGY_OPTIONS = [
@@ -202,3 +202,5 @@ export const DietaryRestrictionsScreen = () => {
 };
 
 export default DietaryRestrictionsScreen;
+
+

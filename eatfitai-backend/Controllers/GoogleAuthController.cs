@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Google Authentication Controller
  * Handles Google Sign-in from mobile app
  * Verifies Google ID Token and creates/updates user
@@ -253,7 +253,7 @@ namespace EatFitAI.API.Controllers
                 var user = await _context.Users.FindAsync(userId);
                 if (user == null)
                 {
-                    return NotFound(new GoogleAuthResponse { Success = false, Error = "User not found" });
+                    return NotFound(new GoogleAuthResponse { Success = false, Error = "Không tìm thấy người dùng" });
                 }
 
                 // Check if Google email matches user email
@@ -374,3 +374,4 @@ namespace EatFitAI.API.Controllers
         #endregion
     }
 }
+

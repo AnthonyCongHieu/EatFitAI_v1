@@ -16,6 +16,28 @@ type AuthUser = { id: string; email: string; name?: string };
 
 export const AUTH_NEEDS_ONBOARDING_KEY = 'auth_needs_onboarding';
 const ONBOARDING_COMPLETE_KEY = 'onboarding_complete';
+const STARTUP_API_INIT_TIMEOUT_MS = 2500;
+
+const readNeedsOnboardingFlag = (
+  payload: Record<string, unknown> | null | undefined,
+  fallback = false,
+): boolean => {
+  if (!payload) {
+    return fallback;
+  }
+
+  const camelCaseValue = payload.needsOnboarding;
+  if (typeof camelCaseValue === 'boolean') {
+    return camelCaseValue;
+  }
+
+  const pascalCaseValue = payload.NeedsOnboarding;
+  if (typeof pascalCaseValue === 'boolean') {
+    return pascalCaseValue;
+  }
+
+  return fallback;
+};
 
 const persistNeedsOnboarding = async (needsOnboarding: boolean): Promise<void> => {
   await AsyncStorage.setItem(AUTH_NEEDS_ONBOARDING_KEY, needsOnboarding ? 'true' : 'false');
@@ -61,7 +83,24 @@ export const useAuthStore = create<AuthState>((set: any) => ({
       // 1. Khởi tạo API client với đúng URL (scan IP nếu cần)
       // Phải chạy TRƯỚC mọi API calls khác
       const { initializeApiClient } = await import('../services/apiClient');
-      await initializeApiClient();
+      await Promise.race([
+        initializeApiClient().catch((error) => {
+          if (__DEV__) {
+            console.warn('[useAuthStore] API init failed during startup:', error);
+          }
+          return false;
+        }),
+        new Promise<boolean>((resolve) => {
+          setTimeout(() => {
+            if (__DEV__) {
+              console.warn(
+                `[useAuthStore] API init exceeded ${STARTUP_API_INIT_TIMEOUT_MS}ms. Continuing app startup without blocking UI.`,
+              );
+            }
+            resolve(false);
+          }, STARTUP_API_INIT_TIMEOUT_MS);
+        }),
+      ]);
 
       // 2. Register callback để auto-logout khi refresh token fails
       setAuthExpiredCallback(() => {
@@ -154,7 +193,7 @@ export const useAuthStore = create<AuthState>((set: any) => ({
     setAccessTokenMem(accessToken);
     await updateSessionFromAuthResponse(data as AuthResponse);
 
-    const needsOnboarding = data?.needsOnboarding ?? false;
+    const needsOnboarding = readNeedsOnboardingFlag(data as Record<string, unknown>, false);
     await persistNeedsOnboarding(needsOnboarding);
     set({
       isAuthenticated: true,
@@ -219,7 +258,7 @@ export const useAuthStore = create<AuthState>((set: any) => ({
     });
     setAccessTokenMem(accessToken);
 
-    const needsOnboarding = data?.needsOnboarding ?? false;
+    const needsOnboarding = readNeedsOnboardingFlag(data as Record<string, unknown>, false);
     await persistNeedsOnboarding(needsOnboarding);
     set({ isAuthenticated: true, needsOnboarding, user: data?.user ?? null });
 

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Cryptography;
@@ -278,12 +278,12 @@ namespace EatFitAI.API.Services
         private string GetMatchReasoning(string label, string foodName, decimal matchScore)
         {
             if (matchScore >= 0.8m)
-                return "Very similar name";
+                return "Tên rất giống";
             if (matchScore >= 0.6m)
-                return "Contains matching words";
+                return "Có chứa từ trùng khớp";
             if (matchScore >= 0.4m)
-                return "Partially similar";
-            return "Possible match based on name similarity";
+                return "Tương đối giống";
+            return "Có thể khớp dựa trên độ tương tự tên";
         }
 
         private int LevenshteinDistance(string source, string target)
@@ -319,3 +319,4 @@ namespace EatFitAI.API.Services
         #endregion
     }
 }
+

@@ -31,12 +31,6 @@
       },
       "package": "com.eatfitai.app",
       "versionCode": 1,
-      "config": {
-        "locales": [
-          "vi",
-          "en"
-        ]
-      },
       "softwareKeyboardLayoutMode": "resize",
       "permissions": [
         "android.permission.INTERNET",

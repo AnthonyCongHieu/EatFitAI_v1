@@ -1,6 +1,7 @@
 // Bottom Tabs after authentication
 // 5 tabs: Home, AI Scan, Voice, Stats, Profile
 
+import type { ComponentType } from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import Animated, {
@@ -10,11 +11,6 @@ import Animated, {
 } from 'react-native-reanimated';
 import { Pressable, StyleSheet } from 'react-native';
 
-import HomeScreen from '../screens/HomeScreen';
-import AIScanScreen from '../screens/ai/AIScanScreen';
-import VoiceScreen from '../screens/VoiceScreen';
-import StatsNavigator from './StatsNavigator';
-import ProfileScreen from '../screens/ProfileScreen';
 import { useAppTheme } from '../../theme/ThemeProvider';
 import { t } from '../../i18n/vi';
 
@@ -32,6 +28,20 @@ export type AppTabsParamList = {
 };
 
 const Tab = createBottomTabNavigator<AppTabsParamList>();
+
+const lazyScreen = (
+  loader: () => { default: ComponentType<any> },
+): (() => ComponentType<any>) => {
+  return () => loader().default;
+};
+
+/* eslint-disable @typescript-eslint/no-require-imports */
+const getHomeScreen = lazyScreen(() => require('../screens/HomeScreen'));
+const getAIScanScreen = lazyScreen(() => require('../screens/ai/AIScanScreen'));
+const getVoiceScreen = lazyScreen(() => require('../screens/VoiceScreen'));
+const getStatsNavigator = lazyScreen(() => require('./StatsNavigator'));
+const getProfileScreen = lazyScreen(() => require('../screens/ProfileScreen'));
+/* eslint-enable @typescript-eslint/no-require-imports */
 
 // Custom animated tab button
 const AnimatedTabButton = ({
@@ -107,7 +117,7 @@ const AppTabs = (): React.ReactElement => {
     >
       <Tab.Screen
         name="HomeTab"
-        component={HomeScreen}
+        getComponent={getHomeScreen}
         options={{
           title: t('navigation.home'),
           tabBarIcon: ({ color, size, focused }) => (
@@ -121,7 +131,7 @@ const AppTabs = (): React.ReactElement => {
       />
       <Tab.Screen
         name="AIScanTab"
-        component={AIScanScreen}
+        getComponent={getAIScanScreen}
         options={{
           title: t('navigation.camera'),
           tabBarIcon: ({ color, size, focused }) => (
@@ -135,7 +145,7 @@ const AppTabs = (): React.ReactElement => {
       />
       <Tab.Screen
         name="VoiceTab"
-        component={VoiceScreen}
+        getComponent={getVoiceScreen}
         options={{
           title: t('navigation.voice'),
           tabBarIcon: ({ color, size, focused }) => (
@@ -149,7 +159,7 @@ const AppTabs = (): React.ReactElement => {
       />
       <Tab.Screen
         name="StatsTab"
-        component={StatsNavigator}
+        getComponent={getStatsNavigator}
         options={{
           title: t('navigation.stats'),
           tabBarIcon: ({ color, size, focused }) => (
@@ -163,7 +173,7 @@ const AppTabs = (): React.ReactElement => {
       />
       <Tab.Screen
         name="ProfileTab"
-        component={ProfileScreen}
+        getComponent={getProfileScreen}
         options={{
           title: t('navigation.profile'),
           tabBarIcon: ({ color, size, focused }) => (
