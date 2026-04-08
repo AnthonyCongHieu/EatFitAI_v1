@@ -25,6 +25,7 @@ namespace EatFitAI.API.Controllers
         private readonly IConfiguration _configuration;
         private readonly ILogger<AIController> _logger;
         private readonly IAiFoodMapService _aiFoodMapService;
+        private readonly IAiCorrectionService _aiCorrectionService;
         private readonly IAiLogService _aiLog;
         private readonly IRecipeSuggestionService _recipeSuggestionService;
         private readonly INutritionInsightService _nutritionInsightService;
@@ -37,6 +38,7 @@ namespace EatFitAI.API.Controllers
             IConfiguration configuration,
             ILogger<AIController> logger,
             IAiFoodMapService aiFoodMapService,
+            IAiCorrectionService aiCorrectionService,
             IAiLogService aiLog,
             IRecipeSuggestionService recipeSuggestionService,
             INutritionInsightService nutritionInsightService,
@@ -48,6 +50,7 @@ namespace EatFitAI.API.Controllers
             _configuration = configuration;
             _logger = logger;
             _aiFoodMapService = aiFoodMapService;
+            _aiCorrectionService = aiCorrectionService;
             _aiLog = aiLog;
             _recipeSuggestionService = recipeSuggestionService;
             _nutritionInsightService = nutritionInsightService;
@@ -679,9 +682,19 @@ namespace EatFitAI.API.Controllers
         {
             await _aiFoodMapService.TeachLabelAsync(request, cancellationToken);
 
+            var userId = GetUserIdFromToken();
+
             try
             {
-                var userId = GetUserIdFromToken();
+                await _aiCorrectionService.LogTeachLabelCorrectionAsync(userId, request, cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to persist teach-label correction event");
+            }
+
+            try
+            {
                 var normalizedLabel = request.Label.Trim().ToLowerInvariant();
                 var minConfidence = request.MinConfidence ?? 0.60m;
 
@@ -710,6 +723,30 @@ namespace EatFitAI.API.Controllers
             }
 
             return NoContent();
+        }
+
+        [HttpPost("corrections")]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(typeof(object), StatusCodes.Status400BadRequest)]
+        public async Task<IActionResult> LogCorrection([FromBody] AiCorrectionRequestDto request, CancellationToken cancellationToken)
+        {
+            if (string.IsNullOrWhiteSpace(request.Label))
+            {
+                return BadRequest(new { message = "Label is required" });
+            }
+
+            var userId = GetUserIdFromToken();
+            await _aiCorrectionService.LogCorrectionAsync(userId, request, cancellationToken);
+            return NoContent();
+        }
+
+        [HttpGet("corrections/stats")]
+        [ProducesResponseType(typeof(AiCorrectionStatsDto), StatusCodes.Status200OK)]
+        public async Task<ActionResult<AiCorrectionStatsDto>> GetCorrectionStats(CancellationToken cancellationToken)
+        {
+            var userId = GetUserIdFromToken();
+            var stats = await _aiCorrectionService.GetStatsAsync(userId, cancellationToken);
+            return Ok(stats);
         }
 
         private static (int count, List<string> labelsWithConf) ExtractDetectionSummary(string json)

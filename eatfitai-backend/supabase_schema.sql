@@ -251,6 +251,33 @@ CREATE TABLE IF NOT EXISTS "ImageDetection" (
     CONSTRAINT "FK_ImageDetection_AILog" FOREIGN KEY ("AILogId") REFERENCES "AILog" ("AILogId")
 );
 
+CREATE TABLE IF NOT EXISTS "AiLabelMap" (
+    "Label"             VARCHAR(100)    NOT NULL,
+    "FoodItemId"        INT             NULL,
+    "MinConfidence"     DECIMAL(5,2)    NOT NULL DEFAULT 0.60,
+    "CreatedAt"         TIMESTAMP(3)    NOT NULL DEFAULT (NOW() AT TIME ZONE 'UTC'),
+    CONSTRAINT "PK_AiLabelMap" PRIMARY KEY ("Label"),
+    CONSTRAINT "FK_AiLabelMap_FoodItem" FOREIGN KEY ("FoodItemId") REFERENCES "FoodItem" ("FoodItemId")
+);
+
+CREATE TABLE IF NOT EXISTS "AiCorrectionEvent" (
+    "AiCorrectionEventId" SERIAL        NOT NULL,
+    "UserId"            UUID            NOT NULL,
+    "Label"             VARCHAR(200)    NOT NULL,
+    "FoodItemId"        INT             NULL,
+    "SelectedFoodName"  VARCHAR(255)    NULL,
+    "DetectedConfidence" DECIMAL(5,4)   NULL,
+    "Source"            VARCHAR(100)    NULL,
+    "ClientTimestamp"   TIMESTAMP(3)    NULL,
+    "CreatedAt"         TIMESTAMP(3)    NOT NULL DEFAULT (NOW() AT TIME ZONE 'UTC'),
+    CONSTRAINT "PK_AiCorrectionEvent" PRIMARY KEY ("AiCorrectionEventId"),
+    CONSTRAINT "FK_AiCorrectionEvent_User" FOREIGN KEY ("UserId") REFERENCES "Users" ("UserId"),
+    CONSTRAINT "FK_AiCorrectionEvent_FoodItem" FOREIGN KEY ("FoodItemId") REFERENCES "FoodItem" ("FoodItemId")
+);
+CREATE INDEX "IX_AiCorrectionEvent_User_CreatedAt" ON "AiCorrectionEvent" ("UserId", "CreatedAt");
+CREATE INDEX "IX_AiCorrectionEvent_Label_CreatedAt" ON "AiCorrectionEvent" ("Label", "CreatedAt");
+CREATE INDEX "IX_AiCorrectionEvent_Source_CreatedAt" ON "AiCorrectionEvent" ("Source", "CreatedAt");
+
 -- ============================================================
 -- USER FAVORITES / RECENT
 -- ============================================================

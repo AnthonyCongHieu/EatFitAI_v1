@@ -14,6 +14,8 @@ public partial class EatFitAIDbContext : DbContext
 
     public virtual DbSet<AILog> AILogs { get; set; }
 
+    public virtual DbSet<AiCorrectionEvent> AiCorrectionEvents { get; set; }
+
     public virtual DbSet<AISuggestion> AISuggestions { get; set; }
 
     public virtual DbSet<ActivityLevel> ActivityLevels { get; set; }
@@ -49,6 +51,7 @@ public partial class EatFitAIDbContext : DbContext
     public virtual DbSet<UserFoodItem> UserFoodItems { get; set; }
 
     public virtual DbSet<UserRecentFood> UserRecentFoods { get; set; }
+    public virtual DbSet<AiLabelMap> AiLabelMaps { get; set; }
 
     public virtual DbSet<vw_DailyMacroShare> vw_DailyMacroShares { get; set; }
 
@@ -77,6 +80,35 @@ public partial class EatFitAIDbContext : DbContext
             entity.HasOne(d => d.User).WithMany(p => p.AILogs)
                 .HasForeignKey(d => d.UserId)
                 .HasConstraintName("FK_AILog_User");
+        });
+
+        modelBuilder.Entity<AiCorrectionEvent>(entity =>
+        {
+            entity.ToTable("AiCorrectionEvent");
+
+            entity.HasIndex(e => new { e.UserId, e.CreatedAt }, "IX_AiCorrectionEvent_User_CreatedAt");
+            entity.HasIndex(e => new { e.Label, e.CreatedAt }, "IX_AiCorrectionEvent_Label_CreatedAt");
+            entity.HasIndex(e => new { e.Source, e.CreatedAt }, "IX_AiCorrectionEvent_Source_CreatedAt");
+
+            entity.Property(e => e.Label).HasMaxLength(200);
+            entity.Property(e => e.SelectedFoodName).HasMaxLength(255);
+            entity.Property(e => e.DetectedConfidence).HasColumnType("decimal(5, 4)");
+            entity.Property(e => e.Source).HasMaxLength(100);
+            entity.Property(e => e.ClientTimestamp).HasPrecision(3);
+            entity.Property(e => e.CreatedAt)
+                .HasPrecision(3)
+                .HasDefaultValueSql("NOW() AT TIME ZONE 'UTC'");
+
+            entity.HasOne(d => d.FoodItem)
+                .WithMany()
+                .HasForeignKey(d => d.FoodItemId)
+                .HasConstraintName("FK_AiCorrectionEvent_FoodItem");
+
+            entity.HasOne(d => d.User)
+                .WithMany()
+                .HasForeignKey(d => d.UserId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_AiCorrectionEvent_User");
         });
 
         modelBuilder.Entity<AISuggestion>(entity =>
@@ -503,6 +535,25 @@ public partial class EatFitAIDbContext : DbContext
             entity.Property(e => e.CarbPer100g).HasColumnType("decimal(10, 2)");
             entity.Property(e => e.MinConfidence).HasColumnType("decimal(5, 2)");
             entity.Property(e => e.Label).HasMaxLength(100);
+        });
+
+        modelBuilder.Entity<AiLabelMap>(entity =>
+        {
+            entity.ToTable("AiLabelMap");
+
+            entity.HasKey(e => e.Label);
+
+            entity.Property(e => e.Label)
+                .HasMaxLength(100)
+                .IsRequired();
+
+            entity.Property(e => e.MinConfidence)
+                .HasColumnType("decimal(5, 2)")
+                .HasDefaultValue(0.60m);
+
+            entity.Property(e => e.CreatedAt)
+                .HasPrecision(3)
+                .HasDefaultValueSql("NOW() AT TIME ZONE 'UTC'");
         });
 
         OnModelCreatingPartial(modelBuilder);

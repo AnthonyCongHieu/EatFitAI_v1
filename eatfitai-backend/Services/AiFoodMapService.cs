@@ -3,8 +3,8 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using EatFitAI.API.DbScaffold.Data;
+using EatFitAI.API.DbScaffold.Models;
 using EatFitAI.API.DTOs.AI;
-using EatFitAI.API.Models;
 using Microsoft.EntityFrameworkCore;
 
 namespace EatFitAI.API.Services
