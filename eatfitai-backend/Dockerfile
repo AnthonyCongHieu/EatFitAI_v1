@@ -16,7 +16,7 @@ RUN dotnet restore
 
 # Copy toàn bộ source code rồi build
 COPY . .
-RUN dotnet publish -c Release -o /app/publish --no-restore
+RUN dotnet publish EatFitAI.API.csproj -c Release -o /app/publish --no-restore
 
 FROM base AS final
 WORKDIR /app
