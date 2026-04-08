@@ -319,6 +319,7 @@ const FoodSearchScreen = (): React.ReactElement => {
   const [items, setItems] = useState<FoodItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const [activeTab, setActiveTab] = useState<'search' | 'favorites'>('search');
   const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set());
@@ -337,6 +338,8 @@ const FoodSearchScreen = (): React.ReactElement => {
   const initialTab = route.params?.initialTab;
   const autoFocus = route.params?.autoFocus ?? false;
   const showQuickSuggestions = route.params?.showQuickSuggestions ?? true;
+  const selectedDate = route.params?.selectedDate;
+  const returnToDiaryOnSave = route.params?.returnToDiaryOnSave ?? false;
 
   // Load favorites on mount and handle initialTab
   useEffect(() => {
@@ -355,12 +358,16 @@ const FoodSearchScreen = (): React.ReactElement => {
       const favs = await foodService.getFavorites();
       console.log('[FoodSearch] Loaded favorites:', favs.length, 'items');
       setFavoriteIds(new Set(favs.map((f) => f.id)));
+      setErrorMessage(null);
       // If setAsList is true, or we are already on the favorites tab, refresh items
       if (setAsList || activeTab === 'favorites') {
         setItems(favs);
         }
     } catch (error) {
       console.error('Failed to load favorites', error);
+      if (setAsList || activeTab === 'favorites') {
+        setErrorMessage(t('common.tryAgainLater'));
+      }
     } finally {
       if (setAsList) {
         setIsLoading(false);
@@ -403,7 +410,9 @@ const FoodSearchScreen = (): React.ReactElement => {
           foodItemId: Number(item.id),
           grams: 100,
         },
-      ]);
+      ], {
+        date: selectedDate,
+      });
 
       Toast.show({
         type: 'success',
@@ -422,6 +431,7 @@ const FoodSearchScreen = (): React.ReactElement => {
     setActiveTab(tab);
     setItems([]);
     setHasSearched(false);
+    setErrorMessage(null);
 
     if (tab === 'favorites') {
       // Pass true so favorites are also copied into the current items list
@@ -443,12 +453,21 @@ const FoodSearchScreen = (): React.ReactElement => {
       }
 
       setIsLoading(true);
+      setErrorMessage(null);
 
       try {
         const result = await foodService.searchAllFoods(searchTerm.trim(), PAGE_SIZE);
         setItems((prev) => (append ? [...prev, ...result.items] : result.items));
         setHasSearched(true);
+        setErrorMessage(null);
       } catch (error: any) {
+        setHasSearched(true);
+        setItems([]);
+        setErrorMessage(
+          error?.response?.data?.message ??
+            error?.message ??
+            t('common.tryAgainLater'),
+        );
         handleApiError(error);
       } finally {
         setIsLoading(false);
@@ -490,12 +509,19 @@ const FoodSearchScreen = (): React.ReactElement => {
             navigation.navigate('FoodDetail', {
               foodId: item.id,
               source: item.source,
+              selectedDate,
+              returnToDiaryOnSave,
             })
           }
           style={({ pressed }) => [
             styles.foodCard,
             pressed && { opacity: 0.85, transform: [{ scale: 0.99 }] },
           ]}
+          testID={
+            index === 0
+              ? TEST_IDS.foodSearch.firstResultCard
+              : 'food-search-result-' + item.id
+          }
         >
           <View style={styles.foodCardRow}>
             {item.thumbnail && item.thumbnail.trim() !== '' ? (
@@ -583,6 +609,9 @@ const FoodSearchScreen = (): React.ReactElement => {
           </Pressable>
           <View style={styles.titleSection}>
             <ThemedText style={styles.headerTitle}>{t('food_search.title')}</ThemedText>
+            {selectedDate ? (
+              <ThemedText style={styles.headerSubtitle}>{selectedDate}</ThemedText>
+            ) : null}
           </View>
         </View>
 
@@ -729,6 +758,23 @@ const FoodSearchScreen = (): React.ReactElement => {
                   : t('food_search.loading_favorites')}
               </ThemedText>
             </View>
+          ) : errorMessage ? (
+            <AnimatedEmptyState
+              variant="error"
+              title={t('search.searchFailed')}
+              description={errorMessage}
+              primaryAction={{
+                label: t('common.retry'),
+                onPress: () => {
+                  if (activeTab === 'favorites') {
+                    loadFavorites(true);
+                    return;
+                  }
+
+                  runSearch(query, false).catch(() => { });
+                },
+              }}
+            />
           ) : items.length > 0 ? (
             <View style={{ gap: 12 }}>
               {items.map((item, index) => (

@@ -43,11 +43,13 @@ interface AnimatedEmptyStateProps {
         label: string;
         onPress: () => void;
         icon?: string;
+        testID?: string;
     };
     /** Secondary action button */
     secondaryAction?: {
         label: string;
         onPress: () => void;
+        testID?: string;
     };
     /** Container style */
     style?: ViewStyle;
@@ -156,6 +158,7 @@ export const AnimatedEmptyState = ({
                             icon={primaryAction.icon}
                             variant="primary"
                             fullWidth
+                            testID={primaryAction.testID}
                         />
                     )}
                     {secondaryAction && (
@@ -164,6 +167,7 @@ export const AnimatedEmptyState = ({
                             onPress={secondaryAction.onPress}
                             variant="ghost"
                             style={styles.secondaryButton}
+                            testID={secondaryAction.testID}
                         />
                     )}
                 </View>

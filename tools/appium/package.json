@@ -4,6 +4,7 @@
   "scripts": {
     "sanity:android": "node sanity.android.js",
     "edge:android": "node edge.android.js",
+    "manual-logging-date:android": "node manual-logging-date.android.js",
     "smoke:android": "node sanity.android.js"
   },
   "dependencies": {

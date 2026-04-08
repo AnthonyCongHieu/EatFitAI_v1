@@ -54,6 +54,11 @@ export type SearchFoodsResult = {
   totalCount?: number;
 };
 
+const getDefaultEatenDate = (): string => {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+};
+
 // Normalizers
 const normalizeFoodItem = (data: FoodItemDtoExtended): FoodItem => ({
   id: String(data?.foodItemId ?? ''),
@@ -165,11 +170,10 @@ export const foodService = {
     foodId: string;
     grams: number;
     note?: string;
+    eatenDate?: string;
   }): Promise<void> {
-    const d = new Date();
-    const eatenDate = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
     await apiClient.post('/api/meal-diary', {
-      eatenDate,
+      eatenDate: payload.eatenDate ?? getDefaultEatenDate(),
       mealTypeId: payload.mealTypeId,
       foodItemId: parseInt(payload.foodId, 10),
       grams: payload.grams,
@@ -187,11 +191,10 @@ export const foodService = {
     carb?: number;
     fat?: number;
     note?: string;
+    eatenDate?: string;
   }): Promise<void> {
-    const d = new Date();
-    const eatenDate = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
     await apiClient.post('/api/meal-diary', {
-      eatenDate,
+      eatenDate: payload.eatenDate ?? getDefaultEatenDate(),
       mealTypeId: payload.mealTypeId,
       userFoodItemId: parseInt(payload.userFoodItemId, 10),
       grams: payload.grams,

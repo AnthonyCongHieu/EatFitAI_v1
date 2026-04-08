@@ -200,14 +200,18 @@ const MealDiaryScreen = (): React.ReactElement => {
   }, [editingEntry, editGrams, queryClient]);
 
   const handleAddManual = useCallback(() => {
-    navigation.navigate('FoodSearch');
-  }, [navigation]);
+    navigation.navigate('FoodSearch', {
+      selectedDate: dateKey,
+      returnToDiaryOnSave: true,
+    });
+  }, [dateKey, navigation]);
 
 // Render each date chip.
   const renderDateItem = useCallback(
     ({ item: date }: { item: Date }) => {
       const isSelected = isSameCalendarDay(date, selectedDate);
       const isCurrentDate = isSameCalendarDay(date, new Date());
+      const chipDateKey = formatDateForApi(date);
       const dayNum = date.getDate();
       const dayName = formatDateChipLabel(date);
 
@@ -218,6 +222,7 @@ const MealDiaryScreen = (): React.ReactElement => {
           accessibilityRole="button"
           accessibilityLabel={`${dayName} ngay ${dayNum}${isCurrentDate ? ', hom nay' : ''}${isSelected ? ', dang chon' : ''}`}
           accessibilityState={{ selected: isSelected }}
+          testID={`${TEST_IDS.mealDiary.dateChipPrefix}-${chipDateKey}`}
         >
           <Animated.View
             style={[
@@ -249,7 +254,7 @@ const MealDiaryScreen = (): React.ReactElement => {
         </Pressable>
       );
     },
-    [selectedDate, handleDateSelect, theme, isDark],
+    [selectedDate, handleDateSelect, formatDateForApi, theme, isDark],
   );
 
   // Render summary header
@@ -391,6 +396,7 @@ const MealDiaryScreen = (): React.ReactElement => {
         label: 'Thêm món ăn',
         onPress: handleAddManual,
         icon: 'add-circle-outline',
+        testID: TEST_IDS.mealDiary.emptyAddManualButton,
       }}
       secondaryAction={{
         label: 'Chụp ảnh món ăn',
@@ -675,6 +681,7 @@ const MealDiaryScreen = (): React.ReactElement => {
           <Pressable
             onPress={() => setShowDatePicker(true)}
             style={styles.datePickerButton}
+            testID={TEST_IDS.mealDiary.datePickerButton}
           >
             <View style={styles.dateIconWrapper}>
               <Ionicons name="calendar" size={18} color={theme.colors.primary} />
@@ -826,6 +833,7 @@ const MealDiaryScreen = (): React.ReactElement => {
                 opacity: pressed ? 0.9 : 1,
               },
             ]}
+            testID={TEST_IDS.mealDiary.backToTodayButton}
           >
             <Ionicons name="today-outline" size={16} color="#fff" />
             <ThemedText variant="bodySmall" weight="600" style={{ color: '#fff' }}>

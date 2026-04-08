@@ -26,6 +26,7 @@ import { MEAL_TYPES, MEAL_TYPE_LABELS, type MealTypeId } from '../../../types';
 import { handleApiError } from '../../../utils/errorHandler';
 import FavoriteButton from '../../../components/FavoriteButton';
 import { favoritesService } from '../../../services/favoritesService';
+import { TEST_IDS } from '../../../testing/testIds';
 
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
@@ -65,6 +66,8 @@ const FoodDetailScreen = (): React.ReactElement | null => {
   const route = useRoute<RouteProps>();
   const queryClient = useQueryClient();
   const insets = useSafeAreaInsets();
+  const selectedDate = route.params.selectedDate;
+  const returnToDiaryOnSave = route.params.returnToDiaryOnSave ?? false;
 
   // Move styles to useMemo to fix hooks order
   const styles = useMemo(
@@ -312,6 +315,7 @@ const FoodDetailScreen = (): React.ReactElement | null => {
             grams: Number(values.grams),
             mealTypeId: values.mealType as MealTypeId,
             note: values.note ?? undefined,
+            eatenDate: selectedDate,
           });
         } else {
           await foodService.addDiaryEntry({
@@ -319,6 +323,7 @@ const FoodDetailScreen = (): React.ReactElement | null => {
             grams: Number(values.grams),
             mealTypeId: values.mealType as MealTypeId,
             note: values.note ?? undefined,
+            eatenDate: selectedDate,
           });
         }
         Toast.show({
@@ -327,6 +332,11 @@ const FoodDetailScreen = (): React.ReactElement | null => {
           text2: 'Tiếp tục theo dõi dinh dưỡng của bạn!',
         });
         await invalidateDiaryQueries(queryClient);
+        if (returnToDiaryOnSave && selectedDate) {
+          navigation.navigate('MealDiary', { selectedDate });
+          return;
+        }
+
         navigation.goBack();
       } catch (err: any) {
         handleApiError(err);
@@ -334,7 +344,7 @@ const FoodDetailScreen = (): React.ReactElement | null => {
         setIsSubmitting(false);
       }
     },
-    [detail, navigation, queryClient],
+    [detail, navigation, queryClient, returnToDiaryOnSave, selectedDate],
   );
 
 
@@ -382,7 +392,7 @@ const FoodDetailScreen = (): React.ReactElement | null => {
   );
 
   return (
-    <Screen scroll={true}>
+    <Screen scroll={true} testID={TEST_IDS.foodDetail.screen}>
       {renderHeader()}
 
       <View
@@ -532,6 +542,7 @@ const FoodDetailScreen = (): React.ReactElement | null => {
             name="grams"
             render={({ field: { onChange, onBlur, value } }) => (
               <ThemedTextInput
+                testID={TEST_IDS.foodDetail.gramsInput}
                 label="Số gram"
                 keyboardType="numeric"
                 returnKeyType="done"
@@ -604,6 +615,7 @@ const FoodDetailScreen = (): React.ReactElement | null => {
               name="note"
               render={({ field: { onChange, onBlur, value } }) => (
                 <ThemedTextInput
+                  testID={TEST_IDS.foodDetail.noteInput}
                   label="Ghi chú (tùy chọn)"
                   value={value}
                   onChangeText={onChange}
@@ -722,6 +734,7 @@ const FoodDetailScreen = (): React.ReactElement | null => {
               disabled={isSubmitting}
               onPress={handleSubmit(submit)}
               title={isSubmitting ? 'Đang thêm...' : 'Thêm vào nhật ký'}
+              testID={TEST_IDS.foodDetail.submitButton}
             />
           </View>
         </View>

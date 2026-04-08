@@ -14,9 +14,16 @@ export type RootStackParamList = {
         initialTab?: 'search' | 'favorites';
         autoFocus?: boolean;
         showQuickSuggestions?: boolean;
+        selectedDate?: string;
+        returnToDiaryOnSave?: boolean;
       }
     | undefined;
-  FoodDetail: { foodId: string; source?: 'catalog' | 'user' };
+  FoodDetail: {
+    foodId: string;
+    source?: 'catalog' | 'user';
+    selectedDate?: string;
+    returnToDiaryOnSave?: boolean;
+  };
   CustomDish: undefined;
   AiCamera: undefined;
   AddMealFromVision: import('../../types/navigation').AddMealFromVisionParams;

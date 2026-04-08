@@ -31,7 +31,7 @@ describe('foodService', () => {
             const result = await foodService.searchFoods('cơm');
 
             // Assert
-            expect(apiClient.get).toHaveBeenCalledWith('/api/food/search', {
+            expect(apiClient.get).toHaveBeenCalledWith('/api/search', {
                 params: expect.objectContaining({ q: 'cơm' }),
             });
             expect(result.items).toHaveLength(2);
@@ -65,7 +65,7 @@ describe('foodService', () => {
             await foodService.searchFoods('thịt', 10);
 
             // Assert - Verify limit được gửi đúng
-            expect(apiClient.get).toHaveBeenCalledWith('/api/food/search', {
+            expect(apiClient.get).toHaveBeenCalledWith('/api/search', {
                 params: expect.objectContaining({ limit: 10 }),
             });
         });
@@ -120,6 +120,52 @@ describe('foodService', () => {
                 params: expect.objectContaining({ q: 'thịt' }),
             });
             expect(result.items).toHaveLength(2);
+        });
+    });
+
+    describe('addDiaryEntry', () => {
+        it('should use provided eatenDate when adding a catalog food', async () => {
+            (apiClient.post as jest.Mock).mockResolvedValue({ data: {} });
+
+            await foodService.addDiaryEntry({
+                foodId: '42',
+                grams: 150,
+                mealTypeId: 2,
+                eatenDate: '2026-04-01',
+            });
+
+            expect(apiClient.post).toHaveBeenCalledWith('/api/meal-diary', {
+                eatenDate: '2026-04-01',
+                mealTypeId: 2,
+                foodItemId: 42,
+                grams: 150,
+                note: null,
+            });
+        });
+    });
+
+    describe('addDiaryEntryFromUserFoodItem', () => {
+        it('should use provided eatenDate when adding a user food item', async () => {
+            (apiClient.post as jest.Mock).mockResolvedValue({ data: {} });
+
+            await foodService.addDiaryEntryFromUserFoodItem({
+                userFoodItemId: '7',
+                grams: 80,
+                mealTypeId: 4,
+                eatenDate: '2026-04-02',
+            });
+
+            expect(apiClient.post).toHaveBeenCalledWith('/api/meal-diary', {
+                eatenDate: '2026-04-02',
+                mealTypeId: 4,
+                userFoodItemId: 7,
+                grams: 80,
+                calories: 0,
+                protein: 0,
+                carb: 0,
+                fat: 0,
+                note: null,
+            });
         });
     });
 });

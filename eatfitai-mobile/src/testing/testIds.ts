@@ -21,11 +21,22 @@ export const TEST_IDS = {
     screen: 'food-search-screen',
     queryInput: 'food-search-query-input',
     submitButton: 'food-search-submit-button',
+    firstResultCard: 'food-search-first-result-card',
     firstAddButton: 'food-search-add-first-item-button',
   },
   mealDiary: {
     screen: 'meal-diary-screen',
+    datePickerButton: 'meal-diary-date-picker-button',
+    dateChipPrefix: 'meal-diary-date-chip',
     addManualButton: 'meal-diary-add-manual-button',
+    emptyAddManualButton: 'meal-diary-empty-add-manual-button',
+    backToTodayButton: 'meal-diary-back-to-today-button',
+  },
+  foodDetail: {
+    screen: 'food-detail-screen',
+    gramsInput: 'food-detail-grams-input',
+    noteInput: 'food-detail-note-input',
+    submitButton: 'food-detail-submit-button',
   },
   aiScan: {
     screen: 'ai-scan-screen',
