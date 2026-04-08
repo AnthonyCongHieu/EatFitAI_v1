@@ -2,17 +2,25 @@
 
 Expo / React Native client for EatFitAI.
 
-## Local development contract
+## Development contract
 
 - Use Node `20.x`
-- Use `.env.development` for local development
-- Default local backend target for Android emulator:
+- Default development target is the cloud backend so emulator work only needs the UI bundle
+- Use `.env.development` for the cloud-first profile
+- Use `.env.development.local` only when you intentionally debug a local backend
+- Render `free` is supported. If the service is sleeping, the first API call can take longer while it wakes up.
+
+Default cloud backend target:
+
+```env
+EXPO_PUBLIC_API_BASE_URL=https://eatfitai-backend.onrender.com
+```
+
+- Local Android emulator override:
 
 ```env
 EXPO_PUBLIC_API_BASE_URL=http://10.0.2.2:5247
 ```
-
-- Physical device on the same LAN is supported as a secondary profile
 
 ## Start commands
 
@@ -24,10 +32,13 @@ npm run dev
 Useful scripts:
 
 - `npm run dev`
+- `npm run dev:cloud`
+- `npm run dev:local`
 - `npm run android`
 - `npm run lint`
 - `npm run typecheck`
 - `npm run test`
+- `npm run api:health`
 - `npm run typegen`
 - `npm run maestro:smoke:android`
 - `npm run maestro:regression:android`
@@ -37,8 +48,10 @@ Useful scripts:
 
 ## Environment files
 
-- `.env.development.example`: canonical local template
-- `.env.development`: active local development config
+- `.env.development.example`: canonical cloud-first template
+- `.env.development.local.example`: local backend override template
+- `.env.development`: active cloud-first development config
+- `.env.development.local`: optional local backend override
 - `.env`: optional non-dev Expo profile
 
 ## Automation lanes

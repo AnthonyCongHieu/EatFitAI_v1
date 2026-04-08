@@ -1,15 +1,9 @@
 ﻿// Food search screen for adding foods to the diary
 // Styled to match the MealDiaryScreen visual language
 
-import { useCallback, useState, useEffect } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import {
-  ActivityIndicator,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  View,
-} from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import Animated, {
   FadeIn,
   FadeInDown,
@@ -41,6 +35,8 @@ import {
 import { AnimatedEmptyState } from '../../../components/ui/AnimatedEmptyState';
 import { t } from '../../../i18n/vi';
 import { TEST_IDS } from '../../../testing/testIds';
+import { useUserPreferenceStore } from '../../../store/useUserPreferenceStore';
+import { filterFoodsByPreferences } from '../../../utils/foodPreferenceFilter';
 
 const PAGE_SIZE = 20;
 const QUICK_SEARCHES = ['com', 'rice', 'chicken', 'trung', 'sua chua'];
@@ -56,6 +52,8 @@ const FoodSearchScreen = (): React.ReactElement => {
   const route = useRoute<FoodSearchRouteProp>();
   const queryClient = useQueryClient();
   const insets = useSafeAreaInsets();
+  const preferences = useUserPreferenceStore((s) => s.preferences);
+  const fetchPreferences = useUserPreferenceStore((s) => s.fetchPreferences);
 
   const styles = StyleSheet.create({
     container: {
@@ -71,7 +69,7 @@ const FoodSearchScreen = (): React.ReactElement => {
     // Header row - back button aligned with title (like EditProfileScreen)
     headerRow: {
       flexDirection: 'row',
-      alignItems: 'flex-start',
+      alignItems: 'center',
       marginBottom: 12,
     },
     backButton: {
@@ -87,7 +85,7 @@ const FoodSearchScreen = (): React.ReactElement => {
     titleSection: {
       flex: 1,
       alignItems: 'center',
-      marginRight: 40,
+      paddingHorizontal: 12,
     },
     headerTitle: {
       fontSize: 20,
@@ -101,6 +99,14 @@ const FoodSearchScreen = (): React.ReactElement => {
       color: theme.colors.textSecondary,
       lineHeight: 18,
       marginTop: 4,
+    },
+    trailingButton: {
+      width: 40,
+      height: 40,
+      borderRadius: 12,
+      backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)',
+      alignItems: 'center',
+      justifyContent: 'center',
     },
     // Tabs - pill style
     tabContainer: {
@@ -276,6 +282,27 @@ const FoodSearchScreen = (): React.ReactElement => {
       borderWidth: 1,
       borderColor: isDark ? 'rgba(34, 197, 94, 0.15)' : 'rgba(34, 197, 94, 0.12)',
     },
+    filterSummaryCard: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      gap: 12,
+      padding: 14,
+      borderRadius: 16,
+      marginBottom: 16,
+      backgroundColor: isDark ? 'rgba(34, 197, 94, 0.08)' : 'rgba(34, 197, 94, 0.06)',
+      borderWidth: 1,
+      borderColor: isDark ? 'rgba(34, 197, 94, 0.16)' : 'rgba(34, 197, 94, 0.12)',
+    },
+    filterSummaryTitle: {
+      marginBottom: 4,
+    },
+    filterSummaryText: {
+      lineHeight: 20,
+    },
+    filterSummaryLink: {
+      marginTop: 4,
+      color: theme.colors.primary,
+    },
     // Others
     loadingCard: {
       padding: theme.spacing.xl,
@@ -349,6 +376,10 @@ const FoodSearchScreen = (): React.ReactElement => {
     }
   }, [initialTab]);
 
+  useEffect(() => {
+    fetchPreferences().catch(() => undefined);
+  }, [fetchPreferences]);
+
   // Load favorites and optionally sync them into the visible list
   const loadFavorites = async (setAsList = false) => {
     if (setAsList) {
@@ -362,7 +393,7 @@ const FoodSearchScreen = (): React.ReactElement => {
       // If setAsList is true, or we are already on the favorites tab, refresh items
       if (setAsList || activeTab === 'favorites') {
         setItems(favs);
-        }
+      }
     } catch (error) {
       console.error('Failed to load favorites', error);
       if (setAsList || activeTab === 'favorites') {
@@ -405,14 +436,17 @@ const FoodSearchScreen = (): React.ReactElement => {
   const handleQuickAdd = async (item: FoodItem) => {
     setIsQuickAdding(item.id);
     try {
-      await addItemsToTodayDiary([
+      await addItemsToTodayDiary(
+        [
+          {
+            foodItemId: Number(item.id),
+            grams: 100,
+          },
+        ],
         {
-          foodItemId: Number(item.id),
-          grams: 100,
+          date: selectedDate,
         },
-      ], {
-        date: selectedDate,
-      });
+      );
 
       Toast.show({
         type: 'success',
@@ -464,9 +498,7 @@ const FoodSearchScreen = (): React.ReactElement => {
         setHasSearched(true);
         setItems([]);
         setErrorMessage(
-          error?.response?.data?.message ??
-            error?.message ??
-            t('common.tryAgainLater'),
+          error?.response?.data?.message ?? error?.message ?? t('common.tryAgainLater'),
         );
         handleApiError(error);
       } finally {
@@ -486,14 +518,26 @@ const FoodSearchScreen = (): React.ReactElement => {
   const handleSearch = useCallback(() => {
     if (activeTab === 'favorites') return;
     triggerSearchGlow();
-    runSearch(query, false).catch(() => { });
+    runSearch(query, false).catch(() => {});
   }, [activeTab, query, runSearch, triggerSearchGlow]);
 
-  const handleQuickSuggestion = useCallback((nextQuery: string) => {
-    setQuery(nextQuery);
-    triggerSearchGlow();
-    runSearch(nextQuery, false).catch(() => { });
-  }, [runSearch, triggerSearchGlow]);
+  const handleQuickSuggestion = useCallback(
+    (nextQuery: string) => {
+      setQuery(nextQuery);
+      triggerSearchGlow();
+      runSearch(nextQuery, false).catch(() => {});
+    },
+    [runSearch, triggerSearchGlow],
+  );
+
+  const filteredResults = useMemo(
+    () => filterFoodsByPreferences(items, preferences),
+    [items, preferences],
+  );
+  const visibleItems = filteredResults.items;
+  const hasActiveFoodFilters = filteredResults.appliedLabels.length > 0;
+  const filtersRemovedAllResults =
+    hasActiveFoodFilters && items.length > 0 && visibleItems.length === 0;
 
   // Render a food result card
   const renderItem = ({ item, index }: { item: FoodItem; index: number }) => {
@@ -547,9 +591,7 @@ const FoodSearchScreen = (): React.ReactElement => {
                   onPress={() => handleToggleFavorite(item)}
                   style={styles.favButton}
                 >
-                  <ThemedText style={{ fontSize: 16 }}>
-                    {isFav ? '*' : '+'}
-                  </ThemedText>
+                  <ThemedText style={{ fontSize: 16 }}>{isFav ? '*' : '+'}</ThemedText>
                 </Pressable>
               </View>
               <ThemedText
@@ -557,7 +599,8 @@ const FoodSearchScreen = (): React.ReactElement => {
                 color="textSecondary"
                 style={{ marginBottom: 6 }}
               >
-                {'100g | ' + (item.calories != null ? Math.round(item.calories) + ' cal' : '-- cal')}
+                {'100g | ' +
+                  (item.calories != null ? Math.round(item.calories) + ' cal' : '-- cal')}
               </ThemedText>
               <View style={styles.macroRow}>
                 <View style={styles.macroItem}>
@@ -585,7 +628,11 @@ const FoodSearchScreen = (): React.ReactElement => {
               onPress={() => handleQuickAdd(item)}
               disabled={isQuickAdding === item.id}
               style={styles.addButtonCircle}
-              testID={index === 0 ? TEST_IDS.foodSearch.firstAddButton : 'food-search-add-item-' + item.id}
+              testID={
+                index === 0
+                  ? TEST_IDS.foodSearch.firstAddButton
+                  : 'food-search-add-item-' + item.id
+              }
             >
               {isQuickAdding === item.id ? (
                 <ActivityIndicator size="small" color={theme.colors.textSecondary} />
@@ -613,6 +660,14 @@ const FoodSearchScreen = (): React.ReactElement => {
               <ThemedText style={styles.headerSubtitle}>{selectedDate}</ThemedText>
             ) : null}
           </View>
+          <Pressable
+            onPress={() => navigation.navigate('DietaryRestrictions')}
+            style={styles.trailingButton}
+            accessibilityRole="button"
+            accessibilityLabel="Thiết lập bộ lọc ăn uống"
+          >
+            <Ionicons name="options-outline" size={20} color={theme.colors.text} />
+          </Pressable>
         </View>
 
         {/* Pill-style Tabs */}
@@ -660,16 +715,20 @@ const FoodSearchScreen = (): React.ReactElement => {
         contentContainerStyle={{ flexGrow: 1 }}
         showsVerticalScrollIndicator={false}
       >
-        <View style={{
-          marginHorizontal: 16,
-          marginTop: 12,
-          marginBottom: 16,
-          backgroundColor: isDark ? 'rgba(74, 144, 226, 0.06)' : 'rgba(59, 130, 246, 0.03)',
-          borderRadius: 20,
-          borderWidth: 1,
-          borderColor: isDark ? 'rgba(74, 144, 226, 0.12)' : 'rgba(59, 130, 246, 0.08)',
-          padding: 16,
-        }}>
+        <View
+          style={{
+            marginHorizontal: 16,
+            marginTop: 12,
+            marginBottom: 16,
+            backgroundColor: isDark
+              ? 'rgba(74, 144, 226, 0.06)'
+              : 'rgba(59, 130, 246, 0.03)',
+            borderRadius: 20,
+            borderWidth: 1,
+            borderColor: isDark ? 'rgba(74, 144, 226, 0.12)' : 'rgba(59, 130, 246, 0.08)',
+            padding: 16,
+          }}
+        >
           {/* Search bar inside card */}
           {activeTab === 'search' && (
             <Animated.View
@@ -730,7 +789,11 @@ const FoodSearchScreen = (): React.ReactElement => {
                     style={styles.quickSearchChip}
                     onPress={() => handleQuickSuggestion(chip)}
                   >
-                    <ThemedText variant="bodySmall" weight="600" style={{ color: theme.colors.primary }}>
+                    <ThemedText
+                      variant="bodySmall"
+                      weight="600"
+                      style={{ color: theme.colors.primary }}
+                    >
                       {chip}
                     </ThemedText>
                   </Pressable>
@@ -743,6 +806,42 @@ const FoodSearchScreen = (): React.ReactElement => {
               </View>
             </View>
           )}
+
+          {hasActiveFoodFilters ? (
+            <View style={styles.filterSummaryCard}>
+              <Ionicons name="leaf-outline" size={20} color={theme.colors.primary} />
+              <View style={{ flex: 1 }}>
+                <ThemedText weight="600" style={styles.filterSummaryTitle}>
+                  Đang áp dụng bộ lọc ăn uống
+                </ThemedText>
+                <ThemedText
+                  variant="bodySmall"
+                  color="textSecondary"
+                  style={styles.filterSummaryText}
+                >
+                  {filteredResults.appliedLabels.join(' • ')}
+                </ThemedText>
+                {filteredResults.excludedCount > 0 ? (
+                  <ThemedText
+                    variant="caption"
+                    color="textSecondary"
+                    style={styles.filterSummaryText}
+                  >
+                    Đã ẩn {filteredResults.excludedCount} món không phù hợp.
+                  </ThemedText>
+                ) : null}
+                <Pressable onPress={() => navigation.navigate('DietaryRestrictions')}>
+                  <ThemedText
+                    variant="caption"
+                    weight="600"
+                    style={styles.filterSummaryLink}
+                  >
+                    Chỉnh sửa bộ lọc
+                  </ThemedText>
+                </Pressable>
+              </View>
+            </View>
+          ) : null}
 
           {/* Results inside card */}
           {isLoading ? (
@@ -771,18 +870,26 @@ const FoodSearchScreen = (): React.ReactElement => {
                     return;
                   }
 
-                  runSearch(query, false).catch(() => { });
+                  runSearch(query, false).catch(() => {});
                 },
               }}
             />
-          ) : items.length > 0 ? (
+          ) : visibleItems.length > 0 ? (
             <View style={{ gap: 12 }}>
-              {items.map((item, index) => (
-                <View key={item.id}>
-                  {renderItem({ item, index })}
-                </View>
+              {visibleItems.map((item, index) => (
+                <View key={item.id}>{renderItem({ item, index })}</View>
               ))}
             </View>
+          ) : filtersRemovedAllResults ? (
+            <AnimatedEmptyState
+              variant="no-search-results"
+              title="Không có món phù hợp"
+              description="Hãy đổi từ khóa hoặc nới lỏng bộ lọc chế độ ăn và dị ứng."
+              primaryAction={{
+                label: 'Mở bộ lọc',
+                onPress: () => navigation.navigate('DietaryRestrictions'),
+              }}
+            />
           ) : hasSearched || activeTab === 'favorites' ? (
             <AnimatedEmptyState
               variant={activeTab === 'search' ? 'no-search-results' : 'no-favorites'}
@@ -799,13 +906,13 @@ const FoodSearchScreen = (): React.ReactElement => {
               primaryAction={
                 activeTab === 'search'
                   ? {
-                    label: 'Thử từ khóa khác',
-                    onPress: () => setQuery(''),
-                  }
+                      label: 'Thử từ khóa khác',
+                      onPress: () => setQuery(''),
+                    }
                   : {
-                    label: 'Tìm món ăn',
-                    onPress: () => handleTabChange('search'),
-                  }
+                      label: 'Tìm món ăn',
+                      onPress: () => handleTabChange('search'),
+                    }
               }
             />
           ) : (
@@ -822,4 +929,3 @@ const FoodSearchScreen = (): React.ReactElement => {
 };
 
 export default FoodSearchScreen;
-

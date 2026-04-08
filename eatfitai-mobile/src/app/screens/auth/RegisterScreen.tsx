@@ -17,6 +17,7 @@ import ThemedTextInput from '../../../components/ThemedTextInput';
 import apiClient from '../../../services/apiClient';
 import type { RootStackParamList } from '../../types';
 import { t } from '../../../i18n/vi';
+import { TEST_IDS } from '../../../testing/testIds';
 
 const RegisterSchema = z
   .object({
@@ -222,7 +223,11 @@ const RegisterScreen = ({ navigation }: Props): React.ReactElement => {
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
-        <Screen scroll={true} contentContainerStyle={styles.scrollContent}>
+        <Screen
+          scroll={true}
+          contentContainerStyle={styles.scrollContent}
+          testID={TEST_IDS.auth.registerScreen}
+        >
           {/* Logo */}
           <Animated.View
             entering={FadeInDown.delay(100).springify()}
@@ -253,6 +258,7 @@ const RegisterScreen = ({ navigation }: Props): React.ReactElement => {
                     error={!!errors.name}
                     helperText={errors.name?.message}
                     required
+                    testID={TEST_IDS.auth.registerNameInput}
                   />
                 )}
               />
@@ -272,6 +278,7 @@ const RegisterScreen = ({ navigation }: Props): React.ReactElement => {
                     error={!!errors.email}
                     helperText={errors.email?.message}
                     required
+                    testID={TEST_IDS.auth.registerEmailInput}
                   />
                 )}
               />
@@ -292,6 +299,7 @@ const RegisterScreen = ({ navigation }: Props): React.ReactElement => {
                       error={!!errors.password}
                       helperText={errors.password?.message}
                       required
+                      testID={TEST_IDS.auth.registerPasswordInput}
                     />
                     {/* Password Strength Meter */}
                     {value && value.length > 0 && (
@@ -335,6 +343,7 @@ const RegisterScreen = ({ navigation }: Props): React.ReactElement => {
                     error={!!errors.confirmPassword}
                     helperText={errors.confirmPassword?.message}
                     required
+                    testID={TEST_IDS.auth.registerConfirmPasswordInput}
                   />
                 )}
               />
@@ -348,6 +357,7 @@ const RegisterScreen = ({ navigation }: Props): React.ReactElement => {
               onPress={handleSubmit(onSubmit)}
               title={loading ? t('auth.processing') : t('auth.createAccount')}
               fullWidth
+              testID={TEST_IDS.auth.registerSubmitButton}
             />
 
                         {/* Divider */}

@@ -61,6 +61,7 @@ if (__DEV__) {
   } else {
     LogBox.ignoreLogs([
       '[expo-av]: Expo AV has been deprecated and will be removed in SDK 54.',
+      '[Reanimated] Reduced motion setting is enabled on this device.',
     ]);
   }
 }
@@ -86,9 +87,13 @@ const AppInner = () => {
     let cancelled = false;
 
     (async () => {
-      await new Promise<void>((resolve) => setTimeout(resolve, 1000));
+      await new Promise<void>((resolve) => setTimeout(resolve, 750));
 
-      const res = await healthService.pingRoot();
+      const res = await healthService.warmUpBackend({
+        maxAttempts: 3,
+        delayMs: 4000,
+        timeoutMs: 15000,
+      });
       if (!cancelled && !res.ok) {
         Toast.show({
           type: 'error',

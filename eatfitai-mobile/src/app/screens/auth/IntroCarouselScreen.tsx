@@ -17,6 +17,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ThemedText } from '../../../components/ThemedText';
 import { useAppTheme } from '../../../theme/ThemeProvider';
 import type { RootStackParamList } from '../../types';
+import { TEST_IDS } from '../../../testing/testIds';
 
 const { width, height } = Dimensions.get('window');
 
@@ -645,7 +646,7 @@ const IntroCarouselScreen = ({ navigation }: Props): React.ReactElement => {
   );
 
   return (
-    <View style={styles.container}>
+    <View style={styles.container} testID={TEST_IDS.auth.introScreen}>
       <LinearGradient
         colors={['#09111F', '#132844', '#08101C']}
         start={{ x: 0.5, y: 0 }}
@@ -683,7 +684,12 @@ const IntroCarouselScreen = ({ navigation }: Props): React.ReactElement => {
             ))}
           </View>
 
-          <Pressable onPress={handleStart} accessibilityRole="button" accessibilityLabel="Bắt đầu ngay">
+          <Pressable
+            onPress={handleStart}
+            accessibilityRole="button"
+            accessibilityLabel="Bắt đầu ngay"
+            testID={TEST_IDS.auth.introStartButton}
+          >
             <View style={styles.buttonShell}>
               <LinearGradient
                 colors={[theme.colors.primary, theme.colors.primaryDark]}

@@ -32,6 +32,7 @@ import { AUTH_NEEDS_ONBOARDING_KEY, useAuthStore } from '../../../store/useAuthS
 import apiClient from '../../../services/apiClient';
 import { showSuccess } from '../../../utils/errorHandler';
 import { t } from '../../../i18n/vi';
+import { TEST_IDS } from '../../../testing/testIds';
 const { width } = Dimensions.get('window');
 
 interface OnboardingData {
@@ -161,6 +162,7 @@ const OnboardingScreen = (): React.ReactElement => {
   const [currentStep, setCurrentStep] = useState(0);
   const [isCalculating, setIsCalculating] = useState(false);
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
+  const [calculationError, setCalculationError] = useState<string | null>(null);
   const [data, setData] = useState<OnboardingData>({
     fullName: '',
     gender: null,
@@ -209,6 +211,8 @@ const OnboardingScreen = (): React.ReactElement => {
     if (currentStep < 4) {
       if (currentStep === 3) {
         // Last data step - calculate AI
+        setAiResult(null);
+        setCalculationError(null);
         setCurrentStep(4);
         calculateNutrition();
       } else {
@@ -225,6 +229,7 @@ const OnboardingScreen = (): React.ReactElement => {
 
   const calculateNutrition = async () => {
     setIsCalculating(true);
+    setCalculationError(null);
     try {
       // Gọi qua backend API thay vì AI provider trực tiếp
       // Backend sẽ proxy đến AI Provider (Ollama)
@@ -250,6 +255,8 @@ const OnboardingScreen = (): React.ReactElement => {
           });
         }
       } else {
+        setAiResult(null);
+        setCalculationError('Không thể tính mục tiêu dinh dưỡng lúc này. Vui lòng thử lại.');
         Toast.show({
           type: 'error',
           text1: 'Dịch vụ AI hiện không khả dụng',
@@ -257,6 +264,8 @@ const OnboardingScreen = (): React.ReactElement => {
         });
       }
     } catch (error) {
+      setAiResult(null);
+      setCalculationError('Không thể kết nối AI. Kiểm tra backend rồi thử lại.');
       // KHÔNG fallback - hiển thị lỗi kết nối
       Toast.show({
         type: 'error',
@@ -492,6 +501,7 @@ const OnboardingScreen = (): React.ReactElement => {
               onChangeText={(text) => setData({ ...data, fullName: text })}
               placeholder={t('onboarding.enter_name')}
               style={{ marginBottom: 20 }}
+              testID={TEST_IDS.auth.onboardingNameInput}
             />
 
             <ThemedText
@@ -505,6 +515,11 @@ const OnboardingScreen = (): React.ReactElement => {
               {GENDER_OPTIONS.map((opt) => (
                 <Pressable
                   key={opt.value}
+                  testID={
+                    opt.value === 'male'
+                      ? TEST_IDS.auth.onboardingGenderMaleButton
+                      : TEST_IDS.auth.onboardingGenderFemaleButton
+                  }
                   style={[
                     styles.optionButton,
                     {
@@ -542,9 +557,10 @@ const OnboardingScreen = (): React.ReactElement => {
               onChangeText={(text) =>
                 setData({ ...data, age: text.replace(/[^0-9]/g, '') })
               }
-              placeholder="25"
+              placeholder="Nhập tuổi"
               keyboardType={Platform.OS === 'ios' ? 'number-pad' : 'numeric'}
               style={{ marginTop: 20 }}
+              testID={TEST_IDS.auth.onboardingAgeInput}
             />
           </Animated.View>
         );
@@ -560,8 +576,9 @@ const OnboardingScreen = (): React.ReactElement => {
                   onChangeText={(text) =>
                     setData({ ...data, heightCm: text.replace(/[^0-9]/g, '') })
                   }
-                  placeholder="170"
+                  placeholder="Nhập chiều cao"
                   keyboardType={Platform.OS === 'ios' ? 'number-pad' : 'numeric'}
+                  testID={TEST_IDS.auth.onboardingHeightInput}
                 />
               </View>
               <View style={styles.inputCol}>
@@ -571,8 +588,9 @@ const OnboardingScreen = (): React.ReactElement => {
                   onChangeText={(text) =>
                     setData({ ...data, weightKg: text.replace(/[^0-9.]/g, '') })
                   }
-                  placeholder="65"
+                  placeholder="Nhập cân nặng"
                   keyboardType={Platform.OS === 'ios' ? 'decimal-pad' : 'numeric'}
+                  testID={TEST_IDS.auth.onboardingWeightInput}
                 />
               </View>
             </View>
@@ -598,6 +616,7 @@ const OnboardingScreen = (): React.ReactElement => {
                 return (
                   <Pressable
                     key={goal.value}
+                    testID={`${TEST_IDS.auth.onboardingGoalPrefix}-${goal.value}`}
                     style={[
                       styles.goalCard,
                       {
@@ -652,6 +671,7 @@ const OnboardingScreen = (): React.ReactElement => {
             {ACTIVITY_OPTIONS.map((act) => (
               <Pressable
                 key={act.value}
+                testID={`${TEST_IDS.auth.onboardingActivityPrefix}-${act.value}`}
                 style={[
                   styles.activityCard,
                   {
@@ -700,7 +720,7 @@ const OnboardingScreen = (): React.ReactElement => {
                 </ThemedText>
               </View>
             ) : aiResult ? (
-              <View style={[glass.card, styles.resultCard]}>
+              <View style={[glass.card, styles.resultCard]} testID={TEST_IDS.auth.onboardingResultCard}>
                 <ThemedText style={{ fontSize: 48 }}>🎉</ThemedText>
                 <ThemedText variant="h2" style={{ marginTop: 12 }}>
                   {t('onboarding.daily_goal')}
@@ -751,7 +771,33 @@ const OnboardingScreen = (): React.ReactElement => {
                   </ThemedText>
                 ) : null}
               </View>
-            ) : null}
+            ) : (
+              <View style={[glass.card, styles.resultCard]} testID={TEST_IDS.auth.onboardingErrorCard}>
+                <ThemedText style={{ fontSize: 40 }}>⚠️</ThemedText>
+                <ThemedText variant="h3" style={{ marginTop: 12, textAlign: 'center' }}>
+                  Chưa thể tạo mục tiêu dinh dưỡng
+                </ThemedText>
+                <ThemedText
+                  variant="bodySmall"
+                  color="textSecondary"
+                  style={{ marginTop: 12, textAlign: 'center' }}
+                >
+                  {calculationError ?? 'Vui lòng thử lại sau khi kiểm tra backend và dịch vụ AI.'}
+                </ThemedText>
+                <View style={{ width: '100%', marginTop: 20 }}>
+                  <Button
+                    title="Thử lại"
+                    variant="secondary"
+                    onPress={() => {
+                      setAiResult(null);
+                      setCalculationError(null);
+                      calculateNutrition();
+                    }}
+                    testID={TEST_IDS.auth.onboardingRetryButton}
+                  />
+                </View>
+              </View>
+            )}
           </Animated.View>
         );
 
@@ -765,6 +811,7 @@ const OnboardingScreen = (): React.ReactElement => {
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'position' : undefined}
       keyboardVerticalOffset={0}
+      testID={TEST_IDS.auth.onboardingScreen}
     >
       <LinearGradient
         colors={theme.colors.screenGradient}
@@ -827,6 +874,7 @@ const OnboardingScreen = (): React.ReactElement => {
                 title="Quay lại"
                 variant="outline"
                 onPress={handleBack}
+                testID={TEST_IDS.auth.onboardingBackButton}
               />
             </View>
           )}
@@ -841,6 +889,7 @@ const OnboardingScreen = (): React.ReactElement => {
                 title={currentStep === 3 ? 'Hoàn tất' : 'Tiếp tục'}
                 onPress={handleNext}
                 disabled={!canProceed()}
+                testID={TEST_IDS.auth.onboardingNextButton}
               />
             </View>
           ) : (
@@ -848,7 +897,8 @@ const OnboardingScreen = (): React.ReactElement => {
               <Button
                 title="Bắt đầu sử dụng"
                 onPress={handleComplete}
-                disabled={isCalculating}
+                disabled={isCalculating || !aiResult}
+                testID={TEST_IDS.auth.onboardingCompleteButton}
               />
             </View>
           )}

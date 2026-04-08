@@ -18,6 +18,7 @@ import { tokenStorage } from '../../../services/secureStore';
 import { setAccessTokenMem } from '../../../services/authTokens';
 import { AUTH_NEEDS_ONBOARDING_KEY, useAuthStore } from '../../../store/useAuthStore';
 import { handleApiError } from '../../../utils/errorHandler';
+import { TEST_IDS } from '../../../testing/testIds';
 
 const CODE_LENGTH = 6;
 
@@ -292,7 +293,11 @@ const VerifyEmailScreen = ({ navigation, route }: Props): React.ReactElement => 
   });
 
   return (
-    <Screen scroll contentContainerStyle={styles.container}>
+    <Screen
+      scroll
+      contentContainerStyle={styles.container}
+      testID={TEST_IDS.auth.verifyScreen}
+    >
       <LinearGradient
         colors={[theme.colors.primary + '20', 'transparent']}
         style={StyleSheet.absoluteFillObject}
@@ -339,6 +344,7 @@ const VerifyEmailScreen = ({ navigation, route }: Props): React.ReactElement => 
             keyboardType="number-pad"
             maxLength={1}
             selectTextOnFocus
+            testID={`${TEST_IDS.auth.verifyCodeInputPrefix}-${index}`}
           />
         ))}
       </Animated.View>
@@ -355,6 +361,7 @@ const VerifyEmailScreen = ({ navigation, route }: Props): React.ReactElement => 
           onPress={handleVerify}
           loading={loading}
           disabled={code.some((d) => !d)}
+          testID={TEST_IDS.auth.verifySubmitButton}
         />
       </Animated.View>
 

@@ -123,7 +123,11 @@ const HomeScreen = (): React.ReactElement => {
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const res = await healthService.pingRoot();
+      const res = await healthService.warmUpBackend({
+        maxAttempts: 2,
+        delayMs: 3000,
+        timeoutMs: 12000,
+      });
       if (!cancelled) setServerDown(!res.ok);
     })();
     return () => {
@@ -136,7 +140,11 @@ const HomeScreen = (): React.ReactElement => {
     useCallback(() => {
       let active = true;
       (async () => {
-        const res = await healthService.pingRoot();
+        const res = await healthService.warmUpBackend({
+          maxAttempts: 2,
+          delayMs: 3000,
+          timeoutMs: 12000,
+        });
         if (active) setServerDown(!res.ok);
       })();
       return () => {
