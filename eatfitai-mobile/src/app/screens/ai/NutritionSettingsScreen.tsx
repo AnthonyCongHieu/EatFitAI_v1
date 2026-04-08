@@ -25,6 +25,9 @@ import type { RootStackParamList } from '../../types';
 import { glassStyles } from '../../../components/ui/GlassCard';
 import { t } from '../../../i18n/vi';
 import { AIExplanationCard } from '../../../components/ai/AIExplanationCard';
+import { AiStatusBadge } from '../../../components/ai/AiStatusBadge';
+import { useAiStatus } from '../../../hooks/useAiStatus';
+import { TEST_IDS } from '../../../testing/testIds';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -62,6 +65,8 @@ const NutritionSettingsScreen = (): React.ReactElement => {
 
   const [isEditing, setIsEditing] = useState(false);
   const [suggestedTarget, setSuggestedTarget] = useState<NutritionTarget | null>(null);
+  const { data: aiStatus, isLoading: isAiStatusLoading } = useAiStatus();
+  const isAiDown = aiStatus?.state === 'DOWN';
 
   const {
     control,
@@ -424,19 +429,26 @@ const NutritionSettingsScreen = (): React.ReactElement => {
           <ThemedText variant="bodySmall" color="textSecondary" style={{ marginBottom: theme.spacing.md }}>
             {t('nutrition_settings.ai_section_subtitle')}
           </ThemedText>
+          <AiStatusBadge
+            status={aiStatus}
+            loading={isAiStatusLoading}
+            testID={TEST_IDS.nutritionSettings.statusBadge}
+          />
 
           {!suggestedTarget ? (
             <View>
               <ThemedText
                 variant="body"
                 color="textSecondary"
-                style={{ marginBottom: theme.spacing.lg }}
+                style={{ marginBottom: theme.spacing.lg, marginTop: theme.spacing.md }}
               >
-                {t('nutrition_settings.ai_desc')}
+                {isAiDown
+                  ? 'AI hiện đang DOWN. EatFitAI sẽ dùng công thức offline nếu bạn tiếp tục phân tích.'
+                  : t('nutrition_settings.ai_desc')}
               </ThemedText>
               <Button
                 variant="secondary"
-                title={t('nutrition_settings.analyze_btn')}
+                title={isAiDown ? 'Dùng công thức tạm thời' : t('nutrition_settings.analyze_btn')}
                 onPress={() => suggestMutation.mutate()}
                 loading={suggestMutation.isPending}
                 disabled={suggestMutation.isPending}

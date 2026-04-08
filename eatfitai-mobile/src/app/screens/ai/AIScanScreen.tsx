@@ -31,8 +31,10 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { ThemedText } from '../../../components/ThemedText';
 import Button from '../../../components/Button';
 import Icon from '../../../components/Icon';
+import { AiStatusBadge } from '../../../components/ai/AiStatusBadge';
 import { useAppTheme } from '../../../theme/ThemeProvider';
 import { aiService, isAiOfflineError } from '../../../services/aiService';
+import { useAiStatus } from '../../../hooks/useAiStatus';
 import {
   addItemsToTodayDiary,
   invalidateDiaryQueries,
@@ -83,6 +85,7 @@ const AIScanScreen: React.FC = () => {
   const [showBasketSheet, setShowBasketSheet] = useState(false);
   const [resultNotice, setResultNotice] = useState<ScanResultNotice | null>(null);
   const [isQuickSaving, setIsQuickSaving] = useState(false);
+  const { data: aiStatus, isLoading: isAiStatusLoading } = useAiStatus();
 
   const addIngredient = useIngredientBasketStore((s) => s.addIngredient);
 
@@ -90,6 +93,15 @@ const AIScanScreen: React.FC = () => {
   const basketIconScale = useSharedValue(1);
 
   const hasPermission = permission?.granted === true;
+  const isAiDown = aiStatus?.state === 'DOWN';
+
+  const notifyAiDown = useCallback(() => {
+    Toast.show({
+      type: 'info',
+      text1: 'AI tạm dừng',
+      text2: 'Bạn có thể dùng tìm kiếm thủ công trong lúc chờ AI hồi phục.',
+    });
+  }, []);
 
   const processImage = useCallback(async (uri: string) => {
     setMode('preview');
@@ -150,6 +162,11 @@ const AIScanScreen: React.FC = () => {
   }, []);
 
   const handleCapture = useCallback(async () => {
+    if (isAiDown) {
+      notifyAiDown();
+      return;
+    }
+
     if (!cameraRef.current) {
       handleApiErrorWithCustomMessage(new Error('Camera not ready'), {
         unknown: { text1: 'Camera chưa sẵn sàng', text2: 'Vui lòng thử lại' },
@@ -180,9 +197,14 @@ const AIScanScreen: React.FC = () => {
     } finally {
       setIsCapturing(false);
     }
-  }, [captureScale, processImage]);
+  }, [captureScale, isAiDown, notifyAiDown, processImage]);
 
   const handlePickImage = useCallback(async () => {
+    if (isAiDown) {
+      notifyAiDown();
+      return;
+    }
+
     if (!galleryPermission?.granted) {
       const result = await requestGalleryPermission();
       if (!result.granted) {
@@ -211,7 +233,7 @@ const AIScanScreen: React.FC = () => {
         unknown: { text1: 'Không thể chọn ảnh', text2: 'Vui lòng thử lại' },
       });
     }
-  }, [galleryPermission, processImage, requestGalleryPermission]);
+  }, [galleryPermission, isAiDown, notifyAiDown, processImage, requestGalleryPermission]);
 
   const handleRetake = useCallback(() => {
     setCapturedUri(null);
@@ -432,6 +454,17 @@ const AIScanScreen: React.FC = () => {
           </View>
         )}
 
+        {mode !== 'results' && (
+          <View style={styles.statusBadgeWrap}>
+            <AiStatusBadge
+              status={aiStatus}
+              loading={isAiStatusLoading}
+              compact
+              testID={TEST_IDS.aiScan.statusBadge}
+            />
+          </View>
+        )}
+
         <View style={styles.spacer} />
 
         {isProcessing && (
@@ -450,6 +483,7 @@ const AIScanScreen: React.FC = () => {
               variant="secondary"
               size="sm"
               fullWidth={false}
+              disabled={isAiDown}
               icon="images-outline"
               accessibilityLabel="Chọn từ thư viện"
               accessibilityHint="Chọn ảnh có sẵn từ thư viện"
@@ -484,12 +518,12 @@ const AIScanScreen: React.FC = () => {
 
               <AnimatedPressable
                 onPress={handleCapture}
-                disabled={isCapturing}
+                disabled={isCapturing || isAiDown}
                 style={[captureButtonStyle, styles.captureButtonOuter]}
                 accessibilityRole="button"
                 accessibilityLabel="Chụp ảnh"
                 accessibilityHint="Chụp ảnh món ăn để AI nhận diện"
-                accessibilityState={{ disabled: isCapturing }}
+                accessibilityState={{ disabled: isCapturing || isAiDown }}
                 testID={TEST_IDS.aiScan.captureButton}
               >
                 <LinearGradient
@@ -517,8 +551,10 @@ const AIScanScreen: React.FC = () => {
                     shadowRadius: 4,
                     elevation: 5,
                   },
+                  isAiDown && styles.disabledSideButton,
                 ]}
                 onPress={handlePickImage}
+                disabled={isAiDown}
                 hitSlop={16}
                 accessible
                 collapsable={false}
@@ -852,6 +888,10 @@ const styles = StyleSheet.create({
     paddingTop: 20,
     alignItems: 'center',
   },
+  statusBadgeWrap: {
+    paddingHorizontal: 20,
+    marginTop: 8,
+  },
   spacer: {
     flex: 1,
   },
@@ -906,6 +946,9 @@ const styles = StyleSheet.create({
     borderRadius: 26,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  disabledSideButton: {
+    opacity: 0.45,
   },
   resultsContainer: {
     position: 'absolute',

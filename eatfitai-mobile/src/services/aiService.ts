@@ -1,5 +1,6 @@
 import apiClient, { aiApiClient, getCurrentApiUrl } from './apiClient';
 import type {
+  AiHealthStatus,
   MappedFoodItem,
   NutritionTargetDto,
   RecipeSuggestionApiItem,
@@ -208,6 +209,28 @@ const normalizeAdaptiveTarget = (data: any): AdaptiveTarget => ({
   applied: Boolean(data?.applied),
 });
 
+const normalizeAiHealthStatus = (data: any): AiHealthStatus => {
+  const rawState =
+    typeof data?.state === 'string' ? data.state.toUpperCase() : 'DEGRADED';
+  const state: AiHealthStatus['state'] =
+    rawState === 'HEALTHY' || rawState === 'DOWN' || rawState === 'DEGRADED'
+      ? rawState
+      : 'DEGRADED';
+
+  return {
+    state,
+    providerUrl: typeof data?.providerUrl === 'string' ? data.providerUrl : '',
+    lastCheckedAt:
+      typeof data?.lastCheckedAt === 'string' ? data.lastCheckedAt : null,
+    lastHealthyAt:
+      typeof data?.lastHealthyAt === 'string' ? data.lastHealthyAt : null,
+    consecutiveFailures: toNumberOr(data?.consecutiveFailures, 0),
+    modelLoaded: Boolean(data?.modelLoaded),
+    geminiConfigured: Boolean(data?.geminiConfigured),
+    message: typeof data?.message === 'string' ? data.message : null,
+  };
+};
+
 const buildNutritionPayload = (profile: {
   currentHeightCm?: number;
   currentWeightKg?: number;
@@ -347,6 +370,25 @@ export async function teachLabel(req: TeachLabelRequest): Promise<void> {
 }
 
 export const aiService = {
+  async getAiStatus(): Promise<AiHealthStatus> {
+    try {
+      const response = await apiClient.get('/api/ai/status');
+      return normalizeAiHealthStatus(response.data);
+    } catch (error) {
+      console.log('[EatFitAI] Error fetching AI status:', error);
+      return {
+        state: 'DOWN',
+        providerUrl: '',
+        lastCheckedAt: null,
+        lastHealthyAt: null,
+        consecutiveFailures: 0,
+        modelLoaded: false,
+        geminiConfigured: false,
+        message: 'Không thể kiểm tra trạng thái AI.',
+      };
+    }
+  },
+
   async detectIngredients(_imageBase64: string): Promise<IngredientItem[]> {
     console.warn(
       'detectIngredients is deprecated. Use detectFoodByImage with imageUri instead.',

@@ -370,7 +370,7 @@ public class AIReviewService
             .OrderByDescending(t => t.EffectiveFrom)
             .FirstOrDefaultAsync();
         
-        // Lấy goal từ target
+        // The active cloud schema does not persist Goal on NutritionTarget in this context.
         var goal = target?.Goal ?? "maintain";
         
         return new UserWeekDataDto

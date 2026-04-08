@@ -39,6 +39,19 @@ export interface NutritionTargetResponse {
   fat?: number | null;
 }
 
+export type AiHealthState = 'HEALTHY' | 'DEGRADED' | 'DOWN';
+
+export interface AiHealthStatus {
+  state: AiHealthState;
+  providerUrl: string;
+  lastCheckedAt?: string | null;
+  lastHealthyAt?: string | null;
+  consecutiveFailures: number;
+  modelLoaded: boolean;
+  geminiConfigured: boolean;
+  message?: string | null;
+}
+
 export interface RecipeSuggestionApiItem {
   id?: string | number;
   slug?: string;

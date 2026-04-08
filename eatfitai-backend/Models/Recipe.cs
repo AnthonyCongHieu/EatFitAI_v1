@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace EatFitAI.API.Models;
 
@@ -15,6 +16,7 @@ public partial class Recipe
 
     public DateTime UpdatedAt { get; set; }
 
+    [NotMapped]
     public bool IsDeleted { get; set; }
 
     public virtual ICollection<MealDiary> MealDiaries { get; set; } = new List<MealDiary>();

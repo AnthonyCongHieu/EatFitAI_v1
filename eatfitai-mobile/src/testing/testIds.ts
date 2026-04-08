@@ -40,12 +40,16 @@ export const TEST_IDS = {
   },
   aiScan: {
     screen: 'ai-scan-screen',
+    statusBadge: 'ai-scan-status-badge',
     captureButton: 'ai-scan-capture-button',
     galleryButton: 'ai-scan-gallery-button',
     retakeButton: 'ai-scan-retake-button',
     addToDiaryButton: 'ai-scan-add-to-diary-button',
     quickAddButton: 'ai-scan-quick-save-button',
     quickAddTopResultButton: 'ai-scan-quick-add-top-result-button',
+  },
+  nutritionSettings: {
+    statusBadge: 'nutrition-settings-status-badge',
   },
   visionAddMeal: {
     screen: 'vision-add-meal-screen',

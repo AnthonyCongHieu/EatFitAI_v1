@@ -140,7 +140,6 @@ namespace EatFitAI.API.Services
                 {
                     entry.AbsoluteExpirationRelativeToNow = CacheDuration;
                     return await _db.Recipes
-                        .Where(r => !r.IsDeleted)
                         .Include(r => r.RecipeIngredients)
                         .ThenInclude(ri => ri.FoodItem)
                         .AsNoTracking()
@@ -233,7 +232,7 @@ namespace EatFitAI.API.Services
             CancellationToken cancellationToken = default)
         {
             var recipe = await _db.Recipes
-                .Where(r => r.RecipeId == recipeId && !r.IsDeleted)
+                .Where(r => r.RecipeId == recipeId)
                 .Include(r => r.RecipeIngredients)
                 .ThenInclude(ri => ri.FoodItem)
                 .FirstOrDefaultAsync(cancellationToken);

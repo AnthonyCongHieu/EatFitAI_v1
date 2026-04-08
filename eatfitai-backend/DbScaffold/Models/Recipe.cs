@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace EatFitAI.API.DbScaffold.Models;
 
@@ -22,6 +23,8 @@ public partial class Recipe
 
     public DateTime UpdatedAt { get; set; }
 
+    // The active Supabase schema does not soft-delete Recipe rows.
+    [NotMapped]
     public bool IsDeleted { get; set; }
 
     public virtual ICollection<MealDiary> MealDiaries { get; set; } = new List<MealDiary>();

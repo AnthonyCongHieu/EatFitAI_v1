@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace EatFitAI.API.Models;
 
@@ -11,13 +12,20 @@ public partial class NutritionTarget
 
     public int? ActivityLevelId { get; set; }
 
+    [Column("CaloriesTarget")]
     public int TargetCalories { get; set; }
 
+    [Column("ProteinTarget")]
     public int TargetProtein { get; set; }
 
+    [Column("CarbTarget")]
     public int TargetCarb { get; set; }
 
+    [Column("FatTarget")]
     public int TargetFat { get; set; }
+
+    // Goal is stored elsewhere in the active cloud schema.
+    [NotMapped]
     public string? Goal { get; set; }
 
     public DateOnly EffectiveFrom { get; set; }
