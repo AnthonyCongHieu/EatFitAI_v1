@@ -26,6 +26,7 @@ namespace EatFitAI.API.Controllers
         private readonly ILogger<AIController> _logger;
         private readonly IAiFoodMapService _aiFoodMapService;
         private readonly IAiCorrectionService _aiCorrectionService;
+        private readonly IAiHealthService _aiHealthService;
         private readonly IAiLogService _aiLog;
         private readonly IRecipeSuggestionService _recipeSuggestionService;
         private readonly INutritionInsightService _nutritionInsightService;
@@ -39,6 +40,7 @@ namespace EatFitAI.API.Controllers
             ILogger<AIController> logger,
             IAiFoodMapService aiFoodMapService,
             IAiCorrectionService aiCorrectionService,
+            IAiHealthService aiHealthService,
             IAiLogService aiLog,
             IRecipeSuggestionService recipeSuggestionService,
             INutritionInsightService nutritionInsightService,
@@ -51,6 +53,7 @@ namespace EatFitAI.API.Controllers
             _logger = logger;
             _aiFoodMapService = aiFoodMapService;
             _aiCorrectionService = aiCorrectionService;
+            _aiHealthService = aiHealthService;
             _aiLog = aiLog;
             _recipeSuggestionService = recipeSuggestionService;
             _nutritionInsightService = nutritionInsightService;
@@ -66,6 +69,18 @@ namespace EatFitAI.API.Controllers
         [ProducesResponseType(typeof(object), StatusCodes.Status400BadRequest)]
         public async Task<ActionResult<EatFitAI.API.DTOs.AI.VisionDetectResultDto>> DetectVision(DetectVisionRequest input)
         {
+            var aiStatus = _aiHealthService.GetStatus();
+            if (string.Equals(aiStatus.State, AiHealthState.Down.ToString().ToUpperInvariant(), StringComparison.Ordinal))
+            {
+                _logger.LogWarning("Skipping vision detection because AI provider is DOWN. Message: {Message}", aiStatus.Message);
+                return StatusCode(StatusCodes.Status503ServiceUnavailable, new
+                {
+                    error = "ai_provider_down",
+                    message = "AI provider hiện đang DOWN. Không thể nhận diện ảnh lúc này.",
+                    aiStatus
+                });
+            }
+
             var file = input.File;
             if (file == null || file.Length == 0)
             {
@@ -165,6 +180,13 @@ namespace EatFitAI.API.Controllers
             }
 
             return Ok(result);
+        }
+
+        [HttpGet("status")]
+        [ProducesResponseType(typeof(AiHealthStatusDto), StatusCodes.Status200OK)]
+        public ActionResult<AiHealthStatusDto> GetAiStatus()
+        {
+            return Ok(_aiHealthService.GetStatus());
         }
 
         /// <summary>
@@ -291,6 +313,12 @@ namespace EatFitAI.API.Controllers
             try
             {
                 // Gọi AI Provider để tính toán bằng Ollama (không dùng công thức local)
+                var aiStatus = _aiHealthService.GetStatus();
+                if (string.Equals(aiStatus.State, AiHealthState.Down.ToString().ToUpperInvariant(), StringComparison.Ordinal))
+                {
+                    return BuildOfflineFallback("AI Provider đang DOWN, đã chuyển sang công thức offline.");
+                }
+
                 var aiProviderUrl = _configuration["AIProvider:VisionBaseUrl"] ?? "http://127.0.0.1:5050";
                 
                 using var client = _httpClientFactory.CreateClient();
