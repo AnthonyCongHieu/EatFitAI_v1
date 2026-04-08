@@ -7,6 +7,30 @@ This repo is now prepared for a cloud path with:
 - Supabase Postgres for application data
 - Supabase Storage public buckets `food-images` and `user-food`
 
+## 0. Production source of truth
+
+Use these production resources only:
+
+- Supabase project: `EatFitAI v1`
+- Render backend URL: `https://eatfitai-backend.onrender.com`
+- Render AI provider URL: `https://eatfitai-ai-provider.onrender.com`
+
+Ignore the old paused Supabase project `EatFitAI`.
+
+## 0.1. Render environment group layout
+
+To preserve production config outside live services, keep these environment groups in Render:
+
+- `eatfitai-backend-shared-prod`
+- `eatfitai-backend-jwt-prod`
+- `eatfitai-ai-provider-prod`
+
+Operational rules:
+
+- do not store production source of truth in service-local env only
+- do not link or relink env groups on a healthy live service unless you are intentionally performing a controlled cutover
+- for a rebuild or recreate, attach the AI provider group first, then backend shared group, then backend JWT group
+
 ## 1. Supabase bootstrap
 
 Run these SQL files in order inside the Supabase SQL editor:
@@ -72,6 +96,13 @@ Deploy order:
 1. Deploy AI provider
 2. Copy its public URL into backend `AIProvider__VisionBaseUrl`
 3. Deploy backend
+
+Recreate order when recovering from a broken Render service:
+
+1. Recreate `eatfitai-ai-provider`
+2. Wait for public `GET /healthz` to return `200`
+3. Recreate `eatfitai-backend`
+4. Wait for public `GET /health/ready` to return `200`
 
 ## 4. Mobile production env
 
