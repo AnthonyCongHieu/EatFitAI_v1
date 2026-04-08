@@ -10,6 +10,7 @@ import type { AdaptiveTarget, NutritionInsight } from '../types/aiEnhanced';
 import { API_BASE_URL, assertBackendApiBaseUrl } from '../config/env';
 import { getAccessTokenMem } from './authTokens';
 import { tokenStorage } from './secureStore';
+import { sanitizeFoodImageUrl } from '../utils/imageHelpers';
 
 const getApiBaseUrl = (): string => {
   const baseUrl = getCurrentApiUrl() ?? API_BASE_URL;
@@ -151,7 +152,7 @@ const normalizeMappedFoodItem = (item: any): MappedFoodItem => ({
   proteinPer100g: toNumber(item?.proteinPer100g),
   fatPer100g: toNumber(item?.fatPer100g),
   carbPer100g: toNumber(item?.carbPer100g),
-  thumbNail: item?.thumbNail ? String(item.thumbNail) : null,
+  thumbNail: sanitizeFoodImageUrl(item?.thumbNail ? String(item.thumbNail) : null),
   isMatched: Boolean(item?.isMatched ?? item?.foodItemId ?? item?.foodName),
 });
 

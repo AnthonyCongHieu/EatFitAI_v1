@@ -2,6 +2,7 @@
 // Cho phep user luu va quan ly cac mon an yeu thich
 
 import apiClient from './apiClient';
+import { sanitizeFoodImageUrl } from '../utils/imageHelpers';
 
 export interface FavoriteItem {
   foodItemId: number;
@@ -29,7 +30,12 @@ export const favoritesService = {
    */
   async getFavorites(): Promise<FavoriteItem[]> {
     const response = await apiClient.get('/api/favorites');
-    return Array.isArray(response.data) ? response.data : [];
+    return Array.isArray(response.data)
+      ? response.data.map((item) => ({
+          ...item,
+          thumbNail: sanitizeFoodImageUrl(item?.thumbNail ?? null),
+        }))
+      : [];
   },
 
   /**

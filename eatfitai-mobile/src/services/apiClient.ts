@@ -26,6 +26,38 @@ const RESCAN_COOLDOWN = 120000; // 2 phút
 // Flag để track đã init chưa
 let isApiInitialized = false;
 
+const isPrivateIpv4Host = (host: string): boolean =>
+  /^10\./.test(host) ||
+  /^127\./.test(host) ||
+  /^192\.168\./.test(host) ||
+  /^172\.(1[6-9]|2\d|3[0-1])\./.test(host);
+
+const shouldUseLanDiscovery = (url: string | undefined | null): boolean => {
+  if (!url) {
+    return __DEV__;
+  }
+
+  try {
+    const parsed = new URL(url);
+    const host = parsed.hostname.toLowerCase();
+    return (
+      __DEV__ &&
+      (host === 'localhost' ||
+        host === '10.0.2.2' ||
+        host === '127.0.0.1' ||
+        host.endsWith('.local') ||
+        isPrivateIpv4Host(host))
+    );
+  } catch {
+    return __DEV__;
+  }
+};
+
+const applyBaseUrl = (url: string): void => {
+  apiClient.defaults.baseURL = url;
+  aiApiClient.defaults.baseURL = url;
+};
+
 /**
  * Reset toàn bộ API state - gọi khi IP thay đổi hoặc cần kết nối lại
  */
@@ -58,10 +90,15 @@ export const initializeApiClient = async (): Promise<boolean> => {
 
     if (API_BASE_URL) {
       console.log('[APIClient] Trying configured API URL first:', API_BASE_URL);
+      if (!shouldUseLanDiscovery(API_BASE_URL)) {
+        applyBaseUrl(API_BASE_URL);
+        isApiInitialized = true;
+        return true;
+      }
+
       const isConfiguredUrlValid = await verifyApiUrl(API_BASE_URL);
       if (isConfiguredUrlValid) {
-        apiClient.defaults.baseURL = API_BASE_URL;
-        aiApiClient.defaults.baseURL = API_BASE_URL;
+        applyBaseUrl(API_BASE_URL);
         isApiInitialized = true;
         return true;
       }
@@ -71,8 +108,7 @@ export const initializeApiClient = async (): Promise<boolean> => {
     // getApiUrl() sẽ tự động verify cachedUrl trước khi scan
     const discoveredUrl = await getApiUrl();
     if (discoveredUrl) {
-      apiClient.defaults.baseURL = discoveredUrl;
-      aiApiClient.defaults.baseURL = discoveredUrl;
+      applyBaseUrl(discoveredUrl);
       console.log('[APIClient] ✅ Đã dùng URL từ scan/cache:', discoveredUrl);
       isApiInitialized = true;
       return true;
@@ -81,10 +117,15 @@ export const initializeApiClient = async (): Promise<boolean> => {
     // 2. Fallback sang URL từ env nếu scan thất bại
     if (API_BASE_URL) {
       console.log('[APIClient] Scan thất bại, thử URL từ env:', API_BASE_URL);
+      if (!shouldUseLanDiscovery(API_BASE_URL)) {
+        applyBaseUrl(API_BASE_URL);
+        isApiInitialized = true;
+        return true;
+      }
+
       const isValid = await verifyApiUrl(API_BASE_URL);
       if (isValid) {
-        apiClient.defaults.baseURL = API_BASE_URL;
-        aiApiClient.defaults.baseURL = API_BASE_URL;
+        applyBaseUrl(API_BASE_URL);
         isApiInitialized = true;
         return true;
       }
@@ -366,6 +407,14 @@ apiClient.interceptors.response.use(
     }
     // Handle network errors specifically - thử re-scan và retry 1 lần
     if (!error.response && error.code && originalRequest && !originalRequest._networkRetried) {
+      const retryBaseUrl =
+        typeof originalRequest.baseURL === 'string'
+          ? originalRequest.baseURL
+          : apiClient.defaults.baseURL;
+      if (!shouldUseLanDiscovery(retryBaseUrl)) {
+        return Promise.reject(error);
+      }
+
       if (__DEV__) {
         console.warn('[EatFitAI] Network Error, đang thử tìm lại backend...');
       }
@@ -384,8 +433,7 @@ apiClient.interceptors.response.use(
         const newUrl = await forceRescan();
         if (newUrl) {
           // Cập nhật baseURL cho cả 2 client
-          apiClient.defaults.baseURL = newUrl;
-          aiApiClient.defaults.baseURL = newUrl;
+          applyBaseUrl(newUrl);
 
           // Retry request với URL mới
           originalRequest.baseURL = newUrl;

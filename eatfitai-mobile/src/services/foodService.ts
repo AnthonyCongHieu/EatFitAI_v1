@@ -9,6 +9,7 @@ import type {
   ApiUserFoodDetail,
   ApiSearchResponse,
 } from '../types/api';
+import { sanitizeFoodImageUrl } from '../utils/imageHelpers';
 
 // Helper to convert unknown to number or null
 const toNumber = (value: unknown): number | null => {
@@ -69,7 +70,7 @@ const normalizeFoodItem = (data: FoodItemDtoExtended): FoodItem => ({
   protein: data?.proteinPer100g ?? null,
   carbs: data?.carbPer100g ?? null,
   fat: data?.fatPer100g ?? null,
-  thumbnail: data?.thumbNail ?? null,
+  thumbnail: sanitizeFoodImageUrl(data?.thumbNail),
   isActive: data?.isActive ?? null,
   createdAt: data?.createdAt ?? null,
   updatedAt: data?.updatedAt ?? null,
@@ -107,7 +108,7 @@ const normalizeUserFoodDetail = (data: ApiUserFoodDetail): FoodDetail => ({
   perServingCarbs: data?.carbPer100 ?? null,
 
   perServingFat: data?.fatPer100 ?? null,
-  thumbnail: data?.thumbnailUrl ?? null,
+  thumbnail: sanitizeFoodImageUrl(data?.thumbnailUrl),
 });
 
 export const foodService = {
@@ -133,7 +134,7 @@ export const foodService = {
       protein: toNumber(x?.proteinPer100),
       carbs: toNumber(x?.carbPer100),
       fat: toNumber(x?.fatPer100),
-      thumbnail: x?.thumbnailUrl ?? null,
+      thumbnail: sanitizeFoodImageUrl(x?.thumbnailUrl),
       isActive: null,
       createdAt: null,
       updatedAt: null,
@@ -269,7 +270,7 @@ export const foodService = {
         protein: item?.proteinPer100g ?? item?.protein ?? null,
         carbs: item?.carbPer100g ?? item?.carbs ?? null,
         fat: item?.fatPer100g ?? item?.fat ?? null,
-        thumbnail: item?.thumbNail ?? item?.thumbnail ?? null,
+        thumbnail: sanitizeFoodImageUrl(item?.thumbNail ?? item?.thumbnail ?? null),
         isActive: item?.isActive ?? null,
         createdAt: item?.createdAt ?? null,
         updatedAt: item?.updatedAt ?? null,
