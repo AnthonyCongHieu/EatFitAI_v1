@@ -31,8 +31,7 @@ public partial class FoodItem
 
     public bool IsDeleted { get; set; }
 
-    // Credibility Fields (2026 Strategy)
-    public string? Source { get; set; } // e.g., "NIN 2019", "USDA"
+    // Credibility fields persisted in PostgreSQL.
     public bool IsVerified { get; set; } // Green checkmark for trusted data
     public string? VerifiedBy { get; set; } // e.g., "Admin", "Community", "NIN"
     public int CredibilityScore { get; set; } = 50; // 0 - 100 confidence scale in DB
