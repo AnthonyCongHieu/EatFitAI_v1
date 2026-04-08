@@ -335,9 +335,16 @@ public partial class ApplicationDbContext : DbContext
             entity.Property(e => e.CreatedAt)
                 .HasPrecision(3)
                 .HasDefaultValueSql("NOW() AT TIME ZONE 'UTC'");
+            entity.Property(e => e.AvatarUrl).HasColumnType("text");
             entity.Property(e => e.DisplayName).HasMaxLength(150);
             entity.Property(e => e.Email).HasMaxLength(256);
+            entity.Property(e => e.EmailVerified).HasColumnName("IsEmailVerified");
             entity.Property(e => e.PasswordHash).HasMaxLength(256);
+            entity.Property(e => e.TargetWeightKg).HasColumnType("numeric");
+            entity.Property(e => e.VerificationCode).HasColumnName("EmailVerificationToken");
+            entity.Property(e => e.VerificationCodeExpiry)
+                .HasColumnName("EmailVerificationExpiry")
+                .HasPrecision(3);
         });
 
         modelBuilder.Entity<UserDish>(entity =>

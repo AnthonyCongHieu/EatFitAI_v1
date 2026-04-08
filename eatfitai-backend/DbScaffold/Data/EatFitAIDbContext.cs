@@ -343,7 +343,21 @@ public partial class EatFitAIDbContext : DbContext
                 .HasDefaultValueSql("NOW() AT TIME ZONE 'UTC'");
             entity.Property(e => e.DisplayName).HasMaxLength(150);
             entity.Property(e => e.Email).HasMaxLength(256);
+            entity.Property(e => e.EmailVerified).HasColumnName("IsEmailVerified");
+            entity.Property(e => e.VerificationCode).HasColumnName("EmailVerificationToken");
+            entity.Property(e => e.VerificationCodeExpiry)
+                .HasColumnName("EmailVerificationExpiry")
+                .HasPrecision(3);
             entity.Property(e => e.PasswordHash).HasMaxLength(256);
+            entity.Property(e => e.RefreshToken).HasColumnType("text");
+            entity.Property(e => e.RefreshTokenExpiryTime).HasPrecision(3);
+            entity.Property(e => e.Goal).HasMaxLength(50);
+            entity.Property(e => e.TargetWeightKg).HasColumnType("numeric");
+
+            entity.HasOne(d => d.ActivityLevel)
+                .WithMany()
+                .HasForeignKey(d => d.ActivityLevelId)
+                .HasConstraintName("FK_Users_ActivityLevel");
         });
 
         modelBuilder.Entity<UserDish>(entity =>
