@@ -57,3 +57,7 @@ errors.txt
 tools/dev/logs/
 tools/dev/device-app-logcat.txt
 tools/dev/device-current.png
+
+data_batches/
+data_chunks/
+*.sql
