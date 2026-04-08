@@ -9,7 +9,7 @@ services:
     dockerfilePath: ./eatfitai-backend/Dockerfile
     dockerContext: ./eatfitai-backend
     region: singapore
-    plan: starter
+    plan: free
     healthCheckPath: /health/live
     envVars:
       - key: ASPNETCORE_ENVIRONMENT
@@ -42,7 +42,7 @@ services:
     dockerfilePath: ./ai-provider/Dockerfile
     dockerContext: ./ai-provider
     region: singapore
-    plan: starter
+    plan: free
     healthCheckPath: /healthz
     envVars:
       - key: GEMINI_API_KEY
