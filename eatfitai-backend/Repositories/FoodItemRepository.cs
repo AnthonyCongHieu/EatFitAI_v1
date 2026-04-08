@@ -19,51 +19,23 @@ namespace EatFitAI.API.Repositories
         {
             var normalizedSearchTerm = searchTerm.Trim();
 
-            if (!_context.Database.IsSqlServer())
-            {
-                var items = await _context.FoodItems
-                    .Where(fi => fi.IsActive && !fi.IsDeleted)
-                    .ToListAsync();
-
-                return items
-                    .Where(fi =>
-                        MatchesSearch(fi.FoodName, normalizedSearchTerm) ||
-                        MatchesSearch(fi.FoodNameEn, normalizedSearchTerm) ||
-                        MatchesSearch(fi.FoodNameUnsigned, normalizedSearchTerm))
-                    .OrderByDescending(fi => StartsWithNormalized(fi.FoodName, normalizedSearchTerm))
-                    .ThenByDescending(fi => StartsWithNormalized(fi.FoodNameEn, normalizedSearchTerm))
-                    .ThenByDescending(fi => StartsWithNormalized(fi.FoodNameUnsigned, normalizedSearchTerm))
-                    .ThenBy(fi => fi.FoodName)
-                    .Take(limit)
-                    .ToList();
-            }
-
-            var containsPattern = BuildContainsPattern(normalizedSearchTerm);
-            var startsWithPattern = BuildStartsWithPattern(normalizedSearchTerm);
-
-            return await _context.FoodItems
+            // PostgreSQL & InMemory: dùng client-side search cho accent-insensitive
+            // Data set nhỏ (<500 items) nên hiệu suất vẫn tốt
+            var items = await _context.FoodItems
                 .Where(fi => fi.IsActive && !fi.IsDeleted)
-                .Select(fi => new
-                {
-                    FoodItem = fi,
-                    FoodName = EF.Functions.Collate(fi.FoodName, AccentInsensitiveCollation),
-                    FoodNameEn = EF.Functions.Collate(fi.FoodNameEn ?? string.Empty, AccentInsensitiveCollation),
-                    FoodNameUnsigned = EF.Functions.Collate(fi.FoodNameUnsigned ?? string.Empty, AccentInsensitiveCollation),
-                })
-                .Where(x =>
-                    EF.Functions.Like(x.FoodName, containsPattern) ||
-                    EF.Functions.Like(x.FoodNameEn, containsPattern) ||
-                    EF.Functions.Like(x.FoodNameUnsigned, containsPattern))
-                .OrderByDescending(x => x.FoodName == normalizedSearchTerm)
-                .ThenByDescending(x => x.FoodNameEn == normalizedSearchTerm)
-                .ThenByDescending(x => x.FoodNameUnsigned == normalizedSearchTerm)
-                .ThenByDescending(x => EF.Functions.Like(x.FoodName, startsWithPattern))
-                .ThenByDescending(x => EF.Functions.Like(x.FoodNameEn, startsWithPattern))
-                .ThenByDescending(x => EF.Functions.Like(x.FoodNameUnsigned, startsWithPattern))
-                .ThenBy(x => x.FoodItem.FoodName)
-                .Select(x => x.FoodItem)
-                .Take(limit)
                 .ToListAsync();
+
+            return items
+                .Where(fi =>
+                    MatchesSearch(fi.FoodName, normalizedSearchTerm) ||
+                    MatchesSearch(fi.FoodNameEn, normalizedSearchTerm) ||
+                    MatchesSearch(fi.FoodNameUnsigned, normalizedSearchTerm))
+                .OrderByDescending(fi => StartsWithNormalized(fi.FoodName, normalizedSearchTerm))
+                .ThenByDescending(fi => StartsWithNormalized(fi.FoodNameEn, normalizedSearchTerm))
+                .ThenByDescending(fi => StartsWithNormalized(fi.FoodNameUnsigned, normalizedSearchTerm))
+                .ThenBy(fi => fi.FoodName)
+                .Take(limit)
+                .ToList();
         }
 
         public async Task<IEnumerable<FoodItem>> GetActiveAsync()

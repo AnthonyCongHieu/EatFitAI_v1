@@ -1,0 +1,12 @@
+bin/
+obj/
+*.log
+*.user
+*.suo
+.vs/
+.vscode/
+Properties/launchSettings.json
+Tests/
+backend-restart-*.log
+backend.log
+appsettings.Development.json

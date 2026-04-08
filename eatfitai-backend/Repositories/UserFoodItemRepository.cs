@@ -24,32 +24,15 @@ namespace EatFitAI.API.Repositories
             {
                 var normalizedSearch = search.Trim();
 
-                if (!_context.Database.IsSqlServer())
-                {
-                    var items = await query.ToListAsync();
-                    return items
-                        .Where(x => MatchesSearch(x.FoodName, normalizedSearch))
-                        .OrderByDescending(x => StartsWithNormalized(x.FoodName, normalizedSearch))
-                        .ThenBy(x => x.FoodName)
-                        .Skip(skip)
-                        .Take(take)
-                        .ToList();
-                }
-
-                var containsPattern = BuildContainsPattern(normalizedSearch);
-                var startsWithPattern = BuildStartsWithPattern(normalizedSearch);
-
-                query = query
-                    .Select(x => new
-                    {
-                        Item = x,
-                        FoodName = EF.Functions.Collate(x.FoodName, AccentInsensitiveCollation),
-                    })
-                    .Where(x => EF.Functions.Like(x.FoodName, containsPattern))
-                    .OrderByDescending(x => x.FoodName == normalizedSearch)
-                    .ThenByDescending(x => EF.Functions.Like(x.FoodName, startsWithPattern))
-                    .ThenBy(x => x.Item.FoodName)
-                    .Select(x => x.Item);
+                // PostgreSQL: client-side search vì không có SQL Server collation
+                var items = await query.ToListAsync();
+                return items
+                    .Where(x => MatchesSearch(x.FoodName, normalizedSearch))
+                    .OrderByDescending(x => StartsWithNormalized(x.FoodName, normalizedSearch))
+                    .ThenBy(x => x.FoodName)
+                    .Skip(skip)
+                    .Take(take)
+                    .ToList();
             }
             else
             {
@@ -71,18 +54,9 @@ namespace EatFitAI.API.Repositories
             {
                 var normalizedSearch = search.Trim();
 
-                if (!_context.Database.IsSqlServer())
-                {
-                    var items = await query.ToListAsync();
-                    return items.Count(x => MatchesSearch(x.FoodName, normalizedSearch));
-                }
-
-                var containsPattern = BuildContainsPattern(normalizedSearch);
-
-                query = query.Where(x =>
-                    EF.Functions.Like(
-                        EF.Functions.Collate(x.FoodName, AccentInsensitiveCollation),
-                        containsPattern));
+                // PostgreSQL: client-side filter
+                var items = await query.ToListAsync();
+                return items.Count(x => MatchesSearch(x.FoodName, normalizedSearch));
             }
 
             return await query.CountAsync();

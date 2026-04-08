@@ -1,33 +1,34 @@
-# Gunicorn configuration for EatFitAI AI Provider
-# Sử dụng để chạy production với multi-worker
+"""
+Gunicorn production configuration cho AI Provider
+Tối ưu cho Render.com starter tier (512MB RAM)
+"""
+import os
+import multiprocessing
 
-# Server socket
-bind = "0.0.0.0:5050"
+# Bind - Render cung cấp PORT env var
+port = os.getenv("PORT", "5050")
+bind = f"0.0.0.0:{port}"
 
-# Worker processes
-# Khuyến nghị: 2 * CPU cores + 1
-workers = 3
+# Workers - chỉ 1 worker vì YOLO model dùng nhiều RAM (~300MB)
+# Nhiều worker sẽ duplicate model trong mỗi process → OOM
+workers = 1
 
-# Worker class - sử dụng sync vì YOLO inference blocking
-worker_class = "sync"
+# Threads - dùng thread thay vì multi-process cho model sharing
+threads = 2
 
-# Timeout cho requests AI (Ollama có thể chậm)
+# Timeout cao vì YOLO inference có thể chậm trên CPU
 timeout = 120
+graceful_timeout = 30
 
-# Graceful timeout
-graceful_timeout = 60
-
-# Keep alive
-keepalive = 5
-
-# Logging
-accesslog = "-"
-errorlog = "-"
-loglevel = "info"
-
-# Preload app để chia sẻ YOLO model giữa workers
+# Preload app để share YOLO model giữa các threads
 preload_app = True
 
-# Max requests per worker trước khi restart (tránh memory leak)
-max_requests = 500
-max_requests_jitter = 50
+# Access log
+accesslog = "-"  # stdout
+errorlog = "-"   # stderr
+loglevel = "info"
+
+# Security
+limit_request_line = 8190
+limit_request_fields = 100
+limit_request_field_size = 8190

@@ -1,0 +1,51 @@
+# render.yaml - Render.com Blueprint cho EatFitAI
+# Docs: https://render.com/docs/blueprint-spec
+
+services:
+  # === Backend API (.NET 9) ===
+  - type: web
+    name: eatfitai-backend
+    runtime: docker
+    dockerfilePath: ./eatfitai-backend/Dockerfile
+    dockerContext: ./eatfitai-backend
+    region: singapore
+    plan: starter
+    healthCheckPath: /health/live
+    envVars:
+      - key: ASPNETCORE_ENVIRONMENT
+        value: Production
+      # Connection string Supabase PostgreSQL (set manual trên dashboard)
+      - key: ConnectionStrings__DefaultConnection
+        sync: false
+      # JWT Secret (tối thiểu 32 ký tự)
+      - key: Jwt__Key
+        sync: false
+      - key: Jwt__Issuer
+        value: EatFitAI
+      - key: Jwt__Audience
+        value: EatFitAI
+      # URL của AI Provider service
+      - key: AIProvider__VisionBaseUrl
+        sync: false
+      # SMTP config
+      - key: Smtp__User
+        sync: false
+      - key: Smtp__Password
+        sync: false
+      - key: Smtp__FromEmail
+        sync: false
+
+  # === AI Provider (Python + YOLO + Gemini) ===
+  - type: web
+    name: eatfitai-ai-provider
+    runtime: docker
+    dockerfilePath: ./ai-provider/Dockerfile
+    dockerContext: ./ai-provider
+    region: singapore
+    plan: starter
+    healthCheckPath: /healthz
+    envVars:
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: ENABLE_STT
+        value: "false"

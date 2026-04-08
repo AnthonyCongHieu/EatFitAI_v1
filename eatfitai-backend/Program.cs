@@ -27,9 +27,14 @@ public partial class Program
 
         // User Secrets will be loaded automatically in Development by CreateBuilder
 
-        // Configure listening URLs from configuration (e.g., appsettings.*.json)
+        // Render.com cung cấp PORT env var, ưu tiên dùng nó
+        var port = Environment.GetEnvironmentVariable("PORT") ?? "10000";
         var configuredUrls = builder.Configuration.GetValue<string>("Urls");
-        if (!string.IsNullOrWhiteSpace(configuredUrls))
+        if (!string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("PORT")))
+        {
+            builder.WebHost.UseUrls($"http://+:{port}");
+        }
+        else if (!string.IsNullOrWhiteSpace(configuredUrls))
         {
             builder.WebHost.UseUrls(configuredUrls);
         }
@@ -225,12 +230,13 @@ builder.Services.AddSwaggerGen(c =>
 });
 
 // Add DbContext (scaffolded from DB)
+// Sử dụng PostgreSQL (Supabase) thay vì SQL Server
 builder.Services.AddDbContext<EatFitAIDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 // Add ApplicationDbContext (custom with WeeklyCheckIns)
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 // Caching for features like password reset
 builder.Services.AddMemoryCache();
@@ -279,9 +285,9 @@ builder.Services.AddSingleton<ILookupCacheService, LookupCacheService>();
 
 // Health checks (used by HealthController and readiness endpoints)
 builder.Services.AddHealthChecks()
-    .AddSqlServer(
+    .AddNpgSql(
         builder.Configuration.GetConnectionString("DefaultConnection")!,
-        name: "sql",
+        name: "postgres",
         timeout: TimeSpan.FromSeconds(3));
 
 var jwtKey = builder.Configuration["Jwt:Key"];

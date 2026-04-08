@@ -73,7 +73,7 @@ public partial class ApplicationDbContext : DbContext
             entity.Property(e => e.Action).HasMaxLength(50);
             entity.Property(e => e.CreatedAt)
                 .HasPrecision(3)
-                .HasDefaultValueSql("(sysutcdatetime())");
+                .HasDefaultValueSql("NOW() AT TIME ZONE 'UTC'");
 
             entity.HasOne(d => d.User).WithMany(p => p.AILogs)
                 .HasForeignKey(d => d.UserId)
@@ -89,7 +89,7 @@ public partial class ApplicationDbContext : DbContext
             entity.Property(e => e.Confidence).HasColumnType("decimal(5, 4)");
             entity.Property(e => e.CreatedAt)
                 .HasPrecision(3)
-                .HasDefaultValueSql("(sysutcdatetime())");
+                .HasDefaultValueSql("NOW() AT TIME ZONE 'UTC'");
 
             entity.HasOne(d => d.AILog).WithMany(p => p.AISuggestions)
                 .HasForeignKey(d => d.AILogId)
@@ -132,13 +132,13 @@ public partial class ApplicationDbContext : DbContext
         {
             entity.ToTable("FoodItem");
 
-            entity.HasIndex(e => e.FoodName, "IX_FoodItem_Name").HasFilter("([IsDeleted]=(0))");
+            entity.HasIndex(e => e.FoodName, "IX_FoodItem_Name").HasFilter("\"IsDeleted\" = false");
 
             entity.Property(e => e.CaloriesPer100g).HasColumnType("decimal(10, 2)");
             entity.Property(e => e.CarbPer100g).HasColumnType("decimal(10, 2)");
             entity.Property(e => e.CreatedAt)
                 .HasPrecision(3)
-                .HasDefaultValueSql("(sysutcdatetime())");
+                .HasDefaultValueSql("NOW() AT TIME ZONE 'UTC'");
             entity.Property(e => e.FatPer100g).HasColumnType("decimal(10, 2)");
             entity.Property(e => e.FoodName).HasMaxLength(255);
             entity.Property(e => e.IsActive).HasDefaultValue(true);
@@ -146,7 +146,7 @@ public partial class ApplicationDbContext : DbContext
             entity.Property(e => e.ThumbNail).HasMaxLength(255);
             entity.Property(e => e.UpdatedAt)
                 .HasPrecision(3)
-                .HasDefaultValueSql("(sysutcdatetime())");
+                .HasDefaultValueSql("NOW() AT TIME ZONE 'UTC'");
         });
 
         modelBuilder.Entity<FoodServing>(entity =>
@@ -186,15 +186,15 @@ public partial class ApplicationDbContext : DbContext
         {
             entity.ToTable("MealDiary");
 
-            entity.HasIndex(e => e.EatenDate, "IX_MealDiary_EatenDate").HasFilter("([IsDeleted]=(0))");
+            entity.HasIndex(e => e.EatenDate, "IX_MealDiary_EatenDate").HasFilter("\"IsDeleted\" = false");
 
-            entity.HasIndex(e => new { e.UserId, e.EatenDate }, "IX_MealDiary_UserDate").HasFilter("([IsDeleted]=(0))");
+            entity.HasIndex(e => new { e.UserId, e.EatenDate }, "IX_MealDiary_UserDate").HasFilter("\"IsDeleted\" = false");
 
             entity.Property(e => e.Calories).HasColumnType("decimal(10, 2)");
             entity.Property(e => e.Carb).HasColumnType("decimal(10, 2)");
             entity.Property(e => e.CreatedAt)
                 .HasPrecision(3)
-                .HasDefaultValueSql("(sysutcdatetime())");
+                .HasDefaultValueSql("NOW() AT TIME ZONE 'UTC'");
             entity.Property(e => e.Fat).HasColumnType("decimal(10, 2)");
             entity.Property(e => e.Grams).HasColumnType("decimal(10, 2)");
             entity.Property(e => e.Note).HasMaxLength(500);
@@ -204,7 +204,7 @@ public partial class ApplicationDbContext : DbContext
             entity.Property(e => e.SourceMethod).HasMaxLength(30);
             entity.Property(e => e.UpdatedAt)
                 .HasPrecision(3)
-                .HasDefaultValueSql("(sysutcdatetime())");
+                .HasDefaultValueSql("NOW() AT TIME ZONE 'UTC'");
 
             entity.HasOne(d => d.FoodItem).WithMany(p => p.MealDiaries)
                 .HasForeignKey(d => d.FoodItemId)
@@ -264,12 +264,12 @@ public partial class ApplicationDbContext : DbContext
 
             entity.Property(e => e.CreatedAt)
                 .HasPrecision(3)
-                .HasDefaultValueSql("(sysutcdatetime())");
+                .HasDefaultValueSql("NOW() AT TIME ZONE 'UTC'");
             entity.Property(e => e.Description).HasMaxLength(500);
             entity.Property(e => e.RecipeName).HasMaxLength(255);
             entity.Property(e => e.UpdatedAt)
                 .HasPrecision(3)
-                .HasDefaultValueSql("(sysutcdatetime())");
+                .HasDefaultValueSql("NOW() AT TIME ZONE 'UTC'");
         });
 
         modelBuilder.Entity<RecipeIngredient>(entity =>
@@ -305,10 +305,10 @@ public partial class ApplicationDbContext : DbContext
         {
             entity.HasIndex(e => e.Email, "UQ_Users_Email").IsUnique();
 
-            entity.Property(e => e.UserId).HasDefaultValueSql("(newid())");
+            entity.Property(e => e.UserId).HasDefaultValueSql("gen_random_uuid()");
             entity.Property(e => e.CreatedAt)
                 .HasPrecision(3)
-                .HasDefaultValueSql("(sysutcdatetime())");
+                .HasDefaultValueSql("NOW() AT TIME ZONE 'UTC'");
             entity.Property(e => e.DisplayName).HasMaxLength(150);
             entity.Property(e => e.Email).HasMaxLength(256);
             entity.Property(e => e.PasswordHash).HasMaxLength(256);
@@ -318,16 +318,16 @@ public partial class ApplicationDbContext : DbContext
         {
             entity.ToTable("UserDish");
 
-            entity.HasIndex(e => new { e.UserId, e.DishName }, "IX_UserDish_UserName").HasFilter("([IsDeleted]=(0))");
+            entity.HasIndex(e => new { e.UserId, e.DishName }, "IX_UserDish_UserName").HasFilter("\"IsDeleted\" = false");
 
             entity.Property(e => e.CreatedAt)
                 .HasPrecision(3)
-                .HasDefaultValueSql("(sysutcdatetime())");
+                .HasDefaultValueSql("NOW() AT TIME ZONE 'UTC'");
             entity.Property(e => e.Description).HasMaxLength(500);
             entity.Property(e => e.DishName).HasMaxLength(255);
             entity.Property(e => e.UpdatedAt)
                 .HasPrecision(3)
-                .HasDefaultValueSql("(sysutcdatetime())");
+                .HasDefaultValueSql("NOW() AT TIME ZONE 'UTC'");
 
             entity.HasOne(d => d.User).WithMany(p => p.UserDishes)
                 .HasForeignKey(d => d.UserId)
@@ -364,7 +364,7 @@ public partial class ApplicationDbContext : DbContext
 
             entity.Property(e => e.CreatedAt)
                 .HasPrecision(3)
-                .HasDefaultValueSql("(sysutcdatetime())");
+                .HasDefaultValueSql("NOW() AT TIME ZONE 'UTC'");
 
             entity.HasOne(d => d.FoodItem).WithMany(p => p.UserFavoriteFoods)
                 .HasForeignKey(d => d.FoodItemId)
@@ -379,7 +379,7 @@ public partial class ApplicationDbContext : DbContext
 
         modelBuilder.Entity<UserFoodItem>(entity =>
         {
-            entity.ToTable("UserFoodItem", tb => tb.HasTrigger("tr_UserFoodItem_SetUpdatedAt"));
+            entity.ToTable("UserFoodItem");
 
             entity.HasIndex(e => new { e.UserId, e.FoodName }, "UQ_UserFoodItem_User_Name").IsUnique();
 
@@ -387,18 +387,16 @@ public partial class ApplicationDbContext : DbContext
             entity.Property(e => e.CarbPer100).HasColumnType("decimal(10, 2)");
             entity.Property(e => e.CreatedAt)
                 .HasPrecision(3)
-                .HasDefaultValueSql("(sysutcdatetime())");
+                .HasDefaultValueSql("NOW() AT TIME ZONE 'UTC'");
             entity.Property(e => e.FatPer100).HasColumnType("decimal(10, 2)");
             entity.Property(e => e.FoodName).HasMaxLength(255);
             entity.Property(e => e.ProteinPer100).HasColumnType("decimal(10, 2)");
             entity.Property(e => e.ThumbnailUrl).HasMaxLength(500);
             entity.Property(e => e.UnitType)
-                .HasMaxLength(2)
-                .IsUnicode(false)
-                .IsFixedLength();
+                .HasMaxLength(2);
             entity.Property(e => e.UpdatedAt)
                 .HasPrecision(3)
-                .HasDefaultValueSql("(sysutcdatetime())");
+                .HasDefaultValueSql("NOW() AT TIME ZONE 'UTC'");
 
             entity.HasOne(d => d.User).WithMany(p => p.UserFoodItems)
                 .HasForeignKey(d => d.UserId)
@@ -416,7 +414,7 @@ public partial class ApplicationDbContext : DbContext
 
             entity.Property(e => e.LastUsedAt)
                 .HasPrecision(3)
-                .HasDefaultValueSql("(sysutcdatetime())");
+                .HasDefaultValueSql("NOW() AT TIME ZONE 'UTC'");
             entity.Property(e => e.UsedCount).HasDefaultValue(1);
 
             entity.HasOne(d => d.FoodItem).WithMany(p => p.UserRecentFoods)
@@ -509,7 +507,7 @@ public partial class ApplicationDbContext : DbContext
 
             entity.Property(e => e.CreatedAt)
                 .HasPrecision(3)
-                .HasDefaultValueSql("(sysutcdatetime())");
+                .HasDefaultValueSql("NOW() AT TIME ZONE 'UTC'");
         });
 
         modelBuilder.Entity<UserPreference>(entity =>
@@ -524,11 +522,11 @@ public partial class ApplicationDbContext : DbContext
 
             entity.Property(e => e.CreatedAt)
                 .HasPrecision(3)
-                .HasDefaultValueSql("(sysutcdatetime())");
+                .HasDefaultValueSql("NOW() AT TIME ZONE 'UTC'");
 
             entity.Property(e => e.UpdatedAt)
                 .HasPrecision(3)
-                .HasDefaultValueSql("(sysutcdatetime())");
+                .HasDefaultValueSql("NOW() AT TIME ZONE 'UTC'");
 
             entity.HasOne(d => d.User).WithOne(p => p.UserPreference)
                 .HasForeignKey<UserPreference>(d => d.UserId)
