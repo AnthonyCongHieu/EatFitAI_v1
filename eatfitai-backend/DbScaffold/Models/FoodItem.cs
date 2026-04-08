@@ -35,7 +35,7 @@ public partial class FoodItem
     public string? Source { get; set; } // e.g., "NIN 2019", "USDA"
     public bool IsVerified { get; set; } // Green checkmark for trusted data
     public string? VerifiedBy { get; set; } // e.g., "Admin", "Community", "NIN"
-    public double ReliabilityScore { get; set; } = 0.0; // 0.0 - 1.0 (confidence)
+    public int CredibilityScore { get; set; } = 50; // 0 - 100 confidence scale in DB
 
     public virtual ICollection<AISuggestion> AISuggestions { get; set; } = new List<AISuggestion>();
 

@@ -15,9 +15,12 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Text;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
+using Npgsql;
 
 public partial class Program
 {
@@ -78,9 +81,10 @@ if (devAllowedOrigins.Length == 0)
 
 if (allowedOrigins.Length == 0)
 {
-    // If production whitelist isn't configured yet, fallback to dev list to avoid startup break.
-    // Team should set strict AllowedOrigins in appsettings.Production.json before public release.
-    allowedOrigins = devAllowedOrigins;
+    if (!builder.Environment.IsProduction())
+    {
+        allowedOrigins = devAllowedOrigins;
+    }
 }
 
 static bool IsOriginAllowed(string origin, string[] rules)
@@ -102,10 +106,10 @@ static bool IsOriginAllowed(string origin, string[] rules)
             return true;
         }
 
-        if (rule.EndsWith("*", StringComparison.Ordinal))
+        if (rule.Contains('*'))
         {
-            var prefix = rule[..^1];
-            if (origin.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+            var regexPattern = "^" + Regex.Escape(rule).Replace("\\*", ".*") + "$";
+            if (Regex.IsMatch(origin, regexPattern, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant))
             {
                 return true;
             }
@@ -129,6 +133,164 @@ static bool IsPlaceholderSecret(string? value)
         || string.Equals(value, "YourSuperSecretKeyHereThatIsAtLeast32CharactersLongForProductionUse", StringComparison.OrdinalIgnoreCase)
         || string.Equals(value, "YourSuperSecretKeyHereThatIsAtLeast32CharactersLongForDevelopmentUse", StringComparison.OrdinalIgnoreCase);
 }
+
+static bool LooksLocalUrl(string? value)
+{
+    if (string.IsNullOrWhiteSpace(value))
+    {
+        return false;
+    }
+
+    if (!Uri.TryCreate(value, UriKind.Absolute, out var uri))
+    {
+        return false;
+    }
+
+    return uri.Host.Equals("localhost", StringComparison.OrdinalIgnoreCase)
+        || uri.Host.Equals("127.0.0.1", StringComparison.OrdinalIgnoreCase)
+        || uri.Host.Equals("0.0.0.0", StringComparison.OrdinalIgnoreCase)
+        || uri.Host.Equals("10.0.2.2", StringComparison.OrdinalIgnoreCase);
+}
+
+static bool LooksLocalConnectionString(string? value)
+{
+    if (string.IsNullOrWhiteSpace(value))
+    {
+        return false;
+    }
+
+    return value.Contains("localhost", StringComparison.OrdinalIgnoreCase)
+        || value.Contains("127.0.0.1", StringComparison.OrdinalIgnoreCase)
+        || value.Contains("Server=.", StringComparison.OrdinalIgnoreCase);
+}
+
+static string GetConnectionMode(string host, int port)
+{
+    if (host.EndsWith(".pooler.supabase.com", StringComparison.OrdinalIgnoreCase))
+    {
+        return port switch
+        {
+            5432 => "supavisor-session",
+            6543 => "supavisor-transaction",
+            _ => "supavisor-custom"
+        };
+    }
+
+    if (host.EndsWith(".supabase.co", StringComparison.OrdinalIgnoreCase))
+    {
+        return "supabase-direct";
+    }
+
+    return "custom";
+}
+
+static string GetSanitizedConnectionSummary(string? connectionString)
+{
+    if (string.IsNullOrWhiteSpace(connectionString))
+    {
+        return "connectionString=<missing>";
+    }
+
+    try
+    {
+        var builder = new NpgsqlConnectionStringBuilder(connectionString);
+        return string.Join(
+            ";",
+            new[]
+            {
+                $"host={builder.Host}",
+                $"port={builder.Port}",
+                $"database={builder.Database}",
+                $"username={builder.Username}",
+                $"sslmode={builder.SslMode}",
+                $"timeout={builder.Timeout}",
+                $"commandTimeout={builder.CommandTimeout}",
+                $"keepalive={builder.KeepAlive}",
+                $"mode={GetConnectionMode(builder.Host ?? string.Empty, builder.Port)}"
+            });
+    }
+    catch
+    {
+        return "connectionString=<unparseable>";
+    }
+}
+
+static void EnsureRequiredProductionConfiguration(
+    WebApplicationBuilder builder,
+    string[] productionAllowedOrigins)
+{
+    if (!builder.Environment.IsProduction())
+    {
+        return;
+    }
+
+    var errors = new List<string>();
+
+    void RequireValue(string key)
+    {
+        if (IsPlaceholderSecret(builder.Configuration[key]))
+        {
+            errors.Add(key);
+        }
+    }
+
+    void RequireHttpsUrl(string key)
+    {
+        var value = builder.Configuration[key];
+        if (IsPlaceholderSecret(value)
+            || !Uri.TryCreate(value, UriKind.Absolute, out var uri)
+            || !string.Equals(uri.Scheme, Uri.UriSchemeHttps, StringComparison.OrdinalIgnoreCase)
+            || LooksLocalUrl(value))
+        {
+            errors.Add(key);
+        }
+    }
+
+    var defaultConnection = builder.Configuration.GetConnectionString("DefaultConnection");
+    if (IsPlaceholderSecret(defaultConnection) || LooksLocalConnectionString(defaultConnection))
+    {
+        errors.Add("ConnectionStrings:DefaultConnection");
+    }
+
+    if (productionAllowedOrigins.Length == 0)
+    {
+        errors.Add("AllowedOrigins");
+    }
+
+    RequireValue("Jwt:Key");
+    RequireHttpsUrl("AIProvider:VisionBaseUrl");
+    RequireHttpsUrl("Supabase:Url");
+    RequireValue("Supabase:ServiceRoleKey");
+    RequireValue("Supabase:FoodImagesBucket");
+    RequireValue("Supabase:UserFoodBucket");
+    RequireValue("Google:WebClientId");
+    RequireValue("Google:AndroidClientId");
+    RequireValue("Google:IosClientId");
+    RequireValue("Smtp:Host");
+    RequireValue("Smtp:User");
+    RequireValue("Smtp:Password");
+    RequireValue("Smtp:FromEmail");
+
+    var smtpPort = builder.Configuration.GetValue<int?>("Smtp:Port") ?? 0;
+    if (smtpPort <= 0)
+    {
+        errors.Add("Smtp:Port");
+    }
+
+    if (errors.Count > 0)
+    {
+        throw new InvalidOperationException(
+            $"Missing or invalid production configuration: {string.Join(", ", errors.Distinct())}");
+    }
+}
+
+EnsureRequiredProductionConfiguration(builder, allowedOrigins);
+
+var defaultConnectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+var databaseHealthTimeout =
+    builder.Configuration.GetValue<TimeSpan?>("HealthChecks:DatabaseTimeout")
+    ?? TimeSpan.FromSeconds(10);
+var sanitizedConnectionSummary = GetSanitizedConnectionSummary(defaultConnectionString);
 
 builder.Services.AddCors(o =>
 {
@@ -232,18 +394,22 @@ builder.Services.AddSwaggerGen(c =>
 // Add DbContext (scaffolded from DB)
 // Sử dụng PostgreSQL (Supabase) thay vì SQL Server
 builder.Services.AddDbContext<EatFitAIDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+    options.UseNpgsql(defaultConnectionString, npgsql =>
+        npgsql.EnableRetryOnFailure()));
 
 // Add ApplicationDbContext (custom with WeeklyCheckIns)
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+    options.UseNpgsql(defaultConnectionString, npgsql =>
+        npgsql.EnableRetryOnFailure()));
 
 // Caching for features like password reset
 builder.Services.AddMemoryCache();
 
 // Mail settings & service
 builder.Services.Configure<MailSettings>(builder.Configuration.GetSection("Smtp"));
+builder.Services.Configure<SupabaseOptions>(builder.Configuration.GetSection("Supabase"));
 builder.Services.AddScoped<IEmailService, EmailService>();
+builder.Services.AddScoped<ISupabaseStorageService, SupabaseStorageService>();
 
 // Add AutoMapper
 builder.Services.AddAutoMapper(_ => { }, typeof(MappingProfile));
@@ -286,9 +452,10 @@ builder.Services.AddSingleton<ILookupCacheService, LookupCacheService>();
 // Health checks (used by HealthController and readiness endpoints)
 builder.Services.AddHealthChecks()
     .AddNpgSql(
-        builder.Configuration.GetConnectionString("DefaultConnection")!,
+        defaultConnectionString!,
         name: "postgres",
-        timeout: TimeSpan.FromSeconds(3));
+        timeout: databaseHealthTimeout,
+        tags: new[] { "ready", "db" });
 
 var jwtKey = builder.Configuration["Jwt:Key"];
 if (IsPlaceholderSecret(jwtKey))
@@ -319,6 +486,10 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 builder.Services.AddAuthorization();
 
 var app = builder.Build();
+var startupLogger = app.Services.GetRequiredService<ILogger<Program>>();
+startupLogger.LogInformation(
+    "Configured PostgreSQL target: {ConnectionSummary}",
+    sanitizedConnectionSummary);
 
 // Seed the database
 using (var scope = app.Services.CreateScope())
@@ -386,17 +557,38 @@ app.UseStaticFiles();
 app.MapControllers();
 
 app.MapGet("/health/live", () => Results.Ok(new { status = "live" }));
-app.MapGet("/health/ready", async (EatFitAI.API.DbScaffold.Data.EatFitAIDbContext db) =>
+app.MapGet("/health/ready", async (HealthCheckService healthCheckService, ILoggerFactory loggerFactory, CancellationToken cancellationToken) =>
 {
-    try
+    var report = await healthCheckService.CheckHealthAsync(
+        registration => registration.Tags.Contains("ready"),
+        cancellationToken);
+
+    if (report.Status == HealthStatus.Healthy)
     {
-        await db.Database.ExecuteSqlRawAsync("SELECT 1");
-        return Results.Ok(new { status = "ready" });
+        return Results.Ok(new
+        {
+            status = "ready",
+            checks = report.Entries.ToDictionary(
+                entry => entry.Key,
+                entry => entry.Value.Status.ToString().ToLowerInvariant())
+        });
     }
-    catch
-    {
-        return Results.Problem(title: "DB not ready", statusCode: 503);
-    }
+
+    var logger = loggerFactory.CreateLogger("HealthReadiness");
+    var failureSummary = string.Join(
+        "; ",
+        report.Entries.Select(entry =>
+            $"{entry.Key}={entry.Value.Status}: {entry.Value.Description ?? entry.Value.Exception?.Message ?? "no detail"}"));
+
+    logger.LogError(
+        "Database readiness failed. Target={ConnectionSummary}; Report={FailureSummary}",
+        sanitizedConnectionSummary,
+        failureSummary);
+
+    return Results.Problem(
+        title: "DB not ready",
+        detail: $"target={sanitizedConnectionSummary}",
+        statusCode: StatusCodes.Status503ServiceUnavailable);
 });
 // Simple health endpoint for mobile ping
 app.MapGet("/health", () => Results.Ok(new { status = "ok" }));

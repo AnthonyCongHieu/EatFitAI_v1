@@ -61,3 +61,5 @@ tools/dev/device-current.png
 data_batches/
 data_chunks/
 *.sql
+!eatfitai-backend/supabase_schema.sql
+!eatfitai-backend/supabase_storage.sql

@@ -95,7 +95,7 @@
     "@testing-library/jest-native": "^5.4.3",
     "@testing-library/react-native": "^12.6.1",
     "@types/jest": "^29.5.14",
-    "@types/react": "~18.2.45",
+    "@types/react": "^19.1.0",
     "@typescript-eslint/eslint-plugin": "^7.14.1",
     "@typescript-eslint/parser": "^7.14.1",
     "env-cmd": "^11.0.0",
@@ -113,7 +113,7 @@
     "lint-staged": "^15.2.2",
     "openapi-typescript": "^7.10.1",
     "prettier": "^3.3.2",
-    "react-test-renderer": "^18.2.0",
+    "react-test-renderer": "19.1.0",
     "typescript": "~5.3.3"
   },
   "engines": {

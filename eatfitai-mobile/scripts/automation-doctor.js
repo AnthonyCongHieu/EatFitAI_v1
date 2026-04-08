@@ -5,6 +5,8 @@ const { resolveEnv } = require('../../tools/automation/resolveEnv');
 
 const projectRoot = path.resolve(__dirname, '..');
 const appJsonPath = path.join(projectRoot, 'app.json');
+const packageJsonPath = path.join(projectRoot, 'package.json');
+const packageLockPath = path.join(projectRoot, 'package-lock.json');
 const configPath = path.join(projectRoot, '.maestro', 'config.yaml');
 
 function runCommand(command, args) {
@@ -46,6 +48,83 @@ function readProjectIdStatus() {
   return {
     status: 'OK',
     detail: `Using app.json projectId ${configuredProjectId}.`,
+  };
+}
+
+function readBuildProfile() {
+  return (
+    resolveEnv('APP_ENV') ||
+    resolveEnv('EAS_BUILD_PROFILE') ||
+    resolveEnv('NODE_ENV') ||
+    'development'
+  ).trim();
+}
+
+function isProductionLikeBuild(profile) {
+  return ['production', 'preview', 'staging'].includes(profile);
+}
+
+function readProductionEnvStatus() {
+  const profile = readBuildProfile();
+  const requiredVars = [
+    'EXPO_PUBLIC_API_BASE_URL',
+    'EXPO_PUBLIC_SUPABASE_URL',
+    'EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID',
+    'EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID',
+  ];
+
+  const missing = requiredVars.filter((name) => {
+    const value = resolveEnv(name);
+    return !value || value.trim().startsWith('YOUR_');
+  });
+
+  if (!isProductionLikeBuild(profile)) {
+    return {
+      status: 'OK',
+      detail: `Current profile is ${profile}; production env contract is not required for this run.`,
+    };
+  }
+
+  if (missing.length > 0) {
+    return {
+      status: 'FAIL',
+      detail: `Missing production-like env: ${missing.join(', ')}`,
+    };
+  }
+
+  return {
+    status: 'OK',
+    detail: `Production-like env is complete for profile ${profile}.`,
+  };
+}
+
+function packageDirectoryExists(packageName) {
+  const packagePath = path.join(projectRoot, 'node_modules', ...packageName.split('/'));
+  return fs.existsSync(packagePath);
+}
+
+function readDependencyInstallStatus() {
+  if (!fs.existsSync(packageJsonPath) || !fs.existsSync(packageLockPath)) {
+    return {
+      status: 'FAIL',
+      detail: 'Missing package.json or package-lock.json',
+    };
+  }
+
+  const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
+  const directDependencies = Object.keys(packageJson.dependencies || {});
+  const missingPackages = directDependencies.filter((packageName) => !packageDirectoryExists(packageName));
+
+  if (missingPackages.length > 0) {
+    return {
+      status: 'FAIL',
+      detail: `Missing installed dependency directories: ${missingPackages.join(', ')}`,
+    };
+  }
+
+  return {
+    status: 'OK',
+    detail: `${directDependencies.length} direct dependencies are present in node_modules.`,
   };
 }
 
@@ -103,6 +182,11 @@ function main() {
   });
 
   checks.push({
+    name: 'Node modules parity',
+    ...readDependencyInstallStatus(),
+  });
+
+  checks.push({
     name: 'Demo credentials',
     status: resolveEnv('EATFITAI_DEMO_EMAIL') && resolveEnv('EATFITAI_DEMO_PASSWORD') ? 'OK' : 'WARN',
     detail:
@@ -114,6 +198,11 @@ function main() {
   checks.push({
     name: 'EAS project',
     ...readProjectIdStatus(),
+  });
+
+  checks.push({
+    name: 'Production env contract',
+    ...readProductionEnvStatus(),
   });
 
   console.log('EatFitAI automation doctor');

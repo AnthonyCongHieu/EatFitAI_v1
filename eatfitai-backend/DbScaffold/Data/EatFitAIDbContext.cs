@@ -135,6 +135,7 @@ public partial class EatFitAIDbContext : DbContext
 
             entity.Property(e => e.CaloriesPer100g).HasColumnType("decimal(10, 2)");
             entity.Property(e => e.CarbPer100g).HasColumnType("decimal(10, 2)");
+            entity.Property(e => e.CredibilityScore).HasDefaultValue(50);
             entity.Property(e => e.CreatedAt)
                 .HasPrecision(3)
                 .HasDefaultValueSql("NOW() AT TIME ZONE 'UTC'");

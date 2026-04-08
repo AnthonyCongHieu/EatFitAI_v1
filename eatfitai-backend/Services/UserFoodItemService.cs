@@ -9,15 +9,32 @@ namespace EatFitAI.API.Services
 {
     public class UserFoodItemService : IUserFoodItemService
     {
+        private static readonly string[] AllowedImageContentTypes =
+        {
+            "image/jpeg", "image/png", "image/webp", "image/jpg"
+        };
+
         private readonly IUserFoodItemRepository _repo;
         private readonly EatFitAIDbContext _context;
         private readonly IMapper _mapper;
+        private readonly ISupabaseStorageService _supabaseStorageService;
+        private readonly IWebHostEnvironment _environment;
+        private readonly ILogger<UserFoodItemService> _logger;
 
-        public UserFoodItemService(IUserFoodItemRepository repo, EatFitAIDbContext context, IMapper mapper)
+        public UserFoodItemService(
+            IUserFoodItemRepository repo,
+            EatFitAIDbContext context,
+            IMapper mapper,
+            ISupabaseStorageService supabaseStorageService,
+            IWebHostEnvironment environment,
+            ILogger<UserFoodItemService> logger)
         {
             _repo = repo;
             _context = context;
             _mapper = mapper;
+            _supabaseStorageService = supabaseStorageService;
+            _environment = environment;
+            _logger = logger;
         }
 
         public async Task<(IEnumerable<UserFoodItemDto> Items, int Total)> ListAsync(Guid userId, string? search, int page, int pageSize)
@@ -52,7 +69,7 @@ namespace EatFitAI.API.Services
             string? thumbnailUrl = null;
             if (request.Thumbnail != null && request.Thumbnail.Length > 0)
             {
-                thumbnailUrl = await SaveImageAsync(request.Thumbnail, uploadsRoot);
+                thumbnailUrl = await SaveImageAsync(request.Thumbnail, userId, uploadsRoot);
             }
 
             if (existingItem != null)
@@ -117,7 +134,7 @@ namespace EatFitAI.API.Services
 
             if (request.Thumbnail != null && request.Thumbnail.Length > 0)
             {
-                var newUrl = await SaveImageAsync(request.Thumbnail, uploadsRoot);
+                var newUrl = await SaveImageAsync(request.Thumbnail, userId, uploadsRoot);
                 entity.ThumbnailUrl = newUrl;
             }
 
@@ -150,30 +167,16 @@ namespace EatFitAI.API.Services
             }
         }
 
-        private static readonly string[] AllowedImageContentTypes = new[]
+        private async Task<string> SaveImageAsync(IFormFile file, Guid userId, string? uploadsRoot)
         {
-            "image/jpeg", "image/png", "image/webp", "image/jpg"
-        };
-
-        private static async Task<string> SaveImageAsync(IFormFile file, string? uploadsRoot)
-        {
-            if (uploadsRoot == null)
-            {
-                // default to wwwroot/uploads/user-food
-                uploadsRoot = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", "user-food");
-            }
-
             if (!AllowedImageContentTypes.Contains(file.ContentType))
             {
                 throw new ArgumentException("Unsupported image type. Allowed: jpeg, png, webp.");
             }
 
-            Directory.CreateDirectory(uploadsRoot);
-
             var ext = Path.GetExtension(file.FileName);
             if (string.IsNullOrWhiteSpace(ext))
             {
-                // fallback ext by content type
                 ext = file.ContentType switch
                 {
                     "image/jpeg" or "image/jpg" => ".jpg",
@@ -183,6 +186,30 @@ namespace EatFitAI.API.Services
                 };
             }
 
+            if (_supabaseStorageService.IsConfigured)
+            {
+                var objectPath = $"{userId:N}/{Guid.NewGuid():N}{ext}";
+                return await _supabaseStorageService.UploadUserFoodImageAsync(file, objectPath);
+            }
+
+            if (_environment.IsProduction())
+            {
+                _logger.LogError(
+                    "Supabase storage is not configured in Production. Rejecting user food thumbnail upload.");
+                throw new InvalidOperationException(
+                    "Cloud storage is not configured for user food thumbnail uploads.");
+            }
+
+            _logger.LogWarning(
+                "Supabase storage is not configured. Falling back to local filesystem for user food thumbnail uploads.");
+
+            if (uploadsRoot == null)
+            {
+                uploadsRoot = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", "user-food");
+            }
+
+            Directory.CreateDirectory(uploadsRoot);
+
             var fileName = $"{Guid.NewGuid():N}{ext}";
             var fullPath = Path.Combine(uploadsRoot, fileName);
 
@@ -191,7 +218,6 @@ namespace EatFitAI.API.Services
                 await file.CopyToAsync(stream);
             }
 
-            // Return URL path served via StaticFiles (wwwroot)
             var urlPath = $"/uploads/user-food/{fileName}";
             return urlPath;
         }

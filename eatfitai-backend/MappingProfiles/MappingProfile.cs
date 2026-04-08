@@ -24,7 +24,10 @@ namespace EatFitAI.API.MappingProfiles
                 .ForMember(dest => dest.ExpiresAt, opt => opt.Ignore());
 
             // Food mappings
-            CreateMap<FoodItem, FoodItemDto>();
+            CreateMap<FoodItem, FoodItemDto>()
+                .ForMember(
+                    dest => dest.ReliabilityScore,
+                    opt => opt.MapFrom(src => src.CredibilityScore / 100.0));
             CreateMap<FoodServing, FoodServingDto>()
                 .ForMember(dest => dest.ServingUnitName, opt => opt.MapFrom(src => src.ServingUnit!.Name))
                 .ForMember(dest => dest.ServingUnitSymbol, opt => opt.MapFrom(src => src.ServingUnit!.Symbol));

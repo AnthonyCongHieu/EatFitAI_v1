@@ -2,8 +2,9 @@
 // Supports local URLs and full Supabase URLs
 
 const FALLBACK_FOOD_IMAGE = 'https://placehold.co/200x200/16A34A/FFFFFF/png?text=Food';
+const DEFAULT_DEV_SUPABASE_URL = 'https://bjlmndmafrajjysenpbm.supabase.co';
 const SUPABASE_URL =
-  process.env.EXPO_PUBLIC_SUPABASE_URL?.trim() || 'https://ddgwaufaifqohcxbwfcm.supabase.co';
+  process.env.EXPO_PUBLIC_SUPABASE_URL?.trim() || (__DEV__ ? DEFAULT_DEV_SUPABASE_URL : '');
 
 export const getFoodImageUrl = (
   thumbnail: string | null | undefined,
@@ -14,6 +15,10 @@ export const getFoodImageUrl = (
   // If already a full URL, return it
   if (thumbnail.startsWith('http://') || thumbnail.startsWith('https://')) {
     return thumbnail;
+  }
+
+  if (!SUPABASE_URL) {
+    return FALLBACK_FOOD_IMAGE;
   }
 
   // Construct Supabase URL

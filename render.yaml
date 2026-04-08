@@ -1,8 +1,6 @@
-# render.yaml - Render.com Blueprint cho EatFitAI
-# Docs: https://render.com/docs/blueprint-spec
+# render.yaml - Render Blueprint for EatFitAI cloud deployment
 
 services:
-  # === Backend API (.NET 9) ===
   - type: web
     name: eatfitai-backend
     runtime: docker
@@ -10,32 +8,49 @@ services:
     dockerContext: ./eatfitai-backend
     region: singapore
     plan: free
-    healthCheckPath: /health/live
+    healthCheckPath: /health/ready
     envVars:
       - key: ASPNETCORE_ENVIRONMENT
         value: Production
-      # Connection string Supabase PostgreSQL (set manual trên dashboard)
       - key: ConnectionStrings__DefaultConnection
         sync: false
-      # JWT Secret (tối thiểu 32 ký tự)
       - key: Jwt__Key
         sync: false
       - key: Jwt__Issuer
         value: EatFitAI
       - key: Jwt__Audience
         value: EatFitAI
-      # URL của AI Provider service
       - key: AIProvider__VisionBaseUrl
         sync: false
-      # SMTP config
+      - key: Google__WebClientId
+        sync: false
+      - key: Google__AndroidClientId
+        sync: false
+      - key: Google__IosClientId
+        sync: false
+      - key: Supabase__Url
+        sync: false
+      - key: Supabase__ServiceRoleKey
+        sync: false
+      - key: Supabase__FoodImagesBucket
+        value: food-images
+      - key: Supabase__UserFoodBucket
+        value: user-food
+      - key: Smtp__Host
+        value: smtp.gmail.com
+      - key: Smtp__Port
+        value: "587"
+      - key: Smtp__EnableSsl
+        value: "true"
       - key: Smtp__User
         sync: false
       - key: Smtp__Password
         sync: false
       - key: Smtp__FromEmail
         sync: false
+      - key: Smtp__FromDisplayName
+        value: EatFitAI
 
-  # === AI Provider (Python + YOLO + Gemini) ===
   - type: web
     name: eatfitai-ai-provider
     runtime: docker

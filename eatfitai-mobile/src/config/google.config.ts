@@ -38,7 +38,7 @@ export const validateGoogleConfig = (): { valid: boolean; errors: string[] } => 
 
   if (!GOOGLE_CONFIG.webClientId) {
     errors.push(
-      'Web Client ID chua duoc cau hinh. Hay set EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID trong .env.development hoac environment.',
+      'Web Client ID chua duoc cau hinh. Hay set EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID trong file env phu hop hoac environment.',
     );
   }
 
@@ -53,8 +53,8 @@ export const validateGoogleConfig = (): { valid: boolean; errors: string[] } => 
  */
 export const GOOGLE_SETUP_GUIDE = `
 1. Tao OAuth client IDs trong Google Cloud Console.
-2. Set EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID trong .env.development.
-3. Neu can iOS-specific client ID, set EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID.
+2. Set EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID trong env development/production.
+3. Set EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID cho iOS builds.
 4. Rebuild app sau khi cap nhat credentials native.
 `;
 
