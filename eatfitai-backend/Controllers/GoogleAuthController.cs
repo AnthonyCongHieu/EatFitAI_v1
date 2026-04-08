@@ -86,18 +86,24 @@ namespace EatFitAI.API.Controllers
                     });
                 }
 
+                var configuredAudiences = GetConfiguredGoogleAudiences();
+                if (configuredAudiences.Count == 0)
+                {
+                    _logger.LogError("Google sign-in requested but Google client IDs are not configured.");
+                    return StatusCode(StatusCodes.Status503ServiceUnavailable, new GoogleAuthResponse
+                    {
+                        Success = false,
+                        Error = "Google Sign-in chua duoc cau hinh tren may chu"
+                    });
+                }
+
                 // Verify Google ID Token
                 GoogleJsonWebSignature.Payload payload;
                 try
                 {
                     var settings = new GoogleJsonWebSignature.ValidationSettings
                     {
-                        Audience = new List<string>
-                        {
-                            _configuration["Google:WebClientId"] ?? "",
-                            _configuration["Google:AndroidClientId"] ?? "",
-                            _configuration["Google:IosClientId"] ?? "",
-                        }.Where(x => !string.IsNullOrEmpty(x)).ToList()
+                        Audience = configuredAudiences
                     };
 
                     payload = await GoogleJsonWebSignature.ValidateAsync(request.IdToken, settings);
@@ -224,8 +230,24 @@ namespace EatFitAI.API.Controllers
 
             try
             {
+                var configuredAudiences = GetConfiguredGoogleAudiences();
+                if (configuredAudiences.Count == 0)
+                {
+                    _logger.LogError("Google account link requested but Google client IDs are not configured.");
+                    return StatusCode(StatusCodes.Status503ServiceUnavailable, new GoogleAuthResponse
+                    {
+                        Success = false,
+                        Error = "Google Sign-in chua duoc cau hinh tren may chu"
+                    });
+                }
+
                 // Verify Google token
-                var payload = await GoogleJsonWebSignature.ValidateAsync(request.IdToken);
+                var payload = await GoogleJsonWebSignature.ValidateAsync(
+                    request.IdToken,
+                    new GoogleJsonWebSignature.ValidationSettings
+                    {
+                        Audience = configuredAudiences
+                    });
 
                 // Get current user
                 var user = await _context.Users.FindAsync(userId);
@@ -314,6 +336,20 @@ namespace EatFitAI.API.Controllers
                 || string.Equals(value, "SET_IN_ENV_OR_SECRET_STORE", StringComparison.OrdinalIgnoreCase)
                 || string.Equals(value, "YourSuperSecretKeyHereThatIsAtLeast32CharactersLongForProductionUse", StringComparison.OrdinalIgnoreCase)
                 || string.Equals(value, "YourSuperSecretKeyHereThatIsAtLeast32CharactersLongForDevelopmentUse", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private List<string> GetConfiguredGoogleAudiences()
+        {
+            return new[]
+                {
+                    _configuration["Google:WebClientId"],
+                    _configuration["Google:AndroidClientId"],
+                    _configuration["Google:IosClientId"],
+                }
+                .Where(value => !IsPlaceholderSecret(value))
+                .Select(value => value!.Trim())
+                .Distinct(StringComparer.Ordinal)
+                .ToList();
         }
 
         private byte[] GetJwtSigningKey()

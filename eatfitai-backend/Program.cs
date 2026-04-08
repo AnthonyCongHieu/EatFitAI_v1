@@ -134,6 +134,20 @@ static bool IsPlaceholderSecret(string? value)
         || string.Equals(value, "YourSuperSecretKeyHereThatIsAtLeast32CharactersLongForDevelopmentUse", StringComparison.OrdinalIgnoreCase);
 }
 
+static bool HasConfiguredValue(string? value) => !IsPlaceholderSecret(value);
+
+static bool HasConfiguredHttpsUrl(string? value)
+{
+    if (!HasConfiguredValue(value)
+        || !Uri.TryCreate(value, UriKind.Absolute, out var uri)
+        || !string.Equals(uri.Scheme, Uri.UriSchemeHttps, StringComparison.OrdinalIgnoreCase))
+    {
+        return false;
+    }
+
+    return !LooksLocalUrl(value);
+}
+
 static bool LooksLocalUrl(string? value)
 {
     if (string.IsNullOrWhiteSpace(value))
@@ -259,29 +273,77 @@ static void EnsureRequiredProductionConfiguration(
 
     RequireValue("Jwt:Key");
     RequireHttpsUrl("AIProvider:VisionBaseUrl");
-    RequireHttpsUrl("Supabase:Url");
-    RequireValue("Supabase:ServiceRoleKey");
-    RequireValue("Supabase:FoodImagesBucket");
-    RequireValue("Supabase:UserFoodBucket");
-    RequireValue("Google:WebClientId");
-    RequireValue("Google:AndroidClientId");
-    RequireValue("Google:IosClientId");
-    RequireValue("Smtp:Host");
-    RequireValue("Smtp:User");
-    RequireValue("Smtp:Password");
-    RequireValue("Smtp:FromEmail");
-
-    var smtpPort = builder.Configuration.GetValue<int?>("Smtp:Port") ?? 0;
-    if (smtpPort <= 0)
-    {
-        errors.Add("Smtp:Port");
-    }
 
     if (errors.Count > 0)
     {
         throw new InvalidOperationException(
             $"Missing or invalid production configuration: {string.Join(", ", errors.Distinct())}");
     }
+}
+
+static IReadOnlyList<string> GetMissingOptionalProductionConfiguration(WebApplicationBuilder builder)
+{
+    var warnings = new List<string>();
+
+    if (!builder.Environment.IsProduction())
+    {
+        return warnings;
+    }
+
+    void AddWarning(string integrationName, params string[] missingKeys)
+    {
+        if (missingKeys.Length > 0)
+        {
+            warnings.Add($"{integrationName}: {string.Join(", ", missingKeys)}");
+        }
+    }
+
+    var missingStorage = new List<string>();
+    if (!HasConfiguredHttpsUrl(builder.Configuration["Supabase:Url"]))
+    {
+        missingStorage.Add("Supabase:Url");
+    }
+
+    if (!HasConfiguredValue(builder.Configuration["Supabase:ServiceRoleKey"]))
+    {
+        missingStorage.Add("Supabase:ServiceRoleKey");
+    }
+
+    if (!HasConfiguredValue(builder.Configuration["Supabase:UserFoodBucket"]))
+    {
+        missingStorage.Add("Supabase:UserFoodBucket");
+    }
+
+    AddWarning("Supabase storage uploads disabled", missingStorage.ToArray());
+
+    var missingGoogle = new[]
+    {
+        "Google:WebClientId",
+        "Google:AndroidClientId",
+        "Google:IosClientId"
+    }
+        .Where(key => !HasConfiguredValue(builder.Configuration[key]))
+        .ToArray();
+    AddWarning("Google sign-in disabled", missingGoogle);
+
+    var missingSmtp = new List<string>();
+    foreach (var key in new[] { "Smtp:Host", "Smtp:User", "Smtp:Password", "Smtp:FromEmail" })
+    {
+        if (!HasConfiguredValue(builder.Configuration[key]))
+        {
+            missingSmtp.Add(key);
+        }
+    }
+
+    var smtpPort = builder.Configuration.GetValue<int?>("Smtp:Port") ?? 0;
+    if (smtpPort <= 0)
+    {
+        missingSmtp.Add("Smtp:Port");
+    }
+
+    AddWarning("SMTP email flows disabled", missingSmtp.ToArray());
+
+    return warnings;
 }
 
 EnsureRequiredProductionConfiguration(builder, allowedOrigins);
@@ -291,6 +353,7 @@ var databaseHealthTimeout =
     builder.Configuration.GetValue<TimeSpan?>("HealthChecks:DatabaseTimeout")
     ?? TimeSpan.FromSeconds(10);
 var sanitizedConnectionSummary = GetSanitizedConnectionSummary(defaultConnectionString);
+var optionalProductionWarnings = GetMissingOptionalProductionConfiguration(builder);
 
 builder.Services.AddCors(o =>
 {
@@ -490,6 +553,11 @@ var startupLogger = app.Services.GetRequiredService<ILogger<Program>>();
 startupLogger.LogInformation(
     "Configured PostgreSQL target: {ConnectionSummary}",
     sanitizedConnectionSummary);
+
+foreach (var warning in optionalProductionWarnings)
+{
+    startupLogger.LogWarning("{Warning}", warning);
+}
 
 // Seed the database
 using (var scope = app.Services.CreateScope())

@@ -10,10 +10,12 @@ namespace EatFitAI.API.Services
     public class EmailService : IEmailService
     {
         private readonly MailSettings _settings;
+        private readonly IHostEnvironment _environment;
 
-        public EmailService(IOptions<MailSettings> options)
+        public EmailService(IOptions<MailSettings> options, IHostEnvironment environment)
         {
             _settings = options.Value;
+            _environment = environment;
         }
 
         public async Task SendResetCodeAsync(string email, string code, DateTime expiresAt)
@@ -25,7 +27,14 @@ namespace EatFitAI.API.Services
                 string.IsNullOrWhiteSpace(_settings.Password) ||
                 string.IsNullOrWhiteSpace(_settings.FromEmail))
             {
-                Console.WriteLine("[EmailService] SMTP settings missing (Host, User, Password, or FromEmail is empty), skipping real send.");
+                const string message = "[EmailService] SMTP settings missing (Host, User, Password, or FromEmail is empty).";
+                if (_environment.IsProduction())
+                {
+                    Console.WriteLine(message + " Rejecting send in Production.");
+                    throw new InvalidOperationException("SMTP is not configured.");
+                }
+
+                Console.WriteLine(message + " Skipping real send in Development.");
                 return;
             }
 
@@ -96,7 +105,14 @@ Nếu bạn không yêu cầu, hãy bỏ qua email này.";
                 string.IsNullOrWhiteSpace(_settings.Password) ||
                 string.IsNullOrWhiteSpace(_settings.FromEmail))
             {
-                Console.WriteLine("[EmailService] SMTP settings missing, skipping real send.");
+                const string message = "[EmailService] SMTP settings missing.";
+                if (_environment.IsProduction())
+                {
+                    Console.WriteLine(message + " Rejecting send in Production.");
+                    throw new InvalidOperationException("SMTP is not configured.");
+                }
+
+                Console.WriteLine(message + " Skipping real send in Development.");
                 return;
             }
 
