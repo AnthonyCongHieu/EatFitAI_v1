@@ -6,7 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import Toast from 'react-native-toast-message';
 import { LinearGradient } from 'expo-linear-gradient';
-import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 
 import { useAppTheme } from '../../../theme/ThemeProvider';
 import { ThemedText } from '../../../components/ThemedText';
@@ -49,50 +49,35 @@ const LoginScreen = ({ navigation }: Props): React.ReactElement => {
     async (values: LoginValues) => {
       try {
         setLoading(true);
-        const result = await login(values.email, values.password);
+        await login(values.email, values.password);
         Toast.show({
           type: 'success',
-          text1: '👋 Chào mừng trở lại!',
+          text1: 'Chào mừng trở lại!',
           text2: 'Đăng nhập thành công',
         });
-
-        // Navigate based on onboarding status
-        if (result.needsOnboarding) {
-          navigation.reset({ index: 0, routes: [{ name: 'Onboarding' }] });
-        } else {
-          navigation.reset({ index: 0, routes: [{ name: 'AppTabs' }] });
-        }
       } catch (e: any) {
         handleApiError(e);
       } finally {
         setLoading(false);
       }
     },
-    [login, navigation],
+    [login],
   );
 
   const onGoogle = useCallback(async () => {
     try {
       setLoading(true);
       console.log('[LoginScreen] Starting Google Sign-In...');
-      const result = await signInWithGoogle();
+      await signInWithGoogle();
       Toast.show({
         type: 'success',
         text1: 'Đăng nhập với Google thành công',
         text2: 'Chào mừng bạn!',
       });
-
-      // Check onboarding status - user mới cần hoàn tất onboarding
-      if (result.needsOnboarding) {
-        navigation.reset({ index: 0, routes: [{ name: 'Onboarding' }] });
-      } else {
-        navigation.reset({ index: 0, routes: [{ name: 'AppTabs' }] });
-      }
     } catch (e: any) {
       console.error('[LoginScreen] Google Sign-In error:', e);
       console.error('[LoginScreen] Error message:', e?.message);
 
-      // Hiển thị lỗi thực tế thay vì check navigator.onLine (Web API không hoạt động trong RN)
       Toast.show({
         type: 'error',
         text1: 'Đăng nhập Google thất bại',
@@ -102,7 +87,7 @@ const LoginScreen = ({ navigation }: Props): React.ReactElement => {
     } finally {
       setLoading(false);
     }
-  }, [signInWithGoogle, navigation]);
+  }, [signInWithGoogle]);
 
   const styles = StyleSheet.create({
     container: {
@@ -186,7 +171,6 @@ const LoginScreen = ({ navigation }: Props): React.ReactElement => {
           contentContainerStyle={styles.scrollContent}
           testID={TEST_IDS.auth.loginScreen}
         >
-          {/* Logo */}
           <Animated.View
             entering={FadeInDown.delay(100).springify()}
             style={styles.logoContainer}
@@ -197,7 +181,6 @@ const LoginScreen = ({ navigation }: Props): React.ReactElement => {
             />
           </Animated.View>
 
-          {/* Login Form Card */}
           <Animated.View
             entering={FadeInDown.delay(200).springify()}
             style={styles.formCard}
@@ -255,7 +238,6 @@ const LoginScreen = ({ navigation }: Props): React.ReactElement => {
               </ThemedText>
             </View>
 
-            {/* Login Button */}
             <Button
               variant="primary"
               loading={loading}
@@ -266,7 +248,6 @@ const LoginScreen = ({ navigation }: Props): React.ReactElement => {
               testID={TEST_IDS.auth.submitButton}
             />
 
-            {/* Divider */}
             <View style={styles.dividerRow}>
               <View style={styles.dividerLine} />
               <ThemedText
@@ -279,7 +260,6 @@ const LoginScreen = ({ navigation }: Props): React.ReactElement => {
               <View style={styles.dividerLine} />
             </View>
 
-            {/* Google Button */}
             <Button
               variant="outline"
               disabled={loading}
@@ -288,26 +268,22 @@ const LoginScreen = ({ navigation }: Props): React.ReactElement => {
               icon="logo-google"
               fullWidth
             />
-          </Animated.View>
 
-          {/* Register Section */}
-          <Animated.View
-            entering={FadeInUp.delay(300).springify()}
-            style={styles.registerSection}
-          >
-            <ThemedText
-              variant="body"
-              color="textSecondary"
-              style={styles.registerText}
-            >
-              Chưa có tài khoản?
-            </ThemedText>
-            <Button
-              variant="ghost"
-              title="Đăng ký miễn phí"
-              onPress={() => navigation.navigate('Register')}
-              fullWidth
-            />
+            <View style={styles.registerSection}>
+              <ThemedText
+                variant="body"
+                color="textSecondary"
+                style={styles.registerText}
+              >
+                Chưa có tài khoản?
+              </ThemedText>
+              <Button
+                variant="outline"
+                title="Đăng ký miễn phí"
+                onPress={() => navigation.navigate('Register')}
+                fullWidth
+              />
+            </View>
           </Animated.View>
         </Screen>
       </KeyboardAvoidingView>

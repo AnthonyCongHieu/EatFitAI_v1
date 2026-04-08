@@ -2,6 +2,7 @@ import type { NavigatorScreenParams } from '@react-navigation/native';
 import type { AppTabsParamList } from '../navigation/AppTabs';
 
 export type RootStackParamList = {
+  IntroCarousel: undefined;
   Welcome: undefined;
   Login: undefined;
   Register: undefined;

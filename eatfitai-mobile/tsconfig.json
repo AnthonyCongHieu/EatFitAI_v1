@@ -31,28 +31,27 @@
       "react-native",
       "jest"
     ],
-    "baseUrl": ".",
     "paths": {
       "@app/*": [
-        "src/app/*"
+        "./src/app/*"
       ],
       "@components/*": [
-        "src/components/*"
+        "./src/components/*"
       ],
       "@store/*": [
-        "src/store/*"
+        "./src/store/*"
       ],
       "@services/*": [
-        "src/services/*"
+        "./src/services/*"
       ],
       "@hooks/*": [
-        "src/hooks/*"
+        "./src/hooks/*"
       ],
       "@theme/*": [
-        "src/theme/*"
+        "./src/theme/*"
       ],
       "@types/*": [
-        "src/types/*"
+        "./src/types/*"
       ]
     }
   },

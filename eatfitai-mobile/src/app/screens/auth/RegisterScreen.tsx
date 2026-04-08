@@ -6,7 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import Toast from 'react-native-toast-message';
 import { LinearGradient } from 'expo-linear-gradient';
-import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 
 import { useAppTheme } from '../../../theme/ThemeProvider';
 import { ThemedText } from '../../../components/ThemedText';
@@ -15,7 +15,6 @@ import { glassStyles } from '../../../components/ui/GlassCard';
 import Button from '../../../components/Button';
 import ThemedTextInput from '../../../components/ThemedTextInput';
 import apiClient from '../../../services/apiClient';
-import { useAuthStore } from '../../../store/useAuthStore';
 import type { RootStackParamList } from '../../types';
 import { t } from '../../../i18n/vi';
 
@@ -44,9 +43,7 @@ const RegisterScreen = ({ navigation }: Props): React.ReactElement => {
   const { theme } = useAppTheme();
   const isDark = theme.mode === 'dark';
   const glass = glassStyles(isDark);
-  const signInWithGoogle = useAuthStore((s) => s.signInWithGoogle);
   const [loading, setLoading] = useState(false);
-  const [googleLoading, setGoogleLoading] = useState(false);
   const [passwordStrength, setPasswordStrength] = useState(0);
 
   const {
@@ -149,33 +146,6 @@ const RegisterScreen = ({ navigation }: Props): React.ReactElement => {
     [navigation],
   );
 
-  const onGoogle = useCallback(async () => {
-    try {
-      setGoogleLoading(true);
-      const result = await signInWithGoogle();
-      Toast.show({
-        type: 'success',
-        text1: 'Đăng ký với Google thành công',
-        text2: 'Chào mừng bạn!',
-      });
-
-      if (result.needsOnboarding) {
-        navigation.reset({ index: 0, routes: [{ name: 'Onboarding' }] });
-      } else {
-        navigation.reset({ index: 0, routes: [{ name: 'AppTabs' }] });
-      }
-    } catch (e: any) {
-      console.error('[RegisterScreen] Google Sign-In error:', e);
-      Toast.show({
-        type: 'error',
-        text1: 'Đăng ký Google thất bại',
-        text2: e?.message || 'Vui lòng thử lại',
-      });
-    } finally {
-      setGoogleLoading(false);
-    }
-  }, [signInWithGoogle, navigation]);
-
   const styles = StyleSheet.create({
     container: {
       flex: 1,
@@ -201,8 +171,30 @@ const RegisterScreen = ({ navigation }: Props): React.ReactElement => {
       marginBottom: 24,
     },
     inputGroup: {
-      gap: 12,
+      gap: 10,
       marginBottom: 16,
+    },
+    passwordFieldGroup: {
+      marginBottom: -4,
+    },
+    passwordStrengthRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'flex-end',
+      marginTop: 2,
+      gap: 10,
+    },
+    passwordStrengthTrack: {
+      width: 92,
+      height: 4,
+      backgroundColor: theme.colors.border,
+      borderRadius: 999,
+      overflow: 'hidden',
+    },
+    passwordStrengthLabel: {
+      fontSize: 14,
+      fontWeight: '600',
+      lineHeight: 20,
     },
     dividerRow: {
       flexDirection: 'row',
@@ -216,10 +208,6 @@ const RegisterScreen = ({ navigation }: Props): React.ReactElement => {
     },
     dividerText: {
       marginHorizontal: 16,
-    },
-    loginSection: {
-      alignItems: 'center',
-      marginTop: 16,
     },
   });
 
@@ -292,7 +280,7 @@ const RegisterScreen = ({ navigation }: Props): React.ReactElement => {
                 control={control}
                 name="password"
                 render={({ field: { onChange, onBlur, value } }) => (
-                  <View>
+                  <View style={styles.passwordFieldGroup}>
                     <ThemedTextInput
                       label={t('auth.password')}
                       placeholder="••••••••"
@@ -307,24 +295,8 @@ const RegisterScreen = ({ navigation }: Props): React.ReactElement => {
                     />
                     {/* Password Strength Meter */}
                     {value && value.length > 0 && (
-                      <View
-                        style={{
-                          flexDirection: 'row',
-                          alignItems: 'center',
-                          justifyContent: 'flex-end',
-                          marginTop: 4,
-                          gap: 8,
-                        }}
-                      >
-                        <View
-                          style={{
-                            width: 80,
-                            height: 3,
-                            backgroundColor: theme.colors.border,
-                            borderRadius: 2,
-                            overflow: 'hidden',
-                          }}
-                        >
+                      <View style={styles.passwordStrengthRow}>
+                        <View style={styles.passwordStrengthTrack}>
                           <View
                             style={{
                               width: `${(passwordStrength / 3) * 100}%`,
@@ -335,7 +307,10 @@ const RegisterScreen = ({ navigation }: Props): React.ReactElement => {
                         </View>
                         <ThemedText
                           variant="caption"
-                          style={{ color: getStrengthColor(), fontSize: 11 }}
+                          style={[
+                            styles.passwordStrengthLabel,
+                            { color: getStrengthColor() },
+                          ]}
                         >
                           {getStrengthLabel()}
                         </ThemedText>
@@ -369,13 +344,13 @@ const RegisterScreen = ({ navigation }: Props): React.ReactElement => {
             <Button
               variant="primary"
               loading={loading}
-              disabled={loading || googleLoading}
+              disabled={loading}
               onPress={handleSubmit(onSubmit)}
               title={loading ? t('auth.processing') : t('auth.createAccount')}
               fullWidth
             />
 
-            {/* Divider */}
+                        {/* Divider */}
             <View style={styles.dividerRow}>
               <View style={styles.dividerLine} />
               <ThemedText
@@ -383,35 +358,20 @@ const RegisterScreen = ({ navigation }: Props): React.ReactElement => {
                 color="textSecondary"
                 style={styles.dividerText}
               >
-                hoặc
+                Đã có tài khoản?
               </ThemedText>
               <View style={styles.dividerLine} />
             </View>
 
-            {/* Google Button */}
+            {/* Login Button */}
             <Button
               variant="outline"
-              loading={googleLoading}
-              disabled={loading || googleLoading}
-              onPress={onGoogle}
-              title="Tiếp tục với Google"
-              icon="logo-google"
-              fullWidth
-            />
-          </Animated.View>
-
-          {/* Login Section */}
-          <Animated.View
-            entering={FadeInUp.delay(300).springify()}
-            style={styles.loginSection}
-          >
-            <ThemedText variant="body" color="textSecondary" style={{ marginBottom: 12 }}>
-              Đã có tài khoản?
-            </ThemedText>
-            <Button
-              variant="ghost"
-              title="Đăng nhập"
+              disabled={loading}
               onPress={() => navigation.navigate('Login')}
+              title="Đăng nhập"
+              icon="log-in-outline"
+              iconPosition="left"
+              size="lg"
               fullWidth
             />
           </Animated.View>

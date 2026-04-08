@@ -1,5 +1,5 @@
 import { useCallback } from 'react';
-import { View, StyleSheet, Dimensions, ScrollView } from 'react-native';
+import { View, StyleSheet, Dimensions, ScrollView, Pressable } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -8,6 +8,7 @@ import Animated, {
     FadeInUp,
     ZoomIn,
 } from 'react-native-reanimated';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useAppTheme } from '../../../theme/ThemeProvider';
 import { ThemedText } from '../../../components/ThemedText';
@@ -24,6 +25,7 @@ type Props = NativeStackScreenProps<RootStackParamList, 'Welcome'>;
  */
 const WelcomeScreen = ({ navigation }: Props): React.ReactElement => {
     const { theme } = useAppTheme();
+    const insets = useSafeAreaInsets();
     const isDark = theme.mode === 'dark';
 
     const handleLogin = useCallback(() => {
@@ -34,8 +36,26 @@ const WelcomeScreen = ({ navigation }: Props): React.ReactElement => {
         navigation.navigate('Register');
     }, [navigation]);
 
+    const handleBackToIntro = useCallback(() => {
+        navigation.replace('IntroCarousel');
+    }, [navigation]);
+
     return (
         <View style={styles.container}>
+            <Pressable
+                onPress={handleBackToIntro}
+                accessibilityRole="button"
+                accessibilityLabel="Quay lại màn hình giới thiệu"
+                style={[
+                    styles.closeButton,
+                    {
+                        top: insets.top + 12,
+                        right: 20,
+                    },
+                ]}
+            >
+                <Ionicons name="close" size={26} color={theme.colors.text} />
+            </Pressable>
             {/* Gradient Background */}
             <LinearGradient
                 colors={
@@ -119,27 +139,6 @@ const WelcomeScreen = ({ navigation }: Props): React.ReactElement => {
                     </Animated.View>
                 </View>
 
-                {/* Features Preview */}
-                <Animated.View
-                    entering={FadeInDown.delay(500).duration(600)}
-                    style={styles.featuresSection}
-                >
-                    <FeatureItem
-                        icon="scan-outline"
-                        text="Nhận diện thực phẩm bằng AI"
-                        theme={theme}
-                    />
-                    <FeatureItem
-                        icon="analytics-outline"
-                        text="Theo dõi dinh dưỡng hàng ngày"
-                        theme={theme}
-                    />
-                    <FeatureItem
-                        icon="restaurant-outline"
-                        text="Gợi ý công thức phù hợp"
-                        theme={theme}
-                    />
-                </Animated.View>
 
                 {/* Buttons Section */}
                 <Animated.View
@@ -152,7 +151,7 @@ const WelcomeScreen = ({ navigation }: Props): React.ReactElement => {
                         color="textSecondary"
                         style={{ textAlign: 'center', marginBottom: theme.spacing.lg }}
                     >
-                        Sẵn sàng bắt đầu hành trình sức khỏe?
+                        Bắt đầu hành trình sức khỏe của bạn
                     </ThemedText>
 
                     {/* Primary: Đăng ký */}
@@ -204,45 +203,12 @@ const WelcomeScreen = ({ navigation }: Props): React.ReactElement => {
                         icon="log-in-outline"
                         iconPosition="left"
                     />
-
-                    {/* Footer hint */}
-                    <ThemedText
-                        variant="caption"
-                        color="textSecondary"
-                        style={{ textAlign: 'center', marginTop: theme.spacing.lg, opacity: 0.7 }}
-                    >
-                        Miễn phí mãi mãi • Không cần thẻ tín dụng
-                    </ThemedText>
                 </Animated.View>
             </ScrollView>
         </View>
     );
 };
 
-// Feature item component
-const FeatureItem = ({
-    icon,
-    text,
-    theme,
-}: {
-    icon: keyof typeof Ionicons.glyphMap;
-    text: string;
-    theme: any;
-}) => (
-    <View style={styles.featureItem}>
-        <View
-            style={[
-                styles.featureIcon,
-                { backgroundColor: theme.colors.primary + '15' },
-            ]}
-        >
-            <Ionicons name={icon} size={20} color={theme.colors.primary} />
-        </View>
-        <ThemedText variant="bodySmall" style={{ flex: 1 }}>
-            {text}
-        </ThemedText>
-    </View>
-);
 
 const styles = StyleSheet.create({
     container: {
@@ -251,13 +217,14 @@ const styles = StyleSheet.create({
     content: {
         flexGrow: 1,
         paddingHorizontal: 32,
-        paddingTop: height * 0.08,
-        paddingBottom: 40,
-        justifyContent: 'space-between',
+        paddingTop: height * 0.06,
+        paddingBottom: 28,
+        justifyContent: 'center',
         minHeight: height,
     },
     heroSection: {
         alignItems: 'center',
+        marginBottom: 72,
     },
     iconContainer: {
         width: 120,
@@ -290,30 +257,22 @@ const styles = StyleSheet.create({
         lineHeight: 24,
         opacity: 0.8,
     },
-    featuresSection: {
-        gap: 16,
-        paddingVertical: 20,
-    },
-    featureItem: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 16,
-    },
-    featureIcon: {
-        width: 40,
-        height: 40,
-        borderRadius: 12,
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
     buttonsSection: {
-        paddingTop: 16,
+        paddingTop: 0,
     },
     decorCircle: {
         position: 'absolute',
         width: width * 0.6,
         height: width * 0.6,
         borderRadius: width * 0.3,
+    },
+    closeButton: {
+        position: 'absolute',
+        width: 40,
+        height: 40,
+        alignItems: 'center',
+        justifyContent: 'center',
+        zIndex: 10,
     },
 });
 

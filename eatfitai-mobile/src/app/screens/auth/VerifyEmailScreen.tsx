@@ -37,6 +37,20 @@ interface VerifyEmailResponse {
   needsOnboarding: boolean;
 }
 
+const resolveNeedsOnboarding = (
+  payload: Partial<VerifyEmailResponse> & { NeedsOnboarding?: boolean },
+): boolean => {
+  if (typeof payload.needsOnboarding === 'boolean') {
+    return payload.needsOnboarding;
+  }
+
+  if (typeof payload.NeedsOnboarding === 'boolean') {
+    return payload.NeedsOnboarding;
+  }
+
+  return true;
+};
+
 const VerifyEmailScreen = ({ navigation, route }: Props): React.ReactElement => {
   const { theme } = useAppTheme();
   const isDark = theme.mode === 'dark';
@@ -111,6 +125,30 @@ const VerifyEmailScreen = ({ navigation, route }: Props): React.ReactElement => 
 
       const data = resp.data;
 
+      // Sau verify của tài khoản mới, app luôn phải đi vào onboarding
+      // dù backend có trả thiếu/sai cờ needsOnboarding.
+      const backendNeedsOnboarding = resolveNeedsOnboarding(
+        data as VerifyEmailResponse & { NeedsOnboarding?: boolean },
+      );
+      const needsOnboarding = true;
+      const nextUser = {
+        id: data.userId,
+        email: data.email,
+        name: data.displayName,
+      };
+
+      if (__DEV__) {
+        console.log('[VerifyEmail] Verification succeeded:', {
+          email: data.email,
+          needsOnboarding,
+          backendNeedsOnboarding,
+          rawNeedsOnboarding: (data as VerifyEmailResponse & { NeedsOnboarding?: boolean })
+            .needsOnboarding,
+          rawPascalNeedsOnboarding: (data as VerifyEmailResponse & { NeedsOnboarding?: boolean })
+            .NeedsOnboarding,
+        });
+      }
+
       // Lưu tokens vào secure storage
       const accessToken = data.accessToken || data.token;
       const accessTokenExpiresAt = data.accessTokenExpiresAt || data.expiresAt;
@@ -123,18 +161,26 @@ const VerifyEmailScreen = ({ navigation, route }: Props): React.ReactElement => 
       });
       await AsyncStorage.setItem(
         AUTH_NEEDS_ONBOARDING_KEY,
-        data.needsOnboarding ? 'true' : 'false',
+        needsOnboarding ? 'true' : 'false',
       );
+      await AsyncStorage.setItem('onboarding_complete', 'false');
       setAccessTokenMem(accessToken);
       useAuthStore.setState({
-        isAuthenticated: true,
-        needsOnboarding: data.needsOnboarding,
+        // Giữ app ở auth guest flow thêm một bước để chuyển thẳng sang Onboarding
+        // thay vì remount toàn bộ navigator ngay sau verify rồi có thể rơi vào màn đen.
+        isAuthenticated: false,
+        needsOnboarding,
+        user: nextUser,
       });
 
       Toast.show({
         type: 'success',
         text1: 'Xác minh thành công!',
-        text2: 'Chào mừng bạn đến với EatFitAI',
+        text2: 'Tiếp tục thiết lập thông tin của bạn',
+      });
+      navigation.reset({
+        index: 0,
+        routes: [{ name: 'Onboarding' }],
       });
 
     } catch (err: any) {
