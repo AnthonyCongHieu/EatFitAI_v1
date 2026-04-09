@@ -184,10 +184,7 @@ public sealed class AiHealthService : IAiHealthService
 
     private string GetProviderBaseUrl()
     {
-        var value = _configuration["AIProvider:VisionBaseUrl"];
-        return string.IsNullOrWhiteSpace(value)
-            ? "http://127.0.0.1:5050"
-            : value.Trim().TrimEnd('/');
+        return AiProviderUrlResolver.GetVisionBaseUrl(_configuration);
     }
 
     private TimeSpan GetTimeout()

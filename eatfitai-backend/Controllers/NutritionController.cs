@@ -60,7 +60,7 @@ namespace EatFitAI.API.Controllers
             try
             {
                 // Gọi AI Provider để tính toán bằng Ollama (không dùng công thức local)
-                var aiProviderUrl = _configuration["AIProvider:VisionBaseUrl"] ?? "http://127.0.0.1:5050";
+                var aiProviderUrl = AiProviderUrlResolver.GetVisionBaseUrl(_configuration);
                 
                 using var client = _httpClientFactory.CreateClient();
                 client.Timeout = TimeSpan.FromSeconds(60);

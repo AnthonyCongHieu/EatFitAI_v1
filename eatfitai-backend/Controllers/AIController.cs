@@ -99,8 +99,8 @@ namespace EatFitAI.API.Controllers
                 return Ok(cachedResult);
             }
 
-            var baseUrl = _configuration["AIProvider:VisionBaseUrl"] ?? "http://127.0.0.1:5050";
-            var url = $"{baseUrl.TrimEnd('/')}/detect";
+            var baseUrl = AiProviderUrlResolver.GetVisionBaseUrl(_configuration);
+            var url = $"{baseUrl}/detect";
 
             using var client = _httpClientFactory.CreateClient();
             using var content = new MultipartFormDataContent();
@@ -319,7 +319,7 @@ namespace EatFitAI.API.Controllers
                     return BuildOfflineFallback("AI Provider đang DOWN, đã chuyển sang công thức offline.");
                 }
 
-                var aiProviderUrl = _configuration["AIProvider:VisionBaseUrl"] ?? "http://127.0.0.1:5050";
+                var aiProviderUrl = AiProviderUrlResolver.GetVisionBaseUrl(_configuration);
                 
                 using var client = _httpClientFactory.CreateClient();
                 client.Timeout = TimeSpan.FromSeconds(60); // Ollama có thể mất thời gian
@@ -652,7 +652,7 @@ namespace EatFitAI.API.Controllers
                     return Ok(cachedResult);
                 }
 
-                var aiProviderUrl = _configuration["AIProvider:VisionBaseUrl"] ?? "http://127.0.0.1:5050";
+                var aiProviderUrl = AiProviderUrlResolver.GetVisionBaseUrl(_configuration);
                 
                 using var client = _httpClientFactory.CreateClient();
                 client.Timeout = TimeSpan.FromSeconds(60);

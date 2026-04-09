@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.Mvc;
 using EatFitAI.DTOs;
 using EatFitAI.API.DTOs.MealDiary;
 using EatFitAI.Services;
+using EatFitAI.API.Services;
 using EatFitAI.API.Services.Interfaces;
 using System.Security.Claims;
 using System.Net.Http.Headers;
@@ -59,9 +60,7 @@ namespace EatFitAI.API.Controllers
 
         private string GetVoiceProviderBaseUrl()
         {
-            return _configuration["AIProvider:VoiceBaseUrl"]
-                ?? _configuration["AIProvider:VisionBaseUrl"]
-                ?? "http://127.0.0.1:5050";
+            return AiProviderUrlResolver.GetVoiceBaseUrl(_configuration);
         }
 
         /// <summary>
