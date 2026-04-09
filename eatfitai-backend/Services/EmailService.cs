@@ -4,6 +4,7 @@ using MailKit.Net.Smtp;
 using MailKit.Security;
 using Microsoft.Extensions.Options;
 using MimeKit;
+using System.Diagnostics;
 
 namespace EatFitAI.API.Services
 {
@@ -25,19 +26,8 @@ namespace EatFitAI.API.Services
                 $"[EmailService] Attempting to send email to {email}. Config: Host='{_settings.Host}', User='{_settings.User}', Port={_settings.Port}, SSL={_settings.EnableSsl}"
             );
 
-            if (string.IsNullOrWhiteSpace(_settings.Host) ||
-                string.IsNullOrWhiteSpace(_settings.User) ||
-                string.IsNullOrWhiteSpace(_settings.Password) ||
-                string.IsNullOrWhiteSpace(_settings.FromEmail))
+            if (!EnsureSmtpConfigured("[EmailService] SMTP settings missing (Host, User, Password, or FromEmail is empty)."))
             {
-                const string message = "[EmailService] SMTP settings missing (Host, User, Password, or FromEmail is empty).";
-                if (_environment.IsProduction())
-                {
-                    Console.WriteLine(message + " Rejecting send in Production.");
-                    throw new InvalidOperationException("SMTP is not configured.");
-                }
-
-                Console.WriteLine(message + " Skipping real send in Development.");
                 return;
             }
 
@@ -48,35 +38,16 @@ namespace EatFitAI.API.Services
                 var cleanPassword = _settings.Password.Replace(" ", "");
                 Console.WriteLine($"[EmailService] Password length: {cleanPassword.Length} characters");
 
-                var message = new MimeMessage();
-                message.From.Add(new MailboxAddress(_settings.FromDisplayName, _settings.FromEmail));
-                message.To.Add(new MailboxAddress("", email));
-                message.Subject = "EatFitAI - Mã đặt lại mật khẩu";
-                message.Body = new TextPart("plain")
-                {
-                    Text = BuildResetBody(code, expiresAt),
-                };
+                var message = CreateMessage(
+                    email,
+                    "EatFitAI - Mã đặt lại mật khẩu",
+                    BuildResetBody(code, expiresAt));
 
-                using var client = new SmtpClient();
-
-                Console.WriteLine("[EmailService] Connecting to SMTP server...");
-                await client.ConnectAsync(
-                    _settings.Host,
-                    _settings.Port,
-                    SecureSocketOptions.StartTls,
-                    timeoutCts.Token
-                );
-
-                Console.WriteLine("[EmailService] Authenticating...");
-                await client.AuthenticateAsync(_settings.User, cleanPassword, timeoutCts.Token);
-
-                Console.WriteLine("[EmailService] Sending email...");
-                await client.SendAsync(message, timeoutCts.Token);
-
-                Console.WriteLine("[EmailService] Disconnecting...");
-                await client.DisconnectAsync(true, timeoutCts.Token);
-
-                Console.WriteLine($"[EmailService] Email sent successfully to {email}");
+                await SendSmtpMessageAsync(
+                    message,
+                    cleanPassword,
+                    timeoutCts.Token,
+                    successMessage: $"[EmailService] Email sent successfully to {email}");
             }
             catch (OperationCanceledException ex) when (timeoutCts.IsCancellationRequested)
             {
@@ -104,19 +75,8 @@ namespace EatFitAI.API.Services
         {
             Console.WriteLine($"[EmailService] Sending verification code to {email}");
 
-            if (string.IsNullOrWhiteSpace(_settings.Host) ||
-                string.IsNullOrWhiteSpace(_settings.User) ||
-                string.IsNullOrWhiteSpace(_settings.Password) ||
-                string.IsNullOrWhiteSpace(_settings.FromEmail))
+            if (!EnsureSmtpConfigured("[EmailService] SMTP settings missing."))
             {
-                const string message = "[EmailService] SMTP settings missing.";
-                if (_environment.IsProduction())
-                {
-                    Console.WriteLine(message + " Rejecting send in Production.");
-                    throw new InvalidOperationException("SMTP is not configured.");
-                }
-
-                Console.WriteLine(message + " Skipping real send in Development.");
                 return;
             }
 
@@ -125,29 +85,16 @@ namespace EatFitAI.API.Services
             try
             {
                 var cleanPassword = _settings.Password.Replace(" ", "");
+                var message = CreateMessage(
+                    email,
+                    "EatFitAI - Mã xác minh email",
+                    BuildVerificationBody(code, expiresAt));
 
-                var message = new MimeMessage();
-                message.From.Add(new MailboxAddress(_settings.FromDisplayName, _settings.FromEmail));
-                message.To.Add(new MailboxAddress("", email));
-                message.Subject = "EatFitAI - Mã xác minh email";
-                message.Body = new TextPart("plain")
-                {
-                    Text = BuildVerificationBody(code, expiresAt),
-                };
-
-                using var client = new SmtpClient();
-
-                await client.ConnectAsync(
-                    _settings.Host,
-                    _settings.Port,
-                    SecureSocketOptions.StartTls,
-                    timeoutCts.Token
-                );
-                await client.AuthenticateAsync(_settings.User, cleanPassword, timeoutCts.Token);
-                await client.SendAsync(message, timeoutCts.Token);
-                await client.DisconnectAsync(true, timeoutCts.Token);
-
-                Console.WriteLine($"[EmailService] Verification code sent to {email}");
+                await SendSmtpMessageAsync(
+                    message,
+                    cleanPassword,
+                    timeoutCts.Token,
+                    successMessage: $"[EmailService] Verification code sent to {email}");
             }
             catch (OperationCanceledException ex) when (timeoutCts.IsCancellationRequested)
             {
@@ -164,6 +111,72 @@ namespace EatFitAI.API.Services
                 Console.WriteLine($"[EmailService] FAILED to send verification email: {ex.Message}");
                 throw;
             }
+        }
+
+        private bool EnsureSmtpConfigured(string missingConfigMessage)
+        {
+            if (string.IsNullOrWhiteSpace(_settings.Host) ||
+                string.IsNullOrWhiteSpace(_settings.User) ||
+                string.IsNullOrWhiteSpace(_settings.Password) ||
+                string.IsNullOrWhiteSpace(_settings.FromEmail))
+            {
+                if (_environment.IsProduction())
+                {
+                    Console.WriteLine(missingConfigMessage + " Rejecting send in Production.");
+                    throw new InvalidOperationException("SMTP is not configured.");
+                }
+
+                Console.WriteLine(missingConfigMessage + " Skipping real send in Development.");
+                return false;
+            }
+
+            return true;
+        }
+
+        private MimeMessage CreateMessage(string email, string subject, string body)
+        {
+            var message = new MimeMessage();
+            message.From.Add(new MailboxAddress(_settings.FromDisplayName, _settings.FromEmail));
+            message.To.Add(new MailboxAddress("", email));
+            message.Subject = subject;
+            message.Body = new TextPart("plain")
+            {
+                Text = body,
+            };
+
+            return message;
+        }
+
+        private async Task SendSmtpMessageAsync(
+            MimeMessage message,
+            string cleanPassword,
+            CancellationToken cancellationToken,
+            string successMessage)
+        {
+            var stopwatch = Stopwatch.StartNew();
+            using var client = new SmtpClient
+            {
+                Timeout = (int)SmtpOperationTimeout.TotalMilliseconds,
+            };
+
+            Console.WriteLine("[EmailService] Connecting to SMTP server...");
+            await client.ConnectAsync(
+                _settings.Host,
+                _settings.Port,
+                SecureSocketOptions.StartTls,
+                cancellationToken);
+
+            Console.WriteLine("[EmailService] Authenticating...");
+            await client.AuthenticateAsync(_settings.User, cleanPassword, cancellationToken);
+
+            Console.WriteLine("[EmailService] Sending email...");
+            await client.SendAsync(message, cancellationToken);
+
+            Console.WriteLine("[EmailService] Disconnecting...");
+            await client.DisconnectAsync(true, cancellationToken);
+            stopwatch.Stop();
+
+            Console.WriteLine($"{successMessage} in {stopwatch.ElapsedMilliseconds} ms");
         }
 
         private static string BuildResetBody(string code, DateTime expiresAt)

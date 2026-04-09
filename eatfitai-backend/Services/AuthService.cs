@@ -526,6 +526,7 @@ namespace EatFitAI.API.Services
         public async Task<RegisterResponse> RegisterWithVerificationAsync(RegisterRequest request)
         {
             _logger.LogInformation("Đăng ký với email verification cho: {Email}", request.Email);
+            var includeCodeInResponse = _env.IsDevelopment();
 
             // Check if email already exists
             var existingUser = await _userRepository.GetByEmailAsync(request.Email);
@@ -559,18 +560,21 @@ namespace EatFitAI.API.Services
                     catch (Exception ex)
                     {
                         _logger.LogError(ex, "Không gửi được email xác minh cho user {UserId}", existingUser.UserId);
+                        if (!includeCodeInResponse)
+                        {
+                            throw new InvalidOperationException("Không gửi được email. Vui lòng thử lại sau.");
+                        }
                     }
-                    
-                    var includeCodeInDevResponse = _env.IsDevelopment();
+
                     return new RegisterResponse
                     {
                         Success = true,
-                        Message = includeCodeInDevResponse 
+                        Message = includeCodeInResponse
                             ? "Đã gửi lại mã xác minh (dev mode)" 
                             : "Đã gửi lại mã xác minh. Kiểm tra email của bạn.",
                         Email = existingUser.Email,
                         VerificationCodeExpiresAt = existingUser.VerificationCodeExpiry.Value,
-                        VerificationCode = includeCodeInDevResponse ? newVerificationCode : null
+                        VerificationCode = includeCodeInResponse ? newVerificationCode : null
                     };
                 }
                 
@@ -609,9 +613,12 @@ namespace EatFitAI.API.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Không gửi được email xác minh cho user {UserId}", user.UserId);
-                // Vẫn return success, user có thể request gửi lại
+                if (!includeCodeInResponse)
+                {
+                    throw new InvalidOperationException("Không gửi được email. Vui lòng thử lại sau.");
+                }
             }
-            var includeCodeInResponse = _env.IsDevelopment();
+
             return new RegisterResponse
             {
                 Success = true,

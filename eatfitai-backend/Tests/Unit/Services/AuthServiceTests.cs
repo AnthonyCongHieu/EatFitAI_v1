@@ -106,6 +106,53 @@ namespace EatFitAI.API.Tests.Unit.Services
         }
 
         [Fact]
+        public async Task RegisterWithVerificationAsync_EmailSendFailsInProduction_ThrowsInvalidOperationException()
+        {
+            var request = new RegisterRequest
+            {
+                Email = "verify-production@example.com",
+                Password = "password123",
+                DisplayName = "Verify Production"
+            };
+
+            _envMock.SetupGet(e => e.EnvironmentName).Returns(Environments.Production);
+            _userRepositoryMock.Setup(r => r.GetByEmailAsync(request.Email)).ReturnsAsync((User?)null);
+            _userRepositoryMock.Setup(r => r.AddAsync(It.IsAny<User>())).Returns(Task.CompletedTask);
+            _emailServiceMock
+                .Setup(s => s.SendVerificationCodeAsync(request.Email, It.IsAny<string>(), It.IsAny<DateTime>()))
+                .ThrowsAsync(new TimeoutException("SMTP verification send timed out."));
+
+            var ex = await Assert.ThrowsAsync<InvalidOperationException>(
+                () => _authService.RegisterWithVerificationAsync(request));
+
+            Assert.Equal("Không gửi được email. Vui lòng thử lại sau.", ex.Message);
+        }
+
+        [Fact]
+        public async Task RegisterWithVerificationAsync_EmailSendFailsInDevelopment_ReturnsVerificationCode()
+        {
+            var request = new RegisterRequest
+            {
+                Email = "verify-development@example.com",
+                Password = "password123",
+                DisplayName = "Verify Development"
+            };
+
+            _envMock.SetupGet(e => e.EnvironmentName).Returns(Environments.Development);
+            _userRepositoryMock.Setup(r => r.GetByEmailAsync(request.Email)).ReturnsAsync((User?)null);
+            _userRepositoryMock.Setup(r => r.AddAsync(It.IsAny<User>())).Returns(Task.CompletedTask);
+            _emailServiceMock
+                .Setup(s => s.SendVerificationCodeAsync(request.Email, It.IsAny<string>(), It.IsAny<DateTime>()))
+                .ThrowsAsync(new TimeoutException("SMTP verification send timed out."));
+
+            var result = await _authService.RegisterWithVerificationAsync(request);
+
+            Assert.True(result.Success);
+            Assert.Equal(request.Email, result.Email);
+            Assert.False(string.IsNullOrWhiteSpace(result.VerificationCode));
+        }
+
+        [Fact]
         public async Task LoginAsync_ValidCredentials_ReturnsSuccess()
         {
             var request = new LoginRequest
