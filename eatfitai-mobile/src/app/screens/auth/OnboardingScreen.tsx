@@ -30,6 +30,7 @@ import { useAppTheme } from '../../../theme/ThemeProvider';
 import { useProfileStore } from '../../../store/useProfileStore';
 import { AUTH_NEEDS_ONBOARDING_KEY, useAuthStore } from '../../../store/useAuthStore';
 import apiClient from '../../../services/apiClient';
+import { profileService } from '../../../services/profileService';
 import { showSuccess } from '../../../utils/errorHandler';
 import { t } from '../../../i18n/vi';
 import { TEST_IDS } from '../../../testing/testIds';
@@ -293,17 +294,33 @@ const OnboardingScreen = (): React.ReactElement => {
       const currentYear = new Date().getFullYear();
       const birthYear = currentYear - Number(data.age);
       const dateOfBirth = `${birthYear}-01-01`; // Giả định ngày 1/1
+      let profileSavedWithFallback = false;
 
-      // Save profile với đầy đủ thông tin
-      await updateProfile({
-        fullName: data.fullName,
-        heightCm: Number(data.heightCm),
-        weightKg: Number(data.weightKg),
-        gender: data.gender || undefined,
-        dateOfBirth: dateOfBirth,
-        activityLevelId: activityLevelMap[data.activityLevel] || 3,
-        goal: data.goal || undefined,
-      });
+      try {
+        // Save profile với đầy đủ thông tin
+        await updateProfile({
+          fullName: data.fullName,
+          heightCm: Number(data.heightCm),
+          weightKg: Number(data.weightKg),
+          gender: data.gender || undefined,
+          dateOfBirth: dateOfBirth,
+          activityLevelId: activityLevelMap[data.activityLevel] || 3,
+          goal: data.goal || undefined,
+        });
+      } catch (profileError) {
+        // Cloud /api/profile đang không ổn định; giữ onboarding tiếp tục bằng cách
+        // ít nhất lưu body metrics để home/diary và nutrition lane không bị chặn.
+        if (__DEV__) {
+          console.warn('[Onboarding] updateProfile failed, falling back to body metrics only:', profileError);
+        }
+
+        await profileService.createBodyMetrics({
+          heightCm: Number(data.heightCm),
+          weightKg: Number(data.weightKg),
+          note: 'Onboarding fallback while profile API is degraded',
+        });
+        profileSavedWithFallback = true;
+      }
 
       // Lưu NutritionTarget từ aiResult vào backend
       if (aiResult) {
@@ -348,7 +365,15 @@ const OnboardingScreen = (): React.ReactElement => {
         // Vẫn tiếp tục vì đã lưu locally
       }
 
-      showSuccess('settings_saved', { text1: '🎉 Thiết lập hoàn tất!' });
+      if (profileSavedWithFallback) {
+        Toast.show({
+          type: 'info',
+          text1: 'Đã hoàn tất thiết lập',
+          text2: 'Một phần hồ sơ sẽ được đồng bộ lại sau.',
+        });
+      } else {
+        showSuccess('settings_saved', { text1: '🎉 Thiết lập hoàn tất!' });
+      }
 
       // Auth state change will cause AppNavigator to swap from onboarding to AppTabs.
       useAuthStore.setState({ isAuthenticated: true, needsOnboarding: false });

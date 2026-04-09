@@ -9,8 +9,17 @@ tags:
 - assertVisible:
     id: home-screen
 - assertVisible:
+    id: home-smart-add-fab
+- tapOn:
+    id: home-smart-add-fab
+    retryTapIfNoChange: true
+- extendedWaitUntil:
+    visible:
+      id: home-quick-add-search-button
+    timeout: 20000
+- assertVisible:
     id: home-quick-add-search-button
 - assertVisible:
     id: home-quick-add-scan-button
 - assertVisible:
-    id: home-smart-add-fab
+    id: home-quick-add-voice-button

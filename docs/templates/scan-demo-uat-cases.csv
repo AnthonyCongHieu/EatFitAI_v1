@@ -1,0 +1,11 @@
+CaseId,Category,Precondition,Steps,Expected Result,Owner,Status,Evidence Path
+UAT-01,Happy path,Fresh disposable mailbox,Register -> receive verify code -> verify email -> complete onboarding,User reaches onboarding result and lands on home after reopen,,, 
+UAT-02,Happy path,Authenticated session,Close app -> reopen app,Home screen restores without forced logout,,,
+UAT-03,Happy path,Primary fixture available,Open gallery -> detect primary fixture -> continue to AddMealFromVision,AI result is usable and AddMealFromVision screen opens,,,
+UAT-04,Happy path,AddMealFromVision open,Change meal type and grams -> save meal -> return to diary,Diary shows the newly saved item with expected meal type and grams,,,
+UAT-05,Voice gate,Authenticated session,Run ask-calories and add-food regression cases,Intent parse succeeds and execute result is coherent,,,
+UAT-06,Nutrition gate,Authenticated session,Run nutrition suggest -> apply target,Current nutrition target is updated without contract error,,,
+UAT-07,Risk scenario,Session artifacts template ready,Simulate AI provider down fallback,User sees fallback path and lane continues without crash,,,
+UAT-08,Risk scenario,Session artifacts template ready,Simulate network lag during smoke lane,User can recover without duplicated writes or stuck loading,,,
+UAT-09,Risk scenario,Session artifacts template ready,Inject invalid or unusable AI result,Flow blocks safely and diary data remains consistent,,,
+UAT-10,Consistency,Successful scan-to-save run completed,Open diary and compare with saved scan result,Meal diary readback matches saved grams and food identity within expected tolerance,,,

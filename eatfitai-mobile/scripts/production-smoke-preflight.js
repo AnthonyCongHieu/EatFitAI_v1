@@ -14,23 +14,40 @@ const DEFAULT_REQUEST_BUDGET = {
   login: 1,
   refresh: 1,
   aiStatus: 1,
-  visionDetect: 6,
+  visionDetect: 8,
   mealDiaryWrite: 3,
 };
 const DEFAULT_FIXTURE_MANIFEST = {
-  primary: [
-    { key: 'egg', targetFileName: 'ai-primary-egg-01.jpg', targetOutcome: 'mapped-or-usable-result' },
-    { key: 'banana', targetFileName: 'ai-primary-banana-01.jpg', targetOutcome: 'mapped-or-usable-result' },
-    { key: 'rice', targetFileName: 'ai-primary-rice-01.jpg', targetOutcome: 'mapped-or-usable-result' },
-    { key: 'broccoli', targetFileName: 'ai-primary-broccoli-01.jpg', targetOutcome: 'mapped-or-usable-result' },
-    { key: 'spinach', targetFileName: 'ai-primary-spinach-01.jpg', targetOutcome: 'mapped-or-usable-result' },
-  ],
-  benchmark: [
-    { key: 'chicken', targetFileName: 'ai-benchmark-chicken-01.jpg', targetOutcome: 'benchmark-only' },
-    { key: 'beef', targetFileName: 'ai-benchmark-beef-01.jpg', targetOutcome: 'benchmark-only' },
-    { key: 'pork', targetFileName: 'ai-benchmark-pork-01.jpg', targetOutcome: 'benchmark-only' },
-  ],
+  version: 1,
+  fixtureRootHint: 'tools/appium/fixtures/scan-demo',
+  galleryRules: {
+    maxFileSizeMb: 10,
+    singleDishOnly: true,
+    lowOcclusion: true,
+    simpleBackgroundPreferred: true,
+  },
+  fixtures: {
+    primary: [
+      { key: 'egg', fileName: 'ai-primary-egg-01.jpg', relativePath: 'scan-demo/ai-primary-egg-01.jpg', targetOutcome: 'mapped-or-usable-result' },
+      { key: 'banana', fileName: 'ai-primary-banana-01.jpg', relativePath: 'scan-demo/ai-primary-banana-01.jpg', targetOutcome: 'mapped-or-usable-result' },
+      { key: 'rice', fileName: 'ai-primary-rice-01.jpg', relativePath: 'scan-demo/ai-primary-rice-01.jpg', targetOutcome: 'mapped-or-usable-result' },
+      { key: 'broccoli', fileName: 'ai-primary-broccoli-01.jpg', relativePath: 'scan-demo/ai-primary-broccoli-01.jpg', targetOutcome: 'mapped-or-usable-result' },
+      { key: 'spinach', fileName: 'ai-primary-spinach-01.jpg', relativePath: 'scan-demo/ai-primary-spinach-01.jpg', targetOutcome: 'mapped-or-usable-result' },
+    ],
+    benchmark: [
+      { key: 'chicken', fileName: 'ai-benchmark-chicken-01.jpg', relativePath: 'scan-demo/ai-benchmark-chicken-01.jpg', targetOutcome: 'benchmark-only' },
+      { key: 'beef', fileName: 'ai-benchmark-beef-01.jpg', relativePath: 'scan-demo/ai-benchmark-beef-01.jpg', targetOutcome: 'benchmark-only' },
+      { key: 'pork', fileName: 'ai-benchmark-pork-01.jpg', relativePath: 'scan-demo/ai-benchmark-pork-01.jpg', targetOutcome: 'benchmark-only' },
+    ],
+  },
+  searchCases: [],
+  voiceCases: [],
+  nutritionCases: [],
 };
+const MANIFEST_TEMPLATE_PATH = path.resolve(
+  __dirname,
+  'production-smoke-manifest.template.json',
+);
 
 function trimEnv(name) {
   const value = process.env[name];
@@ -100,6 +117,78 @@ function createBudgetTemplate() {
   };
 }
 
+function loadFixtureManifestTemplate() {
+  try {
+    if (!fs.existsSync(MANIFEST_TEMPLATE_PATH)) {
+      return DEFAULT_FIXTURE_MANIFEST;
+    }
+
+    return JSON.parse(fs.readFileSync(MANIFEST_TEMPLATE_PATH, 'utf8'));
+  } catch (error) {
+    console.warn('[production-smoke] Failed to load manifest template, using defaults:', error);
+    return DEFAULT_FIXTURE_MANIFEST;
+  }
+}
+
+function createSessionObservationsTemplate(context) {
+  return {
+    generatedAt: new Date().toISOString(),
+    operator: '',
+    accountEmail: context.email || '',
+    reopenHome: {
+      attempted: false,
+      passed: false,
+      notes: '',
+    },
+    scanToSave: {
+      attempted: false,
+      fixtureKey: '',
+      passed: false,
+      diaryReadbackPassed: false,
+      mealType: '',
+      notes: '',
+    },
+    nutritionApply: {
+      attempted: false,
+      passed: false,
+      targetSummary: '',
+      notes: '',
+    },
+    stability: {
+      crashObserved: false,
+      freezeObserved: false,
+      notes: '',
+    },
+    riskScenarios: {
+      aiDownFallback: {
+        attempted: false,
+        passed: false,
+        notes: '',
+      },
+      networkLag: {
+        attempted: false,
+        passed: false,
+        notes: '',
+      },
+      dataCorrupt: {
+        attempted: false,
+        passed: false,
+        notes: '',
+      },
+    },
+    evidence: {
+      mailboxScreenshot: '',
+      verificationScreenshot: '',
+      onboardingScreenshot: '',
+      homeScreenshot: '',
+      aiResultScreenshot: '',
+      diaryScreenshot: '',
+      logcatPath: '',
+      notes: [],
+    },
+  };
+}
+
 function buildChecklistMarkdown(context) {
   return [
     '# Result Production Smoke Session',
@@ -119,13 +208,23 @@ function buildChecklistMarkdown(context) {
     '- Stop the run when a limit reaches zero remaining.',
     '',
     '## Fixture order',
-    '- Primary gate: egg, banana, rice, broccoli, spinach.',
-    '- Benchmark only: chicken, beef, pork.',
+    '- Primary gate: banana-primary, banana-compact, broccoli-primary, apple-primary, orange-primary.',
+    '- Benchmark only: apple-compact, orange-compact, broccoli-compact.',
+    '',
+    '## Regression + metrics',
+    '- Run `node .\\scripts\\production-smoke-seed-cloud.js` before authenticated cloud regression when the dedicated demo account needs a deterministic 7-day reset.',
+    '- Run `node .\\scripts\\production-smoke-regression.js` after login credentials are available.',
+    '- Run `node .\\scripts\\production-smoke-metrics.js` after filling session-observations.json.',
+    '- Run `node .\\scripts\\production-smoke-rehearsal.js` after at least 3 completed sessions.',
     '',
     '## Evidence',
     '- preflight-results.json',
+    '- demo-seed.json',
     '- request-budget.json',
     '- fixture-manifest.json',
+    '- session-observations.json',
+    '- regression-run.json',
+    '- metrics-baseline.json',
     '- temp-mail mailbox screenshot',
     '- verification mail screenshot',
     '- onboarding result screenshot',
@@ -136,25 +235,53 @@ function buildChecklistMarkdown(context) {
   ].join('\n');
 }
 
+function buildRehearsalTemplateMarkdown() {
+  return [
+    '# Rehearsal Report',
+    '',
+    '- Run date:',
+    '- Operator:',
+    '- Account:',
+    '- Passed all required gates: yes/no',
+    '',
+    '## Happy path',
+    '- register -> verify -> onboarding:',
+    '- reopen -> home:',
+    '- scan -> add meal -> diary readback:',
+    '',
+    '## Risk scenarios',
+    '- AI down fallback:',
+    '- network lag:',
+    '- data corrupt / invalid result:',
+    '',
+    '## Notes',
+    '-',
+    '',
+  ].join('\n');
+}
+
 function ensureSessionArtifacts(outputDir, context) {
   writeJsonIfMissing(path.join(outputDir, 'request-budget.json'), createBudgetTemplate());
   writeJsonIfMissing(
     path.join(outputDir, 'fixture-manifest.json'),
     {
       generatedAt: new Date().toISOString(),
-      downloadRules: {
-        maxFileSizeMb: 10,
-        singleDishOnly: true,
-        lowOcclusion: true,
-        simpleBackgroundPreferred: true,
-      },
-      fixtures: DEFAULT_FIXTURE_MANIFEST,
+      ...loadFixtureManifestTemplate(),
     },
+  );
+  writeJsonIfMissing(
+    path.join(outputDir, 'session-observations.json'),
+    createSessionObservationsTemplate(context),
   );
 
   const checklistPath = path.join(outputDir, 'manual-checklist.md');
   if (!fs.existsSync(checklistPath)) {
     fs.writeFileSync(checklistPath, buildChecklistMarkdown(context), 'utf8');
+  }
+
+  const rehearsalTemplatePath = path.join(outputDir, 'rehearsal-report.md');
+  if (!fs.existsSync(rehearsalTemplatePath)) {
+    fs.writeFileSync(rehearsalTemplatePath, buildRehearsalTemplateMarkdown(), 'utf8');
   }
 }
 
@@ -382,6 +509,13 @@ async function main() {
         authEnabled: !results.checks.auth.skipped,
         aiStatus: results.checks.auth.aiStatus?.status || null,
         refresh: results.checks.auth.refresh?.status || null,
+        sessionArtifacts: [
+          'request-budget.json',
+          'fixture-manifest.json',
+          'session-observations.json',
+          'manual-checklist.md',
+          'rehearsal-report.md',
+        ],
       },
       null,
       2,

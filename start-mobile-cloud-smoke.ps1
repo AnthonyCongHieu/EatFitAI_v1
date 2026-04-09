@@ -8,6 +8,7 @@ $env:EXPO_PUBLIC_API_BASE_URL = 'https://eatfitai-backend.onrender.com'
 $env:EXPO_PUBLIC_API_PORT = ''
 $env:EXPO_PUBLIC_API_SCHEME = 'https'
 $env:EXPO_PUBLIC_E2E_AUTOMATION = '0'
+$env:EXPO_NO_DOTENV = '1'
 $env:EATFITAI_SMOKE_OUTPUT_DIR = $sessionOutputDir
 
 New-Item -ItemType Directory -Path $sessionOutputDir -Force | Out-Null
@@ -35,4 +36,6 @@ Write-Host '[cloud-smoke] Initializing request budget...'
 node .\scripts\production-smoke-budget.js init
 
 Write-Host '[cloud-smoke] Starting Expo for production smoke session...'
-npx.cmd expo start --clear
+Write-Host "[cloud-smoke] EXPO_PUBLIC_API_BASE_URL=$($env:EXPO_PUBLIC_API_BASE_URL)"
+Write-Host '[cloud-smoke] Dotenv loading disabled for this session (EXPO_NO_DOTENV=1).'
+npx.cmd expo start --clear --dev-client --port 8081

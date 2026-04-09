@@ -7,9 +7,18 @@ tags:
 - runFlow:
     file: ../subflows/start-authenticated.yaml
 - tapOn:
+    id: home-smart-add-fab
+    retryTapIfNoChange: true
+- extendedWaitUntil:
+    visible:
+      id: home-quick-add-scan-button
+    timeout: 20000
+- tapOn:
     id: home-quick-add-scan-button
 - assertVisible:
     id: ai-scan-screen
+- assertVisible:
+    id: ai-scan-status-badge
 - assertVisible:
     id: ai-scan-gallery-button
 - assertVisible:

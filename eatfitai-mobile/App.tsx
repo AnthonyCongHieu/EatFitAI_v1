@@ -51,6 +51,18 @@ const createQueryClient = () =>
   });
 
 const queryClient = createQueryClient();
+const DEV_LOGBOX_IGNORES = [
+  '[expo-av]: Expo AV has been deprecated and will be removed in SDK 54.',
+  '[Reanimated] Reduced motion setting is enabled on this device.',
+  '[EatFitAI]',
+  '[Onboarding]',
+  '[useAuthStore]',
+  '[GoogleAuth]',
+  '[InsightsCard]',
+  '[AI Insights]',
+  'Image compression failed, using original:',
+  'EatFitAI API warning:',
+];
 
 void SplashScreen.preventAutoHideAsync();
 WebBrowser.maybeCompleteAuthSession();
@@ -59,10 +71,7 @@ if (__DEV__) {
   if (E2E_AUTOMATION_ENABLED) {
     LogBox.ignoreAllLogs();
   } else {
-    LogBox.ignoreLogs([
-      '[expo-av]: Expo AV has been deprecated and will be removed in SDK 54.',
-      '[Reanimated] Reduced motion setting is enabled on this device.',
-    ]);
+    LogBox.ignoreLogs(DEV_LOGBOX_IGNORES);
   }
 }
 

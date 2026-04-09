@@ -12,6 +12,9 @@ const APP_ACTIVITY = 'com.eatfitai.app.MainActivity';
 const ARTIFACT_DIR = path.resolve(__dirname, '..', '..', '..', 'artifacts', 'appium');
 const TEST_IDS = loadTestIds();
 const KNOWN_ENTRY_IDS = [
+  TEST_IDS.auth.introScreen,
+  TEST_IDS.auth.introStartButton,
+  TEST_IDS.auth.welcomeScreen,
   TEST_IDS.auth.welcomeLoginButton,
   TEST_IDS.auth.loginScreen,
   TEST_IDS.home.screen,
@@ -144,6 +147,36 @@ async function loginIfNeeded(driver) {
     return;
   }
 
+  if (
+    current === TEST_IDS.auth.introScreen ||
+    current === TEST_IDS.auth.introStartButton
+  ) {
+    const introStartButton = await findByTestId(
+      driver,
+      TEST_IDS.auth.introStartButton,
+      5000,
+    );
+    if (!introStartButton) {
+      throw new Error('Intro screen detected but start button could not be resolved.');
+    }
+
+    await introStartButton.click();
+    current = await waitForAny(
+      driver,
+      [
+        TEST_IDS.auth.welcomeScreen,
+        TEST_IDS.auth.welcomeLoginButton,
+        TEST_IDS.auth.loginScreen,
+        TEST_IDS.home.screen,
+      ],
+      15000,
+    );
+  }
+
+  if (current === TEST_IDS.auth.welcomeScreen) {
+    current = TEST_IDS.auth.welcomeLoginButton;
+  }
+
   if (current === TEST_IDS.auth.welcomeLoginButton) {
     const welcomeLoginButton = await findByTestId(driver, TEST_IDS.auth.welcomeLoginButton, 5000);
     if (!welcomeLoginButton) {
@@ -151,7 +184,16 @@ async function loginIfNeeded(driver) {
     }
 
     await welcomeLoginButton.click();
-    await waitForAny(driver, [TEST_IDS.auth.loginScreen], 15000);
+    current = await waitForAny(
+      driver,
+      [TEST_IDS.auth.loginScreen, TEST_IDS.home.screen],
+      15000,
+    );
+  }
+
+  if (current === TEST_IDS.home.screen) {
+    console.log('Home screen detected after intro/welcome, skipping login.');
+    return;
   }
 
   const email = resolveEnv('EATFITAI_DEMO_EMAIL');

@@ -21,6 +21,8 @@ android/.kotlin/
 _tooling/
 _state/
 _logs/
+artifacts/
+eatfitai-mobile/artifacts/
 eatfitai-mobile/src/config/generated-api-config.ts
 
 # AI Configuration

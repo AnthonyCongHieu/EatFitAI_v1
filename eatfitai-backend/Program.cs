@@ -27,6 +27,54 @@ public partial class Program
     public static async Task Main(string[] args)
     {
         var builder = WebApplication.CreateBuilder(args);
+        var scanDemoSeedOptions = ParseScanDemoSeedOptions(args);
+
+        static string? TryGetOptionValue(string[] cliArgs, string optionName)
+        {
+            for (var index = 0; index < cliArgs.Length - 1; index += 1)
+            {
+                if (!string.Equals(cliArgs[index], optionName, StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
+                var value = cliArgs[index + 1];
+                if (!string.IsNullOrWhiteSpace(value) && !value.StartsWith("--", StringComparison.Ordinal))
+                {
+                    return value.Trim();
+                }
+            }
+
+            return null;
+        }
+
+        static ScanDemoSeedOptions? ParseScanDemoSeedOptions(string[] cliArgs)
+        {
+            var enabled = cliArgs.Any(arg => string.Equals(arg, "--seed-scan-demo", StringComparison.OrdinalIgnoreCase))
+                || string.Equals(Environment.GetEnvironmentVariable("EATFITAI_SEED_SCAN_DEMO"), "1", StringComparison.OrdinalIgnoreCase);
+
+            if (!enabled)
+            {
+                return null;
+            }
+
+            var email = TryGetOptionValue(cliArgs, "--demo-email")
+                ?? Environment.GetEnvironmentVariable("EATFITAI_DEMO_EMAIL")
+                ?? "scan-demo@redacted.local";
+            var password = TryGetOptionValue(cliArgs, "--demo-password")
+                ?? Environment.GetEnvironmentVariable("EATFITAI_DEMO_PASSWORD")
+                ?? "SET_IN_SEED_SCRIPT";
+            var displayName = TryGetOptionValue(cliArgs, "--demo-display-name")
+                ?? Environment.GetEnvironmentVariable("EATFITAI_DEMO_DISPLAY_NAME")
+                ?? "Scan Demo Reliability";
+
+            return new ScanDemoSeedOptions
+            {
+                Email = email,
+                Password = password,
+                DisplayName = displayName,
+            };
+        }
 
         // User Secrets will be loaded automatically in Development by CreateBuilder
 
@@ -560,6 +608,23 @@ foreach (var warning in optionalProductionWarnings)
 using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;
+    if (scanDemoSeedOptions != null)
+    {
+        await DatabaseSeeder.SeedAsync(services);
+        var seedResult = await ScanDemoReliabilitySeeder.SeedAsync(services, scanDemoSeedOptions);
+        Console.WriteLine(JsonSerializer.Serialize(new
+        {
+            action = "seed-scan-demo",
+            scanDemoSeedOptions.Email,
+            scanDemoSeedOptions.DisplayName,
+            seedResult
+        }, new JsonSerializerOptions
+        {
+            WriteIndented = true
+        }));
+        return;
+    }
+
     try
     {
         await DatabaseSeeder.SeedAsync(services);

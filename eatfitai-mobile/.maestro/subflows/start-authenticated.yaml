@@ -1,5 +1,50 @@
 appId: com.eatfitai.app
 ---
+- runFlow:
+    when:
+      visible:
+        id: auth-intro-start-button
+    commands:
+      - tapOn:
+          id: auth-intro-start-button
+          retryTapIfNoChange: true
+- runFlow:
+    when:
+      visible:
+        id: auth-welcome-login-button
+    commands:
+      - tapOn:
+          id: auth-welcome-login-button
+          retryTapIfNoChange: true
+- runFlow:
+    when:
+      visible:
+        id: auth-login-screen
+    file: ./login.yaml
+- runFlow:
+    when:
+      visible:
+        id: vision-add-meal-screen
+    commands:
+      - back
+- runFlow:
+    when:
+      visible:
+        id: ai-scan-screen
+    commands:
+      - back
+- runFlow:
+    when:
+      visible:
+        id: meal-diary-screen
+    commands:
+      - back
+- runFlow:
+    when:
+      visible:
+        id: food-search-screen
+    commands:
+      - back
 - extendedWaitUntil:
     timeout: 30000
     visible:

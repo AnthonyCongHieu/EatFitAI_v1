@@ -1,0 +1,131 @@
+{
+  "version": 1,
+  "fixtureRootHint": "tools/appium/fixtures/scan-demo",
+  "galleryRules": {
+    "maxFileSizeMb": 10,
+    "singleDishOnly": true,
+    "lowOcclusion": true,
+    "simpleBackgroundPreferred": true
+  },
+  "fixtures": {
+    "primary": [
+      {
+        "key": "banana-primary",
+        "fileName": "ai-primary-banana-01.jpg",
+        "relativePath": "scan-demo/ai-primary-banana-01.jpg",
+        "targetOutcome": "mapped-or-usable-result"
+      },
+      {
+        "key": "banana-compact",
+        "fileName": "ai-primary-banana-02.jpg",
+        "relativePath": "scan-demo/ai-primary-banana-02.jpg",
+        "targetOutcome": "mapped-or-usable-result"
+      },
+      {
+        "key": "broccoli-primary",
+        "fileName": "ai-primary-broccoli-01.jpg",
+        "relativePath": "scan-demo/ai-primary-broccoli-01.jpg",
+        "targetOutcome": "mapped-or-usable-result"
+      },
+      {
+        "key": "apple-primary",
+        "fileName": "ai-primary-apple-01.jpg",
+        "relativePath": "scan-demo/ai-primary-apple-01.jpg",
+        "targetOutcome": "mapped-or-usable-result"
+      },
+      {
+        "key": "orange-primary",
+        "fileName": "ai-primary-orange-01.jpg",
+        "relativePath": "scan-demo/ai-primary-orange-01.jpg",
+        "targetOutcome": "mapped-or-usable-result"
+      }
+    ],
+    "benchmark": [
+      {
+        "key": "apple-compact",
+        "fileName": "ai-benchmark-apple-01.jpg",
+        "relativePath": "scan-demo/ai-benchmark-apple-01.jpg",
+        "targetOutcome": "benchmark-only"
+      },
+      {
+        "key": "orange-compact",
+        "fileName": "ai-benchmark-orange-01.jpg",
+        "relativePath": "scan-demo/ai-benchmark-orange-01.jpg",
+        "targetOutcome": "benchmark-only"
+      },
+      {
+        "key": "broccoli-compact",
+        "fileName": "ai-benchmark-broccoli-01.jpg",
+        "relativePath": "scan-demo/ai-benchmark-broccoli-01.jpg",
+        "targetOutcome": "benchmark-only"
+      }
+    ]
+  },
+  "searchCases": [
+    {
+      "key": "banana-vi",
+      "query": "chu\u1ed1i",
+      "minResults": 1,
+      "expectEmpty": false
+    },
+    {
+      "key": "rice-no-accent",
+      "query": "rice",
+      "minResults": 1,
+      "expectEmpty": false
+    },
+    {
+      "key": "chicken-en",
+      "query": "chicken",
+      "minResults": 1,
+      "expectEmpty": false
+    },
+    {
+      "key": "empty-sentinel",
+      "query": "kh\u00f4ng t\u1ed3n t\u1ea1i regression sentinel",
+      "minResults": 0,
+      "expectEmpty": true
+    }
+  ],
+  "voiceCases": [
+    {
+      "key": "ask-calories",
+      "text": "hom nay an bao nhieu calo",
+      "expectedIntent": "ASK_CALORIES",
+      "executeMode": "execute",
+      "mutatesData": false,
+      "expectedExecuteSuccess": true
+    },
+    {
+      "key": "log-weight",
+      "text": "can nang 70 kg",
+      "expectedIntent": "LOG_WEIGHT",
+      "executeMode": "confirm-weight",
+      "mutatesData": true,
+      "expectedExecuteSuccess": true
+    },
+    {
+      "key": "add-food",
+      "text": "ghi 1 banana vao bua sang",
+      "expectedIntent": "ADD_FOOD",
+      "executeMode": "execute",
+      "mutatesData": true,
+      "expectedExecuteSuccess": true
+    }
+  ],
+  "nutritionCases": [
+    {
+      "key": "maintain-target",
+      "applySuggestedTarget": true,
+      "mutatesData": true,
+      "payload": {
+        "sex": "male",
+        "age": 30,
+        "heightCm": 170,
+        "weightKg": 70,
+        "activityLevel": 1.55,
+        "goal": "maintain"
+      }
+    }
+  ]
+}

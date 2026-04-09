@@ -27,7 +27,14 @@
     "maestro:smoke:android": "node scripts/run-maestro.js smoke",
     "maestro:regression:android": "node scripts/run-maestro.js regression",
     "maestro:studio": "maestro studio",
-    "automation:doctor": "node scripts/automation-doctor.js"
+    "automation:doctor": "node scripts/automation-doctor.js",
+    "smoke:preflight": "node scripts/production-smoke-preflight.js",
+    "smoke:seed:cloud": "node scripts/production-smoke-seed-cloud.js",
+    "smoke:auth:e2e": "node scripts/production-smoke-auth-e2e.js",
+    "smoke:budget": "node scripts/production-smoke-budget.js",
+    "smoke:regression": "node scripts/production-smoke-regression.js",
+    "smoke:metrics": "node scripts/production-smoke-metrics.js",
+    "smoke:rehearsal": "node scripts/production-smoke-rehearsal.js"
   },
   "lint-staged": {
     "*.{ts,tsx,js,jsx}": [
