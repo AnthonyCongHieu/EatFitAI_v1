@@ -69,20 +69,17 @@ Set these env vars on the `eatfitai-backend` service:
 - `Supabase__ServiceRoleKey`
 - `Supabase__FoodImagesBucket`
 - `Supabase__UserFoodBucket`
-- `Smtp__Host`
-- `Smtp__Port`
-- `Smtp__EnableSsl`
-- `Smtp__User`
-- `Smtp__Password`
-- `Smtp__FromEmail`
-- `Smtp__FromDisplayName`
+- `Brevo__ApiKey`
+- `Brevo__SenderEmail`
+- `Brevo__SenderName`
 
 Important:
 
 - `AIProvider__VisionBaseUrl` must be the public HTTPS URL of the Render AI provider service.
 - `Supabase__ServiceRoleKey` is required because backend uploads user thumbnails to Supabase Storage.
 - `ConnectionStrings__DefaultConnection` should use Supavisor session mode on port `5432` for the long-lived .NET backend service.
-- backend startup now fails fast in `Production` if these values are missing or still placeholder values.
+- `Brevo__SenderEmail` must be a sender that is verified inside Brevo.
+- Render free web services cannot use outbound SMTP ports, so production email delivery now goes through the Brevo HTTPS API instead of SMTP.
 
 ## 3. Render AI provider env
 

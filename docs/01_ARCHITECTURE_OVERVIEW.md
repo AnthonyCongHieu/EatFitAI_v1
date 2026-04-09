@@ -127,7 +127,7 @@ Sơ đồ thực tế:
 2. DB: `Microsoft.EntityFrameworkCore.SqlServer`, Tools.
 3. Mapping: `AutoMapper`.
 4. OpenAPI: `Swashbuckle.AspNetCore`.
-5. Email: `MailKit`.
+5. Email: `Brevo Transactional Email API`.
 6. Google sign-in verify token: `Google.Apis.Auth`.
 7. Health check SQL: `AspNetCore.HealthChecks.SqlServer`.
 

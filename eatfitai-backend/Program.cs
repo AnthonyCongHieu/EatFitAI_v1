@@ -326,22 +326,16 @@ static IReadOnlyList<string> GetMissingOptionalProductionConfiguration(WebApplic
         .ToArray();
     AddWarning("Google sign-in disabled", missingGoogle);
 
-    var missingSmtp = new List<string>();
-    foreach (var key in new[] { "Smtp:Host", "Smtp:User", "Smtp:Password", "Smtp:FromEmail" })
+    var missingBrevo = new List<string>();
+    foreach (var key in new[] { "Brevo:ApiKey", "Brevo:SenderEmail" })
     {
         if (!HasConfiguredValue(builder.Configuration[key]))
         {
-            missingSmtp.Add(key);
+            missingBrevo.Add(key);
         }
     }
 
-    var smtpPort = builder.Configuration.GetValue<int?>("Smtp:Port") ?? 0;
-    if (smtpPort <= 0)
-    {
-        missingSmtp.Add("Smtp:Port");
-    }
-
-    AddWarning("SMTP email flows disabled", missingSmtp.ToArray());
+    AddWarning("Brevo email flows disabled", missingBrevo.ToArray());
 
     return warnings;
 }
@@ -468,10 +462,10 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 // Caching for features like password reset
 builder.Services.AddMemoryCache();
 
-// Mail settings & service
-builder.Services.Configure<MailSettings>(builder.Configuration.GetSection("Smtp"));
+// Email settings & service
+builder.Services.Configure<BrevoOptions>(builder.Configuration.GetSection("Brevo"));
 builder.Services.Configure<SupabaseOptions>(builder.Configuration.GetSection("Supabase"));
-builder.Services.AddScoped<IEmailService, EmailService>();
+builder.Services.AddHttpClient<IEmailService, EmailService>();
 builder.Services.AddScoped<ISupabaseStorageService, SupabaseStorageService>();
 
 // Add AutoMapper

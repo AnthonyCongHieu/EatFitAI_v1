@@ -128,15 +128,11 @@ Jwt__Key="your-production-jwt-key-here"
 AllowedOrigins="https://app.eatfitai.com"
 ```
 
-# SMTP (gửi mail quên mật khẩu - Production: dùng ENV)
+# Brevo email API (email verification / reset password - Production: dùng ENV)
 ```
-Smtp__Host="smtp.gmail.com"
-Smtp__Port="587"
-Smtp__EnableSsl="true"
-Smtp__User="your-email@gmail.com"
-Smtp__Password="your-app-password-or-smtp-password"
-Smtp__FromEmail="your-email@gmail.com"
-Smtp__FromDisplayName="EatFitAI"
+Brevo__ApiKey="your-brevo-api-key"
+Brevo__SenderEmail="sender@example.com"
+Brevo__SenderName="EatFitAI"
 ```
 
 ### Reverse Proxy Setup:

@@ -1,139 +1,152 @@
+using System.Diagnostics;
+using System.Net.Http.Headers;
+using System.Text;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using EatFitAI.API.Options;
 using EatFitAI.API.Services.Interfaces;
-using MailKit.Net.Smtp;
-using MailKit.Security;
 using Microsoft.Extensions.Options;
-using MimeKit;
-using System.Diagnostics;
 
 namespace EatFitAI.API.Services
 {
     public class EmailService : IEmailService
     {
-        private static readonly TimeSpan SmtpOperationTimeout = TimeSpan.FromSeconds(15);
-        private readonly MailSettings _settings;
+        private const string SendTransactionalEmailPath = "v3/smtp/email";
+        private static readonly TimeSpan EmailRequestTimeout = TimeSpan.FromSeconds(15);
+        private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web)
+        {
+            DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+        };
+
+        private readonly HttpClient _httpClient;
+        private readonly BrevoOptions _options;
         private readonly IHostEnvironment _environment;
 
-        public EmailService(IOptions<MailSettings> options, IHostEnvironment environment)
+        public EmailService(
+            HttpClient httpClient,
+            IOptions<BrevoOptions> options,
+            IHostEnvironment environment)
         {
-            _settings = options.Value;
+            _httpClient = httpClient;
+            _options = options.Value;
             _environment = environment;
+
+            if (Uri.TryCreate(_options.BaseUrl, UriKind.Absolute, out var baseUri))
+            {
+                _httpClient.BaseAddress = baseUri;
+            }
         }
 
-        public async Task SendResetCodeAsync(string email, string code, DateTime expiresAt)
+        public Task SendResetCodeAsync(string email, string code, DateTime expiresAt)
         {
-            Console.WriteLine(
-                $"[EmailService] Attempting to send email to {email}. Config: Host='{_settings.Host}', User='{_settings.User}', Port={_settings.Port}, SSL={_settings.EnableSsl}"
-            );
+            return SendTransactionalEmailAsync(
+                recipientEmail: email,
+                subject: "EatFitAI - Mã đặt lại mật khẩu",
+                textContent: BuildResetBody(code, expiresAt),
+                operationName: "reset code");
+        }
 
-            if (!EnsureSmtpConfigured("[EmailService] SMTP settings missing (Host, User, Password, or FromEmail is empty)."))
+        public Task SendVerificationCodeAsync(string email, string code, DateTime expiresAt)
+        {
+            return SendTransactionalEmailAsync(
+                recipientEmail: email,
+                subject: "EatFitAI - Mã xác minh email",
+                textContent: BuildVerificationBody(code, expiresAt),
+                operationName: "verification code");
+        }
+
+        private async Task SendTransactionalEmailAsync(
+            string recipientEmail,
+            string subject,
+            string textContent,
+            string operationName)
+        {
+            Console.WriteLine($"[EmailService] Sending {operationName} email to {recipientEmail} via Brevo.");
+
+            if (!EnsureBrevoConfigured())
             {
                 return;
             }
 
-            using var timeoutCts = new CancellationTokenSource(SmtpOperationTimeout);
+            using var timeoutCts = new CancellationTokenSource(EmailRequestTimeout);
+            var payload = new BrevoSendEmailRequest
+            {
+                Sender = new BrevoAddress
+                {
+                    Email = _options.SenderEmail.Trim(),
+                    Name = string.IsNullOrWhiteSpace(_options.SenderName) ? "EatFitAI" : _options.SenderName.Trim(),
+                },
+                To =
+                [
+                    new BrevoAddress
+                    {
+                        Email = recipientEmail,
+                    }
+                ],
+                Subject = subject,
+                TextContent = textContent,
+            };
+
+            using var request = new HttpRequestMessage(HttpMethod.Post, SendTransactionalEmailPath);
+            request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+            request.Headers.Add("api-key", _options.ApiKey.Trim());
+            request.Content = new StringContent(
+                JsonSerializer.Serialize(payload, JsonOptions),
+                Encoding.UTF8,
+                "application/json");
 
             try
             {
-                var cleanPassword = _settings.Password.Replace(" ", "");
-                Console.WriteLine($"[EmailService] Password length: {cleanPassword.Length} characters");
+                var stopwatch = Stopwatch.StartNew();
+                using var response = await _httpClient.SendAsync(request, timeoutCts.Token);
+                var responseBody = await response.Content.ReadAsStringAsync(timeoutCts.Token);
+                stopwatch.Stop();
 
-                var message = CreateMessage(
-                    email,
-                    "EatFitAI - Mã đặt lại mật khẩu",
-                    BuildResetBody(code, expiresAt));
-
-                await SendSmtpMessageAsync(
-                    message,
-                    cleanPassword,
-                    timeoutCts.Token,
-                    successMessage: $"[EmailService] Email sent successfully to {email}");
-            }
-            catch (OperationCanceledException ex) when (timeoutCts.IsCancellationRequested)
-            {
-                Console.WriteLine($"[EmailService] SMTP operation timed out after {SmtpOperationTimeout.TotalSeconds:0} seconds.");
-                throw new TimeoutException(
-                    $"SMTP operation timed out after {SmtpOperationTimeout.TotalSeconds:0} seconds.",
-                    ex
-                );
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"[EmailService] FAILED to send email: {ex.GetType().Name}");
-                Console.WriteLine($"[EmailService] Error message: {ex.Message}");
-                Console.WriteLine($"[EmailService] Stack trace: {ex.StackTrace}");
-                if (ex.InnerException != null)
+                if (!response.IsSuccessStatusCode)
                 {
-                    Console.WriteLine($"[EmailService] Inner exception: {ex.InnerException.Message}");
+                    Console.WriteLine(
+                        $"[EmailService] Brevo send failed with status {(int)response.StatusCode}: {responseBody}");
+                    throw new InvalidOperationException(
+                        $"Brevo send failed with status {(int)response.StatusCode}.");
                 }
 
-                throw;
-            }
-        }
-
-        public async Task SendVerificationCodeAsync(string email, string code, DateTime expiresAt)
-        {
-            Console.WriteLine($"[EmailService] Sending verification code to {email}");
-
-            if (!EnsureSmtpConfigured("[EmailService] SMTP settings missing."))
-            {
-                return;
-            }
-
-            using var timeoutCts = new CancellationTokenSource(SmtpOperationTimeout);
-
-            try
-            {
-                var cleanPassword = _settings.Password.Replace(" ", "");
-                var message = CreateMessage(
-                    email,
-                    "EatFitAI - Mã xác minh email",
-                    BuildVerificationBody(code, expiresAt));
-
-                await SendSmtpMessageAsync(
-                    message,
-                    cleanPassword,
-                    timeoutCts.Token,
-                    successMessage: $"[EmailService] Verification code sent to {email}");
+                Console.WriteLine(
+                    $"[EmailService] {operationName} email sent successfully to {recipientEmail} in {stopwatch.ElapsedMilliseconds} ms.");
             }
             catch (OperationCanceledException ex) when (timeoutCts.IsCancellationRequested)
             {
                 Console.WriteLine(
-                    $"[EmailService] SMTP verification send timed out after {SmtpOperationTimeout.TotalSeconds:0} seconds."
-                );
+                    $"[EmailService] Brevo {operationName} request timed out after {EmailRequestTimeout.TotalSeconds:0} seconds.");
                 throw new TimeoutException(
-                    $"SMTP verification send timed out after {SmtpOperationTimeout.TotalSeconds:0} seconds.",
-                    ex
-                );
+                    $"Brevo {operationName} request timed out after {EmailRequestTimeout.TotalSeconds:0} seconds.",
+                    ex);
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[EmailService] FAILED to send verification email: {ex.Message}");
+                Console.WriteLine($"[EmailService] FAILED to send {operationName} email: {ex.Message}");
                 throw;
             }
         }
 
-        private bool EnsureSmtpConfigured(string missingConfigMessage)
+        private bool EnsureBrevoConfigured()
         {
-            if (!HasConfiguredSmtpValue(_settings.Host) ||
-                !HasConfiguredSmtpValue(_settings.User) ||
-                !HasConfiguredSmtpValue(_settings.Password) ||
-                !HasConfiguredSmtpValue(_settings.FromEmail))
+            if (!HasConfiguredValue(_options.ApiKey) || !HasConfiguredValue(_options.SenderEmail))
             {
+                const string message = "[EmailService] Brevo settings missing (ApiKey or SenderEmail).";
                 if (_environment.IsProduction())
                 {
-                    Console.WriteLine(missingConfigMessage + " Rejecting send in Production.");
-                    throw new InvalidOperationException("SMTP is not configured.");
+                    Console.WriteLine(message + " Rejecting send in Production.");
+                    throw new InvalidOperationException("Brevo email is not configured.");
                 }
 
-                Console.WriteLine(missingConfigMessage + " Skipping real send in Development.");
+                Console.WriteLine(message + " Skipping real send in Development.");
                 return false;
             }
 
             return true;
         }
 
-        private static bool HasConfiguredSmtpValue(string? value)
+        private static bool HasConfiguredValue(string? value)
         {
             if (string.IsNullOrWhiteSpace(value))
             {
@@ -143,68 +156,8 @@ namespace EatFitAI.API.Services
             return !string.Equals(value, "SET_IN_USER_SECRETS", StringComparison.OrdinalIgnoreCase)
                 && !string.Equals(value, "SET_IN_ENV_OR_SECRET_STORE", StringComparison.OrdinalIgnoreCase)
                 && !string.Equals(value, "REPLACE_WITH_USER_SECRET", StringComparison.OrdinalIgnoreCase)
-                && !string.Equals(value, "your-email@gmail.com", StringComparison.OrdinalIgnoreCase)
-                && !string.Equals(value, "your-email@example.com", StringComparison.OrdinalIgnoreCase)
-                && !string.Equals(value, "your-app-password", StringComparison.OrdinalIgnoreCase)
-                && !string.Equals(value, "your-app-password-or-smtp-password", StringComparison.OrdinalIgnoreCase);
-        }
-
-        private SecureSocketOptions GetSecureSocketOptions()
-        {
-            if (!_settings.EnableSsl)
-            {
-                return SecureSocketOptions.None;
-            }
-
-            return _settings.Port == 465
-                ? SecureSocketOptions.SslOnConnect
-                : SecureSocketOptions.StartTls;
-        }
-
-        private MimeMessage CreateMessage(string email, string subject, string body)
-        {
-            var message = new MimeMessage();
-            message.From.Add(new MailboxAddress(_settings.FromDisplayName, _settings.FromEmail));
-            message.To.Add(new MailboxAddress("", email));
-            message.Subject = subject;
-            message.Body = new TextPart("plain")
-            {
-                Text = body,
-            };
-
-            return message;
-        }
-
-        private async Task SendSmtpMessageAsync(
-            MimeMessage message,
-            string cleanPassword,
-            CancellationToken cancellationToken,
-            string successMessage)
-        {
-            var stopwatch = Stopwatch.StartNew();
-            using var client = new SmtpClient
-            {
-                Timeout = (int)SmtpOperationTimeout.TotalMilliseconds,
-            };
-
-            Console.WriteLine("[EmailService] Connecting to SMTP server...");
-            await client.ConnectAsync(
-                _settings.Host,
-                _settings.Port,
-                GetSecureSocketOptions(),
-                cancellationToken);
-
-            Console.WriteLine("[EmailService] Authenticating...");
-            await client.AuthenticateAsync(_settings.User, cleanPassword, cancellationToken);
-
-            Console.WriteLine("[EmailService] Sending email...");
-            await client.SendAsync(message, cancellationToken);
-
-            Console.WriteLine("[EmailService] Disconnecting...");
-            await client.DisconnectAsync(true, cancellationToken);
-            stopwatch.Stop();
-
-            Console.WriteLine($"{successMessage} in {stopwatch.ElapsedMilliseconds} ms");
+                && !string.Equals(value, "your-brevo-api-key", StringComparison.OrdinalIgnoreCase)
+                && !string.Equals(value, "sender@example.com", StringComparison.OrdinalIgnoreCase);
         }
 
         private static string BuildResetBody(string code, DateTime expiresAt)
@@ -219,8 +172,7 @@ namespace EatFitAI.API.Services
                     $"Thời hạn: {expiresAt:yyyy-MM-dd HH:mm:ss} (UTC)",
                     string.Empty,
                     "Nếu bạn không yêu cầu, hãy bỏ qua email này.",
-                }
-            );
+                });
         }
 
         private static string BuildVerificationBody(string code, DateTime expiresAt)
@@ -237,8 +189,31 @@ namespace EatFitAI.API.Services
                     "Nhập mã này vào ứng dụng để hoàn tất đăng ký.",
                     string.Empty,
                     "Nếu bạn không đăng ký tài khoản, hãy bỏ qua email này.",
-                }
-            );
+                });
+        }
+
+        private sealed class BrevoSendEmailRequest
+        {
+            [JsonPropertyName("sender")]
+            public BrevoAddress Sender { get; set; } = new();
+
+            [JsonPropertyName("to")]
+            public List<BrevoAddress> To { get; set; } = [];
+
+            [JsonPropertyName("subject")]
+            public string Subject { get; set; } = string.Empty;
+
+            [JsonPropertyName("textContent")]
+            public string TextContent { get; set; } = string.Empty;
+        }
+
+        private sealed class BrevoAddress
+        {
+            [JsonPropertyName("email")]
+            public string Email { get; set; } = string.Empty;
+
+            [JsonPropertyName("name")]
+            public string? Name { get; set; }
         }
     }
 }
