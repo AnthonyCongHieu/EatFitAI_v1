@@ -169,6 +169,9 @@ function summarizeVoice(regression) {
     .map((entry) => entry.parse?.latencyMs)
     .filter((value) => Number.isFinite(value));
   const executeAttempted = entries.filter((entry) => entry.execute?.attempted);
+  const addFoodExecutions = executeAttempted.filter(
+    (entry) => entry.parse?.parsedIntent === 'ADD_FOOD',
+  );
   const executeLatencies = executeAttempted
     .map((entry) => entry.execute?.latencyMs)
     .filter((value) => Number.isFinite(value));
@@ -177,18 +180,44 @@ function summarizeVoice(regression) {
   );
   const failedParse = entries.filter((entry) => !entry.parse?.passed);
   const failedExecute = executeAttempted.filter((entry) => !entry.execute?.passed);
+  const diaryReadbackAttempted = entries.filter((entry) => entry.diaryReadback?.attempted);
+  const diaryReadbackFailed = diaryReadbackAttempted.filter(
+    (entry) => !entry.diaryReadback?.passed,
+  );
+  const missingDiaryReadback = addFoodExecutions.filter(
+    (entry) => !entry.diaryReadback?.attempted || entry.diaryReadback?.skipped,
+  );
+  const lowConfidenceEntries = entries.filter(
+    (entry) =>
+      Number.isFinite(Number(entry.parse?.confidence)) &&
+      Number(entry.parse?.confidence) > 0 &&
+      Number(entry.parse?.confidence) < 0.75,
+  );
+  const sourceBreakdown = entries.reduce((acc, entry) => {
+    const source = trim(entry.parse?.source || 'unknown') || 'unknown';
+    acc[source] = (acc[source] || 0) + 1;
+    return acc;
+  }, {});
 
   return {
     attempted: entries.length,
     parsePassed: entries.filter((entry) => entry.parse?.passed).length,
     parseSuccessRate: rate(entries.filter((entry) => entry.parse?.passed).length, entries.length),
+    previewPassed: entries.filter((entry) => entry.preview?.passed).length,
+    reviewRequired: entries.filter((entry) => entry.parse?.reviewRequired).length,
     executeAttempted: executeAttempted.length,
     executePassed: executeAttempted.filter((entry) => entry.execute?.passed).length,
     executeSuccessRate: rate(
       executeAttempted.filter((entry) => entry.execute?.passed).length,
       executeAttempted.length,
     ),
+    diaryReadbackAttempted: diaryReadbackAttempted.length,
+    diaryReadbackPassed: diaryReadbackAttempted.filter((entry) => entry.diaryReadback?.passed)
+      .length,
     skippedMutations: skippedMutations.map((entry) => entry.key),
+    lowConfidenceKeys: lowConfidenceEntries.map((entry) => entry.key),
+    missingDiaryReadback: missingDiaryReadback.map((entry) => entry.key),
+    sourceBreakdown,
     parseLatencyAvgMs: average(parseLatencies),
     parseLatencyP95Ms: percentile(parseLatencies, 95),
     executeLatencyAvgMs: average(executeLatencies),
@@ -198,7 +227,9 @@ function summarizeVoice(regression) {
       entries.length > 0 &&
       failedParse.length === 0 &&
       failedExecute.length === 0 &&
-      skippedMutations.length === 0,
+      skippedMutations.length === 0 &&
+      diaryReadbackFailed.length === 0 &&
+      missingDiaryReadback.length === 0,
   };
 }
 
@@ -311,6 +342,9 @@ function buildMarkdown(report) {
     `- Scan-to-save completion: ${report.productMetrics.scan.scanToSaveCompletionPassed ? 'yes' : 'no'}`,
     `- Voice parse success rate: ${report.productMetrics.voice.parseSuccessRate ?? 'n/a'}%`,
     `- Voice execute success rate: ${report.productMetrics.voice.executeSuccessRate ?? 'n/a'}%`,
+    `- Voice preview passed: ${report.productMetrics.voice.previewPassed ?? 'n/a'}`,
+    `- Voice review-required count: ${report.productMetrics.voice.reviewRequired ?? 'n/a'}`,
+    `- Voice diary readback: ${report.productMetrics.voice.diaryReadbackPassed ?? 'n/a'} / ${report.productMetrics.voice.diaryReadbackAttempted ?? 'n/a'}`,
     `- Voice parse latency avg/p95: ${report.productMetrics.voice.parseLatencyAvgMs ?? 'n/a'} / ${report.productMetrics.voice.parseLatencyP95Ms ?? 'n/a'} ms`,
     `- Voice execute latency avg/p95: ${report.productMetrics.voice.executeLatencyAvgMs ?? 'n/a'} / ${report.productMetrics.voice.executeLatencyP95Ms ?? 'n/a'} ms`,
     `- Nutrition suggest success rate: ${report.productMetrics.nutrition.suggestSuccessRate ?? 'n/a'}%`,

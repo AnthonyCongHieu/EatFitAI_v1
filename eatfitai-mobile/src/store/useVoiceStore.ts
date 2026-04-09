@@ -12,6 +12,7 @@ type VoiceStatus =
     | 'listening'      // Đang ghi âm
     | 'processing'     // Đang xử lý STT
     | 'parsing'        // Đang phân tích intent
+    | 'review'         // Cần kiểm tra trước khi lưu
     | 'executing'      // Đang thực hiện lệnh
     | 'success'        // Hoàn thành
     | 'error';         // Lỗi
@@ -70,10 +71,17 @@ export const useVoiceStore = create<VoiceState>((set, get) => ({
 
     /**
      * Process recognized text and parse intent using Ollama AI
-     * ASK_CALORIES sẽ được execute ngay, LOG_WEIGHT cần confirm
+     * ASK_CALORIES sẽ được execute ngay, các intent ghi dữ liệu luôn vào chế độ review
      */
     processText: async (text: string) => {
-        set({ status: 'parsing', recognizedText: text, error: null });
+        set({
+            status: 'parsing',
+            recognizedText: text,
+            parsedCommand: null,
+            executedData: null,
+            lastExecutedAction: null,
+            error: null,
+        });
 
         try {
             // Parse with Ollama AI
@@ -115,8 +123,9 @@ export const useVoiceStore = create<VoiceState>((set, get) => ({
                         const execResponse = await voiceService.executeCommand(command);
                         if (execResponse.success && execResponse.executedAction) {
                             set({
-                                status: 'success',
-                                lastExecutedAction: execResponse.executedAction.details || 'Xác nhận thay đổi cân nặng',
+                                status: 'review',
+                                parsedCommand: command,
+                                lastExecutedAction: execResponse.executedAction.details || 'Kiểm tra trước khi lưu cân nặng',
                                 executedData: {
                                     type: execResponse.executedAction.type,
                                     details: execResponse.executedAction.details,
@@ -134,8 +143,10 @@ export const useVoiceStore = create<VoiceState>((set, get) => ({
 
                 // Các intent khác (ADD_FOOD, etc.): Hiển thị và chờ user confirm
                 set({
-                    status: command.intent !== 'UNKNOWN' ? 'success' : 'idle',
+                    status: command.intent !== 'UNKNOWN' ? 'review' : 'idle',
                     parsedCommand: command,
+                    lastExecutedAction: null,
+                    executedData: null,
                     error: command.intent === 'UNKNOWN' ? 'Không hiểu lệnh. Hãy thử lại.' : null,
                 });
             } else {

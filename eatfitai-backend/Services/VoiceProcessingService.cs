@@ -21,18 +21,30 @@ namespace EatFitAI.Services
         private static readonly Dictionary<string, MealType> MealKeywords = new()
         {
             { "sáng", MealType.Breakfast },
+            { "sang", MealType.Breakfast },
             { "bữa sáng", MealType.Breakfast },
+            { "bua sang", MealType.Breakfast },
             { "ăn sáng", MealType.Breakfast },
+            { "an sang", MealType.Breakfast },
+            { "trưa", MealType.Lunch },
             { "trua", MealType.Lunch },
             { "bữa trưa", MealType.Lunch },
+            { "bua trua", MealType.Lunch },
+            { "ăn trưa", MealType.Lunch },
             { "an trua", MealType.Lunch },
             { "tối", MealType.Dinner },
+            { "toi", MealType.Dinner },
             { "bữa tối", MealType.Dinner },
+            { "bua toi", MealType.Dinner },
             { "ăn tối", MealType.Dinner },
+            { "an toi", MealType.Dinner },
             { "chiều", MealType.Snack },  // Thêm chiều → Snack
+            { "chieu", MealType.Snack },
             { "xế", MealType.Snack },      // Thêm xế → Snack
             { "bữa phụ", MealType.Snack },
+            { "bua phu", MealType.Snack },
             { "ăn vặt", MealType.Snack },
+            { "an vat", MealType.Snack },
         };
 
         public VoiceProcessingService(ILogger<VoiceProcessingService> logger)
@@ -89,7 +101,8 @@ namespace EatFitAI.Services
         private ParsedVoiceCommand TryParseAddFood(string lowerText, string originalText)
         {
             // Pattern: ghi/thêm/ăn/log [số] [món] vào [bữa] [sáng/trưa/tối/chiều]
-            var pattern = @"(?:ghi|thêm|ăn|log)\s+(.+?)\s+(?:vào\s+)?(?:bữa\s+)?(sáng|trưa|tối|chiều)";
+            var pattern =
+                @"(?:ghi|thêm|them|ăn|an|log)\s+(.+?)\s+(?:(?:vào|vao)\s+)?(?:(?:bữa|bua)\s+)?(sáng|sang|trưa|trua|tối|toi|chiều|chieu)";
             var match = Regex.Match(lowerText, pattern, RegexOptions.IgnoreCase);
 
             if (match.Success)
@@ -144,7 +157,7 @@ namespace EatFitAI.Services
         /// </summary>
         private ParsedVoiceCommand TryParseLogWeight(string lowerText, string originalText)
         {
-            var pattern = @"(?:cân nặng|cân)\s+(?:là\s+)?(\d+(?:\.\d+)?)\s*(?:kg|ký|kí)?";
+            var pattern = @"(?:cân nặng|can nang|cân|can)\s+(?:(?:là|la)\s+)?(\d+(?:\.\d+)?)\s*(?:kg|ký|ky|kí|ki)?";
             var match = Regex.Match(lowerText, pattern, RegexOptions.IgnoreCase);
 
             if (match.Success)
@@ -175,7 +188,8 @@ namespace EatFitAI.Services
         private ParsedVoiceCommand TryParseAskCalories(string lowerText, string originalText)
         {
             // Pattern mở rộng: match "ăn bao nhiêu calo", "tiêu thụ bao nhiêu", "tổng calo"...
-            var pattern = @"(?:ăn|tiêu thụ|nạp|uống)?\s*(?:được\s+|đã\s+)?(?:bao nhiêu|tổng|hết|mấy)\s*(?:calo|calories|kcal|năng lượng)";
+            var pattern =
+                @"(?:ăn|an|tiêu thụ|tieu thu|nạp|nap|uống|uong)?\s*(?:(?:được|duoc)\s+|(?:đã|da)\s+)?(?:bao nhiêu|bao nhieu|tổng|tong|hết|het|mấy|may)\s*(?:calo|calories|kcal|năng lượng|nang luong)";
             var match = Regex.Match(lowerText, pattern, RegexOptions.IgnoreCase);
 
             if (match.Success)

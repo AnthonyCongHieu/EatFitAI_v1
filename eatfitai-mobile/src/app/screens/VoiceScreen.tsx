@@ -224,6 +224,12 @@ const VoiceScreen = (): React.ReactElement => {
                 return { emoji: '✨', text: 'Đang xử lý giọng nói...', color: theme.colors.warning };
             case 'parsing':
                 return { emoji: '🤖', text: 'AI đang phân tích...', color: theme.colors.info };
+            case 'review':
+                return {
+                    emoji: '📝',
+                    text: 'Kiểm tra trước khi lưu',
+                    color: theme.colors.warning,
+                };
             case 'executing':
                 return { emoji: '⚡', text: 'Đang thực hiện...', color: theme.colors.primary };
             case 'success':

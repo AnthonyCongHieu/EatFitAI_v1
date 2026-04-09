@@ -54,6 +54,8 @@ export interface ParsedVoiceCommand {
   rawText: string;
   source?: string;
   suggestedAction?: string;
+  reviewRequired?: boolean;
+  reviewReason?: string;
 }
 
 // Voice processing response
@@ -165,6 +167,9 @@ export const voiceService = {
         confidence: data.confidence || 0,
         rawText: data.rawText || text,
         source: data.source || 'backend-proxy',
+        suggestedAction: data.suggestedAction,
+        reviewRequired: Boolean(data.reviewRequired),
+        reviewReason: data.reviewReason,
       };
     } catch (error: any) {
       console.error('[VoiceService] Ollama parse error:', error?.message);
@@ -176,6 +181,7 @@ export const voiceService = {
         rawText: text,
         source: 'error',
         suggestedAction: 'Không thể kết nối AI. Vui lòng thử lại.',
+        reviewRequired: false,
       };
     }
   },

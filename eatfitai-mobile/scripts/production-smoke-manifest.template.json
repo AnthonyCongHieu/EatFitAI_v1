@@ -100,17 +100,37 @@
       "key": "log-weight",
       "text": "can nang 70 kg",
       "expectedIntent": "LOG_WEIGHT",
+      "expectedReviewRequired": true,
       "executeMode": "confirm-weight",
       "mutatesData": true,
       "expectedExecuteSuccess": true
     },
     {
-      "key": "add-food",
+      "key": "add-food-confirm",
       "text": "ghi 1 banana vao bua sang",
       "expectedIntent": "ADD_FOOD",
+      "expectedReviewRequired": true,
+      "expectedMealType": "breakfast",
+      "readbackExpectedText": "banana",
       "executeMode": "execute",
       "mutatesData": true,
       "expectedExecuteSuccess": true
+    },
+    {
+      "key": "add-food-preview-only",
+      "text": "ghi 2 trung vao bua sang",
+      "expectedIntent": "ADD_FOOD",
+      "expectedReviewRequired": true,
+      "executeMode": "none",
+      "mutatesData": false
+    },
+    {
+      "key": "add-food-cancel-path",
+      "text": "ghi 1 tao vao bua phu",
+      "expectedIntent": "ADD_FOOD",
+      "expectedReviewRequired": true,
+      "executeMode": "none",
+      "mutatesData": false
     }
   ],
   "nutritionCases": [

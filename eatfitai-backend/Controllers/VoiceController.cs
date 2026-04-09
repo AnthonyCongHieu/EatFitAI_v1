@@ -15,6 +15,7 @@ using System.Security.Claims;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace EatFitAI.API.Controllers
 {
@@ -31,6 +32,12 @@ namespace EatFitAI.API.Controllers
         private readonly IHttpClientFactory _httpClientFactory;
         private readonly IConfiguration _configuration;
         private readonly ILogger<VoiceController> _logger;
+        private const double VoiceReviewConfidenceThreshold = 0.75;
+        private static readonly JsonSerializerOptions VoiceParseSerializerOptions = new()
+        {
+            PropertyNameCaseInsensitive = true,
+            Converters = { new JsonStringEnumConverter() }
+        };
 
         public VoiceController(
             IVoiceProcessingService voiceService,
@@ -98,44 +105,188 @@ namespace EatFitAI.API.Controllers
                 using var response = await client.PostAsync(providerUrl, content, cancellationToken);
                 var responseBody = await response.Content.ReadAsStringAsync(cancellationToken);
 
-                if (!response.IsSuccessStatusCode)
+                if (response.IsSuccessStatusCode)
                 {
-                    _logger.LogWarning(
-                        "Voice parse proxy failed for user {UserId}. Status={StatusCode}, Body={Body}",
-                        userId,
-                        (int)response.StatusCode,
-                        responseBody);
-
-                    return StatusCode((int)response.StatusCode, new
+                    var providerCommand = DeserializeParsedVoiceCommand(responseBody);
+                    if (ShouldUseRuleFallback(providerCommand))
                     {
-                        error = "voice_provider_error",
-                        detail = responseBody
-                    });
+                        _logger.LogWarning(
+                            "Voice parse proxy returned incomplete result for user {UserId}. Body={Body}",
+                            userId,
+                            responseBody);
+
+                        var fallbackCommand = await BuildFallbackCommandAsync(
+                            request,
+                            "backend-rule-fallback",
+                            "AI parse chưa đủ dữ liệu. Đã dùng parser dự phòng, hãy kiểm tra trước khi lưu.");
+
+                        return Ok(fallbackCommand);
+                    }
+
+                    _logger.LogInformation("Voice parse proxy succeeded for user {UserId}", userId);
+                    return Ok(PrepareParsedCommand(providerCommand, request.Text, "ai-provider-proxy"));
                 }
 
-                _logger.LogInformation("Voice parse proxy succeeded for user {UserId}", userId);
-                return Content(
-                    responseBody,
-                    response.Content.Headers.ContentType?.ToString() ?? "application/json");
+                _logger.LogWarning(
+                    "Voice parse proxy failed for user {UserId}. Status={StatusCode}, Body={Body}",
+                    userId,
+                    (int)response.StatusCode,
+                    responseBody);
+
+                var providerErrorFallback = await BuildFallbackCommandAsync(
+                    request,
+                    "backend-rule-fallback",
+                    $"AI provider lỗi {(int)response.StatusCode}. Đã dùng parser dự phòng, hãy kiểm tra trước khi lưu.");
+                return Ok(providerErrorFallback);
             }
             catch (HttpRequestException ex)
             {
                 _logger.LogError(ex, "Voice parse proxy could not reach AI provider");
-                return StatusCode(503, new
-                {
-                    error = "voice_provider_unavailable",
-                    detail = ex.Message
-                });
+                var fallbackCommand = await BuildFallbackCommandAsync(
+                    request,
+                    "backend-rule-fallback",
+                    "AI provider hiện không sẵn sàng. Đã dùng parser dự phòng, hãy kiểm tra trước khi lưu.");
+                return Ok(fallbackCommand);
             }
             catch (TaskCanceledException ex)
             {
                 _logger.LogError(ex, "Voice parse proxy timed out");
-                return StatusCode(504, new
-                {
-                    error = "voice_provider_timeout",
-                    detail = ex.Message
-                });
+                var fallbackCommand = await BuildFallbackCommandAsync(
+                    request,
+                    "backend-rule-fallback",
+                    "AI provider phản hồi quá chậm. Đã dùng parser dự phòng, hãy kiểm tra trước khi lưu.");
+                return Ok(fallbackCommand);
             }
+        }
+
+        private async Task<ParsedVoiceCommand> BuildFallbackCommandAsync(
+            VoiceProcessRequest request,
+            string source,
+            string reviewReason)
+        {
+            var fallbackCommand = await _voiceService.ParseCommandAsync(request.Text, request.Language);
+            return PrepareParsedCommand(fallbackCommand, request.Text, source, reviewReason);
+        }
+
+        private static ParsedVoiceCommand? DeserializeParsedVoiceCommand(string responseBody)
+        {
+            if (string.IsNullOrWhiteSpace(responseBody))
+            {
+                return null;
+            }
+
+            try
+            {
+                return JsonSerializer.Deserialize<ParsedVoiceCommand>(responseBody, VoiceParseSerializerOptions);
+            }
+            catch (JsonException)
+            {
+                return null;
+            }
+        }
+
+        private static bool ShouldUseRuleFallback(ParsedVoiceCommand? command)
+        {
+            if (command is null)
+            {
+                return true;
+            }
+
+            if (command.Intent == VoiceIntent.UNKNOWN)
+            {
+                return true;
+            }
+
+            return command.Intent switch
+            {
+                VoiceIntent.ADD_FOOD => !HasAddFoodEntities(command),
+                VoiceIntent.LOG_WEIGHT => command.Entities?.Weight is null,
+                _ => false
+            };
+        }
+
+        private static bool HasAddFoodEntities(ParsedVoiceCommand command)
+        {
+            if (command.Entities is null)
+            {
+                return false;
+            }
+
+            if (!string.IsNullOrWhiteSpace(command.Entities.FoodName))
+            {
+                return true;
+            }
+
+            return command.Entities.Foods?.Any(food => !string.IsNullOrWhiteSpace(food?.FoodName)) == true;
+        }
+
+        private static ParsedVoiceCommand PrepareParsedCommand(
+            ParsedVoiceCommand? command,
+            string requestText,
+            string source,
+            string? reviewReason = null)
+        {
+            var normalized = command ?? new ParsedVoiceCommand
+            {
+                Intent = VoiceIntent.UNKNOWN,
+            };
+
+            normalized.Entities ??= new VoiceCommandEntities();
+            normalized.RawText = string.IsNullOrWhiteSpace(normalized.RawText)
+                ? requestText
+                : normalized.RawText;
+            normalized.Source = string.IsNullOrWhiteSpace(normalized.Source)
+                ? source
+                : normalized.Source;
+            normalized.ReviewRequired = RequiresExplicitReview(normalized);
+            normalized.ReviewReason = ResolveReviewReason(normalized, reviewReason);
+
+            return normalized;
+        }
+
+        private static bool RequiresExplicitReview(ParsedVoiceCommand command)
+        {
+            if (command.Intent == VoiceIntent.UNKNOWN || command.Intent == VoiceIntent.ASK_CALORIES)
+            {
+                return false;
+            }
+
+            if (command.ReviewRequired)
+            {
+                return true;
+            }
+
+            if (command.Intent is VoiceIntent.ADD_FOOD or VoiceIntent.LOG_WEIGHT)
+            {
+                return true;
+            }
+
+            return command.Confidence <= 0 || command.Confidence < VoiceReviewConfidenceThreshold;
+        }
+
+        private static string? ResolveReviewReason(ParsedVoiceCommand command, string? reviewReason)
+        {
+            if (!string.IsNullOrWhiteSpace(command.ReviewReason))
+            {
+                return command.ReviewReason;
+            }
+
+            if (!string.IsNullOrWhiteSpace(reviewReason))
+            {
+                return reviewReason;
+            }
+
+            if (command.Intent == VoiceIntent.UNKNOWN || command.Intent == VoiceIntent.ASK_CALORIES)
+            {
+                return null;
+            }
+
+            if (command.Confidence <= 0 || command.Confidence < VoiceReviewConfidenceThreshold)
+            {
+                return "Độ tin cậy chưa cao. Hãy kiểm tra trước khi lưu.";
+            }
+
+            return "Voice Beta cần bạn xác nhận trước khi lưu.";
         }
 
         /// <summary>
@@ -246,7 +397,10 @@ namespace EatFitAI.API.Controllers
                 }
 
                 _logger.LogInformation("Processing voice text for user {UserId}: {Text}", userId, request.Text);
-                var command = await _voiceService.ParseCommandAsync(request.Text, request.Language);
+                var command = PrepareParsedCommand(
+                    await _voiceService.ParseCommandAsync(request.Text, request.Language),
+                    request.Text,
+                    "backend-rule-parser");
 
                 return Ok(new VoiceProcessResponse
                 {

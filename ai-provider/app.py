@@ -52,38 +52,32 @@ def _download_model_from_supabase(filename: str = "best.pt") -> bool:
     """
     Download model weights từ Supabase Storage private bucket.
     Chỉ chạy trên cloud khi file chưa tồn tại local.
-    Dùng service_role key để truy cập bucket private 'ml-models'.
+    Dùng Supabase Python SDK để truy cập bucket private 'ml-models'.
     """
-    import requests as _req
+    try:
+        from supabase import create_client, Client
+    except ImportError:
+        logger.error("❌ Thư viện 'supabase' chưa được cài đặt. Chạy `pip install supabase`")
+        return False
 
-    supabase_url = os.getenv("SUPABASE_URL", "")
-    service_key = os.getenv("SUPABASE_SERVICE_KEY", "")
+    url: str = os.getenv("SUPABASE_URL", "")
+    key: str = os.getenv("SUPABASE_SERVICE_KEY", "")
 
-    if not supabase_url or not service_key:
+    if not url or not key:
         logger.warning("⚠️ SUPABASE_URL hoặc SUPABASE_SERVICE_KEY chưa set → bỏ qua download model")
         return False
 
-    download_url = f"{supabase_url}/storage/v1/object/ml-models/{filename}"
-    logger.info(f"⬇️  Downloading {filename} từ Supabase Storage...")
+    logger.info(f"⬇️  Downloading {filename} từ Supabase Storage bằng official SDK...")
 
     try:
-        resp = _req.get(
-            download_url,
-            headers={"Authorization": f"Bearer {service_key}"},
-            stream=True,
-            timeout=120,  # 2 phút timeout cho file ~22MB
-        )
-        resp.raise_for_status()
-
-        # Ghi file theo chunks để tiết kiệm RAM
-        total = int(resp.headers.get("content-length", 0))
-        downloaded = 0
+        supabase: Client = create_client(url, key)
+        # Download data dưới dạng bytes
+        res = supabase.storage.from_("ml-models").download(filename)
+        
         with open(filename, "wb") as f:
-            for chunk in resp.iter_content(chunk_size=1024 * 256):  # 256KB chunks
-                f.write(chunk)
-                downloaded += len(chunk)
+            f.write(res)
 
-        size_mb = downloaded / (1024 * 1024)
+        size_mb = len(res) / (1024 * 1024)
         logger.info(f"✅ Downloaded {filename} thành công ({size_mb:.1f} MB)")
         return True
 

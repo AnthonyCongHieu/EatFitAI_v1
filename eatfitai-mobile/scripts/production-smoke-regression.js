@@ -295,6 +295,128 @@ async function runSearchCases(backendUrl, manifest) {
   return results;
 }
 
+function normalizeMealTypeName(value) {
+  const raw = trim(value);
+  if (!raw) {
+    return '';
+  }
+
+  const normalized = raw.toLowerCase();
+  if (['1', 'breakfast', 'bữa sáng', 'bua sang', 'sáng', 'sang'].includes(normalized)) {
+    return 'breakfast';
+  }
+  if (['2', 'lunch', 'bữa trưa', 'bua trua', 'trưa', 'trua'].includes(normalized)) {
+    return 'lunch';
+  }
+  if (['3', 'dinner', 'bữa tối', 'bua toi', 'tối', 'toi'].includes(normalized)) {
+    return 'dinner';
+  }
+  if (['4', 'snack', 'bữa phụ', 'bua phu', 'phụ', 'phu', 'chiều', 'chieu'].includes(normalized)) {
+    return 'snack';
+  }
+
+  return normalized;
+}
+
+function collectExpectedVoiceFoods(voiceCase, parseBody) {
+  const expectedFoods = Array.isArray(voiceCase.expectedFoods)
+    ? voiceCase.expectedFoods
+    : [];
+  const caseFoods = expectedFoods
+    .map((food) => trim(food).toLowerCase())
+    .filter(Boolean);
+  if (caseFoods.length > 0) {
+    return [...new Set(caseFoods)];
+  }
+
+  const entities = parseBody?.entities || {};
+  const parsedFoods = [];
+  if (trim(entities.foodName)) {
+    parsedFoods.push(trim(entities.foodName).toLowerCase());
+  }
+  if (Array.isArray(entities.foods)) {
+    for (const food of entities.foods) {
+      const foodName = trim(food?.foodName).toLowerCase();
+      if (foodName) {
+        parsedFoods.push(foodName);
+      }
+    }
+  }
+
+  const explicitReadbackText = trim(voiceCase.readbackExpectedText).toLowerCase();
+  if (explicitReadbackText) {
+    parsedFoods.push(explicitReadbackText);
+  }
+
+  return [...new Set(parsedFoods.filter(Boolean))];
+}
+
+async function readVoiceDiaryEntry(backendUrl, token, parseBody, voiceCase) {
+  const entities = parseBody?.entities || {};
+  const rawDate = trim(voiceCase.readbackDate || entities.date || new Date().toISOString());
+  const dateOnly = rawDate.includes('T') ? rawDate.slice(0, 10) : rawDate.slice(0, 10);
+  const expectedMealType = normalizeMealTypeName(voiceCase.expectedMealType || entities.mealType);
+  const expectedFoods = collectExpectedVoiceFoods(voiceCase, parseBody);
+  const result = {
+    attempted: true,
+    skipped: false,
+    skipReason: '',
+    status: null,
+    latencyMs: null,
+    resultCount: 0,
+    expectedMealType,
+    expectedFoods,
+    matchedFoods: [],
+    passed: false,
+    error: null,
+  };
+
+  const response = await requestJson(
+    `${backendUrl}/api/mealdiary?date=${encodeURIComponent(dateOnly)}`,
+    {
+      method: 'GET',
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    },
+  );
+
+  result.status = response.status;
+  result.latencyMs = response.durationMs;
+
+  if (!response.ok) {
+    result.error = response.error || response.body?.message || 'diary-readback-failed';
+    return result;
+  }
+
+  const entries = Array.isArray(response.body) ? response.body : [];
+  result.resultCount = entries.length;
+
+  const matches = entries.filter((entry) => {
+    const entryMealType = normalizeMealTypeName(entry?.mealTypeName || entry?.mealTypeId);
+    const mealMatches = !expectedMealType || entryMealType === expectedMealType;
+    const entryName = trim(
+      entry?.foodItemName || entry?.userDishName || entry?.recipeName || entry?.note || '',
+    ).toLowerCase();
+    const foodMatches =
+      expectedFoods.length === 0 || expectedFoods.some((food) => entryName.includes(food));
+    return mealMatches && foodMatches;
+  });
+
+  result.matchedFoods = matches
+    .map((entry) =>
+      trim(entry?.foodItemName || entry?.userDishName || entry?.recipeName || entry?.note || ''),
+    )
+    .filter(Boolean);
+  result.passed = matches.length > 0;
+
+  if (!result.passed) {
+    result.error = 'diary-entry-not-found';
+  }
+
+  return result;
+}
+
 async function runVoiceCases(backendUrl, manifest, token, allowMutations) {
   const cases = Array.isArray(manifest.voiceCases) ? manifest.voiceCases : [];
   const results = [];
@@ -313,7 +435,15 @@ async function runVoiceCases(backendUrl, manifest, token, allowMutations) {
     });
 
     const parsedIntent = parseResponse.body?.intent || 'UNKNOWN';
-    const parsePassed = parseResponse.ok && parsedIntent === voiceCase.expectedIntent;
+    const reviewRequired = Boolean(parseResponse.body?.reviewRequired);
+    const expectedReviewRequired =
+      typeof voiceCase.expectedReviewRequired === 'boolean'
+        ? voiceCase.expectedReviewRequired
+        : null;
+    const reviewMatched =
+      expectedReviewRequired === null || reviewRequired === expectedReviewRequired;
+    const parsePassed =
+      parseResponse.ok && parsedIntent === voiceCase.expectedIntent && reviewMatched;
     const result = {
       key: voiceCase.key,
       text: voiceCase.text,
@@ -323,8 +453,18 @@ async function runVoiceCases(backendUrl, manifest, token, allowMutations) {
         latencyMs: parseResponse.durationMs,
         parsedIntent,
         confidence: parseResponse.body?.confidence ?? null,
+        source: parseResponse.body?.source || null,
+        reviewRequired,
+        reviewReason: parseResponse.body?.reviewReason || null,
+        suggestedAction: parseResponse.body?.suggestedAction || null,
         passed: parsePassed,
         error: parseResponse.error || null,
+      },
+      preview: {
+        required: reviewRequired,
+        passed: parsePassed && parsedIntent !== 'UNKNOWN',
+        reason: parseResponse.body?.reviewReason || null,
+        suggestedAction: parseResponse.body?.suggestedAction || null,
       },
       execute: {
         attempted: false,
@@ -332,6 +472,19 @@ async function runVoiceCases(backendUrl, manifest, token, allowMutations) {
         skipReason: '',
         status: null,
         latencyMs: null,
+        passed: false,
+        error: null,
+      },
+      diaryReadback: {
+        attempted: false,
+        skipped: false,
+        skipReason: '',
+        status: null,
+        latencyMs: null,
+        resultCount: 0,
+        expectedMealType: '',
+        expectedFoods: [],
+        matchedFoods: [],
         passed: false,
         error: null,
       },
@@ -396,6 +549,28 @@ async function runVoiceCases(backendUrl, manifest, token, allowMutations) {
     } else {
       result.execute.passed = Boolean(executeResponse.ok && executeResponse.body?.success);
       result.execute.error = executeResponse.error || executeResponse.body?.error || null;
+    }
+
+    const shouldReadback =
+      result.execute.passed &&
+      parsedIntent === 'ADD_FOOD' &&
+      trim(voiceCase.readbackMode || 'diary').toLowerCase() === 'diary';
+
+    if (shouldReadback) {
+      result.diaryReadback = await readVoiceDiaryEntry(
+        backendUrl,
+        token,
+        parseResponse.body,
+        voiceCase,
+      );
+    } else {
+      result.diaryReadback.skipped = true;
+      result.diaryReadback.skipReason =
+        parsedIntent !== 'ADD_FOOD'
+          ? 'intent-not-add-food'
+          : result.execute.passed
+            ? 'readback-disabled'
+            : 'execute-failed';
     }
 
     results.push(result);
@@ -570,8 +745,12 @@ function buildSummary(results) {
     voice: {
       attempted: results.voice.length,
       parsePassed: results.voice.filter((entry) => entry.parse.passed).length,
+      previewPassed: results.voice.filter((entry) => entry.preview.passed).length,
+      reviewRequired: results.voice.filter((entry) => entry.parse.reviewRequired).length,
       executeAttempted: results.voice.filter((entry) => entry.execute.attempted).length,
       executePassed: results.voice.filter((entry) => entry.execute.passed).length,
+      diaryReadbackAttempted: results.voice.filter((entry) => entry.diaryReadback.attempted).length,
+      diaryReadbackPassed: results.voice.filter((entry) => entry.diaryReadback.passed).length,
       parseLatencyAvgMs: average(voiceParseLatencies),
       parseLatencyP95Ms: percentile(voiceParseLatencies, 95),
       executeLatencyAvgMs: average(voiceExecuteLatencies),

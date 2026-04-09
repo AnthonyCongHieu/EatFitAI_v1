@@ -79,7 +79,10 @@ namespace EatFitAI.DTOs
         public VoiceCommandEntities Entities { get; set; } = new();
         public double Confidence { get; set; }
         public string RawText { get; set; } = string.Empty;
+        public string? Source { get; set; }
         public string? SuggestedAction { get; set; }
+        public bool ReviewRequired { get; set; }
+        public string? ReviewReason { get; set; }
     }
 
     /// <summary>
