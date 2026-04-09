@@ -57,6 +57,10 @@ errors.txt
 tools/dev/logs/
 tools/dev/device-app-logcat.txt
 tools/dev/device-current.png
+_cdp_render_profile/
+_chrome_profile_clone/
+_tmp/
+_tmp_*.png
 
 data_batches/
 data_chunks/
