@@ -149,6 +149,18 @@ namespace EatFitAI.API.Services
                 && !string.Equals(value, "your-app-password-or-smtp-password", StringComparison.OrdinalIgnoreCase);
         }
 
+        private SecureSocketOptions GetSecureSocketOptions()
+        {
+            if (!_settings.EnableSsl)
+            {
+                return SecureSocketOptions.None;
+            }
+
+            return _settings.Port == 465
+                ? SecureSocketOptions.SslOnConnect
+                : SecureSocketOptions.StartTls;
+        }
+
         private MimeMessage CreateMessage(string email, string subject, string body)
         {
             var message = new MimeMessage();
@@ -179,7 +191,7 @@ namespace EatFitAI.API.Services
             await client.ConnectAsync(
                 _settings.Host,
                 _settings.Port,
-                SecureSocketOptions.StartTls,
+                GetSecureSocketOptions(),
                 cancellationToken);
 
             Console.WriteLine("[EmailService] Authenticating...");
