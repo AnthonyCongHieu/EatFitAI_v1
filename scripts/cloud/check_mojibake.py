@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import sys
+from collections.abc import Iterator
 from pathlib import Path
 
 
@@ -17,23 +18,38 @@ SOURCE_SUFFIXES = {".cs", ".ts", ".tsx", ".js", ".jsx", ".json", ".py"}
 EXCLUDED_PARTS = {
     "node_modules",
     ".venv",
+    "venv",
     "bin",
     "obj",
     "dist",
     "build",
     "_state",
     "__pycache__",
+    "site-packages",
 }
-MOJIBAKE_MARKERS = ("Ã", "â€", "á»", "Ä", "Æ°", "Æ¡", "Æ»", "Æ’")
+MOJIBAKE_MARKERS = ("â€", "á»", "áº", "Ä‘", "Ä", "Æ°", "Æ¡", "Æ»", "Æ’")
+REPLACEMENT_CHARACTER = "\ufffd"
 
 
 def should_scan(path: Path) -> bool:
     return path.is_file() and path.suffix.lower() in SOURCE_SUFFIXES and not any(
-        part in EXCLUDED_PARTS for part in path.parts
+        part.casefold() in EXCLUDED_PARTS for part in path.parts
     )
 
 
-def iter_hits(root: Path):
+def has_mojibake(text: str) -> bool:
+    return REPLACEMENT_CHARACTER in text or any(
+        marker in text for marker in MOJIBAKE_MARKERS
+    )
+
+
+def iter_line_hits(text: str) -> Iterator[tuple[int, str]]:
+    for line_no, line in enumerate(text.splitlines(), 1):
+        if has_mojibake(line):
+            yield line_no, line
+
+
+def iter_hits(root: Path) -> Iterator[tuple[Path, int, str]]:
     for path in root.rglob("*"):
         if not should_scan(path):
             continue
@@ -43,9 +59,8 @@ def iter_hits(root: Path):
         except UnicodeDecodeError:
             continue
 
-        for line_no, line in enumerate(text.splitlines(), 1):
-            if any(marker in line for marker in MOJIBAKE_MARKERS):
-                yield path, line_no, line
+        for line_no, line in iter_line_hits(text):
+            yield path, line_no, line
 
 
 def main() -> int:

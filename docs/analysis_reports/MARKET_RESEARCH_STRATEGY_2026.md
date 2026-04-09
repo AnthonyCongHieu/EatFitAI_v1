@@ -6,7 +6,7 @@
 
 ---
 
-## 0. � BẢNG ĐỐI CHIẾU YÊU CẦU (COMPLIANCE MATRIX)
+## 0. BẢNG ĐỐI CHIẾU YÊU CẦU (COMPLIANCE MATRIX)
 
 Bảng này xác nhận các giải pháp cụ thể cho 5 yêu cầu cốt lõi của bạn:
 
@@ -171,7 +171,7 @@ Tại sao EatFitAI vượt trội?
 
 ---
 
-## 7. � FUTURE-PROOFING: ĐÓN ĐẦU XU HƯỚNG 2026-2027
+## 7. FUTURE-PROOFING: ĐÓN ĐẦU XU HƯỚNG 2026-2027
 
 Để không bị lạc hậu sau 1 năm, EatFitAI cần chuẩn bị sẵn nền tảng cho các công nghệ sau:
 
@@ -193,7 +193,7 @@ Tại sao EatFitAI vượt trội?
 
 ---
 
-## 8. �🗺️ KẾ HOẠCH HÀNH ĐỘNG (ACTION PLAN)
+## 8. KẾ HOẠCH HÀNH ĐỘNG (ACTION PLAN)
 
 ### Phase 1: Foundation (Tuần này)
 *   [x] Nén ảnh AI (Đã xong).
