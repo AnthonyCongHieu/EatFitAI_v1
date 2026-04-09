@@ -10,7 +10,5 @@ public partial class vw_AiFoodMap
     public decimal? ProteinPer100g { get; set; }
     public decimal? FatPer100g { get; set; }
     public decimal? CarbPer100g { get; set; }
-    public bool? IsActive { get; set; }
-    public bool? IsDeleted { get; set; }
 }
 
