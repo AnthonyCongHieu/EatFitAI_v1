@@ -13,11 +13,18 @@ import time
 import re
 from typing import Any, Dict, Optional
 
+from gemini_pool import (
+    DEFAULT_MODEL,
+    GeminiPoolError,
+    GeminiPoolManager,
+    GeminiQuotaExhaustedError,
+    GeminiUnavailableError,
+)
+
 logger = logging.getLogger(__name__)
 
 # Configuration - Gemini API (thay thế Ollama)
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
-GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.0-flash")
+GEMINI_MODEL = os.getenv("GEMINI_MODEL", DEFAULT_MODEL).strip() or DEFAULT_MODEL
 
 # ============== SIMPLE CACHE SYSTEM ==============
 # In-memory cache với TTL để giảm API calls và chi phí
@@ -59,10 +66,31 @@ _general_cache = SimpleCache(default_ttl=300)
 
 # ============== GEMINI API CLIENT ==============
 
-_gemini_model = None
+_gemini_pool: Optional[GeminiPoolManager] = None
+
+
+def _get_gemini_pool() -> GeminiPoolManager:
+    """Lazy init Gemini pool manager."""
+    global _gemini_pool
+    if _gemini_pool is None:
+        _gemini_pool = GeminiPoolManager.from_env()
+    return _gemini_pool
+
+
+def get_gemini_runtime_status() -> Dict[str, Any]:
+    """Expose runtime Gemini model/pool metadata for health reporting."""
+    return _get_gemini_pool().get_runtime_status()
+
+
+def ensure_gemini_service_available() -> Dict[str, Any]:
+    """Raise when Gemini service is unavailable or quota-exhausted."""
+    pool = _get_gemini_pool()
+    pool.ensure_service_available()
+    return pool.get_runtime_status()
 
 def _init_gemini():
     """Khởi tạo Gemini client (lazy init)"""
+    return is_gemini_available()
     global _gemini_model
     if _gemini_model is not None:
         return True
@@ -83,16 +111,17 @@ def _init_gemini():
 
 def is_gemini_available() -> bool:
     """Kiểm tra Gemini API có sẵn sàng không"""
-    return _init_gemini()
+    try:
+        return _get_gemini_pool().has_available_entry()
+    except Exception as exc:
+        logger.error(f"Gemini availability check failed: {exc}")
+        return False
 
 def query_gemini(prompt: str, use_cache: bool = True, cache_ttl: int = None) -> Optional[str]:
     """
     Query Gemini API với cache support.
     Returns None nếu lỗi.
     """
-    if not is_gemini_available():
-        return None
-    
     # Check cache
     if use_cache:
         cached = _general_cache.get(prompt)
@@ -101,28 +130,29 @@ def query_gemini(prompt: str, use_cache: bool = True, cache_ttl: int = None) -> 
             return cached
     
     try:
-        response = _gemini_model.generate_content(
+        response = _get_gemini_pool().generate_text(
             prompt,
-            generation_config={
-                "temperature": 0.1,
-                "max_output_tokens": 500,
-            }
+            temperature=0.1,
+            max_output_tokens=500,
         )
         
-        if response and response.text:
-            result_text = response.text
+        if response:
             
             # Lưu cache
-            if use_cache and result_text:
-                _general_cache.set(prompt, result_text, cache_ttl)
+            if use_cache:
+                _general_cache.set(prompt, response, cache_ttl)
             
-            return result_text
-        else:
-            logger.warning("Gemini returned empty response")
-            return None
+            return response
+        logger.warning("Gemini returned empty response")
+        return None
     
-    except Exception as e:
-        logger.error(f"Gemini query failed: {e}")
+    except (GeminiQuotaExhaustedError, GeminiUnavailableError):
+        raise
+    except GeminiPoolError as exc:
+        logger.error(f"Gemini pool rejected request: {exc}")
+        return None
+    except Exception as exc:
+        logger.error(f"Gemini query failed: {exc}")
         return None
 
 
@@ -259,9 +289,9 @@ def get_nutrition_advice(
 ) -> Dict[str, Any]:
     """Main function: Gemini first, fallback formula"""
     
-    if is_gemini_available():
-        logger.info("Using Gemini API")
-        return get_nutrition_advice_gemini(gender, age, height_cm, weight_kg, activity_level, goal)
+    ensure_gemini_service_available()
+    logger.info("Using Gemini API")
+    return get_nutrition_advice_gemini(gender, age, height_cm, weight_kg, activity_level, goal)
     
     logger.info("Gemini not available, using Mifflin-St Jeor formula")
     result = calculate_nutrition_mifflin(gender, age, height_cm, weight_kg, activity_level, goal)
@@ -279,10 +309,7 @@ def get_meal_insight(
 ) -> Dict[str, Any]:
     """AI insight về bữa ăn (Gemini hoặc fallback)"""
     
-    if not is_gemini_available():
-        # Smart fallback logic
-        cal_pct = (total_calories / target_calories * 100) if target_calories > 0 else 0
-        return _meal_insight_fallback(cal_pct, total_calories, target_calories, current_macros, target_macros)
+    ensure_gemini_service_available()
     
     items_str = ", ".join([f"{item.get('name', 'Unknown')}" for item in meal_items[:5]])
     cal_pct = (total_calories / target_calories * 100) if target_calories > 0 else 0
@@ -341,8 +368,7 @@ def get_cooking_instructions(
 ) -> Dict[str, Any]:
     """Generate hướng dẫn nấu ăn bằng Gemini AI"""
     
-    if not is_gemini_available():
-        return _generate_fallback_instructions(recipe_name, ingredients)
+    ensure_gemini_service_available()
     
     ingredients_str = ", ".join([
         f"{ing.get('foodName', 'Unknown')} ({ing.get('grams', 100)}g)"
@@ -550,7 +576,8 @@ def parse_voice_command_llm(text: str) -> Dict[str, Any]:
         return calories_result
     
     # Bước 2: Gemini LLM cho ADD_FOOD và complex cases
-    if not is_gemini_available():
+    ensure_gemini_service_available()
+    if False:
         return {
             "intent": "UNKNOWN", "entities": {}, "confidence": 0.0,
             "rawText": text, "source": "fallback",

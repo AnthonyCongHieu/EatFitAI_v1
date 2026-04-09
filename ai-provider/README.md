@@ -3,7 +3,7 @@
 Local Python service for:
 
 - vision detection with YOLO
-- nutrition advice and meal insight via Ollama
+- nutrition advice and meal insight via Gemini API
 - cooking instructions
 - voice transcription / parsing support
 
@@ -12,7 +12,7 @@ Local Python service for:
 - host: `http://127.0.0.1:5050`
 - primary model file: `best.pt`
 - fallback model file: `yolov8s.pt`
-- default Ollama model: `qwen2.5:3b`
+- default Gemini model: `gemini-2.5-flash`
 
 ## Local env file
 
@@ -25,9 +25,9 @@ Copy-Item .\.env.example .\.env
 Tracked example values:
 
 ```env
-HF_TOKEN=SET_ONLY_IF_YOU_DOWNLOAD_MODELS_FROM_HUGGING_FACE
-OLLAMA_URL=http://localhost:11434
-OLLAMA_MODEL=qwen2.5:3b
+GEMINI_MODEL=gemini-2.5-flash
+GEMINI_API_KEY=SET_ONLY_IF_YOU_USE_SINGLE_KEY_FALLBACK
+GEMINI_KEY_POOL_JSON=[{"projectAlias":"gemini-primary","projectId":"project-1","keyAlias":"slot-a","apiKey":"replace_me","model":"gemini-2.5-flash","enabled":true}]
 ENABLE_STT=false
 ```
 
@@ -75,9 +75,9 @@ The local environment is only considered ready when:
 
 - the AI provider starts successfully
 - `/healthz` responds
-- Ollama is reachable when AI text features are required
+- Gemini is configured through `GEMINI_KEY_POOL_JSON` or `GEMINI_API_KEY`
 
 ## Notes
 
-- Use `qwen2.5:3b` as the default local Ollama model unless a benchmark explicitly changes the team baseline.
+- Use `gemini-2.5-flash` as the default Gemini model unless a benchmark explicitly changes the team baseline.
 - This service is required for the emulator-first local lane described in the root setup guide.

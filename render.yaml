@@ -62,5 +62,13 @@ services:
     envVars:
       - key: GEMINI_API_KEY
         sync: false
+      - key: GEMINI_MODEL
+        value: gemini-2.5-flash
+      - key: GEMINI_KEY_POOL_JSON
+        sync: false
+      - key: GEMINI_TIMEOUT_SECONDS
+        value: "30"
+      - key: GEMINI_SHORT_COOLDOWN_SECONDS
+        value: "90"
       - key: ENABLE_STT
         value: "false"

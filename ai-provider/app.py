@@ -101,6 +101,7 @@ def root() -> Dict[str, Any]:
 def healthz() -> Dict[str, Any]:
     """Health check với model và GPU status"""
     model_classes = list(model.names.values()) if model else []
+    gemini_status = _get_gemini_health_status()
     
     return {
         "status": "ok",
@@ -112,8 +113,48 @@ def healthz() -> Dict[str, Any]:
         "device": str(model.device) if model else "unknown",
         "gpu_name": torch.cuda.get_device_name(0) if torch.cuda.is_available() else None,
         "llm_provider": "gemini",
-        "gemini_configured": bool(os.getenv("GEMINI_API_KEY")),
+        **gemini_status,
     }
+
+
+def _get_gemini_health_status() -> Dict[str, Any]:
+    if not NUTRITION_LLM_AVAILABLE:
+        return {
+            "gemini_configured": False,
+            "gemini_model": None,
+            "gemini_active_project": None,
+            "gemini_pool_size": 0,
+            "gemini_distinct_project_count": 0,
+            "gemini_last_failover_reason": None,
+        }
+
+    try:
+        return get_gemini_runtime_status()
+    except Exception as exc:
+        logger.warning(f"Failed to read Gemini runtime status: {exc}")
+        return {
+            "gemini_configured": False,
+            "gemini_model": None,
+            "gemini_active_project": None,
+            "gemini_pool_size": 0,
+            "gemini_distinct_project_count": 0,
+            "gemini_last_failover_reason": "healthz_status_error",
+        }
+
+
+def _gemini_service_error_response(exc: Exception):
+    status = _get_gemini_health_status()
+    payload = {
+        "error": getattr(exc, "code", "gemini_unavailable"),
+        "detail": str(exc),
+        "geminiModel": status.get("gemini_model"),
+        "geminiActiveProject": status.get("gemini_active_project"),
+        "geminiLastFailoverReason": status.get("gemini_last_failover_reason"),
+    }
+    retry_after = getattr(exc, "retry_after", None) or status.get("gemini_retry_after")
+    if retry_after:
+        payload["retryAfter"] = retry_after
+    return jsonify(payload), 503
 
 @app.post("/detect")
 def detect() -> Response | tuple[Dict[str, str], int]:
@@ -192,7 +233,10 @@ try:
     from nutrition_llm import (
         get_nutrition_advice,
         get_meal_insight,
-        parse_voice_command_llm
+        get_gemini_runtime_status,
+        parse_voice_command_llm,
+        GeminiQuotaExhaustedError,
+        GeminiUnavailableError,
     )
     NUTRITION_LLM_AVAILABLE = True
     VOICE_PARSE_AVAILABLE = True
@@ -231,6 +275,9 @@ def nutrition_advice():
         logger.info(f"Nutrition advice generated: {result.get('source', 'unknown')}")
         return jsonify(result)
     
+    except (GeminiQuotaExhaustedError, GeminiUnavailableError) as exc:
+        logger.warning(f"Nutrition advice Gemini unavailable: {exc}")
+        return _gemini_service_error_response(exc)
     except Exception as e:
         logger.error(f"Nutrition advice error: {e}", exc_info=True)
         return {"error": "Internal server error"}, 500
@@ -257,6 +304,9 @@ def meal_insight():
         
         return jsonify(result)
     
+    except (GeminiQuotaExhaustedError, GeminiUnavailableError) as exc:
+        logger.warning(f"Meal insight Gemini unavailable: {exc}")
+        return _gemini_service_error_response(exc)
     except Exception as e:
         logger.error(f"Meal insight error: {e}", exc_info=True)
         return {"error": "Internal server error"}, 500
@@ -298,6 +348,9 @@ def cooking_instructions():
         
         return jsonify(result)
     
+    except (GeminiQuotaExhaustedError, GeminiUnavailableError) as exc:
+        logger.warning(f"Cooking instructions Gemini unavailable: {exc}")
+        return _gemini_service_error_response(exc)
     except Exception as e:
         logger.error(f"Cooking instructions error: {e}", exc_info=True)
         return {"error": "Internal server error"}, 500
@@ -325,6 +378,9 @@ def voice_parse():
         
         return jsonify(result)
         
+    except (GeminiQuotaExhaustedError, GeminiUnavailableError) as exc:
+        logger.warning(f"Voice parsing Gemini unavailable: {exc}")
+        return _gemini_service_error_response(exc)
     except Exception as e:
         logger.error(f"Voice parsing error: {e}", exc_info=True)
         return {"error": "Internal server error"}, 500
