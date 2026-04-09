@@ -8,12 +8,19 @@ const appJsonPath = path.join(projectRoot, 'app.json');
 const packageJsonPath = path.join(projectRoot, 'package.json');
 const packageLockPath = path.join(projectRoot, 'package-lock.json');
 const configPath = path.join(projectRoot, '.maestro', 'config.yaml');
+const repoRoot = path.resolve(projectRoot, '..');
+
+function resolveBundledExecutable(relativeSegments) {
+  const candidate = path.join(repoRoot, ...relativeSegments);
+  return fs.existsSync(candidate) ? candidate : null;
+}
 
 function runCommand(command, args) {
+  const useShell = !(path.isAbsolute(command) || command.includes(path.sep));
   const result = spawnSync(command, args, {
     cwd: projectRoot,
     encoding: 'utf8',
-    shell: process.platform === 'win32',
+    shell: process.platform === 'win32' ? useShell : false,
     timeout: 10000,
   });
 
@@ -148,7 +155,10 @@ function main() {
     detail: appium.ok ? appium.stdout : appium.stderr || appium.error || 'appium not found',
   });
 
-  const adb = runCommand('adb', ['devices']);
+  const bundledAdb =
+    resolveBundledExecutable(['_tooling', 'android-sdk', 'platform-tools', 'adb.exe']) ||
+    resolveBundledExecutable(['_tooling', 'android-sdk', 'platform-tools', 'adb']);
+  const adb = runCommand(bundledAdb || 'adb', ['devices']);
   if (adb.ok) {
     const deviceLines = adb.stdout
       .split(/\r?\n/)
@@ -158,7 +168,9 @@ function main() {
     checks.push({
       name: 'ADB',
       status: 'OK',
-      detail: activeDevices.length > 0 ? `${activeDevices.length} device(s) connected.` : 'adb is available but no device is connected.',
+      detail: activeDevices.length > 0
+        ? `${activeDevices.length} device(s) connected.${bundledAdb ? ' Using bundled SDK adb.' : ''}`
+        : `adb is available but no device is connected.${bundledAdb ? ' Using bundled SDK adb.' : ''}`,
     });
   } else {
     checks.push({

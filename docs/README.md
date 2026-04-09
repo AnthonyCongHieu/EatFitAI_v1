@@ -24,11 +24,15 @@ Thu muc `docs/` la noi tap trung cac tai lieu ky thuat, runtime audit, va tai li
    - Ke hoach va quy uoc setup moi truong Windows, emulator-first, Appium lane.
    - Dung khi dung lai local stack, bo tri storage, va preflight.
 
-5. `06_RUNTIME_AUDIT_SNAPSHOT_2026-03-14.md`
+5. `11_RESULT_E2E_PRODUCTION_SMOKE.md`
+   - Lane smoke production cho flow Result E2E qua Render backend/Supabase.
+   - Dung khi can verify recovery cloud ma khong doi default local lane.
+
+6. `06_RUNTIME_AUDIT_SNAPSHOT_2026-03-14.md`
    - Snapshot runtime audit moi nhat tren native Android build.
    - Dung khi can biet app hien tai chay duoc flow nao, flow nao vo, blocker nao dang ton tai.
 
-6. `07_NOTION_PLAN_GAP_AND_2PERSON_RESTRUCTURE_2026-03-14.md`
+7. `07_NOTION_PLAN_GAP_AND_2PERSON_RESTRUCTURE_2026-03-14.md`
    - Ban doi chieu giua runtime audit, Notion task hien tai, va SQL truth.
    - Dung khi can co cau lai backlog, chia viec cho 2 nguoi, va quyet dinh scope.
 
@@ -41,6 +45,7 @@ Thu muc `docs/` la noi tap trung cac tai lieu ky thuat, runtime audit, va tai li
 ## Cach dung bo tai lieu nay
 
 - Neu can dung moi truong va test app: doc `04` truoc.
+- Neu can verify production Result flow: doc `11`.
 - Neu can biet app hien tai dung o dau: doc `06`.
 - Neu can chia viec, cat scope, va sap lai Notion: doc `07`.
 - Neu can biet he thong duoc xay nhu the nao: doc `01`, `02`, `03`.

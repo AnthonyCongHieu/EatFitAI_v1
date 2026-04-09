@@ -55,6 +55,7 @@ This script:
 - [SETUP_GUIDE.md](/D:/EatFitAI_v1/SETUP_GUIDE.md)
 - [docs/README.md](/D:/EatFitAI_v1/docs/README.md)
 - [docs/04_ENVIRONMENT_EXECUTION_PLAN.md](/D:/EatFitAI_v1/docs/04_ENVIRONMENT_EXECUTION_PLAN.md)
+- [docs/11_RESULT_E2E_PRODUCTION_SMOKE.md](/D:/EatFitAI_v1/docs/11_RESULT_E2E_PRODUCTION_SMOKE.md)
 - [docs/06_RUNTIME_AUDIT_SNAPSHOT_2026-03-14.md](/D:/EatFitAI_v1/docs/06_RUNTIME_AUDIT_SNAPSHOT_2026-03-14.md)
 - [docs/07_NOTION_PLAN_GAP_AND_2PERSON_RESTRUCTURE_2026-03-14.md](/D:/EatFitAI_v1/docs/07_NOTION_PLAN_GAP_AND_2PERSON_RESTRUCTURE_2026-03-14.md)
 - [JWT_CONFIGURATION.md](/D:/EatFitAI_v1/JWT_CONFIGURATION.md)
@@ -87,3 +88,4 @@ powershell -ExecutionPolicy Bypass -File .\tools\dev\Restore-EatFitAI-PortableSn
 - `sqdate13thang3t.sql` is kept as a snapshot reference, not as the canonical bootstrap flow.
 - Backend machine-specific values must stay in `user-secrets`, not in tracked JSON files.
 - Appium + MCP is supported through the emulator-first lane described in `tools/appium`.
+- Production Result smoke should use `start-mobile-cloud-smoke.ps1` so the session targets Render without changing the local default lane.
