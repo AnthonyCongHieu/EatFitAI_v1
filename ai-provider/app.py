@@ -46,6 +46,55 @@ def allowed_file(filename: str) -> bool:
     return '.' in filename and \
            filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
+# ============== AUTO-DOWNLOAD MODEL TỪ SUPABASE STORAGE ==============
+
+def _download_model_from_supabase(filename: str = "best.pt") -> bool:
+    """
+    Download model weights từ Supabase Storage private bucket.
+    Chỉ chạy trên cloud khi file chưa tồn tại local.
+    Dùng service_role key để truy cập bucket private 'ml-models'.
+    """
+    import requests as _req
+
+    supabase_url = os.getenv("SUPABASE_URL", "")
+    service_key = os.getenv("SUPABASE_SERVICE_KEY", "")
+
+    if not supabase_url or not service_key:
+        logger.warning("⚠️ SUPABASE_URL hoặc SUPABASE_SERVICE_KEY chưa set → bỏ qua download model")
+        return False
+
+    download_url = f"{supabase_url}/storage/v1/object/ml-models/{filename}"
+    logger.info(f"⬇️  Downloading {filename} từ Supabase Storage...")
+
+    try:
+        resp = _req.get(
+            download_url,
+            headers={"Authorization": f"Bearer {service_key}"},
+            stream=True,
+            timeout=120,  # 2 phút timeout cho file ~22MB
+        )
+        resp.raise_for_status()
+
+        # Ghi file theo chunks để tiết kiệm RAM
+        total = int(resp.headers.get("content-length", 0))
+        downloaded = 0
+        with open(filename, "wb") as f:
+            for chunk in resp.iter_content(chunk_size=1024 * 256):  # 256KB chunks
+                f.write(chunk)
+                downloaded += len(chunk)
+
+        size_mb = downloaded / (1024 * 1024)
+        logger.info(f"✅ Downloaded {filename} thành công ({size_mb:.1f} MB)")
+        return True
+
+    except Exception as e:
+        logger.error(f"❌ Download {filename} thất bại: {e}")
+        # Xóa file lỗi nếu có
+        if os.path.exists(filename) and os.path.getsize(filename) == 0:
+            os.remove(filename)
+        return False
+
+
 # ============== LOAD YOLO MODEL ==============
 model: YOLO | None = None
 model_file: str = ""
@@ -67,13 +116,18 @@ def get_optimal_device():
 
 DEVICE = get_optimal_device()
 
+# Nếu best.pt chưa có (trên cloud) → tự động download từ Supabase Storage
+if not os.path.exists("best.pt"):
+    logger.info("📦 best.pt không tìm thấy → thử download từ Supabase Storage...")
+    _download_model_from_supabase("best.pt")
+
 try:
     if os.path.exists("best.pt"):
         logger.info("Loading custom trained model: best.pt")
         model = YOLO("best.pt")
         model_file = "best.pt"
     else:
-        logger.info("Loading default model: yolov8s.pt")
+        logger.warning("⚠️ best.pt không có → fallback sang yolov8s.pt (model chung, KHÔNG phải food model)")
         model = YOLO("yolov8s.pt")
         model_file = "yolov8s.pt"
     
