@@ -115,10 +115,10 @@ namespace EatFitAI.API.Services
 
         private bool EnsureSmtpConfigured(string missingConfigMessage)
         {
-            if (string.IsNullOrWhiteSpace(_settings.Host) ||
-                string.IsNullOrWhiteSpace(_settings.User) ||
-                string.IsNullOrWhiteSpace(_settings.Password) ||
-                string.IsNullOrWhiteSpace(_settings.FromEmail))
+            if (!HasConfiguredSmtpValue(_settings.Host) ||
+                !HasConfiguredSmtpValue(_settings.User) ||
+                !HasConfiguredSmtpValue(_settings.Password) ||
+                !HasConfiguredSmtpValue(_settings.FromEmail))
             {
                 if (_environment.IsProduction())
                 {
@@ -131,6 +131,22 @@ namespace EatFitAI.API.Services
             }
 
             return true;
+        }
+
+        private static bool HasConfiguredSmtpValue(string? value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return false;
+            }
+
+            return !string.Equals(value, "SET_IN_USER_SECRETS", StringComparison.OrdinalIgnoreCase)
+                && !string.Equals(value, "SET_IN_ENV_OR_SECRET_STORE", StringComparison.OrdinalIgnoreCase)
+                && !string.Equals(value, "REPLACE_WITH_USER_SECRET", StringComparison.OrdinalIgnoreCase)
+                && !string.Equals(value, "your-email@gmail.com", StringComparison.OrdinalIgnoreCase)
+                && !string.Equals(value, "your-email@example.com", StringComparison.OrdinalIgnoreCase)
+                && !string.Equals(value, "your-app-password", StringComparison.OrdinalIgnoreCase)
+                && !string.Equals(value, "your-app-password-or-smtp-password", StringComparison.OrdinalIgnoreCase);
         }
 
         private MimeMessage CreateMessage(string email, string subject, string body)
