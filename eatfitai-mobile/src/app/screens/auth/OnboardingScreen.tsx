@@ -29,7 +29,7 @@ import { glassStyles } from '../../../components/ui/GlassCard';
 import { useAppTheme } from '../../../theme/ThemeProvider';
 import { useProfileStore } from '../../../store/useProfileStore';
 import { AUTH_NEEDS_ONBOARDING_KEY, useAuthStore } from '../../../store/useAuthStore';
-import apiClient from '../../../services/apiClient';
+import apiClient, { aiApiClient } from '../../../services/apiClient';
 import { profileService } from '../../../services/profileService';
 import { showSuccess } from '../../../utils/errorHandler';
 import { t } from '../../../i18n/vi';
@@ -239,7 +239,7 @@ const OnboardingScreen = (): React.ReactElement => {
       const activityMultiplier =
         ACTIVITY_OPTIONS.find((option) => option.value === data.activityLevel)?.multiplier ?? 1.55;
 
-      const response = await apiClient.post<NutritionCalculationResult>('/api/ai/nutrition/recalculate', {
+      const response = await aiApiClient.post<NutritionCalculationResult>('/api/ai/nutrition/recalculate', {
         sex: data.gender,
         age: Number(data.age),
         heightCm: Number(data.heightCm),

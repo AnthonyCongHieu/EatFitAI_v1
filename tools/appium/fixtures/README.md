@@ -26,3 +26,11 @@ Rules for those images:
 - under `10MB`
 
 The fixture folder stays empty in git except for `.gitkeep`; add the actual images locally.
+
+Provision the missing scan-demo bundle from fixed Wikimedia Commons sources:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\tools\appium\fixtures\provision-scan-demo.ps1
+```
+
+The command downloads the real images locally into `tools/appium/fixtures/scan-demo` and writes a `fixture-sources.json` file next to them for traceability.

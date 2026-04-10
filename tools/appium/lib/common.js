@@ -10,6 +10,14 @@ const APPIUM_PORT = Number(process.env.APPIUM_PORT || 4723);
 const APP_PACKAGE = 'com.eatfitai.app';
 const APP_ACTIVITY = 'com.eatfitai.app.MainActivity';
 const ARTIFACT_DIR = path.resolve(__dirname, '..', '..', '..', 'artifacts', 'appium');
+const REPO_ROOT = path.resolve(__dirname, '..', '..', '..');
+const FALLBACK_ADB_PATH = path.resolve(
+  REPO_ROOT,
+  '_tooling',
+  'android-sdk',
+  'platform-tools',
+  process.platform === 'win32' ? 'adb.exe' : 'adb',
+);
 const TEST_IDS = loadTestIds();
 const KNOWN_ENTRY_IDS = [
   TEST_IDS.auth.introScreen,
@@ -221,8 +229,9 @@ async function loginIfNeeded(driver) {
 function runAdb(args) {
   const serial = process.env.ANDROID_SERIAL;
   const finalArgs = serial ? ['-s', serial, ...args] : args;
+  const adbPath = process.env.ANDROID_ADB_PATH || (fs.existsSync(FALLBACK_ADB_PATH) ? FALLBACK_ADB_PATH : 'adb');
 
-  execFileSync('adb', finalArgs, {
+  execFileSync(adbPath, finalArgs, {
     stdio: 'inherit',
   });
 }

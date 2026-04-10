@@ -479,11 +479,17 @@ async function readVoiceDiaryEntry(backendUrl, token, parseBody, voiceCase) {
   const matches = entries.filter((entry) => {
     const entryMealType = normalizeMealTypeName(entry?.mealTypeName || entry?.mealTypeId);
     const mealMatches = !expectedMealType || entryMealType === expectedMealType;
-    const entryName = trim(
-      entry?.foodItemName || entry?.userDishName || entry?.recipeName || entry?.note || '',
-    ).toLowerCase();
+    const searchableText = [
+      entry?.foodItemName,
+      entry?.userDishName,
+      entry?.recipeName,
+      entry?.note,
+    ]
+      .map((value) => trim(value).toLowerCase())
+      .filter(Boolean)
+      .join(' ');
     const foodMatches =
-      expectedFoods.length === 0 || expectedFoods.some((food) => entryName.includes(food));
+      expectedFoods.length === 0 || expectedFoods.some((food) => searchableText.includes(food));
     return mealMatches && foodMatches;
   });
 

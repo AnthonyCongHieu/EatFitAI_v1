@@ -76,6 +76,7 @@ function runAdb(args, { allowFailure = false } = {}) {
 
 function prewarmAndroidApp() {
   runAdb(['wait-for-device']);
+  runAdb(['reverse', 'tcp:8081', 'tcp:8081'], { allowFailure: true });
   const permissions = [
     'android.permission.CAMERA',
     'android.permission.RECORD_AUDIO',
