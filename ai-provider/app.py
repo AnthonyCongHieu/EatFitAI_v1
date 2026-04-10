@@ -142,7 +142,7 @@ def root() -> Dict[str, Any]:
     return {
         "service": "ai-provider", 
         "version": "2.0.0-cloud",
-        "endpoints": ["/healthz", "/detect", "/nutrition-advice", "/meal-insight", "/cooking-instructions"]
+        "endpoints": ["/healthz", "/healthz/gemini", "/detect", "/nutrition-advice", "/meal-insight", "/cooking-instructions"]
     }
 
 @app.get("/healthz")
@@ -163,6 +163,18 @@ def healthz() -> Dict[str, Any]:
         "llm_provider": "gemini",
         **gemini_status,
     }
+
+
+@app.get("/healthz/gemini")
+def healthz_gemini():
+    gemini_status = _get_gemini_health_status()
+    http_status = 200 if gemini_status.get("gemini_configured") else 503
+    return jsonify(
+        {
+            "status": "ok" if gemini_status.get("gemini_configured") else "degraded",
+            **gemini_status,
+        }
+    ), http_status
 
 
 def _get_gemini_health_status() -> Dict[str, Any]:

@@ -62,13 +62,33 @@ services:
     envVars:
       - key: GEMINI_API_KEY
         sync: false
+      - key: GEMINI_API_KEY_PROJECT_ID
+        sync: false
+      - key: GEMINI_API_KEY_PROJECT_ALIAS
+        sync: false
+      - key: GEMINI_API_KEY_ALIAS
+        sync: false
+      - key: GEMINI_EXTRA_KEY_POOL_JSON
+        sync: false
+      - key: GEMINI_EXHAUSTED_PROJECT_IDS
+        sync: false
+      - key: GEMINI_EXHAUSTED_UNTIL
+        sync: false
       - key: GEMINI_MODEL
         value: gemini-2.5-flash
       - key: GEMINI_KEY_POOL_JSON
         sync: false
+      - key: GEMINI_RPM_LIMIT
+        value: "5"
+      - key: GEMINI_TPM_LIMIT
+        value: "250000"
+      - key: GEMINI_RPD_LIMIT
+        value: "20"
       - key: GEMINI_TIMEOUT_SECONDS
         value: "30"
       - key: GEMINI_SHORT_COOLDOWN_SECONDS
         value: "90"
+      - key: GEMINI_USAGE_STATE_PATH
+        value: uploads/gemini-usage-state.json
       - key: ENABLE_STT
         value: "false"
