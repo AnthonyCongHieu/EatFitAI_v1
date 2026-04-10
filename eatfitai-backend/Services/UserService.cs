@@ -66,7 +66,6 @@ namespace EatFitAI.API.Services
             // Update only allowed fields
             user.DisplayName = userDto.DisplayName;
 
-            _userRepository.Update(user);
             await _context.SaveChangesAsync();
 
             return _mapper.Map<UserDto>(user);
@@ -179,8 +178,6 @@ namespace EatFitAI.API.Services
             if (userProfileDto.TargetWeightKg.HasValue)
                 user.TargetWeightKg = userProfileDto.TargetWeightKg;
             
-            _userRepository.Update(user);
-
             if (userProfileDto.AvatarUrl != null)
             {
                 await EnsureAvatarUrlColumnAsync();
@@ -230,7 +227,6 @@ namespace EatFitAI.API.Services
 
             var avatarUrl = await SaveAvatarAsync(file, userId, uploadsRoot);
             user.AvatarUrl = avatarUrl;
-            _userRepository.Update(user);
             await EnsureAvatarUrlColumnAsync();
             await _context.SaveChangesAsync();
 

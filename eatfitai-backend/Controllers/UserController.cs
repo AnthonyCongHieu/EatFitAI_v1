@@ -49,6 +49,15 @@ namespace EatFitAI.API.Controllers
             {
                 return NotFound(new { message = ex.Message });
             }
+            catch (Exception ex)
+            {
+                var baseException = ex.GetBaseException();
+                return StatusCode(StatusCodes.Status500InternalServerError, new
+                {
+                    message = "Đã xảy ra lỗi khi cập nhật hồ sơ.",
+                    error = baseException.Message
+                });
+            }
         }
 
         [HttpPost("profile/avatar")]
@@ -85,10 +94,11 @@ namespace EatFitAI.API.Controllers
             }
             catch (Exception ex)
             {
+                var baseException = ex.GetBaseException();
                 return StatusCode(StatusCodes.Status500InternalServerError, new
                 {
                     message = "Đã xảy ra lỗi khi tải avatar.",
-                    error = ex.Message
+                    error = baseException.Message
                 });
             }
         }
