@@ -43,6 +43,8 @@ namespace EatFitAI.Services
             { "xế", MealType.Snack },      // Thêm xế → Snack
             { "bữa phụ", MealType.Snack },
             { "bua phu", MealType.Snack },
+            { "phu", MealType.Snack },
+            { "snack", MealType.Snack },
             { "ăn vặt", MealType.Snack },
             { "an vat", MealType.Snack },
         };
@@ -102,7 +104,7 @@ namespace EatFitAI.Services
         {
             // Pattern: ghi/thêm/ăn/log [số] [món] vào [bữa] [sáng/trưa/tối/chiều]
             var pattern =
-                @"(?:ghi|thêm|them|ăn|an|log)\s+(.+?)\s+(?:(?:vào|vao)\s+)?(?:(?:bữa|bua)\s+)?(sáng|sang|trưa|trua|tối|toi|chiều|chieu)";
+                @"(?:ghi|thêm|them|ăn|an|log)\s+(.+?)\s+(?:(?:vào|vao)\s+)?(?:(?:bữa|bua)\s+)?(sáng|sang|trưa|trua|tối|toi|chiều|chieu|phụ|phu|snack)";
             var match = Regex.Match(lowerText, pattern, RegexOptions.IgnoreCase);
 
             if (match.Success)

@@ -168,6 +168,7 @@ const HomeScreen = (): React.ReactElement => {
     navigation.navigate('FoodSearch', {
       autoFocus: true,
       showQuickSuggestions: true,
+      returnToDiaryOnSave: true,
     });
   }, [navigation]);
 
@@ -506,6 +507,7 @@ const HomeScreen = (): React.ReactElement => {
             },
           ]}
           onPress={() => setShowAddModal(true)}
+          delayLongPress={1200}
           onLongPress={() => {
             // Voice integration - chuyển đến VoiceScreen tab
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);

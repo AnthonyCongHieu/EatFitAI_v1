@@ -39,18 +39,6 @@ tags:
 - tapOn:
     id: food-search-add-first-item-button
     retryTapIfNoChange: true
-- back
-- extendedWaitUntil:
-    visible:
-      id: home-screen
-    timeout: 20000
-- runFlow:
-    file: ../subflows/scroll-to-element.yaml
-    env:
-      TARGET_ID: home-view-diary-button
-- tapOn:
-    id: home-view-diary-button
-    retryTapIfNoChange: true
 - extendedWaitUntil:
     visible:
       id: meal-diary-screen

@@ -14,6 +14,7 @@ import { useAppTheme } from '../../theme/ThemeProvider';
 import type { RootStackParamList } from '../../app/types';
 import QuickAddHub from '../home/QuickAddHub';
 import { TEST_IDS } from '../../testing/testIds';
+import { t } from '../../i18n/vi';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -56,7 +57,7 @@ export const SmartAddSheet: React.FC<SmartAddSheetProps> = ({ visible, onClose }
             style={StyleSheet.absoluteFill}
             onPress={onClose}
             accessibilityRole="button"
-            accessibilityLabel="Đóng quick add hub"
+            accessibilityLabel="Đóng bảng thêm nhanh"
           />
         </Animated.View>
 
@@ -79,6 +80,7 @@ export const SmartAddSheet: React.FC<SmartAddSheetProps> = ({ visible, onClose }
               navigateAfterClose('FoodSearch', {
                 autoFocus: true,
                 showQuickSuggestions: true,
+                returnToDiaryOnSave: true,
               })
             }
             onScan={() => navigateAfterClose('AiCamera')}
@@ -95,8 +97,30 @@ export const SmartAddSheet: React.FC<SmartAddSheetProps> = ({ visible, onClose }
 
           <View style={styles.utilitySection}>
             <ThemedText variant="bodySmall" color="textSecondary">
-              Cách thêm khác
+              Lối vào khác
             </ThemedText>
+
+            <Pressable
+              testID={TEST_IDS.home.quickAccessDiaryButton}
+              accessibilityRole="button"
+              accessibilityLabel={t('home.diary_today')}
+              accessibilityHint="Mở nhật ký để kiểm tra và chỉnh sửa bữa ăn hôm nay"
+              style={[
+                styles.primaryUtilityButton,
+                {
+                  backgroundColor: theme.colors.primary + '14',
+                  borderColor: theme.colors.primary + '35',
+                },
+              ]}
+              onPress={() => navigateAfterClose('MealDiary')}
+            >
+              <ThemedText variant="body" weight="700" color="primary">
+                {t('home.diary_today')}
+              </ThemedText>
+              <ThemedText variant="bodySmall" color="textSecondary">
+                {t('home.see_all')}
+              </ThemedText>
+            </Pressable>
 
             <View style={styles.utilityRow}>
               <Pressable
@@ -104,7 +128,7 @@ export const SmartAddSheet: React.FC<SmartAddSheetProps> = ({ visible, onClose }
                 onPress={() => navigateAfterClose('FoodSearch', { initialTab: 'favorites' })}
               >
                 <ThemedText variant="bodySmall" weight="600">
-                  Yêu thích
+                  {t('food_search.tab_favorites')}
                 </ThemedText>
               </Pressable>
               <Pressable
@@ -112,7 +136,7 @@ export const SmartAddSheet: React.FC<SmartAddSheetProps> = ({ visible, onClose }
                 onPress={() => navigateAfterClose('CustomDish')}
               >
                 <ThemedText variant="bodySmall" weight="600">
-                  Món tự tạo
+                  {t('home.createCustom')}
                 </ThemedText>
               </Pressable>
             </View>
@@ -144,6 +168,13 @@ const styles = StyleSheet.create({
   utilitySection: {
     gap: 12,
   },
+  primaryUtilityButton: {
+    borderWidth: 1,
+    borderRadius: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    gap: 4,
+  },
   utilityRow: {
     flexDirection: 'row',
     gap: 12,
@@ -159,4 +190,3 @@ const styles = StyleSheet.create({
 });
 
 export default SmartAddSheet;
-

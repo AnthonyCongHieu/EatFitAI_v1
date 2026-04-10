@@ -41,6 +41,7 @@ export const TEST_IDS = {
     quickAddScanButton: 'home-quick-add-scan-button',
     quickAddVoiceButton: 'home-quick-add-voice-button',
     diaryButton: 'home-view-diary-button',
+    quickAccessDiaryButton: 'home-open-diary-button',
     fabButton: 'home-smart-add-fab',
   },
   foodSearch: {

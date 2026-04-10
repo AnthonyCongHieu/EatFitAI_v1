@@ -218,6 +218,7 @@ function buildChecklistMarkdown(context) {
     '## Regression + metrics',
     '- Run `node .\\scripts\\production-smoke-seed-cloud.js` before authenticated cloud regression when the dedicated demo account needs a deterministic 7-day reset.',
     '- Run `node .\\scripts\\production-smoke-regression.js` after login credentials are available.',
+    '- On the emulator/VM, validate voice through the backend proxy contract (`/api/voice/parse -> /execute -> /confirm-weight`) instead of waiting on live microphone capture.',
     '- Run `node .\\scripts\\production-smoke-metrics.js` after filling session-observations.json.',
     '- Run `node .\\scripts\\production-smoke-rehearsal.js` after at least 3 completed sessions.',
     '',

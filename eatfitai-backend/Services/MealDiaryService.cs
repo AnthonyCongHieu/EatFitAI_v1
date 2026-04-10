@@ -116,6 +116,24 @@ namespace EatFitAI.API.Services
 
         public async Task DeleteMealDiaryAsync(int id, Guid userId)
         {
+            var providerName = _context.Database.ProviderName ?? string.Empty;
+            if (providerName.Contains("Npgsql", StringComparison.OrdinalIgnoreCase))
+            {
+                var utcNow = DateTime.UtcNow;
+                var affectedRows = await _context.MealDiaries
+                    .Where(mealDiary => mealDiary.MealDiaryId == id && mealDiary.UserId == userId && !mealDiary.IsDeleted)
+                    .ExecuteUpdateAsync(setters => setters
+                        .SetProperty(mealDiary => mealDiary.IsDeleted, _ => true)
+                        .SetProperty(mealDiary => mealDiary.UpdatedAt, _ => utcNow));
+
+                if (affectedRows == 0)
+                {
+                    throw new KeyNotFoundException("Meal diary entry not found");
+                }
+
+                return;
+            }
+
             var mealDiary = await _mealDiaryRepository.GetByIdAsync(id);
             if (mealDiary == null || mealDiary.UserId != userId || mealDiary.IsDeleted)
             {

@@ -6,12 +6,15 @@ tags:
 ---
 - runFlow:
     file: ../subflows/start-authenticated.yaml
-- runFlow:
-    file: ../subflows/scroll-to-element.yaml
-    env:
-      TARGET_ID: home-view-diary-button
 - tapOn:
-    id: home-view-diary-button
+    id: home-smart-add-fab
+    retryTapIfNoChange: true
+- extendedWaitUntil:
+    visible:
+      id: home-open-diary-button
+    timeout: 20000
+- tapOn:
+    id: home-open-diary-button
 - assertVisible:
     id: meal-diary-screen
 - assertVisible:

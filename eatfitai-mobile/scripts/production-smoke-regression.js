@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const { execFileSync } = require('child_process');
 
 const DEFAULT_BACKEND_URL = 'https://eatfitai-backend.onrender.com';
 const DEFAULT_OUTPUT_ROOT = path.resolve(__dirname, '..', '..', '_logs', 'production-smoke');
@@ -98,44 +99,78 @@ function guessMimeType(filePath) {
   }
 }
 
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 async function requestJson(url, options = {}) {
   const headers = {
     Accept: 'application/json',
     ...(options.headers || {}),
   };
-  const startedAtMs = Date.now();
+  const retryCount = Math.max(0, Number.parseInt(String(options.retryCount ?? 2), 10) || 0);
+  const retryDelayMs = Math.max(
+    200,
+    Number.parseInt(String(options.retryDelayMs ?? 1500), 10) || 1500,
+  );
+  let lastResult = null;
 
-  try {
-    const response = await fetch(url, {
-      method: options.method || 'GET',
-      headers,
-      body: options.body,
-    });
-    const durationMs = Date.now() - startedAtMs;
-    const rawText = await response.text();
-    let body = null;
+  for (let attempt = 0; attempt <= retryCount; attempt += 1) {
+    const startedAtMs = Date.now();
 
     try {
-      body = rawText ? JSON.parse(rawText) : null;
-    } catch {
-      body = null;
+      const response = await fetch(url, {
+        method: options.method || 'GET',
+        headers,
+        body: options.body,
+      });
+      const durationMs = Date.now() - startedAtMs;
+      const rawText = await response.text();
+      let body = null;
+
+      try {
+        body = rawText ? JSON.parse(rawText) : null;
+      } catch {
+        body = null;
+      }
+
+      lastResult = {
+        ok: response.ok,
+        status: response.status,
+        durationMs,
+        body,
+        rawText: body ? undefined : rawText,
+      };
+
+      const shouldRetryStatus =
+        !response.ok && [408, 425, 429, 500, 502, 503, 504].includes(response.status);
+      if (!shouldRetryStatus || attempt === retryCount) {
+        return lastResult;
+      }
+    } catch (error) {
+      lastResult = {
+        ok: false,
+        status: null,
+        durationMs: Date.now() - startedAtMs,
+        error: error instanceof Error ? error.message : String(error),
+      };
+
+      if (attempt === retryCount) {
+        return lastResult;
+      }
     }
 
-    return {
-      ok: response.ok,
-      status: response.status,
-      durationMs,
-      body,
-      rawText: body ? undefined : rawText,
-    };
-  } catch (error) {
-    return {
+    await sleep(retryDelayMs * (attempt + 1));
+  }
+
+  return (
+    lastResult || {
       ok: false,
       status: null,
-      durationMs: Date.now() - startedAtMs,
-      error: error instanceof Error ? error.message : String(error),
-    };
-  }
+      durationMs: 0,
+      error: 'request failed without result',
+    }
+  );
 }
 
 async function requestMultipart(url, filePath, token) {
@@ -151,6 +186,55 @@ async function requestMultipart(url, filePath, token) {
     },
     body: formData,
   });
+}
+
+function prepareFixtureForUpload(filePath, outputDir) {
+  const extension = path.extname(filePath).toLowerCase();
+  const supportedImage = ['.jpg', '.jpeg', '.png', '.webp', '.bmp'].includes(extension);
+  const originalSize = fs.statSync(filePath).size;
+  if (!supportedImage) {
+    return { uploadPath: filePath, originalSize, uploadSize: originalSize, optimized: false };
+  }
+
+  const tempDir = path.join(outputDir, '.tmp-fixtures');
+  fs.mkdirSync(tempDir, { recursive: true });
+  const tempFilePath = path.join(
+    tempDir,
+    `${path.parse(filePath).name}-mobile-upload.jpg`,
+  );
+  const pythonScript = [
+    'from PIL import Image',
+    'import sys',
+    'src, dst = sys.argv[1], sys.argv[2]',
+    'img = Image.open(src)',
+    'max_width = 800',
+    'if img.width > max_width:',
+    '    ratio = max_width / float(img.width)',
+    '    img = img.resize((max_width, max(1, int(img.height * ratio))))',
+    "img = img.convert('RGB')",
+    "img.save(dst, format='JPEG', quality=70, optimize=True)",
+  ].join('\n');
+
+  try {
+    execFileSync('python', ['-c', pythonScript, filePath, tempFilePath], {
+      stdio: 'pipe',
+    });
+    const uploadSize = fs.statSync(tempFilePath).size;
+    return {
+      uploadPath: tempFilePath,
+      originalSize,
+      uploadSize,
+      optimized: tempFilePath !== filePath,
+    };
+  } catch (error) {
+    return {
+      uploadPath: filePath,
+      originalSize,
+      uploadSize: originalSize,
+      optimized: false,
+      optimizationError: error instanceof Error ? error.message : String(error),
+    };
+  }
 }
 
 function resolveFixtureDir(outputDir, manifest) {
@@ -372,7 +456,7 @@ async function readVoiceDiaryEntry(backendUrl, token, parseBody, voiceCase) {
   };
 
   const response = await requestJson(
-    `${backendUrl}/api/mealdiary?date=${encodeURIComponent(dateOnly)}`,
+    `${backendUrl}/api/meal-diary?date=${encodeURIComponent(dateOnly)}`,
     {
       method: 'GET',
       headers: {
@@ -695,7 +779,12 @@ async function runScanCases(backendUrl, manifest, token, fixtureDir, outputDir) 
       }
 
       recordBudgetHit(outputDir, 'visionDetect', 1, `regression detect ${bucket}:${fixture.key}`);
-      const response = await requestMultipart(`${backendUrl}/api/ai/vision/detect`, filePath, token);
+      const upload = prepareFixtureForUpload(filePath, outputDir);
+      const response = await requestMultipart(
+        `${backendUrl}/api/ai/vision/detect`,
+        upload.uploadPath,
+        token,
+      );
       const items = Array.isArray(response.body?.items) ? response.body.items : [];
       const unmappedLabels = Array.isArray(response.body?.unmappedLabels)
         ? response.body.unmappedLabels
@@ -704,6 +793,11 @@ async function runScanCases(backendUrl, manifest, token, fixtureDir, outputDir) 
 
       result.status = response.status;
       result.latencyMs = response.durationMs;
+      result.uploadPath = upload.uploadPath;
+      result.originalBytes = upload.originalSize;
+      result.uploadBytes = upload.uploadSize;
+      result.optimizedUpload = upload.optimized;
+      result.optimizationError = upload.optimizationError || null;
       result.mappedCount = items.filter((item) => Boolean(item?.isMatched ?? item?.foodItemId)).length;
       result.unmappedCount = unmappedLabels.length;
       result.usableResult = usableResult;

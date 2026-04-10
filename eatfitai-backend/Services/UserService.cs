@@ -6,6 +6,7 @@ using EatFitAI.API.Repositories.Interfaces;
 using EatFitAI.API.Services.Interfaces;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.Extensions.Hosting;
 
 namespace EatFitAI.API.Services
@@ -180,6 +181,11 @@ namespace EatFitAI.API.Services
             
             _userRepository.Update(user);
 
+            if (userProfileDto.AvatarUrl != null)
+            {
+                await EnsureAvatarUrlColumnAsync();
+            }
+
             // Check if metrics changed
             if (userProfileDto.CurrentHeightCm.HasValue || userProfileDto.CurrentWeightKg.HasValue)
             {
@@ -225,6 +231,7 @@ namespace EatFitAI.API.Services
             var avatarUrl = await SaveAvatarAsync(file, userId, uploadsRoot);
             user.AvatarUrl = avatarUrl;
             _userRepository.Update(user);
+            await EnsureAvatarUrlColumnAsync();
             await _context.SaveChangesAsync();
 
             return avatarUrl;
@@ -328,6 +335,32 @@ namespace EatFitAI.API.Services
             await file.CopyToAsync(stream);
 
             return $"/uploads/avatars/{fileName}";
+        }
+
+        private async Task EnsureAvatarUrlColumnAsync(CancellationToken cancellationToken = default)
+        {
+            if (!_context.Database.IsRelational())
+            {
+                return;
+            }
+
+            var entityType = _context.Model.FindEntityType(typeof(User));
+            var tableName = entityType?.GetTableName();
+            if (string.IsNullOrWhiteSpace(tableName))
+            {
+                return;
+            }
+
+            var schema = entityType?.GetSchema();
+            var storeObject = StoreObjectIdentifier.Table(tableName, schema);
+            var avatarProperty = entityType?.FindProperty(nameof(User.AvatarUrl));
+            var columnName = avatarProperty?.GetColumnName(storeObject) ?? nameof(User.AvatarUrl);
+            var qualifiedTableName = string.IsNullOrWhiteSpace(schema)
+                ? $"\"{tableName}\""
+                : $"\"{schema}\".\"{tableName}\"";
+            var ddl = $"ALTER TABLE {qualifiedTableName} ADD COLUMN IF NOT EXISTS \"{columnName}\" text NULL";
+
+            await _context.Database.ExecuteSqlRawAsync(ddl, cancellationToken);
         }
     }
 }

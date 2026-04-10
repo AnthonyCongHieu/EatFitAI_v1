@@ -30,11 +30,36 @@ function getBudgetFilePath(outputDir) {
   return path.join(outputDir, 'request-budget.json');
 }
 
-function createBudgetDocument() {
+function buildLimits(outputDir) {
+  const limits = { ...DEFAULT_LIMITS };
+  const manifestPath = path.join(outputDir, 'fixture-manifest.json');
+
+  if (!fs.existsSync(manifestPath)) {
+    return limits;
+  }
+
+  try {
+    const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+    const totalVisionFixtures = ['primary', 'benchmark']
+      .map((bucket) => (Array.isArray(manifest.fixtures?.[bucket]) ? manifest.fixtures[bucket].length : 0))
+      .reduce((sum, count) => sum + count, 0);
+
+    if (totalVisionFixtures > 0) {
+      limits.visionDetect = Math.max(limits.visionDetect, totalVisionFixtures);
+    }
+  } catch {
+    // Keep static defaults when fixture manifest is absent or malformed.
+  }
+
+  return limits;
+}
+
+function createBudgetDocument(outputDir) {
+  const limits = buildLimits(outputDir);
   return {
     generatedAt: new Date().toISOString(),
-    limits: DEFAULT_LIMITS,
-    used: Object.fromEntries(Object.keys(DEFAULT_LIMITS).map((key) => [key, 0])),
+    limits,
+    used: Object.fromEntries(Object.keys(limits).map((key) => [key, 0])),
     events: [],
   };
 }
@@ -44,7 +69,7 @@ function ensureBudget(outputDir) {
   const budgetFilePath = getBudgetFilePath(outputDir);
 
   if (!fs.existsSync(budgetFilePath)) {
-    fs.writeFileSync(budgetFilePath, JSON.stringify(createBudgetDocument(), null, 2), 'utf8');
+    fs.writeFileSync(budgetFilePath, JSON.stringify(createBudgetDocument(outputDir), null, 2), 'utf8');
   }
 
   return budgetFilePath;

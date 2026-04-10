@@ -222,6 +222,7 @@ function summarizeVoice(regression) {
     parseLatencyP95Ms: percentile(parseLatencies, 95),
     executeLatencyAvgMs: average(executeLatencies),
     executeLatencyP95Ms: percentile(executeLatencies, 95),
+    validationMode: 'backend-proxy-text',
     audioSttReleaseGate: false,
     gatePass:
       entries.length > 0 &&
@@ -327,6 +328,7 @@ function buildMarkdown(report) {
     `- Preflight pass: ${report.gates.preflightPass ? 'yes' : 'no'}`,
     `- Search gate: ${report.gates.searchPass ? 'yes' : 'no'}`,
     `- Voice gate: ${report.gates.voiceGatePass ? 'yes' : 'no'}`,
+    `- Voice validation mode: ${report.productMetrics.voice.validationMode}`,
     `- Scan-to-save gate: ${report.gates.scanGatePass ? 'yes' : 'no'}`,
     `- Nutrition apply gate: ${report.gates.nutritionGatePass ? 'yes' : 'no'}`,
     `- Risk scenarios pass: ${report.gates.riskScenariosPass ? 'yes' : 'no'}`,
@@ -347,6 +349,7 @@ function buildMarkdown(report) {
     `- Voice diary readback: ${report.productMetrics.voice.diaryReadbackPassed ?? 'n/a'} / ${report.productMetrics.voice.diaryReadbackAttempted ?? 'n/a'}`,
     `- Voice parse latency avg/p95: ${report.productMetrics.voice.parseLatencyAvgMs ?? 'n/a'} / ${report.productMetrics.voice.parseLatencyP95Ms ?? 'n/a'} ms`,
     `- Voice execute latency avg/p95: ${report.productMetrics.voice.executeLatencyAvgMs ?? 'n/a'} / ${report.productMetrics.voice.executeLatencyP95Ms ?? 'n/a'} ms`,
+    '- Voice gate on VM uses backend proxy parse/execute/confirm-weight instead of live microphone capture.',
     `- Nutrition suggest success rate: ${report.productMetrics.nutrition.suggestSuccessRate ?? 'n/a'}%`,
     `- Nutrition apply success rate: ${report.productMetrics.nutrition.applySuccessRate ?? 'n/a'}%`,
     '',

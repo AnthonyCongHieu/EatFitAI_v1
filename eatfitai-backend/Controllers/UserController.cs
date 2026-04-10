@@ -83,6 +83,14 @@ namespace EatFitAI.API.Controllers
             {
                 return NotFound(new { message = ex.Message });
             }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, new
+                {
+                    message = "Đã xảy ra lỗi khi tải avatar.",
+                    error = ex.Message
+                });
+            }
         }
 
         [HttpPost("body-metrics")]

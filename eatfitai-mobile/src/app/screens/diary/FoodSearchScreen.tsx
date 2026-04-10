@@ -454,6 +454,9 @@ const FoodSearchScreen = (): React.ReactElement => {
         text2: `${item.name} (100g) - ${item.calories || 0} kcal`,
       });
       await invalidateDiaryQueries(queryClient);
+      if (returnToDiaryOnSave) {
+        navigation.replace('MealDiary', selectedDate ? { selectedDate } : undefined);
+      }
     } catch (error) {
       handleApiError(error);
     } finally {
