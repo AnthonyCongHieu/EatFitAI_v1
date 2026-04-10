@@ -104,6 +104,30 @@ const NutritionInsightsScreen = (): React.ReactElement => {
     void loadData();
   }, []);
 
+  const formatTargetMetric = (value: number | null | undefined): string =>
+    typeof value === 'number' && Number.isFinite(value) && value > 0
+      ? String(Math.round(value))
+      : '--';
+
+  const hasCompleteTarget = (
+    target:
+      | AdaptiveTarget['currentTarget']
+      | AdaptiveTarget['suggestedTarget']
+      | null
+      | undefined,
+  ): boolean =>
+    Boolean(
+      target &&
+        typeof target.targetCalories === 'number' &&
+        target.targetCalories > 0 &&
+        typeof target.targetProtein === 'number' &&
+        target.targetProtein > 0 &&
+        typeof target.targetCarbs === 'number' &&
+        target.targetCarbs > 0 &&
+        typeof target.targetFat === 'number' &&
+        target.targetFat > 0,
+    );
+
   const loadData = async () => {
     setLoading(true);
     setError(null);
@@ -164,7 +188,7 @@ const NutritionInsightsScreen = (): React.ReactElement => {
   };
 
   const applyAdaptiveTarget = async () => {
-    if (!adaptiveTarget) return;
+    if (!adaptiveTarget || !hasCompleteTarget(adaptiveTarget.suggestedTarget)) return;
     setApplying(true);
     try {
       await aiService.applyAdaptiveTarget(adaptiveTarget.suggestedTarget);
@@ -551,7 +575,9 @@ const NutritionInsightsScreen = (): React.ReactElement => {
           </>
         )}
 
-        {adaptiveTarget && adaptiveTarget.confidenceScore > 50 && (
+        {adaptiveTarget &&
+          adaptiveTarget.confidenceScore > 50 &&
+          hasCompleteTarget(adaptiveTarget.suggestedTarget) && (
           <>
             <ThemedText variant="h3" style={styles.sectionTitle}>
               {t('nutrition_insights.adaptive_title')}
@@ -581,7 +607,7 @@ const NutritionInsightsScreen = (): React.ReactElement => {
                     {t('nutrition_insights.current')}
                   </ThemedText>
                   <ThemedText variant="h2">
-                    {adaptiveTarget.currentTarget.targetCalories}
+                    {formatTargetMetric(adaptiveTarget.currentTarget.targetCalories)}
                   </ThemedText>
                   <ThemedText variant="caption" color="textSecondary">
                     kcal
@@ -611,7 +637,7 @@ const NutritionInsightsScreen = (): React.ReactElement => {
                     {t('nutrition_insights.suggested')}
                   </ThemedText>
                   <ThemedText variant="h2" color="primary">
-                    {adaptiveTarget.suggestedTarget.targetCalories}
+                    {formatTargetMetric(adaptiveTarget.suggestedTarget.targetCalories)}
                   </ThemedText>
                   <ThemedText variant="caption" color="primary">
                     kcal

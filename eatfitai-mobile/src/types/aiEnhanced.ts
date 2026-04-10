@@ -64,10 +64,10 @@ export interface NutritionInsight {
 }
 
 export interface NutritionTargetDto {
-  targetCalories: number;
-  targetProtein: number;
-  targetCarbs: number;
-  targetFat: number;
+  targetCalories: number | null;
+  targetProtein: number | null;
+  targetCarbs: number | null;
+  targetFat: number | null;
 }
 
 export interface NutritionRecommendation {

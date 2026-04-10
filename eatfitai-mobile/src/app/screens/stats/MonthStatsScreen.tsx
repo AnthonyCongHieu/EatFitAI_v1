@@ -183,9 +183,29 @@ const MonthStatsScreen = (): React.ReactElement => {
   }, [monthData]);
 
   const maxCalories = useMemo(() => {
-    if (!monthData?.days.length) return 2000;
-    return Math.max(...monthData.days.map((d) => d.calories), 2000);
+    if (!monthData?.days.length) return 1;
+    const maxLoggedCalories = Math.max(...monthData.days.map((d) => Math.max(d.calories, 0)));
+    return maxLoggedCalories > 0 ? maxLoggedCalories : 1;
   }, [monthData]);
+
+  const trackedTargetDays = useMemo(
+    () =>
+      monthData?.days.filter(
+        (d) => typeof d.targetCalories === 'number' && d.targetCalories > 0,
+      ).length ?? 0,
+    [monthData],
+  );
+
+  const targetHitDays = useMemo(
+    () =>
+      monthData?.days.filter(
+        (d) =>
+          typeof d.targetCalories === 'number' &&
+          d.targetCalories > 0 &&
+          d.calories >= d.targetCalories * 0.9,
+      ).length ?? 0,
+    [monthData],
+  );
 
   const getHeatmapColor = (calories: number): string => {
     if (calories === 0) return theme.colors.border + '30';
@@ -548,10 +568,7 @@ const MonthStatsScreen = (): React.ReactElement => {
                     weight="700"
                     style={{ color: theme.statsCards.target.textColor }}
                   >
-                    {monthData.days.filter(d => {
-                      const target = d.targetCalories || 2000;
-                      return d.calories >= target * 0.9;
-                    }).length}/{monthData.daysLogged}
+                    {trackedTargetDays > 0 ? `${targetHitDays}/${trackedTargetDays}` : '--'}
                   </ThemedText>
                   <ThemedText variant="caption" color="textSecondary">
                     {'Đạt mục tiêu'}

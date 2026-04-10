@@ -171,10 +171,10 @@ const normalizeNutritionInsight = (data: any): NutritionInsight => ({
   averageDailyCarbs: toNumberOr(data?.averageDailyCarbs, 0),
   averageDailyFat: toNumberOr(data?.averageDailyFat, 0),
   currentTarget: {
-    targetCalories: toNumberOr(data?.currentTarget?.targetCalories, 2000),
-    targetProtein: toNumberOr(data?.currentTarget?.targetProtein, 150),
-    targetCarbs: toNumberOr(data?.currentTarget?.targetCarbs, 200),
-    targetFat: toNumberOr(data?.currentTarget?.targetFat, 60),
+    targetCalories: toNumber(data?.currentTarget?.targetCalories),
+    targetProtein: toNumber(data?.currentTarget?.targetProtein),
+    targetCarbs: toNumber(data?.currentTarget?.targetCarbs),
+    targetFat: toNumber(data?.currentTarget?.targetFat),
   },
   recommendations: Array.isArray(data?.recommendations) ? data.recommendations : [],
   mealTimingInsight: data?.mealTimingInsight,
@@ -191,16 +191,16 @@ const normalizeNutritionInsight = (data: any): NutritionInsight => ({
 
 const normalizeAdaptiveTarget = (data: any): AdaptiveTarget => ({
   currentTarget: {
-    targetCalories: toNumberOr(data?.currentTarget?.targetCalories, 2000),
-    targetProtein: toNumberOr(data?.currentTarget?.targetProtein, 150),
-    targetCarbs: toNumberOr(data?.currentTarget?.targetCarbs, 200),
-    targetFat: toNumberOr(data?.currentTarget?.targetFat, 60),
+    targetCalories: toNumber(data?.currentTarget?.targetCalories),
+    targetProtein: toNumber(data?.currentTarget?.targetProtein),
+    targetCarbs: toNumber(data?.currentTarget?.targetCarbs),
+    targetFat: toNumber(data?.currentTarget?.targetFat),
   },
   suggestedTarget: {
-    targetCalories: toNumberOr(data?.suggestedTarget?.targetCalories, 2000),
-    targetProtein: toNumberOr(data?.suggestedTarget?.targetProtein, 150),
-    targetCarbs: toNumberOr(data?.suggestedTarget?.targetCarbs, 200),
-    targetFat: toNumberOr(data?.suggestedTarget?.targetFat, 60),
+    targetCalories: toNumber(data?.suggestedTarget?.targetCalories),
+    targetProtein: toNumber(data?.suggestedTarget?.targetProtein),
+    targetCarbs: toNumber(data?.suggestedTarget?.targetCarbs),
+    targetFat: toNumber(data?.suggestedTarget?.targetFat),
   },
   adjustmentReasons: Array.isArray(data?.adjustmentReasons)
     ? data.adjustmentReasons.map((reason: unknown) => String(reason))

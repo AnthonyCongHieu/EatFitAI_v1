@@ -63,7 +63,12 @@ export const CalendarHeatmap: React.FC<CalendarHeatmapProps> = ({
 
     // Find max calories for intensity
     const maxCalories = React.useMemo(() => {
-        return Math.max(...data.map(d => d.calories), 2000);
+        if (data.length === 0) {
+            return 1;
+        }
+
+        const maxLoggedCalories = Math.max(...data.map(d => Math.max(d.calories, 0)));
+        return maxLoggedCalories > 0 ? maxLoggedCalories : 1;
     }, [data]);
 
     const getHeatColor = (calories: number) => {

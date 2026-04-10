@@ -141,6 +141,37 @@ namespace EatFitAI.API.Tests.Integration.Controllers
             Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
         }
 
+        [Fact]
+        public async Task DeleteMealDiary_DeletedEntryIsExcludedFromDateReadback()
+        {
+            var client = await CreateAuthenticatedClientAsync();
+            var eatenDate = DateTime.Today;
+            var createRequest = new CreateMealDiaryRequest
+            {
+                EatenDate = eatenDate,
+                MealTypeId = await GetAnyMealTypeIdAsync(),
+                FoodItemId = await GetAnyFoodItemIdAsync(),
+                Grams = 180
+            };
+
+            var createResponse = await client.PostAsJsonAsync("/api/meal-diary", createRequest);
+
+            createResponse.EnsureSuccessStatusCode();
+            var created = await createResponse.Content.ReadFromJsonAsync<MealDiaryDto>();
+            Assert.NotNull(created);
+
+            var deleteResponse = await client.DeleteAsync($"/api/meal-diary/{created!.MealDiaryId}");
+
+            Assert.Equal(HttpStatusCode.NoContent, deleteResponse.StatusCode);
+
+            var readbackResponse = await client.GetAsync($"/api/meal-diary?date={eatenDate:yyyy-MM-dd}");
+
+            readbackResponse.EnsureSuccessStatusCode();
+            var readback = await readbackResponse.Content.ReadFromJsonAsync<List<MealDiaryDto>>();
+            Assert.NotNull(readback);
+            Assert.DoesNotContain(readback, item => item.MealDiaryId == created.MealDiaryId);
+        }
+
         private async Task<HttpClient> CreateAuthenticatedClientAsync(Guid? userId = null)
         {
             var effectiveUserId = userId ?? Guid.NewGuid();
