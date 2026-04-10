@@ -1,31 +1,28 @@
-// Màn hình tạo món ăn thủ công
-
 import { useCallback, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { Controller, useForm } from 'react-hook-form';
-import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Pressable, StyleSheet, View } from 'react-native';
-import Toast from 'react-native-toast-message';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { Controller, useForm } from 'react-hook-form';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { FadeInDown } from 'react-native-reanimated';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import Toast from 'react-native-toast-message';
+import { z } from 'zod';
 
-import { ThemedText } from '../../../components/ThemedText';
-import Screen from '../../../components/Screen';
 import Button from '../../../components/Button';
+import Screen from '../../../components/Screen';
+import { ThemedText } from '../../../components/ThemedText';
 import ThemedTextInput from '../../../components/ThemedTextInput';
-import { useAppTheme } from '../../../theme/ThemeProvider';
-import { foodService } from '../../../services/foodService';
-import { invalidateDiaryQueries } from '../../../services/diaryFlowService';
-import type { RootStackParamList } from '../../types';
-import { MEAL_TYPES } from '../../../types';
-import { handleApiError } from '../../../utils/errorHandler';
 import { glassStyles } from '../../../components/ui/GlassCard';
+import { invalidateDiaryQueries } from '../../../services/diaryFlowService';
+import { foodService } from '../../../services/foodService';
+import { useAppTheme } from '../../../theme/ThemeProvider';
+import { handleApiError } from '../../../utils/errorHandler';
+import type { RootStackParamList } from '../../types';
 
-const FormSchema = z.object({
+const formSchema = z.object({
   name: z.string().trim().min(3, 'Tên món tối thiểu 3 ký tự'),
   description: z.string().trim().max(200, 'Mô tả tối đa 200 ký tự').optional(),
   servingSizeGram: z
@@ -83,24 +80,9 @@ const FormSchema = z.object({
         message: 'Fat phải ≥ 0 và ≤ 300',
       },
     ),
-  grams: z
-    .string()
-    .trim()
-    .refine((value) => value !== '', { message: 'Vui lòng nhập số gram' })
-    .refine(
-      (value) =>
-        !Number.isNaN(Number(value)) && Number(value) > 0 && Number(value) <= 2000,
-      {
-        message: 'Số gram phải > 0 và ≤ 2000',
-      },
-    ),
-  mealType: z
-    .number()
-    .refine((value) => [1, 2, 3, 4].includes(value), { message: 'Bữa ăn không hợp lệ' }),
-  note: z.string().trim().max(200, 'Ghi chú tối đa 200 ký tự').optional(),
 });
 
-type FormValues = z.infer<typeof FormSchema>;
+type FormValues = z.infer<typeof formSchema>;
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'CustomDish'>;
 
 const CustomDishScreen = (): React.ReactElement => {
@@ -109,6 +91,7 @@ const CustomDishScreen = (): React.ReactElement => {
   const glass = glassStyles(isDark);
   const navigation = useNavigation<NavigationProp>();
   const queryClient = useQueryClient();
+  const insets = useSafeAreaInsets();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const {
@@ -117,7 +100,7 @@ const CustomDishScreen = (): React.ReactElement => {
     formState: { errors },
     reset,
   } = useForm<FormValues>({
-    resolver: zodResolver(FormSchema),
+    resolver: zodResolver(formSchema),
     defaultValues: {
       name: '',
       description: '',
@@ -126,9 +109,6 @@ const CustomDishScreen = (): React.ReactElement => {
       protein: '0',
       carbs: '0',
       fat: '0',
-      grams: '100',
-      mealType: MEAL_TYPES.LUNCH,
-      note: '',
     },
   });
 
@@ -136,16 +116,10 @@ const CustomDishScreen = (): React.ReactElement => {
     async (values: FormValues) => {
       setIsSubmitting(true);
       try {
-        // Sử dụng UserFoodItems API để tạo món ăn với thông tin dinh dưỡng nhập tay
         const formData = new FormData();
         formData.append('FoodName', values.name.trim());
-        if (values.description) {
-          // UserFoodItemDto không có description, nhưng ta có thể append vào note nếu cần
-          // Hiện tại API không hỗ trợ description cho UserFoodItem, ta chấp nhận bỏ qua hoặc chờ update API
-        }
-        formData.append('UnitType', 'g'); // Mặc định là gram
+        formData.append('UnitType', 'g');
 
-        // Chuẩn hóa về 100g
         const servingSize = Number(values.servingSizeGram);
         const factor = 100 / servingSize;
 
@@ -158,11 +132,13 @@ const CustomDishScreen = (): React.ReactElement => {
 
         Toast.show({
           type: 'success',
-          text1: 'Đã tạo món thủ công thành công',
-          text2: 'Món ăn đã được lưu vào thư viện cá nhân',
+          text1: 'Đã lưu món nhập tay',
+          text2: 'Món ăn đã được thêm vào thư viện cá nhân.',
         });
+
         reset();
         await invalidateDiaryQueries(queryClient);
+        navigation.goBack();
       } catch (error: any) {
         handleApiError(error);
       } finally {
@@ -172,22 +148,17 @@ const CustomDishScreen = (): React.ReactElement => {
     [navigation, queryClient, reset],
   );
 
-  // Get safe area insets for header
-  const insets = useSafeAreaInsets();
-
   return (
     <View style={{ flex: 1 }}>
-      <LinearGradient
-        colors={theme.colors.screenGradient}
-        style={StyleSheet.absoluteFill}
-      />
+      <LinearGradient colors={theme.colors.screenGradient} style={StyleSheet.absoluteFill} />
 
-      {/* Header - centered title like EditProfileScreen */}
-      <View style={{
-        paddingTop: insets.top + 8,
-        paddingHorizontal: 20,
-        paddingBottom: 4,
-      }}>
+      <View
+        style={{
+          paddingTop: insets.top + 8,
+          paddingHorizontal: 20,
+          paddingBottom: 4,
+        }}
+      >
         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
           <Pressable
             onPress={() => navigation.goBack()}
@@ -204,8 +175,10 @@ const CustomDishScreen = (): React.ReactElement => {
             <ThemedText style={{ fontSize: 18 }}>←</ThemedText>
           </Pressable>
           <View style={{ flex: 1, alignItems: 'center', marginRight: 40 }}>
-            <ThemedText style={{ fontSize: 20, fontWeight: '700', letterSpacing: -0.3, lineHeight: 28 }}>
-              Món ăn của bạn
+            <ThemedText
+              style={{ fontSize: 20, fontWeight: '700', letterSpacing: 0, lineHeight: 28 }}
+            >
+              Món nhập tay
             </ThemedText>
           </View>
         </View>
@@ -236,11 +209,11 @@ const CustomDishScreen = (): React.ReactElement => {
               name="description"
               render={({ field: { onChange, onBlur, value } }) => (
                 <ThemedTextInput
-                  label="Mô tả (tùy chọn)"
+                  label="Ghi chú (tùy chọn)"
                   onBlur={onBlur}
                   onChangeText={onChange}
                   value={value}
-                  placeholder="Nguyên liệu chính, ghi chú..."
+                  placeholder="Nguyên liệu chính hoặc cách bạn muốn nhớ món này"
                   multiline
                   numberOfLines={2}
                   error={!!errors.description}
@@ -249,23 +222,27 @@ const CustomDishScreen = (): React.ReactElement => {
               )}
             />
 
-            {/* Nutrition Section with modern card style */}
-            <View style={{
-              marginTop: theme.spacing.md,
-              backgroundColor: isDark ? 'rgba(74, 144, 226, 0.08)' : 'rgba(59, 130, 246, 0.04)',
-              borderRadius: 16,
-              padding: 14,
-              borderWidth: 1,
-              borderColor: isDark ? 'rgba(74, 144, 226, 0.15)' : 'rgba(59, 130, 246, 0.08)',
-            }}>
+            <View
+              style={{
+                marginTop: theme.spacing.md,
+                backgroundColor: isDark
+                  ? 'rgba(74, 144, 226, 0.08)'
+                  : 'rgba(59, 130, 246, 0.04)',
+                borderRadius: 16,
+                padding: 14,
+                borderWidth: 1,
+                borderColor: isDark
+                  ? 'rgba(74, 144, 226, 0.15)'
+                  : 'rgba(59, 130, 246, 0.08)',
+              }}
+            >
               <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12, gap: 8 }}>
                 <ThemedText style={{ fontSize: 16 }}>📊</ThemedText>
                 <ThemedText variant="body" weight="600">
-                  Thông tin dinh dưỡng
+                  Giá trị dinh dưỡng cho món nhập tay
                 </ThemedText>
               </View>
 
-              {/* Serving + Calories row */}
               <View style={[styles.row, { marginBottom: 12 }]}>
                 <View style={styles.col}>
                   <Controller
@@ -273,7 +250,7 @@ const CustomDishScreen = (): React.ReactElement => {
                     name="servingSizeGram"
                     render={({ field: { onChange, onBlur, value } }) => (
                       <ThemedTextInput
-                        label="⚖️ Khẩu phần (g)"
+                        label="Khẩu phần (g)"
                         keyboardType="numeric"
                         returnKeyType="done"
                         value={value}
@@ -292,7 +269,7 @@ const CustomDishScreen = (): React.ReactElement => {
                     name="calories"
                     render={({ field: { onChange, onBlur, value } }) => (
                       <ThemedTextInput
-                        label="🔥 Calo"
+                        label="Calo"
                         keyboardType="numeric"
                         returnKeyType="done"
                         value={value}
@@ -307,7 +284,6 @@ const CustomDishScreen = (): React.ReactElement => {
                 </View>
               </View>
 
-              {/* Macros row */}
               <View style={styles.row}>
                 <View style={styles.col}>
                   <Controller
@@ -315,7 +291,7 @@ const CustomDishScreen = (): React.ReactElement => {
                     name="protein"
                     render={({ field: { onChange, onBlur, value } }) => (
                       <ThemedTextInput
-                        label="💪 Protein"
+                        label="Protein"
                         keyboardType="numeric"
                         returnKeyType="done"
                         value={value}
@@ -334,7 +310,7 @@ const CustomDishScreen = (): React.ReactElement => {
                     name="carbs"
                     render={({ field: { onChange, onBlur, value } }) => (
                       <ThemedTextInput
-                        label="🌾 Carb"
+                        label="Carb"
                         keyboardType="numeric"
                         returnKeyType="done"
                         value={value}
@@ -353,7 +329,7 @@ const CustomDishScreen = (): React.ReactElement => {
                     name="fat"
                     render={({ field: { onChange, onBlur, value } }) => (
                       <ThemedTextInput
-                        label="🧈 Fat"
+                        label="Fat"
                         keyboardType="numeric"
                         returnKeyType="done"
                         value={value}
@@ -375,7 +351,7 @@ const CustomDishScreen = (): React.ReactElement => {
                 loading={isSubmitting}
                 disabled={isSubmitting}
                 onPress={handleSubmit(onSubmit)}
-                title={isSubmitting ? 'Đang tạo...' : 'Tạo món ăn'}
+                title={isSubmitting ? 'Đang lưu...' : 'Lưu món nhập tay'}
               />
             </View>
           </View>

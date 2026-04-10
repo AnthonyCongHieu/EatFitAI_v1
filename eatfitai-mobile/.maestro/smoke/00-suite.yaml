@@ -44,11 +44,10 @@ tags:
     visible:
       id: home-screen
     timeout: 20000
-- scrollUntilVisible:
-    element:
-      id: home-view-diary-button
-    direction: DOWN
-    timeout: 20000
+- runFlow:
+    file: ../subflows/scroll-to-element.yaml
+    env:
+      TARGET_ID: home-view-diary-button
 - tapOn:
     id: home-view-diary-button
     retryTapIfNoChange: true

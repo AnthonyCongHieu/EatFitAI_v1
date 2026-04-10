@@ -37,10 +37,16 @@ const generateSmartRecommendations = (
   const recommendations: string[] = [];
 
   const consumed = summary?.totalCalories || 0;
-  const target = summary?.targetCalories || 2000;
+  const hasTarget = typeof summary?.targetCalories === 'number' && summary.targetCalories > 0;
+  const target = hasTarget ? summary?.targetCalories || 0 : 0;
   const protein = summary?.protein || 0;
   const carbs = summary?.carbs || 0;
   const fat = summary?.fat || 0;
+
+  if (!hasTarget) {
+    recommendations.push('Bạn chưa có mục tiêu calo. Hãy thiết lập mục tiêu dinh dưỡng để nhận gợi ý chính xác hơn.');
+    return recommendations;
+  }
 
   const hour = new Date().getHours();
   const deficit = target - consumed;
@@ -183,7 +189,12 @@ export const InsightsCard = () => {
   // HYBRID: Backend + Client validation + Personalization
   const finalRecommendations = useMemo(() => {
     const consumed = summary?.totalCalories || 0;
-    const target = summary?.targetCalories || 2000;
+    const hasTarget = typeof summary?.targetCalories === 'number' && summary.targetCalories > 0;
+    if (!hasTarget) {
+      return generateSmartRecommendations(summary, userContext);
+    }
+
+    const target = summary?.targetCalories || 0;
     const deficit = target - consumed;
 
     // Try backend AI first (historical intelligence)

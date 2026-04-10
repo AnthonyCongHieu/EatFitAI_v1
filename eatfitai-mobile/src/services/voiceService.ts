@@ -1,10 +1,7 @@
-/**
- * Voice Service - API client for Voice AI Assistant
- * Uses backend proxy for Whisper and voice parsing
- */
+import type { AxiosError } from 'axios';
 
-import { aiApiClient, getCurrentApiUrl } from './apiClient';
 import { API_BASE_URL, assertBackendApiBaseUrl } from '../config/env';
+import apiClient, { getCurrentApiUrl } from './apiClient';
 import { getAccessTokenMem } from './authTokens';
 import { tokenStorage } from './secureStore';
 
@@ -19,7 +16,43 @@ const getApiBaseUrl = (): string => {
   return assertBackendApiBaseUrl(baseUrl, 'Voice API base URL');
 };
 
-// Intent types supported
+const getApiErrorMessage = (error: unknown, fallback: string): string => {
+  const axiosError = error as AxiosError<{ message?: string; error?: string; detail?: string }>;
+  const data = axiosError?.response?.data;
+
+  if (typeof data?.message === 'string' && data.message.trim()) {
+    return data.message;
+  }
+
+  if (typeof data?.error === 'string' && data.error.trim()) {
+    switch (data.error) {
+      case 'voice_provider_timeout':
+        return 'AI giọng nói phản hồi quá chậm. Vui lòng thử lại.';
+      case 'voice_provider_unavailable':
+        return 'AI giọng nói hiện không khả dụng. Vui lòng thử lại.';
+      case 'voice_provider_error':
+        return 'AI giọng nói gặp lỗi khi xử lý yêu cầu.';
+      default:
+        return data.error;
+    }
+  }
+
+  if (typeof axiosError?.message === 'string' && axiosError.message.trim()) {
+    const message = axiosError.message.trim();
+    if (
+      message === 'Network Error' ||
+      message === 'Network request failed' ||
+      message === 'Failed to fetch'
+    ) {
+      return `${fallback} Kiểm tra kết nối tới backend và thử lại.`;
+    }
+
+    return message;
+  }
+
+  return fallback;
+};
+
 export type VoiceIntent =
   | 'ADD_FOOD'
   | 'LOG_WEIGHT'
@@ -27,10 +60,8 @@ export type VoiceIntent =
   | 'ASK_NUTRITION'
   | 'UNKNOWN';
 
-// Meal type mapping
 export type MealType = 'breakfast' | 'lunch' | 'dinner' | 'snack';
 
-// Single food item for multi-food commands
 export interface FoodItemEntity {
   foodName?: string;
   quantity?: number;
@@ -38,7 +69,6 @@ export interface FoodItemEntity {
   weight?: number;
 }
 
-// Parsed command from voice input
 export interface ParsedVoiceCommand {
   intent: VoiceIntent;
   entities: {
@@ -58,7 +88,6 @@ export interface ParsedVoiceCommand {
   reviewReason?: string;
 }
 
-// Voice processing response
 export interface VoiceProcessResponse {
   success: boolean;
   command?: ParsedVoiceCommand;
@@ -78,7 +107,6 @@ export interface VoiceProcessResponse {
   };
 }
 
-// Meal type to number mapping
 export const MEAL_TYPE_MAP: Record<MealType, number> = {
   breakfast: 1,
   lunch: 2,
@@ -86,9 +114,6 @@ export const MEAL_TYPE_MAP: Record<MealType, number> = {
   snack: 4,
 };
 
-/**
- * Transcription response from Whisper
- */
 export interface TranscriptionResponse {
   text: string;
   language: string;
@@ -97,18 +122,11 @@ export interface TranscriptionResponse {
   error?: string;
 }
 
-/**
- * Voice Service API - Uses backend proxy for STT and parsing
- */
 export const voiceService = {
-  /**
-   * Transcribe audio file to Vietnamese text via backend proxy
-   */
   async transcribeAudio(audioUri: string): Promise<TranscriptionResponse> {
     try {
       const baseUrl = getApiBaseUrl();
       const token = getAccessTokenMem() ?? (await tokenStorage.getAccessToken());
-      console.log('[VoiceService] Transcribing audio via backend:', audioUri, 'baseUrl=', baseUrl);
 
       const formData = new FormData();
       const ext = audioUri.split('.').pop() || 'm4a';
@@ -133,33 +151,26 @@ export const voiceService = {
         throw new Error(`Voice transcribe failed: ${response.status} ${text}`);
       }
 
-      const data = (await response.json()) as TranscriptionResponse;
-      console.log('[VoiceService] Whisper proxy response:', data);
-      return data;
-    } catch (error: any) {
-      console.error('[VoiceService] Transcription error:', error?.message);
+      return (await response.json()) as TranscriptionResponse;
+    } catch (error: unknown) {
       return {
         text: '',
         language: 'vi',
         duration: 0,
         success: false,
-        error: error?.message || 'Transcription failed',
+        error: getApiErrorMessage(error, 'Không thể chuyển giọng nói thành văn bản.'),
       };
     }
   },
 
-  /**
-   * Parse voice text using backend proxy to AI provider
-   */
   async parseWithOllama(text: string): Promise<ParsedVoiceCommand> {
     try {
-      const baseUrl = getApiBaseUrl();
-      console.log('[VoiceService] Parsing with backend proxy:', text, 'via', `${baseUrl}/api/voice/parse`);
-
-      const response = await aiApiClient.post(`${baseUrl}/api/voice/parse`, { text, language: 'vi' });
+      getApiBaseUrl();
+      const response = await apiClient.post('/api/voice/parse', {
+        text,
+        language: 'vi',
+      });
       const data = response.data;
-
-      console.log('[VoiceService] Voice parse proxy response:', data);
 
       return {
         intent: data.intent || 'UNKNOWN',
@@ -171,31 +182,32 @@ export const voiceService = {
         reviewRequired: Boolean(data.reviewRequired),
         reviewReason: data.reviewReason,
       };
-    } catch (error: any) {
-      console.error('[VoiceService] Ollama parse error:', error?.message);
-
+    } catch (error: unknown) {
       return {
         intent: 'UNKNOWN',
         entities: {},
         confidence: 0,
         rawText: text,
         source: 'error',
-        suggestedAction: 'Không thể kết nối AI. Vui lòng thử lại.',
+        suggestedAction: 'Không thể kết nối AI giọng nói. Vui lòng thử lại.',
         reviewRequired: false,
+        reviewReason: getApiErrorMessage(error, 'Không thể phân tích lệnh giọng nói.'),
       };
     }
   },
 
-  /**
-   * Execute parsed command (add food, log weight, etc.) via Backend
-   */
   async executeCommand(command: ParsedVoiceCommand): Promise<VoiceProcessResponse> {
     try {
       const mealTypeMapping: Record<string, string> = {
-        breakfast: 'Breakfast', sang: 'Breakfast',
-        lunch: 'Lunch', trua: 'Lunch',
-        dinner: 'Dinner', toi: 'Dinner',
-        snack: 'Snack', phu: 'Snack', chieu: 'Snack',
+        breakfast: 'Breakfast',
+        sang: 'Breakfast',
+        lunch: 'Lunch',
+        trua: 'Lunch',
+        dinner: 'Dinner',
+        toi: 'Dinner',
+        snack: 'Snack',
+        phu: 'Snack',
+        chieu: 'Snack',
       };
 
       const backendCommand = {
@@ -206,43 +218,42 @@ export const voiceService = {
         },
       };
 
-      console.log('[VoiceService] Sending to backend:', JSON.stringify(backendCommand));
-      const response = await aiApiClient.post<VoiceProcessResponse>('/api/voice/execute', backendCommand);
+      const response = await apiClient.post<VoiceProcessResponse>(
+        '/api/voice/execute',
+        backendCommand,
+      );
       return response.data;
-    } catch (error: any) {
-      console.error('[VoiceService] Execute error:', error);
+    } catch (error: unknown) {
       return {
         success: false,
-        error: error?.response?.data?.message || 'Không thể thực hiện lệnh',
+        error: getApiErrorMessage(error, 'Không thể thực hiện lệnh giọng nói.'),
       };
     }
   },
 
-  /**
-   * Main function: Parse voice text with backend proxy
-   */
   async processVoiceText(request: { text: string }): Promise<VoiceProcessResponse> {
     const command = await this.parseWithOllama(request.text);
 
     return {
       success: command.intent !== 'UNKNOWN',
       command,
+      error:
+        command.intent === 'UNKNOWN'
+          ? command.reviewReason || 'Không hiểu lệnh. Hãy thử lại.'
+          : undefined,
     };
   },
 
-  /**
-   * Confirm and save weight after user confirmation
-   */
   async confirmWeight(newWeight: number): Promise<VoiceProcessResponse> {
     try {
-      console.log('[VoiceService] Confirming weight:', newWeight);
-      const response = await aiApiClient.post<VoiceProcessResponse>('/api/voice/confirm-weight', { newWeight });
+      const response = await apiClient.post<VoiceProcessResponse>('/api/voice/confirm-weight', {
+        newWeight,
+      });
       return response.data;
-    } catch (error: any) {
-      console.error('[VoiceService] Confirm weight error:', error);
+    } catch (error: unknown) {
       return {
         success: false,
-        error: error?.response?.data?.message || 'Không thể lưu cân nặng',
+        error: getApiErrorMessage(error, 'Không thể lưu cân nặng.'),
       };
     }
   },

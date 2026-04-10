@@ -250,6 +250,63 @@ namespace EatFitAI.API.Tests.Unit.Services
             Assert.False(isValid);
         }
 
+        [Fact]
+        public async Task ForgotPasswordAsync_EmailSendFailsInProduction_DoesNotPersistResetCode()
+        {
+            var request = new ForgotPasswordRequest { Email = "reset@example.com" };
+            var user = new User
+            {
+                UserId = Guid.NewGuid(),
+                Email = request.Email,
+                PasswordHash = HashLegacyPassword("password123"),
+                EmailVerified = true,
+                CreatedAt = DateTime.UtcNow
+            };
+
+            _envMock.SetupGet(e => e.EnvironmentName).Returns(Environments.Production);
+            _userRepositoryMock.Setup(r => r.GetByEmailAsync(request.Email)).ReturnsAsync(user);
+            _emailServiceMock
+                .Setup(s => s.SendResetCodeAsync(request.Email, It.IsAny<string>(), It.IsAny<DateTime>()))
+                .ThrowsAsync(new TimeoutException("SMTP reset send timed out."));
+
+            var ex = await Assert.ThrowsAsync<InvalidOperationException>(
+                () => _authService.ForgotPasswordAsync(request));
+
+            Assert.Equal(
+                "Không gửi được email đặt lại mật khẩu. Vui lòng thử lại sau hoặc kiểm tra cấu hình SMTP.",
+                ex.Message);
+        }
+
+        [Fact]
+        public async Task ResendVerificationAsync_EmailSendFailsInProduction_DoesNotRotateVerificationCode()
+        {
+            var existingCode = Convert.ToBase64String(Encoding.UTF8.GetBytes("existing-code"));
+            var existingExpiry = DateTime.UtcNow.AddMinutes(5);
+            var user = new User
+            {
+                UserId = Guid.NewGuid(),
+                Email = "resend@example.com",
+                PasswordHash = HashLegacyPassword("password123"),
+                CreatedAt = DateTime.UtcNow,
+                EmailVerified = false,
+                VerificationCode = existingCode,
+                VerificationCodeExpiry = existingExpiry
+            };
+
+            _envMock.SetupGet(e => e.EnvironmentName).Returns(Environments.Production);
+            _userRepositoryMock.Setup(r => r.GetByEmailAsync(user.Email)).ReturnsAsync(user);
+            _emailServiceMock
+                .Setup(s => s.SendVerificationCodeAsync(user.Email, It.IsAny<string>(), It.IsAny<DateTime>()))
+                .ThrowsAsync(new TimeoutException("SMTP verification send timed out."));
+
+            var ex = await Assert.ThrowsAsync<InvalidOperationException>(
+                () => _authService.ResendVerificationAsync(new ResendVerificationRequest { Email = user.Email }));
+
+            Assert.Equal("Không gửi được email. Vui lòng thử lại sau.", ex.Message);
+            Assert.Equal(existingCode, user.VerificationCode);
+            Assert.Equal(existingExpiry, user.VerificationCodeExpiry);
+        }
+
         private static string HashLegacyPassword(string password)
         {
             using var sha256 = SHA256.Create();

@@ -544,8 +544,14 @@ async function runDisposableRegisterMode(driver, outputDir, options) {
   await setValueByTestId(driver, TEST_IDS.auth.registerEmailInput, mailbox.address);
   await setValueByTestId(driver, TEST_IDS.auth.registerPasswordInput, options.password);
   await setValueByTestId(driver, TEST_IDS.auth.registerConfirmPasswordInput, options.password);
+  await dismissKeyboard(driver);
+  const registerSubmitButton = await scrollUntilVisible(driver, TEST_IDS.auth.registerSubmitButton, 6);
+  if (!registerSubmitButton) {
+    await captureDebugArtifacts(driver, 'missing-register-submit-button').catch(() => null);
+    throw new Error(`Selector not found after scroll: ${TEST_IDS.auth.registerSubmitButton}`);
+  }
+  await registerSubmitButton.click();
   updateBudget(outputDir, 'registerWithVerification', `register ${mailbox.address}`);
-  await tapByTestId(driver, TEST_IDS.auth.registerSubmitButton);
 
   await waitForAny(driver, [TEST_IDS.auth.verifyScreen], 30000);
   const verifyScreenScreenshot = await saveScreenshot(driver, outputDir, 'disposable-verify-screen.png');

@@ -1,6 +1,3 @@
-// Store quản lý nhật ký hôm nay
-// Chú thích bằng tiếng Việt
-
 import { create } from 'zustand';
 
 import {
@@ -19,8 +16,8 @@ type DiaryState = {
   deleteEntry: (entryId: string) => Promise<void>;
 };
 
-const removeEntryFromMeals = (meals: DiaryMealGroup[], entryId: string) => {
-  return meals
+const removeEntryFromMeals = (meals: DiaryMealGroup[], entryId: string) =>
+  meals
     .map((meal) => {
       const filteredEntries = meal.entries.filter((entry) => entry.id !== entryId);
       if (filteredEntries.length === meal.entries.length) {
@@ -50,9 +47,8 @@ const removeEntryFromMeals = (meals: DiaryMealGroup[], entryId: string) => {
       };
     })
     .filter((meal) => meal.entries.length > 0);
-};
 
-export const useDiaryStore = create<DiaryState>((set: any, get: any) => ({
+export const useDiaryStore = create<DiaryState>((set, get) => ({
   summary: null,
   isLoading: false,
   isRefreshing: false,
@@ -62,12 +58,13 @@ export const useDiaryStore = create<DiaryState>((set: any, get: any) => ({
     if (get().isLoading) {
       return;
     }
+
     set({ isLoading: true, error: null });
     try {
       const summary = await diaryService.getTodayCombined();
       set({ summary });
     } catch (error: any) {
-      set({ error: error?.message ?? 'Không thể tải dữ liệu' });
+      set({ error: error?.message ?? 'Không thể tải dữ liệu.' });
       throw error;
     } finally {
       set({ isLoading: false });
@@ -78,12 +75,13 @@ export const useDiaryStore = create<DiaryState>((set: any, get: any) => ({
     if (get().isRefreshing) {
       return;
     }
+
     set({ isRefreshing: true, error: null });
     try {
       const summary = await diaryService.getTodayCombined();
       set({ summary });
     } catch (error: any) {
-      set({ error: error?.message ?? 'Không thể tải dữ liệu' });
+      set({ error: error?.message ?? 'Không thể tải dữ liệu.' });
       throw error;
     } finally {
       set({ isRefreshing: false });
@@ -96,11 +94,11 @@ export const useDiaryStore = create<DiaryState>((set: any, get: any) => ({
       return;
     }
 
-    // Lưu tạm để rollback khi delete thất bại
     const previousSummary = currentSummary;
     const removedEntry = currentSummary.meals
-      .flatMap((meal: any) => meal.entries)
-      .find((entry: any) => entry.id === entryId);
+      .flatMap((meal) => meal.entries)
+      .find((entry) => entry.id === entryId);
+
     set({
       summary: {
         ...currentSummary,
@@ -127,8 +125,14 @@ export const useDiaryStore = create<DiaryState>((set: any, get: any) => ({
     try {
       await diaryService.deleteEntry(entryId);
     } catch (error) {
-      // Rollback nếu có lỗi
       set({ summary: previousSummary });
+      throw error;
+    }
+
+    try {
+      await get().refreshSummary();
+    } catch (error: any) {
+      set({ error: error?.message ?? 'Đã xóa nhưng chưa thể làm mới nhật ký.' });
       throw error;
     }
   },

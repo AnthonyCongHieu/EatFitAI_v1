@@ -425,22 +425,31 @@ namespace EatFitAI.API.Services
                 ExpiresAt = DateTime.UtcNow.Add(ResetCodeLifetime)
             };
 
-            _memoryCache.Set($"{ResetCacheKeyPrefix}{user.Email}", cacheEntry, cacheEntry.ExpiresAt);
-
             _logger.LogInformation("Đã tạo reset code cho user {UserId}, hết hạn {ExpiresAt:O}", user.UserId, cacheEntry.ExpiresAt);
+            var includeCodeInResponse = _env.IsDevelopment(); // hỗ trợ demo/dev, prod sẽ không trả mã
 
             try
             {
                 await _emailService.SendResetCodeAsync(user.Email, code, cacheEntry.ExpiresAt);
+                _memoryCache.Set($"{ResetCacheKeyPrefix}{user.Email}", cacheEntry, cacheEntry.ExpiresAt);
                 _logger.LogInformation("Đã gửi email reset code cho user {UserId}", user.UserId);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Không gửi được email reset code cho user {UserId}", user.UserId);
-                throw new InvalidOperationException("Không gửi được email reset. Vui lòng thử lại hoặc kiểm tra cấu hình SMTP.");
-            }
+                if (!includeCodeInResponse)
+                {
+                    _memoryCache.Remove($"{ResetCacheKeyPrefix}{user.Email}");
+                    _logger.LogError(ex, "Không gửi được email reset code cho user {UserId}", user.UserId);
+                    throw new InvalidOperationException(
+                        "Không gửi được email đặt lại mật khẩu. Vui lòng thử lại sau hoặc kiểm tra cấu hình SMTP.");
+                }
 
-            var includeCodeInResponse = _env.IsDevelopment(); // hỗ trợ demo/dev, prod sẽ không trả mã
+                _logger.LogWarning(
+                    ex,
+                    "Dev mode: email reset thất bại cho user {UserId}, trả mã qua response.",
+                    user.UserId);
+                _memoryCache.Set($"{ResetCacheKeyPrefix}{user.Email}", cacheEntry, cacheEntry.ExpiresAt);
+            }
 
             return new ForgotPasswordResponse
             {
@@ -710,32 +719,39 @@ namespace EatFitAI.API.Services
                 throw new InvalidOperationException("Email đã được xác minh trước đó");
             }
 
-            // Tạo mã mới
             var verificationCode = GenerateNumericCode(6);
-            user.VerificationCode = HashResetCode(verificationCode);
-            user.VerificationCodeExpiry = DateTime.UtcNow.Add(VerificationCodeLifetime);
-            await _context.SaveChangesAsync();
-
+            var verificationCodeExpiry = DateTime.UtcNow.Add(VerificationCodeLifetime);
             var includeCodeInResponse = _env.IsDevelopment();
+            var emailDelivered = false;
 
-            // Gửi email
             try
             {
-                await _emailService.SendVerificationCodeAsync(user.Email, verificationCode, user.VerificationCodeExpiry.Value);
+                await _emailService.SendVerificationCodeAsync(user.Email, verificationCode, verificationCodeExpiry);
+                emailDelivered = true;
                 _logger.LogInformation("Đã gửi lại mã xác minh cho user {UserId}", user.UserId);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Không gửi lại được email xác minh cho user {UserId}", user.UserId);
                 if (!includeCodeInResponse)
                 {
+                    _logger.LogError(ex, "Không gửi lại được email xác minh cho user {UserId}", user.UserId);
                     throw new InvalidOperationException("Không gửi được email. Vui lòng thử lại sau.");
                 }
 
                 _logger.LogWarning(
+                    ex,
                     "Dev mode: trả mã xác minh trong response cho {Email} do email service thất bại",
                     user.Email);
             }
+
+            if (!emailDelivered && !includeCodeInResponse)
+            {
+                throw new InvalidOperationException("Không gửi được email. Vui lòng thử lại sau.");
+            }
+
+            user.VerificationCode = HashResetCode(verificationCode);
+            user.VerificationCodeExpiry = verificationCodeExpiry;
+            await _context.SaveChangesAsync();
 
             return new RegisterResponse
             {
@@ -744,7 +760,7 @@ namespace EatFitAI.API.Services
                     ? "Đã gửi lại mã xác minh (dev mode)" 
                     : "Đã gửi lại mã xác minh. Kiểm tra email của bạn.",
                 Email = user.Email,
-                VerificationCodeExpiresAt = user.VerificationCodeExpiry.Value,
+                VerificationCodeExpiresAt = verificationCodeExpiry,
                 VerificationCode = includeCodeInResponse ? verificationCode : null
             };
         }

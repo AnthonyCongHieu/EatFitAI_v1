@@ -44,7 +44,7 @@ const warmCloudBackend = async (): Promise<void> => {
   }
 
   const baseUrl = API_BASE_URL.replace(/\/+$/, '');
-  const healthUrls = [`${baseUrl}/health/live`, `${baseUrl}/health`, `${baseUrl}/health/ready`];
+  const healthUrls = [`${baseUrl}/health/live`, `${baseUrl}/health/ready`];
 
   for (let attempt = 1; attempt <= 3; attempt += 1) {
     for (const healthUrl of healthUrls) {

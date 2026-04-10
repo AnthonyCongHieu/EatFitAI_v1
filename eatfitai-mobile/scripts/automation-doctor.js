@@ -9,17 +9,55 @@ const packageJsonPath = path.join(projectRoot, 'package.json');
 const packageLockPath = path.join(projectRoot, 'package-lock.json');
 const configPath = path.join(projectRoot, '.maestro', 'config.yaml');
 const repoRoot = path.resolve(projectRoot, '..');
+const bundledJdkBin = path.join(repoRoot, '_tooling', 'jdk-17', 'bin');
+const bundledAndroidCmdline = path.join(repoRoot, '_tooling', 'android-sdk', 'cmdline-tools', 'latest', 'bin');
+const bundledAndroidPlatformTools = path.join(repoRoot, '_tooling', 'android-sdk', 'platform-tools');
+const bundledAndroidEmulator = path.join(repoRoot, '_tooling', 'android-sdk', 'emulator');
+const bundledMaestroBin = path.join(repoRoot, '_tooling', 'maestro', 'maestro', 'bin');
 
 function resolveBundledExecutable(relativeSegments) {
   const candidate = path.join(repoRoot, ...relativeSegments);
   return fs.existsSync(candidate) ? candidate : null;
 }
 
+function buildToolingEnv() {
+  const pathParts = [
+    bundledJdkBin,
+    bundledAndroidPlatformTools,
+    bundledAndroidEmulator,
+    bundledAndroidCmdline,
+    bundledMaestroBin,
+    process.env.APPDATA ? path.join(process.env.APPDATA, 'npm') : null,
+    process.env.PATH || '',
+  ].filter(Boolean);
+
+  return {
+    ...process.env,
+    JAVA_HOME: path.join(repoRoot, '_tooling', 'jdk-17'),
+    ANDROID_SDK_ROOT: path.join(repoRoot, '_tooling', 'android-sdk'),
+    ANDROID_AVD_HOME: path.join(repoRoot, '_tooling', 'android-avd'),
+    ANDROID_USER_HOME: path.join(repoRoot, '_state', 'android-user-home'),
+    PATH: pathParts.join(path.delimiter),
+  };
+}
+
 function runCommand(command, args) {
-  const useShell = !(path.isAbsolute(command) || command.includes(path.sep));
-  const result = spawnSync(command, args, {
+  const ext = path.extname(command).toLowerCase();
+  const isBatchFile = ext === '.bat' || ext === '.cmd';
+  const useShell = !isBatchFile && !(path.isAbsolute(command) || command.includes(path.sep));
+  const invocation = isBatchFile && process.platform === 'win32'
+    ? {
+        command: 'cmd.exe',
+        args: ['/d', '/s', '/c', `"${command}" ${args.join(' ')}`],
+      }
+    : {
+        command,
+        args,
+      };
+  const result = spawnSync(invocation.command, invocation.args, {
     cwd: projectRoot,
     encoding: 'utf8',
+    env: buildToolingEnv(),
     shell: process.platform === 'win32' ? useShell : false,
     timeout: 10000,
   });
@@ -141,11 +179,16 @@ function printCheck(name, status, detail) {
 
 function main() {
   const checks = [];
+  const bundledMaestro =
+    resolveBundledExecutable(['_tooling', 'maestro', 'maestro', 'bin', 'maestro.bat']) ||
+    resolveBundledExecutable(['_tooling', 'maestro', 'maestro', 'bin', 'maestro']);
   const maestro = runCommand('maestro', ['--version']);
   checks.push({
     name: 'Maestro CLI',
     status: maestro.ok ? 'OK' : 'FAIL',
-    detail: maestro.ok ? maestro.stdout : maestro.stderr || maestro.error || 'maestro not found',
+    detail: maestro.ok
+      ? `${maestro.stdout}${bundledMaestro ? ' (bundled)' : ''}`
+      : maestro.stderr || maestro.error || 'maestro not found',
   });
 
   const appium = runCommand('appium', ['--version']);

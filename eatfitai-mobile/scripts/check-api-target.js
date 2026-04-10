@@ -50,7 +50,7 @@ async function main() {
 
   const baseUrl = rawBaseUrl.replace(/\/+$/, '');
   const localLike = isLocalLikeHost(parsedBaseUrl.hostname);
-  const healthUrls = [`${baseUrl}/health/ready`, `${baseUrl}/health/live`, `${baseUrl}/health`];
+  const healthUrls = [`${baseUrl}/health/ready`, `${baseUrl}/health/live`];
 
   console.log(`[api-target] API target: ${baseUrl}`);
   console.log(`[api-target] Mode: ${localLike ? 'local-or-lan' : 'cloud'}`);

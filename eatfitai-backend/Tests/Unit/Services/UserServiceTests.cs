@@ -4,7 +4,11 @@ using EatFitAI.API.DbScaffold.Models;
 using EatFitAI.API.DTOs.User;
 using EatFitAI.API.Repositories.Interfaces;
 using EatFitAI.API.Services;
+using EatFitAI.API.Services.Interfaces;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using Moq;
 using Xunit;
 
@@ -15,6 +19,9 @@ namespace EatFitAI.API.Tests.Unit.Services
         private readonly Mock<IUserRepository> _userRepositoryMock;
         private readonly EatFitAIDbContext _context;
         private readonly Mock<IMapper> _mapperMock;
+        private readonly Mock<ISupabaseStorageService> _supabaseStorageServiceMock;
+        private readonly Mock<IHostEnvironment> _environmentMock;
+        private readonly Mock<ILogger<UserService>> _loggerMock;
         private readonly UserService _userService;
         private readonly Guid _testUserId = Guid.NewGuid();
 
@@ -22,16 +29,25 @@ namespace EatFitAI.API.Tests.Unit.Services
         {
             _userRepositoryMock = new Mock<IUserRepository>();
             _mapperMock = new Mock<IMapper>();
+            _supabaseStorageServiceMock = new Mock<ISupabaseStorageService>();
+            _environmentMock = new Mock<IHostEnvironment>();
+            _loggerMock = new Mock<ILogger<UserService>>();
 
             var options = new DbContextOptionsBuilder<EatFitAIDbContext>()
                 .UseInMemoryDatabase(Guid.NewGuid().ToString())
                 .Options;
             _context = new EatFitAIDbContext(options);
 
+            _supabaseStorageServiceMock.SetupGet(s => s.IsConfigured).Returns(false);
+            _environmentMock.SetupGet(e => e.EnvironmentName).Returns(Environments.Development);
+
             _userService = new UserService(
                 _userRepositoryMock.Object,
                 _context,
-                _mapperMock.Object);
+                _mapperMock.Object,
+                _supabaseStorageServiceMock.Object,
+                _environmentMock.Object,
+                _loggerMock.Object);
 
             SeedTestData();
         }
@@ -43,6 +59,7 @@ namespace EatFitAI.API.Tests.Unit.Services
                 UserId = _testUserId,
                 Email = "testuser@example.com",
                 DisplayName = "Test User",
+                AvatarUrl = "/uploads/avatars/seed.png",
                 PasswordHash = "hashedpassword",
                 CreatedAt = DateTime.UtcNow,
                 EmailVerified = true
@@ -200,6 +217,28 @@ namespace EatFitAI.API.Tests.Unit.Services
             Assert.Equal("Updated Name", result.DisplayName);
             Assert.Equal("Updated Name", trackedUser.DisplayName);
             Assert.Single(_context.BodyMetrics.Where(x => x.UserId == _testUserId));
+        }
+
+        [Fact]
+        public async Task UpdateAvatarAsync_DevelopmentFallback_PersistsAvatarUrl()
+        {
+            var trackedUser = await _context.Users.SingleAsync(u => u.UserId == _testUserId);
+            _userRepositoryMock.Setup(r => r.GetByIdAsync(_testUserId)).ReturnsAsync(trackedUser);
+            _userRepositoryMock.Setup(r => r.Update(It.IsAny<User>()));
+
+            await using var imageStream = new MemoryStream(new byte[] { 1, 2, 3, 4 });
+            var formFile = new FormFile(imageStream, 0, imageStream.Length, "file", "avatar.png")
+            {
+                Headers = new HeaderDictionary(),
+                ContentType = "image/png"
+            };
+
+            var uploadsRoot = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+            var avatarUrl = await _userService.UpdateAvatarAsync(_testUserId, formFile, uploadsRoot);
+
+            Assert.StartsWith("/uploads/avatars/", avatarUrl);
+            Assert.Equal(avatarUrl, trackedUser.AvatarUrl);
+            Assert.True(Directory.Exists(uploadsRoot));
         }
 
         [Fact]

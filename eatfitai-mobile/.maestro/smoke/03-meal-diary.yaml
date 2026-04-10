@@ -6,6 +6,10 @@ tags:
 ---
 - runFlow:
     file: ../subflows/start-authenticated.yaml
+- runFlow:
+    file: ../subflows/scroll-to-element.yaml
+    env:
+      TARGET_ID: home-view-diary-button
 - tapOn:
     id: home-view-diary-button
 - assertVisible:

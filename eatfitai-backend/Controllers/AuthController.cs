@@ -24,8 +24,15 @@ namespace EatFitAI.API.Controllers
         [HttpPost("forgot-password")]
         public async Task<ActionResult<ForgotPasswordResponse>> ForgotPassword([FromBody] ForgotPasswordRequest request)
         {
-            var result = await _authService.ForgotPasswordAsync(request);
-            return Ok(result);
+            try
+            {
+                var result = await _authService.ForgotPasswordAsync(request);
+                return Ok(result);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return StatusCode(503, new { code = "smtp_unavailable", message = ex.Message });
+            }
         }
 
         [AllowAnonymous]
@@ -111,7 +118,7 @@ namespace EatFitAI.API.Controllers
             }
             catch (InvalidOperationException ex)
             {
-                return BadRequest(new { message = ex.Message });
+                return StatusCode(503, new { message = ex.Message });
             }
         }
 
@@ -133,6 +140,11 @@ namespace EatFitAI.API.Controllers
             }
             catch (InvalidOperationException ex)
             {
+                if (ex.Message.Contains("Không gửi được email", StringComparison.OrdinalIgnoreCase))
+                {
+                    return StatusCode(503, new { code = "smtp_unavailable", message = ex.Message });
+                }
+
                 return BadRequest(new { message = ex.Message });
             }
         }

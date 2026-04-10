@@ -123,6 +123,7 @@ namespace EatFitAI.API.Services
             }
 
             mealDiary.IsDeleted = true;
+            mealDiary.UpdatedAt = DateTime.UtcNow;
             _mealDiaryRepository.Update(mealDiary);
             await _context.SaveChangesAsync();
         }

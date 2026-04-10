@@ -5,6 +5,8 @@ const { resolveEnv } = require('../../tools/automation/resolveEnv');
 
 const APP_ID = 'com.eatfitai.app';
 const suite = process.argv[2];
+const projectRoot = path.resolve(__dirname, '..');
+const repoRoot = path.resolve(projectRoot, '..');
 const suites = {
   smoke: {
     config: '.maestro/smoke.config.yaml',
@@ -21,16 +23,49 @@ if (!suite || !suites[suite]) {
   process.exit(1);
 }
 
+function resolveBundledExecutable(relativeSegments) {
+  const candidate = path.join(repoRoot, ...relativeSegments);
+  return fs.existsSync(candidate) ? candidate : null;
+}
+
+function buildToolingEnv() {
+  const pathParts = [
+    path.join(repoRoot, '_tooling', 'jdk-17', 'bin'),
+    path.join(repoRoot, '_tooling', 'android-sdk', 'platform-tools'),
+    path.join(repoRoot, '_tooling', 'android-sdk', 'emulator'),
+    path.join(repoRoot, '_tooling', 'android-sdk', 'cmdline-tools', 'latest', 'bin'),
+    path.join(repoRoot, '_tooling', 'maestro', 'maestro', 'bin'),
+    process.env.APPDATA ? path.join(process.env.APPDATA, 'npm') : null,
+    process.env.PATH || '',
+  ].filter(Boolean);
+
+  return {
+    ...process.env,
+    JAVA_HOME: path.join(repoRoot, '_tooling', 'jdk-17'),
+    ANDROID_SDK_ROOT: path.join(repoRoot, '_tooling', 'android-sdk'),
+    ANDROID_AVD_HOME: path.join(repoRoot, '_tooling', 'android-avd'),
+    ANDROID_USER_HOME: path.join(repoRoot, '_state', 'android-user-home'),
+    PATH: pathParts.join(path.delimiter),
+  };
+}
+
 function sleep(ms) {
   Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
 }
 
 function runAdb(args, { allowFailure = false } = {}) {
   const serial = resolveEnv('ANDROID_SERIAL') || process.env.ANDROID_SERIAL;
-  const result = spawnSync('adb', serial ? ['-s', serial, ...args] : args, {
-    cwd: path.resolve(__dirname, '..'),
+  const adbExecutable =
+    resolveBundledExecutable(['_tooling', 'android-sdk', 'platform-tools', 'adb.exe']) ||
+    resolveBundledExecutable(['_tooling', 'android-sdk', 'platform-tools', 'adb']) ||
+    'adb';
+  const useShell =
+    !(path.isAbsolute(adbExecutable) || adbExecutable.includes(path.sep));
+  const result = spawnSync(adbExecutable, serial ? ['-s', serial, ...args] : args, {
+    cwd: projectRoot,
     encoding: 'utf8',
-    shell: process.platform === 'win32',
+    env: buildToolingEnv(),
+    shell: process.platform === 'win32' ? useShell : false,
   });
 
   if (!allowFailure && result.status !== 0) {
@@ -64,7 +99,8 @@ function bootstrapAuthenticatedState() {
     process.execPath,
     [path.resolve(__dirname, '..', '..', 'tools', 'appium', 'sanity.android.js')],
     {
-      cwd: path.resolve(__dirname, '..'),
+      cwd: projectRoot,
+      env: buildToolingEnv(),
       stdio: 'inherit',
       shell: false,
     },
@@ -105,7 +141,7 @@ for (const key of forwardIfPresent) {
   }
 }
 
-fs.mkdirSync(path.resolve(__dirname, '..', path.dirname(selectedSuite.output)), {
+fs.mkdirSync(path.resolve(projectRoot, path.dirname(selectedSuite.output)), {
   recursive: true,
 });
 
@@ -113,7 +149,8 @@ prewarmAndroidApp();
 bootstrapAuthenticatedState();
 
 const result = spawnSync('maestro', args, {
-  cwd: path.resolve(__dirname, '..'),
+  cwd: projectRoot,
+  env: buildToolingEnv(),
   stdio: 'inherit',
   shell: process.platform === 'win32',
 });

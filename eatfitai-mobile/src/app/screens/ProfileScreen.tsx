@@ -99,7 +99,7 @@ const ProfileScreen = (): React.ReactElement => {
 
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);
-    await fetchProfile();
+    await fetchProfile({ force: true });
     setRefreshing(false);
   }, [fetchProfile]);
 

@@ -13,6 +13,8 @@ public partial class User
 
     public string? DisplayName { get; set; }
 
+    public string? AvatarUrl { get; set; }
+
     public DateTime CreatedAt { get; set; }
 
     // Email verification - Mã xác minh 6 số

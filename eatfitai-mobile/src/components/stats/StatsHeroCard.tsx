@@ -1,174 +1,171 @@
 import React from 'react';
-import { View, StyleSheet } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import Animated, { FadeInUp } from 'react-native-reanimated';
 import Svg, { Circle, Defs, LinearGradient, Stop } from 'react-native-svg';
+
 import { useAppTheme } from '../../theme/ThemeProvider';
 import { ThemedText } from '../ThemedText';
-import { SimpleAnimatedCounter } from './AnimatedCounter';
 
 interface StatsHeroCardProps {
-    value: number;
-    target: number;
-    unit?: string;
-    label?: string;
-    insight?: string;
-    icon?: string;
+  value: number;
+  target?: number | null;
+  targetStatus?: 'loaded' | 'missing' | 'error' | 'loading';
+  unit?: string;
+  label?: string;
 }
 
-/**
- * Stats Hero Card - Big number spotlight với progress ring
- * 2026 trend: Hero metrics, animated progress, insight text
- */
+const DEFAULT_VISUAL_TARGET = 2000;
+
 export const StatsHeroCard: React.FC<StatsHeroCardProps> = ({
-    value,
-    target,
-    unit: _unit = 'kcal',
-    label: _label = 'Hom nay',
-    insight: _insight,
-    icon: _icon = '',
+  value,
+  target,
+  targetStatus = 'loaded',
+  unit = 'kcal',
+  label = 'Hôm nay',
 }) => {
-    const { theme } = useAppTheme();
-    const isDark = theme.mode === 'dark';
+  const { theme } = useAppTheme();
+  const isDark = theme.mode === 'dark';
 
-    // Tính progress
-    const progress = Math.min(value / target, 1);
-    const percentage = Math.round(progress * 100);
-    const remaining = Math.max(target - value, 0);
+  const hasRealTarget = typeof target === 'number' && target > 0;
+  const visualTarget = hasRealTarget ? target : DEFAULT_VISUAL_TARGET;
+  const progress = Math.min(value / visualTarget, 1);
+  const percentage = Math.round(progress * 100);
+  const highlightValue = hasRealTarget ? Math.max(visualTarget - value, 0) : value;
+  const highlightLabel = hasRealTarget ? 'Còn lại' : 'Đã nạp';
+  const targetLabel =
+    targetStatus === 'error'
+      ? 'Lỗi tải mục tiêu'
+      : hasRealTarget
+        ? 'Mục tiêu'
+        : 'Mốc hiển thị';
 
-    // SVG circle dimensions - LARGER ring
-    const size = 180;
-    const strokeWidth = 14;
-    const radius = (size - strokeWidth) / 2;
-    const circumference = 2 * Math.PI * radius;
-    const strokeDashoffset = circumference * (1 - progress);
+  const size = 180;
+  const strokeWidth = 14;
+  const radius = (size - strokeWidth) / 2;
+  const circumference = 2 * Math.PI * radius;
+  const strokeDashoffset = circumference * (1 - progress);
 
-    const styles = StyleSheet.create({
-        container: {
-            alignItems: 'center',
-            paddingVertical: theme.spacing.xl,
-            paddingHorizontal: theme.spacing.lg,
-            // Solid colors để fix 2 màu trên Android
-            backgroundColor: isDark ? '#1A2744' : '#EEF4FF',
-            borderRadius: theme.radius.xl,
-            borderWidth: 1,
-            borderColor: isDark ? '#2A3F68' : '#D0E4FF',
-        },
-        progressContainer: {
-            position: 'relative',
-            width: size,
-            height: size,
-            alignItems: 'center',
-            justifyContent: 'center',
-        },
-        centerContent: {
-            position: 'absolute',
-            alignItems: 'center',
-            justifyContent: 'center',
-        },
-        icon: {
-            fontSize: 32,
-            marginBottom: 4,
-        },
-        valueRow: {
-            flexDirection: 'row',
-            alignItems: 'baseline',
-        },
-        unit: {
-            marginLeft: 4,
-        },
-        statsRow: {
-            flexDirection: 'row',
-            justifyContent: 'space-around',
-            width: '100%',
-            marginTop: theme.spacing.lg,
-            paddingTop: theme.spacing.md,
-            borderTopWidth: 1,
-            // Solid colors để fix 2 màu trên Android
-            borderTopColor: isDark ? '#2A3F68' : '#E0E0E0',
-        },
-        statItem: {
-            alignItems: 'center',
-        },
-    });
+  const styles = StyleSheet.create({
+    container: {
+      alignItems: 'center',
+      paddingVertical: theme.spacing.xl,
+      paddingHorizontal: theme.spacing.lg,
+      backgroundColor: isDark ? '#1A2744' : '#EEF4FF',
+      borderRadius: theme.radius.xl,
+      borderWidth: 1,
+      borderColor: isDark ? '#2A3F68' : '#D0E4FF',
+      gap: theme.spacing.sm,
+    },
+    progressContainer: {
+      position: 'relative',
+      width: size,
+      height: size,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    centerContent: {
+      position: 'absolute',
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    statsRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-around',
+      width: '100%',
+      marginTop: theme.spacing.lg,
+      paddingTop: theme.spacing.md,
+      borderTopWidth: 1,
+      borderTopColor: isDark ? '#2A3F68' : '#E0E0E0',
+    },
+    statItem: {
+      alignItems: 'center',
+      gap: 4,
+    },
+  });
 
-    return (
-        <Animated.View entering={FadeInUp.springify()} style={styles.container}>
-            {/* Progress Ring */}
-            <View style={styles.progressContainer}>
-                <Svg width={size} height={size}>
-                    <Defs>
-                        <LinearGradient id="progressGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                            <Stop offset="0%" stopColor={theme.colors.primary} />
-                            <Stop offset="100%" stopColor={theme.colors.secondary} />
-                        </LinearGradient>
-                    </Defs>
+  return (
+    <Animated.View entering={FadeInUp.springify()} style={styles.container}>
+      <ThemedText variant="bodySmall" color="textSecondary">
+        {label}
+      </ThemedText>
 
-                    {/* Background circle */}
-                    <Circle
-                        cx={size / 2}
-                        cy={size / 2}
-                        r={radius}
-                        stroke={isDark ? '#2A3F68' : '#E0E0E0'}
-                        strokeWidth={strokeWidth}
-                        fill="transparent"
-                    />
+      <View style={styles.progressContainer}>
+        <Svg width={size} height={size}>
+          <Defs>
+            <LinearGradient id="progressGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+              <Stop offset="0%" stopColor={theme.colors.primary} />
+              <Stop offset="100%" stopColor={theme.colors.secondary} />
+            </LinearGradient>
+          </Defs>
 
-                    {/* Progress circle */}
-                    <Circle
-                        cx={size / 2}
-                        cy={size / 2}
-                        r={radius}
-                        stroke="url(#progressGradient)"
-                        strokeWidth={strokeWidth}
-                        fill="transparent"
-                        strokeDasharray={circumference}
-                        strokeDashoffset={strokeDashoffset}
-                        strokeLinecap="round"
-                        rotation="-90"
-                        origin={`${size / 2}, ${size / 2}`}
-                    />
-                </Svg>
+          <Circle
+            cx={size / 2}
+            cy={size / 2}
+            r={radius}
+            stroke={isDark ? '#2A3F68' : '#E0E0E0'}
+            strokeWidth={strokeWidth}
+            fill="transparent"
+          />
 
-                {/* Center content - shows "Calo còn lại" */}
-                <View style={styles.centerContent}>
-                    <SimpleAnimatedCounter
-                        value={remaining}
-                        variant="h1"
-                        weight="700"
-                        duration={1000}
-                    />
-                    <ThemedText variant="body" color="textSecondary">
-                        Calo còn lại
-                    </ThemedText>
-                </View>
-            </View>
+          <Circle
+            cx={size / 2}
+            cy={size / 2}
+            r={radius}
+            stroke="url(#progressGradient)"
+            strokeWidth={strokeWidth}
+            fill="transparent"
+            strokeDasharray={circumference}
+            strokeDashoffset={strokeDashoffset}
+            strokeLinecap="round"
+            rotation="-90"
+            origin={`${size / 2}, ${size / 2}`}
+          />
+        </Svg>
 
-            {/* Stats Row - with icons like reference */}
-            <View style={styles.statsRow}>
-                <View style={styles.statItem}>
-                    <ThemedText variant="h4" weight="700">{Math.round(target).toLocaleString()}</ThemedText>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                        <ThemedText style={{ fontSize: 14 }}>🚩</ThemedText>
-                        <ThemedText variant="caption" color="textSecondary">Mục tiêu</ThemedText>
-                    </View>
-                </View>
-                <View style={styles.statItem}>
-                    <ThemedText variant="h4" weight="700" color="primary">{Math.round(value).toLocaleString()}</ThemedText>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                        <ThemedText style={{ fontSize: 14 }}>🍴</ThemedText>
-                        <ThemedText variant="caption" color="textSecondary">Đã nạp</ThemedText>
-                    </View>
-                </View>
-                <View style={styles.statItem}>
-                    <ThemedText variant="h4" weight="700" color="success">{percentage}%</ThemedText>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                        <ThemedText style={{ fontSize: 14 }}>🔥</ThemedText>
-                        <ThemedText variant="caption" color="textSecondary">Đạt được</ThemedText>
-                    </View>
-                </View>
-            </View>
-        </Animated.View>
-    );
+        <View style={styles.centerContent}>
+          <ThemedText variant="h1" weight="700">
+            {Math.round(highlightValue).toLocaleString()}
+          </ThemedText>
+          <ThemedText variant="body" color="textSecondary">
+            {highlightLabel}
+          </ThemedText>
+        </View>
+      </View>
+
+      {!hasRealTarget && (
+        <ThemedText variant="caption" color="textSecondary" style={{ textAlign: 'center' }}>
+          Chưa có mục tiêu cá nhân. Ứng dụng dùng mốc {DEFAULT_VISUAL_TARGET} {unit} để hiển thị.
+        </ThemedText>
+      )}
+
+      <View style={styles.statsRow}>
+        <View style={styles.statItem}>
+          <ThemedText variant="h4" weight="700">
+            {Math.round(visualTarget).toLocaleString()}
+          </ThemedText>
+          <ThemedText variant="caption" color="textSecondary">
+            {targetLabel}
+          </ThemedText>
+        </View>
+        <View style={styles.statItem}>
+          <ThemedText variant="h4" weight="700" color="primary">
+            {Math.round(value).toLocaleString()}
+          </ThemedText>
+          <ThemedText variant="caption" color="textSecondary">
+            Đã nạp
+          </ThemedText>
+        </View>
+        <View style={styles.statItem}>
+          <ThemedText variant="h4" weight="700" color="success">
+            {percentage}%
+          </ThemedText>
+          <ThemedText variant="caption" color="textSecondary">
+            Tiến độ
+          </ThemedText>
+        </View>
+      </View>
+    </Animated.View>
+  );
 };
 
 export default StatsHeroCard;

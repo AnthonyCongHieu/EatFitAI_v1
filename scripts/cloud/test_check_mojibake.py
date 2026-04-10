@@ -7,9 +7,7 @@ from pathlib import Path
 
 
 MODULE_PATH = Path(__file__).resolve().with_name("check_mojibake.py")
-MODULE_SPEC = importlib.util.spec_from_file_location(
-    "check_mojibake", MODULE_PATH
-)
+MODULE_SPEC = importlib.util.spec_from_file_location("check_mojibake", MODULE_PATH)
 check_mojibake = importlib.util.module_from_spec(MODULE_SPEC)
 assert MODULE_SPEC.loader is not None
 MODULE_SPEC.loader.exec_module(check_mojibake)
@@ -18,12 +16,12 @@ MODULE_SPEC.loader.exec_module(check_mojibake)
 class MojibakeDetectorTests(unittest.TestCase):
     def test_has_mojibake_flags_high_confidence_sequences(self) -> None:
         samples = (
-            "Chuỗi lỗi Ä‘iển hình",
-            "Chuỗi lỗi Æ°u tiên",
-            "Chuỗi lỗi á»©ng dụng",
-            "Chuỗi lỗi áº¥n tượng",
-            "Quote lỗi â€™ trong text",
-            f"Ký tự thay thế {check_mojibake.REPLACEMENT_CHARACTER} ở đây",
+            "Kh\u00c3ng th\u1ec3 t\u1ea3i d\u1eef li\u1ec7u",
+            "\u00c4\u0090\u00c3 xong b\u01b0\u1edbc x\u00e1c minh",
+            "Ti\u00e1\u00bap t\u1ee5c v\u1edbi lane smoke",
+            "M\u00c3\u00a3 l\u1ed7i m\u00e1\u00bb\u00a5c ti\u00c3\u00aau b\u1ecb h\u1ecfng",
+            "Quote \u00e2\u20ac\u2122 b\u1ecb l\u1ed7i trong text",
+            f"K\u00fd t\u1ef1 thay th\u1ebf {check_mojibake.REPLACEMENT_CHARACTER} \u1edf \u0111\u00e2y",
         )
 
         for sample in samples:
@@ -32,9 +30,10 @@ class MojibakeDetectorTests(unittest.TestCase):
 
     def test_has_mojibake_does_not_flag_valid_text(self) -> None:
         valid_samples = (
-            "ĐÃ TẢI dữ liệu UTF-8 an toàn",
-            "TẢI dữ liệu tiếng Việt bình thường",
-            "ÀÁÂÃÄÅÆÇ là chuỗi Latin-extended hợp lệ",
+            "Đã tải dữ liệu UTF-8 an toàn",
+            "Tiếp tục lane smoke cloud-first",
+            "Không thể kết luận lỗi nếu chưa có evidence",
+            "Mốc mục tiêu 2000 kcal chỉ là nhãn hiển thị",
         )
 
         for sample in valid_samples:
@@ -58,12 +57,12 @@ class MojibakeDetectorTests(unittest.TestCase):
             root = Path(tmp_dir)
             source_path = root / "service.py"
             source_path.write_text(
-                "an toàn\nChuỗi lỗi Ä‘ây rồi\n",
+                "an toan\nKh\u00c3ng th\u1ec3 t\u1ea3i d\u1eef li\u1ec7u\n",
                 encoding="utf-8",
             )
             skipped_path = root / "venv" / "Lib" / "site-packages" / "sample.py"
             skipped_path.parent.mkdir(parents=True, exist_ok=True)
-            skipped_path.write_text("Chuỗi lỗi Ä‘ây rồi\n", encoding="utf-8")
+            skipped_path.write_text("Kh\u00c3ng th\u1ec3 t\u1ea3i d\u1eef li\u1ec7u\n", encoding="utf-8")
 
             hits = list(check_mojibake.iter_hits(root))
 
@@ -71,7 +70,7 @@ class MojibakeDetectorTests(unittest.TestCase):
         path, line_no, line = hits[0]
         self.assertEqual(path.name, "service.py")
         self.assertEqual(line_no, 2)
-        self.assertEqual(line, "Chuỗi lỗi Ä‘ây rồi")
+        self.assertEqual(line, "Kh\u00c3ng thể tải dữ liệu")
 
 
 if __name__ == "__main__":

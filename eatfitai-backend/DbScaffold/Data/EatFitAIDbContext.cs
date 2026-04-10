@@ -338,6 +338,7 @@ public partial class EatFitAIDbContext : DbContext
             entity.HasIndex(e => e.Email, "UQ_Users_Email").IsUnique();
 
             entity.Property(e => e.UserId).HasDefaultValueSql("gen_random_uuid()");
+            entity.Property(e => e.AvatarUrl).HasMaxLength(500);
             entity.Property(e => e.CreatedAt)
                 .HasPrecision(3)
                 .HasDefaultValueSql("NOW() AT TIME ZONE 'UTC'");

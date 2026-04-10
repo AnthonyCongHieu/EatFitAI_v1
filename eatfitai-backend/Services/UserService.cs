@@ -4,24 +4,43 @@ using EatFitAI.API.DTOs.User;
 using EatFitAI.API.DbScaffold.Models;
 using EatFitAI.API.Repositories.Interfaces;
 using EatFitAI.API.Services.Interfaces;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Hosting;
 
 namespace EatFitAI.API.Services
 {
     public class UserService : IUserService
     {
+        private static readonly HashSet<string> AllowedAvatarContentTypes = new(StringComparer.OrdinalIgnoreCase)
+        {
+            "image/jpeg",
+            "image/jpg",
+            "image/png",
+            "image/webp"
+        };
+
         private readonly IUserRepository _userRepository;
         private readonly EatFitAIDbContext _context;
         private readonly IMapper _mapper;
+        private readonly ISupabaseStorageService _supabaseStorageService;
+        private readonly IHostEnvironment _environment;
+        private readonly ILogger<UserService> _logger;
 
         public UserService(
             IUserRepository userRepository,
             EatFitAIDbContext context,
-            IMapper mapper)
+            IMapper mapper,
+            ISupabaseStorageService supabaseStorageService,
+            IHostEnvironment environment,
+            ILogger<UserService> logger)
         {
             _userRepository = userRepository;
             _context = context;
             _mapper = mapper;
+            _supabaseStorageService = supabaseStorageService;
+            _environment = environment;
+            _logger = logger;
         }
 
         public async Task<UserDto> GetUserByIdAsync(Guid userId)
@@ -142,6 +161,8 @@ namespace EatFitAI.API.Services
 
             // Update User info
             user.DisplayName = userProfileDto.DisplayName;
+            if (userProfileDto.AvatarUrl != null)
+                user.AvatarUrl = userProfileDto.AvatarUrl;
             
             // Update profile fields for AI nutrition
             if (userProfileDto.Gender != null)
@@ -193,6 +214,22 @@ namespace EatFitAI.API.Services
             return await GetUserProfileAsync(userId);
         }
 
+        public async Task<string> UpdateAvatarAsync(Guid userId, IFormFile file, string? uploadsRoot)
+        {
+            var user = await _userRepository.GetByIdAsync(userId);
+            if (user == null)
+            {
+                throw new KeyNotFoundException("Không tìm thấy người dùng");
+            }
+
+            var avatarUrl = await SaveAvatarAsync(file, userId, uploadsRoot);
+            user.AvatarUrl = avatarUrl;
+            _userRepository.Update(user);
+            await _context.SaveChangesAsync();
+
+            return avatarUrl;
+        }
+
         public async Task DeleteUserAsync(Guid userId)
         {
             var user = await _userRepository.GetByIdAsync(userId);
@@ -239,6 +276,58 @@ namespace EatFitAI.API.Services
             // Finally, delete the user
             _userRepository.Remove(user);
             await _context.SaveChangesAsync();
+        }
+
+        private async Task<string> SaveAvatarAsync(IFormFile file, Guid userId, string? uploadsRoot)
+        {
+            if (file == null || file.Length <= 0)
+            {
+                throw new ArgumentException("File avatar không hợp lệ.");
+            }
+
+            var contentType = file.ContentType ?? string.Empty;
+            if (!AllowedAvatarContentTypes.Contains(contentType))
+            {
+                throw new ArgumentException("Chỉ chấp nhận file JPG, PNG hoặc WEBP.");
+            }
+
+            var extension = Path.GetExtension(file.FileName);
+            if (string.IsNullOrWhiteSpace(extension))
+            {
+                extension = contentType.ToLowerInvariant() switch
+                {
+                    "image/png" => ".png",
+                    "image/webp" => ".webp",
+                    _ => ".jpg",
+                };
+            }
+
+            if (_supabaseStorageService.IsConfigured)
+            {
+                var objectPath = $"avatars/{userId:N}/{Guid.NewGuid():N}{extension.ToLowerInvariant()}";
+                return await _supabaseStorageService.UploadUserFoodImageAsync(file, objectPath);
+            }
+
+            if (_environment.IsProduction())
+            {
+                _logger.LogError("Avatar upload bị chặn vì cloud storage chưa được cấu hình cho production.");
+                throw new InvalidOperationException(
+                    "Cloud storage chưa được cấu hình cho avatar trong môi trường production.");
+            }
+
+            var root = uploadsRoot;
+            if (string.IsNullOrWhiteSpace(root))
+            {
+                root = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", "avatars");
+            }
+
+            Directory.CreateDirectory(root);
+            var fileName = $"{userId:N}-{Guid.NewGuid():N}{extension.ToLowerInvariant()}";
+            var fullPath = Path.Combine(root, fileName);
+            await using var stream = File.Create(fullPath);
+            await file.CopyToAsync(stream);
+
+            return $"/uploads/avatars/{fileName}";
         }
     }
 }

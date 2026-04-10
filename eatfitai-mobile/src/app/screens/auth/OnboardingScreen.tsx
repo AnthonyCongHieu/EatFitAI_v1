@@ -159,6 +159,8 @@ const OnboardingScreen = (): React.ReactElement => {
   const glass = glassStyles(isDark);
   const insets = useSafeAreaInsets();
   const updateProfile = useProfileStore((s) => s.updateProfile);
+  const fetchProfile = useProfileStore((s) => s.fetchProfile);
+  const invalidateProfile = useProfileStore((s) => s.invalidateProfile);
 
   const [currentStep, setCurrentStep] = useState(0);
   const [isCalculating, setIsCalculating] = useState(false);
@@ -373,6 +375,15 @@ const OnboardingScreen = (): React.ReactElement => {
         });
       } else {
         showSuccess('settings_saved', { text1: '🎉 Thiết lập hoàn tất!' });
+      }
+
+      invalidateProfile();
+      try {
+        await fetchProfile({ force: true });
+      } catch (profileRefreshError) {
+        if (__DEV__) {
+          console.warn('[Onboarding] Failed to refresh profile after completion:', profileRefreshError);
+        }
       }
 
       // Auth state change will cause AppNavigator to swap from onboarding to AppTabs.

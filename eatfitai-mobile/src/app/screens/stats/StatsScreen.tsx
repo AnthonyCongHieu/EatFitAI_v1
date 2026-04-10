@@ -131,6 +131,8 @@ const StatsScreen = (): React.ReactElement => {
         const today = new Date().toISOString().split('T')[0];
         return weekSummary.days.find((d) => d.date === today);
     }, [weekSummary]);
+    const hasTargetCalories =
+        typeof summary?.targetCalories === 'number' && summary.targetCalories > 0;
 
     // Handle refresh
     const handleRefresh = () => {
@@ -227,7 +229,8 @@ const StatsScreen = (): React.ReactElement => {
                         {/* Sử dụng summary từ useDiaryStore để đồng bộ với HomeScreen */}
                         <StatsHeroCard
                             value={summary?.totalCalories || 0}
-                            target={summary?.targetCalories || 2000}
+                            target={hasTargetCalories ? summary?.targetCalories ?? null : null}
+                            targetStatus={summary ? (hasTargetCalories ? 'loaded' : 'missing') : 'loading'}
                             unit="kcal"
                             label="Hôm nay"
                         />

@@ -23,7 +23,7 @@ import Icon from '../../components/Icon';
 import { useDiaryStore } from '../../store/useDiaryStore';
 import { useAppTheme } from '../../theme/ThemeProvider';
 import type { RootStackParamList } from '../types';
-import { diaryService, type DaySummary } from '../../services/diaryService';
+import type { DaySummary } from '../../services/diaryService';
 import { healthService } from '../../services/healthService';
 import { t } from '../../i18n/vi';
 import { handleApiErrorWithCustomMessage } from '../../utils/errorHandler';
@@ -60,6 +60,7 @@ const HomeScreen = (): React.ReactElement => {
   const navigation = useNavigation<NavigationProp>();
   const summary = useDiaryStore((s) => s.summary);
   const fetchSummary = useDiaryStore((s) => s.fetchSummary);
+  const deleteEntry = useDiaryStore((s) => s.deleteEntry);
   const queryClient = useQueryClient();
   const { isLoading, isFetching, isError, refetch } = useQuery<DaySummary | null>({
     queryKey: ['home-summary'],
@@ -196,15 +197,13 @@ const HomeScreen = (): React.ReactElement => {
           text: t('common.delete'),
           style: 'destructive',
           onPress: () => {
-            diaryService
-              .deleteEntry(entryId)
+            deleteEntry(entryId)
               .then(() => {
                 Toast.show({
                   type: 'success',
                   text1: t('common.removed'),
                   text2: t('common.updated'),
                 });
-                // ⚡ Invalidate cache để load lại data mới
                 queryClient.invalidateQueries({ queryKey: ['home-summary'] });
                 queryClient.invalidateQueries({ queryKey: ['diary-entries'] });
               })
@@ -236,7 +235,7 @@ const HomeScreen = (): React.ReactElement => {
         },
       ]);
     },
-    [queryClient],
+    [deleteEntry, queryClient],
   );
 
   // Calculate remaining calories
@@ -260,6 +259,10 @@ const HomeScreen = (): React.ReactElement => {
       return 0;
     return Math.min(1, summary.totalCalories / summary.targetCalories);
   }, [summary]);
+
+  const hasTargetCalories =
+    typeof summary?.targetCalories === 'number' && summary.targetCalories > 0;
+  const calorieTargetForUi = hasTargetCalories ? summary?.targetCalories ?? null : null;
 
   // Animate values when they change
   useEffect(() => {
@@ -362,11 +365,18 @@ const HomeScreen = (): React.ReactElement => {
             style={glass.card}
             accessible={true}
             accessibilityRole="summary"
-            accessibilityLabel={`Còn ${Math.round(remainingCalories)} calo. Đã ăn ${summary?.totalCalories || 0} trong ${summary?.targetCalories || 0} calo mục tiêu.`}
+            accessibilityLabel={
+              hasTargetCalories
+                ? `Còn ${Math.round(remainingCalories)} calo. Đã ăn ${
+                    summary?.totalCalories || 0
+                  } trong ${summary?.targetCalories || 0} calo mục tiêu.`
+                : `Đã ăn ${summary?.totalCalories || 0} calo hôm nay. Chưa có mục tiêu dinh dưỡng.`
+            }
           >
             <CalorieRing
               consumed={summary?.totalCalories || 0}
-              target={summary?.targetCalories || 2000}
+              target={calorieTargetForUi}
+              targetStatus={summary ? (hasTargetCalories ? 'loaded' : 'missing') : 'loading'}
               protein={summary?.protein || 0}
               carbs={summary?.carbs || 0}
               fat={summary?.fat || 0}

@@ -1,0 +1,29 @@
+appId: com.eatfitai.app
+---
+- evalScript: ${output.foundElement = 0}
+- evalScript: ${output.scrollAttempts = 0}
+- runFlow:
+    when:
+      visible:
+        id: "${TARGET_ID}"
+    commands:
+      - evalScript: ${output.foundElement = 1}
+- repeat:
+    while:
+      true: ${output.foundElement == 0 && output.scrollAttempts < 8}
+    commands:
+      - swipe:
+          start: 50%, 88%
+          end: 50%, 44%
+          duration: 500
+      - waitForAnimationToEnd:
+          timeout: 2000
+      - evalScript: ${output.scrollAttempts = output.scrollAttempts + 1}
+      - runFlow:
+          when:
+            visible:
+              id: "${TARGET_ID}"
+          commands:
+            - evalScript: ${output.foundElement = 1}
+- assertVisible:
+    id: "${TARGET_ID}"

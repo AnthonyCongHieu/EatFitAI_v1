@@ -1,244 +1,243 @@
-/**
- * Voice Store - Zustand state management for Voice AI Assistant
- */
-
 import { create } from 'zustand';
-import voiceService, {
-    ParsedVoiceCommand,
-} from '../services/voiceService';
+
+import { useProfileStore } from './useProfileStore';
+import voiceService, { ParsedVoiceCommand } from '../services/voiceService';
 
 type VoiceStatus =
-    | 'idle'           // Sẵn sàng
-    | 'listening'      // Đang ghi âm
-    | 'processing'     // Đang xử lý STT
-    | 'parsing'        // Đang phân tích intent
-    | 'review'         // Cần kiểm tra trước khi lưu
-    | 'executing'      // Đang thực hiện lệnh
-    | 'success'        // Hoàn thành
-    | 'error';         // Lỗi
+  | 'idle'
+  | 'listening'
+  | 'processing'
+  | 'parsing'
+  | 'review'
+  | 'executing'
+  | 'success'
+  | 'error';
 
 interface VoiceState {
-    // State
-    status: VoiceStatus;
-    isSheetOpen: boolean;
-    recognizedText: string;
-    parsedCommand: ParsedVoiceCommand | null;
-    error: string | null;
-    lastExecutedAction: string | null;
-    /** Dữ liệu trả về từ backend sau khi execute (calories, weight, etc.) */
-    executedData: {
-        type?: string;
-        details?: string;
-        totalCalories?: number;
-        targetCalories?: number;
-        remaining?: number;
-        currentWeight?: number;
-        newWeight?: number;
-        requireConfirm?: boolean;
-    } | null;
-
-    // Actions
-    setStatus: (status: VoiceStatus) => void;
-    openSheet: () => void;
-    closeSheet: () => void;
-    setRecognizedText: (text: string) => void;
-    processText: (text: string) => Promise<void>;
-    executeCommand: () => Promise<void>;
-    confirmWeight: (weight: number) => Promise<void>;
-    reset: () => void;
+  status: VoiceStatus;
+  isSheetOpen: boolean;
+  recognizedText: string;
+  parsedCommand: ParsedVoiceCommand | null;
+  error: string | null;
+  lastExecutedAction: string | null;
+  executedData: {
+    type?: string;
+    details?: string;
+    totalCalories?: number;
+    targetCalories?: number;
+    remaining?: number;
+    currentWeight?: number;
+    newWeight?: number;
+    requireConfirm?: boolean;
+  } | null;
+  setStatus: (status: VoiceStatus) => void;
+  openSheet: () => void;
+  closeSheet: () => void;
+  setRecognizedText: (text: string) => void;
+  processText: (text: string) => Promise<void>;
+  executeCommand: () => Promise<void>;
+  confirmWeight: (weight: number) => Promise<void>;
+  reset: () => void;
 }
 
 const initialState = {
-    status: 'idle' as VoiceStatus,
-    isSheetOpen: false,
-    recognizedText: '',
-    parsedCommand: null,
-    error: null,
-    lastExecutedAction: null,
-    executedData: null,
+  status: 'idle' as VoiceStatus,
+  isSheetOpen: false,
+  recognizedText: '',
+  parsedCommand: null,
+  error: null,
+  lastExecutedAction: null,
+  executedData: null,
+};
+
+const refreshProfileAfterWeightUpdate = () => {
+  const profileStore = useProfileStore.getState();
+  profileStore.invalidateProfile();
+  void profileStore.fetchProfile({ force: true }).catch(() => undefined);
 };
 
 export const useVoiceStore = create<VoiceState>((set, get) => ({
-    ...initialState,
+  ...initialState,
 
-    setStatus: (status: VoiceStatus) => set({ status }),
+  setStatus: (status) => set({ status }),
 
-    openSheet: () => set({ isSheetOpen: true, status: 'listening', error: null }),
+  openSheet: () => set({ isSheetOpen: true, status: 'listening', error: null }),
 
-    closeSheet: () => set({ isSheetOpen: false, status: 'idle' }),
+  closeSheet: () => set({ isSheetOpen: false, status: 'idle' }),
 
-    setRecognizedText: (text: string) => set({ recognizedText: text }),
+  setRecognizedText: (text) => set({ recognizedText: text }),
 
-    /**
-     * Process recognized text and parse intent using Ollama AI
-     * ASK_CALORIES sẽ được execute ngay, các intent ghi dữ liệu luôn vào chế độ review
-     */
-    processText: async (text: string) => {
+  async processText(text) {
+    set({
+      status: 'parsing',
+      recognizedText: text,
+      parsedCommand: null,
+      executedData: null,
+      lastExecutedAction: null,
+      error: null,
+    });
+
+    try {
+      const response = await voiceService.processVoiceText({ text });
+
+      if (response.success && response.command) {
+        const command = response.command;
+
+        if (command.intent === 'ASK_CALORIES') {
+          set({ status: 'executing', parsedCommand: command, error: null });
+
+          try {
+            const execResponse = await voiceService.executeCommand(command);
+            if (execResponse.success && execResponse.executedAction) {
+              set({
+                status: 'success',
+                lastExecutedAction: execResponse.executedAction.details || 'Đã thực hiện.',
+                executedData: {
+                  type: execResponse.executedAction.type,
+                  details: execResponse.executedAction.details,
+                  ...execResponse.executedAction.data,
+                },
+              });
+            } else {
+              set({
+                status: 'error',
+                error: execResponse.error || 'Không thể lấy thông tin dinh dưỡng.',
+              });
+            }
+          } catch {
+            set({ status: 'error', error: 'Không thể lấy thông tin calo.' });
+          }
+          return;
+        }
+
+        if (command.intent === 'LOG_WEIGHT') {
+          set({ status: 'executing', parsedCommand: command, error: null });
+
+          try {
+            const execResponse = await voiceService.executeCommand(command);
+            if (execResponse.success && execResponse.executedAction) {
+              set({
+                status: 'review',
+                parsedCommand: command,
+                lastExecutedAction:
+                  execResponse.executedAction.details || 'Kiểm tra trước khi lưu cân nặng.',
+                executedData: {
+                  type: execResponse.executedAction.type,
+                  details: execResponse.executedAction.details,
+                  ...execResponse.executedAction.data,
+                },
+              });
+            } else {
+              set({
+                status: 'error',
+                error: execResponse.error || 'Không thể lấy thông tin cân nặng.',
+              });
+            }
+          } catch {
+            set({ status: 'error', error: 'Không thể lấy thông tin cân nặng.' });
+          }
+          return;
+        }
+
         set({
-            status: 'parsing',
-            recognizedText: text,
-            parsedCommand: null,
-            executedData: null,
-            lastExecutedAction: null,
-            error: null,
+          status: command.intent !== 'UNKNOWN' ? 'review' : 'idle',
+          parsedCommand: command,
+          lastExecutedAction: null,
+          executedData: null,
+          error:
+            command.intent === 'UNKNOWN'
+              ? response.error || 'Không hiểu lệnh. Hãy thử lại.'
+              : null,
         });
+        return;
+      }
 
-        try {
-            // Parse with Ollama AI
-            const response = await voiceService.processVoiceText({ text });
+      set({
+        status: 'idle',
+        parsedCommand: null,
+        error: response.error || 'Không hiểu lệnh. Hãy thử lại.',
+      });
+    } catch (error: any) {
+      console.error('[VoiceStore] Parse error:', error);
+      set({
+        status: 'error',
+        parsedCommand: null,
+        error: 'Không thể kết nối AI giọng nói. Vui lòng thử lại.',
+      });
+    }
+  },
 
-            if (response.success && response.command) {
-                const command = response.command;
+  async executeCommand() {
+    const { parsedCommand } = get();
+    if (!parsedCommand || parsedCommand.intent === 'UNKNOWN') {
+      set({ error: 'Không có lệnh hợp lệ để thực hiện.' });
+      return;
+    }
 
-                // ASK_CALORIES: Auto-execute ngay để hiển thị calories
-                if (command.intent === 'ASK_CALORIES') {
-                    set({ status: 'executing', parsedCommand: command, error: null });
+    set({ status: 'executing', error: null });
 
-                    try {
-                        const execResponse = await voiceService.executeCommand(command);
-                        if (execResponse.success && execResponse.executedAction) {
-                            set({
-                                status: 'success',
-                                lastExecutedAction: execResponse.executedAction.details || 'Đã thực hiện',
-                                executedData: {
-                                    type: execResponse.executedAction.type,
-                                    details: execResponse.executedAction.details,
-                                    ...execResponse.executedAction.data,
-                                },
-                            });
-                        } else {
-                            set({ status: 'error', error: execResponse.error || 'Không thể lấy thông tin' });
-                        }
-                    } catch {
-                        set({ status: 'error', error: 'Lỗi khi lấy thông tin calories' });
-                    }
-                    return;
-                }
+    try {
+      const response = await voiceService.executeCommand(parsedCommand);
 
-                // LOG_WEIGHT: Execute để lấy current weight, nhưng cần confirm để lưu
-                if (command.intent === 'LOG_WEIGHT') {
-                    set({ status: 'executing', parsedCommand: command, error: null });
+      if (response.success && response.executedAction) {
+        set({
+          status: 'success',
+          lastExecutedAction: response.executedAction.details || 'Đã thực hiện lệnh.',
+          executedData: {
+            type: response.executedAction.type,
+            details: response.executedAction.details,
+            ...response.executedAction.data,
+          },
+        });
+        return;
+      }
 
-                    try {
-                        const execResponse = await voiceService.executeCommand(command);
-                        if (execResponse.success && execResponse.executedAction) {
-                            set({
-                                status: 'review',
-                                parsedCommand: command,
-                                lastExecutedAction: execResponse.executedAction.details || 'Kiểm tra trước khi lưu cân nặng',
-                                executedData: {
-                                    type: execResponse.executedAction.type,
-                                    details: execResponse.executedAction.details,
-                                    ...execResponse.executedAction.data,
-                                },
-                            });
-                        } else {
-                            set({ status: 'error', error: execResponse.error || 'Không thể lấy thông tin' });
-                        }
-                    } catch {
-                        set({ status: 'error', error: 'Lỗi khi lấy thông tin cân nặng' });
-                    }
-                    return;
-                }
+      set({
+        status: 'error',
+        error: response.error || 'Không thể thực hiện lệnh.',
+      });
+    } catch (error: any) {
+      set({
+        status: 'error',
+        error: error?.message || 'Không thể thực hiện lệnh.',
+      });
+    }
+  },
 
-                // Các intent khác (ADD_FOOD, etc.): Hiển thị và chờ user confirm
-                set({
-                    status: command.intent !== 'UNKNOWN' ? 'review' : 'idle',
-                    parsedCommand: command,
-                    lastExecutedAction: null,
-                    executedData: null,
-                    error: command.intent === 'UNKNOWN' ? 'Không hiểu lệnh. Hãy thử lại.' : null,
-                });
-            } else {
-                set({
-                    status: 'idle',
-                    parsedCommand: null,
-                    error: response.error || 'Không hiểu lệnh. Hãy thử lại.',
-                });
-            }
-        } catch (error: any) {
-            console.error('[VoiceStore] Parse error:', error);
-            set({
-                status: 'error',
-                parsedCommand: null,
-                error: 'Không thể kết nối AI. Vui lòng thử lại.',
-            });
-        }
-    },
+  async confirmWeight(weight) {
+    set({ status: 'executing', error: null });
 
-    /**
-     * Execute the parsed command
-     */
-    executeCommand: async () => {
-        const { parsedCommand } = get();
-        if (!parsedCommand || parsedCommand.intent === 'UNKNOWN') {
-            set({ error: 'Không có lệnh để thực hiện' });
-            return;
-        }
+    try {
+      const response = await voiceService.confirmWeight(weight);
 
-        set({ status: 'executing', error: null });
+      if (response.success) {
+        refreshProfileAfterWeightUpdate();
+        set({
+          status: 'success',
+          lastExecutedAction:
+            response.executedAction?.details || `Đã lưu cân nặng ${weight} kg.`,
+          executedData: {
+            type: 'LOG_WEIGHT',
+            details: response.executedAction?.details,
+            ...response.executedAction?.data,
+          },
+        });
+        return;
+      }
 
-        try {
-            const response = await voiceService.executeCommand(parsedCommand);
+      set({
+        status: 'error',
+        error: response.error || 'Không thể lưu cân nặng.',
+      });
+    } catch (error: any) {
+      set({
+        status: 'error',
+        error: error?.message || 'Không thể lưu cân nặng.',
+      });
+    }
+  },
 
-            if (response.success && response.executedAction) {
-                set({
-                    status: 'success',
-                    lastExecutedAction: response.executedAction.details || 'Đã thực hiện lệnh',
-                    executedData: {
-                        type: response.executedAction.type,
-                        details: response.executedAction.details,
-                        ...response.executedAction.data,
-                    },
-                });
-            } else {
-                set({
-                    status: 'error',
-                    error: response.error || 'Không thể thực hiện lệnh',
-                });
-            }
-        } catch (error: any) {
-            set({
-                status: 'error',
-                error: error?.message || 'Lỗi khi thực hiện lệnh',
-            });
-        }
-    },
-
-    /**
-     * Confirm and save weight after user approval
-     */
-    confirmWeight: async (weight: number) => {
-        set({ status: 'executing', error: null });
-
-        try {
-            const response = await voiceService.confirmWeight(weight);
-
-            if (response.success) {
-                set({
-                    status: 'success',
-                    lastExecutedAction: response.executedAction?.details || `Đã lưu cân nặng ${weight}kg`,
-                    executedData: {
-                        type: 'LOG_WEIGHT',
-                        details: response.executedAction?.details,
-                        ...response.executedAction?.data,
-                    },
-                });
-            } else {
-                set({
-                    status: 'error',
-                    error: response.error || 'Không thể lưu cân nặng',
-                });
-            }
-        } catch (error: any) {
-            set({
-                status: 'error',
-                error: error?.message || 'Lỗi khi lưu cân nặng',
-            });
-        }
-    },
-
-    reset: () => set(initialState),
+  reset: () => set(initialState),
 }));
 
 export default useVoiceStore;

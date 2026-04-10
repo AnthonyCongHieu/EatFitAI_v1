@@ -2,11 +2,11 @@ import React from 'react';
 import { StyleSheet, View } from 'react-native';
 import Animated, { FadeInUp } from 'react-native-reanimated';
 
-import { ThemedText } from '../ThemedText';
 import Button from '../Button';
+import { ThemedText } from '../ThemedText';
 import { AppCard } from '../ui/AppCard';
-import { useAppTheme } from '../../theme/ThemeProvider';
 import type { ParsedVoiceCommand, VoiceIntent } from '../../services/voiceService';
+import { useAppTheme } from '../../theme/ThemeProvider';
 
 interface ExecutedData {
   type?: string;
@@ -27,37 +27,12 @@ interface VoiceResultCardProps {
   executedData?: ExecutedData | null;
 }
 
-const INTENT_CONFIG: Record<VoiceIntent, { icon: string; emoji: string; label: string; color: string }> = {
-  ADD_FOOD: {
-    icon: 'restaurant',
-    emoji: '',
-    label: 'Thêm món ăn',
-    color: '#10B981',
-  },
-  LOG_WEIGHT: {
-    icon: 'scale',
-    emoji: '',
-    label: 'Ghi cân nặng',
-    color: '#3B82F6',
-  },
-  ASK_CALORIES: {
-    icon: 'flame',
-    emoji: '',
-    label: 'Xem calories',
-    color: '#F59E0B',
-  },
-  ASK_NUTRITION: {
-    icon: 'nutrition',
-    emoji: '',
-    label: 'Xem dinh dưỡng',
-    color: '#8B5CF6',
-  },
-  UNKNOWN: {
-    icon: 'help-circle',
-    emoji: '',
-    label: 'Không hiểu',
-    color: '#6B7280',
-  },
+const INTENT_CONFIG: Record<VoiceIntent, { label: string; color: string }> = {
+  ADD_FOOD: { label: 'Thêm món ăn', color: '#10B981' },
+  LOG_WEIGHT: { label: 'Ghi cân nặng', color: '#3B82F6' },
+  ASK_CALORIES: { label: 'Xem calo', color: '#F59E0B' },
+  ASK_NUTRITION: { label: 'Xem dinh dưỡng', color: '#8B5CF6' },
+  UNKNOWN: { label: 'Không hiểu lệnh', color: '#6B7280' },
 };
 
 const MEAL_LABELS: Record<string, string> = {
@@ -86,9 +61,10 @@ export const VoiceResultCard = ({
     command.intent === 'ADD_FOOD' ||
     command.intent === 'LOG_WEIGHT' ||
     isLowConfidence;
+
   const reviewTitle = isLowConfidence
     ? 'Độ tin cậy chưa cao, hãy kiểm tra kỹ trước khi lưu.'
-    : 'Voice Beta: kiểm tra trước khi lưu vào nhật ký.';
+    : 'Voice Beta luôn cần bạn xác nhận trước khi lưu.';
   const reviewBody =
     command.reviewReason ||
     (command.intent === 'ADD_FOOD'
@@ -230,7 +206,9 @@ export const VoiceResultCard = ({
       if (executedData?.totalCalories !== undefined) {
         rows.push({
           label: 'Đã tiêu thụ',
-          value: `${Math.round(executedData.totalCalories)} / ${Math.round(executedData.targetCalories || 0)} kcal`,
+          value: `${Math.round(executedData.totalCalories)} / ${Math.round(
+            executedData.targetCalories || 0,
+          )} kcal`,
         });
         if (executedData.remaining !== undefined) {
           const remaining = Math.round(executedData.remaining);
@@ -240,12 +218,12 @@ export const VoiceResultCard = ({
           });
         }
       } else {
-        rows.push({ label: 'Thao tác', value: 'Nhấn xác nhận để xem calories' });
+        rows.push({ label: 'Thao tác', value: 'Nhấn xác nhận để xem calo.' });
       }
     }
 
     if (command.intent === 'ASK_NUTRITION') {
-      rows.push({ label: 'Thông tin', value: 'Sẽ hiển thị thông tin dinh dưỡng' });
+      rows.push({ label: 'Thông tin', value: 'Sẽ hiển thị dữ liệu dinh dưỡng.' });
     }
 
     if (rows.length === 0) return null;
@@ -271,7 +249,7 @@ export const VoiceResultCard = ({
       <AppCard style={styles.card}>
         <View style={styles.header}>
           <View style={styles.headerText}>
-            <ThemedText variant="h4" weight="600">
+            <ThemedText variant="h4" weight="600" style={{ color: config.color }}>
               {config.label}
             </ThemedText>
             {requiresManualReview && (
@@ -326,13 +304,17 @@ export const VoiceResultCard = ({
                 color="success"
                 style={{ textAlign: 'center', marginTop: theme.spacing.md }}
               >
-                ✅ Đã lấy thông tin thành công
+                Đã lấy thông tin thành công.
               </ThemedText>
             )}
 
             {needsWeightConfirm && executedData?.newWeight && onConfirmWeight && (
               <Button
-                title={isExecuting ? 'Đang lưu...' : `Xác nhận lưu ${executedData.newWeight} kg`}
+                title={
+                  isExecuting
+                    ? 'Đang lưu...'
+                    : `Xác nhận lưu ${executedData.newWeight} kg`
+                }
                 variant="primary"
                 onPress={() => onConfirmWeight(executedData.newWeight!)}
                 loading={isExecuting}

@@ -310,6 +310,7 @@ namespace EatFitAI.API.Tests.Unit.Services
             {
                 MealDiaryId = 1,
                 UserId = _testUserId,
+                UpdatedAt = DateTime.UtcNow.AddDays(-1),
                 IsDeleted = false
             };
 
@@ -319,7 +320,7 @@ namespace EatFitAI.API.Tests.Unit.Services
             await _mealDiaryService.DeleteMealDiaryAsync(1, _testUserId);
 
             _mealDiaryRepositoryMock.Verify(
-                r => r.Update(It.Is<MealDiary>(d => d.IsDeleted)),
+                r => r.Update(It.Is<MealDiary>(d => d.IsDeleted && d.UpdatedAt > DateTime.UtcNow.AddMinutes(-1))),
                 Times.Once);
         }
 

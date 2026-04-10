@@ -2,6 +2,7 @@
 using EatFitAI.API.DTOs.User;
 using EatFitAI.API.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
 namespace EatFitAI.API.Controllers
@@ -12,10 +13,12 @@ namespace EatFitAI.API.Controllers
     public class UserController : ControllerBase
     {
         private readonly IUserService _userService;
+        private readonly IWebHostEnvironment _environment;
 
-        public UserController(IUserService userService)
+        public UserController(IUserService userService, IWebHostEnvironment environment)
         {
             _userService = userService;
+            _environment = environment;
         }
 
         [HttpGet("profile")]
@@ -41,6 +44,40 @@ namespace EatFitAI.API.Controllers
                 var userId = GetUserIdFromToken();
                 var updatedUser = await _userService.UpdateUserProfileAsync(userId, userDto);
                 return Ok(updatedUser);
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(new { message = ex.Message });
+            }
+        }
+
+        [HttpPost("profile/avatar")]
+        [Consumes("multipart/form-data")]
+        [RequestSizeLimit(5_000_000)]
+        public async Task<ActionResult<object>> UploadAvatar([FromForm] IFormFile? file)
+        {
+            try
+            {
+                if (file == null)
+                {
+                    return BadRequest(new { message = "Thiếu file avatar." });
+                }
+
+                var userId = GetUserIdFromToken();
+                var uploadsRoot = Path.Combine(
+                    _environment.WebRootPath ?? Path.Combine(Directory.GetCurrentDirectory(), "wwwroot"),
+                    "uploads",
+                    "avatars");
+                var avatarUrl = await _userService.UpdateAvatarAsync(userId, file, uploadsRoot);
+                return Ok(new { avatarUrl });
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return StatusCode(StatusCodes.Status503ServiceUnavailable, new { message = ex.Message });
             }
             catch (KeyNotFoundException ex)
             {

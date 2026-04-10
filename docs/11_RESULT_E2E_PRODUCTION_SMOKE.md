@@ -1,16 +1,16 @@
 # Result E2E Production Smoke
 
-Cập nhật: `2026-04-09`
+Cập nhật: `2026-04-10`
 
 Tài liệu này mô tả lane smoke production cho flow:
 
 `temp-mail -> register -> verify email -> onboarding -> reopen -> home -> AI Result -> AddMealFromVision -> diary readback`
 
-Mục tiêu:
+## Mục tiêu
 
 - xác nhận mobile đang hit `https://eatfitai-backend.onrender.com`, không phải `10.0.2.2`
 - xác nhận cloud path thật là `mobile -> Render backend -> Render ai-provider -> Supabase`
-- giới hạn số request để không đi quá budget production
+- giới hạn số request để không vượt budget production
 - lưu evidence đầy đủ cho auth, onboarding, AI Result, diary write/readback
 
 ## Runtime rules
@@ -21,23 +21,15 @@ Mục tiêu:
 4. Mỗi run chỉ dùng `1` account disposable mới tạo.
 5. Nếu `register-with-verification` còn treo hoặc Temp-Mail không nhận mail sau cửa sổ chờ, dừng full E2E và chốt blocker `auth-delivery`.
 
-## Local model parity
+## Health contract chính thức
 
-AI provider local ưu tiên:
+- Backend:
+  - `GET /health/live = 200`
+  - `GET /health/ready = 200`
+- AI provider:
+  - `GET /healthz = 200`
 
-1. `ai-provider/best.pt`
-2. `ai-provider/yolov8s.pt`
-
-Để đồng bộ model local:
-
-```powershell
-powershell -ExecutionPolicy Bypass -File .\sync-ai-provider-model.ps1
-```
-
-Mặc định script sẽ copy từ:
-
-- `C:\Users\pc2\Downloads\best.pt`
-- `C:\Users\pc2\Downloads\yolov8s.pt`
+Không dùng `GET /healthz` của backend để kết luận smoke pass/fail vì endpoint này hiện trả `404`.
 
 ## Start session
 
@@ -59,12 +51,14 @@ Script sẽ:
 
 ## Session artifacts
 
-Mỗi session sẽ có:
+Mỗi session phải có:
 
 - `preflight-results.json`
 - `request-budget.json`
 - `fixture-manifest.json`
+- `session-observations.json`
 - `manual-checklist.md`
+- `rehearsal-report.md`
 
 Nếu đã có account smoke:
 
@@ -85,7 +79,7 @@ Budget mặc định mỗi run:
 - `login = 1`
 - `refresh = 1`
 - `aiStatus = 1`
-- `visionDetect = 6`
+- `visionDetect = 8`
 - `mealDiaryWrite = 3`
 
 Các lệnh budget:
@@ -115,11 +109,7 @@ Nếu `hit` làm vượt limit, script sẽ fail và coi như phải dừng run.
 
 Vì emulator không có camera, chỉ dùng gallery.
 
-Tạo một thư mục fixture riêng trong thư viện VM, ví dụ:
-
-`EatFitAI Smoke 2026-04-09`
-
-### Primary gate fixtures
+Primary gate fixtures:
 
 - `egg`
 - `banana`
@@ -127,44 +117,21 @@ Tạo một thư mục fixture riêng trong thư viện VM, ví dụ:
 - `broccoli`
 - `spinach`
 
-Mỗi class nên có:
-
-- `1` ảnh primary
-- `1` ảnh backup
-
-### Benchmark only
+Benchmark only:
 
 - `chicken`
 - `beef`
 - `pork`
 
-Không dùng riêng `chicken/beef/pork` làm release gate, vì audit cũ đã từng ghi nhận `no detections`.
-
-### Tiêu chí chọn ảnh
-
-- chỉ có `1` món chính
-- món chiếm phần lớn khung hình
-- nền đơn giản
-- không collage
-- không watermark lớn
-- không tay/người che
-- file dưới `10MB`
-
-### Quy ước tên file
-
-- `ai-primary-egg-01.jpg`
-- `ai-primary-rice-01.jpg`
-- `ai-primary-broccoli-01.jpg`
-- `ai-benchmark-chicken-01.jpg`
-- `ai-benchmark-beef-01.jpg`
+Không dùng riêng `chicken/beef/pork` làm release gate.
 
 ## Manual smoke checklist
 
 1. Chạy session bằng `start-mobile-cloud-smoke.ps1`.
 2. Xác nhận `preflight-results.json` cho thấy:
-   - `GET /healthz = 200`
-   - `GET /health/live = 200`
-   - `GET /health/ready = 200`
+   - backend `GET /health/live = 200`
+   - backend `GET /health/ready = 200`
+   - ai-provider `GET /healthz = 200`
 3. Mở Temp-Mail và copy mailbox.
 4. Đăng ký account trên app với format display name `Smoke Result YYYYMMDD-HHMM`.
 5. Record budget `registerWithVerification`.
