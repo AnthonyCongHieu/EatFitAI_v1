@@ -170,7 +170,20 @@ class GeminiPoolTests(unittest.TestCase):
         ):
             pool = GeminiPoolManager.from_env()
 
-        self.assertEqual(pool.get_runtime_status()["gemini_active_project"], "backup")
+        status = pool.get_runtime_status()
+        self.assertEqual(status["gemini_active_project"], "backup")
+        self.assertEqual(status["gemini_manual_override_project_count"], 1)
+        primary = status["gemini_usage_entries"][0]
+        self.assertFalse(primary["available"])
+        self.assertEqual(primary["availabilityReason"], "pre_exhausted_from_env")
+        self.assertEqual(primary["quotaSource"], "manual_override")
+
+    def test_unused_project_starts_as_backend_not_observed(self) -> None:
+        pool = GeminiPoolManager([GeminiPoolEntry("primary", "project-a", "slot-1", "key-1", DEFAULT_MODEL)])
+        status = pool.get_runtime_status()
+        primary = status["gemini_usage_entries"][0]
+        self.assertEqual(status["gemini_quota_truth_source"], "backend_runtime_state_plus_manual_overrides")
+        self.assertEqual(primary["quotaSource"], "backend_not_observed")
 
     def test_rotates_on_rolling_rpm_and_marks_recovery(self) -> None:
         clock = MutableClock(datetime(2026, 4, 10, 12, 0, 0))

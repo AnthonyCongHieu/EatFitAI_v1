@@ -65,6 +65,7 @@ class GeminiUnavailableError(GeminiPoolError):
 class GeminiAvailability:
     available: bool
     reason: Optional[str] = None
+    quota_source: str = "backend_not_observed"
     available_after: Optional[datetime] = None
     rpm_used: int = 0
     tpm_used: int = 0
@@ -223,11 +224,13 @@ class GeminiPoolEntry:
         rpm_recovery_at = self._next_rpm_recovery_at(rpm_limit)
         tpm_recovery_at = self._next_tpm_recovery_at(tpm_limit, estimated_tokens)
         rpd_recovery_at = _parse_retry_after(_next_pacific_midnight_iso()) if rpd_limit > 0 else None
+        quota_source = self._quota_source()
 
         if not self.enabled:
             return GeminiAvailability(
                 available=False,
                 reason=self.disabled_reason or "disabled",
+                quota_source=quota_source,
                 rpm_used=rolling_requests,
                 tpm_used=rolling_tokens,
                 rpd_used=self.day_request_count,
@@ -240,6 +243,7 @@ class GeminiPoolEntry:
             return GeminiAvailability(
                 available=False,
                 reason=self.disabled_reason or "quota_cooldown",
+                quota_source=quota_source,
                 available_after=self.exhausted_until,
                 rpm_used=rolling_requests,
                 tpm_used=rolling_tokens,
@@ -253,6 +257,7 @@ class GeminiPoolEntry:
             return GeminiAvailability(
                 available=False,
                 reason=self.disabled_reason or "cooldown",
+                quota_source=quota_source,
                 available_after=self.cooldown_until,
                 rpm_used=rolling_requests,
                 tpm_used=rolling_tokens,
@@ -268,6 +273,7 @@ class GeminiPoolEntry:
             return GeminiAvailability(
                 available=False,
                 reason="rpd_limit_reached",
+                quota_source="backend_observed",
                 available_after=rpd_recovery_at,
                 rpm_used=rolling_requests,
                 tpm_used=rolling_tokens,
@@ -283,6 +289,7 @@ class GeminiPoolEntry:
             return GeminiAvailability(
                 available=False,
                 reason="rpm_limit_reached",
+                quota_source="backend_observed",
                 available_after=rpm_recovery_at,
                 rpm_used=rolling_requests,
                 tpm_used=rolling_tokens,
@@ -296,6 +303,7 @@ class GeminiPoolEntry:
             return GeminiAvailability(
                 available=False,
                 reason="request_tpm_exceeds_project_limit",
+                quota_source=quota_source,
                 rpm_used=rolling_requests,
                 tpm_used=rolling_tokens,
                 rpd_used=self.day_request_count,
@@ -310,6 +318,7 @@ class GeminiPoolEntry:
             return GeminiAvailability(
                 available=False,
                 reason="tpm_limit_reached",
+                quota_source="backend_observed",
                 available_after=tpm_recovery_at,
                 rpm_used=rolling_requests,
                 tpm_used=rolling_tokens,
@@ -329,6 +338,7 @@ class GeminiPoolEntry:
 
         return GeminiAvailability(
             available=True,
+            quota_source=quota_source,
             rpm_used=rolling_requests,
             tpm_used=rolling_tokens,
             rpd_used=self.day_request_count,
@@ -355,6 +365,7 @@ class GeminiPoolEntry:
             "rollingWindowSeconds": ROLLING_WINDOW_SECONDS,
             "available": availability.available,
             "availabilityReason": availability.reason or "available",
+            "quotaSource": availability.quota_source,
             "availableAfter": available_after.isoformat() if available_after else None,
             "rpmUsed": availability.rpm_used,
             "rpmRemaining": max(0, rpm_limit - availability.rpm_used) if rpm_limit > 0 else None,
@@ -375,6 +386,20 @@ class GeminiPoolEntry:
             "exhaustedUntil": self.exhausted_until.isoformat() if self.exhausted_until else None,
             "disabledReason": self.disabled_reason,
         }
+
+    def _quota_source(self) -> str:
+        if self.disabled_reason == "pre_exhausted_from_env":
+            return "manual_override"
+        if (
+            self.day_request_count > 0
+            or self.total_request_count > 0
+            or self.total_token_count > 0
+            or self.last_used_at is not None
+            or self.last_recovered_at is not None
+            or bool(self.rolling_events)
+        ):
+            return "backend_observed"
+        return "backend_not_observed"
 
     def _prune_rolling_events(self, now: datetime) -> None:
         cutoff = now - timedelta(seconds=ROLLING_WINDOW_SECONDS)
@@ -541,6 +566,10 @@ class GeminiPoolManager:
                 "gemini_last_failover_reason": self._last_failover_reason,
                 "gemini_retry_after": self._last_retry_after,
                 "gemini_rate_limit_scope": PROJECT_RATE_LIMIT_SCOPE,
+                "gemini_quota_truth_source": "backend_runtime_state_plus_manual_overrides",
+                "gemini_manual_override_project_count": sum(
+                    1 for item in usage_entries if item["quotaSource"] == "manual_override"
+                ),
                 "gemini_rolling_window_seconds": ROLLING_WINDOW_SECONDS,
                 "gemini_limits": {
                     "rpm": self.rpm_limit,
