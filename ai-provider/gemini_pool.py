@@ -23,6 +23,9 @@ DEFAULT_RPM_LIMIT = 5
 DEFAULT_TPM_LIMIT = 250_000
 DEFAULT_RPD_LIMIT = 20
 DEFAULT_USAGE_STATE_PATH = os.path.join("uploads", "gemini-usage-state.json")
+DEFAULT_PROBE_MIN_INTERVAL_SECONDS = 600
+DEFAULT_PROBE_MAX_PER_PROJECT_PER_DAY = 3
+DEFAULT_PROBE_PROMPT = "ping"
 ROLLING_WINDOW_SECONDS = 60
 
 try:
@@ -32,6 +35,24 @@ except Exception:
 
 GENERATE_URL_TEMPLATE = "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
 PROJECT_RATE_LIMIT_SCOPE = "project"
+PROBE_MAX_OUTPUT_TOKENS = 1
+
+STATE_AVAILABLE = "available"
+STATE_MANUAL_OVERRIDE_ACTIVE = "manual_override_active"
+STATE_MANUAL_OVERRIDE_EXPIRED_PENDING_PROBE = "manual_override_expired_pending_probe"
+STATE_PROVIDER_RPD_EXHAUSTED = "provider_rpd_exhausted"
+STATE_PROVIDER_RPM_EXHAUSTED = "provider_rpm_exhausted"
+STATE_PROVIDER_TPM_EXHAUSTED = "provider_tpm_exhausted"
+STATE_AUTH_INVALID = "auth_invalid"
+STATE_TRANSIENT_BACKOFF = "transient_backoff"
+STATE_UNKNOWN_UNOBSERVED = "unknown_unobserved"
+
+QUOTA_SOURCE_MANUAL_OVERRIDE = "manual_override"
+QUOTA_SOURCE_PROBE_CONFIRMED = "probe_confirmed"
+QUOTA_SOURCE_BACKEND_OBSERVED = "backend_observed"
+QUOTA_SOURCE_BACKEND_NOT_OBSERVED = "backend_not_observed"
+
+PROBE_RESULT_SUCCESS = "success"
 
 
 class GeminiPoolError(RuntimeError):
@@ -44,6 +65,11 @@ class GeminiPoolError(RuntimeError):
         project_alias: Optional[str] = None,
         project_id: Optional[str] = None,
         model: Optional[str] = None,
+        status_code: Optional[int] = None,
+        quota_id: Optional[str] = None,
+        quota_metric: Optional[str] = None,
+        quota_kind: Optional[str] = None,
+        provider_expected_reset_at: Optional[str] = None,
     ) -> None:
         super().__init__(message)
         self.code = code
@@ -51,6 +77,11 @@ class GeminiPoolError(RuntimeError):
         self.project_alias = project_alias
         self.project_id = project_id
         self.model = model
+        self.status_code = status_code
+        self.quota_id = quota_id
+        self.quota_metric = quota_metric
+        self.quota_kind = quota_kind
+        self.provider_expected_reset_at = provider_expected_reset_at
 
 
 class GeminiQuotaExhaustedError(GeminiPoolError):
@@ -65,7 +96,8 @@ class GeminiUnavailableError(GeminiPoolError):
 class GeminiAvailability:
     available: bool
     reason: Optional[str] = None
-    quota_source: str = "backend_not_observed"
+    state: str = STATE_UNKNOWN_UNOBSERVED
+    quota_source: str = QUOTA_SOURCE_BACKEND_NOT_OBSERVED
     available_after: Optional[datetime] = None
     rpm_used: int = 0
     tpm_used: int = 0
@@ -121,6 +153,17 @@ class GeminiPoolEntry:
     last_used_at: Optional[datetime] = None
     last_recovered_at: Optional[datetime] = None
     last_recovered_reason: Optional[str] = None
+    state: str = STATE_UNKNOWN_UNOBSERVED
+    state_updated_at: Optional[datetime] = None
+    last_provider_status_code: Optional[int] = None
+    last_provider_quota_id: Optional[str] = None
+    last_provider_quota_metric: Optional[str] = None
+    last_probe_at: Optional[datetime] = None
+    last_probe_result: Optional[str] = None
+    next_probe_at: Optional[datetime] = None
+    provider_expected_reset_at: Optional[datetime] = None
+    probe_day_key: Optional[str] = None
+    probe_count: int = 0
 
     def is_available(self, now: datetime) -> bool:
         if not self.enabled:
@@ -134,31 +177,49 @@ class GeminiPoolEntry:
     def clear_expired(self, now: datetime) -> None:
         recovered_reason: Optional[str] = None
         previous_reason = self.disabled_reason
+        previous_state = self.state or STATE_UNKNOWN_UNOBSERVED
 
         if self.cooldown_until and now >= self.cooldown_until:
             self.cooldown_until = None
-            recovered_reason = previous_reason or "cooldown_expired"
+            if previous_state in {
+                STATE_PROVIDER_RPM_EXHAUSTED,
+                STATE_PROVIDER_TPM_EXHAUSTED,
+                STATE_TRANSIENT_BACKOFF,
+            } or previous_reason in {
+                "rpm_limit_reached",
+                "tpm_limit_reached",
+                "gemini_quota_exhausted",
+                "gemini_transient_error",
+                STATE_PROVIDER_RPM_EXHAUSTED,
+                STATE_PROVIDER_TPM_EXHAUSTED,
+            }:
+                recovered_reason = previous_reason or "cooldown_expired"
+                self.disabled_reason = None
+                self.state = self._available_state()
+                self.state_updated_at = now
 
         if self.exhausted_until and now >= self.exhausted_until:
+            expired_until = self.exhausted_until
             self.exhausted_until = None
-            recovered_reason = previous_reason or "quota_reset"
+            if previous_state == STATE_MANUAL_OVERRIDE_ACTIVE or previous_reason == "pre_exhausted_from_env":
+                self.state = STATE_MANUAL_OVERRIDE_EXPIRED_PENDING_PROBE
+                self.disabled_reason = STATE_MANUAL_OVERRIDE_EXPIRED_PENDING_PROBE
+                self.next_probe_at = self.next_probe_at or now
+                self.provider_expected_reset_at = expired_until
+                self.state_updated_at = now
+            elif previous_state == STATE_PROVIDER_RPD_EXHAUSTED or previous_reason in {
+                "rpd_limit_reached",
+                STATE_PROVIDER_RPD_EXHAUSTED,
+            }:
+                self.state = STATE_PROVIDER_RPD_EXHAUSTED
+                self.disabled_reason = previous_reason or STATE_PROVIDER_RPD_EXHAUSTED
+                self.next_probe_at = self.next_probe_at or now
+                self.provider_expected_reset_at = self.provider_expected_reset_at or expired_until
+                self.state_updated_at = now
 
         if recovered_reason:
             self.last_recovered_at = now
             self.last_recovered_reason = recovered_reason
-
-        if (
-            self.enabled
-            and self.cooldown_until is None
-            and self.exhausted_until is None
-            and self.disabled_reason in {
-                "rpm_limit_reached",
-                "tpm_limit_reached",
-                "rpd_limit_reached",
-                "pre_exhausted_from_env",
-            }
-        ):
-            self.disabled_reason = None
 
     def refresh_usage_windows(self, now: datetime) -> None:
         self._prune_rolling_events(now)
@@ -166,6 +227,9 @@ class GeminiPoolEntry:
         if self.day_window_key != day_key:
             self.day_window_key = day_key
             self.day_request_count = 0
+        if self.probe_day_key != day_key:
+            self.probe_day_key = day_key
+            self.probe_count = 0
 
     def reserve_usage(self, now: datetime, estimated_tokens: int) -> str:
         self.refresh_usage_windows(now)
@@ -190,22 +254,31 @@ class GeminiPoolEntry:
         actual_tokens: Optional[int],
     ) -> None:
         self.refresh_usage_windows(now)
-        if actual_tokens is None:
-            return
+        if actual_tokens is not None:
+            actual_tokens = max(0, int(actual_tokens))
+            estimated_tokens = max(0, int(estimated_tokens))
+            for event in reversed(self.rolling_events):
+                if event.request_id != request_id:
+                    continue
+                delta = actual_tokens - event.tokens
+                event.tokens = actual_tokens
+                self.total_token_count = max(0, self.total_token_count + delta)
+                break
+            else:
+                delta = actual_tokens - estimated_tokens
+                if delta != 0:
+                    self.total_token_count = max(0, self.total_token_count + delta)
 
-        actual_tokens = max(0, int(actual_tokens))
-        estimated_tokens = max(0, int(estimated_tokens))
-        for event in reversed(self.rolling_events):
-            if event.request_id != request_id:
-                continue
-            delta = actual_tokens - event.tokens
-            event.tokens = actual_tokens
-            self.total_token_count = max(0, self.total_token_count + delta)
-            return
-
-        delta = actual_tokens - estimated_tokens
-        if delta != 0:
-            self.total_token_count = max(0, self.total_token_count + delta)
+        self.cooldown_until = None
+        self.exhausted_until = None
+        self.disabled_reason = None
+        self.state = STATE_AVAILABLE
+        self.state_updated_at = now
+        self.last_provider_status_code = 200
+        self.last_provider_quota_id = None
+        self.last_provider_quota_metric = None
+        self.provider_expected_reset_at = None
+        self.next_probe_at = None
 
     def evaluate_availability(
         self,
@@ -224,12 +297,15 @@ class GeminiPoolEntry:
         rpm_recovery_at = self._next_rpm_recovery_at(rpm_limit)
         tpm_recovery_at = self._next_tpm_recovery_at(tpm_limit, estimated_tokens)
         rpd_recovery_at = _parse_retry_after(_next_pacific_midnight_iso()) if rpd_limit > 0 else None
-        quota_source = self._quota_source()
+        current_state = self._current_state(now)
+        quota_source = self._quota_source(current_state)
+        unavailable_reason = self._availability_reason(current_state)
 
-        if not self.enabled:
+        if current_state == STATE_AUTH_INVALID:
             return GeminiAvailability(
                 available=False,
-                reason=self.disabled_reason or "disabled",
+                reason=unavailable_reason,
+                state=current_state,
                 quota_source=quota_source,
                 rpm_used=rolling_requests,
                 tpm_used=rolling_tokens,
@@ -239,10 +315,11 @@ class GeminiPoolEntry:
                 rpd_recovery_at=rpd_recovery_at,
             )
 
-        if self.exhausted_until and now < self.exhausted_until:
+        if current_state == STATE_MANUAL_OVERRIDE_ACTIVE:
             return GeminiAvailability(
                 available=False,
-                reason=self.disabled_reason or "quota_cooldown",
+                reason=unavailable_reason,
+                state=current_state,
                 quota_source=quota_source,
                 available_after=self.exhausted_until,
                 rpm_used=rolling_requests,
@@ -250,29 +327,63 @@ class GeminiPoolEntry:
                 rpd_used=self.day_request_count,
                 rpm_recovery_at=rpm_recovery_at,
                 tpm_recovery_at=tpm_recovery_at,
-                rpd_recovery_at=self.exhausted_until,
+                rpd_recovery_at=self.provider_expected_reset_at or self.exhausted_until,
             )
 
-        if self.cooldown_until and now < self.cooldown_until:
+        if current_state == STATE_MANUAL_OVERRIDE_EXPIRED_PENDING_PROBE:
             return GeminiAvailability(
                 available=False,
-                reason=self.disabled_reason or "cooldown",
+                reason=unavailable_reason,
+                state=current_state,
                 quota_source=quota_source,
-                available_after=self.cooldown_until,
+                available_after=self.next_probe_at or now,
                 rpm_used=rolling_requests,
                 tpm_used=rolling_tokens,
                 rpd_used=self.day_request_count,
                 rpm_recovery_at=rpm_recovery_at,
                 tpm_recovery_at=tpm_recovery_at,
-                rpd_recovery_at=rpd_recovery_at,
+                rpd_recovery_at=self.provider_expected_reset_at or rpd_recovery_at,
+            )
+        if current_state == STATE_PROVIDER_RPD_EXHAUSTED:
+            return GeminiAvailability(
+                available=False,
+                reason=unavailable_reason,
+                state=current_state,
+                quota_source=quota_source,
+                available_after=self.next_probe_at or self.provider_expected_reset_at or rpd_recovery_at,
+                rpm_used=rolling_requests,
+                tpm_used=rolling_tokens,
+                rpd_used=self.day_request_count,
+                rpm_recovery_at=rpm_recovery_at,
+                tpm_recovery_at=tpm_recovery_at,
+                rpd_recovery_at=self.provider_expected_reset_at or rpd_recovery_at,
+            )
+        if current_state in {STATE_PROVIDER_RPM_EXHAUSTED, STATE_PROVIDER_TPM_EXHAUSTED, STATE_TRANSIENT_BACKOFF}:
+            return GeminiAvailability(
+                available=False,
+                reason=unavailable_reason,
+                state=current_state,
+                quota_source=quota_source,
+                available_after=self.cooldown_until or self.next_probe_at,
+                rpm_used=rolling_requests,
+                tpm_used=rolling_tokens,
+                rpd_used=self.day_request_count,
+                rpm_recovery_at=rpm_recovery_at,
+                tpm_recovery_at=tpm_recovery_at,
+                rpd_recovery_at=self.provider_expected_reset_at or rpd_recovery_at,
             )
 
         if rpd_limit > 0 and self.day_request_count >= rpd_limit:
             self.exhausted_until = rpd_recovery_at
             self.disabled_reason = "rpd_limit_reached"
+            self.state = STATE_PROVIDER_RPD_EXHAUSTED
+            self.provider_expected_reset_at = rpd_recovery_at
+            self.next_probe_at = rpd_recovery_at
+            self.state_updated_at = now
             return GeminiAvailability(
                 available=False,
                 reason="rpd_limit_reached",
+                state=STATE_PROVIDER_RPD_EXHAUSTED,
                 quota_source="backend_observed",
                 available_after=rpd_recovery_at,
                 rpm_used=rolling_requests,
@@ -286,9 +397,14 @@ class GeminiPoolEntry:
         if rpm_limit > 0 and rolling_requests >= rpm_limit:
             self.cooldown_until = rpm_recovery_at
             self.disabled_reason = "rpm_limit_reached"
+            self.state = STATE_PROVIDER_RPM_EXHAUSTED
+            self.provider_expected_reset_at = None
+            self.next_probe_at = None
+            self.state_updated_at = now
             return GeminiAvailability(
                 available=False,
                 reason="rpm_limit_reached",
+                state=STATE_PROVIDER_RPM_EXHAUSTED,
                 quota_source="backend_observed",
                 available_after=rpm_recovery_at,
                 rpm_used=rolling_requests,
@@ -303,6 +419,7 @@ class GeminiPoolEntry:
             return GeminiAvailability(
                 available=False,
                 reason="request_tpm_exceeds_project_limit",
+                state=current_state,
                 quota_source=quota_source,
                 rpm_used=rolling_requests,
                 tpm_used=rolling_tokens,
@@ -315,9 +432,14 @@ class GeminiPoolEntry:
         if tpm_limit > 0 and rolling_tokens + max(0, estimated_tokens) > tpm_limit:
             self.cooldown_until = tpm_recovery_at
             self.disabled_reason = "tpm_limit_reached"
+            self.state = STATE_PROVIDER_TPM_EXHAUSTED
+            self.provider_expected_reset_at = None
+            self.next_probe_at = None
+            self.state_updated_at = now
             return GeminiAvailability(
                 available=False,
                 reason="tpm_limit_reached",
+                state=STATE_PROVIDER_TPM_EXHAUSTED,
                 quota_source="backend_observed",
                 available_after=tpm_recovery_at,
                 rpm_used=rolling_requests,
@@ -328,16 +450,13 @@ class GeminiPoolEntry:
                 rpd_recovery_at=rpd_recovery_at,
             )
 
-        if self.disabled_reason in {
-            "rpm_limit_reached",
-            "tpm_limit_reached",
-            "rpd_limit_reached",
-            "pre_exhausted_from_env",
-        }:
-            self.disabled_reason = None
+        self.state = self._available_state()
+        self.state_updated_at = self.state_updated_at or now
 
         return GeminiAvailability(
             available=True,
+            reason=None,
+            state=self.state,
             quota_source=quota_source,
             rpm_used=rolling_requests,
             tpm_used=rolling_tokens,
@@ -363,6 +482,7 @@ class GeminiPoolEntry:
             "model": self.model,
             "rateLimitScope": PROJECT_RATE_LIMIT_SCOPE,
             "rollingWindowSeconds": ROLLING_WINDOW_SECONDS,
+            "state": availability.state,
             "available": availability.available,
             "availabilityReason": availability.reason or "available",
             "quotaSource": availability.quota_source,
@@ -385,21 +505,95 @@ class GeminiPoolEntry:
             "cooldownUntil": self.cooldown_until.isoformat() if self.cooldown_until else None,
             "exhaustedUntil": self.exhausted_until.isoformat() if self.exhausted_until else None,
             "disabledReason": self.disabled_reason,
+            "lastProviderStatusCode": self.last_provider_status_code,
+            "lastProviderQuotaId": self.last_provider_quota_id,
+            "lastProviderQuotaMetric": self.last_provider_quota_metric,
+            "lastProbeAt": self.last_probe_at.isoformat() if self.last_probe_at else None,
+            "lastProbeResult": self.last_probe_result,
+            "nextProbeAt": self.next_probe_at.isoformat() if self.next_probe_at else None,
+            "providerExpectedResetAt": self.provider_expected_reset_at.isoformat()
+            if self.provider_expected_reset_at
+            else None,
         }
 
-    def _quota_source(self) -> str:
-        if self.disabled_reason == "pre_exhausted_from_env":
-            return "manual_override"
+    def _has_runtime_observations(self) -> bool:
         if (
             self.day_request_count > 0
             or self.total_request_count > 0
             or self.total_token_count > 0
             or self.last_used_at is not None
             or self.last_recovered_at is not None
+            or self.last_provider_status_code is not None
+            or self.last_probe_at is not None
             or bool(self.rolling_events)
         ):
-            return "backend_observed"
-        return "backend_not_observed"
+            return True
+        return False
+
+    def _available_state(self) -> str:
+        return STATE_AVAILABLE if self._has_runtime_observations() else STATE_UNKNOWN_UNOBSERVED
+
+    def _current_state(self, now: datetime) -> str:
+        if not self.enabled or self.state == STATE_AUTH_INVALID or self.disabled_reason == "gemini_auth_error":
+            return STATE_AUTH_INVALID
+        if self.state == STATE_MANUAL_OVERRIDE_EXPIRED_PENDING_PROBE:
+            return STATE_MANUAL_OVERRIDE_EXPIRED_PENDING_PROBE
+        if (self.state == STATE_MANUAL_OVERRIDE_ACTIVE or self.disabled_reason == "pre_exhausted_from_env") and (
+            self.exhausted_until or self.next_probe_at
+        ):
+            if self.exhausted_until and now < self.exhausted_until:
+                return STATE_MANUAL_OVERRIDE_ACTIVE
+            return STATE_MANUAL_OVERRIDE_EXPIRED_PENDING_PROBE
+        if self.state == STATE_PROVIDER_RPD_EXHAUSTED or self.disabled_reason in {
+            "rpd_limit_reached",
+            STATE_PROVIDER_RPD_EXHAUSTED,
+        }:
+            if self.exhausted_until or self.provider_expected_reset_at or self.next_probe_at:
+                return STATE_PROVIDER_RPD_EXHAUSTED
+        if (self.state == STATE_PROVIDER_RPM_EXHAUSTED or self.disabled_reason in {
+            "rpm_limit_reached",
+            STATE_PROVIDER_RPM_EXHAUSTED,
+        }) and self.cooldown_until and now < self.cooldown_until:
+            return STATE_PROVIDER_RPM_EXHAUSTED
+        if (self.state == STATE_PROVIDER_TPM_EXHAUSTED or self.disabled_reason in {
+            "tpm_limit_reached",
+            STATE_PROVIDER_TPM_EXHAUSTED,
+        }) and self.cooldown_until and now < self.cooldown_until:
+            return STATE_PROVIDER_TPM_EXHAUSTED
+        if (self.state == STATE_TRANSIENT_BACKOFF or self.disabled_reason in {
+            "gemini_transient_error",
+            "gemini_quota_exhausted",
+        }) and self.cooldown_until and now < self.cooldown_until:
+            return STATE_TRANSIENT_BACKOFF
+        if self.state == STATE_AVAILABLE:
+            return STATE_AVAILABLE
+        return self._available_state()
+
+    def _availability_reason(self, state: str) -> Optional[str]:
+        if state == STATE_MANUAL_OVERRIDE_ACTIVE:
+            return "pre_exhausted_from_env"
+        if state == STATE_UNKNOWN_UNOBSERVED:
+            return None
+        if state == STATE_AVAILABLE:
+            return None
+        return self.disabled_reason or state
+
+    def _quota_source(self, state: str) -> str:
+        if state in {STATE_MANUAL_OVERRIDE_ACTIVE, STATE_MANUAL_OVERRIDE_EXPIRED_PENDING_PROBE}:
+            return QUOTA_SOURCE_MANUAL_OVERRIDE
+        if self.last_probe_result == PROBE_RESULT_SUCCESS and state == STATE_AVAILABLE:
+            return QUOTA_SOURCE_PROBE_CONFIRMED
+        if state in {
+            STATE_PROVIDER_RPD_EXHAUSTED,
+            STATE_PROVIDER_RPM_EXHAUSTED,
+            STATE_PROVIDER_TPM_EXHAUSTED,
+            STATE_AUTH_INVALID,
+            STATE_TRANSIENT_BACKOFF,
+        }:
+            return QUOTA_SOURCE_BACKEND_OBSERVED
+        if self._has_runtime_observations():
+            return QUOTA_SOURCE_BACKEND_OBSERVED
+        return QUOTA_SOURCE_BACKEND_NOT_OBSERVED
 
     def _prune_rolling_events(self, now: datetime) -> None:
         cutoff = now - timedelta(seconds=ROLLING_WINDOW_SECONDS)
@@ -441,6 +635,9 @@ class GeminiPoolManager:
         tpm_limit: int = DEFAULT_TPM_LIMIT,
         rpd_limit: int = DEFAULT_RPD_LIMIT,
         usage_state_path: Optional[str] = None,
+        probe_min_interval_seconds: int = DEFAULT_PROBE_MIN_INTERVAL_SECONDS,
+        probe_max_per_project_per_day: int = DEFAULT_PROBE_MAX_PER_PROJECT_PER_DAY,
+        probe_prompt: str = DEFAULT_PROBE_PROMPT,
         requester: Optional[Callable[..., requests.Response]] = None,
     ) -> None:
         self.default_model = default_model or DEFAULT_MODEL
@@ -450,6 +647,9 @@ class GeminiPoolManager:
         self.tpm_limit = tpm_limit
         self.rpd_limit = rpd_limit
         self.usage_state_path = usage_state_path
+        self.probe_min_interval_seconds = max(1, probe_min_interval_seconds)
+        self.probe_max_per_project_per_day = max(1, probe_max_per_project_per_day)
+        self.probe_prompt = probe_prompt or DEFAULT_PROBE_PROMPT
         self._requester = requester or requests.post
         self._lock = RLock()
         self._duplicates_filtered = 0
@@ -471,6 +671,15 @@ class GeminiPoolManager:
         tpm_limit = _safe_int(os.getenv("GEMINI_TPM_LIMIT"), DEFAULT_TPM_LIMIT)
         rpd_limit = _safe_int(os.getenv("GEMINI_RPD_LIMIT"), DEFAULT_RPD_LIMIT)
         usage_state_path = os.getenv("GEMINI_USAGE_STATE_PATH", "").strip() or DEFAULT_USAGE_STATE_PATH
+        probe_min_interval_seconds = _safe_int(
+            os.getenv("GEMINI_PROBE_MIN_INTERVAL_SECONDS"),
+            DEFAULT_PROBE_MIN_INTERVAL_SECONDS,
+        )
+        probe_max_per_project_per_day = _safe_int(
+            os.getenv("GEMINI_PROBE_MAX_PER_PROJECT_PER_DAY"),
+            DEFAULT_PROBE_MAX_PER_PROJECT_PER_DAY,
+        )
+        probe_prompt = os.getenv("GEMINI_PROBE_PROMPT", DEFAULT_PROBE_PROMPT).strip() or DEFAULT_PROBE_PROMPT
 
         entries: List[GeminiPoolEntry] = []
         entries.extend(
@@ -513,6 +722,9 @@ class GeminiPoolManager:
             tpm_limit=tpm_limit,
             rpd_limit=rpd_limit,
             usage_state_path=usage_state_path,
+            probe_min_interval_seconds=probe_min_interval_seconds,
+            probe_max_per_project_per_day=probe_max_per_project_per_day,
+            probe_prompt=probe_prompt,
         )
         manager._apply_pre_exhausted_projects_from_env()
         status = manager.get_runtime_status()
@@ -556,6 +768,7 @@ class GeminiPoolManager:
                 entry.usage_snapshot(now, self.rpm_limit, self.tpm_limit, self.rpd_limit)
                 for entry in self._entries
             ]
+            states = [item["state"] for item in usage_entries]
             return {
                 "gemini_configured": bool(self._entries),
                 "gemini_model": active.model if active else self.default_model,
@@ -570,6 +783,19 @@ class GeminiPoolManager:
                 "gemini_manual_override_project_count": sum(
                     1 for item in usage_entries if item["quotaSource"] == "manual_override"
                 ),
+                "gemini_probe_pending_project_count": sum(
+                    1 for item in usage_entries if item["nextProbeAt"]
+                ),
+                "gemini_provider_exhausted_project_count": sum(
+                    1
+                    for state in states
+                    if state in {
+                        STATE_PROVIDER_RPD_EXHAUSTED,
+                        STATE_PROVIDER_RPM_EXHAUSTED,
+                        STATE_PROVIDER_TPM_EXHAUSTED,
+                    }
+                ),
+                "gemini_auth_invalid_project_count": sum(1 for state in states if state == STATE_AUTH_INVALID),
                 "gemini_rolling_window_seconds": ROLLING_WINDOW_SECONDS,
                 "gemini_limits": {
                     "rpm": self.rpm_limit,
@@ -604,6 +830,7 @@ class GeminiPoolManager:
         temperature: float = 0.1,
         max_output_tokens: int = 500,
     ) -> str:
+        probe_targets: List[GeminiPoolEntry] = []
         with self._lock:
             now = _utcnow()
             self._refresh_locked(now)
@@ -623,12 +850,29 @@ class GeminiPoolManager:
                     model=self.default_model,
                 )
             if not candidates:
-                raise GeminiQuotaExhaustedError(
-                    "gemini_quota_exhausted",
-                    "Toàn bộ Gemini project đã chạm quota hoặc đang cooldown",
-                    retry_after=self._last_retry_after,
-                    model=self.default_model,
-                )
+                probe_targets = self._probe_targets_locked(now)
+                if not probe_targets:
+                    raise GeminiQuotaExhaustedError(
+                        "gemini_quota_exhausted",
+                        "Toàn bộ Gemini project đã chạm quota hoặc đang cooldown",
+                        retry_after=self._last_retry_after,
+                        model=self.default_model,
+                    )
+
+        if probe_targets:
+            self._run_probe_pass(probe_targets)
+            with self._lock:
+                now = _utcnow()
+                self._refresh_locked(now)
+                candidates = self._candidate_entries_locked(now, estimated_tokens)
+                self._refresh_retry_after_locked(now, estimated_tokens)
+                if not candidates:
+                    raise GeminiQuotaExhaustedError(
+                        "gemini_quota_exhausted",
+                        "Toàn bộ Gemini project đã chạm quota hoặc đang cooldown",
+                        retry_after=self._last_retry_after,
+                        model=self.default_model,
+                    )
 
         previous_active_project = self._active_project_id
         last_failed_entry: Optional[GeminiPoolEntry] = None
@@ -793,15 +1037,32 @@ class GeminiPoolManager:
         message = (message or "").strip()
         status_code = response.status_code
         code = "gemini_unavailable"
+        quota_id: Optional[str] = None
+        quota_metric: Optional[str] = None
+        quota_kind: Optional[str] = None
+        provider_expected_reset_at: Optional[str] = None
 
         if status_code in (401, 403):
             code = "gemini_auth_error"
         elif status_code == 429:
-            lower = message.lower()
-            if any(token in lower for token in ("daily", "per day", "rpd", "quota")):
-                retry_after = retry_after or _next_pacific_midnight_iso()
-            elif any(token in lower for token in ("per minute", "rpm", "tpm", "rate limit", "resource exhausted")):
+            quota_id, quota_metric, quota_kind = _pick_primary_quota_signal(
+                _extract_google_quota_violations(payload),
+                message,
+            )
+            if quota_kind == "rpd":
+                provider_expected_reset_at = _next_pacific_midnight_iso()
+            elif quota_kind in {"rpm", "tpm"}:
                 retry_after = retry_after or (_utcnow() + timedelta(seconds=ROLLING_WINDOW_SECONDS)).isoformat()
+            else:
+                lower = message.lower()
+                if any(token in lower for token in ("daily", "per day", "rpd", "quota")):
+                    quota_kind = quota_kind or "rpd"
+                    provider_expected_reset_at = _next_pacific_midnight_iso()
+                elif any(
+                    token in lower for token in ("per minute", "rpm", "tpm", "rate limit", "resource exhausted")
+                ):
+                    quota_kind = quota_kind or "rpm"
+                    retry_after = retry_after or (_utcnow() + timedelta(seconds=ROLLING_WINDOW_SECONDS)).isoformat()
             code = "gemini_quota_exhausted"
         elif status_code >= 500:
             code = "gemini_transient_error"
@@ -815,6 +1076,11 @@ class GeminiPoolManager:
             project_alias=entry.project_alias,
             project_id=entry.project_id,
             model=entry.model,
+            status_code=status_code,
+            quota_id=quota_id,
+            quota_metric=quota_metric,
+            quota_kind=quota_kind,
+            provider_expected_reset_at=provider_expected_reset_at,
         )
 
     def _dedupe_entries(self, entries: List[GeminiPoolEntry]) -> List[GeminiPoolEntry]:
@@ -861,50 +1127,244 @@ class GeminiPoolManager:
                 return entry
         return active
 
-    def _apply_error_state_locked(self, entry: GeminiPoolEntry, error: GeminiPoolError) -> None:
+    def _probe_targets_locked(self, now: datetime) -> List[GeminiPoolEntry]:
+        targets: List[GeminiPoolEntry] = []
+        for entry in self._entries:
+            state = entry._current_state(now)
+            if state == STATE_MANUAL_OVERRIDE_EXPIRED_PENDING_PROBE and self._probe_due_locked(entry, now):
+                targets.append(entry)
+            elif (
+                state == STATE_PROVIDER_RPD_EXHAUSTED
+                and entry.provider_expected_reset_at
+                and now >= entry.provider_expected_reset_at
+                and self._probe_due_locked(entry, now)
+            ):
+                targets.append(entry)
+        return targets
+
+    def _probe_due_locked(self, entry: GeminiPoolEntry, now: datetime) -> bool:
+        entry.refresh_usage_windows(now)
+        if entry.next_probe_at and now < entry.next_probe_at:
+            return False
+        if entry.probe_count >= self.probe_max_per_project_per_day:
+            entry.next_probe_at = _parse_retry_after(_next_pacific_midnight_iso())
+            return False
+        return True
+
+    def _run_probe_pass(self, targets: List[GeminiPoolEntry]) -> None:
+        for entry in targets:
+            self._probe_entry(entry)
+
+    def _probe_entry(self, entry: GeminiPoolEntry) -> None:
+        estimated_tokens = _estimate_total_tokens(self.probe_prompt, PROBE_MAX_OUTPUT_TOKENS)
+        with self._lock:
+            now = _utcnow()
+            entry.refresh_usage_windows(now)
+            request_id = entry.reserve_usage(now, estimated_tokens)
+            self._save_usage_state_locked()
+
+        url = GENERATE_URL_TEMPLATE.format(model=quote(entry.model, safe="-_."))
+        payload = {
+            "contents": [{"parts": [{"text": self.probe_prompt}]}],
+            "generationConfig": {
+                "temperature": 0,
+                "maxOutputTokens": PROBE_MAX_OUTPUT_TOKENS,
+            },
+        }
+
+        try:
+            response = self._requester(
+                url,
+                params={"key": entry.api_key},
+                json=payload,
+                timeout=self.timeout_seconds,
+            )
+        except requests.Timeout as exc:
+            error = GeminiPoolError(
+                "gemini_transient_error",
+                "Gemini probe timed out",
+                project_alias=entry.project_alias,
+                project_id=entry.project_id,
+                model=entry.model,
+            )
+        except requests.RequestException as exc:
+            error = GeminiPoolError(
+                "gemini_transient_error",
+                "Gemini probe failed",
+                project_alias=entry.project_alias,
+                project_id=entry.project_id,
+                model=entry.model,
+            )
+        else:
+            if response.status_code >= 400:
+                try:
+                    self._raise_for_error_response(entry, response)
+                except GeminiPoolError as exc:
+                    error = exc
+                else:
+                    error = None
+            else:
+                data = response.json()
+                actual_tokens = _extract_total_tokens(data)
+                with self._lock:
+                    now = _utcnow()
+                    entry.refresh_usage_windows(now)
+                    entry.probe_count += 1
+                    entry.last_probe_at = now
+                    entry.last_probe_result = PROBE_RESULT_SUCCESS
+                    entry.reconcile_usage(now, request_id, estimated_tokens, actual_tokens)
+                    entry.state = STATE_AVAILABLE
+                    entry.state_updated_at = now
+                    self._save_usage_state_locked()
+                return
+
+        with self._lock:
+            self._apply_error_state_locked(entry, error, is_probe=True)
+            self._refresh_retry_after_locked(_utcnow(), estimated_tokens=1)
+            self._save_usage_state_locked()
+
+    def _apply_error_state_locked(
+        self,
+        entry: GeminiPoolEntry,
+        error: GeminiPoolError,
+        *,
+        is_probe: bool = False,
+    ) -> None:
         now = _utcnow()
+        entry.refresh_usage_windows(now)
+        entry.last_provider_status_code = error.status_code
+        entry.last_provider_quota_id = error.quota_id
+        entry.last_provider_quota_metric = error.quota_metric
+        if is_probe:
+            entry.probe_count += 1
+            entry.last_probe_at = now
+            quota_suffix = error.quota_kind or error.code
+            entry.last_probe_result = f"error:{quota_suffix}"
+
         if error.code == "gemini_auth_error":
             entry.enabled = False
             entry.disabled_reason = error.code
+            entry.state = STATE_AUTH_INVALID
+            entry.next_probe_at = None
+            entry.provider_expected_reset_at = None
+            entry.state_updated_at = now
             return
 
         if error.code == "gemini_quota_exhausted":
             retry_at = _parse_retry_after(error.retry_after)
-            if retry_at:
-                if retry_at > now + timedelta(minutes=5):
-                    entry.exhausted_until = retry_at
-                    entry.disabled_reason = "rpd_limit_reached"
-                else:
-                    entry.cooldown_until = retry_at
-                    entry.disabled_reason = entry.disabled_reason or "gemini_quota_exhausted"
-            else:
-                entry.cooldown_until = now + timedelta(seconds=ROLLING_WINDOW_SECONDS)
-                entry.disabled_reason = entry.disabled_reason or "gemini_quota_exhausted"
+            if error.quota_kind == "rpd":
+                provider_reset_at = _parse_retry_after(error.provider_expected_reset_at) or _parse_retry_after(
+                    _next_pacific_midnight_iso()
+                )
+                entry.state = STATE_PROVIDER_RPD_EXHAUSTED
+                entry.disabled_reason = STATE_PROVIDER_RPD_EXHAUSTED
+                entry.exhausted_until = provider_reset_at
+                entry.provider_expected_reset_at = provider_reset_at
+                entry.cooldown_until = None
+                entry.next_probe_at = _max_datetime(
+                    retry_at,
+                    now + timedelta(seconds=self.probe_min_interval_seconds),
+                )
+                entry.state_updated_at = now
+                return
+            if error.quota_kind == "tpm":
+                entry.state = STATE_PROVIDER_TPM_EXHAUSTED
+                entry.disabled_reason = STATE_PROVIDER_TPM_EXHAUSTED
+                entry.cooldown_until = retry_at or (now + timedelta(seconds=ROLLING_WINDOW_SECONDS))
+                entry.exhausted_until = None
+                entry.provider_expected_reset_at = None
+                entry.next_probe_at = None
+                entry.state_updated_at = now
+                return
+            if error.quota_kind == "rpm":
+                entry.state = STATE_PROVIDER_RPM_EXHAUSTED
+                entry.disabled_reason = STATE_PROVIDER_RPM_EXHAUSTED
+                entry.cooldown_until = retry_at or (now + timedelta(seconds=ROLLING_WINDOW_SECONDS))
+                entry.exhausted_until = None
+                entry.provider_expected_reset_at = None
+                entry.next_probe_at = None
+                entry.state_updated_at = now
+                return
+
+            entry.state = STATE_TRANSIENT_BACKOFF
+            entry.cooldown_until = retry_at or (now + timedelta(seconds=ROLLING_WINDOW_SECONDS))
+            entry.disabled_reason = error.code
+            entry.exhausted_until = None
+            entry.provider_expected_reset_at = None
+            entry.next_probe_at = None
+            entry.state_updated_at = now
             return
 
         if error.code == "gemini_transient_error":
+            entry.state = STATE_TRANSIENT_BACKOFF
             entry.cooldown_until = now + timedelta(seconds=self.short_cooldown_seconds)
             entry.disabled_reason = error.code
+            entry.exhausted_until = None
+            entry.provider_expected_reset_at = None
+            entry.next_probe_at = None
+            entry.state_updated_at = now
 
     def _apply_pre_exhausted_projects_from_env(self) -> None:
         raw_ids = os.getenv("GEMINI_EXHAUSTED_PROJECT_IDS", "").strip()
-        if not raw_ids:
-            return
-
         exhausted_project_ids = {item.strip() for item in raw_ids.replace(";", ",").split(",") if item.strip()}
-        if not exhausted_project_ids:
-            return
 
         exhausted_until = _parse_retry_after(os.getenv("GEMINI_EXHAUSTED_UNTIL", "").strip())
         if exhausted_until is None:
             exhausted_until = _parse_retry_after(_next_pacific_midnight_iso())
 
         with self._lock:
+            now = _utcnow()
             for entry in self._entries:
-                if entry.project_id in exhausted_project_ids:
+                current_state = entry._current_state(now)
+                has_manual_override = current_state in {
+                    STATE_MANUAL_OVERRIDE_ACTIVE,
+                    STATE_MANUAL_OVERRIDE_EXPIRED_PENDING_PROBE,
+                }
+                newer_runtime_state = (
+                    entry.last_probe_result == PROBE_RESULT_SUCCESS
+                    or entry.last_provider_status_code is not None
+                    or current_state
+                    in {
+                        STATE_AVAILABLE,
+                        STATE_PROVIDER_RPD_EXHAUSTED,
+                        STATE_PROVIDER_RPM_EXHAUSTED,
+                        STATE_PROVIDER_TPM_EXHAUSTED,
+                        STATE_AUTH_INVALID,
+                        STATE_TRANSIENT_BACKOFF,
+                    }
+                )
+
+                if entry.project_id not in exhausted_project_ids:
+                    if has_manual_override and entry.disabled_reason in {
+                        "pre_exhausted_from_env",
+                        STATE_MANUAL_OVERRIDE_EXPIRED_PENDING_PROBE,
+                    }:
+                        entry.exhausted_until = None
+                        entry.cooldown_until = None
+                        entry.disabled_reason = None
+                        entry.next_probe_at = None
+                        entry.provider_expected_reset_at = None
+                        entry.state = entry._available_state()
+                        entry.state_updated_at = now
+                    continue
+
+                if newer_runtime_state and not has_manual_override:
+                    continue
+
+                entry.cooldown_until = None
+                entry.provider_expected_reset_at = exhausted_until
+                entry.state_updated_at = now
+                if exhausted_until and now < exhausted_until:
                     entry.exhausted_until = exhausted_until
                     entry.disabled_reason = "pre_exhausted_from_env"
-            self._refresh_retry_after_locked(_utcnow(), estimated_tokens=1)
+                    entry.state = STATE_MANUAL_OVERRIDE_ACTIVE
+                    entry.next_probe_at = None
+                else:
+                    entry.exhausted_until = None
+                    entry.disabled_reason = STATE_MANUAL_OVERRIDE_EXPIRED_PENDING_PROBE
+                    entry.state = STATE_MANUAL_OVERRIDE_EXPIRED_PENDING_PROBE
+                    entry.next_probe_at = now
+            self._refresh_retry_after_locked(now, estimated_tokens=1)
             self._save_usage_state_locked()
 
     def _entry_within_budget_locked(self, entry: GeminiPoolEntry, now: datetime, estimated_tokens: int) -> bool:
@@ -964,9 +1424,23 @@ class GeminiPoolManager:
             entry.cooldown_until = _parse_retry_after(saved.get("cooldownUntil"))
             entry.exhausted_until = _parse_retry_after(saved.get("exhaustedUntil"))
             entry.disabled_reason = saved.get("disabledReason")
+            entry.state = str(saved.get("state", entry.state)).strip() or entry.state
+            entry.state_updated_at = _parse_retry_after(saved.get("stateUpdatedAt"))
+            last_provider_status_code = saved.get("lastProviderStatusCode")
+            entry.last_provider_status_code = (
+                int(last_provider_status_code) if last_provider_status_code not in (None, "") else None
+            )
+            entry.last_provider_quota_id = saved.get("lastProviderQuotaId")
+            entry.last_provider_quota_metric = saved.get("lastProviderQuotaMetric")
             entry.last_used_at = _parse_retry_after(saved.get("lastUsedAt"))
             entry.last_recovered_at = _parse_retry_after(saved.get("lastRecoveredAt"))
             entry.last_recovered_reason = saved.get("lastRecoveredReason")
+            entry.last_probe_at = _parse_retry_after(saved.get("lastProbeAt"))
+            entry.last_probe_result = saved.get("lastProbeResult")
+            entry.next_probe_at = _parse_retry_after(saved.get("nextProbeAt"))
+            entry.provider_expected_reset_at = _parse_retry_after(saved.get("providerExpectedResetAt"))
+            entry.probe_day_key = saved.get("probeDayKey")
+            entry.probe_count = int(saved.get("probeCount", 0) or 0)
             entry.rolling_events = []
             for event_payload in saved.get("rollingEvents", []):
                 if not isinstance(event_payload, dict):
@@ -1008,9 +1482,22 @@ class GeminiPoolManager:
                     "cooldownUntil": entry.cooldown_until.isoformat() if entry.cooldown_until else None,
                     "exhaustedUntil": entry.exhausted_until.isoformat() if entry.exhausted_until else None,
                     "disabledReason": entry.disabled_reason,
+                    "state": entry.state,
+                    "stateUpdatedAt": entry.state_updated_at.isoformat() if entry.state_updated_at else None,
                     "lastUsedAt": entry.last_used_at.isoformat() if entry.last_used_at else None,
                     "lastRecoveredAt": entry.last_recovered_at.isoformat() if entry.last_recovered_at else None,
                     "lastRecoveredReason": entry.last_recovered_reason,
+                    "lastProviderStatusCode": entry.last_provider_status_code,
+                    "lastProviderQuotaId": entry.last_provider_quota_id,
+                    "lastProviderQuotaMetric": entry.last_provider_quota_metric,
+                    "lastProbeAt": entry.last_probe_at.isoformat() if entry.last_probe_at else None,
+                    "lastProbeResult": entry.last_probe_result,
+                    "nextProbeAt": entry.next_probe_at.isoformat() if entry.next_probe_at else None,
+                    "providerExpectedResetAt": entry.provider_expected_reset_at.isoformat()
+                    if entry.provider_expected_reset_at
+                    else None,
+                    "probeDayKey": entry.probe_day_key,
+                    "probeCount": entry.probe_count,
                 }
                 for entry in self._entries
             ],
@@ -1125,6 +1612,13 @@ def _parse_retry_after(retry_after: Optional[str]) -> Optional[datetime]:
         return None
 
 
+def _max_datetime(*values: Optional[datetime]) -> Optional[datetime]:
+    candidates = [value for value in values if value is not None]
+    if not candidates:
+        return None
+    return max(candidates)
+
+
 def _extract_retry_after_from_google_error(payload: Dict[str, Any]) -> Optional[str]:
     error = payload.get("error") if isinstance(payload, dict) else None
     details = error.get("details") if isinstance(error, dict) else None
@@ -1145,6 +1639,99 @@ def _extract_retry_after_from_google_error(payload: Dict[str, Any]) -> Optional[
             if parsed_retry_after is not None:
                 return parsed_retry_after.isoformat()
     return None
+
+
+def _extract_google_quota_violations(payload: Dict[str, Any]) -> List[Dict[str, Optional[str]]]:
+    error = payload.get("error") if isinstance(payload, dict) else None
+    details = error.get("details") if isinstance(error, dict) else None
+    if not isinstance(details, list):
+        return []
+
+    violations: List[Dict[str, Optional[str]]] = []
+    for detail in details:
+        if not isinstance(detail, dict):
+            continue
+        detail_type = str(detail.get("@type", "") or detail.get("type", "")).strip()
+        raw_violations = detail.get("violations")
+        if "QuotaFailure" not in detail_type and not isinstance(raw_violations, list):
+            continue
+        if not isinstance(raw_violations, list):
+            continue
+        for violation in raw_violations:
+            if not isinstance(violation, dict):
+                continue
+            violations.append(
+                {
+                    "quotaId": str(violation.get("quotaId", "")).strip() or None,
+                    "quotaMetric": str(violation.get("quotaMetric", "")).strip() or None,
+                }
+            )
+    return violations
+
+
+def _classify_quota_kind(
+    quota_id: Optional[str],
+    quota_metric: Optional[str],
+    message: str,
+) -> Optional[str]:
+    lower_id = (quota_id or "").lower()
+    lower_metric = (quota_metric or "").lower()
+    lower_message = (message or "").lower()
+    normalized_id = lower_id.replace("-", "").replace("_", "").replace(" ", "")
+    normalized_metric = lower_metric.replace("-", "").replace("_", "").replace(" ", "")
+    normalized_message = lower_message.replace("-", "").replace("_", "").replace(" ", "")
+
+    if (
+        "perday" in normalized_id
+        or "perday" in normalized_metric
+        or "requestsperday" in normalized_message
+        or "inputtokensperday" in normalized_message
+        or " rpd" in lower_message
+    ):
+        return "rpd"
+
+    if "inputtokens" in normalized_id or "inputtokencount" in normalized_metric or "input token" in lower_message:
+        if "perday" in normalized_id or "perday" in normalized_metric or "perday" in normalized_message:
+            return "rpd"
+        return "tpm"
+
+    if (
+        "perminute" in normalized_id
+        or "perminute" in normalized_metric
+        or "requestsperminute" in normalized_message
+        or "rate limit" in lower_message
+        or "resource exhausted" in lower_message
+    ):
+        return "rpm"
+
+    if "quota exceeded" in lower_message or "daily quota" in lower_message:
+        return "rpd"
+    return None
+
+
+def _pick_primary_quota_signal(
+    violations: List[Dict[str, Optional[str]]],
+    message: str,
+) -> tuple[Optional[str], Optional[str], Optional[str]]:
+    if not violations:
+        inferred_kind = _classify_quota_kind(None, None, message)
+        return None, None, inferred_kind
+
+    ranked: Dict[str, tuple[Optional[str], Optional[str], Optional[str]]] = {}
+    fallback_id = violations[0].get("quotaId")
+    fallback_metric = violations[0].get("quotaMetric")
+    for violation in violations:
+        quota_id = violation.get("quotaId")
+        quota_metric = violation.get("quotaMetric")
+        quota_kind = _classify_quota_kind(quota_id, quota_metric, message)
+        if quota_kind and quota_kind not in ranked:
+            ranked[quota_kind] = (quota_id, quota_metric, quota_kind)
+
+    for desired_kind in ("rpd", "tpm", "rpm"):
+        if desired_kind in ranked:
+            return ranked[desired_kind]
+
+    return fallback_id, fallback_metric, _classify_quota_kind(fallback_id, fallback_metric, message)
 
 
 def _parse_google_duration_seconds(raw_duration: str) -> Optional[float]:

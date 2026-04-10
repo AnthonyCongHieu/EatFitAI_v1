@@ -13,8 +13,14 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from gemini_pool import (
     DEFAULT_MODEL,
     GeminiPoolEntry,
+    GeminiPoolError,
     GeminiPoolManager,
     GeminiQuotaExhaustedError,
+    QUOTA_SOURCE_PROBE_CONFIRMED,
+    STATE_AUTH_INVALID,
+    STATE_AVAILABLE,
+    STATE_MANUAL_OVERRIDE_ACTIVE,
+    STATE_MANUAL_OVERRIDE_EXPIRED_PENDING_PROBE,
 )
 
 
@@ -43,6 +49,33 @@ def ok_response(text: str, total_tokens: int = 10) -> FakeResponse:
         {
             "candidates": [{"content": {"parts": [{"text": text}]}}],
             "usageMetadata": {"totalTokenCount": total_tokens},
+        },
+    )
+
+
+def quota_429_response(*violations: dict, retry_delay: str = "21s", message: str = "Resource has been exhausted.") -> FakeResponse:
+    details = [
+        {
+            "@type": "type.googleapis.com/google.rpc.QuotaFailure",
+            "violations": list(violations),
+        }
+    ]
+    if retry_delay:
+        details.append(
+            {
+                "@type": "type.googleapis.com/google.rpc.RetryInfo",
+                "retryDelay": retry_delay,
+            }
+        )
+    return FakeResponse(
+        429,
+        {
+            "error": {
+                "code": 429,
+                "message": message,
+                "status": "RESOURCE_EXHAUSTED",
+                "details": details,
+            }
         },
     )
 
@@ -178,6 +211,29 @@ class GeminiPoolTests(unittest.TestCase):
         self.assertEqual(primary["availabilityReason"], "pre_exhausted_from_env")
         self.assertEqual(primary["quotaSource"], "manual_override")
 
+    def test_manual_override_moves_to_pending_probe_after_reset(self) -> None:
+        clock = MutableClock(datetime(2026, 4, 10, 13, 0, 0))
+        manager = GeminiPoolManager([GeminiPoolEntry("primary", "project-a", "slot-1", "key-1", DEFAULT_MODEL)])
+
+        with patch.dict(
+            os.environ,
+            {
+                "GEMINI_EXHAUSTED_PROJECT_IDS": "project-a",
+                "GEMINI_EXHAUSTED_UNTIL": "2026-04-10T13:05:00",
+            },
+            clear=False,
+        ), patch("gemini_pool._utcnow", side_effect=clock):
+            manager._apply_pre_exhausted_projects_from_env()
+            locked = manager.get_runtime_status()["gemini_usage_entries"][0]
+            self.assertEqual(locked["state"], STATE_MANUAL_OVERRIDE_ACTIVE)
+            self.assertFalse(locked["available"])
+
+            clock.now += timedelta(minutes=6)
+            pending = manager.get_runtime_status()["gemini_usage_entries"][0]
+            self.assertEqual(pending["state"], STATE_MANUAL_OVERRIDE_EXPIRED_PENDING_PROBE)
+            self.assertFalse(pending["available"])
+            self.assertIsNotNone(pending["nextProbeAt"])
+
     def test_unused_project_starts_as_backend_not_observed(self) -> None:
         pool = GeminiPoolManager([GeminiPoolEntry("primary", "project-a", "slot-1", "key-1", DEFAULT_MODEL)])
         status = pool.get_runtime_status()
@@ -271,6 +327,155 @@ class GeminiPoolTests(unittest.TestCase):
             self.assertEqual(status["totalRequests"], 1)
             self.assertEqual(status["totalTokens"], 7)
             self.assertEqual(status["rollingEventsCount"], 1)
+
+    def test_probe_success_unlocks_project_and_marks_probe_confirmed(self) -> None:
+        clock = MutableClock(datetime(2026, 4, 10, 15, 0, 0))
+        entry = GeminiPoolEntry("primary", "project-a", "slot-1", "key-1", DEFAULT_MODEL)
+        entry.state = STATE_MANUAL_OVERRIDE_EXPIRED_PENDING_PROBE
+        entry.disabled_reason = STATE_MANUAL_OVERRIDE_EXPIRED_PENDING_PROBE
+        entry.next_probe_at = clock.now
+        entry.provider_expected_reset_at = clock.now - timedelta(seconds=1)
+        pool = GeminiPoolManager([entry], requester=lambda *args, **kwargs: ok_response("probe ok", total_tokens=2))
+
+        with patch("gemini_pool._utcnow", side_effect=clock):
+            pool._run_probe_pass([entry])
+            status = pool.get_runtime_status()["gemini_usage_entries"][0]
+
+        self.assertTrue(status["available"])
+        self.assertEqual(status["state"], STATE_AVAILABLE)
+        self.assertEqual(status["quotaSource"], QUOTA_SOURCE_PROBE_CONFIRMED)
+        self.assertEqual(status["lastProbeResult"], "success")
+
+    def test_structured_429_prefers_rpd_over_minute_quota(self) -> None:
+        clock = MutableClock(datetime(2026, 4, 10, 17, 0, 0))
+        entry = GeminiPoolEntry("primary", "project-a", "slot-1", "key-1", DEFAULT_MODEL)
+        pool = GeminiPoolManager([entry])
+        response = quota_429_response(
+            {
+                "quotaMetric": "generativelanguage.googleapis.com/generate_content_free_tier_requests",
+                "quotaId": "GenerateRequestsPerMinutePerProjectPerModel-FreeTier",
+            },
+            {
+                "quotaMetric": "generativelanguage.googleapis.com/generate_content_free_tier_requests",
+                "quotaId": "GenerateRequestsPerDayPerProjectPerModel-FreeTier",
+            },
+            retry_delay="21s",
+        )
+
+        with patch("gemini_pool._utcnow", side_effect=clock):
+            with self.assertRaises(GeminiPoolError) as ctx:
+                pool._raise_for_error_response(entry, response)
+
+        error = ctx.exception
+        self.assertEqual(error.code, "gemini_quota_exhausted")
+        self.assertEqual(error.status_code, 429)
+        self.assertEqual(error.quota_kind, "rpd")
+        self.assertEqual(error.quota_id, "GenerateRequestsPerDayPerProjectPerModel-FreeTier")
+        self.assertIsNotNone(error.retry_after)
+        self.assertIsNotNone(error.provider_expected_reset_at)
+        self.assertNotEqual(error.retry_after, error.provider_expected_reset_at)
+
+    def test_structured_429_classifies_tpm_quota(self) -> None:
+        entry = GeminiPoolEntry("primary", "project-a", "slot-1", "key-1", DEFAULT_MODEL)
+        pool = GeminiPoolManager([entry])
+        response = quota_429_response(
+            {
+                "quotaMetric": "generativelanguage.googleapis.com/generate_content_free_tier_input_token_count",
+                "quotaId": "GenerateContentInputTokensPerModelPerMinute-FreeTier",
+            },
+            retry_delay="15s",
+        )
+
+        with self.assertRaises(GeminiPoolError) as ctx:
+            pool._raise_for_error_response(entry, response)
+
+        error = ctx.exception
+        self.assertEqual(error.code, "gemini_quota_exhausted")
+        self.assertEqual(error.quota_kind, "tpm")
+        self.assertEqual(error.quota_id, "GenerateContentInputTokensPerModelPerMinute-FreeTier")
+        self.assertIsNone(error.provider_expected_reset_at)
+
+    def test_probe_marks_auth_invalid_on_403(self) -> None:
+        clock = MutableClock(datetime(2026, 4, 10, 15, 30, 0))
+        entry = GeminiPoolEntry("primary", "project-a", "slot-1", "key-1", DEFAULT_MODEL)
+        entry.state = STATE_MANUAL_OVERRIDE_EXPIRED_PENDING_PROBE
+        entry.disabled_reason = STATE_MANUAL_OVERRIDE_EXPIRED_PENDING_PROBE
+        entry.next_probe_at = clock.now
+        calls = [0]
+
+        def requester(*args, **kwargs):
+            calls[0] += 1
+            return FakeResponse(403, {"error": {"message": "forbidden"}})
+
+        pool = GeminiPoolManager([entry], requester=requester)
+        with patch("gemini_pool._utcnow", side_effect=clock):
+            pool._run_probe_pass([entry])
+            status = pool.get_runtime_status()
+
+        self.assertEqual(calls[0], 1)
+        project = status["gemini_usage_entries"][0]
+        self.assertEqual(project["state"], STATE_AUTH_INVALID)
+        self.assertFalse(project["available"])
+        self.assertEqual(status["gemini_auth_invalid_project_count"], 1)
+
+    def test_bootstrap_override_does_not_reapply_after_probe_confirmed_state(self) -> None:
+        clock = MutableClock(datetime(2026, 4, 10, 16, 0, 0))
+        with tempfile.TemporaryDirectory() as temp_dir:
+            state_path = os.path.join(temp_dir, "gemini-state.json")
+            entry = GeminiPoolEntry("primary", "project-a", "slot-1", "key-1", DEFAULT_MODEL)
+            entry.state = STATE_MANUAL_OVERRIDE_EXPIRED_PENDING_PROBE
+            entry.disabled_reason = STATE_MANUAL_OVERRIDE_EXPIRED_PENDING_PROBE
+            entry.next_probe_at = clock.now
+            entry.provider_expected_reset_at = clock.now - timedelta(seconds=1)
+            manager = GeminiPoolManager(
+                [entry],
+                usage_state_path=state_path,
+                requester=lambda *args, **kwargs: ok_response("probe ok", total_tokens=2),
+            )
+
+            with patch("gemini_pool._utcnow", side_effect=clock):
+                manager._run_probe_pass([entry])
+
+            reloaded = GeminiPoolManager(
+                [GeminiPoolEntry("primary", "project-a", "slot-1", "key-1", DEFAULT_MODEL)],
+                usage_state_path=state_path,
+            )
+            with patch.dict(
+                os.environ,
+                {
+                    "GEMINI_EXHAUSTED_PROJECT_IDS": "project-a",
+                    "GEMINI_EXHAUSTED_UNTIL": "2026-04-11T07:00:00",
+                },
+                clear=False,
+            ), patch("gemini_pool._utcnow", side_effect=clock):
+                reloaded._apply_pre_exhausted_projects_from_env()
+                status = reloaded.get_runtime_status()["gemini_usage_entries"][0]
+
+        self.assertTrue(status["available"])
+        self.assertEqual(status["state"], STATE_AVAILABLE)
+        self.assertEqual(status["quotaSource"], QUOTA_SOURCE_PROBE_CONFIRMED)
+
+    def test_runtime_status_does_not_trigger_probe_requests(self) -> None:
+        clock = MutableClock(datetime(2026, 4, 10, 16, 30, 0))
+        entry = GeminiPoolEntry("primary", "project-a", "slot-1", "key-1", DEFAULT_MODEL)
+        entry.state = STATE_MANUAL_OVERRIDE_EXPIRED_PENDING_PROBE
+        entry.disabled_reason = STATE_MANUAL_OVERRIDE_EXPIRED_PENDING_PROBE
+        entry.next_probe_at = clock.now
+        calls = [0]
+
+        def requester(*args, **kwargs):
+            calls[0] += 1
+            return ok_response("unused")
+
+        pool = GeminiPoolManager([entry], requester=requester)
+        with patch("gemini_pool._utcnow", side_effect=clock):
+            status = pool.get_runtime_status()
+
+        self.assertEqual(calls[0], 0)
+        self.assertEqual(status["gemini_probe_pending_project_count"], 1)
+        project = status["gemini_usage_entries"][0]
+        self.assertEqual(project["state"], STATE_MANUAL_OVERRIDE_EXPIRED_PENDING_PROBE)
+        self.assertFalse(project["available"])
 
 
 if __name__ == "__main__":
