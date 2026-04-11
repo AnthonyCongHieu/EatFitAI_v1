@@ -15,6 +15,7 @@ namespace EatFitAI.API.Controllers
             _healthCheckService = healthCheckService;
         }
 
+        [HttpGet("health")]
         [HttpGet("api/health")]
         public async Task<IActionResult> Get()
         {

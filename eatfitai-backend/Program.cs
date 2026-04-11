@@ -731,42 +731,8 @@ app.UseStaticFiles();
 
 app.MapControllers();
 
-app.MapGet("/health/live", () => Results.Ok(new { status = "live" }));
-app.MapGet("/health/ready", async (HealthCheckService healthCheckService, ILoggerFactory loggerFactory, CancellationToken cancellationToken) =>
-{
-    var report = await healthCheckService.CheckHealthAsync(
-        registration => registration.Tags.Contains("ready"),
-        cancellationToken);
+// Health endpoints handled by HealthController (no MapGet duplicates)
 
-    if (report.Status == HealthStatus.Healthy)
-    {
-        return Results.Ok(new
-        {
-            status = "ready",
-            checks = report.Entries.ToDictionary(
-                entry => entry.Key,
-                entry => entry.Value.Status.ToString().ToLowerInvariant())
-        });
-    }
-
-    var logger = loggerFactory.CreateLogger("HealthReadiness");
-    var failureSummary = string.Join(
-        "; ",
-        report.Entries.Select(entry =>
-            $"{entry.Key}={entry.Value.Status}: {entry.Value.Description ?? entry.Value.Exception?.Message ?? "no detail"}"));
-
-    logger.LogError(
-        "Database readiness failed. Target={ConnectionSummary}; Report={FailureSummary}",
-        sanitizedConnectionSummary,
-        failureSummary);
-
-    return Results.Problem(
-        title: "DB not ready",
-        detail: $"target={sanitizedConnectionSummary}",
-        statusCode: StatusCodes.Status503ServiceUnavailable);
-});
-// Simple health endpoint for mobile ping
-app.MapGet("/health", () => Results.Ok(new { status = "ok" }));
 
 // Discovery endpoint - cho mobile app tự động tìm backend trong LAN
 app.MapGet("/discovery", () => Results.Ok(new { 
