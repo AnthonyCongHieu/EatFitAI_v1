@@ -185,7 +185,7 @@ public class AdminController : ControllerBase
     [HttpGet("foods")]
     public async Task<IActionResult> GetFoods([FromQuery] string? search, [FromQuery] int page = 1, [FromQuery] int pageSize = 50)
     {
-        var query = _context.FoodItems.AsQueryable();
+        var query = _context.FoodItems.Where(f => !f.IsDeleted).AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(search))
         {
@@ -195,7 +195,8 @@ public class AdminController : ControllerBase
 
         var total = await query.CountAsync();
         var foods = await query
-            .OrderByDescending(f => f.CreatedAt)
+            .OrderBy(f => f.IsVerified)
+            .ThenByDescending(f => f.CreatedAt)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
             .ToListAsync();
