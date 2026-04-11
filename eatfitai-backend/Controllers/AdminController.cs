@@ -12,7 +12,7 @@ namespace EatFitAI.API.Controllers;
 
 [Route("api/admin")]
 [ApiController]
-// [Authorize(Roles = "Admin")]
+[Authorize(Roles = "Admin")]
 public class AdminController : ControllerBase
 {
     private readonly ApplicationDbContext _context;
@@ -180,6 +180,29 @@ public class AdminController : ControllerBase
         return Ok(ApiResponse<object>.SuccessResponse(new { Id = user.UserId, Status = status }, $"User {status}."));
     }
 
+    [HttpDelete("users/{id}")]
+    public async Task<IActionResult> DeleteUser(Guid id)
+    {
+        var user = await _context.Users.FirstOrDefaultAsync(x => x.UserId == id);
+        if (user == null) return NotFound(ApiResponse<object>.ErrorResponse("User not found"));
+
+        // Cascade delete related data
+        try
+        {
+            var meals = _context.MealDiaries.Where(m => m.UserId == id);
+            _context.MealDiaries.RemoveRange(meals);
+        } catch { }
+        try
+        {
+            var corrections = _context.AiCorrectionEvents.Where(c => c.UserId == id);
+            _context.AiCorrectionEvents.RemoveRange(corrections);
+        } catch { }
+
+        _context.Users.Remove(user);
+        await _context.SaveChangesAsync();
+        return Ok(ApiResponse<object>.SuccessResponse(null, "User đã bị xóa vĩnh viễn."));
+    }
+
     // ===================== FOODS CRUD =====================
 
     [HttpGet("foods")]
@@ -310,11 +333,30 @@ public class AdminController : ControllerBase
 
     // ===================== KEEP-ALIVE =====================
 
+    [AllowAnonymous]
     [HttpGet("keep-alive")]
     public async Task<IActionResult> KeepAlive()
     {
+        var results = new Dictionary<string, string>();
+        
         // Ping database
-        try { await _context.Database.ExecuteSqlRawAsync("SELECT 1"); } catch { }
-        return Ok(new { status = "alive", timestamp = DateTime.UtcNow });
+        try { await _context.Database.ExecuteSqlRawAsync("SELECT 1"); results["database"] = "alive"; } 
+        catch { results["database"] = "error"; }
+        
+        // Touch key tables to keep EF Core connection pool warm
+        try { var _ = await _context.GeminiKeys.CountAsync(); results["gemini_keys"] = "alive"; }
+        catch { results["gemini_keys"] = "error"; }
+        
+        try { var _ = await _context.FoodItems.CountAsync(); results["food_items"] = "alive"; }
+        catch { results["food_items"] = "error"; }
+        
+        try { var _ = await _context.Users.CountAsync(); results["users"] = "alive"; }
+        catch { results["users"] = "error"; }
+
+        return Ok(new { 
+            status = "alive", 
+            timestamp = DateTime.UtcNow,
+            services = results
+        });
     }
 }

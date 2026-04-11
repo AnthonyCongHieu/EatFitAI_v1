@@ -15,4 +15,9 @@ public interface IGeminiPoolManager
     /// Báo cáo (cộng dồn) mức độ sử dụng cho key đó sau khi AI Request thành công.
     /// </summary>
     Task ReportUsageAsync(Guid keyId);
+
+    /// <summary>
+    /// Circuit Breaker: Báo cáo khi có lỗi xảy ra (vd 429).
+    /// </summary>
+    void ReportFailure(Guid keyId, int statusCode);
 }

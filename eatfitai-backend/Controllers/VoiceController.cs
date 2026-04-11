@@ -135,6 +135,7 @@ namespace EatFitAI.API.Controllers
                     return Ok(PrepareParsedCommand(providerCommand, request.Text, "ai-provider-proxy"));
                 }
 
+                _geminiPoolManager.ReportFailure(keyId, (int)response.StatusCode);
                 _logger.LogWarning(
                     "Voice parse proxy failed for user {UserId}. Status={StatusCode}, Body={Body}",
                     userId,

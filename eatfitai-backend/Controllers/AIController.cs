@@ -119,6 +119,7 @@ namespace EatFitAI.API.Controllers
             var body = await resp.Content.ReadAsStringAsync();
             if (!resp.IsSuccessStatusCode)
             {
+                _geminiPoolManager.ReportFailure(keyId, (int)resp.StatusCode);
                 return StatusCode((int)resp.StatusCode, new { error = "ai-provider_error", detail = body });
             }
 

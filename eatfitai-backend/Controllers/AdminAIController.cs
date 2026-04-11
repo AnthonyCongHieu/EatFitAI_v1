@@ -14,7 +14,7 @@ namespace EatFitAI.API.Controllers;
 
 [Route("api/admin-ai")]
 [ApiController]
-// [Authorize(Roles = "Admin")] // Bỏ comment khi Supabase JWT Claims hoạt động đầy đủ
+[Authorize(Roles = "Admin")]
 public class AdminAIController : ControllerBase
 {
     private readonly ApplicationDbContext _context;
@@ -199,42 +199,75 @@ public class AdminAIController : ControllerBase
             key.IsActive ? "Đã kích hoạt Key." : "Đã vô hiệu hóa Key."));
     }
 
-    // Test key connectivity — gửi request nhỏ tới Gemini API
+    // Test key connectivity — gửi request nhỏ tới Gemini API — with rich status
     [HttpPost("keys/{id}/test")]
     [ProducesResponseType(typeof(ApiResponse<object>), 200)]
     public async Task<IActionResult> TestKey(Guid id)
     {
         var key = await _context.GeminiKeys.FindAsync(id);
         if (key == null)
-        {
             return NotFound(ApiResponse<object>.ErrorResponse("Không tìm thấy Gemini Key."));
+
+        var result = await TestSingleKey(key);
+        return Ok(ApiResponse<object>.SuccessResponse(result, result.Message));
+    }
+
+    // Test ALL keys at once
+    [HttpPost("keys/test-all")]
+    [ProducesResponseType(typeof(ApiResponse<object>), 200)]
+    public async Task<IActionResult> TestAllKeys()
+    {
+        var keys = await _context.GeminiKeys.ToListAsync();
+        var results = new List<object>();
+
+        foreach (var key in keys)
+        {
+            var result = await TestSingleKey(key);
+            results.Add(new { key.Id, key.KeyName, result.Status, result.StatusCode, result.Message });
         }
 
+        var active = results.Count(r => ((dynamic)r).Status == "Active");
+        var rateLimited = results.Count(r => ((dynamic)r).Status == "RateLimited");
+
+        return Ok(ApiResponse<object>.SuccessResponse(
+            new { Results = results, Summary = new { Total = keys.Count, Active = active, RateLimited = rateLimited, Dead = keys.Count - active - rateLimited } },
+            $"Đã test {keys.Count} keys: {active} active, {rateLimited} rate-limited."));
+    }
+
+    private async Task<KeyTestResult> TestSingleKey(Models.GeminiKey key)
+    {
         try
         {
             var apiKey = _encryptionService.Decrypt(key.EncryptedApiKey);
             using var httpClient = new HttpClient { Timeout = TimeSpan.FromSeconds(10) };
-            
+
             var response = await httpClient.GetAsync(
                 $"https://generativelanguage.googleapis.com/v1beta/models?key={apiKey}");
 
+            var statusCode = (int)response.StatusCode;
+
             if (response.IsSuccessStatusCode)
-            {
-                return Ok(ApiResponse<object>.SuccessResponse(
-                    new { Status = "OK", StatusCode = (int)response.StatusCode },
-                    "Key hoạt động bình thường."));
-            }
+                return new KeyTestResult { Status = "Active", StatusCode = statusCode, Message = "Key hoạt động bình thường." };
+
+            if (statusCode == 429)
+                return new KeyTestResult { Status = "RateLimited", StatusCode = statusCode, Message = "Key bị rate limit — vẫn sống nhưng hết quota." };
+
+            if (statusCode == 403)
+                return new KeyTestResult { Status = "Disabled", StatusCode = statusCode, Message = "Key bị vô hiệu hóa hoặc bị thu hồi." };
+
+            if (statusCode == 400)
+                return new KeyTestResult { Status = "Invalid", StatusCode = statusCode, Message = "Key sai format hoặc request lỗi." };
 
             var body = await response.Content.ReadAsStringAsync();
-            return Ok(ApiResponse<object>.SuccessResponse(
-                new { Status = "Error", StatusCode = (int)response.StatusCode, Message = body },
-                "Key không hoạt động."));
+            return new KeyTestResult { Status = "Error", StatusCode = statusCode, Message = body.Length > 200 ? body.Substring(0, 200) : body };
+        }
+        catch (TaskCanceledException)
+        {
+            return new KeyTestResult { Status = "Timeout", StatusCode = 0, Message = "Request timeout — key hoặc network có vấn đề." };
         }
         catch (Exception ex)
         {
-            return Ok(ApiResponse<object>.SuccessResponse(
-                new { Status = "Error", Message = ex.Message },
-                "Lỗi khi test key."));
+            return new KeyTestResult { Status = "Error", StatusCode = 0, Message = ex.Message };
         }
     }
 
@@ -269,4 +302,11 @@ public class AdminAIController : ControllerBase
 
         return Ok(ApiResponse<object>.SuccessResponse(null, $"Đã reset quota trong ngày cho {keys.Count} keys."));
     }
+}
+
+public class KeyTestResult
+{
+    public string Status { get; set; } = "Unknown";
+    public int StatusCode { get; set; }
+    public string Message { get; set; } = "";
 }
