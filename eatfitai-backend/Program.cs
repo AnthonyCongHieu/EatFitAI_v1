@@ -581,14 +581,14 @@ if (IsPlaceholderSecret(jwtKey))
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
-        // We don't manually assign symmetric key anymore. Set Authority to validate via Supabase JWKS.
-        options.Authority = builder.Configuration["Jwt:Issuer"] ?? "https://bjlmndmafrajjysenpbm.supabase.co/auth/v1";
+        // Supabase uses HS256 (Symmetric) to sign JWTs. We MUST use SymmetricSecurityKey, NOT Authority.
+        // options.Authority = builder.Configuration["Jwt:Issuer"] ?? "https://bjlmndmafrajjysenpbm.supabase.co/auth/v1";
         options.RequireHttpsMetadata = false;
 
         options.TokenValidationParameters = new TokenValidationParameters
         {
-            ValidateIssuerSigningKey = true, // Not manually assigning symmetric key anymore
-            // Disable manual IssuerSigningKey assignment since we are dynamically fetching JWKS via Authority
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey!)),
             
             // Bật validate Issuer/Audience để chặn token từ app khác
             ValidateIssuer = true,
