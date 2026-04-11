@@ -557,6 +557,10 @@ builder.Services.AddScoped<IAiLogService, AiLogService>();
 // Lookup cache service (Singleton for shared cache)
 builder.Services.AddSingleton<ILookupCacheService, LookupCacheService>();
 
+// Security & AI Pool Services
+builder.Services.AddSingleton<IEncryptionService, EncryptionService>();
+builder.Services.AddScoped<IGeminiPoolManager, GeminiPoolManager>();
+
 // Health checks (used by HealthController and readiness endpoints)
 builder.Services.AddHealthChecks()
     .AddNpgSql(
@@ -576,17 +580,56 @@ if (IsPlaceholderSecret(jwtKey))
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
+        // We don't manually assign symmetric key anymore. Set Authority to validate via Supabase JWKS.
+        options.Authority = builder.Configuration["Jwt:Issuer"] ?? "https://bjlmndmafrajjysenpbm.supabase.co/auth/v1";
+
         options.TokenValidationParameters = new TokenValidationParameters
         {
-            ValidateIssuerSigningKey = true,
-            IssuerSigningKey = new SymmetricSecurityKey(
-                Encoding.ASCII.GetBytes(jwtKey!)),
+            ValidateIssuerSigningKey = true, // Not manually assigning symmetric key anymore
+            // Disable manual IssuerSigningKey assignment since we are dynamically fetching JWKS via Authority
+            
             // Bật validate Issuer/Audience để chặn token từ app khác
             ValidateIssuer = true,
-            ValidIssuer = builder.Configuration["Jwt:Issuer"] ?? "EatFitAI",
+            ValidIssuers = new[] 
+            { 
+                builder.Configuration["Jwt:Issuer"] ?? "EatFitAI",
+                "https://bjlmndmafrajjysenpbm.supabase.co/auth/v1"
+            },
             ValidateAudience = true,
-            ValidAudience = builder.Configuration["Jwt:Audience"] ?? "EatFitAI",
+            ValidAudiences = new[]
+            {
+                builder.Configuration["Jwt:Audience"] ?? "EatFitAI",
+                "authenticated"
+            },
             ClockSkew = TimeSpan.Zero
+        };
+
+        options.Events = new JwtBearerEvents
+        {
+            OnTokenValidated = context =>
+            {
+                var identity = context.Principal?.Identity as System.Security.Claims.ClaimsIdentity;
+                if (identity != null)
+                {
+                    // Map Supabase user_metadata.role to .NET ClaimTypes.Role
+                    var userMetadataClaim = identity.FindFirst("user_metadata");
+                    if (userMetadataClaim != null)
+                    {
+                        try
+                        {
+                            var md = System.Text.Json.JsonDocument.Parse(userMetadataClaim.Value);
+                            if (md.RootElement.TryGetProperty("role", out var roleElement))
+                            {
+                                identity.AddClaim(new System.Security.Claims.Claim(
+                                    System.Security.Claims.ClaimTypes.Role, 
+                                    roleElement.GetString()!));
+                            }
+                        }
+                        catch { /* Ignore parsing errors */ }
+                    }
+                }
+                return Task.CompletedTask;
+            }
         };
     });
 

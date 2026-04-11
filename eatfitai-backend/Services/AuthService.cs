@@ -1,4 +1,4 @@
-﻿using System.IdentityModel.Tokens.Jwt;
+using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
@@ -221,7 +221,8 @@ namespace EatFitAI.API.Services
                 {
                     new Claim(ClaimTypes.NameIdentifier, user.UserId.ToString()),
                     new Claim(ClaimTypes.Email, user.Email),
-                    new Claim(ClaimTypes.Name, user.DisplayName ?? user.Email)
+                    new Claim(ClaimTypes.Name, user.DisplayName ?? user.Email),
+                    new Claim(ClaimTypes.Role, "User")
                 }),
                 Issuer = issuer,
                 Audience = audience,

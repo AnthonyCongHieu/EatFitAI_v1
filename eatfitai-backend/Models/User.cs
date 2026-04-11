@@ -26,6 +26,9 @@ public partial class User
     // Onboarding status - đã hoàn thành setup profile chưa
     public bool OnboardingCompleted { get; set; } = false;
 
+    // Phân quyền hệ thống (ví dụ: "Admin", "User")
+    public string Role { get; set; } = "User";
+
     // Profile 2026 - Gamification & Goal Tracking
     // Cân nặng mục tiêu (kg)
     public decimal? TargetWeightKg { get; set; }

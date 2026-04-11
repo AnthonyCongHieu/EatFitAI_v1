@@ -65,6 +65,9 @@ _cdp_render_profile/
 _chrome_profile_clone/
 _tmp/
 _tmp_*.png
+.playwright-cli/
+tmp/
+@AutomationLog.txt
 
 data_batches/
 data_chunks/

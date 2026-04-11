@@ -53,6 +53,7 @@ public partial class ApplicationDbContext : DbContext
     public virtual DbSet<UserRecentFood> UserRecentFoods { get; set; }
     public virtual DbSet<AiLabelMap> AiLabelMaps { get; set; }
     public virtual DbSet<UserPreference> UserPreferences { get; set; }
+    public virtual DbSet<GeminiKey> GeminiKeys { get; set; }
 
     public virtual DbSet<vw_DailyMacroShare> vw_DailyMacroShares { get; set; }
 
@@ -564,6 +565,19 @@ public partial class ApplicationDbContext : DbContext
             entity.HasOne(d => d.User).WithOne(p => p.UserPreference)
                 .HasForeignKey<UserPreference>(d => d.UserId)
                 .HasConstraintName("FK_UserPreference_User");
+        });
+
+        modelBuilder.Entity<GeminiKey>(entity =>
+        {
+            entity.ToTable("GeminiKeys");
+
+            entity.HasIndex(e => e.KeyName, "UQ_GeminiKeys_KeyName").IsUnique();
+
+            entity.Property(e => e.Id).HasDefaultValueSql("gen_random_uuid()");
+            
+            entity.Property(e => e.CreatedAt)
+                .HasPrecision(3)
+                .HasDefaultValueSql("NOW() AT TIME ZONE 'UTC'");
         });
 
         OnModelCreatingPartial(modelBuilder);
