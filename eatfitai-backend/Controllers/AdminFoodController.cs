@@ -31,11 +31,11 @@ public class AdminFoodController : ControllerBase
         
         if (verifiedOnly)
         {
-            query = query.Where(f => f.IsActive); // Using IsActive as IsVerified equivalent
+            query = query.Where(f => f.IsVerified);
         }
 
         var foods = await query
-            .OrderBy(f => f.IsActive) // Unverified (Inactive) first
+            .OrderBy(f => f.IsVerified) // Unverified first
             .ThenByDescending(f => f.CreatedAt)
             .Take(100) // Paging
             .Select(f => new AdminFoodDto
@@ -46,8 +46,8 @@ public class AdminFoodController : ControllerBase
                 ProteinPer100g = f.ProteinPer100g,
                 FatPer100g = f.FatPer100g,
                 CarbPer100g = f.CarbPer100g,
-                IsVerified = f.IsActive,
-                CredibilityScore = f.IsActive ? 100 : 50,
+                IsVerified = f.IsVerified,
+                CredibilityScore = f.CredibilityScore,
                 CreatedAt = f.CreatedAt
             })
             .ToListAsync();
@@ -61,7 +61,8 @@ public class AdminFoodController : ControllerBase
         var food = await _context.FoodItems.FindAsync(id);
         if (food == null || food.IsDeleted) return NotFound(ApiResponse<object>.ErrorResponse("Not found"));
 
-        food.IsActive = true;
+        food.IsVerified = true;
+        food.CredibilityScore = 100;
         food.UpdatedAt = DateTime.UtcNow;
         
         await _context.SaveChangesAsync();
