@@ -11,5 +11,12 @@ public class UpdateGeminiKeyRequest
     // Optional: Nếu có truyền giá trị mới thì cập nhật, không thì giữ nguyên key cũ đã mã hóa
     public string? ApiKey { get; set; }
 
-    public bool IsActive { get; set; }
+    public bool? IsActive { get; set; }
+    
+    public string? Tier { get; set; }
+    public string? Model { get; set; }
+    public int? DailyQuotaLimit { get; set; }
+    public string? ProjectId { get; set; }
+    public string? Notes { get; set; }
 }
+

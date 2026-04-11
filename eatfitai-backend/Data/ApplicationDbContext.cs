@@ -348,6 +348,27 @@ public partial class ApplicationDbContext : DbContext
                 .HasPrecision(3);
         });
 
+        modelBuilder.Entity<User>(entity =>
+        {
+            entity.ToTable("Users");
+            entity.HasKey(e => e.UserId);
+
+            entity.Ignore(e => e.Role); // DB no longer has Role column
+
+            entity.Property(e => e.EmailVerified)
+                .HasColumnName("IsEmailVerified");
+
+            entity.Property(e => e.VerificationCode)
+                .HasColumnName("EmailVerificationToken");
+
+            entity.Property(e => e.VerificationCodeExpiry)
+                .HasColumnName("EmailVerificationExpiry");
+
+            entity.Property(e => e.CreatedAt)
+                .HasPrecision(3)
+                .HasDefaultValueSql("NOW() AT TIME ZONE 'UTC'");
+        });
+
         modelBuilder.Entity<UserDish>(entity =>
         {
             entity.ToTable("UserDish");

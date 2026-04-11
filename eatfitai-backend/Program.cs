@@ -96,6 +96,7 @@ builder.Services.AddControllers()
     {
         options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
     });
+builder.Services.AddHttpClient();
 builder.Services.AddEndpointsApiExplorer();
 
 
@@ -582,6 +583,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     {
         // We don't manually assign symmetric key anymore. Set Authority to validate via Supabase JWKS.
         options.Authority = builder.Configuration["Jwt:Issuer"] ?? "https://bjlmndmafrajjysenpbm.supabase.co/auth/v1";
+        options.RequireHttpsMetadata = false;
 
         options.TokenValidationParameters = new TokenValidationParameters
         {

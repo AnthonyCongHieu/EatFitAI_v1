@@ -31,6 +31,10 @@ public partial class FoodItem
 
     public bool IsDeleted { get; set; }
 
+    public bool IsVerified { get; set; }
+
+    public int CredibilityScore { get; set; } = 50;
+
     public virtual ICollection<AISuggestion> AISuggestions { get; set; } = new List<AISuggestion>();
 
     public virtual ICollection<FoodServing> FoodServings { get; set; } = new List<FoodServing>();
