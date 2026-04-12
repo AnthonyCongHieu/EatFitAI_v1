@@ -49,9 +49,9 @@ public class AdminAILogController : ControllerBase
             UserId = l.UserId,
             UserName = l.User != null ? (string.IsNullOrEmpty(l.User.DisplayName) ? l.User.Email : l.User.DisplayName) : null,
             Action = l.Action,
-            InputPreview = l.InputJson != null ? (l.InputJson.Length > 200 ? l.InputJson.Substring(0, 200) + "..." : l.InputJson) : null,
-            OutputPreview = l.OutputJson != null ? (l.OutputJson.Length > 200 ? l.OutputJson.Substring(0, 200) + "..." : l.OutputJson) : null,
-            DurationMs = l.DurationMs,
+            InputPreview = l.InputData != null ? (l.InputData.Length > 200 ? l.InputData.Substring(0, 200) + "..." : l.InputData) : null,
+            OutputPreview = l.OutputData != null ? (l.OutputData.Length > 200 ? l.OutputData.Substring(0, 200) + "..." : l.OutputData) : null,
+            DurationMs = null,
             CreatedAt = l.CreatedAt
         }).ToList();
 

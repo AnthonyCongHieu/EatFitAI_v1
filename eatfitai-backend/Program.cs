@@ -577,33 +577,42 @@ if (IsPlaceholderSecret(jwtKey))
         "Jwt:Key is missing or insecure. Configure a strong secret via appsettings or user-secrets.");
 }
 
-// Add JWT Authentication
+// Add JWT Authentication — Supabase Legacy JWT Secret (HS256 symmetric)
+// The Supabase project uses Legacy JWT Secret for signing tokens.
+// We MUST use SymmetricSecurityKey with the same secret to validate tokens.
+// Using Authority + JWKS (asymmetric) will NOT work with Legacy HS256 tokens.
+var jwtKeyBytes = Encoding.UTF8.GetBytes(jwtKey!);
+
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
-        // Supabase now uses ES256 asymmetric keys. We must use Authority to fetch JWKS.
-        options.Authority = builder.Configuration["Jwt:Issuer"] ?? "https://bjlmndmafrajjysenpbm.supabase.co/auth/v1";
+        // Do NOT set Authority — we validate manually with symmetric key
         options.RequireHttpsMetadata = false;
 
         options.TokenValidationParameters = new TokenValidationParameters
         {
+            // HS256 symmetric validation using Supabase Legacy JWT Secret
             ValidateIssuerSigningKey = true,
-            // IssuerSigningKey validation happens automatically via JWKS fetched from Authority
-            
-            // Bật validate Issuer/Audience để chặn token từ app khác
+            IssuerSigningKey = new SymmetricSecurityKey(jwtKeyBytes),
+
+            // Accept both our custom issuer and Supabase auth issuer
             ValidateIssuer = true,
             ValidIssuers = new[] 
             { 
                 builder.Configuration["Jwt:Issuer"] ?? "EatFitAI",
                 "https://bjlmndmafrajjysenpbm.supabase.co/auth/v1"
             },
+
+            // Accept both our custom audience and Supabase "authenticated" audience
             ValidateAudience = true,
             ValidAudiences = new[]
             {
                 builder.Configuration["Jwt:Audience"] ?? "EatFitAI",
                 "authenticated"
             },
-            ClockSkew = TimeSpan.Zero
+
+            // Supabase tokens have tight expiry, allow small clock skew
+            ClockSkew = TimeSpan.FromSeconds(30)
         };
 
         options.Events = new JwtBearerEvents
@@ -629,7 +638,22 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
                         }
                         catch { /* Ignore parsing errors */ }
                     }
+
+                    // Also map Supabase "role" claim directly (e.g. "authenticated", "anon")
+                    var supabaseRoleClaim = identity.FindFirst("role");
+                    if (supabaseRoleClaim != null && !identity.HasClaim(System.Security.Claims.ClaimTypes.Role, supabaseRoleClaim.Value))
+                    {
+                        identity.AddClaim(new System.Security.Claims.Claim(
+                            System.Security.Claims.ClaimTypes.Role,
+                            supabaseRoleClaim.Value));
+                    }
                 }
+                return Task.CompletedTask;
+            },
+            OnAuthenticationFailed = context =>
+            {
+                var logger = context.HttpContext.RequestServices.GetRequiredService<ILogger<Program>>();
+                logger.LogWarning("JWT authentication failed: {Error}", context.Exception.Message);
                 return Task.CompletedTask;
             }
         };
