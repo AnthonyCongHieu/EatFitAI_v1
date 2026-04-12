@@ -115,7 +115,6 @@ const AppNavigator = (): React.ReactElement => {
           screenOptions={{
             headerShown: false,
             contentStyle: { backgroundColor: theme.colors.background },
-            statusBarStyle: theme.statusBarStyle,
           }}
         >
           {isInAuthFlow ? (
