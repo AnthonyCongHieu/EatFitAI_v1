@@ -22,24 +22,37 @@ public sealed class AiRuntimeStatusService : IAiRuntimeStatusService
 
     public async Task<AdminRuntimeSnapshotDto> GetSnapshotAsync(CancellationToken cancellationToken = default)
     {
-        var providerUrl = $"{AiProviderUrlResolver.GetVisionBaseUrl(_configuration)}/internal/runtime/status";
-        using var client = _httpClientFactory.CreateClient();
-        client.Timeout = TimeSpan.FromSeconds(10);
-
-        using var request = new HttpRequestMessage(HttpMethod.Get, providerUrl);
-        var internalToken = _configuration["AIProvider:InternalToken"];
-        if (!string.IsNullOrWhiteSpace(internalToken))
+        var exceptions = new List<Exception>();
+        foreach (var providerBaseUrl in GetRuntimeStatusBaseUrls())
         {
-            request.Headers.Add("X-Internal-Token", internalToken);
+            try
+            {
+                using var client = _httpClientFactory.CreateClient();
+                client.Timeout = TimeSpan.FromSeconds(10);
+
+                using var request = new HttpRequestMessage(HttpMethod.Get, $"{providerBaseUrl}/internal/runtime/status");
+                var internalToken = _configuration["AIProvider:InternalToken"];
+                if (!string.IsNullOrWhiteSpace(internalToken))
+                {
+                    request.Headers.Add("X-Internal-Token", internalToken);
+                }
+
+                using var response = await client.SendAsync(request, cancellationToken);
+                response.EnsureSuccessStatusCode();
+
+                await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
+                using var doc = await JsonDocument.ParseAsync(stream, cancellationToken: cancellationToken);
+
+                return MapSnapshot(doc.RootElement);
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                exceptions.Add(ex);
+                _logger.LogWarning(ex, "Failed to fetch runtime status from {ProviderBaseUrl}", providerBaseUrl);
+            }
         }
 
-        using var response = await client.SendAsync(request, cancellationToken);
-        response.EnsureSuccessStatusCode();
-
-        await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
-        using var doc = await JsonDocument.ParseAsync(stream, cancellationToken: cancellationToken);
-
-        return MapSnapshot(doc.RootElement);
+        throw new AggregateException("Unable to fetch AI runtime status from all configured providers.", exceptions);
     }
 
     private AdminRuntimeSnapshotDto MapSnapshot(JsonElement root)
@@ -165,5 +178,52 @@ public sealed class AiRuntimeStatusService : IAiRuntimeStatusService
     {
         var value = ReadString(root, propertyName);
         return string.IsNullOrWhiteSpace(value) ? null : value;
+    }
+
+    private IEnumerable<string> GetRuntimeStatusBaseUrls()
+    {
+        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        IEnumerable<string?> candidates =
+        [
+            _configuration["AIProvider:VisionBaseUrl"],
+            _configuration["AIProvider:PublicBaseUrl"],
+            Environment.GetEnvironmentVariable("RENDER_EXTERNAL_AI_PROVIDER_URL"),
+            "https://eatfitai-ai-provider.onrender.com",
+        ];
+
+        foreach (var candidate in candidates)
+        {
+            if (string.IsNullOrWhiteSpace(candidate))
+            {
+                continue;
+            }
+
+            var normalized = candidate.Trim().TrimEnd('/');
+            if (!Uri.TryCreate(normalized, UriKind.Absolute, out var uri) || string.IsNullOrWhiteSpace(uri.Host))
+            {
+                continue;
+            }
+
+            if (seen.Add(normalized))
+            {
+                yield return normalized;
+            }
+        }
+
+        string? configuredBaseUrl = null;
+        try
+        {
+            configuredBaseUrl = AiProviderUrlResolver.GetVisionBaseUrl(_configuration);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Configured AIProvider:VisionBaseUrl is invalid.");
+        }
+
+        if (!string.IsNullOrWhiteSpace(configuredBaseUrl) && seen.Add(configuredBaseUrl))
+        {
+            yield return configuredBaseUrl;
+        }
     }
 }
