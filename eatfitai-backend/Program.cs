@@ -564,6 +564,8 @@ builder.Services.AddSingleton<ILookupCacheService, LookupCacheService>();
 
 // Security & AI Pool Services
 builder.Services.AddSingleton<IEncryptionService, EncryptionService>();
+builder.Services.AddSingleton<IAdminRealtimeEventBus, AdminRealtimeEventBus>();
+builder.Services.AddScoped<IAiRuntimeStatusService, AiRuntimeStatusService>();
 builder.Services.AddScoped<IGeminiPoolManager, GeminiPoolManager>();
 
 // Health checks (used by HealthController and readiness endpoints)

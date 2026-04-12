@@ -33,7 +33,6 @@ namespace EatFitAI.API.Controllers
         private readonly INutritionCalcService _nutritionCalcService;
         private readonly IVisionCacheService _visionCacheService;
         private readonly IMemoryCache _cache;
-        private readonly IGeminiPoolManager _geminiPoolManager;
 
         public AIController(
             IHttpClientFactory httpClientFactory,
@@ -47,8 +46,7 @@ namespace EatFitAI.API.Controllers
             INutritionInsightService nutritionInsightService,
             INutritionCalcService nutritionCalcService,
             IVisionCacheService visionCacheService,
-            IMemoryCache cache,
-            IGeminiPoolManager geminiPoolManager)
+            IMemoryCache cache)
         {
             _httpClientFactory = httpClientFactory;
             _configuration = configuration;
@@ -62,7 +60,6 @@ namespace EatFitAI.API.Controllers
             _nutritionCalcService = nutritionCalcService;
             _visionCacheService = visionCacheService;
             _cache = cache;
-            _geminiPoolManager = geminiPoolManager;
         }
 
         [HttpPost("vision/detect")]
@@ -105,10 +102,7 @@ namespace EatFitAI.API.Controllers
             var baseUrl = AiProviderUrlResolver.GetVisionBaseUrl(_configuration);
             var url = $"{baseUrl}/detect";
 
-            var (keyId, apiKey) = await _geminiPoolManager.GetNextAvailableKeyAsync();
-
             using var client = _httpClientFactory.CreateClient();
-            client.DefaultRequestHeaders.Add("X-Gemini-Api-Key", apiKey);
             using var content = new MultipartFormDataContent();
             await using var stream = file.OpenReadStream();
             var streamContent = new StreamContent(stream);
@@ -119,12 +113,8 @@ namespace EatFitAI.API.Controllers
             var body = await resp.Content.ReadAsStringAsync();
             if (!resp.IsSuccessStatusCode)
             {
-                _geminiPoolManager.ReportFailure(keyId, (int)resp.StatusCode);
                 return StatusCode((int)resp.StatusCode, new { error = "ai-provider_error", detail = body });
             }
-
-            // Báo cáo thành công trừ Usage Quota
-            await _geminiPoolManager.ReportUsageAsync(keyId);
             List<EatFitAI.API.DTOs.AI.VisionDetectionDto> detections;
             try
             {

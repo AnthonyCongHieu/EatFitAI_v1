@@ -19,13 +19,13 @@ public class AdminAIController : ControllerBase
 {
     private readonly ApplicationDbContext _context;
     private readonly IEncryptionService _encryptionService;
-    private readonly IGeminiPoolManager _geminiPoolManager;
+    private readonly IAdminRealtimeEventBus _eventBus;
 
-    public AdminAIController(ApplicationDbContext context, IEncryptionService encryptionService, IGeminiPoolManager geminiPoolManager)
+    public AdminAIController(ApplicationDbContext context, IEncryptionService encryptionService, IAdminRealtimeEventBus eventBus)
     {
         _context = context;
         _encryptionService = encryptionService;
-        _geminiPoolManager = geminiPoolManager;
+        _eventBus = eventBus;
     }
 
     [HttpGet("keys")]
@@ -107,6 +107,7 @@ public class AdminAIController : ControllerBase
 
         _context.GeminiKeys.Add(newKey);
         await _context.SaveChangesAsync();
+        PublishKeyUpdated(newKey.Id, new { newKey.Id, newKey.KeyName, newKey.ProjectId, Mutation = "created" });
 
         return Created("", ApiResponse<object>.SuccessResponse(new { Id = newKey.Id }, "Thêm Gemini Key mới thành công."));
     }
@@ -153,6 +154,10 @@ public class AdminAIController : ControllerBase
         }
 
         await _context.SaveChangesAsync();
+        foreach (var keyId in created)
+        {
+            PublishKeyUpdated(keyId, new { Id = keyId, Mutation = "bulk-created" });
+        }
 
         return Created("", ApiResponse<object>.SuccessResponse(
             new { Created = created.Count, Ids = created, Errors = errors },
@@ -179,6 +184,7 @@ public class AdminAIController : ControllerBase
         if (request.Notes != null) key.Notes = request.Notes;
 
         await _context.SaveChangesAsync();
+        PublishKeyUpdated(key.Id, new { key.Id, key.KeyName, key.ProjectId, Mutation = "updated" });
         return Ok(ApiResponse<object>.SuccessResponse(new { Id = key.Id }, "Cập nhật Gemini Key thành công."));
     }
 
@@ -195,6 +201,7 @@ public class AdminAIController : ControllerBase
 
         key.IsActive = !key.IsActive;
         await _context.SaveChangesAsync();
+        PublishKeyUpdated(key.Id, new { key.Id, key.IsActive, Mutation = "toggled" });
         return Ok(ApiResponse<object>.SuccessResponse(new { Id = key.Id, IsActive = key.IsActive }, 
             key.IsActive ? "Đã kích hoạt Key." : "Đã vô hiệu hóa Key."));
     }
@@ -283,6 +290,7 @@ public class AdminAIController : ControllerBase
 
         _context.GeminiKeys.Remove(key);
         await _context.SaveChangesAsync();
+        PublishKeyUpdated(id, new { Id = id, Mutation = "deleted" });
 
         return Ok(ApiResponse<object>.SuccessResponse(null, "Xóa Gemini Key thành công."));
     }
@@ -299,8 +307,14 @@ public class AdminAIController : ControllerBase
         }
 
         await _context.SaveChangesAsync();
+        _eventBus.Publish("admin.resource.updated", "gemini-key", "all", new { Mutation = "quota-reset", Count = keys.Count });
 
         return Ok(ApiResponse<object>.SuccessResponse(null, $"Đã reset quota trong ngày cho {keys.Count} keys."));
+    }
+
+    private void PublishKeyUpdated(Guid keyId, object payload)
+    {
+        _eventBus.Publish("admin.resource.updated", "gemini-key", keyId.ToString(), payload);
     }
 }
 

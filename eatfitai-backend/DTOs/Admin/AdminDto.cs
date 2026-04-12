@@ -89,6 +89,11 @@ public class SystemHealthDto
     public string BackendStatus { get; set; } = "Unknown";
     public string DatabaseStatus { get; set; } = "Unknown";
     public string AiProviderStatus { get; set; } = "Unknown";
+    public string? ActiveProject { get; set; }
+    public int AvailableProjectCount { get; set; }
+    public int ExhaustedProjectCount { get; set; }
+    public int CooldownProjectCount { get; set; }
+    public RuntimeLimitsDto Limits { get; set; } = new();
     public int TotalUsers { get; set; }
     public int TotalFoods { get; set; }
     public int TotalKeys { get; set; }

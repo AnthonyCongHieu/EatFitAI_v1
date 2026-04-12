@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using EatFitAI.API.Data;
 using EatFitAI.API.DTOs.Admin;
 using EatFitAI.API.DTOs.Common;
+using EatFitAI.API.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -16,15 +17,18 @@ namespace EatFitAI.API.Controllers;
 public class AdminAILogController : ControllerBase
 {
     private readonly ApplicationDbContext _context;
+    private readonly IAdminRealtimeEventBus _eventBus;
 
-    public AdminAILogController(ApplicationDbContext context)
+    public AdminAILogController(ApplicationDbContext context, IAdminRealtimeEventBus eventBus)
     {
         _context = context;
+        _eventBus = eventBus;
     }
 
     // ===================== AI LOGS =====================
     [HttpGet("logs")]
     public async Task<IActionResult> GetAILogs(
+        [FromQuery] string? search,
         [FromQuery] string? action,
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 50)
@@ -35,6 +39,18 @@ public class AdminAILogController : ControllerBase
 
         if (!string.IsNullOrWhiteSpace(action))
             query = query.Where(l => l.Action.ToLower().Contains(action.ToLower()));
+
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            var normalizedSearch = search.Trim().ToLower();
+            query = query.Where(l =>
+                l.Action.ToLower().Contains(normalizedSearch)
+                || (l.User != null && (
+                    l.User.Email.ToLower().Contains(normalizedSearch)
+                    || (l.User.DisplayName != null && l.User.DisplayName.ToLower().Contains(normalizedSearch))))
+                || (l.InputData != null && l.InputData.ToLower().Contains(normalizedSearch))
+                || (l.OutputData != null && l.OutputData.ToLower().Contains(normalizedSearch)));
+        }
 
         var total = await query.CountAsync();
         var logs = await query
@@ -61,12 +77,25 @@ public class AdminAILogController : ControllerBase
     // ===================== CORRECTION EVENTS =====================
     [HttpGet("corrections")]
     public async Task<IActionResult> GetCorrections(
+        [FromQuery] string? search,
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 50)
     {
         var query = _context.AiCorrectionEvents
             .Include(c => c.User)
             .AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            var normalizedSearch = search.Trim().ToLower();
+            query = query.Where(c =>
+                c.Label.ToLower().Contains(normalizedSearch)
+                || (c.SelectedFoodName != null && c.SelectedFoodName.ToLower().Contains(normalizedSearch))
+                || c.Source.ToLower().Contains(normalizedSearch)
+                || (c.User != null && (
+                    c.User.Email.ToLower().Contains(normalizedSearch)
+                    || (c.User.DisplayName != null && c.User.DisplayName.ToLower().Contains(normalizedSearch)))));
+        }
 
         var total = await query.CountAsync();
         var corrections = await query
@@ -126,6 +155,7 @@ public class AdminAILogController : ControllerBase
         if (request.MinConfidence.HasValue) map.MinConfidence = request.MinConfidence.Value;
 
         await _context.SaveChangesAsync();
+        _eventBus.Publish("admin.resource.updated", "ai-label-map", label, new { Label = label, Mutation = "updated" });
         return Ok(ApiResponse<object>.SuccessResponse(null, "Cập nhật label map thành công."));
     }
 
@@ -137,6 +167,7 @@ public class AdminAILogController : ControllerBase
 
         _context.AiLabelMaps.Remove(map);
         await _context.SaveChangesAsync();
+        _eventBus.Publish("admin.resource.updated", "ai-label-map", label, new { Label = label, Mutation = "deleted" });
         return Ok(ApiResponse<object>.SuccessResponse(null, "Xóa label map thành công."));
     }
 
