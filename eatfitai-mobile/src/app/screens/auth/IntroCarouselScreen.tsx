@@ -1,5 +1,6 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
+  Animated,
   Dimensions,
   FlatList,
   Image,
@@ -51,7 +52,7 @@ const SLIDES: IntroSlide[] = [
     key: 'progress',
     title: 'Chinh phục mọi mục\ntiêu hình thể',
     subtitle:
-      'Lên kế hoạch, theo dõi tiến độ và nhận tư vấn của chuyên gia AI trong suốt hành trình.',
+      'Lên kế hoạch, theo dõi tiến độ và nhận tư vấn của chuyên gia AI.',
   },
   {
     key: 'roadmap',
@@ -225,92 +226,100 @@ const s1 = StyleSheet.create({
 
 // ======================== SLIDE 2: PROGRESS CHART ========================
 
-const CHART_W = width * 0.82;
-const SVG_W = CHART_W - 44;
-const SVG_H = 120;
+const CHART_W = width * 0.85;
+const CHART_H = 280;
+const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
 const ProgressChartSlide = (): React.ReactElement => {
-  const curvePath = `M 0 ${SVG_H * 0.92} C ${SVG_W * 0.15} ${SVG_H * 0.85}, ${SVG_W * 0.25} ${SVG_H * 0.72}, ${SVG_W * 0.35} ${SVG_H * 0.58} S ${SVG_W * 0.5} ${SVG_H * 0.42}, ${SVG_W * 0.6} ${SVG_H * 0.32} S ${SVG_W * 0.78} ${SVG_H * 0.18}, ${SVG_W * 0.88} ${SVG_H * 0.12} L ${SVG_W} ${SVG_H * 0.06}`;
-  const areaPath = `${curvePath} L ${SVG_W} ${SVG_H} L 0 ${SVG_H} Z`;
+  const pulseAnimRef = useRef(new Animated.Value(0.2)).current;
+
+  useEffect(() => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseAnimRef, {
+          toValue: 0.8,
+          duration: 1500,
+          useNativeDriver: true,
+        }),
+        Animated.timing(pulseAnimRef, {
+          toValue: 0.2,
+          duration: 1500,
+          useNativeDriver: true,
+        }),
+      ])
+    ).start();
+  }, [pulseAnimRef]);
+
+  // viewBox expanded to prevent SVG clipping at right/bottom edge
+  const curvePath = "M0 140 C 40 135, 80 145, 120 120 C 160 95, 200 130, 240 100 C 280 70, 320 110, 400 20";
+  const areaPath = "M0 140 C 40 135, 80 145, 120 120 C 160 95, 200 130, 240 100 C 280 70, 320 110, 400 20 L 400 160 L 0 160 Z";
 
   return (
     <View style={s2.wrap}>
-      {/* Main card */}
-      <View style={s2.card}>
-        {/* Header */}
-        <ThemedText style={s2.weekLabel}>TIẾN ĐỘ HÀNG TUẦN</ThemedText>
-        <View style={s2.headerRow}>
-          <View style={s2.percentWrap}>
-            <ThemedText 
-              style={s2.percentText} 
-              numberOfLines={1} 
-              adjustsFontSizeToFit
-              allowFontScaling={false}
-            >
-              +8.5% Cơ bắp
-            </ThemedText>
+      <View style={s2.heroWrapper}>
+        {/* Main Glass Card */}
+        <View style={s2.glassCard}>
+          {/* Header */}
+          <View style={s2.headerRow}>
+            <View style={s2.colLeft}>
+              <ThemedText style={s2.weekLabel}>TIẾN ĐỘ HÀNG TUẦN</ThemedText>
+              <ThemedText style={s2.percentText}>+8.5% Cơ bắp</ThemedText>
+            </View>
+
+            {/* Trophy */}
+            <View style={s2.trophyWrap}>
+              <View style={s2.trophyGlow} />
+              <Ionicons name="trophy" size={26} color="#22C55E" style={s2.trophyIcon} />
+            </View>
           </View>
-          <View style={s2.trophyCircle}>
-            <Ionicons name="trophy" size={20} color="#22C55E" />
+
+          {/* SVG Line Graph Area */}
+          <View style={s2.graphArea}>
+            <Svg width="100%" height="100%" viewBox="-10 -10 420 180" preserveAspectRatio="none">
+              <Defs>
+                <SvgLinearGradient id="lineGrad" x1="0" y1="0" x2="1" y2="0">
+                  <Stop offset="0" stopColor="#10B981" />
+                  <Stop offset="1" stopColor="#2DD4BF" />
+                </SvgLinearGradient>
+                <SvgLinearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
+                  <Stop offset="0" stopColor="#10B981" stopOpacity="0.4" />
+                  <Stop offset="1" stopColor="#10B981" stopOpacity="0" />
+                </SvgLinearGradient>
+              </Defs>
+              <Path d={areaPath} fill="url(#areaGrad)" />
+              <Path
+                d={curvePath}
+                fill="none"
+                stroke="url(#lineGrad)"
+                strokeWidth="4"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+
+              {/* Glowing animated dot at current progress */}
+              <AnimatedCircle cx="400" cy="20" r="10" fill="#2DD4BF" opacity={pulseAnimRef} />
+              <Circle cx="400" cy="20" r="4" fill="#FFFFFF" />
+            </Svg>
+
+            {/* Target Badge Floating Top-Right */}
+            <View style={s2.targetBadge}>
+              <View style={s2.targetDot} />
+              <ThemedText style={s2.targetText}>ĐẠT MỤC TIÊU</ThemedText>
+            </View>
           </View>
         </View>
 
-        {/* Goal badge */}
-        <View style={s2.goalRow}>
-          <View style={s2.goalBadge}>
-            <View style={s2.goalDot} />
-            <ThemedText style={s2.goalText}>ĐẠT MỤC TIÊU</ThemedText>
-          </View>
-        </View>
-
-        {/* Chart */}
-        <View style={s2.chartBox}>
-          <Svg width={SVG_W} height={SVG_H} viewBox={`0 0 ${SVG_W} ${SVG_H}`}>
-            <Defs>
-              <SvgLinearGradient id="aGrad" x1="0" y1="0" x2="0" y2="1">
-                <Stop offset="0" stopColor="#22C55E" stopOpacity="0.3" />
-                <Stop offset="1" stopColor="#22C55E" stopOpacity="0.02" />
-              </SvgLinearGradient>
-              <SvgLinearGradient id="lGrad" x1="0" y1="0" x2="1" y2="0">
-                <Stop offset="0" stopColor="#16A34A" stopOpacity="0.5" />
-                <Stop offset="0.5" stopColor="#22C55E" stopOpacity="1" />
-                <Stop offset="1" stopColor="#4ADE80" stopOpacity="1" />
-              </SvgLinearGradient>
-            </Defs>
-            <Path d={areaPath} fill="url(#aGrad)" />
-            <Path
-              d={curvePath}
-              stroke="url(#lGrad)"
-              strokeWidth={3}
-              fill="none"
-              strokeLinecap="round"
-            />
-            <Circle
-              cx={SVG_W}
-              cy={SVG_H * 0.06}
-              r={5}
-              fill="#4ADE80"
-            />
-            <Circle
-              cx={SVG_W}
-              cy={SVG_H * 0.06}
-              r={9}
-              fill="rgba(74,222,128,0.2)"
-            />
-          </Svg>
-        </View>
-      </View>
-
-      {/* Daily badge */}
-      <View style={s2.dailyBadge}>
-        <View style={s2.flashCircle}>
-          <Ionicons name="flash" size={18} color="#FFFFFF" />
-        </View>
-        <View>
-          <ThemedText style={s2.dailyLabel}>TIÊU THỤ HÀNG NGÀY</ThemedText>
-          <View style={s2.dailyRow}>
-            <ThemedText style={s2.dailyVal}>2,480 </ThemedText>
-            <ThemedText style={s2.dailyUnit}>kcal</ThemedText>
+        {/* Floating Stats Bubbles (Bottom Left) */}
+        <View style={s2.floatingStats}>
+          <LinearGradient colors={['#059669', '#4BE277']} style={s2.boltCircle}>
+            <Ionicons name="flash" size={20} color="#002109" />
+          </LinearGradient>
+          <View style={s2.statsCol}>
+            <ThemedText style={s2.statsLabel}>TIÊU THỤ HÀNG NGÀY</ThemedText>
+            <View style={s2.statsValRow}>
+              <ThemedText style={s2.statsVal}>2,480 </ThemedText>
+              <ThemedText style={s2.statsUnit}>kcal</ThemedText>
+            </View>
           </View>
         </View>
       </View>
@@ -323,316 +332,407 @@ const s2 = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
+    paddingHorizontal: 16,
   },
-  card: {
+  heroWrapper: {
     width: CHART_W,
-    backgroundColor: 'rgba(14,24,42,0.92)',
-    borderRadius: 22,
-    padding: 22,
-    borderWidth: 1,
-    borderColor: 'rgba(34,197,94,0.12)',
+    paddingBottom: 48, // Allow overlap area for floating stats
+    alignItems: 'center',
+    position: 'relative',
+    marginTop: -20,
   },
-  weekLabel: {
-    color: 'rgba(255,255,255,0.4)',
-    fontSize: 11,
-    fontFamily: 'BeVietnamPro_500Medium',
-    letterSpacing: 1,
-    marginBottom: 6,
+  glassCard: {
+    width: '100%',
+    height: CHART_H,
+    backgroundColor: 'rgba(26, 34, 53, 0.7)',
+    borderRadius: 24,
+    padding: 24,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)',
+    borderTopWidth: 1, // subtle top border for 3D metallic sheen
+    elevation: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.4,
+    shadowRadius: 16,
   },
   headerRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: 10,
   },
-  percentWrap: {
-    flex: 1,
+  colLeft: {
+    flexDirection: 'column',
     justifyContent: 'center',
-    marginRight: 8,
+  },
+  weekLabel: {
+    color: 'rgba(188,203,185,0.8)', // Text on surface variant approx
+    fontSize: 10,
+    fontFamily: 'BeVietnamPro_700Bold',
+    letterSpacing: 1.2,
+    marginBottom: 4,
+    textTransform: 'uppercase',
   },
   percentText: {
-    color: '#FFFFFF',
-    fontSize: 24,
-    fontFamily: 'BeVietnamPro_700Bold',
+    color: '#DEE1F7',
+    fontSize: 26,
+    fontFamily: 'BeVietnamPro_800ExtraBold',
     letterSpacing: -0.5,
-    paddingRight: 4,
-    paddingTop: 8,
+    marginTop: -2,
+    lineHeight: 34,
+    paddingTop: 4,
     paddingBottom: 4,
     includeFontPadding: true,
   },
-  trophyCircle: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-    backgroundColor: 'rgba(34,197,94,0.12)',
+  trophyWrap: {
     alignItems: 'center',
     justifyContent: 'center',
-    marginLeft: 8,
+    marginTop: 4,
+    marginRight: 4,
   },
-  goalRow: {
-    alignItems: 'flex-end',
-    marginBottom: 4,
+  trophyGlow: {
+    position: 'absolute',
+    width: 32,
+    height: 32,
+    backgroundColor: '#22C55E',
+    opacity: 0.25,
+    borderRadius: 16,
+    shadowColor: '#22C55E',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 1,
+    shadowRadius: 16,
   },
-  goalBadge: {
+  trophyIcon: {
+    textShadowColor: 'rgba(75, 226, 119, 0.8)',
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 8,
+  },
+  graphArea: {
+    flex: 1,
+    width: '100%',
+    marginTop: 16,
+    position: 'relative',
+  },
+  targetBadge: {
+    position: 'absolute',
+    top: -16,
+    right: 0,
+    backgroundColor: 'rgba(34, 197, 94, 0.15)',
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(34, 197, 94, 0.4)',
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(34,197,94,0.12)',
-    borderRadius: 10,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
   },
-  goalDot: {
+  targetDot: {
     width: 6,
     height: 6,
     borderRadius: 3,
     backgroundColor: '#22C55E',
     marginRight: 6,
   },
-  goalText: {
+  targetText: {
     color: '#22C55E',
-    fontSize: 10,
-    fontFamily: 'BeVietnamPro_600SemiBold',
-    letterSpacing: 0.5,
+    fontSize: 9,
+    fontFamily: 'BeVietnamPro_700Bold',
+    textTransform: 'uppercase',
   },
-  chartBox: {
-    marginTop: 4,
-    overflow: 'hidden',
-    borderRadius: 8,
-  },
-  dailyBadge: {
+  floatingStats: {
+    position: 'absolute',
+    bottom: -40,
+    left: -12,
+    backgroundColor: 'rgba(26, 34, 53, 0.95)',
+    paddingHorizontal: 20,
+    paddingVertical: 14,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(14,24,42,0.92)',
-    borderRadius: 18,
-    paddingHorizontal: 18,
-    paddingVertical: 14,
-    marginTop: 14,
-    borderWidth: 1,
-    borderColor: 'rgba(34,197,94,0.12)',
-    alignSelf: 'flex-start',
-    marginLeft: 4,
+    shadowColor: '#22C55E',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.15,
+    shadowRadius: 20,
+    elevation: 10,
   },
-  flashCircle: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    backgroundColor: '#22C55E',
+  statsCol: {
+    justifyContent: 'center',
+  },
+  boltCircle: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     alignItems: 'center',
     justifyContent: 'center',
+    shadowColor: '#4BE277',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.4,
+    shadowRadius: 15,
     marginRight: 14,
   },
-  dailyLabel: {
-    color: '#22C55E',
+  statsLabel: {
+    color: 'rgba(52, 211, 153, 0.8)',
     fontSize: 10,
-    fontFamily: 'BeVietnamPro_600SemiBold',
-    letterSpacing: 0.8,
+    fontFamily: 'BeVietnamPro_700Bold',
+    letterSpacing: 1,
     marginBottom: 2,
+    textTransform: 'uppercase',
   },
-  dailyRow: {
+  statsValRow: {
     flexDirection: 'row',
     alignItems: 'baseline',
   },
-  dailyVal: {
+  statsVal: {
     color: '#FFFFFF',
     fontSize: 22,
-    fontFamily: 'BeVietnamPro_700Bold',
+    fontFamily: 'BeVietnamPro_800ExtraBold',
+    letterSpacing: -0.5,
   },
-  dailyUnit: {
-    color: 'rgba(255,255,255,0.4)',
-    fontSize: 14,
-    fontFamily: 'BeVietnamPro_400Regular',
+  statsUnit: {
+    color: 'rgba(188,203,185,0.8)',
+    fontSize: 12,
+    fontFamily: 'BeVietnamPro_500Medium',
+    marginLeft: 4,
   },
 });
 
 // ======================== SLIDE 3: ROADMAP ========================
 
 // Design reference layout:
-// - Step 1 (Đạt mục tiêu): top-center, lock icon on right
-// - Step 2 (Theo dõi bữa ăn): middle, shifted left, fork icon on far-left
+// - Step 1 (Đạt mục tiêu): top, lock icon on right, opacity 50%
+// - Step 2 (Theo dõi bữa ăn): middle, shifted left, pulsing fork icon on far-left
 // - Step 3 (Đặt mục tiêu): bottom, shifted right, green checkmark on right
-// - Dashed curved path connecting all three steps
+// - S-curve connecting all three steps
 
-const RM_CARD_W = width * 0.55;
-const RM_SVG_W = width - 48; // leave some padding
-  const RM_SVG_H = height * 0.46; // Extended height for better curve
+const RM_CARD_W = width * 0.47; // Tương đương khoảng 185px trên màn hình 400px
 
-  const RoadmapSlide = (): React.ReactElement => {
-    // S-curve winding dashed path
-    const step1Y = RM_SVG_H * 0.15;
-    const step2Y = RM_SVG_H * 0.50;
-    const step3Y = RM_SVG_H * 0.85;
-    const leftX = RM_SVG_W * 0.28;
-    const rightX = RM_SVG_W * 0.72; 
+const RoadmapSlide = (): React.ReactElement => {
+  const pulseAnimRef = useRef(new Animated.Value(0.4)).current;
 
-    // S-Shape: start at right, curve to left, curve back to right
-    const dashedPath = `M ${rightX} 0
-      L ${rightX} ${step1Y}
-      C ${rightX} ${step1Y + 40}, ${leftX} ${step2Y - 40}, ${leftX} ${step2Y}
-      C ${leftX} ${step2Y + 40}, ${rightX} ${step3Y - 40}, ${rightX} ${step3Y}
-      L ${rightX} ${RM_SVG_H}`;
+  useEffect(() => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseAnimRef, {
+          toValue: 1,
+          duration: 1200,
+          useNativeDriver: true,
+        }),
+        Animated.timing(pulseAnimRef, {
+          toValue: 0.4,
+          duration: 1200,
+          useNativeDriver: true,
+        }),
+      ])
+    ).start();
+  }, [pulseAnimRef]);
 
-    return (
-      <View style={s3.wrap}>
-        {/* SVG dashed winding path */}
-        <View style={s3.svgLayer}>
-          <Svg width={RM_SVG_W} height={RM_SVG_H}>
-            <Defs>
-              <SvgLinearGradient id="rmGrad" x1="0" y1="0" x2="0" y2="1">
-                <Stop offset="0" stopColor="#22C55E" stopOpacity="0.5" />
-                <Stop offset="0.5" stopColor="#22C55E" stopOpacity="0.3" />
-                <Stop offset="1" stopColor="#22C55E" stopOpacity="0.0" />
-              </SvgLinearGradient>
-            </Defs>
-            <Path
-              d={dashedPath}
-              stroke="url(#rmGrad)"
-              strokeWidth={2}
-              fill="none"
-              strokeDasharray="8,6"
-              strokeLinecap="round"
-            />
-            {/* Glow dots at each step */}
-            <Circle cx={rightX} cy={step1Y} r={4} fill="rgba(34,197,94,0.4)" />
-            <Circle cx={leftX} cy={step2Y} r={4} fill="rgba(34,197,94,0.3)" />
-            <Circle cx={rightX} cy={step3Y} r={4} fill="rgba(34,197,94,0.25)" />
-          </Svg>
+  // Heights and Coordinates
+  const SVG_HEIGHT = 440;
+  
+  // Icon radiuses
+  const topRadius = 22;
+  const midRadius = 28;
+  const botRadius = 20;
+
+  // Node Y Centers
+  const node1Y = 70;
+  const node2Y = 220;
+  const node3Y = 370;
+
+  // X Layout Calculation
+  // Tinh chỉnh trục X về sát tâm màn hình để đường cong mềm mại tự nhiên
+  const centerX = width / 2;
+  const SWEEP = 38; // Khoảng lệch của S-Curve so với tâm (vừa đủ mượt mà)
+
+  const rightX = centerX + SWEEP;
+  const leftX = centerX - SWEEP;
+  const botX = rightX;
+
+  // Nội suy Bezier Curve mượt mà với 2 control points quy về trung điểm Y
+  const yMid1 = (node1Y + node2Y) / 2;
+  const yMid2 = (node2Y + node3Y) / 2;
+
+  const dashedPath = `
+    M ${rightX} 0
+    L ${rightX} ${node1Y}
+    C ${rightX} ${yMid1}, ${leftX} ${yMid1}, ${leftX} ${node2Y}
+    C ${leftX} ${yMid2}, ${botX} ${yMid2}, ${botX} ${node3Y}
+    L ${botX} ${SVG_HEIGHT}
+  `;
+
+  return (
+    <View style={s3.wrap}>
+      {/* Background Winding Line */}
+      <View style={StyleSheet.absoluteFillObject}>
+        <Svg width={width} height={SVG_HEIGHT}>
+          <Path
+            d={dashedPath}
+            stroke="#22C55E"
+            strokeWidth={1.5}
+            fill="none"
+            strokeDasharray="6,6"
+            strokeOpacity={0.6}
+            strokeLinecap="round" // Góc cắt nét đứt mềm
+          />
+        </Svg>
+      </View>
+
+      {/* NODE 1: Đạt mục tiêu (Future) */}
+      <View style={[s3.glassCard, { position: 'absolute', opacity: 0.5, right: width - rightX + topRadius + 12, top: node1Y - 34, width: undefined, maxWidth: Math.min(RM_CARD_W, rightX - topRadius - 12 - 16) }]}>
+        <View style={s3.iconBox}>
+          <Ionicons name="trophy" size={18} color="#F59E0B" />
         </View>
-
-        {/* Step 1: Đạt mục tiêu - Shifted Right */}
-        <View style={[s3.stepRow, { justifyContent: 'flex-end', paddingRight: width * 0.04 }]}>
-          <View style={s3.card}>
-            <View style={s3.iconBox}>
-              <Ionicons name="trophy" size={20} color="#F59E0B" />
-            </View>
-            <View style={s3.txts}>
-              <ThemedText style={s3.cardTitle}>Đạt mục tiêu</ThemedText>
-              <ThemedText style={s3.cardSub}>Khỏe mạnh bền vững</ThemedText>
-            </View>
-          </View>
-          <View style={s3.lockCircle}>
-            <Ionicons name="lock-closed" size={13} color="rgba(255,255,255,0.45)" />
-          </View>
-        </View>
-
-        {/* Step 2: Theo dõi bữa ăn - Shifted left */}
-        <View style={[s3.stepRow, { justifyContent: 'flex-start', paddingLeft: width * 0.04 }]}>
-          <View style={s3.sideCircle}>
-            <Ionicons name="restaurant" size={18} color="#22C55E" />
-          </View>
-          <View style={s3.card}>
-            <View style={s3.iconBox}>
-              <ThemedText style={{ fontSize: 20 }}>🥗</ThemedText>
-            </View>
-            <View style={s3.txts}>
-              <ThemedText style={s3.cardTitle}>Theo dõi bữa ăn</ThemedText>
-              <ThemedText style={s3.cardSub}>Ghi lại bữa ăn hàng ngày</ThemedText>
-            </View>
-          </View>
-        </View>
-
-        {/* Step 3: Đặt mục tiêu - Shifted Right */}
-        <View style={[s3.stepRow, { justifyContent: 'flex-end', paddingRight: width * 0.04 }]}>
-          <View style={s3.card}>
-            <View style={s3.iconBox}>
-              <Ionicons name="flag" size={18} color="#EF4444" />
-            </View>
-            <View style={s3.txts}>
-              <ThemedText style={s3.cardTitle}>Đặt mục tiêu</ThemedText>
-              <ThemedText style={s3.cardSub}>Chọn mục tiêu sức khỏe</ThemedText>
-            </View>
-          </View>
-          <View style={s3.checkCircle}>
-            <Ionicons name="checkmark" size={20} color="#FFFFFF" />
-          </View>
+        <View style={s3.txts}>
+          <ThemedText style={s3.cardTitle}>Đạt mục tiêu</ThemedText>
+          <ThemedText style={s3.cardSub}>Khỏe mạnh bền vững</ThemedText>
         </View>
       </View>
-    );
-  };
+      <View style={[s3.lockCircle, { position: 'absolute', right: width - rightX - topRadius, top: node1Y - topRadius, opacity: 0.5 }]}>
+        <Ionicons name="lock-closed" size={18} color="#94A3B8" />
+      </View>
+
+      {/* NODE 2: Theo dõi bữa ăn (Active) */}
+      <View style={[s3.activePulseWrap, { position: 'absolute', left: leftX - midRadius, top: node2Y - midRadius }]}>
+        <Animated.View style={[s3.pulseRing, { opacity: pulseAnimRef }]} />
+        <View style={s3.activeCircle}>
+          <Ionicons name="restaurant" size={16} color="#FFFFFF" />
+        </View>
+      </View>
+      <View style={[s3.glassCard, s3.activeCard, { position: 'absolute', left: leftX + midRadius + 12, top: node2Y - 34, width: undefined, maxWidth: Math.min(RM_CARD_W, width - (leftX + midRadius + 12) - 16) }]}>
+        <View style={[s3.iconBox, s3.iconBoxActive]}>
+          <ThemedText style={{ fontSize: 16 }}>🥗</ThemedText>
+        </View>
+        <View style={s3.txts}>
+          <ThemedText style={s3.cardTitle}>Theo dõi bữa ăn</ThemedText>
+          <ThemedText style={s3.cardSubActive}>Ghi lại bữa ăn hàng ngày</ThemedText>
+        </View>
+      </View>
+
+      {/* NODE 3: Đạt mục tiêu (Completed) */}
+      <View style={[s3.glassCard, { position: 'absolute', right: width - botX + botRadius + 12, top: node3Y - 34, width: undefined, maxWidth: Math.min(RM_CARD_W, botX - botRadius - 12 - 16) }]}>
+        <View style={s3.iconBox}>
+          <Ionicons name="flag" size={18} color="#EF4444" />
+        </View>
+        <View style={s3.txts}>
+          <ThemedText style={s3.cardTitle}>Đạt mục tiêu</ThemedText>
+          <ThemedText style={s3.cardSub}>Chọn mục tiêu sức khỏe</ThemedText>
+        </View>
+      </View>
+      <View style={[s3.checkCircle, { position: 'absolute', right: width - botX - botRadius, top: node3Y - botRadius }]}>
+        <Ionicons name="checkmark" size={20} color="#FFFFFF" />
+      </View>
+    </View>
+  );
+};
 
 const s3 = StyleSheet.create({
   wrap: {
     flex: 1,
-    justifyContent: 'center',
-    gap: 24,
+    height: 480, // Chiều cao container an toàn so với SVG
+    width: '100%',
+    position: 'relative',
+    marginTop: 20,
   },
-  svgLayer: {
-    ...StyleSheet.absoluteFillObject,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  stepRow: {
+  glassCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
-    paddingHorizontal: 4,
-  },
-  card: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(14,24,42,0.92)',
-    borderRadius: 18,
-    paddingHorizontal: 14,
-    paddingVertical: 14,
-    borderWidth: 1,
-    borderColor: 'rgba(34,197,94,0.14)',
-    gap: 10,
     width: RM_CARD_W,
+    backgroundColor: 'rgba(37, 41, 58, 0.5)',
+    borderRadius: 16,
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
+    gap: 10,
+  },
+  activeCard: {
+    borderColor: 'rgba(34, 197, 94, 0.25)',
+    backgroundColor: 'rgba(37, 41, 58, 0.8)',
   },
   iconBox: {
-    width: 34,
-    height: 34,
+    width: 32,
+    height: 32,
     borderRadius: 10,
     backgroundColor: 'rgba(255,255,255,0.06)',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  iconBoxActive: {
+    backgroundColor: 'rgba(34,197,94,0.1)',
   },
   txts: {
     flex: 1,
   },
   cardTitle: {
     color: '#FFFFFF',
-    fontSize: 14,
+    fontSize: 13,
     fontFamily: 'BeVietnamPro_700Bold',
     marginBottom: 2,
+    letterSpacing: -0.2, // Text khít hơn cho thẻ gọn
   },
   cardSub: {
-    color: 'rgba(255,255,255,0.4)',
+    color: '#94A3B8',
     fontSize: 11,
+    lineHeight: 14,
     fontFamily: 'BeVietnamPro_400Regular',
-    lineHeight: 15,
+  },
+  cardSubActive: {
+    color: 'rgba(52, 211, 153, 0.9)',
+    fontSize: 11,
+    lineHeight: 14,
+    fontFamily: 'BeVietnamPro_400Regular',
   },
   lockCircle: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    backgroundColor: 'rgba(255,255,255,0.06)',
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#2F3445',
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)',
+    borderWidth: 2,
+    borderColor: '#475569',
   },
-  sideCircle: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-    backgroundColor: 'rgba(34,197,94,0.08)',
+  activePulseWrap: {
+    width: 56,
+    height: 56,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(34,197,94,0.14)',
+  },
+  pulseRing: {
+    position: 'absolute',
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    borderWidth: 4,
+    borderColor: '#22C55E',
+    shadowColor: '#22C55E',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.4,
+    shadowRadius: 10,
+    elevation: 6,
+  },
+  activeCircle: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#22C55E',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   checkCircle: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     backgroundColor: '#22C55E',
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#22C55E',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.35,
-    shadowRadius: 10,
-    elevation: 6,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 4,
   },
 });
 
