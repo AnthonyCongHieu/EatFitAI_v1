@@ -14,6 +14,7 @@ namespace EatFitAI.API.Controllers;
 public class AdminRuntimeController : ControllerBase
 {
     private static readonly TimeSpan SnapshotInterval = TimeSpan.FromSeconds(5);
+    private const int InitialSsePaddingBytes = 2048;
 
     private readonly IAdminRuntimeSnapshotCache _runtimeSnapshotCache;
     private readonly IAdminRealtimeEventBus _eventBus;
@@ -55,6 +56,7 @@ public class AdminRuntimeController : ControllerBase
         Response.Headers.Append("X-Accel-Buffering", "no");
         Response.HttpContext.Features.Get<IHttpResponseBodyFeature>()?.DisableBuffering();
         await Response.StartAsync(cancellationToken);
+        await Response.WriteAsync($": {new string(' ', InitialSsePaddingBytes)}\n\n", cancellationToken);
         await Response.WriteAsync($": stream-open {DateTime.UtcNow:O}\n\n", cancellationToken);
         await Response.Body.FlushAsync(cancellationToken);
 
@@ -128,7 +130,23 @@ public class AdminRuntimeController : ControllerBase
                         detail = cacheState.LastError,
                     },
                 });
+                return;
             }
+
+            await WriteEventAsync("runtime.health.updated", new AdminRuntimeEventDto
+            {
+                EventId = $"bootstrap-pending-{DateTime.UtcNow.Ticks}",
+                EventType = "runtime.health.updated",
+                EntityType = "runtime-health",
+                EntityId = "global",
+                OccurredAt = DateTime.UtcNow,
+                Version = _eventBus.CurrentVersion,
+                Payload = new
+                {
+                    status = "connecting",
+                    detail = "Realtime stream opened. Waiting for the first runtime snapshot.",
+                },
+            });
         }
 
         await WriteCachedBootstrapAsync();
