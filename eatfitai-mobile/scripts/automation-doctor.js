@@ -10,8 +10,20 @@ const packageLockPath = path.join(projectRoot, 'package-lock.json');
 const configPath = path.join(projectRoot, '.maestro', 'config.yaml');
 const repoRoot = path.resolve(projectRoot, '..');
 const bundledJdkBin = path.join(repoRoot, '_tooling', 'jdk-17', 'bin');
-const bundledAndroidCmdline = path.join(repoRoot, '_tooling', 'android-sdk', 'cmdline-tools', 'latest', 'bin');
-const bundledAndroidPlatformTools = path.join(repoRoot, '_tooling', 'android-sdk', 'platform-tools');
+const bundledAndroidCmdline = path.join(
+  repoRoot,
+  '_tooling',
+  'android-sdk',
+  'cmdline-tools',
+  'latest',
+  'bin',
+);
+const bundledAndroidPlatformTools = path.join(
+  repoRoot,
+  '_tooling',
+  'android-sdk',
+  'platform-tools',
+);
 const bundledAndroidEmulator = path.join(repoRoot, '_tooling', 'android-sdk', 'emulator');
 const bundledMaestroBin = path.join(repoRoot, '_tooling', 'maestro', 'maestro', 'bin');
 
@@ -44,16 +56,18 @@ function buildToolingEnv() {
 function runCommand(command, args) {
   const ext = path.extname(command).toLowerCase();
   const isBatchFile = ext === '.bat' || ext === '.cmd';
-  const useShell = !isBatchFile && !(path.isAbsolute(command) || command.includes(path.sep));
-  const invocation = isBatchFile && process.platform === 'win32'
-    ? {
-        command: 'cmd.exe',
-        args: ['/d', '/s', '/c', `"${command}" ${args.join(' ')}`],
-      }
-    : {
-        command,
-        args,
-      };
+  const useShell =
+    !isBatchFile && !(path.isAbsolute(command) || command.includes(path.sep));
+  const invocation =
+    isBatchFile && process.platform === 'win32'
+      ? {
+          command: 'cmd.exe',
+          args: ['/d', '/s', '/c', `"${command}" ${args.join(' ')}`],
+        }
+      : {
+          command,
+          args,
+        };
   const result = spawnSync(invocation.command, invocation.args, {
     cwd: projectRoot,
     encoding: 'utf8',
@@ -86,7 +100,8 @@ function readProjectIdStatus() {
   if (!configuredProjectId || /^0{8}-0{4}-0{4}-0{4}-0{12}$/.test(configuredProjectId)) {
     return {
       status: 'WARN',
-      detail: 'EAS projectId is still a placeholder. Set EXPO_EAS_PROJECT_ID before EAS builds.',
+      detail:
+        'EAS projectId is still a placeholder. Set EXPO_EAS_PROJECT_ID before EAS builds.',
     };
   }
 
@@ -158,7 +173,9 @@ function readDependencyInstallStatus() {
 
   const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
   const directDependencies = Object.keys(packageJson.dependencies || {});
-  const missingPackages = directDependencies.filter((packageName) => !packageDirectoryExists(packageName));
+  const missingPackages = directDependencies.filter(
+    (packageName) => !packageDirectoryExists(packageName),
+  );
 
   if (missingPackages.length > 0) {
     return {
@@ -195,7 +212,9 @@ function main() {
   checks.push({
     name: 'Appium CLI',
     status: appium.ok ? 'OK' : 'FAIL',
-    detail: appium.ok ? appium.stdout : appium.stderr || appium.error || 'appium not found',
+    detail: appium.ok
+      ? appium.stdout
+      : appium.stderr || appium.error || 'appium not found',
   });
 
   const bundledAdb =
@@ -211,9 +230,10 @@ function main() {
     checks.push({
       name: 'ADB',
       status: 'OK',
-      detail: activeDevices.length > 0
-        ? `${activeDevices.length} device(s) connected.${bundledAdb ? ' Using bundled SDK adb.' : ''}`
-        : `adb is available but no device is connected.${bundledAdb ? ' Using bundled SDK adb.' : ''}`,
+      detail:
+        activeDevices.length > 0
+          ? `${activeDevices.length} device(s) connected.${bundledAdb ? ' Using bundled SDK adb.' : ''}`
+          : `adb is available but no device is connected.${bundledAdb ? ' Using bundled SDK adb.' : ''}`,
     });
   } else {
     checks.push({
@@ -233,7 +253,9 @@ function main() {
   checks.push({
     name: 'Maestro workspace',
     status: fs.existsSync(configPath) ? 'OK' : 'FAIL',
-    detail: fs.existsSync(configPath) ? '.maestro/config.yaml found.' : 'Missing .maestro/config.yaml',
+    detail: fs.existsSync(configPath)
+      ? '.maestro/config.yaml found.'
+      : 'Missing .maestro/config.yaml',
   });
 
   checks.push({
@@ -243,7 +265,10 @@ function main() {
 
   checks.push({
     name: 'Demo credentials',
-    status: resolveEnv('EATFITAI_DEMO_EMAIL') && resolveEnv('EATFITAI_DEMO_PASSWORD') ? 'OK' : 'WARN',
+    status:
+      resolveEnv('EATFITAI_DEMO_EMAIL') && resolveEnv('EATFITAI_DEMO_PASSWORD')
+        ? 'OK'
+        : 'WARN',
     detail:
       resolveEnv('EATFITAI_DEMO_EMAIL') && resolveEnv('EATFITAI_DEMO_PASSWORD')
         ? 'EATFITAI_DEMO_EMAIL and EATFITAI_DEMO_PASSWORD are available.'

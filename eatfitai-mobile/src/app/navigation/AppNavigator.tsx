@@ -25,46 +25,62 @@ const lazyScreen = (
 
 /* eslint-disable @typescript-eslint/no-require-imports */
 const getAppTabs = lazyScreen(() => require('./AppTabs'));
-const getFoodSearchScreen = lazyScreen(() => require('../screens/diary/FoodSearchScreen'));
-const getFoodDetailScreen = lazyScreen(() => require('../screens/diary/FoodDetailScreen'));
-const getCustomDishScreen = lazyScreen(() => require('../screens/diary/CustomDishScreen'));
+const getFoodSearchScreen = lazyScreen(() =>
+  require('../screens/diary/FoodSearchScreen'),
+);
+const getFoodDetailScreen = lazyScreen(() =>
+  require('../screens/diary/FoodDetailScreen'),
+);
+const getCustomDishScreen = lazyScreen(() =>
+  require('../screens/diary/CustomDishScreen'),
+);
 const getMealDiaryScreen = lazyScreen(() => require('../screens/diary/MealDiaryScreen'));
 const getAIScanScreen = lazyScreen(() => require('../screens/ai/AIScanScreen'));
-const getAddMealFromVisionScreen = lazyScreen(
-  () => require('../screens/meals/AddMealFromVisionScreen'),
+const getAddMealFromVisionScreen = lazyScreen(() =>
+  require('../screens/meals/AddMealFromVisionScreen'),
 );
-const getVisionHistoryScreen = lazyScreen(() => require('../screens/ai/VisionHistoryScreen'));
-const getRecipeSuggestionsScreen = lazyScreen(
-  () => require('../screens/ai/RecipeSuggestionsScreen'),
+const getVisionHistoryScreen = lazyScreen(() =>
+  require('../screens/ai/VisionHistoryScreen'),
 );
-const getNutritionInsightsScreen = lazyScreen(
-  () => require('../screens/ai/NutritionInsightsScreen'),
+const getRecipeSuggestionsScreen = lazyScreen(() =>
+  require('../screens/ai/RecipeSuggestionsScreen'),
 );
-const getRecipeDetailScreen = lazyScreen(() => require('../screens/ai/RecipeDetailScreen'));
-const getNutritionSettingsScreen = lazyScreen(
-  () => require('../screens/ai/NutritionSettingsScreen'),
+const getNutritionInsightsScreen = lazyScreen(() =>
+  require('../screens/ai/NutritionInsightsScreen'),
 );
-const getAchievementsScreen = lazyScreen(
-  () => require('../screens/gamification/AchievementsScreen'),
+const getRecipeDetailScreen = lazyScreen(() =>
+  require('../screens/ai/RecipeDetailScreen'),
 );
-const getEditProfileScreen = lazyScreen(() => require('../screens/profile/EditProfileScreen'));
-const getBodyMetricsScreen = lazyScreen(() => require('../screens/profile/BodyMetricsScreen'));
-const getGoalSettingsScreen = lazyScreen(() => require('../screens/profile/GoalSettingsScreen'));
-const getWeightHistoryScreen = lazyScreen(
-  () => require('../screens/profile/WeightHistoryScreen'),
+const getNutritionSettingsScreen = lazyScreen(() =>
+  require('../screens/ai/NutritionSettingsScreen'),
 );
-const getChangePasswordScreen = lazyScreen(
-  () => require('../screens/profile/ChangePasswordScreen'),
+const getAchievementsScreen = lazyScreen(() =>
+  require('../screens/gamification/AchievementsScreen'),
+);
+const getEditProfileScreen = lazyScreen(() =>
+  require('../screens/profile/EditProfileScreen'),
+);
+const getBodyMetricsScreen = lazyScreen(() =>
+  require('../screens/profile/BodyMetricsScreen'),
+);
+const getGoalSettingsScreen = lazyScreen(() =>
+  require('../screens/profile/GoalSettingsScreen'),
+);
+const getWeightHistoryScreen = lazyScreen(() =>
+  require('../screens/profile/WeightHistoryScreen'),
+);
+const getChangePasswordScreen = lazyScreen(() =>
+  require('../screens/profile/ChangePasswordScreen'),
 );
 const getAboutScreen = lazyScreen(() => require('../screens/profile/AboutScreen'));
-const getPrivacyPolicyScreen = lazyScreen(
-  () => require('../screens/profile/PrivacyPolicyScreen'),
+const getPrivacyPolicyScreen = lazyScreen(() =>
+  require('../screens/profile/PrivacyPolicyScreen'),
 );
-const getNotificationsScreen = lazyScreen(
-  () => require('../screens/profile/NotificationsScreen'),
+const getNotificationsScreen = lazyScreen(() =>
+  require('../screens/profile/NotificationsScreen'),
 );
-const getDietaryRestrictionsScreen = lazyScreen(
-  () => require('../screens/ai/DietaryRestrictionsScreen'),
+const getDietaryRestrictionsScreen = lazyScreen(() =>
+  require('../screens/ai/DietaryRestrictionsScreen'),
 );
 /* eslint-enable @typescript-eslint/no-require-imports */
 
@@ -115,7 +131,6 @@ const AppNavigator = (): React.ReactElement => {
           screenOptions={{
             headerShown: false,
             contentStyle: { backgroundColor: theme.colors.background },
-            statusBarStyle: theme.statusBarStyle,
           }}
         >
           {isInAuthFlow ? (

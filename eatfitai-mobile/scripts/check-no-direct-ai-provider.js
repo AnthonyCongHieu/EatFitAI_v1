@@ -52,9 +52,13 @@ for (const scanRoot of scanRoots) {
 }
 
 if (violations.length > 0) {
-  console.error('Direct AI provider URLs are not allowed in eatfitai-mobile. Use the backend proxy instead.');
+  console.error(
+    'Direct AI provider URLs are not allowed in eatfitai-mobile. Use the backend proxy instead.',
+  );
   for (const violation of violations) {
-    console.error(`- ${violation.file}:${violation.line} [${violation.pattern}] ${violation.snippet}`);
+    console.error(
+      `- ${violation.file}:${violation.line} [${violation.pattern}] ${violation.snippet}`,
+    );
   }
   process.exit(1);
 }

@@ -47,9 +47,9 @@ export const Screen = ({
   const paddingTop =
     useSafeArea && !hasHeader
       ? Math.max(
-        insets.top,
-        Platform.OS === 'android' ? StatusBar.currentHeight || 24 : 0,
-      )
+          insets.top,
+          Platform.OS === 'android' ? StatusBar.currentHeight || 24 : 0,
+        )
       : 0;
   const paddingBottom = useSafeArea ? Math.max(insets.bottom, 16) : 0;
   const paddingHorizontal = horizontalPadding ? theme.spacing.lg : 0;
@@ -81,7 +81,9 @@ export const Screen = ({
       {children}
     </ScrollView>
   ) : (
-    <View testID={testID} style={contentStyle}>{children}</View>
+    <View testID={testID} style={contentStyle}>
+      {children}
+    </View>
   );
 
   // Render with or without gradient - NO inline component to prevent remounts
@@ -98,9 +100,7 @@ export const Screen = ({
     );
   }
 
-  return (
-    <View style={[containerStyle, style as ViewStyle]}>{content}</View>
-  );
+  return <View style={[containerStyle, style as ViewStyle]}>{content}</View>;
 };
 
 const styles = StyleSheet.create({

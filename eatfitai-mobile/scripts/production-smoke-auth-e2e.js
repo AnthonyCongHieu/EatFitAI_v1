@@ -13,7 +13,13 @@ const {
   waitForAny,
 } = require('../../tools/appium/lib/common');
 
-const DEFAULT_OUTPUT_ROOT = path.resolve(__dirname, '..', '..', '_logs', 'production-smoke');
+const DEFAULT_OUTPUT_ROOT = path.resolve(
+  __dirname,
+  '..',
+  '..',
+  '_logs',
+  'production-smoke',
+);
 const DEFAULT_DEMO_EMAIL = 'scan-demo@redacted.local';
 const DEFAULT_DEMO_PASSWORD = 'SET_IN_SEED_SCRIPT';
 const DEFAULT_DEMO_DISPLAY_NAME = 'Scan Demo Reliability';
@@ -95,7 +101,11 @@ function sleep(ms) {
 async function waitForTestId(driver, testId, timeout = 15000) {
   let element = await findByTestId(driver, testId, timeout);
   if (!element && ACCESSIBILITY_LABEL_FALLBACKS[testId]) {
-    element = await findByAccessibilityLabels(driver, ACCESSIBILITY_LABEL_FALLBACKS[testId], timeout);
+    element = await findByAccessibilityLabels(
+      driver,
+      ACCESSIBILITY_LABEL_FALLBACKS[testId],
+      timeout,
+    );
   }
   if (!element) {
     await captureDebugArtifacts(driver, `missing-${testId}`).catch(() => null);
@@ -219,12 +229,7 @@ async function advanceIntroIfPresent(driver) {
 }
 
 function extractVerificationCode(message) {
-  const candidates = [
-    message?.text,
-    message?.html,
-    message?.intro,
-    message?.subject,
-  ]
+  const candidates = [message?.text, message?.html, message?.intro, message?.subject]
     .filter(Boolean)
     .map((value) => String(value));
 
@@ -274,8 +279,14 @@ async function requestJson(url, options = {}) {
 
 async function createDisposableMailbox(outputDir) {
   const domains = await requestJson(`${DEFAULT_MAIL_API}/domains`);
-  if (!domains.ok || !Array.isArray(domains.body?.['hydra:member']) || domains.body['hydra:member'].length === 0) {
-    throw new Error(`Failed to resolve disposable mail domains. Status=${domains.status}`);
+  if (
+    !domains.ok ||
+    !Array.isArray(domains.body?.['hydra:member']) ||
+    domains.body['hydra:member'].length === 0
+  ) {
+    throw new Error(
+      `Failed to resolve disposable mail domains. Status=${domains.status}`,
+    );
   }
 
   const domain = domains.body['hydra:member'][0].domain;
@@ -346,7 +357,9 @@ async function waitForVerificationMessage(mailbox, outputDir) {
     });
 
     if (messages.ok) {
-      const items = Array.isArray(messages.body?.['hydra:member']) ? messages.body['hydra:member'] : [];
+      const items = Array.isArray(messages.body?.['hydra:member'])
+        ? messages.body['hydra:member']
+        : [];
       const newest = items[0];
       if (newest?.id) {
         const detail = await requestJson(`${DEFAULT_MAIL_API}/messages/${newest.id}`, {
@@ -413,7 +426,11 @@ function captureLogcat(outputDir, fileName) {
 function updateBudget(outputDir, key, note) {
   const budgetPath = path.join(outputDir, 'request-budget.json');
   const budget = readJsonIfExists(budgetPath);
-  if (!budget || !budget.limits || !Object.prototype.hasOwnProperty.call(budget.limits, key)) {
+  if (
+    !budget ||
+    !budget.limits ||
+    !Object.prototype.hasOwnProperty.call(budget.limits, key)
+  ) {
     return;
   }
 
@@ -446,10 +463,12 @@ function updateObservations(outputDir, patch) {
       ...(observations.evidence || {}),
       ...(patch.evidence || {}),
       notes: [
-        ...((observations.evidence && Array.isArray(observations.evidence.notes))
+        ...(observations.evidence && Array.isArray(observations.evidence.notes)
           ? observations.evidence.notes
           : []),
-        ...((patch.evidence && Array.isArray(patch.evidence.notes)) ? patch.evidence.notes : []),
+        ...(patch.evidence && Array.isArray(patch.evidence.notes)
+          ? patch.evidence.notes
+          : []),
       ],
     },
   };
@@ -474,11 +493,17 @@ async function runDemoLoginMode(driver, outputDir, options) {
     60000,
   );
 
-  if (current === TEST_IDS.auth.introScreen || current === TEST_IDS.auth.introStartButton) {
+  if (
+    current === TEST_IDS.auth.introScreen ||
+    current === TEST_IDS.auth.introStartButton
+  ) {
     current = await advanceIntroIfPresent(driver);
   }
 
-  if (current === TEST_IDS.auth.welcomeScreen || current === TEST_IDS.auth.welcomeLoginButton) {
+  if (
+    current === TEST_IDS.auth.welcomeScreen ||
+    current === TEST_IDS.auth.welcomeLoginButton
+  ) {
     await tapByTestId(driver, TEST_IDS.auth.welcomeLoginButton);
   }
 
@@ -494,11 +519,19 @@ async function runDemoLoginMode(driver, outputDir, options) {
   }
   await diaryButton.click();
   await waitForAny(driver, [TEST_IDS.mealDiary.screen], 20000);
-  const diaryScreenshot = await saveScreenshot(driver, outputDir, 'demo-diary-screen.png');
+  const diaryScreenshot = await saveScreenshot(
+    driver,
+    outputDir,
+    'demo-diary-screen.png',
+  );
 
   coldLaunchApp();
   await waitForAny(driver, [TEST_IDS.home.screen], 30000);
-  const reopenScreenshot = await saveScreenshot(driver, outputDir, 'demo-home-reopen.png');
+  const reopenScreenshot = await saveScreenshot(
+    driver,
+    outputDir,
+    'demo-home-reopen.png',
+  );
 
   return {
     mode: 'demo-login',
@@ -528,11 +561,18 @@ async function runDisposableRegisterMode(driver, outputDir, options) {
   );
 
   let next = current;
-  if (current === TEST_IDS.auth.introScreen || current === TEST_IDS.auth.introStartButton) {
+  if (
+    current === TEST_IDS.auth.introScreen ||
+    current === TEST_IDS.auth.introStartButton
+  ) {
     next = await advanceIntroIfPresent(driver);
   }
 
-  const registerButton = await findByTestId(driver, TEST_IDS.auth.welcomeRegisterButton, 5000);
+  const registerButton = await findByTestId(
+    driver,
+    TEST_IDS.auth.welcomeRegisterButton,
+    5000,
+  );
   if (registerButton) {
     await registerButton.click();
   } else if (next !== TEST_IDS.auth.registerScreen) {
@@ -543,18 +583,34 @@ async function runDisposableRegisterMode(driver, outputDir, options) {
   await setValueByTestId(driver, TEST_IDS.auth.registerNameInput, options.displayName);
   await setValueByTestId(driver, TEST_IDS.auth.registerEmailInput, mailbox.address);
   await setValueByTestId(driver, TEST_IDS.auth.registerPasswordInput, options.password);
-  await setValueByTestId(driver, TEST_IDS.auth.registerConfirmPasswordInput, options.password);
+  await setValueByTestId(
+    driver,
+    TEST_IDS.auth.registerConfirmPasswordInput,
+    options.password,
+  );
   await dismissKeyboard(driver);
-  const registerSubmitButton = await scrollUntilVisible(driver, TEST_IDS.auth.registerSubmitButton, 6);
+  const registerSubmitButton = await scrollUntilVisible(
+    driver,
+    TEST_IDS.auth.registerSubmitButton,
+    6,
+  );
   if (!registerSubmitButton) {
-    await captureDebugArtifacts(driver, 'missing-register-submit-button').catch(() => null);
-    throw new Error(`Selector not found after scroll: ${TEST_IDS.auth.registerSubmitButton}`);
+    await captureDebugArtifacts(driver, 'missing-register-submit-button').catch(
+      () => null,
+    );
+    throw new Error(
+      `Selector not found after scroll: ${TEST_IDS.auth.registerSubmitButton}`,
+    );
   }
   await registerSubmitButton.click();
   updateBudget(outputDir, 'registerWithVerification', `register ${mailbox.address}`);
 
   await waitForAny(driver, [TEST_IDS.auth.verifyScreen], 30000);
-  const verifyScreenScreenshot = await saveScreenshot(driver, outputDir, 'disposable-verify-screen.png');
+  const verifyScreenScreenshot = await saveScreenshot(
+    driver,
+    outputDir,
+    'disposable-verify-screen.png',
+  );
 
   const message = await waitForVerificationMessage(mailbox, outputDir);
   for (let index = 0; index < message.verificationCode.length; index += 1) {
@@ -589,18 +645,30 @@ async function runDisposableRegisterMode(driver, outputDir, options) {
     [TEST_IDS.auth.onboardingResultCard, TEST_IDS.auth.onboardingErrorCard],
     60000,
   );
-  const onboardingScreenshot = await saveScreenshot(driver, outputDir, 'disposable-onboarding-result.png');
+  const onboardingScreenshot = await saveScreenshot(
+    driver,
+    outputDir,
+    'disposable-onboarding-result.png',
+  );
   if (resultState === TEST_IDS.auth.onboardingErrorCard) {
     throw new Error('Onboarding reached error card instead of result card.');
   }
 
   await tapByTestId(driver, TEST_IDS.auth.onboardingCompleteButton, 15000);
   await waitForAny(driver, [TEST_IDS.home.screen], 30000);
-  const homeScreenshot = await saveScreenshot(driver, outputDir, 'disposable-home-screen.png');
+  const homeScreenshot = await saveScreenshot(
+    driver,
+    outputDir,
+    'disposable-home-screen.png',
+  );
 
   coldLaunchApp();
   await waitForAny(driver, [TEST_IDS.home.screen], 30000);
-  const reopenScreenshot = await saveScreenshot(driver, outputDir, 'disposable-home-reopen.png');
+  const reopenScreenshot = await saveScreenshot(
+    driver,
+    outputDir,
+    'disposable-home-reopen.png',
+  );
 
   return {
     mode: 'disposable-register',
@@ -630,8 +698,12 @@ async function main() {
     let result;
     if (mode === 'disposable-register') {
       result = await runDisposableRegisterMode(driver, outputDir, {
-        displayName: trim(args.displayName || process.env.EATFITAI_SMOKE_DISPLAY_NAME) || DEFAULT_DEMO_DISPLAY_NAME,
-        password: trim(args.password || process.env.EATFITAI_SMOKE_PASSWORD) || DEFAULT_DEMO_PASSWORD,
+        displayName:
+          trim(args.displayName || process.env.EATFITAI_SMOKE_DISPLAY_NAME) ||
+          DEFAULT_DEMO_DISPLAY_NAME,
+        password:
+          trim(args.password || process.env.EATFITAI_SMOKE_PASSWORD) ||
+          DEFAULT_DEMO_PASSWORD,
       });
       updateObservations(outputDir, {
         operator: 'codex',
@@ -639,7 +711,8 @@ async function main() {
         reopenHome: {
           attempted: true,
           passed: true,
-          notes: 'Disposable mailbox register -> verify -> onboarding -> reopen passed on emulator.',
+          notes:
+            'Disposable mailbox register -> verify -> onboarding -> reopen passed on emulator.',
         },
         evidence: {
           mailboxScreenshot: result.mailboxArtifactPath,
@@ -654,8 +727,18 @@ async function main() {
       });
     } else if (mode === 'demo-login') {
       result = await runDemoLoginMode(driver, outputDir, {
-        email: trim(args.email || process.env.EATFITAI_SMOKE_EMAIL || process.env.EATFITAI_DEMO_EMAIL) || DEFAULT_DEMO_EMAIL,
-        password: trim(args.password || process.env.EATFITAI_SMOKE_PASSWORD || process.env.EATFITAI_DEMO_PASSWORD) || DEFAULT_DEMO_PASSWORD,
+        email:
+          trim(
+            args.email ||
+              process.env.EATFITAI_SMOKE_EMAIL ||
+              process.env.EATFITAI_DEMO_EMAIL,
+          ) || DEFAULT_DEMO_EMAIL,
+        password:
+          trim(
+            args.password ||
+              process.env.EATFITAI_SMOKE_PASSWORD ||
+              process.env.EATFITAI_DEMO_PASSWORD,
+          ) || DEFAULT_DEMO_PASSWORD,
       });
       updateObservations(outputDir, {
         operator: 'codex',
@@ -663,7 +746,8 @@ async function main() {
         reopenHome: {
           attempted: true,
           passed: true,
-          notes: 'Dedicated cloud demo account login -> diary -> reopen passed on emulator.',
+          notes:
+            'Dedicated cloud demo account login -> diary -> reopen passed on emulator.',
         },
         evidence: {
           homeScreenshot: result.reopenScreenshot,

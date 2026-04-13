@@ -1,26 +1,43 @@
-﻿/**
+/**
  * OnboardingScreen - First-time user setup wizard
  * 5 steps: Basic Info → Body Metrics → Goal → Activity → AI Calculate
+ *
+ * Emerald Nebula design system + 3D Parallax tilt on Step 0
  */
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef, useMemo } from 'react';
 import {
   View,
   StyleSheet,
   Pressable,
+  TextInput,
   ActivityIndicator,
   Alert,
   Dimensions,
   ScrollView,
-  KeyboardAvoidingView,
   Keyboard,
   Platform,
 } from 'react-native';
 import Toast from 'react-native-toast-message';
 import { LinearGradient } from 'expo-linear-gradient';
-import Animated, { FadeInRight, FadeOutLeft } from 'react-native-reanimated';
+import Animated, {
+  FadeInRight,
+  FadeOutLeft,
+  FadeInDown,
+  useSharedValue,
+  useAnimatedStyle,
+  useAnimatedScrollHandler,
+  runOnJS,
+  withRepeat,
+  withSequence,
+  withTiming,
+  Easing,
+} from 'react-native-reanimated';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import Slider from '@react-native-community/slider';
 
 import { ThemedText } from '../../../components/ThemedText';
 import ThemedTextInput from '../../../components/ThemedTextInput';
@@ -34,6 +51,8 @@ import { profileService } from '../../../services/profileService';
 import { showSuccess } from '../../../utils/errorHandler';
 import { t } from '../../../i18n/vi';
 import { TEST_IDS } from '../../../testing/testIds';
+import Tilt3DCard, { ParallaxLayer } from '../../../components/ui/Tilt3DCard';
+
 const { width } = Dimensions.get('window');
 
 interface OnboardingData {
@@ -42,6 +61,7 @@ interface OnboardingData {
   age: string;
   heightCm: string;
   weightKg: string;
+  targetWeightKg: string;
   goal: 'lose' | 'maintain' | 'gain' | null;
   activityLevel: 'sedentary' | 'light' | 'moderate' | 'active' | 'very_active';
 }
@@ -57,7 +77,27 @@ interface NutritionCalculationResult {
   message?: string | null;
 }
 
-const STEPS = [
+/* ─── Emerald Nebula palette ─── */
+const C = {
+  surface: '#0E1322',
+  surfaceContainer: '#1A1F2F',
+  surfaceContainerLow: '#161B2B',
+  surfaceContainerHigh: '#25293A',
+  surfaceContainerHighest: '#2F3445',
+  surfaceContainerLowest: '#090E1C',
+  primary: '#4BE277',
+  primaryDark: '#22C55E',
+  onPrimary: '#003915',
+  onSurface: '#DEE1F7',
+  onSurfaceVariant: '#BCC8B9',
+  outlineVariant: '#3D4A3D',
+  glassBg: 'rgba(37, 41, 58, 0.6)',
+  glassBorder: 'rgba(75, 226, 119, 0.1)',
+  inputBg: '#090E1C',
+  inputBorder: 'rgba(61, 74, 61, 0.3)',
+};
+
+const STEPS_BASE = [
   {
     title: t('onboarding.step1_title'),
     subtitle: t('onboarding.step1_subtitle'),
@@ -73,6 +113,7 @@ const STEPS = [
     subtitle: t('onboarding.step3_subtitle'),
     icon: '🎯',
   },
+  { title: 'Mục tiêu cân nặng', subtitle: 'Chọn cân nặng mục tiêu của bạn', icon: '⚖️' },
   {
     title: t('onboarding.step4_title'),
     subtitle: t('onboarding.step4_subtitle'),
@@ -170,13 +211,238 @@ const OnboardingScreen = (): React.ReactElement => {
     fullName: '',
     gender: null,
     age: '',
-    heightCm: '',
-    weightKg: '',
+    heightCm: '160', // Default height 160cm
+    weightKg: '60', // Default weight 60kg
+    targetWeightKg: '',
     goal: null,
     activityLevel: 'moderate',
   });
 
+  /* ─── Dynamic step logic for conditional Target Weight step ─── */
+  const needsTargetWeight = data.goal === 'lose' || data.goal === 'gain';
+  const totalSteps = needsTargetWeight ? 6 : 5;
+  const getDisplayStep = (step: number) => {
+    if (needsTargetWeight) return step;
+    return step <= 2 ? step : step - 1;
+  };
+  const displayStep = getDisplayStep(currentStep);
+  const STEPS = needsTargetWeight ? STEPS_BASE : STEPS_BASE.filter((_, i) => i !== 3);
+
   const [aiResult, setAiResult] = useState<NutritionCalculationResult | null>(null);
+  const [analysisStep, setAnalysisStep] = useState(0);
+  const [analysisProgress, setAnalysisProgress] = useState(0);
+  const [analysisStarted, setAnalysisStarted] = useState(false);
+
+  // Waving hand animation
+  const waveRotation = useSharedValue(0);
+
+  useEffect(() => {
+    waveRotation.value = withRepeat(
+      withSequence(
+        withTiming(25, { duration: 300, easing: Easing.out(Easing.ease) }),
+        withTiming(-15, { duration: 250, easing: Easing.inOut(Easing.ease) }),
+        withTiming(20, { duration: 250, easing: Easing.inOut(Easing.ease) }),
+        withTiming(-10, { duration: 200, easing: Easing.inOut(Easing.ease) }),
+        withTiming(0, { duration: 400, easing: Easing.out(Easing.ease) }),
+        withTiming(0, { duration: 1500 }), // Pause
+      ),
+      -1,
+      false,
+    );
+  }, []);
+
+  const waveStyle = useAnimatedStyle(() => ({
+    transform: [{ rotate: `${waveRotation.value}deg` }],
+  }));
+
+  // Glowing pulse animation for icons
+  const glowPulse = useSharedValue(1);
+  useEffect(() => {
+    glowPulse.value = withRepeat(
+      withSequence(
+        withTiming(1.2, { duration: 1500, easing: Easing.inOut(Easing.ease) }),
+        withTiming(1.0, { duration: 1500, easing: Easing.inOut(Easing.ease) }),
+      ),
+      -1,
+      true,
+    );
+  }, []);
+
+  const glowPulseStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: glowPulse.value }],
+    opacity: 0.3 + (glowPulse.value - 1) * 2,
+  }));
+
+  // Step 5 - Orbital AI core animations
+  const orbitalSpin = useSharedValue(0);
+  const orbitalSpinReverse = useSharedValue(0);
+  const corePulse = useSharedValue(1);
+  const chipBlink = useSharedValue(1);
+
+  useEffect(() => {
+    orbitalSpin.value = withRepeat(
+      withTiming(360, { duration: 10000, easing: Easing.linear }),
+      -1,
+      false,
+    );
+    orbitalSpinReverse.value = withRepeat(
+      withTiming(-360, { duration: 15000, easing: Easing.linear }),
+      -1,
+      false,
+    );
+    corePulse.value = withRepeat(
+      withSequence(
+        withTiming(1.08, { duration: 1200, easing: Easing.inOut(Easing.ease) }),
+        withTiming(0.95, { duration: 1200, easing: Easing.inOut(Easing.ease) }),
+      ),
+      -1,
+      true,
+    );
+    chipBlink.value = withRepeat(
+      withSequence(
+        withTiming(0.4, { duration: 800, easing: Easing.inOut(Easing.ease) }),
+        withTiming(1, { duration: 800, easing: Easing.inOut(Easing.ease) }),
+      ),
+      -1,
+      true,
+    );
+  }, []);
+
+  const orbitalSpinStyle = useAnimatedStyle(() => ({
+    transform: [{ rotate: `${orbitalSpin.value}deg` }],
+  }));
+  const orbitalSpinReverseStyle = useAnimatedStyle(() => ({
+    transform: [{ rotate: `${orbitalSpinReverse.value}deg` }],
+  }));
+  const corePulseStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: corePulse.value }],
+  }));
+  const chipBlinkStyle = useAnimatedStyle(() => ({
+    opacity: chipBlink.value,
+  }));
+
+  // Step 5 - Analysis progress simulation with smooth counting
+  const progressInterval = useRef<ReturnType<typeof setInterval> | null>(null);
+  const analysisTimers = useRef<ReturnType<typeof setTimeout>[]>([]);
+
+  const animateProgressTo = (target: number) => {
+    if (progressInterval.current) clearInterval(progressInterval.current);
+    progressInterval.current = setInterval(() => {
+      setAnalysisProgress((prev) => {
+        if (prev + 2 >= target) {
+          if (progressInterval.current) clearInterval(progressInterval.current);
+          return target;
+        }
+        return prev + 2;
+      });
+    }, 30); // Tăng tốc độ mượt mà đảm bảo không bị tụt lại
+  };
+
+  const startAnalysis = () => {
+    setAnalysisStarted(true);
+    setAnalysisStep(0);
+    setAnalysisProgress(0);
+    setAiResult(null);
+    setCalculationError(null);
+
+    // Call API
+    calculateNutrition();
+
+    // Start background fallback timers (will be overridden if API is fast)
+    analysisTimers.current.forEach(clearTimeout);
+    analysisTimers.current = [];
+    analysisTimers.current.push(
+      setTimeout(() => {
+        setAnalysisStep(1);
+        animateProgressTo(20);
+      }, 600),
+      setTimeout(() => {
+        setAnalysisStep(2);
+        animateProgressTo(40);
+      }, 2200),
+      setTimeout(() => {
+        setAnalysisStep(3);
+        animateProgressTo(60);
+      }, 4000),
+      setTimeout(() => {
+        setAnalysisStep(4);
+        animateProgressTo(72);
+      }, 6000),
+    );
+  };
+
+  // Reset state when entering screen
+  useEffect(() => {
+    if (currentStep === 5) {
+      setAnalysisStarted(false);
+      setAnalysisStep(0);
+      setAnalysisProgress(0);
+      setAiResult(null);
+    }
+    return () => {
+      analysisTimers.current.forEach(clearTimeout);
+    };
+  }, [currentStep]);
+
+  // When AI result arrives, cancel fallback timers
+  useEffect(() => {
+    if (currentStep === 5 && aiResult && analysisStarted) {
+      analysisTimers.current.forEach(clearTimeout);
+      analysisTimers.current = [];
+    }
+  }, [aiResult, currentStep, analysisStarted]);
+
+  // State machine loop to complete remaining chips smoothly
+  useEffect(() => {
+    if (currentStep === 5 && aiResult && analysisStarted && analysisStep < 5) {
+      const timer = setTimeout(() => {
+        const nextStep = analysisStep + 1;
+        setAnalysisStep(nextStep);
+
+        // Progress targets that perfectly align with the chip sequence
+        const progressMap: Record<number, number> = {
+          1: 25,
+          2: 50,
+          3: 75,
+          4: 90,
+          5: 100,
+        };
+        animateProgressTo(progressMap[nextStep] || 100);
+      }, 950); // Delay chậm lại để thanh % kịp chạy và UX nhìn rõ ràng hơn
+      return () => clearTimeout(timer);
+    }
+  }, [aiResult, currentStep, analysisStarted, analysisStep]);
+
+  // Robust snapping for Step 1 Rulers
+  useEffect(() => {
+    if (currentStep === 1) {
+      if (rulerContainerWidth > 0 && !rulerInitialized.current) {
+        const initVal = parseInt(data.heightCm, 10) || 160;
+        setTimeout(() => {
+          rulerScrollRef.current?.scrollTo({ x: (initVal - 100) * 12, animated: false });
+          rulerInitialized.current = true;
+        }, 120);
+      }
+      if (weightRulerWidth > 0 && !weightRulerInitialized.current) {
+        const initVal = parseFloat(data.weightKg) || 60;
+        setTimeout(() => {
+          weightRulerRef.current?.scrollTo({ x: (initVal - 30) * 100, animated: false });
+          weightRulerInitialized.current = true;
+        }, 120);
+      }
+    } else {
+      // Reset initialization flags when leaving Step 1 so it snaps again on return
+      rulerInitialized.current = false;
+      weightRulerInitialized.current = false;
+    }
+  }, [currentStep, rulerContainerWidth, weightRulerWidth]);
+
+  // Cleanup progress interval
+  useEffect(() => {
+    return () => {
+      if (progressInterval.current) clearInterval(progressInterval.current);
+    };
+  }, []);
 
   useEffect(() => {
     const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
@@ -204,6 +470,8 @@ const OnboardingScreen = (): React.ReactElement => {
       case 2:
         return data.goal !== null;
       case 3:
+        return data.targetWeightKg !== '';
+      case 4:
         return true;
       default:
         return true;
@@ -211,13 +479,17 @@ const OnboardingScreen = (): React.ReactElement => {
   };
 
   const handleNext = async () => {
-    if (currentStep < 4) {
-      if (currentStep === 3) {
-        // Last data step - calculate AI
-        setAiResult(null);
-        setCalculationError(null);
+    if (currentStep < 5) {
+      if (currentStep === 4) {
+        setCurrentStep(5);
+      } else if (currentStep === 2 && !needsTargetWeight) {
         setCurrentStep(4);
-        calculateNutrition();
+      } else if (currentStep === 2 && needsTargetWeight) {
+        if (!data.targetWeightKg) {
+          setData((prev) => ({ ...prev, targetWeightKg: prev.weightKg }));
+        }
+        targetWeightRulerInitialized.current = false;
+        setCurrentStep(3);
       } else {
         setCurrentStep((prev) => prev + 1);
       }
@@ -226,7 +498,11 @@ const OnboardingScreen = (): React.ReactElement => {
 
   const handleBack = () => {
     if (currentStep > 0) {
-      setCurrentStep((prev) => prev - 1);
+      if (currentStep === 4 && !needsTargetWeight) {
+        setCurrentStep(2);
+      } else {
+        setCurrentStep((prev) => prev - 1);
+      }
     }
   };
 
@@ -237,16 +513,20 @@ const OnboardingScreen = (): React.ReactElement => {
       // Gọi qua backend API thay vì AI provider trực tiếp
       // Backend sẽ proxy đến AI Provider (Ollama)
       const activityMultiplier =
-        ACTIVITY_OPTIONS.find((option) => option.value === data.activityLevel)?.multiplier ?? 1.55;
+        ACTIVITY_OPTIONS.find((option) => option.value === data.activityLevel)
+          ?.multiplier ?? 1.55;
 
-      const response = await aiApiClient.post<NutritionCalculationResult>('/api/ai/nutrition/recalculate', {
-        sex: data.gender,
-        age: Number(data.age),
-        heightCm: Number(data.heightCm),
-        weightKg: Number(data.weightKg),
-        activityLevel: activityMultiplier,
-        goal: data.goal,
-      });
+      const response = await aiApiClient.post<NutritionCalculationResult>(
+        '/api/ai/nutrition/recalculate',
+        {
+          sex: data.gender,
+          age: Number(data.age),
+          heightCm: Number(data.heightCm),
+          weightKg: Number(data.weightKg),
+          activityLevel: activityMultiplier,
+          goal: data.goal,
+        },
+      );
 
       if (response.data?.calories > 0) {
         setAiResult(response.data);
@@ -254,12 +534,15 @@ const OnboardingScreen = (): React.ReactElement => {
           Toast.show({
             type: 'info',
             text1: 'Offline mode',
-            text2: 'AI đang tạm thời không khả dụng. App dùng công thức chuẩn để hoàn tất onboarding.',
+            text2:
+              'AI đang tạm thời không khả dụng. App dùng công thức chuẩn để hoàn tất onboarding.',
           });
         }
       } else {
         setAiResult(null);
-        setCalculationError('Không thể tính mục tiêu dinh dưỡng lúc này. Vui lòng thử lại.');
+        setCalculationError(
+          'Không thể tính mục tiêu dinh dưỡng lúc này. Vui lòng thử lại.',
+        );
         Toast.show({
           type: 'error',
           text1: 'Dịch vụ AI hiện không khả dụng',
@@ -279,7 +562,6 @@ const OnboardingScreen = (): React.ReactElement => {
       setIsCalculating(false);
     }
   };
-
 
   const handleComplete = async () => {
     try {
@@ -304,6 +586,7 @@ const OnboardingScreen = (): React.ReactElement => {
           fullName: data.fullName,
           heightCm: Number(data.heightCm),
           weightKg: Number(data.weightKg),
+          targetWeightKg: data.targetWeightKg ? Number(data.targetWeightKg) : undefined,
           gender: data.gender || undefined,
           dateOfBirth: dateOfBirth,
           activityLevelId: activityLevelMap[data.activityLevel] || 3,
@@ -313,7 +596,10 @@ const OnboardingScreen = (): React.ReactElement => {
         // Cloud /api/profile đang không ổn định; giữ onboarding tiếp tục bằng cách
         // ít nhất lưu body metrics để home/diary và nutrition lane không bị chặn.
         if (__DEV__) {
-          console.warn('[Onboarding] updateProfile failed, falling back to body metrics only:', profileError);
+          console.warn(
+            '[Onboarding] updateProfile failed, falling back to body metrics only:',
+            profileError,
+          );
         }
 
         await profileService.createBodyMetrics({
@@ -382,7 +668,10 @@ const OnboardingScreen = (): React.ReactElement => {
         await fetchProfile({ force: true });
       } catch (profileRefreshError) {
         if (__DEV__) {
-          console.warn('[Onboarding] Failed to refresh profile after completion:', profileRefreshError);
+          console.warn(
+            '[Onboarding] Failed to refresh profile after completion:',
+            profileRefreshError,
+          );
         }
       }
 
@@ -393,447 +682,2228 @@ const OnboardingScreen = (): React.ReactElement => {
     }
   };
 
-  const styles = StyleSheet.create({
-    container: {
-      flex: 1,
-    },
-    header: {
-      paddingTop: Math.max(insets.top + 12, 28),
-      paddingHorizontal: 24,
-      paddingBottom: 16,
-    },
-    progressContainer: {
-      flexDirection: 'row',
-      gap: 8,
-      marginBottom: 16,
-    },
-    progressDot: {
-      height: 6,
-      flex: 1,
-      borderRadius: 3,
-    },
-    content: {
-      flex: 1,
-      paddingHorizontal: 24,
-    },
-    scrollArea: {
-      flex: 1,
-    },
-    scrollContent: {
-      flexGrow: 1,
-      paddingBottom: 24,
-    },
-    stepIcon: {
-      fontSize: 44,
-      lineHeight: 52,
-      textAlign: 'center',
-      marginBottom: 12,
-    },
-    stepTitle: {
-      textAlign: 'center',
-      marginBottom: 10,
-    },
-    stepSubtitle: {
-      textAlign: 'center',
-      marginBottom: 24,
-    },
-    optionGrid: {
-      flexDirection: 'row',
-      flexWrap: 'wrap',
-      gap: 12,
-      justifyContent: 'center',
-    },
-    optionButton: {
-      paddingHorizontal: 24,
-      paddingVertical: 16,
-      borderRadius: 20,
-      borderWidth: 2,
-      minWidth: 120,
-      alignItems: 'center',
-      gap: 8,
-    },
-    goalCard: {
-      width: (width - 72) / 3,
-      padding: 16,
-      borderRadius: 20,
-      alignItems: 'center',
-      borderWidth: 2,
-    },
-    activityCard: {
-      width: '100%',
-      padding: 18,
-      borderRadius: 16,
-      marginBottom: 12,
-      borderWidth: 2,
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 16,
-    },
-    inputRow: {
-      flexDirection: 'row',
-      gap: 16,
-      marginBottom: 16,
-    },
-    inputCol: {
-      flex: 1,
-    },
-    footer: {
-      paddingHorizontal: 24,
-      paddingTop: isKeyboardVisible ? 12 : 16,
-      paddingBottom: isKeyboardVisible ? 10 : Math.max(insets.bottom + 12, 24),
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 12,
-    },
-    footerBackButtonWrap: {
-      width: 112,
-    },
-    footerPrimaryButtonWrap: {
-      flex: 1,
-    },
-    footerSingleButtonWrap: {
-      width: '100%',
-    },
-    resultCard: {
-      padding: 24,
-      borderRadius: 24,
-      alignItems: 'center',
-      marginBottom: 24,
-    },
-    resultRow: {
-      flexDirection: 'row',
-      flexWrap: 'wrap',
-      gap: 16,
-      marginTop: 20,
-      justifyContent: 'center',
-    },
-    resultItem: {
-      alignItems: 'center',
-      minWidth: 80,
-    },
-    offlineBadge: {
-      paddingHorizontal: 12,
-      paddingVertical: 6,
-      borderRadius: 999,
-      borderWidth: 1,
-      backgroundColor: isDark ? 'rgba(251, 191, 36, 0.16)' : 'rgba(245, 158, 11, 0.12)',
-      borderColor: isDark ? 'rgba(251, 191, 36, 0.45)' : 'rgba(245, 158, 11, 0.35)',
-      marginTop: 12,
-    },
-    offlineNote: {
-      textAlign: 'center',
-      marginTop: 16,
+  /* ─── Age as a number for slider ─── */
+  const ageNum = data.age ? parseInt(data.age, 10) : 24;
+
+  /* ─── Render Step 0 — Emerald Nebula "Basic Info" ─── */
+  const renderStep0Nebula = () => (
+    <Animated.View entering={FadeInRight} exiting={FadeOutLeft} key="step0">
+      <Tilt3DCard maxTilt={6} perspective={900}>
+        <Animated.View
+          entering={FadeInDown.delay(150).springify()}
+          style={[
+            s.card,
+            {
+              backgroundColor: C.glassBg,
+              borderColor: C.glassBorder,
+            },
+          ]}
+        >
+          {/* Header — depth 0.3 */}
+          <ParallaxLayer depth={0.3}>
+            <View style={s.cardHeader}>
+              {/* Waving hand emoji */}
+              <View style={[s.iconBox, { backgroundColor: C.surfaceContainerHigh }]}>
+                <Animated.Text style={[{ fontSize: 36 }, waveStyle]}>👋</Animated.Text>
+              </View>
+              <ThemedText
+                variant="h2"
+                weight="700"
+                style={{
+                  color: '#FFFFFF',
+                  fontSize: 28,
+                  textAlign: 'center',
+                  fontFamily: 'Inter_700Bold',
+                }}
+              >
+                Thông tin cơ bản
+              </ThemedText>
+              <ThemedText
+                variant="body"
+                style={{
+                  color: C.onSurfaceVariant,
+                  marginTop: 6,
+                  textAlign: 'center',
+                  lineHeight: 22,
+                  maxWidth: 280,
+                  fontFamily: 'Inter_500Medium',
+                }}
+              >
+                Hãy cho chúng tôi biết một chút{'\n'}về bản thân bạn
+              </ThemedText>
+            </View>
+          </ParallaxLayer>
+
+          {/* Form — depth 0.5 */}
+          <ParallaxLayer depth={0.5}>
+            <View style={s.formGroup}>
+              {/* Name */}
+              <View style={s.fieldBlock}>
+                <ThemedText variant="caption" weight="700" style={s.label}>
+                  HỌ VÀ TÊN
+                </ThemedText>
+                <View
+                  style={[
+                    s.inputContainer,
+                    { backgroundColor: C.inputBg, borderColor: C.inputBorder },
+                  ]}
+                >
+                  <TextInput
+                    testID={TEST_IDS.auth.onboardingNameInput}
+                    placeholder="Nhập họ và tên của bạn"
+                    placeholderTextColor={C.surfaceContainerHighest}
+                    value={data.fullName}
+                    onChangeText={(text) => setData({ ...data, fullName: text })}
+                    style={[s.input, { color: C.onSurface }]}
+                  />
+                </View>
+              </View>
+
+              {/* Age — slider */}
+              <View style={s.fieldBlock}>
+                <View style={s.ageHeadRow}>
+                  <ThemedText variant="caption" weight="700" style={s.label}>
+                    TUỔI
+                  </ThemedText>
+                  <View style={{ flexDirection: 'row', alignItems: 'baseline' }}>
+                    <ThemedText
+                      variant="h2"
+                      weight="700"
+                      style={{ color: C.primary, fontSize: 30 }}
+                    >
+                      {data.age || '24'}
+                    </ThemedText>
+                    <ThemedText
+                      variant="bodySmall"
+                      weight="600"
+                      style={{ color: C.onSurfaceVariant, marginLeft: 4 }}
+                    >
+                      tuổi
+                    </ThemedText>
+                  </View>
+                </View>
+                <View
+                  style={[
+                    s.sliderBox,
+                    { backgroundColor: C.glassBg, borderColor: C.glassBorder },
+                  ]}
+                >
+                  {/* Hidden input for testID */}
+                  <TextInput
+                    testID={TEST_IDS.auth.onboardingAgeInput}
+                    style={{ position: 'absolute', opacity: 0, width: 1, height: 1 }}
+                    value={data.age}
+                    onChangeText={(text) =>
+                      setData({ ...data, age: text.replace(/[^0-9]/g, '') })
+                    }
+                    keyboardType={Platform.OS === 'ios' ? 'number-pad' : 'numeric'}
+                  />
+                  {/* Native draggable slider */}
+                  <Slider
+                    style={{ width: '100%', height: 36 }}
+                    minimumValue={0}
+                    maximumValue={100}
+                    step={1}
+                    value={ageNum}
+                    onValueChange={(v: number) =>
+                      setData({ ...data, age: String(Math.round(v)) })
+                    }
+                    minimumTrackTintColor={C.primary}
+                    maximumTrackTintColor={C.surfaceContainerHighest}
+                    thumbTintColor={C.primary}
+                  />
+                  <View style={s.sliderLabels}>
+                    <ThemedText
+                      variant="caption"
+                      style={{
+                        color: C.onSurfaceVariant,
+                        fontSize: 13,
+                        letterSpacing: 0.5,
+                        fontFamily: 'Inter_600SemiBold',
+                      }}
+                    >
+                      0
+                    </ThemedText>
+                    <ThemedText
+                      variant="caption"
+                      style={{
+                        color: C.onSurfaceVariant,
+                        fontSize: 13,
+                        letterSpacing: 0.5,
+                        fontFamily: 'Inter_600SemiBold',
+                      }}
+                    >
+                      100
+                    </ThemedText>
+                  </View>
+                </View>
+              </View>
+
+              {/* Gender */}
+              <View style={s.fieldBlock}>
+                <ThemedText variant="caption" weight="700" style={s.label}>
+                  GIỚI TÍNH
+                </ThemedText>
+                <View style={s.genderRow}>
+                  {GENDER_OPTIONS.map((opt) => {
+                    const selected = data.gender === opt.value;
+                    return (
+                      <Pressable
+                        key={opt.value}
+                        testID={
+                          opt.value === 'male'
+                            ? TEST_IDS.auth.onboardingGenderMaleButton
+                            : TEST_IDS.auth.onboardingGenderFemaleButton
+                        }
+                        onPress={() => setData({ ...data, gender: opt.value as any })}
+                        style={({ pressed }) => [
+                          s.genderCard,
+                          {
+                            backgroundColor: selected ? C.primary + '15' : C.glassBg,
+                            borderColor: selected ? C.primary : C.glassBorder,
+                            borderWidth: selected ? 2 : 1,
+                          },
+                          pressed && { transform: [{ scale: 0.95 }] },
+                        ]}
+                        accessibilityRole="radio"
+                        accessibilityLabel={opt.label}
+                        accessibilityState={{ checked: selected }}
+                      >
+                        <Ionicons
+                          name={opt.value === 'male' ? 'male' : 'female'}
+                          size={28}
+                          color={selected ? C.primary : C.onSurfaceVariant}
+                        />
+                        <ThemedText
+                          weight={selected ? '700' : '500'}
+                          style={{
+                            color: selected ? C.primary : C.onSurface,
+                            marginTop: 2,
+                            fontSize: 13,
+                            fontFamily: selected ? 'Inter_700Bold' : 'Inter_500Medium',
+                          }}
+                        >
+                          {opt.label}
+                        </ThemedText>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              </View>
+            </View>
+          </ParallaxLayer>
+        </Animated.View>
+      </Tilt3DCard>
+    </Animated.View>
+  );
+
+  /* ─── Render Step 1 — Emerald Nebula "Body Metrics" ─── */
+  const heightNum = data.heightCm ? parseInt(data.heightCm, 10) : 170;
+  const weightNum = data.weightKg ? parseFloat(data.weightKg) : 65;
+  const rulerScrollRef = useRef<ScrollView>(null);
+  const rulerInitialized = useRef(false);
+  const [rulerContainerWidth, setRulerContainerWidth] = useState(0);
+  const weightRulerRef = useRef<ScrollView>(null);
+  const weightRulerInitialized = useRef(false);
+  const [weightRulerWidth, setWeightRulerWidth] = useState(0);
+
+  // Target weight ruler refs (Step 3)
+  const targetWeightRulerRef = useRef<any>(null);
+  const targetWeightRulerInitialized = useRef(false);
+  const [targetWeightRulerWidth, setTargetWeightRulerWidth] = useState(0);
+  const targetRulerScrollXRef = useRef(0);
+  const [targetDisplayWeight, setTargetDisplayWeight] = useState(0);
+
+  const targetRulerNativeScrollX = useSharedValue(0);
+
+  const updateTargetWeightUI = (offsetX: number) => {
+    targetRulerScrollXRef.current = offsetX;
+    const v = Math.round((offsetX / 100 + 30) * 10) / 10;
+    setTargetDisplayWeight(Math.max(30, Math.min(200, v)));
+  };
+
+  const onTargetRulerScroll = useAnimatedScrollHandler({
+    onScroll: (event) => {
+      targetRulerNativeScrollX.value = event.contentOffset.x;
+      runOnJS(updateTargetWeightUI)(event.contentOffset.x);
     },
   });
 
-  const renderStep = () => {
-    switch (currentStep) {
-      case 0: // Basic Info
+  const targetOverlayAnimatedStyle = useAnimatedStyle(() => {
+    const origWeight = parseFloat(data.weightKg) || 65;
+    const twPad = Math.max(targetWeightRulerWidth / 2 - 5, 0);
+    const origCX = (origWeight - 30) * 100;
+
+    // UI Thread scroll sync
+    const sX = targetRulerNativeScrollX.value;
+    const origScrX = origCX - sX + twPad;
+    const ctrX = targetWeightRulerWidth / 2;
+    const left = Math.min(origScrX, ctrX);
+    const width = Math.abs(origScrX - ctrX);
+
+    const valStr = Math.round((sX / 100 + 30) * 10) / 10;
+    const wDiff = valStr - origWeight;
+    const showDiffUI = Math.abs(wDiff) >= 0.2 && width > 2;
+
+    return {
+      left,
+      width,
+      opacity: showDiffUI ? 1 : 0,
+      backgroundColor:
+        wDiff <= 0 ? 'rgba(75, 226, 119, 0.12)' : 'rgba(251, 146, 60, 0.12)',
+    };
+  });
+
+  useEffect(() => {
+    if (
+      currentStep === 3 &&
+      targetWeightRulerWidth > 0 &&
+      !targetWeightRulerInitialized.current
+    ) {
+      const initVal = data.targetWeightKg
+        ? parseFloat(data.targetWeightKg)
+        : parseFloat(data.weightKg) || 65;
+      const scrollX = (initVal - 30) * 100;
+      setTimeout(() => {
+        targetWeightRulerRef.current?.scrollTo({ x: scrollX, animated: false });
+        targetRulerScrollXRef.current = scrollX;
+        setTargetDisplayWeight(initVal);
+        targetWeightRulerInitialized.current = true;
+      }, 150);
+    }
+  }, [currentStep, targetWeightRulerWidth]);
+
+  // Memoize the large arrays to prevent significant lag during active scrolling
+  const memoizedHeightTicks = useMemo(
+    () =>
+      Array.from({ length: 151 }).map((_, i) => {
+        const val = 100 + i;
+        const isMajor = val % 10 === 0;
+        const isMedium = val % 5 === 0;
         return (
-          <Animated.View entering={FadeInRight} exiting={FadeOutLeft} key="step0">
-            <ThemedTextInput
-              label={t('onboarding.your_name')}
-              value={data.fullName}
-              onChangeText={(text) => setData({ ...data, fullName: text })}
-              placeholder={t('onboarding.enter_name')}
-              style={{ marginBottom: 20 }}
-              testID={TEST_IDS.auth.onboardingNameInput}
+          <View
+            key={i}
+            style={{ width: 12, alignItems: 'center', justifyContent: 'flex-end' }}
+          >
+            {isMajor && (
+              <ThemedText
+                style={{
+                  fontSize: 11,
+                  color: 'rgba(188, 200, 185, 0.6)',
+                  marginBottom: 6,
+                  fontFamily: 'Inter_600SemiBold',
+                  width: 40,
+                  textAlign: 'center',
+                }}
+              >
+                {val}
+              </ThemedText>
+            )}
+            <View
+              style={{
+                width: isMajor ? 2 : 1,
+                height: isMajor ? 32 : isMedium ? 20 : 12,
+                backgroundColor: isMajor ? C.primary : 'rgba(188, 200, 185, 0.4)',
+                borderRadius: 1,
+              }}
             />
-
-            <ThemedText
-              variant="bodySmall"
-              color="textSecondary"
-              style={{ marginBottom: 12 }}
-            >
-              {t('onboarding.gender')}
-            </ThemedText>
-            <View style={styles.optionGrid} accessibilityRole="radiogroup" accessibilityLabel="Chọn giới tính">
-              {GENDER_OPTIONS.map((opt) => (
-                <Pressable
-                  key={opt.value}
-                  testID={
-                    opt.value === 'male'
-                      ? TEST_IDS.auth.onboardingGenderMaleButton
-                      : TEST_IDS.auth.onboardingGenderFemaleButton
-                  }
-                  style={[
-                    styles.optionButton,
-                    {
-                      backgroundColor:
-                        data.gender === opt.value
-                          ? theme.colors.primaryLight
-                          : isDark
-                            ? 'rgba(255,255,255,0.05)'
-                            : 'rgba(0,0,0,0.03)',
-                      borderColor:
-                        data.gender === opt.value ? theme.colors.primary : 'transparent',
-                    },
-                  ]}
-                  onPress={() => setData({ ...data, gender: opt.value as any })}
-                  accessibilityRole="radio"
-                  accessibilityLabel={opt.label}
-                  accessibilityState={{ checked: data.gender === opt.value }}
-                >
-                  <ThemedText
-                    style={{
-                      fontSize: theme.typography.h2.fontSize,
-                      lineHeight: theme.typography.h2.lineHeight,
-                    }}
-                  >
-                    {opt.icon}
-                  </ThemedText>
-                  <ThemedText weight="500">{opt.label}</ThemedText>
-                </Pressable>
-              ))}
-            </View>
-
-            <ThemedTextInput
-              label={t('onboarding.age')}
-              value={data.age}
-              onChangeText={(text) =>
-                setData({ ...data, age: text.replace(/[^0-9]/g, '') })
-              }
-              placeholder="Nhập tuổi"
-              keyboardType={Platform.OS === 'ios' ? 'number-pad' : 'numeric'}
-              style={{ marginTop: 20 }}
-              testID={TEST_IDS.auth.onboardingAgeInput}
-            />
-          </Animated.View>
+          </View>
         );
+      }),
+    [],
+  );
 
-      case 1: // Body Metrics
+  const memoizedWeightTicks = useMemo(
+    () =>
+      Array.from({ length: 1701 }).map((_, i) => {
+        const val = 30 + i * 0.1;
+        const isMajor = i % 10 === 0;
+        const isMedium = i % 5 === 0;
         return (
-          <Animated.View entering={FadeInRight} exiting={FadeOutLeft} key="step1">
-            <View style={styles.inputRow}>
-              <View style={styles.inputCol}>
-                <ThemedTextInput
-                  label={t('onboarding.height_cm')}
+          <View
+            key={i}
+            style={{ width: 10, alignItems: 'center', justifyContent: 'flex-end' }}
+          >
+            {isMajor && (
+              <ThemedText
+                style={{
+                  fontSize: 11,
+                  color: 'rgba(188, 200, 185, 0.6)',
+                  marginBottom: 6,
+                  fontFamily: 'Inter_600SemiBold',
+                  width: 40,
+                  textAlign: 'center',
+                }}
+              >
+                {Math.round(val)}
+              </ThemedText>
+            )}
+            <View
+              style={{
+                width: isMajor ? 2 : 1,
+                height: isMajor ? 32 : isMedium ? 20 : 12,
+                backgroundColor: isMajor ? C.primary : 'rgba(188, 200, 185, 0.4)',
+                borderRadius: 1,
+              }}
+            />
+          </View>
+        );
+      }),
+    [],
+  );
+
+  const renderStep1Nebula = () => (
+    <Animated.View entering={FadeInRight} exiting={FadeOutLeft} key="step1">
+      <Tilt3DCard maxTilt={6} perspective={900} height={650}>
+        <Animated.View
+          entering={FadeInDown.delay(150).springify()}
+          style={[s.card, { backgroundColor: C.glassBg, borderColor: C.glassBorder }]}
+        >
+          {/* Header */}
+          <ParallaxLayer depth={0.3}>
+            <View style={s.cardHeader}>
+              <ThemedText
+                variant="h2"
+                weight="700"
+                style={{
+                  color: '#FFFFFF',
+                  fontSize: 28,
+                  textAlign: 'center',
+                  fontFamily: 'Inter_700Bold',
+                  paddingTop: 8,
+                }}
+              >
+                Chỉ số cơ thể
+              </ThemedText>
+              <ThemedText
+                variant="body"
+                style={{
+                  color: C.onSurfaceVariant,
+                  marginTop: 6,
+                  textAlign: 'center',
+                  lineHeight: 22,
+                  maxWidth: 280,
+                  fontFamily: 'Inter_500Medium',
+                }}
+              >
+                Cung cấp chỉ số cơ thể chính xác để chúng tôi tính toán lộ trình tối ưu
+              </ThemedText>
+            </View>
+          </ParallaxLayer>
+
+          {/* Metric cards */}
+          <ParallaxLayer depth={0.5}>
+            <View style={s.formGroup}>
+              {/* Height */}
+              <View
+                style={[
+                  s1.metricCard,
+                  { backgroundColor: C.inputBg, borderColor: C.glassBorder },
+                ]}
+              >
+                <View style={s1.metricHeader}>
+                  <View>
+                    <ThemedText style={[s.label, { marginLeft: 0 }]}>
+                      CHIỀU CAO
+                    </ThemedText>
+                    <View
+                      style={{
+                        flexDirection: 'row',
+                        alignItems: 'baseline',
+                        gap: 4,
+                        marginTop: 4,
+                      }}
+                    >
+                      <ThemedText
+                        weight="700"
+                        style={{
+                          color: '#FFFFFF',
+                          fontSize: 36,
+                          fontFamily: 'Inter_700Bold',
+                          lineHeight: 42,
+                        }}
+                      >
+                        {data.heightCm || '170'}
+                      </ThemedText>
+                      <ThemedText
+                        style={{
+                          color: C.onSurfaceVariant,
+                          fontSize: 16,
+                          fontFamily: 'Inter_500Medium',
+                        }}
+                      >
+                        cm
+                      </ThemedText>
+                    </View>
+                  </View>
+                  <View style={s1.metricIconBox}>
+                    <MaterialCommunityIcons
+                      name="arrow-up-down"
+                      size={24}
+                      color={C.primary}
+                    />
+                  </View>
+                </View>
+                <TextInput
+                  testID={TEST_IDS.auth.onboardingHeightInput}
+                  style={{ position: 'absolute', opacity: 0, width: 1, height: 1 }}
                   value={data.heightCm}
                   onChangeText={(text) =>
                     setData({ ...data, heightCm: text.replace(/[^0-9]/g, '') })
                   }
-                  placeholder="Nhập chiều cao"
                   keyboardType={Platform.OS === 'ios' ? 'number-pad' : 'numeric'}
-                  testID={TEST_IDS.auth.onboardingHeightInput}
                 />
+
+                {/* Custom Horizontal Ruler Selector */}
+                <View
+                  style={{
+                    marginTop: 20,
+                    height: 80,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                  onLayout={(e) => {
+                    const w = e.nativeEvent.layout.width;
+                    setRulerContainerWidth(w);
+                  }}
+                >
+                  {/* Center Indicator — only covers the tick area */}
+                  <View
+                    style={{
+                      position: 'absolute',
+                      bottom: 0,
+                      height: 44,
+                      width: 3,
+                      backgroundColor: C.primary,
+                      borderRadius: 2,
+                      zIndex: 10,
+                      shadowColor: C.primary,
+                      shadowOpacity: 0.8,
+                      shadowRadius: 8,
+                    }}
+                  />
+
+                  {rulerContainerWidth > 0 && (
+                    <ScrollView
+                      ref={rulerScrollRef}
+                      horizontal
+                      showsHorizontalScrollIndicator={false}
+                      snapToInterval={12}
+                      decelerationRate="fast"
+                      showsHorizontalScrollIndicator={false}
+                      snapToInterval={12}
+                      decelerationRate="fast"
+                      contentContainerStyle={{
+                        paddingLeft: rulerContainerWidth / 2 - 6,
+                        paddingRight: rulerContainerWidth / 2 - 6,
+                        height: 80,
+                        alignItems: 'flex-end',
+                      }}
+                      onMomentumScrollEnd={(e) => {
+                        const offset = e.nativeEvent.contentOffset.x;
+                        const val = Math.round(offset / 12) + 100;
+                        const clamped = Math.max(100, Math.min(250, val));
+                        setData((prev) => ({ ...prev, heightCm: String(clamped) }));
+                      }}
+                      onScrollEndDrag={(e) => {
+                        const offset = e.nativeEvent.contentOffset.x;
+                        const val = Math.round(offset / 12) + 100;
+                        const clamped = Math.max(100, Math.min(250, val));
+                        setData((prev) => ({ ...prev, heightCm: String(clamped) }));
+                      }}
+                      scrollEventThrottle={64}
+                    >
+                      {memoizedHeightTicks}
+                    </ScrollView>
+                  )}
+                </View>
               </View>
-              <View style={styles.inputCol}>
-                <ThemedTextInput
-                  label={t('onboarding.weight_kg')}
+
+              {/* Weight */}
+              <View
+                style={[
+                  s1.metricCard,
+                  { backgroundColor: C.inputBg, borderColor: C.glassBorder },
+                ]}
+              >
+                <View style={s1.metricHeader}>
+                  <View>
+                    <ThemedText style={[s.label, { marginLeft: 0 }]}>CÂN NẶNG</ThemedText>
+                    <View
+                      style={{
+                        flexDirection: 'row',
+                        alignItems: 'baseline',
+                        gap: 4,
+                        marginTop: 4,
+                      }}
+                    >
+                      <ThemedText
+                        weight="700"
+                        style={{
+                          color: '#FFFFFF',
+                          fontSize: 36,
+                          fontFamily: 'Inter_700Bold',
+                          lineHeight: 42,
+                        }}
+                      >
+                        {data.weightKg || '65'}
+                      </ThemedText>
+                      <ThemedText
+                        style={{
+                          color: C.onSurfaceVariant,
+                          fontSize: 16,
+                          fontFamily: 'Inter_500Medium',
+                        }}
+                      >
+                        kg
+                      </ThemedText>
+                    </View>
+                  </View>
+                  <View style={s1.metricIconBox}>
+                    <Ionicons name="scale-outline" size={24} color={C.primary} />
+                  </View>
+                </View>
+                <TextInput
+                  testID={TEST_IDS.auth.onboardingWeightInput}
+                  style={{ position: 'absolute', opacity: 0, width: 1, height: 1 }}
                   value={data.weightKg}
                   onChangeText={(text) =>
                     setData({ ...data, weightKg: text.replace(/[^0-9.]/g, '') })
                   }
-                  placeholder="Nhập cân nặng"
                   keyboardType={Platform.OS === 'ios' ? 'decimal-pad' : 'numeric'}
-                  testID={TEST_IDS.auth.onboardingWeightInput}
+                />
+
+                {/* Custom Horizontal Ruler Selector for Weight */}
+                <View
+                  style={{
+                    marginTop: 20,
+                    height: 80,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                  onLayout={(e) => {
+                    const w = e.nativeEvent.layout.width;
+                    setWeightRulerWidth(w);
+                  }}
+                >
+                  {/* Center Indicator */}
+                  <View
+                    style={{
+                      position: 'absolute',
+                      bottom: 0,
+                      height: 44,
+                      width: 3,
+                      backgroundColor: C.primary,
+                      borderRadius: 2,
+                      zIndex: 10,
+                      shadowColor: C.primary,
+                      shadowOpacity: 0.8,
+                      shadowRadius: 8,
+                    }}
+                  />
+
+                  {weightRulerWidth > 0 && (
+                    <ScrollView
+                      ref={weightRulerRef}
+                      horizontal
+                      showsHorizontalScrollIndicator={false}
+                      snapToInterval={10}
+                      decelerationRate="fast"
+                      showsHorizontalScrollIndicator={false}
+                      snapToInterval={10}
+                      decelerationRate="fast"
+                      contentContainerStyle={{
+                        paddingLeft: weightRulerWidth / 2 - 5,
+                        paddingRight: weightRulerWidth / 2 - 5,
+                        height: 80,
+                        alignItems: 'flex-end',
+                      }}
+                      onMomentumScrollEnd={(e) => {
+                        const offset = e.nativeEvent.contentOffset.x;
+                        const val = Math.round((offset / 100 + 30) * 10) / 10;
+                        const clamped = Math.max(30, Math.min(200, val));
+                        setData((prev) => ({ ...prev, weightKg: String(clamped) }));
+                      }}
+                      onScrollEndDrag={(e) => {
+                        const offset = e.nativeEvent.contentOffset.x;
+                        const val = Math.round((offset / 100 + 30) * 10) / 10;
+                        const clamped = Math.max(30, Math.min(200, val));
+                        setData((prev) => ({ ...prev, weightKg: String(clamped) }));
+                      }}
+                      scrollEventThrottle={64}
+                    >
+                      {memoizedWeightTicks}
+                    </ScrollView>
+                  )}
+                </View>
+              </View>
+            </View>
+          </ParallaxLayer>
+        </Animated.View>
+      </Tilt3DCard>
+    </Animated.View>
+  );
+
+  const renderStep = () => {
+    switch (currentStep) {
+      case 0:
+        return renderStep0Nebula();
+
+      case 1: // Body Metrics — Emerald Nebula redesign
+        return renderStep1Nebula();
+
+      case 2: // Goal — Emerald Nebula redesign
+        return (
+          <Animated.View entering={FadeInRight} exiting={FadeOutLeft} key="step2">
+            <Tilt3DCard maxTilt={6} perspective={900} height={620}>
+              <Animated.View
+                entering={FadeInDown.delay(150).springify()}
+                style={[
+                  s.card,
+                  { backgroundColor: C.glassBg, borderColor: C.glassBorder },
+                ]}
+              >
+                {/* Header — no icon, just title + subtitle */}
+                <ParallaxLayer depth={0.3}>
+                  <View style={s.cardHeader}>
+                    <ThemedText
+                      variant="h2"
+                      weight="700"
+                      style={{
+                        color: '#FFFFFF',
+                        fontSize: 28,
+                        textAlign: 'center',
+                        fontFamily: 'Inter_700Bold',
+                        paddingTop: 8,
+                      }}
+                    >
+                      Mục tiêu của bạn
+                    </ThemedText>
+                    <ThemedText
+                      variant="body"
+                      style={{
+                        color: C.onSurfaceVariant,
+                        marginTop: 6,
+                        textAlign: 'center',
+                        lineHeight: 22,
+                        maxWidth: 280,
+                        fontFamily: 'Inter_500Medium',
+                      }}
+                    >
+                      Chúng tôi sẽ cá nhân hóa kế hoạch dinh dưỡng dựa trên mục tiêu của
+                      bạn
+                    </ThemedText>
+                  </View>
+                </ParallaxLayer>
+
+                {/* Goal Selection Cards */}
+                <ParallaxLayer depth={0.5}>
+                  <View style={{ gap: 14, marginTop: 8 }}>
+                    {/* Giảm cân */}
+                    <Pressable
+                      testID={`${TEST_IDS.auth.onboardingGoalPrefix}-lose`}
+                      style={[
+                        s2.goalCard,
+                        {
+                          backgroundColor: C.inputBg,
+                          borderColor: data.goal === 'lose' ? C.primary : C.glassBorder,
+                          borderWidth: data.goal === 'lose' ? 2 : 1,
+                          ...(data.goal === 'lose' && {
+                            shadowColor: C.primary,
+                            shadowOpacity: 0.2,
+                            shadowRadius: 20,
+                            elevation: 8,
+                          }),
+                        },
+                      ]}
+                      onPress={() => setData({ ...data, goal: 'lose' as any })}
+                      accessibilityRole="radio"
+                      accessibilityState={{ checked: data.goal === 'lose' }}
+                    >
+                      <View
+                        style={[
+                          s2.goalIconBox,
+                          {
+                            backgroundColor: 'rgba(75, 226, 119, 0.15)',
+                            borderColor: 'rgba(75, 226, 119, 0.3)',
+                          },
+                        ]}
+                      >
+                        <MaterialCommunityIcons
+                          name="scale-bathroom"
+                          size={28}
+                          color={C.primary}
+                        />
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        <ThemedText
+                          weight="700"
+                          style={{
+                            color: '#FFFFFF',
+                            fontSize: 17,
+                            fontFamily: 'Inter_700Bold',
+                          }}
+                        >
+                          Giảm cân
+                        </ThemedText>
+                        <ThemedText
+                          style={{
+                            color: C.onSurfaceVariant,
+                            fontSize: 13,
+                            fontFamily: 'Inter_400Regular',
+                            marginTop: 2,
+                            lineHeight: 18,
+                          }}
+                        >
+                          Giảm mỡ thừa với chế độ thâm hụt calo
+                        </ThemedText>
+                      </View>
+                      <View
+                        style={[
+                          s2.radioOuter,
+                          data.goal === 'lose'
+                            ? { backgroundColor: C.primary }
+                            : { borderColor: 'rgba(134, 149, 133, 0.5)', borderWidth: 2 },
+                        ]}
+                      >
+                        {data.goal === 'lose' && (
+                          <Ionicons name="checkmark" size={16} color="#003915" />
+                        )}
+                      </View>
+                    </Pressable>
+
+                    {/* Duy trì cân nặng */}
+                    <Pressable
+                      testID={`${TEST_IDS.auth.onboardingGoalPrefix}-maintain`}
+                      style={[
+                        s2.goalCard,
+                        {
+                          backgroundColor: C.inputBg,
+                          borderColor:
+                            data.goal === 'maintain' ? C.primary : C.glassBorder,
+                          borderWidth: data.goal === 'maintain' ? 2 : 1,
+                          ...(data.goal === 'maintain' && {
+                            shadowColor: C.primary,
+                            shadowOpacity: 0.2,
+                            shadowRadius: 20,
+                            elevation: 8,
+                          }),
+                        },
+                      ]}
+                      onPress={() => setData({ ...data, goal: 'maintain' as any })}
+                      accessibilityRole="radio"
+                      accessibilityState={{ checked: data.goal === 'maintain' }}
+                    >
+                      <View
+                        style={[
+                          s2.goalIconBox,
+                          {
+                            backgroundColor: 'rgba(96, 165, 250, 0.15)',
+                            borderColor: 'rgba(96, 165, 250, 0.3)',
+                          },
+                        ]}
+                      >
+                        <MaterialCommunityIcons
+                          name="scale-balance"
+                          size={28}
+                          color="#60A5FA"
+                        />
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        <ThemedText
+                          weight="700"
+                          style={{
+                            color: '#FFFFFF',
+                            fontSize: 17,
+                            fontFamily: 'Inter_700Bold',
+                          }}
+                        >
+                          Duy trì cân nặng
+                        </ThemedText>
+                        <ThemedText
+                          style={{
+                            color: C.onSurfaceVariant,
+                            fontSize: 13,
+                            fontFamily: 'Inter_400Regular',
+                            marginTop: 2,
+                            lineHeight: 18,
+                          }}
+                        >
+                          Giữ gìn sức khỏe và duy trì vóc dáng
+                        </ThemedText>
+                      </View>
+                      <View
+                        style={[
+                          s2.radioOuter,
+                          data.goal === 'maintain'
+                            ? { backgroundColor: C.primary }
+                            : { borderColor: 'rgba(134, 149, 133, 0.5)', borderWidth: 2 },
+                        ]}
+                      >
+                        {data.goal === 'maintain' && (
+                          <Ionicons name="checkmark" size={16} color="#003915" />
+                        )}
+                      </View>
+                    </Pressable>
+
+                    {/* Tăng cơ */}
+                    <Pressable
+                      testID={`${TEST_IDS.auth.onboardingGoalPrefix}-gain`}
+                      style={[
+                        s2.goalCard,
+                        {
+                          backgroundColor: C.inputBg,
+                          borderColor: data.goal === 'gain' ? C.primary : C.glassBorder,
+                          borderWidth: data.goal === 'gain' ? 2 : 1,
+                          ...(data.goal === 'gain' && {
+                            shadowColor: C.primary,
+                            shadowOpacity: 0.2,
+                            shadowRadius: 20,
+                            elevation: 8,
+                          }),
+                        },
+                      ]}
+                      onPress={() => setData({ ...data, goal: 'gain' as any })}
+                      accessibilityRole="radio"
+                      accessibilityState={{ checked: data.goal === 'gain' }}
+                    >
+                      <View
+                        style={[
+                          s2.goalIconBox,
+                          {
+                            backgroundColor: 'rgba(251, 146, 60, 0.15)',
+                            borderColor: 'rgba(251, 146, 60, 0.3)',
+                          },
+                        ]}
+                      >
+                        <MaterialCommunityIcons
+                          name="dumbbell"
+                          size={28}
+                          color="#FB923C"
+                        />
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        <ThemedText
+                          weight="700"
+                          style={{
+                            color: '#FFFFFF',
+                            fontSize: 17,
+                            fontFamily: 'Inter_700Bold',
+                          }}
+                        >
+                          Tăng cơ
+                        </ThemedText>
+                        <ThemedText
+                          style={{
+                            color: C.onSurfaceVariant,
+                            fontSize: 13,
+                            fontFamily: 'Inter_400Regular',
+                            marginTop: 2,
+                            lineHeight: 18,
+                          }}
+                        >
+                          Phát triển cơ bắp với chế độ giàu protein
+                        </ThemedText>
+                      </View>
+                      <View
+                        style={[
+                          s2.radioOuter,
+                          data.goal === 'gain'
+                            ? { backgroundColor: C.primary }
+                            : { borderColor: 'rgba(134, 149, 133, 0.5)', borderWidth: 2 },
+                        ]}
+                      >
+                        {data.goal === 'gain' && (
+                          <Ionicons name="checkmark" size={16} color="#003915" />
+                        )}
+                      </View>
+                    </Pressable>
+                  </View>
+                </ParallaxLayer>
+              </Animated.View>
+            </Tilt3DCard>
+          </Animated.View>
+        );
+
+      case 3: {
+        // Target Weight
+        const origWeight = parseFloat(data.weightKg) || 65;
+        const targetVal = targetDisplayWeight || origWeight;
+        const weightDiff = targetVal - origWeight;
+        const twPad = Math.max(targetWeightRulerWidth / 2 - 5, 0);
+        const showDiffUI = Math.abs(weightDiff) >= 0.2;
+        const origCX = (origWeight - 30) * 100;
+        const sX = targetRulerScrollXRef.current;
+        const origScrX = origCX - sX + twPad;
+        const ctrX = targetWeightRulerWidth / 2;
+        const oLeft = Math.min(origScrX, ctrX);
+        const oWidth = Math.abs(origScrX - ctrX);
+        const origMLeft = twPad + (origWeight - 30) * 100 - 1.5;
+
+        return (
+          <Animated.View entering={FadeInRight} exiting={FadeOutLeft} key="step3-tw">
+            <Tilt3DCard maxTilt={6} perspective={900} height={320}>
+              <Animated.View
+                entering={FadeInDown.delay(150).springify()}
+                style={[
+                  s.card,
+                  {
+                    backgroundColor: C.glassBg,
+                    borderColor: C.glassBorder,
+                    paddingVertical: 28,
+                  },
+                ]}
+              >
+                <ParallaxLayer depth={0.3}>
+                  <View style={s.cardHeader}>
+                    <ThemedText
+                      variant="h2"
+                      weight="700"
+                      style={{
+                        color: '#FFFFFF',
+                        fontSize: 28,
+                        textAlign: 'center',
+                        fontFamily: 'Inter_700Bold',
+                        paddingTop: 8,
+                      }}
+                    >
+                      Mục tiêu cân nặng
+                    </ThemedText>
+                    <ThemedText
+                      variant="body"
+                      style={{
+                        color: C.onSurfaceVariant,
+                        marginTop: 6,
+                        textAlign: 'center',
+                        lineHeight: 22,
+                        maxWidth: 280,
+                        fontFamily: 'Inter_500Medium',
+                      }}
+                    >
+                      Hãy cho chúng tôi biết cân nặng mà bạn mong muốn đạt được
+                    </ThemedText>
+                  </View>
+                </ParallaxLayer>
+                <ParallaxLayer depth={0.5}>
+                  <View style={{ alignItems: 'center' }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'baseline' }}>
+                      <ThemedText
+                        weight="700"
+                        style={{
+                          color: '#FFFFFF',
+                          fontSize: 64,
+                          fontFamily: 'Inter_700Bold',
+                          letterSpacing: -2,
+                          textShadowColor: 'rgba(75, 226, 119, 0.4)',
+                          textShadowOffset: { width: 0, height: 0 },
+                          textShadowRadius: 20,
+                          lineHeight: 76,
+                        }}
+                      >
+                        {targetVal.toFixed(1)}
+                      </ThemedText>
+                      <ThemedText
+                        weight="700"
+                        style={{
+                          color: C.onSurfaceVariant,
+                          fontSize: 22,
+                          fontFamily: 'Inter_700Bold',
+                          marginLeft: 4,
+                          marginBottom: 6,
+                        }}
+                      >
+                        kg
+                      </ThemedText>
+                    </View>
+                    {showDiffUI && (
+                      <View
+                        style={{
+                          marginTop: 14,
+                          paddingHorizontal: 16,
+                          paddingVertical: 6,
+                          borderRadius: 20,
+                          backgroundColor:
+                            weightDiff < 0
+                              ? 'rgba(75, 226, 119, 0.15)'
+                              : 'rgba(251, 146, 60, 0.15)',
+                          borderWidth: 1,
+                          borderColor:
+                            weightDiff < 0
+                              ? 'rgba(75, 226, 119, 0.3)'
+                              : 'rgba(251, 146, 60, 0.3)',
+                        }}
+                      >
+                        <ThemedText
+                          weight="600"
+                          style={{
+                            color: weightDiff < 0 ? C.primary : '#FB923C',
+                            fontSize: 14,
+                            fontFamily: 'Inter_600SemiBold',
+                          }}
+                        >
+                          {weightDiff > 0 ? '+' : ''}
+                          {weightDiff.toFixed(1)} kg so với hiện tại
+                        </ThemedText>
+                      </View>
+                    )}
+                  </View>
+                </ParallaxLayer>
+              </Animated.View>
+            </Tilt3DCard>
+
+            <Animated.View
+              entering={FadeInDown.delay(350).springify()}
+              style={{ marginTop: 32 }}
+            >
+              <View
+                style={{ height: 110, alignItems: 'center', justifyContent: 'flex-end' }}
+                onLayout={(e) => {
+                  const w = e.nativeEvent.layout.width;
+                  if (w > 0 && w !== targetWeightRulerWidth) setTargetWeightRulerWidth(w);
+                }}
+              >
+                <View
+                  style={{
+                    position: 'absolute',
+                    bottom: 0,
+                    height: 52,
+                    width: 3,
+                    backgroundColor: C.primary,
+                    borderRadius: 2,
+                    zIndex: 10,
+                    shadowColor: C.primary,
+                    shadowOpacity: 0.8,
+                    shadowRadius: 12,
+                    alignSelf: 'center',
+                  }}
+                />
+                {targetWeightRulerInitialized.current && (
+                  <Animated.View
+                    style={[
+                      {
+                        position: 'absolute',
+                        bottom: 0,
+                        height: 52,
+                        borderRadius: 4,
+                        zIndex: 5,
+                      },
+                      targetOverlayAnimatedStyle,
+                    ]}
+                  />
+                )}
+                <Animated.ScrollView
+                  ref={targetWeightRulerRef}
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  snapToInterval={10}
+                  decelerationRate="fast"
+                  contentContainerStyle={{
+                    paddingLeft: twPad,
+                    paddingRight: twPad,
+                    height: 110,
+                    alignItems: 'flex-end',
+                  }}
+                  onScroll={onTargetRulerScroll}
+                  onMomentumScrollEnd={(e) => {
+                    const o = e.nativeEvent.contentOffset.x;
+                    const v = Math.round((o / 100 + 30) * 10) / 10;
+                    const c = Math.max(30, Math.min(200, v));
+                    setData((p) => ({ ...p, targetWeightKg: String(c) }));
+                    setTargetDisplayWeight(c);
+                  }}
+                  onScrollEndDrag={(e) => {
+                    const o = e.nativeEvent.contentOffset.x;
+                    const v = Math.round((o / 100 + 30) * 10) / 10;
+                    const c = Math.max(30, Math.min(200, v));
+                    setData((p) => ({ ...p, targetWeightKg: String(c) }));
+                    setTargetDisplayWeight(c);
+                  }}
+                  scrollEventThrottle={16}
+                >
+                  {showDiffUI && (
+                    <View
+                      style={{
+                        position: 'absolute',
+                        bottom: 0,
+                        left: origMLeft,
+                        height: 52,
+                        width: 3,
+                        backgroundColor: 'rgba(188, 200, 185, 0.6)',
+                        borderRadius: 2,
+                        zIndex: 8,
+                      }}
+                    />
+                  )}
+                  {memoizedWeightTicks}
+                </Animated.ScrollView>
+              </View>
+            </Animated.View>
+          </Animated.View>
+        );
+      }
+
+      case 4: // Activity Level
+        return (
+          <Animated.View entering={FadeInRight} exiting={FadeOutLeft} key="step3">
+            <Tilt3DCard maxTilt={6} perspective={900} height={680}>
+              <Animated.View
+                entering={FadeInDown.delay(150).springify()}
+                style={[
+                  s.card,
+                  { backgroundColor: C.glassBg, borderColor: C.glassBorder },
+                ]}
+              >
+                {/* Header — no icon, just title + subtitle */}
+                <ParallaxLayer depth={0.3}>
+                  <View style={s.cardHeader}>
+                    <ThemedText
+                      variant="h2"
+                      weight="700"
+                      style={{
+                        color: '#FFFFFF',
+                        fontSize: 28,
+                        textAlign: 'center',
+                        fontFamily: 'Inter_700Bold',
+                        paddingTop: 8,
+                      }}
+                    >
+                      Cường độ vận động
+                    </ThemedText>
+                    <ThemedText
+                      variant="body"
+                      style={{
+                        color: C.onSurfaceVariant,
+                        marginTop: 6,
+                        textAlign: 'center',
+                        lineHeight: 22,
+                        maxWidth: 280,
+                        fontFamily: 'Inter_500Medium',
+                      }}
+                    >
+                      Chỉ số BMR sẽ được tùy chỉnh theo mức tốn năng lượng của bạn
+                    </ThemedText>
+                  </View>
+                </ParallaxLayer>
+
+                {/* Activity Selection Cards */}
+                <ParallaxLayer depth={0.5}>
+                  <View style={{ gap: 12, marginTop: 8 }}>
+                    {/* Ít vận động */}
+                    <Pressable
+                      testID={`${TEST_IDS.auth.onboardingActivityPrefix}-sedentary`}
+                      style={[
+                        s3.actCard,
+                        {
+                          backgroundColor: C.glassBg,
+                          borderColor:
+                            data.activityLevel === 'sedentary'
+                              ? C.primary
+                              : C.glassBorder,
+                          borderWidth: data.activityLevel === 'sedentary' ? 2 : 1,
+                          ...(data.activityLevel === 'sedentary' && {
+                            shadowColor: C.primary,
+                            shadowOpacity: 0.2,
+                            shadowRadius: 20,
+                            elevation: 8,
+                          }),
+                        },
+                      ]}
+                      onPress={() =>
+                        setData({ ...data, activityLevel: 'sedentary' as any })
+                      }
+                      accessibilityRole="radio"
+                      accessibilityState={{ checked: data.activityLevel === 'sedentary' }}
+                    >
+                      <View
+                        style={[
+                          s3.actIconBox,
+                          data.activityLevel === 'sedentary'
+                            ? {
+                                backgroundColor: 'rgba(75, 226, 119, 0.15)',
+                                borderColor: 'rgba(75, 226, 119, 0.3)',
+                              }
+                            : {
+                                backgroundColor: 'rgba(47, 52, 69, 0.5)',
+                                borderColor: 'rgba(61, 74, 61, 0.2)',
+                              },
+                        ]}
+                      >
+                        <MaterialCommunityIcons
+                          name="desktop-classic"
+                          size={24}
+                          color={
+                            data.activityLevel === 'sedentary' ? C.primary : '#869585'
+                          }
+                        />
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        <ThemedText
+                          weight="700"
+                          style={{
+                            color: '#FFFFFF',
+                            fontSize: 17,
+                            fontFamily: 'Inter_700Bold',
+                          }}
+                        >
+                          Ít vận động
+                        </ThemedText>
+                        <ThemedText
+                          style={{
+                            color: C.onSurfaceVariant,
+                            fontSize: 13,
+                            fontFamily: 'Inter_400Regular',
+                            marginTop: 2,
+                            lineHeight: 18,
+                          }}
+                        >
+                          Ngồi văn phòng hoặc làm việc tại nhà, ít đi lại
+                        </ThemedText>
+                      </View>
+                      <View
+                        style={[
+                          s3.radioOuter,
+                          data.activityLevel === 'sedentary'
+                            ? { backgroundColor: C.primary }
+                            : { borderColor: 'rgba(134, 149, 133, 0.5)', borderWidth: 2 },
+                        ]}
+                      >
+                        {data.activityLevel === 'sedentary' && (
+                          <Ionicons name="checkmark" size={16} color="#003915" />
+                        )}
+                      </View>
+                    </Pressable>
+
+                    {/* Vận động nhẹ */}
+                    <Pressable
+                      testID={`${TEST_IDS.auth.onboardingActivityPrefix}-light`}
+                      style={[
+                        s3.actCard,
+                        {
+                          backgroundColor: C.glassBg,
+                          borderColor:
+                            data.activityLevel === 'light' ? C.primary : C.glassBorder,
+                          borderWidth: data.activityLevel === 'light' ? 2 : 1,
+                          ...(data.activityLevel === 'light' && {
+                            shadowColor: C.primary,
+                            shadowOpacity: 0.2,
+                            shadowRadius: 20,
+                            elevation: 8,
+                          }),
+                        },
+                      ]}
+                      onPress={() => setData({ ...data, activityLevel: 'light' as any })}
+                      accessibilityRole="radio"
+                      accessibilityState={{ checked: data.activityLevel === 'light' }}
+                    >
+                      <View
+                        style={[
+                          s3.actIconBox,
+                          data.activityLevel === 'light'
+                            ? {
+                                backgroundColor: 'rgba(75, 226, 119, 0.15)',
+                                borderColor: 'rgba(75, 226, 119, 0.3)',
+                              }
+                            : {
+                                backgroundColor: 'rgba(47, 52, 69, 0.5)',
+                                borderColor: 'rgba(61, 74, 61, 0.2)',
+                              },
+                        ]}
+                      >
+                        <MaterialCommunityIcons
+                          name="walk"
+                          size={24}
+                          color={data.activityLevel === 'light' ? C.primary : '#869585'}
+                        />
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        <ThemedText
+                          weight="700"
+                          style={{
+                            color: '#FFFFFF',
+                            fontSize: 17,
+                            fontFamily: 'Inter_700Bold',
+                          }}
+                        >
+                          Vận động nhẹ
+                        </ThemedText>
+                        <ThemedText
+                          style={{
+                            color: C.onSurfaceVariant,
+                            fontSize: 13,
+                            fontFamily: 'Inter_400Regular',
+                            marginTop: 2,
+                            lineHeight: 18,
+                          }}
+                        >
+                          Tập thể dục nhẹ nhàng 1-3 ngày/tuần
+                        </ThemedText>
+                      </View>
+                      <View
+                        style={[
+                          s3.radioOuter,
+                          data.activityLevel === 'light'
+                            ? { backgroundColor: C.primary }
+                            : { borderColor: 'rgba(134, 149, 133, 0.5)', borderWidth: 2 },
+                        ]}
+                      >
+                        {data.activityLevel === 'light' && (
+                          <Ionicons name="checkmark" size={16} color="#003915" />
+                        )}
+                      </View>
+                    </Pressable>
+
+                    {/* Vận động vừa */}
+                    <Pressable
+                      testID={`${TEST_IDS.auth.onboardingActivityPrefix}-moderate`}
+                      style={[
+                        s3.actCard,
+                        {
+                          backgroundColor: C.glassBg,
+                          borderColor:
+                            data.activityLevel === 'moderate' ? C.primary : C.glassBorder,
+                          borderWidth: data.activityLevel === 'moderate' ? 2 : 1,
+                          ...(data.activityLevel === 'moderate' && {
+                            shadowColor: C.primary,
+                            shadowOpacity: 0.2,
+                            shadowRadius: 20,
+                            elevation: 8,
+                          }),
+                        },
+                      ]}
+                      onPress={() =>
+                        setData({ ...data, activityLevel: 'moderate' as any })
+                      }
+                      accessibilityRole="radio"
+                      accessibilityState={{ checked: data.activityLevel === 'moderate' }}
+                    >
+                      <View
+                        style={[
+                          s3.actIconBox,
+                          data.activityLevel === 'moderate'
+                            ? {
+                                backgroundColor: 'rgba(75, 226, 119, 0.15)',
+                                borderColor: 'rgba(75, 226, 119, 0.3)',
+                              }
+                            : {
+                                backgroundColor: 'rgba(47, 52, 69, 0.5)',
+                                borderColor: 'rgba(61, 74, 61, 0.2)',
+                              },
+                        ]}
+                      >
+                        <MaterialCommunityIcons
+                          name="dumbbell"
+                          size={24}
+                          color={
+                            data.activityLevel === 'moderate' ? C.primary : '#869585'
+                          }
+                        />
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        <ThemedText
+                          weight="700"
+                          style={{
+                            color: '#FFFFFF',
+                            fontSize: 17,
+                            fontFamily: 'Inter_700Bold',
+                          }}
+                        >
+                          Vận động vừa
+                        </ThemedText>
+                        <ThemedText
+                          style={{
+                            color: C.onSurfaceVariant,
+                            fontSize: 13,
+                            fontFamily: 'Inter_400Regular',
+                            marginTop: 2,
+                            lineHeight: 18,
+                          }}
+                        >
+                          Tập thể thao 3-5 ngày/tuần
+                        </ThemedText>
+                      </View>
+                      <View
+                        style={[
+                          s3.radioOuter,
+                          data.activityLevel === 'moderate'
+                            ? { backgroundColor: C.primary }
+                            : { borderColor: 'rgba(134, 149, 133, 0.5)', borderWidth: 2 },
+                        ]}
+                      >
+                        {data.activityLevel === 'moderate' && (
+                          <Ionicons name="checkmark" size={16} color="#003915" />
+                        )}
+                      </View>
+                    </Pressable>
+
+                    {/* Vận động nhiều */}
+                    <Pressable
+                      testID={`${TEST_IDS.auth.onboardingActivityPrefix}-active`}
+                      style={[
+                        s3.actCard,
+                        {
+                          backgroundColor: C.glassBg,
+                          borderColor:
+                            data.activityLevel === 'active' ? C.primary : C.glassBorder,
+                          borderWidth: data.activityLevel === 'active' ? 2 : 1,
+                          ...(data.activityLevel === 'active' && {
+                            shadowColor: C.primary,
+                            shadowOpacity: 0.2,
+                            shadowRadius: 20,
+                            elevation: 8,
+                          }),
+                        },
+                      ]}
+                      onPress={() => setData({ ...data, activityLevel: 'active' as any })}
+                      accessibilityRole="radio"
+                      accessibilityState={{ checked: data.activityLevel === 'active' }}
+                    >
+                      <View
+                        style={[
+                          s3.actIconBox,
+                          data.activityLevel === 'active'
+                            ? {
+                                backgroundColor: 'rgba(75, 226, 119, 0.15)',
+                                borderColor: 'rgba(75, 226, 119, 0.3)',
+                              }
+                            : {
+                                backgroundColor: 'rgba(47, 52, 69, 0.5)',
+                                borderColor: 'rgba(61, 74, 61, 0.2)',
+                              },
+                        ]}
+                      >
+                        <MaterialCommunityIcons
+                          name="lightning-bolt"
+                          size={24}
+                          color={data.activityLevel === 'active' ? C.primary : '#869585'}
+                        />
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        <ThemedText
+                          weight="700"
+                          style={{
+                            color: '#FFFFFF',
+                            fontSize: 17,
+                            fontFamily: 'Inter_700Bold',
+                          }}
+                        >
+                          Vận động nhiều
+                        </ThemedText>
+                        <ThemedText
+                          style={{
+                            color: C.onSurfaceVariant,
+                            fontSize: 13,
+                            fontFamily: 'Inter_400Regular',
+                            marginTop: 2,
+                            lineHeight: 18,
+                          }}
+                        >
+                          Luyện tập cường độ cao 6-7 ngày/tuần
+                        </ThemedText>
+                      </View>
+                      <View
+                        style={[
+                          s3.radioOuter,
+                          data.activityLevel === 'active'
+                            ? { backgroundColor: C.primary }
+                            : { borderColor: 'rgba(134, 149, 133, 0.5)', borderWidth: 2 },
+                        ]}
+                      >
+                        {data.activityLevel === 'active' && (
+                          <Ionicons name="checkmark" size={16} color="#003915" />
+                        )}
+                      </View>
+                    </Pressable>
+                  </View>
+                </ParallaxLayer>
+              </Animated.View>
+            </Tilt3DCard>
+          </Animated.View>
+        );
+
+      case 5: // Result — Emerald Nebula AI Analysis
+        return (
+          <Animated.View entering={FadeInRight} key="step5-nebula" style={{ flex: 1 }}>
+            {/* ─── AI Core Orbital Ring ─── */}
+            <View style={{ alignItems: 'center', marginBottom: 32 }}>
+              <View
+                style={{
+                  width: 220,
+                  height: 220,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                {/* Background glow */}
+                <View
+                  style={{
+                    position: 'absolute',
+                    width: 260,
+                    height: 260,
+                    borderRadius: 130,
+                    backgroundColor: 'rgba(75, 226, 119, 0.06)',
+                  }}
+                />
+
+                {/* Outer orbital ring */}
+                <Animated.View
+                  style={[
+                    {
+                      position: 'absolute',
+                      width: 220,
+                      height: 220,
+                      borderRadius: 110,
+                      borderWidth: 1,
+                      borderColor: 'rgba(75, 226, 119, 0.15)',
+                    },
+                    orbitalSpinStyle,
+                  ]}
+                >
+                  <View
+                    style={{
+                      position: 'absolute',
+                      top: -4,
+                      left: '50%',
+                      marginLeft: -4,
+                      width: 8,
+                      height: 8,
+                      borderRadius: 4,
+                      backgroundColor: C.primary,
+                      shadowColor: C.primary,
+                      shadowOpacity: 0.9,
+                      shadowRadius: 8,
+                    }}
+                  />
+                </Animated.View>
+
+                {/* Middle dashed ring */}
+                <Animated.View
+                  style={[
+                    {
+                      position: 'absolute',
+                      width: 170,
+                      height: 170,
+                      borderRadius: 85,
+                      borderWidth: 1.5,
+                      borderColor: 'rgba(75, 226, 119, 0.25)',
+                      borderStyle: 'dashed',
+                    },
+                    orbitalSpinReverseStyle,
+                  ]}
+                />
+
+                {/* Inner glowing core */}
+                <Animated.View
+                  style={[
+                    {
+                      width: 120,
+                      height: 120,
+                      borderRadius: 60,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      backgroundColor: C.surfaceContainerHigh,
+                    },
+                    corePulseStyle,
+                  ]}
+                >
+                  <View
+                    style={{
+                      position: 'absolute',
+                      width: 108,
+                      height: 108,
+                      borderRadius: 54,
+                      borderWidth: 3,
+                      borderColor: 'rgba(75, 226, 119, 0.08)',
+                    }}
+                  />
+                  <LinearGradient
+                    colors={['#6BFF8F', '#4BE277', '#22C55E']}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={{
+                      width: 88,
+                      height: 88,
+                      borderRadius: 44,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      shadowColor: C.primary,
+                      shadowOpacity: 0.5,
+                      shadowRadius: 24,
+                    }}
+                  >
+                    <MaterialCommunityIcons name="creation" size={40} color="#003915" />
+                  </LinearGradient>
+                </Animated.View>
+              </View>
+            </View>
+
+            {/* ─── Title ─── */}
+            <View style={{ alignItems: 'center', marginBottom: 28 }}>
+              <ThemedText
+                variant="h2"
+                weight="700"
+                style={{
+                  color: '#FFFFFF',
+                  fontSize: 28,
+                  textAlign: 'center',
+                  fontFamily: 'Inter_700Bold',
+                }}
+              >
+                {analysisStep >= 5
+                  ? 'Lộ trình đã sẵn sàng!'
+                  : analysisStarted
+                    ? 'Đang thiết lập lộ trình...'
+                    : 'Sẵn sàng phân tích'}
+              </ThemedText>
+              <ThemedText
+                variant="body"
+                style={{
+                  color: C.onSurfaceVariant,
+                  marginTop: 6,
+                  textAlign: 'center',
+                  fontFamily: 'Inter_500Medium',
+                  lineHeight: 22,
+                  maxWidth: 280,
+                }}
+              >
+                {analysisStep >= 5
+                  ? 'Hệ thống AI đã hoàn tất phân tích dữ liệu của bạn.'
+                  : analysisStarted
+                    ? 'Khởi tạo lộ trình sức khỏe cá nhân của bạn.'
+                    : 'Nhấn nút bên dưới để bắt đầu.'}
+              </ThemedText>
+            </View>
+
+            {/* ─── Analysis Chips ─── */}
+            <View style={{ gap: 10, paddingHorizontal: 8 }}>
+              {/* Chip 1: Phân tích chỉ số cơ thể */}
+              <Animated.View
+                entering={FadeInDown.delay(200).springify()}
+                style={[
+                  s5.chipRow,
+                  {
+                    backgroundColor:
+                      analysisStep === 1
+                        ? C.surfaceContainerHigh
+                        : analysisStep > 1
+                          ? C.surfaceContainerLow
+                          : 'rgba(9, 14, 28, 0.5)',
+                    borderLeftColor:
+                      analysisStep >= 1
+                        ? 'rgba(75, 226, 119, 0.5)'
+                        : 'rgba(75, 226, 119, 0.15)',
+                    opacity: analysisStep >= 1 ? 1 : 0.4,
+                  },
+                ]}
+              >
+                {analysisStep > 1 ? (
+                  <Ionicons name="checkmark-circle" size={20} color={C.primary} />
+                ) : analysisStep === 1 ? (
+                  <Animated.View style={chipBlinkStyle}>
+                    <View style={s5.chipActiveDot} />
+                  </Animated.View>
+                ) : (
+                  <View style={s5.chipPendingDot} />
+                )}
+                <ThemedText
+                  style={[
+                    s5.chipText,
+                    analysisStep === 1 && {
+                      color: C.primary,
+                      fontFamily: 'Inter_600SemiBold',
+                    },
+                    analysisStep > 1 && { color: '#FFFFFF' },
+                  ]}
+                >
+                  {analysisStep === 1
+                    ? 'Đang phân tích chỉ số cơ thể...'
+                    : 'Phân tích chỉ số cơ thể'}
+                </ThemedText>
+              </Animated.View>
+
+              {/* Chip 2: Xây dựng biểu đồ TDEE */}
+              <Animated.View
+                entering={FadeInDown.delay(350).springify()}
+                style={[
+                  s5.chipRow,
+                  {
+                    backgroundColor:
+                      analysisStep === 2
+                        ? C.surfaceContainerHigh
+                        : analysisStep > 2
+                          ? C.surfaceContainerLow
+                          : 'rgba(9, 14, 28, 0.5)',
+                    borderLeftColor:
+                      analysisStep >= 2
+                        ? 'rgba(75, 226, 119, 0.5)'
+                        : 'rgba(75, 226, 119, 0.15)',
+                    opacity: analysisStep >= 2 ? 1 : 0.4,
+                  },
+                ]}
+              >
+                {analysisStep > 2 ? (
+                  <Ionicons name="checkmark-circle" size={20} color={C.primary} />
+                ) : analysisStep === 2 ? (
+                  <Animated.View style={chipBlinkStyle}>
+                    <View style={s5.chipActiveDot} />
+                  </Animated.View>
+                ) : (
+                  <View style={s5.chipPendingDot} />
+                )}
+                <ThemedText
+                  style={[
+                    s5.chipText,
+                    analysisStep === 2 && {
+                      color: C.primary,
+                      fontFamily: 'Inter_600SemiBold',
+                    },
+                    analysisStep > 2 && { color: '#FFFFFF' },
+                  ]}
+                >
+                  {analysisStep === 2
+                    ? 'Đang xây dựng biểu đồ TDEE...'
+                    : 'Xây dựng biểu đồ TDEE'}
+                </ThemedText>
+              </Animated.View>
+
+              {/* Chip 3: Lên thực đơn cá nhân hóa */}
+              <Animated.View
+                entering={FadeInDown.delay(500).springify()}
+                style={[
+                  s5.chipRow,
+                  {
+                    backgroundColor:
+                      analysisStep === 3
+                        ? C.surfaceContainerHigh
+                        : analysisStep > 3
+                          ? C.surfaceContainerLow
+                          : 'rgba(9, 14, 28, 0.5)',
+                    borderLeftColor:
+                      analysisStep >= 3
+                        ? 'rgba(75, 226, 119, 0.5)'
+                        : 'rgba(75, 226, 119, 0.15)',
+                    opacity: analysisStep >= 3 ? 1 : 0.4,
+                  },
+                ]}
+              >
+                {analysisStep > 3 ? (
+                  <Ionicons name="checkmark-circle" size={20} color={C.primary} />
+                ) : analysisStep === 3 ? (
+                  <Animated.View style={chipBlinkStyle}>
+                    <View style={s5.chipActiveDot} />
+                  </Animated.View>
+                ) : (
+                  <View style={s5.chipPendingDot} />
+                )}
+                <ThemedText
+                  style={[
+                    s5.chipText,
+                    analysisStep === 3 && {
+                      color: C.primary,
+                      fontFamily: 'Inter_600SemiBold',
+                    },
+                    analysisStep > 3 && { color: '#FFFFFF' },
+                  ]}
+                >
+                  {analysisStep === 3
+                    ? 'Đang lên thực đơn cá nhân hóa...'
+                    : 'Lên thực đơn cá nhân hóa'}
+                </ThemedText>
+              </Animated.View>
+
+              {/* Chip 4: Dự đoán lộ trình */}
+              <Animated.View
+                entering={FadeInDown.delay(650).springify()}
+                style={[
+                  s5.chipRow,
+                  {
+                    backgroundColor:
+                      analysisStep === 4
+                        ? C.surfaceContainerHigh
+                        : analysisStep > 4
+                          ? C.surfaceContainerLow
+                          : 'rgba(9, 14, 28, 0.5)',
+                    borderLeftColor:
+                      analysisStep >= 4
+                        ? 'rgba(75, 226, 119, 0.5)'
+                        : 'rgba(75, 226, 119, 0.15)',
+                    opacity: analysisStep >= 4 ? 1 : 0.4,
+                  },
+                ]}
+              >
+                {analysisStep > 4 ? (
+                  <Ionicons name="checkmark-circle" size={20} color={C.primary} />
+                ) : analysisStep === 4 ? (
+                  <Animated.View style={chipBlinkStyle}>
+                    <View style={s5.chipActiveDot} />
+                  </Animated.View>
+                ) : (
+                  <View style={s5.chipPendingDot} />
+                )}
+                <ThemedText
+                  style={[
+                    s5.chipText,
+                    analysisStep === 4 && {
+                      color: C.primary,
+                      fontFamily: 'Inter_600SemiBold',
+                    },
+                    analysisStep > 4 && { color: '#FFFFFF' },
+                  ]}
+                >
+                  {analysisStep === 4
+                    ? data.goal === 'lose'
+                      ? 'Đang dự đoán lộ trình giảm cân...'
+                      : data.goal === 'gain'
+                        ? 'Đang dự đoán lộ trình tăng cơ...'
+                        : 'Đang dự đoán lộ trình sức khỏe...'
+                    : data.goal === 'lose'
+                      ? 'Dự đoán lộ trình giảm cân'
+                      : data.goal === 'gain'
+                        ? 'Dự đoán lộ trình tăng cơ'
+                        : 'Dự đoán lộ trình sức khỏe'}
+                </ThemedText>
+              </Animated.View>
+            </View>
+
+            {/* ─── Error state ─── */}
+            {calculationError && !aiResult && (
+              <Animated.View
+                entering={FadeInDown.delay(100).springify()}
+                style={{ marginTop: 20, paddingHorizontal: 8 }}
+              >
+                <View
+                  style={[
+                    s5.chipRow,
+                    {
+                      backgroundColor: 'rgba(147, 0, 10, 0.15)',
+                      borderLeftColor: 'rgba(255, 180, 171, 0.5)',
+                    },
+                  ]}
+                >
+                  <Ionicons name="alert-circle" size={20} color="#FFB4AB" />
+                  <View style={{ flex: 1 }}>
+                    <ThemedText
+                      style={{
+                        color: '#FFB4AB',
+                        fontSize: 13,
+                        fontFamily: 'Inter_500Medium',
+                      }}
+                    >
+                      {calculationError}
+                    </ThemedText>
+                  </View>
+                </View>
+                <Pressable
+                  onPress={() => {
+                    setAiResult(null);
+                    setCalculationError(null);
+                    setAnalysisStep(0);
+                    setAnalysisProgress(0);
+                    startAnalysis();
+                  }}
+                  testID={TEST_IDS.auth.onboardingRetryButton}
+                  style={({ pressed }) => [s5.retryBtn, pressed && { opacity: 0.7 }]}
+                >
+                  <Ionicons name="refresh" size={18} color={C.primary} />
+                  <ThemedText
+                    style={{
+                      color: C.primary,
+                      fontSize: 14,
+                      fontFamily: 'Inter_600SemiBold',
+                    }}
+                  >
+                    Thử lại
+                  </ThemedText>
+                </Pressable>
+              </Animated.View>
+            )}
+
+            {/* ─── Result summary (when AI completes) ─── */}
+            {aiResult && (
+              <Animated.View
+                entering={FadeInDown.delay(200).springify()}
+                style={{ marginTop: 24 }}
+              >
+                <View
+                  style={[
+                    s5.resultCard,
+                    { backgroundColor: C.glassBg, borderColor: C.glassBorder },
+                  ]}
+                  testID={TEST_IDS.auth.onboardingResultCard}
+                >
+                  <View style={{ gap: 24, paddingVertical: 8 }}>
+                    {/* Calories Highlighted */}
+                    <View style={{ alignItems: 'center' }}>
+                      <View
+                        style={{
+                          width: 140,
+                          height: 140,
+                          borderRadius: 70,
+                          borderWidth: 2,
+                          borderColor: 'rgba(75, 226, 119, 0.4)',
+                          justifyContent: 'center',
+                          alignItems: 'center',
+                          backgroundColor: 'rgba(75, 226, 119, 0.05)',
+                          shadowColor: '#4BE277',
+                          shadowOffset: { width: 0, height: 0 },
+                          shadowOpacity: 0.3,
+                          shadowRadius: 15,
+                          elevation: 10,
+                        }}
+                      >
+                        <ThemedText
+                          style={{
+                            fontSize: 12,
+                            color: C.onSurfaceVariant,
+                            fontFamily: 'Inter_600SemiBold',
+                            letterSpacing: 2,
+                            marginBottom: 4,
+                          }}
+                        >
+                          CALORIES
+                        </ThemedText>
+                        <ThemedText
+                          weight="800"
+                          style={{
+                            color: '#4BE277',
+                            fontSize: 36,
+                            fontFamily: 'Inter_800ExtraBold',
+                            lineHeight: 46,
+                            textShadowColor: 'rgba(75, 226, 119, 0.5)',
+                            textShadowOffset: { width: 0, height: 0 },
+                            textShadowRadius: 10,
+                          }}
+                        >
+                          {aiResult.calories}
+                        </ThemedText>
+                        <ThemedText
+                          style={{
+                            fontSize: 12,
+                            color: C.onSurfaceVariant,
+                            fontFamily: 'Inter_500Medium',
+                            marginTop: 2,
+                          }}
+                        >
+                          kcal / ngày
+                        </ThemedText>
+                      </View>
+                    </View>
+
+                    {/* Macros Row */}
+                    <View
+                      style={{
+                        flexDirection: 'row',
+                        justifyContent: 'space-between',
+                        paddingHorizontal: 16,
+                      }}
+                    >
+                      {/* Protein */}
+                      <View
+                        style={{
+                          alignItems: 'center',
+                          flex: 1,
+                          borderRightWidth: 1,
+                          borderRightColor: 'rgba(255,255,255,0.08)',
+                        }}
+                      >
+                        <ThemedText
+                          style={{
+                            fontSize: 11,
+                            color: C.onSurfaceVariant,
+                            fontFamily: 'Inter_600SemiBold',
+                            letterSpacing: 1,
+                            marginBottom: 8,
+                          }}
+                        >
+                          PROTEIN
+                        </ThemedText>
+                        <ThemedText
+                          weight="700"
+                          style={{
+                            color: '#FFFFFF',
+                            fontSize: 22,
+                            fontFamily: 'Inter_700Bold',
+                          }}
+                        >
+                          {aiResult.protein}
+                          <ThemedText style={{ fontSize: 13, color: C.onSurfaceVariant }}>
+                            g
+                          </ThemedText>
+                        </ThemedText>
+                      </View>
+
+                      {/* Carbs */}
+                      <View
+                        style={{
+                          alignItems: 'center',
+                          flex: 1,
+                          borderRightWidth: 1,
+                          borderRightColor: 'rgba(255,255,255,0.08)',
+                        }}
+                      >
+                        <ThemedText
+                          style={{
+                            fontSize: 11,
+                            color: C.onSurfaceVariant,
+                            fontFamily: 'Inter_600SemiBold',
+                            letterSpacing: 1,
+                            marginBottom: 8,
+                          }}
+                        >
+                          CARBS
+                        </ThemedText>
+                        <ThemedText
+                          weight="700"
+                          style={{
+                            color: '#FFFFFF',
+                            fontSize: 22,
+                            fontFamily: 'Inter_700Bold',
+                          }}
+                        >
+                          {aiResult.carbs}
+                          <ThemedText style={{ fontSize: 13, color: C.onSurfaceVariant }}>
+                            g
+                          </ThemedText>
+                        </ThemedText>
+                      </View>
+
+                      {/* Fat */}
+                      <View style={{ alignItems: 'center', flex: 1 }}>
+                        <ThemedText
+                          style={{
+                            fontSize: 11,
+                            color: C.onSurfaceVariant,
+                            fontFamily: 'Inter_600SemiBold',
+                            letterSpacing: 1,
+                            marginBottom: 8,
+                          }}
+                        >
+                          FAT
+                        </ThemedText>
+                        <ThemedText
+                          weight="700"
+                          style={{
+                            color: '#FFFFFF',
+                            fontSize: 22,
+                            fontFamily: 'Inter_700Bold',
+                          }}
+                        >
+                          {aiResult.fat}
+                          <ThemedText style={{ fontSize: 13, color: C.onSurfaceVariant }}>
+                            g
+                          </ThemedText>
+                        </ThemedText>
+                      </View>
+                    </View>
+                  </View>
+                  {aiResult.offlineMode && (
+                    <View
+                      style={{
+                        marginTop: 12,
+                        paddingHorizontal: 12,
+                        paddingVertical: 6,
+                        borderRadius: 999,
+                        backgroundColor: 'rgba(251, 191, 36, 0.16)',
+                        borderWidth: 1,
+                        borderColor: 'rgba(251, 191, 36, 0.45)',
+                        alignSelf: 'center',
+                      }}
+                    >
+                      <ThemedText
+                        style={{
+                          fontSize: 11,
+                          color: '#FBBF24',
+                          fontFamily: 'Inter_600SemiBold',
+                        }}
+                      >
+                        Offline mode
+                      </ThemedText>
+                    </View>
+                  )}
+                </View>
+              </Animated.View>
+            )}
+
+            {/* ─── Progress Footer ─── */}
+            <View style={{ marginTop: 28, paddingHorizontal: 8 }}>
+              <View
+                style={{
+                  flexDirection: 'row',
+                  justifyContent: 'space-between',
+                  alignItems: 'flex-end',
+                  marginBottom: 10,
+                }}
+              >
+                <View>
+                  <ThemedText
+                    style={{
+                      fontSize: 10,
+                      color: C.onSurfaceVariant,
+                      fontFamily: 'Inter_700Bold',
+                      letterSpacing: 1,
+                      textTransform: 'uppercase',
+                    }}
+                  >
+                    Tiến độ tổng quát
+                  </ThemedText>
+                  <ThemedText
+                    weight="700"
+                    style={{
+                      color: '#FFFFFF',
+                      fontSize: 24,
+                      fontFamily: 'Inter_700Bold',
+                      marginTop: 2,
+                    }}
+                  >
+                    {analysisProgress}%
+                  </ThemedText>
+                </View>
+                <View
+                  style={{
+                    paddingHorizontal: 12,
+                    paddingVertical: 5,
+                    backgroundColor: 'rgba(75, 226, 119, 0.1)',
+                    borderRadius: 999,
+                  }}
+                >
+                  <ThemedText
+                    style={{
+                      fontSize: 12,
+                      color: C.primary,
+                      fontFamily: 'Inter_500Medium',
+                    }}
+                  >
+                    {analysisProgress >= 100
+                      ? 'Hoàn tất'
+                      : analysisStarted
+                        ? 'Đang phân tích'
+                        : 'Chưa bắt đầu'}
+                  </ThemedText>
+                </View>
+              </View>
+              <View
+                style={{
+                  height: 10,
+                  backgroundColor: C.surfaceContainerLowest,
+                  borderRadius: 5,
+                  overflow: 'hidden',
+                  padding: 2,
+                }}
+              >
+                <LinearGradient
+                  colors={['#4BE277', '#22C55E']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={{
+                    height: '100%',
+                    borderRadius: 4,
+                    width: `${analysisProgress}%`,
+                    shadowColor: C.primary,
+                    shadowOpacity: 0.3,
+                    shadowRadius: 8,
+                  }}
                 />
               </View>
             </View>
-
-            <View style={[glass.card, { marginTop: 20 }]}>
-              <ThemedText
-                variant="bodySmall"
-                color="textSecondary"
-                style={{ textAlign: 'center' }}
-              >
-                {t('onboarding.ai_calculation_tip')}
-              </ThemedText>
-            </View>
-          </Animated.View>
-        );
-
-      case 2: // Goal
-        return (
-          <Animated.View entering={FadeInRight} exiting={FadeOutLeft} key="step2">
-            <View style={styles.optionGrid} accessibilityRole="radiogroup" accessibilityLabel="Chọn mục tiêu">
-              {GOAL_OPTIONS.map((goal) => {
-                const goalColor = theme.colors[goal.colorKey];
-                return (
-                  <Pressable
-                    key={goal.value}
-                    testID={`${TEST_IDS.auth.onboardingGoalPrefix}-${goal.value}`}
-                    style={[
-                      styles.goalCard,
-                      {
-                        backgroundColor:
-                          data.goal === goal.value
-                            ? `${goalColor}20`
-                            : isDark
-                              ? 'rgba(255,255,255,0.05)'
-                              : 'rgba(0,0,0,0.03)',
-                        borderColor: data.goal === goal.value ? goalColor : 'transparent',
-                      },
-                    ]}
-                    onPress={() => setData({ ...data, goal: goal.value as any })}
-                    accessibilityRole="radio"
-                    accessibilityLabel={`${goal.label}: ${goal.desc}`}
-                    accessibilityState={{ checked: data.goal === goal.value }}
-                  >
-                    <ThemedText
-                      style={{
-                        fontSize: theme.typography.h1.fontSize,
-                        lineHeight: theme.typography.h1.lineHeight,
-                      }}
-                    >
-                      {goal.icon}
-                    </ThemedText>
-                    <ThemedText
-                      weight="600"
-                      style={{
-                        marginTop: theme.spacing.sm,
-                        color: data.goal === goal.value ? goalColor : theme.colors.text,
-                      }}
-                    >
-                      {goal.label}
-                    </ThemedText>
-                    <ThemedText
-                      variant="caption"
-                      color="textSecondary"
-                      style={{ textAlign: 'center', marginTop: theme.spacing.xs }}
-                    >
-                      {goal.desc}
-                    </ThemedText>
-                  </Pressable>
-                );
-              })}
-            </View>
-          </Animated.View>
-        );
-
-      case 3: // Activity Level
-        return (
-          <Animated.View entering={FadeInRight} exiting={FadeOutLeft} key="step3" accessibilityRole="radiogroup" accessibilityLabel="Chọn mức độ vận động">
-            {ACTIVITY_OPTIONS.map((act) => (
-              <Pressable
-                key={act.value}
-                testID={`${TEST_IDS.auth.onboardingActivityPrefix}-${act.value}`}
-                style={[
-                  styles.activityCard,
-                  {
-                    backgroundColor:
-                      data.activityLevel === act.value
-                        ? theme.colors.primaryLight
-                        : isDark
-                          ? 'rgba(255,255,255,0.05)'
-                          : 'rgba(0,0,0,0.03)',
-                    borderColor:
-                      data.activityLevel === act.value
-                        ? theme.colors.primary
-                        : 'transparent',
-                  },
-                ]}
-                onPress={() => setData({ ...data, activityLevel: act.value as any })}
-                accessibilityRole="radio"
-                accessibilityLabel={`${act.label}: ${act.desc}`}
-                accessibilityState={{ checked: data.activityLevel === act.value }}
-              >
-                <ThemedText style={{ fontSize: 28, lineHeight: 32 }}>{act.icon}</ThemedText>
-                <View style={{ flex: 1 }}>
-                  <ThemedText
-                    weight={data.activityLevel === act.value ? '600' : '400'}
-                    color={data.activityLevel === act.value ? 'primary' : undefined}
-                  >
-                    {act.label}
-                  </ThemedText>
-                  <ThemedText variant="caption" color="textSecondary">
-                    {act.desc}
-                  </ThemedText>
-                </View>
-              </Pressable>
-            ))}
-          </Animated.View>
-        );
-
-      case 4: // Result
-        return (
-          <Animated.View entering={FadeInRight} key="step4">
-            {isCalculating ? (
-              <View style={{ alignItems: 'center', paddingVertical: 40 }}>
-                <ActivityIndicator size="large" color={theme.colors.primary} />
-                <ThemedText style={{ marginTop: 16 }}>
-                  {t('onboarding.calculating')}
-                </ThemedText>
-              </View>
-            ) : aiResult ? (
-              <View style={[glass.card, styles.resultCard]} testID={TEST_IDS.auth.onboardingResultCard}>
-                <ThemedText style={{ fontSize: 48 }}>🎉</ThemedText>
-                <ThemedText variant="h2" style={{ marginTop: 12 }}>
-                  {t('onboarding.daily_goal')}
-                </ThemedText>
-                {aiResult.offlineMode ? (
-                  <View style={styles.offlineBadge}>
-                    <ThemedText variant="caption" weight="600">
-                      Offline mode
-                    </ThemedText>
-                  </View>
-                ) : null}
-
-                <View style={styles.resultRow}>
-                  <View style={styles.resultItem}>
-                    <ThemedText style={{ fontSize: 24 }}>🔥</ThemedText>
-                    <ThemedText variant="h3" color="primary">
-                      {aiResult.calories}
-                    </ThemedText>
-                    <ThemedText variant="caption" color="textSecondary">
-                      kcal
-                    </ThemedText>
-                  </View>
-                  <View style={styles.resultItem}>
-                    <ThemedText style={{ fontSize: 24 }}>💪</ThemedText>
-                    <ThemedText variant="h3">{aiResult.protein}g</ThemedText>
-                    <ThemedText variant="caption" color="textSecondary">
-                      Protein
-                    </ThemedText>
-                  </View>
-                  <View style={styles.resultItem}>
-                    <ThemedText style={{ fontSize: 24 }}>🍞</ThemedText>
-                    <ThemedText variant="h3">{aiResult.carbs}g</ThemedText>
-                    <ThemedText variant="caption" color="textSecondary">
-                      Carbs
-                    </ThemedText>
-                  </View>
-                  <View style={styles.resultItem}>
-                    <ThemedText style={{ fontSize: 24 }}>🥑</ThemedText>
-                    <ThemedText variant="h3">{aiResult.fat}g</ThemedText>
-                    <ThemedText variant="caption" color="textSecondary">
-                      Fat
-                    </ThemedText>
-                  </View>
-                </View>
-                {aiResult.offlineMode ? (
-                  <ThemedText variant="caption" color="textSecondary" style={styles.offlineNote}>
-                    {aiResult.explanation ?? 'Đang dùng công thức chuẩn để hoàn tất onboarding.'}
-                  </ThemedText>
-                ) : null}
-              </View>
-            ) : (
-              <View style={[glass.card, styles.resultCard]} testID={TEST_IDS.auth.onboardingErrorCard}>
-                <ThemedText style={{ fontSize: 40 }}>⚠️</ThemedText>
-                <ThemedText variant="h3" style={{ marginTop: 12, textAlign: 'center' }}>
-                  Chưa thể tạo mục tiêu dinh dưỡng
-                </ThemedText>
-                <ThemedText
-                  variant="bodySmall"
-                  color="textSecondary"
-                  style={{ marginTop: 12, textAlign: 'center' }}
-                >
-                  {calculationError ?? 'Vui lòng thử lại sau khi kiểm tra backend và dịch vụ AI.'}
-                </ThemedText>
-                <View style={{ width: '100%', marginTop: 20 }}>
-                  <Button
-                    title="Thử lại"
-                    variant="secondary"
-                    onPress={() => {
-                      setAiResult(null);
-                      setCalculationError(null);
-                      calculateNutrition();
-                    }}
-                    testID={TEST_IDS.auth.onboardingRetryButton}
-                  />
-                </View>
-              </View>
-            )}
           </Animated.View>
         );
 
@@ -842,107 +2912,758 @@ const OnboardingScreen = (): React.ReactElement => {
     }
   };
 
+  /* ─── Render footer button (Emerald Nebula for step 0) ─── */
+  const renderFooterButton = () => {
+    if (currentStep <= 4) {
+      return (
+        <View style={s.nebulaFooter}>
+          <Pressable
+            testID={TEST_IDS.auth.onboardingNextButton}
+            onPress={handleNext}
+            disabled={!canProceed()}
+            style={({ pressed }) => [
+              s.nebulaCTA,
+              { width: '100%' },
+              pressed && { transform: [{ scale: 0.97 }] },
+              !canProceed() && { opacity: 0.5 },
+            ]}
+          >
+            <LinearGradient
+              colors={['#6BFF8F', '#4BE277', '#22C55E']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={StyleSheet.absoluteFill}
+            />
+            <LinearGradient
+              colors={['rgba(255,255,255,0.25)', 'rgba(255,255,255,0.05)', 'transparent']}
+              start={{ x: 0.2, y: 0 }}
+              end={{ x: 0.8, y: 1 }}
+              style={StyleSheet.absoluteFill}
+            />
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              <ThemedText
+                variant="body"
+                weight="700"
+                style={{ color: C.onPrimary, fontSize: 18 }}
+              >
+                Tiếp tục
+              </ThemedText>
+              <Ionicons name="arrow-forward" size={20} color={C.onPrimary} />
+            </View>
+          </Pressable>
+        </View>
+      );
+    }
+
+    // Step 5: Show different buttons based on analysis state
+    if (currentStep === 5) {
+      // Before analysis starts: show "Bắt đầu phân tích"
+      if (!analysisStarted) {
+        return (
+          <View style={s.nebulaFooter}>
+            <Pressable
+              testID={TEST_IDS.auth.onboardingNextButton}
+              onPress={startAnalysis}
+              style={({ pressed }) => [
+                s.nebulaCTA,
+                { width: '100%' },
+                pressed && { transform: [{ scale: 0.97 }] },
+              ]}
+            >
+              <LinearGradient
+                colors={['#6BFF8F', '#4BE277', '#22C55E']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={StyleSheet.absoluteFill}
+              />
+              <LinearGradient
+                colors={[
+                  'rgba(255,255,255,0.25)',
+                  'rgba(255,255,255,0.05)',
+                  'transparent',
+                ]}
+                start={{ x: 0.2, y: 0 }}
+                end={{ x: 0.8, y: 1 }}
+                style={StyleSheet.absoluteFill}
+              />
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <Ionicons name="sparkles" size={20} color={C.onPrimary} />
+                <ThemedText
+                  variant="body"
+                  weight="700"
+                  style={{ color: C.onPrimary, fontSize: 18 }}
+                >
+                  Bắt đầu phân tích
+                </ThemedText>
+              </View>
+            </Pressable>
+          </View>
+        );
+      }
+
+      // After analysis complete: show "Bắt đầu sử dụng"
+      return (
+        <View style={s.nebulaFooter}>
+          <Pressable
+            testID={TEST_IDS.auth.onboardingCompleteButton}
+            onPress={handleComplete}
+            disabled={isCalculating || !aiResult}
+            style={({ pressed }) => [
+              s.nebulaCTA,
+              { width: '100%' },
+              pressed && { transform: [{ scale: 0.97 }] },
+              (isCalculating || !aiResult) && { opacity: 0.4 },
+            ]}
+          >
+            <LinearGradient
+              colors={['#6BFF8F', '#4BE277', '#22C55E']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={StyleSheet.absoluteFill}
+            />
+            <LinearGradient
+              colors={['rgba(255,255,255,0.25)', 'rgba(255,255,255,0.05)', 'transparent']}
+              start={{ x: 0.2, y: 0 }}
+              end={{ x: 0.8, y: 1 }}
+              style={StyleSheet.absoluteFill}
+            />
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              <ThemedText
+                variant="body"
+                weight="700"
+                style={{ color: C.onPrimary, fontSize: 18 }}
+              >
+                Bắt đầu sử dụng
+              </ThemedText>
+              <Ionicons name="arrow-forward" size={20} color={C.onPrimary} />
+            </View>
+          </Pressable>
+        </View>
+      );
+    }
+
+    // Steps 1-4: original footer
+    return (
+      <View style={oldStyles.footer}>
+        {currentStep > 0 && currentStep < 5 && (
+          <View style={oldStyles.footerBackButtonWrap}>
+            <Button
+              title="Quay lại"
+              variant="outline"
+              onPress={handleBack}
+              testID={TEST_IDS.auth.onboardingBackButton}
+            />
+          </View>
+        )}
+
+        {currentStep < 5 ? (
+          <View
+            style={
+              currentStep > 0
+                ? oldStyles.footerPrimaryButtonWrap
+                : oldStyles.footerSingleButtonWrap
+            }
+          >
+            <Button
+              title={currentStep === 4 ? 'Hoàn tất' : 'Tiếp tục'}
+              onPress={handleNext}
+              disabled={!canProceed()}
+              testID={TEST_IDS.auth.onboardingNextButton}
+            />
+          </View>
+        ) : (
+          <View style={oldStyles.footerSingleButtonWrap}>
+            <Button
+              title="Bắt đầu sử dụng"
+              onPress={handleComplete}
+              disabled={isCalculating || !aiResult}
+              testID={TEST_IDS.auth.onboardingCompleteButton}
+            />
+          </View>
+        )}
+      </View>
+    );
+  };
+
+  /* ─── Main render ─── */
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'position' : undefined}
-      keyboardVerticalOffset={0}
-      testID={TEST_IDS.auth.onboardingScreen}
-    >
-      <LinearGradient
-        colors={theme.colors.screenGradient}
-        style={styles.container}
-      >
-        {/* Header */}
-        <View style={styles.header}>
-          <View style={styles.progressContainer}>
-            {STEPS.map((_, index) => (
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <View style={{ flex: 1 }} testID={TEST_IDS.auth.onboardingScreen}>
+        {/* Background */}
+        <View
+          style={[
+            StyleSheet.absoluteFill,
+            { backgroundColor: currentStep <= 5 ? C.surface : undefined },
+          ]}
+        >
+          {currentStep <= 5 ? (
+            <>
+              {/* Background glow blobs */}
               <View
-                key={index}
                 style={[
-                  styles.progressDot,
-                  {
-                    backgroundColor:
-                      index <= currentStep
-                        ? theme.colors.primary
-                        : isDark
-                          ? 'rgba(255,255,255,0.1)'
-                          : 'rgba(0,0,0,0.1)',
-                  },
+                  s.blob,
+                  { top: -80, right: -100, backgroundColor: C.primary + '0D' },
                 ]}
               />
-            ))}
+              <View
+                style={[
+                  s.blob,
+                  { bottom: -60, left: -100, backgroundColor: C.primary + '0D' },
+                ]}
+              />
+            </>
+          ) : null}
+        </View>
+
+        <LinearGradient
+          colors={
+            currentStep <= 5
+              ? ['transparent', 'transparent']
+              : theme.colors.screenGradient
+          }
+          style={{ flex: 1 }}
+        >
+          {/* Header */}
+          <View style={[s.header, { paddingTop: Math.max(insets.top + 12, 28) }]}>
+            {/* Top bar: row with back button and step counter */}
+            {currentStep <= 5 ? (
+              <View
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  marginBottom: 16,
+                  width: '100%',
+                  position: 'relative',
+                }}
+              >
+                {currentStep > 0 && (
+                  <Pressable
+                    onPress={handleBack}
+                    style={{ position: 'absolute', left: 0, padding: 4 }}
+                  >
+                    <Ionicons
+                      name="arrow-back"
+                      size={28}
+                      color={C.onSurface}
+                      style={{ opacity: 0.8 }}
+                    />
+                  </Pressable>
+                )}
+                <ThemedText
+                  variant="body"
+                  weight="700"
+                  style={{ color: C.primary, fontSize: 16 }}
+                >
+                  {`Bước ${displayStep + 1} trên ${totalSteps}`}
+                </ThemedText>
+              </View>
+            ) : null}
+            {/* Progress bars */}
+            <View style={s.progressContainer}>
+              {STEPS.map((_, index) => (
+                <View
+                  key={index}
+                  style={[
+                    s.progressDot,
+                    {
+                      backgroundColor:
+                        index <= displayStep
+                          ? C.primary
+                          : currentStep <= 4
+                            ? C.surfaceContainerHighest
+                            : isDark
+                              ? 'rgba(255,255,255,0.1)'
+                              : 'rgba(0,0,0,0.1)',
+                    },
+                  ]}
+                />
+              ))}
+            </View>
+
+            {/* Step title/subtitle for steps 2-4 only */}
+            {currentStep > 5 && (
+              <>
+                <ThemedText style={s.stepIcon}>
+                  {STEPS[currentStep]?.icon ?? '👋'}
+                </ThemedText>
+                <ThemedText variant="h2" style={s.stepTitle}>
+                  {STEPS[currentStep]?.title ?? ''}
+                </ThemedText>
+                <ThemedText variant="body" color="textSecondary" style={s.stepSubtitle}>
+                  {STEPS[currentStep]?.subtitle ?? ''}
+                </ThemedText>
+              </>
+            )}
           </View>
 
-          <ThemedText style={styles.stepIcon}>
-            {STEPS[currentStep]?.icon ?? '👋'}
-          </ThemedText>
-          <ThemedText variant="h2" style={styles.stepTitle}>
-            {STEPS[currentStep]?.title ?? ''}
-          </ThemedText>
-          <ThemedText
-            variant="body"
-            color="textSecondary"
-            style={styles.stepSubtitle}
-          >
-            {STEPS[currentStep]?.subtitle ?? ''}
-          </ThemedText>
-        </View>
-
-        {/* Content */}
-        <View style={styles.content}>
-          <ScrollView
-            style={styles.scrollArea}
-            showsVerticalScrollIndicator={false}
-            contentContainerStyle={styles.scrollContent}
-            keyboardShouldPersistTaps="handled"
-            keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
-          >
-            {renderStep()}
-          </ScrollView>
-        </View>
-
-        {/* Footer */}
-        <View style={styles.footer}>
-          {currentStep > 0 && currentStep < 4 && (
-            <View style={styles.footerBackButtonWrap}>
-              <Button
-                title="Quay lại"
-                variant="outline"
-                onPress={handleBack}
-                testID={TEST_IDS.auth.onboardingBackButton}
-              />
-            </View>
-          )}
-
-          {currentStep < 4 ? (
-            <View
-              style={
-                currentStep > 0 ? styles.footerPrimaryButtonWrap : styles.footerSingleButtonWrap
-              }
+          {/* Content */}
+          <View style={s.content}>
+            <ScrollView
+              style={s.scrollArea}
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={[
+                s.scrollContent,
+                currentStep <= 5 && { paddingHorizontal: 24 },
+              ]}
+              keyboardShouldPersistTaps="handled"
+              keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
             >
-              <Button
-                title={currentStep === 3 ? 'Hoàn tất' : 'Tiếp tục'}
-                onPress={handleNext}
-                disabled={!canProceed()}
-                testID={TEST_IDS.auth.onboardingNextButton}
-              />
-            </View>
-          ) : (
-            <View style={styles.footerSingleButtonWrap}>
-              <Button
-                title="Bắt đầu sử dụng"
-                onPress={handleComplete}
-                disabled={isCalculating || !aiResult}
-                testID={TEST_IDS.auth.onboardingCompleteButton}
-              />
-            </View>
-          )}
-        </View>
-      </LinearGradient>
-    </KeyboardAvoidingView>
+              {renderStep()}
+            </ScrollView>
+          </View>
+
+          {/* Footer */}
+          {renderFooterButton()}
+        </LinearGradient>
+      </View>
+    </GestureHandlerRootView>
   );
 };
 
-export default OnboardingScreen;
+/* ─── New styles (Emerald Nebula for Step 0) ─── */
+const s = StyleSheet.create({
+  header: {
+    paddingHorizontal: 24,
+    paddingBottom: 8,
+  },
+  progressContainer: {
+    flexDirection: 'row',
+    gap: 6,
+    marginBottom: 12,
+    height: 6,
+  },
+  progressDot: {
+    height: 6,
+    flex: 1,
+    borderRadius: 3,
+  },
+  stepIcon: {
+    fontSize: 44,
+    lineHeight: 52,
+    textAlign: 'center',
+    marginBottom: 12,
+  },
+  stepTitle: {
+    textAlign: 'center',
+    marginBottom: 10,
+  },
+  stepSubtitle: {
+    textAlign: 'center',
+    marginBottom: 24,
+  },
+  content: {
+    flex: 1,
+    paddingHorizontal: 0,
+  },
+  scrollArea: {
+    flex: 1,
+  },
+  scrollContent: {
+    flexGrow: 1,
+    paddingBottom: 24,
+  },
 
+  /* Background blobs */
+  blob: {
+    position: 'absolute',
+    width: 300,
+    height: 300,
+    borderRadius: 150,
+  },
+
+  /* Card */
+  card: {
+    borderRadius: 28,
+    borderWidth: 1,
+    padding: 24,
+    overflow: 'hidden',
+  },
+
+  /* Card Header */
+  cardHeader: {
+    alignItems: 'center',
+    marginBottom: 28,
+  },
+  iconBox: {
+    width: 72,
+    height: 72,
+    borderRadius: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(75, 226, 119, 0.2)',
+    // Emerald glow
+    shadowColor: '#4BE277',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.15,
+    shadowRadius: 16,
+    elevation: 4,
+    overflow: 'visible',
+  },
+
+  /* Form */
+  formGroup: {
+    gap: 20,
+  },
+  fieldBlock: {
+    gap: 8,
+  },
+  label: {
+    color: 'rgba(188, 200, 185, 0.8)',
+    fontSize: 12,
+    letterSpacing: 0.5,
+    marginLeft: 2,
+    fontFamily: 'Inter_700Bold',
+  },
+  inputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 16,
+    borderWidth: 1,
+    height: 52,
+    paddingHorizontal: 16,
+  },
+  input: {
+    flex: 1,
+    fontSize: 16,
+    fontFamily: 'Inter_500Medium',
+    height: '100%',
+  },
+
+  /* Age */
+  ageHeadRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-end',
+    marginBottom: 4,
+  },
+  sliderBox: {
+    borderRadius: 16,
+    borderWidth: 1,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    gap: 8,
+  },
+  sliderTrack: {
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: 'rgba(47, 52, 69, 0.6)',
+    overflow: 'hidden',
+  },
+  sliderFill: {
+    height: '100%',
+    borderRadius: 3,
+  },
+  sliderLabels: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  stepperRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 16,
+  },
+  stepperBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  ageDirectInput: {
+    fontSize: 24,
+    fontFamily: 'Inter_700Bold',
+    textAlign: 'center',
+    width: 60,
+    height: 40,
+  },
+
+  /* Gender */
+  genderRow: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  genderCard: {
+    flex: 1,
+    borderRadius: 16,
+    paddingVertical: 12,
+    alignItems: 'center',
+    gap: 2,
+  },
+
+  /* Nebula footer */
+  nebulaFooter: {
+    paddingHorizontal: 24,
+    paddingBottom: 32,
+    paddingTop: 12,
+  },
+  nebulaCTA: {
+    height: 56,
+    borderRadius: 16,
+    overflow: 'hidden',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#4BE277',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.25,
+    shadowRadius: 16,
+    elevation: 6,
+  },
+  nebulaBackBtn: {
+    width: 56,
+    height: 56,
+    borderRadius: 16,
+    backgroundColor: C.surfaceContainerHigh,
+    borderWidth: 1,
+    borderColor: C.glassBorder,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+});
+
+/* ─── Legacy styles for steps 1-4 ─── */
+const oldStyles = StyleSheet.create({
+  inputRow: {
+    flexDirection: 'row',
+    gap: 16,
+    marginBottom: 16,
+  },
+  inputCol: {
+    flex: 1,
+  },
+  optionGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+    justifyContent: 'center',
+  },
+  goalCard: {
+    width: (width - 72) / 3,
+    padding: 16,
+    borderRadius: 20,
+    alignItems: 'center',
+    borderWidth: 2,
+  },
+  activityCard: {
+    width: '100%',
+    padding: 18,
+    borderRadius: 16,
+    marginBottom: 12,
+    borderWidth: 2,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+  },
+  footer: {
+    paddingHorizontal: 24,
+    paddingTop: 16,
+    paddingBottom: 24,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  footerBackButtonWrap: {
+    width: 112,
+  },
+  footerPrimaryButtonWrap: {
+    flex: 1,
+  },
+  footerSingleButtonWrap: {
+    width: '100%',
+  },
+  resultCard: {
+    padding: 24,
+    borderRadius: 24,
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  resultRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 16,
+    marginTop: 20,
+    justifyContent: 'center',
+  },
+  resultItem: {
+    alignItems: 'center',
+    minWidth: 80,
+  },
+  offlineBadge: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 999,
+    borderWidth: 1,
+    backgroundColor: 'rgba(251, 191, 36, 0.16)',
+    borderColor: 'rgba(251, 191, 36, 0.45)',
+    marginTop: 12,
+  },
+  offlineNote: {
+    textAlign: 'center',
+    marginTop: 16,
+  },
+});
+
+/* ─── Step 1 styles (Body Metrics Nebula) ─── */
+const s1 = StyleSheet.create({
+  glowRing: {
+    position: 'absolute',
+    width: 90,
+    height: 90,
+    borderRadius: 45,
+    borderWidth: 3,
+    borderColor: 'rgba(75, 226, 119, 0.4)',
+    shadowColor: '#4BE277',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.8,
+    shadowRadius: 18,
+    elevation: 10,
+  },
+  iconBox: {
+    width: 80,
+    height: 80,
+    borderRadius: 26,
+    backgroundColor: '#1E2433',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1.5,
+    borderColor: 'rgba(75, 226, 119, 0.3)',
+    marginBottom: 16,
+    zIndex: 2,
+  },
+  metricCard: {
+    borderRadius: 20,
+    borderWidth: 1,
+    padding: 20,
+    marginBottom: 0,
+  },
+  metricHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+  },
+  metricIconBox: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    backgroundColor: 'rgba(75, 226, 119, 0.12)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(75, 226, 119, 0.2)',
+  },
+});
+
+/* ─── Step 2 styles (Goals Nebula) ─── */
+const s2 = StyleSheet.create({
+  goalCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+    borderRadius: 24,
+    padding: 18,
+    borderWidth: 1,
+  },
+  goalIconBox: {
+    width: 52,
+    height: 52,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+  },
+  radioOuter: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+});
+
+/* ─── Step 3 styles (Activity Level Nebula) ─── */
+const s3 = StyleSheet.create({
+  actCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+    borderRadius: 24,
+    padding: 16,
+    borderWidth: 1,
+  },
+  actIconBox: {
+    width: 48,
+    height: 48,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+  },
+  radioOuter: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+});
+
+/* ─── Step 5 styles (AI Analysis Nebula) ─── */
+const s5 = StyleSheet.create({
+  chipRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+    paddingHorizontal: 18,
+    paddingVertical: 14,
+    borderRadius: 14,
+    borderLeftWidth: 2,
+  },
+  chipText: {
+    fontSize: 14,
+    fontFamily: 'Inter_500Medium',
+    color: C.onSurfaceVariant,
+  },
+  chipPendingDot: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    borderWidth: 2,
+    borderColor: 'rgba(134, 149, 133, 0.4)',
+  },
+  chipActiveDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: C.primary,
+    shadowColor: C.primary,
+    shadowOpacity: 0.8,
+    shadowRadius: 6,
+  },
+  retryBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    marginTop: 12,
+    paddingVertical: 12,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(75, 226, 119, 0.2)',
+    backgroundColor: 'rgba(75, 226, 119, 0.06)',
+  },
+  resultCard: {
+    borderRadius: 20,
+    borderWidth: 1,
+    padding: 20,
+  },
+  resultItem: {
+    alignItems: 'center',
+    minWidth: 70,
+    gap: 2,
+  },
+});
+
+export default OnboardingScreen;

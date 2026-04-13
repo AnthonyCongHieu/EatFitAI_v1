@@ -133,8 +133,13 @@ export const StatsHeroCard: React.FC<StatsHeroCardProps> = ({
       </View>
 
       {!hasRealTarget && (
-        <ThemedText variant="caption" color="textSecondary" style={{ textAlign: 'center' }}>
-          Chưa có mục tiêu cá nhân. Ứng dụng dùng mốc {DEFAULT_VISUAL_TARGET} {unit} để hiển thị.
+        <ThemedText
+          variant="caption"
+          color="textSecondary"
+          style={{ textAlign: 'center' }}
+        >
+          Chưa có mục tiêu cá nhân. Ứng dụng dùng mốc {DEFAULT_VISUAL_TARGET} {unit} để
+          hiển thị.
         </ThemedText>
       )}
 

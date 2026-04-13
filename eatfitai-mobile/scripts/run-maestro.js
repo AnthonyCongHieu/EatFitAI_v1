@@ -59,8 +59,7 @@ function runAdb(args, { allowFailure = false } = {}) {
     resolveBundledExecutable(['_tooling', 'android-sdk', 'platform-tools', 'adb.exe']) ||
     resolveBundledExecutable(['_tooling', 'android-sdk', 'platform-tools', 'adb']) ||
     'adb';
-  const useShell =
-    !(path.isAbsolute(adbExecutable) || adbExecutable.includes(path.sep));
+  const useShell = !(path.isAbsolute(adbExecutable) || adbExecutable.includes(path.sep));
   const result = spawnSync(adbExecutable, serial ? ['-s', serial, ...args] : args, {
     cwd: projectRoot,
     encoding: 'utf8',

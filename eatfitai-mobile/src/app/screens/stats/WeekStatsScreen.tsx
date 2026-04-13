@@ -25,7 +25,10 @@ import Icon from '../../../components/Icon';
 import { useAppTheme } from '../../../theme/ThemeProvider';
 import { useStatsStore } from '../../../store/useStatsStore';
 import { handleApiError } from '../../../utils/errorHandler';
-import { formatShortWeekdayLabel, formatWeekRangeLabel } from '../../../utils/dateDisplay';
+import {
+  formatShortWeekdayLabel,
+  formatWeekRangeLabel,
+} from '../../../utils/dateDisplay';
 import { StatsSkeleton } from '../../../components/skeletons/StatsSkeleton';
 import { MacroPieChart } from '../../../components/charts/MacroPieChart';
 import { t } from '../../../i18n/vi';
@@ -137,7 +140,6 @@ const WeekStatsScreen = (): React.ReactElement => {
     refreshWeekSummary().catch(handleApiError);
   }, [refreshWeekSummary]);
 
-
   const chartData = useMemo(() => {
     return (weekSummary?.days ?? []).map((day) => ({
       x: formatShortWeekdayLabel(new Date(day.date)),
@@ -145,7 +147,6 @@ const WeekStatsScreen = (): React.ReactElement => {
       target: day.targetCalories ?? undefined,
     }));
   }, [weekSummary]);
-
 
   if (isLoading && !weekSummary) {
     return <StatsSkeleton />;
@@ -210,20 +211,40 @@ const WeekStatsScreen = (): React.ReactElement => {
         />
 
         {/* Legend */}
-        <View style={{
-          flexDirection: 'row',
-          justifyContent: 'center',
-          gap: theme.spacing.lg,
-          marginBottom: theme.spacing.sm,
-        }}>
+        <View
+          style={{
+            flexDirection: 'row',
+            justifyContent: 'center',
+            gap: theme.spacing.lg,
+            marginBottom: theme.spacing.sm,
+          }}
+        >
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-            <View style={{ width: 12, height: 12, borderRadius: 3, backgroundColor: '#4ade80' }} />
-            <ThemedText variant="caption" color="textSecondary">{'Đã tiêu thụ'}</ThemedText>
+            <View
+              style={{
+                width: 12,
+                height: 12,
+                borderRadius: 3,
+                backgroundColor: '#4ade80',
+              }}
+            />
+            <ThemedText variant="caption" color="textSecondary">
+              {'Đã tiêu thụ'}
+            </ThemedText>
           </View>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
             {/* Solid colors avoid Android gradient banding artifacts */}
-            <View style={{ width: 12, height: 12, borderRadius: 3, backgroundColor: isDark ? '#1E3050' : '#D0D0D5' }} />
-            <ThemedText variant="caption" color="textSecondary">{'Còn lại'}</ThemedText>
+            <View
+              style={{
+                width: 12,
+                height: 12,
+                borderRadius: 3,
+                backgroundColor: isDark ? '#1E3050' : '#D0D0D5',
+              }}
+            />
+            <ThemedText variant="caption" color="textSecondary">
+              {'Còn lại'}
+            </ThemedText>
           </View>
         </View>
 
@@ -346,24 +367,28 @@ const WeekStatsScreen = (): React.ReactElement => {
 
         {/* Compact Summary Cards */}
         {weekSummary && weekSummary.days.length > 0 && (
-          <View style={{
-            flexDirection: 'row',
-            gap: theme.spacing.sm,
-            marginTop: theme.spacing.md,
-            paddingTop: theme.spacing.md,
-            borderTopWidth: 1,
-            // Solid colors avoid Android gradient banding artifacts
-            borderTopColor: isDark ? '#2A3F68' : '#E0E0E0',
-          }}>
+          <View
+            style={{
+              flexDirection: 'row',
+              gap: theme.spacing.sm,
+              marginTop: theme.spacing.md,
+              paddingTop: theme.spacing.md,
+              borderTopWidth: 1,
+              // Solid colors avoid Android gradient banding artifacts
+              borderTopColor: isDark ? '#2A3F68' : '#E0E0E0',
+            }}
+          >
             {/* Average per day */}
-            <View style={{
-              flex: 1,
-              alignItems: 'center',
-              padding: theme.spacing.sm,
-              // Solid navy blue
-              backgroundColor: isDark ? '#1A2744' : '#EEF4FF',
-              borderRadius: 12,
-            }}>
+            <View
+              style={{
+                flex: 1,
+                alignItems: 'center',
+                padding: theme.spacing.sm,
+                // Solid navy blue
+                backgroundColor: isDark ? '#1A2744' : '#EEF4FF',
+                borderRadius: 12,
+              }}
+            >
               <ThemedText style={{ fontSize: 16 }}>{'📊'}</ThemedText>
               <ThemedText
                 variant="h4"
@@ -372,7 +397,7 @@ const WeekStatsScreen = (): React.ReactElement => {
               >
                 {Math.round(
                   weekSummary.days.reduce((sum, day) => sum + day.calories, 0) /
-                  weekSummary.days.length,
+                    weekSummary.days.length,
                 )}
               </ThemedText>
               <ThemedText variant="caption" color="textSecondary">
@@ -381,14 +406,16 @@ const WeekStatsScreen = (): React.ReactElement => {
             </View>
 
             {/* Total week */}
-            <View style={{
-              flex: 1,
-              alignItems: 'center',
-              padding: theme.spacing.sm,
-              // Solid purple
-              backgroundColor: isDark ? '#1E1A40' : '#F3E8FF',
-              borderRadius: 12,
-            }}>
+            <View
+              style={{
+                flex: 1,
+                alignItems: 'center',
+                padding: theme.spacing.sm,
+                // Solid purple
+                backgroundColor: isDark ? '#1E1A40' : '#F3E8FF',
+                borderRadius: 12,
+              }}
+            >
               <ThemedText style={{ fontSize: 16 }}>{'⚡'}</ThemedText>
               <ThemedText
                 variant="h4"
@@ -396,8 +423,10 @@ const WeekStatsScreen = (): React.ReactElement => {
                 style={{ color: '#8b5cf6', marginTop: 2 }}
               >
                 {Math.round(
-                  weekSummary.days.reduce((sum, day) => sum + day.calories, 0) / 1000 * 10,
-                ) / 10}k
+                  (weekSummary.days.reduce((sum, day) => sum + day.calories, 0) / 1000) *
+                    10,
+                ) / 10}
+                k
               </ThemedText>
               <ThemedText variant="caption" color="textSecondary">
                 {'Tổng tuần'}
@@ -405,23 +434,29 @@ const WeekStatsScreen = (): React.ReactElement => {
             </View>
 
             {/* Target achieved */}
-            <View style={{
-              flex: 1,
-              alignItems: 'center',
-              padding: theme.spacing.sm,
-              // Solid green
-              backgroundColor: isDark ? '#1A3028' : '#E8F5E9',
-              borderRadius: 12,
-            }}>
+            <View
+              style={{
+                flex: 1,
+                alignItems: 'center',
+                padding: theme.spacing.sm,
+                // Solid green
+                backgroundColor: isDark ? '#1A3028' : '#E8F5E9',
+                borderRadius: 12,
+              }}
+            >
               <ThemedText style={{ fontSize: 16 }}>{'🎯'}</ThemedText>
               <ThemedText
                 variant="h4"
                 weight="700"
                 style={{ color: '#22c55e', marginTop: 2 }}
               >
-                {weekSummary.days.filter(
-                  (day) => day.targetCalories && day.calories >= day.targetCalories * 0.9,
-                ).length}/{weekSummary.days.length}
+                {
+                  weekSummary.days.filter(
+                    (day) =>
+                      day.targetCalories && day.calories >= day.targetCalories * 0.9,
+                  ).length
+                }
+                /{weekSummary.days.length}
               </ThemedText>
               <ThemedText variant="caption" color="textSecondary">
                 {'Đạt mục tiêu'}

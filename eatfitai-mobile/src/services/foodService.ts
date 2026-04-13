@@ -289,4 +289,3 @@ export const foodService = {
     return response.data.isFavorite;
   },
 };
-

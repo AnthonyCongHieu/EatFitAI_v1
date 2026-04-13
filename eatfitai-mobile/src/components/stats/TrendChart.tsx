@@ -6,15 +6,15 @@ import { useAppTheme } from '../../theme/ThemeProvider';
 import { ThemedText } from '../ThemedText';
 
 interface DayData {
-    date: string;
-    calories: number;
-    targetCalories?: number;
+  date: string;
+  calories: number;
+  targetCalories?: number;
 }
 
 interface TrendChartProps {
-    data: DayData[];
-    highlightBest?: boolean;
-    onBarPress?: (day: DayData) => void;
+  data: DayData[];
+  highlightBest?: boolean;
+  onBarPress?: (day: DayData) => void;
 }
 
 const WEEKDAYS = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
@@ -24,150 +24,154 @@ const WEEKDAYS = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
  * 2026 trend: Animated entry, gradient bars, highlight best day
  */
 export const TrendChart: React.FC<TrendChartProps> = ({
-    data,
-    highlightBest = true,
-    onBarPress,
+  data,
+  highlightBest = true,
+  onBarPress,
 }) => {
-    const { theme } = useAppTheme();
-    const isDark = theme.mode === 'dark';
+  const { theme } = useAppTheme();
+  const isDark = theme.mode === 'dark';
 
-    // Tìm max để scale bars
-    const maxCalories = Math.max(...data.map(d => d.calories), 1);
-    const bestDayIndex = data.reduce(
-        (maxIdx, day, idx, arr) => day.calories > arr[maxIdx]!.calories ? idx : maxIdx,
-        0,
-    );
+  // Tìm max để scale bars
+  const maxCalories = Math.max(...data.map((d) => d.calories), 1);
+  const bestDayIndex = data.reduce(
+    (maxIdx, day, idx, arr) => (day.calories > arr[maxIdx]!.calories ? idx : maxIdx),
+    0,
+  );
 
-    const styles = StyleSheet.create({
-        container: {
-            paddingVertical: theme.spacing.md,
-        },
-        barsContainer: {
-            flexDirection: 'row',
-            alignItems: 'flex-end',
-            justifyContent: 'space-between',
-            height: 140,
-            paddingHorizontal: theme.spacing.sm,
-        },
-        barWrapper: {
-            flex: 1,
-            alignItems: 'center',
-            marginHorizontal: 4,
-        },
-        bar: {
-            width: '80%',
-            borderRadius: 8,
-            minHeight: 4,
-        },
-        label: {
-            marginTop: theme.spacing.xs,
-        },
-        valueLabel: {
-            position: 'absolute',
-            top: -20,
-            fontSize: 10,
-            fontWeight: '600',
-        },
-        legendRow: {
-            flexDirection: 'row',
-            justifyContent: 'center',
-            gap: theme.spacing.lg,
-            marginTop: theme.spacing.md,
-            paddingTop: theme.spacing.md,
-            borderTopWidth: 1,
-            // Solid colors để fix 2 màu trên Android
-            borderTopColor: isDark ? '#2A3F68' : '#E0E0E0',
-        },
-        legendItem: {
-            flexDirection: 'row',
-            alignItems: 'center',
-            gap: 6,
-        },
-        legendDot: {
-            width: 10,
-            height: 10,
-            borderRadius: 5,
-        },
-    });
+  const styles = StyleSheet.create({
+    container: {
+      paddingVertical: theme.spacing.md,
+    },
+    barsContainer: {
+      flexDirection: 'row',
+      alignItems: 'flex-end',
+      justifyContent: 'space-between',
+      height: 140,
+      paddingHorizontal: theme.spacing.sm,
+    },
+    barWrapper: {
+      flex: 1,
+      alignItems: 'center',
+      marginHorizontal: 4,
+    },
+    bar: {
+      width: '80%',
+      borderRadius: 8,
+      minHeight: 4,
+    },
+    label: {
+      marginTop: theme.spacing.xs,
+    },
+    valueLabel: {
+      position: 'absolute',
+      top: -20,
+      fontSize: 10,
+      fontWeight: '600',
+    },
+    legendRow: {
+      flexDirection: 'row',
+      justifyContent: 'center',
+      gap: theme.spacing.lg,
+      marginTop: theme.spacing.md,
+      paddingTop: theme.spacing.md,
+      borderTopWidth: 1,
+      // Solid colors để fix 2 màu trên Android
+      borderTopColor: isDark ? '#2A3F68' : '#E0E0E0',
+    },
+    legendItem: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+    },
+    legendDot: {
+      width: 10,
+      height: 10,
+      borderRadius: 5,
+    },
+  });
 
-    const getBarColor = (index: number, calories: number, _target?: number) => {
-        // Highest day = blue (primary)
-        if (highlightBest && index === bestDayIndex && calories > 0) {
-            return theme.colors.primary;
-        }
-        // No data = solid dim color
-        if (calories === 0) {
-            // Solid colors để fix 2 màu trên Android
-            return isDark ? '#1E3050' : '#E0E0E0';
-        }
-        // Normal days = green
-        return '#22C55E';
-    };
+  const getBarColor = (index: number, calories: number, _target?: number) => {
+    // Highest day = blue (primary)
+    if (highlightBest && index === bestDayIndex && calories > 0) {
+      return theme.colors.primary;
+    }
+    // No data = solid dim color
+    if (calories === 0) {
+      // Solid colors để fix 2 màu trên Android
+      return isDark ? '#1E3050' : '#E0E0E0';
+    }
+    // Normal days = green
+    return '#22C55E';
+  };
 
-    const handleBarPress = (day: DayData) => {
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-        onBarPress?.(day);
-    };
+  const handleBarPress = (day: DayData) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    onBarPress?.(day);
+  };
 
-    return (
-        <View style={styles.container}>
-            <View style={styles.barsContainer}>
-                {data.map((day, index) => {
-                    const height = (day.calories / maxCalories) * 120 + 4;
-                    const isBest = highlightBest && index === bestDayIndex && day.calories > 0;
+  return (
+    <View style={styles.container}>
+      <View style={styles.barsContainer}>
+        {data.map((day, index) => {
+          const height = (day.calories / maxCalories) * 120 + 4;
+          const isBest = highlightBest && index === bestDayIndex && day.calories > 0;
 
-                    return (
-                        <Pressable
-                            key={day.date}
-                            style={({ pressed }) => [
-                                styles.barWrapper,
-                                pressed && { opacity: 0.7, transform: [{ scale: 0.95 }] },
-                            ]}
-                            onPress={() => handleBarPress(day)}
-                        >
-                            <Animated.View
-                                entering={FadeInUp.delay(index * 80).springify()}
-                                style={[
-                                    styles.bar,
-                                    {
-                                        height,
-                                        backgroundColor: getBarColor(index, day.calories, day.targetCalories),
-                                        // Glow effect for best day
-                                        shadowColor: isBest ? theme.colors.primary : 'transparent',
-                                        shadowOffset: { width: 0, height: 0 },
-                                        shadowOpacity: isBest ? 0.6 : 0,
-                                        shadowRadius: 8,
-                                        elevation: isBest ? 4 : 0,
-                                    },
-                                ]}
-                            />
-                            {/* Day label */}
-                            <ThemedText
-                                variant="caption"
-                                weight={isBest ? '700' : '500'}
-                                color={isBest ? 'primary' : 'textSecondary'}
-                                style={styles.label}
-                            >
-                                {WEEKDAYS[index]}
-                            </ThemedText>
-                        </Pressable>
-                    );
-                })}
-            </View>
+          return (
+            <Pressable
+              key={day.date}
+              style={({ pressed }) => [
+                styles.barWrapper,
+                pressed && { opacity: 0.7, transform: [{ scale: 0.95 }] },
+              ]}
+              onPress={() => handleBarPress(day)}
+            >
+              <Animated.View
+                entering={FadeInUp.delay(index * 80).springify()}
+                style={[
+                  styles.bar,
+                  {
+                    height,
+                    backgroundColor: getBarColor(index, day.calories, day.targetCalories),
+                    // Glow effect for best day
+                    shadowColor: isBest ? theme.colors.primary : 'transparent',
+                    shadowOffset: { width: 0, height: 0 },
+                    shadowOpacity: isBest ? 0.6 : 0,
+                    shadowRadius: 8,
+                    elevation: isBest ? 4 : 0,
+                  },
+                ]}
+              />
+              {/* Day label */}
+              <ThemedText
+                variant="caption"
+                weight={isBest ? '700' : '500'}
+                color={isBest ? 'primary' : 'textSecondary'}
+                style={styles.label}
+              >
+                {WEEKDAYS[index]}
+              </ThemedText>
+            </Pressable>
+          );
+        })}
+      </View>
 
-            {/* Legend */}
-            <View style={styles.legendRow}>
-                <View style={styles.legendItem}>
-                    <View style={[styles.legendDot, { backgroundColor: '#22C55E' }]} />
-                    <ThemedText variant="caption" color="textSecondary">Bình thường</ThemedText>
-                </View>
-                <View style={styles.legendItem}>
-                    <View style={[styles.legendDot, { backgroundColor: theme.colors.primary }]} />
-                    <ThemedText variant="caption" color="textSecondary">Cao nhất</ThemedText>
-                </View>
-            </View>
+      {/* Legend */}
+      <View style={styles.legendRow}>
+        <View style={styles.legendItem}>
+          <View style={[styles.legendDot, { backgroundColor: '#22C55E' }]} />
+          <ThemedText variant="caption" color="textSecondary">
+            Bình thường
+          </ThemedText>
         </View>
-    );
+        <View style={styles.legendItem}>
+          <View style={[styles.legendDot, { backgroundColor: theme.colors.primary }]} />
+          <ThemedText variant="caption" color="textSecondary">
+            Cao nhất
+          </ThemedText>
+        </View>
+      </View>
+    </View>
+  );
 };
 
 export default TrendChart;

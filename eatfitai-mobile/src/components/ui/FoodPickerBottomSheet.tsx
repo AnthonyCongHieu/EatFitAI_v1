@@ -117,9 +117,13 @@ export const FoodPickerBottomSheet = ({
               styles.messageBox,
               {
                 backgroundColor:
-                  theme.mode === 'dark' ? 'rgba(239, 68, 68, 0.12)' : 'rgba(239, 68, 68, 0.08)',
+                  theme.mode === 'dark'
+                    ? 'rgba(239, 68, 68, 0.12)'
+                    : 'rgba(239, 68, 68, 0.08)',
                 borderColor:
-                  theme.mode === 'dark' ? 'rgba(239, 68, 68, 0.28)' : 'rgba(239, 68, 68, 0.18)',
+                  theme.mode === 'dark'
+                    ? 'rgba(239, 68, 68, 0.28)'
+                    : 'rgba(239, 68, 68, 0.18)',
               },
             ]}
           >
@@ -172,7 +176,11 @@ export const FoodPickerBottomSheet = ({
                   <ThemedText variant="body" weight="600">
                     Không tìm thấy món phù hợp
                   </ThemedText>
-                  <ThemedText variant="bodySmall" color="textSecondary" style={styles.emptySubtext}>
+                  <ThemedText
+                    variant="bodySmall"
+                    color="textSecondary"
+                    style={styles.emptySubtext}
+                  >
                     Thử đổi từ khóa hoặc tìm bằng tên tiếng Anh.
                   </ThemedText>
                 </View>

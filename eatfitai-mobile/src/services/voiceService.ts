@@ -17,7 +17,11 @@ const getApiBaseUrl = (): string => {
 };
 
 const getApiErrorMessage = (error: unknown, fallback: string): string => {
-  const axiosError = error as AxiosError<{ message?: string; error?: string; detail?: string }>;
+  const axiosError = error as AxiosError<{
+    message?: string;
+    error?: string;
+    detail?: string;
+  }>;
   const data = axiosError?.response?.data;
 
   if (typeof data?.message === 'string' && data.message.trim()) {
@@ -214,7 +218,8 @@ export const voiceService = {
         ...command,
         entities: {
           ...command.entities,
-          mealType: mealTypeMapping[command.entities.mealType?.toLowerCase() || ''] || 'Lunch',
+          mealType:
+            mealTypeMapping[command.entities.mealType?.toLowerCase() || ''] || 'Lunch',
         },
       };
 
@@ -246,9 +251,12 @@ export const voiceService = {
 
   async confirmWeight(newWeight: number): Promise<VoiceProcessResponse> {
     try {
-      const response = await apiClient.post<VoiceProcessResponse>('/api/voice/confirm-weight', {
-        newWeight,
-      });
+      const response = await apiClient.post<VoiceProcessResponse>(
+        '/api/voice/confirm-weight',
+        {
+          newWeight,
+        },
+      );
       return response.data;
     } catch (error: unknown) {
       return {

@@ -99,10 +99,7 @@ export const StreakCard: React.FC<StreakCardProps> = ({
   }, [isActive, fireScale, fireRotate, glowOpacity, badgePulse]);
 
   const fireStyle = useAnimatedStyle(() => ({
-    transform: [
-      { scale: fireScale.value },
-      { rotate: `${fireRotate.value}deg` },
-    ],
+    transform: [{ scale: fireScale.value }, { rotate: `${fireRotate.value}deg` }],
   }));
 
   const glowStyle = useAnimatedStyle(() => ({
@@ -123,19 +120,21 @@ export const StreakCard: React.FC<StreakCardProps> = ({
       style={styles.container}
       onPress={onPress}
       accessibilityRole="button"
-      accessibilityLabel={isActive ? `Chuỗi ${currentStreak} ngày liên tiếp` : 'Bắt đầu chuỗi mới'}
+      accessibilityLabel={
+        isActive ? `Chuỗi ${currentStreak} ngày liên tiếp` : 'Bắt đầu chuỗi mới'
+      }
       accessibilityHint="Nhấn để xem thành tựu"
     >
       <LinearGradient
         colors={
           isActive
             ? isDark
-              // Solid colors thay vì rgba để tránh lỗi 2 màu trên Android
-              ? ['#1A2A4A', '#152238'] as const
-              : ['#FFF7ED', '#FFEDD5'] as const
+              ? // Solid colors thay vì rgba để tránh lỗi 2 màu trên Android
+                (['#1A2A4A', '#152238'] as const)
+              : (['#FFF7ED', '#FFEDD5'] as const)
             : isDark
-              ? ['#1A2744', '#152238'] as const
-              : ['#FAFAFA', '#F5F5F5'] as const
+              ? (['#1A2744', '#152238'] as const)
+              : (['#FAFAFA', '#F5F5F5'] as const)
         }
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
@@ -145,9 +144,7 @@ export const StreakCard: React.FC<StreakCardProps> = ({
         <View style={styles.topRow}>
           <View style={styles.iconWrapper}>
             {/* Glow effect */}
-            {isActive && (
-              <Animated.View style={[styles.glow, glowStyle]} />
-            )}
+            {isActive && <Animated.View style={[styles.glow, glowStyle]} />}
             <Animated.View style={[styles.iconContainer, fireStyle]}>
               <AnimatedIonicons
                 name="flame"
@@ -183,7 +180,11 @@ export const StreakCard: React.FC<StreakCardProps> = ({
 
             return (
               <View key={day} style={styles.dayColumn}>
-                <ThemedText variant="caption" color="textSecondary" style={styles.dayLabel}>
+                <ThemedText
+                  variant="caption"
+                  color="textSecondary"
+                  style={styles.dayLabel}
+                >
                   {day}
                 </ThemedText>
                 <View
@@ -194,9 +195,7 @@ export const StreakCard: React.FC<StreakCardProps> = ({
                     { borderColor: isToday ? '#FF9500' : 'transparent' },
                   ]}
                 >
-                  {isLogged && (
-                    <Ionicons name="checkmark" size={12} color="#FFF" />
-                  )}
+                  {isLogged && <Ionicons name="checkmark" size={12} color="#FFF" />}
                 </View>
               </View>
             );
@@ -225,7 +224,9 @@ const getStyles = (theme: any, isDark: boolean, isActive: boolean) =>
       borderWidth: 1,
       borderColor: isActive
         ? 'rgba(255, 149, 0, 0.3)'
-        : isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)',
+        : isDark
+          ? 'rgba(255,255,255,0.08)'
+          : 'rgba(0,0,0,0.05)',
       ...theme.shadows.sm,
     },
     gradient: {
@@ -307,4 +308,3 @@ const getStyles = (theme: any, isDark: boolean, isActive: boolean) =>
       paddingTop: theme.spacing.xs,
     },
   });
-

@@ -8,11 +8,7 @@ import {
   StyleSheet,
   View,
 } from 'react-native';
-import Animated, {
-  FadeInUp,
-  useSharedValue,
-  withTiming,
-} from 'react-native-reanimated';
+import Animated, { FadeInUp, useSharedValue, withTiming } from 'react-native-reanimated';
 import Toast from 'react-native-toast-message';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -72,7 +68,8 @@ const HomeScreen = (): React.ReactElement => {
   });
   const [showAddModal, setShowAddModal] = useState(false);
   const [serverDown, setServerDown] = useState(false);
-  const { currentStreak, longestStreak, weeklyLogs, checkStreak, fetchWeeklyLogs } = useGamificationStore();
+  const { currentStreak, longestStreak, weeklyLogs, checkStreak, fetchWeeklyLogs } =
+    useGamificationStore();
 
   // AI-driven context awareness (2026 trend)
   const smartContext = useSmartContext(summary);
@@ -111,8 +108,6 @@ const HomeScreen = (): React.ReactElement => {
   const proteinValue = useSharedValue(0);
   const carbsValue = useSharedValue(0);
   const fatValue = useSharedValue(0);
-
-
 
   // Tự động set status server dựa trên useQuery
   useEffect(() => {
@@ -162,7 +157,6 @@ const HomeScreen = (): React.ReactElement => {
       });
     });
   }, [refetch, showCommonErrors]);
-
 
   const handleQuickAddSearch = useCallback(() => {
     navigation.navigate('FoodSearch', {
@@ -263,7 +257,7 @@ const HomeScreen = (): React.ReactElement => {
 
   const hasTargetCalories =
     typeof summary?.targetCalories === 'number' && summary.targetCalories > 0;
-  const calorieTargetForUi = hasTargetCalories ? summary?.targetCalories ?? null : null;
+  const calorieTargetForUi = hasTargetCalories ? (summary?.targetCalories ?? null) : null;
 
   // Animate values when they change
   useEffect(() => {
@@ -307,7 +301,6 @@ const HomeScreen = (): React.ReactElement => {
     return summary.meals.flatMap((meal) => meal.entries).slice(0, 3);
   }, [summary]);
 
-
   if (isLoading && !summary) {
     return <HomeSkeleton />;
   }
@@ -349,7 +342,9 @@ const HomeScreen = (): React.ReactElement => {
           </View>
         )}
 
-        <Animated.View entering={FadeInUp.delay(150).springify().damping(15).stiffness(100)}>
+        <Animated.View
+          entering={FadeInUp.delay(150).springify().damping(15).stiffness(100)}
+        >
           <StreakCard
             currentStreak={currentStreak}
             longestStreak={longestStreak}
@@ -377,7 +372,9 @@ const HomeScreen = (): React.ReactElement => {
             <CalorieRing
               consumed={summary?.totalCalories || 0}
               target={calorieTargetForUi}
-              targetStatus={summary ? (hasTargetCalories ? 'loaded' : 'missing') : 'loading'}
+              targetStatus={
+                summary ? (hasTargetCalories ? 'loaded' : 'missing') : 'loading'
+              }
               protein={summary?.protein || 0}
               carbs={summary?.carbs || 0}
               fat={summary?.fat || 0}
@@ -423,8 +420,6 @@ const HomeScreen = (): React.ReactElement => {
             </Pressable>
           </Animated.View>
         )}
-
-
 
         {/* Quick Add Hub */}
         <Animated.View entering={FadeInUp.delay(250).springify()}>
@@ -533,10 +528,17 @@ const HomeScreen = (): React.ReactElement => {
             entering={FadeInUp.delay(700).springify()}
             style={styles.fabBadge}
           >
-            <ThemedText variant="caption" style={{ color: '#FFF', fontWeight: '700', fontSize: 10 }}>
-              {smartContext.suggestedMeal === 'breakfast' ? 'Sáng' :
-                smartContext.suggestedMeal === 'lunch' ? 'Trưa' :
-                  smartContext.suggestedMeal === 'dinner' ? 'Tối' : 'HOT'}
+            <ThemedText
+              variant="caption"
+              style={{ color: '#FFF', fontWeight: '700', fontSize: 10 }}
+            >
+              {smartContext.suggestedMeal === 'breakfast'
+                ? 'Sáng'
+                : smartContext.suggestedMeal === 'lunch'
+                  ? 'Trưa'
+                  : smartContext.suggestedMeal === 'dinner'
+                    ? 'Tối'
+                    : 'HOT'}
             </ThemedText>
           </Animated.View>
         )}

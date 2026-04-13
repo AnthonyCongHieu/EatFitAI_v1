@@ -6,24 +6,24 @@ import { useAppTheme } from '../theme/ThemeProvider';
 
 type ThemedTextProps = TextProps & {
   variant?:
-  | 'h1'
-  | 'h2'
-  | 'h3'
-  | 'h4'
-  | 'body'
-  | 'bodyLarge'
-  | 'bodySmall'
-  | 'caption'
-  | 'button';
+    | 'h1'
+    | 'h2'
+    | 'h3'
+    | 'h4'
+    | 'body'
+    | 'bodyLarge'
+    | 'bodySmall'
+    | 'caption'
+    | 'button';
   color?:
-  | 'primary'
-  | 'secondary'
-  | 'muted'
-  | 'danger'
-  | 'success'
-  | 'warning'
-  | 'info'
-  | 'textSecondary';
+    | 'primary'
+    | 'secondary'
+    | 'muted'
+    | 'danger'
+    | 'success'
+    | 'warning'
+    | 'info'
+    | 'textSecondary';
   weight?: '300' | '400' | '500' | '600' | '700';
   align?: 'left' | 'center' | 'right' | 'justify';
   // Props mới để xử lý text wrap và ellipsis

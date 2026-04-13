@@ -149,11 +149,7 @@ const AppTabs = (): React.ReactElement => {
         options={{
           title: t('navigation.voice'),
           tabBarIcon: ({ color, size, focused }) => (
-            <Ionicons
-              name={focused ? 'mic' : 'mic-outline'}
-              color={color}
-              size={size}
-            />
+            <Ionicons name={focused ? 'mic' : 'mic-outline'} color={color} size={size} />
           ),
         }}
       />
@@ -206,4 +202,3 @@ const styles = StyleSheet.create({
 });
 
 export default AppTabs;
-

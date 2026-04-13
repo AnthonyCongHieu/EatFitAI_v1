@@ -2,26 +2,34 @@
 // Inspired by Duolingo, Strava, và các fitness apps hàng đầu
 
 import React, { useEffect, useRef, useState, useCallback } from 'react';
-import { View, StyleSheet, FlatList, TouchableOpacity, RefreshControl } from 'react-native';
+import {
+  View,
+  StyleSheet,
+  FlatList,
+  TouchableOpacity,
+  RefreshControl,
+} from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import Animated, {
-  FadeIn,
-  FadeInDown,
-} from 'react-native-reanimated';
+import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import { ThemedText } from '../../../components/ThemedText';
 import { useAppTheme } from '../../../theme/ThemeProvider';
 import { useGamificationStore, Achievement } from '../../../store/useGamificationStore';
 import { shareService } from '../../../services/shareService';
 
-
 const AchievementsScreen = (): React.ReactElement => {
   const { theme } = useAppTheme();
   const isDark = theme.mode === 'dark';
   const navigation = useNavigation();
-  const { achievements, currentStreak, longestStreak, totalDaysLogged, checkStreak, syncAchievementProgress } =
-    useGamificationStore();
+  const {
+    achievements,
+    currentStreak,
+    longestStreak,
+    totalDaysLogged,
+    checkStreak,
+    syncAchievementProgress,
+  } = useGamificationStore();
   const viewRef = useRef(null);
 
   useEffect(() => {
@@ -49,7 +57,10 @@ const AchievementsScreen = (): React.ReactElement => {
   const totalCount = achievements.length;
 
   // Gradient colors cho các thành tích - sử dụng theme
-  const getGradientColors = (id: string, isUnlocked: boolean): readonly [string, string] => {
+  const getGradientColors = (
+    id: string,
+    isUnlocked: boolean,
+  ): readonly [string, string] => {
     if (!isUnlocked) return [theme.colors.card, theme.colors.card] as const;
 
     switch (id) {
@@ -99,7 +110,11 @@ const AchievementsScreen = (): React.ReactElement => {
           >
             {currentStreak}
           </ThemedText>
-          <ThemedText style={{ color: 'rgba(255,255,255,0.9)' }} variant="body" weight="600">
+          <ThemedText
+            style={{ color: 'rgba(255,255,255,0.9)' }}
+            variant="body"
+            weight="600"
+          >
             ngày liên tiếp 🔥
           </ThemedText>
         </View>
@@ -110,12 +125,16 @@ const AchievementsScreen = (): React.ReactElement => {
             <ThemedText style={styles.statValue}>{longestStreak}</ThemedText>
             <ThemedText style={styles.statLabel}>Kỷ lục</ThemedText>
           </View>
-          <View style={[styles.statDivider, { backgroundColor: 'rgba(255,255,255,0.2)' }]} />
+          <View
+            style={[styles.statDivider, { backgroundColor: 'rgba(255,255,255,0.2)' }]}
+          />
           <View style={styles.statItem}>
             <ThemedText style={styles.statValue}>{totalDaysLogged}</ThemedText>
             <ThemedText style={styles.statLabel}>Tổng ngày</ThemedText>
           </View>
-          <View style={[styles.statDivider, { backgroundColor: 'rgba(255,255,255,0.2)' }]} />
+          <View
+            style={[styles.statDivider, { backgroundColor: 'rgba(255,255,255,0.2)' }]}
+          />
           <View style={styles.statItem}>
             <ThemedText style={styles.statValue}>
               {unlockedCount}/{totalCount}
@@ -127,7 +146,13 @@ const AchievementsScreen = (): React.ReactElement => {
     </Animated.View>
   );
 
-  const renderAchievementCard = ({ item, index }: { item: Achievement; index: number }) => {
+  const renderAchievementCard = ({
+    item,
+    index,
+  }: {
+    item: Achievement;
+    index: number;
+  }) => {
     const isUnlocked = !!item.unlockedAt;
     const progressPercent = Math.min(100, (item.progress / item.target) * 100);
     const gradientColors = getGradientColors(item.id, isUnlocked);
@@ -149,7 +174,11 @@ const AchievementsScreen = (): React.ReactElement => {
               </LinearGradient>
             ) : (
               <View style={[styles.iconLocked, { backgroundColor: theme.colors.border }]}>
-                <Ionicons name="lock-closed" size={24} color={theme.colors.textSecondary} />
+                <Ionicons
+                  name="lock-closed"
+                  size={24}
+                  color={theme.colors.textSecondary}
+                />
               </View>
             )}
           </View>
@@ -165,7 +194,9 @@ const AchievementsScreen = (): React.ReactElement => {
                 {item.title}
               </ThemedText>
               {isUnlocked && (
-                <View style={[styles.badge, { backgroundColor: theme.colors.success + '20' }]}>
+                <View
+                  style={[styles.badge, { backgroundColor: theme.colors.success + '20' }]}
+                >
                   <ThemedText variant="caption" color="success" weight="600">
                     🏆 Đã đạt
                   </ThemedText>
@@ -184,7 +215,11 @@ const AchievementsScreen = (): React.ReactElement => {
             {/* Progress bar */}
             <View style={[styles.progressBg, { backgroundColor: theme.colors.border }]}>
               <LinearGradient
-                colors={isUnlocked ? gradientColors : [theme.colors.primary, theme.colors.primary]}
+                colors={
+                  isUnlocked
+                    ? gradientColors
+                    : [theme.colors.primary, theme.colors.primary]
+                }
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 0 }}
                 style={[styles.progressFill, { width: `${progressPercent}%` }]}
@@ -195,7 +230,10 @@ const AchievementsScreen = (): React.ReactElement => {
               <ThemedText variant="caption" color="textSecondary">
                 Tiến độ: {Math.round(item.progress)}/{item.target}
               </ThemedText>
-              <ThemedText variant="caption" color={isUnlocked ? 'success' : 'textSecondary'}>
+              <ThemedText
+                variant="caption"
+                color={isUnlocked ? 'success' : 'textSecondary'}
+              >
                 {Math.round(progressPercent)}%
               </ThemedText>
             </View>
@@ -338,7 +376,13 @@ const AchievementsScreen = (): React.ReactElement => {
       style={{ flex: 1 }}
     >
       {/* Custom Header matching EditProfileScreen */}
-      <View style={{ paddingTop: 60, paddingBottom: theme.spacing.sm, paddingHorizontal: theme.spacing.lg }}>
+      <View
+        style={{
+          paddingTop: 60,
+          paddingBottom: theme.spacing.sm,
+          paddingHorizontal: theme.spacing.lg,
+        }}
+      >
         {/* Row: Back button + Title */}
         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
           <TouchableOpacity
@@ -361,13 +405,29 @@ const AchievementsScreen = (): React.ReactElement => {
             </ThemedText>
           </View>
 
-          <TouchableOpacity onPress={handleShare} style={{ width: 40, height: 40, alignItems: 'center', justifyContent: 'center' }}>
-            <Ionicons name="share-social-outline" size={22} color={theme.colors.primary} />
+          <TouchableOpacity
+            onPress={handleShare}
+            style={{
+              width: 40,
+              height: 40,
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <Ionicons
+              name="share-social-outline"
+              size={22}
+              color={theme.colors.primary}
+            />
           </TouchableOpacity>
         </View>
 
         {/* Subtitle below */}
-        <ThemedText variant="bodySmall" color="textSecondary" style={{ textAlign: 'center', marginTop: 8 }}>
+        <ThemedText
+          variant="bodySmall"
+          color="textSecondary"
+          style={{ textAlign: 'center', marginTop: 8 }}
+        >
           Hành trình sức khỏe của bạn
         </ThemedText>
       </View>

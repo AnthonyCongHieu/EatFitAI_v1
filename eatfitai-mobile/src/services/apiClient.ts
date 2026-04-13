@@ -9,7 +9,14 @@ import { tokenStorage } from './secureStore';
 import { getAccessTokenMem, setAccessTokenMem, clearAccessTokenMem } from './authTokens';
 import { postRefreshToken } from './tokenService';
 import { updateSessionFromAuthResponse } from './authSession';
-import { getApiUrl, forceRescan, getCachedApiUrl, verifyApiUrl, preloadCachedUrl, resetScanState } from './ipScanner';
+import {
+  getApiUrl,
+  forceRescan,
+  getCachedApiUrl,
+  verifyApiUrl,
+  preloadCachedUrl,
+  resetScanState,
+} from './ipScanner';
 
 // Extend axios types để support custom retry flags
 declare module 'axios' {
@@ -314,7 +321,7 @@ apiClient.interceptors.response.use(
 
         // Validate refresh token format (basic check)
         if (typeof refreshToken !== 'string' || refreshToken.trim().length === 0) {
-      throw new Error('Định dạng refresh token không hợp lệ');
+          throw new Error('Định dạng refresh token không hợp lệ');
         }
 
         const data = await postRefreshToken(refreshToken);
@@ -364,7 +371,7 @@ apiClient.interceptors.response.use(
         });
         try {
           updateSessionFromAuthResponse?.(data);
-        } catch { }
+        } catch {}
 
         processQueue(null, newAccessToken);
         const retryHeaders = AxiosHeaders.from(originalRequest.headers ?? {});
@@ -406,7 +413,12 @@ apiClient.interceptors.response.use(
       }
     }
     // Handle network errors specifically - thử re-scan và retry 1 lần
-    if (!error.response && error.code && originalRequest && !originalRequest._networkRetried) {
+    if (
+      !error.response &&
+      error.code &&
+      originalRequest &&
+      !originalRequest._networkRetried
+    ) {
       const retryBaseUrl =
         typeof originalRequest.baseURL === 'string'
           ? originalRequest.baseURL
@@ -447,7 +459,7 @@ apiClient.interceptors.response.use(
       // Re-scan thất bại, return lỗi gốc
       const networkError = new Error(
         `Network Error: ${error.message || 'Không kết nối được server'}. ` +
-        'Kiểm tra kết nối mạng và đảm bảo backend đang chạy.',
+          'Kiểm tra kết nối mạng và đảm bảo backend đang chạy.',
       );
       networkError.name = 'NetworkError';
       return Promise.reject(networkError);
@@ -476,4 +488,3 @@ aiApiClient.interceptors.request.use(async (config: InternalAxiosRequestConfig) 
 });
 
 export default apiClient;
-

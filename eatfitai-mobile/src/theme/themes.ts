@@ -443,10 +443,10 @@ export const darkTheme: AppTheme = {
     },
     // Glassmorphism colors - Solid colors để tránh lỗi 2 màu trên Android
     glass: {
-      background: '#1A2744',      // Solid navy thay vì rgba
-      border: '#2A3F68',          // Solid border
-      backgroundAlt: '#1E3050',   // Solid alt background
-      borderAlt: '#3A5080',       // Solid alt border
+      background: '#1A2744', // Solid navy thay vì rgba
+      border: '#2A3F68', // Solid border
+      backgroundAlt: '#1E3050', // Solid alt background
+      borderAlt: '#3A5080', // Solid alt border
     },
     // Chart colors (blue theme)
     chart: {
@@ -458,7 +458,7 @@ export const darkTheme: AppTheme = {
     // Gamification/Streak colors
     streak: {
       active: '#FF9500',
-      background: '#2A2A1A',      // Solid warm dark thay vì rgba
+      background: '#2A2A1A', // Solid warm dark thay vì rgba
       border: '#FF9500',
     },
   },

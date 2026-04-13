@@ -139,7 +139,8 @@ export const handleApiErrorSilent = (error: any): ApiError => {
     error?.response?.data?.title ??
     error?.response?.data?.message;
 
-  if (isNetworkError) return { type: 'network_error', status: 0, message: error?.message };
+  if (isNetworkError)
+    return { type: 'network_error', status: 0, message: error?.message };
 
   const rawStatus = error?.response?.status;
   const status = rawStatus ? Number(rawStatus) : undefined;

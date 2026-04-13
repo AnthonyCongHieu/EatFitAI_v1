@@ -1,5 +1,5 @@
 flows:
-  - "smoke/00-suite.yaml"
+  - 'smoke/00-suite.yaml'
 includeTags:
   - smoke
 excludeTags:

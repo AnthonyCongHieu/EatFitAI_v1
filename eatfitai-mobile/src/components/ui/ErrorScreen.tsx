@@ -122,7 +122,10 @@ export const ErrorScreen = ({
 
   return (
     <View style={styles.container}>
-      <Animated.View entering={FadeInUp.springify()} style={[styles.iconContainer, shakeStyle]}>
+      <Animated.View
+        entering={FadeInUp.springify()}
+        style={[styles.iconContainer, shakeStyle]}
+      >
         <Icon name={preset.icon} size={inline ? 40 : 56} color="danger" />
       </Animated.View>
 

@@ -2,7 +2,14 @@
 // Cho phép xem, chỉnh sửa thủ công và sử dụng AI để gợi ý mục tiêu
 
 import React, { useEffect, useState } from 'react';
-import { View, StyleSheet, ScrollView, ActivityIndicator, Alert, Pressable } from 'react-native';
+import {
+  View,
+  StyleSheet,
+  ScrollView,
+  ActivityIndicator,
+  Alert,
+  Pressable,
+} from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -261,7 +268,13 @@ const NutritionSettingsScreen = (): React.ReactElement => {
         style={styles.container}
       >
         {/* Custom Header */}
-        <View style={{ paddingTop: 60, paddingBottom: theme.spacing.sm, paddingHorizontal: theme.spacing.lg }}>
+        <View
+          style={{
+            paddingTop: 60,
+            paddingBottom: theme.spacing.sm,
+            paddingHorizontal: theme.spacing.lg,
+          }}
+        >
           <View style={{ flexDirection: 'row', alignItems: 'center' }}>
             <Pressable
               onPress={() => navigation.goBack()}
@@ -298,7 +311,13 @@ const NutritionSettingsScreen = (): React.ReactElement => {
       style={styles.container}
     >
       {/* Custom Header - centered like EditProfileScreen */}
-      <View style={{ paddingTop: 60, paddingBottom: theme.spacing.sm, paddingHorizontal: theme.spacing.lg }}>
+      <View
+        style={{
+          paddingTop: 60,
+          paddingBottom: theme.spacing.sm,
+          paddingHorizontal: theme.spacing.lg,
+        }}
+      >
         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
           <Pressable
             onPress={() => navigation.goBack()}
@@ -333,7 +352,9 @@ const NutritionSettingsScreen = (): React.ReactElement => {
             }}
           >
             <View style={{ flex: 1 }}>
-              <ThemedText variant="h3">{t('nutrition_settings.current_target')}</ThemedText>
+              <ThemedText variant="h3">
+                {t('nutrition_settings.current_target')}
+              </ThemedText>
             </View>
             {!isEditing && (
               <Button
@@ -426,7 +447,11 @@ const NutritionSettingsScreen = (): React.ReactElement => {
           <ThemedText variant="h3" style={{ marginBottom: theme.spacing.sm }}>
             {t('nutrition_settings.ai_section_title')}
           </ThemedText>
-          <ThemedText variant="bodySmall" color="textSecondary" style={{ marginBottom: theme.spacing.md }}>
+          <ThemedText
+            variant="bodySmall"
+            color="textSecondary"
+            style={{ marginBottom: theme.spacing.md }}
+          >
             {t('nutrition_settings.ai_section_subtitle')}
           </ThemedText>
           <AiStatusBadge
@@ -448,7 +473,11 @@ const NutritionSettingsScreen = (): React.ReactElement => {
               </ThemedText>
               <Button
                 variant="secondary"
-                title={isAiDown ? 'Dùng công thức tạm thời' : t('nutrition_settings.analyze_btn')}
+                title={
+                  isAiDown
+                    ? 'Dùng công thức tạm thời'
+                    : t('nutrition_settings.analyze_btn')
+                }
                 onPress={() => suggestMutation.mutate()}
                 loading={suggestMutation.isPending}
                 disabled={suggestMutation.isPending}

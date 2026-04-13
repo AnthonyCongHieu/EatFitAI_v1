@@ -61,12 +61,13 @@ export const useStatsStore = create<StatsState>((set: any, get: any) => ({
       const cachedData = cache.get(targetDate);
       set({ weekSummary: cachedData, selectedDate: targetDate });
       // Vẫn fetch mới nhưng không block UI
-      summaryService.getWeekSummary(targetDate)
-        .then(data => {
+      summaryService
+        .getWeekSummary(targetDate)
+        .then((data) => {
           cache.set(targetDate, data);
           set({ weekSummary: data, weekCache: new Map(cache) });
         })
-        .catch(() => { }); // Silent refresh
+        .catch(() => {}); // Silent refresh
       return;
     }
 

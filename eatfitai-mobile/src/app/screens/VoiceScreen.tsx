@@ -1,7 +1,12 @@
 import React, { useCallback, useEffect } from 'react';
 import { Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
-import { RouteProp, useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
+import {
+  RouteProp,
+  useFocusEffect,
+  useNavigation,
+  useRoute,
+} from '@react-navigation/native';
 import { useQueryClient } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -213,11 +218,19 @@ const VoiceScreen = (): React.ReactElement => {
       case 'listening':
         return { emoji: '🎙️', text: 'Đang lắng nghe...', color: theme.colors.danger };
       case 'processing':
-        return { emoji: '✨', text: 'Đang xử lý giọng nói...', color: theme.colors.warning };
+        return {
+          emoji: '✨',
+          text: 'Đang xử lý giọng nói...',
+          color: theme.colors.warning,
+        };
       case 'parsing':
         return { emoji: '🤖', text: 'AI đang phân tích...', color: theme.colors.info };
       case 'review':
-        return { emoji: '📝', text: 'Kiểm tra trước khi lưu', color: theme.colors.warning };
+        return {
+          emoji: '📝',
+          text: 'Kiểm tra trước khi lưu',
+          color: theme.colors.warning,
+        };
       case 'executing':
         return { emoji: '⚡', text: 'Đang thực hiện...', color: theme.colors.primary };
       case 'success':
@@ -225,7 +238,11 @@ const VoiceScreen = (): React.ReactElement => {
       case 'error':
         return { emoji: '❌', text: 'Có lỗi xảy ra', color: theme.colors.danger };
       default:
-        return { emoji: '', text: 'Chạm vào micro để bắt đầu', color: theme.colors.primary };
+        return {
+          emoji: '',
+          text: 'Chạm vào micro để bắt đầu',
+          color: theme.colors.primary,
+        };
     }
   };
 
@@ -272,16 +289,34 @@ const VoiceScreen = (): React.ReactElement => {
         >
           <View style={styles.micButtonWrapper}>
             <Animated.View
-              style={[styles.ring, styles.ring3, { borderColor: statusConfig.color }, ring3Style]}
+              style={[
+                styles.ring,
+                styles.ring3,
+                { borderColor: statusConfig.color },
+                ring3Style,
+              ]}
             />
             <Animated.View
-              style={[styles.ring, styles.ring2, { borderColor: statusConfig.color }, ring2Style]}
+              style={[
+                styles.ring,
+                styles.ring2,
+                { borderColor: statusConfig.color },
+                ring2Style,
+              ]}
             />
             <Animated.View
-              style={[styles.ring, styles.ring1, { borderColor: statusConfig.color }, ring1Style]}
+              style={[
+                styles.ring,
+                styles.ring1,
+                { borderColor: statusConfig.color },
+                ring1Style,
+              ]}
             />
 
-            <AnimatedPressable onPress={handleToggleRecording} style={buttonAnimatedStyle}>
+            <AnimatedPressable
+              onPress={handleToggleRecording}
+              style={buttonAnimatedStyle}
+            >
               <LinearGradient
                 colors={
                   isRecording
@@ -328,9 +363,7 @@ const VoiceScreen = (): React.ReactElement => {
                     backgroundColor: isDark
                       ? 'rgba(255,255,255,0.08)'
                       : 'rgba(0,0,0,0.05)',
-                    borderColor: isDark
-                      ? 'rgba(255,255,255,0.15)'
-                      : 'rgba(0,0,0,0.1)',
+                    borderColor: isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.1)',
                   },
                 ]}
               >
@@ -359,7 +392,11 @@ const VoiceScreen = (): React.ReactElement => {
               >
                 <View style={styles.statusContent}>
                   <ThemedText style={{ fontSize: 28 }}>{statusConfig.emoji}</ThemedText>
-                  <ThemedText variant="h4" weight="600" style={{ color: statusConfig.color }}>
+                  <ThemedText
+                    variant="h4"
+                    weight="600"
+                    style={{ color: statusConfig.color }}
+                  >
                     {statusConfig.text}
                   </ThemedText>
                 </View>
@@ -403,9 +440,7 @@ const VoiceScreen = (): React.ReactElement => {
                     backgroundColor: isDark
                       ? 'rgba(255,255,255,0.08)'
                       : 'rgba(0,0,0,0.03)',
-                    borderColor: isDark
-                      ? 'rgba(255,255,255,0.12)'
-                      : 'rgba(0,0,0,0.08)',
+                    borderColor: isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.08)',
                   },
                 ]}
               >
@@ -431,7 +466,10 @@ const VoiceScreen = (): React.ReactElement => {
                       ]}
                       onPress={() => setRecognizedText(example)}
                     >
-                      <ThemedText variant="caption" style={{ color: theme.colors.primary }}>
+                      <ThemedText
+                        variant="caption"
+                        style={{ color: theme.colors.primary }}
+                      >
                         {example}
                       </ThemedText>
                     </Pressable>
@@ -445,12 +483,8 @@ const VoiceScreen = (): React.ReactElement => {
               style={[
                 styles.voiceGuide,
                 {
-                  backgroundColor: isDark
-                    ? 'rgba(255,255,255,0.04)'
-                    : 'rgba(0,0,0,0.02)',
-                  borderColor: isDark
-                    ? 'rgba(255,255,255,0.08)'
-                    : 'rgba(0,0,0,0.05)',
+                  backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.02)',
+                  borderColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)',
                 },
               ]}
             >
@@ -464,16 +498,25 @@ const VoiceScreen = (): React.ReactElement => {
               </ThemedText>
               <View style={styles.guideList}>
                 <ThemedText variant="caption" color="muted">
-                  • <ThemedText variant="caption" weight="500">Thêm món</ThemedText>: "Thêm
-                  1 bát phở bữa trưa"
+                  •{' '}
+                  <ThemedText variant="caption" weight="500">
+                    Thêm món
+                  </ThemedText>
+                  : "Thêm 1 bát phở bữa trưa"
                 </ThemedText>
                 <ThemedText variant="caption" color="muted">
-                  • <ThemedText variant="caption" weight="500">Ghi cân nặng</ThemedText>:
-                  "Cân nặng 65 kg"
+                  •{' '}
+                  <ThemedText variant="caption" weight="500">
+                    Ghi cân nặng
+                  </ThemedText>
+                  : "Cân nặng 65 kg"
                 </ThemedText>
                 <ThemedText variant="caption" color="muted">
-                  • <ThemedText variant="caption" weight="500">Hỏi calo</ThemedText>: "Hôm
-                  nay ăn bao nhiêu calo?"
+                  •{' '}
+                  <ThemedText variant="caption" weight="500">
+                    Hỏi calo
+                  </ThemedText>
+                  : "Hôm nay ăn bao nhiêu calo?"
                 </ThemedText>
               </View>
             </Animated.View>
@@ -510,7 +553,11 @@ const VoiceScreen = (): React.ReactElement => {
                 ]}
               >
                 <Ionicons name="refresh" size={20} color={theme.colors.textSecondary} />
-                <ThemedText variant="button" color="textSecondary" style={{ marginLeft: 8 }}>
+                <ThemedText
+                  variant="button"
+                  color="textSecondary"
+                  style={{ marginLeft: 8 }}
+                >
                   Đặt lại
                 </ThemedText>
               </Pressable>

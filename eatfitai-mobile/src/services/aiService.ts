@@ -67,7 +67,8 @@ const toNumber = (value: unknown): number | null => {
   return null;
 };
 
-const toNumberOr = (value: unknown, fallback: number): number => toNumber(value) ?? fallback;
+const toNumberOr = (value: unknown, fallback: number): number =>
+  toNumber(value) ?? fallback;
 
 const clamp = (value: number, min: number, max: number): number =>
   Math.min(Math.max(value, min), max);
@@ -108,7 +109,9 @@ export const isAiOfflineError = (error: unknown): boolean => {
   if ([502, 503, 504].includes(status)) return true;
 
   if (status === 500) {
-    const errorBody = isHttpError(error) ? JSON.stringify(error.response?.data ?? '') : '';
+    const errorBody = isHttpError(error)
+      ? JSON.stringify(error.response?.data ?? '')
+      : '';
     const normalizedBody = errorBody.toLowerCase();
     if (
       normalizedBody.includes('ai provider') ||
@@ -220,10 +223,8 @@ const normalizeAiHealthStatus = (data: any): AiHealthStatus => {
   return {
     state,
     providerUrl: typeof data?.providerUrl === 'string' ? data.providerUrl : '',
-    lastCheckedAt:
-      typeof data?.lastCheckedAt === 'string' ? data.lastCheckedAt : null,
-    lastHealthyAt:
-      typeof data?.lastHealthyAt === 'string' ? data.lastHealthyAt : null,
+    lastCheckedAt: typeof data?.lastCheckedAt === 'string' ? data.lastCheckedAt : null,
+    lastHealthyAt: typeof data?.lastHealthyAt === 'string' ? data.lastHealthyAt : null,
     consecutiveFailures: toNumberOr(data?.consecutiveFailures, 0),
     modelLoaded: Boolean(data?.modelLoaded),
     geminiConfigured: Boolean(data?.geminiConfigured),
@@ -252,7 +253,10 @@ const buildLocalNutritionTarget = (
 ): NutritionTarget => {
   const isFemale = String(payload.sex).toLowerCase() === 'female';
   const baseBmr =
-    10 * payload.weightKg + 6.25 * payload.heightCm - 5 * payload.age + (isFemale ? -161 : 5);
+    10 * payload.weightKg +
+    6.25 * payload.heightCm -
+    5 * payload.age +
+    (isFemale ? -161 : 5);
   const maintenanceCalories = baseBmr * payload.activityLevel;
   const goalAdjustment =
     payload.goal === 'lose' || payload.goal === 'lose_weight'
@@ -291,7 +295,9 @@ const buildFallbackCookingInstructions = (
     .filter(Boolean)
     .slice(0, 4);
   const ingredientText =
-    ingredientNames.length > 0 ? ingredientNames.join(', ') : 'các nguyên liệu đã chuẩn bị';
+    ingredientNames.length > 0
+      ? ingredientNames.join(', ')
+      : 'các nguyên liệu đã chuẩn bị';
 
   return {
     steps: [
@@ -340,7 +346,9 @@ export async function detectFoodByImage(imageUri: string): Promise<VisionDetectR
         console.error('[aiService] detectFoodByImage failed:', response.status, text);
       }
 
-      const httpError = new Error(`Vision API failed: ${response.status} ${text}`) as AiOfflineError;
+      const httpError = new Error(
+        `Vision API failed: ${response.status} ${text}`,
+      ) as AiOfflineError;
       httpError.status = response.status;
       if ([502, 503, 504].includes(response.status)) {
         throw toAiOfflineError(
@@ -425,9 +433,16 @@ export const aiService = {
   },
 
   async getCurrentNutritionTarget(): Promise<NutritionTarget> {
-    const defaults: NutritionTarget = { calories: 2000, protein: 50, carbs: 250, fat: 65 };
+    const defaults: NutritionTarget = {
+      calories: 2000,
+      protein: 50,
+      carbs: 250,
+      fat: 65,
+    };
     try {
-      const response = await apiClient.get<NutritionTargetDto>('/api/ai/nutrition-targets/current');
+      const response = await apiClient.get<NutritionTargetDto>(
+        '/api/ai/nutrition-targets/current',
+      );
       const data = response.data ?? {};
 
       const calories = toNumber(data.caloriesKcal ?? data.calories);
@@ -436,7 +451,10 @@ export const aiService = {
       const fat = toNumber(data.fatGrams ?? data.fat);
 
       if (calories == null || protein == null || carbs == null || fat == null) {
-        console.warn('[EatFitAI] Nutrition target has null values, using defaults:', data);
+        console.warn(
+          '[EatFitAI] Nutrition target has null values, using defaults:',
+          data,
+        );
         return defaults;
       }
       return { calories, protein, carbs, fat };
@@ -444,7 +462,9 @@ export const aiService = {
       if (error && typeof error === 'object' && 'response' in error) {
         const axiosError = error as { response?: { status?: number } };
         if (axiosError.response?.status === 404) {
-          console.log('[EatFitAI] No nutrition target found for user (404), using defaults');
+          console.log(
+            '[EatFitAI] No nutrition target found for user (404), using defaults',
+          );
           return defaults;
         }
       }
@@ -634,7 +654,9 @@ export const aiService = {
           return buildFallbackCookingInstructions(recipeName, ingredients);
         }
 
-        const httpError = new Error(`Không thể tạo hướng dẫn nấu: ${text}`) as AiOfflineError;
+        const httpError = new Error(
+          `Không thể tạo hướng dẫn nấu: ${text}`,
+        ) as AiOfflineError;
         httpError.status = response.status;
         throw httpError;
       }

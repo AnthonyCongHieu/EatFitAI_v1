@@ -103,7 +103,6 @@ const VoiceInput: React.FC<VoiceInputProps> = ({
 
       setRecordingState('idle');
       onResult(simulatedText, command);
-
     } catch (error) {
       console.error('[VoiceInput] Parse error:', error);
       setRecordingState('idle');
@@ -224,7 +223,9 @@ const VoiceInput: React.FC<VoiceInputProps> = ({
 
       {/* Show recognized text */}
       {recognizedText && recordingState === 'idle' && (
-        <View style={[styles.resultBox, { backgroundColor: theme.colors.success + '20' }]}>
+        <View
+          style={[styles.resultBox, { backgroundColor: theme.colors.success + '20' }]}
+        >
           <ThemedText variant="bodySmall" color="success">
             "{recognizedText}"
           </ThemedText>

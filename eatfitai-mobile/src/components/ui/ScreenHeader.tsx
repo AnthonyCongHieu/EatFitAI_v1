@@ -66,4 +66,3 @@ export const ScreenHeader = ({
 };
 
 export default ScreenHeader;
-

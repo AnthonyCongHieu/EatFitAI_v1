@@ -1,7 +1,14 @@
 // Màn hình Chi tiết món ăn và thêm vào nhật ký
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, View, Image, TouchableOpacity } from 'react-native';
+import {
+  ActivityIndicator,
+  Pressable,
+  StyleSheet,
+  View,
+  Image,
+  TouchableOpacity,
+} from 'react-native';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Controller, useForm } from 'react-hook-form';
@@ -27,7 +34,6 @@ import { handleApiError } from '../../../utils/errorHandler';
 import FavoriteButton from '../../../components/FavoriteButton';
 import { favoritesService } from '../../../services/favoritesService';
 import { TEST_IDS } from '../../../testing/testIds';
-
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 type RouteProps = RouteProp<RootStackParamList, 'FoodDetail'>;
@@ -171,7 +177,9 @@ const FoodDetailScreen = (): React.ReactElement | null => {
         nutritionCard: {
           borderRadius: 20,
           padding: theme.spacing.lg,
-          backgroundColor: isDark ? 'rgba(20, 27, 45, 0.95)' : 'rgba(255, 255, 255, 0.98)',
+          backgroundColor: isDark
+            ? 'rgba(20, 27, 45, 0.95)'
+            : 'rgba(255, 255, 255, 0.98)',
           borderWidth: 1,
           borderColor: isDark ? 'rgba(74, 144, 226, 0.15)' : 'rgba(59, 130, 246, 0.08)',
         },
@@ -279,13 +287,10 @@ const FoodDetailScreen = (): React.ReactElement | null => {
   }, [multiplier, detail, proteinValue, carbsValue, fatValue, caloriesValue]);
 
   // For nutrition info section - show base values (no multiplier)
-  const baseMacroValue = useCallback(
-    (base?: number | null) => {
-      if (base === null || base === undefined) return '--';
-      return `${base.toFixed(1).replace(/\.0$/, '')} g`;
-    },
-    [],
-  );
+  const baseMacroValue = useCallback((base?: number | null) => {
+    if (base === null || base === undefined) return '--';
+    return `${base.toFixed(1).replace(/\.0$/, '')} g`;
+  }, []);
 
   // For diary preview section - show calculated values with multiplier
   const macroValue = useCallback(
@@ -347,7 +352,6 @@ const FoodDetailScreen = (): React.ReactElement | null => {
     [detail, navigation, queryClient, returnToDiaryOnSave, selectedDate],
   );
 
-
   if (isLoading) {
     return (
       <Screen contentContainerStyle={styles.loadingContainer}>
@@ -373,10 +377,7 @@ const FoodDetailScreen = (): React.ReactElement | null => {
   const renderHeader = () => (
     <View style={[styles.screenHeader, { paddingTop: insets.top }]}>
       <View style={styles.headerRow}>
-        <TouchableOpacity
-          onPress={() => navigation.goBack()}
-          style={styles.backButton}
-        >
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
           <ThemedText style={{ fontSize: 18 }}>←</ThemedText>
         </TouchableOpacity>
         <View style={styles.headerTitles}>
@@ -395,9 +396,7 @@ const FoodDetailScreen = (): React.ReactElement | null => {
     <Screen scroll={true} testID={TEST_IDS.foodDetail.screen}>
       {renderHeader()}
 
-      <View
-        style={styles.content}
-      >
+      <View style={styles.content}>
         {/* Hero Food Image */}
         <View style={styles.imageContainer}>
           {detail.thumbnail ? (
@@ -414,7 +413,14 @@ const FoodDetailScreen = (): React.ReactElement | null => {
         {/* Nutrition Info Card - 2025 Design */}
         <View style={styles.nutritionCard}>
           {/* Header */}
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: theme.spacing.md }}>
+          <View
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 8,
+              marginBottom: theme.spacing.md,
+            }}
+          >
             <ThemedText variant="h3" weight="700">
               Thông tin dinh dưỡng
             </ThemedText>
@@ -430,7 +436,11 @@ const FoodDetailScreen = (): React.ReactElement | null => {
             </ThemedText>
           ) : null}
           {detail.description ? (
-            <ThemedText variant="bodySmall" color="textSecondary" style={{ marginBottom: theme.spacing.md }}>
+            <ThemedText
+              variant="bodySmall"
+              color="textSecondary"
+              style={{ marginBottom: theme.spacing.md }}
+            >
               {detail.description}
             </ThemedText>
           ) : null}
@@ -441,16 +451,24 @@ const FoodDetailScreen = (): React.ReactElement | null => {
               style={[
                 styles.infoBox,
                 {
-                  backgroundColor: isDark ? 'rgba(74, 144, 226, 0.12)' : 'rgba(59, 130, 246, 0.08)',
+                  backgroundColor: isDark
+                    ? 'rgba(74, 144, 226, 0.12)'
+                    : 'rgba(59, 130, 246, 0.08)',
                   borderWidth: 1,
-                  borderColor: isDark ? 'rgba(74, 144, 226, 0.25)' : 'rgba(59, 130, 246, 0.15)',
+                  borderColor: isDark
+                    ? 'rgba(74, 144, 226, 0.25)'
+                    : 'rgba(59, 130, 246, 0.15)',
                 },
               ]}
             >
               <ThemedText
                 variant="caption"
                 weight="600"
-                style={{ textTransform: 'uppercase', color: isDark ? '#64B5F6' : '#3B82F6', fontSize: 10 }}
+                style={{
+                  textTransform: 'uppercase',
+                  color: isDark ? '#64B5F6' : '#3B82F6',
+                  fontSize: 10,
+                }}
               >
                 Khẩu phần
               </ThemedText>
@@ -462,9 +480,13 @@ const FoodDetailScreen = (): React.ReactElement | null => {
               style={[
                 styles.infoBox,
                 {
-                  backgroundColor: isDark ? 'rgba(239, 68, 68, 0.12)' : 'rgba(239, 68, 68, 0.08)',
+                  backgroundColor: isDark
+                    ? 'rgba(239, 68, 68, 0.12)'
+                    : 'rgba(239, 68, 68, 0.08)',
                   borderWidth: 1,
-                  borderColor: isDark ? 'rgba(239, 68, 68, 0.25)' : 'rgba(239, 68, 68, 0.15)',
+                  borderColor: isDark
+                    ? 'rgba(239, 68, 68, 0.25)'
+                    : 'rgba(239, 68, 68, 0.15)',
                 },
               ]}
             >
@@ -483,7 +505,16 @@ const FoodDetailScreen = (): React.ReactElement | null => {
 
           {/* Macro Pills Row */}
           <View style={[styles.macroRow, { marginTop: theme.spacing.md }]}>
-            <View style={[styles.macroCard, { backgroundColor: 'rgba(59, 130, 246, 0.12)', borderWidth: 1, borderColor: 'rgba(59, 130, 246, 0.2)' }]}>
+            <View
+              style={[
+                styles.macroCard,
+                {
+                  backgroundColor: 'rgba(59, 130, 246, 0.12)',
+                  borderWidth: 1,
+                  borderColor: 'rgba(59, 130, 246, 0.2)',
+                },
+              ]}
+            >
               <ThemedText
                 variant="caption"
                 weight="600"
@@ -495,7 +526,16 @@ const FoodDetailScreen = (): React.ReactElement | null => {
                 {baseMacroValue(detail.perServingProtein ?? detail.protein)}
               </ThemedText>
             </View>
-            <View style={[styles.macroCard, { backgroundColor: 'rgba(251, 191, 36, 0.12)', borderWidth: 1, borderColor: 'rgba(251, 191, 36, 0.2)' }]}>
+            <View
+              style={[
+                styles.macroCard,
+                {
+                  backgroundColor: 'rgba(251, 191, 36, 0.12)',
+                  borderWidth: 1,
+                  borderColor: 'rgba(251, 191, 36, 0.2)',
+                },
+              ]}
+            >
               <ThemedText
                 variant="caption"
                 weight="600"
@@ -507,7 +547,16 @@ const FoodDetailScreen = (): React.ReactElement | null => {
                 {baseMacroValue(detail.perServingCarbs ?? detail.carbs)}
               </ThemedText>
             </View>
-            <View style={[styles.macroCard, { backgroundColor: 'rgba(236, 72, 153, 0.12)', borderWidth: 1, borderColor: 'rgba(236, 72, 153, 0.2)' }]}>
+            <View
+              style={[
+                styles.macroCard,
+                {
+                  backgroundColor: 'rgba(236, 72, 153, 0.12)',
+                  borderWidth: 1,
+                  borderColor: 'rgba(236, 72, 153, 0.2)',
+                },
+              ]}
+            >
               <ThemedText
                 variant="caption"
                 weight="600"
@@ -523,15 +572,17 @@ const FoodDetailScreen = (): React.ReactElement | null => {
         </View>
       </View>
 
-      <View
-        style={{ paddingHorizontal: theme.spacing.lg, paddingBottom: 40 }}
-      >
-        <View style={[
-          styles.nutritionCard,
-          { marginBottom: theme.spacing.lg },
-        ]}>
+      <View style={{ paddingHorizontal: theme.spacing.lg, paddingBottom: 40 }}>
+        <View style={[styles.nutritionCard, { marginBottom: theme.spacing.lg }]}>
           {/* Header */}
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: theme.spacing.lg }}>
+          <View
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 8,
+              marginBottom: theme.spacing.lg,
+            }}
+          >
             <ThemedText variant="h3" weight="700">
               Thêm vào nhật ký
             </ThemedText>
@@ -559,14 +610,20 @@ const FoodDetailScreen = (): React.ReactElement | null => {
 
           {/* Meal Type Selection - Grid Layout */}
           <View style={{ marginTop: theme.spacing.lg }}>
-            <ThemedText variant="bodySmall" weight="600" style={{ marginBottom: theme.spacing.sm }}>
+            <ThemedText
+              variant="bodySmall"
+              weight="600"
+              style={{ marginBottom: theme.spacing.sm }}
+            >
               Chọn bữa ăn
             </ThemedText>
-            <View style={{
-              flexDirection: 'row',
-              flexWrap: 'wrap',
-              gap: 10,
-            }}>
+            <View
+              style={{
+                flexDirection: 'row',
+                flexWrap: 'wrap',
+                gap: 10,
+              }}
+            >
               {MEAL_OPTIONS.map((option) => {
                 const isSelected = mealTypeValue === option.value;
                 return (
@@ -584,10 +641,14 @@ const FoodDetailScreen = (): React.ReactElement | null => {
                       borderWidth: 1.5,
                       backgroundColor: isSelected
                         ? theme.colors.primary
-                        : isDark ? 'rgba(74, 144, 226, 0.08)' : 'rgba(59, 130, 246, 0.05)',
+                        : isDark
+                          ? 'rgba(74, 144, 226, 0.08)'
+                          : 'rgba(59, 130, 246, 0.05)',
                       borderColor: isSelected
                         ? theme.colors.primary
-                        : isDark ? 'rgba(74, 144, 226, 0.3)' : 'rgba(59, 130, 246, 0.2)',
+                        : isDark
+                          ? 'rgba(74, 144, 226, 0.3)'
+                          : 'rgba(59, 130, 246, 0.2)',
                     }}
                   >
                     <ThemedText
@@ -602,7 +663,11 @@ const FoodDetailScreen = (): React.ReactElement | null => {
               })}
             </View>
             {errors.mealType && (
-              <ThemedText variant="bodySmall" color="danger" style={{ marginTop: theme.spacing.xs }}>
+              <ThemedText
+                variant="bodySmall"
+                color="danger"
+                style={{ marginTop: theme.spacing.xs }}
+              >
                 {errors.mealType.message}
               </ThemedText>
             )}
@@ -637,14 +702,18 @@ const FoodDetailScreen = (): React.ReactElement | null => {
               borderRadius: 20,
               overflow: 'hidden',
               borderWidth: 1,
-              borderColor: isDark ? 'rgba(74, 144, 226, 0.25)' : 'rgba(59, 130, 246, 0.15)',
+              borderColor: isDark
+                ? 'rgba(74, 144, 226, 0.25)'
+                : 'rgba(59, 130, 246, 0.15)',
             }}
           >
             {/* Header with gradient */}
             <LinearGradient
-              colors={isDark
-                ? ['rgba(74, 144, 226, 0.25)', 'rgba(118, 75, 162, 0.2)']
-                : ['rgba(59, 130, 246, 0.15)', 'rgba(139, 92, 246, 0.1)']}
+              colors={
+                isDark
+                  ? ['rgba(74, 144, 226, 0.25)', 'rgba(118, 75, 162, 0.2)']
+                  : ['rgba(59, 130, 246, 0.15)', 'rgba(139, 92, 246, 0.1)']
+              }
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
               style={{
@@ -678,45 +747,65 @@ const FoodDetailScreen = (): React.ReactElement | null => {
                 flexDirection: 'row',
                 padding: theme.spacing.md,
                 gap: 8,
-                backgroundColor: isDark ? 'rgba(20, 27, 45, 0.6)' : 'rgba(255, 255, 255, 0.8)',
+                backgroundColor: isDark
+                  ? 'rgba(20, 27, 45, 0.6)'
+                  : 'rgba(255, 255, 255, 0.8)',
               }}
             >
-              <View style={{
-                flex: 1,
-                backgroundColor: 'rgba(59, 130, 246, 0.12)',
-                borderRadius: 12,
-                padding: 10,
-                alignItems: 'center',
-              }}>
-                <ThemedText variant="caption" weight="600" style={{ color: '#3B82F6', fontSize: 10 }}>
+              <View
+                style={{
+                  flex: 1,
+                  backgroundColor: 'rgba(59, 130, 246, 0.12)',
+                  borderRadius: 12,
+                  padding: 10,
+                  alignItems: 'center',
+                }}
+              >
+                <ThemedText
+                  variant="caption"
+                  weight="600"
+                  style={{ color: '#3B82F6', fontSize: 10 }}
+                >
                   ĐẠM
                 </ThemedText>
                 <ThemedText variant="body" weight="700" style={{ color: '#3B82F6' }}>
                   {macroValue(detail.perServingProtein ?? detail.protein)}
                 </ThemedText>
               </View>
-              <View style={{
-                flex: 1,
-                backgroundColor: 'rgba(251, 191, 36, 0.12)',
-                borderRadius: 12,
-                padding: 10,
-                alignItems: 'center',
-              }}>
-                <ThemedText variant="caption" weight="600" style={{ color: '#D97706', fontSize: 10 }}>
+              <View
+                style={{
+                  flex: 1,
+                  backgroundColor: 'rgba(251, 191, 36, 0.12)',
+                  borderRadius: 12,
+                  padding: 10,
+                  alignItems: 'center',
+                }}
+              >
+                <ThemedText
+                  variant="caption"
+                  weight="600"
+                  style={{ color: '#D97706', fontSize: 10 }}
+                >
                   TINH BỘT
                 </ThemedText>
                 <ThemedText variant="body" weight="700" style={{ color: '#D97706' }}>
                   {macroValue(detail.perServingCarbs ?? detail.carbs)}
                 </ThemedText>
               </View>
-              <View style={{
-                flex: 1,
-                backgroundColor: 'rgba(236, 72, 153, 0.12)',
-                borderRadius: 12,
-                padding: 10,
-                alignItems: 'center',
-              }}>
-                <ThemedText variant="caption" weight="600" style={{ color: '#DB2777', fontSize: 10 }}>
+              <View
+                style={{
+                  flex: 1,
+                  backgroundColor: 'rgba(236, 72, 153, 0.12)',
+                  borderRadius: 12,
+                  padding: 10,
+                  alignItems: 'center',
+                }}
+              >
+                <ThemedText
+                  variant="caption"
+                  weight="600"
+                  style={{ color: '#DB2777', fontSize: 10 }}
+                >
                   CHẤT BÉO
                 </ThemedText>
                 <ThemedText variant="body" weight="700" style={{ color: '#DB2777' }}>

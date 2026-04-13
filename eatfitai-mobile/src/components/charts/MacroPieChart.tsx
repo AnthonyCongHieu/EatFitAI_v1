@@ -77,10 +77,8 @@ export const MacroPieChart: React.FC<MacroPieChartProps> = ({ protein, carbs, fa
           style={[
             styles.legendCard,
             {
-              backgroundColor:
-                theme.mode === 'dark' ? '#1A3028' : '#E8F5E9',
-              borderColor:
-                theme.mode === 'dark' ? '#2A4A3A' : '#C8E6C9',
+              backgroundColor: theme.mode === 'dark' ? '#1A3028' : '#E8F5E9',
+              borderColor: theme.mode === 'dark' ? '#2A4A3A' : '#C8E6C9',
             },
           ]}
         >
@@ -103,10 +101,8 @@ export const MacroPieChart: React.FC<MacroPieChartProps> = ({ protein, carbs, fa
           style={[
             styles.legendCard,
             {
-              backgroundColor:
-                theme.mode === 'dark' ? '#2A2818' : '#FFF8E1',
-              borderColor:
-                theme.mode === 'dark' ? '#4A4828' : '#FFE0B2',
+              backgroundColor: theme.mode === 'dark' ? '#2A2818' : '#FFF8E1',
+              borderColor: theme.mode === 'dark' ? '#4A4828' : '#FFE0B2',
             },
           ]}
         >
@@ -129,10 +125,8 @@ export const MacroPieChart: React.FC<MacroPieChartProps> = ({ protein, carbs, fa
           style={[
             styles.legendCard,
             {
-              backgroundColor:
-                theme.mode === 'dark' ? '#1A2540' : '#E3F2FD',
-              borderColor:
-                theme.mode === 'dark' ? '#2A3F68' : '#BBDEFB',
+              backgroundColor: theme.mode === 'dark' ? '#1A2540' : '#E3F2FD',
+              borderColor: theme.mode === 'dark' ? '#2A3F68' : '#BBDEFB',
             },
           ]}
         >

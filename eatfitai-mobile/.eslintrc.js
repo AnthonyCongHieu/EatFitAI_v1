@@ -27,7 +27,10 @@ module.exports = {
     curly: 'off',
     '@typescript-eslint/consistent-type-imports': 'off',
     '@typescript-eslint/no-explicit-any': 'off',
-    '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }],
+    '@typescript-eslint/no-unused-vars': [
+      'warn',
+      { argsIgnorePattern: '^_', varsIgnorePattern: '^_' },
+    ],
     'react-native/no-inline-styles': 'off',
     'react/no-unstable-nested-components': 'off',
     'react/react-in-jsx-scope': 'off',

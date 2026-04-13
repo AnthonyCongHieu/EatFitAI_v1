@@ -31,9 +31,11 @@ export interface RelativeDateLabelOptions {
 }
 
 export const isSameCalendarDay = (left: Date, right: Date): boolean => {
-  return left.getFullYear() === right.getFullYear()
-    && left.getMonth() === right.getMonth()
-    && left.getDate() === right.getDate();
+  return (
+    left.getFullYear() === right.getFullYear() &&
+    left.getMonth() === right.getMonth() &&
+    left.getDate() === right.getDate()
+  );
 };
 
 export const formatDateChipLabel = (date: Date): string => {
@@ -64,7 +66,10 @@ export const formatRelativeDateLabel = (
     }
   }
 
-  return date.toLocaleDateString(VI_LOCALE, options.fallbackOptions ?? DEFAULT_RELATIVE_DATE_OPTIONS);
+  return date.toLocaleDateString(
+    VI_LOCALE,
+    options.fallbackOptions ?? DEFAULT_RELATIVE_DATE_OPTIONS,
+  );
 };
 
 export const formatShortTime = (date: Date): string => {

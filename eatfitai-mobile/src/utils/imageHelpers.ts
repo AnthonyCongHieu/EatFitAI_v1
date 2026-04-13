@@ -4,7 +4,8 @@
 const FALLBACK_FOOD_IMAGE = 'https://placehold.co/200x200/16A34A/FFFFFF/png?text=Food';
 const DEFAULT_DEV_SUPABASE_URL = 'https://bjlmndmafrajjysenpbm.supabase.co';
 const SUPABASE_URL =
-  process.env.EXPO_PUBLIC_SUPABASE_URL?.trim() || (__DEV__ ? DEFAULT_DEV_SUPABASE_URL : '');
+  process.env.EXPO_PUBLIC_SUPABASE_URL?.trim() ||
+  (__DEV__ ? DEFAULT_DEV_SUPABASE_URL : '');
 const LEGACY_SUPABASE_HOSTS = new Set(['ddgwaufaifqohcxbwfcm.supabase.co']);
 
 export const getFoodImageUrl = (

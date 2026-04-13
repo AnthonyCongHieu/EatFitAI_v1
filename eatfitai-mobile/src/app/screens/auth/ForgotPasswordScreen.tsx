@@ -1,11 +1,5 @@
 import { useCallback, useState } from 'react';
-import {
-  StyleSheet,
-  View,
-  Image,
-  KeyboardAvoidingView,
-  Platform,
-} from 'react-native';
+import { StyleSheet, View, Image, KeyboardAvoidingView, Platform } from 'react-native';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Controller, useForm } from 'react-hook-form';
@@ -121,8 +115,7 @@ const ForgotPasswordScreen = ({ navigation }: Props): React.ReactElement => {
           text2: 'Bạn có thể đăng nhập với mật khẩu mới',
         });
       } catch (e: any) {
-        const msg =
-          e?.response?.data?.message || e?.message || 'Không thể đổi mật khẩu';
+        const msg = e?.response?.data?.message || e?.message || 'Không thể đổi mật khẩu';
         Toast.show({
           type: 'error',
           text1: 'Đổi mật khẩu thất bại',
@@ -171,9 +164,7 @@ const ForgotPasswordScreen = ({ navigation }: Props): React.ReactElement => {
                     styles.stepLine,
                     {
                       backgroundColor:
-                        index < currentIndex
-                          ? theme.colors.primary
-                          : theme.colors.border,
+                        index < currentIndex ? theme.colors.primary : theme.colors.border,
                     },
                   ]}
                 />
@@ -274,10 +265,7 @@ const ForgotPasswordScreen = ({ navigation }: Props): React.ReactElement => {
             entering={FadeInDown.delay(100).springify()}
             style={styles.logoContainer}
           >
-            <Image
-              source={require('../../../assets/icon.png')}
-              style={styles.logo}
-            />
+            <Image source={require('../../../assets/icon.png')} style={styles.logo} />
           </Animated.View>
 
           <Animated.View
@@ -482,11 +470,7 @@ const ForgotPasswordScreen = ({ navigation }: Props): React.ReactElement => {
                   />
                 </View>
 
-                <ThemedText
-                  variant="body"
-                  color="textSecondary"
-                  style={styles.subtitle}
-                >
+                <ThemedText variant="body" color="textSecondary" style={styles.subtitle}>
                   Mật khẩu của bạn đã được đổi thành công.{'\n'}
                   Hãy đăng nhập với mật khẩu mới.
                 </ThemedText>

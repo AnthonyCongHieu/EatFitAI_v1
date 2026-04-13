@@ -1,17 +1,33 @@
-﻿import { useCallback, useState, useRef, useEffect } from 'react';
+import { useCallback, useState, useRef, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { StyleSheet, View, TextInput, Pressable, Keyboard } from 'react-native';
+import {
+  StyleSheet,
+  View,
+  Image,
+  TextInput,
+  Pressable,
+  Keyboard,
+  KeyboardAvoidingView,
+  Platform,
+} from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import Toast from 'react-native-toast-message';
 import { LinearGradient } from 'expo-linear-gradient';
-import Animated, { FadeInDown, FadeInUp, ZoomIn } from 'react-native-reanimated';
+import Animated, {
+  FadeInDown,
+  useSharedValue,
+  useAnimatedStyle,
+  withRepeat,
+  withSequence,
+  withTiming,
+} from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import Tilt3DCard, { ParallaxLayer } from '../../../components/ui/Tilt3DCard';
 
 import { useAppTheme } from '../../../theme/ThemeProvider';
 import { ThemedText } from '../../../components/ThemedText';
 import Screen from '../../../components/Screen';
-import { glassStyles } from '../../../components/ui/GlassCard';
-import Button from '../../../components/Button';
 import type { RootStackParamList } from '../../types';
 import apiClient from '../../../services/apiClient';
 import { tokenStorage } from '../../../services/secureStore';
@@ -54,18 +70,56 @@ const resolveNeedsOnboarding = (
 
 const VerifyEmailScreen = ({ navigation, route }: Props): React.ReactElement => {
   const { theme } = useAppTheme();
-  const isDark = theme.mode === 'dark';
-  const glass = glassStyles(isDark);
   const { email, verificationCode: devCode } = route.params;
 
-  // Luôn bắt đầu với mảng rỗng - user phải tự nhập mã
+  /* ─── Colors (Emerald Nebula palette) ─── */
+  const C = {
+    surface: '#0E1322',
+    surfaceContainer: '#1A1F2F',
+    surfaceContainerHigh: '#25293A',
+    surfaceContainerHighest: '#2F3445',
+    surfaceContainerLowest: '#090E1C',
+    primary: '#4BE277',
+    primaryDark: '#22C55E',
+    onPrimary: '#003915',
+    onSurface: '#DEE1F7',
+    onSurfaceVariant: '#BCC8B9',
+    outlineVariant: '#3D4A3D',
+    glassBg: 'rgba(37, 41, 58, 0.6)',
+    glassBorder: 'rgba(75, 226, 119, 0.1)',
+    inputBg: '#090E1C',
+    inputBorder: 'rgba(61, 74, 61, 0.3)',
+  };
+
+  // State
   const [code, setCode] = useState<string[]>(Array(CODE_LENGTH).fill(''));
   const [loading, setLoading] = useState(false);
   const [resendLoading, setResendLoading] = useState(false);
   const [countdown, setCountdown] = useState(0);
   const inputRefs = useRef<(TextInput | null)[]>([]);
 
-  // Countdown timer cho nút gửi lại
+  // Pulse glow animation for mail icon
+  const glowValue = useSharedValue(0.5);
+
+  useEffect(() => {
+    glowValue.value = withRepeat(
+      withSequence(
+        withTiming(1, { duration: 1200 }),
+        withTiming(0.5, { duration: 1200 }),
+      ),
+      -1,
+      true,
+    );
+  }, []);
+
+  const glowStyle = useAnimatedStyle(() => {
+    return {
+      opacity: glowValue.value,
+      transform: [{ scale: 1 + (glowValue.value - 0.5) * 0.8 }], // Tăng độ phóng to của vòng ngoài
+    };
+  });
+
+  // Countdown timer
   useEffect(() => {
     if (countdown > 0) {
       const timer = setTimeout(() => setCountdown(countdown - 1), 1000);
@@ -73,12 +127,12 @@ const VerifyEmailScreen = ({ navigation, route }: Props): React.ReactElement => 
     }
   }, [countdown]);
 
-  // Auto-focus vào ô đầu tiên
+  // Auto-focus ô đầu tiên
   useEffect(() => {
     setTimeout(() => inputRefs.current[0]?.focus(), 500);
   }, []);
 
-  // Hiển thị dev code nếu có
+  // Dev code toast
   useEffect(() => {
     if (devCode) {
       Toast.show({
@@ -91,15 +145,18 @@ const VerifyEmailScreen = ({ navigation, route }: Props): React.ReactElement => 
   }, [devCode]);
 
   const handleCodeChange = (value: string, index: number) => {
-    if (!/^\d*$/.test(value)) return; // Chỉ cho phép số
+    if (value && !/^\d*$/.test(value)) return;
 
     const newCode = [...code];
     newCode[index] = value;
     setCode(newCode);
 
-    // Auto-focus sang ô tiếp theo
     if (value && index < CODE_LENGTH - 1) {
+      // Nhập số -> nhảy tiến
       inputRefs.current[index + 1]?.focus();
+    } else if (!value && index > 0) {
+      // Xóa số -> nhảy lùi
+      inputRefs.current[index - 1]?.focus();
     }
   };
 
@@ -126,8 +183,6 @@ const VerifyEmailScreen = ({ navigation, route }: Props): React.ReactElement => 
 
       const data = resp.data;
 
-      // Sau verify của tài khoản mới, app luôn phải đi vào onboarding
-      // dù backend có trả thiếu/sai cờ needsOnboarding.
       const backendNeedsOnboarding = resolveNeedsOnboarding(
         data as VerifyEmailResponse & { NeedsOnboarding?: boolean },
       );
@@ -143,14 +198,15 @@ const VerifyEmailScreen = ({ navigation, route }: Props): React.ReactElement => 
           email: data.email,
           needsOnboarding,
           backendNeedsOnboarding,
-          rawNeedsOnboarding: (data as VerifyEmailResponse & { NeedsOnboarding?: boolean })
-            .needsOnboarding,
-          rawPascalNeedsOnboarding: (data as VerifyEmailResponse & { NeedsOnboarding?: boolean })
-            .NeedsOnboarding,
+          rawNeedsOnboarding: (
+            data as VerifyEmailResponse & { NeedsOnboarding?: boolean }
+          ).needsOnboarding,
+          rawPascalNeedsOnboarding: (
+            data as VerifyEmailResponse & { NeedsOnboarding?: boolean }
+          ).NeedsOnboarding,
         });
       }
 
-      // Lưu tokens vào secure storage
       const accessToken = data.accessToken || data.token;
       const accessTokenExpiresAt = data.accessTokenExpiresAt || data.expiresAt;
 
@@ -167,8 +223,6 @@ const VerifyEmailScreen = ({ navigation, route }: Props): React.ReactElement => 
       await AsyncStorage.setItem('onboarding_complete', 'false');
       setAccessTokenMem(accessToken);
       useAuthStore.setState({
-        // Giữ app ở auth guest flow thêm một bước để chuyển thẳng sang Onboarding
-        // thay vì remount toàn bộ navigator ngay sau verify rồi có thể rơi vào màn đen.
         isAuthenticated: false,
         needsOnboarding,
         user: nextUser,
@@ -179,8 +233,10 @@ const VerifyEmailScreen = ({ navigation, route }: Props): React.ReactElement => 
         text1: 'Xác minh thành công!',
         text2: 'Tiếp tục thiết lập thông tin của bạn',
       });
-      navigation.replace('Onboarding');
 
+      setTimeout(() => {
+        navigation.replace('Onboarding');
+      }, 50);
     } catch (err: any) {
       const message = err?.response?.data?.message || handleApiError(err);
       Toast.show({ type: 'error', text1: 'Xác minh thất bại', text2: message });
@@ -199,7 +255,6 @@ const VerifyEmailScreen = ({ navigation, route }: Props): React.ReactElement => 
       });
       const data = resp.data as any;
 
-      // Nếu dev mode có trả về mã mới
       if (data?.verificationCode) {
         Toast.show({
           type: 'info',
@@ -215,8 +270,8 @@ const VerifyEmailScreen = ({ navigation, route }: Props): React.ReactElement => 
         });
       }
 
-      setCountdown(60); // Chờ 60s trước khi cho phép gửi lại
-      setCode(Array(CODE_LENGTH).fill('')); // Reset code
+      setCountdown(60);
+      setCode(Array(CODE_LENGTH).fill(''));
     } catch (err: any) {
       const message = err?.response?.data?.message || handleApiError(err);
       Toast.show({ type: 'error', text1: 'Gửi lại thất bại', text2: message });
@@ -225,162 +280,381 @@ const VerifyEmailScreen = ({ navigation, route }: Props): React.ReactElement => 
     }
   }, [email, countdown]);
 
-  const styles = StyleSheet.create({
-    container: {
-      flexGrow: 1,
-      justifyContent: 'center',
-      alignItems: 'center',
-      padding: theme.spacing.xl,
-      paddingBottom: 48,
-    },
-    icon: {
-      marginBottom: theme.spacing.lg,
-    },
-    title: {
-      textAlign: 'center',
-      marginBottom: theme.spacing.sm,
-    },
-    subtitle: {
-      textAlign: 'center',
-      marginBottom: theme.spacing.xl,
-      opacity: 0.8,
-    },
-    codeContainer: {
-      flexDirection: 'row',
-      justifyContent: 'center',
-      gap: theme.spacing.sm,
-      marginBottom: theme.spacing.xl,
-    },
-    codeInput: {
-      width: 48,
-      height: 56,
-      borderRadius: theme.borderRadius.input,
-      backgroundColor: theme.colors.card,
-      borderWidth: 2,
-      borderColor: theme.colors.border,
-      textAlign: 'center',
-      fontSize: 24,
-      fontFamily: 'Inter_700Bold',
-      color: theme.colors.text,
-    },
-    codeInputFilled: {
-      borderColor: theme.colors.primary,
-      backgroundColor: theme.colors.primary + '15',
-    },
-    buttonContainer: {
-      width: '100%',
-      gap: theme.spacing.md,
-    },
-    resendContainer: {
-      flexDirection: 'row',
-      justifyContent: 'center',
-      alignItems: 'center',
-      marginTop: theme.spacing.lg,
-    },
-    resendText: {
-      opacity: 0.7,
-    },
-    resendLink: {
-      color: theme.colors.primary,
-      fontWeight: '600',
-    },
-    backButton: {
-      position: 'absolute',
-      top: 60,
-      left: theme.spacing.lg,
-      zIndex: 10,
-    },
-  });
+  const isCodeComplete = code.every((d) => d !== '');
 
   return (
-    <Screen
-      scroll
-      contentContainerStyle={styles.container}
-      testID={TEST_IDS.auth.verifyScreen}
-    >
-      <LinearGradient
-        colors={[theme.colors.primary + '20', 'transparent']}
-        style={StyleSheet.absoluteFillObject}
+    <GestureHandlerRootView style={[styles.container, { backgroundColor: C.surface }]}>
+      {/* Background glow blobs */}
+      <View
+        style={[styles.blob, styles.blobTopRight, { backgroundColor: C.primary + '0D' }]}
+      />
+      <View
+        style={[
+          styles.blob,
+          styles.blobBottomLeft,
+          { backgroundColor: C.primary + '0D' },
+        ]}
       />
 
-      {/* Nút quay lại */}
-      <Pressable style={styles.backButton} onPress={() => navigation.goBack()}>
-        <Ionicons name="arrow-back-circle" size={40} color={theme.colors.text} />
+      {/* Back button */}
+      <Pressable
+        onPress={() => navigation.goBack()}
+        style={styles.backButton}
+        hitSlop={12}
+      >
+        <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
       </Pressable>
 
-      {/* Icon email */}
-      <Animated.View entering={ZoomIn.delay(200).duration(500)} style={styles.icon}>
-        <View style={[glass.card, { padding: theme.spacing.lg, borderRadius: 50 }]}>
-          <Ionicons name="mail-open-outline" size={48} color={theme.colors.primary} />
-        </View>
-      </Animated.View>
-
-      {/* Tiêu đề */}
-      <Animated.View entering={FadeInDown.delay(300).duration(500)}>
-        <ThemedText variant="h2" weight="700" style={styles.title}>
-          Xác minh Email
-        </ThemedText>
-        <ThemedText variant="body" style={styles.subtitle}>
-          Nhập mã 6 số đã gửi đến{'\n'}
-          <ThemedText variant="body" weight="600">
-            {email}
-          </ThemedText>
-        </ThemedText>
-      </Animated.View>
-
-      {/* OTP Input */}
-      <Animated.View
-        entering={FadeInUp.delay(400).duration(500)}
-        style={styles.codeContainer}
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
-        {code.map((digit, index) => (
-          <TextInput
-            key={index}
-            ref={(ref) => { inputRefs.current[index] = ref; }}
-            style={[styles.codeInput, digit ? styles.codeInputFilled : null]}
-            value={digit}
-            onChangeText={(value) => handleCodeChange(value, index)}
-            onKeyPress={(e) => handleKeyPress(e, index)}
-            keyboardType="number-pad"
-            maxLength={1}
-            selectTextOnFocus
-            testID={`${TEST_IDS.auth.verifyCodeInputPrefix}-${index}`}
-          />
-        ))}
-      </Animated.View>
+        <Screen
+          scroll={true}
+          useGradient={false}
+          horizontalPadding={false}
+          contentContainerStyle={styles.scrollContent}
+          testID={TEST_IDS.auth.verifyScreen}
+        >
+          {/* ─── Logo (icon only) ─── */}
+          <Animated.View
+            entering={FadeInDown.delay(100).springify()}
+            style={styles.logoSection}
+          >
+            <Image
+              source={require('../../../assets/icon.png')}
+              style={styles.logoImage}
+            />
+          </Animated.View>
 
-      {/* Nút xác minh */}
-      <Animated.View
-        entering={FadeInUp.delay(500).duration(500)}
-        style={styles.buttonContainer}
-      >
-        <Button
-          title="Xác minh"
-          variant="primary"
-          size="lg"
-          onPress={handleVerify}
-          loading={loading}
-          disabled={code.some((d) => !d)}
-          testID={TEST_IDS.auth.verifySubmitButton}
-        />
-      </Animated.View>
+          {/* ─── Verification Card (3D tilt interaction) ─── */}
+          <Tilt3DCard maxTilt={6} perspective={900}>
+            <Animated.View
+              entering={FadeInDown.delay(200).springify()}
+              style={[
+                styles.card,
+                {
+                  backgroundColor: C.glassBg,
+                  borderColor: C.glassBorder,
+                },
+              ]}
+            >
+              {/* Header — depth 0.3 */}
+              <ParallaxLayer depth={0.3}>
+                <View style={styles.cardHeader}>
+                  {/* Mail icon with bordered pulsing glow */}
+                  <View style={styles.iconWrapper}>
+                    <Animated.View
+                      style={[styles.glowRing, { borderColor: C.primary }, glowStyle]}
+                    />
+                    <View
+                      style={[
+                        styles.mailIconContainer,
+                        { backgroundColor: 'transparent' },
+                      ]}
+                    >
+                      <Ionicons name="mail-open-outline" size={32} color={C.primary} />
+                    </View>
+                  </View>
 
-      {/* Gửi lại mã */}
-      <Animated.View
-        entering={FadeInUp.delay(600).duration(500)}
-        style={styles.resendContainer}
-      >
-        <ThemedText variant="body" style={styles.resendText}>
-          Không nhận được mã?{' '}
-        </ThemedText>
-        <Pressable onPress={handleResend} disabled={countdown > 0 || resendLoading}>
-          <ThemedText variant="body" style={styles.resendLink}>
-            {countdown > 0 ? `Gửi lại sau ${countdown}s` : 'Gửi lại'}
-          </ThemedText>
-        </Pressable>
-      </Animated.View>
-    </Screen>
+                  <ThemedText
+                    variant="h2"
+                    weight="700"
+                    style={{
+                      color: '#FFFFFF',
+                      fontSize: 28,
+                      textAlign: 'center',
+                      lineHeight: 34,
+                    }}
+                  >
+                    Kiểm tra hộp thư{'\n'}của bạn!
+                  </ThemedText>
+                  <ThemedText
+                    variant="body"
+                    style={{
+                      color: C.onSurfaceVariant,
+                      marginTop: 12,
+                      textAlign: 'center',
+                      lineHeight: 24,
+                    }}
+                  >
+                    Chúng tôi đã gửi mã xác thực{'\n'}gồm 6 chữ số đến
+                  </ThemedText>
+                  <ThemedText
+                    variant="body"
+                    weight="700"
+                    style={{
+                      color: '#FFFFFF',
+                      marginTop: 4,
+                      textAlign: 'center',
+                      fontSize: 16,
+                    }}
+                  >
+                    {email}
+                  </ThemedText>
+                </View>
+              </ParallaxLayer>
+
+              {/* OTP Input — depth 0.5 */}
+              <ParallaxLayer depth={0.5}>
+                <View style={styles.otpContainer}>
+                  {code.map((digit, index) => (
+                    <TextInput
+                      key={index}
+                      ref={(ref) => {
+                        inputRefs.current[index] = ref;
+                      }}
+                      style={[
+                        styles.otpInput,
+                        {
+                          backgroundColor: C.inputBg,
+                          borderColor: digit ? C.primary : C.inputBorder,
+                        },
+                      ]}
+                      value={digit}
+                      onChangeText={(value) => handleCodeChange(value, index)}
+                      onKeyPress={(e) => handleKeyPress(e, index)}
+                      keyboardType="number-pad"
+                      maxLength={1}
+                      placeholderTextColor={C.onSurfaceVariant}
+                      selectionColor={C.primary}
+                      testID={`${TEST_IDS.auth.verifyCodeInputPrefix}-${index}`}
+                    />
+                  ))}
+                </View>
+              </ParallaxLayer>
+
+              {/* Verify Button — depth 0.8 */}
+              <ParallaxLayer depth={0.8}>
+                <Animated.View entering={FadeInDown.delay(350).springify()}>
+                  <Pressable
+                    testID={TEST_IDS.auth.verifySubmitButton}
+                    onPress={handleVerify}
+                    disabled={loading || !isCodeComplete}
+                    style={({ pressed }) => [
+                      styles.verifyButton,
+                      pressed && { transform: [{ scale: 0.96 }] },
+                      (loading || !isCodeComplete) && { opacity: 0.5 },
+                    ]}
+                  >
+                    <LinearGradient
+                      colors={['#6BFF8F', '#4BE277', '#22C55E']}
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 1, y: 1 }}
+                      style={StyleSheet.absoluteFill}
+                    />
+                    {/* Glossy highlight */}
+                    <LinearGradient
+                      colors={[
+                        'rgba(255,255,255,0.25)',
+                        'rgba(255,255,255,0.05)',
+                        'transparent',
+                      ]}
+                      start={{ x: 0.2, y: 0 }}
+                      end={{ x: 0.8, y: 1 }}
+                      style={StyleSheet.absoluteFill}
+                    />
+                    <ThemedText
+                      variant="body"
+                      weight="700"
+                      style={{ color: C.onPrimary, fontSize: 18 }}
+                    >
+                      {loading ? 'Đang xác minh...' : 'Xác nhận Email'}
+                    </ThemedText>
+                  </Pressable>
+                </Animated.View>
+              </ParallaxLayer>
+
+              {/* Resend section — depth 0.6 */}
+              <ParallaxLayer depth={0.6}>
+                <View style={styles.resendSection}>
+                  <View style={styles.resendRow}>
+                    <ThemedText variant="bodySmall" style={{ color: C.onSurfaceVariant }}>
+                      Bạn không nhận được mã?{' '}
+                    </ThemedText>
+                    {countdown > 0 ? (
+                      <ThemedText
+                        variant="bodySmall"
+                        weight="600"
+                        style={{ color: C.primary }}
+                      >
+                        Gửi lại sau {Math.floor(countdown / 60)}:
+                        {(countdown % 60).toString().padStart(2, '0')}
+                      </ThemedText>
+                    ) : null}
+                  </View>
+                  <Pressable
+                    onPress={handleResend}
+                    disabled={countdown > 0 || resendLoading}
+                    style={({ pressed }) => [
+                      styles.resendButton,
+                      {
+                        backgroundColor: C.surfaceContainerHighest + '33',
+                        borderColor: C.outlineVariant + '33',
+                      },
+                      (countdown > 0 || resendLoading) && { opacity: 0.4 },
+                      pressed && { transform: [{ scale: 0.96 }] },
+                    ]}
+                  >
+                    <ThemedText
+                      variant="bodySmall"
+                      weight="500"
+                      style={{ color: C.onSurfaceVariant }}
+                    >
+                      {resendLoading ? 'Đang gửi...' : 'Gửi lại mã xác nhận'}
+                    </ThemedText>
+                  </Pressable>
+                </View>
+              </ParallaxLayer>
+            </Animated.View>
+          </Tilt3DCard>
+        </Screen>
+      </KeyboardAvoidingView>
+    </GestureHandlerRootView>
   );
 };
+
+/* ─── Styles ─── */
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+
+  /* Background blobs */
+  blob: {
+    position: 'absolute',
+    width: 300,
+    height: 300,
+    borderRadius: 150,
+  },
+  blobTopRight: {
+    top: -80,
+    right: -100,
+  },
+  blobBottomLeft: {
+    bottom: -60,
+    left: -100,
+  },
+
+  /* Back button */
+  backButton: {
+    position: 'absolute',
+    top: 56,
+    left: 20,
+    zIndex: 50,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  /* Scroll */
+  scrollContent: {
+    flexGrow: 1,
+    paddingHorizontal: 24,
+    paddingTop: 80,
+    paddingBottom: 40,
+    justifyContent: 'center',
+  },
+
+  /* Logo */
+  logoSection: {
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  logoImage: {
+    width: 72,
+    height: 72,
+    borderRadius: 20,
+  },
+
+  /* Card */
+  card: {
+    borderRadius: 28,
+    borderWidth: 1,
+    padding: 28,
+    overflow: 'hidden',
+  },
+
+  /* Card Header */
+  cardHeader: {
+    alignItems: 'center',
+    marginBottom: 32,
+  },
+
+  iconWrapper: {
+    position: 'relative',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 20,
+    width: 64,
+    height: 64,
+  },
+  glowRing: {
+    ...StyleSheet.absoluteFillObject,
+    borderRadius: 32,
+    borderWidth: 3, // Viền dày hơn
+    opacity: 0.8,
+  },
+
+  /* Mail icon container */
+  mailIconContainer: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  /* OTP */
+  otpContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 8,
+    marginBottom: 24,
+  },
+  otpInput: {
+    width: 48,
+    height: 58,
+    borderRadius: 14,
+    borderWidth: 1.5,
+    textAlign: 'center',
+    fontSize: 22,
+    fontFamily: 'Inter_700Bold',
+    color: '#FFFFFF',
+  },
+
+  /* Verify Button */
+  verifyButton: {
+    height: 56,
+    borderRadius: 9999,
+    overflow: 'hidden',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#4BE277',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.3,
+    shadowRadius: 16,
+    elevation: 6,
+  },
+
+  /* Resend */
+  resendSection: {
+    marginTop: 20,
+    alignItems: 'center',
+    gap: 12,
+  },
+  resendRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  resendButton: {
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 12,
+    borderWidth: 1,
+  },
+});
 
 export default VerifyEmailScreen;

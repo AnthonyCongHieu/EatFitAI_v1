@@ -28,16 +28,56 @@ const DEFAULT_FIXTURE_MANIFEST = {
   },
   fixtures: {
     primary: [
-      { key: 'egg', fileName: 'ai-primary-egg-01.jpg', relativePath: 'scan-demo/ai-primary-egg-01.jpg', targetOutcome: 'mapped-or-usable-result' },
-      { key: 'banana', fileName: 'ai-primary-banana-01.jpg', relativePath: 'scan-demo/ai-primary-banana-01.jpg', targetOutcome: 'mapped-or-usable-result' },
-      { key: 'rice', fileName: 'ai-primary-rice-01.jpg', relativePath: 'scan-demo/ai-primary-rice-01.jpg', targetOutcome: 'mapped-or-usable-result' },
-      { key: 'broccoli', fileName: 'ai-primary-broccoli-01.jpg', relativePath: 'scan-demo/ai-primary-broccoli-01.jpg', targetOutcome: 'mapped-or-usable-result' },
-      { key: 'spinach', fileName: 'ai-primary-spinach-01.jpg', relativePath: 'scan-demo/ai-primary-spinach-01.jpg', targetOutcome: 'mapped-or-usable-result' },
+      {
+        key: 'egg',
+        fileName: 'ai-primary-egg-01.jpg',
+        relativePath: 'scan-demo/ai-primary-egg-01.jpg',
+        targetOutcome: 'mapped-or-usable-result',
+      },
+      {
+        key: 'banana',
+        fileName: 'ai-primary-banana-01.jpg',
+        relativePath: 'scan-demo/ai-primary-banana-01.jpg',
+        targetOutcome: 'mapped-or-usable-result',
+      },
+      {
+        key: 'rice',
+        fileName: 'ai-primary-rice-01.jpg',
+        relativePath: 'scan-demo/ai-primary-rice-01.jpg',
+        targetOutcome: 'mapped-or-usable-result',
+      },
+      {
+        key: 'broccoli',
+        fileName: 'ai-primary-broccoli-01.jpg',
+        relativePath: 'scan-demo/ai-primary-broccoli-01.jpg',
+        targetOutcome: 'mapped-or-usable-result',
+      },
+      {
+        key: 'spinach',
+        fileName: 'ai-primary-spinach-01.jpg',
+        relativePath: 'scan-demo/ai-primary-spinach-01.jpg',
+        targetOutcome: 'mapped-or-usable-result',
+      },
     ],
     benchmark: [
-      { key: 'chicken', fileName: 'ai-benchmark-chicken-01.jpg', relativePath: 'scan-demo/ai-benchmark-chicken-01.jpg', targetOutcome: 'benchmark-only' },
-      { key: 'beef', fileName: 'ai-benchmark-beef-01.jpg', relativePath: 'scan-demo/ai-benchmark-beef-01.jpg', targetOutcome: 'benchmark-only' },
-      { key: 'pork', fileName: 'ai-benchmark-pork-01.jpg', relativePath: 'scan-demo/ai-benchmark-pork-01.jpg', targetOutcome: 'benchmark-only' },
+      {
+        key: 'chicken',
+        fileName: 'ai-benchmark-chicken-01.jpg',
+        relativePath: 'scan-demo/ai-benchmark-chicken-01.jpg',
+        targetOutcome: 'benchmark-only',
+      },
+      {
+        key: 'beef',
+        fileName: 'ai-benchmark-beef-01.jpg',
+        relativePath: 'scan-demo/ai-benchmark-beef-01.jpg',
+        targetOutcome: 'benchmark-only',
+      },
+      {
+        key: 'pork',
+        fileName: 'ai-benchmark-pork-01.jpg',
+        relativePath: 'scan-demo/ai-benchmark-pork-01.jpg',
+        targetOutcome: 'benchmark-only',
+      },
     ],
   },
   searchCases: [],
@@ -125,7 +165,10 @@ function loadFixtureManifestTemplate() {
 
     return JSON.parse(fs.readFileSync(MANIFEST_TEMPLATE_PATH, 'utf8'));
   } catch (error) {
-    console.warn('[production-smoke] Failed to load manifest template, using defaults:', error);
+    console.warn(
+      '[production-smoke] Failed to load manifest template, using defaults:',
+      error,
+    );
     return DEFAULT_FIXTURE_MANIFEST;
   }
 }
@@ -267,13 +310,10 @@ function buildRehearsalTemplateMarkdown() {
 
 function ensureSessionArtifacts(outputDir, context) {
   writeJsonIfMissing(path.join(outputDir, 'request-budget.json'), createBudgetTemplate());
-  writeJsonIfMissing(
-    path.join(outputDir, 'fixture-manifest.json'),
-    {
-      generatedAt: new Date().toISOString(),
-      ...loadFixtureManifestTemplate(),
-    },
-  );
+  writeJsonIfMissing(path.join(outputDir, 'fixture-manifest.json'), {
+    generatedAt: new Date().toISOString(),
+    ...loadFixtureManifestTemplate(),
+  });
   writeJsonIfMissing(
     path.join(outputDir, 'session-observations.json'),
     createSessionObservationsTemplate(context),
@@ -408,21 +448,25 @@ async function runAuthChecks(context) {
   if (!context.email || !context.password) {
     return {
       skipped: true,
-      reason: 'Set EATFITAI_SMOKE_EMAIL and EATFITAI_SMOKE_PASSWORD to enable login/refresh/API checks.',
+      reason:
+        'Set EATFITAI_SMOKE_EMAIL and EATFITAI_SMOKE_PASSWORD to enable login/refresh/API checks.',
     };
   }
 
-  const loginResponse = await fetchJsonWithDetails(`${context.backendUrl}/api/auth/login`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Accept: 'application/json',
+  const loginResponse = await fetchJsonWithDetails(
+    `${context.backendUrl}/api/auth/login`,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+      },
+      body: JSON.stringify({
+        email: context.email,
+        password: context.password,
+      }),
     },
-    body: JSON.stringify({
-      email: context.email,
-      password: context.password,
-    }),
-  });
+  );
 
   const accessToken = loginResponse.body?.accessToken;
   const refreshToken = loginResponse.body?.refreshToken;
@@ -532,9 +576,11 @@ async function main() {
   );
   const failedAuthCheck =
     !results.checks.auth.skipped &&
-    [results.checks.auth.login, results.checks.auth.aiStatus, results.checks.auth.refresh].some(
-      (check) => !check?.ok,
-    );
+    [
+      results.checks.auth.login,
+      results.checks.auth.aiStatus,
+      results.checks.auth.refresh,
+    ].some((check) => !check?.ok);
 
   if (failedHealthCheck || failedAuthCheck) {
     process.exitCode = 1;

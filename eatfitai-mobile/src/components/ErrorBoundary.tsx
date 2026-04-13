@@ -62,7 +62,9 @@ class ErrorBoundaryClass extends Component<Props, State> {
       );
     }
 
-    return <React.Fragment key={this.state.recoveryKey}>{this.props.children}</React.Fragment>;
+    return (
+      <React.Fragment key={this.state.recoveryKey}>{this.props.children}</React.Fragment>
+    );
   }
 }
 

@@ -106,7 +106,9 @@ export const VoiceResultCard = ({
           ? 'rgba(255,255,255,0.06)'
           : `${theme.colors.info}12`,
       borderWidth: 1,
-      borderColor: isLowConfidence ? `${theme.colors.warning}55` : `${theme.colors.info}33`,
+      borderColor: isLowConfidence
+        ? `${theme.colors.warning}55`
+        : `${theme.colors.info}33`,
       padding: theme.spacing.md,
       borderRadius: theme.radius.md,
       marginBottom: theme.spacing.md,
@@ -180,7 +182,10 @@ export const VoiceResultCard = ({
     }
 
     if (entities.mealType) {
-      rows.push({ label: 'Bữa ăn', value: MEAL_LABELS[entities.mealType] || entities.mealType });
+      rows.push({
+        label: 'Bữa ăn',
+        value: MEAL_LABELS[entities.mealType] || entities.mealType,
+      });
     }
 
     if (entities.weight && command.intent === 'ADD_FOOD' && !entities.foods) {
@@ -298,15 +303,16 @@ export const VoiceResultCard = ({
 
         {command.intent !== 'UNKNOWN' && (
           <>
-            {command.intent === 'ASK_CALORIES' && executedData?.totalCalories !== undefined && (
-              <ThemedText
-                variant="caption"
-                color="success"
-                style={{ textAlign: 'center', marginTop: theme.spacing.md }}
-              >
-                Đã lấy thông tin thành công.
-              </ThemedText>
-            )}
+            {command.intent === 'ASK_CALORIES' &&
+              executedData?.totalCalories !== undefined && (
+                <ThemedText
+                  variant="caption"
+                  color="success"
+                  style={{ textAlign: 'center', marginTop: theme.spacing.md }}
+                >
+                  Đã lấy thông tin thành công.
+                </ThemedText>
+              )}
 
             {needsWeightConfirm && executedData?.newWeight && onConfirmWeight && (
               <Button

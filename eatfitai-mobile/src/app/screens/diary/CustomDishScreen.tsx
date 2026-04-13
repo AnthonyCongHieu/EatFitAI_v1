@@ -150,7 +150,10 @@ const CustomDishScreen = (): React.ReactElement => {
 
   return (
     <View style={{ flex: 1 }}>
-      <LinearGradient colors={theme.colors.screenGradient} style={StyleSheet.absoluteFill} />
+      <LinearGradient
+        colors={theme.colors.screenGradient}
+        style={StyleSheet.absoluteFill}
+      />
 
       <View
         style={{
@@ -176,7 +179,12 @@ const CustomDishScreen = (): React.ReactElement => {
           </Pressable>
           <View style={{ flex: 1, alignItems: 'center', marginRight: 40 }}>
             <ThemedText
-              style={{ fontSize: 20, fontWeight: '700', letterSpacing: 0, lineHeight: 28 }}
+              style={{
+                fontSize: 20,
+                fontWeight: '700',
+                letterSpacing: 0,
+                lineHeight: 28,
+              }}
             >
               Món nhập tay
             </ThemedText>
@@ -236,7 +244,14 @@ const CustomDishScreen = (): React.ReactElement => {
                   : 'rgba(59, 130, 246, 0.08)',
               }}
             >
-              <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12, gap: 8 }}>
+              <View
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  marginBottom: 12,
+                  gap: 8,
+                }}
+              >
                 <ThemedText style={{ fontSize: 16 }}>📊</ThemedText>
                 <ThemedText variant="body" weight="600">
                   Giá trị dinh dưỡng cho món nhập tay

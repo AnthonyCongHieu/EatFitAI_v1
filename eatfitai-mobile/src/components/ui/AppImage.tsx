@@ -40,17 +40,23 @@ export const AppImage = ({
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
 
-  const handleLoad = useCallback((e: any) => {
-    setIsLoading(false);
-    setHasError(false);
-    onLoad?.(e);
-  }, [onLoad]);
+  const handleLoad = useCallback(
+    (e: any) => {
+      setIsLoading(false);
+      setHasError(false);
+      onLoad?.(e);
+    },
+    [onLoad],
+  );
 
-  const handleError = useCallback((e: any) => {
-    setIsLoading(false);
-    setHasError(true);
-    onError?.(e);
-  }, [onError]);
+  const handleError = useCallback(
+    (e: any) => {
+      setIsLoading(false);
+      setHasError(true);
+      onError?.(e);
+    },
+    [onError],
+  );
 
   const styles = StyleSheet.create({
     container: {
@@ -119,4 +125,3 @@ export const AppImage = ({
 };
 
 export default AppImage;
-
