@@ -1,4 +1,4 @@
-﻿import { useCallback, useState, useRef, useEffect } from 'react';
+import { useCallback, useState, useRef, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { StyleSheet, View, TextInput, Pressable, Keyboard } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -179,7 +179,13 @@ const VerifyEmailScreen = ({ navigation, route }: Props): React.ReactElement => 
         text1: 'Xác minh thành công!',
         text2: 'Tiếp tục thiết lập thông tin của bạn',
       });
-      navigation.replace('Onboarding');
+
+      // Sử dụng setTimeout để tránh Race Condition giữa React Navigation (replace state) 
+      // và trạng thái render lại của Zustand useAuthStore. Điều này khắc phục lỗi 
+      // rơi vào màn đen ngay sau khi nhập OTP.
+      setTimeout(() => {
+        navigation.replace('Onboarding');
+      }, 50);
 
     } catch (err: any) {
       const message = err?.response?.data?.message || handleApiError(err);

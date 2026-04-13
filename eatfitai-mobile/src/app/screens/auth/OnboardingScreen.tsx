@@ -1,4 +1,4 @@
-﻿/**
+/**
  * OnboardingScreen - First-time user setup wizard
  * 5 steps: Basic Info → Body Metrics → Goal → Activity → AI Calculate
  */
@@ -845,6 +845,7 @@ const OnboardingScreen = (): React.ReactElement => {
   return (
     <KeyboardAvoidingView
       style={styles.container}
+      contentContainerStyle={styles.container}
       behavior={Platform.OS === 'ios' ? 'position' : undefined}
       keyboardVerticalOffset={0}
       testID={TEST_IDS.auth.onboardingScreen}

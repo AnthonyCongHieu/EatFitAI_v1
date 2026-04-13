@@ -91,14 +91,10 @@ export const ParallaxLayer: React.FC<ParallaxLayerProps> = ({
       return { transform: [] };
     }
 
-    // Scale up slightly for "closer" layers
-    const scale = ctx.isPressed.value ? 1 + depth * 0.03 : 1;
-
     return {
       transform: [
-        { translateX: offsetX },
-        { translateY: offsetY },
-        { scale: withSpring(scale, SPRING_CONFIG) },
+        { translateX: Math.round(offsetX) },
+        { translateY: Math.round(offsetY) },
       ],
     };
   });
@@ -200,14 +196,11 @@ const Tilt3DCard: React.FC<Tilt3DCardProps> = ({
       return { transform: [] };
     }
 
-    const scale = isPressed.value ? 1.015 : 1;
-
     return {
       transform: [
         { perspective },
         { rotateY: `${rotateY}deg` },
         { rotateX: `${rotateX}deg` },
-        { scale: withSpring(scale, SPRING_CONFIG) },
       ],
     };
   });
