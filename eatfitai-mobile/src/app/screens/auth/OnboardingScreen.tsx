@@ -1136,47 +1136,234 @@ const OnboardingScreen = (): React.ReactElement => {
           </Animated.View>
         );
 
-      case 3: // Activity Level
+      case 3: // Activity Level — Emerald Nebula redesign
         return (
-          <Animated.View entering={FadeInRight} exiting={FadeOutLeft} key="step3" accessibilityRole="radiogroup" accessibilityLabel="Chọn mức độ vận động">
-            {ACTIVITY_OPTIONS.map((act) => (
-              <Pressable
-                key={act.value}
-                testID={`${TEST_IDS.auth.onboardingActivityPrefix}-${act.value}`}
-                style={[
-                  oldStyles.activityCard,
-                  {
-                    backgroundColor:
-                      data.activityLevel === act.value
-                        ? theme.colors.primaryLight
-                        : isDark
-                          ? 'rgba(255,255,255,0.05)'
-                          : 'rgba(0,0,0,0.03)',
-                    borderColor:
-                      data.activityLevel === act.value
-                        ? theme.colors.primary
-                        : 'transparent',
-                  },
-                ]}
-                onPress={() => setData({ ...data, activityLevel: act.value as any })}
-                accessibilityRole="radio"
-                accessibilityLabel={`${act.label}: ${act.desc}`}
-                accessibilityState={{ checked: data.activityLevel === act.value }}
+          <Animated.View entering={FadeInRight} exiting={FadeOutLeft} key="step3">
+            <Tilt3DCard maxTilt={6} perspective={900} height={680}>
+              <Animated.View
+                entering={FadeInDown.delay(150).springify()}
+                style={[s.card, { backgroundColor: C.glassBg, borderColor: C.glassBorder }]}
               >
-                <ThemedText style={{ fontSize: 28, lineHeight: 32 }}>{act.icon}</ThemedText>
-                <View style={{ flex: 1 }}>
-                  <ThemedText
-                    weight={data.activityLevel === act.value ? '600' : '400'}
-                    color={data.activityLevel === act.value ? 'primary' : undefined}
-                  >
-                    {act.label}
-                  </ThemedText>
-                  <ThemedText variant="caption" color="textSecondary">
-                    {act.desc}
-                  </ThemedText>
-                </View>
-              </Pressable>
-            ))}
+                {/* Header — no icon, just title + subtitle */}
+                <ParallaxLayer depth={0.3}>
+                  <View style={s.cardHeader}>
+                    <ThemedText
+                      variant="h2"
+                      weight="700"
+                      style={{ color: '#FFFFFF', fontSize: 26, textAlign: 'center', fontFamily: 'Inter_700Bold', paddingTop: 8 }}
+                    >
+                      Cường độ vận động
+                    </ThemedText>
+                    <ThemedText
+                      variant="body"
+                      style={{
+                        color: C.onSurfaceVariant,
+                        marginTop: 6,
+                        textAlign: 'center',
+                        lineHeight: 22,
+                        maxWidth: 280,
+                        fontFamily: 'Inter_500Medium',
+                      }}
+                    >
+                      Chỉ số BMR sẽ được tùy chỉnh theo mức tốn năng lượng của bạn
+                    </ThemedText>
+                  </View>
+                </ParallaxLayer>
+
+                {/* Activity Selection Cards */}
+                <ParallaxLayer depth={0.5}>
+                  <View style={{ gap: 12, marginTop: 8 }}>
+                    {/* Ít vận động */}
+                    <Pressable
+                      testID={`${TEST_IDS.auth.onboardingActivityPrefix}-sedentary`}
+                      style={[
+                        s3.actCard,
+                        {
+                          backgroundColor: C.glassBg,
+                          borderColor: data.activityLevel === 'sedentary' ? C.primary : C.glassBorder,
+                          borderWidth: data.activityLevel === 'sedentary' ? 2 : 1,
+                          ...(data.activityLevel === 'sedentary' && {
+                            shadowColor: C.primary,
+                            shadowOpacity: 0.2,
+                            shadowRadius: 20,
+                            elevation: 8,
+                          }),
+                        },
+                      ]}
+                      onPress={() => setData({ ...data, activityLevel: 'sedentary' as any })}
+                      accessibilityRole="radio"
+                      accessibilityState={{ checked: data.activityLevel === 'sedentary' }}
+                    >
+                      <View style={[s3.actIconBox, data.activityLevel === 'sedentary'
+                        ? { backgroundColor: 'rgba(75, 226, 119, 0.15)', borderColor: 'rgba(75, 226, 119, 0.3)' }
+                        : { backgroundColor: 'rgba(47, 52, 69, 0.5)', borderColor: 'rgba(61, 74, 61, 0.2)' }
+                      ]}>
+                        <MaterialCommunityIcons name="desktop-classic" size={24} color={data.activityLevel === 'sedentary' ? C.primary : '#869585'} />
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        <ThemedText weight="700" style={{ color: '#FFFFFF', fontSize: 17, fontFamily: 'Inter_700Bold' }}>
+                          Ít vận động
+                        </ThemedText>
+                        <ThemedText style={{ color: C.onSurfaceVariant, fontSize: 13, fontFamily: 'Inter_400Regular', marginTop: 2, lineHeight: 18 }}>
+                          Ngồi văn phòng hoặc làm việc tại nhà, ít đi lại
+                        </ThemedText>
+                      </View>
+                      <View style={[
+                        s3.radioOuter,
+                        data.activityLevel === 'sedentary'
+                          ? { backgroundColor: C.primary }
+                          : { borderColor: 'rgba(134, 149, 133, 0.5)', borderWidth: 2 },
+                      ]}>
+                        {data.activityLevel === 'sedentary' && (
+                          <Ionicons name="checkmark" size={16} color="#003915" />
+                        )}
+                      </View>
+                    </Pressable>
+
+                    {/* Vận động nhẹ */}
+                    <Pressable
+                      testID={`${TEST_IDS.auth.onboardingActivityPrefix}-light`}
+                      style={[
+                        s3.actCard,
+                        {
+                          backgroundColor: C.glassBg,
+                          borderColor: data.activityLevel === 'light' ? C.primary : C.glassBorder,
+                          borderWidth: data.activityLevel === 'light' ? 2 : 1,
+                          ...(data.activityLevel === 'light' && {
+                            shadowColor: C.primary,
+                            shadowOpacity: 0.2,
+                            shadowRadius: 20,
+                            elevation: 8,
+                          }),
+                        },
+                      ]}
+                      onPress={() => setData({ ...data, activityLevel: 'light' as any })}
+                      accessibilityRole="radio"
+                      accessibilityState={{ checked: data.activityLevel === 'light' }}
+                    >
+                      <View style={[s3.actIconBox, data.activityLevel === 'light'
+                        ? { backgroundColor: 'rgba(75, 226, 119, 0.15)', borderColor: 'rgba(75, 226, 119, 0.3)' }
+                        : { backgroundColor: 'rgba(47, 52, 69, 0.5)', borderColor: 'rgba(61, 74, 61, 0.2)' }
+                      ]}>
+                        <MaterialCommunityIcons name="walk" size={24} color={data.activityLevel === 'light' ? C.primary : '#869585'} />
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        <ThemedText weight="700" style={{ color: '#FFFFFF', fontSize: 17, fontFamily: 'Inter_700Bold' }}>
+                          Vận động nhẹ
+                        </ThemedText>
+                        <ThemedText style={{ color: C.onSurfaceVariant, fontSize: 13, fontFamily: 'Inter_400Regular', marginTop: 2, lineHeight: 18 }}>
+                          Tập thể dục nhẹ nhàng 1-3 ngày/tuần
+                        </ThemedText>
+                      </View>
+                      <View style={[
+                        s3.radioOuter,
+                        data.activityLevel === 'light'
+                          ? { backgroundColor: C.primary }
+                          : { borderColor: 'rgba(134, 149, 133, 0.5)', borderWidth: 2 },
+                      ]}>
+                        {data.activityLevel === 'light' && (
+                          <Ionicons name="checkmark" size={16} color="#003915" />
+                        )}
+                      </View>
+                    </Pressable>
+
+                    {/* Vận động vừa */}
+                    <Pressable
+                      testID={`${TEST_IDS.auth.onboardingActivityPrefix}-moderate`}
+                      style={[
+                        s3.actCard,
+                        {
+                          backgroundColor: C.glassBg,
+                          borderColor: data.activityLevel === 'moderate' ? C.primary : C.glassBorder,
+                          borderWidth: data.activityLevel === 'moderate' ? 2 : 1,
+                          ...(data.activityLevel === 'moderate' && {
+                            shadowColor: C.primary,
+                            shadowOpacity: 0.2,
+                            shadowRadius: 20,
+                            elevation: 8,
+                          }),
+                        },
+                      ]}
+                      onPress={() => setData({ ...data, activityLevel: 'moderate' as any })}
+                      accessibilityRole="radio"
+                      accessibilityState={{ checked: data.activityLevel === 'moderate' }}
+                    >
+                      <View style={[s3.actIconBox, data.activityLevel === 'moderate'
+                        ? { backgroundColor: 'rgba(75, 226, 119, 0.15)', borderColor: 'rgba(75, 226, 119, 0.3)' }
+                        : { backgroundColor: 'rgba(47, 52, 69, 0.5)', borderColor: 'rgba(61, 74, 61, 0.2)' }
+                      ]}>
+                        <MaterialCommunityIcons name="dumbbell" size={24} color={data.activityLevel === 'moderate' ? C.primary : '#869585'} />
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        <ThemedText weight="700" style={{ color: '#FFFFFF', fontSize: 17, fontFamily: 'Inter_700Bold' }}>
+                          Vận động vừa
+                        </ThemedText>
+                        <ThemedText style={{ color: C.onSurfaceVariant, fontSize: 13, fontFamily: 'Inter_400Regular', marginTop: 2, lineHeight: 18 }}>
+                          Tập thể thao 3-5 ngày/tuần
+                        </ThemedText>
+                      </View>
+                      <View style={[
+                        s3.radioOuter,
+                        data.activityLevel === 'moderate'
+                          ? { backgroundColor: C.primary }
+                          : { borderColor: 'rgba(134, 149, 133, 0.5)', borderWidth: 2 },
+                      ]}>
+                        {data.activityLevel === 'moderate' && (
+                          <Ionicons name="checkmark" size={16} color="#003915" />
+                        )}
+                      </View>
+                    </Pressable>
+
+                    {/* Vận động nhiều */}
+                    <Pressable
+                      testID={`${TEST_IDS.auth.onboardingActivityPrefix}-active`}
+                      style={[
+                        s3.actCard,
+                        {
+                          backgroundColor: C.glassBg,
+                          borderColor: data.activityLevel === 'active' ? C.primary : C.glassBorder,
+                          borderWidth: data.activityLevel === 'active' ? 2 : 1,
+                          ...(data.activityLevel === 'active' && {
+                            shadowColor: C.primary,
+                            shadowOpacity: 0.2,
+                            shadowRadius: 20,
+                            elevation: 8,
+                          }),
+                        },
+                      ]}
+                      onPress={() => setData({ ...data, activityLevel: 'active' as any })}
+                      accessibilityRole="radio"
+                      accessibilityState={{ checked: data.activityLevel === 'active' }}
+                    >
+                      <View style={[s3.actIconBox, data.activityLevel === 'active'
+                        ? { backgroundColor: 'rgba(75, 226, 119, 0.15)', borderColor: 'rgba(75, 226, 119, 0.3)' }
+                        : { backgroundColor: 'rgba(47, 52, 69, 0.5)', borderColor: 'rgba(61, 74, 61, 0.2)' }
+                      ]}>
+                        <MaterialCommunityIcons name="lightning-bolt" size={24} color={data.activityLevel === 'active' ? C.primary : '#869585'} />
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        <ThemedText weight="700" style={{ color: '#FFFFFF', fontSize: 17, fontFamily: 'Inter_700Bold' }}>
+                          Vận động nhiều
+                        </ThemedText>
+                        <ThemedText style={{ color: C.onSurfaceVariant, fontSize: 13, fontFamily: 'Inter_400Regular', marginTop: 2, lineHeight: 18 }}>
+                          Luyện tập cường độ cao 6-7 ngày/tuần
+                        </ThemedText>
+                      </View>
+                      <View style={[
+                        s3.radioOuter,
+                        data.activityLevel === 'active'
+                          ? { backgroundColor: C.primary }
+                          : { borderColor: 'rgba(134, 149, 133, 0.5)', borderWidth: 2 },
+                      ]}>
+                        {data.activityLevel === 'active' && (
+                          <Ionicons name="checkmark" size={16} color="#003915" />
+                        )}
+                      </View>
+                    </Pressable>
+                  </View>
+                </ParallaxLayer>
+              </Animated.View>
+            </Tilt3DCard>
           </Animated.View>
         );
 
@@ -1279,7 +1466,7 @@ const OnboardingScreen = (): React.ReactElement => {
 
   /* ─── Render footer button (Emerald Nebula for step 0) ─── */
   const renderFooterButton = () => {
-    if (currentStep === 0 || currentStep === 1 || currentStep === 2) {
+    if (currentStep <= 3) {
       return (
         <View style={s.nebulaFooter}>
           <Pressable
@@ -1369,8 +1556,8 @@ const OnboardingScreen = (): React.ReactElement => {
         testID={TEST_IDS.auth.onboardingScreen}
       >
         {/* Background */}
-        <View style={[StyleSheet.absoluteFill, { backgroundColor: (currentStep === 0 || currentStep === 1 || currentStep === 2) ? C.surface : undefined }]}>
-          {(currentStep === 0 || currentStep === 1 || currentStep === 2) ? (
+        <View style={[StyleSheet.absoluteFill, { backgroundColor: currentStep <= 3 ? C.surface : undefined }]}>
+          {currentStep <= 3 ? (
             <>
               {/* Background glow blobs */}
               <View style={[s.blob, { top: -80, right: -100, backgroundColor: C.primary + '0D' }]} />
@@ -1380,13 +1567,13 @@ const OnboardingScreen = (): React.ReactElement => {
         </View>
 
         <LinearGradient
-          colors={(currentStep === 0 || currentStep === 1 || currentStep === 2) ? ['transparent', 'transparent'] : theme.colors.screenGradient}
+          colors={currentStep <= 3 ? ['transparent', 'transparent'] : theme.colors.screenGradient}
           style={{ flex: 1 }}
         >
           {/* Header */}
           <View style={[s.header, { paddingTop: Math.max(insets.top + 12, 28) }]}>
             {/* Top bar: row with back button and step counter */}
-            {(currentStep === 0 || currentStep === 1 || currentStep === 2) ? (
+            {currentStep <= 3 ? (
               <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginBottom: 16, width: '100%', position: 'relative' }}>
                 {currentStep > 0 && (
                   <Pressable
@@ -1416,7 +1603,7 @@ const OnboardingScreen = (): React.ReactElement => {
                       backgroundColor:
                         index <= currentStep
                           ? C.primary
-                          : (currentStep === 0 || currentStep === 1)
+                          : currentStep <= 3
                             ? C.surfaceContainerHighest
                             : isDark
                               ? 'rgba(255,255,255,0.1)'
@@ -1428,7 +1615,7 @@ const OnboardingScreen = (): React.ReactElement => {
             </View>
 
             {/* Step title/subtitle for steps 2-4 only */}
-            {currentStep > 2 && (
+            {currentStep > 3 && (
               <>
                 <ThemedText style={s.stepIcon}>
                   {STEPS[currentStep]?.icon ?? '👋'}
@@ -1454,7 +1641,7 @@ const OnboardingScreen = (): React.ReactElement => {
               showsVerticalScrollIndicator={false}
               contentContainerStyle={[
                 s.scrollContent,
-                (currentStep === 0 || currentStep === 1 || currentStep === 2) && { paddingHorizontal: 24 },
+                currentStep <= 3 && { paddingHorizontal: 24 },
               ]}
               keyboardShouldPersistTaps="handled"
               keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
@@ -1820,6 +2007,33 @@ const s2 = StyleSheet.create({
   goalIconBox: {
     width: 52,
     height: 52,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+  },
+  radioOuter: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+});
+
+/* ─── Step 3 styles (Activity Level Nebula) ─── */
+const s3 = StyleSheet.create({
+  actCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+    borderRadius: 24,
+    padding: 16,
+    borderWidth: 1,
+  },
+  actIconBox: {
+    width: 48,
+    height: 48,
     borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
