@@ -81,6 +81,7 @@ interface NutritionCalculationResult {
 const C = {
   surface: '#0E1322',
   surfaceContainer: '#1A1F2F',
+  surfaceContainerLow: '#161B2B',
   surfaceContainerHigh: '#25293A',
   surfaceContainerHighest: '#2F3445',
   surfaceContainerLowest: '#090E1C',
@@ -210,8 +211,8 @@ const OnboardingScreen = (): React.ReactElement => {
     fullName: '',
     gender: null,
     age: '',
-    heightCm: '',
-    weightKg: '',
+    heightCm: '160', // Default height 160cm
+    weightKg: '60', // Default weight 60kg
     targetWeightKg: '',
     goal: null,
     activityLevel: 'moderate',
@@ -228,6 +229,9 @@ const OnboardingScreen = (): React.ReactElement => {
   const STEPS = needsTargetWeight ? STEPS_BASE : STEPS_BASE.filter((_, i) => i !== 3);
 
   const [aiResult, setAiResult] = useState<NutritionCalculationResult | null>(null);
+  const [analysisStep, setAnalysisStep] = useState(0);
+  const [analysisProgress, setAnalysisProgress] = useState(0);
+  const [analysisStarted, setAnalysisStarted] = useState(false);
 
   // Waving hand animation
   const waveRotation = useSharedValue(0);
@@ -269,6 +273,177 @@ const OnboardingScreen = (): React.ReactElement => {
     opacity: 0.3 + (glowPulse.value - 1) * 2,
   }));
 
+  // Step 5 - Orbital AI core animations
+  const orbitalSpin = useSharedValue(0);
+  const orbitalSpinReverse = useSharedValue(0);
+  const corePulse = useSharedValue(1);
+  const chipBlink = useSharedValue(1);
+
+  useEffect(() => {
+    orbitalSpin.value = withRepeat(
+      withTiming(360, { duration: 10000, easing: Easing.linear }),
+      -1,
+      false,
+    );
+    orbitalSpinReverse.value = withRepeat(
+      withTiming(-360, { duration: 15000, easing: Easing.linear }),
+      -1,
+      false,
+    );
+    corePulse.value = withRepeat(
+      withSequence(
+        withTiming(1.08, { duration: 1200, easing: Easing.inOut(Easing.ease) }),
+        withTiming(0.95, { duration: 1200, easing: Easing.inOut(Easing.ease) }),
+      ),
+      -1,
+      true,
+    );
+    chipBlink.value = withRepeat(
+      withSequence(
+        withTiming(0.4, { duration: 800, easing: Easing.inOut(Easing.ease) }),
+        withTiming(1, { duration: 800, easing: Easing.inOut(Easing.ease) }),
+      ),
+      -1,
+      true,
+    );
+  }, []);
+
+  const orbitalSpinStyle = useAnimatedStyle(() => ({
+    transform: [{ rotate: `${orbitalSpin.value}deg` }],
+  }));
+  const orbitalSpinReverseStyle = useAnimatedStyle(() => ({
+    transform: [{ rotate: `${orbitalSpinReverse.value}deg` }],
+  }));
+  const corePulseStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: corePulse.value }],
+  }));
+  const chipBlinkStyle = useAnimatedStyle(() => ({
+    opacity: chipBlink.value,
+  }));
+
+  // Step 5 - Analysis progress simulation with smooth counting
+  const progressInterval = useRef<ReturnType<typeof setInterval> | null>(null);
+  const analysisTimers = useRef<ReturnType<typeof setTimeout>[]>([]);
+
+  const animateProgressTo = (target: number) => {
+    if (progressInterval.current) clearInterval(progressInterval.current);
+    progressInterval.current = setInterval(() => {
+      setAnalysisProgress((prev) => {
+        if (prev + 2 >= target) {
+          if (progressInterval.current) clearInterval(progressInterval.current);
+          return target;
+        }
+        return prev + 2;
+      });
+    }, 30); // Tăng tốc độ mượt mà đảm bảo không bị tụt lại
+  };
+
+  const startAnalysis = () => {
+    setAnalysisStarted(true);
+    setAnalysisStep(0);
+    setAnalysisProgress(0);
+    setAiResult(null);
+    setCalculationError(null);
+
+    // Call API
+    calculateNutrition();
+
+    // Start background fallback timers (will be overridden if API is fast)
+    analysisTimers.current.forEach(clearTimeout);
+    analysisTimers.current = [];
+    analysisTimers.current.push(
+      setTimeout(() => {
+        setAnalysisStep(1);
+        animateProgressTo(20);
+      }, 600),
+      setTimeout(() => {
+        setAnalysisStep(2);
+        animateProgressTo(40);
+      }, 2200),
+      setTimeout(() => {
+        setAnalysisStep(3);
+        animateProgressTo(60);
+      }, 4000),
+      setTimeout(() => {
+        setAnalysisStep(4);
+        animateProgressTo(72);
+      }, 6000),
+    );
+  };
+
+  // Reset state when entering screen
+  useEffect(() => {
+    if (currentStep === 5) {
+      setAnalysisStarted(false);
+      setAnalysisStep(0);
+      setAnalysisProgress(0);
+      setAiResult(null);
+    }
+    return () => {
+      analysisTimers.current.forEach(clearTimeout);
+    };
+  }, [currentStep]);
+
+  // When AI result arrives, cancel fallback timers
+  useEffect(() => {
+    if (currentStep === 5 && aiResult && analysisStarted) {
+      analysisTimers.current.forEach(clearTimeout);
+      analysisTimers.current = [];
+    }
+  }, [aiResult, currentStep, analysisStarted]);
+
+  // State machine loop to complete remaining chips smoothly
+  useEffect(() => {
+    if (currentStep === 5 && aiResult && analysisStarted && analysisStep < 5) {
+      const timer = setTimeout(() => {
+        const nextStep = analysisStep + 1;
+        setAnalysisStep(nextStep);
+
+        // Progress targets that perfectly align with the chip sequence
+        const progressMap: Record<number, number> = {
+          1: 25,
+          2: 50,
+          3: 75,
+          4: 90,
+          5: 100,
+        };
+        animateProgressTo(progressMap[nextStep] || 100);
+      }, 950); // Delay chậm lại để thanh % kịp chạy và UX nhìn rõ ràng hơn
+      return () => clearTimeout(timer);
+    }
+  }, [aiResult, currentStep, analysisStarted, analysisStep]);
+
+  // Robust snapping for Step 1 Rulers
+  useEffect(() => {
+    if (currentStep === 1) {
+      if (rulerContainerWidth > 0 && !rulerInitialized.current) {
+        const initVal = parseInt(data.heightCm, 10) || 160;
+        setTimeout(() => {
+          rulerScrollRef.current?.scrollTo({ x: (initVal - 100) * 12, animated: false });
+          rulerInitialized.current = true;
+        }, 120);
+      }
+      if (weightRulerWidth > 0 && !weightRulerInitialized.current) {
+        const initVal = parseFloat(data.weightKg) || 60;
+        setTimeout(() => {
+          weightRulerRef.current?.scrollTo({ x: (initVal - 30) * 100, animated: false });
+          weightRulerInitialized.current = true;
+        }, 120);
+      }
+    } else {
+      // Reset initialization flags when leaving Step 1 so it snaps again on return
+      rulerInitialized.current = false;
+      weightRulerInitialized.current = false;
+    }
+  }, [currentStep, rulerContainerWidth, weightRulerWidth]);
+
+  // Cleanup progress interval
+  useEffect(() => {
+    return () => {
+      if (progressInterval.current) clearInterval(progressInterval.current);
+    };
+  }, []);
+
   useEffect(() => {
     const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
     const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
@@ -306,10 +481,7 @@ const OnboardingScreen = (): React.ReactElement => {
   const handleNext = async () => {
     if (currentStep < 5) {
       if (currentStep === 4) {
-        setAiResult(null);
-        setCalculationError(null);
         setCurrentStep(5);
-        calculateNutrition();
       } else if (currentStep === 2 && !needsTargetWeight) {
         setCurrentStep(4);
       } else if (currentStep === 2 && needsTargetWeight) {
@@ -993,17 +1165,6 @@ const OnboardingScreen = (): React.ReactElement => {
                   onLayout={(e) => {
                     const w = e.nativeEvent.layout.width;
                     setRulerContainerWidth(w);
-                    // Initialize scroll position once we know the width
-                    if (!rulerInitialized.current && rulerScrollRef.current && w > 0) {
-                      const initVal = data.heightCm ? parseInt(data.heightCm, 10) : 170;
-                      setTimeout(() => {
-                        rulerScrollRef.current?.scrollTo({
-                          x: (initVal - 100) * 12,
-                          animated: false,
-                        });
-                        rulerInitialized.current = true;
-                      }, 100);
-                    }
                   }}
                 >
                   {/* Center Indicator — only covers the tick area */}
@@ -1026,6 +1187,9 @@ const OnboardingScreen = (): React.ReactElement => {
                     <ScrollView
                       ref={rulerScrollRef}
                       horizontal
+                      showsHorizontalScrollIndicator={false}
+                      snapToInterval={12}
+                      decelerationRate="fast"
                       showsHorizontalScrollIndicator={false}
                       snapToInterval={12}
                       decelerationRate="fast"
@@ -1120,20 +1284,6 @@ const OnboardingScreen = (): React.ReactElement => {
                   onLayout={(e) => {
                     const w = e.nativeEvent.layout.width;
                     setWeightRulerWidth(w);
-                    if (
-                      !weightRulerInitialized.current &&
-                      weightRulerRef.current &&
-                      w > 0
-                    ) {
-                      const initVal = data.weightKg ? parseFloat(data.weightKg) : 65;
-                      setTimeout(() => {
-                        weightRulerRef.current?.scrollTo({
-                          x: (initVal - 30) * 100,
-                          animated: false,
-                        });
-                        weightRulerInitialized.current = true;
-                      }, 100);
-                    }
                   }}
                 >
                   {/* Center Indicator */}
@@ -1156,6 +1306,9 @@ const OnboardingScreen = (): React.ReactElement => {
                     <ScrollView
                       ref={weightRulerRef}
                       horizontal
+                      showsHorizontalScrollIndicator={false}
+                      snapToInterval={10}
+                      decelerationRate="fast"
                       showsHorizontalScrollIndicator={false}
                       snapToInterval={10}
                       decelerationRate="fast"
@@ -1218,7 +1371,7 @@ const OnboardingScreen = (): React.ReactElement => {
                       weight="700"
                       style={{
                         color: '#FFFFFF',
-                        fontSize: 26,
+                        fontSize: 28,
                         textAlign: 'center',
                         fontFamily: 'Inter_700Bold',
                         paddingTop: 8,
@@ -1508,7 +1661,7 @@ const OnboardingScreen = (): React.ReactElement => {
                       weight="700"
                       style={{
                         color: '#FFFFFF',
-                        fontSize: 26,
+                        fontSize: 28,
                         textAlign: 'center',
                         fontFamily: 'Inter_700Bold',
                         paddingTop: 8,
@@ -1708,7 +1861,7 @@ const OnboardingScreen = (): React.ReactElement => {
                       weight="700"
                       style={{
                         color: '#FFFFFF',
-                        fontSize: 26,
+                        fontSize: 28,
                         textAlign: 'center',
                         fontFamily: 'Inter_700Bold',
                         paddingTop: 8,
@@ -2067,107 +2220,690 @@ const OnboardingScreen = (): React.ReactElement => {
           </Animated.View>
         );
 
-      case 5: // Result
+      case 5: // Result — Emerald Nebula AI Analysis
         return (
-          <Animated.View entering={FadeInRight} key="step4">
-            {isCalculating ? (
-              <View style={{ alignItems: 'center', paddingVertical: 40 }}>
-                <ActivityIndicator size="large" color={theme.colors.primary} />
-                <ThemedText style={{ marginTop: 16 }}>
-                  {t('onboarding.calculating')}
-                </ThemedText>
-              </View>
-            ) : aiResult ? (
+          <Animated.View entering={FadeInRight} key="step5-nebula" style={{ flex: 1 }}>
+            {/* ─── AI Core Orbital Ring ─── */}
+            <View style={{ alignItems: 'center', marginBottom: 32 }}>
               <View
-                style={[glass.card, oldStyles.resultCard]}
-                testID={TEST_IDS.auth.onboardingResultCard}
+                style={{
+                  width: 220,
+                  height: 220,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
               >
-                <ThemedText style={{ fontSize: 48 }}>🎉</ThemedText>
-                <ThemedText variant="h2" style={{ marginTop: 12 }}>
-                  {t('onboarding.daily_goal')}
-                </ThemedText>
-                {aiResult.offlineMode ? (
-                  <View style={oldStyles.offlineBadge}>
-                    <ThemedText variant="caption" weight="600">
-                      Offline mode
-                    </ThemedText>
-                  </View>
-                ) : null}
+                {/* Background glow */}
+                <View
+                  style={{
+                    position: 'absolute',
+                    width: 260,
+                    height: 260,
+                    borderRadius: 130,
+                    backgroundColor: 'rgba(75, 226, 119, 0.06)',
+                  }}
+                />
 
-                <View style={oldStyles.resultRow}>
-                  <View style={oldStyles.resultItem}>
-                    <ThemedText style={{ fontSize: 24 }}>🔥</ThemedText>
-                    <ThemedText variant="h3" color="primary">
-                      {aiResult.calories}
-                    </ThemedText>
-                    <ThemedText variant="caption" color="textSecondary">
-                      kcal
-                    </ThemedText>
-                  </View>
-                  <View style={oldStyles.resultItem}>
-                    <ThemedText style={{ fontSize: 24 }}>💪</ThemedText>
-                    <ThemedText variant="h3">{aiResult.protein}g</ThemedText>
-                    <ThemedText variant="caption" color="textSecondary">
-                      Protein
-                    </ThemedText>
-                  </View>
-                  <View style={oldStyles.resultItem}>
-                    <ThemedText style={{ fontSize: 24 }}>🍞</ThemedText>
-                    <ThemedText variant="h3">{aiResult.carbs}g</ThemedText>
-                    <ThemedText variant="caption" color="textSecondary">
-                      Carbs
-                    </ThemedText>
-                  </View>
-                  <View style={oldStyles.resultItem}>
-                    <ThemedText style={{ fontSize: 24 }}>🥑</ThemedText>
-                    <ThemedText variant="h3">{aiResult.fat}g</ThemedText>
-                    <ThemedText variant="caption" color="textSecondary">
-                      Fat
-                    </ThemedText>
-                  </View>
-                </View>
-                {aiResult.offlineMode ? (
-                  <ThemedText
-                    variant="caption"
-                    color="textSecondary"
-                    style={oldStyles.offlineNote}
-                  >
-                    {aiResult.explanation ??
-                      'Đang dùng công thức chuẩn để hoàn tất onboarding.'}
-                  </ThemedText>
-                ) : null}
-              </View>
-            ) : (
-              <View
-                style={[glass.card, oldStyles.resultCard]}
-                testID={TEST_IDS.auth.onboardingErrorCard}
-              >
-                <ThemedText style={{ fontSize: 40 }}>⚠️</ThemedText>
-                <ThemedText variant="h3" style={{ marginTop: 12, textAlign: 'center' }}>
-                  Chưa thể tạo mục tiêu dinh dưỡng
-                </ThemedText>
-                <ThemedText
-                  variant="bodySmall"
-                  color="textSecondary"
-                  style={{ marginTop: 12, textAlign: 'center' }}
+                {/* Outer orbital ring */}
+                <Animated.View
+                  style={[
+                    {
+                      position: 'absolute',
+                      width: 220,
+                      height: 220,
+                      borderRadius: 110,
+                      borderWidth: 1,
+                      borderColor: 'rgba(75, 226, 119, 0.15)',
+                    },
+                    orbitalSpinStyle,
+                  ]}
                 >
-                  {calculationError ??
-                    'Vui lòng thử lại sau khi kiểm tra backend và dịch vụ AI.'}
-                </ThemedText>
-                <View style={{ width: '100%', marginTop: 20 }}>
-                  <Button
-                    title="Thử lại"
-                    variant="secondary"
-                    onPress={() => {
-                      setAiResult(null);
-                      setCalculationError(null);
-                      calculateNutrition();
+                  <View
+                    style={{
+                      position: 'absolute',
+                      top: -4,
+                      left: '50%',
+                      marginLeft: -4,
+                      width: 8,
+                      height: 8,
+                      borderRadius: 4,
+                      backgroundColor: C.primary,
+                      shadowColor: C.primary,
+                      shadowOpacity: 0.9,
+                      shadowRadius: 8,
                     }}
-                    testID={TEST_IDS.auth.onboardingRetryButton}
                   />
+                </Animated.View>
+
+                {/* Middle dashed ring */}
+                <Animated.View
+                  style={[
+                    {
+                      position: 'absolute',
+                      width: 170,
+                      height: 170,
+                      borderRadius: 85,
+                      borderWidth: 1.5,
+                      borderColor: 'rgba(75, 226, 119, 0.25)',
+                      borderStyle: 'dashed',
+                    },
+                    orbitalSpinReverseStyle,
+                  ]}
+                />
+
+                {/* Inner glowing core */}
+                <Animated.View
+                  style={[
+                    {
+                      width: 120,
+                      height: 120,
+                      borderRadius: 60,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      backgroundColor: C.surfaceContainerHigh,
+                    },
+                    corePulseStyle,
+                  ]}
+                >
+                  <View
+                    style={{
+                      position: 'absolute',
+                      width: 108,
+                      height: 108,
+                      borderRadius: 54,
+                      borderWidth: 3,
+                      borderColor: 'rgba(75, 226, 119, 0.08)',
+                    }}
+                  />
+                  <LinearGradient
+                    colors={['#6BFF8F', '#4BE277', '#22C55E']}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={{
+                      width: 88,
+                      height: 88,
+                      borderRadius: 44,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      shadowColor: C.primary,
+                      shadowOpacity: 0.5,
+                      shadowRadius: 24,
+                    }}
+                  >
+                    <MaterialCommunityIcons name="creation" size={40} color="#003915" />
+                  </LinearGradient>
+                </Animated.View>
+              </View>
+            </View>
+
+            {/* ─── Title ─── */}
+            <View style={{ alignItems: 'center', marginBottom: 28 }}>
+              <ThemedText
+                variant="h2"
+                weight="700"
+                style={{
+                  color: '#FFFFFF',
+                  fontSize: 28,
+                  textAlign: 'center',
+                  fontFamily: 'Inter_700Bold',
+                }}
+              >
+                {analysisStep >= 5
+                  ? 'Lộ trình đã sẵn sàng!'
+                  : analysisStarted
+                    ? 'Đang thiết lập lộ trình...'
+                    : 'Sẵn sàng phân tích'}
+              </ThemedText>
+              <ThemedText
+                variant="body"
+                style={{
+                  color: C.onSurfaceVariant,
+                  marginTop: 6,
+                  textAlign: 'center',
+                  fontFamily: 'Inter_500Medium',
+                  lineHeight: 22,
+                  maxWidth: 280,
+                }}
+              >
+                {analysisStep >= 5
+                  ? 'Hệ thống AI đã hoàn tất phân tích dữ liệu của bạn.'
+                  : analysisStarted
+                    ? 'Khởi tạo lộ trình sức khỏe cá nhân của bạn.'
+                    : 'Nhấn nút bên dưới để bắt đầu.'}
+              </ThemedText>
+            </View>
+
+            {/* ─── Analysis Chips ─── */}
+            <View style={{ gap: 10, paddingHorizontal: 8 }}>
+              {/* Chip 1: Phân tích chỉ số cơ thể */}
+              <Animated.View
+                entering={FadeInDown.delay(200).springify()}
+                style={[
+                  s5.chipRow,
+                  {
+                    backgroundColor:
+                      analysisStep === 1
+                        ? C.surfaceContainerHigh
+                        : analysisStep > 1
+                          ? C.surfaceContainerLow
+                          : 'rgba(9, 14, 28, 0.5)',
+                    borderLeftColor:
+                      analysisStep >= 1
+                        ? 'rgba(75, 226, 119, 0.5)'
+                        : 'rgba(75, 226, 119, 0.15)',
+                    opacity: analysisStep >= 1 ? 1 : 0.4,
+                  },
+                ]}
+              >
+                {analysisStep > 1 ? (
+                  <Ionicons name="checkmark-circle" size={20} color={C.primary} />
+                ) : analysisStep === 1 ? (
+                  <Animated.View style={chipBlinkStyle}>
+                    <View style={s5.chipActiveDot} />
+                  </Animated.View>
+                ) : (
+                  <View style={s5.chipPendingDot} />
+                )}
+                <ThemedText
+                  style={[
+                    s5.chipText,
+                    analysisStep === 1 && {
+                      color: C.primary,
+                      fontFamily: 'Inter_600SemiBold',
+                    },
+                    analysisStep > 1 && { color: '#FFFFFF' },
+                  ]}
+                >
+                  {analysisStep === 1
+                    ? 'Đang phân tích chỉ số cơ thể...'
+                    : 'Phân tích chỉ số cơ thể'}
+                </ThemedText>
+              </Animated.View>
+
+              {/* Chip 2: Xây dựng biểu đồ TDEE */}
+              <Animated.View
+                entering={FadeInDown.delay(350).springify()}
+                style={[
+                  s5.chipRow,
+                  {
+                    backgroundColor:
+                      analysisStep === 2
+                        ? C.surfaceContainerHigh
+                        : analysisStep > 2
+                          ? C.surfaceContainerLow
+                          : 'rgba(9, 14, 28, 0.5)',
+                    borderLeftColor:
+                      analysisStep >= 2
+                        ? 'rgba(75, 226, 119, 0.5)'
+                        : 'rgba(75, 226, 119, 0.15)',
+                    opacity: analysisStep >= 2 ? 1 : 0.4,
+                  },
+                ]}
+              >
+                {analysisStep > 2 ? (
+                  <Ionicons name="checkmark-circle" size={20} color={C.primary} />
+                ) : analysisStep === 2 ? (
+                  <Animated.View style={chipBlinkStyle}>
+                    <View style={s5.chipActiveDot} />
+                  </Animated.View>
+                ) : (
+                  <View style={s5.chipPendingDot} />
+                )}
+                <ThemedText
+                  style={[
+                    s5.chipText,
+                    analysisStep === 2 && {
+                      color: C.primary,
+                      fontFamily: 'Inter_600SemiBold',
+                    },
+                    analysisStep > 2 && { color: '#FFFFFF' },
+                  ]}
+                >
+                  {analysisStep === 2
+                    ? 'Đang xây dựng biểu đồ TDEE...'
+                    : 'Xây dựng biểu đồ TDEE'}
+                </ThemedText>
+              </Animated.View>
+
+              {/* Chip 3: Lên thực đơn cá nhân hóa */}
+              <Animated.View
+                entering={FadeInDown.delay(500).springify()}
+                style={[
+                  s5.chipRow,
+                  {
+                    backgroundColor:
+                      analysisStep === 3
+                        ? C.surfaceContainerHigh
+                        : analysisStep > 3
+                          ? C.surfaceContainerLow
+                          : 'rgba(9, 14, 28, 0.5)',
+                    borderLeftColor:
+                      analysisStep >= 3
+                        ? 'rgba(75, 226, 119, 0.5)'
+                        : 'rgba(75, 226, 119, 0.15)',
+                    opacity: analysisStep >= 3 ? 1 : 0.4,
+                  },
+                ]}
+              >
+                {analysisStep > 3 ? (
+                  <Ionicons name="checkmark-circle" size={20} color={C.primary} />
+                ) : analysisStep === 3 ? (
+                  <Animated.View style={chipBlinkStyle}>
+                    <View style={s5.chipActiveDot} />
+                  </Animated.View>
+                ) : (
+                  <View style={s5.chipPendingDot} />
+                )}
+                <ThemedText
+                  style={[
+                    s5.chipText,
+                    analysisStep === 3 && {
+                      color: C.primary,
+                      fontFamily: 'Inter_600SemiBold',
+                    },
+                    analysisStep > 3 && { color: '#FFFFFF' },
+                  ]}
+                >
+                  {analysisStep === 3
+                    ? 'Đang lên thực đơn cá nhân hóa...'
+                    : 'Lên thực đơn cá nhân hóa'}
+                </ThemedText>
+              </Animated.View>
+
+              {/* Chip 4: Dự đoán lộ trình */}
+              <Animated.View
+                entering={FadeInDown.delay(650).springify()}
+                style={[
+                  s5.chipRow,
+                  {
+                    backgroundColor:
+                      analysisStep === 4
+                        ? C.surfaceContainerHigh
+                        : analysisStep > 4
+                          ? C.surfaceContainerLow
+                          : 'rgba(9, 14, 28, 0.5)',
+                    borderLeftColor:
+                      analysisStep >= 4
+                        ? 'rgba(75, 226, 119, 0.5)'
+                        : 'rgba(75, 226, 119, 0.15)',
+                    opacity: analysisStep >= 4 ? 1 : 0.4,
+                  },
+                ]}
+              >
+                {analysisStep > 4 ? (
+                  <Ionicons name="checkmark-circle" size={20} color={C.primary} />
+                ) : analysisStep === 4 ? (
+                  <Animated.View style={chipBlinkStyle}>
+                    <View style={s5.chipActiveDot} />
+                  </Animated.View>
+                ) : (
+                  <View style={s5.chipPendingDot} />
+                )}
+                <ThemedText
+                  style={[
+                    s5.chipText,
+                    analysisStep === 4 && {
+                      color: C.primary,
+                      fontFamily: 'Inter_600SemiBold',
+                    },
+                    analysisStep > 4 && { color: '#FFFFFF' },
+                  ]}
+                >
+                  {analysisStep === 4
+                    ? data.goal === 'lose'
+                      ? 'Đang dự đoán lộ trình giảm cân...'
+                      : data.goal === 'gain'
+                        ? 'Đang dự đoán lộ trình tăng cơ...'
+                        : 'Đang dự đoán lộ trình sức khỏe...'
+                    : data.goal === 'lose'
+                      ? 'Dự đoán lộ trình giảm cân'
+                      : data.goal === 'gain'
+                        ? 'Dự đoán lộ trình tăng cơ'
+                        : 'Dự đoán lộ trình sức khỏe'}
+                </ThemedText>
+              </Animated.View>
+            </View>
+
+            {/* ─── Error state ─── */}
+            {calculationError && !aiResult && (
+              <Animated.View
+                entering={FadeInDown.delay(100).springify()}
+                style={{ marginTop: 20, paddingHorizontal: 8 }}
+              >
+                <View
+                  style={[
+                    s5.chipRow,
+                    {
+                      backgroundColor: 'rgba(147, 0, 10, 0.15)',
+                      borderLeftColor: 'rgba(255, 180, 171, 0.5)',
+                    },
+                  ]}
+                >
+                  <Ionicons name="alert-circle" size={20} color="#FFB4AB" />
+                  <View style={{ flex: 1 }}>
+                    <ThemedText
+                      style={{
+                        color: '#FFB4AB',
+                        fontSize: 13,
+                        fontFamily: 'Inter_500Medium',
+                      }}
+                    >
+                      {calculationError}
+                    </ThemedText>
+                  </View>
+                </View>
+                <Pressable
+                  onPress={() => {
+                    setAiResult(null);
+                    setCalculationError(null);
+                    setAnalysisStep(0);
+                    setAnalysisProgress(0);
+                    startAnalysis();
+                  }}
+                  testID={TEST_IDS.auth.onboardingRetryButton}
+                  style={({ pressed }) => [s5.retryBtn, pressed && { opacity: 0.7 }]}
+                >
+                  <Ionicons name="refresh" size={18} color={C.primary} />
+                  <ThemedText
+                    style={{
+                      color: C.primary,
+                      fontSize: 14,
+                      fontFamily: 'Inter_600SemiBold',
+                    }}
+                  >
+                    Thử lại
+                  </ThemedText>
+                </Pressable>
+              </Animated.View>
+            )}
+
+            {/* ─── Result summary (when AI completes) ─── */}
+            {aiResult && (
+              <Animated.View
+                entering={FadeInDown.delay(200).springify()}
+                style={{ marginTop: 24 }}
+              >
+                <View
+                  style={[
+                    s5.resultCard,
+                    { backgroundColor: C.glassBg, borderColor: C.glassBorder },
+                  ]}
+                  testID={TEST_IDS.auth.onboardingResultCard}
+                >
+                  <View style={{ gap: 24, paddingVertical: 8 }}>
+                    {/* Calories Highlighted */}
+                    <View style={{ alignItems: 'center' }}>
+                      <View
+                        style={{
+                          width: 140,
+                          height: 140,
+                          borderRadius: 70,
+                          borderWidth: 2,
+                          borderColor: 'rgba(75, 226, 119, 0.4)',
+                          justifyContent: 'center',
+                          alignItems: 'center',
+                          backgroundColor: 'rgba(75, 226, 119, 0.05)',
+                          shadowColor: '#4BE277',
+                          shadowOffset: { width: 0, height: 0 },
+                          shadowOpacity: 0.3,
+                          shadowRadius: 15,
+                          elevation: 10,
+                        }}
+                      >
+                        <ThemedText
+                          style={{
+                            fontSize: 12,
+                            color: C.onSurfaceVariant,
+                            fontFamily: 'Inter_600SemiBold',
+                            letterSpacing: 2,
+                            marginBottom: 4,
+                          }}
+                        >
+                          CALORIES
+                        </ThemedText>
+                        <ThemedText
+                          weight="800"
+                          style={{
+                            color: '#4BE277',
+                            fontSize: 36,
+                            fontFamily: 'Inter_800ExtraBold',
+                            lineHeight: 46,
+                            textShadowColor: 'rgba(75, 226, 119, 0.5)',
+                            textShadowOffset: { width: 0, height: 0 },
+                            textShadowRadius: 10,
+                          }}
+                        >
+                          {aiResult.calories}
+                        </ThemedText>
+                        <ThemedText
+                          style={{
+                            fontSize: 12,
+                            color: C.onSurfaceVariant,
+                            fontFamily: 'Inter_500Medium',
+                            marginTop: 2,
+                          }}
+                        >
+                          kcal / ngày
+                        </ThemedText>
+                      </View>
+                    </View>
+
+                    {/* Macros Row */}
+                    <View
+                      style={{
+                        flexDirection: 'row',
+                        justifyContent: 'space-between',
+                        paddingHorizontal: 16,
+                      }}
+                    >
+                      {/* Protein */}
+                      <View
+                        style={{
+                          alignItems: 'center',
+                          flex: 1,
+                          borderRightWidth: 1,
+                          borderRightColor: 'rgba(255,255,255,0.08)',
+                        }}
+                      >
+                        <ThemedText
+                          style={{
+                            fontSize: 11,
+                            color: C.onSurfaceVariant,
+                            fontFamily: 'Inter_600SemiBold',
+                            letterSpacing: 1,
+                            marginBottom: 8,
+                          }}
+                        >
+                          PROTEIN
+                        </ThemedText>
+                        <ThemedText
+                          weight="700"
+                          style={{
+                            color: '#FFFFFF',
+                            fontSize: 22,
+                            fontFamily: 'Inter_700Bold',
+                          }}
+                        >
+                          {aiResult.protein}
+                          <ThemedText style={{ fontSize: 13, color: C.onSurfaceVariant }}>
+                            g
+                          </ThemedText>
+                        </ThemedText>
+                      </View>
+
+                      {/* Carbs */}
+                      <View
+                        style={{
+                          alignItems: 'center',
+                          flex: 1,
+                          borderRightWidth: 1,
+                          borderRightColor: 'rgba(255,255,255,0.08)',
+                        }}
+                      >
+                        <ThemedText
+                          style={{
+                            fontSize: 11,
+                            color: C.onSurfaceVariant,
+                            fontFamily: 'Inter_600SemiBold',
+                            letterSpacing: 1,
+                            marginBottom: 8,
+                          }}
+                        >
+                          CARBS
+                        </ThemedText>
+                        <ThemedText
+                          weight="700"
+                          style={{
+                            color: '#FFFFFF',
+                            fontSize: 22,
+                            fontFamily: 'Inter_700Bold',
+                          }}
+                        >
+                          {aiResult.carbs}
+                          <ThemedText style={{ fontSize: 13, color: C.onSurfaceVariant }}>
+                            g
+                          </ThemedText>
+                        </ThemedText>
+                      </View>
+
+                      {/* Fat */}
+                      <View style={{ alignItems: 'center', flex: 1 }}>
+                        <ThemedText
+                          style={{
+                            fontSize: 11,
+                            color: C.onSurfaceVariant,
+                            fontFamily: 'Inter_600SemiBold',
+                            letterSpacing: 1,
+                            marginBottom: 8,
+                          }}
+                        >
+                          FAT
+                        </ThemedText>
+                        <ThemedText
+                          weight="700"
+                          style={{
+                            color: '#FFFFFF',
+                            fontSize: 22,
+                            fontFamily: 'Inter_700Bold',
+                          }}
+                        >
+                          {aiResult.fat}
+                          <ThemedText style={{ fontSize: 13, color: C.onSurfaceVariant }}>
+                            g
+                          </ThemedText>
+                        </ThemedText>
+                      </View>
+                    </View>
+                  </View>
+                  {aiResult.offlineMode && (
+                    <View
+                      style={{
+                        marginTop: 12,
+                        paddingHorizontal: 12,
+                        paddingVertical: 6,
+                        borderRadius: 999,
+                        backgroundColor: 'rgba(251, 191, 36, 0.16)',
+                        borderWidth: 1,
+                        borderColor: 'rgba(251, 191, 36, 0.45)',
+                        alignSelf: 'center',
+                      }}
+                    >
+                      <ThemedText
+                        style={{
+                          fontSize: 11,
+                          color: '#FBBF24',
+                          fontFamily: 'Inter_600SemiBold',
+                        }}
+                      >
+                        Offline mode
+                      </ThemedText>
+                    </View>
+                  )}
+                </View>
+              </Animated.View>
+            )}
+
+            {/* ─── Progress Footer ─── */}
+            <View style={{ marginTop: 28, paddingHorizontal: 8 }}>
+              <View
+                style={{
+                  flexDirection: 'row',
+                  justifyContent: 'space-between',
+                  alignItems: 'flex-end',
+                  marginBottom: 10,
+                }}
+              >
+                <View>
+                  <ThemedText
+                    style={{
+                      fontSize: 10,
+                      color: C.onSurfaceVariant,
+                      fontFamily: 'Inter_700Bold',
+                      letterSpacing: 1,
+                      textTransform: 'uppercase',
+                    }}
+                  >
+                    Tiến độ tổng quát
+                  </ThemedText>
+                  <ThemedText
+                    weight="700"
+                    style={{
+                      color: '#FFFFFF',
+                      fontSize: 24,
+                      fontFamily: 'Inter_700Bold',
+                      marginTop: 2,
+                    }}
+                  >
+                    {analysisProgress}%
+                  </ThemedText>
+                </View>
+                <View
+                  style={{
+                    paddingHorizontal: 12,
+                    paddingVertical: 5,
+                    backgroundColor: 'rgba(75, 226, 119, 0.1)',
+                    borderRadius: 999,
+                  }}
+                >
+                  <ThemedText
+                    style={{
+                      fontSize: 12,
+                      color: C.primary,
+                      fontFamily: 'Inter_500Medium',
+                    }}
+                  >
+                    {analysisProgress >= 100
+                      ? 'Hoàn tất'
+                      : analysisStarted
+                        ? 'Đang phân tích'
+                        : 'Chưa bắt đầu'}
+                  </ThemedText>
                 </View>
               </View>
-            )}
+              <View
+                style={{
+                  height: 10,
+                  backgroundColor: C.surfaceContainerLowest,
+                  borderRadius: 5,
+                  overflow: 'hidden',
+                  padding: 2,
+                }}
+              >
+                <LinearGradient
+                  colors={['#4BE277', '#22C55E']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={{
+                    height: '100%',
+                    borderRadius: 4,
+                    width: `${analysisProgress}%`,
+                    shadowColor: C.primary,
+                    shadowOpacity: 0.3,
+                    shadowRadius: 8,
+                  }}
+                />
+              </View>
+            </View>
           </Animated.View>
         );
 
@@ -2211,6 +2947,93 @@ const OnboardingScreen = (): React.ReactElement => {
                 style={{ color: C.onPrimary, fontSize: 18 }}
               >
                 Tiếp tục
+              </ThemedText>
+              <Ionicons name="arrow-forward" size={20} color={C.onPrimary} />
+            </View>
+          </Pressable>
+        </View>
+      );
+    }
+
+    // Step 5: Show different buttons based on analysis state
+    if (currentStep === 5) {
+      // Before analysis starts: show "Bắt đầu phân tích"
+      if (!analysisStarted) {
+        return (
+          <View style={s.nebulaFooter}>
+            <Pressable
+              testID={TEST_IDS.auth.onboardingNextButton}
+              onPress={startAnalysis}
+              style={({ pressed }) => [
+                s.nebulaCTA,
+                { width: '100%' },
+                pressed && { transform: [{ scale: 0.97 }] },
+              ]}
+            >
+              <LinearGradient
+                colors={['#6BFF8F', '#4BE277', '#22C55E']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={StyleSheet.absoluteFill}
+              />
+              <LinearGradient
+                colors={[
+                  'rgba(255,255,255,0.25)',
+                  'rgba(255,255,255,0.05)',
+                  'transparent',
+                ]}
+                start={{ x: 0.2, y: 0 }}
+                end={{ x: 0.8, y: 1 }}
+                style={StyleSheet.absoluteFill}
+              />
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <Ionicons name="sparkles" size={20} color={C.onPrimary} />
+                <ThemedText
+                  variant="body"
+                  weight="700"
+                  style={{ color: C.onPrimary, fontSize: 18 }}
+                >
+                  Bắt đầu phân tích
+                </ThemedText>
+              </View>
+            </Pressable>
+          </View>
+        );
+      }
+
+      // After analysis complete: show "Bắt đầu sử dụng"
+      return (
+        <View style={s.nebulaFooter}>
+          <Pressable
+            testID={TEST_IDS.auth.onboardingCompleteButton}
+            onPress={handleComplete}
+            disabled={isCalculating || !aiResult}
+            style={({ pressed }) => [
+              s.nebulaCTA,
+              { width: '100%' },
+              pressed && { transform: [{ scale: 0.97 }] },
+              (isCalculating || !aiResult) && { opacity: 0.4 },
+            ]}
+          >
+            <LinearGradient
+              colors={['#6BFF8F', '#4BE277', '#22C55E']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={StyleSheet.absoluteFill}
+            />
+            <LinearGradient
+              colors={['rgba(255,255,255,0.25)', 'rgba(255,255,255,0.05)', 'transparent']}
+              start={{ x: 0.2, y: 0 }}
+              end={{ x: 0.8, y: 1 }}
+              style={StyleSheet.absoluteFill}
+            />
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              <ThemedText
+                variant="body"
+                weight="700"
+                style={{ color: C.onPrimary, fontSize: 18 }}
+              >
+                Bắt đầu sử dụng
               </ThemedText>
               <Ionicons name="arrow-forward" size={20} color={C.onPrimary} />
             </View>
@@ -2270,10 +3093,10 @@ const OnboardingScreen = (): React.ReactElement => {
         <View
           style={[
             StyleSheet.absoluteFill,
-            { backgroundColor: currentStep <= 4 ? C.surface : undefined },
+            { backgroundColor: currentStep <= 5 ? C.surface : undefined },
           ]}
         >
-          {currentStep <= 4 ? (
+          {currentStep <= 5 ? (
             <>
               {/* Background glow blobs */}
               <View
@@ -2294,7 +3117,7 @@ const OnboardingScreen = (): React.ReactElement => {
 
         <LinearGradient
           colors={
-            currentStep <= 4
+            currentStep <= 5
               ? ['transparent', 'transparent']
               : theme.colors.screenGradient
           }
@@ -2303,7 +3126,7 @@ const OnboardingScreen = (): React.ReactElement => {
           {/* Header */}
           <View style={[s.header, { paddingTop: Math.max(insets.top + 12, 28) }]}>
             {/* Top bar: row with back button and step counter */}
-            {currentStep <= 4 ? (
+            {currentStep <= 5 ? (
               <View
                 style={{
                   flexDirection: 'row',
@@ -2359,7 +3182,7 @@ const OnboardingScreen = (): React.ReactElement => {
             </View>
 
             {/* Step title/subtitle for steps 2-4 only */}
-            {currentStep > 4 && (
+            {currentStep > 5 && (
               <>
                 <ThemedText style={s.stepIcon}>
                   {STEPS[currentStep]?.icon ?? '👋'}
@@ -2381,7 +3204,7 @@ const OnboardingScreen = (): React.ReactElement => {
               showsVerticalScrollIndicator={false}
               contentContainerStyle={[
                 s.scrollContent,
-                currentStep <= 4 && { paddingHorizontal: 24 },
+                currentStep <= 5 && { paddingHorizontal: 24 },
               ]}
               keyboardShouldPersistTaps="handled"
               keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
@@ -2784,6 +3607,62 @@ const s3 = StyleSheet.create({
     borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+});
+
+/* ─── Step 5 styles (AI Analysis Nebula) ─── */
+const s5 = StyleSheet.create({
+  chipRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+    paddingHorizontal: 18,
+    paddingVertical: 14,
+    borderRadius: 14,
+    borderLeftWidth: 2,
+  },
+  chipText: {
+    fontSize: 14,
+    fontFamily: 'Inter_500Medium',
+    color: C.onSurfaceVariant,
+  },
+  chipPendingDot: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    borderWidth: 2,
+    borderColor: 'rgba(134, 149, 133, 0.4)',
+  },
+  chipActiveDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: C.primary,
+    shadowColor: C.primary,
+    shadowOpacity: 0.8,
+    shadowRadius: 6,
+  },
+  retryBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    marginTop: 12,
+    paddingVertical: 12,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(75, 226, 119, 0.2)',
+    backgroundColor: 'rgba(75, 226, 119, 0.06)',
+  },
+  resultCard: {
+    borderRadius: 20,
+    borderWidth: 1,
+    padding: 20,
+  },
+  resultItem: {
+    alignItems: 'center',
+    minWidth: 70,
+    gap: 2,
   },
 });
 
