@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using EatFitAI.API.Data;
 using EatFitAI.API.DTOs.Admin;
 using EatFitAI.API.DTOs.Common;
+using EatFitAI.API.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -16,10 +17,12 @@ namespace EatFitAI.API.Controllers;
 public class AdminMealController : ControllerBase
 {
     private readonly ApplicationDbContext _context;
+    private readonly IAdminRealtimeEventBus _eventBus;
 
-    public AdminMealController(ApplicationDbContext context)
+    public AdminMealController(ApplicationDbContext context, IAdminRealtimeEventBus eventBus)
     {
         _context = context;
+        _eventBus = eventBus;
     }
 
     [HttpGet]
@@ -144,6 +147,7 @@ public class AdminMealController : ControllerBase
 
         meal.IsDeleted = true;
         await _context.SaveChangesAsync();
+        _eventBus.Publish("admin.resource.updated", "meal", id.ToString(), new { MealDiaryId = id, Deleted = true });
         return Ok(ApiResponse<object>.SuccessResponse(null, "Xóa meal thành công."));
     }
 }

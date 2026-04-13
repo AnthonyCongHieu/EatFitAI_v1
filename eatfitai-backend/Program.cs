@@ -11,11 +11,15 @@ using EatFitAI.Services; // Voice processing service
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Protocols;
+using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using System.Security.Claims;
 using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Extensions.Configuration;
@@ -560,6 +564,8 @@ builder.Services.AddSingleton<ILookupCacheService, LookupCacheService>();
 
 // Security & AI Pool Services
 builder.Services.AddSingleton<IEncryptionService, EncryptionService>();
+builder.Services.AddSingleton<IAdminRealtimeEventBus, AdminRealtimeEventBus>();
+builder.Services.AddScoped<IAiRuntimeStatusService, AiRuntimeStatusService>();
 builder.Services.AddScoped<IGeminiPoolManager, GeminiPoolManager>();
 
 // Health checks (used by HealthController and readiness endpoints)
@@ -577,33 +583,65 @@ if (IsPlaceholderSecret(jwtKey))
         "Jwt:Key is missing or insecure. Configure a strong secret via appsettings or user-secrets.");
 }
 
-// Add JWT Authentication — Supabase Legacy JWT Secret (HS256 symmetric)
-// The Supabase project uses Legacy JWT Secret for signing tokens.
-// We MUST use SymmetricSecurityKey with the same secret to validate tokens.
-// Using Authority + JWKS (asymmetric) will NOT work with Legacy HS256 tokens.
+// Add JWT authentication.
+// We must support both:
+// 1. Legacy custom backend tokens signed with Jwt:Key (HS256).
+// 2. Supabase access tokens signed by the project's JWKS (currently ES256).
 var jwtKeyBytes = Encoding.UTF8.GetBytes(jwtKey!);
+var localJwtSigningKey = new SymmetricSecurityKey(jwtKeyBytes);
+var configuredSupabaseUrl = builder.Configuration["Supabase:Url"];
+var supabaseUrl = HasConfiguredHttpsUrl(configuredSupabaseUrl)
+    ? configuredSupabaseUrl!.TrimEnd('/')
+    : "https://bjlmndmafrajjysenpbm.supabase.co";
+var supabaseAuthIssuer = $"{supabaseUrl}/auth/v1";
+var supabaseMetadataAddress = $"{supabaseAuthIssuer}/.well-known/openid-configuration";
+var supabaseConfigurationManager = new ConfigurationManager<OpenIdConnectConfiguration>(
+    supabaseMetadataAddress,
+    new OpenIdConnectConfigurationRetriever(),
+    new HttpDocumentRetriever
+    {
+        RequireHttps = true
+    });
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
-        // Do NOT set Authority — we validate manually with symmetric key
         options.RequireHttpsMetadata = false;
 
         options.TokenValidationParameters = new TokenValidationParameters
         {
-            // HS256 symmetric validation using Supabase Legacy JWT Secret
             ValidateIssuerSigningKey = true,
-            IssuerSigningKey = new SymmetricSecurityKey(jwtKeyBytes),
+            IssuerSigningKeyResolver = (_, _, _, _) =>
+            {
+                var signingKeys = new List<SecurityKey> { localJwtSigningKey };
 
-            // Accept both our custom issuer and Supabase auth issuer
+                try
+                {
+                    var configuration = supabaseConfigurationManager
+                        .GetConfigurationAsync(CancellationToken.None)
+                        .GetAwaiter()
+                        .GetResult();
+
+                    if (configuration?.SigningKeys != null)
+                    {
+                        signingKeys.AddRange(configuration.SigningKeys);
+                    }
+                }
+                catch
+                {
+                    // Keep the legacy local key path working even if JWKS retrieval fails.
+                }
+
+                return signingKeys;
+            },
+
             ValidateIssuer = true,
             ValidIssuers = new[] 
             { 
                 builder.Configuration["Jwt:Issuer"] ?? "EatFitAI",
-                "https://bjlmndmafrajjysenpbm.supabase.co/auth/v1"
+                supabaseAuthIssuer
             },
 
-            // Accept both our custom audience and Supabase "authenticated" audience
             ValidateAudience = true,
             ValidAudiences = new[]
             {
@@ -611,7 +649,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
                 "authenticated"
             },
 
-            // Supabase tokens have tight expiry, allow small clock skew
+            RoleClaimType = ClaimTypes.Role,
             ClockSkew = TimeSpan.FromSeconds(30)
         };
 
@@ -619,34 +657,51 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         {
             OnTokenValidated = context =>
             {
-                var identity = context.Principal?.Identity as System.Security.Claims.ClaimsIdentity;
+                var identity = context.Principal?.Identity as ClaimsIdentity;
                 if (identity != null)
                 {
-                    // Map Supabase user_metadata.role to .NET ClaimTypes.Role
-                    var userMetadataClaim = identity.FindFirst("user_metadata");
-                    if (userMetadataClaim != null)
+                    void AddRoleIfPresent(string? roleValue)
                     {
-                        try
+                        if (string.IsNullOrWhiteSpace(roleValue))
                         {
-                            var md = System.Text.Json.JsonDocument.Parse(userMetadataClaim.Value);
-                            if (md.RootElement.TryGetProperty("role", out var roleElement))
-                            {
-                                identity.AddClaim(new System.Security.Claims.Claim(
-                                    System.Security.Claims.ClaimTypes.Role, 
-                                    roleElement.GetString()!));
-                            }
+                            return;
                         }
-                        catch { /* Ignore parsing errors */ }
+
+                        if (!identity.HasClaim(ClaimTypes.Role, roleValue))
+                        {
+                            identity.AddClaim(new Claim(ClaimTypes.Role, roleValue));
+                        }
                     }
 
-                    // Also map Supabase "role" claim directly (e.g. "authenticated", "anon")
-                    var supabaseRoleClaim = identity.FindFirst("role");
-                    if (supabaseRoleClaim != null && !identity.HasClaim(System.Security.Claims.ClaimTypes.Role, supabaseRoleClaim.Value))
+                    void AddRoleFromJsonClaim(string claimType)
                     {
-                        identity.AddClaim(new System.Security.Claims.Claim(
-                            System.Security.Claims.ClaimTypes.Role,
-                            supabaseRoleClaim.Value));
+                        var jsonClaim = identity.FindFirst(claimType);
+                        if (jsonClaim == null || string.IsNullOrWhiteSpace(jsonClaim.Value))
+                        {
+                            return;
+                        }
+
+                        try
+                        {
+                            using var document = JsonDocument.Parse(jsonClaim.Value);
+                            if (document.RootElement.ValueKind == JsonValueKind.Object
+                                && document.RootElement.TryGetProperty("role", out var roleElement)
+                                && roleElement.ValueKind == JsonValueKind.String)
+                            {
+                                AddRoleIfPresent(roleElement.GetString());
+                            }
+                        }
+                        catch
+                        {
+                            // Ignore malformed optional metadata claims.
+                        }
                     }
+
+                    AddRoleFromJsonClaim("user_metadata");
+                    AddRoleFromJsonClaim("app_metadata");
+                    AddRoleIfPresent(identity.FindFirst("user_metadata.role")?.Value);
+                    AddRoleIfPresent(identity.FindFirst("app_metadata.role")?.Value);
+                    AddRoleIfPresent(identity.FindFirst("role")?.Value);
                 }
                 return Task.CompletedTask;
             },

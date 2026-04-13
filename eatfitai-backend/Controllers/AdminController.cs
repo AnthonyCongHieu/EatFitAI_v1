@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using EatFitAI.API.Data;
 using EatFitAI.API.DTOs.Admin;
 using EatFitAI.API.DTOs.Common;
+using EatFitAI.API.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -17,11 +18,19 @@ public class AdminController : ControllerBase
 {
     private readonly ApplicationDbContext _context;
     private readonly IHttpClientFactory _httpClientFactory;
+    private readonly IAiRuntimeStatusService _runtimeStatusService;
+    private readonly IAdminRealtimeEventBus _eventBus;
 
-    public AdminController(ApplicationDbContext context, IHttpClientFactory httpClientFactory)
+    public AdminController(
+        ApplicationDbContext context,
+        IHttpClientFactory httpClientFactory,
+        IAiRuntimeStatusService runtimeStatusService,
+        IAdminRealtimeEventBus eventBus)
     {
         _context = context;
         _httpClientFactory = httpClientFactory;
+        _runtimeStatusService = runtimeStatusService;
+        _eventBus = eventBus;
     }
 
     // ===================== DASHBOARD =====================
@@ -33,24 +42,18 @@ public class AdminController : ControllerBase
         try
         {
             var totalUsers = await _context.Users.CountAsync();
+            var runtime = await _runtimeStatusService.GetSnapshotAsync();
 
-            int totalRequests = 0, activeKeys = 0, totalKeys = 0;
-            var poolHealth = new List<PoolHealthDto>();
-            try
+            var totalRequests = runtime.Projects.Sum(project => project.TotalRequests);
+            var activeKeys = runtime.AvailableProjectCount;
+            var totalKeys = runtime.Projects.Count;
+            var poolHealth = runtime.Projects.Select(project => new PoolHealthDto
             {
-                var keys = await _context.GeminiKeys.ToListAsync();
-                totalRequests = keys.Sum(k => k.TotalRequestsUsed);
-                activeKeys = keys.Count(k => k.IsActive);
-                totalKeys = keys.Count;
-                poolHealth = keys.Select(k => new PoolHealthDto
-                {
-                    KeyName = k.KeyName,
-                    Used = k.DailyRequestsUsed,
-                    Limit = k.DailyQuotaLimit,
-                    Status = k.IsActive ? "Active" : "Exhausted"
-                }).ToList();
-            }
-            catch { /* GeminiKeys query failed */ }
+                KeyName = string.IsNullOrWhiteSpace(project.ProjectAlias) ? project.ProjectId : project.ProjectAlias,
+                Used = project.RpdUsed ?? 0,
+                Limit = runtime.Limits.Rpd ?? 0,
+                Status = project.Available ? "Active" : project.State,
+            }).ToList();
 
             int totalFoods = 0;
             try { totalFoods = await _context.FoodItems.CountAsync(); } catch { }
@@ -64,18 +67,19 @@ public class AdminController : ControllerBase
                 ActiveKeys = activeKeys,
                 TotalKeys = totalKeys,
                 TotalRequests = totalRequests,
-                Health = (totalKeys > 0 && activeKeys > 0) ? "Healthy" : "Warning",
-                HealthMessage = (totalKeys > 0 && activeKeys > 0) ? "Platform stable" : "Key exhausted or not configured",
+                Health = runtime.PoolHealth,
+                HealthMessage = runtime.ActiveProject is not null
+                    ? $"Runtime authority active on {runtime.ActiveProject}"
+                    : "Runtime authority is reporting no available project",
                 NewUsersToday = newUsersToday,
                 RequestsGrowth = 5.2m,
                 TotalFoods = totalFoods,
-                ChartData = new List<ChartDataDto>
+                ChartData = runtime.Projects.Take(6).Select(project => new ChartDataDto
                 {
-                    new ChartDataDto { Name = "Mon", Requests = 120, Quota = 1500 },
-                    new ChartDataDto { Name = "Tue", Requests = 350, Quota = 1500 },
-                    new ChartDataDto { Name = "Wed", Requests = 200, Quota = 1500 },
-                    new ChartDataDto { Name = "Thu", Requests = 400, Quota = 1500 }
-                },
+                    Name = string.IsNullOrWhiteSpace(project.ProjectAlias) ? project.ProjectId : project.ProjectAlias,
+                    Requests = project.RpdUsed ?? 0,
+                    Quota = runtime.Limits.Rpd ?? 0,
+                }).ToList(),
                 PoolHealth = poolHealth
             };
 
@@ -164,6 +168,7 @@ public class AdminController : ControllerBase
 
         user.Role = request.Role;
         await _context.SaveChangesAsync();
+        PublishResourceUpdated("user", user.UserId.ToString(), new { user.UserId, user.Role });
         return Ok(ApiResponse<object>.SuccessResponse(new { Id = user.UserId, Role = user.Role }, "Đã cập nhật role."));
     }
 
@@ -177,6 +182,7 @@ public class AdminController : ControllerBase
         user.EmailVerified = !user.EmailVerified;
         await _context.SaveChangesAsync();
         var status = user.EmailVerified ? "Active" : "Suspended";
+        PublishResourceUpdated("user", user.UserId.ToString(), new { user.UserId, Status = status });
         return Ok(ApiResponse<object>.SuccessResponse(new { Id = user.UserId, Status = status }, $"User {status}."));
     }
 
@@ -200,13 +206,18 @@ public class AdminController : ControllerBase
 
         _context.Users.Remove(user);
         await _context.SaveChangesAsync();
+        PublishResourceUpdated("user", user.UserId.ToString(), new { user.UserId, Deleted = true });
         return Ok(ApiResponse<object>.SuccessResponse(null, "User đã bị xóa vĩnh viễn."));
     }
 
     // ===================== FOODS CRUD =====================
 
     [HttpGet("foods")]
-    public async Task<IActionResult> GetFoods([FromQuery] string? search, [FromQuery] int page = 1, [FromQuery] int pageSize = 50)
+    public async Task<IActionResult> GetFoods(
+        [FromQuery] string? search,
+        [FromQuery] bool? isVerified,
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 50)
     {
         var query = _context.FoodItems.Where(f => !f.IsDeleted).AsQueryable();
 
@@ -214,6 +225,11 @@ public class AdminController : ControllerBase
         {
             var q = search.ToLower();
             query = query.Where(f => f.FoodName.ToLower().Contains(q));
+        }
+
+        if (isVerified.HasValue)
+        {
+            query = query.Where(f => f.IsVerified == isVerified.Value);
         }
 
         var total = await query.CountAsync();
@@ -257,6 +273,7 @@ public class AdminController : ControllerBase
 
         _context.FoodItems.Add(food);
         await _context.SaveChangesAsync();
+        PublishResourceUpdated("food", food.FoodItemId.ToString(), new { food.FoodItemId, food.FoodName });
         return Created("", ApiResponse<object>.SuccessResponse(new { Id = food.FoodItemId }, "Thêm food mới thành công."));
     }
 
@@ -273,6 +290,7 @@ public class AdminController : ControllerBase
         if (request.CarbPer100g.HasValue) food.CarbPer100g = request.CarbPer100g.Value;
 
         await _context.SaveChangesAsync();
+        PublishResourceUpdated("food", food.FoodItemId.ToString(), new { food.FoodItemId, food.FoodName });
         return Ok(ApiResponse<object>.SuccessResponse(new { Id = food.FoodItemId }, "Cập nhật food thành công."));
     }
 
@@ -284,6 +302,7 @@ public class AdminController : ControllerBase
 
         _context.FoodItems.Remove(food);
         await _context.SaveChangesAsync();
+        PublishResourceUpdated("food", id.ToString(), new { FoodItemId = id, Deleted = true });
         return Ok(ApiResponse<object>.SuccessResponse(null, "Xóa food thành công."));
     }
 
@@ -296,6 +315,7 @@ public class AdminController : ControllerBase
         food.IsVerified = !food.IsVerified;
         if (food.IsVerified) food.CredibilityScore = 100;
         await _context.SaveChangesAsync();
+        PublishResourceUpdated("food", food.FoodItemId.ToString(), new { food.FoodItemId, food.IsVerified });
         return Ok(ApiResponse<object>.SuccessResponse(new { Id = food.FoodItemId, IsVerified = food.IsVerified }, "Cập nhật verify thành công."));
     }
 
@@ -305,6 +325,7 @@ public class AdminController : ControllerBase
     public async Task<IActionResult> GetSystemHealth()
     {
         var health = new SystemHealthDto { BackendStatus = "Live" };
+        AdminRuntimeSnapshotDto? runtime = null;
 
         try
         {
@@ -315,10 +336,13 @@ public class AdminController : ControllerBase
 
         try
         {
-            var client = _httpClientFactory.CreateClient();
-            client.Timeout = TimeSpan.FromSeconds(8);
-            var r = await client.GetAsync("https://eatfitai-ai-provider.onrender.com/healthz");
-            health.AiProviderStatus = r.IsSuccessStatusCode ? "Live" : "Down";
+            runtime = await _runtimeStatusService.GetSnapshotAsync();
+            health.AiProviderStatus = runtime.AvailableProjectCount > 0 ? "Live" : "Down";
+            health.ActiveProject = runtime.ActiveProject;
+            health.AvailableProjectCount = runtime.AvailableProjectCount;
+            health.ExhaustedProjectCount = runtime.ExhaustedProjectCount;
+            health.CooldownProjectCount = runtime.CooldownProjectCount;
+            health.Limits = runtime.Limits;
         }
         catch { health.AiProviderStatus = "Unreachable"; }
 
@@ -326,7 +350,7 @@ public class AdminController : ControllerBase
         try { health.TotalFoods = await _context.FoodItems.CountAsync(); } catch { }
         try { health.TotalKeys = await _context.GeminiKeys.CountAsync(); } catch { }
 
-        health.CheckedAt = DateTime.UtcNow;
+        health.CheckedAt = runtime?.CheckedAt ?? DateTime.UtcNow;
 
         return Ok(ApiResponse<SystemHealthDto>.SuccessResponse(health, "System health check complete"));
     }
@@ -358,5 +382,10 @@ public class AdminController : ControllerBase
             timestamp = DateTime.UtcNow,
             services = results
         });
+    }
+
+    private void PublishResourceUpdated(string entityType, string entityId, object payload)
+    {
+        _eventBus.Publish("admin.resource.updated", entityType, entityId, payload);
     }
 }

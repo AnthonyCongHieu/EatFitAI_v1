@@ -1,0 +1,10 @@
+bin/
+obj/
+
+*.user
+*.suo
+*.cache
+
+local-backend.err.log
+local-backend.out.log
+localbackend-admin.log
