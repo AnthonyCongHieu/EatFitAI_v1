@@ -961,61 +961,178 @@ const OnboardingScreen = (): React.ReactElement => {
       case 1: // Body Metrics — Emerald Nebula redesign
         return renderStep1Nebula();
 
-      case 2: // Goal
+      case 2: // Goal — Emerald Nebula redesign
         return (
           <Animated.View entering={FadeInRight} exiting={FadeOutLeft} key="step2">
-            <View style={oldStyles.optionGrid} accessibilityRole="radiogroup" accessibilityLabel="Chọn mục tiêu">
-              {GOAL_OPTIONS.map((goal) => {
-                const goalColor = theme.colors[goal.colorKey];
-                return (
-                  <Pressable
-                    key={goal.value}
-                    testID={`${TEST_IDS.auth.onboardingGoalPrefix}-${goal.value}`}
-                    style={[
-                      oldStyles.goalCard,
-                      {
-                        backgroundColor:
-                          data.goal === goal.value
-                            ? `${goalColor}20`
-                            : isDark
-                              ? 'rgba(255,255,255,0.05)'
-                              : 'rgba(0,0,0,0.03)',
-                        borderColor: data.goal === goal.value ? goalColor : 'transparent',
-                      },
-                    ]}
-                    onPress={() => setData({ ...data, goal: goal.value as any })}
-                    accessibilityRole="radio"
-                    accessibilityLabel={`${goal.label}: ${goal.desc}`}
-                    accessibilityState={{ checked: data.goal === goal.value }}
-                  >
+            <Tilt3DCard maxTilt={6} perspective={900} height={620}>
+              <Animated.View
+                entering={FadeInDown.delay(150).springify()}
+                style={[s.card, { backgroundColor: C.glassBg, borderColor: C.glassBorder }]}
+              >
+                {/* Header — no icon, just title + subtitle */}
+                <ParallaxLayer depth={0.3}>
+                  <View style={s.cardHeader}>
                     <ThemedText
+                      variant="h2"
+                      weight="700"
+                      style={{ color: '#FFFFFF', fontSize: 26, textAlign: 'center', fontFamily: 'Inter_700Bold', paddingTop: 8 }}
+                    >
+                      Mục tiêu của bạn
+                    </ThemedText>
+                    <ThemedText
+                      variant="body"
                       style={{
-                        fontSize: theme.typography.h1.fontSize,
-                        lineHeight: theme.typography.h1.lineHeight,
+                        color: C.onSurfaceVariant,
+                        marginTop: 6,
+                        textAlign: 'center',
+                        lineHeight: 22,
+                        maxWidth: 280,
+                        fontFamily: 'Inter_500Medium',
                       }}
                     >
-                      {goal.icon}
+                      Chúng tôi sẽ cá nhân hóa kế hoạch dinh dưỡng dựa trên mục tiêu của bạn
                     </ThemedText>
-                    <ThemedText
-                      weight="600"
-                      style={{
-                        marginTop: theme.spacing.sm,
-                        color: data.goal === goal.value ? goalColor : theme.colors.text,
-                      }}
+                  </View>
+                </ParallaxLayer>
+
+                {/* Goal Selection Cards */}
+                <ParallaxLayer depth={0.5}>
+                  <View style={{ gap: 14, marginTop: 8 }}>
+                    {/* Giảm cân */}
+                    <Pressable
+                      testID={`${TEST_IDS.auth.onboardingGoalPrefix}-lose`}
+                      style={[
+                        s2.goalCard,
+                        {
+                          backgroundColor: C.inputBg,
+                          borderColor: data.goal === 'lose' ? C.primary : C.glassBorder,
+                          borderWidth: data.goal === 'lose' ? 2 : 1,
+                          ...(data.goal === 'lose' && {
+                            shadowColor: C.primary,
+                            shadowOpacity: 0.2,
+                            shadowRadius: 20,
+                            elevation: 8,
+                          }),
+                        },
+                      ]}
+                      onPress={() => setData({ ...data, goal: 'lose' as any })}
+                      accessibilityRole="radio"
+                      accessibilityState={{ checked: data.goal === 'lose' }}
                     >
-                      {goal.label}
-                    </ThemedText>
-                    <ThemedText
-                      variant="caption"
-                      color="textSecondary"
-                      style={{ textAlign: 'center', marginTop: theme.spacing.xs }}
+                      <View style={[s2.goalIconBox, { backgroundColor: 'rgba(75, 226, 119, 0.15)', borderColor: 'rgba(75, 226, 119, 0.3)' }]}>
+                        <MaterialCommunityIcons name="scale-bathroom" size={28} color={C.primary} />
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        <ThemedText weight="700" style={{ color: '#FFFFFF', fontSize: 17, fontFamily: 'Inter_700Bold' }}>
+                          Giảm cân
+                        </ThemedText>
+                        <ThemedText style={{ color: C.onSurfaceVariant, fontSize: 13, fontFamily: 'Inter_400Regular', marginTop: 2, lineHeight: 18 }}>
+                          Giảm mỡ thừa với chế độ thâm hụt calo
+                        </ThemedText>
+                      </View>
+                      <View style={[
+                        s2.radioOuter,
+                        data.goal === 'lose'
+                          ? { backgroundColor: C.primary }
+                          : { borderColor: 'rgba(134, 149, 133, 0.5)', borderWidth: 2 },
+                      ]}>
+                        {data.goal === 'lose' && (
+                          <Ionicons name="checkmark" size={16} color="#003915" />
+                        )}
+                      </View>
+                    </Pressable>
+
+                    {/* Duy trì cân nặng */}
+                    <Pressable
+                      testID={`${TEST_IDS.auth.onboardingGoalPrefix}-maintain`}
+                      style={[
+                        s2.goalCard,
+                        {
+                          backgroundColor: C.inputBg,
+                          borderColor: data.goal === 'maintain' ? C.primary : C.glassBorder,
+                          borderWidth: data.goal === 'maintain' ? 2 : 1,
+                          ...(data.goal === 'maintain' && {
+                            shadowColor: C.primary,
+                            shadowOpacity: 0.2,
+                            shadowRadius: 20,
+                            elevation: 8,
+                          }),
+                        },
+                      ]}
+                      onPress={() => setData({ ...data, goal: 'maintain' as any })}
+                      accessibilityRole="radio"
+                      accessibilityState={{ checked: data.goal === 'maintain' }}
                     >
-                      {goal.desc}
-                    </ThemedText>
-                  </Pressable>
-                );
-              })}
-            </View>
+                      <View style={[s2.goalIconBox, { backgroundColor: 'rgba(96, 165, 250, 0.15)', borderColor: 'rgba(96, 165, 250, 0.3)' }]}>
+                        <MaterialCommunityIcons name="scale-balance" size={28} color="#60A5FA" />
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        <ThemedText weight="700" style={{ color: '#FFFFFF', fontSize: 17, fontFamily: 'Inter_700Bold' }}>
+                          Duy trì cân nặng
+                        </ThemedText>
+                        <ThemedText style={{ color: C.onSurfaceVariant, fontSize: 13, fontFamily: 'Inter_400Regular', marginTop: 2, lineHeight: 18 }}>
+                          Giữ gìn sức khỏe và duy trì vóc dáng
+                        </ThemedText>
+                      </View>
+                      <View style={[
+                        s2.radioOuter,
+                        data.goal === 'maintain'
+                          ? { backgroundColor: C.primary }
+                          : { borderColor: 'rgba(134, 149, 133, 0.5)', borderWidth: 2 },
+                      ]}>
+                        {data.goal === 'maintain' && (
+                          <Ionicons name="checkmark" size={16} color="#003915" />
+                        )}
+                      </View>
+                    </Pressable>
+
+                    {/* Tăng cơ */}
+                    <Pressable
+                      testID={`${TEST_IDS.auth.onboardingGoalPrefix}-gain`}
+                      style={[
+                        s2.goalCard,
+                        {
+                          backgroundColor: C.inputBg,
+                          borderColor: data.goal === 'gain' ? C.primary : C.glassBorder,
+                          borderWidth: data.goal === 'gain' ? 2 : 1,
+                          ...(data.goal === 'gain' && {
+                            shadowColor: C.primary,
+                            shadowOpacity: 0.2,
+                            shadowRadius: 20,
+                            elevation: 8,
+                          }),
+                        },
+                      ]}
+                      onPress={() => setData({ ...data, goal: 'gain' as any })}
+                      accessibilityRole="radio"
+                      accessibilityState={{ checked: data.goal === 'gain' }}
+                    >
+                      <View style={[s2.goalIconBox, { backgroundColor: 'rgba(251, 146, 60, 0.15)', borderColor: 'rgba(251, 146, 60, 0.3)' }]}>
+                        <MaterialCommunityIcons name="dumbbell" size={28} color="#FB923C" />
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        <ThemedText weight="700" style={{ color: '#FFFFFF', fontSize: 17, fontFamily: 'Inter_700Bold' }}>
+                          Tăng cơ
+                        </ThemedText>
+                        <ThemedText style={{ color: C.onSurfaceVariant, fontSize: 13, fontFamily: 'Inter_400Regular', marginTop: 2, lineHeight: 18 }}>
+                          Phát triển cơ bắp với chế độ giàu protein
+                        </ThemedText>
+                      </View>
+                      <View style={[
+                        s2.radioOuter,
+                        data.goal === 'gain'
+                          ? { backgroundColor: C.primary }
+                          : { borderColor: 'rgba(134, 149, 133, 0.5)', borderWidth: 2 },
+                      ]}>
+                        {data.goal === 'gain' && (
+                          <Ionicons name="checkmark" size={16} color="#003915" />
+                        )}
+                      </View>
+                    </Pressable>
+                  </View>
+                </ParallaxLayer>
+              </Animated.View>
+            </Tilt3DCard>
           </Animated.View>
         );
 
@@ -1162,7 +1279,7 @@ const OnboardingScreen = (): React.ReactElement => {
 
   /* ─── Render footer button (Emerald Nebula for step 0) ─── */
   const renderFooterButton = () => {
-    if (currentStep === 0 || currentStep === 1) {
+    if (currentStep === 0 || currentStep === 1 || currentStep === 2) {
       return (
         <View style={s.nebulaFooter}>
           <Pressable
@@ -1252,8 +1369,8 @@ const OnboardingScreen = (): React.ReactElement => {
         testID={TEST_IDS.auth.onboardingScreen}
       >
         {/* Background */}
-        <View style={[StyleSheet.absoluteFill, { backgroundColor: (currentStep === 0 || currentStep === 1) ? C.surface : undefined }]}>
-          {(currentStep === 0 || currentStep === 1) ? (
+        <View style={[StyleSheet.absoluteFill, { backgroundColor: (currentStep === 0 || currentStep === 1 || currentStep === 2) ? C.surface : undefined }]}>
+          {(currentStep === 0 || currentStep === 1 || currentStep === 2) ? (
             <>
               {/* Background glow blobs */}
               <View style={[s.blob, { top: -80, right: -100, backgroundColor: C.primary + '0D' }]} />
@@ -1263,13 +1380,13 @@ const OnboardingScreen = (): React.ReactElement => {
         </View>
 
         <LinearGradient
-          colors={(currentStep === 0 || currentStep === 1) ? ['transparent', 'transparent'] : theme.colors.screenGradient}
+          colors={(currentStep === 0 || currentStep === 1 || currentStep === 2) ? ['transparent', 'transparent'] : theme.colors.screenGradient}
           style={{ flex: 1 }}
         >
           {/* Header */}
           <View style={[s.header, { paddingTop: Math.max(insets.top + 12, 28) }]}>
             {/* Top bar: row with back button and step counter */}
-            {(currentStep === 0 || currentStep === 1) ? (
+            {(currentStep === 0 || currentStep === 1 || currentStep === 2) ? (
               <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginBottom: 16, width: '100%', position: 'relative' }}>
                 {currentStep > 0 && (
                   <Pressable
@@ -1311,7 +1428,7 @@ const OnboardingScreen = (): React.ReactElement => {
             </View>
 
             {/* Step title/subtitle for steps 2-4 only */}
-            {currentStep > 1 && (
+            {currentStep > 2 && (
               <>
                 <ThemedText style={s.stepIcon}>
                   {STEPS[currentStep]?.icon ?? '👋'}
@@ -1337,7 +1454,7 @@ const OnboardingScreen = (): React.ReactElement => {
               showsVerticalScrollIndicator={false}
               contentContainerStyle={[
                 s.scrollContent,
-                (currentStep === 0 || currentStep === 1) && { paddingHorizontal: 24 },
+                (currentStep === 0 || currentStep === 1 || currentStep === 2) && { paddingHorizontal: 24 },
               ]}
               keyboardShouldPersistTaps="handled"
               keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
@@ -1687,6 +1804,33 @@ const s1 = StyleSheet.create({
     justifyContent: 'center',
     borderWidth: 1,
     borderColor: 'rgba(75, 226, 119, 0.2)',
+  },
+});
+
+/* ─── Step 2 styles (Goals Nebula) ─── */
+const s2 = StyleSheet.create({
+  goalCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+    borderRadius: 24,
+    padding: 18,
+    borderWidth: 1,
+  },
+  goalIconBox: {
+    width: 52,
+    height: 52,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+  },
+  radioOuter: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });
 
