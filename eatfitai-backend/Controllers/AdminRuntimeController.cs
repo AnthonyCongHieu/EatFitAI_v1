@@ -4,6 +4,7 @@ using EatFitAI.API.DTOs.Common;
 using EatFitAI.API.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Http.Features;
 
 namespace EatFitAI.API.Controllers;
 
@@ -14,16 +15,16 @@ public class AdminRuntimeController : ControllerBase
 {
     private static readonly TimeSpan SnapshotInterval = TimeSpan.FromSeconds(5);
 
-    private readonly IAiRuntimeStatusService _runtimeStatusService;
+    private readonly IAdminRuntimeSnapshotCache _runtimeSnapshotCache;
     private readonly IAdminRealtimeEventBus _eventBus;
     private readonly ILogger<AdminRuntimeController> _logger;
 
     public AdminRuntimeController(
-        IAiRuntimeStatusService runtimeStatusService,
+        IAdminRuntimeSnapshotCache runtimeSnapshotCache,
         IAdminRealtimeEventBus eventBus,
         ILogger<AdminRuntimeController> logger)
     {
-        _runtimeStatusService = runtimeStatusService;
+        _runtimeSnapshotCache = runtimeSnapshotCache;
         _eventBus = eventBus;
         _logger = logger;
     }
@@ -32,7 +33,16 @@ public class AdminRuntimeController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<AdminRuntimeSnapshotDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetSnapshot(CancellationToken cancellationToken)
     {
-        var snapshot = await _runtimeStatusService.GetSnapshotAsync(cancellationToken);
+        var snapshot = await _runtimeSnapshotCache.GetLatestAsync(cancellationToken);
+        if (snapshot == null)
+        {
+            var cacheState = _runtimeSnapshotCache.GetState();
+            return StatusCode(
+                StatusCodes.Status503ServiceUnavailable,
+                ApiResponse<object>.ErrorResponse(
+                    $"Runtime snapshot unavailable. {cacheState.LastError ?? "No runtime snapshot has been cached yet."}"));
+        }
+
         return Ok(ApiResponse<AdminRuntimeSnapshotDto>.SuccessResponse(snapshot, "Runtime snapshot ready."));
     }
 
@@ -40,12 +50,15 @@ public class AdminRuntimeController : ControllerBase
     public async Task GetEvents(CancellationToken cancellationToken)
     {
         Response.Headers.Append("Content-Type", "text/event-stream");
-        Response.Headers.Append("Cache-Control", "no-cache");
+        Response.Headers.Append("Cache-Control", "no-cache, no-transform");
         Response.Headers.Append("Connection", "keep-alive");
         Response.Headers.Append("X-Accel-Buffering", "no");
+        Response.HttpContext.Features.Get<IHttpResponseBodyFeature>()?.DisableBuffering();
+        await Response.StartAsync(cancellationToken);
+        await Response.WriteAsync($": stream-open {DateTime.UtcNow:O}\n\n", cancellationToken);
+        await Response.Body.FlushAsync(cancellationToken);
 
         var subscriber = _eventBus.Subscribe(cancellationToken);
-        string? lastSnapshotFingerprint = null;
 
         async Task WriteEventAsync(string eventName, AdminRuntimeEventDto payload)
         {
@@ -56,55 +69,95 @@ public class AdminRuntimeController : ControllerBase
             await Response.Body.FlushAsync(cancellationToken);
         }
 
+        async Task WriteHeartbeatAsync()
+        {
+            await Response.WriteAsync($": heartbeat {DateTime.UtcNow:O}\n\n", cancellationToken);
+            await Response.Body.FlushAsync(cancellationToken);
+        }
+
+        async Task WriteCachedBootstrapAsync()
+        {
+            var cacheState = _runtimeSnapshotCache.GetState();
+            if (cacheState.Snapshot != null)
+            {
+                await WriteEventAsync("runtime.snapshot", new AdminRuntimeEventDto
+                {
+                    EventId = $"bootstrap-snapshot-{DateTime.UtcNow.Ticks}",
+                    EventType = "runtime.snapshot",
+                    EntityType = "runtime",
+                    EntityId = "global",
+                    OccurredAt = DateTime.UtcNow,
+                    Version = _eventBus.CurrentVersion,
+                    Payload = cacheState.Snapshot,
+                });
+
+                await WriteEventAsync("runtime.health.updated", new AdminRuntimeEventDto
+                {
+                    EventId = $"bootstrap-health-{DateTime.UtcNow.Ticks}",
+                    EventType = "runtime.health.updated",
+                    EntityType = "runtime-health",
+                    EntityId = "global",
+                    OccurredAt = DateTime.UtcNow,
+                    Version = _eventBus.CurrentVersion,
+                    Payload = new
+                    {
+                        cacheState.Snapshot.PoolHealth,
+                        cacheState.Snapshot.ActiveProject,
+                        cacheState.Snapshot.AvailableProjectCount,
+                        cacheState.Snapshot.ExhaustedProjectCount,
+                        cacheState.Snapshot.CooldownProjectCount,
+                    },
+                });
+
+                return;
+            }
+
+            if (!string.IsNullOrWhiteSpace(cacheState.LastError))
+            {
+                await WriteEventAsync("runtime.health.updated", new AdminRuntimeEventDto
+                {
+                    EventId = $"bootstrap-error-{DateTime.UtcNow.Ticks}",
+                    EventType = "runtime.health.updated",
+                    EntityType = "runtime-health",
+                    EntityId = "global",
+                    OccurredAt = DateTime.UtcNow,
+                    Version = _eventBus.CurrentVersion,
+                    Payload = new
+                    {
+                        error = "runtime_snapshot_unavailable",
+                        detail = cacheState.LastError,
+                    },
+                });
+            }
+        }
+
+        await WriteCachedBootstrapAsync();
+
+        using var heartbeatTimer = new PeriodicTimer(SnapshotInterval);
         while (!cancellationToken.IsCancellationRequested)
         {
             try
             {
-                var snapshot = await _runtimeStatusService.GetSnapshotAsync(cancellationToken);
-                var fingerprint = JsonSerializer.Serialize(snapshot);
-                if (!string.Equals(lastSnapshotFingerprint, fingerprint, StringComparison.Ordinal))
+                var waitForEventTask = subscriber.WaitToReadAsync(cancellationToken).AsTask();
+                var heartbeatTask = heartbeatTimer.WaitForNextTickAsync(cancellationToken).AsTask();
+                var completedTask = await Task.WhenAny(waitForEventTask, heartbeatTask);
+
+                if (completedTask == waitForEventTask)
                 {
-                    lastSnapshotFingerprint = fingerprint;
-                    var snapshotEvent = new AdminRuntimeEventDto
+                    if (!await waitForEventTask)
                     {
-                        EventId = $"snapshot-{DateTime.UtcNow.Ticks}",
-                        EventType = "runtime.snapshot",
-                        EntityType = "runtime",
-                        EntityId = "global",
-                        OccurredAt = DateTime.UtcNow,
-                        Version = _eventBus.CurrentVersion,
-                        Payload = snapshot,
-                    };
-                    await WriteEventAsync("runtime.snapshot", snapshotEvent);
+                        break;
+                    }
 
-                    var healthEvent = new AdminRuntimeEventDto
+                    while (subscriber.TryRead(out var evt))
                     {
-                        EventId = $"health-{DateTime.UtcNow.Ticks}",
-                        EventType = "runtime.health.updated",
-                        EntityType = "runtime-health",
-                        EntityId = "global",
-                        OccurredAt = DateTime.UtcNow,
-                        Version = _eventBus.CurrentVersion,
-                        Payload = new
-                        {
-                            snapshot.PoolHealth,
-                            snapshot.ActiveProject,
-                            snapshot.AvailableProjectCount,
-                            snapshot.ExhaustedProjectCount,
-                            snapshot.CooldownProjectCount,
-                        },
-                    };
-                    await WriteEventAsync("runtime.health.updated", healthEvent);
+                        await WriteEventAsync(evt.EventType, evt);
+                    }
                 }
-
-                while (subscriber.TryRead(out var evt))
+                else if (await heartbeatTask)
                 {
-                    await WriteEventAsync(evt.EventType, evt);
+                    await WriteHeartbeatAsync();
                 }
-
-                await Response.WriteAsync($": heartbeat {DateTime.UtcNow:O}\n\n", cancellationToken);
-                await Response.Body.FlushAsync(cancellationToken);
-                await Task.Delay(SnapshotInterval, cancellationToken);
             }
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
             {
@@ -113,21 +166,28 @@ public class AdminRuntimeController : ControllerBase
             catch (Exception ex)
             {
                 _logger.LogWarning(ex, "Runtime SSE loop hit an error.");
-                var errorEvent = new AdminRuntimeEventDto
+                try
                 {
-                    EventId = $"error-{DateTime.UtcNow.Ticks}",
-                    EventType = "runtime.health.updated",
-                    EntityType = "runtime-health",
-                    EntityId = "global",
-                    OccurredAt = DateTime.UtcNow,
-                    Version = _eventBus.CurrentVersion,
-                    Payload = new
+                    await WriteEventAsync("runtime.health.updated", new AdminRuntimeEventDto
                     {
-                        error = "runtime_stream_error",
-                        detail = ex.Message,
-                    },
-                };
-                await WriteEventAsync("runtime.health.updated", errorEvent);
+                        EventId = $"error-{DateTime.UtcNow.Ticks}",
+                        EventType = "runtime.health.updated",
+                        EntityType = "runtime-health",
+                        EntityId = "global",
+                        OccurredAt = DateTime.UtcNow,
+                        Version = _eventBus.CurrentVersion,
+                        Payload = new
+                        {
+                            error = "runtime_stream_error",
+                            detail = ex.Message,
+                        },
+                    });
+                }
+                catch
+                {
+                    break;
+                }
+
                 await Task.Delay(TimeSpan.FromSeconds(3), cancellationToken);
             }
         }

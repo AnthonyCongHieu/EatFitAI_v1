@@ -18,20 +18,20 @@ public class AdminController : ControllerBase
 {
     private readonly ApplicationDbContext _context;
     private readonly IHttpClientFactory _httpClientFactory;
-    private readonly IAiRuntimeStatusService _runtimeStatusService;
+    private readonly IAdminRuntimeSnapshotCache _runtimeSnapshotCache;
     private readonly IAdminRealtimeEventBus _eventBus;
     private readonly IAdminAuditService _auditService;
 
     public AdminController(
         ApplicationDbContext context,
         IHttpClientFactory httpClientFactory,
-        IAiRuntimeStatusService runtimeStatusService,
+        IAdminRuntimeSnapshotCache runtimeSnapshotCache,
         IAdminRealtimeEventBus eventBus,
         IAdminAuditService auditService)
     {
         _context = context;
         _httpClientFactory = httpClientFactory;
-        _runtimeStatusService = runtimeStatusService;
+        _runtimeSnapshotCache = runtimeSnapshotCache;
         _eventBus = eventBus;
         _auditService = auditService;
     }
@@ -45,7 +45,7 @@ public class AdminController : ControllerBase
         try
         {
             var totalUsers = await _context.Users.CountAsync();
-            var runtime = await _runtimeStatusService.GetSnapshotAsync();
+            var runtime = await _runtimeSnapshotCache.GetLatestAsync() ?? new AdminRuntimeSnapshotDto();
 
             var totalRequests = runtime.Projects.Sum(project => project.TotalRequests);
             var activeKeys = runtime.AvailableProjectCount;
@@ -370,13 +370,20 @@ public class AdminController : ControllerBase
 
         try
         {
-            runtime = await _runtimeStatusService.GetSnapshotAsync();
-            health.AiProviderStatus = runtime.AvailableProjectCount > 0 ? "Live" : "Down";
-            health.ActiveProject = runtime.ActiveProject;
-            health.AvailableProjectCount = runtime.AvailableProjectCount;
-            health.ExhaustedProjectCount = runtime.ExhaustedProjectCount;
-            health.CooldownProjectCount = runtime.CooldownProjectCount;
-            health.Limits = runtime.Limits;
+            runtime = await _runtimeSnapshotCache.GetLatestAsync();
+            if (runtime != null)
+            {
+                health.AiProviderStatus = runtime.AvailableProjectCount > 0 ? "Live" : "Down";
+                health.ActiveProject = runtime.ActiveProject;
+                health.AvailableProjectCount = runtime.AvailableProjectCount;
+                health.ExhaustedProjectCount = runtime.ExhaustedProjectCount;
+                health.CooldownProjectCount = runtime.CooldownProjectCount;
+                health.Limits = runtime.Limits;
+            }
+            else
+            {
+                health.AiProviderStatus = "Unreachable";
+            }
         }
         catch { health.AiProviderStatus = "Unreachable"; }
 
