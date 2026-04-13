@@ -2,6 +2,8 @@ namespace EatFitAI.API.Middleware
 {
     public class RequestLoggingMiddleware
     {
+        private static readonly PathString AdminRuntimeEventsPath = new("/api/admin/runtime/events");
+
         private readonly RequestDelegate _next;
         private readonly ILogger<RequestLoggingMiddleware> _logger;
 
@@ -22,6 +24,21 @@ namespace EatFitAI.API.Middleware
                 context.Request.Method,
                 context.Request.Path,
                 context.Connection.RemoteIpAddress);
+
+            // SSE responses must stream directly to the client. Wrapping them in a memory
+            // buffer prevents the initial event bytes from being flushed through Render.
+            if (context.Request.Path.Equals(AdminRuntimeEventsPath))
+            {
+                await _next(context);
+
+                _logger.LogInformation(
+                    "Response {TraceId}: {StatusCode} for {Method} {Path}",
+                    traceId,
+                    context.Response.StatusCode,
+                    context.Request.Method,
+                    context.Request.Path);
+                return;
+            }
 
             var originalBodyStream = context.Response.Body;
             await using var responseBody = new MemoryStream();
