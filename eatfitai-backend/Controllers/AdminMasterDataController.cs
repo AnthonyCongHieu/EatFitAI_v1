@@ -1,6 +1,7 @@
 using EatFitAI.API.DbScaffold.Data;
 using EatFitAI.API.DbScaffold.Models;
 using EatFitAI.API.DTOs.Admin;
+using EatFitAI.API.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -18,11 +19,13 @@ namespace EatFitAI.API.Controllers
     {
         private readonly EatFitAIDbContext _context;
         private readonly ILogger<AdminMasterDataController> _logger;
+        private readonly IAdminAuditService _auditService;
 
-        public AdminMasterDataController(EatFitAIDbContext context, ILogger<AdminMasterDataController> logger)
+        public AdminMasterDataController(EatFitAIDbContext context, ILogger<AdminMasterDataController> logger, IAdminAuditService auditService)
         {
             _context = context;
             _logger = logger;
+            _auditService = auditService;
         }
 
         // --- Meal Type ---
@@ -51,6 +54,7 @@ namespace EatFitAI.API.Controllers
 
             _context.MealTypes.Add(entity);
             await _context.SaveChangesAsync();
+            await WriteAuditAsync("create", "meal-type", entity.MealTypeId.ToString(), "success", $"Name={entity.Name}");
 
             _logger.LogInformation("Admin user {User} created MealType ID {Id}", User.Identity?.Name, entity.MealTypeId);
 
@@ -65,10 +69,15 @@ namespace EatFitAI.API.Controllers
         public async Task<IActionResult> UpdateMealType(int id, [FromBody] UpdateMealTypeRequest request)
         {
             var entity = await _context.MealTypes.FindAsync(id);
-            if (entity == null) return NotFound(new { error = "Meal type not found" });
+            if (entity == null)
+            {
+                await WriteAuditAsync("update", "meal-type", id.ToString(), "failed", "Meal type not found");
+                return NotFound(new { error = "Meal type not found" });
+            }
 
             entity.Name = request.Name;
             await _context.SaveChangesAsync();
+            await WriteAuditAsync("update", "meal-type", id.ToString(), "success", $"Name={entity.Name}");
             _logger.LogInformation("Admin user {User} updated MealType ID {Id}", User.Identity?.Name, id);
 
             return NoContent();
@@ -78,15 +87,21 @@ namespace EatFitAI.API.Controllers
         public async Task<IActionResult> DeleteMealType(int id)
         {
             var entity = await _context.MealTypes.Include(m => m.MealDiaries).FirstOrDefaultAsync(m => m.MealTypeId == id);
-            if (entity == null) return NotFound(new { error = "Meal type not found" });
+            if (entity == null)
+            {
+                await WriteAuditAsync("delete", "meal-type", id.ToString(), "failed", "Meal type not found");
+                return NotFound(new { error = "Meal type not found" });
+            }
 
             if (entity.MealDiaries.Any())
             {
+                await WriteAuditAsync("delete", "meal-type", id.ToString(), "failed", "Meal type is still referenced by meal diaries");
                 return BadRequest(new { error = "Cannot delete meal type as it is used in meal diaries." });
             }
 
             _context.MealTypes.Remove(entity);
             await _context.SaveChangesAsync();
+            await WriteAuditAsync("delete", "meal-type", id.ToString(), "success", $"Name={entity.Name}");
             _logger.LogInformation("Admin user {User} deleted MealType ID {Id}", User.Identity?.Name, id);
 
             return NoContent();
@@ -120,6 +135,7 @@ namespace EatFitAI.API.Controllers
 
             _context.ActivityLevels.Add(entity);
             await _context.SaveChangesAsync();
+            await WriteAuditAsync("create", "activity-level", entity.ActivityLevelId.ToString(), "success", $"Name={entity.Name}");
 
             _logger.LogInformation("Admin user {User} created ActivityLevel ID {Id}", User.Identity?.Name, entity.ActivityLevelId);
 
@@ -135,12 +151,17 @@ namespace EatFitAI.API.Controllers
         public async Task<IActionResult> UpdateActivityLevel(int id, [FromBody] UpdateActivityLevelRequest request)
         {
             var entity = await _context.ActivityLevels.FindAsync(id);
-            if (entity == null) return NotFound(new { error = "Activity level not found" });
+            if (entity == null)
+            {
+                await WriteAuditAsync("update", "activity-level", id.ToString(), "failed", "Activity level not found");
+                return NotFound(new { error = "Activity level not found" });
+            }
 
             entity.Name = request.Name;
             entity.ActivityFactor = request.ActivityFactor;
             
             await _context.SaveChangesAsync();
+            await WriteAuditAsync("update", "activity-level", id.ToString(), "success", $"Name={entity.Name};Factor={entity.ActivityFactor}");
             _logger.LogInformation("Admin user {User} updated ActivityLevel ID {Id}", User.Identity?.Name, id);
 
             return NoContent();
@@ -150,15 +171,21 @@ namespace EatFitAI.API.Controllers
         public async Task<IActionResult> DeleteActivityLevel(int id)
         {
             var entity = await _context.ActivityLevels.Include(a => a.NutritionTargets).FirstOrDefaultAsync(a => a.ActivityLevelId == id);
-            if (entity == null) return NotFound(new { error = "Activity level not found" });
+            if (entity == null)
+            {
+                await WriteAuditAsync("delete", "activity-level", id.ToString(), "failed", "Activity level not found");
+                return NotFound(new { error = "Activity level not found" });
+            }
 
             if (entity.NutritionTargets.Any())
             {
+                await WriteAuditAsync("delete", "activity-level", id.ToString(), "failed", "Activity level is still referenced by nutrition targets");
                 return BadRequest(new { error = "Cannot delete activity level as it is used in nutrition targets." });
             }
 
             _context.ActivityLevels.Remove(entity);
             await _context.SaveChangesAsync();
+            await WriteAuditAsync("delete", "activity-level", id.ToString(), "success", $"Name={entity.Name}");
             _logger.LogInformation("Admin user {User} deleted ActivityLevel ID {Id}", User.Identity?.Name, id);
 
             return NoContent();
@@ -194,6 +221,7 @@ namespace EatFitAI.API.Controllers
 
             _context.ServingUnits.Add(entity);
             await _context.SaveChangesAsync();
+            await WriteAuditAsync("create", "serving-unit", entity.ServingUnitId.ToString(), "success", $"Name={entity.Name};Symbol={entity.Symbol}");
 
             _logger.LogInformation("Admin user {User} created ServingUnit ID {Id}", User.Identity?.Name, entity.ServingUnitId);
 
@@ -210,13 +238,18 @@ namespace EatFitAI.API.Controllers
         public async Task<IActionResult> UpdateServingUnit(int id, [FromBody] UpdateServingUnitRequest request)
         {
             var entity = await _context.ServingUnits.FindAsync(id);
-            if (entity == null) return NotFound(new { error = "Serving unit not found" });
+            if (entity == null)
+            {
+                await WriteAuditAsync("update", "serving-unit", id.ToString(), "failed", "Serving unit not found");
+                return NotFound(new { error = "Serving unit not found" });
+            }
 
             entity.Name = request.Name;
             entity.Symbol = request.Symbol;
             entity.IsBaseUnit = request.IsBaseUnit;
 
             await _context.SaveChangesAsync();
+            await WriteAuditAsync("update", "serving-unit", id.ToString(), "success", $"Name={entity.Name};Symbol={entity.Symbol}");
             _logger.LogInformation("Admin user {User} updated ServingUnit ID {Id}", User.Identity?.Name, id);
 
             return NoContent();
@@ -230,18 +263,36 @@ namespace EatFitAI.API.Controllers
                 .Include(s => s.MealDiaries)
                 .FirstOrDefaultAsync(s => s.ServingUnitId == id);
                 
-            if (entity == null) return NotFound(new { error = "Serving unit not found" });
+            if (entity == null)
+            {
+                await WriteAuditAsync("delete", "serving-unit", id.ToString(), "failed", "Serving unit not found");
+                return NotFound(new { error = "Serving unit not found" });
+            }
 
             if (entity.FoodServings.Any() || entity.MealDiaries.Any())
             {
+                await WriteAuditAsync("delete", "serving-unit", id.ToString(), "failed", "Serving unit is still referenced");
                 return BadRequest(new { error = "Cannot delete serving unit as it is used in food servings or meal diaries." });
             }
 
             _context.ServingUnits.Remove(entity);
             await _context.SaveChangesAsync();
+            await WriteAuditAsync("delete", "serving-unit", id.ToString(), "success", $"Name={entity.Name}");
             _logger.LogInformation("Admin user {User} deleted ServingUnit ID {Id}", User.Identity?.Name, id);
 
             return NoContent();
+        }
+
+        private Task WriteAuditAsync(string action, string entity, string entityId, string outcome, string? detail = null)
+        {
+            return _auditService.WriteAsync(HttpContext, new AdminAuditWriteRequest
+            {
+                Action = action,
+                Entity = entity,
+                EntityId = entityId,
+                Outcome = outcome,
+                Detail = detail
+            });
         }
     }
 }

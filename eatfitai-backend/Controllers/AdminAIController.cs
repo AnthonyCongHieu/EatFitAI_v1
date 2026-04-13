@@ -2,6 +2,7 @@ using System;
 using System.Linq;
 using System.Threading.Tasks;
 using EatFitAI.API.Data;
+using EatFitAI.API.DTOs.Admin;
 using EatFitAI.API.DTOs.AdminAi;
 using EatFitAI.API.DTOs.Common;
 using EatFitAI.API.Models;
@@ -20,12 +21,14 @@ public class AdminAIController : ControllerBase
     private readonly ApplicationDbContext _context;
     private readonly IEncryptionService _encryptionService;
     private readonly IAdminRealtimeEventBus _eventBus;
+    private readonly IAdminAuditService _auditService;
 
-    public AdminAIController(ApplicationDbContext context, IEncryptionService encryptionService, IAdminRealtimeEventBus eventBus)
+    public AdminAIController(ApplicationDbContext context, IEncryptionService encryptionService, IAdminRealtimeEventBus eventBus, IAdminAuditService auditService)
     {
         _context = context;
         _encryptionService = encryptionService;
         _eventBus = eventBus;
+        _auditService = auditService;
     }
 
     [HttpGet("keys")]
@@ -84,6 +87,7 @@ public class AdminAIController : ControllerBase
     {
         if (string.IsNullOrWhiteSpace(request.ApiKey))
         {
+            await WriteAuditAsync("create", "gemini-key", "-", "failed", "API key was empty");
             return BadRequest(ApiResponse<object>.ErrorResponse("API Key không được để trống."));
         }
 
@@ -107,6 +111,7 @@ public class AdminAIController : ControllerBase
 
         _context.GeminiKeys.Add(newKey);
         await _context.SaveChangesAsync();
+        await WriteAuditAsync("create", "gemini-key", newKey.Id.ToString(), "success", $"KeyName={newKey.KeyName}");
         PublishKeyUpdated(newKey.Id, new { newKey.Id, newKey.KeyName, newKey.ProjectId, Mutation = "created" });
 
         return Created("", ApiResponse<object>.SuccessResponse(new { Id = newKey.Id }, "Thêm Gemini Key mới thành công."));
@@ -119,6 +124,7 @@ public class AdminAIController : ControllerBase
     {
         if (request.Keys == null || request.Keys.Count == 0)
         {
+            await WriteAuditAsync("bulk-create", "gemini-key", "-", "failed", "Key list was empty");
             return BadRequest(ApiResponse<object>.ErrorResponse("Danh sách keys không được trống."));
         }
 
@@ -154,6 +160,7 @@ public class AdminAIController : ControllerBase
         }
 
         await _context.SaveChangesAsync();
+        await WriteAuditAsync("bulk-create", "gemini-key", string.Join(",", created), "success", $"Created={created.Count};Errors={errors.Count}");
         foreach (var keyId in created)
         {
             PublishKeyUpdated(keyId, new { Id = keyId, Mutation = "bulk-created" });
@@ -172,6 +179,7 @@ public class AdminAIController : ControllerBase
         var key = await _context.GeminiKeys.FindAsync(id);
         if (key == null)
         {
+            await WriteAuditAsync("update", "gemini-key", id.ToString(), "failed", "Gemini key not found");
             return NotFound(ApiResponse<object>.ErrorResponse("Không tìm thấy Gemini Key."));
         }
 
@@ -184,6 +192,7 @@ public class AdminAIController : ControllerBase
         if (request.Notes != null) key.Notes = request.Notes;
 
         await _context.SaveChangesAsync();
+        await WriteAuditAsync("update", "gemini-key", key.Id.ToString(), "success", $"KeyName={key.KeyName};IsActive={key.IsActive}");
         PublishKeyUpdated(key.Id, new { key.Id, key.KeyName, key.ProjectId, Mutation = "updated" });
         return Ok(ApiResponse<object>.SuccessResponse(new { Id = key.Id }, "Cập nhật Gemini Key thành công."));
     }
@@ -196,11 +205,13 @@ public class AdminAIController : ControllerBase
         var key = await _context.GeminiKeys.FindAsync(id);
         if (key == null)
         {
+            await WriteAuditAsync("toggle", "gemini-key", id.ToString(), "failed", "Gemini key not found");
             return NotFound(ApiResponse<object>.ErrorResponse("Không tìm thấy Gemini Key."));
         }
 
         key.IsActive = !key.IsActive;
         await _context.SaveChangesAsync();
+        await WriteAuditAsync("toggle", "gemini-key", key.Id.ToString(), "success", $"IsActive={key.IsActive}");
         PublishKeyUpdated(key.Id, new { key.Id, key.IsActive, Mutation = "toggled" });
         return Ok(ApiResponse<object>.SuccessResponse(new { Id = key.Id, IsActive = key.IsActive }, 
             key.IsActive ? "Đã kích hoạt Key." : "Đã vô hiệu hóa Key."));
@@ -213,9 +224,13 @@ public class AdminAIController : ControllerBase
     {
         var key = await _context.GeminiKeys.FindAsync(id);
         if (key == null)
+        {
+            await WriteAuditAsync("test", "gemini-key", id.ToString(), "failed", "Gemini key not found");
             return NotFound(ApiResponse<object>.ErrorResponse("Không tìm thấy Gemini Key."));
+        }
 
         var result = await TestSingleKey(key);
+        await WriteAuditAsync("test", "gemini-key", key.Id.ToString(), result.Status == "Active" ? "success" : "failed", $"{result.Status}:{result.StatusCode}");
         return Ok(ApiResponse<object>.SuccessResponse(result, result.Message));
     }
 
@@ -235,6 +250,7 @@ public class AdminAIController : ControllerBase
 
         var active = results.Count(r => ((dynamic)r).Status == "Active");
         var rateLimited = results.Count(r => ((dynamic)r).Status == "RateLimited");
+        await WriteAuditAsync("test-all", "gemini-key", "all", "success", $"Total={keys.Count};Active={active};RateLimited={rateLimited}");
 
         return Ok(ApiResponse<object>.SuccessResponse(
             new { Results = results, Summary = new { Total = keys.Count, Active = active, RateLimited = rateLimited, Dead = keys.Count - active - rateLimited } },
@@ -285,11 +301,13 @@ public class AdminAIController : ControllerBase
         var key = await _context.GeminiKeys.FindAsync(id);
         if (key == null)
         {
+            await WriteAuditAsync("delete", "gemini-key", id.ToString(), "failed", "Gemini key not found");
             return NotFound(ApiResponse<object>.ErrorResponse("Không tìm thấy Gemini Key."));
         }
 
         _context.GeminiKeys.Remove(key);
         await _context.SaveChangesAsync();
+        await WriteAuditAsync("delete", "gemini-key", id.ToString(), "success", $"KeyName={key.KeyName}");
         PublishKeyUpdated(id, new { Id = id, Mutation = "deleted" });
 
         return Ok(ApiResponse<object>.SuccessResponse(null, "Xóa Gemini Key thành công."));
@@ -307,6 +325,7 @@ public class AdminAIController : ControllerBase
         }
 
         await _context.SaveChangesAsync();
+        await WriteAuditAsync("reset-quota", "gemini-key", "all", "success", $"Count={keys.Count}");
         _eventBus.Publish("admin.resource.updated", "gemini-key", "all", new { Mutation = "quota-reset", Count = keys.Count });
 
         return Ok(ApiResponse<object>.SuccessResponse(null, $"Đã reset quota trong ngày cho {keys.Count} keys."));
@@ -315,6 +334,18 @@ public class AdminAIController : ControllerBase
     private void PublishKeyUpdated(Guid keyId, object payload)
     {
         _eventBus.Publish("admin.resource.updated", "gemini-key", keyId.ToString(), payload);
+    }
+
+    private Task WriteAuditAsync(string action, string entity, string entityId, string outcome, string? detail = null)
+    {
+        return _auditService.WriteAsync(HttpContext, new AdminAuditWriteRequest
+        {
+            Action = action,
+            Entity = entity,
+            EntityId = entityId,
+            Outcome = outcome,
+            Detail = detail
+        });
     }
 }
 

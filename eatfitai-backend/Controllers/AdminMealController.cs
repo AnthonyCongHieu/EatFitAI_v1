@@ -18,11 +18,13 @@ public class AdminMealController : ControllerBase
 {
     private readonly ApplicationDbContext _context;
     private readonly IAdminRealtimeEventBus _eventBus;
+    private readonly IAdminAuditService _auditService;
 
-    public AdminMealController(ApplicationDbContext context, IAdminRealtimeEventBus eventBus)
+    public AdminMealController(ApplicationDbContext context, IAdminRealtimeEventBus eventBus, IAdminAuditService auditService)
     {
         _context = context;
         _eventBus = eventBus;
+        _auditService = auditService;
     }
 
     [HttpGet]
@@ -143,11 +145,28 @@ public class AdminMealController : ControllerBase
     public async Task<IActionResult> DeleteMeal(int id)
     {
         var meal = await _context.MealDiaries.FindAsync(id);
-        if (meal == null) return NotFound(ApiResponse<object>.ErrorResponse("Meal not found"));
+        if (meal == null)
+        {
+            await WriteAuditAsync("delete", "meal", id.ToString(), "failed", "Meal not found");
+            return NotFound(ApiResponse<object>.ErrorResponse("Meal not found"));
+        }
 
         meal.IsDeleted = true;
         await _context.SaveChangesAsync();
+        await WriteAuditAsync("delete", "meal", id.ToString(), "success", $"UserId={meal.UserId}");
         _eventBus.Publish("admin.resource.updated", "meal", id.ToString(), new { MealDiaryId = id, Deleted = true });
         return Ok(ApiResponse<object>.SuccessResponse(null, "Xóa meal thành công."));
+    }
+
+    private Task WriteAuditAsync(string action, string entity, string entityId, string outcome, string? detail = null)
+    {
+        return _auditService.WriteAsync(HttpContext, new AdminAuditWriteRequest
+        {
+            Action = action,
+            Entity = entity,
+            EntityId = entityId,
+            Outcome = outcome,
+            Detail = detail
+        });
     }
 }

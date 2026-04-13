@@ -558,6 +558,7 @@ builder.Services.AddHttpClient();
 // Nutrition + AI logging services
 builder.Services.AddScoped<INutritionCalcService, NutritionCalcService>();
 builder.Services.AddScoped<IAiLogService, AiLogService>();
+builder.Services.AddScoped<IAdminAuditService, AdminAuditService>();
 
 // Lookup cache service (Singleton for shared cache)
 builder.Services.AddSingleton<ILookupCacheService, LookupCacheService>();
@@ -751,6 +752,8 @@ using (var scope = app.Services.CreateScope())
 
     try
     {
+        var adminAuditService = services.GetRequiredService<IAdminAuditService>();
+        await adminAuditService.EnsureTableAsync();
         await DatabaseSeeder.SeedAsync(services);
     }
     catch (Exception ex)

@@ -20,17 +20,20 @@ public class AdminController : ControllerBase
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly IAiRuntimeStatusService _runtimeStatusService;
     private readonly IAdminRealtimeEventBus _eventBus;
+    private readonly IAdminAuditService _auditService;
 
     public AdminController(
         ApplicationDbContext context,
         IHttpClientFactory httpClientFactory,
         IAiRuntimeStatusService runtimeStatusService,
-        IAdminRealtimeEventBus eventBus)
+        IAdminRealtimeEventBus eventBus,
+        IAdminAuditService auditService)
     {
         _context = context;
         _httpClientFactory = httpClientFactory;
         _runtimeStatusService = runtimeStatusService;
         _eventBus = eventBus;
+        _auditService = auditService;
     }
 
     // ===================== DASHBOARD =====================
@@ -164,10 +167,15 @@ public class AdminController : ControllerBase
     public async Task<IActionResult> UpdateUserRole(Guid id, [FromBody] UpdateUserRoleRequest request)
     {
         var user = await _context.Users.FirstOrDefaultAsync(x => x.UserId == id);
-        if (user == null) return NotFound(ApiResponse<object>.ErrorResponse("User not found"));
+        if (user == null)
+        {
+            await WriteAuditAsync("update-role", "user", id.ToString(), "failed", "User not found");
+            return NotFound(ApiResponse<object>.ErrorResponse("User not found"));
+        }
 
         user.Role = request.Role;
         await _context.SaveChangesAsync();
+        await WriteAuditAsync("update-role", "user", user.UserId.ToString(), "success", $"Role={user.Role}");
         PublishResourceUpdated("user", user.UserId.ToString(), new { user.UserId, user.Role });
         return Ok(ApiResponse<object>.SuccessResponse(new { Id = user.UserId, Role = user.Role }, "Đã cập nhật role."));
     }
@@ -176,12 +184,17 @@ public class AdminController : ControllerBase
     public async Task<IActionResult> SuspendUser(Guid id)
     {
         var user = await _context.Users.FirstOrDefaultAsync(x => x.UserId == id);
-        if (user == null) return NotFound(ApiResponse<object>.ErrorResponse("User not found"));
+        if (user == null)
+        {
+            await WriteAuditAsync("toggle-suspend", "user", id.ToString(), "failed", "User not found");
+            return NotFound(ApiResponse<object>.ErrorResponse("User not found"));
+        }
 
         // Toggle email verified as suspend mechanism
         user.EmailVerified = !user.EmailVerified;
         await _context.SaveChangesAsync();
         var status = user.EmailVerified ? "Active" : "Suspended";
+        await WriteAuditAsync("toggle-suspend", "user", user.UserId.ToString(), "success", $"Status={status}");
         PublishResourceUpdated("user", user.UserId.ToString(), new { user.UserId, Status = status });
         return Ok(ApiResponse<object>.SuccessResponse(new { Id = user.UserId, Status = status }, $"User {status}."));
     }
@@ -190,7 +203,11 @@ public class AdminController : ControllerBase
     public async Task<IActionResult> DeleteUser(Guid id)
     {
         var user = await _context.Users.FirstOrDefaultAsync(x => x.UserId == id);
-        if (user == null) return NotFound(ApiResponse<object>.ErrorResponse("User not found"));
+        if (user == null)
+        {
+            await WriteAuditAsync("delete", "user", id.ToString(), "failed", "User not found");
+            return NotFound(ApiResponse<object>.ErrorResponse("User not found"));
+        }
 
         // Cascade delete related data
         try
@@ -206,6 +223,7 @@ public class AdminController : ControllerBase
 
         _context.Users.Remove(user);
         await _context.SaveChangesAsync();
+        await WriteAuditAsync("delete", "user", user.UserId.ToString(), "success", $"Email={user.Email}");
         PublishResourceUpdated("user", user.UserId.ToString(), new { user.UserId, Deleted = true });
         return Ok(ApiResponse<object>.SuccessResponse(null, "User đã bị xóa vĩnh viễn."));
     }
@@ -273,6 +291,7 @@ public class AdminController : ControllerBase
 
         _context.FoodItems.Add(food);
         await _context.SaveChangesAsync();
+        await WriteAuditAsync("create", "food", food.FoodItemId.ToString(), "success", $"FoodName={food.FoodName}");
         PublishResourceUpdated("food", food.FoodItemId.ToString(), new { food.FoodItemId, food.FoodName });
         return Created("", ApiResponse<object>.SuccessResponse(new { Id = food.FoodItemId }, "Thêm food mới thành công."));
     }
@@ -281,7 +300,11 @@ public class AdminController : ControllerBase
     public async Task<IActionResult> UpdateFood(int id, [FromBody] UpdateFoodRequest request)
     {
         var food = await _context.FoodItems.FindAsync(id);
-        if (food == null) return NotFound(ApiResponse<object>.ErrorResponse("Food not found"));
+        if (food == null)
+        {
+            await WriteAuditAsync("update", "food", id.ToString(), "failed", "Food not found");
+            return NotFound(ApiResponse<object>.ErrorResponse("Food not found"));
+        }
 
         if (request.FoodName != null) food.FoodName = request.FoodName.Trim();
         if (request.CaloriesPer100g.HasValue) food.CaloriesPer100g = request.CaloriesPer100g.Value;
@@ -290,6 +313,7 @@ public class AdminController : ControllerBase
         if (request.CarbPer100g.HasValue) food.CarbPer100g = request.CarbPer100g.Value;
 
         await _context.SaveChangesAsync();
+        await WriteAuditAsync("update", "food", food.FoodItemId.ToString(), "success", $"FoodName={food.FoodName}");
         PublishResourceUpdated("food", food.FoodItemId.ToString(), new { food.FoodItemId, food.FoodName });
         return Ok(ApiResponse<object>.SuccessResponse(new { Id = food.FoodItemId }, "Cập nhật food thành công."));
     }
@@ -298,10 +322,15 @@ public class AdminController : ControllerBase
     public async Task<IActionResult> DeleteFood(int id)
     {
         var food = await _context.FoodItems.FindAsync(id);
-        if (food == null) return NotFound(ApiResponse<object>.ErrorResponse("Food not found"));
+        if (food == null)
+        {
+            await WriteAuditAsync("delete", "food", id.ToString(), "failed", "Food not found");
+            return NotFound(ApiResponse<object>.ErrorResponse("Food not found"));
+        }
 
         _context.FoodItems.Remove(food);
         await _context.SaveChangesAsync();
+        await WriteAuditAsync("delete", "food", id.ToString(), "success", $"FoodName={food.FoodName}");
         PublishResourceUpdated("food", id.ToString(), new { FoodItemId = id, Deleted = true });
         return Ok(ApiResponse<object>.SuccessResponse(null, "Xóa food thành công."));
     }
@@ -310,11 +339,16 @@ public class AdminController : ControllerBase
     public async Task<IActionResult> VerifyFood(int id)
     {
         var food = await _context.FoodItems.FindAsync(id);
-        if (food == null) return NotFound(ApiResponse<object>.ErrorResponse("Food not found"));
+        if (food == null)
+        {
+            await WriteAuditAsync("verify", "food", id.ToString(), "failed", "Food not found");
+            return NotFound(ApiResponse<object>.ErrorResponse("Food not found"));
+        }
 
         food.IsVerified = !food.IsVerified;
         if (food.IsVerified) food.CredibilityScore = 100;
         await _context.SaveChangesAsync();
+        await WriteAuditAsync("verify", "food", food.FoodItemId.ToString(), "success", $"IsVerified={food.IsVerified}");
         PublishResourceUpdated("food", food.FoodItemId.ToString(), new { food.FoodItemId, food.IsVerified });
         return Ok(ApiResponse<object>.SuccessResponse(new { Id = food.FoodItemId, IsVerified = food.IsVerified }, "Cập nhật verify thành công."));
     }
@@ -387,5 +421,17 @@ public class AdminController : ControllerBase
     private void PublishResourceUpdated(string entityType, string entityId, object payload)
     {
         _eventBus.Publish("admin.resource.updated", entityType, entityId, payload);
+    }
+
+    private Task WriteAuditAsync(string action, string entity, string entityId, string outcome, string? detail = null)
+    {
+        return _auditService.WriteAsync(HttpContext, new AdminAuditWriteRequest
+        {
+            Action = action,
+            Entity = entity,
+            EntityId = entityId,
+            Outcome = outcome,
+            Detail = detail
+        });
     }
 }

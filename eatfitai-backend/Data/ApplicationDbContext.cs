@@ -54,6 +54,7 @@ public partial class ApplicationDbContext : DbContext
     public virtual DbSet<AiLabelMap> AiLabelMaps { get; set; }
     public virtual DbSet<UserPreference> UserPreferences { get; set; }
     public virtual DbSet<GeminiKey> GeminiKeys { get; set; }
+    public virtual DbSet<AdminAuditEvent> AdminAuditEvents { get; set; }
 
     public virtual DbSet<vw_DailyMacroShare> vw_DailyMacroShares { get; set; }
 
@@ -597,6 +598,30 @@ public partial class ApplicationDbContext : DbContext
             entity.Property(e => e.Id).HasDefaultValueSql("gen_random_uuid()");
             
             entity.Property(e => e.CreatedAt)
+                .HasPrecision(3)
+                .HasDefaultValueSql("NOW() AT TIME ZONE 'UTC'");
+        });
+
+        modelBuilder.Entity<AdminAuditEvent>(entity =>
+        {
+            entity.ToTable("AdminAuditEvent");
+
+            entity.HasKey(e => e.AdminAuditEventId);
+
+            entity.HasIndex(e => e.OccurredAt, "IX_AdminAuditEvent_OccurredAt");
+            entity.HasIndex(e => new { e.Action, e.Entity }, "IX_AdminAuditEvent_Action_Entity");
+            entity.HasIndex(e => e.RequestId, "IX_AdminAuditEvent_RequestId");
+
+            entity.Property(e => e.AdminAuditEventId)
+                .HasDefaultValueSql("gen_random_uuid()");
+
+            entity.Property(e => e.Actor).HasMaxLength(256);
+            entity.Property(e => e.Action).HasMaxLength(120);
+            entity.Property(e => e.Entity).HasMaxLength(120);
+            entity.Property(e => e.EntityId).HasMaxLength(120);
+            entity.Property(e => e.Outcome).HasMaxLength(40);
+            entity.Property(e => e.RequestId).HasMaxLength(120);
+            entity.Property(e => e.OccurredAt)
                 .HasPrecision(3)
                 .HasDefaultValueSql("NOW() AT TIME ZONE 'UTC'");
         });
