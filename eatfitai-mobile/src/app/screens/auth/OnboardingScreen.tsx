@@ -34,7 +34,7 @@ import Animated, {
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import Slider from '@react-native-community/slider';
 
 import { ThemedText } from '../../../components/ThemedText';
@@ -234,6 +234,24 @@ const OnboardingScreen = (): React.ReactElement => {
 
   const waveStyle = useAnimatedStyle(() => ({
     transform: [{ rotate: `${waveRotation.value}deg` }],
+  }));
+
+  // Glowing pulse animation for icons
+  const glowPulse = useSharedValue(1);
+  useEffect(() => {
+    glowPulse.value = withRepeat(
+      withSequence(
+        withTiming(1.2, { duration: 1500, easing: Easing.inOut(Easing.ease) }),
+        withTiming(1.0, { duration: 1500, easing: Easing.inOut(Easing.ease) })
+      ),
+      -1,
+      true
+    );
+  }, []);
+
+  const glowPulseStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: glowPulse.value }],
+    opacity: 0.3 + (glowPulse.value - 1) * 2,
   }));
 
   useEffect(() => {
@@ -650,52 +668,298 @@ const OnboardingScreen = (): React.ReactElement => {
     </Animated.View>
   );
 
+  /* ─── Render Step 1 — Emerald Nebula "Body Metrics" ─── */
+  const heightNum = data.heightCm ? parseInt(data.heightCm, 10) : 170;
+  const weightNum = data.weightKg ? parseFloat(data.weightKg) : 65;
+  const rulerScrollRef = useRef<ScrollView>(null);
+  const rulerInitialized = useRef(false);
+  const [rulerContainerWidth, setRulerContainerWidth] = useState(0);
+  const weightRulerRef = useRef<ScrollView>(null);
+  const weightRulerInitialized = useRef(false);
+  const [weightRulerWidth, setWeightRulerWidth] = useState(0);
+
+  const renderStep1Nebula = () => (
+    <Animated.View entering={FadeInRight} exiting={FadeOutLeft} key="step1">
+      <Tilt3DCard maxTilt={6} perspective={900} height={650}>
+        <Animated.View
+          entering={FadeInDown.delay(150).springify()}
+          style={[s.card, { backgroundColor: C.glassBg, borderColor: C.glassBorder }]}
+        >
+          {/* Header */}
+          <ParallaxLayer depth={0.3}>
+            <View style={s.cardHeader}>
+              <ThemedText
+                variant="h2"
+                weight="700"
+                style={{ color: '#FFFFFF', fontSize: 28, textAlign: 'center', fontFamily: 'Inter_700Bold', paddingTop: 8 }}
+              >
+                Chỉ số cơ thể
+              </ThemedText>
+              <ThemedText
+                variant="body"
+                style={{
+                  color: C.onSurfaceVariant,
+                  marginTop: 6,
+                  textAlign: 'center',
+                  lineHeight: 22,
+                  maxWidth: 280,
+                  fontFamily: 'Inter_500Medium',
+                }}
+              >
+                Cung cấp chỉ số cơ thể chính xác để chúng tôi tính toán lộ trình tối ưu
+              </ThemedText>
+            </View>
+          </ParallaxLayer>
+
+          {/* Metric cards */}
+          <ParallaxLayer depth={0.5}>
+            <View style={s.formGroup}>
+
+              {/* Height */}
+              <View style={[s1.metricCard, { backgroundColor: C.inputBg, borderColor: C.glassBorder }]}>
+                <View style={s1.metricHeader}>
+                  <View>
+                    <ThemedText style={[s.label, { marginLeft: 0 }]}>CHIỀU CAO</ThemedText>
+                    <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 4, marginTop: 4 }}>
+                      <ThemedText weight="700" style={{ color: '#FFFFFF', fontSize: 36, fontFamily: 'Inter_700Bold', lineHeight: 42 }}>
+                        {data.heightCm || '170'}
+                      </ThemedText>
+                      <ThemedText style={{ color: C.onSurfaceVariant, fontSize: 16, fontFamily: 'Inter_500Medium' }}>
+                        cm
+                      </ThemedText>
+                    </View>
+                  </View>
+                  <View style={s1.metricIconBox}>
+                    <MaterialCommunityIcons name="arrow-up-down" size={24} color={C.primary} />
+                  </View>
+                </View>
+                <TextInput
+                  testID={TEST_IDS.auth.onboardingHeightInput}
+                  style={{ position: 'absolute', opacity: 0, width: 1, height: 1 }}
+                  value={data.heightCm}
+                  onChangeText={(text) => setData({ ...data, heightCm: text.replace(/[^0-9]/g, '') })}
+                  keyboardType={Platform.OS === 'ios' ? 'number-pad' : 'numeric'}
+                />
+
+                {/* Custom Horizontal Ruler Selector */}
+                <View
+                  style={{ marginTop: 20, height: 80, alignItems: 'center', justifyContent: 'center' }}
+                  onLayout={(e) => {
+                    const w = e.nativeEvent.layout.width;
+                    setRulerContainerWidth(w);
+                    // Initialize scroll position once we know the width
+                    if (!rulerInitialized.current && rulerScrollRef.current && w > 0) {
+                      const initVal = data.heightCm ? parseInt(data.heightCm, 10) : 170;
+                      setTimeout(() => {
+                        rulerScrollRef.current?.scrollTo({ x: (initVal - 100) * 12, animated: false });
+                        rulerInitialized.current = true;
+                      }, 100);
+                    }
+                  }}
+                >
+                  {/* Center Indicator — only covers the tick area */}
+                  <View style={{
+                    position: 'absolute',
+                    bottom: 0,
+                    height: 44,
+                    width: 3,
+                    backgroundColor: C.primary,
+                    borderRadius: 2,
+                    zIndex: 10,
+                    shadowColor: C.primary,
+                    shadowOpacity: 0.8,
+                    shadowRadius: 8,
+                  }} />
+
+                  {rulerContainerWidth > 0 && (
+                    <ScrollView
+                      ref={rulerScrollRef}
+                      horizontal
+                      showsHorizontalScrollIndicator={false}
+                      snapToInterval={12}
+                      decelerationRate="fast"
+                      contentContainerStyle={{
+                        paddingLeft: rulerContainerWidth / 2 - 6,
+                        paddingRight: rulerContainerWidth / 2 - 6,
+                        height: 80,
+                        alignItems: 'flex-end',
+                      }}
+                      onMomentumScrollEnd={(e) => {
+                        const offset = e.nativeEvent.contentOffset.x;
+                        const val = Math.round(offset / 12) + 100;
+                        const clamped = Math.max(100, Math.min(250, val));
+                        setData((prev) => ({ ...prev, heightCm: String(clamped) }));
+                      }}
+                      onScrollEndDrag={(e) => {
+                        const offset = e.nativeEvent.contentOffset.x;
+                        const val = Math.round(offset / 12) + 100;
+                        const clamped = Math.max(100, Math.min(250, val));
+                        setData((prev) => ({ ...prev, heightCm: String(clamped) }));
+                      }}
+                      scrollEventThrottle={64}
+                    >
+                      {Array.from({ length: 151 }).map((_, i) => {
+                        const val = 100 + i;
+                        const isMajor = val % 10 === 0;
+                        const isMedium = val % 5 === 0;
+
+                        return (
+                          <View key={i} style={{ width: 12, alignItems: 'center', justifyContent: 'flex-end' }}>
+                            {isMajor && (
+                              <ThemedText style={{
+                                fontSize: 11,
+                                color: 'rgba(188, 200, 185, 0.6)',
+                                marginBottom: 6,
+                                fontFamily: 'Inter_600SemiBold',
+                                width: 40,
+                                textAlign: 'center'
+                              }}>
+                                {val}
+                              </ThemedText>
+                            )}
+                            <View style={{
+                              width: isMajor ? 2 : 1,
+                              height: isMajor ? 32 : (isMedium ? 20 : 12),
+                              backgroundColor: isMajor ? C.primary : 'rgba(188, 200, 185, 0.4)',
+                              borderRadius: 1,
+                            }} />
+                          </View>
+                        );
+                      })}
+                    </ScrollView>
+                  )}
+                </View>
+              </View>
+
+              {/* Weight */}
+              <View style={[s1.metricCard, { backgroundColor: C.inputBg, borderColor: C.glassBorder }]}>
+                <View style={s1.metricHeader}>
+                  <View>
+                    <ThemedText style={[s.label, { marginLeft: 0 }]}>CÂN NẶNG</ThemedText>
+                    <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 4, marginTop: 4 }}>
+                      <ThemedText weight="700" style={{ color: '#FFFFFF', fontSize: 36, fontFamily: 'Inter_700Bold', lineHeight: 42 }}>
+                        {data.weightKg || '65'}
+                      </ThemedText>
+                      <ThemedText style={{ color: C.onSurfaceVariant, fontSize: 16, fontFamily: 'Inter_500Medium' }}>
+                        kg
+                      </ThemedText>
+                    </View>
+                  </View>
+                  <View style={s1.metricIconBox}>
+                    <Ionicons name="scale-outline" size={24} color={C.primary} />
+                  </View>
+                </View>
+                <TextInput
+                  testID={TEST_IDS.auth.onboardingWeightInput}
+                  style={{ position: 'absolute', opacity: 0, width: 1, height: 1 }}
+                  value={data.weightKg}
+                  onChangeText={(text) => setData({ ...data, weightKg: text.replace(/[^0-9.]/g, '') })}
+                  keyboardType={Platform.OS === 'ios' ? 'decimal-pad' : 'numeric'}
+                />
+
+                {/* Custom Horizontal Ruler Selector for Weight */}
+                <View
+                  style={{ marginTop: 20, height: 80, alignItems: 'center', justifyContent: 'center' }}
+                  onLayout={(e) => {
+                    const w = e.nativeEvent.layout.width;
+                    setWeightRulerWidth(w);
+                    if (!weightRulerInitialized.current && weightRulerRef.current && w > 0) {
+                      const initVal = data.weightKg ? parseFloat(data.weightKg) : 65;
+                      setTimeout(() => {
+                        weightRulerRef.current?.scrollTo({ x: (initVal - 30) * 100, animated: false });
+                        weightRulerInitialized.current = true;
+                      }, 100);
+                    }
+                  }}
+                >
+                  {/* Center Indicator */}
+                  <View style={{
+                    position: 'absolute',
+                    bottom: 0,
+                    height: 44,
+                    width: 3,
+                    backgroundColor: C.primary,
+                    borderRadius: 2,
+                    zIndex: 10,
+                    shadowColor: C.primary,
+                    shadowOpacity: 0.8,
+                    shadowRadius: 8,
+                  }} />
+
+                  {weightRulerWidth > 0 && (
+                    <ScrollView
+                      ref={weightRulerRef}
+                      horizontal
+                      showsHorizontalScrollIndicator={false}
+                      snapToInterval={10}
+                      decelerationRate="fast"
+                      contentContainerStyle={{
+                        paddingLeft: weightRulerWidth / 2 - 5,
+                        paddingRight: weightRulerWidth / 2 - 5,
+                        height: 80,
+                        alignItems: 'flex-end',
+                      }}
+                      onMomentumScrollEnd={(e) => {
+                        const offset = e.nativeEvent.contentOffset.x;
+                        const val = Math.round((offset / 100 + 30) * 10) / 10;
+                        const clamped = Math.max(30, Math.min(200, val));
+                        setData((prev) => ({ ...prev, weightKg: String(clamped) }));
+                      }}
+                      onScrollEndDrag={(e) => {
+                        const offset = e.nativeEvent.contentOffset.x;
+                        const val = Math.round((offset / 100 + 30) * 10) / 10;
+                        const clamped = Math.max(30, Math.min(200, val));
+                        setData((prev) => ({ ...prev, weightKg: String(clamped) }));
+                      }}
+                      scrollEventThrottle={64}
+                    >
+                      {Array.from({ length: 1701 }).map((_, i) => {
+                        const val = 30 + i * 0.1;
+                        const isMajor = i % 10 === 0;
+                        const isMedium = i % 5 === 0;
+
+                        return (
+                          <View key={i} style={{ width: 10, alignItems: 'center', justifyContent: 'flex-end' }}>
+                            {isMajor && (
+                              <ThemedText style={{
+                                fontSize: 11,
+                                color: 'rgba(188, 200, 185, 0.6)',
+                                marginBottom: 6,
+                                fontFamily: 'Inter_600SemiBold',
+                                width: 40,
+                                textAlign: 'center'
+                              }}>
+                                {Math.round(val)}
+                              </ThemedText>
+                            )}
+                            <View style={{
+                              width: isMajor ? 2 : 1,
+                              height: isMajor ? 32 : (isMedium ? 20 : 12),
+                              backgroundColor: isMajor ? C.primary : 'rgba(188, 200, 185, 0.4)',
+                              borderRadius: 1,
+                            }} />
+                          </View>
+                        );
+                      })}
+                    </ScrollView>
+                  )}
+                </View>
+              </View>
+
+            </View>
+          </ParallaxLayer>
+        </Animated.View>
+      </Tilt3DCard>
+    </Animated.View>
+  );
+
   const renderStep = () => {
     switch (currentStep) {
       case 0:
         return renderStep0Nebula();
 
-      case 1: // Body Metrics
-        return (
-          <Animated.View entering={FadeInRight} exiting={FadeOutLeft} key="step1">
-            <View style={oldStyles.inputRow}>
-              <View style={oldStyles.inputCol}>
-                <ThemedTextInput
-                  label={t('onboarding.height_cm')}
-                  value={data.heightCm}
-                  onChangeText={(text) =>
-                    setData({ ...data, heightCm: text.replace(/[^0-9]/g, '') })
-                  }
-                  placeholder="Nhập chiều cao"
-                  keyboardType={Platform.OS === 'ios' ? 'number-pad' : 'numeric'}
-                  testID={TEST_IDS.auth.onboardingHeightInput}
-                />
-              </View>
-              <View style={oldStyles.inputCol}>
-                <ThemedTextInput
-                  label={t('onboarding.weight_kg')}
-                  value={data.weightKg}
-                  onChangeText={(text) =>
-                    setData({ ...data, weightKg: text.replace(/[^0-9.]/g, '') })
-                  }
-                  placeholder="Nhập cân nặng"
-                  keyboardType={Platform.OS === 'ios' ? 'decimal-pad' : 'numeric'}
-                  testID={TEST_IDS.auth.onboardingWeightInput}
-                />
-              </View>
-            </View>
-
-            <View style={[glass.card, { marginTop: 20 }]}>
-              <ThemedText
-                variant="bodySmall"
-                color="textSecondary"
-                style={{ textAlign: 'center' }}
-              >
-                {t('onboarding.ai_calculation_tip')}
-              </ThemedText>
-            </View>
-          </Animated.View>
-        );
+      case 1: // Body Metrics — Emerald Nebula redesign
+        return renderStep1Nebula();
 
       case 2: // Goal
         return (
@@ -898,7 +1162,7 @@ const OnboardingScreen = (): React.ReactElement => {
 
   /* ─── Render footer button (Emerald Nebula for step 0) ─── */
   const renderFooterButton = () => {
-    if (currentStep === 0) {
+    if (currentStep === 0 || currentStep === 1) {
       return (
         <View style={s.nebulaFooter}>
           <Pressable
@@ -907,6 +1171,7 @@ const OnboardingScreen = (): React.ReactElement => {
             disabled={!canProceed()}
             style={({ pressed }) => [
               s.nebulaCTA,
+              { width: '100%' },
               pressed && { transform: [{ scale: 0.97 }] },
               !canProceed() && { opacity: 0.5 },
             ]}
@@ -917,7 +1182,6 @@ const OnboardingScreen = (): React.ReactElement => {
               end={{ x: 1, y: 1 }}
               style={StyleSheet.absoluteFill}
             />
-            {/* Glossy highlight */}
             <LinearGradient
               colors={['rgba(255,255,255,0.25)', 'rgba(255,255,255,0.05)', 'transparent']}
               start={{ x: 0.2, y: 0 }}
@@ -988,8 +1252,8 @@ const OnboardingScreen = (): React.ReactElement => {
         testID={TEST_IDS.auth.onboardingScreen}
       >
         {/* Background */}
-        <View style={[StyleSheet.absoluteFill, { backgroundColor: currentStep === 0 ? C.surface : undefined }]}>
-          {currentStep === 0 ? (
+        <View style={[StyleSheet.absoluteFill, { backgroundColor: (currentStep === 0 || currentStep === 1) ? C.surface : undefined }]}>
+          {(currentStep === 0 || currentStep === 1) ? (
             <>
               {/* Background glow blobs */}
               <View style={[s.blob, { top: -80, right: -100, backgroundColor: C.primary + '0D' }]} />
@@ -999,20 +1263,30 @@ const OnboardingScreen = (): React.ReactElement => {
         </View>
 
         <LinearGradient
-          colors={currentStep === 0 ? ['transparent', 'transparent'] : theme.colors.screenGradient}
+          colors={(currentStep === 0 || currentStep === 1) ? ['transparent', 'transparent'] : theme.colors.screenGradient}
           style={{ flex: 1 }}
         >
           {/* Header */}
           <View style={[s.header, { paddingTop: Math.max(insets.top + 12, 28) }]}>
-            {/* Top bar: step counter */}
-            {currentStep === 0 ? (
-              <ThemedText
-                variant="body"
-                weight="700"
-                style={{ color: C.primary, textAlign: 'center', fontSize: 16, marginBottom: 16 }}
-              >
-                Bước 1 trên 5
-              </ThemedText>
+            {/* Top bar: row with back button and step counter */}
+            {(currentStep === 0 || currentStep === 1) ? (
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginBottom: 16, width: '100%', position: 'relative' }}>
+                {currentStep > 0 && (
+                  <Pressable
+                    onPress={handleBack}
+                    style={{ position: 'absolute', left: 0, padding: 4 }}
+                  >
+                    <Ionicons name="arrow-back" size={28} color={C.onSurface} style={{ opacity: 0.8 }} />
+                  </Pressable>
+                )}
+                <ThemedText
+                  variant="body"
+                  weight="700"
+                  style={{ color: C.primary, fontSize: 16 }}
+                >
+                  {`Bước ${currentStep + 1} trên 5`}
+                </ThemedText>
+              </View>
             ) : null}
             {/* Progress bars */}
             <View style={s.progressContainer}>
@@ -1025,7 +1299,7 @@ const OnboardingScreen = (): React.ReactElement => {
                       backgroundColor:
                         index <= currentStep
                           ? C.primary
-                          : currentStep === 0
+                          : (currentStep === 0 || currentStep === 1)
                             ? C.surfaceContainerHighest
                             : isDark
                               ? 'rgba(255,255,255,0.1)'
@@ -1036,8 +1310,8 @@ const OnboardingScreen = (): React.ReactElement => {
               ))}
             </View>
 
-            {/* Step title/subtitle for steps 1-4 */}
-            {currentStep > 0 && (
+            {/* Step title/subtitle for steps 2-4 only */}
+            {currentStep > 1 && (
               <>
                 <ThemedText style={s.stepIcon}>
                   {STEPS[currentStep]?.icon ?? '👋'}
@@ -1063,7 +1337,7 @@ const OnboardingScreen = (): React.ReactElement => {
               showsVerticalScrollIndicator={false}
               contentContainerStyle={[
                 s.scrollContent,
-                currentStep === 0 && { paddingHorizontal: 24 },
+                (currentStep === 0 || currentStep === 1) && { paddingHorizontal: 24 },
               ]}
               keyboardShouldPersistTaps="handled"
               keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
@@ -1159,6 +1433,7 @@ const s = StyleSheet.create({
     shadowOpacity: 0.15,
     shadowRadius: 16,
     elevation: 4,
+    overflow: 'visible',
   },
 
   /* Form */
@@ -1271,6 +1546,16 @@ const s = StyleSheet.create({
     shadowRadius: 16,
     elevation: 6,
   },
+  nebulaBackBtn: {
+    width: 56,
+    height: 56,
+    borderRadius: 16,
+    backgroundColor: C.surfaceContainerHigh,
+    borderWidth: 1,
+    borderColor: C.glassBorder,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
 });
 
 /* ─── Legacy styles for steps 1-4 ─── */
@@ -1352,6 +1637,56 @@ const oldStyles = StyleSheet.create({
   offlineNote: {
     textAlign: 'center',
     marginTop: 16,
+  },
+});
+
+/* ─── Step 1 styles (Body Metrics Nebula) ─── */
+const s1 = StyleSheet.create({
+  glowRing: {
+    position: 'absolute',
+    width: 90,
+    height: 90,
+    borderRadius: 45,
+    borderWidth: 3,
+    borderColor: 'rgba(75, 226, 119, 0.4)',
+    shadowColor: '#4BE277',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.8,
+    shadowRadius: 18,
+    elevation: 10,
+  },
+  iconBox: {
+    width: 80,
+    height: 80,
+    borderRadius: 26,
+    backgroundColor: '#1E2433',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1.5,
+    borderColor: 'rgba(75, 226, 119, 0.3)',
+    marginBottom: 16,
+    zIndex: 2,
+  },
+  metricCard: {
+    borderRadius: 20,
+    borderWidth: 1,
+    padding: 20,
+    marginBottom: 0,
+  },
+  metricHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+  },
+  metricIconBox: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    backgroundColor: 'rgba(75, 226, 119, 0.12)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(75, 226, 119, 0.2)',
   },
 });
 
