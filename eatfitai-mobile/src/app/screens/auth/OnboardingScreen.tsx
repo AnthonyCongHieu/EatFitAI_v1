@@ -1,26 +1,41 @@
 /**
  * OnboardingScreen - First-time user setup wizard
  * 5 steps: Basic Info → Body Metrics → Goal → Activity → AI Calculate
+ *
+ * Emerald Nebula design system + 3D Parallax tilt on Step 0
  */
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import {
   View,
   StyleSheet,
   Pressable,
+  TextInput,
   ActivityIndicator,
   Alert,
   Dimensions,
   ScrollView,
-  KeyboardAvoidingView,
   Keyboard,
   Platform,
 } from 'react-native';
 import Toast from 'react-native-toast-message';
 import { LinearGradient } from 'expo-linear-gradient';
-import Animated, { FadeInRight, FadeOutLeft } from 'react-native-reanimated';
+import Animated, {
+  FadeInRight,
+  FadeOutLeft,
+  FadeInDown,
+  useSharedValue,
+  useAnimatedStyle,
+  withRepeat,
+  withSequence,
+  withTiming,
+  Easing,
+} from 'react-native-reanimated';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { Ionicons } from '@expo/vector-icons';
+import Slider from '@react-native-community/slider';
 
 import { ThemedText } from '../../../components/ThemedText';
 import ThemedTextInput from '../../../components/ThemedTextInput';
@@ -34,6 +49,8 @@ import { profileService } from '../../../services/profileService';
 import { showSuccess } from '../../../utils/errorHandler';
 import { t } from '../../../i18n/vi';
 import { TEST_IDS } from '../../../testing/testIds';
+import Tilt3DCard, { ParallaxLayer } from '../../../components/ui/Tilt3DCard';
+
 const { width } = Dimensions.get('window');
 
 interface OnboardingData {
@@ -56,6 +73,25 @@ interface NutritionCalculationResult {
   explanation?: string | null;
   message?: string | null;
 }
+
+/* ─── Emerald Nebula palette ─── */
+const C = {
+  surface: '#0E1322',
+  surfaceContainer: '#1A1F2F',
+  surfaceContainerHigh: '#25293A',
+  surfaceContainerHighest: '#2F3445',
+  surfaceContainerLowest: '#090E1C',
+  primary: '#4BE277',
+  primaryDark: '#22C55E',
+  onPrimary: '#003915',
+  onSurface: '#DEE1F7',
+  onSurfaceVariant: '#BCC8B9',
+  outlineVariant: '#3D4A3D',
+  glassBg: 'rgba(37, 41, 58, 0.6)',
+  glassBorder: 'rgba(75, 226, 119, 0.1)',
+  inputBg: '#090E1C',
+  inputBorder: 'rgba(61, 74, 61, 0.3)',
+};
 
 const STEPS = [
   {
@@ -177,6 +213,28 @@ const OnboardingScreen = (): React.ReactElement => {
   });
 
   const [aiResult, setAiResult] = useState<NutritionCalculationResult | null>(null);
+
+  // Waving hand animation
+  const waveRotation = useSharedValue(0);
+
+  useEffect(() => {
+    waveRotation.value = withRepeat(
+      withSequence(
+        withTiming(25, { duration: 300, easing: Easing.out(Easing.ease) }),
+        withTiming(-15, { duration: 250, easing: Easing.inOut(Easing.ease) }),
+        withTiming(20, { duration: 250, easing: Easing.inOut(Easing.ease) }),
+        withTiming(-10, { duration: 200, easing: Easing.inOut(Easing.ease) }),
+        withTiming(0, { duration: 400, easing: Easing.out(Easing.ease) }),
+        withTiming(0, { duration: 1500 }) // Pause
+      ),
+      -1,
+      false
+    );
+  }, []);
+
+  const waveStyle = useAnimatedStyle(() => ({
+    transform: [{ rotate: `${waveRotation.value}deg` }],
+  }));
 
   useEffect(() => {
     const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
@@ -393,219 +451,215 @@ const OnboardingScreen = (): React.ReactElement => {
     }
   };
 
-  const styles = StyleSheet.create({
-    container: {
-      flex: 1,
-    },
-    header: {
-      paddingTop: Math.max(insets.top + 12, 28),
-      paddingHorizontal: 24,
-      paddingBottom: 16,
-    },
-    progressContainer: {
-      flexDirection: 'row',
-      gap: 8,
-      marginBottom: 16,
-    },
-    progressDot: {
-      height: 6,
-      flex: 1,
-      borderRadius: 3,
-    },
-    content: {
-      flex: 1,
-      paddingHorizontal: 24,
-    },
-    scrollArea: {
-      flex: 1,
-    },
-    scrollContent: {
-      flexGrow: 1,
-      paddingBottom: 24,
-    },
-    stepIcon: {
-      fontSize: 44,
-      lineHeight: 52,
-      textAlign: 'center',
-      marginBottom: 12,
-    },
-    stepTitle: {
-      textAlign: 'center',
-      marginBottom: 10,
-    },
-    stepSubtitle: {
-      textAlign: 'center',
-      marginBottom: 24,
-    },
-    optionGrid: {
-      flexDirection: 'row',
-      flexWrap: 'wrap',
-      gap: 12,
-      justifyContent: 'center',
-    },
-    optionButton: {
-      paddingHorizontal: 24,
-      paddingVertical: 16,
-      borderRadius: 20,
-      borderWidth: 2,
-      minWidth: 120,
-      alignItems: 'center',
-      gap: 8,
-    },
-    goalCard: {
-      width: (width - 72) / 3,
-      padding: 16,
-      borderRadius: 20,
-      alignItems: 'center',
-      borderWidth: 2,
-    },
-    activityCard: {
-      width: '100%',
-      padding: 18,
-      borderRadius: 16,
-      marginBottom: 12,
-      borderWidth: 2,
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 16,
-    },
-    inputRow: {
-      flexDirection: 'row',
-      gap: 16,
-      marginBottom: 16,
-    },
-    inputCol: {
-      flex: 1,
-    },
-    footer: {
-      paddingHorizontal: 24,
-      paddingTop: isKeyboardVisible ? 12 : 16,
-      paddingBottom: isKeyboardVisible ? 10 : Math.max(insets.bottom + 12, 24),
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 12,
-    },
-    footerBackButtonWrap: {
-      width: 112,
-    },
-    footerPrimaryButtonWrap: {
-      flex: 1,
-    },
-    footerSingleButtonWrap: {
-      width: '100%',
-    },
-    resultCard: {
-      padding: 24,
-      borderRadius: 24,
-      alignItems: 'center',
-      marginBottom: 24,
-    },
-    resultRow: {
-      flexDirection: 'row',
-      flexWrap: 'wrap',
-      gap: 16,
-      marginTop: 20,
-      justifyContent: 'center',
-    },
-    resultItem: {
-      alignItems: 'center',
-      minWidth: 80,
-    },
-    offlineBadge: {
-      paddingHorizontal: 12,
-      paddingVertical: 6,
-      borderRadius: 999,
-      borderWidth: 1,
-      backgroundColor: isDark ? 'rgba(251, 191, 36, 0.16)' : 'rgba(245, 158, 11, 0.12)',
-      borderColor: isDark ? 'rgba(251, 191, 36, 0.45)' : 'rgba(245, 158, 11, 0.35)',
-      marginTop: 12,
-    },
-    offlineNote: {
-      textAlign: 'center',
-      marginTop: 16,
-    },
-  });
+  /* ─── Age as a number for slider ─── */
+  const ageNum = data.age ? parseInt(data.age, 10) : 24;
+
+  /* ─── Render Step 0 — Emerald Nebula "Basic Info" ─── */
+  const renderStep0Nebula = () => (
+    <Animated.View entering={FadeInRight} exiting={FadeOutLeft} key="step0">
+      <Tilt3DCard maxTilt={6} perspective={900}>
+        <Animated.View
+          entering={FadeInDown.delay(150).springify()}
+          style={[
+            s.card,
+            {
+              backgroundColor: C.glassBg,
+              borderColor: C.glassBorder,
+            },
+          ]}
+        >
+          {/* Header — depth 0.3 */}
+          <ParallaxLayer depth={0.3}>
+            <View style={s.cardHeader}>
+              {/* Waving hand emoji */}
+              <View style={[s.iconBox, { backgroundColor: C.surfaceContainerHigh }]}>
+                <Animated.Text style={[{ fontSize: 36 }, waveStyle]}>👋</Animated.Text>
+              </View>
+              <ThemedText
+                variant="h2"
+                weight="700"
+                style={{ color: '#FFFFFF', fontSize: 28, textAlign: 'center', fontFamily: 'Inter_700Bold' }}
+              >
+                Thông tin cơ bản
+              </ThemedText>
+              <ThemedText
+                variant="body"
+                style={{
+                  color: C.onSurfaceVariant,
+                  marginTop: 6,
+                  textAlign: 'center',
+                  lineHeight: 22,
+                  maxWidth: 280,
+                  fontFamily: 'Inter_500Medium'
+                }}
+              >
+                Hãy cho chúng tôi biết một chút{'\n'}về bản thân bạn
+              </ThemedText>
+            </View>
+          </ParallaxLayer>
+
+          {/* Form — depth 0.5 */}
+          <ParallaxLayer depth={0.5}>
+            <View style={s.formGroup}>
+              {/* Name */}
+              <View style={s.fieldBlock}>
+                <ThemedText
+                  variant="caption"
+                  weight="700"
+                  style={s.label}
+                >
+                  HỌ VÀ TÊN
+                </ThemedText>
+                <View
+                  style={[
+                    s.inputContainer,
+                    { backgroundColor: C.inputBg, borderColor: C.inputBorder },
+                  ]}
+                >
+                  <TextInput
+                    testID={TEST_IDS.auth.onboardingNameInput}
+                    placeholder="Nhập họ và tên của bạn"
+                    placeholderTextColor={C.surfaceContainerHighest}
+                    value={data.fullName}
+                    onChangeText={(text) => setData({ ...data, fullName: text })}
+                    style={[s.input, { color: C.onSurface }]}
+                  />
+                </View>
+              </View>
+
+              {/* Age — slider */}
+              <View style={s.fieldBlock}>
+                <View style={s.ageHeadRow}>
+                  <ThemedText variant="caption" weight="700" style={s.label}>
+                    TUỔI
+                  </ThemedText>
+                  <View style={{ flexDirection: 'row', alignItems: 'baseline' }}>
+                    <ThemedText
+                      variant="h2"
+                      weight="700"
+                      style={{ color: C.primary, fontSize: 30 }}
+                    >
+                      {data.age || '24'}
+                    </ThemedText>
+                    <ThemedText
+                      variant="bodySmall"
+                      weight="600"
+                      style={{ color: C.onSurfaceVariant, marginLeft: 4 }}
+                    >
+                      tuổi
+                    </ThemedText>
+                  </View>
+                </View>
+                <View
+                  style={[
+                    s.sliderBox,
+                    { backgroundColor: C.glassBg, borderColor: C.glassBorder },
+                  ]}
+                >
+                  {/* Hidden input for testID */}
+                  <TextInput
+                    testID={TEST_IDS.auth.onboardingAgeInput}
+                    style={{ position: 'absolute', opacity: 0, width: 1, height: 1 }}
+                    value={data.age}
+                    onChangeText={(text) =>
+                      setData({ ...data, age: text.replace(/[^0-9]/g, '') })
+                    }
+                    keyboardType={Platform.OS === 'ios' ? 'number-pad' : 'numeric'}
+                  />
+                  {/* Native draggable slider */}
+                  <Slider
+                    style={{ width: '100%', height: 36 }}
+                    minimumValue={0}
+                    maximumValue={100}
+                    step={1}
+                    value={ageNum}
+                    onValueChange={(v: number) => setData({ ...data, age: String(Math.round(v)) })}
+                    minimumTrackTintColor={C.primary}
+                    maximumTrackTintColor={C.surfaceContainerHighest}
+                    thumbTintColor={C.primary}
+                  />
+                  <View style={s.sliderLabels}>
+                    <ThemedText
+                      variant="caption"
+                      style={{ color: C.onSurfaceVariant, fontSize: 13, letterSpacing: 0.5, fontFamily: 'Inter_600SemiBold' }}
+                    >
+                      0
+                    </ThemedText>
+                    <ThemedText
+                      variant="caption"
+                      style={{ color: C.onSurfaceVariant, fontSize: 13, letterSpacing: 0.5, fontFamily: 'Inter_600SemiBold' }}
+                    >
+                      100
+                    </ThemedText>
+                  </View>
+                </View>
+              </View>
+
+              {/* Gender */}
+              <View style={s.fieldBlock}>
+                <ThemedText variant="caption" weight="700" style={s.label}>
+                  GIỚI TÍNH
+                </ThemedText>
+                <View style={s.genderRow}>
+                  {GENDER_OPTIONS.map((opt) => {
+                    const selected = data.gender === opt.value;
+                    return (
+                      <Pressable
+                        key={opt.value}
+                        testID={
+                          opt.value === 'male'
+                            ? TEST_IDS.auth.onboardingGenderMaleButton
+                            : TEST_IDS.auth.onboardingGenderFemaleButton
+                        }
+                        onPress={() => setData({ ...data, gender: opt.value as any })}
+                        style={({ pressed }) => [
+                          s.genderCard,
+                          {
+                            backgroundColor: selected ? C.primary + '15' : C.glassBg,
+                            borderColor: selected ? C.primary : C.glassBorder,
+                            borderWidth: selected ? 2 : 1,
+                          },
+                          pressed && { transform: [{ scale: 0.95 }] },
+                        ]}
+                        accessibilityRole="radio"
+                        accessibilityLabel={opt.label}
+                        accessibilityState={{ checked: selected }}
+                      >
+                        <Ionicons
+                          name={opt.value === 'male' ? 'male' : 'female'}
+                          size={28}
+                          color={selected ? C.primary : C.onSurfaceVariant}
+                        />
+                        <ThemedText
+                          weight={selected ? '700' : '500'}
+                          style={{ color: selected ? C.primary : C.onSurface, marginTop: 2, fontSize: 13, fontFamily: selected ? 'Inter_700Bold' : 'Inter_500Medium' }}
+                        >
+                          {opt.label}
+                        </ThemedText>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              </View>
+
+
+            </View>
+          </ParallaxLayer>
+        </Animated.View>
+      </Tilt3DCard>
+    </Animated.View>
+  );
 
   const renderStep = () => {
     switch (currentStep) {
-      case 0: // Basic Info
-        return (
-          <Animated.View entering={FadeInRight} exiting={FadeOutLeft} key="step0">
-            <ThemedTextInput
-              label={t('onboarding.your_name')}
-              value={data.fullName}
-              onChangeText={(text) => setData({ ...data, fullName: text })}
-              placeholder={t('onboarding.enter_name')}
-              style={{ marginBottom: 20 }}
-              testID={TEST_IDS.auth.onboardingNameInput}
-            />
-
-            <ThemedText
-              variant="bodySmall"
-              color="textSecondary"
-              style={{ marginBottom: 12 }}
-            >
-              {t('onboarding.gender')}
-            </ThemedText>
-            <View style={styles.optionGrid} accessibilityRole="radiogroup" accessibilityLabel="Chọn giới tính">
-              {GENDER_OPTIONS.map((opt) => (
-                <Pressable
-                  key={opt.value}
-                  testID={
-                    opt.value === 'male'
-                      ? TEST_IDS.auth.onboardingGenderMaleButton
-                      : TEST_IDS.auth.onboardingGenderFemaleButton
-                  }
-                  style={[
-                    styles.optionButton,
-                    {
-                      backgroundColor:
-                        data.gender === opt.value
-                          ? theme.colors.primaryLight
-                          : isDark
-                            ? 'rgba(255,255,255,0.05)'
-                            : 'rgba(0,0,0,0.03)',
-                      borderColor:
-                        data.gender === opt.value ? theme.colors.primary : 'transparent',
-                    },
-                  ]}
-                  onPress={() => setData({ ...data, gender: opt.value as any })}
-                  accessibilityRole="radio"
-                  accessibilityLabel={opt.label}
-                  accessibilityState={{ checked: data.gender === opt.value }}
-                >
-                  <ThemedText
-                    style={{
-                      fontSize: theme.typography.h2.fontSize,
-                      lineHeight: theme.typography.h2.lineHeight,
-                    }}
-                  >
-                    {opt.icon}
-                  </ThemedText>
-                  <ThemedText weight="500">{opt.label}</ThemedText>
-                </Pressable>
-              ))}
-            </View>
-
-            <ThemedTextInput
-              label={t('onboarding.age')}
-              value={data.age}
-              onChangeText={(text) =>
-                setData({ ...data, age: text.replace(/[^0-9]/g, '') })
-              }
-              placeholder="Nhập tuổi"
-              keyboardType={Platform.OS === 'ios' ? 'number-pad' : 'numeric'}
-              style={{ marginTop: 20 }}
-              testID={TEST_IDS.auth.onboardingAgeInput}
-            />
-          </Animated.View>
-        );
+      case 0:
+        return renderStep0Nebula();
 
       case 1: // Body Metrics
         return (
           <Animated.View entering={FadeInRight} exiting={FadeOutLeft} key="step1">
-            <View style={styles.inputRow}>
-              <View style={styles.inputCol}>
+            <View style={oldStyles.inputRow}>
+              <View style={oldStyles.inputCol}>
                 <ThemedTextInput
                   label={t('onboarding.height_cm')}
                   value={data.heightCm}
@@ -617,7 +671,7 @@ const OnboardingScreen = (): React.ReactElement => {
                   testID={TEST_IDS.auth.onboardingHeightInput}
                 />
               </View>
-              <View style={styles.inputCol}>
+              <View style={oldStyles.inputCol}>
                 <ThemedTextInput
                   label={t('onboarding.weight_kg')}
                   value={data.weightKg}
@@ -646,7 +700,7 @@ const OnboardingScreen = (): React.ReactElement => {
       case 2: // Goal
         return (
           <Animated.View entering={FadeInRight} exiting={FadeOutLeft} key="step2">
-            <View style={styles.optionGrid} accessibilityRole="radiogroup" accessibilityLabel="Chọn mục tiêu">
+            <View style={oldStyles.optionGrid} accessibilityRole="radiogroup" accessibilityLabel="Chọn mục tiêu">
               {GOAL_OPTIONS.map((goal) => {
                 const goalColor = theme.colors[goal.colorKey];
                 return (
@@ -654,7 +708,7 @@ const OnboardingScreen = (): React.ReactElement => {
                     key={goal.value}
                     testID={`${TEST_IDS.auth.onboardingGoalPrefix}-${goal.value}`}
                     style={[
-                      styles.goalCard,
+                      oldStyles.goalCard,
                       {
                         backgroundColor:
                           data.goal === goal.value
@@ -709,7 +763,7 @@ const OnboardingScreen = (): React.ReactElement => {
                 key={act.value}
                 testID={`${TEST_IDS.auth.onboardingActivityPrefix}-${act.value}`}
                 style={[
-                  styles.activityCard,
+                  oldStyles.activityCard,
                   {
                     backgroundColor:
                       data.activityLevel === act.value
@@ -756,21 +810,21 @@ const OnboardingScreen = (): React.ReactElement => {
                 </ThemedText>
               </View>
             ) : aiResult ? (
-              <View style={[glass.card, styles.resultCard]} testID={TEST_IDS.auth.onboardingResultCard}>
+              <View style={[glass.card, oldStyles.resultCard]} testID={TEST_IDS.auth.onboardingResultCard}>
                 <ThemedText style={{ fontSize: 48 }}>🎉</ThemedText>
                 <ThemedText variant="h2" style={{ marginTop: 12 }}>
                   {t('onboarding.daily_goal')}
                 </ThemedText>
                 {aiResult.offlineMode ? (
-                  <View style={styles.offlineBadge}>
+                  <View style={oldStyles.offlineBadge}>
                     <ThemedText variant="caption" weight="600">
                       Offline mode
                     </ThemedText>
                   </View>
                 ) : null}
 
-                <View style={styles.resultRow}>
-                  <View style={styles.resultItem}>
+                <View style={oldStyles.resultRow}>
+                  <View style={oldStyles.resultItem}>
                     <ThemedText style={{ fontSize: 24 }}>🔥</ThemedText>
                     <ThemedText variant="h3" color="primary">
                       {aiResult.calories}
@@ -779,21 +833,21 @@ const OnboardingScreen = (): React.ReactElement => {
                       kcal
                     </ThemedText>
                   </View>
-                  <View style={styles.resultItem}>
+                  <View style={oldStyles.resultItem}>
                     <ThemedText style={{ fontSize: 24 }}>💪</ThemedText>
                     <ThemedText variant="h3">{aiResult.protein}g</ThemedText>
                     <ThemedText variant="caption" color="textSecondary">
                       Protein
                     </ThemedText>
                   </View>
-                  <View style={styles.resultItem}>
+                  <View style={oldStyles.resultItem}>
                     <ThemedText style={{ fontSize: 24 }}>🍞</ThemedText>
                     <ThemedText variant="h3">{aiResult.carbs}g</ThemedText>
                     <ThemedText variant="caption" color="textSecondary">
                       Carbs
                     </ThemedText>
                   </View>
-                  <View style={styles.resultItem}>
+                  <View style={oldStyles.resultItem}>
                     <ThemedText style={{ fontSize: 24 }}>🥑</ThemedText>
                     <ThemedText variant="h3">{aiResult.fat}g</ThemedText>
                     <ThemedText variant="caption" color="textSecondary">
@@ -802,13 +856,13 @@ const OnboardingScreen = (): React.ReactElement => {
                   </View>
                 </View>
                 {aiResult.offlineMode ? (
-                  <ThemedText variant="caption" color="textSecondary" style={styles.offlineNote}>
+                  <ThemedText variant="caption" color="textSecondary" style={oldStyles.offlineNote}>
                     {aiResult.explanation ?? 'Đang dùng công thức chuẩn để hoàn tất onboarding.'}
                   </ThemedText>
                 ) : null}
               </View>
             ) : (
-              <View style={[glass.card, styles.resultCard]} testID={TEST_IDS.auth.onboardingErrorCard}>
+              <View style={[glass.card, oldStyles.resultCard]} testID={TEST_IDS.auth.onboardingErrorCard}>
                 <ThemedText style={{ fontSize: 40 }}>⚠️</ThemedText>
                 <ThemedText variant="h3" style={{ marginTop: 12, textAlign: 'center' }}>
                   Chưa thể tạo mục tiêu dinh dưỡng
@@ -842,108 +896,463 @@ const OnboardingScreen = (): React.ReactElement => {
     }
   };
 
+  /* ─── Render footer button (Emerald Nebula for step 0) ─── */
+  const renderFooterButton = () => {
+    if (currentStep === 0) {
+      return (
+        <View style={s.nebulaFooter}>
+          <Pressable
+            testID={TEST_IDS.auth.onboardingNextButton}
+            onPress={handleNext}
+            disabled={!canProceed()}
+            style={({ pressed }) => [
+              s.nebulaCTA,
+              pressed && { transform: [{ scale: 0.97 }] },
+              !canProceed() && { opacity: 0.5 },
+            ]}
+          >
+            <LinearGradient
+              colors={['#6BFF8F', '#4BE277', '#22C55E']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={StyleSheet.absoluteFill}
+            />
+            {/* Glossy highlight */}
+            <LinearGradient
+              colors={['rgba(255,255,255,0.25)', 'rgba(255,255,255,0.05)', 'transparent']}
+              start={{ x: 0.2, y: 0 }}
+              end={{ x: 0.8, y: 1 }}
+              style={StyleSheet.absoluteFill}
+            />
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              <ThemedText
+                variant="body"
+                weight="700"
+                style={{ color: C.onPrimary, fontSize: 18 }}
+              >
+                Tiếp tục
+              </ThemedText>
+              <Ionicons name="arrow-forward" size={20} color={C.onPrimary} />
+            </View>
+          </Pressable>
+        </View>
+      );
+    }
+
+    // Steps 1-4: original footer
+    return (
+      <View style={oldStyles.footer}>
+        {currentStep > 0 && currentStep < 4 && (
+          <View style={oldStyles.footerBackButtonWrap}>
+            <Button
+              title="Quay lại"
+              variant="outline"
+              onPress={handleBack}
+              testID={TEST_IDS.auth.onboardingBackButton}
+            />
+          </View>
+        )}
+
+        {currentStep < 4 ? (
+          <View
+            style={
+              currentStep > 0 ? oldStyles.footerPrimaryButtonWrap : oldStyles.footerSingleButtonWrap
+            }
+          >
+            <Button
+              title={currentStep === 3 ? 'Hoàn tất' : 'Tiếp tục'}
+              onPress={handleNext}
+              disabled={!canProceed()}
+              testID={TEST_IDS.auth.onboardingNextButton}
+            />
+          </View>
+        ) : (
+          <View style={oldStyles.footerSingleButtonWrap}>
+            <Button
+              title="Bắt đầu sử dụng"
+              onPress={handleComplete}
+              disabled={isCalculating || !aiResult}
+              testID={TEST_IDS.auth.onboardingCompleteButton}
+            />
+          </View>
+        )}
+      </View>
+    );
+  };
+
+  /* ─── Main render ─── */
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      contentContainerStyle={styles.container}
-      behavior={Platform.OS === 'ios' ? 'position' : undefined}
-      keyboardVerticalOffset={0}
-      testID={TEST_IDS.auth.onboardingScreen}
-    >
-      <LinearGradient
-        colors={theme.colors.screenGradient}
-        style={styles.container}
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <View
+        style={{ flex: 1 }}
+        testID={TEST_IDS.auth.onboardingScreen}
       >
-        {/* Header */}
-        <View style={styles.header}>
-          <View style={styles.progressContainer}>
-            {STEPS.map((_, index) => (
-              <View
-                key={index}
-                style={[
-                  styles.progressDot,
-                  {
-                    backgroundColor:
-                      index <= currentStep
-                        ? theme.colors.primary
-                        : isDark
-                          ? 'rgba(255,255,255,0.1)'
-                          : 'rgba(0,0,0,0.1)',
-                  },
-                ]}
-              />
-            ))}
+        {/* Background */}
+        <View style={[StyleSheet.absoluteFill, { backgroundColor: currentStep === 0 ? C.surface : undefined }]}>
+          {currentStep === 0 ? (
+            <>
+              {/* Background glow blobs */}
+              <View style={[s.blob, { top: -80, right: -100, backgroundColor: C.primary + '0D' }]} />
+              <View style={[s.blob, { bottom: -60, left: -100, backgroundColor: C.primary + '0D' }]} />
+            </>
+          ) : null}
+        </View>
+
+        <LinearGradient
+          colors={currentStep === 0 ? ['transparent', 'transparent'] : theme.colors.screenGradient}
+          style={{ flex: 1 }}
+        >
+          {/* Header */}
+          <View style={[s.header, { paddingTop: Math.max(insets.top + 12, 28) }]}>
+            {/* Top bar: step counter */}
+            {currentStep === 0 ? (
+              <ThemedText
+                variant="body"
+                weight="700"
+                style={{ color: C.primary, textAlign: 'center', fontSize: 16, marginBottom: 16 }}
+              >
+                Bước 1 trên 5
+              </ThemedText>
+            ) : null}
+            {/* Progress bars */}
+            <View style={s.progressContainer}>
+              {STEPS.map((_, index) => (
+                <View
+                  key={index}
+                  style={[
+                    s.progressDot,
+                    {
+                      backgroundColor:
+                        index <= currentStep
+                          ? C.primary
+                          : currentStep === 0
+                            ? C.surfaceContainerHighest
+                            : isDark
+                              ? 'rgba(255,255,255,0.1)'
+                              : 'rgba(0,0,0,0.1)',
+                    },
+                  ]}
+                />
+              ))}
+            </View>
+
+            {/* Step title/subtitle for steps 1-4 */}
+            {currentStep > 0 && (
+              <>
+                <ThemedText style={s.stepIcon}>
+                  {STEPS[currentStep]?.icon ?? '👋'}
+                </ThemedText>
+                <ThemedText variant="h2" style={s.stepTitle}>
+                  {STEPS[currentStep]?.title ?? ''}
+                </ThemedText>
+                <ThemedText
+                  variant="body"
+                  color="textSecondary"
+                  style={s.stepSubtitle}
+                >
+                  {STEPS[currentStep]?.subtitle ?? ''}
+                </ThemedText>
+              </>
+            )}
           </View>
 
-          <ThemedText style={styles.stepIcon}>
-            {STEPS[currentStep]?.icon ?? '👋'}
-          </ThemedText>
-          <ThemedText variant="h2" style={styles.stepTitle}>
-            {STEPS[currentStep]?.title ?? ''}
-          </ThemedText>
-          <ThemedText
-            variant="body"
-            color="textSecondary"
-            style={styles.stepSubtitle}
-          >
-            {STEPS[currentStep]?.subtitle ?? ''}
-          </ThemedText>
-        </View>
-
-        {/* Content */}
-        <View style={styles.content}>
-          <ScrollView
-            style={styles.scrollArea}
-            showsVerticalScrollIndicator={false}
-            contentContainerStyle={styles.scrollContent}
-            keyboardShouldPersistTaps="handled"
-            keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
-          >
-            {renderStep()}
-          </ScrollView>
-        </View>
-
-        {/* Footer */}
-        <View style={styles.footer}>
-          {currentStep > 0 && currentStep < 4 && (
-            <View style={styles.footerBackButtonWrap}>
-              <Button
-                title="Quay lại"
-                variant="outline"
-                onPress={handleBack}
-                testID={TEST_IDS.auth.onboardingBackButton}
-              />
-            </View>
-          )}
-
-          {currentStep < 4 ? (
-            <View
-              style={
-                currentStep > 0 ? styles.footerPrimaryButtonWrap : styles.footerSingleButtonWrap
-              }
+          {/* Content */}
+          <View style={s.content}>
+            <ScrollView
+              style={s.scrollArea}
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={[
+                s.scrollContent,
+                currentStep === 0 && { paddingHorizontal: 24 },
+              ]}
+              keyboardShouldPersistTaps="handled"
+              keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
             >
-              <Button
-                title={currentStep === 3 ? 'Hoàn tất' : 'Tiếp tục'}
-                onPress={handleNext}
-                disabled={!canProceed()}
-                testID={TEST_IDS.auth.onboardingNextButton}
-              />
-            </View>
-          ) : (
-            <View style={styles.footerSingleButtonWrap}>
-              <Button
-                title="Bắt đầu sử dụng"
-                onPress={handleComplete}
-                disabled={isCalculating || !aiResult}
-                testID={TEST_IDS.auth.onboardingCompleteButton}
-              />
-            </View>
-          )}
-        </View>
-      </LinearGradient>
-    </KeyboardAvoidingView>
+              {renderStep()}
+            </ScrollView>
+          </View>
+
+          {/* Footer */}
+          {renderFooterButton()}
+        </LinearGradient>
+      </View>
+    </GestureHandlerRootView>
   );
 };
 
-export default OnboardingScreen;
+/* ─── New styles (Emerald Nebula for Step 0) ─── */
+const s = StyleSheet.create({
+  header: {
+    paddingHorizontal: 24,
+    paddingBottom: 8,
+  },
+  progressContainer: {
+    flexDirection: 'row',
+    gap: 6,
+    marginBottom: 12,
+    height: 6,
+  },
+  progressDot: {
+    height: 6,
+    flex: 1,
+    borderRadius: 3,
+  },
+  stepIcon: {
+    fontSize: 44,
+    lineHeight: 52,
+    textAlign: 'center',
+    marginBottom: 12,
+  },
+  stepTitle: {
+    textAlign: 'center',
+    marginBottom: 10,
+  },
+  stepSubtitle: {
+    textAlign: 'center',
+    marginBottom: 24,
+  },
+  content: {
+    flex: 1,
+    paddingHorizontal: 0,
+  },
+  scrollArea: {
+    flex: 1,
+  },
+  scrollContent: {
+    flexGrow: 1,
+    paddingBottom: 24,
+  },
 
+  /* Background blobs */
+  blob: {
+    position: 'absolute',
+    width: 300,
+    height: 300,
+    borderRadius: 150,
+  },
+
+  /* Card */
+  card: {
+    borderRadius: 28,
+    borderWidth: 1,
+    padding: 24,
+    overflow: 'hidden',
+  },
+
+  /* Card Header */
+  cardHeader: {
+    alignItems: 'center',
+    marginBottom: 28,
+  },
+  iconBox: {
+    width: 72,
+    height: 72,
+    borderRadius: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(75, 226, 119, 0.2)',
+    // Emerald glow
+    shadowColor: '#4BE277',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.15,
+    shadowRadius: 16,
+    elevation: 4,
+  },
+
+  /* Form */
+  formGroup: {
+    gap: 20,
+  },
+  fieldBlock: {
+    gap: 8,
+  },
+  label: {
+    color: 'rgba(188, 200, 185, 0.8)',
+    fontSize: 12,
+    letterSpacing: 0.5,
+    marginLeft: 2,
+    fontFamily: 'Inter_700Bold',
+  },
+  inputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 16,
+    borderWidth: 1,
+    height: 52,
+    paddingHorizontal: 16,
+  },
+  input: {
+    flex: 1,
+    fontSize: 16,
+    fontFamily: 'Inter_500Medium',
+    height: '100%',
+  },
+
+  /* Age */
+  ageHeadRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-end',
+    marginBottom: 4,
+  },
+  sliderBox: {
+    borderRadius: 16,
+    borderWidth: 1,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    gap: 8,
+  },
+  sliderTrack: {
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: 'rgba(47, 52, 69, 0.6)',
+    overflow: 'hidden',
+  },
+  sliderFill: {
+    height: '100%',
+    borderRadius: 3,
+  },
+  sliderLabels: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  stepperRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 16,
+  },
+  stepperBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  ageDirectInput: {
+    fontSize: 24,
+    fontFamily: 'Inter_700Bold',
+    textAlign: 'center',
+    width: 60,
+    height: 40,
+  },
+
+  /* Gender */
+  genderRow: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  genderCard: {
+    flex: 1,
+    borderRadius: 16,
+    paddingVertical: 12,
+    alignItems: 'center',
+    gap: 2,
+  },
+
+
+  /* Nebula footer */
+  nebulaFooter: {
+    paddingHorizontal: 24,
+    paddingBottom: 32,
+    paddingTop: 12,
+  },
+  nebulaCTA: {
+    height: 56,
+    borderRadius: 16,
+    overflow: 'hidden',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#4BE277',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.25,
+    shadowRadius: 16,
+    elevation: 6,
+  },
+});
+
+/* ─── Legacy styles for steps 1-4 ─── */
+const oldStyles = StyleSheet.create({
+  inputRow: {
+    flexDirection: 'row',
+    gap: 16,
+    marginBottom: 16,
+  },
+  inputCol: {
+    flex: 1,
+  },
+  optionGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+    justifyContent: 'center',
+  },
+  goalCard: {
+    width: (width - 72) / 3,
+    padding: 16,
+    borderRadius: 20,
+    alignItems: 'center',
+    borderWidth: 2,
+  },
+  activityCard: {
+    width: '100%',
+    padding: 18,
+    borderRadius: 16,
+    marginBottom: 12,
+    borderWidth: 2,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+  },
+  footer: {
+    paddingHorizontal: 24,
+    paddingTop: 16,
+    paddingBottom: 24,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  footerBackButtonWrap: {
+    width: 112,
+  },
+  footerPrimaryButtonWrap: {
+    flex: 1,
+  },
+  footerSingleButtonWrap: {
+    width: '100%',
+  },
+  resultCard: {
+    padding: 24,
+    borderRadius: 24,
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  resultRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 16,
+    marginTop: 20,
+    justifyContent: 'center',
+  },
+  resultItem: {
+    alignItems: 'center',
+    minWidth: 80,
+  },
+  offlineBadge: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 999,
+    borderWidth: 1,
+    backgroundColor: 'rgba(251, 191, 36, 0.16)',
+    borderColor: 'rgba(251, 191, 36, 0.45)',
+    marginTop: 12,
+  },
+  offlineNote: {
+    textAlign: 'center',
+    marginTop: 16,
+  },
+});
+
+export default OnboardingScreen;
