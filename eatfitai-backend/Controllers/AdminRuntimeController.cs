@@ -133,13 +133,12 @@ public class AdminRuntimeController : ControllerBase
 
         await WriteCachedBootstrapAsync();
 
-        using var heartbeatTimer = new PeriodicTimer(SnapshotInterval);
         while (!cancellationToken.IsCancellationRequested)
         {
             try
             {
                 var waitForEventTask = subscriber.WaitToReadAsync(cancellationToken).AsTask();
-                var heartbeatTask = heartbeatTimer.WaitForNextTickAsync(cancellationToken).AsTask();
+                var heartbeatTask = Task.Delay(SnapshotInterval, cancellationToken);
                 var completedTask = await Task.WhenAny(waitForEventTask, heartbeatTask);
 
                 if (completedTask == waitForEventTask)
@@ -154,7 +153,7 @@ public class AdminRuntimeController : ControllerBase
                         await WriteEventAsync(evt.EventType, evt);
                     }
                 }
-                else if (await heartbeatTask)
+                else
                 {
                     await WriteHeartbeatAsync();
                 }
