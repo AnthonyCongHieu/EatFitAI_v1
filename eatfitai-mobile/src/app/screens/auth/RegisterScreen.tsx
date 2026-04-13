@@ -517,11 +517,11 @@ const RegisterScreen = ({ navigation }: Props): React.ReactElement => {
                 <Pressable
                   testID={TEST_IDS.auth.registerSubmitButton}
                   onPress={handleSubmit(onSubmit)}
-                  disabled={loading}
+                  disabled={loading || !termsAccepted}
                   style={({ pressed }) => [
                     styles.registerButton,
                     pressed && { transform: [{ scale: 0.96 }] },
-                    loading && { opacity: 0.6 },
+                    (loading || !termsAccepted) && { opacity: 0.5 },
                   ]}
                 >
                   <LinearGradient
