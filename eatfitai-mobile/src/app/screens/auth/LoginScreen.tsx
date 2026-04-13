@@ -510,6 +510,7 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     fontSize: 16,
+    fontFamily: 'Inter_500Medium',
     height: '100%',
   },
   eyeButton: {

@@ -85,6 +85,12 @@ export const ParallaxLayer: React.FC<ParallaxLayerProps> = ({
       Extrapolation.CLAMP,
     );
 
+    const isAtRest = Math.abs(ctx.translateX.value) < 0.5 && Math.abs(ctx.translateY.value) < 0.5;
+
+    if (isAtRest) {
+      return { transform: [] };
+    }
+
     // Scale up slightly for "closer" layers
     const scale = ctx.isPressed.value ? 1 + depth * 0.03 : 1;
 
@@ -187,6 +193,12 @@ const Tilt3DCard: React.FC<Tilt3DCardProps> = ({
       [-maxTilt, 0, maxTilt],
       Extrapolation.CLAMP,
     );
+
+    const isAtRest = Math.abs(translateX.value) < 0.5 && Math.abs(translateY.value) < 0.5;
+
+    if (isAtRest) {
+      return { transform: [] };
+    }
 
     const scale = isPressed.value ? 1.015 : 1;
 
