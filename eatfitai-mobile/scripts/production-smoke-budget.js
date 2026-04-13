@@ -20,7 +20,9 @@ function trim(value) {
 function resolveOutputDir(cliValue) {
   const explicit = trim(cliValue) || trim(process.env.EATFITAI_SMOKE_OUTPUT_DIR);
   if (!explicit) {
-    throw new Error('Missing output directory. Pass it explicitly or set EATFITAI_SMOKE_OUTPUT_DIR.');
+    throw new Error(
+      'Missing output directory. Pass it explicitly or set EATFITAI_SMOKE_OUTPUT_DIR.',
+    );
   }
 
   return path.resolve(explicit);
@@ -41,7 +43,9 @@ function buildLimits(outputDir) {
   try {
     const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
     const totalVisionFixtures = ['primary', 'benchmark']
-      .map((bucket) => (Array.isArray(manifest.fixtures?.[bucket]) ? manifest.fixtures[bucket].length : 0))
+      .map((bucket) =>
+        Array.isArray(manifest.fixtures?.[bucket]) ? manifest.fixtures[bucket].length : 0,
+      )
       .reduce((sum, count) => sum + count, 0);
 
     if (totalVisionFixtures > 0) {
@@ -69,7 +73,11 @@ function ensureBudget(outputDir) {
   const budgetFilePath = getBudgetFilePath(outputDir);
 
   if (!fs.existsSync(budgetFilePath)) {
-    fs.writeFileSync(budgetFilePath, JSON.stringify(createBudgetDocument(outputDir), null, 2), 'utf8');
+    fs.writeFileSync(
+      budgetFilePath,
+      JSON.stringify(createBudgetDocument(outputDir), null, 2),
+      'utf8',
+    );
   }
 
   return budgetFilePath;
@@ -165,7 +173,9 @@ function printUsage() {
   console.log('Usage:');
   console.log('  node production-smoke-budget.js init [outputDir]');
   console.log('  node production-smoke-budget.js status [outputDir]');
-  console.log('  node production-smoke-budget.js hit <key> [count] [note...] [outputDir]');
+  console.log(
+    '  node production-smoke-budget.js hit <key> [count] [note...] [outputDir]',
+  );
   console.log('  node production-smoke-budget.js note <message...> [outputDir]');
   console.log('');
   console.log(`Keys: ${Object.keys(DEFAULT_LIMITS).join(', ')}`);
@@ -212,9 +222,10 @@ function main() {
     const [key, maybeCount, ...noteParts] = args;
     const count = Number.parseInt(maybeCount, 10);
     const normalizedCount = Number.isFinite(count) && count > 0 ? count : 1;
-    const note = Number.isFinite(count) && count > 0
-      ? noteParts.join(' ')
-      : [maybeCount, ...noteParts].filter(Boolean).join(' ');
+    const note =
+      Number.isFinite(count) && count > 0
+        ? noteParts.join(' ')
+        : [maybeCount, ...noteParts].filter(Boolean).join(' ');
 
     recordHit(outputDir, key, normalizedCount, note);
     return;

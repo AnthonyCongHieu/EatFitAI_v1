@@ -692,4 +692,3 @@ export function t<K extends string>(key: K, ...args: any[]): string {
   if (typeof cur === 'string') return cur;
   return key;
 }
-

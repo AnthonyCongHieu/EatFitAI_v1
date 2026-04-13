@@ -37,14 +37,17 @@ const generateSmartRecommendations = (
   const recommendations: string[] = [];
 
   const consumed = summary?.totalCalories || 0;
-  const hasTarget = typeof summary?.targetCalories === 'number' && summary.targetCalories > 0;
+  const hasTarget =
+    typeof summary?.targetCalories === 'number' && summary.targetCalories > 0;
   const target = hasTarget ? summary?.targetCalories || 0 : 0;
   const protein = summary?.protein || 0;
   const carbs = summary?.carbs || 0;
   const fat = summary?.fat || 0;
 
   if (!hasTarget) {
-    recommendations.push('Bạn chưa có mục tiêu calo. Hãy thiết lập mục tiêu dinh dưỡng để nhận gợi ý chính xác hơn.');
+    recommendations.push(
+      'Bạn chưa có mục tiêu calo. Hãy thiết lập mục tiêu dinh dưỡng để nhận gợi ý chính xác hơn.',
+    );
     return recommendations;
   }
 
@@ -55,7 +58,7 @@ const generateSmartRecommendations = (
   // Dynamic thresholds based on user goal
   const thresholds = {
     lose_weight: {
-      deficitOK: 20,  // 20% deficit is OK
+      deficitOK: 20, // 20% deficit is OK
       deficitWarning: 30, // >30% too aggressive
     },
     maintain: {
@@ -72,22 +75,32 @@ const generateSmartRecommendations = (
 
   // Calorie analysis với context-aware messaging
   if (consumed < 100) {
-    recommendations.push('Bạn chưa ghi lại bữa ăn nào hôm nay. Hãy bắt đầu ghi nhật ký! 📝');
+    recommendations.push(
+      'Bạn chưa ghi lại bữa ăn nào hôm nay. Hãy bắt đầu ghi nhật ký! 📝',
+    );
   } else if (deficit > 0) {
     // User in DEFICIT
     if (deficitPercent > userThreshold.deficitWarning) {
       // Too large deficit
       if (userContext.goal === 'lose_weight') {
-        recommendations.push(`Thiếu ${Math.round(deficit)} calo (${Math.round(deficitPercent)}%). Quá aggressive - có thể làm chậm trao đổi chất! ⚠️`);
+        recommendations.push(
+          `Thiếu ${Math.round(deficit)} calo (${Math.round(deficitPercent)}%). Quá aggressive - có thể làm chậm trao đổi chất! ⚠️`,
+        );
       } else {
-        recommendations.push(`Thiếu ${Math.round(deficit)} calo - Không đủ cho mục tiêu của bạn. Hãy ăn thêm! 🍽️`);
+        recommendations.push(
+          `Thiếu ${Math.round(deficit)} calo - Không đủ cho mục tiêu của bạn. Hãy ăn thêm! 🍽️`,
+        );
       }
     } else if (deficitPercent > userThreshold.deficitOK) {
       // Acceptable deficit
       if (userContext.goal === 'lose_weight') {
-        recommendations.push(`Deficit ${Math.round(deficit)} calo - Tốt cho giảm cân! Nhưng đừng đói quá nhé! 👍`);
+        recommendations.push(
+          `Deficit ${Math.round(deficit)} calo - Tốt cho giảm cân! Nhưng đừng đói quá nhé! 👍`,
+        );
       } else {
-        recommendations.push(`Còn ${Math.round(deficit)} calo để đạt mục tiêu. ${hour >= 17 ? 'Bữa tối đầy đủ nhé!' : 'Cố gắng!'} 💪`);
+        recommendations.push(
+          `Còn ${Math.round(deficit)} calo để đạt mục tiêu. ${hour >= 17 ? 'Bữa tối đầy đủ nhé!' : 'Cố gắng!'} 💪`,
+        );
       }
     }
   } else if (deficit < 0) {
@@ -96,12 +109,18 @@ const generateSmartRecommendations = (
     const excessPercent = (excess / target) * 100;
 
     if (excessPercent > 20) {
-      recommendations.push(`Vượt mục tiêu ${Math.round(excess)} calo (${Math.round(excessPercent)}%). Hãy điều chỉnh bữa sau nhẹ hơn! ⚖️`);
+      recommendations.push(
+        `Vượt mục tiêu ${Math.round(excess)} calo (${Math.round(excessPercent)}%). Hãy điều chỉnh bữa sau nhẹ hơn! ⚖️`,
+      );
     } else if (excessPercent > 10) {
       if (userContext.goal === 'gain_muscle') {
-        recommendations.push(`Surplus ${Math.round(excess)} calo - Tốt cho tăng cơ! Nhớ tập luyện đều! 💪`);
+        recommendations.push(
+          `Surplus ${Math.round(excess)} calo - Tốt cho tăng cơ! Nhớ tập luyện đều! 💪`,
+        );
       } else {
-        recommendations.push(`Ăn hơi nhiều. Đã vượt ${Math.round(excess)} calo - Nhẹ tay ở bữa sau! 🥗`);
+        recommendations.push(
+          `Ăn hơi nhiều. Đã vượt ${Math.round(excess)} calo - Nhẹ tay ở bữa sau! 🥗`,
+        );
       }
     }
   }
@@ -121,37 +140,58 @@ const generateSmartRecommendations = (
 
       // Protein check với diet-type personalization
       const proteinIdeal = userContext.goal === 'gain_muscle' ? [30, 40] : [20, 30];
-      if (proteinIdeal?.[0] && proteinPercent < proteinIdeal[0] && recommendations.length < 2) {
-        const foodSuggestions = userContext.dietType === 'vegetarian'
-          ? 'đậu phụ, đậu lăng, quinoa'
-          : userContext.dietType === 'vegan'
-            ? 'đậu phụ, tempeh, hạt chia'
-            : 'thịt gà, cá, trứng, sữa';
+      if (
+        proteinIdeal?.[0] &&
+        proteinPercent < proteinIdeal[0] &&
+        recommendations.length < 2
+      ) {
+        const foodSuggestions =
+          userContext.dietType === 'vegetarian'
+            ? 'đậu phụ, đậu lăng, quinoa'
+            : userContext.dietType === 'vegan'
+              ? 'đậu phụ, tempeh, hạt chia'
+              : 'thịt gà, cá, trứng, sữa';
 
-        recommendations.push(`Protein chỉ ${Math.round(proteinPercent)}% - quá thấp! Thêm ${foodSuggestions}! 🥩`);
+        recommendations.push(
+          `Protein chỉ ${Math.round(proteinPercent)}% - quá thấp! Thêm ${foodSuggestions}! 🥩`,
+        );
       }
 
       // Carbs check với goal personalization
-      if (userContext.dietType !== 'keto' && carbsPercent < 30 && recommendations.length < 2) {
-        recommendations.push(`Carbs thấp (${Math.round(carbsPercent)}%). Thêm cơm, bánh mì hoặc khoai cho năng lượng! 🍚`);
+      if (
+        userContext.dietType !== 'keto' &&
+        carbsPercent < 30 &&
+        recommendations.length < 2
+      ) {
+        recommendations.push(
+          `Carbs thấp (${Math.round(carbsPercent)}%). Thêm cơm, bánh mì hoặc khoai cho năng lượng! 🍚`,
+        );
       }
 
       // Fat check
       if (fatPercent > 45 && recommendations.length < 2) {
-        recommendations.push(`Fat cao (${Math.round(fatPercent)}%). Hạn chế đồ chiên rán, chọn dầu olive/hạt! 🥑`);
+        recommendations.push(
+          `Fat cao (${Math.round(fatPercent)}%). Hạn chế đồ chiên rán, chọn dầu olive/hạt! 🥑`,
+        );
       }
     }
   }
 
   // Time-based contextual advice
   if (hour >= 22 && consumed < target * 0.7 && recommendations.length < 2) {
-    recommendations.push('Đã khuya nhưng chưa ăn đủ. Hãy ăn nhẹ (sữa, chuối) trước khi ngủ! 🌙');
+    recommendations.push(
+      'Đã khuya nhưng chưa ăn đủ. Hãy ăn nhẹ (sữa, chuối) trước khi ngủ! 🌙',
+    );
   } else if (hour <= 14 && consumed < 500 && recommendations.length < 2) {
     recommendations.push('Sáng/trưa quan trọng cho năng lượng! Đừng bỏ bữa chính! ☀️');
   }
 
   // Good job message
-  if (recommendations.length === 0 && consumed >= target * 0.9 && consumed <= target * 1.1) {
+  if (
+    recommendations.length === 0 &&
+    consumed >= target * 0.9 &&
+    consumed <= target * 1.1
+  ) {
     recommendations.push('Tuyệt vời! Bạn đang ăn uống cân bằng và đúng mục tiêu! 🎯');
   }
 
@@ -180,7 +220,6 @@ export const InsightsCard = () => {
     },
   });
 
-
   // Log error for debugging
   if (error) {
     console.warn('[InsightsCard] Failed to load AI insights:', error);
@@ -189,7 +228,8 @@ export const InsightsCard = () => {
   // HYBRID: Backend + Client validation + Personalization
   const finalRecommendations = useMemo(() => {
     const consumed = summary?.totalCalories || 0;
-    const hasTarget = typeof summary?.targetCalories === 'number' && summary.targetCalories > 0;
+    const hasTarget =
+      typeof summary?.targetCalories === 'number' && summary.targetCalories > 0;
     if (!hasTarget) {
       return generateSmartRecommendations(summary, userContext);
     }
@@ -207,13 +247,17 @@ export const InsightsCard = () => {
         if (deficit > 0) {
           // User in DEFICIT - filter out "nạp dư" / "vượt" messages
           if (message.includes('nạp dư') || message.includes('vượt mục tiêu')) {
-            console.warn('[AI Insights] Backend wrong: deficit but says surplus. Filtered.');
+            console.warn(
+              '[AI Insights] Backend wrong: deficit but says surplus. Filtered.',
+            );
             return false;
           }
         } else if (deficit < -(target || 1) * 0.1) {
           // User in SURPLUS (>10%) - filter out "thiếu" messages
           if (message.includes('thiếu') || message.includes('ăn dưới')) {
-            console.warn('[AI Insights] Backend wrong: surplus but says deficit. Filtered.');
+            console.warn(
+              '[AI Insights] Backend wrong: surplus but says deficit. Filtered.',
+            );
             return false;
           }
         }

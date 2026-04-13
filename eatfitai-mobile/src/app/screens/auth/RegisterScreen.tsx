@@ -176,8 +176,16 @@ const RegisterScreen = ({ navigation }: Props): React.ReactElement => {
   return (
     <GestureHandlerRootView style={[styles.container, { backgroundColor: C.surface }]}>
       {/* Background glow blobs */}
-      <View style={[styles.blob, styles.blobTopRight, { backgroundColor: C.primary + '0D' }]} />
-      <View style={[styles.blob, styles.blobBottomLeft, { backgroundColor: C.primary + '0D' }]} />
+      <View
+        style={[styles.blob, styles.blobTopRight, { backgroundColor: C.primary + '0D' }]}
+      />
+      <View
+        style={[
+          styles.blob,
+          styles.blobBottomLeft,
+          { backgroundColor: C.primary + '0D' },
+        ]}
+      />
 
       {/* Back button */}
       <Pressable
@@ -222,352 +230,391 @@ const RegisterScreen = ({ navigation }: Props): React.ReactElement => {
                 },
               ]}
             >
-            {/* Header — depth 0.3 */}
-            <ParallaxLayer depth={0.3}>
-              <View style={styles.cardHeader}>
-                <ThemedText
-                  variant="h2"
-                  weight="700"
-                  style={{ color: '#FFFFFF', fontSize: 24 }}
-                >
-                  Đăng ký tài khoản
-                </ThemedText>
-                <ThemedText
-                  variant="bodySmall"
-                  style={{ color: C.onSurfaceVariant, marginTop: 4 }}
-                >
-                  Bắt đầu hành trình sức khỏe của bạn
-                </ThemedText>
-              </View>
-            </ParallaxLayer>
-
-            {/* ─── Form — depth 0.5 (mid-float) ─── */}
-            <ParallaxLayer depth={0.5}>
-              <View style={styles.formGroup}>
-                {/* Full Name */}
-                <Controller
-                  control={control}
-                  name="name"
-                  render={({ field: { onChange, onBlur, value } }) => (
-                    <View>
-                      <View
-                        style={[
-                          styles.inputContainer,
-                          {
-                            backgroundColor: C.inputBg,
-                            borderColor: errors.name ? theme.colors.danger : C.inputBorder,
-                          },
-                        ]}
-                      >
-                        <Ionicons
-                          name="person-outline"
-                          size={20}
-                          color={C.onSurfaceVariant}
-                          style={styles.inputIcon}
-                        />
-                        <TextInput
-                          testID={TEST_IDS.auth.registerNameInput}
-                          placeholder="Họ và tên"
-                          placeholderTextColor="#475569"
-                          onBlur={onBlur}
-                          onChangeText={onChange}
-                          value={value}
-                          style={[styles.input, { color: C.onSurface }]}
-                        />
-                      </View>
-                      {errors.name && (
-                        <ThemedText
-                          variant="bodySmall"
-                          style={{ color: theme.colors.danger, marginTop: 4, marginLeft: 4 }}
-                        >
-                          {errors.name.message}
-                        </ThemedText>
-                      )}
-                    </View>
-                  )}
-                />
-
-                {/* Email */}
-                <Controller
-                  control={control}
-                  name="email"
-                  render={({ field: { onChange, onBlur, value } }) => (
-                    <View>
-                      <View
-                        style={[
-                          styles.inputContainer,
-                          {
-                            backgroundColor: C.inputBg,
-                            borderColor: errors.email ? theme.colors.danger : C.inputBorder,
-                          },
-                        ]}
-                      >
-                        <Ionicons
-                          name="mail-outline"
-                          size={20}
-                          color={C.onSurfaceVariant}
-                          style={styles.inputIcon}
-                        />
-                        <TextInput
-                          testID={TEST_IDS.auth.registerEmailInput}
-                          placeholder="Địa chỉ Email"
-                          placeholderTextColor="#475569"
-                          autoCapitalize="none"
-                          keyboardType="email-address"
-                          onBlur={onBlur}
-                          onChangeText={onChange}
-                          value={value}
-                          style={[styles.input, { color: C.onSurface }]}
-                        />
-                      </View>
-                      {errors.email && (
-                        <ThemedText
-                          variant="bodySmall"
-                          style={{ color: theme.colors.danger, marginTop: 4, marginLeft: 4 }}
-                        >
-                          {errors.email.message}
-                        </ThemedText>
-                      )}
-                    </View>
-                  )}
-                />
-
-                {/* Password */}
-                <Controller
-                  control={control}
-                  name="password"
-                  render={({ field: { onChange, onBlur, value } }) => (
-                    <View>
-                      <View
-                        style={[
-                          styles.inputContainer,
-                          {
-                            backgroundColor: C.inputBg,
-                            borderColor: errors.password ? theme.colors.danger : C.inputBorder,
-                          },
-                        ]}
-                      >
-                        <Ionicons
-                          name="lock-closed-outline"
-                          size={20}
-                          color={C.onSurfaceVariant}
-                          style={styles.inputIcon}
-                        />
-                        <TextInput
-                          testID={TEST_IDS.auth.registerPasswordInput}
-                          placeholder="Mật khẩu"
-                          placeholderTextColor="#475569"
-                          secureTextEntry={!passwordVisible}
-                          onBlur={onBlur}
-                          onChangeText={onChange}
-                          value={value}
-                          style={[styles.input, { color: C.onSurface }]}
-                        />
-                        <Pressable
-                          onPress={() => setPasswordVisible((v) => !v)}
-                          hitSlop={12}
-                          style={styles.eyeButton}
-                        >
-                          <Ionicons
-                            name={passwordVisible ? 'eye-off-outline' : 'eye-outline'}
-                            size={20}
-                            color={C.onSurfaceVariant}
-                          />
-                        </Pressable>
-                      </View>
-                      {errors.password && (
-                        <ThemedText
-                          variant="bodySmall"
-                          style={{ color: theme.colors.danger, marginTop: 4, marginLeft: 4 }}
-                        >
-                          {errors.password.message}
-                        </ThemedText>
-                      )}
-                      {/* Password Strength Meter */}
-                      {value && value.length > 0 && (
-                        <View style={styles.strengthRow}>
-                          <View style={[styles.strengthTrack, { backgroundColor: C.surfaceContainerHighest }]}>
-                            <View
-                              style={{
-                                width: `${(passwordStrength / 3) * 100}%`,
-                                height: '100%',
-                                backgroundColor: getStrengthColor(),
-                                borderRadius: 999,
-                              }}
-                            />
-                          </View>
-                          <ThemedText
-                            variant="caption"
-                            weight="700"
-                            style={{
-                              color: getStrengthColor(),
-                              fontSize: 10,
-                              letterSpacing: 1.5,
-                            }}
-                          >
-                            {getStrengthLabel()}
-                          </ThemedText>
-                        </View>
-                      )}
-                    </View>
-                  )}
-                />
-
-                {/* Confirm Password */}
-                <Controller
-                  control={control}
-                  name="confirmPassword"
-                  render={({ field: { onChange, onBlur, value } }) => (
-                    <View>
-                      <View
-                        style={[
-                          styles.inputContainer,
-                          {
-                            backgroundColor: C.inputBg,
-                            borderColor: errors.confirmPassword ? theme.colors.danger : C.inputBorder,
-                          },
-                        ]}
-                      >
-                        <Ionicons
-                          name="checkmark-circle-outline"
-                          size={20}
-                          color={C.onSurfaceVariant}
-                          style={styles.inputIcon}
-                        />
-                        <TextInput
-                          testID={TEST_IDS.auth.registerConfirmPasswordInput}
-                          placeholder="Xác nhận mật khẩu"
-                          placeholderTextColor="#475569"
-                          secureTextEntry={!confirmVisible}
-                          onBlur={onBlur}
-                          onChangeText={onChange}
-                          value={value}
-                          style={[styles.input, { color: C.onSurface }]}
-                        />
-                        <Pressable
-                          onPress={() => setConfirmVisible((v) => !v)}
-                          hitSlop={12}
-                          style={styles.eyeButton}
-                        >
-                          <Ionicons
-                            name={confirmVisible ? 'eye-off-outline' : 'eye-outline'}
-                            size={20}
-                            color={C.onSurfaceVariant}
-                          />
-                        </Pressable>
-                      </View>
-                      {errors.confirmPassword && (
-                        <ThemedText
-                          variant="bodySmall"
-                          style={{ color: theme.colors.danger, marginTop: 4, marginLeft: 4 }}
-                        >
-                          {errors.confirmPassword.message}
-                        </ThemedText>
-                      )}
-                    </View>
-                  )}
-                />
-
-                {/* Terms & Conditions */}
-                <Pressable
-                  onPress={() => setTermsAccepted((v) => !v)}
-                  style={styles.termsRow}
-                >
-                  <View
-                    style={[
-                      styles.checkbox,
-                      {
-                        borderColor: termsAccepted ? C.primary : C.outlineVariant + '4D',
-                        backgroundColor: termsAccepted ? C.primary + '33' : 'transparent',
-                      },
-                    ]}
+              {/* Header — depth 0.3 */}
+              <ParallaxLayer depth={0.3}>
+                <View style={styles.cardHeader}>
+                  <ThemedText
+                    variant="h2"
+                    weight="700"
+                    style={{ color: '#FFFFFF', fontSize: 24 }}
                   >
-                    {termsAccepted && (
-                      <Ionicons name="checkmark" size={12} color={C.primary} />
-                    )}
-                  </View>
+                    Đăng ký tài khoản
+                  </ThemedText>
                   <ThemedText
                     variant="bodySmall"
-                    style={{ color: C.onSurfaceVariant, fontSize: 12, lineHeight: 18, flex: 1 }}
+                    style={{ color: C.onSurfaceVariant, marginTop: 4 }}
                   >
-                    Tôi đồng ý với{' '}
-                    <ThemedText
-                      variant="bodySmall"
-                      weight="600"
-                      style={{ color: C.primary, fontSize: 12 }}
-                    >
-                      Điều khoản dịch vụ
-                    </ThemedText>
-                    {' '}và{' '}
-                    <ThemedText
-                      variant="bodySmall"
-                      weight="600"
-                      style={{ color: C.primary, fontSize: 12 }}
-                    >
-                      Chính sách bảo mật
-                    </ThemedText>
+                    Bắt đầu hành trình sức khỏe của bạn
                   </ThemedText>
-                </Pressable>
-              </View>
-            </ParallaxLayer>
+                </View>
+              </ParallaxLayer>
 
-            {/* ─── Register Button — depth 0.8 (highest float) ─── */}
-            <ParallaxLayer depth={0.8}>
-              <Animated.View entering={FadeInDown.delay(350).springify()}>
-                <Pressable
-                  testID={TEST_IDS.auth.registerSubmitButton}
-                  onPress={handleSubmit(onSubmit)}
-                  disabled={loading || !termsAccepted}
-                  style={({ pressed }) => [
-                    styles.registerButton,
-                    pressed && { transform: [{ scale: 0.96 }] },
-                    (loading || !termsAccepted) && { opacity: 0.5 },
-                  ]}
-                >
-                  <LinearGradient
-                    colors={['#6BFF8F', '#4BE277', '#22C55E']}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 1 }}
-                    style={StyleSheet.absoluteFill}
+              {/* ─── Form — depth 0.5 (mid-float) ─── */}
+              <ParallaxLayer depth={0.5}>
+                <View style={styles.formGroup}>
+                  {/* Full Name */}
+                  <Controller
+                    control={control}
+                    name="name"
+                    render={({ field: { onChange, onBlur, value } }) => (
+                      <View>
+                        <View
+                          style={[
+                            styles.inputContainer,
+                            {
+                              backgroundColor: C.inputBg,
+                              borderColor: errors.name
+                                ? theme.colors.danger
+                                : C.inputBorder,
+                            },
+                          ]}
+                        >
+                          <Ionicons
+                            name="person-outline"
+                            size={20}
+                            color={C.onSurfaceVariant}
+                            style={styles.inputIcon}
+                          />
+                          <TextInput
+                            testID={TEST_IDS.auth.registerNameInput}
+                            placeholder="Họ và tên"
+                            placeholderTextColor="#475569"
+                            onBlur={onBlur}
+                            onChangeText={onChange}
+                            value={value}
+                            style={[styles.input, { color: C.onSurface }]}
+                          />
+                        </View>
+                        {errors.name && (
+                          <ThemedText
+                            variant="bodySmall"
+                            style={{
+                              color: theme.colors.danger,
+                              marginTop: 4,
+                              marginLeft: 4,
+                            }}
+                          >
+                            {errors.name.message}
+                          </ThemedText>
+                        )}
+                      </View>
+                    )}
                   />
-                  {/* Glossy highlight */}
-                  <LinearGradient
-                    colors={['rgba(255,255,255,0.25)', 'rgba(255,255,255,0.05)', 'transparent']}
-                    start={{ x: 0.2, y: 0 }}
-                    end={{ x: 0.8, y: 1 }}
-                    style={StyleSheet.absoluteFill}
+
+                  {/* Email */}
+                  <Controller
+                    control={control}
+                    name="email"
+                    render={({ field: { onChange, onBlur, value } }) => (
+                      <View>
+                        <View
+                          style={[
+                            styles.inputContainer,
+                            {
+                              backgroundColor: C.inputBg,
+                              borderColor: errors.email
+                                ? theme.colors.danger
+                                : C.inputBorder,
+                            },
+                          ]}
+                        >
+                          <Ionicons
+                            name="mail-outline"
+                            size={20}
+                            color={C.onSurfaceVariant}
+                            style={styles.inputIcon}
+                          />
+                          <TextInput
+                            testID={TEST_IDS.auth.registerEmailInput}
+                            placeholder="Địa chỉ Email"
+                            placeholderTextColor="#475569"
+                            autoCapitalize="none"
+                            keyboardType="email-address"
+                            onBlur={onBlur}
+                            onChangeText={onChange}
+                            value={value}
+                            style={[styles.input, { color: C.onSurface }]}
+                          />
+                        </View>
+                        {errors.email && (
+                          <ThemedText
+                            variant="bodySmall"
+                            style={{
+                              color: theme.colors.danger,
+                              marginTop: 4,
+                              marginLeft: 4,
+                            }}
+                          >
+                            {errors.email.message}
+                          </ThemedText>
+                        )}
+                      </View>
+                    )}
                   />
+
+                  {/* Password */}
+                  <Controller
+                    control={control}
+                    name="password"
+                    render={({ field: { onChange, onBlur, value } }) => (
+                      <View>
+                        <View
+                          style={[
+                            styles.inputContainer,
+                            {
+                              backgroundColor: C.inputBg,
+                              borderColor: errors.password
+                                ? theme.colors.danger
+                                : C.inputBorder,
+                            },
+                          ]}
+                        >
+                          <Ionicons
+                            name="lock-closed-outline"
+                            size={20}
+                            color={C.onSurfaceVariant}
+                            style={styles.inputIcon}
+                          />
+                          <TextInput
+                            testID={TEST_IDS.auth.registerPasswordInput}
+                            placeholder="Mật khẩu"
+                            placeholderTextColor="#475569"
+                            secureTextEntry={!passwordVisible}
+                            onBlur={onBlur}
+                            onChangeText={onChange}
+                            value={value}
+                            style={[styles.input, { color: C.onSurface }]}
+                          />
+                          <Pressable
+                            onPress={() => setPasswordVisible((v) => !v)}
+                            hitSlop={12}
+                            style={styles.eyeButton}
+                          >
+                            <Ionicons
+                              name={passwordVisible ? 'eye-off-outline' : 'eye-outline'}
+                              size={20}
+                              color={C.onSurfaceVariant}
+                            />
+                          </Pressable>
+                        </View>
+                        {errors.password && (
+                          <ThemedText
+                            variant="bodySmall"
+                            style={{
+                              color: theme.colors.danger,
+                              marginTop: 4,
+                              marginLeft: 4,
+                            }}
+                          >
+                            {errors.password.message}
+                          </ThemedText>
+                        )}
+                        {/* Password Strength Meter */}
+                        {value && value.length > 0 && (
+                          <View style={styles.strengthRow}>
+                            <View
+                              style={[
+                                styles.strengthTrack,
+                                { backgroundColor: C.surfaceContainerHighest },
+                              ]}
+                            >
+                              <View
+                                style={{
+                                  width: `${(passwordStrength / 3) * 100}%`,
+                                  height: '100%',
+                                  backgroundColor: getStrengthColor(),
+                                  borderRadius: 999,
+                                }}
+                              />
+                            </View>
+                            <ThemedText
+                              variant="caption"
+                              weight="700"
+                              style={{
+                                color: getStrengthColor(),
+                                fontSize: 10,
+                                letterSpacing: 1.5,
+                              }}
+                            >
+                              {getStrengthLabel()}
+                            </ThemedText>
+                          </View>
+                        )}
+                      </View>
+                    )}
+                  />
+
+                  {/* Confirm Password */}
+                  <Controller
+                    control={control}
+                    name="confirmPassword"
+                    render={({ field: { onChange, onBlur, value } }) => (
+                      <View>
+                        <View
+                          style={[
+                            styles.inputContainer,
+                            {
+                              backgroundColor: C.inputBg,
+                              borderColor: errors.confirmPassword
+                                ? theme.colors.danger
+                                : C.inputBorder,
+                            },
+                          ]}
+                        >
+                          <Ionicons
+                            name="checkmark-circle-outline"
+                            size={20}
+                            color={C.onSurfaceVariant}
+                            style={styles.inputIcon}
+                          />
+                          <TextInput
+                            testID={TEST_IDS.auth.registerConfirmPasswordInput}
+                            placeholder="Xác nhận mật khẩu"
+                            placeholderTextColor="#475569"
+                            secureTextEntry={!confirmVisible}
+                            onBlur={onBlur}
+                            onChangeText={onChange}
+                            value={value}
+                            style={[styles.input, { color: C.onSurface }]}
+                          />
+                          <Pressable
+                            onPress={() => setConfirmVisible((v) => !v)}
+                            hitSlop={12}
+                            style={styles.eyeButton}
+                          >
+                            <Ionicons
+                              name={confirmVisible ? 'eye-off-outline' : 'eye-outline'}
+                              size={20}
+                              color={C.onSurfaceVariant}
+                            />
+                          </Pressable>
+                        </View>
+                        {errors.confirmPassword && (
+                          <ThemedText
+                            variant="bodySmall"
+                            style={{
+                              color: theme.colors.danger,
+                              marginTop: 4,
+                              marginLeft: 4,
+                            }}
+                          >
+                            {errors.confirmPassword.message}
+                          </ThemedText>
+                        )}
+                      </View>
+                    )}
+                  />
+
+                  {/* Terms & Conditions */}
+                  <Pressable
+                    onPress={() => setTermsAccepted((v) => !v)}
+                    style={styles.termsRow}
+                  >
+                    <View
+                      style={[
+                        styles.checkbox,
+                        {
+                          borderColor: termsAccepted
+                            ? C.primary
+                            : C.outlineVariant + '4D',
+                          backgroundColor: termsAccepted
+                            ? C.primary + '33'
+                            : 'transparent',
+                        },
+                      ]}
+                    >
+                      {termsAccepted && (
+                        <Ionicons name="checkmark" size={12} color={C.primary} />
+                      )}
+                    </View>
+                    <ThemedText
+                      variant="bodySmall"
+                      style={{
+                        color: C.onSurfaceVariant,
+                        fontSize: 12,
+                        lineHeight: 18,
+                        flex: 1,
+                      }}
+                    >
+                      Tôi đồng ý với{' '}
+                      <ThemedText
+                        variant="bodySmall"
+                        weight="600"
+                        style={{ color: C.primary, fontSize: 12 }}
+                      >
+                        Điều khoản dịch vụ
+                      </ThemedText>{' '}
+                      và{' '}
+                      <ThemedText
+                        variant="bodySmall"
+                        weight="600"
+                        style={{ color: C.primary, fontSize: 12 }}
+                      >
+                        Chính sách bảo mật
+                      </ThemedText>
+                    </ThemedText>
+                  </Pressable>
+                </View>
+              </ParallaxLayer>
+
+              {/* ─── Register Button — depth 0.8 (highest float) ─── */}
+              <ParallaxLayer depth={0.8}>
+                <Animated.View entering={FadeInDown.delay(350).springify()}>
+                  <Pressable
+                    testID={TEST_IDS.auth.registerSubmitButton}
+                    onPress={handleSubmit(onSubmit)}
+                    disabled={loading || !termsAccepted}
+                    style={({ pressed }) => [
+                      styles.registerButton,
+                      pressed && { transform: [{ scale: 0.96 }] },
+                      (loading || !termsAccepted) && { opacity: 0.5 },
+                    ]}
+                  >
+                    <LinearGradient
+                      colors={['#6BFF8F', '#4BE277', '#22C55E']}
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 1, y: 1 }}
+                      style={StyleSheet.absoluteFill}
+                    />
+                    {/* Glossy highlight */}
+                    <LinearGradient
+                      colors={[
+                        'rgba(255,255,255,0.25)',
+                        'rgba(255,255,255,0.05)',
+                        'transparent',
+                      ]}
+                      start={{ x: 0.2, y: 0 }}
+                      end={{ x: 0.8, y: 1 }}
+                      style={StyleSheet.absoluteFill}
+                    />
+                    <ThemedText
+                      variant="body"
+                      weight="700"
+                      style={{ color: C.onPrimary, fontSize: 18 }}
+                    >
+                      {loading ? 'Đang xử lý...' : 'Đăng ký tài khoản'}
+                    </ThemedText>
+                  </Pressable>
+                </Animated.View>
+              </ParallaxLayer>
+
+              {/* ─── Sign-in link — depth 0.6 ─── */}
+              <ParallaxLayer depth={0.6}>
+                <View style={styles.signInRow}>
+                  <ThemedText variant="bodySmall" style={{ color: C.onSurfaceVariant }}>
+                    Đã có tài khoản?{' '}
+                  </ThemedText>
                   <ThemedText
-                    variant="body"
+                    variant="bodySmall"
                     weight="700"
-                    style={{ color: C.onPrimary, fontSize: 18 }}
+                    onPress={() => navigation.navigate('Login')}
+                    style={{ color: C.primary }}
                   >
-                    {loading ? 'Đang xử lý...' : 'Đăng ký tài khoản'}
+                    Đăng nhập
                   </ThemedText>
-                </Pressable>
-              </Animated.View>
-            </ParallaxLayer>
-
-            {/* ─── Sign-in link — depth 0.6 ─── */}
-            <ParallaxLayer depth={0.6}>
-              <View style={styles.signInRow}>
-                <ThemedText
-                  variant="bodySmall"
-                  style={{ color: C.onSurfaceVariant }}
-                >
-                  Đã có tài khoản?{' '}
-                </ThemedText>
-                <ThemedText
-                  variant="bodySmall"
-                  weight="700"
-                  onPress={() => navigation.navigate('Login')}
-                  style={{ color: C.primary }}
-                >
-                  Đăng nhập
-                </ThemedText>
-              </View>
-            </ParallaxLayer>
-          </Animated.View>
+                </View>
+              </ParallaxLayer>
+            </Animated.View>
           </Tilt3DCard>
         </Screen>
       </KeyboardAvoidingView>

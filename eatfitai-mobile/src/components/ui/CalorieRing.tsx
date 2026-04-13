@@ -84,7 +84,10 @@ const CalorieRing: React.FC<CalorieRingProps> = ({
   useEffect(() => {
     if (isCloseToTarget && !isOverTarget) {
       pulseScale.value = withRepeat(
-        withSequence(withTiming(1.02, { duration: 800 }), withTiming(1, { duration: 800 })),
+        withSequence(
+          withTiming(1.02, { duration: 800 }),
+          withTiming(1, { duration: 800 }),
+        ),
         -1,
         true,
       );
@@ -172,7 +175,8 @@ const CalorieRing: React.FC<CalorieRingProps> = ({
           color="textSecondary"
           style={{ textAlign: 'center', paddingHorizontal: theme.spacing.md }}
         >
-          Chưa có mục tiêu calo. Ứng dụng dùng mốc {DEFAULT_VISUAL_TARGET} kcal để hiển thị.
+          Chưa có mục tiêu calo. Ứng dụng dùng mốc {DEFAULT_VISUAL_TARGET} kcal để hiển
+          thị.
         </ThemedText>
       )}
 

@@ -118,14 +118,14 @@ const NutritionInsightsScreen = (): React.ReactElement => {
   ): boolean =>
     Boolean(
       target &&
-        typeof target.targetCalories === 'number' &&
-        target.targetCalories > 0 &&
-        typeof target.targetProtein === 'number' &&
-        target.targetProtein > 0 &&
-        typeof target.targetCarbs === 'number' &&
-        target.targetCarbs > 0 &&
-        typeof target.targetFat === 'number' &&
-        target.targetFat > 0,
+      typeof target.targetCalories === 'number' &&
+      target.targetCalories > 0 &&
+      typeof target.targetProtein === 'number' &&
+      target.targetProtein > 0 &&
+      typeof target.targetCarbs === 'number' &&
+      target.targetCarbs > 0 &&
+      typeof target.targetFat === 'number' &&
+      target.targetFat > 0,
     );
 
   const loadData = async () => {
@@ -297,7 +297,13 @@ const NutritionInsightsScreen = (): React.ReactElement => {
   };
 
   const renderHeader = () => (
-    <View style={{ paddingTop: 60, paddingBottom: theme.spacing.sm, paddingHorizontal: theme.spacing.lg }}>
+    <View
+      style={{
+        paddingTop: 60,
+        paddingBottom: theme.spacing.sm,
+        paddingHorizontal: theme.spacing.lg,
+      }}
+    >
       <View style={{ flexDirection: 'row', alignItems: 'center' }}>
         <Pressable
           onPress={() => navigation.goBack()}
@@ -320,7 +326,11 @@ const NutritionInsightsScreen = (): React.ReactElement => {
         </View>
       </View>
 
-      <ThemedText variant="bodySmall" color="textSecondary" style={{ textAlign: 'center', marginTop: 8 }}>
+      <ThemedText
+        variant="bodySmall"
+        color="textSecondary"
+        style={{ textAlign: 'center', marginTop: 8 }}
+      >
         {t('nutrition_insights.subtitle')}
       </ThemedText>
     </View>
@@ -383,7 +393,8 @@ const NutritionInsightsScreen = (): React.ReactElement => {
   if (error) {
     const normalizedError = error.toLowerCase();
     const isNoTargetError =
-      normalizedError.includes('nutrition target') || normalizedError.includes('no active');
+      normalizedError.includes('nutrition target') ||
+      normalizedError.includes('no active');
 
     return (
       <LinearGradient
@@ -449,7 +460,11 @@ const NutritionInsightsScreen = (): React.ReactElement => {
       <ScrollView contentContainerStyle={styles.content}>
         {notice && (
           <View style={styles.noticeCard}>
-            <Ionicons name="cloud-offline-outline" size={20} color={theme.colors.warning} />
+            <Ionicons
+              name="cloud-offline-outline"
+              size={20}
+              color={theme.colors.warning}
+            />
             <ThemedText variant="bodySmall" style={{ flex: 1 }}>
               {notice}
             </ThemedText>
@@ -460,7 +475,10 @@ const NutritionInsightsScreen = (): React.ReactElement => {
           <>
             <Animated.View entering={FadeInDown.delay(100)} style={styles.headerCard}>
               <View style={styles.scoreContainer}>
-                <ScoreGauge score={insights.adherenceScore} color={theme.colors.primary} />
+                <ScoreGauge
+                  score={insights.adherenceScore}
+                  color={theme.colors.primary}
+                />
               </View>
               <View style={styles.trendContainer}>
                 <ThemedText variant="h3" style={{ marginBottom: 4 }}>
@@ -578,99 +596,101 @@ const NutritionInsightsScreen = (): React.ReactElement => {
         {adaptiveTarget &&
           adaptiveTarget.confidenceScore > 50 &&
           hasCompleteTarget(adaptiveTarget.suggestedTarget) && (
-          <>
-            <ThemedText variant="h3" style={styles.sectionTitle}>
-              {t('nutrition_insights.adaptive_title')}
-            </ThemedText>
-            <Animated.View entering={FadeInDown.delay(300)} style={styles.card}>
-              <View
-                style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16 }}
-              >
-                <Ionicons
-                  name="analytics"
-                  size={24}
-                  color={theme.colors.primary}
-                  style={{ marginRight: 8 }}
-                />
-                <ThemedText variant="h4">
-                  {t('nutrition_insights.ai_suggestion')}
-                </ThemedText>
-              </View>
-
-              <View style={styles.targetComparison}>
-                <View style={styles.targetCol}>
-                  <ThemedText
-                    variant="caption"
-                    color="textSecondary"
-                    style={{ marginBottom: 4 }}
-                  >
-                    {t('nutrition_insights.current')}
-                  </ThemedText>
-                  <ThemedText variant="h2">
-                    {formatTargetMetric(adaptiveTarget.currentTarget.targetCalories)}
-                  </ThemedText>
-                  <ThemedText variant="caption" color="textSecondary">
-                    kcal
-                  </ThemedText>
-                </View>
-                <View style={{ justifyContent: 'center' }}>
-                  <Ionicons
-                    name="arrow-forward-circle"
-                    size={32}
-                    color={theme.colors.primary}
-                  />
-                </View>
+            <>
+              <ThemedText variant="h3" style={styles.sectionTitle}>
+                {t('nutrition_insights.adaptive_title')}
+              </ThemedText>
+              <Animated.View entering={FadeInDown.delay(300)} style={styles.card}>
                 <View
-                  style={[
-                    styles.targetCol,
-                    {
-                      borderColor: theme.colors.primary,
-                      backgroundColor: theme.colors.primaryLight,
-                    },
-                  ]}
+                  style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16 }}
                 >
-                  <ThemedText
-                    variant="caption"
-                    color="primary"
-                    style={{ marginBottom: 4, fontWeight: 'bold' }}
-                  >
-                    {t('nutrition_insights.suggested')}
-                  </ThemedText>
-                  <ThemedText variant="h2" color="primary">
-                    {formatTargetMetric(adaptiveTarget.suggestedTarget.targetCalories)}
-                  </ThemedText>
-                  <ThemedText variant="caption" color="primary">
-                    kcal
+                  <Ionicons
+                    name="analytics"
+                    size={24}
+                    color={theme.colors.primary}
+                    style={{ marginRight: 8 }}
+                  />
+                  <ThemedText variant="h4">
+                    {t('nutrition_insights.ai_suggestion')}
                   </ThemedText>
                 </View>
-              </View>
 
-              <View
-                style={{
-                  backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)',
-                  padding: 12,
-                  borderRadius: 8,
-                  marginBottom: 16,
-                }}
-              >
-                <ThemedText variant="bodySmall" style={{ fontStyle: 'italic' }}>
-                  "
-                  {adaptiveTarget.adjustmentReasons
-                    .map((reason) => translateToVietnamese(reason))
-                    .join('. ')}
-                  "
-                </ThemedText>
-              </View>
+                <View style={styles.targetComparison}>
+                  <View style={styles.targetCol}>
+                    <ThemedText
+                      variant="caption"
+                      color="textSecondary"
+                      style={{ marginBottom: 4 }}
+                    >
+                      {t('nutrition_insights.current')}
+                    </ThemedText>
+                    <ThemedText variant="h2">
+                      {formatTargetMetric(adaptiveTarget.currentTarget.targetCalories)}
+                    </ThemedText>
+                    <ThemedText variant="caption" color="textSecondary">
+                      kcal
+                    </ThemedText>
+                  </View>
+                  <View style={{ justifyContent: 'center' }}>
+                    <Ionicons
+                      name="arrow-forward-circle"
+                      size={32}
+                      color={theme.colors.primary}
+                    />
+                  </View>
+                  <View
+                    style={[
+                      styles.targetCol,
+                      {
+                        borderColor: theme.colors.primary,
+                        backgroundColor: theme.colors.primaryLight,
+                      },
+                    ]}
+                  >
+                    <ThemedText
+                      variant="caption"
+                      color="primary"
+                      style={{ marginBottom: 4, fontWeight: 'bold' }}
+                    >
+                      {t('nutrition_insights.suggested')}
+                    </ThemedText>
+                    <ThemedText variant="h2" color="primary">
+                      {formatTargetMetric(adaptiveTarget.suggestedTarget.targetCalories)}
+                    </ThemedText>
+                    <ThemedText variant="caption" color="primary">
+                      kcal
+                    </ThemedText>
+                  </View>
+                </View>
 
-              <Button
-                title={`${t('nutrition_insights.apply_change')} (${t('nutrition_insights.confidence')}: ${Math.round(adaptiveTarget.confidenceScore)}%)`}
-                onPress={applyAdaptiveTarget}
-                loading={applying}
-                variant="primary"
-              />
-            </Animated.View>
-          </>
-        )}
+                <View
+                  style={{
+                    backgroundColor: isDark
+                      ? 'rgba(255,255,255,0.05)'
+                      : 'rgba(0,0,0,0.03)',
+                    padding: 12,
+                    borderRadius: 8,
+                    marginBottom: 16,
+                  }}
+                >
+                  <ThemedText variant="bodySmall" style={{ fontStyle: 'italic' }}>
+                    "
+                    {adaptiveTarget.adjustmentReasons
+                      .map((reason) => translateToVietnamese(reason))
+                      .join('. ')}
+                    "
+                  </ThemedText>
+                </View>
+
+                <Button
+                  title={`${t('nutrition_insights.apply_change')} (${t('nutrition_insights.confidence')}: ${Math.round(adaptiveTarget.confidenceScore)}%)`}
+                  onPress={applyAdaptiveTarget}
+                  loading={applying}
+                  variant="primary"
+                />
+              </Animated.View>
+            </>
+          )}
       </ScrollView>
     </LinearGradient>
   );

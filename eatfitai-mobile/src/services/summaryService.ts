@@ -50,7 +50,10 @@ const normalizeDay = (
   caloriesByMealType: null,
 });
 
-const normalizeWeekData = (data: NutritionSummaryDto, targetDate?: string): WeekDaySummary[] => {
+const normalizeWeekData = (
+  data: NutritionSummaryDto,
+  targetDate?: string,
+): WeekDaySummary[] => {
   // Tính ngày đầu tuần (Thứ 2) từ targetDate hoặc ngày hiện tại
   const refDate = targetDate ? new Date(targetDate) : new Date();
   const dayOfWeek = refDate.getDay();

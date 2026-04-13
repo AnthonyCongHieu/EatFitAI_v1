@@ -33,22 +33,32 @@ type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 // Map goal to Vietnamese label
 const getGoalLabel = (goal?: string): string => {
   switch (goal) {
-    case 'lose': return 'Giảm cân';
-    case 'maintain': return 'Giữ cân';
-    case 'gain': return 'Tăng cân';
-    default: return 'Chưa đặt';
+    case 'lose':
+      return 'Giảm cân';
+    case 'maintain':
+      return 'Giữ cân';
+    case 'gain':
+      return 'Tăng cân';
+    default:
+      return 'Chưa đặt';
   }
 };
 
 // Map activity level ID to label
 const getActivityLabel = (levelId?: number): string => {
   switch (levelId) {
-    case 1: return 'Ít vận động';
-    case 2: return 'Nhẹ nhàng';
-    case 3: return 'Trung bình';
-    case 4: return 'Tích cực';
-    case 5: return 'Rất tích cực';
-    default: return 'Chưa đặt';
+    case 1:
+      return 'Ít vận động';
+    case 2:
+      return 'Nhẹ nhàng';
+    case 3:
+      return 'Trung bình';
+    case 4:
+      return 'Tích cực';
+    case 5:
+      return 'Rất tích cực';
+    default:
+      return 'Chưa đặt';
   }
 };
 
@@ -81,10 +91,13 @@ const ProfileScreen = (): React.ReactElement => {
   }, [isDark]);
 
   // Handle dark mode toggle
-  const handleDarkModeToggle = useCallback((value: boolean) => {
-    setDarkModeEnabled(value);
-    toggleTheme();
-  }, [toggleTheme]);
+  const handleDarkModeToggle = useCallback(
+    (value: boolean) => {
+      setDarkModeEnabled(value);
+      toggleTheme();
+    },
+    [toggleTheme],
+  );
 
   // Handle logout
   const handleLogout = useCallback(() => {
@@ -199,7 +212,9 @@ const ProfileScreen = (): React.ReactElement => {
       style={styles.container}
     >
       {/* Custom Header - matching StatsScreen */}
-      <View style={{ alignItems: 'center', paddingTop: 70, paddingBottom: theme.spacing.lg }}>
+      <View
+        style={{ alignItems: 'center', paddingTop: 70, paddingBottom: theme.spacing.lg }}
+      >
         <ThemedText variant="h2" weight="700">
           Hồ sơ
         </ThemedText>
@@ -227,24 +242,30 @@ const ProfileScreen = (): React.ReactElement => {
           </ThemedText>
 
           {/* Join Date - Subtitle */}
-          <ThemedText variant="bodySmall" color="textSecondary" style={{ textAlign: 'center', marginTop: 6 }}>
+          <ThemedText
+            variant="bodySmall"
+            color="textSecondary"
+            style={{ textAlign: 'center', marginTop: 6 }}
+          >
             {profile?.createdAt
               ? `Đã tham gia từ ${new Date(profile.createdAt).toLocaleDateString('vi-VN', { day: '2-digit', month: 'short', year: 'numeric' })}`
               : 'Thành viên mới'}
           </ThemedText>
 
           {/* Stats Row - 3 columns with dividers */}
-          <View style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            justifyContent: 'center',
-            marginTop: 24,
-            marginBottom: 20,
-            paddingVertical: 16,
-            paddingHorizontal: 20,
-            backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)',
-            borderRadius: 16,
-          }}>
+          <View
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'center',
+              marginTop: 24,
+              marginBottom: 20,
+              paddingVertical: 16,
+              paddingHorizontal: 20,
+              backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)',
+              borderRadius: 16,
+            }}
+          >
             {/* Age */}
             <View style={{ flex: 1, alignItems: 'center' }}>
               <ThemedText style={{ fontSize: 20, marginBottom: 4 }}>🎂</ThemedText>
@@ -254,7 +275,13 @@ const ProfileScreen = (): React.ReactElement => {
             </View>
 
             {/* Divider */}
-            <View style={{ width: 1, height: 40, backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)' }} />
+            <View
+              style={{
+                width: 1,
+                height: 40,
+                backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)',
+              }}
+            />
 
             {/* Height */}
             <View style={{ flex: 1, alignItems: 'center' }}>
@@ -265,7 +292,13 @@ const ProfileScreen = (): React.ReactElement => {
             </View>
 
             {/* Divider */}
-            <View style={{ width: 1, height: 40, backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)' }} />
+            <View
+              style={{
+                width: 1,
+                height: 40,
+                backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)',
+              }}
+            />
 
             {/* Weight */}
             <View style={{ flex: 1, alignItems: 'center' }}>
@@ -392,16 +425,11 @@ const ProfileScreen = (): React.ReactElement => {
 
         {/* Logout */}
         <Animated.View entering={FadeInDown.delay(400)} style={styles.logoutSection}>
-          <Button
-            title={t('common.logout')}
-            variant="ghost"
-            onPress={handleLogout}
-          />
+          <Button title={t('common.logout')} variant="ghost" onPress={handleLogout} />
         </Animated.View>
       </ScrollView>
-    </LinearGradient >
+    </LinearGradient>
   );
 };
 
 export default ProfileScreen;
-

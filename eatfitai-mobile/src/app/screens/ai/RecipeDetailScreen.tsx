@@ -1,7 +1,15 @@
 // Recipe detail screen
 import React, { useEffect, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { View, StyleSheet, ScrollView, ActivityIndicator, Pressable, Linking, TouchableOpacity } from 'react-native';
+import {
+  View,
+  StyleSheet,
+  ScrollView,
+  ActivityIndicator,
+  Pressable,
+  Linking,
+  TouchableOpacity,
+} from 'react-native';
 import { useRoute, useNavigation, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
@@ -17,7 +25,6 @@ import type { MealTypeId } from '../../../types';
 import { AddRecipeToDiarySheet } from '../../../components/recipe/AddRecipeToDiarySheet';
 import Toast from 'react-native-toast-message';
 import Button from '../../../components/Button';
-
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 type RouteProps = RouteProp<RootStackParamList, 'RecipeDetail'>;
@@ -114,7 +121,10 @@ const RecipeDetailScreen = (): React.ReactElement => {
       // Create a user food item from the recipe
       const formData = new FormData();
       formData.append('foodName', recipe.recipeName);
-      formData.append('description', recipe.description || `Công thức: ${recipe.recipeName}`);
+      formData.append(
+        'description',
+        recipe.description || `Công thức: ${recipe.recipeName}`,
+      );
       formData.append('caloriesPer100', String(recipe.totalCalories ?? 0));
       formData.append('proteinPer100', String(recipe.totalProtein ?? 0));
       formData.append('carbPer100', String(recipe.totalCarbs ?? 0));
@@ -307,20 +317,41 @@ const RecipeDetailScreen = (): React.ReactElement => {
 
         {/* Cooking instructions from DB or AI fallback */}
         <View style={[styles.box, { backgroundColor: theme.colors.card }]}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: theme.spacing.sm }}>
+          <View
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              marginBottom: theme.spacing.sm,
+            }}
+          >
             <ThemedText variant="h4">{'Hướng dẫn nấu'}</ThemedText>
             {aiInstructions.cookingTime && (
-              <ThemedText variant="caption" color="textSecondary" style={{ marginLeft: theme.spacing.sm }}>
-                {'Thời gian: '}{aiInstructions.cookingTime}
+              <ThemedText
+                variant="caption"
+                color="textSecondary"
+                style={{ marginLeft: theme.spacing.sm }}
+              >
+                {'Thời gian: '}
+                {aiInstructions.cookingTime}
               </ThemedText>
             )}
           </View>
 
           {/* Loading state */}
           {aiInstructions.isLoading && (
-            <View style={{ flexDirection: 'row', alignItems: 'center', padding: theme.spacing.md }}>
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                padding: theme.spacing.md,
+              }}
+            >
               <ActivityIndicator size="small" color={theme.colors.primary} />
-              <ThemedText variant="body" color="textSecondary" style={{ marginLeft: theme.spacing.sm }}>
+              <ThemedText
+                variant="body"
+                color="textSecondary"
+                style={{ marginLeft: theme.spacing.sm }}
+              >
                 {'AI đang tạo hướng dẫn nấu...'}
               </ThemedText>
             </View>
@@ -334,7 +365,7 @@ const RecipeDetailScreen = (): React.ReactElement => {
           )}
 
           {/* Render steps */}
-          {((recipe.instructions && recipe.instructions.length > 0)
+          {(recipe.instructions && recipe.instructions.length > 0
             ? recipe.instructions
             : aiInstructions.steps
           ).map((step: string, i: number) => (
@@ -358,11 +389,7 @@ const RecipeDetailScreen = (): React.ReactElement => {
                   marginTop: 2,
                 }}
               >
-                <ThemedText
-                  variant="caption"
-                  weight="700"
-                  style={{ color: '#fff' }}
-                >
+                <ThemedText variant="caption" weight="700" style={{ color: '#fff' }}>
                   {i + 1}
                 </ThemedText>
               </View>
@@ -388,7 +415,9 @@ const RecipeDetailScreen = (): React.ReactElement => {
               style={({ pressed }) => [
                 styles.videoSearchButton,
                 {
-                  backgroundColor: isDark ? 'rgba(255, 0, 0, 0.15)' : 'rgba(255, 0, 0, 0.08)',
+                  backgroundColor: isDark
+                    ? 'rgba(255, 0, 0, 0.15)'
+                    : 'rgba(255, 0, 0, 0.08)',
                   opacity: pressed ? 0.8 : 1,
                 },
               ]}
@@ -417,12 +446,16 @@ const RecipeDetailScreen = (): React.ReactElement => {
             <Pressable
               onPress={() => {
                 const searchQuery = encodeURIComponent(`cách nấu ${recipe.recipeName} `);
-                Linking.openURL(`https://www.youtube.com/results?search_query=${searchQuery}`);
+                Linking.openURL(
+                  `https://www.youtube.com/results?search_query=${searchQuery}`,
+                );
               }}
               style={({ pressed }) => [
                 styles.videoSearchButton,
                 {
-                  backgroundColor: isDark ? 'rgba(255, 0, 0, 0.15)' : 'rgba(255, 0, 0, 0.08)',
+                  backgroundColor: isDark
+                    ? 'rgba(255, 0, 0, 0.15)'
+                    : 'rgba(255, 0, 0, 0.08)',
                   opacity: pressed ? 0.8 : 1,
                 },
               ]}
@@ -436,7 +469,9 @@ const RecipeDetailScreen = (): React.ReactElement => {
                     {'Tìm video trên YouTube'}
                   </ThemedText>
                   <ThemedText variant="caption" color="textSecondary">
-                    {'Nhấn để tìm video "'}{recipe.recipeName}{'"'}
+                    {'Nhấn để tìm video "'}
+                    {recipe.recipeName}
+                    {'"'}
                   </ThemedText>
                 </View>
                 <Ionicons
@@ -445,12 +480,14 @@ const RecipeDetailScreen = (): React.ReactElement => {
                   color={theme.colors.textSecondary}
                 />
               </View>
-            </Pressable >
+            </Pressable>
           )}
-        </View >
+        </View>
 
         {/* Add to diary button */}
-        < View style={{ paddingHorizontal: theme.spacing.md, marginTop: theme.spacing.lg }}>
+        <View
+          style={{ paddingHorizontal: theme.spacing.md, marginTop: theme.spacing.lg }}
+        >
           <Button
             title="Thêm vào nhật ký hôm nay"
             variant="primary"
@@ -458,27 +495,25 @@ const RecipeDetailScreen = (): React.ReactElement => {
             loading={isAddingToDiary}
             style={{ width: '100%' }}
           />
-        </View >
-      </ScrollView >
+        </View>
+      </ScrollView>
 
       {/* Add to diary sheet */}
-      {
-        recipe && (
-          <AddRecipeToDiarySheet
-            visible={showAddToDiarySheet}
-            onClose={() => setShowAddToDiarySheet(false)}
-            recipeName={recipe.recipeName}
-            nutrition={{
-              calories: recipe.totalCalories,
-              protein: recipe.totalProtein,
-              carbs: recipe.totalCarbs,
-              fat: recipe.totalFat,
-            }}
-            onConfirm={handleAddToDiary}
-          />
-        )
-      }
-    </Screen >
+      {recipe && (
+        <AddRecipeToDiarySheet
+          visible={showAddToDiarySheet}
+          onClose={() => setShowAddToDiarySheet(false)}
+          recipeName={recipe.recipeName}
+          nutrition={{
+            calories: recipe.totalCalories,
+            protein: recipe.totalProtein,
+            carbs: recipe.totalCarbs,
+            fat: recipe.totalFat,
+          }}
+          onConfirm={handleAddToDiary}
+        />
+      )}
+    </Screen>
   );
 };
 

@@ -12,9 +12,7 @@
       "resizeMode": "contain",
       "backgroundColor": "#0A4D3C"
     },
-    "assetBundlePatterns": [
-      "**/*"
-    ],
+    "assetBundlePatterns": ["**/*"],
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.eatfitai.app",

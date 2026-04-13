@@ -265,7 +265,12 @@ const RecipeSuggestionsScreen = (): React.ReactElement => {
             <View style={{ flex: 1, marginRight: 8 }}>
               <View style={styles.recipeTitleRow}>
                 <ThemedText style={styles.recipeEmoji}>🍲</ThemedText>
-                <ThemedText variant="h4" weight="700" numberOfLines={2} style={{ flex: 1 }}>
+                <ThemedText
+                  variant="h4"
+                  weight="700"
+                  numberOfLines={2}
+                  style={{ flex: 1 }}
+                >
                   {item.recipeName}
                 </ThemedText>
               </View>
@@ -286,12 +291,19 @@ const RecipeSuggestionsScreen = (): React.ReactElement => {
           </View>
 
           {item.missingIngredients.length > 0 && (
-            <View style={{ flexDirection: 'row', gap: 6, marginTop: 8, backgroundColor: isDark ? 'rgba(251, 191, 36, 0.1)' : 'rgba(251, 191, 36, 0.15)', padding: 10, borderRadius: 10 }}>
-              <Ionicons
-                name="alert-circle"
-                size={16}
-                color={theme.colors.warning}
-              />
+            <View
+              style={{
+                flexDirection: 'row',
+                gap: 6,
+                marginTop: 8,
+                backgroundColor: isDark
+                  ? 'rgba(251, 191, 36, 0.1)'
+                  : 'rgba(251, 191, 36, 0.15)',
+                padding: 10,
+                borderRadius: 10,
+              }}
+            >
+              <Ionicons name="alert-circle" size={16} color={theme.colors.warning} />
               <ThemedText variant="caption" color="textSecondary" style={{ flex: 1 }}>
                 Thiếu: {item.missingIngredients.join(', ')}
               </ThemedText>
@@ -299,35 +311,83 @@ const RecipeSuggestionsScreen = (): React.ReactElement => {
           )}
 
           <View style={styles.nutritionRow}>
-            <View style={[styles.nutritionPill, { backgroundColor: 'rgba(239, 68, 68, 0.15)' }]}>
-              <ThemedText variant="caption" style={{ color: '#EF4444', fontWeight: '600' }}>
+            <View
+              style={[
+                styles.nutritionPill,
+                { backgroundColor: 'rgba(239, 68, 68, 0.15)' },
+              ]}
+            >
+              <ThemedText
+                variant="caption"
+                style={{ color: '#EF4444', fontWeight: '600' }}
+              >
                 {Math.round(item.totalCalories)}
               </ThemedText>
-              <ThemedText variant="caption" color="textSecondary" style={{ fontSize: 10 }}>
+              <ThemedText
+                variant="caption"
+                color="textSecondary"
+                style={{ fontSize: 10 }}
+              >
                 kcal
               </ThemedText>
             </View>
-            <View style={[styles.nutritionPill, { backgroundColor: 'rgba(59, 130, 246, 0.15)' }]}>
-              <ThemedText variant="caption" style={{ color: '#3B82F6', fontWeight: '600' }}>
+            <View
+              style={[
+                styles.nutritionPill,
+                { backgroundColor: 'rgba(59, 130, 246, 0.15)' },
+              ]}
+            >
+              <ThemedText
+                variant="caption"
+                style={{ color: '#3B82F6', fontWeight: '600' }}
+              >
                 {Math.round(item.totalProtein)}g
               </ThemedText>
-              <ThemedText variant="caption" color="textSecondary" style={{ fontSize: 10 }}>
+              <ThemedText
+                variant="caption"
+                color="textSecondary"
+                style={{ fontSize: 10 }}
+              >
                 Đạm
               </ThemedText>
             </View>
-            <View style={[styles.nutritionPill, { backgroundColor: 'rgba(251, 191, 36, 0.15)' }]}>
-              <ThemedText variant="caption" style={{ color: '#D97706', fontWeight: '600' }}>
+            <View
+              style={[
+                styles.nutritionPill,
+                { backgroundColor: 'rgba(251, 191, 36, 0.15)' },
+              ]}
+            >
+              <ThemedText
+                variant="caption"
+                style={{ color: '#D97706', fontWeight: '600' }}
+              >
                 {Math.round(item.totalCarbs)}g
               </ThemedText>
-              <ThemedText variant="caption" color="textSecondary" style={{ fontSize: 10 }}>
+              <ThemedText
+                variant="caption"
+                color="textSecondary"
+                style={{ fontSize: 10 }}
+              >
                 Carb
               </ThemedText>
             </View>
-            <View style={[styles.nutritionPill, { backgroundColor: 'rgba(236, 72, 153, 0.15)' }]}>
-              <ThemedText variant="caption" style={{ color: '#DB2777', fontWeight: '600' }}>
+            <View
+              style={[
+                styles.nutritionPill,
+                { backgroundColor: 'rgba(236, 72, 153, 0.15)' },
+              ]}
+            >
+              <ThemedText
+                variant="caption"
+                style={{ color: '#DB2777', fontWeight: '600' }}
+              >
                 {Math.round(item.totalFat)}g
               </ThemedText>
-              <ThemedText variant="caption" color="textSecondary" style={{ fontSize: 10 }}>
+              <ThemedText
+                variant="caption"
+                color="textSecondary"
+                style={{ fontSize: 10 }}
+              >
                 Béo
               </ThemedText>
             </View>
@@ -355,10 +415,7 @@ const RecipeSuggestionsScreen = (): React.ReactElement => {
       {/* Custom Header */}
       <View style={[styles.screenHeader, { paddingTop: insets.top }]}>
         <View style={styles.headerRow}>
-          <TouchableOpacity
-            onPress={() => navigation.goBack()}
-            style={styles.backButton}
-          >
+          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
             <ThemedText style={{ fontSize: 18 }}>←</ThemedText>
           </TouchableOpacity>
           <View style={styles.headerTitles}>

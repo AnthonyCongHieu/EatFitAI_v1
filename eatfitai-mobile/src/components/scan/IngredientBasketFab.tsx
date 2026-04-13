@@ -48,19 +48,18 @@ export const IngredientBasketFab: React.FC<IngredientBasketFabProps> = ({ onPres
   }, [onPress]);
 
   // Tap gesture for opening sheet
-  const tapGesture = Gesture.Tap()
-    .onEnd(() => {
-      'worklet';
-      if (!isDragging.value) {
-        // Animate: scale down rồi scale up
-        scale.value = withSequence(
-          withSpring(0.9, { damping: 18, stiffness: 400 }),
-          withSpring(1, { damping: 18, stiffness: 400 }),
-        );
-        // Gọi JS function qua runOnJS
-        runOnJS(handleTap)();
-      }
-    });
+  const tapGesture = Gesture.Tap().onEnd(() => {
+    'worklet';
+    if (!isDragging.value) {
+      // Animate: scale down rồi scale up
+      scale.value = withSequence(
+        withSpring(0.9, { damping: 18, stiffness: 400 }),
+        withSpring(1, { damping: 18, stiffness: 400 }),
+      );
+      // Gọi JS function qua runOnJS
+      runOnJS(handleTap)();
+    }
+  });
 
   // Pan gesture for dragging
   const panGesture = Gesture.Pan()
@@ -180,4 +179,3 @@ const styles = StyleSheet.create({
 });
 
 export default IngredientBasketFab;
-

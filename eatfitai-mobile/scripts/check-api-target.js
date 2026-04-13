@@ -10,7 +10,9 @@ function isPrivateIpv4Host(host) {
 }
 
 function isLocalLikeHost(host) {
-  const normalizedHost = String(host || '').trim().toLowerCase();
+  const normalizedHost = String(host || '')
+    .trim()
+    .toLowerCase();
   return (
     LOCAL_HOSTS.has(normalizedHost) ||
     normalizedHost.endsWith('.local') ||
@@ -36,7 +38,9 @@ async function fetchWithTimeout(url, timeoutMs) {
 async function main() {
   const rawBaseUrl = String(process.env.EXPO_PUBLIC_API_BASE_URL || '').trim();
   if (!rawBaseUrl) {
-    console.warn('[api-target] EXPO_PUBLIC_API_BASE_URL is not set. Skipping backend health check.');
+    console.warn(
+      '[api-target] EXPO_PUBLIC_API_BASE_URL is not set. Skipping backend health check.',
+    );
     return;
   }
 
@@ -68,7 +72,9 @@ async function main() {
         }
 
         const responseText = await response.text();
-        lastError = new Error(`HTTP ${response.status}${responseText ? ` ${responseText}` : ''}`);
+        lastError = new Error(
+          `HTTP ${response.status}${responseText ? ` ${responseText}` : ''}`,
+        );
       } catch (error) {
         lastError = error;
       }
@@ -83,7 +89,9 @@ async function main() {
   }
 
   const detail =
-    lastError instanceof Error ? lastError.message : 'Unknown backend health check failure';
+    lastError instanceof Error
+      ? lastError.message
+      : 'Unknown backend health check failure';
 
   if (localLike) {
     console.warn(

@@ -361,7 +361,10 @@ const AIScanScreen: React.FC = () => {
       handleRetake();
     } catch (error) {
       handleApiErrorWithCustomMessage(error, {
-        unknown: { text1: 'Không thể lưu nhanh', text2: 'Vui lòng thử lại hoặc chỉnh tay' },
+        unknown: {
+          text1: 'Không thể lưu nhanh',
+          text2: 'Vui lòng thử lại hoặc chỉnh tay',
+        },
       });
     } finally {
       setIsQuickSaving(false);
@@ -572,9 +575,14 @@ const AIScanScreen: React.FC = () => {
         {mode === 'results' && detectionResult && (
           <Animated.View
             entering={SlideInRight}
-            style={[styles.resultsContainer, { backgroundColor: theme.colors.background }]}
+            style={[
+              styles.resultsContainer,
+              { backgroundColor: theme.colors.background },
+            ]}
           >
-            <View style={[styles.resultsHandle, { backgroundColor: theme.colors.border }]} />
+            <View
+              style={[styles.resultsHandle, { backgroundColor: theme.colors.border }]}
+            />
             <View style={styles.resultsHeader}>
               <ThemedText variant="h4" weight="700">
                 {'Kết quả'}
@@ -661,7 +669,12 @@ const AIScanScreen: React.FC = () => {
                     </ThemedText>
 
                     <View
-                      style={{ flexDirection: 'row', alignItems: 'center', marginTop: 6, gap: 8 }}
+                      style={{
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        marginTop: 6,
+                        gap: 8,
+                      }}
                     >
                       <View
                         style={{
@@ -699,7 +712,11 @@ const AIScanScreen: React.FC = () => {
                             }}
                           />
                         </View>
-                        <ThemedText variant="caption" weight="600" style={{ fontSize: 11 }}>
+                        <ThemedText
+                          variant="caption"
+                          weight="600"
+                          style={{ fontSize: 11 }}
+                        >
                           {Math.round(item.confidence * 100)}%
                         </ThemedText>
                       </View>
@@ -717,7 +734,10 @@ const AIScanScreen: React.FC = () => {
                   <View style={styles.resultActions}>
                     <Pressable
                       onPress={() => handleQuickAdd(item)}
-                      style={[styles.resultActionBtn, { backgroundColor: theme.colors.primary }]}
+                      style={[
+                        styles.resultActionBtn,
+                        { backgroundColor: theme.colors.primary },
+                      ]}
                       hitSlop={4}
                       testID={
                         index === 0
@@ -784,7 +804,10 @@ const AIScanScreen: React.FC = () => {
             <View style={styles.actionButtons}>
               <Pressable
                 onPress={handleRetake}
-                style={[styles.compactButton, { borderColor: theme.colors.border, borderWidth: 1 }]}
+                style={[
+                  styles.compactButton,
+                  { borderColor: theme.colors.border, borderWidth: 1 },
+                ]}
                 testID={TEST_IDS.aiScan.retakeButton}
               >
                 <Icon name="refresh" size="sm" color="text" />
@@ -797,7 +820,13 @@ const AIScanScreen: React.FC = () => {
                   <Pressable
                     onPress={handleQuickSave}
                     disabled={isQuickSaving}
-                    style={[styles.compactButton, { backgroundColor: theme.colors.primary, opacity: isQuickSaving ? 0.7 : 1 }]}
+                    style={[
+                      styles.compactButton,
+                      {
+                        backgroundColor: theme.colors.primary,
+                        opacity: isQuickSaving ? 0.7 : 1,
+                      },
+                    ]}
                     testID={TEST_IDS.aiScan.quickAddButton}
                   >
                     {isQuickSaving ? (
@@ -817,11 +846,18 @@ const AIScanScreen: React.FC = () => {
                   </Pressable>
                   <Pressable
                     onPress={handleAddToDiary}
-                    style={[styles.compactButton, { borderColor: theme.colors.border, borderWidth: 1 }]}
+                    style={[
+                      styles.compactButton,
+                      { borderColor: theme.colors.border, borderWidth: 1 },
+                    ]}
                     testID={TEST_IDS.aiScan.addToDiaryButton}
                   >
                     <Icon name="options-outline" size="sm" color="text" />
-                    <ThemedText variant="bodySmall" weight="600" style={{ marginLeft: 6 }}>
+                    <ThemedText
+                      variant="bodySmall"
+                      weight="600"
+                      style={{ marginLeft: 6 }}
+                    >
                       {'Sửa trước khi lưu'}
                     </ThemedText>
                   </Pressable>
@@ -829,7 +865,10 @@ const AIScanScreen: React.FC = () => {
               ) : (
                 <Pressable
                   onPress={() => navigation.navigate('FoodSearch')}
-                  style={[styles.compactButton, { backgroundColor: theme.colors.primary }]}
+                  style={[
+                    styles.compactButton,
+                    { backgroundColor: theme.colors.primary },
+                  ]}
                 >
                   <Icon name="search-outline" size="sm" color="background" />
                   <ThemedText
@@ -1023,6 +1062,3 @@ const styles = StyleSheet.create({
 });
 
 export default AIScanScreen;
-
-
-

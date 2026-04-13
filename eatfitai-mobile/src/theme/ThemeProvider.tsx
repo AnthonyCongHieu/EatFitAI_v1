@@ -19,7 +19,11 @@ type ThemeContextValue = {
 
 const ThemeContext = createContext<ThemeContextValue | undefined>(undefined);
 
-export const ThemeProvider = ({ children }: { children: ReactNode }): React.ReactElement => {
+export const ThemeProvider = ({
+  children,
+}: {
+  children: ReactNode;
+}): React.ReactElement => {
   useColorScheme();
   const [mode, setMode] = useState<AppTheme['mode']>('dark');
 

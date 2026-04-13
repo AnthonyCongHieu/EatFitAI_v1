@@ -2,11 +2,17 @@
 // Features: Summary header, improved date selector, beautiful meal cards
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { FlatList, Pressable, StyleSheet, View, Dimensions, Platform, RefreshControl } from 'react-native';
+import {
+  FlatList,
+  Pressable,
+  StyleSheet,
+  View,
+  Dimensions,
+  Platform,
+  RefreshControl,
+} from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import Animated, {
-  FadeInDown,
-} from 'react-native-reanimated';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import type { NavigationProp } from '@react-navigation/native';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -22,7 +28,11 @@ import { ThemedTextInput } from '../../../components/ThemedTextInput';
 import { useAppTheme } from '../../../theme/ThemeProvider';
 import { diaryService, type DiaryEntry } from '../../../services/diaryService';
 import { invalidateDiaryQueries } from '../../../services/diaryFlowService';
-import { formatDateChipLabel, formatRelativeDateLabel, isSameCalendarDay } from '../../../utils/dateDisplay';
+import {
+  formatDateChipLabel,
+  formatRelativeDateLabel,
+  isSameCalendarDay,
+} from '../../../utils/dateDisplay';
 import { MEAL_TYPE_LABELS, type MealTypeId } from '../../../types';
 import type { RootStackParamList } from '../../types';
 import Toast from 'react-native-toast-message';
@@ -40,14 +50,13 @@ const MEAL_EMOJIS: Record<MealTypeId, string> = {
   4: '🍵', // Snack
 };
 
-
 const MealDiaryScreen = (): React.ReactElement => {
   const { theme } = useAppTheme();
   const isDark = theme.mode === 'dark';
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
   const route = useRoute<RouteProp<RootStackParamList, 'MealDiary'>>();
 
-// If MonthStats passes a selected date, use it as the initial value.
+  // If MonthStats passes a selected date, use it as the initial value.
   const initialDate = useMemo(() => {
     const paramDate = route.params?.selectedDate;
     if (paramDate) {
@@ -65,7 +74,7 @@ const MealDiaryScreen = (): React.ReactElement => {
   const queryClient = useQueryClient();
   const dateListRef = useRef<FlatList<Date>>(null);
 
-// Date options: from 30 days ago to 7 days ahead.
+  // Date options: from 30 days ago to 7 days ahead.
   const dateOptions = useMemo(() => {
     const options = [];
     const today = new Date();
@@ -98,10 +107,16 @@ const MealDiaryScreen = (): React.ReactElement => {
     return `${y}-${m}-${d}`;
   }, []);
 
-  const dateKey = useMemo(() => formatDateForApi(selectedDate), [formatDateForApi, selectedDate]);
+  const dateKey = useMemo(
+    () => formatDateForApi(selectedDate),
+    [formatDateForApi, selectedDate],
+  );
 
   // Check if selected date is today
-  const isToday = useMemo(() => isSameCalendarDay(selectedDate, new Date()), [selectedDate]);
+  const isToday = useMemo(
+    () => isSameCalendarDay(selectedDate, new Date()),
+    [selectedDate],
+  );
 
   const {
     data: entriesData,
@@ -206,7 +221,7 @@ const MealDiaryScreen = (): React.ReactElement => {
     });
   }, [dateKey, navigation]);
 
-// Render each date chip.
+  // Render each date chip.
   const renderDateItem = useCallback(
     ({ item: date }: { item: Date }) => {
       const isSelected = isSameCalendarDay(date, selectedDate);
@@ -238,14 +253,19 @@ const MealDiaryScreen = (): React.ReactElement => {
             >
               {dayName}
             </ThemedText>
-            <View style={[
-              styles.dateChipNumber,
-              isSelected && { backgroundColor: 'rgba(255,255,255,0.2)' },
-            ]}>
+            <View
+              style={[
+                styles.dateChipNumber,
+                isSelected && { backgroundColor: 'rgba(255,255,255,0.2)' },
+              ]}
+            >
               <ThemedText
                 variant="h4"
                 weight="700"
-                style={{ color: isSelected ? '#fff' : theme.colors.text, textAlign: 'center' }}
+                style={{
+                  color: isSelected ? '#fff' : theme.colors.text,
+                  textAlign: 'center',
+                }}
               >
                 {dayNum}
               </ThemedText>
@@ -262,11 +282,15 @@ const MealDiaryScreen = (): React.ReactElement => {
     if (entries.length === 0) return null;
 
     return (
-      <Animated.View entering={FadeInDown.delay(100).springify()} style={{ marginBottom: 20 }}>
+      <Animated.View
+        entering={FadeInDown.delay(100).springify()}
+        style={{ marginBottom: 20 }}
+      >
         <LinearGradient
-          colors={isDark
-            ? ['rgba(102, 126, 234, 0.15)', 'rgba(118, 75, 162, 0.15)']
-            : ['#667eea', '#764ba2']
+          colors={
+            isDark
+              ? ['rgba(102, 126, 234, 0.15)', 'rgba(118, 75, 162, 0.15)']
+              : ['#667eea', '#764ba2']
           }
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
@@ -274,26 +298,40 @@ const MealDiaryScreen = (): React.ReactElement => {
         >
           {/* Calories main */}
           <View style={styles.summaryMain}>
-            <ThemedText style={styles.summaryCalories}>{Math.round(totals.calories)}</ThemedText>
+            <ThemedText style={styles.summaryCalories}>
+              {Math.round(totals.calories)}
+            </ThemedText>
             <ThemedText style={styles.summaryLabel}>{'kcal hôm nay'}</ThemedText>
           </View>
 
           {/* Macro pills */}
           <View style={styles.summaryMacros}>
-            <View style={[styles.macroPill, { backgroundColor: 'rgba(239, 68, 68, 0.2)' }]}>
-              <ThemedText style={[styles.macroValue, { color: isDark ? '#fca5a5' : '#fff' }]}>
+            <View
+              style={[styles.macroPill, { backgroundColor: 'rgba(239, 68, 68, 0.2)' }]}
+            >
+              <ThemedText
+                style={[styles.macroValue, { color: isDark ? '#fca5a5' : '#fff' }]}
+              >
                 {totals.protein.toFixed(0)}g
               </ThemedText>
               <ThemedText style={styles.macroLabel}>Protein</ThemedText>
             </View>
-            <View style={[styles.macroPill, { backgroundColor: 'rgba(59, 130, 246, 0.2)' }]}>
-              <ThemedText style={[styles.macroValue, { color: isDark ? '#93c5fd' : '#fff' }]}>
+            <View
+              style={[styles.macroPill, { backgroundColor: 'rgba(59, 130, 246, 0.2)' }]}
+            >
+              <ThemedText
+                style={[styles.macroValue, { color: isDark ? '#93c5fd' : '#fff' }]}
+              >
                 {totals.carbs.toFixed(0)}g
               </ThemedText>
               <ThemedText style={styles.macroLabel}>Carbs</ThemedText>
             </View>
-            <View style={[styles.macroPill, { backgroundColor: 'rgba(234, 179, 8, 0.2)' }]}>
-              <ThemedText style={[styles.macroValue, { color: isDark ? '#fde047' : '#fff' }]}>
+            <View
+              style={[styles.macroPill, { backgroundColor: 'rgba(234, 179, 8, 0.2)' }]}
+            >
+              <ThemedText
+                style={[styles.macroValue, { color: isDark ? '#fde047' : '#fff' }]}
+              >
                 {totals.fat.toFixed(0)}g
               </ThemedText>
               <ThemedText style={styles.macroLabel}>Fat</ThemedText>
@@ -304,7 +342,7 @@ const MealDiaryScreen = (): React.ReactElement => {
     );
   };
 
-// Render each food entry card.
+  // Render each food entry card.
 
   const renderFoodCard = useCallback(
     (entry: DiaryEntry) => {
@@ -347,7 +385,7 @@ const MealDiaryScreen = (): React.ReactElement => {
     [handleEditGrams, queryClient],
   );
 
-// Render each meal section.
+  // Render each meal section.
   const renderMealSection = useCallback(
     ({
       item,
@@ -358,9 +396,7 @@ const MealDiaryScreen = (): React.ReactElement => {
       const mealCalories = item.entries.reduce((sum, e) => sum + (e.calories || 0), 0);
 
       return (
-        <View
-          style={{ marginBottom: 20, paddingHorizontal: 16 }}
-        >
+        <View style={{ marginBottom: 20, paddingHorizontal: 16 }}>
           {/* Meal header */}
           <View style={styles.mealHeader}>
             <View style={styles.mealTitle}>
@@ -386,7 +422,7 @@ const MealDiaryScreen = (): React.ReactElement => {
     [renderFoodCard],
   );
 
-// Render the empty state.
+  // Render the empty state.
   const renderEmptyState = () => (
     <AnimatedEmptyState
       variant="no-food"
@@ -698,8 +734,13 @@ const MealDiaryScreen = (): React.ReactElement => {
           <View style={styles.datePickerContainer}>
             {Platform.OS === 'ios' && (
               <View style={styles.datePickerHeader}>
-                <Pressable onPress={() => setShowDatePicker(false)} style={styles.datePickerDoneBtn}>
-                  <ThemedText variant="body" weight="600" color="primary">Xong</ThemedText>
+                <Pressable
+                  onPress={() => setShowDatePicker(false)}
+                  style={styles.datePickerDoneBtn}
+                >
+                  <ThemedText variant="body" weight="600" color="primary">
+                    Xong
+                  </ThemedText>
                 </Pressable>
               </View>
             )}
@@ -874,4 +915,3 @@ const MealDiaryScreen = (): React.ReactElement => {
 };
 
 export default MealDiaryScreen;
-

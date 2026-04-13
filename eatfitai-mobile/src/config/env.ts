@@ -108,12 +108,24 @@ const resolveHostUri = (): string | undefined => {
   // DEBUG: log every source that might contain a host URI
   if (__DEV__) {
     console.log('[EatFitAI] DEBUG Constants keys:', Object.keys(expoConfig || {}));
-    console.log('[EatFitAI] DEBUG executionEnvironment:', expoConfig?.executionEnvironment);
+    console.log(
+      '[EatFitAI] DEBUG executionEnvironment:',
+      expoConfig?.executionEnvironment,
+    );
     console.log('[EatFitAI] DEBUG expoConfig.hostUri:', expoConfig?.expoConfig?.hostUri);
-    console.log('[EatFitAI] DEBUG expoGoConfig.hostUri:', expoConfig?.expoGoConfig?.hostUri);
-    console.log('[EatFitAI] DEBUG manifest2.extra.expoClient.hostUri:', expoConfig?.manifest2?.extra?.expoClient?.hostUri);
+    console.log(
+      '[EatFitAI] DEBUG expoGoConfig.hostUri:',
+      expoConfig?.expoGoConfig?.hostUri,
+    );
+    console.log(
+      '[EatFitAI] DEBUG manifest2.extra.expoClient.hostUri:',
+      expoConfig?.manifest2?.extra?.expoClient?.hostUri,
+    );
     console.log('[EatFitAI] DEBUG manifest.hostUri:', expoConfig?.manifest?.hostUri);
-    console.log('[EatFitAI] DEBUG manifest.debuggerHost:', expoConfig?.manifest?.debuggerHost);
+    console.log(
+      '[EatFitAI] DEBUG manifest.debuggerHost:',
+      expoConfig?.manifest?.debuggerHost,
+    );
     console.log('[EatFitAI] DEBUG manifest.bundleUrl:', expoConfig?.manifest?.bundleUrl);
     console.log('[EatFitAI] DEBUG debuggerHost:', expoConfig?.debuggerHost);
     console.log('[EatFitAI] DEBUG experienceUrl:', expoConfig?.experienceUrl);
@@ -211,7 +223,10 @@ export const API_BASE_URL: string | undefined = (() => {
     console.log('[EatFitAI] DEBUG - Looking for apiBaseUrl in extra:');
     console.log('  expoConfig.extra:', expoConfig?.expoConfig?.extra);
     console.log('  manifest.extra:', expoConfig?.manifest?.extra);
-    console.log('  manifest2.extra.expoClient.extra:', expoConfig?.manifest2?.extra?.expoClient?.extra);
+    console.log(
+      '  manifest2.extra.expoClient.extra:',
+      expoConfig?.manifest2?.extra?.expoClient?.extra,
+    );
   }
 
   for (const extraUrl of possibleExtras) {
@@ -234,7 +249,9 @@ export const API_BASE_URL: string | undefined = (() => {
     } else {
       const fallbackHost = resolveDevFallbackHost();
       if (!fallbackHost) {
-        console.warn('[EatFitAI] Auto-detect failed and no safe fallback host is configured.');
+        console.warn(
+          '[EatFitAI] Auto-detect failed and no safe fallback host is configured.',
+        );
         return undefined;
       }
 
@@ -242,7 +259,7 @@ export const API_BASE_URL: string | undefined = (() => {
       host = fallbackHost;
     }
   }
-// Android emulator can't reach host via localhost/127.0.0.1 -> use 10.0.2.2
+  // Android emulator can't reach host via localhost/127.0.0.1 -> use 10.0.2.2
   if (Platform.OS === 'android' && (host === 'localhost' || host === '127.0.0.1')) {
     host = '10.0.2.2';
   }

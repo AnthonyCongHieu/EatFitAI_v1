@@ -52,14 +52,12 @@ const SLIDES: IntroSlide[] = [
   {
     key: 'progress',
     title: 'Chinh phục mọi mục\ntiêu hình thể',
-    subtitle:
-      'Lên kế hoạch, theo dõi tiến độ và nhận tư vấn của chuyên gia AI.',
+    subtitle: 'Lên kế hoạch, theo dõi tiến độ và nhận tư vấn của chuyên gia AI.',
   },
   {
     key: 'roadmap',
     title: 'Có lộ trình, gợi ý và\nđồng hành mỗi ngày',
-    subtitle:
-      'Nhận đề xuất phù hợp với mục tiêu để bắt đầu khỏe hơn từ những bước nhỏ.',
+    subtitle: 'Nhận đề xuất phù hợp với mục tiêu để bắt đầu khỏe hơn từ những bước nhỏ.',
   },
 ];
 
@@ -83,7 +81,7 @@ const NutritionRingSlide = (): React.ReactElement => {
           Animated.timing(anim, { toValue: -6, duration: dur, useNativeDriver: true }),
           Animated.timing(anim, { toValue: 6, duration: dur, useNativeDriver: true }),
           Animated.timing(anim, { toValue: 0, duration: dur / 2, useNativeDriver: true }),
-        ])
+        ]),
       );
     createBob(bobCalo, 2200, 0).start();
     createBob(bobProtein, 2600, 400).start();
@@ -93,65 +91,75 @@ const NutritionRingSlide = (): React.ReactElement => {
     Animated.loop(
       Animated.sequence([
         Animated.timing(glowAnim, { toValue: 1, duration: 1800, useNativeDriver: true }),
-        Animated.timing(glowAnim, { toValue: 0.3, duration: 1800, useNativeDriver: true }),
-      ])
+        Animated.timing(glowAnim, {
+          toValue: 0.3,
+          duration: 1800,
+          useNativeDriver: true,
+        }),
+      ]),
     ).start();
   }, [bobCalo, bobProtein, bobCarbs, glowAnim]);
 
   return (
     <View style={s1.wrap}>
-      <Tilt3DCard width={RING_SIZE + 80} height={RING_SIZE + 80} maxTilt={6} perspective={900} showReflection={false}>
-      {/* The ring + labels compound */}
-      <View style={s1.ringCompound}>
-        {/* CALO pill – overlaps ring at upper-left */}
-        <Animated.View style={[s1.caloPill, { transform: [{ translateY: bobCalo }] }]}>
-          <ParallaxLayer depth={0.7}>
-          <View style={s1.pill}>
-            <ThemedText style={s1.pillKey}>CALO</ThemedText>
-            <ThemedText style={s1.pillVal}>  450 kcal</ThemedText>
-          </View>
-          </ParallaxLayer>
-        </Animated.View>
+      <Tilt3DCard
+        width={RING_SIZE + 80}
+        height={RING_SIZE + 80}
+        maxTilt={6}
+        perspective={900}
+        showReflection={false}
+      >
+        {/* The ring + labels compound */}
+        <View style={s1.ringCompound}>
+          {/* CALO pill – overlaps ring at upper-left */}
+          <Animated.View style={[s1.caloPill, { transform: [{ translateY: bobCalo }] }]}>
+            <ParallaxLayer depth={0.7}>
+              <View style={s1.pill}>
+                <ThemedText style={s1.pillKey}>CALO</ThemedText>
+                <ThemedText style={s1.pillVal}> 450 kcal</ThemedText>
+              </View>
+            </ParallaxLayer>
+          </Animated.View>
 
-        {/* Ring */}
-        <View style={s1.ring}>
-          {/* Green glow border — pulsing */}
-          <Animated.View style={[s1.greenBorder, { opacity: glowAnim }]} />
-          {/* Dashed ring */}
-          <View style={s1.dashed} />
-          {/* Dark inner */}
-          <View style={s1.innerDark}>
-            {/* Phở bò image */}
-            <View style={s1.bowlClip}>
-              <Image
-                source={phoBowlImage}
-                style={s1.bowlImage}
-                resizeMode="cover"
-              />
+          {/* Ring */}
+          <View style={s1.ring}>
+            {/* Green glow border — pulsing */}
+            <Animated.View style={[s1.greenBorder, { opacity: glowAnim }]} />
+            {/* Dashed ring */}
+            <View style={s1.dashed} />
+            {/* Dark inner */}
+            <View style={s1.innerDark}>
+              {/* Phở bò image */}
+              <View style={s1.bowlClip}>
+                <Image source={phoBowlImage} style={s1.bowlImage} resizeMode="cover" />
+              </View>
             </View>
           </View>
+
+          {/* PROTEIN pill – overlaps ring at lower-right */}
+          <Animated.View
+            style={[s1.proteinPill, { transform: [{ translateY: bobProtein }] }]}
+          >
+            <ParallaxLayer depth={0.5}>
+              <View style={s1.pill}>
+                <ThemedText style={s1.pillKey}>PROTEIN</ThemedText>
+                <ThemedText style={s1.pillVal}> 35g</ThemedText>
+              </View>
+            </ParallaxLayer>
+          </Animated.View>
+
+          {/* CARBS pill – overlaps ring at lower-left */}
+          <Animated.View
+            style={[s1.carbsPill, { transform: [{ translateY: bobCarbs }] }]}
+          >
+            <ParallaxLayer depth={0.6}>
+              <View style={s1.pill}>
+                <ThemedText style={s1.pillKey}>CARBS</ThemedText>
+                <ThemedText style={s1.pillVal}> 40g</ThemedText>
+              </View>
+            </ParallaxLayer>
+          </Animated.View>
         </View>
-
-        {/* PROTEIN pill – overlaps ring at lower-right */}
-        <Animated.View style={[s1.proteinPill, { transform: [{ translateY: bobProtein }] }]}>
-          <ParallaxLayer depth={0.5}>
-          <View style={s1.pill}>
-            <ThemedText style={s1.pillKey}>PROTEIN</ThemedText>
-            <ThemedText style={s1.pillVal}>  35g</ThemedText>
-          </View>
-          </ParallaxLayer>
-        </Animated.View>
-
-        {/* CARBS pill – overlaps ring at lower-left */}
-        <Animated.View style={[s1.carbsPill, { transform: [{ translateY: bobCarbs }] }]}>
-          <ParallaxLayer depth={0.6}>
-          <View style={s1.pill}>
-            <ThemedText style={s1.pillKey}>CARBS</ThemedText>
-            <ThemedText style={s1.pillVal}>  40g</ThemedText>
-          </View>
-          </ParallaxLayer>
-        </Animated.View>
-      </View>
       </Tilt3DCard>
     </View>
   );
@@ -286,7 +294,7 @@ const ProgressChartSlide = (): React.ReactElement => {
           duration: 1500,
           useNativeDriver: true,
         }),
-      ])
+      ]),
     ).start();
 
     // Bobbing for badge & stats
@@ -297,94 +305,117 @@ const ProgressChartSlide = (): React.ReactElement => {
           Animated.timing(anim, { toValue: -5, duration: dur, useNativeDriver: true }),
           Animated.timing(anim, { toValue: 5, duration: dur, useNativeDriver: true }),
           Animated.timing(anim, { toValue: 0, duration: dur / 2, useNativeDriver: true }),
-        ])
+        ]),
       );
     createBob(bobBadge, 2400, 0).start();
     createBob(bobStats, 2800, 600).start();
   }, [pulseAnimRef, bobBadge, bobStats]);
 
   // viewBox expanded to prevent SVG clipping at right/bottom edge
-  const curvePath = "M0 140 C 40 135, 80 145, 120 120 C 160 95, 200 130, 240 100 C 280 70, 320 110, 400 20";
-  const areaPath = "M0 140 C 40 135, 80 145, 120 120 C 160 95, 200 130, 240 100 C 280 70, 320 110, 400 20 L 400 160 L 0 160 Z";
+  const curvePath =
+    'M0 140 C 40 135, 80 145, 120 120 C 160 95, 200 130, 240 100 C 280 70, 320 110, 400 20';
+  const areaPath =
+    'M0 140 C 40 135, 80 145, 120 120 C 160 95, 200 130, 240 100 C 280 70, 320 110, 400 20 L 400 160 L 0 160 Z';
 
   return (
     <View style={s2.wrap}>
-      <Tilt3DCard width={CHART_W} height={CHART_H + 48} maxTilt={5} perspective={1000} showReflection={false}>
-      <View style={s2.heroWrapper}>
-        {/* Main Glass Card */}
-        <View style={s2.glassCard}>
-          {/* Header */}
-          <View style={s2.headerRow}>
-            <View style={s2.colLeft}>
-              <ThemedText style={s2.weekLabel}>TIẾN ĐỘ HÀNG TUẦN</ThemedText>
-              <ThemedText style={s2.percentText}>+8.5% Cơ bắp</ThemedText>
-            </View>
-
-            {/* Trophy */}
-            <View style={s2.trophyWrap}>
-              <View style={s2.trophyGlow} />
-              <Ionicons name="trophy" size={26} color="#22C55E" style={s2.trophyIcon} />
-            </View>
-          </View>
-
-          {/* SVG Line Graph Area */}
-          <View style={s2.graphArea}>
-            <Svg width="100%" height="100%" viewBox="-10 -10 420 180" preserveAspectRatio="none">
-              <Defs>
-                <SvgLinearGradient id="lineGrad" x1="0" y1="0" x2="1" y2="0">
-                  <Stop offset="0" stopColor="#10B981" />
-                  <Stop offset="1" stopColor="#2DD4BF" />
-                </SvgLinearGradient>
-                <SvgLinearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
-                  <Stop offset="0" stopColor="#10B981" stopOpacity="0.4" />
-                  <Stop offset="1" stopColor="#10B981" stopOpacity="0" />
-                </SvgLinearGradient>
-              </Defs>
-              <Path d={areaPath} fill="url(#areaGrad)" />
-              <Path
-                d={curvePath}
-                fill="none"
-                stroke="url(#lineGrad)"
-                strokeWidth="4"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-
-              {/* Glowing animated dot at current progress */}
-              <AnimatedCircle cx="400" cy="20" r="10" fill="#2DD4BF" opacity={pulseAnimRef} />
-              <Circle cx="400" cy="20" r="4" fill="#FFFFFF" />
-            </Svg>
-
-            {/* Target Badge Floating Top-Right */}
-            <Animated.View style={[s2.targetBadge, { transform: [{ translateY: bobBadge }] }]}>
-              <ParallaxLayer depth={0.6}>
-              <View style={s2.targetBadgeInner}>
-                <View style={s2.targetDot} />
-                <ThemedText style={s2.targetText}>ĐẠT MỤC TIÊU</ThemedText>
+      <Tilt3DCard
+        width={CHART_W}
+        height={CHART_H + 48}
+        maxTilt={5}
+        perspective={1000}
+        showReflection={false}
+      >
+        <View style={s2.heroWrapper}>
+          {/* Main Glass Card */}
+          <View style={s2.glassCard}>
+            {/* Header */}
+            <View style={s2.headerRow}>
+              <View style={s2.colLeft}>
+                <ThemedText style={s2.weekLabel}>TIẾN ĐỘ HÀNG TUẦN</ThemedText>
+                <ThemedText style={s2.percentText}>+8.5% Cơ bắp</ThemedText>
               </View>
-              </ParallaxLayer>
-            </Animated.View>
+
+              {/* Trophy */}
+              <View style={s2.trophyWrap}>
+                <View style={s2.trophyGlow} />
+                <Ionicons name="trophy" size={26} color="#22C55E" style={s2.trophyIcon} />
+              </View>
+            </View>
+
+            {/* SVG Line Graph Area */}
+            <View style={s2.graphArea}>
+              <Svg
+                width="100%"
+                height="100%"
+                viewBox="-10 -10 420 180"
+                preserveAspectRatio="none"
+              >
+                <Defs>
+                  <SvgLinearGradient id="lineGrad" x1="0" y1="0" x2="1" y2="0">
+                    <Stop offset="0" stopColor="#10B981" />
+                    <Stop offset="1" stopColor="#2DD4BF" />
+                  </SvgLinearGradient>
+                  <SvgLinearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
+                    <Stop offset="0" stopColor="#10B981" stopOpacity="0.4" />
+                    <Stop offset="1" stopColor="#10B981" stopOpacity="0" />
+                  </SvgLinearGradient>
+                </Defs>
+                <Path d={areaPath} fill="url(#areaGrad)" />
+                <Path
+                  d={curvePath}
+                  fill="none"
+                  stroke="url(#lineGrad)"
+                  strokeWidth="4"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+
+                {/* Glowing animated dot at current progress */}
+                <AnimatedCircle
+                  cx="400"
+                  cy="20"
+                  r="10"
+                  fill="#2DD4BF"
+                  opacity={pulseAnimRef}
+                />
+                <Circle cx="400" cy="20" r="4" fill="#FFFFFF" />
+              </Svg>
+
+              {/* Target Badge Floating Top-Right */}
+              <Animated.View
+                style={[s2.targetBadge, { transform: [{ translateY: bobBadge }] }]}
+              >
+                <ParallaxLayer depth={0.6}>
+                  <View style={s2.targetBadgeInner}>
+                    <View style={s2.targetDot} />
+                    <ThemedText style={s2.targetText}>ĐẠT MỤC TIÊU</ThemedText>
+                  </View>
+                </ParallaxLayer>
+              </Animated.View>
+            </View>
           </View>
+
+          {/* Floating Stats Bubbles (Bottom Left) */}
+          <Animated.View
+            style={[s2.floatingStats, { transform: [{ translateY: bobStats }] }]}
+          >
+            <ParallaxLayer depth={0.8}>
+              <View style={s2.floatingStatsInner}>
+                <LinearGradient colors={['#059669', '#4BE277']} style={s2.boltCircle}>
+                  <Ionicons name="flash" size={20} color="#002109" />
+                </LinearGradient>
+                <View style={s2.statsCol}>
+                  <ThemedText style={s2.statsLabel}>TIÊU THỤ HÀNG NGÀY</ThemedText>
+                  <View style={s2.statsValRow}>
+                    <ThemedText style={s2.statsVal}>2,480 </ThemedText>
+                    <ThemedText style={s2.statsUnit}>kcal</ThemedText>
+                  </View>
+                </View>
+              </View>
+            </ParallaxLayer>
+          </Animated.View>
         </View>
-
-        {/* Floating Stats Bubbles (Bottom Left) */}
-        <Animated.View style={[s2.floatingStats, { transform: [{ translateY: bobStats }] }]}>
-          <ParallaxLayer depth={0.8}>
-          <View style={s2.floatingStatsInner}>
-            <LinearGradient colors={['#059669', '#4BE277']} style={s2.boltCircle}>
-              <Ionicons name="flash" size={20} color="#002109" />
-            </LinearGradient>
-            <View style={s2.statsCol}>
-              <ThemedText style={s2.statsLabel}>TIÊU THỤ HÀNG NGÀY</ThemedText>
-              <View style={s2.statsValRow}>
-                <ThemedText style={s2.statsVal}>2,480 </ThemedText>
-                <ThemedText style={s2.statsUnit}>kcal</ThemedText>
-              </View>
-            </View>
-          </View>
-          </ParallaxLayer>
-        </Animated.View>
-      </View>
       </Tilt3DCard>
     </View>
   );
@@ -573,7 +604,6 @@ const s2 = StyleSheet.create({
 // - Step 3 (Đặt mục tiêu): bottom, shifted right, green checkmark on right
 // - S-curve connecting all three steps
 
-
 const RoadmapSlide = (): React.ReactElement => {
   const pulseAnimRef = useRef(new Animated.Value(0.4)).current;
   const bobChip1 = useRef(new Animated.Value(0)).current;
@@ -593,7 +623,7 @@ const RoadmapSlide = (): React.ReactElement => {
           duration: 1200,
           useNativeDriver: true,
         }),
-      ])
+      ]),
     ).start();
 
     // Bobbing for chips
@@ -604,7 +634,7 @@ const RoadmapSlide = (): React.ReactElement => {
           Animated.timing(anim, { toValue: -5, duration: dur, useNativeDriver: true }),
           Animated.timing(anim, { toValue: 5, duration: dur, useNativeDriver: true }),
           Animated.timing(anim, { toValue: 0, duration: dur / 2, useNativeDriver: true }),
-        ])
+        ]),
       );
     createBob(bobChip1, 2600, 0).start();
     createBob(bobChip2, 2200, 500).start();
@@ -613,7 +643,7 @@ const RoadmapSlide = (): React.ReactElement => {
 
   // Heights and Coordinates
   const SVG_HEIGHT = 440;
-  
+
   // Icon radiuses
   const topRadius = 22;
   const midRadius = 28;
@@ -663,44 +693,91 @@ const RoadmapSlide = (): React.ReactElement => {
       </View>
 
       {/* NODE 1: Đạt mục tiêu (Future) */}
-      <Animated.View style={{ position: 'absolute', right: width - 48 - rightX + topRadius + 8, top: node1Y - 24, transform: [{ translateY: bobChip1 }] }}>
+      <Animated.View
+        style={{
+          position: 'absolute',
+          right: width - 48 - rightX + topRadius + 8,
+          top: node1Y - 24,
+          transform: [{ translateY: bobChip1 }],
+        }}
+      >
         <View style={[s3.glassCard, { opacity: 0.5 }]}>
           <View style={s3.iconBox}>
             <Ionicons name="trophy" size={18} color="#F59E0B" />
           </View>
-          <ThemedText style={s3.cardTitle} numberOfLines={1}>Đạt mục tiêu</ThemedText>
+          <ThemedText style={s3.cardTitle} numberOfLines={1}>
+            Đạt mục tiêu
+          </ThemedText>
         </View>
       </Animated.View>
-      <View style={[s3.lockCircle, { position: 'absolute', left: rightX - topRadius, top: node1Y - topRadius, opacity: 0.5 }]}>
+      <View
+        style={[
+          s3.lockCircle,
+          {
+            position: 'absolute',
+            left: rightX - topRadius,
+            top: node1Y - topRadius,
+            opacity: 0.5,
+          },
+        ]}
+      >
         <Ionicons name="lock-closed" size={18} color="#94A3B8" />
       </View>
 
       {/* NODE 2: Theo dõi bữa ăn (Active) */}
-      <View style={[s3.activePulseWrap, { position: 'absolute', left: leftX - midRadius, top: node2Y - midRadius }]}>
+      <View
+        style={[
+          s3.activePulseWrap,
+          { position: 'absolute', left: leftX - midRadius, top: node2Y - midRadius },
+        ]}
+      >
         <Animated.View style={[s3.pulseRing, { opacity: pulseAnimRef }]} />
         <View style={s3.activeCircle}>
           <Ionicons name="restaurant" size={16} color="#FFFFFF" />
         </View>
       </View>
-      <Animated.View style={{ position: 'absolute', left: leftX + midRadius + 6, top: node2Y - 24, transform: [{ translateY: bobChip2 }] }}>
+      <Animated.View
+        style={{
+          position: 'absolute',
+          left: leftX + midRadius + 6,
+          top: node2Y - 24,
+          transform: [{ translateY: bobChip2 }],
+        }}
+      >
         <View style={[s3.glassCard, s3.activeCard]}>
           <View style={[s3.iconBox, s3.iconBoxActive]}>
             <ThemedText style={{ fontSize: 16 }}>🥗</ThemedText>
           </View>
-          <ThemedText style={s3.cardTitle} numberOfLines={1}>Theo dõi bữa ăn</ThemedText>
+          <ThemedText style={s3.cardTitle} numberOfLines={1}>
+            Theo dõi bữa ăn
+          </ThemedText>
         </View>
       </Animated.View>
 
       {/* NODE 3: Đặt mục tiêu (Completed) */}
-      <Animated.View style={{ position: 'absolute', right: width - 48 - botX + botRadius + 8, top: node3Y - 24, transform: [{ translateY: bobChip3 }] }}>
+      <Animated.View
+        style={{
+          position: 'absolute',
+          right: width - 48 - botX + botRadius + 8,
+          top: node3Y - 24,
+          transform: [{ translateY: bobChip3 }],
+        }}
+      >
         <View style={[s3.glassCard]}>
           <View style={s3.iconBox}>
             <Ionicons name="flag" size={18} color="#EF4444" />
           </View>
-          <ThemedText style={s3.cardTitle} numberOfLines={1}>Đặt mục tiêu</ThemedText>
+          <ThemedText style={s3.cardTitle} numberOfLines={1}>
+            Đặt mục tiêu
+          </ThemedText>
         </View>
       </Animated.View>
-      <View style={[s3.checkCircle, { position: 'absolute', left: botX - botRadius, top: node3Y - botRadius }]}>
+      <View
+        style={[
+          s3.checkCircle,
+          { position: 'absolute', left: botX - botRadius, top: node3Y - botRadius },
+        ]}
+      >
         <Ionicons name="checkmark" size={20} color="#FFFFFF" />
       </View>
     </View>

@@ -5,7 +5,7 @@ appId: com.eatfitai.app
 - runFlow:
     when:
       visible:
-        id: "${TARGET_ID}"
+        id: '${TARGET_ID}'
     commands:
       - evalScript: ${output.foundElement = 1}
 - repeat:
@@ -22,8 +22,8 @@ appId: com.eatfitai.app
       - runFlow:
           when:
             visible:
-              id: "${TARGET_ID}"
+              id: '${TARGET_ID}'
           commands:
             - evalScript: ${output.foundElement = 1}
 - assertVisible:
-    id: "${TARGET_ID}"
+    id: '${TARGET_ID}'

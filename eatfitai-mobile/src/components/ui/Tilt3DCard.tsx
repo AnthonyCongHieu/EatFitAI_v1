@@ -39,8 +39,7 @@ interface TiltContextValue {
 
 const TiltContext = createContext<TiltContextValue | null>(null);
 
-export const useTiltContext = (): TiltContextValue | null =>
-  useContext(TiltContext);
+export const useTiltContext = (): TiltContextValue | null => useContext(TiltContext);
 
 /* ─── ParallaxLayer ─── */
 interface ParallaxLayerProps {
@@ -85,7 +84,8 @@ export const ParallaxLayer: React.FC<ParallaxLayerProps> = ({
       Extrapolation.CLAMP,
     );
 
-    const isAtRest = Math.abs(ctx.translateX.value) < 0.5 && Math.abs(ctx.translateY.value) < 0.5;
+    const isAtRest =
+      Math.abs(ctx.translateX.value) < 0.5 && Math.abs(ctx.translateY.value) < 0.5;
 
     if (isAtRest) {
       return { transform: [] };
@@ -99,11 +99,7 @@ export const ParallaxLayer: React.FC<ParallaxLayerProps> = ({
     };
   });
 
-  return (
-    <Animated.View style={[animatedStyle, style]}>
-      {children}
-    </Animated.View>
-  );
+  return <Animated.View style={[animatedStyle, style]}>{children}</Animated.View>;
 };
 
 /* ─── Main Tilt3DCard ─── */
@@ -225,12 +221,7 @@ const Tilt3DCard: React.FC<Tilt3DCardProps> = ({
     const tiltMagnitude =
       Math.abs(translateX.value / (width / 2)) +
       Math.abs(translateY.value / (height / 2));
-    const opacity = interpolate(
-      tiltMagnitude,
-      [0, 1],
-      [0, 0.4],
-      Extrapolation.CLAMP,
-    );
+    const opacity = interpolate(tiltMagnitude, [0, 1], [0, 0.4], Extrapolation.CLAMP);
 
     return {
       opacity,

@@ -13,7 +13,14 @@ import {
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import Toast from 'react-native-toast-message';
 import { LinearGradient } from 'expo-linear-gradient';
-import Animated, { FadeInDown, useSharedValue, useAnimatedStyle, withRepeat, withSequence, withTiming } from 'react-native-reanimated';
+import Animated, {
+  FadeInDown,
+  useSharedValue,
+  useAnimatedStyle,
+  withRepeat,
+  withSequence,
+  withTiming,
+} from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import Tilt3DCard, { ParallaxLayer } from '../../../components/ui/Tilt3DCard';
@@ -98,10 +105,10 @@ const VerifyEmailScreen = ({ navigation, route }: Props): React.ReactElement => 
     glowValue.value = withRepeat(
       withSequence(
         withTiming(1, { duration: 1200 }),
-        withTiming(0.5, { duration: 1200 })
+        withTiming(0.5, { duration: 1200 }),
       ),
       -1,
-      true
+      true,
     );
   }, []);
 
@@ -191,10 +198,12 @@ const VerifyEmailScreen = ({ navigation, route }: Props): React.ReactElement => 
           email: data.email,
           needsOnboarding,
           backendNeedsOnboarding,
-          rawNeedsOnboarding: (data as VerifyEmailResponse & { NeedsOnboarding?: boolean })
-            .needsOnboarding,
-          rawPascalNeedsOnboarding: (data as VerifyEmailResponse & { NeedsOnboarding?: boolean })
-            .NeedsOnboarding,
+          rawNeedsOnboarding: (
+            data as VerifyEmailResponse & { NeedsOnboarding?: boolean }
+          ).needsOnboarding,
+          rawPascalNeedsOnboarding: (
+            data as VerifyEmailResponse & { NeedsOnboarding?: boolean }
+          ).NeedsOnboarding,
         });
       }
 
@@ -228,7 +237,6 @@ const VerifyEmailScreen = ({ navigation, route }: Props): React.ReactElement => 
       setTimeout(() => {
         navigation.replace('Onboarding');
       }, 50);
-
     } catch (err: any) {
       const message = err?.response?.data?.message || handleApiError(err);
       Toast.show({ type: 'error', text1: 'Xác minh thất bại', text2: message });
@@ -277,8 +285,16 @@ const VerifyEmailScreen = ({ navigation, route }: Props): React.ReactElement => 
   return (
     <GestureHandlerRootView style={[styles.container, { backgroundColor: C.surface }]}>
       {/* Background glow blobs */}
-      <View style={[styles.blob, styles.blobTopRight, { backgroundColor: C.primary + '0D' }]} />
-      <View style={[styles.blob, styles.blobBottomLeft, { backgroundColor: C.primary + '0D' }]} />
+      <View
+        style={[styles.blob, styles.blobTopRight, { backgroundColor: C.primary + '0D' }]}
+      />
+      <View
+        style={[
+          styles.blob,
+          styles.blobBottomLeft,
+          { backgroundColor: C.primary + '0D' },
+        ]}
+      />
 
       {/* Back button */}
       <Pressable
@@ -328,8 +344,15 @@ const VerifyEmailScreen = ({ navigation, route }: Props): React.ReactElement => 
                 <View style={styles.cardHeader}>
                   {/* Mail icon with bordered pulsing glow */}
                   <View style={styles.iconWrapper}>
-                    <Animated.View style={[styles.glowRing, { borderColor: C.primary }, glowStyle]} />
-                    <View style={[styles.mailIconContainer, { backgroundColor: 'transparent' }]}>
+                    <Animated.View
+                      style={[styles.glowRing, { borderColor: C.primary }, glowStyle]}
+                    />
+                    <View
+                      style={[
+                        styles.mailIconContainer,
+                        { backgroundColor: 'transparent' },
+                      ]}
+                    >
                       <Ionicons name="mail-open-outline" size={32} color={C.primary} />
                     </View>
                   </View>
@@ -337,20 +360,35 @@ const VerifyEmailScreen = ({ navigation, route }: Props): React.ReactElement => 
                   <ThemedText
                     variant="h2"
                     weight="700"
-                    style={{ color: '#FFFFFF', fontSize: 28, textAlign: 'center', lineHeight: 34 }}
+                    style={{
+                      color: '#FFFFFF',
+                      fontSize: 28,
+                      textAlign: 'center',
+                      lineHeight: 34,
+                    }}
                   >
                     Kiểm tra hộp thư{'\n'}của bạn!
                   </ThemedText>
                   <ThemedText
                     variant="body"
-                    style={{ color: C.onSurfaceVariant, marginTop: 12, textAlign: 'center', lineHeight: 24 }}
+                    style={{
+                      color: C.onSurfaceVariant,
+                      marginTop: 12,
+                      textAlign: 'center',
+                      lineHeight: 24,
+                    }}
                   >
                     Chúng tôi đã gửi mã xác thực{'\n'}gồm 6 chữ số đến
                   </ThemedText>
                   <ThemedText
                     variant="body"
                     weight="700"
-                    style={{ color: '#FFFFFF', marginTop: 4, textAlign: 'center', fontSize: 16 }}
+                    style={{
+                      color: '#FFFFFF',
+                      marginTop: 4,
+                      textAlign: 'center',
+                      fontSize: 16,
+                    }}
                   >
                     {email}
                   </ThemedText>
@@ -363,7 +401,9 @@ const VerifyEmailScreen = ({ navigation, route }: Props): React.ReactElement => 
                   {code.map((digit, index) => (
                     <TextInput
                       key={index}
-                      ref={(ref) => { inputRefs.current[index] = ref; }}
+                      ref={(ref) => {
+                        inputRefs.current[index] = ref;
+                      }}
                       style={[
                         styles.otpInput,
                         {
@@ -405,7 +445,11 @@ const VerifyEmailScreen = ({ navigation, route }: Props): React.ReactElement => 
                     />
                     {/* Glossy highlight */}
                     <LinearGradient
-                      colors={['rgba(255,255,255,0.25)', 'rgba(255,255,255,0.05)', 'transparent']}
+                      colors={[
+                        'rgba(255,255,255,0.25)',
+                        'rgba(255,255,255,0.05)',
+                        'transparent',
+                      ]}
                       start={{ x: 0.2, y: 0 }}
                       end={{ x: 0.8, y: 1 }}
                       style={StyleSheet.absoluteFill}
@@ -425,10 +469,7 @@ const VerifyEmailScreen = ({ navigation, route }: Props): React.ReactElement => 
               <ParallaxLayer depth={0.6}>
                 <View style={styles.resendSection}>
                   <View style={styles.resendRow}>
-                    <ThemedText
-                      variant="bodySmall"
-                      style={{ color: C.onSurfaceVariant }}
-                    >
+                    <ThemedText variant="bodySmall" style={{ color: C.onSurfaceVariant }}>
                       Bạn không nhận được mã?{' '}
                     </ThemedText>
                     {countdown > 0 ? (
@@ -437,7 +478,8 @@ const VerifyEmailScreen = ({ navigation, route }: Props): React.ReactElement => 
                         weight="600"
                         style={{ color: C.primary }}
                       >
-                        Gửi lại sau {Math.floor(countdown / 60)}:{(countdown % 60).toString().padStart(2, '0')}
+                        Gửi lại sau {Math.floor(countdown / 60)}:
+                        {(countdown % 60).toString().padStart(2, '0')}
                       </ThemedText>
                     ) : null}
                   </View>
@@ -464,7 +506,6 @@ const VerifyEmailScreen = ({ navigation, route }: Props): React.ReactElement => 
                   </Pressable>
                 </View>
               </ParallaxLayer>
-
             </Animated.View>
           </Tilt3DCard>
         </Screen>

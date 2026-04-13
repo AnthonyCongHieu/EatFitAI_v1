@@ -1,7 +1,13 @@
 const fs = require('fs');
 const path = require('path');
 
-const DEFAULT_OUTPUT_ROOT = path.resolve(__dirname, '..', '..', '_logs', 'production-smoke');
+const DEFAULT_OUTPUT_ROOT = path.resolve(
+  __dirname,
+  '..',
+  '..',
+  '_logs',
+  'production-smoke',
+);
 
 function trim(value) {
   return String(value || '').trim();
@@ -55,7 +61,8 @@ function listSessionDirs(rootDir) {
 
 function evaluateSession(sessionDir) {
   const metrics = readJsonIfExists(path.join(sessionDir, 'metrics-baseline.json'));
-  const observations = readJsonIfExists(path.join(sessionDir, 'session-observations.json')) || {};
+  const observations =
+    readJsonIfExists(path.join(sessionDir, 'session-observations.json')) || {};
   const summary = metrics?.productMetrics || {};
   const gates = metrics?.gates || {};
   const failures = [];
@@ -76,7 +83,10 @@ function evaluateSession(sessionDir) {
 
   const riskEntries = metrics?.risks?.entries || [];
   const riskSnapshot = Object.fromEntries(
-    riskEntries.map((entry) => [entry.key, { attempted: entry.attempted, passed: entry.passed }]),
+    riskEntries.map((entry) => [
+      entry.key,
+      { attempted: entry.attempted, passed: entry.passed },
+    ]),
   );
 
   return {
@@ -150,7 +160,8 @@ function main() {
     rootDir,
     sessions,
     latestThree,
-    consecutivePass: latestThree.length === 3 && latestThree.every((session) => session.pass),
+    consecutivePass:
+      latestThree.length === 3 && latestThree.every((session) => session.pass),
     failures,
   };
 

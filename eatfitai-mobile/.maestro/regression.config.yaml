@@ -1,5 +1,5 @@
 flows:
-  - "regression/*.yaml"
+  - 'regression/*.yaml'
 includeTags:
   - regression
 excludeTags:

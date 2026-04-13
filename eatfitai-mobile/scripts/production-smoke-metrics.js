@@ -1,7 +1,13 @@
 const fs = require('fs');
 const path = require('path');
 
-const DEFAULT_OUTPUT_ROOT = path.resolve(__dirname, '..', '..', '_logs', 'production-smoke');
+const DEFAULT_OUTPUT_ROOT = path.resolve(
+  __dirname,
+  '..',
+  '..',
+  '_logs',
+  'production-smoke',
+);
 
 function trim(value) {
   return String(value || '').trim();
@@ -121,11 +127,18 @@ function summarizeBudget(budget) {
 function summarizePreflight(preflight) {
   const health = preflight?.checks?.health || {};
   const auth = preflight?.checks?.auth || {};
-  const healthChecks = [health.backendReady, health.backendLive, health.aiProviderHealthz].filter(Boolean);
-  const authChecks = auth.skipped ? [] : [auth.login, auth.aiStatus, auth.refresh].filter(Boolean);
+  const healthChecks = [
+    health.backendReady,
+    health.backendLive,
+    health.aiProviderHealthz,
+  ].filter(Boolean);
+  const authChecks = auth.skipped
+    ? []
+    : [auth.login, auth.aiStatus, auth.refresh].filter(Boolean);
 
   return {
-    healthPass: healthChecks.length > 0 && healthChecks.every((entry) => Boolean(entry.ok)),
+    healthPass:
+      healthChecks.length > 0 && healthChecks.every((entry) => Boolean(entry.ok)),
     authPass: authChecks.length === 3 && authChecks.every((entry) => Boolean(entry.ok)),
     authSkipped: Boolean(auth.skipped),
     statuses: {
@@ -152,11 +165,15 @@ function summarizeSearch(regression) {
     passed: entries.filter((entry) => entry.passed).length,
     positiveCases: positive.length,
     positivePassed: positive.filter((entry) => entry.passed).length,
-    positivePassRate: rate(positive.filter((entry) => entry.passed).length, positive.length),
+    positivePassRate: rate(
+      positive.filter((entry) => entry.passed).length,
+      positive.length,
+    ),
     emptyCases: empty.length,
     emptyPassed: empty.filter((entry) => entry.passed).length,
     emptyPassRate: rate(empty.filter((entry) => entry.passed).length, empty.length),
-    actualEmptyResponses: entries.filter((entry) => Number(entry.resultCount || 0) === 0).length,
+    actualEmptyResponses: entries.filter((entry) => Number(entry.resultCount || 0) === 0)
+      .length,
     latencyAvgMs: average(latencies),
     latencyP95Ms: percentile(latencies, 95),
     gatePass: entries.length > 0 && entries.every((entry) => entry.passed),
@@ -176,11 +193,14 @@ function summarizeVoice(regression) {
     .map((entry) => entry.execute?.latencyMs)
     .filter((value) => Number.isFinite(value));
   const skippedMutations = entries.filter(
-    (entry) => entry.execute?.skipped && entry.execute?.skipReason === 'mutations-disabled',
+    (entry) =>
+      entry.execute?.skipped && entry.execute?.skipReason === 'mutations-disabled',
   );
   const failedParse = entries.filter((entry) => !entry.parse?.passed);
   const failedExecute = executeAttempted.filter((entry) => !entry.execute?.passed);
-  const diaryReadbackAttempted = entries.filter((entry) => entry.diaryReadback?.attempted);
+  const diaryReadbackAttempted = entries.filter(
+    (entry) => entry.diaryReadback?.attempted,
+  );
   const diaryReadbackFailed = diaryReadbackAttempted.filter(
     (entry) => !entry.diaryReadback?.passed,
   );
@@ -202,7 +222,10 @@ function summarizeVoice(regression) {
   return {
     attempted: entries.length,
     parsePassed: entries.filter((entry) => entry.parse?.passed).length,
-    parseSuccessRate: rate(entries.filter((entry) => entry.parse?.passed).length, entries.length),
+    parseSuccessRate: rate(
+      entries.filter((entry) => entry.parse?.passed).length,
+      entries.length,
+    ),
     previewPassed: entries.filter((entry) => entry.preview?.passed).length,
     reviewRequired: entries.filter((entry) => entry.parse?.reviewRequired).length,
     executeAttempted: executeAttempted.length,
@@ -212,8 +235,9 @@ function summarizeVoice(regression) {
       executeAttempted.length,
     ),
     diaryReadbackAttempted: diaryReadbackAttempted.length,
-    diaryReadbackPassed: diaryReadbackAttempted.filter((entry) => entry.diaryReadback?.passed)
-      .length,
+    diaryReadbackPassed: diaryReadbackAttempted.filter(
+      (entry) => entry.diaryReadback?.passed,
+    ).length,
     skippedMutations: skippedMutations.map((entry) => entry.key),
     lowConfidenceKeys: lowConfidenceEntries.map((entry) => entry.key),
     missingDiaryReadback: missingDiaryReadback.map((entry) => entry.key),
@@ -239,7 +263,9 @@ function summarizeNutrition(regression, observations) {
   const suggested = entries.filter((entry) => entry.suggest?.passed);
   const applyAttempted = entries.filter((entry) => entry.apply?.attempted);
   const applyPassed = applyAttempted.filter((entry) => entry.apply?.passed);
-  const manualPassed = Boolean(observations?.nutritionApply?.attempted && observations?.nutritionApply?.passed);
+  const manualPassed = Boolean(
+    observations?.nutritionApply?.attempted && observations?.nutritionApply?.passed,
+  );
   const skippedMutations = entries.filter(
     (entry) => entry.apply?.skipped && entry.apply?.skipReason === 'mutations-disabled',
   );
@@ -257,8 +283,8 @@ function summarizeNutrition(regression, observations) {
       (entries.length > 0 &&
         suggested.length === entries.length &&
         applyAttempted.length > 0 &&
-        applyPassed.length === applyAttempted.length)
-      || manualPassed,
+        applyPassed.length === applyAttempted.length) ||
+      manualPassed,
   };
 }
 
@@ -270,7 +296,9 @@ function summarizeScan(regression, observations) {
     .map((entry) => entry.latencyMs)
     .filter((value) => Number.isFinite(value));
   const manual = observations?.scanToSave || {};
-  const completionPassed = Boolean(manual.attempted && manual.passed && manual.diaryReadbackPassed);
+  const completionPassed = Boolean(
+    manual.attempted && manual.passed && manual.diaryReadbackPassed,
+  );
 
   return {
     attempted: entries.length,
@@ -302,7 +330,8 @@ function summarizeRiskScenarios(observations) {
 
   return {
     entries,
-    gatePass: entries.length === 3 && entries.every((entry) => entry.attempted && entry.passed),
+    gatePass:
+      entries.length === 3 && entries.every((entry) => entry.attempted && entry.passed),
   };
 }
 
@@ -372,9 +401,11 @@ function buildMarkdown(report) {
 
 function main() {
   const outputDir = resolveOutputDir(process.argv[2]);
-  const preflight = readJsonIfExists(path.join(outputDir, 'preflight-results.json')) || {};
+  const preflight =
+    readJsonIfExists(path.join(outputDir, 'preflight-results.json')) || {};
   const regression = readJsonIfExists(path.join(outputDir, 'regression-run.json')) || {};
-  const observations = readJsonIfExists(path.join(outputDir, 'session-observations.json')) || {};
+  const observations =
+    readJsonIfExists(path.join(outputDir, 'session-observations.json')) || {};
   const budget = readJsonIfExists(path.join(outputDir, 'request-budget.json')) || {};
   const preflightSummary = summarizePreflight(preflight);
   const searchSummary = summarizeSearch(regression);
@@ -441,7 +472,8 @@ function main() {
         },
         scan: {
           primaryPassRate: report.productMetrics.scan.primaryPassRate,
-          scanToSaveCompletionPassed: report.productMetrics.scan.scanToSaveCompletionPassed,
+          scanToSaveCompletionPassed:
+            report.productMetrics.scan.scanToSaveCompletionPassed,
         },
         voice: {
           parseSuccessRate: report.productMetrics.voice.parseSuccessRate,
@@ -452,7 +484,8 @@ function main() {
         nutrition: {
           suggestSuccessRate: report.productMetrics.nutrition.suggestSuccessRate,
           applySuccessRate: report.productMetrics.nutrition.applySuccessRate,
-          manualNutritionApplyPassed: report.productMetrics.nutrition.manualNutritionApplyPassed,
+          manualNutritionApplyPassed:
+            report.productMetrics.nutrition.manualNutritionApplyPassed,
         },
       },
       null,

@@ -5,7 +5,7 @@
  * Emerald Nebula design system + 3D Parallax tilt on Step 0
  */
 
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useMemo } from 'react';
 import {
   View,
   StyleSheet,
@@ -26,6 +26,8 @@ import Animated, {
   FadeInDown,
   useSharedValue,
   useAnimatedStyle,
+  useAnimatedScrollHandler,
+  runOnJS,
   withRepeat,
   withSequence,
   withTiming,
@@ -59,6 +61,7 @@ interface OnboardingData {
   age: string;
   heightCm: string;
   weightKg: string;
+  targetWeightKg: string;
   goal: 'lose' | 'maintain' | 'gain' | null;
   activityLevel: 'sedentary' | 'light' | 'moderate' | 'active' | 'very_active';
 }
@@ -93,7 +96,7 @@ const C = {
   inputBorder: 'rgba(61, 74, 61, 0.3)',
 };
 
-const STEPS = [
+const STEPS_BASE = [
   {
     title: t('onboarding.step1_title'),
     subtitle: t('onboarding.step1_subtitle'),
@@ -109,6 +112,7 @@ const STEPS = [
     subtitle: t('onboarding.step3_subtitle'),
     icon: '🎯',
   },
+  { title: 'Mục tiêu cân nặng', subtitle: 'Chọn cân nặng mục tiêu của bạn', icon: '⚖️' },
   {
     title: t('onboarding.step4_title'),
     subtitle: t('onboarding.step4_subtitle'),
@@ -208,9 +212,20 @@ const OnboardingScreen = (): React.ReactElement => {
     age: '',
     heightCm: '',
     weightKg: '',
+    targetWeightKg: '',
     goal: null,
     activityLevel: 'moderate',
   });
+
+  /* ─── Dynamic step logic for conditional Target Weight step ─── */
+  const needsTargetWeight = data.goal === 'lose' || data.goal === 'gain';
+  const totalSteps = needsTargetWeight ? 6 : 5;
+  const getDisplayStep = (step: number) => {
+    if (needsTargetWeight) return step;
+    return step <= 2 ? step : step - 1;
+  };
+  const displayStep = getDisplayStep(currentStep);
+  const STEPS = needsTargetWeight ? STEPS_BASE : STEPS_BASE.filter((_, i) => i !== 3);
 
   const [aiResult, setAiResult] = useState<NutritionCalculationResult | null>(null);
 
@@ -225,10 +240,10 @@ const OnboardingScreen = (): React.ReactElement => {
         withTiming(20, { duration: 250, easing: Easing.inOut(Easing.ease) }),
         withTiming(-10, { duration: 200, easing: Easing.inOut(Easing.ease) }),
         withTiming(0, { duration: 400, easing: Easing.out(Easing.ease) }),
-        withTiming(0, { duration: 1500 }) // Pause
+        withTiming(0, { duration: 1500 }), // Pause
       ),
       -1,
-      false
+      false,
     );
   }, []);
 
@@ -242,10 +257,10 @@ const OnboardingScreen = (): React.ReactElement => {
     glowPulse.value = withRepeat(
       withSequence(
         withTiming(1.2, { duration: 1500, easing: Easing.inOut(Easing.ease) }),
-        withTiming(1.0, { duration: 1500, easing: Easing.inOut(Easing.ease) })
+        withTiming(1.0, { duration: 1500, easing: Easing.inOut(Easing.ease) }),
       ),
       -1,
-      true
+      true,
     );
   }, []);
 
@@ -280,6 +295,8 @@ const OnboardingScreen = (): React.ReactElement => {
       case 2:
         return data.goal !== null;
       case 3:
+        return data.targetWeightKg !== '';
+      case 4:
         return true;
       default:
         return true;
@@ -287,13 +304,20 @@ const OnboardingScreen = (): React.ReactElement => {
   };
 
   const handleNext = async () => {
-    if (currentStep < 4) {
-      if (currentStep === 3) {
-        // Last data step - calculate AI
+    if (currentStep < 5) {
+      if (currentStep === 4) {
         setAiResult(null);
         setCalculationError(null);
-        setCurrentStep(4);
+        setCurrentStep(5);
         calculateNutrition();
+      } else if (currentStep === 2 && !needsTargetWeight) {
+        setCurrentStep(4);
+      } else if (currentStep === 2 && needsTargetWeight) {
+        if (!data.targetWeightKg) {
+          setData((prev) => ({ ...prev, targetWeightKg: prev.weightKg }));
+        }
+        targetWeightRulerInitialized.current = false;
+        setCurrentStep(3);
       } else {
         setCurrentStep((prev) => prev + 1);
       }
@@ -302,7 +326,11 @@ const OnboardingScreen = (): React.ReactElement => {
 
   const handleBack = () => {
     if (currentStep > 0) {
-      setCurrentStep((prev) => prev - 1);
+      if (currentStep === 4 && !needsTargetWeight) {
+        setCurrentStep(2);
+      } else {
+        setCurrentStep((prev) => prev - 1);
+      }
     }
   };
 
@@ -313,16 +341,20 @@ const OnboardingScreen = (): React.ReactElement => {
       // Gọi qua backend API thay vì AI provider trực tiếp
       // Backend sẽ proxy đến AI Provider (Ollama)
       const activityMultiplier =
-        ACTIVITY_OPTIONS.find((option) => option.value === data.activityLevel)?.multiplier ?? 1.55;
+        ACTIVITY_OPTIONS.find((option) => option.value === data.activityLevel)
+          ?.multiplier ?? 1.55;
 
-      const response = await aiApiClient.post<NutritionCalculationResult>('/api/ai/nutrition/recalculate', {
-        sex: data.gender,
-        age: Number(data.age),
-        heightCm: Number(data.heightCm),
-        weightKg: Number(data.weightKg),
-        activityLevel: activityMultiplier,
-        goal: data.goal,
-      });
+      const response = await aiApiClient.post<NutritionCalculationResult>(
+        '/api/ai/nutrition/recalculate',
+        {
+          sex: data.gender,
+          age: Number(data.age),
+          heightCm: Number(data.heightCm),
+          weightKg: Number(data.weightKg),
+          activityLevel: activityMultiplier,
+          goal: data.goal,
+        },
+      );
 
       if (response.data?.calories > 0) {
         setAiResult(response.data);
@@ -330,12 +362,15 @@ const OnboardingScreen = (): React.ReactElement => {
           Toast.show({
             type: 'info',
             text1: 'Offline mode',
-            text2: 'AI đang tạm thời không khả dụng. App dùng công thức chuẩn để hoàn tất onboarding.',
+            text2:
+              'AI đang tạm thời không khả dụng. App dùng công thức chuẩn để hoàn tất onboarding.',
           });
         }
       } else {
         setAiResult(null);
-        setCalculationError('Không thể tính mục tiêu dinh dưỡng lúc này. Vui lòng thử lại.');
+        setCalculationError(
+          'Không thể tính mục tiêu dinh dưỡng lúc này. Vui lòng thử lại.',
+        );
         Toast.show({
           type: 'error',
           text1: 'Dịch vụ AI hiện không khả dụng',
@@ -355,7 +390,6 @@ const OnboardingScreen = (): React.ReactElement => {
       setIsCalculating(false);
     }
   };
-
 
   const handleComplete = async () => {
     try {
@@ -380,6 +414,7 @@ const OnboardingScreen = (): React.ReactElement => {
           fullName: data.fullName,
           heightCm: Number(data.heightCm),
           weightKg: Number(data.weightKg),
+          targetWeightKg: data.targetWeightKg ? Number(data.targetWeightKg) : undefined,
           gender: data.gender || undefined,
           dateOfBirth: dateOfBirth,
           activityLevelId: activityLevelMap[data.activityLevel] || 3,
@@ -389,7 +424,10 @@ const OnboardingScreen = (): React.ReactElement => {
         // Cloud /api/profile đang không ổn định; giữ onboarding tiếp tục bằng cách
         // ít nhất lưu body metrics để home/diary và nutrition lane không bị chặn.
         if (__DEV__) {
-          console.warn('[Onboarding] updateProfile failed, falling back to body metrics only:', profileError);
+          console.warn(
+            '[Onboarding] updateProfile failed, falling back to body metrics only:',
+            profileError,
+          );
         }
 
         await profileService.createBodyMetrics({
@@ -458,7 +496,10 @@ const OnboardingScreen = (): React.ReactElement => {
         await fetchProfile({ force: true });
       } catch (profileRefreshError) {
         if (__DEV__) {
-          console.warn('[Onboarding] Failed to refresh profile after completion:', profileRefreshError);
+          console.warn(
+            '[Onboarding] Failed to refresh profile after completion:',
+            profileRefreshError,
+          );
         }
       }
 
@@ -496,7 +537,12 @@ const OnboardingScreen = (): React.ReactElement => {
               <ThemedText
                 variant="h2"
                 weight="700"
-                style={{ color: '#FFFFFF', fontSize: 28, textAlign: 'center', fontFamily: 'Inter_700Bold' }}
+                style={{
+                  color: '#FFFFFF',
+                  fontSize: 28,
+                  textAlign: 'center',
+                  fontFamily: 'Inter_700Bold',
+                }}
               >
                 Thông tin cơ bản
               </ThemedText>
@@ -508,7 +554,7 @@ const OnboardingScreen = (): React.ReactElement => {
                   textAlign: 'center',
                   lineHeight: 22,
                   maxWidth: 280,
-                  fontFamily: 'Inter_500Medium'
+                  fontFamily: 'Inter_500Medium',
                 }}
               >
                 Hãy cho chúng tôi biết một chút{'\n'}về bản thân bạn
@@ -521,11 +567,7 @@ const OnboardingScreen = (): React.ReactElement => {
             <View style={s.formGroup}>
               {/* Name */}
               <View style={s.fieldBlock}>
-                <ThemedText
-                  variant="caption"
-                  weight="700"
-                  style={s.label}
-                >
+                <ThemedText variant="caption" weight="700" style={s.label}>
                   HỌ VÀ TÊN
                 </ThemedText>
                 <View
@@ -591,7 +633,9 @@ const OnboardingScreen = (): React.ReactElement => {
                     maximumValue={100}
                     step={1}
                     value={ageNum}
-                    onValueChange={(v: number) => setData({ ...data, age: String(Math.round(v)) })}
+                    onValueChange={(v: number) =>
+                      setData({ ...data, age: String(Math.round(v)) })
+                    }
                     minimumTrackTintColor={C.primary}
                     maximumTrackTintColor={C.surfaceContainerHighest}
                     thumbTintColor={C.primary}
@@ -599,13 +643,23 @@ const OnboardingScreen = (): React.ReactElement => {
                   <View style={s.sliderLabels}>
                     <ThemedText
                       variant="caption"
-                      style={{ color: C.onSurfaceVariant, fontSize: 13, letterSpacing: 0.5, fontFamily: 'Inter_600SemiBold' }}
+                      style={{
+                        color: C.onSurfaceVariant,
+                        fontSize: 13,
+                        letterSpacing: 0.5,
+                        fontFamily: 'Inter_600SemiBold',
+                      }}
                     >
                       0
                     </ThemedText>
                     <ThemedText
                       variant="caption"
-                      style={{ color: C.onSurfaceVariant, fontSize: 13, letterSpacing: 0.5, fontFamily: 'Inter_600SemiBold' }}
+                      style={{
+                        color: C.onSurfaceVariant,
+                        fontSize: 13,
+                        letterSpacing: 0.5,
+                        fontFamily: 'Inter_600SemiBold',
+                      }}
                     >
                       100
                     </ThemedText>
@@ -650,7 +704,12 @@ const OnboardingScreen = (): React.ReactElement => {
                         />
                         <ThemedText
                           weight={selected ? '700' : '500'}
-                          style={{ color: selected ? C.primary : C.onSurface, marginTop: 2, fontSize: 13, fontFamily: selected ? 'Inter_700Bold' : 'Inter_500Medium' }}
+                          style={{
+                            color: selected ? C.primary : C.onSurface,
+                            marginTop: 2,
+                            fontSize: 13,
+                            fontFamily: selected ? 'Inter_700Bold' : 'Inter_500Medium',
+                          }}
                         >
                           {opt.label}
                         </ThemedText>
@@ -659,8 +718,6 @@ const OnboardingScreen = (): React.ReactElement => {
                   })}
                 </View>
               </View>
-
-
             </View>
           </ParallaxLayer>
         </Animated.View>
@@ -678,6 +735,151 @@ const OnboardingScreen = (): React.ReactElement => {
   const weightRulerInitialized = useRef(false);
   const [weightRulerWidth, setWeightRulerWidth] = useState(0);
 
+  // Target weight ruler refs (Step 3)
+  const targetWeightRulerRef = useRef<any>(null);
+  const targetWeightRulerInitialized = useRef(false);
+  const [targetWeightRulerWidth, setTargetWeightRulerWidth] = useState(0);
+  const targetRulerScrollXRef = useRef(0);
+  const [targetDisplayWeight, setTargetDisplayWeight] = useState(0);
+
+  const targetRulerNativeScrollX = useSharedValue(0);
+
+  const updateTargetWeightUI = (offsetX: number) => {
+    targetRulerScrollXRef.current = offsetX;
+    const v = Math.round((offsetX / 100 + 30) * 10) / 10;
+    setTargetDisplayWeight(Math.max(30, Math.min(200, v)));
+  };
+
+  const onTargetRulerScroll = useAnimatedScrollHandler({
+    onScroll: (event) => {
+      targetRulerNativeScrollX.value = event.contentOffset.x;
+      runOnJS(updateTargetWeightUI)(event.contentOffset.x);
+    },
+  });
+
+  const targetOverlayAnimatedStyle = useAnimatedStyle(() => {
+    const origWeight = parseFloat(data.weightKg) || 65;
+    const twPad = Math.max(targetWeightRulerWidth / 2 - 5, 0);
+    const origCX = (origWeight - 30) * 100;
+
+    // UI Thread scroll sync
+    const sX = targetRulerNativeScrollX.value;
+    const origScrX = origCX - sX + twPad;
+    const ctrX = targetWeightRulerWidth / 2;
+    const left = Math.min(origScrX, ctrX);
+    const width = Math.abs(origScrX - ctrX);
+
+    const valStr = Math.round((sX / 100 + 30) * 10) / 10;
+    const wDiff = valStr - origWeight;
+    const showDiffUI = Math.abs(wDiff) >= 0.2 && width > 2;
+
+    return {
+      left,
+      width,
+      opacity: showDiffUI ? 1 : 0,
+      backgroundColor:
+        wDiff <= 0 ? 'rgba(75, 226, 119, 0.12)' : 'rgba(251, 146, 60, 0.12)',
+    };
+  });
+
+  useEffect(() => {
+    if (
+      currentStep === 3 &&
+      targetWeightRulerWidth > 0 &&
+      !targetWeightRulerInitialized.current
+    ) {
+      const initVal = data.targetWeightKg
+        ? parseFloat(data.targetWeightKg)
+        : parseFloat(data.weightKg) || 65;
+      const scrollX = (initVal - 30) * 100;
+      setTimeout(() => {
+        targetWeightRulerRef.current?.scrollTo({ x: scrollX, animated: false });
+        targetRulerScrollXRef.current = scrollX;
+        setTargetDisplayWeight(initVal);
+        targetWeightRulerInitialized.current = true;
+      }, 150);
+    }
+  }, [currentStep, targetWeightRulerWidth]);
+
+  // Memoize the large arrays to prevent significant lag during active scrolling
+  const memoizedHeightTicks = useMemo(
+    () =>
+      Array.from({ length: 151 }).map((_, i) => {
+        const val = 100 + i;
+        const isMajor = val % 10 === 0;
+        const isMedium = val % 5 === 0;
+        return (
+          <View
+            key={i}
+            style={{ width: 12, alignItems: 'center', justifyContent: 'flex-end' }}
+          >
+            {isMajor && (
+              <ThemedText
+                style={{
+                  fontSize: 11,
+                  color: 'rgba(188, 200, 185, 0.6)',
+                  marginBottom: 6,
+                  fontFamily: 'Inter_600SemiBold',
+                  width: 40,
+                  textAlign: 'center',
+                }}
+              >
+                {val}
+              </ThemedText>
+            )}
+            <View
+              style={{
+                width: isMajor ? 2 : 1,
+                height: isMajor ? 32 : isMedium ? 20 : 12,
+                backgroundColor: isMajor ? C.primary : 'rgba(188, 200, 185, 0.4)',
+                borderRadius: 1,
+              }}
+            />
+          </View>
+        );
+      }),
+    [],
+  );
+
+  const memoizedWeightTicks = useMemo(
+    () =>
+      Array.from({ length: 1701 }).map((_, i) => {
+        const val = 30 + i * 0.1;
+        const isMajor = i % 10 === 0;
+        const isMedium = i % 5 === 0;
+        return (
+          <View
+            key={i}
+            style={{ width: 10, alignItems: 'center', justifyContent: 'flex-end' }}
+          >
+            {isMajor && (
+              <ThemedText
+                style={{
+                  fontSize: 11,
+                  color: 'rgba(188, 200, 185, 0.6)',
+                  marginBottom: 6,
+                  fontFamily: 'Inter_600SemiBold',
+                  width: 40,
+                  textAlign: 'center',
+                }}
+              >
+                {Math.round(val)}
+              </ThemedText>
+            )}
+            <View
+              style={{
+                width: isMajor ? 2 : 1,
+                height: isMajor ? 32 : isMedium ? 20 : 12,
+                backgroundColor: isMajor ? C.primary : 'rgba(188, 200, 185, 0.4)',
+                borderRadius: 1,
+              }}
+            />
+          </View>
+        );
+      }),
+    [],
+  );
+
   const renderStep1Nebula = () => (
     <Animated.View entering={FadeInRight} exiting={FadeOutLeft} key="step1">
       <Tilt3DCard maxTilt={6} perspective={900} height={650}>
@@ -691,7 +893,13 @@ const OnboardingScreen = (): React.ReactElement => {
               <ThemedText
                 variant="h2"
                 weight="700"
-                style={{ color: '#FFFFFF', fontSize: 28, textAlign: 'center', fontFamily: 'Inter_700Bold', paddingTop: 8 }}
+                style={{
+                  color: '#FFFFFF',
+                  fontSize: 28,
+                  textAlign: 'center',
+                  fontFamily: 'Inter_700Bold',
+                  paddingTop: 8,
+                }}
               >
                 Chỉ số cơ thể
               </ThemedText>
@@ -714,36 +922,74 @@ const OnboardingScreen = (): React.ReactElement => {
           {/* Metric cards */}
           <ParallaxLayer depth={0.5}>
             <View style={s.formGroup}>
-
               {/* Height */}
-              <View style={[s1.metricCard, { backgroundColor: C.inputBg, borderColor: C.glassBorder }]}>
+              <View
+                style={[
+                  s1.metricCard,
+                  { backgroundColor: C.inputBg, borderColor: C.glassBorder },
+                ]}
+              >
                 <View style={s1.metricHeader}>
                   <View>
-                    <ThemedText style={[s.label, { marginLeft: 0 }]}>CHIỀU CAO</ThemedText>
-                    <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 4, marginTop: 4 }}>
-                      <ThemedText weight="700" style={{ color: '#FFFFFF', fontSize: 36, fontFamily: 'Inter_700Bold', lineHeight: 42 }}>
+                    <ThemedText style={[s.label, { marginLeft: 0 }]}>
+                      CHIỀU CAO
+                    </ThemedText>
+                    <View
+                      style={{
+                        flexDirection: 'row',
+                        alignItems: 'baseline',
+                        gap: 4,
+                        marginTop: 4,
+                      }}
+                    >
+                      <ThemedText
+                        weight="700"
+                        style={{
+                          color: '#FFFFFF',
+                          fontSize: 36,
+                          fontFamily: 'Inter_700Bold',
+                          lineHeight: 42,
+                        }}
+                      >
                         {data.heightCm || '170'}
                       </ThemedText>
-                      <ThemedText style={{ color: C.onSurfaceVariant, fontSize: 16, fontFamily: 'Inter_500Medium' }}>
+                      <ThemedText
+                        style={{
+                          color: C.onSurfaceVariant,
+                          fontSize: 16,
+                          fontFamily: 'Inter_500Medium',
+                        }}
+                      >
                         cm
                       </ThemedText>
                     </View>
                   </View>
                   <View style={s1.metricIconBox}>
-                    <MaterialCommunityIcons name="arrow-up-down" size={24} color={C.primary} />
+                    <MaterialCommunityIcons
+                      name="arrow-up-down"
+                      size={24}
+                      color={C.primary}
+                    />
                   </View>
                 </View>
                 <TextInput
                   testID={TEST_IDS.auth.onboardingHeightInput}
                   style={{ position: 'absolute', opacity: 0, width: 1, height: 1 }}
                   value={data.heightCm}
-                  onChangeText={(text) => setData({ ...data, heightCm: text.replace(/[^0-9]/g, '') })}
+                  onChangeText={(text) =>
+                    setData({ ...data, heightCm: text.replace(/[^0-9]/g, '') })
+                  }
                   keyboardType={Platform.OS === 'ios' ? 'number-pad' : 'numeric'}
                 />
 
                 {/* Custom Horizontal Ruler Selector */}
                 <View
-                  style={{ marginTop: 20, height: 80, alignItems: 'center', justifyContent: 'center' }}
+                  style={{
+                    marginTop: 20,
+                    height: 80,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
                   onLayout={(e) => {
                     const w = e.nativeEvent.layout.width;
                     setRulerContainerWidth(w);
@@ -751,25 +997,30 @@ const OnboardingScreen = (): React.ReactElement => {
                     if (!rulerInitialized.current && rulerScrollRef.current && w > 0) {
                       const initVal = data.heightCm ? parseInt(data.heightCm, 10) : 170;
                       setTimeout(() => {
-                        rulerScrollRef.current?.scrollTo({ x: (initVal - 100) * 12, animated: false });
+                        rulerScrollRef.current?.scrollTo({
+                          x: (initVal - 100) * 12,
+                          animated: false,
+                        });
                         rulerInitialized.current = true;
                       }, 100);
                     }
                   }}
                 >
                   {/* Center Indicator — only covers the tick area */}
-                  <View style={{
-                    position: 'absolute',
-                    bottom: 0,
-                    height: 44,
-                    width: 3,
-                    backgroundColor: C.primary,
-                    borderRadius: 2,
-                    zIndex: 10,
-                    shadowColor: C.primary,
-                    shadowOpacity: 0.8,
-                    shadowRadius: 8,
-                  }} />
+                  <View
+                    style={{
+                      position: 'absolute',
+                      bottom: 0,
+                      height: 44,
+                      width: 3,
+                      backgroundColor: C.primary,
+                      borderRadius: 2,
+                      zIndex: 10,
+                      shadowColor: C.primary,
+                      shadowOpacity: 0.8,
+                      shadowRadius: 8,
+                    }}
+                  />
 
                   {rulerContainerWidth > 0 && (
                     <ScrollView
@@ -798,49 +1049,48 @@ const OnboardingScreen = (): React.ReactElement => {
                       }}
                       scrollEventThrottle={64}
                     >
-                      {Array.from({ length: 151 }).map((_, i) => {
-                        const val = 100 + i;
-                        const isMajor = val % 10 === 0;
-                        const isMedium = val % 5 === 0;
-
-                        return (
-                          <View key={i} style={{ width: 12, alignItems: 'center', justifyContent: 'flex-end' }}>
-                            {isMajor && (
-                              <ThemedText style={{
-                                fontSize: 11,
-                                color: 'rgba(188, 200, 185, 0.6)',
-                                marginBottom: 6,
-                                fontFamily: 'Inter_600SemiBold',
-                                width: 40,
-                                textAlign: 'center'
-                              }}>
-                                {val}
-                              </ThemedText>
-                            )}
-                            <View style={{
-                              width: isMajor ? 2 : 1,
-                              height: isMajor ? 32 : (isMedium ? 20 : 12),
-                              backgroundColor: isMajor ? C.primary : 'rgba(188, 200, 185, 0.4)',
-                              borderRadius: 1,
-                            }} />
-                          </View>
-                        );
-                      })}
+                      {memoizedHeightTicks}
                     </ScrollView>
                   )}
                 </View>
               </View>
 
               {/* Weight */}
-              <View style={[s1.metricCard, { backgroundColor: C.inputBg, borderColor: C.glassBorder }]}>
+              <View
+                style={[
+                  s1.metricCard,
+                  { backgroundColor: C.inputBg, borderColor: C.glassBorder },
+                ]}
+              >
                 <View style={s1.metricHeader}>
                   <View>
                     <ThemedText style={[s.label, { marginLeft: 0 }]}>CÂN NẶNG</ThemedText>
-                    <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 4, marginTop: 4 }}>
-                      <ThemedText weight="700" style={{ color: '#FFFFFF', fontSize: 36, fontFamily: 'Inter_700Bold', lineHeight: 42 }}>
+                    <View
+                      style={{
+                        flexDirection: 'row',
+                        alignItems: 'baseline',
+                        gap: 4,
+                        marginTop: 4,
+                      }}
+                    >
+                      <ThemedText
+                        weight="700"
+                        style={{
+                          color: '#FFFFFF',
+                          fontSize: 36,
+                          fontFamily: 'Inter_700Bold',
+                          lineHeight: 42,
+                        }}
+                      >
                         {data.weightKg || '65'}
                       </ThemedText>
-                      <ThemedText style={{ color: C.onSurfaceVariant, fontSize: 16, fontFamily: 'Inter_500Medium' }}>
+                      <ThemedText
+                        style={{
+                          color: C.onSurfaceVariant,
+                          fontSize: 16,
+                          fontFamily: 'Inter_500Medium',
+                        }}
+                      >
                         kg
                       </ThemedText>
                     </View>
@@ -853,38 +1103,54 @@ const OnboardingScreen = (): React.ReactElement => {
                   testID={TEST_IDS.auth.onboardingWeightInput}
                   style={{ position: 'absolute', opacity: 0, width: 1, height: 1 }}
                   value={data.weightKg}
-                  onChangeText={(text) => setData({ ...data, weightKg: text.replace(/[^0-9.]/g, '') })}
+                  onChangeText={(text) =>
+                    setData({ ...data, weightKg: text.replace(/[^0-9.]/g, '') })
+                  }
                   keyboardType={Platform.OS === 'ios' ? 'decimal-pad' : 'numeric'}
                 />
 
                 {/* Custom Horizontal Ruler Selector for Weight */}
                 <View
-                  style={{ marginTop: 20, height: 80, alignItems: 'center', justifyContent: 'center' }}
+                  style={{
+                    marginTop: 20,
+                    height: 80,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
                   onLayout={(e) => {
                     const w = e.nativeEvent.layout.width;
                     setWeightRulerWidth(w);
-                    if (!weightRulerInitialized.current && weightRulerRef.current && w > 0) {
+                    if (
+                      !weightRulerInitialized.current &&
+                      weightRulerRef.current &&
+                      w > 0
+                    ) {
                       const initVal = data.weightKg ? parseFloat(data.weightKg) : 65;
                       setTimeout(() => {
-                        weightRulerRef.current?.scrollTo({ x: (initVal - 30) * 100, animated: false });
+                        weightRulerRef.current?.scrollTo({
+                          x: (initVal - 30) * 100,
+                          animated: false,
+                        });
                         weightRulerInitialized.current = true;
                       }, 100);
                     }
                   }}
                 >
                   {/* Center Indicator */}
-                  <View style={{
-                    position: 'absolute',
-                    bottom: 0,
-                    height: 44,
-                    width: 3,
-                    backgroundColor: C.primary,
-                    borderRadius: 2,
-                    zIndex: 10,
-                    shadowColor: C.primary,
-                    shadowOpacity: 0.8,
-                    shadowRadius: 8,
-                  }} />
+                  <View
+                    style={{
+                      position: 'absolute',
+                      bottom: 0,
+                      height: 44,
+                      width: 3,
+                      backgroundColor: C.primary,
+                      borderRadius: 2,
+                      zIndex: 10,
+                      shadowColor: C.primary,
+                      shadowOpacity: 0.8,
+                      shadowRadius: 8,
+                    }}
+                  />
 
                   {weightRulerWidth > 0 && (
                     <ScrollView
@@ -913,39 +1179,11 @@ const OnboardingScreen = (): React.ReactElement => {
                       }}
                       scrollEventThrottle={64}
                     >
-                      {Array.from({ length: 1701 }).map((_, i) => {
-                        const val = 30 + i * 0.1;
-                        const isMajor = i % 10 === 0;
-                        const isMedium = i % 5 === 0;
-
-                        return (
-                          <View key={i} style={{ width: 10, alignItems: 'center', justifyContent: 'flex-end' }}>
-                            {isMajor && (
-                              <ThemedText style={{
-                                fontSize: 11,
-                                color: 'rgba(188, 200, 185, 0.6)',
-                                marginBottom: 6,
-                                fontFamily: 'Inter_600SemiBold',
-                                width: 40,
-                                textAlign: 'center'
-                              }}>
-                                {Math.round(val)}
-                              </ThemedText>
-                            )}
-                            <View style={{
-                              width: isMajor ? 2 : 1,
-                              height: isMajor ? 32 : (isMedium ? 20 : 12),
-                              backgroundColor: isMajor ? C.primary : 'rgba(188, 200, 185, 0.4)',
-                              borderRadius: 1,
-                            }} />
-                          </View>
-                        );
-                      })}
+                      {memoizedWeightTicks}
                     </ScrollView>
                   )}
                 </View>
               </View>
-
             </View>
           </ParallaxLayer>
         </Animated.View>
@@ -967,7 +1205,10 @@ const OnboardingScreen = (): React.ReactElement => {
             <Tilt3DCard maxTilt={6} perspective={900} height={620}>
               <Animated.View
                 entering={FadeInDown.delay(150).springify()}
-                style={[s.card, { backgroundColor: C.glassBg, borderColor: C.glassBorder }]}
+                style={[
+                  s.card,
+                  { backgroundColor: C.glassBg, borderColor: C.glassBorder },
+                ]}
               >
                 {/* Header — no icon, just title + subtitle */}
                 <ParallaxLayer depth={0.3}>
@@ -975,7 +1216,13 @@ const OnboardingScreen = (): React.ReactElement => {
                     <ThemedText
                       variant="h2"
                       weight="700"
-                      style={{ color: '#FFFFFF', fontSize: 26, textAlign: 'center', fontFamily: 'Inter_700Bold', paddingTop: 8 }}
+                      style={{
+                        color: '#FFFFFF',
+                        fontSize: 26,
+                        textAlign: 'center',
+                        fontFamily: 'Inter_700Bold',
+                        paddingTop: 8,
+                      }}
                     >
                       Mục tiêu của bạn
                     </ThemedText>
@@ -990,7 +1237,8 @@ const OnboardingScreen = (): React.ReactElement => {
                         fontFamily: 'Inter_500Medium',
                       }}
                     >
-                      Chúng tôi sẽ cá nhân hóa kế hoạch dinh dưỡng dựa trên mục tiêu của bạn
+                      Chúng tôi sẽ cá nhân hóa kế hoạch dinh dưỡng dựa trên mục tiêu của
+                      bạn
                     </ThemedText>
                   </View>
                 </ParallaxLayer>
@@ -1019,23 +1267,52 @@ const OnboardingScreen = (): React.ReactElement => {
                       accessibilityRole="radio"
                       accessibilityState={{ checked: data.goal === 'lose' }}
                     >
-                      <View style={[s2.goalIconBox, { backgroundColor: 'rgba(75, 226, 119, 0.15)', borderColor: 'rgba(75, 226, 119, 0.3)' }]}>
-                        <MaterialCommunityIcons name="scale-bathroom" size={28} color={C.primary} />
+                      <View
+                        style={[
+                          s2.goalIconBox,
+                          {
+                            backgroundColor: 'rgba(75, 226, 119, 0.15)',
+                            borderColor: 'rgba(75, 226, 119, 0.3)',
+                          },
+                        ]}
+                      >
+                        <MaterialCommunityIcons
+                          name="scale-bathroom"
+                          size={28}
+                          color={C.primary}
+                        />
                       </View>
                       <View style={{ flex: 1 }}>
-                        <ThemedText weight="700" style={{ color: '#FFFFFF', fontSize: 17, fontFamily: 'Inter_700Bold' }}>
+                        <ThemedText
+                          weight="700"
+                          style={{
+                            color: '#FFFFFF',
+                            fontSize: 17,
+                            fontFamily: 'Inter_700Bold',
+                          }}
+                        >
                           Giảm cân
                         </ThemedText>
-                        <ThemedText style={{ color: C.onSurfaceVariant, fontSize: 13, fontFamily: 'Inter_400Regular', marginTop: 2, lineHeight: 18 }}>
+                        <ThemedText
+                          style={{
+                            color: C.onSurfaceVariant,
+                            fontSize: 13,
+                            fontFamily: 'Inter_400Regular',
+                            marginTop: 2,
+                            lineHeight: 18,
+                          }}
+                        >
                           Giảm mỡ thừa với chế độ thâm hụt calo
                         </ThemedText>
                       </View>
-                      <View style={[
-                        s2.radioOuter,
-                        data.goal === 'lose'
-                          ? { backgroundColor: C.primary }
-                          : { borderColor: 'rgba(134, 149, 133, 0.5)', borderWidth: 2 },
-                      ]}>
+                      <View
+                        style={[
+                          s2.radioOuter,
+                          data.goal === 'lose'
+                            ? { backgroundColor: C.primary }
+                            : { borderColor: 'rgba(134, 149, 133, 0.5)', borderWidth: 2 },
+                        ]}
+                      >
                         {data.goal === 'lose' && (
                           <Ionicons name="checkmark" size={16} color="#003915" />
                         )}
@@ -1049,7 +1326,8 @@ const OnboardingScreen = (): React.ReactElement => {
                         s2.goalCard,
                         {
                           backgroundColor: C.inputBg,
-                          borderColor: data.goal === 'maintain' ? C.primary : C.glassBorder,
+                          borderColor:
+                            data.goal === 'maintain' ? C.primary : C.glassBorder,
                           borderWidth: data.goal === 'maintain' ? 2 : 1,
                           ...(data.goal === 'maintain' && {
                             shadowColor: C.primary,
@@ -1063,23 +1341,52 @@ const OnboardingScreen = (): React.ReactElement => {
                       accessibilityRole="radio"
                       accessibilityState={{ checked: data.goal === 'maintain' }}
                     >
-                      <View style={[s2.goalIconBox, { backgroundColor: 'rgba(96, 165, 250, 0.15)', borderColor: 'rgba(96, 165, 250, 0.3)' }]}>
-                        <MaterialCommunityIcons name="scale-balance" size={28} color="#60A5FA" />
+                      <View
+                        style={[
+                          s2.goalIconBox,
+                          {
+                            backgroundColor: 'rgba(96, 165, 250, 0.15)',
+                            borderColor: 'rgba(96, 165, 250, 0.3)',
+                          },
+                        ]}
+                      >
+                        <MaterialCommunityIcons
+                          name="scale-balance"
+                          size={28}
+                          color="#60A5FA"
+                        />
                       </View>
                       <View style={{ flex: 1 }}>
-                        <ThemedText weight="700" style={{ color: '#FFFFFF', fontSize: 17, fontFamily: 'Inter_700Bold' }}>
+                        <ThemedText
+                          weight="700"
+                          style={{
+                            color: '#FFFFFF',
+                            fontSize: 17,
+                            fontFamily: 'Inter_700Bold',
+                          }}
+                        >
                           Duy trì cân nặng
                         </ThemedText>
-                        <ThemedText style={{ color: C.onSurfaceVariant, fontSize: 13, fontFamily: 'Inter_400Regular', marginTop: 2, lineHeight: 18 }}>
+                        <ThemedText
+                          style={{
+                            color: C.onSurfaceVariant,
+                            fontSize: 13,
+                            fontFamily: 'Inter_400Regular',
+                            marginTop: 2,
+                            lineHeight: 18,
+                          }}
+                        >
                           Giữ gìn sức khỏe và duy trì vóc dáng
                         </ThemedText>
                       </View>
-                      <View style={[
-                        s2.radioOuter,
-                        data.goal === 'maintain'
-                          ? { backgroundColor: C.primary }
-                          : { borderColor: 'rgba(134, 149, 133, 0.5)', borderWidth: 2 },
-                      ]}>
+                      <View
+                        style={[
+                          s2.radioOuter,
+                          data.goal === 'maintain'
+                            ? { backgroundColor: C.primary }
+                            : { borderColor: 'rgba(134, 149, 133, 0.5)', borderWidth: 2 },
+                        ]}
+                      >
                         {data.goal === 'maintain' && (
                           <Ionicons name="checkmark" size={16} color="#003915" />
                         )}
@@ -1107,23 +1414,52 @@ const OnboardingScreen = (): React.ReactElement => {
                       accessibilityRole="radio"
                       accessibilityState={{ checked: data.goal === 'gain' }}
                     >
-                      <View style={[s2.goalIconBox, { backgroundColor: 'rgba(251, 146, 60, 0.15)', borderColor: 'rgba(251, 146, 60, 0.3)' }]}>
-                        <MaterialCommunityIcons name="dumbbell" size={28} color="#FB923C" />
+                      <View
+                        style={[
+                          s2.goalIconBox,
+                          {
+                            backgroundColor: 'rgba(251, 146, 60, 0.15)',
+                            borderColor: 'rgba(251, 146, 60, 0.3)',
+                          },
+                        ]}
+                      >
+                        <MaterialCommunityIcons
+                          name="dumbbell"
+                          size={28}
+                          color="#FB923C"
+                        />
                       </View>
                       <View style={{ flex: 1 }}>
-                        <ThemedText weight="700" style={{ color: '#FFFFFF', fontSize: 17, fontFamily: 'Inter_700Bold' }}>
+                        <ThemedText
+                          weight="700"
+                          style={{
+                            color: '#FFFFFF',
+                            fontSize: 17,
+                            fontFamily: 'Inter_700Bold',
+                          }}
+                        >
                           Tăng cơ
                         </ThemedText>
-                        <ThemedText style={{ color: C.onSurfaceVariant, fontSize: 13, fontFamily: 'Inter_400Regular', marginTop: 2, lineHeight: 18 }}>
+                        <ThemedText
+                          style={{
+                            color: C.onSurfaceVariant,
+                            fontSize: 13,
+                            fontFamily: 'Inter_400Regular',
+                            marginTop: 2,
+                            lineHeight: 18,
+                          }}
+                        >
                           Phát triển cơ bắp với chế độ giàu protein
                         </ThemedText>
                       </View>
-                      <View style={[
-                        s2.radioOuter,
-                        data.goal === 'gain'
-                          ? { backgroundColor: C.primary }
-                          : { borderColor: 'rgba(134, 149, 133, 0.5)', borderWidth: 2 },
-                      ]}>
+                      <View
+                        style={[
+                          s2.radioOuter,
+                          data.goal === 'gain'
+                            ? { backgroundColor: C.primary }
+                            : { borderColor: 'rgba(134, 149, 133, 0.5)', borderWidth: 2 },
+                        ]}
+                      >
                         {data.goal === 'gain' && (
                           <Ionicons name="checkmark" size={16} color="#003915" />
                         )}
@@ -1136,13 +1472,233 @@ const OnboardingScreen = (): React.ReactElement => {
           </Animated.View>
         );
 
-      case 3: // Activity Level — Emerald Nebula redesign
+      case 3: {
+        // Target Weight
+        const origWeight = parseFloat(data.weightKg) || 65;
+        const targetVal = targetDisplayWeight || origWeight;
+        const weightDiff = targetVal - origWeight;
+        const twPad = Math.max(targetWeightRulerWidth / 2 - 5, 0);
+        const showDiffUI = Math.abs(weightDiff) >= 0.2;
+        const origCX = (origWeight - 30) * 100;
+        const sX = targetRulerScrollXRef.current;
+        const origScrX = origCX - sX + twPad;
+        const ctrX = targetWeightRulerWidth / 2;
+        const oLeft = Math.min(origScrX, ctrX);
+        const oWidth = Math.abs(origScrX - ctrX);
+        const origMLeft = twPad + (origWeight - 30) * 100 - 1.5;
+
+        return (
+          <Animated.View entering={FadeInRight} exiting={FadeOutLeft} key="step3-tw">
+            <Tilt3DCard maxTilt={6} perspective={900} height={320}>
+              <Animated.View
+                entering={FadeInDown.delay(150).springify()}
+                style={[
+                  s.card,
+                  {
+                    backgroundColor: C.glassBg,
+                    borderColor: C.glassBorder,
+                    paddingVertical: 28,
+                  },
+                ]}
+              >
+                <ParallaxLayer depth={0.3}>
+                  <View style={s.cardHeader}>
+                    <ThemedText
+                      variant="h2"
+                      weight="700"
+                      style={{
+                        color: '#FFFFFF',
+                        fontSize: 26,
+                        textAlign: 'center',
+                        fontFamily: 'Inter_700Bold',
+                        paddingTop: 8,
+                      }}
+                    >
+                      Mục tiêu cân nặng
+                    </ThemedText>
+                    <ThemedText
+                      variant="body"
+                      style={{
+                        color: C.onSurfaceVariant,
+                        marginTop: 6,
+                        textAlign: 'center',
+                        lineHeight: 22,
+                        maxWidth: 280,
+                        fontFamily: 'Inter_500Medium',
+                      }}
+                    >
+                      Hãy cho chúng tôi biết cân nặng mà bạn mong muốn đạt được
+                    </ThemedText>
+                  </View>
+                </ParallaxLayer>
+                <ParallaxLayer depth={0.5}>
+                  <View style={{ alignItems: 'center' }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'baseline' }}>
+                      <ThemedText
+                        weight="700"
+                        style={{
+                          color: '#FFFFFF',
+                          fontSize: 64,
+                          fontFamily: 'Inter_700Bold',
+                          letterSpacing: -2,
+                          textShadowColor: 'rgba(75, 226, 119, 0.4)',
+                          textShadowOffset: { width: 0, height: 0 },
+                          textShadowRadius: 20,
+                          lineHeight: 76,
+                        }}
+                      >
+                        {targetVal.toFixed(1)}
+                      </ThemedText>
+                      <ThemedText
+                        weight="700"
+                        style={{
+                          color: C.onSurfaceVariant,
+                          fontSize: 22,
+                          fontFamily: 'Inter_700Bold',
+                          marginLeft: 4,
+                          marginBottom: 6,
+                        }}
+                      >
+                        kg
+                      </ThemedText>
+                    </View>
+                    {showDiffUI && (
+                      <View
+                        style={{
+                          marginTop: 14,
+                          paddingHorizontal: 16,
+                          paddingVertical: 6,
+                          borderRadius: 20,
+                          backgroundColor:
+                            weightDiff < 0
+                              ? 'rgba(75, 226, 119, 0.15)'
+                              : 'rgba(251, 146, 60, 0.15)',
+                          borderWidth: 1,
+                          borderColor:
+                            weightDiff < 0
+                              ? 'rgba(75, 226, 119, 0.3)'
+                              : 'rgba(251, 146, 60, 0.3)',
+                        }}
+                      >
+                        <ThemedText
+                          weight="600"
+                          style={{
+                            color: weightDiff < 0 ? C.primary : '#FB923C',
+                            fontSize: 14,
+                            fontFamily: 'Inter_600SemiBold',
+                          }}
+                        >
+                          {weightDiff > 0 ? '+' : ''}
+                          {weightDiff.toFixed(1)} kg so với hiện tại
+                        </ThemedText>
+                      </View>
+                    )}
+                  </View>
+                </ParallaxLayer>
+              </Animated.View>
+            </Tilt3DCard>
+
+            <Animated.View
+              entering={FadeInDown.delay(350).springify()}
+              style={{ marginTop: 32 }}
+            >
+              <View
+                style={{ height: 110, alignItems: 'center', justifyContent: 'flex-end' }}
+                onLayout={(e) => {
+                  const w = e.nativeEvent.layout.width;
+                  if (w > 0 && w !== targetWeightRulerWidth) setTargetWeightRulerWidth(w);
+                }}
+              >
+                <View
+                  style={{
+                    position: 'absolute',
+                    bottom: 0,
+                    height: 52,
+                    width: 3,
+                    backgroundColor: C.primary,
+                    borderRadius: 2,
+                    zIndex: 10,
+                    shadowColor: C.primary,
+                    shadowOpacity: 0.8,
+                    shadowRadius: 12,
+                    alignSelf: 'center',
+                  }}
+                />
+                {targetWeightRulerInitialized.current && (
+                  <Animated.View
+                    style={[
+                      {
+                        position: 'absolute',
+                        bottom: 0,
+                        height: 52,
+                        borderRadius: 4,
+                        zIndex: 5,
+                      },
+                      targetOverlayAnimatedStyle,
+                    ]}
+                  />
+                )}
+                <Animated.ScrollView
+                  ref={targetWeightRulerRef}
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  snapToInterval={10}
+                  decelerationRate="fast"
+                  contentContainerStyle={{
+                    paddingLeft: twPad,
+                    paddingRight: twPad,
+                    height: 110,
+                    alignItems: 'flex-end',
+                  }}
+                  onScroll={onTargetRulerScroll}
+                  onMomentumScrollEnd={(e) => {
+                    const o = e.nativeEvent.contentOffset.x;
+                    const v = Math.round((o / 100 + 30) * 10) / 10;
+                    const c = Math.max(30, Math.min(200, v));
+                    setData((p) => ({ ...p, targetWeightKg: String(c) }));
+                    setTargetDisplayWeight(c);
+                  }}
+                  onScrollEndDrag={(e) => {
+                    const o = e.nativeEvent.contentOffset.x;
+                    const v = Math.round((o / 100 + 30) * 10) / 10;
+                    const c = Math.max(30, Math.min(200, v));
+                    setData((p) => ({ ...p, targetWeightKg: String(c) }));
+                    setTargetDisplayWeight(c);
+                  }}
+                  scrollEventThrottle={16}
+                >
+                  {showDiffUI && (
+                    <View
+                      style={{
+                        position: 'absolute',
+                        bottom: 0,
+                        left: origMLeft,
+                        height: 52,
+                        width: 3,
+                        backgroundColor: 'rgba(188, 200, 185, 0.6)',
+                        borderRadius: 2,
+                        zIndex: 8,
+                      }}
+                    />
+                  )}
+                  {memoizedWeightTicks}
+                </Animated.ScrollView>
+              </View>
+            </Animated.View>
+          </Animated.View>
+        );
+      }
+
+      case 4: // Activity Level
         return (
           <Animated.View entering={FadeInRight} exiting={FadeOutLeft} key="step3">
             <Tilt3DCard maxTilt={6} perspective={900} height={680}>
               <Animated.View
                 entering={FadeInDown.delay(150).springify()}
-                style={[s.card, { backgroundColor: C.glassBg, borderColor: C.glassBorder }]}
+                style={[
+                  s.card,
+                  { backgroundColor: C.glassBg, borderColor: C.glassBorder },
+                ]}
               >
                 {/* Header — no icon, just title + subtitle */}
                 <ParallaxLayer depth={0.3}>
@@ -1150,7 +1706,13 @@ const OnboardingScreen = (): React.ReactElement => {
                     <ThemedText
                       variant="h2"
                       weight="700"
-                      style={{ color: '#FFFFFF', fontSize: 26, textAlign: 'center', fontFamily: 'Inter_700Bold', paddingTop: 8 }}
+                      style={{
+                        color: '#FFFFFF',
+                        fontSize: 26,
+                        textAlign: 'center',
+                        fontFamily: 'Inter_700Bold',
+                        paddingTop: 8,
+                      }}
                     >
                       Cường độ vận động
                     </ThemedText>
@@ -1180,7 +1742,10 @@ const OnboardingScreen = (): React.ReactElement => {
                         s3.actCard,
                         {
                           backgroundColor: C.glassBg,
-                          borderColor: data.activityLevel === 'sedentary' ? C.primary : C.glassBorder,
+                          borderColor:
+                            data.activityLevel === 'sedentary'
+                              ? C.primary
+                              : C.glassBorder,
                           borderWidth: data.activityLevel === 'sedentary' ? 2 : 1,
                           ...(data.activityLevel === 'sedentary' && {
                             shadowColor: C.primary,
@@ -1190,30 +1755,65 @@ const OnboardingScreen = (): React.ReactElement => {
                           }),
                         },
                       ]}
-                      onPress={() => setData({ ...data, activityLevel: 'sedentary' as any })}
+                      onPress={() =>
+                        setData({ ...data, activityLevel: 'sedentary' as any })
+                      }
                       accessibilityRole="radio"
                       accessibilityState={{ checked: data.activityLevel === 'sedentary' }}
                     >
-                      <View style={[s3.actIconBox, data.activityLevel === 'sedentary'
-                        ? { backgroundColor: 'rgba(75, 226, 119, 0.15)', borderColor: 'rgba(75, 226, 119, 0.3)' }
-                        : { backgroundColor: 'rgba(47, 52, 69, 0.5)', borderColor: 'rgba(61, 74, 61, 0.2)' }
-                      ]}>
-                        <MaterialCommunityIcons name="desktop-classic" size={24} color={data.activityLevel === 'sedentary' ? C.primary : '#869585'} />
+                      <View
+                        style={[
+                          s3.actIconBox,
+                          data.activityLevel === 'sedentary'
+                            ? {
+                                backgroundColor: 'rgba(75, 226, 119, 0.15)',
+                                borderColor: 'rgba(75, 226, 119, 0.3)',
+                              }
+                            : {
+                                backgroundColor: 'rgba(47, 52, 69, 0.5)',
+                                borderColor: 'rgba(61, 74, 61, 0.2)',
+                              },
+                        ]}
+                      >
+                        <MaterialCommunityIcons
+                          name="desktop-classic"
+                          size={24}
+                          color={
+                            data.activityLevel === 'sedentary' ? C.primary : '#869585'
+                          }
+                        />
                       </View>
                       <View style={{ flex: 1 }}>
-                        <ThemedText weight="700" style={{ color: '#FFFFFF', fontSize: 17, fontFamily: 'Inter_700Bold' }}>
+                        <ThemedText
+                          weight="700"
+                          style={{
+                            color: '#FFFFFF',
+                            fontSize: 17,
+                            fontFamily: 'Inter_700Bold',
+                          }}
+                        >
                           Ít vận động
                         </ThemedText>
-                        <ThemedText style={{ color: C.onSurfaceVariant, fontSize: 13, fontFamily: 'Inter_400Regular', marginTop: 2, lineHeight: 18 }}>
+                        <ThemedText
+                          style={{
+                            color: C.onSurfaceVariant,
+                            fontSize: 13,
+                            fontFamily: 'Inter_400Regular',
+                            marginTop: 2,
+                            lineHeight: 18,
+                          }}
+                        >
                           Ngồi văn phòng hoặc làm việc tại nhà, ít đi lại
                         </ThemedText>
                       </View>
-                      <View style={[
-                        s3.radioOuter,
-                        data.activityLevel === 'sedentary'
-                          ? { backgroundColor: C.primary }
-                          : { borderColor: 'rgba(134, 149, 133, 0.5)', borderWidth: 2 },
-                      ]}>
+                      <View
+                        style={[
+                          s3.radioOuter,
+                          data.activityLevel === 'sedentary'
+                            ? { backgroundColor: C.primary }
+                            : { borderColor: 'rgba(134, 149, 133, 0.5)', borderWidth: 2 },
+                        ]}
+                      >
                         {data.activityLevel === 'sedentary' && (
                           <Ionicons name="checkmark" size={16} color="#003915" />
                         )}
@@ -1227,7 +1827,8 @@ const OnboardingScreen = (): React.ReactElement => {
                         s3.actCard,
                         {
                           backgroundColor: C.glassBg,
-                          borderColor: data.activityLevel === 'light' ? C.primary : C.glassBorder,
+                          borderColor:
+                            data.activityLevel === 'light' ? C.primary : C.glassBorder,
                           borderWidth: data.activityLevel === 'light' ? 2 : 1,
                           ...(data.activityLevel === 'light' && {
                             shadowColor: C.primary,
@@ -1241,26 +1842,57 @@ const OnboardingScreen = (): React.ReactElement => {
                       accessibilityRole="radio"
                       accessibilityState={{ checked: data.activityLevel === 'light' }}
                     >
-                      <View style={[s3.actIconBox, data.activityLevel === 'light'
-                        ? { backgroundColor: 'rgba(75, 226, 119, 0.15)', borderColor: 'rgba(75, 226, 119, 0.3)' }
-                        : { backgroundColor: 'rgba(47, 52, 69, 0.5)', borderColor: 'rgba(61, 74, 61, 0.2)' }
-                      ]}>
-                        <MaterialCommunityIcons name="walk" size={24} color={data.activityLevel === 'light' ? C.primary : '#869585'} />
+                      <View
+                        style={[
+                          s3.actIconBox,
+                          data.activityLevel === 'light'
+                            ? {
+                                backgroundColor: 'rgba(75, 226, 119, 0.15)',
+                                borderColor: 'rgba(75, 226, 119, 0.3)',
+                              }
+                            : {
+                                backgroundColor: 'rgba(47, 52, 69, 0.5)',
+                                borderColor: 'rgba(61, 74, 61, 0.2)',
+                              },
+                        ]}
+                      >
+                        <MaterialCommunityIcons
+                          name="walk"
+                          size={24}
+                          color={data.activityLevel === 'light' ? C.primary : '#869585'}
+                        />
                       </View>
                       <View style={{ flex: 1 }}>
-                        <ThemedText weight="700" style={{ color: '#FFFFFF', fontSize: 17, fontFamily: 'Inter_700Bold' }}>
+                        <ThemedText
+                          weight="700"
+                          style={{
+                            color: '#FFFFFF',
+                            fontSize: 17,
+                            fontFamily: 'Inter_700Bold',
+                          }}
+                        >
                           Vận động nhẹ
                         </ThemedText>
-                        <ThemedText style={{ color: C.onSurfaceVariant, fontSize: 13, fontFamily: 'Inter_400Regular', marginTop: 2, lineHeight: 18 }}>
+                        <ThemedText
+                          style={{
+                            color: C.onSurfaceVariant,
+                            fontSize: 13,
+                            fontFamily: 'Inter_400Regular',
+                            marginTop: 2,
+                            lineHeight: 18,
+                          }}
+                        >
                           Tập thể dục nhẹ nhàng 1-3 ngày/tuần
                         </ThemedText>
                       </View>
-                      <View style={[
-                        s3.radioOuter,
-                        data.activityLevel === 'light'
-                          ? { backgroundColor: C.primary }
-                          : { borderColor: 'rgba(134, 149, 133, 0.5)', borderWidth: 2 },
-                      ]}>
+                      <View
+                        style={[
+                          s3.radioOuter,
+                          data.activityLevel === 'light'
+                            ? { backgroundColor: C.primary }
+                            : { borderColor: 'rgba(134, 149, 133, 0.5)', borderWidth: 2 },
+                        ]}
+                      >
                         {data.activityLevel === 'light' && (
                           <Ionicons name="checkmark" size={16} color="#003915" />
                         )}
@@ -1274,7 +1906,8 @@ const OnboardingScreen = (): React.ReactElement => {
                         s3.actCard,
                         {
                           backgroundColor: C.glassBg,
-                          borderColor: data.activityLevel === 'moderate' ? C.primary : C.glassBorder,
+                          borderColor:
+                            data.activityLevel === 'moderate' ? C.primary : C.glassBorder,
                           borderWidth: data.activityLevel === 'moderate' ? 2 : 1,
                           ...(data.activityLevel === 'moderate' && {
                             shadowColor: C.primary,
@@ -1284,30 +1917,65 @@ const OnboardingScreen = (): React.ReactElement => {
                           }),
                         },
                       ]}
-                      onPress={() => setData({ ...data, activityLevel: 'moderate' as any })}
+                      onPress={() =>
+                        setData({ ...data, activityLevel: 'moderate' as any })
+                      }
                       accessibilityRole="radio"
                       accessibilityState={{ checked: data.activityLevel === 'moderate' }}
                     >
-                      <View style={[s3.actIconBox, data.activityLevel === 'moderate'
-                        ? { backgroundColor: 'rgba(75, 226, 119, 0.15)', borderColor: 'rgba(75, 226, 119, 0.3)' }
-                        : { backgroundColor: 'rgba(47, 52, 69, 0.5)', borderColor: 'rgba(61, 74, 61, 0.2)' }
-                      ]}>
-                        <MaterialCommunityIcons name="dumbbell" size={24} color={data.activityLevel === 'moderate' ? C.primary : '#869585'} />
+                      <View
+                        style={[
+                          s3.actIconBox,
+                          data.activityLevel === 'moderate'
+                            ? {
+                                backgroundColor: 'rgba(75, 226, 119, 0.15)',
+                                borderColor: 'rgba(75, 226, 119, 0.3)',
+                              }
+                            : {
+                                backgroundColor: 'rgba(47, 52, 69, 0.5)',
+                                borderColor: 'rgba(61, 74, 61, 0.2)',
+                              },
+                        ]}
+                      >
+                        <MaterialCommunityIcons
+                          name="dumbbell"
+                          size={24}
+                          color={
+                            data.activityLevel === 'moderate' ? C.primary : '#869585'
+                          }
+                        />
                       </View>
                       <View style={{ flex: 1 }}>
-                        <ThemedText weight="700" style={{ color: '#FFFFFF', fontSize: 17, fontFamily: 'Inter_700Bold' }}>
+                        <ThemedText
+                          weight="700"
+                          style={{
+                            color: '#FFFFFF',
+                            fontSize: 17,
+                            fontFamily: 'Inter_700Bold',
+                          }}
+                        >
                           Vận động vừa
                         </ThemedText>
-                        <ThemedText style={{ color: C.onSurfaceVariant, fontSize: 13, fontFamily: 'Inter_400Regular', marginTop: 2, lineHeight: 18 }}>
+                        <ThemedText
+                          style={{
+                            color: C.onSurfaceVariant,
+                            fontSize: 13,
+                            fontFamily: 'Inter_400Regular',
+                            marginTop: 2,
+                            lineHeight: 18,
+                          }}
+                        >
                           Tập thể thao 3-5 ngày/tuần
                         </ThemedText>
                       </View>
-                      <View style={[
-                        s3.radioOuter,
-                        data.activityLevel === 'moderate'
-                          ? { backgroundColor: C.primary }
-                          : { borderColor: 'rgba(134, 149, 133, 0.5)', borderWidth: 2 },
-                      ]}>
+                      <View
+                        style={[
+                          s3.radioOuter,
+                          data.activityLevel === 'moderate'
+                            ? { backgroundColor: C.primary }
+                            : { borderColor: 'rgba(134, 149, 133, 0.5)', borderWidth: 2 },
+                        ]}
+                      >
                         {data.activityLevel === 'moderate' && (
                           <Ionicons name="checkmark" size={16} color="#003915" />
                         )}
@@ -1321,7 +1989,8 @@ const OnboardingScreen = (): React.ReactElement => {
                         s3.actCard,
                         {
                           backgroundColor: C.glassBg,
-                          borderColor: data.activityLevel === 'active' ? C.primary : C.glassBorder,
+                          borderColor:
+                            data.activityLevel === 'active' ? C.primary : C.glassBorder,
                           borderWidth: data.activityLevel === 'active' ? 2 : 1,
                           ...(data.activityLevel === 'active' && {
                             shadowColor: C.primary,
@@ -1335,26 +2004,57 @@ const OnboardingScreen = (): React.ReactElement => {
                       accessibilityRole="radio"
                       accessibilityState={{ checked: data.activityLevel === 'active' }}
                     >
-                      <View style={[s3.actIconBox, data.activityLevel === 'active'
-                        ? { backgroundColor: 'rgba(75, 226, 119, 0.15)', borderColor: 'rgba(75, 226, 119, 0.3)' }
-                        : { backgroundColor: 'rgba(47, 52, 69, 0.5)', borderColor: 'rgba(61, 74, 61, 0.2)' }
-                      ]}>
-                        <MaterialCommunityIcons name="lightning-bolt" size={24} color={data.activityLevel === 'active' ? C.primary : '#869585'} />
+                      <View
+                        style={[
+                          s3.actIconBox,
+                          data.activityLevel === 'active'
+                            ? {
+                                backgroundColor: 'rgba(75, 226, 119, 0.15)',
+                                borderColor: 'rgba(75, 226, 119, 0.3)',
+                              }
+                            : {
+                                backgroundColor: 'rgba(47, 52, 69, 0.5)',
+                                borderColor: 'rgba(61, 74, 61, 0.2)',
+                              },
+                        ]}
+                      >
+                        <MaterialCommunityIcons
+                          name="lightning-bolt"
+                          size={24}
+                          color={data.activityLevel === 'active' ? C.primary : '#869585'}
+                        />
                       </View>
                       <View style={{ flex: 1 }}>
-                        <ThemedText weight="700" style={{ color: '#FFFFFF', fontSize: 17, fontFamily: 'Inter_700Bold' }}>
+                        <ThemedText
+                          weight="700"
+                          style={{
+                            color: '#FFFFFF',
+                            fontSize: 17,
+                            fontFamily: 'Inter_700Bold',
+                          }}
+                        >
                           Vận động nhiều
                         </ThemedText>
-                        <ThemedText style={{ color: C.onSurfaceVariant, fontSize: 13, fontFamily: 'Inter_400Regular', marginTop: 2, lineHeight: 18 }}>
+                        <ThemedText
+                          style={{
+                            color: C.onSurfaceVariant,
+                            fontSize: 13,
+                            fontFamily: 'Inter_400Regular',
+                            marginTop: 2,
+                            lineHeight: 18,
+                          }}
+                        >
                           Luyện tập cường độ cao 6-7 ngày/tuần
                         </ThemedText>
                       </View>
-                      <View style={[
-                        s3.radioOuter,
-                        data.activityLevel === 'active'
-                          ? { backgroundColor: C.primary }
-                          : { borderColor: 'rgba(134, 149, 133, 0.5)', borderWidth: 2 },
-                      ]}>
+                      <View
+                        style={[
+                          s3.radioOuter,
+                          data.activityLevel === 'active'
+                            ? { backgroundColor: C.primary }
+                            : { borderColor: 'rgba(134, 149, 133, 0.5)', borderWidth: 2 },
+                        ]}
+                      >
                         {data.activityLevel === 'active' && (
                           <Ionicons name="checkmark" size={16} color="#003915" />
                         )}
@@ -1367,7 +2067,7 @@ const OnboardingScreen = (): React.ReactElement => {
           </Animated.View>
         );
 
-      case 4: // Result
+      case 5: // Result
         return (
           <Animated.View entering={FadeInRight} key="step4">
             {isCalculating ? (
@@ -1378,7 +2078,10 @@ const OnboardingScreen = (): React.ReactElement => {
                 </ThemedText>
               </View>
             ) : aiResult ? (
-              <View style={[glass.card, oldStyles.resultCard]} testID={TEST_IDS.auth.onboardingResultCard}>
+              <View
+                style={[glass.card, oldStyles.resultCard]}
+                testID={TEST_IDS.auth.onboardingResultCard}
+              >
                 <ThemedText style={{ fontSize: 48 }}>🎉</ThemedText>
                 <ThemedText variant="h2" style={{ marginTop: 12 }}>
                   {t('onboarding.daily_goal')}
@@ -1424,13 +2127,21 @@ const OnboardingScreen = (): React.ReactElement => {
                   </View>
                 </View>
                 {aiResult.offlineMode ? (
-                  <ThemedText variant="caption" color="textSecondary" style={oldStyles.offlineNote}>
-                    {aiResult.explanation ?? 'Đang dùng công thức chuẩn để hoàn tất onboarding.'}
+                  <ThemedText
+                    variant="caption"
+                    color="textSecondary"
+                    style={oldStyles.offlineNote}
+                  >
+                    {aiResult.explanation ??
+                      'Đang dùng công thức chuẩn để hoàn tất onboarding.'}
                   </ThemedText>
                 ) : null}
               </View>
             ) : (
-              <View style={[glass.card, oldStyles.resultCard]} testID={TEST_IDS.auth.onboardingErrorCard}>
+              <View
+                style={[glass.card, oldStyles.resultCard]}
+                testID={TEST_IDS.auth.onboardingErrorCard}
+              >
                 <ThemedText style={{ fontSize: 40 }}>⚠️</ThemedText>
                 <ThemedText variant="h3" style={{ marginTop: 12, textAlign: 'center' }}>
                   Chưa thể tạo mục tiêu dinh dưỡng
@@ -1440,7 +2151,8 @@ const OnboardingScreen = (): React.ReactElement => {
                   color="textSecondary"
                   style={{ marginTop: 12, textAlign: 'center' }}
                 >
-                  {calculationError ?? 'Vui lòng thử lại sau khi kiểm tra backend và dịch vụ AI.'}
+                  {calculationError ??
+                    'Vui lòng thử lại sau khi kiểm tra backend và dịch vụ AI.'}
                 </ThemedText>
                 <View style={{ width: '100%', marginTop: 20 }}>
                   <Button
@@ -1466,7 +2178,7 @@ const OnboardingScreen = (): React.ReactElement => {
 
   /* ─── Render footer button (Emerald Nebula for step 0) ─── */
   const renderFooterButton = () => {
-    if (currentStep <= 3) {
+    if (currentStep <= 4) {
       return (
         <View style={s.nebulaFooter}>
           <Pressable
@@ -1510,7 +2222,7 @@ const OnboardingScreen = (): React.ReactElement => {
     // Steps 1-4: original footer
     return (
       <View style={oldStyles.footer}>
-        {currentStep > 0 && currentStep < 4 && (
+        {currentStep > 0 && currentStep < 5 && (
           <View style={oldStyles.footerBackButtonWrap}>
             <Button
               title="Quay lại"
@@ -1521,14 +2233,16 @@ const OnboardingScreen = (): React.ReactElement => {
           </View>
         )}
 
-        {currentStep < 4 ? (
+        {currentStep < 5 ? (
           <View
             style={
-              currentStep > 0 ? oldStyles.footerPrimaryButtonWrap : oldStyles.footerSingleButtonWrap
+              currentStep > 0
+                ? oldStyles.footerPrimaryButtonWrap
+                : oldStyles.footerSingleButtonWrap
             }
           >
             <Button
-              title={currentStep === 3 ? 'Hoàn tất' : 'Tiếp tục'}
+              title={currentStep === 4 ? 'Hoàn tất' : 'Tiếp tục'}
               onPress={handleNext}
               disabled={!canProceed()}
               testID={TEST_IDS.auth.onboardingNextButton}
@@ -1551,36 +2265,66 @@ const OnboardingScreen = (): React.ReactElement => {
   /* ─── Main render ─── */
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <View
-        style={{ flex: 1 }}
-        testID={TEST_IDS.auth.onboardingScreen}
-      >
+      <View style={{ flex: 1 }} testID={TEST_IDS.auth.onboardingScreen}>
         {/* Background */}
-        <View style={[StyleSheet.absoluteFill, { backgroundColor: currentStep <= 3 ? C.surface : undefined }]}>
-          {currentStep <= 3 ? (
+        <View
+          style={[
+            StyleSheet.absoluteFill,
+            { backgroundColor: currentStep <= 4 ? C.surface : undefined },
+          ]}
+        >
+          {currentStep <= 4 ? (
             <>
               {/* Background glow blobs */}
-              <View style={[s.blob, { top: -80, right: -100, backgroundColor: C.primary + '0D' }]} />
-              <View style={[s.blob, { bottom: -60, left: -100, backgroundColor: C.primary + '0D' }]} />
+              <View
+                style={[
+                  s.blob,
+                  { top: -80, right: -100, backgroundColor: C.primary + '0D' },
+                ]}
+              />
+              <View
+                style={[
+                  s.blob,
+                  { bottom: -60, left: -100, backgroundColor: C.primary + '0D' },
+                ]}
+              />
             </>
           ) : null}
         </View>
 
         <LinearGradient
-          colors={currentStep <= 3 ? ['transparent', 'transparent'] : theme.colors.screenGradient}
+          colors={
+            currentStep <= 4
+              ? ['transparent', 'transparent']
+              : theme.colors.screenGradient
+          }
           style={{ flex: 1 }}
         >
           {/* Header */}
           <View style={[s.header, { paddingTop: Math.max(insets.top + 12, 28) }]}>
             {/* Top bar: row with back button and step counter */}
-            {currentStep <= 3 ? (
-              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginBottom: 16, width: '100%', position: 'relative' }}>
+            {currentStep <= 4 ? (
+              <View
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  marginBottom: 16,
+                  width: '100%',
+                  position: 'relative',
+                }}
+              >
                 {currentStep > 0 && (
                   <Pressable
                     onPress={handleBack}
                     style={{ position: 'absolute', left: 0, padding: 4 }}
                   >
-                    <Ionicons name="arrow-back" size={28} color={C.onSurface} style={{ opacity: 0.8 }} />
+                    <Ionicons
+                      name="arrow-back"
+                      size={28}
+                      color={C.onSurface}
+                      style={{ opacity: 0.8 }}
+                    />
                   </Pressable>
                 )}
                 <ThemedText
@@ -1588,7 +2332,7 @@ const OnboardingScreen = (): React.ReactElement => {
                   weight="700"
                   style={{ color: C.primary, fontSize: 16 }}
                 >
-                  {`Bước ${currentStep + 1} trên 5`}
+                  {`Bước ${displayStep + 1} trên ${totalSteps}`}
                 </ThemedText>
               </View>
             ) : null}
@@ -1601,9 +2345,9 @@ const OnboardingScreen = (): React.ReactElement => {
                     s.progressDot,
                     {
                       backgroundColor:
-                        index <= currentStep
+                        index <= displayStep
                           ? C.primary
-                          : currentStep <= 3
+                          : currentStep <= 4
                             ? C.surfaceContainerHighest
                             : isDark
                               ? 'rgba(255,255,255,0.1)'
@@ -1615,7 +2359,7 @@ const OnboardingScreen = (): React.ReactElement => {
             </View>
 
             {/* Step title/subtitle for steps 2-4 only */}
-            {currentStep > 3 && (
+            {currentStep > 4 && (
               <>
                 <ThemedText style={s.stepIcon}>
                   {STEPS[currentStep]?.icon ?? '👋'}
@@ -1623,11 +2367,7 @@ const OnboardingScreen = (): React.ReactElement => {
                 <ThemedText variant="h2" style={s.stepTitle}>
                   {STEPS[currentStep]?.title ?? ''}
                 </ThemedText>
-                <ThemedText
-                  variant="body"
-                  color="textSecondary"
-                  style={s.stepSubtitle}
-                >
+                <ThemedText variant="body" color="textSecondary" style={s.stepSubtitle}>
                   {STEPS[currentStep]?.subtitle ?? ''}
                 </ThemedText>
               </>
@@ -1641,7 +2381,7 @@ const OnboardingScreen = (): React.ReactElement => {
               showsVerticalScrollIndicator={false}
               contentContainerStyle={[
                 s.scrollContent,
-                currentStep <= 3 && { paddingHorizontal: 24 },
+                currentStep <= 4 && { paddingHorizontal: 24 },
               ]}
               keyboardShouldPersistTaps="handled"
               keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
@@ -1830,7 +2570,6 @@ const s = StyleSheet.create({
     alignItems: 'center',
     gap: 2,
   },
-
 
   /* Nebula footer */
   nebulaFooter: {

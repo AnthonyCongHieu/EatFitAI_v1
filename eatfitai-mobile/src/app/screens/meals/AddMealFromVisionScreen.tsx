@@ -123,26 +123,29 @@ const AddMealFromVisionScreen = (): React.ReactElement => {
     [],
   );
 
-  const handleToggleSelect = useCallback((index: number) => {
-    const target = detectionItems[index];
-    if (!target) {
-      return;
-    }
+  const handleToggleSelect = useCallback(
+    (index: number) => {
+      const target = detectionItems[index];
+      if (!target) {
+        return;
+      }
 
-    if (!target.item.isMatched && !target.selected) {
-      Toast.show({
-        type: 'info',
-        text1: 'Cần xác nhận món',
-        text2: 'Hãy đổi món bằng Search hoặc dạy AI trước khi lưu.',
-        visibilityTime: 2200,
-      });
-    }
+      if (!target.item.isMatched && !target.selected) {
+        Toast.show({
+          type: 'info',
+          text1: 'Cần xác nhận món',
+          text2: 'Hãy đổi món bằng Search hoặc dạy AI trước khi lưu.',
+          visibilityTime: 2200,
+        });
+      }
 
-    updateDetectionItem(index, (current) => ({
-      ...current,
-      selected: !current.selected,
-    }));
-  }, [detectionItems, updateDetectionItem]);
+      updateDetectionItem(index, (current) => ({
+        ...current,
+        selected: !current.selected,
+      }));
+    },
+    [detectionItems, updateDetectionItem],
+  );
 
   const handleAdjustGrams = useCallback(
     (index: number, delta: number) => {
@@ -318,7 +321,9 @@ const AddMealFromVisionScreen = (): React.ReactElement => {
 
   const renderFoodItem = (detection: DetectionItem, index: number) => {
     const displayName = getDisplayName(detection.item);
-    const calories = Math.round(((detection.item.caloriesPer100g ?? 0) * detection.grams) / 100);
+    const calories = Math.round(
+      ((detection.item.caloriesPer100g ?? 0) * detection.grams) / 100,
+    );
     const confidence = Math.round((detection.item.confidence ?? 0) * 100);
     const isMatched = detection.item.isMatched;
 
@@ -328,7 +333,9 @@ const AddMealFromVisionScreen = (): React.ReactElement => {
         style={[
           styles.foodCard,
           {
-            backgroundColor: detection.selected ? theme.colors.primary + '12' : theme.colors.card,
+            backgroundColor: detection.selected
+              ? theme.colors.primary + '12'
+              : theme.colors.card,
             borderColor: detection.selected ? theme.colors.primary : theme.colors.border,
           },
         ]}
@@ -338,8 +345,12 @@ const AddMealFromVisionScreen = (): React.ReactElement => {
             style={[
               styles.checkbox,
               {
-                backgroundColor: detection.selected ? theme.colors.primary : 'transparent',
-                borderColor: detection.selected ? theme.colors.primary : theme.colors.border,
+                backgroundColor: detection.selected
+                  ? theme.colors.primary
+                  : 'transparent',
+                borderColor: detection.selected
+                  ? theme.colors.primary
+                  : theme.colors.border,
               },
             ]}
           >
@@ -367,13 +378,15 @@ const AddMealFromVisionScreen = (): React.ReactElement => {
                 <ThemedText
                   variant="caption"
                   weight="600"
-                  style={{ color: isMatched ? theme.colors.success : theme.colors.warning }}
+                  style={{
+                    color: isMatched ? theme.colors.success : theme.colors.warning,
+                  }}
                 >
                   {isMatched ? `${confidence}%` : 'Cần review'}
                 </ThemedText>
               </View>
             </View>
-            </View>
+          </View>
         </Pressable>
 
         <View style={styles.controlsRow}>
@@ -424,12 +437,20 @@ const AddMealFromVisionScreen = (): React.ReactElement => {
               }}
               style={[
                 styles.actionChip,
-                { backgroundColor: theme.colors.primary + '14', borderColor: theme.colors.primary + '35' },
+                {
+                  backgroundColor: theme.colors.primary + '14',
+                  borderColor: theme.colors.primary + '35',
+                },
               ]}
               testID={`${TEST_IDS.visionAddMeal.replaceButton}-${index}`}
             >
               <Icon name="search-outline" size="xs" color="primary" />
-              <ThemedText variant="caption" weight="600" color="primary" style={{ marginLeft: 4 }}>
+              <ThemedText
+                variant="caption"
+                weight="600"
+                color="primary"
+                style={{ marginLeft: 4 }}
+              >
                 Đổi món
               </ThemedText>
             </Pressable>
@@ -445,7 +466,10 @@ const AddMealFromVisionScreen = (): React.ReactElement => {
                 }}
                 style={[
                   styles.actionChip,
-                  { backgroundColor: theme.colors.warning + '14', borderColor: theme.colors.warning + '35' },
+                  {
+                    backgroundColor: theme.colors.warning + '14',
+                    borderColor: theme.colors.warning + '35',
+                  },
                 ]}
               >
                 <Icon name="school-outline" size="xs" color="warning" />
@@ -476,7 +500,11 @@ const AddMealFromVisionScreen = (): React.ReactElement => {
   );
 
   return (
-    <Screen style={styles.container} scroll={false} testID={TEST_IDS.visionAddMeal.screen}>
+    <Screen
+      style={styles.container}
+      scroll={false}
+      testID={TEST_IDS.visionAddMeal.screen}
+    >
       <ScrollView
         style={{ flex: 1 }}
         contentContainerStyle={styles.scrollContent}
@@ -497,14 +525,19 @@ const AddMealFromVisionScreen = (): React.ReactElement => {
             styles.reviewHint,
             {
               backgroundColor:
-                theme.mode === 'dark' ? 'rgba(59, 130, 246, 0.12)' : 'rgba(59, 130, 246, 0.08)',
+                theme.mode === 'dark'
+                  ? 'rgba(59, 130, 246, 0.12)'
+                  : 'rgba(59, 130, 246, 0.08)',
               borderColor:
-                theme.mode === 'dark' ? 'rgba(59, 130, 246, 0.28)' : 'rgba(59, 130, 246, 0.16)',
+                theme.mode === 'dark'
+                  ? 'rgba(59, 130, 246, 0.28)'
+                  : 'rgba(59, 130, 246, 0.16)',
             },
           ]}
         >
           <ThemedText variant="bodySmall" color="textSecondary">
-            Nếu AI đoán chưa đúng, hãy đổi món bằng Search, chỉnh gram và chọn bữa ăn trước khi lưu.
+            Nếu AI đoán chưa đúng, hãy đổi món bằng Search, chỉnh gram và chọn bữa ăn
+            trước khi lưu.
           </ThemedText>
         </View>
 
@@ -558,7 +591,9 @@ const AddMealFromVisionScreen = (): React.ReactElement => {
                 style={[
                   styles.mealTypeChip,
                   {
-                    backgroundColor: selected ? theme.colors.primary : theme.colors.background,
+                    backgroundColor: selected
+                      ? theme.colors.primary
+                      : theme.colors.background,
                     borderColor: selected ? theme.colors.primary : theme.colors.border,
                   },
                 ]}

@@ -40,7 +40,10 @@ const readNeedsOnboardingFlag = (
 };
 
 const persistNeedsOnboarding = async (needsOnboarding: boolean): Promise<void> => {
-  await AsyncStorage.setItem(AUTH_NEEDS_ONBOARDING_KEY, needsOnboarding ? 'true' : 'false');
+  await AsyncStorage.setItem(
+    AUTH_NEEDS_ONBOARDING_KEY,
+    needsOnboarding ? 'true' : 'false',
+  );
 };
 
 const parseDateMs = (value?: string | null): number | null => {
@@ -70,7 +73,6 @@ type AuthState = {
   forgotPassword: (email: string) => Promise<string | undefined>;
   resetPassword: (email: string, code: string, newPassword: string) => Promise<void>;
 };
-
 
 export const useAuthStore = create<AuthState>((set: any) => ({
   isInitializing: true,
@@ -108,9 +110,12 @@ export const useAuthStore = create<AuthState>((set: any) => ({
           console.log('[useAuthStore] Auth expired callback triggered - logging out');
         }
         // Gọi getState() để access store actions từ bên ngoài component
-        useAuthStore.getState().logout().catch((err) => {
-          console.error('[useAuthStore] Auto-logout failed:', err);
-        });
+        useAuthStore
+          .getState()
+          .logout()
+          .catch((err) => {
+            console.error('[useAuthStore] Auto-logout failed:', err);
+          });
       });
 
       // 3. Load token từ storage nếu có
@@ -142,24 +147,38 @@ export const useAuthStore = create<AuthState>((set: any) => ({
             set({ isAuthenticated: true, needsOnboarding: persistedNeedsOnboarding });
           } catch (error) {
             if (__DEV__) {
-              console.warn('[useAuthStore] Session refresh during init failed, clearing stale auth state:', error);
+              console.warn(
+                '[useAuthStore] Session refresh during init failed, clearing stale auth state:',
+                error,
+              );
             }
             await tokenStorage.clearAll();
-            await AsyncStorage.multiRemove([AUTH_NEEDS_ONBOARDING_KEY, ONBOARDING_COMPLETE_KEY]);
+            await AsyncStorage.multiRemove([
+              AUTH_NEEDS_ONBOARDING_KEY,
+              ONBOARDING_COMPLETE_KEY,
+            ]);
             setAccessTokenMem(null);
             set({ isAuthenticated: false, needsOnboarding: false, user: null });
           }
         } else {
           if (__DEV__) {
-            console.log('[useAuthStore] Stored access token is expired and no valid refresh token remains. Clearing session.');
+            console.log(
+              '[useAuthStore] Stored access token is expired and no valid refresh token remains. Clearing session.',
+            );
           }
           await tokenStorage.clearAll();
-          await AsyncStorage.multiRemove([AUTH_NEEDS_ONBOARDING_KEY, ONBOARDING_COMPLETE_KEY]);
+          await AsyncStorage.multiRemove([
+            AUTH_NEEDS_ONBOARDING_KEY,
+            ONBOARDING_COMPLETE_KEY,
+          ]);
           setAccessTokenMem(null);
           set({ isAuthenticated: false, needsOnboarding: false, user: null });
         }
       } else {
-        await AsyncStorage.multiRemove([AUTH_NEEDS_ONBOARDING_KEY, ONBOARDING_COMPLETE_KEY]);
+        await AsyncStorage.multiRemove([
+          AUTH_NEEDS_ONBOARDING_KEY,
+          ONBOARDING_COMPLETE_KEY,
+        ]);
       }
       await initAuthSession();
     } finally {
@@ -193,7 +212,10 @@ export const useAuthStore = create<AuthState>((set: any) => ({
     setAccessTokenMem(accessToken);
     await updateSessionFromAuthResponse(data as AuthResponse);
 
-    const needsOnboarding = readNeedsOnboardingFlag(data as Record<string, unknown>, false);
+    const needsOnboarding = readNeedsOnboardingFlag(
+      data as Record<string, unknown>,
+      false,
+    );
     await persistNeedsOnboarding(needsOnboarding);
     set({
       isAuthenticated: true,
@@ -213,7 +235,9 @@ export const useAuthStore = create<AuthState>((set: any) => ({
   register: async (_name, _email, _password) => {
     console.warn('[useAuthStore] DEPRECATED: register() bypasses email verification!');
     console.warn('[useAuthStore] Use RegisterScreen → VerifyEmailScreen flow instead.');
-    throw new Error('Register function is deprecated. Use RegisterScreen for proper email verification flow.');
+    throw new Error(
+      'Register function is deprecated. Use RegisterScreen for proper email verification flow.',
+    );
   },
 
   signInWithGoogle: async () => {
@@ -223,7 +247,9 @@ export const useAuthStore = create<AuthState>((set: any) => ({
     // Configure và sign in với native module
     const configured = await googleAuthService.configure();
     if (!configured) {
-      throw new Error('Không thể khởi tạo Google Sign-In. Kiểm tra EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID và env mobile.');
+      throw new Error(
+        'Không thể khởi tạo Google Sign-In. Kiểm tra EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID và env mobile.',
+      );
     }
 
     // Sign in với Google
@@ -237,9 +263,12 @@ export const useAuthStore = create<AuthState>((set: any) => ({
     }
 
     // Gửi idToken lên backend để xác thực và lấy JWT
-    const resp = await apiClient.post<AuthTokensResponse & { user?: AuthUser }>('/api/auth/google/signin', {
-      idToken: result.idToken,
-    });
+    const resp = await apiClient.post<AuthTokensResponse & { user?: AuthUser }>(
+      '/api/auth/google/signin',
+      {
+        idToken: result.idToken,
+      },
+    );
 
     const data = resp.data;
     const accessToken = data?.accessToken || data?.token;
@@ -258,7 +287,10 @@ export const useAuthStore = create<AuthState>((set: any) => ({
     });
     setAccessTokenMem(accessToken);
 
-    const needsOnboarding = readNeedsOnboardingFlag(data as Record<string, unknown>, false);
+    const needsOnboarding = readNeedsOnboardingFlag(
+      data as Record<string, unknown>,
+      false,
+    );
     await persistNeedsOnboarding(needsOnboarding);
     set({ isAuthenticated: true, needsOnboarding, user: data?.user ?? null });
 
@@ -276,7 +308,10 @@ export const useAuthStore = create<AuthState>((set: any) => ({
       // ignore logout API failure; proceed to clear local session
     } finally {
       await tokenStorage.clearAll();
-      await AsyncStorage.multiRemove([AUTH_NEEDS_ONBOARDING_KEY, ONBOARDING_COMPLETE_KEY]);
+      await AsyncStorage.multiRemove([
+        AUTH_NEEDS_ONBOARDING_KEY,
+        ONBOARDING_COMPLETE_KEY,
+      ]);
       setAccessTokenMem(null);
       set({ isAuthenticated: false, needsOnboarding: false, user: null });
     }

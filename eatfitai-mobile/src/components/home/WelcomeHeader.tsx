@@ -72,14 +72,13 @@ export const WelcomeHeader = () => {
   return (
     <View style={styles.container}>
       <Animated.View entering={FadeInDown.delay(100).springify()}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+        <View
+          style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 }}
+        >
           <ThemedText variant="body" style={{ fontSize: 20 }}>
             {greeting.emoji}
           </ThemedText>
-          <ThemedText
-            variant="body"
-            style={{ color: theme.colors.textSecondary }}
-          >
+          <ThemedText variant="body" style={{ color: theme.colors.textSecondary }}>
             {greeting.text},
           </ThemedText>
         </View>

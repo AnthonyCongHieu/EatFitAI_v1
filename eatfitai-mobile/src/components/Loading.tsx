@@ -9,7 +9,10 @@ type LoadingProps = {
   fullHeight?: boolean;
 };
 
-export const Loading = ({ message, fullHeight = false }: LoadingProps): React.ReactElement => {
+export const Loading = ({
+  message,
+  fullHeight = false,
+}: LoadingProps): React.ReactElement => {
   const { theme } = useAppTheme();
   return (
     <View style={[styles.container, fullHeight && styles.fullHeight]}>

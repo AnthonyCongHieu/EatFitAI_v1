@@ -156,9 +156,3 @@ const styles = StyleSheet.create({
 });
 
 export default FoodItemPicker;
-
-
-
-
-
-
