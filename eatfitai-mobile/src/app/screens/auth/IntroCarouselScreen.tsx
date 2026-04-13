@@ -506,7 +506,6 @@ const s2 = StyleSheet.create({
 // - Step 3 (Đặt mục tiêu): bottom, shifted right, green checkmark on right
 // - S-curve connecting all three steps
 
-const RM_CARD_W = width * 0.47; // Tương đương khoảng 185px trên màn hình 400px
 
 const RoadmapSlide = (): React.ReactElement => {
   const pulseAnimRef = useRef(new Animated.Value(0.4)).current;
@@ -543,7 +542,7 @@ const RoadmapSlide = (): React.ReactElement => {
 
   // X Layout Calculation
   // Tinh chỉnh trục X về sát tâm màn hình để đường cong mềm mại tự nhiên
-  const centerX = width / 2;
+  const centerX = (width - 48) / 2; // Căn giữa container (trừ padding slide)
   const SWEEP = 38; // Khoảng lệch của S-Curve so với tâm (vừa đủ mượt mà)
 
   const rightX = centerX + SWEEP;
@@ -580,16 +579,13 @@ const RoadmapSlide = (): React.ReactElement => {
       </View>
 
       {/* NODE 1: Đạt mục tiêu (Future) */}
-      <View style={[s3.glassCard, { position: 'absolute', opacity: 0.5, right: width - rightX + topRadius + 12, top: node1Y - 34, width: undefined, maxWidth: Math.min(RM_CARD_W, rightX - topRadius - 12 - 16) }]}>
+      <View style={[s3.glassCard, { position: 'absolute', opacity: 0.5, right: width - 48 - rightX + topRadius + 8, top: node1Y - 24 }]}>
         <View style={s3.iconBox}>
           <Ionicons name="trophy" size={18} color="#F59E0B" />
         </View>
-        <View style={s3.txts}>
-          <ThemedText style={s3.cardTitle}>Đạt mục tiêu</ThemedText>
-          <ThemedText style={s3.cardSub}>Khỏe mạnh bền vững</ThemedText>
-        </View>
+        <ThemedText style={s3.cardTitle} numberOfLines={1}>Đạt mục tiêu</ThemedText>
       </View>
-      <View style={[s3.lockCircle, { position: 'absolute', right: width - rightX - topRadius, top: node1Y - topRadius, opacity: 0.5 }]}>
+      <View style={[s3.lockCircle, { position: 'absolute', left: rightX - topRadius, top: node1Y - topRadius, opacity: 0.5 }]}>
         <Ionicons name="lock-closed" size={18} color="#94A3B8" />
       </View>
 
@@ -600,27 +596,21 @@ const RoadmapSlide = (): React.ReactElement => {
           <Ionicons name="restaurant" size={16} color="#FFFFFF" />
         </View>
       </View>
-      <View style={[s3.glassCard, s3.activeCard, { position: 'absolute', left: leftX + midRadius + 12, top: node2Y - 34, width: undefined, maxWidth: Math.min(RM_CARD_W, width - (leftX + midRadius + 12) - 16) }]}>
+      <View style={[s3.glassCard, s3.activeCard, { position: 'absolute', left: leftX + midRadius + 6, top: node2Y - 24 }]}>
         <View style={[s3.iconBox, s3.iconBoxActive]}>
           <ThemedText style={{ fontSize: 16 }}>🥗</ThemedText>
         </View>
-        <View style={s3.txts}>
-          <ThemedText style={s3.cardTitle}>Theo dõi bữa ăn</ThemedText>
-          <ThemedText style={s3.cardSubActive}>Ghi lại bữa ăn hàng ngày</ThemedText>
-        </View>
+        <ThemedText style={s3.cardTitle} numberOfLines={1}>Theo dõi bữa ăn</ThemedText>
       </View>
 
-      {/* NODE 3: Đạt mục tiêu (Completed) */}
-      <View style={[s3.glassCard, { position: 'absolute', right: width - botX + botRadius + 12, top: node3Y - 34, width: undefined, maxWidth: Math.min(RM_CARD_W, botX - botRadius - 12 - 16) }]}>
+      {/* NODE 3: Đặt mục tiêu (Completed) */}
+      <View style={[s3.glassCard, { position: 'absolute', right: width - 48 - botX + botRadius + 8, top: node3Y - 24 }]}>
         <View style={s3.iconBox}>
           <Ionicons name="flag" size={18} color="#EF4444" />
         </View>
-        <View style={s3.txts}>
-          <ThemedText style={s3.cardTitle}>Đạt mục tiêu</ThemedText>
-          <ThemedText style={s3.cardSub}>Chọn mục tiêu sức khỏe</ThemedText>
-        </View>
+        <ThemedText style={s3.cardTitle} numberOfLines={1}>Đặt mục tiêu</ThemedText>
       </View>
-      <View style={[s3.checkCircle, { position: 'absolute', right: width - botX - botRadius, top: node3Y - botRadius }]}>
+      <View style={[s3.checkCircle, { position: 'absolute', left: botX - botRadius, top: node3Y - botRadius }]}>
         <Ionicons name="checkmark" size={20} color="#FFFFFF" />
       </View>
     </View>
@@ -630,18 +620,18 @@ const RoadmapSlide = (): React.ReactElement => {
 const s3 = StyleSheet.create({
   wrap: {
     flex: 1,
-    height: 480, // Chiều cao container an toàn so với SVG
+    height: 480,
     width: '100%',
     position: 'relative',
     marginTop: 20,
+    overflow: 'hidden',
   },
   glassCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    width: RM_CARD_W,
     backgroundColor: 'rgba(37, 41, 58, 0.5)',
-    borderRadius: 16,
-    paddingVertical: 12,
+    borderRadius: 14,
+    paddingVertical: 10,
     paddingHorizontal: 12,
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.08)',
@@ -652,8 +642,8 @@ const s3 = StyleSheet.create({
     backgroundColor: 'rgba(37, 41, 58, 0.8)',
   },
   iconBox: {
-    width: 32,
-    height: 32,
+    width: 30,
+    height: 30,
     borderRadius: 10,
     backgroundColor: 'rgba(255,255,255,0.06)',
     alignItems: 'center',
@@ -662,27 +652,11 @@ const s3 = StyleSheet.create({
   iconBoxActive: {
     backgroundColor: 'rgba(34,197,94,0.1)',
   },
-  txts: {
-    flex: 1,
-  },
   cardTitle: {
     color: '#FFFFFF',
     fontSize: 13,
     fontFamily: 'BeVietnamPro_700Bold',
-    marginBottom: 2,
-    letterSpacing: -0.2, // Text khít hơn cho thẻ gọn
-  },
-  cardSub: {
-    color: '#94A3B8',
-    fontSize: 11,
-    lineHeight: 14,
-    fontFamily: 'BeVietnamPro_400Regular',
-  },
-  cardSubActive: {
-    color: 'rgba(52, 211, 153, 0.9)',
-    fontSize: 11,
-    lineHeight: 14,
-    fontFamily: 'BeVietnamPro_400Regular',
+    letterSpacing: -0.2,
   },
   lockCircle: {
     width: 44,
@@ -844,7 +818,7 @@ const IntroCarouselScreen = ({ navigation }: Props): React.ReactElement => {
           elevation: 8,
         },
         buttonGradient: {
-          minHeight: 58,
+          minHeight: 52,
           alignItems: 'center',
           justifyContent: 'center',
           flexDirection: 'row',
@@ -853,8 +827,8 @@ const IntroCarouselScreen = ({ navigation }: Props): React.ReactElement => {
         },
         buttonText: {
           color: '#FFFFFF',
-          fontSize: 18,
-          lineHeight: 24,
+          fontSize: 17,
+          lineHeight: 22,
           fontFamily: 'BeVietnamPro_700Bold',
         },
         buttonArrow: {
