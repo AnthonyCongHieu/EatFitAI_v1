@@ -22,25 +22,37 @@ public class AdminAIController : ControllerBase
     private readonly IEncryptionService _encryptionService;
     private readonly IAdminRealtimeEventBus _eventBus;
     private readonly IAdminAuditService _auditService;
+    private readonly IGeminiRuntimeProjectService _runtimeProjectService;
 
-    public AdminAIController(ApplicationDbContext context, IEncryptionService encryptionService, IAdminRealtimeEventBus eventBus, IAdminAuditService auditService)
+    public AdminAIController(
+        ApplicationDbContext context,
+        IEncryptionService encryptionService,
+        IAdminRealtimeEventBus eventBus,
+        IAdminAuditService auditService,
+        IGeminiRuntimeProjectService runtimeProjectService)
     {
         _context = context;
         _encryptionService = encryptionService;
         _eventBus = eventBus;
         _auditService = auditService;
+        _runtimeProjectService = runtimeProjectService;
     }
 
     [HttpGet("keys")]
     [ProducesResponseType(typeof(ApiResponse<object>), 200)]
     public async Task<IActionResult> GetAllKeys()
     {
+        var runtimeProjects = await _runtimeProjectService.GetRuntimeProjectsAsync(HttpContext.RequestAborted);
+        var runtimeByProjectId = runtimeProjects.ToDictionary(project => project.RuntimeProjectId, project => project, StringComparer.OrdinalIgnoreCase);
+
         var keys = await _context.GeminiKeys
             .OrderByDescending(k => k.CreatedAt)
             .ToListAsync();
 
         var result = keys.Select(k =>
         {
+            var runtimeProjectId = ResolveRuntimeProjectIdForDto(k);
+            var runtimeProject = runtimeByProjectId.GetValueOrDefault(runtimeProjectId);
             // Cố gắng giải mã để hiển thị Masked Key
             string maskedKey = "N/A";
             try
@@ -74,11 +86,22 @@ public class AdminAIController : ControllerBase
                 Model = k.Model,
                 DailyQuotaLimit = k.DailyQuotaLimit,
                 ProjectId = k.ProjectId,
-                Notes = k.Notes
+                Notes = k.Notes,
+                RuntimeProjectId = runtimeProjectId,
+                CredentialRole = runtimeProject?.ManualRole ?? "warm_spare",
+                LastProbeStatus = runtimeProject?.LastProviderStatus,
+                LastProbeAt = runtimeProject?.LastSuccessAt
             };
         });
 
         return Ok(ApiResponse<object>.SuccessResponse(result, "Lấy danh sách Gemini Keys thành công."));
+    }
+
+    private static string ResolveRuntimeProjectIdForDto(Models.GeminiKey key)
+    {
+        return string.IsNullOrWhiteSpace(key.ProjectId)
+            ? $"key-{key.Id:N}"
+            : key.ProjectId.Trim();
     }
 
     [HttpPost("keys")]
@@ -255,6 +278,98 @@ public class AdminAIController : ControllerBase
         return Ok(ApiResponse<object>.SuccessResponse(
             new { Results = results, Summary = new { Total = keys.Count, Active = active, RateLimited = rateLimited, Dead = keys.Count - active - rateLimited } },
             $"Đã test {keys.Count} keys: {active} active, {rateLimited} rate-limited."));
+    }
+
+    [HttpGet("runtime-projects")]
+    [ProducesResponseType(typeof(ApiResponse<object>), 200)]
+    public async Task<IActionResult> GetRuntimeProjects()
+    {
+        var projects = await _runtimeProjectService.GetRuntimeProjectsAsync(HttpContext.RequestAborted);
+        return Ok(ApiResponse<object>.SuccessResponse(projects, "Runtime projects ready."));
+    }
+
+    [HttpGet("runtime-projects/metrics")]
+    [ProducesResponseType(typeof(ApiResponse<object>), 200)]
+    public async Task<IActionResult> GetRuntimeMetrics()
+    {
+        var metrics = await _runtimeProjectService.GetMetricsAsync(HttpContext.RequestAborted);
+        return Ok(ApiResponse<object>.SuccessResponse(metrics, "Runtime metrics ready."));
+    }
+
+    [HttpGet("runtime-projects/telemetry")]
+    [ProducesResponseType(typeof(ApiResponse<object>), 200)]
+    public async Task<IActionResult> GetRuntimeTelemetry()
+    {
+        var rows = await _runtimeProjectService.GetTelemetryAsync(HttpContext.RequestAborted);
+        return Ok(ApiResponse<object>.SuccessResponse(rows, "Runtime telemetry ready."));
+    }
+
+    [HttpGet("runtime-projects/{runtimeProjectId}")]
+    [ProducesResponseType(typeof(ApiResponse<object>), 200)]
+    public async Task<IActionResult> GetRuntimeProject(string runtimeProjectId)
+    {
+        var project = await _runtimeProjectService.GetRuntimeProjectAsync(runtimeProjectId, HttpContext.RequestAborted);
+        if (project == null)
+        {
+            return NotFound(ApiResponse<object>.ErrorResponse("Không tìm thấy runtime project."));
+        }
+
+        return Ok(ApiResponse<object>.SuccessResponse(project, "Runtime project ready."));
+    }
+
+    [HttpPost("runtime-projects/import")]
+    [ProducesResponseType(typeof(ApiResponse<object>), 201)]
+    public async Task<IActionResult> ImportRuntimeProject([FromBody] RuntimeProjectImportRequest request)
+    {
+        var keyId = await _runtimeProjectService.ImportProjectAsync(request, HttpContext.RequestAborted);
+        await WriteAuditAsync("import", "gemini-runtime-project", keyId.ToString(), "success", $"ProjectId={request.ProjectId}");
+        return Created("", ApiResponse<object>.SuccessResponse(new { Id = keyId }, "Imported runtime project."));
+    }
+
+    [HttpPost("runtime-projects/{runtimeProjectId}/probe")]
+    [ProducesResponseType(typeof(ApiResponse<object>), 200)]
+    public async Task<IActionResult> ProbeRuntimeProject(string runtimeProjectId)
+    {
+        var result = await _runtimeProjectService.ProbeProjectAsync(runtimeProjectId, HttpContext.RequestAborted);
+        await WriteAuditAsync("probe", "gemini-runtime-project", runtimeProjectId, result.Status == "Active" ? "success" : "failed", result.Status);
+        return Ok(ApiResponse<object>.SuccessResponse(result, result.Message));
+    }
+
+    [HttpPost("runtime-projects/{runtimeProjectId}/toggle")]
+    [ProducesResponseType(typeof(ApiResponse<object>), 200)]
+    public async Task<IActionResult> ToggleRuntimeProject(string runtimeProjectId)
+    {
+        var project = await _runtimeProjectService.ToggleProjectAsync(runtimeProjectId, HttpContext.RequestAborted);
+        if (project == null)
+        {
+            return NotFound(ApiResponse<object>.ErrorResponse("Không tìm thấy runtime project."));
+        }
+
+        await WriteAuditAsync("toggle", "gemini-runtime-project", runtimeProjectId, "success", $"IsEnabled={project.IsEnabled}");
+        return Ok(ApiResponse<object>.SuccessResponse(project, "Runtime project toggled."));
+    }
+
+    [HttpPost("runtime-projects/{runtimeProjectId}/set-role")]
+    [ProducesResponseType(typeof(ApiResponse<object>), 200)]
+    public async Task<IActionResult> SetRuntimeProjectRole(string runtimeProjectId, [FromBody] SetRuntimeProjectRoleRequest request)
+    {
+        var project = await _runtimeProjectService.SetRoleAsync(runtimeProjectId, request.ManualRole, HttpContext.RequestAborted);
+        if (project == null)
+        {
+            return NotFound(ApiResponse<object>.ErrorResponse("Không tìm thấy runtime project."));
+        }
+
+        await WriteAuditAsync("set-role", "gemini-runtime-project", runtimeProjectId, "success", $"ManualRole={project.ManualRole}");
+        return Ok(ApiResponse<object>.SuccessResponse(project, "Runtime project role updated."));
+    }
+
+    [HttpPost("runtime-projects/simulate-request")]
+    [ProducesResponseType(typeof(ApiResponse<object>), 200)]
+    public async Task<IActionResult> SimulateRuntimeRequest([FromBody] SimulateRuntimeRequest request)
+    {
+        var row = await _runtimeProjectService.SimulateRequestAsync(request.ForcedStatusCode, request.TriggerSource, HttpContext.RequestAborted);
+        await WriteAuditAsync("simulate-request", "gemini-runtime-project", row.RuntimeProjectId, "success", $"Status={row.ProviderStatusCode}");
+        return Ok(ApiResponse<object>.SuccessResponse(row, "Runtime request simulated."));
     }
 
     private async Task<KeyTestResult> TestSingleKey(Models.GeminiKey key)

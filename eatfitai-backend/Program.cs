@@ -567,6 +567,7 @@ builder.Services.AddSingleton<ILookupCacheService, LookupCacheService>();
 builder.Services.AddSingleton<IEncryptionService, EncryptionService>();
 builder.Services.AddSingleton<IAdminRealtimeEventBus, AdminRealtimeEventBus>();
 builder.Services.AddSingleton<IAdminRuntimeSnapshotCache, AdminRuntimeSnapshotCache>();
+builder.Services.AddSingleton<IGeminiRuntimeProjectService, GeminiRuntimeProjectService>();
 builder.Services.AddScoped<IAiRuntimeStatusService, AiRuntimeStatusService>();
 builder.Services.AddScoped<IGeminiPoolManager, GeminiPoolManager>();
 builder.Services.AddHostedService<AdminRuntimeSnapshotBackgroundService>();

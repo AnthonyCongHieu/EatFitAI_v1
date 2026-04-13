@@ -5,9 +5,12 @@ public class AdminRuntimeSnapshotDto
     public DateTime CheckedAt { get; set; } = DateTime.UtcNow;
     public string PoolHealth { get; set; } = "Unknown";
     public string? ActiveProject { get; set; }
+    public string? ActiveProjectId { get; set; }
+    public string? ActiveProjectAlias { get; set; }
     public int AvailableProjectCount { get; set; }
     public int ExhaustedProjectCount { get; set; }
     public int CooldownProjectCount { get; set; }
+    public int AuthInvalidProjectCount { get; set; }
     public int DistinctProjectCount { get; set; }
     public RuntimeLimitsDto Limits { get; set; } = new();
     public List<RuntimeProjectStateDto> Projects { get; set; } = new();
@@ -44,6 +47,9 @@ public class RuntimeProjectStateDto
     public int TotalTokens { get; set; }
     public string? LastUsedAt { get; set; }
     public string? LastProviderStatusCode { get; set; }
+    public string ManualRole { get; set; } = "warm_spare";
+    public Guid PrimaryKeyId { get; set; }
+    public string? CooldownUntil { get; set; }
 }
 
 public class AdminRuntimeEventDto

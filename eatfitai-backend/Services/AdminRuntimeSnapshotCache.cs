@@ -51,8 +51,8 @@ public sealed class AdminRuntimeSnapshotCache : IAdminRuntimeSnapshotCache
             }
 
             using var scope = _scopeFactory.CreateScope();
-            var runtimeStatusService = scope.ServiceProvider.GetRequiredService<IAiRuntimeStatusService>();
-            var snapshot = await runtimeStatusService.GetSnapshotAsync(cancellationToken);
+            var runtimeProjectService = scope.ServiceProvider.GetRequiredService<IGeminiRuntimeProjectService>();
+            var snapshot = await runtimeProjectService.BuildSnapshotAsync(cancellationToken);
             var fingerprint = JsonSerializer.Serialize(snapshot);
             var now = DateTimeOffset.UtcNow;
             var changed = false;
@@ -114,9 +114,12 @@ public sealed class AdminRuntimeSnapshotCache : IAdminRuntimeSnapshotCache
         {
             snapshot.PoolHealth,
             snapshot.ActiveProject,
+            snapshot.ActiveProjectId,
+            snapshot.ActiveProjectAlias,
             snapshot.AvailableProjectCount,
             snapshot.ExhaustedProjectCount,
             snapshot.CooldownProjectCount,
+            snapshot.AuthInvalidProjectCount,
         });
     }
 }

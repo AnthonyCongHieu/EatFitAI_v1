@@ -105,9 +105,12 @@ public class AdminRuntimeController : ControllerBase
                     {
                         cacheState.Snapshot.PoolHealth,
                         cacheState.Snapshot.ActiveProject,
+                        cacheState.Snapshot.ActiveProjectId,
+                        cacheState.Snapshot.ActiveProjectAlias,
                         cacheState.Snapshot.AvailableProjectCount,
                         cacheState.Snapshot.ExhaustedProjectCount,
                         cacheState.Snapshot.CooldownProjectCount,
+                        cacheState.Snapshot.AuthInvalidProjectCount,
                     },
                 });
 

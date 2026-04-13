@@ -17,5 +17,9 @@ public class GeminiKeyDto
     public int DailyQuotaLimit { get; set; } = 1500;
     public string? ProjectId { get; set; }
     public string? Notes { get; set; }
+    public string? RuntimeProjectId { get; set; }
+    public string CredentialRole { get; set; } = "warm_spare";
+    public string? LastProbeStatus { get; set; }
+    public string? LastProbeAt { get; set; }
 }
 
