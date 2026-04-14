@@ -136,12 +136,21 @@ public class AdminController : ControllerBase
     {
         var userIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value
             ?? User.FindFirst("sub")?.Value;
-        if (!Guid.TryParse(userIdClaim, out var userId))
+        var email = User.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value
+            ?? User.FindFirst("email")?.Value;
+        Models.User? user = null;
+
+        if (Guid.TryParse(userIdClaim, out var userId))
         {
-            return Unauthorized(ApiResponse<object>.ErrorResponse("Unable to resolve admin session."));
+            user = await _context.Users.AsNoTracking().FirstOrDefaultAsync(item => item.UserId == userId);
         }
 
-        var user = await _context.Users.AsNoTracking().FirstOrDefaultAsync(item => item.UserId == userId);
+        if (user == null && !string.IsNullOrWhiteSpace(email))
+        {
+            var normalizedEmail = email.Trim();
+            user = await _context.Users.AsNoTracking().FirstOrDefaultAsync(item => item.Email == normalizedEmail);
+        }
+
         if (user == null)
         {
             return Unauthorized(ApiResponse<object>.ErrorResponse("Admin user was not found."));

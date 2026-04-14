@@ -33,22 +33,21 @@ public sealed class AdminClaimsTransformation : IClaimsTransformation
             return principal;
         }
 
-        var query = _context.Users.AsNoTracking().AsQueryable();
+        AdminUserProjection? user = null;
         if (Guid.TryParse(userId, out var parsedUserId))
         {
-            query = query.Where(user => user.UserId == parsedUserId);
-        }
-        else if (!string.IsNullOrWhiteSpace(email))
-        {
-            var normalizedEmail = email.Trim();
-            query = query.Where(user => user.Email == normalizedEmail);
-        }
-        else
-        {
-            return principal;
+            user = await TryResolveUserAsync(_context.Users
+                .AsNoTracking()
+                .Where(item => item.UserId == parsedUserId));
         }
 
-        var user = await TryResolveUserAsync(query);
+        if (user == null && !string.IsNullOrWhiteSpace(email))
+        {
+            var normalizedEmail = email.Trim();
+            user = await TryResolveUserAsync(_context.Users
+                .AsNoTracking()
+                .Where(item => item.Email == normalizedEmail));
+        }
 
         if (user == null)
         {
