@@ -253,7 +253,7 @@ const ForgotPasswordScreen = ({ navigation }: Props): React.ReactElement => {
       case 'verify':
         return { name: 'shield-checkmark', label: 'Xác thực tài khoản' };
       case 'newPassword':
-        return { name: 'key', label: 'Mật khẩu mới' };
+        return { name: 'key', label: 'Tạo mật khẩu mới' };
       case 'success':
         return { name: 'checkmark-circle', label: 'Thành công!' };
     }
@@ -372,7 +372,7 @@ const ForgotPasswordScreen = ({ navigation }: Props): React.ReactElement => {
                         fontSize: 15,
                       }}
                     >
-                      Tạo mật khẩu mới cho tài khoản của bạn
+                      Để bảo mật, mật khẩu mới của bạn phải khác với các mật khẩu đã sử dụng trước đây.
                     </ThemedText>
                   )}
 
@@ -676,12 +676,6 @@ const ForgotPasswordScreen = ({ navigation }: Props): React.ReactElement => {
                               },
                             ]}
                           >
-                            <Ionicons
-                              name="lock-closed-outline"
-                              size={20}
-                              color={C.onSurfaceVariant}
-                              style={styles.inputIcon}
-                            />
                             <TextInput
                               placeholder="••••••••"
                               placeholderTextColor="#475569"
@@ -705,18 +699,7 @@ const ForgotPasswordScreen = ({ navigation }: Props): React.ReactElement => {
                               />
                             </Pressable>
                           </View>
-                          {passwordForm.formState.errors.newPassword && (
-                            <ThemedText
-                              variant="bodySmall"
-                              style={{
-                                color: theme.colors.danger,
-                                marginTop: 4,
-                                marginLeft: 4,
-                              }}
-                            >
-                              {passwordForm.formState.errors.newPassword.message}
-                            </ThemedText>
-                          )}
+                          {/* Hide redundant error since we use validationBox */}
                         </View>
                       )}
                     />
@@ -727,7 +710,7 @@ const ForgotPasswordScreen = ({ navigation }: Props): React.ReactElement => {
                       weight="700"
                       style={[styles.fieldLabel, { marginTop: 20 }]}
                     >
-                      XÁC NHẬN MẬT KHẨU
+                      NHẬP LẠI MẬT KHẨU MỚI
                     </ThemedText>
                     <Controller
                       control={passwordForm.control}
@@ -745,12 +728,6 @@ const ForgotPasswordScreen = ({ navigation }: Props): React.ReactElement => {
                               },
                             ]}
                           >
-                            <Ionicons
-                              name="lock-closed-outline"
-                              size={20}
-                              color={C.onSurfaceVariant}
-                              style={styles.inputIcon}
-                            />
                             <TextInput
                               placeholder="••••••••"
                               placeholderTextColor="#475569"
@@ -774,21 +751,66 @@ const ForgotPasswordScreen = ({ navigation }: Props): React.ReactElement => {
                               />
                             </Pressable>
                           </View>
-                          {passwordForm.formState.errors.confirm && (
-                            <ThemedText
-                              variant="bodySmall"
-                              style={{
-                                color: theme.colors.danger,
-                                marginTop: 4,
-                                marginLeft: 4,
-                              }}
-                            >
-                              {passwordForm.formState.errors.confirm.message}
-                            </ThemedText>
-                          )}
+                          {/* Hide redundant error since we use validationBox */}
                         </View>
                       )}
                     />
+
+                    {/* ─── Validation Checklist ─── */}
+                    {(() => {
+                      const pw = passwordForm.watch('newPassword') || '';
+                      const hasLength = pw.length >= 6;
+                      const hasUpperLowerNum = /[A-Z]/.test(pw) && /[a-z]/.test(pw) && /\d/.test(pw);
+
+                      return (
+                        <View style={styles.validationBox}>
+                          {/* Rule 1 */}
+                          <View style={styles.validationRow}>
+                            <View style={[
+                              styles.validationDot,
+                              hasLength ? styles.validationDotActive : styles.validationDotInactive,
+                            ]}>
+                              {hasLength ? (
+                                <Ionicons name="checkmark" size={12} color={C.primary} />
+                              ) : (
+                                <Ionicons name="close" size={12} color="#475569" />
+                              )}
+                            </View>
+                            <ThemedText
+                              variant="bodySmall"
+                              style={{
+                                color: hasLength ? C.onSurface : '#64748B',
+                                fontSize: 13,
+                              }}
+                            >
+                              Ít nhất có 6 ký tự
+                            </ThemedText>
+                          </View>
+                          {/* Rule 2 */}
+                          <View style={styles.validationRow}>
+                            <View style={[
+                              styles.validationDot,
+                              hasUpperLowerNum ? styles.validationDotActive : styles.validationDotInactive,
+                            ]}>
+                              {hasUpperLowerNum ? (
+                                <Ionicons name="checkmark" size={12} color={C.primary} />
+                              ) : (
+                                <Ionicons name="close" size={12} color="#475569" />
+                              )}
+                            </View>
+                            <ThemedText
+                              variant="bodySmall"
+                              style={{
+                                color: hasUpperLowerNum ? C.onSurface : '#64748B',
+                                fontSize: 13,
+                              }}
+                            >
+                              Ít nhất có 1 chữ hoa, chữ thường và số
+                            </ThemedText>
+                          </View>
+                        </View>
+                      );
+                    })()}
 
                     {/* CTA */}
                     <Pressable
@@ -821,7 +843,7 @@ const ForgotPasswordScreen = ({ navigation }: Props): React.ReactElement => {
                         weight="700"
                         style={{ color: C.onPrimary, fontSize: 18 }}
                       >
-                        {loading ? 'Đang xử lý...' : 'Đổi mật khẩu'}
+                        {loading ? 'Đang xử lý...' : 'Lưu mật khẩu mới'}
                       </ThemedText>
                     </Pressable>
                   </Animated.View>
@@ -940,7 +962,7 @@ const styles = StyleSheet.create({
   /* Hero section */
   heroSection: {
     alignItems: 'center',
-    marginBottom: 32,
+    marginBottom: 20,
   },
 
   heroGlassOuter: {
@@ -974,7 +996,7 @@ const styles = StyleSheet.create({
   card: {
     borderRadius: 32,
     borderWidth: 1,
-    padding: 28,
+    padding: 24,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 12 },
     shadowOpacity: 0.3,
@@ -982,7 +1004,7 @@ const styles = StyleSheet.create({
     elevation: 10,
   },
   cardHeader: {
-    marginBottom: 24,
+    marginBottom: 16,
   },
 
   /* Step indicator */
@@ -1046,6 +1068,35 @@ const styles = StyleSheet.create({
     padding: 4,
   },
 
+  /* Validation Checklist */
+  validationBox: {
+    marginTop: 20,
+    backgroundColor: 'rgba(22, 27, 43, 0.3)',
+    borderRadius: 16,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(61, 74, 61, 0.1)',
+    gap: 12,
+  },
+  validationRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  validationDot: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  validationDotActive: {
+    backgroundColor: 'rgba(75, 226, 119, 0.2)',
+  },
+  validationDotInactive: {
+    backgroundColor: 'rgba(71, 85, 105, 0.2)',
+  },
+
   /* OTP Inputs */
   otpContainer: {
     flexDirection: 'row',
@@ -1106,7 +1157,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 28,
+    marginTop: 20,
     shadowColor: '#4BE277',
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.3,
