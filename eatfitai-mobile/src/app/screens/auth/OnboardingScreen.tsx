@@ -58,7 +58,6 @@ import Tilt3DCard, { ParallaxLayer } from '../../../components/ui/Tilt3DCard';
 const { width } = Dimensions.get('window');
 
 interface OnboardingData {
-  fullName: string;
   gender: 'male' | 'female' | null; // Đã bỏ 'other'
   age: string;
   heightCm: string;
@@ -210,7 +209,6 @@ const OnboardingScreen = (): React.ReactElement => {
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
   const [calculationError, setCalculationError] = useState<string | null>(null);
   const [data, setData] = useState<OnboardingData>({
-    fullName: '',
     gender: null,
     age: '24',
     heightCm: '160', // Default height 160cm
@@ -494,7 +492,7 @@ const OnboardingScreen = (): React.ReactElement => {
   const canProceed = (): boolean => {
     switch (currentStep) {
       case 0:
-        return data.fullName.length >= 2 && data.gender !== null && data.age !== '';
+        return data.gender !== null && data.age !== '';
       case 1:
         return data.heightCm !== '' && data.weightKg !== '';
       case 2:
@@ -613,7 +611,6 @@ const OnboardingScreen = (): React.ReactElement => {
       try {
         // Save profile với đầy đủ thông tin
         await updateProfile({
-          fullName: data.fullName,
           heightCm: Number(data.heightCm),
           weightKg: Number(data.weightKg),
           targetWeightKg: data.targetWeightKg ? Number(data.targetWeightKg) : undefined,
@@ -767,28 +764,6 @@ const OnboardingScreen = (): React.ReactElement => {
           {/* Form — depth 0.5 */}
           <ParallaxLayer depth={0.5}>
             <View style={s.formGroup}>
-              {/* Name */}
-              <View style={s.fieldBlock}>
-                <ThemedText variant="caption" weight="700" style={s.label}>
-                  HỌ VÀ TÊN
-                </ThemedText>
-                <View
-                  style={[
-                    s.inputContainer,
-                    { backgroundColor: C.inputBg, borderColor: C.inputBorder },
-                  ]}
-                >
-                  <TextInput
-                    testID={TEST_IDS.auth.onboardingNameInput}
-                    placeholder="Nhập họ và tên của bạn"
-                    placeholderTextColor={C.surfaceContainerHighest}
-                    value={data.fullName}
-                    onChangeText={(text) => setData({ ...data, fullName: text })}
-                    style={[s.input, { color: C.onSurface }]}
-                  />
-                </View>
-              </View>
-
               {/* Age — slider */}
               <View style={s.fieldBlock}>
                 <View style={s.ageHeadRow}>
