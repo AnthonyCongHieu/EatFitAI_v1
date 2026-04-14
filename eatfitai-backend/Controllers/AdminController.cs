@@ -148,14 +148,15 @@ public class AdminController : ControllerBase
         }
 
         var accessControl = await _context.UserAccessControls.AsNoTracking().FirstOrDefaultAsync(item => item.UserId == userId);
+        var resolvedRole = PlatformRoles.ResolveEffectiveRole(User, user.Role);
         var session = new AdminSessionDto
         {
             UserId = user.UserId,
             Email = user.Email,
             DisplayName = user.DisplayName ?? user.Email,
-            PlatformRole = PlatformRoles.Normalize(user.Role),
+            PlatformRole = resolvedRole,
             AccessState = accessControl?.AccessState ?? AdminAccessStates.Active,
-            Capabilities = AdminCapabilities.GetForRole(user.Role).ToList(),
+            Capabilities = AdminCapabilities.GetForRole(resolvedRole).ToList(),
             RequestId = HttpContext.TraceIdentifier,
         };
 

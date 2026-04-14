@@ -52,6 +52,58 @@ public static class PlatformRoles
         var normalized = Normalize(role);
         return normalized != User;
     }
+
+    public static string ResolveEffectiveRole(ClaimsPrincipal principal, string? persistedRole)
+    {
+        var normalizedPersistedRole = Normalize(persistedRole);
+        var normalizedClaimRole = ResolveRoleFromClaims(principal);
+
+        if (!string.IsNullOrWhiteSpace(persistedRole) && IsAdminRole(normalizedPersistedRole))
+        {
+            return normalizedPersistedRole;
+        }
+
+        if (IsAdminRole(normalizedClaimRole))
+        {
+            return normalizedClaimRole;
+        }
+
+        if (!string.IsNullOrWhiteSpace(persistedRole))
+        {
+            return normalizedPersistedRole;
+        }
+
+        return normalizedClaimRole;
+    }
+
+    public static string ResolveRoleFromClaims(ClaimsPrincipal principal)
+    {
+        var candidateClaims = new[]
+        {
+            principal.FindFirstValue(AdminCapabilityClaims.PlatformRole),
+            principal.FindFirstValue("app_metadata.role"),
+            principal.FindFirstValue("user_metadata.role"),
+            principal.FindFirstValue("role"),
+        };
+
+        foreach (var candidate in candidateClaims)
+        {
+            var normalized = Normalize(candidate);
+            if (IsAdminRole(normalized))
+            {
+                return normalized;
+            }
+        }
+
+        var directRoleClaim = principal.Claims
+            .Where(claim => claim.Type == ClaimTypes.Role)
+            .Select(claim => Normalize(claim.Value))
+            .FirstOrDefault(IsAdminRole);
+
+        return string.IsNullOrWhiteSpace(directRoleClaim)
+            ? User
+            : directRoleClaim;
+    }
 }
 
 public static class AdminCapabilities

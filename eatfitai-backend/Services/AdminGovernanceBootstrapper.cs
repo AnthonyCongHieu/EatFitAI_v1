@@ -17,6 +17,11 @@ public sealed class AdminGovernanceBootstrapper
     public async Task EnsureSchemaAsync(CancellationToken cancellationToken = default)
     {
         const string sql = """
+            ALTER TABLE "Users" ADD COLUMN IF NOT EXISTS "Role" varchar(80) NULL;
+            ALTER TABLE "Users" ALTER COLUMN "Role" SET DEFAULT 'user';
+            CREATE INDEX IF NOT EXISTS "IX_Users_Role"
+            ON "Users" ("Role");
+
             CREATE TABLE IF NOT EXISTS "UserAccessControl" (
                 "UserId" uuid PRIMARY KEY,
                 "AccessState" varchar(40) NOT NULL DEFAULT 'active',
@@ -43,6 +48,86 @@ public sealed class AdminGovernanceBootstrapper
 
             CREATE INDEX IF NOT EXISTS "IX_AdminAuditEvent_CorrelationId"
             ON "AdminAuditEvent" ("CorrelationId");
+
+            ALTER TABLE "GeminiKeys" ENABLE ROW LEVEL SECURITY;
+            ALTER TABLE "AiCorrectionEvent" ENABLE ROW LEVEL SECURITY;
+            ALTER TABLE "AdminAuditEvent" ENABLE ROW LEVEL SECURITY;
+            ALTER TABLE "UserAccessControl" ENABLE ROW LEVEL SECURITY;
+
+            DO $$
+            BEGIN
+                IF EXISTS (
+                    SELECT 1
+                    FROM information_schema.role_table_grants
+                    WHERE table_schema = 'public'
+                      AND table_name = 'GeminiKeys'
+                      AND grantee IN ('anon', 'authenticated')
+                ) THEN
+                    EXECUTE 'REVOKE ALL ON TABLE "GeminiKeys" FROM anon, authenticated';
+                END IF;
+            END $$;
+
+            DO $$
+            BEGIN
+                IF EXISTS (
+                    SELECT 1
+                    FROM information_schema.role_table_grants
+                    WHERE table_schema = 'public'
+                      AND table_name = 'AdminAuditEvent'
+                      AND grantee IN ('anon', 'authenticated')
+                ) THEN
+                    EXECUTE 'REVOKE ALL ON TABLE "AdminAuditEvent" FROM anon, authenticated';
+                END IF;
+            END $$;
+
+            DO $$
+            BEGIN
+                IF EXISTS (
+                    SELECT 1
+                    FROM information_schema.role_table_grants
+                    WHERE table_schema = 'public'
+                      AND table_name = 'UserAccessControl'
+                      AND grantee IN ('anon', 'authenticated')
+                ) THEN
+                    EXECUTE 'REVOKE ALL ON TABLE "UserAccessControl" FROM anon, authenticated';
+                END IF;
+            END $$;
+
+            DO $$
+            BEGIN
+                IF NOT EXISTS (
+                    SELECT 1
+                    FROM pg_policies
+                    WHERE schemaname = 'public'
+                      AND tablename = 'AiCorrectionEvent'
+                      AND policyname = 'AiCorrectionEvent_authenticated_own_read'
+                ) THEN
+                    CREATE POLICY "AiCorrectionEvent_authenticated_own_read"
+                    ON "AiCorrectionEvent"
+                    FOR SELECT
+                    TO authenticated
+                    USING (auth.uid() = "UserId");
+                END IF;
+            END $$;
+
+            DO $$
+            BEGIN
+                IF NOT EXISTS (
+                    SELECT 1
+                    FROM pg_policies
+                    WHERE schemaname = 'public'
+                      AND tablename = 'AiCorrectionEvent'
+                      AND policyname = 'AiCorrectionEvent_authenticated_own_write'
+                ) THEN
+                    CREATE POLICY "AiCorrectionEvent_authenticated_own_write"
+                    ON "AiCorrectionEvent"
+                    FOR INSERT
+                    TO authenticated
+                    WITH CHECK (auth.uid() = "UserId");
+                END IF;
+            END $$;
+
+            NOTIFY pgrst, 'reload schema';
             """;
 
         try
