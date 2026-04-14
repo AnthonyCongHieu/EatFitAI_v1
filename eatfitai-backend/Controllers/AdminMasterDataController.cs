@@ -1,6 +1,7 @@
 using EatFitAI.API.DbScaffold.Data;
 using EatFitAI.API.DbScaffold.Models;
 using EatFitAI.API.DTOs.Admin;
+using EatFitAI.API.Security;
 using EatFitAI.API.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -14,7 +15,7 @@ namespace EatFitAI.API.Controllers
 {
     [ApiController]
     [Route("api/admin/master-data")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Policy = AdminPolicies.Access)]
     public class AdminMasterDataController : ControllerBase
     {
         private readonly EatFitAIDbContext _context;
@@ -31,6 +32,7 @@ namespace EatFitAI.API.Controllers
         // --- Meal Type ---
 
         [HttpGet("meal-types")]
+        [Authorize(Policy = AdminPolicies.MasterDataRead)]
         public async Task<ActionResult<List<MealTypeDto>>> GetMealTypes()
         {
             var items = await _context.MealTypes
@@ -45,6 +47,7 @@ namespace EatFitAI.API.Controllers
         }
 
         [HttpPost("meal-types")]
+        [Authorize(Policy = AdminPolicies.MasterDataWrite)]
         public async Task<ActionResult<MealTypeDto>> CreateMealType([FromBody] CreateMealTypeRequest request)
         {
             var entity = new MealType
@@ -66,6 +69,7 @@ namespace EatFitAI.API.Controllers
         }
 
         [HttpPut("meal-types/{id}")]
+        [Authorize(Policy = AdminPolicies.MasterDataWrite)]
         public async Task<IActionResult> UpdateMealType(int id, [FromBody] UpdateMealTypeRequest request)
         {
             var entity = await _context.MealTypes.FindAsync(id);
@@ -84,6 +88,7 @@ namespace EatFitAI.API.Controllers
         }
 
         [HttpDelete("meal-types/{id}")]
+        [Authorize(Policy = AdminPolicies.MasterDataWrite)]
         public async Task<IActionResult> DeleteMealType(int id)
         {
             var entity = await _context.MealTypes.Include(m => m.MealDiaries).FirstOrDefaultAsync(m => m.MealTypeId == id);
@@ -110,6 +115,7 @@ namespace EatFitAI.API.Controllers
         // --- Activity Level ---
 
         [HttpGet("activity-levels")]
+        [Authorize(Policy = AdminPolicies.MasterDataRead)]
         public async Task<ActionResult<List<ActivityLevelDto>>> GetActivityLevels()
         {
             var items = await _context.ActivityLevels
@@ -125,6 +131,7 @@ namespace EatFitAI.API.Controllers
         }
 
         [HttpPost("activity-levels")]
+        [Authorize(Policy = AdminPolicies.MasterDataWrite)]
         public async Task<ActionResult<ActivityLevelDto>> CreateActivityLevel([FromBody] CreateActivityLevelRequest request)
         {
             var entity = new ActivityLevel
@@ -148,6 +155,7 @@ namespace EatFitAI.API.Controllers
         }
 
         [HttpPut("activity-levels/{id}")]
+        [Authorize(Policy = AdminPolicies.MasterDataWrite)]
         public async Task<IActionResult> UpdateActivityLevel(int id, [FromBody] UpdateActivityLevelRequest request)
         {
             var entity = await _context.ActivityLevels.FindAsync(id);
@@ -168,6 +176,7 @@ namespace EatFitAI.API.Controllers
         }
 
         [HttpDelete("activity-levels/{id}")]
+        [Authorize(Policy = AdminPolicies.MasterDataWrite)]
         public async Task<IActionResult> DeleteActivityLevel(int id)
         {
             var entity = await _context.ActivityLevels.Include(a => a.NutritionTargets).FirstOrDefaultAsync(a => a.ActivityLevelId == id);
@@ -194,6 +203,7 @@ namespace EatFitAI.API.Controllers
         // --- Serving Unit ---
 
         [HttpGet("serving-units")]
+        [Authorize(Policy = AdminPolicies.MasterDataRead)]
         public async Task<ActionResult<List<ServingUnitDto>>> GetServingUnits()
         {
             var items = await _context.ServingUnits
@@ -210,6 +220,7 @@ namespace EatFitAI.API.Controllers
         }
 
         [HttpPost("serving-units")]
+        [Authorize(Policy = AdminPolicies.MasterDataWrite)]
         public async Task<ActionResult<ServingUnitDto>> CreateServingUnit([FromBody] CreateServingUnitRequest request)
         {
             var entity = new ServingUnit
@@ -235,6 +246,7 @@ namespace EatFitAI.API.Controllers
         }
 
         [HttpPut("serving-units/{id}")]
+        [Authorize(Policy = AdminPolicies.MasterDataWrite)]
         public async Task<IActionResult> UpdateServingUnit(int id, [FromBody] UpdateServingUnitRequest request)
         {
             var entity = await _context.ServingUnits.FindAsync(id);
@@ -256,6 +268,7 @@ namespace EatFitAI.API.Controllers
         }
 
         [HttpDelete("serving-units/{id}")]
+        [Authorize(Policy = AdminPolicies.MasterDataWrite)]
         public async Task<IActionResult> DeleteServingUnit(int id)
         {
             var entity = await _context.ServingUnits

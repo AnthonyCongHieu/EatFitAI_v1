@@ -1,5 +1,6 @@
 using EatFitAI.API.DTOs.Admin;
 using EatFitAI.API.DTOs.Common;
+using EatFitAI.API.Security;
 using EatFitAI.API.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -8,7 +9,7 @@ namespace EatFitAI.API.Controllers;
 
 [Route("api/admin/audit-events")]
 [ApiController]
-[Authorize(Roles = "Admin")]
+[Authorize(Policy = AdminPolicies.AuditRead)]
 public class AdminAuditController : ControllerBase
 {
     private readonly IAdminAuditService _auditService;

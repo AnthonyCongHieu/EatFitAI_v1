@@ -1,6 +1,7 @@
 using System.Security.Cryptography;
 using System.Text;
 using AutoMapper;
+using EatFitAI.API.Data;
 using EatFitAI.API.DbScaffold.Data;
 using EatFitAI.API.DbScaffold.Models;
 using EatFitAI.API.DTOs.Auth;
@@ -23,6 +24,7 @@ namespace EatFitAI.API.Tests.Unit.Services
 
         private readonly Mock<IUserRepository> _userRepositoryMock;
         private readonly EatFitAIDbContext _context;
+        private readonly ApplicationDbContext _adminContext;
         private readonly Mock<IMapper> _mapperMock;
         private readonly Mock<IConfiguration> _configurationMock;
         private readonly IMemoryCache _memoryCache;
@@ -51,9 +53,15 @@ namespace EatFitAI.API.Tests.Unit.Services
                 .Options;
             _context = new EatFitAIDbContext(options);
 
+            var adminOptions = new DbContextOptionsBuilder<ApplicationDbContext>()
+                .UseInMemoryDatabase(Guid.NewGuid().ToString())
+                .Options;
+            _adminContext = new ApplicationDbContext(adminOptions);
+
             _authService = new AuthService(
                 _userRepositoryMock.Object,
                 _context,
+                _adminContext,
                 _mapperMock.Object,
                 _configurationMock.Object,
                 _memoryCache,
@@ -65,6 +73,7 @@ namespace EatFitAI.API.Tests.Unit.Services
         public void Dispose()
         {
             _context.Dispose();
+            _adminContext.Dispose();
             _memoryCache.Dispose();
         }
 

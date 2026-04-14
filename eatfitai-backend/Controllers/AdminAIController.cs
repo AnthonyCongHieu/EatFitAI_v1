@@ -6,6 +6,7 @@ using EatFitAI.API.DTOs.Admin;
 using EatFitAI.API.DTOs.AdminAi;
 using EatFitAI.API.DTOs.Common;
 using EatFitAI.API.Models;
+using EatFitAI.API.Security;
 using EatFitAI.API.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -15,7 +16,7 @@ namespace EatFitAI.API.Controllers;
 
 [Route("api/admin-ai")]
 [ApiController]
-[Authorize(Roles = "Admin")]
+[Authorize(Policy = AdminPolicies.RuntimeRead)]
 public class AdminAIController : ControllerBase
 {
     private readonly ApplicationDbContext _context;
@@ -105,6 +106,7 @@ public class AdminAIController : ControllerBase
     }
 
     [HttpPost("keys")]
+    [Authorize(Policy = AdminPolicies.RuntimeKeysManage)]
     [ProducesResponseType(typeof(ApiResponse<GeminiKeyDto>), 201)]
     public async Task<IActionResult> CreateKey([FromBody] CreateGeminiKeyRequest request)
     {
@@ -142,6 +144,7 @@ public class AdminAIController : ControllerBase
 
     // Bulk import nhiều keys cùng lúc
     [HttpPost("keys/bulk")]
+    [Authorize(Policy = AdminPolicies.RuntimeKeysManage)]
     [ProducesResponseType(typeof(ApiResponse<object>), 201)]
     public async Task<IActionResult> BulkCreateKeys([FromBody] BulkCreateGeminiKeysRequest request)
     {
@@ -196,6 +199,7 @@ public class AdminAIController : ControllerBase
     }
 
     [HttpPut("keys/{id}")]
+    [Authorize(Policy = AdminPolicies.RuntimeKeysManage)]
     [ProducesResponseType(typeof(ApiResponse<object>), 200)]
     public async Task<IActionResult> UpdateKey(Guid id, [FromBody] UpdateGeminiKeyRequest request)
     {
@@ -222,6 +226,7 @@ public class AdminAIController : ControllerBase
 
     // Toggle active/inactive nhanh
     [HttpPost("keys/{id}/toggle")]
+    [Authorize(Policy = AdminPolicies.RuntimeKeysManage)]
     [ProducesResponseType(typeof(ApiResponse<object>), 200)]
     public async Task<IActionResult> ToggleKey(Guid id)
     {
@@ -242,6 +247,7 @@ public class AdminAIController : ControllerBase
 
     // Test key connectivity — gửi request nhỏ tới Gemini API — with rich status
     [HttpPost("keys/{id}/test")]
+    [Authorize(Policy = AdminPolicies.RuntimeKeysManage)]
     [ProducesResponseType(typeof(ApiResponse<object>), 200)]
     public async Task<IActionResult> TestKey(Guid id)
     {
@@ -259,6 +265,7 @@ public class AdminAIController : ControllerBase
 
     // Test ALL keys at once
     [HttpPost("keys/test-all")]
+    [Authorize(Policy = AdminPolicies.RuntimeKeysManage)]
     [ProducesResponseType(typeof(ApiResponse<object>), 200)]
     public async Task<IActionResult> TestAllKeys()
     {
@@ -318,6 +325,7 @@ public class AdminAIController : ControllerBase
     }
 
     [HttpPost("runtime-projects/import")]
+    [Authorize(Policy = AdminPolicies.RuntimeKeysManage)]
     [ProducesResponseType(typeof(ApiResponse<object>), 201)]
     public async Task<IActionResult> ImportRuntimeProject([FromBody] RuntimeProjectImportRequest request)
     {
@@ -327,6 +335,7 @@ public class AdminAIController : ControllerBase
     }
 
     [HttpPost("runtime-projects/{runtimeProjectId}/probe")]
+    [Authorize(Policy = AdminPolicies.RuntimeKeysManage)]
     [ProducesResponseType(typeof(ApiResponse<object>), 200)]
     public async Task<IActionResult> ProbeRuntimeProject(string runtimeProjectId)
     {
@@ -336,6 +345,7 @@ public class AdminAIController : ControllerBase
     }
 
     [HttpPost("runtime-projects/{runtimeProjectId}/toggle")]
+    [Authorize(Policy = AdminPolicies.RuntimeKeysManage)]
     [ProducesResponseType(typeof(ApiResponse<object>), 200)]
     public async Task<IActionResult> ToggleRuntimeProject(string runtimeProjectId)
     {
@@ -350,6 +360,7 @@ public class AdminAIController : ControllerBase
     }
 
     [HttpPost("runtime-projects/{runtimeProjectId}/set-role")]
+    [Authorize(Policy = AdminPolicies.RuntimeKeysManage)]
     [ProducesResponseType(typeof(ApiResponse<object>), 200)]
     public async Task<IActionResult> SetRuntimeProjectRole(string runtimeProjectId, [FromBody] SetRuntimeProjectRoleRequest request)
     {
@@ -364,6 +375,7 @@ public class AdminAIController : ControllerBase
     }
 
     [HttpPost("runtime-projects/simulate-request")]
+    [Authorize(Policy = AdminPolicies.RuntimeKeysManage)]
     [ProducesResponseType(typeof(ApiResponse<object>), 200)]
     public async Task<IActionResult> SimulateRuntimeRequest([FromBody] SimulateRuntimeRequest request)
     {
@@ -410,6 +422,7 @@ public class AdminAIController : ControllerBase
     }
 
     [HttpDelete("keys/{id}")]
+    [Authorize(Policy = AdminPolicies.RuntimeKeysDelete)]
     [ProducesResponseType(typeof(ApiResponse<object>), 200)]
     public async Task<IActionResult> DeleteKey(Guid id)
     {
@@ -429,6 +442,7 @@ public class AdminAIController : ControllerBase
     }
 
     [HttpPost("keys/reset-quota")]
+    [Authorize(Policy = AdminPolicies.RuntimeKeysManage)]
     [ProducesResponseType(typeof(ApiResponse<object>), 200)]
     public async Task<IActionResult> ResetAllQuotas()
     {

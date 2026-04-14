@@ -2,6 +2,7 @@ using System.Security.Claims;
 using EatFitAI.API.Data;
 using EatFitAI.API.DTOs.Admin;
 using EatFitAI.API.Models;
+using EatFitAI.API.Security;
 using EatFitAI.API.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
@@ -24,12 +25,21 @@ public class AdminAuditService : IAdminAuditService
             CREATE TABLE IF NOT EXISTS "AdminAuditEvent" (
                 "AdminAuditEventId" uuid PRIMARY KEY,
                 "Actor" varchar(256) NOT NULL,
+                "ActorId" varchar(120) NULL,
+                "ActorEmail" varchar(256) NULL,
+                "EffectiveRole" varchar(80) NULL,
+                "CapabilitySnapshot" text NULL,
                 "Action" varchar(120) NOT NULL,
                 "Entity" varchar(120) NOT NULL,
                 "EntityId" varchar(120) NOT NULL,
                 "Outcome" varchar(40) NOT NULL,
+                "Severity" varchar(40) NULL,
                 "OccurredAt" timestamp with time zone NOT NULL DEFAULT (NOW() AT TIME ZONE 'UTC'),
                 "RequestId" varchar(120) NULL,
+                "CorrelationId" varchar(120) NULL,
+                "Environment" varchar(80) NULL,
+                "DiffSummary" text NULL,
+                "Justification" text NULL,
                 "Detail" text NULL
             );
 
@@ -41,6 +51,9 @@ public class AdminAuditService : IAdminAuditService
 
             CREATE INDEX IF NOT EXISTS "IX_AdminAuditEvent_RequestId"
             ON "AdminAuditEvent" ("RequestId");
+
+            CREATE INDEX IF NOT EXISTS "IX_AdminAuditEvent_CorrelationId"
+            ON "AdminAuditEvent" ("CorrelationId");
             """;
 
         await _context.Database.ExecuteSqlRawAsync(sql, cancellationToken);
@@ -55,17 +68,39 @@ public class AdminAuditService : IAdminAuditService
                 ?? httpContext.User.FindFirstValue("email")
                 ?? httpContext.User.Identity?.Name
                 ?? "unknown";
+            var actorId =
+                httpContext.User.FindFirstValue(ClaimTypes.NameIdentifier)
+                ?? httpContext.User.FindFirstValue("sub");
+            var actorEmail =
+                httpContext.User.FindFirstValue(ClaimTypes.Email)
+                ?? httpContext.User.FindFirstValue("email");
+            var effectiveRole = httpContext.User.FindFirstValue(AdminCapabilityClaims.PlatformRole)
+                ?? httpContext.User.FindFirstValue(ClaimTypes.Role);
+            var capabilitySnapshot = string.Join(
+                ",",
+                httpContext.User.FindAll(AdminCapabilityClaims.Capability)
+                    .Select(claim => claim.Value)
+                    .Distinct(StringComparer.OrdinalIgnoreCase));
 
             var entity = new AdminAuditEvent
             {
                 AdminAuditEventId = Guid.NewGuid(),
                 Actor = actor,
+                ActorId = actorId,
+                ActorEmail = actorEmail,
+                EffectiveRole = effectiveRole,
+                CapabilitySnapshot = capabilitySnapshot,
                 Action = request.Action,
                 Entity = request.Entity,
                 EntityId = string.IsNullOrWhiteSpace(request.EntityId) ? "-" : request.EntityId,
                 Outcome = string.IsNullOrWhiteSpace(request.Outcome) ? "unknown" : request.Outcome,
+                Severity = string.IsNullOrWhiteSpace(request.Severity) ? "info" : request.Severity,
                 OccurredAt = DateTime.UtcNow,
                 RequestId = httpContext.TraceIdentifier,
+                CorrelationId = httpContext.Request.Headers["X-Correlation-Id"].FirstOrDefault(),
+                Environment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "unknown",
+                DiffSummary = request.DiffSummary,
+                Justification = request.Justification,
                 Detail = request.Detail
             };
 
@@ -133,12 +168,21 @@ public class AdminAuditService : IAdminAuditService
             {
                 Id = item.AdminAuditEventId,
                 Actor = item.Actor,
+                ActorId = item.ActorId,
+                ActorEmail = item.ActorEmail,
+                EffectiveRole = item.EffectiveRole,
+                CapabilitySnapshot = item.CapabilitySnapshot,
                 Action = item.Action,
                 Entity = item.Entity,
                 EntityId = item.EntityId,
                 Outcome = item.Outcome,
+                Severity = item.Severity,
                 OccurredAt = item.OccurredAt,
                 RequestId = item.RequestId,
+                CorrelationId = item.CorrelationId,
+                Environment = item.Environment,
+                DiffSummary = item.DiffSummary,
+                Justification = item.Justification,
                 Detail = item.Detail
             })
             .ToListAsync(cancellationToken);

@@ -6,7 +6,9 @@ using AutoMapper;
 using EatFitAI.API.DbScaffold.Data;
 using EatFitAI.API.DTOs.Auth;
 using EatFitAI.API.DbScaffold.Models;
+using EatFitAI.API.Data;
 using EatFitAI.API.Repositories.Interfaces;
+using EatFitAI.API.Security;
 using EatFitAI.API.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -20,6 +22,7 @@ namespace EatFitAI.API.Services
     {
         private readonly IUserRepository _userRepository;
         private readonly EatFitAIDbContext _context;
+        private readonly ApplicationDbContext _adminContext;
         private readonly IMapper _mapper;
         private readonly IConfiguration _configuration;
         private readonly IMemoryCache _memoryCache;
@@ -36,6 +39,7 @@ namespace EatFitAI.API.Services
         public AuthService(
             IUserRepository userRepository,
             EatFitAIDbContext context,
+            ApplicationDbContext adminContext,
             IMapper mapper,
             IConfiguration configuration,
             IMemoryCache memoryCache,
@@ -45,6 +49,7 @@ namespace EatFitAI.API.Services
         {
             _userRepository = userRepository;
             _context = context;
+            _adminContext = adminContext;
             _mapper = mapper;
             _configuration = configuration;
             _memoryCache = memoryCache;
@@ -75,7 +80,8 @@ namespace EatFitAI.API.Services
                     DisplayName = request.DisplayName,
                     CreatedAt = DateTime.UtcNow,
                     EmailVerified = true, // Legacy register: bypass email verification
-                    OnboardingCompleted = false
+                    OnboardingCompleted = false,
+                    Role = PlatformRoles.User
                 };
 
                 await _userRepository.AddAsync(user);
@@ -123,6 +129,12 @@ namespace EatFitAI.API.Services
             if (!VerifyPassword(request.Password, user.PasswordHash, out var needsRehash))
             {
                 throw new UnauthorizedAccessException("Email hoặc mật khẩu không đúng");
+            }
+
+            var accessState = await GetAccessStateAsync(user.UserId);
+            if (accessState != AdminAccessStates.Active)
+            {
+                throw new UnauthorizedAccessException("Tai khoan hien khong the dang nhap vao he thong.");
             }
 
             if (needsRehash)
@@ -214,16 +226,30 @@ namespace EatFitAI.API.Services
             var key = GetJwtSigningKey();
             var issuer = _configuration["Jwt:Issuer"] ?? "EatFitAI";
             var audience = _configuration["Jwt:Audience"] ?? "EatFitAI";
+            var normalizedRole = PlatformRoles.Normalize(user.Role);
+            var claims = new List<Claim>
+            {
+                new Claim(ClaimTypes.NameIdentifier, user.UserId.ToString()),
+                new Claim(ClaimTypes.Email, user.Email),
+                new Claim(ClaimTypes.Name, user.DisplayName ?? user.Email),
+                new Claim(ClaimTypes.Role, normalizedRole),
+                new Claim(AdminCapabilityClaims.PlatformRole, normalizedRole),
+                new Claim(AdminCapabilityClaims.AccessState, AdminAccessStates.Active),
+            };
+
+            if (PlatformRoles.IsAdminRole(normalizedRole))
+            {
+                claims.Add(new Claim(ClaimTypes.Role, "Admin"));
+            }
+
+            foreach (var capability in AdminCapabilities.GetForRole(normalizedRole))
+            {
+                claims.Add(new Claim(AdminCapabilityClaims.Capability, capability));
+            }
 
             var tokenDescriptor = new SecurityTokenDescriptor
             {
-                Subject = new ClaimsIdentity(new[]
-                {
-                    new Claim(ClaimTypes.NameIdentifier, user.UserId.ToString()),
-                    new Claim(ClaimTypes.Email, user.Email),
-                    new Claim(ClaimTypes.Name, user.DisplayName ?? user.Email),
-                    new Claim(ClaimTypes.Role, "User")
-                }),
+                Subject = new ClaimsIdentity(claims),
                 Issuer = issuer,
                 Audience = audience,
                 Expires = DateTime.UtcNow.AddHours(24),
@@ -300,6 +326,16 @@ namespace EatFitAI.API.Services
             var isLegacyMatch = string.Equals(legacyHash, hashedPassword, StringComparison.Ordinal);
             needsRehash = isLegacyMatch;
             return isLegacyMatch;
+        }
+
+        private async Task<string> GetAccessStateAsync(Guid userId)
+        {
+            return await _adminContext.UserAccessControls
+                .AsNoTracking()
+                .Where(item => item.UserId == userId)
+                .Select(item => item.AccessState)
+                .FirstOrDefaultAsync()
+                ?? AdminAccessStates.Active;
         }
 
         private static bool IsPlaceholderSecret(string? value)

@@ -1,6 +1,7 @@
 using System.Text.Json;
 using EatFitAI.API.DTOs.Admin;
 using EatFitAI.API.DTOs.Common;
+using EatFitAI.API.Security;
 using EatFitAI.API.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -10,7 +11,7 @@ namespace EatFitAI.API.Controllers;
 
 [Route("api/admin/runtime")]
 [ApiController]
-[Authorize(Roles = "Admin")]
+[Authorize(Policy = AdminPolicies.RuntimeRead)]
 public class AdminRuntimeController : ControllerBase
 {
     private static readonly TimeSpan SnapshotInterval = TimeSpan.FromSeconds(5);

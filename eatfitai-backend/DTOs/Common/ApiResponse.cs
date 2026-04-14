@@ -1,13 +1,19 @@
+using System.Collections.Generic;
+
 namespace EatFitAI.API.DTOs.Common;
 
 public class ApiResponse<T>
 {
     public bool Success { get; set; }
-    public string Message { get; set; }
-    public T Data { get; set; }
-    public string ErrorCode { get; set; }
+    public string? Message { get; set; }
+    public T? Data { get; set; }
+    public string? ErrorCode { get; set; }
+    public string? RequestId { get; set; }
+    public string? Severity { get; set; }
+    public string? AuditRef { get; set; }
+    public List<string>? Warnings { get; set; }
 
-    public static ApiResponse<T> SuccessResponse(T data, string message = null)
+    public static ApiResponse<T> SuccessResponse(T data, string? message = null)
     {
         return new ApiResponse<T>
         {
@@ -17,7 +23,7 @@ public class ApiResponse<T>
         };
     }
 
-    public static ApiResponse<T> ErrorResponse(string message, string errorCode = null)
+    public static ApiResponse<T> ErrorResponse(string message, string? errorCode = null)
     {
         return new ApiResponse<T>
         {

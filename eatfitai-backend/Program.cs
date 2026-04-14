@@ -7,8 +7,11 @@ using EatFitAI.API.Repositories.Interfaces;
 using EatFitAI.API.Services;
 using EatFitAI.API.Services.Interfaces;
 using EatFitAI.API.Options;
+using EatFitAI.API.Security;
 using EatFitAI.Services; // Voice processing service
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Protocols;
@@ -719,13 +722,47 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     });
 
 // Add Authorization
-builder.Services.AddAuthorization();
+builder.Services.AddScoped<IClaimsTransformation, AdminClaimsTransformation>();
+builder.Services.AddScoped<AdminGovernanceBootstrapper>();
+builder.Services.AddAuthorization(options =>
+{
+    static void RequireCapability(AuthorizationPolicyBuilder builder, string capability)
+    {
+        builder.RequireAuthenticatedUser();
+        builder.RequireClaim(AdminCapabilityClaims.AccessState, AdminAccessStates.Active);
+        builder.RequireClaim(AdminCapabilityClaims.Capability, capability);
+    }
+
+    options.AddPolicy(AdminPolicies.Access, builder => RequireCapability(builder, AdminCapabilities.Access));
+    options.AddPolicy(AdminPolicies.UsersRead, builder => RequireCapability(builder, AdminCapabilities.UsersRead));
+    options.AddPolicy(AdminPolicies.UsersWrite, builder => RequireCapability(builder, AdminCapabilities.UsersWrite));
+    options.AddPolicy(AdminPolicies.UsersRoleManage, builder => RequireCapability(builder, AdminCapabilities.UsersRoleManage));
+    options.AddPolicy(AdminPolicies.UsersDeactivate, builder => RequireCapability(builder, AdminCapabilities.UsersDeactivate));
+    options.AddPolicy(AdminPolicies.SupportRead, builder => RequireCapability(builder, AdminCapabilities.SupportRead));
+    options.AddPolicy(AdminPolicies.MealsRead, builder => RequireCapability(builder, AdminCapabilities.MealsRead));
+    options.AddPolicy(AdminPolicies.MealsDelete, builder => RequireCapability(builder, AdminCapabilities.MealsDelete));
+    options.AddPolicy(AdminPolicies.FoodsRead, builder => RequireCapability(builder, AdminCapabilities.FoodsRead));
+    options.AddPolicy(AdminPolicies.FoodsWrite, builder => RequireCapability(builder, AdminCapabilities.FoodsWrite));
+    options.AddPolicy(AdminPolicies.MasterDataRead, builder => RequireCapability(builder, AdminCapabilities.MasterDataRead));
+    options.AddPolicy(AdminPolicies.MasterDataWrite, builder => RequireCapability(builder, AdminCapabilities.MasterDataWrite));
+    options.AddPolicy(AdminPolicies.RuntimeRead, builder => RequireCapability(builder, AdminCapabilities.RuntimeRead));
+    options.AddPolicy(AdminPolicies.RuntimeKeysManage, builder => RequireCapability(builder, AdminCapabilities.RuntimeKeysManage));
+    options.AddPolicy(AdminPolicies.RuntimeKeysDelete, builder => RequireCapability(builder, AdminCapabilities.RuntimeKeysDelete));
+    options.AddPolicy(AdminPolicies.AuditRead, builder => RequireCapability(builder, AdminCapabilities.AuditRead));
+    options.AddPolicy(AdminPolicies.SettingsRead, builder => RequireCapability(builder, AdminCapabilities.SettingsRead));
+});
 
 var app = builder.Build();
 var startupLogger = app.Services.GetRequiredService<ILogger<Program>>();
 startupLogger.LogInformation(
     "Configured PostgreSQL target: {ConnectionSummary}",
     sanitizedConnectionSummary);
+
+using (var scope = app.Services.CreateScope())
+{
+    var governanceBootstrapper = scope.ServiceProvider.GetRequiredService<AdminGovernanceBootstrapper>();
+    await governanceBootstrapper.EnsureSchemaAsync();
+}
 
 foreach (var warning in optionalProductionWarnings)
 {

@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using EatFitAI.API.Data;
 using EatFitAI.API.DTOs.Admin;
 using EatFitAI.API.DTOs.Common;
+using EatFitAI.API.Security;
 using EatFitAI.API.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -13,7 +14,7 @@ namespace EatFitAI.API.Controllers;
 
 [Route("api/admin/meals")]
 [ApiController]
-[Authorize(Roles = "Admin")]
+[Authorize(Policy = AdminPolicies.MealsRead)]
 public class AdminMealController : ControllerBase
 {
     private readonly ApplicationDbContext _context;
@@ -142,6 +143,7 @@ public class AdminMealController : ControllerBase
     }
 
     [HttpDelete("{id}")]
+    [Authorize(Policy = AdminPolicies.MealsDelete)]
     public async Task<IActionResult> DeleteMeal(int id)
     {
         var meal = await _context.MealDiaries.FindAsync(id);
