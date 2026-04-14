@@ -18,6 +18,7 @@ import {
   Keyboard,
   Platform,
   UIManager,
+  Image,
 } from 'react-native';
 import Toast from 'react-native-toast-message';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -704,7 +705,7 @@ const OnboardingScreen = (): React.ReactElement => {
   /* ─── Render Step 0 — Emerald Nebula "Basic Info" ─── */
   const renderStep0Nebula = () => (
     <Animated.View entering={FadeInRight} exiting={FadeOutLeft} key="step0">
-      <Tilt3DCard maxTilt={6} perspective={900}>
+      <Tilt3DCard maxTilt={6} perspective={900} useDeviceMotion={true} showReflection={false}>
         <Animated.View
           entering={FadeInDown.delay(150).springify()}
           style={[
@@ -718,10 +719,7 @@ const OnboardingScreen = (): React.ReactElement => {
           {/* Header — depth 0.3 */}
           <ParallaxLayer depth={0.3}>
             <View style={s.cardHeader}>
-              {/* Waving hand emoji */}
-              <View style={[s.iconBox, { backgroundColor: C.surfaceContainerHigh }]}>
-                <Animated.Text style={[{ fontSize: 36 }, waveStyle]}>👋</Animated.Text>
-              </View>
+              {/* Removed waving hand emoji */}
               <ThemedText
                 variant="h2"
                 weight="700"
@@ -1122,7 +1120,7 @@ const OnboardingScreen = (): React.ReactElement => {
 
   const renderStep1Nebula = () => (
     <Animated.View entering={FadeInRight} exiting={FadeOutLeft} key="step1">
-      <Tilt3DCard maxTilt={6} perspective={900} height={650}>
+      <Tilt3DCard maxTilt={6} perspective={900} height={650} useDeviceMotion={true} showReflection={false}>
         <Animated.View
           entering={FadeInDown.delay(150).springify()}
           style={[s.card, { backgroundColor: C.glassBg, borderColor: C.glassBorder }]}
@@ -1419,7 +1417,7 @@ const OnboardingScreen = (): React.ReactElement => {
       case 2: // Goal — Emerald Nebula redesign
         return (
           <Animated.View entering={FadeInRight} exiting={FadeOutLeft} key="step2">
-            <Tilt3DCard maxTilt={6} perspective={900} height={620}>
+            <Tilt3DCard maxTilt={6} perspective={900} height={620} useDeviceMotion={true} showReflection={false}>
               <Animated.View
                 entering={FadeInDown.delay(150).springify()}
                 style={[
@@ -1706,7 +1704,7 @@ const OnboardingScreen = (): React.ReactElement => {
 
         return (
           <Animated.View entering={FadeInRight} exiting={FadeOutLeft} key="step3-tw">
-            <Tilt3DCard maxTilt={6} perspective={900} height={320}>
+            <Tilt3DCard maxTilt={6} perspective={900} height={320} useDeviceMotion={true} showReflection={false}>
               <Animated.View
                 entering={FadeInDown.delay(150).springify()}
                 style={[
@@ -1909,7 +1907,7 @@ const OnboardingScreen = (): React.ReactElement => {
       case 4: // Activity Level
         return (
           <Animated.View entering={FadeInRight} exiting={FadeOutLeft} key="step3">
-            <Tilt3DCard maxTilt={6} perspective={900} height={680}>
+            <Tilt3DCard maxTilt={6} perspective={900} height={680} useDeviceMotion={true} showReflection={false}>
               <Animated.View
                 entering={FadeInDown.delay(150).springify()}
                 style={[
@@ -2682,7 +2680,7 @@ const OnboardingScreen = (): React.ReactElement => {
             )}
 
             {/* ─── Result summary (when AI completes) ─── */}
-            {aiResult && (
+            {aiResult && analysisProgress >= 100 && (
               <Animated.View
                 entering={FadeInDown.delay(200).springify()}
                 style={{ marginTop: 24 }}
@@ -3012,7 +3010,6 @@ const OnboardingScreen = (): React.ReactElement => {
               >
                 Tiếp tục
               </ThemedText>
-              <Ionicons name="arrow-forward" size={20} color={C.onPrimary} />
             </View>
           </Pressable>
         </View>
@@ -3051,7 +3048,6 @@ const OnboardingScreen = (): React.ReactElement => {
                 style={StyleSheet.absoluteFill}
               />
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                <Ionicons name="sparkles" size={20} color={C.onPrimary} />
                 <ThemedText
                   variant="body"
                   weight="700"

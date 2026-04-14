@@ -328,7 +328,7 @@ const VerifyEmailScreen = ({ navigation, route }: Props): React.ReactElement => 
           </Animated.View>
 
           {/* ─── Verification Card (3D tilt interaction) ─── */}
-          <Tilt3DCard maxTilt={6} perspective={900}>
+          <Tilt3DCard maxTilt={6} perspective={900} useDeviceMotion={true} showReflection={false}>
             <Animated.View
               entering={FadeInDown.delay(200).springify()}
               style={[

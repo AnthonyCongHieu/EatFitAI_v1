@@ -993,6 +993,7 @@ const IntroCarouselScreen = ({ navigation }: Props): React.ReactElement => {
           backgroundColor: '#FFFFFF',
         },
         buttonShell: {
+          alignSelf: 'center',
           borderRadius: 999,
           overflow: 'hidden',
           shadowColor: '#22C55E',
@@ -1003,6 +1004,7 @@ const IntroCarouselScreen = ({ navigation }: Props): React.ReactElement => {
         },
         buttonGradient: {
           minHeight: 52,
+          paddingHorizontal: 80,
           alignItems: 'center',
           justifyContent: 'center',
           flexDirection: 'row',
@@ -1101,7 +1103,6 @@ const IntroCarouselScreen = ({ navigation }: Props): React.ReactElement => {
                 style={styles.buttonGradient}
               >
                 <ThemedText style={styles.buttonText}>Bắt đầu ngay</ThemedText>
-                <ThemedText style={styles.buttonArrow}>→</ThemedText>
               </LinearGradient>
             </View>
           </Pressable>

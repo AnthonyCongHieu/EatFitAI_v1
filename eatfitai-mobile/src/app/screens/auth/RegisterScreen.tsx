@@ -82,9 +82,9 @@ const RegisterScreen = ({ navigation }: Props): React.ReactElement => {
 
   const getStrengthColor = () => {
     if (passwordStrength === 0) return C.outlineVariant;
-    if (passwordStrength === 1) return '#EF4444';
-    if (passwordStrength === 2) return C.primary;
-    return '#22C55E';
+    if (passwordStrength === 1) return '#EF4444'; // YẾU (Red)
+    if (passwordStrength === 2) return '#F59E0B'; // TRUNG BÌNH (Yellow/Orange)
+    return '#22C55E'; // MẠNH (Green)
   };
 
   const getStrengthLabel = () => {
