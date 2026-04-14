@@ -982,32 +982,38 @@ const OnboardingScreen = (): React.ReactElement => {
 
   const targetRulerNativeScrollX = useSharedValue(0);
 
-  const updateTargetWeightUI = (offsetX: number) => {
+  const currentGoal = data.goal;
+  const currentWeightStr = data.weightKg;
+  const currentWeightVal = parseFloat(currentWeightStr) || 65;
+  const targetMinWeight = currentGoal === 'gain' ? currentWeightVal : 30;
+  const targetMaxWeight = currentGoal === 'lose' ? currentWeightVal : 200;
+
+  const updateTargetWeightUI = (offsetX: number, minW: number, maxW: number) => {
     targetRulerScrollXRef.current = offsetX;
-    const v = Math.round((offsetX / 100 + 30) * 10) / 10;
-    setTargetDisplayWeight(Math.max(30, Math.min(200, v)));
+    let v = Math.round((offsetX / 100 + minW) * 10) / 10;
+    setTargetDisplayWeight(Math.max(minW, Math.min(maxW, v)));
   };
 
   const onTargetRulerScroll = useAnimatedScrollHandler({
     onScroll: (event) => {
       targetRulerNativeScrollX.value = event.contentOffset.x;
-      runOnJS(updateTargetWeightUI)(event.contentOffset.x);
+      runOnJS(updateTargetWeightUI)(event.contentOffset.x, targetMinWeight, targetMaxWeight);
     },
-  });
+  }, [targetMinWeight, targetMaxWeight]);
 
   const targetOverlayAnimatedStyle = useAnimatedStyle(() => {
-    const origWeight = parseFloat(data.weightKg) || 65;
-    const twPad = Math.max(targetWeightRulerWidth / 2 - 5, 0);
-    const origCX = (origWeight - 30) * 100;
+    const origWeight = currentWeightVal;
+    const ctrX = targetWeightRulerWidth / 2;
+    const origCX = (origWeight - targetMinWeight) * 100;
 
     // UI Thread scroll sync
     const sX = targetRulerNativeScrollX.value;
-    const origScrX = origCX - sX + twPad;
-    const ctrX = targetWeightRulerWidth / 2;
+    const origScrX = origCX - sX + ctrX;
+    
     const left = Math.min(origScrX, ctrX);
     const width = Math.abs(origScrX - ctrX);
 
-    const valStr = Math.round((sX / 100 + 30) * 10) / 10;
+    const valStr = Math.round((sX / 100 + targetMinWeight) * 10) / 10;
     const wDiff = valStr - origWeight;
     const showDiffUI = Math.abs(wDiff) >= 0.2 && width > 2;
 
@@ -1018,7 +1024,7 @@ const OnboardingScreen = (): React.ReactElement => {
       backgroundColor:
         wDiff <= 0 ? 'rgba(75, 226, 119, 0.12)' : 'rgba(251, 146, 60, 0.12)',
     };
-  });
+  }, [currentWeightVal, targetMinWeight, targetWeightRulerWidth]);
 
   useEffect(() => {
     if (
@@ -1028,16 +1034,17 @@ const OnboardingScreen = (): React.ReactElement => {
     ) {
       const initVal = data.targetWeightKg
         ? parseFloat(data.targetWeightKg)
-        : parseFloat(data.weightKg) || 65;
-      const scrollX = (initVal - 30) * 100;
+        : currentWeightVal;
+      const clampedVal = Math.max(targetMinWeight, Math.min(targetMaxWeight, initVal));
+      const scrollX = (clampedVal - targetMinWeight) * 100;
       setTimeout(() => {
         targetWeightRulerRef.current?.scrollTo({ x: scrollX, animated: false });
         targetRulerScrollXRef.current = scrollX;
-        setTargetDisplayWeight(initVal);
+        setTargetDisplayWeight(clampedVal);
         targetWeightRulerInitialized.current = true;
       }, 150);
     }
-  }, [currentStep, targetWeightRulerWidth]);
+  }, [currentStep, targetWeightRulerWidth, currentWeightVal, targetMinWeight, targetMaxWeight]);
 
   // Memoize the large arrays to prevent significant lag during active scrolling
   const memoizedHeightTicks = useMemo(
@@ -1117,6 +1124,43 @@ const OnboardingScreen = (): React.ReactElement => {
       }),
     [],
   );
+
+  const memoizedTargetWeightTicks = useMemo(() => {
+    const count = Math.max(1, Math.floor((targetMaxWeight - targetMinWeight) * 10) + 1);
+    
+    return Array.from({ length: count }).map((_, i) => {
+      const val = targetMinWeight + i * 0.1;
+      const valRound = Math.round(val * 10);
+      const isMajor = valRound % 10 === 0;
+      const isMedium = valRound % 5 === 0;
+      return (
+        <View key={i} style={{ width: 10, alignItems: 'center', justifyContent: 'flex-end' }}>
+          {isMajor && (
+            <ThemedText
+              style={{
+                fontSize: 11,
+                color: 'rgba(188, 200, 185, 0.6)',
+                marginBottom: 6,
+                fontFamily: 'Inter_600SemiBold',
+                width: 40,
+                textAlign: 'center',
+              }}
+            >
+              {Math.round(val)}
+            </ThemedText>
+          )}
+          <View
+            style={{
+              width: isMajor ? 2 : 1,
+              height: isMajor ? 32 : isMedium ? 20 : 12,
+              backgroundColor: isMajor ? C.primary : 'rgba(188, 200, 185, 0.4)',
+              borderRadius: 1,
+            }}
+          />
+        </View>
+      );
+    });
+  }, [targetMinWeight, targetMaxWeight]);
 
   const renderStep1Nebula = () => (
     <Animated.View entering={FadeInRight} exiting={FadeOutLeft} key="step1">
@@ -1689,18 +1733,11 @@ const OnboardingScreen = (): React.ReactElement => {
 
       case 3: {
         // Target Weight
-        const origWeight = parseFloat(data.weightKg) || 65;
+        const origWeight = currentWeightVal;
         const targetVal = targetDisplayWeight || origWeight;
         const weightDiff = targetVal - origWeight;
-        const twPad = Math.max(targetWeightRulerWidth / 2 - 5, 0);
         const showDiffUI = Math.abs(weightDiff) >= 0.2;
-        const origCX = (origWeight - 30) * 100;
-        const sX = targetRulerScrollXRef.current;
-        const origScrX = origCX - sX + twPad;
-        const ctrX = targetWeightRulerWidth / 2;
-        const oLeft = Math.min(origScrX, ctrX);
-        const oWidth = Math.abs(origScrX - ctrX);
-        const origMLeft = twPad + (origWeight - 30) * 100 - 1.5;
+        const origMLeft = (targetWeightRulerWidth / 2 - 5) + (origWeight - targetMinWeight) * 100 + 4;
 
         return (
           <Animated.View entering={FadeInRight} exiting={FadeOutLeft} key="step3-tw">
@@ -1860,23 +1897,23 @@ const OnboardingScreen = (): React.ReactElement => {
                   snapToInterval={10}
                   decelerationRate="fast"
                   contentContainerStyle={{
-                    paddingLeft: twPad,
-                    paddingRight: twPad,
+                    paddingLeft: targetWeightRulerWidth / 2 - 5,
+                    paddingRight: targetWeightRulerWidth / 2 - 5,
                     height: 110,
                     alignItems: 'flex-end',
                   }}
                   onScroll={onTargetRulerScroll}
                   onMomentumScrollEnd={(e) => {
                     const o = e.nativeEvent.contentOffset.x;
-                    const v = Math.round((o / 100 + 30) * 10) / 10;
-                    const c = Math.max(30, Math.min(200, v));
+                    const v = Math.round((o / 100 + targetMinWeight) * 10) / 10;
+                    const c = Math.max(targetMinWeight, Math.min(targetMaxWeight, v));
                     setData((p) => ({ ...p, targetWeightKg: String(c) }));
                     setTargetDisplayWeight(c);
                   }}
                   onScrollEndDrag={(e) => {
                     const o = e.nativeEvent.contentOffset.x;
-                    const v = Math.round((o / 100 + 30) * 10) / 10;
-                    const c = Math.max(30, Math.min(200, v));
+                    const v = Math.round((o / 100 + targetMinWeight) * 10) / 10;
+                    const c = Math.max(targetMinWeight, Math.min(targetMaxWeight, v));
                     setData((p) => ({ ...p, targetWeightKg: String(c) }));
                     setTargetDisplayWeight(c);
                   }}
@@ -1896,7 +1933,7 @@ const OnboardingScreen = (): React.ReactElement => {
                       }}
                     />
                   )}
-                  {memoizedWeightTicks}
+                  {memoizedTargetWeightTicks}
                 </Animated.ScrollView>
               </View>
             </Animated.View>
