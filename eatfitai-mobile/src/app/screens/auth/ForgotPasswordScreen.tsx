@@ -1,4 +1,4 @@
-import { useCallback, useState, useEffect } from 'react';
+import { useCallback, useState, useEffect, useRef } from 'react';
 import {
   StyleSheet,
   View,
@@ -46,6 +46,7 @@ const NewPasswordSchema = z
 
 type Props = NativeStackScreenProps<RootStackParamList, 'ForgotPassword'>;
 type Step = 'email' | 'verify' | 'newPassword' | 'success';
+const CODE_LENGTH = 6;
 
 /* ─── Emerald Nebula palette (synced with Login / Register) ─── */
 const C = {
@@ -84,10 +85,10 @@ const ForgotPasswordScreen = ({ navigation }: Props): React.ReactElement => {
     defaultValues: { email: '' },
   });
 
-  const verifyForm = useForm({
-    resolver: zodResolver(VerifySchema),
-    defaultValues: { resetCode: '' },
-  });
+  const [code, setCode] = useState<string[]>(Array(CODE_LENGTH).fill(''));
+  const inputRefs = useRef<(TextInput | null)[]>([]);
+  const [activeSlot, setActiveSlot] = useState<number>(0);
+  const [countdown, setCountdown] = useState(0);
 
   const passwordForm = useForm({
     resolver: zodResolver(NewPasswordSchema),
@@ -116,6 +117,39 @@ const ForgotPasswordScreen = ({ navigation }: Props): React.ReactElement => {
     };
   });
 
+  /* ─── Cursor Blink Animation ─── */
+  const cursorOpacity = useSharedValue(1);
+
+  useEffect(() => {
+    cursorOpacity.value = withRepeat(
+      withSequence(
+        withTiming(0, { duration: 500 }),
+        withTiming(1, { duration: 500 })
+      ),
+      -1,
+      true
+    );
+  }, []);
+
+  const cursorStyle = useAnimatedStyle(() => {
+    return {
+      opacity: cursorOpacity.value,
+    };
+  });
+
+  useEffect(() => {
+    if (step === 'verify') {
+      setTimeout(() => inputRefs.current[0]?.focus(), 450);
+    }
+  }, [step]);
+
+  useEffect(() => {
+    if (countdown > 0) {
+      const timer = setTimeout(() => setCountdown(countdown - 1), 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [countdown]);
+
   /* ─── Handlers ─── */
   const onSendCode = useCallback(
     async (values: { email: string }) => {
@@ -129,6 +163,7 @@ const ForgotPasswordScreen = ({ navigation }: Props): React.ReactElement => {
           text2: 'Kiểm tra email của bạn để tiếp tục',
         });
         setStep('verify');
+        setCountdown(45);
       } catch (e: any) {
         const msg = e?.response?.data?.message || e?.message || 'Không thể gửi mã';
         Toast.show({
@@ -143,15 +178,40 @@ const ForgotPasswordScreen = ({ navigation }: Props): React.ReactElement => {
     [forgotPassword],
   );
 
-  const onVerifyCode = useCallback((values: { resetCode: string }) => {
-    setResetCode(values.resetCode);
+  const handleCodeChange = (value: string, index: number) => {
+    if (value && !/^\d*$/.test(value)) return;
+
+    const newCode = [...code];
+    newCode[index] = value;
+    setCode(newCode);
+
+    if (value && index < CODE_LENGTH - 1) {
+      inputRefs.current[index + 1]?.focus();
+    } else if (!value && index > 0) {
+      inputRefs.current[index - 1]?.focus();
+    }
+  };
+
+  const handleKeyPress = (e: any, index: number) => {
+    if (e.nativeEvent.key === 'Backspace' && !code[index] && index > 0) {
+      inputRefs.current[index - 1]?.focus();
+    }
+  };
+
+  const onVerifyCode = useCallback(() => {
+    const fullCode = code.join('');
+    if (fullCode.length !== CODE_LENGTH) {
+      Toast.show({ type: 'error', text1: 'Lỗi', text2: 'Vui lòng nhập đủ 6 số' });
+      return;
+    }
+    setResetCode(fullCode);
     setStep('newPassword');
     Toast.show({
       type: 'info',
       text1: 'Mã hợp lệ',
       text2: 'Tiếp tục tạo mật khẩu mới',
     });
-  }, []);
+  }, [code]);
 
   const onResetPassword = useCallback(
     async (values: { newPassword: string; confirm: string }) => {
@@ -191,7 +251,7 @@ const ForgotPasswordScreen = ({ navigation }: Props): React.ReactElement => {
       case 'email':
         return { name: 'lock-closed', label: 'Quên mật khẩu?' };
       case 'verify':
-        return { name: 'shield-checkmark', label: 'Xác minh mã' };
+        return { name: 'shield-checkmark', label: 'Xác thực tài khoản' };
       case 'newPassword':
         return { name: 'key', label: 'Mật khẩu mới' };
       case 'success':
@@ -297,14 +357,7 @@ const ForgotPasswordScreen = ({ navigation }: Props): React.ReactElement => {
                         fontSize: 15,
                       }}
                     >
-                      Nhập mã xác minh đã gửi đến{'\n'}
-                      <ThemedText
-                        variant="body"
-                        weight="600"
-                        style={{ color: C.primary, fontSize: 15 }}
-                      >
-                        {email}
-                      </ThemedText>
+                      Hãy nhập mã OTP gồm 6 chữ số vừa được AI gửi đến email <ThemedText variant="body" weight="600" style={{ color: C.onSurface }}>{email}</ThemedText> của bạn.
                     </ThemedText>
                   )}
 
@@ -493,68 +546,53 @@ const ForgotPasswordScreen = ({ navigation }: Props): React.ReactElement => {
               {step === 'verify' && (
                 <ParallaxLayer depth={0.5}>
                   <Animated.View entering={FadeInRight.duration(400)}>
-                    {/* Label */}
-                    <ThemedText
-                      variant="caption"
-                      weight="700"
-                      style={styles.fieldLabel}
-                    >
-                      MÃ XÁC MINH
-                    </ThemedText>
-
-                    {/* Code input */}
-                    <Controller
-                      control={verifyForm.control}
-                      name="resetCode"
-                      render={({ field: { onChange, onBlur, value } }) => (
-                        <View>
-                          <View
+                     <View style={styles.otpContainer}>
+                      {code.map((digit, index) => {
+                        const isActive = activeSlot === index;
+                        return (
+                          <Pressable
+                            key={index}
+                            onPress={() => inputRefs.current[index]?.focus()}
                             style={[
-                              styles.inputContainer,
-                              {
-                                backgroundColor: C.inputBg,
-                                borderColor: verifyForm.formState.errors.resetCode
-                                  ? theme.colors.danger
-                                  : C.inputBorder,
-                              },
+                              styles.otpSlot,
+                              isActive && styles.otpSlotActive,
+                              digit ? { borderColor: C.primary } : {}
                             ]}
                           >
-                            <Ionicons
-                              name="keypad-outline"
-                              size={20}
-                              color={C.onSurfaceVariant}
-                              style={styles.inputIcon}
-                            />
                             <TextInput
-                              placeholder="123456"
-                              placeholderTextColor="#475569"
-                              keyboardType="number-pad"
-                              returnKeyType="done"
-                              onBlur={onBlur}
-                              onChangeText={onChange}
-                              value={value}
-                              style={[styles.input, { color: C.onSurface }]}
-                            />
-                          </View>
-                          {verifyForm.formState.errors.resetCode && (
-                            <ThemedText
-                              variant="bodySmall"
-                              style={{
-                                color: theme.colors.danger,
-                                marginTop: 4,
-                                marginLeft: 4,
+                              ref={(ref) => {
+                                inputRefs.current[index] = ref;
                               }}
-                            >
-                              {verifyForm.formState.errors.resetCode.message}
-                            </ThemedText>
-                          )}
-                        </View>
-                      )}
-                    />
+                              style={styles.hiddenInput}
+                              value={digit}
+                              onChangeText={(value) => handleCodeChange(value, index)}
+                              onKeyPress={(e) => handleKeyPress(e, index)}
+                              onFocus={() => setActiveSlot(index)}
+                              onBlur={() => setActiveSlot(-1)}
+                              keyboardType="number-pad"
+                              maxLength={1}
+                              caretHidden={true}
+                            />
+                            {/* Display */}
+                            {digit ? (
+                              <ThemedText variant="h2" weight="700" style={{ color: C.onSurface, fontSize: 24 }}>
+                                {digit}
+                              </ThemedText>
+                            ) : isActive ? (
+                              <Animated.View style={[styles.cursorBlink, cursorStyle]} />
+                            ) : (
+                              <ThemedText variant="h2" weight="700" style={{ color: '#475569', fontSize: 24, fontStyle: 'italic' }}>
+                                _
+                              </ThemedText>
+                            )}
+                          </Pressable>
+                        );
+                      })}
+                    </View>
 
                     {/* CTA */}
                     <Pressable
-                      onPress={verifyForm.handleSubmit(onVerifyCode)}
+                      onPress={onVerifyCode}
                       disabled={loading}
                       style={({ pressed }) => [
                         styles.ctaButton,
@@ -582,18 +620,18 @@ const ForgotPasswordScreen = ({ navigation }: Props): React.ReactElement => {
                         weight="700"
                         style={{ color: C.onPrimary, fontSize: 18 }}
                       >
-                        Xác nhận mã
+                        {loading ? 'Đang xác minh...' : 'Xác nhận'}
                       </ThemedText>
                     </Pressable>
 
                     {/* Resend */}
                     <Pressable
                       onPress={() => onSendCode({ email })}
-                      disabled={loading}
+                      disabled={loading || countdown > 0}
                       style={({ pressed }) => [
                         styles.outlineButton,
                         pressed && { opacity: 0.7 },
-                        loading && { opacity: 0.4 },
+                        (loading || countdown > 0) && { opacity: 0.4 },
                       ]}
                     >
                       <ThemedText
@@ -601,7 +639,9 @@ const ForgotPasswordScreen = ({ navigation }: Props): React.ReactElement => {
                         weight="600"
                         style={{ color: C.primary, fontSize: 16 }}
                       >
-                        Gửi lại mã
+                        {countdown > 0
+                          ? `Gửi lại (${countdown.toString().padStart(2, '0')}s)`
+                          : 'Gửi lại mã'}
                       </ThemedText>
                     </Pressable>
                   </Animated.View>
@@ -840,22 +880,25 @@ const ForgotPasswordScreen = ({ navigation }: Props): React.ReactElement => {
           </Tilt3DCard>
 
           {/* ─── Footer ─── */}
-          <Animated.View
-            entering={FadeInDown.delay(400).springify()}
-            style={styles.footer}
-          >
-            <ThemedText variant="bodySmall" style={{ color: '#64748B' }}>
-              Bạn nhớ ra mật khẩu?{' '}
-            </ThemedText>
-            <ThemedText
-              variant="bodySmall"
-              weight="700"
-              onPress={goToLogin}
-              style={{ color: C.primary }}
+          {step === 'email' && (
+            <Animated.View
+              entering={FadeInDown.delay(400).springify()}
+              style={styles.footer}
             >
-              Quay lại đăng nhập
-            </ThemedText>
-          </Animated.View>
+              <ThemedText variant="bodySmall" style={{ color: '#64748B' }}>
+                Bạn nhớ ra mật khẩu?{' '}
+              </ThemedText>
+              <ThemedText
+                variant="bodySmall"
+                weight="700"
+                onPress={goToLogin}
+                style={{ color: C.primary }}
+              >
+                Quay lại đăng nhập
+              </ThemedText>
+            </Animated.View>
+          )}
+
         </Screen>
       </KeyboardAvoidingView>
     </GestureHandlerRootView>
@@ -1003,6 +1046,59 @@ const styles = StyleSheet.create({
     padding: 4,
   },
 
+  /* OTP Inputs */
+  otpContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 4,
+    marginTop: 8,
+  },
+  otpSlot: {
+    width: 44,
+    height: 60,
+    borderRadius: 12,
+    backgroundColor: C.surfaceContainerLowest,
+    borderWidth: 1,
+    borderColor: 'rgba(61, 74, 61, 0.3)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  otpSlotActive: {
+    borderColor: C.primary,
+    borderWidth: 2,
+    shadowColor: C.primary,
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 0 },
+    elevation: 4,
+  },
+  hiddenInput: {
+    position: 'absolute',
+    width: '100%',
+    height: '100%',
+    opacity: 0,
+    zIndex: 10,
+    textAlign: 'center',
+    fontSize: 24,
+  },
+  cursorBlink: {
+    width: 2,
+    height: 32,
+    backgroundColor: C.primary,
+  },
+
+  /* Footer */
+  footer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginTop: 32,
+  },
+
   /* CTA Button */
   ctaButton: {
     height: 56,
@@ -1041,12 +1137,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
 
-  /* Footer */
-  footer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    marginTop: 32,
-  },
+
 });
 
 export default ForgotPasswordScreen;
