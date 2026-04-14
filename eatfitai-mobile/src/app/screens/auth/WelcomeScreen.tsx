@@ -272,6 +272,7 @@ const WelcomeScreen = ({ navigation }: Props): React.ReactElement => {
             height={cardHeight}
             showReflection={false}
             reflectionColor="rgba(75, 226, 119, 0.04)"
+            useDeviceMotion={true}
             style={[styles.tiltCard, { width: cardWidth }]}
           >
             {/* ══════════ HERO SECTION ══════════ */}
