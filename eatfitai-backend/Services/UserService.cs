@@ -1,4 +1,4 @@
-﻿using AutoMapper;
+using AutoMapper;
 using EatFitAI.API.DbScaffold.Data;
 using EatFitAI.API.DTOs.User;
 using EatFitAI.API.DbScaffold.Models;
@@ -159,8 +159,8 @@ namespace EatFitAI.API.Services
             var user = await _userRepository.GetByIdAsync(userId);
             if (user == null) throw new KeyNotFoundException("Không tìm thấy người dùng");
 
-            // Update User info
-            user.DisplayName = userProfileDto.DisplayName;
+            if (userProfileDto.DisplayName != null)
+                user.DisplayName = userProfileDto.DisplayName;
             if (userProfileDto.AvatarUrl != null)
                 user.AvatarUrl = userProfileDto.AvatarUrl;
             

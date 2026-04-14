@@ -18,6 +18,7 @@ import {
   Keyboard,
   Platform,
   UIManager,
+  Image,
 } from 'react-native';
 import Toast from 'react-native-toast-message';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -57,7 +58,6 @@ import Tilt3DCard, { ParallaxLayer } from '../../../components/ui/Tilt3DCard';
 const { width } = Dimensions.get('window');
 
 interface OnboardingData {
-  fullName: string;
   gender: 'male' | 'female' | null; // Đã bỏ 'other'
   age: string;
   heightCm: string;
@@ -209,7 +209,6 @@ const OnboardingScreen = (): React.ReactElement => {
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
   const [calculationError, setCalculationError] = useState<string | null>(null);
   const [data, setData] = useState<OnboardingData>({
-    fullName: '',
     gender: null,
     age: '24',
     heightCm: '160', // Default height 160cm
@@ -426,6 +425,22 @@ const OnboardingScreen = (): React.ReactElement => {
     }
   }, [aiResult, currentStep, analysisStarted, analysisStep]);
 
+  const rulerScrollRef = useRef<ScrollView>(null);
+  const rulerInitialized = useRef(false);
+  const [rulerContainerWidth, setRulerContainerWidth] = useState(0);
+  const weightRulerRef = useRef<ScrollView>(null);
+  const weightRulerInitialized = useRef(false);
+  const [weightRulerWidth, setWeightRulerWidth] = useState(0);
+
+  // Target weight ruler refs (Step 3)
+  const targetWeightRulerRef = useRef<any>(null);
+  const targetWeightRulerInitialized = useRef(false);
+  const [targetWeightRulerWidth, setTargetWeightRulerWidth] = useState(0);
+  const targetRulerScrollXRef = useRef(0);
+  const [targetDisplayWeight, setTargetDisplayWeight] = useState(0);
+
+  const targetRulerNativeScrollX = useSharedValue(0);
+
   // Robust snapping for Step 1 Rulers
   useEffect(() => {
     if (currentStep === 1) {
@@ -477,7 +492,7 @@ const OnboardingScreen = (): React.ReactElement => {
   const canProceed = (): boolean => {
     switch (currentStep) {
       case 0:
-        return data.fullName.length >= 2 && data.gender !== null && data.age !== '';
+        return data.gender !== null && data.age !== '';
       case 1:
         return data.heightCm !== '' && data.weightKg !== '';
       case 2:
@@ -596,7 +611,6 @@ const OnboardingScreen = (): React.ReactElement => {
       try {
         // Save profile với đầy đủ thông tin
         await updateProfile({
-          fullName: data.fullName,
           heightCm: Number(data.heightCm),
           weightKg: Number(data.weightKg),
           targetWeightKg: data.targetWeightKg ? Number(data.targetWeightKg) : undefined,
@@ -704,7 +718,7 @@ const OnboardingScreen = (): React.ReactElement => {
   /* ─── Render Step 0 — Emerald Nebula "Basic Info" ─── */
   const renderStep0Nebula = () => (
     <Animated.View entering={FadeInRight} exiting={FadeOutLeft} key="step0">
-      <Tilt3DCard maxTilt={6} perspective={900}>
+      <Tilt3DCard maxTilt={6} perspective={900} useDeviceMotion={true} showReflection={false}>
         <Animated.View
           entering={FadeInDown.delay(150).springify()}
           style={[
@@ -718,10 +732,7 @@ const OnboardingScreen = (): React.ReactElement => {
           {/* Header — depth 0.3 */}
           <ParallaxLayer depth={0.3}>
             <View style={s.cardHeader}>
-              {/* Waving hand emoji */}
-              <View style={[s.iconBox, { backgroundColor: C.surfaceContainerHigh }]}>
-                <Animated.Text style={[{ fontSize: 36 }, waveStyle]}>👋</Animated.Text>
-              </View>
+              {/* Removed waving hand emoji */}
               <ThemedText
                 variant="h2"
                 weight="700"
@@ -753,28 +764,6 @@ const OnboardingScreen = (): React.ReactElement => {
           {/* Form — depth 0.5 */}
           <ParallaxLayer depth={0.5}>
             <View style={s.formGroup}>
-              {/* Name */}
-              <View style={s.fieldBlock}>
-                <ThemedText variant="caption" weight="700" style={s.label}>
-                  HỌ VÀ TÊN
-                </ThemedText>
-                <View
-                  style={[
-                    s.inputContainer,
-                    { backgroundColor: C.inputBg, borderColor: C.inputBorder },
-                  ]}
-                >
-                  <TextInput
-                    testID={TEST_IDS.auth.onboardingNameInput}
-                    placeholder="Nhập họ và tên của bạn"
-                    placeholderTextColor={C.surfaceContainerHighest}
-                    value={data.fullName}
-                    onChangeText={(text) => setData({ ...data, fullName: text })}
-                    style={[s.input, { color: C.onSurface }]}
-                  />
-                </View>
-              </View>
-
               {/* Age — slider */}
               <View style={s.fieldBlock}>
                 <View style={s.ageHeadRow}>
@@ -968,48 +957,39 @@ const OnboardingScreen = (): React.ReactElement => {
   /* ─── Render Step 1 — Emerald Nebula "Body Metrics" ─── */
   const heightNum = data.heightCm ? parseInt(data.heightCm, 10) : 170;
   const weightNum = data.weightKg ? parseFloat(data.weightKg) : 65;
-  const rulerScrollRef = useRef<ScrollView>(null);
-  const rulerInitialized = useRef(false);
-  const [rulerContainerWidth, setRulerContainerWidth] = useState(0);
-  const weightRulerRef = useRef<ScrollView>(null);
-  const weightRulerInitialized = useRef(false);
-  const [weightRulerWidth, setWeightRulerWidth] = useState(0);
 
-  // Target weight ruler refs (Step 3)
-  const targetWeightRulerRef = useRef<any>(null);
-  const targetWeightRulerInitialized = useRef(false);
-  const [targetWeightRulerWidth, setTargetWeightRulerWidth] = useState(0);
-  const targetRulerScrollXRef = useRef(0);
-  const [targetDisplayWeight, setTargetDisplayWeight] = useState(0);
+  const currentGoal = data.goal;
+  const currentWeightStr = data.weightKg;
+  const currentWeightVal = parseFloat(currentWeightStr) || 65;
+  const targetMinWeight = currentGoal === 'gain' ? currentWeightVal : 30;
+  const targetMaxWeight = currentGoal === 'lose' ? currentWeightVal : 200;
 
-  const targetRulerNativeScrollX = useSharedValue(0);
-
-  const updateTargetWeightUI = (offsetX: number) => {
+  const updateTargetWeightUI = (offsetX: number, minW: number, maxW: number) => {
     targetRulerScrollXRef.current = offsetX;
-    const v = Math.round((offsetX / 100 + 30) * 10) / 10;
-    setTargetDisplayWeight(Math.max(30, Math.min(200, v)));
+    const v = Math.round((offsetX / 100 + minW) * 10) / 10;
+    setTargetDisplayWeight(Math.max(minW, Math.min(maxW, v)));
   };
 
   const onTargetRulerScroll = useAnimatedScrollHandler({
     onScroll: (event) => {
       targetRulerNativeScrollX.value = event.contentOffset.x;
-      runOnJS(updateTargetWeightUI)(event.contentOffset.x);
+      runOnJS(updateTargetWeightUI)(event.contentOffset.x, targetMinWeight, targetMaxWeight);
     },
-  });
+  }, [targetMinWeight, targetMaxWeight]);
 
   const targetOverlayAnimatedStyle = useAnimatedStyle(() => {
-    const origWeight = parseFloat(data.weightKg) || 65;
-    const twPad = Math.max(targetWeightRulerWidth / 2 - 5, 0);
-    const origCX = (origWeight - 30) * 100;
+    const origWeight = currentWeightVal;
+    const ctrX = targetWeightRulerWidth / 2;
+    const origCX = (origWeight - targetMinWeight) * 100;
 
     // UI Thread scroll sync
     const sX = targetRulerNativeScrollX.value;
-    const origScrX = origCX - sX + twPad;
-    const ctrX = targetWeightRulerWidth / 2;
+    const origScrX = origCX - sX + ctrX;
+    
     const left = Math.min(origScrX, ctrX);
     const width = Math.abs(origScrX - ctrX);
 
-    const valStr = Math.round((sX / 100 + 30) * 10) / 10;
+    const valStr = Math.round((sX / 100 + targetMinWeight) * 10) / 10;
     const wDiff = valStr - origWeight;
     const showDiffUI = Math.abs(wDiff) >= 0.2 && width > 2;
 
@@ -1020,7 +1000,7 @@ const OnboardingScreen = (): React.ReactElement => {
       backgroundColor:
         wDiff <= 0 ? 'rgba(75, 226, 119, 0.12)' : 'rgba(251, 146, 60, 0.12)',
     };
-  });
+  }, [currentWeightVal, targetMinWeight, targetWeightRulerWidth]);
 
   useEffect(() => {
     if (
@@ -1030,16 +1010,17 @@ const OnboardingScreen = (): React.ReactElement => {
     ) {
       const initVal = data.targetWeightKg
         ? parseFloat(data.targetWeightKg)
-        : parseFloat(data.weightKg) || 65;
-      const scrollX = (initVal - 30) * 100;
+        : currentWeightVal;
+      const clampedVal = Math.max(targetMinWeight, Math.min(targetMaxWeight, initVal));
+      const scrollX = (clampedVal - targetMinWeight) * 100;
       setTimeout(() => {
         targetWeightRulerRef.current?.scrollTo({ x: scrollX, animated: false });
         targetRulerScrollXRef.current = scrollX;
-        setTargetDisplayWeight(initVal);
+        setTargetDisplayWeight(clampedVal);
         targetWeightRulerInitialized.current = true;
       }, 150);
     }
-  }, [currentStep, targetWeightRulerWidth]);
+  }, [currentStep, targetWeightRulerWidth, currentWeightVal, targetMinWeight, targetMaxWeight, data.targetWeightKg]);
 
   // Memoize the large arrays to prevent significant lag during active scrolling
   const memoizedHeightTicks = useMemo(
@@ -1120,9 +1101,46 @@ const OnboardingScreen = (): React.ReactElement => {
     [],
   );
 
+  const memoizedTargetWeightTicks = useMemo(() => {
+    const count = Math.max(1, Math.floor((targetMaxWeight - targetMinWeight) * 10) + 1);
+    
+    return Array.from({ length: count }).map((_, i) => {
+      const val = targetMinWeight + i * 0.1;
+      const valRound = Math.round(val * 10);
+      const isMajor = valRound % 10 === 0;
+      const isMedium = valRound % 5 === 0;
+      return (
+        <View key={i} style={{ width: 10, alignItems: 'center', justifyContent: 'flex-end' }}>
+          {isMajor && (
+            <ThemedText
+              style={{
+                fontSize: 11,
+                color: 'rgba(188, 200, 185, 0.6)',
+                marginBottom: 6,
+                fontFamily: 'Inter_600SemiBold',
+                width: 40,
+                textAlign: 'center',
+              }}
+            >
+              {Math.round(val)}
+            </ThemedText>
+          )}
+          <View
+            style={{
+              width: isMajor ? 2 : 1,
+              height: isMajor ? 32 : isMedium ? 20 : 12,
+              backgroundColor: isMajor ? C.primary : 'rgba(188, 200, 185, 0.4)',
+              borderRadius: 1,
+            }}
+          />
+        </View>
+      );
+    });
+  }, [targetMinWeight, targetMaxWeight]);
+
   const renderStep1Nebula = () => (
     <Animated.View entering={FadeInRight} exiting={FadeOutLeft} key="step1">
-      <Tilt3DCard maxTilt={6} perspective={900} height={650}>
+      <Tilt3DCard maxTilt={6} perspective={900} height={650} useDeviceMotion={true} showReflection={false}>
         <Animated.View
           entering={FadeInDown.delay(150).springify()}
           style={[s.card, { backgroundColor: C.glassBg, borderColor: C.glassBorder }]}
@@ -1258,9 +1276,7 @@ const OnboardingScreen = (): React.ReactElement => {
                       showsHorizontalScrollIndicator={false}
                       snapToInterval={12}
                       decelerationRate="fast"
-                      showsHorizontalScrollIndicator={false}
-                      snapToInterval={12}
-                      decelerationRate="fast"
+                      contentOffset={{ x: ((parseInt(data.heightCm, 10) || 160) - 100) * 12, y: 0 }}
                       contentContainerStyle={{
                         paddingLeft: rulerContainerWidth / 2 - 6,
                         paddingRight: rulerContainerWidth / 2 - 6,
@@ -1377,9 +1393,7 @@ const OnboardingScreen = (): React.ReactElement => {
                       showsHorizontalScrollIndicator={false}
                       snapToInterval={10}
                       decelerationRate="fast"
-                      showsHorizontalScrollIndicator={false}
-                      snapToInterval={10}
-                      decelerationRate="fast"
+                      contentOffset={{ x: ((parseFloat(data.weightKg) || 60) - 30) * 100, y: 0 }}
                       contentContainerStyle={{
                         paddingLeft: weightRulerWidth / 2 - 5,
                         paddingRight: weightRulerWidth / 2 - 5,
@@ -1423,7 +1437,7 @@ const OnboardingScreen = (): React.ReactElement => {
       case 2: // Goal — Emerald Nebula redesign
         return (
           <Animated.View entering={FadeInRight} exiting={FadeOutLeft} key="step2">
-            <Tilt3DCard maxTilt={6} perspective={900} height={620}>
+            <Tilt3DCard maxTilt={6} perspective={900} height={620} useDeviceMotion={true} showReflection={false}>
               <Animated.View
                 entering={FadeInDown.delay(150).springify()}
                 style={[
@@ -1695,22 +1709,15 @@ const OnboardingScreen = (): React.ReactElement => {
 
       case 3: {
         // Target Weight
-        const origWeight = parseFloat(data.weightKg) || 65;
+        const origWeight = currentWeightVal;
         const targetVal = targetDisplayWeight || origWeight;
         const weightDiff = targetVal - origWeight;
-        const twPad = Math.max(targetWeightRulerWidth / 2 - 5, 0);
         const showDiffUI = Math.abs(weightDiff) >= 0.2;
-        const origCX = (origWeight - 30) * 100;
-        const sX = targetRulerScrollXRef.current;
-        const origScrX = origCX - sX + twPad;
-        const ctrX = targetWeightRulerWidth / 2;
-        const oLeft = Math.min(origScrX, ctrX);
-        const oWidth = Math.abs(origScrX - ctrX);
-        const origMLeft = twPad + (origWeight - 30) * 100 - 1.5;
+        const origMLeft = (targetWeightRulerWidth / 2 - 5) + (origWeight - targetMinWeight) * 100 + 4;
 
         return (
           <Animated.View entering={FadeInRight} exiting={FadeOutLeft} key="step3-tw">
-            <Tilt3DCard maxTilt={6} perspective={900} height={320}>
+            <Tilt3DCard maxTilt={6} perspective={900} height={320} useDeviceMotion={true} showReflection={false}>
               <Animated.View
                 entering={FadeInDown.delay(150).springify()}
                 style={[
@@ -1866,23 +1873,23 @@ const OnboardingScreen = (): React.ReactElement => {
                   snapToInterval={10}
                   decelerationRate="fast"
                   contentContainerStyle={{
-                    paddingLeft: twPad,
-                    paddingRight: twPad,
+                    paddingLeft: targetWeightRulerWidth / 2 - 5,
+                    paddingRight: targetWeightRulerWidth / 2 - 5,
                     height: 110,
                     alignItems: 'flex-end',
                   }}
                   onScroll={onTargetRulerScroll}
                   onMomentumScrollEnd={(e) => {
                     const o = e.nativeEvent.contentOffset.x;
-                    const v = Math.round((o / 100 + 30) * 10) / 10;
-                    const c = Math.max(30, Math.min(200, v));
+                    const v = Math.round((o / 100 + targetMinWeight) * 10) / 10;
+                    const c = Math.max(targetMinWeight, Math.min(targetMaxWeight, v));
                     setData((p) => ({ ...p, targetWeightKg: String(c) }));
                     setTargetDisplayWeight(c);
                   }}
                   onScrollEndDrag={(e) => {
                     const o = e.nativeEvent.contentOffset.x;
-                    const v = Math.round((o / 100 + 30) * 10) / 10;
-                    const c = Math.max(30, Math.min(200, v));
+                    const v = Math.round((o / 100 + targetMinWeight) * 10) / 10;
+                    const c = Math.max(targetMinWeight, Math.min(targetMaxWeight, v));
                     setData((p) => ({ ...p, targetWeightKg: String(c) }));
                     setTargetDisplayWeight(c);
                   }}
@@ -1902,7 +1909,7 @@ const OnboardingScreen = (): React.ReactElement => {
                       }}
                     />
                   )}
-                  {memoizedWeightTicks}
+                  {memoizedTargetWeightTicks}
                 </Animated.ScrollView>
               </View>
             </Animated.View>
@@ -1913,7 +1920,7 @@ const OnboardingScreen = (): React.ReactElement => {
       case 4: // Activity Level
         return (
           <Animated.View entering={FadeInRight} exiting={FadeOutLeft} key="step3">
-            <Tilt3DCard maxTilt={6} perspective={900} height={680}>
+            <Tilt3DCard maxTilt={6} perspective={900} height={680} useDeviceMotion={true} showReflection={false}>
               <Animated.View
                 entering={FadeInDown.delay(150).springify()}
                 style={[
@@ -2686,7 +2693,7 @@ const OnboardingScreen = (): React.ReactElement => {
             )}
 
             {/* ─── Result summary (when AI completes) ─── */}
-            {aiResult && (
+            {aiResult && analysisProgress >= 100 && (
               <Animated.View
                 entering={FadeInDown.delay(200).springify()}
                 style={{ marginTop: 24 }}
@@ -2730,7 +2737,7 @@ const OnboardingScreen = (): React.ReactElement => {
                           CALORIES
                         </ThemedText>
                         <ThemedText
-                          weight="800"
+                          weight="700"
                           style={{
                             color: '#4BE277',
                             fontSize: 36,
@@ -3016,7 +3023,6 @@ const OnboardingScreen = (): React.ReactElement => {
               >
                 Tiếp tục
               </ThemedText>
-              <Ionicons name="arrow-forward" size={20} color={C.onPrimary} />
             </View>
           </Pressable>
         </View>
@@ -3055,7 +3061,6 @@ const OnboardingScreen = (): React.ReactElement => {
                 style={StyleSheet.absoluteFill}
               />
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                <Ionicons name="sparkles" size={20} color={C.onPrimary} />
                 <ThemedText
                   variant="body"
                   weight="700"

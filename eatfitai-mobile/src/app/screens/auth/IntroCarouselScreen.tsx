@@ -108,6 +108,7 @@ const NutritionRingSlide = (): React.ReactElement => {
         maxTilt={6}
         perspective={900}
         showReflection={false}
+        useDeviceMotion={true}
       >
         {/* The ring + labels compound */}
         <View style={s1.ringCompound}>
@@ -325,6 +326,7 @@ const ProgressChartSlide = (): React.ReactElement => {
         maxTilt={5}
         perspective={1000}
         showReflection={false}
+        useDeviceMotion={true}
       >
         <View style={s2.heroWrapper}>
           {/* Main Glass Card */}
@@ -677,6 +679,14 @@ const RoadmapSlide = (): React.ReactElement => {
 
   return (
     <View style={s3.wrap}>
+      <Tilt3DCard
+        width={width - 48}
+        height={480}
+        maxTilt={4}
+        perspective={1000}
+        showReflection={false}
+        useDeviceMotion={true}
+      >
       {/* Background Winding Line */}
       <View style={StyleSheet.absoluteFillObject}>
         <Svg width={width} height={SVG_HEIGHT}>
@@ -701,14 +711,16 @@ const RoadmapSlide = (): React.ReactElement => {
           transform: [{ translateY: bobChip1 }],
         }}
       >
-        <View style={[s3.glassCard, { opacity: 0.5 }]}>
-          <View style={s3.iconBox}>
-            <Ionicons name="trophy" size={18} color="#F59E0B" />
+        <ParallaxLayer depth={0.5}>
+          <View style={[s3.glassCard, { opacity: 0.5 }]}>
+            <View style={s3.iconBox}>
+              <Ionicons name="trophy" size={18} color="#F59E0B" />
+            </View>
+            <ThemedText style={s3.cardTitle} numberOfLines={1}>
+              Đạt mục tiêu
+            </ThemedText>
           </View>
-          <ThemedText style={s3.cardTitle} numberOfLines={1}>
-            Đạt mục tiêu
-          </ThemedText>
-        </View>
+        </ParallaxLayer>
       </Animated.View>
       <View
         style={[
@@ -744,14 +756,16 @@ const RoadmapSlide = (): React.ReactElement => {
           transform: [{ translateY: bobChip2 }],
         }}
       >
-        <View style={[s3.glassCard, s3.activeCard]}>
-          <View style={[s3.iconBox, s3.iconBoxActive]}>
-            <ThemedText style={{ fontSize: 16 }}>🥗</ThemedText>
+        <ParallaxLayer depth={0.7}>
+          <View style={[s3.glassCard, s3.activeCard]}>
+            <View style={[s3.iconBox, s3.iconBoxActive]}>
+              <ThemedText style={{ fontSize: 16 }}>🥗</ThemedText>
+            </View>
+            <ThemedText style={s3.cardTitle} numberOfLines={1}>
+              Theo dõi bữa ăn
+            </ThemedText>
           </View>
-          <ThemedText style={s3.cardTitle} numberOfLines={1}>
-            Theo dõi bữa ăn
-          </ThemedText>
-        </View>
+        </ParallaxLayer>
       </Animated.View>
 
       {/* NODE 3: Đặt mục tiêu (Completed) */}
@@ -763,14 +777,16 @@ const RoadmapSlide = (): React.ReactElement => {
           transform: [{ translateY: bobChip3 }],
         }}
       >
-        <View style={[s3.glassCard]}>
-          <View style={s3.iconBox}>
-            <Ionicons name="flag" size={18} color="#EF4444" />
+        <ParallaxLayer depth={0.6}>
+          <View style={[s3.glassCard]}>
+            <View style={s3.iconBox}>
+              <Ionicons name="flag" size={18} color="#EF4444" />
+            </View>
+            <ThemedText style={s3.cardTitle} numberOfLines={1}>
+              Đặt mục tiêu
+            </ThemedText>
           </View>
-          <ThemedText style={s3.cardTitle} numberOfLines={1}>
-            Đặt mục tiêu
-          </ThemedText>
-        </View>
+        </ParallaxLayer>
       </Animated.View>
       <View
         style={[
@@ -780,6 +796,7 @@ const RoadmapSlide = (): React.ReactElement => {
       >
         <Ionicons name="checkmark" size={20} color="#FFFFFF" />
       </View>
+      </Tilt3DCard>
     </View>
   );
 };
@@ -976,6 +993,7 @@ const IntroCarouselScreen = ({ navigation }: Props): React.ReactElement => {
           backgroundColor: '#FFFFFF',
         },
         buttonShell: {
+          alignSelf: 'center',
           borderRadius: 999,
           overflow: 'hidden',
           shadowColor: '#22C55E',
@@ -986,6 +1004,7 @@ const IntroCarouselScreen = ({ navigation }: Props): React.ReactElement => {
         },
         buttonGradient: {
           minHeight: 52,
+          paddingHorizontal: 80,
           alignItems: 'center',
           justifyContent: 'center',
           flexDirection: 'row',
@@ -1084,7 +1103,6 @@ const IntroCarouselScreen = ({ navigation }: Props): React.ReactElement => {
                 style={styles.buttonGradient}
               >
                 <ThemedText style={styles.buttonText}>Bắt đầu ngay</ThemedText>
-                <ThemedText style={styles.buttonArrow}>→</ThemedText>
               </LinearGradient>
             </View>
           </Pressable>

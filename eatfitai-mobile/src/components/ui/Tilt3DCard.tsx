@@ -6,10 +6,14 @@
  * 2. Exposing gesture values via React Context so child
  *    `ParallaxLayer` components can offset at different depths
  *
+ * Supports two input modes:
+ * - **Touch** (default): Pan gesture drives tilt
+ * - **Device Motion**: Gyroscope/accelerometer drives tilt (set `useDeviceMotion={true}`)
+ *
  * The deeper the layer, the more it shifts — mimicking
  * how objects at different distances move relative to each other.
  */
-import React, { createContext, useContext, useMemo } from 'react';
+import React, { createContext, useContext, useEffect, useMemo } from 'react';
 import { StyleSheet, ViewStyle, StyleProp } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
@@ -20,6 +24,7 @@ import Animated, {
   interpolate,
   Extrapolation,
 } from 'react-native-reanimated';
+import { useDeviceTilt } from '../../hooks/useDeviceTilt';
 
 /* ─── Spring config for natural bounce ─── */
 const SPRING_CONFIG = {
@@ -119,6 +124,8 @@ interface Tilt3DCardProps {
   showReflection?: boolean;
   /** Color of the reflection highlight (default white) */
   reflectionColor?: string;
+  /** Enable gyroscope/accelerometer-driven tilt (default false) */
+  useDeviceMotion?: boolean;
 }
 
 const Tilt3DCard: React.FC<Tilt3DCardProps> = ({
@@ -130,10 +137,42 @@ const Tilt3DCard: React.FC<Tilt3DCardProps> = ({
   style,
   showReflection = true,
   reflectionColor = 'rgba(255,255,255,0.07)',
+  useDeviceMotion = false,
 }) => {
   const translateX = useSharedValue(0);
   const translateY = useSharedValue(0);
   const isPressed = useSharedValue(false);
+
+  // Device tilt input (only active when useDeviceMotion is true)
+  const { tiltX, tiltY } = useDeviceTilt({ active: useDeviceMotion });
+
+  // Bridge device tilt values → translateX/translateY
+  // tiltX/tiltY range is [-1, 1], map to [-width/2, width/2] for consistent behavior
+  useEffect(() => {
+    if (!useDeviceMotion) return;
+
+    // Use a Reanimated-compatible approach: poll the shared values
+    const interval = setInterval(() => {
+      if (!isPressed.value) {
+        // Map tilt [-1, 1] → translate [-width/3, width/3]
+        // Using width/3 instead of width/2 for a subtler, more elegant effect
+        const targetX = tiltX.value * (width / 3);
+        const targetY = tiltY.value * (height / 3);
+        translateX.value = withSpring(targetX, {
+          damping: 25,
+          stiffness: 120,
+          mass: 0.6,
+        });
+        translateY.value = withSpring(targetY, {
+          damping: 25,
+          stiffness: 120,
+          mass: 0.6,
+        });
+      }
+    }, 32); // ~30fps polling is enough since tilt values are already spring-smoothed
+
+    return () => clearInterval(interval);
+  }, [useDeviceMotion, width, height]);
 
   const contextValue = useMemo<TiltContextValue>(
     () => ({
@@ -146,7 +185,7 @@ const Tilt3DCard: React.FC<Tilt3DCardProps> = ({
     [translateX, translateY, isPressed, width, height],
   );
 
-  // Pan gesture
+  // Pan gesture (touch override — always available)
   const pan = useMemo(
     () =>
       Gesture.Pan()

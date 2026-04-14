@@ -181,6 +181,9 @@ export const useAuthStore = create<AuthState>((set: any) => ({
         ]);
       }
       await initAuthSession();
+
+      // Giữ màn hình Splash tối thiểu 2.5s để người dùng kịp thiết kế 3D và tiến trình "Khởi tạo"
+      await new Promise((resolve) => setTimeout(resolve, 2500));
     } finally {
       set({ isInitializing: false });
     }

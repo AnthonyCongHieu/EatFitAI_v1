@@ -328,7 +328,7 @@ const VerifyEmailScreen = ({ navigation, route }: Props): React.ReactElement => 
           </Animated.View>
 
           {/* ─── Verification Card (3D tilt interaction) ─── */}
-          <Tilt3DCard maxTilt={6} perspective={900}>
+          <Tilt3DCard maxTilt={6} perspective={900} useDeviceMotion={true} showReflection={false}>
             <Animated.View
               entering={FadeInDown.delay(200).springify()}
               style={[
@@ -433,7 +433,7 @@ const VerifyEmailScreen = ({ navigation, route }: Props): React.ReactElement => 
                     disabled={loading || !isCodeComplete}
                     style={({ pressed }) => [
                       styles.verifyButton,
-                      pressed && { transform: [{ scale: 0.96 }] },
+                      pressed && { opacity: 0.7 },
                       (loading || !isCodeComplete) && { opacity: 0.5 },
                     ]}
                   >
@@ -493,7 +493,7 @@ const VerifyEmailScreen = ({ navigation, route }: Props): React.ReactElement => 
                         borderColor: C.outlineVariant + '33',
                       },
                       (countdown > 0 || resendLoading) && { opacity: 0.4 },
-                      pressed && { transform: [{ scale: 0.96 }] },
+                      pressed && { opacity: 0.7 },
                     ]}
                   >
                     <ThemedText
