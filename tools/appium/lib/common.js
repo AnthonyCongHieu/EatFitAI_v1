@@ -7,6 +7,7 @@ const { loadTestIds } = require('./loadTestIds');
 
 const APPIUM_HOST = process.env.APPIUM_HOST || '127.0.0.1';
 const APPIUM_PORT = Number(process.env.APPIUM_PORT || 4723);
+const APPIUM_AUTOMATION_NAME = process.env.APPIUM_AUTOMATION_NAME || 'UiAutomator2';
 const APP_PACKAGE = 'com.eatfitai.app';
 const APP_ACTIVITY = 'com.eatfitai.app.MainActivity';
 const ARTIFACT_DIR = path.resolve(__dirname, '..', '..', '..', 'artifacts', 'appium');
@@ -86,15 +87,46 @@ async function tapElement(driver, element, options = {}) {
     useAdbFirst = false,
   } = options;
 
-  const adbTap = async () => {
+  const getTapPoint = async () => {
     const rect =
       typeof element.getRect === 'function'
         ? await element.getRect()
         : await driver.getElementRect(element.elementId);
-    const x = Math.round(rect.x + rect.width * horizontalBias);
-    const y = Math.round(rect.y + rect.height * verticalBias);
+    return {
+      x: Math.round(rect.x + rect.width * horizontalBias),
+      y: Math.round(rect.y + rect.height * verticalBias),
+    };
+  };
+
+  const adbTap = async () => {
+    const { x, y } = await getTapPoint();
     runAdb(['shell', 'input', 'tap', String(x), String(y)]);
     await driver.pause(500);
+  };
+
+  const mobileClickGestureTap = async () => {
+    const { x, y } = await getTapPoint();
+    await driver.execute('mobile: clickGesture', { x, y });
+    await driver.pause(400);
+  };
+
+  const pointerActionsTap = async () => {
+    const { x, y } = await getTapPoint();
+    await driver.performActions([
+      {
+        type: 'pointer',
+        id: 'finger1',
+        parameters: { pointerType: 'touch' },
+        actions: [
+          { type: 'pointerMove', duration: 0, x, y },
+          { type: 'pointerDown', button: 0 },
+          { type: 'pause', duration: 80 },
+          { type: 'pointerUp', button: 0 },
+        ],
+      },
+    ]);
+    await driver.releaseActions().catch(() => null);
+    await driver.pause(400);
   };
 
   if (useAdbFirst) {
@@ -102,6 +134,9 @@ async function tapElement(driver, element, options = {}) {
       await adbTap();
       return;
     } catch (error) {
+      if (String(error?.message || '').toLowerCase().includes('stale')) {
+        return;
+      }
       console.warn(`ADB tap fallback failed before click: ${error.message}`);
     }
   }
@@ -110,13 +145,44 @@ async function tapElement(driver, element, options = {}) {
     await element.click();
     return;
   } catch (error) {
-    console.warn(`Element click failed, retrying with adb tap: ${error.message}`);
+    if (String(error?.message || '').toLowerCase().includes('stale')) {
+      return;
+    }
+    console.warn(`Element click failed, retrying with mobile click gesture: ${error.message}`);
+  }
+
+  try {
+    await mobileClickGestureTap();
+    return;
+  } catch (error) {
+    if (String(error?.message || '').toLowerCase().includes('stale')) {
+      return;
+    }
+    console.warn(`mobile: clickGesture failed, retrying with pointer actions: ${error.message}`);
+  }
+
+  try {
+    await pointerActionsTap();
+    return;
+  } catch (error) {
+    if (String(error?.message || '').toLowerCase().includes('stale')) {
+      return;
+    }
+    console.warn(`Pointer actions tap failed, retrying with adb tap: ${error.message}`);
   }
 
   await adbTap();
 }
 
 function selectorCandidates(testId) {
+  if (APPIUM_AUTOMATION_NAME.toLowerCase() === 'espresso') {
+    return [
+      `id=${testId}`,
+      `id=${APP_PACKAGE}:id/${testId}`,
+      `~${testId}`,
+    ];
+  }
+
   return [
     `android=new UiSelector().resourceId("${testId}")`,
     `android=new UiSelector().resourceId("${APP_PACKAGE}:id/${testId}")`,
@@ -126,29 +192,39 @@ function selectorCandidates(testId) {
 async function connect() {
   coldLaunchApp();
 
+  const capabilities = {
+    platformName: 'Android',
+    'appium:automationName': APPIUM_AUTOMATION_NAME,
+    'appium:deviceName': process.env.ANDROID_DEVICE_NAME || 'Android Emulator',
+    'appium:udid': process.env.ANDROID_SERIAL || undefined,
+    'appium:platformVersion': process.env.ANDROID_PLATFORM_VERSION || undefined,
+    'appium:appPackage': APP_PACKAGE,
+    'appium:appActivity': APP_ACTIVITY,
+    'appium:autoLaunch': false,
+    'appium:noReset': true,
+    'appium:appWaitDuration': 120000,
+    'appium:disableWindowAnimation': true,
+    'appium:ignoreHiddenApiPolicyError': true,
+    'appium:skipDeviceInitialization': true,
+    'appium:newCommandTimeout': 180,
+    'appium:adbExecTimeout': 120000,
+    'appium:uiautomator2ServerLaunchTimeout': 120000,
+    'appium:uiautomator2ServerInstallTimeout': 120000,
+  };
+
+  if (process.env.APPIUM_USE_KEYSTORE === '1' || process.env.APPIUM_USE_KEYSTORE === 'true') {
+    capabilities['appium:useKeystore'] = true;
+    capabilities['appium:keystorePath'] = process.env.APPIUM_KEYSTORE_PATH;
+    capabilities['appium:keystorePassword'] = process.env.APPIUM_KEYSTORE_PASSWORD;
+    capabilities['appium:keyAlias'] = process.env.APPIUM_KEY_ALIAS;
+    capabilities['appium:keyPassword'] = process.env.APPIUM_KEY_PASSWORD;
+  }
+
   return remote({
     hostname: APPIUM_HOST,
     port: APPIUM_PORT,
     path: '/',
-    capabilities: {
-      platformName: 'Android',
-      'appium:automationName': 'UiAutomator2',
-      'appium:deviceName': process.env.ANDROID_DEVICE_NAME || 'Android Emulator',
-      'appium:udid': process.env.ANDROID_SERIAL || undefined,
-      'appium:platformVersion': process.env.ANDROID_PLATFORM_VERSION || undefined,
-      'appium:appPackage': APP_PACKAGE,
-      'appium:appActivity': APP_ACTIVITY,
-      'appium:autoLaunch': false,
-      'appium:noReset': true,
-      'appium:appWaitDuration': 120000,
-      'appium:disableWindowAnimation': true,
-      'appium:ignoreHiddenApiPolicyError': true,
-      'appium:skipDeviceInitialization': true,
-      'appium:newCommandTimeout': 180,
-      'appium:adbExecTimeout': 120000,
-      'appium:uiautomator2ServerLaunchTimeout': 120000,
-      'appium:uiautomator2ServerInstallTimeout': 120000,
-    },
+    capabilities,
   });
 }
 
