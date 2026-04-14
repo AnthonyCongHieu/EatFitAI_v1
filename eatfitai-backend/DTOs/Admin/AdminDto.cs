@@ -89,6 +89,19 @@ public class AdminSessionDto
     public string RequestId { get; set; } = string.Empty;
 }
 
+public class AdminAuthCompatibilityDto
+{
+    public bool Ok { get; set; }
+    public string Reason { get; set; } = "ok";
+    public string? Detail { get; set; }
+    public Guid? UserId { get; set; }
+    public string? Email { get; set; }
+    public string PlatformRole { get; set; } = "user";
+    public string AccessState { get; set; } = "active";
+    public List<string> Capabilities { get; set; } = new();
+    public string RequestId { get; set; } = string.Empty;
+}
+
 public class AdminMutationDefinitionDto
 {
     public string Key { get; set; } = string.Empty;

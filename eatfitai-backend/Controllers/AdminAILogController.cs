@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using EatFitAI.API.Data;
 using EatFitAI.API.DTOs.Admin;
 using EatFitAI.API.DTOs.Common;
+using EatFitAI.API.Security;
 using EatFitAI.API.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -13,16 +14,21 @@ namespace EatFitAI.API.Controllers;
 
 [Route("api/admin/ai")]
 [ApiController]
-[Authorize(Roles = "Admin")]
+[Authorize(Policy = AdminPolicies.AuditRead)]
 public class AdminAILogController : ControllerBase
 {
     private readonly ApplicationDbContext _context;
     private readonly IAdminRealtimeEventBus _eventBus;
+    private readonly IAdminAuditService _auditService;
 
-    public AdminAILogController(ApplicationDbContext context, IAdminRealtimeEventBus eventBus)
+    public AdminAILogController(
+        ApplicationDbContext context,
+        IAdminRealtimeEventBus eventBus,
+        IAdminAuditService auditService)
     {
         _context = context;
         _eventBus = eventBus;
+        _auditService = auditService;
     }
 
     // ===================== AI LOGS =====================
@@ -91,7 +97,7 @@ public class AdminAILogController : ControllerBase
             query = query.Where(c =>
                 c.Label.ToLower().Contains(normalizedSearch)
                 || (c.SelectedFoodName != null && c.SelectedFoodName.ToLower().Contains(normalizedSearch))
-                || c.Source.ToLower().Contains(normalizedSearch)
+                || (c.Source != null && c.Source.ToLower().Contains(normalizedSearch))
                 || (c.User != null && (
                     c.User.Email.ToLower().Contains(normalizedSearch)
                     || (c.User.DisplayName != null && c.User.DisplayName.ToLower().Contains(normalizedSearch)))));
@@ -146,6 +152,7 @@ public class AdminAILogController : ControllerBase
     }
 
     [HttpPut("label-map/{label}")]
+    [Authorize(Policy = AdminPolicies.FoodsWrite)]
     public async Task<IActionResult> UpdateLabelMap(string label, [FromBody] UpdateLabelMapRequest request)
     {
         var map = await _context.AiLabelMaps.FirstOrDefaultAsync(l => l.Label == label);
@@ -155,11 +162,23 @@ public class AdminAILogController : ControllerBase
         if (request.MinConfidence.HasValue) map.MinConfidence = request.MinConfidence.Value;
 
         await _context.SaveChangesAsync();
+        var auditRef = await WriteAuditAsync(
+            "update",
+            "ai-label-map",
+            label,
+            "success",
+            $"FoodItemId={map.FoodItemId};MinConfidence={map.MinConfidence}",
+            severity: "high");
         _eventBus.Publish("admin.resource.updated", "ai-label-map", label, new { Label = label, Mutation = "updated" });
-        return Ok(ApiResponse<object>.SuccessResponse(null, "Cập nhật label map thành công."));
+        return Ok(BuildMutationResponse(
+            "Cập nhật label map thành công.",
+            "high",
+            auditRef,
+            new { Label = label, map.FoodItemId, map.MinConfidence }));
     }
 
     [HttpDelete("label-map/{label}")]
+    [Authorize(Policy = AdminPolicies.FoodsWrite)]
     public async Task<IActionResult> DeleteLabelMap(string label)
     {
         var map = await _context.AiLabelMaps.FirstOrDefaultAsync(l => l.Label == label);
@@ -167,8 +186,19 @@ public class AdminAILogController : ControllerBase
 
         _context.AiLabelMaps.Remove(map);
         await _context.SaveChangesAsync();
+        var auditRef = await WriteAuditAsync(
+            "delete",
+            "ai-label-map",
+            label,
+            "success",
+            $"FoodItemId={map.FoodItemId}",
+            severity: "critical");
         _eventBus.Publish("admin.resource.updated", "ai-label-map", label, new { Label = label, Mutation = "deleted" });
-        return Ok(ApiResponse<object>.SuccessResponse(null, "Xóa label map thành công."));
+        return Ok(BuildMutationResponse(
+            "Xóa label map thành công.",
+            "critical",
+            auditRef,
+            new { Label = label, Deleted = true }));
     }
 
     // ===================== AI STATS =====================
@@ -203,6 +233,49 @@ public class AdminAILogController : ControllerBase
         };
 
         return Ok(ApiResponse<AdminAIStatsDto>.SuccessResponse(stats, "Thành công"));
+    }
+
+    private async Task<string?> WriteAuditAsync(
+        string action,
+        string entity,
+        string entityId,
+        string outcome,
+        string? detail = null,
+        string severity = "info")
+    {
+        var auditRef = Guid.NewGuid().ToString("N");
+        await _auditService.WriteAsync(HttpContext, new AdminAuditWriteRequest
+        {
+            Action = action,
+            Entity = entity,
+            EntityId = entityId,
+            Outcome = outcome,
+            Severity = severity,
+            DiffSummary = auditRef,
+            Detail = detail
+        });
+        return auditRef;
+    }
+
+    private ApiResponse<AdminMutationResponseDto> BuildMutationResponse(
+        string message,
+        string severity,
+        string? auditRef,
+        object? data = null)
+    {
+        return ApiResponse<AdminMutationResponseDto>.SuccessResponse(
+            new AdminMutationResponseDto
+            {
+                Status = "success",
+                Severity = severity,
+                RequestId = HttpContext.TraceIdentifier,
+                AuditRef = auditRef,
+                Data = data
+            },
+            message,
+            requestId: HttpContext.TraceIdentifier,
+            severity: severity,
+            auditRef: auditRef);
     }
 }
 

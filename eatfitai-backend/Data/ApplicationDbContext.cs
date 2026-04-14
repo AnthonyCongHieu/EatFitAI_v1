@@ -598,16 +598,23 @@ public partial class ApplicationDbContext : DbContext
             entity.HasIndex(e => e.OccurredAt, "IX_AdminAuditEvent_OccurredAt");
             entity.HasIndex(e => new { e.Action, e.Entity }, "IX_AdminAuditEvent_Action_Entity");
             entity.HasIndex(e => e.RequestId, "IX_AdminAuditEvent_RequestId");
+            entity.HasIndex(e => e.CorrelationId, "IX_AdminAuditEvent_CorrelationId");
 
             entity.Property(e => e.AdminAuditEventId)
                 .HasDefaultValueSql("gen_random_uuid()");
 
             entity.Property(e => e.Actor).HasMaxLength(256);
+            entity.Property(e => e.ActorId).HasMaxLength(120);
+            entity.Property(e => e.ActorEmail).HasMaxLength(256);
             entity.Property(e => e.Action).HasMaxLength(120);
+            entity.Property(e => e.EffectiveRole).HasMaxLength(80);
             entity.Property(e => e.Entity).HasMaxLength(120);
             entity.Property(e => e.EntityId).HasMaxLength(120);
+            entity.Property(e => e.Severity).HasMaxLength(40);
             entity.Property(e => e.Outcome).HasMaxLength(40);
             entity.Property(e => e.RequestId).HasMaxLength(120);
+            entity.Property(e => e.CorrelationId).HasMaxLength(120);
+            entity.Property(e => e.Environment).HasMaxLength(80);
             entity.Property(e => e.OccurredAt)
                 .HasPrecision(3)
                 .HasDefaultValueSql("NOW() AT TIME ZONE 'UTC'");

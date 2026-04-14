@@ -13,23 +13,43 @@ public class ApiResponse<T>
     public string? AuditRef { get; set; }
     public List<string>? Warnings { get; set; }
 
-    public static ApiResponse<T> SuccessResponse(T data, string? message = null)
+    public static ApiResponse<T> SuccessResponse(
+        T data,
+        string? message = null,
+        string? requestId = null,
+        string? severity = null,
+        string? auditRef = null,
+        List<string>? warnings = null)
     {
         return new ApiResponse<T>
         {
             Success = true,
             Message = message,
-            Data = data
+            Data = data,
+            RequestId = requestId,
+            Severity = severity,
+            AuditRef = auditRef,
+            Warnings = warnings
         };
     }
 
-    public static ApiResponse<T> ErrorResponse(string message, string? errorCode = null)
+    public static ApiResponse<T> ErrorResponse(
+        string message,
+        string? errorCode = null,
+        string? requestId = null,
+        string? severity = null,
+        string? auditRef = null,
+        List<string>? warnings = null)
     {
         return new ApiResponse<T>
         {
             Success = false,
             Message = message,
-            ErrorCode = errorCode
+            ErrorCode = errorCode,
+            RequestId = requestId,
+            Severity = severity,
+            AuditRef = auditRef,
+            Warnings = warnings
         };
     }
 }

@@ -27,6 +27,7 @@ using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
+using Microsoft.Extensions.Options;
 using Npgsql;
 
 public partial class Program
@@ -35,6 +36,12 @@ public partial class Program
     {
         var builder = WebApplication.CreateBuilder(args);
         var scanDemoSeedOptions = ParseScanDemoSeedOptions(args);
+        var adminGovernanceBootstrapRequested =
+            args.Any(arg => string.Equals(arg, "--admin-governance-bootstrap", StringComparison.OrdinalIgnoreCase))
+            || string.Equals(Environment.GetEnvironmentVariable("EATFITAI_ADMIN_GOVERNANCE_BOOTSTRAP"), "1", StringComparison.OrdinalIgnoreCase);
+        var adminGovernanceBootstrapReportPath =
+            TryGetOptionValue(args, "--admin-governance-report")
+            ?? Environment.GetEnvironmentVariable("EATFITAI_ADMIN_GOVERNANCE_REPORT");
 
         static string? TryGetOptionValue(string[] cliArgs, string optionName)
         {
@@ -521,6 +528,7 @@ builder.Services.AddMemoryCache();
 // Email settings & service
 builder.Services.Configure<BrevoOptions>(builder.Configuration.GetSection("Brevo"));
 builder.Services.Configure<SupabaseOptions>(builder.Configuration.GetSection("Supabase"));
+builder.Services.Configure<AdminGovernanceOptions>(builder.Configuration.GetSection("AdminGovernance"));
 builder.Services.AddHttpClient<IEmailService, EmailService>();
 builder.Services.AddScoped<ISupabaseStorageService, SupabaseStorageService>();
 
@@ -758,10 +766,64 @@ startupLogger.LogInformation(
     "Configured PostgreSQL target: {ConnectionSummary}",
     sanitizedConnectionSummary);
 
+if (adminGovernanceBootstrapRequested)
+{
+    startupLogger.LogInformation("Running admin governance bootstrap in one-shot mode.");
+
+    using var scope = app.Services.CreateScope();
+    var adminAuditService = scope.ServiceProvider.GetRequiredService<IAdminAuditService>();
+    var governanceBootstrapper = scope.ServiceProvider.GetRequiredService<AdminGovernanceBootstrapper>();
+    var governanceOptions = scope.ServiceProvider.GetRequiredService<IOptions<AdminGovernanceOptions>>().Value;
+
+    await adminAuditService.EnsureTableAsync();
+    await governanceBootstrapper.EnsureSchemaAsync();
+
+    var report = new
+    {
+        action = "admin-governance-bootstrap",
+        executedAt = DateTimeOffset.UtcNow,
+        environment = app.Environment.EnvironmentName,
+        configuredSeedMembershipCount = governanceOptions.SeedMemberships.Count,
+        configuredSeedRoles = governanceOptions.SeedMemberships
+            .Select(seed => PlatformRoles.Normalize(seed.Role))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToArray(),
+        connectionSummary = sanitizedConnectionSummary
+    };
+    var serializedReport = JsonSerializer.Serialize(report, new JsonSerializerOptions
+    {
+        WriteIndented = true
+    });
+
+    if (!string.IsNullOrWhiteSpace(adminGovernanceBootstrapReportPath))
+    {
+        var fullReportPath = Path.GetFullPath(adminGovernanceBootstrapReportPath);
+        var reportDirectory = Path.GetDirectoryName(fullReportPath);
+        if (!string.IsNullOrWhiteSpace(reportDirectory))
+        {
+            Directory.CreateDirectory(reportDirectory);
+        }
+
+        await File.WriteAllTextAsync(fullReportPath, serializedReport);
+    }
+
+    Console.WriteLine(serializedReport);
+    return;
+}
+
 using (var scope = app.Services.CreateScope())
 {
-    var governanceBootstrapper = scope.ServiceProvider.GetRequiredService<AdminGovernanceBootstrapper>();
-    await governanceBootstrapper.EnsureSchemaAsync();
+    try
+    {
+        var adminAuditService = scope.ServiceProvider.GetRequiredService<IAdminAuditService>();
+        var governanceBootstrapper = scope.ServiceProvider.GetRequiredService<AdminGovernanceBootstrapper>();
+        await adminAuditService.EnsureTableAsync();
+        await governanceBootstrapper.EnsureSchemaAsync();
+    }
+    catch (Exception ex)
+    {
+        startupLogger.LogWarning(ex, "Admin governance bootstrap was skipped during startup.");
+    }
 }
 
 foreach (var warning in optionalProductionWarnings)
@@ -792,9 +854,9 @@ using (var scope = app.Services.CreateScope())
 
     try
     {
-        var adminAuditService = services.GetRequiredService<IAdminAuditService>();
-        await adminAuditService.EnsureTableAsync();
         await DatabaseSeeder.SeedAsync(services);
+        var governanceBootstrapper = services.GetRequiredService<AdminGovernanceBootstrapper>();
+        await governanceBootstrapper.EnsureSchemaAsync();
     }
     catch (Exception ex)
     {

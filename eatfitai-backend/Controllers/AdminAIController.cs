@@ -136,10 +136,14 @@ public class AdminAIController : ControllerBase
 
         _context.GeminiKeys.Add(newKey);
         await _context.SaveChangesAsync();
-        await WriteAuditAsync("create", "gemini-key", newKey.Id.ToString(), "success", $"KeyName={newKey.KeyName}");
+        var auditRef = await WriteAuditAsync("create", "gemini-key", newKey.Id.ToString(), "success", $"KeyName={newKey.KeyName}", severity: "high");
         PublishKeyUpdated(newKey.Id, new { newKey.Id, newKey.KeyName, newKey.ProjectId, Mutation = "created" });
 
-        return Created("", ApiResponse<object>.SuccessResponse(new { Id = newKey.Id }, "Thêm Gemini Key mới thành công."));
+        return StatusCode(StatusCodes.Status201Created, BuildMutationResponse(
+            "Thêm Gemini Key mới thành công.",
+            "high",
+            auditRef,
+            new { Id = newKey.Id }));
     }
 
     // Bulk import nhiều keys cùng lúc
@@ -186,16 +190,17 @@ public class AdminAIController : ControllerBase
         }
 
         await _context.SaveChangesAsync();
-        await WriteAuditAsync("bulk-create", "gemini-key", string.Join(",", created), "success", $"Created={created.Count};Errors={errors.Count}");
+        var auditRef = await WriteAuditAsync("bulk-create", "gemini-key", string.Join(",", created), "success", $"Created={created.Count};Errors={errors.Count}", severity: "high");
         foreach (var keyId in created)
         {
             PublishKeyUpdated(keyId, new { Id = keyId, Mutation = "bulk-created" });
         }
 
-        return Created("", ApiResponse<object>.SuccessResponse(
-            new { Created = created.Count, Ids = created, Errors = errors },
-            $"Đã thêm {created.Count}/{request.Keys.Count} keys."
-        ));
+        return StatusCode(StatusCodes.Status201Created, BuildMutationResponse(
+            $"Đã thêm {created.Count}/{request.Keys.Count} keys.",
+            "high",
+            auditRef,
+            new { Created = created.Count, Ids = created, Errors = errors }));
     }
 
     [HttpPut("keys/{id}")]
@@ -219,9 +224,13 @@ public class AdminAIController : ControllerBase
         if (request.Notes != null) key.Notes = request.Notes;
 
         await _context.SaveChangesAsync();
-        await WriteAuditAsync("update", "gemini-key", key.Id.ToString(), "success", $"KeyName={key.KeyName};IsActive={key.IsActive}");
+        var auditRef = await WriteAuditAsync("update", "gemini-key", key.Id.ToString(), "success", $"KeyName={key.KeyName};IsActive={key.IsActive}", severity: "high");
         PublishKeyUpdated(key.Id, new { key.Id, key.KeyName, key.ProjectId, Mutation = "updated" });
-        return Ok(ApiResponse<object>.SuccessResponse(new { Id = key.Id }, "Cập nhật Gemini Key thành công."));
+        return Ok(BuildMutationResponse(
+            "Cập nhật Gemini Key thành công.",
+            "high",
+            auditRef,
+            new { Id = key.Id }));
     }
 
     // Toggle active/inactive nhanh
@@ -239,10 +248,13 @@ public class AdminAIController : ControllerBase
 
         key.IsActive = !key.IsActive;
         await _context.SaveChangesAsync();
-        await WriteAuditAsync("toggle", "gemini-key", key.Id.ToString(), "success", $"IsActive={key.IsActive}");
+        var auditRef = await WriteAuditAsync("toggle", "gemini-key", key.Id.ToString(), "success", $"IsActive={key.IsActive}", severity: "high");
         PublishKeyUpdated(key.Id, new { key.Id, key.IsActive, Mutation = "toggled" });
-        return Ok(ApiResponse<object>.SuccessResponse(new { Id = key.Id, IsActive = key.IsActive }, 
-            key.IsActive ? "Đã kích hoạt Key." : "Đã vô hiệu hóa Key."));
+        return Ok(BuildMutationResponse(
+            key.IsActive ? "Đã kích hoạt Key." : "Đã vô hiệu hóa Key.",
+            "high",
+            auditRef,
+            new { Id = key.Id, IsActive = key.IsActive }));
     }
 
     // Test key connectivity — gửi request nhỏ tới Gemini API — with rich status
@@ -259,8 +271,14 @@ public class AdminAIController : ControllerBase
         }
 
         var result = await TestSingleKey(key);
-        await WriteAuditAsync("test", "gemini-key", key.Id.ToString(), result.Status == "Active" ? "success" : "failed", $"{result.Status}:{result.StatusCode}");
-        return Ok(ApiResponse<object>.SuccessResponse(result, result.Message));
+        var auditRef = await WriteAuditAsync(
+            "test",
+            "gemini-key",
+            key.Id.ToString(),
+            result.Status == "Active" ? "success" : "failed",
+            $"{result.Status}:{result.StatusCode}",
+            severity: result.Status == "Active" ? "medium" : "high");
+        return Ok(BuildMutationResponse(result.Message, result.Status == "Active" ? "medium" : "high", auditRef, result));
     }
 
     // Test ALL keys at once
@@ -280,11 +298,13 @@ public class AdminAIController : ControllerBase
 
         var active = results.Count(r => ((dynamic)r).Status == "Active");
         var rateLimited = results.Count(r => ((dynamic)r).Status == "RateLimited");
-        await WriteAuditAsync("test-all", "gemini-key", "all", "success", $"Total={keys.Count};Active={active};RateLimited={rateLimited}");
+        var auditRef = await WriteAuditAsync("test-all", "gemini-key", "all", "success", $"Total={keys.Count};Active={active};RateLimited={rateLimited}", severity: "high");
 
-        return Ok(ApiResponse<object>.SuccessResponse(
-            new { Results = results, Summary = new { Total = keys.Count, Active = active, RateLimited = rateLimited, Dead = keys.Count - active - rateLimited } },
-            $"Đã test {keys.Count} keys: {active} active, {rateLimited} rate-limited."));
+        return Ok(BuildMutationResponse(
+            $"Đã test {keys.Count} keys: {active} active, {rateLimited} rate-limited.",
+            "high",
+            auditRef,
+            new { Results = results, Summary = new { Total = keys.Count, Active = active, RateLimited = rateLimited, Dead = keys.Count - active - rateLimited } }));
     }
 
     [HttpGet("runtime-projects")]
@@ -330,8 +350,12 @@ public class AdminAIController : ControllerBase
     public async Task<IActionResult> ImportRuntimeProject([FromBody] RuntimeProjectImportRequest request)
     {
         var keyId = await _runtimeProjectService.ImportProjectAsync(request, HttpContext.RequestAborted);
-        await WriteAuditAsync("import", "gemini-runtime-project", keyId.ToString(), "success", $"ProjectId={request.ProjectId}");
-        return Created("", ApiResponse<object>.SuccessResponse(new { Id = keyId }, "Imported runtime project."));
+        var auditRef = await WriteAuditAsync("import", "gemini-runtime-project", keyId.ToString(), "success", $"ProjectId={request.ProjectId}", severity: "high");
+        return StatusCode(StatusCodes.Status201Created, BuildMutationResponse(
+            "Imported runtime project.",
+            "high",
+            auditRef,
+            new { Id = keyId }));
     }
 
     [HttpPost("runtime-projects/{runtimeProjectId}/probe")]
@@ -340,8 +364,14 @@ public class AdminAIController : ControllerBase
     public async Task<IActionResult> ProbeRuntimeProject(string runtimeProjectId)
     {
         var result = await _runtimeProjectService.ProbeProjectAsync(runtimeProjectId, HttpContext.RequestAborted);
-        await WriteAuditAsync("probe", "gemini-runtime-project", runtimeProjectId, result.Status == "Active" ? "success" : "failed", result.Status);
-        return Ok(ApiResponse<object>.SuccessResponse(result, result.Message));
+        var auditRef = await WriteAuditAsync(
+            "probe",
+            "gemini-runtime-project",
+            runtimeProjectId,
+            result.Status == "Active" ? "success" : "failed",
+            result.Status,
+            severity: result.Status == "Active" ? "medium" : "high");
+        return Ok(BuildMutationResponse(result.Message, result.Status == "Active" ? "medium" : "high", auditRef, result));
     }
 
     [HttpPost("runtime-projects/{runtimeProjectId}/toggle")]
@@ -355,8 +385,8 @@ public class AdminAIController : ControllerBase
             return NotFound(ApiResponse<object>.ErrorResponse("Không tìm thấy runtime project."));
         }
 
-        await WriteAuditAsync("toggle", "gemini-runtime-project", runtimeProjectId, "success", $"IsEnabled={project.IsEnabled}");
-        return Ok(ApiResponse<object>.SuccessResponse(project, "Runtime project toggled."));
+        var auditRef = await WriteAuditAsync("toggle", "gemini-runtime-project", runtimeProjectId, "success", $"IsEnabled={project.IsEnabled}", severity: "high");
+        return Ok(BuildMutationResponse("Runtime project toggled.", "high", auditRef, project));
     }
 
     [HttpPost("runtime-projects/{runtimeProjectId}/set-role")]
@@ -370,8 +400,8 @@ public class AdminAIController : ControllerBase
             return NotFound(ApiResponse<object>.ErrorResponse("Không tìm thấy runtime project."));
         }
 
-        await WriteAuditAsync("set-role", "gemini-runtime-project", runtimeProjectId, "success", $"ManualRole={project.ManualRole}");
-        return Ok(ApiResponse<object>.SuccessResponse(project, "Runtime project role updated."));
+        var auditRef = await WriteAuditAsync("set-role", "gemini-runtime-project", runtimeProjectId, "success", $"ManualRole={project.ManualRole}", severity: "high");
+        return Ok(BuildMutationResponse("Runtime project role updated.", "high", auditRef, project));
     }
 
     [HttpPost("runtime-projects/simulate-request")]
@@ -380,8 +410,8 @@ public class AdminAIController : ControllerBase
     public async Task<IActionResult> SimulateRuntimeRequest([FromBody] SimulateRuntimeRequest request)
     {
         var row = await _runtimeProjectService.SimulateRequestAsync(request.ForcedStatusCode, request.TriggerSource, HttpContext.RequestAborted);
-        await WriteAuditAsync("simulate-request", "gemini-runtime-project", row.RuntimeProjectId, "success", $"Status={row.ProviderStatusCode}");
-        return Ok(ApiResponse<object>.SuccessResponse(row, "Runtime request simulated."));
+        var auditRef = await WriteAuditAsync("simulate-request", "gemini-runtime-project", row.RuntimeProjectId, "success", $"Status={row.ProviderStatusCode}", severity: "medium");
+        return Ok(BuildMutationResponse("Runtime request simulated.", "medium", auditRef, row));
     }
 
     private async Task<KeyTestResult> TestSingleKey(Models.GeminiKey key)
@@ -435,10 +465,14 @@ public class AdminAIController : ControllerBase
 
         _context.GeminiKeys.Remove(key);
         await _context.SaveChangesAsync();
-        await WriteAuditAsync("delete", "gemini-key", id.ToString(), "success", $"KeyName={key.KeyName}");
+        var auditRef = await WriteAuditAsync("delete", "gemini-key", id.ToString(), "success", $"KeyName={key.KeyName}", severity: "critical");
         PublishKeyUpdated(id, new { Id = id, Mutation = "deleted" });
 
-        return Ok(ApiResponse<object>.SuccessResponse(null, "Xóa Gemini Key thành công."));
+        return Ok(BuildMutationResponse(
+            "Xóa Gemini Key thành công.",
+            "critical",
+            auditRef,
+            new { Id = id, Deleted = true }));
     }
 
     [HttpPost("keys/reset-quota")]
@@ -454,10 +488,14 @@ public class AdminAIController : ControllerBase
         }
 
         await _context.SaveChangesAsync();
-        await WriteAuditAsync("reset-quota", "gemini-key", "all", "success", $"Count={keys.Count}");
+        var auditRef = await WriteAuditAsync("reset-quota", "gemini-key", "all", "success", $"Count={keys.Count}", severity: "high");
         _eventBus.Publish("admin.resource.updated", "gemini-key", "all", new { Mutation = "quota-reset", Count = keys.Count });
 
-        return Ok(ApiResponse<object>.SuccessResponse(null, $"Đã reset quota trong ngày cho {keys.Count} keys."));
+        return Ok(BuildMutationResponse(
+            $"Đã reset quota trong ngày cho {keys.Count} keys.",
+            "high",
+            auditRef,
+            new { Count = keys.Count }));
     }
 
     private void PublishKeyUpdated(Guid keyId, object payload)
@@ -465,16 +503,47 @@ public class AdminAIController : ControllerBase
         _eventBus.Publish("admin.resource.updated", "gemini-key", keyId.ToString(), payload);
     }
 
-    private Task WriteAuditAsync(string action, string entity, string entityId, string outcome, string? detail = null)
+    private async Task<string?> WriteAuditAsync(
+        string action,
+        string entity,
+        string entityId,
+        string outcome,
+        string? detail = null,
+        string severity = "info")
     {
-        return _auditService.WriteAsync(HttpContext, new AdminAuditWriteRequest
+        var auditRef = Guid.NewGuid().ToString("N");
+        await _auditService.WriteAsync(HttpContext, new AdminAuditWriteRequest
         {
             Action = action,
             Entity = entity,
             EntityId = entityId,
             Outcome = outcome,
+            Severity = severity,
+            DiffSummary = auditRef,
             Detail = detail
         });
+        return auditRef;
+    }
+
+    private ApiResponse<AdminMutationResponseDto> BuildMutationResponse(
+        string message,
+        string severity,
+        string? auditRef,
+        object? data = null)
+    {
+        return ApiResponse<AdminMutationResponseDto>.SuccessResponse(
+            new AdminMutationResponseDto
+            {
+                Status = "success",
+                Severity = severity,
+                RequestId = HttpContext.TraceIdentifier,
+                AuditRef = auditRef,
+                Data = data
+            },
+            message,
+            requestId: HttpContext.TraceIdentifier,
+            severity: severity,
+            auditRef: auditRef);
     }
 }
 

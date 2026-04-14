@@ -155,20 +155,42 @@ public class AdminMealController : ControllerBase
 
         meal.IsDeleted = true;
         await _context.SaveChangesAsync();
-        await WriteAuditAsync("delete", "meal", id.ToString(), "success", $"UserId={meal.UserId}");
+        var auditRef = await WriteAuditAsync("delete", "meal", id.ToString(), "success", $"UserId={meal.UserId}", severity: "critical");
         _eventBus.Publish("admin.resource.updated", "meal", id.ToString(), new { MealDiaryId = id, Deleted = true });
-        return Ok(ApiResponse<object>.SuccessResponse(null, "Xóa meal thành công."));
+        return Ok(ApiResponse<AdminMutationResponseDto>.SuccessResponse(
+            new AdminMutationResponseDto
+            {
+                Status = "success",
+                Severity = "critical",
+                RequestId = HttpContext.TraceIdentifier,
+                AuditRef = auditRef,
+                Data = new { MealDiaryId = id, Deleted = true }
+            },
+            "Xóa meal thành công.",
+            requestId: HttpContext.TraceIdentifier,
+            severity: "critical",
+            auditRef: auditRef));
     }
 
-    private Task WriteAuditAsync(string action, string entity, string entityId, string outcome, string? detail = null)
+    private async Task<string?> WriteAuditAsync(
+        string action,
+        string entity,
+        string entityId,
+        string outcome,
+        string? detail = null,
+        string severity = "info")
     {
-        return _auditService.WriteAsync(HttpContext, new AdminAuditWriteRequest
+        var auditRef = Guid.NewGuid().ToString("N");
+        await _auditService.WriteAsync(HttpContext, new AdminAuditWriteRequest
         {
             Action = action,
             Entity = entity,
             EntityId = entityId,
             Outcome = outcome,
+            Severity = severity,
+            DiffSummary = auditRef,
             Detail = detail
         });
+        return auditRef;
     }
 }

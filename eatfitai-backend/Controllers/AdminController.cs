@@ -156,7 +156,9 @@ public class AdminController : ControllerBase
             return Unauthorized(ApiResponse<object>.ErrorResponse("Admin user was not found."));
         }
 
-        var accessControl = await _context.UserAccessControls.AsNoTracking().FirstOrDefaultAsync(item => item.UserId == userId);
+        var accessControl = await _context.UserAccessControls
+            .AsNoTracking()
+            .FirstOrDefaultAsync(item => item.UserId == user.UserId);
         var resolvedRole = PlatformRoles.ResolveEffectiveRole(User, user.Role);
         var session = new AdminSessionDto
         {
@@ -169,7 +171,10 @@ public class AdminController : ControllerBase
             RequestId = HttpContext.TraceIdentifier,
         };
 
-        return Ok(ApiResponse<AdminSessionDto>.SuccessResponse(session, "Admin session ready."));
+        return Ok(ApiResponse<AdminSessionDto>.SuccessResponse(
+            session,
+            "Admin session ready.",
+            requestId: HttpContext.TraceIdentifier));
     }
 
     [HttpGet("mutations")]
@@ -180,7 +185,10 @@ public class AdminController : ControllerBase
             .Where(item => User.HasCapability(item.Capability))
             .ToList();
 
-        return Ok(ApiResponse<IReadOnlyList<AdminMutationDefinitionDto>>.SuccessResponse(registry, "Admin mutation registry ready."));
+        return Ok(ApiResponse<IReadOnlyList<AdminMutationDefinitionDto>>.SuccessResponse(
+            registry,
+            "Admin mutation registry ready.",
+            requestId: HttpContext.TraceIdentifier));
     }
 
     // ===================== DASHBOARD =====================
@@ -432,7 +440,10 @@ public class AdminController : ControllerBase
             RecentAuditEvents = recentAuditEvents,
         };
 
-        return Ok(ApiResponse<AdminSupportOverviewDto>.SuccessResponse(overview, "Support overview ready."));
+        return Ok(ApiResponse<AdminSupportOverviewDto>.SuccessResponse(
+            overview,
+            "Support overview ready.",
+            requestId: HttpContext.TraceIdentifier));
     }
 
     [HttpPut("users/{id}/role")]
@@ -450,7 +461,11 @@ public class AdminController : ControllerBase
         await _context.SaveChangesAsync();
         var auditRef = await WriteAuditAsync("update-role", "user", user.UserId.ToString(), "success", $"Role={user.Role}", severity: "high", justification: request.Justification);
         PublishResourceUpdated("user", user.UserId.ToString(), new { user.UserId, user.Role });
-        return Ok(ApiResponse<object>.SuccessResponse(new { Id = user.UserId, Role = user.Role }, "Đã cập nhật role."));
+        return Ok(BuildMutationResponse(
+            "Đã cập nhật role.",
+            "high",
+            auditRef,
+            new { Id = user.UserId, Role = user.Role }));
     }
 
     [HttpPut("users/{id}/suspend")]
@@ -497,11 +512,14 @@ public class AdminController : ControllerBase
 
         await _context.SaveChangesAsync();
         var status = ResolveUserStatus(user, accessControl);
-        await WriteAuditAsync("toggle-suspend-legacy", "user", user.UserId.ToString(), "success", $"AccessState={nextState}", severity: "high");
+        var auditRef = await WriteAuditAsync("toggle-suspend-legacy", "user", user.UserId.ToString(), "success", $"AccessState={nextState}", severity: "high");
         PublishResourceUpdated("user", user.UserId.ToString(), new { user.UserId, Status = status, AccessState = nextState });
-        return Ok(ApiResponse<object>.SuccessResponse(
-            new { Id = user.UserId, Status = status, AccessState = nextState, Warning = "Use /users/{id}/access-state for governed mutations." },
-            $"User {status}."));
+        return Ok(BuildMutationResponse(
+            $"User {status}.",
+            "high",
+            auditRef,
+            new { Id = user.UserId, Status = status, AccessState = nextState },
+            warning: "Use /users/{id}/access-state for governed mutations."));
     }
 
     [HttpDelete("users/{id}")]
@@ -569,14 +587,11 @@ public class AdminController : ControllerBase
         var status = ResolveUserStatus(user, accessControl);
         PublishResourceUpdated("user", user.UserId.ToString(), new { user.UserId, Status = status, AccessState = normalizedState });
 
-        return Ok(ApiResponse<AdminMutationResponseDto>.SuccessResponse(new AdminMutationResponseDto
-        {
-            Status = "success",
-            Severity = "high",
-            RequestId = HttpContext.TraceIdentifier,
-            AuditRef = auditRef,
-            Data = new { Id = user.UserId, Status = status, AccessState = normalizedState }
-        }, "User access updated."));
+        return Ok(BuildMutationResponse(
+            "User access updated.",
+            "high",
+            auditRef,
+            new { Id = user.UserId, Status = status, AccessState = normalizedState }));
     }
 
     [HttpPost("users/{id}/deactivate")]
@@ -652,9 +667,13 @@ public class AdminController : ControllerBase
 
         _context.FoodItems.Add(food);
         await _context.SaveChangesAsync();
-        await WriteAuditAsync("create", "food", food.FoodItemId.ToString(), "success", $"FoodName={food.FoodName}");
+        var auditRef = await WriteAuditAsync("create", "food", food.FoodItemId.ToString(), "success", $"FoodName={food.FoodName}");
         PublishResourceUpdated("food", food.FoodItemId.ToString(), new { food.FoodItemId, food.FoodName });
-        return Created("", ApiResponse<object>.SuccessResponse(new { Id = food.FoodItemId }, "Thêm food mới thành công."));
+        return StatusCode(StatusCodes.Status201Created, BuildMutationResponse(
+            "Thêm food mới thành công.",
+            "medium",
+            auditRef,
+            new { Id = food.FoodItemId }));
     }
 
     [HttpPut("foods/{id}")]
@@ -675,9 +694,13 @@ public class AdminController : ControllerBase
         if (request.CarbPer100g.HasValue) food.CarbPer100g = request.CarbPer100g.Value;
 
         await _context.SaveChangesAsync();
-        await WriteAuditAsync("update", "food", food.FoodItemId.ToString(), "success", $"FoodName={food.FoodName}");
+        var auditRef = await WriteAuditAsync("update", "food", food.FoodItemId.ToString(), "success", $"FoodName={food.FoodName}");
         PublishResourceUpdated("food", food.FoodItemId.ToString(), new { food.FoodItemId, food.FoodName });
-        return Ok(ApiResponse<object>.SuccessResponse(new { Id = food.FoodItemId }, "Cập nhật food thành công."));
+        return Ok(BuildMutationResponse(
+            "Cập nhật food thành công.",
+            "medium",
+            auditRef,
+            new { Id = food.FoodItemId }));
     }
 
     [HttpDelete("foods/{id}")]
@@ -693,9 +716,13 @@ public class AdminController : ControllerBase
 
         _context.FoodItems.Remove(food);
         await _context.SaveChangesAsync();
-        await WriteAuditAsync("delete", "food", id.ToString(), "success", $"FoodName={food.FoodName}");
+        var auditRef = await WriteAuditAsync("delete", "food", id.ToString(), "success", $"FoodName={food.FoodName}", severity: "critical");
         PublishResourceUpdated("food", id.ToString(), new { FoodItemId = id, Deleted = true });
-        return Ok(ApiResponse<object>.SuccessResponse(null, "Xóa food thành công."));
+        return Ok(BuildMutationResponse(
+            "Xóa food thành công.",
+            "critical",
+            auditRef,
+            new { FoodItemId = id, Deleted = true }));
     }
 
     [HttpPost("foods/{id}/verify")]
@@ -712,9 +739,13 @@ public class AdminController : ControllerBase
         food.IsVerified = !food.IsVerified;
         if (food.IsVerified) food.CredibilityScore = 100;
         await _context.SaveChangesAsync();
-        await WriteAuditAsync("verify", "food", food.FoodItemId.ToString(), "success", $"IsVerified={food.IsVerified}");
+        var auditRef = await WriteAuditAsync("verify", "food", food.FoodItemId.ToString(), "success", $"IsVerified={food.IsVerified}", severity: "medium");
         PublishResourceUpdated("food", food.FoodItemId.ToString(), new { food.FoodItemId, food.IsVerified });
-        return Ok(ApiResponse<object>.SuccessResponse(new { Id = food.FoodItemId, IsVerified = food.IsVerified }, "Cập nhật verify thành công."));
+        return Ok(BuildMutationResponse(
+            "Cập nhật verify thành công.",
+            "medium",
+            auditRef,
+            new { Id = food.FoodItemId, IsVerified = food.IsVerified }));
     }
 
     // ===================== SYSTEM HEALTH =====================
@@ -818,7 +849,10 @@ public class AdminController : ControllerBase
             .Take(12)
             .ToList();
 
-        return Ok(ApiResponse<IReadOnlyList<AdminInboxItemDto>>.SuccessResponse(inbox, "Admin inbox ready."));
+        return Ok(ApiResponse<IReadOnlyList<AdminInboxItemDto>>.SuccessResponse(
+            inbox,
+            "Admin inbox ready.",
+            requestId: HttpContext.TraceIdentifier));
     }
 
     // ===================== KEEP-ALIVE =====================
@@ -877,6 +911,34 @@ public class AdminController : ControllerBase
             Detail = detail
         });
         return auditRef;
+    }
+
+    private ApiResponse<AdminMutationResponseDto> BuildMutationResponse(
+        string message,
+        string severity,
+        string? auditRef,
+        object? data = null,
+        string? warning = null)
+    {
+        var warnings = string.IsNullOrWhiteSpace(warning)
+            ? null
+            : new List<string> { warning };
+
+        return ApiResponse<AdminMutationResponseDto>.SuccessResponse(
+            new AdminMutationResponseDto
+            {
+                Status = "success",
+                Severity = severity,
+                RequestId = HttpContext.TraceIdentifier,
+                AuditRef = auditRef,
+                Warning = warning,
+                Data = data
+            },
+            message,
+            requestId: HttpContext.TraceIdentifier,
+            severity: severity,
+            auditRef: auditRef,
+            warnings: warnings);
     }
 
     private static string NormalizeAccessState(string? accessState)

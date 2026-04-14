@@ -55,25 +55,10 @@ public static class PlatformRoles
 
     public static string ResolveEffectiveRole(ClaimsPrincipal principal, string? persistedRole)
     {
-        var normalizedPersistedRole = Normalize(persistedRole);
-        var normalizedClaimRole = ResolveRoleFromClaims(principal);
-
-        if (!string.IsNullOrWhiteSpace(persistedRole) && IsAdminRole(normalizedPersistedRole))
-        {
-            return normalizedPersistedRole;
-        }
-
-        if (IsAdminRole(normalizedClaimRole))
-        {
-            return normalizedClaimRole;
-        }
-
-        if (!string.IsNullOrWhiteSpace(persistedRole))
-        {
-            return normalizedPersistedRole;
-        }
-
-        return normalizedClaimRole;
+        _ = principal;
+        return string.IsNullOrWhiteSpace(persistedRole)
+            ? User
+            : Normalize(persistedRole);
     }
 
     public static string ResolveRoleFromClaims(ClaimsPrincipal principal)

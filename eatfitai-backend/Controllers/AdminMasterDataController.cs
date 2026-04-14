@@ -1,12 +1,14 @@
 using EatFitAI.API.DbScaffold.Data;
 using EatFitAI.API.DbScaffold.Models;
 using EatFitAI.API.DTOs.Admin;
+using EatFitAI.API.DTOs.Common;
 using EatFitAI.API.Security;
 using EatFitAI.API.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -57,15 +59,19 @@ namespace EatFitAI.API.Controllers
 
             _context.MealTypes.Add(entity);
             await _context.SaveChangesAsync();
-            await WriteAuditAsync("create", "meal-type", entity.MealTypeId.ToString(), "success", $"Name={entity.Name}");
+            var auditRef = await WriteAuditAsync("create", "meal-type", entity.MealTypeId.ToString(), "success", $"Name={entity.Name}", severity: "high");
 
             _logger.LogInformation("Admin user {User} created MealType ID {Id}", User.Identity?.Name, entity.MealTypeId);
 
-            return CreatedAtAction(nameof(GetMealTypes), new { id = entity.MealTypeId }, new MealTypeDto
-            {
-                MealTypeId = entity.MealTypeId,
-                Name = entity.Name
-            });
+            return StatusCode(StatusCodes.Status201Created, BuildMutationResponse(
+                "Meal type created.",
+                "high",
+                auditRef,
+                new MealTypeDto
+                {
+                    MealTypeId = entity.MealTypeId,
+                    Name = entity.Name
+                }));
         }
 
         [HttpPut("meal-types/{id}")]
@@ -81,10 +87,18 @@ namespace EatFitAI.API.Controllers
 
             entity.Name = request.Name;
             await _context.SaveChangesAsync();
-            await WriteAuditAsync("update", "meal-type", id.ToString(), "success", $"Name={entity.Name}");
+            var auditRef = await WriteAuditAsync("update", "meal-type", id.ToString(), "success", $"Name={entity.Name}", severity: "high");
             _logger.LogInformation("Admin user {User} updated MealType ID {Id}", User.Identity?.Name, id);
 
-            return NoContent();
+            return Ok(BuildMutationResponse(
+                "Meal type updated.",
+                "high",
+                auditRef,
+                new MealTypeDto
+                {
+                    MealTypeId = entity.MealTypeId,
+                    Name = entity.Name
+                }));
         }
 
         [HttpDelete("meal-types/{id}")]
@@ -106,10 +120,14 @@ namespace EatFitAI.API.Controllers
 
             _context.MealTypes.Remove(entity);
             await _context.SaveChangesAsync();
-            await WriteAuditAsync("delete", "meal-type", id.ToString(), "success", $"Name={entity.Name}");
+            var auditRef = await WriteAuditAsync("delete", "meal-type", id.ToString(), "success", $"Name={entity.Name}", severity: "critical");
             _logger.LogInformation("Admin user {User} deleted MealType ID {Id}", User.Identity?.Name, id);
 
-            return NoContent();
+            return Ok(BuildMutationResponse(
+                "Meal type deleted.",
+                "critical",
+                auditRef,
+                new { Id = id, Deleted = true }));
         }
 
         // --- Activity Level ---
@@ -142,16 +160,20 @@ namespace EatFitAI.API.Controllers
 
             _context.ActivityLevels.Add(entity);
             await _context.SaveChangesAsync();
-            await WriteAuditAsync("create", "activity-level", entity.ActivityLevelId.ToString(), "success", $"Name={entity.Name}");
+            var auditRef = await WriteAuditAsync("create", "activity-level", entity.ActivityLevelId.ToString(), "success", $"Name={entity.Name}", severity: "high");
 
             _logger.LogInformation("Admin user {User} created ActivityLevel ID {Id}", User.Identity?.Name, entity.ActivityLevelId);
 
-            return CreatedAtAction(nameof(GetActivityLevels), new { id = entity.ActivityLevelId }, new ActivityLevelDto
-            {
-                ActivityLevelId = entity.ActivityLevelId,
-                Name = entity.Name,
-                ActivityFactor = entity.ActivityFactor
-            });
+            return StatusCode(StatusCodes.Status201Created, BuildMutationResponse(
+                "Activity level created.",
+                "high",
+                auditRef,
+                new ActivityLevelDto
+                {
+                    ActivityLevelId = entity.ActivityLevelId,
+                    Name = entity.Name,
+                    ActivityFactor = entity.ActivityFactor
+                }));
         }
 
         [HttpPut("activity-levels/{id}")]
@@ -169,10 +191,19 @@ namespace EatFitAI.API.Controllers
             entity.ActivityFactor = request.ActivityFactor;
             
             await _context.SaveChangesAsync();
-            await WriteAuditAsync("update", "activity-level", id.ToString(), "success", $"Name={entity.Name};Factor={entity.ActivityFactor}");
+            var auditRef = await WriteAuditAsync("update", "activity-level", id.ToString(), "success", $"Name={entity.Name};Factor={entity.ActivityFactor}", severity: "high");
             _logger.LogInformation("Admin user {User} updated ActivityLevel ID {Id}", User.Identity?.Name, id);
 
-            return NoContent();
+            return Ok(BuildMutationResponse(
+                "Activity level updated.",
+                "high",
+                auditRef,
+                new ActivityLevelDto
+                {
+                    ActivityLevelId = entity.ActivityLevelId,
+                    Name = entity.Name,
+                    ActivityFactor = entity.ActivityFactor
+                }));
         }
 
         [HttpDelete("activity-levels/{id}")]
@@ -194,10 +225,14 @@ namespace EatFitAI.API.Controllers
 
             _context.ActivityLevels.Remove(entity);
             await _context.SaveChangesAsync();
-            await WriteAuditAsync("delete", "activity-level", id.ToString(), "success", $"Name={entity.Name}");
+            var auditRef = await WriteAuditAsync("delete", "activity-level", id.ToString(), "success", $"Name={entity.Name}", severity: "critical");
             _logger.LogInformation("Admin user {User} deleted ActivityLevel ID {Id}", User.Identity?.Name, id);
 
-            return NoContent();
+            return Ok(BuildMutationResponse(
+                "Activity level deleted.",
+                "critical",
+                auditRef,
+                new { Id = id, Deleted = true }));
         }
 
         // --- Serving Unit ---
@@ -232,17 +267,21 @@ namespace EatFitAI.API.Controllers
 
             _context.ServingUnits.Add(entity);
             await _context.SaveChangesAsync();
-            await WriteAuditAsync("create", "serving-unit", entity.ServingUnitId.ToString(), "success", $"Name={entity.Name};Symbol={entity.Symbol}");
+            var auditRef = await WriteAuditAsync("create", "serving-unit", entity.ServingUnitId.ToString(), "success", $"Name={entity.Name};Symbol={entity.Symbol}", severity: "high");
 
             _logger.LogInformation("Admin user {User} created ServingUnit ID {Id}", User.Identity?.Name, entity.ServingUnitId);
 
-            return CreatedAtAction(nameof(GetServingUnits), new { id = entity.ServingUnitId }, new ServingUnitDto
-            {
-                ServingUnitId = entity.ServingUnitId,
-                Name = entity.Name,
-                Symbol = entity.Symbol,
-                IsBaseUnit = entity.IsBaseUnit
-            });
+            return StatusCode(StatusCodes.Status201Created, BuildMutationResponse(
+                "Serving unit created.",
+                "high",
+                auditRef,
+                new ServingUnitDto
+                {
+                    ServingUnitId = entity.ServingUnitId,
+                    Name = entity.Name,
+                    Symbol = entity.Symbol,
+                    IsBaseUnit = entity.IsBaseUnit
+                }));
         }
 
         [HttpPut("serving-units/{id}")]
@@ -261,10 +300,20 @@ namespace EatFitAI.API.Controllers
             entity.IsBaseUnit = request.IsBaseUnit;
 
             await _context.SaveChangesAsync();
-            await WriteAuditAsync("update", "serving-unit", id.ToString(), "success", $"Name={entity.Name};Symbol={entity.Symbol}");
+            var auditRef = await WriteAuditAsync("update", "serving-unit", id.ToString(), "success", $"Name={entity.Name};Symbol={entity.Symbol}", severity: "high");
             _logger.LogInformation("Admin user {User} updated ServingUnit ID {Id}", User.Identity?.Name, id);
 
-            return NoContent();
+            return Ok(BuildMutationResponse(
+                "Serving unit updated.",
+                "high",
+                auditRef,
+                new ServingUnitDto
+                {
+                    ServingUnitId = entity.ServingUnitId,
+                    Name = entity.Name,
+                    Symbol = entity.Symbol,
+                    IsBaseUnit = entity.IsBaseUnit
+                }));
         }
 
         [HttpDelete("serving-units/{id}")]
@@ -290,22 +339,57 @@ namespace EatFitAI.API.Controllers
 
             _context.ServingUnits.Remove(entity);
             await _context.SaveChangesAsync();
-            await WriteAuditAsync("delete", "serving-unit", id.ToString(), "success", $"Name={entity.Name}");
+            var auditRef = await WriteAuditAsync("delete", "serving-unit", id.ToString(), "success", $"Name={entity.Name}", severity: "critical");
             _logger.LogInformation("Admin user {User} deleted ServingUnit ID {Id}", User.Identity?.Name, id);
 
-            return NoContent();
+            return Ok(BuildMutationResponse(
+                "Serving unit deleted.",
+                "critical",
+                auditRef,
+                new { Id = id, Deleted = true }));
         }
 
-        private Task WriteAuditAsync(string action, string entity, string entityId, string outcome, string? detail = null)
+        private async Task<string?> WriteAuditAsync(
+            string action,
+            string entity,
+            string entityId,
+            string outcome,
+            string? detail = null,
+            string severity = "info")
         {
-            return _auditService.WriteAsync(HttpContext, new AdminAuditWriteRequest
+            var auditRef = Guid.NewGuid().ToString("N");
+            await _auditService.WriteAsync(HttpContext, new AdminAuditWriteRequest
             {
                 Action = action,
                 Entity = entity,
                 EntityId = entityId,
                 Outcome = outcome,
+                Severity = severity,
+                DiffSummary = auditRef,
                 Detail = detail
             });
+            return auditRef;
+        }
+
+        private ApiResponse<AdminMutationResponseDto> BuildMutationResponse(
+            string message,
+            string severity,
+            string? auditRef,
+            object? data = null)
+        {
+            return ApiResponse<AdminMutationResponseDto>.SuccessResponse(
+                new AdminMutationResponseDto
+                {
+                    Status = "success",
+                    Severity = severity,
+                    RequestId = HttpContext.TraceIdentifier,
+                    AuditRef = auditRef,
+                    Data = data
+                },
+                message,
+                requestId: HttpContext.TraceIdentifier,
+                severity: severity,
+                auditRef: auditRef);
         }
     }
 }

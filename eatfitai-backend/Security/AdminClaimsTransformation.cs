@@ -23,6 +23,11 @@ public sealed class AdminClaimsTransformation : IClaimsTransformation
             return principal;
         }
 
+        RemoveAll(identity, AdminCapabilityClaims.PlatformRole);
+        RemoveAll(identity, AdminCapabilityClaims.AccessState);
+        RemoveAll(identity, AdminCapabilityClaims.Capability);
+        RemoveAdminRoleClaims(identity);
+
         var userId = principal.FindFirstValue(ClaimTypes.NameIdentifier)
             ?? principal.FindFirstValue("sub");
         var email = principal.FindFirstValue(ClaimTypes.Email)
@@ -51,11 +56,6 @@ public sealed class AdminClaimsTransformation : IClaimsTransformation
 
         if (user == null)
         {
-            user = await EnsureAdminUserProjectionAsync(principal, userId, email);
-        }
-
-        if (user == null)
-        {
             return principal;
         }
 
@@ -72,17 +72,19 @@ public sealed class AdminClaimsTransformation : IClaimsTransformation
         AddOrReplace(identity, AdminCapabilityClaims.AccessState, accessState);
         AddOrReplace(identity, ClaimTypes.Email, user.Email);
 
-        if (PlatformRoles.IsAdminRole(normalizedRole) && !identity.HasClaim(ClaimTypes.Role, "Admin"))
+        if (PlatformRoles.IsAdminRole(normalizedRole))
         {
-            identity.AddClaim(new Claim(ClaimTypes.Role, "Admin"));
+            if (!identity.HasClaim(ClaimTypes.Role, "Admin"))
+            {
+                identity.AddClaim(new Claim(ClaimTypes.Role, "Admin"));
+            }
+
+            if (!identity.HasClaim(ClaimTypes.Role, normalizedRole))
+            {
+                identity.AddClaim(new Claim(ClaimTypes.Role, normalizedRole));
+            }
         }
 
-        if (!identity.HasClaim(ClaimTypes.Role, normalizedRole))
-        {
-            identity.AddClaim(new Claim(ClaimTypes.Role, normalizedRole));
-        }
-
-        RemoveAll(identity, AdminCapabilityClaims.Capability);
         foreach (var capability in AdminCapabilities.GetForRole(normalizedRole))
         {
             identity.AddClaim(new Claim(AdminCapabilityClaims.Capability, capability));
@@ -117,64 +119,6 @@ public sealed class AdminClaimsTransformation : IClaimsTransformation
         }
     }
 
-    private async Task<AdminUserProjection?> EnsureAdminUserProjectionAsync(
-        ClaimsPrincipal principal,
-        string? userId,
-        string? email)
-    {
-        var bootstrapRole = PlatformRoles.ResolveRoleFromClaims(principal);
-        if (!PlatformRoles.IsAdminRole(bootstrapRole)
-            || !Guid.TryParse(userId, out var parsedUserId)
-            || string.IsNullOrWhiteSpace(email))
-        {
-            return null;
-        }
-
-        var normalizedEmail = email.Trim();
-        var existingUser = await TryResolveUserAsync(_context.Users
-            .AsNoTracking()
-            .Where(item => item.UserId == parsedUserId || item.Email == normalizedEmail));
-        if (existingUser != null)
-        {
-            return existingUser;
-        }
-
-        var now = DateTime.UtcNow;
-        _context.Users.Add(new User
-        {
-            UserId = parsedUserId,
-            Email = normalizedEmail,
-            DisplayName = principal.FindFirstValue(ClaimTypes.Name) ?? normalizedEmail,
-            CreatedAt = now,
-            EmailVerified = true,
-            OnboardingCompleted = true,
-            Role = bootstrapRole,
-        });
-
-        if (!await _context.UserAccessControls.AnyAsync(item => item.UserId == parsedUserId))
-        {
-            _context.UserAccessControls.Add(new UserAccessControl
-            {
-                UserId = parsedUserId,
-                AccessState = AdminAccessStates.Active,
-                UpdatedAt = now,
-            });
-        }
-
-        try
-        {
-            await _context.SaveChangesAsync();
-        }
-        catch (DbUpdateException)
-        {
-            _context.ChangeTracker.Clear();
-        }
-
-        return await TryResolveUserAsync(_context.Users
-            .AsNoTracking()
-            .Where(item => item.UserId == parsedUserId || item.Email == normalizedEmail));
-    }
-
     private static void AddOrReplace(ClaimsIdentity identity, string claimType, string value)
     {
         RemoveAll(identity, claimType);
@@ -186,6 +130,18 @@ public sealed class AdminClaimsTransformation : IClaimsTransformation
         foreach (var claim in identity.FindAll(claimType).ToArray())
         {
             identity.RemoveClaim(claim);
+        }
+    }
+
+    private static void RemoveAdminRoleClaims(ClaimsIdentity identity)
+    {
+        foreach (var claim in identity.FindAll(ClaimTypes.Role).ToArray())
+        {
+            if (string.Equals(claim.Value, "Admin", StringComparison.OrdinalIgnoreCase)
+                || PlatformRoles.IsAdminRole(claim.Value))
+            {
+                identity.RemoveClaim(claim);
+            }
         }
     }
 
