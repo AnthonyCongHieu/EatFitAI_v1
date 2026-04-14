@@ -1258,9 +1258,7 @@ const OnboardingScreen = (): React.ReactElement => {
                       showsHorizontalScrollIndicator={false}
                       snapToInterval={12}
                       decelerationRate="fast"
-                      showsHorizontalScrollIndicator={false}
-                      snapToInterval={12}
-                      decelerationRate="fast"
+                      contentOffset={{ x: ((parseInt(data.heightCm, 10) || 160) - 100) * 12, y: 0 }}
                       contentContainerStyle={{
                         paddingLeft: rulerContainerWidth / 2 - 6,
                         paddingRight: rulerContainerWidth / 2 - 6,
@@ -1377,9 +1375,7 @@ const OnboardingScreen = (): React.ReactElement => {
                       showsHorizontalScrollIndicator={false}
                       snapToInterval={10}
                       decelerationRate="fast"
-                      showsHorizontalScrollIndicator={false}
-                      snapToInterval={10}
-                      decelerationRate="fast"
+                      contentOffset={{ x: ((parseFloat(data.weightKg) || 60) - 30) * 100, y: 0 }}
                       contentContainerStyle={{
                         paddingLeft: weightRulerWidth / 2 - 5,
                         paddingRight: weightRulerWidth / 2 - 5,
