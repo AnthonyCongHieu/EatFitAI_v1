@@ -1,6 +1,5 @@
 import { useEffect, type ComponentType } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
-import { ActivityIndicator, View } from 'react-native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../types';
 import { useAppTheme } from '../../theme/ThemeProvider';
@@ -13,6 +12,7 @@ import ForgotPasswordScreen from '../screens/auth/ForgotPasswordScreen';
 import IntroCarouselScreen from '../screens/auth/IntroCarouselScreen';
 import WelcomeScreen from '../screens/auth/WelcomeScreen';
 import OnboardingScreen from '../screens/auth/OnboardingScreen';
+import SplashScreen from '../screens/SplashScreen';
 import { t } from '../../i18n/vi';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -114,16 +114,7 @@ const AppNavigator = (): React.ReactElement => {
   return (
     <NavigationContainer key={navigatorKey} theme={navigationTheme}>
       {isInitializing ? (
-        <View
-          style={{
-            flex: 1,
-            alignItems: 'center',
-            justifyContent: 'center',
-            backgroundColor: theme.colors.background,
-          }}
-        >
-          <ActivityIndicator size="large" color={theme.colors.primary} />
-        </View>
+        <SplashScreen />
       ) : (
         <Stack.Navigator
           key={navigatorKey}
