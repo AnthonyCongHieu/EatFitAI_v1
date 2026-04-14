@@ -10,6 +10,7 @@ const {
   coldLaunchApp,
   findByTestId,
   runAdb,
+  tapElement,
   waitForAny,
 } = require('../../tools/appium/lib/common');
 
@@ -29,6 +30,19 @@ const VERIFY_POLL_INTERVAL_MS = 10000;
 const ACCESSIBILITY_LABEL_FALLBACKS = {
   [TEST_IDS.auth.onboardingNextButton]: ['Tiếp tục', 'Hoàn tất'],
   [TEST_IDS.auth.onboardingCompleteButton]: ['Bắt đầu sử dụng'],
+  [TEST_IDS.auth.onboardingGenderMaleButton]: ['Nam'],
+  [TEST_IDS.auth.onboardingGenderFemaleButton]: ['Nữ'],
+};
+const TAP_OPTIONS_BY_TEST_ID = {
+  [TEST_IDS.auth.introStartButton]: { verticalBias: 0.82, useAdbFirst: true },
+  [TEST_IDS.auth.welcomeLoginButton]: { verticalBias: 0.72, useAdbFirst: true },
+  [TEST_IDS.auth.welcomeRegisterButton]: { verticalBias: 0.72, useAdbFirst: true },
+  [TEST_IDS.auth.submitButton]: { verticalBias: 0.7 },
+  [TEST_IDS.auth.registerSubmitButton]: { verticalBias: 0.75, useAdbFirst: true },
+  [TEST_IDS.auth.verifySubmitButton]: { verticalBias: 0.7, useAdbFirst: true },
+  [TEST_IDS.auth.onboardingGenderMaleButton]: { verticalBias: 0.55, useAdbFirst: true },
+  [TEST_IDS.auth.onboardingGenderFemaleButton]: { verticalBias: 0.55, useAdbFirst: true },
+  [TEST_IDS.home.diaryButton]: { verticalBias: 0.6 },
 };
 
 function trim(value) {
@@ -116,7 +130,7 @@ async function waitForTestId(driver, testId, timeout = 15000) {
 
 async function tapByTestId(driver, testId, timeout = 15000) {
   const element = await waitForTestId(driver, testId, timeout);
-  await element.click();
+  await tapElement(driver, element, TAP_OPTIONS_BY_TEST_ID[testId] || {});
 }
 
 async function setValueByTestId(driver, testId, value, timeout = 15000) {
@@ -126,6 +140,62 @@ async function setValueByTestId(driver, testId, value, timeout = 15000) {
     await element.clearValue();
   } catch {}
   await element.setValue(String(value));
+}
+
+async function setValueByTestIdIfPresent(driver, testId, value, timeout = 5000) {
+  const element = await findByTestId(driver, testId, timeout);
+  if (!element) {
+    return false;
+  }
+
+  await element.click();
+  try {
+    await element.clearValue();
+  } catch {}
+  await element.setValue(String(value));
+  return true;
+}
+
+async function tapRegisterTerms(driver) {
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    const byTestId = await findByTestId(driver, TEST_IDS.auth.registerTermsCheckbox, 3000);
+    if (byTestId) {
+      await tapElement(driver, byTestId, { verticalBias: 0.5, useAdbFirst: true });
+      return;
+    }
+
+    const byAccessibility = await findByAccessibilityLabels(
+      driver,
+      ['Tôi đồng ý với Điều khoản dịch vụ và Chính sách bảo mật'],
+      5000,
+    );
+    if (byAccessibility) {
+      await tapElement(driver, byAccessibility, { verticalBias: 0.5, useAdbFirst: true });
+      return;
+    }
+
+    runAdb(['shell', 'input', 'swipe', '540', '1800', '540', '1450', '250']);
+    await sleep(1000);
+  }
+
+  await captureDebugArtifacts(driver, 'missing-register-terms-checkbox').catch(() => null);
+  throw new Error('Selector not found: register terms checkbox');
+}
+
+async function tapOnboardingGender(driver, testId, timeout = 15000) {
+  for (let attempt = 0; attempt < 4; attempt += 1) {
+    const element = await findByTestId(driver, testId, 3000);
+    if (element) {
+      await tapElement(driver, element, TAP_OPTIONS_BY_TEST_ID[testId] || { useAdbFirst: true });
+      return;
+    }
+
+    runAdb(['shell', 'input', 'swipe', '540', '1800', '540', '1400', '250']);
+    await sleep(900);
+  }
+
+  await captureDebugArtifacts(driver, `missing-${testId}`).catch(() => null);
+  throw new Error(`Selector not found: ${testId}`);
 }
 
 async function findByAccessibilityLabels(driver, labels, timeout = 5000) {
@@ -407,7 +477,11 @@ function adbOutput(args, options = {}) {
 }
 
 function clearAppData() {
-  runAdb(['shell', 'pm', 'clear', APP_PACKAGE]);
+  try {
+    runAdb(['shell', 'pm', 'clear', APP_PACKAGE]);
+  } catch (error) {
+    console.warn(`Skipping pm clear for ${APP_PACKAGE}: ${error.message}`);
+  }
 }
 
 function clearLogcat() {
@@ -517,7 +591,7 @@ async function runDemoLoginMode(driver, outputDir, options) {
   if (!diaryButton) {
     throw new Error(`Selector not found after scroll: ${TEST_IDS.home.diaryButton}`);
   }
-  await diaryButton.click();
+  await tapElement(driver, diaryButton, TAP_OPTIONS_BY_TEST_ID[TEST_IDS.home.diaryButton]);
   await waitForAny(driver, [TEST_IDS.mealDiary.screen], 20000);
   const diaryScreenshot = await saveScreenshot(
     driver,
@@ -574,7 +648,11 @@ async function runDisposableRegisterMode(driver, outputDir, options) {
     5000,
   );
   if (registerButton) {
-    await registerButton.click();
+    await tapElement(
+      driver,
+      registerButton,
+      TAP_OPTIONS_BY_TEST_ID[TEST_IDS.auth.welcomeRegisterButton],
+    );
   } else if (next !== TEST_IDS.auth.registerScreen) {
     throw new Error('Register entry point was not reachable from intro/welcome flow.');
   }
@@ -589,6 +667,7 @@ async function runDisposableRegisterMode(driver, outputDir, options) {
     options.password,
   );
   await dismissKeyboard(driver);
+  await tapRegisterTerms(driver);
   const registerSubmitButton = await scrollUntilVisible(
     driver,
     TEST_IDS.auth.registerSubmitButton,
@@ -602,7 +681,11 @@ async function runDisposableRegisterMode(driver, outputDir, options) {
       `Selector not found after scroll: ${TEST_IDS.auth.registerSubmitButton}`,
     );
   }
-  await registerSubmitButton.click();
+  await tapElement(
+    driver,
+    registerSubmitButton,
+    TAP_OPTIONS_BY_TEST_ID[TEST_IDS.auth.registerSubmitButton],
+  );
   updateBudget(outputDir, 'registerWithVerification', `register ${mailbox.address}`);
 
   await waitForAny(driver, [TEST_IDS.auth.verifyScreen], 30000);
@@ -627,8 +710,9 @@ async function runDisposableRegisterMode(driver, outputDir, options) {
   await waitForAny(driver, [TEST_IDS.auth.onboardingScreen], 30000);
 
   await setValueByTestId(driver, TEST_IDS.auth.onboardingNameInput, options.displayName);
-  await tapByTestId(driver, TEST_IDS.auth.onboardingGenderMaleButton);
-  await setValueByTestId(driver, TEST_IDS.auth.onboardingAgeInput, '29');
+  await dismissKeyboard(driver);
+  await tapOnboardingGender(driver, TEST_IDS.auth.onboardingGenderMaleButton);
+  await setValueByTestIdIfPresent(driver, TEST_IDS.auth.onboardingAgeInput, '29');
   await dismissKeyboard(driver);
   await tapByTestId(driver, TEST_IDS.auth.onboardingNextButton);
   await setValueByTestId(driver, TEST_IDS.auth.onboardingHeightInput, '170');

@@ -507,6 +507,7 @@ const RegisterScreen = ({ navigation }: Props): React.ReactElement => {
 
                   {/* Terms & Conditions */}
                   <Pressable
+                    testID={TEST_IDS.auth.registerTermsCheckbox}
                     onPress={() => setTermsAccepted((v) => !v)}
                     style={styles.termsRow}
                   >

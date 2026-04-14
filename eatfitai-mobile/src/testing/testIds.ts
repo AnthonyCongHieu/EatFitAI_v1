@@ -14,6 +14,7 @@ export const TEST_IDS = {
     registerEmailInput: 'auth-register-email-input',
     registerPasswordInput: 'auth-register-password-input',
     registerConfirmPasswordInput: 'auth-register-confirm-password-input',
+    registerTermsCheckbox: 'auth-register-terms-checkbox',
     registerSubmitButton: 'auth-register-submit-button',
     verifyScreen: 'auth-verify-screen',
     verifyCodeInputPrefix: 'auth-verify-code-input',

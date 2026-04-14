@@ -17,6 +17,7 @@ import {
   ScrollView,
   Keyboard,
   Platform,
+  UIManager,
 } from 'react-native';
 import Toast from 'react-native-toast-message';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -210,7 +211,7 @@ const OnboardingScreen = (): React.ReactElement => {
   const [data, setData] = useState<OnboardingData>({
     fullName: '',
     gender: null,
-    age: '',
+    age: '24',
     heightCm: '160', // Default height 160cm
     weightKg: '60', // Default weight 60kg
     targetWeightKg: '',
@@ -232,6 +233,18 @@ const OnboardingScreen = (): React.ReactElement => {
   const [analysisStep, setAnalysisStep] = useState(0);
   const [analysisProgress, setAnalysisProgress] = useState(0);
   const [analysisStarted, setAnalysisStarted] = useState(false);
+  const hasNativeSlider = useMemo(() => {
+    try {
+      return Boolean(
+        UIManager.getViewManagerConfig?.('RNCSlider') ||
+          UIManager.getViewManagerConfig?.('RCTRNCSlider') ||
+          UIManager.hasViewManagerConfig?.('RNCSlider') ||
+          UIManager.hasViewManagerConfig?.('RCTRNCSlider'),
+      );
+    } catch {
+      return false;
+    }
+  }, []);
 
   // Waving hand animation
   const waveRotation = useSharedValue(0);
@@ -684,6 +697,9 @@ const OnboardingScreen = (): React.ReactElement => {
 
   /* ─── Age as a number for slider ─── */
   const ageNum = data.age ? parseInt(data.age, 10) : 24;
+  const clampAge = (value: number) => Math.max(0, Math.min(100, Math.round(value)));
+  const setAge = (value: number) =>
+    setData((prev) => ({ ...prev, age: String(clampAge(value)) }));
 
   /* ─── Render Step 0 — Emerald Nebula "Basic Info" ─── */
   const renderStep0Nebula = () => (
@@ -798,20 +814,72 @@ const OnboardingScreen = (): React.ReactElement => {
                     }
                     keyboardType={Platform.OS === 'ios' ? 'number-pad' : 'numeric'}
                   />
-                  {/* Native draggable slider */}
-                  <Slider
-                    style={{ width: '100%', height: 36 }}
-                    minimumValue={0}
-                    maximumValue={100}
-                    step={1}
-                    value={ageNum}
-                    onValueChange={(v: number) =>
-                      setData({ ...data, age: String(Math.round(v)) })
-                    }
-                    minimumTrackTintColor={C.primary}
-                    maximumTrackTintColor={C.surfaceContainerHighest}
-                    thumbTintColor={C.primary}
-                  />
+                  {hasNativeSlider ? (
+                    <Slider
+                      style={{ width: '100%', height: 36 }}
+                      minimumValue={0}
+                      maximumValue={100}
+                      step={1}
+                      value={ageNum}
+                      onValueChange={(v: number) => setAge(v)}
+                      minimumTrackTintColor={C.primary}
+                      maximumTrackTintColor={C.surfaceContainerHighest}
+                      thumbTintColor={C.primary}
+                    />
+                  ) : (
+                    <>
+                      <View style={s.sliderTrack}>
+                        <View
+                          style={[
+                            s.sliderFill,
+                            {
+                              width: `${ageNum}%`,
+                              backgroundColor: C.primary,
+                            },
+                          ]}
+                        />
+                      </View>
+                      <View style={s.stepperRow}>
+                        <Pressable
+                          onPress={() => setAge(ageNum - 1)}
+                          style={[
+                            s.stepperBtn,
+                            {
+                              backgroundColor: C.surfaceContainerHigh,
+                              borderWidth: 1,
+                              borderColor: C.glassBorder,
+                            },
+                          ]}
+                          accessibilityRole="button"
+                          accessibilityLabel="Giảm tuổi"
+                        >
+                          <Ionicons name="remove" size={18} color={C.onSurface} />
+                        </Pressable>
+                        <ThemedText
+                          variant="body"
+                          weight="700"
+                          style={{ color: C.onSurface, minWidth: 48, textAlign: 'center' }}
+                        >
+                          {ageNum}
+                        </ThemedText>
+                        <Pressable
+                          onPress={() => setAge(ageNum + 1)}
+                          style={[
+                            s.stepperBtn,
+                            {
+                              backgroundColor: C.surfaceContainerHigh,
+                              borderWidth: 1,
+                              borderColor: C.glassBorder,
+                            },
+                          ]}
+                          accessibilityRole="button"
+                          accessibilityLabel="Tăng tuổi"
+                        >
+                          <Ionicons name="add" size={18} color={C.onSurface} />
+                        </Pressable>
+                      </View>
+                    </>
+                  )}
                   <View style={s.sliderLabels}>
                     <ThemedText
                       variant="caption"

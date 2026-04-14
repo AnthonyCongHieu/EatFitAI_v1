@@ -19,6 +19,14 @@ const FALLBACK_ADB_PATH = path.resolve(
   process.platform === 'win32' ? 'adb.exe' : 'adb',
 );
 const TEST_IDS = loadTestIds();
+const ACCESSIBILITY_LABEL_FALLBACKS = {
+  [TEST_IDS.auth.introStartButton]: ['Bắt đầu ngay'],
+  [TEST_IDS.auth.welcomeLoginButton]: ['Tiếp tục với Google', 'Tiếp tục với Email'],
+  [TEST_IDS.auth.welcomeRegisterButton]: ['Đăng ký ngay'],
+  [TEST_IDS.auth.registerTermsCheckbox]: [
+    'Tôi đồng ý với Điều khoản dịch vụ và Chính sách bảo mật',
+  ],
+};
 const KNOWN_ENTRY_IDS = [
   TEST_IDS.auth.introScreen,
   TEST_IDS.auth.introStartButton,
@@ -71,6 +79,43 @@ async function captureDebugArtifacts(driver, label) {
   }
 }
 
+async function tapElement(driver, element, options = {}) {
+  const {
+    horizontalBias = 0.5,
+    verticalBias = 0.5,
+    useAdbFirst = false,
+  } = options;
+
+  const adbTap = async () => {
+    const rect =
+      typeof element.getRect === 'function'
+        ? await element.getRect()
+        : await driver.getElementRect(element.elementId);
+    const x = Math.round(rect.x + rect.width * horizontalBias);
+    const y = Math.round(rect.y + rect.height * verticalBias);
+    runAdb(['shell', 'input', 'tap', String(x), String(y)]);
+    await driver.pause(500);
+  };
+
+  if (useAdbFirst) {
+    try {
+      await adbTap();
+      return;
+    } catch (error) {
+      console.warn(`ADB tap fallback failed before click: ${error.message}`);
+    }
+  }
+
+  try {
+    await element.click();
+    return;
+  } catch (error) {
+    console.warn(`Element click failed, retrying with adb tap: ${error.message}`);
+  }
+
+  await adbTap();
+}
+
 function selectorCandidates(testId) {
   return [
     `android=new UiSelector().resourceId("${testId}")`,
@@ -89,6 +134,7 @@ async function connect() {
       platformName: 'Android',
       'appium:automationName': 'UiAutomator2',
       'appium:deviceName': process.env.ANDROID_DEVICE_NAME || 'Android Emulator',
+      'appium:udid': process.env.ANDROID_SERIAL || undefined,
       'appium:platformVersion': process.env.ANDROID_PLATFORM_VERSION || undefined,
       'appium:appPackage': APP_PACKAGE,
       'appium:appActivity': APP_ACTIVITY,
@@ -96,9 +142,12 @@ async function connect() {
       'appium:noReset': true,
       'appium:appWaitDuration': 120000,
       'appium:disableWindowAnimation': true,
+      'appium:ignoreHiddenApiPolicyError': true,
+      'appium:skipDeviceInitialization': true,
       'appium:newCommandTimeout': 180,
       'appium:adbExecTimeout': 120000,
       'appium:uiautomator2ServerLaunchTimeout': 120000,
+      'appium:uiautomator2ServerInstallTimeout': 120000,
     },
   });
 }
@@ -114,6 +163,24 @@ async function findByTestId(driver, testId, timeout = 5000) {
         return element;
       }
     }
+
+    const fallbackLabels = ACCESSIBILITY_LABEL_FALLBACKS[testId];
+    if (fallbackLabels) {
+      for (const label of fallbackLabels) {
+        for (const selector of [
+          `android=new UiSelector().description("${label}")`,
+          `android=new UiSelector().text("${label}")`,
+          `android=new UiSelector().descriptionContains("${label}")`,
+          `android=new UiSelector().textContains("${label}")`,
+        ]) {
+          const element = await driver.$(selector);
+          if (await element.isExisting()) {
+            return element;
+          }
+        }
+      }
+    }
+
     await driver.pause(250);
   }
 
@@ -168,7 +235,7 @@ async function loginIfNeeded(driver) {
       throw new Error('Intro screen detected but start button could not be resolved.');
     }
 
-    await introStartButton.click();
+    await tapElement(driver, introStartButton, { verticalBias: 0.82, useAdbFirst: true });
     current = await waitForAny(
       driver,
       [
@@ -191,7 +258,7 @@ async function loginIfNeeded(driver) {
       throw new Error('Welcome login button was detected but could not be resolved.');
     }
 
-    await welcomeLoginButton.click();
+    await tapElement(driver, welcomeLoginButton);
     current = await waitForAny(
       driver,
       [TEST_IDS.auth.loginScreen, TEST_IDS.home.screen],
@@ -220,7 +287,7 @@ async function loginIfNeeded(driver) {
 
   await emailInput.setValue(email);
   await passwordInput.setValue(password);
-  await submitButton.click();
+  await tapElement(driver, submitButton);
 
   await waitForAny(driver, [TEST_IDS.home.screen], 20000);
   console.log('Login successful.');
@@ -238,7 +305,11 @@ function runAdb(args) {
 
 function coldLaunchApp() {
   console.log('Cold launching app for Appium automation.');
-  runAdb(['shell', 'input', 'keyevent', 'KEYCODE_HOME']);
+  try {
+    runAdb(['shell', 'input', 'keyevent', 'KEYCODE_HOME']);
+  } catch (error) {
+    console.warn('Skipping KEYCODE_HOME during launch:', error.message);
+  }
   runAdb(['shell', 'am', 'start', '-S', '-W', '-n', `${APP_PACKAGE}/${APP_ACTIVITY}`]);
 }
 
@@ -252,6 +323,7 @@ module.exports = {
   findByTestId,
   loginIfNeeded,
   runAdb,
+  tapElement,
   waitForAppEntry,
   waitForAny,
 };
