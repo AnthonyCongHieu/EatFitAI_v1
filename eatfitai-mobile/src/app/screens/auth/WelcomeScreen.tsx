@@ -545,8 +545,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   buttonPressed: {
-    transform: [{ scale: 0.96 }],
-    opacity: 0.85,
+    opacity: 0.7,
   },
 
   /* Divider */
