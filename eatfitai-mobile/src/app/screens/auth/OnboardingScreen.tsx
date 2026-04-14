@@ -427,6 +427,22 @@ const OnboardingScreen = (): React.ReactElement => {
     }
   }, [aiResult, currentStep, analysisStarted, analysisStep]);
 
+  const rulerScrollRef = useRef<ScrollView>(null);
+  const rulerInitialized = useRef(false);
+  const [rulerContainerWidth, setRulerContainerWidth] = useState(0);
+  const weightRulerRef = useRef<ScrollView>(null);
+  const weightRulerInitialized = useRef(false);
+  const [weightRulerWidth, setWeightRulerWidth] = useState(0);
+
+  // Target weight ruler refs (Step 3)
+  const targetWeightRulerRef = useRef<any>(null);
+  const targetWeightRulerInitialized = useRef(false);
+  const [targetWeightRulerWidth, setTargetWeightRulerWidth] = useState(0);
+  const targetRulerScrollXRef = useRef(0);
+  const [targetDisplayWeight, setTargetDisplayWeight] = useState(0);
+
+  const targetRulerNativeScrollX = useSharedValue(0);
+
   // Robust snapping for Step 1 Rulers
   useEffect(() => {
     if (currentStep === 1) {
@@ -966,21 +982,6 @@ const OnboardingScreen = (): React.ReactElement => {
   /* ─── Render Step 1 — Emerald Nebula "Body Metrics" ─── */
   const heightNum = data.heightCm ? parseInt(data.heightCm, 10) : 170;
   const weightNum = data.weightKg ? parseFloat(data.weightKg) : 65;
-  const rulerScrollRef = useRef<ScrollView>(null);
-  const rulerInitialized = useRef(false);
-  const [rulerContainerWidth, setRulerContainerWidth] = useState(0);
-  const weightRulerRef = useRef<ScrollView>(null);
-  const weightRulerInitialized = useRef(false);
-  const [weightRulerWidth, setWeightRulerWidth] = useState(0);
-
-  // Target weight ruler refs (Step 3)
-  const targetWeightRulerRef = useRef<any>(null);
-  const targetWeightRulerInitialized = useRef(false);
-  const [targetWeightRulerWidth, setTargetWeightRulerWidth] = useState(0);
-  const targetRulerScrollXRef = useRef(0);
-  const [targetDisplayWeight, setTargetDisplayWeight] = useState(0);
-
-  const targetRulerNativeScrollX = useSharedValue(0);
 
   const currentGoal = data.goal;
   const currentWeightStr = data.weightKg;
@@ -990,7 +991,7 @@ const OnboardingScreen = (): React.ReactElement => {
 
   const updateTargetWeightUI = (offsetX: number, minW: number, maxW: number) => {
     targetRulerScrollXRef.current = offsetX;
-    let v = Math.round((offsetX / 100 + minW) * 10) / 10;
+    const v = Math.round((offsetX / 100 + minW) * 10) / 10;
     setTargetDisplayWeight(Math.max(minW, Math.min(maxW, v)));
   };
 
@@ -1044,7 +1045,7 @@ const OnboardingScreen = (): React.ReactElement => {
         targetWeightRulerInitialized.current = true;
       }, 150);
     }
-  }, [currentStep, targetWeightRulerWidth, currentWeightVal, targetMinWeight, targetMaxWeight]);
+  }, [currentStep, targetWeightRulerWidth, currentWeightVal, targetMinWeight, targetMaxWeight, data.targetWeightKg]);
 
   // Memoize the large arrays to prevent significant lag during active scrolling
   const memoizedHeightTicks = useMemo(
@@ -2761,7 +2762,7 @@ const OnboardingScreen = (): React.ReactElement => {
                           CALORIES
                         </ThemedText>
                         <ThemedText
-                          weight="800"
+                          weight="700"
                           style={{
                             color: '#4BE277',
                             fontSize: 36,
