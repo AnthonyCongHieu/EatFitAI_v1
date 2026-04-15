@@ -29,8 +29,11 @@ function resolveBundledExecutable(relativeSegments) {
 }
 
 function buildToolingEnv() {
+  const bundledJdkHome = path.join(repoRoot, '_tooling', 'jdk-17');
+  const bundledJdkBin = path.join(bundledJdkHome, 'bin');
+  const hasBundledJdk = fs.existsSync(bundledJdkBin);
   const pathParts = [
-    path.join(repoRoot, '_tooling', 'jdk-17', 'bin'),
+    hasBundledJdk ? bundledJdkBin : null,
     path.join(repoRoot, '_tooling', 'android-sdk', 'platform-tools'),
     path.join(repoRoot, '_tooling', 'android-sdk', 'emulator'),
     path.join(repoRoot, '_tooling', 'android-sdk', 'cmdline-tools', 'latest', 'bin'),
@@ -39,14 +42,19 @@ function buildToolingEnv() {
     process.env.PATH || '',
   ].filter(Boolean);
 
-  return {
+  const env = {
     ...process.env,
-    JAVA_HOME: path.join(repoRoot, '_tooling', 'jdk-17'),
     ANDROID_SDK_ROOT: path.join(repoRoot, '_tooling', 'android-sdk'),
     ANDROID_AVD_HOME: path.join(repoRoot, '_tooling', 'android-avd'),
     ANDROID_USER_HOME: path.join(repoRoot, '_state', 'android-user-home'),
     PATH: pathParts.join(path.delimiter),
   };
+
+  if (hasBundledJdk) {
+    env.JAVA_HOME = bundledJdkHome;
+  }
+
+  return env;
 }
 
 function sleep(ms) {
