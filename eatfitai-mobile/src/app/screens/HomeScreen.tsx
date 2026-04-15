@@ -215,9 +215,6 @@ const HomeScreen = (): React.ReactElement => {
     return Math.min(1, summary.totalCalories / summary.targetCalories);
   }, [summary]);
 
-  const hasTargetCalories = typeof summary?.targetCalories === 'number' && summary.targetCalories > 0;
-  const targetCalories = hasTargetCalories ? summary!.targetCalories : 2200;
-
   useEffect(() => {
     const safeValue = Number.isNaN(remainingCalories) ? 0 : remainingCalories;
     remainingCaloriesValue.value = withTiming(safeValue, { duration: theme.animation.normal });
@@ -233,13 +230,14 @@ const HomeScreen = (): React.ReactElement => {
     return summary.meals.flatMap((meal) => meal.entries).slice(0, 3);
   }, [summary]);
 
-  // Macro data
-  const protein = summary?.protein || 0;
-  const carbs = summary?.carbs || 0;
-  const fat = summary?.fat || 0;
-  const targetProtein = summary?.targetProtein || 120;
-  const targetCarbs = summary?.targetCarbs || 280;
-  const targetFat = summary?.targetFat || 60;
+  // Macro data - Ensure strictly numbers for TypeScript
+  const protein = Number(summary?.protein ?? 0);
+  const carbs = Number(summary?.carbs ?? 0);
+  const fat = Number(summary?.fat ?? 0);
+  const targetProtein = Number(summary?.targetProtein ?? 120);
+  const targetCarbs = Number(summary?.targetCarbs ?? 280);
+  const targetFat = Number(summary?.targetFat ?? 60);
+  const targetCalories = typeof summary?.targetCalories === 'number' ? summary.targetCalories : 2200;
 
   // CalorieRing SVG values
   const ringSize = 140;
