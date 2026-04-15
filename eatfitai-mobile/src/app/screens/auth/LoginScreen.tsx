@@ -25,7 +25,6 @@ import { ThemedText } from '../../../components/ThemedText';
 import Screen from '../../../components/Screen';
 import { useAuthStore } from '../../../store/useAuthStore';
 import type { RootStackParamList } from '../../types';
-import { t } from '../../../i18n/vi';
 import { handleApiError } from '../../../utils/errorHandler';
 import { TEST_IDS } from '../../../testing/testIds';
 
@@ -79,31 +78,45 @@ const LoginScreen = ({ navigation }: Props): React.ReactElement => {
     async (values: LoginValues) => {
       try {
         setLoading(true);
-        await login(values.email, values.password);
+        const result = await login(values.email, values.password);
         Toast.show({
           type: 'success',
           text1: 'Chào mừng trở lại!',
           text2: 'Đăng nhập thành công',
         });
+
+        if (result.needsOnboarding) {
+          navigation.reset({
+            index: 0,
+            routes: [{ name: 'Onboarding' }],
+          });
+        }
       } catch (e: any) {
         handleApiError(e);
       } finally {
         setLoading(false);
       }
     },
-    [login],
+    [login, navigation],
   );
 
   const onGoogle = useCallback(async () => {
     try {
       setLoading(true);
       console.log('[LoginScreen] Starting Google Sign-In...');
-      await signInWithGoogle();
+      const result = await signInWithGoogle();
       Toast.show({
         type: 'success',
         text1: 'Đăng nhập với Google thành công',
         text2: 'Chào mừng bạn!',
       });
+
+      if (result.needsOnboarding) {
+        navigation.reset({
+          index: 0,
+          routes: [{ name: 'Onboarding' }],
+        });
+      }
     } catch (e: any) {
       console.error('[LoginScreen] Google Sign-In error:', e);
       console.error('[LoginScreen] Error message:', e?.message);
@@ -117,7 +130,7 @@ const LoginScreen = ({ navigation }: Props): React.ReactElement => {
     } finally {
       setLoading(false);
     }
-  }, [signInWithGoogle]);
+  }, [navigation, signInWithGoogle]);
 
   /* ─── Colors (Emerald Nebula palette from the reference) ─── */
   const C = {

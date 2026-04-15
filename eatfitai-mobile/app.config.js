@@ -72,6 +72,7 @@ module.exports = ({ config }) => {
     process.env.EXPO_EAS_PROJECT_ID ||
     process.env.EAS_PROJECT_ID ||
     existingEas.projectId;
+  const buildPlatform = readTrimmedEnv('EAS_BUILD_PLATFORM');
 
   const appProfile =
     readTrimmedEnv('APP_ENV') ||
@@ -92,10 +93,12 @@ module.exports = ({ config }) => {
       'EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID',
       readTrimmedEnv('EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID'),
     );
-    assertRequiredProductionEnv(
-      'EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID',
-      readTrimmedEnv('EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID'),
-    );
+    if (buildPlatform === 'ios') {
+      assertRequiredProductionEnv(
+        'EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID',
+        readTrimmedEnv('EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID'),
+      );
+    }
   }
 
   const localIp = productionLike ? '' : getLocalIpAddress();

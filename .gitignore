@@ -25,6 +25,7 @@ uploads/
 artifacts/
 eatfitai-mobile/artifacts/
 eatfitai-mobile/src/config/generated-api-config.ts
+eatfitai-mobile/android/keystore.properties
 
 # AI Configuration
 .agent/
