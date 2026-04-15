@@ -24,87 +24,87 @@ public class AdminController : ControllerBase
         {
             Key = "users.access-state",
             Category = "users",
-            Label = "Update user access state",
-            Description = "Suspend, restore, or deactivate a user account with explicit confirmation and audit evidence.",
+            Label = "Cập nhật trạng thái truy cập người dùng",
+            Description = "Đình chỉ, khôi phục hoặc vô hiệu hóa tài khoản người dùng với xác nhận rõ ràng và bằng chứng audit.",
             Capability = AdminCapabilities.UsersDeactivate,
             Severity = "high",
             JustificationRequired = true,
             ConfirmPhraseTemplate = "USER:{email}:{state}",
-            Rollback = "Restore the user to active state through the same governed workflow.",
+            Rollback = "Đưa người dùng về trạng thái hoạt động qua chính luồng kiểm soát này.",
             AuditSchema = "user-access-state.v1",
         },
         new()
         {
             Key = "users.role",
             Category = "users",
-            Label = "Change platform role",
-            Description = "Update the user's platform role and capability set from the DB-backed authority model.",
+            Label = "Đổi vai trò nền tảng",
+            Description = "Cập nhật vai trò nền tảng và bộ capability của người dùng theo mô hình phân quyền từ DB.",
             Capability = AdminCapabilities.UsersRoleManage,
             Severity = "high",
             JustificationRequired = true,
-            Rollback = "Reapply the previous role assignment and refresh claims.",
+            Rollback = "Gán lại vai trò trước đó và làm mới claims.",
             AuditSchema = "user-role.v1",
         },
         new()
         {
             Key = "foods.verify",
             Category = "foods",
-            Label = "Verify or unverify food",
-            Description = "Curate food credibility without exposing raw database access.",
+            Label = "Xác minh hoặc bỏ xác minh món ăn",
+            Description = "Kiểm duyệt độ tin cậy của món ăn mà không mở quyền truy cập cơ sở dữ liệu thô.",
             Capability = AdminCapabilities.FoodsWrite,
             Severity = "medium",
             JustificationRequired = false,
-            Rollback = "Toggle verification back to the prior state.",
+            Rollback = "Đưa trạng thái xác minh về như trước đó.",
             AuditSchema = "food-verify.v1",
         },
         new()
         {
             Key = "foods.delete",
             Category = "foods",
-            Label = "Delete food item",
-            Description = "Destructive food mutation that should eventually move to retire or soft-delete semantics with impact preview.",
+            Label = "Xóa món ăn",
+            Description = "Mutation phá hủy trên kho món ăn; về lâu dài nên chuyển sang retire hoặc soft-delete kèm phần xem trước tác động.",
             Capability = AdminCapabilities.FoodsWrite,
             Severity = "critical",
             JustificationRequired = true,
             ConfirmPhraseTemplate = "FOOD:{id}:DELETE",
-            Rollback = "Restore from backup or re-create the food record.",
+            Rollback = "Khôi phục từ backup hoặc tạo lại bản ghi món ăn.",
             AuditSchema = "food-delete.v1",
         },
         new()
         {
             Key = "runtime.keys.delete",
             Category = "runtime",
-            Label = "Delete runtime credential",
-            Description = "Delete a Gemini key only after disable or revoke workflows are exhausted.",
+            Label = "Xóa credential runtime",
+            Description = "Chỉ xóa Gemini key sau khi đã thử hết các luồng tắt hoặc thu hồi trước đó.",
             Capability = AdminCapabilities.RuntimeKeysDelete,
             Severity = "critical",
             JustificationRequired = true,
             ConfirmPhraseTemplate = "KEY:{id}:DELETE",
-            Rollback = "Re-import the credential and rebind runtime ownership if needed.",
+            Rollback = "Import lại credential và gắn lại quyền sở hữu runtime nếu cần.",
             AuditSchema = "runtime-key-delete.v1",
         },
         new()
         {
             Key = "runtime.keys.manage",
             Category = "runtime",
-            Label = "Manage runtime credential",
-            Description = "Rotate, toggle, bulk-import, or test runtime credentials through curated operations.",
+            Label = "Quản lý credential runtime",
+            Description = "Xoay vòng, bật tắt, import hàng loạt hoặc kiểm tra credential runtime qua các thao tác đã được kiểm soát.",
             Capability = AdminCapabilities.RuntimeKeysManage,
             Severity = "high",
             JustificationRequired = false,
-            Rollback = "Disable or revert the credential configuration through the same governed API.",
+            Rollback = "Tắt hoặc hoàn nguyên cấu hình credential qua cùng API có kiểm soát.",
             AuditSchema = "runtime-key-manage.v1",
         },
         new()
         {
             Key = "master-data.write",
             Category = "master-data",
-            Label = "Mutate master data",
-            Description = "Change meal types, serving units, and activity levels with reference checks and audit logging.",
+            Label = "Cập nhật dữ liệu gốc",
+            Description = "Thay đổi loại bữa ăn, đơn vị khẩu phần và mức vận động kèm kiểm tra tham chiếu và audit log.",
             Capability = AdminCapabilities.MasterDataWrite,
             Severity = "high",
             JustificationRequired = true,
-            Rollback = "Reapply the previous master-data value or restore from audit evidence.",
+            Rollback = "Áp lại giá trị dữ liệu gốc trước đó hoặc khôi phục từ bằng chứng audit.",
             AuditSchema = "master-data.v1",
         },
     };
@@ -153,7 +153,7 @@ public class AdminController : ControllerBase
 
         if (user == null)
         {
-            return Unauthorized(ApiResponse<object>.ErrorResponse("Admin user was not found."));
+            return Unauthorized(ApiResponse<object>.ErrorResponse("Không tìm thấy tài khoản admin."));
         }
 
         var accessControl = await _context.UserAccessControls
@@ -173,7 +173,7 @@ public class AdminController : ControllerBase
 
         return Ok(ApiResponse<AdminSessionDto>.SuccessResponse(
             session,
-            "Admin session ready.",
+            "Phiên admin đã sẵn sàng.",
             requestId: HttpContext.TraceIdentifier));
     }
 
@@ -187,7 +187,7 @@ public class AdminController : ControllerBase
 
         return Ok(ApiResponse<IReadOnlyList<AdminMutationDefinitionDto>>.SuccessResponse(
             registry,
-            "Admin mutation registry ready.",
+            "Danh mục mutation admin đã sẵn sàng.",
             requestId: HttpContext.TraceIdentifier));
     }
 
@@ -227,8 +227,8 @@ public class AdminController : ControllerBase
                 TotalRequests = totalRequests,
                 Health = runtime.PoolHealth,
                 HealthMessage = runtime.ActiveProject is not null
-                    ? $"Runtime authority active on {runtime.ActiveProject}"
-                    : "Runtime authority is reporting no available project",
+                    ? $"Bộ điều phối runtime đang hoạt động trên {runtime.ActiveProject}"
+                    : "Bộ điều phối runtime hiện chưa thấy project khả dụng",
                 NewUsersToday = newUsersToday,
                 RequestsGrowth = 5.2m,
                 TotalFoods = totalFoods,
@@ -248,12 +248,12 @@ public class AdminController : ControllerBase
             var fallback = new AdminDashboardStatsDto
             {
                 TotalUsers = 0, ActiveKeys = 0, TotalKeys = 0, TotalRequests = 0,
-                Health = "Unknown", HealthMessage = "Could not fetch stats",
+                Health = "Unknown", HealthMessage = "Chưa lấy được số liệu dashboard từ backend.",
                 NewUsersToday = 0, RequestsGrowth = 0, TotalFoods = 0,
                 ChartData = new List<ChartDataDto>(),
                 PoolHealth = new List<PoolHealthDto>()
             };
-            return Ok(ApiResponse<AdminDashboardStatsDto>.SuccessResponse(fallback, "Partial data"));
+            return Ok(ApiResponse<AdminDashboardStatsDto>.SuccessResponse(fallback, "Dữ liệu dashboard đang ở trạng thái một phần."));
         }
     }
 
@@ -290,7 +290,7 @@ public class AdminController : ControllerBase
             return new AdminUserDto
             {
                 Id = u.UserId,
-                Name = string.IsNullOrEmpty(u.DisplayName) ? "No Name" : u.DisplayName,
+                Name = string.IsNullOrEmpty(u.DisplayName) ? "Chưa đặt tên" : u.DisplayName,
                 Email = u.Email,
                 Status = ResolveUserStatus(u, accessControl),
                 AccessState = accessControl?.AccessState ?? AdminAccessStates.Active,
@@ -308,7 +308,7 @@ public class AdminController : ControllerBase
     public async Task<IActionResult> GetUserDetail(Guid id)
     {
         var u = await _context.Users.FirstOrDefaultAsync(x => x.UserId == id);
-        if (u == null) return NotFound(ApiResponse<object>.ErrorResponse("User not found"));
+        if (u == null) return NotFound(ApiResponse<object>.ErrorResponse("Không tìm thấy người dùng."));
         var accessControl = await _context.UserAccessControls.AsNoTracking().FirstOrDefaultAsync(item => item.UserId == id);
 
         int mealsLogged = 0;
@@ -317,7 +317,7 @@ public class AdminController : ControllerBase
         var detail = new AdminUserDetailDto
         {
             Id = u.UserId,
-            Name = string.IsNullOrEmpty(u.DisplayName) ? "No Name" : u.DisplayName,
+            Name = string.IsNullOrEmpty(u.DisplayName) ? "Chưa đặt tên" : u.DisplayName,
             Email = u.Email,
             Status = ResolveUserStatus(u, accessControl),
             AccessState = accessControl?.AccessState ?? AdminAccessStates.Active,
@@ -346,7 +346,7 @@ public class AdminController : ControllerBase
         var user = await _context.Users.AsNoTracking().FirstOrDefaultAsync(item => item.UserId == id);
         if (user == null)
         {
-            return NotFound(ApiResponse<object>.ErrorResponse("User not found"));
+            return NotFound(ApiResponse<object>.ErrorResponse("Không tìm thấy người dùng."));
         }
 
         var accessControl = await _context.UserAccessControls.AsNoTracking().FirstOrDefaultAsync(item => item.UserId == id);
@@ -418,7 +418,7 @@ public class AdminController : ControllerBase
             User = new AdminUserDetailDto
             {
                 Id = user.UserId,
-                Name = string.IsNullOrWhiteSpace(user.DisplayName) ? "No Name" : user.DisplayName,
+                Name = string.IsNullOrWhiteSpace(user.DisplayName) ? "Chưa đặt tên" : user.DisplayName,
                 Email = user.Email,
                 Status = ResolveUserStatus(user, accessControl),
                 AccessState = accessControl?.AccessState ?? AdminAccessStates.Active,
@@ -442,7 +442,7 @@ public class AdminController : ControllerBase
 
         return Ok(ApiResponse<AdminSupportOverviewDto>.SuccessResponse(
             overview,
-            "Support overview ready.",
+            "Đã tải xong tổng quan hỗ trợ.",
             requestId: HttpContext.TraceIdentifier));
     }
 
@@ -453,8 +453,8 @@ public class AdminController : ControllerBase
         var user = await _context.Users.FirstOrDefaultAsync(x => x.UserId == id);
         if (user == null)
         {
-            await WriteAuditAsync("update-role", "user", id.ToString(), "failed", "User not found", severity: "warning", justification: request.Justification);
-            return NotFound(ApiResponse<object>.ErrorResponse("User not found"));
+            await WriteAuditAsync("update-role", "user", id.ToString(), "failed", "Không tìm thấy người dùng.", severity: "warning", justification: request.Justification);
+            return NotFound(ApiResponse<object>.ErrorResponse("Không tìm thấy người dùng."));
         }
 
         user.Role = PlatformRoles.Normalize(request.Role);
@@ -475,8 +475,8 @@ public class AdminController : ControllerBase
         var user = await _context.Users.FirstOrDefaultAsync(x => x.UserId == id);
         if (user == null)
         {
-            await WriteAuditAsync("toggle-suspend-legacy", "user", id.ToString(), "failed", "User not found", severity: "warning");
-            return NotFound(ApiResponse<object>.ErrorResponse("User not found"));
+            await WriteAuditAsync("toggle-suspend-legacy", "user", id.ToString(), "failed", "Không tìm thấy người dùng.", severity: "warning");
+            return NotFound(ApiResponse<object>.ErrorResponse("Không tìm thấy người dùng."));
         }
 
         var accessControl = await _context.UserAccessControls.FirstOrDefaultAsync(item => item.UserId == user.UserId);
@@ -499,7 +499,7 @@ public class AdminController : ControllerBase
         {
             accessControl.SuspendedAt = DateTime.UtcNow;
             accessControl.SuspendedBy = User.Identity?.Name ?? User.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value;
-            accessControl.SuspendedReason = "Legacy suspend endpoint invoked.";
+            accessControl.SuspendedReason = "Đã gọi endpoint suspend cũ.";
             accessControl.DeactivatedAt = null;
             accessControl.DeactivatedBy = null;
         }
@@ -515,19 +515,19 @@ public class AdminController : ControllerBase
         var auditRef = await WriteAuditAsync("toggle-suspend-legacy", "user", user.UserId.ToString(), "success", $"AccessState={nextState}", severity: "high");
         PublishResourceUpdated("user", user.UserId.ToString(), new { user.UserId, Status = status, AccessState = nextState });
         return Ok(BuildMutationResponse(
-            $"User {status}.",
+            $"Trạng thái người dùng hiện là {status}.",
             "high",
             auditRef,
             new { Id = user.UserId, Status = status, AccessState = nextState },
-            warning: "Use /users/{id}/access-state for governed mutations."));
+            warning: "Hãy dùng /users/{id}/access-state cho các mutation có kiểm soát."));
     }
 
     [HttpDelete("users/{id}")]
     [Authorize(Policy = AdminPolicies.UsersDeactivate)]
     public async Task<IActionResult> DeleteUser(Guid id)
     {
-        await WriteAuditAsync("delete-legacy-blocked", "user", id.ToString(), "failed", "Legacy hard-delete endpoint is blocked. Use deactivation workflow instead.", severity: "critical");
-        return StatusCode(StatusCodes.Status410Gone, ApiResponse<object>.ErrorResponse("Hard delete is blocked. Use the governed deactivation workflow instead."));
+        await WriteAuditAsync("delete-legacy-blocked", "user", id.ToString(), "failed", "Endpoint hard-delete cũ đã bị chặn. Hãy dùng luồng vô hiệu hóa thay thế.", severity: "critical");
+        return StatusCode(StatusCodes.Status410Gone, ApiResponse<object>.ErrorResponse("Xóa cứng đã bị chặn. Hãy dùng luồng vô hiệu hóa có kiểm soát thay thế."));
     }
 
     [HttpPut("users/{id}/access-state")]
@@ -537,15 +537,15 @@ public class AdminController : ControllerBase
         var user = await _context.Users.FirstOrDefaultAsync(item => item.UserId == id);
         if (user == null)
         {
-            await WriteAuditAsync("update-access", "user", id.ToString(), "failed", "User not found", severity: "warning", justification: request.Justification);
-            return NotFound(ApiResponse<object>.ErrorResponse("User not found"));
+            await WriteAuditAsync("update-access", "user", id.ToString(), "failed", "Không tìm thấy người dùng.", severity: "warning", justification: request.Justification);
+            return NotFound(ApiResponse<object>.ErrorResponse("Không tìm thấy người dùng."));
         }
 
         var normalizedState = NormalizeAccessState(request.AccessState);
         var expectedConfirm = $"USER:{user.Email}:{normalizedState}".ToUpperInvariant();
         if (!string.Equals(request.ConfirmText?.Trim(), expectedConfirm, StringComparison.OrdinalIgnoreCase))
         {
-            return BadRequest(ApiResponse<object>.ErrorResponse($"Confirmation text mismatch. Expected {expectedConfirm}."));
+            return BadRequest(ApiResponse<object>.ErrorResponse($"Cụm xác nhận không khớp. Cần nhập {expectedConfirm}."));
         }
 
         var accessControl = await _context.UserAccessControls.FirstOrDefaultAsync(item => item.UserId == user.UserId);
@@ -588,7 +588,7 @@ public class AdminController : ControllerBase
         PublishResourceUpdated("user", user.UserId.ToString(), new { user.UserId, Status = status, AccessState = normalizedState });
 
         return Ok(BuildMutationResponse(
-            "User access updated.",
+            "Đã cập nhật trạng thái truy cập người dùng.",
             "high",
             auditRef,
             new { Id = user.UserId, Status = status, AccessState = normalizedState }));
@@ -670,7 +670,7 @@ public class AdminController : ControllerBase
         var auditRef = await WriteAuditAsync("create", "food", food.FoodItemId.ToString(), "success", $"FoodName={food.FoodName}");
         PublishResourceUpdated("food", food.FoodItemId.ToString(), new { food.FoodItemId, food.FoodName });
         return StatusCode(StatusCodes.Status201Created, BuildMutationResponse(
-            "Thêm food mới thành công.",
+            "Đã thêm món ăn mới.",
             "medium",
             auditRef,
             new { Id = food.FoodItemId }));
@@ -683,8 +683,8 @@ public class AdminController : ControllerBase
         var food = await _context.FoodItems.FindAsync(id);
         if (food == null)
         {
-            await WriteAuditAsync("update", "food", id.ToString(), "failed", "Food not found");
-            return NotFound(ApiResponse<object>.ErrorResponse("Food not found"));
+            await WriteAuditAsync("update", "food", id.ToString(), "failed", "Không tìm thấy món ăn.");
+            return NotFound(ApiResponse<object>.ErrorResponse("Không tìm thấy món ăn."));
         }
 
         if (request.FoodName != null) food.FoodName = request.FoodName.Trim();
@@ -697,7 +697,7 @@ public class AdminController : ControllerBase
         var auditRef = await WriteAuditAsync("update", "food", food.FoodItemId.ToString(), "success", $"FoodName={food.FoodName}");
         PublishResourceUpdated("food", food.FoodItemId.ToString(), new { food.FoodItemId, food.FoodName });
         return Ok(BuildMutationResponse(
-            "Cập nhật food thành công.",
+            "Đã cập nhật món ăn.",
             "medium",
             auditRef,
             new { Id = food.FoodItemId }));
@@ -710,8 +710,8 @@ public class AdminController : ControllerBase
         var food = await _context.FoodItems.FindAsync(id);
         if (food == null)
         {
-            await WriteAuditAsync("delete", "food", id.ToString(), "failed", "Food not found");
-            return NotFound(ApiResponse<object>.ErrorResponse("Food not found"));
+            await WriteAuditAsync("delete", "food", id.ToString(), "failed", "Không tìm thấy món ăn.");
+            return NotFound(ApiResponse<object>.ErrorResponse("Không tìm thấy món ăn."));
         }
 
         _context.FoodItems.Remove(food);
@@ -719,7 +719,7 @@ public class AdminController : ControllerBase
         var auditRef = await WriteAuditAsync("delete", "food", id.ToString(), "success", $"FoodName={food.FoodName}", severity: "critical");
         PublishResourceUpdated("food", id.ToString(), new { FoodItemId = id, Deleted = true });
         return Ok(BuildMutationResponse(
-            "Xóa food thành công.",
+            "Đã xóa món ăn.",
             "critical",
             auditRef,
             new { FoodItemId = id, Deleted = true }));
@@ -732,8 +732,8 @@ public class AdminController : ControllerBase
         var food = await _context.FoodItems.FindAsync(id);
         if (food == null)
         {
-            await WriteAuditAsync("verify", "food", id.ToString(), "failed", "Food not found");
-            return NotFound(ApiResponse<object>.ErrorResponse("Food not found"));
+            await WriteAuditAsync("verify", "food", id.ToString(), "failed", "Không tìm thấy món ăn.");
+            return NotFound(ApiResponse<object>.ErrorResponse("Không tìm thấy món ăn."));
         }
 
         food.IsVerified = !food.IsVerified;
@@ -742,7 +742,7 @@ public class AdminController : ControllerBase
         var auditRef = await WriteAuditAsync("verify", "food", food.FoodItemId.ToString(), "success", $"IsVerified={food.IsVerified}", severity: "medium");
         PublishResourceUpdated("food", food.FoodItemId.ToString(), new { food.FoodItemId, food.IsVerified });
         return Ok(BuildMutationResponse(
-            "Cập nhật verify thành công.",
+            "Đã cập nhật trạng thái xác minh món ăn.",
             "medium",
             auditRef,
             new { Id = food.FoodItemId, IsVerified = food.IsVerified }));
@@ -789,7 +789,7 @@ public class AdminController : ControllerBase
 
         health.CheckedAt = runtime?.CheckedAt ?? DateTime.UtcNow;
 
-        return Ok(ApiResponse<SystemHealthDto>.SuccessResponse(health, "System health check complete"));
+        return Ok(ApiResponse<SystemHealthDto>.SuccessResponse(health, "Đã hoàn tất kiểm tra sức khỏe hệ thống."));
     }
 
     [HttpGet("inbox")]
@@ -810,8 +810,8 @@ public class AdminController : ControllerBase
                 Id = item.AdminAuditEventId.ToString(),
                 Kind = "audit",
                 Severity = item.Severity ?? "warning",
-                Title = $"{item.Action} on {item.Entity}",
-                Summary = item.Detail ?? $"{item.Entity} {item.EntityId} requires attention.",
+                Title = $"{item.Action} trên {item.Entity}",
+                Summary = item.Detail ?? $"{item.Entity} {item.EntityId} cần được kiểm tra.",
                 EntityType = item.Entity,
                 EntityId = item.EntityId,
                 RequestId = item.RequestId,
@@ -835,8 +835,8 @@ public class AdminController : ControllerBase
                 Id = $"access-{item.user.UserId}",
                 Kind = "access-state",
                 Severity = item.access.AccessState == AdminAccessStates.Deactivated ? "high" : "medium",
-                Title = $"{item.user.Email} is {item.access.AccessState}",
-                Summary = item.access.SuspendedReason ?? "Access state changed and should be reviewed in support flows.",
+                Title = $"{item.user.Email} đang ở trạng thái {item.access.AccessState}",
+                Summary = item.access.SuspendedReason ?? "Trạng thái truy cập đã thay đổi và cần được rà soát trong luồng hỗ trợ.",
                 EntityType = "user",
                 EntityId = item.user.UserId.ToString(),
                 OccurredAt = item.access.UpdatedAt,
@@ -851,7 +851,7 @@ public class AdminController : ControllerBase
 
         return Ok(ApiResponse<IReadOnlyList<AdminInboxItemDto>>.SuccessResponse(
             inbox,
-            "Admin inbox ready.",
+            "Đã tải xong hộp thư admin.",
             requestId: HttpContext.TraceIdentifier));
     }
 

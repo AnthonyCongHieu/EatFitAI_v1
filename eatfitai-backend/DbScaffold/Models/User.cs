@@ -26,7 +26,7 @@ public partial class User
     public bool OnboardingCompleted { get; set; } = false;
 
     // Platform role source of truth for admin authority
-    public string Role { get; set; } = "user";
+    public string? Role { get; set; } = "user";
 
     // Refresh Token for Long-lived Sessions
     public string? RefreshToken { get; set; }

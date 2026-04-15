@@ -136,7 +136,8 @@ public sealed class GeminiRuntimeProjectService : IGeminiRuntimeProjectService
 
     public async Task<AdminRuntimeProjectDto?> ToggleProjectAsync(string runtimeProjectId, CancellationToken cancellationToken = default)
     {
-        var project = await GetInternalProjectAsync(runtimeProjectId, cancellationToken);
+        var normalizedRuntimeProjectId = runtimeProjectId.Trim();
+        var project = await GetInternalProjectAsync(normalizedRuntimeProjectId, cancellationToken);
         if (project is null)
         {
             return null;
@@ -144,9 +145,11 @@ public sealed class GeminiRuntimeProjectService : IGeminiRuntimeProjectService
 
         await using var scope = _scopeFactory.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-        var keys = await db.GeminiKeys
-            .Where(key => ResolveRuntimeProjectId(key).Equals(runtimeProjectId, StringComparison.OrdinalIgnoreCase))
-            .ToListAsync(cancellationToken);
+        var keys = await LoadKeysForToggleAsync(db, normalizedRuntimeProjectId, cancellationToken);
+        if (keys.Count == 0)
+        {
+            return null;
+        }
 
         var nextIsActive = !keys.All(key => key.IsActive);
         foreach (var key in keys)
@@ -156,12 +159,12 @@ public sealed class GeminiRuntimeProjectService : IGeminiRuntimeProjectService
 
         await db.SaveChangesAsync(cancellationToken);
 
-        var state = GetOrCreateState(runtimeProjectId);
+        var state = GetOrCreateState(normalizedRuntimeProjectId);
         state.IsEnabled = nextIsActive;
         state.State = nextIsActive ? "available" : "disabled";
 
-        PublishStateChanged(runtimeProjectId, project.ProjectAlias, state.State, "toggle");
-        return await GetRuntimeProjectAsync(runtimeProjectId, cancellationToken);
+        PublishStateChanged(normalizedRuntimeProjectId, project.ProjectAlias, state.State, "toggle");
+        return await GetRuntimeProjectAsync(normalizedRuntimeProjectId, cancellationToken);
     }
 
     public async Task<AdminRuntimeProjectDto?> SetRoleAsync(string runtimeProjectId, string manualRole, CancellationToken cancellationToken = default)
@@ -578,6 +581,40 @@ public sealed class GeminiRuntimeProjectService : IGeminiRuntimeProjectService
         return string.IsNullOrWhiteSpace(key.ProjectId)
             ? $"key-{key.Id:N}"
             : key.ProjectId.Trim();
+    }
+
+    private static bool TryParseSingleKeyRuntimeProjectId(string runtimeProjectId, out Guid keyId)
+    {
+        const string Prefix = "key-";
+        if (runtimeProjectId.StartsWith(Prefix, StringComparison.OrdinalIgnoreCase))
+        {
+            var rawKeyId = runtimeProjectId[Prefix.Length..];
+            if (Guid.TryParseExact(rawKeyId, "N", out keyId) || Guid.TryParse(rawKeyId, out keyId))
+            {
+                return true;
+            }
+        }
+
+        keyId = Guid.Empty;
+        return false;
+    }
+
+    private static async Task<List<GeminiKey>> LoadKeysForToggleAsync(ApplicationDbContext db, string runtimeProjectId, CancellationToken cancellationToken)
+    {
+        if (TryParseSingleKeyRuntimeProjectId(runtimeProjectId, out var keyId))
+        {
+            return await db.GeminiKeys
+                .Where(key => key.Id == keyId)
+                .ToListAsync(cancellationToken);
+        }
+
+        var candidateKeys = await db.GeminiKeys
+            .Where(key => key.ProjectId != null)
+            .ToListAsync(cancellationToken);
+
+        return candidateKeys
+            .Where(key => ResolveRuntimeProjectId(key).Equals(runtimeProjectId, StringComparison.OrdinalIgnoreCase))
+            .ToList();
     }
 
     private static string ResolveProjectAlias(GeminiKey key)
