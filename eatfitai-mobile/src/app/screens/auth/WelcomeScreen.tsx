@@ -324,7 +324,7 @@ const WelcomeScreen = ({ navigation }: Props): React.ReactElement => {
                     styles.glassButton,
                     pressed && styles.buttonPressed,
                   ]}
-                  testID={TEST_IDS.auth.welcomeLoginButton}
+                  testID={TEST_IDS.auth.welcomeGoogleButton}
                 >
                   <View style={styles.googleIconWrap}>
                     <GoogleLogo />
@@ -350,6 +350,7 @@ const WelcomeScreen = ({ navigation }: Props): React.ReactElement => {
                     styles.outlineButton,
                     pressed && styles.buttonPressed,
                   ]}
+                  testID={TEST_IDS.auth.welcomeLoginButton}
                 >
                   <Ionicons
                     name="mail"

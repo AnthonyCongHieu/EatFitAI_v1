@@ -22,7 +22,8 @@ const FALLBACK_ADB_PATH = path.resolve(
 const TEST_IDS = loadTestIds();
 const ACCESSIBILITY_LABEL_FALLBACKS = {
   [TEST_IDS.auth.introStartButton]: ['Bắt đầu ngay'],
-  [TEST_IDS.auth.welcomeLoginButton]: ['Tiếp tục với Google', 'Tiếp tục với Email'],
+  [TEST_IDS.auth.welcomeGoogleButton]: ['Tiếp tục với Google'],
+  [TEST_IDS.auth.welcomeLoginButton]: ['Tiếp tục với Email'],
   [TEST_IDS.auth.welcomeRegisterButton]: ['Đăng ký ngay'],
   [TEST_IDS.auth.registerTermsCheckbox]: [
     'Tôi đồng ý với Điều khoản dịch vụ và Chính sách bảo mật',
@@ -85,6 +86,7 @@ async function tapElement(driver, element, options = {}) {
     horizontalBias = 0.5,
     verticalBias = 0.5,
     useAdbFirst = false,
+    adbPressDurationMs = 0,
   } = options;
 
   const getTapPoint = async () => {
@@ -100,6 +102,21 @@ async function tapElement(driver, element, options = {}) {
 
   const adbTap = async () => {
     const { x, y } = await getTapPoint();
+    if (adbPressDurationMs > 0) {
+      runAdb([
+        'shell',
+        'input',
+        'swipe',
+        String(x),
+        String(y),
+        String(x),
+        String(y),
+        String(adbPressDurationMs),
+      ]);
+      await driver.pause(Math.max(700, adbPressDurationMs + 250));
+      return;
+    }
+
     runAdb(['shell', 'input', 'tap', String(x), String(y)]);
     await driver.pause(500);
   };
@@ -311,7 +328,11 @@ async function loginIfNeeded(driver) {
       throw new Error('Intro screen detected but start button could not be resolved.');
     }
 
-    await tapElement(driver, introStartButton, { verticalBias: 0.82, useAdbFirst: true });
+    await tapElement(driver, introStartButton, {
+      verticalBias: 0.5,
+      useAdbFirst: true,
+      adbPressDurationMs: 450,
+    });
     current = await waitForAny(
       driver,
       [

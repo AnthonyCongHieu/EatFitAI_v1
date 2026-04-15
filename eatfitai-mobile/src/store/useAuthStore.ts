@@ -5,6 +5,7 @@ import { create } from 'zustand';
 
 import apiClient, { setAuthExpiredCallback } from '../services/apiClient';
 import { setAccessTokenMem } from '../services/authTokens';
+import { googleAuthService } from '../services/googleAuthService';
 import { tokenStorage } from '../services/secureStore';
 import { initAuthSession, updateSessionFromAuthResponse } from '../services/authSession';
 import { postRefreshToken } from '../services/tokenService';
@@ -71,6 +72,7 @@ type AuthState = {
   signInWithGoogle: () => Promise<{ needsOnboarding: boolean }>;
   logout: () => Promise<void>;
   forgotPassword: (email: string) => Promise<string | undefined>;
+  verifyResetCode: (email: string, code: string) => Promise<void>;
   resetPassword: (email: string, code: string, newPassword: string) => Promise<void>;
 };
 
@@ -244,9 +246,6 @@ export const useAuthStore = create<AuthState>((set: any) => ({
   },
 
   signInWithGoogle: async () => {
-    // Import googleAuthService for native Google Sign-In
-    const { googleAuthService } = await import('../services/googleAuthService');
-
     // Configure và sign in với native module
     const configured = await googleAuthService.configure();
     if (!configured) {
@@ -326,6 +325,12 @@ export const useAuthStore = create<AuthState>((set: any) => ({
     );
     const data = resp.data;
     return data?.resetCode as string | undefined;
+  },
+  verifyResetCode: async (email, code) => {
+    await apiClient.post('/api/auth/verify-reset-code', {
+      Email: email,
+      ResetCode: code,
+    });
   },
   resetPassword: async (email, code, newPassword) => {
     await apiClient.post('/api/auth/reset-password', {

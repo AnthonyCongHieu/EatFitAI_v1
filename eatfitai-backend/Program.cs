@@ -732,6 +732,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 // Add Authorization
 builder.Services.AddScoped<IClaimsTransformation, AdminClaimsTransformation>();
 builder.Services.AddScoped<AdminGovernanceBootstrapper>();
+builder.Services.AddScoped<AuthInfrastructureBootstrapper>();
 builder.Services.AddAuthorization(options =>
 {
     static void RequireCapability(AuthorizationPolicyBuilder builder, string capability)
@@ -773,10 +774,12 @@ if (adminGovernanceBootstrapRequested)
     using var scope = app.Services.CreateScope();
     var adminAuditService = scope.ServiceProvider.GetRequiredService<IAdminAuditService>();
     var governanceBootstrapper = scope.ServiceProvider.GetRequiredService<AdminGovernanceBootstrapper>();
+    var authInfrastructureBootstrapper = scope.ServiceProvider.GetRequiredService<AuthInfrastructureBootstrapper>();
     var governanceOptions = scope.ServiceProvider.GetRequiredService<IOptions<AdminGovernanceOptions>>().Value;
 
     await adminAuditService.EnsureTableAsync();
     await governanceBootstrapper.EnsureSchemaAsync();
+    await authInfrastructureBootstrapper.EnsureSchemaAsync();
 
     var report = new
     {
@@ -817,8 +820,10 @@ using (var scope = app.Services.CreateScope())
     {
         var adminAuditService = scope.ServiceProvider.GetRequiredService<IAdminAuditService>();
         var governanceBootstrapper = scope.ServiceProvider.GetRequiredService<AdminGovernanceBootstrapper>();
+        var authInfrastructureBootstrapper = scope.ServiceProvider.GetRequiredService<AuthInfrastructureBootstrapper>();
         await adminAuditService.EnsureTableAsync();
         await governanceBootstrapper.EnsureSchemaAsync();
+        await authInfrastructureBootstrapper.EnsureSchemaAsync();
     }
     catch (Exception ex)
     {
@@ -856,7 +861,9 @@ using (var scope = app.Services.CreateScope())
     {
         await DatabaseSeeder.SeedAsync(services);
         var governanceBootstrapper = services.GetRequiredService<AdminGovernanceBootstrapper>();
+        var authInfrastructureBootstrapper = services.GetRequiredService<AuthInfrastructureBootstrapper>();
         await governanceBootstrapper.EnsureSchemaAsync();
+        await authInfrastructureBootstrapper.EnsureSchemaAsync();
     }
     catch (Exception ex)
     {

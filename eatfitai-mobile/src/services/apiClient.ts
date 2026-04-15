@@ -222,6 +222,7 @@ apiClient.interceptors.request.use(async (config: InternalAxiosRequestConfig) =>
       '/api/auth/resend-verification',
       '/api/auth/refresh',
       '/api/auth/forgot-password',
+      '/api/auth/verify-reset-code',
       '/api/auth/reset-password',
       '/api/search',
       '/api/food/search',

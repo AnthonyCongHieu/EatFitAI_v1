@@ -42,6 +42,7 @@ public partial class ApplicationDbContext : DbContext
 
     public virtual DbSet<User> Users { get; set; }
     public virtual DbSet<UserAccessControl> UserAccessControls { get; set; }
+    public virtual DbSet<PasswordResetCode> PasswordResetCodes { get; set; }
 
     public virtual DbSet<UserDish> UserDishes { get; set; }
 
@@ -629,6 +630,23 @@ public partial class ApplicationDbContext : DbContext
                 .HasDefaultValue("active");
             entity.Property(e => e.SuspendedBy).HasMaxLength(256);
             entity.Property(e => e.DeactivatedBy).HasMaxLength(256);
+            entity.Property(e => e.UpdatedAt)
+                .HasPrecision(3)
+                .HasDefaultValueSql("NOW() AT TIME ZONE 'UTC'");
+        });
+
+        modelBuilder.Entity<PasswordResetCode>(entity =>
+        {
+            entity.ToTable("PasswordResetCode");
+            entity.HasKey(e => e.UserId);
+            entity.HasIndex(e => e.ExpiresAt, "IX_PasswordResetCode_ExpiresAt");
+            entity.HasIndex(e => e.ConsumedAt, "IX_PasswordResetCode_ConsumedAt");
+            entity.Property(e => e.CodeHash).HasMaxLength(88);
+            entity.Property(e => e.ExpiresAt).HasPrecision(3);
+            entity.Property(e => e.ConsumedAt).HasPrecision(3);
+            entity.Property(e => e.CreatedAt)
+                .HasPrecision(3)
+                .HasDefaultValueSql("NOW() AT TIME ZONE 'UTC'");
             entity.Property(e => e.UpdatedAt)
                 .HasPrecision(3)
                 .HasDefaultValueSql("NOW() AT TIME ZONE 'UTC'");

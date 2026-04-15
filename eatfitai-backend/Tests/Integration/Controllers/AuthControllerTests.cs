@@ -108,5 +108,59 @@ namespace EatFitAI.API.Tests.Integration.Controllers
 
             Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
         }
+
+        [Fact]
+        public async Task VerifyResetCode_ValidRequest_ReturnsOk()
+        {
+            var client = _factory.CreateClient();
+            var userId = Guid.NewGuid();
+            const string email = "verify-reset@example.com";
+
+            await IntegrationTestHost.EnsureAppUserAsync(
+                _factory.Services,
+                userId,
+                email,
+                "Verify Reset User",
+                passwordHash: "test");
+            await IntegrationTestHost.SeedPasswordResetCodeAsync(
+                _factory.Services,
+                userId,
+                "123456");
+
+            var response = await client.PostAsJsonAsync("/api/auth/verify-reset-code", new VerifyResetCodeRequest
+            {
+                Email = email,
+                ResetCode = "123456",
+            });
+
+            response.EnsureSuccessStatusCode();
+        }
+
+        [Fact]
+        public async Task VerifyResetCode_InvalidCode_ReturnsUnauthorized()
+        {
+            var client = _factory.CreateClient();
+            var userId = Guid.NewGuid();
+            const string email = "verify-reset-invalid@example.com";
+
+            await IntegrationTestHost.EnsureAppUserAsync(
+                _factory.Services,
+                userId,
+                email,
+                "Verify Reset Invalid User",
+                passwordHash: "test");
+            await IntegrationTestHost.SeedPasswordResetCodeAsync(
+                _factory.Services,
+                userId,
+                "123456");
+
+            var response = await client.PostAsJsonAsync("/api/auth/verify-reset-code", new VerifyResetCodeRequest
+            {
+                Email = email,
+                ResetCode = "654321",
+            });
+
+            Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+        }
     }
 }

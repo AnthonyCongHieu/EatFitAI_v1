@@ -31,6 +31,7 @@
     "smoke:preflight": "node scripts/production-smoke-preflight.js",
     "smoke:seed:cloud": "node scripts/production-smoke-seed-cloud.js",
     "smoke:auth:e2e": "node scripts/production-smoke-auth-e2e.js",
+    "smoke:forgot-reset": "node scripts/production-smoke-forgot-reset.js",
     "smoke:budget": "node scripts/production-smoke-budget.js",
     "smoke:regression": "node scripts/production-smoke-regression.js",
     "smoke:metrics": "node scripts/production-smoke-metrics.js",

@@ -1,148 +1,138 @@
-/**
- * Unit tests cho authStore (Zustand)
- * Test authentication state management: login, logout, token refresh
- */
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
-import { create } from 'zustand';
+import apiClient from '../src/services/apiClient';
+import { tokenStorage } from '../src/services/secureStore';
+import { googleAuthService } from '../src/services/googleAuthService';
+import { useAuthStore } from '../src/store/useAuthStore';
 
-// Tạo mock store để test
-interface AuthState {
-  user: { userId: string; email: string; displayName: string } | null;
-  token: string | null;
-  isAuthenticated: boolean;
-  isLoading: boolean;
-  login: (email: string, password: string) => Promise<void>;
-  logout: () => void;
-  setToken: (token: string) => void;
-  clearAuth: () => void;
-}
+jest.mock('@react-native-async-storage/async-storage', () => ({
+  __esModule: true,
+  default: {
+    getItem: jest.fn(),
+    setItem: jest.fn(),
+    multiRemove: jest.fn(),
+  },
+}));
 
-// Mock implementation của authStore để test
-const createAuthStore = () =>
-  create<AuthState>((set) => ({
-    user: null,
-    token: null,
-    isAuthenticated: false,
-    isLoading: false,
-    login: async (email: string, password: string) => {
-      set({ isLoading: true });
-      // Simulate API call
-      if (email === 'test@example.com' && password === 'password123') {
-        set({
-          user: { userId: '1', email, displayName: 'Test User' },
-          token: 'mock-jwt-token',
-          isAuthenticated: true,
-          isLoading: false,
-        });
-      } else {
-        set({ isLoading: false });
-        throw new Error('Invalid credentials');
-      }
-    },
-    logout: () => {
-      set({ user: null, token: null, isAuthenticated: false });
-    },
-    setToken: (token: string) => {
-      set({ token });
-    },
-    clearAuth: () => {
-      set({ user: null, token: null, isAuthenticated: false });
-    },
-  }));
+jest.mock('../src/services/apiClient', () => ({
+  __esModule: true,
+  default: {
+    post: jest.fn(),
+  },
+  setAuthExpiredCallback: jest.fn(),
+}));
 
-describe('authStore', () => {
-  let useAuthStore: ReturnType<typeof createAuthStore>;
+jest.mock('../src/services/authTokens', () => ({
+  setAccessTokenMem: jest.fn(),
+}));
 
+jest.mock('../src/services/secureStore', () => ({
+  tokenStorage: {
+    getAccessToken: jest.fn(),
+    getRefreshToken: jest.fn(),
+    getAccessTokenExpiresAt: jest.fn(),
+    getRefreshTokenExpiresAt: jest.fn(),
+    saveTokensFull: jest.fn(),
+    clearAll: jest.fn(),
+  },
+}));
+
+jest.mock('../src/services/authSession', () => ({
+  initAuthSession: jest.fn(),
+  updateSessionFromAuthResponse: jest.fn(),
+}));
+
+jest.mock('../src/services/tokenService', () => ({
+  postRefreshToken: jest.fn(),
+}));
+
+jest.mock('../src/services/googleAuthService', () => ({
+  googleAuthService: {
+    configure: jest.fn(),
+    signIn: jest.fn(),
+  },
+}));
+
+describe('useAuthStore', () => {
   beforeEach(() => {
-    // Tạo store mới cho mỗi test
-    useAuthStore = createAuthStore();
-  });
+    jest.clearAllMocks();
 
-  describe('initial state', () => {
-    it('should have correct initial state', () => {
-      // Arrange & Act
-      const state = useAuthStore.getState();
+    (AsyncStorage.getItem as jest.Mock).mockResolvedValue(null);
+    (AsyncStorage.setItem as jest.Mock).mockResolvedValue(undefined);
+    (AsyncStorage.multiRemove as jest.Mock).mockResolvedValue(undefined);
 
-      // Assert - State ban đầu phải không có user và chưa authenticated
-      expect(state.user).toBeNull();
-      expect(state.token).toBeNull();
-      expect(state.isAuthenticated).toBe(false);
-      expect(state.isLoading).toBe(false);
+    (tokenStorage.getAccessToken as jest.Mock).mockResolvedValue(null);
+    (tokenStorage.getRefreshToken as jest.Mock).mockResolvedValue(null);
+    (tokenStorage.getAccessTokenExpiresAt as jest.Mock).mockResolvedValue(null);
+    (tokenStorage.getRefreshTokenExpiresAt as jest.Mock).mockResolvedValue(null);
+    (tokenStorage.saveTokensFull as jest.Mock).mockResolvedValue(undefined);
+    (tokenStorage.clearAll as jest.Mock).mockResolvedValue(undefined);
+    useAuthStore.setState({
+      isInitializing: false,
+      isAuthenticated: false,
+      needsOnboarding: false,
+      user: null,
     });
   });
 
-  describe('login', () => {
-    it('should set user and token on successful login', async () => {
-      // Arrange & Act
-      await useAuthStore.getState().login('test@example.com', 'password123');
-      const state = useAuthStore.getState();
-
-      // Assert
-      expect(state.user).not.toBeNull();
-      expect(state.user?.email).toBe('test@example.com');
-      expect(state.token).toBe('mock-jwt-token');
-      expect(state.isAuthenticated).toBe(true);
+  it('calls forgot-password endpoint and returns the reset code when present', async () => {
+    (apiClient.post as jest.Mock).mockResolvedValue({
+      data: { resetCode: '123456' },
     });
 
-    it('should throw error on invalid credentials', async () => {
-      // Arrange & Act & Assert
-      await expect(
-        useAuthStore.getState().login('wrong@example.com', 'wrongpassword'),
-      ).rejects.toThrow('Invalid credentials');
+    await expect(
+      useAuthStore.getState().forgotPassword('demo@example.com'),
+    ).resolves.toBe('123456');
 
-      // State should remain unauthenticated
-      const state = useAuthStore.getState();
-      expect(state.isAuthenticated).toBe(false);
-    });
-
-    it('should set isLoading during login process', async () => {
-      // Chỉ verify rằng isLoading được set về false sau khi login xong
-      await useAuthStore.getState().login('test@example.com', 'password123');
-      const state = useAuthStore.getState();
-      expect(state.isLoading).toBe(false);
+    expect(apiClient.post).toHaveBeenCalledWith('/api/auth/forgot-password', {
+      Email: 'demo@example.com',
     });
   });
 
-  describe('logout', () => {
-    it('should clear user and token on logout', async () => {
-      // Arrange - Login first
-      await useAuthStore.getState().login('test@example.com', 'password123');
+  it('calls verify-reset-code before continuing the reset flow', async () => {
+    (apiClient.post as jest.Mock).mockResolvedValue({ data: { message: 'Mã hợp lệ' } });
 
-      // Act
-      useAuthStore.getState().logout();
-      const state = useAuthStore.getState();
+    await expect(
+      useAuthStore.getState().verifyResetCode('demo@example.com', '123456'),
+    ).resolves.toBeUndefined();
 
-      // Assert - State phải được reset
-      expect(state.user).toBeNull();
-      expect(state.token).toBeNull();
-      expect(state.isAuthenticated).toBe(false);
+    expect(apiClient.post).toHaveBeenCalledWith('/api/auth/verify-reset-code', {
+      Email: 'demo@example.com',
+      ResetCode: '123456',
     });
   });
 
-  describe('setToken', () => {
-    it('should update token', () => {
-      // Arrange & Act
-      useAuthStore.getState().setToken('new-token');
-      const state = useAuthStore.getState();
+  it('calls reset-password with the expected payload', async () => {
+    (apiClient.post as jest.Mock).mockResolvedValue({ data: { message: 'ok' } });
 
-      // Assert
-      expect(state.token).toBe('new-token');
+    await expect(
+      useAuthStore.getState().resetPassword('demo@example.com', '123456', 'NewPass123'),
+    ).resolves.toBeUndefined();
+
+    expect(apiClient.post).toHaveBeenCalledWith('/api/auth/reset-password', {
+      Email: 'demo@example.com',
+      ResetCode: '123456',
+      NewPassword: 'NewPass123',
     });
   });
 
-  describe('clearAuth', () => {
-    it('should clear all auth state', async () => {
-      // Arrange - Set some state first
-      await useAuthStore.getState().login('test@example.com', 'password123');
+  it('surfaces Google config errors from the native setup stage', async () => {
+    (googleAuthService.configure as jest.Mock).mockResolvedValue(false);
 
-      // Act
-      useAuthStore.getState().clearAuth();
-      const state = useAuthStore.getState();
+    await expect(useAuthStore.getState().signInWithGoogle()).rejects.toThrow(
+      'Không thể khởi tạo Google Sign-In. Kiểm tra EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID và env mobile.',
+    );
+  });
 
-      // Assert
-      expect(state.user).toBeNull();
-      expect(state.token).toBeNull();
-      expect(state.isAuthenticated).toBe(false);
+  it('surfaces operator-visible Google sign-in errors from the native module', async () => {
+    (googleAuthService.configure as jest.Mock).mockResolvedValue(true);
+    (googleAuthService.signIn as jest.Mock).mockResolvedValue({
+      success: false,
+      error: 'Google Sign-in chua duoc cau hinh tren may chu',
     });
+
+    await expect(useAuthStore.getState().signInWithGoogle()).rejects.toThrow(
+      'Google Sign-in chua duoc cau hinh tren may chu',
+    );
   });
 });

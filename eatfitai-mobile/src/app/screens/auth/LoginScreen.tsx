@@ -326,6 +326,7 @@ const LoginScreen = ({ navigation }: Props): React.ReactElement => {
                       variant="bodySmall"
                       weight="600"
                       onPress={() => navigation.navigate('ForgotPassword')}
+                      testID={TEST_IDS.auth.forgotPasswordButton}
                       style={{ color: C.primary }}
                     >
                       Quên mật khẩu?
@@ -396,6 +397,7 @@ const LoginScreen = ({ navigation }: Props): React.ReactElement => {
                 </View>
 
                 <Pressable
+                  testID={TEST_IDS.auth.googleButton}
                   onPress={onGoogle}
                   disabled={loading}
                   style={({ pressed }) => [

@@ -15,6 +15,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Moq;
 using Xunit;
+using AdminPasswordResetCode = EatFitAI.API.Models.PasswordResetCode;
 
 namespace EatFitAI.API.Tests.Unit.Services
 {
@@ -287,6 +288,127 @@ namespace EatFitAI.API.Tests.Unit.Services
         }
 
         [Fact]
+        public async Task VerifyResetCodeAsync_ValidCode_DoesNotThrow()
+        {
+            var user = await AddTrackedUserAsync("verify-reset@example.com");
+            await SeedPasswordResetCodeAsync(user.UserId, "123456");
+
+            await _authService.VerifyResetCodeAsync(new VerifyResetCodeRequest
+            {
+                Email = user.Email,
+                ResetCode = "123456",
+            });
+        }
+
+        [Fact]
+        public async Task VerifyResetCodeAsync_InvalidCode_ThrowsUnauthorizedAccessException()
+        {
+            var user = await AddTrackedUserAsync("invalid-reset@example.com");
+            await SeedPasswordResetCodeAsync(user.UserId, "123456");
+
+            await Assert.ThrowsAsync<UnauthorizedAccessException>(() =>
+                _authService.VerifyResetCodeAsync(new VerifyResetCodeRequest
+                {
+                    Email = user.Email,
+                    ResetCode = "654321",
+                }));
+        }
+
+        [Fact]
+        public async Task VerifyResetCodeAsync_ExpiredCode_ThrowsUnauthorizedAccessException_AndMarksConsumed()
+        {
+            var user = await AddTrackedUserAsync("expired-reset@example.com");
+            await SeedPasswordResetCodeAsync(user.UserId, "123456", DateTime.UtcNow.AddMinutes(-1));
+
+            await Assert.ThrowsAsync<UnauthorizedAccessException>(() =>
+                _authService.VerifyResetCodeAsync(new VerifyResetCodeRequest
+                {
+                    Email = user.Email,
+                    ResetCode = "123456",
+                }));
+
+            var storedCode = await _adminContext.PasswordResetCodes.SingleAsync(item => item.UserId == user.UserId);
+            Assert.NotNull(storedCode.ConsumedAt);
+        }
+
+        [Fact]
+        public async Task VerifyResetCodeAsync_ConsumedCode_ThrowsUnauthorizedAccessException()
+        {
+            var user = await AddTrackedUserAsync("consumed-reset@example.com");
+            await SeedPasswordResetCodeAsync(
+                user.UserId,
+                "123456",
+                consumedAt: DateTime.UtcNow.AddMinutes(-1));
+
+            await Assert.ThrowsAsync<UnauthorizedAccessException>(() =>
+                _authService.VerifyResetCodeAsync(new VerifyResetCodeRequest
+                {
+                    Email = user.Email,
+                    ResetCode = "123456",
+                }));
+        }
+
+        [Fact]
+        public async Task ResetPasswordAsync_ValidCode_UpdatesPasswordAndConsumesCode()
+        {
+            var user = await AddTrackedUserAsync("reset-success@example.com", "OldPass123");
+            await SeedPasswordResetCodeAsync(user.UserId, "123456");
+            var oldPasswordHash = user.PasswordHash;
+
+            await _authService.ResetPasswordAsync(new ResetPasswordRequest
+            {
+                Email = user.Email,
+                ResetCode = "123456",
+                NewPassword = "NewPass123",
+            });
+
+            var updatedUser = await _context.Users.SingleAsync(item => item.UserId == user.UserId);
+            var storedCode = await _adminContext.PasswordResetCodes.SingleAsync(item => item.UserId == user.UserId);
+
+            Assert.NotEqual(oldPasswordHash, updatedUser.PasswordHash);
+            Assert.True(updatedUser.EmailVerified);
+            Assert.NotNull(storedCode.ConsumedAt);
+
+            var loginResult = await _authService.LoginAsync(new LoginRequest
+            {
+                Email = user.Email,
+                Password = "NewPass123",
+            });
+            Assert.Equal(user.Email, loginResult.Email);
+        }
+
+        [Fact]
+        public async Task ForgotPasswordAsync_ResetCodeSurvivesServiceRecreation()
+        {
+            var user = await AddTrackedUserAsync("recreate-reset@example.com");
+            _emailServiceMock
+                .Setup(s => s.SendResetCodeAsync(user.Email, It.IsAny<string>(), It.IsAny<DateTime>()))
+                .Returns(Task.CompletedTask);
+
+            var forgotResult = await _authService.ForgotPasswordAsync(new ForgotPasswordRequest
+            {
+                Email = user.Email,
+            });
+
+            var recreatedService = new AuthService(
+                _userRepositoryMock.Object,
+                _context,
+                _adminContext,
+                _mapperMock.Object,
+                _configurationMock.Object,
+                new MemoryCache(new MemoryCacheOptions()),
+                _emailServiceMock.Object,
+                _envMock.Object,
+                _loggerMock.Object);
+
+            await recreatedService.VerifyResetCodeAsync(new VerifyResetCodeRequest
+            {
+                Email = user.Email,
+                ResetCode = forgotResult.ResetCode,
+            });
+        }
+
+        [Fact]
         public async Task ResendVerificationAsync_EmailSendFailsInProduction_DoesNotRotateVerificationCode()
         {
             var existingCode = Convert.ToBase64String(Encoding.UTF8.GetBytes("existing-code"));
@@ -320,6 +442,52 @@ namespace EatFitAI.API.Tests.Unit.Services
         {
             using var sha256 = SHA256.Create();
             var hashedBytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(password));
+            return Convert.ToBase64String(hashedBytes);
+        }
+
+        private async Task<User> AddTrackedUserAsync(string email, string password = "password123")
+        {
+            var user = new User
+            {
+                UserId = Guid.NewGuid(),
+                Email = email,
+                PasswordHash = HashLegacyPassword(password),
+                DisplayName = "Tracked User",
+                CreatedAt = DateTime.UtcNow,
+                EmailVerified = true,
+                OnboardingCompleted = false,
+            };
+
+            await _context.Users.AddAsync(user);
+            await _context.SaveChangesAsync();
+            _userRepositoryMock.Setup(r => r.GetByEmailAsync(email)).ReturnsAsync(user);
+
+            return user;
+        }
+
+        private async Task SeedPasswordResetCodeAsync(
+            Guid userId,
+            string resetCode,
+            DateTime? expiresAt = null,
+            DateTime? consumedAt = null)
+        {
+            _adminContext.PasswordResetCodes.Add(new AdminPasswordResetCode
+            {
+                UserId = userId,
+                CodeHash = HashResetCode(resetCode),
+                ExpiresAt = expiresAt ?? DateTime.UtcNow.AddMinutes(10),
+                ConsumedAt = consumedAt,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow,
+            });
+
+            await _adminContext.SaveChangesAsync();
+        }
+
+        private static string HashResetCode(string code)
+        {
+            using var sha256 = SHA256.Create();
+            var hashedBytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(code));
             return Convert.ToBase64String(hashedBytes);
         }
     }

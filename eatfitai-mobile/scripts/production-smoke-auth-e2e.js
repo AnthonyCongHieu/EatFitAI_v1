@@ -34,9 +34,13 @@ const ACCESSIBILITY_LABEL_FALLBACKS = {
   [TEST_IDS.auth.onboardingGenderFemaleButton]: ['Nữ'],
 };
 const TAP_OPTIONS_BY_TEST_ID = {
-  [TEST_IDS.auth.introStartButton]: { verticalBias: 0.82, useAdbFirst: true },
-  [TEST_IDS.auth.welcomeLoginButton]: { verticalBias: 0.72, useAdbFirst: true },
-  [TEST_IDS.auth.welcomeRegisterButton]: { verticalBias: 0.72, useAdbFirst: true },
+  [TEST_IDS.auth.introStartButton]: {
+    verticalBias: 0.5,
+    useAdbFirst: true,
+    adbPressDurationMs: 450,
+  },
+  [TEST_IDS.auth.welcomeLoginButton]: { verticalBias: 0.5, useAdbFirst: true },
+  [TEST_IDS.auth.welcomeRegisterButton]: { verticalBias: 0.5, useAdbFirst: true },
   [TEST_IDS.auth.submitButton]: { verticalBias: 0.7 },
   [TEST_IDS.auth.registerSubmitButton]: { verticalBias: 0.75, useAdbFirst: true },
   [TEST_IDS.auth.verifySubmitButton]: { verticalBias: 0.7, useAdbFirst: true },
@@ -347,6 +351,18 @@ async function requestJson(url, options = {}) {
   }
 }
 
+function getMailItems(body) {
+  if (Array.isArray(body)) {
+    return body;
+  }
+
+  if (Array.isArray(body?.['hydra:member'])) {
+    return body['hydra:member'];
+  }
+
+  return [];
+}
+
 async function createDisposableMailbox(outputDir) {
   const domains = await requestJson(`${DEFAULT_MAIL_API}/domains`);
   if (
@@ -427,9 +443,7 @@ async function waitForVerificationMessage(mailbox, outputDir) {
     });
 
     if (messages.ok) {
-      const items = Array.isArray(messages.body?.['hydra:member'])
-        ? messages.body['hydra:member']
-        : [];
+      const items = getMailItems(messages.body);
       const newest = items[0];
       if (newest?.id) {
         const detail = await requestJson(`${DEFAULT_MAIL_API}/messages/${newest.id}`, {

@@ -22,6 +22,7 @@ import { ThemedText } from '../../../components/ThemedText';
 import { useAppTheme } from '../../../theme/ThemeProvider';
 import { useAuthStore } from '../../../store/useAuthStore';
 import { t } from '../../../i18n/vi';
+import { TEST_IDS } from '../../../testing/testIds';
 import type { RootStackParamList } from '../../types';
 import Tilt3DCard, { ParallaxLayer } from '../../../components/ui/Tilt3DCard';
 
@@ -71,6 +72,7 @@ const C = {
 const ForgotPasswordScreen = ({ navigation }: Props): React.ReactElement => {
   const { theme } = useAppTheme();
   const forgotPassword = useAuthStore((s) => s.forgotPassword);
+  const verifyResetCode = useAuthStore((s) => s.verifyResetCode);
   const resetPassword = useAuthStore((s) => s.resetPassword);
 
   const [step, setStep] = useState<Step>('email');
@@ -198,20 +200,34 @@ const ForgotPasswordScreen = ({ navigation }: Props): React.ReactElement => {
     }
   };
 
-  const onVerifyCode = useCallback(() => {
+  const onVerifyCode = useCallback(async () => {
     const fullCode = code.join('');
     if (fullCode.length !== CODE_LENGTH) {
       Toast.show({ type: 'error', text1: 'Lỗi', text2: 'Vui lòng nhập đủ 6 số' });
       return;
     }
-    setResetCode(fullCode);
-    setStep('newPassword');
-    Toast.show({
-      type: 'info',
-      text1: 'Mã hợp lệ',
-      text2: 'Tiếp tục tạo mật khẩu mới',
-    });
-  }, [code]);
+    try {
+      setLoading(true);
+      await verifyResetCode(email, fullCode);
+      setResetCode(fullCode);
+      setStep('newPassword');
+      Toast.show({
+        type: 'info',
+        text1: 'Mã hợp lệ',
+        text2: 'Tiếp tục tạo mật khẩu mới',
+      });
+    } catch (e: any) {
+      const msg =
+        e?.response?.data?.message || e?.message || 'Mã xác minh không hợp lệ';
+      Toast.show({
+        type: 'error',
+        text1: 'Xác minh thất bại',
+        text2: msg,
+      });
+    } finally {
+      setLoading(false);
+    }
+  }, [code, email, verifyResetCode]);
 
   const onResetPassword = useCallback(
     async (values: { newPassword: string; confirm: string }) => {
@@ -262,7 +278,10 @@ const ForgotPasswordScreen = ({ navigation }: Props): React.ReactElement => {
   const hero = heroIcon();
 
   return (
-    <GestureHandlerRootView style={[styles.container, { backgroundColor: C.surface }]}>
+    <GestureHandlerRootView
+      testID={TEST_IDS.auth.forgotPasswordScreen}
+      style={[styles.container, { backgroundColor: C.surface }]}
+    >
       {/* Background glow blobs */}
       <View
         style={[styles.blob, styles.blobTopRight, { backgroundColor: C.primary + '0D' }]}
@@ -477,6 +496,7 @@ const ForgotPasswordScreen = ({ navigation }: Props): React.ReactElement => {
                               style={styles.inputIcon}
                             />
                             <TextInput
+                              testID={TEST_IDS.auth.forgotPasswordEmailInput}
                               placeholder="Ví dụ: nam@gmail.com"
                               placeholderTextColor="#475569"
                               autoCapitalize="none"
@@ -505,6 +525,7 @@ const ForgotPasswordScreen = ({ navigation }: Props): React.ReactElement => {
 
                     {/* CTA Button */}
                     <Pressable
+                      testID={TEST_IDS.auth.forgotPasswordSendCodeButton}
                       onPress={emailForm.handleSubmit(onSendCode)}
                       disabled={loading}
                       style={({ pressed }) => [
@@ -552,6 +573,7 @@ const ForgotPasswordScreen = ({ navigation }: Props): React.ReactElement => {
                         return (
                           <Pressable
                             key={index}
+                            testID={`${TEST_IDS.auth.forgotPasswordVerifyCodeSlotPrefix}-${index}`}
                             onPress={() => inputRefs.current[index]?.focus()}
                             style={[
                               styles.otpSlot,
@@ -560,6 +582,7 @@ const ForgotPasswordScreen = ({ navigation }: Props): React.ReactElement => {
                             ]}
                           >
                             <TextInput
+                              testID={`${TEST_IDS.auth.forgotPasswordVerifyCodeInputPrefix}-${index}`}
                               ref={(ref) => {
                                 inputRefs.current[index] = ref;
                               }}
@@ -592,6 +615,7 @@ const ForgotPasswordScreen = ({ navigation }: Props): React.ReactElement => {
 
                     {/* CTA */}
                     <Pressable
+                      testID={TEST_IDS.auth.forgotPasswordVerifyButton}
                       onPress={onVerifyCode}
                       disabled={loading}
                       style={({ pressed }) => [
@@ -626,6 +650,7 @@ const ForgotPasswordScreen = ({ navigation }: Props): React.ReactElement => {
 
                     {/* Resend */}
                     <Pressable
+                      testID={TEST_IDS.auth.forgotPasswordResendButton}
                       onPress={() => onSendCode({ email })}
                       disabled={loading || countdown > 0}
                       style={({ pressed }) => [
@@ -677,6 +702,7 @@ const ForgotPasswordScreen = ({ navigation }: Props): React.ReactElement => {
                             ]}
                           >
                             <TextInput
+                              testID={TEST_IDS.auth.forgotPasswordNewPasswordInput}
                               placeholder="••••••••"
                               placeholderTextColor="#475569"
                               secureTextEntry={!passwordVisible}
@@ -729,6 +755,7 @@ const ForgotPasswordScreen = ({ navigation }: Props): React.ReactElement => {
                             ]}
                           >
                             <TextInput
+                              testID={TEST_IDS.auth.forgotPasswordConfirmPasswordInput}
                               placeholder="••••••••"
                               placeholderTextColor="#475569"
                               secureTextEntry={!confirmVisible}
@@ -814,6 +841,7 @@ const ForgotPasswordScreen = ({ navigation }: Props): React.ReactElement => {
 
                     {/* CTA */}
                     <Pressable
+                      testID={TEST_IDS.auth.forgotPasswordResetButton}
                       onPress={passwordForm.handleSubmit(onResetPassword)}
                       disabled={loading}
                       style={({ pressed }) => [
@@ -865,6 +893,7 @@ const ForgotPasswordScreen = ({ navigation }: Props): React.ReactElement => {
 
                     {/* CTA */}
                     <Pressable
+                      testID={TEST_IDS.auth.forgotPasswordLoginButton}
                       onPress={goToLogin}
                       style={({ pressed }) => [
                         styles.ctaButton,

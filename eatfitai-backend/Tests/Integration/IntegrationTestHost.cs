@@ -7,7 +7,9 @@ using EatFitAI.API.Data;
 using EatFitAI.API.DbScaffold.Data;
 using EatFitAI.API.Security;
 using EatFitAI.API.Services;
+using EatFitAI.API.DTOs.Auth;
 using AdminUser = EatFitAI.API.Models.User;
+using AdminPasswordResetCode = EatFitAI.API.Models.PasswordResetCode;
 using AdminUserAccessControl = EatFitAI.API.Models.UserAccessControl;
 using AppUser = EatFitAI.API.DbScaffold.Models.User;
 using Microsoft.AspNetCore.Hosting;
@@ -244,6 +246,35 @@ internal static class IntegrationTestHost
         await EnsureAdminAccessAsync(services, userId, accessState);
     }
 
+    internal static async Task SeedPasswordResetCodeAsync(
+        IServiceProvider services,
+        Guid userId,
+        string resetCode,
+        DateTime? expiresAt = null,
+        DateTime? consumedAt = null)
+    {
+        using var scope = services.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        var existing = await context.PasswordResetCodes.FirstOrDefaultAsync(item => item.UserId == userId);
+
+        if (existing != null)
+        {
+            context.PasswordResetCodes.Remove(existing);
+        }
+
+        await context.PasswordResetCodes.AddAsync(new AdminPasswordResetCode
+        {
+            UserId = userId,
+            CodeHash = HashResetCode(resetCode),
+            ExpiresAt = expiresAt ?? DateTime.UtcNow.AddMinutes(10),
+            ConsumedAt = consumedAt,
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow,
+        });
+
+        await context.SaveChangesAsync();
+    }
+
     private static void RemoveDbContextRegistration<TContext>(IServiceCollection services)
         where TContext : DbContext
     {
@@ -261,5 +292,12 @@ internal static class IntegrationTestHost
         {
             services.Remove(descriptor);
         }
+    }
+
+    private static string HashResetCode(string code)
+    {
+        using var sha256 = System.Security.Cryptography.SHA256.Create();
+        var hashedBytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(code));
+        return Convert.ToBase64String(hashedBytes);
     }
 }

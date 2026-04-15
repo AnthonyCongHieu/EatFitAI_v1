@@ -15,6 +15,7 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using AdminPasswordResetCode = EatFitAI.API.Models.PasswordResetCode;
 
 namespace EatFitAI.API.Services
 {
@@ -30,7 +31,6 @@ namespace EatFitAI.API.Services
         private readonly IHostEnvironment _env;
         private readonly ILogger<AuthService> _logger;
         private static readonly TimeSpan ResetCodeLifetime = TimeSpan.FromMinutes(10);
-        private const string ResetCacheKeyPrefix = "pwdreset_";
         private const string PasswordHashPrefix = "PBKDF2";
         private const int PasswordHashIterations = 100_000;
         private const int PasswordSaltSize = 16;
@@ -455,27 +455,22 @@ namespace EatFitAI.API.Services
             _logger.LogDebug("ForgotPassword - Tìm thấy user {UserId}", user.UserId);
 
             var code = GenerateNumericCode(6);
-            var cacheEntry = new ResetCacheEntry
-            {
-                UserId = user.UserId,
-                CodeHash = HashResetCode(code),
-                ExpiresAt = DateTime.UtcNow.Add(ResetCodeLifetime)
-            };
+            var expiresAt = DateTime.UtcNow.Add(ResetCodeLifetime);
+            var codeHash = HashResetCode(code);
 
-            _logger.LogInformation("Đã tạo reset code cho user {UserId}, hết hạn {ExpiresAt:O}", user.UserId, cacheEntry.ExpiresAt);
+            _logger.LogInformation("Đã tạo reset code cho user {UserId}, hết hạn {ExpiresAt:O}", user.UserId, expiresAt);
             var includeCodeInResponse = _env.IsDevelopment(); // hỗ trợ demo/dev, prod sẽ không trả mã
 
             try
             {
-                await _emailService.SendResetCodeAsync(user.Email, code, cacheEntry.ExpiresAt);
-                _memoryCache.Set($"{ResetCacheKeyPrefix}{user.Email}", cacheEntry, cacheEntry.ExpiresAt);
+                await _emailService.SendResetCodeAsync(user.Email, code, expiresAt);
+                await UpsertPasswordResetCodeAsync(user.UserId, codeHash, expiresAt);
                 _logger.LogInformation("Đã gửi email reset code cho user {UserId}", user.UserId);
             }
             catch (Exception ex)
             {
                 if (!includeCodeInResponse)
                 {
-                    _memoryCache.Remove($"{ResetCacheKeyPrefix}{user.Email}");
                     _logger.LogError(ex, "Không gửi được email reset code cho user {UserId}", user.UserId);
                     throw new InvalidOperationException(
                         "Không gửi được email đặt lại mật khẩu. Vui lòng thử lại sau hoặc kiểm tra cấu hình SMTP.");
@@ -485,7 +480,7 @@ namespace EatFitAI.API.Services
                     ex,
                     "Dev mode: email reset thất bại cho user {UserId}, trả mã qua response.",
                     user.UserId);
-                _memoryCache.Set($"{ResetCacheKeyPrefix}{user.Email}", cacheEntry, cacheEntry.ExpiresAt);
+                await UpsertPasswordResetCodeAsync(user.UserId, codeHash, expiresAt);
             }
 
             return new ForgotPasswordResponse
@@ -494,9 +489,20 @@ namespace EatFitAI.API.Services
                 Message = includeCodeInResponse
                     ? "Đã tạo mã đặt lại (chế độ dev)."
                     : "Mã đặt lại đã được gửi tới email của bạn.",
-                ExpiresAt = cacheEntry.ExpiresAt,
+                ExpiresAt = expiresAt,
                 ResetCode = includeCodeInResponse ? code : string.Empty
             };
+        }
+
+        public async Task VerifyResetCodeAsync(VerifyResetCodeRequest request)
+        {
+            var user = await _userRepository.GetByEmailAsync(request.Email);
+            if (user == null)
+            {
+                throw new UnauthorizedAccessException("Mã đặt lại hoặc email không hợp lệ.");
+            }
+
+            await GetValidPasswordResetCodeAsync(user, request.ResetCode);
         }
 
         public async Task ResetPasswordAsync(ResetPasswordRequest request)
@@ -507,28 +513,17 @@ namespace EatFitAI.API.Services
                 throw new UnauthorizedAccessException("Mã đặt lại hoặc email không hợp lệ.");
             }
 
-            if (!_memoryCache.TryGetValue($"{ResetCacheKeyPrefix}{user.Email}", out ResetCacheEntry? cached) || cached == null)
-            {
-                throw new UnauthorizedAccessException("Mã đặt lại đã hết hạn hoặc không tồn tại.");
-            }
-
-            if (cached.ExpiresAt < DateTime.UtcNow)
-            {
-                _memoryCache.Remove($"{ResetCacheKeyPrefix}{user.Email}");
-                throw new UnauthorizedAccessException("Mã đặt lại đã hết hạn hoặc không tồn tại.");
-            }
-
-            var hashedInput = HashResetCode(request.ResetCode);
-            if (!string.Equals(hashedInput, cached.CodeHash, StringComparison.Ordinal))
-            {
-                throw new UnauthorizedAccessException("Mã đặt lại hoặc email không hợp lệ.");
-            }
+            var resetCode = await GetValidPasswordResetCodeAsync(user, request.ResetCode);
 
             user.PasswordHash = HashPassword(request.NewPassword);
             // Nếu user reset password thành công nghĩa là họ đã xác minh quyền sở hữu email
             user.EmailVerified = true;
             await _context.SaveChangesAsync();
-            _memoryCache.Remove($"{ResetCacheKeyPrefix}{user.Email}");
+
+            resetCode.ConsumedAt = DateTime.UtcNow;
+            resetCode.UpdatedAt = DateTime.UtcNow;
+            await _adminContext.SaveChangesAsync();
+
             _logger.LogInformation("Reset password thành công cho user {UserId}", user.UserId);
         }
 
@@ -554,11 +549,60 @@ namespace EatFitAI.API.Services
             return Convert.ToBase64String(hashedBytes);
         }
 
-        private class ResetCacheEntry
+        private async Task<AdminPasswordResetCode> GetValidPasswordResetCodeAsync(User user, string resetCode)
         {
-            public Guid UserId { get; set; }
-            public string CodeHash { get; set; } = string.Empty;
-            public DateTime ExpiresAt { get; set; }
+            var storedCode = await _adminContext.PasswordResetCodes
+                .FirstOrDefaultAsync(item => item.UserId == user.UserId);
+
+            if (storedCode == null || storedCode.ConsumedAt.HasValue)
+            {
+                throw new UnauthorizedAccessException("Mã đặt lại đã hết hạn hoặc không tồn tại.");
+            }
+
+            if (storedCode.ExpiresAt < DateTime.UtcNow)
+            {
+                storedCode.ConsumedAt = DateTime.UtcNow;
+                storedCode.UpdatedAt = DateTime.UtcNow;
+                await _adminContext.SaveChangesAsync();
+                throw new UnauthorizedAccessException("Mã đặt lại đã hết hạn hoặc không tồn tại.");
+            }
+
+            var hashedInput = HashResetCode(resetCode);
+            if (!string.Equals(hashedInput, storedCode.CodeHash, StringComparison.Ordinal))
+            {
+                throw new UnauthorizedAccessException("Mã đặt lại hoặc email không hợp lệ.");
+            }
+
+            return storedCode;
+        }
+
+        private async Task UpsertPasswordResetCodeAsync(Guid userId, string codeHash, DateTime expiresAt)
+        {
+            var now = DateTime.UtcNow;
+            var storedCode = await _adminContext.PasswordResetCodes
+                .FirstOrDefaultAsync(item => item.UserId == userId);
+
+            if (storedCode == null)
+            {
+                await _adminContext.PasswordResetCodes.AddAsync(new AdminPasswordResetCode
+                {
+                    UserId = userId,
+                    CodeHash = codeHash,
+                    ExpiresAt = expiresAt,
+                    CreatedAt = now,
+                    UpdatedAt = now,
+                });
+            }
+            else
+            {
+                storedCode.CodeHash = codeHash;
+                storedCode.ExpiresAt = expiresAt;
+                storedCode.ConsumedAt = null;
+                storedCode.CreatedAt = now;
+                storedCode.UpdatedAt = now;
+            }
+
+            await _adminContext.SaveChangesAsync();
         }
 
         // ========= EMAIL VERIFICATION METHODS =========

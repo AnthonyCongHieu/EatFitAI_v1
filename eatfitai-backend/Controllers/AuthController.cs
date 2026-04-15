@@ -36,6 +36,21 @@ namespace EatFitAI.API.Controllers
         }
 
         [AllowAnonymous]
+        [HttpPost("verify-reset-code")]
+        public async Task<IActionResult> VerifyResetCode([FromBody] VerifyResetCodeRequest request)
+        {
+            try
+            {
+                await _authService.VerifyResetCodeAsync(request);
+                return Ok(new { message = "Mã hợp lệ" });
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Unauthorized(new { message = ex.Message });
+            }
+        }
+
+        [AllowAnonymous]
         [HttpPost("reset-password")]
         public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequest request)
         {
