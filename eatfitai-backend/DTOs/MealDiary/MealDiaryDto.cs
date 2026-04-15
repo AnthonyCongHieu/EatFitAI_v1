@@ -25,6 +25,7 @@ namespace EatFitAI.API.DTOs.MealDiary
         public string? Note { get; set; }
         public string? PhotoUrl { get; set; }
         public string? SourceMethod { get; set; }
+        public string? FoodItemThumbNail { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime UpdatedAt { get; set; }
         public bool IsDeleted { get; set; }

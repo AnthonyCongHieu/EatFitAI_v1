@@ -16,6 +16,7 @@ import { t } from '../i18n/vi';
 type AuthUser = { id: string; email: string; name?: string };
 
 export const AUTH_NEEDS_ONBOARDING_KEY = 'auth_needs_onboarding';
+export const AUTH_USER_KEY = 'auth_user';
 const ONBOARDING_COMPLETE_KEY = 'onboarding_complete';
 const STARTUP_API_INIT_TIMEOUT_MS = 2500;
 
@@ -133,9 +134,12 @@ export const useAuthStore = create<AuthState>((set: any) => ({
         const persistedNeedsOnboarding =
           (await AsyncStorage.getItem(AUTH_NEEDS_ONBOARDING_KEY)) === 'true';
 
+        const persistedUserStr = await AsyncStorage.getItem(AUTH_USER_KEY);
+        const persistedUser = persistedUserStr ? JSON.parse(persistedUserStr) : null;
+
         if (isTokenStillValid(accessTokenExpiresAt)) {
           setAccessTokenMem(token);
-          set({ isAuthenticated: true, needsOnboarding: persistedNeedsOnboarding });
+          set({ isAuthenticated: true, needsOnboarding: persistedNeedsOnboarding, user: persistedUser });
         } else if (refreshToken && isTokenStillValid(refreshTokenExpiresAt)) {
           try {
             const refreshed = await postRefreshToken(refreshToken);
@@ -146,7 +150,7 @@ export const useAuthStore = create<AuthState>((set: any) => ({
 
             setAccessTokenMem(refreshedAccessToken);
             await updateSessionFromAuthResponse(refreshed as AuthResponse);
-            set({ isAuthenticated: true, needsOnboarding: persistedNeedsOnboarding });
+            set({ isAuthenticated: true, needsOnboarding: persistedNeedsOnboarding, user: persistedUser });
           } catch (error) {
             if (__DEV__) {
               console.warn(
@@ -158,6 +162,7 @@ export const useAuthStore = create<AuthState>((set: any) => ({
             await AsyncStorage.multiRemove([
               AUTH_NEEDS_ONBOARDING_KEY,
               ONBOARDING_COMPLETE_KEY,
+              AUTH_USER_KEY,
             ]);
             setAccessTokenMem(null);
             set({ isAuthenticated: false, needsOnboarding: false, user: null });
@@ -172,6 +177,7 @@ export const useAuthStore = create<AuthState>((set: any) => ({
           await AsyncStorage.multiRemove([
             AUTH_NEEDS_ONBOARDING_KEY,
             ONBOARDING_COMPLETE_KEY,
+            AUTH_USER_KEY,
           ]);
           setAccessTokenMem(null);
           set({ isAuthenticated: false, needsOnboarding: false, user: null });
@@ -180,6 +186,7 @@ export const useAuthStore = create<AuthState>((set: any) => ({
         await AsyncStorage.multiRemove([
           AUTH_NEEDS_ONBOARDING_KEY,
           ONBOARDING_COMPLETE_KEY,
+          AUTH_USER_KEY,
         ]);
       }
       await initAuthSession();
@@ -222,10 +229,22 @@ export const useAuthStore = create<AuthState>((set: any) => ({
       false,
     );
     await persistNeedsOnboarding(needsOnboarding);
+
+    // AuthResponse returns UserId/Email/DisplayName at top level (not nested under 'user')
+    const extractedUser: AuthUser = {
+      id: String(data?.userId ?? data?.UserId ?? ''),
+      email: String(data?.email ?? data?.Email ?? email),
+      name: String(data?.displayName ?? data?.DisplayName ?? ''),
+    };
+
+    if (extractedUser.id) {
+      await AsyncStorage.setItem(AUTH_USER_KEY, JSON.stringify(extractedUser));
+    }
+
     set({
       isAuthenticated: true,
       needsOnboarding,
-      user: (data?.user as AuthUser | undefined) ?? null,
+      user: extractedUser.id ? extractedUser : null,
     });
 
     // Return needsOnboarding flag for navigation decision
@@ -294,7 +313,18 @@ export const useAuthStore = create<AuthState>((set: any) => ({
       false,
     );
     await persistNeedsOnboarding(needsOnboarding);
-    set({ isAuthenticated: true, needsOnboarding, user: data?.user ?? null });
+
+    const extractedUser: AuthUser = {
+      id: String(data?.userId ?? data?.UserId ?? ''),
+      email: String(data?.email ?? data?.Email ?? ''),
+      name: String(data?.displayName ?? data?.DisplayName ?? result.user?.name ?? ''),
+    };
+
+    if (extractedUser.id) {
+      await AsyncStorage.setItem(AUTH_USER_KEY, JSON.stringify(extractedUser));
+    }
+
+    set({ isAuthenticated: true, needsOnboarding, user: extractedUser.id ? extractedUser : null });
 
     // Return needsOnboarding flag for navigation decision
     return { needsOnboarding };
@@ -313,6 +343,7 @@ export const useAuthStore = create<AuthState>((set: any) => ({
       await AsyncStorage.multiRemove([
         AUTH_NEEDS_ONBOARDING_KEY,
         ONBOARDING_COMPLETE_KEY,
+        AUTH_USER_KEY,
       ]);
       setAccessTokenMem(null);
       set({ isAuthenticated: false, needsOnboarding: false, user: null });

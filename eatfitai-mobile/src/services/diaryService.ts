@@ -22,6 +22,7 @@ export type DiaryEntry = {
   updatedAt?: string | null;
   isDeleted?: boolean | null;
   sourceMethod?: string | null;
+  photoUrl?: string | null;
 };
 
 export type DiaryMealGroup = {
@@ -84,6 +85,7 @@ const normalizeEntry = (data: MealDiaryDto): DiaryEntry => ({
   updatedAt: data?.updatedAt ?? null,
   isDeleted: data?.isDeleted ?? null,
   sourceMethod: data?.sourceMethod ?? null,
+  photoUrl: data?.photoUrl ?? data?.PhotoUrl ?? data?.foodItemThumbNail ?? data?.FoodItemThumbNail ?? null,
 });
 
 const normalizeMeal = (data: any): DiaryMealGroup => {
