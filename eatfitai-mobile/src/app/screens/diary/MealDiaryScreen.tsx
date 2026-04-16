@@ -721,7 +721,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 17,
-    fontWeight: '700',
+    fontWeight: '800',
     color: C.primary,
     letterSpacing: -0.3,
   },
@@ -740,14 +740,14 @@ const styles = StyleSheet.create({
   },
   weekDayLabel: {
     fontSize: 10,
-    fontWeight: '600',
+    fontWeight: '800',
     color: C.textMuted,
     textTransform: 'uppercase',
     letterSpacing: 1,
   },
   weekDayLabelSelected: {
     color: C.onSurface,
-    fontWeight: '700',
+    fontWeight: '900',
   },
   weekDayNumWrap: {
     width: 34,
@@ -766,7 +766,7 @@ const styles = StyleSheet.create({
   },
   weekDayNum: {
     fontSize: 16,
-    fontWeight: '700',
+    fontWeight: '800',
     color: C.onSurface,
   },
   weekDayNumSelected: {
@@ -805,27 +805,27 @@ const styles = StyleSheet.create({
   },
   summaryCalories: {
     fontSize: 28,
-    fontWeight: '800',
+    fontWeight: '900',
     color: C.primary,
     letterSpacing: -1,
     lineHeight: 38,
   },
   summaryRemaining: {
     fontSize: 13,
-    fontWeight: '500',
+    fontWeight: '700',
     color: C.textMuted,
     marginTop: 2,
   },
   summaryTargetLabel: {
     fontSize: 9,
-    fontWeight: '700',
+    fontWeight: '800',
     color: C.textMuted,
     letterSpacing: 1.5,
     textTransform: 'uppercase',
   },
   summaryTargetValue: {
     fontSize: 15,
-    fontWeight: '600',
+    fontWeight: '800',
     color: C.onSurface,
     marginTop: 2,
   },
@@ -868,12 +868,12 @@ const styles = StyleSheet.create({
   },
   mealTitle: {
     fontSize: 15,
-    fontWeight: '700',
+    fontWeight: '800',
     color: C.onSurface,
   },
   mealCalories: {
     fontSize: 14,
-    fontWeight: '700',
+    fontWeight: '800',
     color: C.primary,
   },
 
@@ -908,18 +908,18 @@ const styles = StyleSheet.create({
   },
   entryName: {
     fontSize: 15,
-    fontWeight: '700',
+    fontWeight: '800',
     color: C.onSurface,
   },
   entryQuantity: {
     fontSize: 13,
-    fontWeight: '500',
+    fontWeight: '700',
     color: C.textMuted,
     marginTop: 2,
   },
   entryCalories: {
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: '800',
     color: C.primary,
   },
 
@@ -966,7 +966,7 @@ const styles = StyleSheet.create({
   },
   mealEmptyText: {
     fontSize: 14,
-    fontWeight: '700',
+    fontWeight: '800',
     color: C.textMuted,
   },
 
@@ -1073,7 +1073,7 @@ const styles = StyleSheet.create({
   },
   backToTodayText: {
     fontSize: 13,
-    fontWeight: '600',
+    fontWeight: '800',
     color: '#fff',
   },
 

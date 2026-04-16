@@ -826,14 +826,14 @@ const styles = StyleSheet.create({
   },
   ringValue: {
     fontSize: 26,
-    fontWeight: '800',
+    fontWeight: '900',
     color: C.onSurface,
     lineHeight: 30,
     textAlign: 'center',
   },
   ringLabel: {
     fontSize: 10,
-    fontWeight: '700',
+    fontWeight: '800',
     color: C.textMuted,
     letterSpacing: 0.5,
     textTransform: 'uppercase',
@@ -852,14 +852,14 @@ const styles = StyleSheet.create({
   },
   macroTitle: {
     fontSize: 10,
-    fontWeight: '800',
+    fontWeight: '900',
     color: C.textMuted,
     letterSpacing: 1.5,
     textTransform: 'uppercase',
   },
   macroTarget: {
     fontSize: 13,
-    fontWeight: '700',
+    fontWeight: '800',
     color: C.primary,
     marginBottom: 10,
   },
@@ -872,12 +872,12 @@ const styles = StyleSheet.create({
   },
   macroName: {
     fontSize: 14,
-    fontWeight: '700',
+    fontWeight: '800',
     color: C.onSurface,
   },
   macroValue: {
     fontSize: 14,
-    fontWeight: '700',
+    fontWeight: '800',
     color: C.textMuted,
   },
   macroTrack: {
@@ -902,13 +902,13 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 18,
-    fontWeight: '800',
+    fontWeight: '900',
     color: C.onSurface,
     letterSpacing: -0.3,
   },
   seeAll: {
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: '800',
     color: C.primary,
     letterSpacing: 1,
     textTransform: 'uppercase',
@@ -959,19 +959,19 @@ const styles = StyleSheet.create({
   },
   entryMealLabel: {
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: '800',
     color: C.primary,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
   entryCalories: {
     fontSize: 14,
-    fontWeight: '800',
+    fontWeight: '900',
     color: C.onSurface,
   },
   entryFoodName: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '800',
     color: C.onSurface,
   },
   entryMacros: {
@@ -990,7 +990,7 @@ const styles = StyleSheet.create({
   },
   entryMacroTextV2: {
     fontSize: 11,
-    fontWeight: '700',
+    fontWeight: '800',
     color: '#a1a1aa',
   },
 
@@ -1003,7 +1003,7 @@ const styles = StyleSheet.create({
   },
   emptyTitle: {
     fontSize: 17,
-    fontWeight: '700',
+    fontWeight: '800',
     color: C.onSurface,
     marginBottom: 6,
   },

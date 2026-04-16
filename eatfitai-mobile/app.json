@@ -37,7 +37,8 @@
         "android.permission.CAMERA",
         "android.permission.READ_EXTERNAL_STORAGE",
         "android.permission.WRITE_EXTERNAL_STORAGE"
-      ]
+      ],
+      "certificateHash": "83:FF:A6:99:53:2E:D1:05:1A:38:53:5C:7B:01:E2:1D:5F:41:C5:1F"
     },
     "web": {
       "bundler": "metro",

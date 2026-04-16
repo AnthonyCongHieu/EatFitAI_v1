@@ -1,12 +1,11 @@
 /**
- * StatsScreen — Emerald Nebula 3D unified stats (Ngày / Tuần / Tháng)
+ * StatsScreen — Emerald Nebula 3D unified stats
+ * Faithfully follows the HTML template design reference.
  *
- * Sections:
- *  1. Hero card with calorie ring + macro bars (3D tilt via gyroscope)
- *  2. "Phân bổ bữa ăn" – stacked bar + 4-up meal-type breakdown card (3D tilt)
- *  3. Lượng Nước – hydration tracker (3D tilt)
- *  4. Week: bar chart + summary cards
- *  5. Month: calendar heatmap + summary
+ * Tabs: Ngày / Tuần / Tháng
+ * Today: Hero card (ring+macros), Phân bổ bữa ăn, Lượng Nước
+ * Week: bar chart + summary
+ * Month: calendar heatmap + summary
  */
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
@@ -24,10 +23,6 @@ import Animated, {
   FadeIn,
   FadeInDown,
   FadeInUp,
-  useSharedValue,
-  useAnimatedStyle,
-  withTiming,
-  Easing,
 } from 'react-native-reanimated';
 import Svg, {
   Circle,
@@ -48,10 +43,7 @@ import { useDiaryStore } from '../../../store/useDiaryStore';
 import { summaryService } from '../../../services/summaryService';
 import { handleApiError } from '../../../utils/errorHandler';
 import { StatsSkeleton } from '../../../components/skeletons/StatsSkeleton';
-import {
-  TrendChart,
-  CalendarHeatmap,
-} from '../../../components/stats';
+import { CalendarHeatmap } from '../../../components/stats';
 import Tilt3DCard from '../../../components/ui/Tilt3DCard';
 import type { RootStackParamList } from '../../types';
 import {
@@ -62,42 +54,49 @@ import {
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 /* ═══════════════════════════════════════════════
-   Emerald Nebula Palette (synced with HomeScreen)
+   Palette — exact match with HTML template
    ═══════════════════════════════════════════════ */
-const C = {
+const P = {
+  // Surfaces (from template tailwind config)
   bg: '#0a0e1a',
-  surfaceLow: '#111827',
-  surface: '#1a1f2f',
-  surfaceHigh: '#1e2435',
-  surfaceHighest: '#2a2f40',
-  surfaceLowest: '#090e1c',
+  surface: '#0a0e1a',
+  surfaceContainerLowest: '#090e1c',
+  surfaceContainerLow: '#161b2b',
+  surfaceContainer: '#1a1f2f',
+  surfaceContainerHigh: '#25293a',
+  surfaceContainerHighest: '#2f3445',
+  surfaceBright: '#343949',
+  // Primary
   primary: '#4be277',
-  primaryDark: '#22c55e',
   primaryContainer: '#22c55e',
   onPrimary: '#003915',
   onPrimaryContainer: '#004b1e',
+  // Secondary
   secondary: '#96d59d',
   secondaryFixed: '#b2f2b7',
+  // Tertiary
   tertiary: '#ffb5ab',
   tertiaryContainer: '#ff8b7c',
   tertiaryFixed: '#ffdad5',
+  // Text
   onSurface: '#dee1f7',
-  textMuted: '#94a3b8',
-  outline: 'rgba(255,255,255,0.06)',
-  outlineVariant: 'rgba(61,74,61,0.35)',
-  cyan: '#06b6d4',
-  amber: '#f59e0b',
-  indigo: '#818cf8',
-  rose: '#fb7185',
-  danger: '#ff6b6b',
+  onSurfaceVariant: '#bccbb9',
+  textSlate400: '#94a3b8',
+  textSlate500: '#64748b',
+  // Outline
+  outline: '#869585',
+  outlineVariant: '#3d4a3d',
+  // Misc
+  error: '#ffb4ab',
+  glassCard: 'rgba(47, 52, 69, 0.4)',
 };
 
-/* ─── Meal type colors for distribution ─── */
-const MEAL_COLORS: Record<number, { color: string; label: string }> = {
-  1: { color: C.primary, label: 'BỮA SÁNG' },
-  2: { color: C.primaryDark, label: 'BỮA TRƯA' },
-  3: { color: C.secondary, label: 'BỮA TỐI' },
-  4: { color: C.secondaryFixed, label: 'BỮA PHỤ' },
+/* ─── Meal type meta ─── */
+const MEAL_META: Record<number, { color: string; label: string }> = {
+  1: { color: '#fbbf24', label: 'BỮA SÁNG' },   // Amber
+  2: { color: '#34d399', label: 'BỮA TRƯA' },   // Emerald
+  3: { color: '#22d3ee', label: 'BỮA TỐI' },    // Cyan
+  4: { color: '#c084fc', label: 'BỮA PHỤ' },    // Purple
 };
 
 type TabOption = 'today' | 'week' | 'month';
@@ -121,13 +120,21 @@ interface MonthSummary {
 /* ─── Date helper (Hanoi UTC+7) ─── */
 const formatViDate = (): string => {
   const now = new Date();
-  const hanoiNow = new Date(now.getTime() + 7 * 60 * 60 * 1000);
-  const day = hanoiNow.getUTCDate();
-  const month = hanoiNow.getUTCMonth() + 1;
-  return `Hôm nay, ${day} Thg ${month}`;
+  const offset = now.getTime() + 7 * 60 * 60 * 1000;
+  const hanoi = new Date(offset);
+  return `Hôm nay, ${hanoi.getUTCDate()} Thg ${hanoi.getUTCMonth() + 1}`;
 };
 
-const cardWidth = SCREEN_WIDTH - 32;
+const cardW = SCREEN_WIDTH - 48; // px-6 * 2
+
+/* ═════════════════════════════════════════════════
+   RING CONSTANTS
+   ═════════════════════════════════════════════════ */
+const RING_SIZE = 192; // w-48 h-48
+const RING_STROKE = 12;
+const RING_CENTER = RING_SIZE / 2;
+const RING_RADIUS = (RING_SIZE - RING_STROKE) / 2;
+const RING_CIRCUMFERENCE = 2 * Math.PI * RING_RADIUS;
 
 /* ═══════════════════════════════════════════════
    COMPONENT
@@ -136,7 +143,6 @@ const StatsScreen = (): React.ReactElement => {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
-  /* ─── Tab ─── */
   const [activeTab, setActiveTab] = useState<TabOption>('today');
 
   /* ─── Data: Today ─── */
@@ -168,104 +174,86 @@ const StatsScreen = (): React.ReactElement => {
   }, []);
 
   useEffect(() => {
-    if (activeTab === 'month' && !monthData) {
-      fetchMonthData();
-    }
+    if (activeTab === 'month' && !monthData) fetchMonthData();
   }, [activeTab]);
 
   const fetchMonthData = useCallback(async () => {
     setIsLoadingMonth(true);
     try {
-      const year = currentMonth.getFullYear();
-      const month = currentMonth.getMonth();
-      const startDate = new Date(year, month, 1).toISOString().split('T')[0]!;
-      const endDate = new Date(year, month + 1, 0).toISOString().split('T')[0]!;
-      const result = await summaryService.getNutritionSummary(startDate, endDate);
+      const y = currentMonth.getFullYear();
+      const m = currentMonth.getMonth();
+      const s = new Date(y, m, 1).toISOString().split('T')[0]!;
+      const e = new Date(y, m + 1, 0).toISOString().split('T')[0]!;
+      const result = await summaryService.getNutritionSummary(s, e);
       const days: DayData[] = Object.entries(result.dailyCalories || {}).map(
-        ([date, calories]) => ({
-          date,
-          calories: Number(calories) || 0,
-        }),
+        ([date, cal]) => ({ date, calories: Number(cal) || 0 }),
       );
-      const daysLogged = days.filter((d) => d.calories > 0).length;
+      const logged = days.filter((d) => d.calories > 0).length;
       setMonthData({
         days,
         totalCalories: result.totalCalories || 0,
         totalProtein: result.totalProtein || 0,
         totalCarbs: result.totalCarbs || 0,
         totalFat: result.totalFat || 0,
-        averageCalories: daysLogged > 0 ? (result.totalCalories || 0) / daysLogged : 0,
-        daysLogged,
+        averageCalories: logged > 0 ? (result.totalCalories || 0) / logged : 0,
+        daysLogged: logged,
       });
-    } catch (error) {
-      handleApiError(error);
+    } catch (err) {
+      handleApiError(err);
     } finally {
       setIsLoadingMonth(false);
     }
   }, [currentMonth]);
 
-  /* ─── Derived data ─── */
-  const todayCalories = Number(summary?.totalCalories ?? 0);
-  const targetCalories = Number(summary?.targetCalories ?? 2200);
+  /* ─── Derived values ─── */
+  const todayCal = Number(summary?.totalCalories ?? 0);
+  const targetCal = Number(summary?.targetCalories ?? 2200);
   const protein = Number(summary?.protein ?? 0);
   const carbs = Number(summary?.carbs ?? 0);
   const fat = Number(summary?.fat ?? 0);
-  const targetProtein = Number(summary?.targetProtein ?? 120);
-  const targetCarbs = Number(summary?.targetCarbs ?? 280);
-  const targetFat = Number(summary?.targetFat ?? 60);
-  const progress = targetCalories > 0 ? Math.min(1, todayCalories / targetCalories) : 0;
+  const targetP = Number(summary?.targetProtein ?? 120);
+  const targetC = Number(summary?.targetCarbs ?? 280);
+  const targetF = Number(summary?.targetFat ?? 60);
+  const progress = targetCal > 0 ? Math.min(1, todayCal / targetCal) : 0;
+  const dashOffset = RING_CIRCUMFERENCE * (1 - progress);
 
-  /* ─── Meal distribution from summary ─── */
-  const mealDistribution = useMemo(() => {
+  /* ─── Meal distribution ─── */
+  const mealDist = useMemo(() => {
     if (!summary?.meals) return [];
-    const typeMap: Record<number, number> = {};
+    const map: Record<number, number> = {};
     for (const meal of summary.meals) {
-      const mealType = meal.mealType ?? 4;
-      const cal = meal.entries.reduce((s, e) => s + (e.calories || 0), 0);
-      typeMap[mealType] = (typeMap[mealType] || 0) + cal;
+      const t = meal.mealType ?? 4;
+      const c = meal.entries.reduce((s, e) => s + (e.calories || 0), 0);
+      map[t] = (map[t] || 0) + c;
     }
     return [1, 2, 3, 4].map((id) => ({
       id,
-      calories: Math.round(typeMap[id] || 0),
-      ...MEAL_COLORS[id],
+      calories: Math.round(map[id] || 0),
+      ...(MEAL_META[id] ?? MEAL_META[4]),
     }));
   }, [summary]);
 
-  const totalMealCal = mealDistribution.reduce((s, m) => s + m.calories, 0);
+  const totalMealCal = mealDist.reduce((s, m) => s + m.calories, 0);
 
-  /* ─── CalorieRing SVG ─── */
-  const ringSize = 180;
-  const strokeWidth = 12;
-  const center = ringSize / 2;
-  const radius = (ringSize - strokeWidth) / 2;
-  const circumference = 2 * Math.PI * radius;
-  const dashOffset = circumference * (1 - progress);
-
-  /* ─── Week chart data ─── */
+  /* ─── Week helpers ─── */
   const isFutureWeek = useMemo(() => {
-    const startOfWeek = new Date(selectedWeekDate);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    return startOfWeek > today;
+    const sw = new Date(selectedWeekDate);
+    const now = new Date();
+    now.setHours(0, 0, 0, 0);
+    return sw > now;
   }, [selectedWeekDate]);
 
-  /* ─── Tab change ─── */
+  /* ─── Handlers ─── */
   const handleTabChange = (tab: TabOption) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setActiveTab(tab);
   };
 
-  /* ─── Refresh ─── */
   const handleRefresh = useCallback(() => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    if (activeTab === 'today') {
-      fetchSummary();
-      fetchWeekSummary();
-    } else if (activeTab === 'week') {
-      fetchWeekSummary();
-    } else {
-      fetchMonthData();
-    }
+    if (activeTab === 'today') { fetchSummary(); fetchWeekSummary(); }
+    else if (activeTab === 'week') fetchWeekSummary();
+    else fetchMonthData();
   }, [activeTab, fetchSummary, fetchWeekSummary, fetchMonthData]);
 
   const handleDayPress = useCallback(
@@ -278,309 +266,252 @@ const StatsScreen = (): React.ReactElement => {
 
   const isLoading = activeTab === 'month' ? isLoadingMonth : isLoadingWeek;
 
-  if (isLoading && !weekSummary && !monthData && !summary) {
-    return <StatsSkeleton />;
-  }
+  if (isLoading && !weekSummary && !monthData && !summary) return <StatsSkeleton />;
 
+  /* ═══════════════════════════════════════════════
+     RENDER
+     ═══════════════════════════════════════════════ */
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
-      <StatusBar barStyle="light-content" backgroundColor={C.bg} />
+    <View style={[S.root, { paddingTop: insets.top }]}>
+      <StatusBar barStyle="light-content" backgroundColor={P.bg} />
 
-      {/* ══════════ HEADER ══════════ */}
-      <Animated.View entering={FadeIn.duration(400)} style={styles.header}>
-        <ThemedText style={styles.headerTitle}>{formatViDate()}</ThemedText>
-      </Animated.View>
+      {/* ══════ FIXED HEADER ══════ */}
+      <View style={S.headerBar}>
+        <ThemedText style={S.headerTitle}>{formatViDate()}</ThemedText>
+      </View>
 
-      {/* ══════════ TAB SWITCHER ══════════ */}
-      <Animated.View entering={FadeInDown.delay(100).springify()} style={styles.tabBar}>
-        <View style={styles.tabContainer}>
+      {/* ══════ TAB SWITCHER ══════ */}
+      <View style={S.tabWrap}>
+        <View style={S.tabPill}>
           {(['today', 'week', 'month'] as TabOption[]).map((tab) => {
-            const active = activeTab === tab;
+            const on = activeTab === tab;
             const label = tab === 'today' ? 'Ngày' : tab === 'week' ? 'Tuần' : 'Tháng';
             return (
               <Pressable
                 key={tab}
                 onPress={() => handleTabChange(tab)}
-                style={[styles.tabBtn, active && styles.tabBtnActive]}
+                style={[S.tabBtn, on && S.tabBtnOn]}
               >
-                <ThemedText
-                  style={[styles.tabLabel, active && styles.tabLabelActive]}
-                >
-                  {label}
-                </ThemedText>
+                <ThemedText style={[S.tabTxt, on && S.tabTxtOn]}>{label}</ThemedText>
               </Pressable>
             );
           })}
         </View>
-      </Animated.View>
+      </View>
 
-      {/* ══════════ SCROLLABLE CONTENT ══════════ */}
+      {/* ══════ SCROLL ══════ */}
       <ScrollView
         style={{ flex: 1 }}
-        contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 140, gap: 24 }}
+        contentContainerStyle={S.scroll}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
             refreshing={isLoading}
             onRefresh={handleRefresh}
-            colors={[C.primary]}
-            tintColor={C.primary}
-            progressBackgroundColor={C.surfaceHigh}
+            colors={[P.primary]}
+            tintColor={P.primary}
+            progressBackgroundColor={P.surfaceContainerHigh}
           />
         }
       >
-        {/* ═══════════════════════════════════════
-            TODAY TAB
-           ═══════════════════════════════════════ */}
+
+        {/* ═══════════ TODAY ═══════════ */}
         {activeTab === 'today' && (
           <>
-            {/* ── Hero Card: Calorie Ring + Macros ── */}
-            <Animated.View entering={FadeInDown.delay(150).springify()}>
+            {/* ── HERO CARD ── */}
+            <Animated.View entering={FadeInDown.delay(100).springify()}>
               <Tilt3DCard
-                width={cardWidth}
-                height={320}
+                width={cardW}
+                height={440}
                 maxTilt={6}
                 showReflection={false}
-                useDeviceMotion={true}
+                useDeviceMotion
                 activeTouch={false}
               >
-                <View style={styles.heroCard}>
-                  {/* Metallic sheen overlay */}
+                <View style={S.heroCard}>
+                  {/* Metallic sheen */}
                   <LinearGradient
-                    colors={['rgba(255,255,255,0.08)', 'rgba(255,255,255,0)']}
+                    colors={['rgba(255,255,255,0.1)', 'rgba(255,255,255,0)']}
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 1 }}
                     style={StyleSheet.absoluteFill}
                   />
 
-                  <View style={styles.heroContent}>
-                    {/* Left: Calorie Ring */}
-                    <View style={styles.ringSection}>
-                      <Svg width={ringSize} height={ringSize}>
+                  {/* Ring — centered top */}
+                  <View style={S.heroRingWrap}>
+                    <View style={S.heroRing}>
+                      <Svg
+                        width={RING_SIZE}
+                        height={RING_SIZE}
+                        style={{ transform: [{ rotate: '-90deg' }] }}
+                      >
                         <Defs>
-                          <SvgGradient id="emeraldGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-                            <Stop offset="0%" stopColor={C.primary} />
-                            <Stop offset="100%" stopColor={C.primaryDark} />
+                          <SvgGradient id="ringG" x1="0%" y1="0%" x2="100%" y2="0%">
+                            <Stop offset="0%" stopColor={P.primary} />
+                            <Stop offset="100%" stopColor={P.primaryContainer} />
                           </SvgGradient>
                         </Defs>
                         {/* Track */}
                         <Circle
-                          cx={center}
-                          cy={center}
-                          r={radius}
-                          stroke={C.surfaceLowest}
-                          strokeWidth={strokeWidth}
+                          cx={RING_CENTER}
+                          cy={RING_CENTER}
+                          r={RING_RADIUS}
+                          stroke={P.surfaceContainerLowest}
+                          strokeWidth={RING_STROKE}
                           fill="none"
                         />
                         {/* Progress */}
                         <Circle
-                          cx={center}
-                          cy={center}
-                          r={radius}
-                          stroke="url(#emeraldGrad)"
-                          strokeWidth={strokeWidth}
+                          cx={RING_CENTER}
+                          cy={RING_CENTER}
+                          r={RING_RADIUS}
+                          stroke="url(#ringG)"
+                          strokeWidth={RING_STROKE}
                           fill="none"
                           strokeLinecap="round"
-                          strokeDasharray={circumference}
+                          strokeDasharray={RING_CIRCUMFERENCE}
                           strokeDashoffset={dashOffset}
-                          transform={`rotate(-90 ${center} ${center})`}
                         />
                       </Svg>
                       {/* Center text */}
-                      <View style={styles.ringCenter}>
-                        <ThemedText style={styles.ringValue}>
-                          {Math.round(todayCalories).toLocaleString()}
+                      <View style={S.ringCenter}>
+                        <ThemedText style={S.ringBig}>
+                          {Math.round(todayCal).toLocaleString()}
                         </ThemedText>
-                        <ThemedText style={styles.ringLabel}>KCAL NẠP</ThemedText>
+                        <ThemedText style={S.ringUnit}>KCAL NẠP</ThemedText>
                       </View>
                     </View>
+                  </View>
 
-                    {/* Right: Macro Bars */}
-                    <View style={styles.macroSection}>
-                      {/* Protein */}
-                      <View style={styles.macroGroup}>
-                        <View style={styles.macroLabelRow}>
-                          <ThemedText style={styles.macroName}>PROTEIN</ThemedText>
-                          <ThemedText style={[styles.macroValue, { color: C.primary }]}>
-                            {Math.round(protein)}/{targetProtein}g
-                          </ThemedText>
-                        </View>
-                        <View style={styles.macroTrack}>
-                          <View
-                            style={[
-                              styles.macroFill,
-                              {
-                                width: `${Math.min(100, (protein / Math.max(targetProtein, 1)) * 100)}%`,
-                                backgroundColor: C.primary,
-                              },
-                            ]}
-                          />
-                        </View>
-                      </View>
-
-                      {/* Carbs */}
-                      <View style={styles.macroGroup}>
-                        <View style={styles.macroLabelRow}>
-                          <ThemedText style={styles.macroName}>CARBS</ThemedText>
-                          <ThemedText style={[styles.macroValue, { color: C.secondary }]}>
-                            {Math.round(carbs)}/{targetCarbs}g
-                          </ThemedText>
-                        </View>
-                        <View style={styles.macroTrack}>
-                          <View
-                            style={[
-                              styles.macroFill,
-                              {
-                                width: `${Math.min(100, (carbs / Math.max(targetCarbs, 1)) * 100)}%`,
-                                backgroundColor: C.secondary,
-                              },
-                            ]}
-                          />
-                        </View>
-                      </View>
-
-                      {/* Fat */}
-                      <View style={styles.macroGroup}>
-                        <View style={styles.macroLabelRow}>
-                          <ThemedText style={styles.macroName}>FAT</ThemedText>
-                          <ThemedText style={[styles.macroValue, { color: C.tertiaryContainer }]}>
-                            {Math.round(fat)}/{targetFat}g
-                          </ThemedText>
-                        </View>
-                        <View style={styles.macroTrack}>
-                          <View
-                            style={[
-                              styles.macroFill,
-                              {
-                                width: `${Math.min(100, (fat / Math.max(targetFat, 1)) * 100)}%`,
-                                backgroundColor: C.tertiaryContainer,
-                              },
-                            ]}
-                          />
-                        </View>
-                      </View>
-                    </View>
+                  {/* Macros — full width below ring */}
+                  <View style={S.heroMacros}>
+                    {/* Protein: emerald gradient */}
+                    <MacroBar
+                      label="PROTEIN"
+                      value={protein}
+                      target={targetP}
+                      valueColor="#34d399" /* emerald-400 */
+                      gradientFrom="#10b981" /* emerald-500 */
+                      gradientTo="#6ee7b7" /* emerald-300 */
+                    />
+                    {/* Carbs: secondary gradient */}
+                    <MacroBar
+                      label="CARBS"
+                      value={carbs}
+                      target={targetC}
+                      valueColor={P.secondary}
+                      gradientFrom={P.secondary}
+                      gradientTo={P.secondaryFixed}
+                    />
+                    {/* Fat: tertiary gradient */}
+                    <MacroBar
+                      label="FAT"
+                      value={fat}
+                      target={targetF}
+                      valueColor={P.tertiaryContainer}
+                      gradientFrom={P.tertiaryContainer}
+                      gradientTo={P.tertiaryFixed}
+                    />
                   </View>
                 </View>
               </Tilt3DCard>
             </Animated.View>
 
-            {/* ── Phân bổ bữa ăn ── */}
-            <Animated.View entering={FadeInUp.delay(250).springify()}>
+            {/* ── PHÂN BỔ BỮA ĂN ── */}
+            <Animated.View entering={FadeInUp.delay(200).springify()}>
               <Tilt3DCard
-                width={cardWidth}
-                height={220}
+                width={cardW}
+                height={totalMealCal > 0 ? 220 : 140}
                 maxTilt={5}
                 showReflection={false}
-                useDeviceMotion={true}
+                useDeviceMotion
                 activeTouch={false}
               >
-                <View style={styles.distributionCard}>
-                  <LinearGradient
-                    colors={['rgba(255,255,255,0.06)', 'rgba(255,255,255,0)']}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 1 }}
-                    style={StyleSheet.absoluteFill}
-                  />
-
-                  {/* Title */}
-                  <View style={styles.distTitleRow}>
-                    <ThemedText style={styles.distTitle}>Phân bổ bữa ăn</ThemedText>
-                    <View style={styles.distDot} />
+                <View style={S.distCard}>
+                  {/* Title row */}
+                  <View style={S.distHead}>
+                    <ThemedText style={S.distTitle}>Phân bổ bữa ăn</ThemedText>
+                    <View style={S.dotGreen} />
                   </View>
 
-                  {/* Stacked Bar */}
-                  <View style={styles.stackedBarTrack}>
-                    {mealDistribution.map((meal) => {
-                      const pct = totalMealCal > 0
-                        ? (meal.calories / totalMealCal) * 100
-                        : 25;
-                      return (
-                        <View
-                          key={meal.id}
-                          style={[
-                            styles.stackedBarSegment,
-                            {
-                              width: `${pct}%`,
-                              backgroundColor: meal.color,
-                            },
-                          ]}
-                        />
-                      );
-                    })}
-                  </View>
-
-                  {/* 4 meal grid */}
-                  <View style={styles.mealGrid}>
-                    {mealDistribution.map((meal) => (
-                      <View key={meal.id} style={styles.mealGridItem}>
-                        <View style={styles.mealDotRow}>
+                  {totalMealCal > 0 ? (
+                    <>
+                      {/* Stacked bar */}
+                      <View style={S.stackTrack}>
+                        {mealDist.map((m) => (
                           <View
-                            style={[styles.mealDot, { backgroundColor: meal.color }]}
+                            key={m.id}
+                            style={{
+                              flex: m.calories || 0.01,
+                              height: '100%',
+                              backgroundColor: m.color,
+                            }}
                           />
-                          <ThemedText style={styles.mealLabel}>
-                            {meal.label}
-                          </ThemedText>
-                        </View>
-                        <ThemedText style={styles.mealCalValue}>
-                          {meal.calories} kcal
-                        </ThemedText>
+                        ))}
                       </View>
-                    ))}
-                  </View>
+
+                      {/* 2x2 grid */}
+                      <View style={S.distGrid}>
+                        {mealDist.map((m) => (
+                          <View key={m.id} style={S.distGridItem}>
+                            <View style={S.distDotRow}>
+                              <View style={[S.distDot, { backgroundColor: m.color }]} />
+                              <ThemedText style={S.distLabel}>{m.label}</ThemedText>
+                            </View>
+                            <ThemedText style={S.distVal}>{m.calories} kcal</ThemedText>
+                          </View>
+                        ))}
+                      </View>
+                    </>
+                  ) : (
+                    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+                      <ThemedText style={{ color: P.textSlate500, fontSize: 13 }}>
+                        Chưa có dữ liệu bữa ăn
+                      </ThemedText>
+                    </View>
+                  )}
                 </View>
               </Tilt3DCard>
             </Animated.View>
 
-            {/* ── Lượng Nước ── */}
-            <Animated.View entering={FadeInUp.delay(350).springify()}>
+            {/* ── LƯỢNG NƯỚC ── */}
+            <Animated.View entering={FadeInUp.delay(300).springify()}>
               <Tilt3DCard
-                width={cardWidth}
+                width={cardW}
                 height={130}
                 maxTilt={4}
                 showReflection={false}
-                useDeviceMotion={true}
+                useDeviceMotion
                 activeTouch={false}
               >
-                <View style={styles.waterCard}>
+                <View style={S.waterCard}>
                   <LinearGradient
                     colors={['rgba(255,255,255,0.06)', 'rgba(255,255,255,0)']}
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 1 }}
                     style={StyleSheet.absoluteFill}
                   />
-
                   {/* Header */}
-                  <View style={styles.waterHeader}>
-                    <View style={styles.waterTitleRow}>
-                      <View style={styles.waterIcon}>
-                        <Ionicons name="water" size={20} color={C.primary} />
+                  <View style={S.waterHead}>
+                    <View style={S.waterLeft}>
+                      <View style={S.waterIconBox}>
+                        <Ionicons name="water" size={20} color={P.primary} />
                       </View>
-                      <ThemedText style={styles.waterTitle}>LƯỢNG NƯỚC</ThemedText>
+                      <ThemedText style={S.waterLabel}>LƯỢNG NƯỚC</ThemedText>
                     </View>
-                    <View style={styles.waterValueRow}>
-                      <ThemedText style={styles.waterValue}>1.25L</ThemedText>
-                      <ThemedText style={styles.waterTarget}> / 2.0L</ThemedText>
+                    <View style={{ flexDirection: 'row', alignItems: 'baseline' }}>
+                      <ThemedText style={S.waterBig}>0L</ThemedText>
+                      <ThemedText style={S.waterSmall}> / 2.0L</ThemedText>
                     </View>
                   </View>
-
-                  {/* Water drops */}
-                  <View style={styles.waterDrops}>
-                    {[1, 2, 3, 4, 5].map((i) => (
+                  {/* Drops */}
+                  <View style={S.waterDrops}>
+                    {Array.from({ length: 8 }).map((_, i) => (
                       <Ionicons
-                        key={`filled-${i}`}
+                        key={i}
                         name="water"
                         size={28}
-                        color={C.primary}
-                        style={{ opacity: 0.9 }}
-                      />
-                    ))}
-                    {[6, 7, 8].map((i) => (
-                      <Ionicons
-                        key={`empty-${i}`}
-                        name="water-outline"
-                        size={28}
-                        color={C.surfaceHighest}
+                        color={P.surfaceContainerHighest}
                       />
                     ))}
                   </View>
@@ -590,82 +521,71 @@ const StatsScreen = (): React.ReactElement => {
           </>
         )}
 
-        {/* ═══════════════════════════════════════
-            WEEK TAB
-           ═══════════════════════════════════════ */}
+        {/* ═══════════ WEEK ═══════════ */}
         {activeTab === 'week' && weekSummary && (
           <>
-            {/* Week Navigation */}
+            {/* Week nav */}
             <Animated.View entering={FadeInDown.delay(100).springify()}>
-              <View style={styles.weekNav}>
-                <Pressable onPress={goToPreviousWeek} style={styles.weekNavBtn}>
-                  <Ionicons name="chevron-back" size={20} color={C.primary} />
+              <View style={S.weekNav}>
+                <Pressable onPress={goToPreviousWeek} style={S.wkBtn}>
+                  <Ionicons name="chevron-back" size={20} color={P.primary} />
                 </Pressable>
-                <View style={{ alignItems: 'center' }}>
-                  <ThemedText style={styles.weekNavTitle}>
-                    {formatWeekRangeLabel(selectedWeekDate)}
-                  </ThemedText>
-                </View>
+                <ThemedText style={S.wkTitle}>
+                  {formatWeekRangeLabel(selectedWeekDate)}
+                </ThemedText>
                 <Pressable
                   onPress={goToNextWeek}
-                  style={[styles.weekNavBtn, isFutureWeek && { opacity: 0.3 }]}
+                  style={[S.wkBtn, isFutureWeek && { opacity: 0.3 }]}
                   disabled={isFutureWeek}
                 >
-                  <Ionicons name="chevron-forward" size={20} color={C.primary} />
+                  <Ionicons name="chevron-forward" size={20} color={P.primary} />
                 </Pressable>
               </View>
             </Animated.View>
 
-            {/* ── Week Chart Card ── */}
+            {/* Bar chart card */}
             <Animated.View entering={FadeInDown.delay(200).springify()}>
               <Tilt3DCard
-                width={cardWidth}
+                width={cardW}
                 height={300}
                 maxTilt={5}
                 showReflection={false}
-                useDeviceMotion={true}
+                useDeviceMotion
                 activeTouch={false}
               >
-                <View style={styles.weekChartCard}>
+                <View style={S.chartCard}>
                   <LinearGradient
-                    colors={['rgba(255,255,255,0.06)', 'rgba(255,255,255,0)']}
+                    colors={['rgba(255,255,255,0.08)', 'rgba(255,255,255,0)']}
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 1 }}
                     style={StyleSheet.absoluteFill}
                   />
+                  <ThemedText style={S.secTitle}>Tuần này</ThemedText>
 
-                  <ThemedText style={styles.sectionTitle}>Tuần này</ThemedText>
-
-                  {/* Simple bar chart */}
-                  <View style={styles.barChartRow}>
-                    {weekSummary.days.map((day, i) => {
-                      const maxCal = Math.max(
-                        ...weekSummary.days.map((d) => d.calories),
-                        1,
-                      );
-                      const barHeight = (day.calories / maxCal) * 120;
-                      const label = formatShortWeekdayLabel(new Date(day.date));
+                  <View style={S.bars}>
+                    {weekSummary.days.map((day) => {
+                      const maxC = Math.max(...weekSummary.days.map((d) => d.calories), 1);
+                      const h = (day.calories / maxC) * 130;
                       return (
                         <Pressable
                           key={day.date}
-                          style={styles.barItem}
+                          style={S.barCol}
                           onPress={() => handleDayPress(day.date)}
                         >
-                          <ThemedText style={styles.barValue}>
+                          <ThemedText style={S.barVal}>
                             {day.calories > 0 ? Math.round(day.calories) : ''}
                           </ThemedText>
-                          <View style={styles.barTrack}>
+                          <View style={S.barTrack}>
                             <LinearGradient
-                              colors={[C.primary, C.primaryDark]}
+                              colors={[P.primary, P.primaryContainer]}
                               start={{ x: 0, y: 0 }}
                               end={{ x: 0, y: 1 }}
-                              style={[
-                                styles.barFill,
-                                { height: Math.max(barHeight, 4) },
-                              ]}
+                              style={[S.barFill, { height: Math.max(h, 4) }]}
                             />
                           </View>
-                          <ThemedText style={styles.barLabel}>{label}</ThemedText>
+                          <ThemedText style={S.barLbl}>
+                            {formatShortWeekdayLabel(new Date(day.date))}
+                          </ThemedText>
                         </Pressable>
                       );
                     })}
@@ -674,82 +594,58 @@ const StatsScreen = (): React.ReactElement => {
               </Tilt3DCard>
             </Animated.View>
 
-            {/* ── Week Summary Cards ── */}
+            {/* Summary row */}
             <Animated.View entering={FadeInUp.delay(300).springify()}>
-              <View style={styles.summaryRow}>
-                {/* Average */}
-                <View style={styles.summaryCard}>
-                  <ThemedText style={{ fontSize: 22 }}>📊</ThemedText>
-                  <ThemedText style={styles.summaryValue}>
-                    {Math.round(
-                      weekSummary.days.reduce((s, d) => s + d.calories, 0) /
-                        Math.max(weekSummary.days.filter((d) => d.calories > 0).length, 1),
-                    ).toLocaleString()}
-                  </ThemedText>
-                  <ThemedText style={styles.summaryLabel}>TB/ngày</ThemedText>
-                </View>
-
-                {/* Total */}
-                <View style={styles.summaryCard}>
-                  <ThemedText style={{ fontSize: 22 }}>🔥</ThemedText>
-                  <ThemedText style={styles.summaryValue}>
-                    {Math.round(weekSummary.totalCalories).toLocaleString()}
-                  </ThemedText>
-                  <ThemedText style={styles.summaryLabel}>Tổng tuần</ThemedText>
-                </View>
-
-                {/* Goal */}
-                <View style={styles.summaryCard}>
-                  <ThemedText style={{ fontSize: 22 }}>🎯</ThemedText>
-                  <ThemedText style={styles.summaryValue}>
-                    {weekSummary.days.filter(
-                      (d) => d.targetCalories && d.calories >= d.targetCalories * 0.9,
-                    ).length}
-                    /{weekSummary.days.length}
-                  </ThemedText>
-                  <ThemedText style={styles.summaryLabel}>Đạt mục tiêu</ThemedText>
-                </View>
+              <View style={S.sumRow}>
+                <SummaryChip emoji="📊" value={`${Math.round(
+                  weekSummary.days.reduce((s, d) => s + d.calories, 0) /
+                    Math.max(weekSummary.days.filter((d) => d.calories > 0).length, 1),
+                ).toLocaleString()}`} label="TB/ngày" />
+                <SummaryChip emoji="🔥" value={`${Math.round(weekSummary.totalCalories).toLocaleString()}`} label="Tổng tuần" />
+                <SummaryChip emoji="🎯" value={`${weekSummary.days.filter(
+                  (d) => d.targetCalories && d.calories >= d.targetCalories * 0.9,
+                ).length}/${weekSummary.days.length}`} label="Đạt mục tiêu" />
               </View>
             </Animated.View>
 
-            {/* ── Week Macro Distribution ── */}
+            {/* Macro card */}
             <Animated.View entering={FadeInUp.delay(400).springify()}>
               <Tilt3DCard
-                width={cardWidth}
-                height={180}
+                width={cardW}
+                height={150}
                 maxTilt={4}
                 showReflection={false}
-                useDeviceMotion={true}
+                useDeviceMotion
                 activeTouch={false}
               >
-                <View style={styles.weekMacroCard}>
+                <View style={S.macroCard}>
                   <LinearGradient
                     colors={['rgba(255,255,255,0.06)', 'rgba(255,255,255,0)']}
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 1 }}
                     style={StyleSheet.absoluteFill}
                   />
-                  <ThemedText style={styles.sectionTitle}>Macro tuần</ThemedText>
-                  <View style={styles.weekMacroRow}>
-                    <View style={styles.weekMacroItem}>
-                      <ThemedText style={[styles.weekMacroValue, { color: C.primary }]}>
+                  <ThemedText style={S.secTitle}>Macro tuần</ThemedText>
+                  <View style={S.macroRow}>
+                    <View style={S.macroItem}>
+                      <ThemedText style={[S.macroV, { color: P.primary }]}>
                         {Math.round(weekSummary.totalProtein)}g
                       </ThemedText>
-                      <ThemedText style={styles.weekMacroLabel}>Protein</ThemedText>
+                      <ThemedText style={S.macroL}>Protein</ThemedText>
                     </View>
-                    <View style={styles.weekMacroDivider} />
-                    <View style={styles.weekMacroItem}>
-                      <ThemedText style={[styles.weekMacroValue, { color: C.secondary }]}>
+                    <View style={S.macroDivider} />
+                    <View style={S.macroItem}>
+                      <ThemedText style={[S.macroV, { color: P.secondary }]}>
                         {Math.round(weekSummary.totalCarbs)}g
                       </ThemedText>
-                      <ThemedText style={styles.weekMacroLabel}>Carbs</ThemedText>
+                      <ThemedText style={S.macroL}>Carbs</ThemedText>
                     </View>
-                    <View style={styles.weekMacroDivider} />
-                    <View style={styles.weekMacroItem}>
-                      <ThemedText style={[styles.weekMacroValue, { color: C.tertiaryContainer }]}>
+                    <View style={S.macroDivider} />
+                    <View style={S.macroItem}>
+                      <ThemedText style={[S.macroV, { color: P.tertiaryContainer }]}>
                         {Math.round(weekSummary.totalFat)}g
                       </ThemedText>
-                      <ThemedText style={styles.weekMacroLabel}>Fat</ThemedText>
+                      <ThemedText style={S.macroL}>Fat</ThemedText>
                     </View>
                   </View>
                 </View>
@@ -758,34 +654,32 @@ const StatsScreen = (): React.ReactElement => {
           </>
         )}
 
-        {/* ═══════════════════════════════════════
-            MONTH TAB
-           ═══════════════════════════════════════ */}
+        {/* ═══════════ MONTH ═══════════ */}
         {activeTab === 'month' && (
           <>
-            <Animated.View entering={FadeInDown.delay(150).springify()}>
+            <Animated.View entering={FadeInDown.delay(100).springify()}>
               <Tilt3DCard
-                width={cardWidth}
+                width={cardW}
                 height={360}
                 maxTilt={4}
                 showReflection={false}
-                useDeviceMotion={true}
+                useDeviceMotion
                 activeTouch={false}
               >
-                <View style={styles.monthCard}>
+                <View style={S.monthCard}>
                   <LinearGradient
                     colors={['rgba(255,255,255,0.06)', 'rgba(255,255,255,0)']}
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 1 }}
                     style={StyleSheet.absoluteFill}
                   />
-                  <ThemedText style={styles.sectionTitle}>
-                    Tháng {currentMonth.getMonth() + 1} năm {currentMonth.getFullYear()}
+                  <ThemedText style={S.secTitle}>
+                    Tháng {currentMonth.getMonth() + 1}/{currentMonth.getFullYear()}
                   </ThemedText>
 
                   {isLoadingMonth ? (
                     <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-                      <ActivityIndicator color={C.primary} size="large" />
+                      <ActivityIndicator color={P.primary} size="large" />
                     </View>
                   ) : monthData ? (
                     <CalendarHeatmap
@@ -796,53 +690,29 @@ const StatsScreen = (): React.ReactElement => {
                     />
                   ) : (
                     <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-                      <ThemedText style={{ color: C.textMuted }}>
-                        Không có dữ liệu
-                      </ThemedText>
+                      <ThemedText style={{ color: P.textSlate500 }}>Không có dữ liệu</ThemedText>
                     </View>
                   )}
                 </View>
               </Tilt3DCard>
             </Animated.View>
 
-            {/* Month summary */}
             {monthData && (
               <Animated.View entering={FadeInUp.delay(250).springify()}>
-                <View style={styles.summaryRow}>
-                  <View style={styles.summaryCard}>
-                    <ThemedText style={{ fontSize: 22 }}>🔥</ThemedText>
-                    <ThemedText style={styles.summaryValue}>
-                      {Math.round(monthData.totalCalories / 1000)}k
-                    </ThemedText>
-                    <ThemedText style={styles.summaryLabel}>Tổng kcal</ThemedText>
-                  </View>
-                  <View style={styles.summaryCard}>
-                    <ThemedText style={{ fontSize: 22 }}>📅</ThemedText>
-                    <ThemedText style={styles.summaryValue}>
-                      {monthData.daysLogged}
-                    </ThemedText>
-                    <ThemedText style={styles.summaryLabel}>Ngày HĐ</ThemedText>
-                  </View>
-                  <View style={styles.summaryCard}>
-                    <ThemedText style={{ fontSize: 22 }}>📊</ThemedText>
-                    <ThemedText style={styles.summaryValue}>
-                      {Math.round(monthData.averageCalories).toLocaleString()}
-                    </ThemedText>
-                    <ThemedText style={styles.summaryLabel}>TB/ngày</ThemedText>
-                  </View>
+                <View style={S.sumRow}>
+                  <SummaryChip emoji="🔥" value={`${Math.round(monthData.totalCalories / 1000)}k`} label="Tổng kcal" />
+                  <SummaryChip emoji="📅" value={`${monthData.daysLogged}`} label="Ngày HĐ" />
+                  <SummaryChip emoji="📊" value={`${Math.round(monthData.averageCalories).toLocaleString()}`} label="TB/ngày" />
                 </View>
               </Animated.View>
             )}
           </>
         )}
 
-        {/* Loading indicator */}
+        {/* Loading */}
         {isLoading && (
-          <View style={styles.loadingBox}>
-            <ActivityIndicator color={C.primary} size="large" />
-            <ThemedText style={{ color: C.textMuted, marginTop: 12 }}>
-              Đang tải...
-            </ThemedText>
+          <View style={{ alignItems: 'center', paddingVertical: 32 }}>
+            <ActivityIndicator color={P.primary} size="large" />
           </View>
         )}
       </ScrollView>
@@ -851,430 +721,331 @@ const StatsScreen = (): React.ReactElement => {
 };
 
 /* ═══════════════════════════════════════════════
+   SUB-COMPONENTS
+   ═══════════════════════════════════════════════ */
+
+/** Macro progress bar — gradient fill matching HTML template */
+const MacroBar = ({
+  label,
+  value,
+  target,
+  valueColor,
+  gradientFrom,
+  gradientTo,
+}: {
+  label: string;
+  value: number;
+  target: number;
+  valueColor: string;
+  gradientFrom: string;
+  gradientTo: string;
+}) => (
+  <View style={S.mBar}>
+    <View style={S.mBarHead}>
+      <ThemedText style={S.mBarLabel}>{label}</ThemedText>
+      <ThemedText style={[S.mBarValue, { color: valueColor }]}>
+        {Math.round(value)}/{target}g
+      </ThemedText>
+    </View>
+    <View style={S.mBarTrack}>
+      <LinearGradient
+        colors={[gradientFrom, gradientTo]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 0 }}
+        style={[
+          S.mBarFill,
+          { width: `${Math.min(100, (value / Math.max(target, 1)) * 100)}%` },
+        ]}
+      />
+    </View>
+  </View>
+);
+
+/** Summary chip for week/month */
+const SummaryChip = ({
+  emoji,
+  value,
+  label,
+}: {
+  emoji: string;
+  value: string;
+  label: string;
+}) => (
+  <View style={S.sumCard}>
+    <ThemedText style={{ fontSize: 20 }}>{emoji}</ThemedText>
+    <ThemedText style={S.sumVal}>{value}</ThemedText>
+    <ThemedText style={S.sumLbl}>{label}</ThemedText>
+  </View>
+);
+
+/* ═══════════════════════════════════════════════
    STYLES
    ═══════════════════════════════════════════════ */
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: C.bg,
-  },
+const S = StyleSheet.create({
+  root: { flex: 1, backgroundColor: P.bg },
 
-  /* ─── Header ─── */
-  header: {
-    paddingHorizontal: 20,
-    paddingTop: 12,
+  /* Header */
+  headerBar: {
+    paddingHorizontal: 24,
+    paddingTop: 16,
     paddingBottom: 8,
   },
   headerTitle: {
     fontSize: 18,
-    fontWeight: '700',
-    color: C.primary,
+    fontWeight: '800',
+    color: P.primary,
     letterSpacing: -0.3,
   },
 
-  /* ─── Tab Switcher ─── */
-  tabBar: {
-    paddingHorizontal: 16,
-    paddingBottom: 12,
-    alignItems: 'center',
-  },
-  tabContainer: {
+  /* Tabs — glass-card pill style */
+  tabWrap: { alignItems: 'center', paddingHorizontal: 24, paddingBottom: 16 },
+  tabPill: {
+    width: '100%',
     flexDirection: 'row',
-    backgroundColor: 'rgba(47, 52, 69, 0.4)',
+    backgroundColor: P.glassCard,
     borderRadius: 16,
-    padding: 5,
+    padding: 6,
     gap: 4,
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.05)',
   },
-  tabBtn: {
-    paddingHorizontal: 24,
-    paddingVertical: 10,
-    borderRadius: 12,
-  },
-  tabBtnActive: {
-    backgroundColor: C.primaryContainer,
-    shadowColor: C.primary,
+  tabBtn: { flex: 1, alignItems: 'center', paddingVertical: 6, borderRadius: 12 },
+  tabBtnOn: {
+    backgroundColor: P.primaryContainer,
+    shadowColor: P.primary,
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.2,
     shadowRadius: 15,
     elevation: 4,
   },
-  tabLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: C.textMuted,
-  },
-  tabLabelActive: {
-    color: C.onPrimaryContainer,
-    fontWeight: '700',
+  tabTxt: { fontSize: 14, fontWeight: '800', color: P.textSlate400 },
+  tabTxtOn: { color: P.onPrimaryContainer, fontWeight: '900' },
+
+  /* Scroll */
+  scroll: { paddingHorizontal: 24, paddingBottom: 140, gap: 20 },
+
+  /* ── Hero Card — vertical layout (ring top, macros bottom) ── */
+  heroCard: {
+    backgroundColor: 'rgba(22, 27, 43, 0.5)',
+    borderRadius: 24,
+    padding: 28,
+    overflow: 'hidden',
+    minHeight: 420,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.05)',
   },
 
-  /* ─── Hero Card ─── */
-  heroCard: {
-    backgroundColor: C.surfaceHigh,
-    borderRadius: 24,
-    padding: 24,
-    borderWidth: 1,
-    borderColor: C.outline,
-    overflow: 'hidden',
-    minHeight: 300,
-  },
-  heroContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 20,
-  },
-  ringSection: {
-    width: 180,
-    height: 180,
+  heroRingWrap: { alignItems: 'center', justifyContent: 'center', marginBottom: 28 },
+  heroRing: {
+    width: RING_SIZE,
+    height: RING_SIZE,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  ringCenter: {
-    position: 'absolute',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  ringValue: {
-    fontSize: 32,
-    fontWeight: '800',
+  ringCenter: { position: 'absolute', alignItems: 'center', justifyContent: 'center' },
+  ringBig: {
+    fontSize: 36,
+    fontWeight: '900',
     color: '#fff',
-    letterSpacing: -1.5,
-    lineHeight: 38,
+    letterSpacing: -2,
+    lineHeight: 42,
   },
-  ringLabel: {
-    fontSize: 10,
-    fontWeight: '700',
-    color: C.primary,
-    letterSpacing: 1.5,
+  ringUnit: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: P.primary,
+    letterSpacing: 2,
     textTransform: 'uppercase',
     marginTop: 4,
   },
 
-  /* Macros */
-  macroSection: {
-    flex: 1,
-    gap: 20,
-    justifyContent: 'center',
-  },
-  macroGroup: {
-    gap: 6,
-  },
-  macroLabelRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-end',
-  },
-  macroName: {
+  heroMacros: { gap: 20 },
+
+  /* Macro bar sub-component */
+  mBar: { gap: 6 },
+  mBarHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end' },
+  mBarLabel: {
     fontSize: 10,
     fontWeight: '800',
-    color: C.textMuted,
+    color: P.textSlate400,
     letterSpacing: 2,
     textTransform: 'uppercase',
   },
-  macroValue: {
-    fontSize: 13,
-    fontWeight: '700',
-  },
-  macroTrack: {
+  mBarValue: { fontSize: 14, fontWeight: '800' },
+  mBarTrack: {
     height: 8,
-    backgroundColor: C.surfaceLowest,
-    borderRadius: 4,
+    backgroundColor: P.surfaceContainerLowest,
+    borderRadius: 99,
     overflow: 'hidden',
   },
-  macroFill: {
-    height: '100%',
-    borderRadius: 4,
-  },
+  mBarFill: { height: '100%', borderRadius: 99 },
 
-  /* ─── Phân bổ bữa ăn ─── */
-  distributionCard: {
-    backgroundColor: C.surfaceHigh,
+  /* ── Phân bổ bữa ăn ── */
+  distCard: {
+    backgroundColor: 'rgba(22, 27, 43, 0.5)',
     borderRadius: 24,
     padding: 20,
-    borderWidth: 1,
-    borderColor: C.outline,
     overflow: 'hidden',
-    minHeight: 200,
+    minHeight: 130,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.05)',
   },
-  distTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginBottom: 16,
-  },
-  distTitle: {
-    fontSize: 16,
-    fontWeight: '800',
-    color: C.onSurface,
-    letterSpacing: -0.3,
-  },
-  distDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: C.primary,
-  },
-  stackedBarTrack: {
-    height: 16,
-    borderRadius: 8,
+  distHead: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 16 },
+  distTitle: { fontSize: 16, fontWeight: '800', color: P.onSurface },
+  dotGreen: { width: 8, height: 8, borderRadius: 4, backgroundColor: P.primary },
+
+  stackTrack: {
+    height: 14,
+    borderRadius: 7,
     overflow: 'hidden',
     flexDirection: 'row',
     marginBottom: 18,
   },
-  stackedBarSegment: {
-    height: '100%',
-  },
-  mealGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 0,
-  },
-  mealGridItem: {
-    width: '50%',
-    paddingVertical: 8,
-    paddingHorizontal: 4,
-  },
-  mealDotRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginBottom: 4,
-  },
-  mealDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-  },
-  mealLabel: {
+
+  distGrid: { flexDirection: 'row', flexWrap: 'wrap' },
+  distGridItem: { width: '50%', paddingVertical: 8 },
+  distDotRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 },
+  distDot: { width: 8, height: 8, borderRadius: 4 },
+  distLabel: {
     fontSize: 10,
-    fontWeight: '700',
-    color: C.textMuted,
-    letterSpacing: 1,
+    fontWeight: '800',
+    color: P.textSlate400,
+    letterSpacing: 1.5,
     textTransform: 'uppercase',
   },
-  mealCalValue: {
-    fontSize: 18,
-    fontWeight: '800',
-    color: C.onSurface,
-    paddingLeft: 16,
-  },
+  distVal: { fontSize: 20, fontWeight: '800', color: P.onSurface, paddingLeft: 16 },
 
-  /* ─── Lượng Nước ─── */
+  /* ── Lượng Nước ── */
   waterCard: {
-    backgroundColor: C.surfaceHigh,
+    backgroundColor: 'rgba(22, 27, 43, 0.5)',
     borderRadius: 24,
     padding: 20,
-    borderWidth: 1,
-    borderColor: C.outline,
     overflow: 'hidden',
     minHeight: 120,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.05)',
   },
-  waterHeader: {
+  waterHead: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 16,
   },
-  waterTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-  },
-  waterIcon: {
-    width: 36,
-    height: 36,
+  waterLeft: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  waterIconBox: {
+    width: 40,
+    height: 40,
     borderRadius: 12,
-    backgroundColor: 'rgba(75, 226, 119, 0.1)',
+    backgroundColor: 'rgba(75,226,119,0.1)',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  waterTitle: {
+  waterLabel: {
     fontSize: 11,
     fontWeight: '800',
-    color: C.onSurface,
+    color: P.onSurface,
     letterSpacing: 2,
     textTransform: 'uppercase',
   },
-  waterValueRow: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-  },
-  waterValue: {
-    fontSize: 20,
-    fontWeight: '800',
-    color: '#fff',
-  },
-  waterTarget: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: C.textMuted,
-  },
+  waterBig: { fontSize: 22, fontWeight: '800', color: '#fff' },
+  waterSmall: { fontSize: 12, color: P.textSlate500 },
   waterDrops: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
     paddingHorizontal: 8,
   },
 
-  /* ─── Week Tab ─── */
+  /* ── WEEK ── */
   weekNav: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: C.surfaceLow,
+    backgroundColor: P.surfaceContainerLow,
     borderRadius: 16,
-    borderWidth: 1,
-    borderColor: C.outline,
     padding: 12,
-  },
-  weekNavBtn: {
-    padding: 8,
-    borderRadius: 12,
-  },
-  weekNavTitle: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: C.onSurface,
-  },
-  weekChartCard: {
-    backgroundColor: C.surfaceHigh,
-    borderRadius: 24,
-    padding: 20,
     borderWidth: 1,
-    borderColor: C.outline,
+    borderColor: 'rgba(255,255,255,0.05)',
+  },
+  wkBtn: { padding: 8, borderRadius: 12 },
+  wkTitle: { fontSize: 15, fontWeight: '800', color: P.onSurface },
+
+  chartCard: {
+    backgroundColor: P.surfaceContainerHigh,
+    borderRadius: 24,
+    paddingHorizontal: 20,
+    paddingVertical: 24,
     overflow: 'hidden',
     minHeight: 280,
   },
+  secTitle: { fontSize: 16, fontWeight: '800', color: P.onSurface, marginBottom: 8 },
 
-  /* Simple bar chart */
-  barChartRow: {
+  bars: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-end',
-    height: 180,
-    marginTop: 16,
-    paddingHorizontal: 4,
+    height: 200,
+    marginTop: 8,
   },
-  barItem: {
-    alignItems: 'center',
-    flex: 1,
-    gap: 6,
-  },
-  barValue: {
-    fontSize: 9,
-    fontWeight: '700',
-    color: C.textMuted,
-  },
+  barCol: { alignItems: 'center', flex: 1, gap: 4 },
+  barVal: { fontSize: 9, fontWeight: '800', color: P.textSlate400 },
   barTrack: {
-    width: 18,
-    height: 120,
-    backgroundColor: C.surfaceLowest,
-    borderRadius: 9,
+    width: 20,
+    height: 140,
+    backgroundColor: P.surfaceContainerLowest,
+    borderRadius: 10,
     overflow: 'hidden',
     justifyContent: 'flex-end',
   },
-  barFill: {
-    width: '100%',
-    borderRadius: 9,
-  },
-  barLabel: {
-    fontSize: 10,
-    fontWeight: '700',
-    color: C.textMuted,
-    textTransform: 'uppercase',
-  },
+  barFill: { width: '100%', borderRadius: 10 },
+  barLbl: { fontSize: 10, fontWeight: '800', color: P.textSlate400, textTransform: 'uppercase' },
 
   /* Summary row */
-  summaryRow: {
-    flexDirection: 'row',
-    gap: 10,
-  },
-  summaryCard: {
+  sumRow: { flexDirection: 'row', gap: 10 },
+  sumCard: {
     flex: 1,
-    backgroundColor: C.surfaceLow,
+    backgroundColor: P.surfaceContainerLow,
     borderRadius: 20,
     padding: 14,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: C.outline,
+    borderColor: 'rgba(255,255,255,0.05)',
     gap: 4,
   },
-  summaryValue: {
-    fontSize: 18,
-    fontWeight: '800',
-    color: C.onSurface,
-  },
-  summaryLabel: {
-    fontSize: 10,
-    fontWeight: '700',
-    color: C.textMuted,
-    letterSpacing: 0.5,
-  },
+  sumVal: { fontSize: 16, fontWeight: '800', color: P.onSurface },
+  sumLbl: { fontSize: 10, fontWeight: '800', color: P.textSlate400 },
 
-  /* Week macro card */
-  weekMacroCard: {
-    backgroundColor: C.surfaceHigh,
+  /* Macro card */
+  macroCard: {
+    backgroundColor: P.surfaceContainerHigh,
     borderRadius: 24,
     padding: 20,
-    borderWidth: 1,
-    borderColor: C.outline,
     overflow: 'hidden',
-    minHeight: 160,
+    minHeight: 140,
   },
-  weekMacroRow: {
+  macroRow: {
     flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'space-around',
+    alignItems: 'center',
     marginTop: 20,
   },
-  weekMacroItem: {
-    alignItems: 'center',
-    gap: 6,
-  },
-  weekMacroValue: {
-    fontSize: 24,
-    fontWeight: '800',
-  },
-  weekMacroLabel: {
+  macroItem: { alignItems: 'center', gap: 6 },
+  macroV: { fontSize: 24, fontWeight: '800' },
+  macroL: {
     fontSize: 10,
-    fontWeight: '700',
-    color: C.textMuted,
+    fontWeight: '800',
+    color: P.textSlate400,
     letterSpacing: 1,
     textTransform: 'uppercase',
   },
-  weekMacroDivider: {
-    width: 1,
-    height: 40,
-    backgroundColor: C.outlineVariant,
-  },
-
-  /* Section title */
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: '800',
-    color: C.onSurface,
-    letterSpacing: -0.3,
-    marginBottom: 4,
-  },
+  macroDivider: { width: 1, height: 40, backgroundColor: 'rgba(61,74,61,0.35)' },
 
   /* Month */
   monthCard: {
-    backgroundColor: C.surfaceHigh,
+    backgroundColor: P.surfaceContainerHigh,
     borderRadius: 24,
     padding: 20,
-    borderWidth: 1,
-    borderColor: C.outline,
     overflow: 'hidden',
     minHeight: 340,
-  },
-
-  /* Loading */
-  loadingBox: {
-    alignItems: 'center',
-    paddingVertical: 32,
-    gap: 8,
   },
 });
 
