@@ -81,7 +81,7 @@ const CustomTabBar: React.FC<BottomTabBarProps> = ({ state, navigation }) => {
   const insets = useSafeAreaInsets();
   const safeBottom = Platform.OS === 'ios' ? Math.max(insets.bottom, 0) : 4;
   const navigateTo = (name: string) => navigation.navigate(name);
-  const current = state.routes[state.index].name;
+  const current = state.routes[state.index]?.name;
 
   return (
     <View style={styles.outerWrapper} pointerEvents="box-none">
@@ -108,9 +108,9 @@ const CustomTabBar: React.FC<BottomTabBarProps> = ({ state, navigation }) => {
       {/* Absolute positioning for the center button to make it float */}
       <View style={[styles.absoluteCenterBtn, { bottom: TAB_BAR_HEIGHT / 2 + safeBottom - 24 }]} pointerEvents="box-none">
         <TabBtn
-          tab={ALL_TABS[2]}
-          isFocused={current === ALL_TABS[2].name}
-          onPress={() => navigateTo(ALL_TABS[2].name)}
+          tab={ALL_TABS[2]!}
+          isFocused={current === ALL_TABS[2]!.name}
+          onPress={() => navigateTo(ALL_TABS[2]!.name)}
           isCenter={true}
         />
       </View>

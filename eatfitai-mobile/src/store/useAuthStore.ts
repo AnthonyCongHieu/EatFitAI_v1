@@ -340,10 +340,11 @@ export const useAuthStore = create<AuthState>((set: any) => ({
     );
     await persistNeedsOnboarding(needsOnboarding);
 
+    const rawData = data as Record<string, any>;
     const extractedUser: AuthUser = {
-      id: String(data?.userId ?? data?.UserId ?? ''),
-      email: String(data?.email ?? data?.Email ?? ''),
-      name: String(data?.displayName ?? data?.DisplayName ?? result.user?.name ?? ''),
+      id: String(rawData?.userId ?? rawData?.UserId ?? ''),
+      email: String(rawData?.email ?? rawData?.Email ?? ''),
+      name: String(rawData?.displayName ?? rawData?.DisplayName ?? result.user?.name ?? ''),
     };
 
     if (extractedUser.id) {
