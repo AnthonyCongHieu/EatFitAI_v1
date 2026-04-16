@@ -1,5 +1,5 @@
 /**
- * QuickActionsOverlay – Full-screen glass-blur popup with 2×2 bento grid
+ * QuickActionsOverlay – Full-screen blur overlay with 2×2 bento grid
  * Triggered by the floating AI robot FAB on the HomeScreen.
  */
 import React, { useCallback } from 'react';
@@ -10,32 +10,33 @@ import {
   Dimensions,
   Modal,
   StatusBar,
+  Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, {
   FadeIn,
   FadeOut,
   ZoomIn,
-  SlideInDown,
   FadeInDown,
 } from 'react-native-reanimated';
+import { BlurView } from 'expo-blur';
 import * as Haptics from 'expo-haptics';
 
 const { width } = Dimensions.get('window');
 
 /* ─── Emerald Nebula palette ─── */
 const C = {
-  bg: '#0e1322',
-  surfaceLow: '#161b2b',
+  bg: '#0a0e1a',
+  surfaceLow: '#111827',
   surface: '#1a1f2f',
-  surfaceHigh: '#25293a',
-  surfaceHighest: '#2f3445',
+  surfaceHigh: '#1e2435',
+  surfaceHighest: '#2a2f40',
   primary: '#4be277',
   primaryContainer: '#22c55e',
   onPrimary: '#003915',
   onSurface: '#dee1f7',
   textMuted: '#94a3b8',
-  outlineVariant: 'rgba(61, 74, 61, 0.1)',
+  outlineVariant: 'rgba(75,226,119,0.08)',
 };
 
 interface QuickAction {
@@ -90,12 +91,18 @@ const QuickActionsOverlay: React.FC<QuickActionsOverlayProps> = ({
     >
       <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
 
-      {/* Dark overlay background */}
+      {/* Blurred background overlay */}
       <Animated.View
         entering={FadeIn.duration(250)}
         exiting={FadeOut.duration(200)}
-        style={[StyleSheet.absoluteFill, styles.overlayTint]}
-      />
+        style={StyleSheet.absoluteFill}
+      >
+        {Platform.OS === 'ios' ? (
+          <BlurView intensity={60} tint="dark" style={StyleSheet.absoluteFill} />
+        ) : (
+          <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(10, 14, 26, 0.92)' }]} />
+        )}
+      </Animated.View>
 
       {/* Content */}
       <View style={styles.container}>
@@ -174,9 +181,6 @@ const QuickActionsOverlay: React.FC<QuickActionsOverlayProps> = ({
 };
 
 const styles = StyleSheet.create({
-  overlayTint: {
-    backgroundColor: 'rgba(14, 19, 34, 0.82)',
-  },
   container: {
     flex: 1,
     alignItems: 'center',
@@ -195,9 +199,11 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: 'rgba(47, 52, 69, 0.5)',
+    backgroundColor: 'rgba(47, 52, 69, 0.6)',
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.06)',
   },
 
   /* Header */
@@ -206,17 +212,17 @@ const styles = StyleSheet.create({
     marginBottom: 48,
   },
   title: {
-    fontSize: 30,
-    fontWeight: '900',
+    fontSize: 28,
+    fontWeight: '800',
     color: C.onSurface,
-    fontFamily: 'Inter_800ExtraBold',
     letterSpacing: -0.5,
-    marginBottom: 12,
+    marginBottom: 10,
   },
   subtitle: {
     fontSize: 15,
     fontWeight: '500',
     color: C.textMuted,
+    letterSpacing: 0.1,
   },
 
   /* Grid */
@@ -229,19 +235,13 @@ const styles = StyleSheet.create({
 
   /* Action card */
   actionCard: {
-    borderRadius: 40,
-    backgroundColor: 'rgba(22, 27, 43, 0.5)',
+    borderRadius: 28,
+    backgroundColor: 'rgba(17, 24, 39, 0.7)',
     borderWidth: 1,
     borderColor: C.outlineVariant,
     alignItems: 'center',
     justifyContent: 'center',
     padding: 16,
-    // Bioluminescent glow
-    shadowColor: C.primary,
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.08,
-    shadowRadius: 20,
-    elevation: 2,
   },
   actionCardPressed: {
     transform: [{ scale: 0.95 }],
@@ -261,9 +261,9 @@ const styles = StyleSheet.create({
 
   /* Label */
   actionLabel: {
-    fontSize: 10,
+    fontSize: 11,
     fontWeight: '700',
-    letterSpacing: 2,
+    letterSpacing: 1.5,
     color: C.onSurface,
     textAlign: 'center',
     textTransform: 'uppercase',
@@ -275,17 +275,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
     marginTop: 48,
-    opacity: 0.5,
+    opacity: 0.6,
   },
   footerDot: {
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: 'rgba(75, 226, 119, 0.5)',
+    backgroundColor: C.primary,
   },
   footerText: {
     fontSize: 10,
-    fontWeight: '500',
+    fontWeight: '600',
     letterSpacing: 2,
     color: C.textMuted,
     textTransform: 'uppercase',

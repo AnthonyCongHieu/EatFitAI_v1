@@ -79,7 +79,7 @@ const TabBtn = ({
 
 const CustomTabBar: React.FC<BottomTabBarProps> = ({ state, navigation }) => {
   const insets = useSafeAreaInsets();
-  const safeBottom = Platform.OS === 'ios' ? Math.max(insets.bottom, 0) : 0;
+  const safeBottom = Platform.OS === 'ios' ? Math.max(insets.bottom, 0) : 4;
   const navigateTo = (name: string) => navigation.navigate(name);
   const current = state.routes[state.index].name;
 
@@ -127,8 +127,8 @@ const styles = StyleSheet.create({
   },
   bar: {
     backgroundColor: C.bg,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
+    borderTopLeftRadius: 0,
+    borderTopRightRadius: 0,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: -4 },
     shadowOpacity: 0.3,

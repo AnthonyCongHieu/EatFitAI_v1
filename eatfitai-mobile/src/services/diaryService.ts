@@ -85,7 +85,7 @@ const normalizeEntry = (data: MealDiaryDto): DiaryEntry => ({
   updatedAt: data?.updatedAt ?? null,
   isDeleted: data?.isDeleted ?? null,
   sourceMethod: data?.sourceMethod ?? null,
-  photoUrl: data?.photoUrl ?? data?.PhotoUrl ?? data?.foodItemThumbNail ?? data?.FoodItemThumbNail ?? null,
+  photoUrl: data?.photoUrl ?? data?.PhotoUrl ?? data?.foodItemThumbNail ?? data?.foodItemThumbNail ?? null,
 });
 
 const normalizeMeal = (data: any): DiaryMealGroup => {
@@ -192,11 +192,15 @@ export const diaryService = {
   },
 
   async getTodayCombined(): Promise<DaySummary> {
-    const date = todayDate();
-    const [summary, entries] = await Promise.all([
-      this.getTodaySummary(),
+    return this.getDayCombined(todayDate());
+  },
+
+  async getDayCombined(date: string): Promise<DaySummary> {
+    const [summaryResp, entries] = await Promise.all([
+      apiClient.get('/api/summary/day', { params: { date } }),
       this.getEntriesByDate(date),
     ]);
+    const summary = normalizeSummary(summaryResp.data);
     const meals = groupByMeal(entries);
     return { ...summary, meals };
   },

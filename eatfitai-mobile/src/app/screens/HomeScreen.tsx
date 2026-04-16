@@ -100,6 +100,116 @@ const getFoodEmoji = (foodName: string): string => {
   return '🍽️';
 };
 
+/* ─── Date helpers ─── */
+const VIET_DAYS = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
+
+const isToday = (d: Date): boolean => {
+  const now = new Date();
+  return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth() && d.getDate() === now.getDate();
+};
+
+const isSameDay = (a: Date, b: Date): boolean =>
+  a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+
+const formatShortDate = (d: Date): string => `${d.getDate()}/${d.getMonth() + 1}`;
+
+const getWeekDays = (): Date[] => {
+  const today = new Date();
+  const dayOfWeek = today.getDay(); // 0=Sun
+  const monday = new Date(today);
+  monday.setDate(today.getDate() - ((dayOfWeek + 6) % 7));
+  const days: Date[] = [];
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(monday);
+    d.setDate(monday.getDate() + i);
+    days.push(d);
+  }
+  return days;
+};
+
+/* ─── WeekDayStrip Component ─── */
+const WeekDayStrip = ({ selectedDate, onSelectDate }: { selectedDate: Date; onSelectDate: (d: Date) => void }) => {
+  const days = useMemo(() => getWeekDays(), []);
+  return (
+    <View style={weekStyles.container}>
+      {days.map((day) => {
+        const selected = isSameDay(day, selectedDate);
+        const today = isToday(day);
+        return (
+          <Pressable
+            key={day.toISOString()}
+            style={weekStyles.dayBtn}
+            onPress={() => onSelectDate(day)}
+          >
+            <ThemedText style={[weekStyles.dayLabel, selected && weekStyles.dayLabelSelected]}>
+              {VIET_DAYS[day.getDay()]}
+            </ThemedText>
+            <View style={[weekStyles.dayNumContainer, selected && weekStyles.dayNumContainerSelected]}>
+              <ThemedText style={[weekStyles.dayNum, selected && weekStyles.dayNumSelected]}>
+                {day.getDate()}
+              </ThemedText>
+            </View>
+            {today && !selected && <View style={weekStyles.todayDot} />}
+          </Pressable>
+        );
+      })}
+    </View>
+  );
+};
+
+const weekStyles = StyleSheet.create({
+  container: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    backgroundColor: C.surfaceLow,
+    borderRadius: 16,
+    padding: 6,
+    borderWidth: 1,
+    borderColor: C.outline,
+  },
+  dayBtn: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: 8,
+    borderRadius: 12,
+    gap: 4,
+  },
+  dayLabel: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: C.textMuted,
+    textTransform: 'uppercase',
+  },
+  dayLabelSelected: {
+    color: C.onSurface,
+    fontWeight: '700',
+  },
+  dayNumContainer: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  dayNumContainerSelected: {
+    backgroundColor: C.primary,
+  },
+  dayNum: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: C.onSurface,
+  },
+  dayNumSelected: {
+    color: '#003915',
+  },
+  todayDot: {
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: C.primary,
+    marginTop: -2,
+  },
+});
 const HomeScreen = (): React.ReactElement => {
   const { theme } = useAppTheme();
   const navigation = useNavigation<NavigationProp>();
@@ -116,6 +226,7 @@ const HomeScreen = (): React.ReactElement => {
   });
   const [showQuickActions, setShowQuickActions] = useState(false);
   const [serverDown, setServerDown] = useState(false);
+  const [selectedDate, setSelectedDate] = useState(new Date());
   const { currentStreak, longestStreak, weeklyLogs, checkStreak, fetchWeeklyLogs } =
     useGamificationStore();
 
@@ -227,7 +338,13 @@ const HomeScreen = (): React.ReactElement => {
 
   const todayEntries = useMemo(() => {
     if (!summary?.meals) return [];
-    return summary.meals.flatMap((meal) => meal.entries).slice(0, 3);
+    const entries = summary.meals.flatMap((meal) => meal.entries);
+    // Sắp xếp: cũ nhất tới mới nhất
+    return entries.sort((a, b) => {
+      const tA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+      const tB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+      return tA - tB;
+    });
   }, [summary]);
 
   // Macro data - Ensure strictly numbers for TypeScript
@@ -470,11 +587,28 @@ const HomeScreen = (): React.ReactElement => {
           </Tilt3DCard>
         </Animated.View>
 
+        {/* ══════════ WEEK DAY SELECTOR ══════════ */}
+        <Animated.View entering={FadeInUp.delay(300).springify()}>
+          <WeekDayStrip selectedDate={selectedDate} onSelectDate={(d) => {
+            setSelectedDate(d);
+            // Refetch diary for the selected date
+            const dateStr = d.toISOString().split('T')[0];
+            const today = new Date().toISOString().split('T')[0];
+            if (dateStr === today) {
+              fetchSummary();
+            } else {
+              fetchSummary(dateStr);
+            }
+          }} />
+        </Animated.View>
+
         {/* ══════════ DIARY SECTION ══════════ */}
         <View>
           {/* Section header */}
           <View style={styles.sectionHeader}>
-            <ThemedText style={styles.sectionTitle}>Nhật ký hôm nay</ThemedText>
+            <ThemedText style={styles.sectionTitle}>
+              {isToday(selectedDate) ? 'Nhật ký hôm nay' : `Nhật ký ${formatShortDate(selectedDate)}`}
+            </ThemedText>
             <Pressable onPress={() => navigation.navigate('MealDiary')} testID={TEST_IDS.home.diaryButton}>
               <ThemedText style={styles.seeAll}>XEM TẤT CẢ</ThemedText>
             </Pressable>
@@ -494,12 +628,16 @@ const HomeScreen = (): React.ReactElement => {
                   const emoji = getFoodEmoji(entry.foodName);
                   const isLast = index === todayEntries.length - 1;
 
-                  // Parse time from entry (use createdAt to show actual logged time)
+                  // Định dạng thời gian theo múi giờ Hà Nội (UTC+7)
                   let timeStr = '';
                   if (entry.createdAt) {
-                    const dateObj = new Date(entry.createdAt);
+                    const dtStr = entry.createdAt.endsWith('Z') ? entry.createdAt : entry.createdAt + 'Z';
+                    const dateObj = new Date(dtStr);
                     if (!Number.isNaN(dateObj.getTime())) {
-                      timeStr = dateObj.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+                      const hanoiDate = new Date(dateObj.getTime() + 7 * 60 * 60 * 1000);
+                      const hr = hanoiDate.getUTCHours().toString().padStart(2, '0');
+                      const mn = hanoiDate.getUTCMinutes().toString().padStart(2, '0');
+                      timeStr = `${hr}:${mn}`;
                     }
                   }
 
@@ -549,19 +687,13 @@ const HomeScreen = (): React.ReactElement => {
                           </ThemedText>
                           <View style={styles.entryMacros}>
                             <View style={styles.entryMacroChipV2}>
-                              <ThemedText style={styles.entryMacroTextV2}>
-                                Đ: {Math.round(entry.protein || 0)}g
-                              </ThemedText>
+                              <ThemedText style={styles.entryMacroTextV2}>Đ: {Math.round(entry.protein || 0)}g</ThemedText>
                             </View>
                             <View style={styles.entryMacroChipV2}>
-                              <ThemedText style={styles.entryMacroTextV2}>
-                                T:{Math.round(entry.carbs || 0)}g
-                              </ThemedText>
+                              <ThemedText style={styles.entryMacroTextV2}>T: {Math.round(entry.carbs || 0)}g</ThemedText>
                             </View>
                             <View style={styles.entryMacroChipV2}>
-                              <ThemedText style={styles.entryMacroTextV2}>
-                                B: {Math.round(entry.fat || 0)}g
-                              </ThemedText>
+                              <ThemedText style={styles.entryMacroTextV2}>B: {Math.round(entry.fat || 0)}g</ThemedText>
                             </View>
                           </View>
                         </View>
@@ -573,9 +705,13 @@ const HomeScreen = (): React.ReactElement => {
             ) : (
               /* Empty state */
               <View style={styles.emptyState}>
-                <ThemedText style={styles.emptyTitle}>Chưa có món nào hôm nay</ThemedText>
+                <ThemedText style={styles.emptyTitle}>
+                  {isToday(selectedDate) ? 'Chưa có món nào hôm nay' : 'Không có dữ liệu'}
+                </ThemedText>
                 <ThemedText style={styles.emptySubtitle}>
-                  Hãy chụp ảnh hoặc tìm kiếm để thêm món ăn đầu tiên!
+                  {isToday(selectedDate)
+                    ? 'Hãy chụp ảnh hoặc tìm kiếm để thêm món ăn đầu tiên!'
+                    : `Chưa có nhật ký cho ngày ${formatShortDate(selectedDate)}`}
                 </ThemedText>
               </View>
             )}
@@ -839,18 +975,21 @@ const styles = StyleSheet.create({
   },
   entryMacros: {
     flexDirection: 'row',
+    alignItems: 'center',
     gap: 8,
     marginTop: 8,
   },
   entryMacroChipV2: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 5,
     borderRadius: 6,
     backgroundColor: C.surfaceHighest,
   },
   entryMacroTextV2: {
-    fontSize: 10,
-    fontWeight: '600',
+    fontSize: 11,
+    fontWeight: '700',
     color: '#a1a1aa',
   },
 

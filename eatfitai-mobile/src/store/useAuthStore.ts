@@ -207,8 +207,11 @@ export const useAuthStore = create<AuthState>((set: any) => ({
       },
     );
     const data = resp.data;
+    // Use bracket notation to access raw JSON fields regardless of TS type
+    const raw = data as Record<string, any>;
+
     // Backend trả accessToken (JsonPropertyName) không phải token
-    const accessToken = data?.accessToken || data?.token;
+    const accessToken = raw.accessToken || raw.token;
     if (!accessToken) {
       console.error('[useAuthStore] Login response missing token:', data);
       throw new Error(t('auth.missingAccessToken'));
@@ -217,24 +220,47 @@ export const useAuthStore = create<AuthState>((set: any) => ({
     console.log('[useAuthStore] Login successful, saving tokens...');
     await tokenStorage.saveTokensFull({
       accessToken,
-      accessTokenExpiresAt: (data?.accessTokenExpiresAt || data?.expiresAt) ?? null,
-      refreshToken: data?.refreshToken ?? null,
-      refreshTokenExpiresAt: data?.refreshTokenExpiresAt ?? null,
+      accessTokenExpiresAt: (raw.accessTokenExpiresAt || raw.expiresAt) ?? null,
+      refreshToken: raw.refreshToken ?? raw.RefreshToken ?? null,
+      refreshTokenExpiresAt: raw.refreshTokenExpiresAt ?? raw.RefreshTokenExpiresAt ?? null,
     });
     setAccessTokenMem(accessToken);
     await updateSessionFromAuthResponse(data as AuthResponse);
 
     const needsOnboarding = readNeedsOnboardingFlag(
-      data as Record<string, unknown>,
+      raw,
       false,
     );
     await persistNeedsOnboarding(needsOnboarding);
 
-    // AuthResponse returns UserId/Email/DisplayName at top level (not nested under 'user')
+    // Backend uses PascalCase by default (System.Text.Json)
+    // Try both PascalCase and camelCase
+    let userName = String(raw.DisplayName ?? raw.displayName ?? '');
+    const userEmail = String(raw.Email ?? raw.email ?? email);
+    const userId = String(raw.UserId ?? raw.userId ?? '');
+
+    if (__DEV__) {
+      console.log('[useAuthStore] Extracted from login response:', { userId, userEmail, userName, rawKeys: Object.keys(raw) });
+    }
+
+    // If displayName is still empty, fetch user profile as fallback
+    if (!userName && accessToken) {
+      try {
+        const profileResp = await apiClient.get('/api/users/profile');
+        const profile = profileResp.data as Record<string, any>;
+        userName = String(profile?.DisplayName ?? profile?.displayName ?? profile?.Email ?? profile?.email ?? '');
+        if (__DEV__) {
+          console.log('[useAuthStore] Fetched profile fallback name:', userName);
+        }
+      } catch (e) {
+        if (__DEV__) console.warn('[useAuthStore] Profile fetch fallback failed:', e);
+      }
+    }
+
     const extractedUser: AuthUser = {
-      id: String(data?.userId ?? data?.UserId ?? ''),
-      email: String(data?.email ?? data?.Email ?? email),
-      name: String(data?.displayName ?? data?.DisplayName ?? ''),
+      id: userId,
+      email: userEmail,
+      name: userName,
     };
 
     if (extractedUser.id) {
