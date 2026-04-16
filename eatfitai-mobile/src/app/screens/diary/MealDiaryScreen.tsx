@@ -16,6 +16,7 @@ import {
   ScrollView,
   StatusBar,
   StyleSheet,
+  TouchableOpacity,
   View,
 } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
@@ -23,7 +24,14 @@ import Animated, {
   FadeIn,
   FadeInDown,
   FadeInUp,
+  useSharedValue,
+  useAnimatedStyle,
+  withTiming,
+  withRepeat,
+  withSequence,
+  Easing,
 } from 'react-native-reanimated';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import type { NavigationProp } from '@react-navigation/native';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -157,6 +165,45 @@ const MealDiaryScreen = (): React.ReactElement => {
   const [showQuickActions, setShowQuickActions] = useState(false);
 
   const dateKey = useMemo(() => formatDateForApi(selectedDate), [selectedDate]);
+
+  // Robot FAB floating animation & Drag gesture
+  const floatAnim = useSharedValue(0);
+  const robotOffsetX = useSharedValue(0);
+  const robotOffsetY = useSharedValue(0);
+  const robotSavedX = useSharedValue(0);
+  const robotSavedY = useSharedValue(0);
+
+  React.useEffect(() => {
+    floatAnim.value = withRepeat(
+      withSequence(
+        withTiming(-10, { duration: 1500, easing: Easing.inOut(Easing.ease) }),
+        withTiming(0, { duration: 1500, easing: Easing.inOut(Easing.ease) }),
+      ),
+      -1,
+      true,
+    );
+  }, []);
+
+  const floatStyle = useAnimatedStyle(() => ({
+    transform: [
+      { translateX: robotOffsetX.value },
+      { translateY: floatAnim.value + robotOffsetY.value },
+    ],
+  }));
+
+  const robotPanGesture = useMemo(
+    () =>
+      Gesture.Pan()
+        .onUpdate((e) => {
+          robotOffsetX.value = robotSavedX.value + e.translationX;
+          robotOffsetY.value = robotSavedY.value + e.translationY;
+        })
+        .onEnd(() => {
+          robotSavedX.value = robotOffsetX.value;
+          robotSavedY.value = robotOffsetY.value;
+        }),
+    [robotOffsetX, robotOffsetY, robotSavedX, robotSavedY],
+  );
 
   /* ─── Data fetching ─── */
   const { data: daySummary, isLoading, refetch } = useQuery<DaySummary>({
@@ -476,36 +523,41 @@ const MealDiaryScreen = (): React.ReactElement => {
       </ScrollView>
 
       {/* ══════════ FLOATING AI ROBOT FAB ══════════ */}
-      <Animated.View entering={FadeInUp.delay(500).springify()} style={styles.fabContainer}>
-        <Pressable
-          style={({ pressed }) => [
-            styles.fab,
-            pressed && { transform: [{ scale: 0.95 }], opacity: 0.9 },
-          ]}
-          onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-            setShowQuickActions(true);
-          }}
-          testID={TEST_IDS.mealDiary.addManualButton}
+      <GestureDetector gesture={robotPanGesture}>
+        <Animated.View
+          entering={FadeInUp.delay(500).springify()}
+          style={[styles.fabContainer, floatStyle]}
         >
-          {/* Robot face */}
-          <View style={styles.robotFace}>
-            {/* Eyes area */}
-            <View style={styles.robotVisor}>
-              <View style={styles.robotEye} />
-              <View style={styles.robotEye} />
+          <Pressable
+            style={({ pressed }) => [
+              styles.fab,
+              pressed && { transform: [{ scale: 0.95 }], opacity: 0.9 },
+            ]}
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+              setShowQuickActions(true);
+            }}
+            testID={TEST_IDS.mealDiary.addManualButton}
+          >
+            {/* Robot face */}
+            <View style={styles.robotFace}>
+              {/* Eyes area */}
+              <View style={styles.robotVisor}>
+                <View style={styles.robotEye} />
+                <View style={styles.robotEye} />
+              </View>
+              {/* Mouth */}
+              <View style={styles.robotMouth} />
             </View>
-            {/* Mouth */}
-            <View style={styles.robotMouth} />
-          </View>
 
-          {/* Ping dot */}
-          <View style={styles.fabPingContainer}>
-            <Animated.View entering={FadeIn.delay(800)} style={styles.fabPing} />
-            <View style={styles.fabDot} />
-          </View>
-        </Pressable>
-      </Animated.View>
+            {/* Ping dot */}
+            <View style={styles.fabPingContainer}>
+              <Animated.View entering={FadeIn.delay(800)} style={styles.fabPing} />
+              <View style={styles.fabDot} />
+            </View>
+          </Pressable>
+        </Animated.View>
+      </GestureDetector>
 
       {/* ══════════ BACK TO TODAY ══════════ */}
       {!isToday(selectedDate) && (

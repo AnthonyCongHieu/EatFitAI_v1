@@ -466,6 +466,7 @@ const HomeScreen = (): React.ReactElement => {
             height={210}
             showReflection={false}
             useDeviceMotion={true}
+            activeTouch={false}
             style={styles.dashboardCard}
           >
             {/* Ambient glow top-right */}
