@@ -36,6 +36,15 @@ Thu muc `docs/` la noi tap trung cac tai lieu ky thuat, runtime audit, va tai li
    - Ban doi chieu giua runtime audit, Notion task hien tai, va SQL truth.
    - Dung khi can co cau lai backlog, chia viec cho 2 nguoi, va quyet dinh scope.
 
+8. `16_AUTH_INFRA_INVESTIGATION_2026-04-14.md`
+   - Tong hop tinh hinh Google sign-in, email delivery, va auth infra.
+   - Dung khi can doi chieu auth voi backend/env/infra.
+
+9. `18_REAL_DEVICE_AUTH_RUNBOOK_AND_GOOGLE_REMEDIATION_2026-04-15.md`
+   - Runbook van hanh auth tren thiet bi Android that qua USB.
+   - Co huong dan lay Google credentials/files, note bug, workaround, va ke hoach fix toan dien.
+   - Dung khi can test lai forgot/reset/google ma khong muon di do lane tu dau.
+
 ## Thu muc phu
 
 - `analysis_reports/`
@@ -48,6 +57,7 @@ Thu muc `docs/` la noi tap trung cac tai lieu ky thuat, runtime audit, va tai li
 - Neu can verify production Result flow: doc `11`.
 - Neu can biet app hien tai dung o dau: doc `06`.
 - Neu can chia viec, cat scope, va sap lai Notion: doc `07`.
+- Neu can van hanh auth tren may that va chot Google/reset mail: doc `18`.
 - Neu can biet he thong duoc xay nhu the nao: doc `01`, `02`, `03`.
 
 ## Nguyen tac cap nhat

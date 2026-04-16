@@ -31,10 +31,6 @@ const EmailSchema = z.object({
   email: z.string().email(t('auth.invalidEmail')),
 });
 
-const VerifySchema = z.object({
-  resetCode: z.string().min(4, t('auth.resetCodeRequired')),
-});
-
 const NewPasswordSchema = z
   .object({
     newPassword: z.string().min(6, t('auth.passwordTooShort')),
@@ -79,6 +75,7 @@ const ForgotPasswordScreen = ({ navigation }: Props): React.ReactElement => {
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState('');
   const [resetCode, setResetCode] = useState('');
+  const [devResetCode, setDevResetCode] = useState('');
   const [passwordVisible, setPasswordVisible] = useState(false);
   const [confirmVisible, setConfirmVisible] = useState(false);
 
@@ -104,10 +101,10 @@ const ForgotPasswordScreen = ({ navigation }: Props): React.ReactElement => {
     glowOpacity.value = withRepeat(
       withSequence(
         withTiming(0.6, { duration: 1500 }),
-        withTiming(0.15, { duration: 1500 })
+        withTiming(0.15, { duration: 1500 }),
       ),
       -1,
-      true
+      true,
     );
   }, []);
 
@@ -126,10 +123,10 @@ const ForgotPasswordScreen = ({ navigation }: Props): React.ReactElement => {
     cursorOpacity.value = withRepeat(
       withSequence(
         withTiming(0, { duration: 500 }),
-        withTiming(1, { duration: 500 })
+        withTiming(1, { duration: 500 }),
       ),
       -1,
-      true
+      true,
     );
   }, []);
 
@@ -140,10 +137,13 @@ const ForgotPasswordScreen = ({ navigation }: Props): React.ReactElement => {
   });
 
   useEffect(() => {
-    if (step === 'verify') {
-      setTimeout(() => inputRefs.current[0]?.focus(), 450);
+    if (step !== 'verify' || devResetCode) {
+      return;
     }
-  }, [step]);
+
+    const timer = setTimeout(() => inputRefs.current[0]?.focus(), 450);
+    return () => clearTimeout(timer);
+  }, [devResetCode, step]);
 
   useEffect(() => {
     if (countdown > 0) {
@@ -157,13 +157,27 @@ const ForgotPasswordScreen = ({ navigation }: Props): React.ReactElement => {
     async (values: { email: string }) => {
       try {
         setLoading(true);
-        await forgotPassword(values.email);
+        setCode(Array(CODE_LENGTH).fill(''));
+        setResetCode('');
+        setDevResetCode('');
+
+        const returnedResetCode = (await forgotPassword(values.email))?.trim() ?? '';
+        const nextCode = returnedResetCode.replace(/\D/g, '').slice(0, CODE_LENGTH);
+
         setEmail(values.email);
         Toast.show({
           type: 'success',
           text1: 'Đã gửi mã xác minh',
-          text2: 'Kiểm tra email của bạn để tiếp tục',
+          text2: nextCode
+            ? `Chế độ dev: dùng mã ${nextCode} để tiếp tục`
+            : 'Kiểm tra email của bạn để tiếp tục',
         });
+
+        if (nextCode) {
+          setDevResetCode(nextCode);
+          setCode(Array.from({ length: CODE_LENGTH }, (_, index) => nextCode[index] ?? ''));
+        }
+
         setStep('verify');
         setCountdown(45);
       } catch (e: any) {
@@ -578,7 +592,7 @@ const ForgotPasswordScreen = ({ navigation }: Props): React.ReactElement => {
                             style={[
                               styles.otpSlot,
                               isActive && styles.otpSlotActive,
-                              digit ? { borderColor: C.primary } : {}
+                              digit ? { borderColor: C.primary } : {},
                             ]}
                           >
                             <TextInput
@@ -612,6 +626,42 @@ const ForgotPasswordScreen = ({ navigation }: Props): React.ReactElement => {
                         );
                       })}
                     </View>
+
+                    {devResetCode ? (
+                      <View
+                        style={{
+                          marginBottom: 20,
+                          borderRadius: 18,
+                          borderWidth: 1,
+                          borderColor: 'rgba(75, 226, 119, 0.28)',
+                          backgroundColor: 'rgba(75, 226, 119, 0.08)',
+                          paddingHorizontal: 16,
+                          paddingVertical: 14,
+                        }}
+                      >
+                        <ThemedText
+                          variant="caption"
+                          weight="700"
+                          style={{ color: C.primary, marginBottom: 6 }}
+                        >
+                          MÃ DEV
+                        </ThemedText>
+                        <ThemedText
+                          variant="body"
+                          weight="700"
+                          style={{ color: C.onSurface, fontSize: 20, letterSpacing: 3 }}
+                        >
+                          {devResetCode}
+                        </ThemedText>
+                        <ThemedText
+                          variant="bodySmall"
+                          style={{ color: C.onSurfaceVariant, marginTop: 6, lineHeight: 20 }}
+                        >
+                          Backend đang chạy ở chế độ dev nên app đã tự điền mã để bạn tiếp tục
+                          test reset mật khẩu mà không cần chờ email.
+                        </ThemedText>
+                      </View>
+                    ) : null}
 
                     {/* CTA */}
                     <Pressable

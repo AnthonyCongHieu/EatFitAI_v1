@@ -36,19 +36,11 @@ services:
         value: food-images
       - key: Supabase__UserFoodBucket
         value: user-food
-      - key: Smtp__Host
-        value: smtp.gmail.com
-      - key: Smtp__Port
-        value: "587"
-      - key: Smtp__EnableSsl
-        value: "true"
-      - key: Smtp__User
+      - key: Brevo__ApiKey
         sync: false
-      - key: Smtp__Password
+      - key: Brevo__SenderEmail
         sync: false
-      - key: Smtp__FromEmail
-        sync: false
-      - key: Smtp__FromDisplayName
+      - key: Brevo__SenderName
         value: EatFitAI
 
   - type: web

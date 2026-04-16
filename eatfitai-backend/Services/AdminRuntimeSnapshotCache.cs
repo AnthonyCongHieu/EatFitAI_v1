@@ -126,7 +126,7 @@ public sealed class AdminRuntimeSnapshotCache : IAdminRuntimeSnapshotCache
 
 public sealed class AdminRuntimeSnapshotBackgroundService : BackgroundService
 {
-    private static readonly TimeSpan DefaultInterval = TimeSpan.FromSeconds(5);
+    private static readonly TimeSpan DefaultInterval = TimeSpan.FromSeconds(30);
 
     private readonly IConfiguration _configuration;
     private readonly IAdminRuntimeSnapshotCache _runtimeSnapshotCache;
@@ -177,7 +177,14 @@ public sealed class AdminRuntimeSnapshotBackgroundService : BackgroundService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Unhandled exception while refreshing cached admin runtime snapshot.");
+            try
+            {
+                _logger.LogError(ex, "Unhandled exception while refreshing cached admin runtime snapshot.");
+            }
+            catch (ObjectDisposedException)
+            {
+                // Logger has been disposed during application shutdown — safe to ignore.
+            }
         }
     }
 }
