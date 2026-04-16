@@ -126,6 +126,8 @@ interface Tilt3DCardProps {
   reflectionColor?: string;
   /** Enable gyroscope/accelerometer-driven tilt (default false) */
   useDeviceMotion?: boolean;
+  /** Enable touch-based tilt (default true) */
+  activeTouch?: boolean;
 }
 
 const Tilt3DCard: React.FC<Tilt3DCardProps> = ({
@@ -138,6 +140,7 @@ const Tilt3DCard: React.FC<Tilt3DCardProps> = ({
   showReflection = true,
   reflectionColor = 'rgba(255,255,255,0.07)',
   useDeviceMotion = false,
+  activeTouch = true,
 }) => {
   const translateX = useSharedValue(0);
   const translateY = useSharedValue(0);
@@ -268,23 +271,31 @@ const Tilt3DCard: React.FC<Tilt3DCardProps> = ({
     };
   });
 
+  const content = (
+    <Animated.View style={[cardAnimatedStyle, style]}>
+      {children}
+      {showReflection && (
+        <Animated.View
+          pointerEvents="none"
+          style={[
+            styles.reflection,
+            { backgroundColor: reflectionColor },
+            reflectionStyle,
+          ]}
+        />
+      )}
+    </Animated.View>
+  );
+
   return (
     <TiltContext.Provider value={contextValue}>
-      <GestureDetector gesture={pan}>
-        <Animated.View style={[cardAnimatedStyle, style]}>
-          {children}
-          {showReflection && (
-            <Animated.View
-              pointerEvents="none"
-              style={[
-                styles.reflection,
-                { backgroundColor: reflectionColor },
-                reflectionStyle,
-              ]}
-            />
-          )}
-        </Animated.View>
-      </GestureDetector>
+      {activeTouch ? (
+        <GestureDetector gesture={pan}>
+          {content}
+        </GestureDetector>
+      ) : (
+        content
+      )}
     </TiltContext.Provider>
   );
 };
