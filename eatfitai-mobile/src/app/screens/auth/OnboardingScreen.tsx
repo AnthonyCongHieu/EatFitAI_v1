@@ -49,6 +49,7 @@ import { useAppTheme } from '../../../theme/ThemeProvider';
 import { useProfileStore } from '../../../store/useProfileStore';
 import { AUTH_NEEDS_ONBOARDING_KEY, useAuthStore } from '../../../store/useAuthStore';
 import apiClient, { aiApiClient } from '../../../services/apiClient';
+import { aiService } from '../../../services/aiService';
 import { profileService } from '../../../services/profileService';
 import { showSuccess } from '../../../utils/errorHandler';
 import { t } from '../../../i18n/vi';
@@ -640,10 +641,10 @@ const OnboardingScreen = (): React.ReactElement => {
       // Lưu NutritionTarget từ aiResult vào backend
       if (aiResult) {
         try {
-          await apiClient.post('/api/ai/nutrition/apply', {
+          await aiService.applyNutritionTarget({
             calories: aiResult.calories,
             protein: aiResult.protein,
-            carb: aiResult.carbs,
+            carbs: aiResult.carbs,
             fat: aiResult.fat,
           });
           // Log only in development mode

@@ -11,6 +11,9 @@ obj/
 !.env*.example
 !**/.env.example
 !**/.env*.example
+.envrc
+.env.vault
+.direnv/
 ios/Pods/
 android/app/build/
 android/.kotlin/
@@ -26,6 +29,10 @@ artifacts/
 eatfitai-mobile/artifacts/
 eatfitai-mobile/src/config/generated-api-config.ts
 eatfitai-mobile/android/keystore.properties
+*.jks
+*.keystore
+*.p12
+*.pfx
 
 # AI Configuration
 .agent/
