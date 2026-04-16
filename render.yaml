@@ -16,10 +16,14 @@ services:
         sync: false
       - key: Jwt__Key
         sync: false
+      - key: Jwt__PreviousKeys
+        sync: false
       - key: Jwt__Issuer
         value: EatFitAI
       - key: Jwt__Audience
         value: EatFitAI
+      - key: AIProvider__InternalToken
+        sync: false
       - key: AIProvider__VisionBaseUrl
         sync: false
       - key: Google__WebClientId

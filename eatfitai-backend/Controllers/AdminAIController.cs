@@ -438,16 +438,15 @@ public class AdminAIController : ControllerBase
             if (statusCode == 400)
                 return new KeyTestResult { Status = "Invalid", StatusCode = statusCode, Message = "Key sai format hoặc request lỗi." };
 
-            var body = await response.Content.ReadAsStringAsync();
-            return new KeyTestResult { Status = "Error", StatusCode = statusCode, Message = body.Length > 200 ? body.Substring(0, 200) : body };
+            return new KeyTestResult { Status = "Error", StatusCode = statusCode, Message = "Khong the xac thuc key voi dich vu upstream." };
         }
         catch (TaskCanceledException)
         {
             return new KeyTestResult { Status = "Timeout", StatusCode = 0, Message = "Request timeout — key hoặc network có vấn đề." };
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            return new KeyTestResult { Status = "Error", StatusCode = 0, Message = ex.Message };
+            return new KeyTestResult { Status = "Error", StatusCode = 0, Message = "Khong the kiem tra key luc nay." };
         }
     }
 

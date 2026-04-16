@@ -1,0 +1,84 @@
+{
+  "github": {
+    "owner": "AnthonyCongHieu",
+    "repos": [
+      {
+        "name": "EatFitAI_v1",
+        "path": "E:/tool edit/eatfitai_v1"
+      },
+      {
+        "name": "EatFitAI_Admin",
+        "path": "E:/tool edit/EatFitAI_Admin"
+      }
+    ]
+  },
+  "render": {
+    "baseUrl": "https://api.render.com/v1",
+    "services": {
+      "backend": {
+        "name": "eatfitai-backend",
+        "id": "srv-d7arf2svjg8s73em138g",
+        "criticalEnvKeys": [
+          "ConnectionStrings__DefaultConnection",
+          "AIProvider__InternalToken",
+          "Jwt__Key",
+          "Jwt__PreviousKeys"
+        ]
+      },
+      "aiProvider": {
+        "name": "eatfitai-ai-provider",
+        "id": "srv-d7arf2kvjg8s73em1360",
+        "criticalEnvKeys": [
+          "AI_PROVIDER_INTERNAL_TOKEN",
+          "GEMINI_API_KEY"
+        ]
+      }
+    }
+  },
+  "vercel": {
+    "baseUrl": "https://api.vercel.com",
+    "projectName": "eatfitai-admin",
+    "projectId": "prj_Z1FYSyVnmdQUy7YVRSaFgWK9kNkr",
+    "teamId": "team_kBGVK6h7HrCXlKXOJGehd0bb",
+    "path": "E:/tool edit/EatFitAI_Admin"
+  },
+  "supabase": {
+    "baseUrl": "https://api.supabase.com/v1",
+    "projectRef": "bjlmndmafrajjysenpbm"
+  },
+  "firebase": {
+    "projectId": "eatfitai-449b2",
+    "androidPackageName": "com.eatfitai.app",
+    "googleServicesPath": "E:/tool edit/eatfitai_v1/eatfitai-mobile/android/app/google-services.json"
+  },
+  "historyRewrite": {
+    "repos": [
+      {
+        "name": "EatFitAI_v1",
+        "path": "E:/tool edit/eatfitai_v1",
+        "paths": [
+          "eatfitai-backend/appsettings.Development.json",
+          "eatfitai-mobile/android/app/google-services.json"
+        ],
+        "pathGlobs": [
+          "**/.env",
+          "**/.env.local",
+          "**/.env.*.local"
+        ]
+      },
+      {
+        "name": "EatFitAI_Admin",
+        "path": "E:/tool edit/EatFitAI_Admin",
+        "paths": [
+          ".admin_token.tmp",
+          "session.json"
+        ],
+        "pathGlobs": [
+          "**/.env",
+          "**/.env.local",
+          "**/.env.*.local"
+        ]
+      }
+    ]
+  }
+}

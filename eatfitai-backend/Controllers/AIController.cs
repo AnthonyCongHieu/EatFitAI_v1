@@ -9,6 +9,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Caching.Memory;
 using System.Text.Json;
 using EatFitAI.API.DTOs.AI;
+using EatFitAI.API.Helpers;
 using EatFitAI.API.Services;
 using EatFitAI.API.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
@@ -113,7 +114,13 @@ namespace EatFitAI.API.Controllers
             var body = await resp.Content.ReadAsStringAsync();
             if (!resp.IsSuccessStatusCode)
             {
-                return StatusCode((int)resp.StatusCode, new { error = "ai-provider_error", detail = body });
+                _logger.LogWarning(
+                    "AI provider detect failed with status {StatusCode}. Body length={BodyLength}",
+                    (int)resp.StatusCode,
+                    body.Length);
+                return StatusCode(
+                    (int)resp.StatusCode,
+                    ErrorResponseHelper.SafeError("ai-provider_error", "Khong the xu ly anh tu dich vu AI.", HttpContext));
             }
             List<EatFitAI.API.DTOs.AI.VisionDetectionDto> detections;
             try

@@ -202,7 +202,7 @@ public class AdminRuntimeController : ControllerBase
                             Payload = new
                             {
                                 error = "runtime_stream_error",
-                                detail = ex.Message,
+                                message = "Runtime stream gap su co. Dang thu lai.",
                             },
                         });
                     }

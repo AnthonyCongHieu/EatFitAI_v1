@@ -600,10 +600,9 @@ if (IsPlaceholderSecret(jwtKey))
 
 // Add JWT authentication.
 // We must support both:
-// 1. Legacy custom backend tokens signed with Jwt:Key (HS256).
+// 1. Legacy custom backend tokens signed with Jwt:Key / Jwt:PreviousKeys (HS256).
 // 2. Supabase access tokens signed by the project's JWKS (currently ES256).
-var jwtKeyBytes = Encoding.UTF8.GetBytes(jwtKey!);
-var localJwtSigningKey = new SymmetricSecurityKey(jwtKeyBytes);
+var localJwtSigningKeys = JwtKeyRing.GetConfiguredSigningKeys(builder.Configuration);
 var configuredSupabaseUrl = builder.Configuration["Supabase:Url"];
 var supabaseUrl = HasConfiguredHttpsUrl(configuredSupabaseUrl)
     ? configuredSupabaseUrl!.TrimEnd('/')
@@ -628,7 +627,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidateIssuerSigningKey = true,
             IssuerSigningKeyResolver = (_, _, _, _) =>
             {
-                var signingKeys = new List<SecurityKey> { localJwtSigningKey };
+                var signingKeys = new List<SecurityKey>(localJwtSigningKeys);
 
                 try
                 {

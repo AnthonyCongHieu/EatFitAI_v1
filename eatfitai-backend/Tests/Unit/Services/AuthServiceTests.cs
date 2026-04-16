@@ -1,3 +1,5 @@
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
 using AutoMapper;
@@ -13,6 +15,7 @@ using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.IdentityModel.Tokens;
 using Moq;
 using Xunit;
 using AdminPasswordResetCode = EatFitAI.API.Models.PasswordResetCode;
@@ -22,6 +25,7 @@ namespace EatFitAI.API.Tests.Unit.Services
     public class AuthServiceTests : IDisposable
     {
         private const string TestJwtKey = "test-secret-key-for-unit-tests-12345";
+        private const string PreviousJwtKey = "previous-secret-key-for-unit-tests-67890";
 
         private readonly Mock<IUserRepository> _userRepositoryMock;
         private readonly EatFitAIDbContext _context;
@@ -46,6 +50,7 @@ namespace EatFitAI.API.Tests.Unit.Services
 
             _envMock.SetupGet(e => e.EnvironmentName).Returns(Environments.Development);
             _configurationMock.Setup(c => c["Jwt:Key"]).Returns(TestJwtKey);
+            _configurationMock.Setup(c => c["Jwt:PreviousKeys"]).Returns(PreviousJwtKey);
             _configurationMock.Setup(c => c["Jwt:Issuer"]).Returns("EatFitAI");
             _configurationMock.Setup(c => c["Jwt:Audience"]).Returns("EatFitAI");
 
@@ -258,6 +263,31 @@ namespace EatFitAI.API.Tests.Unit.Services
             var isValid = await _authService.ValidateTokenAsync("invalid.jwt.token");
 
             Assert.False(isValid);
+        }
+
+        [Fact]
+        public async Task ValidateTokenAsync_TokenSignedByPreviousKey_ReturnsTrue()
+        {
+            var tokenHandler = new JwtSecurityTokenHandler();
+            var descriptor = new SecurityTokenDescriptor
+            {
+                Subject = new ClaimsIdentity(new[]
+                {
+                    new Claim(ClaimTypes.NameIdentifier, Guid.NewGuid().ToString()),
+                    new Claim(ClaimTypes.Email, "previous-key@example.com"),
+                }),
+                Issuer = "EatFitAI",
+                Audience = "EatFitAI",
+                Expires = DateTime.UtcNow.AddMinutes(15),
+                SigningCredentials = new SigningCredentials(
+                    new SymmetricSecurityKey(Encoding.UTF8.GetBytes(PreviousJwtKey)),
+                    SecurityAlgorithms.HmacSha256Signature),
+            };
+
+            var token = tokenHandler.WriteToken(tokenHandler.CreateToken(descriptor));
+            var isValid = await _authService.ValidateTokenAsync(token);
+
+            Assert.True(isValid);
         }
 
         [Fact]

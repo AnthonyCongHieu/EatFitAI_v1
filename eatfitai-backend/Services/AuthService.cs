@@ -180,12 +180,12 @@ namespace EatFitAI.API.Services
             try
             {
                 var tokenHandler = new JwtSecurityTokenHandler();
-                var key = GetJwtSigningKey();
+                var signingKeys = JwtKeyRing.GetConfiguredSigningKeys(_configuration);
 
                 tokenHandler.ValidateToken(token, new TokenValidationParameters
                 {
                     ValidateIssuerSigningKey = true,
-                    IssuerSigningKey = new SymmetricSecurityKey(key),
+                    IssuerSigningKeyResolver = (_, _, _, _) => signingKeys,
                     ValidateIssuer = false,
                     ValidateAudience = false,
                     ClockSkew = TimeSpan.Zero
@@ -355,13 +355,7 @@ namespace EatFitAI.API.Services
 
         private byte[] GetJwtSigningKey()
         {
-            var key = _configuration["Jwt:Key"];
-            if (IsPlaceholderSecret(key))
-            {
-                throw new InvalidOperationException("Jwt:Key is missing or insecure.");
-            }
-
-            return Encoding.ASCII.GetBytes(key!);
+            return JwtKeyRing.GetPrimarySigningKeyBytes(_configuration);
         }
 
         public async Task LogoutAsync(string refreshToken)
