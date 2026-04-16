@@ -139,7 +139,7 @@ const SplashScreen = (): React.ReactElement => {
 
         {/* ─── Hero Section ─── */}
         <ParallaxLayer depth={0.8} style={styles.heroSection}>
-          {/* Empty hero section as per user request to remove text */}
+          <View />
         </ParallaxLayer>
       </Tilt3DCard>
 

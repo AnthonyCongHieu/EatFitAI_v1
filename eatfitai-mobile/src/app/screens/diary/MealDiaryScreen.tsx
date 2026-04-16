@@ -45,7 +45,7 @@ import { ThemedText } from '../../../components/ThemedText';
 import { BottomSheet } from '../../../components/BottomSheet';
 import { ThemedTextInput } from '../../../components/ThemedTextInput';
 import { Button } from '../../../components/Button';
-import { diaryService, type DiaryEntry, type DaySummary } from '../../../services/diaryService';
+import { diaryService, type DiaryEntry, type DaySummary, type DiaryMealGroup } from '../../../services/diaryService';
 import { invalidateDiaryQueries } from '../../../services/diaryFlowService';
 import { MEAL_TYPE_LABELS, type MealTypeId } from '../../../types';
 import type { RootStackParamList } from '../../types';
@@ -214,13 +214,13 @@ const MealDiaryScreen = (): React.ReactElement => {
   const entries = useMemo(() => {
     if (!daySummary?.meals) return [];
     return daySummary.meals
-      .flatMap((m) => m.entries)
-      .sort((a, b) => new Date(a.createdAt || 0).getTime() - new Date(b.createdAt || 0).getTime());
+      .flatMap((m: DiaryMealGroup) => m.entries)
+      .sort((a: DiaryEntry, b: DiaryEntry) => new Date(a.createdAt || 0).getTime() - new Date(b.createdAt || 0).getTime());
   }, [daySummary]);
 
   const totals = useMemo(() => {
     return entries.reduce(
-      (acc, e) => ({
+      (acc: { calories: number; protein: number; carbs: number; fat: number }, e: DiaryEntry) => ({
         calories: acc.calories + (e.calories || 0),
         protein: acc.protein + (e.protein || 0),
         carbs: acc.carbs + (e.carbs || 0),
@@ -237,7 +237,7 @@ const MealDiaryScreen = (): React.ReactElement => {
   // Group entries by meal type, ensuring all 4 meal types are shown
   const mealGroups = useMemo(() => {
     const groups = new Map<MealTypeId, DiaryEntry[]>();
-    entries.forEach((e) => {
+    entries.forEach((e: DiaryEntry) => {
       const mt = e.mealType as MealTypeId;
       if (!groups.has(mt)) groups.set(mt, []);
       groups.get(mt)!.push(e);

@@ -32,5 +32,5 @@
   },
   "include": ["App.tsx", "src", "__tests__"],
   "exclude": ["node_modules", "android", "ios"],
-  "extends": "expo/tsconfig.base"
+  "extends": "./node_modules/expo/tsconfig.base.json"
 }
