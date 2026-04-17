@@ -70,18 +70,6 @@ namespace EatFitAI.API.Controllers
         [ProducesResponseType(typeof(object), StatusCodes.Status400BadRequest)]
         public async Task<ActionResult<EatFitAI.API.DTOs.AI.VisionDetectResultDto>> DetectVision(DetectVisionRequest input)
         {
-            var aiStatus = _aiHealthService.GetStatus();
-            if (string.Equals(aiStatus.State, AiHealthState.Down.ToString().ToUpperInvariant(), StringComparison.Ordinal))
-            {
-                _logger.LogWarning("Skipping vision detection because AI provider is DOWN. Message: {Message}", aiStatus.Message);
-                return StatusCode(StatusCodes.Status503ServiceUnavailable, new
-                {
-                    error = "ai_provider_down",
-                    message = "AI provider hiện đang DOWN. Không thể nhận diện ảnh lúc này.",
-                    aiStatus
-                });
-            }
-
             var file = input.File;
             if (file == null || file.Length == 0)
             {
@@ -100,6 +88,18 @@ namespace EatFitAI.API.Controllers
                 return Ok(cachedResult);
             }
 
+            var aiStatus = _aiHealthService.GetStatus();
+            if (ShouldBlockVisionDetection(aiStatus))
+            {
+                _logger.LogWarning("Skipping vision detection because AI provider is DOWN and health state is fresh. Message: {Message}", aiStatus.Message);
+                return StatusCode(StatusCodes.Status503ServiceUnavailable, new
+                {
+                    error = "ai_provider_down",
+                    message = "AI provider hiện đang DOWN. Không thể nhận diện ảnh lúc này.",
+                    aiStatus
+                });
+            }
+
             var baseUrl = AiProviderUrlResolver.GetVisionBaseUrl(_configuration);
             var url = $"{baseUrl}/detect";
 
@@ -110,8 +110,28 @@ namespace EatFitAI.API.Controllers
             streamContent.Headers.ContentType = new MediaTypeHeaderValue(file.ContentType ?? "application/octet-stream");
             content.Add(streamContent, "file", file.FileName);
 
-            using var resp = await client.PostAsync(url, content);
-            var body = await resp.Content.ReadAsStringAsync();
+            HttpResponseMessage response;
+            try
+            {
+                response = await client.PostAsync(url, content, HttpContext.RequestAborted);
+            }
+            catch (OperationCanceledException ex) when (!HttpContext.RequestAborted.IsCancellationRequested)
+            {
+                _logger.LogWarning(ex, "AI provider detect timed out for {Url}", url);
+                return StatusCode(
+                    StatusCodes.Status504GatewayTimeout,
+                    ErrorResponseHelper.SafeError("ai-provider_timeout", "Khong the xu ly anh tu dich vu AI.", HttpContext));
+            }
+            catch (HttpRequestException ex)
+            {
+                _logger.LogWarning(ex, "AI provider detect request failed for {Url}", url);
+                return StatusCode(
+                    StatusCodes.Status503ServiceUnavailable,
+                    ErrorResponseHelper.SafeError("ai-provider_error", "Khong the xu ly anh tu dich vu AI.", HttpContext));
+            }
+
+            using var resp = response;
+            var body = await resp.Content.ReadAsStringAsync(HttpContext.RequestAborted);
             if (!resp.IsSuccessStatusCode)
             {
                 _logger.LogWarning(
@@ -848,6 +868,29 @@ namespace EatFitAI.API.Controllers
             }
 
             return list;
+        }
+
+        private bool ShouldBlockVisionDetection(AiHealthStatusDto aiStatus)
+        {
+            if (!string.Equals(aiStatus.State, AiHealthState.Down.ToString(), StringComparison.OrdinalIgnoreCase))
+            {
+                return false;
+            }
+
+            if (!aiStatus.LastCheckedAt.HasValue)
+            {
+                return false;
+            }
+
+            return DateTimeOffset.UtcNow - aiStatus.LastCheckedAt.Value <= GetVisionHealthGateFreshnessWindow();
+        }
+
+        private TimeSpan GetVisionHealthGateFreshnessWindow()
+        {
+            var configuredSeconds = _configuration.GetValue<int?>("AIProvider:HealthGateFreshnessSeconds");
+            return configuredSeconds.HasValue && configuredSeconds.Value > 0
+                ? TimeSpan.FromSeconds(configuredSeconds.Value)
+                : TimeSpan.FromSeconds(60);
         }
 
         /// <summary>

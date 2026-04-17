@@ -71,7 +71,6 @@ export const Screen = ({
   // Render content based on scroll prop
   const content = scroll ? (
     <ScrollView
-      testID={testID}
       style={styles.scrollView}
       contentContainerStyle={[contentStyle, contentContainerStyle]}
       refreshControl={refreshControl}
@@ -95,12 +94,18 @@ export const Screen = ({
         end={{ x: 0.5, y: 1 }}
         style={[styles.gradient, style as ViewStyle]}
       >
-        {content}
+        <View testID={testID} style={containerStyle}>
+          {content}
+        </View>
       </LinearGradient>
     );
   }
 
-  return <View style={[containerStyle, style as ViewStyle]}>{content}</View>;
+  return (
+    <View testID={testID} style={[containerStyle, style as ViewStyle]}>
+      {content}
+    </View>
+  );
 };
 
 const styles = StyleSheet.create({

@@ -1,0 +1,34 @@
+appId: com.eatfitai.app
+name: auth-full
+tags:
+  - hero
+  - auth
+  - android
+---
+- launchApp
+- runFlow:
+    when:
+      visible:
+        id: auth-intro-start-button
+    commands:
+      - tapOn:
+          id: auth-intro-start-button
+          retryTapIfNoChange: true
+- runFlow:
+    when:
+      visible:
+        id: auth-welcome-login-button
+    commands:
+      - tapOn:
+          id: auth-welcome-login-button
+          retryTapIfNoChange: true
+- assertVisible:
+    id: auth-login-screen
+- runFlow:
+    file: ../subflows/login.yaml
+- extendedWaitUntil:
+    visible:
+      id: home-screen
+    timeout: 30000
+- assertVisible:
+    id: home-screen

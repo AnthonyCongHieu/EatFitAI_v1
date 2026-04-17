@@ -10,7 +10,6 @@ const APPIUM_PORT = Number(process.env.APPIUM_PORT || 4723);
 const APPIUM_AUTOMATION_NAME = process.env.APPIUM_AUTOMATION_NAME || 'UiAutomator2';
 const APP_PACKAGE = 'com.eatfitai.app';
 const APP_ACTIVITY = 'com.eatfitai.app.MainActivity';
-const ARTIFACT_DIR = path.resolve(__dirname, '..', '..', '..', 'artifacts', 'appium');
 const REPO_ROOT = path.resolve(__dirname, '..', '..', '..');
 const FALLBACK_ADB_PATH = path.resolve(
   REPO_ROOT,
@@ -52,12 +51,22 @@ function createArtifactBaseName(label) {
   return `${stamp}-${label}`;
 }
 
+function resolveArtifactDir() {
+  const sessionRoot = process.env.EATFITAI_SMOKE_OUTPUT_DIR || process.env.APPIUM_EVIDENCE_DIR;
+  if (sessionRoot) {
+    return path.join(path.resolve(sessionRoot), 'appium');
+  }
+
+  return path.resolve(__dirname, '..', '..', '..', 'artifacts', 'appium');
+}
+
 async function captureDebugArtifacts(driver, label) {
-  fs.mkdirSync(ARTIFACT_DIR, { recursive: true });
+  const artifactDir = resolveArtifactDir();
+  fs.mkdirSync(artifactDir, { recursive: true });
   const baseName = createArtifactBaseName(label);
-  const metaPath = path.join(ARTIFACT_DIR, `${baseName}.json`);
-  const sourcePath = path.join(ARTIFACT_DIR, `${baseName}.xml`);
-  const screenshotPath = path.join(ARTIFACT_DIR, `${baseName}.png`);
+  const metaPath = path.join(artifactDir, `${baseName}.json`);
+  const sourcePath = path.join(artifactDir, `${baseName}.xml`);
+  const screenshotPath = path.join(artifactDir, `${baseName}.png`);
   const payload = {
     label,
     capturedAt: new Date().toISOString(),
@@ -79,6 +88,30 @@ async function captureDebugArtifacts(driver, label) {
   } finally {
     fs.writeFileSync(metaPath, JSON.stringify(payload, null, 2), 'utf8');
   }
+
+  return {
+    ...payload,
+    metaPath,
+  };
+}
+
+function adbOutput(args, options = {}) {
+  const serial = process.env.ANDROID_SERIAL;
+  const finalArgs = serial ? ['-s', serial, ...args] : args;
+  const adbPath = process.env.ANDROID_ADB_PATH || (fs.existsSync(FALLBACK_ADB_PATH) ? FALLBACK_ADB_PATH : 'adb');
+  return execFileSync(adbPath, finalArgs, {
+    encoding: 'utf8',
+    maxBuffer: options.maxBuffer || 8 * 1024 * 1024,
+  });
+}
+
+function captureLogcat(outputDir, fileName = 'appium.logcat.txt', options = {}) {
+  fs.mkdirSync(outputDir, { recursive: true });
+  const filePath = path.join(outputDir, fileName);
+  const lines = options.lines || '4000';
+  const content = adbOutput(['logcat', '-d', '-t', String(lines)]);
+  fs.writeFileSync(filePath, content, 'utf8');
+  return filePath;
 }
 
 async function tapElement(driver, element, options = {}) {
@@ -415,6 +448,7 @@ module.exports = {
   APP_PACKAGE,
   TEST_IDS,
   captureDebugArtifacts,
+  captureLogcat,
   connect,
   coldLaunchApp,
   findByTestId,

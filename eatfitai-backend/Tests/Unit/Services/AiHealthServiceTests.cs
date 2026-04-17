@@ -1,4 +1,5 @@
 using System.Net;
+using System.Text;
 using EatFitAI.API.Services;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -51,6 +52,58 @@ public class AiHealthServiceTests
         Assert.Equal(2, down.ConsecutiveFailures);
     }
 
+    [Fact]
+    public async Task RefreshAsync_UsesLongerDefaultTimeout_WhenTimeoutIsNotConfigured()
+    {
+        var handler = new DelayedSuccessHandler(TimeSpan.FromSeconds(6));
+        var configuration = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["AIProvider:VisionBaseUrl"] = "https://example-ai.onrender.com"
+            })
+            .Build();
+
+        var service = new AiHealthService(
+            new StubHttpClientFactory(handler),
+            configuration,
+            NullLogger<AiHealthService>.Instance);
+
+        await service.RefreshAsync();
+
+        var status = service.GetStatus();
+        Assert.Equal("HEALTHY", status.State);
+        Assert.Equal(0, status.ConsecutiveFailures);
+        Assert.Equal("AI provider healthy.", status.Message);
+    }
+
+    [Fact]
+    public async Task RefreshAsync_HttpFailureMessage_IncludesProbeUrl()
+    {
+        var handler = new QueueMessageHandler();
+        handler.Enqueue(new HttpResponseMessage(HttpStatusCode.NotFound)
+        {
+            Content = new StringContent("missing", Encoding.UTF8, "text/plain")
+        });
+
+        var configuration = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["AIProvider:VisionBaseUrl"] = "https://example-ai.onrender.com"
+            })
+            .Build();
+
+        var service = new AiHealthService(
+            new StubHttpClientFactory(handler),
+            configuration,
+            NullLogger<AiHealthService>.Instance);
+
+        await service.RefreshAsync();
+
+        var status = service.GetStatus();
+        Assert.Equal("DEGRADED", status.State);
+        Assert.Contains("https://example-ai.onrender.com/healthz", status.Message, StringComparison.Ordinal);
+    }
+
     private sealed class StubHttpClientFactory : IHttpClientFactory
     {
         private readonly HttpMessageHandler _handler;
@@ -79,6 +132,31 @@ public class AiHealthServiceTests
                 HttpResponseMessage response => Task.FromResult(response),
                 Exception ex => Task.FromException<HttpResponseMessage>(ex),
                 _ => throw new InvalidOperationException("Unexpected queued message handler item.")
+            };
+        }
+    }
+
+    private sealed class DelayedSuccessHandler : HttpMessageHandler
+    {
+        private readonly TimeSpan _delay;
+
+        public DelayedSuccessHandler(TimeSpan delay)
+        {
+            _delay = delay;
+        }
+
+        protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            await Task.Delay(_delay, cancellationToken);
+
+            return new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent(
+                    """
+                    {"status":"ok","model_loaded":true,"gemini_configured":true}
+                    """,
+                    Encoding.UTF8,
+                    "application/json")
             };
         }
     }

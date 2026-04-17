@@ -14,7 +14,7 @@ public interface IAiHealthService
 public sealed class AiHealthService : IAiHealthService
 {
     private static readonly TimeSpan DefaultPollInterval = TimeSpan.FromSeconds(30);
-    private static readonly TimeSpan DefaultTimeout = TimeSpan.FromSeconds(5);
+    private static readonly TimeSpan DefaultTimeout = TimeSpan.FromSeconds(15);
 
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly IConfiguration _configuration;
@@ -77,7 +77,7 @@ public sealed class AiHealthService : IAiHealthService
 
                 if (!response.IsSuccessStatusCode)
                 {
-                    ApplyHttpFailure(checkedAt, $"AI health check HTTP {(int)response.StatusCode} từ /healthz.");
+                    ApplyHttpFailure(checkedAt, $"AI health check HTTP {(int)response.StatusCode} từ {url}.");
                     return;
                 }
 
@@ -86,17 +86,17 @@ public sealed class AiHealthService : IAiHealthService
             catch (OperationCanceledException ex) when (!cancellationToken.IsCancellationRequested)
             {
                 _logger.LogWarning(ex, "AI health check timeout for {Url}", url);
-                ApplyHttpFailure(checkedAt, "AI health check timeout khi gọi /healthz.");
+                ApplyHttpFailure(checkedAt, $"AI health check timeout khi gọi {url}.");
             }
             catch (HttpRequestException ex)
             {
                 _logger.LogWarning(ex, "AI health check request failed for {Url}", url);
-                ApplyHttpFailure(checkedAt, "Không thể kết nối AI provider qua /healthz.");
+                ApplyHttpFailure(checkedAt, $"Không thể kết nối AI provider qua {url}.");
             }
             catch (JsonException ex)
             {
                 _logger.LogWarning(ex, "AI health check returned invalid JSON from {Url}", url);
-                ApplyDegraded(checkedAt, "AI provider phản hồi /healthz nhưng JSON không hợp lệ.", modelLoaded: false, geminiConfigured: false);
+                ApplyDegraded(checkedAt, $"AI provider phản hồi {url} nhưng JSON không hợp lệ.", modelLoaded: false, geminiConfigured: false);
             }
         }
         finally

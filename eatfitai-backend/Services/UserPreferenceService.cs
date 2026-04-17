@@ -19,6 +19,8 @@ namespace EatFitAI.API.Services
 
     public class UserPreferenceService : IUserPreferenceService
     {
+        private static readonly SemaphoreSlim SchemaInitLock = new(1, 1);
+        private static bool _schemaInitialized;
         private readonly ApplicationDbContext _db;
 
         public UserPreferenceService(ApplicationDbContext db)
@@ -28,6 +30,8 @@ namespace EatFitAI.API.Services
 
         public async Task<UserPreferenceDto> GetUserPreferenceAsync(Guid userId, CancellationToken ct = default)
         {
+            await EnsureSchemaReadyAsync(ct);
+
             var pref = await _db.UserPreferences
                 .FirstOrDefaultAsync(p => p.UserId == userId, ct);
 
@@ -53,6 +57,8 @@ namespace EatFitAI.API.Services
 
         public async Task UpdateUserPreferenceAsync(Guid userId, UserPreferenceDto dto, CancellationToken ct = default)
         {
+            await EnsureSchemaReadyAsync(ct);
+
             var pref = await _db.UserPreferences
                 .FirstOrDefaultAsync(p => p.UserId == userId, ct);
 
@@ -73,6 +79,30 @@ namespace EatFitAI.API.Services
             pref.UpdatedAt = DateTime.UtcNow;
 
             await _db.SaveChangesAsync(ct);
+        }
+
+        private async Task EnsureSchemaReadyAsync(CancellationToken ct)
+        {
+            if (_schemaInitialized || !_db.Database.IsRelational())
+            {
+                return;
+            }
+
+            await SchemaInitLock.WaitAsync(ct);
+            try
+            {
+                if (_schemaInitialized)
+                {
+                    return;
+                }
+
+                await _db.Database.MigrateAsync(ct);
+                _schemaInitialized = true;
+            }
+            finally
+            {
+                SchemaInitLock.Release();
+            }
         }
 
         private List<string> DeserializeList(string? json)

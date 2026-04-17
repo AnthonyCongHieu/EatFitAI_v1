@@ -1,0 +1,13 @@
+flows:
+  - 'hero/manual-diary.yaml'
+  - 'hero/ai-scan-save.yaml'
+  - 'hero/nutrition.yaml'
+  - 'hero/voice-text.yaml'
+  - 'hero/profile-stats.yaml'
+includeTags:
+  - hero
+  - android
+testOutputDir: artifacts/hero
+platform:
+  android:
+    disableAnimations: true

@@ -25,7 +25,7 @@ services:
       - key: AIProvider__InternalToken
         sync: false
       - key: AIProvider__VisionBaseUrl
-        sync: false
+        value: https://eatfitai-ai-provider.onrender.com
       - key: Google__WebClientId
         sync: false
       - key: Google__AndroidClientId

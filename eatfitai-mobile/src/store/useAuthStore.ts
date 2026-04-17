@@ -246,7 +246,7 @@ export const useAuthStore = create<AuthState>((set: any) => ({
     // If displayName is still empty, fetch user profile as fallback
     if (!userName && accessToken) {
       try {
-        const profileResp = await apiClient.get('/api/users/profile');
+        const profileResp = await apiClient.get('/api/profile');
         const profile = profileResp.data as Record<string, any>;
         userName = String(profile?.DisplayName ?? profile?.displayName ?? profile?.Email ?? profile?.email ?? '');
         if (__DEV__) {
@@ -318,6 +318,7 @@ export const useAuthStore = create<AuthState>((set: any) => ({
     );
 
     const data = resp.data;
+    const rawData = data as Record<string, unknown>;
     const accessToken = data?.accessToken || data?.token;
 
     if (!accessToken) {
@@ -341,9 +342,25 @@ export const useAuthStore = create<AuthState>((set: any) => ({
     await persistNeedsOnboarding(needsOnboarding);
 
     const extractedUser: AuthUser = {
-      id: String(data?.userId ?? data?.UserId ?? ''),
-      email: String(data?.email ?? data?.Email ?? ''),
-      name: String(data?.displayName ?? data?.DisplayName ?? result.user?.name ?? ''),
+      id: String(
+        data?.user?.id ??
+          rawData.userId ??
+          rawData.UserId ??
+          '',
+      ),
+      email: String(
+        data?.user?.email ??
+          rawData.email ??
+          rawData.Email ??
+          '',
+      ),
+      name: String(
+        data?.user?.name ??
+          rawData.displayName ??
+          rawData.DisplayName ??
+          result.user?.name ??
+          '',
+      ),
     };
 
     if (extractedUser.id) {

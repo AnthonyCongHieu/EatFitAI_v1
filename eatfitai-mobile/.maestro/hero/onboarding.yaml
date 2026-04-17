@@ -1,0 +1,103 @@
+appId: com.eatfitai.app
+name: onboarding
+tags:
+  - hero
+  - auth
+  - android
+---
+- launchApp
+- runFlow:
+    when:
+      visible:
+        id: auth-intro-start-button
+    commands:
+      - tapOn:
+          id: auth-intro-start-button
+          retryTapIfNoChange: true
+- runFlow:
+    when:
+      visible:
+        id: auth-welcome-login-button
+    commands:
+      - tapOn:
+          id: auth-welcome-login-button
+          retryTapIfNoChange: true
+- assertVisible:
+    id: auth-login-screen
+- runFlow:
+    file: ../subflows/login.yaml
+- extendedWaitUntil:
+    visible:
+      id: auth-onboarding-screen
+    timeout: 30000
+- runFlow:
+    when:
+      visible:
+        id: auth-onboarding-name-input
+    commands:
+      - tapOn:
+          id: auth-onboarding-name-input
+      - setClipboard: Smoke Onboarding
+      - pasteText
+      - hideKeyboard
+- runFlow:
+    when:
+      visible:
+        id: auth-onboarding-gender-male-button
+    commands:
+      - tapOn:
+          id: auth-onboarding-gender-male-button
+- runFlow:
+    when:
+      visible:
+        id: auth-onboarding-age-input
+    commands:
+      - tapOn:
+          id: auth-onboarding-age-input
+      - setClipboard: 30
+      - pasteText
+      - hideKeyboard
+- tapOn:
+    id: auth-onboarding-next-button
+    retryTapIfNoChange: true
+- extendedWaitUntil:
+    visible:
+      id: auth-onboarding-height-input
+    timeout: 20000
+- tapOn:
+    id: auth-onboarding-height-input
+- setClipboard: 170
+- pasteText
+- hideKeyboard
+- tapOn:
+    id: auth-onboarding-weight-input
+- setClipboard: 70
+- pasteText
+- hideKeyboard
+- tapOn:
+    id: auth-onboarding-next-button
+    retryTapIfNoChange: true
+- extendedWaitUntil:
+    visible:
+      id: auth-onboarding-goal-maintain
+    timeout: 20000
+- tapOn:
+    id: auth-onboarding-goal-maintain
+- tapOn:
+    id: auth-onboarding-next-button
+    retryTapIfNoChange: true
+- extendedWaitUntil:
+    visible:
+      id: auth-onboarding-activity-moderate
+    timeout: 20000
+- tapOn:
+    id: auth-onboarding-activity-moderate
+- tapOn:
+    id: auth-onboarding-complete-button
+    retryTapIfNoChange: true
+- extendedWaitUntil:
+    visible:
+      id: auth-onboarding-result-card
+    timeout: 60000
+- assertVisible:
+    id: auth-onboarding-result-card

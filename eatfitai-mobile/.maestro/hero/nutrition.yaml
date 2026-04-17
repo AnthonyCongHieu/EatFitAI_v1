@@ -1,0 +1,35 @@
+appId: com.eatfitai.app
+name: nutrition
+tags:
+  - hero
+  - android
+---
+- runFlow:
+    file: ../subflows/start-authenticated.yaml
+- tapOn:
+    id: navigation-profile-tab-button
+- extendedWaitUntil:
+    visible:
+      id: profile-screen
+    timeout: 20000
+- tapOn:
+    id: profile-nutrition-settings-button
+- extendedWaitUntil:
+    visible:
+      id: nutrition-settings-screen
+    timeout: 30000
+- assertVisible:
+    id: nutrition-settings-status-badge
+- back
+- extendedWaitUntil:
+    visible:
+      id: profile-screen
+    timeout: 20000
+- tapOn:
+    id: profile-nutrition-insights-button
+- extendedWaitUntil:
+    visible:
+      id: nutrition-insights-screen
+    timeout: 30000
+- assertVisible:
+    id: nutrition-insights-screen

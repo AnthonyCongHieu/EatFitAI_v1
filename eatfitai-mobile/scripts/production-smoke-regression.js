@@ -1,6 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const { execFileSync } = require('child_process');
+const { resolveSmokeCredentials } = require('./lib/smoke-credentials');
 
 const DEFAULT_BACKEND_URL = 'https://eatfitai-backend.onrender.com';
 const DEFAULT_OUTPUT_ROOT = path.resolve(
@@ -270,35 +271,13 @@ function resolveFixtureDir(outputDir, manifest) {
 }
 
 function resolveCredentials(backendUrl) {
-  const smokeEmail = trim(process.env.EATFITAI_SMOKE_EMAIL);
-  const smokePassword = trim(process.env.EATFITAI_SMOKE_PASSWORD);
-  if (smokeEmail && smokePassword) {
-    return {
-      email: smokeEmail,
-      password: smokePassword,
-      source: 'EATFITAI_SMOKE_EMAIL/EATFITAI_SMOKE_PASSWORD',
-    };
-  }
-
-  const demoEmail = trim(process.env.EATFITAI_DEMO_EMAIL);
-  const demoPassword = trim(process.env.EATFITAI_DEMO_PASSWORD);
-  if (demoEmail && demoPassword) {
-    return {
-      email: demoEmail,
-      password: demoPassword,
-      source: 'EATFITAI_DEMO_EMAIL/EATFITAI_DEMO_PASSWORD',
-    };
-  }
-
-  if (looksLocalUrl(backendUrl)) {
-    return {
-      email: DEFAULT_DEMO_EMAIL,
-      password: DEFAULT_DEMO_PASSWORD,
-      source: 'local-default-demo-account',
-    };
-  }
-
-  return null;
+  return resolveSmokeCredentials({
+    allowLocalDefaults: true,
+    backendUrl,
+    defaultEmail: DEFAULT_DEMO_EMAIL,
+    defaultPassword: DEFAULT_DEMO_PASSWORD,
+    looksLocalUrl,
+  });
 }
 
 function loadBudget(outputDir) {

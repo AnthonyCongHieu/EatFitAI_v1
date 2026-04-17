@@ -5,7 +5,8 @@
     "sanity:android": "node sanity.android.js",
     "edge:android": "node edge.android.js",
     "manual-logging-date:android": "node manual-logging-date.android.js",
-    "smoke:android": "node sanity.android.js"
+    "smoke:android": "node sanity.android.js",
+    "cloud-proof:android": "node cloud-proof.android.js"
   },
   "dependencies": {
     "webdriverio": "^9.17.0"

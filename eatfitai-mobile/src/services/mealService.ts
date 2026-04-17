@@ -45,9 +45,9 @@ export const mealService = {
     return addMealItems(date, mealType, items);
   },
 
-  // Lay danh sach bua an theo ngay (neu backend ho tro /api/meals)
+  // Lay danh sach bua an theo ngay tu backend diary contract
   async getMeals(date: string): Promise<any> {
-    const response = await apiClient.get('/api/meals', { params: { date } });
+    const response = await apiClient.get('/api/meal-diary', { params: { date } });
     return response.data;
   },
 };

@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const { resolveSmokeCredentials } = require('./lib/smoke-credentials');
 
 const DEFAULT_BACKEND_URL = 'https://eatfitai-backend.onrender.com';
 const DEFAULT_AI_PROVIDER_URL = 'https://eatfitai-ai-provider.onrender.com';
@@ -449,7 +450,7 @@ async function runAuthChecks(context) {
     return {
       skipped: true,
       reason:
-        'Set EATFITAI_SMOKE_EMAIL and EATFITAI_SMOKE_PASSWORD to enable login/refresh/API checks.',
+        'Set EATFITAI_SMOKE_EMAIL/PASSWORD or EATFITAI_DEMO_EMAIL/PASSWORD to enable login/refresh/API checks.',
     };
   }
 
@@ -517,11 +518,13 @@ async function main() {
     DEFAULT_AI_PROVIDER_URL,
   );
   const outputDir = buildOutputDir();
+  const credentials = resolveSmokeCredentials();
   const context = {
     backendUrl,
     aiProviderUrl,
-    email: trimEnv('EATFITAI_SMOKE_EMAIL'),
-    password: trimEnv('EATFITAI_SMOKE_PASSWORD'),
+    email: credentials?.email || '',
+    password: credentials?.password || '',
+    credentialsSource: credentials?.source || null,
   };
 
   fs.mkdirSync(outputDir, { recursive: true });

@@ -17,6 +17,7 @@ jest.mock('@react-native-async-storage/async-storage', () => ({
 jest.mock('../src/services/apiClient', () => ({
   __esModule: true,
   default: {
+    get: jest.fn(),
     post: jest.fn(),
   },
   setAuthExpiredCallback: jest.fn(),
@@ -114,6 +115,32 @@ describe('useAuthStore', () => {
       ResetCode: '123456',
       NewPassword: 'NewPass123',
     });
+  });
+
+  it('uses the canonical profile route when login needs a display name fallback', async () => {
+    (apiClient.post as jest.Mock).mockResolvedValue({
+      data: {
+        accessToken: 'token-123',
+        refreshToken: 'refresh-123',
+        accessTokenExpiresAt: new Date(Date.now() + 60_000).toISOString(),
+        refreshTokenExpiresAt: new Date(Date.now() + 86_400_000).toISOString(),
+        needsOnboarding: false,
+        userId: 'user-123',
+        email: 'demo@example.com',
+      },
+    });
+    (apiClient.get as jest.Mock).mockResolvedValue({
+      data: {
+        displayName: 'Fallback Name',
+        email: 'demo@example.com',
+      },
+    });
+
+    await expect(
+      useAuthStore.getState().login('demo@example.com', 'Password123!'),
+    ).resolves.toEqual({ needsOnboarding: false });
+
+    expect(apiClient.get).toHaveBeenCalledWith('/api/profile');
   });
 
   it('surfaces Google config errors from the native setup stage', async () => {

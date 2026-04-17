@@ -1,4 +1,5 @@
 using AutoMapper;
+using EatFitAI.API.Data;
 using EatFitAI.API.DbScaffold.Data;
 using EatFitAI.API.DTOs.User;
 using EatFitAI.API.DbScaffold.Models;
@@ -23,6 +24,7 @@ namespace EatFitAI.API.Services
 
         private readonly IUserRepository _userRepository;
         private readonly EatFitAIDbContext _context;
+        private readonly ApplicationDbContext _adminContext;
         private readonly IMapper _mapper;
         private readonly ISupabaseStorageService _supabaseStorageService;
         private readonly IHostEnvironment _environment;
@@ -31,6 +33,7 @@ namespace EatFitAI.API.Services
         public UserService(
             IUserRepository userRepository,
             EatFitAIDbContext context,
+            ApplicationDbContext adminContext,
             IMapper mapper,
             ISupabaseStorageService supabaseStorageService,
             IHostEnvironment environment,
@@ -38,6 +41,7 @@ namespace EatFitAI.API.Services
         {
             _userRepository = userRepository;
             _context = context;
+            _adminContext = adminContext;
             _mapper = mapper;
             _supabaseStorageService = supabaseStorageService;
             _environment = environment;
@@ -275,6 +279,15 @@ namespace EatFitAI.API.Services
             // Delete UserRecentFoods
             var userRecentFoods = await _context.UserRecentFoods.Where(x => x.UserId == userId).ToListAsync();
             _context.UserRecentFoods.RemoveRange(userRecentFoods);
+
+            // Delete user preferences from the admin context first so profile delete
+            // does not fail on stale preference rows in production.
+            var userPreferences = await _adminContext.UserPreferences
+                .Where(x => x.UserId == userId)
+                .ToListAsync();
+            _adminContext.UserPreferences.RemoveRange(userPreferences);
+
+            await _adminContext.SaveChangesAsync();
 
             // Finally, delete the user
             _userRepository.Remove(user);

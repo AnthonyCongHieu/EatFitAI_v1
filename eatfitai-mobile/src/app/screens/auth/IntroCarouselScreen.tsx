@@ -30,7 +30,7 @@ import { TEST_IDS } from '../../../testing/testIds';
 import Tilt3DCard, { ParallaxLayer } from '../../../components/ui/Tilt3DCard';
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
-const phoBowlImage = require('../../../assets/pho-bowl.png');
+const phoBowlImage = require('../../../assets/pho-bowl.jpg');
 
 const { width, height } = Dimensions.get('window');
 
