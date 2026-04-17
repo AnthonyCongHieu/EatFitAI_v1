@@ -57,6 +57,7 @@ public partial class ApplicationDbContext : DbContext
     public virtual DbSet<UserPreference> UserPreferences { get; set; }
     public virtual DbSet<GeminiKey> GeminiKeys { get; set; }
     public virtual DbSet<AdminAuditEvent> AdminAuditEvents { get; set; }
+    public virtual DbSet<WaterIntake> WaterIntakes { get; set; }
 
     public virtual DbSet<vw_DailyMacroShare> vw_DailyMacroShares { get; set; }
 
@@ -650,6 +651,28 @@ public partial class ApplicationDbContext : DbContext
             entity.Property(e => e.UpdatedAt)
                 .HasPrecision(3)
                 .HasDefaultValueSql("NOW() AT TIME ZONE 'UTC'");
+        });
+
+        modelBuilder.Entity<WaterIntake>(entity =>
+        {
+            entity.ToTable("WaterIntake");
+
+            entity.HasKey(e => e.WaterIntakeId);
+
+            entity.HasIndex(e => new { e.UserId, e.IntakeDate }, "UQ_WaterIntake_User_Date").IsUnique();
+            entity.HasIndex(e => new { e.UserId, e.IntakeDate }, "IX_WaterIntake_UserDate");
+
+            entity.Property(e => e.AmountMl).HasDefaultValue(0);
+            entity.Property(e => e.TargetMl).HasDefaultValue(2000);
+            entity.Property(e => e.UpdatedAt)
+                .HasPrecision(3)
+                .HasDefaultValueSql("NOW() AT TIME ZONE 'UTC'");
+
+            entity.HasOne(d => d.User)
+                .WithMany()
+                .HasForeignKey(d => d.UserId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_WaterIntake_User");
         });
 
         OnModelCreatingPartial(modelBuilder);

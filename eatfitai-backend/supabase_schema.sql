@@ -525,5 +525,27 @@ CREATE TRIGGER tr_userpreference_set_updated_at
     EXECUTE FUNCTION fn_set_updated_at();
 
 -- ============================================================
+-- WATER INTAKE TRACKING
+-- ============================================================
+
+CREATE TABLE IF NOT EXISTS "WaterIntake" (
+    "WaterIntakeId"   SERIAL        NOT NULL,
+    "UserId"          UUID          NOT NULL,
+    "IntakeDate"      DATE          NOT NULL,
+    "AmountMl"        INT           NOT NULL DEFAULT 0,
+    "TargetMl"        INT           NOT NULL DEFAULT 2000,
+    "UpdatedAt"       TIMESTAMP(3)  NOT NULL DEFAULT (NOW() AT TIME ZONE 'UTC'),
+    CONSTRAINT "PK_WaterIntake" PRIMARY KEY ("WaterIntakeId"),
+    CONSTRAINT "FK_WaterIntake_User" FOREIGN KEY ("UserId") REFERENCES "Users" ("UserId")
+);
+CREATE UNIQUE INDEX "UQ_WaterIntake_User_Date" ON "WaterIntake" ("UserId", "IntakeDate");
+CREATE INDEX "IX_WaterIntake_UserDate" ON "WaterIntake" ("UserId", "IntakeDate");
+
+CREATE TRIGGER tr_waterintake_set_updated_at
+    BEFORE UPDATE ON "WaterIntake"
+    FOR EACH ROW
+    EXECUTE FUNCTION fn_set_updated_at();
+
+-- ============================================================
 -- DONE! Schema ready for seeding via DatabaseSeeder.cs
 -- ============================================================

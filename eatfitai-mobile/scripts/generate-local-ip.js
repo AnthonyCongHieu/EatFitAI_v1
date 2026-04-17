@@ -61,13 +61,13 @@ function getLocalIpAddress() {
         candidates.push({
           name,
           address: addr.address,
-          // Ưu tiên WiFi và Ethernet
+          // Ưu tiên Ethernet, sau đó WiFi
           priority:
-            lowerName.includes('wi-fi') ||
-            lowerName.includes('wifi') ||
-            lowerName.includes('wlan')
+            lowerName.includes('ethernet') || lowerName.includes('eth')
               ? 1
-              : lowerName.includes('ethernet') || lowerName.includes('eth')
+              : lowerName.includes('wi-fi') ||
+                lowerName.includes('wifi') ||
+                lowerName.includes('wlan')
                 ? 2
                 : 3,
         });

@@ -318,7 +318,7 @@ export const useAuthStore = create<AuthState>((set: any) => ({
     );
 
     const data = resp.data;
-    const rawData = data as Record<string, unknown>;
+    const rawData = data as Record<string, any>;
     const accessToken = data?.accessToken || data?.token;
 
     if (!accessToken) {
@@ -335,10 +335,7 @@ export const useAuthStore = create<AuthState>((set: any) => ({
     });
     setAccessTokenMem(accessToken);
 
-    const needsOnboarding = readNeedsOnboardingFlag(
-      data as Record<string, unknown>,
-      false,
-    );
+    const needsOnboarding = readNeedsOnboardingFlag(rawData, false);
     await persistNeedsOnboarding(needsOnboarding);
 
     const extractedUser: AuthUser = {

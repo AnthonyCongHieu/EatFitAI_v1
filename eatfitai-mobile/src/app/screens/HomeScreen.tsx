@@ -46,6 +46,7 @@ import { useSmartContext } from '../../hooks/useSmartContext';
 import Tilt3DCard from '../../components/ui/Tilt3DCard';
 import * as Haptics from 'expo-haptics';
 import { TEST_IDS } from '../../testing/testIds';
+import { waterService, type WaterIntakeData } from '../../services/waterService';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -227,6 +228,36 @@ const HomeScreen = (): React.ReactElement => {
   const [showQuickActions, setShowQuickActions] = useState(false);
   const [serverDown, setServerDown] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date());
+
+  // Water intake state
+  const { data: waterData, refetch: refetchWater } = useQuery<WaterIntakeData>({
+    queryKey: ['water-intake-today'],
+    queryFn: () => waterService.getWaterIntake(new Date()),
+    staleTime: 30000,
+  });
+  const waterAmount = waterData?.amountMl ?? 0;
+  const waterTarget = waterData?.targetMl ?? 2000;
+  const waterProgress = Math.min(1, waterAmount / Math.max(waterTarget, 1));
+
+  const handleAddWater = useCallback(async () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    try {
+      await waterService.addWater(new Date());
+      refetchWater();
+    } catch (err: any) {
+      Toast.show({ type: 'error', text1: 'Lỗi', text2: 'Không thể cập nhật lượng nước' });
+    }
+  }, [refetchWater]);
+
+  const handleSubtractWater = useCallback(async () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    try {
+      await waterService.subtractWater(new Date());
+      refetchWater();
+    } catch (err: any) {
+      Toast.show({ type: 'error', text1: 'Lỗi', text2: 'Không thể cập nhật lượng nước' });
+    }
+  }, [refetchWater]);
   const { currentStreak, longestStreak, weeklyLogs, checkStreak, fetchWeeklyLogs } =
     useGamificationStore();
 
@@ -718,6 +749,51 @@ const HomeScreen = (): React.ReactElement => {
             )}
           </View>
         </View>
+
+        {/* ══════════ WATER TRACKING ══════════ */}
+        <Animated.View entering={FadeInUp.delay(400).springify()}>
+          <View style={styles.waterCard}>
+            {/* Left: icon + label + value */}
+            <View style={styles.waterLeft}>
+              <Ionicons name="water" size={28} color="#3b82f6" />
+              <View style={styles.waterLabelWrap}>
+                <ThemedText style={styles.waterTitle}>Uống nước</ThemedText>
+                <ThemedText style={styles.waterValue}>{waterAmount} ml</ThemedText>
+              </View>
+            </View>
+
+            {/* Right: pill controls */}
+            <View style={styles.waterPill}>
+              <Pressable
+                style={({ pressed }) => [
+                  styles.waterPillBtn,
+                  pressed && { opacity: 0.5, transform: [{ scale: 0.9 }] },
+                ]}
+                onPress={handleSubtractWater}
+              >
+                <View style={styles.waterGlassDark}>
+                  <Ionicons name="remove" size={14} color="#94a3b8" style={styles.waterGlassBadge} />
+                  <Ionicons name="beer-outline" size={22} color="#64748b" />
+                </View>
+              </Pressable>
+
+              <View style={styles.waterPillDivider} />
+
+              <Pressable
+                style={({ pressed }) => [
+                  styles.waterPillBtn,
+                  pressed && { opacity: 0.5, transform: [{ scale: 0.9 }] },
+                ]}
+                onPress={handleAddWater}
+              >
+                <View style={styles.waterGlassBlue}>
+                  <Ionicons name="add" size={14} color="#3b82f6" style={styles.waterGlassBadge} />
+                  <Ionicons name="beer-outline" size={22} color="#3b82f6" />
+                </View>
+              </Pressable>
+            </View>
+          </View>
+        </Animated.View>
       </Screen>
 
       {/* ══════════ FLOATING AI ROBOT FAB (Draggable) ══════════ */}
@@ -762,8 +838,7 @@ const HomeScreen = (): React.ReactElement => {
         onAddMeal={() => navigation.navigate('FoodSearch', { autoFocus: true, showQuickSuggestions: true, returnToDiaryOnSave: true })}
         onRecipes={() => navigation.navigate('RecipeSuggestions', {})}
         onWater={() => {
-          // Future: water tracking
-          Toast.show({ type: 'info', text1: 'Sắp ra mắt', text2: 'Tính năng theo dõi lượng nước sẽ sớm có mặt!' });
+          handleAddWater();
         }}
       />
     </View>
@@ -826,14 +901,14 @@ const styles = StyleSheet.create({
   },
   ringValue: {
     fontSize: 26,
-    fontWeight: '800',
+    fontWeight: '900',
     color: C.onSurface,
     lineHeight: 30,
     textAlign: 'center',
   },
   ringLabel: {
     fontSize: 10,
-    fontWeight: '700',
+    fontWeight: '800',
     color: C.textMuted,
     letterSpacing: 0.5,
     textTransform: 'uppercase',
@@ -852,14 +927,14 @@ const styles = StyleSheet.create({
   },
   macroTitle: {
     fontSize: 10,
-    fontWeight: '800',
+    fontWeight: '900',
     color: C.textMuted,
     letterSpacing: 1.5,
     textTransform: 'uppercase',
   },
   macroTarget: {
     fontSize: 13,
-    fontWeight: '700',
+    fontWeight: '800',
     color: C.primary,
     marginBottom: 10,
   },
@@ -872,12 +947,12 @@ const styles = StyleSheet.create({
   },
   macroName: {
     fontSize: 14,
-    fontWeight: '700',
+    fontWeight: '800',
     color: C.onSurface,
   },
   macroValue: {
     fontSize: 14,
-    fontWeight: '700',
+    fontWeight: '800',
     color: C.textMuted,
   },
   macroTrack: {
@@ -902,13 +977,13 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 18,
-    fontWeight: '800',
+    fontWeight: '900',
     color: C.onSurface,
     letterSpacing: -0.3,
   },
   seeAll: {
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: '800',
     color: C.primary,
     letterSpacing: 1,
     textTransform: 'uppercase',
@@ -959,19 +1034,19 @@ const styles = StyleSheet.create({
   },
   entryMealLabel: {
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: '800',
     color: C.primary,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
   entryCalories: {
     fontSize: 14,
-    fontWeight: '800',
+    fontWeight: '900',
     color: C.onSurface,
   },
   entryFoodName: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '800',
     color: C.onSurface,
   },
   entryMacros: {
@@ -990,7 +1065,7 @@ const styles = StyleSheet.create({
   },
   entryMacroTextV2: {
     fontSize: 11,
-    fontWeight: '700',
+    fontWeight: '800',
     color: '#a1a1aa',
   },
 
@@ -1003,7 +1078,7 @@ const styles = StyleSheet.create({
   },
   emptyTitle: {
     fontSize: 17,
-    fontWeight: '700',
+    fontWeight: '800',
     color: C.onSurface,
     marginBottom: 6,
   },
@@ -1106,6 +1181,73 @@ const styles = StyleSheet.create({
     backgroundColor: C.primary,
     borderWidth: 2,
     borderColor: C.bg,
+  },
+  /* ── Water Tracking ── */
+  waterCard: {
+    backgroundColor: C.surfaceHigh,
+    borderRadius: 20,
+    padding: 18,
+    paddingHorizontal: 20,
+    borderWidth: 1,
+    borderColor: C.outline,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  waterLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  waterLabelWrap: {
+    gap: 2,
+  },
+  waterTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: C.onSurface,
+  },
+  waterValue: {
+    fontSize: 20,
+    fontWeight: '900',
+    color: C.onSurface,
+  },
+  waterPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(30, 35, 50, 0.9)',
+    borderRadius: 28,
+    borderWidth: 1,
+    borderColor: 'rgba(100, 116, 139, 0.25)',
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+    gap: 6,
+  },
+  waterPillBtn: {
+    padding: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  waterPillDivider: {
+    width: 1,
+    height: 24,
+    backgroundColor: 'rgba(100, 116, 139, 0.4)',
+  },
+  waterGlassDark: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'relative' as const,
+  },
+  waterGlassBlue: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'relative' as const,
+  },
+  waterGlassBadge: {
+    position: 'absolute' as const,
+    top: -4,
+    right: -6,
+    zIndex: 1,
   },
 });
 
