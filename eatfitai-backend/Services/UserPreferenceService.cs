@@ -19,13 +19,15 @@ namespace EatFitAI.API.Services
 
     public class UserPreferenceService : IUserPreferenceService
     {
-        private static readonly SemaphoreSlim SchemaInitLock = new(1, 1);
-        private static bool _schemaInitialized;
         private readonly ApplicationDbContext _db;
+        private readonly SupabaseSchemaBootstrapper _schemaBootstrapper;
 
-        public UserPreferenceService(ApplicationDbContext db)
+        public UserPreferenceService(
+            ApplicationDbContext db,
+            SupabaseSchemaBootstrapper schemaBootstrapper)
         {
             _db = db;
+            _schemaBootstrapper = schemaBootstrapper;
         }
 
         public async Task<UserPreferenceDto> GetUserPreferenceAsync(Guid userId, CancellationToken ct = default)
@@ -83,26 +85,7 @@ namespace EatFitAI.API.Services
 
         private async Task EnsureSchemaReadyAsync(CancellationToken ct)
         {
-            if (_schemaInitialized || !_db.Database.IsRelational())
-            {
-                return;
-            }
-
-            await SchemaInitLock.WaitAsync(ct);
-            try
-            {
-                if (_schemaInitialized)
-                {
-                    return;
-                }
-
-                await _db.Database.MigrateAsync(ct);
-                _schemaInitialized = true;
-            }
-            finally
-            {
-                SchemaInitLock.Release();
-            }
+            await _schemaBootstrapper.EnsureSchemaAsync(ct);
         }
 
         private List<string> DeserializeList(string? json)

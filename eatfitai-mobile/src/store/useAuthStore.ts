@@ -3,12 +3,16 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { create } from 'zustand';
 
-import apiClient, { setAuthExpiredCallback } from '../services/apiClient';
+import apiClient from '../services/apiClient';
 import { setAccessTokenMem } from '../services/authTokens';
 import { googleAuthService } from '../services/googleAuthService';
 import { tokenStorage } from '../services/secureStore';
-import { initAuthSession, updateSessionFromAuthResponse } from '../services/authSession';
-import { postRefreshToken } from '../services/tokenService';
+import {
+  initAuthSession,
+  setAuthExpiredCallback,
+  tryRefreshAccessToken,
+  updateSessionFromAuthResponse,
+} from '../services/authSession';
 import type { AuthResponse } from '../types';
 import type { AuthTokensResponse } from '../types/auth';
 import { t } from '../i18n/vi';
@@ -142,14 +146,11 @@ export const useAuthStore = create<AuthState>((set: any) => ({
           set({ isAuthenticated: true, needsOnboarding: persistedNeedsOnboarding, user: persistedUser });
         } else if (refreshToken && isTokenStillValid(refreshTokenExpiresAt)) {
           try {
-            const refreshed = await postRefreshToken(refreshToken);
-            const refreshedAccessToken = refreshed?.accessToken;
+            const refreshedAccessToken = await tryRefreshAccessToken();
             if (!refreshedAccessToken) {
               throw new Error(t('auth.missingAccessToken'));
             }
 
-            setAccessTokenMem(refreshedAccessToken);
-            await updateSessionFromAuthResponse(refreshed as AuthResponse);
             set({ isAuthenticated: true, needsOnboarding: persistedNeedsOnboarding, user: persistedUser });
           } catch (error) {
             if (__DEV__) {

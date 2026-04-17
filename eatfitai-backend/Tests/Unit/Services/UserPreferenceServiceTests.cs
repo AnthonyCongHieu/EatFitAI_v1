@@ -20,7 +20,7 @@ public class UserPreferenceServiceTests : IDisposable
             .Options;
 
         _db = new ApplicationDbContext(options);
-        _service = new UserPreferenceService(_db);
+        _service = new UserPreferenceService(_db, new SupabaseSchemaBootstrapper(_db, Microsoft.Extensions.Logging.Abstractions.NullLogger<SupabaseSchemaBootstrapper>.Instance));
     }
 
     public void Dispose()
