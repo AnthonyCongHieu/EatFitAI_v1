@@ -658,7 +658,9 @@ const StatsScreen = (): React.ReactElement => {
           const wkAvgCal = wkLoggedDays.length > 0
             ? Math.round(wkLoggedDays.reduce((s, d) => s + d.calories, 0) / wkLoggedDays.length)
             : 0;
-          const wkMaxC = Math.max(...weekSummary.days.map(d => d.calories), 1);
+          const wkMaxDay = Math.max(...weekSummary.days.map(d => d.calories), 1);
+          // Scale chart so the target is always visible in the upper half
+          const wkMaxC = Math.max(wkMaxDay, (typeof targetCal === 'number' && targetCal > 0 ? targetCal * 1.2 : 1));
           // Find the best day in the week (highest cal)
           const wkBestDay = wkLoggedDays.length > 0
             ? wkLoggedDays.reduce((best, d) => d.calories > best.calories ? d : best)
@@ -795,37 +797,22 @@ const StatsScreen = (): React.ReactElement => {
                   />
                   {/* Header row */}
                   <View style={S.wkChartHeader}>
-                    <ThemedText style={S.wkChartTitle}>Biểu Đồ Calo</ThemedText>
-                    <View style={S.wkAvgBadge}>
-                      <ThemedText style={S.wkAvgBadgeText}>
-                        TRUNG BÌNH: {wkAvgCal.toLocaleString()}
+                    <ThemedText style={S.wkChartTitle}>Xu hướng Calo</ThemedText>
+                    <View style={S.wkTargetBadge}>
+                      <ThemedText style={S.wkTargetBadgeText}>
+                        MỤC TIÊU: {Math.round(targetCal).toLocaleString()}
                       </ThemedText>
+                      <View style={S.wkTargetLineIcon} />
                     </View>
-                  </View>
-
-                  {/* Chart Legend */}
-                  <View style={S.wkChartLegend}>
-                     <View style={S.wkLegendItem}>
-                        <View style={[S.wkLegendDot, { backgroundColor: P.primary }]} />
-                        <ThemedText style={S.wkLegendText}>Cao nhất</ThemedText>
-                     </View>
-                     <View style={S.wkLegendItem}>
-                        <View style={[S.wkLegendDot, { backgroundColor: P.tertiaryContainer }]} />
-                        <ThemedText style={S.wkLegendText}>Thấp nhất</ThemedText>
-                     </View>
                   </View>
 
                   {/* Bars */}
                   <View style={S.wkBarsArea}>
-                    {/* Background grid lines */}
-                    <View style={StyleSheet.absoluteFill}>
-                      <View style={S.wkGridLine} />
-                      <View style={[S.wkGridLine, { top: '33%' }]} />
-                      <View style={[S.wkGridLine, { top: '66%' }]} />
-                    </View>
+                    {/* Background Target Line */}
+                    <View style={[S.wkTargetLine, { bottom: (targetCal / wkMaxC) * 160 }]} />
 
                     {weekSummary.days.map((day, idx) => {
-                      const h = (day.calories / wkMaxC) * 140;
+                      const h = (day.calories / wkMaxC) * 160;
                       const isBest = idx === wkBestDayIdx;
                       const isWorst = idx === wkWorstDayIdx;
                       return (
@@ -835,30 +822,26 @@ const StatsScreen = (): React.ReactElement => {
                           onPress={() => handleDayPress(day.date)}
                         >
                           <View style={[S.wkBarTrack, { height: Math.max(h, 4) }]}>
+                            {isBest && (
+                              <ThemedText style={S.wkBarFloatLabel}>{formatShortWeekdayLabel(new Date(day.date))}</ThemedText>
+                            )}
                             {isBest ? (
                               <LinearGradient
-                                colors={['rgba(75,226,119,0.2)', P.primary]}
+                                colors={['#4BE277', '#3DB860']}
                                 start={{ x: 0, y: 1 }}
                                 end={{ x: 0, y: 0 }}
-                                style={[StyleSheet.absoluteFill, { borderRadius: 8 }]}
+                                style={[StyleSheet.absoluteFill, { borderRadius: 8, shadowColor: '#4BE277', shadowOpacity: 0.6, shadowRadius: 10, elevation: 5 }]}
                               />
                             ) : isWorst ? (
                               <LinearGradient
-                                colors={['rgba(255,139,124,0.2)', P.tertiaryContainer]}
+                                colors={['#2c543f', '#203d2e']}
                                 start={{ x: 0, y: 1 }}
                                 end={{ x: 0, y: 0 }}
                                 style={[StyleSheet.absoluteFill, { borderRadius: 8 }]}
                               />
                             ) : (
-                              <View style={{ ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(255,255,255,0.06)', borderRadius: 8 }} />
+                              <View style={{ ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(255,255,255,0.08)', borderRadius: 8 }} />
                             )}
-                            {/* Dot on top */}
-                            <View style={[
-                              S.wkBarDot,
-                              isBest && S.wkBarDotBest,
-                              isWorst && S.wkBarDotWorst,
-                              (!isBest && !isWorst) && { backgroundColor: 'rgba(255,255,255,0.2)', shadowOpacity: 0 }
-                            ]} />
                           </View>
                         </Pressable>
                       );
@@ -899,7 +882,7 @@ const StatsScreen = (): React.ReactElement => {
                     colors={['rgba(255,255,255,0.06)', 'rgba(255,255,255,0)']}
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 1 }}
-                    style={StyleSheet.absoluteFill}
+                    style={[StyleSheet.absoluteFill, { borderRadius: 24 }]}
                   />
                   <View style={S.wkProteinHead}>
                     <View style={S.wkProteinIcon}>
@@ -911,7 +894,7 @@ const StatsScreen = (): React.ReactElement => {
                     <View>
                       <View style={{ flexDirection: 'row', alignItems: 'baseline' }}>
                         <ThemedText style={S.wkProteinVal}>
-                          {Math.round(weekSummary.totalProtein)}
+                          {' ' + Math.round(weekSummary.totalProtein)}
                         </ThemedText>
                         <ThemedText style={S.wkProteinTarget}>
                           {' '}/ {Math.round(wkTargetProtein)}g
@@ -946,7 +929,7 @@ const StatsScreen = (): React.ReactElement => {
                     colors={['rgba(255,255,255,0.06)', 'rgba(255,255,255,0)']}
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 1 }}
-                    style={StyleSheet.absoluteFill}
+                    style={[StyleSheet.absoluteFill, { borderRadius: 24 }]}
                   />
                   <View style={S.wkProteinHead}>
                     <View style={[S.wkProteinIcon, { backgroundColor: 'rgba(255,139,124,0.15)' }]}>
@@ -958,7 +941,7 @@ const StatsScreen = (): React.ReactElement => {
                     <View>
                       <View style={{ flexDirection: 'row', alignItems: 'baseline' }}>
                         <ThemedText style={S.wkProteinVal}>
-                          {Math.round(weekSummary.totalCarbs)}
+                          {' ' + Math.round(weekSummary.totalCarbs)}
                         </ThemedText>
                         <ThemedText style={S.wkProteinTarget}>
                           {' '}/ {Math.round(wkTargetCarbs)}g
@@ -993,7 +976,7 @@ const StatsScreen = (): React.ReactElement => {
                     colors={['rgba(255,255,255,0.06)', 'rgba(255,255,255,0)']}
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 1 }}
-                    style={StyleSheet.absoluteFill}
+                    style={[StyleSheet.absoluteFill, { borderRadius: 24 }]}
                   />
                   <View style={S.wkProteinHead}>
                     <View style={[S.wkProteinIcon, { backgroundColor: 'rgba(88,185,255,0.15)' }]}>
@@ -1005,7 +988,7 @@ const StatsScreen = (): React.ReactElement => {
                     <View>
                       <View style={{ flexDirection: 'row', alignItems: 'baseline' }}>
                         <ThemedText style={S.wkProteinVal}>
-                          {Math.round(weekSummary.totalFat)}
+                          {' ' + Math.round(weekSummary.totalFat)}
                         </ThemedText>
                         <ThemedText style={S.wkProteinTarget}>
                           {' '}/ {Math.round(wkTargetFat)}g
@@ -1975,46 +1958,31 @@ const S = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 20,
+    zIndex: 10, // Ensure header is above chart bounds
   },
   wkChartTitle: {
     fontSize: 16,
     fontWeight: '800',
     color: P.onSurface,
   },
-  wkAvgBadge: {
-    backgroundColor: 'rgba(75,226,119,0.1)',
-    paddingHorizontal: 12,
-    paddingVertical: 5,
-    borderRadius: 99,
+  wkTargetBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
-  wkAvgBadgeText: {
+  wkTargetBadgeText: {
     fontSize: 10,
-    fontWeight: '800',
-    color: P.primary,
+    fontWeight: '700',
+    color: P.onSurfaceVariant,
     letterSpacing: 0.5,
     textTransform: 'uppercase',
   },
-  wkChartLegend: {
-    flexDirection: 'row',
-    gap: 16,
-    marginBottom: 20,
-    paddingHorizontal: 0,
-  },
-  wkLegendItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  wkLegendDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-  },
-  wkLegendText: {
-    fontSize: 10,
-    fontWeight: '800',
-    color: P.onSurfaceVariant,
-    textTransform: 'uppercase',
+  wkTargetLineIcon: {
+    width: 24,
+    height: 1,
+    borderWidth: 1,
+    borderStyle: 'dashed',
+    borderColor: P.primary,
   },
   wkBarsArea: {
     flexDirection: 'row',
@@ -2022,14 +1990,17 @@ const S = StyleSheet.create({
     alignItems: 'flex-end',
     height: 160,
     paddingHorizontal: 4,
+    position: 'relative',
+    marginTop: 20,
   },
-  wkGridLine: {
+  wkTargetLine: {
     position: 'absolute',
-    left: 0,
-    right: 0,
-    height: 1,
-    backgroundColor: 'rgba(61,74,61,0.2)',
-    top: 0,
+    left: 4,
+    right: 4,
+    borderTopWidth: 1,
+    borderStyle: 'dashed',
+    borderColor: 'rgba(75, 226, 119, 0.25)',
+    zIndex: -1,
   },
   wkBarCol: {
     alignItems: 'center',
@@ -2037,49 +2008,21 @@ const S = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   wkBarTrack: {
-    width: 28,
+    width: 32,
     borderRadius: 8,
     overflow: 'visible',
     position: 'relative',
   },
-  wkBarDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: P.primary,
+  wkBarFloatLabel: {
     position: 'absolute',
-    top: -4,
-    alignSelf: 'center',
-    shadowColor: P.primary,
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.8,
-    shadowRadius: 6,
-    elevation: 4,
-  },
-  wkBarDotBest: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    top: -6,
-    borderWidth: 2,
-    borderColor: P.surfaceContainer,
-    shadowColor: P.primary,
-    shadowOpacity: 1,
-    shadowRadius: 12,
-    elevation: 6,
-  },
-  wkBarDotWorst: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    top: -6,
-    borderWidth: 2,
-    borderColor: P.surfaceContainer,
-    backgroundColor: P.tertiaryContainer,
-    shadowColor: P.tertiaryContainer,
-    shadowOpacity: 1,
-    shadowRadius: 12,
-    elevation: 6,
+    top: -22,
+    width: '150%',
+    left: '-25%',
+    textAlign: 'center',
+    fontSize: 10,
+    fontWeight: '800',
+    color: P.primary,
+    textTransform: 'uppercase',
   },
   wkDayLabels: {
     flexDirection: 'row',
