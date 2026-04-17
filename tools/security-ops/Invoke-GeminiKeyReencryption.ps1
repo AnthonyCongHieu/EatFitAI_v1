@@ -1,11 +1,15 @@
 [CmdletBinding()]
 param(
-    [string]$BackendProjectPath = (Join-Path $PSScriptRoot "..\..\eatfitai-backend\EatFitAI.API.csproj"),
+    [string]$BackendProjectPath,
     [string]$ReportPath
 )
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
+
+if ([string]::IsNullOrWhiteSpace($BackendProjectPath)) {
+    $BackendProjectPath = Join-Path $PSScriptRoot "..\..\eatfitai-backend\EatFitAI.API.csproj"
+}
 
 if ([string]::IsNullOrWhiteSpace($env:EATFITAI_GEMINI_REENCRYPT_OLD_KEY)) {
     throw "Set EATFITAI_GEMINI_REENCRYPT_OLD_KEY in the current shell before running this script."
