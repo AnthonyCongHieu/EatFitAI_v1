@@ -151,6 +151,7 @@ public sealed class AdminGovernanceBootstrapper
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "Unable to ensure admin governance schema.");
+            throw;
         }
     }
 

@@ -3,8 +3,8 @@ using Microsoft.Extensions.Diagnostics.HealthChecks;
 
 namespace EatFitAI.API.Controllers
 {
-    // Dual-route: Render dùng /health/ready (không có /api prefix)
-    // Admin dashboard dùng /api/health/*
+    // Render uses /health/live for liveness.
+    // Admin tooling can use the /api/health/* aliases.
     [ApiController]
     public class HealthController : ControllerBase
     {
@@ -23,7 +23,7 @@ namespace EatFitAI.API.Controllers
             return report.Status == HealthStatus.Healthy ? Ok(report) : StatusCode(503, report);
         }
 
-        // Render health check — PHẢI respond nhanh, ko phụ thuộc DB
+        // Liveness must stay fast and must not depend on DB readiness.
         [HttpGet("health/live")]
         [HttpGet("api/health/live")]
         public IActionResult GetLive()
@@ -31,15 +31,13 @@ namespace EatFitAI.API.Controllers
             return Ok(new { status = "alive", timestamp = DateTime.UtcNow });
         }
 
-        // Render dùng route này — trả 200 ngay cả khi DB chưa sẵn sàng
-        // để tránh deploy timeout trên free tier (512MB RAM, cold start chậm)
+        // Readiness checks startup/bootstrap state and ready-tagged dependencies.
         [HttpGet("health/ready")]
         [HttpGet("api/health/ready")]
-        public IActionResult GetReady()
+        public async Task<IActionResult> GetReady()
         {
-            // Always return 200 so Render deploy succeeds.
-            // DB readiness is checked separately via /api/health detailed endpoint.
-            return Ok(new { status = "ready", timestamp = DateTime.UtcNow });
+            var report = await _healthCheckService.CheckHealthAsync(check => check.Tags.Contains("ready"));
+            return report.Status == HealthStatus.Healthy ? Ok(report) : StatusCode(503, report);
         }
     }
 }

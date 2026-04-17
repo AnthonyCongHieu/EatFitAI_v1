@@ -278,6 +278,12 @@ CREATE INDEX "IX_AiCorrectionEvent_User_CreatedAt" ON "AiCorrectionEvent" ("User
 CREATE INDEX "IX_AiCorrectionEvent_Label_CreatedAt" ON "AiCorrectionEvent" ("Label", "CreatedAt");
 CREATE INDEX "IX_AiCorrectionEvent_Source_CreatedAt" ON "AiCorrectionEvent" ("Source", "CreatedAt");
 
+ALTER TABLE IF EXISTS "UserPreference"
+    ADD COLUMN IF NOT EXISTS "Allergies" TEXT NULL;
+
+ALTER TABLE IF EXISTS "AILog"
+    ADD COLUMN IF NOT EXISTS "DurationMs" INTEGER NULL;
+
 -- ============================================================
 -- USER FAVORITES / RECENT
 -- ============================================================

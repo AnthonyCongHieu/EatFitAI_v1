@@ -42,6 +42,7 @@ public sealed class AuthInfrastructureBootstrapper
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "Unable to ensure auth infrastructure schema.");
+            throw;
         }
     }
 }
