@@ -13,6 +13,7 @@ import IntroCarouselScreen from '../screens/auth/IntroCarouselScreen';
 import WelcomeScreen from '../screens/auth/WelcomeScreen';
 import OnboardingScreen from '../screens/auth/OnboardingScreen';
 import SplashScreen from '../screens/SplashScreen';
+import MascotOverlay from '../../components/MascotOverlay';
 import { t } from '../../i18n/vi';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -116,14 +117,15 @@ const AppNavigator = (): React.ReactElement => {
       {isInitializing ? (
         <SplashScreen />
       ) : (
-        <Stack.Navigator
-          key={navigatorKey}
-          initialRouteName={initialRouteName}
-          screenOptions={{
-            headerShown: false,
-            contentStyle: { backgroundColor: theme.colors.background },
-          }}
-        >
+        <>
+          <Stack.Navigator
+            key={navigatorKey}
+            initialRouteName={initialRouteName}
+            screenOptions={{
+              headerShown: false,
+              contentStyle: { backgroundColor: theme.colors.background },
+            }}
+          >
           {isInAuthFlow ? (
             <Stack.Group navigationKey="auth-flow">
               {!E2E_AUTOMATION_ENABLED && (
@@ -266,7 +268,9 @@ const AppNavigator = (): React.ReactElement => {
               />
             </Stack.Group>
           )}
-        </Stack.Navigator>
+          </Stack.Navigator>
+          {!isInAuthFlow && <MascotOverlay />}
+        </>
       )}
     </NavigationContainer>
   );

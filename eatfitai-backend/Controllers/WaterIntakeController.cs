@@ -158,6 +158,53 @@ namespace EatFitAI.API.Controllers
             }
         }
 
+        /// <summary>
+        /// Lấy tổng hợp lượng nước uống theo tháng
+        /// GET /api/water-intake/monthly?year=2026&month=4
+        /// </summary>
+        [HttpGet("monthly")]
+        public async Task<ActionResult> GetMonthlyWaterIntake([FromQuery] int year, [FromQuery] int month)
+        {
+            try
+            {
+                var userId = GetUserIdFromToken();
+                var startDate = new DateOnly(year, month, 1);
+                var endDate = startDate.AddMonths(1).AddDays(-1);
+
+                var records = await _db.WaterIntakes
+                    .Where(w => w.UserId == userId && w.IntakeDate >= startDate && w.IntakeDate <= endDate)
+                    .OrderBy(w => w.IntakeDate)
+                    .ToListAsync();
+
+                var daysWithData = records.Count;
+                var totalMl = records.Sum(r => r.AmountMl);
+                var averageMl = daysWithData > 0 ? totalMl / daysWithData : 0;
+
+                return Ok(new
+                {
+                    year,
+                    month,
+                    totalMl,
+                    averageMl,
+                    daysWithData,
+                    daily = records.Select(r => new
+                    {
+                        date = r.IntakeDate.ToString("yyyy-MM-dd"),
+                        amountMl = r.AmountMl,
+                        targetMl = r.TargetMl,
+                    })
+                });
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return Unauthorized(new { message = "Token không hợp lệ" });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "Lỗi khi lấy dữ liệu nước tháng", error = ex.Message });
+            }
+        }
+
         private Guid GetUserIdFromToken()
         {
             var userIdClaim = User.FindFirst("http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier")?.Value
