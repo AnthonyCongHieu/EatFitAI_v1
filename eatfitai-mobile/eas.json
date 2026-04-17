@@ -3,22 +3,37 @@
     "version": ">= 16.18.0"
   },
   "build": {
+    "release-base": {
+      "env": {
+        "NODE_ENV": "production",
+        "EXPO_PUBLIC_GOOGLE_OFFLINE_ACCESS": "true",
+        "EXPO_PUBLIC_GOOGLE_FORCE_CODE_FOR_REFRESH_TOKEN": "true"
+      }
+    },
     "preview": {
+      "extends": "release-base",
       "withoutCredentials": true,
       "distribution": "internal",
       "env": {
-        "APP_ENV": "preview"
+        "APP_ENV": "preview",
+        "EXPO_PUBLIC_API_BASE_URL": "https://eatfitai-backend.onrender.com",
+        "EXPO_PUBLIC_SUPABASE_URL": "https://bjlmndmafrajjysenpbm.supabase.co"
       },
       "android": {
         "buildType": "apk"
       }
     },
-    "e2e-test": {
-      "withoutCredentials": true,
-      "distribution": "internal",
+    "production": {
+      "extends": "release-base",
+      "distribution": "store",
       "env": {
-        "APP_ENV": "preview"
-      },
+        "APP_ENV": "production",
+        "EXPO_PUBLIC_API_BASE_URL": "https://eatfitai-backend.onrender.com",
+        "EXPO_PUBLIC_SUPABASE_URL": "https://bjlmndmafrajjysenpbm.supabase.co"
+      }
+    },
+    "e2e-test": {
+      "extends": "preview",
       "android": {
         "buildType": "apk"
       },

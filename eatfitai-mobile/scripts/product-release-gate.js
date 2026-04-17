@@ -7,6 +7,12 @@ const { resolveEnv } = require('../../tools/automation/resolveEnv');
 const repoRoot = path.resolve(__dirname, '..', '..');
 const mobileRoot = path.resolve(__dirname, '..');
 const appiumToolsRoot = path.resolve(repoRoot, 'tools', 'appium');
+const buildAndroidPreviewScript = path.resolve(mobileRoot, 'scripts', 'build-android-preview.ps1');
+const installAndroidPreviewScript = path.resolve(
+  mobileRoot,
+  'scripts',
+  'install-android-preview.ps1',
+);
 const outputRoot = path.resolve(repoRoot, '_logs', 'production-smoke');
 const gateArg = String(process.argv[2] || 'all').trim().toLowerCase();
 const stageOrder = ['environment', 'code', 'android', 'device', 'cloud'];
@@ -101,6 +107,36 @@ function runCommand(label, command, args, options = {}) {
   };
 }
 
+function powershellExecutable() {
+  return process.platform === 'win32' ? 'powershell.exe' : 'pwsh';
+}
+
+function runPowerShellScript(label, scriptPath, args = [], options = {}) {
+  return runCommand(
+    label,
+    powershellExecutable(),
+    ['-NoLogo', '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', scriptPath, ...args],
+    options,
+  );
+}
+
+function resolveInstalledApkPath(commandResult) {
+  const lines = [commandResult.stdout, commandResult.stderr]
+    .join('\n')
+    .split(/\r?\n/)
+    .map(trim)
+    .filter(Boolean)
+    .reverse();
+
+  for (const line of lines) {
+    if (looksLikePath(line) && line.toLowerCase().endsWith('.apk')) {
+      return path.resolve(line);
+    }
+  }
+
+  return '';
+}
+
 function readAppiumServerConfig(env) {
   const rawPort = Number.parseInt(trim(env.APPIUM_PORT) || '4723', 10);
   return {
@@ -140,21 +176,6 @@ function resolveOutputDir() {
 
   const stamp = new Date().toISOString().replace(/[:.]/g, '-');
   return path.join(outputRoot, stamp);
-}
-
-function resolveLatestSessionDir() {
-  if (!fs.existsSync(outputRoot)) {
-    return '';
-  }
-
-  const candidates = fs
-    .readdirSync(outputRoot, { withFileTypes: true })
-    .filter((entry) => entry.isDirectory())
-    .map((entry) => entry.name)
-    .sort()
-    .reverse();
-
-  return candidates.length > 0 ? path.join(outputRoot, candidates[0]) : '';
 }
 
 function readJsonIfExists(filePath) {
@@ -265,6 +286,17 @@ function isKnownMaestroInstallBlock(commandResult) {
     .join('\n');
 
   return MAESTRO_INSTALL_BLOCK_PATTERNS.some((pattern) => combinedOutput.includes(pattern));
+}
+
+function markKnownMaestroInstallBlock(gateResult, commandResult) {
+  if (!isKnownMaestroInstallBlock(commandResult)) {
+    return false;
+  }
+
+  gateResult.status = 'blocked';
+  gateResult.blockedReason =
+    'Maestro could not install its helper APK on the connected Android device. This is an environment/device-policy blocker, not an app regression.';
+  return true;
 }
 
 function buildGateResult(name) {
@@ -388,12 +420,37 @@ async function main() {
       let maestroBlockedByInstallPolicy = false;
 
       gateResult.commands.push(
-        runCommand('automation doctor (release-like)', 'npm', ['run', 'automation:doctor'], {
+        runPowerShellScript('Build Android preview candidate', buildAndroidPreviewScript, [], {
           cwd: mobileRoot,
           env: releaseLikeAndroidEnv,
-          timeoutMs: 10 * 60 * 1000,
+          timeoutMs: 45 * 60 * 1000,
         }),
       );
+      if (gateResult.commands.at(-1).ok) {
+        const builtApkPath = resolveInstalledApkPath(gateResult.commands.at(-1));
+        const installArgs = builtApkPath ? ['-ApkPath', builtApkPath] : [];
+        gateResult.commands.push(
+          runPowerShellScript(
+            'Install Android preview candidate',
+            installAndroidPreviewScript,
+            installArgs,
+            {
+              cwd: mobileRoot,
+              env: releaseLikeAndroidEnv,
+              timeoutMs: 20 * 60 * 1000,
+            },
+          ),
+        );
+      }
+      if (gateResult.commands.every((entry) => entry.ok)) {
+        gateResult.commands.push(
+          runCommand('automation doctor (release-like)', 'npm', ['run', 'automation:doctor'], {
+            cwd: mobileRoot,
+            env: releaseLikeAndroidEnv,
+            timeoutMs: 10 * 60 * 1000,
+          }),
+        );
+      }
       if (gateResult.commands.at(-1).ok) {
         gateResult.commands.push(
           runCommand('Maestro smoke', 'npm', ['run', 'maestro:smoke:android'], {
@@ -402,12 +459,10 @@ async function main() {
             timeoutMs: 20 * 60 * 1000,
           }),
         );
-        maestroBlockedByInstallPolicy = isKnownMaestroInstallBlock(gateResult.commands.at(-1));
-        if (maestroBlockedByInstallPolicy) {
-          gateResult.status = 'blocked';
-          gateResult.blockedReason =
-            'Maestro could not install its helper APK on the connected Android device. This is an environment/device-policy blocker, not an app regression.';
-        }
+        maestroBlockedByInstallPolicy = markKnownMaestroInstallBlock(
+          gateResult,
+          gateResult.commands.at(-1),
+        );
       }
       if (gateResult.commands.at(-1).ok && !maestroBlockedByInstallPolicy) {
         gateResult.commands.push(
@@ -416,6 +471,23 @@ async function main() {
             env: releaseLikeAndroidEnv,
             timeoutMs: 20 * 60 * 1000,
           }),
+        );
+        maestroBlockedByInstallPolicy = markKnownMaestroInstallBlock(
+          gateResult,
+          gateResult.commands.at(-1),
+        );
+      }
+      if (gateResult.commands.at(-1).ok && !maestroBlockedByInstallPolicy) {
+        gateResult.commands.push(
+          runCommand('Maestro AI scan save', 'npm', ['run', 'maestro:ai-scan-save:android'], {
+            cwd: mobileRoot,
+            env: releaseLikeAndroidEnv,
+            timeoutMs: 20 * 60 * 1000,
+          }),
+        );
+        maestroBlockedByInstallPolicy = markKnownMaestroInstallBlock(
+          gateResult,
+          gateResult.commands.at(-1),
         );
       }
       if (
@@ -451,8 +523,7 @@ async function main() {
     }
 
     if (gateName === 'device') {
-      const latestOutputDir = resolveLatestSessionDir() || outputDir;
-      gateResult.deviceEvidence = evaluateDeviceEvidence(latestOutputDir);
+      gateResult.deviceEvidence = evaluateDeviceEvidence(outputDir);
       gateResult.status = gateResult.deviceEvidence.passed ? 'passed' : 'failed';
     }
 

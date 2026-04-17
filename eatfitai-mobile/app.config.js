@@ -72,13 +72,13 @@ module.exports = ({ config }) => {
     process.env.EXPO_EAS_PROJECT_ID ||
     process.env.EAS_PROJECT_ID ||
     existingEas.projectId;
+  const easBuildProfile = readTrimmedEnv('EAS_BUILD_PROFILE');
   const buildPlatform = readTrimmedEnv('EAS_BUILD_PLATFORM');
-
+  const nodeEnv = readTrimmedEnv('NODE_ENV');
   const appProfile =
     readTrimmedEnv('APP_ENV') ||
-    readTrimmedEnv('EAS_BUILD_PROFILE') ||
-    readTrimmedEnv('NODE_ENV') ||
-    'development';
+    easBuildProfile ||
+    (nodeEnv === 'production' ? 'production' : 'development');
   const explicitApiBaseUrl = readTrimmedEnv('EXPO_PUBLIC_API_BASE_URL');
   const explicitSupabaseUrl = readTrimmedEnv('EXPO_PUBLIC_SUPABASE_URL');
   const fallbackApiPort = readTrimmedEnv('EXPO_PUBLIC_API_PORT') || '5247';
