@@ -588,7 +588,7 @@ const AIScanScreen: React.FC = () => {
                 accessibilityRole="button"
                 accessibilityLabel="Đóng kết quả"
                 accessibilityHint="Quay lại chế độ camera"
-                testID={TEST_IDS.aiScan.retakeButton}
+                testID={TEST_IDS.aiScan.closeResultsButton}
               >
                 <Icon name="close" size="md" color="text" />
               </Pressable>
@@ -718,10 +718,14 @@ const AIScanScreen: React.FC = () => {
 
                       <ThemedText
                         variant="caption"
-                        color="textSecondary"
+                        color={item.isMatched ? 'textSecondary' : 'warning'}
                         style={{ fontSize: 12 }}
                       >
-                        {item.caloriesPer100g ? `${item.caloriesPer100g} kcal` : '--'}
+                        {item.isMatched
+                          ? item.caloriesPer100g
+                            ? `${item.caloriesPer100g} kcal`
+                            : '--'
+                          : 'Cần review'}
                       </ThemedText>
                     </View>
                   </View>

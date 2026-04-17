@@ -105,7 +105,7 @@ const AddMealFromVisionScreen = (): React.ReactElement => {
       return '';
     }
 
-    return target.item.foodName || translateIngredient(target.item.label);
+    return target.item.foodName || target.item.label || translateIngredient(target.item.label);
   }, [detectionItems, replaceTargetIndex]);
 
   const getDisplayName = useCallback((item: MappedFoodItem) => {
@@ -307,7 +307,7 @@ const AddMealFromVisionScreen = (): React.ReactElement => {
       });
 
       await invalidateDiaryQueries(queryClient);
-      navigation.goBack();
+      navigation.navigate('MealDiary');
     } catch (error) {
       handleApiErrorWithCustomMessage(error, {
         server_error: { text1: 'Lỗi', text2: 'Máy chủ gặp sự cố' },

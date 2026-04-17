@@ -6,6 +6,7 @@ const {
   captureLogcat,
   connect,
   coldLaunchApp,
+  ensureHomeVisible,
   loginIfNeeded,
   runAdb,
   waitForAny,
@@ -93,6 +94,10 @@ async function dismissSystemDialogIfPresent(driver) {
     'While using the app',
     'Only this time',
     'Select photos and videos',
+    'Allow access to photos and videos',
+    'Allow access to photos',
+    'Allow all photos',
+    'Allow selected photos',
   ];
 
   for (const label of labels) {
@@ -142,12 +147,35 @@ async function waitForPickerPackage(driver, appPackage, timeout = 15000) {
   return null;
 }
 
-async function tapFirstVisiblePickerItem(driver) {
+async function tapFirstVisiblePickerItem(driver, preferredLabel = '') {
+  const preferredName = path.parse(String(preferredLabel || '')).name;
+  const selectorSeeds = [preferredLabel, preferredName].filter(Boolean);
   const selectors = [
+    ...selectorSeeds.flatMap((label) => [
+      `android=new UiSelector().text("${label}")`,
+      `android=new UiSelector().textContains("${label}")`,
+      `android=new UiSelector().description("${label}")`,
+      `android=new UiSelector().descriptionContains("${label}")`,
+    ]),
+    'android=new UiSelector().descriptionContains("Ảnh được chụp")',
+    'android=new UiSelector().descriptionContains("Photo taken")',
+    'android=new UiSelector().className("android.view.View").clickable(true)',
     'android=new UiSelector().resourceIdMatches(".*thumbnail.*")',
     'android=new UiSelector().className("android.widget.ImageView")',
     'android=new UiSelector().className("android.widget.FrameLayout")',
   ];
+  const windowRect = await driver.getWindowRect().catch(() => null);
+  const resolveRect = async (element) => {
+    if (typeof element?.getRect === 'function') {
+      return element.getRect().catch(() => null);
+    }
+
+    if (element?.elementId && typeof driver.getElementRect === 'function') {
+      return driver.getElementRect(element.elementId).catch(() => null);
+    }
+
+    return null;
+  };
 
   for (const selector of selectors) {
     const elements = await driver.$$(selector).catch(() => []);
@@ -162,20 +190,32 @@ async function tapFirstVisiblePickerItem(driver) {
         continue;
       }
 
+      const rect = await resolveRect(element);
+      if (rect) {
+        const tooSmall = rect.width < 48 || rect.height < 48;
+        const tooCloseToHeader =
+          windowRect && !selectorSeeds.some((label) => selector.includes(label))
+            ? rect.y < Math.max(120, Math.round(windowRect.height * 0.2))
+            : false;
+        if (tooSmall || tooCloseToHeader) {
+          continue;
+        }
+      }
+
       try {
         await element.click();
         await driver.pause(700);
         return true;
       } catch (error) {
-        const rect = await element.getRect().catch(() => null);
-        if (!rect) {
+        const tapRect = rect || (await resolveRect(element));
+        if (!tapRect) {
           continue;
         }
 
         try {
           await driver.execute('mobile: clickGesture', {
-            x: Math.round(rect.x + rect.width / 2),
-            y: Math.round(rect.y + rect.height / 2),
+            x: Math.round(tapRect.x + tapRect.width / 2),
+            y: Math.round(tapRect.y + tapRect.height / 2),
           });
           await driver.pause(700);
           return true;
@@ -201,6 +241,7 @@ async function run() {
   try {
     const initialEntry = await waitForAppEntry(driver, 60000);
     await loginIfNeeded(driver);
+    await ensureHomeVisible(driver);
 
     const homeArtifact = await captureDebugArtifacts(driver, 'cloud-proof-auth-home');
     const homeEvidence = {
@@ -216,6 +257,7 @@ async function run() {
     runAdb(['shell', 'input', 'keyevent', 'KEYCODE_HOME']);
     coldLaunchApp();
     await driver.pause(15000);
+    await ensureHomeVisible(driver);
 
     const reopenArtifact = await captureDebugArtifacts(driver, 'cloud-proof-auth-reopen-home');
     const reopenEvidence = {
@@ -264,7 +306,7 @@ async function run() {
       currentActivity: galleryPickerArtifact.currentActivity || null,
     };
 
-    const pickerSelected = await tapFirstVisiblePickerItem(driver);
+    const pickerSelected = await tapFirstVisiblePickerItem(driver, path.basename(scanFixturePath));
     if (!pickerSelected) {
       throw new Error(`Could not select the seeded gallery fixture: ${seededGalleryPath}`);
     }
@@ -312,6 +354,7 @@ async function run() {
     runAdb(['shell', 'input', 'keyevent', 'KEYCODE_HOME']);
     coldLaunchApp();
     await driver.pause(15000);
+    await ensureHomeVisible(driver);
 
     const finalReopenArtifact = await captureDebugArtifacts(driver, 'cloud-proof-auth-final-reopen-home');
     const finalReopenEvidence = {

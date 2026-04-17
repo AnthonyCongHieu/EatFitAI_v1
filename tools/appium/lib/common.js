@@ -28,23 +28,99 @@ const ACCESSIBILITY_LABEL_FALLBACKS = {
     'Tôi đồng ý với Điều khoản dịch vụ và Chính sách bảo mật',
   ],
 };
-const KNOWN_ENTRY_IDS = [
-  TEST_IDS.auth.introScreen,
-  TEST_IDS.auth.introStartButton,
-  TEST_IDS.auth.welcomeScreen,
-  TEST_IDS.auth.welcomeLoginButton,
-  TEST_IDS.auth.loginScreen,
-  TEST_IDS.home.screen,
-  TEST_IDS.foodSearch.screen,
-  TEST_IDS.mealDiary.screen,
-  TEST_IDS.aiScan.screen,
-];
 const AUTHENTICATED_ENTRY_IDS = new Set([
   TEST_IDS.home.screen,
   TEST_IDS.foodSearch.screen,
   TEST_IDS.mealDiary.screen,
   TEST_IDS.aiScan.screen,
+  TEST_IDS.voice.screen,
+  TEST_IDS.stats.screen,
+  TEST_IDS.profile.screen,
 ]);
+const ENTRY_PROBES = [
+  [
+    TEST_IDS.home.screen,
+    [
+      TEST_IDS.home.diaryButton,
+      TEST_IDS.home.searchButton,
+      TEST_IDS.home.quickAddSearchButton,
+      TEST_IDS.home.fabButton,
+      TEST_IDS.home.screen,
+    ],
+  ],
+  [
+    TEST_IDS.foodSearch.screen,
+    [
+      TEST_IDS.foodSearch.screen,
+      TEST_IDS.foodSearch.queryInput,
+      TEST_IDS.foodSearch.submitButton,
+    ],
+  ],
+  [
+    TEST_IDS.mealDiary.screen,
+    [
+      TEST_IDS.mealDiary.screen,
+      TEST_IDS.mealDiary.datePickerButton,
+      TEST_IDS.mealDiary.addManualButton,
+      TEST_IDS.mealDiary.emptyAddManualButton,
+    ],
+  ],
+  [
+    TEST_IDS.aiScan.screen,
+    [
+      TEST_IDS.aiScan.screen,
+      TEST_IDS.aiScan.captureButton,
+      TEST_IDS.aiScan.galleryButton,
+      TEST_IDS.aiScan.statusBadge,
+    ],
+  ],
+  [
+    TEST_IDS.voice.screen,
+    [
+      TEST_IDS.voice.screen,
+      TEST_IDS.voice.statusCard,
+      TEST_IDS.voice.textInput,
+      TEST_IDS.voice.processButton,
+    ],
+  ],
+  [
+    TEST_IDS.stats.screen,
+    [
+      TEST_IDS.stats.screen,
+      TEST_IDS.stats.todayTabButton,
+      TEST_IDS.stats.weekTabButton,
+      TEST_IDS.stats.monthTabButton,
+    ],
+  ],
+  [
+    TEST_IDS.profile.screen,
+    [
+      TEST_IDS.profile.screen,
+      TEST_IDS.profile.editButton,
+      TEST_IDS.profile.logoutButton,
+    ],
+  ],
+  [TEST_IDS.auth.introScreen, [TEST_IDS.auth.introScreen, TEST_IDS.auth.introStartButton]],
+  [
+    TEST_IDS.auth.welcomeScreen,
+    [
+      TEST_IDS.auth.welcomeScreen,
+      TEST_IDS.auth.welcomeLoginButton,
+      TEST_IDS.auth.welcomeRegisterButton,
+      TEST_IDS.auth.welcomeGoogleButton,
+    ],
+  ],
+  [
+    TEST_IDS.auth.loginScreen,
+    [
+      TEST_IDS.auth.loginScreen,
+      TEST_IDS.auth.emailInput,
+      TEST_IDS.auth.passwordInput,
+      TEST_IDS.auth.submitButton,
+    ],
+  ],
+];
+const KNOWN_ENTRY_IDS = Array.from(new Set(ENTRY_PROBES.map(([entryId]) => entryId)));
 
 function createArtifactBaseName(label) {
   const stamp = new Date().toISOString().replace(/[:.]/g, '-');
@@ -236,6 +312,7 @@ function selectorCandidates(testId) {
   return [
     `android=new UiSelector().resourceId("${testId}")`,
     `android=new UiSelector().resourceId("${APP_PACKAGE}:id/${testId}")`,
+    `~${testId}`,
   ];
 }
 
@@ -278,7 +355,8 @@ async function connect() {
   });
 }
 
-async function findByTestId(driver, testId, timeout = 5000) {
+async function findByTestId(driver, testId, timeout = 5000, options = {}) {
+  const allowLabelFallbacks = options.allowLabelFallbacks !== false;
   const selectors = selectorCandidates(testId);
   const start = Date.now();
 
@@ -290,7 +368,7 @@ async function findByTestId(driver, testId, timeout = 5000) {
       }
     }
 
-    const fallbackLabels = ACCESSIBILITY_LABEL_FALLBACKS[testId];
+    const fallbackLabels = allowLabelFallbacks ? ACCESSIBILITY_LABEL_FALLBACKS[testId] : null;
     if (fallbackLabels) {
       for (const label of fallbackLabels) {
         for (const selector of [
@@ -330,22 +408,43 @@ async function waitForAny(driver, ids, timeout = 10000) {
   throw new Error(`Timed out waiting for any selector: ${ids.join(', ')}`);
 }
 
+async function detectVisibleEntry(driver, timeoutPerProbe = 150) {
+  for (const [entryId, probeIds] of ENTRY_PROBES) {
+    for (const probeId of probeIds) {
+      const element = await findByTestId(driver, probeId, timeoutPerProbe, {
+        allowLabelFallbacks: false,
+      });
+      if (element) {
+        return entryId;
+      }
+    }
+  }
+
+  return null;
+}
+
 async function waitForAppEntry(driver, timeout = 45000) {
-  return waitForAny(driver, KNOWN_ENTRY_IDS, timeout);
+  const start = Date.now();
+
+  while (Date.now() - start < timeout) {
+    const entryId = await detectVisibleEntry(driver);
+    if (entryId) {
+      return entryId;
+    }
+
+    await driver.pause(300);
+  }
+
+  await captureDebugArtifacts(driver, 'wait-for-app-entry-timeout').catch(() => null);
+  throw new Error(`Timed out waiting for a visible app entry: ${KNOWN_ENTRY_IDS.join(', ')}`);
 }
 
 async function loginIfNeeded(driver) {
   let current = await waitForAppEntry(driver, 60000);
 
-  if (AUTHENTICATED_ENTRY_IDS.has(current) && current !== TEST_IDS.home.screen) {
-    console.log(`Authenticated non-home screen detected (${current}), relaunching to normalize state.`);
-    coldLaunchApp();
-    current = await waitForAppEntry(driver, 30000);
-  }
-
-  if (current === TEST_IDS.home.screen) {
-    console.log('Home screen detected, skipping login.');
-    return;
+  if (AUTHENTICATED_ENTRY_IDS.has(current)) {
+    console.log(`Authenticated screen detected (${current}), skipping login.`);
+    return current;
   }
 
   if (
@@ -398,7 +497,7 @@ async function loginIfNeeded(driver) {
 
   if (current === TEST_IDS.home.screen) {
     console.log('Home screen detected after intro/welcome, skipping login.');
-    return;
+    return current;
   }
 
   const email = resolveEnv('EATFITAI_DEMO_EMAIL');
@@ -419,8 +518,38 @@ async function loginIfNeeded(driver) {
   await passwordInput.setValue(password);
   await tapElement(driver, submitButton);
 
-  await waitForAny(driver, [TEST_IDS.home.screen], 20000);
+  current = await waitForAppEntry(driver, 20000);
   console.log('Login successful.');
+  return current;
+}
+
+async function ensureHomeVisible(driver, timeout = 15000) {
+  const current = await detectVisibleEntry(driver);
+  if (current === TEST_IDS.home.screen) {
+    return current;
+  }
+
+  const homeTabButton = await findByTestId(driver, TEST_IDS.navigation.homeTabButton, 3000, {
+    allowLabelFallbacks: false,
+  });
+  if (!homeTabButton) {
+    throw new Error('Home navigation tab button could not be resolved.');
+  }
+
+  await tapElement(driver, homeTabButton, { useAdbFirst: true });
+
+  const start = Date.now();
+  while (Date.now() - start < timeout) {
+    const entry = await detectVisibleEntry(driver);
+    if (entry === TEST_IDS.home.screen) {
+      return entry;
+    }
+
+    await driver.pause(300);
+  }
+
+  await captureDebugArtifacts(driver, 'ensure-home-visible-timeout').catch(() => null);
+  throw new Error('Timed out waiting for a visible home surface.');
 }
 
 function runAdb(args) {
@@ -455,6 +584,8 @@ module.exports = {
   loginIfNeeded,
   runAdb,
   tapElement,
+  ensureHomeVisible,
+  detectVisibleEntry,
   waitForAppEntry,
   waitForAny,
 };

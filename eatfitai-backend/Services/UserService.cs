@@ -28,6 +28,7 @@ namespace EatFitAI.API.Services
         private readonly IMapper _mapper;
         private readonly ISupabaseStorageService _supabaseStorageService;
         private readonly IHostEnvironment _environment;
+        private readonly SupabaseSchemaBootstrapper _schemaBootstrapper;
         private readonly ILogger<UserService> _logger;
 
         public UserService(
@@ -37,6 +38,7 @@ namespace EatFitAI.API.Services
             IMapper mapper,
             ISupabaseStorageService supabaseStorageService,
             IHostEnvironment environment,
+            SupabaseSchemaBootstrapper schemaBootstrapper,
             ILogger<UserService> logger)
         {
             _userRepository = userRepository;
@@ -45,6 +47,7 @@ namespace EatFitAI.API.Services
             _mapper = mapper;
             _supabaseStorageService = supabaseStorageService;
             _environment = environment;
+            _schemaBootstrapper = schemaBootstrapper;
             _logger = logger;
         }
 
@@ -244,6 +247,8 @@ namespace EatFitAI.API.Services
             {
                 throw new KeyNotFoundException("Không tìm thấy người dùng");
             }
+
+            await _schemaBootstrapper.EnsureSchemaAsync();
 
             // Delete all related records first (due to ClientSetNull delete behavior)
             // Delete AILogs

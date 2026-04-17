@@ -14,6 +14,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.IdentityModel.Protocols;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 using Microsoft.IdentityModel.Tokens;
@@ -521,8 +522,18 @@ builder.Services.AddDbContext<EatFitAIDbContext>(options =>
 
 // Add ApplicationDbContext (custom with WeeklyCheckIns)
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
+{
     options.UseNpgsql(defaultConnectionString, npgsql =>
-        npgsql.EnableRetryOnFailure()));
+        npgsql.EnableRetryOnFailure());
+
+    if (builder.Environment.IsProduction())
+    {
+        // Keep runtime writes on ApplicationDbContext available even when
+        // the migrations snapshot lags behind newer non-critical model changes.
+        options.ConfigureWarnings(warnings =>
+            warnings.Ignore(RelationalEventId.PendingModelChangesWarning));
+    }
+});
 
 // Caching for features like password reset
 builder.Services.AddMemoryCache();
@@ -859,10 +870,11 @@ using (var scope = app.Services.CreateScope())
         await TryRunTrackedStartupPhaseAsync(
             "auth-infrastructure-bootstrap",
             () => authInfrastructureBootstrapper.EnsureSchemaAsync());
-        await TryRunTrackedStartupPhaseAsync(
-            "supabase-schema-bootstrap",
-            () => supabaseSchemaBootstrapper.EnsureSchemaAsync());
     }
+
+    await TryRunTrackedStartupPhaseAsync(
+        "supabase-schema-bootstrap",
+        () => supabaseSchemaBootstrapper.EnsureSchemaAsync());
 }
 
 foreach (var warning in optionalProductionWarnings)
@@ -908,11 +920,12 @@ using (var scope = app.Services.CreateScope())
             "auth-infrastructure-bootstrap",
             () => authInfrastructureBootstrapper.EnsureSchemaAsync(),
             LogLevel.Error);
-        await TryRunTrackedStartupPhaseAsync(
-            "supabase-schema-bootstrap",
-            () => supabaseSchemaBootstrapper.EnsureSchemaAsync(),
-            LogLevel.Error);
     }
+
+    await TryRunTrackedStartupPhaseAsync(
+        "supabase-schema-bootstrap",
+        () => supabaseSchemaBootstrapper.EnsureSchemaAsync(),
+        LogLevel.Error);
 }
 
 

@@ -37,6 +37,15 @@ function commandName(name) {
   return name;
 }
 
+function quoteWindowsShellArg(value) {
+  const text = String(value).replace(/%/g, '%%');
+  if (text.length === 0) {
+    return '""';
+  }
+
+  return /[\s&()^|<>"]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
+}
+
 function buildBaseEnv(outputDir) {
   const env = {
     ...process.env,
@@ -73,10 +82,11 @@ function runCommand(label, command, args, options = {}) {
   const startedAt = Date.now();
   const executable = commandName(command);
   const isBatchCommand = /\.cmd$/i.test(executable) || /\.bat$/i.test(executable);
+  const batchCommandLine = [executable, ...args].map(quoteWindowsShellArg).join(' ');
   const invocation = isBatchCommand
     ? {
-        command: 'cmd.exe',
-        args: ['/d', '/s', '/c', [executable, ...args].join(' ')],
+        command: process.env.ComSpec || 'cmd.exe',
+        args: ['/d', '/s', '/c', batchCommandLine],
       }
     : {
         command: executable,

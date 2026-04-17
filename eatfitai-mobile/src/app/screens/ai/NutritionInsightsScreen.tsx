@@ -375,20 +375,26 @@ const NutritionInsightsScreen = (): React.ReactElement => {
     </View>
   );
 
+  const renderScreen = (content: React.ReactNode) => (
+    <LinearGradient
+      colors={theme.colors.screenGradient}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 0.5, y: 1 }}
+      style={styles.container}
+      testID={TEST_IDS.nutritionInsights.screen}
+    >
+      {content}
+    </LinearGradient>
+  );
+
   if (loading) {
-    return (
-      <LinearGradient
-        colors={theme.colors.screenGradient}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 0.5, y: 1 }}
-        style={styles.container}
-        testID={TEST_IDS.nutritionInsights.screen}
-      >
+    return renderScreen(
+      <>
         {renderHeader()}
         <View style={styles.center}>
           <ActivityIndicator size="large" color={theme.colors.primary} />
         </View>
-      </LinearGradient>
+      </>,
     );
   }
 
@@ -398,14 +404,8 @@ const NutritionInsightsScreen = (): React.ReactElement => {
       normalizedError.includes('nutrition target') ||
       normalizedError.includes('no active');
 
-    return (
-      <LinearGradient
-        colors={theme.colors.screenGradient}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 0.5, y: 1 }}
-        style={styles.container}
-        testID={TEST_IDS.nutritionInsights.screen}
-      >
+    return renderScreen(
+      <>
         {renderHeader()}
         <View style={styles.center}>
           {isNoTargetError ? (
@@ -447,18 +447,12 @@ const NutritionInsightsScreen = (): React.ReactElement => {
             />
           )}
         </View>
-      </LinearGradient>
+      </>,
     );
   }
 
-  return (
-    <LinearGradient
-      colors={theme.colors.screenGradient}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 0.5, y: 1 }}
-      style={styles.container}
-      testID={TEST_IDS.nutritionInsights.screen}
-    >
+  return renderScreen(
+    <>
       {renderHeader()}
 
       <ScrollView contentContainerStyle={styles.content}>
@@ -697,7 +691,7 @@ const NutritionInsightsScreen = (): React.ReactElement => {
             </>
           )}
       </ScrollView>
-    </LinearGradient>
+    </>,
   );
 };
 

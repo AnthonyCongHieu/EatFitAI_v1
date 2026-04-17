@@ -322,7 +322,12 @@ const MealDiaryScreen = (): React.ReactElement => {
      RENDER
      ═══════════════════════════════════════════════ */
   return (
-    <View style={[styles.root, { paddingTop: insets.top }]}>
+    <View
+      style={[styles.root, { paddingTop: insets.top }]}
+      testID={TEST_IDS.mealDiary.screen}
+      nativeID={TEST_IDS.mealDiary.screen}
+      collapsable={false}
+    >
       <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
       <LinearGradient
         colors={[C.surfaceLow, C.bg, C.bg]}
