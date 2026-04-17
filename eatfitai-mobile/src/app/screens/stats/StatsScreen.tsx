@@ -46,6 +46,8 @@ import { StatsSkeleton } from '../../../components/skeletons/StatsSkeleton';
 import { CalendarHeatmap } from '../../../components/stats';
 import Tilt3DCard from '../../../components/ui/Tilt3DCard';
 import type { RootStackParamList } from '../../types';
+import { waterService, type WaterIntakeData } from '../../../services/waterService';
+import { useQuery } from '@tanstack/react-query';
 import {
   formatShortWeekdayLabel,
   formatWeekRangeLabel,
@@ -167,6 +169,16 @@ const StatsScreen = (): React.ReactElement => {
   const [monthData, setMonthData] = useState<MonthSummary | null>(null);
   const [isLoadingMonth, setIsLoadingMonth] = useState(false);
   const [currentMonth] = useState(() => new Date());
+
+  /* ─── Data: Water ─── */
+  const { data: statsWaterData } = useQuery<WaterIntakeData>({
+    queryKey: ['water-intake-stats'],
+    queryFn: () => waterService.getWaterIntake(new Date()),
+    staleTime: 30000,
+    enabled: activeTab === 'today',
+  });
+  const statsWaterAmount = statsWaterData?.amountMl ?? 0;
+  const statsWaterTarget = statsWaterData?.targetMl ?? 2000;
 
   useEffect(() => {
     fetchWeekSummary();
@@ -500,20 +512,27 @@ const StatsScreen = (): React.ReactElement => {
                       <ThemedText style={S.waterLabel}>LƯỢNG NƯỚC</ThemedText>
                     </View>
                     <View style={{ flexDirection: 'row', alignItems: 'baseline' }}>
-                      <ThemedText style={S.waterBig}>0L</ThemedText>
-                      <ThemedText style={S.waterSmall}> / 2.0L</ThemedText>
+                      <ThemedText style={S.waterBig}>
+                        {(statsWaterAmount / 1000).toFixed(1)}L
+                      </ThemedText>
+                      <ThemedText style={S.waterSmall}>
+                        {' '}/ {(statsWaterTarget / 1000).toFixed(1)}L
+                      </ThemedText>
                     </View>
                   </View>
                   {/* Drops */}
                   <View style={S.waterDrops}>
-                    {Array.from({ length: 8 }).map((_, i) => (
-                      <Ionicons
-                        key={i}
-                        name="water"
-                        size={28}
-                        color={P.surfaceContainerHighest}
-                      />
-                    ))}
+                    {Array.from({ length: 8 }).map((_, i) => {
+                      const filled = i < Math.floor((statsWaterAmount / statsWaterTarget) * 8);
+                      return (
+                        <Ionicons
+                          key={i}
+                          name="water"
+                          size={28}
+                          color={filled ? '#22d3ee' : P.surfaceContainerHighest}
+                        />
+                      );
+                    })}
                   </View>
                 </View>
               </Tilt3DCard>
