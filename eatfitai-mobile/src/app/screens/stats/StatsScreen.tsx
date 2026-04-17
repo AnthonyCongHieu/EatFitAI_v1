@@ -649,7 +649,40 @@ const StatsScreen = (): React.ReactElement => {
         )}
 
         {/* ═══════════ WEEK ═══════════ */}
-        {activeTab === 'week' && weekSummary && (
+        {activeTab === 'week' && weekSummary && (() => {
+          const wkTotalCal = Math.round(weekSummary.totalCalories);
+          const wkTargetCal = targetCal * 7;
+          const wkProgress = wkTargetCal > 0 ? Math.min(1, wkTotalCal / wkTargetCal) : 0;
+          const wkDashOffset = RING_CIRCUMFERENCE * (1 - wkProgress);
+          const wkLoggedDays = weekSummary.days.filter(d => d.calories > 0);
+          const wkAvgCal = wkLoggedDays.length > 0
+            ? Math.round(wkLoggedDays.reduce((s, d) => s + d.calories, 0) / wkLoggedDays.length)
+            : 0;
+          const wkMaxC = Math.max(...weekSummary.days.map(d => d.calories), 1);
+          // Find the best day in the week (highest cal)
+          const wkBestDay = wkLoggedDays.length > 0
+            ? wkLoggedDays.reduce((best, d) => d.calories > best.calories ? d : best)
+            : null;
+          const wkBestDayIdx = wkBestDay ? weekSummary.days.findIndex(d => d.date === wkBestDay.date) : -1;
+          // Find the worst day in the week (lowest cal)
+          const wkWorstDay = wkLoggedDays.length > 0
+            ? wkLoggedDays.reduce((worst, d) => d.calories < worst.calories ? d : worst)
+            : null;
+          // Only show worst if it's different from best (requires at least 2 logged days)
+          const wkWorstDayIdx = wkWorstDay && wkLoggedDays.length > 1 && wkWorstDay.date !== wkBestDay?.date
+            ? weekSummary.days.findIndex(d => d.date === wkWorstDay.date) : -1;
+
+          // Protein target for progress bar
+          const wkTargetProtein = targetP * 7;
+          const wkProteinPct = wkTargetProtein > 0 ? Math.min(1, weekSummary.totalProtein / wkTargetProtein) : 0;
+          // Carbs target
+          const wkTargetCarbs = targetC * 7;
+          const wkCarbsPct = wkTargetCarbs > 0 ? Math.min(1, weekSummary.totalCarbs / wkTargetCarbs) : 0;
+          // Fat target
+          const wkTargetFat = targetF * 7;
+          const wkFatPct = wkTargetFat > 0 ? Math.min(1, weekSummary.totalFat / wkTargetFat) : 0;
+
+          return (
           <>
             {/* Week nav */}
             <Animated.View entering={FadeInDown.delay(100).springify()}>
@@ -670,8 +703,81 @@ const StatsScreen = (): React.ReactElement => {
               </View>
             </Animated.View>
 
-            {/* Bar chart card */}
-            <Animated.View entering={FadeInDown.delay(200).springify()}>
+            {/* ── VITALITY RING CARD ── */}
+            <Animated.View entering={FadeInDown.delay(150).springify()}>
+              <Tilt3DCard
+                width={cardW}
+                height={340}
+                maxTilt={6}
+                showReflection={false}
+                useDeviceMotion
+                activeTouch={false}
+              >
+                <View style={S.wkRingCard}>
+                  <LinearGradient
+                    colors={['rgba(255,255,255,0.08)', 'rgba(255,255,255,0)']}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={StyleSheet.absoluteFill}
+                  />
+                  {/* Ring */}
+                  <View style={S.heroRingWrap}>
+                    <View style={S.heroRing}>
+                      <Svg
+                        width={RING_SIZE}
+                        height={RING_SIZE}
+                        style={{ transform: [{ rotate: '-90deg' }] }}
+                      >
+                        <Defs>
+                          <SvgGradient id="wkRingG" x1="0%" y1="0%" x2="100%" y2="0%">
+                            <Stop offset="0%" stopColor={P.primary} />
+                            <Stop offset="100%" stopColor={P.primaryContainer} />
+                          </SvgGradient>
+                        </Defs>
+                        {/* Track */}
+                        <Circle
+                          cx={RING_CENTER}
+                          cy={RING_CENTER}
+                          r={RING_RADIUS}
+                          stroke={P.surfaceContainerLowest}
+                          strokeWidth={RING_STROKE}
+                          fill="none"
+                        />
+                        {/* Progress */}
+                        <Circle
+                          cx={RING_CENTER}
+                          cy={RING_CENTER}
+                          r={RING_RADIUS}
+                          stroke="url(#wkRingG)"
+                          strokeWidth={RING_STROKE}
+                          fill="none"
+                          strokeLinecap="round"
+                          strokeDasharray={RING_CIRCUMFERENCE}
+                          strokeDashoffset={wkDashOffset}
+                        />
+                      </Svg>
+                      {/* Center text */}
+                      <View style={S.ringCenter}>
+                        <ThemedText style={S.ringBig}>
+                          {wkTotalCal.toLocaleString()}
+                        </ThemedText>
+                        <ThemedText style={[S.wkRingUnit]}>
+                          / {wkTargetCal.toLocaleString()} kcal
+                        </ThemedText>
+                      </View>
+                    </View>
+                  </View>
+                  {/* Title + subtitle */}
+                  <ThemedText style={S.wkRingTitle}>Tổng Năng Lượng</ThemedText>
+                  <ThemedText style={S.wkRingSub}>
+                    Bạn đã đạt {Math.round(wkProgress * 100)}% mục tiêu tuần
+                  </ThemedText>
+                </View>
+              </Tilt3DCard>
+            </Animated.View>
+
+            {/* ── GLASSMORPHISM BAR CHART ── */}
+            <Animated.View entering={FadeInDown.delay(250).springify()}>
               <Tilt3DCard
                 width={cardW}
                 height={300}
@@ -680,106 +786,247 @@ const StatsScreen = (): React.ReactElement => {
                 useDeviceMotion
                 activeTouch={false}
               >
-                <View style={S.chartCard}>
-                  <LinearGradient
-                    colors={['rgba(255,255,255,0.08)', 'rgba(255,255,255,0)']}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 1 }}
-                    style={StyleSheet.absoluteFill}
-                  />
-                  <ThemedText style={S.secTitle}>Tuần này</ThemedText>
-
-                  <View style={S.bars}>
-                    {weekSummary.days.map((day) => {
-                      const maxC = Math.max(...weekSummary.days.map((d) => d.calories), 1);
-                      const h = (day.calories / maxC) * 130;
-                      return (
-                        <Pressable
-                          key={day.date}
-                          style={S.barCol}
-                          onPress={() => handleDayPress(day.date)}
-                        >
-                          <ThemedText style={S.barVal}>
-                            {day.calories > 0 ? Math.round(day.calories) : ''}
-                          </ThemedText>
-                          <View style={S.barTrack}>
-                            <LinearGradient
-                              colors={[P.primary, P.primaryContainer]}
-                              start={{ x: 0, y: 0 }}
-                              end={{ x: 0, y: 1 }}
-                              style={[S.barFill, { height: Math.max(h, 4) }]}
-                            />
-                          </View>
-                          <ThemedText style={S.barLbl}>
-                            {formatShortWeekdayLabel(new Date(day.date))}
-                          </ThemedText>
-                        </Pressable>
-                      );
-                    })}
-                  </View>
-                </View>
-              </Tilt3DCard>
-            </Animated.View>
-
-            {/* Summary row */}
-            <Animated.View entering={FadeInUp.delay(300).springify()}>
-              <View style={S.sumRow}>
-                <SummaryChip emoji="📊" value={`${Math.round(
-                  weekSummary.days.reduce((s, d) => s + d.calories, 0) /
-                    Math.max(weekSummary.days.filter((d) => d.calories > 0).length, 1),
-                ).toLocaleString()}`} label="TB/ngày" />
-                <SummaryChip emoji="🔥" value={`${Math.round(weekSummary.totalCalories).toLocaleString()}`} label="Tổng tuần" />
-                <SummaryChip emoji="🎯" value={`${weekSummary.days.filter(
-                  (d) => d.targetCalories && d.calories >= d.targetCalories * 0.9,
-                ).length}/${weekSummary.days.length}`} label="Đạt mục tiêu" />
-              </View>
-            </Animated.View>
-
-            {/* Macro card */}
-            <Animated.View entering={FadeInUp.delay(400).springify()}>
-              <Tilt3DCard
-                width={cardW}
-                height={150}
-                maxTilt={4}
-                showReflection={false}
-                useDeviceMotion
-                activeTouch={false}
-              >
-                <View style={S.macroCard}>
+                <View style={S.wkGlassChart}>
                   <LinearGradient
                     colors={['rgba(255,255,255,0.06)', 'rgba(255,255,255,0)']}
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 1 }}
                     style={StyleSheet.absoluteFill}
                   />
-                  <ThemedText style={S.secTitle}>Macro tuần</ThemedText>
-                  <View style={S.macroRow}>
-                    <View style={S.macroItem}>
-                      <ThemedText style={[S.macroV, { color: P.primary }]}>
-                        {Math.round(weekSummary.totalProtein)}g
+                  {/* Header row */}
+                  <View style={S.wkChartHeader}>
+                    <ThemedText style={S.wkChartTitle}>Biểu Đồ Calo</ThemedText>
+                    <View style={S.wkAvgBadge}>
+                      <ThemedText style={S.wkAvgBadgeText}>
+                        TRUNG BÌNH: {wkAvgCal.toLocaleString()}
                       </ThemedText>
-                      <ThemedText style={S.macroL}>Protein</ThemedText>
                     </View>
-                    <View style={S.macroDivider} />
-                    <View style={S.macroItem}>
-                      <ThemedText style={[S.macroV, { color: P.secondary }]}>
-                        {Math.round(weekSummary.totalCarbs)}g
-                      </ThemedText>
-                      <ThemedText style={S.macroL}>Carbs</ThemedText>
+                  </View>
+
+                  {/* Chart Legend */}
+                  <View style={S.wkChartLegend}>
+                     <View style={S.wkLegendItem}>
+                        <View style={[S.wkLegendDot, { backgroundColor: P.primary }]} />
+                        <ThemedText style={S.wkLegendText}>Cao nhất</ThemedText>
+                     </View>
+                     <View style={S.wkLegendItem}>
+                        <View style={[S.wkLegendDot, { backgroundColor: P.tertiaryContainer }]} />
+                        <ThemedText style={S.wkLegendText}>Thấp nhất</ThemedText>
+                     </View>
+                  </View>
+
+                  {/* Bars */}
+                  <View style={S.wkBarsArea}>
+                    {/* Background grid lines */}
+                    <View style={StyleSheet.absoluteFill}>
+                      <View style={S.wkGridLine} />
+                      <View style={[S.wkGridLine, { top: '33%' }]} />
+                      <View style={[S.wkGridLine, { top: '66%' }]} />
                     </View>
-                    <View style={S.macroDivider} />
-                    <View style={S.macroItem}>
-                      <ThemedText style={[S.macroV, { color: P.tertiaryContainer }]}>
-                        {Math.round(weekSummary.totalFat)}g
+
+                    {weekSummary.days.map((day, idx) => {
+                      const h = (day.calories / wkMaxC) * 140;
+                      const isBest = idx === wkBestDayIdx;
+                      const isWorst = idx === wkWorstDayIdx;
+                      return (
+                        <Pressable
+                          key={day.date}
+                          style={S.wkBarCol}
+                          onPress={() => handleDayPress(day.date)}
+                        >
+                          <View style={[S.wkBarTrack, { height: Math.max(h, 4) }]}>
+                            {isBest ? (
+                              <LinearGradient
+                                colors={['rgba(75,226,119,0.2)', P.primary]}
+                                start={{ x: 0, y: 1 }}
+                                end={{ x: 0, y: 0 }}
+                                style={[StyleSheet.absoluteFill, { borderRadius: 8 }]}
+                              />
+                            ) : isWorst ? (
+                              <LinearGradient
+                                colors={['rgba(255,139,124,0.2)', P.tertiaryContainer]}
+                                start={{ x: 0, y: 1 }}
+                                end={{ x: 0, y: 0 }}
+                                style={[StyleSheet.absoluteFill, { borderRadius: 8 }]}
+                              />
+                            ) : (
+                              <View style={{ ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(255,255,255,0.06)', borderRadius: 8 }} />
+                            )}
+                            {/* Dot on top */}
+                            <View style={[
+                              S.wkBarDot,
+                              isBest && S.wkBarDotBest,
+                              isWorst && S.wkBarDotWorst,
+                              (!isBest && !isWorst) && { backgroundColor: 'rgba(255,255,255,0.2)', shadowOpacity: 0 }
+                            ]} />
+                          </View>
+                        </Pressable>
+                      );
+                    })}
+                  </View>
+
+                  {/* Day labels */}
+                  <View style={S.wkDayLabels}>
+                    {weekSummary.days.map((day, idx) => (
+                      <ThemedText
+                        key={day.date}
+                        style={[
+                          S.wkDayLbl,
+                          idx === wkBestDayIdx && S.wkDayLblBest,
+                        ]}
+                      >
+                        {formatShortWeekdayLabel(new Date(day.date))}
                       </ThemedText>
-                      <ThemedText style={S.macroL}>Fat</ThemedText>
+                    ))}
+                  </View>
+                </View>
+              </Tilt3DCard>
+            </Animated.View>
+
+            {/* ── MACROS BENTO GRID ── */}
+            {/* Protein — full width */}
+            <Animated.View entering={FadeInUp.delay(350).springify()}>
+              <Tilt3DCard
+                width={cardW}
+                height={130}
+                maxTilt={4}
+                showReflection={false}
+                useDeviceMotion
+                activeTouch={false}
+              >
+                <View style={S.wkProteinCard}>
+                  <LinearGradient
+                    colors={['rgba(255,255,255,0.06)', 'rgba(255,255,255,0)']}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={StyleSheet.absoluteFill}
+                  />
+                  <View style={S.wkProteinHead}>
+                    <View style={S.wkProteinIcon}>
+                      <Ionicons name="egg" size={16} color={P.secondary} />
+                    </View>
+                    <ThemedText style={S.wkProteinTitle}>Đạm (Protein)</ThemedText>
+                  </View>
+                  <View style={S.wkProteinBottom}>
+                    <View>
+                      <View style={{ flexDirection: 'row', alignItems: 'baseline' }}>
+                        <ThemedText style={S.wkProteinVal}>
+                          {Math.round(weekSummary.totalProtein)}
+                        </ThemedText>
+                        <ThemedText style={S.wkProteinTarget}>
+                          {' '}/ {Math.round(wkTargetProtein)}g
+                        </ThemedText>
+                      </View>
+                    </View>
+                    <View style={S.wkProteinBarTrack}>
+                      <LinearGradient
+                        colors={[P.secondary, P.secondaryFixed]}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 0 }}
+                        style={[S.wkProteinBarFill, { width: `${Math.round(wkProteinPct * 100)}%` as any }]}
+                      />
+                    </View>
+                  </View>
+                </View>
+              </Tilt3DCard>
+            </Animated.View>
+
+            {/* Carbs — full width */}
+            <Animated.View entering={FadeInUp.delay(400).springify()}>
+              <Tilt3DCard
+                width={cardW}
+                height={130}
+                maxTilt={4}
+                showReflection={false}
+                useDeviceMotion
+                activeTouch={false}
+              >
+                <View style={S.wkProteinCard}>
+                  <LinearGradient
+                    colors={['rgba(255,255,255,0.06)', 'rgba(255,255,255,0)']}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={StyleSheet.absoluteFill}
+                  />
+                  <View style={S.wkProteinHead}>
+                    <View style={[S.wkProteinIcon, { backgroundColor: 'rgba(255,139,124,0.15)' }]}>
+                      <Ionicons name="fast-food" size={16} color={P.tertiaryContainer} />
+                    </View>
+                    <ThemedText style={S.wkProteinTitle}>Tinh bột</ThemedText>
+                  </View>
+                  <View style={S.wkProteinBottom}>
+                    <View>
+                      <View style={{ flexDirection: 'row', alignItems: 'baseline' }}>
+                        <ThemedText style={S.wkProteinVal}>
+                          {Math.round(weekSummary.totalCarbs)}
+                        </ThemedText>
+                        <ThemedText style={S.wkProteinTarget}>
+                          {' '}/ {Math.round(wkTargetCarbs)}g
+                        </ThemedText>
+                      </View>
+                    </View>
+                    <View style={S.wkProteinBarTrack}>
+                      <LinearGradient
+                        colors={[P.tertiaryContainer, '#ffb4ab']}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 0 }}
+                        style={[S.wkProteinBarFill, { width: `${Math.round(wkCarbsPct * 100)}%` as any, shadowColor: P.tertiaryContainer }]}
+                      />
+                    </View>
+                  </View>
+                </View>
+              </Tilt3DCard>
+            </Animated.View>
+
+            {/* Fat — full width */}
+            <Animated.View entering={FadeInUp.delay(450).springify()}>
+              <Tilt3DCard
+                width={cardW}
+                height={130}
+                maxTilt={4}
+                showReflection={false}
+                useDeviceMotion
+                activeTouch={false}
+              >
+                <View style={S.wkProteinCard}>
+                  <LinearGradient
+                    colors={['rgba(255,255,255,0.06)', 'rgba(255,255,255,0)']}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={StyleSheet.absoluteFill}
+                  />
+                  <View style={S.wkProteinHead}>
+                    <View style={[S.wkProteinIcon, { backgroundColor: 'rgba(88,185,255,0.15)' }]}>
+                      <Ionicons name="water" size={16} color="#58B9FF" />
+                    </View>
+                    <ThemedText style={S.wkProteinTitle}>Chất béo</ThemedText>
+                  </View>
+                  <View style={S.wkProteinBottom}>
+                    <View>
+                      <View style={{ flexDirection: 'row', alignItems: 'baseline' }}>
+                        <ThemedText style={S.wkProteinVal}>
+                          {Math.round(weekSummary.totalFat)}
+                        </ThemedText>
+                        <ThemedText style={S.wkProteinTarget}>
+                          {' '}/ {Math.round(wkTargetFat)}g
+                        </ThemedText>
+                      </View>
+                    </View>
+                    <View style={S.wkProteinBarTrack}>
+                      <LinearGradient
+                        colors={['#58B9FF', '#a8d5ff']}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 0 }}
+                        style={[S.wkProteinBarFill, { width: `${Math.round(wkFatPct * 100)}%` as any, shadowColor: '#58B9FF' }]}
+                      />
                     </View>
                   </View>
                 </View>
               </Tilt3DCard>
             </Animated.View>
           </>
-        )}
+          );
+        })()}
 
         {/* ═══════════ MONTH ═══════════ */}
         {activeTab === 'month' && (() => {
@@ -1667,6 +1914,291 @@ const S = StyleSheet.create({
     color: '#34d399',
     letterSpacing: 0.5,
     textTransform: 'uppercase',
+  },
+
+  /* ═══ WEEK TAB REDESIGN ═══ */
+  wkRingCard: {
+    backgroundColor: 'rgba(22, 27, 43, 0.5)',
+
+    borderRadius: 24,
+    paddingHorizontal: 24,
+    paddingVertical: 28,
+    overflow: 'hidden',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.05)',
+    shadowColor: P.primary,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.15,
+    shadowRadius: 32,
+    elevation: 8,
+  },
+  wkRingUnit: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: P.onSurfaceVariant,
+    marginTop: 4,
+  },
+  wkRingTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: P.primary,
+    marginTop: 8,
+    letterSpacing: -0.3,
+  },
+  wkRingSub: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: P.onSurfaceVariant,
+    marginTop: 4,
+  },
+
+  /* Glassmorphism chart */
+  wkGlassChart: {
+    backgroundColor: 'rgba(22, 27, 43, 0.5)',
+
+    borderRadius: 24,
+    paddingHorizontal: 20,
+    paddingVertical: 24,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.05)',
+    shadowColor: P.primary,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.15,
+    shadowRadius: 32,
+    elevation: 8,
+  },
+  wkChartHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  wkChartTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: P.onSurface,
+  },
+  wkAvgBadge: {
+    backgroundColor: 'rgba(75,226,119,0.1)',
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    borderRadius: 99,
+  },
+  wkAvgBadgeText: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: P.primary,
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
+  },
+  wkChartLegend: {
+    flexDirection: 'row',
+    gap: 16,
+    marginBottom: 20,
+    paddingHorizontal: 0,
+  },
+  wkLegendItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  wkLegendDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+  },
+  wkLegendText: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: P.onSurfaceVariant,
+    textTransform: 'uppercase',
+  },
+  wkBarsArea: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-end',
+    height: 160,
+    paddingHorizontal: 4,
+  },
+  wkGridLine: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    height: 1,
+    backgroundColor: 'rgba(61,74,61,0.2)',
+    top: 0,
+  },
+  wkBarCol: {
+    alignItems: 'center',
+    flex: 1,
+    justifyContent: 'flex-end',
+  },
+  wkBarTrack: {
+    width: 28,
+    borderRadius: 8,
+    overflow: 'visible',
+    position: 'relative',
+  },
+  wkBarDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: P.primary,
+    position: 'absolute',
+    top: -4,
+    alignSelf: 'center',
+    shadowColor: P.primary,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.8,
+    shadowRadius: 6,
+    elevation: 4,
+  },
+  wkBarDotBest: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    top: -6,
+    borderWidth: 2,
+    borderColor: P.surfaceContainer,
+    shadowColor: P.primary,
+    shadowOpacity: 1,
+    shadowRadius: 12,
+    elevation: 6,
+  },
+  wkBarDotWorst: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    top: -6,
+    borderWidth: 2,
+    borderColor: P.surfaceContainer,
+    backgroundColor: P.tertiaryContainer,
+    shadowColor: P.tertiaryContainer,
+    shadowOpacity: 1,
+    shadowRadius: 12,
+    elevation: 6,
+  },
+  wkDayLabels: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 10,
+    paddingHorizontal: 4,
+  },
+  wkDayLbl: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: P.onSurfaceVariant,
+    textTransform: 'uppercase',
+    flex: 1,
+    textAlign: 'center',
+  },
+  wkDayLblBest: {
+    color: P.primary,
+    fontWeight: '900',
+  },
+
+  /* Protein card */
+  wkProteinCard: {
+    backgroundColor: 'rgba(22, 27, 43, 0.5)',
+    borderRadius: 24,
+    padding: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.05)',
+  },
+  wkProteinHead: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginBottom: 12,
+  },
+  wkProteinIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: 'rgba(23, 84, 40, 0.4)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  wkProteinTitle: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: P.onSurface,
+  },
+  wkProteinBottom: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    justifyContent: 'space-between',
+    marginTop: 8,
+  },
+  wkProteinVal: {
+    fontSize: 26,
+    fontWeight: '900',
+    color: P.onSurface,
+    paddingHorizontal: 4,
+  },
+  wkProteinTarget: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: P.onSurfaceVariant,
+  },
+  wkProteinBarTrack: {
+    width: 96,
+    height: 8,
+    backgroundColor: P.surfaceContainerHighest,
+    borderRadius: 99,
+    overflow: 'hidden',
+  },
+  wkProteinBarFill: {
+    height: '100%',
+    borderRadius: 99,
+    shadowColor: P.secondary,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.5,
+    shadowRadius: 10,
+    elevation: 4,
+  },
+
+  /* Mini macro cards (Carbs / Fat) */
+  wkMiniMacro: {
+    backgroundColor: P.surfaceContainerLow,
+    borderRadius: 24,
+    padding: 20,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.05)',
+    justifyContent: 'space-between',
+    height: 130,
+  },
+  wkMiniMacroHead: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  wkMiniMacroIcon: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  wkMiniMacroLabel: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: P.onSurfaceVariant,
+  },
+  wkMiniMacroVal: {
+    fontSize: 28,
+    fontWeight: '900',
+    color: P.onSurface,
+  },
+  wkMiniMacroUnit: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: P.onSurfaceVariant,
+    marginLeft: 2,
   },
 });
 
