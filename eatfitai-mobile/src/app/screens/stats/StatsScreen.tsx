@@ -173,7 +173,7 @@ const StatsScreen = (): React.ReactElement => {
 
   /* ─── Data: Water ─── */
   const { data: statsWaterData } = useQuery<WaterIntakeData>({
-    queryKey: ['water-intake-stats'],
+    queryKey: ['water-intake-today'],
     queryFn: () => waterService.getWaterIntake(new Date()),
     staleTime: 30000,
     enabled: activeTab === 'today',
@@ -518,7 +518,7 @@ const StatsScreen = (): React.ReactElement => {
                   <View style={S.waterHead}>
                     <View style={S.waterLeft}>
                       <View style={S.waterIconBox}>
-                        <Ionicons name="water" size={20} color={P.primary} />
+                        <Ionicons name="water" size={20} color="#3b82f6" />
                       </View>
                       <ThemedText style={S.waterLabel}>LƯỢNG NƯỚC</ThemedText>
                     </View>
@@ -540,7 +540,7 @@ const StatsScreen = (): React.ReactElement => {
                           key={i}
                           name="water"
                           size={28}
-                          color={filled ? '#22d3ee' : P.surfaceContainerHighest}
+                          color={filled ? '#3b82f6' : P.surfaceContainerHighest}
                         />
                       );
                     })}

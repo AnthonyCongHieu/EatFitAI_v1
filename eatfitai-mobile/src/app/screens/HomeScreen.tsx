@@ -24,7 +24,7 @@ import Toast from 'react-native-toast-message';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
-import Svg, { Circle, Defs, LinearGradient as SvgGradient, Stop } from 'react-native-svg';
+import Svg, { Circle, Defs, LinearGradient as SvgGradient, Stop, Path } from 'react-native-svg';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -41,7 +41,6 @@ import { handleApiErrorWithCustomMessage } from '../../utils/errorHandler';
 import { useGamificationStore } from '../../store/useGamificationStore';
 import { HomeSkeleton } from '../../components/skeletons/HomeSkeleton';
 import { WelcomeHeader } from '../../components/home/WelcomeHeader';
-import QuickActionsOverlay from '../../components/home/QuickActionsOverlay';
 import { useSmartContext } from '../../hooks/useSmartContext';
 import Tilt3DCard from '../../components/ui/Tilt3DCard';
 import * as Haptics from 'expo-haptics';
@@ -211,6 +210,25 @@ const weekStyles = StyleSheet.create({
     marginTop: -2,
   },
 });
+
+const WaterGlassIcon = ({ isPlus }: { isPlus: boolean }) => {
+  const color = isPlus ? '#3b82f6' : '#64748b';
+  const liquidOpacity = isPlus ? 0.9 : 0.4;
+  return (
+    <View style={{ width: 22, height: 26, alignItems: 'center', justifyContent: 'center' }}>
+      <Svg width="22" height="26" viewBox="0 0 24 24" fill="none">
+        {/* Fill */}
+        <Path d="M5.5 12L6.5 20C6.6 20.6 7.2 21 7.8 21H16.2C16.8 21 17.4 20.6 17.5 20L18.5 12H5.5Z" fill={color} fillOpacity={liquidOpacity} />
+        {/* Outline */}
+        <Path d="M4 3L6.5 20C6.7 21.1 7.6 22 8.8 22H15.2C16.4 22 17.3 21.1 17.5 20L20 3" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+      </Svg>
+      <ThemedText style={{ position: 'absolute', fontSize: 16, fontWeight: '600', color: '#fff', top: 3, width: '100%', textAlign: 'center' }}>
+        {isPlus ? '+' : '−'}
+      </ThemedText>
+    </View>
+  );
+};
+
 const HomeScreen = (): React.ReactElement => {
   const { theme } = useAppTheme();
   const navigation = useNavigation<NavigationProp>();
@@ -225,7 +243,6 @@ const HomeScreen = (): React.ReactElement => {
       return useDiaryStore.getState().summary ?? null;
     },
   });
-  const [showQuickActions, setShowQuickActions] = useState(false);
   const [serverDown, setServerDown] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date());
 
@@ -241,23 +258,46 @@ const HomeScreen = (): React.ReactElement => {
 
   const handleAddWater = useCallback(async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    
+    // Optimistic Update
+    const prevData = queryClient.getQueryData<WaterIntakeData>(['water-intake-today']);
+    queryClient.setQueryData<WaterIntakeData>(['water-intake-today'], (old) => ({
+      amountMl: (old?.amountMl ?? 0) + 200,
+      targetMl: old?.targetMl ?? 2000,
+      intakeDate: old?.intakeDate ?? new Date().toISOString()
+    }));
+
     try {
       await waterService.addWater(new Date());
-      refetchWater();
     } catch (err: any) {
+      if (prevData) {
+        queryClient.setQueryData(['water-intake-today'], prevData);
+      }
       Toast.show({ type: 'error', text1: 'Lỗi', text2: 'Không thể cập nhật lượng nước' });
     }
-  }, [refetchWater]);
+  }, [queryClient, refetchWater]);
 
   const handleSubtractWater = useCallback(async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    
+    // Optimistic Update
+    const prevData = queryClient.getQueryData<WaterIntakeData>(['water-intake-today']);
+    const newAmount = Math.max(0, (prevData?.amountMl ?? 0) - 200);
+    queryClient.setQueryData<WaterIntakeData>(['water-intake-today'], (old) => ({
+      amountMl: newAmount,
+      targetMl: old?.targetMl ?? 2000,
+      intakeDate: old?.intakeDate ?? new Date().toISOString()
+    }));
+
     try {
       await waterService.subtractWater(new Date());
-      refetchWater();
     } catch (err: any) {
+      if (prevData) {
+        queryClient.setQueryData(['water-intake-today'], prevData);
+      }
       Toast.show({ type: 'error', text1: 'Lỗi', text2: 'Không thể cập nhật lượng nước' });
     }
-  }, [refetchWater]);
+  }, [queryClient, refetchWater]);
   const { currentStreak, longestStreak, weeklyLogs, checkStreak, fetchWeeklyLogs } =
     useGamificationStore();
 
@@ -394,45 +434,6 @@ const HomeScreen = (): React.ReactElement => {
   const radius = (ringSize - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
   const dashOffset = circumference * (1 - Math.min(1, calorieProgress));
-
-  // Robot FAB floating animation & Drag gesture
-  const floatAnim = useSharedValue(0);
-  const robotOffsetX = useSharedValue(0);
-  const robotOffsetY = useSharedValue(0);
-  const robotSavedX = useSharedValue(0);
-  const robotSavedY = useSharedValue(0);
-
-  useEffect(() => {
-    floatAnim.value = withRepeat(
-      withSequence(
-        withTiming(-10, { duration: 1500, easing: Easing.inOut(Easing.ease) }),
-        withTiming(0, { duration: 1500, easing: Easing.inOut(Easing.ease) }),
-      ),
-      -1,
-      true,
-    );
-  }, []);
-
-  const floatStyle = useAnimatedStyle(() => ({
-    transform: [
-      { translateX: robotOffsetX.value },
-      { translateY: floatAnim.value + robotOffsetY.value },
-    ],
-  }));
-
-  const robotPanGesture = useMemo(
-    () =>
-      Gesture.Pan()
-        .onUpdate((e) => {
-          robotOffsetX.value = robotSavedX.value + e.translationX;
-          robotOffsetY.value = robotSavedY.value + e.translationY;
-        })
-        .onEnd(() => {
-          robotSavedX.value = robotOffsetX.value;
-          robotSavedY.value = robotOffsetY.value;
-        }),
-    [robotOffsetX, robotOffsetY, robotSavedX, robotSavedY],
-  );
 
   // Card width for Tilt3D
   const cardWidth = SCREEN_WIDTH - 40;
@@ -771,10 +772,7 @@ const HomeScreen = (): React.ReactElement => {
                 ]}
                 onPress={handleSubtractWater}
               >
-                <View style={styles.waterGlassDark}>
-                  <Ionicons name="remove" size={14} color="#94a3b8" style={styles.waterGlassBadge} />
-                  <Ionicons name="beer-outline" size={22} color="#64748b" />
-                </View>
+                <WaterGlassIcon isPlus={false} />
               </Pressable>
 
               <View style={styles.waterPillDivider} />
@@ -786,61 +784,12 @@ const HomeScreen = (): React.ReactElement => {
                 ]}
                 onPress={handleAddWater}
               >
-                <View style={styles.waterGlassBlue}>
-                  <Ionicons name="add" size={14} color="#3b82f6" style={styles.waterGlassBadge} />
-                  <Ionicons name="beer-outline" size={22} color="#3b82f6" />
-                </View>
+                <WaterGlassIcon isPlus={true} />
               </Pressable>
             </View>
           </View>
         </Animated.View>
       </Screen>
-
-      {/* ══════════ FLOATING AI ROBOT FAB (Draggable) ══════════ */}
-      <GestureDetector gesture={robotPanGesture}>
-        <Animated.View
-          entering={FadeInUp.delay(500).springify()}
-          style={[styles.fabContainer, floatStyle]}
-        >
-          <Pressable
-            style={styles.fab}
-            onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-              setShowQuickActions(true);
-            }}
-            testID={TEST_IDS.home.fabButton}
-          >
-            {/* Robot face */}
-            <View style={styles.robotFace}>
-              {/* Eyes area */}
-              <View style={styles.robotVisor}>
-                <View style={styles.robotEye} />
-                <View style={styles.robotEye} />
-              </View>
-              {/* Mouth */}
-              <View style={styles.robotMouth} />
-            </View>
-
-            {/* Ping dot */}
-            <View style={styles.fabPingContainer}>
-              <Animated.View entering={FadeIn.delay(800)} style={styles.fabPing} />
-              <View style={styles.fabDot} />
-            </View>
-          </Pressable>
-        </Animated.View>
-      </GestureDetector>
-
-      {/* ══════════ QUICK ACTIONS OVERLAY ══════════ */}
-      <QuickActionsOverlay
-        visible={showQuickActions}
-        onClose={() => setShowQuickActions(false)}
-        onScanFood={() => navigation.navigate('AiCamera')}
-        onAddMeal={() => navigation.navigate('FoodSearch', { autoFocus: true, showQuickSuggestions: true, returnToDiaryOnSave: true })}
-        onRecipes={() => navigation.navigate('RecipeSuggestions', {})}
-        onWater={() => {
-          handleAddWater();
-        }}
-      />
     </View>
   );
 };
@@ -1184,15 +1133,19 @@ const styles = StyleSheet.create({
   },
   /* ── Water Tracking ── */
   waterCard: {
-    backgroundColor: C.surfaceHigh,
-    borderRadius: 20,
-    padding: 18,
-    paddingHorizontal: 20,
-    borderWidth: 1,
-    borderColor: C.outline,
+    backgroundColor: '#1E2332',
+    borderRadius: 18,
+    padding: 10,
+    paddingHorizontal: 14,
+    borderWidth: 0,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    shadowColor: '#000',
+    shadowOpacity: 0.2,
+    shadowOffset: { width: 0, height: 4 },
+    shadowRadius: 6,
+    elevation: 4,
   },
   waterLeft: {
     flexDirection: 'row',
@@ -1201,25 +1154,24 @@ const styles = StyleSheet.create({
   },
   waterLabelWrap: {
     gap: 2,
+    justifyContent: 'center',
   },
   waterTitle: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: C.onSurface,
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#f8fafc',
   },
   waterValue: {
-    fontSize: 20,
-    fontWeight: '900',
-    color: C.onSurface,
+    fontSize: 17,
+    fontWeight: '800',
+    color: '#f8fafc',
   },
   waterPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(30, 35, 50, 0.9)',
-    borderRadius: 28,
-    borderWidth: 1,
-    borderColor: 'rgba(100, 116, 139, 0.25)',
-    paddingHorizontal: 8,
+    backgroundColor: '#131622',
+    borderRadius: 30,
+    paddingHorizontal: 12,
     paddingVertical: 6,
     gap: 6,
   },
@@ -1229,25 +1181,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   waterPillDivider: {
-    width: 1,
-    height: 24,
-    backgroundColor: 'rgba(100, 116, 139, 0.4)',
-  },
-  waterGlassDark: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    position: 'relative' as const,
-  },
-  waterGlassBlue: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    position: 'relative' as const,
-  },
-  waterGlassBadge: {
-    position: 'absolute' as const,
-    top: -4,
-    right: -6,
-    zIndex: 1,
+    width: 2,
+    height: 20,
+    backgroundColor: '#334155',
+    opacity: 0.8,
   },
 });
 
