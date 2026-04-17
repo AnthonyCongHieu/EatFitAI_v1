@@ -264,7 +264,7 @@ const HomeScreen = (): React.ReactElement => {
     queryClient.setQueryData<WaterIntakeData>(['water-intake-today'], (old) => ({
       amountMl: (old?.amountMl ?? 0) + 200,
       targetMl: old?.targetMl ?? 2000,
-      intakeDate: old?.intakeDate ?? new Date().toISOString()
+      date: old?.date ?? new Date().toISOString().split('T')[0]!
     }));
 
     try {
@@ -286,7 +286,7 @@ const HomeScreen = (): React.ReactElement => {
     queryClient.setQueryData<WaterIntakeData>(['water-intake-today'], (old) => ({
       amountMl: newAmount,
       targetMl: old?.targetMl ?? 2000,
-      intakeDate: old?.intakeDate ?? new Date().toISOString()
+      date: old?.date ?? new Date().toISOString().split('T')[0]!
     }));
 
     try {
