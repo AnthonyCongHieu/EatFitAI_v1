@@ -1,6 +1,6 @@
 # Result E2E Production Smoke
 
-Cập nhật: `2026-04-10`
+Cập nhật: `2026-04-16`
 
 Tài liệu này mô tả lane smoke production cho flow:
 
@@ -45,18 +45,23 @@ Script sẽ:
 2. ép `EXPO_PUBLIC_API_BASE_URL=https://eatfitai-backend.onrender.com`
 3. chạy `generate-local-ip.js`
 4. chạy `check-api-target.js`
-5. chạy `production-smoke-preflight.js`
-6. khởi tạo `request-budget.json`
-7. start Expo với output session riêng trong `_logs/production-smoke/<timestamp>`
+5. tự nạp `RENDER_API_KEY` từ Windows user env nếu shell hiện tại chưa có
+6. chạy `production-smoke-render-verify.js`
+7. chạy `production-smoke-preflight.js`
+8. khởi tạo `request-budget.json`
+9. start Expo với output session riêng trong `_logs/production-smoke/<timestamp>`
 
 ## Session artifacts
 
 Mỗi session phải có:
 
+- `render-verify.json`
 - `preflight-results.json`
 - `request-budget.json`
 - `fixture-manifest.json`
 - `session-observations.json`
+- `regression-run.json`
+- `metrics-baseline.json`
 - `manual-checklist.md`
 - `rehearsal-report.md`
 

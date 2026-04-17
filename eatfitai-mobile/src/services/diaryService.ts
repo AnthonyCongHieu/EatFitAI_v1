@@ -85,7 +85,7 @@ const normalizeEntry = (data: MealDiaryDto): DiaryEntry => ({
   updatedAt: data?.updatedAt ?? null,
   isDeleted: data?.isDeleted ?? null,
   sourceMethod: data?.sourceMethod ?? null,
-  photoUrl: data?.photoUrl ?? data?.PhotoUrl ?? data?.foodItemThumbNail ?? data?.foodItemThumbNail ?? null,
+  photoUrl: data?.photoUrl ?? null,
 });
 
 const normalizeMeal = (data: any): DiaryMealGroup => {

@@ -16,7 +16,7 @@ jobs:
     environment: preview
     params:
       platform: android
-      profile: e2e-test
+      profile: preview
 
   maestro_smoke:
     name: Run Maestro smoke flows

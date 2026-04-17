@@ -24,6 +24,7 @@ import { useDiaryStore } from '../../../store/useDiaryStore';
 import { handleApiError } from '../../../utils/errorHandler';
 import { StatsSkeleton } from '../../../components/skeletons/StatsSkeleton';
 import { MacroPieChart } from '../../../components/charts/MacroPieChart';
+import { TEST_IDS } from '../../../testing/testIds';
 
 type TabOption = 'today' | 'week' | 'month';
 
@@ -191,6 +192,7 @@ const StatsScreen = (): React.ReactElement => {
       start={{ x: 0, y: 0 }}
       end={{ x: 0.5, y: 1 }}
       style={{ flex: 1 }}
+      testID={TEST_IDS.stats.screen}
     >
       {/* Fixed Custom Header - matching ProfileScreen */}
       <View
@@ -206,7 +208,15 @@ const StatsScreen = (): React.ReactElement => {
 
       {/* Fixed Tab Switcher - with header */}
       <View style={styles.tabContainer}>
-        <TabSwitcher activeTab={activeTab} onTabChange={handleTabChange} />
+        <TabSwitcher
+          activeTab={activeTab}
+          onTabChange={handleTabChange}
+          testIDMap={{
+            today: TEST_IDS.stats.todayTabButton,
+            week: TEST_IDS.stats.weekTabButton,
+            month: TEST_IDS.stats.monthTabButton,
+          }}
+        />
       </View>
 
       <Screen

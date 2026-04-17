@@ -26,6 +26,7 @@ export type AppCardProps = {
   onPress?: () => void;
   accessibilityLabel?: string;
   accessibilityHint?: string;
+  testID?: string;
   /** Disable press animation */
   disableAnimation?: boolean;
 };
@@ -50,6 +51,7 @@ export const AppCard = ({
   onPress,
   accessibilityLabel,
   accessibilityHint,
+  testID,
   disableAnimation = false,
 }: AppCardProps): React.ReactElement => {
   const { theme } = useAppTheme();
@@ -154,13 +156,18 @@ export const AppCard = ({
         onPressIn={handlePressIn}
         onPressOut={handlePressOut}
         style={[cardStyle, animatedStyle, style]}
+        testID={testID}
       >
         {content}
       </AnimatedPressable>
     );
   }
 
-  return <View style={[cardStyle, style]}>{content}</View>;
+  return (
+    <View style={[cardStyle, style]} testID={testID}>
+      {content}
+    </View>
+  );
 };
 
 export default AppCard;

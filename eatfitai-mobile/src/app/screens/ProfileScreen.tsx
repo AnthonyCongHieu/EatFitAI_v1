@@ -27,6 +27,7 @@ import { handleApiErrorWithCustomMessage } from '../../utils/errorHandler';
 import type { RootStackParamList } from '../types';
 import { t } from '../../i18n/vi';
 import Button from '../../components/Button';
+import { TEST_IDS } from '../../testing/testIds';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -210,6 +211,7 @@ const ProfileScreen = (): React.ReactElement => {
       start={{ x: 0, y: 0 }}
       end={{ x: 0.5, y: 1 }}
       style={styles.container}
+      testID={TEST_IDS.profile.screen}
     >
       {/* Custom Header - matching StatsScreen */}
       <View
@@ -325,6 +327,7 @@ const ProfileScreen = (): React.ReactElement => {
             onPress={() => navigation.navigate('EditProfile' as any)}
             accessibilityRole="button"
             accessibilityLabel="Chỉnh sửa hồ sơ"
+            testID={TEST_IDS.profile.editButton}
           >
             <ThemedText variant="body" weight="600">
               Chỉnh sửa hồ sơ
@@ -343,12 +346,14 @@ const ProfileScreen = (): React.ReactElement => {
                 : 'Chưa cập nhật'
             }
             onPress={() => navigation.navigate('BodyMetrics' as any)}
+            testID={TEST_IDS.profile.bodyMetricsButton}
           />
           <SettingsMenuItem
             icon="🎯"
             label="Mục tiêu & Hoạt động"
             subtitle={`${getGoalLabel(profile?.goal)} • ${getActivityLabel(profile?.activityLevelId)}`}
             onPress={() => navigation.navigate('GoalSettings' as any)}
+            testID={TEST_IDS.profile.goalSettingsButton}
           />
           <SettingsMenuItem
             icon="🥗"
@@ -361,6 +366,7 @@ const ProfileScreen = (): React.ReactElement => {
             label="Lịch sử cân đo"
             subtitle="Xem biểu đồ tiến trình"
             onPress={() => navigation.navigate('WeightHistory' as any)}
+            testID={TEST_IDS.profile.weightHistoryButton}
           />
           <SettingsMenuItem
             icon="🏆"
@@ -377,12 +383,14 @@ const ProfileScreen = (): React.ReactElement => {
             label="Mục tiêu dinh dưỡng"
             subtitle="Calories, protein, carbs, fat"
             onPress={() => navigation.navigate('NutritionSettings')}
+            testID={TEST_IDS.profile.nutritionSettingsButton}
           />
           <SettingsMenuItem
             icon="💡"
             label="Phân tích AI"
             subtitle="Phân tích và gợi ý"
             onPress={() => navigation.navigate('NutritionInsights')}
+            testID={TEST_IDS.profile.nutritionInsightsButton}
           />
         </SettingsSection>
 
@@ -425,7 +433,12 @@ const ProfileScreen = (): React.ReactElement => {
 
         {/* Logout */}
         <Animated.View entering={FadeInDown.delay(400)} style={styles.logoutSection}>
-          <Button title={t('common.logout')} variant="ghost" onPress={handleLogout} />
+          <Button
+            title={t('common.logout')}
+            variant="ghost"
+            onPress={handleLogout}
+            testID={TEST_IDS.profile.logoutButton}
+          />
         </Animated.View>
       </ScrollView>
     </LinearGradient>

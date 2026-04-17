@@ -8,6 +8,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { useAnimatedStyle, withSpring, useSharedValue } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
+import { TEST_IDS } from '../../testing/testIds';
 
 const C = {
   bg: '#0a0e1a',
@@ -34,6 +35,13 @@ const ALL_TABS: TabItem[] = [
 ];
 
 const TAB_BAR_HEIGHT = 56;
+const TAB_TEST_IDS: Record<string, string> = {
+  HomeTab: TEST_IDS.navigation.homeTabButton,
+  VoiceTab: TEST_IDS.navigation.voiceTabButton,
+  AIScanTab: TEST_IDS.navigation.aiScanTabButton,
+  StatsTab: TEST_IDS.navigation.statsTabButton,
+  ProfileTab: TEST_IDS.navigation.profileTabButton,
+};
 
 const TabBtn = ({
   tab, isFocused, onPress, isCenter,
@@ -42,6 +50,7 @@ const TabBtn = ({
   const anim = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
 
   const iconColor = isFocused ? C.primary : C.textMuted;
+  const testID = TAB_TEST_IDS[tab.name];
 
   if (isCenter) {
     return (
@@ -52,6 +61,7 @@ const TabBtn = ({
           onPressOut={() => { scale.value = withSpring(1,    { damping: 15, stiffness: 400 }); }}
           accessibilityRole="tab"
           accessibilityLabel={tab.label}
+          testID={testID}
         >
           <Animated.View style={[styles.centerIconWrap, anim]}>
             <Ionicons name="scan" size={26} color={C.onPrimary} />
@@ -68,6 +78,8 @@ const TabBtn = ({
       onPressIn={() => { scale.value = withSpring(0.85, { damping: 15, stiffness: 400 }); }}
       onPressOut={() => { scale.value = withSpring(1,    { damping: 15, stiffness: 400 }); }}
       accessibilityRole="tab"
+      accessibilityLabel={tab.label}
+      testID={testID}
     >
       <Animated.View style={[styles.tabInner, anim]}>
         <Ionicons name={isFocused ? tab.iconFocused : tab.icon} size={22} color={iconColor} />
@@ -81,7 +93,8 @@ const CustomTabBar: React.FC<BottomTabBarProps> = ({ state, navigation }) => {
   const insets = useSafeAreaInsets();
   const safeBottom = Platform.OS === 'ios' ? Math.max(insets.bottom, 0) : 4;
   const navigateTo = (name: string) => navigation.navigate(name);
-  const current = state.routes[state.index].name;
+  const current = state.routes[state.index]?.name ?? '';
+  const centerTab = ALL_TABS[2]!;
 
   return (
     <View style={styles.outerWrapper} pointerEvents="box-none">
@@ -108,9 +121,9 @@ const CustomTabBar: React.FC<BottomTabBarProps> = ({ state, navigation }) => {
       {/* Absolute positioning for the center button to make it float */}
       <View style={[styles.absoluteCenterBtn, { bottom: TAB_BAR_HEIGHT / 2 + safeBottom - 24 }]} pointerEvents="box-none">
         <TabBtn
-          tab={ALL_TABS[2]}
-          isFocused={current === ALL_TABS[2].name}
-          onPress={() => navigateTo(ALL_TABS[2].name)}
+          tab={centerTab}
+          isFocused={current === centerTab.name}
+          onPress={() => navigateTo(centerTab.name)}
           isCenter={true}
         />
       </View>

@@ -7,6 +7,7 @@ import { ThemedText } from '../ThemedText';
 import { AppCard } from '../ui/AppCard';
 import type { ParsedVoiceCommand, VoiceIntent } from '../../services/voiceService';
 import { useAppTheme } from '../../theme/ThemeProvider';
+import { TEST_IDS } from '../../testing/testIds';
 
 interface ExecutedData {
   type?: string;
@@ -251,7 +252,7 @@ export const VoiceResultCard = ({
 
   return (
     <Animated.View entering={FadeInUp.springify()}>
-      <AppCard style={styles.card}>
+      <AppCard style={styles.card} testID={TEST_IDS.voice.resultCard}>
         <View style={styles.header}>
           <View style={styles.headerText}>
             <ThemedText variant="h4" weight="600" style={{ color: config.color }}>
@@ -330,6 +331,7 @@ export const VoiceResultCard = ({
                   marginTop: theme.spacing.md,
                   minHeight: 52,
                 }}
+                testID={TEST_IDS.voice.confirmWeightButton}
               />
             )}
 
@@ -345,6 +347,7 @@ export const VoiceResultCard = ({
                   marginTop: theme.spacing.md,
                   minHeight: 52,
                 }}
+                testID={TEST_IDS.voice.executeButton}
               />
             )}
           </>

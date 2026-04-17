@@ -3,9 +3,22 @@
     "version": ">= 16.18.0"
   },
   "build": {
+    "preview": {
+      "withoutCredentials": true,
+      "distribution": "internal",
+      "env": {
+        "APP_ENV": "preview"
+      },
+      "android": {
+        "buildType": "apk"
+      }
+    },
     "e2e-test": {
       "withoutCredentials": true,
       "distribution": "internal",
+      "env": {
+        "APP_ENV": "preview"
+      },
       "android": {
         "buildType": "apk"
       },

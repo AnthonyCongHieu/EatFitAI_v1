@@ -45,6 +45,10 @@ Thu muc `docs/` la noi tap trung cac tai lieu ky thuat, runtime audit, va tai li
    - Co huong dan lay Google credentials/files, note bug, workaround, va ke hoach fix toan dien.
    - Dung khi can test lai forgot/reset/google ma khong muon di do lane tu dau.
 
+10. `24_PRODUCT_RELEASE_TEST_PLAN_2026-04-16.md`
+   - Ke hoach gate test product-grade moi nhat cho workspace, Android automation, real device, va cloud verify.
+   - Dung khi can chot release readiness theo mot runbook duy nhat.
+
 ## Thu muc phu
 
 - `analysis_reports/`
@@ -55,6 +59,7 @@ Thu muc `docs/` la noi tap trung cac tai lieu ky thuat, runtime audit, va tai li
 
 - Neu can dung moi truong va test app: doc `04` truoc.
 - Neu can verify production Result flow: doc `11`.
+- Neu can chot release gate va evidence bundle product-grade: doc `24`.
 - Neu can biet app hien tai dung o dau: doc `06`.
 - Neu can chia viec, cat scope, va sap lai Notion: doc `07`.
 - Neu can van hanh auth tren may that va chot Google/reset mail: doc `18`.

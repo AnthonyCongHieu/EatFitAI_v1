@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-var-requires, @typescript-eslint/no-require-imports */
 // notificationService.ts - Quản lý local notifications cho meal reminders
 // Sử dụng expo-notifications để schedule thông báo
 // LƯU Ý: Expo Go không hỗ trợ native modules, cần development build để test
@@ -12,7 +13,6 @@ let notificationsAvailable = false;
 
 // Try load notifications module
 try {
-  // eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-require-imports
   const notificationsModule =
     require('expo-notifications') as typeof import('expo-notifications');
   Notifications = notificationsModule;

@@ -25,6 +25,7 @@ import {
 import { glassStyles } from '../../../components/ui/GlassCard';
 import { t } from '../../../i18n/vi';
 import Toast from 'react-native-toast-message';
+import { TEST_IDS } from '../../../testing/testIds';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -381,6 +382,7 @@ const NutritionInsightsScreen = (): React.ReactElement => {
         start={{ x: 0, y: 0 }}
         end={{ x: 0.5, y: 1 }}
         style={styles.container}
+        testID={TEST_IDS.nutritionInsights.screen}
       >
         {renderHeader()}
         <View style={styles.center}>
@@ -402,6 +404,7 @@ const NutritionInsightsScreen = (): React.ReactElement => {
         start={{ x: 0, y: 0 }}
         end={{ x: 0.5, y: 1 }}
         style={styles.container}
+        testID={TEST_IDS.nutritionInsights.screen}
       >
         {renderHeader()}
         <View style={styles.center}>
@@ -454,6 +457,7 @@ const NutritionInsightsScreen = (): React.ReactElement => {
       start={{ x: 0, y: 0 }}
       end={{ x: 0.5, y: 1 }}
       style={styles.container}
+      testID={TEST_IDS.nutritionInsights.screen}
     >
       {renderHeader()}
 
@@ -687,6 +691,7 @@ const NutritionInsightsScreen = (): React.ReactElement => {
                   onPress={applyAdaptiveTarget}
                   loading={applying}
                   variant="primary"
+                  testID={TEST_IDS.nutritionInsights.applyAdaptiveButton}
                 />
               </Animated.View>
             </>

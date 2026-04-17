@@ -30,6 +30,8 @@ interface SettingsMenuItemProps {
   iconColor?: string;
   // Disabled state
   disabled?: boolean;
+  // Stable selector for automation
+  testID?: string;
 }
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
@@ -43,6 +45,7 @@ export const SettingsMenuItem: React.FC<SettingsMenuItemProps> = ({
   showArrow = true,
   iconColor,
   disabled = false,
+  testID,
 }) => {
   const { theme } = useAppTheme();
   const isDark = theme.mode === 'dark';
@@ -127,6 +130,7 @@ export const SettingsMenuItem: React.FC<SettingsMenuItemProps> = ({
       accessibilityLabel={label}
       accessibilityHint={subtitle}
       accessibilityState={{ disabled }}
+      testID={testID}
     >
       {/* Icon */}
       <View style={styles.iconContainer}>

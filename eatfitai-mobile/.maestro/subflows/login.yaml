@@ -2,11 +2,11 @@ appId: com.eatfitai.app
 ---
 - tapOn:
     id: auth-login-email-input
-- setClipboard: ${EATFITAI_DEMO_EMAIL}
+- setClipboard: ${LOGIN_EMAIL}
 - pasteText
 - tapOn:
     id: auth-login-password-input
-- setClipboard: ${EATFITAI_DEMO_PASSWORD}
+- setClipboard: ${LOGIN_PASSWORD}
 - pasteText
 - hideKeyboard
 - tapOn:

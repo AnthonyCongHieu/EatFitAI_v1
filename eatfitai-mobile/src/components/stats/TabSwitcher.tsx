@@ -14,6 +14,7 @@ type TabOption = 'today' | 'week' | 'month';
 interface TabSwitcherProps {
   activeTab: TabOption;
   onTabChange: (tab: TabOption) => void;
+  testIDMap?: Partial<Record<TabOption, string>>;
 }
 
 const TABS: { key: TabOption; label: string }[] = [
@@ -26,7 +27,11 @@ const TABS: { key: TabOption; label: string }[] = [
  * Tab Switcher - Segmented control cho Stats screen
  * 2026 trend: Smooth sliding indicator, haptic feedback
  */
-export const TabSwitcher: React.FC<TabSwitcherProps> = ({ activeTab, onTabChange }) => {
+export const TabSwitcher: React.FC<TabSwitcherProps> = ({
+  activeTab,
+  onTabChange,
+  testIDMap,
+}) => {
   const { theme } = useAppTheme();
   const isDark = theme.mode === 'dark';
 
@@ -109,6 +114,7 @@ export const TabSwitcher: React.FC<TabSwitcherProps> = ({ activeTab, onTabChange
           onPress={() => handleTabPress(tab.key, index)}
           accessibilityRole="tab"
           accessibilityState={{ selected: activeTab === tab.key }}
+          testID={testIDMap?.[tab.key]}
         >
           <ThemedText
             variant="bodySmall"

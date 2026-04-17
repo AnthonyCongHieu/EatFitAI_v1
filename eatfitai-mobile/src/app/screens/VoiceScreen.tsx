@@ -29,6 +29,7 @@ import { useVoiceRecognition } from '../../hooks/useVoiceRecognition';
 import { useVoiceStore } from '../../store/useVoiceStore';
 import { useAppTheme } from '../../theme/ThemeProvider';
 import type { AppTabsParamList } from '../navigation/AppTabs';
+import { TEST_IDS } from '../../testing/testIds';
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
@@ -254,6 +255,7 @@ const VoiceScreen = (): React.ReactElement => {
       start={{ x: 0, y: 0 }}
       end={{ x: 0.5, y: 1 }}
       style={styles.container}
+      testID={TEST_IDS.voice.screen}
     >
       <ScrollView
         showsVerticalScrollIndicator={false}
@@ -389,6 +391,7 @@ const VoiceScreen = (): React.ReactElement => {
                     borderColor: `${statusConfig.color}40`,
                   },
                 ]}
+                testID={TEST_IDS.voice.statusCard}
               >
                 <View style={styles.statusContent}>
                   <ThemedText style={{ fontSize: 28 }}>{statusConfig.emoji}</ThemedText>
@@ -452,6 +455,7 @@ const VoiceScreen = (): React.ReactElement => {
                   onChangeText={setRecognizedText}
                   multiline
                   numberOfLines={3}
+                  testID={TEST_IDS.voice.textInput}
                 />
               </View>
 
@@ -551,6 +555,7 @@ const VoiceScreen = (): React.ReactElement => {
                       : 'rgba(0,0,0,0.05)',
                   },
                 ]}
+                testID={TEST_IDS.voice.resetButton}
               >
                 <Ionicons name="refresh" size={20} color={theme.colors.textSecondary} />
                 <ThemedText
@@ -576,6 +581,7 @@ const VoiceScreen = (): React.ReactElement => {
                   styles.processButton,
                   { opacity: !recognizedText.trim() || status === 'parsing' ? 0.5 : 1 },
                 ]}
+                testID={TEST_IDS.voice.processButton}
               >
                 <LinearGradient
                   colors={[theme.colors.primary, theme.colors.secondary]}

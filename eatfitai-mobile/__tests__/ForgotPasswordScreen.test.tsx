@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-var-requires, @typescript-eslint/no-require-imports */
 import React from 'react';
 import { Text, View } from 'react-native';
 import { fireEvent, render, waitFor } from '@testing-library/react-native';

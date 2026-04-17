@@ -4,6 +4,12 @@ Cập nhật lần cuối: 2026-02-27
 Repo: `d:\EatFitAI_v1`  
 Phương pháp: đọc source code FE/BE/AI/DB + chạy kiểm tra build hiện tại (`dotnet test`, `npm run typecheck`).
 
+Errata `2026-04-16`:
+
+- Tài liệu này có drift ở lane `voice`.
+- Source of truth hiện tại là mobile voice đi qua backend proxy cho `POST /api/voice/transcribe` và `POST /api/voice/parse`.
+- Khi test/review release, ưu tiên [24_PRODUCT_RELEASE_TEST_PLAN_2026-04-16.md](/D:/EatFitAI_v1/docs/24_PRODUCT_RELEASE_TEST_PLAN_2026-04-16.md) và code trong [voiceService.ts](/D:/EatFitAI_v1/eatfitai-mobile/src/services/voiceService.ts:129).
+
 ---
 
 ## 1) Mục đích tài liệu
