@@ -1091,20 +1091,21 @@ const IntroCarouselScreen = ({ navigation }: Props): React.ReactElement => {
 
           <Pressable
             onPress={handleStart}
+            style={styles.buttonShell}
+            hitSlop={12}
+            pressRetentionOffset={12}
             accessibilityRole="button"
             accessibilityLabel="Bắt đầu ngay"
             testID={TEST_IDS.auth.introStartButton}
           >
-            <View style={styles.buttonShell}>
-              <LinearGradient
-                colors={['#22C55E', '#16A34A']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-                style={styles.buttonGradient}
-              >
-                <ThemedText style={styles.buttonText}>Bắt đầu ngay</ThemedText>
-              </LinearGradient>
-            </View>
+            <LinearGradient
+              colors={['#22C55E', '#16A34A']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={styles.buttonGradient}
+            >
+              <ThemedText style={styles.buttonText}>Bắt đầu ngay</ThemedText>
+            </LinearGradient>
           </Pressable>
         </View>
       </View>
