@@ -26,7 +26,13 @@ Key defaults:
 2. Configure backend `user-secrets`.
 3. Start `ai-provider` on `http://127.0.0.1:5050`.
 4. Start backend on `http://localhost:5247`.
-5. Start mobile with `.env.development` pointing to `http://10.0.2.2:5247`.
+5. Start mobile with `start-mobile-local.ps1` or `.env.development.local` when you want the app to call the local backend.
+
+## Mobile launch modes
+
+- `start-mobile.ps1`: default Expo dev lane, targets Render cloud via `https://eatfitai-backend.onrender.com`
+- `start-mobile-local.ps1`: emulator/local-backend lane, targets `http://10.0.2.2:5247`
+- `start-stack.ps1`: full local stack and launches `start-mobile-local.ps1`
 
 ## One-command physical device start
 
@@ -88,4 +94,4 @@ powershell -ExecutionPolicy Bypass -File .\tools\dev\Restore-EatFitAI-PortableSn
 - `sqdate13thang3t.sql` is kept as a snapshot reference, not as the canonical bootstrap flow.
 - Backend machine-specific values must stay in `user-secrets`, not in tracked JSON files.
 - Appium + MCP is supported through the emulator-first lane described in `tools/appium`.
-- Production Result smoke should use `start-mobile-cloud-smoke.ps1` so the session targets Render without changing the local default lane.
+- Production Result smoke should use `start-mobile-cloud-smoke.ps1` for the smoke-specific Render lane.
