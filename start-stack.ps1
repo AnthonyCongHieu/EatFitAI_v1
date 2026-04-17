@@ -1,27 +1,13 @@
-. (Join-Path $PSScriptRoot '_config\dev-env.ps1')
+[CmdletBinding()]
+param(
+    [string]$AvdName = "EatFitAI_API_34",
+    [switch]$SkipEmulator
+)
 
-function Start-WorkspaceScript {
-    param(
-        [Parameter(Mandatory = $true)]
-        [string]$ScriptName
-    )
+$laneScript = Join-Path $PSScriptRoot 'tools\dev\Start-EatFitAI-EmulatorLane.ps1'
 
-    $scriptPath = Join-Path $PSScriptRoot $ScriptName
-    $command = "& '$scriptPath'"
-
-    Start-Process powershell.exe -WorkingDirectory $PSScriptRoot -ArgumentList @(
-        '-NoExit',
-        '-ExecutionPolicy', 'Bypass',
-        '-Command', $command
-    )
+if (-not (Test-Path -LiteralPath $laneScript)) {
+    throw "Missing emulator lane script: $laneScript"
 }
 
-Start-WorkspaceScript 'start-emulator.ps1'
-Start-Sleep -Seconds 2
-Start-WorkspaceScript 'start-ai-provider.ps1'
-Start-Sleep -Seconds 2
-Start-WorkspaceScript 'start-backend.ps1'
-Start-Sleep -Seconds 2
-Start-WorkspaceScript 'start-mobile-local.ps1'
-
-Write-Host 'Launched emulator, AI provider, backend, and local mobile dev server in separate terminals.'
+& $laneScript -AvdName $AvdName -SkipEmulator:$SkipEmulator

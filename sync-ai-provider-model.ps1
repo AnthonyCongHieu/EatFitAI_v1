@@ -1,11 +1,20 @@
 [CmdletBinding()]
 param(
-    [string]$PrimarySource = 'C:\Users\pc2\Downloads\best.pt',
-    [string]$FallbackSource = 'C:\Users\pc2\Downloads\yolov8s.pt',
+    [string]$PrimarySource = '',
+    [string]$FallbackSource = '',
     [string]$TargetDirectory = ''
 )
 
 $ErrorActionPreference = 'Stop'
+
+function Get-DefaultModelSourcePath {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$FileName
+    )
+
+    return Join-Path $HOME "Downloads\$FileName"
+}
 
 function Copy-ModelIfPresent {
     param(
@@ -26,6 +35,14 @@ function Copy-ModelIfPresent {
 
 if ([string]::IsNullOrWhiteSpace($TargetDirectory)) {
     $TargetDirectory = Join-Path $PSScriptRoot 'ai-provider'
+}
+
+if ([string]::IsNullOrWhiteSpace($PrimarySource)) {
+    $PrimarySource = Get-DefaultModelSourcePath -FileName 'best.pt'
+}
+
+if ([string]::IsNullOrWhiteSpace($FallbackSource)) {
+    $FallbackSource = Get-DefaultModelSourcePath -FileName 'yolov8s.pt'
 }
 
 $targetBest = Join-Path $TargetDirectory 'best.pt'

@@ -37,6 +37,7 @@ eatfitai-mobile/android/keystore.properties
 # AI Configuration
 .agent/
 .claude/
+.serena/
 
 # Python
 __pycache__/

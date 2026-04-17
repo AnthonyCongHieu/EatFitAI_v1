@@ -27,7 +27,7 @@ The safe pattern for this repository is:
 
 For the committed manifest, use:
 
-- [ENVIRONMENT_MANIFEST.example](/E:/tool%20edit/eatfitai_v1/ENVIRONMENT_MANIFEST.example)
+- [archive/ENVIRONMENT_MANIFEST.example](archive/ENVIRONMENT_MANIFEST.example)
 
 This manifest is for reference only. It is **not** a runtime file.
 
@@ -191,7 +191,7 @@ Current hardening changes were added to:
 
 When a teammate joins:
 
-1. Give them this file and `ENVIRONMENT_MANIFEST.example`.
+1. Give them this file and `archive/ENVIRONMENT_MANIFEST.example`.
 2. Give them the correct provider dashboard links, not raw secrets in chat.
 3. Have them create their own local runtime files:
    - `EatFitAI_Admin/.env.local`
@@ -223,7 +223,7 @@ Do not send production secrets through:
 Safe to share:
 
 - `.example` files
-- `ENVIRONMENT_MANIFEST.example`
+- `archive/ENVIRONMENT_MANIFEST.example`
 - secret names
 - provider locations
 - setup commands

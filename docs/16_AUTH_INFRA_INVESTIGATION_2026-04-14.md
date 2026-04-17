@@ -110,7 +110,7 @@ Conclusion:
 ### 3.1 Render email source-of-truth mismatch
 
 - `Verified from repo`: [render.yaml](E:/tool%20edit/eatfitai_v1/render.yaml) still declares `Smtp__Host`, `Smtp__Port`, `Smtp__User`, `Smtp__Password`, and `Smtp__FromEmail`.
-- `Verified from repo`: [10_SUPABASE_RENDER_CLOUD_SETUP.md](E:/tool%20edit/eatfitai_v1/docs/10_SUPABASE_RENDER_CLOUD_SETUP.md) says production must use `Brevo__ApiKey`, `Brevo__SenderEmail`, and `Brevo__SenderName` at lines 72-74.
+- `Verified from repo`: [archive/10_SUPABASE_RENDER_CLOUD_SETUP.md](archive/10_SUPABASE_RENDER_CLOUD_SETUP.md) says production must use `Brevo__ApiKey`, `Brevo__SenderEmail`, and `Brevo__SenderName` at lines 72-74.
 - `Verified from repo`: the same document says Render free web services cannot use outbound SMTP ports and therefore production mail uses the Brevo HTTPS API at line 82.
 - `Verified from live API / live mailbox`: live production mail is in fact using Brevo successfully.
 
@@ -130,7 +130,7 @@ Conclusion:
 ### 3.3 Database connection mode mismatch
 
 - `Verified from repo`: [appsettings.Development.json](E:/tool%20edit/eatfitai_v1/eatfitai-backend/appsettings.Development.json) uses the Supabase pooler on port `6543` with `Pooling=false`.
-- `Verified from repo`: [10_SUPABASE_RENDER_CLOUD_SETUP.md](E:/tool%20edit/eatfitai_v1/docs/10_SUPABASE_RENDER_CLOUD_SETUP.md) explicitly says the long-lived .NET backend should use Supavisor session mode on port `5432` at line 80.
+- `Verified from repo`: [archive/10_SUPABASE_RENDER_CLOUD_SETUP.md](archive/10_SUPABASE_RENDER_CLOUD_SETUP.md) explicitly says the long-lived .NET backend should use Supavisor session mode on port `5432` at line 80.
 - `Verified from repo`: [Program.cs](E:/tool%20edit/eatfitai_v1/eatfitai-backend/Program.cs) classifies `5432` as `supavisor-session` and `6543` as `supavisor-transaction`.
 
 Conclusion:

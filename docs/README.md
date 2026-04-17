@@ -51,9 +51,10 @@ Thu muc `docs/` la noi tap trung cac tai lieu ky thuat, runtime audit, va tai li
 
 ## Thu muc phu
 
-- `analysis_reports/`
-  - Luu cac bao cao phan tich point-in-time.
-  - Dung de tham khao bo sung, khong phai nguon su that chinh cho execution hang ngay.
+- `archive/`
+  - Luu cac bao cao lich su, evidence bundles, cleanup inventory, va tai lieu da duoc dua ra khoi luong execution hang ngay.
+- `templates/`
+  - Luu cac template dung lai cho rehearsal, UAT, va bao cao.
 
 ## Cach dung bo tai lieu nay
 

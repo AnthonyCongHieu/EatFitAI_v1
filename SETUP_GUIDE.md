@@ -63,7 +63,7 @@ Required keys:
 - `Smtp:Password`
 - `Smtp:FromEmail`
 
-Detailed commands are documented in [JWT_CONFIGURATION.md](/D:/EatFitAI_v1/JWT_CONFIGURATION.md).
+Detailed commands are documented in [docs/archive/JWT_CONFIGURATION.md](docs/archive/JWT_CONFIGURATION.md).
 
 ## 3. Local SQL Server
 

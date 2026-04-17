@@ -1,7 +1,0 @@
-fix(backend): harden db connection pooling & optimize runtime snapshot service
-
-- Changed DefaultConnection to use Session Mode (Port 5432) instead of Transaction Mode (Port 6543) to prevent connection exhaustion and ensure EF Core stability.
-- Enabled pooling (Pooling=true) with explicit limits (Min=2, Max=20, Idle=60).
-- Added `Prepare Threshold=0` to connection string to prevent "prepared statement does not exist" errors upon Supabase pool resets.
-- Increased AdminRuntimeSnapshotBackgroundService polling interval from 5s to 30s, reducing redundant database load by ~83%.
-- Added try-catch wrapper around task execution in AdminRuntimeSnapshotBackgroundService to prevent ObjectDisposedException during application shutdown.
