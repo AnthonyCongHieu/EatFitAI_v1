@@ -6,10 +6,12 @@ import type {
   ViewStyle,
 } from 'react-native';
 import { ScrollView, View, StyleSheet, Platform, StatusBar } from 'react-native';
+import { useIsFocused } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 
 import { useAppTheme } from '../theme/ThemeProvider';
+import AutomationMarker from './AutomationMarker';
 
 type ScreenProps = {
   children: ReactNode;
@@ -42,6 +44,7 @@ export const Screen = ({
 }: ScreenProps): React.ReactElement => {
   const { theme } = useAppTheme();
   const insets = useSafeAreaInsets();
+  const isFocused = useIsFocused();
 
   // Tính padding dựa vào safe area
   const paddingTop =
@@ -80,7 +83,7 @@ export const Screen = ({
       {children}
     </ScrollView>
   ) : (
-    <View testID={testID} style={contentStyle}>
+    <View style={contentStyle}>
       {children}
     </View>
   );
@@ -94,7 +97,8 @@ export const Screen = ({
         end={{ x: 0.5, y: 1 }}
         style={[styles.gradient, style as ViewStyle]}
       >
-        <View testID={testID} style={containerStyle}>
+        <View style={containerStyle}>
+          {testID && isFocused ? <AutomationMarker marker={testID} /> : null}
           {content}
         </View>
       </LinearGradient>
@@ -102,7 +106,8 @@ export const Screen = ({
   }
 
   return (
-    <View testID={testID} style={[containerStyle, style as ViewStyle]}>
+    <View style={[containerStyle, style as ViewStyle]}>
+      {testID && isFocused ? <AutomationMarker marker={testID} /> : null}
       {content}
     </View>
   );

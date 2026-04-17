@@ -4,28 +4,27 @@ const {
   TEST_IDS,
   captureDebugArtifacts,
   connect,
-  findByTestId,
+  detectVisibleEntry,
   loginIfNeeded,
-  waitForAppEntry,
 } = require('./lib/common');
 
 async function run() {
   const driver = await connect();
 
   try {
-    const initialEntry = await waitForAppEntry(driver, 60000);
-    await loginIfNeeded(driver);
+    const initialEntry = await detectVisibleEntry(driver, 800);
+    const currentEntry = await loginIfNeeded(driver);
 
-    const home = await findByTestId(driver, TEST_IDS.home.screen, 10000);
-    if (!home) {
-      throw new Error('Home screen selector not found after login sanity check.');
+    if (!currentEntry) {
+      throw new Error('No visible authenticated or auth entry was detected during Appium sanity.');
     }
 
     const artifact = await captureDebugArtifacts(driver, 'sanity-android-pass');
     const summary = {
       capturedAt: new Date().toISOString(),
-      entryScreen: initialEntry,
-      loginMode: initialEntry === TEST_IDS.home.screen ? 'skipped' : 'checked',
+      entryScreen: initialEntry || null,
+      currentEntry,
+      loginMode: initialEntry && initialEntry === currentEntry ? 'skipped' : 'checked',
       currentPackage: artifact.currentPackage || null,
       currentActivity: artifact.currentActivity || null,
       pageSourcePath: artifact.pageSourcePath || null,

@@ -21,6 +21,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { BlurView } from 'expo-blur';
 import * as Haptics from 'expo-haptics';
+import { TEST_IDS } from '../../testing/testIds';
 
 const { width } = Dimensions.get('window');
 
@@ -43,6 +44,7 @@ interface QuickAction {
   icon: keyof typeof Ionicons.glyphMap;
   label: string;
   onPress: () => void;
+  testID?: string;
 }
 
 interface QuickActionsOverlayProps {
@@ -63,9 +65,23 @@ const QuickActionsOverlay: React.FC<QuickActionsOverlayProps> = ({
   onWater,
 }) => {
   const actions: QuickAction[] = [
-    { icon: 'camera', label: 'QUÉT THỨC ĂN', onPress: onScanFood },
-    { icon: 'restaurant', label: 'THÊM BỮA', onPress: onAddMeal },
-    { icon: 'book', label: 'CÔNG THỨC', onPress: onRecipes },
+    {
+      icon: 'camera',
+      label: 'QUÉT THỨC ĂN',
+      onPress: onScanFood,
+      testID: TEST_IDS.home.quickAddScanButton,
+    },
+    {
+      icon: 'restaurant',
+      label: 'THÊM BỮA',
+      onPress: onAddMeal,
+      testID: TEST_IDS.home.quickAddSearchButton,
+    },
+    {
+      icon: 'book',
+      label: 'CÔNG THỨC',
+      onPress: onRecipes,
+    },
     { icon: 'water', label: 'LƯỢNG NƯỚC', onPress: onWater },
   ];
 
@@ -151,6 +167,7 @@ const QuickActionsOverlay: React.FC<QuickActionsOverlayProps> = ({
                   pressed && styles.actionCardPressed,
                 ]}
                 onPress={() => handleAction(action)}
+                testID={action.testID}
               >
                 {/* Icon container */}
                 <View style={styles.iconBox}>

@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { API_BASE_URL } from '../config/env';
+import { getCachedApiUrl } from './ipScanner';
 
 export type RefreshTokenResponse = {
   accessToken: string;
@@ -8,7 +9,25 @@ export type RefreshTokenResponse = {
   refreshTokenExpiresAt?: string;
 };
 
-const refreshClient = axios.create({ baseURL: API_BASE_URL, timeout: 10000 });
+const resolveRefreshBaseUrl = (overrideBaseUrl?: string): string | undefined => {
+  const override = overrideBaseUrl?.trim();
+  if (override) {
+    return override;
+  }
+
+  const configuredBaseUrl = API_BASE_URL?.trim();
+  const cachedApiUrl = getCachedApiUrl()?.trim();
+
+  if (configuredBaseUrl && (!__DEV__ || shouldWarmCloudBackend(configuredBaseUrl))) {
+    return configuredBaseUrl;
+  }
+
+  if (cachedApiUrl) {
+    return cachedApiUrl;
+  }
+
+  return configuredBaseUrl;
+};
 
 const isPrivateIpv4Host = (host: string): boolean =>
   /^10\./.test(host) ||
@@ -16,13 +35,13 @@ const isPrivateIpv4Host = (host: string): boolean =>
   /^192\.168\./.test(host) ||
   /^172\.(1[6-9]|2\d|3[0-1])\./.test(host);
 
-const shouldWarmCloudBackend = (): boolean => {
-  if (!API_BASE_URL) {
+const shouldWarmCloudBackend = (baseUrl?: string): boolean => {
+  if (!baseUrl) {
     return false;
   }
 
   try {
-    const host = new URL(API_BASE_URL).hostname.toLowerCase();
+    const host = new URL(baseUrl).hostname.toLowerCase();
     return !(
       host === 'localhost' ||
       host === '127.0.0.1' ||
@@ -38,13 +57,14 @@ const shouldWarmCloudBackend = (): boolean => {
 const sleep = (ms: number): Promise<void> =>
   new Promise((resolve) => setTimeout(resolve, ms));
 
-const warmCloudBackend = async (): Promise<void> => {
-  if (!shouldWarmCloudBackend() || !API_BASE_URL) {
+const warmCloudBackend = async (baseUrl?: string): Promise<void> => {
+  const resolvedBaseUrl = resolveRefreshBaseUrl(baseUrl);
+  if (!shouldWarmCloudBackend(resolvedBaseUrl) || !resolvedBaseUrl) {
     return;
   }
 
-  const baseUrl = API_BASE_URL.replace(/\/+$/, '');
-  const healthUrls = [`${baseUrl}/health/live`, `${baseUrl}/health/ready`];
+  const trimmedBaseUrl = resolvedBaseUrl.replace(/\/+$/, '');
+  const healthUrls = [`${trimmedBaseUrl}/health/live`, `${trimmedBaseUrl}/health/ready`];
 
   for (let attempt = 1; attempt <= 3; attempt += 1) {
     for (const healthUrl of healthUrls) {
@@ -69,11 +89,20 @@ const warmCloudBackend = async (): Promise<void> => {
 
 export const postRefreshToken = async (
   refreshToken: string,
+  baseUrl?: string,
 ): Promise<RefreshTokenResponse> => {
-  await warmCloudBackend();
+  const resolvedBaseUrl = resolveRefreshBaseUrl(baseUrl);
+  if (!resolvedBaseUrl) {
+    throw new Error('API base URL is missing for token refresh.');
+  }
+
+  await warmCloudBackend(resolvedBaseUrl);
 
   try {
-    const response = await refreshClient.post('/api/auth/refresh', { refreshToken });
+    const response = await axios.post('/api/auth/refresh', { refreshToken }, {
+      baseURL: resolvedBaseUrl,
+      timeout: 10000,
+    });
     return response.data as RefreshTokenResponse;
   } catch (error) {
     const status = axios.isAxiosError(error) ? error.response?.status : undefined;
@@ -83,8 +112,11 @@ export const postRefreshToken = async (
       throw error;
     }
 
-    await warmCloudBackend();
-    const retryResponse = await refreshClient.post('/api/auth/refresh', { refreshToken });
+    await warmCloudBackend(resolvedBaseUrl);
+    const retryResponse = await axios.post('/api/auth/refresh', { refreshToken }, {
+      baseURL: resolvedBaseUrl,
+      timeout: 10000,
+    });
     return retryResponse.data as RefreshTokenResponse;
   }
 };

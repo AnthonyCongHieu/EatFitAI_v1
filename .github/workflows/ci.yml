@@ -2,9 +2,9 @@ name: CI
 
 on:
   pull_request:
-    branches: [main, dev_UI_New]
+    branches: [main, dev_UI_New, hieu_deploy/production]
   push:
-    branches: [main, dev_UI_New]
+    branches: [main, dev_UI_New, hieu_deploy/production]
 
 jobs:
   backend:
@@ -50,6 +50,9 @@ jobs:
 
       - name: Install
         run: npm ci
+
+      - name: Expo release config smoke
+        run: node scripts/validate-release-config.js
 
       - name: Typecheck
         run: npm run typecheck

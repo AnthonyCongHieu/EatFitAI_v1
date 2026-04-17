@@ -74,16 +74,60 @@ function buildToolingEnv() {
   return env;
 }
 
+function quoteWindowsShellArg(value) {
+  const text = String(value).replace(/%/g, '%%');
+  if (text.length === 0) {
+    return '""';
+  }
+
+  return /[\s&()^|<>"]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
+}
+
+function buildWindowsBatchInvocation(command, args, env) {
+  const hasPathSegment = path.isAbsolute(command) || command.includes(path.sep);
+  const commandDir = hasPathSegment ? path.dirname(command) : null;
+  const executable = hasPathSegment ? path.basename(command) : command;
+  const commandLine = [executable, ...args].map(quoteWindowsShellArg).join(' ');
+  return {
+    command: process.env.ComSpec || 'cmd.exe',
+    args: ['/d', '/s', '/c', commandLine],
+    env: commandDir
+      ? {
+          ...env,
+          PATH: [commandDir, env.PATH || ''].filter(Boolean).join(path.delimiter),
+        }
+      : env,
+  };
+}
+
+function buildWindowsCommandInvocation(command, args, env) {
+  const hasPathSegment = path.isAbsolute(command) || command.includes(path.sep);
+  if (hasPathSegment) {
+    return { command, args, env };
+  }
+
+  return {
+    command: process.env.ComSpec || 'cmd.exe',
+    args: ['/d', '/s', '/c', [command, ...args].map(quoteWindowsShellArg).join(' ')],
+    env,
+  };
+}
+
 function runCommand(command, args, timeoutMs = 10000) {
+  const env = buildToolingEnv();
   const ext = path.extname(command).toLowerCase();
   const isBatchFile = ext === '.bat' || ext === '.cmd';
-  const useShell =
-    !isBatchFile && !(path.isAbsolute(command) || command.includes(path.sep));
-  const result = spawnSync(command, args, {
+  const invocation =
+    process.platform === 'win32' && isBatchFile
+      ? buildWindowsBatchInvocation(command, args, env)
+      : process.platform === 'win32'
+        ? buildWindowsCommandInvocation(command, args, env)
+        : { command, args, env };
+  const result = spawnSync(invocation.command, invocation.args, {
     cwd: projectRoot,
     encoding: 'utf8',
-    env: buildToolingEnv(),
-    shell: process.platform === 'win32' ? useShell || isBatchFile : false,
+    env: invocation.env,
+    shell: false,
     timeout: timeoutMs,
   });
 

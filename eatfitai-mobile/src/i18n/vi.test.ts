@@ -1,57 +1,34 @@
-export const vi = {
-  common: {
-    close: 'Đóng',
-    loading: 'Đang tải...',
-    today: 'Hôm nay',
-    delete: 'Xoá',
-    cancel: 'Hủy',
-    confirm: 'Xác nhận',
-    retry: 'Thử lại',
-    save: 'Lưu',
-    saving: 'Đang lưu...',
-    logout: 'Đăng xuất',
-    logoutConfirm: 'Bạn có chắc chắn muốn đăng xuất không?',
-    yes: 'Đồng ý',
-    no: 'Huỷ',
-    ok: 'OK',
-    error: 'Lỗi',
-    success: 'Thành công',
-    info: 'Thông tin',
-    warning: 'Cảnh báo',
-    networkError: 'Không có kết nối mạng',
-    serverError: 'Lỗi máy chủ',
-    sessionExpired: 'Phiên đăng nhập đã hết hạn',
-    pleaseLoginAgain: 'Vui lòng đăng nhập lại',
-    tryAgain: 'Vui lòng thử lại',
-    checkConnection: 'Kiểm tra kết nối và thử lại',
-    tryAgainLater: 'Vui lòng thử lại sau',
-    contactSupport: 'Vui lòng thử lại hoặc liên hệ hỗ trợ',
-    showPassword: 'Hiện mật khẩu',
-    hidePassword: 'Ẩn mật khẩu',
-    appError: 'Ứng dụng gặp lỗi',
-    appErrorDescription:
-      'Đã xảy ra lỗi không mong muốn. Vui lòng khởi động lại ứng dụng.',
-    mayBeDeleted: 'Món này có thể đã bị xóa trước đó',
-    onlyDeleteOwn: 'Chỉ có thể xóa món do bạn thêm',
-    deleteFailed: 'Xóa thất bại',
-    invalidData: 'Dữ liệu không hợp lệ',
-    checkInfo: 'Vui lòng kiểm tra thông tin đã nhập',
-    notFound: 'Không tồn tại',
-    noPermission: 'Không có quyền',
-    deleteConfirm: 'Xác nhận xóa',
-    deleteItem: (item: string) => `Xác nhận xóa "${item}" khỏi nhật ký?`,
-    deleted: 'Đã xóa',
-    updated: 'Đã cập nhật',
-    saved: 'Đã lưu',
-    applied: 'Đã áp dụng',
-    created: 'Đã tạo',
-    added: 'Đã thêm',
-    removed: 'Đã xóa khỏi nhật ký',
-    continueTracking: 'Tiếp tục theo dõi dinh dưỡng của bạn!',
-    welcomeBack: 'Chào mừng bạn quay trở lại!',
-    startHealthyJourney: 'Bắt đầu hành trình ăn uống lành mạnh!',
-    noData: 'Chưa có dữ liệu',
-    status: 'Trạng thái',
-  },
-  // ... (keeping only essential parts for now to test if this fixed the encoding)
-};
+import { t, vi } from './vi';
+
+describe('vi translations', () => {
+  it('keeps key Vietnamese strings readable and correctly encoded', () => {
+    expect(vi.common.close).toBe('Đóng');
+    expect(vi.common.loading).toBe('Đang tải...');
+    expect(vi.common.logoutConfirm).toContain('đăng xuất');
+    expect(vi.common.appErrorDescription).toContain('khởi động lại');
+    expect(vi.home.title).toBe('Nhật ký hôm nay');
+    expect(vi.profile.personalInfo).toBe('Thông tin cá nhân');
+    expect(vi.meals.breakfast).toBe('Bữa sáng');
+    expect(vi.navigation.voice).toBe('Giọng nói');
+  });
+
+  it('formats dynamic translation helpers', () => {
+    expect(vi.common.deleteItem('món ăn')).toBe('Xác nhận xóa "món ăn" khỏi nhật ký?');
+    expect(vi.home.diffAbove(250)).toBe('Vượt 250 kcal so với mục tiêu');
+    expect(vi.stats.daysAchieved(3, 7)).toBe('3/7 ngày');
+    expect(t('home.entries', 2)).toBe('2 món');
+  });
+
+  it('does not contain mojibake markers in core strings', () => {
+    const sample = [
+      vi.common.close,
+      vi.common.logoutConfirm,
+      vi.home.title,
+      vi.profile.personalInfo,
+      vi.meals.lunch,
+    ].join(' ');
+
+    expect(sample).not.toMatch(/[ÃÂÄ]/);
+    expect(sample).not.toContain('�');
+  });
+});

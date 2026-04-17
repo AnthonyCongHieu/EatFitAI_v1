@@ -266,15 +266,21 @@ const NutritionSettingsScreen = (): React.ReactElement => {
     </View>
   );
 
+  const renderScreen = (content: React.ReactNode) => (
+    <LinearGradient
+      colors={theme.colors.screenGradient}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 0.5, y: 1 }}
+      style={styles.container}
+      testID={TEST_IDS.nutritionSettings.screen}
+    >
+      {content}
+    </LinearGradient>
+  );
+
   if (isLoading) {
-    return (
-      <LinearGradient
-        colors={theme.colors.screenGradient}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 0.5, y: 1 }}
-        style={styles.container}
-        testID={TEST_IDS.nutritionSettings.screen}
-      >
+    return renderScreen(
+      <>
         {/* Custom Header */}
         <View
           style={{
@@ -307,18 +313,12 @@ const NutritionSettingsScreen = (): React.ReactElement => {
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
           <ActivityIndicator size="large" color={theme.colors.primary} />
         </View>
-      </LinearGradient>
+      </>,
     );
   }
 
-  return (
-    <LinearGradient
-      colors={theme.colors.screenGradient}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 0.5, y: 1 }}
-      style={styles.container}
-      testID={TEST_IDS.nutritionSettings.screen}
-    >
+  return renderScreen(
+    <>
       {/* Custom Header - centered like EditProfileScreen */}
       <View
         style={{
@@ -583,7 +583,7 @@ const NutritionSettingsScreen = (): React.ReactElement => {
           )}
         </Animated.View>
       </ScrollView>
-    </LinearGradient>
+    </>,
   );
 };
 

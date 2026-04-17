@@ -1,4 +1,8 @@
-﻿import apiClient, { aiApiClient, getCurrentApiUrl } from './apiClient';
+﻿import apiClient, {
+  aiApiClient,
+  fetchWithAuthRetry,
+  getCurrentApiUrl,
+} from './apiClient';
 import type {
   AiHealthStatus,
   MappedFoodItem,
@@ -9,8 +13,6 @@ import type {
 import type { AdaptiveTarget, NutritionInsight } from '../types/aiEnhanced';
 
 import { API_BASE_URL, assertBackendApiBaseUrl } from '../config/env';
-import { getAccessTokenMem } from './authTokens';
-import { tokenStorage } from './secureStore';
 import { sanitizeFoodImageUrl } from '../utils/imageHelpers';
 
 const getApiBaseUrl = (): string => {
@@ -313,31 +315,29 @@ const buildFallbackCookingInstructions = (
 
 export async function detectFoodByImage(imageUri: string): Promise<VisionDetectResult> {
   try {
-    const formData = new FormData();
-
-    formData.append('file', {
-      uri: imageUri,
-      name: 'photo.jpg',
-      type: 'image/jpeg',
-    } as unknown as Blob);
-
-    const token = getAccessTokenMem() ?? (await tokenStorage.getAccessToken());
     const baseUrl = getApiBaseUrl();
     const url = `${baseUrl}/api/ai/vision/detect`;
 
     if (__DEV__) {
       console.log('[aiService] detectFoodByImage calling:', url);
-      console.log('[aiService] using token length:', token?.length);
       console.log('[aiService] imageUri:', imageUri);
     }
 
-    const response = await fetch(url, {
-      method: 'POST',
-      body: formData,
-      headers: {
-        Authorization: `Bearer ${token}`,
-        Accept: 'application/json',
-      },
+    const response = await fetchWithAuthRetry(url, () => {
+      const formData = new FormData();
+      formData.append('file', {
+        uri: imageUri,
+        name: 'photo.jpg',
+        type: 'image/jpeg',
+      } as unknown as Blob);
+
+      return {
+        method: 'POST',
+        body: formData,
+        headers: {
+          Accept: 'application/json',
+        },
+      };
     });
 
     if (!response.ok) {
@@ -633,20 +633,21 @@ export const aiService = {
     description?: string,
   ): Promise<{ steps: string[]; cookingTime?: string; difficulty?: string }> {
     try {
-      const token = getAccessTokenMem() ?? (await tokenStorage.getAccessToken());
       const baseUrl = getApiBaseUrl();
-      const response = await fetch(`${baseUrl}/api/ai/cooking-instructions`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          recipeName,
-          ingredients,
-          description: description || '',
+      const response = await fetchWithAuthRetry(
+        `${baseUrl}/api/ai/cooking-instructions`,
+        () => ({
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            recipeName,
+            ingredients,
+            description: description || '',
+          }),
         }),
-      });
+      );
 
       if (!response.ok) {
         const text = await response.text();

@@ -14,11 +14,13 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.IdentityModel.Protocols;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Security.Claims;
+using System.Collections.Concurrent;
 using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
@@ -335,6 +337,7 @@ static void EnsureRequiredProductionConfiguration(
     }
 
     RequireValue("Jwt:Key");
+    RequireValue("Encryption:Key");
     RequireHttpsUrl("AIProvider:VisionBaseUrl");
 
     if (errors.Count > 0)
@@ -519,8 +522,18 @@ builder.Services.AddDbContext<EatFitAIDbContext>(options =>
 
 // Add ApplicationDbContext (custom with WeeklyCheckIns)
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
+{
     options.UseNpgsql(defaultConnectionString, npgsql =>
-        npgsql.EnableRetryOnFailure()));
+        npgsql.EnableRetryOnFailure());
+
+    if (builder.Environment.IsProduction())
+    {
+        // Keep runtime writes on ApplicationDbContext available even when
+        // the migrations snapshot lags behind newer non-critical model changes.
+        options.ConfigureWarnings(warnings =>
+            warnings.Ignore(RelationalEventId.PendingModelChangesWarning));
+    }
+});
 
 // Caching for features like password reset
 builder.Services.AddMemoryCache();
@@ -570,6 +583,7 @@ builder.Services.AddHttpClient();
 builder.Services.AddScoped<INutritionCalcService, NutritionCalcService>();
 builder.Services.AddScoped<IAiLogService, AiLogService>();
 builder.Services.AddScoped<IAdminAuditService, AdminAuditService>();
+builder.Services.AddScoped<SupabaseSchemaBootstrapper>();
 
 // Lookup cache service (Singleton for shared cache)
 builder.Services.AddSingleton<ILookupCacheService, LookupCacheService>();
@@ -584,7 +598,11 @@ builder.Services.AddScoped<IGeminiPoolManager, GeminiPoolManager>();
 builder.Services.AddHostedService<AdminRuntimeSnapshotBackgroundService>();
 
 // Health checks (used by HealthController and readiness endpoints)
+builder.Services.AddSingleton<StartupHealthState>();
 builder.Services.AddHealthChecks()
+    .AddCheck<StartupBootstrapHealthCheck>(
+        "startup-bootstrap",
+        tags: new[] { "ready" })
     .AddNpgSql(
         defaultConnectionString!,
         name: "postgres",
@@ -762,9 +780,29 @@ builder.Services.AddAuthorization(options =>
 
 var app = builder.Build();
 var startupLogger = app.Services.GetRequiredService<ILogger<Program>>();
+var startupHealthState = app.Services.GetRequiredService<StartupHealthState>();
 startupLogger.LogInformation(
     "Configured PostgreSQL target: {ConnectionSummary}",
     sanitizedConnectionSummary);
+
+async Task<bool> TryRunTrackedStartupPhaseAsync(
+    string phase,
+    Func<Task> action,
+    LogLevel failureLogLevel = LogLevel.Warning)
+{
+    try
+    {
+        await action();
+        startupHealthState.MarkSucceeded(phase);
+        return true;
+    }
+    catch (Exception ex)
+    {
+        startupHealthState.MarkFailed(phase);
+        startupLogger.Log(failureLogLevel, ex, "{Phase} failed during startup.", phase);
+        return false;
+    }
+}
 
 if (adminGovernanceBootstrapRequested)
 {
@@ -774,11 +812,13 @@ if (adminGovernanceBootstrapRequested)
     var adminAuditService = scope.ServiceProvider.GetRequiredService<IAdminAuditService>();
     var governanceBootstrapper = scope.ServiceProvider.GetRequiredService<AdminGovernanceBootstrapper>();
     var authInfrastructureBootstrapper = scope.ServiceProvider.GetRequiredService<AuthInfrastructureBootstrapper>();
+    var supabaseSchemaBootstrapper = scope.ServiceProvider.GetRequiredService<SupabaseSchemaBootstrapper>();
     var governanceOptions = scope.ServiceProvider.GetRequiredService<IOptions<AdminGovernanceOptions>>().Value;
 
     await adminAuditService.EnsureTableAsync();
     await governanceBootstrapper.EnsureSchemaAsync();
     await authInfrastructureBootstrapper.EnsureSchemaAsync();
+    await supabaseSchemaBootstrapper.EnsureSchemaAsync();
 
     var report = new
     {
@@ -815,19 +855,26 @@ if (adminGovernanceBootstrapRequested)
 
 using (var scope = app.Services.CreateScope())
 {
-    try
+    var adminAuditService = scope.ServiceProvider.GetRequiredService<IAdminAuditService>();
+    var governanceBootstrapper = scope.ServiceProvider.GetRequiredService<AdminGovernanceBootstrapper>();
+    var authInfrastructureBootstrapper = scope.ServiceProvider.GetRequiredService<AuthInfrastructureBootstrapper>();
+    var supabaseSchemaBootstrapper = scope.ServiceProvider.GetRequiredService<SupabaseSchemaBootstrapper>();
+
+    if (await TryRunTrackedStartupPhaseAsync(
+            "admin-audit-bootstrap",
+            () => adminAuditService.EnsureTableAsync())
+        && await TryRunTrackedStartupPhaseAsync(
+            "admin-governance-bootstrap",
+            () => governanceBootstrapper.EnsureSchemaAsync()))
     {
-        var adminAuditService = scope.ServiceProvider.GetRequiredService<IAdminAuditService>();
-        var governanceBootstrapper = scope.ServiceProvider.GetRequiredService<AdminGovernanceBootstrapper>();
-        var authInfrastructureBootstrapper = scope.ServiceProvider.GetRequiredService<AuthInfrastructureBootstrapper>();
-        await adminAuditService.EnsureTableAsync();
-        await governanceBootstrapper.EnsureSchemaAsync();
-        await authInfrastructureBootstrapper.EnsureSchemaAsync();
+        await TryRunTrackedStartupPhaseAsync(
+            "auth-infrastructure-bootstrap",
+            () => authInfrastructureBootstrapper.EnsureSchemaAsync());
     }
-    catch (Exception ex)
-    {
-        startupLogger.LogWarning(ex, "Admin governance bootstrap was skipped during startup.");
-    }
+
+    await TryRunTrackedStartupPhaseAsync(
+        "supabase-schema-bootstrap",
+        () => supabaseSchemaBootstrapper.EnsureSchemaAsync());
 }
 
 foreach (var warning in optionalProductionWarnings)
@@ -856,19 +903,29 @@ using (var scope = app.Services.CreateScope())
         return;
     }
 
-    try
+    var governanceBootstrapper = services.GetRequiredService<AdminGovernanceBootstrapper>();
+    var authInfrastructureBootstrapper = services.GetRequiredService<AuthInfrastructureBootstrapper>();
+    var supabaseSchemaBootstrapper = services.GetRequiredService<SupabaseSchemaBootstrapper>();
+
+    if (await TryRunTrackedStartupPhaseAsync(
+            "database-seed",
+            () => DatabaseSeeder.SeedAsync(services),
+            LogLevel.Error)
+        && await TryRunTrackedStartupPhaseAsync(
+            "admin-governance-bootstrap",
+            () => governanceBootstrapper.EnsureSchemaAsync(),
+            LogLevel.Error))
     {
-        await DatabaseSeeder.SeedAsync(services);
-        var governanceBootstrapper = services.GetRequiredService<AdminGovernanceBootstrapper>();
-        var authInfrastructureBootstrapper = services.GetRequiredService<AuthInfrastructureBootstrapper>();
-        await governanceBootstrapper.EnsureSchemaAsync();
-        await authInfrastructureBootstrapper.EnsureSchemaAsync();
+        await TryRunTrackedStartupPhaseAsync(
+            "auth-infrastructure-bootstrap",
+            () => authInfrastructureBootstrapper.EnsureSchemaAsync(),
+            LogLevel.Error);
     }
-    catch (Exception ex)
-    {
-        var logger = services.GetRequiredService<ILogger<Program>>();
-        logger.LogError(ex, "An error occurred while seeding the database.");
-    }
+
+    await TryRunTrackedStartupPhaseAsync(
+        "supabase-schema-bootstrap",
+        () => supabaseSchemaBootstrapper.EnsureSchemaAsync(),
+        LogLevel.Error);
 }
 
 
@@ -932,5 +989,63 @@ app.MapGet("/discovery", () => Results.Ok(new {
 }));
 
 await app.RunAsync();
+    }
+}
+
+public sealed record StartupFailedPhase(string Phase, DateTimeOffset FailedAt);
+
+public sealed class StartupHealthState
+{
+    private readonly ConcurrentDictionary<string, DateTimeOffset> _failedPhases =
+        new(StringComparer.OrdinalIgnoreCase);
+
+    public void MarkFailed(string phase)
+    {
+        _failedPhases[phase] = DateTimeOffset.UtcNow;
+    }
+
+    public void MarkSucceeded(string phase)
+    {
+        _failedPhases.TryRemove(phase, out _);
+    }
+
+    public StartupFailedPhase[] GetFailedPhases()
+    {
+        return _failedPhases
+            .OrderBy(entry => entry.Key, StringComparer.OrdinalIgnoreCase)
+            .Select(entry => new StartupFailedPhase(entry.Key, entry.Value))
+            .ToArray();
+    }
+}
+
+public sealed class StartupBootstrapHealthCheck : IHealthCheck
+{
+    private readonly StartupHealthState _startupHealthState;
+
+    public StartupBootstrapHealthCheck(StartupHealthState startupHealthState)
+    {
+        _startupHealthState = startupHealthState;
+    }
+
+    public Task<HealthCheckResult> CheckHealthAsync(
+        HealthCheckContext context,
+        CancellationToken cancellationToken = default)
+    {
+        var failedPhases = _startupHealthState.GetFailedPhases();
+        if (failedPhases.Length == 0)
+        {
+            return Task.FromResult(HealthCheckResult.Healthy(
+                "No recorded startup/bootstrap failures."));
+        }
+
+        var data = new Dictionary<string, object>
+        {
+            ["failedPhases"] = failedPhases.Select(phase => phase.Phase).ToArray(),
+            ["lastFailureAt"] = failedPhases.Max(phase => phase.FailedAt)
+        };
+
+        return Task.FromResult(HealthCheckResult.Unhealthy(
+            "Startup/bootstrap failures were recorded.",
+            data: data));
     }
 }

@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using Xunit;
 using AdminUser = EatFitAI.API.Models.User;
@@ -57,6 +58,7 @@ namespace EatFitAI.API.Tests.Unit.Services
                 _mapperMock.Object,
                 _supabaseStorageServiceMock.Object,
                 _environmentMock.Object,
+                new SupabaseSchemaBootstrapper(_adminContext, NullLogger<SupabaseSchemaBootstrapper>.Instance),
                 _loggerMock.Object);
 
             SeedTestData();

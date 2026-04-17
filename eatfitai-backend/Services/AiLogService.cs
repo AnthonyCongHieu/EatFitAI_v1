@@ -12,10 +12,20 @@ namespace EatFitAI.API.Services
     public sealed class AiLogService : IAiLogService
     {
         private readonly EatFitAIDbContext _db;
-        public AiLogService(EatFitAIDbContext db) => _db = db;
+        private readonly SupabaseSchemaBootstrapper _schemaBootstrapper;
+
+        public AiLogService(
+            EatFitAIDbContext db,
+            SupabaseSchemaBootstrapper schemaBootstrapper)
+        {
+            _db = db;
+            _schemaBootstrapper = schemaBootstrapper;
+        }
 
         public async Task<int> LogAsync(Guid userId, string action, object? input, object? output, long durationMs)
         {
+            await _schemaBootstrapper.EnsureSchemaAsync();
+
             var log = new AILog
             {
                 UserId = userId,

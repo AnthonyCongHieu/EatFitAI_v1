@@ -109,6 +109,47 @@ function buildToolingEnv() {
   return env;
 }
 
+function resolveGlobalCliExecutable(commandName) {
+  if (process.platform !== 'win32' || !process.env.APPDATA) {
+    return null;
+  }
+
+  const candidate = path.join(process.env.APPDATA, 'npm', `${commandName}.cmd`);
+  return fs.existsSync(candidate) ? candidate : null;
+}
+
+function quoteWindowsShellArg(value) {
+  const text = String(value).replace(/%/g, '%%');
+  if (text.length === 0) {
+    return '""';
+  }
+
+  return /[\s&()^|<>"]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
+}
+
+function buildWindowsBatchInvocation(command, args, env) {
+  const hasPathSegment = path.isAbsolute(command) || command.includes(path.sep);
+  const commandDir = hasPathSegment ? path.dirname(command) : null;
+  const executable = hasPathSegment ? path.basename(command) : command;
+  const commandLine = [executable, ...args].map(quoteWindowsShellArg).join(' ');
+  return {
+    command: process.env.ComSpec || 'cmd.exe',
+    args: ['/d', '/s', '/c', commandLine],
+    env: commandDir
+      ? {
+          ...env,
+          PATH: [commandDir, env.PATH || ''].filter(Boolean).join(path.delimiter),
+        }
+      : env,
+  };
+}
+
+function buildCommandInvocation(command, args, env) {
+  const ext = path.extname(command).toLowerCase();
+  const isBatchFile = process.platform === 'win32' && (ext === '.bat' || ext === '.cmd');
+  return isBatchFile ? buildWindowsBatchInvocation(command, args, env) : { command, args, env };
+}
+
 function sleep(ms) {
   Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
 }
@@ -395,11 +436,22 @@ async function main() {
     }
   }
 
-  const result = spawnSync('maestro', args, {
+  const maestroExecutable =
+    resolveBundledExecutable(['_tooling', 'maestro', 'maestro', 'bin', 'maestro.bat']) ||
+    resolveBundledExecutable(['_tooling', 'maestro', 'maestro', 'bin', 'maestro']) ||
+    resolveGlobalCliExecutable('maestro') ||
+    'maestro';
+  const env = buildToolingEnv();
+  const invocation = buildCommandInvocation(maestroExecutable, args, env);
+  const useShell =
+    process.platform === 'win32' &&
+    invocation.command === maestroExecutable &&
+    !(path.isAbsolute(maestroExecutable) || maestroExecutable.includes(path.sep));
+  const result = spawnSync(invocation.command, invocation.args, {
     cwd: projectRoot,
-    env: buildToolingEnv(),
+    env: invocation.env,
     encoding: 'utf8',
-    shell: process.platform === 'win32',
+    shell: useShell,
   });
 
   printProcessOutput(result);

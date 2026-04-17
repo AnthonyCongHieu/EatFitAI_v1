@@ -1,5 +1,5 @@
 /**
- * CustomTabBar – Emerald Nebula bottom navigation
+ * CustomTabBar - Emerald Nebula bottom navigation
  * All 5 tabs in a single flat row (no elevated center button)
  */
 import React from 'react';
@@ -27,11 +27,11 @@ type TabItem = {
 };
 
 const ALL_TABS: TabItem[] = [
-  { name: 'HomeTab',    label: 'Trang chủ', icon: 'home-outline',      iconFocused: 'home' },
-  { name: 'VoiceTab',   label: 'Giọng nói', icon: 'mic-outline',       iconFocused: 'mic' },
-  { name: 'AIScanTab',  label: 'Quét AI',   icon: 'scan-outline',      iconFocused: 'scan' },
-  { name: 'StatsTab',   label: 'Thống kê',  icon: 'bar-chart-outline', iconFocused: 'bar-chart' },
-  { name: 'ProfileTab', label: 'Cá nhân',   icon: 'person-outline',    iconFocused: 'person' },
+  { name: 'HomeTab', label: 'Trang chủ', icon: 'home-outline', iconFocused: 'home' },
+  { name: 'VoiceTab', label: 'Giọng nói', icon: 'mic-outline', iconFocused: 'mic' },
+  { name: 'AIScanTab', label: 'Quét AI', icon: 'scan-outline', iconFocused: 'scan' },
+  { name: 'StatsTab', label: 'Thống kê', icon: 'bar-chart-outline', iconFocused: 'bar-chart' },
+  { name: 'ProfileTab', label: 'Cá nhân', icon: 'person-outline', iconFocused: 'person' },
 ];
 
 const TAB_BAR_HEIGHT = 56;
@@ -57,6 +57,7 @@ const TabBtn = ({
       <View style={styles.centerTabWrapper} pointerEvents="box-none">
         <Pressable
           onPress={onPress}
+          hitSlop={12}
           onPressIn={() => { scale.value = withSpring(0.88, { damping: 15, stiffness: 400 }); }}
           onPressOut={() => { scale.value = withSpring(1,    { damping: 15, stiffness: 400 }); }}
           accessibilityRole="tab"
@@ -104,7 +105,7 @@ const CustomTabBar: React.FC<BottomTabBarProps> = ({ state, navigation }) => {
             const isCenter = index === 2;
             if (isCenter) {
               return (
-                <View key={tab.name} style={styles.centerSpacer} />
+                <View key={tab.name} style={styles.centerSpacer} pointerEvents="none" />
               );
             }
             return (
@@ -184,6 +185,8 @@ const styles = StyleSheet.create({
     right: 0,
     alignItems: 'center',
     justifyContent: 'center',
+    zIndex: 30,
+    elevation: 30,
   },
   centerTabWrapper: {
     alignItems: 'center',

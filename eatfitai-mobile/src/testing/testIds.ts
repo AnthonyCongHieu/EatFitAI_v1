@@ -93,6 +93,7 @@ export const TEST_IDS = {
     captureButton: 'ai-scan-capture-button',
     galleryButton: 'ai-scan-gallery-button',
     retakeButton: 'ai-scan-retake-button',
+    closeResultsButton: 'ai-scan-close-results-button',
     addToDiaryButton: 'ai-scan-add-to-diary-button',
     quickAddButton: 'ai-scan-quick-save-button',
     quickAddTopResultButton: 'ai-scan-quick-add-top-result-button',

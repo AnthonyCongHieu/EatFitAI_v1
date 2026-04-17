@@ -1,9 +1,7 @@
 import type { AxiosError } from 'axios';
 
 import { API_BASE_URL, assertBackendApiBaseUrl } from '../config/env';
-import apiClient, { getCurrentApiUrl } from './apiClient';
-import { getAccessTokenMem } from './authTokens';
-import { tokenStorage } from './secureStore';
+import apiClient, { fetchWithAuthRetry, getCurrentApiUrl } from './apiClient';
 
 const getApiBaseUrl = (): string => {
   const baseUrl = getCurrentApiUrl() ?? API_BASE_URL;
@@ -130,25 +128,27 @@ export const voiceService = {
   async transcribeAudio(audioUri: string): Promise<TranscriptionResponse> {
     try {
       const baseUrl = getApiBaseUrl();
-      const token = getAccessTokenMem() ?? (await tokenStorage.getAccessToken());
 
-      const formData = new FormData();
       const ext = audioUri.split('.').pop() || 'm4a';
+      const response = await fetchWithAuthRetry(
+        `${baseUrl}/api/voice/transcribe`,
+        () => {
+          const formData = new FormData();
+          formData.append('audio', {
+            uri: audioUri,
+            type: `audio/${ext}`,
+            name: `recording.${ext}`,
+          } as any);
 
-      formData.append('audio', {
-        uri: audioUri,
-        type: `audio/${ext}`,
-        name: `recording.${ext}`,
-      } as any);
-
-      const response = await fetch(`${baseUrl}/api/voice/transcribe`, {
-        method: 'POST',
-        body: formData,
-        headers: {
-          Authorization: token ? `Bearer ${token}` : '',
-          Accept: 'application/json',
+          return {
+            method: 'POST',
+            body: formData,
+            headers: {
+              Accept: 'application/json',
+            },
+          };
         },
-      });
+      );
 
       if (!response.ok) {
         const text = await response.text();

@@ -26,3 +26,14 @@ tags:
     id: ai-scan-gallery-button
 - assertVisible:
     id: ai-scan-capture-button
+- tapOn:
+    id: ai-scan-gallery-button
+    retryTapIfNoChange: true
+- extendedWaitUntil:
+    visible:
+      id: ai-scan-add-to-diary-button
+    timeout: 60000
+- assertVisible:
+    id: ai-scan-add-to-diary-button
+- assertVisible:
+    id: ai-scan-quick-save-button

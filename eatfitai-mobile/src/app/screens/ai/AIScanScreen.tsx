@@ -99,7 +99,7 @@ const AIScanScreen: React.FC = () => {
     Toast.show({
       type: 'info',
       text1: 'AI tạm dừng',
-      text2: 'Bạn có thể dùng tìm kiếm thủ công trong lúc chờ AI hồi phục.',
+      text2: 'EatFitAI vẫn sẽ thử phân tích; nếu chưa sẵn sàng bạn có thể tìm thủ công.',
     });
   }, []);
 
@@ -164,7 +164,6 @@ const AIScanScreen: React.FC = () => {
   const handleCapture = useCallback(async () => {
     if (isAiDown) {
       notifyAiDown();
-      return;
     }
 
     if (!cameraRef.current) {
@@ -202,7 +201,6 @@ const AIScanScreen: React.FC = () => {
   const handlePickImage = useCallback(async () => {
     if (isAiDown) {
       notifyAiDown();
-      return;
     }
 
     if (!galleryPermission?.granted) {
@@ -486,7 +484,6 @@ const AIScanScreen: React.FC = () => {
               variant="secondary"
               size="sm"
               fullWidth={false}
-              disabled={isAiDown}
               icon="images-outline"
               accessibilityLabel="Chọn từ thư viện"
               accessibilityHint="Chọn ảnh có sẵn từ thư viện"
@@ -521,12 +518,12 @@ const AIScanScreen: React.FC = () => {
 
               <AnimatedPressable
                 onPress={handleCapture}
-                disabled={isCapturing || isAiDown}
+                disabled={isCapturing}
                 style={[captureButtonStyle, styles.captureButtonOuter]}
                 accessibilityRole="button"
                 accessibilityLabel="Chụp ảnh"
                 accessibilityHint="Chụp ảnh món ăn để AI nhận diện"
-                accessibilityState={{ disabled: isCapturing || isAiDown }}
+                accessibilityState={{ disabled: isCapturing }}
                 testID={TEST_IDS.aiScan.captureButton}
               >
                 <LinearGradient
@@ -554,10 +551,8 @@ const AIScanScreen: React.FC = () => {
                     shadowRadius: 4,
                     elevation: 5,
                   },
-                  isAiDown && styles.disabledSideButton,
                 ]}
                 onPress={handlePickImage}
-                disabled={isAiDown}
                 hitSlop={16}
                 accessible
                 collapsable={false}
@@ -593,7 +588,7 @@ const AIScanScreen: React.FC = () => {
                 accessibilityRole="button"
                 accessibilityLabel="Đóng kết quả"
                 accessibilityHint="Quay lại chế độ camera"
-                testID={TEST_IDS.aiScan.retakeButton}
+                testID={TEST_IDS.aiScan.closeResultsButton}
               >
                 <Icon name="close" size="md" color="text" />
               </Pressable>
@@ -723,10 +718,14 @@ const AIScanScreen: React.FC = () => {
 
                       <ThemedText
                         variant="caption"
-                        color="textSecondary"
+                        color={item.isMatched ? 'textSecondary' : 'warning'}
                         style={{ fontSize: 12 }}
                       >
-                        {item.caloriesPer100g ? `${item.caloriesPer100g} kcal` : '--'}
+                        {item.isMatched
+                          ? item.caloriesPer100g
+                            ? `${item.caloriesPer100g} kcal`
+                            : '--'
+                          : 'Cần review'}
                       </ThemedText>
                     </View>
                   </View>
