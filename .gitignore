@@ -83,3 +83,4 @@ data_chunks/
 *.sql
 !eatfitai-backend/supabase_schema.sql
 !eatfitai-backend/supabase_storage.sql
+artifacts-device-latest.png
