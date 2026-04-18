@@ -20,6 +20,8 @@ services:
         sync: false
       - key: Encryption__Key
         sync: false
+      - key: Encryption__PreviousKeys
+        sync: false
       - key: Jwt__Issuer
         value: EatFitAI
       - key: Jwt__Audience

@@ -38,6 +38,7 @@ public partial class Program
     {
         var builder = WebApplication.CreateBuilder(args);
         var scanDemoSeedOptions = ParseScanDemoSeedOptions(args);
+        var geminiKeyReencryptionOptions = ParseGeminiKeyReencryptionOptions(args);
         var adminGovernanceBootstrapRequested =
             args.Any(arg => string.Equals(arg, "--admin-governance-bootstrap", StringComparison.OrdinalIgnoreCase))
             || string.Equals(Environment.GetEnvironmentVariable("EATFITAI_ADMIN_GOVERNANCE_BOOTSTRAP"), "1", StringComparison.OrdinalIgnoreCase);
@@ -92,6 +93,35 @@ public partial class Program
             };
         }
 
+        static GeminiKeyReencryptionOptions? ParseGeminiKeyReencryptionOptions(string[] cliArgs)
+        {
+            var enabled = cliArgs.Any(arg => string.Equals(arg, "--reencrypt-gemini-keys", StringComparison.OrdinalIgnoreCase))
+                || string.Equals(Environment.GetEnvironmentVariable("EATFITAI_REENCRYPT_GEMINI_KEYS"), "1", StringComparison.OrdinalIgnoreCase);
+
+            if (!enabled)
+            {
+                return null;
+            }
+
+            var oldKey = Environment.GetEnvironmentVariable("EATFITAI_GEMINI_REENCRYPT_OLD_KEY");
+            var newKey = Environment.GetEnvironmentVariable("EATFITAI_GEMINI_REENCRYPT_NEW_KEY");
+            var reportPath = TryGetOptionValue(cliArgs, "--reencrypt-report")
+                ?? Environment.GetEnvironmentVariable("EATFITAI_GEMINI_REENCRYPT_REPORT");
+
+            if (string.IsNullOrWhiteSpace(oldKey) || string.IsNullOrWhiteSpace(newKey))
+            {
+                throw new InvalidOperationException(
+                    "Gemini key re-encryption requires EATFITAI_GEMINI_REENCRYPT_OLD_KEY and EATFITAI_GEMINI_REENCRYPT_NEW_KEY.");
+            }
+
+            return new GeminiKeyReencryptionOptions
+            {
+                OldKey = oldKey,
+                NewKey = newKey,
+                ReportPath = reportPath
+            };
+        }
+
         // User Secrets will be loaded automatically in Development by CreateBuilder
 
         // Render.com cung cấp PORT env var, ưu tiên dùng nó
@@ -104,6 +134,85 @@ public partial class Program
         else if (!string.IsNullOrWhiteSpace(configuredUrls))
         {
             builder.WebHost.UseUrls(configuredUrls);
+        }
+
+        static string GetSanitizedConnectionSummary(string? connectionString)
+        {
+            if (string.IsNullOrWhiteSpace(connectionString))
+            {
+                return "connectionString=<missing>";
+            }
+
+            try
+            {
+                var builder = new NpgsqlConnectionStringBuilder(connectionString);
+                return string.Join(
+                    ";",
+                    new[]
+                    {
+                        $"host={builder.Host}",
+                        $"port={builder.Port}",
+                        $"database={builder.Database}",
+                        $"username={builder.Username}",
+                        $"sslmode={builder.SslMode}",
+                        $"timeout={builder.Timeout}",
+                        $"commandTimeout={builder.CommandTimeout}",
+                        $"keepalive={builder.KeepAlive}",
+                        $"mode={GetConnectionMode(builder.Host ?? string.Empty, builder.Port)}"
+                    });
+            }
+            catch
+            {
+                return "connectionString=<unparseable>";
+            }
+        }
+
+        if (geminiKeyReencryptionOptions is not null)
+        {
+            var reencryptConnectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+            if (string.IsNullOrWhiteSpace(reencryptConnectionString))
+            {
+                throw new InvalidOperationException(
+                    "ConnectionStrings:DefaultConnection is required for Gemini key re-encryption.");
+            }
+
+            builder.Services.AddDbContext<ApplicationDbContext>(options =>
+                options.UseNpgsql(reencryptConnectionString, npgsql =>
+                    npgsql.EnableRetryOnFailure()));
+            builder.Services.AddScoped<GeminiKeyReencryptionService>();
+
+            var reencryptApp = builder.Build();
+            using var reencryptScope = reencryptApp.Services.CreateScope();
+            var reencryptService = reencryptScope.ServiceProvider.GetRequiredService<GeminiKeyReencryptionService>();
+            var report = await reencryptService.ReencryptAsync(
+                geminiKeyReencryptionOptions.OldKey,
+                geminiKeyReencryptionOptions.NewKey);
+            var payload = new
+            {
+                action = "reencrypt-gemini-keys",
+                reencryptedCount = report.ReencryptedCount,
+                completedAt = report.CompletedAt,
+                connectionSummary = GetSanitizedConnectionSummary(reencryptConnectionString)
+            };
+            var serializedReport = JsonSerializer.Serialize(payload, new JsonSerializerOptions
+            {
+                WriteIndented = true
+            });
+
+            if (!string.IsNullOrWhiteSpace(geminiKeyReencryptionOptions.ReportPath))
+            {
+                var fullReportPath = Path.GetFullPath(geminiKeyReencryptionOptions.ReportPath);
+                var reportDirectory = Path.GetDirectoryName(fullReportPath);
+                if (!string.IsNullOrWhiteSpace(reportDirectory))
+                {
+                    Directory.CreateDirectory(reportDirectory);
+                }
+
+                await File.WriteAllTextAsync(fullReportPath, serializedReport);
+            }
+
+            Console.WriteLine(serializedReport);
+            return;
         }
 
 // Add services to the container.
@@ -261,37 +370,6 @@ static string GetConnectionMode(string host, int port)
     }
 
     return "custom";
-}
-
-static string GetSanitizedConnectionSummary(string? connectionString)
-{
-    if (string.IsNullOrWhiteSpace(connectionString))
-    {
-        return "connectionString=<missing>";
-    }
-
-    try
-    {
-        var builder = new NpgsqlConnectionStringBuilder(connectionString);
-        return string.Join(
-            ";",
-            new[]
-            {
-                $"host={builder.Host}",
-                $"port={builder.Port}",
-                $"database={builder.Database}",
-                $"username={builder.Username}",
-                $"sslmode={builder.SslMode}",
-                $"timeout={builder.Timeout}",
-                $"commandTimeout={builder.CommandTimeout}",
-                $"keepalive={builder.KeepAlive}",
-                $"mode={GetConnectionMode(builder.Host ?? string.Empty, builder.Port)}"
-            });
-    }
-    catch
-    {
-        return "connectionString=<unparseable>";
-    }
 }
 
 static void EnsureRequiredProductionConfiguration(
@@ -990,6 +1068,13 @@ app.MapGet("/discovery", () => Results.Ok(new {
 
 await app.RunAsync();
     }
+}
+
+public sealed class GeminiKeyReencryptionOptions
+{
+    public string OldKey { get; init; } = string.Empty;
+    public string NewKey { get; init; } = string.Empty;
+    public string? ReportPath { get; init; }
 }
 
 public sealed record StartupFailedPhase(string Phase, DateTimeOffset FailedAt);
