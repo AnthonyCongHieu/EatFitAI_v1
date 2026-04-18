@@ -1,22 +1,21 @@
-﻿import React, { useEffect, useState } from 'react';
+// DietaryRestrictionsScreen - Emerald Nebula 3D UI
+
+import React, { useEffect, useState } from 'react';
 import {
   ScrollView,
   StyleSheet,
   View,
   ActivityIndicator,
-  Alert,
   Pressable,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import Animated, { FadeInDown } from 'react-native-reanimated';
-import { LinearGradient } from 'expo-linear-gradient';
+import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
+import { Ionicons } from '@expo/vector-icons';
+import Toast from 'react-native-toast-message';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ThemedText } from '../../../components/ThemedText';
-import Button from '../../../components/Button';
-import { glassStyles } from '../../../components/ui/GlassCard';
-import { useAppTheme } from '../../../theme/ThemeProvider';
 import { useUserPreferenceStore } from '../../../store/useUserPreferenceStore';
-import { SelectionChip } from '../../../components/ui/SelectionChip';
 
 const DIETARY_OPTIONS = [
   { id: 'vegetarian', label: 'Ăn chay' },
@@ -37,11 +36,22 @@ const ALLERGY_OPTIONS = [
   { id: 'soy', label: 'Đậu nành' },
 ];
 
+/* ═══ Palette ═══ */
+const P = {
+  primary: '#4be277',
+  surface: '#0e1322',
+  surfaceContainerHigh: '#25293a',
+  surfaceContainerLowest: '#090e1c',
+  onSurface: '#dee1f7',
+  onSurfaceVariant: '#bccbb9',
+  onPrimary: '#003915',
+  glassBorder: 'rgba(255,255,255,0.05)',
+  chipBg: 'rgba(255,255,255,0.08)',
+};
+
 export const DietaryRestrictionsScreen = () => {
-  const { theme } = useAppTheme();
-  const isDark = theme.mode === 'dark';
-  const glass = glassStyles(isDark);
   const navigation = useNavigation();
+  const insets = useSafeAreaInsets();
 
   const { preferences, fetchPreferences, updatePreferences, isLoading } =
     useUserPreferenceStore();
@@ -69,10 +79,19 @@ export const DietaryRestrictionsScreen = () => {
         preferredMealsPerDay: preferences?.preferredMealsPerDay || 3,
         preferredCuisine: preferences?.preferredCuisine || null,
       });
-      Alert.alert('Thành công', 'Đã lưu thay đổi');
+      Toast.show({
+        type: 'success',
+        text1: 'Thành công',
+        text2: 'Đã lưu thiết lập ăn uống',
+        visibilityTime: 2000,
+      });
       navigation.goBack();
     } catch (error) {
-      Alert.alert('Lỗi', 'Không thể lưu thay đổi');
+      Toast.show({
+        type: 'error',
+        text1: 'Lỗi',
+        text2: 'Không thể lưu thay đổi',
+      });
     }
   };
 
@@ -88,138 +107,170 @@ export const DietaryRestrictionsScreen = () => {
     }
   };
 
-  const styles = StyleSheet.create({
-    container: { flex: 1 },
-    content: { padding: 20, gap: 24, paddingBottom: 100 },
-    card: {
-      ...glass.card,
-      padding: 20,
-    },
-    sectionTitle: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 8,
-      marginBottom: 8,
-    },
-    subtitle: { fontSize: 14, color: theme.colors.textSecondary, marginBottom: 12 },
-    chipsContainer: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-  });
-
   if (isLoading && !preferences) {
     return (
-      <LinearGradient
-        colors={theme.colors.screenGradient}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 0.5, y: 1 }}
-        style={[styles.container, { justifyContent: 'center' }]}
-      >
-        <ActivityIndicator size="large" color={theme.colors.primary} />
-      </LinearGradient>
+      <View style={[S.container, { justifyContent: 'center' }]}>
+        <ActivityIndicator size="large" color={P.primary} />
+      </View>
     );
   }
 
   return (
-    <LinearGradient
-      colors={theme.colors.screenGradient}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 0.5, y: 1 }}
-      style={styles.container}
-    >
-      {/* Custom Header - Back button + Title on same row */}
-      <View
-        style={{
-          paddingTop: 60,
-          paddingBottom: theme.spacing.sm,
-          paddingHorizontal: theme.spacing.lg,
-        }}
-      >
-        {/* Row: Back button + Title */}
-        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-          <Pressable
-            onPress={() => navigation.goBack()}
-            style={{
-              width: 40,
-              height: 40,
-              borderRadius: 12,
-              backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <ThemedText style={{ fontSize: 18 }}>←</ThemedText>
+    <View style={[S.container, { paddingTop: insets.top }]}>
+      {/* ═══ Header ═══ */}
+      <View style={S.header}>
+        <View style={S.headerLeft}>
+          <Pressable style={S.iconBtn} onPress={() => navigation.goBack()}>
+            <Ionicons name="arrow-back" size={24} color={P.onSurface} />
           </Pressable>
-
-          <View style={{ flex: 1, alignItems: 'center', marginRight: 40 }}>
-            <ThemedText variant="h3" weight="700">
-              Chế độ ăn & Dị ứng
-            </ThemedText>
-          </View>
+          <ThemedText style={S.headerTitle}>Chế độ ăn & Dị ứng</ThemedText>
         </View>
-
-        {/* Subtitle below */}
-        <ThemedText
-          variant="bodySmall"
-          color="textSecondary"
-          style={{ textAlign: 'center', marginTop: 8 }}
-        >
-          Thiết lập hạn chế thực phẩm
-        </ThemedText>
       </View>
 
-      <ScrollView contentContainerStyle={styles.content}>
-        {/* Chế độ ăn */}
-        <Animated.View entering={FadeInDown.delay(100)} style={styles.card}>
-          <View style={styles.sectionTitle}>
-            <ThemedText variant="h3">Chế độ ăn</ThemedText>
+      <ScrollView contentContainerStyle={S.content} showsVerticalScrollIndicator={false}>
+        {/* ═══ Chế độ ăn ═══ */}
+        <Animated.View entering={FadeInDown.delay(100)} style={S.card}>
+          <View style={S.sectionTitleRow}>
+            <ThemedText style={S.sectionTitle}>Chế độ ăn</ThemedText>
+            <Ionicons name="leaf-outline" size={20} color={P.onSurfaceVariant} />
           </View>
-          <ThemedText style={styles.subtitle}>
+          <ThemedText style={S.subtitle}>
             Chọn các hạn chế hoặc chế độ ăn bạn đang theo đuổi.
           </ThemedText>
-          <View style={styles.chipsContainer}>
-            {DIETARY_OPTIONS.map((opt) => (
-              <SelectionChip
-                key={opt.id}
-                label={opt.label}
-                selected={selectedDiet.includes(opt.id)}
-                onPress={() => toggleSelection(opt.id, selectedDiet, setSelectedDiet)}
-              />
-            ))}
+          <View style={S.chipsContainer}>
+            {DIETARY_OPTIONS.map((opt) => {
+              const isSelected = selectedDiet.includes(opt.id);
+              return (
+                <Pressable
+                  key={opt.id}
+                  style={[S.chip, isSelected && S.chipActive]}
+                  onPress={() => toggleSelection(opt.id, selectedDiet, setSelectedDiet)}
+                >
+                  <ThemedText style={[S.chipText, isSelected && S.chipTextActive]}>
+                    {opt.label}
+                  </ThemedText>
+                </Pressable>
+              );
+            })}
           </View>
         </Animated.View>
 
-        {/* Dị ứng thực phẩm */}
-        <Animated.View entering={FadeInDown.delay(200)} style={styles.card}>
-          <View style={styles.sectionTitle}>
-            <ThemedText variant="h3">Dị ứng thực phẩm</ThemedText>
+        {/* ═══ Dị ứng thực phẩm ═══ */}
+        <Animated.View entering={FadeInDown.delay(200)} style={S.card}>
+          <View style={S.sectionTitleRow}>
+            <ThemedText style={S.sectionTitle}>Dị ứng thực phẩm</ThemedText>
+            <Ionicons name="warning-outline" size={20} color={P.onSurfaceVariant} />
           </View>
-          <ThemedText style={styles.subtitle}>
-            Chúng tôi sẽ cảnh báo hoặc loại bỏ các món chứa thành phần này.
+          <ThemedText style={S.subtitle}>
+            Hệ thống sẽ cảnh báo hoặc loại bỏ các món chứa thành phần này.
           </ThemedText>
-          <View style={styles.chipsContainer}>
-            {ALLERGY_OPTIONS.map((opt) => (
-              <SelectionChip
-                key={opt.id}
-                label={opt.label}
-                selected={selectedAllergies.includes(opt.id)}
-                onPress={() =>
-                  toggleSelection(opt.id, selectedAllergies, setSelectedAllergies)
-                }
-              />
-            ))}
+          <View style={S.chipsContainer}>
+            {ALLERGY_OPTIONS.map((opt) => {
+              const isSelected = selectedAllergies.includes(opt.id);
+              return (
+                <Pressable
+                  key={opt.id}
+                  style={[S.chip, isSelected && S.chipActive]}
+                  onPress={() => toggleSelection(opt.id, selectedAllergies, setSelectedAllergies)}
+                >
+                  <ThemedText style={[S.chipText, isSelected && S.chipTextActive]}>
+                    {opt.label}
+                  </ThemedText>
+                </Pressable>
+              );
+            })}
           </View>
-        </Animated.View>
-
-        <Animated.View entering={FadeInDown.delay(300)}>
-          <Button
-            title="Lưu thay đổi"
-            onPress={handleSave}
-            loading={isLoading}
-            variant="primary"
-          />
         </Animated.View>
       </ScrollView>
-    </LinearGradient>
+
+      {/* ═══ Fixed Bottom Button ═══ */}
+      <Animated.View entering={FadeInUp.delay(300)} style={S.bottomArea}>
+        <Pressable
+          style={({ pressed }) => [S.saveBtn, pressed && { opacity: 0.85, transform: [{ scale: 0.98 }] }]}
+          onPress={handleSave}
+          disabled={isLoading}
+        >
+          {isLoading ? (
+            <ActivityIndicator color={P.onPrimary} />
+          ) : (
+            <ThemedText style={S.saveBtnText}>Lưu thay đổi</ThemedText>
+          )}
+        </Pressable>
+      </Animated.View>
+    </View>
   );
 };
+
+const S = StyleSheet.create({
+  container: { flex: 1, backgroundColor: P.surface },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    height: 60,
+    backgroundColor: P.surfaceContainerLowest + '90',
+  },
+  headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 16 },
+  iconBtn: { padding: 8, borderRadius: 20 },
+  headerTitle: { fontSize: 22, fontFamily: 'Inter_700Bold', color: P.onSurface, letterSpacing: -0.5 },
+  
+  content: { padding: 20, gap: 20, paddingBottom: 120, paddingTop: 16 },
+  
+  card: {
+    backgroundColor: P.surfaceContainerHigh,
+    borderRadius: 24,
+    padding: 24,
+    borderWidth: 1,
+    borderColor: P.glassBorder,
+  },
+  sectionTitleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 },
+  sectionTitle: { fontSize: 18, fontFamily: 'Inter_700Bold', color: P.onSurface },
+  subtitle: { fontSize: 14, fontFamily: 'Inter_500Medium', color: P.onSurfaceVariant, marginBottom: 20, lineHeight: 22 },
+  
+  chipsContainer: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
+  chip: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 20,
+    backgroundColor: P.chipBg,
+    borderWidth: 1,
+    borderColor: P.glassBorder,
+  },
+  chipActive: {
+    backgroundColor: P.primary,
+    borderColor: P.primary,
+    shadowColor: P.primary,
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
+    elevation: 4,
+  },
+  chipText: { fontSize: 14, fontFamily: 'Inter_600SemiBold', color: P.onSurfaceVariant },
+  chipTextActive: { color: P.onPrimary, fontFamily: 'Inter_700Bold' },
+
+  bottomArea: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    padding: 24,
+    paddingBottom: 40,
+    backgroundColor: P.surfaceContainerLowest + 'F0',
+    borderTopWidth: 1,
+    borderColor: P.glassBorder,
+  },
+  saveBtn: {
+    backgroundColor: P.primary,
+    borderRadius: 16,
+    paddingVertical: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  saveBtnText: {
+    fontSize: 16,
+    fontFamily: 'Inter_700Bold',
+    color: P.onPrimary,
+  },
+});
 
 export default DietaryRestrictionsScreen;
