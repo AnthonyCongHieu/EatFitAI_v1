@@ -1,6 +1,8 @@
-# Secrets Setup
+# Quản lý Secrets
 
-This file is the teammate handoff guide for environment variables and secret handling across:
+Cập nhật: `2026-04-18`
+
+Tài liệu này là hướng dẫn bàn giao cho đồng đội về biến môi trường và quản lý secrets cho:
 
 - `eatfitai-backend`
 - `ai-provider`
@@ -56,7 +58,7 @@ Do not put live development secrets back into `appsettings.Development.json`.
 Local development:
 
 ```powershell
-cd E:\tool edit\eatfitai_v1\eatfitai-backend
+cd .\eatfitai-backend
 dotnet user-secrets set "ConnectionStrings:DefaultConnection" "<local-connection-string>"
 dotnet user-secrets set "Jwt:Key" "<development-jwt-key>"
 dotnet user-secrets set "Encryption:Key" "<32-char-encryption-key>"
@@ -191,8 +193,8 @@ Current hardening changes were added to:
 
 When a teammate joins:
 
-1. Give them this file and `archive/ENVIRONMENT_MANIFEST.example`.
-2. Give them the correct provider dashboard links, not raw secrets in chat.
+1. Đưa file này và `archive/ENVIRONMENT_MANIFEST.example`.
+2. Đưa link dashboard provider đúng, không gửi raw secrets qua chat.
 3. Have them create their own local runtime files:
    - `EatFitAI_Admin/.env.local`
    - `EatFitAI_Admin/.env.live.local` if they do live ops

@@ -1,97 +1,76 @@
 # EatFitAI
 
-EatFitAI is a Windows-first development workspace for a nutrition tracking app with:
+EatFitAI là một workspace phát triển trên Windows cho ứng dụng theo dõi dinh dưỡng với:
 
 - `eatfitai-mobile`: Expo / React Native client
 - `eatfitai-backend`: ASP.NET Core 9 Web API
-- `ai-provider`: local Python AI service for vision + Ollama-backed AI flows
+- `ai-provider`: Python AI service cho vision + Gemini/Ollama AI flows
 
-## Canonical local setup
+## Thiết lập local
 
-Use [SETUP_GUIDE.md](/D:/EatFitAI_v1/SETUP_GUIDE.md) as the single source of truth for local environment setup.
+Xem [SETUP_GUIDE.md](SETUP_GUIDE.md) là nguồn sự thật duy nhất cho thiết lập môi trường local.
 
-Key defaults:
+Các phiên bản mặc định:
 
 - Node `20.x`
 - .NET SDK `9.0.306`
 - Python `3.11`
 - Java `17`
 - SQL Server 2022 Developer (local instance)
-- Android emulator first, physical device as fallback
-- Backend secrets stored in `dotnet user-secrets`
+- Android emulator first, thiết bị thật là fallback
 
-## Quick local profile
+## Khởi chạy nhanh
 
-1. Restore or verify the local SQL Server database.
-2. Configure backend `user-secrets`.
-3. Start `ai-provider` on `http://127.0.0.1:5050`.
-4. Start backend on `http://localhost:5247`.
-5. Start mobile with `start-mobile-local.ps1` or `.env.development.local` when you want the app to call the local backend.
+1. Khôi phục hoặc xác minh cơ sở dữ liệu SQL Server local
+2. Cấu hình backend `user-secrets`
+3. Khởi động `ai-provider` tại `http://127.0.0.1:5050`
+4. Khởi động backend tại `http://localhost:5247`
+5. Khởi động mobile với `start-mobile-local.ps1` hoặc `.env.development.local` khi muốn app gọi backend local
 
-## Mobile launch modes
+## Chế độ khởi chạy mobile
 
-- `start-mobile.ps1`: default Expo dev lane, targets Render cloud via `https://eatfitai-backend.onrender.com`
-- `start-mobile-local.ps1`: emulator/local-backend lane, targets `http://10.0.2.2:5247`
-- `start-stack.ps1`: full local stack and launches `start-mobile-local.ps1`
+| Script | Mô tả | API target |
+|---|---|---|
+| `start-mobile.ps1` | Expo dev mặc định | `https://eatfitai-backend.onrender.com` |
+| `start-mobile-local.ps1` | Emulator/local-backend | `http://10.0.2.2:5247` |
+| `start-stack.ps1` | Full local stack | `http://10.0.2.2:5247` |
 
-## One-command physical device start
-
-For Android physical device on the same LAN, use:
+## Thiết bị Android thật
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\tools\dev\Start-EatFitAI-PhysicalDeviceLane.ps1
 ```
 
-Disable voice STT warm-up if you only need non-voice flows:
+Tắt voice STT warm-up nếu chỉ cần non-voice flows:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\tools\dev\Start-EatFitAI-PhysicalDeviceLane.ps1 -EnableStt:$false
 ```
 
-This script:
+## Tài liệu
 
-- detects the current LAN IPv4
-- rewrites `eatfitai-mobile\.env.development` to the current backend LAN URL
-- starts `ai-provider`
-- starts backend with `EatFitAI.API.csproj`
-- starts Expo LAN mode for the phone
+- [SETUP_GUIDE.md](SETUP_GUIDE.md) — Hướng dẫn thiết lập đầy đủ
+- [docs/README.md](docs/README.md) — Chỉ mục tài liệu kỹ thuật
+- [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) — Kiến trúc hệ thống
+- [docs/TESTING_AND_RELEASE.md](docs/TESTING_AND_RELEASE.md) — Kiểm thử và phát hành
+- [ai-provider/README.md](ai-provider/README.md) — AI provider
+- [tools/appium/README.md](tools/appium/README.md) — Appium smoke lane
 
-## Environment helper docs
-
-- [SETUP_GUIDE.md](/D:/EatFitAI_v1/SETUP_GUIDE.md)
-- [docs/README.md](/D:/EatFitAI_v1/docs/README.md)
-- [docs/04_ENVIRONMENT_EXECUTION_PLAN.md](/D:/EatFitAI_v1/docs/04_ENVIRONMENT_EXECUTION_PLAN.md)
-- [docs/11_RESULT_E2E_PRODUCTION_SMOKE.md](/D:/EatFitAI_v1/docs/11_RESULT_E2E_PRODUCTION_SMOKE.md)
-- [docs/06_RUNTIME_AUDIT_SNAPSHOT_2026-03-14.md](/D:/EatFitAI_v1/docs/06_RUNTIME_AUDIT_SNAPSHOT_2026-03-14.md)
-- [docs/07_NOTION_PLAN_GAP_AND_2PERSON_RESTRUCTURE_2026-03-14.md](/D:/EatFitAI_v1/docs/07_NOTION_PLAN_GAP_AND_2PERSON_RESTRUCTURE_2026-03-14.md)
-- [docs/archive/JWT_CONFIGURATION.md](docs/archive/JWT_CONFIGURATION.md)
-- [docs/archive/SECRETS_CHECKLIST.md](docs/archive/SECRETS_CHECKLIST.md)
-- [ai-provider/README.md](/D:/EatFitAI_v1/ai-provider/README.md)
-- [tools/appium/README.md](/D:/EatFitAI_v1/tools/appium/README.md)
-
-## Current planning and audit docs
-
-- Runtime truth snapshot: [docs/06_RUNTIME_AUDIT_SNAPSHOT_2026-03-14.md](/D:/EatFitAI_v1/docs/06_RUNTIME_AUDIT_SNAPSHOT_2026-03-14.md)
-- Notion gap analysis and 2-person restructure proposal: [docs/07_NOTION_PLAN_GAP_AND_2PERSON_RESTRUCTURE_2026-03-14.md](/D:/EatFitAI_v1/docs/07_NOTION_PLAN_GAP_AND_2PERSON_RESTRUCTURE_2026-03-14.md)
-- Documentation index: [docs/README.md](/D:/EatFitAI_v1/docs/README.md)
-
-## Local verification
-
-Run the Windows preflight after the basic tools are installed:
+## Xác minh local
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\tools\dev\Invoke-DevPreflight.ps1
 ```
 
-To restore the SQL snapshot in a portable way:
+Khôi phục SQL snapshot portable:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\tools\dev\Restore-EatFitAI-PortableSnapshot.ps1
 ```
 
-## Notes
+## Ghi chú
 
-- `sqdate13thang3t.sql` is kept as a snapshot reference, not as the canonical bootstrap flow.
-- Backend machine-specific values must stay in `user-secrets`, not in tracked JSON files.
-- Appium + MCP is supported through the emulator-first lane described in `tools/appium`.
-- Production Result smoke should use `start-mobile-cloud-smoke.ps1` for the smoke-specific Render lane.
+- `sqdate13thang3t.sql` chỉ là snapshot tham chiếu, không phải bootstrap flow chuẩn
+- Backend machine-specific values phải nằm trong `user-secrets`, không phải file JSON tracked
+- Appium + MCP được hỗ trợ qua emulator-first lane trong `tools/appium`
+- Smoke production nên dùng `start-mobile-cloud-smoke.ps1`
