@@ -83,6 +83,9 @@ const getNotificationsScreen = lazyScreen(() =>
 const getDietaryRestrictionsScreen = lazyScreen(() =>
   require('../screens/ai/DietaryRestrictionsScreen'),
 );
+const getBasicInfoScreen = lazyScreen(() =>
+  require('../screens/profile/BasicInfoScreen'),
+);
 /* eslint-enable @typescript-eslint/no-require-imports */
 
 const AppNavigator = (): React.ReactElement => {
@@ -148,6 +151,11 @@ const AppNavigator = (): React.ReactElement => {
           ) : (
             <Stack.Group navigationKey="authenticated">
               <Stack.Screen name="AppTabs" getComponent={getAppTabs} />
+              <Stack.Screen
+                name="Onboarding"
+                component={OnboardingScreen}
+                options={{ headerShown: false, gestureEnabled: false }}
+              />
               <Stack.Screen
                 name="FoodSearch"
                 getComponent={getFoodSearchScreen}
@@ -266,7 +274,12 @@ const AppNavigator = (): React.ReactElement => {
                 getComponent={getNotificationsScreen}
                 options={{ headerShown: false }}
               />
-            </Stack.Group>
+              <Stack.Screen
+                name="BasicInfo"
+                getComponent={getBasicInfoScreen}
+                options={{ headerShown: false }}
+              />
+              </Stack.Group>
           )}
           </Stack.Navigator>
           {!isInAuthFlow && <MascotOverlay />}

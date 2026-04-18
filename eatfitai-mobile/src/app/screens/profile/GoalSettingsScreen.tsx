@@ -1,91 +1,67 @@
-// GoalSettingsScreen: Cài đặt mục tiêu và hoạt động
-// Cho phép chọn goal (giảm/giữ/tăng cân) và mức độ hoạt động
+// GoalSettingsScreen: Cài đặt mức độ vận động
+// Emerald Nebula 3D — only Activity Level selection
 
 import React, { useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, View, Pressable } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import Animated, { FadeInDown } from 'react-native-reanimated';
-import { LinearGradient } from 'expo-linear-gradient';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
+import { Ionicons } from '@expo/vector-icons';
 
 import { ThemedText } from '../../../components/ThemedText';
-import Button from '../../../components/Button';
-import { glassStyles } from '../../../components/ui/GlassCard';
-import { useAppTheme } from '../../../theme/ThemeProvider';
 import { useProfileStore } from '../../../store/useProfileStore';
 import {
   showSuccess,
   handleApiErrorWithCustomMessage,
 } from '../../../utils/errorHandler';
 
-// Goal options
-const GOAL_OPTIONS = [
-  {
-    value: 'lose',
-    label: 'Giảm cân',
-    icon: '📉',
-    description: 'Ăn ít hơn calories tiêu hao',
-    colorKey: 'danger',
-  },
-  {
-    value: 'maintain',
-    label: 'Giữ cân',
-    icon: '⚖️',
-    description: 'Cân bằng calories',
-    colorKey: 'info',
-  },
-  {
-    value: 'gain',
-    label: 'Tăng cân',
-    icon: '📈',
-    description: 'Ăn nhiều hơn calories tiêu hao',
-    colorKey: 'success',
-  },
-] as const;
+/* ═══ Emerald Nebula Palette ═══ */
+const P = {
+  primary: '#4be277',
+  surface: '#0e1322',
+  surfaceContainerHigh: '#25293a',
+  onSurface: '#dee1f7',
+  onSurfaceVariant: '#bccbb9',
+  glassBorder: 'rgba(255,255,255,0.05)',
+};
 
 // Activity level options
 const ACTIVITY_OPTIONS = [
   {
     id: 1,
-    value: 'sedentary',
     label: 'Ít vận động',
     icon: '🪑',
     description: 'Ngồi nhiều, ít đi lại',
   },
   {
     id: 2,
-    value: 'light',
     label: 'Nhẹ nhàng',
     icon: '🚶',
     description: 'Đi bộ 1-3 ngày/tuần',
   },
   {
     id: 3,
-    value: 'moderate',
     label: 'Trung bình',
     icon: '🏃',
     description: 'Tập thể dục 3-5 ngày/tuần',
   },
   {
     id: 4,
-    value: 'active',
-    label: 'Tích cực',
+    label: 'Năng động',
     icon: '💪',
     description: 'Tập luyện 6-7 ngày/tuần',
   },
   {
     id: 5,
-    value: 'very_active',
-    label: 'Rất tích cực',
+    label: 'Rất năng động',
     icon: '🏋️',
     description: 'Tập luyện cường độ cao hàng ngày',
   },
 ] as const;
 
 const GoalSettingsScreen = (): React.ReactElement => {
-  const { theme } = useAppTheme();
-  const isDark = theme.mode === 'dark';
-  const glass = glassStyles(isDark);
   const navigation = useNavigation();
+  const insets = useSafeAreaInsets();
 
   const { profile, updateProfile, isSaving } = useProfileStore((state) => ({
     profile: state.profile,
@@ -93,13 +69,11 @@ const GoalSettingsScreen = (): React.ReactElement => {
     isSaving: state.isSaving,
   }));
 
-  const [selectedGoal, setSelectedGoal] = useState<string>('maintain');
   const [selectedActivity, setSelectedActivity] = useState<number>(3);
 
   // Load current values
   useEffect(() => {
     if (profile) {
-      setSelectedGoal(profile.goal || 'maintain');
       setSelectedActivity(profile.activityLevelId || 3);
     }
   }, [profile]);
@@ -107,7 +81,6 @@ const GoalSettingsScreen = (): React.ReactElement => {
   const onSubmit = async () => {
     try {
       await updateProfile({
-        goal: selectedGoal as any,
         activityLevelId: selectedActivity,
       });
       showSuccess('profile_updated');
@@ -119,240 +92,193 @@ const GoalSettingsScreen = (): React.ReactElement => {
     }
   };
 
-  const styles = StyleSheet.create({
-    container: { flex: 1 },
-    content: {
-      paddingHorizontal: theme.spacing.lg,
-      paddingVertical: theme.spacing.xl,
-      gap: theme.spacing.lg,
-    },
-    card: {
-      ...glass.card,
-      padding: 20,
-    },
-    sectionTitle: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 8,
-      marginBottom: 16,
-    },
-    optionsGrid: {
-      gap: 12,
-    },
-    optionCard: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      padding: 16,
-      borderRadius: 14,
-      borderWidth: 2,
-    },
-    optionIcon: {
-      fontSize: 28,
-      marginRight: 14,
-    },
-    optionContent: {
-      flex: 1,
-    },
-    optionLabel: {
-      fontSize: 16,
-      fontWeight: '600',
-    },
-    optionDesc: {
-      fontSize: 13,
-      marginTop: 2,
-    },
-    checkMark: {
-      width: 24,
-      height: 24,
-      borderRadius: 12,
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-  });
-
   return (
-    <LinearGradient
-      colors={theme.colors.screenGradient}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 0.5, y: 1 }}
-      style={styles.container}
-    >
-      {/* Custom Header - Back button + Title on same row */}
-      <View
-        style={{
-          paddingTop: 60,
-          paddingBottom: theme.spacing.sm,
-          paddingHorizontal: theme.spacing.lg,
-        }}
-      >
-        {/* Row: Back button + Title */}
-        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-          <Pressable
-            onPress={() => navigation.goBack()}
-            style={{
-              width: 40,
-              height: 40,
-              borderRadius: 12,
-              backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <ThemedText style={{ fontSize: 18 }}>←</ThemedText>
-          </Pressable>
-
-          <View style={{ flex: 1, alignItems: 'center', marginRight: 40 }}>
-            <ThemedText variant="h3" weight="700">
-              Mục tiêu & Hoạt động
-            </ThemedText>
-          </View>
-        </View>
-
-        {/* Subtitle below */}
-        <ThemedText
-          variant="bodySmall"
-          color="textSecondary"
-          style={{ textAlign: 'center', marginTop: 8 }}
-        >
-          Thiết lập mục tiêu dinh dưỡng
-        </ThemedText>
+    <View style={[S.container, { paddingTop: insets.top, paddingBottom: insets.bottom + 20 }]}>
+      {/* Header */}
+      <View style={S.header}>
+        <Pressable style={S.headerBtn} onPress={() => navigation.goBack()} hitSlop={12}>
+          <Ionicons name="chevron-back" size={24} color={P.onSurface} />
+        </Pressable>
+        <ThemedText style={S.headerTitle}>Cường độ vận động</ThemedText>
+        <View style={S.headerBtn} />
       </View>
 
-      <ScrollView contentContainerStyle={styles.content}>
-        {/* Goal Selection */}
-        <Animated.View entering={FadeInDown.delay(100)} style={styles.card}>
-          <View style={styles.sectionTitle}>
-            <ThemedText style={{ fontSize: 20 }} />
-            <ThemedText variant="h3">Mục tiêu của bạn</ThemedText>
-          </View>
-
-          <View style={styles.optionsGrid}>
-            {GOAL_OPTIONS.map((goal) => {
-              const isSelected = selectedGoal === goal.value;
-              // Lấy màu an toàn - fallback về primary nếu không tìm thấy
-              const goalColor = String(
-                theme.colors[goal.colorKey as keyof typeof theme.colors] ||
-                  theme.colors.primary,
-              );
-
-              return (
-                <Pressable
-                  key={goal.value}
-                  onPress={() => setSelectedGoal(goal.value)}
-                  style={[
-                    styles.optionCard,
-                    {
-                      backgroundColor: isSelected
-                        ? `${goalColor}15`
-                        : isDark
-                          ? 'rgba(255,255,255,0.03)'
-                          : 'rgba(0,0,0,0.02)',
-                      borderColor: isSelected ? goalColor : 'transparent',
-                    },
-                  ]}
-                  accessibilityRole="radio"
-                  accessibilityState={{ checked: isSelected }}
-                >
-                  <ThemedText style={styles.optionIcon}>{goal.icon}</ThemedText>
-                  <View style={styles.optionContent}>
-                    <ThemedText
-                      style={[
-                        styles.optionLabel,
-                        { color: isSelected ? goalColor : theme.colors.text },
-                      ]}
-                    >
-                      {goal.label}
-                    </ThemedText>
-                    <ThemedText
-                      style={[styles.optionDesc, { color: theme.colors.textSecondary }]}
-                    >
-                      {goal.description}
-                    </ThemedText>
-                  </View>
-                  {isSelected && (
-                    <View style={[styles.checkMark, { backgroundColor: goalColor }]}>
-                      <ThemedText style={{ color: '#fff', fontSize: 14 }}>✓</ThemedText>
-                    </View>
-                  )}
-                </Pressable>
-              );
-            })}
-          </View>
+      <ScrollView
+        contentContainerStyle={[S.content, { paddingBottom: 20 }]}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Section title */}
+        <Animated.View entering={FadeInDown.delay(50).duration(300)}>
+          <ThemedText style={S.sectionTitle}>Mức độ vận động</ThemedText>
+          <ThemedText style={S.sectionSubtitle}>
+            Chọn mức độ hoạt động phù hợp với bạn
+          </ThemedText>
         </Animated.View>
 
-        {/* Activity Level Selection */}
-        <Animated.View entering={FadeInDown.delay(200)} style={styles.card}>
-          <View style={styles.sectionTitle}>
-            <ThemedText style={{ fontSize: 20 }} />
-            <ThemedText variant="h3">Mức độ vận động</ThemedText>
-          </View>
+        {/* Activity options */}
+        <View style={S.optionsGrid}>
+          {ACTIVITY_OPTIONS.map((activity, index) => {
+            const isSelected = selectedActivity === activity.id;
 
-          <View style={styles.optionsGrid}>
-            {ACTIVITY_OPTIONS.map((activity) => {
-              const isSelected = selectedActivity === activity.id;
-
-              return (
+            return (
+              <Animated.View
+                key={activity.id}
+                entering={FadeInDown.delay(100 + index * 60).duration(350)}
+              >
                 <Pressable
-                  key={activity.id}
                   onPress={() => setSelectedActivity(activity.id)}
-                  style={[
-                    styles.optionCard,
-                    {
-                      backgroundColor: isSelected
-                        ? `${theme.colors.primary}15`
-                        : isDark
-                          ? 'rgba(255,255,255,0.03)'
-                          : 'rgba(0,0,0,0.02)',
-                      borderColor: isSelected ? theme.colors.primary : 'transparent',
-                    },
+                  style={({ pressed }) => [
+                    S.optionCard,
+                    isSelected && S.optionCardSelected,
+                    pressed && { opacity: 0.8 },
                   ]}
                   accessibilityRole="radio"
                   accessibilityState={{ checked: isSelected }}
                 >
-                  <ThemedText style={styles.optionIcon}>{activity.icon}</ThemedText>
-                  <View style={styles.optionContent}>
+                  <ThemedText style={S.optionIcon}>{activity.icon}</ThemedText>
+                  <View style={S.optionContent}>
                     <ThemedText
                       style={[
-                        styles.optionLabel,
-                        { color: isSelected ? theme.colors.primary : theme.colors.text },
+                        S.optionLabel,
+                        isSelected && { color: P.primary },
                       ]}
                     >
                       {activity.label}
                     </ThemedText>
-                    <ThemedText
-                      style={[styles.optionDesc, { color: theme.colors.textSecondary }]}
-                    >
+                    <ThemedText style={S.optionDesc}>
                       {activity.description}
                     </ThemedText>
                   </View>
                   {isSelected && (
-                    <View
-                      style={[
-                        styles.checkMark,
-                        { backgroundColor: theme.colors.primary },
-                      ]}
-                    >
-                      <ThemedText style={{ color: '#fff', fontSize: 14 }}>✓</ThemedText>
+                    <View style={S.checkMark}>
+                      <Ionicons name="checkmark" size={16} color="#fff" />
                     </View>
                   )}
                 </Pressable>
-              );
-            })}
-          </View>
-        </Animated.View>
-
-        {/* Save Button */}
-        <Animated.View entering={FadeInDown.delay(300)}>
-          <Button
-            title={isSaving ? 'Đang lưu...' : 'Lưu thay đổi'}
-            onPress={onSubmit}
-            loading={isSaving}
-            disabled={isSaving}
-          />
-        </Animated.View>
+              </Animated.View>
+            );
+          })}
+        </View>
       </ScrollView>
-    </LinearGradient>
+
+      {/* Save Button */}
+      <Animated.View entering={FadeInUp.delay(500).duration(400)} style={S.bottomArea}>
+        <Pressable
+          style={({ pressed }) => [
+            S.saveBtn,
+            pressed && { opacity: 0.85, transform: [{ scale: 0.98 }] },
+            isSaving && { opacity: 0.6 },
+          ]}
+          onPress={onSubmit}
+          disabled={isSaving}
+        >
+          <ThemedText style={S.saveBtnText}>
+            {isSaving ? 'Đang lưu...' : 'Lưu thay đổi'}
+          </ThemedText>
+        </Pressable>
+      </Animated.View>
+    </View>
   );
 };
+
+/* ═══ Styles ═══ */
+const S = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: P.surface,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    height: 56,
+  },
+  headerBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: P.onSurface,
+    letterSpacing: -0.3,
+  },
+  content: {
+    paddingHorizontal: 20,
+  },
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: P.onSurface,
+    marginBottom: 6,
+  },
+  sectionSubtitle: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: P.onSurfaceVariant,
+    marginBottom: 20,
+  },
+  optionsGrid: {
+    gap: 12,
+  },
+  optionCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 18,
+    borderRadius: 16,
+    borderWidth: 2,
+    borderColor: 'transparent',
+    backgroundColor: P.surfaceContainerHigh,
+  },
+  optionCardSelected: {
+    borderColor: P.primary,
+    backgroundColor: P.primary + '10',
+  },
+  optionIcon: {
+    fontSize: 28,
+    marginRight: 16,
+  },
+  optionContent: {
+    flex: 1,
+  },
+  optionLabel: {
+    fontSize: 17,
+    fontWeight: '600',
+    color: P.onSurface,
+  },
+  optionDesc: {
+    fontSize: 13,
+    fontWeight: '400',
+    color: P.onSurfaceVariant,
+    marginTop: 3,
+  },
+  checkMark: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    backgroundColor: P.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  bottomArea: {
+    paddingHorizontal: 20,
+    paddingBottom: 12,
+  },
+  saveBtn: {
+    alignItems: 'center',
+    paddingVertical: 16,
+    borderRadius: 16,
+    backgroundColor: P.primary,
+  },
+  saveBtnText: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#003915',
+  },
+});
 
 export default GoalSettingsScreen;
