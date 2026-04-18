@@ -14,8 +14,7 @@ import { BottomSheet } from '../BottomSheet';
 import { ThemedText } from '../ThemedText';
 import { Button } from '../Button';
 import Icon from '../Icon';
-import { AppCard } from '../ui/AppCard';
-import { useAppTheme } from '../../theme/ThemeProvider';
+import { LinearGradient } from 'expo-linear-gradient';
 import {
   useIngredientBasketStore,
   ScannedIngredient,
@@ -34,7 +33,6 @@ export const IngredientBasketSheet: React.FC<IngredientBasketSheetProps> = ({
   visible,
   onClose,
 }) => {
-  const { theme } = useAppTheme();
   const navigation = useNavigation<NavigationProp>();
   const ingredients = useIngredientBasketStore((s) => s.ingredients);
   const removeIngredient = useIngredientBasketStore((s) => s.removeIngredient);
@@ -103,32 +101,33 @@ export const IngredientBasketSheet: React.FC<IngredientBasketSheetProps> = ({
       <Animated.View
         entering={FadeInRight.duration(200)}
         exiting={FadeOutLeft.duration(200)}
+        style={styles.ingredientCardWrap}
       >
-        <AppCard style={styles.ingredientCard}>
-          <View style={styles.ingredientContent}>
-            <View style={[styles.iconBg, { backgroundColor: theme.colors.primaryLight }]}>
-              <Icon name="leaf-outline" size="md" color="primary" />
-            </View>
-            <View style={styles.ingredientInfo}>
-              <ThemedText variant="body" weight="600">
-                {item.name}
-              </ThemedText>
-              <ThemedText variant="caption" color="textSecondary">
-                Độ tin cậy: {Math.round(item.confidence * 100)}%
-              </ThemedText>
-            </View>
-            <Pressable
-              onPress={() => handleRemove(item.id)}
-              style={[styles.removeBtn, { backgroundColor: theme.colors.danger + '20' }]}
-              hitSlop={8}
-            >
-              <Icon name="close" size="sm" color="danger" />
-            </Pressable>
+        <View style={styles.ingredientCard}>
+          <View style={styles.iconBg}>
+            <Icon name="restaurant-outline" size="sm" color="text" />
           </View>
-        </AppCard>
+          
+          <View style={styles.ingredientInfo}>
+            <ThemedText style={styles.ingredientName} numberOfLines={1}>
+              {item.name}
+            </ThemedText>
+            <ThemedText style={styles.ingredientConf}>
+              {Math.round(item.confidence * 100)}% Độ tin cậy
+            </ThemedText>
+          </View>
+
+          <Pressable
+            onPress={() => handleRemove(item.id)}
+            style={styles.removeBtn}
+            hitSlop={8}
+          >
+            <Icon name="close" size="xs" color="textSecondary" />
+          </Pressable>
+        </View>
       </Animated.View>
     ),
-    [handleRemove, theme],
+    [handleRemove],
   );
 
   return (
@@ -136,49 +135,58 @@ export const IngredientBasketSheet: React.FC<IngredientBasketSheetProps> = ({
       visible={visible}
       onClose={onClose}
       title={`Giỏ nguyên liệu (${ingredients.length})`}
-      height={450}
+      height="auto"
     >
       <View style={styles.container}>
         {ingredients.length === 0 ? (
           <View style={styles.emptyState}>
-            <Icon name="basket-outline" size="xl" color="muted" />
-            <ThemedText
-              variant="body"
-              color="textSecondary"
-              style={{ textAlign: 'center', marginTop: theme.spacing.md }}
-            >
-              Chưa có nguyên liệu nào.{'\n'}Quét để thêm nguyên liệu!
+            <View style={styles.emptyIconWrap}>
+              <Icon name="basket-outline" size="xl" color="primary" />
+            </View>
+            <ThemedText style={styles.emptyTitle}>Giỏ nguyên liệu trống</ThemedText>
+            <ThemedText style={styles.emptyDesc}>
+              Hãy bắt đầu quét để lưu nguyên liệu vào đây!
             </ThemedText>
           </View>
         ) : (
-          <>
+          <View>
             <FlatList
               data={ingredients}
               keyExtractor={(item) => item.id}
               renderItem={renderIngredient}
               contentContainerStyle={styles.list}
+              style={{ maxHeight: 350 }}
               showsVerticalScrollIndicator={false}
             />
 
             <View style={styles.actions}>
-              <Button
-                variant="outline"
-                title="Xóa tất cả"
-                onPress={handleClear}
-                style={{ flex: 1 }}
-                size="sm"
-              />
-              <Button
-                variant="primary"
-                title={isLoading ? 'Đang tìm...' : 'Gợi ý công thức'}
+              <Pressable style={styles.clearBtn} onPress={handleClear}>
+                <ThemedText style={styles.clearBtnText}>Xóa tất cả</ThemedText>
+              </Pressable>
+
+              <Pressable
+                style={styles.suggestBtn}
                 onPress={handleSuggestRecipes}
-                loading={isLoading}
                 disabled={isLoading}
-                style={{ flex: 2 }}
-                size="sm"
-              />
+              >
+                <LinearGradient
+                  colors={['#4be277', '#3DB860']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={styles.suggestBtnGrad}
+                >
+                  {isLoading ? (
+                    <ThemedText style={styles.suggestBtnText}>Đang xử lý...</ThemedText>
+                  ) : (
+                    <>
+                      <Icon name="sparkles" size="sm" color="background" />
+                      <ThemedText style={styles.suggestBtnText}>Gợi ý công thức</ThemedText>
+                    </>
+                  )}
+                </LinearGradient>
+              </Pressable>
             </View>
-          </>
+          </View>
         )}
       </View>
     </BottomSheet>
@@ -187,50 +195,123 @@ export const IngredientBasketSheet: React.FC<IngredientBasketSheetProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
+    paddingBottom: 24, // Added bottom padding to ensure safe area visibility
   },
   list: {
     paddingBottom: 16,
-    gap: 8,
+    gap: 12,
+  },
+  ingredientCardWrap: {
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.06)',
+    backgroundColor: '#161b2b',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 10,
+    elevation: 3,
+    marginBottom: 4,
   },
   ingredientCard: {
-    padding: 12,
-    marginBottom: 0,
-  },
-  ingredientContent: {
     flexDirection: 'row',
     alignItems: 'center',
+    padding: 12,
     gap: 12,
   },
   iconBg: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: 'rgba(75, 226, 119, 0.1)',
   },
   ingredientInfo: {
     flex: 1,
   },
+  ingredientName: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#dee1f7',
+    marginBottom: 2,
+  },
+  ingredientConf: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: '#4be277',
+  },
   removeBtn: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: 'rgba(255,255,255,0.05)',
   },
   emptyState: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 40,
+    paddingTop: 10,
+    paddingBottom: 40,
+  },
+  emptyIconWrap: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: 'rgba(75, 226, 119, 0.08)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 20,
+  },
+  emptyTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#dee1f7',
+    marginBottom: 8,
+  },
+  emptyDesc: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: '#bccbb9',
+    textAlign: 'center',
   },
   actions: {
     flexDirection: 'row',
     gap: 12,
     paddingTop: 12,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(0,0,0,0.1)',
+  },
+  clearBtn: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255,255,255,0.02)',
+  },
+  clearBtnText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#dee1f7',
+  },
+  suggestBtn: {
+    flex: 2,
+    borderRadius: 16,
+    overflow: 'hidden',
+  },
+  suggestBtnGrad: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 14,
+    gap: 8,
+  },
+  suggestBtnText: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#003915',
   },
 });
 

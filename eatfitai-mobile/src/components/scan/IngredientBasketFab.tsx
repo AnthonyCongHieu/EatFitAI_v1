@@ -117,25 +117,18 @@ export const IngredientBasketFab: React.FC<IngredientBasketFabProps> = ({ onPres
     >
       <GestureDetector gesture={composedGesture}>
         <Animated.View>
-          <LinearGradient
-            colors={[theme.colors.primary, theme.colors.secondary]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={styles.fab}
-          >
-            <Icon name="basket-outline" size="lg" color="card" />
-
-            {/* Badge count */}
-            <View style={[styles.badge, { backgroundColor: theme.colors.danger }]}>
-              <ThemedText
-                variant="caption"
-                weight="700"
-                style={{ color: '#fff', fontSize: 11 }}
-              >
-                {count > 9 ? '9+' : count}
-              </ThemedText>
-            </View>
-          </LinearGradient>
+          <View style={styles.fabWrap}>
+            <LinearGradient
+              colors={['rgba(22, 27, 43, 0.9)', 'rgba(22, 27, 43, 0.7)']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.fab}
+            >
+              <View style={styles.iconBg}>
+                <Icon name="basket" size="md" color="background" />
+              </View>
+            </LinearGradient>
+          </View>
         </Animated.View>
       </GestureDetector>
     </Animated.View>
@@ -145,9 +138,16 @@ export const IngredientBasketFab: React.FC<IngredientBasketFabProps> = ({ onPres
 const styles = StyleSheet.create({
   container: {
     position: 'absolute',
-    bottom: 175,
+    bottom: 220,
     right: 20,
     zIndex: 100,
+  },
+  fabWrap: {
+    shadowColor: '#4be277',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.35,
+    shadowRadius: 16,
+    elevation: 10,
   },
   fab: {
     width: FAB_SIZE,
@@ -155,26 +155,30 @@ const styles = StyleSheet.create({
     borderRadius: FAB_SIZE / 2,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.35,
-    shadowRadius: 8,
-    elevation: 10,
-    borderWidth: 3,
-    borderColor: 'rgba(255,255,255,0.9)',
+    borderWidth: 1,
+    borderColor: 'rgba(75, 226, 119, 0.4)',
+  },
+  iconBg: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#4be277',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   badge: {
     position: 'absolute',
-    top: -6,
-    right: -6,
-    minWidth: 20,
-    height: 20,
-    borderRadius: 10,
+    top: -4,
+    right: -4,
+    minWidth: 22,
+    height: 22,
+    borderRadius: 11,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 4,
+    backgroundColor: '#4be277',
     borderWidth: 2,
-    borderColor: '#fff',
+    borderColor: '#0e1322',
   },
 });
 
