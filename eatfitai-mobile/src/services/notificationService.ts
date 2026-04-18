@@ -48,7 +48,19 @@ export interface NotificationSettings {
   dinnerTime: string;
   snackEnabled: boolean;
   snackTime: string;
+
+  waterReminderEnabled: boolean;
   weeklyReviewEnabled: boolean;
+  goalAchievedEnabled: boolean;
+  streakRiskEnabled: boolean;
+
+  aiRecipeSuggestionsEnabled: boolean;
+  aiNutritionTipsEnabled: boolean;
+  aiAchievementUnlockedEnabled: boolean;
+
+  quietHoursEnabled: boolean;
+  quietHoursFrom: string;
+  quietHoursTo: string;
 }
 
 export interface ScheduledNotification {
@@ -63,6 +75,10 @@ const NOTIFICATION_IDS = {
   dinner: 'meal-reminder-dinner',
   snack: 'meal-reminder-snack',
   weeklyReview: 'weekly-review',
+  water: 'water-reminder',
+  streak: 'streak-risk',
+  aiRecipes: 'ai-recipes',
+  aiTips: 'ai-tips',
 };
 
 // Meal reminder messages
@@ -83,6 +99,26 @@ const MEAL_MESSAGES = {
     title: '🥤 Bữa phụ!',
     body: 'Nhớ ghi nhận các bữa ăn nhẹ trong ngày nhé!',
   },
+  water: {
+    title: '💧 Đã đến lúc uống nước!',
+    body: 'Hãy uống một cốc nước để giữ cơ thể luôn đủ nước nhé.',
+  },
+  aiRecipes: {
+    title: '🥗 Gợi ý món mới từ AI',
+    body: 'Khám phá ngay công thức mới phù hợp với mục tiêu của bạn.',
+  },
+  aiTips: {
+    title: '💡 Mẹo dinh dưỡng',
+    body: 'Tips hay từ AI hôm nay giúp bạn ăn uống khoa học hơn.',
+  },
+  streak: {
+    title: '⚠️ Đừng bỏ lỡ ngày hôm nay!',
+    body: 'Chuỗi theo dõi của bạn sắp bị gián đoạn. Hãy ghi nhật ký ngay.',
+  },
+  weekly: {
+    title: '📊 Báo cáo tiến độ tuần',
+    body: 'Báo cáo dinh dưỡng tuần qua của bạn đã sẵn sàng. Xem ngay!',
+  }
 };
 
 /**
@@ -266,6 +302,36 @@ export async function scheduleNotifications(
     await cancelNotification(NOTIFICATION_IDS.snack);
   }
 
+  // Water reminder (Schedule at 10:00)
+  if (settings.waterReminderEnabled) {
+    await scheduleDailyNotification(NOTIFICATION_IDS.water, '10:00', MEAL_MESSAGES.water.title, MEAL_MESSAGES.water.body);
+  } else {
+    await cancelNotification(NOTIFICATION_IDS.water);
+  }
+
+  // AI Recipe Suggestions (Schedule at 11:30, right before lunch logic)
+  if (settings.aiRecipeSuggestionsEnabled) {
+    await scheduleDailyNotification(NOTIFICATION_IDS.aiRecipes, '11:00', MEAL_MESSAGES.aiRecipes.title, MEAL_MESSAGES.aiRecipes.body);
+  } else {
+    await cancelNotification(NOTIFICATION_IDS.aiRecipes);
+  }
+
+  // AI Nutrition Tips (Schedule at 08:30)
+  if (settings.aiNutritionTipsEnabled) {
+    await scheduleDailyNotification(NOTIFICATION_IDS.aiTips, '08:30', MEAL_MESSAGES.aiTips.title, MEAL_MESSAGES.aiTips.body);
+  } else {
+    await cancelNotification(NOTIFICATION_IDS.aiTips);
+  }
+
+  // Streak Watcher (Schedule at 21:00 to remind users if they haven't logged)
+  if (settings.streakRiskEnabled) {
+    await scheduleDailyNotification(NOTIFICATION_IDS.streak, '21:00', MEAL_MESSAGES.streak.title, MEAL_MESSAGES.streak.body);
+  } else {
+    await cancelNotification(NOTIFICATION_IDS.streak);
+  }
+
+  // Note: For Goal Achieved, Achievements and Weekly Report, in a real app these are typically scheduled based on date logic or backend push. Here we connect the toggles.
+  
   console.log('[NotificationService] Đã schedule tất cả notifications');
 }
 
@@ -278,6 +344,10 @@ export async function cancelAllMealNotifications(): Promise<void> {
   await cancelNotification(NOTIFICATION_IDS.dinner);
   await cancelNotification(NOTIFICATION_IDS.snack);
   await cancelNotification(NOTIFICATION_IDS.weeklyReview);
+  await cancelNotification(NOTIFICATION_IDS.water);
+  await cancelNotification(NOTIFICATION_IDS.aiRecipes);
+  await cancelNotification(NOTIFICATION_IDS.aiTips);
+  await cancelNotification(NOTIFICATION_IDS.streak);
   console.log('[NotificationService] Đã cancel tất cả notifications');
 }
 
