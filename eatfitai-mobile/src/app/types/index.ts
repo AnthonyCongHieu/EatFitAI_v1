@@ -47,6 +47,7 @@ export type RootStackParamList = {
   PrivacyPolicy: undefined;
   NotificationsSettings: undefined;
   DietaryRestrictions: undefined;
+  BasicInfo: undefined;
 };
 
 export interface UserPreference {

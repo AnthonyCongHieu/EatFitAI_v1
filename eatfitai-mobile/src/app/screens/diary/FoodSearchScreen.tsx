@@ -1,9 +1,17 @@
-﻿// Food search screen for adding foods to the diary
-// Styled to match the MealDiaryScreen visual language
+// Food search screen for adding foods to the diary
+// Emerald Nebula 3D UI
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  View,
+  Text,
+  TextInput,
+} from 'react-native';
 import Animated, {
   FadeIn,
   FadeInDown,
@@ -20,7 +28,6 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ThemedText } from '../../../components/ThemedText';
 import Screen from '../../../components/Screen';
-import ThemedTextInput from '../../../components/ThemedTextInput';
 import { useAppTheme } from '../../../theme/ThemeProvider';
 import { AppImage } from '../../../components/ui/AppImage';
 import type { RootStackParamList } from '../../types';
@@ -31,6 +38,7 @@ import {
   addItemsToTodayDiary,
   invalidateDiaryQueries,
 } from '../../../services/diaryFlowService';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { AnimatedEmptyState } from '../../../components/ui/AnimatedEmptyState';
 import { t } from '../../../i18n/vi';
@@ -39,15 +47,33 @@ import { useUserPreferenceStore } from '../../../store/useUserPreferenceStore';
 import { filterFoodsByPreferences } from '../../../utils/foodPreferenceFilter';
 
 const PAGE_SIZE = 20;
-const QUICK_SEARCHES = ['com', 'rice', 'chicken', 'trung', 'sua chua'];
+const RECENT_SEARCHES_KEY = '@eatfit_recent_searches';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'FoodSearch'>;
 type FoodSearchRouteProp = RouteProp<RootStackParamList, 'FoodSearch'>;
 
+/* ═══ Palette ═══ */
+const P = {
+  primary: '#4be277',
+  primaryDark: '#22c55e',
+  surface: '#0e1322',
+  surfaceContainer: '#161b2b',
+  surfaceContainerHigh: '#25293a',
+  surfaceContainerHighest: '#2f3445',
+  surfaceContainerLowest: '#090e1c',
+  onSurface: '#dee1f7',
+  onSurfaceVariant: '#bccbb9',
+  onPrimary: '#003915',
+  glassBg: 'rgba(47, 52, 69, 0.4)',
+  glassHover: 'rgba(47, 52, 69, 0.6)',
+  glassBorder: 'rgba(255, 255, 255, 0.05)',
+  macroP: '#34d399', // emerald-400
+  macroC: '#fbbf24', // amber-400
+  macroF: '#fb7185', // rose-400
+};
+
 const FoodSearchScreen = (): React.ReactElement => {
   const { theme } = useAppTheme();
-  const isDark = theme.mode === 'dark';
-
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<FoodSearchRouteProp>();
   const queryClient = useQueryClient();
@@ -55,295 +81,9 @@ const FoodSearchScreen = (): React.ReactElement => {
   const preferences = useUserPreferenceStore((s) => s.preferences);
   const fetchPreferences = useUserPreferenceStore((s) => s.fetchPreferences);
 
-  const styles = StyleSheet.create({
-    container: {
-      flex: 1,
-      backgroundColor: theme.colors.background,
-    },
-    // Header section - reduced paddingTop to move content up
-    headerSection: {
-      paddingTop: insets.top - 4,
-      paddingHorizontal: 20,
-      paddingBottom: 4,
-    },
-    // Header row - back button aligned with title (like EditProfileScreen)
-    headerRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      marginBottom: 12,
-    },
-    backButton: {
-      width: 40,
-      height: 40,
-      borderRadius: 12,
-      backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)',
-      alignItems: 'center',
-      justifyContent: 'center',
-      marginTop: 2,
-    },
-    // Title section - centered
-    titleSection: {
-      flex: 1,
-      alignItems: 'center',
-      paddingHorizontal: 12,
-    },
-    headerTitle: {
-      fontSize: 20,
-      fontWeight: '700',
-      color: theme.colors.text,
-      letterSpacing: -0.3,
-      lineHeight: 28,
-    },
-    headerSubtitle: {
-      fontSize: 12,
-      color: theme.colors.textSecondary,
-      lineHeight: 18,
-      marginTop: 4,
-    },
-    trailingButton: {
-      width: 40,
-      height: 40,
-      borderRadius: 12,
-      backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)',
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-    // Tabs - pill style
-    tabContainer: {
-      flexDirection: 'row',
-      marginBottom: 20,
-      gap: 10,
-    },
-    tab: {
-      paddingVertical: 10,
-      paddingHorizontal: 20,
-      borderRadius: 24,
-    },
-    tabActive: {
-      backgroundColor: theme.colors.primary,
-    },
-    tabInactive: {
-      backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)',
-    },
-    // Search bar - clean modern design
-    searchBar: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      backgroundColor: isDark ? 'rgba(255, 255, 255, 0.08)' : '#fff',
-      borderRadius: 16,
-      borderWidth: 1,
-      borderColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.08)',
-      paddingLeft: 16,
-      paddingRight: 6,
-      paddingVertical: 6,
-      gap: 12,
-    },
-    searchInputWrapper: {
-      flex: 1,
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 10,
-    },
-    searchButton: {
-      backgroundColor: theme.colors.primary,
-      paddingHorizontal: 20,
-      paddingVertical: 12,
-      borderRadius: 12,
-    },
-    // Summary card for favorites
-    summaryCard: {
-      borderRadius: 20,
-      padding: 20,
-      marginHorizontal: 20,
-      marginBottom: 16,
-      borderWidth: isDark ? 1 : 0,
-      borderColor: 'rgba(255,255,255,0.1)',
-      ...theme.shadows.md,
-    },
-    summaryMain: {
-      alignItems: 'center',
-    },
-    summaryCount: {
-      fontSize: 36,
-      fontWeight: '800',
-      color: isDark ? theme.colors.text : '#fff',
-      letterSpacing: -1,
-    },
-    summaryLabel: {
-      fontSize: 14,
-      color: isDark ? theme.colors.textSecondary : 'rgba(255,255,255,0.85)',
-      marginTop: 2,
-      fontWeight: '500',
-    },
-    // Food cards - matching MealDiaryScreen style
-    foodCard: {
-      marginBottom: 8,
-      paddingVertical: 16,
-      paddingHorizontal: 16,
-      borderRadius: 16,
-      backgroundColor: theme.colors.glass.background,
-      borderWidth: 1,
-      borderColor: theme.colors.glass.border,
-    },
-    foodCardRow: {
-      flexDirection: 'row',
-      alignItems: 'flex-start',
-    },
-    foodImage: {
-      width: 60,
-      height: 60,
-      borderRadius: 12,
-      marginRight: 14,
-    },
-    foodImagePlaceholder: {
-      width: 60,
-      height: 60,
-      borderRadius: 12,
-      marginRight: 14,
-      backgroundColor: isDark ? 'rgba(100, 100, 140, 0.3)' : 'rgba(0, 0, 0, 0.06)',
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-    foodInfo: {
-      flex: 1,
-      marginRight: 12,
-    },
-    foodTitleRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      marginBottom: 4,
-    },
-    foodName: {
-      fontSize: 16,
-      flex: 1,
-      marginRight: 8,
-      color: theme.colors.text,
-    },
-    favButton: {
-      padding: 4,
-    },
-    macroRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 16,
-    },
-    macroItem: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 4,
-    },
-    macroIcon: {
-      fontSize: 12,
-    },
-    macroValue: {
-      fontSize: 13,
-      color: theme.colors.textSecondary,
-    },
-    addButtonCircle: {
-      width: 36,
-      height: 36,
-      borderRadius: 18,
-      borderWidth: 1,
-      borderColor: isDark ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.15)',
-      alignItems: 'center',
-      justifyContent: 'center',
-      alignSelf: 'center',
-    },
-    // Quick search chips
-    quickSearchContainer: {
-      paddingHorizontal: 20,
-    },
-    quickSearchTitle: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      marginBottom: 12,
-      gap: 8,
-    },
-    quickSearchChips: {
-      flexDirection: 'row',
-      flexWrap: 'wrap',
-      gap: 10,
-    },
-    quickSearchChip: {
-      paddingHorizontal: 16,
-      paddingVertical: 10,
-      backgroundColor: isDark ? 'rgba(59, 130, 246, 0.12)' : 'rgba(59, 130, 246, 0.08)',
-      borderRadius: 20,
-      borderWidth: 1,
-      borderColor: isDark ? 'rgba(59, 130, 246, 0.25)' : 'rgba(59, 130, 246, 0.15)',
-    },
-    // Tip box
-    tipBox: {
-      marginTop: 24,
-      padding: 16,
-      backgroundColor: isDark ? 'rgba(34, 197, 94, 0.08)' : 'rgba(34, 197, 94, 0.06)',
-      borderRadius: 16,
-      borderWidth: 1,
-      borderColor: isDark ? 'rgba(34, 197, 94, 0.15)' : 'rgba(34, 197, 94, 0.12)',
-    },
-    filterSummaryCard: {
-      flexDirection: 'row',
-      alignItems: 'flex-start',
-      gap: 12,
-      padding: 14,
-      borderRadius: 16,
-      marginBottom: 16,
-      backgroundColor: isDark ? 'rgba(34, 197, 94, 0.08)' : 'rgba(34, 197, 94, 0.06)',
-      borderWidth: 1,
-      borderColor: isDark ? 'rgba(34, 197, 94, 0.16)' : 'rgba(34, 197, 94, 0.12)',
-    },
-    filterSummaryTitle: {
-      marginBottom: 4,
-    },
-    filterSummaryText: {
-      lineHeight: 20,
-    },
-    filterSummaryLink: {
-      marginTop: 4,
-      color: theme.colors.primary,
-    },
-    // Others
-    loadingCard: {
-      padding: theme.spacing.xl,
-      borderRadius: theme.borderRadius.card,
-      alignItems: 'center',
-    },
-    emptyCard: {
-      padding: theme.spacing.xl,
-      borderRadius: theme.borderRadius.card,
-      alignItems: 'center',
-    },
-    listContent: {
-      paddingHorizontal: 20,
-      paddingBottom: 100,
-      gap: 8,
-      flexGrow: 1,
-    },
-    centerBox: {
-      flex: 1,
-      alignItems: 'center',
-      justifyContent: 'center',
-      gap: theme.spacing.sm,
-      paddingTop: 40,
-      width: '100%',
-      paddingHorizontal: theme.spacing.xl,
-    },
-    footerLoading: {
-      paddingVertical: 20,
-      alignItems: 'center',
-    },
-    totalBar: {
-      padding: 16,
-      alignItems: 'center',
-      borderTopWidth: 1,
-      backgroundColor: theme.colors.card,
-      borderTopColor: theme.colors.border,
-    },
-  });
-
   const [query, setQuery] = useState('');
   const [items, setItems] = useState<FoodItem[]>([]);
+  const [recentSearches, setRecentSearches] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -352,57 +92,52 @@ const FoodSearchScreen = (): React.ReactElement => {
   const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set());
   const [isQuickAdding, setIsQuickAdding] = useState<string | null>(null);
 
-  // Animation values
-  const searchGlow = useSharedValue(0);
-  const searchGlowStyle = useAnimatedStyle(() => ({
-    shadowColor: theme.colors.primary,
-    shadowOpacity: searchGlow.value * 0.3,
-    shadowRadius: searchGlow.value * 8,
-    elevation: searchGlow.value * 5,
-  }));
-
-  // Read quick-add preferences from route params
+  // Read quick-add preferences
   const initialTab = route.params?.initialTab;
   const autoFocus = route.params?.autoFocus ?? false;
   const showQuickSuggestions = route.params?.showQuickSuggestions ?? true;
   const selectedDate = route.params?.selectedDate;
   const returnToDiaryOnSave = route.params?.returnToDiaryOnSave ?? false;
 
-  // Load favorites on mount and handle initialTab
   useEffect(() => {
     loadFavorites(initialTab === 'favorites');
-    if (initialTab === 'favorites') {
-      setActiveTab('favorites');
-    }
+    if (initialTab === 'favorites') setActiveTab('favorites');
+    loadRecentSearches();
   }, [initialTab]);
+
+  const loadRecentSearches = async () => {
+    try {
+      const stored = await AsyncStorage.getItem(RECENT_SEARCHES_KEY);
+      if (stored) {
+        setRecentSearches(JSON.parse(stored));
+      }
+    } catch (e) {}
+  };
+
+  const saveRecentSearch = async (term: string) => {
+    try {
+      const filtered = recentSearches.filter(t => t.toLowerCase() !== term.toLowerCase());
+      const newSearches = [term, ...filtered].slice(0, 10);
+      setRecentSearches(newSearches);
+      await AsyncStorage.setItem(RECENT_SEARCHES_KEY, JSON.stringify(newSearches));
+    } catch (e) {}
+  };
 
   useEffect(() => {
     fetchPreferences().catch(() => undefined);
   }, [fetchPreferences]);
 
-  // Load favorites and optionally sync them into the visible list
   const loadFavorites = async (setAsList = false) => {
-    if (setAsList) {
-      setIsLoading(true);
-    }
+    if (setAsList) setIsLoading(true);
     try {
       const favs = await foodService.getFavorites();
-      console.log('[FoodSearch] Loaded favorites:', favs.length, 'items');
       setFavoriteIds(new Set(favs.map((f) => f.id)));
       setErrorMessage(null);
-      // If setAsList is true, or we are already on the favorites tab, refresh items
-      if (setAsList || activeTab === 'favorites') {
-        setItems(favs);
-      }
+      if (setAsList || activeTab === 'favorites') setItems(favs);
     } catch (error) {
-      console.error('Failed to load favorites', error);
-      if (setAsList || activeTab === 'favorites') {
-        setErrorMessage(t('common.tryAgainLater'));
-      }
+      if (setAsList || activeTab === 'favorites') setErrorMessage(t('common.tryAgainLater'));
     } finally {
-      if (setAsList) {
-        setIsLoading(false);
-      }
+      if (setAsList) setIsLoading(false);
     }
   };
 
@@ -415,17 +150,12 @@ const FoodSearchScreen = (): React.ReactElement => {
         else next.delete(item.id);
         return next;
       });
-
-      // If in favorites tab and removed, refresh list
       if (activeTab === 'favorites' && !isFavorite) {
         setItems((prev) => prev.filter((i) => i.id !== item.id));
       }
-
       Toast.show({
         type: 'success',
-        text1: isFavorite
-          ? t('food_search.added_favorite')
-          : t('food_search.removed_favorite'),
+        text1: isFavorite ? t('food_search.added_favorite') : t('food_search.removed_favorite'),
         visibilityTime: 2000,
       });
     } catch (error) {
@@ -436,18 +166,7 @@ const FoodSearchScreen = (): React.ReactElement => {
   const handleQuickAdd = async (item: FoodItem) => {
     setIsQuickAdding(item.id);
     try {
-      await addItemsToTodayDiary(
-        [
-          {
-            foodItemId: Number(item.id),
-            grams: 100,
-          },
-        ],
-        {
-          date: selectedDate,
-        },
-      );
-
+      await addItemsToTodayDiary([{ foodItemId: Number(item.id), grams: 100 }], { date: selectedDate });
       Toast.show({
         type: 'success',
         text1: t('food_search.quick_add_success'),
@@ -469,17 +188,12 @@ const FoodSearchScreen = (): React.ReactElement => {
     setItems([]);
     setHasSearched(false);
     setErrorMessage(null);
-
-    if (tab === 'favorites') {
-      // Pass true so favorites are also copied into the current items list
-      loadFavorites(true);
-    }
+    if (tab === 'favorites') loadFavorites(true);
   };
 
   const runSearch = useCallback(
     async (searchTerm: string, append = false) => {
       if (activeTab === 'favorites') return;
-
       if (!searchTerm.trim()) {
         Toast.show({
           type: 'info',
@@ -488,69 +202,49 @@ const FoodSearchScreen = (): React.ReactElement => {
         });
         return;
       }
-
       setIsLoading(true);
       setErrorMessage(null);
-
       try {
         const result = await foodService.searchAllFoods(searchTerm.trim(), PAGE_SIZE);
         setItems((prev) => (append ? [...prev, ...result.items] : result.items));
         setHasSearched(true);
         setErrorMessage(null);
+        if (!append && result.items.length > 0) {
+          saveRecentSearch(searchTerm.trim());
+        }
       } catch (error: any) {
         setHasSearched(true);
         setItems([]);
-        setErrorMessage(
-          error?.response?.data?.message ?? error?.message ?? t('common.tryAgainLater'),
-        );
+        setErrorMessage(error?.response?.data?.message ?? error?.message ?? t('common.tryAgainLater'));
         handleApiError(error);
       } finally {
         setIsLoading(false);
       }
     },
-    [activeTab],
+    [activeTab]
   );
-
-  const triggerSearchGlow = useCallback(() => {
-    searchGlow.value = withTiming(1, { duration: theme.animation.normal });
-    setTimeout(() => {
-      searchGlow.value = withTiming(0, { duration: theme.animation.slow });
-    }, 1000);
-  }, [searchGlow, theme.animation.normal, theme.animation.slow]);
 
   const handleSearch = useCallback(() => {
     if (activeTab === 'favorites') return;
-    triggerSearchGlow();
     runSearch(query, false).catch(() => {});
-  }, [activeTab, query, runSearch, triggerSearchGlow]);
+  }, [activeTab, query, runSearch]);
 
   const handleQuickSuggestion = useCallback(
     (nextQuery: string) => {
       setQuery(nextQuery);
-      triggerSearchGlow();
       runSearch(nextQuery, false).catch(() => {});
     },
-    [runSearch, triggerSearchGlow],
+    [runSearch]
   );
 
-  const filteredResults = useMemo(
-    () => filterFoodsByPreferences(items, preferences),
-    [items, preferences],
-  );
+  const filteredResults = useMemo(() => filterFoodsByPreferences(items, preferences), [items, preferences]);
   const visibleItems = filteredResults.items;
-  const hasActiveFoodFilters = filteredResults.appliedLabels.length > 0;
-  const filtersRemovedAllResults =
-    hasActiveFoodFilters && items.length > 0 && visibleItems.length === 0;
 
-  // Render a food result card
+  // ═══ Render ═══ //
   const renderItem = ({ item, index }: { item: FoodItem; index: number }) => {
     const isFav = favoriteIds.has(item.id);
-
     return (
-      <Animated.View
-        entering={FadeIn.delay(index * 40).duration(300)}
-        layout={Layout.springify()}
-      >
+      <Animated.View entering={FadeInDown.delay(index * 40).duration(300)} layout={Layout.springify()}>
         <Pressable
           onPress={() =>
             navigation.navigate('FoodDetail', {
@@ -560,87 +254,68 @@ const FoodSearchScreen = (): React.ReactElement => {
               returnToDiaryOnSave,
             })
           }
-          style={({ pressed }) => [
-            styles.foodCard,
-            pressed && { opacity: 0.85, transform: [{ scale: 0.99 }] },
-          ]}
-          testID={
-            index === 0
-              ? TEST_IDS.foodSearch.firstResultCard
-              : 'food-search-result-' + item.id
-          }
+          style={({ pressed }) => [S.resultCard, pressed && { opacity: 0.85, transform: [{ scale: 0.98 }] }]}
         >
-          <View style={styles.foodCardRow}>
-            {item.thumbnail && item.thumbnail.trim() !== '' ? (
-              <AppImage
-                source={{ uri: getFoodImageUrl(item.thumbnail) }}
-                style={styles.foodImage}
-                onError={() =>
-                  console.log('[FoodSearch] Image load error:', item.thumbnail)
-                }
-              />
-            ) : (
-              <View style={styles.foodImagePlaceholder}>
-                <ThemedText style={{ fontSize: 24 }}>?</ThemedText>
-              </View>
-            )}
-            <View style={styles.foodInfo}>
-              <View style={styles.foodTitleRow}>
-                <ThemedText weight="600" style={styles.foodName} numberOfLines={1}>
-                  {item.name}
+          <View style={S.resultCardLeft}>
+            <View style={S.thumbnailBox}>
+              {item.thumbnail ? (
+                <AppImage
+                  source={{ uri: getFoodImageUrl(item.thumbnail) }}
+                  style={S.thumbnail}
+                />
+              ) : (
+                <Ionicons name="fast-food" size={24} color={P.onSurfaceVariant} />
+              )}
+            </View>
+            <View style={S.resultInfo}>
+              <ThemedText style={S.resultTitle} numberOfLines={1}>{item.name}</ThemedText>
+              
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 6 }}>
+                <ThemedText style={S.per100g}>100g</ThemedText>
+                <ThemedText style={S.resultCaloriesSmall}>
+                  {item.calories != null ? Math.round(item.calories) : '--'} kcal
                 </ThemedText>
-                <Pressable
-                  hitSlop={8}
-                  onPress={() => handleToggleFavorite(item)}
-                  style={styles.favButton}
-                >
-                  <ThemedText style={{ fontSize: 16 }}>{isFav ? '*' : '+'}</ThemedText>
-                </Pressable>
               </View>
-              <ThemedText
-                variant="bodySmall"
-                color="textSecondary"
-                style={{ marginBottom: 6 }}
-              >
-                {'100g | ' +
-                  (item.calories != null ? Math.round(item.calories) + ' cal' : '-- cal')}
-              </ThemedText>
-              <View style={styles.macroRow}>
-                <View style={styles.macroItem}>
-                  <ThemedText style={styles.macroIcon}>P</ThemedText>
-                  <ThemedText style={styles.macroValue}>
-                    {item.protein != null ? item.protein.toFixed(1) + 'g' : '--g'}
-                  </ThemedText>
+
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <View style={S.macroDots}>
+                  <View style={[S.macroDot, { backgroundColor: P.macroP }]} />
+                  <ThemedText style={S.macroText}>P: {item.protein != null ? Math.round(item.protein) : '--'}g</ThemedText>
                 </View>
-                <View style={styles.macroItem}>
-                  <ThemedText style={styles.macroIcon}>C</ThemedText>
-                  <ThemedText style={styles.macroValue}>
-                    {item.carbs != null ? item.carbs.toFixed(1) + 'g' : '--g'}
-                  </ThemedText>
+                <View style={S.macroDots}>
+                  <View style={[S.macroDot, { backgroundColor: P.macroC }]} />
+                  <ThemedText style={S.macroText}>C: {item.carbs != null ? Math.round(item.carbs) : '--'}g</ThemedText>
                 </View>
-                <View style={styles.macroItem}>
-                  <ThemedText style={styles.macroIcon}>F</ThemedText>
-                  <ThemedText style={styles.macroValue}>
-                    {item.fat != null ? item.fat.toFixed(1) + 'g' : '--g'}
-                  </ThemedText>
+                <View style={S.macroDots}>
+                  <View style={[S.macroDot, { backgroundColor: P.macroF }]} />
+                  <ThemedText style={S.macroText}>F: {item.fat != null ? Math.round(item.fat) : '--'}g</ThemedText>
                 </View>
               </View>
             </View>
+          </View>
+
+          <View style={S.resultCardRight}>
+            <Pressable
+              hitSlop={12}
+              onPress={() => handleToggleFavorite(item)}
+              style={({ pressed }) => [
+                { padding: 4, marginRight: 8 },
+                pressed && { transform: [{ scale: 0.7 }], opacity: 0.7 }
+              ]}
+            >
+              <Ionicons name={isFav ? "heart" : "heart-outline"} size={20} color={isFav ? P.primary : P.onSurfaceVariant} />
+            </Pressable>
+
             <Pressable
               hitSlop={8}
               onPress={() => handleQuickAdd(item)}
               disabled={isQuickAdding === item.id}
-              style={styles.addButtonCircle}
-              testID={
-                index === 0
-                  ? TEST_IDS.foodSearch.firstAddButton
-                  : 'food-search-add-item-' + item.id
-              }
+              style={({ pressed }) => [S.addBtn, pressed && { transform: [{ scale: 0.9 }], opacity: 0.7 }]}
             >
               {isQuickAdding === item.id ? (
-                <ActivityIndicator size="small" color={theme.colors.textSecondary} />
+                <ActivityIndicator size="small" color={P.primary} />
               ) : (
-                <Ionicons name="add" size={24} color={theme.colors.textSecondary} />
+                <Ionicons name="add-circle" size={28} color={P.primary} />
               )}
             </Pressable>
           </View>
@@ -648,287 +323,246 @@ const FoodSearchScreen = (): React.ReactElement => {
       </Animated.View>
     );
   };
-  return (
-    <Screen scroll={false} style={styles.container} testID={TEST_IDS.foodSearch.screen}>
-      {/* Header Section */}
-      <View style={styles.headerSection}>
-        {/* Back button + Title in same row */}
-        <View style={styles.headerRow}>
-          <Pressable onPress={() => navigation.goBack()} style={styles.backButton}>
-            <ThemedText style={{ fontSize: 18 }}>{'<'}</ThemedText>
-          </Pressable>
-          <View style={styles.titleSection}>
-            <ThemedText style={styles.headerTitle}>{t('food_search.title')}</ThemedText>
-            {selectedDate ? (
-              <ThemedText style={styles.headerSubtitle}>{selectedDate}</ThemedText>
-            ) : null}
-          </View>
-          <Pressable
-            onPress={() => navigation.navigate('DietaryRestrictions')}
-            style={styles.trailingButton}
-            accessibilityRole="button"
-            accessibilityLabel="Thiết lập bộ lọc ăn uống"
-          >
-            <Ionicons name="options-outline" size={20} color={theme.colors.text} />
-          </Pressable>
-        </View>
 
-        {/* Pill-style Tabs */}
-        <View style={styles.tabContainer}>
-          <Pressable
-            onPress={() => handleTabChange('search')}
-            style={[
-              styles.tab,
-              activeTab === 'search' ? styles.tabActive : styles.tabInactive,
-            ]}
-          >
-            <ThemedText
-              variant="body"
-              weight="600"
-              style={{
-                color: activeTab === 'search' ? '#fff' : theme.colors.textSecondary,
-              }}
-            >
-              {t('food_search.tab_search')}
-            </ThemedText>
+  return (
+    <View style={[S.container, { paddingTop: insets.top }]}>
+      {/* ═══ Header ═══ */}
+      <View style={S.header}>
+        <View style={S.headerLeft}>
+          <Pressable style={S.iconBtn} onPress={() => navigation.goBack()}>
+            <Ionicons name="arrow-back" size={24} color={P.onSurface} />
           </Pressable>
-          <Pressable
-            onPress={() => handleTabChange('favorites')}
-            style={[
-              styles.tab,
-              activeTab === 'favorites' ? styles.tabActive : styles.tabInactive,
-            ]}
-          >
-            <ThemedText
-              variant="body"
-              weight="600"
-              style={{
-                color: activeTab === 'favorites' ? '#fff' : theme.colors.textSecondary,
-              }}
-            >
-              {t('food_search.tab_favorites')}
-            </ThemedText>
-          </Pressable>
+          <ThemedText style={S.headerTitle}>{t('food_search.title')}</ThemedText>
         </View>
+        <Pressable
+          style={S.iconBtn}
+          onPress={() => navigation.navigate('DietaryRestrictions')}
+        >
+          <Ionicons name="options-outline" size={22} color={P.onSurfaceVariant} />
+        </Pressable>
       </View>
 
-      {/* Card wrapper containing search bar and results */}
-      <ScrollView
-        style={{ flex: 1 }}
-        contentContainerStyle={{ flexGrow: 1 }}
-        showsVerticalScrollIndicator={false}
-      >
-        <View
-          style={{
-            marginHorizontal: 16,
-            marginTop: 12,
-            marginBottom: 16,
-            backgroundColor: isDark
-              ? 'rgba(74, 144, 226, 0.06)'
-              : 'rgba(59, 130, 246, 0.03)',
-            borderRadius: 20,
-            borderWidth: 1,
-            borderColor: isDark ? 'rgba(74, 144, 226, 0.12)' : 'rgba(59, 130, 246, 0.08)',
-            padding: 16,
-          }}
-        >
-          {/* Search bar inside card */}
-          {activeTab === 'search' && (
-            <Animated.View
-              entering={FadeInDown.duration(200)}
-              style={[styles.searchBar, searchGlowStyle, { marginBottom: 16 }]}
-            >
-              <View style={styles.searchInputWrapper}>
-                <Ionicons
-                  name="search-outline"
-                  size={20}
-                  color={theme.colors.textSecondary}
-                />
-                <ThemedTextInput
-                  testID={TEST_IDS.foodSearch.queryInput}
-                  value={query}
-                  onChangeText={setQuery}
-                  onSubmitEditing={handleSearch}
-                  placeholder={t('food_search.placeholder')}
-                  autoCapitalize="none"
-                  autoFocus={autoFocus && activeTab === 'search'}
-                  returnKeyType="search"
-                  style={{
-                    flex: 1,
-                    borderWidth: 0,
-                    paddingHorizontal: 0,
-                    paddingVertical: 8,
-                    backgroundColor: 'transparent',
-                  }}
-                  accessibilityLabel={t('food_search.title')}
-                  accessibilityHint={t('food_search.placeholder')}
-                />
-              </View>
-              {/* Custom search button */}
-              <Pressable
-                onPress={handleSearch}
-                style={styles.searchButton}
-                testID={TEST_IDS.foodSearch.submitButton}
-              >
-                <ThemedText variant="body" weight="600" style={{ color: '#fff' }}>
-                  {t('food_search.btn_search')}
-                </ThemedText>
-              </Pressable>
-            </Animated.View>
-          )}
-
-          {activeTab === 'search' && showQuickSuggestions && (
-            <View style={styles.quickSearchContainer}>
-              <View style={styles.quickSearchTitle}>
-                <Ionicons name="flash-outline" size={18} color={theme.colors.primary} />
-                <ThemedText variant="bodySmall" weight="600">
-                  Quick add tu Home
-                </ThemedText>
-              </View>
-              <View style={styles.quickSearchChips}>
-                {QUICK_SEARCHES.map((chip) => (
-                  <Pressable
-                    key={chip}
-                    style={styles.quickSearchChip}
-                    onPress={() => handleQuickSuggestion(chip)}
-                  >
-                    <ThemedText
-                      variant="bodySmall"
-                      weight="600"
-                      style={{ color: theme.colors.primary }}
-                    >
-                      {chip}
-                    </ThemedText>
-                  </Pressable>
-                ))}
-              </View>
-              <View style={styles.tipBox}>
-                <ThemedText variant="bodySmall" color="textSecondary">
-                  Chạm 1 từ khóa, xem kết quả rồi bấm + để lưu nhanh vào nhật ký.
-                </ThemedText>
-              </View>
-            </View>
-          )}
-
-          {hasActiveFoodFilters ? (
-            <View style={styles.filterSummaryCard}>
-              <Ionicons name="leaf-outline" size={20} color={theme.colors.primary} />
-              <View style={{ flex: 1 }}>
-                <ThemedText weight="600" style={styles.filterSummaryTitle}>
-                  Đang áp dụng bộ lọc ăn uống
-                </ThemedText>
-                <ThemedText
-                  variant="bodySmall"
-                  color="textSecondary"
-                  style={styles.filterSummaryText}
-                >
-                  {filteredResults.appliedLabels.join(' • ')}
-                </ThemedText>
-                {filteredResults.excludedCount > 0 ? (
-                  <ThemedText
-                    variant="caption"
-                    color="textSecondary"
-                    style={styles.filterSummaryText}
-                  >
-                    Đã ẩn {filteredResults.excludedCount} món không phù hợp.
-                  </ThemedText>
-                ) : null}
-                <Pressable onPress={() => navigation.navigate('DietaryRestrictions')}>
-                  <ThemedText
-                    variant="caption"
-                    weight="600"
-                    style={styles.filterSummaryLink}
-                  >
-                    Chỉnh sửa bộ lọc
-                  </ThemedText>
+      <ScrollView contentContainerStyle={S.scrollContent} showsVerticalScrollIndicator={false}>
+        
+        {/* ═══ Search Input Area ═══ */}
+        {activeTab === 'search' && (
+          <View style={S.searchArea}>
+            <View style={S.searchInputBox}>
+              <Ionicons name="search" size={20} color={P.onSurfaceVariant} style={{ marginRight: 10 }} />
+              <TextInput
+                style={S.searchInput}
+                placeholder="Tìm kiếm món ăn, công thức..."
+                placeholderTextColor={P.onSurfaceVariant + '80'}
+                value={query}
+                onChangeText={setQuery}
+                onSubmitEditing={handleSearch}
+                autoFocus={autoFocus}
+                returnKeyType="search"
+              />
+              {query.length > 0 && (
+                <Pressable onPress={() => setQuery('')} hitSlop={10}>
+                  <Ionicons name="close-circle" size={18} color={P.onSurfaceVariant} />
                 </Pressable>
-              </View>
+              )}
             </View>
-          ) : null}
+          </View>
+        )}
 
-          {/* Results inside card */}
-          {isLoading ? (
-            <View style={{ alignItems: 'center', padding: 20 }}>
-              <ActivityIndicator color={theme.colors.primary} size="large" />
-              <ThemedText
-                variant="body"
-                color="textSecondary"
-                style={{ marginTop: theme.spacing.md }}
-              >
-                {activeTab === 'search'
-                  ? t('food_search.loading_search')
-                  : t('food_search.loading_favorites')}
+        {/* ═══ Filter Chips ═══ */}
+        <View style={S.chipsWrapper}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={S.chipsContent}>
+            <Pressable
+              style={[S.chip, activeTab === 'search' && S.chipActive]}
+              onPress={() => handleTabChange('search')}
+            >
+              <ThemedText style={[S.chipText, activeTab === 'search' && S.chipTextActive]}>
+                Tất cả
               </ThemedText>
-            </View>
-          ) : errorMessage ? (
+            </Pressable>
+            <Pressable
+              style={[S.chip, activeTab === 'favorites' && S.chipActive]}
+              onPress={() => handleTabChange('favorites')}
+            >
+              <ThemedText style={[S.chipText, activeTab === 'favorites' && S.chipTextActive]}>
+                Món yêu thích
+              </ThemedText>
+            </Pressable>
+          </ScrollView>
+        </View>
+
+        {/* ═══ Content ═══ */}
+        {isLoading ? (
+          <View style={S.centerBox}>
+            <ActivityIndicator color={P.primary} size="large" />
+          </View>
+        ) : errorMessage ? (
+          <View style={{ marginTop: 24 }}>
             <AnimatedEmptyState
               variant="error"
-              title={t('search.searchFailed')}
+              title="Tìm kiếm thất bại"
               description={errorMessage}
-              primaryAction={{
-                label: t('common.retry'),
-                onPress: () => {
-                  if (activeTab === 'favorites') {
-                    loadFavorites(true);
-                    return;
-                  }
-
-                  runSearch(query, false).catch(() => {});
-                },
-              }}
+              primaryAction={{ label: 'Thử lại', onPress: () => activeTab === 'favorites' ? loadFavorites(true) : handleSearch() }}
             />
-          ) : visibleItems.length > 0 ? (
-            <View style={{ gap: 12 }}>
-              {visibleItems.map((item, index) => (
-                <View key={item.id}>{renderItem({ item, index })}</View>
-              ))}
-            </View>
-          ) : filtersRemovedAllResults ? (
-            <AnimatedEmptyState
-              variant="no-search-results"
-              title="Không có món phù hợp"
-              description="Hãy đổi từ khóa hoặc nới lỏng bộ lọc chế độ ăn và dị ứng."
-              primaryAction={{
-                label: 'Mở bộ lọc',
-                onPress: () => navigation.navigate('DietaryRestrictions'),
-              }}
-            />
-          ) : hasSearched || activeTab === 'favorites' ? (
-            <AnimatedEmptyState
-              variant={activeTab === 'search' ? 'no-search-results' : 'no-favorites'}
-              title={
-                activeTab === 'search'
-                  ? t('food_search.no_results')
-                  : t('food_search.no_favorites')
-              }
-              description={
-                activeTab === 'search'
-                  ? t('food_search.no_results_hint')
-                  : t('food_search.no_favorites_hint')
-              }
-              primaryAction={
-                activeTab === 'search'
-                  ? {
-                      label: 'Thử từ khóa khác',
-                      onPress: () => setQuery(''),
-                    }
-                  : {
-                      label: 'Tìm món ăn',
-                      onPress: () => handleTabChange('search'),
-                    }
-              }
-            />
-          ) : (
-            <View style={{ alignItems: 'center', padding: 20 }}>
-              <ThemedText variant="body" color="textSecondary">
-                Nhập từ khóa để tìm kiếm
+          </View>
+        ) : items.length > 0 ? (
+          <View style={S.resultsArea}>
+            <View style={S.sectionHeader}>
+              <ThemedText style={S.sectionTitle}>
+                {activeTab === 'favorites' ? 'MÓN YÊU THÍCH' : `KẾT QUẢ CHO "${query}"`}
               </ThemedText>
             </View>
-          )}
-        </View>
+            <View style={{ gap: 12 }}>
+              {visibleItems.map((item, idx) => <View key={item.id}>{renderItem({ item, index: idx })}</View>)}
+            </View>
+          </View>
+        ) : (
+          /* Empty / Default States */
+          activeTab === 'search' && !hasSearched ? (
+            <View style={S.recentArea}>
+              <View style={S.sectionHeader}>
+                <ThemedText style={S.sectionTitle}>TÌM KIẾM GẦN ĐÂY</ThemedText>
+              </View>
+              <View style={{ gap: 8 }}>
+                {recentSearches.length > 0 ? recentSearches.map((term, i) => (
+                  <Pressable
+                    key={i}
+                    style={({ pressed }) => [S.recentItem, pressed && { backgroundColor: P.glassHover }]}
+                    onPress={() => handleQuickSuggestion(term)}
+                  >
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                      <Ionicons name="time-outline" size={20} color={P.onSurfaceVariant} />
+                      <ThemedText style={S.recentText}>{term}</ThemedText>
+                    </View>
+                    <Ionicons name="arrow-undo-outline" size={16} color={P.onSurfaceVariant} style={{ transform: [{ scaleX: -1 }] }} />
+                  </Pressable>
+                )) : (
+                  <ThemedText style={{ color: P.onSurfaceVariant, fontSize: 13, marginTop: 4 }}>
+                    Chưa có tìm kiếm nào gần đây.
+                  </ThemedText>
+                )}
+              </View>
+            </View>
+          ) : (
+            <View style={{ marginTop: 24 }}>
+              <AnimatedEmptyState
+                variant={activeTab === 'search' ? 'no-search-results' : 'no-favorites'}
+                title={activeTab === 'search' ? 'Không tìm thấy kết quả' : 'Chưa có món yêu thích'}
+                description={activeTab === 'search' ? 'Thử thay đổi từ khóa tìm kiếm.' : 'Lưu món ăn yêu thích để truy cập nhanh chóng.'}
+              />
+            </View>
+          )
+        )}
       </ScrollView>
-    </Screen>
+
+      {/* Floating Scan Button removed as requested to "bỏ vài thứ thừa" */}
+    </View>
   );
 };
+
+/* ═══ Styles ═══ */
+const S = StyleSheet.create({
+  container: { flex: 1, backgroundColor: P.surface },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    height: 60,
+    backgroundColor: P.surfaceContainerLowest + '90',
+  },
+  headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 16 },
+  iconBtn: { padding: 8, borderRadius: 20 },
+  headerTitle: { fontSize: 22, fontFamily: 'Inter_700Bold', color: P.onSurface, letterSpacing: -0.5 },
+  
+  scrollContent: { paddingHorizontal: 20, paddingTop: 16, paddingBottom: 40 },
+
+  searchArea: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 20 },
+  searchInputBox: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: P.surfaceContainerLowest,
+    borderRadius: 16,
+    paddingHorizontal: 16,
+    height: 52,
+  },
+  searchInput: {
+    flex: 1,
+    color: P.onSurface,
+    fontSize: 16,
+    fontFamily: 'Inter_500Medium',
+  },
+  cancelBtn: { color: P.primary, fontFamily: 'Inter_600SemiBold', fontSize: 15, paddingHorizontal: 4 },
+
+  chipsWrapper: { marginBottom: 24, marginHorizontal: -20 },
+  chipsContent: { paddingHorizontal: 20, gap: 12 },
+  chip: {
+    paddingHorizontal: 24,
+    paddingVertical: 10,
+    borderRadius: 24,
+    backgroundColor: P.surfaceContainerHigh,
+  },
+  chipActive: {
+    backgroundColor: P.primary,
+    shadowColor: P.primary,
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 4,
+  },
+  chipText: { fontSize: 14, fontFamily: 'Inter_600SemiBold', color: P.onSurfaceVariant },
+  chipTextActive: { color: P.onPrimary, fontFamily: 'Inter_700Bold' },
+
+  sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12 },
+  sectionTitle: { fontSize: 13, fontFamily: 'Inter_700Bold', color: P.onSurfaceVariant, letterSpacing: 1.5, textTransform: 'uppercase' },
+
+  recentArea: { gap: 12 },
+  recentItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 16,
+    backgroundColor: P.glassBg,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: P.glassBorder,
+  },
+  recentText: { fontSize: 16, fontFamily: 'Inter_500Medium', color: P.onSurface },
+
+  resultsArea: { gap: 12 },
+  resultCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: P.glassBg,
+    borderRadius: 20,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: P.glassBorder,
+  },
+  resultCardLeft: { flexDirection: 'row', alignItems: 'center', gap: 16, flex: 1 },
+  thumbnailBox: {
+    width: 56,
+    height: 56,
+    borderRadius: 18,
+    backgroundColor: P.surfaceContainerHighest,
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  thumbnail: { width: '100%', height: '100%', borderRadius: 18 },
+  resultInfo: { flex: 1 },
+  resultTitle: { fontSize: 16, fontFamily: 'Inter_700Bold', color: P.onSurface, marginBottom: 4 },
+  macroRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  per100g: { fontSize: 13, fontFamily: 'Inter_500Medium', color: P.onSurfaceVariant },
+  macroDots: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  macroDot: { width: 8, height: 8, borderRadius: 4 },
+  macroText: { fontSize: 11, fontFamily: 'Inter_600SemiBold', color: P.onSurfaceVariant },
+
+  resultCardRight: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  resultCaloriesSmall: { fontSize: 13, fontFamily: 'Inter_600SemiBold', color: P.primary },  
+  addBtn: { width: 32, height: 32, backgroundColor: P.primary + '20', borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
+
+  centerBox: { paddingTop: 40, alignItems: 'center' },
+});
 
 export default FoodSearchScreen;

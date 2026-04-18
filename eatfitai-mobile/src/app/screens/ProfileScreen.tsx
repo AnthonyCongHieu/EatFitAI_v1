@@ -1,72 +1,119 @@
-﻿// ProfileScreen v5: Redesigned with menu-based layout
-// Xu hướng 2026: Progressive Disclosure, Glassmorphism, Menu Navigation
+// ProfileScreen — Emerald Nebula 3D Design v2
+// Hồ sơ: Hero avatar + PRO badge + Metrics strip + Grouped menu actions
 
 import { useEffect, useState, useCallback } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  Image,
   Pressable,
   RefreshControl,
   ScrollView,
   StyleSheet,
-  Switch,
   View,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
+import Animated, { FadeIn, FadeInDown, FadeInUp } from 'react-native-reanimated';
+import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import * as ImagePicker from 'expo-image-picker';
+import Toast from 'react-native-toast-message';
 
 import { ThemedText } from '../../components/ThemedText';
-import { SettingsMenuItem } from '../../components/ui/SettingsMenuItem';
-import { SettingsSection } from '../../components/ui/SettingsSection';
 import { useAppTheme } from '../../theme/ThemeProvider';
 import { useAuthStore } from '../../store/useAuthStore';
 import { useProfileStore } from '../../store/useProfileStore';
+import { profileService } from '../../services/profileService';
 import { handleApiErrorWithCustomMessage } from '../../utils/errorHandler';
 import type { RootStackParamList } from '../types';
 import { t } from '../../i18n/vi';
-import Button from '../../components/Button';
 import { TEST_IDS } from '../../testing/testIds';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
-// Map goal to Vietnamese label
-const getGoalLabel = (goal?: string): string => {
-  switch (goal) {
-    case 'lose':
-      return 'Giảm cân';
-    case 'maintain':
-      return 'Giữ cân';
-    case 'gain':
-      return 'Tăng cân';
-    default:
-      return 'Chưa đặt';
-  }
+/* ═══════════════════════════════════════════════
+   Emerald Nebula Palette
+   ═══════════════════════════════════════════════ */
+const P = {
+  primary: '#4be277',
+  primaryContainer: '#22c55e',
+  surface: '#0e1322',
+  surfaceContainer: '#1a1f2f',
+  surfaceContainerLow: '#161b2b',
+  surfaceContainerHigh: '#25293a',
+  surfaceContainerHighest: '#2f3445',
+  onSurface: '#dee1f7',
+  onSurfaceVariant: '#bccbb9',
+  outlineVariant: '#3d4a3d',
+  glassBg: 'rgba(37, 41, 58, 0.6)',
+  glassBorder: 'rgba(255,255,255,0.05)',
+  error: '#ffb4ab',
+  errorContainer: 'rgba(147, 0, 10, 0.3)',
 };
 
-// Map activity level ID to label
-const getActivityLabel = (levelId?: number): string => {
-  switch (levelId) {
-    case 1:
-      return 'Ít vận động';
-    case 2:
-      return 'Nhẹ nhàng';
-    case 3:
-      return 'Trung bình';
-    case 4:
-      return 'Tích cực';
-    case 5:
-      return 'Rất tích cực';
-    default:
-      return 'Chưa đặt';
-  }
+/* ═══ BMI Helpers ═══ */
+const calcBMI = (kg?: number, cm?: number): number | null => {
+  if (!kg || !cm || cm < 50) return null;
+  return kg / ((cm / 100) ** 2);
 };
 
+const bmiColor = (bmi: number): string => {
+  if (bmi < 18.5) return '#60a5fa';   // Blue — underweight
+  if (bmi < 25) return '#4be277';     // Green — normal
+  if (bmi < 30) return '#fbbf24';     // Yellow — overweight
+  return '#ef4444';                   // Red — obese
+};
+
+/* ═══ Reusable menu row ═══ */
+interface MenuRowProps {
+  icon: string;
+  label: string;
+  onPress?: () => void;
+  labelColor?: string;
+  iconBg?: string;
+  iconColor?: string;
+  showChevron?: boolean;
+  chevronColor?: string;
+  testID?: string;
+}
+
+const MenuRow = ({
+  icon,
+  label,
+  onPress,
+  labelColor = P.onSurface,
+  iconBg = P.surfaceContainerHighest,
+  iconColor = P.onSurfaceVariant,
+  showChevron = true,
+  chevronColor = P.onSurfaceVariant,
+  testID,
+}: MenuRowProps) => (
+  <Pressable
+    style={({ pressed }) => [S.menuRow, pressed && { opacity: 0.7 }]}
+    onPress={onPress}
+    testID={testID}
+  >
+    <View style={[S.menuIconWrap, { backgroundColor: iconBg }]}>
+      <Ionicons name={icon as any} size={20} color={iconColor} />
+    </View>
+    <ThemedText style={[S.menuLabel, { color: labelColor }]} numberOfLines={1}>
+      {label}
+    </ThemedText>
+    {showChevron && (
+      <Ionicons name="chevron-forward" size={18} color={chevronColor} />
+    )}
+  </Pressable>
+);
+
+/* ═══════════════════════════════════════════════
+   ProfileScreen
+   ═══════════════════════════════════════════════ */
 const ProfileScreen = (): React.ReactElement => {
-  const { theme, toggleTheme } = useAppTheme();
-  const isDark = theme.mode === 'dark';
+  const { theme } = useAppTheme();
   const navigation = useNavigation<NavigationProp>();
+  const insets = useSafeAreaInsets();
 
   const logout = useAuthStore((s) => s.logout);
   const { profile, fetchProfile, isLoading } = useProfileStore((state) => ({
@@ -75,8 +122,7 @@ const ProfileScreen = (): React.ReactElement => {
     isLoading: state.isLoading,
   }));
 
-  // Dark mode toggle state
-  const [darkModeEnabled, setDarkModeEnabled] = useState(isDark);
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
     fetchProfile().catch((error: any) => {
@@ -86,21 +132,6 @@ const ProfileScreen = (): React.ReactElement => {
     });
   }, [fetchProfile]);
 
-  // Sync dark mode state with theme
-  useEffect(() => {
-    setDarkModeEnabled(isDark);
-  }, [isDark]);
-
-  // Handle dark mode toggle
-  const handleDarkModeToggle = useCallback(
-    (value: boolean) => {
-      setDarkModeEnabled(value);
-      toggleTheme();
-    },
-    [toggleTheme],
-  );
-
-  // Handle logout
   const handleLogout = useCallback(() => {
     Alert.alert(t('common.logout'), t('common.logout_confirm'), [
       { text: t('common.cancel'), style: 'cancel' },
@@ -108,341 +139,465 @@ const ProfileScreen = (): React.ReactElement => {
     ]);
   }, [logout]);
 
-  // Pull-to-refresh state
-  const [refreshing, setRefreshing] = useState(false);
-
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);
     await fetchProfile({ force: true });
     setRefreshing(false);
   }, [fetchProfile]);
 
-  const styles = StyleSheet.create({
-    container: { flex: 1 },
-    scrollContent: {
-      paddingHorizontal: theme.spacing.lg,
-      paddingVertical: theme.spacing.xl,
-      paddingBottom: 50,
-    },
-    // Hero Section - matching calorie chart card style
-    heroCard: {
-      alignItems: 'center',
-      paddingVertical: 24,
-      paddingHorizontal: 20,
-      borderRadius: 24,
-      marginBottom: 24,
-      backgroundColor: isDark ? 'rgba(74, 144, 226, 0.15)' : 'rgba(59, 130, 246, 0.08)',
-      borderWidth: 1,
-      borderColor: isDark ? 'rgba(74, 144, 226, 0.2)' : 'rgba(59, 130, 246, 0.1)',
-    },
-    avatarContainer: {
-      marginBottom: 16,
-    },
-    name: {
-      fontSize: 22,
-      fontWeight: '700',
-      color: theme.colors.text,
-      marginBottom: 4,
-    },
-    email: {
-      fontSize: 14,
-      color: theme.colors.textSecondary,
-      marginBottom: 16,
-    },
-    bmiSection: {
-      marginTop: 8,
-    },
-    editButton: {
-      marginTop: 16,
-      paddingHorizontal: 20,
-      paddingVertical: 10,
-      borderRadius: 12,
-      backgroundColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)',
-    },
-    editButtonText: {
-      fontSize: 14,
-      fontWeight: '600',
-      color: theme.colors.primary,
-    },
-    // Streak badge
-    streakBadge: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 6,
-      paddingHorizontal: 12,
-      paddingVertical: 6,
-      borderRadius: 16,
-      backgroundColor: isDark ? 'rgba(249, 115, 22, 0.15)' : 'rgba(249, 115, 22, 0.1)',
-      marginTop: 12,
-    },
-    streakText: {
-      fontSize: 13,
-      fontWeight: '600',
-      color: '#F97316',
-    },
-    // Logout
-    logoutSection: {
-      marginTop: 12,
-    },
-  });
+  /* ═══ Avatar picker ═══ */
+  const pickAvatar = useCallback(async (source: 'library' | 'camera') => {
+    try {
+      let result: ImagePicker.ImagePickerResult;
+      if (source === 'camera') {
+        const perm = await ImagePicker.requestCameraPermissionsAsync();
+        if (!perm.granted) {
+          Alert.alert('Quyền truy cập', 'Vui lòng cấp quyền truy cập camera');
+          return;
+        }
+        result = await ImagePicker.launchCameraAsync({
+          mediaTypes: ['images'],
+          allowsEditing: true,
+          aspect: [1, 1],
+          quality: 0.8,
+        });
+      } else {
+        const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (!perm.granted) {
+          Alert.alert('Quyền truy cập', 'Vui lòng cấp quyền truy cập thư viện ảnh');
+          return;
+        }
+        result = await ImagePicker.launchImageLibraryAsync({
+          mediaTypes: ['images'],
+          allowsEditing: true,
+          aspect: [1, 1],
+          quality: 0.8,
+        });
+      }
+      if (!result.canceled && result.assets[0]?.uri) {
+        const url = await profileService.uploadAvatar(result.assets[0].uri);
+        await useProfileStore.getState().updateProfile({ avatarUrl: url });
+        await fetchProfile({ force: true });
+        Toast.show({ type: 'success', text1: 'Cập nhật avatar thành công' });
+      }
+    } catch (e: any) {
+      Toast.show({ type: 'error', text1: 'Lỗi', text2: e?.message || 'Không thể cập nhật avatar' });
+    }
+  }, [fetchProfile]);
 
+  const handleAvatarPress = useCallback(() => {
+    Alert.alert('Đổi ảnh đại diện', 'Chọn nguồn ảnh', [
+      { text: 'Chọn ảnh từ thư viện', onPress: () => pickAvatar('library') },
+      { text: 'Chụp ảnh', onPress: () => pickAvatar('camera') },
+      { text: 'Hủy', style: 'cancel' },
+    ]);
+  }, [pickAvatar]);
+
+  const handleProPress = useCallback(() => {
+    Toast.show({
+      type: 'info',
+      text1: 'Thông báo',
+      text2: 'Tính năng đang phát triển',
+    });
+  }, []);
+
+  /* Loading */
   if (isLoading && !profile) {
     return (
-      <LinearGradient
-        colors={theme.colors.screenGradient}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 0.5, y: 1 }}
-        style={[
-          styles.container,
-          {
-            justifyContent: 'center',
-            alignItems: 'center',
-          },
-        ]}
-      >
-        <ActivityIndicator size="large" color={theme.colors.primary} />
-      </LinearGradient>
+      <View style={[S.container, { justifyContent: 'center', alignItems: 'center' }]}>
+        <ActivityIndicator size="large" color={P.primary} />
+      </View>
     );
   }
 
+  const bmi = calcBMI(profile?.weightKg, profile?.heightCm);
+  const displayName = profile?.fullName || 'Chưa cập nhật';
+
   return (
-    <LinearGradient
-      colors={theme.colors.screenGradient}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 0.5, y: 1 }}
-      style={styles.container}
-      testID={TEST_IDS.profile.screen}
-    >
-      {/* Custom Header - matching StatsScreen */}
-      <View
-        style={{ alignItems: 'center', paddingTop: 70, paddingBottom: theme.spacing.lg }}
-      >
-        <ThemedText variant="h2" weight="700">
-          Hồ sơ
-        </ThemedText>
-        <ThemedText variant="bodySmall" color="textSecondary">
-          Thông tin cá nhân của bạn
-        </ThemedText>
+    <View style={[S.container, { paddingTop: insets.top }]} testID={TEST_IDS.profile.screen}>
+
+      {/* ═══ HEADER ═══ */}
+      <View style={S.header}>
+        <View style={S.headerBtn} />
+        <ThemedText style={S.headerTitle}>Hồ sơ</ThemedText>
+        <View style={S.headerBtn} />
       </View>
 
       <ScrollView
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[S.scrollContent, { paddingBottom: insets.bottom + 100 }]}
+        showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
             onRefresh={handleRefresh}
-            colors={[theme.colors.primary]}
-            tintColor={theme.colors.primary}
+            colors={[P.primary]}
+            tintColor={P.primary}
           />
         }
       >
-        {/* Hero Section - Matching Reference Image */}
-        <Animated.View entering={FadeIn.duration(400)} style={styles.heroCard}>
-          {/* Name - Centered */}
-          <ThemedText variant="h2" weight="700" style={{ textAlign: 'center' }}>
-            {profile?.fullName || 'Chưa cập nhật'}
-          </ThemedText>
-
-          {/* Join Date - Subtitle */}
-          <ThemedText
-            variant="bodySmall"
-            color="textSecondary"
-            style={{ textAlign: 'center', marginTop: 6 }}
-          >
-            {profile?.createdAt
-              ? `Đã tham gia từ ${new Date(profile.createdAt).toLocaleDateString('vi-VN', { day: '2-digit', month: 'short', year: 'numeric' })}`
-              : 'Thành viên mới'}
-          </ThemedText>
-
-          {/* Stats Row - 3 columns with dividers */}
-          <View
-            style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              justifyContent: 'center',
-              marginTop: 24,
-              marginBottom: 20,
-              paddingVertical: 16,
-              paddingHorizontal: 20,
-              backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)',
-              borderRadius: 16,
-            }}
-          >
-            {/* Age */}
-            <View style={{ flex: 1, alignItems: 'center' }}>
-              <ThemedText style={{ fontSize: 20, marginBottom: 4 }}>🎂</ThemedText>
-              <ThemedText variant="h4" weight="700">
-                {profile?.age ? `${profile.age} tuổi` : '--'}
-              </ThemedText>
-            </View>
-
-            {/* Divider */}
-            <View
-              style={{
-                width: 1,
-                height: 40,
-                backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)',
-              }}
-            />
-
-            {/* Height */}
-            <View style={{ flex: 1, alignItems: 'center' }}>
-              <ThemedText style={{ fontSize: 20, marginBottom: 4 }}>📏</ThemedText>
-              <ThemedText variant="h4" weight="700">
-                {profile?.heightCm ? `${profile.heightCm} cm` : '--'}
-              </ThemedText>
-            </View>
-
-            {/* Divider */}
-            <View
-              style={{
-                width: 1,
-                height: 40,
-                backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)',
-              }}
-            />
-
-            {/* Weight */}
-            <View style={{ flex: 1, alignItems: 'center' }}>
-              <ThemedText style={{ fontSize: 20, marginBottom: 4 }}>⚖️</ThemedText>
-              <ThemedText variant="h4" weight="700">
-                {profile?.weightKg ? `${profile.weightKg} kg` : '--'}
-              </ThemedText>
-            </View>
-          </View>
-
-          {/* Edit Profile Button */}
+        {/* ═══ HERO SECTION ═══ */}
+        <Animated.View entering={FadeIn.delay(100).duration(500)} style={S.heroSection}>
+          {/* Avatar with gradient ring + glow — tappable → photo picker */}
           <Pressable
-            style={({ pressed }) => [
-              {
-                width: '100%',
-                paddingVertical: 16,
-                borderRadius: 16,
-                backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)',
-                alignItems: 'center',
-                opacity: pressed ? 0.8 : 1,
-                transform: [{ scale: pressed ? 0.98 : 1 }],
-              },
-            ]}
-            onPress={() => navigation.navigate('EditProfile' as any)}
-            accessibilityRole="button"
-            accessibilityLabel="Chỉnh sửa hồ sơ"
-            testID={TEST_IDS.profile.editButton}
+            style={S.avatarContainer}
+            onPress={handleAvatarPress}
           >
-            <ThemedText variant="body" weight="600">
-              Chỉnh sửa hồ sơ
-            </ThemedText>
+            <LinearGradient
+              colors={[P.primary, P.primaryContainer]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 0, y: 1 }}
+              style={S.avatarGradientRing}
+            >
+              {profile?.avatarUrl ? (
+                <Image source={{ uri: profile.avatarUrl }} style={S.avatarImage} />
+              ) : (
+                <View style={S.avatarPlaceholder}>
+                  <Ionicons name="person" size={44} color={P.primary} />
+                </View>
+              )}
+            </LinearGradient>
+            {/* Camera badge */}
+            <View style={S.cameraBadge}>
+              <Ionicons name="camera" size={14} color="#fff" />
+            </View>
           </Pressable>
+
+          {/* Name */}
+          <ThemedText style={S.heroName}>{displayName}</ThemedText>
+
+          {/* Member badge */}
+          <View style={S.proBadge}>
+            <ThemedText style={S.proBadgeText}>Thành viên</ThemedText>
+          </View>
         </Animated.View>
 
-        {/* Health Profile Section */}
-        <SettingsSection title="Hồ sơ sức khỏe" delay={100}>
-          <SettingsMenuItem
-            icon="📏"
-            label="Số đo cơ thể"
-            subtitle={
-              profile?.heightCm && profile?.weightKg
-                ? `${profile.heightCm}cm • ${profile.weightKg}kg`
-                : 'Chưa cập nhật'
-            }
+        {/* ═══ METRICS STRIP ═══ */}
+        <Animated.View entering={FadeInUp.delay(200).duration(400)} style={S.metricsCard}>
+          {/* Metallic sheen overlay */}
+          <LinearGradient
+            colors={['rgba(255,255,255,0.08)', 'transparent']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={StyleSheet.absoluteFillObject}
+            pointerEvents="none"
+          />
+          <View style={S.metricCol}>
+            <ThemedText style={S.metricLabel}>CÂN NẶNG</ThemedText>
+            <View style={{ flexDirection: 'row', alignItems: 'baseline' }}>
+              <ThemedText style={S.metricValue}>
+                {profile?.weightKg ?? '--'}
+              </ThemedText>
+              <ThemedText style={S.metricUnit}> kg</ThemedText>
+            </View>
+          </View>
+          <View style={S.metricDivider} />
+          <View style={S.metricCol}>
+            <ThemedText style={S.metricLabel}>CHIỀU CAO</ThemedText>
+            <View style={{ flexDirection: 'row', alignItems: 'baseline' }}>
+              <ThemedText style={S.metricValue}>
+                {profile?.heightCm ?? '--'}
+              </ThemedText>
+              <ThemedText style={S.metricUnit}> cm</ThemedText>
+            </View>
+          </View>
+          <View style={S.metricDivider} />
+          <View style={S.metricCol}>
+            <ThemedText style={S.metricLabel}>BMI</ThemedText>
+            {bmi ? (
+              <ThemedText style={[
+                S.metricBMIValue,
+                {
+                  color: bmiColor(bmi),
+                  textShadowColor: bmiColor(bmi) + '80',
+                },
+              ]}>
+                {bmi.toFixed(1)}
+              </ThemedText>
+            ) : (
+              <ThemedText style={S.metricValue}>--</ThemedText>
+            )}
+          </View>
+        </Animated.View>
+
+        {/* ═══ MENU GROUP 1 — Main actions ═══ */}
+        <Animated.View entering={FadeInUp.delay(300).duration(400)} style={S.menuGroup}>
+          <MenuRow
+            icon="person-outline"
+            label="Hồ sơ thể chất"
             onPress={() => navigation.navigate('BodyMetrics' as any)}
             testID={TEST_IDS.profile.bodyMetricsButton}
           />
-          <SettingsMenuItem
-            icon="🎯"
-            label="Mục tiêu & Hoạt động"
-            subtitle={`${getGoalLabel(profile?.goal)} • ${getActivityLabel(profile?.activityLevelId)}`}
-            onPress={() => navigation.navigate('GoalSettings' as any)}
-            testID={TEST_IDS.profile.goalSettingsButton}
-          />
-          <SettingsMenuItem
-            icon="🥗"
-            label="Chế độ ăn & Dị ứng"
-            subtitle="Vegetarian, No-pork, Allergies..."
-            onPress={() => navigation.navigate('DietaryRestrictions' as any)}
-          />
-          <SettingsMenuItem
-            icon="📈"
-            label="Lịch sử cân đo"
-            subtitle="Xem biểu đồ tiến trình"
-            onPress={() => navigation.navigate('WeightHistory' as any)}
-            testID={TEST_IDS.profile.weightHistoryButton}
-          />
-          <SettingsMenuItem
-            icon="🏆"
-            label="Thành tích"
-            subtitle="Xem badges và streaks"
-            onPress={() => navigation.navigate('Achievements')}
-          />
-        </SettingsSection>
-
-        {/* Nutrition Section */}
-        <SettingsSection title="Dinh dưỡng" delay={200}>
-          <SettingsMenuItem
-            icon="⚙️"
-            label="Mục tiêu dinh dưỡng"
-            subtitle="Calories, protein, carbs, fat"
+          <MenuRow
+            icon="nutrition-outline"
+            label="Cài đặt dinh dưỡng"
             onPress={() => navigation.navigate('NutritionSettings')}
             testID={TEST_IDS.profile.nutritionSettingsButton}
           />
-          <SettingsMenuItem
-            icon="💡"
-            label="Phân tích AI"
-            subtitle="Phân tích và gợi ý"
-            onPress={() => navigation.navigate('NutritionInsights')}
-            testID={TEST_IDS.profile.nutritionInsightsButton}
-          />
-        </SettingsSection>
-
-        {/* App Settings Section */}
-        <SettingsSection title="Cài đặt" delay={300}>
-          <SettingsMenuItem
-            icon="🌙"
-            label="Giao diện tối"
-            showArrow={false}
-            rightElement={
-              <Switch
-                value={darkModeEnabled}
-                onValueChange={handleDarkModeToggle}
-                trackColor={{
-                  false: 'rgba(0,0,0,0.1)',
-                  true: theme.colors.primary,
-                }}
-                thumbColor="#fff"
-              />
-            }
-          />
-          <SettingsMenuItem
-            icon="🔔"
-            label="Thông báo"
-            subtitle="Nhắc nhở bữa ăn"
+          <MenuRow
+            icon="notifications-outline"
+            label="Tùy chỉnh thông báo"
             onPress={() => navigation.navigate('NotificationsSettings' as any)}
           />
-          <SettingsMenuItem
-            icon="🔐"
-            label="Đổi mật khẩu"
+          <MenuRow
+            icon="shield-checkmark-outline"
+            label="Bảo mật & Riêng tư"
             onPress={() => navigation.navigate('ChangePassword' as any)}
           />
-          <SettingsMenuItem
-            icon="ℹ️"
-            label="Về ứng dụng"
-            subtitle="Phiên bản, phản hồi"
+        </Animated.View>
+
+        {/* ═══ MENU GROUP 2 — About + PRO + Logout ═══ */}
+        <Animated.View entering={FadeInUp.delay(400).duration(400)} style={[S.menuGroup, { marginTop: 16 }]}>
+          <MenuRow
+            icon="information-circle-outline"
+            label="Về EatFit AI"
             onPress={() => navigation.navigate('About' as any)}
           />
-        </SettingsSection>
-
-        {/* Logout */}
-        <Animated.View entering={FadeInDown.delay(400)} style={styles.logoutSection}>
-          <Button
-            title={t('common.logout')}
-            variant="ghost"
+          <MenuRow
+            icon="ribbon-outline"
+            label="Quản lý Gói EatFit PRO"
+            labelColor={P.primary}
+            iconBg={P.primary + '18'}
+            iconColor={P.primary}
+            chevronColor={P.primary + '80'}
+            onPress={handleProPress}
+          />
+          <MenuRow
+            icon="log-out-outline"
+            label="Đăng xuất"
+            labelColor={P.error}
+            iconBg={P.errorContainer}
+            iconColor={P.error}
+            showChevron={false}
             onPress={handleLogout}
             testID={TEST_IDS.profile.logoutButton}
           />
         </Animated.View>
+
+        {/* ═══ FOOTER ═══ */}
+        <Animated.View entering={FadeIn.delay(500)} style={S.footer}>
+          <ThemedText style={S.footerText}>
+            Phiên bản 1.0.2 — Hệ thống cốt lõi bởi AI
+          </ThemedText>
+        </Animated.View>
       </ScrollView>
-    </LinearGradient>
+    </View>
   );
 };
+
+/* ═══════════════════════════════════════════════
+   Styles — Emerald Nebula 3D Profile v2
+   ═══════════════════════════════════════════════ */
+const S = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: P.surface,
+  },
+
+  /* ═══ HEADER ═══ */
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    height: 56,
+    backgroundColor: 'rgba(14, 19, 34, 0.8)',
+  },
+  headerBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  headerTitle: {
+    fontSize: 17,
+    fontWeight: '600',
+    color: P.primaryContainer,
+    letterSpacing: -0.3,
+  },
+
+  /* ═══ SCROLL ═══ */
+  scrollContent: {
+    paddingHorizontal: 24,
+  },
+
+  /* ═══ HERO ═══ */
+  heroSection: {
+    alignItems: 'center',
+    paddingTop: 32,
+    marginBottom: 28,
+  },
+  avatarContainer: {
+    marginBottom: 18,
+    shadowColor: P.primary,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.35,
+    shadowRadius: 24,
+    elevation: 12,
+  },
+  cameraBadge: {
+    position: 'absolute',
+    bottom: 2,
+    right: 2,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: P.primaryContainer,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: P.surface,
+  },
+  avatarGradientRing: {
+    width: 112,
+    height: 112,
+    borderRadius: 56,
+    padding: 4,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  avatarImage: {
+    width: 104,
+    height: 104,
+    borderRadius: 52,
+    borderWidth: 4,
+    borderColor: P.surface,
+  },
+  avatarPlaceholder: {
+    width: 104,
+    height: 104,
+    borderRadius: 52,
+    borderWidth: 4,
+    borderColor: P.surface,
+    backgroundColor: P.surfaceContainerHigh,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  heroName: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: P.onSurface,
+    letterSpacing: -0.5,
+    marginBottom: 10,
+  },
+  proBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: 20,
+    backgroundColor: P.primaryContainer + '18',
+    borderWidth: 1,
+    borderColor: P.primary + '30',
+    shadowColor: P.primary,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 4,
+  },
+  proBadgeText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: P.primary,
+    letterSpacing: 0.3,
+  },
+
+  /* ═══ METRICS STRIP ═══ */
+  metricsCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 16,
+    borderRadius: 16,
+    backgroundColor: P.glassBg,
+    borderTopWidth: 1,
+    borderTopColor: P.glassBorder,
+    marginBottom: 28,
+    overflow: 'hidden',
+  },
+  metricCol: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  metricLabel: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: P.onSurfaceVariant,
+    letterSpacing: 2,
+    textTransform: 'uppercase',
+    marginBottom: 6,
+  },
+  metricValue: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: P.onSurface,
+  },
+  metricUnit: {
+    fontSize: 13,
+    fontWeight: '400',
+    color: P.onSurfaceVariant,
+  },
+  metricDivider: {
+    width: 1,
+    height: 40,
+    backgroundColor: P.surfaceContainerHighest,
+  },
+  metricBMIValue: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: P.primary,
+    textShadowColor: 'rgba(75, 226, 119, 0.5)',
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 8,
+  },
+
+
+  /* ═══ MENU GROUPS ═══ */
+  menuGroup: {
+    borderRadius: 16,
+    backgroundColor: P.surfaceContainerLow,
+    padding: 8,
+    gap: 4,
+    overflow: 'hidden',
+  },
+  menuRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+    paddingVertical: 14,
+    paddingHorizontal: 14,
+    borderRadius: 12,
+    backgroundColor: P.glassBg,
+    borderTopWidth: 1,
+    borderTopColor: P.glassBorder,
+  },
+  menuIconWrap: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  menuLabel: {
+    flex: 1,
+    fontSize: 15,
+    fontWeight: '500',
+  },
+
+  /* ═══ FOOTER ═══ */
+  footer: {
+    marginTop: 28,
+    alignItems: 'center',
+    paddingBottom: 12,
+  },
+  footerText: {
+    fontSize: 11,
+    fontWeight: '500',
+    color: P.onSurfaceVariant + '50',
+    letterSpacing: 0.5,
+  },
+});
 
 export default ProfileScreen;

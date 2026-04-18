@@ -40,6 +40,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import Slider from '@react-native-community/slider';
+import { useNavigation, useRoute } from '@react-navigation/native';
 
 import { ThemedText } from '../../../components/ThemedText';
 import ThemedTextInput from '../../../components/ThemedTextInput';
@@ -205,7 +206,10 @@ const OnboardingScreen = (): React.ReactElement => {
   const fetchProfile = useProfileStore((s) => s.fetchProfile);
   const invalidateProfile = useProfileStore((s) => s.invalidateProfile);
 
-  const [currentStep, setCurrentStep] = useState(0);
+  const route = useRoute<any>();
+  const navigation = useNavigation<any>();
+
+  const [currentStep, setCurrentStep] = useState<number>(Number(route.params?.initialStep ?? 0));
   const [isCalculating, setIsCalculating] = useState(false);
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
   const [calculationError, setCalculationError] = useState<string | null>(null);
@@ -692,6 +696,7 @@ const OnboardingScreen = (): React.ReactElement => {
       }
 
       invalidateProfile();
+      // Calling fetchProfile ensures state is updated globally.
       try {
         await fetchProfile({ force: true });
       } catch (profileRefreshError) {
@@ -703,8 +708,13 @@ const OnboardingScreen = (): React.ReactElement => {
         }
       }
 
-      // Auth state change will cause AppNavigator to swap from onboarding to AppTabs.
-      useAuthStore.setState({ isAuthenticated: true, needsOnboarding: false });
+      // If we are in the authenticated stack and can go back, go back to Profile
+      if (navigation.canGoBack()) {
+        navigation.goBack();
+      } else {
+        // Auth state change will cause AppNavigator to swap from onboarding to AppTabs.
+        useAuthStore.setState({ isAuthenticated: true, needsOnboarding: false });
+      }
     } catch (error) {
       Alert.alert('Lỗi', 'Không thể lưu thông tin. Vui lòng thử lại.');
     }
