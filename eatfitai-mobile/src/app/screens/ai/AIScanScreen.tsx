@@ -1,12 +1,16 @@
-﻿import React, { useCallback, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import {
   View,
   StyleSheet,
   Pressable,
-  FlatList,
   ActivityIndicator,
   Dimensions,
+  Modal,
+  TextInput,
+  ScrollView,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import * as ImagePicker from 'expo-image-picker';
@@ -16,11 +20,14 @@ import Animated, {
   FadeIn,
   FadeInDown,
   FadeInUp,
-  SlideInRight,
+  SlideInUp,
   useAnimatedStyle,
   useSharedValue,
+  withRepeat,
   withSequence,
   withSpring,
+  withTiming,
+  Easing,
 } from 'react-native-reanimated';
 import Toast from 'react-native-toast-message';
 import { useNavigation } from '@react-navigation/native';
@@ -42,10 +49,8 @@ import {
 import { handleApiErrorWithCustomMessage } from '../../../utils/errorHandler';
 import { AppImage } from '../../../components/ui/AppImage';
 import { AnimatedEmptyState } from '../../../components/ui/AnimatedEmptyState';
-import { AIResultEditModal } from '../../../components/ui/AIResultEditModal';
 import type { RootStackParamList } from '../../types';
 import type { MappedFoodItem } from '../../../types/ai';
-import { ScanFrameOverlay } from '../../../components/scan/ScanFrameOverlay';
 import { IngredientBasketFab } from '../../../components/scan/IngredientBasketFab';
 import { IngredientBasketSheet } from '../../../components/scan/IngredientBasketSheet';
 import { useIngredientBasketStore } from '../../../store/useIngredientBasketStore';
@@ -61,6 +66,27 @@ type ScanResultNotice = {
 };
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
+const { width: SW } = Dimensions.get('window');
+
+/* ═══════════════════════════════════════════════
+   Emerald Nebula Palette
+   ═══════════════════════════════════════════════ */
+const P = {
+  primary: '#4be277',
+  primaryDim: '#3DB860',
+  surface: '#0e1322',
+  surfaceContainer: '#1a1f2f',
+  surfaceContainerLow: '#161b2b',
+  surfaceContainerHigh: '#25293a',
+  onSurface: '#dee1f7',
+  onSurfaceVariant: '#bccbb9',
+  outlineVariant: '#3d4a3d',
+  glass: 'rgba(22, 27, 43, 0.6)',
+  glassBorder: 'rgba(255,255,255,0.06)',
+  glow: 'rgba(75, 226, 119, 0.15)',
+};
+
+const SCANNER_SIZE = SW * 0.72;
 
 const AIScanScreen: React.FC = () => {
   const { theme } = useAppTheme();
@@ -80,20 +106,52 @@ const AIScanScreen: React.FC = () => {
     items: MappedFoodItem[];
     unmappedLabels: string[];
   } | null>(null);
-  const [editingItem, setEditingItem] = useState<MappedFoodItem | null>(null);
-  const [showEditModal, setShowEditModal] = useState(false);
   const [showBasketSheet, setShowBasketSheet] = useState(false);
   const [resultNotice, setResultNotice] = useState<ScanResultNotice | null>(null);
-  const [isQuickSaving, setIsQuickSaving] = useState(false);
+  const [flashOn, setFlashOn] = useState(false);
   const { data: aiStatus, isLoading: isAiStatusLoading } = useAiStatus();
+
+  // Gram state for results drawer
+  const [resultGrams, setResultGrams] = useState(100);
+  const [showGramModal, setShowGramModal] = useState(false);
+  const [gramInputValue, setGramInputValue] = useState('100');
 
   const addIngredient = useIngredientBasketStore((s) => s.addIngredient);
 
   const captureScale = useSharedValue(1);
-  const basketIconScale = useSharedValue(1);
+  const scanLineY = useSharedValue(0);
+
+  // Inline processing banner state
+  const [showProcessingBanner, setShowProcessingBanner] = useState(false);
 
   const hasPermission = permission?.granted === true;
   const isAiDown = aiStatus?.state === 'DOWN';
+
+  /* ── Scanning line animation ── */
+  useEffect(() => {
+    if (mode === 'camera' && !isCapturing && !isProcessing) {
+      scanLineY.value = withRepeat(
+        withTiming(SCANNER_SIZE, { duration: 2200, easing: Easing.inOut(Easing.ease) }),
+        -1,
+        true,
+      );
+    } else {
+      scanLineY.value = withTiming(0, { duration: 300 });
+    }
+  }, [mode, isCapturing, isProcessing, scanLineY]);
+
+  const scanLineStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: scanLineY.value }],
+  }));
+
+  /* ── Hide processing banner when results arrive ── */
+  useEffect(() => {
+    if (mode === 'results' || mode === 'camera') {
+      setShowProcessingBanner(false);
+    }
+  }, [mode]);
+
+  /* ── All business-logic handlers ── */
 
   const notifyAiDown = useCallback(() => {
     Toast.show({
@@ -106,6 +164,7 @@ const AIScanScreen: React.FC = () => {
   const processImage = useCallback(async (uri: string) => {
     setMode('preview');
     setIsProcessing(true);
+    setShowProcessingBanner(true);
     setDetectionResult(null);
     setResultNotice(null);
 
@@ -139,6 +198,7 @@ const AIScanScreen: React.FC = () => {
             }
           : null,
       );
+      setResultGrams(100);
       setMode('results');
     } catch (error) {
       if (isAiOfflineError(error)) {
@@ -161,6 +221,32 @@ const AIScanScreen: React.FC = () => {
     }
   }, []);
 
+  const handleCaptureInternal = useCallback(async () => {
+    if (!cameraRef.current) return;
+
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    setIsCapturing(true);
+
+    try {
+      const result = await cameraRef.current.takePictureAsync({
+        base64: false,
+        quality: 0.7,
+      });
+
+      if (!result?.uri) throw new Error('Không đọc được ảnh');
+
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+
+      await processImage(result.uri);
+    } catch (error) {
+      handleApiErrorWithCustomMessage(error, {
+        unknown: { text1: 'Không thể chụp ảnh', text2: 'Vui lòng thử lại' },
+      });
+    } finally {
+      setIsCapturing(false);
+    }
+  }, [processImage]);
+
   const handleCapture = useCallback(async () => {
     if (isAiDown) {
       notifyAiDown();
@@ -173,30 +259,10 @@ const AIScanScreen: React.FC = () => {
       return;
     }
 
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    setIsCapturing(true);
     captureScale.value = withSpring(0.9, { damping: 10 });
-
-    try {
-      const result = await cameraRef.current.takePictureAsync({
-        base64: false,
-        quality: 0.7,
-      });
-
-      if (!result?.uri) throw new Error('Không đọc được ảnh');
-
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      captureScale.value = withSpring(1, { damping: 15 });
-      await processImage(result.uri);
-    } catch (error) {
-      handleApiErrorWithCustomMessage(error, {
-        unknown: { text1: 'Không thể chụp ảnh', text2: 'Vui lòng thử lại' },
-      });
-      captureScale.value = withSpring(1, { damping: 15 });
-    } finally {
-      setIsCapturing(false);
-    }
-  }, [captureScale, isAiDown, notifyAiDown, processImage]);
+    await handleCaptureInternal();
+    captureScale.value = withSpring(1, { damping: 15 });
+  }, [captureScale, handleCaptureInternal, isAiDown, notifyAiDown]);
 
   const handlePickImage = useCallback(async () => {
     if (isAiDown) {
@@ -237,35 +303,50 @@ const AIScanScreen: React.FC = () => {
     setCapturedUri(null);
     setDetectionResult(null);
     setResultNotice(null);
+    setResultGrams(100);
     setMode('camera');
   }, []);
 
-  const handleAddToDiary = useCallback(() => {
-    if (!capturedUri || !detectionResult) {
-      handleApiErrorWithCustomMessage(new Error('No data'), {
-        unknown: { text1: 'Chưa có dữ liệu', text2: 'Vui lòng chụp hoặc chọn ảnh' },
+  const handleAddToDiary = useCallback(async () => {
+    if (!capturedUri || !detectionResult) return;
+
+    const topItem = [...detectionResult.items]
+      .sort((a, b) => b.confidence - a.confidence)[0];
+    if (!topItem?.foodItemId || Number(topItem.foodItemId) <= 0) {
+      // Navigate to detailed add screen
+      navigation.navigate('AddMealFromVision', {
+        imageUri: capturedUri,
+        result: detectionResult,
       });
       return;
     }
 
-    navigation.navigate('AddMealFromVision', {
-      imageUri: capturedUri,
-      result: detectionResult,
-    });
-  }, [capturedUri, detectionResult, navigation]);
+    try {
+      await addItemsToTodayDiary([
+        {
+          foodItemId: Number(topItem.foodItemId),
+          grams: resultGrams,
+        },
+      ]);
 
-  const handleQuickAdd = useCallback((item: MappedFoodItem) => {
-    setEditingItem(item);
-    setShowEditModal(true);
-  }, []);
+      const ratio = resultGrams / 100;
+      const actualCal = Math.round((topItem.caloriesPer100g || 0) * ratio);
+      Toast.show({
+        type: 'success',
+        text1: 'Đã thêm vào nhật ký',
+        text2: `${topItem.foodName || translateIngredient(topItem.label)} - ${resultGrams}g (${actualCal} kcal)`,
+      });
+      await invalidateDiaryQueries(queryClient);
+      handleRetake();
+    } catch (error) {
+      handleApiErrorWithCustomMessage(error, {
+        unknown: { text1: 'Lỗi', text2: 'Không thể thêm vào nhật ký' },
+      });
+    }
+  }, [capturedUri, detectionResult, handleRetake, navigation, queryClient, resultGrams]);
 
   const handleAddToBasket = useCallback(
     (item: MappedFoodItem) => {
-      basketIconScale.value = withSequence(
-        withSpring(1.3, { damping: 10 }),
-        withSpring(1, { damping: 15 }),
-      );
-
       const displayName = item.foodName || translateIngredient(item.label);
       addIngredient({
         name: displayName,
@@ -275,124 +356,66 @@ const AIScanScreen: React.FC = () => {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       Toast.show({
         type: 'success',
-        text1: 'Đã thêm vào giỏ',
+        text1: '🧺 Đã thêm vào giỏ',
         text2: displayName,
         visibilityTime: 1500,
       });
     },
-    [addIngredient, basketIconScale, capturedUri],
+    [addIngredient, capturedUri],
   );
 
-  const handleEditModalSave = useCallback(
-    async (editedItem: MappedFoodItem & { grams: number }) => {
-      setShowEditModal(false);
-      setIsProcessing(true);
-      try {
-        const ratio = editedItem.grams / 100;
-        const actualCalories = Math.round((editedItem.caloriesPer100g || 0) * ratio);
-
-        await addItemsToTodayDiary([
-          {
-            foodItemId: Number(editedItem.foodItemId || 0),
-            grams: editedItem.grams,
-          },
-        ]);
-
-        Toast.show({
-          type: 'success',
-          text1: 'Đã thêm',
-          text2: `${editedItem.label} - ${actualCalories} kcal`,
-        });
-        await invalidateDiaryQueries(queryClient);
-        setEditingItem(null);
-      } catch (error) {
-        handleApiErrorWithCustomMessage(error, {
-          unknown: { text1: 'Lỗi thêm món', text2: 'Vui lòng thử lại' },
-        });
-      } finally {
-        setIsProcessing(false);
-      }
-    },
-    [queryClient],
-  );
+  const handleGramModalConfirm = useCallback(() => {
+    const parsed = parseInt(gramInputValue, 10);
+    if (!isNaN(parsed) && parsed > 0 && parsed <= 5000) {
+      setResultGrams(parsed);
+    }
+    setShowGramModal(false);
+  }, [gramInputValue]);
 
   const captureButtonStyle = useAnimatedStyle(() => ({
     transform: [{ scale: captureScale.value }],
-  }));
-
-  const basketIconStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: basketIconScale.value }],
   }));
 
   const isCameraMode = mode === 'camera';
   const topResults = detectionResult
     ? [...detectionResult.items].sort((a, b) => b.confidence - a.confidence).slice(0, 2)
     : [];
-  const quickSaveItem = topResults.find(
-    (item) => typeof item.foodItemId === 'number' && Number(item.foodItemId) > 0,
-  );
   const hasDetectedItems = topResults.length > 0;
+  const topItem = topResults[0] ?? null;
 
-  const handleQuickSave = useCallback(async () => {
-    if (!quickSaveItem?.foodItemId) {
-      if (topResults[0]) {
-        handleQuickAdd(topResults[0]);
-      }
-      return;
-    }
+  // Compute macros based on current grams
+  const ratio = resultGrams / 100;
+  const computedCal = topItem ? Math.round((topItem.caloriesPer100g ?? 0) * ratio) : 0;
+  const computedProtein = topItem ? Math.round((topItem.proteinPer100g ?? 0) * ratio) : 0;
+  const computedCarbs = topItem ? Math.round((topItem.carbPer100g ?? 0) * ratio) : 0;
+  const computedFat = topItem ? Math.round((topItem.fatPer100g ?? 0) * ratio) : 0;
 
-    setIsQuickSaving(true);
-    try {
-      await addItemsToTodayDiary([
-        {
-          foodItemId: Number(quickSaveItem.foodItemId),
-          grams: 100,
-        },
-      ]);
-
-      Toast.show({
-        type: 'success',
-        text1: 'Lưu nhanh thành công',
-        text2: `${quickSaveItem.foodName || translateIngredient(quickSaveItem.label)} - 100g`,
-      });
-      await invalidateDiaryQueries(queryClient);
-      handleRetake();
-    } catch (error) {
-      handleApiErrorWithCustomMessage(error, {
-        unknown: {
-          text1: 'Không thể lưu nhanh',
-          text2: 'Vui lòng thử lại hoặc chỉnh tay',
-        },
-      });
-    } finally {
-      setIsQuickSaving(false);
-    }
-  }, [handleQuickAdd, handleRetake, queryClient, quickSaveItem, topResults]);
-
+  /* ═══════════════════════════════════════════════
+     Permission screens
+     ═══════════════════════════════════════════════ */
   if (!permission) {
     return (
-      <View style={[styles.center, { backgroundColor: theme.colors.background }]}>
-        <ActivityIndicator color={theme.colors.primary} />
+      <View style={[S.center, { backgroundColor: P.surface }]}>
+        <ActivityIndicator color={P.primary} />
       </View>
     );
   }
 
   if (!hasPermission) {
     return (
-      <View style={[styles.center, { backgroundColor: theme.colors.background }]}>
+      <View style={[S.center, { backgroundColor: P.surface }]}>
         <Animated.View entering={FadeIn.duration(400)}>
           <Icon name="camera-outline" size="xl" color="muted" />
         </Animated.View>
         <ThemedText
           variant="h3"
-          style={{ marginTop: theme.spacing.lg, marginBottom: theme.spacing.sm }}
+          style={{ marginTop: 24, marginBottom: 8, color: P.onSurface }}
         >
           {'Cần quyền camera'}
         </ThemedText>
         <ThemedText
           variant="body"
-          color="textSecondary"
-          style={{ textAlign: 'center', paddingHorizontal: 32 }}
+          style={{ textAlign: 'center', paddingHorizontal: 32, color: P.onSurfaceVariant }}
         >
           {'Cho phép truy cập camera để quét món ăn bằng AI'}
         </ThemedText>
@@ -400,14 +423,18 @@ const AIScanScreen: React.FC = () => {
           variant="primary"
           title="Cấp quyền camera"
           onPress={requestPermission}
-          style={{ marginTop: theme.spacing.xl }}
+          style={{ marginTop: 32 }}
         />
       </View>
     );
   }
 
+  /* ═══════════════════════════════════════════════
+     Main UI
+     ═══════════════════════════════════════════════ */
   return (
-    <View style={styles.container} testID={TEST_IDS.aiScan.screen}>
+    <View style={S.container} testID={TEST_IDS.aiScan.screen}>
+      {/* ── Camera / Preview layer ── */}
       {(isCameraMode || mode === 'preview') && (
         <CameraView
           ref={(ref) => {
@@ -415,6 +442,7 @@ const AIScanScreen: React.FC = () => {
           }}
           style={StyleSheet.absoluteFill}
           facing="back"
+          enableTorch={flashOn}
         />
       )}
 
@@ -426,474 +454,439 @@ const AIScanScreen: React.FC = () => {
         />
       )}
 
-      {isCameraMode && (
-        <ScanFrameOverlay isScanning={!isCapturing && !isProcessing} isSuccess={false} />
-      )}
-
+      {/* Dimming overlay */}
       {!isCameraMode && (
         <View
-          style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.2)' }]}
+          style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.3)' }]}
           pointerEvents="none"
         />
       )}
 
-      <SafeAreaView style={styles.uiOverlay} pointerEvents="box-none">
-        {mode !== 'results' && (
-          <View style={styles.headerFloating}>
-            <ThemedText
-              variant="h3"
-              weight="700"
-              style={{
-                color: '#fff',
-                textShadowColor: 'rgba(0,0,0,0.5)',
-                textShadowRadius: 4,
-              }}
+      <SafeAreaView style={S.uiOverlay} pointerEvents="box-none">
+        {/* ═══ FLOATING GLASS HEADER ═══ */}
+        <Animated.View entering={FadeInDown.delay(100).springify()} style={S.headerWrap}>
+          <View style={S.glassPill}>
+            <Pressable
+              style={S.headerBtn}
+              onPress={() => navigation.goBack()}
+              hitSlop={12}
             >
-              AI Scan
-            </ThemedText>
-            {isProcessing && <ActivityIndicator color="#fff" />}
+              <Icon name="close" size="md" color="text" />
+            </Pressable>
+            <ThemedText style={S.headerTitle}>AI Food Scanner</ThemedText>
+            <Pressable
+              style={S.headerBtn}
+              onPress={() => setFlashOn((v) => !v)}
+              hitSlop={12}
+            >
+              <Icon
+                name={flashOn ? 'flash' : 'flash-outline'}
+                size="md"
+                color={flashOn ? 'primary' : 'text'}
+              />
+            </Pressable>
           </View>
-        )}
 
-        {mode !== 'results' && (
-          <View style={styles.statusBadgeWrap}>
-            <AiStatusBadge
-              status={aiStatus}
-              loading={isAiStatusLoading}
-              compact
-              testID={TEST_IDS.aiScan.statusBadge}
-            />
-          </View>
-        )}
+          {/* Help pill */}
+          {isCameraMode && (
+            <Animated.View entering={FadeIn.delay(300)} style={S.helpPillWrap}>
+              <View style={S.helpPill}>
+                <Icon name="sparkles" size="xs" color="primary" />
+                <ThemedText style={S.helpPillText}>
+                  HƯỚNG CAMERA VÀO MÓN ĂN ĐỂ NHẬN DIỆN
+                </ThemedText>
+              </View>
+            </Animated.View>
+          )}
 
-        <View style={styles.spacer} />
+          {/* Inline processing banner */}
+          {showProcessingBanner && (mode === 'preview') && (
+            <Animated.View entering={FadeIn.duration(300)} style={S.inlineBanner}>
+              <ActivityIndicator size="small" color={P.primary} />
+              <ThemedText style={S.inlineBannerText}>
+                Đã chụp! AI đang nhận diện món ăn...
+              </ThemedText>
+            </Animated.View>
+          )}
 
-        {isProcessing && (
-          <Animated.View entering={FadeInUp} style={styles.processingBadge}>
-            <ThemedText variant="body" style={{ color: '#fff' }}>
-              {'Đang phân tích...'}
-            </ThemedText>
-          </Animated.View>
-        )}
+          {/* AI status badge (camera mode only) */}
+          {isCameraMode && (
+            <View style={S.statusBadgeWrap}>
+              <AiStatusBadge
+                status={aiStatus}
+                loading={isAiStatusLoading}
+                compact
+                testID={TEST_IDS.aiScan.statusBadge}
+              />
+            </View>
+          )}
+        </Animated.View>
 
+        {/* ═══ CENTER: Scanner Frame ═══ */}
         {isCameraMode && (
-          <Animated.View entering={FadeInDown} style={styles.cameraActionGroup}>
-            <Button
-              title="Chọn từ thư viện"
+          <View style={S.scannerCenter}>
+            <View style={S.scannerFrame}>
+              {/* 4 bracket corners */}
+              <View style={[S.bracket, S.bracketTL]} />
+              <View style={[S.bracket, S.bracketTR]} />
+              <View style={[S.bracket, S.bracketBL]} />
+              <View style={[S.bracket, S.bracketBR]} />
+
+              {/* Scanning line */}
+              <Animated.View style={[S.scanLine, scanLineStyle]}>
+                <LinearGradient
+                  colors={['transparent', P.primary, 'transparent']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={S.scanLineGradient}
+                />
+              </Animated.View>
+            </View>
+
+            {/* Processing indicator */}
+            {isProcessing && (
+              <Animated.View entering={FadeIn} style={S.processingPill}>
+                <ActivityIndicator size="small" color={P.primary} />
+                <ThemedText style={S.processingText}>AI đang nhận diện...</ThemedText>
+              </Animated.View>
+            )}
+
+            {/* Hold steady indicator */}
+            {!isProcessing && !isCapturing && (
+              <Animated.View entering={FadeIn} style={S.holdSteadyWrap}>
+                <View style={S.holdDot} />
+                <ThemedText style={S.holdText}>Giữ yên...</ThemedText>
+              </Animated.View>
+            )}
+          </View>
+        )}
+
+        {/* Notice: Image only, no floating bubbles */}
+        {mode === 'results' && topItem && (
+          <View style={S.scannerCenter} />
+        )}
+
+        <View style={S.spacer} />
+
+        {/* ═══ CAMERA CONTROLS ═══ */}
+        {isCameraMode && (
+          <Animated.View entering={FadeInDown.delay(200)} style={S.cameraControls}>
+            {/* Gallery pick CTA */}
+            <Pressable
+              style={S.galleryPill}
               onPress={handlePickImage}
-              variant="secondary"
-              size="sm"
-              fullWidth={false}
-              icon="images-outline"
-              accessibilityLabel="Chọn từ thư viện"
-              accessibilityHint="Chọn ảnh có sẵn từ thư viện"
               testID={TEST_IDS.aiScan.galleryButton}
-              style={styles.galleryCtaButton}
-            />
+            >
+              <Icon name="images-outline" size="sm" color="text" />
+              <ThemedText style={S.galleryPillText}>Chọn từ thư viện</ThemedText>
+            </Pressable>
 
-            <Animated.View style={styles.bottomControls}>
-              <AnimatedPressable
-                style={[
-                  styles.sideButton,
-                  {
-                    backgroundColor: 'rgba(255,255,255,0.95)',
-                    shadowColor: '#000',
-                    shadowOffset: { width: 0, height: 2 },
-                    shadowOpacity: 0.25,
-                    shadowRadius: 4,
-                    elevation: 5,
-                  },
-                ]}
-                onPress={() => navigation.navigate('FoodSearch')}
-                hitSlop={16}
-                accessible
-                collapsable={false}
-                importantForAccessibility="yes"
-                accessibilityRole="button"
-                accessibilityLabel="Tìm kiếm món ăn"
-                accessibilityHint="Chuyển sang màn hình tìm kiếm"
-              >
-                <Icon name="search-outline" size="lg" color="primary" />
-              </AnimatedPressable>
-
+            {/* Bottom row: Capture */}
+            <View style={S.bottomRow}>
               <AnimatedPressable
                 onPress={handleCapture}
                 disabled={isCapturing}
-                style={[captureButtonStyle, styles.captureButtonOuter]}
-                accessibilityRole="button"
-                accessibilityLabel="Chụp ảnh"
-                accessibilityHint="Chụp ảnh món ăn để AI nhận diện"
-                accessibilityState={{ disabled: isCapturing }}
+                style={[captureButtonStyle, S.captureOuter]}
                 testID={TEST_IDS.aiScan.captureButton}
               >
                 <LinearGradient
-                  colors={[
-                    theme.colors.primary,
-                    theme.colors.secondary,
-                    theme.colors.primary,
-                  ]}
+                  colors={[P.primary, P.primaryDim, P.primary]}
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 1 }}
-                  style={styles.captureGradientRing}
+                  style={S.captureGradient}
                 >
-                  <View style={[styles.captureInnerLarge, { backgroundColor: '#fff' }]} />
+                  <View style={S.captureInner} />
                 </LinearGradient>
               </AnimatedPressable>
-
-              <AnimatedPressable
-                style={[
-                  styles.sideButton,
-                  {
-                    backgroundColor: 'rgba(255,255,255,0.95)',
-                    shadowColor: '#000',
-                    shadowOffset: { width: 0, height: 2 },
-                    shadowOpacity: 0.25,
-                    shadowRadius: 4,
-                    elevation: 5,
-                  },
-                ]}
-                onPress={handlePickImage}
-                hitSlop={16}
-                accessible
-                collapsable={false}
-                importantForAccessibility="yes"
-                accessibilityRole="button"
-                accessibilityLabel="Chọn từ thư viện"
-                accessibilityHint="Chọn ảnh có sẵn từ thư viện"
-              >
-                <Icon name="images-outline" size="lg" color="primary" />
-              </AnimatedPressable>
-            </Animated.View>
+            </View>
           </Animated.View>
         )}
 
+        {/* ═══ RESULTS BOTTOM DRAWER ═══ */}
         {mode === 'results' && detectionResult && (
           <Animated.View
-            entering={SlideInRight}
-            style={[
-              styles.resultsContainer,
-              { backgroundColor: theme.colors.background },
-            ]}
+            entering={SlideInUp.duration(300)}
+            style={S.drawer}
           >
-            <View
-              style={[styles.resultsHandle, { backgroundColor: theme.colors.border }]}
-            />
-            <View style={styles.resultsHeader}>
-              <ThemedText variant="h4" weight="700">
-                {'Kết quả'}
-              </ThemedText>
-              <Pressable
-                onPress={handleRetake}
-                style={{ padding: 8 }}
-                accessibilityRole="button"
-                accessibilityLabel="Đóng kết quả"
-                accessibilityHint="Quay lại chế độ camera"
-                testID={TEST_IDS.aiScan.closeResultsButton}
-              >
-                <Icon name="close" size="md" color="text" />
-              </Pressable>
-            </View>
+            {/* Drag handle */}
+            <View style={S.drawerHandle} />
 
-            <FlatList
-              data={topResults}
-              keyExtractor={(item, index) => item.label + index}
-              renderItem={({ item, index }) => (
-                <View
-                  style={[
-                    styles.resultCard,
-                    {
-                      backgroundColor:
-                        index === 0
-                          ? theme.mode === 'dark'
-                            ? 'rgba(59, 130, 246, 0.15)'
-                            : 'rgba(59, 130, 246, 0.08)'
-                          : theme.colors.card,
-                      borderColor:
-                        index === 0 ? theme.colors.primary + '50' : theme.colors.border,
-                    },
-                  ]}
-                >
-                  <View style={styles.resultThumbnail}>
-                    {item.thumbNail ? (
-                      <AppImage
-                        source={{ uri: item.thumbNail }}
-                        style={{ width: 56, height: 56, borderRadius: 12 }}
-                      />
-                    ) : (
-                      <View
-                        style={{
-                          width: 56,
-                          height: 56,
-                          borderRadius: 12,
-                          backgroundColor: theme.colors.background,
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          borderWidth: 1,
-                          borderColor: theme.colors.border,
-                        }}
-                      >
-                        <Icon name="leaf-outline" size="lg" color="textSecondary" />
-                      </View>
-                    )}
-                    {index === 0 && (
-                      <View
-                        style={{
-                          position: 'absolute',
-                          bottom: -4,
-                          left: '50%',
-                          marginLeft: -20,
-                          backgroundColor: theme.colors.success,
-                          paddingHorizontal: 6,
-                          paddingVertical: 2,
-                          borderRadius: 6,
-                        }}
-                      >
-                        <ThemedText
-                          variant="caption"
-                          style={{ color: '#fff', fontSize: 8, fontWeight: '700' }}
-                        >
-                          TOP 1
-                        </ThemedText>
-                      </View>
-                    )}
-                  </View>
-
-                  <View style={styles.resultContent}>
-                    <ThemedText variant="body" weight="700" numberOfLines={1}>
-                      {item.foodName || translateIngredient(item.label)}
+            {hasDetectedItems && topItem ? (
+              <View style={S.drawerContent}>
+                {/* Title row */}
+                <View style={S.drawerTitleRow}>
+                  <View style={{ flex: 1 }}>
+                    <ThemedText style={S.drawerFoodName} numberOfLines={2}>
+                      {topItem.foodName || translateIngredient(topItem.label)}
                     </ThemedText>
-
-                    <View
-                      style={{
-                        flexDirection: 'row',
-                        alignItems: 'center',
-                        marginTop: 6,
-                        gap: 8,
-                      }}
-                    >
-                      <View
-                        style={{
-                          flexDirection: 'row',
-                          alignItems: 'center',
-                          backgroundColor:
-                            theme.mode === 'dark'
-                              ? 'rgba(255,255,255,0.1)'
-                              : 'rgba(0,0,0,0.05)',
-                          paddingHorizontal: 8,
-                          paddingVertical: 4,
-                          borderRadius: 6,
-                        }}
-                      >
-                        <View
-                          style={{
-                            width: 32,
-                            height: 3,
-                            backgroundColor: theme.colors.border,
-                            borderRadius: 2,
-                            overflow: 'hidden',
-                            marginRight: 4,
-                          }}
-                        >
-                          <View
-                            style={{
-                              width: `${item.confidence * 100}%`,
-                              height: '100%',
-                              backgroundColor:
-                                item.confidence > 0.7
-                                  ? theme.colors.success
-                                  : item.confidence > 0.5
-                                    ? theme.colors.warning
-                                    : theme.colors.danger,
-                            }}
-                          />
-                        </View>
-                        <ThemedText
-                          variant="caption"
-                          weight="600"
-                          style={{ fontSize: 11 }}
-                        >
-                          {Math.round(item.confidence * 100)}%
-                        </ThemedText>
-                      </View>
-
-                      <ThemedText
-                        variant="caption"
-                        color={item.isMatched ? 'textSecondary' : 'warning'}
-                        style={{ fontSize: 12 }}
-                      >
-                        {item.isMatched
-                          ? item.caloriesPer100g
-                            ? `${item.caloriesPer100g} kcal`
-                            : '--'
-                          : 'Cần review'}
+                    <View style={{ flexDirection: 'row', alignItems: 'baseline', marginTop: 4 }}>
+                      <ThemedText style={S.drawerKcal}>
+                        {computedCal} kcal
                       </ThemedText>
+                      <ThemedText style={S.drawerServing}> / {resultGrams}g</ThemedText>
                     </View>
                   </View>
 
-                  <View style={styles.resultActions}>
+                  {/* Quantity control: - / grams / + */}
+                  <View style={S.qtyControl}>
                     <Pressable
-                      onPress={() => handleQuickAdd(item)}
-                      style={[
-                        styles.resultActionBtn,
-                        { backgroundColor: theme.colors.primary },
-                      ]}
-                      hitSlop={4}
-                      testID={
-                        index === 0
-                          ? TEST_IDS.aiScan.quickAddTopResultButton
-                          : `ai-scan-quick-add-${index}`
-                      }
+                      style={S.qtyBtnMinus}
+                      onPress={() => setResultGrams((g) => Math.max(25, g - 100))}
                     >
-                      <Icon name="add" size="md" color="background" />
+                      <Icon name="remove" size="sm" color="text" />
                     </Pressable>
                     <Pressable
-                      onPress={() => handleAddToBasket(item)}
-                      style={[
-                        styles.resultActionBtn,
-                        {
-                          backgroundColor:
-                            theme.mode === 'dark'
-                              ? 'rgba(255,255,255,0.1)'
-                              : 'rgba(0,0,0,0.05)',
-                        },
-                      ]}
-                      hitSlop={4}
+                      onPress={() => {
+                        setGramInputValue(String(resultGrams));
+                        setShowGramModal(true);
+                      }}
                     >
-                      <Animated.View style={basketIconStyle}>
-                        <Icon name="basket-outline" size="sm" color="textSecondary" />
-                      </Animated.View>
+                      <ThemedText style={S.qtyText}>{resultGrams}g</ThemedText>
+                    </Pressable>
+                    <Pressable
+                      style={S.qtyBtnPlus}
+                      onPress={() => setResultGrams((g) => Math.min(5000, g + 100))}
+                    >
+                      <Icon name="add" size="sm" color="background" />
                     </Pressable>
                   </View>
                 </View>
-              )}
-              ListEmptyComponent={() =>
-                resultNotice ? (
-                  <AnimatedEmptyState
-                    title={resultNotice.title}
-                    description={resultNotice.description}
-                    compact
-                    primaryAction={{
-                      label: 'Tìm thủ công',
-                      onPress: () => navigation.navigate('FoodSearch'),
-                    }}
-                    secondaryAction={{
-                      label: 'Chụp lại',
-                      onPress: handleRetake,
-                    }}
-                  />
-                ) : (
-                  <View style={{ padding: 20, alignItems: 'center' }}>
-                    <ThemedText
-                      variant="body"
-                      color="textSecondary"
-                      style={{ textAlign: 'center' }}
-                    >
-                      {'Không tìm thấy món ăn nào.'}
-                      {'\nThử chụp lại rõ hơn nhé!'}
-                    </ThemedText>
-                  </View>
-                )
-              }
-              style={{ flex: 1, maxHeight: Dimensions.get('window').height * 0.5 }}
-              contentContainerStyle={{ flexGrow: 1 }}
-              showsVerticalScrollIndicator
-              nestedScrollEnabled
-            />
 
-            <View style={styles.actionButtons}>
-              <Pressable
-                onPress={handleRetake}
-                style={[
-                  styles.compactButton,
-                  { borderColor: theme.colors.border, borderWidth: 1 },
-                ]}
-                testID={TEST_IDS.aiScan.retakeButton}
-              >
-                <Icon name="refresh" size="sm" color="text" />
-                <ThemedText variant="bodySmall" weight="600" style={{ marginLeft: 6 }}>
-                  {'Chụp lại'}
-                </ThemedText>
-              </Pressable>
-              {hasDetectedItems ? (
-                <>
+                {/* Macro visualization */}
+                <View style={S.macroRow}>
+                  <View style={S.macroCard}>
+                    <ThemedText style={S.macroLabel}>PROTEIN</ThemedText>
+                    <View style={S.macroValRow}>
+                      <ThemedText style={S.macroVal}>{computedProtein}g</ThemedText>
+                      <View style={S.macroBarTrack}>
+                        <View
+                          style={[
+                            S.macroBarFill,
+                            {
+                              width: `${Math.min(100, (computedProtein / 50) * 100)}%`,
+                              backgroundColor: P.primary,
+                              shadowColor: P.primary,
+                            },
+                          ]}
+                        />
+                      </View>
+                    </View>
+                  </View>
+                  <View style={S.macroCard}>
+                    <ThemedText style={S.macroLabel}>CARBS</ThemedText>
+                    <View style={S.macroValRow}>
+                      <ThemedText style={S.macroVal}>{computedCarbs}g</ThemedText>
+                      <View style={S.macroBarTrack}>
+                        <View
+                          style={[
+                            S.macroBarFill,
+                            {
+                              width: `${Math.min(100, (computedCarbs / 80) * 100)}%`,
+                              backgroundColor: '#22d3ee',
+                              shadowColor: '#22d3ee',
+                            },
+                          ]}
+                        />
+                      </View>
+                    </View>
+                  </View>
+                  <View style={S.macroCard}>
+                    <ThemedText style={S.macroLabel}>FAT</ThemedText>
+                    <View style={S.macroValRow}>
+                      <ThemedText style={S.macroVal}>{computedFat}g</ThemedText>
+                      <View style={S.macroBarTrack}>
+                        <View
+                          style={[
+                            S.macroBarFill,
+                            {
+                              width: `${Math.min(100, (computedFat / 40) * 100)}%`,
+                              backgroundColor: '#fbbf24',
+                              shadowColor: '#fbbf24',
+                            },
+                          ]}
+                        />
+                      </View>
+                    </View>
+                  </View>
+                </View>
+
+                {/* Action buttons row */}
+                <View style={S.actionBtnRow}>
+                  {/* Retake button — no icon */}
                   <Pressable
-                    onPress={handleQuickSave}
-                    disabled={isQuickSaving}
-                    style={[
-                      styles.compactButton,
-                      {
-                        backgroundColor: theme.colors.primary,
-                        opacity: isQuickSaving ? 0.7 : 1,
-                      },
-                    ]}
-                    testID={TEST_IDS.aiScan.quickAddButton}
+                    onPress={handleRetake}
+                    style={S.retakeBtn}
+                    testID={TEST_IDS.aiScan.retakeButton}
                   >
-                    {isQuickSaving ? (
-                      <ActivityIndicator size="small" color="#fff" />
-                    ) : (
-                      <>
-                        <Icon name="flash" size="sm" color="background" />
-                        <ThemedText
-                          variant="bodySmall"
-                          weight="600"
-                          style={{ marginLeft: 6, color: '#fff' }}
-                        >
-                          {quickSaveItem ? 'Lưu nhanh' : 'Sửa món đầu tiên'}
-                        </ThemedText>
-                      </>
-                    )}
+                    <ThemedText style={S.retakeBtnText}>Chụp lại</ThemedText>
                   </Pressable>
+
+                  {/* Add to diary */}
                   <Pressable
                     onPress={handleAddToDiary}
-                    style={[
-                      styles.compactButton,
-                      { borderColor: theme.colors.border, borderWidth: 1 },
-                    ]}
+                    style={S.addBtn}
                     testID={TEST_IDS.aiScan.addToDiaryButton}
                   >
-                    <Icon name="options-outline" size="sm" color="text" />
-                    <ThemedText
-                      variant="bodySmall"
-                      weight="600"
-                      style={{ marginLeft: 6 }}
+                    <LinearGradient
+                      colors={[P.primary, P.primaryDim]}
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 1, y: 0 }}
+                      style={S.addBtnGradient}
                     >
-                      {'Sửa trước khi lưu'}
-                    </ThemedText>
+                      <ThemedText style={S.addBtnText}>Thêm vào Nhật ký</ThemedText>
+                    </LinearGradient>
                   </Pressable>
-                </>
-              ) : (
-                <Pressable
-                  onPress={() => navigation.navigate('FoodSearch')}
-                  style={[
-                    styles.compactButton,
-                    { backgroundColor: theme.colors.primary },
-                  ]}
-                >
-                  <Icon name="search-outline" size="sm" color="background" />
-                  <ThemedText
-                    variant="bodySmall"
-                    weight="600"
-                    style={{ marginLeft: 6, color: '#fff' }}
+                </View>
+
+                {/* Bottom links row */}
+                <View style={S.bottomLinksRow}>
+                  {/* Add to basket — bordered, no icon */}
+                  <Pressable
+                    style={S.basketBtn}
+                    onPress={() => topItem && handleAddToBasket(topItem)}
                   >
-                    {'Tìm thủ công'}
+                    <ThemedText style={S.basketBtnText}>Thêm vào giỏ</ThemedText>
+                  </Pressable>
+
+                  {/* Search manually */}
+                  <View style={S.searchManualRow}>
+                    <ThemedText style={S.searchManualTextNormal}>Không đúng?</ThemedText>
+                    <Pressable onPress={() => navigation.navigate('FoodSearch')}>
+                      <ThemedText style={S.searchManualTextLink}> Tìm thủ công</ThemedText>
+                    </Pressable>
+                  </View>
+                </View>
+              </View>
+            ) : (
+              /* No results / offline state — custom dark theme */
+              <View style={S.drawerContent}>
+                <View style={S.noResultsWrap}>
+                  <ThemedText style={S.noResultsTitle}>
+                    {resultNotice?.title ?? 'Chưa nhận diện được'}
                   </ThemedText>
-                </Pressable>
-              )}
-            </View>
+                  <ThemedText style={S.noResultsDesc}>
+                    {resultNotice?.description ?? 'Thử chụp lại rõ hơn nhé!'}
+                  </ThemedText>
+
+                  {/* Primary: Search manually */}
+                  <Pressable
+                    style={S.noResultsPrimaryBtn}
+                    onPress={() => navigation.navigate('FoodSearch')}
+                  >
+                    <LinearGradient
+                      colors={[P.primary, P.primaryDim]}
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 1, y: 0 }}
+                      style={S.noResultsPrimaryGrad}
+                    >
+                      <ThemedText style={S.noResultsPrimaryText}>Tìm thủ công</ThemedText>
+                    </LinearGradient>
+                  </Pressable>
+
+                  {/* Secondary: Retake */}
+                  <Pressable style={S.noResultsSecondaryBtn} onPress={handleRetake}>
+                    <ThemedText style={S.noResultsSecondaryText}>Chụp lại</ThemedText>
+                  </Pressable>
+                </View>
+              </View>
+            )}
           </Animated.View>
         )}
       </SafeAreaView>
 
-      <AIResultEditModal
-        visible={showEditModal}
-        item={editingItem}
-        onClose={() => {
-          setShowEditModal(false);
-          setEditingItem(null);
-        }}
-        onSave={handleEditModalSave}
-      />
+      {/* ═══ Gram Input Modal ═══ */}
+      <Modal
+        visible={showGramModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowGramModal(false)}
+      >
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={S.modalOverlay}
+        >
+          <Pressable style={S.modalOverlay} onPress={() => setShowGramModal(false)}>
+            <Pressable
+              style={S.gramModalCard}
+              onPress={(e) => e.stopPropagation()}
+            >
+              <ThemedText style={S.gramModalTitle}>Nhập khối lượng</ThemedText>
+              <ThemedText style={S.gramModalSubtitle}>gram</ThemedText>
 
+              <View style={S.gramInputWrap}>
+                <TextInput
+                  style={S.gramInput}
+                  value={gramInputValue}
+                  onChangeText={setGramInputValue}
+                  keyboardType="number-pad"
+                  autoFocus
+                  selectTextOnFocus
+                  maxLength={4}
+                  placeholderTextColor={P.onSurfaceVariant}
+                />
+              </View>
+
+              {/* Preview macros */}
+              {topItem && (() => {
+                const previewGrams = parseInt(gramInputValue, 10) || 0;
+                const pr = previewGrams / 100;
+                return (
+                  <View style={S.gramPreviewRow}>
+                    <View style={S.gramPreviewItem}>
+                      <ThemedText style={[S.gramPreviewVal, { color: P.primary }]}>
+                        {Math.round((topItem.caloriesPer100g ?? 0) * pr)}
+                      </ThemedText>
+                      <ThemedText style={S.gramPreviewLabel}>kcal</ThemedText>
+                    </View>
+                    <View style={S.gramPreviewItem}>
+                      <ThemedText style={S.gramPreviewVal}>
+                        {Math.round((topItem.proteinPer100g ?? 0) * pr)}g
+                      </ThemedText>
+                      <ThemedText style={S.gramPreviewLabel}>Protein</ThemedText>
+                    </View>
+                    <View style={S.gramPreviewItem}>
+                      <ThemedText style={S.gramPreviewVal}>
+                        {Math.round((topItem.carbPer100g ?? 0) * pr)}g
+                      </ThemedText>
+                      <ThemedText style={S.gramPreviewLabel}>Carbs</ThemedText>
+                    </View>
+                    <View style={S.gramPreviewItem}>
+                      <ThemedText style={S.gramPreviewVal}>
+                        {Math.round((topItem.fatPer100g ?? 0) * pr)}g
+                      </ThemedText>
+                      <ThemedText style={S.gramPreviewLabel}>Fat</ThemedText>
+                    </View>
+                  </View>
+                );
+              })()}
+
+              <View style={S.gramModalBtns}>
+                <Pressable
+                  style={S.gramCancelBtn}
+                  onPress={() => setShowGramModal(false)}
+                >
+                  <ThemedText style={S.gramCancelBtnText}>Hủy</ThemedText>
+                </Pressable>
+                <Pressable
+                  style={S.gramConfirmBtn}
+                  onPress={handleGramModalConfirm}
+                >
+                  <LinearGradient
+                    colors={[P.primary, P.primaryDim]}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 0 }}
+                    style={S.gramConfirmBtnGrad}
+                  >
+                    <ThemedText style={S.gramConfirmBtnText}>Xác nhận</ThemedText>
+                  </LinearGradient>
+                </Pressable>
+              </View>
+            </Pressable>
+          </Pressable>
+        </KeyboardAvoidingView>
+      </Modal>
+
+      {/* Basket FAB */}
       <IngredientBasketFab onPress={() => setShowBasketSheet(true)} />
 
       <IngredientBasketSheet
@@ -904,7 +897,10 @@ const AIScanScreen: React.FC = () => {
   );
 };
 
-const styles = StyleSheet.create({
+/* ═══════════════════════════════════════════════
+   STYLES — Emerald Nebula 3D Design
+   ═══════════════════════════════════════════════ */
+const S = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#000',
@@ -919,52 +915,332 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'space-between',
   },
-  headerFloating: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingTop: 20,
-    alignItems: 'center',
-  },
-  statusBadgeWrap: {
-    paddingHorizontal: 20,
-    marginTop: 8,
-  },
   spacer: {
     flex: 1,
   },
-  processingBadge: {
-    alignSelf: 'center',
-    backgroundColor: 'rgba(0,0,0,0.7)',
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 20,
-    marginBottom: 20,
+
+  /* ═══ GLASS HEADER ═══ */
+  headerWrap: {
+    paddingHorizontal: 16,
+    paddingTop: 8,
   },
-  cameraActionGroup: {
+  glassPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: P.glass,
+    borderRadius: 999,
+    paddingHorizontal: 6,
+    paddingVertical: 6,
+    borderWidth: 1,
+    borderColor: P.glassBorder,
+    shadowColor: P.primary,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.15,
+    shadowRadius: 32,
+    elevation: 8,
+  },
+  headerBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  headerTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: P.onSurface,
+    letterSpacing: -0.3,
+  },
+  helpPillWrap: {
+    alignItems: 'center',
+    marginTop: 14,
+  },
+  helpPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: P.glass,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: P.glassBorder,
+  },
+  helpPillText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: P.onSurfaceVariant,
+    letterSpacing: 1.5,
+    textTransform: 'uppercase',
+  },
+  statusBadgeWrap: {
+    paddingHorizontal: 4,
+    marginTop: 10,
+    alignItems: 'center',
+  },
+
+  /* ═══ SCANNER FRAME ═══ */
+  scannerCenter: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: -20,
+  },
+  scannerFrame: {
+    width: SCANNER_SIZE,
+    height: SCANNER_SIZE,
+    position: 'relative',
+  },
+  bracket: {
+    position: 'absolute',
+    width: 48,
+    height: 48,
+  },
+  bracketTL: {
+    top: 0,
+    left: 0,
+    borderTopWidth: 4,
+    borderLeftWidth: 4,
+    borderColor: P.primary,
+    borderTopLeftRadius: 12,
+  },
+  bracketTR: {
+    top: 0,
+    right: 0,
+    borderTopWidth: 4,
+    borderRightWidth: 4,
+    borderColor: P.primary,
+    borderTopRightRadius: 12,
+  },
+  bracketBL: {
+    bottom: 0,
+    left: 0,
+    borderBottomWidth: 4,
+    borderLeftWidth: 4,
+    borderColor: P.primary,
+    borderBottomLeftRadius: 12,
+  },
+  bracketBR: {
+    bottom: 0,
+    right: 0,
+    borderBottomWidth: 4,
+    borderRightWidth: 4,
+    borderColor: P.primary,
+    borderBottomRightRadius: 12,
+  },
+  scanLine: {
+    position: 'absolute',
+    left: 4,
+    right: 4,
+    height: 2,
+    top: 0,
+  },
+  scanLineGradient: {
+    width: '100%',
+    height: 2,
+    shadowColor: P.primary,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.8,
+    shadowRadius: 15,
+    elevation: 5,
+  },
+  processingPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginTop: 24,
+    backgroundColor: P.glass,
     paddingHorizontal: 20,
-    paddingBottom: 28,
+    paddingVertical: 12,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: P.glassBorder,
+  },
+  processingText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: P.onSurface,
+  },
+  inlineBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    alignSelf: 'center',
+    backgroundColor: P.glass,
+    paddingHorizontal: 18,
+    paddingVertical: 10,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: P.glassBorder,
+    marginTop: 12,
+  },
+  inlineBannerText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: P.onSurface,
+  },
+  holdSteadyWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 24,
+  },
+  holdDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: P.primary,
+    shadowColor: P.primary,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.8,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  holdText: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: 'rgba(255,255,255,0.8)',
+  },
+
+  /* ═══ FLOATING LABELS ═══ */
+  floatingLabel: {
+    position: 'absolute',
+    top: -52,
+    alignSelf: 'center',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: P.glass,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(75,226,119,0.3)',
+    shadowColor: P.primary,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.3,
+    shadowRadius: 20,
+    elevation: 6,
+  },
+  floatingLabelEmoji: {
+    fontSize: 16,
+  },
+  floatingLabelName: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: P.onSurface,
+    maxWidth: 160,
+  },
+  floatingLabelConf: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: P.primary,
+  },
+
+  /* Macro bubbles */
+  macroBubble: {
+    position: 'absolute',
+    borderRadius: 999,
+    backgroundColor: P.glass,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+  },
+  macroBubbleKcal: {
+    width: 64,
+    height: 64,
+    right: -32,
+    top: 48,
+    borderColor: 'rgba(75,226,119,0.2)',
+    shadowColor: P.primary,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.15,
+    shadowRadius: 32,
+    elevation: 4,
+  },
+  macroBubbleP: {
+    width: 48,
+    height: 48,
+    left: -24,
+    bottom: 64,
+    borderColor: 'rgba(255,255,255,0.08)',
+  },
+  macroBubbleC: {
+    width: 48,
+    height: 48,
+    left: 40,
+    bottom: -24,
+    borderColor: 'rgba(255,255,255,0.08)',
+  },
+  macroBubbleF: {
+    width: 48,
+    height: 48,
+    right: 40,
+    bottom: -24,
+    borderColor: 'rgba(255,255,255,0.08)',
+  },
+  macroBubbleLabel: {
+    fontSize: 9,
+    fontWeight: '700',
+    color: P.onSurfaceVariant,
+    textTransform: 'uppercase',
+    letterSpacing: -0.5,
+  },
+  macroBubbleValuePrimary: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: P.primary,
+  },
+  macroBubbleLabelSm: {
+    fontSize: 8,
+    fontWeight: '700',
+    color: P.onSurfaceVariant,
+    textTransform: 'uppercase',
+  },
+  macroBubbleValueSm: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: P.onSurface,
+  },
+
+  /* ═══ CAMERA CONTROLS ═══ */
+  cameraControls: {
+    paddingHorizontal: 20,
+    paddingBottom: 110,
     gap: 14,
   },
-  galleryCtaButton: {
-    alignSelf: 'center',
-    minWidth: 190,
-  },
-  bottomControls: {
+  galleryPill: {
     flexDirection: 'row',
-    justifyContent: 'space-evenly',
+    alignItems: 'center',
+    gap: 8,
+    alignSelf: 'center',
+    backgroundColor: P.glass,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: P.glassBorder,
+  },
+  galleryPillText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: P.onSurface,
+  },
+  bottomRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
     alignItems: 'center',
     paddingBottom: 12,
-    paddingHorizontal: 0,
   },
-  captureButtonOuter: {
+  captureOuter: {
     width: 88,
     height: 88,
     borderRadius: 44,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  captureGradientRing: {
+  captureGradient: {
     width: 84,
     height: 84,
     borderRadius: 42,
@@ -972,91 +1248,385 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     padding: 4,
   },
-  captureInnerLarge: {
+  captureInner: {
     width: 68,
     height: 68,
     borderRadius: 34,
     backgroundColor: '#FFFFFF',
   },
-  sideButton: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  disabledSideButton: {
-    opacity: 0.45,
-  },
-  resultsContainer: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    padding: 20,
-    paddingBottom: 40,
+
+  /* ═══ RESULTS DRAWER ═══ */
+  drawer: {
+    backgroundColor: 'rgba(22, 27, 43, 0.92)',
+    borderTopLeftRadius: 40,
+    borderTopRightRadius: 40,
+    paddingTop: 16,
+    paddingHorizontal: 24,
+    paddingBottom: 100,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: -2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
+    shadowOffset: { width: 0, height: -10 },
+    shadowOpacity: 0.5,
+    shadowRadius: 40,
+    elevation: 20,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255,255,255,0.05)',
   },
-  resultsHandle: {
-    width: 40,
+  drawerHandle: {
+    width: 48,
     height: 4,
-    backgroundColor: '#ccc',
+    backgroundColor: P.surfaceContainerHigh,
     borderRadius: 2,
     alignSelf: 'center',
-    marginBottom: 10,
+    marginBottom: 20,
   },
-  resultsHeader: {
+  drawerContent: {
+    gap: 0,
+  },
+  drawerTitleRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 16,
+    alignItems: 'flex-start',
+    marginBottom: 20,
   },
-  resultCard: {
+  drawerFoodName: {
+    fontSize: 22,
+    fontWeight: '800',
+    color: P.onSurface,
+    letterSpacing: -0.5,
+    lineHeight: 28,
+  },
+  drawerKcal: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: P.primary,
+  },
+  drawerServing: {
+    fontSize: 13,
+    fontWeight: '400',
+    color: P.onSurfaceVariant,
+  },
+  qtyControl: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 12,
+    backgroundColor: P.surfaceContainerLow,
     borderRadius: 16,
+    padding: 4,
     borderWidth: 1,
-    marginBottom: 10,
+    borderColor: 'rgba(255,255,255,0.05)',
+    marginLeft: 12,
   },
-  resultThumbnail: {
-    position: 'relative',
-    marginRight: 12,
-  },
-  resultContent: {
-    flex: 1,
-    marginRight: 8,
-  },
-  resultActions: {
-    flexDirection: 'column',
-    gap: 6,
-  },
-  resultActionBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
+  qtyBtnMinus: {
+    width: 32,
+    height: 32,
+    borderRadius: 12,
+    backgroundColor: P.surfaceContainerHigh,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  actionButtons: {
+  qtyText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: P.onSurface,
+    paddingHorizontal: 10,
+    textDecorationLine: 'underline',
+    textDecorationColor: P.onSurfaceVariant,
+  },
+  qtyBtnPlus: {
+    width: 32,
+    height: 32,
+    borderRadius: 12,
+    backgroundColor: P.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  /* Macro cards */
+  macroRow: {
+    flexDirection: 'row',
+    gap: 10,
+    marginBottom: 20,
+  },
+  macroCard: {
+    flex: 1,
+    backgroundColor: P.surfaceContainerLow,
+    borderRadius: 16,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.04)',
+  },
+  macroLabel: {
+    fontSize: 9,
+    fontWeight: '700',
+    color: P.onSurfaceVariant,
+    letterSpacing: 1.5,
+    textTransform: 'uppercase',
+    marginBottom: 6,
+  },
+  macroValRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    gap: 8,
+  },
+  macroVal: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: P.onSurface,
+  },
+  macroBarTrack: {
+    flex: 1,
+    height: 5,
+    backgroundColor: P.surfaceContainerHigh,
+    borderRadius: 99,
+    overflow: 'hidden',
+    marginBottom: 3,
+  },
+  macroBarFill: {
+    height: '100%',
+    borderRadius: 99,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.5,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+
+  /* Action buttons */
+  actionBtnRow: {
     flexDirection: 'row',
     gap: 12,
-    marginTop: 16,
+    marginBottom: 12,
   },
-  compactButton: {
+  retakeBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
+    backgroundColor: P.surfaceContainerLow,
+  },
+  retakeBtnText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: P.onSurface,
+  },
+  addBtn: {
     flex: 1,
-    paddingVertical: 12,
+    borderRadius: 20,
+    overflow: 'hidden',
+    shadowColor: P.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 16,
+    elevation: 8,
+  },
+  addBtnGradient: {
+    paddingVertical: 14,
+    borderRadius: 20,
+    alignItems: 'center',
+  },
+  addBtnText: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#003915',
+    letterSpacing: -0.3,
+  },
+  bottomLinksRow: {
+    flexDirection: 'row',
+    justifyContent: 'flex-start',
+    alignItems: 'center',
+    paddingVertical: 4,
+    gap: 16,
+  },
+  basketBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 8,
     paddingHorizontal: 16,
     borderRadius: 12,
+    borderWidth: 1,
+    borderColor: P.primary,
+  },
+  basketBtnText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: P.primary,
+  },
+  searchManualRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 8,
+  },
+  searchManualTextNormal: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: '#ffffff',
+  },
+  searchManualTextLink: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: P.primary,
+  },
+
+  /* ═══ NO RESULTS / OFFLINE STATE ═══ */
+  noResultsWrap: {
+    alignItems: 'center',
+    paddingVertical: 16,
+    paddingHorizontal: 8,
+  },
+  noResultsTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: P.onSurface,
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  noResultsDesc: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: P.onSurfaceVariant,
+    textAlign: 'center',
+    marginBottom: 24,
+    lineHeight: 20,
+  },
+  noResultsPrimaryBtn: {
+    width: '100%',
+    borderRadius: 20,
+    overflow: 'hidden',
+    marginBottom: 12,
+    shadowColor: P.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 16,
+    elevation: 8,
+  },
+  noResultsPrimaryGrad: {
+    paddingVertical: 14,
+    borderRadius: 20,
+    alignItems: 'center',
+  },
+  noResultsPrimaryText: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#003915',
+    letterSpacing: -0.3,
+  },
+  noResultsSecondaryBtn: {
+    width: '100%',
+    paddingVertical: 14,
+    borderRadius: 20,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
+    backgroundColor: P.surfaceContainerLow,
+  },
+  noResultsSecondaryText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: P.primary,
+  },
+
+  /* ═══ GRAM INPUT MODAL ═══ */
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+    paddingBottom: 40,
+  },
+  gramModalCard: {
+    width: SW - 64,
+    backgroundColor: P.surfaceContainer,
+    borderRadius: 28,
+    padding: 28,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.06)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.5,
+    shadowRadius: 30,
+    elevation: 20,
+  },
+  gramModalTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: P.onSurface,
+    marginBottom: 4,
+  },
+  gramModalSubtitle: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: P.onSurfaceVariant,
+    marginBottom: 20,
+  },
+  gramInputWrap: {
+    backgroundColor: P.surfaceContainerHigh,
+    borderRadius: 16,
+    paddingHorizontal: 20,
+    paddingVertical: 14,
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: P.primary + '30',
+  },
+  gramInput: {
+    fontSize: 28,
+    fontWeight: '700',
+    color: P.onSurface,
+    textAlign: 'center',
+  },
+  gramPreviewRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 24,
+    paddingHorizontal: 4,
+  },
+  gramPreviewItem: {
+    alignItems: 'center',
+  },
+  gramPreviewVal: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: P.onSurface,
+  },
+  gramPreviewLabel: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: P.onSurfaceVariant,
+    marginTop: 2,
+  },
+  gramModalBtns: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  gramCancelBtn: {
+    flex: 1,
+    backgroundColor: P.surfaceContainerHigh,
+    borderRadius: 16,
+    paddingVertical: 14,
+    alignItems: 'center',
+  },
+  gramCancelBtnText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: P.onSurface,
+  },
+  gramConfirmBtn: {
+    flex: 1,
+    borderRadius: 16,
+    overflow: 'hidden',
+  },
+  gramConfirmBtnGrad: {
+    paddingVertical: 14,
+    borderRadius: 16,
+    alignItems: 'center',
+  },
+  gramConfirmBtnText: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#003915',
   },
 });
 
