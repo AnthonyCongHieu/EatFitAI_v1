@@ -319,11 +319,12 @@ class GeminiPoolTests(unittest.TestCase):
             with patch("gemini_pool._utcnow", side_effect=clock):
                 self.assertEqual(pool.generate_text("hello", max_output_tokens=3), "primary")
 
-            reloaded = GeminiPoolManager(
-                [GeminiPoolEntry("primary", "project-a", "slot-1", "key-1", DEFAULT_MODEL)],
-                usage_state_path=state_path,
-            )
-            status = reloaded.get_runtime_status()["gemini_usage_entries"][0]
+            with patch("gemini_pool._utcnow", side_effect=clock):
+                reloaded = GeminiPoolManager(
+                    [GeminiPoolEntry("primary", "project-a", "slot-1", "key-1", DEFAULT_MODEL)],
+                    usage_state_path=state_path,
+                )
+                status = reloaded.get_runtime_status()["gemini_usage_entries"][0]
             self.assertEqual(status["totalRequests"], 1)
             self.assertEqual(status["totalTokens"], 7)
             self.assertEqual(status["rollingEventsCount"], 1)
