@@ -235,8 +235,11 @@ namespace EatFitAI.API.Controllers
                 request.UserId = userId; // Gán UserId để service lấy sở thích
                 var recipes = await _recipeSuggestionService.SuggestRecipesAsync(request, cancellationToken);
 
-                // Log AI activity
-                await _aiLog.LogAsync(userId, "RecipeSuggestion", request, new { RecipeCount = recipes.Count }, 0);
+                await LogAiActivityBestEffortAsync(
+                    userId,
+                    "RecipeSuggestion",
+                    request,
+                    new { RecipeCount = recipes.Count });
 
                 return Ok(recipes);
             }
@@ -474,11 +477,11 @@ namespace EatFitAI.API.Controllers
                 var insights = await _nutritionInsightService.GetPersonalizedInsightsAsync(
                     userId, request, cancellationToken);
 
-                // Log AI activity
-                await _aiLog.LogAsync(userId, "NutritionInsight", request, new { 
+                await LogAiActivityBestEffortAsync(userId, "NutritionInsight", request, new
+                {
                     AdherenceScore = insights.AdherenceScore,
                     RecommendationCount = insights.Recommendations.Count
-                }, 0);
+                });
 
                 return Ok(insights);
             }
@@ -512,11 +515,11 @@ namespace EatFitAI.API.Controllers
                 var adaptiveTarget = await _nutritionInsightService.GetAdaptiveTargetAsync(
                     userId, request, cancellationToken);
 
-                // Log AI activity
-                await _aiLog.LogAsync(userId, "AdaptiveTarget", request, new {
+                await LogAiActivityBestEffortAsync(userId, "AdaptiveTarget", request, new
+                {
                     ConfidenceScore = adaptiveTarget.ConfidenceScore,
                     Applied = adaptiveTarget.Applied
-                }, 0);
+                });
 
                 return Ok(adaptiveTarget);
             }
@@ -549,8 +552,7 @@ namespace EatFitAI.API.Controllers
 
                 await _nutritionInsightService.ApplyAdaptiveTargetAsync(userId, newTarget, cancellationToken);
 
-                // Log AI activity
-                await _aiLog.LogAsync(userId, "ApplyTarget", newTarget, new { Success = true }, 0);
+                await LogAiActivityBestEffortAsync(userId, "ApplyTarget", newTarget, new { Success = true });
 
                 return NoContent();
             }
@@ -653,6 +655,26 @@ namespace EatFitAI.API.Controllers
             }
 
             return userId;
+        }
+
+        private async Task LogAiActivityBestEffortAsync(
+            Guid userId,
+            string action,
+            object? input,
+            object? output,
+            long durationMs = 0)
+        {
+            try
+            {
+                await _aiLog.LogAsync(userId, action, input, output, durationMs);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(
+                    ex,
+                    "AI activity log failed for action {Action}; preserving user-facing API response.",
+                    action);
+            }
         }
 
         /// <summary>

@@ -3,10 +3,12 @@ using System.Net.Http.Json;
 using EatFitAI.API.DbScaffold.Data;
 using EatFitAI.API.DbScaffold.Models;
 using EatFitAI.API.DTOs.AI;
+using EatFitAI.API.Services;
 using EatFitAI.API.Tests.Integration;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Xunit;
 
 namespace EatFitAI.API.Tests.Integration.Controllers;
@@ -88,6 +90,43 @@ public class AIControllerTests : IClassFixture<WebApplicationFactory<Program>>
         Assert.Contains(stats.TopCorrectedLabels, x => x.Value == "ga nuong" && x.Count >= 1);
     }
 
+    [Fact]
+    public async Task SuggestRecipes_ReturnsSuggestions_WhenAiLogPersistenceFails()
+    {
+        var userId = Guid.NewGuid();
+        using var factory = _factory.WithWebHostBuilder(builder =>
+        {
+            builder.ConfigureServices(services =>
+            {
+                services.RemoveAll<IAiLogService>();
+                services.AddSingleton<IAiLogService, ThrowingAiLogService>();
+            });
+        });
+
+        await SeedRecipeAsync(factory.Services, userId);
+        var client = factory.CreateClient();
+        var token = IntegrationTestHost.CreateJwtToken(
+            factory.Services,
+            userId,
+            $"airecipe_{userId:N}@example.com",
+            "AI Recipe Test User");
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+        var response = await client.PostAsJsonAsync("/api/ai/recipes/suggest", new RecipeSuggestionRequest
+        {
+            AvailableIngredients = new List<string> { "Trứng", "Thịt gà" },
+            MaxResults = 5
+        });
+
+        response.EnsureSuccessStatusCode();
+        var suggestions = await response.Content.ReadFromJsonAsync<List<RecipeSuggestionDto>>();
+
+        Assert.NotNull(suggestions);
+        var suggestion = Assert.Single(suggestions);
+        Assert.Equal("Trứng gà áp chảo", suggestion.RecipeName);
+        Assert.Equal(2, suggestion.MatchedIngredientsCount);
+    }
+
     private HttpClient CreateAuthorizedClient(Guid userId)
     {
         var client = _factory.CreateClient();
@@ -134,5 +173,71 @@ public class AIControllerTests : IClassFixture<WebApplicationFactory<Program>>
         await context.FoodItems.AddAsync(foodItem);
         await context.SaveChangesAsync();
         return foodItem.FoodItemId;
+    }
+
+    private static async Task SeedRecipeAsync(IServiceProvider services, Guid userId)
+    {
+        using var scope = services.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<EatFitAIDbContext>();
+
+        await context.Users.AddAsync(new User
+        {
+            UserId = userId,
+            Email = $"airecipe_{userId:N}@example.com",
+            DisplayName = "AI Recipe Test User",
+            PasswordHash = "test",
+            CreatedAt = DateTime.UtcNow,
+            EmailVerified = true
+        });
+
+        var egg = new FoodItem
+        {
+            FoodName = "Trứng",
+            CaloriesPer100g = 155,
+            ProteinPer100g = 13,
+            CarbPer100g = 1.1m,
+            FatPer100g = 11,
+            IsActive = true,
+            IsDeleted = false,
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow
+        };
+        var chicken = new FoodItem
+        {
+            FoodName = "Thịt gà",
+            CaloriesPer100g = 165,
+            ProteinPer100g = 31,
+            CarbPer100g = 0,
+            FatPer100g = 3.6m,
+            IsActive = true,
+            IsDeleted = false,
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow
+        };
+        var recipe = new Recipe
+        {
+            RecipeName = "Trứng gà áp chảo",
+            Description = "Recipe suggestion smoke fixture",
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow,
+            IsDeleted = false
+        };
+
+        await context.FoodItems.AddRangeAsync(egg, chicken);
+        await context.Recipes.AddAsync(recipe);
+        await context.SaveChangesAsync();
+
+        await context.RecipeIngredients.AddRangeAsync(
+            new RecipeIngredient { RecipeId = recipe.RecipeId, FoodItemId = egg.FoodItemId, Grams = 100 },
+            new RecipeIngredient { RecipeId = recipe.RecipeId, FoodItemId = chicken.FoodItemId, Grams = 120 });
+        await context.SaveChangesAsync();
+    }
+
+    private sealed class ThrowingAiLogService : IAiLogService
+    {
+        public Task<int> LogAsync(Guid userId, string action, object? input, object? output, long durationMs)
+        {
+            throw new DbUpdateException("Simulated AI log persistence failure");
+        }
     }
 }
