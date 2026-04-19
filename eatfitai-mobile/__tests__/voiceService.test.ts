@@ -3,7 +3,7 @@ import {
   fetchWithAuthRetry,
   getCurrentApiUrl,
 } from '../src/services/apiClient';
-import { API_BASE_URL, assertBackendApiBaseUrl } from '../src/config/env';
+import { assertBackendApiBaseUrl } from '../src/config/env';
 
 jest.mock('../src/services/apiClient', () => ({
   __esModule: true,
@@ -30,46 +30,17 @@ describe('voiceService', () => {
     mockedAssertBackendApiBaseUrl.mockImplementation((value: string) => value);
   });
 
-  it('transcribeAudio sends the request through fetchWithAuthRetry', async () => {
-    mockedFetchWithAuthRetry.mockResolvedValue({
-      ok: true,
-      json: async () => ({
-        text: 'xin chao',
-        language: 'vi',
-        duration: 1.2,
-        success: true,
-      }),
-    });
-
+  it('transcribeAudio returns the disabled-STT response without calling backend', async () => {
     const result = await voiceService.transcribeAudio('file:///recording.m4a');
 
-    expect(mockedAssertBackendApiBaseUrl).toHaveBeenCalledWith(
-      API_BASE_URL,
-      'Voice API base URL',
-    );
-    expect(mockedFetchWithAuthRetry).toHaveBeenCalledWith(
-      'http://mock-api.local/api/voice/transcribe',
-      expect.any(Function),
-    );
+    expect(mockedAssertBackendApiBaseUrl).not.toHaveBeenCalled();
+    expect(mockedFetchWithAuthRetry).not.toHaveBeenCalled();
     expect(result).toEqual({
-      text: 'xin chao',
+      text: '',
       language: 'vi',
-      duration: 1.2,
-      success: true,
+      duration: 0,
+      success: false,
+      error: 'Chức năng chuyển giọng nói hiện đang tạm tắt. Hãy nhập lệnh bằng text.',
     });
-  });
-
-  it('transcribeAudio maps fetch failures into a user-facing error response', async () => {
-    mockedFetchWithAuthRetry.mockRejectedValue(new Error('Network Error'));
-
-    const result = await voiceService.transcribeAudio('file:///recording.m4a');
-
-    expect(result.success).toBe(false);
-    expect(result.text).toBe('');
-    expect(result.language).toBe('vi');
-    expect(result.duration).toBe(0);
-    expect(result.error).toBe(
-      'Không thể chuyển giọng nói thành văn bản. Kiểm tra kết nối tới backend và thử lại.',
-    );
   });
 });

@@ -31,6 +31,6 @@
     }
   },
   "include": ["App.tsx", "src", "__tests__"],
-  "exclude": ["node_modules", "android", "ios"],
+  "exclude": ["node_modules", "android", "ios", "src/_archive"],
   "extends": "./node_modules/expo/tsconfig.base.json"
 }

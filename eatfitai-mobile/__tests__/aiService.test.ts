@@ -103,19 +103,24 @@ describe('aiService', () => {
     );
   });
 
-  it('suggestRecipes uses apiClient.post and maps the response', async () => {
+  it('suggestRecipes uses apiClient.post and maps the backend recipe contract', async () => {
     mockedApiClient.post.mockResolvedValue({
       data: {
         recipes: [
           {
-            id: 1,
-            title: 'Chicken rice',
+            recipeId: 1,
+            recipeName: 'Chicken rice',
             description: 'Simple bowl',
-            calories: '650',
-            protein: '35',
-            carbs: '60',
-            fat: '20',
-            ingredients: ['Chicken', 'Rice'],
+            totalCalories: '650',
+            totalProtein: '35',
+            totalCarbs: '60',
+            totalFat: '20',
+            matchedIngredientsCount: '2',
+            totalIngredientsCount: '4',
+            matchPercentage: '50',
+            matchedIngredients: ['Chicken', 'Rice'],
+            missingIngredients: ['Egg'],
+            allIngredients: ['Chicken', 'Rice', 'Egg', 'Onion'],
           },
         ],
       },
@@ -128,14 +133,87 @@ describe('aiService', () => {
     });
     expect(result).toHaveLength(1);
     expect(result[0]).toMatchObject({
-      id: '1',
-      title: 'Chicken rice',
+      recipeId: 1,
+      recipeName: 'Chicken rice',
       description: 'Simple bowl',
-      calories: 650,
-      protein: 35,
-      carbs: 60,
-      fat: 20,
-      ingredients: ['Chicken', 'Rice'],
+      totalCalories: 650,
+      totalProtein: 35,
+      totalCarbs: 60,
+      totalFat: 20,
+      matchedIngredientsCount: 2,
+      totalIngredientsCount: 4,
+      matchPercentage: 50,
+      matchedIngredients: ['Chicken', 'Rice'],
+      missingIngredients: ['Egg'],
+      allIngredients: ['Chicken', 'Rice', 'Egg', 'Onion'],
+    });
+  });
+
+  it('getRecipeDetail normalizes instructions and video fields', async () => {
+    mockedApiClient.get.mockResolvedValue({
+      data: {
+        RecipeId: 12,
+        RecipeName: 'Pho ga',
+        Description: 'Warm bowl',
+        TotalCalories: 520,
+        TotalProtein: 28,
+        TotalCarbs: 45,
+        TotalFat: 18,
+        Instructions: '1. Prep\n2. Cook',
+        VideoUrl: 'https://youtu.be/demo',
+        Ingredients: [
+          {
+            FoodItemId: 7,
+            FoodName: 'Chicken',
+            Grams: 200,
+            Calories: 320,
+            Protein: 24,
+            Carbs: 0,
+            Fat: 8,
+          },
+        ],
+      },
+    });
+
+    const result = await aiService.getRecipeDetail(12);
+
+    expect(mockedApiClient.get).toHaveBeenCalledWith('/api/ai/recipes/12');
+    expect(result).toMatchObject({
+      recipeId: 12,
+      recipeName: 'Pho ga',
+      description: 'Warm bowl',
+      totalCalories: 520,
+      totalProtein: 28,
+      totalCarbs: 45,
+      totalFat: 18,
+      instructions: ['1. Prep', '2. Cook'],
+      videoUrl: 'https://youtu.be/demo',
+    });
+    expect(result.ingredients).toEqual([
+      expect.objectContaining({
+        foodItemId: 7,
+        foodName: 'Chicken',
+        grams: 200,
+      }),
+    ]);
+  });
+
+  it('applyNutritionTarget posts only to the valid nutrition apply route', async () => {
+    mockedApiClient.post.mockResolvedValue({ data: {} });
+
+    await aiService.applyNutritionTarget({
+      calories: 2100,
+      protein: 140,
+      carbs: 220,
+      fat: 60,
+    });
+
+    expect(mockedApiClient.post).toHaveBeenCalledWith('/api/ai/nutrition/apply', {
+      calories: 2100,
+      protein: 140,
+      carb: 220,
+      fat: 60,
+      effectiveFrom: null,
     });
   });
 

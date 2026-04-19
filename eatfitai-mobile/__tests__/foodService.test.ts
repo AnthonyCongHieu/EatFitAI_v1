@@ -160,10 +160,6 @@ describe('foodService', () => {
         mealTypeId: 4,
         userFoodItemId: 7,
         grams: 80,
-        calories: 0,
-        protein: 0,
-        carb: 0,
-        fat: 0,
         note: null,
       });
     });

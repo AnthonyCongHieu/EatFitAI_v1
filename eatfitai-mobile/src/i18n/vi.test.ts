@@ -29,6 +29,6 @@ describe('vi translations', () => {
     ].join(' ');
 
     expect(sample).not.toMatch(/[ÃÂÄ]/);
-    expect(sample).not.toContain('�');
+    expect(sample).not.toContain('\uFFFD');
   });
 });
