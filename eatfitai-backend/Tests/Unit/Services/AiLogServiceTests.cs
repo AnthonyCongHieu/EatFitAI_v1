@@ -44,15 +44,17 @@ public class AiLogServiceTests : IDisposable
         var logId = await _service.LogAsync(
             userId,
             "vision-scan",
-            new { food = "pho" },
-            new { calories = 420 },
+            new { FoodName = "pho" },
+            new { TotalCalories = 420 },
             1234);
 
         var entry = await _db.AILogs.SingleAsync(item => item.AILogId == logId);
         Assert.Equal(userId, entry.UserId);
         Assert.Equal("vision-scan", entry.Action);
         Assert.Equal(1234, entry.DurationMs);
+        Assert.Contains("foodName", entry.InputJson ?? string.Empty, StringComparison.Ordinal);
         Assert.Contains("pho", entry.InputJson ?? string.Empty, StringComparison.Ordinal);
+        Assert.Contains("totalCalories", entry.OutputJson ?? string.Empty, StringComparison.Ordinal);
         Assert.Contains("420", entry.OutputJson ?? string.Empty, StringComparison.Ordinal);
     }
 }

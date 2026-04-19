@@ -11,6 +11,11 @@ namespace EatFitAI.API.Services
 
     public sealed class AiLogService : IAiLogService
     {
+        private static readonly JsonSerializerOptions CamelCaseJsonOptions = new()
+        {
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+        };
+
         private readonly EatFitAIDbContext _db;
         private readonly SupabaseSchemaBootstrapper _schemaBootstrapper;
 
@@ -30,8 +35,8 @@ namespace EatFitAI.API.Services
             {
                 UserId = userId,
                 Action = action,
-                InputJson = input is null ? null : JsonSerializer.Serialize(input),
-                OutputJson = output is null ? null : JsonSerializer.Serialize(output),
+                InputJson = input is null ? null : JsonSerializer.Serialize(input, CamelCaseJsonOptions),
+                OutputJson = output is null ? null : JsonSerializer.Serialize(output, CamelCaseJsonOptions),
                 DurationMs = (int)Math.Min(durationMs, int.MaxValue),
             };
             _db.AILogs.Add(log);

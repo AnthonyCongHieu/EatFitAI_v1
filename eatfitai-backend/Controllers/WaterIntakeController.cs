@@ -68,34 +68,24 @@ namespace EatFitAI.API.Controllers
                     ? DateOnly.Parse(request.Date)
                     : DateOnly.FromDateTime(DateTime.UtcNow.AddHours(7));
 
+                await _db.Database.ExecuteSqlInterpolatedAsync($@"
+                    INSERT INTO ""WaterIntake"" (""UserId"", ""IntakeDate"", ""AmountMl"", ""TargetMl"", ""UpdatedAt"")
+                    VALUES ({userId}, {targetDate}, 200, 2000, NOW() AT TIME ZONE 'UTC')
+                    ON CONFLICT (""UserId"", ""IntakeDate"")
+                    DO UPDATE SET
+                        ""AmountMl"" = ""WaterIntake"".""AmountMl"" + EXCLUDED.""AmountMl"",
+                        ""TargetMl"" = COALESCE(""WaterIntake"".""TargetMl"", EXCLUDED.""TargetMl""),
+                        ""UpdatedAt"" = NOW() AT TIME ZONE 'UTC'");
+
                 var record = await _db.WaterIntakes
+                    .AsNoTracking()
                     .FirstOrDefaultAsync(w => w.UserId == userId && w.IntakeDate == targetDate);
-
-                if (record == null)
-                {
-                    record = new WaterIntake
-                    {
-                        UserId = userId,
-                        IntakeDate = targetDate,
-                        AmountMl = 200,
-                        TargetMl = 2000,
-                        UpdatedAt = DateTime.UtcNow,
-                    };
-                    _db.WaterIntakes.Add(record);
-                }
-                else
-                {
-                    record.AmountMl += 200;
-                    record.UpdatedAt = DateTime.UtcNow;
-                }
-
-                await _db.SaveChangesAsync();
 
                 return Ok(new
                 {
                     date = targetDate.ToString("yyyy-MM-dd"),
-                    amountMl = record.AmountMl,
-                    targetMl = record.TargetMl,
+                    amountMl = record?.AmountMl ?? 0,
+                    targetMl = record?.TargetMl ?? 2000,
                 });
             }
             catch (UnauthorizedAccessException)
@@ -123,10 +113,14 @@ namespace EatFitAI.API.Controllers
                     ? DateOnly.Parse(request.Date)
                     : DateOnly.FromDateTime(DateTime.UtcNow.AddHours(7));
 
-                var record = await _db.WaterIntakes
-                    .FirstOrDefaultAsync(w => w.UserId == userId && w.IntakeDate == targetDate);
+                var affectedRows = await _db.Database.ExecuteSqlInterpolatedAsync($@"
+                    UPDATE ""WaterIntake""
+                    SET ""AmountMl"" = GREATEST(""AmountMl"" - 200, 0),
+                        ""UpdatedAt"" = NOW() AT TIME ZONE 'UTC'
+                    WHERE ""UserId"" = {userId}
+                      AND ""IntakeDate"" = {targetDate}");
 
-                if (record == null)
+                if (affectedRows == 0)
                 {
                     // Nothing to subtract
                     return Ok(new
@@ -137,15 +131,15 @@ namespace EatFitAI.API.Controllers
                     });
                 }
 
-                record.AmountMl = Math.Max(0, record.AmountMl - 200);
-                record.UpdatedAt = DateTime.UtcNow;
-                await _db.SaveChangesAsync();
+                var record = await _db.WaterIntakes
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(w => w.UserId == userId && w.IntakeDate == targetDate);
 
                 return Ok(new
                 {
                     date = targetDate.ToString("yyyy-MM-dd"),
-                    amountMl = record.AmountMl,
-                    targetMl = record.TargetMl,
+                    amountMl = record?.AmountMl ?? 0,
+                    targetMl = record?.TargetMl ?? 2000,
                 });
             }
             catch (UnauthorizedAccessException)

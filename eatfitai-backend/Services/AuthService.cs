@@ -62,8 +62,15 @@ namespace EatFitAI.API.Services
         {
             _logger.LogInformation("Bắt đầu đăng ký cho email: {Email}", request.Email);
 
+            if (!_env.IsDevelopment())
+            {
+                _logger.LogWarning("Legacy register endpoint is disabled outside Development for email: {Email}", request.Email);
+                throw new NotSupportedException("Endpoint đăng ký cũ đã bị vô hiệu hóa. Hãy dùng /api/auth/register-with-verification.");
+            }
+
             try
             {
+
                 // Kiểm tra email đã tồn tại chưa
                 if (await _userRepository.EmailExistsAsync(request.Email))
                 {
@@ -365,9 +372,7 @@ namespace EatFitAI.API.Services
             var user = await _context.Users.FirstOrDefaultAsync(u => u.RefreshToken == refreshToken);
             if (user != null)
             {
-                // Revoke token
-                user.RefreshToken = null;
-                user.RefreshTokenExpiryTime = null;
+                await RevokeRefreshTokenAsync(user);
                 await _context.SaveChangesAsync();
                 _logger.LogInformation("User {UserId} đã logout, refresh token đã revoke", user.UserId);
             }
@@ -393,6 +398,14 @@ namespace EatFitAI.API.Services
             {
                 // Token expired
                 throw new UnauthorizedAccessException("Refresh token đã hết hạn. Vui lòng đăng nhập lại.");
+            }
+
+            var accessState = await GetAccessStateAsync(user.UserId);
+            if (accessState != AdminAccessStates.Active)
+            {
+                await RevokeRefreshTokenAsync(user);
+                await _context.SaveChangesAsync();
+                throw new UnauthorizedAccessException("Tai khoan hien khong the dang nhap vao he thong.");
             }
 
             // Generate NEW tokens (Rotation)
@@ -423,10 +436,7 @@ namespace EatFitAI.API.Services
 
         public Task<AuthResponse> GoogleLoginAsync(string idToken)
         {
-            // In a real implementation, you would validate the Google ID token
-            // and create/login the user. For now, we'll throw an exception
-            // as this requires Google OAuth integration
-            return Task.FromException<AuthResponse>(new NotImplementedException("Tính năng đăng nhập Google cần tích hợp OAuth"));
+            return Task.FromException<AuthResponse>(new NotSupportedException("Tính năng đăng nhập Google qua endpoint cũ đã bị vô hiệu hóa. Hãy dùng /api/auth/google/signin."));
         }
 
         public async Task<ForgotPasswordResponse> ForgotPasswordAsync(ForgotPasswordRequest request)
@@ -512,6 +522,7 @@ namespace EatFitAI.API.Services
             user.PasswordHash = HashPassword(request.NewPassword);
             // Nếu user reset password thành công nghĩa là họ đã xác minh quyền sở hữu email
             user.EmailVerified = true;
+            await RevokeRefreshTokenAsync(user);
             await _context.SaveChangesAsync();
 
             resetCode.ConsumedAt = DateTime.UtcNow;
@@ -880,9 +891,17 @@ namespace EatFitAI.API.Services
 
             // Update password
             user.PasswordHash = HashPassword(newPassword);
+            await RevokeRefreshTokenAsync(user);
             await _context.SaveChangesAsync();
 
             _logger.LogInformation("Đổi mật khẩu thành công cho user: {UserId}", userId);
+        }
+
+        private static Task RevokeRefreshTokenAsync(User user)
+        {
+            user.RefreshToken = null;
+            user.RefreshTokenExpiryTime = null;
+            return Task.CompletedTask;
         }
     }
 }

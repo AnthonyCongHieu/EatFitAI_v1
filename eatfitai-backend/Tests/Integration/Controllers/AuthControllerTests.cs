@@ -110,6 +110,16 @@ namespace EatFitAI.API.Tests.Integration.Controllers
         }
 
         [Fact]
+        public async Task GoogleLogin_LegacyEndpoint_ReturnsGone()
+        {
+            var client = _factory.CreateClient();
+
+            var response = await client.GetAsync("/api/auth/google?idToken=legacy-test-token");
+
+            Assert.Equal(HttpStatusCode.Gone, response.StatusCode);
+        }
+
+        [Fact]
         public async Task VerifyResetCode_ValidRequest_ReturnsOk()
         {
             var client = _factory.CreateClient();

@@ -121,6 +121,21 @@ namespace EatFitAI.API.Tests.Unit.Services
         }
 
         [Fact]
+        public async Task RegisterAsync_NonDevelopment_ThrowsNotSupportedException()
+        {
+            var request = new RegisterRequest
+            {
+                Email = "legacy-production@example.com",
+                Password = "password123",
+                DisplayName = "Legacy Production"
+            };
+
+            _envMock.SetupGet(e => e.EnvironmentName).Returns(Environments.Production);
+
+            await Assert.ThrowsAsync<NotSupportedException>(() => _authService.RegisterAsync(request));
+        }
+
+        [Fact]
         public async Task RegisterWithVerificationAsync_EmailSendFailsInProduction_ThrowsInvalidOperationException()
         {
             var request = new RegisterRequest
@@ -232,6 +247,37 @@ namespace EatFitAI.API.Tests.Unit.Services
             };
 
             _userRepositoryMock.Setup(r => r.GetByEmailAsync(request.Email)).ReturnsAsync(user);
+
+            await Assert.ThrowsAsync<UnauthorizedAccessException>(() => _authService.LoginAsync(request));
+        }
+
+        [Fact]
+        public async Task LoginAsync_SuspendedUser_ThrowsUnauthorizedAccessException()
+        {
+            var request = new LoginRequest
+            {
+                Email = "suspended@example.com",
+                Password = "password123"
+            };
+
+            var user = new User
+            {
+                UserId = Guid.NewGuid(),
+                Email = request.Email,
+                PasswordHash = HashLegacyPassword(request.Password),
+                DisplayName = "Suspended User",
+                CreatedAt = DateTime.UtcNow,
+                EmailVerified = true
+            };
+
+            _userRepositoryMock.Setup(r => r.GetByEmailAsync(request.Email)).ReturnsAsync(user);
+            _adminContext.UserAccessControls.Add(new EatFitAI.API.Models.UserAccessControl
+            {
+                UserId = user.UserId,
+                AccessState = EatFitAI.API.Security.AdminAccessStates.Suspended,
+                UpdatedAt = DateTime.UtcNow,
+            });
+            await _adminContext.SaveChangesAsync();
 
             await Assert.ThrowsAsync<UnauthorizedAccessException>(() => _authService.LoginAsync(request));
         }
@@ -379,10 +425,30 @@ namespace EatFitAI.API.Tests.Unit.Services
         }
 
         [Fact]
+        public async Task RefreshTokenAsync_SuspendedUser_ThrowsUnauthorizedAccessException_AndRevokesToken()
+        {
+            var user = await AddTrackedUserAsync("refresh-suspended@example.com");
+            user.RefreshToken = "refresh-token-value";
+            user.RefreshTokenExpiryTime = DateTime.UtcNow.AddDays(30);
+            await _context.SaveChangesAsync();
+            await SetAccessStateAsync(user.UserId, EatFitAI.API.Security.AdminAccessStates.Suspended);
+
+            await Assert.ThrowsAsync<UnauthorizedAccessException>(() =>
+                _authService.RefreshTokenAsync(user.RefreshToken!));
+
+            var updatedUser = await _context.Users.SingleAsync(item => item.UserId == user.UserId);
+            Assert.Null(updatedUser.RefreshToken);
+            Assert.Null(updatedUser.RefreshTokenExpiryTime);
+        }
+
+        [Fact]
         public async Task ResetPasswordAsync_ValidCode_UpdatesPasswordAndConsumesCode()
         {
             var user = await AddTrackedUserAsync("reset-success@example.com", "OldPass123");
             await SeedPasswordResetCodeAsync(user.UserId, "123456");
+            user.RefreshToken = "refresh-before-reset";
+            user.RefreshTokenExpiryTime = DateTime.UtcNow.AddDays(30);
+            await _context.SaveChangesAsync();
             var oldPasswordHash = user.PasswordHash;
 
             await _authService.ResetPasswordAsync(new ResetPasswordRequest
@@ -398,6 +464,8 @@ namespace EatFitAI.API.Tests.Unit.Services
             Assert.NotEqual(oldPasswordHash, updatedUser.PasswordHash);
             Assert.True(updatedUser.EmailVerified);
             Assert.NotNull(storedCode.ConsumedAt);
+            Assert.Null(updatedUser.RefreshToken);
+            Assert.Null(updatedUser.RefreshTokenExpiryTime);
 
             var loginResult = await _authService.LoginAsync(new LoginRequest
             {
@@ -405,6 +473,21 @@ namespace EatFitAI.API.Tests.Unit.Services
                 Password = "NewPass123",
             });
             Assert.Equal(user.Email, loginResult.Email);
+        }
+
+        [Fact]
+        public async Task ChangePasswordAsync_ValidPassword_RevokesRefreshToken()
+        {
+            var user = await AddTrackedUserAsync("change-password@example.com", "OldPass123");
+            user.RefreshToken = "refresh-before-change";
+            user.RefreshTokenExpiryTime = DateTime.UtcNow.AddDays(30);
+            await _context.SaveChangesAsync();
+
+            await _authService.ChangePasswordAsync(user.UserId, "OldPass123", "NewPass123");
+
+            var updatedUser = await _context.Users.SingleAsync(item => item.UserId == user.UserId);
+            Assert.Null(updatedUser.RefreshToken);
+            Assert.Null(updatedUser.RefreshTokenExpiryTime);
         }
 
         [Fact]
@@ -510,6 +593,28 @@ namespace EatFitAI.API.Tests.Unit.Services
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow,
             });
+
+            await _adminContext.SaveChangesAsync();
+        }
+
+        private async Task SetAccessStateAsync(Guid userId, string accessState)
+        {
+            var control = await _adminContext.UserAccessControls.SingleOrDefaultAsync(item => item.UserId == userId);
+            if (control == null)
+            {
+                control = new EatFitAI.API.Models.UserAccessControl
+                {
+                    UserId = userId,
+                    AccessState = accessState,
+                    UpdatedAt = DateTime.UtcNow,
+                };
+                _adminContext.UserAccessControls.Add(control);
+            }
+            else
+            {
+                control.AccessState = accessState;
+                control.UpdatedAt = DateTime.UtcNow;
+            }
 
             await _adminContext.SaveChangesAsync();
         }

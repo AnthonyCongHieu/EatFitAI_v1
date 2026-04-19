@@ -1,8 +1,12 @@
-﻿using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
-using EatFitAI.API.DTOs;
-using EatFitAI.API.Services;
 using System.Security.Claims;
+using EatFitAI.API.DbScaffold.Data;
+using EatFitAI.API.DTOs;
+using EatFitAI.API.DTOs.AI;
+using EatFitAI.API.Services;
+using EatFitAI.API.Services.Interfaces;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace EatFitAI.API.Controllers;
 
@@ -15,11 +19,19 @@ namespace EatFitAI.API.Controllers;
 public class AIReviewController : ControllerBase
 {
     private readonly AIReviewService _reviewService;
+    private readonly INutritionInsightService _nutritionInsightService;
+    private readonly EatFitAIDbContext _db;
     private readonly ILogger<AIReviewController> _logger;
 
-    public AIReviewController(AIReviewService reviewService, ILogger<AIReviewController> logger)
+    public AIReviewController(
+        AIReviewService reviewService,
+        INutritionInsightService nutritionInsightService,
+        EatFitAIDbContext db,
+        ILogger<AIReviewController> logger)
     {
         _reviewService = reviewService;
+        _nutritionInsightService = nutritionInsightService;
+        _db = db;
         _logger = logger;
     }
 
@@ -80,7 +92,7 @@ public class AIReviewController : ControllerBase
     /// Apply AI suggestions (auto-update targets)
     /// </summary>
     [HttpPost("apply-suggestions")]
-    public ActionResult ApplySuggestions([FromBody] ApplySuggestionsRequest request)
+    public async Task<IActionResult> ApplySuggestions([FromBody] ApplySuggestionsRequest request, CancellationToken cancellationToken)
     {
         try
         {
@@ -89,10 +101,56 @@ public class AIReviewController : ControllerBase
 
             _logger.LogInformation("[AIReview] Applying suggestions for user {UserId}", userId);
 
-            // TODO: Implement auto-apply logic
-            // Update nutrition targets based on suggestions
-            
-            return Ok(new { message = "Đã áp dụng gợi ý thành công" });
+            var currentTarget = await _db.NutritionTargets
+                .Where(target => target.UserId == userId)
+                .OrderByDescending(target => target.EffectiveFrom)
+                .ThenByDescending(target => target.NutritionTargetId)
+                .FirstOrDefaultAsync(cancellationToken);
+
+            var calories = request.NewTargetCalories
+                ?? currentTarget?.TargetCalories
+                ?? 0;
+            var macros = request.NewMacros ?? new Dictionary<string, int>();
+
+            int ReadMacro(int fallback, params string[] keys)
+            {
+                foreach (var key in keys)
+                {
+                    if (macros.TryGetValue(key, out var value) && value > 0)
+                    {
+                        return value;
+                    }
+                }
+
+                return fallback;
+            }
+
+            var target = new NutritionTargetDto
+            {
+                TargetCalories = calories,
+                TargetProtein = ReadMacro(currentTarget?.TargetProtein ?? 0, "protein", "proteins"),
+                TargetCarbs = ReadMacro(currentTarget?.TargetCarb ?? 0, "carb", "carbs"),
+                TargetFat = ReadMacro(currentTarget?.TargetFat ?? 0, "fat")
+            };
+
+            if (target.TargetCalories <= 0 || target.TargetProtein <= 0 || target.TargetCarbs < 0 || target.TargetFat <= 0)
+            {
+                return BadRequest(new { message = "Thiếu dữ liệu mục tiêu dinh dưỡng hợp lệ để áp dụng." });
+            }
+
+            await _nutritionInsightService.ApplyAdaptiveTargetAsync(userId, target, cancellationToken);
+
+            return Ok(new
+            {
+                message = "Đã áp dụng gợi ý thành công",
+                target = new
+                {
+                    calories = target.TargetCalories,
+                    protein = target.TargetProtein,
+                    carbs = target.TargetCarbs,
+                    fat = target.TargetFat
+                }
+            });
         }
         catch (Exception ex)
         {
@@ -107,4 +165,3 @@ public class ApplySuggestionsRequest
     public int? NewTargetCalories { get; set; }
     public Dictionary<string, int>? NewMacros { get; set; }
 }
-

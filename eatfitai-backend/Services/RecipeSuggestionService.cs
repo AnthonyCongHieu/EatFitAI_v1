@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using EatFitAI.API.DbScaffold.Data; // FIX: Using EatFitAIDbContext (scaffolded)
@@ -260,6 +261,9 @@ namespace EatFitAI.API.Services
                 })
                 .ToList();
 
+            var instructions = TryGetRecipeInstructions(recipe);
+            var videoUrl = TryGetRecipeVideoUrl(recipe);
+
             return new RecipeDetailDto
             {
                 RecipeId = recipe.RecipeId,
@@ -269,6 +273,8 @@ namespace EatFitAI.API.Services
                 TotalProtein = totalProtein,
                 TotalCarbs = totalCarbs,
                 TotalFat = totalFat,
+                Instructions = instructions,
+                VideoUrl = videoUrl,
                 Ingredients = ingredientDetails
             };
         }
@@ -337,6 +343,69 @@ namespace EatFitAI.API.Services
                 }
             }
             return keywords.ToList();
+        }
+
+        private static List<string>? TryGetRecipeInstructions(Recipe recipe)
+        {
+            var rawValue = GetOptionalPropertyValue(recipe, "Instructions");
+            if (rawValue is null)
+            {
+                return null;
+            }
+
+            if (rawValue is string instructionText)
+            {
+                var lines = instructionText
+                    .Split(new[] { "\r\n", "\n", "\r" }, StringSplitOptions.RemoveEmptyEntries)
+                    .Select(line => line.Trim())
+                    .Where(line => !string.IsNullOrWhiteSpace(line))
+                    .ToList();
+
+                return lines.Count > 0 ? lines : null;
+            }
+
+            if (rawValue is IEnumerable<string> stringSteps)
+            {
+                var steps = stringSteps
+                    .Select(step => step?.Trim())
+                    .Where(step => !string.IsNullOrWhiteSpace(step))
+                    .Select(step => step!)
+                    .ToList();
+
+                return steps.Count > 0 ? steps : null;
+            }
+
+            if (rawValue is System.Collections.IEnumerable enumerable)
+            {
+                var steps = new List<string>();
+                foreach (var item in enumerable)
+                {
+                    var step = item?.ToString()?.Trim();
+                    if (!string.IsNullOrWhiteSpace(step))
+                    {
+                        steps.Add(step);
+                    }
+                }
+
+                return steps.Count > 0 ? steps : null;
+            }
+
+            return null;
+        }
+
+        private static string? TryGetRecipeVideoUrl(Recipe recipe)
+        {
+            var rawValue = GetOptionalPropertyValue(recipe, "VideoUrl");
+            return rawValue as string;
+        }
+
+        private static object? GetOptionalPropertyValue(object source, string propertyName)
+        {
+            var property = source.GetType().GetProperty(
+                propertyName,
+                BindingFlags.Instance | BindingFlags.Public | BindingFlags.IgnoreCase);
+
+            return property?.GetValue(source);
         }
     }
 }

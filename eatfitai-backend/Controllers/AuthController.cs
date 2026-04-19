@@ -74,6 +74,11 @@ namespace EatFitAI.API.Controllers
                 var result = await _authService.RegisterAsync(request);
                 return Ok(result);
             }
+            catch (NotSupportedException ex)
+            {
+                _logger.LogWarning("Legacy registration blocked for email: {Email}", request.Email);
+                return StatusCode(StatusCodes.Status410Gone, new { message = ex.Message });
+            }
             catch (InvalidOperationException ex)
             {
                 // Email đã tồn tại - trả về 400 thay vì 500
@@ -242,6 +247,10 @@ namespace EatFitAI.API.Controllers
             {
                 var result = await _authService.GoogleLoginAsync(idToken);
                 return Ok(result);
+            }
+            catch (NotSupportedException ex)
+            {
+                return StatusCode(StatusCodes.Status410Gone, new { message = ex.Message });
             }
             catch (UnauthorizedAccessException ex)
             {

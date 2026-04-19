@@ -8,8 +8,10 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Google.Apis.Auth;
+using EatFitAI.API.Data;
 using EatFitAI.API.DbScaffold.Data;
 using EatFitAI.API.DbScaffold.Models;
+using EatFitAI.API.Security;
 using System.Security.Claims;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Cryptography;
@@ -23,15 +25,18 @@ namespace EatFitAI.API.Controllers
     public class GoogleAuthController : ControllerBase
     {
         private readonly EatFitAIDbContext _context;
+        private readonly ApplicationDbContext _adminContext;
         private readonly IConfiguration _configuration;
         private readonly ILogger<GoogleAuthController> _logger;
 
         public GoogleAuthController(
             EatFitAIDbContext context,
+            ApplicationDbContext adminContext,
             IConfiguration configuration,
             ILogger<GoogleAuthController> logger)
         {
             _context = context;
+            _adminContext = adminContext;
             _configuration = configuration;
             _logger = logger;
         }
@@ -55,6 +60,7 @@ namespace EatFitAI.API.Controllers
             public GoogleUserDto? User { get; set; }
             public string? Error { get; set; }
             public bool IsNewUser { get; set; }
+            public bool NeedsOnboarding { get; set; }
             public DateTime? ExpiresAt { get; set; }
         }
 
@@ -157,6 +163,16 @@ namespace EatFitAI.API.Controllers
                 }
                 else
                 {
+                    var accessState = await GetAccessStateAsync(user.UserId);
+                    if (accessState != AdminAccessStates.Active)
+                    {
+                        return Unauthorized(new GoogleAuthResponse
+                        {
+                            Success = false,
+                            Error = "Tai khoan hien khong the dang nhap vao he thong."
+                        });
+                    }
+
                     // Update existing user - mark email as verified
                     if (!user.EmailVerified)
                     {
@@ -192,6 +208,7 @@ namespace EatFitAI.API.Controllers
                     AccessToken = accessToken,
                     RefreshToken = refreshToken,
                     IsNewUser = isNewUser,
+                    NeedsOnboarding = needsOnboarding,
                     ExpiresAt = expiresAt,
                     User = new GoogleUserDto
                     {
@@ -256,6 +273,16 @@ namespace EatFitAI.API.Controllers
                     return NotFound(new GoogleAuthResponse { Success = false, Error = "Không tìm thấy người dùng" });
                 }
 
+                var accessState = await GetAccessStateAsync(user.UserId);
+                if (accessState != AdminAccessStates.Active)
+                {
+                    return Unauthorized(new GoogleAuthResponse
+                    {
+                        Success = false,
+                        Error = "Tai khoan hien khong the dang nhap vao he thong."
+                    });
+                }
+
                 // Check if Google email matches user email
                 if (user.Email != payload.Email)
                 {
@@ -273,6 +300,7 @@ namespace EatFitAI.API.Controllers
                 return Ok(new GoogleAuthResponse
                 {
                     Success = true,
+                    NeedsOnboarding = !user.OnboardingCompleted,
                     User = new GoogleUserDto
                     {
                         UserId = user.UserId,
@@ -361,6 +389,16 @@ namespace EatFitAI.API.Controllers
             }
 
             return Encoding.ASCII.GetBytes(key!);
+        }
+
+        private async Task<string> GetAccessStateAsync(Guid userId)
+        {
+            return await _adminContext.UserAccessControls
+                .AsNoTracking()
+                .Where(item => item.UserId == userId)
+                .Select(item => item.AccessState)
+                .FirstOrDefaultAsync()
+                ?? AdminAccessStates.Active;
         }
 
         private string GenerateRefreshToken()

@@ -37,7 +37,7 @@ internal static class IntegrationTestHost
 
         return baseFactory.WithWebHostBuilder(builder =>
         {
-            builder.UseEnvironment("Staging");
+            builder.UseEnvironment("Development");
             builder.ConfigureAppConfiguration((_, config) =>
             {
                 config.AddInMemoryCollection(new Dictionary<string, string?>

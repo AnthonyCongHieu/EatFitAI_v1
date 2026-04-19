@@ -49,7 +49,9 @@ namespace EatFitAI.API.Tests.Unit.Services
                     CaloriesPer100g = 130,
                     ProteinPer100g = 2.7m,
                     CarbPer100g = 28,
-                    FatPer100g = 0.3m
+                    FatPer100g = 0.3m,
+                    IsActive = true,
+                    IsDeleted = false
                 },
                 new FoodItem
                 {
@@ -58,7 +60,9 @@ namespace EatFitAI.API.Tests.Unit.Services
                     CaloriesPer100g = 165,
                     ProteinPer100g = 31,
                     CarbPer100g = 0,
-                    FatPer100g = 3.6m
+                    FatPer100g = 3.6m,
+                    IsActive = true,
+                    IsDeleted = false
                 }
             );
 
@@ -75,6 +79,47 @@ namespace EatFitAI.API.Tests.Unit.Services
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow,
                 IsDeleted = false
+            });
+
+            _context.UserFoodItems.Add(new UserFoodItem
+            {
+                UserFoodItemId = 2,
+                UserId = Guid.NewGuid(),
+                FoodName = "Banh mi ca",
+                UnitType = "g",
+                CaloriesPer100 = 250,
+                ProteinPer100 = 12,
+                CarbPer100 = 30,
+                FatPer100 = 8,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow,
+                IsDeleted = false
+            });
+
+            _context.UserDishes.Add(new UserDish
+            {
+                UserDishId = 1,
+                UserId = _testUserId,
+                DishName = "Com ga",
+                Description = "Mon tu tao",
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow,
+                IsDeleted = false,
+                UserDishIngredients =
+                {
+                    new UserDishIngredient
+                    {
+                        UserDishIngredientId = 1,
+                        FoodItemId = 1,
+                        Grams = 100
+                    },
+                    new UserDishIngredient
+                    {
+                        UserDishIngredientId = 2,
+                        FoodItemId = 2,
+                        Grams = 50
+                    }
+                }
             });
 
             _context.SaveChanges();
@@ -260,6 +305,92 @@ namespace EatFitAI.API.Tests.Unit.Services
         }
 
         [Fact]
+        public async Task CreateMealDiaryAsync_WithUserDish_CreatesDiaryWithDishMacros()
+        {
+            var request = new CreateMealDiaryRequest
+            {
+                EatenDate = DateTime.Today,
+                MealTypeId = 1,
+                UserDishId = 1,
+                Grams = 150
+            };
+
+            var mappedDiary = new MealDiary
+            {
+                UserId = _testUserId,
+                EatenDate = DateOnly.FromDateTime(request.EatenDate),
+                MealTypeId = 1,
+                UserDishId = 1,
+                Grams = 150
+            };
+
+            _mapperMock.Setup(m => m.Map<MealDiary>(request)).Returns(mappedDiary);
+            _mealDiaryRepositoryMock.Setup(r => r.AddAsync(It.IsAny<MealDiary>())).Returns(Task.CompletedTask);
+            _mealDiaryRepositoryMock.Setup(r => r.GetByIdWithIncludesAsync(It.IsAny<int>())).ReturnsAsync(mappedDiary);
+            _mapperMock.Setup(m => m.Map<MealDiaryDto>(It.IsAny<MealDiary>()))
+                .Returns(new MealDiaryDto { MealDiaryId = 1, Calories = 0 });
+
+            var result = await _mealDiaryService.CreateMealDiaryAsync(_testUserId, request);
+
+            Assert.NotNull(result);
+            _mealDiaryRepositoryMock.Verify(r => r.AddAsync(It.IsAny<MealDiary>()), Times.Once);
+        }
+
+        [Fact]
+        public async Task CreateMealDiaryAsync_WithMultipleSources_ThrowsArgumentException()
+        {
+            var request = new CreateMealDiaryRequest
+            {
+                EatenDate = DateTime.Today,
+                MealTypeId = 1,
+                FoodItemId = 1,
+                UserFoodItemId = 1,
+                Grams = 100
+            };
+
+            var mappedDiary = new MealDiary
+            {
+                UserId = _testUserId,
+                EatenDate = DateOnly.FromDateTime(request.EatenDate),
+                MealTypeId = 1,
+                FoodItemId = 1,
+                UserFoodItemId = 1,
+                Grams = 100
+            };
+
+            _mapperMock.Setup(m => m.Map<MealDiary>(request)).Returns(mappedDiary);
+
+            await Assert.ThrowsAsync<ArgumentException>(() =>
+                _mealDiaryService.CreateMealDiaryAsync(_testUserId, request));
+        }
+
+        [Fact]
+        public async Task CreateMealDiaryAsync_WithForeignUserFoodItem_ThrowsKeyNotFoundException()
+        {
+            var request = new CreateMealDiaryRequest
+            {
+                EatenDate = DateTime.Today,
+                MealTypeId = 1,
+                UserFoodItemId = 2,
+                Grams = 100
+            };
+
+            var mappedDiary = new MealDiary
+            {
+                UserId = _testUserId,
+                EatenDate = DateOnly.FromDateTime(request.EatenDate),
+                MealTypeId = 1,
+                UserFoodItemId = 2,
+                Grams = 100
+            };
+
+            _mapperMock.Setup(m => m.Map<MealDiary>(request)).Returns(mappedDiary);
+
+            await Assert.ThrowsAsync<KeyNotFoundException>(() =>
+                _mealDiaryService.CreateMealDiaryAsync(_testUserId, request));
+        }
+
+        [Fact]
         public async Task UpdateMealDiaryAsync_ValidRequest_UpdatesDiary()
         {
             var existingDiary = new MealDiary
@@ -292,6 +423,46 @@ namespace EatFitAI.API.Tests.Unit.Services
             Assert.NotNull(result);
             Assert.Equal(300, result.Grams);
             Assert.Equal("An them mot chut", result.Note);
+        }
+
+        [Fact]
+        public async Task UpdateMealDiaryAsync_SourceChangeClearsPreviousSourceIds()
+        {
+            var existingDiary = new MealDiary
+            {
+                MealDiaryId = 1,
+                UserId = _testUserId,
+                FoodItemId = 1,
+                UserFoodItemId = null,
+                UserDishId = null,
+                RecipeId = null,
+                Grams = 200,
+                Calories = 260,
+                Protein = 5.4m,
+                Carb = 56,
+                Fat = 0.6m,
+                IsDeleted = false
+            };
+
+            var updateRequest = new UpdateMealDiaryRequest
+            {
+                UserFoodItemId = 1,
+                Grams = 350
+            };
+
+            _mealDiaryRepositoryMock.Setup(r => r.GetByIdAsync(1)).ReturnsAsync(existingDiary);
+            _mealDiaryRepositoryMock.Setup(r => r.Update(It.IsAny<MealDiary>()));
+            _mealDiaryRepositoryMock.Setup(r => r.GetByIdWithIncludesAsync(1)).ReturnsAsync(existingDiary);
+            _mapperMock.Setup(m => m.Map<MealDiaryDto>(It.IsAny<MealDiary>()))
+                .Returns(new MealDiaryDto { MealDiaryId = 1, Grams = 350 });
+
+            var result = await _mealDiaryService.UpdateMealDiaryAsync(1, _testUserId, updateRequest);
+
+            Assert.NotNull(result);
+            Assert.Null(existingDiary.FoodItemId);
+            Assert.Equal(1, existingDiary.UserFoodItemId);
+            Assert.Null(existingDiary.UserDishId);
+            Assert.Null(existingDiary.RecipeId);
         }
 
         [Fact]
