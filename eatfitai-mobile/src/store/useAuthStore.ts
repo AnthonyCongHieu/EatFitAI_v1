@@ -5,7 +5,8 @@ import { create } from 'zustand';
 
 import apiClient from '../services/apiClient';
 import { setAccessTokenMem } from '../services/authTokens';
-import { googleAuthService } from '../services/googleAuthService';
+import { googleAuthService, normalizeGoogleAuthResponse } from '../services/googleAuthService';
+import { useProfileStore } from './useProfileStore';
 import { tokenStorage } from '../services/secureStore';
 import {
   initAuthSession,
@@ -50,6 +51,14 @@ const persistNeedsOnboarding = async (needsOnboarding: boolean): Promise<void> =
     AUTH_NEEDS_ONBOARDING_KEY,
     needsOnboarding ? 'true' : 'false',
   );
+};
+
+const syncProfileCacheForUser = async (userId: string | null): Promise<void> => {
+  useProfileStore.getState().syncForUser(userId);
+};
+
+const clearProfileCache = async (): Promise<void> => {
+  useProfileStore.getState().clear();
 };
 
 const parseDateMs = (value?: string | null): number | null => {
@@ -143,6 +152,7 @@ export const useAuthStore = create<AuthState>((set: any) => ({
 
         if (isTokenStillValid(accessTokenExpiresAt)) {
           setAccessTokenMem(token);
+          await syncProfileCacheForUser(persistedUser?.id ?? null);
           set({ isAuthenticated: true, needsOnboarding: persistedNeedsOnboarding, user: persistedUser });
         } else if (refreshToken && isTokenStillValid(refreshTokenExpiresAt)) {
           try {
@@ -151,6 +161,7 @@ export const useAuthStore = create<AuthState>((set: any) => ({
               throw new Error(t('auth.missingAccessToken'));
             }
 
+            await syncProfileCacheForUser(persistedUser?.id ?? null);
             set({ isAuthenticated: true, needsOnboarding: persistedNeedsOnboarding, user: persistedUser });
           } catch (error) {
             if (__DEV__) {
@@ -166,6 +177,7 @@ export const useAuthStore = create<AuthState>((set: any) => ({
               AUTH_USER_KEY,
             ]);
             setAccessTokenMem(null);
+            await clearProfileCache();
             set({ isAuthenticated: false, needsOnboarding: false, user: null });
           }
         } else {
@@ -181,6 +193,7 @@ export const useAuthStore = create<AuthState>((set: any) => ({
             AUTH_USER_KEY,
           ]);
           setAccessTokenMem(null);
+          await clearProfileCache();
           set({ isAuthenticated: false, needsOnboarding: false, user: null });
         }
       } else {
@@ -189,6 +202,7 @@ export const useAuthStore = create<AuthState>((set: any) => ({
           ONBOARDING_COMPLETE_KEY,
           AUTH_USER_KEY,
         ]);
+        await clearProfileCache();
       }
       await initAuthSession();
 
@@ -264,6 +278,7 @@ export const useAuthStore = create<AuthState>((set: any) => ({
       name: userName,
     };
 
+    await syncProfileCacheForUser(extractedUser.id || null);
     if (extractedUser.id) {
       await AsyncStorage.setItem(AUTH_USER_KEY, JSON.stringify(extractedUser));
     }
@@ -319,7 +334,7 @@ export const useAuthStore = create<AuthState>((set: any) => ({
     );
 
     const data = resp.data;
-    const rawData = data as Record<string, any>;
+    const normalized = normalizeGoogleAuthResponse(data);
     const accessToken = data?.accessToken || data?.token;
 
     if (!accessToken) {
@@ -336,31 +351,16 @@ export const useAuthStore = create<AuthState>((set: any) => ({
     });
     setAccessTokenMem(accessToken);
 
-    const needsOnboarding = readNeedsOnboardingFlag(rawData, false);
+    const needsOnboarding = normalized.needsOnboarding;
     await persistNeedsOnboarding(needsOnboarding);
 
     const extractedUser: AuthUser = {
-      id: String(
-        data?.user?.id ??
-          rawData.userId ??
-          rawData.UserId ??
-          '',
-      ),
-      email: String(
-        data?.user?.email ??
-          rawData.email ??
-          rawData.Email ??
-          '',
-      ),
-      name: String(
-        data?.user?.name ??
-          rawData.displayName ??
-          rawData.DisplayName ??
-          result.user?.name ??
-          '',
-      ),
+      id: String(normalized.userId || normalized.user?.id || ''),
+      email: String(normalized.email || normalized.user?.email || ''),
+      name: String(normalized.displayName || normalized.user?.name || result.user?.name || ''),
     };
 
+    await syncProfileCacheForUser(extractedUser.id || null);
     if (extractedUser.id) {
       await AsyncStorage.setItem(AUTH_USER_KEY, JSON.stringify(extractedUser));
     }
@@ -387,6 +387,7 @@ export const useAuthStore = create<AuthState>((set: any) => ({
         AUTH_USER_KEY,
       ]);
       setAccessTokenMem(null);
+      await clearProfileCache();
       set({ isAuthenticated: false, needsOnboarding: false, user: null });
     }
   },

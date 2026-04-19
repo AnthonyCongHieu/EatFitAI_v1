@@ -66,15 +66,50 @@ const RecipeSuggestionsScreen = (): React.ReactElement => {
 
   const [ingredients, setIngredients] = useState<string[]>([]);
   const [newIngredient, setNewIngredient] = useState('');
-  const [recipes, setRecipes] = useState<RecipeSuggestion[]>([]);
+  const [recipes, setRecipes] = useState<RecipeSuggestion[]>(
+    route.params?.recipes ?? [],
+  );
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  async function searchRecipes(overrideIngredients?: string[]) {
+    const ingredientsToUse = overrideIngredients ?? ingredients;
+    if (ingredientsToUse.length === 0) return;
+
+    setLoading(true);
+    setError(null);
+    setRecipes([]);
+    try {
+      const results = await aiService.suggestRecipes(ingredientsToUse);
+      setRecipes(results);
+      if (results.length === 0) {
+        setError('Không tìm thấy công thức nào phù hợp.');
+      }
+    } catch (err: any) {
+      setError(err?.message || 'Lỗi khi tìm công thức');
+    } finally {
+      setLoading(false);
+    }
+  }
 
   useEffect(() => {
     if (route.params?.ingredients) {
       setIngredients(route.params.ingredients);
     }
   }, [route.params?.ingredients]);
+
+  useEffect(() => {
+    if (route.params?.recipes?.length) {
+      setRecipes(route.params.recipes);
+      setError(null);
+      setLoading(false);
+      return;
+    }
+
+    if ((route.params?.ingredients?.length ?? 0) > 0) {
+      void searchRecipes(route.params.ingredients);
+    }
+  }, [route.params?.recipes, route.params?.ingredients]);
 
   const addIngredient = (ing?: string) => {
     const val = (ing ?? newIngredient).trim();
@@ -89,29 +124,6 @@ const RecipeSuggestionsScreen = (): React.ReactElement => {
       setIngredients(ingredients.filter((i) => i !== ing));
     } else {
       addIngredient(ing);
-    }
-  };
-
-  const searchRecipes = async () => {
-    if (ingredients.length === 0) return;
-
-    setLoading(true);
-    setError(null);
-    setRecipes([]);
-    try {
-      const results = await aiService.suggestRecipesEnhanced({
-        availableIngredients: ingredients,
-        maxResults: 10,
-        minMatchedIngredients: 1,
-      });
-      setRecipes(results);
-      if (results.length === 0) {
-        setError('Không tìm thấy công thức nào phù hợp.');
-      }
-    } catch (err: any) {
-      setError(err?.message || 'Lỗi khi tìm công thức');
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -195,7 +207,7 @@ const RecipeSuggestionsScreen = (): React.ReactElement => {
         {ingredients.length > 0 && (
           <TouchableOpacity
             style={S.mainActionBtn}
-            onPress={searchRecipes}
+            onPress={() => searchRecipes()}
             disabled={loading}
           >
             <ThemedText style={S.mainActionBtnText}>

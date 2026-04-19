@@ -56,6 +56,7 @@ import {
   formatShortWeekdayLabel,
   formatWeekRangeLabel,
 } from '../../../utils/dateDisplay';
+import { formatLocalDate } from '../../../utils/localDate';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -257,13 +258,6 @@ const StatsScreen = (): React.ReactElement => {
     fetchSummary();
   }, []);
 
-  useEffect(() => {
-    if (activeTab === 'month') {
-      if (!monthData) fetchMonthData();
-      fetchMonthExtras();
-    }
-  }, [activeTab, fetchMonthData, fetchMonthExtras]);
-
   /** Fetch monthly water average + weight change */
   const fetchMonthExtras = useCallback(async () => {
     try {
@@ -292,8 +286,8 @@ const StatsScreen = (): React.ReactElement => {
     try {
       const y = currentMonth.getFullYear();
       const m = currentMonth.getMonth();
-      const s = new Date(y, m, 1).toISOString().split('T')[0]!;
-      const e = new Date(y, m + 1, 0).toISOString().split('T')[0]!;
+      const s = formatLocalDate(new Date(y, m, 1));
+      const e = formatLocalDate(new Date(y, m + 1, 0));
       const result = await summaryService.getNutritionSummary(s, e);
       const days: DayData[] = Object.entries(result.dailyCalories || {}).map(
         ([date, cal]) => ({ date, calories: Number(cal) || 0 }),
@@ -314,6 +308,13 @@ const StatsScreen = (): React.ReactElement => {
       setIsLoadingMonth(false);
     }
   }, [currentMonth]);
+
+  useEffect(() => {
+    if (activeTab === 'month') {
+      if (!monthData) fetchMonthData();
+      fetchMonthExtras();
+    }
+  }, [activeTab, monthData, fetchMonthData, fetchMonthExtras]);
 
   /* ─── Derived values ─── */
   const todayCal = Number(summary?.totalCalories ?? 0);

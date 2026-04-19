@@ -74,12 +74,9 @@ const P = {
    Quick Command Chips
    ═══════════════════════════════════════════════ */
 const QUICK_COMMANDS = [
-  'Hôm nay ăn gì?',
-  'Ghi nước',
-  'Tổng kết',
-  'Gợi ý công thức',
-  'Thêm 200g cơm',
-  'Cân nặng 65kg',
+  'Hôm nay ăn bao nhiêu calo?',
+  'Thêm 200g cơm vào bữa trưa',
+  'Cân nặng 65 kg',
 ];
 
 /* ═══════════════════════════════════════════════

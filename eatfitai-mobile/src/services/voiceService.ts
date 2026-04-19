@@ -126,45 +126,17 @@ export interface TranscriptionResponse {
 
 export const voiceService = {
   async transcribeAudio(audioUri: string): Promise<TranscriptionResponse> {
-    try {
-      const baseUrl = getApiBaseUrl();
-
-      const ext = audioUri.split('.').pop() || 'm4a';
-      const response = await fetchWithAuthRetry(
-        `${baseUrl}/api/voice/transcribe`,
-        () => {
-          const formData = new FormData();
-          formData.append('audio', {
-            uri: audioUri,
-            type: `audio/${ext}`,
-            name: `recording.${ext}`,
-          } as any);
-
-          return {
-            method: 'POST',
-            body: formData,
-            headers: {
-              Accept: 'application/json',
-            },
-          };
-        },
-      );
-
-      if (!response.ok) {
-        const text = await response.text();
-        throw new Error(`Voice transcribe failed: ${response.status} ${text}`);
-      }
-
-      return (await response.json()) as TranscriptionResponse;
-    } catch (error: unknown) {
-      return {
-        text: '',
-        language: 'vi',
-        duration: 0,
-        success: false,
-        error: getApiErrorMessage(error, 'Không thể chuyển giọng nói thành văn bản.'),
-      };
+    if (__DEV__) {
+      console.info('[voiceService] STT is disabled; skipping transcription for:', audioUri);
     }
+
+    return {
+      text: '',
+      language: 'vi',
+      duration: 0,
+      success: false,
+      error: 'Chức năng chuyển giọng nói hiện đang tạm tắt. Hãy nhập lệnh bằng text.',
+    };
   },
 
   async parseWithOllama(text: string): Promise<ParsedVoiceCommand> {

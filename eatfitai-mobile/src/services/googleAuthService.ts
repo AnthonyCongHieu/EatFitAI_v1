@@ -59,6 +59,83 @@ const loadGoogleModule = async (): Promise<boolean> => {
   }
 };
 
+const readString = (...values: Array<unknown>): string => {
+  for (const value of values) {
+    if (typeof value === 'string' && value.trim()) {
+      return value;
+    }
+  }
+  return '';
+};
+
+const readBoolean = (...values: Array<unknown>): boolean => {
+  for (const value of values) {
+    if (typeof value === 'boolean') {
+      return value;
+    }
+  }
+  return false;
+};
+
+export type NormalizedGoogleAuthResponse = GoogleAuthResult & {
+  userId: string;
+  displayName: string;
+  email: string;
+  needsOnboarding: boolean;
+  user?: NonNullable<GoogleAuthResult['user']> & {
+    displayName?: string;
+    needsOnboarding?: boolean;
+  };
+};
+
+export const normalizeGoogleAuthResponse = (payload: any): NormalizedGoogleAuthResponse => {
+  const source = payload ?? {};
+  const nestedUser = source.user ?? null;
+  const userId = readString(
+    nestedUser?.id,
+    nestedUser?.userId,
+    source.userId,
+    source.UserId,
+    source.id,
+    source.Id,
+  );
+  const email = readString(
+    nestedUser?.email,
+    source.email,
+    source.Email,
+  );
+  const displayName = readString(
+    nestedUser?.displayName,
+    nestedUser?.name,
+    source.displayName,
+    source.DisplayName,
+    source.name,
+    source.Name,
+  );
+  const needsOnboarding = readBoolean(
+    source.needsOnboarding,
+    source.NeedsOnboarding,
+    nestedUser?.needsOnboarding,
+    nestedUser?.NeedsOnboarding,
+  );
+
+  return {
+    ...source,
+    userId,
+    displayName,
+    email,
+    needsOnboarding,
+    user: {
+      ...(nestedUser ?? {}),
+      id: userId || nestedUser?.id || '',
+      email: email || nestedUser?.email || '',
+      name: displayName || nestedUser?.name || '',
+      displayName: displayName || nestedUser?.displayName || '',
+      needsOnboarding,
+    },
+  };
+};
+
 /**
  * Auth result from Google Sign-in
  */
@@ -159,15 +236,16 @@ export const googleAuthService = {
       // Sign in
       const response = await GoogleSignin.signIn();
 
-      // Debug log to inspect the response shape
-      console.log('[GoogleAuth] Raw response:', JSON.stringify(response, null, 2));
-
       // Newer APIs may return data in response.data instead of response.user
       const userInfo = (response as any).data || response;
       const user = userInfo.user || userInfo;
 
       if (!user || !user.email) {
-        console.error('[GoogleAuth] No user email in response:', response);
+        console.error('[GoogleAuth] No user email in response:', {
+          hasUser: Boolean(user),
+          hasIdToken: Boolean(userInfo.idToken || response.idToken),
+          hasServerAuthCode: Boolean(userInfo.serverAuthCode || response.serverAuthCode),
+        });
         return {
           success: false,
           error:

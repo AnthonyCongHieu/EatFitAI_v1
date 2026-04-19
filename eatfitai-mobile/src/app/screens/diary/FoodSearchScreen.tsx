@@ -52,6 +52,9 @@ const RECENT_SEARCHES_KEY = '@eatfit_recent_searches';
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'FoodSearch'>;
 type FoodSearchRouteProp = RouteProp<RootStackParamList, 'FoodSearch'>;
 
+const getFoodItemKey = (item: { id: string; source?: 'catalog' | 'user' }) =>
+  `${item.source ?? 'catalog'}:${item.id}`;
+
 /* ═══ Palette ═══ */
 const P = {
   primary: '#4be277',
@@ -131,7 +134,7 @@ const FoodSearchScreen = (): React.ReactElement => {
     if (setAsList) setIsLoading(true);
     try {
       const favs = await foodService.getFavorites();
-      setFavoriteIds(new Set(favs.map((f) => f.id)));
+      setFavoriteIds(new Set(favs.map((f) => getFoodItemKey(f))));
       setErrorMessage(null);
       if (setAsList || activeTab === 'favorites') setItems(favs);
     } catch (error) {
@@ -142,12 +145,17 @@ const FoodSearchScreen = (): React.ReactElement => {
   };
 
   const handleToggleFavorite = async (item: FoodItem) => {
+    if (item.source === 'user') {
+      return;
+    }
+
     try {
       const { isFavorite } = await foodService.toggleFavorite(Number(item.id));
+      const key = getFoodItemKey(item);
       setFavoriteIds((prev) => {
         const next = new Set(prev);
-        if (isFavorite) next.add(item.id);
-        else next.delete(item.id);
+        if (isFavorite) next.add(key);
+        else next.delete(key);
         return next;
       });
       if (activeTab === 'favorites' && !isFavorite) {
@@ -166,7 +174,12 @@ const FoodSearchScreen = (): React.ReactElement => {
   const handleQuickAdd = async (item: FoodItem) => {
     setIsQuickAdding(item.id);
     try {
-      await addItemsToTodayDiary([{ foodItemId: Number(item.id), grams: 100 }], { date: selectedDate });
+      await addItemsToTodayDiary(
+        item.source === 'user'
+          ? [{ source: 'user', userFoodItemId: Number(item.id), grams: 100 }]
+          : [{ source: 'catalog', foodItemId: Number(item.id), grams: 100 }],
+        { date: selectedDate },
+      );
       Toast.show({
         type: 'success',
         text1: t('food_search.quick_add_success'),
@@ -242,7 +255,7 @@ const FoodSearchScreen = (): React.ReactElement => {
 
   // ═══ Render ═══ //
   const renderItem = ({ item, index }: { item: FoodItem; index: number }) => {
-    const isFav = favoriteIds.has(item.id);
+    const isFav = favoriteIds.has(getFoodItemKey(item));
     return (
       <Animated.View entering={FadeInDown.delay(index * 40).duration(300)} layout={Layout.springify()}>
         <Pressable
@@ -295,16 +308,18 @@ const FoodSearchScreen = (): React.ReactElement => {
           </View>
 
           <View style={S.resultCardRight}>
-            <Pressable
-              hitSlop={12}
-              onPress={() => handleToggleFavorite(item)}
-              style={({ pressed }) => [
-                { padding: 4, marginRight: 8 },
-                pressed && { transform: [{ scale: 0.7 }], opacity: 0.7 }
-              ]}
-            >
-              <Ionicons name={isFav ? "heart" : "heart-outline"} size={20} color={isFav ? P.primary : P.onSurfaceVariant} />
-            </Pressable>
+            {item.source !== 'user' && (
+              <Pressable
+                hitSlop={12}
+                onPress={() => handleToggleFavorite(item)}
+                style={({ pressed }) => [
+                  { padding: 4, marginRight: 8 },
+                  pressed && { transform: [{ scale: 0.7 }], opacity: 0.7 }
+                ]}
+              >
+                <Ionicons name={isFav ? "heart" : "heart-outline"} size={20} color={isFav ? P.primary : P.onSurfaceVariant} />
+              </Pressable>
+            )}
 
             <Pressable
               hitSlop={8}
@@ -412,7 +427,9 @@ const FoodSearchScreen = (): React.ReactElement => {
               </ThemedText>
             </View>
             <View style={{ gap: 12 }}>
-              {visibleItems.map((item, idx) => <View key={item.id}>{renderItem({ item, index: idx })}</View>)}
+              {visibleItems.map((item, idx) => (
+                <View key={getFoodItemKey(item)}>{renderItem({ item, index: idx })}</View>
+              ))}
             </View>
           </View>
         ) : (

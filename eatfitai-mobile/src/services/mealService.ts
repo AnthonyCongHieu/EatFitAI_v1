@@ -3,13 +3,40 @@
 
 import apiClient from './apiClient';
 import type { MealItemInput } from '../types/meals';
+import { formatLocalDate } from '../utils/localDate';
 
 const todayDate = (): string => {
-  const d = new Date();
-  const y = d.getFullYear();
-  const m = `${d.getMonth() + 1}`.padStart(2, '0');
-  const day = `${d.getDate()}`.padStart(2, '0');
-  return `${y}-${m}-${day}`;
+  return formatLocalDate(new Date());
+};
+
+const buildDiaryPayload = (date: string, mealType: number, item: MealItemInput) => {
+  const source = item.source ?? (item.userFoodItemId != null ? 'user' : 'catalog');
+
+  if (source === 'user') {
+    if (item.userFoodItemId == null) {
+      throw new Error('userFoodItemId is required for user food items');
+    }
+
+    return {
+      eatenDate: date,
+      mealTypeId: mealType,
+      userFoodItemId: item.userFoodItemId,
+      grams: item.grams,
+      note: null,
+    };
+  }
+
+  if (item.foodItemId == null) {
+    throw new Error('foodItemId is required for catalog food items');
+  }
+
+  return {
+    eatenDate: date,
+    mealTypeId: mealType,
+    foodItemId: item.foodItemId,
+    grams: item.grams,
+    note: null,
+  };
 };
 
 export async function addMealItems(
@@ -19,13 +46,7 @@ export async function addMealItems(
 ): Promise<void> {
   // Backend does not support batch insert (/api/meals), so we loop and insert individually
   const promises = items.map((item) => {
-    return apiClient.post('/api/meal-diary', {
-      eatenDate: date,
-      mealTypeId: mealType,
-      foodItemId: item.foodItemId,
-      grams: item.grams,
-      note: null,
-    });
+    return apiClient.post('/api/meal-diary', buildDiaryPayload(date, mealType, item));
   });
 
   await Promise.all(promises);

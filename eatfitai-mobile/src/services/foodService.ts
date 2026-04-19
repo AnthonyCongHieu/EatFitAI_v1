@@ -187,10 +187,6 @@ export const foodService = {
     mealTypeId: MealTypeId;
     userFoodItemId: string;
     grams: number;
-    calories?: number;
-    protein?: number;
-    carb?: number;
-    fat?: number;
     note?: string;
     eatenDate?: string;
   }): Promise<void> {
@@ -199,10 +195,6 @@ export const foodService = {
       mealTypeId: payload.mealTypeId,
       userFoodItemId: parseInt(payload.userFoodItemId, 10),
       grams: payload.grams,
-      calories: payload.calories ?? 0,
-      protein: payload.protein ?? 0,
-      carb: payload.carb ?? 0,
-      fat: payload.fat ?? 0,
       note: payload.note ?? null,
     });
   },

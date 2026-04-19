@@ -2,7 +2,7 @@
  * IngredientBasketSheet - Bottom Sheet hiển thị danh sách nguyên liệu
  * Cho phép xóa nguyên liệu và gợi ý công thức
  */
-import React, { useCallback, useState } from 'react';
+import React, { useCallback } from 'react';
 import { View, StyleSheet, FlatList, Pressable } from 'react-native';
 import Animated, { FadeInRight, FadeOutLeft } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
@@ -19,7 +19,6 @@ import {
   useIngredientBasketStore,
   ScannedIngredient,
 } from '../../store/useIngredientBasketStore';
-import { aiService } from '../../services/aiService';
 import type { RootStackParamList } from '../../app/types';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
@@ -39,8 +38,6 @@ export const IngredientBasketSheet: React.FC<IngredientBasketSheetProps> = ({
   const clearBasket = useIngredientBasketStore((s) => s.clearBasket);
   const getIngredientNames = useIngredientBasketStore((s) => s.getIngredientNames);
 
-  const [isLoading, setIsLoading] = useState(false);
-
   const handleRemove = useCallback(
     (id: string) => {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -55,7 +52,7 @@ export const IngredientBasketSheet: React.FC<IngredientBasketSheetProps> = ({
     onClose();
   }, [clearBasket, onClose]);
 
-  const handleSuggestRecipes = useCallback(async () => {
+  const handleSuggestRecipes = useCallback(() => {
     const names = getIngredientNames();
     if (names.length === 0) {
       Toast.show({
@@ -66,34 +63,10 @@ export const IngredientBasketSheet: React.FC<IngredientBasketSheetProps> = ({
       return;
     }
 
-    setIsLoading(true);
-    try {
-      const recipes = await aiService.suggestRecipes(names);
-
-      if (recipes.length === 0) {
-        Toast.show({
-          type: 'info',
-          text1: 'Không tìm thấy công thức',
-          text2: 'Thử thêm nguyên liệu khác',
-        });
-        return;
-      }
-
-      // Navigate to recipe list with suggested recipes
-      onClose();
-      navigation.navigate('RecipeSuggestions', {
-        ingredients: names,
-        recipes: recipes,
-      });
-    } catch (error) {
-      Toast.show({
-        type: 'error',
-        text1: 'Lỗi gợi ý công thức',
-        text2: 'Vui lòng thử lại',
-      });
-    } finally {
-      setIsLoading(false);
-    }
+    onClose();
+    navigation.navigate('RecipeSuggestions', {
+      ingredients: names,
+    });
   }, [getIngredientNames, navigation, onClose]);
 
   const renderIngredient = useCallback(
@@ -167,7 +140,6 @@ export const IngredientBasketSheet: React.FC<IngredientBasketSheetProps> = ({
               <Pressable
                 style={styles.suggestBtn}
                 onPress={handleSuggestRecipes}
-                disabled={isLoading}
               >
                 <LinearGradient
                   colors={['#4be277', '#3DB860']}
@@ -175,14 +147,8 @@ export const IngredientBasketSheet: React.FC<IngredientBasketSheetProps> = ({
                   end={{ x: 1, y: 0 }}
                   style={styles.suggestBtnGrad}
                 >
-                  {isLoading ? (
-                    <ThemedText style={styles.suggestBtnText}>Đang xử lý...</ThemedText>
-                  ) : (
-                    <>
-                      <Icon name="sparkles" size="sm" color="background" />
-                      <ThemedText style={styles.suggestBtnText}>Gợi ý công thức</ThemedText>
-                    </>
-                  )}
+                  <Icon name="sparkles" size="sm" color="background" />
+                  <ThemedText style={styles.suggestBtnText}>Gợi ý công thức</ThemedText>
                 </LinearGradient>
               </Pressable>
             </View>

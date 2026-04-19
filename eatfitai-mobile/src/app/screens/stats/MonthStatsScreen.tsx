@@ -16,6 +16,7 @@ import { useAppTheme } from '../../../theme/ThemeProvider';
 import { summaryService } from '../../../services/summaryService';
 import { handleApiError } from '../../../utils/errorHandler';
 import { formatMonthYearLabel } from '../../../utils/dateDisplay';
+import { formatLocalDate } from '../../../utils/localDate';
 import { StatsSkeleton } from '../../../components/skeletons/StatsSkeleton';
 import { MacroPieChart } from '../../../components/charts/MacroPieChart';
 import { t } from '../../../i18n/vi';
@@ -81,10 +82,10 @@ const MonthStatsScreen = (): React.ReactElement => {
       setMonthData(cached);
       setIsLoading(false);
       // Silent refresh in background
-      summaryService
+        summaryService
         .getNutritionSummary(
-          new Date(year, month, 1).toISOString().split('T')[0]!,
-          new Date(year, month + 1, 0).toISOString().split('T')[0]!,
+          formatLocalDate(new Date(year, month, 1)),
+          formatLocalDate(new Date(year, month + 1, 0)),
         )
         .then((result) => {
           const days: DayData[] = Object.entries(result.dailyCalories || {}).map(
@@ -116,8 +117,8 @@ const MonthStatsScreen = (): React.ReactElement => {
       const startDate = new Date(year, month, 1);
       const endDate = new Date(year, month + 1, 0);
 
-      const startStr = startDate.toISOString().split('T')[0]!;
-      const endStr = endDate.toISOString().split('T')[0]!;
+      const startStr = formatLocalDate(startDate);
+      const endStr = formatLocalDate(endDate);
 
       const result = await summaryService.getNutritionSummary(startStr, endStr);
 
@@ -226,7 +227,7 @@ const MonthStatsScreen = (): React.ReactElement => {
   };
 
   const renderCalendarCell = (date: Date, index: number) => {
-    const dateStr = date.toISOString().split('T')[0]!;
+    const dateStr = formatLocalDate(date);
     const isCurrentMonthDay = date.getMonth() === month;
     const dayData = dayDataMap[dateStr];
     const calories = dayData?.calories || 0;

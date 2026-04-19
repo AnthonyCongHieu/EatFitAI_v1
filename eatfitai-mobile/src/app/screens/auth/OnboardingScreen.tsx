@@ -666,12 +666,6 @@ const OnboardingScreen = (): React.ReactElement => {
         }
       }
 
-      // Mark onboarding complete in local storage
-      await AsyncStorage.multiSet([
-        ['onboarding_complete', 'true'],
-        [AUTH_NEEDS_ONBOARDING_KEY, 'false'],
-      ]);
-
       // Gọi API đánh dấu onboarding hoàn tất trên server
       try {
         await apiClient.post('/api/auth/mark-onboarding-completed');
@@ -682,8 +676,17 @@ const OnboardingScreen = (): React.ReactElement => {
         if (__DEV__) {
           console.warn('[Onboarding] Failed to update server:', apiError);
         }
-        // Vẫn tiếp tục vì đã lưu locally
+        Alert.alert('Lỗi', 'Không thể hoàn tất onboarding. Vui lòng thử lại.');
+        return;
       }
+
+      // Mark onboarding complete in local storage only after server sync succeeds
+      await AsyncStorage.multiSet([
+        ['onboarding_complete', 'true'],
+        [AUTH_NEEDS_ONBOARDING_KEY, 'false'],
+      ]);
+
+      useAuthStore.setState({ isAuthenticated: true, needsOnboarding: false });
 
       if (profileSavedWithFallback) {
         Toast.show({
@@ -711,9 +714,6 @@ const OnboardingScreen = (): React.ReactElement => {
       // If we are in the authenticated stack and can go back, go back to Profile
       if (navigation.canGoBack()) {
         navigation.goBack();
-      } else {
-        // Auth state change will cause AppNavigator to swap from onboarding to AppTabs.
-        useAuthStore.setState({ isAuthenticated: true, needsOnboarding: false });
       }
     } catch (error) {
       Alert.alert('Lỗi', 'Không thể lưu thông tin. Vui lòng thử lại.');

@@ -1,5 +1,6 @@
 import apiClient from './apiClient';
 import type { NutritionSummaryDto } from '../types';
+import { formatLocalDate } from '../utils/localDate';
 
 export type WeekDaySummary = {
   date: string;
@@ -67,7 +68,7 @@ const normalizeWeekData = (
   for (let i = 0; i < 7; i++) {
     const d = new Date(monday);
     d.setDate(monday.getDate() + i);
-    const dateStr = d.toISOString().split('T')[0]!;
+    const dateStr = formatLocalDate(d);
     weekDays.push(normalizeDay(dateStr, 0, undefined));
   }
 
@@ -113,7 +114,7 @@ const normalizeWeekData = (
 
 export const summaryService = {
   async getWeekSummary(date?: string): Promise<WeekSummary> {
-    const targetDate = date ?? new Date().toISOString().split('T')[0];
+    const targetDate = date ?? formatLocalDate(new Date());
     const response = await apiClient.get('/api/summary/week', {
       params: { date: targetDate },
     });

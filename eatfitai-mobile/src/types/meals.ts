@@ -2,7 +2,9 @@
 // Chu thich bang tieng Viet khong dau
 
 export interface MealItemInput {
-  foodItemId: number;
+  source?: 'catalog' | 'user';
+  foodItemId?: number;
+  userFoodItemId?: number;
   grams: number;
 }
 

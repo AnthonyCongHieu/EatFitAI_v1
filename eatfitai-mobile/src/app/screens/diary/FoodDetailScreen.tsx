@@ -97,11 +97,13 @@ const FoodDetailScreen = (): React.ReactElement | null => {
   
   const selectedDate = route.params.selectedDate;
   const returnToDiaryOnSave = route.params.returnToDiaryOnSave ?? false;
+  const foodKey = `${route.params.source ?? 'catalog'}:${route.params.foodId}`;
+  const isUserFood = route.params.source === 'user';
 
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const { data: detail, isLoading, error } = useQuery<FoodDetail | null, unknown>({
-    queryKey: ['food-detail', route.params.foodId, route.params.source],
+    queryKey: ['food-detail', foodKey],
     queryFn: async () => {
       const data = await foodService.getFoodDetail(route.params.foodId, route.params.source);
       return data ?? null;
@@ -111,16 +113,16 @@ const FoodDetailScreen = (): React.ReactElement | null => {
   });
 
   const { data: isFavorite = false, refetch: refetchFavorite } = useQuery({
-    queryKey: ['favorite', route.params.foodId],
+    queryKey: ['favorite', foodKey],
     queryFn: () => favoritesService.checkIsFavorite(Number(route.params.foodId)),
-    enabled: !!route.params.foodId,
+    enabled: !!route.params.foodId && !isUserFood,
   });
 
   const toggleFavorite = useCallback(async () => {
-    if (!route.params.foodId) return;
+    if (!route.params.foodId || isUserFood) return;
     await favoritesService.toggleFavorite(Number(route.params.foodId));
     refetchFavorite();
-  }, [route.params.foodId, refetchFavorite]);
+  }, [route.params.foodId, isUserFood, refetchFavorite]);
 
   useEffect(() => {
     if (error) {
@@ -179,7 +181,6 @@ const FoodDetailScreen = (): React.ReactElement | null => {
     if (!detail) return;
     setIsSubmitting(true);
     try {
-      const isUserFood = detail.source === 'user';
       const payload = {
         mealTypeId: values.mealType as MealTypeId,
         grams: Number(values.grams),
@@ -191,10 +192,6 @@ const FoodDetailScreen = (): React.ReactElement | null => {
         await foodService.addDiaryEntryFromUserFoodItem({
           ...payload,
           userFoodItemId: detail.id,
-          calories: displayCalories,
-          protein: displayProtein,
-          carb: displayCarbs,
-          fat: displayFat,
         });
       } else {
         await foodService.addDiaryEntry({
@@ -238,9 +235,13 @@ const FoodDetailScreen = (): React.ReactElement | null => {
           <Ionicons name="arrow-back" size={24} color={P.primary} />
         </Pressable>
         <ThemedText style={S.headerTitle}>Chi tiết món ăn</ThemedText>
-        <Pressable style={S.iconBtn} onPress={toggleFavorite}>
-          <Ionicons name={isFavorite ? "heart" : "heart-outline"} size={22} color={P.primary} />
-        </Pressable>
+        {!isUserFood ? (
+          <Pressable style={S.iconBtn} onPress={toggleFavorite}>
+            <Ionicons name={isFavorite ? "heart" : "heart-outline"} size={22} color={P.primary} />
+          </Pressable>
+        ) : (
+          <View style={S.iconBtn} />
+        )}
       </View>
 
       <ScrollView contentContainerStyle={S.scrollContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
