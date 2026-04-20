@@ -4,6 +4,7 @@ using EatFitAI.API.DTOs.Food;
 using EatFitAI.API.DbScaffold.Models;
 using EatFitAI.API.Repositories.Interfaces;
 using EatFitAI.API.Services.Interfaces;
+using Microsoft.EntityFrameworkCore;
 
 namespace EatFitAI.API.Services
 {
@@ -48,6 +49,32 @@ namespace EatFitAI.API.Services
 
         public async Task<CustomDishResponseDto> CreateCustomDishAsync(Guid userId, CustomDishDto customDishDto)
         {
+            if (customDishDto.Ingredients == null || customDishDto.Ingredients.Count == 0)
+            {
+                throw new ArgumentException("Custom dish must contain at least one ingredient");
+            }
+
+            foreach (var ingredient in customDishDto.Ingredients)
+            {
+                if (ingredient.Grams <= 0)
+                {
+                    throw new ArgumentException("Custom dish ingredient grams must be greater than 0");
+                }
+
+                var foodExists = await _context.FoodItems.AnyAsync(foodItem =>
+                    foodItem.FoodItemId == ingredient.FoodItemId &&
+                    !foodItem.IsDeleted &&
+                    foodItem.IsActive);
+                if (!foodExists)
+                {
+                    throw new KeyNotFoundException($"Food item {ingredient.FoodItemId} was not found");
+                }
+            }
+
+            await using var transaction = _context.Database.IsRelational()
+                ? await _context.Database.BeginTransactionAsync()
+                : null;
+
             var userDish = new UserDish
             {
                 UserId = userId,
@@ -61,7 +88,7 @@ namespace EatFitAI.API.Services
             await _context.UserDishes.AddAsync(userDish);
             await _context.SaveChangesAsync();
 
-            // Add ingredients
+            // Add ingredients after the parent row exists so the dish/ingredient set stays consistent.
             foreach (var ingredient in customDishDto.Ingredients)
             {
                 var userDishIngredient = new UserDishIngredient
@@ -85,6 +112,11 @@ namespace EatFitAI.API.Services
                 UpdatedAt = userDish.UpdatedAt,
                 Ingredients = customDishDto.Ingredients
             };
+
+            if (transaction != null)
+            {
+                await transaction.CommitAsync();
+            }
 
             return response;
         }

@@ -6,10 +6,12 @@ import type {
   ViewStyle,
 } from 'react-native';
 import { ScrollView, View, StyleSheet, Platform, StatusBar } from 'react-native';
+import { useIsFocused } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 
 import { useAppTheme } from '../theme/ThemeProvider';
+import AutomationMarker from './AutomationMarker';
 
 type ScreenProps = {
   children: ReactNode;
@@ -42,14 +44,15 @@ export const Screen = ({
 }: ScreenProps): React.ReactElement => {
   const { theme } = useAppTheme();
   const insets = useSafeAreaInsets();
+  const isFocused = useIsFocused();
 
   // Tính padding dựa vào safe area
   const paddingTop =
     useSafeArea && !hasHeader
       ? Math.max(
-        insets.top,
-        Platform.OS === 'android' ? StatusBar.currentHeight || 24 : 0,
-      )
+          insets.top,
+          Platform.OS === 'android' ? StatusBar.currentHeight || 24 : 0,
+        )
       : 0;
   const paddingBottom = useSafeArea ? Math.max(insets.bottom, 16) : 0;
   const paddingHorizontal = horizontalPadding ? theme.spacing.lg : 0;
@@ -71,7 +74,6 @@ export const Screen = ({
   // Render content based on scroll prop
   const content = scroll ? (
     <ScrollView
-      testID={testID}
       style={styles.scrollView}
       contentContainerStyle={[contentStyle, contentContainerStyle]}
       refreshControl={refreshControl}
@@ -81,7 +83,9 @@ export const Screen = ({
       {children}
     </ScrollView>
   ) : (
-    <View testID={testID} style={contentStyle}>{children}</View>
+    <View style={contentStyle}>
+      {children}
+    </View>
   );
 
   // Render with or without gradient - NO inline component to prevent remounts
@@ -93,13 +97,19 @@ export const Screen = ({
         end={{ x: 0.5, y: 1 }}
         style={[styles.gradient, style as ViewStyle]}
       >
-        {content}
+        <View style={containerStyle}>
+          {testID && isFocused ? <AutomationMarker marker={testID} /> : null}
+          {content}
+        </View>
       </LinearGradient>
     );
   }
 
   return (
-    <View style={[containerStyle, style as ViewStyle]}>{content}</View>
+    <View style={[containerStyle, style as ViewStyle]}>
+      {testID && isFocused ? <AutomationMarker marker={testID} /> : null}
+      {content}
+    </View>
   );
 };
 

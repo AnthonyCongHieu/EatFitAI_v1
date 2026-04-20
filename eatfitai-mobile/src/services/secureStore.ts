@@ -111,7 +111,9 @@ export const tokenStorage = {
         });
       }
     } else if (__DEV__) {
-      console.warn('[SecureStore] No valid refresh token to save - this will cause auth issues later!');
+      console.warn(
+        '[SecureStore] No valid refresh token to save - this will cause auth issues later!',
+      );
     }
     if (
       typeof refreshTokenExpiresAt === 'string' &&
@@ -168,4 +170,3 @@ export const SECURE_STORE_KEYS = {
   ACCESS_EXP_KEY,
   REFRESH_EXP_KEY,
 } as const;
-

@@ -11,6 +11,13 @@ $env:EXPO_PUBLIC_E2E_AUTOMATION = '0'
 $env:EXPO_NO_DOTENV = '1'
 $env:EATFITAI_SMOKE_OUTPUT_DIR = $sessionOutputDir
 
+if (-not $env:RENDER_API_KEY) {
+    $storedRenderKey = [Environment]::GetEnvironmentVariable('RENDER_API_KEY', 'User')
+    if (-not [string]::IsNullOrWhiteSpace($storedRenderKey)) {
+        $env:RENDER_API_KEY = $storedRenderKey
+    }
+}
+
 New-Item -ItemType Directory -Path $sessionOutputDir -Force | Out-Null
 
 Set-Location (Join-Path $PSScriptRoot 'eatfitai-mobile')
@@ -28,6 +35,9 @@ node .\scripts\generate-local-ip.js
 
 Write-Host '[cloud-smoke] Verifying API target...'
 node .\scripts\check-api-target.js
+
+Write-Host '[cloud-smoke] Verifying Render deploy state...'
+node .\scripts\production-smoke-render-verify.js
 
 Write-Host '[cloud-smoke] Running cloud health preflight...'
 node .\scripts\production-smoke-preflight.js

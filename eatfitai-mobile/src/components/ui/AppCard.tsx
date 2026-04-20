@@ -26,6 +26,7 @@ export type AppCardProps = {
   onPress?: () => void;
   accessibilityLabel?: string;
   accessibilityHint?: string;
+  testID?: string;
   /** Disable press animation */
   disableAnimation?: boolean;
 };
@@ -50,6 +51,7 @@ export const AppCard = ({
   onPress,
   accessibilityLabel,
   accessibilityHint,
+  testID,
   disableAnimation = false,
 }: AppCardProps): React.ReactElement => {
   const { theme } = useAppTheme();
@@ -68,7 +70,7 @@ export const AppCard = ({
     if (onPress && !disableAnimation) {
       scale.value = withSpring(0.98, { damping: 15, stiffness: 300 });
       opacity.value = withTiming(0.9, { duration: 100 });
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => { });
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
     }
   };
 
@@ -86,35 +88,45 @@ export const AppCard = ({
     shadow === 'none'
       ? {}
       : {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: isDark ? 0.3 : 0.1,
-        shadowRadius: shadow === 'lg' ? 16 : shadow === 'md' ? 12 : 8,
-        // Android: giảm elevation trong dark mode để tránh hiệu ứng 2 màu
-        elevation: isDark ? (shadow === 'lg' ? 4 : shadow === 'md' ? 2 : 1) : (shadow === 'lg' ? 8 : shadow === 'md' ? 6 : 4),
-      };
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 4 },
+          shadowOpacity: isDark ? 0.3 : 0.1,
+          shadowRadius: shadow === 'lg' ? 16 : shadow === 'md' ? 12 : 8,
+          // Android: giảm elevation trong dark mode để tránh hiệu ứng 2 màu
+          elevation: isDark
+            ? shadow === 'lg'
+              ? 4
+              : shadow === 'md'
+                ? 2
+                : 1
+            : shadow === 'lg'
+              ? 8
+              : shadow === 'md'
+                ? 6
+                : 4,
+        };
 
   // Glassmorphism styles theo variant - Solid colors để fix 2 màu trên Android
   const variantStyle: ViewStyle =
     variant === 'outlined'
       ? {
-        // Solid colors thay vì rgba
-        backgroundColor: isDark ? '#1A2744' : '#F8FAFF',
-        borderWidth: 1,
-        borderColor: isDark ? '#2A3F68' : 'rgba(0, 0, 0, 0.06)',
-      }
+          // Solid colors thay vì rgba
+          backgroundColor: isDark ? '#1A2744' : '#F8FAFF',
+          borderWidth: 1,
+          borderColor: isDark ? '#2A3F68' : 'rgba(0, 0, 0, 0.06)',
+        }
       : variant === 'filled'
         ? {
-          backgroundColor: theme.colors.primaryLight,
-          borderWidth: 1,
-          borderColor: isDark ? '#2A4A3A' : 'rgba(16, 185, 129, 0.2)',
-        }
+            backgroundColor: theme.colors.primaryLight,
+            borderWidth: 1,
+            borderColor: isDark ? '#2A4A3A' : 'rgba(16, 185, 129, 0.2)',
+          }
         : {
-          // Default elevated - solid navy blue
-          backgroundColor: isDark ? '#1A2744' : '#EEF4FF',
-          borderWidth: 1,
-          borderColor: isDark ? '#2A3F68' : 'rgba(59, 130, 246, 0.15)',
-        };
+            // Default elevated - solid navy blue
+            backgroundColor: isDark ? '#1A2744' : '#EEF4FF',
+            borderWidth: 1,
+            borderColor: isDark ? '#2A3F68' : 'rgba(59, 130, 246, 0.15)',
+          };
 
   const cardStyle: ViewStyle = {
     borderRadius: theme.borderRadius.card,
@@ -144,6 +156,7 @@ export const AppCard = ({
         onPressIn={handlePressIn}
         onPressOut={handlePressOut}
         style={[cardStyle, animatedStyle, style]}
+        testID={testID}
       >
         {content}
       </AnimatedPressable>
@@ -151,11 +164,10 @@ export const AppCard = ({
   }
 
   return (
-    <View style={[cardStyle, style]}>
+    <View style={[cardStyle, style]} testID={testID}>
       {content}
     </View>
   );
 };
 
 export default AppCard;
-

@@ -1,4 +1,8 @@
-﻿import apiClient, { aiApiClient, getCurrentApiUrl } from './apiClient';
+﻿import apiClient, {
+  aiApiClient,
+  fetchWithAuthRetry,
+  getCurrentApiUrl,
+} from './apiClient';
 import type {
   AiHealthStatus,
   MappedFoodItem,
@@ -6,11 +10,15 @@ import type {
   RecipeSuggestionApiItem,
   VisionDetectResult,
 } from '../types/ai';
-import type { AdaptiveTarget, NutritionInsight } from '../types/aiEnhanced';
+import type {
+  AdaptiveTarget,
+  NutritionInsight,
+  RecipeDetail,
+  RecipeIngredientDetail,
+  RecipeSuggestion,
+} from '../types/aiEnhanced';
 
 import { API_BASE_URL, assertBackendApiBaseUrl } from '../config/env';
-import { getAccessTokenMem } from './authTokens';
-import { tokenStorage } from './secureStore';
 import { sanitizeFoodImageUrl } from '../utils/imageHelpers';
 
 const getApiBaseUrl = (): string => {
@@ -29,16 +37,7 @@ export type IngredientItem = {
   confidence?: number | null;
 };
 
-export type SuggestedRecipe = {
-  id: string;
-  title: string;
-  description?: string | null;
-  calories?: number | null;
-  protein?: number | null;
-  carbs?: number | null;
-  fat?: number | null;
-  ingredients?: string[];
-};
+export type SuggestedRecipe = RecipeSuggestion;
 
 export type NutritionTarget = {
   calories: number;
@@ -67,7 +66,8 @@ const toNumber = (value: unknown): number | null => {
   return null;
 };
 
-const toNumberOr = (value: unknown, fallback: number): number => toNumber(value) ?? fallback;
+const toNumberOr = (value: unknown, fallback: number): number =>
+  toNumber(value) ?? fallback;
 
 const clamp = (value: number, min: number, max: number): number =>
   Math.min(Math.max(value, min), max);
@@ -108,7 +108,9 @@ export const isAiOfflineError = (error: unknown): boolean => {
   if ([502, 503, 504].includes(status)) return true;
 
   if (status === 500) {
-    const errorBody = isHttpError(error) ? JSON.stringify(error.response?.data ?? '') : '';
+    const errorBody = isHttpError(error)
+      ? JSON.stringify(error.response?.data ?? '')
+      : '';
     const normalizedBody = errorBody.toLowerCase();
     if (
       normalizedBody.includes('ai provider') ||
@@ -189,6 +191,112 @@ const normalizeNutritionInsight = (data: any): NutritionInsight => ({
   daysAnalyzed: toNumberOr(data?.daysAnalyzed, 0),
 });
 
+const normalizeStringArray = (value: unknown): string[] | undefined => {
+  if (!Array.isArray(value)) return undefined;
+
+  const result = value
+    .map((item) => String(item).trim())
+    .filter((item) => item.length > 0);
+
+  return result.length > 0 ? result : undefined;
+};
+
+const readRecipeNumber = (data: any, ...keys: string[]): number => {
+  for (const key of keys) {
+    const value = toNumber(data?.[key]);
+    if (value != null) return value;
+  }
+
+  return 0;
+};
+
+const normalizeRecipeSuggestionItem = (item: RecipeSuggestionApiItem | any): RecipeSuggestion => ({
+  recipeId: readRecipeNumber(item, 'recipeId', 'RecipeId', 'id'),
+  recipeName: (() => {
+    const rawName = item?.recipeName ?? item?.RecipeName ?? item?.title ?? item?.name;
+    return typeof rawName === 'string' && rawName.trim().length > 0
+      ? rawName.trim()
+      : 'Công thức';
+  })(),
+  description: (() => {
+    const rawDescription = item?.description ?? item?.Description ?? item?.summary ?? item?.Summary;
+    return typeof rawDescription === 'string' && rawDescription.trim().length > 0
+      ? rawDescription.trim()
+      : undefined;
+  })(),
+  totalCalories: readRecipeNumber(item, 'totalCalories', 'TotalCalories', 'calories', 'Calories'),
+  totalProtein: readRecipeNumber(item, 'totalProtein', 'TotalProtein', 'protein', 'Protein'),
+  totalCarbs: readRecipeNumber(item, 'totalCarbs', 'TotalCarbs', 'carbs', 'Carbs'),
+  totalFat: readRecipeNumber(item, 'totalFat', 'TotalFat', 'fat', 'Fat'),
+  matchedIngredientsCount: readRecipeNumber(
+    item,
+    'matchedIngredientsCount',
+    'MatchedIngredientsCount',
+  ),
+  totalIngredientsCount: readRecipeNumber(
+    item,
+    'totalIngredientsCount',
+    'TotalIngredientsCount',
+  ),
+  matchPercentage: readRecipeNumber(item, 'matchPercentage', 'MatchPercentage'),
+  matchedIngredients: normalizeStringArray(item?.matchedIngredients ?? item?.MatchedIngredients) ?? [],
+  missingIngredients: normalizeStringArray(item?.missingIngredients ?? item?.MissingIngredients) ?? [],
+  allIngredients: normalizeStringArray(item?.allIngredients ?? item?.AllIngredients) ?? [],
+});
+
+const normalizeRecipeIngredient = (item: any): RecipeIngredientDetail => ({
+  foodItemId: readRecipeNumber(item, 'foodItemId', 'FoodItemId'),
+  foodName: String(item?.foodName ?? item?.FoodName ?? 'Nguyên liệu'),
+  grams: readRecipeNumber(item, 'grams', 'Grams'),
+  calories: readRecipeNumber(item, 'calories', 'Calories'),
+  protein: readRecipeNumber(item, 'protein', 'Protein'),
+  carbs: readRecipeNumber(item, 'carbs', 'Carbs'),
+  fat: readRecipeNumber(item, 'fat', 'Fat'),
+});
+
+const normalizeRecipeDetail = (data: any): RecipeDetail => ({
+  ...normalizeRecipeSuggestionItem(data),
+  ingredients: Array.isArray(data?.ingredients ?? data?.Ingredients)
+    ? (data.ingredients ?? data.Ingredients).map(normalizeRecipeIngredient)
+    : [],
+  instructions: (() => {
+    const rawInstructions = data?.instructions ?? data?.Instructions;
+    if (Array.isArray(rawInstructions)) {
+      const steps = rawInstructions.map((step) => String(step).trim()).filter(Boolean);
+      return steps.length > 0 ? steps : undefined;
+    }
+
+    if (typeof rawInstructions === 'string') {
+      const trimmed = rawInstructions.trim();
+      if (!trimmed) return undefined;
+
+      try {
+        const parsed = JSON.parse(trimmed);
+        if (Array.isArray(parsed)) {
+          const steps = parsed.map((step) => String(step).trim()).filter(Boolean);
+          return steps.length > 0 ? steps : undefined;
+        }
+      } catch {
+        // fall through to line splitting
+      }
+
+      const steps = trimmed
+        .split(/\r?\n+/)
+        .map((step) => step.trim())
+        .filter(Boolean);
+
+      return steps.length > 0 ? steps : undefined;
+    }
+
+    return undefined;
+  })(),
+  videoUrl:
+    typeof (data?.videoUrl ?? data?.VideoUrl) === 'string'
+      ? String(data.videoUrl ?? data.VideoUrl).trim() || undefined
+      : undefined,
+  tags: normalizeStringArray(data?.tags ?? data?.Tags),
+});
+
 const normalizeAdaptiveTarget = (data: any): AdaptiveTarget => ({
   currentTarget: {
     targetCalories: toNumber(data?.currentTarget?.targetCalories),
@@ -220,10 +328,8 @@ const normalizeAiHealthStatus = (data: any): AiHealthStatus => {
   return {
     state,
     providerUrl: typeof data?.providerUrl === 'string' ? data.providerUrl : '',
-    lastCheckedAt:
-      typeof data?.lastCheckedAt === 'string' ? data.lastCheckedAt : null,
-    lastHealthyAt:
-      typeof data?.lastHealthyAt === 'string' ? data.lastHealthyAt : null,
+    lastCheckedAt: typeof data?.lastCheckedAt === 'string' ? data.lastCheckedAt : null,
+    lastHealthyAt: typeof data?.lastHealthyAt === 'string' ? data.lastHealthyAt : null,
     consecutiveFailures: toNumberOr(data?.consecutiveFailures, 0),
     modelLoaded: Boolean(data?.modelLoaded),
     geminiConfigured: Boolean(data?.geminiConfigured),
@@ -252,7 +358,10 @@ const buildLocalNutritionTarget = (
 ): NutritionTarget => {
   const isFemale = String(payload.sex).toLowerCase() === 'female';
   const baseBmr =
-    10 * payload.weightKg + 6.25 * payload.heightCm - 5 * payload.age + (isFemale ? -161 : 5);
+    10 * payload.weightKg +
+    6.25 * payload.heightCm -
+    5 * payload.age +
+    (isFemale ? -161 : 5);
   const maintenanceCalories = baseBmr * payload.activityLevel;
   const goalAdjustment =
     payload.goal === 'lose' || payload.goal === 'lose_weight'
@@ -291,7 +400,9 @@ const buildFallbackCookingInstructions = (
     .filter(Boolean)
     .slice(0, 4);
   const ingredientText =
-    ingredientNames.length > 0 ? ingredientNames.join(', ') : 'các nguyên liệu đã chuẩn bị';
+    ingredientNames.length > 0
+      ? ingredientNames.join(', ')
+      : 'các nguyên liệu đã chuẩn bị';
 
   return {
     steps: [
@@ -307,31 +418,29 @@ const buildFallbackCookingInstructions = (
 
 export async function detectFoodByImage(imageUri: string): Promise<VisionDetectResult> {
   try {
-    const formData = new FormData();
-
-    formData.append('file', {
-      uri: imageUri,
-      name: 'photo.jpg',
-      type: 'image/jpeg',
-    } as unknown as Blob);
-
-    const token = getAccessTokenMem() ?? (await tokenStorage.getAccessToken());
     const baseUrl = getApiBaseUrl();
     const url = `${baseUrl}/api/ai/vision/detect`;
 
     if (__DEV__) {
       console.log('[aiService] detectFoodByImage calling:', url);
-      console.log('[aiService] using token length:', token?.length);
       console.log('[aiService] imageUri:', imageUri);
     }
 
-    const response = await fetch(url, {
-      method: 'POST',
-      body: formData,
-      headers: {
-        Authorization: `Bearer ${token}`,
-        Accept: 'application/json',
-      },
+    const response = await fetchWithAuthRetry(url, () => {
+      const formData = new FormData();
+      formData.append('file', {
+        uri: imageUri,
+        name: 'photo.jpg',
+        type: 'image/jpeg',
+      } as unknown as Blob);
+
+      return {
+        method: 'POST',
+        body: formData,
+        headers: {
+          Accept: 'application/json',
+        },
+      };
     });
 
     if (!response.ok) {
@@ -340,7 +449,9 @@ export async function detectFoodByImage(imageUri: string): Promise<VisionDetectR
         console.error('[aiService] detectFoodByImage failed:', response.status, text);
       }
 
-      const httpError = new Error(`Vision API failed: ${response.status} ${text}`) as AiOfflineError;
+      const httpError = new Error(
+        `Vision API failed: ${response.status} ${text}`,
+      ) as AiOfflineError;
       httpError.status = response.status;
       if ([502, 503, 504].includes(response.status)) {
         throw toAiOfflineError(
@@ -408,26 +519,20 @@ export const aiService = {
       : Array.isArray(payload)
         ? payload
         : [];
-    return results.map((item) => ({
-      id: String(
-        item?.id ?? item?.slug ?? item?.title ?? Math.random().toString(36).slice(2),
-      ),
-      title: item?.title ?? item?.name ?? 'Công thức',
-      description: item?.description ?? item?.summary ?? null,
-      calories: toNumber(item?.calories),
-      protein: toNumber(item?.protein),
-      carbs: toNumber(item?.carbs),
-      fat: toNumber(item?.fat),
-      ingredients: Array.isArray(item?.ingredients)
-        ? item.ingredients.map((ing) => String(ing))
-        : undefined,
-    }));
+    return results.map(normalizeRecipeSuggestionItem);
   },
 
   async getCurrentNutritionTarget(): Promise<NutritionTarget> {
-    const defaults: NutritionTarget = { calories: 2000, protein: 50, carbs: 250, fat: 65 };
+    const defaults: NutritionTarget = {
+      calories: 2000,
+      protein: 50,
+      carbs: 250,
+      fat: 65,
+    };
     try {
-      const response = await apiClient.get<NutritionTargetDto>('/api/ai/nutrition-targets/current');
+      const response = await apiClient.get<NutritionTargetDto>(
+        '/api/ai/nutrition-targets/current',
+      );
       const data = response.data ?? {};
 
       const calories = toNumber(data.caloriesKcal ?? data.calories);
@@ -436,7 +541,10 @@ export const aiService = {
       const fat = toNumber(data.fatGrams ?? data.fat);
 
       if (calories == null || protein == null || carbs == null || fat == null) {
-        console.warn('[EatFitAI] Nutrition target has null values, using defaults:', data);
+        console.warn(
+          '[EatFitAI] Nutrition target has null values, using defaults:',
+          data,
+        );
         return defaults;
       }
       return { calories, protein, carbs, fat };
@@ -444,7 +552,9 @@ export const aiService = {
       if (error && typeof error === 'object' && 'response' in error) {
         const axiosError = error as { response?: { status?: number } };
         if (axiosError.response?.status === 404) {
-          console.log('[EatFitAI] No nutrition target found for user (404), using defaults');
+          console.log(
+            '[EatFitAI] No nutrition target found for user (404), using defaults',
+          );
           return defaults;
         }
       }
@@ -495,19 +605,16 @@ export const aiService = {
 
   async applyNutritionTarget(target: NutritionTarget): Promise<void> {
     try {
-      await apiClient.post('/api/ai/nutrition/apply-target', {
-        targetCalories: target.calories,
-        targetProtein: target.protein,
-        targetCarbs: target.carbs,
-        targetFat: target.fat,
+      await apiClient.post('/api/ai/nutrition/apply', {
+        calories: target.calories,
+        protein: target.protein,
+        carb: target.carbs,
+        fat: target.fat,
+        effectiveFrom: null,
       });
-    } catch {
-      await apiClient.post('/api/ai/nutrition-targets', {
-        caloriesKcal: target.calories,
-        proteinGrams: target.protein,
-        carbohydrateGrams: target.carbs,
-        fatGrams: target.fat,
-      });
+    } catch (error) {
+      console.error('[EatFitAI] Error applying nutrition target:', error);
+      throw error;
     }
   },
 
@@ -523,14 +630,21 @@ export const aiService = {
     request: import('../types/aiEnhanced').RecipeSuggestionRequest,
   ): Promise<import('../types/aiEnhanced').RecipeSuggestion[]> {
     const response = await apiClient.post('/api/ai/recipes/suggest', request);
-    return response.data;
+    const payload = response.data;
+    const results = Array.isArray((payload as { recipes?: RecipeSuggestion[] }).recipes)
+      ? (payload as { recipes: RecipeSuggestion[] }).recipes
+      : Array.isArray(payload)
+        ? payload
+        : [];
+
+    return results.map(normalizeRecipeSuggestionItem);
   },
 
   async getRecipeDetail(
     recipeId: number,
   ): Promise<import('../types/aiEnhanced').RecipeDetail> {
     const response = await apiClient.get(`/api/ai/recipes/${recipeId}`);
-    return response.data;
+    return normalizeRecipeDetail(response.data);
   },
 
   async getNutritionInsights(
@@ -613,20 +727,21 @@ export const aiService = {
     description?: string,
   ): Promise<{ steps: string[]; cookingTime?: string; difficulty?: string }> {
     try {
-      const token = getAccessTokenMem() ?? (await tokenStorage.getAccessToken());
       const baseUrl = getApiBaseUrl();
-      const response = await fetch(`${baseUrl}/api/ai/cooking-instructions`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          recipeName,
-          ingredients,
-          description: description || '',
+      const response = await fetchWithAuthRetry(
+        `${baseUrl}/api/ai/cooking-instructions`,
+        () => ({
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            recipeName,
+            ingredients,
+            description: description || '',
+          }),
         }),
-      });
+      );
 
       if (!response.ok) {
         const text = await response.text();
@@ -634,7 +749,9 @@ export const aiService = {
           return buildFallbackCookingInstructions(recipeName, ingredients);
         }
 
-        const httpError = new Error(`Không thể tạo hướng dẫn nấu: ${text}`) as AiOfflineError;
+        const httpError = new Error(
+          `Không thể tạo hướng dẫn nấu: ${text}`,
+        ) as AiOfflineError;
         httpError.status = response.status;
         throw httpError;
       }

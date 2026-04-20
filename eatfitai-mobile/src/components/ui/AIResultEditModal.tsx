@@ -90,17 +90,29 @@ export const AIResultEditModal: React.FC<AIResultEditModalProps> = ({
             <Pressable
               onPress={onClose}
               hitSlop={10}
-              style={[styles.closeButton, { backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)' }]}
+              style={[
+                styles.closeButton,
+                {
+                  backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)',
+                },
+              ]}
             >
               <Icon name="close" size="sm" color="textSecondary" />
             </Pressable>
           </View>
 
           {/* Grams Input - Prominent */}
-          <View style={[styles.gramsCard, {
-            backgroundColor: isDark ? 'rgba(59, 130, 246, 0.15)' : 'rgba(59, 130, 246, 0.08)',
-            borderColor: theme.colors.primary + '30',
-          }]}>
+          <View
+            style={[
+              styles.gramsCard,
+              {
+                backgroundColor: isDark
+                  ? 'rgba(59, 130, 246, 0.15)'
+                  : 'rgba(59, 130, 246, 0.08)',
+                borderColor: theme.colors.primary + '30',
+              },
+            ]}
+          >
             <View>
               <ThemedText variant="bodySmall" weight="600" color="primary">
                 Khối lượng
@@ -129,16 +141,23 @@ export const AIResultEditModal: React.FC<AIResultEditModalProps> = ({
           </View>
 
           {/* Nutrition Display - Clean horizontal layout */}
-          <View style={[styles.nutritionCard, {
-            backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)',
-            borderColor: theme.colors.border,
-          }]}>
+          <View
+            style={[
+              styles.nutritionCard,
+              {
+                backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)',
+                borderColor: theme.colors.border,
+              },
+            ]}
+          >
             {/* Calories */}
             <View style={styles.nutritionItem}>
               <ThemedText variant="h3" weight="700" style={{ color: '#EF4444' }}>
                 {calculatedNutrition.calories}
               </ThemedText>
-              <ThemedText variant="caption" color="textSecondary">kcal</ThemedText>
+              <ThemedText variant="caption" color="textSecondary">
+                kcal
+              </ThemedText>
             </View>
 
             <View style={[styles.divider, { backgroundColor: theme.colors.border }]} />
@@ -148,7 +167,9 @@ export const AIResultEditModal: React.FC<AIResultEditModalProps> = ({
               <ThemedText variant="body" weight="700" style={{ color: '#3B82F6' }}>
                 {calculatedNutrition.protein}g
               </ThemedText>
-              <ThemedText variant="caption" color="textSecondary">Protein</ThemedText>
+              <ThemedText variant="caption" color="textSecondary">
+                Protein
+              </ThemedText>
             </View>
 
             <View style={[styles.divider, { backgroundColor: theme.colors.border }]} />
@@ -158,7 +179,9 @@ export const AIResultEditModal: React.FC<AIResultEditModalProps> = ({
               <ThemedText variant="body" weight="700" style={{ color: '#F59E0B' }}>
                 {calculatedNutrition.carbs}g
               </ThemedText>
-              <ThemedText variant="caption" color="textSecondary">Carbs</ThemedText>
+              <ThemedText variant="caption" color="textSecondary">
+                Carbs
+              </ThemedText>
             </View>
 
             <View style={[styles.divider, { backgroundColor: theme.colors.border }]} />
@@ -168,7 +191,9 @@ export const AIResultEditModal: React.FC<AIResultEditModalProps> = ({
               <ThemedText variant="body" weight="700" style={{ color: '#EC4899' }}>
                 {calculatedNutrition.fat}g
               </ThemedText>
-              <ThemedText variant="caption" color="textSecondary">Fat</ThemedText>
+              <ThemedText variant="caption" color="textSecondary">
+                Fat
+              </ThemedText>
             </View>
           </View>
 
@@ -176,9 +201,14 @@ export const AIResultEditModal: React.FC<AIResultEditModalProps> = ({
           <View style={styles.actions}>
             <Pressable
               onPress={onClose}
-              style={[styles.actionButton, { borderColor: theme.colors.border, borderWidth: 1 }]}
+              style={[
+                styles.actionButton,
+                { borderColor: theme.colors.border, borderWidth: 1 },
+              ]}
             >
-              <ThemedText variant="body" weight="600">Hủy</ThemedText>
+              <ThemedText variant="body" weight="600">
+                Hủy
+              </ThemedText>
             </Pressable>
             <Pressable onPress={handleSave} style={styles.actionButton}>
               <LinearGradient
@@ -188,7 +218,11 @@ export const AIResultEditModal: React.FC<AIResultEditModalProps> = ({
                 style={styles.gradientButton}
               >
                 <Icon name="add" size="sm" color="background" />
-                <ThemedText variant="body" weight="600" style={{ color: '#fff', marginLeft: 6 }}>
+                <ThemedText
+                  variant="body"
+                  weight="600"
+                  style={{ color: '#fff', marginLeft: 6 }}
+                >
                   Thêm
                 </ThemedText>
               </LinearGradient>
@@ -287,4 +321,3 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
 });
-

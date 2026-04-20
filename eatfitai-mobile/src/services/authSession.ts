@@ -1,5 +1,5 @@
 import { AppState, AppStateStatus } from 'react-native';
-import { setAccessTokenMem } from './authTokens';
+import { clearAccessTokenMem, setAccessTokenMem } from './authTokens';
 import { tokenStorage } from './secureStore';
 import { postRefreshToken } from './tokenService';
 
@@ -7,6 +7,8 @@ import { postRefreshToken } from './tokenService';
 
 let refreshTimer: ReturnType<typeof setTimeout> | null = null;
 let appStateListenerSet = false;
+let onAuthExpiredCallback: (() => void) | null = null;
+let refreshPromise: Promise<string> | null = null;
 
 const FIVE_MIN_MS = 5 * 60 * 1000;
 const SCHEDULE_AHEAD_MS = 4 * 60 * 1000; // refresh ~4 minutes before expiry
@@ -36,6 +38,140 @@ const scheduleRefresh = async (accessExpIso?: string | null) => {
   }, delay);
 };
 
+const notifyAuthExpired = (): void => {
+  if (!onAuthExpiredCallback) {
+    return;
+  }
+
+  if (__DEV__) {
+    console.log('[EatFitAI] Triggering auth expired callback (auto-logout)...');
+  }
+
+  try {
+    onAuthExpiredCallback();
+  } catch (callbackError) {
+    console.error('[EatFitAI] Auth expired callback error:', callbackError);
+  }
+};
+
+const clearStoredAuthState = async (): Promise<void> => {
+  try {
+    await tokenStorage.clearAll();
+  } catch (clearError) {
+    console.warn('[EatFitAI] Failed to clear stored auth state:', clearError);
+  }
+
+  clearAccessTokenMem();
+};
+
+export const setAuthExpiredCallback = (callback: (() => void) | null): void => {
+  onAuthExpiredCallback = callback;
+};
+
+export const updateSessionFromAuthResponse = async (data: any): Promise<void> => {
+  const accessToken = data?.accessToken as string | undefined;
+  const refreshToken = data?.refreshToken as string | undefined;
+  const accessTokenExpiresAt = data?.accessTokenExpiresAt as string | undefined;
+  const refreshTokenExpiresAt = data?.refreshTokenExpiresAt as string | undefined;
+  if (!accessToken) return;
+  setAccessTokenMem(accessToken);
+  await tokenStorage.saveTokensFull({
+    accessToken,
+    accessTokenExpiresAt,
+    refreshToken,
+    refreshTokenExpiresAt,
+  });
+  await scheduleRefresh(accessTokenExpiresAt);
+};
+
+const runSharedRefresh = async (): Promise<string> => {
+  if (!refreshPromise) {
+    refreshPromise = (async () => {
+      const refreshToken = await tokenStorage.getRefreshToken();
+      if (__DEV__) {
+        console.log('[EatFitAI] Refresh attempt - has refresh token:', !!refreshToken);
+      }
+
+      if (!refreshToken) {
+        throw new Error('Missing refresh token');
+      }
+
+      if (typeof refreshToken !== 'string' || refreshToken.trim().length === 0) {
+        throw new Error('Định dạng refresh token không hợp lệ');
+      }
+
+      const data = await postRefreshToken(refreshToken);
+      if (__DEV__) {
+        console.log('[EatFitAI] Refresh response received:', {
+          hasAccessToken: !!data.accessToken,
+          hasRefreshToken: !!data.refreshToken,
+          accessExp: data.accessTokenExpiresAt,
+          refreshExp: data.refreshTokenExpiresAt,
+        });
+      }
+
+      const newAccessToken = data.accessToken;
+      if (
+        !newAccessToken ||
+        typeof newAccessToken !== 'string' ||
+        newAccessToken.trim().length === 0
+      ) {
+        throw new Error('Refresh response missing or invalid accessToken');
+      }
+
+      if (data.accessTokenExpiresAt && isNaN(Date.parse(data.accessTokenExpiresAt))) {
+        console.warn(
+          '[EatFitAI] Invalid access token expiration format:',
+          data.accessTokenExpiresAt,
+        );
+      }
+      if (data.refreshTokenExpiresAt && isNaN(Date.parse(data.refreshTokenExpiresAt))) {
+        console.warn(
+          '[EatFitAI] Định dạng thời hạn refresh token không hợp lệ:',
+          data.refreshTokenExpiresAt,
+        );
+      }
+
+      try {
+        await updateSessionFromAuthResponse(data);
+      } catch (sessionError) {
+        console.warn(
+          '[EatFitAI] Refresh succeeded but session persistence failed; continuing with in-memory token.',
+          sessionError,
+        );
+      }
+
+      return newAccessToken;
+    })().finally(() => {
+      refreshPromise = null;
+    });
+  }
+
+  return refreshPromise;
+};
+
+export const tryRefreshAccessToken = async (): Promise<string | null> => {
+  try {
+    return await runSharedRefresh();
+  } catch {
+    return null;
+  }
+};
+
+export const refreshAccessToken = async (): Promise<string> => {
+  try {
+    return await runSharedRefresh();
+  } catch (err) {
+    if (__DEV__) {
+      console.error('[EatFitAI] Refresh failed:', err);
+    }
+
+    await clearStoredAuthState();
+    notifyAuthExpired();
+    throw err;
+  }
+};
+
 export const silentRefreshIfNeeded = async (): Promise<void> => {
   try {
     const accessExpIso = await tokenStorage.getAccessTokenExpiresAt();
@@ -50,22 +186,7 @@ export const silentRefreshIfNeeded = async (): Promise<void> => {
       return; // not close to expire
     }
 
-    // Call refresh endpoint via token service to avoid circular import
-    const data = await postRefreshToken(refreshToken);
-    const accessToken = data?.accessToken as string | undefined;
-    const refreshTokenNew = data?.refreshToken as string | undefined;
-    const accessTokenExpiresAt = data?.accessTokenExpiresAt as string | undefined;
-    const refreshTokenExpiresAt = data?.refreshTokenExpiresAt as string | undefined;
-    if (accessToken) {
-      setAccessTokenMem(accessToken);
-      await tokenStorage.saveTokensFull({
-        accessToken,
-        accessTokenExpiresAt,
-        refreshToken: refreshTokenNew ?? refreshToken,
-        refreshTokenExpiresAt: refreshTokenExpiresAt,
-      });
-      await scheduleRefresh(accessTokenExpiresAt);
-    }
+    await tryRefreshAccessToken();
   } catch {
     // Ignore errors; interceptor flow will handle on demand
   }
@@ -83,20 +204,4 @@ export const initAuthSession = async (): Promise<void> => {
     appStateListenerSet = true;
   }
   await scheduleRefresh();
-};
-
-export const updateSessionFromAuthResponse = async (data: any): Promise<void> => {
-  const accessToken = data?.accessToken as string | undefined;
-  const refreshToken = data?.refreshToken as string | undefined;
-  const accessTokenExpiresAt = data?.accessTokenExpiresAt as string | undefined;
-  const refreshTokenExpiresAt = data?.refreshTokenExpiresAt as string | undefined;
-  if (!accessToken) return;
-  setAccessTokenMem(accessToken);
-  await tokenStorage.saveTokensFull({
-    accessToken,
-    accessTokenExpiresAt,
-    refreshToken,
-    refreshTokenExpiresAt,
-  });
-  await scheduleRefresh(accessTokenExpiresAt);
 };

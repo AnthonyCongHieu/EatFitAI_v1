@@ -14,12 +14,14 @@ type FetchProfileOptions = {
 
 type ProfileState = {
   profile: UserProfile | null;
+  ownerUserId: string | null;
   isLoading: boolean;
   isSaving: boolean;
   lastFetched: number | null;
   fetchProfile: (options?: FetchProfileOptions) => Promise<UserProfile | null>;
   updateProfile: (payload: UpdateProfilePayload) => Promise<UserProfile>;
   invalidateProfile: () => void;
+  syncForUser: (userId: string | null) => void;
   clear: () => void;
 };
 
@@ -29,6 +31,7 @@ export const useProfileStore = create<ProfileState>()(
   persist(
     (set, get) => ({
       profile: null,
+      ownerUserId: null,
       isLoading: false,
       isSaving: false,
       lastFetched: null,
@@ -36,6 +39,7 @@ export const useProfileStore = create<ProfileState>()(
       async fetchProfile(options) {
         const state = get();
         const force = options?.force === true;
+        const ownerUserId = state.ownerUserId;
 
         if (state.isLoading) {
           return state.profile;
@@ -53,9 +57,17 @@ export const useProfileStore = create<ProfileState>()(
         set({ isLoading: true });
         try {
           const data = await profileService.getProfile();
+          if (get().ownerUserId !== ownerUserId) {
+            return null;
+          }
+
           set({ profile: data, lastFetched: Date.now() });
           return data;
         } catch (error) {
+          if (get().ownerUserId !== ownerUserId) {
+            return null;
+          }
+
           if (!force && state.profile) {
             return state.profile;
           }
@@ -66,16 +78,29 @@ export const useProfileStore = create<ProfileState>()(
       },
 
       async updateProfile(payload) {
+        const ownerUserId = get().ownerUserId;
         set({ isSaving: true });
         try {
           const updated = await profileService.updateProfile(payload);
+          if (get().ownerUserId !== ownerUserId) {
+            return updated;
+          }
+
           set({ profile: updated, lastFetched: null });
 
           try {
             const freshProfile = await profileService.getProfile();
+            if (get().ownerUserId !== ownerUserId) {
+              return freshProfile;
+            }
+
             set({ profile: freshProfile, lastFetched: Date.now() });
             return freshProfile;
           } catch {
+            if (get().ownerUserId !== ownerUserId) {
+              return updated;
+            }
+
             set({ profile: updated, lastFetched: Date.now() });
             return updated;
           }
@@ -84,12 +109,33 @@ export const useProfileStore = create<ProfileState>()(
         }
       },
 
+      syncForUser(userId) {
+        const state = get();
+        if (state.ownerUserId === userId) {
+          return;
+        }
+
+        set({
+          profile: null,
+          isLoading: false,
+          isSaving: false,
+          lastFetched: null,
+          ownerUserId: userId,
+        });
+      },
+
       invalidateProfile() {
         set({ lastFetched: null });
       },
 
       clear() {
-        set({ profile: null, lastFetched: null });
+        set({
+          profile: null,
+          isLoading: false,
+          isSaving: false,
+          lastFetched: null,
+          ownerUserId: null,
+        });
       },
     }),
     {
@@ -98,6 +144,7 @@ export const useProfileStore = create<ProfileState>()(
       partialize: (state) => ({
         profile: state.profile,
         lastFetched: state.lastFetched,
+        ownerUserId: state.ownerUserId,
       }),
     },
   ),

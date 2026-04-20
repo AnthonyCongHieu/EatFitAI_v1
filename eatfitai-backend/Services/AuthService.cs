@@ -6,13 +6,16 @@ using AutoMapper;
 using EatFitAI.API.DbScaffold.Data;
 using EatFitAI.API.DTOs.Auth;
 using EatFitAI.API.DbScaffold.Models;
+using EatFitAI.API.Data;
 using EatFitAI.API.Repositories.Interfaces;
+using EatFitAI.API.Security;
 using EatFitAI.API.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using AdminPasswordResetCode = EatFitAI.API.Models.PasswordResetCode;
 
 namespace EatFitAI.API.Services
 {
@@ -20,6 +23,7 @@ namespace EatFitAI.API.Services
     {
         private readonly IUserRepository _userRepository;
         private readonly EatFitAIDbContext _context;
+        private readonly ApplicationDbContext _adminContext;
         private readonly IMapper _mapper;
         private readonly IConfiguration _configuration;
         private readonly IMemoryCache _memoryCache;
@@ -27,7 +31,6 @@ namespace EatFitAI.API.Services
         private readonly IHostEnvironment _env;
         private readonly ILogger<AuthService> _logger;
         private static readonly TimeSpan ResetCodeLifetime = TimeSpan.FromMinutes(10);
-        private const string ResetCacheKeyPrefix = "pwdreset_";
         private const string PasswordHashPrefix = "PBKDF2";
         private const int PasswordHashIterations = 100_000;
         private const int PasswordSaltSize = 16;
@@ -36,6 +39,7 @@ namespace EatFitAI.API.Services
         public AuthService(
             IUserRepository userRepository,
             EatFitAIDbContext context,
+            ApplicationDbContext adminContext,
             IMapper mapper,
             IConfiguration configuration,
             IMemoryCache memoryCache,
@@ -45,6 +49,7 @@ namespace EatFitAI.API.Services
         {
             _userRepository = userRepository;
             _context = context;
+            _adminContext = adminContext;
             _mapper = mapper;
             _configuration = configuration;
             _memoryCache = memoryCache;
@@ -57,8 +62,15 @@ namespace EatFitAI.API.Services
         {
             _logger.LogInformation("Bắt đầu đăng ký cho email: {Email}", request.Email);
 
+            if (!_env.IsDevelopment())
+            {
+                _logger.LogWarning("Legacy register endpoint is disabled outside Development for email: {Email}", request.Email);
+                throw new NotSupportedException("Endpoint đăng ký cũ đã bị vô hiệu hóa. Hãy dùng /api/auth/register-with-verification.");
+            }
+
             try
             {
+
                 // Kiểm tra email đã tồn tại chưa
                 if (await _userRepository.EmailExistsAsync(request.Email))
                 {
@@ -75,7 +87,8 @@ namespace EatFitAI.API.Services
                     DisplayName = request.DisplayName,
                     CreatedAt = DateTime.UtcNow,
                     EmailVerified = true, // Legacy register: bypass email verification
-                    OnboardingCompleted = false
+                    OnboardingCompleted = false,
+                    Role = PlatformRoles.User
                 };
 
                 await _userRepository.AddAsync(user);
@@ -125,6 +138,12 @@ namespace EatFitAI.API.Services
                 throw new UnauthorizedAccessException("Email hoặc mật khẩu không đúng");
             }
 
+            var accessState = await GetAccessStateAsync(user.UserId);
+            if (accessState != AdminAccessStates.Active)
+            {
+                throw new UnauthorizedAccessException("Tai khoan hien khong the dang nhap vao he thong.");
+            }
+
             if (needsRehash)
             {
                 user.PasswordHash = HashPassword(request.Password);
@@ -168,12 +187,12 @@ namespace EatFitAI.API.Services
             try
             {
                 var tokenHandler = new JwtSecurityTokenHandler();
-                var key = GetJwtSigningKey();
+                var signingKeys = JwtKeyRing.GetConfiguredSigningKeys(_configuration);
 
                 tokenHandler.ValidateToken(token, new TokenValidationParameters
                 {
                     ValidateIssuerSigningKey = true,
-                    IssuerSigningKey = new SymmetricSecurityKey(key),
+                    IssuerSigningKeyResolver = (_, _, _, _) => signingKeys,
                     ValidateIssuer = false,
                     ValidateAudience = false,
                     ClockSkew = TimeSpan.Zero
@@ -214,16 +233,30 @@ namespace EatFitAI.API.Services
             var key = GetJwtSigningKey();
             var issuer = _configuration["Jwt:Issuer"] ?? "EatFitAI";
             var audience = _configuration["Jwt:Audience"] ?? "EatFitAI";
+            var normalizedRole = PlatformRoles.Normalize(user.Role);
+            var claims = new List<Claim>
+            {
+                new Claim(ClaimTypes.NameIdentifier, user.UserId.ToString()),
+                new Claim(ClaimTypes.Email, user.Email),
+                new Claim(ClaimTypes.Name, user.DisplayName ?? user.Email),
+                new Claim(ClaimTypes.Role, normalizedRole),
+                new Claim(AdminCapabilityClaims.PlatformRole, normalizedRole),
+                new Claim(AdminCapabilityClaims.AccessState, AdminAccessStates.Active),
+            };
+
+            if (PlatformRoles.IsAdminRole(normalizedRole))
+            {
+                claims.Add(new Claim(ClaimTypes.Role, "Admin"));
+            }
+
+            foreach (var capability in AdminCapabilities.GetForRole(normalizedRole))
+            {
+                claims.Add(new Claim(AdminCapabilityClaims.Capability, capability));
+            }
 
             var tokenDescriptor = new SecurityTokenDescriptor
             {
-                Subject = new ClaimsIdentity(new[]
-                {
-                    new Claim(ClaimTypes.NameIdentifier, user.UserId.ToString()),
-                    new Claim(ClaimTypes.Email, user.Email),
-                    new Claim(ClaimTypes.Name, user.DisplayName ?? user.Email),
-                    new Claim(ClaimTypes.Role, "User")
-                }),
+                Subject = new ClaimsIdentity(claims),
                 Issuer = issuer,
                 Audience = audience,
                 Expires = DateTime.UtcNow.AddHours(24),
@@ -302,6 +335,16 @@ namespace EatFitAI.API.Services
             return isLegacyMatch;
         }
 
+        private async Task<string> GetAccessStateAsync(Guid userId)
+        {
+            return await _adminContext.UserAccessControls
+                .AsNoTracking()
+                .Where(item => item.UserId == userId)
+                .Select(item => item.AccessState)
+                .FirstOrDefaultAsync()
+                ?? AdminAccessStates.Active;
+        }
+
         private static bool IsPlaceholderSecret(string? value)
         {
             if (string.IsNullOrWhiteSpace(value))
@@ -319,13 +362,7 @@ namespace EatFitAI.API.Services
 
         private byte[] GetJwtSigningKey()
         {
-            var key = _configuration["Jwt:Key"];
-            if (IsPlaceholderSecret(key))
-            {
-                throw new InvalidOperationException("Jwt:Key is missing or insecure.");
-            }
-
-            return Encoding.ASCII.GetBytes(key!);
+            return JwtKeyRing.GetPrimarySigningKeyBytes(_configuration);
         }
 
         public async Task LogoutAsync(string refreshToken)
@@ -335,9 +372,7 @@ namespace EatFitAI.API.Services
             var user = await _context.Users.FirstOrDefaultAsync(u => u.RefreshToken == refreshToken);
             if (user != null)
             {
-                // Revoke token
-                user.RefreshToken = null;
-                user.RefreshTokenExpiryTime = null;
+                await RevokeRefreshTokenAsync(user);
                 await _context.SaveChangesAsync();
                 _logger.LogInformation("User {UserId} đã logout, refresh token đã revoke", user.UserId);
             }
@@ -363,6 +398,14 @@ namespace EatFitAI.API.Services
             {
                 // Token expired
                 throw new UnauthorizedAccessException("Refresh token đã hết hạn. Vui lòng đăng nhập lại.");
+            }
+
+            var accessState = await GetAccessStateAsync(user.UserId);
+            if (accessState != AdminAccessStates.Active)
+            {
+                await RevokeRefreshTokenAsync(user);
+                await _context.SaveChangesAsync();
+                throw new UnauthorizedAccessException("Tai khoan hien khong the dang nhap vao he thong.");
             }
 
             // Generate NEW tokens (Rotation)
@@ -393,10 +436,7 @@ namespace EatFitAI.API.Services
 
         public Task<AuthResponse> GoogleLoginAsync(string idToken)
         {
-            // In a real implementation, you would validate the Google ID token
-            // and create/login the user. For now, we'll throw an exception
-            // as this requires Google OAuth integration
-            return Task.FromException<AuthResponse>(new NotImplementedException("Tính năng đăng nhập Google cần tích hợp OAuth"));
+            return Task.FromException<AuthResponse>(new NotSupportedException("Tính năng đăng nhập Google qua endpoint cũ đã bị vô hiệu hóa. Hãy dùng /api/auth/google/signin."));
         }
 
         public async Task<ForgotPasswordResponse> ForgotPasswordAsync(ForgotPasswordRequest request)
@@ -419,27 +459,22 @@ namespace EatFitAI.API.Services
             _logger.LogDebug("ForgotPassword - Tìm thấy user {UserId}", user.UserId);
 
             var code = GenerateNumericCode(6);
-            var cacheEntry = new ResetCacheEntry
-            {
-                UserId = user.UserId,
-                CodeHash = HashResetCode(code),
-                ExpiresAt = DateTime.UtcNow.Add(ResetCodeLifetime)
-            };
+            var expiresAt = DateTime.UtcNow.Add(ResetCodeLifetime);
+            var codeHash = HashResetCode(code);
 
-            _logger.LogInformation("Đã tạo reset code cho user {UserId}, hết hạn {ExpiresAt:O}", user.UserId, cacheEntry.ExpiresAt);
+            _logger.LogInformation("Đã tạo reset code cho user {UserId}, hết hạn {ExpiresAt:O}", user.UserId, expiresAt);
             var includeCodeInResponse = _env.IsDevelopment(); // hỗ trợ demo/dev, prod sẽ không trả mã
 
             try
             {
-                await _emailService.SendResetCodeAsync(user.Email, code, cacheEntry.ExpiresAt);
-                _memoryCache.Set($"{ResetCacheKeyPrefix}{user.Email}", cacheEntry, cacheEntry.ExpiresAt);
+                await _emailService.SendResetCodeAsync(user.Email, code, expiresAt);
+                await UpsertPasswordResetCodeAsync(user.UserId, codeHash, expiresAt);
                 _logger.LogInformation("Đã gửi email reset code cho user {UserId}", user.UserId);
             }
             catch (Exception ex)
             {
                 if (!includeCodeInResponse)
                 {
-                    _memoryCache.Remove($"{ResetCacheKeyPrefix}{user.Email}");
                     _logger.LogError(ex, "Không gửi được email reset code cho user {UserId}", user.UserId);
                     throw new InvalidOperationException(
                         "Không gửi được email đặt lại mật khẩu. Vui lòng thử lại sau hoặc kiểm tra cấu hình SMTP.");
@@ -449,7 +484,7 @@ namespace EatFitAI.API.Services
                     ex,
                     "Dev mode: email reset thất bại cho user {UserId}, trả mã qua response.",
                     user.UserId);
-                _memoryCache.Set($"{ResetCacheKeyPrefix}{user.Email}", cacheEntry, cacheEntry.ExpiresAt);
+                await UpsertPasswordResetCodeAsync(user.UserId, codeHash, expiresAt);
             }
 
             return new ForgotPasswordResponse
@@ -458,9 +493,20 @@ namespace EatFitAI.API.Services
                 Message = includeCodeInResponse
                     ? "Đã tạo mã đặt lại (chế độ dev)."
                     : "Mã đặt lại đã được gửi tới email của bạn.",
-                ExpiresAt = cacheEntry.ExpiresAt,
+                ExpiresAt = expiresAt,
                 ResetCode = includeCodeInResponse ? code : string.Empty
             };
+        }
+
+        public async Task VerifyResetCodeAsync(VerifyResetCodeRequest request)
+        {
+            var user = await _userRepository.GetByEmailAsync(request.Email);
+            if (user == null)
+            {
+                throw new UnauthorizedAccessException("Mã đặt lại hoặc email không hợp lệ.");
+            }
+
+            await GetValidPasswordResetCodeAsync(user, request.ResetCode);
         }
 
         public async Task ResetPasswordAsync(ResetPasswordRequest request)
@@ -471,28 +517,18 @@ namespace EatFitAI.API.Services
                 throw new UnauthorizedAccessException("Mã đặt lại hoặc email không hợp lệ.");
             }
 
-            if (!_memoryCache.TryGetValue($"{ResetCacheKeyPrefix}{user.Email}", out ResetCacheEntry? cached) || cached == null)
-            {
-                throw new UnauthorizedAccessException("Mã đặt lại đã hết hạn hoặc không tồn tại.");
-            }
-
-            if (cached.ExpiresAt < DateTime.UtcNow)
-            {
-                _memoryCache.Remove($"{ResetCacheKeyPrefix}{user.Email}");
-                throw new UnauthorizedAccessException("Mã đặt lại đã hết hạn hoặc không tồn tại.");
-            }
-
-            var hashedInput = HashResetCode(request.ResetCode);
-            if (!string.Equals(hashedInput, cached.CodeHash, StringComparison.Ordinal))
-            {
-                throw new UnauthorizedAccessException("Mã đặt lại hoặc email không hợp lệ.");
-            }
+            var resetCode = await GetValidPasswordResetCodeAsync(user, request.ResetCode);
 
             user.PasswordHash = HashPassword(request.NewPassword);
             // Nếu user reset password thành công nghĩa là họ đã xác minh quyền sở hữu email
             user.EmailVerified = true;
+            await RevokeRefreshTokenAsync(user);
             await _context.SaveChangesAsync();
-            _memoryCache.Remove($"{ResetCacheKeyPrefix}{user.Email}");
+
+            resetCode.ConsumedAt = DateTime.UtcNow;
+            resetCode.UpdatedAt = DateTime.UtcNow;
+            await _adminContext.SaveChangesAsync();
+
             _logger.LogInformation("Reset password thành công cho user {UserId}", user.UserId);
         }
 
@@ -518,11 +554,60 @@ namespace EatFitAI.API.Services
             return Convert.ToBase64String(hashedBytes);
         }
 
-        private class ResetCacheEntry
+        private async Task<AdminPasswordResetCode> GetValidPasswordResetCodeAsync(User user, string resetCode)
         {
-            public Guid UserId { get; set; }
-            public string CodeHash { get; set; } = string.Empty;
-            public DateTime ExpiresAt { get; set; }
+            var storedCode = await _adminContext.PasswordResetCodes
+                .FirstOrDefaultAsync(item => item.UserId == user.UserId);
+
+            if (storedCode == null || storedCode.ConsumedAt.HasValue)
+            {
+                throw new UnauthorizedAccessException("Mã đặt lại đã hết hạn hoặc không tồn tại.");
+            }
+
+            if (storedCode.ExpiresAt < DateTime.UtcNow)
+            {
+                storedCode.ConsumedAt = DateTime.UtcNow;
+                storedCode.UpdatedAt = DateTime.UtcNow;
+                await _adminContext.SaveChangesAsync();
+                throw new UnauthorizedAccessException("Mã đặt lại đã hết hạn hoặc không tồn tại.");
+            }
+
+            var hashedInput = HashResetCode(resetCode);
+            if (!string.Equals(hashedInput, storedCode.CodeHash, StringComparison.Ordinal))
+            {
+                throw new UnauthorizedAccessException("Mã đặt lại hoặc email không hợp lệ.");
+            }
+
+            return storedCode;
+        }
+
+        private async Task UpsertPasswordResetCodeAsync(Guid userId, string codeHash, DateTime expiresAt)
+        {
+            var now = DateTime.UtcNow;
+            var storedCode = await _adminContext.PasswordResetCodes
+                .FirstOrDefaultAsync(item => item.UserId == userId);
+
+            if (storedCode == null)
+            {
+                await _adminContext.PasswordResetCodes.AddAsync(new AdminPasswordResetCode
+                {
+                    UserId = userId,
+                    CodeHash = codeHash,
+                    ExpiresAt = expiresAt,
+                    CreatedAt = now,
+                    UpdatedAt = now,
+                });
+            }
+            else
+            {
+                storedCode.CodeHash = codeHash;
+                storedCode.ExpiresAt = expiresAt;
+                storedCode.ConsumedAt = null;
+                storedCode.CreatedAt = now;
+                storedCode.UpdatedAt = now;
+            }
+
+            await _adminContext.SaveChangesAsync();
         }
 
         // ========= EMAIL VERIFICATION METHODS =========
@@ -806,9 +891,17 @@ namespace EatFitAI.API.Services
 
             // Update password
             user.PasswordHash = HashPassword(newPassword);
+            await RevokeRefreshTokenAsync(user);
             await _context.SaveChangesAsync();
 
             _logger.LogInformation("Đổi mật khẩu thành công cho user: {UserId}", userId);
+        }
+
+        private static Task RevokeRefreshTokenAsync(User user)
+        {
+            user.RefreshToken = null;
+            user.RefreshTokenExpiryTime = null;
+            return Task.CompletedTask;
         }
     }
 }

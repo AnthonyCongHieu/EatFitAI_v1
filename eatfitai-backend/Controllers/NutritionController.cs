@@ -163,24 +163,45 @@ namespace EatFitAI.API.Controllers
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         public async Task<IActionResult> Apply([FromBody] NutritionApplyRequest req)
         {
-            var userId = GetUserIdFromToken();
-            var eff = req.EffectiveFrom ?? DateOnly.FromDateTime(DateTime.UtcNow.Date);
-
-            var entity = new NutritionTarget
+            try
             {
-                UserId = userId,
-                TargetCalories = req.Calories,
-                TargetProtein = req.Protein,
-                TargetCarb = req.Carb,
-                TargetFat = req.Fat,
-                EffectiveFrom = eff,
-                EffectiveTo = null
-            };
-            _db.NutritionTargets.Add(entity);
-            await _db.SaveChangesAsync();
+                var userId = GetUserIdFromToken();
+                if (req.Calories <= 0 || req.Protein <= 0 || req.Carb < 0 || req.Fat <= 0)
+                {
+                    return BadRequest(new { message = "Mục tiêu dinh dưỡng không hợp lệ." });
+                }
 
-            try { await _aiLog.LogAsync(userId, "NutritionApply", req, new { id = entity.NutritionTargetId }, 0); } catch { }
-            return NoContent();
+                var eff = req.EffectiveFrom ?? DateOnly.FromDateTime(DateTime.UtcNow.Date);
+
+                var entity = new NutritionTarget
+                {
+                    UserId = userId,
+                    TargetCalories = req.Calories,
+                    TargetProtein = req.Protein,
+                    TargetCarb = req.Carb,
+                    TargetFat = req.Fat,
+                    EffectiveFrom = eff,
+                    EffectiveTo = null
+                };
+                _db.NutritionTargets.Add(entity);
+                await _db.SaveChangesAsync();
+
+                try
+                {
+                    await _aiLog.LogAsync(userId, "NutritionApply", req, new { id = entity.NutritionTargetId }, 0);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Failed to persist nutrition apply AI log");
+                }
+
+                return NoContent();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to apply nutrition target");
+                return StatusCode(500, new { message = "Không thể lưu mục tiêu dinh dưỡng.", error = ex.Message });
+            }
         }
 
         [HttpGet("current")]

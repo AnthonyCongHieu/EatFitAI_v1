@@ -1,140 +1,176 @@
-import React, { useEffect, useState, useRef } from 'react';
-import { View, StyleSheet } from 'react-native';
+/**
+ * WelcomeHeader – Compact Emerald Nebula header bar
+ */
+import React from 'react';
+import { View, StyleSheet, Pressable, Text } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
-import { ThemedText } from '../ThemedText';
+import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '../../store/useAuthStore';
-import { useAppTheme } from '../../theme/ThemeProvider';
 
-const TypingText = ({ text, style }: { text: string; style?: any }) => {
-  const [displayedText, setDisplayedText] = useState('');
-  const indexRef = useRef(0);
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
-  useEffect(() => {
-    // Reset khi text thay đổi
-    indexRef.current = 0;
-    setDisplayedText('');
-
-    // Clear interval cũ nếu có
-    if (intervalRef.current) {
-      clearInterval(intervalRef.current);
-    }
-
-    intervalRef.current = setInterval(() => {
-      if (indexRef.current < text.length) {
-        setDisplayedText(text.slice(0, indexRef.current + 1));
-        indexRef.current++;
-      } else {
-        if (intervalRef.current) {
-          clearInterval(intervalRef.current);
-        }
-      }
-    }, 50);
-
-    return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-      }
-    };
-  }, [text]);
-
-  return <ThemedText style={style}>{displayedText}</ThemedText>;
+const C = {
+  bg: '#0a0e1a',
+  surfaceHigh: '#1e2435',
+  primary: '#4be277',
+  onSurface: '#dee1f7',
+  textMuted: '#94a3b8',
+  danger: '#ff6b6b',
 };
 
-export const WelcomeHeader = () => {
+interface WelcomeHeaderProps {
+  streakCount?: number;
+  onNotificationPress?: () => void;
+  onAvatarPress?: () => void;
+}
+
+export const WelcomeHeader: React.FC<WelcomeHeaderProps> = ({
+  streakCount = 0,
+  onNotificationPress,
+  onAvatarPress,
+}) => {
   const { user } = useAuthStore();
-  const { theme } = useAppTheme();
 
-  const getGreeting = (): { emoji: string; text: string } => {
-    const hour = new Date().getHours();
-    if (hour >= 5 && hour < 12) return { emoji: '🌅', text: 'Chào buổi sáng' };
-    if (hour >= 12 && hour < 17) return { emoji: '☀️', text: 'Chào buổi chiều' };
-    if (hour >= 17 && hour < 22) return { emoji: '🌙', text: 'Chào buổi tối' };
-    return { emoji: '🌃', text: 'Khuya rồi' }; // Late night
+  const getGreeting = (): string => {
+    const h = new Date().getHours();
+    if (h >= 5  && h < 12) return 'Chào buổi sáng 🌿';
+    if (h >= 12 && h < 17) return 'Chào buổi chiều ☀️';
+    if (h >= 17 && h < 22) return 'Chào buổi tối 🌙';
+    return 'Khuya rồi 🌃';
   };
 
-  const getInsight = () => {
-    // In a real app, this would be dynamic or fetched from AI
-    const insights = [
-      'Hôm nay hãy tập trung vào Protein nhé!',
-      'Đừng quên uống đủ nước hôm nay.',
-      'Bạn đã làm rất tốt trong tuần này!',
-      'Sẵn sàng cho một bữa ăn ngon chưa?',
-      'Cố gắng đạt mục tiêu calories nhé!',
-    ];
-    // Pick random insight based on day to keep it stable for the day
-    const day = new Date().getDate();
-    return insights[day % insights.length];
-  };
-
-  const greeting = getGreeting();
+  const userName = user?.name || user?.email?.split('@')[0] || 'Bạn';
+  const initials = userName.charAt(0).toUpperCase();
 
   return (
-    <View style={styles.container}>
-      <Animated.View entering={FadeInDown.delay(100).springify()}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 }}>
-          <ThemedText variant="body" style={{ fontSize: 20 }}>
-            {greeting.emoji}
-          </ThemedText>
-          <ThemedText
-            variant="body"
-            style={{ color: theme.colors.textSecondary }}
-          >
-            {greeting.text},
-          </ThemedText>
+    <Animated.View entering={FadeInDown.delay(80).springify()} style={styles.container}>
+      {/* Left: avatar + texts */}
+      <Pressable style={styles.left} onPress={onAvatarPress}>
+        <View style={styles.avatarRing}>
+          <View style={styles.avatarInner}>
+            <Text style={styles.avatarText}>{initials}</Text>
+          </View>
         </View>
-        <TView style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap' }}>
-          <ThemedText
-            variant="h2"
-            style={{ color: theme.colors.text, fontWeight: '700' }}
-            shrink
-            ellipsis
-          >
-            {user?.name || 'Bạn mới'}
-          </ThemedText>
-          <ThemedText variant="h2" style={{ color: theme.colors.primary }}>
-            {' '}
-            !
-          </ThemedText>
-        </TView>
-      </Animated.View>
+        <View style={styles.texts}>
+          <Text style={styles.greeting}>{getGreeting()}</Text>
+          <Text style={styles.name} numberOfLines={1}>{userName}</Text>
+        </View>
+      </Pressable>
 
-      <Animated.View
-        entering={FadeInDown.delay(300).springify()}
-        style={[
-          styles.insightContainer,
-          { backgroundColor: theme.colors.primaryLight + '40' },
-        ]}
-      >
-        <ThemedText style={{ marginRight: 8 }}>✨</ThemedText>
-        <TypingText
-          text={getInsight() || ''}
-          style={{
-            color: theme.colors.primaryDark,
-            fontWeight: '600',
-            fontSize: 14,
-          }}
-        />
-      </Animated.View>
-    </View>
+      {/* Right: streak + bell */}
+      <View style={styles.right}>
+        {streakCount > 0 && (
+          <View style={styles.streak}>
+            <Ionicons name="flame" size={16} color={C.primary} />
+            <Text style={styles.streakText}>{streakCount}</Text>
+          </View>
+        )}
+        <Pressable style={styles.bell} onPress={onNotificationPress} hitSlop={10}>
+          <Ionicons name="notifications-outline" size={22} color={C.textMuted} />
+          <View style={styles.bellDot} />
+        </Pressable>
+      </View>
+    </Animated.View>
   );
 };
 
-// Helper wrapper to fix TView potential issue
-const TView = View;
-
 const styles = StyleSheet.create({
   container: {
-    paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 10,
-  },
-  insightContainer: {
-    marginTop: 12,
-    padding: 12,
-    borderRadius: 12,
     flexDirection: 'row',
     alignItems: 'center',
-    alignSelf: 'flex-start',
+    justifyContent: 'space-between',
+    paddingVertical: 4,   // ← was 8, reduced for compact header
+  },
+
+  left: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    flex: 1,
+  },
+
+  avatarRing: {
+    width: 40,            // ← was 44, reduced slightly
+    height: 40,
+    borderRadius: 20,
+    borderWidth: 2,
+    borderColor: C.primary,
+    padding: 2,
+    shadowColor: C.primary,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  avatarInner: {
+    flex: 1,
+    borderRadius: 16,
+    backgroundColor: C.surfaceHigh,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  avatarText: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: C.primary,
+  },
+
+  texts: { flex: 1 },
+  greeting: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: C.primary,
+    letterSpacing: 1,
+    textTransform: 'uppercase',
+    marginBottom: 1,
+  },
+  name: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: C.onSurface,
+    letterSpacing: -0.2,
+  },
+
+  right: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+
+  streak: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    backgroundColor: C.surfaceHigh,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.05)',
+  },
+  streakText: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: C.onSurface,
+  },
+
+  bell: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'relative',
+  },
+  bellDot: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    width: 7,
+    height: 7,
+    borderRadius: 3.5,
+    backgroundColor: C.danger,
+    borderWidth: 1.5,
+    borderColor: C.bg,
   },
 });
+
+export default WelcomeHeader;

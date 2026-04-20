@@ -11,17 +11,32 @@ namespace EatFitAI.API.Services
 
     public sealed class AiLogService : IAiLogService
     {
+        private static readonly JsonSerializerOptions CamelCaseJsonOptions = new()
+        {
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+        };
+
         private readonly EatFitAIDbContext _db;
-        public AiLogService(EatFitAIDbContext db) => _db = db;
+        private readonly SupabaseSchemaBootstrapper _schemaBootstrapper;
+
+        public AiLogService(
+            EatFitAIDbContext db,
+            SupabaseSchemaBootstrapper schemaBootstrapper)
+        {
+            _db = db;
+            _schemaBootstrapper = schemaBootstrapper;
+        }
 
         public async Task<int> LogAsync(Guid userId, string action, object? input, object? output, long durationMs)
         {
+            await _schemaBootstrapper.EnsureSchemaAsync();
+
             var log = new AILog
             {
                 UserId = userId,
                 Action = action,
-                InputJson = input is null ? null : JsonSerializer.Serialize(input),
-                OutputJson = output is null ? null : JsonSerializer.Serialize(output),
+                InputJson = input is null ? null : JsonSerializer.Serialize(input, CamelCaseJsonOptions),
+                OutputJson = output is null ? null : JsonSerializer.Serialize(output, CamelCaseJsonOptions),
                 DurationMs = (int)Math.Min(durationMs, int.MaxValue),
             };
             _db.AILogs.Add(log);

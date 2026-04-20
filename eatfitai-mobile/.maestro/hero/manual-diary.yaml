@@ -1,0 +1,50 @@
+appId: com.eatfitai.app
+name: manual-diary
+tags:
+  - hero
+  - android
+---
+- runFlow:
+    file: ../subflows/start-authenticated.yaml
+- tapOn:
+    id: home-smart-add-fab
+    retryTapIfNoChange: true
+- extendedWaitUntil:
+    visible:
+      id: home-quick-add-search-button
+    timeout: 20000
+- tapOn:
+    id: home-quick-add-search-button
+    retryTapIfNoChange: true
+- extendedWaitUntil:
+    visible:
+      id: food-search-screen
+    timeout: 20000
+- tapOn:
+    id: food-search-query-input
+- setClipboard: rice
+- pasteText
+- hideKeyboard
+- tapOn:
+    id: food-search-submit-button
+    retryTapIfNoChange: true
+- extendedWaitUntil:
+    visible:
+      id: food-search-add-first-item-button
+    timeout: 20000
+- tapOn:
+    id: food-search-add-first-item-button
+    retryTapIfNoChange: true
+- extendedWaitUntil:
+    visible:
+      id: food-detail-screen
+    timeout: 20000
+- tapOn:
+    id: food-detail-submit-button
+    retryTapIfNoChange: true
+- extendedWaitUntil:
+    visible:
+      id: meal-diary-screen
+    timeout: 30000
+- assertVisible:
+    id: meal-diary-screen

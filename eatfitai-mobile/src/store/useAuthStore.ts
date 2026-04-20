@@ -3,11 +3,17 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { create } from 'zustand';
 
-import apiClient, { setAuthExpiredCallback } from '../services/apiClient';
+import apiClient from '../services/apiClient';
 import { setAccessTokenMem } from '../services/authTokens';
+import { googleAuthService, normalizeGoogleAuthResponse } from '../services/googleAuthService';
+import { useProfileStore } from './useProfileStore';
 import { tokenStorage } from '../services/secureStore';
-import { initAuthSession, updateSessionFromAuthResponse } from '../services/authSession';
-import { postRefreshToken } from '../services/tokenService';
+import {
+  initAuthSession,
+  setAuthExpiredCallback,
+  tryRefreshAccessToken,
+  updateSessionFromAuthResponse,
+} from '../services/authSession';
 import type { AuthResponse } from '../types';
 import type { AuthTokensResponse } from '../types/auth';
 import { t } from '../i18n/vi';
@@ -15,6 +21,7 @@ import { t } from '../i18n/vi';
 type AuthUser = { id: string; email: string; name?: string };
 
 export const AUTH_NEEDS_ONBOARDING_KEY = 'auth_needs_onboarding';
+export const AUTH_USER_KEY = 'auth_user';
 const ONBOARDING_COMPLETE_KEY = 'onboarding_complete';
 const STARTUP_API_INIT_TIMEOUT_MS = 2500;
 
@@ -40,7 +47,18 @@ const readNeedsOnboardingFlag = (
 };
 
 const persistNeedsOnboarding = async (needsOnboarding: boolean): Promise<void> => {
-  await AsyncStorage.setItem(AUTH_NEEDS_ONBOARDING_KEY, needsOnboarding ? 'true' : 'false');
+  await AsyncStorage.setItem(
+    AUTH_NEEDS_ONBOARDING_KEY,
+    needsOnboarding ? 'true' : 'false',
+  );
+};
+
+const syncProfileCacheForUser = async (userId: string | null): Promise<void> => {
+  useProfileStore.getState().syncForUser(userId);
+};
+
+const clearProfileCache = async (): Promise<void> => {
+  useProfileStore.getState().clear();
 };
 
 const parseDateMs = (value?: string | null): number | null => {
@@ -68,9 +86,9 @@ type AuthState = {
   signInWithGoogle: () => Promise<{ needsOnboarding: boolean }>;
   logout: () => Promise<void>;
   forgotPassword: (email: string) => Promise<string | undefined>;
+  verifyResetCode: (email: string, code: string) => Promise<void>;
   resetPassword: (email: string, code: string, newPassword: string) => Promise<void>;
 };
-
 
 export const useAuthStore = create<AuthState>((set: any) => ({
   isInitializing: true,
@@ -108,9 +126,12 @@ export const useAuthStore = create<AuthState>((set: any) => ({
           console.log('[useAuthStore] Auth expired callback triggered - logging out');
         }
         // Gọi getState() để access store actions từ bên ngoài component
-        useAuthStore.getState().logout().catch((err) => {
-          console.error('[useAuthStore] Auto-logout failed:', err);
-        });
+        useAuthStore
+          .getState()
+          .logout()
+          .catch((err) => {
+            console.error('[useAuthStore] Auto-logout failed:', err);
+          });
       });
 
       // 3. Load token từ storage nếu có
@@ -126,42 +147,67 @@ export const useAuthStore = create<AuthState>((set: any) => ({
         const persistedNeedsOnboarding =
           (await AsyncStorage.getItem(AUTH_NEEDS_ONBOARDING_KEY)) === 'true';
 
+        const persistedUserStr = await AsyncStorage.getItem(AUTH_USER_KEY);
+        const persistedUser = persistedUserStr ? JSON.parse(persistedUserStr) : null;
+
         if (isTokenStillValid(accessTokenExpiresAt)) {
           setAccessTokenMem(token);
-          set({ isAuthenticated: true, needsOnboarding: persistedNeedsOnboarding });
+          await syncProfileCacheForUser(persistedUser?.id ?? null);
+          set({ isAuthenticated: true, needsOnboarding: persistedNeedsOnboarding, user: persistedUser });
         } else if (refreshToken && isTokenStillValid(refreshTokenExpiresAt)) {
           try {
-            const refreshed = await postRefreshToken(refreshToken);
-            const refreshedAccessToken = refreshed?.accessToken;
+            const refreshedAccessToken = await tryRefreshAccessToken();
             if (!refreshedAccessToken) {
               throw new Error(t('auth.missingAccessToken'));
             }
 
-            setAccessTokenMem(refreshedAccessToken);
-            await updateSessionFromAuthResponse(refreshed as AuthResponse);
-            set({ isAuthenticated: true, needsOnboarding: persistedNeedsOnboarding });
+            await syncProfileCacheForUser(persistedUser?.id ?? null);
+            set({ isAuthenticated: true, needsOnboarding: persistedNeedsOnboarding, user: persistedUser });
           } catch (error) {
             if (__DEV__) {
-              console.warn('[useAuthStore] Session refresh during init failed, clearing stale auth state:', error);
+              console.warn(
+                '[useAuthStore] Session refresh during init failed, clearing stale auth state:',
+                error,
+              );
             }
             await tokenStorage.clearAll();
-            await AsyncStorage.multiRemove([AUTH_NEEDS_ONBOARDING_KEY, ONBOARDING_COMPLETE_KEY]);
+            await AsyncStorage.multiRemove([
+              AUTH_NEEDS_ONBOARDING_KEY,
+              ONBOARDING_COMPLETE_KEY,
+              AUTH_USER_KEY,
+            ]);
             setAccessTokenMem(null);
+            await clearProfileCache();
             set({ isAuthenticated: false, needsOnboarding: false, user: null });
           }
         } else {
           if (__DEV__) {
-            console.log('[useAuthStore] Stored access token is expired and no valid refresh token remains. Clearing session.');
+            console.log(
+              '[useAuthStore] Stored access token is expired and no valid refresh token remains. Clearing session.',
+            );
           }
           await tokenStorage.clearAll();
-          await AsyncStorage.multiRemove([AUTH_NEEDS_ONBOARDING_KEY, ONBOARDING_COMPLETE_KEY]);
+          await AsyncStorage.multiRemove([
+            AUTH_NEEDS_ONBOARDING_KEY,
+            ONBOARDING_COMPLETE_KEY,
+            AUTH_USER_KEY,
+          ]);
           setAccessTokenMem(null);
+          await clearProfileCache();
           set({ isAuthenticated: false, needsOnboarding: false, user: null });
         }
       } else {
-        await AsyncStorage.multiRemove([AUTH_NEEDS_ONBOARDING_KEY, ONBOARDING_COMPLETE_KEY]);
+        await AsyncStorage.multiRemove([
+          AUTH_NEEDS_ONBOARDING_KEY,
+          ONBOARDING_COMPLETE_KEY,
+          AUTH_USER_KEY,
+        ]);
+        await clearProfileCache();
       }
       await initAuthSession();
+
+      // Giữ màn hình Splash tối thiểu 2.5s để người dùng kịp thiết kế 3D và tiến trình "Khởi tạo"
+      await new Promise((resolve) => setTimeout(resolve, 2500));
     } finally {
       set({ isInitializing: false });
     }
@@ -176,8 +222,11 @@ export const useAuthStore = create<AuthState>((set: any) => ({
       },
     );
     const data = resp.data;
+    // Use bracket notation to access raw JSON fields regardless of TS type
+    const raw = data as Record<string, any>;
+
     // Backend trả accessToken (JsonPropertyName) không phải token
-    const accessToken = data?.accessToken || data?.token;
+    const accessToken = raw.accessToken || raw.token;
     if (!accessToken) {
       console.error('[useAuthStore] Login response missing token:', data);
       throw new Error(t('auth.missingAccessToken'));
@@ -186,19 +235,58 @@ export const useAuthStore = create<AuthState>((set: any) => ({
     console.log('[useAuthStore] Login successful, saving tokens...');
     await tokenStorage.saveTokensFull({
       accessToken,
-      accessTokenExpiresAt: (data?.accessTokenExpiresAt || data?.expiresAt) ?? null,
-      refreshToken: data?.refreshToken ?? null,
-      refreshTokenExpiresAt: data?.refreshTokenExpiresAt ?? null,
+      accessTokenExpiresAt: (raw.accessTokenExpiresAt || raw.expiresAt) ?? null,
+      refreshToken: raw.refreshToken ?? raw.RefreshToken ?? null,
+      refreshTokenExpiresAt: raw.refreshTokenExpiresAt ?? raw.RefreshTokenExpiresAt ?? null,
     });
     setAccessTokenMem(accessToken);
     await updateSessionFromAuthResponse(data as AuthResponse);
 
-    const needsOnboarding = readNeedsOnboardingFlag(data as Record<string, unknown>, false);
+    const needsOnboarding = readNeedsOnboardingFlag(
+      raw,
+      false,
+    );
     await persistNeedsOnboarding(needsOnboarding);
+
+    // Backend uses PascalCase by default (System.Text.Json)
+    // Try both PascalCase and camelCase
+    let userName = String(raw.DisplayName ?? raw.displayName ?? '');
+    const userEmail = String(raw.Email ?? raw.email ?? email);
+    const userId = String(raw.UserId ?? raw.userId ?? '');
+
+    if (__DEV__) {
+      console.log('[useAuthStore] Extracted from login response:', { userId, userEmail, userName, rawKeys: Object.keys(raw) });
+    }
+
+    // If displayName is still empty, fetch user profile as fallback
+    if (!userName && accessToken) {
+      try {
+        const profileResp = await apiClient.get('/api/profile');
+        const profile = profileResp.data as Record<string, any>;
+        userName = String(profile?.DisplayName ?? profile?.displayName ?? profile?.Email ?? profile?.email ?? '');
+        if (__DEV__) {
+          console.log('[useAuthStore] Fetched profile fallback name:', userName);
+        }
+      } catch (e) {
+        if (__DEV__) console.warn('[useAuthStore] Profile fetch fallback failed:', e);
+      }
+    }
+
+    const extractedUser: AuthUser = {
+      id: userId,
+      email: userEmail,
+      name: userName,
+    };
+
+    await syncProfileCacheForUser(extractedUser.id || null);
+    if (extractedUser.id) {
+      await AsyncStorage.setItem(AUTH_USER_KEY, JSON.stringify(extractedUser));
+    }
+
     set({
       isAuthenticated: true,
       needsOnboarding,
-      user: (data?.user as AuthUser | undefined) ?? null,
+      user: extractedUser.id ? extractedUser : null,
     });
 
     // Return needsOnboarding flag for navigation decision
@@ -213,17 +301,18 @@ export const useAuthStore = create<AuthState>((set: any) => ({
   register: async (_name, _email, _password) => {
     console.warn('[useAuthStore] DEPRECATED: register() bypasses email verification!');
     console.warn('[useAuthStore] Use RegisterScreen → VerifyEmailScreen flow instead.');
-    throw new Error('Register function is deprecated. Use RegisterScreen for proper email verification flow.');
+    throw new Error(
+      'Register function is deprecated. Use RegisterScreen for proper email verification flow.',
+    );
   },
 
   signInWithGoogle: async () => {
-    // Import googleAuthService for native Google Sign-In
-    const { googleAuthService } = await import('../services/googleAuthService');
-
     // Configure và sign in với native module
     const configured = await googleAuthService.configure();
     if (!configured) {
-      throw new Error('Không thể khởi tạo Google Sign-In. Kiểm tra EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID và env mobile.');
+      throw new Error(
+        'Không thể khởi tạo Google Sign-In. Kiểm tra EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID và env mobile.',
+      );
     }
 
     // Sign in với Google
@@ -237,11 +326,15 @@ export const useAuthStore = create<AuthState>((set: any) => ({
     }
 
     // Gửi idToken lên backend để xác thực và lấy JWT
-    const resp = await apiClient.post<AuthTokensResponse & { user?: AuthUser }>('/api/auth/google/signin', {
-      idToken: result.idToken,
-    });
+    const resp = await apiClient.post<AuthTokensResponse & { user?: AuthUser }>(
+      '/api/auth/google/signin',
+      {
+        idToken: result.idToken,
+      },
+    );
 
     const data = resp.data;
+    const normalized = normalizeGoogleAuthResponse(data);
     const accessToken = data?.accessToken || data?.token;
 
     if (!accessToken) {
@@ -258,9 +351,21 @@ export const useAuthStore = create<AuthState>((set: any) => ({
     });
     setAccessTokenMem(accessToken);
 
-    const needsOnboarding = readNeedsOnboardingFlag(data as Record<string, unknown>, false);
+    const needsOnboarding = normalized.needsOnboarding;
     await persistNeedsOnboarding(needsOnboarding);
-    set({ isAuthenticated: true, needsOnboarding, user: data?.user ?? null });
+
+    const extractedUser: AuthUser = {
+      id: String(normalized.userId || normalized.user?.id || ''),
+      email: String(normalized.email || normalized.user?.email || ''),
+      name: String(normalized.displayName || normalized.user?.name || result.user?.name || ''),
+    };
+
+    await syncProfileCacheForUser(extractedUser.id || null);
+    if (extractedUser.id) {
+      await AsyncStorage.setItem(AUTH_USER_KEY, JSON.stringify(extractedUser));
+    }
+
+    set({ isAuthenticated: true, needsOnboarding, user: extractedUser.id ? extractedUser : null });
 
     // Return needsOnboarding flag for navigation decision
     return { needsOnboarding };
@@ -276,8 +381,13 @@ export const useAuthStore = create<AuthState>((set: any) => ({
       // ignore logout API failure; proceed to clear local session
     } finally {
       await tokenStorage.clearAll();
-      await AsyncStorage.multiRemove([AUTH_NEEDS_ONBOARDING_KEY, ONBOARDING_COMPLETE_KEY]);
+      await AsyncStorage.multiRemove([
+        AUTH_NEEDS_ONBOARDING_KEY,
+        ONBOARDING_COMPLETE_KEY,
+        AUTH_USER_KEY,
+      ]);
       setAccessTokenMem(null);
+      await clearProfileCache();
       set({ isAuthenticated: false, needsOnboarding: false, user: null });
     }
   },
@@ -288,6 +398,12 @@ export const useAuthStore = create<AuthState>((set: any) => ({
     );
     const data = resp.data;
     return data?.resetCode as string | undefined;
+  },
+  verifyResetCode: async (email, code) => {
+    await apiClient.post('/api/auth/verify-reset-code', {
+      Email: email,
+      ResetCode: code,
+    });
   },
   resetPassword: async (email, code, newPassword) => {
     await apiClient.post('/api/auth/reset-password', {

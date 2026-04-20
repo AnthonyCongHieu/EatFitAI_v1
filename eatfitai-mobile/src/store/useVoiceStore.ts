@@ -91,7 +91,8 @@ export const useVoiceStore = create<VoiceState>((set, get) => ({
             if (execResponse.success && execResponse.executedAction) {
               set({
                 status: 'success',
-                lastExecutedAction: execResponse.executedAction.details || 'Đã thực hiện.',
+                lastExecutedAction:
+                  execResponse.executedAction.details || 'Đã thực hiện.',
                 executedData: {
                   type: execResponse.executedAction.type,
                   details: execResponse.executedAction.details,
@@ -120,7 +121,8 @@ export const useVoiceStore = create<VoiceState>((set, get) => ({
                 status: 'review',
                 parsedCommand: command,
                 lastExecutedAction:
-                  execResponse.executedAction.details || 'Kiểm tra trước khi lưu cân nặng.',
+                  execResponse.executedAction.details ||
+                  'Kiểm tra trước khi lưu cân nặng.',
                 executedData: {
                   type: execResponse.executedAction.type,
                   details: execResponse.executedAction.details,

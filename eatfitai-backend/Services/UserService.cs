@@ -1,4 +1,5 @@
-﻿using AutoMapper;
+using AutoMapper;
+using EatFitAI.API.Data;
 using EatFitAI.API.DbScaffold.Data;
 using EatFitAI.API.DTOs.User;
 using EatFitAI.API.DbScaffold.Models;
@@ -23,24 +24,30 @@ namespace EatFitAI.API.Services
 
         private readonly IUserRepository _userRepository;
         private readonly EatFitAIDbContext _context;
+        private readonly ApplicationDbContext _adminContext;
         private readonly IMapper _mapper;
         private readonly ISupabaseStorageService _supabaseStorageService;
         private readonly IHostEnvironment _environment;
+        private readonly SupabaseSchemaBootstrapper _schemaBootstrapper;
         private readonly ILogger<UserService> _logger;
 
         public UserService(
             IUserRepository userRepository,
             EatFitAIDbContext context,
+            ApplicationDbContext adminContext,
             IMapper mapper,
             ISupabaseStorageService supabaseStorageService,
             IHostEnvironment environment,
+            SupabaseSchemaBootstrapper schemaBootstrapper,
             ILogger<UserService> logger)
         {
             _userRepository = userRepository;
             _context = context;
+            _adminContext = adminContext;
             _mapper = mapper;
             _supabaseStorageService = supabaseStorageService;
             _environment = environment;
+            _schemaBootstrapper = schemaBootstrapper;
             _logger = logger;
         }
 
@@ -159,8 +166,8 @@ namespace EatFitAI.API.Services
             var user = await _userRepository.GetByIdAsync(userId);
             if (user == null) throw new KeyNotFoundException("Không tìm thấy người dùng");
 
-            // Update User info
-            user.DisplayName = userProfileDto.DisplayName;
+            if (userProfileDto.DisplayName != null)
+                user.DisplayName = userProfileDto.DisplayName;
             if (userProfileDto.AvatarUrl != null)
                 user.AvatarUrl = userProfileDto.AvatarUrl;
             
@@ -241,6 +248,8 @@ namespace EatFitAI.API.Services
                 throw new KeyNotFoundException("Không tìm thấy người dùng");
             }
 
+            await _schemaBootstrapper.EnsureSchemaAsync();
+
             // Delete all related records first (due to ClientSetNull delete behavior)
             // Delete AILogs
             var aiLogs = await _context.AILogs.Where(x => x.UserId == userId).ToListAsync();
@@ -275,6 +284,15 @@ namespace EatFitAI.API.Services
             // Delete UserRecentFoods
             var userRecentFoods = await _context.UserRecentFoods.Where(x => x.UserId == userId).ToListAsync();
             _context.UserRecentFoods.RemoveRange(userRecentFoods);
+
+            // Delete user preferences from the admin context first so profile delete
+            // does not fail on stale preference rows in production.
+            var userPreferences = await _adminContext.UserPreferences
+                .Where(x => x.UserId == userId)
+                .ToListAsync();
+            _adminContext.UserPreferences.RemoveRange(userPreferences);
+
+            await _adminContext.SaveChangesAsync();
 
             // Finally, delete the user
             _userRepository.Remove(user);

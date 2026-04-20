@@ -142,7 +142,6 @@ export const profileService = {
     }));
   },
 
-
   // --- User Preferences (Dietary Restrictions) ---
 
   async getUserPreferences(): Promise<any> {

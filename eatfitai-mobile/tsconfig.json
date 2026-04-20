@@ -5,13 +5,8 @@
     "module": "esnext",
     "moduleResolution": "bundler",
     "moduleDetection": "force",
-    "customConditions": [
-      "react-native"
-    ],
-    "lib": [
-      "DOM",
-      "ESNext"
-    ],
+    "customConditions": ["react-native"],
+    "lib": ["DOM", "ESNext"],
     "jsx": "react-jsx",
     "jsxImportSource": "react",
     "allowSyntheticDefaultImports": true,
@@ -24,46 +19,18 @@
     "allowJs": true,
     "noEmit": true,
     "incremental": true,
-    "types": [
-      "@types/react",
-      "react",
-      "react/jsx-runtime",
-      "react-native",
-      "jest"
-    ],
+    "types": ["@types/react", "react", "react/jsx-runtime", "react-native", "jest"],
     "paths": {
-      "@app/*": [
-        "./src/app/*"
-      ],
-      "@components/*": [
-        "./src/components/*"
-      ],
-      "@store/*": [
-        "./src/store/*"
-      ],
-      "@services/*": [
-        "./src/services/*"
-      ],
-      "@hooks/*": [
-        "./src/hooks/*"
-      ],
-      "@theme/*": [
-        "./src/theme/*"
-      ],
-      "@types/*": [
-        "./src/types/*"
-      ]
+      "@app/*": ["./src/app/*"],
+      "@components/*": ["./src/components/*"],
+      "@store/*": ["./src/store/*"],
+      "@services/*": ["./src/services/*"],
+      "@hooks/*": ["./src/hooks/*"],
+      "@theme/*": ["./src/theme/*"],
+      "@types/*": ["./src/types/*"]
     }
   },
-  "include": [
-    "App.tsx",
-    "src",
-    "__tests__"
-  ],
-  "exclude": [
-    "node_modules",
-    "android",
-    "ios"
-  ],
-  "extends": "expo/tsconfig.base"
+  "include": ["App.tsx", "src", "__tests__"],
+  "exclude": ["node_modules", "android", "ios", "src/_archive"],
+  "extends": "./node_modules/expo/tsconfig.base.json"
 }

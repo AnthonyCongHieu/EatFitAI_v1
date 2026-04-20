@@ -27,7 +27,7 @@ public partial class User
     public bool OnboardingCompleted { get; set; } = false;
 
     // Phân quyền hệ thống (ví dụ: "Admin", "User")
-    public string Role { get; set; } = "User";
+    public string? Role { get; set; } = "user";
 
     // Profile 2026 - Gamification & Goal Tracking
     // Cân nặng mục tiêu (kg)

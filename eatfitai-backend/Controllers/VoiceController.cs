@@ -31,7 +31,6 @@ namespace EatFitAI.API.Controllers
         private readonly IAnalyticsService _analyticsService;
         private readonly IHttpClientFactory _httpClientFactory;
         private readonly IConfiguration _configuration;
-        private readonly IGeminiPoolManager _geminiPoolManager;
         private readonly ILogger<VoiceController> _logger;
         private const double VoiceReviewConfidenceThreshold = 0.75;
         private static readonly JsonSerializerOptions VoiceParseSerializerOptions = new()
@@ -48,7 +47,6 @@ namespace EatFitAI.API.Controllers
             IAnalyticsService analyticsService,
             IHttpClientFactory httpClientFactory,
             IConfiguration configuration,
-            IGeminiPoolManager geminiPoolManager,
             ILogger<VoiceController> logger)
         {
             _voiceService = voiceService;
@@ -58,7 +56,6 @@ namespace EatFitAI.API.Controllers
             _analyticsService = analyticsService;
             _httpClientFactory = httpClientFactory;
             _configuration = configuration;
-            _geminiPoolManager = geminiPoolManager;
             _logger = logger;
         }
 
@@ -95,10 +92,8 @@ namespace EatFitAI.API.Controllers
             try
             {
                 var providerUrl = $"{GetVoiceProviderBaseUrl().TrimEnd('/')}/voice/parse";
-                var (keyId, apiKey) = await _geminiPoolManager.GetNextAvailableKeyAsync();
 
                 using var client = _httpClientFactory.CreateClient();
-                client.DefaultRequestHeaders.Add("X-Gemini-Api-Key", apiKey);
                 client.Timeout = TimeSpan.FromSeconds(60);
 
                 var payload = JsonSerializer.Serialize(new
@@ -113,8 +108,6 @@ namespace EatFitAI.API.Controllers
 
                 if (response.IsSuccessStatusCode)
                 {
-                    // Báo cáo thành công trừ Usage Quota
-                    await _geminiPoolManager.ReportUsageAsync(keyId);
                     var providerCommand = DeserializeParsedVoiceCommand(responseBody);
                     if (ShouldUseRuleFallback(providerCommand))
                     {

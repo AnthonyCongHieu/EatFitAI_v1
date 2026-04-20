@@ -9,6 +9,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Caching.Memory;
 using System.Text.Json;
 using EatFitAI.API.DTOs.AI;
+using EatFitAI.API.Helpers;
 using EatFitAI.API.Services;
 using EatFitAI.API.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
@@ -33,7 +34,6 @@ namespace EatFitAI.API.Controllers
         private readonly INutritionCalcService _nutritionCalcService;
         private readonly IVisionCacheService _visionCacheService;
         private readonly IMemoryCache _cache;
-        private readonly IGeminiPoolManager _geminiPoolManager;
 
         public AIController(
             IHttpClientFactory httpClientFactory,
@@ -47,8 +47,7 @@ namespace EatFitAI.API.Controllers
             INutritionInsightService nutritionInsightService,
             INutritionCalcService nutritionCalcService,
             IVisionCacheService visionCacheService,
-            IMemoryCache cache,
-            IGeminiPoolManager geminiPoolManager)
+            IMemoryCache cache)
         {
             _httpClientFactory = httpClientFactory;
             _configuration = configuration;
@@ -62,7 +61,6 @@ namespace EatFitAI.API.Controllers
             _nutritionCalcService = nutritionCalcService;
             _visionCacheService = visionCacheService;
             _cache = cache;
-            _geminiPoolManager = geminiPoolManager;
         }
 
         [HttpPost("vision/detect")]
@@ -72,18 +70,6 @@ namespace EatFitAI.API.Controllers
         [ProducesResponseType(typeof(object), StatusCodes.Status400BadRequest)]
         public async Task<ActionResult<EatFitAI.API.DTOs.AI.VisionDetectResultDto>> DetectVision(DetectVisionRequest input)
         {
-            var aiStatus = _aiHealthService.GetStatus();
-            if (string.Equals(aiStatus.State, AiHealthState.Down.ToString().ToUpperInvariant(), StringComparison.Ordinal))
-            {
-                _logger.LogWarning("Skipping vision detection because AI provider is DOWN. Message: {Message}", aiStatus.Message);
-                return StatusCode(StatusCodes.Status503ServiceUnavailable, new
-                {
-                    error = "ai_provider_down",
-                    message = "AI provider hiện đang DOWN. Không thể nhận diện ảnh lúc này.",
-                    aiStatus
-                });
-            }
-
             var file = input.File;
             if (file == null || file.Length == 0)
             {
@@ -102,28 +88,60 @@ namespace EatFitAI.API.Controllers
                 return Ok(cachedResult);
             }
 
+            var aiStatus = _aiHealthService.GetStatus();
+            if (ShouldBlockVisionDetection(aiStatus))
+            {
+                _logger.LogWarning("Skipping vision detection because AI provider is DOWN and health state is fresh. Message: {Message}", aiStatus.Message);
+                return StatusCode(StatusCodes.Status503ServiceUnavailable, new
+                {
+                    error = "ai_provider_down",
+                    message = "AI provider hiện đang DOWN. Không thể nhận diện ảnh lúc này.",
+                    aiStatus
+                });
+            }
+
             var baseUrl = AiProviderUrlResolver.GetVisionBaseUrl(_configuration);
             var url = $"{baseUrl}/detect";
 
-            var (keyId, apiKey) = await _geminiPoolManager.GetNextAvailableKeyAsync();
-
             using var client = _httpClientFactory.CreateClient();
-            client.DefaultRequestHeaders.Add("X-Gemini-Api-Key", apiKey);
             using var content = new MultipartFormDataContent();
             await using var stream = file.OpenReadStream();
             var streamContent = new StreamContent(stream);
             streamContent.Headers.ContentType = new MediaTypeHeaderValue(file.ContentType ?? "application/octet-stream");
             content.Add(streamContent, "file", file.FileName);
 
-            using var resp = await client.PostAsync(url, content);
-            var body = await resp.Content.ReadAsStringAsync();
-            if (!resp.IsSuccessStatusCode)
+            HttpResponseMessage response;
+            try
             {
-                return StatusCode((int)resp.StatusCode, new { error = "ai-provider_error", detail = body });
+                response = await client.PostAsync(url, content, HttpContext.RequestAborted);
+            }
+            catch (OperationCanceledException ex) when (!HttpContext.RequestAborted.IsCancellationRequested)
+            {
+                _logger.LogWarning(ex, "AI provider detect timed out for {Url}", url);
+                return StatusCode(
+                    StatusCodes.Status504GatewayTimeout,
+                    ErrorResponseHelper.SafeError("ai-provider_timeout", "Khong the xu ly anh tu dich vu AI.", HttpContext));
+            }
+            catch (HttpRequestException ex)
+            {
+                _logger.LogWarning(ex, "AI provider detect request failed for {Url}", url);
+                return StatusCode(
+                    StatusCodes.Status503ServiceUnavailable,
+                    ErrorResponseHelper.SafeError("ai-provider_error", "Khong the xu ly anh tu dich vu AI.", HttpContext));
             }
 
-            // Báo cáo thành công trừ Usage Quota
-            await _geminiPoolManager.ReportUsageAsync(keyId);
+            using var resp = response;
+            var body = await resp.Content.ReadAsStringAsync(HttpContext.RequestAborted);
+            if (!resp.IsSuccessStatusCode)
+            {
+                _logger.LogWarning(
+                    "AI provider detect failed with status {StatusCode}. Body length={BodyLength}",
+                    (int)resp.StatusCode,
+                    body.Length);
+                return StatusCode(
+                    (int)resp.StatusCode,
+                    ErrorResponseHelper.SafeError("ai-provider_error", "Khong the xu ly anh tu dich vu AI.", HttpContext));
+            }
             List<EatFitAI.API.DTOs.AI.VisionDetectionDto> detections;
             try
             {
@@ -217,8 +235,11 @@ namespace EatFitAI.API.Controllers
                 request.UserId = userId; // Gán UserId để service lấy sở thích
                 var recipes = await _recipeSuggestionService.SuggestRecipesAsync(request, cancellationToken);
 
-                // Log AI activity
-                await _aiLog.LogAsync(userId, "RecipeSuggestion", request, new { RecipeCount = recipes.Count }, 0);
+                await LogAiActivityBestEffortAsync(
+                    userId,
+                    "RecipeSuggestion",
+                    request,
+                    new { RecipeCount = recipes.Count });
 
                 return Ok(recipes);
             }
@@ -456,11 +477,11 @@ namespace EatFitAI.API.Controllers
                 var insights = await _nutritionInsightService.GetPersonalizedInsightsAsync(
                     userId, request, cancellationToken);
 
-                // Log AI activity
-                await _aiLog.LogAsync(userId, "NutritionInsight", request, new { 
+                await LogAiActivityBestEffortAsync(userId, "NutritionInsight", request, new
+                {
                     AdherenceScore = insights.AdherenceScore,
                     RecommendationCount = insights.Recommendations.Count
-                }, 0);
+                });
 
                 return Ok(insights);
             }
@@ -494,11 +515,11 @@ namespace EatFitAI.API.Controllers
                 var adaptiveTarget = await _nutritionInsightService.GetAdaptiveTargetAsync(
                     userId, request, cancellationToken);
 
-                // Log AI activity
-                await _aiLog.LogAsync(userId, "AdaptiveTarget", request, new {
+                await LogAiActivityBestEffortAsync(userId, "AdaptiveTarget", request, new
+                {
                     ConfidenceScore = adaptiveTarget.ConfidenceScore,
                     Applied = adaptiveTarget.Applied
-                }, 0);
+                });
 
                 return Ok(adaptiveTarget);
             }
@@ -531,8 +552,7 @@ namespace EatFitAI.API.Controllers
 
                 await _nutritionInsightService.ApplyAdaptiveTargetAsync(userId, newTarget, cancellationToken);
 
-                // Log AI activity
-                await _aiLog.LogAsync(userId, "ApplyTarget", newTarget, new { Success = true }, 0);
+                await LogAiActivityBestEffortAsync(userId, "ApplyTarget", newTarget, new { Success = true });
 
                 return NoContent();
             }
@@ -635,6 +655,26 @@ namespace EatFitAI.API.Controllers
             }
 
             return userId;
+        }
+
+        private async Task LogAiActivityBestEffortAsync(
+            Guid userId,
+            string action,
+            object? input,
+            object? output,
+            long durationMs = 0)
+        {
+            try
+            {
+                await _aiLog.LogAsync(userId, action, input, output, durationMs);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(
+                    ex,
+                    "AI activity log failed for action {Action}; preserving user-facing API response.",
+                    action);
+            }
         }
 
         /// <summary>
@@ -850,6 +890,29 @@ namespace EatFitAI.API.Controllers
             }
 
             return list;
+        }
+
+        private bool ShouldBlockVisionDetection(AiHealthStatusDto aiStatus)
+        {
+            if (!string.Equals(aiStatus.State, AiHealthState.Down.ToString(), StringComparison.OrdinalIgnoreCase))
+            {
+                return false;
+            }
+
+            if (!aiStatus.LastCheckedAt.HasValue)
+            {
+                return false;
+            }
+
+            return DateTimeOffset.UtcNow - aiStatus.LastCheckedAt.Value <= GetVisionHealthGateFreshnessWindow();
+        }
+
+        private TimeSpan GetVisionHealthGateFreshnessWindow()
+        {
+            var configuredSeconds = _configuration.GetValue<int?>("AIProvider:HealthGateFreshnessSeconds");
+            return configuredSeconds.HasValue && configuredSeconds.Value > 0
+                ? TimeSpan.FromSeconds(configuredSeconds.Value)
+                : TimeSpan.FromSeconds(60);
         }
 
         /// <summary>

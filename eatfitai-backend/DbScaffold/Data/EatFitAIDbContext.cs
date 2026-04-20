@@ -350,6 +350,7 @@ public partial class EatFitAIDbContext : DbContext
                 .HasColumnName("EmailVerificationExpiry")
                 .HasPrecision(3);
             entity.Property(e => e.PasswordHash).HasMaxLength(256);
+            entity.Property(e => e.Role).HasMaxLength(80).HasDefaultValue("user");
             entity.Property(e => e.RefreshToken).HasColumnType("text");
             entity.Property(e => e.RefreshTokenExpiryTime).HasPrecision(3);
             entity.Property(e => e.Goal).HasMaxLength(50);

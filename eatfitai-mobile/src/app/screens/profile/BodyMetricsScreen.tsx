@@ -1,325 +1,450 @@
-// BodyMetricsScreen: Màn hình nhập số đo cơ thể
-// Cho phép nhập chiều cao, cân nặng, cân nặng mục tiêu
+// BodyMetricsScreen — "Hồ sơ thể chất"
+// Emerald Nebula 3D: Basic info card + Weight goals section
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
-    ScrollView,
-    StyleSheet,
-    View,
-    Pressable,
-    KeyboardAvoidingView,
-    Platform,
+  ScrollView,
+  StyleSheet,
+  View,
+  Pressable,
+  Text,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
-import Animated, { FadeInDown } from 'react-native-reanimated';
-import { Controller, useForm } from 'react-hook-form';
-import { z } from 'zod';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { LinearGradient } from 'expo-linear-gradient';
+import { useNavigation, useIsFocused } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
+import { Ionicons } from '@expo/vector-icons';
 
 import { ThemedText } from '../../../components/ThemedText';
-import ThemedTextInput from '../../../components/ThemedTextInput';
-import Button from '../../../components/Button';
-import { BMIIndicator } from '../../../components/ui/BMIIndicator';
-import { glassStyles } from '../../../components/ui/GlassCard';
-import { useAppTheme } from '../../../theme/ThemeProvider';
 import { useProfileStore } from '../../../store/useProfileStore';
-import { showSuccess, handleApiErrorWithCustomMessage } from '../../../utils/errorHandler';
+import { useDiaryStore } from '../../../store/useDiaryStore';
+import type { RootStackParamList } from '../../types';
 
-// Schema validation
-const BodyMetricsSchema = z.object({
-    heightCm: z
-        .string()
-        .trim()
-        .refine(
-            (value) =>
-                !value ||
-                (!Number.isNaN(Number(value)) && Number(value) >= 100 && Number(value) <= 250),
-            { message: 'Chiều cao từ 100 - 250 cm' },
-        ),
-    weightKg: z
-        .string()
-        .trim()
-        .refine(
-            (value) =>
-                !value ||
-                (!Number.isNaN(Number(value)) && Number(value) >= 30 && Number(value) <= 300),
-            { message: 'Cân nặng từ 30 - 300 kg' },
-        ),
-    targetWeightKg: z
-        .string()
-        .trim()
-        .optional()
-        .refine(
-            (value) =>
-                !value ||
-                (!Number.isNaN(Number(value)) && Number(value) >= 30 && Number(value) <= 300),
-            { message: 'Cân nặng mục tiêu từ 30 - 300 kg' },
-        ),
-});
+type Nav = NativeStackNavigationProp<RootStackParamList>;
 
-type BodyMetricsForm = z.infer<typeof BodyMetricsSchema>;
+/* ═══════════════════════════════════════════════
+   Emerald Nebula Palette
+   ═══════════════════════════════════════════════ */
+const P = {
+  primary: '#4be277',
+  primaryContainer: '#22c55e',
+  surface: '#0e1322',
+  surfaceContainerHigh: '#25293a',
+  surfaceContainerHighest: '#2f3445',
+  onSurface: '#dee1f7',
+  onSurfaceVariant: '#bccbb9',
+  glassBorder: 'rgba(255,255,255,0.05)',
+};
 
+/* ═══ Helpers ═══ */
+const getGoalLabel = (goal?: string): string => {
+  switch (goal) {
+    case 'lose': return 'Giảm cân';
+    case 'maintain': return 'Giữ cân';
+    case 'gain': return 'Tăng cân';
+    default: return 'Chưa đặt';
+  }
+};
+
+const getActivityLabel = (levelId?: number): string => {
+  switch (levelId) {
+    case 1: return 'Ít vận động';
+    case 2: return 'Nhẹ nhàng';
+    case 3: return 'Trung bình';
+    case 4: return 'Năng động';
+    case 5: return 'Rất năng động';
+    default: return 'Chưa đặt';
+  }
+};
+
+const getGenderLabel = (g?: string): string => {
+  switch (g) {
+    case 'male': return 'Nam';
+    case 'female': return 'Nữ';
+    default: return '--';
+  }
+};
+
+
+
+const getEstimatedCompletion = (
+  currentKg?: number,
+  targetKg?: number,
+  goal?: string,
+  weeklyRate?: number,
+): string => {
+  if (!currentKg || !targetKg || !goal) return '--';
+  const diff = Math.abs(targetKg - currentKg);
+  if (diff < 0.5) return 'Đã đạt mục tiêu 🎉';
+  const rate = weeklyRate || (goal === 'lose' ? 0.5 : goal === 'gain' ? 0.3 : 0);
+  if (rate === 0) return '--';
+  const weeks = diff / rate;
+  const completionDate = new Date();
+  completionDate.setDate(completionDate.getDate() + weeks * 7);
+  return completionDate.toLocaleDateString('vi-VN', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  });
+};
+
+/* ═══ Info Row ═══ */
+interface InfoRowProps {
+  label: string;
+  value: string;
+  onPress?: () => void;
+  showChevron?: boolean;
+  isLast?: boolean;
+}
+
+const InfoRow = ({ label, value, onPress, showChevron = false, isLast = false }: InfoRowProps) => (
+  <Pressable
+    style={({ pressed }) => [
+      S.infoRow,
+      !isLast && S.infoRowBorder,
+      pressed && onPress && { opacity: 0.7 },
+    ]}
+    onPress={onPress}
+    disabled={!onPress}
+  >
+    <ThemedText style={S.infoRowLabel} numberOfLines={1}>{label}</ThemedText>
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+      <ThemedText style={S.infoRowValue} numberOfLines={1}>{value}</ThemedText>
+      {showChevron && onPress && (
+        <Ionicons name="chevron-forward" size={18} color={P.onSurfaceVariant + '60'} />
+      )}
+    </View>
+  </Pressable>
+);
+
+/* ═══════════════════════════════════════════════
+   BodyMetricsScreen — "Hồ sơ thể chất"
+   ═══════════════════════════════════════════════ */
 const BodyMetricsScreen = (): React.ReactElement => {
-    const { theme } = useAppTheme();
-    const isDark = theme.mode === 'dark';
-    const glass = glassStyles(isDark);
-    const navigation = useNavigation();
+  const navigation = useNavigation<Nav>();
+  const insets = useSafeAreaInsets();
+  const isFocused = useIsFocused();
 
-    const { profile, updateProfile, isSaving } = useProfileStore((state) => ({
-        profile: state.profile,
-        updateProfile: state.updateProfile,
-        isSaving: state.isSaving,
-    }));
+  const profile = useProfileStore((s) => s.profile);
+  const fetchProfile = useProfileStore((s) => s.fetchProfile);
+  
+  // Instantly load summary from store instead of waiting for API call to prevent layout blinks
+  const summary = useDiaryStore((s) => s.summary);
 
-    const {
-        control,
-        handleSubmit,
-        watch,
-        formState: { errors },
-        reset,
-    } = useForm<BodyMetricsForm>({
-        resolver: zodResolver(BodyMetricsSchema),
-        defaultValues: {
-            heightCm: '',
-            weightKg: '',
-            targetWeightKg: '',
-        },
-    });
+  useEffect(() => {
+    if (isFocused) {
+      // Refresh profile data when screen comes into focus
+      fetchProfile({ force: true });
+    }
+  }, [isFocused, fetchProfile]);
 
-    // Load current values
-    useEffect(() => {
-        if (profile) {
-            reset({
-                heightCm: profile.heightCm ? String(profile.heightCm) : '',
-                weightKg: profile.weightKg ? String(profile.weightKg) : '',
-                targetWeightKg: profile.targetWeightKg ? String(profile.targetWeightKg) : '',
-            });
-        }
-    }, [profile, reset]);
+  // Fallback: Estimated target calo (Harris-Benedict) only if backend doesn't provide one
+  const estimatedCalo = useMemo(() => {
+    if (summary?.targetCalories && summary.targetCalories > 0) {
+      return summary.targetCalories;
+    }
+    if (!profile?.weightKg || !profile?.heightCm || !profile?.age) return null;
+    const isMale = profile.gender === 'male';
+    let bmr: number;
+    if (isMale) {
+      bmr = 88.362 + (13.397 * profile.weightKg) + (4.799 * profile.heightCm) - (5.677 * profile.age);
+    } else {
+      bmr = 447.593 + (9.247 * profile.weightKg) + (3.098 * profile.heightCm) - (4.330 * profile.age);
+    }
+    const factor = profile.activityFactor || 1.55;
+    let tdee = bmr * factor;
+    if (profile.goal === 'lose') tdee -= 500;
+    if (profile.goal === 'gain') tdee += 300;
+    return Math.round(tdee);
+  }, [profile, summary?.targetCalories]);
 
-    // Watch values for BMI calculation
-    const heightCm = watch('heightCm');
-    const weightKg = watch('weightKg');
-    const targetWeightKg = watch('targetWeightKg');
+  return (
+    <View style={[S.container, { paddingTop: insets.top }]}>
+      {/* ═══ HEADER ═══ */}
+      <View style={S.header}>
+        <Pressable style={S.headerBtn} onPress={() => navigation.goBack()} hitSlop={12}>
+          <Ionicons name="chevron-back" size={24} color={P.onSurface} />
+        </Pressable>
+        <ThemedText style={S.headerTitle}>Hồ sơ thể chất</ThemedText>
+        <View style={S.headerBtn} />
+      </View>
 
-    // Calculate difference to target
-    const weightDiff = (): string | null => {
-        if (!weightKg || !targetWeightKg) return null;
-        const current = Number(weightKg);
-        const target = Number(targetWeightKg);
-        if (isNaN(current) || isNaN(target)) return null;
-        const diff = target - current;
-        if (diff > 0) return `Cần tăng ${diff.toFixed(1)} kg`;
-        if (diff < 0) return `Cần giảm ${Math.abs(diff).toFixed(1)} kg`;
-        return 'Đã đạt mục tiêu! 🎉';
-    };
+      <ScrollView
+        contentContainerStyle={[S.scrollContent, { paddingBottom: insets.bottom + 40 }]}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* ═══ SECTION 1: Thông tin cơ bản ═══ */}
+        <Animated.View entering={FadeInDown.delay(100).duration(400)}>
+          <View style={S.sectionHeader}>
+            <ThemedText style={S.sectionTitle}>Thông tin cơ bản</ThemedText>
+            <Pressable
+              onPress={() => navigation.navigate('BasicInfo')}
+              hitSlop={12}
+            >
+              <Ionicons name="pencil" size={20} color={P.onSurfaceVariant} />
+            </Pressable>
+          </View>
 
-    const onSubmit = async (values: BodyMetricsForm) => {
-        try {
-            await updateProfile({
-                heightCm: values.heightCm ? Number(values.heightCm) : null,
-                weightKg: values.weightKg ? Number(values.weightKg) : null,
-                targetWeightKg: values.targetWeightKg ? Number(values.targetWeightKg) : null,
-            });
-            showSuccess('profile_updated');
-            navigation.goBack();
-        } catch (error: any) {
-            handleApiErrorWithCustomMessage(error, {
-                unknown: { text1: 'Lỗi', text2: 'Không thể lưu thông tin' },
-            });
-        }
-    };
-
-    const styles = StyleSheet.create({
-        container: { flex: 1 },
-        content: {
-            paddingHorizontal: theme.spacing.lg,
-            paddingVertical: theme.spacing.xl,
-            gap: theme.spacing.lg,
-        },
-        card: {
-            ...glass.card,
-            padding: 20,
-        },
-        sectionTitle: {
-            flexDirection: 'row',
-            alignItems: 'center',
-            gap: 8,
-            marginBottom: 16,
-        },
-        row: {
-            flexDirection: 'row',
-            gap: theme.spacing.md,
-        },
-        col: {
-            flex: 1,
-        },
-        bmiSection: {
-            alignItems: 'center',
-            marginTop: 20,
-            paddingTop: 20,
-            borderTopWidth: 1,
-            borderTopColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)',
-        },
-        diffBadge: {
-            marginTop: 16,
-            paddingHorizontal: 16,
-            paddingVertical: 8,
-            borderRadius: 12,
-            backgroundColor: isDark ? 'rgba(59, 130, 246, 0.1)' : 'rgba(59, 130, 246, 0.08)',
-        },
-        diffText: {
-            fontSize: 14,
-            fontWeight: '600',
-            color: theme.colors.primary,
-        },
-    });
-
-    return (
-        <LinearGradient
-            colors={theme.colors.screenGradient}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 0.5, y: 1 }}
-            style={styles.container}
-        >
-            {/* Custom Header - Back button + Title on same row */}
-            <View style={{ paddingTop: 60, paddingBottom: theme.spacing.sm, paddingHorizontal: theme.spacing.lg }}>
-                {/* Row: Back button + Title */}
-                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                    <Pressable
-                        onPress={() => navigation.goBack()}
-                        style={{
-                            width: 40,
-                            height: 40,
-                            borderRadius: 12,
-                            backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                        }}
-                    >
-                        <ThemedText style={{ fontSize: 18 }}>←</ThemedText>
-                    </Pressable>
-
-                    <View style={{ flex: 1, alignItems: 'center', marginRight: 40 }}>
-                        <ThemedText variant="h3" weight="700">
-                            Số đo cơ thể
-                        </ThemedText>
-                    </View>
-                </View>
-
-                {/* Subtitle below */}
-                <ThemedText variant="bodySmall" color="textSecondary" style={{ textAlign: 'center', marginTop: 8 }}>
-                    Cập nhật chiều cao và cân nặng
-                </ThemedText>
+          <View style={S.card}>
+            {/* Nickname */}
+            <View style={S.nicknameBlock}>
+              <ThemedText style={S.fieldLabel}>NICKNAME</ThemedText>
+              <Text style={S.nicknameValue} numberOfLines={1}>
+                {profile?.fullName || 'Chưa đặt'}
+              </Text>
             </View>
 
-            <KeyboardAvoidingView
-                style={{ flex: 1 }}
-                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-            >
-                <ScrollView contentContainerStyle={styles.content}>
-                    {/* Current Metrics */}
-                    <Animated.View entering={FadeInDown.delay(100)} style={styles.card}>
-                        <View style={styles.sectionTitle}>
-                            <ThemedText style={{ fontSize: 20 }} />
-                            <ThemedText variant="h3">Số đo hiện tại</ThemedText>
-                        </View>
+            <View style={S.cardDivider} />
 
-                        <View style={styles.row}>
-                            <View style={styles.col}>
-                                <Controller
-                                    control={control}
-                                    name="heightCm"
-                                    render={({ field: { value, onChange, onBlur } }) => (
-                                        <ThemedTextInput
-                                            label="Chiều cao (cm)"
-                                            value={value}
-                                            onChangeText={onChange}
-                                            onBlur={onBlur}
-                                            placeholder="170"
-                                            keyboardType="numeric"
-                                            error={!!errors.heightCm}
-                                            helperText={errors.heightCm?.message}
-                                        />
-                                    )}
-                                />
-                            </View>
-                            <View style={styles.col}>
-                                <Controller
-                                    control={control}
-                                    name="weightKg"
-                                    render={({ field: { value, onChange, onBlur } }) => (
-                                        <ThemedTextInput
-                                            label="Cân nặng (kg)"
-                                            value={value}
-                                            onChangeText={onChange}
-                                            onBlur={onBlur}
-                                            placeholder="65"
-                                            keyboardType="numeric"
-                                            error={!!errors.weightKg}
-                                            helperText={errors.weightKg?.message}
-                                        />
-                                    )}
-                                />
-                            </View>
-                        </View>
+            {/* Gender | Age | Height row */}
+            <View style={S.tripleRow}>
+              <View style={S.tripleCol}>
+                <ThemedText style={S.fieldLabel}>GIỚI TÍNH</ThemedText>
+                <ThemedText style={S.tripleValue}>
+                  {getGenderLabel(profile?.gender)}
+                </ThemedText>
+              </View>
+              <View style={S.tripleCol}>
+                <ThemedText style={S.fieldLabel}>TUỔI</ThemedText>
+                <ThemedText style={S.tripleValue}>
+                  {profile?.age ?? '--'}
+                </ThemedText>
+              </View>
+              <View style={S.tripleCol}>
+                <ThemedText style={S.fieldLabel}>CHIỀU CAO</ThemedText>
+                <ThemedText style={S.tripleValue}>
+                  {profile?.heightCm ? `${profile.heightCm} cm` : '--'}
+                </ThemedText>
+              </View>
+            </View>
+          </View>
+        </Animated.View>
 
-                        {/* BMI Display */}
-                        <View style={styles.bmiSection}>
-                            <BMIIndicator
-                                heightCm={heightCm ? Number(heightCm) : undefined}
-                                weightKg={weightKg ? Number(weightKg) : undefined}
-                                variant="full"
-                            />
-                        </View>
-                    </Animated.View>
+        {/* ═══ SECTION 2: Mục tiêu cân nặng ═══ */}
+        <Animated.View entering={FadeInDown.delay(200).duration(400)}>
+          <View style={S.sectionHeader}>
+            <ThemedText style={S.sectionTitle}>Mục tiêu cân nặng</ThemedText>
+            <Pressable hitSlop={12}>
+              <Ionicons name="information-circle-outline" size={22} color={P.onSurfaceVariant} />
+            </Pressable>
+          </View>
 
-                    {/* Target Weight */}
-                    <Animated.View entering={FadeInDown.delay(200)} style={styles.card}>
-                        <View style={styles.sectionTitle}>
-                            <ThemedText style={{ fontSize: 20 }} />
-                            <ThemedText variant="h3">Cân nặng mục tiêu</ThemedText>
-                        </View>
+          <View style={S.card}>
+            {/* Goal row — current → target */}
+            <View style={[S.infoRow, S.infoRowBorder]}>
+              <ThemedText style={S.goalLabel} numberOfLines={1}>
+                {getGoalLabel(profile?.goal)}
+              </ThemedText>
+              <View style={S.goalWeightRow}>
+                <ThemedText style={S.goalWeight} numberOfLines={1}>
+                  {profile?.weightKg ?? '--'} kg
+                </ThemedText>
+                <Ionicons name="play-forward" size={14} color={P.onSurfaceVariant} />
+                <ThemedText style={[S.goalWeight, { color: P.primary }]} numberOfLines={1}>
+                  {profile?.targetWeightKg ?? '--'} kg
+                </ThemedText>
+              </View>
+            </View>
 
-                        <Controller
-                            control={control}
-                            name="targetWeightKg"
-                            render={({ field: { value, onChange, onBlur } }) => (
-                                <ThemedTextInput
-                                    label="Mục tiêu (kg)"
-                                    value={value}
-                                    onChangeText={onChange}
-                                    onBlur={onBlur}
-                                    placeholder="60"
-                                    keyboardType="numeric"
-                                    error={!!errors.targetWeightKg}
-                                    helperText={errors.targetWeightKg?.message}
-                                />
-                            )}
-                        />
 
-                        {/* Weight difference badge */}
-                        {weightDiff() && (
-                            <View style={styles.diffBadge}>
-                                <ThemedText style={styles.diffText}>{weightDiff()}</ThemedText>
-                            </View>
-                        )}
-                    </Animated.View>
+            {/* Cường độ vận động → GoalSettings */}
+            <InfoRow
+              label="Cường độ vận động"
+              value={getActivityLabel(profile?.activityLevelId)}
+              onPress={() => navigation.navigate('GoalSettings')}
+              showChevron
+            />
 
-                    {/* Save Button */}
-                    <Animated.View entering={FadeInDown.delay(300)}>
-                        <Button
-                            title={isSaving ? 'Đang lưu...' : 'Lưu thay đổi'}
-                            onPress={handleSubmit(onSubmit)}
-                            loading={isSaving}
-                            disabled={isSaving}
-                        />
-                    </Animated.View>
-                </ScrollView>
-            </KeyboardAvoidingView>
-        </LinearGradient>
-    );
+            {/* Calo mục tiêu */}
+            <InfoRow
+              label="Calo mục tiêu"
+              value={estimatedCalo ? `${estimatedCalo} calo` : '--'}
+            />
+
+            {/* Dự kiến hoàn thành */}
+            <InfoRow
+              label="Dự kiến hoàn thành"
+              value={getEstimatedCompletion(
+                profile?.weightKg,
+                profile?.targetWeightKg,
+                profile?.goal,
+                (profile as any)?.weeklyWeightRateKg,
+              )}
+              isLast
+            />
+          </View>
+        </Animated.View>
+
+        {/* ═══ BOTTOM BUTTON ═══ */}
+        <Animated.View entering={FadeInUp.delay(300).duration(400)}>
+          <Pressable
+            style={({ pressed }) => [S.ctaBtn, pressed && { opacity: 0.85, transform: [{ scale: 0.98 }] }]}
+            onPress={() => navigation.navigate('Onboarding', { initialStep: 1 } as any)}
+          >
+            <ThemedText style={S.ctaBtnText}>Thiết lập mục tiêu mới</ThemedText>
+          </Pressable>
+        </Animated.View>
+      </ScrollView>
+    </View>
+  );
 };
+
+/* ═══════════════════════════════════════════════
+   Styles — Emerald Nebula Hồ sơ thể chất
+   ═══════════════════════════════════════════════ */
+const S = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: P.surface,
+  },
+
+  /* Header */
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    height: 56,
+  },
+  headerBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: P.onSurface,
+    letterSpacing: -0.3,
+  },
+
+  /* Scroll */
+  scrollContent: {
+    paddingHorizontal: 20,
+    gap: 28,
+  },
+
+  /* Section header */
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 14,
+    paddingHorizontal: 4,
+  },
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: P.onSurface,
+  },
+
+  /* Card */
+  card: {
+    borderRadius: 16,
+    backgroundColor: P.surfaceContainerHigh,
+    paddingHorizontal: 20,
+    paddingVertical: 18,
+    // Remove overflow hidden to prevent text clipping
+  },
+  cardDivider: {
+    height: 1,
+    backgroundColor: P.glassBorder,
+    marginVertical: 16,
+  },
+
+  /* Nickname */
+  nicknameBlock: {
+    marginBottom: 4,
+  },
+  fieldLabel: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: P.onSurfaceVariant + '80',
+    letterSpacing: 2,
+    textTransform: 'uppercase',
+    marginBottom: 8,
+  },
+  nicknameValue: {
+    fontSize: 26,
+    fontFamily: 'Inter_700Bold',
+    color: P.onSurface,
+  },
+
+  /* Triple row */
+  tripleRow: {
+    flexDirection: 'row',
+  },
+  tripleCol: {
+    flex: 1,
+  },
+  tripleValue: {
+    fontSize: 22,
+    fontWeight: '600',
+    color: P.onSurface,
+  },
+
+  /* Goal row */
+  goalLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: P.onSurface,
+    flexShrink: 1,
+  },
+  goalWeightRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    flexShrink: 0,
+    marginLeft: 12,
+  },
+  goalWeight: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: P.onSurface,
+  },
+
+  /* Info row */
+  infoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 16,
+  },
+  infoRowBorder: {
+    borderBottomWidth: 1,
+    borderBottomColor: P.glassBorder,
+  },
+  infoRowLabel: {
+    fontSize: 15,
+    fontWeight: '500',
+    color: P.onSurfaceVariant,
+    flexShrink: 1,
+  },
+  infoRowValue: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: P.onSurface,
+    flexShrink: 0,
+    marginLeft: 8,
+  },
+
+  /* CTA button */
+  ctaBtn: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 18,
+    borderRadius: 16,
+    backgroundColor: P.surfaceContainerHigh,
+    borderWidth: 1,
+    borderColor: P.primary + '30',
+  },
+  ctaBtnText: {
+    fontSize: 17,
+    fontWeight: '700',
+    color: P.primary,
+  },
+});
 
 export default BodyMetricsScreen;

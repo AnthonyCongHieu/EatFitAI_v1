@@ -16,6 +16,7 @@ import { useAppTheme } from '../../../theme/ThemeProvider';
 import { summaryService } from '../../../services/summaryService';
 import { handleApiError } from '../../../utils/errorHandler';
 import { formatMonthYearLabel } from '../../../utils/dateDisplay';
+import { formatLocalDate } from '../../../utils/localDate';
 import { StatsSkeleton } from '../../../components/skeletons/StatsSkeleton';
 import { MacroPieChart } from '../../../components/charts/MacroPieChart';
 import { t } from '../../../i18n/vi';
@@ -81,26 +82,33 @@ const MonthStatsScreen = (): React.ReactElement => {
       setMonthData(cached);
       setIsLoading(false);
       // Silent refresh in background
-      summaryService.getNutritionSummary(
-        new Date(year, month, 1).toISOString().split('T')[0]!,
-        new Date(year, month + 1, 0).toISOString().split('T')[0]!,
-      ).then(result => {
-        const days: DayData[] = Object.entries(result.dailyCalories || {}).map(([date, calories]) => ({
-          date, calories: Number(calories) || 0,
-        }));
-        const daysLogged = days.filter(d => d.calories > 0).length;
-        const newData: MonthSummary = {
-          days,
-          totalCalories: result.totalCalories || 0,
-          totalProtein: result.totalProtein || 0,
-          totalCarbs: result.totalCarbs || 0,
-          totalFat: result.totalFat || 0,
-          averageCalories: daysLogged > 0 ? (result.totalCalories || 0) / daysLogged : 0,
-          daysLogged,
-        };
-        monthCacheRef.current.set(monthKey, newData);
-        setMonthData(newData);
-      }).catch(() => { });
+        summaryService
+        .getNutritionSummary(
+          formatLocalDate(new Date(year, month, 1)),
+          formatLocalDate(new Date(year, month + 1, 0)),
+        )
+        .then((result) => {
+          const days: DayData[] = Object.entries(result.dailyCalories || {}).map(
+            ([date, calories]) => ({
+              date,
+              calories: Number(calories) || 0,
+            }),
+          );
+          const daysLogged = days.filter((d) => d.calories > 0).length;
+          const newData: MonthSummary = {
+            days,
+            totalCalories: result.totalCalories || 0,
+            totalProtein: result.totalProtein || 0,
+            totalCarbs: result.totalCarbs || 0,
+            totalFat: result.totalFat || 0,
+            averageCalories:
+              daysLogged > 0 ? (result.totalCalories || 0) / daysLogged : 0,
+            daysLogged,
+          };
+          monthCacheRef.current.set(monthKey, newData);
+          setMonthData(newData);
+        })
+        .catch(() => {});
       return;
     }
 
@@ -109,8 +117,8 @@ const MonthStatsScreen = (): React.ReactElement => {
       const startDate = new Date(year, month, 1);
       const endDate = new Date(year, month + 1, 0);
 
-      const startStr = startDate.toISOString().split('T')[0]!;
-      const endStr = endDate.toISOString().split('T')[0]!;
+      const startStr = formatLocalDate(startDate);
+      const endStr = formatLocalDate(endDate);
 
       const result = await summaryService.getNutritionSummary(startStr, endStr);
 
@@ -184,7 +192,9 @@ const MonthStatsScreen = (): React.ReactElement => {
 
   const maxCalories = useMemo(() => {
     if (!monthData?.days.length) return 1;
-    const maxLoggedCalories = Math.max(...monthData.days.map((d) => Math.max(d.calories, 0)));
+    const maxLoggedCalories = Math.max(
+      ...monthData.days.map((d) => Math.max(d.calories, 0)),
+    );
     return maxLoggedCalories > 0 ? maxLoggedCalories : 1;
   }, [monthData]);
 
@@ -217,7 +227,7 @@ const MonthStatsScreen = (): React.ReactElement => {
   };
 
   const renderCalendarCell = (date: Date, index: number) => {
-    const dateStr = date.toISOString().split('T')[0]!;
+    const dateStr = formatLocalDate(date);
     const isCurrentMonthDay = date.getMonth() === month;
     const dayData = dayDataMap[dateStr];
     const calories = dayData?.calories || 0;
@@ -242,10 +252,12 @@ const MonthStatsScreen = (): React.ReactElement => {
               : 'transparent',
             opacity: isCurrentMonthDay ? 1 : 0.3,
           },
-          pressed && isCurrentMonthDay && calories > 0 && {
-            transform: [{ scale: 0.92 }],
-            opacity: 0.7,
-          },
+          pressed &&
+            isCurrentMonthDay &&
+            calories > 0 && {
+              transform: [{ scale: 0.92 }],
+              opacity: 0.7,
+            },
         ]}
       >
         <ThemedText
@@ -478,7 +490,14 @@ const MonthStatsScreen = (): React.ReactElement => {
                     borderColor: theme.statsCards.calories.borderColor,
                   }}
                 >
-                  <ThemedText style={{ fontSize: theme.typography.h3.fontSize, marginBottom: theme.spacing.xs }}>{'🔥'}</ThemedText>
+                  <ThemedText
+                    style={{
+                      fontSize: theme.typography.h3.fontSize,
+                      marginBottom: theme.spacing.xs,
+                    }}
+                  >
+                    {'🔥'}
+                  </ThemedText>
                   <ThemedText
                     variant="h3"
                     weight="700"
@@ -506,7 +525,14 @@ const MonthStatsScreen = (): React.ReactElement => {
                     borderColor: theme.statsCards.average.borderColor,
                   }}
                 >
-                  <ThemedText style={{ fontSize: theme.typography.h3.fontSize, marginBottom: theme.spacing.xs }}>{'📊'}</ThemedText>
+                  <ThemedText
+                    style={{
+                      fontSize: theme.typography.h3.fontSize,
+                      marginBottom: theme.spacing.xs,
+                    }}
+                  >
+                    {'📊'}
+                  </ThemedText>
                   <ThemedText
                     variant="h3"
                     weight="700"
@@ -534,7 +560,14 @@ const MonthStatsScreen = (): React.ReactElement => {
                     borderColor: theme.statsCards.daysLogged.borderColor,
                   }}
                 >
-                  <ThemedText style={{ fontSize: theme.typography.h3.fontSize, marginBottom: theme.spacing.xs }}>{'📆'}</ThemedText>
+                  <ThemedText
+                    style={{
+                      fontSize: theme.typography.h3.fontSize,
+                      marginBottom: theme.spacing.xs,
+                    }}
+                  >
+                    {'📆'}
+                  </ThemedText>
                   <ThemedText
                     variant="h3"
                     weight="700"
@@ -562,13 +595,22 @@ const MonthStatsScreen = (): React.ReactElement => {
                     borderColor: theme.statsCards.target.borderColor,
                   }}
                 >
-                  <ThemedText style={{ fontSize: theme.typography.h3.fontSize, marginBottom: theme.spacing.xs }}>{'🎯'}</ThemedText>
+                  <ThemedText
+                    style={{
+                      fontSize: theme.typography.h3.fontSize,
+                      marginBottom: theme.spacing.xs,
+                    }}
+                  >
+                    {'🎯'}
+                  </ThemedText>
                   <ThemedText
                     variant="h3"
                     weight="700"
                     style={{ color: theme.statsCards.target.textColor }}
                   >
-                    {trackedTargetDays > 0 ? `${targetHitDays}/${trackedTargetDays}` : '--'}
+                    {trackedTargetDays > 0
+                      ? `${targetHitDays}/${trackedTargetDays}`
+                      : '--'}
                   </ThemedText>
                   <ThemedText variant="caption" color="textSecondary">
                     {'Đạt mục tiêu'}

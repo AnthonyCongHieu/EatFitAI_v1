@@ -16,12 +16,20 @@ services:
         sync: false
       - key: Jwt__Key
         sync: false
+      - key: Jwt__PreviousKeys
+        sync: false
+      - key: Encryption__Key
+        sync: false
+      - key: Encryption__PreviousKeys
+        sync: false
       - key: Jwt__Issuer
         value: EatFitAI
       - key: Jwt__Audience
         value: EatFitAI
-      - key: AIProvider__VisionBaseUrl
+      - key: AIProvider__InternalToken
         sync: false
+      - key: AIProvider__VisionBaseUrl
+        value: https://eatfitai-ai-provider.onrender.com
       - key: Google__WebClientId
         sync: false
       - key: Google__AndroidClientId
@@ -36,19 +44,11 @@ services:
         value: food-images
       - key: Supabase__UserFoodBucket
         value: user-food
-      - key: Smtp__Host
-        value: smtp.gmail.com
-      - key: Smtp__Port
-        value: "587"
-      - key: Smtp__EnableSsl
-        value: "true"
-      - key: Smtp__User
+      - key: Brevo__ApiKey
         sync: false
-      - key: Smtp__Password
+      - key: Brevo__SenderEmail
         sync: false
-      - key: Smtp__FromEmail
-        sync: false
-      - key: Smtp__FromDisplayName
+      - key: Brevo__SenderName
         value: EatFitAI
 
   - type: web

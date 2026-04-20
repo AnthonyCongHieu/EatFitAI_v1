@@ -104,34 +104,44 @@ namespace EatFitAI.API.Services
                     var totalConfidence = 0.0;
                     var count = 0;
 
-                    if (output.TryGetProperty("items", out var items) && items.ValueKind == JsonValueKind.Array)
+                    if (TryGetPropertyIgnoreCase(output, "items", out var items) &&
+                        items.ValueKind == JsonValueKind.Array)
                     {
                         foreach (var item in items.EnumerateArray())
                         {
-                            if (item.TryGetProperty("label", out var label))
+                            if (TryGetPropertyIgnoreCase(item, "label", out var label))
                             {
                                 detectedLabels.Add(label.GetString() ?? "");
                             }
-                            if (item.TryGetProperty("confidence", out var conf))
+                            if (TryGetPropertyIgnoreCase(item, "confidence", out var conf) &&
+                                conf.ValueKind == JsonValueKind.Number)
                             {
                                 totalConfidence += conf.GetDouble();
                                 count++;
                             }
-                            if (item.TryGetProperty("foodName", out var foodName) && !string.IsNullOrEmpty(foodName.GetString()))
+                            if (TryGetPropertyIgnoreCase(item, "foodName", out var foodName) &&
+                                !string.IsNullOrEmpty(foodName.GetString()))
                             {
                                 mappedFoodNames.Add(foodName.GetString() ?? "");
                             }
                         }
                     }
 
-                    if (output.TryGetProperty("unmappedLabels", out var unmapped) && unmapped.ValueKind == JsonValueKind.Array)
+                    if (TryGetPropertyIgnoreCase(output, "unmappedLabels", out var unmapped) &&
+                        unmapped.ValueKind == JsonValueKind.Array)
                     {
                         unmappedCount = unmapped.GetArrayLength();
                         foreach (var item in unmapped.EnumerateArray())
                         {
-                            if (item.ValueKind == JsonValueKind.String)
+                            var label = item.ValueKind == JsonValueKind.String
+                                ? item.GetString()
+                                : TryGetPropertyIgnoreCase(item, "label", out var labelValue)
+                                    ? labelValue.GetString()
+                                    : null;
+
+                            if (!string.IsNullOrWhiteSpace(label))
                             {
-                                detectedLabels.Add(item.GetString() ?? "");
+                                detectedLabels.Add(label!);
                             }
                         }
                     }
@@ -182,13 +192,14 @@ namespace EatFitAI.API.Services
                 {
                     var output = JsonSerializer.Deserialize<JsonElement>(log.OutputJson ?? "{}");
                     
-                    if (output.TryGetProperty("unmappedLabels", out var unmapped) && unmapped.ValueKind == JsonValueKind.Array)
+                    if (TryGetPropertyIgnoreCase(output, "unmappedLabels", out var unmapped) &&
+                        unmapped.ValueKind == JsonValueKind.Array)
                     {
                         foreach (var item in unmapped.EnumerateArray())
                         {
                             var label = item.ValueKind == JsonValueKind.String 
                                 ? item.GetString() 
-                                : item.TryGetProperty("label", out var l) ? l.GetString() : null;
+                                : TryGetPropertyIgnoreCase(item, "label", out var l) ? l.GetString() : null;
 
                             if (!string.IsNullOrEmpty(label))
                             {
@@ -244,6 +255,29 @@ namespace EatFitAI.API.Services
         }
 
         #region Private Helper Methods
+
+        private static bool TryGetPropertyIgnoreCase(JsonElement element, string propertyName, out JsonElement value)
+        {
+            if (element.ValueKind == JsonValueKind.Object)
+            {
+                if (element.TryGetProperty(propertyName, out value))
+                {
+                    return true;
+                }
+
+                foreach (var property in element.EnumerateObject())
+                {
+                    if (string.Equals(property.Name, propertyName, StringComparison.OrdinalIgnoreCase))
+                    {
+                        value = property.Value;
+                        return true;
+                    }
+                }
+            }
+
+            value = default;
+            return false;
+        }
 
         private decimal CalculateMatchScore(string label, string foodName)
         {

@@ -1,4 +1,5 @@
 using AutoMapper;
+using EatFitAI.API.Data;
 using EatFitAI.API.DbScaffold.Data;
 using EatFitAI.API.DbScaffold.Models;
 using EatFitAI.API.DTOs.User;
@@ -9,8 +10,11 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using Xunit;
+using AdminUser = EatFitAI.API.Models.User;
+using AdminUserPreference = EatFitAI.API.Models.UserPreference;
 
 namespace EatFitAI.API.Tests.Unit.Services
 {
@@ -18,6 +22,7 @@ namespace EatFitAI.API.Tests.Unit.Services
     {
         private readonly Mock<IUserRepository> _userRepositoryMock;
         private readonly EatFitAIDbContext _context;
+        private readonly ApplicationDbContext _adminContext;
         private readonly Mock<IMapper> _mapperMock;
         private readonly Mock<ISupabaseStorageService> _supabaseStorageServiceMock;
         private readonly Mock<IHostEnvironment> _environmentMock;
@@ -38,15 +43,22 @@ namespace EatFitAI.API.Tests.Unit.Services
                 .Options;
             _context = new EatFitAIDbContext(options);
 
+            var adminOptions = new DbContextOptionsBuilder<ApplicationDbContext>()
+                .UseInMemoryDatabase(Guid.NewGuid().ToString())
+                .Options;
+            _adminContext = new ApplicationDbContext(adminOptions);
+
             _supabaseStorageServiceMock.SetupGet(s => s.IsConfigured).Returns(false);
             _environmentMock.SetupGet(e => e.EnvironmentName).Returns(Environments.Development);
 
             _userService = new UserService(
                 _userRepositoryMock.Object,
                 _context,
+                _adminContext,
                 _mapperMock.Object,
                 _supabaseStorageServiceMock.Object,
                 _environmentMock.Object,
+                new SupabaseSchemaBootstrapper(_adminContext, NullLogger<SupabaseSchemaBootstrapper>.Instance),
                 _loggerMock.Object);
 
             SeedTestData();
@@ -71,6 +83,7 @@ namespace EatFitAI.API.Tests.Unit.Services
         public void Dispose()
         {
             _context.Dispose();
+            _adminContext.Dispose();
         }
 
         [Fact]
@@ -256,6 +269,26 @@ namespace EatFitAI.API.Tests.Unit.Services
         {
             var trackedUser = await _context.Users.SingleAsync(u => u.UserId == _testUserId);
 
+            await _adminContext.Users.AddAsync(new AdminUser
+            {
+                UserId = _testUserId,
+                Email = "testuser@example.com",
+                DisplayName = "Test User",
+                CreatedAt = DateTime.UtcNow,
+                EmailVerified = true
+            });
+            await _adminContext.UserPreferences.AddAsync(new AdminUserPreference
+            {
+                UserId = _testUserId,
+                DietaryRestrictions = "[]",
+                Allergies = "[]",
+                PreferredMealsPerDay = 4,
+                PreferredCuisine = "vietnamese",
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            });
+            await _adminContext.SaveChangesAsync();
+
             await _context.BodyMetrics.AddAsync(new BodyMetric
             {
                 UserId = _testUserId,
@@ -287,6 +320,7 @@ namespace EatFitAI.API.Tests.Unit.Services
             _userRepositoryMock.Verify(r => r.Remove(It.IsAny<User>()), Times.Once);
             Assert.Empty(_context.BodyMetrics.Where(x => x.UserId == _testUserId));
             Assert.Empty(_context.UserFoodItems.Where(x => x.UserId == _testUserId));
+            Assert.Empty(_adminContext.UserPreferences.Where(x => x.UserId == _testUserId));
         }
 
         [Fact]

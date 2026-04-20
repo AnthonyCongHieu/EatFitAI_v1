@@ -96,11 +96,15 @@ const QuickActionButton = ({
             {
               backgroundColor: isPrimary
                 ? theme.colors.primary
-                // Solid colors để fix 2 màu trên Android
-                : theme.mode === 'dark' ? '#1A2744' : '#EEF4FF',
+                : // Solid colors để fix 2 màu trên Android
+                  theme.mode === 'dark'
+                  ? '#1A2744'
+                  : '#EEF4FF',
               borderColor: isPrimary
                 ? theme.colors.primary
-                : theme.mode === 'dark' ? '#2A3F68' : '#D0E4FF',
+                : theme.mode === 'dark'
+                  ? '#2A3F68'
+                  : '#D0E4FF',
               ...theme.shadows.sm,
             },
           ]}

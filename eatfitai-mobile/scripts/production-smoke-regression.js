@@ -1,9 +1,16 @@
 const fs = require('fs');
 const path = require('path');
 const { execFileSync } = require('child_process');
+const { resolveSmokeCredentials } = require('./lib/smoke-credentials');
 
 const DEFAULT_BACKEND_URL = 'https://eatfitai-backend.onrender.com';
-const DEFAULT_OUTPUT_ROOT = path.resolve(__dirname, '..', '..', '_logs', 'production-smoke');
+const DEFAULT_OUTPUT_ROOT = path.resolve(
+  __dirname,
+  '..',
+  '..',
+  '_logs',
+  'production-smoke',
+);
 const DEFAULT_DEMO_EMAIL = 'scan-demo@redacted.local';
 const DEFAULT_DEMO_PASSWORD = 'SET_IN_SEED_SCRIPT';
 
@@ -108,7 +115,10 @@ async function requestJson(url, options = {}) {
     Accept: 'application/json',
     ...(options.headers || {}),
   };
-  const retryCount = Math.max(0, Number.parseInt(String(options.retryCount ?? 2), 10) || 0);
+  const retryCount = Math.max(
+    0,
+    Number.parseInt(String(options.retryCount ?? 2), 10) || 0,
+  );
   const retryDelayMs = Math.max(
     200,
     Number.parseInt(String(options.retryDelayMs ?? 1500), 10) || 1500,
@@ -177,7 +187,11 @@ async function requestMultipart(url, filePath, token) {
   const formData = new FormData();
   const buffer = fs.readFileSync(filePath);
   const mimeType = guessMimeType(filePath);
-  formData.append('file', new Blob([buffer], { type: mimeType }), path.basename(filePath));
+  formData.append(
+    'file',
+    new Blob([buffer], { type: mimeType }),
+    path.basename(filePath),
+  );
 
   return requestJson(url, {
     method: 'POST',
@@ -193,7 +207,12 @@ function prepareFixtureForUpload(filePath, outputDir) {
   const supportedImage = ['.jpg', '.jpeg', '.png', '.webp', '.bmp'].includes(extension);
   const originalSize = fs.statSync(filePath).size;
   if (!supportedImage) {
-    return { uploadPath: filePath, originalSize, uploadSize: originalSize, optimized: false };
+    return {
+      uploadPath: filePath,
+      originalSize,
+      uploadSize: originalSize,
+      optimized: false,
+    };
   }
 
   const tempDir = path.join(outputDir, '.tmp-fixtures');
@@ -252,35 +271,13 @@ function resolveFixtureDir(outputDir, manifest) {
 }
 
 function resolveCredentials(backendUrl) {
-  const smokeEmail = trim(process.env.EATFITAI_SMOKE_EMAIL);
-  const smokePassword = trim(process.env.EATFITAI_SMOKE_PASSWORD);
-  if (smokeEmail && smokePassword) {
-    return {
-      email: smokeEmail,
-      password: smokePassword,
-      source: 'EATFITAI_SMOKE_EMAIL/EATFITAI_SMOKE_PASSWORD',
-    };
-  }
-
-  const demoEmail = trim(process.env.EATFITAI_DEMO_EMAIL);
-  const demoPassword = trim(process.env.EATFITAI_DEMO_PASSWORD);
-  if (demoEmail && demoPassword) {
-    return {
-      email: demoEmail,
-      password: demoPassword,
-      source: 'EATFITAI_DEMO_EMAIL/EATFITAI_DEMO_PASSWORD',
-    };
-  }
-
-  if (looksLocalUrl(backendUrl)) {
-    return {
-      email: DEFAULT_DEMO_EMAIL,
-      password: DEFAULT_DEMO_PASSWORD,
-      source: 'local-default-demo-account',
-    };
-  }
-
-  return null;
+  return resolveSmokeCredentials({
+    allowLocalDefaults: true,
+    backendUrl,
+    defaultEmail: DEFAULT_DEMO_EMAIL,
+    defaultPassword: DEFAULT_DEMO_PASSWORD,
+    looksLocalUrl,
+  });
 }
 
 function loadBudget(outputDir) {
@@ -293,7 +290,11 @@ function loadBudget(outputDir) {
 
 function recordBudgetHit(outputDir, key, count, note) {
   const { budgetPath, budget } = loadBudget(outputDir);
-  if (!budget || !budget.limits || !Object.prototype.hasOwnProperty.call(budget.limits, key)) {
+  if (
+    !budget ||
+    !budget.limits ||
+    !Object.prototype.hasOwnProperty.call(budget.limits, key)
+  ) {
     return;
   }
 
@@ -395,7 +396,11 @@ function normalizeMealTypeName(value) {
   if (['3', 'dinner', 'bữa tối', 'bua toi', 'tối', 'toi'].includes(normalized)) {
     return 'dinner';
   }
-  if (['4', 'snack', 'bữa phụ', 'bua phu', 'phụ', 'phu', 'chiều', 'chieu'].includes(normalized)) {
+  if (
+    ['4', 'snack', 'bữa phụ', 'bua phu', 'phụ', 'phu', 'chiều', 'chieu'].includes(
+      normalized,
+    )
+  ) {
     return 'snack';
   }
 
@@ -406,9 +411,7 @@ function collectExpectedVoiceFoods(voiceCase, parseBody) {
   const expectedFoods = Array.isArray(voiceCase.expectedFoods)
     ? voiceCase.expectedFoods
     : [];
-  const caseFoods = expectedFoods
-    .map((food) => trim(food).toLowerCase())
-    .filter(Boolean);
+  const caseFoods = expectedFoods.map((food) => trim(food).toLowerCase()).filter(Boolean);
   if (caseFoods.length > 0) {
     return [...new Set(caseFoods)];
   }
@@ -437,9 +440,13 @@ function collectExpectedVoiceFoods(voiceCase, parseBody) {
 
 async function readVoiceDiaryEntry(backendUrl, token, parseBody, voiceCase) {
   const entities = parseBody?.entities || {};
-  const rawDate = trim(voiceCase.readbackDate || entities.date || new Date().toISOString());
+  const rawDate = trim(
+    voiceCase.readbackDate || entities.date || new Date().toISOString(),
+  );
   const dateOnly = rawDate.includes('T') ? rawDate.slice(0, 10) : rawDate.slice(0, 10);
-  const expectedMealType = normalizeMealTypeName(voiceCase.expectedMealType || entities.mealType);
+  const expectedMealType = normalizeMealTypeName(
+    voiceCase.expectedMealType || entities.mealType,
+  );
   const expectedFoods = collectExpectedVoiceFoods(voiceCase, parseBody);
   const result = {
     attempted: true,
@@ -489,13 +496,20 @@ async function readVoiceDiaryEntry(backendUrl, token, parseBody, voiceCase) {
       .filter(Boolean)
       .join(' ');
     const foodMatches =
-      expectedFoods.length === 0 || expectedFoods.some((food) => searchableText.includes(food));
+      expectedFoods.length === 0 ||
+      expectedFoods.some((food) => searchableText.includes(food));
     return mealMatches && foodMatches;
   });
 
   result.matchedFoods = matches
     .map((entry) =>
-      trim(entry?.foodItemName || entry?.userDishName || entry?.recipeName || entry?.note || ''),
+      trim(
+        entry?.foodItemName ||
+          entry?.userDishName ||
+          entry?.recipeName ||
+          entry?.note ||
+          '',
+      ),
     )
     .filter(Boolean);
   result.passed = matches.length > 0;
@@ -617,27 +631,39 @@ async function runVoiceCases(backendUrl, manifest, token, allowMutations) {
         parseResponse.body?.entities?.weight;
 
       if (executeResponse.ok && Number.isFinite(Number(newWeight))) {
-        const confirmResponse = await requestJson(`${backendUrl}/api/voice/confirm-weight`, {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json',
+        const confirmResponse = await requestJson(
+          `${backendUrl}/api/voice/confirm-weight`,
+          {
+            method: 'POST',
+            headers: {
+              Authorization: `Bearer ${token}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              newWeight: Number(newWeight),
+            }),
           },
-          body: JSON.stringify({
-            newWeight: Number(newWeight),
-          }),
-        });
+        );
         result.execute.status = confirmResponse.status;
         result.execute.latencyMs =
-          Number(executeResponse.durationMs || 0) + Number(confirmResponse.durationMs || 0);
-        result.execute.passed = Boolean(confirmResponse.ok && confirmResponse.body?.success);
-        result.execute.error = confirmResponse.error || confirmResponse.body?.error || null;
+          Number(executeResponse.durationMs || 0) +
+          Number(confirmResponse.durationMs || 0);
+        result.execute.passed = Boolean(
+          confirmResponse.ok && confirmResponse.body?.success,
+        );
+        result.execute.error =
+          confirmResponse.error || confirmResponse.body?.error || null;
       } else {
         result.execute.passed = false;
-        result.execute.error = executeResponse.error || executeResponse.body?.error || 'Missing newWeight confirmation payload.';
+        result.execute.error =
+          executeResponse.error ||
+          executeResponse.body?.error ||
+          'Missing newWeight confirmation payload.';
       }
     } else {
-      result.execute.passed = Boolean(executeResponse.ok && executeResponse.body?.success);
+      result.execute.passed = Boolean(
+        executeResponse.ok && executeResponse.body?.success,
+      );
       result.execute.error = executeResponse.error || executeResponse.body?.error || null;
     }
 
@@ -757,7 +783,9 @@ async function runScanCases(backendUrl, manifest, token, fixtureDir, outputDir) 
   const results = [];
 
   for (const bucket of buckets) {
-    const fixtures = Array.isArray(manifest.fixtures?.[bucket]) ? manifest.fixtures[bucket] : [];
+    const fixtures = Array.isArray(manifest.fixtures?.[bucket])
+      ? manifest.fixtures[bucket]
+      : [];
     for (const fixture of fixtures) {
       const relativePath = trim(fixture.relativePath || fixture.fileName || '');
       const filePath = relativePath
@@ -784,7 +812,12 @@ async function runScanCases(backendUrl, manifest, token, fixtureDir, outputDir) 
         continue;
       }
 
-      recordBudgetHit(outputDir, 'visionDetect', 1, `regression detect ${bucket}:${fixture.key}`);
+      recordBudgetHit(
+        outputDir,
+        'visionDetect',
+        1,
+        `regression detect ${bucket}:${fixture.key}`,
+      );
       const upload = prepareFixtureForUpload(filePath, outputDir);
       const response = await requestMultipart(
         `${backendUrl}/api/ai/vision/detect`,
@@ -804,7 +837,9 @@ async function runScanCases(backendUrl, manifest, token, fixtureDir, outputDir) 
       result.uploadBytes = upload.uploadSize;
       result.optimizedUpload = upload.optimized;
       result.optimizationError = upload.optimizationError || null;
-      result.mappedCount = items.filter((item) => Boolean(item?.isMatched ?? item?.foodItemId)).length;
+      result.mappedCount = items.filter((item) =>
+        Boolean(item?.isMatched ?? item?.foodItemId),
+      ).length;
       result.unmappedCount = unmappedLabels.length;
       result.usableResult = usableResult;
       result.passed =
@@ -830,8 +865,12 @@ function buildSummary(results) {
     .filter((entry) => entry.execute.passed)
     .map((entry) => entry.execute.latencyMs)
     .filter((value) => Number.isFinite(value));
-  const primaryScans = results.scan.filter((entry) => entry.bucket === 'primary' && entry.exists);
-  const benchmarkScans = results.scan.filter((entry) => entry.bucket === 'benchmark' && entry.exists);
+  const primaryScans = results.scan.filter(
+    (entry) => entry.bucket === 'primary' && entry.exists,
+  );
+  const benchmarkScans = results.scan.filter(
+    (entry) => entry.bucket === 'benchmark' && entry.exists,
+  );
 
   return {
     search: {
@@ -840,7 +879,8 @@ function buildSummary(results) {
       positivePassed: searchPositive.filter((entry) => entry.passed).length,
       emptyCases: searchEmpty.length,
       emptyPassed: searchEmpty.filter((entry) => entry.passed).length,
-      actualEmptyResponses: results.search.filter((entry) => entry.resultCount === 0).length,
+      actualEmptyResponses: results.search.filter((entry) => entry.resultCount === 0)
+        .length,
     },
     voice: {
       attempted: results.voice.length,
@@ -849,8 +889,11 @@ function buildSummary(results) {
       reviewRequired: results.voice.filter((entry) => entry.parse.reviewRequired).length,
       executeAttempted: results.voice.filter((entry) => entry.execute.attempted).length,
       executePassed: results.voice.filter((entry) => entry.execute.passed).length,
-      diaryReadbackAttempted: results.voice.filter((entry) => entry.diaryReadback.attempted).length,
-      diaryReadbackPassed: results.voice.filter((entry) => entry.diaryReadback.passed).length,
+      diaryReadbackAttempted: results.voice.filter(
+        (entry) => entry.diaryReadback.attempted,
+      ).length,
+      diaryReadbackPassed: results.voice.filter((entry) => entry.diaryReadback.passed)
+        .length,
       parseLatencyAvgMs: average(voiceParseLatencies),
       parseLatencyP95Ms: percentile(voiceParseLatencies, 95),
       executeLatencyAvgMs: average(voiceExecuteLatencies),
@@ -876,7 +919,8 @@ function buildSummary(results) {
 
 async function main() {
   const outputDir = resolveOutputDir(process.argv[2]);
-  const preflight = readJsonIfExists(path.join(outputDir, 'preflight-results.json')) || {};
+  const preflight =
+    readJsonIfExists(path.join(outputDir, 'preflight-results.json')) || {};
   const manifest = readJsonIfExists(path.join(outputDir, 'fixture-manifest.json')) || {};
   const backendUrl = normalizeBaseUrl(
     process.env.EATFITAI_SMOKE_BACKEND_URL || preflight.backendUrl,

@@ -5,23 +5,22 @@ import {
   TouchableOpacity,
   ScrollView,
   RefreshControl,
+  TextInput,
+  Image,
 } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { FadeInDown, Layout, FadeOut } from 'react-native-reanimated';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import Screen from '../../../components/Screen';
 import { ThemedText } from '../../../components/ThemedText';
-import { ThemedTextInput } from '../../../components/ThemedTextInput';
-import Button from '../../../components/Button';
-import { AppCard } from '../../../components/ui/AppCard';
 import { useAppTheme } from '../../../theme/ThemeProvider';
 import { aiService } from '../../../services/aiService';
 import type { RootStackParamList } from '../../types';
 import type { RecipeSuggestion } from '../../../types/aiEnhanced';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 type RouteProps = RouteProp<RootStackParamList, 'RecipeSuggestions'>;
@@ -32,57 +31,56 @@ const POPULAR_INGREDIENTS = [
   'Thịt bò',
   'Cà chua',
   'Khoai tây',
-  'Cà rốt',
   'Hành tây',
   'Tỏi',
   'Gạo',
-  'Mì',
   'Đậu phụ',
 ];
 
+const P = {
+  primary: '#4be277',
+  primaryContainer: '#22c55e',
+  surface: '#0e1322',
+  surfaceContainerLow: '#161b2b',
+  surfaceContainerHigh: 'rgba(37, 41, 58, 0.7)',
+  surfaceContainerLowest: '#090e1c',
+  onSurface: '#dee1f7',
+  onSurfaceVariant: '#bccbb9',
+  onPrimary: '#003915',
+  glassBorder: 'rgba(255,255,255,0.08)',
+  glassHeader: 'rgba(22, 27, 43, 0.6)',
+  danger: '#ffb4ab',
+};
+
+const DUMMY_IMAGES = [
+  "https://lh3.googleusercontent.com/aida-public/AB6AXuDkPxIplDyeONp_vJiPgRP9EW8RoZM3JbhwNM_m-RuN4-VbxdI0wZ7GSo-ZaJC1FiQg0qZAaXoa5bDcNN7yFtfjv0COjoDcA7mV2jJxznij2k8eFuar5HgcugqzCUrUw0DDBN7LHa9PV9WHN7XtXYo16jZpLXq9Yp41P2LoigkRXdviz1dDzRD2ciDCo4kb5d4PxtXlFpLSu6Y9EKlH2nf8ZdRPtV-KBl_Me3V7z0vo6v7Z5kAb8pgQgPy-GW_HNrY3GrbxpKaVAVQ",
+  "https://lh3.googleusercontent.com/aida-public/AB6AXuAukILvQNoq71Oq5m173g7C5FBqvtI4EI6F99iYC5D_rxoimx2XLrR-naIwXyc7HU8gwk-lW_RVQcIEB03s0vU-6VN6qLrt3B-sLVM9or1_aHo3vcxXoSLiqM0NHbSpz6x3eqN7hHGNs2ZFFFSYbiuN8OylajF-6_keIerdbIye7Vf49E4WK21rRkzottpDUNOK4OsMS-N1F4XIFvx47oE4MqL-Xn7WTjv7kS4kjZ6I5wFX7BsoKhsLRtaxWz94VwNMuvw6mIAN064",
+  "https://lh3.googleusercontent.com/aida-public/AB6AXuB3hPK0Hob1eHqbdkBE-ckh0GdR84ek_HNKh1Pl0wKDWHrNshSGfOc6lB38EvpD-FKGK5hvdJWtDO5M7M9s377sx1bEQvuYk24Cv3B52ogRpHPnUMr4--h6JirsfpGJB-PZ8nhx5GTmqj_i7w0VYkHnx5w62gFzhdm3luXM8T2MA6UB_HFl4waKj-sxAaGpX6-Y1xtgGVDcgUTdiFsGivqmp7P69DgEEx75Z1ZSRAzQTX-J4X06yyLd7xANQjxxTLuoNyF5FASMXWg",
+  "https://lh3.googleusercontent.com/aida-public/AB6AXuC1oYs0RykK8I-wEhX1LQnzONtN6EiE1cvMhm5W145lb1jvI8giPgzWHB5khpzmBAqWhHynXB_wBGubDuPqE_Kr46LYUwkaTQfvxBRTMH_1wHv0IdVwIKkQNfrOAB6FMWNXTbPwxrVRMBi2Tl8-BWHpqVI9P39HwRi3PxbmCK5XetFuYsNdcyMe4P-hbbISlEt7vi08RVlOKucOPh4OY4bPfosnfjMju8Qt4jKXoWLgB3cyqT9JbGN0LCSMJcL2xIgewveqIIhDyLw"
+];
+
 const RecipeSuggestionsScreen = (): React.ReactElement => {
-  const { theme } = useAppTheme();
-  const isDark = theme.mode === 'dark';
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<RouteProps>();
   const insets = useSafeAreaInsets();
 
   const [ingredients, setIngredients] = useState<string[]>([]);
   const [newIngredient, setNewIngredient] = useState('');
-  const [recipes, setRecipes] = useState<RecipeSuggestion[]>([]);
+  const [recipes, setRecipes] = useState<RecipeSuggestion[]>(
+    route.params?.recipes ?? [],
+  );
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (route.params?.ingredients) {
-      setIngredients(route.params.ingredients);
-    }
-  }, [route.params?.ingredients]);
-
-  const addIngredient = (ing: string) => {
-    const trimmed = ing.trim();
-    if (trimmed && !ingredients.includes(trimmed)) {
-      setIngredients([...ingredients, trimmed]);
-    }
-    setNewIngredient('');
-  };
-
-  const removeIngredient = (ing: string) => {
-    setIngredients(ingredients.filter((i) => i !== ing));
-  };
-
-  const searchRecipes = async () => {
-    if (ingredients.length === 0) return;
+  async function searchRecipes(overrideIngredients?: string[]) {
+    const ingredientsToUse = overrideIngredients ?? ingredients;
+    if (ingredientsToUse.length === 0) return;
 
     setLoading(true);
     setError(null);
-    setRecipes([]); // Clear previous results to show loading skeleton
+    setRecipes([]);
     try {
-      const results = await aiService.suggestRecipesEnhanced({
-        availableIngredients: ingredients,
-        maxResults: 10,
-        minMatchedIngredients: 1,
-      });
+      const results = await aiService.suggestRecipes(ingredientsToUse);
       setRecipes(results);
       if (results.length === 0) {
         setError('Không tìm thấy công thức nào phù hợp.');
@@ -92,257 +90,49 @@ const RecipeSuggestionsScreen = (): React.ReactElement => {
     } finally {
       setLoading(false);
     }
+  }
+
+  useEffect(() => {
+    if (route.params?.ingredients) {
+      setIngredients(route.params.ingredients);
+    }
+  }, [route.params?.ingredients]);
+
+  useEffect(() => {
+    if (route.params?.recipes?.length) {
+      setRecipes(route.params.recipes);
+      setError(null);
+      setLoading(false);
+      return;
+    }
+
+    if ((route.params?.ingredients?.length ?? 0) > 0) {
+      void searchRecipes(route.params.ingredients);
+    }
+  }, [route.params?.recipes, route.params?.ingredients]);
+
+  const addIngredient = (ing?: string) => {
+    const val = (ing ?? newIngredient).trim();
+    if (val && !ingredients.includes(val)) {
+      setIngredients([...ingredients, val]);
+    }
+    if (!ing) setNewIngredient('');
   };
 
-  const styles = StyleSheet.create({
-    container: {
-      flex: 1,
-      backgroundColor: theme.colors.background,
-    },
-    screenHeader: {
-      paddingHorizontal: 16,
-      paddingBottom: 8,
-    },
-    headerRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-    },
-    backButton: {
-      width: 40,
-      height: 40,
-      borderRadius: 12,
-      backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)',
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-    headerTitles: {
-      flex: 1,
-      alignItems: 'center',
-      marginRight: 40,
-    },
-    content: {
-      flex: 1,
-      padding: theme.spacing.md,
-    },
-    inputSection: {
-      backgroundColor: theme.colors.card,
-      padding: theme.spacing.md,
-      borderRadius: theme.borderRadius.card,
-      marginBottom: theme.spacing.md,
-      ...theme.shadows.sm,
-    },
-    inputContainer: {
-      flexDirection: 'row',
-      marginBottom: theme.spacing.md,
-      gap: theme.spacing.sm,
-    },
-    input: {
-      flex: 1,
-    },
-    sectionLabel: {
-      marginBottom: theme.spacing.sm,
-      color: theme.colors.textSecondary,
-      fontSize: 12,
-      fontWeight: '600',
-      textTransform: 'uppercase',
-    },
-    chipsContainer: {
-      flexDirection: 'row',
-      flexWrap: 'wrap',
-      gap: theme.spacing.sm,
-    },
-    chip: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      backgroundColor: theme.colors.primaryLight,
-      paddingHorizontal: theme.spacing.md,
-      paddingVertical: 6,
-      borderRadius: theme.radius.full,
-      gap: theme.spacing.xs,
-      borderWidth: 1,
-      borderColor: theme.colors.primary,
-    },
-    suggestionChip: {
-      backgroundColor: theme.colors.background,
-      paddingHorizontal: theme.spacing.md,
-      paddingVertical: 6,
-      borderRadius: theme.radius.full,
-      borderWidth: 1,
-      borderColor: theme.colors.border,
-      flexDirection: 'row',
-      alignItems: 'center',
-    },
-    recipeCard: {
-      marginBottom: theme.spacing.md,
-      padding: 0,
-      overflow: 'hidden',
-      borderWidth: 1,
-      borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)',
-      borderRadius: 20,
-      backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : theme.colors.card,
-      ...theme.shadows.md,
-    },
-    cardContent: {
-      padding: 16,
-    },
-    recipeHeader: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'flex-start',
-      marginBottom: 8,
-    },
-    recipeTitleRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 8,
-      marginBottom: 4,
-    },
-    recipeEmoji: {
-      fontSize: 24,
-    },
-    matchBadge: {
-      paddingHorizontal: 12,
-      paddingVertical: 6,
-      borderRadius: 12,
-    },
-    nutritionRow: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      marginTop: 16,
-      gap: 8,
-    },
-    nutritionPill: {
-      flex: 1,
-      alignItems: 'center',
-      paddingVertical: 10,
-      paddingHorizontal: 8,
-      borderRadius: 12,
-    },
-    nutritionItem: {
-      alignItems: 'center',
-    },
-    missingIngredients: {
-      marginTop: theme.spacing.sm,
-      fontStyle: 'italic',
-      fontSize: 13,
-    },
-    center: {
-      alignItems: 'center',
-      justifyContent: 'center',
-      padding: theme.spacing.xl,
-    },
-    skeletonCard: {
-      height: 160,
-      backgroundColor: theme.colors.card,
-      borderRadius: theme.borderRadius.card,
-      marginBottom: theme.spacing.md,
-      opacity: 0.5,
-    },
-  });
-
-  const renderRecipeItem = ({
-    item,
-    index,
-  }: {
-    item: RecipeSuggestion;
-    index: number;
-  }) => (
-    <Animated.View
-      entering={FadeInDown.delay(index * 100).springify()}
-      layout={Layout.springify()}
-    >
-      <AppCard
-        style={styles.recipeCard}
-        onPress={() =>
-          navigation.navigate('RecipeDetail', {
-            recipeId: item.recipeId,
-            recipeName: item.recipeName,
-          })
-        }
-      >
-        <View style={styles.cardContent}>
-          <View style={styles.recipeHeader}>
-            <View style={{ flex: 1, marginRight: 8 }}>
-              <View style={styles.recipeTitleRow}>
-                <ThemedText style={styles.recipeEmoji}>🍲</ThemedText>
-                <ThemedText variant="h4" weight="700" numberOfLines={2} style={{ flex: 1 }}>
-                  {item.recipeName}
-                </ThemedText>
-              </View>
-              <ThemedText variant="caption" color="textSecondary">
-                Có {item.matchedIngredientsCount}/{item.totalIngredientsCount} nguyên liệu
-              </ThemedText>
-            </View>
-            <LinearGradient
-              colors={theme.gradients.primary}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.matchBadge}
-            >
-              <ThemedText variant="caption" style={{ color: '#FFF', fontWeight: 'bold' }}>
-                {Math.round(item.matchPercentage)}%
-              </ThemedText>
-            </LinearGradient>
-          </View>
-
-          {item.missingIngredients.length > 0 && (
-            <View style={{ flexDirection: 'row', gap: 6, marginTop: 8, backgroundColor: isDark ? 'rgba(251, 191, 36, 0.1)' : 'rgba(251, 191, 36, 0.15)', padding: 10, borderRadius: 10 }}>
-              <Ionicons
-                name="alert-circle"
-                size={16}
-                color={theme.colors.warning}
-              />
-              <ThemedText variant="caption" color="textSecondary" style={{ flex: 1 }}>
-                Thiếu: {item.missingIngredients.join(', ')}
-              </ThemedText>
-            </View>
-          )}
-
-          <View style={styles.nutritionRow}>
-            <View style={[styles.nutritionPill, { backgroundColor: 'rgba(239, 68, 68, 0.15)' }]}>
-              <ThemedText variant="caption" style={{ color: '#EF4444', fontWeight: '600' }}>
-                {Math.round(item.totalCalories)}
-              </ThemedText>
-              <ThemedText variant="caption" color="textSecondary" style={{ fontSize: 10 }}>
-                kcal
-              </ThemedText>
-            </View>
-            <View style={[styles.nutritionPill, { backgroundColor: 'rgba(59, 130, 246, 0.15)' }]}>
-              <ThemedText variant="caption" style={{ color: '#3B82F6', fontWeight: '600' }}>
-                {Math.round(item.totalProtein)}g
-              </ThemedText>
-              <ThemedText variant="caption" color="textSecondary" style={{ fontSize: 10 }}>
-                Đạm
-              </ThemedText>
-            </View>
-            <View style={[styles.nutritionPill, { backgroundColor: 'rgba(251, 191, 36, 0.15)' }]}>
-              <ThemedText variant="caption" style={{ color: '#D97706', fontWeight: '600' }}>
-                {Math.round(item.totalCarbs)}g
-              </ThemedText>
-              <ThemedText variant="caption" color="textSecondary" style={{ fontSize: 10 }}>
-                Carb
-              </ThemedText>
-            </View>
-            <View style={[styles.nutritionPill, { backgroundColor: 'rgba(236, 72, 153, 0.15)' }]}>
-              <ThemedText variant="caption" style={{ color: '#DB2777', fontWeight: '600' }}>
-                {Math.round(item.totalFat)}g
-              </ThemedText>
-              <ThemedText variant="caption" color="textSecondary" style={{ fontSize: 10 }}>
-                Béo
-              </ThemedText>
-            </View>
-          </View>
-        </View>
-      </AppCard>
-    </Animated.View>
-  );
+  const toggleIngredient = (ing: string) => {
+    if (ingredients.includes(ing)) {
+      setIngredients(ingredients.filter((i) => i !== ing));
+    } else {
+      addIngredient(ing);
+    }
+  };
 
   const renderSkeleton = () => (
-    <View>
+    <View style={S.skeletonWrap}>
       {[1, 2, 3].map((key) => (
         <Animated.View
           key={key}
-          style={styles.skeletonCard}
+          style={S.skeletonCard}
           entering={FadeInDown.delay(key * 100)}
           exiting={FadeOut}
         />
@@ -351,156 +141,345 @@ const RecipeSuggestionsScreen = (): React.ReactElement => {
   );
 
   return (
-    <Screen style={styles.container} scroll={false}>
-      {/* Custom Header */}
-      <View style={[styles.screenHeader, { paddingTop: insets.top }]}>
-        <View style={styles.headerRow}>
-          <TouchableOpacity
-            onPress={() => navigation.goBack()}
-            style={styles.backButton}
-          >
-            <ThemedText style={{ fontSize: 18 }}>←</ThemedText>
+    <View style={S.container}>
+      {/* ═══ Header ═══ */}
+      <View style={[S.header, { paddingTop: insets.top + 10 }]}>
+        <View style={S.headerLeft}>
+          <TouchableOpacity onPress={() => navigation.goBack()} style={S.iconBtn}>
+            <Ionicons name="arrow-back" size={24} color={P.primary} />
           </TouchableOpacity>
-          <View style={styles.headerTitles}>
-            <ThemedText variant="h3" weight="700">
-              Gợi ý món ăn
-            </ThemedText>
-          </View>
+          <ThemedText style={S.headerTitle}>Gợi ý công thức</ThemedText>
         </View>
       </View>
 
       <ScrollView
-        style={styles.content}
+        contentContainerStyle={[S.scrollContent, { paddingTop: insets.top + 80 }]}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
-        <View style={styles.inputSection}>
-          <View style={styles.inputContainer}>
-            <View style={styles.input}>
-              <ThemedTextInput
-                placeholder="Nhập nguyên liệu..."
-                value={newIngredient}
-                onChangeText={setNewIngredient}
-                onSubmitEditing={() => addIngredient(newIngredient)}
-              />
-            </View>
-            <View style={{ width: 80 }}>
-              <Button
-                title="Thêm"
-                onPress={() => addIngredient(newIngredient)}
-                variant="secondary"
-                size="sm"
-              />
-            </View>
-          </View>
-
-          {ingredients.length > 0 ? (
-            <View style={{ marginBottom: theme.spacing.md }}>
-              <ThemedText style={styles.sectionLabel}>Đã chọn:</ThemedText>
-              <View style={styles.chipsContainer}>
-                {ingredients.map((ing, index) => (
-                  <TouchableOpacity
-                    key={index}
-                    style={styles.chip}
-                    onPress={() => removeIngredient(ing)}
-                  >
-                    <ThemedText variant="caption" color="primary" weight="600">
-                      {ing}
-                    </ThemedText>
-                    <Ionicons
-                      name="close-circle"
-                      size={16}
-                      color={theme.colors.primary}
-                    />
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </View>
-          ) : (
-            <ThemedText
-              variant="caption"
-              color="textSecondary"
-              style={{ marginBottom: theme.spacing.md, fontStyle: 'italic' }}
-            >
-              Chưa có nguyên liệu nào được chọn
-            </ThemedText>
-          )}
-
-          <View>
-            <ThemedText style={styles.sectionLabel}>Gợi ý nhanh:</ThemedText>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={{ gap: 8 }}
-            >
-              {POPULAR_INGREDIENTS.filter((i) => !ingredients.includes(i)).map(
-                (ing, index) => (
-                  <TouchableOpacity
-                    key={index}
-                    style={styles.suggestionChip}
-                    onPress={() => addIngredient(ing)}
-                  >
-                    <ThemedText variant="caption">{ing}</ThemedText>
-                    <Ionicons
-                      name="add"
-                      size={14}
-                      color={theme.colors.textSecondary}
-                      style={{ marginLeft: 4 }}
-                    />
-                  </TouchableOpacity>
-                ),
-              )}
-            </ScrollView>
+        {/* ═══ Search Section ═══ */}
+        <View style={S.searchSection}>
+          <View style={S.searchBox}>
+            <Ionicons name="search" size={20} color={P.onSurfaceVariant} style={S.searchIcon} />
+            <TextInput
+              style={S.searchInput}
+              placeholder="Nhập nguyên liệu (VD: Thịt gà)..."
+              placeholderTextColor={P.onSurfaceVariant}
+              value={newIngredient}
+              onChangeText={setNewIngredient}
+              onSubmitEditing={() => addIngredient()}
+            />
+            {newIngredient.length > 0 && (
+              <TouchableOpacity onPress={() => addIngredient()} style={S.addBtnInside}>
+                <Ionicons name="add-circle" size={24} color={P.primary} />
+              </TouchableOpacity>
+            )}
           </View>
         </View>
 
-        <Button
-          title="Tìm công thức ngay"
-          onPress={searchRecipes}
-          disabled={ingredients.length === 0 || loading}
-          variant="primary"
-          style={{ marginBottom: theme.spacing.lg, ...theme.shadows.md }}
-        />
+        {/* ═══ Categories / Ingredients Chips ═══ */}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={S.chipsScroll}
+          style={S.chipsSection}
+        >
+          {POPULAR_INGREDIENTS.map((ing) => {
+            const isActive = ingredients.includes(ing);
+            return (
+              <TouchableOpacity
+                key={ing}
+                onPress={() => toggleIngredient(ing)}
+                style={[S.chipBadge, isActive && S.chipBadgeActive]}
+              >
+                <ThemedText style={[S.chipBadgeText, isActive && S.chipBadgeTextActive]}>
+                  {ing}
+                </ThemedText>
+                {isActive && (
+                  <Ionicons name="close" size={14} color={P.onSurface} style={{ marginLeft: 4 }} />
+                )}
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
 
-        {loading ? (
-          renderSkeleton()
-        ) : error ? (
-          <View style={styles.center}>
-            <Ionicons name="alert-circle" size={48} color={theme.colors.danger} />
-            <ThemedText color="danger" style={{ marginTop: 8 }}>
-              {error}
-            </ThemedText>
-          </View>
-        ) : recipes.length === 0 ? (
-          <View style={styles.center}>
-            <Ionicons name="restaurant-outline" size={64} color={theme.colors.border} />
-            <ThemedText
-              color="textSecondary"
-              style={{ marginTop: 16, textAlign: 'center' }}
-            >
-              Hãy thêm nguyên liệu và nhấn tìm kiếm{'\n'}để nhận gợi ý món ăn ngon!
-            </ThemedText>
-          </View>
-        ) : (
-          <ScrollView
-            showsVerticalScrollIndicator={false}
-            refreshControl={
-              <RefreshControl
-                refreshing={loading}
-                onRefresh={searchRecipes}
-                colors={[theme.colors.primary]}
-                tintColor={theme.colors.primary}
-              />
-            }
+        {/* Action Button If Ingredients Exist */}
+        {ingredients.length > 0 && (
+          <TouchableOpacity
+            style={S.mainActionBtn}
+            onPress={() => searchRecipes()}
+            disabled={loading}
           >
-            {recipes.map((item, index) => (
-              <View key={item.recipeId}>{renderRecipeItem({ item, index })}</View>
-            ))}
-          </ScrollView>
+            <ThemedText style={S.mainActionBtnText}>
+              {loading ? 'Đang tìm...' : 'Khám phá công thức'}
+            </ThemedText>
+          </TouchableOpacity>
         )}
+
+        {/* ═══ Results Section ═══ */}
+        <View style={S.resultsWrap}>
+          {loading ? (
+            renderSkeleton()
+          ) : error ? (
+            <View style={S.center}>
+              <Ionicons name="alert-circle" size={48} color={P.danger} />
+              <ThemedText style={S.errorText}>{error}</ThemedText>
+            </View>
+          ) : recipes.length === 0 ? (
+            <View style={S.centerEmpty}>
+              <Ionicons name="restaurant-outline" size={64} color={P.onSurfaceVariant} />
+              <ThemedText style={S.emptyText}>
+                Hãy nhập nguyên liệu phía trên để{'\n'}chúng tôi lên thực đơn cho bạn!
+              </ThemedText>
+            </View>
+          ) : (
+            <>
+              {/* Featured AI Card (Index 0) */}
+              <Animated.View entering={FadeInDown.springify()} style={S.featuredCard}>
+                <View style={S.featuredContent}>
+                  {/* Left Side / Top - Image Space */}
+                  <View style={S.featuredImageWrap}>
+                    <Image source={{ uri: DUMMY_IMAGES[0] }} style={S.cardImageFull} />
+                  </View>
+                  {/* Right Side / Bottom - Details */}
+                  <View style={S.featuredDetails}>
+                    <View style={S.aiBadge}>
+                      <Ionicons name="sparkles" size={12} color={P.primary} />
+                      <ThemedText style={S.aiBadgeText}>AI RECOMMENDED FOR YOU</ThemedText>
+                    </View>
+                    <ThemedText style={S.featuredTitle} numberOfLines={2}>
+                      {recipes[0]?.recipeName}
+                    </ThemedText>
+                    <View style={S.tagsRow}>
+                      <View style={S.tagSubBadge}>
+                        <ThemedText style={S.tagText}>Trùng {recipes[0]?.matchedIngredientsCount}/{recipes[0]?.totalIngredientsCount}</ThemedText>
+                      </View>
+                      <View style={S.tagSubBadge}>
+                        <ThemedText style={S.tagText}>{Math.round(recipes[0]?.matchPercentage || 0)}% Phù hợp</ThemedText>
+                      </View>
+                    </View>
+                    <View style={S.metricsRow}>
+                      <View style={S.metric}>
+                        <Ionicons name="time-outline" size={14} color={P.onSurfaceVariant} />
+                        <ThemedText style={S.metricText}>~20m</ThemedText>
+                      </View>
+                      <View style={S.metric}>
+                        <Ionicons name="flame-outline" size={14} color={P.onSurfaceVariant} />
+                        <ThemedText style={S.metricText}>{Math.round(recipes[0]?.totalCalories || 0)} kcal</ThemedText>
+                      </View>
+                    </View>
+                    <TouchableOpacity
+                      style={S.viewRecipeBtn}
+                      onPress={() => navigation.navigate('RecipeDetail', { recipeId: recipes[0]?.recipeId!, recipeName: recipes[0]?.recipeName! })}
+                    >
+                      <ThemedText style={S.viewRecipeBtnText}>Xem Công Thức</ThemedText>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              </Animated.View>
+
+              {/* Grid 2 Columns for Explore More */}
+              {recipes.length > 1 && (
+                <View style={S.exploreSection}>
+                  <View style={S.exploreHeader}>
+                    <ThemedText style={S.exploreTitle}>Khám phá thêm</ThemedText>
+                    <ThemedText style={S.exploreLink}>Xem tất cả</ThemedText>
+                  </View>
+                  <View style={S.gridContainer}>
+                    {recipes.slice(1).map((item, idx) => (
+                      <Animated.View
+                        key={item.recipeId}
+                        entering={FadeInDown.delay((idx + 1) * 100).springify()}
+                        style={S.gridItem}
+                      >
+                        <TouchableOpacity
+                          style={S.gridCard}
+                          activeOpacity={0.8}
+                          onPress={() => navigation.navigate('RecipeDetail', { recipeId: item.recipeId, recipeName: item.recipeName })}
+                        >
+                          <View style={S.gridImageWrap}>
+                            {/* Cycle through dummy images */}
+                            <Image source={{ uri: DUMMY_IMAGES[(idx + 1) % 4] }} style={S.cardImageFull} />
+                            <View style={S.glassOverlayTag}>
+                              <ThemedText style={S.tagTextSmall}>{Math.round(item.matchPercentage)}% MATCH</ThemedText>
+                            </View>
+                          </View>
+                          <View style={S.gridCardBody}>
+                            <ThemedText style={S.gridTitle} numberOfLines={2}>{item.recipeName}</ThemedText>
+                            <View style={S.gridMetrics}>
+                              <View style={S.metric}>
+                                <Ionicons name="time-outline" size={12} color={P.onSurfaceVariant} />
+                                <ThemedText style={S.metricTextSmall}>20m</ThemedText>
+                              </View>
+                              <View style={S.metric}>
+                                <Ionicons name="flame-outline" size={12} color={P.primary} />
+                                <ThemedText style={S.metricTextSmall}>{Math.round(item.totalCalories)}</ThemedText>
+                              </View>
+                            </View>
+                          </View>
+                        </TouchableOpacity>
+                      </Animated.View>
+                    ))}
+                  </View>
+                </View>
+              )}
+            </>
+          )}
+        </View>
+
+        <View style={{ height: 60 }} />
       </ScrollView>
-    </Screen>
+    </View>
   );
 };
 
 export default RecipeSuggestionsScreen;
+
+/* ═══ Styles ═══ */
+const S = StyleSheet.create({
+  container: { flex: 1, backgroundColor: P.surface },
+  header: {
+    position: 'absolute',
+    top: 0, left: 0, right: 0,
+    zIndex: 50,
+    backgroundColor: P.glassHeader,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingBottom: 15,
+  },
+  headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  iconBtn: { padding: 8, borderRadius: 20 },
+  headerTitle: { fontFamily: 'Inter_800ExtraBold', fontSize: 20, color: P.onSurface },
+  scrollContent: { paddingHorizontal: 20 },
+
+  searchSection: { marginBottom: 16 },
+  searchBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: P.surfaceContainerLowest,
+    borderWidth: 1,
+    borderColor: P.glassBorder,
+    borderRadius: 16,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+  },
+  searchIcon: { marginRight: 12 },
+  searchInput: { flex: 1, fontSize: 16, fontFamily: 'Inter_500Medium', color: P.onSurface },
+  addBtnInside: { marginLeft: 8 },
+
+  chipsSection: { marginHorizontal: -20, marginBottom: 24 },
+  chipsScroll: { paddingHorizontal: 20, gap: 12 },
+  chipBadge: {
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 99,
+    backgroundColor: P.surfaceContainerHigh,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  chipBadgeActive: { backgroundColor: P.primary },
+  chipBadgeText: { fontSize: 13, fontFamily: 'Inter_600SemiBold', color: P.onSurfaceVariant },
+  chipBadgeTextActive: { color: P.onPrimary },
+
+  mainActionBtn: {
+    backgroundColor: P.primary,
+    borderRadius: 16,
+    paddingVertical: 16,
+    alignItems: 'center',
+    marginBottom: 24,
+    shadowColor: P.primary,
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
+    elevation: 5,
+  },
+  mainActionBtnText: { fontSize: 16, fontFamily: 'Inter_800ExtraBold', color: P.onPrimary },
+
+  resultsWrap: { minHeight: 400 },
+
+  /* Featured Card */
+  featuredCard: {
+    backgroundColor: P.surfaceContainerHigh,
+    borderRadius: 32,
+    borderWidth: 1,
+    borderColor: P.glassBorder,
+    marginBottom: 32,
+    shadowColor: P.primary,
+    shadowOpacity: 0.15,
+    shadowRadius: 30,
+    elevation: 10,
+    overflow: 'hidden',
+  },
+  featuredContent: { flexDirection: 'column' },
+  featuredImageWrap: { height: 200, width: '100%', backgroundColor: P.surfaceContainerLow },
+  cardImageFull: { width: '100%', height: '100%', resizeMode: 'cover' },
+  featuredDetails: { padding: 24, gap: 16 },
+  aiBadge: {
+    alignSelf: 'flex-start',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: P.primary + '20',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 99,
+  },
+  aiBadgeText: { fontSize: 10, fontFamily: 'Inter_800ExtraBold', color: P.primary, letterSpacing: 0.5 },
+  featuredTitle: { fontSize: 26, fontFamily: 'Inter_800ExtraBold', color: P.onSurface, lineHeight: 32 },
+  tagsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  tagSubBadge: {
+    backgroundColor: P.surfaceContainerLowest,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+  },
+  tagText: { fontSize: 11, fontFamily: 'Inter_600SemiBold', color: '#96d59d' },
+  metricsRow: { flexDirection: 'row', gap: 24, paddingVertical: 8 },
+  metric: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  metricText: { fontSize: 13, fontFamily: 'Inter_500Medium', color: P.onSurfaceVariant },
+  viewRecipeBtn: {
+    width: '100%',
+    backgroundColor: P.primary,
+    paddingVertical: 16,
+    borderRadius: 16,
+    alignItems: 'center',
+  },
+  viewRecipeBtnText: { fontSize: 15, fontFamily: 'Inter_800ExtraBold', color: P.onPrimary },
+
+  /* Grid Area */
+  exploreSection: { gap: 16 },
+  exploreHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  exploreTitle: { fontSize: 18, fontFamily: 'Inter_800ExtraBold', color: P.onSurfaceVariant },
+  exploreLink: { fontSize: 13, fontFamily: 'Inter_600SemiBold', color: P.primary },
+  gridContainer: { flexDirection: 'row', flexWrap: 'wrap', gap: 16 },
+  gridItem: { width: '47%' },
+  gridCard: {
+    backgroundColor: P.surfaceContainerHigh,
+    borderRadius: 24,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: P.glassBorder,
+  },
+  gridImageWrap: { height: 130, width: '100%', position: 'relative' },
+  glassOverlayTag: {
+    position: 'absolute',
+    bottom: 10, left: 10,
+    backgroundColor: P.primary + 'E6', // translucent primary
+    paddingHorizontal: 8, paddingVertical: 4,
+    borderRadius: 6,
+  },
+  tagTextSmall: { fontSize: 9, fontFamily: 'Inter_800ExtraBold', color: P.onPrimary },
+  gridCardBody: { padding: 12, gap: 8 },
+  gridTitle: { fontSize: 14, fontFamily: 'Inter_700Bold', color: P.onSurface, lineHeight: 20 },
+  gridMetrics: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  metricTextSmall: { fontSize: 11, fontFamily: 'Inter_500Medium', color: P.onSurfaceVariant },
+
+  /* Empty & Loading States */
+  centerEmpty: { alignItems: 'center', justifyContent: 'center', paddingVertical: 80 },
+  emptyText: { marginTop: 16, textAlign: 'center', color: P.onSurfaceVariant, fontSize: 14, fontFamily: 'Inter_500Medium', lineHeight: 22 },
+  center: { alignItems: 'center', justifyContent: 'center', paddingVertical: 60 },
+  errorText: { marginTop: 12, color: P.danger, fontFamily: 'Inter_600SemiBold', textAlign: 'center' },
+  skeletonWrap: { gap: 16 },
+  skeletonCard: { height: 180, borderRadius: 24, backgroundColor: P.surfaceContainerHigh, opacity: 0.5 },
+});

@@ -1,43 +1,39 @@
-# EatFitAI Windows Setup Guide
+# Hướng dẫn thiết lập EatFitAI trên Windows
 
-This is the canonical onboarding guide for local development.
+Cập nhật: `2026-04-18`
 
-## 0. One-command bootstrap
+Đây là hướng dẫn onboarding chính thức cho phát triển local.
 
-If the machine already has the required base runtimes installed, bootstrap the portable dev environment with:
+## 0. Bootstrap một lệnh
+
+Nếu máy đã cài sẵn các runtime cần thiết, bootstrap môi trường portable:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\tools\dev\Setup-WindowsPortableDevEnvironment.ps1
 ```
 
-This provisions the Appium lane, repairs the Android SDK command-line toolchain, creates the standard AVD, and runs the repo preflight.
+Script này provision lane Appium, sửa chữa Android SDK command-line toolchain, tạo AVD chuẩn, và chạy preflight.
 
-To move heavy Android/Ollama storage from `C:` to `D:` after the initial install:
+Để chuyển storage nặng (Android/Ollama) từ `C:` sang `D:`:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\tools\dev\Relocate-WindowsDevStorage.ps1
 ```
 
-This relocates:
-
-- Android SDK
-- Android AVD storage
-- Ollama model storage
-
-## 1. Required versions
+## 1. Phiên bản cần thiết
 
 - Node `20.x`
 - .NET SDK `9.0.306`
 - Python `3.11`
 - Java `17`
 - SQL Server 2022 Developer
-- Android Studio with:
+- Android Studio với:
   - `cmdline-tools`
   - `platform-tools`
   - `emulator`
   - Android 14 / API 34 / Google APIs Play Store / x86_64 system image
 
-Version pin files in this repo:
+File pin phiên bản trong repo:
 
 - `.nvmrc`
 - `.python-version`
@@ -45,42 +41,51 @@ Version pin files in this repo:
 
 ## 2. Backend secrets
 
-Backend secrets must be stored per machine with `dotnet user-secrets`.
+Backend secrets phải được lưu per machine bằng `dotnet user-secrets`.
 
-Project:
+Kiểm tra:
 
 ```powershell
 dotnet user-secrets list --project .\eatfitai-backend\EatFitAI.API.csproj
 ```
 
-Required keys:
+Các key bắt buộc:
 
 - `ConnectionStrings:DefaultConnection`
 - `Jwt:Key`
-- `Smtp:Host`
-- `Smtp:Port`
-- `Smtp:User`
-- `Smtp:Password`
-- `Smtp:FromEmail`
+- `Encryption:Key`
+- `AIProvider:InternalToken`
+- `Brevo:ApiKey`
+- `Brevo:SenderEmail`
+- `Brevo:SenderName`
 
-Detailed commands are documented in [JWT_CONFIGURATION.md](/D:/EatFitAI_v1/JWT_CONFIGURATION.md).
+Xem chi tiết tại [docs/SECRETS_SETUP.md](docs/SECRETS_SETUP.md).
 
-## 3. Local SQL Server
+### Cổng local chuẩn
 
-The canonical local database is `EatFitAI` on a local SQL Server instance.
+| Dịch vụ | Cổng |
+|---|---:|
+| Backend | `5247` |
+| AI provider | `5050` |
+| Metro (mobile) | `8081` |
+| Appium | `4723` |
 
-Important:
+## 3. SQL Server local
 
-- `sqdate13thang3t.sql` is a raw snapshot and contains machine-specific MDF/LDF paths.
-- Use the portable restore script instead of importing the raw file directly.
+Cơ sở dữ liệu local chuẩn là `EatFitAI` trên SQL Server instance local.
 
-Portable restore:
+Lưu ý quan trọng:
+
+- `sqdate13thang3t.sql` là raw snapshot chứa đường dẫn MDF/LDF cụ thể theo máy
+- Dùng script portable restore thay vì import file raw trực tiếp
+
+Khôi phục portable:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\tools\dev\Restore-EatFitAI-PortableSnapshot.ps1
 ```
 
-Verify database health:
+Xác minh database:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\tools\dev\Test-EatFitAIDatabase.ps1
@@ -88,21 +93,21 @@ powershell -ExecutionPolicy Bypass -File .\tools\dev\Test-EatFitAIDatabase.ps1
 
 ## 4. AI provider
 
-Create a local env file from the example:
+Tạo file env local từ example:
 
 ```powershell
 Copy-Item .\ai-provider\.env.example .\ai-provider\.env
 ```
 
-Expected local defaults:
+Giá trị mặc định local:
 
 - `OLLAMA_URL=http://localhost:11434`
 - `OLLAMA_MODEL=qwen2.5:3b`
 - `ENABLE_STT=false`
 
-`best.pt` should live in `ai-provider\` and is not committed to git.
+`best.pt` phải nằm trong `ai-provider\` và không commit vào git.
 
-Start AI provider:
+Khởi chạy:
 
 ```powershell
 cd .\ai-provider
@@ -120,7 +125,7 @@ curl http://127.0.0.1:5050/healthz
 
 ## 5. Backend
 
-Start backend:
+Khởi chạy:
 
 ```powershell
 cd .\eatfitai-backend
@@ -128,25 +133,23 @@ dotnet restore
 dotnet run
 ```
 
-Expected local URL:
-
-- `http://localhost:5247`
+URL local: `http://localhost:5247`
 
 ## 6. Mobile
 
-Create local mobile env if needed:
+Tạo file env mobile local nếu cần:
 
 ```powershell
 Copy-Item .\eatfitai-mobile\.env.development.example .\eatfitai-mobile\.env.development
 ```
 
-Default emulator config:
+Cấu hình emulator mặc định:
 
 ```env
 EXPO_PUBLIC_API_BASE_URL=http://10.0.2.2:5247
 ```
 
-Start mobile:
+Khởi chạy:
 
 ```powershell
 cd .\eatfitai-mobile
@@ -156,26 +159,26 @@ npm run dev
 
 ## 7. Android emulator-first lane
 
-Recommended AVD:
+AVD khuyến nghị:
 
 - Device: `Pixel 7`
 - API: `34`
 - Image: `Google APIs Play Store x86_64`
 
-Provision or repair the Android SDK command-line toolchain, required packages, and AVD with:
+Provision hoặc sửa chữa Android SDK:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\tools\dev\Install-AndroidSdkComponents.ps1 -PersistUserEnvironment
 ```
 
-The emulator is the default dev + Appium lane.
-Use a physical device only for sanity checks, camera validation, and live demo rehearsal.
+Emulator là lane mặc định cho dev + Appium.
+Thiết bị thật chỉ dùng cho sanity checks, camera validation, và live demo rehearsal.
 
 ## 8. Appium + MCP
 
-The repo includes an Appium smoke lane in `tools/appium`.
+Repo có lane Appium smoke trong `tools/appium`.
 
-Local setup:
+Thiết lập:
 
 ```powershell
 npm install -g appium
@@ -184,31 +187,31 @@ cd .\tools\appium
 npm install
 ```
 
-Then start Appium:
+Khởi chạy Appium:
 
 ```powershell
 appium
 ```
 
-See [tools/appium/README.md](/D:/EatFitAI_v1/tools/appium/README.md) for selectors, env vars, and smoke flow details.
+Xem [tools/appium/README.md](tools/appium/README.md) để biết selectors, env vars, và smoke flow.
 
-## 9. One-command preflight
+## 9. Preflight một lệnh
 
-Run the preflight before coding on a fresh machine:
+Chạy preflight trước khi code trên máy mới:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\tools\dev\Invoke-DevPreflight.ps1
 ```
 
-The environment is considered ready only when the preflight reports:
+Môi trường được coi là sẵn sàng khi preflight báo:
 
-- toolchain present
-- `ollama` present
-- user-secrets present
+- Toolchain có mặt
+- `ollama` có mặt
+- User-secrets có mặt
 - SQL Server reachable
-- `EatFitAI` database present
+- Database `EatFitAI` có mặt
 - AI provider health reachable
-- backend buildable
+- Backend buildable
 - Android tooling available
 - Android AVD available
 - Appium tooling available

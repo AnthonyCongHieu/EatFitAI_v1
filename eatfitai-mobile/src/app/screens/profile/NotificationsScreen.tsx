@@ -1,376 +1,338 @@
-// NotificationsScreen: Cài đặt thông báo
-// Meal reminders với time pickers
-
 import React, { useState, useEffect } from 'react';
-import {
-    ScrollView,
-    StyleSheet,
-    View,
-    Switch,
-    Pressable,
-} from 'react-native';
+import { ScrollView, StyleSheet, View, Switch, Pressable } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { LinearGradient } from 'expo-linear-gradient';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 
 import { ThemedText } from '../../../components/ThemedText';
-import Button from '../../../components/Button';
-import { SettingsMenuItem } from '../../../components/ui/SettingsMenuItem';
-import { glassStyles } from '../../../components/ui/GlassCard';
-import { useAppTheme } from '../../../theme/ThemeProvider';
 import { showSuccess, showInfo } from '../../../utils/errorHandler';
-import { scheduleNotifications, requestNotificationPermissions, cancelAllMealNotifications } from '../../../services/notificationService';
+import {
+  scheduleNotifications,
+  requestNotificationPermissions,
+  cancelAllMealNotifications,
+} from '../../../services/notificationService';
 
 // Storage key
 const NOTIFICATIONS_SETTINGS_KEY = '@eatfitai_notifications';
 
-// Default times
-const DEFAULT_MEAL_TIMES = {
-    breakfast: '07:00',
-    lunch: '12:00',
-    dinner: '19:00',
-    snack: '15:00',
-};
+const DEFAULT_MEAL_TIMES = { breakfast: '07:30', lunch: '12:00', dinner: '19:00', snack: '15:30' };
 
 interface NotificationSettings {
-    enabled: boolean;
-    breakfastEnabled: boolean;
-    breakfastTime: string;
-    lunchEnabled: boolean;
-    lunchTime: string;
-    dinnerEnabled: boolean;
-    dinnerTime: string;
-    snackEnabled: boolean;
-    snackTime: string;
-    weeklyReviewEnabled: boolean;
+  enabled: boolean;
+  breakfastEnabled: boolean; breakfastTime: string;
+  lunchEnabled: boolean; lunchTime: string;
+  dinnerEnabled: boolean; dinnerTime: string;
+  snackEnabled: boolean; snackTime: string;
+
+  waterReminderEnabled: boolean;
+  weeklyReviewEnabled: boolean;
+  goalAchievedEnabled: boolean;
+  streakRiskEnabled: boolean;
+
+  aiRecipeSuggestionsEnabled: boolean;
+  aiNutritionTipsEnabled: boolean;
+  aiAchievementUnlockedEnabled: boolean;
+
+  quietHoursEnabled: boolean;
+  quietHoursFrom: string;
+  quietHoursTo: string;
 }
 
 const defaultSettings: NotificationSettings = {
-    enabled: false,
-    breakfastEnabled: true,
-    breakfastTime: DEFAULT_MEAL_TIMES.breakfast,
-    lunchEnabled: true,
-    lunchTime: DEFAULT_MEAL_TIMES.lunch,
-    dinnerEnabled: true,
-    dinnerTime: DEFAULT_MEAL_TIMES.dinner,
-    snackEnabled: false,
-    snackTime: DEFAULT_MEAL_TIMES.snack,
-    weeklyReviewEnabled: true,
+  enabled: true,
+  breakfastEnabled: true, breakfastTime: DEFAULT_MEAL_TIMES.breakfast,
+  lunchEnabled: true, lunchTime: DEFAULT_MEAL_TIMES.lunch,
+  dinnerEnabled: true, dinnerTime: DEFAULT_MEAL_TIMES.dinner,
+  snackEnabled: false, snackTime: DEFAULT_MEAL_TIMES.snack,
+
+  waterReminderEnabled: true,
+  weeklyReviewEnabled: true,
+  goalAchievedEnabled: true,
+  streakRiskEnabled: true,
+
+  aiRecipeSuggestionsEnabled: false,
+  aiNutritionTipsEnabled: true,
+  aiAchievementUnlockedEnabled: true,
+
+  quietHoursEnabled: true,
+  quietHoursFrom: '22:00', // 10:00 PM
+  quietHoursTo: '07:00', // 07:00 AM
+};
+
+const P = {
+  primary: '#22c55e',
+  onPrimary: '#003915',
+  surface: '#0e1322',
+  surfaceContainerLowest: '#090e1c',
+  surfaceContainerLow: '#161b2b',
+  surfaceContainerHighest: '#2f3445',
+  surfaceGlass: 'rgba(37, 41, 58, 0.4)',
+  onSurface: '#dee1f7',
+  onSurfaceVariant: '#bccbb9',
+  glassBorder: 'rgba(61, 74, 61, 0.2)',
+  slate500: '#64748b',
+  slate400: '#94a3b8',
 };
 
 const NotificationsScreen = (): React.ReactElement => {
-    const { theme } = useAppTheme();
-    const isDark = theme.mode === 'dark';
-    const glass = glassStyles(isDark);
-    const navigation = useNavigation();
+  const navigation = useNavigation();
+  const insets = useSafeAreaInsets();
+  const [settings, setSettings] = useState<NotificationSettings>(defaultSettings);
+  const [isSaving, setIsSaving] = useState(false);
 
-    const [settings, setSettings] = useState<NotificationSettings>(defaultSettings);
-    const [isSaving, setIsSaving] = useState(false);
+  useEffect(() => { loadSettings(); }, []);
 
-    // Load saved settings
-    useEffect(() => {
-        loadSettings();
-    }, []);
+  const loadSettings = async () => {
+    try {
+      const saved = await AsyncStorage.getItem(NOTIFICATIONS_SETTINGS_KEY);
+      if (saved) setSettings({ ...defaultSettings, ...JSON.parse(saved) });
+    } catch (error) { console.log('Error loading notification settings:', error); }
+  };
 
-    const loadSettings = async () => {
-        try {
-            const saved = await AsyncStorage.getItem(NOTIFICATIONS_SETTINGS_KEY);
-            if (saved) {
-                setSettings({ ...defaultSettings, ...JSON.parse(saved) });
-            }
-        } catch (error) {
-            console.log('Error loading notification settings:', error);
+  const saveSettings = async (newSettings = settings) => {
+    try {
+      setIsSaving(true);
+      await AsyncStorage.setItem(NOTIFICATIONS_SETTINGS_KEY, JSON.stringify(newSettings));
+      if (newSettings.enabled) {
+        const hasPermission = await requestNotificationPermissions();
+        if (hasPermission) {
+          await scheduleNotifications(newSettings);
         }
-    };
+      } else {
+        await cancelAllMealNotifications();
+      }
+    } catch (error) {
+      console.log('Error saving notification settings:', error);
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
-    const saveSettings = async () => {
-        try {
-            setIsSaving(true);
-            await AsyncStorage.setItem(NOTIFICATIONS_SETTINGS_KEY, JSON.stringify(settings));
+  const updateSetting = <K extends keyof NotificationSettings>(key: K, value: NotificationSettings[K]) => {
+    const updated = { ...settings, [key]: value };
+    setSettings(updated);
+    // Auto save on toggle to match modern UX
+    saveSettings(updated);
+  };
 
-            // Schedule notifications với expo-notifications
-            if (settings.enabled) {
-                // Yêu cầu quyền và schedule
-                const hasPermission = await requestNotificationPermissions();
-                if (hasPermission) {
-                    await scheduleNotifications(settings);
-                    showSuccess('settings_saved', { text2: 'Thông báo đã được bật' });
-                } else {
-                    // Không được cấp quyền - tắt lại settings
-                    showInfo('Cần cấp quyền thông báo để bật nhắc nhở');
-                }
-            } else {
-                // Tắt thông báo - cancel tất cả
-                await cancelAllMealNotifications();
-                showInfo('Thông báo đã tắt');
-            }
+  const formatTime = (time: string): string => {
+    const parts = time.split(':');
+    const h = parseInt(parts[0] || '00', 10);
+    const m = parts[1] || '00';
+    const period = h >= 12 ? 'PM' : 'AM';
+    const displayHour = h > 12 ? h - 12 : h === 0 ? 12 : h;
+    const formattedHour = displayHour < 10 ? `0${displayHour}` : displayHour;
+    return `${formattedHour}:${m} ${period}`;
+  };
 
-            navigation.goBack();
-        } catch (error) {
-            console.log('Error saving notification settings:', error);
-        } finally {
-            setIsSaving(false);
-        }
-    };
+  // Switch Toggle wrapper mimicking iOS/custom styling
+  const CustomToggle = ({ value, onValueChange, disabled = false }: { value: boolean, onValueChange: (val: boolean) => void, disabled?: boolean }) => (
+    <Switch
+      value={value}
+      onValueChange={onValueChange}
+      disabled={disabled}
+      trackColor={{ false: P.surfaceContainerHighest, true: P.primary }}
+      thumbColor={'#fff'}
+    />
+  );
 
-    const updateSetting = <K extends keyof NotificationSettings>(
-        key: K,
-        value: NotificationSettings[K],
-    ) => {
-        setSettings((prev) => ({ ...prev, [key]: value }));
-    };
-
-    const formatTime = (time: string): string => {
-        const parts = time.split(':');
-        const hours = parts[0] || '00';
-        const minutes = parts[1] || '00';
-        const h = parseInt(hours, 10);
-        const period = h >= 12 ? 'PM' : 'AM';
-        const displayHour = h > 12 ? h - 12 : h === 0 ? 12 : h;
-        return `${displayHour}:${minutes} ${period}`;
-    };
-
-    const styles = StyleSheet.create({
-        container: { flex: 1 },
-        content: {
-            paddingHorizontal: theme.spacing.lg,
-            paddingVertical: theme.spacing.xl,
-            gap: theme.spacing.lg,
-        },
-        card: {
-            ...glass.card,
-            padding: 4,
-        },
-        sectionTitle: {
-            flexDirection: 'row',
-            alignItems: 'center',
-            gap: 8,
-            paddingHorizontal: 16,
-            paddingTop: 16,
-            paddingBottom: 8,
-        },
-        masterToggle: {
-            ...glass.card,
-            flexDirection: 'row',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            padding: 20,
-            borderWidth: 2,
-            borderColor: settings.enabled ? theme.colors.primary : 'transparent',
-        },
-        masterToggleText: {
-            flex: 1,
-        },
-        mealItem: {
-            flexDirection: 'row',
-            alignItems: 'center',
-            paddingVertical: 14,
-            paddingHorizontal: 16,
-            borderBottomWidth: 1,
-            borderBottomColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)',
-        },
-        mealIcon: {
-            fontSize: 24,
-            marginRight: 12,
-        },
-        mealInfo: {
-            flex: 1,
-        },
-        mealLabel: {
-            fontSize: 16,
-            fontWeight: '500',
-            color: theme.colors.text,
-        },
-        mealTime: {
-            fontSize: 13,
-            color: theme.colors.textSecondary,
-            marginTop: 2,
-        },
-        disabledOverlay: {
-            opacity: 0.5,
-        },
-        infoBox: {
-            ...glass.card,
-            flexDirection: 'row',
-            alignItems: 'flex-start',
-            gap: 10,
-            padding: 16,
-        },
-    });
-
-    const MealReminderItem = ({
-        icon,
-        label,
-        enabledKey,
-        timeKey: _timeKey,
-        enabled,
-        time,
-    }: {
-        icon: string;
-        label: string;
-        enabledKey: keyof NotificationSettings;
-        timeKey: keyof NotificationSettings;
-        enabled: boolean;
-        time: string;
-    }) => (
-        <View style={[styles.mealItem, !settings.enabled && styles.disabledOverlay]}>
-            <ThemedText style={styles.mealIcon}>{icon}</ThemedText>
-            <View style={styles.mealInfo}>
-                <ThemedText style={styles.mealLabel}>{label}</ThemedText>
-                <ThemedText style={styles.mealTime}>{formatTime(time)}</ThemedText>
-            </View>
-            <Switch
-                value={enabled && settings.enabled}
-                onValueChange={(val) => updateSetting(enabledKey as keyof NotificationSettings, val)}
-                disabled={!settings.enabled}
-                trackColor={{ false: theme.colors.border, true: theme.colors.primary }}
-                thumbColor={enabled ? '#fff' : '#f4f3f4'}
-            />
+  return (
+    <View style={S.container}>
+      {/* ═══ Header ═══ */}
+      <View style={[S.header, { paddingTop: insets.top + 10 }]}>
+        <Pressable onPress={() => navigation.goBack()} style={{ padding: 8, width: 40 }}>
+          <Ionicons name="arrow-back" size={24} color={P.primary} />
+        </Pressable>
+        <View style={S.headerCenter}>
+          <ThemedText style={S.headerTitle}>Thông báo</ThemedText>
         </View>
-    );
+        <View style={{ width: 40 }} />
+      </View>
 
-    return (
-        <LinearGradient
-            colors={theme.colors.screenGradient}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 0.5, y: 1 }}
-            style={styles.container}
-        >
-            {/* Custom Header - Back button + Title on same row */}
-            <View style={{ paddingTop: 60, paddingBottom: theme.spacing.sm, paddingHorizontal: theme.spacing.lg }}>
-                {/* Row: Back button + Title */}
-                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                    <Pressable
-                        onPress={() => navigation.goBack()}
-                        style={{
-                            width: 40,
-                            height: 40,
-                            borderRadius: 12,
-                            backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                        }}
-                    >
-                        <ThemedText style={{ fontSize: 18 }}>←</ThemedText>
-                    </Pressable>
+      <ScrollView contentContainerStyle={[S.scrollContent, { paddingTop: 20 }]} showsVerticalScrollIndicator={false}>
+        <View style={[{ gap: 24 }, !settings.enabled && { opacity: 0.5 }]}>
+          {/* Master Toggle Card */}
+          <Animated.View entering={FadeInDown.delay(100)} style={[S.glassCard, S.masterCard]}>
+            <View style={[S.rowCenter, { flex: 1 }]}>
+              <View style={S.iconBoxPrimary}>
+                <Ionicons name="notifications" size={24} color={P.primary} />
+              </View>
+              <View style={{ marginLeft: 16, flex: 1 }}>
+                <ThemedText style={S.titleWhite}>Tất cả thông báo</ThemedText>
+                <ThemedText style={S.subText}>Quản lý tùy chọn thông báo của bạn</ThemedText>
+              </View>
+            </View>
+            <CustomToggle value={settings.enabled} onValueChange={(val) => updateSetting('enabled', val)} disabled={false} />
+          </Animated.View>
 
-                    <View style={{ flex: 1, alignItems: 'center', marginRight: 40 }}>
-                        <ThemedText variant="h3" weight="700">
-                            Thông báo
-                        </ThemedText>
+          {/* Meal Reminders Card */}
+          <Animated.View entering={FadeInDown.delay(200)} style={S.glassCard}>
+            <ThemedText style={S.sectionLabel}>NHẮC NHỞ BỮA ĂN</ThemedText>
+            
+            <View style={S.gapLarge}>
+              {[
+                { label: 'Nhắc ăn sáng', timeKey: 'breakfastTime', toggleKey: 'breakfastEnabled', icon: 'restaurant-outline' },
+                { label: 'Nhắc ăn trưa', timeKey: 'lunchTime', toggleKey: 'lunchEnabled', icon: 'nutrition-outline' },
+                { label: 'Nhắc ăn tối', timeKey: 'dinnerTime', toggleKey: 'dinnerEnabled', icon: 'pizza-outline' },
+                { label: 'Nhắc bữa phụ', timeKey: 'snackTime', toggleKey: 'snackEnabled', icon: 'cafe-outline', dim: true },
+              ].map((item) => (
+                <View key={item.label} style={S.rowBetween}>
+                  <View style={[S.rowCenter, { flex: 1, marginRight: 8 }]}>
+                    <View style={[S.iconBoxDark, item.dim && !settings[item.toggleKey as keyof NotificationSettings] && { opacity: 0.6 }]}>
+                      <Ionicons name={item.icon as any} size={20} color={P.primary} />
                     </View>
+                    <ThemedText 
+                      style={[S.itemText, !settings[item.toggleKey as keyof NotificationSettings] && { color: P.slate400, fontFamily: 'Inter_500Medium' }, { flex: 1 }]}
+                      numberOfLines={1}
+                    >
+                      {item.label}
+                    </ThemedText>
+                  </View>
+                  <View style={S.rowCenterGap}>
+                    <ThemedText style={S.timeText}>{formatTime(settings[item.timeKey as keyof NotificationSettings] as string)}</ThemedText>
+                    <CustomToggle 
+                      value={settings[item.toggleKey as keyof NotificationSettings] as boolean} 
+                      onValueChange={(val) => updateSetting(item.toggleKey as keyof NotificationSettings, val)} 
+                      disabled={!settings.enabled} 
+                    />
+                  </View>
                 </View>
-
-                {/* Subtitle below */}
-                <ThemedText variant="bodySmall" color="textSecondary" style={{ textAlign: 'center', marginTop: 8 }}>
-                    Nhắc nhở bữa ăn
-                </ThemedText>
+              ))}
             </View>
 
-            <ScrollView contentContainerStyle={styles.content}>
-                {/* Master Toggle */}
-                <Animated.View entering={FadeInDown.delay(100)}>
-                    <Pressable
-                        style={styles.masterToggle}
-                        onPress={() => updateSetting('enabled', !settings.enabled)}
-                    >
-                        <View style={styles.masterToggleText}>
-                            <ThemedText variant="h3">
-                                {settings.enabled ? '🔔 Thông báo đang bật' : '🔕 Thông báo đã tắt'}
-                            </ThemedText>
-                            <ThemedText variant="bodySmall" color="textSecondary" style={{ marginTop: 4 }}>
-                                Nhận nhắc nhở ghi lại bữa ăn
-                            </ThemedText>
-                        </View>
-                        <Switch
-                            value={settings.enabled}
-                            onValueChange={(val) => updateSetting('enabled', val)}
-                            trackColor={{ false: theme.colors.border, true: theme.colors.primary }}
-                            thumbColor={settings.enabled ? '#fff' : '#f4f3f4'}
-                        />
-                    </Pressable>
-                </Animated.View>
+            <Pressable style={S.editBtn}>
+              <ThemedText style={S.editBtnText}>ĐỔI GIỜ</ThemedText>
+              <Ionicons name="pencil" size={12} color={P.primary} />
+            </Pressable>
+          </Animated.View>
 
-                {/* Meal Reminders */}
-                <Animated.View entering={FadeInDown.delay(200)} style={styles.card}>
-                    <View style={styles.sectionTitle}>
-                        <ThemedText variant="h3">Nhắc nhở bữa ăn</ThemedText>
-                    </View>
+          {/* Health Alerts Card */}
+          <Animated.View entering={FadeInDown.delay(300)} style={S.glassCard}>
+            <ThemedText style={S.sectionLabel}>CẢNH BÁO SỨC KHỎE</ThemedText>
+            <View style={S.gapMedium}>
+              {[
+                { label: 'Nhắc uống nước', key: 'waterReminderEnabled' },
+                { label: 'Báo cáo tiến độ tuần', key: 'weeklyReviewEnabled' },
+                { label: 'Chúc mừng đạt mục tiêu', key: 'goalAchievedEnabled' },
+                { label: 'Cảnh báo mất chuỗi', key: 'streakRiskEnabled' },
+              ].map((item) => (
+                <View key={item.label} style={S.rowBetween}>
+                  <ThemedText style={[S.itemTextStandard, { flex: 1, paddingRight: 16 }]} numberOfLines={2}>{item.label}</ThemedText>
+                  <CustomToggle 
+                    value={settings[item.key as keyof NotificationSettings] as boolean} 
+                    onValueChange={(val) => updateSetting(item.key as keyof NotificationSettings, val)} 
+                    disabled={!settings.enabled} 
+                  />
+                </View>
+              ))}
+            </View>
+          </Animated.View>
 
-                    <MealReminderItem
-                        icon="🌅"
-                        label="Bữa sáng"
-                        enabledKey="breakfastEnabled"
-                        timeKey="breakfastTime"
-                        enabled={settings.breakfastEnabled}
-                        time={settings.breakfastTime}
-                    />
-                    <MealReminderItem
-                        icon="☀️"
-                        label="Bữa trưa"
-                        enabledKey="lunchEnabled"
-                        timeKey="lunchTime"
-                        enabled={settings.lunchEnabled}
-                        time={settings.lunchTime}
-                    />
-                    <MealReminderItem
-                        icon="🌙"
-                        label="Bữa tối"
-                        enabledKey="dinnerEnabled"
-                        timeKey="dinnerTime"
-                        enabled={settings.dinnerEnabled}
-                        time={settings.dinnerTime}
-                    />
-                    <MealReminderItem
-                        icon="🥤"
-                        label="Bữa phụ"
-                        enabledKey="snackEnabled"
-                        timeKey="snackTime"
-                        enabled={settings.snackEnabled}
-                        time={settings.snackTime}
-                    />
-                </Animated.View>
+          {/* AI Insights Card */}
+          <Animated.View entering={FadeInDown.delay(400)} style={S.glassCard}>
+            <ThemedText style={S.sectionLabel}>AI & GỢI Ý</ThemedText>
+            <View style={S.gapMedium}>
+              {[
+                { label: 'Gợi ý công thức mới', key: 'aiRecipeSuggestionsEnabled' },
+                { label: 'Mẹo dinh dưỡng từ AI', key: 'aiNutritionTipsEnabled' },
+                { label: 'Thông báo thành tích mới', key: 'aiAchievementUnlockedEnabled' },
+              ].map((item) => (
+                <View key={item.label} style={S.rowBetween}>
+                  <ThemedText style={[S.itemTextStandard, !settings[item.key as keyof NotificationSettings] && { color: P.slate400 }, { flex: 1, paddingRight: 16 }]} numberOfLines={2}>
+                    {item.label}
+                  </ThemedText>
+                  <CustomToggle 
+                    value={settings[item.key as keyof NotificationSettings] as boolean} 
+                    onValueChange={(val) => updateSetting(item.key as keyof NotificationSettings, val)} 
+                    disabled={!settings.enabled} 
+                  />
+                </View>
+              ))}
+            </View>
+          </Animated.View>
 
-                {/* Weekly Review */}
-                <Animated.View entering={FadeInDown.delay(300)} style={styles.card}>
-                    <SettingsMenuItem
-                        icon="📊"
-                        label="Báo cáo tuần"
-                        subtitle="Nhận thông báo phân tích hàng tuần"
-                        rightElement={
-                            <Switch
-                                value={settings.weeklyReviewEnabled && settings.enabled}
-                                onValueChange={(val) => updateSetting('weeklyReviewEnabled', val)}
-                                disabled={!settings.enabled}
-                                trackColor={{ false: theme.colors.border, true: theme.colors.primary }}
-                                thumbColor={settings.weeklyReviewEnabled ? '#fff' : '#f4f3f4'}
-                            />
-                        }
-                    />
-                </Animated.View>
+          {/* Quiet Hours Card */}
+          <Animated.View entering={FadeInDown.delay(500)} style={S.glassCard}>
+            <View style={S.rowBetweenStart}>
+              <View style={{ flex: 1, paddingRight: 16 }}>
+                <ThemedText style={S.titleWhite}>Giờ yên tĩnh</ThemedText>
+                <ThemedText style={S.subText}>Không làm phiền trong thời gian này</ThemedText>
+              </View>
+              <CustomToggle 
+                value={settings.quietHoursEnabled} 
+                onValueChange={(val) => updateSetting('quietHoursEnabled', val)} 
+                disabled={!settings.enabled} 
+              />
+            </View>
 
-                {/* Info */}
-                <Animated.View entering={FadeInDown.delay(400)} style={styles.infoBox}>
-                    <ThemedText style={{ fontSize: 16 }}>💡</ThemedText>
-                    <ThemedText variant="bodySmall" color="textSecondary" style={{ flex: 1 }}>
-                        Thông báo sẽ nhắc bạn ghi lại bữa ăn vào những thời điểm đã chọn.
-                        Bạn cần cho phép quyền thông báo khi được hỏi.
-                    </ThemedText>
-                </Animated.View>
-
-                {/* Save Button */}
-                <Animated.View entering={FadeInDown.delay(500)}>
-                    <Button
-                        title={isSaving ? 'Đang lưu...' : 'Lưu cài đặt'}
-                        onPress={saveSettings}
-                        loading={isSaving}
-                        disabled={isSaving}
-                    />
-                </Animated.View>
-            </ScrollView>
-        </LinearGradient>
-    );
+            <View style={S.quietGrid}>
+              <View style={S.quietBox}>
+                <ThemedText style={S.quietLabel}>TỪ</ThemedText>
+                <ThemedText style={S.quietTime}>{formatTime(settings.quietHoursFrom)}</ThemedText>
+              </View>
+              <View style={S.quietBox}>
+                <ThemedText style={S.quietLabel}>ĐẾN</ThemedText>
+                <ThemedText style={S.quietTime}>{formatTime(settings.quietHoursTo)}</ThemedText>
+              </View>
+            </View>
+          </Animated.View>
+        </View>
+      </ScrollView>
+    </View>
+  );
 };
 
 export default NotificationsScreen;
+
+/* ═══ Styles ═══ */
+const S = StyleSheet.create({
+  container: { flex: 1, backgroundColor: P.surface },
+  header: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingHorizontal: 16, paddingBottom: 15,
+  },
+  headerCenter: { flex: 1, alignItems: 'center' },
+  headerTitle: { fontFamily: 'Inter_800ExtraBold', fontSize: 22, color: P.primary, letterSpacing: -0.5 },
+  
+  scrollContent: { paddingHorizontal: 20, paddingBottom: 120, gap: 24 },
+
+  glassCard: {
+    backgroundColor: P.surfaceGlass,
+    borderRadius: 24, padding: 20,
+    borderWidth: 1, borderColor: P.glassBorder,
+    shadowColor: P.primary, shadowOpacity: 0.05, shadowRadius: 20, elevation: 5,
+  },
+  masterCard: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  
+  iconBoxPrimary: { width: 48, height: 48, borderRadius: 16, backgroundColor: P.primary + '33', alignItems: 'center', justifyContent: 'center' },
+  iconBoxDark: { width: 40, height: 40, borderRadius: 12, backgroundColor: P.surfaceContainerHighest, alignItems: 'center', justifyContent: 'center' },
+
+  titleWhite: { fontSize: 18, fontFamily: 'Inter_700Bold', color: '#fff' },
+  subText: { fontSize: 13, fontFamily: 'Inter_400Regular', color: P.slate400, marginTop: 4 },
+  sectionLabel: { fontSize: 11, fontFamily: 'Inter_800ExtraBold', color: P.slate500, letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 20 },
+  
+  rowBetween: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  rowBetweenStart: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' },
+  rowCenter: { flexDirection: 'row', alignItems: 'center' },
+  rowCenterGap: { flexDirection: 'row', alignItems: 'center', gap: 16 },
+  gapLarge: { gap: 20 },
+  gapMedium: { gap: 16 },
+
+  itemText: { fontSize: 16, fontFamily: 'Inter_600SemiBold', color: '#fff', marginLeft: 12 },
+  itemTextStandard: { fontSize: 16, fontFamily: 'Inter_500Medium', color: '#fff' },
+  timeText: { fontSize: 14, fontFamily: 'Inter_600SemiBold', color: P.slate500 },
+
+  editBtn: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 20 },
+  editBtnText: { fontSize: 12, fontFamily: 'Inter_800ExtraBold', color: P.primary, letterSpacing: 1 },
+
+  quietGrid: { flexDirection: 'row', gap: 16, marginTop: 20 },
+  quietBox: {
+    flex: 1, backgroundColor: P.surfaceContainerLowest,
+    borderWidth: 1, borderColor: P.glassBorder, borderRadius: 16,
+    padding: 16, gap: 4
+  },
+  quietLabel: { fontSize: 11, fontFamily: 'Inter_600SemiBold', color: P.slate500, textTransform: 'uppercase' },
+  quietTime: { fontSize: 18, fontFamily: 'Inter_700Bold', color: '#fff' },
+});

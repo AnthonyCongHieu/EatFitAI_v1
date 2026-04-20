@@ -7,19 +7,29 @@ using EatFitAI.API.Repositories.Interfaces;
 using EatFitAI.API.Services;
 using EatFitAI.API.Services.Interfaces;
 using EatFitAI.API.Options;
+using EatFitAI.API.Security;
 using EatFitAI.Services; // Voice processing service
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
+using Microsoft.IdentityModel.Protocols;
+using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using System.Security.Claims;
+using System.Collections.Concurrent;
 using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
+using Microsoft.Extensions.Options;
 using Npgsql;
 
 public partial class Program
@@ -28,6 +38,13 @@ public partial class Program
     {
         var builder = WebApplication.CreateBuilder(args);
         var scanDemoSeedOptions = ParseScanDemoSeedOptions(args);
+        var geminiKeyReencryptionOptions = ParseGeminiKeyReencryptionOptions(args);
+        var adminGovernanceBootstrapRequested =
+            args.Any(arg => string.Equals(arg, "--admin-governance-bootstrap", StringComparison.OrdinalIgnoreCase))
+            || string.Equals(Environment.GetEnvironmentVariable("EATFITAI_ADMIN_GOVERNANCE_BOOTSTRAP"), "1", StringComparison.OrdinalIgnoreCase);
+        var adminGovernanceBootstrapReportPath =
+            TryGetOptionValue(args, "--admin-governance-report")
+            ?? Environment.GetEnvironmentVariable("EATFITAI_ADMIN_GOVERNANCE_REPORT");
 
         static string? TryGetOptionValue(string[] cliArgs, string optionName)
         {
@@ -76,6 +93,35 @@ public partial class Program
             };
         }
 
+        static GeminiKeyReencryptionOptions? ParseGeminiKeyReencryptionOptions(string[] cliArgs)
+        {
+            var enabled = cliArgs.Any(arg => string.Equals(arg, "--reencrypt-gemini-keys", StringComparison.OrdinalIgnoreCase))
+                || string.Equals(Environment.GetEnvironmentVariable("EATFITAI_REENCRYPT_GEMINI_KEYS"), "1", StringComparison.OrdinalIgnoreCase);
+
+            if (!enabled)
+            {
+                return null;
+            }
+
+            var oldKey = Environment.GetEnvironmentVariable("EATFITAI_GEMINI_REENCRYPT_OLD_KEY");
+            var newKey = Environment.GetEnvironmentVariable("EATFITAI_GEMINI_REENCRYPT_NEW_KEY");
+            var reportPath = TryGetOptionValue(cliArgs, "--reencrypt-report")
+                ?? Environment.GetEnvironmentVariable("EATFITAI_GEMINI_REENCRYPT_REPORT");
+
+            if (string.IsNullOrWhiteSpace(oldKey) || string.IsNullOrWhiteSpace(newKey))
+            {
+                throw new InvalidOperationException(
+                    "Gemini key re-encryption requires EATFITAI_GEMINI_REENCRYPT_OLD_KEY and EATFITAI_GEMINI_REENCRYPT_NEW_KEY.");
+            }
+
+            return new GeminiKeyReencryptionOptions
+            {
+                OldKey = oldKey,
+                NewKey = newKey,
+                ReportPath = reportPath
+            };
+        }
+
         // User Secrets will be loaded automatically in Development by CreateBuilder
 
         // Render.com cung cấp PORT env var, ưu tiên dùng nó
@@ -88,6 +134,85 @@ public partial class Program
         else if (!string.IsNullOrWhiteSpace(configuredUrls))
         {
             builder.WebHost.UseUrls(configuredUrls);
+        }
+
+        static string GetSanitizedConnectionSummary(string? connectionString)
+        {
+            if (string.IsNullOrWhiteSpace(connectionString))
+            {
+                return "connectionString=<missing>";
+            }
+
+            try
+            {
+                var builder = new NpgsqlConnectionStringBuilder(connectionString);
+                return string.Join(
+                    ";",
+                    new[]
+                    {
+                        $"host={builder.Host}",
+                        $"port={builder.Port}",
+                        $"database={builder.Database}",
+                        $"username={builder.Username}",
+                        $"sslmode={builder.SslMode}",
+                        $"timeout={builder.Timeout}",
+                        $"commandTimeout={builder.CommandTimeout}",
+                        $"keepalive={builder.KeepAlive}",
+                        $"mode={GetConnectionMode(builder.Host ?? string.Empty, builder.Port)}"
+                    });
+            }
+            catch
+            {
+                return "connectionString=<unparseable>";
+            }
+        }
+
+        if (geminiKeyReencryptionOptions is not null)
+        {
+            var reencryptConnectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+            if (string.IsNullOrWhiteSpace(reencryptConnectionString))
+            {
+                throw new InvalidOperationException(
+                    "ConnectionStrings:DefaultConnection is required for Gemini key re-encryption.");
+            }
+
+            builder.Services.AddDbContext<ApplicationDbContext>(options =>
+                options.UseNpgsql(reencryptConnectionString, npgsql =>
+                    npgsql.EnableRetryOnFailure()));
+            builder.Services.AddScoped<GeminiKeyReencryptionService>();
+
+            var reencryptApp = builder.Build();
+            using var reencryptScope = reencryptApp.Services.CreateScope();
+            var reencryptService = reencryptScope.ServiceProvider.GetRequiredService<GeminiKeyReencryptionService>();
+            var report = await reencryptService.ReencryptAsync(
+                geminiKeyReencryptionOptions.OldKey,
+                geminiKeyReencryptionOptions.NewKey);
+            var payload = new
+            {
+                action = "reencrypt-gemini-keys",
+                reencryptedCount = report.ReencryptedCount,
+                completedAt = report.CompletedAt,
+                connectionSummary = GetSanitizedConnectionSummary(reencryptConnectionString)
+            };
+            var serializedReport = JsonSerializer.Serialize(payload, new JsonSerializerOptions
+            {
+                WriteIndented = true
+            });
+
+            if (!string.IsNullOrWhiteSpace(geminiKeyReencryptionOptions.ReportPath))
+            {
+                var fullReportPath = Path.GetFullPath(geminiKeyReencryptionOptions.ReportPath);
+                var reportDirectory = Path.GetDirectoryName(fullReportPath);
+                if (!string.IsNullOrWhiteSpace(reportDirectory))
+                {
+                    Directory.CreateDirectory(reportDirectory);
+                }
+
+                await File.WriteAllTextAsync(fullReportPath, serializedReport);
+            }
+
+            Console.WriteLine(serializedReport);
+            return;
         }
 
 // Add services to the container.
@@ -247,37 +372,6 @@ static string GetConnectionMode(string host, int port)
     return "custom";
 }
 
-static string GetSanitizedConnectionSummary(string? connectionString)
-{
-    if (string.IsNullOrWhiteSpace(connectionString))
-    {
-        return "connectionString=<missing>";
-    }
-
-    try
-    {
-        var builder = new NpgsqlConnectionStringBuilder(connectionString);
-        return string.Join(
-            ";",
-            new[]
-            {
-                $"host={builder.Host}",
-                $"port={builder.Port}",
-                $"database={builder.Database}",
-                $"username={builder.Username}",
-                $"sslmode={builder.SslMode}",
-                $"timeout={builder.Timeout}",
-                $"commandTimeout={builder.CommandTimeout}",
-                $"keepalive={builder.KeepAlive}",
-                $"mode={GetConnectionMode(builder.Host ?? string.Empty, builder.Port)}"
-            });
-    }
-    catch
-    {
-        return "connectionString=<unparseable>";
-    }
-}
-
 static void EnsureRequiredProductionConfiguration(
     WebApplicationBuilder builder,
     string[] productionAllowedOrigins)
@@ -321,6 +415,7 @@ static void EnsureRequiredProductionConfiguration(
     }
 
     RequireValue("Jwt:Key");
+    RequireValue("Encryption:Key");
     RequireHttpsUrl("AIProvider:VisionBaseUrl");
 
     if (errors.Count > 0)
@@ -505,8 +600,18 @@ builder.Services.AddDbContext<EatFitAIDbContext>(options =>
 
 // Add ApplicationDbContext (custom with WeeklyCheckIns)
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
+{
     options.UseNpgsql(defaultConnectionString, npgsql =>
-        npgsql.EnableRetryOnFailure()));
+        npgsql.EnableRetryOnFailure());
+
+    if (builder.Environment.IsProduction())
+    {
+        // Keep runtime writes on ApplicationDbContext available even when
+        // the migrations snapshot lags behind newer non-critical model changes.
+        options.ConfigureWarnings(warnings =>
+            warnings.Ignore(RelationalEventId.PendingModelChangesWarning));
+    }
+});
 
 // Caching for features like password reset
 builder.Services.AddMemoryCache();
@@ -514,6 +619,7 @@ builder.Services.AddMemoryCache();
 // Email settings & service
 builder.Services.Configure<BrevoOptions>(builder.Configuration.GetSection("Brevo"));
 builder.Services.Configure<SupabaseOptions>(builder.Configuration.GetSection("Supabase"));
+builder.Services.Configure<AdminGovernanceOptions>(builder.Configuration.GetSection("AdminGovernance"));
 builder.Services.AddHttpClient<IEmailService, EmailService>();
 builder.Services.AddScoped<ISupabaseStorageService, SupabaseStorageService>();
 
@@ -554,16 +660,27 @@ builder.Services.AddHttpClient();
 // Nutrition + AI logging services
 builder.Services.AddScoped<INutritionCalcService, NutritionCalcService>();
 builder.Services.AddScoped<IAiLogService, AiLogService>();
+builder.Services.AddScoped<IAdminAuditService, AdminAuditService>();
+builder.Services.AddScoped<SupabaseSchemaBootstrapper>();
 
 // Lookup cache service (Singleton for shared cache)
 builder.Services.AddSingleton<ILookupCacheService, LookupCacheService>();
 
 // Security & AI Pool Services
 builder.Services.AddSingleton<IEncryptionService, EncryptionService>();
+builder.Services.AddSingleton<IAdminRealtimeEventBus, AdminRealtimeEventBus>();
+builder.Services.AddSingleton<IAdminRuntimeSnapshotCache, AdminRuntimeSnapshotCache>();
+builder.Services.AddSingleton<IGeminiRuntimeProjectService, GeminiRuntimeProjectService>();
+builder.Services.AddScoped<IAiRuntimeStatusService, AiRuntimeStatusService>();
 builder.Services.AddScoped<IGeminiPoolManager, GeminiPoolManager>();
+builder.Services.AddHostedService<AdminRuntimeSnapshotBackgroundService>();
 
 // Health checks (used by HealthController and readiness endpoints)
+builder.Services.AddSingleton<StartupHealthState>();
 builder.Services.AddHealthChecks()
+    .AddCheck<StartupBootstrapHealthCheck>(
+        "startup-bootstrap",
+        tags: new[] { "ready" })
     .AddNpgSql(
         defaultConnectionString!,
         name: "postgres",
@@ -577,72 +694,266 @@ if (IsPlaceholderSecret(jwtKey))
         "Jwt:Key is missing or insecure. Configure a strong secret via appsettings or user-secrets.");
 }
 
-// Add JWT Authentication
+// Add JWT authentication.
+// We must support both:
+// 1. Legacy custom backend tokens signed with Jwt:Key / Jwt:PreviousKeys (HS256).
+// 2. Supabase access tokens signed by the project's JWKS (currently ES256).
+var localJwtSigningKeys = JwtKeyRing.GetConfiguredSigningKeys(builder.Configuration);
+var configuredSupabaseUrl = builder.Configuration["Supabase:Url"];
+var supabaseUrl = HasConfiguredHttpsUrl(configuredSupabaseUrl)
+    ? configuredSupabaseUrl!.TrimEnd('/')
+    : "https://bjlmndmafrajjysenpbm.supabase.co";
+var supabaseAuthIssuer = $"{supabaseUrl}/auth/v1";
+var supabaseMetadataAddress = $"{supabaseAuthIssuer}/.well-known/openid-configuration";
+var supabaseConfigurationManager = new ConfigurationManager<OpenIdConnectConfiguration>(
+    supabaseMetadataAddress,
+    new OpenIdConnectConfigurationRetriever(),
+    new HttpDocumentRetriever
+    {
+        RequireHttps = true
+    });
+
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
-        // We don't manually assign symmetric key anymore. Set Authority to validate via Supabase JWKS.
-        options.Authority = builder.Configuration["Jwt:Issuer"] ?? "https://bjlmndmafrajjysenpbm.supabase.co/auth/v1";
         options.RequireHttpsMetadata = false;
 
         options.TokenValidationParameters = new TokenValidationParameters
         {
-            ValidateIssuerSigningKey = true, // Not manually assigning symmetric key anymore
-            // Disable manual IssuerSigningKey assignment since we are dynamically fetching JWKS via Authority
-            
-            // Bật validate Issuer/Audience để chặn token từ app khác
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKeyResolver = (_, _, _, _) =>
+            {
+                var signingKeys = new List<SecurityKey>(localJwtSigningKeys);
+
+                try
+                {
+                    var configuration = supabaseConfigurationManager
+                        .GetConfigurationAsync(CancellationToken.None)
+                        .GetAwaiter()
+                        .GetResult();
+
+                    if (configuration?.SigningKeys != null)
+                    {
+                        signingKeys.AddRange(configuration.SigningKeys);
+                    }
+                }
+                catch
+                {
+                    // Keep the legacy local key path working even if JWKS retrieval fails.
+                }
+
+                return signingKeys;
+            },
+
             ValidateIssuer = true,
             ValidIssuers = new[] 
             { 
                 builder.Configuration["Jwt:Issuer"] ?? "EatFitAI",
-                "https://bjlmndmafrajjysenpbm.supabase.co/auth/v1"
+                supabaseAuthIssuer
             },
+
             ValidateAudience = true,
             ValidAudiences = new[]
             {
                 builder.Configuration["Jwt:Audience"] ?? "EatFitAI",
                 "authenticated"
             },
-            ClockSkew = TimeSpan.Zero
+
+            RoleClaimType = ClaimTypes.Role,
+            ClockSkew = TimeSpan.FromSeconds(30)
         };
 
         options.Events = new JwtBearerEvents
         {
             OnTokenValidated = context =>
             {
-                var identity = context.Principal?.Identity as System.Security.Claims.ClaimsIdentity;
+                var identity = context.Principal?.Identity as ClaimsIdentity;
                 if (identity != null)
                 {
-                    // Map Supabase user_metadata.role to .NET ClaimTypes.Role
-                    var userMetadataClaim = identity.FindFirst("user_metadata");
-                    if (userMetadataClaim != null)
+                    void AddRoleIfPresent(string? roleValue)
                     {
+                        if (string.IsNullOrWhiteSpace(roleValue))
+                        {
+                            return;
+                        }
+
+                        if (!identity.HasClaim(ClaimTypes.Role, roleValue))
+                        {
+                            identity.AddClaim(new Claim(ClaimTypes.Role, roleValue));
+                        }
+                    }
+
+                    void AddRoleFromJsonClaim(string claimType)
+                    {
+                        var jsonClaim = identity.FindFirst(claimType);
+                        if (jsonClaim == null || string.IsNullOrWhiteSpace(jsonClaim.Value))
+                        {
+                            return;
+                        }
+
                         try
                         {
-                            var md = System.Text.Json.JsonDocument.Parse(userMetadataClaim.Value);
-                            if (md.RootElement.TryGetProperty("role", out var roleElement))
+                            using var document = JsonDocument.Parse(jsonClaim.Value);
+                            if (document.RootElement.ValueKind == JsonValueKind.Object
+                                && document.RootElement.TryGetProperty("role", out var roleElement)
+                                && roleElement.ValueKind == JsonValueKind.String)
                             {
-                                identity.AddClaim(new System.Security.Claims.Claim(
-                                    System.Security.Claims.ClaimTypes.Role, 
-                                    roleElement.GetString()!));
+                                AddRoleIfPresent(roleElement.GetString());
                             }
                         }
-                        catch { /* Ignore parsing errors */ }
+                        catch
+                        {
+                            // Ignore malformed optional metadata claims.
+                        }
                     }
+
+                    AddRoleFromJsonClaim("user_metadata");
+                    AddRoleFromJsonClaim("app_metadata");
+                    AddRoleIfPresent(identity.FindFirst("user_metadata.role")?.Value);
+                    AddRoleIfPresent(identity.FindFirst("app_metadata.role")?.Value);
+                    AddRoleIfPresent(identity.FindFirst("role")?.Value);
                 }
+                return Task.CompletedTask;
+            },
+            OnAuthenticationFailed = context =>
+            {
+                var logger = context.HttpContext.RequestServices.GetRequiredService<ILogger<Program>>();
+                logger.LogWarning("JWT authentication failed: {Error}", context.Exception.Message);
                 return Task.CompletedTask;
             }
         };
     });
 
 // Add Authorization
-builder.Services.AddAuthorization();
+builder.Services.AddScoped<IClaimsTransformation, AdminClaimsTransformation>();
+builder.Services.AddScoped<AdminGovernanceBootstrapper>();
+builder.Services.AddScoped<AuthInfrastructureBootstrapper>();
+builder.Services.AddAuthorization(options =>
+{
+    static void RequireCapability(AuthorizationPolicyBuilder builder, string capability)
+    {
+        builder.RequireAuthenticatedUser();
+        builder.RequireClaim(AdminCapabilityClaims.AccessState, AdminAccessStates.Active);
+        builder.RequireClaim(AdminCapabilityClaims.Capability, capability);
+    }
+
+    options.AddPolicy(AdminPolicies.Access, builder => RequireCapability(builder, AdminCapabilities.Access));
+    options.AddPolicy(AdminPolicies.UsersRead, builder => RequireCapability(builder, AdminCapabilities.UsersRead));
+    options.AddPolicy(AdminPolicies.UsersWrite, builder => RequireCapability(builder, AdminCapabilities.UsersWrite));
+    options.AddPolicy(AdminPolicies.UsersRoleManage, builder => RequireCapability(builder, AdminCapabilities.UsersRoleManage));
+    options.AddPolicy(AdminPolicies.UsersDeactivate, builder => RequireCapability(builder, AdminCapabilities.UsersDeactivate));
+    options.AddPolicy(AdminPolicies.SupportRead, builder => RequireCapability(builder, AdminCapabilities.SupportRead));
+    options.AddPolicy(AdminPolicies.MealsRead, builder => RequireCapability(builder, AdminCapabilities.MealsRead));
+    options.AddPolicy(AdminPolicies.MealsDelete, builder => RequireCapability(builder, AdminCapabilities.MealsDelete));
+    options.AddPolicy(AdminPolicies.FoodsRead, builder => RequireCapability(builder, AdminCapabilities.FoodsRead));
+    options.AddPolicy(AdminPolicies.FoodsWrite, builder => RequireCapability(builder, AdminCapabilities.FoodsWrite));
+    options.AddPolicy(AdminPolicies.MasterDataRead, builder => RequireCapability(builder, AdminCapabilities.MasterDataRead));
+    options.AddPolicy(AdminPolicies.MasterDataWrite, builder => RequireCapability(builder, AdminCapabilities.MasterDataWrite));
+    options.AddPolicy(AdminPolicies.RuntimeRead, builder => RequireCapability(builder, AdminCapabilities.RuntimeRead));
+    options.AddPolicy(AdminPolicies.RuntimeKeysManage, builder => RequireCapability(builder, AdminCapabilities.RuntimeKeysManage));
+    options.AddPolicy(AdminPolicies.RuntimeKeysDelete, builder => RequireCapability(builder, AdminCapabilities.RuntimeKeysDelete));
+    options.AddPolicy(AdminPolicies.AuditRead, builder => RequireCapability(builder, AdminCapabilities.AuditRead));
+    options.AddPolicy(AdminPolicies.SettingsRead, builder => RequireCapability(builder, AdminCapabilities.SettingsRead));
+});
 
 var app = builder.Build();
 var startupLogger = app.Services.GetRequiredService<ILogger<Program>>();
+var startupHealthState = app.Services.GetRequiredService<StartupHealthState>();
 startupLogger.LogInformation(
     "Configured PostgreSQL target: {ConnectionSummary}",
     sanitizedConnectionSummary);
+
+async Task<bool> TryRunTrackedStartupPhaseAsync(
+    string phase,
+    Func<Task> action,
+    LogLevel failureLogLevel = LogLevel.Warning)
+{
+    try
+    {
+        await action();
+        startupHealthState.MarkSucceeded(phase);
+        return true;
+    }
+    catch (Exception ex)
+    {
+        startupHealthState.MarkFailed(phase);
+        startupLogger.Log(failureLogLevel, ex, "{Phase} failed during startup.", phase);
+        return false;
+    }
+}
+
+if (adminGovernanceBootstrapRequested)
+{
+    startupLogger.LogInformation("Running admin governance bootstrap in one-shot mode.");
+
+    using var scope = app.Services.CreateScope();
+    var adminAuditService = scope.ServiceProvider.GetRequiredService<IAdminAuditService>();
+    var governanceBootstrapper = scope.ServiceProvider.GetRequiredService<AdminGovernanceBootstrapper>();
+    var authInfrastructureBootstrapper = scope.ServiceProvider.GetRequiredService<AuthInfrastructureBootstrapper>();
+    var supabaseSchemaBootstrapper = scope.ServiceProvider.GetRequiredService<SupabaseSchemaBootstrapper>();
+    var governanceOptions = scope.ServiceProvider.GetRequiredService<IOptions<AdminGovernanceOptions>>().Value;
+
+    await adminAuditService.EnsureTableAsync();
+    await governanceBootstrapper.EnsureSchemaAsync();
+    await authInfrastructureBootstrapper.EnsureSchemaAsync();
+    await supabaseSchemaBootstrapper.EnsureSchemaAsync();
+
+    var report = new
+    {
+        action = "admin-governance-bootstrap",
+        executedAt = DateTimeOffset.UtcNow,
+        environment = app.Environment.EnvironmentName,
+        configuredSeedMembershipCount = governanceOptions.SeedMemberships.Count,
+        configuredSeedRoles = governanceOptions.SeedMemberships
+            .Select(seed => PlatformRoles.Normalize(seed.Role))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToArray(),
+        connectionSummary = sanitizedConnectionSummary
+    };
+    var serializedReport = JsonSerializer.Serialize(report, new JsonSerializerOptions
+    {
+        WriteIndented = true
+    });
+
+    if (!string.IsNullOrWhiteSpace(adminGovernanceBootstrapReportPath))
+    {
+        var fullReportPath = Path.GetFullPath(adminGovernanceBootstrapReportPath);
+        var reportDirectory = Path.GetDirectoryName(fullReportPath);
+        if (!string.IsNullOrWhiteSpace(reportDirectory))
+        {
+            Directory.CreateDirectory(reportDirectory);
+        }
+
+        await File.WriteAllTextAsync(fullReportPath, serializedReport);
+    }
+
+    Console.WriteLine(serializedReport);
+    return;
+}
+
+using (var scope = app.Services.CreateScope())
+{
+    var adminAuditService = scope.ServiceProvider.GetRequiredService<IAdminAuditService>();
+    var governanceBootstrapper = scope.ServiceProvider.GetRequiredService<AdminGovernanceBootstrapper>();
+    var authInfrastructureBootstrapper = scope.ServiceProvider.GetRequiredService<AuthInfrastructureBootstrapper>();
+    var supabaseSchemaBootstrapper = scope.ServiceProvider.GetRequiredService<SupabaseSchemaBootstrapper>();
+
+    if (await TryRunTrackedStartupPhaseAsync(
+            "admin-audit-bootstrap",
+            () => adminAuditService.EnsureTableAsync())
+        && await TryRunTrackedStartupPhaseAsync(
+            "admin-governance-bootstrap",
+            () => governanceBootstrapper.EnsureSchemaAsync()))
+    {
+        await TryRunTrackedStartupPhaseAsync(
+            "auth-infrastructure-bootstrap",
+            () => authInfrastructureBootstrapper.EnsureSchemaAsync());
+    }
+
+    await TryRunTrackedStartupPhaseAsync(
+        "supabase-schema-bootstrap",
+        () => supabaseSchemaBootstrapper.EnsureSchemaAsync());
+}
 
 foreach (var warning in optionalProductionWarnings)
 {
@@ -670,15 +981,29 @@ using (var scope = app.Services.CreateScope())
         return;
     }
 
-    try
+    var governanceBootstrapper = services.GetRequiredService<AdminGovernanceBootstrapper>();
+    var authInfrastructureBootstrapper = services.GetRequiredService<AuthInfrastructureBootstrapper>();
+    var supabaseSchemaBootstrapper = services.GetRequiredService<SupabaseSchemaBootstrapper>();
+
+    if (await TryRunTrackedStartupPhaseAsync(
+            "database-seed",
+            () => DatabaseSeeder.SeedAsync(services),
+            LogLevel.Error)
+        && await TryRunTrackedStartupPhaseAsync(
+            "admin-governance-bootstrap",
+            () => governanceBootstrapper.EnsureSchemaAsync(),
+            LogLevel.Error))
     {
-        await DatabaseSeeder.SeedAsync(services);
+        await TryRunTrackedStartupPhaseAsync(
+            "auth-infrastructure-bootstrap",
+            () => authInfrastructureBootstrapper.EnsureSchemaAsync(),
+            LogLevel.Error);
     }
-    catch (Exception ex)
-    {
-        var logger = services.GetRequiredService<ILogger<Program>>();
-        logger.LogError(ex, "An error occurred while seeding the database.");
-    }
+
+    await TryRunTrackedStartupPhaseAsync(
+        "supabase-schema-bootstrap",
+        () => supabaseSchemaBootstrapper.EnsureSchemaAsync(),
+        LogLevel.Error);
 }
 
 
@@ -742,5 +1067,70 @@ app.MapGet("/discovery", () => Results.Ok(new {
 }));
 
 await app.RunAsync();
+    }
+}
+
+public sealed class GeminiKeyReencryptionOptions
+{
+    public string OldKey { get; init; } = string.Empty;
+    public string NewKey { get; init; } = string.Empty;
+    public string? ReportPath { get; init; }
+}
+
+public sealed record StartupFailedPhase(string Phase, DateTimeOffset FailedAt);
+
+public sealed class StartupHealthState
+{
+    private readonly ConcurrentDictionary<string, DateTimeOffset> _failedPhases =
+        new(StringComparer.OrdinalIgnoreCase);
+
+    public void MarkFailed(string phase)
+    {
+        _failedPhases[phase] = DateTimeOffset.UtcNow;
+    }
+
+    public void MarkSucceeded(string phase)
+    {
+        _failedPhases.TryRemove(phase, out _);
+    }
+
+    public StartupFailedPhase[] GetFailedPhases()
+    {
+        return _failedPhases
+            .OrderBy(entry => entry.Key, StringComparer.OrdinalIgnoreCase)
+            .Select(entry => new StartupFailedPhase(entry.Key, entry.Value))
+            .ToArray();
+    }
+}
+
+public sealed class StartupBootstrapHealthCheck : IHealthCheck
+{
+    private readonly StartupHealthState _startupHealthState;
+
+    public StartupBootstrapHealthCheck(StartupHealthState startupHealthState)
+    {
+        _startupHealthState = startupHealthState;
+    }
+
+    public Task<HealthCheckResult> CheckHealthAsync(
+        HealthCheckContext context,
+        CancellationToken cancellationToken = default)
+    {
+        var failedPhases = _startupHealthState.GetFailedPhases();
+        if (failedPhases.Length == 0)
+        {
+            return Task.FromResult(HealthCheckResult.Healthy(
+                "No recorded startup/bootstrap failures."));
+        }
+
+        var data = new Dictionary<string, object>
+        {
+            ["failedPhases"] = failedPhases.Select(phase => phase.Phase).ToArray(),
+            ["lastFailureAt"] = failedPhases.Max(phase => phase.FailedAt)
+        };
+
+        return Task.FromResult(HealthCheckResult.Unhealthy(
+            "Startup/bootstrap failures were recorded.",
+            data: data));
     }
 }

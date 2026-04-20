@@ -20,14 +20,20 @@ namespace EatFitAI.API.Services
     public class UserPreferenceService : IUserPreferenceService
     {
         private readonly ApplicationDbContext _db;
+        private readonly SupabaseSchemaBootstrapper _schemaBootstrapper;
 
-        public UserPreferenceService(ApplicationDbContext db)
+        public UserPreferenceService(
+            ApplicationDbContext db,
+            SupabaseSchemaBootstrapper schemaBootstrapper)
         {
             _db = db;
+            _schemaBootstrapper = schemaBootstrapper;
         }
 
         public async Task<UserPreferenceDto> GetUserPreferenceAsync(Guid userId, CancellationToken ct = default)
         {
+            await EnsureSchemaReadyAsync(ct);
+
             var pref = await _db.UserPreferences
                 .FirstOrDefaultAsync(p => p.UserId == userId, ct);
 
@@ -53,6 +59,8 @@ namespace EatFitAI.API.Services
 
         public async Task UpdateUserPreferenceAsync(Guid userId, UserPreferenceDto dto, CancellationToken ct = default)
         {
+            await EnsureSchemaReadyAsync(ct);
+
             var pref = await _db.UserPreferences
                 .FirstOrDefaultAsync(p => p.UserId == userId, ct);
 
@@ -73,6 +81,11 @@ namespace EatFitAI.API.Services
             pref.UpdatedAt = DateTime.UtcNow;
 
             await _db.SaveChangesAsync(ct);
+        }
+
+        private async Task EnsureSchemaReadyAsync(CancellationToken ct)
+        {
+            await _schemaBootstrapper.EnsureSchemaAsync(ct);
         }
 
         private List<string> DeserializeList(string? json)

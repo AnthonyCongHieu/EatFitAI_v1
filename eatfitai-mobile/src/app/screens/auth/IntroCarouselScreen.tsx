@@ -1,7 +1,9 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
+  Animated,
   Dimensions,
   FlatList,
+  Image,
   Pressable,
   StyleSheet,
   View,
@@ -13,223 +15,886 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import Svg, {
+  Path,
+  Defs,
+  LinearGradient as SvgLinearGradient,
+  Stop,
+  Circle,
+} from 'react-native-svg';
 
 import { ThemedText } from '../../../components/ThemedText';
 import { useAppTheme } from '../../../theme/ThemeProvider';
 import type { RootStackParamList } from '../../types';
 import { TEST_IDS } from '../../../testing/testIds';
+import Tilt3DCard, { ParallaxLayer } from '../../../components/ui/Tilt3DCard';
+
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const phoBowlImage = require('../../../assets/pho-bowl.jpg');
 
 const { width, height } = Dimensions.get('window');
 
 type Props = NativeStackScreenProps<RootStackParamList, 'IntroCarousel'>;
 
 type IntroSlide = {
-  key: 'rank' | 'calories' | 'experts';
+  key: 'calories' | 'progress' | 'roadmap';
   title: string;
   subtitle: string;
 };
 
-type MascotHeadProps = {
-  size: number;
-  bodyColor: string;
-};
-
-type MascotProps = {
-  size: number;
-  bodyColor: string;
-  showAppleBadge?: boolean;
-};
-
-type FoodChip = {
-  label: string;
-  backgroundColor: string;
-  position: {
-    top: number;
-    left?: number;
-    right?: number;
-  };
-};
-
 const SLIDES: IntroSlide[] = [
-  {
-    key: 'rank',
-    title: 'Ứng dụng dinh dưỡng\ndành cho người Việt',
-    subtitle: 'Theo dõi bữa ăn, hiểu dinh dưỡng và xây thói quen sống khỏe mỗi ngày.',
-  },
   {
     key: 'calories',
     title: 'Tính calo và dinh dưỡng\nmón Việt dễ dàng hơn',
-    subtitle: 'Ước tính theo món bạn chọn để việc ăn uống đúng mục tiêu trở nên đơn giản.',
+    subtitle:
+      'Ước tính theo món bạn chọn để việc ăn uống đúng mục tiêu trở nên đơn giản.',
   },
   {
-    key: 'experts',
+    key: 'progress',
+    title: 'Chinh phục mọi mục\ntiêu hình thể',
+    subtitle: 'Lên kế hoạch, theo dõi tiến độ và nhận tư vấn của chuyên gia AI.',
+  },
+  {
+    key: 'roadmap',
     title: 'Có lộ trình, gợi ý và\nđồng hành mỗi ngày',
     subtitle: 'Nhận đề xuất phù hợp với mục tiêu để bắt đầu khỏe hơn từ những bước nhỏ.',
   },
 ];
 
-const CALORIE_CHIPS: FoodChip[] = [
-  {
-    label: 'cơm tấm',
-    backgroundColor: '#22C55E',
-    position: { left: 10, top: 26 },
-  },
-  {
-    label: 'phở gà',
-    backgroundColor: '#22C55E',
-    position: { right: 10, top: 26 },
-  },
-  {
-    label: 'bún bò',
-    backgroundColor: '#22C55E',
-    position: { left: 10, top: 220 },
-  },
-  {
-    label: 'gỏi cuốn',
-    backgroundColor: '#22C55E',
-    position: { right: 10, top: 220 },
-  },
-];
-const MascotHead = ({ size, bodyColor }: MascotHeadProps): React.ReactElement => {
-  const faceWidth = size * 0.74;
-  const faceHeight = size * 0.6;
+// ======================== SLIDE 1: NUTRITION RING ========================
+
+const RING_SIZE = width * 0.56;
+const BOWL_SIZE = RING_SIZE * 0.52;
+
+const NutritionRingSlide = (): React.ReactElement => {
+  // Bobbing animations for floating pills
+  const bobCalo = useRef(new Animated.Value(0)).current;
+  const bobProtein = useRef(new Animated.Value(0)).current;
+  const bobCarbs = useRef(new Animated.Value(0)).current;
+  const glowAnim = useRef(new Animated.Value(0.3)).current;
+
+  useEffect(() => {
+    const createBob = (anim: Animated.Value, dur: number, delay: number) =>
+      Animated.loop(
+        Animated.sequence([
+          Animated.delay(delay),
+          Animated.timing(anim, { toValue: -6, duration: dur, useNativeDriver: true }),
+          Animated.timing(anim, { toValue: 6, duration: dur, useNativeDriver: true }),
+          Animated.timing(anim, { toValue: 0, duration: dur / 2, useNativeDriver: true }),
+        ]),
+      );
+    createBob(bobCalo, 2200, 0).start();
+    createBob(bobProtein, 2600, 400).start();
+    createBob(bobCarbs, 2400, 800).start();
+
+    // Pulsing glow for the ring
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(glowAnim, { toValue: 1, duration: 1800, useNativeDriver: true }),
+        Animated.timing(glowAnim, {
+          toValue: 0.3,
+          duration: 1800,
+          useNativeDriver: true,
+        }),
+      ]),
+    ).start();
+  }, [bobCalo, bobProtein, bobCarbs, glowAnim]);
 
   return (
-    <View style={{ width: size, height: size * 0.94, alignItems: 'center' }}>
-      <View
-        style={{
-          width: size,
-          height: size * 0.82,
-          borderRadius: size * 0.34,
-          backgroundColor: bodyColor,
-          alignItems: 'center',
-          justifyContent: 'center',
-          shadowColor: bodyColor,
-          shadowOffset: { width: 0, height: 10 },
-          shadowOpacity: 0.18,
-          shadowRadius: 20,
-          elevation: 10,
-        }}
+    <View style={s1.wrap}>
+      <Tilt3DCard
+        width={RING_SIZE + 80}
+        height={RING_SIZE + 80}
+        maxTilt={6}
+        perspective={900}
+        showReflection={false}
+        useDeviceMotion={true}
       >
-        <View
-          style={{
-            position: 'absolute',
-            top: size * 0.08,
-            left: size * 0.14,
-            width: size * 0.14,
-            height: size * 0.14,
-            borderRadius: 999,
-            backgroundColor: 'rgba(255,255,255,0.12)',
-          }}
-        />
-        <View
-          style={{
-            width: faceWidth,
-            height: faceHeight,
-            borderRadius: size * 0.3,
-            backgroundColor: '#F8FBFF',
-            marginTop: size * 0.13,
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
-        >
-          <View style={{ flexDirection: 'row', gap: size * 0.08, marginTop: size * 0.01 }}>
-            <View
-              style={{
-                width: size * 0.08,
-                height: size * 0.13,
-                borderRadius: 999,
-                backgroundColor: bodyColor,
-              }}
-            />
-            <View
-              style={{
-                width: size * 0.08,
-                height: size * 0.13,
-                borderRadius: 999,
-                backgroundColor: bodyColor,
-              }}
-            />
+        {/* The ring + labels compound */}
+        <View style={s1.ringCompound}>
+          {/* CALO pill – overlaps ring at upper-left */}
+          <Animated.View style={[s1.caloPill, { transform: [{ translateY: bobCalo }] }]}>
+            <ParallaxLayer depth={0.7}>
+              <View style={s1.pill}>
+                <ThemedText style={s1.pillKey}>CALO</ThemedText>
+                <ThemedText style={s1.pillVal}> 450 kcal</ThemedText>
+              </View>
+            </ParallaxLayer>
+          </Animated.View>
+
+          {/* Ring */}
+          <View style={s1.ring}>
+            {/* Green glow border — pulsing */}
+            <Animated.View style={[s1.greenBorder, { opacity: glowAnim }]} />
+            {/* Dashed ring */}
+            <View style={s1.dashed} />
+            {/* Dark inner */}
+            <View style={s1.innerDark}>
+              {/* Phở bò image */}
+              <View style={s1.bowlClip}>
+                <Image source={phoBowlImage} style={s1.bowlImage} resizeMode="cover" />
+              </View>
+            </View>
           </View>
-          <View
-            style={{
-              position: 'absolute',
-              top: faceHeight * 0.53,
-              left: faceWidth * 0.14,
-              width: size * 0.085,
-              height: size * 0.042,
-              borderRadius: 999,
-              backgroundColor: 'rgba(244, 114, 182, 0.32)',
-            }}
-          />
-          <View
-            style={{
-              position: 'absolute',
-              top: faceHeight * 0.53,
-              right: faceWidth * 0.14,
-              width: size * 0.085,
-              height: size * 0.042,
-              borderRadius: 999,
-              backgroundColor: 'rgba(244, 114, 182, 0.32)',
-            }}
-          />
-          <View
-            style={{
-              position: 'absolute',
-              bottom: faceHeight * 0.16,
-              width: size * 0.11,
-              height: size * 0.056,
-              borderBottomLeftRadius: 999,
-              borderBottomRightRadius: 999,
-              borderWidth: size * 0.01,
-              borderTopWidth: 0,
-              borderColor: 'rgba(15, 23, 42, 0.28)',
-            }}
-          />
+
+          {/* PROTEIN pill – overlaps ring at lower-right */}
+          <Animated.View
+            style={[s1.proteinPill, { transform: [{ translateY: bobProtein }] }]}
+          >
+            <ParallaxLayer depth={0.5}>
+              <View style={s1.pill}>
+                <ThemedText style={s1.pillKey}>PROTEIN</ThemedText>
+                <ThemedText style={s1.pillVal}> 35g</ThemedText>
+              </View>
+            </ParallaxLayer>
+          </Animated.View>
+
+          {/* CARBS pill – overlaps ring at lower-left */}
+          <Animated.View
+            style={[s1.carbsPill, { transform: [{ translateY: bobCarbs }] }]}
+          >
+            <ParallaxLayer depth={0.6}>
+              <View style={s1.pill}>
+                <ThemedText style={s1.pillKey}>CARBS</ThemedText>
+                <ThemedText style={s1.pillVal}> 40g</ThemedText>
+              </View>
+            </ParallaxLayer>
+          </Animated.View>
         </View>
-      </View>
+      </Tilt3DCard>
     </View>
   );
 };
-const CuteMascot = ({ size, bodyColor, showAppleBadge = false }: MascotProps): React.ReactElement => {
-  const bodyWidth = size * 0.56;
-  const bodyHeight = size * 0.46;
+
+const s1 = StyleSheet.create({
+  wrap: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  ringCompound: {
+    width: RING_SIZE + 80,
+    height: RING_SIZE + 80,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  ring: {
+    width: RING_SIZE,
+    height: RING_SIZE,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  greenBorder: {
+    position: 'absolute',
+    width: RING_SIZE,
+    height: RING_SIZE,
+    borderRadius: RING_SIZE / 2,
+    borderWidth: 4,
+    borderColor: '#22C55E',
+    shadowColor: '#22C55E',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.5,
+    shadowRadius: 22,
+    elevation: 10,
+  },
+  dashed: {
+    position: 'absolute',
+    width: RING_SIZE * 0.88,
+    height: RING_SIZE * 0.88,
+    borderRadius: (RING_SIZE * 0.88) / 2,
+    borderWidth: 1.5,
+    borderColor: 'rgba(34,197,94,0.28)',
+    borderStyle: 'dashed',
+  },
+  innerDark: {
+    width: RING_SIZE * 0.78,
+    height: RING_SIZE * 0.78,
+    borderRadius: (RING_SIZE * 0.78) / 2,
+    backgroundColor: '#0B1426',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  bowlClip: {
+    width: BOWL_SIZE * 1.3,
+    height: BOWL_SIZE * 1.3,
+    borderRadius: (BOWL_SIZE * 1.3) / 2,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  bowlImage: {
+    width: BOWL_SIZE * 1.3,
+    height: BOWL_SIZE * 1.3,
+  },
+  // --- Pills positioned around the ring ---
+  caloPill: {
+    position: 'absolute',
+    top: -4,
+    left: -20,
+    zIndex: 10,
+  },
+  proteinPill: {
+    position: 'absolute',
+    bottom: 8,
+    right: -30,
+    zIndex: 10,
+  },
+  carbsPill: {
+    position: 'absolute',
+    bottom: -8,
+    left: -20,
+    zIndex: 10,
+  },
+  pill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(10,20,38,0.92)',
+    borderRadius: 20,
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    borderWidth: 1,
+    borderColor: 'rgba(34,197,94,0.16)',
+  },
+  pillKey: {
+    color: 'rgba(255,255,255,0.6)',
+    fontSize: 11,
+    fontFamily: 'BeVietnamPro_600SemiBold',
+    letterSpacing: 0.8,
+  },
+  pillVal: {
+    color: '#22C55E',
+    fontSize: 15,
+    fontFamily: 'BeVietnamPro_700Bold',
+  },
+});
+
+// ======================== SLIDE 2: PROGRESS CHART ========================
+
+const CHART_W = width * 0.85;
+const CHART_H = 280;
+const AnimatedCircle = Animated.createAnimatedComponent(Circle);
+
+const ProgressChartSlide = (): React.ReactElement => {
+  const pulseAnimRef = useRef(new Animated.Value(0.2)).current;
+  const bobBadge = useRef(new Animated.Value(0)).current;
+  const bobStats = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseAnimRef, {
+          toValue: 0.8,
+          duration: 1500,
+          useNativeDriver: true,
+        }),
+        Animated.timing(pulseAnimRef, {
+          toValue: 0.2,
+          duration: 1500,
+          useNativeDriver: true,
+        }),
+      ]),
+    ).start();
+
+    // Bobbing for badge & stats
+    const createBob = (anim: Animated.Value, dur: number, delay: number) =>
+      Animated.loop(
+        Animated.sequence([
+          Animated.delay(delay),
+          Animated.timing(anim, { toValue: -5, duration: dur, useNativeDriver: true }),
+          Animated.timing(anim, { toValue: 5, duration: dur, useNativeDriver: true }),
+          Animated.timing(anim, { toValue: 0, duration: dur / 2, useNativeDriver: true }),
+        ]),
+      );
+    createBob(bobBadge, 2400, 0).start();
+    createBob(bobStats, 2800, 600).start();
+  }, [pulseAnimRef, bobBadge, bobStats]);
+
+  // viewBox expanded to prevent SVG clipping at right/bottom edge
+  const curvePath =
+    'M0 140 C 40 135, 80 145, 120 120 C 160 95, 200 130, 240 100 C 280 70, 320 110, 400 20';
+  const areaPath =
+    'M0 140 C 40 135, 80 145, 120 120 C 160 95, 200 130, 240 100 C 280 70, 320 110, 400 20 L 400 160 L 0 160 Z';
 
   return (
-    <View style={{ width: size * 1.18, alignItems: 'center' }}>
-      <MascotHead size={size} bodyColor={bodyColor} />
-      <View
-        style={{
-          width: bodyWidth,
-          height: bodyHeight,
-          borderRadius: bodyWidth * 0.38,
-          backgroundColor: bodyColor,
-          marginTop: -size * 0.08,
-          alignItems: 'center',
-          justifyContent: 'center',
-          shadowColor: bodyColor,
-          shadowOffset: { width: 0, height: 8 },
-          shadowOpacity: 0.14,
-          shadowRadius: 14,
-          elevation: 6,
-        }}
+    <View style={s2.wrap}>
+      <Tilt3DCard
+        width={CHART_W}
+        height={CHART_H + 48}
+        maxTilt={5}
+        perspective={1000}
+        showReflection={false}
+        useDeviceMotion={true}
       >
-        <View
-          style={{
-            width: bodyWidth * 0.5,
-            height: bodyHeight * 0.42,
-            borderRadius: bodyWidth * 0.22,
-            backgroundColor: 'rgba(255,255,255,0.22)',
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
-        >
-          {showAppleBadge ? <Ionicons name="nutrition" size={size * 0.17} color="#FFFFFF" /> : null}
+        <View style={s2.heroWrapper}>
+          {/* Main Glass Card */}
+          <View style={s2.glassCard}>
+            {/* Header */}
+            <View style={s2.headerRow}>
+              <View style={s2.colLeft}>
+                <ThemedText style={s2.weekLabel}>TIẾN ĐỘ HÀNG TUẦN</ThemedText>
+                <ThemedText style={s2.percentText}>+8.5% Cơ bắp</ThemedText>
+              </View>
+
+              {/* Trophy */}
+              <View style={s2.trophyWrap}>
+                <View style={s2.trophyGlow} />
+                <Ionicons name="trophy" size={26} color="#22C55E" style={s2.trophyIcon} />
+              </View>
+            </View>
+
+            {/* SVG Line Graph Area */}
+            <View style={s2.graphArea}>
+              <Svg
+                width="100%"
+                height="100%"
+                viewBox="-10 -10 420 180"
+                preserveAspectRatio="none"
+              >
+                <Defs>
+                  <SvgLinearGradient id="lineGrad" x1="0" y1="0" x2="1" y2="0">
+                    <Stop offset="0" stopColor="#10B981" />
+                    <Stop offset="1" stopColor="#2DD4BF" />
+                  </SvgLinearGradient>
+                  <SvgLinearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
+                    <Stop offset="0" stopColor="#10B981" stopOpacity="0.4" />
+                    <Stop offset="1" stopColor="#10B981" stopOpacity="0" />
+                  </SvgLinearGradient>
+                </Defs>
+                <Path d={areaPath} fill="url(#areaGrad)" />
+                <Path
+                  d={curvePath}
+                  fill="none"
+                  stroke="url(#lineGrad)"
+                  strokeWidth="4"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+
+                {/* Glowing animated dot at current progress */}
+                <AnimatedCircle
+                  cx="400"
+                  cy="20"
+                  r="10"
+                  fill="#2DD4BF"
+                  opacity={pulseAnimRef}
+                />
+                <Circle cx="400" cy="20" r="4" fill="#FFFFFF" />
+              </Svg>
+
+              {/* Target Badge Floating Top-Right */}
+              <Animated.View
+                style={[s2.targetBadge, { transform: [{ translateY: bobBadge }] }]}
+              >
+                <ParallaxLayer depth={0.6}>
+                  <View style={s2.targetBadgeInner}>
+                    <View style={s2.targetDot} />
+                    <ThemedText style={s2.targetText}>ĐẠT MỤC TIÊU</ThemedText>
+                  </View>
+                </ParallaxLayer>
+              </Animated.View>
+            </View>
+          </View>
+
+          {/* Floating Stats Bubbles (Bottom Left) */}
+          <Animated.View
+            style={[s2.floatingStats, { transform: [{ translateY: bobStats }] }]}
+          >
+            <ParallaxLayer depth={0.8}>
+              <View style={s2.floatingStatsInner}>
+                <LinearGradient colors={['#059669', '#4BE277']} style={s2.boltCircle}>
+                  <Ionicons name="flash" size={20} color="#002109" />
+                </LinearGradient>
+                <View style={s2.statsCol}>
+                  <ThemedText style={s2.statsLabel}>TIÊU THỤ HÀNG NGÀY</ThemedText>
+                  <View style={s2.statsValRow}>
+                    <ThemedText style={s2.statsVal}>2,480 </ThemedText>
+                    <ThemedText style={s2.statsUnit}>kcal</ThemedText>
+                  </View>
+                </View>
+              </View>
+            </ParallaxLayer>
+          </Animated.View>
         </View>
-      </View>
+      </Tilt3DCard>
     </View>
   );
 };
+
+const s2 = StyleSheet.create({
+  wrap: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 16,
+  },
+  heroWrapper: {
+    width: CHART_W,
+    paddingBottom: 48, // Allow overlap area for floating stats
+    alignItems: 'center',
+    position: 'relative',
+    marginTop: -20,
+  },
+  glassCard: {
+    width: '100%',
+    height: CHART_H,
+    backgroundColor: 'rgba(26, 34, 53, 0.7)',
+    borderRadius: 24,
+    padding: 24,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)',
+    borderTopWidth: 1, // subtle top border for 3D metallic sheen
+    elevation: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.4,
+    shadowRadius: 16,
+  },
+  headerRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+  },
+  colLeft: {
+    flexDirection: 'column',
+    justifyContent: 'center',
+  },
+  weekLabel: {
+    color: 'rgba(188,203,185,0.8)', // Text on surface variant approx
+    fontSize: 10,
+    fontFamily: 'BeVietnamPro_700Bold',
+    letterSpacing: 1.2,
+    marginBottom: 4,
+    textTransform: 'uppercase',
+  },
+  percentText: {
+    color: '#DEE1F7',
+    fontSize: 26,
+    fontFamily: 'BeVietnamPro_800ExtraBold',
+    letterSpacing: -0.5,
+    marginTop: -2,
+    lineHeight: 34,
+    paddingTop: 4,
+    paddingBottom: 4,
+    includeFontPadding: true,
+  },
+  trophyWrap: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 4,
+    marginRight: 4,
+  },
+  trophyGlow: {
+    position: 'absolute',
+    width: 32,
+    height: 32,
+    backgroundColor: '#22C55E',
+    opacity: 0.25,
+    borderRadius: 16,
+    shadowColor: '#22C55E',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 1,
+    shadowRadius: 16,
+  },
+  trophyIcon: {
+    textShadowColor: 'rgba(75, 226, 119, 0.8)',
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 8,
+  },
+  graphArea: {
+    flex: 1,
+    width: '100%',
+    marginTop: 16,
+    position: 'relative',
+  },
+  targetBadge: {
+    position: 'absolute',
+    top: -16,
+    right: 0,
+  },
+  targetBadgeInner: {
+    backgroundColor: 'rgba(34, 197, 94, 0.15)',
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(34, 197, 94, 0.4)',
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  targetDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#22C55E',
+    marginRight: 6,
+  },
+  targetText: {
+    color: '#22C55E',
+    fontSize: 9,
+    fontFamily: 'BeVietnamPro_700Bold',
+    textTransform: 'uppercase',
+  },
+  floatingStats: {
+    position: 'absolute',
+    bottom: -40,
+    left: -12,
+  },
+  floatingStatsInner: {
+    backgroundColor: 'rgba(26, 34, 53, 0.95)',
+    paddingHorizontal: 20,
+    paddingVertical: 14,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+    flexDirection: 'row',
+    alignItems: 'center',
+    shadowColor: '#22C55E',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.15,
+    shadowRadius: 20,
+    elevation: 10,
+  },
+  statsCol: {
+    justifyContent: 'center',
+  },
+  boltCircle: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#4BE277',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.4,
+    shadowRadius: 15,
+    marginRight: 14,
+  },
+  statsLabel: {
+    color: 'rgba(52, 211, 153, 0.8)',
+    fontSize: 10,
+    fontFamily: 'BeVietnamPro_700Bold',
+    letterSpacing: 1,
+    marginBottom: 2,
+    textTransform: 'uppercase',
+  },
+  statsValRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+  },
+  statsVal: {
+    color: '#FFFFFF',
+    fontSize: 22,
+    fontFamily: 'BeVietnamPro_800ExtraBold',
+    letterSpacing: -0.5,
+  },
+  statsUnit: {
+    color: 'rgba(188,203,185,0.8)',
+    fontSize: 12,
+    fontFamily: 'BeVietnamPro_500Medium',
+    marginLeft: 4,
+  },
+});
+
+// ======================== SLIDE 3: ROADMAP ========================
+
+// Design reference layout:
+// - Step 1 (Đạt mục tiêu): top, lock icon on right, opacity 50%
+// - Step 2 (Theo dõi bữa ăn): middle, shifted left, pulsing fork icon on far-left
+// - Step 3 (Đặt mục tiêu): bottom, shifted right, green checkmark on right
+// - S-curve connecting all three steps
+
+const RoadmapSlide = (): React.ReactElement => {
+  const pulseAnimRef = useRef(new Animated.Value(0.4)).current;
+  const bobChip1 = useRef(new Animated.Value(0)).current;
+  const bobChip2 = useRef(new Animated.Value(0)).current;
+  const bobChip3 = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseAnimRef, {
+          toValue: 1,
+          duration: 1200,
+          useNativeDriver: true,
+        }),
+        Animated.timing(pulseAnimRef, {
+          toValue: 0.4,
+          duration: 1200,
+          useNativeDriver: true,
+        }),
+      ]),
+    ).start();
+
+    // Bobbing for chips
+    const createBob = (anim: Animated.Value, dur: number, delay: number) =>
+      Animated.loop(
+        Animated.sequence([
+          Animated.delay(delay),
+          Animated.timing(anim, { toValue: -5, duration: dur, useNativeDriver: true }),
+          Animated.timing(anim, { toValue: 5, duration: dur, useNativeDriver: true }),
+          Animated.timing(anim, { toValue: 0, duration: dur / 2, useNativeDriver: true }),
+        ]),
+      );
+    createBob(bobChip1, 2600, 0).start();
+    createBob(bobChip2, 2200, 500).start();
+    createBob(bobChip3, 2800, 1000).start();
+  }, [pulseAnimRef, bobChip1, bobChip2, bobChip3]);
+
+  // Heights and Coordinates
+  const SVG_HEIGHT = 440;
+
+  // Icon radiuses
+  const topRadius = 22;
+  const midRadius = 28;
+  const botRadius = 20;
+
+  // Node Y Centers
+  const node1Y = 70;
+  const node2Y = 220;
+  const node3Y = 370;
+
+  // X Layout Calculation
+  // Tinh chỉnh trục X về sát tâm màn hình để đường cong mềm mại tự nhiên
+  const centerX = (width - 48) / 2; // Căn giữa container (trừ padding slide)
+  const SWEEP = 38; // Khoảng lệch của S-Curve so với tâm (vừa đủ mượt mà)
+
+  const rightX = centerX + SWEEP;
+  const leftX = centerX - SWEEP;
+  const botX = rightX;
+
+  // Nội suy Bezier Curve mượt mà với 2 control points quy về trung điểm Y
+  const yMid1 = (node1Y + node2Y) / 2;
+  const yMid2 = (node2Y + node3Y) / 2;
+
+  const dashedPath = `
+    M ${rightX} 0
+    L ${rightX} ${node1Y}
+    C ${rightX} ${yMid1}, ${leftX} ${yMid1}, ${leftX} ${node2Y}
+    C ${leftX} ${yMid2}, ${botX} ${yMid2}, ${botX} ${node3Y}
+    L ${botX} ${SVG_HEIGHT}
+  `;
+
+  return (
+    <View style={s3.wrap}>
+      <Tilt3DCard
+        width={width - 48}
+        height={480}
+        maxTilt={4}
+        perspective={1000}
+        showReflection={false}
+        useDeviceMotion={true}
+      >
+      {/* Background Winding Line */}
+      <View style={StyleSheet.absoluteFillObject}>
+        <Svg width={width} height={SVG_HEIGHT}>
+          <Path
+            d={dashedPath}
+            stroke="#22C55E"
+            strokeWidth={1.5}
+            fill="none"
+            strokeDasharray="6,6"
+            strokeOpacity={0.6}
+            strokeLinecap="round"
+          />
+        </Svg>
+      </View>
+
+      {/* NODE 1: Đạt mục tiêu (Future) */}
+      <Animated.View
+        style={{
+          position: 'absolute',
+          right: width - 48 - rightX + topRadius + 8,
+          top: node1Y - 24,
+          transform: [{ translateY: bobChip1 }],
+        }}
+      >
+        <ParallaxLayer depth={0.5}>
+          <View style={[s3.glassCard, { opacity: 0.5 }]}>
+            <View style={s3.iconBox}>
+              <Ionicons name="trophy" size={18} color="#F59E0B" />
+            </View>
+            <ThemedText style={s3.cardTitle} numberOfLines={1}>
+              Đạt mục tiêu
+            </ThemedText>
+          </View>
+        </ParallaxLayer>
+      </Animated.View>
+      <View
+        style={[
+          s3.lockCircle,
+          {
+            position: 'absolute',
+            left: rightX - topRadius,
+            top: node1Y - topRadius,
+            opacity: 0.5,
+          },
+        ]}
+      >
+        <Ionicons name="lock-closed" size={18} color="#94A3B8" />
+      </View>
+
+      {/* NODE 2: Theo dõi bữa ăn (Active) */}
+      <View
+        style={[
+          s3.activePulseWrap,
+          { position: 'absolute', left: leftX - midRadius, top: node2Y - midRadius },
+        ]}
+      >
+        <Animated.View style={[s3.pulseRing, { opacity: pulseAnimRef }]} />
+        <View style={s3.activeCircle}>
+          <Ionicons name="restaurant" size={16} color="#FFFFFF" />
+        </View>
+      </View>
+      <Animated.View
+        style={{
+          position: 'absolute',
+          left: leftX + midRadius + 6,
+          top: node2Y - 24,
+          transform: [{ translateY: bobChip2 }],
+        }}
+      >
+        <ParallaxLayer depth={0.7}>
+          <View style={[s3.glassCard, s3.activeCard]}>
+            <View style={[s3.iconBox, s3.iconBoxActive]}>
+              <ThemedText style={{ fontSize: 16 }}>🥗</ThemedText>
+            </View>
+            <ThemedText style={s3.cardTitle} numberOfLines={1}>
+              Theo dõi bữa ăn
+            </ThemedText>
+          </View>
+        </ParallaxLayer>
+      </Animated.View>
+
+      {/* NODE 3: Đặt mục tiêu (Completed) */}
+      <Animated.View
+        style={{
+          position: 'absolute',
+          right: width - 48 - botX + botRadius + 8,
+          top: node3Y - 24,
+          transform: [{ translateY: bobChip3 }],
+        }}
+      >
+        <ParallaxLayer depth={0.6}>
+          <View style={[s3.glassCard]}>
+            <View style={s3.iconBox}>
+              <Ionicons name="flag" size={18} color="#EF4444" />
+            </View>
+            <ThemedText style={s3.cardTitle} numberOfLines={1}>
+              Đặt mục tiêu
+            </ThemedText>
+          </View>
+        </ParallaxLayer>
+      </Animated.View>
+      <View
+        style={[
+          s3.checkCircle,
+          { position: 'absolute', left: botX - botRadius, top: node3Y - botRadius },
+        ]}
+      >
+        <Ionicons name="checkmark" size={20} color="#FFFFFF" />
+      </View>
+      </Tilt3DCard>
+    </View>
+  );
+};
+
+const s3 = StyleSheet.create({
+  wrap: {
+    flex: 1,
+    height: 480,
+    width: '100%',
+    position: 'relative',
+    marginTop: 20,
+    overflow: 'hidden',
+  },
+  glassCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(37, 41, 58, 0.5)',
+    borderRadius: 14,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
+    gap: 10,
+  },
+  activeCard: {
+    borderColor: 'rgba(34, 197, 94, 0.25)',
+    backgroundColor: 'rgba(37, 41, 58, 0.8)',
+  },
+  iconBox: {
+    width: 30,
+    height: 30,
+    borderRadius: 10,
+    backgroundColor: 'rgba(255,255,255,0.06)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  iconBoxActive: {
+    backgroundColor: 'rgba(34,197,94,0.1)',
+  },
+  cardTitle: {
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontFamily: 'BeVietnamPro_700Bold',
+    letterSpacing: -0.2,
+  },
+  lockCircle: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#2F3445',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: '#475569',
+  },
+  activePulseWrap: {
+    width: 56,
+    height: 56,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  pulseRing: {
+    position: 'absolute',
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    borderWidth: 4,
+    borderColor: '#22C55E',
+    shadowColor: '#22C55E',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.4,
+    shadowRadius: 10,
+    elevation: 6,
+  },
+  activeCircle: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#22C55E',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  checkCircle: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#22C55E',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#22C55E',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+});
+
+// ======================== MAIN SCREEN ========================
 
 const IntroCarouselScreen = ({ navigation }: Props): React.ReactElement => {
   const { theme } = useAppTheme();
@@ -241,28 +906,19 @@ const IntroCarouselScreen = ({ navigation }: Props): React.ReactElement => {
       StyleSheet.create({
         container: {
           flex: 1,
-          backgroundColor: theme.colors.background,
+          backgroundColor: '#080E1A',
         },
         backgroundFill: {
           ...StyleSheet.absoluteFillObject,
         },
         topGlow: {
           position: 'absolute',
-          top: -height * 0.16,
+          top: -height * 0.12,
           alignSelf: 'center',
-          width: width * 1.18,
-          height: width * 1.18,
-          borderRadius: width * 0.59,
-          backgroundColor: theme.colors.primary + '26',
-        },
-        bottomGlow: {
-          position: 'absolute',
-          bottom: -height * 0.1,
-          left: -width * 0.1,
-          width: width * 0.78,
-          height: width * 0.78,
-          borderRadius: width * 0.39,
-          backgroundColor: theme.colors.primary + '12',
+          width: width * 1.1,
+          height: width * 1.1,
+          borderRadius: width * 0.55,
+          backgroundColor: 'rgba(34,197,94,0.05)',
         },
         shell: {
           flex: 1,
@@ -271,278 +927,100 @@ const IntroCarouselScreen = ({ navigation }: Props): React.ReactElement => {
         },
         brand: {
           alignItems: 'center',
-          marginBottom: 8,
+          marginBottom: 4,
         },
         brandText: {
-          color: '#FFFFFF',
-          fontSize: 28,
-          lineHeight: 34,
+          color: '#22C55E',
+          fontSize: 24,
+          lineHeight: 30,
           fontFamily: 'BeVietnamPro_700Bold',
-          letterSpacing: -0.4,
+          letterSpacing: 4,
+          textTransform: 'uppercase',
         },
         carousel: {
           flex: 1,
         },
         slide: {
           width,
-          paddingHorizontal: 28,
-          justifyContent: 'space-between',
+          paddingHorizontal: 24,
         },
         heroBlock: {
           flex: 1,
           justifyContent: 'center',
         },
-        artworkWrap: {
-          height: height * 0.42,
-          alignItems: 'center',
-          justifyContent: 'center',
-          marginTop: 8,
-        },
-        artworkGlow: {
-          position: 'absolute',
-          width: width * 0.7,
-          height: width * 0.7,
-          borderRadius: width * 0.35,
-          backgroundColor: theme.colors.primary + '18',
-        },
-        artworkHalo: {
-          position: 'absolute',
-          width: width * 0.48,
-          height: width * 0.48,
-          borderRadius: width * 0.24,
-          backgroundColor: theme.colors.primary + '10',
-          borderWidth: 1,
-          borderColor: theme.colors.primary + '18',
-        },
-        mascotShadow: {
-          position: 'absolute',
-          bottom: 34,
-          width: width * 0.28,
-          height: 18,
-          borderRadius: 999,
-          backgroundColor: 'rgba(4, 12, 24, 0.28)',
-        },
-        chip: {
-          position: 'absolute',
-          width: 104,
-          paddingVertical: 10,
-          borderRadius: 999,
-          alignItems: 'center',
-          borderWidth: 1,
-          borderColor: 'rgba(255,255,255,0.16)',
-        },
-        chipText: {
-          color: '#052E16',
-          fontSize: 15,
-          lineHeight: 20,
-          fontFamily: 'BeVietnamPro_700Bold',
-        },
-        chartScene: {
-          width: width,
-          height: width * 0.72,
-          alignItems: 'center',
-          justifyContent: 'center',
-          overflow: 'hidden',
-        },
-        deviceStack: {
-          width: width * 0.56,
-          alignItems: 'center',
-          justifyContent: 'center',
-        },
-        deviceScreen: {
-          width: width * 0.48,
-          borderRadius: 24,
-          backgroundColor: '#152033',
-          borderWidth: 4,
-          borderColor: theme.colors.primary,
-          paddingHorizontal: 14,
-          paddingTop: 16,
-          paddingBottom: 14,
-          shadowColor: theme.colors.primary,
-          shadowOffset: { width: 0, height: 12 },
-          shadowOpacity: 0.16,
-          shadowRadius: 22,
-          elevation: 10,
-        },
-        deviceTopLine: {
-          width: '42%',
-          height: 10,
-          borderRadius: 999,
-          backgroundColor: 'rgba(255,255,255,0.12)',
-          marginBottom: 16,
-          alignSelf: 'flex-start',
-        },
-        deviceBarsRow: {
-          flexDirection: 'row',
-          alignItems: 'flex-end',
-          justifyContent: 'space-between',
-          gap: 10,
-          marginBottom: 14,
-        },
-        deviceBar: {
-          flex: 1,
-          minWidth: 16,
-          borderRadius: 8,
-          backgroundColor: '#4D8FE3',
-        },
-        deviceBarAccent: {
-          backgroundColor: '#22C55E',
-        },
-        deviceBottomLine: {
-          width: '84%',
-          height: 8,
-          borderRadius: 999,
-          backgroundColor: 'rgba(255,255,255,0.18)',
-          alignSelf: 'center',
-        },
-        deviceBase: {
-          width: width * 0.48,
-          height: 18,
-          borderRadius: 999,
-          backgroundColor: theme.colors.primary,
-          marginTop: 10,
-        },
-        cardStage: {
-          width: width * 0.84,
-          height: width * 0.62,
-          alignItems: 'center',
-          justifyContent: 'center',
-        },
-        lightRay: {
-          position: 'absolute',
-          width: 86,
-          height: 220,
-          borderRadius: 999,
-          backgroundColor: theme.colors.primary + '16',
-        },
-        profileFrame: {
-          width: width * 0.89,
-          borderRadius: 40,
-          padding: 5,
-          backgroundColor: 'rgba(111, 176, 255, 0.95)',
-          borderWidth: 1,
-          borderColor: 'rgba(255,255,255,0.22)',
-          transform: [{ rotate: '-6deg' }],
-          shadowColor: theme.colors.primary,
-          shadowOffset: { width: 0, height: 16 },
-          shadowOpacity: 0.22,
-          shadowRadius: 26,
-          elevation: 12,
-        },
-        profileCard: {
-          width: '100%',
-          minHeight: width * 0.36,
-          borderRadius: 35,
-          backgroundColor: '#F7FBFF',
-          borderWidth: 1,
-          borderColor: 'rgba(126, 166, 220, 0.35)',
-          paddingHorizontal: 20,
-          paddingVertical: 18,
-        },
-        profileInner: {
-          flexDirection: 'row',
-          alignItems: 'center',
-        },
-        avatarCard: {
-          width: 80,
-          height: 88,
-          borderRadius: 28,
-          backgroundColor: '#DCEBFF',
-          alignItems: 'center',
-          justifyContent: 'center',
-          marginRight: 14,
-        },
-        profileContent: {
-          flex: 1,
-        },
-        profileLabel: {
-          color: '#5C6D87',
-          fontSize: 13,
-          lineHeight: 18,
-          fontFamily: 'BeVietnamPro_500Medium',
-          marginBottom: 3,
-        },
-        profileValue: {
-          color: '#0F172A',
-          fontSize: 17,
-          lineHeight: 22,
-          fontFamily: 'BeVietnamPro_700Bold',
-          marginBottom: 8,
-        },
-        profileRole: {
-          color: '#0F172A',
-          fontSize: 13,
-          lineHeight: 17,
-          fontFamily: 'BeVietnamPro_700Bold',
-          letterSpacing: 0.2,
-        },
-        starsRow: {
-          flexDirection: 'row',
-          gap: 4,
-          marginTop: 12,
-        },
         content: {
+          paddingBottom: 4,
           alignItems: 'center',
-          paddingBottom: 12,
         },
         title: {
           color: '#FFFFFF',
           textAlign: 'center',
-          fontSize: 28,
-          lineHeight: 38,
+          fontSize: 26,
+          lineHeight: 37,
           fontFamily: 'BeVietnamPro_700Bold',
-          letterSpacing: -0.4,
-          marginBottom: 14,
+          letterSpacing: -0.3,
+          marginBottom: 10,
         },
         subtitle: {
-          maxWidth: 330,
+          maxWidth: 310,
           textAlign: 'center',
-          color: 'rgba(228, 236, 249, 0.76)',
-          fontSize: 17,
-          lineHeight: 28,
+          color: 'rgba(228,236,249,0.55)',
+          fontSize: 15,
+          lineHeight: 24,
           fontFamily: 'BeVietnamPro_400Regular',
         },
         footer: {
           paddingHorizontal: 24,
-          paddingTop: 12,
+          paddingTop: 8,
         },
         dotsRow: {
           flexDirection: 'row',
           justifyContent: 'center',
-          gap: 10,
-          marginBottom: 22,
+          alignItems: 'center',
+          gap: 8,
+          marginBottom: 18,
         },
         dot: {
-          width: 10,
-          height: 10,
+          width: 8,
+          height: 8,
           borderRadius: 999,
-          backgroundColor: 'rgba(255,255,255,0.28)',
+          backgroundColor: 'rgba(255,255,255,0.22)',
         },
         dotActive: {
-          width: 12,
-          height: 12,
+          width: 28,
+          height: 8,
+          borderRadius: 999,
           backgroundColor: '#FFFFFF',
         },
         buttonShell: {
+          alignSelf: 'center',
           borderRadius: 999,
           overflow: 'hidden',
-          shadowColor: theme.colors.primary,
-          shadowOffset: { width: 0, height: 14 },
-          shadowOpacity: 0.2,
+          shadowColor: '#22C55E',
+          shadowOffset: { width: 0, height: 10 },
+          shadowOpacity: 0.3,
           shadowRadius: 20,
           elevation: 8,
         },
         buttonGradient: {
-          minHeight: 62,
+          minHeight: 52,
+          paddingHorizontal: 80,
           alignItems: 'center',
           justifyContent: 'center',
+          flexDirection: 'row',
+          gap: 8,
           borderRadius: 999,
         },
         buttonText: {
           color: '#FFFFFF',
-          fontSize: 18,
-          lineHeight: 24,
-          fontFamily: 'Inter_700Bold',
+          fontSize: 17,
+          lineHeight: 22,
+          fontFamily: 'BeVietnamPro_700Bold',
+        },
+        buttonArrow: {
+          color: '#FFFFFF',
+          fontSize: 20,
+          fontFamily: 'BeVietnamPro_400Regular',
         },
       }),
     [insets.bottom, insets.top, theme],
@@ -558,81 +1036,9 @@ const IntroCarouselScreen = ({ navigation }: Props): React.ReactElement => {
   };
 
   const renderArtwork = (slide: IntroSlide) => {
-    if (slide.key === 'rank') {
-      return (
-        <View style={styles.artworkWrap}>
-          <View style={styles.artworkGlow} />
-          <View style={styles.artworkHalo} />
-          <View style={styles.mascotShadow} />
-          <CuteMascot size={154} bodyColor={theme.colors.primary} showAppleBadge />
-        </View>
-      );
-    }
-
-    if (slide.key === 'calories') {
-      return (
-        <View style={styles.artworkWrap}>
-          <View style={styles.artworkGlow} />
-          <View style={styles.artworkHalo} />
-          <View style={styles.chartScene}>
-            {CALORIE_CHIPS.map((chip) => (
-              <View
-                key={chip.label}
-                style={[styles.chip, chip.position, { backgroundColor: chip.backgroundColor }]}
-              >
-                <ThemedText style={styles.chipText}>{chip.label}</ThemedText>
-              </View>
-            ))}
-
-            <View style={styles.deviceStack}>
-              <View style={styles.deviceScreen}>
-                <View style={styles.deviceTopLine} />
-                <View style={styles.deviceBarsRow}>
-                  <View style={[styles.deviceBar, { height: 30 }]} />
-                  <View style={[styles.deviceBar, { height: 54 }]} />
-                  <View style={[styles.deviceBar, { height: 40 }]} />
-                  <View style={[styles.deviceBar, styles.deviceBarAccent, { height: 68 }]} />
-                  <View style={[styles.deviceBar, { height: 48 }]} />
-                </View>
-                <View style={styles.deviceBottomLine} />
-              </View>
-            </View>
-          </View>
-        </View>
-      );
-    }
-
-    return (
-      <View style={styles.artworkWrap}>
-        <View style={styles.artworkGlow} />
-        <View style={styles.cardStage}>
-          <View style={[styles.lightRay, { transform: [{ rotate: '-24deg' }] }]} />
-          <View style={[styles.lightRay, { transform: [{ rotate: '24deg' }] }]} />
-          <View style={styles.profileFrame}>
-            <View style={styles.profileCard}>
-              <View style={styles.profileInner}>
-                <View style={styles.avatarCard}>
-                  <MascotHead size={56} bodyColor={theme.colors.primary} />
-                </View>
-                <View style={styles.profileContent}>
-                  <ThemedText style={styles.profileLabel}>Họ tên:</ThemedText>
-                  <ThemedText style={styles.profileValue}>EatFit</ThemedText>
-                  <ThemedText style={styles.profileLabel}>Chức vụ:</ThemedText>
-                  <ThemedText style={styles.profileRole} lines={1}>
-                    CHUYÊN GIA DINH DƯỠNG
-                  </ThemedText>
-                  <View style={styles.starsRow}>
-                    {Array.from({ length: 5 }).map((_, index) => (
-                      <Ionicons key={index} name="star" size={20} color="#22C55E" />
-                    ))}
-                  </View>
-                </View>
-              </View>
-            </View>
-          </View>
-        </View>
-      </View>
-    );
+    if (slide.key === 'calories') return <NutritionRingSlide />;
+    if (slide.key === 'progress') return <ProgressChartSlide />;
+    return <RoadmapSlide />;
   };
 
   const renderSlide = ({ item }: ListRenderItemInfo<IntroSlide>) => (
@@ -648,17 +1054,16 @@ const IntroCarouselScreen = ({ navigation }: Props): React.ReactElement => {
   return (
     <View style={styles.container} testID={TEST_IDS.auth.introScreen}>
       <LinearGradient
-        colors={['#09111F', '#132844', '#08101C']}
+        colors={['#080E1A', '#0F1B2E', '#080E1A']}
         start={{ x: 0.5, y: 0 }}
         end={{ x: 0.5, y: 1 }}
         style={styles.backgroundFill}
       />
       <View style={styles.topGlow} />
-      <View style={styles.bottomGlow} />
 
       <View style={styles.shell}>
         <View style={styles.brand}>
-          <ThemedText style={styles.brandText}>EatFit AI</ThemedText>
+          <ThemedText style={styles.brandText}>EATFIT AI</ThemedText>
         </View>
 
         <FlatList
@@ -686,20 +1091,21 @@ const IntroCarouselScreen = ({ navigation }: Props): React.ReactElement => {
 
           <Pressable
             onPress={handleStart}
+            style={styles.buttonShell}
+            hitSlop={12}
+            pressRetentionOffset={12}
             accessibilityRole="button"
             accessibilityLabel="Bắt đầu ngay"
             testID={TEST_IDS.auth.introStartButton}
           >
-            <View style={styles.buttonShell}>
-              <LinearGradient
-                colors={[theme.colors.primary, theme.colors.primaryDark]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-                style={styles.buttonGradient}
-              >
-                <ThemedText style={styles.buttonText}>Bắt đầu ngay</ThemedText>
-              </LinearGradient>
-            </View>
+            <LinearGradient
+              colors={['#22C55E', '#16A34A']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={styles.buttonGradient}
+            >
+              <ThemedText style={styles.buttonText}>Bắt đầu ngay</ThemedText>
+            </LinearGradient>
           </Pressable>
         </View>
       </View>

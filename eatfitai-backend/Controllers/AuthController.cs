@@ -36,6 +36,21 @@ namespace EatFitAI.API.Controllers
         }
 
         [AllowAnonymous]
+        [HttpPost("verify-reset-code")]
+        public async Task<IActionResult> VerifyResetCode([FromBody] VerifyResetCodeRequest request)
+        {
+            try
+            {
+                await _authService.VerifyResetCodeAsync(request);
+                return Ok(new { message = "Mã hợp lệ" });
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Unauthorized(new { message = ex.Message });
+            }
+        }
+
+        [AllowAnonymous]
         [HttpPost("reset-password")]
         public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequest request)
         {
@@ -58,6 +73,11 @@ namespace EatFitAI.API.Controllers
             {
                 var result = await _authService.RegisterAsync(request);
                 return Ok(result);
+            }
+            catch (NotSupportedException ex)
+            {
+                _logger.LogWarning("Legacy registration blocked for email: {Email}", request.Email);
+                return StatusCode(StatusCodes.Status410Gone, new { message = ex.Message });
             }
             catch (InvalidOperationException ex)
             {
@@ -227,6 +247,10 @@ namespace EatFitAI.API.Controllers
             {
                 var result = await _authService.GoogleLoginAsync(idToken);
                 return Ok(result);
+            }
+            catch (NotSupportedException ex)
+            {
+                return StatusCode(StatusCodes.Status410Gone, new { message = ex.Message });
             }
             catch (UnauthorizedAccessException ex)
             {

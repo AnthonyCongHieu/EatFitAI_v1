@@ -1,12 +1,15 @@
-﻿import React from 'react';
-import { Linking, Pressable, ScrollView, StyleSheet, View } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
+// PrivacyPolicyScreen — Emerald Nebula Design
+// Chính sách bảo mật: Hero card, Quick Facts, 10 Sections, Contact
+
+import React from 'react';
+import { Linking, Pressable, StyleSheet, View } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import Animated, { FadeInDown } from 'react-native-reanimated';
+import Animated, { FadeInUp } from 'react-native-reanimated';
+import { Ionicons } from '@expo/vector-icons';
 
 import { ThemedText } from '../../../components/ThemedText';
-import { glassStyles } from '../../../components/ui/GlassCard';
-import { useAppTheme } from '../../../theme/ThemeProvider';
+import SubScreenLayout from '../../../components/ui/SubScreenLayout';
+import { EN, enStyles } from '../../../theme/emeraldNebula';
 import type { RootStackParamList } from '../../types';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'PrivacyPolicy'>;
@@ -106,274 +109,261 @@ const POLICY_SECTIONS: PolicySection[] = [
   },
 ];
 
-const PrivacyPolicyScreen = ({ navigation }: Props): React.ReactElement => {
-  const { theme } = useAppTheme();
-  const isDark = theme.mode === 'dark';
-  const glass = glassStyles(isDark);
-
+/* ═══════════════════════════════════════════════
+   PrivacyPolicyScreen — Emerald Nebula
+   ═══════════════════════════════════════════════ */
+const PrivacyPolicyScreen = ({ navigation: _navigation }: Props): React.ReactElement => {
   const handleOpenLink = (url: string) => {
     Linking.openURL(url).catch(() => {
       console.log('Cannot open URL:', url);
     });
   };
 
-  const styles = StyleSheet.create({
-    container: {
-      flex: 1,
-    },
-    header: {
-      paddingTop: 60,
-      paddingBottom: theme.spacing.sm,
-      paddingHorizontal: theme.spacing.lg,
-    },
-    headerRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-    },
-    backButton: {
-      width: 40,
-      height: 40,
-      borderRadius: 12,
-      backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)',
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-    subtitle: {
-      textAlign: 'center',
-      marginTop: 8,
-    },
-    content: {
-      paddingHorizontal: theme.spacing.lg,
-      paddingVertical: theme.spacing.xl,
-      gap: theme.spacing.lg,
-    },
-    heroCard: {
-      ...glass.card,
-      gap: theme.spacing.md,
-    },
-    heroIconWrap: {
-      width: 56,
-      height: 56,
-      borderRadius: 18,
-      backgroundColor: isDark ? 'rgba(34, 197, 94, 0.16)' : 'rgba(34, 197, 94, 0.12)',
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-    heroIcon: {
-      fontSize: 24,
-      fontFamily: 'Inter_700Bold',
-      color: theme.colors.success,
-    },
-    badgeRow: {
-      flexDirection: 'row',
-      flexWrap: 'wrap',
-      gap: theme.spacing.sm,
-    },
-    badge: {
-      paddingHorizontal: theme.spacing.md,
-      paddingVertical: theme.spacing.sm,
-      borderRadius: 999,
-      backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.72)',
-      borderWidth: 1,
-      borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(59,130,246,0.12)',
-    },
-    card: {
-      ...glass.card,
-      gap: theme.spacing.md,
-    },
-    sectionTitle: {
-      marginBottom: theme.spacing.xs,
-    },
-    paragraph: {
-      color: theme.colors.textSecondary,
-    },
-    bulletRow: {
-      flexDirection: 'row',
-      alignItems: 'flex-start',
-      gap: theme.spacing.sm,
-    },
-    bulletDot: {
-      width: 7,
-      height: 7,
-      borderRadius: 999,
-      marginTop: 8,
-      backgroundColor: theme.colors.primary,
-    },
-    bulletText: {
-      flex: 1,
-      color: theme.colors.textSecondary,
-    },
-    contactCard: {
-      ...glass.card,
-      gap: theme.spacing.sm,
-    },
-    contactButton: {
-      borderRadius: 18,
-      borderWidth: 1,
-      borderColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(59,130,246,0.12)',
-      backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(255,255,255,0.7)',
-      paddingHorizontal: theme.spacing.md,
-      paddingVertical: theme.spacing.md,
-    },
-    footer: {
-      alignItems: 'center',
-      paddingBottom: theme.spacing.lg,
-    },
-    footerText: {
-      textAlign: 'center',
-      color: theme.colors.textSecondary,
-    },
-  });
-
   return (
-    <LinearGradient
-      colors={theme.colors.screenGradient}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 0.5, y: 1 }}
-      style={styles.container}
+    <SubScreenLayout
+      title="Chính sách bảo mật"
+      subtitle="Ngày hiệu lực: 26/03/2026"
     >
-      <View style={styles.header}>
-        <View style={styles.headerRow}>
-          <Pressable onPress={() => navigation.goBack()} style={styles.backButton}>
-            <ThemedText style={{ fontSize: 18 }}>{'<'}</ThemedText>
-          </Pressable>
-
-          <View style={{ flex: 1, alignItems: 'center', marginRight: 40 }}>
-            <ThemedText variant="h3" weight="700">
-              Chính sách bảo mật
-            </ThemedText>
-          </View>
+      {/* ─── Hero Card ─── */}
+      <Animated.View entering={FadeInUp.delay(100).duration(400)} style={S.heroCard}>
+        <View style={S.heroIconWrap}>
+          <Ionicons name="shield-checkmark" size={28} color={EN.primary} />
         </View>
 
-        <ThemedText variant="bodySmall" color="textSecondary" style={styles.subtitle}>
-          Ngày hiệu lực: 26/03/2026
-        </ThemedText>
-      </View>
-
-      <ScrollView
-        contentContainerStyle={styles.content}
-        showsVerticalScrollIndicator={false}
-      >
-        <Animated.View entering={FadeInDown.delay(100)} style={styles.heroCard}>
-          <View style={styles.heroIconWrap}>
-            <ThemedText style={styles.heroIcon}>PP</ThemedText>
-          </View>
-
-          <View style={{ gap: theme.spacing.sm }}>
-            <ThemedText variant="h3" weight="700">
-              Cam kết tôn trọng dữ liệu cá nhân của bạn
-            </ThemedText>
-            <ThemedText variant="body" style={styles.paragraph}>
-              EatFitAI thu thập và xử lý dữ liệu cần thiết để cung cấp tính năng theo dõi
-              dinh dưỡng, nhận diện món ăn bằng AI và cá nhân hóa trải nghiệm sức khỏe.
-              Chúng tôi ưu tiên minh bạch, giảm thiểu thu thập không cần thiết và áp dụng
-              biện pháp bảo vệ phù hợp trong suốt vòng đời dữ liệu.
-            </ThemedText>
-          </View>
-
-          <View style={styles.badgeRow}>
-            <View style={styles.badge}>
-              <ThemedText variant="caption" weight="600" color="primary">
-                Minh bạch
-              </ThemedText>
-            </View>
-            <View style={styles.badge}>
-              <ThemedText variant="caption" weight="600" color="primary">
-                Không bán dữ liệu
-              </ThemedText>
-            </View>
-            <View style={styles.badge}>
-              <ThemedText variant="caption" weight="600" color="primary">
-                Kiểm soát bởi người dùng
-              </ThemedText>
-            </View>
-          </View>
-        </Animated.View>
-
-        <Animated.View entering={FadeInDown.delay(160)} style={styles.card}>
-          <ThemedText variant="h4" weight="700">
-            Tóm tắt nhanh
+        <View style={{ gap: 8 }}>
+          <ThemedText style={S.heroTitle}>
+            Cam kết tôn trọng dữ liệu cá nhân của bạn
           </ThemedText>
-          {QUICK_FACTS.map((fact) => (
-            <View key={fact} style={styles.bulletRow}>
-              <View style={styles.bulletDot} />
-              <ThemedText variant="body" style={styles.bulletText}>
-                {fact}
-              </ThemedText>
+          <ThemedText style={S.heroParagraph}>
+            EatFitAI thu thập và xử lý dữ liệu cần thiết để cung cấp tính năng theo dõi
+            dinh dưỡng, nhận diện món ăn bằng AI và cá nhân hóa trải nghiệm sức khỏe.
+            Chúng tôi ưu tiên minh bạch, giảm thiểu thu thập không cần thiết và áp dụng
+            biện pháp bảo vệ phù hợp trong suốt vòng đời dữ liệu.
+          </ThemedText>
+        </View>
+
+        <View style={S.badgeRow}>
+          <View style={S.badge}>
+            <ThemedText style={S.badgeText}>Minh bạch</ThemedText>
+          </View>
+          <View style={S.badge}>
+            <ThemedText style={S.badgeText}>Không bán dữ liệu</ThemedText>
+          </View>
+          <View style={S.badge}>
+            <ThemedText style={S.badgeText}>Kiểm soát bởi người dùng</ThemedText>
+          </View>
+        </View>
+      </Animated.View>
+
+      {/* ─── Quick Facts ─── */}
+      <Animated.View entering={FadeInUp.delay(160).duration(400)} style={enStyles.card}>
+        <ThemedText style={S.cardTitle}>Tóm tắt nhanh</ThemedText>
+        {QUICK_FACTS.map((fact) => (
+          <View key={fact} style={S.bulletRow}>
+            <View style={S.bulletDot} />
+            <ThemedText style={S.bulletText}>{fact}</ThemedText>
+          </View>
+        ))}
+      </Animated.View>
+
+      {/* ─── Policy Sections ─── */}
+      {POLICY_SECTIONS.map((section, index) => (
+        <Animated.View
+          key={section.title}
+          entering={FadeInUp.delay(220 + index * 50).duration(400)}
+          style={enStyles.card}
+        >
+          <ThemedText style={S.sectionTitle}>{section.title}</ThemedText>
+
+          {section.paragraphs?.map((paragraph) => (
+            <ThemedText key={paragraph} style={S.paragraph}>
+              {paragraph}
+            </ThemedText>
+          ))}
+
+          {section.bullets?.map((bullet) => (
+            <View key={bullet} style={S.bulletRow}>
+              <View style={S.bulletDot} />
+              <ThemedText style={S.bulletText}>{bullet}</ThemedText>
             </View>
           ))}
         </Animated.View>
+      ))}
 
-        {POLICY_SECTIONS.map((section, index) => (
-          <Animated.View
-            key={section.title}
-            entering={FadeInDown.delay(220 + index * 60)}
-            style={styles.card}
-          >
-            <ThemedText variant="h4" weight="700" style={styles.sectionTitle}>
-              {section.title}
-            </ThemedText>
+      {/* ─── Contact Section ─── */}
+      <Animated.View entering={FadeInUp.delay(800).duration(400)} style={enStyles.card}>
+        <ThemedText style={S.cardTitle}>11. Liên hệ</ThemedText>
+        <ThemedText style={S.paragraph}>
+          Nếu bạn có câu hỏi, yêu cầu hỗ trợ liên quan đến quyền riêng tư hoặc muốn thực
+          hiện quyền của mình đối với dữ liệu cá nhân, vui lòng liên hệ EatFitAI qua:
+        </ThemedText>
 
-            {section.paragraphs?.map((paragraph) => (
-              <ThemedText key={paragraph} variant="body" style={styles.paragraph}>
-                {paragraph}
+        <Pressable
+          onPress={() => handleOpenLink('mailto:support@eatfitai.com')}
+          style={({ pressed }) => [S.contactButton, pressed && { opacity: 0.7 }]}
+        >
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+            <Ionicons name="mail-outline" size={20} color={EN.primary} />
+            <View>
+              <ThemedText style={{ fontWeight: '600', fontSize: 15, color: EN.onSurface }}>
+                support@eatfitai.com
               </ThemedText>
-            ))}
+              <ThemedText style={{ fontSize: 12, color: EN.textMuted }}>
+                Hỗ trợ về tài khoản, dữ liệu và yêu cầu quyền riêng tư
+              </ThemedText>
+            </View>
+          </View>
+          <Ionicons name="chevron-forward" size={16} color={EN.onSurfaceVariant} />
+        </Pressable>
 
-            {section.bullets?.map((bullet) => (
-              <View key={bullet} style={styles.bulletRow}>
-                <View style={styles.bulletDot} />
-                <ThemedText variant="body" style={styles.bulletText}>
-                  {bullet}
-                </ThemedText>
-              </View>
-            ))}
-          </Animated.View>
-        ))}
+        <Pressable
+          onPress={() => handleOpenLink('https://eatfitai.com')}
+          style={({ pressed }) => [S.contactButton, pressed && { opacity: 0.7 }]}
+        >
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+            <Ionicons name="globe-outline" size={20} color={EN.cyan} />
+            <View>
+              <ThemedText style={{ fontWeight: '600', fontSize: 15, color: EN.onSurface }}>
+                eatfitai.com
+              </ThemedText>
+              <ThemedText style={{ fontSize: 12, color: EN.textMuted }}>
+                Thông tin sản phẩm và cập nhật chính thức
+              </ThemedText>
+            </View>
+          </View>
+          <Ionicons name="chevron-forward" size={16} color={EN.onSurfaceVariant} />
+        </Pressable>
+      </Animated.View>
 
-        <Animated.View entering={FadeInDown.delay(900)} style={styles.contactCard}>
-          <ThemedText variant="h4" weight="700">
-            11. Liên hệ
-          </ThemedText>
-          <ThemedText variant="body" style={styles.paragraph}>
-            Nếu bạn có câu hỏi, yêu cầu hỗ trợ liên quan đến quyền riêng tư hoặc muốn thực
-            hiện quyền của mình đối với dữ liệu cá nhân, vui lòng liên hệ EatFitAI qua:
-          </ThemedText>
-
-          <Pressable
-            onPress={() => handleOpenLink('mailto:support@eatfitai.com')}
-            style={styles.contactButton}
-          >
-            <ThemedText variant="body" weight="600">
-              support@eatfitai.com
-            </ThemedText>
-            <ThemedText variant="bodySmall" color="textSecondary">
-              Hỗ trợ về tài khoản, dữ liệu và yêu cầu quyền riêng tư
-            </ThemedText>
-          </Pressable>
-
-          <Pressable
-            onPress={() => handleOpenLink('https://eatfitai.com')}
-            style={styles.contactButton}
-          >
-            <ThemedText variant="body" weight="600">
-              eatfitai.com
-            </ThemedText>
-            <ThemedText variant="bodySmall" color="textSecondary">
-              Thông tin sản phẩm và cập nhật chính thức
-            </ThemedText>
-          </Pressable>
-        </Animated.View>
-
-        <Animated.View entering={FadeInDown.delay(980)} style={styles.footer}>
-          <ThemedText variant="caption" style={styles.footerText}>
-            Chính sách này được hiển thị bên trong ứng dụng EatFitAI để bạn có thể xem bất
-            cứ lúc nào trong mục Về ứng dụng.
-          </ThemedText>
-        </Animated.View>
-      </ScrollView>
-    </LinearGradient>
+      {/* ─── Footer ─── */}
+      <Animated.View entering={FadeInUp.delay(880).duration(400)} style={S.footer}>
+        <ThemedText style={S.footerText}>
+          Chính sách này được hiển thị bên trong ứng dụng EatFitAI để bạn có thể xem bất
+          cứ lúc nào trong mục Về ứng dụng.
+        </ThemedText>
+      </Animated.View>
+    </SubScreenLayout>
   );
 };
+
+/* ─── Styles ─── */
+const S = StyleSheet.create({
+  /* Hero */
+  heroCard: {
+    ...enStyles.card,
+    gap: 14,
+  },
+  heroIconWrap: {
+    width: 56,
+    height: 56,
+    borderRadius: 18,
+    backgroundColor: EN.primary + '18',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  heroTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: EN.onSurface,
+    letterSpacing: -0.3,
+  },
+  heroParagraph: {
+    fontSize: 15,
+    color: EN.textMuted,
+    lineHeight: 22,
+  },
+
+  /* Badges */
+  badgeRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  badge: {
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: 20,
+    backgroundColor: EN.primaryContainer + '18',
+    borderWidth: 1,
+    borderColor: EN.primary + '30',
+    shadowColor: EN.primary,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 4,
+  },
+  badgeText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: EN.primary,
+    letterSpacing: 0.3,
+  },
+
+  /* Section */
+  cardTitle: {
+    fontSize: 17,
+    fontWeight: '700',
+    color: EN.onSurface,
+    marginBottom: 8,
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: EN.onSurface,
+    marginBottom: 8,
+  },
+  paragraph: {
+    fontSize: 15,
+    color: EN.textMuted,
+    lineHeight: 22,
+    marginBottom: 6,
+  },
+
+  /* Bullets */
+  bulletRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 10,
+    marginTop: 4,
+  },
+  bulletDot: {
+    width: 7,
+    height: 7,
+    borderRadius: 4,
+    marginTop: 7,
+    backgroundColor: EN.primary,
+  },
+  bulletText: {
+    flex: 1,
+    fontSize: 15,
+    color: EN.textMuted,
+    lineHeight: 22,
+  },
+
+  /* Contact */
+  contactButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: EN.outline,
+    backgroundColor: EN.surfaceHighest,
+    paddingHorizontal: 14,
+    paddingVertical: 14,
+    marginTop: 8,
+  },
+
+  /* Footer */
+  footer: {
+    alignItems: 'center',
+    paddingBottom: 16,
+  },
+  footerText: {
+    textAlign: 'center',
+    fontSize: 12,
+    color: EN.onSurfaceVariant + '50',
+  },
+});
 
 export default PrivacyPolicyScreen;

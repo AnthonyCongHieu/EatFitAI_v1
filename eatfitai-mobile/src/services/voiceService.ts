@@ -1,9 +1,7 @@
 import type { AxiosError } from 'axios';
 
 import { API_BASE_URL, assertBackendApiBaseUrl } from '../config/env';
-import apiClient, { getCurrentApiUrl } from './apiClient';
-import { getAccessTokenMem } from './authTokens';
-import { tokenStorage } from './secureStore';
+import apiClient, { fetchWithAuthRetry, getCurrentApiUrl } from './apiClient';
 
 const getApiBaseUrl = (): string => {
   const baseUrl = getCurrentApiUrl() ?? API_BASE_URL;
@@ -17,7 +15,11 @@ const getApiBaseUrl = (): string => {
 };
 
 const getApiErrorMessage = (error: unknown, fallback: string): string => {
-  const axiosError = error as AxiosError<{ message?: string; error?: string; detail?: string }>;
+  const axiosError = error as AxiosError<{
+    message?: string;
+    error?: string;
+    detail?: string;
+  }>;
   const data = axiosError?.response?.data;
 
   if (typeof data?.message === 'string' && data.message.trim()) {
@@ -124,43 +126,17 @@ export interface TranscriptionResponse {
 
 export const voiceService = {
   async transcribeAudio(audioUri: string): Promise<TranscriptionResponse> {
-    try {
-      const baseUrl = getApiBaseUrl();
-      const token = getAccessTokenMem() ?? (await tokenStorage.getAccessToken());
-
-      const formData = new FormData();
-      const ext = audioUri.split('.').pop() || 'm4a';
-
-      formData.append('audio', {
-        uri: audioUri,
-        type: `audio/${ext}`,
-        name: `recording.${ext}`,
-      } as any);
-
-      const response = await fetch(`${baseUrl}/api/voice/transcribe`, {
-        method: 'POST',
-        body: formData,
-        headers: {
-          Authorization: token ? `Bearer ${token}` : '',
-          Accept: 'application/json',
-        },
-      });
-
-      if (!response.ok) {
-        const text = await response.text();
-        throw new Error(`Voice transcribe failed: ${response.status} ${text}`);
-      }
-
-      return (await response.json()) as TranscriptionResponse;
-    } catch (error: unknown) {
-      return {
-        text: '',
-        language: 'vi',
-        duration: 0,
-        success: false,
-        error: getApiErrorMessage(error, 'Không thể chuyển giọng nói thành văn bản.'),
-      };
+    if (__DEV__) {
+      console.info('[voiceService] STT is disabled; skipping transcription for:', audioUri);
     }
+
+    return {
+      text: '',
+      language: 'vi',
+      duration: 0,
+      success: false,
+      error: 'Chức năng chuyển giọng nói hiện đang tạm tắt. Hãy nhập lệnh bằng text.',
+    };
   },
 
   async parseWithOllama(text: string): Promise<ParsedVoiceCommand> {
@@ -214,7 +190,8 @@ export const voiceService = {
         ...command,
         entities: {
           ...command.entities,
-          mealType: mealTypeMapping[command.entities.mealType?.toLowerCase() || ''] || 'Lunch',
+          mealType:
+            mealTypeMapping[command.entities.mealType?.toLowerCase() || ''] || 'Lunch',
         },
       };
 
@@ -246,9 +223,12 @@ export const voiceService = {
 
   async confirmWeight(newWeight: number): Promise<VoiceProcessResponse> {
     try {
-      const response = await apiClient.post<VoiceProcessResponse>('/api/voice/confirm-weight', {
-        newWeight,
-      });
+      const response = await apiClient.post<VoiceProcessResponse>(
+        '/api/voice/confirm-weight',
+        {
+          newWeight,
+        },
+      );
       return response.data;
     } catch (error: unknown) {
       return {

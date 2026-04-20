@@ -11,11 +11,9 @@ public partial class AILog
 
     public string Action { get; set; } = null!;
 
-    public string? InputJson { get; set; }
+    public string? InputData { get; set; }
 
-    public string? OutputJson { get; set; }
-
-    public int? DurationMs { get; set; }
+    public string? OutputData { get; set; }
 
     public DateTime CreatedAt { get; set; }
 

@@ -75,7 +75,10 @@ const warmUpInternal = async ({
   for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
     const live = await requestHealth(['/health/live', '/api/Health/live'], timeoutMs);
     if (live.ok) {
-      const ready = await requestHealth(['/health/ready', '/api/Health/ready'], timeoutMs);
+      const ready = await requestHealth(
+        ['/health/ready', '/api/Health/ready'],
+        timeoutMs,
+      );
       if (ready.ok) {
         lastWarmUpSuccessAt = Date.now();
         return ready;
@@ -103,14 +106,20 @@ export const healthService = {
   },
 
   async pingRoot(timeoutMs?: number): Promise<HealthStatus> {
-    return requestHealth(['/health/live', '/api/Health/live', '/health/ready', '/api/Health/ready'], timeoutMs);
+    return requestHealth(
+      ['/health/live', '/api/Health/live', '/health/ready', '/api/Health/ready'],
+      timeoutMs,
+    );
   },
 
   async warmUpBackend(options: WarmUpOptions = {}): Promise<HealthStatus> {
     const { force = false } = options;
 
     if (!force && !isCloudBackendTarget()) {
-      return requestHealth(['/health/live', '/api/Health/live', '/health/ready', '/api/Health/ready'], options.timeoutMs);
+      return requestHealth(
+        ['/health/live', '/api/Health/live', '/health/ready', '/api/Health/ready'],
+        options.timeoutMs,
+      );
     }
 
     if (

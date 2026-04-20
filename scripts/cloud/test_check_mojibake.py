@@ -28,17 +28,23 @@ class MojibakeDetectorTests(unittest.TestCase):
             with self.subTest(sample=sample):
                 self.assertTrue(check_mojibake.has_mojibake(sample))
 
-    def test_has_mojibake_does_not_flag_valid_text(self) -> None:
+    def test_has_mojibake_does_not_flag_valid_text_or_ascii_escape_literals(self) -> None:
         valid_samples = (
             "Đã tải dữ liệu UTF-8 an toàn",
+            "MÃ",
             "Tiếp tục lane smoke cloud-first",
             "Không thể kết luận lỗi nếu chưa có evidence",
             "Mốc mục tiêu 2000 kcal chỉ là nhãn hiển thị",
+            r"Kh\u00c3ng th\u1ec3 t\u1ea3i d\u1eef li\u1ec7u",
         )
 
         for sample in valid_samples:
             with self.subTest(sample=sample):
                 self.assertFalse(check_mojibake.has_mojibake(sample))
+
+    def test_has_mojibake_allows_explicit_fixture_markers(self) -> None:
+        sample = "KhÃng th\u1ec3 t\u1ea3i d\u1eef li\u1ec7u mojibake:allow"
+        self.assertFalse(check_mojibake.has_mojibake(sample))
 
     def test_should_scan_excludes_local_env_paths(self) -> None:
         repo_root = check_mojibake.REPO_ROOT
@@ -52,25 +58,38 @@ class MojibakeDetectorTests(unittest.TestCase):
             with self.subTest(path=path):
                 self.assertFalse(check_mojibake.should_scan(path))
 
-    def test_iter_hits_reports_repo_owned_files_only(self) -> None:
+    def test_iter_hits_scans_utf8_docs_and_reports_decode_errors(self) -> None:
         with tempfile.TemporaryDirectory() as tmp_dir:
             root = Path(tmp_dir)
-            source_path = root / "service.py"
-            source_path.write_text(
-                "an toan\nKh\u00c3ng th\u1ec3 t\u1ea3i d\u1eef li\u1ec7u\n",
+            docs_path = root / "docs" / "architecture.md"
+            docs_path.parent.mkdir(parents=True, exist_ok=True)
+            docs_path.write_text("an toan\nKh\u00c3ng th\u1ec3 t\u1ea3i d\u1eef li\u1ec7u\n", encoding="utf-8")
+
+            escaped_path = root / "src" / "fixture.ts"
+            escaped_path.parent.mkdir(parents=True, exist_ok=True)
+            escaped_path.write_text(
+                "const sample = String.raw`Kh\\u00c3ng th\\u1ec3 t\\u1ea3i d\\u1eef li\\u1ec7u`;\n",
                 encoding="utf-8",
             )
-            skipped_path = root / "venv" / "Lib" / "site-packages" / "sample.py"
-            skipped_path.parent.mkdir(parents=True, exist_ok=True)
-            skipped_path.write_text("Kh\u00c3ng th\u1ec3 t\u1ea3i d\u1eef li\u1ec7u\n", encoding="utf-8")
+
+            ignored_path = root / "docs" / "fixture.md"
+            ignored_path.write_text(
+                "Kh\u00c3ng th\u1ec3 t\u1ea3i d\u1eef li\u1ec7u mojibake:allow\n",
+                encoding="utf-8",
+            )
+
+            broken_path = root / "docs" / "broken.md"
+            broken_path.write_bytes(b"\xff")
 
             hits = list(check_mojibake.iter_hits(root))
 
-        self.assertEqual(len(hits), 1)
-        path, line_no, line = hits[0]
-        self.assertEqual(path.name, "service.py")
-        self.assertEqual(line_no, 2)
-        self.assertEqual(line, "Kh\u00c3ng thể tải dữ liệu")
+        self.assertEqual(len(hits), 2)
+        self.assertEqual(hits[0][0].name, "architecture.md")
+        self.assertEqual(hits[0][1], 2)
+        self.assertEqual(hits[0][2], "KhÃng thể tải dữ liệu")
+        self.assertEqual(hits[1][0].name, "broken.md")
+        self.assertEqual(hits[1][1], 0)
+        self.assertEqual(hits[1][2], "<UTF-8 decode error>")
 
 
 if __name__ == "__main__":

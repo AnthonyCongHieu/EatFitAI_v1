@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { summaryService, type WeekSummary } from '../services/summaryService';
+import { formatLocalDate } from '../utils/localDate';
 
 export type StatsState = {
   weekSummary: WeekSummary | null;
@@ -22,7 +23,7 @@ const getStartOfWeek = (date: Date): Date => {
   return new Date(d.setDate(diff));
 };
 
-const formatDate = (date: Date): string => date.toISOString().split('T')[0] ?? '';
+const formatDate = (date: Date): string => formatLocalDate(date);
 
 export const useStatsStore = create<StatsState>((set: any, get: any) => ({
   weekSummary: null,
@@ -61,12 +62,13 @@ export const useStatsStore = create<StatsState>((set: any, get: any) => ({
       const cachedData = cache.get(targetDate);
       set({ weekSummary: cachedData, selectedDate: targetDate });
       // Vẫn fetch mới nhưng không block UI
-      summaryService.getWeekSummary(targetDate)
-        .then(data => {
+      summaryService
+        .getWeekSummary(targetDate)
+        .then((data) => {
           cache.set(targetDate, data);
           set({ weekSummary: data, weekCache: new Map(cache) });
         })
-        .catch(() => { }); // Silent refresh
+        .catch(() => {}); // Silent refresh
       return;
     }
 

@@ -11,7 +11,7 @@ type DiaryState = {
   isLoading: boolean;
   isRefreshing: boolean;
   error: string | null;
-  fetchSummary: () => Promise<void>;
+  fetchSummary: (date?: string) => Promise<void>;
   refreshSummary: () => Promise<void>;
   deleteEntry: (entryId: string) => Promise<void>;
 };
@@ -54,14 +54,16 @@ export const useDiaryStore = create<DiaryState>((set, get) => ({
   isRefreshing: false,
   error: null,
 
-  async fetchSummary() {
+  async fetchSummary(date?: string) {
     if (get().isLoading) {
       return;
     }
 
     set({ isLoading: true, error: null });
     try {
-      const summary = await diaryService.getTodayCombined();
+      const summary = date
+        ? await diaryService.getDayCombined(date)
+        : await diaryService.getTodayCombined();
       set({ summary });
     } catch (error: any) {
       set({ error: error?.message ?? 'Không thể tải dữ liệu.' });

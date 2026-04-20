@@ -1,5 +1,6 @@
 import apiClient from './apiClient';
 import type { NutritionSummaryDto } from '../types';
+import { formatLocalDate } from '../utils/localDate';
 
 export type WeekDaySummary = {
   date: string;
@@ -50,7 +51,10 @@ const normalizeDay = (
   caloriesByMealType: null,
 });
 
-const normalizeWeekData = (data: NutritionSummaryDto, targetDate?: string): WeekDaySummary[] => {
+const normalizeWeekData = (
+  data: NutritionSummaryDto,
+  targetDate?: string,
+): WeekDaySummary[] => {
   // Tính ngày đầu tuần (Thứ 2) từ targetDate hoặc ngày hiện tại
   const refDate = targetDate ? new Date(targetDate) : new Date();
   const dayOfWeek = refDate.getDay();
@@ -64,7 +68,7 @@ const normalizeWeekData = (data: NutritionSummaryDto, targetDate?: string): Week
   for (let i = 0; i < 7; i++) {
     const d = new Date(monday);
     d.setDate(monday.getDate() + i);
-    const dateStr = d.toISOString().split('T')[0]!;
+    const dateStr = formatLocalDate(d);
     weekDays.push(normalizeDay(dateStr, 0, undefined));
   }
 
@@ -110,7 +114,7 @@ const normalizeWeekData = (data: NutritionSummaryDto, targetDate?: string): Week
 
 export const summaryService = {
   async getWeekSummary(date?: string): Promise<WeekSummary> {
-    const targetDate = date ?? new Date().toISOString().split('T')[0];
+    const targetDate = date ?? formatLocalDate(new Date());
     const response = await apiClient.get('/api/summary/week', {
       params: { date: targetDate },
     });

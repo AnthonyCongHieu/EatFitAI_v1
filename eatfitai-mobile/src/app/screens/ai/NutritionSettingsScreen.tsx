@@ -2,7 +2,14 @@
 // Cho phép xem, chỉnh sửa thủ công và sử dụng AI để gợi ý mục tiêu
 
 import React, { useEffect, useState } from 'react';
-import { View, StyleSheet, ScrollView, ActivityIndicator, Alert, Pressable } from 'react-native';
+import {
+  View,
+  StyleSheet,
+  ScrollView,
+  ActivityIndicator,
+  Alert,
+  Pressable,
+} from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -231,6 +238,13 @@ const NutritionSettingsScreen = (): React.ReactElement => {
             style={{
               backgroundColor: isEditing ? theme.colors.background : theme.colors.card,
             }}
+            testID={
+              name === 'protein'
+                ? TEST_IDS.nutritionSettings.proteinInput
+                : name === 'carbs'
+                  ? TEST_IDS.nutritionSettings.carbsInput
+                  : TEST_IDS.nutritionSettings.fatInput
+            }
           />
         )}
       />
@@ -252,16 +266,29 @@ const NutritionSettingsScreen = (): React.ReactElement => {
     </View>
   );
 
+  const renderScreen = (content: React.ReactNode) => (
+    <LinearGradient
+      colors={theme.colors.screenGradient}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 0.5, y: 1 }}
+      style={styles.container}
+      testID={TEST_IDS.nutritionSettings.screen}
+    >
+      {content}
+    </LinearGradient>
+  );
+
   if (isLoading) {
-    return (
-      <LinearGradient
-        colors={theme.colors.screenGradient}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 0.5, y: 1 }}
-        style={styles.container}
-      >
+    return renderScreen(
+      <>
         {/* Custom Header */}
-        <View style={{ paddingTop: 60, paddingBottom: theme.spacing.sm, paddingHorizontal: theme.spacing.lg }}>
+        <View
+          style={{
+            paddingTop: 60,
+            paddingBottom: theme.spacing.sm,
+            paddingHorizontal: theme.spacing.lg,
+          }}
+        >
           <View style={{ flexDirection: 'row', alignItems: 'center' }}>
             <Pressable
               onPress={() => navigation.goBack()}
@@ -286,19 +313,20 @@ const NutritionSettingsScreen = (): React.ReactElement => {
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
           <ActivityIndicator size="large" color={theme.colors.primary} />
         </View>
-      </LinearGradient>
+      </>,
     );
   }
 
-  return (
-    <LinearGradient
-      colors={theme.colors.screenGradient}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 0.5, y: 1 }}
-      style={styles.container}
-    >
+  return renderScreen(
+    <>
       {/* Custom Header - centered like EditProfileScreen */}
-      <View style={{ paddingTop: 60, paddingBottom: theme.spacing.sm, paddingHorizontal: theme.spacing.lg }}>
+      <View
+        style={{
+          paddingTop: 60,
+          paddingBottom: theme.spacing.sm,
+          paddingHorizontal: theme.spacing.lg,
+        }}
+      >
         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
           <Pressable
             onPress={() => navigation.goBack()}
@@ -333,7 +361,9 @@ const NutritionSettingsScreen = (): React.ReactElement => {
             }}
           >
             <View style={{ flex: 1 }}>
-              <ThemedText variant="h3">{t('nutrition_settings.current_target')}</ThemedText>
+              <ThemedText variant="h3">
+                {t('nutrition_settings.current_target')}
+              </ThemedText>
             </View>
             {!isEditing && (
               <Button
@@ -341,6 +371,7 @@ const NutritionSettingsScreen = (): React.ReactElement => {
                 title={t('nutrition_settings.edit')}
                 size="sm"
                 onPress={() => setIsEditing(true)}
+                testID={TEST_IDS.nutritionSettings.editButton}
               />
             )}
           </View>
@@ -361,6 +392,7 @@ const NutritionSettingsScreen = (): React.ReactElement => {
                     returnKeyType="done"
                     error={!!errors.calories}
                     helperText={errors.calories?.message}
+                    testID={TEST_IDS.nutritionSettings.caloriesInput}
                   />
                 )}
               />
@@ -392,6 +424,7 @@ const NutritionSettingsScreen = (): React.ReactElement => {
                   loading={applyMutation.isPending}
                   disabled={applyMutation.isPending}
                   style={styles.col}
+                  testID={TEST_IDS.nutritionSettings.saveButton}
                 />
               </View>
             </Animated.View>
@@ -426,7 +459,11 @@ const NutritionSettingsScreen = (): React.ReactElement => {
           <ThemedText variant="h3" style={{ marginBottom: theme.spacing.sm }}>
             {t('nutrition_settings.ai_section_title')}
           </ThemedText>
-          <ThemedText variant="bodySmall" color="textSecondary" style={{ marginBottom: theme.spacing.md }}>
+          <ThemedText
+            variant="bodySmall"
+            color="textSecondary"
+            style={{ marginBottom: theme.spacing.md }}
+          >
             {t('nutrition_settings.ai_section_subtitle')}
           </ThemedText>
           <AiStatusBadge
@@ -448,11 +485,16 @@ const NutritionSettingsScreen = (): React.ReactElement => {
               </ThemedText>
               <Button
                 variant="secondary"
-                title={isAiDown ? 'Dùng công thức tạm thời' : t('nutrition_settings.analyze_btn')}
+                title={
+                  isAiDown
+                    ? 'Dùng công thức tạm thời'
+                    : t('nutrition_settings.analyze_btn')
+                }
                 onPress={() => suggestMutation.mutate()}
                 loading={suggestMutation.isPending}
                 disabled={suggestMutation.isPending}
                 icon={<ThemedText>✨</ThemedText>}
+                testID={TEST_IDS.nutritionSettings.analyzeButton}
               />
             </View>
           ) : (
@@ -534,13 +576,14 @@ const NutritionSettingsScreen = (): React.ReactElement => {
                   onPress={onApplySuggestion}
                   loading={applyMutation.isPending}
                   style={styles.col}
+                  testID={TEST_IDS.nutritionSettings.applySuggestionButton}
                 />
               </View>
             </Animated.View>
           )}
         </Animated.View>
       </ScrollView>
-    </LinearGradient>
+    </>,
   );
 };
 

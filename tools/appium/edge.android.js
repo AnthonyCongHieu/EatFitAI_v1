@@ -1,9 +1,8 @@
 const {
   APP_ACTIVITY,
   APP_PACKAGE,
-  TEST_IDS,
   connect,
-  findByTestId,
+  ensureHomeVisible,
   loginIfNeeded,
   runAdb,
   waitForAppEntry,
@@ -14,11 +13,7 @@ async function run() {
 
   try {
     await loginIfNeeded(driver);
-
-    const home = await findByTestId(driver, TEST_IDS.home.screen, 10000);
-    if (!home) {
-      throw new Error('Home screen selector not found before edge flow.');
-    }
+    await ensureHomeVisible(driver);
 
     console.log('Simulating Android process death and relaunch.');
     runAdb(['shell', 'input', 'keyevent', 'KEYCODE_HOME']);
@@ -27,11 +22,7 @@ async function run() {
 
     await waitForAppEntry(driver, 30000);
     await loginIfNeeded(driver);
-
-    const recoveredHome = await findByTestId(driver, TEST_IDS.home.screen, 10000);
-    if (!recoveredHome) {
-      throw new Error('Home screen selector not found after edge recovery flow.');
-    }
+    await ensureHomeVisible(driver);
 
     console.log('Appium edge flow completed successfully.');
   } finally {

@@ -39,6 +39,7 @@ namespace EatFitAI.API.MappingProfiles
             CreateMap<MealDiary, MealDiaryDto>()
                 .ForMember(dest => dest.MealTypeName, opt => opt.MapFrom(src => src.MealType!.Name))
                 .ForMember(dest => dest.FoodItemName, opt => opt.MapFrom(src => src.FoodItem != null ? src.FoodItem.FoodName : null))
+                .ForMember(dest => dest.FoodItemThumbNail, opt => opt.MapFrom(src => src.FoodItem != null ? src.FoodItem.ThumbNail : null))
                 .ForMember(dest => dest.UserDishName, opt => opt.MapFrom(src => src.UserDish != null ? src.UserDish.DishName : null))
                 .ForMember(dest => dest.RecipeName, opt => opt.MapFrom(src => src.Recipe != null ? src.Recipe.RecipeName : null))
                 .ForMember(dest => dest.ServingUnitName, opt => opt.MapFrom(src => src.ServingUnit != null ? src.ServingUnit.Name : null))

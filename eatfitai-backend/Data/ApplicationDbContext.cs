@@ -41,6 +41,8 @@ public partial class ApplicationDbContext : DbContext
     public virtual DbSet<ServingUnit> ServingUnits { get; set; }
 
     public virtual DbSet<User> Users { get; set; }
+    public virtual DbSet<UserAccessControl> UserAccessControls { get; set; }
+    public virtual DbSet<PasswordResetCode> PasswordResetCodes { get; set; }
 
     public virtual DbSet<UserDish> UserDishes { get; set; }
 
@@ -54,6 +56,8 @@ public partial class ApplicationDbContext : DbContext
     public virtual DbSet<AiLabelMap> AiLabelMaps { get; set; }
     public virtual DbSet<UserPreference> UserPreferences { get; set; }
     public virtual DbSet<GeminiKey> GeminiKeys { get; set; }
+    public virtual DbSet<AdminAuditEvent> AdminAuditEvents { get; set; }
+    public virtual DbSet<WaterIntake> WaterIntakes { get; set; }
 
     public virtual DbSet<vw_DailyMacroShare> vw_DailyMacroShares { get; set; }
 
@@ -330,34 +334,20 @@ public partial class ApplicationDbContext : DbContext
 
         modelBuilder.Entity<User>(entity =>
         {
+            entity.ToTable("Users");
+            entity.HasKey(e => e.UserId);
             entity.HasIndex(e => e.Email, "UQ_Users_Email").IsUnique();
 
             entity.Property(e => e.UserId).HasDefaultValueSql("gen_random_uuid()");
-            entity.Property(e => e.CreatedAt)
-                .HasPrecision(3)
-                .HasDefaultValueSql("NOW() AT TIME ZONE 'UTC'");
-            entity.Property(e => e.AvatarUrl).HasColumnType("text");
-            entity.Property(e => e.DisplayName).HasMaxLength(150);
-            entity.Property(e => e.Email).HasMaxLength(256);
-            entity.Property(e => e.EmailVerified).HasColumnName("IsEmailVerified");
-            entity.Property(e => e.PasswordHash).HasMaxLength(256);
-            entity.Property(e => e.TargetWeightKg).HasColumnType("numeric");
-            entity.Property(e => e.VerificationCode).HasColumnName("EmailVerificationToken");
-            entity.Property(e => e.VerificationCodeExpiry)
-                .HasColumnName("EmailVerificationExpiry")
-                .HasPrecision(3);
-        });
-
-        modelBuilder.Entity<User>(entity =>
-        {
-            entity.ToTable("Users");
-            entity.HasKey(e => e.UserId);
-
-            entity.Ignore(e => e.Role); // DB no longer has Role column
-
             entity.Property(e => e.EmailVerified)
                 .HasColumnName("IsEmailVerified");
 
+            entity.Property(e => e.AvatarUrl).HasColumnType("text");
+            entity.Property(e => e.DisplayName).HasMaxLength(150);
+            entity.Property(e => e.Email).HasMaxLength(256);
+            entity.Property(e => e.PasswordHash).HasMaxLength(256);
+            entity.Property(e => e.Role).HasMaxLength(80).HasDefaultValue("user");
+            entity.Property(e => e.TargetWeightKg).HasColumnType("numeric");
             entity.Property(e => e.VerificationCode)
                 .HasColumnName("EmailVerificationToken");
 
@@ -599,6 +589,90 @@ public partial class ApplicationDbContext : DbContext
             entity.Property(e => e.CreatedAt)
                 .HasPrecision(3)
                 .HasDefaultValueSql("NOW() AT TIME ZONE 'UTC'");
+        });
+
+        modelBuilder.Entity<AdminAuditEvent>(entity =>
+        {
+            entity.ToTable("AdminAuditEvent");
+
+            entity.HasKey(e => e.AdminAuditEventId);
+
+            entity.HasIndex(e => e.OccurredAt, "IX_AdminAuditEvent_OccurredAt");
+            entity.HasIndex(e => new { e.Action, e.Entity }, "IX_AdminAuditEvent_Action_Entity");
+            entity.HasIndex(e => e.RequestId, "IX_AdminAuditEvent_RequestId");
+            entity.HasIndex(e => e.CorrelationId, "IX_AdminAuditEvent_CorrelationId");
+
+            entity.Property(e => e.AdminAuditEventId)
+                .HasDefaultValueSql("gen_random_uuid()");
+
+            entity.Property(e => e.Actor).HasMaxLength(256);
+            entity.Property(e => e.ActorId).HasMaxLength(120);
+            entity.Property(e => e.ActorEmail).HasMaxLength(256);
+            entity.Property(e => e.Action).HasMaxLength(120);
+            entity.Property(e => e.EffectiveRole).HasMaxLength(80);
+            entity.Property(e => e.Entity).HasMaxLength(120);
+            entity.Property(e => e.EntityId).HasMaxLength(120);
+            entity.Property(e => e.Severity).HasMaxLength(40);
+            entity.Property(e => e.Outcome).HasMaxLength(40);
+            entity.Property(e => e.RequestId).HasMaxLength(120);
+            entity.Property(e => e.CorrelationId).HasMaxLength(120);
+            entity.Property(e => e.Environment).HasMaxLength(80);
+            entity.Property(e => e.OccurredAt)
+                .HasPrecision(3)
+                .HasDefaultValueSql("NOW() AT TIME ZONE 'UTC'");
+        });
+
+        modelBuilder.Entity<UserAccessControl>(entity =>
+        {
+            entity.ToTable("UserAccessControl");
+            entity.HasKey(e => e.UserId);
+            entity.Property(e => e.AccessState)
+                .HasMaxLength(40)
+                .HasDefaultValue("active");
+            entity.Property(e => e.SuspendedBy).HasMaxLength(256);
+            entity.Property(e => e.DeactivatedBy).HasMaxLength(256);
+            entity.Property(e => e.UpdatedAt)
+                .HasPrecision(3)
+                .HasDefaultValueSql("NOW() AT TIME ZONE 'UTC'");
+        });
+
+        modelBuilder.Entity<PasswordResetCode>(entity =>
+        {
+            entity.ToTable("PasswordResetCode");
+            entity.HasKey(e => e.UserId);
+            entity.HasIndex(e => e.ExpiresAt, "IX_PasswordResetCode_ExpiresAt");
+            entity.HasIndex(e => e.ConsumedAt, "IX_PasswordResetCode_ConsumedAt");
+            entity.Property(e => e.CodeHash).HasMaxLength(88);
+            entity.Property(e => e.ExpiresAt).HasPrecision(3);
+            entity.Property(e => e.ConsumedAt).HasPrecision(3);
+            entity.Property(e => e.CreatedAt)
+                .HasPrecision(3)
+                .HasDefaultValueSql("NOW() AT TIME ZONE 'UTC'");
+            entity.Property(e => e.UpdatedAt)
+                .HasPrecision(3)
+                .HasDefaultValueSql("NOW() AT TIME ZONE 'UTC'");
+        });
+
+        modelBuilder.Entity<WaterIntake>(entity =>
+        {
+            entity.ToTable("WaterIntake");
+
+            entity.HasKey(e => e.WaterIntakeId);
+
+            entity.HasIndex(e => new { e.UserId, e.IntakeDate }, "UQ_WaterIntake_User_Date").IsUnique();
+            entity.HasIndex(e => new { e.UserId, e.IntakeDate }, "IX_WaterIntake_UserDate");
+
+            entity.Property(e => e.AmountMl).HasDefaultValue(0);
+            entity.Property(e => e.TargetMl).HasDefaultValue(2000);
+            entity.Property(e => e.UpdatedAt)
+                .HasPrecision(3)
+                .HasDefaultValueSql("NOW() AT TIME ZONE 'UTC'");
+
+            entity.HasOne(d => d.User)
+                .WithMany()
+                .HasForeignKey(d => d.UserId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_WaterIntake_User");
         });
 
         OnModelCreatingPartial(modelBuilder);

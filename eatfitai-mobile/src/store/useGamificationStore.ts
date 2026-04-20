@@ -210,7 +210,11 @@ export const useGamificationStore = create<GamificationState>()(
           if (calculatedStreak >= 7) unlockAchievement('streak_7');
           if (totalDays >= 1) unlockAchievement('first_log');
 
-          console.log('[GamificationStore] Streak calculated:', { calculatedStreak, totalDays, newLongestStreak });
+          console.log('[GamificationStore] Streak calculated:', {
+            calculatedStreak,
+            totalDays,
+            newLongestStreak,
+          });
         } catch (error) {
           console.error('Error checking streak:', error);
         }

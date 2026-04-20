@@ -1,15 +1,22 @@
 ﻿import axios, {
   AxiosError,
   AxiosHeaders,
-  AxiosRequestConfig,
   InternalAxiosRequestConfig,
 } from 'axios';
 import { API_BASE_URL } from '../config/env';
 import { tokenStorage } from './secureStore';
-import { getAccessTokenMem, setAccessTokenMem, clearAccessTokenMem } from './authTokens';
-import { postRefreshToken } from './tokenService';
-import { updateSessionFromAuthResponse } from './authSession';
-import { getApiUrl, forceRescan, getCachedApiUrl, verifyApiUrl, preloadCachedUrl, resetScanState } from './ipScanner';
+import { getAccessTokenMem } from './authTokens';
+import { refreshAccessToken } from './authSession';
+import {
+  getApiUrl,
+  forceRescan,
+  getCachedApiUrl,
+  verifyApiUrl,
+  preloadCachedUrl,
+  resetScanState,
+} from './ipScanner';
+
+export { setAuthExpiredCallback } from './authSession';
 
 // Extend axios types để support custom retry flags
 declare module 'axios' {
@@ -159,43 +166,39 @@ if (__DEV__) {
   }
 }
 
-// In-memory access token cache lives in authTokens module
+type FetchInitFactory = (accessToken: string | null) => RequestInit;
 
-// Callback khi auth expired (để tránh circular dependency với useAuthStore)
-let onAuthExpiredCallback: (() => void) | null = null;
+export const fetchWithAuthRetry = async (
+  url: string,
+  buildInit: FetchInitFactory,
+): Promise<Response> => {
+  const runAttempt = async (accessToken: string | null): Promise<Response> => {
+    const init = buildInit(accessToken);
+    const headers = new Headers(init.headers ?? {});
 
-/**
- * Register callback sẽ được gọi khi refresh token fails
- * Được dùng bởi useAuthStore để trigger logout
- */
-export const setAuthExpiredCallback = (callback: (() => void) | null): void => {
-  onAuthExpiredCallback = callback;
-};
-
-// Queue for 401 refresh handling
-type FailedQueueItem = {
-  resolve: (value?: unknown) => void;
-  reject: (reason?: unknown) => void;
-  config: AxiosRequestConfig;
-};
-let isRefreshing = false;
-const failedQueue: FailedQueueItem[] = [];
-const processQueue = (error: unknown, token: string | null): void => {
-  while (failedQueue.length > 0) {
-    const { resolve, reject, config } = failedQueue.shift()!;
-    if (error) {
-      reject(error);
-      continue;
+    if (accessToken && accessToken.trim().length > 0) {
+      headers.set('Authorization', `Bearer ${accessToken}`);
+    } else {
+      headers.delete('Authorization');
     }
-    if (token && config.headers) {
-      const headers = config.headers as AxiosHeaders | Record<string, string>;
-      if (headers instanceof AxiosHeaders) {
-        headers.set('Authorization', `Bearer ${token}`);
-      } else {
-        headers.Authorization = `Bearer ${token}`;
-      }
-    }
-    resolve(apiClient(config));
+
+    return fetch(url, {
+      ...init,
+      headers,
+    });
+  };
+
+  const initialAccessToken = getAccessTokenMem() ?? (await tokenStorage.getAccessToken());
+  const initialResponse = await runAttempt(initialAccessToken);
+  if (initialResponse.status !== 401) {
+    return initialResponse;
+  }
+
+  try {
+    const refreshedAccessToken = await refreshAccessToken();
+    return await runAttempt(refreshedAccessToken);
+  } catch {
+    return initialResponse;
   }
 };
 
@@ -215,6 +218,7 @@ apiClient.interceptors.request.use(async (config: InternalAxiosRequestConfig) =>
       '/api/auth/resend-verification',
       '/api/auth/refresh',
       '/api/auth/forgot-password',
+      '/api/auth/verify-reset-code',
       '/api/auth/reset-password',
       '/api/search',
       '/api/food/search',
@@ -295,78 +299,8 @@ apiClient.interceptors.response.use(
     }
     if (status === 401 && originalRequest && !originalRequest._retry) {
       originalRequest._retry = true;
-
-      if (isRefreshing) {
-        return new Promise((resolve, reject) => {
-          failedQueue.push({ resolve, reject, config: originalRequest });
-        });
-      }
-
-      isRefreshing = true;
       try {
-        const refreshToken = await tokenStorage.getRefreshToken();
-        if (__DEV__) {
-          console.log('[EatFitAI] Refresh attempt - has refresh token:', !!refreshToken);
-        }
-        if (!refreshToken) {
-          throw new Error('Missing refresh token');
-        }
-
-        // Validate refresh token format (basic check)
-        if (typeof refreshToken !== 'string' || refreshToken.trim().length === 0) {
-      throw new Error('Định dạng refresh token không hợp lệ');
-        }
-
-        const data = await postRefreshToken(refreshToken);
-        if (__DEV__) {
-          console.log('[EatFitAI] Refresh response received:', {
-            hasAccessToken: !!data.accessToken,
-            hasRefreshToken: !!data.refreshToken,
-            accessExp: data.accessTokenExpiresAt,
-            refreshExp: data.refreshTokenExpiresAt,
-          });
-        }
-
-        // Validate refresh response
-        const newAccessToken: string | undefined = data.accessToken;
-        const newRefreshToken: string | undefined = data.refreshToken;
-        const newAccessExp: string | undefined = data.accessTokenExpiresAt;
-        const newRefreshExp: string | undefined = data.refreshTokenExpiresAt;
-
-        if (
-          !newAccessToken ||
-          typeof newAccessToken !== 'string' ||
-          newAccessToken.trim().length === 0
-        ) {
-          throw new Error('Refresh response missing or invalid accessToken');
-        }
-
-        // Validate token expiration dates if provided
-        if (newAccessExp && isNaN(Date.parse(newAccessExp))) {
-          console.warn(
-            '[EatFitAI] Invalid access token expiration format:',
-            newAccessExp,
-          );
-        }
-        if (newRefreshExp && isNaN(Date.parse(newRefreshExp))) {
-          console.warn(
-            '[EatFitAI] Định dạng thời hạn refresh token không hợp lệ:',
-            newRefreshExp,
-          );
-        }
-
-        setAccessTokenMem(newAccessToken);
-        await tokenStorage.saveTokensFull({
-          accessToken: newAccessToken,
-          accessTokenExpiresAt: newAccessExp,
-          refreshToken: newRefreshToken,
-          refreshTokenExpiresAt: newRefreshExp,
-        });
-        try {
-          updateSessionFromAuthResponse?.(data);
-        } catch { }
-
-        processQueue(null, newAccessToken);
+        const newAccessToken = await refreshAccessToken();
         const retryHeaders = AxiosHeaders.from(originalRequest.headers ?? {});
         retryHeaders.set('Authorization', `Bearer ${newAccessToken}`);
         originalRequest.headers = retryHeaders;
@@ -375,38 +309,16 @@ apiClient.interceptors.response.use(
         }
         return apiClient(originalRequest);
       } catch (err) {
-        if (__DEV__) {
-          console.error('[EatFitAI] Refresh failed:', err);
-        }
-        // Clear invalid tokens on refresh failure
-        try {
-          await tokenStorage.clearAll();
-          clearAccessTokenMem();
-        } catch (clearError) {
-          console.warn('[EatFitAI] Failed to clear tokens on refresh error:', clearError);
-        }
-        processQueue(err, null);
-
-        // Trigger auto-logout callback để redirect về Login
-        if (onAuthExpiredCallback) {
-          if (__DEV__) {
-            console.log('[EatFitAI] Triggering auth expired callback (auto-logout)...');
-          }
-          try {
-            onAuthExpiredCallback();
-          } catch (callbackError) {
-            console.error('[EatFitAI] Auth expired callback error:', callbackError);
-          }
-        }
-
-        processQueue(err, null);
         return Promise.reject(err);
-      } finally {
-        isRefreshing = false;
       }
     }
     // Handle network errors specifically - thử re-scan và retry 1 lần
-    if (!error.response && error.code && originalRequest && !originalRequest._networkRetried) {
+    if (
+      !error.response &&
+      error.code &&
+      originalRequest &&
+      !originalRequest._networkRetried
+    ) {
       const retryBaseUrl =
         typeof originalRequest.baseURL === 'string'
           ? originalRequest.baseURL
@@ -447,7 +359,7 @@ apiClient.interceptors.response.use(
       // Re-scan thất bại, return lỗi gốc
       const networkError = new Error(
         `Network Error: ${error.message || 'Không kết nối được server'}. ` +
-        'Kiểm tra kết nối mạng và đảm bảo backend đang chạy.',
+          'Kiểm tra kết nối mạng và đảm bảo backend đang chạy.',
       );
       networkError.name = 'NetworkError';
       return Promise.reject(networkError);
@@ -476,4 +388,3 @@ aiApiClient.interceptors.request.use(async (config: InternalAxiosRequestConfig) 
 });
 
 export default apiClient;
-

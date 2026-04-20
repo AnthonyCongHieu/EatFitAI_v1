@@ -1,10 +1,22 @@
-// Recipe detail screen
 import React, { useEffect, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { View, StyleSheet, ScrollView, ActivityIndicator, Pressable, Linking, TouchableOpacity } from 'react-native';
+import {
+  View,
+  StyleSheet,
+  ScrollView,
+  ActivityIndicator,
+  Pressable,
+  Linking,
+  ImageBackground,
+} from 'react-native';
 import { useRoute, useNavigation, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
+import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import Toast from 'react-native-toast-message';
+
 import { ThemedText } from '../../../components/ThemedText';
 import Screen from '../../../components/Screen';
 import { useAppTheme } from '../../../theme/ThemeProvider';
@@ -15,14 +27,10 @@ import type { RootStackParamList } from '../../types';
 import type { RecipeDetail } from '../../../types/aiEnhanced';
 import type { MealTypeId } from '../../../types';
 import { AddRecipeToDiarySheet } from '../../../components/recipe/AddRecipeToDiarySheet';
-import Toast from 'react-native-toast-message';
-import Button from '../../../components/Button';
-
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 type RouteProps = RouteProp<RootStackParamList, 'RecipeDetail'>;
 
-// Type cho AI-generated instructions
 type AiCookingInstructions = {
   steps: string[];
   cookingTime?: string;
@@ -31,27 +39,47 @@ type AiCookingInstructions = {
   error?: string;
 };
 
+const P = {
+  primary: '#4be277',
+  primaryContainer: '#22c55e',
+  surface: '#0e1322',
+  surfaceContainerLow: '#161b2b',
+  surfaceContainerHigh: 'rgba(37, 41, 58, 0.7)',
+  surfaceContainerLowest: '#090e1c',
+  onSurface: '#dee1f7',
+  onSurfaceVariant: '#bccbb9',
+  onPrimary: '#003915',
+  glassBorder: 'rgba(255,255,255,0.08)',
+  glassHeader: 'rgba(22, 27, 43, 0.6)',
+  danger: '#ffb4ab',
+  macroC: '#fbbf24',
+  macroP: '#34d399',
+  macroF: '#f87171',
+};
+
+const DUMMY_IMAGES = [
+  "https://lh3.googleusercontent.com/aida-public/AB6AXuDkPxIplDyeONp_vJiPgRP9EW8RoZM3JbhwNM_m-RuN4-VbxdI0wZ7GSo-ZaJC1FiQg0qZAaXoa5bDcNN7yFtfjv0COjoDcA7mV2jJxznij2k8eFuar5HgcugqzCUrUw0DDBN7LHa9PV9WHN7XtXYo16jZpLXq9Yp41P2LoigkRXdviz1dDzRD2ciDCo4kb5d4PxtXlFpLSu6Y9EKlH2nf8ZdRPtV-KBl_Me3V7z0vo6v7Z5kAb8pgQgPy-GW_HNrY3GrbxpKaVAVQ",
+  "https://lh3.googleusercontent.com/aida-public/AB6AXuAukILvQNoq71Oq5m173g7C5FBqvtI4EI6F99iYC5D_rxoimx2XLrR-naIwXyc7HU8gwk-lW_RVQcIEB03s0vU-6VN6qLrt3B-sLVM9or1_aHo3vcxXoSLiqM0NHbSpz6x3eqN7hHGNs2ZFFFSYbiuN8OylajF-6_keIerdbIye7Vf49E4WK21rRkzottpDUNOK4OsMS-N1F4XIFvx47oE4MqL-Xn7WTjv7kS4kjZ6I5wFX7BsoKhsLRtaxWz94VwNMuvw6mIAN064",
+  "https://lh3.googleusercontent.com/aida-public/AB6AXuB3hPK0Hob1eHqbdkBE-ckh0GdR84ek_HNKh1Pl0wKDWHrNshSGfOc6lB38EvpD-FKGK5hvdJWtDO5M7M9s377sx1bEQvuYk24Cv3B52ogRpHPnUMr4--h6JirsfpGJB-PZ8nhx5GTmqj_i7w0VYkHnx5w62gFzhdm3luXM8T2MA6UB_HFl4waKj-sxAaGpX6-Y1xtgGVDcgUTdiFsGivqmp7P69DgEEx75Z1ZSRAzQTX-J4X06yyLd7xANQjxxTLuoNyF5FASMXWg",
+  "https://lh3.googleusercontent.com/aida-public/AB6AXuC1oYs0RykK8I-wEhX1LQnzONtN6EiE1cvMhm5W145lb1jvI8giPgzWHB5khpzmBAqWhHynXB_wBGubDuPqE_Kr46LYUwkaTQfvxBRTMH_1wHv0IdVwIKkQNfrOAB6FMWNXTbPwxrVRMBi2Tl8-BWHpqVI9P39HwRi3PxbmCK5XetFuYsNdcyMe4P-hbbISlEt7vi08RVlOKucOPh4OY4bPfosnfjMju8Qt4jKXoWLgB3cyqT9JbGN0LCSMJcL2xIgewveqIIhDyLw"
+];
+
 const RecipeDetailScreen = (): React.ReactElement => {
   const { theme } = useAppTheme();
-  const isDark = theme.mode === 'dark';
   const route = useRoute<RouteProps>();
   const navigation = useNavigation<NavigationProp>();
+  const insets = useSafeAreaInsets();
+  const queryClient = useQueryClient();
+
   const [recipe, setRecipe] = useState<RecipeDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
-  // State cho AI-generated instructions
   const [aiInstructions, setAiInstructions] = useState<AiCookingInstructions>({
     steps: [],
     isLoading: false,
   });
-
-  // State cho Add to Diary sheet
   const [showAddToDiarySheet, setShowAddToDiarySheet] = useState(false);
-  const [isAddingToDiary, setIsAddingToDiary] = useState(false);
-  const queryClient = useQueryClient();
 
-  // Load recipe detail
   useEffect(() => {
     const load = async () => {
       try {
@@ -59,9 +87,6 @@ const RecipeDetailScreen = (): React.ReactElement => {
         const data = await aiService.getRecipeDetail(route.params.recipeId);
         setRecipe(data);
       } catch (e) {
-        if (__DEV__) {
-          console.error('[RecipeDetailScreen] Error loading recipe:', e);
-        }
         setError('Không thể tải chi tiết công thức. Vui lòng thử lại.');
       } finally {
         setLoading(false);
@@ -70,11 +95,8 @@ const RecipeDetailScreen = (): React.ReactElement => {
     load();
   }, [route.params.recipeId]);
 
-  // Fetch AI-generated cooking instructions khi recipe load xong
   useEffect(() => {
-    if (!recipe || (recipe.instructions && recipe.instructions.length > 0)) {
-      return; // Skip if instructions already exist in the DB payload
-    }
+    if (!recipe || (recipe.instructions && recipe.instructions.length > 0)) return;
 
     const fetchAiInstructions = async () => {
       setAiInstructions((prev) => ({ ...prev, isLoading: true, error: undefined }));
@@ -91,9 +113,6 @@ const RecipeDetailScreen = (): React.ReactElement => {
           isLoading: false,
         });
       } catch (e) {
-        if (__DEV__) {
-          console.error('[RecipeDetailScreen] Error fetching AI instructions:', e);
-        }
         setAiInstructions({
           steps: [],
           isLoading: false,
@@ -104,14 +123,9 @@ const RecipeDetailScreen = (): React.ReactElement => {
     fetchAiInstructions();
   }, [recipe]);
 
-  // Add the current recipe to the diary
   const handleAddToDiary = async (mealTypeId: MealTypeId, servings: number) => {
     if (!recipe) return;
-
     try {
-      setIsAddingToDiary(true);
-
-      // Create a user food item from the recipe
       const formData = new FormData();
       formData.append('foodName', recipe.recipeName);
       formData.append('description', recipe.description || `Công thức: ${recipe.recipeName}`);
@@ -121,21 +135,9 @@ const RecipeDetailScreen = (): React.ReactElement => {
       formData.append('fatPer100', String(recipe.totalFat ?? 0));
       formData.append('unitType', 'g');
 
-      console.log('[RecipeDetailScreen] Creating UserFoodItem with:', {
-        foodName: recipe.recipeName,
-        calories: recipe.totalCalories,
-        protein: recipe.totalProtein,
-        carbs: recipe.totalCarbs,
-        fat: recipe.totalFat,
-      });
-
       const createdItem = await foodService.createUserFoodItem(formData);
-      console.log('[RecipeDetailScreen] Created UserFoodItem:', createdItem);
-
-      // Add the recipe into the diary using servings
-      const gramsPerServing = 100; // Default: 1 serving = 100g
-      const totalGrams = gramsPerServing * servings;
-      const ratio = totalGrams / 100; // Scale nutrition by grams
+      const totalGrams = 100 * servings;
+      const ratio = totalGrams / 100;
 
       const diaryPayload = {
         mealTypeId,
@@ -147,7 +149,6 @@ const RecipeDetailScreen = (): React.ReactElement => {
         fat: Number((recipe.totalFat ?? 0) * ratio) || 0,
         note: `Từ công thức: ${recipe.recipeName}`,
       };
-      console.log('[RecipeDetailScreen] Adding to diary with:', diaryPayload);
 
       await foodService.addDiaryEntryFromUserFoodItem(diaryPayload);
       await invalidateDiaryQueries(queryClient);
@@ -158,384 +159,269 @@ const RecipeDetailScreen = (): React.ReactElement => {
         text2: `${recipe.recipeName} (${servings} khẩu phần)`,
       });
     } catch (err: any) {
-      console.error('[RecipeDetailScreen] Error adding to diary:', err);
-      console.error('[RecipeDetailScreen] Error details:', err?.response?.data);
       Toast.show({
         type: 'error',
         text1: 'Thêm thất bại',
-        text2: err?.response?.data?.message || 'Vui lòng thử lại',
+        text2: 'Vui lòng thử lại',
       });
-    } finally {
-      setIsAddingToDiary(false);
     }
   };
 
-  if (loading) {
-    return (
-      <Screen>
-        <View style={styles.center}>
-          <ActivityIndicator size="large" color={theme.colors.primary} />
-          <ThemedText
-            variant="body"
-            color="textSecondary"
-            style={{ marginTop: theme.spacing.md }}
-          >
-            {'Đang tải chi tiết công thức...'}
-          </ThemedText>
-        </View>
-      </Screen>
-    );
-  }
-
-  // Custom header component (matching EditProfileScreen)
-  const renderHeader = (title: string) => (
-    <View style={customStyles.screenHeader}>
-      <View style={customStyles.headerRow}>
-        <TouchableOpacity
-          onPress={() => navigation.goBack()}
-          style={customStyles.backButton}
-        >
-          <ThemedText style={{ fontSize: 18 }}>{'<'}</ThemedText>
-        </TouchableOpacity>
-        <View style={customStyles.headerTitles}>
-          <ThemedText variant="h3" weight="700" numberOfLines={1}>
-            {title}
-          </ThemedText>
-        </View>
-      </View>
+  const TopHeader = () => (
+    <View style={[S.header, { paddingTop: insets.top + 10 }]}>
+      <Pressable style={S.iconBtn} onPress={() => navigation.goBack()}>
+        <Ionicons name="arrow-back" size={24} color={P.onSurface} />
+      </Pressable>
+      <Pressable style={S.iconBtn}>
+        <Ionicons name="heart-outline" size={24} color={P.onSurface} />
+      </Pressable>
     </View>
   );
 
-  // Custom styles for header
-  const customStyles = StyleSheet.create({
-    screenHeader: {
-      paddingHorizontal: 16,
-      paddingBottom: 8,
-    },
-    headerRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-    },
-    backButton: {
-      width: 40,
-      height: 40,
-      borderRadius: 12,
-      backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)',
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-    headerTitles: {
-      flex: 1,
-      alignItems: 'center',
-      marginRight: 40,
-    },
-  });
-
-  if (error) {
+  if (loading) {
     return (
-      <Screen scroll={false}>
-        {renderHeader('Chi tiết công thức')}
-        <View style={styles.center}>
-          <ThemedText variant="body" color="danger" style={{ textAlign: 'center' }}>
-            {error}
-          </ThemedText>
-        </View>
-      </Screen>
+      <View style={S.center}>
+        <ActivityIndicator size="large" color={P.primary} />
+      </View>
     );
   }
 
-  if (!recipe) {
+  if (error || !recipe) {
     return (
-      <Screen scroll={false}>
-        {renderHeader('Chi tiết công thức')}
-        <View style={styles.center}>
-          <ThemedText variant="body" color="textSecondary">
-            {'Không tìm thấy công thức.'}
-          </ThemedText>
+      <View style={S.container}>
+        <TopHeader />
+        <View style={S.center}>
+          <ThemedText style={{ color: P.danger }}>{error || 'Không tìm thấy công thức.'}</ThemedText>
         </View>
-      </Screen>
+      </View>
     );
   }
+
+  const imageIdx = Math.abs((route.params.recipeId || 0)) % DUMMY_IMAGES.length;
 
   return (
-    <Screen scroll={false}>
-      {renderHeader(route.params.recipeName)}
-      <ScrollView contentContainerStyle={styles.content}>
-        <View style={[styles.box, { backgroundColor: theme.colors.card }]}>
-          <ThemedText variant="h4" style={{ marginBottom: theme.spacing.sm }}>
-            {'Thông tin dinh dưỡng'}
-          </ThemedText>
-          <ThemedText variant="body" style={{ marginBottom: theme.spacing.xs }}>
-            Calories: {recipe.totalCalories} kcal
-          </ThemedText>
-          <ThemedText variant="body" style={{ marginBottom: theme.spacing.xs }}>
-            Protein: {recipe.totalProtein} g
-          </ThemedText>
-          <ThemedText variant="body" style={{ marginBottom: theme.spacing.xs }}>
-            Carbs: {recipe.totalCarbs} g
-          </ThemedText>
-          <ThemedText variant="body" style={{ marginBottom: theme.spacing.xs }}>
-            Fat: {recipe.totalFat} g
-          </ThemedText>
-        </View>
+    <View style={S.container}>
+      {/* Absolute Add Button at bottom safely above tabs */}
+      <Animated.View entering={FadeInUp.delay(500)} style={[S.floatBottomBtn, { bottom: insets.bottom + 20 }]}>
+        <Pressable
+          style={S.addBtn}
+          onPress={() => setShowAddToDiarySheet(true)}
+        >
+          <ThemedText style={S.addBtnText}>Thêm vào nhật ký</ThemedText>
+          <Ionicons name="add" size={24} color={P.onPrimary} />
+        </Pressable>
+      </Animated.View>
 
-        {recipe.description && (
-          <View style={[styles.box, { backgroundColor: theme.colors.card }]}>
-            <ThemedText variant="h4" style={{ marginBottom: theme.spacing.sm }}>
-              {'Mô tả'}
-            </ThemedText>
-            <ThemedText variant="body">{recipe.description}</ThemedText>
-          </View>
-        )}
+      <TopHeader />
 
-        {recipe.ingredients && recipe.ingredients.length > 0 && (
-          <View style={[styles.box, { backgroundColor: theme.colors.card }]}>
-            <ThemedText variant="h4" style={{ marginBottom: theme.spacing.sm }}>
-              {'Nguyên liệu'}
-            </ThemedText>
-            {recipe.ingredients.map((ing, i) => (
-              <ThemedText
-                key={i}
-                variant="body"
-                style={{ marginBottom: theme.spacing.xs }}
-              >
-                {'-'} {ing.foodName}: {ing.grams}g ({ing.calories} kcal)
-              </ThemedText>
-            ))}
-          </View>
-        )}
-
-        {/* Cooking instructions from DB or AI fallback */}
-        <View style={[styles.box, { backgroundColor: theme.colors.card }]}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: theme.spacing.sm }}>
-            <ThemedText variant="h4">{'Hướng dẫn nấu'}</ThemedText>
+      <ScrollView contentContainerStyle={S.scrollContent} showsVerticalScrollIndicator={false}>
+        <View style={S.heroContainer}>
+          <ImageBackground source={{ uri: DUMMY_IMAGES[imageIdx] }} style={S.heroImage}>
+            <LinearGradient colors={['transparent', P.surface]} style={S.gradientMask} />
+          </ImageBackground>
+          <View style={S.heroTextWrap}>
+            <ThemedText style={S.heroMainTitle} numberOfLines={3}>{recipe.recipeName}</ThemedText>
             {aiInstructions.cookingTime && (
-              <ThemedText variant="caption" color="textSecondary" style={{ marginLeft: theme.spacing.sm }}>
-                {'Thời gian: '}{aiInstructions.cookingTime}
-              </ThemedText>
+              <View style={S.badgeWrap}>
+                <Ionicons name="time" size={14} color={P.primary} />
+                <ThemedText style={S.badgeText}>{aiInstructions.cookingTime}</ThemedText>
+              </View>
             )}
           </View>
-
-          {/* Loading state */}
-          {aiInstructions.isLoading && (
-            <View style={{ flexDirection: 'row', alignItems: 'center', padding: theme.spacing.md }}>
-              <ActivityIndicator size="small" color={theme.colors.primary} />
-              <ThemedText variant="body" color="textSecondary" style={{ marginLeft: theme.spacing.sm }}>
-                {'AI đang tạo hướng dẫn nấu...'}
-              </ThemedText>
-            </View>
-          )}
-
-          {/* Error state */}
-          {aiInstructions.error && !aiInstructions.isLoading && (
-            <ThemedText variant="body" color="danger">
-              {aiInstructions.error}
-            </ThemedText>
-          )}
-
-          {/* Render steps */}
-          {((recipe.instructions && recipe.instructions.length > 0)
-            ? recipe.instructions
-            : aiInstructions.steps
-          ).map((step: string, i: number) => (
-            <View
-              key={i}
-              style={{
-                flexDirection: 'row',
-                marginBottom: theme.spacing.sm,
-                alignItems: 'flex-start',
-              }}
-            >
-              <View
-                style={{
-                  width: 24,
-                  height: 24,
-                  borderRadius: 12,
-                  backgroundColor: theme.colors.primary,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  marginRight: theme.spacing.sm,
-                  marginTop: 2,
-                }}
-              >
-                <ThemedText
-                  variant="caption"
-                  weight="700"
-                  style={{ color: '#fff' }}
-                >
-                  {i + 1}
-                </ThemedText>
-              </View>
-              <ThemedText variant="body" style={{ flex: 1 }}>
-                {step}
-              </ThemedText>
-            </View>
-          ))}
         </View>
 
-        {/* Video Tutorial Section */}
-        <View style={[styles.box, { backgroundColor: theme.colors.card }]}>
-          <ThemedText variant="h4" style={{ marginBottom: theme.spacing.sm }}>
-            {'Video hướng dẫn'}
-          </ThemedText>
+        <View style={S.mainCanvas}>
+          {/* Nutrition Row */}
+          <Animated.View entering={FadeInDown.delay(100)} style={S.macrosRow}>
+            <View style={[S.macroBox, { backgroundColor: P.primary + '15', borderColor: P.primary + '40' }]}>
+              <ThemedText style={[S.macroVal, { color: P.primary }]}>{Math.round(recipe.totalCalories!)}</ThemedText>
+              <ThemedText style={S.macroLabel}>Kcal</ThemedText>
+            </View>
+            <View style={[S.macroBox, { backgroundColor: P.macroP + '15', borderColor: P.macroP + '40' }]}>
+              <ThemedText style={[S.macroVal, { color: P.macroP }]}>{Math.round(recipe.totalProtein!)}g</ThemedText>
+              <ThemedText style={S.macroLabel}>Đạm</ThemedText>
+            </View>
+            <View style={[S.macroBox, { backgroundColor: P.macroC + '15', borderColor: P.macroC + '40' }]}>
+              <ThemedText style={[S.macroVal, { color: P.macroC }]}>{Math.round(recipe.totalCarbs!)}g</ThemedText>
+              <ThemedText style={S.macroLabel}>Carb</ThemedText>
+            </View>
+            <View style={[S.macroBox, { backgroundColor: P.macroF + '15', borderColor: P.macroF + '40' }]}>
+              <ThemedText style={[S.macroVal, { color: P.macroF }]}>{Math.round(recipe.totalFat!)}g</ThemedText>
+              <ThemedText style={S.macroLabel}>Béo</ThemedText>
+            </View>
+          </Animated.View>
 
-          {recipe.videoUrl ? (
-            // Open the recipe video URL directly in the browser
-            <Pressable
-              onPress={() => {
-                Linking.openURL(recipe.videoUrl!);
-              }}
-              style={({ pressed }) => [
-                styles.videoSearchButton,
-                {
-                  backgroundColor: isDark ? 'rgba(255, 0, 0, 0.15)' : 'rgba(255, 0, 0, 0.08)',
-                  opacity: pressed ? 0.8 : 1,
-                },
-              ]}
-            >
-              <View style={styles.videoCardContent}>
-                <View style={styles.videoIconContainer}>
-                  <Ionicons name="play-circle" size={40} color="#FF0000" />
-                </View>
-                <View style={styles.videoTextContainer}>
-                  <ThemedText variant="bodySmall" weight="600">
-                    {'Xem video hướng dẫn'}
-                  </ThemedText>
-                  <ThemedText variant="caption" color="textSecondary">
-                    {'Nhấn để xem video nấu món này'}
-                  </ThemedText>
-                </View>
-                <Ionicons
-                  name="chevron-forward"
-                  size={24}
-                  color={theme.colors.textSecondary}
-                />
-              </View>
-            </Pressable>
-          ) : (
-            // No video URL: fall back to a YouTube search
-            <Pressable
-              onPress={() => {
-                const searchQuery = encodeURIComponent(`cách nấu ${recipe.recipeName} `);
-                Linking.openURL(`https://www.youtube.com/results?search_query=${searchQuery}`);
-              }}
-              style={({ pressed }) => [
-                styles.videoSearchButton,
-                {
-                  backgroundColor: isDark ? 'rgba(255, 0, 0, 0.15)' : 'rgba(255, 0, 0, 0.08)',
-                  opacity: pressed ? 0.8 : 1,
-                },
-              ]}
-            >
-              <View style={styles.videoCardContent}>
-                <View style={styles.videoIconContainer}>
-                  <Ionicons name="logo-youtube" size={40} color="#FF0000" />
-                </View>
-                <View style={styles.videoTextContainer}>
-                  <ThemedText variant="bodySmall" weight="600">
-                    {'Tìm video trên YouTube'}
-                  </ThemedText>
-                  <ThemedText variant="caption" color="textSecondary">
-                    {'Nhấn để tìm video "'}{recipe.recipeName}{'"'}
-                  </ThemedText>
-                </View>
-                <Ionicons
-                  name="chevron-forward"
-                  size={24}
-                  color={theme.colors.textSecondary}
-                />
-              </View>
-            </Pressable >
+          {/* Description */}
+          {recipe.description && (
+            <Animated.View entering={FadeInDown.delay(200)} style={S.glassCard}>
+              <ThemedText style={S.sectionTitle}>Giới thiệu</ThemedText>
+              <ThemedText style={S.bodyText}>{recipe.description}</ThemedText>
+            </Animated.View>
           )}
-        </View >
 
-        {/* Add to diary button */}
-        < View style={{ paddingHorizontal: theme.spacing.md, marginTop: theme.spacing.lg }}>
-          <Button
-            title="Thêm vào nhật ký hôm nay"
-            variant="primary"
-            onPress={() => setShowAddToDiarySheet(true)}
-            loading={isAddingToDiary}
-            style={{ width: '100%' }}
-          />
-        </View >
-      </ScrollView >
+          {/* Ingredients */}
+          {recipe.ingredients && recipe.ingredients.length > 0 && (
+            <Animated.View entering={FadeInDown.delay(300)} style={S.glassCard}>
+              <ThemedText style={S.sectionTitle}>Nguyên liệu</ThemedText>
+              <View style={S.ingredientsWrap}>
+                {recipe.ingredients.map((ing, i) => (
+                  <View key={i} style={S.ingredientRow}>
+                    <View style={S.ingDot} />
+                    <ThemedText style={S.bodyTextItem}>{ing.foodName}</ThemedText>
+                    <ThemedText style={S.bodyTextWeight}>{ing.grams}g</ThemedText>
+                  </View>
+                ))}
+              </View>
+            </Animated.View>
+          )}
 
-      {/* Add to diary sheet */}
-      {
-        recipe && (
-          <AddRecipeToDiarySheet
-            visible={showAddToDiarySheet}
-            onClose={() => setShowAddToDiarySheet(false)}
-            recipeName={recipe.recipeName}
-            nutrition={{
-              calories: recipe.totalCalories,
-              protein: recipe.totalProtein,
-              carbs: recipe.totalCarbs,
-              fat: recipe.totalFat,
-            }}
-            onConfirm={handleAddToDiary}
-          />
-        )
-      }
-    </Screen >
+          {/* Cooking Instructions */}
+          <Animated.View entering={FadeInDown.delay(400)} style={S.glassCard}>
+            <ThemedText style={S.sectionTitle}>Hướng dẫn nấu</ThemedText>
+            
+            {aiInstructions.isLoading ? (
+              <View style={{ flexDirection: 'row', alignItems: 'center', marginVertical: 10 }}>
+                <ActivityIndicator size="small" color={P.primary} />
+                <ThemedText style={{ marginLeft: 10, color: P.onSurfaceVariant, fontSize: 13 }}>
+                  AI đang viết công thức...
+                </ThemedText>
+              </View>
+            ) : aiInstructions.error ? (
+              <ThemedText style={{ color: P.danger, fontSize: 13 }}>{aiInstructions.error}</ThemedText>
+            ) : (
+              <View style={S.stepsWrap}>
+                {(recipe.instructions?.length ? recipe.instructions : aiInstructions.steps).map((step: string, i: number) => (
+                  <View key={i} style={S.stepRow}>
+                    <View style={S.stepNumberWrap}>
+                      <ThemedText style={S.stepNumberText}>{i + 1}</ThemedText>
+                    </View>
+                    <ThemedText style={S.stepContentText}>{step}</ThemedText>
+                  </View>
+                ))}
+              </View>
+            )}
+          </Animated.View>
+
+          {/* Video Guide */}
+          <Animated.View entering={FadeInDown.delay(500)} style={S.glassCard}>
+            <ThemedText style={S.sectionTitle}>Video hướng dẫn</ThemedText>
+            <Pressable
+              onPress={() => Linking.openURL(recipe.videoUrl || `https://www.youtube.com/results?search_query=${encodeURIComponent(`cách nấu ${recipe.recipeName}`)}`)}
+              style={({ pressed }) => [S.videoBox, { opacity: pressed ? 0.8 : 1 }]}
+            >
+              <View style={S.videoIconBg}>
+                <Ionicons name="play" size={24} color="#ef4444" />
+              </View>
+              <View style={S.videoTextWrap}>
+                <ThemedText style={S.videoTitle}>{recipe.videoUrl ? 'Xem video hướng dẫn' : 'Tìm video trên YouTube'}</ThemedText>
+                <ThemedText style={S.videoSub}>Học cách nấu trực quan</ThemedText>
+              </View>
+              <Ionicons name="open-outline" size={20} color={P.onSurfaceVariant} />
+            </Pressable>
+          </Animated.View>
+
+          <View style={{ height: 100 }} />
+        </View>
+      </ScrollView>
+
+      {recipe && (
+        <AddRecipeToDiarySheet
+          visible={showAddToDiarySheet}
+          onClose={() => setShowAddToDiarySheet(false)}
+          recipeName={recipe.recipeName}
+          nutrition={{ calories: recipe.totalCalories, protein: recipe.totalProtein, carbs: recipe.totalCarbs, fat: recipe.totalFat }}
+          onConfirm={handleAddToDiary}
+        />
+      )}
+    </View>
   );
 };
 
-const styles = StyleSheet.create({
-  center: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 16,
-  },
-  content: {
-    padding: 16,
-    gap: 16,
-    paddingBottom: 120, // Extra space to scroll past the button
-  },
-  box: {
-    padding: 16,
-    borderRadius: 16,
-    marginBottom: 8,
-  },
-  // Video search button when no videoUrl is available
-  videoSearchButton: {
-    padding: 12,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 0, 0, 0.2)',
-  },
-  videoCardContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  videoIconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 12,
-    backgroundColor: 'rgba(255, 0, 0, 0.1)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  videoTextContainer: {
-    flex: 1,
-    gap: 2,
-  },
-  // Nutrition info grid
-  nutritionGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  nutritionItem: {
-    flex: 1,
-    minWidth: '45%',
-    padding: 12,
-    borderRadius: 12,
-    alignItems: 'center',
-  },
-});
-
 export default RecipeDetailScreen;
+
+/* ═══ Styles ═══ */
+const S = StyleSheet.create({
+  container: { flex: 1, backgroundColor: P.surface },
+  center: { flex: 1, backgroundColor: P.surface, alignItems: 'center', justifyContent: 'center' },
+  
+  header: {
+    position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10,
+    flexDirection: 'row', justifyContent: 'space-between',
+    paddingHorizontal: 20, paddingBottom: 15,
+  },
+  iconBtn: {
+    width: 44, height: 44, borderRadius: 22,
+    backgroundColor: P.glassHeader,
+    alignItems: 'center', justifyContent: 'center',
+    borderWidth: 1, borderColor: P.glassBorder,
+  },
+
+  scrollContent: { paddingBottom: 60 },
+  
+  heroContainer: { width: '100%', height: 350, position: 'relative' },
+  heroImage: { width: '100%', height: '100%', resizeMode: 'cover' },
+  gradientMask: { ...StyleSheet.absoluteFillObject },
+  heroTextWrap: {
+    position: 'absolute', bottom: 20, left: 24, right: 24, gap: 12
+  },
+  heroMainTitle: { fontSize: 32, fontFamily: 'Inter_800ExtraBold', color: P.onSurface, lineHeight: 40 },
+  badgeWrap: {
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    backgroundColor: P.surfaceContainerHigh,
+    alignSelf: 'flex-start',
+    paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20,
+    borderWidth: 1, borderColor: P.glassBorder
+  },
+  badgeText: { fontSize: 13, fontFamily: 'Inter_600SemiBold', color: P.onSurface },
+
+  mainCanvas: { paddingHorizontal: 20, gap: 16 },
+
+  macrosRow: { flexDirection: 'row', gap: 10, justifyContent: 'space-between', marginTop: 8 },
+  macroBox: {
+    flex: 1, borderRadius: 16, paddingVertical: 12, borderWidth: 1,
+    alignItems: 'center', justifyContent: 'center', gap: 2
+  },
+  macroVal: { fontSize: 16, fontFamily: 'Inter_800ExtraBold' },
+  macroLabel: { fontSize: 11, fontFamily: 'Inter_500Medium', color: P.onSurfaceVariant },
+
+  glassCard: {
+    backgroundColor: P.surfaceContainerHigh,
+    borderRadius: 24, padding: 20, gap: 12,
+    borderWidth: 1, borderColor: P.glassBorder,
+  },
+  sectionTitle: { fontSize: 18, fontFamily: 'Inter_800ExtraBold', color: P.onSurface, marginBottom: 4 },
+  bodyText: { fontSize: 14, fontFamily: 'Inter_400Regular', color: P.onSurfaceVariant, lineHeight: 22 },
+
+  ingredientsWrap: { gap: 10 },
+  ingredientRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  ingDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: P.primary },
+  bodyTextItem: { flex: 1, fontSize: 14, fontFamily: 'Inter_500Medium', color: P.onSurface },
+  bodyTextWeight: { fontSize: 14, fontFamily: 'Inter_700Bold', color: P.primary },
+
+  stepsWrap: { gap: 16 },
+  stepRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
+  stepNumberWrap: {
+    width: 28, height: 28, borderRadius: 14, backgroundColor: P.primary + '20',
+    alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: P.primary + '40',
+    marginTop: 2
+  },
+  stepNumberText: { fontSize: 12, fontFamily: 'Inter_800ExtraBold', color: P.primary },
+  stepContentText: { flex: 1, fontSize: 14, fontFamily: 'Inter_500Medium', color: P.onSurfaceVariant, lineHeight: 22 },
+
+  videoBox: { flexDirection: 'row', alignItems: 'center', gap: 14, backgroundColor: P.surfaceContainerLowest, padding: 14, borderRadius: 16 },
+  videoIconBg: { width: 40, height: 40, borderRadius: 12, backgroundColor: 'rgba(239, 68, 68, 0.1)', alignItems: 'center', justifyContent: 'center' },
+  videoTextWrap: { flex: 1 },
+  videoTitle: { fontSize: 14, fontFamily: 'Inter_700Bold', color: P.onSurface },
+  videoSub: { fontSize: 12, fontFamily: 'Inter_500Medium', color: P.onSurfaceVariant },
+
+  floatBottomBtn: {
+    position: 'absolute', left: 24, right: 24, zIndex: 100,
+    shadowColor: P.primary, shadowOpacity: 0.4, shadowRadius: 15, elevation: 15,
+  },
+  addBtn: {
+    backgroundColor: P.primary, borderRadius: 99,
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
+    paddingVertical: 18,
+  },
+  addBtnText: { fontSize: 16, fontFamily: 'Inter_800ExtraBold', color: P.onPrimary },
+});

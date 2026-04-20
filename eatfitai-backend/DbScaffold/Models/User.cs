@@ -25,6 +25,9 @@ public partial class User
     // Onboarding status - đã hoàn thành setup profile chưa
     public bool OnboardingCompleted { get; set; } = false;
 
+    // Platform role source of truth for admin authority
+    public string? Role { get; set; } = "user";
+
     // Refresh Token for Long-lived Sessions
     public string? RefreshToken { get; set; }
     public DateTime? RefreshTokenExpiryTime { get; set; }

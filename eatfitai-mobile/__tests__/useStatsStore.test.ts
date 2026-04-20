@@ -28,6 +28,19 @@ describe('useStatsStore', () => {
     expect(useStatsStore.getState().error).toBeNull();
   });
 
+  it('initial selectedDate stays on the local calendar week boundary', async () => {
+    jest.useFakeTimers();
+    jest.setSystemTime(new Date(2026, 3, 1, 0, 30));
+    try {
+      jest.resetModules();
+      const { useStatsStore: isolatedStore } = require('../src/store/useStatsStore');
+
+      expect(isolatedStore.getState().selectedDate).toBe('2026-03-30');
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
   it('refreshWeekSummary luu loi khi that bai', async () => {
     (summaryService.getWeekSummary as jest.Mock).mockRejectedValue(
       new Error('Network error'),

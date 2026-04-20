@@ -32,6 +32,7 @@ namespace EatFitAI.API.Tests.Unit.Services
                 .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
                 .Options;
             _context = new EatFitAIDbContext(options);
+            SeedFoodItems();
 
             _foodService = new FoodService(
                 _foodItemRepositoryMock.Object,
@@ -43,6 +44,36 @@ namespace EatFitAI.API.Tests.Unit.Services
         public void Dispose()
         {
             _context.Dispose();
+        }
+
+        private void SeedFoodItems()
+        {
+            _context.FoodItems.AddRange(
+                new FoodItem
+                {
+                    FoodItemId = 1,
+                    FoodName = "Com trang",
+                    CaloriesPer100g = 130,
+                    ProteinPer100g = 2.7m,
+                    CarbPer100g = 28,
+                    FatPer100g = 0.3m,
+                    IsActive = true,
+                    IsDeleted = false
+                },
+                new FoodItem
+                {
+                    FoodItemId = 2,
+                    FoodName = "Thit ga",
+                    CaloriesPer100g = 165,
+                    ProteinPer100g = 31,
+                    CarbPer100g = 0,
+                    FatPer100g = 3.6m,
+                    IsActive = true,
+                    IsDeleted = false
+                }
+            );
+
+            _context.SaveChanges();
         }
 
         #region SearchFoodItemsAsync Tests
@@ -200,7 +231,7 @@ namespace EatFitAI.API.Tests.Unit.Services
         }
 
         [Fact]
-        public async Task CreateCustomDishAsync_EmptyIngredients_ReturnsEmptyIngredientsList()
+        public async Task CreateCustomDishAsync_EmptyIngredients_ThrowsArgumentException()
         {
             // Arrange - Món ăn không có nguyên liệu (edge case)
             var userId = Guid.NewGuid();
@@ -211,11 +242,45 @@ namespace EatFitAI.API.Tests.Unit.Services
             };
 
             // Act
-            var result = await _foodService.CreateCustomDishAsync(userId, customDishDto);
+            var exception = await Assert.ThrowsAsync<ArgumentException>(() =>
+                _foodService.CreateCustomDishAsync(userId, customDishDto));
 
             // Assert
-            Assert.NotNull(result);
-            Assert.Empty(result.Ingredients);
+            Assert.Contains("at least one ingredient", exception.Message);
+        }
+
+        [Fact]
+        public async Task CreateCustomDishAsync_InvalidIngredientGrams_ThrowsArgumentException()
+        {
+            var userId = Guid.NewGuid();
+            var customDishDto = new CustomDishDto
+            {
+                DishName = "Món test",
+                Ingredients = new List<CustomDishIngredientDto>
+                {
+                    new CustomDishIngredientDto { FoodItemId = 1, Grams = 0 }
+                }
+            };
+
+            await Assert.ThrowsAsync<ArgumentException>(() =>
+                _foodService.CreateCustomDishAsync(userId, customDishDto));
+        }
+
+        [Fact]
+        public async Task CreateCustomDishAsync_MissingFoodItem_ThrowsKeyNotFoundException()
+        {
+            var userId = Guid.NewGuid();
+            var customDishDto = new CustomDishDto
+            {
+                DishName = "Món test",
+                Ingredients = new List<CustomDishIngredientDto>
+                {
+                    new CustomDishIngredientDto { FoodItemId = 9999, Grams = 100 }
+                }
+            };
+
+            await Assert.ThrowsAsync<KeyNotFoundException>(() =>
+                _foodService.CreateCustomDishAsync(userId, customDishDto));
         }
 
         #endregion

@@ -27,6 +27,19 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 load_dotenv()
 
+
+def _get_internal_runtime_token() -> str:
+    return os.getenv("AI_PROVIDER_INTERNAL_TOKEN", "").strip()
+
+
+def _is_internal_request_authorized() -> bool:
+    expected = _get_internal_runtime_token()
+    if not expected:
+        return True
+
+    provided = request.headers.get("X-Internal-Token", "").strip()
+    return bool(provided) and provided == expected
+
 def env_flag(name: str, default: bool = False) -> bool:
     raw = os.getenv(name)
     if raw is None:
@@ -215,6 +228,19 @@ def _gemini_service_error_response(exc: Exception):
     if retry_after:
         payload["retryAfter"] = retry_after
     return jsonify(payload), 503
+
+
+@app.get("/internal/runtime/status")
+def internal_runtime_status():
+    if not _is_internal_request_authorized():
+        return jsonify({"error": "forbidden"}), 403
+
+    status = _get_gemini_health_status()
+    runtime_status = {
+        "checkedAt": time.time(),
+        **status,
+    }
+    return jsonify(runtime_status), 200
 
 @app.post("/detect")
 def detect() -> Response | tuple[Dict[str, str], int]:

@@ -51,7 +51,10 @@ export const SmartAddSheet: React.FC<SmartAddSheetProps> = ({ visible, onClose }
         <Animated.View
           entering={FadeIn}
           exiting={FadeOut}
-          style={[StyleSheet.absoluteFill, { backgroundColor: theme.colors.overlay.medium }]}
+          style={[
+            StyleSheet.absoluteFill,
+            { backgroundColor: theme.colors.overlay.medium },
+          ]}
         >
           <Pressable
             style={StyleSheet.absoluteFill}
@@ -125,7 +128,9 @@ export const SmartAddSheet: React.FC<SmartAddSheetProps> = ({ visible, onClose }
             <View style={styles.utilityRow}>
               <Pressable
                 style={[styles.utilityButton, { borderColor: theme.colors.border }]}
-                onPress={() => navigateAfterClose('FoodSearch', { initialTab: 'favorites' })}
+                onPress={() =>
+                  navigateAfterClose('FoodSearch', { initialTab: 'favorites' })
+                }
               >
                 <ThemedText variant="bodySmall" weight="600">
                   {t('food_search.tab_favorites')}

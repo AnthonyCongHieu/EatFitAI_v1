@@ -3,60 +3,234 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   ActivityIndicator,
   Alert,
+  Image,
   Pressable,
   RefreshControl,
   StyleSheet,
   View,
+  Dimensions,
 } from 'react-native';
 import Animated, {
   FadeInUp,
+  FadeIn,
   useSharedValue,
+  useAnimatedStyle,
   withTiming,
+  withRepeat,
+  withSequence,
+  Easing,
 } from 'react-native-reanimated';
 import Toast from 'react-native-toast-message';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import Svg, { Circle, Defs, LinearGradient as SvgGradient, Stop, Path } from 'react-native-svg';
+import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
 
 import { ThemedText } from '../../components/ThemedText';
 import Screen from '../../components/Screen';
-import Icon from '../../components/Icon';
 import { useDiaryStore } from '../../store/useDiaryStore';
 import { useAppTheme } from '../../theme/ThemeProvider';
 import type { RootStackParamList } from '../types';
-import type { DaySummary } from '../../services/diaryService';
+import { MEAL_TYPE_LABELS, type MealTypeId } from '../../types';
+import type { DaySummary, DiaryEntry } from '../../services/diaryService';
 import { healthService } from '../../services/healthService';
 import { t } from '../../i18n/vi';
 import { handleApiErrorWithCustomMessage } from '../../utils/errorHandler';
-
-// New UI components
-import { AppCard } from '../../components/ui/AppCard';
-import { SectionHeader } from '../../components/ui/SectionHeader';
-import { AnimatedEmptyState } from '../../components/ui/AnimatedEmptyState';
-
-// InsightsCard removed per user request
-import { MacroProgressCard } from '../../components/ui/MacroProgressCard';
-import CalorieRing from '../../components/ui/CalorieRing';
-import { FoodEntryCard } from '../../components/ui/FoodEntryCard';
-import QuickAddHub from '../../components/home/QuickAddHub';
-import { SmartAddSheet } from '../../components/ui/SmartAddSheet';
 import { useGamificationStore } from '../../store/useGamificationStore';
-import { StreakCard } from '../../components/gamification/StreakCard';
 import { HomeSkeleton } from '../../components/skeletons/HomeSkeleton';
-import { glassStyles } from '../../components/ui/GlassCard';
-import { GradientBackground } from '../../components/ui/GradientBackground';
 import { WelcomeHeader } from '../../components/home/WelcomeHeader';
 import { useSmartContext } from '../../hooks/useSmartContext';
+import Tilt3DCard from '../../components/ui/Tilt3DCard';
 import * as Haptics from 'expo-haptics';
 import { TEST_IDS } from '../../testing/testIds';
+import { waterService, type WaterIntakeData } from '../../services/waterService';
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+
+/* ─── Emerald Nebula palette ─── */
+const C = {
+  bg: '#0a0e1a',
+  surfaceLow: '#111827',
+  surface: '#1a1f2f',
+  surfaceHigh: '#1e2435',
+  surfaceHighest: '#2a2f40',
+  primary: '#4be277',
+  primaryDark: '#22c55e',
+  cyan: '#06b6d4',
+  amber: '#f59e0b',
+  onSurface: '#dee1f7',
+  textMuted: '#94a3b8',
+  outline: 'rgba(255,255,255,0.06)',
+  danger: '#ff6b6b',
+};
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
+/* ═══════════════════════════════════════════════
+   Helper: get meal label from entry time or index
+   ═══════════════════════════════════════════════ */
+const getMealLabelFromEntry = (entry: DiaryEntry): string => {
+  if (entry.mealType && MEAL_TYPE_LABELS[entry.mealType as MealTypeId]) {
+    return MEAL_TYPE_LABELS[entry.mealType as MealTypeId];
+  }
+  // Fallback: guess from recordedAt time
+  const h = entry.recordedAt ? new Date(entry.recordedAt).getHours() : new Date().getHours();
+  if (h >= 5 && h < 11) return 'Bữa sáng';
+  if (h >= 11 && h < 14) return 'Bữa trưa';
+  if (h >= 14 && h < 17) return 'Ăn vặt';
+  return 'Bữa tối';
+};
+
+/* ═══════════════════════════════════════════════
+   Helper: get food emoji
+   ═══════════════════════════════════════════════ */
+const getFoodEmoji = (foodName: string): string => {
+  const name = foodName.toLowerCase();
+  if (name.includes('cơm') || name.includes('rice')) return '🍚';
+  if (name.includes('phở') || name.includes('noodle')) return '🍜';
+  if (name.includes('gà') || name.includes('chicken')) return '🍗';
+  if (name.includes('cá') || name.includes('fish') || name.includes('hồi')) return '🐟';
+  if (name.includes('salad') || name.includes('rau')) return '🥗';
+  if (name.includes('trứng') || name.includes('egg')) return '🥚';
+  if (name.includes('sữa') || name.includes('milk')) return '🥛';
+  if (name.includes('bánh')) return '🍞';
+  if (name.includes('canh') || name.includes('soup')) return '🍲';
+  return '🍽️';
+};
+
+/* ─── Date helpers ─── */
+const VIET_DAYS = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
+
+const isToday = (d: Date): boolean => {
+  const now = new Date();
+  return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth() && d.getDate() === now.getDate();
+};
+
+const isSameDay = (a: Date, b: Date): boolean =>
+  a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+
+const formatShortDate = (d: Date): string => `${d.getDate()}/${d.getMonth() + 1}`;
+
+const getWeekDays = (): Date[] => {
+  const today = new Date();
+  const dayOfWeek = today.getDay(); // 0=Sun
+  const monday = new Date(today);
+  monday.setDate(today.getDate() - ((dayOfWeek + 6) % 7));
+  const days: Date[] = [];
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(monday);
+    d.setDate(monday.getDate() + i);
+    days.push(d);
+  }
+  return days;
+};
+
+/* ─── WeekDayStrip Component ─── */
+const WeekDayStrip = ({ selectedDate, onSelectDate }: { selectedDate: Date; onSelectDate: (d: Date) => void }) => {
+  const days = useMemo(() => getWeekDays(), []);
+  return (
+    <View style={weekStyles.container}>
+      {days.map((day) => {
+        const selected = isSameDay(day, selectedDate);
+        const today = isToday(day);
+        return (
+          <Pressable
+            key={day.toISOString()}
+            style={weekStyles.dayBtn}
+            onPress={() => onSelectDate(day)}
+          >
+            <ThemedText style={[weekStyles.dayLabel, selected && weekStyles.dayLabelSelected]}>
+              {VIET_DAYS[day.getDay()]}
+            </ThemedText>
+            <View style={[weekStyles.dayNumContainer, selected && weekStyles.dayNumContainerSelected]}>
+              <ThemedText style={[weekStyles.dayNum, selected && weekStyles.dayNumSelected]}>
+                {day.getDate()}
+              </ThemedText>
+            </View>
+            {today && !selected && <View style={weekStyles.todayDot} />}
+          </Pressable>
+        );
+      })}
+    </View>
+  );
+};
+
+const weekStyles = StyleSheet.create({
+  container: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    backgroundColor: C.surfaceLow,
+    borderRadius: 16,
+    padding: 6,
+    borderWidth: 1,
+    borderColor: C.outline,
+  },
+  dayBtn: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: 8,
+    borderRadius: 12,
+    gap: 4,
+  },
+  dayLabel: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: C.textMuted,
+    textTransform: 'uppercase',
+  },
+  dayLabelSelected: {
+    color: C.onSurface,
+    fontWeight: '700',
+  },
+  dayNumContainer: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  dayNumContainerSelected: {
+    backgroundColor: C.primary,
+  },
+  dayNum: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: C.onSurface,
+  },
+  dayNumSelected: {
+    color: '#003915',
+  },
+  todayDot: {
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: C.primary,
+    marginTop: -2,
+  },
+});
+
+const WaterGlassIcon = ({ isPlus }: { isPlus: boolean }) => {
+  const color = isPlus ? '#3b82f6' : '#64748b';
+  const liquidOpacity = isPlus ? 0.9 : 0.4;
+  return (
+    <View style={{ width: 22, height: 26, alignItems: 'center', justifyContent: 'center' }}>
+      <Svg width="22" height="26" viewBox="0 0 24 24" fill="none">
+        {/* Fill */}
+        <Path d="M5.5 12L6.5 20C6.6 20.6 7.2 21 7.8 21H16.2C16.8 21 17.4 20.6 17.5 20L18.5 12H5.5Z" fill={color} fillOpacity={liquidOpacity} />
+        {/* Outline */}
+        <Path d="M4 3L6.5 20C6.7 21.1 7.6 22 8.8 22H15.2C16.4 22 17.3 21.1 17.5 20L20 3" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+      </Svg>
+      <ThemedText style={{ position: 'absolute', fontSize: 16, fontWeight: '600', color: '#fff', top: 3, width: '100%', textAlign: 'center' }}>
+        {isPlus ? '+' : '−'}
+      </ThemedText>
+    </View>
+  );
+};
+
 const HomeScreen = (): React.ReactElement => {
   const { theme } = useAppTheme();
-  const styles = getStyles(theme);
-  const isDark = theme.mode === 'dark';
-  const glass = glassStyles(isDark);
-
   const navigation = useNavigation<NavigationProp>();
   const summary = useDiaryStore((s) => s.summary);
   const fetchSummary = useDiaryStore((s) => s.fetchSummary);
@@ -68,37 +242,78 @@ const HomeScreen = (): React.ReactElement => {
       await fetchSummary();
       return useDiaryStore.getState().summary ?? null;
     },
-    // staleTime từ global config (2 phút)
   });
-  const [showAddModal, setShowAddModal] = useState(false);
   const [serverDown, setServerDown] = useState(false);
-  const { currentStreak, longestStreak, weeklyLogs, checkStreak, fetchWeeklyLogs } = useGamificationStore();
+  const [selectedDate, setSelectedDate] = useState(new Date());
 
-  // AI-driven context awareness (2026 trend)
+  // Water intake state
+  const { data: waterData, refetch: refetchWater } = useQuery<WaterIntakeData>({
+    queryKey: ['water-intake-today'],
+    queryFn: () => waterService.getWaterIntake(new Date()),
+    staleTime: 30000,
+  });
+  const waterAmount = waterData?.amountMl ?? 0;
+  const waterTarget = waterData?.targetMl ?? 2000;
+  const waterProgress = Math.min(1, waterAmount / Math.max(waterTarget, 1));
+
+  const handleAddWater = useCallback(async () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    
+    // Optimistic Update
+    const prevData = queryClient.getQueryData<WaterIntakeData>(['water-intake-today']);
+    queryClient.setQueryData<WaterIntakeData>(['water-intake-today'], (old) => ({
+      amountMl: (old?.amountMl ?? 0) + 200,
+      targetMl: old?.targetMl ?? 2000,
+      date: old?.date ?? new Date().toISOString().split('T')[0]!
+    }));
+
+    try {
+      await waterService.addWater(new Date());
+    } catch (err: any) {
+      if (prevData) {
+        queryClient.setQueryData(['water-intake-today'], prevData);
+      }
+      Toast.show({ type: 'error', text1: 'Lỗi', text2: 'Không thể cập nhật lượng nước' });
+    }
+  }, [queryClient, refetchWater]);
+
+  const handleSubtractWater = useCallback(async () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    
+    // Optimistic Update
+    const prevData = queryClient.getQueryData<WaterIntakeData>(['water-intake-today']);
+    const newAmount = Math.max(0, (prevData?.amountMl ?? 0) - 200);
+    queryClient.setQueryData<WaterIntakeData>(['water-intake-today'], (old) => ({
+      amountMl: newAmount,
+      targetMl: old?.targetMl ?? 2000,
+      date: old?.date ?? new Date().toISOString().split('T')[0]!
+    }));
+
+    try {
+      await waterService.subtractWater(new Date());
+    } catch (err: any) {
+      if (prevData) {
+        queryClient.setQueryData(['water-intake-today'], prevData);
+      }
+      Toast.show({ type: 'error', text1: 'Lỗi', text2: 'Không thể cập nhật lượng nước' });
+    }
+  }, [queryClient, refetchWater]);
+  const { currentStreak, longestStreak, weeklyLogs, checkStreak, fetchWeeklyLogs } =
+    useGamificationStore();
+
   const smartContext = useSmartContext(summary);
 
   useEffect(() => {
     checkStreak();
     fetchWeeklyLogs();
-    // ⚡ Chỉ chạy 1 lần khi mount - không refetch khi chuyển tab
-    // Store nội bộ đã có caching để tránh spam API kể cả khi mount lại
   }, [checkStreak, fetchWeeklyLogs]);
 
   const showCommonErrors = useCallback(
     (error: any, fallback: { text1: string; text2: string }) => {
       handleApiErrorWithCustomMessage(error, {
-        unauthorized: {
-          text1: t('common.sessionExpired'),
-          text2: t('common.pleaseLoginAgain'),
-        },
-        server_error: {
-          text1: t('common.serverError'),
-          text2: t('common.tryAgainLater'),
-        },
-        network_error: {
-          text1: t('common.networkError'),
-          text2: t('common.checkConnection'),
-        },
+        unauthorized: { text1: t('common.sessionExpired'), text2: t('common.pleaseLoginAgain') },
+        server_error: { text1: t('common.serverError'), text2: t('common.tryAgainLater') },
+        network_error: { text1: t('common.networkError'), text2: t('common.checkConnection') },
         unknown: fallback,
       });
     },
@@ -108,13 +323,7 @@ const HomeScreen = (): React.ReactElement => {
   // Animation values
   const remainingCaloriesValue = useSharedValue(0);
   const calorieProgressValue = useSharedValue(0);
-  const proteinValue = useSharedValue(0);
-  const carbsValue = useSharedValue(0);
-  const fatValue = useSharedValue(0);
 
-
-
-  // Tự động set status server dựa trên useQuery
   useEffect(() => {
     if (!isLoading && !isFetching) {
       setServerDown(!!(isError || !summary));
@@ -124,71 +333,28 @@ const HomeScreen = (): React.ReactElement => {
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const res = await healthService.warmUpBackend({
-        maxAttempts: 2,
-        delayMs: 3000,
-        timeoutMs: 12000,
-      });
+      const res = await healthService.warmUpBackend({ maxAttempts: 2, delayMs: 3000, timeoutMs: 12000 });
       if (!cancelled) setServerDown(!res.ok);
     })();
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, []);
 
-  // Re-check server health whenever screen gains focus (tránh kẹt cờ khi ping lần đầu thất bại)
   useFocusEffect(
     useCallback(() => {
       let active = true;
       (async () => {
-        const res = await healthService.warmUpBackend({
-          maxAttempts: 2,
-          delayMs: 3000,
-          timeoutMs: 12000,
-        });
+        const res = await healthService.warmUpBackend({ maxAttempts: 2, delayMs: 3000, timeoutMs: 12000 });
         if (active) setServerDown(!res.ok);
       })();
-      return () => {
-        active = false;
-      };
+      return () => { active = false; };
     }, []),
   );
 
   const handleRefresh = useCallback(() => {
     refetch().catch((err: any) => {
-      showCommonErrors(err, {
-        text1: t('home.reloadFailed'),
-        text2: t('home.pullToRetry'),
-      });
+      showCommonErrors(err, { text1: t('home.reloadFailed'), text2: t('home.pullToRetry') });
     });
   }, [refetch, showCommonErrors]);
-
-
-  const handleQuickAddSearch = useCallback(() => {
-    navigation.navigate('FoodSearch', {
-      autoFocus: true,
-      showQuickSuggestions: true,
-      returnToDiaryOnSave: true,
-    });
-  }, [navigation]);
-
-  const handleQuickAddScan = useCallback(() => {
-    navigation.navigate('AiCamera');
-  }, [navigation]);
-
-  const handleQuickAddVoice = useCallback(() => {
-    navigation.navigate('AppTabs', {
-      screen: 'VoiceTab',
-      params: {
-        autoStart: true,
-        source: 'home-hub',
-      },
-    });
-  }, [navigation]);
-
-  const handleViewAllDiary = useCallback(() => {
-    navigation.navigate('MealDiary');
-  }, [navigation]);
 
   const handleDelete = useCallback(
     (entryId: string, foodName: string) => {
@@ -200,36 +366,17 @@ const HomeScreen = (): React.ReactElement => {
           onPress: () => {
             deleteEntry(entryId)
               .then(() => {
-                Toast.show({
-                  type: 'success',
-                  text1: t('common.removed'),
-                  text2: t('common.updated'),
-                });
+                Toast.show({ type: 'success', text1: t('common.removed'), text2: t('common.updated') });
                 queryClient.invalidateQueries({ queryKey: ['home-summary'] });
                 queryClient.invalidateQueries({ queryKey: ['diary-entries'] });
               })
               .catch((err: any) => {
                 handleApiErrorWithCustomMessage(err, {
-                  not_found: {
-                    text1: t('common.notFound'),
-                    text2: t('common.mayBeDeleted'),
-                  },
-                  forbidden: {
-                    text1: t('common.noPermission'),
-                    text2: t('common.onlyDeleteOwn'),
-                  },
-                  server_error: {
-                    text1: t('common.serverError'),
-                    text2: t('common.tryAgainLater'),
-                  },
-                  network_error: {
-                    text1: t('common.networkError'),
-                    text2: t('common.checkConnection'),
-                  },
-                  unknown: {
-                    text1: t('common.deleteFailed'),
-                    text2: t('common.contactSupport'),
-                  },
+                  not_found: { text1: t('common.notFound'), text2: t('common.mayBeDeleted') },
+                  forbidden: { text1: t('common.noPermission'), text2: t('common.onlyDeleteOwn') },
+                  server_error: { text1: t('common.serverError'), text2: t('common.tryAgainLater') },
+                  network_error: { text1: t('common.networkError'), text2: t('common.checkConnection') },
+                  unknown: { text1: t('common.deleteFailed'), text2: t('common.contactSupport') },
                 });
               });
           },
@@ -239,360 +386,806 @@ const HomeScreen = (): React.ReactElement => {
     [deleteEntry, queryClient],
   );
 
-  // Calculate remaining calories
+  // Calculated values
   const remainingCalories = useMemo(() => {
-    if (
-      !summary ||
-      typeof summary.totalCalories !== 'number' ||
-      typeof summary.targetCalories !== 'number'
-    )
-      return 0;
+    if (!summary || typeof summary.totalCalories !== 'number' || typeof summary.targetCalories !== 'number') return 0;
     return Math.max(0, summary.targetCalories - summary.totalCalories);
   }, [summary]);
 
-  // Calculate progress percentage
   const calorieProgress = useMemo(() => {
-    if (
-      !summary ||
-      typeof summary.totalCalories !== 'number' ||
-      typeof summary.targetCalories !== 'number'
-    )
-      return 0;
+    if (!summary || typeof summary.totalCalories !== 'number' || typeof summary.targetCalories !== 'number') return 0;
     return Math.min(1, summary.totalCalories / summary.targetCalories);
   }, [summary]);
 
-  const hasTargetCalories =
-    typeof summary?.targetCalories === 'number' && summary.targetCalories > 0;
-  const calorieTargetForUi = hasTargetCalories ? summary?.targetCalories ?? null : null;
-
-  // Animate values when they change
   useEffect(() => {
     const safeValue = Number.isNaN(remainingCalories) ? 0 : remainingCalories;
-    remainingCaloriesValue.value = withTiming(safeValue, {
-      duration: theme.animation.normal,
-    });
+    remainingCaloriesValue.value = withTiming(safeValue, { duration: theme.animation.normal });
   }, [remainingCalories, remainingCaloriesValue, theme.animation.normal]);
 
   useEffect(() => {
     const safeValue = Number.isNaN(calorieProgress) ? 0 : calorieProgress;
-    calorieProgressValue.value = withTiming(safeValue, {
-      duration: theme.animation.slow,
-    });
+    calorieProgressValue.value = withTiming(safeValue, { duration: theme.animation.slow });
   }, [calorieProgress, calorieProgressValue, theme.animation.slow]);
 
-  useEffect(() => {
-    const newValue = summary?.protein ?? 0;
-    proteinValue.value = withTiming(Number.isNaN(newValue) ? 0 : newValue, {
-      duration: theme.animation.normal,
-    });
-  }, [summary?.protein, proteinValue, theme.animation.normal]);
-
-  useEffect(() => {
-    const newValue = summary?.carbs ?? 0;
-    carbsValue.value = withTiming(Number.isNaN(newValue) ? 0 : newValue, {
-      duration: theme.animation.normal,
-    });
-  }, [summary?.carbs, carbsValue, theme.animation.normal]);
-
-  useEffect(() => {
-    const newValue = summary?.fat ?? 0;
-    fatValue.value = withTiming(Number.isNaN(newValue) ? 0 : newValue, {
-      duration: theme.animation.normal,
-    });
-  }, [summary?.fat, fatValue, theme.animation.normal]);
-
-  // Get today's entries for diary section (first 2-3)
   const todayEntries = useMemo(() => {
     if (!summary?.meals) return [];
-    return summary.meals.flatMap((meal) => meal.entries).slice(0, 3);
+    const entries = summary.meals.flatMap((meal) => meal.entries);
+    // Sắp xếp: cũ nhất tới mới nhất
+    return entries.sort((a, b) => {
+      const tA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+      const tB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+      return tA - tB;
+    });
   }, [summary]);
 
+  // Macro data - Ensure strictly numbers for TypeScript
+  const protein = Number(summary?.protein ?? 0);
+  const carbs = Number(summary?.carbs ?? 0);
+  const fat = Number(summary?.fat ?? 0);
+  const targetProtein = Number(summary?.targetProtein ?? 120);
+  const targetCarbs = Number(summary?.targetCarbs ?? 280);
+  const targetFat = Number(summary?.targetFat ?? 60);
+  const targetCalories = typeof summary?.targetCalories === 'number' ? summary.targetCalories : 2200;
+
+  // CalorieRing SVG values
+  const ringSize = 140;
+  const strokeWidth = 10;
+  const center = ringSize / 2;
+  const radius = (ringSize - strokeWidth) / 2;
+  const circumference = 2 * Math.PI * radius;
+  const dashOffset = circumference * (1 - Math.min(1, calorieProgress));
+
+  // Card width for Tilt3D
+  const cardWidth = SCREEN_WIDTH - 40;
 
   if (isLoading && !summary) {
     return <HomeSkeleton />;
   }
 
   return (
-    <GradientBackground>
+    <View style={styles.screenBg}>
+      {/* Background gradient */}
+      <LinearGradient
+        colors={[C.surfaceLow, C.bg, C.bg]}
+        locations={[0, 0.3, 1]}
+        style={StyleSheet.absoluteFill}
+      />
+
       <Screen
         testID={TEST_IDS.home.screen}
+        useGradient={false}
+        horizontalPadding={false}
+        useSafeArea={true}
+        hasHeader={false}
         contentContainerStyle={{
-          paddingHorizontal: theme.spacing.lg,
-          paddingVertical: theme.spacing.xl,
-          gap: theme.spacing.xxl,
-          paddingBottom: 50,
+          paddingHorizontal: 20,
+          paddingBottom: 140,
+          gap: 16,
         }}
         refreshControl={
           <RefreshControl
             refreshing={isFetching}
             onRefresh={handleRefresh}
-            tintColor={theme.colors.primary}
+            tintColor={C.primary}
           />
         }
       >
-        <WelcomeHeader />
+        {/* ══════════ HEADER ══════════ */}
+        <WelcomeHeader
+          streakCount={currentStreak}
+          onNotificationPress={() => navigation.navigate('NotificationsSettings')}
+          onAvatarPress={() => navigation.navigate('EditProfile')}
+        />
 
+        {/* ══════════ SERVER ERROR ══════════ */}
         {serverDown && (
-          <View
-            style={{
-              padding: theme.spacing.md,
-              borderRadius: theme.radius.md,
-              backgroundColor: theme.colors.danger + '20',
-            }}
-          >
-            <ThemedText color="danger" weight="600">
+          <View style={styles.errorBanner}>
+            <ThemedText style={{ color: C.danger, fontWeight: '600', fontSize: 13 }}>
               {t('app.serverConnectionError')}
             </ThemedText>
-            <ThemedText variant="bodySmall" color="textSecondary">
+            <ThemedText style={{ color: C.textMuted, fontSize: 12 }}>
               {t('app.checkApiUrl')}
             </ThemedText>
           </View>
         )}
 
-        <Animated.View entering={FadeInUp.delay(150).springify().damping(15).stiffness(100)}>
-          <StreakCard
-            currentStreak={currentStreak}
-            longestStreak={longestStreak}
-            weeklyLogs={weeklyLogs}
-            onPress={() => {
-              navigation.navigate('Achievements');
-            }}
-          />
-        </Animated.View>
-
-        {/* Hero Card - CalorieRing (macro display removed) */}
-        <Animated.View entering={FadeInUp.duration(theme.animation.slow).springify()}>
-          <View
-            style={glass.card}
-            accessible={true}
-            accessibilityRole="summary"
-            accessibilityLabel={
-              hasTargetCalories
-                ? `Còn ${Math.round(remainingCalories)} calo. Đã ăn ${
-                    summary?.totalCalories || 0
-                  } trong ${summary?.targetCalories || 0} calo mục tiêu.`
-                : `Đã ăn ${summary?.totalCalories || 0} calo hôm nay. Chưa có mục tiêu dinh dưỡng.`
-            }
+        {/* ══════════ DASHBOARD CARD (3D Tilt) ══════════ */}
+        <Animated.View entering={FadeInUp.duration(600).springify()}>
+          <Tilt3DCard
+            maxTilt={6}
+            perspective={1200}
+            width={cardWidth}
+            height={210}
+            showReflection={false}
+            useDeviceMotion={true}
+            activeTouch={false}
+            style={styles.dashboardCard}
           >
-            <CalorieRing
-              consumed={summary?.totalCalories || 0}
-              target={calorieTargetForUi}
-              targetStatus={summary ? (hasTargetCalories ? 'loaded' : 'missing') : 'loading'}
-              protein={summary?.protein || 0}
-              carbs={summary?.carbs || 0}
-              fat={summary?.fat || 0}
-              showMacros={false}
-              size={180}
-            />
-          </View>
+            {/* Ambient glow top-right */}
+            <View style={styles.dashGlow} pointerEvents="none" />
+
+            {/* Row layout: ring left, macros right */}
+            <View style={styles.dashContent}>
+              {/* ── Left: CalorieRing ── */}
+              <View style={styles.ringSection}>
+                <Svg width={ringSize} height={ringSize}>
+                  <Defs>
+                    <SvgGradient id="ringGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <Stop offset="0%" stopColor={C.primary} />
+                      <Stop offset="100%" stopColor={C.primaryDark} />
+                    </SvgGradient>
+                  </Defs>
+                  {/* Track */}
+                  <Circle
+                    cx={center}
+                    cy={center}
+                    r={radius}
+                    stroke={C.surfaceHighest}
+                    strokeWidth={strokeWidth}
+                    fill="none"
+                  />
+                  {/* Progress main ring */}
+                  <Circle
+                    cx={center}
+                    cy={center}
+                    r={radius}
+                    stroke="url(#ringGrad)"
+                    strokeWidth={strokeWidth}
+                    fill="none"
+                    strokeLinecap="round"
+                    strokeDasharray={circumference}
+                    strokeDashoffset={dashOffset}
+                    transform={`rotate(-90 ${center} ${center})`}
+                  />
+                </Svg>
+                {/* Center text */}
+                <View style={styles.ringCenter}>
+                  <ThemedText style={styles.ringValue}>
+                    {Math.round(remainingCalories).toLocaleString()}
+                  </ThemedText>
+                  <ThemedText style={styles.ringLabel}>calo còn lại</ThemedText>
+                </View>
+              </View>
+
+              {/* ── Right: Macro bars ── */}
+              <View style={styles.macroSection}>
+                <ThemedText style={styles.macroTarget}>
+                  Mục tiêu: {Math.round(targetCalories).toLocaleString()} kcal
+                </ThemedText>
+
+                {/* Protein */}
+                <View style={styles.macroRow}>
+                  <View style={styles.macroLabelRow}>
+                    <ThemedText style={styles.macroName}>ĐẠM</ThemedText>
+                    <ThemedText style={styles.macroValue}>
+                      {Math.round(protein)}g / {targetProtein}g
+                    </ThemedText>
+                  </View>
+                  <View style={styles.macroTrack}>
+                    <View
+                      style={[
+                        styles.macroFill,
+                        {
+                          width: `${Math.min(100, (protein / Math.max(targetProtein, 1)) * 100)}%`,
+                          backgroundColor: C.primary,
+                        },
+                      ]}
+                    />
+                  </View>
+                </View>
+
+                {/* Carbs */}
+                <View style={styles.macroRow}>
+                  <View style={styles.macroLabelRow}>
+                    <ThemedText style={styles.macroName}>TINH BỘT</ThemedText>
+                    <ThemedText style={styles.macroValue}>
+                      {Math.round(carbs)}g / {targetCarbs}g
+                    </ThemedText>
+                  </View>
+                  <View style={styles.macroTrack}>
+                    <View
+                      style={[
+                        styles.macroFill,
+                        {
+                          width: `${Math.min(100, (carbs / Math.max(targetCarbs, 1)) * 100)}%`,
+                          backgroundColor: C.cyan,
+                        },
+                      ]}
+                    />
+                  </View>
+                </View>
+
+                {/* Fat */}
+                <View style={styles.macroRow}>
+                  <View style={styles.macroLabelRow}>
+                    <ThemedText style={styles.macroName}>CHẤT BÉO</ThemedText>
+                    <ThemedText style={styles.macroValue}>
+                      {Math.round(fat)}g / {targetFat}g
+                    </ThemedText>
+                  </View>
+                  <View style={styles.macroTrack}>
+                    <View
+                      style={[
+                        styles.macroFill,
+                        {
+                          width: `${Math.min(100, (fat / Math.max(targetFat, 1)) * 100)}%`,
+                          backgroundColor: C.amber,
+                        },
+                      ]}
+                    />
+                  </View>
+                </View>
+              </View>
+            </View>
+          </Tilt3DCard>
         </Animated.View>
 
-        {/* Macro Progress Card - right below CalorieRing */}
-        <Animated.View entering={FadeInUp.delay(150).springify()}>
-          <MacroProgressCard
-            protein={summary?.protein || 0}
-            carbs={summary?.carbs || 0}
-            fat={summary?.fat || 0}
-            targetProtein={summary?.targetProtein || 155}
-            targetCarbs={summary?.targetCarbs || 220}
-            targetFat={summary?.targetFat || 71}
-          />
+        {/* ══════════ WEEK DAY SELECTOR ══════════ */}
+        <Animated.View entering={FadeInUp.delay(300).springify()}>
+          <WeekDayStrip selectedDate={selectedDate} onSelectDate={(d) => {
+            setSelectedDate(d);
+            // Refetch diary for the selected date
+            const dateStr = d.toISOString().split('T')[0];
+            const today = new Date().toISOString().split('T')[0];
+            if (dateStr === today) {
+              fetchSummary();
+            } else {
+              fetchSummary(dateStr);
+            }
+          }} />
         </Animated.View>
 
-        {/* Smart Context Banner (AI Suggestion) - between CalorieRing and QuickActions */}
-        {smartContext.priority >= 2 && (
-          <Animated.View entering={FadeInUp.delay(200).springify()}>
-            <Pressable
-              style={[
-                glass.card,
-                {
-                  padding: theme.spacing.md,
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  gap: theme.spacing.sm,
-                  borderLeftWidth: 3,
-                  borderLeftColor: smartContext.fabAction.color || theme.colors.primary,
-                },
-              ]}
-              onPress={() => setShowAddModal(true)}
-            >
-              <ThemedText style={{ fontSize: 20 }}>💡</ThemedText>
-              <ThemedText variant="bodySmall" style={{ flex: 1, fontWeight: '500' }}>
-                {smartContext.quickSuggestion}
-              </ThemedText>
-            </Pressable>
-          </Animated.View>
-        )}
-
-
-
-        {/* Quick Add Hub */}
-        <Animated.View entering={FadeInUp.delay(250).springify()}>
-          <AppCard>
-            <QuickAddHub
-              onSearch={handleQuickAddSearch}
-              onScan={handleQuickAddScan}
-              onVoice={handleQuickAddVoice}
-              searchTestID={TEST_IDS.home.quickAddSearchButton}
-              scanTestID={TEST_IDS.home.quickAddScanButton}
-              voiceTestID={TEST_IDS.home.quickAddVoiceButton}
-            />
-          </AppCard>
-        </Animated.View>
-
-        {/* Today's Diary */}
+        {/* ══════════ DIARY SECTION ══════════ */}
         <View>
-          <SectionHeader
-            title={t('home.diary_today')}
-            action={handleViewAllDiary}
-            actionText={t('home.see_all')}
-            actionTestID={TEST_IDS.home.diaryButton}
-          />
-          {isLoading ? (
-            <AppCard>
-              <View style={{ alignItems: 'center', paddingVertical: 20 }}>
-                <ActivityIndicator color={theme.colors.primary} />
-                <ThemedText variant="body" color="textSecondary">
-                  {t('home.loadingDiary')}
+          {/* Section header */}
+          <View style={styles.sectionHeader}>
+            <ThemedText style={styles.sectionTitle}>
+              {isToday(selectedDate) ? 'Nhật ký hôm nay' : `Nhật ký ${formatShortDate(selectedDate)}`}
+            </ThemedText>
+            <Pressable onPress={() => navigation.navigate('MealDiary')} testID={TEST_IDS.home.diaryButton}>
+              <ThemedText style={styles.seeAll}>XEM TẤT CẢ</ThemedText>
+            </Pressable>
+          </View>
+
+          {/* Content */}
+          <View style={styles.diaryContainer}>
+            {isLoading ? (
+              <View style={styles.loadingBox}>
+                <ActivityIndicator color={C.primary} />
+                <ThemedText style={{ color: C.textMuted, fontSize: 13 }}>{t('home.loadingDiary')}</ThemedText>
+              </View>
+            ) : todayEntries.length > 0 ? (
+              <View style={{ gap: 0 }}>
+                {todayEntries.map((entry, index) => {
+                  const mealLabel = getMealLabelFromEntry(entry);
+                  const emoji = getFoodEmoji(entry.foodName);
+                  const isLast = index === todayEntries.length - 1;
+
+                  // Định dạng thời gian theo múi giờ Hà Nội (UTC+7)
+                  let timeStr = '';
+                  if (entry.createdAt) {
+                    const dtStr = entry.createdAt.endsWith('Z') ? entry.createdAt : entry.createdAt + 'Z';
+                    const dateObj = new Date(dtStr);
+                    if (!Number.isNaN(dateObj.getTime())) {
+                      const hanoiDate = new Date(dateObj.getTime() + 7 * 60 * 60 * 1000);
+                      const hr = hanoiDate.getUTCHours().toString().padStart(2, '0');
+                      const mn = hanoiDate.getUTCMinutes().toString().padStart(2, '0');
+                      timeStr = `${hr}:${mn}`;
+                    }
+                  }
+
+                  return (
+                    <Animated.View
+                      key={entry.id}
+                      entering={FadeInUp.delay(150 + index * 80).springify()}
+                      style={{ flexDirection: 'row', paddingHorizontal: 4 }}
+                    >
+                      {/* Timeline on the left */}
+                      <View style={{ width: 20, alignItems: 'center', marginRight: 12 }}>
+                        <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: C.primary, marginTop: 24 }} />
+                        {!isLast && (
+                           <View style={{ width: 1, flex: 1, backgroundColor: 'rgba(255,255,255,0.1)', marginTop: 8, marginBottom: -16 }} />
+                        )}
+                      </View>
+
+                      {/* Card Content */}
+                      <Pressable
+                        style={[styles.diaryEntryCard, { flex: 1, marginBottom: 16 }]}
+                        onLongPress={() => handleDelete(entry.id, entry.foodName)}
+                      >
+                        {/* Food image or emoji fallback */}
+                        <View style={styles.entryEmoji}>
+                          {entry.photoUrl ? (
+                            <Image
+                              source={{ uri: entry.photoUrl }}
+                              style={styles.entryFoodImage}
+                              resizeMode="cover"
+                            />
+                          ) : (
+                            <ThemedText style={{ fontSize: 30 }}>{emoji}</ThemedText>
+                          )}
+                        </View>
+                        {/* Info */}
+                        <View style={styles.entryInfo}>
+                          <View style={styles.entryTopRow}>
+                            <ThemedText style={styles.entryMealLabel}>
+                              {getMealLabelFromEntry(entry).toUpperCase()} {timeStr ? `• ${timeStr}` : ''}
+                            </ThemedText>
+                            <ThemedText style={styles.entryCalories}>
+                              {Math.round(entry.calories || 0)} kcal
+                            </ThemedText>
+                          </View>
+                          <ThemedText style={styles.entryFoodName} numberOfLines={1}>
+                            {entry.foodName}
+                          </ThemedText>
+                          <View style={styles.entryMacros}>
+                            <View style={styles.entryMacroChipV2}>
+                              <ThemedText style={styles.entryMacroTextV2}>Đ: {Math.round(entry.protein || 0)}g</ThemedText>
+                            </View>
+                            <View style={styles.entryMacroChipV2}>
+                              <ThemedText style={styles.entryMacroTextV2}>T: {Math.round(entry.carbs || 0)}g</ThemedText>
+                            </View>
+                            <View style={styles.entryMacroChipV2}>
+                              <ThemedText style={styles.entryMacroTextV2}>B: {Math.round(entry.fat || 0)}g</ThemedText>
+                            </View>
+                          </View>
+                        </View>
+                      </Pressable>
+                    </Animated.View>
+                  );
+                })}
+              </View>
+            ) : (
+              /* Empty state */
+              <View style={styles.emptyState}>
+                <ThemedText style={styles.emptyTitle}>
+                  {isToday(selectedDate) ? 'Chưa có món nào hôm nay' : 'Không có dữ liệu'}
+                </ThemedText>
+                <ThemedText style={styles.emptySubtitle}>
+                  {isToday(selectedDate)
+                    ? 'Hãy chụp ảnh hoặc tìm kiếm để thêm món ăn đầu tiên!'
+                    : `Chưa có nhật ký cho ngày ${formatShortDate(selectedDate)}`}
                 </ThemedText>
               </View>
-            </AppCard>
-          ) : todayEntries.length > 0 ? (
-            <AppCard>
-              {todayEntries.map((entry) => (
-                <FoodEntryCard
-                  key={entry.id}
-                  id={entry.id}
-                  foodName={entry.foodName}
-                  calories={entry.calories || 0}
-                  protein={entry.protein || 0}
-                  carbs={entry.carbs || 0}
-                  fat={entry.fat || 0}
-                  quantityText={entry.quantityText ?? undefined}
-                  sourceMethod={entry.sourceMethod as 'ai' | 'manual' | 'search'}
-                  onDelete={() => handleDelete(entry.id, entry.foodName)}
-                />
-              ))}
-            </AppCard>
-          ) : (
-            <AnimatedEmptyState
-              variant="no-food"
-              title={t('home.empty')}
-              description="Hãy chụp ảnh hoặc tìm kiếm để thêm món ăn đầu tiên!"
-              primaryAction={{
-                label: 'Chụp ảnh món ăn',
-                onPress: () => navigation.navigate('AiCamera'),
-                icon: 'camera-outline',
-              }}
-              secondaryAction={{
-                label: 'Tìm kiếm thực phẩm',
-                onPress: () => navigation.navigate('FoodSearch'),
-              }}
-            />
-          )}
+            )}
+          </View>
         </View>
+
+        {/* ══════════ WATER TRACKING ══════════ */}
+        <Animated.View entering={FadeInUp.delay(400).springify()}>
+          <View style={styles.waterCard}>
+            {/* Left: icon + label + value */}
+            <View style={styles.waterLeft}>
+              <Ionicons name="water" size={28} color="#3b82f6" />
+              <View style={styles.waterLabelWrap}>
+                <ThemedText style={styles.waterTitle}>Uống nước</ThemedText>
+                <ThemedText style={styles.waterValue}>{waterAmount} ml</ThemedText>
+              </View>
+            </View>
+
+            {/* Right: pill controls */}
+            <View style={styles.waterPill}>
+              <Pressable
+                style={({ pressed }) => [
+                  styles.waterPillBtn,
+                  pressed && { opacity: 0.5, transform: [{ scale: 0.9 }] },
+                ]}
+                onPress={handleSubtractWater}
+              >
+                <WaterGlassIcon isPlus={false} />
+              </Pressable>
+
+              <View style={styles.waterPillDivider} />
+
+              <Pressable
+                style={({ pressed }) => [
+                  styles.waterPillBtn,
+                  pressed && { opacity: 0.5, transform: [{ scale: 0.9 }] },
+                ]}
+                onPress={handleAddWater}
+              >
+                <WaterGlassIcon isPlus={true} />
+              </Pressable>
+            </View>
+          </View>
+        </Animated.View>
       </Screen>
-
-      {/* Context-Aware Floating Action Button (2026 AI Trend) */}
-      <Animated.View
-        entering={FadeInUp.delay(500).springify()}
-        style={styles.fabContainer}
-      >
-        <Pressable
-          style={[
-            styles.fab,
-            {
-              backgroundColor: smartContext.fabAction.color || theme.colors.primary,
-              shadowColor: smartContext.fabAction.color || theme.colors.primary,
-            },
-          ]}
-          onPress={() => setShowAddModal(true)}
-          delayLongPress={1200}
-          onLongPress={() => {
-            // Voice integration - chuyển đến VoiceScreen tab
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-            navigation.navigate('AppTabs', {
-              screen: 'VoiceTab',
-              params: {
-                autoStart: true,
-                source: 'home-fab',
-              },
-            });
-          }}
-          accessibilityRole="button"
-          accessibilityLabel={smartContext.fabAction.label}
-          accessibilityHint={`${smartContext.fabAction.hint}. Nhấn giữ để dùng giọng nói`}
-          testID={TEST_IDS.home.fabButton}
-        >
-          <Icon name={smartContext.fabAction.icon as any} size="xl" color="card" />
-        </Pressable>
-
-        {/* Smart badge cho high-priority suggestions */}
-        {smartContext.priority >= 3 && (
-          <Animated.View
-            entering={FadeInUp.delay(700).springify()}
-            style={styles.fabBadge}
-          >
-            <ThemedText variant="caption" style={{ color: '#FFF', fontWeight: '700', fontSize: 10 }}>
-              {smartContext.suggestedMeal === 'breakfast' ? 'Sáng' :
-                smartContext.suggestedMeal === 'lunch' ? 'Trưa' :
-                  smartContext.suggestedMeal === 'dinner' ? 'Tối' : 'HOT'}
-            </ThemedText>
-          </Animated.View>
-        )}
-      </Animated.View>
-
-      <SmartAddSheet visible={showAddModal} onClose={() => setShowAddModal(false)} />
-    </GradientBackground>
+    </View>
   );
 };
 
-const getStyles = (theme: any) =>
-  StyleSheet.create({
-    fabContainer: {
-      position: 'absolute',
-      bottom: 80, // Tab bar (56px) + safe margin (24px) = không đè lên tabs
-      right: theme.spacing.xl,
-      zIndex: 999, // Ensure FAB stays on top
-    },
+/* ═══════════════════════════════════════════════
+   STYLES
+   ═══════════════════════════════════════════════ */
+const styles = StyleSheet.create({
+  screenBg: {
+    flex: 1,
+    backgroundColor: C.bg,
+  },
 
-    fab: {
-      width: 56,
-      height: 56,
-      borderRadius: 28,
-      alignItems: 'center',
-      justifyContent: 'center',
-      elevation: 5,
-      shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.3,
-      shadowRadius: 8,
-    },
+  /* Error */
+  errorBanner: {
+    padding: 12,
+    borderRadius: 12,
+    backgroundColor: 'rgba(255,107,107,0.12)',
+    gap: 4,
+  },
 
-    fabBadge: {
-      position: 'absolute',
-      top: -4,
-      right: -4,
-      backgroundColor: '#EF4444', // Bright red
-      paddingHorizontal: 6,
-      paddingVertical: 2,
-      borderRadius: 10,
-      minWidth: 32,
-      alignItems: 'center',
-      justifyContent: 'center',
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.3,
-      shadowRadius: 4,
-      shadowColor: '#000',
-      elevation: 3,
-    },
+  /* ─── Dashboard Card ─── */
+  dashboardCard: {
+    backgroundColor: C.surfaceHigh,
+    borderRadius: 28,
+    padding: 18,
+    borderWidth: 1,
+    borderColor: C.outline,
+    overflow: 'hidden',
+  },
+  dashGlow: {
+    position: 'absolute',
+    top: -40,
+    right: -40,
+    width: 160,
+    height: 160,
+    borderRadius: 80,
+    backgroundColor: 'rgba(75, 226, 119, 0.06)',
+  },
+  dashContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+  },
 
-    modalBackdrop: {
-      flex: 1,
-      backgroundColor: 'rgba(0,0,0,0.4)',
-      justifyContent: 'center',
-      alignItems: 'center',
-      padding: theme.spacing.xl,
-    },
-  });
+  /* Ring */
+  ringSection: {
+    width: 140,
+    height: 140,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  },
+  ringCenter: {
+    position: 'absolute',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  ringValue: {
+    fontSize: 26,
+    fontWeight: '900',
+    color: C.onSurface,
+    lineHeight: 30,
+    textAlign: 'center',
+  },
+  ringLabel: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: C.textMuted,
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
+    textAlign: 'center',
+  },
+
+  /* Macros */
+  macroSection: {
+    flex: 1,
+    gap: 12,
+    minWidth: 0,
+    justifyContent: 'center',
+  },
+  macroHeader: {
+    marginBottom: 0,
+  },
+  macroTitle: {
+    fontSize: 10,
+    fontWeight: '900',
+    color: C.textMuted,
+    letterSpacing: 1.5,
+    textTransform: 'uppercase',
+  },
+  macroTarget: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: C.primary,
+    marginBottom: 10,
+  },
+  macroRow: {
+    gap: 4,
+  },
+  macroLabelRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  macroName: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: C.onSurface,
+  },
+  macroValue: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: C.textMuted,
+  },
+  macroTrack: {
+    height: 6,
+    backgroundColor: C.surfaceHighest,
+    borderRadius: 3,
+    overflow: 'hidden',
+    marginTop: 2,
+  },
+  macroFill: {
+    height: '100%',
+    borderRadius: 3,
+  },
+
+  /* ─── Diary Section ─── */
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 14,
+    paddingHorizontal: 2,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '900',
+    color: C.onSurface,
+    letterSpacing: -0.3,
+  },
+  seeAll: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: C.primary,
+    letterSpacing: 1,
+    textTransform: 'uppercase',
+  },
+
+  /* Diary List Container */
+  diaryContainer: {
+    gap: 12,
+  },
+
+  /* Each meal row as a distinct chip/card */
+  diaryEntryCard: {
+    backgroundColor: C.surfaceLow,
+    borderRadius: 20,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: C.outline,
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    gap: 14,
+    marginBottom: 12,
+  },
+  entryEmoji: {
+    width: 68,
+    height: 68,
+    borderRadius: 16,
+    backgroundColor: '#fff',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+    overflow: 'hidden',
+  },
+  entryFoodImage: {
+    width: 68,
+    height: 68,
+    borderRadius: 16,
+  },
+  entryInfo: {
+    flex: 1,
+    gap: 2,
+    minWidth: 0,
+  },
+  entryTopRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  entryMealLabel: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: C.primary,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  entryCalories: {
+    fontSize: 14,
+    fontWeight: '900',
+    color: C.onSurface,
+  },
+  entryFoodName: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: C.onSurface,
+  },
+  entryMacros: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 8,
+  },
+  entryMacroChipV2: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 5,
+    borderRadius: 6,
+    backgroundColor: C.surfaceHighest,
+  },
+  entryMacroTextV2: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#a1a1aa',
+  },
+
+  /* Empty state */
+  emptyState: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 48,
+    paddingHorizontal: 20,
+  },
+  emptyTitle: {
+    fontSize: 17,
+    fontWeight: '800',
+    color: C.onSurface,
+    marginBottom: 6,
+  },
+  emptySubtitle: {
+    fontSize: 14,
+    color: C.textMuted,
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+
+  /* Loading */
+  loadingBox: {
+    alignItems: 'center',
+    paddingVertical: 32,
+    gap: 8,
+  },
+
+  /* ─── Floating AI Robot FAB ─── */
+  fabContainer: {
+    position: 'absolute',
+    bottom: 110,
+    right: 24,
+    zIndex: 60,
+  },
+  fab: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: C.surfaceHigh,
+    borderWidth: 2,
+    borderColor: 'rgba(75, 226, 119, 0.4)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    // Glow
+    shadowColor: C.primary,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.3,
+    shadowRadius: 16,
+    elevation: 8,
+  },
+  robotFace: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: '#E2E8F0',
+    borderBottomWidth: 2,
+    borderBottomColor: '#94A3B8',
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  robotVisor: {
+    width: 28,
+    height: 14,
+    borderRadius: 10,
+    backgroundColor: '#1E293B',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+  },
+  robotEye: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#22D3EE',
+    // Cyan glow
+    shadowColor: '#22D3EE',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.9,
+    shadowRadius: 5,
+    elevation: 2,
+  },
+  robotMouth: {
+    width: 24,
+    height: 2,
+    backgroundColor: 'rgba(148, 163, 184, 0.3)',
+    borderRadius: 1,
+    marginTop: 4,
+  },
+
+  /* Ping indicators */
+  fabPingContainer: {
+    position: 'absolute',
+    top: -4,
+    right: -4,
+  },
+  fabPing: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: C.primary,
+    opacity: 0.6,
+  },
+  fabDot: {
+    position: 'absolute',
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: C.primary,
+    borderWidth: 2,
+    borderColor: C.bg,
+  },
+  /* ── Water Tracking ── */
+  waterCard: {
+    backgroundColor: '#1E2332',
+    borderRadius: 18,
+    padding: 10,
+    paddingHorizontal: 14,
+    borderWidth: 0,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    shadowColor: '#000',
+    shadowOpacity: 0.2,
+    shadowOffset: { width: 0, height: 4 },
+    shadowRadius: 6,
+    elevation: 4,
+  },
+  waterLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  waterLabelWrap: {
+    gap: 2,
+    justifyContent: 'center',
+  },
+  waterTitle: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#f8fafc',
+  },
+  waterValue: {
+    fontSize: 17,
+    fontWeight: '800',
+    color: '#f8fafc',
+  },
+  waterPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#131622',
+    borderRadius: 30,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    gap: 6,
+  },
+  waterPillBtn: {
+    padding: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  waterPillDivider: {
+    width: 2,
+    height: 20,
+    backgroundColor: '#334155',
+    opacity: 0.8,
+  },
+});
 
 export default HomeScreen;

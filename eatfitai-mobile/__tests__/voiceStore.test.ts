@@ -12,6 +12,15 @@ jest.mock('../src/services/voiceService', () => ({
   },
 }));
 
+jest.mock('../src/store/useProfileStore', () => ({
+  useProfileStore: {
+    getState: jest.fn(() => ({
+      invalidateProfile: jest.fn(),
+      fetchProfile: jest.fn().mockResolvedValue(null),
+    })),
+  },
+}));
+
 const mockedVoiceService = voiceService as jest.Mocked<typeof voiceService>;
 
 describe('useVoiceStore', () => {
@@ -34,7 +43,7 @@ describe('useVoiceStore', () => {
         rawText: 'ghi 1 banana vao bua sang',
         source: 'backend-rule-fallback',
         reviewRequired: true,
-        reviewReason: 'Voice Beta cần bạn xác nhận trước khi lưu.',
+        reviewReason: 'Cần xác nhận món trước khi lưu.',
       },
     });
 
@@ -67,7 +76,7 @@ describe('useVoiceStore', () => {
       success: true,
       executedAction: {
         type: 'LOG_WEIGHT_CONFIRM',
-        details: 'Kiểm tra trước khi lưu cân nặng',
+        details: 'Kiểm tra trước khi lưu cân nặng.',
         data: {
           currentWeight: 69,
           newWeight: 70,

@@ -30,7 +30,9 @@ function getLocalIpAddress() {
           name,
           address: addr.address,
           priority:
-            lowerName.includes('wi-fi') || lowerName.includes('wifi') || lowerName.includes('wlan')
+            lowerName.includes('wi-fi') ||
+            lowerName.includes('wifi') ||
+            lowerName.includes('wlan')
               ? 1
               : lowerName.includes('ethernet') || lowerName.includes('eth')
                 ? 2
@@ -43,7 +45,9 @@ function getLocalIpAddress() {
   candidates.sort((a, b) => a.priority - b.priority);
 
   if (candidates.length > 0) {
-    console.log(`[app.config.js] Auto-detected IP: ${candidates[0].address} (${candidates[0].name})`);
+    console.log(
+      `[app.config.js] Auto-detected IP: ${candidates[0].address} (${candidates[0].name})`,
+    );
     return candidates[0].address;
   }
 
@@ -68,12 +72,13 @@ module.exports = ({ config }) => {
     process.env.EXPO_EAS_PROJECT_ID ||
     process.env.EAS_PROJECT_ID ||
     existingEas.projectId;
-
+  const easBuildProfile = readTrimmedEnv('EAS_BUILD_PROFILE');
+  const buildPlatform = readTrimmedEnv('EAS_BUILD_PLATFORM');
+  const nodeEnv = readTrimmedEnv('NODE_ENV');
   const appProfile =
     readTrimmedEnv('APP_ENV') ||
-    readTrimmedEnv('EAS_BUILD_PROFILE') ||
-    readTrimmedEnv('NODE_ENV') ||
-    'development';
+    easBuildProfile ||
+    (nodeEnv === 'production' ? 'production' : 'development');
   const explicitApiBaseUrl = readTrimmedEnv('EXPO_PUBLIC_API_BASE_URL');
   const explicitSupabaseUrl = readTrimmedEnv('EXPO_PUBLIC_SUPABASE_URL');
   const fallbackApiPort = readTrimmedEnv('EXPO_PUBLIC_API_PORT') || '5247';
@@ -84,13 +89,22 @@ module.exports = ({ config }) => {
   if (productionLike) {
     assertRequiredProductionEnv('EXPO_PUBLIC_API_BASE_URL', explicitApiBaseUrl);
     assertRequiredProductionEnv('EXPO_PUBLIC_SUPABASE_URL', explicitSupabaseUrl);
-    assertRequiredProductionEnv('EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID', readTrimmedEnv('EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID'));
-    assertRequiredProductionEnv('EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID', readTrimmedEnv('EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID'));
+    assertRequiredProductionEnv(
+      'EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID',
+      readTrimmedEnv('EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID'),
+    );
+    if (buildPlatform === 'ios') {
+      assertRequiredProductionEnv(
+        'EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID',
+        readTrimmedEnv('EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID'),
+      );
+    }
   }
 
   const localIp = productionLike ? '' : getLocalIpAddress();
   const apiBaseUrl =
-    explicitApiBaseUrl || (!productionLike ? `${fallbackApiScheme}://${localIp}:${fallbackApiPort}` : '');
+    explicitApiBaseUrl ||
+    (!productionLike ? `${fallbackApiScheme}://${localIp}:${fallbackApiPort}` : '');
 
   let resolvedApiHost = localIp;
   let resolvedApiPort = fallbackApiPort;
@@ -100,7 +114,12 @@ module.exports = ({ config }) => {
     const parsedUrl = new URL(apiBaseUrl);
     resolvedApiHost = parsedUrl.hostname;
     resolvedApiPort =
-      parsedUrl.port || (parsedUrl.protocol === 'https:' ? '443' : parsedUrl.protocol === 'http:' ? '80' : '');
+      parsedUrl.port ||
+      (parsedUrl.protocol === 'https:'
+        ? '443'
+        : parsedUrl.protocol === 'http:'
+          ? '80'
+          : '');
     resolvedApiScheme = parsedUrl.protocol.replace(':', '');
   }
 

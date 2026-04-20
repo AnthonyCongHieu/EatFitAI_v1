@@ -10,13 +10,15 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 SCAN_ROOTS = (
+    REPO_ROOT / "docs",
+    REPO_ROOT / "README.md",
+    REPO_ROOT / "SETUP_GUIDE.md",
     REPO_ROOT / "eatfitai-backend",
     REPO_ROOT / "eatfitai-mobile" / "scripts",
     REPO_ROOT / "eatfitai-mobile" / "src",
-    REPO_ROOT / "scripts",
     REPO_ROOT / "ai-provider",
 )
-SOURCE_SUFFIXES = {".cs", ".ts", ".tsx", ".js", ".jsx", ".json", ".py"}
+SOURCE_SUFFIXES = {".cs", ".ts", ".tsx", ".js", ".jsx", ".json", ".py", ".md", ".txt"}
 EXCLUDED_PARTS = {
     "node_modules",
     ".venv",
@@ -29,6 +31,7 @@ EXCLUDED_PARTS = {
     "__pycache__",
     "site-packages",
 }
+ALLOW_MARKER = "mojibake:allow"
 MOJIBAKE_MARKERS = tuple(
     marker.encode("utf-8").decode("unicode_escape")
     for marker in (
@@ -68,12 +71,17 @@ REPLACEMENT_CHARACTER = "\ufffd"
 
 
 def should_scan(path: Path) -> bool:
-    return path.is_file() and path.suffix.lower() in SOURCE_SUFFIXES and not any(
-        part.casefold() in EXCLUDED_PARTS for part in path.parts
+    return (
+        path.is_file()
+        and path.suffix.lower() in SOURCE_SUFFIXES
+        and not any(part.casefold() in EXCLUDED_PARTS for part in path.parts)
     )
 
 
 def has_mojibake(text: str) -> bool:
+    if ALLOW_MARKER in text:
+        return False
+
     return REPLACEMENT_CHARACTER in text or any(marker in text for marker in MOJIBAKE_MARKERS)
 
 
@@ -84,13 +92,15 @@ def iter_line_hits(text: str) -> Iterator[tuple[int, str]]:
 
 
 def iter_hits(root: Path) -> Iterator[tuple[Path, int, str]]:
-    for path in root.rglob("*"):
+    paths = (root,) if root.is_file() else root.rglob("*")
+    for path in paths:
         if not should_scan(path):
             continue
 
         try:
-            text = path.read_text(encoding="utf-8")
+            text = path.read_text(encoding="utf-8", errors="strict")
         except UnicodeDecodeError:
+            yield path, 0, "<UTF-8 decode error>"
             continue
 
         for line_no, line in iter_line_hits(text):
