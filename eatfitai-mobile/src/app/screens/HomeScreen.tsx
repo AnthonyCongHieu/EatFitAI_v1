@@ -250,7 +250,7 @@ const HomeScreen = (): React.ReactElement => {
   const { data: waterData, refetch: refetchWater } = useQuery<WaterIntakeData>({
     queryKey: ['water-intake-today'],
     queryFn: () => waterService.getWaterIntake(new Date()),
-    staleTime: 30000,
+    staleTime: 2 * 60 * 1000, // 2 phút — water data chỉ thay đổi khi user bấm (đã có optimistic update)
   });
   const waterAmount = waterData?.amountMl ?? 0;
   const waterTarget = waterData?.targetMl ?? 2000;

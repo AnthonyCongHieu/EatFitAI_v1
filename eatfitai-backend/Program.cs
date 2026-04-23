@@ -25,8 +25,10 @@ using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Threading;
+using System.IO.Compression;
 using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Options;
@@ -613,8 +615,26 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
     }
 });
 
-// Caching for features like password reset
+// In-memory cache cho lookup cache (food search, etc.) — password reset đã dùng DB
 builder.Services.AddMemoryCache();
+
+// Response compression — giảm bandwidth cho mobile clients (3G/4G)
+builder.Services.AddResponseCompression(options =>
+{
+    options.EnableForHttps = true;
+    options.Providers.Add<BrotliCompressionProvider>();
+    options.Providers.Add<GzipCompressionProvider>();
+    options.MimeTypes = ResponseCompressionDefaults.MimeTypes.Concat(new[]
+    {
+        "application/json",
+        "application/problem+json",
+        "image/svg+xml"
+    });
+});
+builder.Services.Configure<BrotliCompressionProviderOptions>(options =>
+    options.Level = CompressionLevel.Fastest);
+builder.Services.Configure<GzipCompressionProviderOptions>(options =>
+    options.Level = CompressionLevel.SmallestSize);
 
 // Email settings & service
 builder.Services.Configure<BrevoOptions>(builder.Configuration.GetSection("Brevo"));
@@ -1020,6 +1040,9 @@ using (var scope = app.Services.CreateScope())
         LogLevel.Error);
 }
 
+
+// Response compression — phải đặt trước middleware khác để compress output
+app.UseResponseCompression();
 
 // Add custom middleware
 app.UseMiddleware<ExceptionHandlingMiddleware>();

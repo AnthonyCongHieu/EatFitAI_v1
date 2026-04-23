@@ -66,11 +66,11 @@ Tài liệu này ghi nhận hiện trạng xác thực (auth) và hạ tầng tr
 - `AdminRuntimeSnapshotCache` refresh mỗi 5 giây
 - Ngay cả khi chưa có user traffic, backend đã tạo hoạt động nền liên tục
 
-### 4. Reset password chưa an toàn đa instance
+### 4. ~~Reset password chưa an toàn đa instance~~ → ĐÃ SỬA
 
-Password reset codes được lưu trong `IMemoryCache`, không phải database. Nếu Render restart hoặc scale ra nhiều instance, mã reset sẽ bị mất.
+> **[2026-04-24 Audit verified]** Password reset codes hiện đã được lưu trong **database** (bảng `PasswordResetCodes` qua `AdminDbContext`), KHÔNG PHẢI `IMemoryCache`. `AuthService.cs` dùng `_adminContext.PasswordResetCodes` cho cả generate và verify. An toàn khi restart/scale.
 
-**Khuyến nghị:** Chuyển sang lưu trong database (bảng `PasswordResetCode` đã tồn tại).
+~~Password reset codes được lưu trong `IMemoryCache`, không phải database.~~
 
 ---
 
@@ -88,10 +88,10 @@ Password reset codes được lưu trong `IMemoryCache`, không phải database.
 2. Sửa forgot-password UX: verify step phải gọi backend kiểm tra mã trước khi sang màn đặt mật khẩu mới
 3. Thêm rate limit cho forgot-password và resend verification
 
-### Giai đoạn 2: Auth chịu được restart/scale
+### ~~Giai đoạn 2: Auth chịu được restart/scale~~ → DONE
 
-1. Chuyển password reset codes từ `IMemoryCache` sang database
-2. Giữ email verification trong database (đã đúng)
+1. ✅ ~~Chuyển password reset codes từ `IMemoryCache` sang database~~ → Đã dùng DB (`PasswordResetCodes`)
+2. ✅ Giữ email verification trong database (đã đúng)
 
 ### Giai đoạn 3: Chuẩn hóa kết nối database
 

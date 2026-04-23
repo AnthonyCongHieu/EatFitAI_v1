@@ -260,7 +260,7 @@ const StatsScreen = (): React.ReactElement => {
   const { data: statsWaterData } = useQuery<WaterIntakeData>({
     queryKey: ['water-intake-today'],
     queryFn: () => waterService.getWaterIntake(new Date()),
-    staleTime: 30000,
+    staleTime: 2 * 60 * 1000, // 2 phút — share cache với HomeScreen
     enabled: activeTab === 'today',
   });
   const statsWaterAmount = statsWaterData?.amountMl ?? 0;

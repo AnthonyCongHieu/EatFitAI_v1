@@ -50,6 +50,8 @@
       }
     },
     "plugins": [
+      "@react-native-firebase/app",
+      "@react-native-firebase/crashlytics",
       "expo-secure-store",
       "expo-localization",
       "@react-native-google-signin/google-signin",

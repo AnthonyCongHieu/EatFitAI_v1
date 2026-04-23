@@ -1,4 +1,4 @@
-node_modules/
+﻿node_modules/
 .expo/
 bin/
 obj/
@@ -84,3 +84,7 @@ data_chunks/
 !eatfitai-backend/supabase_schema.sql
 !eatfitai-backend/supabase_storage.sql
 artifacts-device-latest.png
+
+# Firebase config — chứa API key, không track trong git
+google-services.json
+

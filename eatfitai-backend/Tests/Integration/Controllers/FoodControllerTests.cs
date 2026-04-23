@@ -184,6 +184,25 @@ namespace EatFitAI.API.Tests.Integration.Controllers
         }
 
         [Fact]
+        public async Task SearchAll_WhenCatalogHasNoMatches_ReturnsUserFoodsOnly()
+        {
+            var userId = Guid.NewGuid();
+            var client = await CreateAuthenticatedClientAsync(userId);
+            var uniqueFoodName = $"Manual search only {Guid.NewGuid():N}";
+            var userFoodItemId = await SeedUserFoodItemAsync(userId, uniqueFoodName);
+
+            var response = await client.GetAsync($"/api/food/search-all?q={Uri.EscapeDataString(uniqueFoodName)}");
+
+            response.EnsureSuccessStatusCode();
+            var result = await response.Content.ReadFromJsonAsync<List<FoodSearchResultDto>>();
+            Assert.NotNull(result);
+            var matched = Assert.Single(result);
+            Assert.Equal("user", matched.Source);
+            Assert.Equal(userFoodItemId, matched.Id);
+            Assert.Equal(uniqueFoodName, matched.FoodName);
+        }
+
+        [Fact]
         public async Task GetRecentFoods_AfterDiaryWrites_ReturnsMostRecentUniqueFoods()
         {
             var userId = Guid.NewGuid();
