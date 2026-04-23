@@ -28,6 +28,10 @@ const APPIUM_SESSION_TEARDOWN_TIMEOUT_MS = readPositiveInt(
   10000,
 );
 const APPIUM_ADB_TIMEOUT_MS = readPositiveInt(process.env.APPIUM_ADB_TIMEOUT_MS, 45000);
+const WDIO_CONNECTION_RETRY_TIMEOUT_MS = readPositiveInt(
+  process.env.WDIO_CONNECTION_RETRY_TIMEOUT_MS,
+  30000,
+);
 const APPIUM_FATAL_DRIVER_PATTERNS = [
   'instrumentation process is not running',
   'not trusted uid',
@@ -136,6 +140,9 @@ const ENTRY_PROBES = [
     ],
   ],
 ];
+const AUTHENTICATED_ENTRY_PROBES = ENTRY_PROBES.filter(([entryId]) =>
+  AUTHENTICATED_ENTRY_IDS.has(entryId),
+);
 const KNOWN_ENTRY_IDS = Array.from(new Set(ENTRY_PROBES.map(([entryId]) => entryId)));
 
 function readPositiveInt(rawValue, fallback) {
@@ -444,6 +451,9 @@ async function connect() {
     hostname: APPIUM_HOST,
     port: APPIUM_PORT,
     path: '/',
+    connectionRetryCount: 0,
+    connectionRetryTimeout: WDIO_CONNECTION_RETRY_TIMEOUT_MS,
+    logLevel: process.env.WDIO_LOG_LEVEL || 'error',
     capabilities,
   });
 
@@ -522,8 +532,8 @@ async function waitForAny(driver, ids, timeout = 10000) {
   throw new Error(`Timed out waiting for any selector: ${ids.join(', ')}`);
 }
 
-async function detectVisibleEntry(driver, timeoutPerProbe = 150) {
-  for (const [entryId, probeIds] of ENTRY_PROBES) {
+async function detectVisibleEntry(driver, timeoutPerProbe = 150, probes = ENTRY_PROBES) {
+  for (const [entryId, probeIds] of probes) {
     for (const probeId of probeIds) {
       const element = await findByTestId(driver, probeId, timeoutPerProbe, {
         allowLabelFallbacks: false,
@@ -535,6 +545,10 @@ async function detectVisibleEntry(driver, timeoutPerProbe = 150) {
   }
 
   return null;
+}
+
+async function detectAuthenticatedEntry(driver, timeoutPerProbe = 200) {
+  return detectVisibleEntry(driver, timeoutPerProbe, AUTHENTICATED_ENTRY_PROBES);
 }
 
 async function waitForAppEntry(driver, timeout = 45000) {
@@ -558,7 +572,10 @@ async function waitForAppEntry(driver, timeout = 45000) {
 }
 
 async function loginIfNeeded(driver) {
-  let current = await waitForAppEntry(driver, 60000);
+  let current = await detectAuthenticatedEntry(driver, 250);
+  if (!current) {
+    current = await waitForAppEntry(driver, 60000);
+  }
 
   if (AUTHENTICATED_ENTRY_IDS.has(current)) {
     console.log(`Authenticated screen detected (${current}), skipping login.`);
@@ -730,6 +747,7 @@ module.exports = {
   runAdb,
   tapElement,
   ensureHomeVisible,
+  detectAuthenticatedEntry,
   detectVisibleEntry,
   waitForAppEntry,
   waitForAny,

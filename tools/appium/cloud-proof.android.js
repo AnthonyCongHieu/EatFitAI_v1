@@ -2,14 +2,18 @@ const fs = require('fs');
 const path = require('path');
 const {
   APP_PACKAGE,
+  TEST_IDS,
   captureDebugArtifacts,
   captureLogcat,
   connect,
   coldLaunchApp,
+  detectAuthenticatedEntry,
   deleteSessionQuietly,
   ensureHomeVisible,
+  findByTestId,
   loginIfNeeded,
   runAdb,
+  tapElement,
   waitForAny,
   waitForAppEntry,
 } = require('./lib/common');
@@ -118,6 +122,21 @@ function seedGalleryFixture(imagePath) {
   ]);
 
   return devicePath;
+}
+
+async function requireTestId(driver, testId, timeout = 10000) {
+  const element = await findByTestId(driver, testId, timeout);
+  if (!element) {
+    throw new Error(`Required test id not found: ${testId}`);
+  }
+
+  return element;
+}
+
+async function tapByTestId(driver, testId, timeout = 10000, options = {}) {
+  const element = await requireTestId(driver, testId, timeout);
+  await tapElement(driver, element, options);
+  return element;
 }
 
 async function dismissSystemDialogIfPresent(driver) {
@@ -272,7 +291,9 @@ async function run() {
 
   const driver = await connect();
   try {
-    const initialEntry = await waitForAppEntry(driver, 60000);
+    const initialEntry =
+      (await detectAuthenticatedEntry(driver, 250)) ||
+      (await waitForAppEntry(driver, 60000));
     await loginIfNeeded(driver);
     await ensureHomeVisible(driver);
 
@@ -284,6 +305,13 @@ async function run() {
       currentPackage: homeArtifact.currentPackage || null,
       currentActivity: homeArtifact.currentActivity || null,
     };
+    updateObservations(evidenceRoot, {
+      operator: 'codex',
+      evidence: {
+        homeScreenshot: homeEvidence.screenshotPath,
+        notes: ['Cloud-proof captured authenticated home state.'],
+      },
+    });
 
     const seededGalleryPath = seedGalleryFixture(scanFixturePath);
 
@@ -300,16 +328,24 @@ async function run() {
       currentPackage: reopenArtifact.currentPackage || null,
       currentActivity: reopenArtifact.currentActivity || null,
     };
+    updateObservations(evidenceRoot, {
+      reopenHome: {
+        attempted: true,
+        passed: false,
+        notes: 'Cloud-proof reopened to home and is continuing through scan flow.',
+      },
+      evidence: {
+        notes: [
+          `Reopen home evidence: ${reopenEvidence.screenshotPath || reopenEvidence.metaPath}`,
+        ],
+      },
+    });
 
-    const homeFab = await driver.$('android=new UiSelector().resourceId("home-smart-add-fab")');
-    await homeFab.click();
+    await tapByTestId(driver, TEST_IDS.home.fabButton, 10000, { useAdbFirst: true });
     await driver.pause(1000);
 
-    const quickScanButton = await driver.$(
-      'android=new UiSelector().resourceId("home-quick-add-scan-button")',
-    );
-    await quickScanButton.click();
-    await waitForAny(driver, ['ai-scan-screen'], 20000);
+    await tapByTestId(driver, TEST_IDS.home.quickAddScanButton, 10000, { useAdbFirst: true });
+    await waitForAny(driver, [TEST_IDS.aiScan.screen], 20000);
 
     const scanScreenArtifact = await captureDebugArtifacts(driver, 'cloud-proof-scan-screen');
     const scanScreenEvidence = {
@@ -321,8 +357,7 @@ async function run() {
     };
 
     const appPackageBeforeGallery = await driver.getCurrentPackage().catch(() => null);
-    const galleryButton = await driver.$('android=new UiSelector().resourceId("ai-scan-gallery-button")');
-    await galleryButton.click();
+    await tapByTestId(driver, TEST_IDS.aiScan.galleryButton, 10000, { useAdbFirst: true });
 
     const pickerBasePackage = appPackageBeforeGallery || APP_PACKAGE;
     const pickerPackage = await waitForPickerPackage(driver, pickerBasePackage, 15000);
@@ -344,7 +379,11 @@ async function run() {
       throw new Error(`Could not select the seeded gallery fixture: ${seededGalleryPath}`);
     }
 
-    await waitForAny(driver, ['ai-scan-quick-save-button', 'ai-scan-add-to-diary-button'], 60000);
+    await waitForAny(
+      driver,
+      [TEST_IDS.aiScan.quickAddButton, TEST_IDS.aiScan.addToDiaryButton],
+      60000,
+    );
     const scanResultArtifact = await captureDebugArtifacts(driver, 'cloud-proof-scan-results');
     const scanResultEvidence = {
       screenshotPath: scanResultArtifact.screenshotPath || null,
@@ -353,13 +392,16 @@ async function run() {
       currentPackage: scanResultArtifact.currentPackage || null,
       currentActivity: scanResultArtifact.currentActivity || null,
     };
+    updateObservations(evidenceRoot, {
+      evidence: {
+        aiResultScreenshot: scanResultEvidence.screenshotPath,
+        notes: ['Cloud-proof captured AI scan result state.'],
+      },
+    });
 
-    const addToDiaryButton = await driver.$(
-      'android=new UiSelector().resourceId("ai-scan-add-to-diary-button")',
-    );
-    await addToDiaryButton.click();
+    await tapByTestId(driver, TEST_IDS.aiScan.addToDiaryButton, 10000, { useAdbFirst: true });
 
-    await waitForAny(driver, ['vision-add-meal-screen'], 30000);
+    await waitForAny(driver, [TEST_IDS.visionAddMeal.screen], 30000);
     const visionArtifact = await captureDebugArtifacts(driver, 'cloud-proof-vision-review');
     const visionEvidence = {
       screenshotPath: visionArtifact.screenshotPath || null,
@@ -369,12 +411,11 @@ async function run() {
       currentActivity: visionArtifact.currentActivity || null,
     };
 
-    const confirmButton = await driver.$(
-      'android=new UiSelector().resourceId("vision-add-meal-confirm-button")',
-    );
-    await confirmButton.click();
+    await tapByTestId(driver, TEST_IDS.visionAddMeal.confirmButton, 10000, {
+      useAdbFirst: true,
+    });
 
-    await waitForAny(driver, ['meal-diary-screen'], 30000);
+    await waitForAny(driver, [TEST_IDS.mealDiary.screen], 30000);
     const diaryArtifact = await captureDebugArtifacts(driver, 'cloud-proof-diary-save');
     const diaryEvidence = {
       screenshotPath: diaryArtifact.screenshotPath || null,
@@ -383,6 +424,20 @@ async function run() {
       currentPackage: diaryArtifact.currentPackage || null,
       currentActivity: diaryArtifact.currentActivity || null,
     };
+    updateObservations(evidenceRoot, {
+      scanToSave: {
+        attempted: true,
+        fixtureKey: path.parse(scanFixturePath).name,
+        passed: true,
+        diaryReadbackPassed: true,
+        mealType: 'unspecified',
+        notes: 'Cloud-proof completed gallery -> result -> add to diary -> diary readback.',
+      },
+      evidence: {
+        diaryScreenshot: diaryEvidence.screenshotPath,
+        notes: ['Cloud-proof captured meal diary readback state.'],
+      },
+    });
 
     runAdb(['shell', 'input', 'keyevent', 'KEYCODE_HOME']);
     coldLaunchApp();
@@ -428,14 +483,6 @@ async function run() {
         passed: true,
         notes: 'Appium cloud-proof reopened the authenticated app to home successfully.',
       },
-      scanToSave: {
-        attempted: true,
-        fixtureKey: path.parse(scanFixturePath).name,
-        passed: true,
-        diaryReadbackPassed: true,
-        mealType: 'unspecified',
-        notes: 'Appium cloud-proof completed gallery -> result -> add to diary -> diary readback.',
-      },
       evidence: {
         homeScreenshot: homeEvidence.screenshotPath,
         aiResultScreenshot: scanResultEvidence.screenshotPath,
@@ -464,28 +511,43 @@ async function run() {
     const failureLogcatPath = captureLogcat(appiumOutputDir, 'cloud-proof-auth-failure.logcat.txt', {
       lines: 5000,
     });
+    const failureSummary = {
+      generatedAt: new Date().toISOString(),
+      evidenceRoot,
+      appiumOutputDir,
+      failureArtifact: failureArtifact
+        ? {
+            screenshotPath: failureArtifact.screenshotPath || null,
+            pageSourcePath: failureArtifact.pageSourcePath || null,
+            metaPath: failureArtifact.metaPath,
+            currentPackage: failureArtifact.currentPackage || null,
+            currentActivity: failureArtifact.currentActivity || null,
+          }
+        : null,
+      failureLogcatPath,
+      error: error instanceof Error ? error.message : String(error),
+      status: 'failed',
+    };
+    const failureSummaryPath = path.join(evidenceRoot, 'cloud-proof-auth.failure.json');
+    fs.writeFileSync(failureSummaryPath, JSON.stringify(failureSummary, null, 2), 'utf8');
+    updateObservations(evidenceRoot, {
+      evidence: {
+        logcatPath: failureLogcatPath,
+        notes: [
+          `Cloud-proof failure summary: ${failureSummaryPath}`,
+          failureArtifact?.screenshotPath ? `Failure screenshot: ${failureArtifact.screenshotPath}` : '',
+        ].filter(Boolean),
+      },
+      stability: {
+        crashObserved: false,
+        freezeObserved: false,
+        notes: `Cloud-proof failed before completion: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      },
+    });
     console.error(
-      JSON.stringify(
-        {
-          generatedAt: new Date().toISOString(),
-          evidenceRoot,
-          appiumOutputDir,
-          failureArtifact: failureArtifact
-            ? {
-                screenshotPath: failureArtifact.screenshotPath || null,
-                pageSourcePath: failureArtifact.pageSourcePath || null,
-                metaPath: failureArtifact.metaPath,
-                currentPackage: failureArtifact.currentPackage || null,
-                currentActivity: failureArtifact.currentActivity || null,
-              }
-            : null,
-          failureLogcatPath,
-          error: error instanceof Error ? error.message : String(error),
-          status: 'failed',
-        },
-        null,
-        2,
-      ),
+      JSON.stringify(failureSummary, null, 2),
     );
     throw error;
   } finally {

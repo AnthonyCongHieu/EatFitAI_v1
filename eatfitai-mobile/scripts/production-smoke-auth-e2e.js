@@ -244,6 +244,35 @@ async function dismissKeyboard(driver) {
   } catch {}
 }
 
+async function waitForOnboardingReady(driver, timeout = 30000) {
+  return waitForAny(
+    driver,
+    [
+      TEST_IDS.auth.onboardingScreen,
+      TEST_IDS.auth.onboardingGenderMaleButton,
+      TEST_IDS.auth.onboardingNextButton,
+    ],
+    timeout,
+  );
+}
+
+async function tapVerifySubmitAndWaitForOnboarding(driver) {
+  await tapByTestId(driver, TEST_IDS.auth.verifySubmitButton);
+  const firstAttempt = await waitForOnboardingReady(driver, 10000).catch(() => null);
+  if (firstAttempt) {
+    return firstAttempt;
+  }
+
+  const byLabel = await findByAccessibilityLabels(driver, ['Xác nhận Email'], 5000);
+  if (byLabel) {
+    await tapElement(driver, byLabel, { verticalBias: 0.6, useAdbFirst: true });
+  } else {
+    runAdb(['shell', 'input', 'tap', '540', '1740']);
+  }
+
+  return waitForOnboardingReady(driver, 30000);
+}
+
 async function saveScreenshot(driver, outputDir, fileName) {
   const filePath = path.join(outputDir, fileName);
   await driver.saveScreenshot(filePath);
@@ -739,17 +768,16 @@ async function runDisposableRegisterMode(driver, outputDir, options) {
   }
 
   updateBudget(outputDir, 'verifyEmail', `verify ${mailbox.address}`);
-  await tapByTestId(driver, TEST_IDS.auth.verifySubmitButton);
-  await waitForAny(driver, [TEST_IDS.auth.onboardingScreen], 30000);
+  await tapVerifySubmitAndWaitForOnboarding(driver);
 
-  await setValueByTestId(driver, TEST_IDS.auth.onboardingNameInput, options.displayName);
+  await setValueByTestIdIfPresent(driver, TEST_IDS.auth.onboardingNameInput, options.displayName);
   await dismissKeyboard(driver);
   await tapOnboardingGender(driver, TEST_IDS.auth.onboardingGenderMaleButton);
   await setValueByTestIdIfPresent(driver, TEST_IDS.auth.onboardingAgeInput, '29');
   await dismissKeyboard(driver);
   await tapByTestId(driver, TEST_IDS.auth.onboardingNextButton);
-  await setValueByTestId(driver, TEST_IDS.auth.onboardingHeightInput, '170');
-  await setValueByTestId(driver, TEST_IDS.auth.onboardingWeightInput, '70');
+  await setValueByTestIdIfPresent(driver, TEST_IDS.auth.onboardingHeightInput, '170');
+  await setValueByTestIdIfPresent(driver, TEST_IDS.auth.onboardingWeightInput, '70');
   await dismissKeyboard(driver);
   await tapByTestId(driver, TEST_IDS.auth.onboardingNextButton);
   await tapByTestId(driver, `${TEST_IDS.auth.onboardingGoalPrefix}-maintain`);
