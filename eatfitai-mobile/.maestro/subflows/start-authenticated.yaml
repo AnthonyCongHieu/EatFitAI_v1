@@ -1,6 +1,5 @@
 appId: com.eatfitai.app
 ---
-- launchApp
 - runFlow:
     when:
       visible:

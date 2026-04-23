@@ -26,6 +26,27 @@ const getDeepestRouteName = (state: MaybeState): string | undefined => {
   return getDeepestRouteName(route.state) ?? route.name;
 };
 
+const stateContainsRoute = (
+  state: MaybeState,
+  routeName: keyof RootStackParamList,
+): boolean => {
+  if (!state || !Array.isArray(state.routes) || state.routes.length === 0) {
+    return false;
+  }
+
+  return state.routes.some((route) => {
+    const typedRoute = route as
+      | (NavigationState['routes'][number] & { state?: MaybeState })
+      | undefined;
+
+    if (!typedRoute) {
+      return false;
+    }
+
+    return typedRoute.name === routeName || stateContainsRoute(typedRoute.state, routeName);
+  });
+};
+
 export const getActiveRouteName = (): string | undefined => {
   if (!navigationRef.isReady()) {
     return undefined;
@@ -37,6 +58,10 @@ export const getActiveRouteName = (): string | undefined => {
 
 export const navigateToStatsWeeklyReview = (): boolean => {
   if (!navigationRef.isReady()) {
+    return false;
+  }
+
+  if (!stateContainsRoute(navigationRef.getRootState(), 'AppTabs')) {
     return false;
   }
 

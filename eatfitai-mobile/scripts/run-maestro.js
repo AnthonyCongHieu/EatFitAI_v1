@@ -176,6 +176,13 @@ function runAdb(args, { allowFailure = false } = {}) {
   return result;
 }
 
+function launchAndroidApp(startupDelayMs = 5000) {
+  runAdb(['shell', 'am', 'start', '-W', '-n', `${APP_ID}/.MainActivity`]);
+  if (startupDelayMs > 0) {
+    sleep(startupDelayMs);
+  }
+}
+
 function prepareAndroidApp(selectedSuite) {
   runAdb(['wait-for-device']);
   runAdb(['reverse', 'tcp:8081', 'tcp:8081'], { allowFailure: true });
@@ -194,10 +201,7 @@ function prepareAndroidApp(selectedSuite) {
   }
   runAdb(['shell', 'input', 'keyevent', 'KEYCODE_HOME'], { allowFailure: true });
   runAdb(['shell', 'am', 'force-stop', APP_ID], { allowFailure: true });
-  runAdb(['shell', 'am', 'start', '-W', '-n', `${APP_ID}/.MainActivity`]);
-  sleep(5000);
-  runAdb(['shell', 'input', 'keyevent', 'KEYCODE_HOME'], { allowFailure: true });
-  runAdb(['shell', 'am', 'force-stop', APP_ID], { allowFailure: true });
+  launchAndroidApp();
 }
 
 function bootstrapAuthenticatedState() {
@@ -222,7 +226,7 @@ function bootstrapAuthenticatedState() {
 
   if (result.error) {
     console.warn(
-      '[run-maestro] Appium bootstrap errored; continuing because Maestro is the primary smoke gate.',
+      '[run-maestro] Optional Appium bootstrap errored; continuing because this Maestro lane is legacy/manual only.',
     );
     console.warn(result.error.message || result.error);
     return;
@@ -230,7 +234,7 @@ function bootstrapAuthenticatedState() {
 
   if (result.status !== 0) {
     console.warn(
-      '[run-maestro] Appium bootstrap failed; continuing because Maestro handles the authenticated flow directly.',
+      '[run-maestro] Optional Appium bootstrap failed; continuing because this Maestro lane can still run as an auxiliary diagnostic path.',
     );
   }
 }
@@ -323,6 +327,13 @@ function readAndroidInstallPolicyHint() {
 
 function readRequireReleaseLikeBuild() {
   const value = String(resolveEnv('EATFITAI_REQUIRE_RELEASE_LIKE_BUILD') || '')
+    .trim()
+    .toLowerCase();
+  return value === '1' || value === 'true';
+}
+
+function readSkipMaestroBootstrap() {
+  const value = String(resolveEnv('EATFITAI_SKIP_MAESTRO_BOOTSTRAP') || '')
     .trim()
     .toLowerCase();
   return value === '1' || value === 'true';
@@ -426,8 +437,13 @@ async function main() {
       appiumServer.host,
       appiumServer.port,
     );
+    const skipMaestroBootstrap = readSkipMaestroBootstrap();
 
-    if (appiumServerReachable) {
+    if (skipMaestroBootstrap) {
+      console.warn(
+        '[run-maestro] Skipping optional Appium bootstrap because EATFITAI_SKIP_MAESTRO_BOOTSTRAP is enabled.',
+      );
+    } else if (appiumServerReachable) {
       bootstrapAuthenticatedState();
     } else {
       console.warn(

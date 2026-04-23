@@ -34,8 +34,14 @@ import Svg, {
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
+import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
+import {
+  CompositeNavigationProp,
+  RouteProp,
+  useNavigation,
+  useRoute,
+} from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
 import { ThemedText } from '../../../components/ThemedText';
@@ -138,6 +144,11 @@ const formatViDate = (): string => {
 
 const cardW = SCREEN_WIDTH - 48; // px-6 * 2
 
+type StatsScreenNavigationProp = CompositeNavigationProp<
+  BottomTabNavigationProp<AppTabsParamList, 'StatsTab'>,
+  NativeStackNavigationProp<RootStackParamList>
+>;
+
 /* ─── Month helpers ─── */
 interface WeekAvg { label: string; avg: number; }
 
@@ -211,12 +222,16 @@ const RING_CIRCUMFERENCE = 2 * Math.PI * RING_RADIUS;
    ═══════════════════════════════════════════════ */
 const StatsScreen = (): React.ReactElement => {
   const insets = useSafeAreaInsets();
-  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const navigation = useNavigation<StatsScreenNavigationProp>();
   const route = useRoute<RouteProp<AppTabsParamList, 'StatsTab'>>();
+  const weeklyReviewSource = route.params?.source ?? 'stats';
+  const focusWeeklyReview = route.params?.focusWeeklyReview === true;
 
   const [activeTab, setActiveTab] = useState<TabOption>('today');
   const [hasTrackedWeeklyReviewOpen, setHasTrackedWeeklyReviewOpen] = useState(false);
   const [weeklyReviewAcknowledged, setWeeklyReviewAcknowledged] = useState(false);
+  const [pendingWeeklyReviewFocus, setPendingWeeklyReviewFocus] = useState(focusWeeklyReview);
+  const [isWeeklyReviewFocused, setIsWeeklyReviewFocused] = useState(focusWeeklyReview);
 
   /* ─── Data: Today ─── */
   const summary = useDiaryStore((s) => s.summary);
@@ -259,9 +274,6 @@ const StatsScreen = (): React.ReactElement => {
   /* ─── Data: Month extras (weight change + water average) ─── */
   const [monthlyWater, setMonthlyWater] = useState<MonthlyWaterData | null>(null);
   const [weightChange, setWeightChange] = useState<number | null>(null);
-  const weeklyReviewSource = route.params?.source ?? 'stats';
-  const focusWeeklyReview = route.params?.focusWeeklyReview === true;
-
   const {
     data: weeklyReview,
     isFetching: isFetchingWeeklyReview,
@@ -279,10 +291,28 @@ const StatsScreen = (): React.ReactElement => {
   }, []);
 
   useEffect(() => {
-    if (focusWeeklyReview && activeTab !== 'week') {
+    if (!focusWeeklyReview) {
+      return;
+    }
+
+    setPendingWeeklyReviewFocus(true);
+    setIsWeeklyReviewFocused(true);
+  }, [focusWeeklyReview]);
+
+  useEffect(() => {
+    if (!pendingWeeklyReviewFocus) {
+      return;
+    }
+
+    if (activeTab !== 'week') {
       setActiveTab('week');
     }
-  }, [focusWeeklyReview, activeTab]);
+
+    setPendingWeeklyReviewFocus(false);
+    navigation.setParams({
+      focusWeeklyReview: undefined,
+    });
+  }, [activeTab, navigation, pendingWeeklyReviewFocus]);
 
   /** Fetch monthly water average + weight change */
   const fetchMonthExtras = useCallback(async () => {
@@ -355,7 +385,7 @@ const StatsScreen = (): React.ReactElement => {
       screen: 'StatsScreen',
       metadata: {
         source: weeklyReviewSource,
-        focused: focusWeeklyReview,
+        focused: isWeeklyReviewFocused,
         reviewStatus: weeklyReview.status,
         confidence: weeklyReview.confidence,
         dataQuality: weeklyReview.dataQuality,
@@ -364,8 +394,8 @@ const StatsScreen = (): React.ReactElement => {
     setHasTrackedWeeklyReviewOpen(true);
   }, [
     activeTab,
-    focusWeeklyReview,
     hasTrackedWeeklyReviewOpen,
+    isWeeklyReviewFocused,
     weeklyReview,
     weeklyReviewSource,
   ]);
@@ -411,6 +441,9 @@ const StatsScreen = (): React.ReactElement => {
   /* ─── Handlers ─── */
   const handleTabChange = (tab: TabOption) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    if (tab !== 'week' && isWeeklyReviewFocused) {
+      setIsWeeklyReviewFocused(false);
+    }
     setActiveTab(tab);
   };
 
@@ -795,7 +828,7 @@ const StatsScreen = (): React.ReactElement => {
                   <View
                     style={[
                       S.weeklyReviewCard,
-                      focusWeeklyReview && S.weeklyReviewCardFocused,
+                      isWeeklyReviewFocused && S.weeklyReviewCardFocused,
                     ]}
                   >
                     <LinearGradient

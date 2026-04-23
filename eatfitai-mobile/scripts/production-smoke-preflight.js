@@ -92,7 +92,13 @@ const MANIFEST_TEMPLATE_PATH = path.resolve(
 
 function trimEnv(name) {
   const value = process.env[name];
-  return value ? value.trim() : '';
+  if (!value) {
+    return '';
+  }
+
+  const normalized = value.trim();
+  const quotedMatch = normalized.match(/^"(.*)"$/);
+  return quotedMatch ? quotedMatch[1] : normalized;
 }
 
 function normalizeBaseUrl(value, fallback) {

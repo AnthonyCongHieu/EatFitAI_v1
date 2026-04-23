@@ -26,6 +26,7 @@
     "test": "jest --runInBand",
     "appium:smoke": "npm --prefix ../tools/appium run sanity:android",
     "appium:edge:android": "npm --prefix ../tools/appium run edge:android",
+    "appium:cloud-proof:android": "npm --prefix ../tools/appium run cloud-proof:android",
     "maestro:smoke:android": "node scripts/run-maestro.js smoke",
     "maestro:regression:android": "node scripts/run-maestro.js regression",
     "maestro:hero:android": "node scripts/run-maestro.js hero",

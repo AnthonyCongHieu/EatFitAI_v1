@@ -41,12 +41,13 @@ npm --prefix .\eatfitai-mobile run guard:no-direct-ai-provider
 ```powershell
 npm --prefix .\eatfitai-mobile run build:android:preview
 npm --prefix .\eatfitai-mobile run install:android:preview
-npm --prefix .\eatfitai-mobile run maestro:smoke:android
-npm --prefix .\eatfitai-mobile run maestro:regression:android
-npm --prefix .\eatfitai-mobile run maestro:hero:android
+npm --prefix .\eatfitai-mobile run automation:doctor
 npm --prefix .\eatfitai-mobile run appium:smoke
-npm --prefix .\tools\appium run cloud-proof:android
 ```
+
+Lane Android mặc định cho release gate hiện là Appium-only. Các flow `appium:edge:android` và
+`cloud-proof:android` vẫn hữu ích cho debug/evidence sâu hơn, nhưng không còn nằm trên critical
+path của Gate 2.
 
 ### Gate 3 — Chứng nhận thiết bị thật
 
@@ -96,7 +97,7 @@ node .\eatfitai-mobile\scripts\product-release-gate.js cloud
 
 ---
 
-## Maestro Suites
+## Legacy Maestro Suites
 
 | Suite | Lệnh | Ghi chú |
 |---|---|---|
@@ -110,6 +111,7 @@ node .\eatfitai-mobile\scripts\product-release-gate.js cloud
 | Profile & Stats | `maestro:profile-stats:android` | Dùng lane authenticated |
 
 Lưu ý:
+- Đây là lane legacy/manual, không còn là release gate Android chính thức
 - Với máy Android thật, phải mở khóa máy và bật tùy chọn developer cho phép cài helper APK qua USB/ADB
 - Build debug + Metro chỉ để debug, không đủ điều kiện pass release gate Android
 

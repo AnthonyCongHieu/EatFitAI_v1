@@ -1,10 +1,42 @@
 param(
     [ValidateSet('local', 'cloud')]
     [string]$Mode = 'local',
-    [string]$Email = $(if ($env:EATFITAI_DEMO_EMAIL) { $env:EATFITAI_DEMO_EMAIL } else { 'scan-demo@redacted.local' }),
-    [string]$Password = $(if ($env:EATFITAI_DEMO_PASSWORD) { $env:EATFITAI_DEMO_PASSWORD } else { 'SET_IN_SEED_SCRIPT' }),
-    [string]$DisplayName = $(if ($env:EATFITAI_DEMO_DISPLAY_NAME) { $env:EATFITAI_DEMO_DISPLAY_NAME } else { 'Scan Demo Reliability' })
+    [string]$Email = '',
+    [string]$Password = '',
+    [string]$DisplayName = ''
 )
+
+function Resolve-EnvValue {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$Name,
+        [string]$Fallback = ''
+    )
+
+    $processValue = (Get-Item -Path "Env:$Name" -ErrorAction SilentlyContinue).Value
+    if ($processValue) {
+        return $processValue
+    }
+
+    $userValue = [Environment]::GetEnvironmentVariable($Name, 'User')
+    if ($userValue) {
+        return $userValue
+    }
+
+    return $Fallback
+}
+
+if (-not $Email) {
+    $Email = Resolve-EnvValue -Name 'EATFITAI_DEMO_EMAIL' -Fallback 'scan-demo@redacted.local'
+}
+
+if (-not $Password) {
+    $Password = Resolve-EnvValue -Name 'EATFITAI_DEMO_PASSWORD' -Fallback 'SET_IN_SEED_SCRIPT'
+}
+
+if (-not $DisplayName) {
+    $DisplayName = Resolve-EnvValue -Name 'EATFITAI_DEMO_DISPLAY_NAME' -Fallback 'Scan Demo Reliability'
+}
 
 $env:EATFITAI_DEMO_EMAIL = $Email
 $env:EATFITAI_DEMO_PASSWORD = $Password

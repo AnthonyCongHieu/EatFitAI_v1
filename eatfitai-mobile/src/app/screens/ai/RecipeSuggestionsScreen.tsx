@@ -71,6 +71,7 @@ const RecipeSuggestionsScreen = (): React.ReactElement => {
   );
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const featuredRecipe = recipes[0] ?? null;
 
   async function searchRecipes(overrideIngredients?: string[]) {
     const ingredientsToUse = overrideIngredients ?? ingredients;
@@ -234,7 +235,7 @@ const RecipeSuggestionsScreen = (): React.ReactElement => {
             </View>
           ) : (
             <>
-              {/* Featured AI Card (Index 0) */}
+              {featuredRecipe && (
               <Animated.View entering={FadeInDown.springify()} style={S.featuredCard}>
                 <View style={S.featuredContent}>
                   {/* Left Side / Top - Image Space */}
@@ -248,7 +249,7 @@ const RecipeSuggestionsScreen = (): React.ReactElement => {
                       <ThemedText style={S.aiBadgeText}>AI RECOMMENDED FOR YOU</ThemedText>
                     </View>
                     <ThemedText style={S.featuredTitle} numberOfLines={2}>
-                      {recipes[0]?.recipeName}
+                      {featuredRecipe.recipeName}
                     </ThemedText>
                     <View style={S.tagsRow}>
                       <View style={S.tagSubBadge}>
@@ -265,18 +266,19 @@ const RecipeSuggestionsScreen = (): React.ReactElement => {
                       </View>
                       <View style={S.metric}>
                         <Ionicons name="flame-outline" size={14} color={P.onSurfaceVariant} />
-                        <ThemedText style={S.metricText}>{Math.round(recipes[0]?.totalCalories || 0)} kcal</ThemedText>
+                        <ThemedText style={S.metricText}>{Math.round(featuredRecipe.totalCalories || 0)} kcal</ThemedText>
                       </View>
                     </View>
                     <TouchableOpacity
                       style={S.viewRecipeBtn}
-                      onPress={() => navigation.navigate('RecipeDetail', { recipeId: recipes[0]?.recipeId!, recipeName: recipes[0]?.recipeName! })}
+                      onPress={() => navigation.navigate('RecipeDetail', { recipeId: featuredRecipe.recipeId, recipeName: featuredRecipe.recipeName })}
                     >
                       <ThemedText style={S.viewRecipeBtnText}>Xem Công Thức</ThemedText>
                     </TouchableOpacity>
                   </View>
                 </View>
               </Animated.View>
+              )}
 
               {/* Grid 2 Columns for Explore More */}
               {recipes.length > 1 && (

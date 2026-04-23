@@ -2,6 +2,7 @@ const {
   APP_ACTIVITY,
   APP_PACKAGE,
   connect,
+  deleteSessionQuietly,
   ensureHomeVisible,
   loginIfNeeded,
   runAdb,
@@ -26,7 +27,7 @@ async function run() {
 
     console.log('Appium edge flow completed successfully.');
   } finally {
-    await driver.deleteSession();
+    await deleteSessionQuietly(driver);
   }
 }
 

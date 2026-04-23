@@ -19,6 +19,22 @@ const FALLBACK_ADB_PATH = path.resolve(
   process.platform === 'win32' ? 'adb.exe' : 'adb',
 );
 const TEST_IDS = loadTestIds();
+const APPIUM_ARTIFACT_TIMEOUT_MS = readPositiveInt(
+  process.env.APPIUM_ARTIFACT_TIMEOUT_MS,
+  12000,
+);
+const APPIUM_SESSION_TEARDOWN_TIMEOUT_MS = readPositiveInt(
+  process.env.APPIUM_SESSION_TEARDOWN_TIMEOUT_MS,
+  10000,
+);
+const APPIUM_ADB_TIMEOUT_MS = readPositiveInt(process.env.APPIUM_ADB_TIMEOUT_MS, 45000);
+const APPIUM_FATAL_DRIVER_PATTERNS = [
+  'instrumentation process is not running',
+  'not trusted uid',
+  'socket hang up',
+  'invalid session id',
+  'target application appears to have died',
+];
 const ACCESSIBILITY_LABEL_FALLBACKS = {
   [TEST_IDS.auth.introStartButton]: ['Bắt đầu ngay'],
   [TEST_IDS.auth.welcomeGoogleButton]: ['Tiếp tục với Google'],
@@ -38,6 +54,25 @@ const AUTHENTICATED_ENTRY_IDS = new Set([
   TEST_IDS.profile.screen,
 ]);
 const ENTRY_PROBES = [
+  [TEST_IDS.auth.introScreen, [TEST_IDS.auth.introScreen, TEST_IDS.auth.introStartButton]],
+  [
+    TEST_IDS.auth.welcomeScreen,
+    [
+      TEST_IDS.auth.welcomeScreen,
+      TEST_IDS.auth.welcomeLoginButton,
+      TEST_IDS.auth.welcomeRegisterButton,
+      TEST_IDS.auth.welcomeGoogleButton,
+    ],
+  ],
+  [
+    TEST_IDS.auth.loginScreen,
+    [
+      TEST_IDS.auth.loginScreen,
+      TEST_IDS.auth.emailInput,
+      TEST_IDS.auth.passwordInput,
+      TEST_IDS.auth.submitButton,
+    ],
+  ],
   [
     TEST_IDS.home.screen,
     [
@@ -100,27 +135,58 @@ const ENTRY_PROBES = [
       TEST_IDS.profile.logoutButton,
     ],
   ],
-  [TEST_IDS.auth.introScreen, [TEST_IDS.auth.introScreen, TEST_IDS.auth.introStartButton]],
-  [
-    TEST_IDS.auth.welcomeScreen,
-    [
-      TEST_IDS.auth.welcomeScreen,
-      TEST_IDS.auth.welcomeLoginButton,
-      TEST_IDS.auth.welcomeRegisterButton,
-      TEST_IDS.auth.welcomeGoogleButton,
-    ],
-  ],
-  [
-    TEST_IDS.auth.loginScreen,
-    [
-      TEST_IDS.auth.loginScreen,
-      TEST_IDS.auth.emailInput,
-      TEST_IDS.auth.passwordInput,
-      TEST_IDS.auth.submitButton,
-    ],
-  ],
 ];
 const KNOWN_ENTRY_IDS = Array.from(new Set(ENTRY_PROBES.map(([entryId]) => entryId)));
+
+function readPositiveInt(rawValue, fallback) {
+  const parsed = Number.parseInt(String(rawValue || '').trim(), 10);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+}
+
+function errorMessage(error) {
+  return String(error && (error.stack || error.message || error) ? error.stack || error.message || error : '')
+    .trim();
+}
+
+function throwIfFatalDriverError(error, context) {
+  const message = errorMessage(error);
+  const lowered = message.toLowerCase();
+  if (!message) {
+    return;
+  }
+
+  if (APPIUM_FATAL_DRIVER_PATTERNS.some((pattern) => lowered.includes(pattern))) {
+    throw new Error(`[appium] ${context} aborted: ${message}`);
+  }
+}
+
+async function withTimeout(run, timeoutMs, label) {
+  let timer;
+
+  try {
+    return await Promise.race([
+      Promise.resolve().then(run),
+      new Promise((_, reject) => {
+        timer = setTimeout(() => {
+          reject(new Error(`${label} timed out after ${timeoutMs}ms`));
+        }, timeoutMs);
+      }),
+    ]);
+  } finally {
+    if (timer) {
+      clearTimeout(timer);
+    }
+  }
+}
+
+async function withSoftTimeout(run, timeoutMs, label) {
+  try {
+    return await withTimeout(run, timeoutMs, label);
+  } catch (error) {
+    console.warn(`[appium] ${label} skipped: ${error.message}`);
+    return null;
+  }
+}
 
 function createArtifactBaseName(label) {
   const stamp = new Date().toISOString().replace(/[:.]/g, '-');
@@ -149,15 +215,41 @@ async function captureDebugArtifacts(driver, label) {
   };
 
   try {
-    payload.currentPackage = await driver.getCurrentPackage().catch(() => null);
-    payload.currentActivity = await driver.getCurrentActivity().catch(() => null);
-    payload.currentContext = await driver.getContext().catch(() => null);
-    const source = await driver.getPageSource().catch(() => null);
+    payload.currentPackage = await withSoftTimeout(
+      () =>
+        driver
+          .execute('mobile: getCurrentPackage')
+          .catch(() => driver.getCurrentPackage().catch(() => null)),
+      APPIUM_ARTIFACT_TIMEOUT_MS,
+      'getCurrentPackage',
+    );
+    payload.currentActivity = await withSoftTimeout(
+      () =>
+        driver
+          .execute('mobile: getCurrentActivity')
+          .catch(() => driver.getCurrentActivity().catch(() => null)),
+      APPIUM_ARTIFACT_TIMEOUT_MS,
+      'getCurrentActivity',
+    );
+    payload.currentContext = await withSoftTimeout(
+      () => driver.getContext().catch(() => null),
+      APPIUM_ARTIFACT_TIMEOUT_MS,
+      'getContext',
+    );
+    const source = await withSoftTimeout(
+      () => driver.getPageSource().catch(() => null),
+      APPIUM_ARTIFACT_TIMEOUT_MS,
+      'getPageSource',
+    );
     if (source) {
       fs.writeFileSync(sourcePath, source, 'utf8');
       payload.pageSourcePath = sourcePath;
     }
-    await driver.saveScreenshot(screenshotPath).catch(() => null);
+    await withSoftTimeout(
+      () => driver.saveScreenshot(screenshotPath).catch(() => null),
+      APPIUM_ARTIFACT_TIMEOUT_MS,
+      'saveScreenshot',
+    );
     if (fs.existsSync(screenshotPath)) {
       payload.screenshotPath = screenshotPath;
     }
@@ -178,6 +270,7 @@ function adbOutput(args, options = {}) {
   return execFileSync(adbPath, finalArgs, {
     encoding: 'utf8',
     maxBuffer: options.maxBuffer || 8 * 1024 * 1024,
+    timeout: options.timeoutMs || APPIUM_ADB_TIMEOUT_MS,
   });
 }
 
@@ -347,12 +440,15 @@ async function connect() {
     capabilities['appium:keyPassword'] = process.env.APPIUM_KEY_PASSWORD;
   }
 
-  return remote({
+  const driver = await remote({
     hostname: APPIUM_HOST,
     port: APPIUM_PORT,
     path: '/',
     capabilities,
   });
+
+  await driver.setTimeout({ implicit: 0 });
+  return driver;
 }
 
 async function findByTestId(driver, testId, timeout = 5000, options = {}) {
@@ -362,9 +458,14 @@ async function findByTestId(driver, testId, timeout = 5000, options = {}) {
 
   while (Date.now() - start < timeout) {
     for (const selector of selectors) {
-      const element = await driver.$(selector);
-      if (await element.isExisting()) {
-        return element;
+      let elements = [];
+      try {
+        elements = await driver.$$(selector);
+      } catch (error) {
+        throwIfFatalDriverError(error, `selector lookup for ${testId}`);
+      }
+      if (elements.length > 0) {
+        return elements[0];
       }
     }
 
@@ -377,15 +478,24 @@ async function findByTestId(driver, testId, timeout = 5000, options = {}) {
           `android=new UiSelector().descriptionContains("${label}")`,
           `android=new UiSelector().textContains("${label}")`,
         ]) {
-          const element = await driver.$(selector);
-          if (await element.isExisting()) {
-            return element;
+          let elements = [];
+          try {
+            elements = await driver.$$(selector);
+          } catch (error) {
+            throwIfFatalDriverError(error, `fallback selector lookup for ${testId}`);
+          }
+          if (elements.length > 0) {
+            return elements[0];
           }
         }
       }
     }
 
-    await driver.pause(250);
+    try {
+      await driver.pause(250);
+    } catch (error) {
+      throwIfFatalDriverError(error, `pause while resolving ${testId}`);
+    }
   }
 
   return null;
@@ -401,7 +511,11 @@ async function waitForAny(driver, ids, timeout = 10000) {
         return id;
       }
     }
-    await driver.pause(300);
+    try {
+      await driver.pause(300);
+    } catch (error) {
+      throwIfFatalDriverError(error, `pause while waiting for ${ids.join(', ')}`);
+    }
   }
 
   await captureDebugArtifacts(driver, 'wait-for-any-timeout').catch(() => null);
@@ -432,7 +546,11 @@ async function waitForAppEntry(driver, timeout = 45000) {
       return entryId;
     }
 
-    await driver.pause(300);
+    try {
+      await driver.pause(300);
+    } catch (error) {
+      throwIfFatalDriverError(error, 'pause while waiting for app entry');
+    }
   }
 
   await captureDebugArtifacts(driver, 'wait-for-app-entry-timeout').catch(() => null);
@@ -471,6 +589,9 @@ async function loginIfNeeded(driver) {
         TEST_IDS.auth.welcomeScreen,
         TEST_IDS.auth.welcomeLoginButton,
         TEST_IDS.auth.loginScreen,
+        TEST_IDS.auth.emailInput,
+        TEST_IDS.auth.passwordInput,
+        TEST_IDS.auth.submitButton,
         TEST_IDS.home.screen,
       ],
       15000,
@@ -490,7 +611,13 @@ async function loginIfNeeded(driver) {
     await tapElement(driver, welcomeLoginButton);
     current = await waitForAny(
       driver,
-      [TEST_IDS.auth.loginScreen, TEST_IDS.home.screen],
+      [
+        TEST_IDS.auth.loginScreen,
+        TEST_IDS.auth.emailInput,
+        TEST_IDS.auth.passwordInput,
+        TEST_IDS.auth.submitButton,
+        TEST_IDS.home.screen,
+      ],
       15000,
     );
   }
@@ -545,7 +672,11 @@ async function ensureHomeVisible(driver, timeout = 15000) {
       return entry;
     }
 
-    await driver.pause(300);
+    try {
+      await driver.pause(300);
+    } catch (error) {
+      throwIfFatalDriverError(error, 'pause while waiting for home screen');
+    }
   }
 
   await captureDebugArtifacts(driver, 'ensure-home-visible-timeout').catch(() => null);
@@ -559,6 +690,7 @@ function runAdb(args) {
 
   execFileSync(adbPath, finalArgs, {
     stdio: 'inherit',
+    timeout: APPIUM_ADB_TIMEOUT_MS,
   });
 }
 
@@ -572,6 +704,18 @@ function coldLaunchApp() {
   runAdb(['shell', 'am', 'start', '-S', '-W', '-n', `${APP_PACKAGE}/${APP_ACTIVITY}`]);
 }
 
+async function deleteSessionQuietly(driver, timeoutMs = APPIUM_SESSION_TEARDOWN_TIMEOUT_MS) {
+  if (!driver) {
+    return;
+  }
+
+  try {
+    await withTimeout(() => driver.deleteSession(), timeoutMs, 'deleteSession');
+  } catch (error) {
+    console.warn(`[appium] deleteSession skipped: ${error.message}`);
+  }
+}
+
 module.exports = {
   APP_ACTIVITY,
   APP_PACKAGE,
@@ -580,6 +724,7 @@ module.exports = {
   captureLogcat,
   connect,
   coldLaunchApp,
+  deleteSessionQuietly,
   findByTestId,
   loginIfNeeded,
   runAdb,

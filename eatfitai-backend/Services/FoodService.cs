@@ -2,10 +2,12 @@ using AutoMapper;
 using EatFitAI.API.DbScaffold.Data;
 using EatFitAI.API.DTOs.Food;
 using EatFitAI.API.DbScaffold.Models;
+using EatFitAI.API.Exceptions;
 using EatFitAI.API.Repositories.Interfaces;
 using EatFitAI.API.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
+using System.Net;
 using System.Text.Json;
 
 namespace EatFitAI.API.Services
@@ -236,11 +238,20 @@ namespace EatFitAI.API.Services
                 using var response = await client.GetAsync(requestUrl, cancellationToken);
                 if (!response.IsSuccessStatusCode)
                 {
+                    if (response.StatusCode == HttpStatusCode.NotFound)
+                    {
+                        _logger.LogInformation(
+                            "Barcode provider returned 404 for barcode {Barcode}",
+                            barcode);
+                        return null;
+                    }
+
                     _logger.LogInformation(
                         "Barcode provider returned {StatusCode} for barcode {Barcode}",
                         (int)response.StatusCode,
                         barcode);
-                    return null;
+                    throw new BarcodeProviderUnavailableException(
+                        $"Barcode provider returned {(int)response.StatusCode} for barcode {barcode}.");
                 }
 
                 var payload = await response.Content.ReadAsStringAsync(cancellationToken);
@@ -262,7 +273,9 @@ namespace EatFitAI.API.Services
             catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or JsonException)
             {
                 _logger.LogWarning(ex, "Barcode provider lookup failed for {Barcode}", barcode);
-                return null;
+                throw new BarcodeProviderUnavailableException(
+                    $"Barcode provider lookup failed for {barcode}.",
+                    ex);
             }
         }
 

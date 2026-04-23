@@ -4,12 +4,14 @@ using EatFitAI.API.Helpers;
 using EatFitAI.API.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace EatFitAI.API.Controllers;
 
 [ApiController]
 [Route("api/telemetry")]
-[AllowAnonymous]
+[Authorize]
+[EnableRateLimiting("GeneralPolicy")]
 public sealed class TelemetryController : ControllerBase
 {
     private readonly ITelemetryService _telemetryService;

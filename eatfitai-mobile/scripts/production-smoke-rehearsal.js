@@ -10,11 +10,18 @@ const DEFAULT_OUTPUT_ROOT = path.resolve(
 );
 
 function trim(value) {
-  return String(value || '').trim();
+  const normalized = String(value || '').trim();
+  const quotedMatch = normalized.match(/^"(.*)"$/);
+  return quotedMatch ? quotedMatch[1] : normalized;
+}
+
+function normalizePathArg(value) {
+  return trim(value).replace(/\\"/g, '"').replace(/"/g, '');
 }
 
 function resolveRootDir(cliValue) {
-  const explicit = trim(cliValue) || trim(process.env.EATFITAI_SMOKE_REHEARSAL_ROOT);
+  const explicit =
+    normalizePathArg(cliValue) || normalizePathArg(process.env.EATFITAI_SMOKE_REHEARSAL_ROOT);
   const resolved = explicit ? path.resolve(explicit) : DEFAULT_OUTPUT_ROOT;
 
   if (!fs.existsSync(resolved)) {

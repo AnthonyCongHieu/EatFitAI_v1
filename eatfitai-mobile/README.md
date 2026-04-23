@@ -40,10 +40,9 @@ Useful scripts:
 - `npm run test`
 - `npm run api:health`
 - `npm run typegen`
-- `npm run maestro:smoke:android`
-- `npm run maestro:regression:android`
-- `npm run maestro:studio`
+- `npm run appium:smoke`
 - `npm run appium:edge:android`
+- `npm run appium:cloud-proof:android`
 - `npm run automation:doctor`
 
 ## Environment files
@@ -69,35 +68,29 @@ Rules:
 - keep screen-level `screen` selectors for every major route
 - only add `accessible` when a nested touch target needs it
 
-### Maestro
+### Appium
 
-Maestro is the primary UI automation lane:
+Appium is the primary Android automation lane:
 
-- `.maestro/smoke`: PR-safe happy path coverage
-- `.maestro/regression`: broader UI contract checks
-- `.maestro/device`: physical-device-safe flows
+- lane-alive sanity for release-like APKs
+- authenticated smoke on real devices
+- process-death and resume diagnostics
+- device/system interactions and evidence capture
 
 Recommended local loop:
 
 ```powershell
 npm run automation:doctor
-npm run maestro:smoke:android
+npm run appium:smoke
 ```
 
-EAS workflow config lives in `.eas/workflows/e2e-test-android.yml` and uses the `e2e-test` build profile from `eas.json`.
+Extended lanes:
 
-Authenticated Maestro flows expect:
+- `npm run appium:edge:android`
+- `npm run appium:cloud-proof:android`
 
-- `EATFITAI_DEMO_EMAIL`
-- `EATFITAI_DEMO_PASSWORD`
-- `EXPO_EAS_PROJECT_ID` for real EAS linkage
+The dedicated Appium docs live in [tools/appium/README.md](/D:/EatFitAI_v1/tools/appium/README.md).
 
-### Appium
+### Legacy Maestro
 
-Appium is the secondary lane for edge/debug coverage:
-
-- lane-alive sanity
-- process-death and resume diagnostics
-- device/system interactions that are harder or flakier in Maestro
-
-Use Appium after Maestro passes locally, or when you need a device-level repro. The dedicated Appium docs live in [tools/appium/README.md](/D:/EatFitAI_v1/tools/appium/README.md).
+Maestro flows remain in the repo for historical coverage and ad hoc experimentation, but they are no longer the default Android release gate on Xiaomi/real-device verification.

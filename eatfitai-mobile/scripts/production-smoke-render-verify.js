@@ -30,7 +30,13 @@ const FAILURE_STATES = new Set([
 ]);
 
 function trim(value) {
-  return String(value || '').trim();
+  const normalized = String(value || '').trim();
+  const quotedMatch = normalized.match(/^"(.*)"$/);
+  return quotedMatch ? quotedMatch[1] : normalized;
+}
+
+function normalizePathArg(value) {
+  return trim(value).replace(/\\"/g, '"').replace(/"/g, '');
 }
 
 function normalizeBaseUrl(value) {
@@ -38,7 +44,9 @@ function normalizeBaseUrl(value) {
 }
 
 function buildOutputDir() {
-  const explicit = trim(process.argv[2]) || trim(process.env.EATFITAI_SMOKE_OUTPUT_DIR);
+  const explicit =
+    normalizePathArg(process.argv[2]) ||
+    normalizePathArg(process.env.EATFITAI_SMOKE_OUTPUT_DIR);
   if (explicit) {
     return path.resolve(explicit);
   }

@@ -1,5 +1,6 @@
 ﻿using System.Security.Claims;
 using EatFitAI.API.DTOs.Food;
+using EatFitAI.API.Exceptions;
 using EatFitAI.API.Helpers;
 using EatFitAI.API.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
@@ -88,6 +89,14 @@ namespace EatFitAI.API.Controllers
                 }
 
                 return Ok(result);
+            }
+            catch (BarcodeProviderUnavailableException)
+            {
+                return StatusCode(
+                    StatusCodes.Status503ServiceUnavailable,
+                    ErrorResponseHelper.SafeError(
+                        "Dịch vụ tra cứu mã vạch tạm thời không khả dụng. Vui lòng thử lại sau.",
+                        HttpContext));
             }
             catch (Exception)
             {

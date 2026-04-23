@@ -6,6 +6,7 @@ const {
   captureLogcat,
   connect,
   coldLaunchApp,
+  deleteSessionQuietly,
   ensureHomeVisible,
   loginIfNeeded,
   runAdb,
@@ -423,7 +424,7 @@ async function run() {
     );
     throw error;
   } finally {
-    await driver.deleteSession();
+    await deleteSessionQuietly(driver);
   }
 }
 

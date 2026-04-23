@@ -12,6 +12,9 @@ const DEFAULT_OUTPUT_ROOT = path.resolve(
 const DEFAULT_DEMO_EMAIL = 'scan-demo@redacted.local';
 const DEFAULT_DEMO_PASSWORD = 'SET_IN_SEED_SCRIPT';
 const DEFAULT_DEMO_DISPLAY_NAME = 'Scan Demo Reliability';
+const DEFAULT_MAIL_API = 'https://api.mail.tm';
+const VERIFY_TIMEOUT_MS = 240000;
+const VERIFY_POLL_INTERVAL_MS = 10000;
 
 const DEFAULT_PROFILE = {
   displayName: DEFAULT_DEMO_DISPLAY_NAME,
@@ -653,6 +656,155 @@ async function requestJson(url, options = {}) {
   }
 }
 
+function getMailItems(body) {
+  if (Array.isArray(body)) {
+    return body;
+  }
+
+  if (Array.isArray(body?.['hydra:member'])) {
+    return body['hydra:member'];
+  }
+
+  return [];
+}
+
+function extractVerificationCode(message) {
+  const candidates = [message?.text, message?.html, message?.intro, message?.subject]
+    .filter(Boolean)
+    .map((value) => String(value));
+
+  for (const candidate of candidates) {
+    const match = candidate.match(/\b(\d{6})\b/);
+    if (match) {
+      return match[1];
+    }
+  }
+
+  return '';
+}
+
+async function requestMailboxToken(mailApi, address, password) {
+  let lastResult = null;
+
+  for (let attempt = 1; attempt <= 6; attempt += 1) {
+    lastResult = await requestJson(`${mailApi}/token`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ address, password }),
+    });
+
+    if (lastResult.ok && lastResult.body?.token) {
+      return lastResult;
+    }
+
+    if (attempt < 6) {
+      await wait(5000);
+    }
+  }
+
+  return lastResult;
+}
+
+async function resolveDisposableMailbox(credentials, outputDir) {
+  const email = trim(credentials.email).toLowerCase();
+  const password = trim(credentials.password);
+  if (!email || !password) {
+    return null;
+  }
+
+  const emailDomain = email.includes('@') ? email.split('@').pop() : '';
+  if (!emailDomain) {
+    return null;
+  }
+
+  const mailApi = trim(process.env.EATFITAI_DEMO_MAIL_API) || DEFAULT_MAIL_API;
+  const domainsResult = await requestJson(`${mailApi}/domains`);
+  const supportedDomains = getMailItems(domainsResult.body)
+    .map((entry) => trim(entry?.domain).toLowerCase())
+    .filter(Boolean);
+
+  if (!domainsResult.ok || supportedDomains.length === 0 || !supportedDomains.includes(emailDomain)) {
+    return null;
+  }
+
+  const tokenResult = await requestMailboxToken(mailApi, email, password);
+  if (!tokenResult?.ok || !tokenResult.body?.token) {
+    throw new Error(
+      `Failed to create disposable mailbox token for ${email}. Status=${tokenResult?.status || 'unknown'} Error=${tokenResult?.error || tokenResult?.rawText || ''}`,
+    );
+  }
+
+  const artifact = {
+    generatedAt: new Date().toISOString(),
+    provider: 'mail.tm',
+    address: email,
+    password,
+    token: tokenResult.body.token,
+    mailApi,
+  };
+  const artifactPath = path.join(outputDir, 'disposable-mailbox.json');
+  writeJson(artifactPath, artifact);
+
+  return {
+    artifactPath,
+    address: email,
+    token: tokenResult.body.token,
+    mailApi,
+  };
+}
+
+async function waitForVerificationMessage(mailbox, outputDir) {
+  const startedAt = Date.now();
+  while (Date.now() - startedAt < VERIFY_TIMEOUT_MS) {
+    const messages = await requestJson(`${mailbox.mailApi}/messages`, {
+      headers: {
+        Authorization: `Bearer ${mailbox.token}`,
+      },
+    });
+
+    if (messages.ok) {
+      const items = getMailItems(messages.body);
+      const newest = items[0];
+      if (newest?.id) {
+        const detail = await requestJson(`${mailbox.mailApi}/messages/${newest.id}`, {
+          headers: {
+            Authorization: `Bearer ${mailbox.token}`,
+          },
+        });
+
+        if (detail.ok) {
+          const verificationCode = extractVerificationCode(detail.body);
+          const artifact = {
+            generatedAt: new Date().toISOString(),
+            mailbox: mailbox.address,
+            messageCount: items.length,
+            newestMessageId: newest.id,
+            subject: detail.body?.subject || newest.subject || '',
+            verificationCode,
+            message: detail.body,
+          };
+          const artifactPath = path.join(outputDir, 'disposable-mail-message.json');
+          writeJson(artifactPath, artifact);
+
+          if (verificationCode) {
+            return {
+              artifactPath,
+              verificationCode,
+              subject: artifact.subject,
+            };
+          }
+        }
+      }
+    }
+
+    await wait(VERIFY_POLL_INTERVAL_MS);
+  }
+
+  throw new Error(`Timed out waiting for disposable mailbox verification message for ${mailbox.address}.`);
+}
+
 async function login(backendUrl, email, password) {
   return requestJson(`${backendUrl}/api/auth/login`, {
     method: 'POST',
@@ -663,13 +815,33 @@ async function login(backendUrl, email, password) {
   });
 }
 
-async function register(backendUrl, email, password, displayName) {
+async function registerLegacy(backendUrl, email, password, displayName) {
   return requestJson(`${backendUrl}/api/auth/register`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({ email, password, displayName }),
+  });
+}
+
+async function registerWithVerification(backendUrl, email, password, displayName) {
+  return requestJson(`${backendUrl}/api/auth/register-with-verification`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ email, password, displayName }),
+  });
+}
+
+async function verifyEmailCode(backendUrl, email, verificationCode) {
+  return requestJson(`${backendUrl}/api/auth/verify-email`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ email, verificationCode }),
   });
 }
 
@@ -725,8 +897,125 @@ async function resetAccount(backendUrl, credentials, events) {
   };
 }
 
-async function authenticateFreshAccount(backendUrl, credentials, events) {
-  let registerResult = await register(
+function isLegacyRegistrationGone(registerResult) {
+  const message = trim(registerResult?.body?.message || registerResult?.rawText || '').toLowerCase();
+  return registerResult?.status === 410 || message.includes('register-with-verification');
+}
+
+async function authenticateFreshAccountWithVerification(
+  backendUrl,
+  credentials,
+  events,
+  outputDir,
+) {
+  const mailbox = await resolveDisposableMailbox(credentials, outputDir);
+  let registerResult = await registerWithVerification(
+    backendUrl,
+    credentials.email,
+    credentials.password,
+    credentials.displayName,
+  );
+  events.push({
+    step: 'register-demo-account-with-verification',
+    ok: registerResult.ok,
+    status: registerResult.status,
+    durationMs: registerResult.durationMs,
+    error: registerResult.error || registerResult.body?.message || null,
+  });
+
+  if (!registerResult.ok) {
+    if (registerResult.status !== 400) {
+      throw new Error(
+        `Cloud register-with-verification failed. Status=${registerResult.status} Error=${registerResult.error || registerResult.body?.message || registerResult.rawText || 'unknown'}`,
+      );
+    }
+
+    await wait(1500);
+    registerResult = await registerWithVerification(
+      backendUrl,
+      credentials.email,
+      credentials.password,
+      credentials.displayName,
+    );
+    events.push({
+      step: 'register-demo-account-with-verification-retry',
+      ok: registerResult.ok,
+      status: registerResult.status,
+      durationMs: registerResult.durationMs,
+      error: registerResult.error || registerResult.body?.message || null,
+    });
+  }
+
+  if (!registerResult.ok) {
+    throw new Error(
+      `Cloud register-with-verification retry failed. Status=${registerResult.status} Error=${registerResult.error || registerResult.body?.message || registerResult.rawText || 'unknown'}`,
+    );
+  }
+
+  let verificationCode = trim(registerResult.body?.verificationCode);
+  let verificationArtifactPath = '';
+  if (!verificationCode) {
+    if (!mailbox) {
+      throw new Error(
+        'Cloud seed now requires an email-verification mailbox. Use a mail.tm mailbox in EATFITAI_DEMO_EMAIL/EATFITAI_DEMO_PASSWORD or set EATFITAI_DEMO_MAIL_API to a compatible provider.',
+      );
+    }
+
+    const message = await waitForVerificationMessage(mailbox, outputDir);
+    verificationCode = message.verificationCode;
+    verificationArtifactPath = message.artifactPath;
+  }
+
+  const verifyResult = await verifyEmailCode(backendUrl, credentials.email, verificationCode);
+  events.push({
+    step: 'verify-demo-account-email',
+    ok: verifyResult.ok,
+    status: verifyResult.status,
+    durationMs: verifyResult.durationMs,
+    error: verifyResult.error || verifyResult.body?.message || null,
+  });
+
+  const accessToken = verifyResult.body?.accessToken || verifyResult.body?.token || '';
+  if (verifyResult.ok && accessToken) {
+    return {
+      accessToken,
+      refreshToken: verifyResult.body?.refreshToken || '',
+      source: 'verify-email',
+      response: verifyResult,
+      mailboxArtifactPath: mailbox?.artifactPath || '',
+      verificationArtifactPath,
+    };
+  }
+
+  const loginResult = await login(backendUrl, credentials.email, credentials.password);
+  events.push({
+    step: 'login-after-verify-email',
+    ok: loginResult.ok,
+    status: loginResult.status,
+    durationMs: loginResult.durationMs,
+    error: loginResult.error || loginResult.body?.message || null,
+  });
+
+  const fallbackAccessToken =
+    loginResult.body?.accessToken || loginResult.body?.token || '';
+  if (!loginResult.ok || !fallbackAccessToken) {
+    throw new Error(
+      `Cloud auth failed after register. Status=${loginResult.status} Error=${loginResult.error || loginResult.body?.message || 'unknown'}`,
+    );
+  }
+
+  return {
+    accessToken: fallbackAccessToken,
+    refreshToken: loginResult.body?.refreshToken || '',
+    source: 'login-after-verify-email',
+    response: loginResult,
+    mailboxArtifactPath: mailbox?.artifactPath || '',
+    verificationArtifactPath,
+  };
+}
+
+async function authenticateFreshAccount(backendUrl, credentials, events, outputDir) {
+  let registerResult = await registerLegacy(
     backendUrl,
     credentials.email,
     credentials.password,
@@ -740,6 +1029,10 @@ async function authenticateFreshAccount(backendUrl, credentials, events) {
     error: registerResult.error || registerResult.body?.message || null,
   });
 
+  if (isLegacyRegistrationGone(registerResult)) {
+    return authenticateFreshAccountWithVerification(backendUrl, credentials, events, outputDir);
+  }
+
   if (!registerResult.ok) {
     if (registerResult.status !== 400) {
       throw new Error(
@@ -748,7 +1041,7 @@ async function authenticateFreshAccount(backendUrl, credentials, events) {
     }
 
     await wait(1500);
-    registerResult = await register(
+    registerResult = await registerLegacy(
       backendUrl,
       credentials.email,
       credentials.password,
@@ -771,6 +1064,8 @@ async function authenticateFreshAccount(backendUrl, credentials, events) {
       refreshToken: registerResult.body?.refreshToken || '',
       source: 'register',
       response: registerResult,
+      mailboxArtifactPath: '',
+      verificationArtifactPath: '',
     };
   }
 
@@ -796,6 +1091,8 @@ async function authenticateFreshAccount(backendUrl, credentials, events) {
     refreshToken: loginResult.body?.refreshToken || '',
     source: 'login',
     response: loginResult,
+    mailboxArtifactPath: '',
+    verificationArtifactPath: '',
   };
 }
 
@@ -899,11 +1196,13 @@ async function main() {
     deletedExistingAccount: resetResult.deleted,
   };
 
-  const auth = await authenticateFreshAccount(backendUrl, credentials, report.events);
+  const auth = await authenticateFreshAccount(backendUrl, credentials, report.events, outputDir);
   const token = auth.accessToken;
   report.auth = {
     source: auth.source,
     refreshTokenPresent: Boolean(auth.refreshToken),
+    mailboxArtifactPath: auth.mailboxArtifactPath || '',
+    verificationArtifactPath: auth.verificationArtifactPath || '',
   };
 
   const profilePayload = {

@@ -25,6 +25,7 @@ COPY --from=build /app/publish .
 # Cấu hình cho production trên Render
 ENV ASPNETCORE_ENVIRONMENT=Production
 ENV ASPNETCORE_URLS=http://+:10000
+ENV DOTNET_hostBuilder__reloadConfigOnChange=false
 ENV DOTNET_RUNNING_IN_CONTAINER=true
 
 ENTRYPOINT ["dotnet", "EatFitAI.API.dll"]

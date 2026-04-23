@@ -57,11 +57,18 @@ const RELEASE_THRESHOLDS = {
 };
 
 function trim(value) {
-  return String(value || '').trim();
+  const normalized = String(value || '').trim();
+  const quotedMatch = normalized.match(/^"(.*)"$/);
+  return quotedMatch ? quotedMatch[1] : normalized;
+}
+
+function normalizePathArg(value) {
+  return trim(value).replace(/\\"/g, '"').replace(/"/g, '');
 }
 
 function resolveOutputDir(cliValue) {
-  const explicit = trim(cliValue) || trim(process.env.EATFITAI_SMOKE_OUTPUT_DIR);
+  const explicit =
+    normalizePathArg(cliValue) || normalizePathArg(process.env.EATFITAI_SMOKE_OUTPUT_DIR);
   if (explicit) {
     return path.resolve(explicit);
   }

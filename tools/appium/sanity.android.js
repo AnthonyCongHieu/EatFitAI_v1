@@ -4,21 +4,26 @@ const {
   TEST_IDS,
   captureDebugArtifacts,
   connect,
+  deleteSessionQuietly,
   detectVisibleEntry,
   loginIfNeeded,
 } = require('./lib/common');
 
 async function run() {
+  console.log('[appium:sanity] Connecting to Appium and launching app.');
   const driver = await connect();
 
   try {
+    console.log('[appium:sanity] Detecting visible entry.');
     const initialEntry = await detectVisibleEntry(driver, 800);
+    console.log('[appium:sanity] Resolving authenticated state.');
     const currentEntry = await loginIfNeeded(driver);
 
     if (!currentEntry) {
       throw new Error('No visible authenticated or auth entry was detected during Appium sanity.');
     }
 
+    console.log('[appium:sanity] Capturing artifacts.');
     const artifact = await captureDebugArtifacts(driver, 'sanity-android-pass');
     const summary = {
       capturedAt: new Date().toISOString(),
@@ -37,7 +42,7 @@ async function run() {
     console.log(JSON.stringify(summary, null, 2));
     console.log('Appium sanity flow completed successfully.');
   } finally {
-    await driver.deleteSession();
+    await deleteSessionQuietly(driver);
   }
 }
 

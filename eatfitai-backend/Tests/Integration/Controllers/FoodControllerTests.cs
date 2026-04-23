@@ -7,7 +7,9 @@ using EatFitAI.API.DTOs.Food;
 using EatFitAI.API.Tests.Integration;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Xunit;
 
 namespace EatFitAI.API.Tests.Integration.Controllers
@@ -135,6 +137,36 @@ namespace EatFitAI.API.Tests.Integration.Controllers
         }
 
         [Fact]
+        public async Task GetFoodByBarcode_WhenProviderIsUnavailable_ReturnsServiceUnavailable()
+        {
+            var factory = _factory.WithWebHostBuilder(builder =>
+            {
+                builder.ConfigureAppConfiguration((_, config) =>
+                {
+                    config.AddInMemoryCollection(new Dictionary<string, string?>
+                    {
+                        ["FoodBarcodeProvider:TemplateUrl"] = "https://provider.test/api/{barcode}",
+                        ["FoodBarcodeProvider:Name"] = "provider-test",
+                    });
+                });
+
+                builder.ConfigureServices(services =>
+                {
+                    services.RemoveAll<IHttpClientFactory>();
+                    services.AddSingleton<IHttpClientFactory>(
+                        new StubHttpClientFactory(
+                            HttpStatusCode.ServiceUnavailable,
+                            JsonContent.Create(new { message = "provider unavailable" })));
+                });
+            });
+            var client = factory.CreateClient();
+
+            var response = await client.GetAsync("/api/food/barcode/9988776655443");
+
+            Assert.Equal(HttpStatusCode.ServiceUnavailable, response.StatusCode);
+        }
+
+        [Fact]
         public async Task SearchAll_CombinesCatalogAndUserFoods()
         {
             var userId = Guid.NewGuid();
@@ -237,6 +269,47 @@ namespace EatFitAI.API.Tests.Integration.Controllers
                 Barcode = barcode,
             });
             await context.SaveChangesAsync();
+        }
+
+        private sealed class StubHttpClientFactory : IHttpClientFactory
+        {
+            private readonly HttpStatusCode _statusCode;
+            private readonly HttpContent? _content;
+
+            public StubHttpClientFactory(HttpStatusCode statusCode, HttpContent? content = null)
+            {
+                _statusCode = statusCode;
+                _content = content;
+            }
+
+            public HttpClient CreateClient(string name)
+            {
+                return new HttpClient(
+                    new StubHttpMessageHandler(_statusCode, _content),
+                    disposeHandler: true);
+            }
+        }
+
+        private sealed class StubHttpMessageHandler : HttpMessageHandler
+        {
+            private readonly HttpStatusCode _statusCode;
+            private readonly HttpContent? _content;
+
+            public StubHttpMessageHandler(HttpStatusCode statusCode, HttpContent? content)
+            {
+                _statusCode = statusCode;
+                _content = content;
+            }
+
+            protected override Task<HttpResponseMessage> SendAsync(
+                HttpRequestMessage request,
+                CancellationToken cancellationToken)
+            {
+                return Task.FromResult(new HttpResponseMessage(_statusCode)
+                {
+                    Content = _content,
+                });
+            }
         }
     }
 }

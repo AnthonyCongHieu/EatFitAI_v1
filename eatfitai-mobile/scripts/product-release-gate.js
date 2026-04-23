@@ -16,11 +16,6 @@ const installAndroidPreviewScript = path.resolve(
 const outputRoot = path.resolve(repoRoot, '_logs', 'production-smoke');
 const gateArg = String(process.argv[2] || 'all').trim().toLowerCase();
 const stageOrder = ['environment', 'code', 'android', 'device', 'cloud'];
-const MAESTRO_INSTALL_BLOCK_PATTERNS = [
-  'INSTALL_FAILED_USER_RESTRICTED',
-  'Device is blocking ADB helper APK installs',
-];
-
 function trim(value) {
   return String(value || '').trim();
 }
@@ -289,26 +284,6 @@ function shouldRunGate(name) {
   return gateArg === name;
 }
 
-function isKnownMaestroInstallBlock(commandResult) {
-  const combinedOutput = [commandResult.stdout, commandResult.stderr, commandResult.error]
-    .map((value) => trim(value))
-    .filter(Boolean)
-    .join('\n');
-
-  return MAESTRO_INSTALL_BLOCK_PATTERNS.some((pattern) => combinedOutput.includes(pattern));
-}
-
-function markKnownMaestroInstallBlock(gateResult, commandResult) {
-  if (!isKnownMaestroInstallBlock(commandResult)) {
-    return false;
-  }
-
-  gateResult.status = 'blocked';
-  gateResult.blockedReason =
-    'Maestro could not install its helper APK on the connected Android device. This is an environment/device-policy blocker, not an app regression.';
-  return true;
-}
-
 function buildGateResult(name) {
   return {
     name,
@@ -427,7 +402,6 @@ async function main() {
       const releaseLikeAndroidEnv = withExtraEnv(env, {
         EATFITAI_REQUIRE_RELEASE_LIKE_BUILD: '1',
       });
-      let maestroBlockedByInstallPolicy = false;
 
       gateResult.commands.push(
         runPowerShellScript('Build Android preview candidate', buildAndroidPreviewScript, [], {
@@ -462,73 +436,34 @@ async function main() {
         );
       }
       if (gateResult.commands.at(-1).ok) {
-        gateResult.commands.push(
-          runCommand('Maestro smoke', 'npm', ['run', 'maestro:smoke:android'], {
-            cwd: mobileRoot,
-            env: releaseLikeAndroidEnv,
-            timeoutMs: 20 * 60 * 1000,
-          }),
-        );
-        maestroBlockedByInstallPolicy = markKnownMaestroInstallBlock(
-          gateResult,
-          gateResult.commands.at(-1),
-        );
-      }
-      if (gateResult.commands.at(-1).ok && !maestroBlockedByInstallPolicy) {
-        gateResult.commands.push(
-          runCommand('Maestro regression', 'npm', ['run', 'maestro:regression:android'], {
-            cwd: mobileRoot,
-            env: releaseLikeAndroidEnv,
-            timeoutMs: 20 * 60 * 1000,
-          }),
-        );
-        maestroBlockedByInstallPolicy = markKnownMaestroInstallBlock(
-          gateResult,
-          gateResult.commands.at(-1),
-        );
-      }
-      if (gateResult.commands.at(-1).ok && !maestroBlockedByInstallPolicy) {
-        gateResult.commands.push(
-          runCommand('Maestro AI scan save', 'npm', ['run', 'maestro:ai-scan-save:android'], {
-            cwd: mobileRoot,
-            env: releaseLikeAndroidEnv,
-            timeoutMs: 20 * 60 * 1000,
-          }),
-        );
-        maestroBlockedByInstallPolicy = markKnownMaestroInstallBlock(
-          gateResult,
-          gateResult.commands.at(-1),
-        );
-      }
-      if (
-        gateResult.commands.every((entry) => entry.ok) ||
-        maestroBlockedByInstallPolicy
-      ) {
-        const appiumServer = readAppiumServerConfig(env);
+        const appiumServer = readAppiumServerConfig(releaseLikeAndroidEnv);
         const appiumServerReachable = await isTcpServerReachable(
           appiumServer.host,
           appiumServer.port,
         );
 
-        if (appiumServerReachable) {
-          gateResult.commands.push(
-            runCommand(
-              maestroBlockedByInstallPolicy ? 'Appium sanity (diagnostic)' : 'Appium sanity',
-              'npm',
-              ['run', 'appium:smoke'],
-              {
-                cwd: mobileRoot,
-                env: releaseLikeAndroidEnv,
-                timeoutMs: 20 * 60 * 1000,
-              },
-            ),
-          );
-        } else {
-          gateResult.appium = {
-            skipped: true,
-            reason: `Appium server is not reachable at http://${appiumServer.host}:${appiumServer.port}/; secondary Appium lane skipped.${maestroBlockedByInstallPolicy ? ' Android gate remains blocked by Maestro helper install policy.' : ''}`,
-          };
+        if (!appiumServerReachable) {
+          gateResult.commands.push({
+            label: 'Appium availability',
+            command: `http://${appiumServer.host}:${appiumServer.port}/`,
+            cwd: mobileRoot,
+            durationMs: 0,
+            ok: false,
+            exitCode: 1,
+            stdout: '',
+            stderr: `Appium server is not reachable at http://${appiumServer.host}:${appiumServer.port}/.`,
+            error: '',
+          });
         }
+      }
+      if (gateResult.commands.every((entry) => entry.ok)) {
+        gateResult.commands.push(
+          runCommand('Appium sanity', 'npm', ['run', 'appium:smoke'], {
+            cwd: mobileRoot,
+            env: releaseLikeAndroidEnv,
+            timeoutMs: 20 * 60 * 1000,
+          }),
+        );
       }
     }
 

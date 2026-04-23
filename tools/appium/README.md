@@ -1,6 +1,6 @@
 # EatFitAI Appium Lane
 
-This folder contains the secondary Appium lane used for edge-case validation and device diagnostics.
+This folder contains the primary Android automation lane used for release-like smoke checks, device validation, and diagnostics.
 
 ## Prerequisites
 
@@ -62,8 +62,6 @@ Current Appium responsibilities:
 5. keep a very short sanity path alive for device debugging
 6. capture cloud-proof evidence bundles with screenshots, page source, and logcat
 
-Appium is no longer the primary smoke gate. Maestro owns the default happy-path smoke suite under `eatfitai-mobile/.maestro`.
-
 For Android release-gate work, install the non-debuggable preview/release-like APK first. Debug builds with Metro are for dev smoke only.
 
 Selector contract:
@@ -74,11 +72,13 @@ Selector contract:
 Recommended order:
 
 1. `npm --prefix eatfitai-mobile run automation:doctor`
-2. `npm --prefix eatfitai-mobile run maestro:smoke:android`
-3. `npm --prefix eatfitai-mobile run maestro:hero:android`
-4. start `appium` only when the secondary diagnostics lane is needed
-5. `npm run edge:android` only for device/system cases Maestro does not cover well
-6. `npm --prefix eatfitai-mobile run release:gate -- android` or full release gate when canh release
+2. install the preview/release-like APK
+3. `npm --prefix eatfitai-mobile run appium:smoke`
+4. `npm run edge:android` only for deeper device/system checks
+5. `npm run cloud-proof:android -- --output .\_logs\production-smoke\<timestamp>` when collecting evidence
+6. `npm --prefix eatfitai-mobile run release:gate -- android` or full release gate when cận release
+
+On Xiaomi/MIUI devices, fail-fast handling is intentional: if `UiAutomator2` dies or the device rejects the instrumentation process, the lane should abort quickly so we can inspect the real blocker instead of burning time in selector retries.
 
 If the installed Android app is a debug build, Metro must already be reachable on `127.0.0.1:8081` before Maestro/Appium lanes can validate startup reliably.
 
