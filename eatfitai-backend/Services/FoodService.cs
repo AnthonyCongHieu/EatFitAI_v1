@@ -216,6 +216,76 @@ namespace EatFitAI.API.Services
             return combined;
         }
 
+        public async Task<IEnumerable<FoodSearchResultDto>> GetRecentFoodsAsync(Guid userId, int limit = 20)
+        {
+            var normalizedLimit = Math.Clamp(limit, 1, 50);
+
+            var recentCatalogFoods = await _context.UserRecentFoods
+                .AsNoTracking()
+                .Where(item =>
+                    item.UserId == userId &&
+                    !item.FoodItem.IsDeleted &&
+                    item.FoodItem.IsActive)
+                .Select(item => new RecentFoodProjection
+                {
+                    Source = "catalog",
+                    Id = item.FoodItemId,
+                    FoodName = item.FoodItem.FoodName,
+                    ThumbnailUrl = item.FoodItem.ThumbNail,
+                    UnitType = "g",
+                    CaloriesPer100 = item.FoodItem.CaloriesPer100g,
+                    ProteinPer100 = item.FoodItem.ProteinPer100g,
+                    CarbPer100 = item.FoodItem.CarbPer100g,
+                    FatPer100 = item.FoodItem.FatPer100g,
+                    LastUsedAt = item.LastUsedAt,
+                    UsedCount = item.UsedCount
+                })
+                .ToListAsync();
+
+            var recentUserFoods = await _context.MealDiaries
+                .AsNoTracking()
+                .Where(mealDiary =>
+                    mealDiary.UserId == userId &&
+                    !mealDiary.IsDeleted &&
+                    mealDiary.UserFoodItemId.HasValue)
+                .GroupBy(mealDiary => mealDiary.UserFoodItemId!.Value)
+                .Select(group => new
+                {
+                    UserFoodItemId = group.Key,
+                    LastUsedAt = group.Max(mealDiary => mealDiary.UpdatedAt),
+                    UsedCount = group.Count()
+                })
+                .Join(
+                    _context.UserFoodItems
+                        .AsNoTracking()
+                        .Where(item => item.UserId == userId && !item.IsDeleted),
+                    recent => recent.UserFoodItemId,
+                    userFood => userFood.UserFoodItemId,
+                    (recent, userFood) => new RecentFoodProjection
+                    {
+                        Source = "user",
+                        Id = userFood.UserFoodItemId,
+                        FoodName = userFood.FoodName,
+                        ThumbnailUrl = userFood.ThumbnailUrl,
+                        UnitType = string.IsNullOrWhiteSpace(userFood.UnitType) ? "g" : userFood.UnitType,
+                        CaloriesPer100 = userFood.CaloriesPer100,
+                        ProteinPer100 = userFood.ProteinPer100,
+                        CarbPer100 = userFood.CarbPer100,
+                        FatPer100 = userFood.FatPer100,
+                        LastUsedAt = recent.LastUsedAt,
+                        UsedCount = recent.UsedCount
+                    })
+                .ToListAsync();
+
+            return recentCatalogFoods
+                .Concat(recentUserFoods)
+                .OrderByDescending(item => item.LastUsedAt)
+                .ThenByDescending(item => item.UsedCount)
+                .Take(normalizedLimit)
+                .Select(item => item.ToDto())
+                .ToList();
+        }
+
         private async Task<BarcodeLookupResultDto?> LookupBarcodeFromProviderAsync(
             string barcode,
             CancellationToken cancellationToken)
@@ -372,6 +442,37 @@ namespace EatFitAI.API.Services
                     .Trim()
                     .Where(char.IsLetterOrDigit)
                     .ToArray());
+        }
+
+        private sealed class RecentFoodProjection
+        {
+            public string Source { get; init; } = string.Empty;
+            public int Id { get; init; }
+            public string FoodName { get; init; } = string.Empty;
+            public string? ThumbnailUrl { get; init; }
+            public string UnitType { get; init; } = "g";
+            public decimal CaloriesPer100 { get; init; }
+            public decimal ProteinPer100 { get; init; }
+            public decimal CarbPer100 { get; init; }
+            public decimal FatPer100 { get; init; }
+            public DateTime LastUsedAt { get; init; }
+            public int UsedCount { get; init; }
+
+            public FoodSearchResultDto ToDto()
+            {
+                return new FoodSearchResultDto
+                {
+                    Source = Source,
+                    Id = Id,
+                    FoodName = FoodName,
+                    ThumbnailUrl = ThumbnailUrl,
+                    UnitType = UnitType,
+                    CaloriesPer100 = CaloriesPer100,
+                    ProteinPer100 = ProteinPer100,
+                    CarbPer100 = CarbPer100,
+                    FatPer100 = FatPer100
+                };
+            }
         }
     }
 }

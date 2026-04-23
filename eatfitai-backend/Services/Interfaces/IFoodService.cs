@@ -9,5 +9,6 @@ namespace EatFitAI.API.Services.Interfaces
         Task<BarcodeLookupResultDto?> LookupByBarcodeAsync(string barcode, CancellationToken cancellationToken = default);
         Task<CustomDishResponseDto> CreateCustomDishAsync(Guid userId, CustomDishDto customDishDto);
         Task<IEnumerable<FoodSearchResultDto>> SearchAllAsync(string searchTerm, Guid? userId, int limit = 50);
+        Task<IEnumerable<FoodSearchResultDto>> GetRecentFoodsAsync(Guid userId, int limit = 20);
     }
 }

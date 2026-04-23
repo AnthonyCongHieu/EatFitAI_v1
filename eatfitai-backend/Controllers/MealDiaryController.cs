@@ -80,6 +80,42 @@ namespace EatFitAI.API.Controllers
             }
         }
 
+        [HttpPost("copy-previous-day")]
+        public async Task<ActionResult<IEnumerable<MealDiaryDto>>> CopyPreviousDay([FromBody] CopyPreviousDayRequest? request)
+        {
+            try
+            {
+                if (request == null)
+                {
+                    return BadRequest(new { message = "Request body is required" });
+                }
+
+                var userId = GetUserIdFromToken();
+                var copiedEntries = await _mealDiaryService.CopyPreviousDayAsync(userId, request);
+                return Ok(copiedEntries);
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(new { message = ex.Message });
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return Conflict(new { message = ex.Message });
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Unauthorized(new { message = ex.Message });
+            }
+            catch (Exception)
+            {
+                return StatusCode(500, ErrorResponseHelper.SafeError("Đã xảy ra lỗi khi sao chép nhật ký bữa ăn", HttpContext));
+            }
+        }
+
         [HttpPut("{id}")]
         public async Task<ActionResult<MealDiaryDto>> UpdateMealDiary(int id, [FromBody] UpdateMealDiaryRequest request)
         {

@@ -5,6 +5,7 @@
 
 import { diaryService } from '../src/services/diaryService';
 import apiClient from '../src/services/apiClient';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Mock apiClient
 jest.mock('../src/services/apiClient', () => ({
@@ -15,8 +16,9 @@ jest.mock('../src/services/apiClient', () => ({
 }));
 
 describe('diaryService', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     jest.clearAllMocks();
+    await AsyncStorage.clear();
   });
 
   describe('getTodaySummary', () => {
@@ -69,6 +71,16 @@ describe('diaryService', () => {
       (apiClient.get as jest.Mock).mockRejectedValue(new Error('Network error'));
 
       await expect(diaryService.getTodaySummary()).rejects.toThrow('Network error');
+    });
+
+    it('should preserve accented fallback food names when entry names are missing', async () => {
+      (apiClient.get as jest.Mock).mockResolvedValue({
+        data: [{ mealDiaryId: 99, mealTypeId: 2, grams: 120, calories: 150 }],
+      });
+
+      const result = await diaryService.getEntriesByDate('2024-01-15');
+
+      expect(result[0]!.foodName).toBe('Món ăn');
     });
   });
 
@@ -213,6 +225,21 @@ describe('diaryService', () => {
         params: { date: '2024-01-15' },
       });
       expect(result.totalCalories).toBe(12500);
+    });
+  });
+
+  describe('fallback copy', () => {
+    it('should preserve accented fallback meal titles', async () => {
+      (apiClient.get as jest.Mock).mockResolvedValue({
+        data: {
+          totalCalories: 900,
+          meals: [{}],
+        },
+      });
+
+      const result = await diaryService.getTodaySummary();
+
+      expect(result.meals[0]?.title).toBe('Bữa ăn');
     });
   });
 });

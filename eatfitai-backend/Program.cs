@@ -639,6 +639,7 @@ builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IMealDiaryService, MealDiaryService>();
 builder.Services.AddScoped<IFoodService, FoodService>();
+builder.Services.AddScoped<ICustomDishService, CustomDishService>();
 builder.Services.AddScoped<IAnalyticsService, AnalyticsService>();
 builder.Services.AddScoped<IUserFoodItemService, UserFoodItemService>();
 builder.Services.AddScoped<IAiFoodMapService, AiFoodMapService>();

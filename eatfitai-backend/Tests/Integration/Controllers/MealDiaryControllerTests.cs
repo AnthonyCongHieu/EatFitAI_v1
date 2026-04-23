@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
+using System.Text;
 using EatFitAI.API.DbScaffold.Data;
 using EatFitAI.API.DbScaffold.Models;
 using EatFitAI.API.DTOs.MealDiary;
@@ -172,6 +173,75 @@ namespace EatFitAI.API.Tests.Integration.Controllers
             Assert.DoesNotContain(readback, item => item.MealDiaryId == created.MealDiaryId);
         }
 
+        [Fact]
+        public async Task CopyPreviousDay_WithoutMealTypeId_CopiesAllEntriesFromPreviousDay()
+        {
+            var userId = Guid.NewGuid();
+            var client = await CreateAuthenticatedClientAsync(userId);
+            var targetDate = new DateTime(2026, 3, 21);
+            var previousDate = targetDate.AddDays(-1);
+            var mealTypeIds = await GetMealTypeIdsAsync(2);
+
+            await SeedMealDiaryAsync(userId, previousDate, mealTypeIds[0]);
+            await SeedMealDiaryAsync(userId, previousDate, mealTypeIds[1]);
+
+            var response = await client.PostAsJsonAsync("/api/meal-diary/copy-previous-day", new
+            {
+                targetDate,
+            });
+
+            response.EnsureSuccessStatusCode();
+            var copied = await response.Content.ReadFromJsonAsync<List<MealDiaryDto>>();
+            Assert.NotNull(copied);
+            Assert.Equal(2, copied.Count);
+            Assert.All(copied, item => Assert.Equal(targetDate.Date, item.EatenDate.Date));
+            Assert.Equal(mealTypeIds.OrderBy(x => x), copied.Select(x => x.MealTypeId).OrderBy(x => x));
+        }
+
+        [Fact]
+        public async Task CopyPreviousDay_WithMealTypeId_CopiesOnlyRequestedMealGroup()
+        {
+            var userId = Guid.NewGuid();
+            var client = await CreateAuthenticatedClientAsync(userId);
+            var targetDate = new DateTime(2026, 3, 23);
+            var previousDate = targetDate.AddDays(-1);
+            var mealTypeIds = await GetMealTypeIdsAsync(2);
+
+            await SeedMealDiaryAsync(userId, previousDate, mealTypeIds[0]);
+            await SeedMealDiaryAsync(userId, previousDate, mealTypeIds[1]);
+
+            var response = await client.PostAsJsonAsync("/api/meal-diary/copy-previous-day", new
+            {
+                targetDate,
+                mealTypeId = mealTypeIds[0],
+            });
+
+            response.EnsureSuccessStatusCode();
+            var copied = await response.Content.ReadFromJsonAsync<List<MealDiaryDto>>();
+            Assert.NotNull(copied);
+            Assert.Single(copied);
+            Assert.Equal(mealTypeIds[0], copied[0].MealTypeId);
+
+            var readbackResponse = await client.GetAsync($"/api/meal-diary?date={targetDate:yyyy-MM-dd}");
+
+            readbackResponse.EnsureSuccessStatusCode();
+            var readback = await readbackResponse.Content.ReadFromJsonAsync<List<MealDiaryDto>>();
+            Assert.NotNull(readback);
+            Assert.Single(readback);
+            Assert.Equal(mealTypeIds[0], readback[0].MealTypeId);
+        }
+
+        [Fact]
+        public async Task CopyPreviousDay_WithNullBody_ReturnsBadRequest()
+        {
+            var client = await CreateAuthenticatedClientAsync();
+            using var content = new StringContent("null", Encoding.UTF8, "application/json");
+
+            var response = await client.PostAsync("/api/meal-diary/copy-previous-day", content);
+
+            Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        }
+
         private async Task<HttpClient> CreateAuthenticatedClientAsync(Guid? userId = null)
         {
             var effectiveUserId = userId ?? Guid.NewGuid();
@@ -228,6 +298,17 @@ namespace EatFitAI.API.Tests.Integration.Controllers
             return await context.MealTypes
                 .Select(x => x.MealTypeId)
                 .FirstAsync();
+        }
+
+        private async Task<List<int>> GetMealTypeIdsAsync(int count)
+        {
+            using var scope = _factory.Services.CreateScope();
+            var context = scope.ServiceProvider.GetRequiredService<EatFitAIDbContext>();
+            return await context.MealTypes
+                .OrderBy(x => x.MealTypeId)
+                .Select(x => x.MealTypeId)
+                .Take(count)
+                .ToListAsync();
         }
 
         private async Task SeedMealDiaryAsync(Guid userId, DateTime eatenDate, int mealTypeId)

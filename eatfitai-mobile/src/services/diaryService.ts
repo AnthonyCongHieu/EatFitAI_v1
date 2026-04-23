@@ -1,6 +1,3 @@
-// Service làm việc với API nhật ký ăn uống trong ngày
-// Chú thích bằng tiếng Việt
-
 import apiClient from './apiClient';
 import { loadWithOfflineFallback, offlineCache } from './offlineCache';
 import type { MealDiaryDto, MealTypeId } from '../types';
@@ -49,7 +46,6 @@ export type DaySummary = {
   protein?: number | null;
   carbs?: number | null;
   fat?: number | null;
-  // Target macros để hiển thị consumed/target (ví dụ: 166/190g Protein)
   targetProtein?: number | null;
   targetCarbs?: number | null;
   targetFat?: number | null;
@@ -61,23 +57,25 @@ export type WeekSummary = {
   totalProtein: number;
   totalCarbs: number;
   totalFat: number;
-  dailyCalories: Record<string, number>; // yyyy-MM-dd -> calories
+  dailyCalories: Record<string, number>;
 };
 
 const toNumberOrNull = (value: unknown): number | null => {
   if (typeof value === 'number' && !Number.isNaN(value)) {
     return value;
   }
+
   if (typeof value === 'string') {
     const parsed = Number.parseFloat(value);
     return Number.isNaN(parsed) ? null : parsed;
   }
+
   return null;
 };
 
 const normalizeEntry = (data: MealDiaryDto): DiaryEntry => ({
   id: String(data?.mealDiaryId ?? ''),
-  mealType: (data?.mealTypeId as MealTypeId) ?? 1, // Default to breakfast if unknown
+  mealType: (data?.mealTypeId as MealTypeId) ?? 1,
   foodName: data?.foodItemName ?? data?.userDishName ?? data?.recipeName ?? 'Món ăn',
   note: data?.note ?? null,
   quantityText: data?.portionQuantity
@@ -97,12 +95,12 @@ const normalizeEntry = (data: MealDiaryDto): DiaryEntry => ({
 
 const normalizeMeal = (data: any): DiaryMealGroup => {
   const mealTypeId = data?.mealTypeId ?? data?.mealType ?? data?.meal ?? 'unknown';
-  const mealType = typeof mealTypeId === 'number' ? (mealTypeId as MealTypeId) : 1; // Default to breakfast if unknown
+  const mealType = typeof mealTypeId === 'number' ? (mealTypeId as MealTypeId) : 1;
   const title =
     data?.title ??
     (typeof mealTypeId === 'number'
       ? MEAL_TYPE_LABELS[mealTypeId as MealTypeId]
-      : (data?.mealType ?? 'Bữa ăn'));
+      : 'Bữa ăn');
 
   return {
     mealType,
@@ -119,11 +117,9 @@ const normalizeSummary = (data: any): DaySummary => ({
   date: data?.date ?? data?.mealDate ?? new Date().toISOString(),
   totalCalories: toNumberOrNull(data?.totalCalories),
   targetCalories: toNumberOrNull(data?.targetCalories),
-  // Backend trả về TotalProtein, TotalCarbs, TotalFat
   protein: toNumberOrNull(data?.totalProtein ?? data?.protein),
   carbs: toNumberOrNull(data?.totalCarbs ?? data?.carbs),
   fat: toNumberOrNull(data?.totalFat ?? data?.fat),
-  // Target macros để hiển thị consumed/target (ví dụ: 166/190g Protein)
   targetProtein: toNumberOrNull(data?.targetProtein),
   targetCarbs: toNumberOrNull(data?.targetCarbs),
   targetFat: toNumberOrNull(data?.targetFat),
@@ -138,7 +134,6 @@ const normalizeWeekSummary = (data: any): WeekSummary => {
     totalProtein: toNumberOrNull(data?.totalProtein ?? data?.TotalProtein) ?? 0,
     totalCarbs: toNumberOrNull(data?.totalCarbs ?? data?.TotalCarbs) ?? 0,
     totalFat: toNumberOrNull(data?.totalFat ?? data?.TotalFat) ?? 0,
-    // Handle cả dailyCalories (camelCase) và DailyCalories (PascalCase)
     dailyCalories: data?.dailyCalories ?? data?.DailyCalories ?? {},
   };
 };
@@ -153,9 +148,10 @@ const todayDate = (): string => {
 
 const groupByMeal = (entries: DiaryEntry[]): DiaryMealGroup[] => {
   const map = new Map<MealTypeId, DiaryMealGroup>();
-  for (const e of entries) {
-    const key = typeof e.mealType === 'number' ? e.mealType : 1; // Default to breakfast
-    const g = map.get(key) ?? {
+
+  for (const entry of entries) {
+    const key = typeof entry.mealType === 'number' ? entry.mealType : 1;
+    const group = map.get(key) ?? {
       mealType: key,
       title: MEAL_TYPE_LABELS[key],
       totalCalories: 0,
@@ -164,18 +160,19 @@ const groupByMeal = (entries: DiaryEntry[]): DiaryMealGroup[] => {
       fat: 0,
       entries: [],
     };
-    g.entries.push(e);
-    g.totalCalories = (g.totalCalories ?? 0) + (e.calories ?? 0);
-    g.protein = (g.protein ?? 0) + (e.protein ?? 0);
-    g.carbs = (g.carbs ?? 0) + (e.carbs ?? 0);
-    g.fat = (g.fat ?? 0) + (e.fat ?? 0);
-    map.set(key, g);
+
+    group.entries.push(entry);
+    group.totalCalories = (group.totalCalories ?? 0) + (entry.calories ?? 0);
+    group.protein = (group.protein ?? 0) + (entry.protein ?? 0);
+    group.carbs = (group.carbs ?? 0) + (entry.carbs ?? 0);
+    group.fat = (group.fat ?? 0) + (entry.fat ?? 0);
+    map.set(key, group);
   }
+
   return Array.from(map.values());
 };
 
 export const diaryService = {
-  // Lấy tổng quan nhật ký ngày (mặc định hôm nay)
   async getTodaySummary(): Promise<DaySummary> {
     const date = todayDate();
     return loadWithOfflineFallback(`${DAY_SUMMARY_CACHE_PREFIX}${date}`, async () => {
@@ -187,7 +184,6 @@ export const diaryService = {
     });
   },
 
-  // Lấy tổng quan nhật ký tuần
   async getWeekSummary(date: string): Promise<WeekSummary> {
     return loadWithOfflineFallback(`${WEEK_SUMMARY_CACHE_PREFIX}${date}`, async () => {
       const response = await apiClient.get('/api/summary/week', { params: { date } });
@@ -221,12 +217,24 @@ export const diaryService = {
     });
   },
 
-  // Xóa một entry khỏi nhật ký
+  async copyPreviousDay(date: string, mealTypeId?: MealTypeId): Promise<DiaryEntry[]> {
+    const payload: { targetDate: string; mealTypeId?: MealTypeId } = {
+      targetDate: date,
+    };
+
+    if (mealTypeId != null) {
+      payload.mealTypeId = mealTypeId;
+    }
+
+    const response = await apiClient.post('/api/meal-diary/copy-previous-day', payload);
+    const rows = Array.isArray(response.data) ? response.data : [];
+    return rows.map(normalizeEntry);
+  },
+
   async deleteEntry(entryId: string): Promise<void> {
     await apiClient.delete(`/api/meal-diary/${entryId}`);
   },
 
-  // Cập nhật một entry trong nhật ký
   async updateEntry(
     entryId: string,
     updates: { grams?: number; note?: string },

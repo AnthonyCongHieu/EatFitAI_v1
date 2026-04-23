@@ -56,6 +56,12 @@ const getFoodDetailScreen = lazyScreen(() =>
 const getCustomDishScreen = lazyScreen(() =>
   require('../screens/diary/CustomDishScreen'),
 );
+const getCommonMealsScreen = lazyScreen(() =>
+  require('../screens/diary/CommonMealsScreen'),
+);
+const getCommonMealTemplateScreen = lazyScreen(() =>
+  require('../screens/diary/CommonMealTemplateScreen'),
+);
 const getMealDiaryScreen = lazyScreen(() => require('../screens/diary/MealDiaryScreen'));
 const getAIScanScreen = lazyScreen(() => require('../screens/ai/AIScanScreen'));
 const getAddMealFromVisionScreen = lazyScreen(() =>
@@ -221,6 +227,16 @@ const AppNavigator = (): React.ReactElement => {
               <Stack.Screen
                 name="CustomDish"
                 getComponent={getCustomDishScreen}
+                options={{ headerShown: false }}
+              />
+              <Stack.Screen
+                name="CommonMeals"
+                getComponent={getCommonMealsScreen}
+                options={{ headerShown: false }}
+              />
+              <Stack.Screen
+                name="CommonMealTemplate"
+                getComponent={getCommonMealTemplateScreen}
                 options={{ headerShown: false }}
               />
               <Stack.Screen

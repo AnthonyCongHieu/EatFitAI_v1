@@ -70,4 +70,10 @@ namespace EatFitAI.API.DTOs.MealDiary
         public string? PhotoUrl { get; set; }
         public string? SourceMethod { get; set; }
     }
+
+    public class CopyPreviousDayRequest
+    {
+        public DateTime TargetDate { get; set; }
+        public int? MealTypeId { get; set; }
+    }
 }

@@ -4,6 +4,7 @@ using System.Net.Http.Json;
 using EatFitAI.API.DbScaffold.Data;
 using EatFitAI.API.DbScaffold.Models;
 using EatFitAI.API.DTOs.Food;
+using EatFitAI.API.DTOs.MealDiary;
 using EatFitAI.API.Tests.Integration;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
@@ -170,17 +171,8 @@ namespace EatFitAI.API.Tests.Integration.Controllers
         public async Task SearchAll_CombinesCatalogAndUserFoods()
         {
             var userId = Guid.NewGuid();
-            await EnsureUserExistsAsync(userId);
+            var client = await CreateAuthenticatedClientAsync(userId);
             await SeedUserFoodItemAsync(userId, "Banana Shake");
-
-            var client = _factory.CreateClient();
-            var token = IntegrationTestHost.CreateJwtToken(
-                _factory.Services,
-                userId,
-                $"foodtest_{userId:N}@example.com",
-                "Food Test User");
-            client.DefaultRequestHeaders.Authorization =
-                new AuthenticationHeaderValue("Bearer", token);
 
             var response = await client.GetAsync("/api/food/search-all?q=Banana");
 
@@ -191,6 +183,109 @@ namespace EatFitAI.API.Tests.Integration.Controllers
             Assert.Contains(result, item => item.Source == "user");
         }
 
+        [Fact]
+        public async Task GetRecentFoods_AfterDiaryWrites_ReturnsMostRecentUniqueFoods()
+        {
+            var userId = Guid.NewGuid();
+            var client = await CreateAuthenticatedClientAsync(userId);
+            var mealTypeId = await GetAnyMealTypeIdAsync();
+            var firstFoodItemId = await SeedCatalogFoodAsync("Recent Food Alpha");
+            var secondFoodItemId = await SeedCatalogFoodAsync("Recent Food Beta");
+
+            await client.PostAsJsonAsync("/api/meal-diary", new CreateMealDiaryRequest
+            {
+                EatenDate = DateTime.Today,
+                MealTypeId = mealTypeId,
+                FoodItemId = firstFoodItemId,
+                Grams = 120
+            });
+
+            await client.PostAsJsonAsync("/api/meal-diary", new CreateMealDiaryRequest
+            {
+                EatenDate = DateTime.Today,
+                MealTypeId = mealTypeId,
+                FoodItemId = secondFoodItemId,
+                Grams = 150
+            });
+
+            await client.PostAsJsonAsync("/api/meal-diary", new CreateMealDiaryRequest
+            {
+                EatenDate = DateTime.Today,
+                MealTypeId = mealTypeId,
+                FoodItemId = firstFoodItemId,
+                Grams = 180
+            });
+
+            var response = await client.GetAsync("/api/food/recent?limit=5");
+
+            response.EnsureSuccessStatusCode();
+            var result = await response.Content.ReadFromJsonAsync<List<FoodSearchResultDto>>();
+            Assert.NotNull(result);
+            Assert.Equal(2, result.Count);
+            Assert.Equal(firstFoodItemId, result[0].Id);
+            Assert.Equal(secondFoodItemId, result[1].Id);
+
+            using var scope = _factory.Services.CreateScope();
+            var context = scope.ServiceProvider.GetRequiredService<EatFitAIDbContext>();
+            var trackedFood = await context.UserRecentFoods
+                .SingleAsync(item => item.UserId == userId && item.FoodItemId == firstFoodItemId);
+            Assert.Equal(2, trackedFood.UsedCount);
+        }
+
+        [Fact]
+        public async Task GetRecentFoods_AfterUserFoodDiaryWrites_ReturnsRecentUserFoods()
+        {
+            var userId = Guid.NewGuid();
+            var client = await CreateAuthenticatedClientAsync(userId);
+            var mealTypeId = await GetAnyMealTypeIdAsync();
+            var userFoodItemId = await SeedUserFoodItemAsync(userId, "Recent User Food");
+
+            await client.PostAsJsonAsync("/api/meal-diary", new CreateMealDiaryRequest
+            {
+                EatenDate = DateTime.Today,
+                MealTypeId = mealTypeId,
+                UserFoodItemId = userFoodItemId,
+                Grams = 95
+            });
+
+            var response = await client.GetAsync("/api/food/recent?limit=5");
+
+            response.EnsureSuccessStatusCode();
+            var result = await response.Content.ReadFromJsonAsync<List<FoodSearchResultDto>>();
+            Assert.NotNull(result);
+            Assert.Contains(result, item =>
+                item.Source == "user" &&
+                item.Id == userFoodItemId &&
+                item.FoodName == "Recent User Food");
+        }
+
+        [Fact]
+        public async Task GetRecentFoods_WithoutAuth_ReturnsUnauthorized()
+        {
+            var client = _factory.CreateClient();
+
+            var response = await client.GetAsync("/api/food/recent");
+
+            Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+        }
+
+        private async Task<HttpClient> CreateAuthenticatedClientAsync(Guid? userId = null)
+        {
+            var effectiveUserId = userId ?? Guid.NewGuid();
+            await EnsureUserExistsAsync(effectiveUserId);
+
+            var client = _factory.CreateClient();
+            var token = IntegrationTestHost.CreateJwtToken(
+                _factory.Services,
+                effectiveUserId,
+                $"foodtest_{effectiveUserId:N}@example.com",
+                "Food Test User");
+            client.DefaultRequestHeaders.Authorization =
+                new AuthenticationHeaderValue("Bearer", token);
+
+            return client;
+        }
+
         private async Task<int> GetAnyFoodItemIdAsync()
         {
             using var scope = _factory.Services.CreateScope();
@@ -198,6 +293,15 @@ namespace EatFitAI.API.Tests.Integration.Controllers
             return await context.FoodItems
                 .Where(x => x.IsActive && !x.IsDeleted)
                 .Select(x => x.FoodItemId)
+                .FirstAsync();
+        }
+
+        private async Task<int> GetAnyMealTypeIdAsync()
+        {
+            using var scope = _factory.Services.CreateScope();
+            var context = scope.ServiceProvider.GetRequiredService<EatFitAIDbContext>();
+            return await context.MealTypes
+                .Select(x => x.MealTypeId)
                 .FirstAsync();
         }
 
@@ -223,12 +327,12 @@ namespace EatFitAI.API.Tests.Integration.Controllers
             await context.SaveChangesAsync();
         }
 
-        private async Task SeedUserFoodItemAsync(Guid userId, string foodName)
+        private async Task<int> SeedUserFoodItemAsync(Guid userId, string foodName)
         {
             using var scope = _factory.Services.CreateScope();
             var context = scope.ServiceProvider.GetRequiredService<EatFitAIDbContext>();
 
-            await context.UserFoodItems.AddAsync(new UserFoodItem
+            var userFoodItem = new UserFoodItem
             {
                 UserId = userId,
                 FoodName = foodName,
@@ -240,21 +344,28 @@ namespace EatFitAI.API.Tests.Integration.Controllers
                 IsDeleted = false,
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow
-            });
+            };
+
+            await context.UserFoodItems.AddAsync(userFoodItem);
             await context.SaveChangesAsync();
+            return userFoodItem.UserFoodItemId;
         }
 
-        private async Task SeedCatalogFoodAsync(string foodName, string? foodNameEn = null, string? barcode = null)
+        private async Task<int> SeedCatalogFoodAsync(string foodName, string? foodNameEn = null, string? barcode = null)
         {
             using var scope = _factory.Services.CreateScope();
             var context = scope.ServiceProvider.GetRequiredService<EatFitAIDbContext>();
 
-            if (await context.FoodItems.AnyAsync(x => x.FoodName == foodName))
+            var existingId = await context.FoodItems
+                .Where(x => x.FoodName == foodName)
+                .Select(x => (int?)x.FoodItemId)
+                .FirstOrDefaultAsync();
+            if (existingId.HasValue)
             {
-                return;
+                return existingId.Value;
             }
 
-            await context.FoodItems.AddAsync(new FoodItem
+            var foodItem = new FoodItem
             {
                 FoodName = foodName,
                 FoodNameEn = foodNameEn,
@@ -267,8 +378,11 @@ namespace EatFitAI.API.Tests.Integration.Controllers
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow,
                 Barcode = barcode,
-            });
+            };
+
+            await context.FoodItems.AddAsync(foodItem);
             await context.SaveChangesAsync();
+            return foodItem.FoodItemId;
         }
 
         private sealed class StubHttpClientFactory : IHttpClientFactory

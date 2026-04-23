@@ -26,6 +26,8 @@ export type RootStackParamList = {
     returnToDiaryOnSave?: boolean;
   };
   CustomDish: undefined;
+  CommonMeals: undefined;
+  CommonMealTemplate: { templateId?: string } | undefined;
   AiCamera: undefined;
   AddMealFromVision: import('../../types/navigation').AddMealFromVisionParams;
   MealDiary: { selectedDate?: string } | undefined;

@@ -10,6 +10,8 @@ import apiClient from '../src/services/apiClient';
 jest.mock('../src/services/apiClient', () => ({
   get: jest.fn(),
   post: jest.fn(),
+  put: jest.fn(),
+  delete: jest.fn(),
 }));
 
 describe('foodService', () => {
@@ -150,6 +152,141 @@ describe('foodService', () => {
         params: expect.objectContaining({ q: 'thịt' }),
       });
       expect(result.items).toHaveLength(2);
+    });
+  });
+
+  describe('getRecentFoods', () => {
+    it('should normalize recent foods and preserve accented fallback copy', async () => {
+      (apiClient.get as jest.Mock).mockResolvedValue({
+        data: [
+          { source: 'catalog', id: 1, foodName: null },
+          { source: 'user', id: 7, foodName: 'Phở bò nhà làm' },
+        ],
+      });
+
+      const result = await foodService.getRecentFoods(5);
+
+      expect(apiClient.get).toHaveBeenCalledWith('/api/food/recent', {
+        params: { limit: 5 },
+      });
+      expect(result[0]?.name).toBe('Món ăn');
+      expect(result[1]).toMatchObject({
+        id: '7',
+        name: 'Phở bò nhà làm',
+        source: 'user',
+      });
+    });
+  });
+
+  describe('common meals', () => {
+    it('should fetch common meal templates', async () => {
+      (apiClient.get as jest.Mock).mockResolvedValue({
+        data: [
+          {
+            userDishId: 12,
+            dishName: 'Cơm gà meal prep',
+            ingredientCount: 3,
+            defaultGrams: 320,
+            calories: 540,
+            protein: 38,
+            carb: 44,
+            fat: 18,
+          },
+        ],
+      });
+
+      const result = await foodService.getCommonMeals();
+
+      expect(apiClient.get).toHaveBeenCalledWith('/api/custom-dishes');
+      expect(result[0]).toMatchObject({
+        id: '12',
+        name: 'Cơm gà meal prep',
+        ingredientCount: 3,
+        defaultGrams: 320,
+        calories: 540,
+      });
+    });
+
+    it('should apply a common meal template to diary', async () => {
+      (apiClient.post as jest.Mock).mockResolvedValue({ data: {} });
+
+      await foodService.applyCommonMeal({
+        customDishId: '12',
+        targetDate: '2026-04-24',
+        mealTypeId: 2,
+        grams: 320,
+      });
+
+      expect(apiClient.post).toHaveBeenCalledWith('/api/custom-dishes/12/apply', {
+        targetDate: '2026-04-24',
+        mealTypeId: 2,
+        grams: 320,
+        note: null,
+      });
+    });
+
+    it('should fetch common meal template detail for editing', async () => {
+      (apiClient.get as jest.Mock).mockResolvedValue({
+        data: {
+          userDishId: 12,
+          dishName: 'Cơm gà meal prep',
+          description: 'Lunch template',
+          ingredients: [
+            {
+              foodItemId: 5,
+              foodName: 'Ức gà',
+              grams: 180,
+              caloriesPer100g: 165,
+            },
+          ],
+        },
+      });
+
+      const result = await (foodService as any).getCommonMealDetail('12');
+
+      expect(apiClient.get).toHaveBeenCalledWith('/api/custom-dishes/12');
+      expect(result).toMatchObject({
+        id: '12',
+        name: 'Cơm gà meal prep',
+        ingredients: [
+          {
+            foodItemId: 5,
+            foodName: 'Ức gà',
+            grams: 180,
+            caloriesPer100g: 165,
+          },
+        ],
+      });
+    });
+
+    it('should update a common meal template', async () => {
+      (apiClient.put as jest.Mock).mockResolvedValue({ data: {} });
+
+      await (foodService as any).updateCommonMeal('12', {
+        dishName: 'Cơm gà tối ưu',
+        description: 'Updated template',
+        ingredients: [
+          { foodItemId: 5, grams: 200 },
+          { foodItemId: 9, grams: 120 },
+        ],
+      });
+
+      expect(apiClient.put).toHaveBeenCalledWith('/api/custom-dishes/12', {
+        dishName: 'Cơm gà tối ưu',
+        description: 'Updated template',
+        ingredients: [
+          { foodItemId: 5, grams: 200 },
+          { foodItemId: 9, grams: 120 },
+        ],
+      });
+    });
+
+    it('should delete a common meal template', async () => {
+      (apiClient.delete as jest.Mock).mockResolvedValue({ data: {} });
+
+      await (foodService as any).deleteCommonMeal('12');
+
+      expect(apiClient.delete).toHaveBeenCalledWith('/api/custom-dishes/12');
     });
   });
 
