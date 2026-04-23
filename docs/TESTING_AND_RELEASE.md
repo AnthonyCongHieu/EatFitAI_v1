@@ -1,21 +1,22 @@
-# Kiểm thử và phát hành
+# Testing and Release
 
-Cập nhật: `2026-04-18`
+Updated: `2026-04-23`
 
-## Tổng quan
+## Overview
 
-Tài liệu này gộp các quy trình kiểm thử và phát hành cho EatFitAI:
+This document consolidates the testing and release processes for EatFitAI:
 
-- Gate kiểm thử product-grade
-- Runbook vận hành thiết bị thật
-- Smoke production qua cloud
-- Maestro automation suites
+- Product-grade testing gate
+- Real device operation runbook
+- Production smoke via cloud
+- Automation framework (Appium primary, Maestro legacy)
+- Keep-alive strategy for Render Free Tier
 
 ---
 
-## Gate kiểm thử
+## Testing Gate
 
-### Gate 0 — Môi trường
+### Gate 0 — Environment
 
 ```powershell
 npm --prefix .\eatfitai-mobile install
@@ -23,9 +24,9 @@ npm --prefix .\tools\appium install
 npm --prefix .\eatfitai-mobile run automation:doctor
 ```
 
-Lưu ý:
-- Nếu app trên máy Android là build `DEBUGGABLE`, `automation:doctor` phải thấy Metro đang listen ở `http://127.0.0.1:8081`
-- Cho release gate Android, build phải là `release-like` không `DEBUGGABLE`
+Notes:
+- If the app on an Android device is built as `DEBUGGABLE`, `automation:doctor` must see Metro listening on `http://127.0.0.1:8081`
+- For Android release gate, the build must be `release-like` and not `DEBUGGABLE`
 
 ### Gate 1 — Code
 
@@ -45,22 +46,27 @@ npm --prefix .\eatfitai-mobile run automation:doctor
 npm --prefix .\eatfitai-mobile run appium:smoke
 ```
 
-Lane Android mặc định cho release gate hiện là Appium-only. Các flow `appium:edge:android` và
-`cloud-proof:android` vẫn hữu ích cho debug/evidence sâu hơn, nhưng không còn nằm trên critical
-path của Gate 2.
+The default Android lane for the release gate is currently **Appium-only** (WebDriverIO + UiAutomator2).
 
-### Gate 3 — Chứng nhận thiết bị thật
+Main framework: `tools/appium/`
+- `sanity.android.js` — Basic smoke/sanity test
+- `cloud-proof.android.js` — Evidence capture for cloud verification
+- `lib/common.js` (755 lines) — Helpers: element fallbacks, ADB fallback, gesture, screenshot, logcat
 
-Evidence bundle trong `_logs/production-smoke/<timestamp>` phải có:
+The `appium:edge:android` and `cloud-proof:android` flows are still useful for deep debug/evidence, but are no longer on the critical path of Gate 2.
+
+### Gate 3 — Real device certification
+
+The evidence bundle in `_logs/production-smoke/<timestamp>` must contain:
 
 - `preflight-results.json`
 - `request-budget.json`
 - `session-observations.json`
 - `regression-run.json`
 - `metrics-baseline.json`
-- Screenshot và logcat theo checklist
+- Screenshots and logcat according to the checklist
 
-Điều kiện pass tối thiểu trong `session-observations.json`:
+Minimum passing conditions in `session-observations.json`:
 
 - `reopenHome.passed = true`
 - `scanToSave.passed = true`
@@ -79,13 +85,13 @@ npm --prefix .\eatfitai-mobile run smoke:metrics
 npm --prefix .\eatfitai-mobile run smoke:rehearsal
 ```
 
-Một lệnh gộp gate:
+A combined gate command:
 
 ```powershell
 npm --prefix .\eatfitai-mobile run release:gate
 ```
 
-Hoặc chạy từng gate:
+Or run each gate individually:
 
 ```powershell
 node .\eatfitai-mobile\scripts\product-release-gate.js environment
@@ -99,106 +105,108 @@ node .\eatfitai-mobile\scripts\product-release-gate.js cloud
 
 ## Legacy Maestro Suites
 
-| Suite | Lệnh | Ghi chú |
+| Suite | Command | Notes |
 |---|---|---|
-| Tổng hợp | `maestro:hero:android` | Chạy tất cả |
-| Auth đầy đủ | `maestro:auth-full:android` | Clear app data trước |
-| Onboarding | `maestro:onboarding:android` | Clear app data trước |
-| Nhật ký thủ công | `maestro:manual-diary:android` | Dùng lane authenticated |
-| AI scan lưu | `maestro:ai-scan-save:android` | Contract lane cho màn scan entry |
-| Dinh dưỡng | `maestro:nutrition:android` | Dùng lane authenticated |
-| Voice text | `maestro:voice-text:android` | Dùng lane authenticated |
-| Profile & Stats | `maestro:profile-stats:android` | Dùng lane authenticated |
+| Comprehensive | `maestro:hero:android` | Run all |
+| Full Auth | `maestro:auth-full:android` | Clear app data first |
+| Onboarding | `maestro:onboarding:android` | Clear app data first |
+| Manual Diary | `maestro:manual-diary:android` | Uses authenticated lane |
+| AI scan save | `maestro:ai-scan-save:android` | Contract lane for scan entry screen |
+| Nutrition | `maestro:nutrition:android` | Uses authenticated lane |
+| Voice text | `maestro:voice-text:android` | Uses authenticated lane |
+| Profile & Stats | `maestro:profile-stats:android` | Uses authenticated lane |
 
-Lưu ý:
-- Đây là lane legacy/manual, không còn là release gate Android chính thức
-- Với máy Android thật, phải mở khóa máy và bật tùy chọn developer cho phép cài helper APK qua USB/ADB
-- Build debug + Metro chỉ để debug, không đủ điều kiện pass release gate Android
+Notes:
+- **This is a legacy/manual lane**, no longer an official Android release gate (since 2026-04-23)
+- Replacement framework: Appium (WebDriverIO + UiAutomator2) — see Gate 2
+- Reason for migration: Appium is stronger than Maestro in fallback cascades (element click → mobile gesture → pointer actions → adb tap), integrated artifacts (screenshot + page source + logcat), and handling stale elements
+- For real Android devices, the device must be unlocked and developer options must allow installing helper APKs via USB/ADB
+- Debug build + Metro is only for debugging, not eligible to pass Android release gate
 
 ---
 
-## Runbook thiết bị thật
+## Real Device Runbook
 
-### Chuẩn bị
+### Preparation
 
-1. Cắm thiết bị Android thật qua USB
-2. Bật `USB debugging`
-3. Đảm bảo máy tính và điện thoại cùng LAN nếu dùng Metro qua `--host lan`
-4. Dùng Node `20.x`
+1. Plug in real Android device via USB
+2. Enable `USB debugging`
+3. Ensure computer and phone are on the same LAN if using Metro via `--host lan`
+4. Use Node `20.x`
 
-Kiểm tra:
+Check:
 
 ```powershell
 adb devices -l
 ```
 
-### Khởi động backend local
+### Start local backend
 
-Backend auth flow không cần AI provider để test login/forgot/reset.
+The backend auth flow does not require AI provider to test login/forgot/reset.
 
 ```powershell
 Invoke-WebRequest http://127.0.0.1:5247/health -UseBasicParsing
 ```
 
-### Khởi động Metro cho thiết bị thật
+### Start Metro for real device
 
 ```powershell
 cd .\eatfitai-mobile
 npm run dev:device -- --clear --port 8081
 ```
 
-Reverse cổng:
+Reverse port:
 
 ```powershell
 adb reverse tcp:8081 tcp:8081
 ```
 
-### Khởi chạy app
+### Launch app
 
 ```powershell
 adb shell am start -S -W -n com.eatfitai.app/.MainActivity
 ```
 
-### Quy tắc bắt buộc sau mỗi lần restart
+### Mandatory rules after each restart
 
 1. Cold-launch app
-2. Kiểm tra state ngay sau restart
-3. Nếu thấy warning `Open debugger to view warnings.` → bấm `x` trước
-4. Chỉ sau khi warning biến mất mới tiếp tục vào intro/welcome/login
+2. Check state immediately after restart
+3. If seeing the `Open debugger to view warnings.` warning → click `x` first
+4. Continue to intro/welcome/login only after the warning disappears
 
-### Nguyên tắc debug UI
+### UI Debugging Principles
 
-1. Ưu tiên Appium `getPageSource()` + screenshot
-2. Không tin `adb uiautomator dump` trên máy Xiaomi/MIUI
-3. Nếu cần attach vào app đang mở, dùng WebdriverIO `remote()` với `appium:autoLaunch=false` và `appium:noReset=true`
-4. Nếu `UiAutomator2` crash → dùng `adb logcat -d` và `adb shell dumpsys` để xác nhận flow thực tế
+1. Prioritize Appium `getPageSource()` + screenshots
+2. Do not trust `adb uiautomator dump` on Xiaomi/MIUI devices
+3. If needing to attach to an already open app, use WebdriverIO `remote()` with `appium:autoLaunch=false` and `appium:noReset=true`
+4. If `UiAutomator2` crashes → use `adb logcat -d` and `adb shell dumpsys` to confirm actual flow
 
 ---
 
-## Smoke Production qua Cloud
+## Production Smoke via Cloud
 
-### Quy tắc chạy
+### Execution rules
 
-1. Không sửa `.env.development` để đổi lane mặc định
-2. Chỉ dùng lane riêng `start-mobile-cloud-smoke.ps1` cho smoke production
-3. Mỗi run chỉ dùng 1 account disposable mới tạo
+1. Do not modify `.env.development` to change default lanes
+2. Only use the dedicated lane `start-mobile-cloud-smoke.ps1` for production smoke
+3. Each run must use 1 newly created disposable account
 
-### Khởi chạy session
+### Launch session
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\start-mobile-cloud-smoke.ps1
 ```
 
-### Health contract chính thức
+### Official health contract
 
 - Backend: `GET /health/live = 200`, `GET /health/ready = 200`
 - AI provider: `GET /healthz = 200`
 
-### Request budget mặc định
+### Default request budget
 
-| Endpoint | Giới hạn |
+| Endpoint | Limit |
 |---|---:|
-| Health mỗi endpoint | 2 |
+| Health per endpoint | 2 |
 | Register with verification | 1 |
 | Resend verification | 1 |
 | Verify email | 2 |
@@ -208,66 +216,99 @@ powershell -ExecutionPolicy Bypass -File .\start-mobile-cloud-smoke.ps1
 | Vision detect | 8 |
 | Meal diary write | 3 |
 
-### Điều kiện pass tối thiểu
+### Minimum passing conditions
 
-- Health công khai đều `200`
-- Register không treo
-- Temp-Mail nhận được mã trong cửa sổ chờ
-- Verify thành công và vào onboarding
-- Onboarding ra `result card`
-- Mở lại app vào thẳng `home-screen`
-- Login và refresh thành công
-- Ít nhất 1 primary fixture đi trọn `gallery → result → AddMealFromVision → diary`
+- Public health points all return `200`
+- Register does not hang
+- Temp-Mail receives the code within the waiting window
+- Verification succeeds and proceeds to onboarding
+- Onboarding yields a `result card`
+- Reopening the app goes straight to `home-screen`
+- Login and refresh succeed
+- At least 1 primary fixture completes the `gallery → result → AddMealFromVision → diary` flow
 
-### Điều kiện fail ngay
+### Immediate failure conditions
 
-- Register treo quá lâu
-- Mail không tới sau khi hết cửa sổ chờ và đã resend đúng quy trình
-- Onboarding chỉ ra `error card`
-- AI scan treo, rơi khỏi flow, hoặc báo network fail rõ ràng
-- Vượt budget request
+- Register hangs for too long
+- Mail does not arrive after waiting window expires and resend was followed correctly
+- Onboarding only yields an `error card`
+- AI scan hangs, drops out of flow, or shows clear network failure
+- Exceeds request budget
 
 ---
 
 ## Secret contract
 
-Bắt buộc:
+Required:
 
 - `RENDER_API_KEY`
 - `EATFITAI_DEMO_EMAIL` / `EATFITAI_DEMO_PASSWORD`
 - `EATFITAI_SMOKE_EMAIL` / `EATFITAI_SMOKE_PASSWORD`
 
-Quy ước:
+Conventions:
 
-- `RENDER_API_KEY` đọc từ shell env hoặc Windows user env
-- Không ghi key vào repo, `.env` tracked, markdown, JSON hay screenshot
+- `RENDER_API_KEY` is read from shell env or Windows user env
+- Do not write keys to repo, tracked `.env`, markdown, JSON, or screenshots
 
 ---
 
-## Trạng thái cloud hiện tại
+## Current cloud status
 
 - `eatfitai-backend`: service id `srv-d7arf2svjg8s73em138g`, branch `hieu_deploy/production`, auto deploy `yes`
 - `eatfitai-ai-provider`: service id `srv-d7arf2kvjg8s73em1360`, branch `hieu_deploy/production`, auto deploy `yes`
 
-Push branch `hieu_deploy/production` lên `origin` sẽ tự động rollout cloud cho cả 2 service.
+Pushing branch `hieu_deploy/production` to `origin` will automatically trigger a cloud rollout for both services.
 
 ---
 
-## Thứ tự release khuyến nghị
+## Keep-alive strategy
 
-1. Chạy Gate 0 và Gate 1
-2. Chạy Gate 2 trên Android automation
-3. Chạy lane real-device và cập nhật evidence bundle
-4. Chạy Gate 4 sau khi Render rollout xong
-5. Chỉ coi lane ổn định khi `smoke:rehearsal` xác nhận 3 session gần nhất đều pass
+### Problem
+
+Render Free Tier spins down services after 15 minutes of no inbound traffic. Cold-start wake-up takes ~30-60 seconds.
+
+### Options
+
+| Option | Tool | Pros | Cons |
+|---|---|---|---|
+| **A. UptimeRobot** | [uptimerobot.com](https://uptimerobot.com) | Monitoring + Alert + Uptime report | Minimum interval is 5 minutes |
+| **B. Cron-job** | [cron-job.org](https://cron-job.org) | Active ping, intervals from 1 minute | No uptime reporting |
+| **C. Both (recommended)** | UptimeRobot + cron-job.org | Guaranteed keep-alive + monitoring | Requires accounts on both |
+
+### Endpoints to ping
+
+| Service | Endpoint | Interval |
+|---|---|---|
+| Backend | `https://<backend-url>/health/live` | 5 minutes |
+| AI Provider | `https://<ai-provider-url>/healthz` | 5 minutes |
+
+### Instance hours warning
+
+Render Free provides 750 hours/month/workspace. Keep-alive **2 always-on services** = ~1440 hours → **EXCEEDS budget**.
+
+Solution:
+- Only keep-alive the **backend** (critical), let AI provider sleep + use fallback formula
+- Or upgrade 1 service to Render Starter ($7/month)
+
+Detailed guide: see Appendix A (UptimeRobot) and Appendix B (Cron-job) in `STABILIZATION_PLAN.md`.
 
 ---
 
-## Voice: nguồn sự thật
+## Recommended release order
 
-Từ ngày `2026-04-16`, lane test và release gate phải bám code hiện tại:
+1. Run Gate 0 and Gate 1
+2. Run Gate 2 on Android automation
+3. Run real-device lane and update evidence bundle
+4. Run Gate 4 after Render rollout finishes
+5. Consider the lane stable only when `smoke:rehearsal` confirms the last 3 sessions all pass
+
+---
+
+## Voice: source of truth
+
+From `2026-04-16`, test lanes and release gates must adhere to current code:
 
 - mobile → backend `/api/voice/transcribe`
 - mobile → backend `/api/voice/parse`
 
-Không test theo tài liệu cũ mô tả mobile gọi trực tiếp AI provider cho voice parse/transcribe.
+Do not test according to old documentation describing mobile calling AI provider directly for voice parse/transcribe.

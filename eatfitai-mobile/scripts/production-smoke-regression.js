@@ -72,7 +72,8 @@ function readJsonIfExists(filePath) {
     return null;
   }
 
-  return JSON.parse(fs.readFileSync(filePath, 'utf8'));
+  const content = fs.readFileSync(filePath, 'utf8');
+  return JSON.parse(content.charCodeAt(0) === 0xFEFF ? content.slice(1) : content);
 }
 
 function writeJson(filePath, value) {

@@ -1,6 +1,6 @@
 # Xác thực và hạ tầng
 
-Cập nhật: `2026-04-18`
+Cập nhật: `2026-04-23`
 
 ## Tổng quan
 
@@ -79,8 +79,8 @@ Password reset codes được lưu trong `IMemoryCache`, không phải database.
 ### Giai đoạn 0: Dọn rủi ro ẩn
 
 1. ✅ Đã rotate credential Supabase bị lộ trong `appsettings.Development.json`
-2. Sửa `render.yaml` — đổi `Smtp__*` thành `Brevo__*`
-3. Đảm bảo không còn credential thật trong code tracked
+2. ✅ Đã sửa `render.yaml` — đã dùng Brevo, không còn SMTP config sai
+3. ✅ Đã thay thế secret trong file tracked bằng placeholder (xem `20_SECURITY_REMEDIATION_REPORT`)
 
 ### Giai đoạn 1: Hoàn tất auth đúng
 
@@ -95,8 +95,8 @@ Password reset codes được lưu trong `IMemoryCache`, không phải database.
 
 ### Giai đoạn 3: Chuẩn hóa kết nối database
 
-1. Dùng Supavisor session mode (`5432`) cho long-lived backend
-2. Bỏ `Pooling=false`
+1. ✅ Đã dùng Supavisor session mode (`5432`) cho backend production
+2. ✅ Đã bỏ `Pooling=false` — `Program.cs` đã có `EnableRetryOnFailure`
 3. Giữ health checks nhẹ, không amplify incident load
 
 ### Giai đoạn 4: Giảm tải nền không cần thiết

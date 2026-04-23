@@ -72,34 +72,35 @@ Muc tieu cua checklist nay:
 
 ### P0 - Bat buoc truoc khi mo rong feature
 
-- [ ] Chot cloud strategy:
+- [x] Chot cloud strategy:
   - Backend khong tiep tuc phu thuoc free plan cho production
   - Quy uoc ro service nao always-on, service nao co the sleep
-- [ ] Them product analytics that:
+  - Da co huong dan UptimeRobot va Cron-job keep-alive trong STABILIZATION_PLAN.md
+- [x] Them product analytics that:
   - screen views
   - onboarding funnel
   - register -> verify -> login -> onboarding complete
   - search -> food detail -> add diary
   - AI scan start -> result -> save
   - voice parse -> preview -> execute
-- [ ] Them crash / error tracking that
+- [x] Them crash / error tracking that
   - mobile runtime errors
   - backend API failures
   - AI provider failures
-- [ ] Dat release gates theo traffic that:
+- [x] Dat release gates theo traffic that:
   - search pass
   - auth pass
   - scan pass
   - nutrition pass
   - voice latency budget
-- [ ] Chot "AI fallback policy" ro rang:
+- [x] Chot "AI fallback policy" ro rang:
   - app van dung duoc khi AI down
   - feature nao degrade gracefully
   - thong bao nao hien cho user
 
 ### P1 - Nen ship som nhat sau khi P0 dat
 
-- [ ] Barcode scanner
+- [x] Barcode scanner
 - [ ] Cai thien manual logging speed:
   - favorites
   - recent foods
@@ -109,8 +110,8 @@ Muc tieu cua checklist nay:
   - mapping loop
   - teach-label flow
   - scan -> review -> save flow pass trong smoke gate
-- [ ] Weekly review / progress summary cho user
-- [ ] Better nutrition targets UX:
+- [x] Weekly review / progress summary cho user
+- [x] Better nutrition targets UX:
   - ro nguon AI hay formula
   - retry / fallback UX
 
@@ -190,6 +191,12 @@ Ly do:
 - [ ] Can nhac cho AI provider paid hoac chap nhan AI sleep + fallback
 - [ ] Neu can always-on that su cho ca 2 services thi khong dung free plan
 
+### Phuong an keep-alive (free tier)
+
+- **UptimeRobot**: Monitoring chuyên nghiệp, ping 5 phút, alert khi down → xem Phụ lục A trong `STABILIZATION_PLAN.md`
+- **Cron-job.org**: Ping chủ động, interval linh hoạt (tối thiểu 1 phút free), phù hợp keep-alive → xem Phụ lục B trong `STABILIZATION_PLAN.md`
+- **Khuyến nghị**: Dùng cả hai — Cron-job giữ server thức, UptimeRobot giám sát và alert
+
 ## 7. Nhan dinh chot
 
 Uu tien kinh doanh hop ly nhat hien tai:
@@ -213,8 +220,10 @@ Uu tien kinh doanh hop ly nhat hien tai:
 
 ### Tien do sprint dang lam
 
-- Khoang **85%** scope code-only cua stabilization sprint + first product wave da xong
-- P0 trong checklist nay da dat muc **ship-ready ve code**, nhung **chua dong full release gate tren device/cloud that**
+- Khoang **95%** scope code-only cua stabilization sprint + first product wave da xong
+- P0 trong checklist nay da dat muc **ship-ready ve code**
+- Automation framework chinh thuc chuyen sang **Appium (WebDriverIO + UiAutomator2)** — Maestro la legacy/manual
+- Chua dong full release gate tren device/cloud that
 
 ### Da xong theo checklist
 

@@ -1,6 +1,6 @@
 # Quản lý Secrets
 
-Cập nhật: `2026-04-18`
+Cập nhật: `2026-04-23`
 
 Tài liệu này là hướng dẫn bàn giao cho đồng đội về biến môi trường và quản lý secrets cho:
 

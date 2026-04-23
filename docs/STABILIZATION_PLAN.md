@@ -2,7 +2,7 @@
 
 > **Bắt đầu**: 2026-04-20  
 > **Nguyên tắc**: Thảo luận → Chốt → Code → Commit dần. KHÔNG push vội.  
-> **Trạng thái**: 🟡 Đang thảo luận từng mục
+> **Trạng thái**: 🟢 Code ~95% xong — còn manual ops (keep-alive) + full release gate verification trên môi trường thật
 
 ---
 
@@ -1064,9 +1064,9 @@ Tạo **2 monitors** với cấu hình:
 
 ### Tiến độ sprint hiện tại
 
-- **~85%** scope code-only của sprint ổn định hóa + product wave đầu tiên đã được implement
-- **~88-90%** phần code-applicable trong tài liệu này đã xong
-- Phần còn lại chủ yếu là **manual ops** hoặc cần **môi trường release thật** để verify
+- **~90%** scope code-only của sprint ổn định hóa + product wave đầu tiên đã được implement
+- **~92%** phần code-applicable trong tài liệu này đã xong
+- Phần còn lại chủ yếu là **manual ops** (keep-alive / cron) và **full release gate verification** trên môi trường thật
 
 ### Đã triển khai
 
@@ -1096,19 +1096,84 @@ Tạo **2 monitors** với cấu hình:
 - Focused mobile Jest (telemetry / ai client retry / ai service / water / summary / food / logger): ✅ pass
 - `python -m unittest` cho AI provider parity + runtime config: ✅ pass
 - `node --check` cho release gate scripts: ✅ pass
+- Android preview APK build: ✅ pass (2026-04-23)
+- Android APK install lên emulator: ✅ pass (2026-04-23)
 
 ### Chưa hoàn tất
 
 | Hạng mục | Trạng thái | Ghi chú |
 |---|---|---|
-| Full device smoke gate | ⬜ Chưa chạy | Cần Android release-like build, thiết bị/emulator, Maestro/Appium lane |
+| Full device smoke gate (Appium) | 🟡 Partially done | Build + install APK ✅. Appium sanity khởi chạy được nhưng chưa chạy trọn flow do cloud cold-start |
 | Full cloud smoke gate | ⬜ Chưa chạy | Cần backend/AI provider thật, secret thật, smoke account thật, artifact lane `_logs/production-smoke` |
-| Manual ops cloud | ⬜ Chưa làm | UptimeRobot, keep-alive/ping, Render paid strategy, env/secrets ngoài code |
+| Manual ops cloud (keep-alive) | 🟡 Đang chọn phương án | 2 phương án: **UptimeRobot** (xem [Phụ lục A](#phụ-lục-a-hướng-dẫn-uptimerobot)) hoặc **Cron-job** (xem [Phụ lục B](#phụ-lục-b-cron-job-keep-alive)) |
 | P2/P3 backlog | ⏩ Deferred | Meal planner, grocery, fasting, wearable sync, premium, micronutrients, coach dashboard |
 
 ### Ghi chú quan trọng
 
 - 3 file store `useAuthStore.ts`, `useProfileStore.ts`, `useStatsStore.ts` đã được làm sạch trạng thái Git; trước đó chỉ dirty do line-ending/working-tree metadata, không phải thay đổi logic.
+
+### Quyết định automation framework (2026-04-23)
+
+- **Maestro**: Chuyển sang trạng thái **Legacy/Manual** — không còn trên critical path release gate
+- **Appium (WebDriverIO + UiAutomator2)**: Trở thành **framework chính** cho Gate 2 (Android automation)
+- Lý do: Appium mạnh hơn Maestro ở khả năng điều khiển device, fallback cascade (element click → mobile gesture → pointer actions → adb tap), và tích hợp artifact (screenshot + page source + logcat)
+- Hạ tầng Appium đã sẵn sàng: `tools/appium/` với `sanity.android.js`, `cloud-proof.android.js`, `lib/common.js` (755 dòng helpers)
+
+---
+
+## Phụ lục B: Cron-job Keep-Alive
+
+> Phương án thay thế UptimeRobot — sử dụng dịch vụ cron miễn phí bên ngoài để ping giữ server không ngủ.
+
+### Tại sao dùng Cron-job?
+
+| So sánh | UptimeRobot | Cron-job (cron-job.org / Easycron) |
+|---|---|---|
+| Chức năng chính | Monitoring + Alert khi server down | Lên lịch gọi HTTP theo thời gian cố định |
+| Interval tối thiểu (free) | 5 phút | 1 phút (cron-job.org) |
+| Alert khi fail | ✅ Email / Webhook | ✅ Email |
+| Giao diện | Dashboard trực quan | Dashboard đơn giản |
+| Giá | Free (50 monitors) | Free (5 jobs cron-job.org, 200 calls/tháng Easycron) |
+| Ưu điểm | Monitoring chuyên nghiệp, uptime report | Ping chủ động, interval ngắn hơn, phù hợp keep-alive |
+| Nhược điểm | Chỉ ping, không có scheduling logic | Không có uptime reporting chi tiết |
+
+**Khuyến nghị**: Dùng **cả hai** — Cron-job để giữ server thức (keep-alive), UptimeRobot để giám sát uptime và nhận alert.
+
+### Bước 1: Tạo tài khoản cron-job.org
+
+1. Truy cập [cron-job.org](https://cron-job.org)
+2. Đăng ký free (hỗ trợ 5 cron jobs miễn phí)
+
+### Bước 2: Tạo cron jobs
+
+**Job 1 — Backend Keep-Alive**:
+
+| Field | Giá trị |
+|---|---|
+| Title | EatFitAI Backend Ping |
+| URL | `https://<backend-url>/health/live` |
+| Schedule | Every 5 minutes (`*/5 * * * *`) |
+| Request Method | GET |
+| Notification | On failure |
+
+**Job 2 — AI Provider Keep-Alive**:
+
+| Field | Giá trị |
+|---|---|
+| Title | EatFitAI AI Provider Ping |
+| URL | `https://<ai-provider-url>/healthz` |
+| Schedule | Every 5 minutes (`*/5 * * * *`) |
+| Request Method | GET |
+| Notification | On failure |
+
+### Lưu ý quan trọng
+
+- **Render Free Tier spin-down**: Sau 15 phút không có request → service ngủ. Cron ping 5 phút đảm bảo **luôn dưới ngưỡng 15 phút** → server không bao giờ ngủ.
+- **Instance hours**: Render Free cấp 750 giờ/tháng/workspace. Nếu chạy **2 services always-on** → 2 × 720 giờ = **1440 giờ** → **VƯỢT budget**. Cần cân nhắc:
+  - Chỉ keep-alive backend (critical), cho AI provider ngủ + dùng fallback formula
+  - Hoặc nâng lên Render Starter ($7/service/tháng) cho 1 service
+- **Alternatives miễn phí**: [Easycron](https://www.easycron.com/), [Google Cloud Scheduler](https://cloud.google.com/scheduler) (nếu có GCP project)
+- Cron-job **không thay thế** monitoring — vẫn nên dùng UptimeRobot để biết khi nào server thật sự down.
 
 ---
 

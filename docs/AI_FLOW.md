@@ -2,7 +2,7 @@
 
 Updated: `2026-04-23`
 
-Tai lieu nay mo ta runtime AI hien tai cua repo. Khi co khac biet, uu tien:
+This document describes the current AI runtime of the repository. When there are discrepancies, prioritize:
 
 - `docs/ARCHITECTURE.md`
 - `docs/TESTING_AND_RELEASE.md`
