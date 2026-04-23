@@ -102,6 +102,36 @@ describe('foodService', () => {
     });
   });
 
+  describe('lookupByBarcode', () => {
+    it('should call the backend barcode lookup endpoint and normalize the result', async () => {
+      (apiClient.get as jest.Mock).mockResolvedValue({
+        data: {
+          barcode: '8938505974198',
+          source: 'catalog',
+          foodItem: {
+            foodItemId: 12,
+            foodName: 'Sữa chua',
+            barcode: '8938505974198',
+            caloriesPer100g: 90,
+            proteinPer100g: 3.5,
+            carbPer100g: 12,
+            fatPer100g: 2,
+          },
+        },
+      });
+
+      const result = await foodService.lookupByBarcode('8938505974198');
+
+      expect(apiClient.get).toHaveBeenCalledWith('/api/food/barcode/8938505974198');
+      expect(result).toMatchObject({
+        id: '12',
+        name: 'Sữa chua',
+        barcode: '8938505974198',
+        calories: 90,
+      });
+    });
+  });
+
   describe('searchAllFoods', () => {
     it('should combine catalog and user foods', async () => {
       // Arrange - API trả về kết quả từ cả catalog và user

@@ -12,7 +12,11 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
-import { CameraView, useCameraPermissions } from 'expo-camera';
+import {
+  BarcodeScanningResult,
+  CameraView,
+  useCameraPermissions,
+} from 'expo-camera';
 import * as ImagePicker from 'expo-image-picker';
 import * as Haptics from 'expo-haptics';
 import * as ImageManipulator from 'expo-image-manipulator';
@@ -36,6 +40,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 
 import { ThemedText } from '../../../components/ThemedText';
+import { trackEvent } from '../../../services/analytics';
 import Button from '../../../components/Button';
 import Icon from '../../../components/Icon';
 import { AiStatusBadge } from '../../../components/ai/AiStatusBadge';
@@ -51,6 +56,7 @@ import { AppImage } from '../../../components/ui/AppImage';
 import { AnimatedEmptyState } from '../../../components/ui/AnimatedEmptyState';
 import type { RootStackParamList } from '../../types';
 import type { MappedFoodItem } from '../../../types/ai';
+import { foodService } from '../../../services/foodService';
 import { IngredientBasketFab } from '../../../components/scan/IngredientBasketFab';
 import { IngredientBasketSheet } from '../../../components/scan/IngredientBasketSheet';
 import { useIngredientBasketStore } from '../../../store/useIngredientBasketStore';
@@ -60,6 +66,7 @@ import { TEST_IDS } from '../../../testing/testIds';
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 type CameraViewInstance = InstanceType<typeof CameraView>;
 type ScanMode = 'camera' | 'preview' | 'results';
+type CaptureLane = 'ai' | 'barcode';
 type ScanResultNotice = {
   title: string;
   description: string;
@@ -99,6 +106,7 @@ const AIScanScreen: React.FC = () => {
     ImagePicker.useMediaLibraryPermissions();
 
   const [mode, setMode] = useState<ScanMode>('camera');
+  const [captureLane, setCaptureLane] = useState<CaptureLane>('ai');
   const [isCapturing, setIsCapturing] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [capturedUri, setCapturedUri] = useState<string | null>(null);
@@ -117,6 +125,7 @@ const AIScanScreen: React.FC = () => {
   const [gramInputValue, setGramInputValue] = useState('100');
 
   const addIngredient = useIngredientBasketStore((s) => s.addIngredient);
+  const barcodeLockRef = useRef(false);
 
   const captureScale = useSharedValue(1);
   const scanLineY = useSharedValue(0);
@@ -126,6 +135,7 @@ const AIScanScreen: React.FC = () => {
 
   const hasPermission = permission?.granted === true;
   const isAiDown = aiStatus?.state === 'DOWN';
+  const isBarcodeMode = captureLane === 'barcode';
 
   /* ── Scanning line animation ── */
   useEffect(() => {
@@ -161,12 +171,18 @@ const AIScanScreen: React.FC = () => {
     });
   }, []);
 
-  const processImage = useCallback(async (uri: string) => {
+  const processImage = useCallback(async (uri: string, source: 'camera' | 'gallery') => {
     setMode('preview');
     setIsProcessing(true);
     setShowProcessingBanner(true);
     setDetectionResult(null);
     setResultNotice(null);
+    trackEvent('ai_scan_start', {
+      flow: 'ai_scan',
+      step: 'detect',
+      status: 'submitted',
+      metadata: { source },
+    });
 
     let processedUri = uri;
     try {
@@ -200,6 +216,16 @@ const AIScanScreen: React.FC = () => {
       );
       setResultGrams(100);
       setMode('results');
+      trackEvent('ai_scan_result', {
+        flow: 'ai_scan',
+        step: 'detect',
+        status: filteredItems.length > 0 ? 'success' : 'empty',
+        metadata: {
+          source,
+          itemCount: filteredItems.length,
+          unmappedCount: result.unmappedLabels.length,
+        },
+      });
     } catch (error) {
       if (isAiOfflineError(error)) {
         setDetectionResult({ items: [], unmappedLabels: [] });
@@ -208,7 +234,26 @@ const AIScanScreen: React.FC = () => {
           description: 'Bạn vẫn có thể tìm món thủ công hoặc thử lại sau.',
         });
         setMode('results');
+        trackEvent('ai_scan_result', {
+          flow: 'ai_scan',
+          step: 'detect',
+          status: 'fallback',
+          metadata: {
+            source,
+            reason: 'ai_offline',
+          },
+        });
       } else {
+        trackEvent('ai_scan_result', {
+          category: 'error',
+          flow: 'ai_scan',
+          step: 'detect',
+          status: 'failure',
+          metadata: {
+            source,
+            message: (error as { message?: string } | null)?.message,
+          },
+        });
         handleApiErrorWithCustomMessage(error, {
           server_error: { text1: 'Lỗi máy chủ', text2: 'Vui lòng thử lại sau' },
           network_error: { text1: 'Không có kết nối', text2: 'Kiểm tra mạng và thử lại' },
@@ -237,7 +282,7 @@ const AIScanScreen: React.FC = () => {
 
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 
-      await processImage(result.uri);
+      await processImage(result.uri, 'camera');
     } catch (error) {
       handleApiErrorWithCustomMessage(error, {
         unknown: { text1: 'Không thể chụp ảnh', text2: 'Vui lòng thử lại' },
@@ -290,7 +335,7 @@ const AIScanScreen: React.FC = () => {
       });
 
       if (!result.canceled && result.assets?.[0]?.uri) {
-        await processImage(result.assets[0].uri);
+        await processImage(result.assets[0].uri, 'gallery');
       }
     } catch (error) {
       handleApiErrorWithCustomMessage(error, {
@@ -298,6 +343,89 @@ const AIScanScreen: React.FC = () => {
       });
     }
   }, [galleryPermission, isAiDown, notifyAiDown, processImage, requestGalleryPermission]);
+
+  const handleBarcodeScanned = useCallback(
+    async (scanningResult: BarcodeScanningResult) => {
+      const barcode = scanningResult.data?.trim();
+      if (!barcode || barcodeLockRef.current || !isBarcodeMode || mode !== 'camera') {
+        return;
+      }
+
+      barcodeLockRef.current = true;
+      setIsProcessing(true);
+      trackEvent('barcode_scan_start', {
+        flow: 'ai_scan',
+        step: 'barcode_scan',
+        status: 'submitted',
+        metadata: {
+          barcode,
+          type: scanningResult.type,
+        },
+      });
+
+      try {
+        const foodDetail = await foodService.lookupByBarcode(barcode);
+        if (!foodDetail) {
+          trackEvent('barcode_scan_result', {
+            category: 'error',
+            flow: 'ai_scan',
+            step: 'barcode_scan',
+            status: 'not_found',
+            metadata: { barcode },
+          });
+          Toast.show({
+            type: 'info',
+            text1: 'Chưa có món cho mã vạch này',
+            text2: 'Bạn có thể tìm thủ công hoặc thử mã khác.',
+          });
+          return;
+        }
+
+        trackEvent('barcode_scan_result', {
+          flow: 'ai_scan',
+          step: 'barcode_scan',
+          status: 'success',
+          metadata: {
+            barcode,
+            foodId: foodDetail.id,
+            foodName: foodDetail.name,
+          },
+        });
+        Toast.show({
+          type: 'success',
+          text1: 'Đã nhận diện mã vạch',
+          text2: foodDetail.name,
+        });
+        navigation.navigate('FoodDetail', {
+          foodId: foodDetail.id,
+          source: 'catalog',
+        });
+      } catch (error) {
+        trackEvent('barcode_scan_result', {
+          category: 'error',
+          flow: 'ai_scan',
+          step: 'barcode_scan',
+          status: 'failure',
+          metadata: {
+            barcode,
+            message: (error as { message?: string } | null)?.message,
+          },
+        });
+        handleApiErrorWithCustomMessage(error, {
+          unknown: {
+            text1: 'Không thể tra mã vạch',
+            text2: 'Vui lòng thử lại sau hoặc tìm thủ công.',
+          },
+        });
+      } finally {
+        setIsProcessing(false);
+        setTimeout(() => {
+          barcodeLockRef.current = false;
+        }, 1200);
+      }
+    },
+    [isBarcodeMode, mode, navigation],
+  );
 
   const handleRetake = useCallback(() => {
     setCapturedUri(null);
@@ -336,9 +464,32 @@ const AIScanScreen: React.FC = () => {
         text1: 'Đã thêm vào nhật ký',
         text2: `${topItem.foodName || translateIngredient(topItem.label)} - ${resultGrams}g (${actualCal} kcal)`,
       });
+      trackEvent('ai_scan_save_success', {
+        flow: 'ai_scan',
+        step: 'save',
+        status: 'success',
+        metadata: {
+          foodItemId: topItem.foodItemId,
+          label: topItem.label,
+          grams: resultGrams,
+          calories: actualCal,
+        },
+      });
       await invalidateDiaryQueries(queryClient);
       handleRetake();
     } catch (error) {
+      trackEvent('ai_scan_save_failure', {
+        category: 'error',
+        flow: 'ai_scan',
+        step: 'save',
+        status: 'failure',
+        metadata: {
+          foodItemId: topItem.foodItemId,
+          label: topItem.label,
+          grams: resultGrams,
+          message: (error as { message?: string } | null)?.message,
+        },
+      });
       handleApiErrorWithCustomMessage(error, {
         unknown: { text1: 'Lỗi', text2: 'Không thể thêm vào nhật ký' },
       });
@@ -443,6 +594,7 @@ const AIScanScreen: React.FC = () => {
           style={StyleSheet.absoluteFill}
           facing="back"
           enableTorch={flashOn}
+          onBarcodeScanned={isBarcodeMode ? handleBarcodeScanned : undefined}
         />
       )}
 
@@ -493,8 +645,53 @@ const AIScanScreen: React.FC = () => {
               <View style={S.helpPill}>
                 <Icon name="sparkles" size="xs" color="primary" />
                 <ThemedText style={S.helpPillText}>
-                  HƯỚNG CAMERA VÀO MÓN ĂN ĐỂ NHẬN DIỆN
+                  {isBarcodeMode
+                    ? 'ĐƯA MÃ VẠCH VÀO KHUNG ĐỂ TRA CỨU'
+                    : 'HƯỚNG CAMERA VÀO MÓN ĂN ĐỂ NHẬN DIỆN'}
                 </ThemedText>
+              </View>
+            </Animated.View>
+          )}
+
+          {isCameraMode && (
+            <Animated.View entering={FadeIn.delay(360)} style={S.helpPillWrap}>
+              <View
+                style={{
+                  flexDirection: 'row',
+                  gap: 8,
+                  backgroundColor: 'rgba(14, 19, 34, 0.72)',
+                  borderRadius: 18,
+                  padding: 4,
+                  borderWidth: 1,
+                  borderColor: 'rgba(255,255,255,0.08)',
+                }}
+              >
+                <Pressable
+                  onPress={() => setCaptureLane('ai')}
+                  style={{
+                    paddingHorizontal: 12,
+                    paddingVertical: 8,
+                    borderRadius: 14,
+                    backgroundColor:
+                      captureLane === 'ai' ? 'rgba(75, 226, 119, 0.18)' : 'transparent',
+                  }}
+                >
+                  <ThemedText style={S.helpPillText}>AI scan</ThemedText>
+                </Pressable>
+                <Pressable
+                  onPress={() => setCaptureLane('barcode')}
+                  style={{
+                    paddingHorizontal: 12,
+                    paddingVertical: 8,
+                    borderRadius: 14,
+                    backgroundColor:
+                      captureLane === 'barcode'
+                        ? 'rgba(75, 226, 119, 0.18)'
+                        : 'transparent',
+                  }}
+                >
+                  <ThemedText style={S.helpPillText}>Barcode</ThemedText>
+                </Pressable>
               </View>
             </Animated.View>
           )}
@@ -572,32 +769,56 @@ const AIScanScreen: React.FC = () => {
         {isCameraMode && (
           <Animated.View entering={FadeInDown.delay(200)} style={S.cameraControls}>
             {/* Gallery pick CTA */}
-            <Pressable
-              style={S.galleryPill}
-              onPress={handlePickImage}
-              testID={TEST_IDS.aiScan.galleryButton}
-            >
-              <Icon name="images-outline" size="sm" color="text" />
-              <ThemedText style={S.galleryPillText}>Chọn từ thư viện</ThemedText>
-            </Pressable>
+            {!isBarcodeMode ? (
+              <Pressable
+                style={S.galleryPill}
+                onPress={handlePickImage}
+                testID={TEST_IDS.aiScan.galleryButton}
+              >
+                <Icon name="images-outline" size="sm" color="text" />
+                <ThemedText style={S.galleryPillText}>Chọn từ thư viện</ThemedText>
+              </Pressable>
+            ) : (
+              <View style={S.galleryPill}>
+                <Icon name="barcode-outline" size="sm" color="text" />
+                <ThemedText style={S.galleryPillText}>Quét tự động khi thấy mã vạch</ThemedText>
+              </View>
+            )}
 
             {/* Bottom row: Capture */}
             <View style={S.bottomRow}>
-              <AnimatedPressable
-                onPress={handleCapture}
-                disabled={isCapturing}
-                style={[captureButtonStyle, S.captureOuter]}
-                testID={TEST_IDS.aiScan.captureButton}
-              >
-                <LinearGradient
-                  colors={[P.primary, P.primaryDim, P.primary]}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
-                  style={S.captureGradient}
+              {!isBarcodeMode ? (
+                <AnimatedPressable
+                  onPress={handleCapture}
+                  disabled={isCapturing}
+                  style={[captureButtonStyle, S.captureOuter]}
+                  testID={TEST_IDS.aiScan.captureButton}
                 >
-                  <View style={S.captureInner} />
-                </LinearGradient>
-              </AnimatedPressable>
+                  <LinearGradient
+                    colors={[P.primary, P.primaryDim, P.primary]}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={S.captureGradient}
+                  >
+                    <View style={S.captureInner} />
+                  </LinearGradient>
+                </AnimatedPressable>
+              ) : (
+                <View
+                  style={{
+                    paddingHorizontal: 18,
+                    paddingVertical: 12,
+                    borderRadius: 999,
+                    backgroundColor: 'rgba(14, 19, 34, 0.72)',
+                    borderWidth: 1,
+                    borderColor: 'rgba(255,255,255,0.08)',
+                  }}
+                >
+                  <ThemedText style={S.galleryPillText}>
+                    {isProcessing ? 'Đang tra cứu mã vạch...' : 'Giữ mã vạch trong khung'}
+                  </ThemedText>
+                </View>
+              )}
             </View>
           </Animated.View>
         )}

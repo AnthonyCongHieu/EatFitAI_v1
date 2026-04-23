@@ -6,6 +6,7 @@
 
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using EatFitAI.API.Helpers;
 using EatFitAI.DTOs;
 using EatFitAI.API.DTOs.MealDiary;
 using EatFitAI.Services;
@@ -343,7 +344,8 @@ namespace EatFitAI.API.Controllers
                     {
                         success = false,
                         error = "voice_provider_error",
-                        detail = responseBody
+                        message = "AI giọng nói gặp lỗi khi xử lý yêu cầu.",
+                        requestId = HttpContext.TraceIdentifier,
                     });
                 }
 
@@ -363,7 +365,8 @@ namespace EatFitAI.API.Controllers
                 {
                     success = false,
                     error = "voice_provider_unavailable",
-                    detail = ex.Message
+                    message = "AI giọng nói hiện không khả dụng.",
+                    requestId = HttpContext.TraceIdentifier,
                 });
             }
             catch (TaskCanceledException ex)
@@ -373,7 +376,8 @@ namespace EatFitAI.API.Controllers
                 {
                     success = false,
                     error = "voice_provider_timeout",
-                    detail = ex.Message
+                    message = "AI giọng nói phản hồi quá chậm.",
+                    requestId = HttpContext.TraceIdentifier,
                 });
             }
         }
@@ -511,7 +515,7 @@ namespace EatFitAI.API.Controllers
                         // Query DaySummary để lấy cả calo và mục tiêu
                         try
                         {
-                            var today = command.Entities.Date ?? DateTime.Today;
+                            var today = command.Entities.Date ?? DateTimeHelper.GetVietnamNow().Date;
                             var daySummary = await _analyticsService.GetDaySummaryWithMealsAsync(userId, today);
                             var totalCalories = daySummary.TotalCalories;
                             var targetCalories = daySummary.TargetCalories ?? 2000;
@@ -574,7 +578,7 @@ namespace EatFitAI.API.Controllers
                 var bodyMetric = new EatFitAI.API.DTOs.User.BodyMetricDto
                 {
                     WeightKg = request.NewWeight,
-                    MeasuredDate = DateTime.Now
+                    MeasuredDate = DateTimeHelper.GetVietnamNow()
                 };
                 await _userService.RecordBodyMetricsAsync(userId, bodyMetric);
                 
@@ -590,7 +594,7 @@ namespace EatFitAI.API.Controllers
                         Data = new Dictionary<string, object>
                         {
                             ["savedWeight"] = request.NewWeight,
-                            ["savedAt"] = DateTime.Now.ToString("yyyy-MM-dd HH:mm")
+                            ["savedAt"] = DateTimeHelper.GetVietnamNow().ToString("yyyy-MM-dd HH:mm")
                         }
                     }
                 });
@@ -686,7 +690,7 @@ namespace EatFitAI.API.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error adding food via voice");
-                return (null, $"Lỗi khi thêm món ăn: {ex.Message}");
+                return (null, "Lỗi khi thêm món ăn. Vui lòng thử lại.");
             }
         }
 

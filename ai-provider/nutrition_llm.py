@@ -91,23 +91,6 @@ def ensure_gemini_service_available() -> Dict[str, Any]:
 def _init_gemini():
     """Khởi tạo Gemini client (lazy init)"""
     return is_gemini_available()
-    global _gemini_model
-    if _gemini_model is not None:
-        return True
-    
-    if not GEMINI_API_KEY:
-        logger.warning("GEMINI_API_KEY chưa được cấu hình")
-        return False
-    
-    try:
-        import google.generativeai as genai
-        genai.configure(api_key=GEMINI_API_KEY)
-        _gemini_model = genai.GenerativeModel(GEMINI_MODEL)
-        logger.info(f"✅ Gemini API initialized (model: {GEMINI_MODEL})")
-        return True
-    except Exception as e:
-        logger.error(f"❌ Gemini init failed: {e}")
-        return False
 
 def is_gemini_available() -> bool:
     """Kiểm tra Gemini API có sẵn sàng không"""
@@ -158,6 +141,62 @@ def query_gemini(prompt: str, use_cache: bool = True, cache_ttl: int = None) -> 
 
 # ============== FALLBACK: Mifflin-St Jeor Formula ==============
 
+def _normalize_goal(goal: str) -> str:
+    normalized = (goal or "maintain").strip().lower()
+    if normalized in {"lose", "weight_loss", "giam_can", "giảm cân", "cut"}:
+        return "cut"
+    if normalized in {"gain", "weight_gain", "tang_can", "tăng cân", "bulk"}:
+        return "bulk"
+    return "maintain"
+
+
+def _build_formula_result(
+    gender: str,
+    age: int,
+    height_cm: float,
+    weight_kg: float,
+    activity_level: str,
+    goal: str,
+    *,
+    source: str = "formula",
+    message: Optional[str] = None,
+) -> Dict[str, Any]:
+    result = calculate_nutrition_mifflin(
+        gender,
+        age,
+        height_cm,
+        weight_kg,
+        activity_level,
+        goal,
+    )
+    result["source"] = source
+    result["offlineMode"] = True
+    result["message"] = (
+        message
+        or "AI tạm thời không khả dụng. EatFitAI đã dùng công thức chuẩn để tính mục tiêu."
+    )
+    return result
+
+
+def _is_target_within_bounds(
+    calories: int,
+    protein: int,
+    carbs: int,
+    fat: int,
+    weight_kg: float,
+) -> bool:
+    if calories < 800 or calories > 6000:
+        return False
+    if protein < 40 or protein > max(350, int(round(weight_kg * 3.5))):
+        return False
+    if carbs < 0 or carbs > 800:
+        return False
+    if fat < 20 or fat > 220:
+        return False
+
+    macro_calories = protein * 4 + carbs * 4 + fat * 9
+    return calories * 0.55 <= macro_calories <= calories * 1.25
+
 def calculate_nutrition_mifflin(
     gender: str,
     age: int,
@@ -188,30 +227,32 @@ def calculate_nutrition_mifflin(
     
     # TDEE
     tdee = bmr * multiplier
-    
-    # Goal adjustment
-    if goal.lower() in ["lose", "weight_loss", "giam_can", "giảm cân"]:
-        calories = int(tdee * 0.85)
-    elif goal.lower() in ["gain", "weight_gain", "tang_can", "tăng cân"]:
-        calories = int(tdee * 1.15)
-    else:
-        calories = int(tdee)
-    
-    # Macro distribution: Protein 25%, Carbs 50%, Fat 25%
-    protein = int(calories * 0.25 / 4)
-    carbs = int(calories * 0.50 / 4)
-    fat = int(calories * 0.25 / 9)
+    normalized_goal = _normalize_goal(goal)
+    goal_adjustment = {
+        "cut": 0.80,
+        "maintain": 1.00,
+        "bulk": 1.10,
+    }.get(normalized_goal, 1.00)
+    calories = int(round(tdee * goal_adjustment))
+
+    protein_per_kg = 2.2 if normalized_goal == "cut" else 1.8
+    protein = int(round(protein_per_kg * weight_kg))
+    fat_calories = int(round(calories * 0.25))
+    fat = int(round(fat_calories / 9.0))
+    carb_calories = max(0, calories - (protein * 4) - fat_calories)
+    carbs = int(round(carb_calories / 4.0))
     
     logger.info(f"Formula calculated: cal={calories}, p={protein}, c={carbs}, f={fat}")
     
     goal_explanations = {
-        "lose": f"Giảm 15% TDEE ({int(tdee)}→{calories}kcal) để giảm cân an toàn. Protein cao giữ cơ bắp.",
-        "weight_loss": f"Giảm 15% TDEE để giảm cân. Duy trì protein {protein}g/ngày để tránh mất cơ.",
-        "gain": f"Tăng 15% TDEE ({int(tdee)}→{calories}kcal) để tăng cân. Carbs cao hỗ trợ tập luyện.",
-        "weight_gain": f"Tăng 15% TDEE để tăng cơ. Protein {protein}g, Carbs {carbs}g cho năng lượng.",
-        "maintain": f"Duy trì TDEE {calories}kcal. Phân bổ chuẩn: 25% Protein, 50% Carbs, 25% Fat."
+        "cut": f"Giảm còn khoảng 80% TDEE ({int(round(tdee))}→{calories} kcal) và ưu tiên protein {protein}g để giữ cơ bắp.",
+        "bulk": f"Tăng khoảng 10% TDEE ({int(round(tdee))}→{calories} kcal) để hỗ trợ tăng cơ ổn định.",
+        "maintain": f"Duy trì quanh mức TDEE {calories} kcal với protein {protein}g, fat {fat}g và carbs {carbs}g."
     }
-    explanation = goal_explanations.get(goal.lower(), f"TDEE {calories}kcal. Macro ratio: P25% C50% F25%.")
+    explanation = goal_explanations.get(
+        normalized_goal,
+        f"TDEE {calories} kcal với protein {protein}g, carbs {carbs}g, fat {fat}g.",
+    )
     
     return {
         "calories": calories,
@@ -236,8 +277,10 @@ CÔNG THỨC: Mifflin-St Jeor
 - Nam: BMR = 10 × cân_nặng + 6.25 × chiều_cao - 5 × tuổi + 5
 - Nữ: BMR = 10 × cân_nặng + 6.25 × chiều_cao - 5 × tuổi - 161
 - TDEE = BMR × Activity (sedentary:1.2, light:1.375, moderate:1.55, active:1.725, very_active:1.9)
-- lose: TDEE×0.85, maintain: TDEE×1.0, gain: TDEE×1.15
-- Macro: Protein 25% (÷4), Carbs 50% (÷4), Fat 25% (÷9)
+- lose/cut: TDEE×0.80, maintain: TDEE×1.0, gain/bulk: TDEE×1.10
+- Protein: cut = 2.2g/kg, maintain/bulk = 1.8g/kg
+- Fat = 25% calories (÷9)
+- Carbs = calories còn lại sau protein và fat
 
 THÔNG TIN: {gender}, {age} tuổi, {height_cm}cm, {weight_kg}kg, {activity_level}, {goal}
 
@@ -258,14 +301,28 @@ TRẢ LỜI JSON (chỉ JSON, không giải thích thêm):
                 carbs = int(result.get("carbs", 0))
                 fat = int(result.get("fat", 0))
                 
-                # Validation: nếu giá trị bất hợp lý → fallback formula
-                if carbs < 50 or calories < 1000 or protein < 30:
-                    logger.warning(f"Gemini trả về kết quả không hợp lý: cal={calories}, p={protein}, c={carbs}")
-                    result = calculate_nutrition_mifflin(gender, age, height_cm, weight_kg, activity_level, goal)
-                    result["source"] = "formula_validated"
-                    return result
+                if not _is_target_within_bounds(calories, protein, carbs, fat, weight_kg):
+                    logger.warning(
+                        "Gemini trả về kết quả ngoài ngưỡng hợp lý: cal=%s, p=%s, c=%s, f=%s",
+                        calories,
+                        protein,
+                        carbs,
+                        fat,
+                    )
+                    return _build_formula_result(
+                        gender,
+                        age,
+                        height_cm,
+                        weight_kg,
+                        activity_level,
+                        goal,
+                        source="formula_validated",
+                        message="AI trả dữ liệu chưa hợp lệ. EatFitAI đã dùng công thức chuẩn để tính mục tiêu.",
+                    )
                 
                 result["source"] = "gemini"
+                result["offlineMode"] = False
+                result["message"] = None
                 result["calories"] = calories
                 result["protein"] = protein
                 result["carbs"] = carbs
@@ -275,10 +332,14 @@ TRẢ LỜI JSON (chỉ JSON, không giải thích thêm):
         except json.JSONDecodeError:
             logger.warning(f"Failed to parse Gemini response: {response[:100]}")
     
-    # Fallback to formula
-    result = calculate_nutrition_mifflin(gender, age, height_cm, weight_kg, activity_level, goal)
-    result["source"] = "formula"
-    return result
+    return _build_formula_result(
+        gender,
+        age,
+        height_cm,
+        weight_kg,
+        activity_level,
+        goal,
+    )
 
 
 # ============== MAIN FUNCTION ==============
@@ -288,16 +349,39 @@ def get_nutrition_advice(
     activity_level: str, goal: str
 ) -> Dict[str, Any]:
     """Main function: Gemini first, fallback formula"""
-    
-    ensure_gemini_service_available()
-    logger.info("Using Gemini API")
-    return get_nutrition_advice_gemini(gender, age, height_cm, weight_kg, activity_level, goal)
-    
-    logger.info("Gemini not available, using Mifflin-St Jeor formula")
-    result = calculate_nutrition_mifflin(gender, age, height_cm, weight_kg, activity_level, goal)
-    result["source"] = "formula"
-    result["explanation"] = "Sử dụng công thức Mifflin-St Jeor (chuẩn y khoa) - AI tạm thời không khả dụng"
-    return result
+    try:
+        ensure_gemini_service_available()
+        logger.info("Using Gemini API")
+        return get_nutrition_advice_gemini(
+            gender,
+            age,
+            height_cm,
+            weight_kg,
+            activity_level,
+            goal,
+        )
+    except (GeminiQuotaExhaustedError, GeminiUnavailableError) as exc:
+        logger.warning("Gemini unavailable, using formula fallback: %s", exc)
+        return _build_formula_result(
+            gender,
+            age,
+            height_cm,
+            weight_kg,
+            activity_level,
+            goal,
+            message="AI tạm thời không khả dụng. EatFitAI đã dùng công thức chuẩn để tính mục tiêu.",
+        )
+    except Exception as exc:
+        logger.error("Nutrition advice failed unexpectedly, using formula fallback: %s", exc)
+        return _build_formula_result(
+            gender,
+            age,
+            height_cm,
+            weight_kg,
+            activity_level,
+            goal,
+            message="AI đang bận. EatFitAI đã dùng công thức chuẩn để tính mục tiêu.",
+        )
 
 
 # ============== MEAL INSIGHT ==============
@@ -308,8 +392,18 @@ def get_meal_insight(
     user_history: Optional[Dict[str, Any]] = None
 ) -> Dict[str, Any]:
     """AI insight về bữa ăn (Gemini hoặc fallback)"""
-    
-    ensure_gemini_service_available()
+    try:
+        ensure_gemini_service_available()
+    except (GeminiQuotaExhaustedError, GeminiUnavailableError) as exc:
+        logger.warning("Meal insight fallback due to Gemini unavailable: %s", exc)
+        cal_pct = (total_calories / target_calories * 100) if target_calories > 0 else 0
+        return _meal_insight_fallback(
+            cal_pct,
+            total_calories,
+            target_calories,
+            current_macros,
+            target_macros,
+        )
     
     items_str = ", ".join([f"{item.get('name', 'Unknown')}" for item in meal_items[:5]])
     cal_pct = (total_calories / target_calories * 100) if target_calories > 0 else 0
@@ -367,8 +461,11 @@ def get_cooking_instructions(
     recipe_name: str, ingredients: list[dict], description: str = ""
 ) -> Dict[str, Any]:
     """Generate hướng dẫn nấu ăn bằng Gemini AI"""
-    
-    ensure_gemini_service_available()
+    try:
+        ensure_gemini_service_available()
+    except (GeminiQuotaExhaustedError, GeminiUnavailableError) as exc:
+        logger.warning("Cooking instructions fallback due to Gemini unavailable: %s", exc)
+        return _generate_fallback_instructions(recipe_name, ingredients)
     
     ingredients_str = ", ".join([
         f"{ing.get('foodName', 'Unknown')} ({ing.get('grams', 100)}g)"

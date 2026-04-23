@@ -1,6 +1,7 @@
 import { captureRef } from 'react-native-view-shot';
 import * as Sharing from 'expo-sharing';
 import { Alert } from 'react-native';
+import logger from '../utils/logger';
 
 export const shareService = {
   /**
@@ -30,7 +31,7 @@ export const shareService = {
         UTI: 'public.png', // iOS
       });
     } catch (error) {
-      console.error('Share error:', error);
+      logger.error('Share error:', error);
       Alert.alert('Lỗi', 'Không thể chia sẻ ảnh. Vui lòng thử lại.');
     }
   },

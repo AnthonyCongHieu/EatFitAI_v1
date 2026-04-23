@@ -3,6 +3,7 @@ using EatFitAI.API.Data;
 using EatFitAI.API.DbScaffold.Data;
 using EatFitAI.API.DTOs.User;
 using EatFitAI.API.DbScaffold.Models;
+using EatFitAI.API.Helpers;
 using EatFitAI.API.Repositories.Interfaces;
 using EatFitAI.API.Services.Interfaces;
 using Microsoft.AspNetCore.Http;
@@ -213,7 +214,7 @@ namespace EatFitAI.API.Services
                         UserId = userId,
                         HeightCm = newHeight,
                         WeightKg = newWeight,
-                        MeasuredDate = DateOnly.FromDateTime(DateTime.Now),
+                        MeasuredDate = DateTimeHelper.GetVietnamToday(),
                         Note = "Cập nhật từ Hồ sơ"
                     };
                     await _context.BodyMetrics.AddAsync(newMetric);

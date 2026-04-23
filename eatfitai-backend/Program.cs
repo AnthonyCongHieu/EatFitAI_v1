@@ -662,6 +662,8 @@ builder.Services.AddScoped<INutritionCalcService, NutritionCalcService>();
 builder.Services.AddScoped<IAiLogService, AiLogService>();
 builder.Services.AddScoped<IAdminAuditService, AdminAuditService>();
 builder.Services.AddScoped<SupabaseSchemaBootstrapper>();
+builder.Services.AddScoped<ProductSchemaBootstrapper>();
+builder.Services.AddScoped<ITelemetryService, TelemetryService>();
 
 // Lookup cache service (Singleton for shared cache)
 builder.Services.AddSingleton<ILookupCacheService, LookupCacheService>();
@@ -891,12 +893,14 @@ if (adminGovernanceBootstrapRequested)
     var governanceBootstrapper = scope.ServiceProvider.GetRequiredService<AdminGovernanceBootstrapper>();
     var authInfrastructureBootstrapper = scope.ServiceProvider.GetRequiredService<AuthInfrastructureBootstrapper>();
     var supabaseSchemaBootstrapper = scope.ServiceProvider.GetRequiredService<SupabaseSchemaBootstrapper>();
+    var productSchemaBootstrapper = scope.ServiceProvider.GetRequiredService<ProductSchemaBootstrapper>();
     var governanceOptions = scope.ServiceProvider.GetRequiredService<IOptions<AdminGovernanceOptions>>().Value;
 
     await adminAuditService.EnsureTableAsync();
     await governanceBootstrapper.EnsureSchemaAsync();
     await authInfrastructureBootstrapper.EnsureSchemaAsync();
     await supabaseSchemaBootstrapper.EnsureSchemaAsync();
+    await productSchemaBootstrapper.EnsureSchemaAsync();
 
     var report = new
     {
@@ -937,6 +941,7 @@ using (var scope = app.Services.CreateScope())
     var governanceBootstrapper = scope.ServiceProvider.GetRequiredService<AdminGovernanceBootstrapper>();
     var authInfrastructureBootstrapper = scope.ServiceProvider.GetRequiredService<AuthInfrastructureBootstrapper>();
     var supabaseSchemaBootstrapper = scope.ServiceProvider.GetRequiredService<SupabaseSchemaBootstrapper>();
+    var productSchemaBootstrapper = scope.ServiceProvider.GetRequiredService<ProductSchemaBootstrapper>();
 
     if (await TryRunTrackedStartupPhaseAsync(
             "admin-audit-bootstrap",
@@ -953,6 +958,9 @@ using (var scope = app.Services.CreateScope())
     await TryRunTrackedStartupPhaseAsync(
         "supabase-schema-bootstrap",
         () => supabaseSchemaBootstrapper.EnsureSchemaAsync());
+    await TryRunTrackedStartupPhaseAsync(
+        "product-schema-bootstrap",
+        () => productSchemaBootstrapper.EnsureSchemaAsync());
 }
 
 foreach (var warning in optionalProductionWarnings)
@@ -984,6 +992,7 @@ using (var scope = app.Services.CreateScope())
     var governanceBootstrapper = services.GetRequiredService<AdminGovernanceBootstrapper>();
     var authInfrastructureBootstrapper = services.GetRequiredService<AuthInfrastructureBootstrapper>();
     var supabaseSchemaBootstrapper = services.GetRequiredService<SupabaseSchemaBootstrapper>();
+    var productSchemaBootstrapper = services.GetRequiredService<ProductSchemaBootstrapper>();
 
     if (await TryRunTrackedStartupPhaseAsync(
             "database-seed",
@@ -1004,12 +1013,17 @@ using (var scope = app.Services.CreateScope())
         "supabase-schema-bootstrap",
         () => supabaseSchemaBootstrapper.EnsureSchemaAsync(),
         LogLevel.Error);
+    await TryRunTrackedStartupPhaseAsync(
+        "product-schema-bootstrap",
+        () => productSchemaBootstrapper.EnsureSchemaAsync(),
+        LogLevel.Error);
 }
 
 
 // Add custom middleware
 app.UseMiddleware<ExceptionHandlingMiddleware>();
 app.UseMiddleware<RequestLoggingMiddleware>();
+app.UseMiddleware<SecurityHeadersMiddleware>();
 
 if (app.Environment.IsDevelopment())
 {

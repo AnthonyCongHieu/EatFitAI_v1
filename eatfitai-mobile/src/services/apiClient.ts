@@ -15,6 +15,7 @@ import {
   preloadCachedUrl,
   resetScanState,
 } from './ipScanner';
+import logger from '../utils/logger';
 
 export { setAuthExpiredCallback } from './authSession';
 
@@ -69,7 +70,7 @@ const applyBaseUrl = (url: string): void => {
  * Reset toàn bộ API state - gọi khi IP thay đổi hoặc cần kết nối lại
  */
 export const resetApiState = async (): Promise<void> => {
-  console.log('[APIClient] Đang reset toàn bộ API state...');
+  logger.info('[APIClient] Đang reset toàn bộ API state...');
   lastRescanTime = 0;
   isApiInitialized = false;
   await resetScanState();
@@ -87,7 +88,7 @@ export const aiApiClient = axios.create({ baseURL: API_BASE_URL, timeout: 60000 
  * Luôn verify URL trước khi dùng, fallback sang scan nếu cần
  */
 export const initializeApiClient = async (): Promise<boolean> => {
-  console.log('[APIClient] initializeApiClient started');
+  logger.info('[APIClient] initializeApiClient started');
 
   if (isApiInitialized) return true;
 
@@ -96,7 +97,7 @@ export const initializeApiClient = async (): Promise<boolean> => {
     await preloadCachedUrl();
 
     if (API_BASE_URL) {
-      console.log('[APIClient] Trying configured API URL first:', API_BASE_URL);
+      logger.info('[APIClient] Trying configured API URL first:', API_BASE_URL);
       if (!shouldUseLanDiscovery(API_BASE_URL)) {
         applyBaseUrl(API_BASE_URL);
         isApiInitialized = true;
@@ -116,14 +117,14 @@ export const initializeApiClient = async (): Promise<boolean> => {
     const discoveredUrl = await getApiUrl();
     if (discoveredUrl) {
       applyBaseUrl(discoveredUrl);
-      console.log('[APIClient] ✅ Đã dùng URL từ scan/cache:', discoveredUrl);
+      logger.info('[APIClient] ✅ Đã dùng URL từ scan/cache:', discoveredUrl);
       isApiInitialized = true;
       return true;
     }
 
     // 2. Fallback sang URL từ env nếu scan thất bại
     if (API_BASE_URL) {
-      console.log('[APIClient] Scan thất bại, thử URL từ env:', API_BASE_URL);
+      logger.warn('[APIClient] Scan thất bại, thử URL từ env:', API_BASE_URL);
       if (!shouldUseLanDiscovery(API_BASE_URL)) {
         applyBaseUrl(API_BASE_URL);
         isApiInitialized = true;
@@ -138,10 +139,10 @@ export const initializeApiClient = async (): Promise<boolean> => {
       }
     }
 
-    console.error('[APIClient] ❌ Không tìm thấy backend!');
+    logger.error('[APIClient] ❌ Không tìm thấy backend!');
     return false;
   } catch (error) {
-    console.error('[APIClient] Init error:', error);
+    logger.error('[APIClient] Init error:', error);
     return false;
   }
 };
@@ -155,14 +156,14 @@ export const getCurrentApiUrl = (): string | undefined => {
 
 if (__DEV__) {
   if (!API_BASE_URL) {
-    console.error(
+    logger.error(
       '[EatFitAI] CRITICAL: API_BASE_URL is undefined! Network requests will fail.',
     );
-    console.error(
+    logger.error(
       '[EatFitAI] Set EXPO_PUBLIC_API_BASE_URL environment variable or ensure Expo hostUri is available.',
     );
   } else {
-    console.log(`[EatFitAI] API_BASE_URL configured: ${API_BASE_URL}`);
+    logger.info(`[EatFitAI] API_BASE_URL configured: ${API_BASE_URL}`);
   }
 }
 
@@ -202,6 +203,19 @@ export const fetchWithAuthRetry = async (
   }
 };
 
+const retryUnauthorizedRequest = async (
+  client: typeof apiClient | typeof aiApiClient,
+  originalRequest: InternalAxiosRequestConfig,
+) => {
+  originalRequest._retry = true;
+  const newAccessToken = await refreshAccessToken();
+  const retryHeaders = AxiosHeaders.from(originalRequest.headers ?? {});
+  retryHeaders.set('Authorization', `Bearer ${newAccessToken}`);
+  originalRequest.headers = retryHeaders;
+  logger.info('[EatFitAI] Retrying original request with new token');
+  return client(originalRequest);
+};
+
 // Attach Authorization before requests
 apiClient.interceptors.request.use(async (config: InternalAxiosRequestConfig) => {
   try {
@@ -225,7 +239,7 @@ apiClient.interceptors.request.use(async (config: InternalAxiosRequestConfig) =>
       '/api/food/search-all',
     ]);
     if (__DEV__) {
-      console.log('[EatFitAI] Request Interceptor:', {
+      logger.debug('[EatFitAI] Request Interceptor:', {
         url: config.url,
         method: config.method,
         hasTokenInMem: !!getAccessTokenMem(),
@@ -242,21 +256,21 @@ apiClient.interceptors.request.use(async (config: InternalAxiosRequestConfig) =>
           Authorization: `Bearer ${token}`,
         } as InternalAxiosRequestConfig['headers'];
         if (__DEV__) {
-          console.log(
+          logger.debug(
             '[EatFitAI] Authorization header attached:',
             config.headers.Authorization,
           );
         }
       } else {
-        console.warn('[EatFitAI] Invalid token format, skipping authorization header');
+        logger.warn('[EatFitAI] Invalid token format, skipping authorization header');
       }
     } else if (__DEV__ && urlPath && !noAuthPaths.has(urlPath)) {
       // Only warn for endpoints that typically require auth
-      console.warn('[EatFitAI] No token available for request:', config.url);
+      logger.warn('[EatFitAI] No token available for request:', config.url);
     }
   } catch (error) {
     if (__DEV__) {
-      console.error('[EatFitAI] Error in request interceptor:', error);
+      logger.error('[EatFitAI] Error in request interceptor:', error);
     }
   }
   return config;
@@ -281,16 +295,16 @@ apiClient.interceptors.response.use(
       } as const;
       // Reduce noise: don't warn for /health 404 (handled by fallback)
       if (urlPath === '/health' && safeError.status === 404) {
-        console.debug('EatFitAI health ping fallback:', safeError);
+        logger.debug('EatFitAI health ping fallback:', safeError);
       } else {
-        console.warn('EatFitAI API warning:', safeError);
+        logger.warn('EatFitAI API warning:', safeError);
       }
     }
 
     const originalRequest = error.config;
     const status = error.response?.status;
     if (__DEV__) {
-      console.log('[EatFitAI] Response Interceptor - Status check:', {
+      logger.debug('[EatFitAI] Response Interceptor - Status check:', {
         status,
         hasOriginalRequest: !!originalRequest,
         isRetry: !!originalRequest?._retry,
@@ -298,16 +312,8 @@ apiClient.interceptors.response.use(
       });
     }
     if (status === 401 && originalRequest && !originalRequest._retry) {
-      originalRequest._retry = true;
       try {
-        const newAccessToken = await refreshAccessToken();
-        const retryHeaders = AxiosHeaders.from(originalRequest.headers ?? {});
-        retryHeaders.set('Authorization', `Bearer ${newAccessToken}`);
-        originalRequest.headers = retryHeaders;
-        if (__DEV__) {
-          console.log('[EatFitAI] Retrying original request with new token');
-        }
-        return apiClient(originalRequest);
+        return await retryUnauthorizedRequest(apiClient, originalRequest);
       } catch (err) {
         return Promise.reject(err);
       }
@@ -328,14 +334,14 @@ apiClient.interceptors.response.use(
       }
 
       if (__DEV__) {
-        console.warn('[EatFitAI] Network Error, đang thử tìm lại backend...');
+        logger.warn('[EatFitAI] Network Error, đang thử tìm lại backend...');
       }
 
       originalRequest._networkRetried = true;
 
       const now = Date.now();
       if (now - lastRescanTime < RESCAN_COOLDOWN) {
-        console.log('[APIClient] Bỏ qua re-scan do đang trong cooldown');
+        logger.info('[APIClient] Bỏ qua re-scan do đang trong cooldown');
         return Promise.reject(error);
       }
 
@@ -349,11 +355,11 @@ apiClient.interceptors.response.use(
 
           // Retry request với URL mới
           originalRequest.baseURL = newUrl;
-          console.log('[EatFitAI] Retry với URL mới:', newUrl);
+          logger.info('[EatFitAI] Retry với URL mới:', newUrl);
           return apiClient(originalRequest);
         }
       } catch (rescanError) {
-        console.error('[EatFitAI] Re-scan failed:', rescanError);
+        logger.error('[EatFitAI] Re-scan failed:', rescanError);
       }
 
       // Re-scan thất bại, return lỗi gốc
@@ -381,10 +387,26 @@ aiApiClient.interceptors.request.use(async (config: InternalAxiosRequestConfig) 
     }
   } catch (error) {
     if (__DEV__) {
-      console.error('[EatFitAI] AI Client Interceptor Error:', error);
+      logger.error('[EatFitAI] AI Client Interceptor Error:', error);
     }
   }
   return config;
 });
+
+aiApiClient.interceptors.response.use(
+  (response) => response,
+  async (error: AxiosError) => {
+    const originalRequest = error.config;
+    if (error.response?.status === 401 && originalRequest && !originalRequest._retry) {
+      try {
+        return await retryUnauthorizedRequest(aiApiClient, originalRequest);
+      } catch (refreshError) {
+        return Promise.reject(refreshError);
+      }
+    }
+
+    return Promise.reject(error);
+  },
+);
 
 export default apiClient;

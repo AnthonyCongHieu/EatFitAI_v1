@@ -1,5 +1,6 @@
 ﻿using System.Security.Claims;
 using EatFitAI.API.DTOs.User;
+using EatFitAI.API.Helpers;
 using EatFitAI.API.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -34,6 +35,10 @@ namespace EatFitAI.API.Controllers
             {
                 return NotFound(new { message = ex.Message });
             }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Unauthorized(new { message = ex.Message });
+            }
         }
 
         [HttpPut("profile")]
@@ -49,14 +54,15 @@ namespace EatFitAI.API.Controllers
             {
                 return NotFound(new { message = ex.Message });
             }
-            catch (Exception ex)
+            catch (UnauthorizedAccessException ex)
             {
-                var baseException = ex.GetBaseException();
-                return StatusCode(StatusCodes.Status500InternalServerError, new
-                {
-                    message = "Đã xảy ra lỗi khi cập nhật hồ sơ.",
-                    error = baseException.Message
-                });
+                return Unauthorized(new { message = ex.Message });
+            }
+            catch (Exception)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, ErrorResponseHelper.SafeError(
+                    "Đã xảy ra lỗi khi cập nhật hồ sơ.",
+                    HttpContext));
             }
         }
 
@@ -84,22 +90,26 @@ namespace EatFitAI.API.Controllers
             {
                 return BadRequest(new { message = ex.Message });
             }
-            catch (InvalidOperationException ex)
+            catch (InvalidOperationException)
             {
-                return StatusCode(StatusCodes.Status503ServiceUnavailable, new { message = ex.Message });
+                return StatusCode(StatusCodes.Status503ServiceUnavailable, ErrorResponseHelper.SafeError(
+                    "avatar_unavailable",
+                    "Không thể tải avatar lúc này.",
+                    HttpContext));
             }
             catch (KeyNotFoundException ex)
             {
                 return NotFound(new { message = ex.Message });
             }
-            catch (Exception ex)
+            catch (UnauthorizedAccessException ex)
             {
-                var baseException = ex.GetBaseException();
-                return StatusCode(StatusCodes.Status500InternalServerError, new
-                {
-                    message = "Đã xảy ra lỗi khi tải avatar.",
-                    error = baseException.Message
-                });
+                return Unauthorized(new { message = ex.Message });
+            }
+            catch (Exception)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, ErrorResponseHelper.SafeError(
+                    "Đã xảy ra lỗi khi tải avatar.",
+                    HttpContext));
             }
         }
 
@@ -116,9 +126,13 @@ namespace EatFitAI.API.Controllers
             {
                 return NotFound(new { message = ex.Message });
             }
-            catch (Exception ex)
+            catch (UnauthorizedAccessException ex)
             {
-                return StatusCode(500, new { message = "Đã xảy ra lỗi khi ghi nhận chỉ số cơ thể", error = ex.Message });
+                return Unauthorized(new { message = ex.Message });
+            }
+            catch (Exception)
+            {
+                return StatusCode(500, ErrorResponseHelper.SafeError("Đã xảy ra lỗi khi ghi nhận chỉ số cơ thể", HttpContext));
             }
         }
 
@@ -135,9 +149,13 @@ namespace EatFitAI.API.Controllers
             {
                 return NotFound(new { message = ex.Message });
             }
-            catch (Exception ex)
+            catch (UnauthorizedAccessException ex)
             {
-                return StatusCode(500, new { message = "Đã xảy ra lỗi khi lấy lịch sử chỉ số cơ thể", error = ex.Message });
+                return Unauthorized(new { message = ex.Message });
+            }
+            catch (Exception)
+            {
+                return StatusCode(500, ErrorResponseHelper.SafeError("Đã xảy ra lỗi khi lấy lịch sử chỉ số cơ thể", HttpContext));
             }
         }
 
@@ -154,6 +172,10 @@ namespace EatFitAI.API.Controllers
             catch (KeyNotFoundException ex)
             {
                 return NotFound(new { message = ex.Message });
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Unauthorized(new { message = ex.Message });
             }
         }
 

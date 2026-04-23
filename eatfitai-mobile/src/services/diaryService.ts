@@ -2,8 +2,15 @@
 // Chú thích bằng tiếng Việt
 
 import apiClient from './apiClient';
+import { loadWithOfflineFallback, offlineCache } from './offlineCache';
 import type { MealDiaryDto, MealTypeId } from '../types';
 import { MEAL_TYPE_LABELS } from '../types';
+import logger from '../utils/logger';
+
+const DAY_SUMMARY_CACHE_PREFIX = '@eatfit_cache:diary:summary:';
+const DAY_COMBINED_CACHE_PREFIX = '@eatfit_cache:diary:combined:';
+const DAY_ENTRIES_CACHE_PREFIX = '@eatfit_cache:diary:entries:';
+const WEEK_SUMMARY_CACHE_PREFIX = '@eatfit_cache:diary:week:';
 
 export type DiaryMealType = MealTypeId;
 
@@ -124,8 +131,7 @@ const normalizeSummary = (data: any): DaySummary => ({
 });
 
 const normalizeWeekSummary = (data: any): WeekSummary => {
-  // Log để debug
-  console.log('[diaryService] Raw week summary:', JSON.stringify(data));
+  logger.debug('[diaryService] Raw week summary:', JSON.stringify(data));
 
   return {
     totalCalories: toNumberOrNull(data?.totalCalories ?? data?.TotalCalories) ?? 0,
@@ -172,23 +178,29 @@ export const diaryService = {
   // Lấy tổng quan nhật ký ngày (mặc định hôm nay)
   async getTodaySummary(): Promise<DaySummary> {
     const date = todayDate();
-    const response = await apiClient.get('/api/summary/day', { params: { date } });
-    console.log('[EatFitAI DEBUG] Raw API response:', JSON.stringify(response.data));
-    const normalized = normalizeSummary(response.data);
-    console.log('[EatFitAI DEBUG] Normalized summary:', JSON.stringify(normalized));
-    return normalized;
+    return loadWithOfflineFallback(`${DAY_SUMMARY_CACHE_PREFIX}${date}`, async () => {
+      const response = await apiClient.get('/api/summary/day', { params: { date } });
+      logger.debug('[EatFitAI DEBUG] Raw API response:', JSON.stringify(response.data));
+      const normalized = normalizeSummary(response.data);
+      logger.debug('[EatFitAI DEBUG] Normalized summary:', JSON.stringify(normalized));
+      return normalized;
+    });
   },
 
   // Lấy tổng quan nhật ký tuần
   async getWeekSummary(date: string): Promise<WeekSummary> {
-    const response = await apiClient.get('/api/summary/week', { params: { date } });
-    return normalizeWeekSummary(response.data);
+    return loadWithOfflineFallback(`${WEEK_SUMMARY_CACHE_PREFIX}${date}`, async () => {
+      const response = await apiClient.get('/api/summary/week', { params: { date } });
+      return normalizeWeekSummary(response.data);
+    });
   },
 
   async getEntriesByDate(date: string): Promise<DiaryEntry[]> {
-    const response = await apiClient.get('/api/meal-diary', { params: { date } });
-    const rows = Array.isArray(response.data) ? response.data : [];
-    return rows.map(normalizeEntry);
+    return loadWithOfflineFallback(`${DAY_ENTRIES_CACHE_PREFIX}${date}`, async () => {
+      const response = await apiClient.get('/api/meal-diary', { params: { date } });
+      const rows = Array.isArray(response.data) ? response.data : [];
+      return rows.map(normalizeEntry);
+    });
   },
 
   async getTodayCombined(): Promise<DaySummary> {
@@ -196,13 +208,17 @@ export const diaryService = {
   },
 
   async getDayCombined(date: string): Promise<DaySummary> {
-    const [summaryResp, entries] = await Promise.all([
-      apiClient.get('/api/summary/day', { params: { date } }),
-      this.getEntriesByDate(date),
-    ]);
-    const summary = normalizeSummary(summaryResp.data);
-    const meals = groupByMeal(entries);
-    return { ...summary, meals };
+    return loadWithOfflineFallback(`${DAY_COMBINED_CACHE_PREFIX}${date}`, async () => {
+      const [summaryResp, entries] = await Promise.all([
+        apiClient.get('/api/summary/day', { params: { date } }),
+        this.getEntriesByDate(date),
+      ]);
+      const summary = normalizeSummary(summaryResp.data);
+      const meals = groupByMeal(entries);
+      const combined = { ...summary, meals };
+      await offlineCache.set(`${DAY_SUMMARY_CACHE_PREFIX}${date}`, summary);
+      return combined;
+    });
   },
 
   // Xóa một entry khỏi nhật ký

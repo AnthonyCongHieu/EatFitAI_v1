@@ -16,7 +16,12 @@ export type AppTabsParamList = {
         source?: 'home-hub' | 'sheet-hub' | 'home-fab';
       }
     | undefined;
-  StatsTab: undefined;
+  StatsTab:
+    | {
+        source?: 'weekly-review';
+        focusWeeklyReview?: boolean;
+      }
+    | undefined;
   ProfileTab: undefined;
 };
 

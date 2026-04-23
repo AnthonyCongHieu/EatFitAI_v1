@@ -246,7 +246,7 @@ namespace EatFitAI.API.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error suggesting recipes");
-                return StatusCode(500, new { message = "Đã xảy ra lỗi khi gợi ý công thức", error = ex.Message });
+                return StatusCode(500, ErrorResponseHelper.SafeError("Đã xảy ra lỗi khi gợi ý công thức", HttpContext));
             }
         }
 
@@ -274,7 +274,7 @@ namespace EatFitAI.API.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error getting recipe detail for RecipeId {RecipeId}", recipeId);
-                return StatusCode(500, new { message = "Đã xảy ra lỗi khi lấy chi tiết công thức", error = ex.Message });
+                return StatusCode(500, ErrorResponseHelper.SafeError("Đã xảy ra lỗi khi lấy chi tiết công thức", HttpContext));
             }
         }
 
@@ -284,7 +284,7 @@ namespace EatFitAI.API.Controllers
         var userId = GetUserIdFromToken();
         using var scope = HttpContext.RequestServices.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<EatFitAI.API.DbScaffold.Data.EatFitAIDbContext>();
-        var today = DateOnly.FromDateTime(DateTime.UtcNow.Date);
+        var today = DateTimeHelper.GetVietnamToday();
         var current = await db.NutritionTargets
             .Where(t => t.UserId == userId && t.EffectiveFrom <= today && (t.EffectiveTo == null || t.EffectiveTo >= today))
             .OrderByDescending(t => t.EffectiveFrom)
@@ -360,8 +360,7 @@ namespace EatFitAI.API.Controllers
                     age = request.Age ?? 25,
                     height = request.HeightCm ?? 170,
                     weight = request.WeightKg ?? 65,
-                    activity = request.Goal?.ToLower() == "cut" ? "moderate" : 
-                              request.Goal?.ToLower() == "bulk" ? "active" : "moderate",
+                    activity = MapActivityLevelToProviderLabel(request.ActivityLevel),
                     goal = request.Goal ?? "maintain"
                 };
                 
@@ -397,6 +396,15 @@ namespace EatFitAI.API.Controllers
                     var result = System.Text.Json.JsonSerializer.Deserialize<System.Text.Json.JsonElement>(resultJson);
                     
                     var source = result.TryGetProperty("source", out var srcProp) ? srcProp.GetString() : "unknown";
+                    var offlineMode =
+                        result.TryGetProperty("offlineMode", out var offlineProp) &&
+                        offlineProp.ValueKind is System.Text.Json.JsonValueKind.True or System.Text.Json.JsonValueKind.False
+                            ? offlineProp.GetBoolean()
+                            : !string.Equals(source, "gemini", StringComparison.OrdinalIgnoreCase);
+                    var explanation =
+                        result.TryGetProperty("explanation", out var expProp) ? expProp.GetString() : null;
+                    var message =
+                        result.TryGetProperty("message", out var msgProp) ? msgProp.GetString() : null;
                     _logger.LogInformation("AI Provider returned nutrition advice from source: {Source}", source);
                     
                     // Helper function để parse số từ JSON (handle number, double, string)
@@ -435,26 +443,27 @@ namespace EatFitAI.API.Controllers
                         carbs,
                         fat,
                         source = source,
-                        offlineMode = false,
-                        explanation = result.TryGetProperty("explanation", out var expProp) ? expProp.GetString() : null
+                        offlineMode = offlineMode,
+                        explanation = explanation,
+                        message = message
                     });
                 }
                 else
                 {
                     var errorContent = await response.Content.ReadAsStringAsync();
                     _logger.LogWarning("AI Provider returned error: {StatusCode} - {Error}", response.StatusCode, errorContent);
-                    return StatusCode(503, new { message = "Dịch vụ AI hiện không khả dụng", error = errorContent });
+                    return StatusCode(503, ErrorResponseHelper.SafeError("ai-provider_error", "Dịch vụ AI hiện không khả dụng", HttpContext));
                 }
             }
             catch (HttpRequestException ex)
             {
                 _logger.LogError(ex, "Failed to connect to AI Provider");
-                return StatusCode(503, new { message = "Không thể kết nối đến dịch vụ AI. Hãy đảm bảo Ollama đang chạy.", error = ex.Message });
+                return StatusCode(503, ErrorResponseHelper.SafeError("ai-provider_error", "Không thể kết nối đến dịch vụ AI.", HttpContext));
             }
             catch (TaskCanceledException ex)
             {
                 _logger.LogError(ex, "AI Provider request timed out");
-                return StatusCode(504, new { message = "Dịch vụ AI phản hồi quá chậm", error = ex.Message });
+                return StatusCode(504, ErrorResponseHelper.SafeError("ai-provider_timeout", "Dịch vụ AI phản hồi quá chậm", HttpContext));
             }
         }
 
@@ -493,7 +502,7 @@ namespace EatFitAI.API.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error generating nutrition insights");
-                return StatusCode(500, new { message = "Đã xảy ra lỗi khi tạo phân tích dinh dưỡng", error = ex.Message });
+                return StatusCode(500, ErrorResponseHelper.SafeError("Đã xảy ra lỗi khi tạo phân tích dinh dưỡng", HttpContext));
             }
         }
 
@@ -531,7 +540,7 @@ namespace EatFitAI.API.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error calculating adaptive target");
-                return StatusCode(500, new { message = "Đã xảy ra lỗi khi tính mục tiêu thích ứng", error = ex.Message });
+                return StatusCode(500, ErrorResponseHelper.SafeError("Đã xảy ra lỗi khi tính mục tiêu thích ứng", HttpContext));
             }
         }
 
@@ -559,7 +568,7 @@ namespace EatFitAI.API.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error applying nutrition target");
-                return StatusCode(500, new { message = "Đã xảy ra lỗi khi áp dụng mục tiêu", error = ex.Message });
+                return StatusCode(500, ErrorResponseHelper.SafeError("Đã xảy ra lỗi khi áp dụng mục tiêu", HttpContext));
             }
         }
 
@@ -587,7 +596,7 @@ namespace EatFitAI.API.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error retrieving detection history");
-                return StatusCode(500, new { message = "Đã xảy ra lỗi khi lấy lịch sử", error = ex.Message });
+                return StatusCode(500, ErrorResponseHelper.SafeError("Đã xảy ra lỗi khi lấy lịch sử", HttpContext));
             }
         }
 
@@ -615,7 +624,7 @@ namespace EatFitAI.API.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error retrieving unmapped labels stats");
-                return StatusCode(500, new { message = "Đã xảy ra lỗi khi lấy thống kê", error = ex.Message });
+                return StatusCode(500, ErrorResponseHelper.SafeError("Đã xảy ra lỗi khi lấy thống kê", HttpContext));
             }
         }
 
@@ -640,7 +649,7 @@ namespace EatFitAI.API.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error suggesting food items for label");
-                return StatusCode(500, new { message = "Đã xảy ra lỗi khi gợi ý món ăn", error = ex.Message });
+                return StatusCode(500, ErrorResponseHelper.SafeError("Đã xảy ra lỗi khi gợi ý món ăn", HttpContext));
             }
         }
 
@@ -738,18 +747,18 @@ namespace EatFitAI.API.Controllers
                     var errorContent = await response.Content.ReadAsStringAsync(cancellationToken);
                     _logger.LogWarning("AI Provider cooking-instructions error: {StatusCode} - {Error}", 
                         response.StatusCode, errorContent);
-                    return StatusCode(503, new { message = "Dịch vụ AI hiện không khả dụng", error = errorContent });
+                    return StatusCode(503, ErrorResponseHelper.SafeError("ai-provider_error", "Dịch vụ AI hiện không khả dụng", HttpContext));
                 }
             }
             catch (HttpRequestException ex)
             {
                 _logger.LogError(ex, "Failed to connect to AI Provider for cooking instructions");
-                return StatusCode(503, new { message = "Không thể kết nối đến dịch vụ AI", error = ex.Message });
+                return StatusCode(503, ErrorResponseHelper.SafeError("ai-provider_error", "Không thể kết nối đến dịch vụ AI", HttpContext));
             }
             catch (TaskCanceledException ex)
             {
                 _logger.LogError(ex, "AI Provider cooking-instructions request timed out");
-                return StatusCode(504, new { message = "Dịch vụ AI phản hồi quá chậm", error = ex.Message });
+                return StatusCode(504, ErrorResponseHelper.SafeError("ai-provider_timeout", "Dịch vụ AI phản hồi quá chậm", HttpContext));
             }
         }
 
@@ -913,6 +922,33 @@ namespace EatFitAI.API.Controllers
             return configuredSeconds.HasValue && configuredSeconds.Value > 0
                 ? TimeSpan.FromSeconds(configuredSeconds.Value)
                 : TimeSpan.FromSeconds(60);
+        }
+
+        private static string MapActivityLevelToProviderLabel(double? activityLevel)
+        {
+            var factor = activityLevel is > 0 ? activityLevel.Value : 1.55;
+
+            if (factor < 1.3)
+            {
+                return "sedentary";
+            }
+
+            if (factor < 1.5)
+            {
+                return "light";
+            }
+
+            if (factor < 1.7)
+            {
+                return "moderate";
+            }
+
+            if (factor < 1.9)
+            {
+                return "active";
+            }
+
+            return "very_active";
         }
 
         /// <summary>

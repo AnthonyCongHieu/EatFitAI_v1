@@ -7,6 +7,10 @@ import * as Device from 'expo-device';
 import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
+import { navigateToStatsWeeklyReview } from '../app/navigation/navigationRef';
+import logger from '../utils/logger';
+import { trackEvent } from './analytics';
+
 // Lazy import để tránh crash trong Expo Go
 let Notifications: typeof import('expo-notifications') | null = null;
 let notificationsAvailable = false;
@@ -28,9 +32,9 @@ try {
       shouldShowList: true,
     }),
   });
-  console.log('[NotificationService] Native module loaded successfully');
+  logger.info('[NotificationService] Native module loaded successfully');
 } catch (error) {
-  console.log('[NotificationService] Native module không available (Expo Go mode)');
+  logger.info('[NotificationService] Native module không available (Expo Go mode)');
   notificationsAvailable = false;
 }
 
@@ -80,6 +84,12 @@ const NOTIFICATION_IDS = {
   aiRecipes: 'ai-recipes',
   aiTips: 'ai-tips',
 };
+const WEEKLY_REVIEW_DAY = 2;
+const WEEKLY_REVIEW_TIME = '08:30';
+type NotificationTarget = 'weekly-review';
+
+let notificationResponseSubscription: { remove: () => void } | null = null;
+let pendingNotificationTarget: NotificationTarget | null = null;
 
 // Meal reminder messages
 const MEAL_MESSAGES = {
@@ -118,7 +128,64 @@ const MEAL_MESSAGES = {
   weekly: {
     title: '📊 Báo cáo tiến độ tuần',
     body: 'Báo cáo dinh dưỡng tuần qua của bạn đã sẵn sàng. Xem ngay!',
+  },
+};
+
+const resolveNotificationTarget = (response: any): NotificationTarget | null => {
+  const target = response?.notification?.request?.content?.data?.target;
+  return target === 'weekly-review' ? 'weekly-review' : null;
+};
+
+const handleNotificationTarget = (
+  target: NotificationTarget,
+  source: 'tap' | 'launch' | 'pending',
+): void => {
+  if (target !== 'weekly-review') {
+    return;
   }
+
+  const navigated = navigateToStatsWeeklyReview();
+  pendingNotificationTarget = navigated ? null : target;
+
+  trackEvent('weekly_review_notification_open', {
+    category: 'product',
+    flow: 'retention',
+    step: 'weekly_review_notification',
+    status: navigated ? 'opened' : 'pending',
+    screen: 'StatsScreen',
+    metadata: { source },
+  });
+};
+
+const processNotificationResponse = (
+  response: any,
+  source: 'tap' | 'launch',
+): void => {
+  const target = resolveNotificationTarget(response);
+  if (!target) {
+    return;
+  }
+
+  handleNotificationTarget(target, source);
+};
+
+const ensureNotificationResponseListener = (): void => {
+  if (!Notifications || notificationResponseSubscription) {
+    return;
+  }
+
+  notificationResponseSubscription =
+    Notifications.addNotificationResponseReceivedListener((response) => {
+      processNotificationResponse(response, 'tap');
+    });
+};
+
+export const flushPendingNotificationNavigation = (): void => {
+  if (!pendingNotificationTarget) {
+    return;
+  }
+
+  handleNotificationTarget(pendingNotificationTarget, 'pending');
 };
 
 /**
@@ -129,13 +196,13 @@ export async function requestNotificationPermissions(): Promise<boolean> {
   try {
     // Check nếu native module không available (Expo Go)
     if (!notificationsAvailable || !Notifications) {
-      console.log('[NotificationService] Native module không available (Expo Go mode)');
+      logger.info('[NotificationService] Native module không available (Expo Go mode)');
       return false;
     }
 
     // Kiểm tra thiết bị vật lý (notifications không hoạt động trên simulator/Expo Go)
     if (!Device.isDevice) {
-      console.log(
+      logger.info(
         '[NotificationService] Notifications không hoạt động trên simulator/Expo Go',
       );
       return false;
@@ -150,7 +217,7 @@ export async function requestNotificationPermissions(): Promise<boolean> {
     }
 
     if (finalStatus !== 'granted') {
-      console.log('[NotificationService] Không được cấp quyền notification');
+      logger.warn('[NotificationService] Không được cấp quyền notification');
       return false;
     }
 
@@ -164,11 +231,11 @@ export async function requestNotificationPermissions(): Promise<boolean> {
       });
     }
 
-    console.log('[NotificationService] Đã được cấp quyền notification');
+    logger.info('[NotificationService] Đã được cấp quyền notification');
     return true;
   } catch (error) {
     // Handle gracefully khi native module không available (Expo Go)
-    console.log('[NotificationService] Native module không available:', error);
+    logger.warn('[NotificationService] Native module không available:', error);
     return false;
   }
 }
@@ -216,10 +283,44 @@ async function scheduleDailyNotification(
       },
     });
 
-    console.log(`[NotificationService] Đã schedule ${identifier} lúc ${time}`);
+    logger.info(`[NotificationService] Đã schedule ${identifier} lúc ${time}`);
     return notificationId;
   } catch (error) {
-    console.error(`[NotificationService] Lỗi schedule ${identifier}:`, error);
+    logger.error(`[NotificationService] Lỗi schedule ${identifier}:`, error);
+    return null;
+  }
+}
+
+async function scheduleWeeklyReviewNotification(): Promise<string | null> {
+  if (!Notifications) return null;
+
+  try {
+    await Notifications.cancelScheduledNotificationAsync(NOTIFICATION_IDS.weeklyReview);
+
+    const { hours, minutes } = parseTime(WEEKLY_REVIEW_TIME);
+    const notificationId = await Notifications.scheduleNotificationAsync({
+      identifier: NOTIFICATION_IDS.weeklyReview,
+      content: {
+        title: MEAL_MESSAGES.weekly.title,
+        body: MEAL_MESSAGES.weekly.body,
+        sound: 'default',
+        priority: Notifications.AndroidNotificationPriority.HIGH,
+        data: {
+          target: 'weekly-review',
+        },
+      },
+      trigger: {
+        type: Notifications.SchedulableTriggerInputTypes.WEEKLY,
+        weekday: WEEKLY_REVIEW_DAY,
+        hour: hours,
+        minute: minutes,
+      } as any,
+    });
+
+    logger.info('[NotificationService] Đã schedule weekly review notification');
+    return notificationId;
+  } catch (error) {
+    logger.error('[NotificationService] Lỗi schedule weekly review:', error);
     return null;
   }
 }
@@ -232,9 +333,9 @@ async function cancelNotification(identifier: string): Promise<void> {
 
   try {
     await Notifications.cancelScheduledNotificationAsync(identifier);
-    console.log(`[NotificationService] Đã cancel ${identifier}`);
+    logger.info(`[NotificationService] Đã cancel ${identifier}`);
   } catch (error) {
-    console.error(`[NotificationService] Lỗi cancel ${identifier}:`, error);
+    logger.error(`[NotificationService] Lỗi cancel ${identifier}:`, error);
   }
 }
 
@@ -253,7 +354,7 @@ export async function scheduleNotifications(
   // Yêu cầu quyền nếu chưa có
   const hasPermission = await requestNotificationPermissions();
   if (!hasPermission) {
-    console.log('[NotificationService] Không có quyền, skip scheduling');
+    logger.warn('[NotificationService] Không có quyền, skip scheduling');
     return;
   }
 
@@ -330,9 +431,15 @@ export async function scheduleNotifications(
     await cancelNotification(NOTIFICATION_IDS.streak);
   }
 
+  if (settings.weeklyReviewEnabled) {
+    await scheduleWeeklyReviewNotification();
+  } else {
+    await cancelNotification(NOTIFICATION_IDS.weeklyReview);
+  }
+
   // Note: For Goal Achieved, Achievements and Weekly Report, in a real app these are typically scheduled based on date logic or backend push. Here we connect the toggles.
-  
-  console.log('[NotificationService] Đã schedule tất cả notifications');
+
+  logger.info('[NotificationService] Đã schedule tất cả notifications');
 }
 
 /**
@@ -348,7 +455,7 @@ export async function cancelAllMealNotifications(): Promise<void> {
   await cancelNotification(NOTIFICATION_IDS.aiRecipes);
   await cancelNotification(NOTIFICATION_IDS.aiTips);
   await cancelNotification(NOTIFICATION_IDS.streak);
-  console.log('[NotificationService] Đã cancel tất cả notifications');
+  logger.info('[NotificationService] Đã cancel tất cả notifications');
 }
 
 /**
@@ -364,6 +471,14 @@ export async function getScheduledNotifications(): Promise<any[]> {
  */
 export async function initializeNotifications(): Promise<void> {
   try {
+    if (Notifications) {
+      ensureNotificationResponseListener();
+      const lastResponse = await Notifications.getLastNotificationResponseAsync();
+      if (lastResponse) {
+        processNotificationResponse(lastResponse, 'launch');
+      }
+    }
+
     const saved = await AsyncStorage.getItem(NOTIFICATIONS_SETTINGS_KEY);
     if (saved) {
       const settings: NotificationSettings = JSON.parse(saved);
@@ -371,8 +486,8 @@ export async function initializeNotifications(): Promise<void> {
         await scheduleNotifications(settings);
       }
     }
-    console.log('[NotificationService] Initialized successfully');
+    logger.info('[NotificationService] Initialized successfully');
   } catch (error) {
-    console.error('[NotificationService] Lỗi khởi tạo:', error);
+    logger.error('[NotificationService] Lỗi khởi tạo:', error);
   }
 }

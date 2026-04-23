@@ -119,6 +119,22 @@ namespace EatFitAI.API.Tests.Integration.Controllers
         }
 
         [Fact]
+        public async Task GetFoodByBarcode_LocalMatch_ReturnsFood()
+        {
+            await SeedCatalogFoodAsync("Sữa chua barcode test", barcode: "8938505974198");
+            var client = _factory.CreateClient();
+
+            var response = await client.GetAsync("/api/food/barcode/8938505974198");
+
+            response.EnsureSuccessStatusCode();
+            var result = await response.Content.ReadFromJsonAsync<BarcodeLookupResultDto>();
+            Assert.NotNull(result);
+            Assert.Equal("8938505974198", result.Barcode);
+            Assert.Equal("catalog", result.Source);
+            Assert.NotNull(result.FoodItem);
+        }
+
+        [Fact]
         public async Task SearchAll_CombinesCatalogAndUserFoods()
         {
             var userId = Guid.NewGuid();
@@ -196,7 +212,7 @@ namespace EatFitAI.API.Tests.Integration.Controllers
             await context.SaveChangesAsync();
         }
 
-        private async Task SeedCatalogFoodAsync(string foodName, string? foodNameEn = null)
+        private async Task SeedCatalogFoodAsync(string foodName, string? foodNameEn = null, string? barcode = null)
         {
             using var scope = _factory.Services.CreateScope();
             var context = scope.ServiceProvider.GetRequiredService<EatFitAIDbContext>();
@@ -218,6 +234,7 @@ namespace EatFitAI.API.Tests.Integration.Controllers
                 IsDeleted = false,
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow,
+                Barcode = barcode,
             });
             await context.SaveChangesAsync();
         }

@@ -19,7 +19,14 @@ import type {
 } from '../types/aiEnhanced';
 
 import { API_BASE_URL, assertBackendApiBaseUrl } from '../config/env';
+import { loadWithOfflineFallback, offlineCache } from './offlineCache';
+import { captureError } from './errorTracking';
 import { sanitizeFoodImageUrl } from '../utils/imageHelpers';
+import logger from '../utils/logger';
+
+const CURRENT_NUTRITION_TARGET_CACHE_KEY = '@eatfit_cache:nutrition:current';
+const NUTRITION_INSIGHTS_CACHE_PREFIX = '@eatfit_cache:nutrition:insights:';
+const ADAPTIVE_TARGET_CACHE_PREFIX = '@eatfit_cache:nutrition:adaptive:';
 
 const getApiBaseUrl = (): string => {
   const baseUrl = getCurrentApiUrl() ?? API_BASE_URL;
@@ -45,6 +52,8 @@ export type NutritionTarget = {
   carbs: number;
   fat: number;
   explanation?: string;
+  source?: string;
+  offlineMode?: boolean;
 };
 
 export interface TeachLabelRequest {
@@ -386,6 +395,8 @@ const buildLocalNutritionTarget = (
     protein,
     carbs,
     fat,
+    source: 'formula',
+    offlineMode: true,
     explanation:
       'AI tạm offline. Đây là mục tiêu ước tính từ profile hiện tại, bạn có thể sửa thủ công nếu cần.',
   };
@@ -422,8 +433,8 @@ export async function detectFoodByImage(imageUri: string): Promise<VisionDetectR
     const url = `${baseUrl}/api/ai/vision/detect`;
 
     if (__DEV__) {
-      console.log('[aiService] detectFoodByImage calling:', url);
-      console.log('[aiService] imageUri:', imageUri);
+      logger.info('[aiService] detectFoodByImage calling:', url);
+      logger.info('[aiService] imageUri:', imageUri);
     }
 
     const response = await fetchWithAuthRetry(url, () => {
@@ -446,7 +457,7 @@ export async function detectFoodByImage(imageUri: string): Promise<VisionDetectR
     if (!response.ok) {
       const text = await response.text();
       if (__DEV__) {
-        console.error('[aiService] detectFoodByImage failed:', response.status, text);
+        logger.error('[aiService] detectFoodByImage failed:', response.status, text);
       }
 
       const httpError = new Error(
@@ -486,7 +497,7 @@ export const aiService = {
       const response = await apiClient.get('/api/ai/status');
       return normalizeAiHealthStatus(response.data);
     } catch (error) {
-      console.log('[EatFitAI] Error fetching AI status:', error);
+      logger.warn('[EatFitAI] Error fetching AI status:', error);
       return {
         state: 'DOWN',
         providerUrl: '',
@@ -501,7 +512,7 @@ export const aiService = {
   },
 
   async detectIngredients(_imageBase64: string): Promise<IngredientItem[]> {
-    console.warn(
+    logger.warn(
       'detectIngredients is deprecated. Use detectFoodByImage with imageUri instead.',
     );
     return [];
@@ -528,37 +539,50 @@ export const aiService = {
       protein: 50,
       carbs: 250,
       fat: 65,
+      source: 'default',
+      offlineMode: false,
     };
     try {
-      const response = await apiClient.get<NutritionTargetDto>(
-        '/api/ai/nutrition-targets/current',
-      );
-      const data = response.data ?? {};
-
-      const calories = toNumber(data.caloriesKcal ?? data.calories);
-      const protein = toNumber(data.proteinGrams ?? data.protein);
-      const carbs = toNumber(data.carbohydrateGrams ?? data.carbs);
-      const fat = toNumber(data.fatGrams ?? data.fat);
-
-      if (calories == null || protein == null || carbs == null || fat == null) {
-        console.warn(
-          '[EatFitAI] Nutrition target has null values, using defaults:',
-          data,
-        );
-        return defaults;
-      }
-      return { calories, protein, carbs, fat };
-    } catch (error: unknown) {
-      if (error && typeof error === 'object' && 'response' in error) {
-        const axiosError = error as { response?: { status?: number } };
-        if (axiosError.response?.status === 404) {
-          console.log(
-            '[EatFitAI] No nutrition target found for user (404), using defaults',
+      return await loadWithOfflineFallback(CURRENT_NUTRITION_TARGET_CACHE_KEY, async () => {
+        try {
+          const response = await apiClient.get<NutritionTargetDto>(
+            '/api/ai/nutrition-targets/current',
           );
-          return defaults;
+          const data = response.data ?? {};
+
+          const calories = toNumber(data.caloriesKcal ?? data.calories);
+          const protein = toNumber(data.proteinGrams ?? data.protein);
+          const carbs = toNumber(data.carbohydrateGrams ?? data.carbs);
+          const fat = toNumber(data.fatGrams ?? data.fat);
+
+          if (calories == null || protein == null || carbs == null || fat == null) {
+            logger.warn('[EatFitAI] Nutrition target has null values, using defaults:', data);
+            return defaults;
+          }
+          return {
+            calories,
+            protein,
+            carbs,
+            fat,
+            source: data.source ?? 'backend',
+            offlineMode: Boolean(data.offlineMode),
+            explanation: data.explanation ?? undefined,
+          };
+        } catch (error: unknown) {
+          if (error && typeof error === 'object' && 'response' in error) {
+            const axiosError = error as { response?: { status?: number } };
+            if (axiosError.response?.status === 404) {
+              logger.info('[EatFitAI] No nutrition target found for user (404), using defaults');
+              return defaults;
+            }
+          }
+
+          throw error;
         }
-      }
-      console.error('[EatFitAI] Error fetching nutrition target, using defaults:', error);
+      });
+    } catch (error) {
+      logger.error('[EatFitAI] Error fetching nutrition target, using defaults:', error);
+      captureError(error, 'aiService.getCurrentNutritionTarget');
       return defaults;
     }
   },
@@ -576,29 +600,36 @@ export const aiService = {
     try {
       const profileResponse = await apiClient.get<typeof profile>('/api/profile');
       profile = profileResponse.data ?? {};
-      console.log('[EatFitAI] Profile for nutrition:', profile);
+      logger.debug('[EatFitAI] Profile for nutrition:', profile);
     } catch (profileError) {
-      console.log('[EatFitAI] Error loading profile for nutrition:', profileError);
+      logger.warn('[EatFitAI] Error loading profile for nutrition:', profileError);
     }
 
     const payload = buildNutritionPayload(profile);
 
     try {
-      console.log('[EatFitAI] Nutrition suggest payload:', payload);
+      logger.debug('[EatFitAI] Nutrition suggest payload:', payload);
       const response = await aiApiClient.post<NutritionTargetDto>(
         '/api/ai/nutrition/recalculate',
         payload,
       );
       const data = response.data ?? {};
-      return {
+      const target = {
         calories: Number(data.calories ?? 0),
         protein: Number(data.protein ?? 0),
         carbs: Number(data.carbs ?? data.carb ?? 0),
         fat: Number(data.fat ?? 0),
         explanation: data.explanation ?? undefined,
+        source: data.source ?? 'ai',
+        offlineMode: Boolean(data.offlineMode),
       };
+      await offlineCache.set(CURRENT_NUTRITION_TARGET_CACHE_KEY, target);
+      return target;
     } catch (error) {
-      console.log('[EatFitAI] Error in recalculateNutritionTarget:', error);
+      logger.warn('[EatFitAI] Error in recalculateNutritionTarget:', error);
+      captureError(error, 'aiService.recalculateNutritionTarget', {
+        fallback: 'formula',
+      });
       return buildLocalNutritionTarget(payload);
     }
   },
@@ -613,7 +644,8 @@ export const aiService = {
         effectiveFrom: null,
       });
     } catch (error) {
-      console.error('[EatFitAI] Error applying nutrition target:', error);
+      logger.error('[EatFitAI] Error applying nutrition target:', error);
+      captureError(error, 'aiService.applyNutritionTarget');
       throw error;
     }
   },
@@ -651,16 +683,24 @@ export const aiService = {
     request: import('../types/aiEnhanced').NutritionInsightRequest = {},
   ): Promise<import('../types/aiEnhanced').NutritionInsight> {
     try {
-      const response = await apiClient.post('/api/ai/nutrition/insights', {
+      const cacheKey = `${NUTRITION_INSIGHTS_CACHE_PREFIX}${JSON.stringify({
         analysisDays: request.analysisDays ?? 30,
         includeMealTiming: request.includeMealTiming ?? true,
         includeMacroAnalysis: request.includeMacroAnalysis ?? true,
+      })}`;
+      return await loadWithOfflineFallback(cacheKey, async () => {
+        const response = await apiClient.post('/api/ai/nutrition/insights', {
+          analysisDays: request.analysisDays ?? 30,
+          includeMealTiming: request.includeMealTiming ?? true,
+          includeMacroAnalysis: request.includeMacroAnalysis ?? true,
+        });
+        return normalizeNutritionInsight(response.data);
       });
-      return normalizeNutritionInsight(response.data);
     } catch (error) {
       if (isAiOfflineError(error)) {
         throw toAiOfflineError(error, 'Tính năng phân tích AI tạm không khả dụng.');
       }
+      captureError(error, 'aiService.getNutritionInsights');
       throw error;
     }
   },
@@ -669,15 +709,22 @@ export const aiService = {
     request: import('../types/aiEnhanced').AdaptiveTargetRequest = {},
   ): Promise<import('../types/aiEnhanced').AdaptiveTarget> {
     try {
-      const response = await apiClient.post('/api/ai/nutrition/adaptive-target', {
+      const cacheKey = `${ADAPTIVE_TARGET_CACHE_PREFIX}${JSON.stringify({
         analysisDays: request.analysisDays ?? 14,
         autoApply: request.autoApply ?? false,
+      })}`;
+      return await loadWithOfflineFallback(cacheKey, async () => {
+        const response = await apiClient.post('/api/ai/nutrition/adaptive-target', {
+          analysisDays: request.analysisDays ?? 14,
+          autoApply: request.autoApply ?? false,
+        });
+        return normalizeAdaptiveTarget(response.data);
       });
-      return normalizeAdaptiveTarget(response.data);
     } catch (error) {
       if (isAiOfflineError(error)) {
         throw toAiOfflineError(error, 'AI adaptive target tạm không khả dụng.');
       }
+      captureError(error, 'aiService.getAdaptiveTarget');
       throw error;
     }
   },

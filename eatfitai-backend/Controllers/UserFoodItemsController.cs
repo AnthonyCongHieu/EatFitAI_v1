@@ -1,5 +1,6 @@
 ﻿using System.Security.Claims;
 using EatFitAI.API.DTOs.Food;
+using EatFitAI.API.Helpers;
 using EatFitAI.API.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -29,9 +30,13 @@ namespace EatFitAI.API.Controllers
                 var (items, total) = await _service.ListAsync(userId, q, page, pageSize);
                 return Ok(new { items, total, page, pageSize });
             }
-            catch (Exception ex)
+            catch (UnauthorizedAccessException ex)
             {
-                return StatusCode(500, new { message = "Đã xảy ra lỗi khi lấy danh sách món ăn tự tạo", error = ex.Message });
+                return Unauthorized(new { message = ex.Message });
+            }
+            catch (Exception)
+            {
+                return StatusCode(500, ErrorResponseHelper.SafeError("Đã xảy ra lỗi khi lấy danh sách món ăn tự tạo", HttpContext));
             }
         }
 
@@ -48,9 +53,13 @@ namespace EatFitAI.API.Controllers
             {
                 return NotFound(new { message = ex.Message });
             }
-            catch (Exception ex)
+            catch (UnauthorizedAccessException ex)
             {
-                return StatusCode(500, new { message = "Đã xảy ra lỗi khi lấy món ăn tự tạo", error = ex.Message });
+                return Unauthorized(new { message = ex.Message });
+            }
+            catch (Exception)
+            {
+                return StatusCode(500, ErrorResponseHelper.SafeError("Đã xảy ra lỗi khi lấy món ăn tự tạo", HttpContext));
             }
         }
 
@@ -69,9 +78,13 @@ namespace EatFitAI.API.Controllers
             {
                 return BadRequest(new { message = ex.Message });
             }
-            catch (Exception ex)
+            catch (UnauthorizedAccessException ex)
             {
-                return StatusCode(500, new { message = "Đã xảy ra lỗi khi tạo món ăn tự tạo", error = ex.Message });
+                return Unauthorized(new { message = ex.Message });
+            }
+            catch (Exception)
+            {
+                return StatusCode(500, ErrorResponseHelper.SafeError("Đã xảy ra lỗi khi tạo món ăn tự tạo", HttpContext));
             }
         }
 
@@ -94,9 +107,13 @@ namespace EatFitAI.API.Controllers
             {
                 return BadRequest(new { message = ex.Message });
             }
-            catch (Exception ex)
+            catch (UnauthorizedAccessException ex)
             {
-                return StatusCode(500, new { message = "Đã xảy ra lỗi khi cập nhật món ăn tự tạo", error = ex.Message });
+                return Unauthorized(new { message = ex.Message });
+            }
+            catch (Exception)
+            {
+                return StatusCode(500, ErrorResponseHelper.SafeError("Đã xảy ra lỗi khi cập nhật món ăn tự tạo", HttpContext));
             }
         }
 
@@ -113,9 +130,13 @@ namespace EatFitAI.API.Controllers
             {
                 return NotFound(new { message = ex.Message });
             }
-            catch (Exception ex)
+            catch (UnauthorizedAccessException ex)
             {
-                return StatusCode(500, new { message = "Đã xảy ra lỗi khi xóa món ăn tự tạo", error = ex.Message });
+                return Unauthorized(new { message = ex.Message });
+            }
+            catch (Exception)
+            {
+                return StatusCode(500, ErrorResponseHelper.SafeError("Đã xảy ra lỗi khi xóa món ăn tự tạo", HttpContext));
             }
         }
 

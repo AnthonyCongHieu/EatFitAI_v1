@@ -1,5 +1,6 @@
 ﻿using System.Security.Claims;
 using EatFitAI.API.DTOs.Food;
+using EatFitAI.API.Helpers;
 using EatFitAI.API.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -33,9 +34,9 @@ namespace EatFitAI.API.Controllers
                 var foodItems = await _foodService.SearchFoodItemsAsync(q, limit);
                 return Ok(foodItems);
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                return StatusCode(500, new { message = "Đã xảy ra lỗi khi tìm kiếm món ăn", error = ex.Message });
+                return StatusCode(500, ErrorResponseHelper.SafeError("Đã xảy ra lỗi khi tìm kiếm món ăn", HttpContext));
             }
         }
 
@@ -62,9 +63,35 @@ namespace EatFitAI.API.Controllers
                 var results = await _foodService.SearchAllAsync(q, userId, limit);
                 return Ok(results);
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                return StatusCode(500, new { message = "Đã xảy ra lỗi khi tìm kiếm món ăn", error = ex.Message });
+                return StatusCode(500, ErrorResponseHelper.SafeError("Đã xảy ra lỗi khi tìm kiếm món ăn", HttpContext));
+            }
+        }
+
+        [HttpGet("food/barcode/{barcode}")]
+        public async Task<ActionResult<BarcodeLookupResultDto>> GetFoodByBarcode(
+            string barcode,
+            CancellationToken cancellationToken)
+        {
+            if (string.IsNullOrWhiteSpace(barcode))
+            {
+                return BadRequest(new { message = "Barcode là bắt buộc." });
+            }
+
+            try
+            {
+                var result = await _foodService.LookupByBarcodeAsync(barcode, cancellationToken);
+                if (result == null)
+                {
+                    return NotFound(new { message = "Không tìm thấy sản phẩm cho mã vạch này." });
+                }
+
+                return Ok(result);
+            }
+            catch (Exception)
+            {
+                return StatusCode(500, ErrorResponseHelper.SafeError("Đã xảy ra lỗi khi tra cứu mã vạch", HttpContext));
             }
         }
 
@@ -81,9 +108,9 @@ namespace EatFitAI.API.Controllers
             {
                 return NotFound(new { message = ex.Message });
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                return StatusCode(500, new { message = "Đã xảy ra lỗi khi lấy thông tin món ăn", error = ex.Message });
+                return StatusCode(500, ErrorResponseHelper.SafeError("Đã xảy ra lỗi khi lấy thông tin món ăn", HttpContext));
             }
         }
 
@@ -97,9 +124,9 @@ namespace EatFitAI.API.Controllers
                 var customDish = await _foodService.CreateCustomDishAsync(userId, customDishDto);
                 return Ok(customDish);
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                return StatusCode(500, new { message = "Đã xảy ra lỗi khi tạo món tự tạo", error = ex.Message });
+                return StatusCode(500, ErrorResponseHelper.SafeError("Đã xảy ra lỗi khi tạo món tự tạo", HttpContext));
             }
         }
 

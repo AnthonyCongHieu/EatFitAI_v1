@@ -5,6 +5,8 @@ using EatFitAI.API.DbScaffold.Models;
 using EatFitAI.API.Repositories.Interfaces;
 using EatFitAI.API.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+using System.Text.Json;
 
 namespace EatFitAI.API.Services
 {
@@ -14,17 +16,26 @@ namespace EatFitAI.API.Services
         private readonly IUserFoodItemRepository _userFoodItemRepository;
         private readonly EatFitAIDbContext _context;
         private readonly IMapper _mapper;
+        private readonly IHttpClientFactory _httpClientFactory;
+        private readonly IConfiguration _configuration;
+        private readonly ILogger<FoodService> _logger;
 
         public FoodService(
             IFoodItemRepository foodItemRepository,
             IUserFoodItemRepository userFoodItemRepository,
             EatFitAIDbContext context,
-            IMapper mapper)
+            IMapper mapper,
+            IHttpClientFactory httpClientFactory,
+            IConfiguration configuration,
+            ILogger<FoodService> logger)
         {
             _foodItemRepository = foodItemRepository;
             _userFoodItemRepository = userFoodItemRepository;
             _context = context;
             _mapper = mapper;
+            _httpClientFactory = httpClientFactory;
+            _configuration = configuration;
+            _logger = logger;
         }
 
         public async Task<IEnumerable<FoodItemDto>> SearchFoodItemsAsync(string searchTerm, int limit = 50)
@@ -45,6 +56,44 @@ namespace EatFitAI.API.Services
             var servingDtos = _mapper.Map<IEnumerable<FoodServingDto>>(servings);
 
             return (foodItemDto, servingDtos);
+        }
+
+        public async Task<BarcodeLookupResultDto?> LookupByBarcodeAsync(
+            string barcode,
+            CancellationToken cancellationToken = default)
+        {
+            var normalizedBarcode = NormalizeBarcode(barcode);
+            if (string.IsNullOrWhiteSpace(normalizedBarcode))
+            {
+                return null;
+            }
+
+            var foodItem = await _context.FoodItems
+                .AsNoTracking()
+                .FirstOrDefaultAsync(
+                    item => item.IsActive
+                        && !item.IsDeleted
+                        && item.Barcode == normalizedBarcode,
+                    cancellationToken);
+
+            if (foodItem != null)
+            {
+                var servings = await _context.FoodServings
+                    .AsNoTracking()
+                    .Where(serving => serving.FoodItemId == foodItem.FoodItemId)
+                    .Include(serving => serving.ServingUnit)
+                    .ToListAsync(cancellationToken);
+
+                return new BarcodeLookupResultDto
+                {
+                    Barcode = normalizedBarcode,
+                    Source = "catalog",
+                    FoodItem = _mapper.Map<FoodItemDto>(foodItem),
+                    Servings = _mapper.Map<IEnumerable<FoodServingDto>>(servings),
+                };
+            }
+
+            return await LookupBarcodeFromProviderAsync(normalizedBarcode, cancellationToken);
         }
 
         public async Task<CustomDishResponseDto> CreateCustomDishAsync(Guid userId, CustomDishDto customDishDto)
@@ -163,6 +212,153 @@ namespace EatFitAI.API.Services
                 .ToList();
 
             return combined;
+        }
+
+        private async Task<BarcodeLookupResultDto?> LookupBarcodeFromProviderAsync(
+            string barcode,
+            CancellationToken cancellationToken)
+        {
+            var templateUrl = _configuration["FoodBarcodeProvider:TemplateUrl"];
+            if (string.IsNullOrWhiteSpace(templateUrl))
+            {
+                return null;
+            }
+
+            var requestUrl = templateUrl.Replace(
+                "{barcode}",
+                Uri.EscapeDataString(barcode),
+                StringComparison.OrdinalIgnoreCase);
+
+            using var client = _httpClientFactory.CreateClient();
+
+            try
+            {
+                using var response = await client.GetAsync(requestUrl, cancellationToken);
+                if (!response.IsSuccessStatusCode)
+                {
+                    _logger.LogInformation(
+                        "Barcode provider returned {StatusCode} for barcode {Barcode}",
+                        (int)response.StatusCode,
+                        barcode);
+                    return null;
+                }
+
+                var payload = await response.Content.ReadAsStringAsync(cancellationToken);
+                using var document = JsonDocument.Parse(payload);
+                var foodItem = ParseProviderFoodItem(document.RootElement, barcode);
+                if (foodItem == null)
+                {
+                    return null;
+                }
+
+                return new BarcodeLookupResultDto
+                {
+                    Barcode = barcode,
+                    Source = "provider",
+                    ProviderName = _configuration["FoodBarcodeProvider:Name"] ?? "barcode-provider",
+                    FoodItem = foodItem,
+                };
+            }
+            catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or JsonException)
+            {
+                _logger.LogWarning(ex, "Barcode provider lookup failed for {Barcode}", barcode);
+                return null;
+            }
+        }
+
+        private static FoodItemDto? ParseProviderFoodItem(JsonElement root, string barcode)
+        {
+            var product = root;
+            if (root.ValueKind == JsonValueKind.Object
+                && root.TryGetProperty("product", out var productElement)
+                && productElement.ValueKind == JsonValueKind.Object)
+            {
+                product = productElement;
+            }
+
+            var name = ReadString(product, "product_name", "product_name_vi", "food_name", "name", "title");
+            if (string.IsNullOrWhiteSpace(name))
+            {
+                return null;
+            }
+
+            decimal? ReadNutriment(params string[] keys)
+            {
+                if (!product.TryGetProperty("nutriments", out var nutriments)
+                    || nutriments.ValueKind != JsonValueKind.Object)
+                {
+                    return null;
+                }
+
+                foreach (var key in keys)
+                {
+                    if (!nutriments.TryGetProperty(key, out var value))
+                    {
+                        continue;
+                    }
+
+                    if (value.ValueKind == JsonValueKind.Number && value.TryGetDecimal(out var decimalValue))
+                    {
+                        return decimalValue;
+                    }
+
+                    if (value.ValueKind == JsonValueKind.String
+                        && decimal.TryParse(value.GetString(), out decimalValue))
+                    {
+                        return decimalValue;
+                    }
+                }
+
+                return null;
+            }
+
+            return new FoodItemDto
+            {
+                FoodItemId = 0,
+                FoodName = name,
+                Barcode = barcode,
+                CaloriesPer100g = ReadNutriment("energy-kcal_100g", "energy_kcal_100g", "calories_100g", "calories") ?? 0m,
+                ProteinPer100g = ReadNutriment("proteins_100g", "protein_100g", "protein") ?? 0m,
+                CarbPer100g = ReadNutriment("carbohydrates_100g", "carbs_100g", "carbs") ?? 0m,
+                FatPer100g = ReadNutriment("fat_100g", "fats_100g", "fat") ?? 0m,
+                ThumbNail = ReadString(product, "image_url", "image_front_url", "image"),
+                Source = "provider",
+                IsActive = true,
+                IsVerified = false,
+                ReliabilityScore = 0.5d,
+            };
+        }
+
+        private static string? ReadString(JsonElement element, params string[] keys)
+        {
+            if (element.ValueKind != JsonValueKind.Object)
+            {
+                return null;
+            }
+
+            foreach (var key in keys)
+            {
+                if (element.TryGetProperty(key, out var value)
+                    && value.ValueKind == JsonValueKind.String)
+                {
+                    var result = value.GetString()?.Trim();
+                    if (!string.IsNullOrWhiteSpace(result))
+                    {
+                        return result;
+                    }
+                }
+            }
+
+            return null;
+        }
+
+        private static string NormalizeBarcode(string barcode)
+        {
+            return new string(
+                barcode
+                    .Trim()
+                    .Where(char.IsLetterOrDigit)
+                    .ToArray());
         }
     }
 }

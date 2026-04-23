@@ -29,6 +29,7 @@ export type FoodItem = {
   name: string;
   nameEn?: string | null;
   brand?: string | null;
+  barcode?: string | null;
   calories?: number | null;
   protein?: number | null;
   carbs?: number | null;
@@ -66,6 +67,7 @@ const normalizeFoodItem = (data: FoodItemDtoExtended): FoodItem => ({
   name: data?.foodName ?? 'Món ăn',
   nameEn: data?.foodNameEn ?? null,
   brand: null,
+  barcode: (data as FoodItemDtoExtended & { barcode?: string | null })?.barcode ?? null,
   calories: data?.caloriesPer100g ?? null,
   protein: data?.proteinPer100g ?? null,
   carbs: data?.carbPer100g ?? null,
@@ -130,6 +132,7 @@ export const foodService = {
       id: String(x?.id ?? ''),
       name: x?.foodName ?? 'Món ăn',
       brand: null,
+      barcode: null,
       calories: toNumber(x?.caloriesPer100),
       protein: toNumber(x?.proteinPer100),
       carbs: toNumber(x?.carbPer100),
@@ -199,6 +202,22 @@ export const foodService = {
     });
   },
 
+  async lookupByBarcode(barcode: string): Promise<FoodDetail | null> {
+    const trimmedBarcode = barcode.trim();
+    if (!trimmedBarcode) {
+      return null;
+    }
+
+    const response = await apiClient.get(`/api/food/barcode/${encodeURIComponent(trimmedBarcode)}`);
+    const data = response.data;
+    const foodItem = data?.foodItem ?? data;
+    if (!foodItem) {
+      return null;
+    }
+
+    return normalizeFoodDetail(foodItem as FoodItemDtoExtended);
+  },
+
   // Create a custom dish
   async createCustomDish(payload: {
     dishName: string;
@@ -258,6 +277,7 @@ export const foodService = {
         name: item?.foodName ?? item?.name ?? 'Món ăn',
         nameEn: item?.foodNameEn ?? null,
         brand: null,
+        barcode: item?.barcode ?? null,
         calories: item?.caloriesPer100g ?? item?.calories ?? null,
         protein: item?.proteinPer100g ?? item?.protein ?? null,
         carbs: item?.carbPer100g ?? item?.carbs ?? null,

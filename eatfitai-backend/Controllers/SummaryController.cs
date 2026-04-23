@@ -1,5 +1,6 @@
 ﻿using System.Security.Claims;
 using EatFitAI.API.DTOs.Analytics;
+using EatFitAI.API.Helpers;
 using EatFitAI.API.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -33,9 +34,13 @@ namespace EatFitAI.API.Controllers
                 var summary = await _analyticsService.GetDaySummaryWithMealsAsync(userId, date);
                 return Ok(summary);
             }
-            catch (Exception ex)
+            catch (UnauthorizedAccessException ex)
             {
-                return StatusCode(500, new { message = "Đã xảy ra lỗi khi lấy tổng quan ngày", error = ex.Message });
+                return Unauthorized(new { message = ex.Message });
+            }
+            catch (Exception)
+            {
+                return StatusCode(500, ErrorResponseHelper.SafeError("Đã xảy ra lỗi khi lấy tổng quan ngày", HttpContext));
             }
         }
 
@@ -53,9 +58,13 @@ namespace EatFitAI.API.Controllers
                 var summary = await _analyticsService.GetWeekSummaryAsync(userId, date);
                 return Ok(summary);
             }
-            catch (Exception ex)
+            catch (UnauthorizedAccessException ex)
             {
-                return StatusCode(500, new { message = "Đã xảy ra lỗi khi lấy tổng quan tuần", error = ex.Message });
+                return Unauthorized(new { message = ex.Message });
+            }
+            catch (Exception)
+            {
+                return StatusCode(500, ErrorResponseHelper.SafeError("Đã xảy ra lỗi khi lấy tổng quan tuần", HttpContext));
             }
         }
 

@@ -31,6 +31,7 @@ import Screen from '../../../components/Screen';
 import { useAppTheme } from '../../../theme/ThemeProvider';
 import { AppImage } from '../../../components/ui/AppImage';
 import type { RootStackParamList } from '../../types';
+import { trackEvent } from '../../../services/analytics';
 import { foodService, type FoodItem } from '../../../services/foodService';
 import { getFoodImageUrl } from '../../../utils/imageHelpers';
 import { handleApiError } from '../../../utils/errorHandler';
@@ -185,11 +186,32 @@ const FoodSearchScreen = (): React.ReactElement => {
         text1: t('food_search.quick_add_success'),
         text2: `${item.name} (100g) - ${item.calories || 0} kcal`,
       });
+      trackEvent('diary_add_quick_success', {
+        flow: 'food_search',
+        step: 'quick_add',
+        status: 'success',
+        metadata: {
+          foodId: item.id,
+          source: item.source,
+          foodName: item.name,
+        },
+      });
       await invalidateDiaryQueries(queryClient);
       if (returnToDiaryOnSave) {
         navigation.replace('MealDiary', selectedDate ? { selectedDate } : undefined);
       }
     } catch (error) {
+      trackEvent('diary_add_quick_failure', {
+        category: 'error',
+        flow: 'food_search',
+        step: 'quick_add',
+        status: 'failure',
+        metadata: {
+          foodId: item.id,
+          source: item.source,
+          message: (error as { message?: string } | null)?.message,
+        },
+      });
       handleApiError(error);
     } finally {
       setIsQuickAdding(null);
@@ -217,11 +239,30 @@ const FoodSearchScreen = (): React.ReactElement => {
       }
       setIsLoading(true);
       setErrorMessage(null);
+      trackEvent('food_search_submit', {
+        flow: 'food_search',
+        step: 'search',
+        status: append ? 'paginate' : 'submitted',
+        metadata: {
+          query: searchTerm.trim(),
+          tab: activeTab,
+        },
+      });
       try {
         const result = await foodService.searchAllFoods(searchTerm.trim(), PAGE_SIZE);
         setItems((prev) => (append ? [...prev, ...result.items] : result.items));
         setHasSearched(true);
         setErrorMessage(null);
+        trackEvent('food_search_results', {
+          flow: 'food_search',
+          step: 'results',
+          status: 'success',
+          metadata: {
+            query: searchTerm.trim(),
+            resultCount: result.items.length,
+            tab: activeTab,
+          },
+        });
         if (!append && result.items.length > 0) {
           saveRecentSearch(searchTerm.trim());
         }
@@ -229,6 +270,17 @@ const FoodSearchScreen = (): React.ReactElement => {
         setHasSearched(true);
         setItems([]);
         setErrorMessage(error?.response?.data?.message ?? error?.message ?? t('common.tryAgainLater'));
+        trackEvent('food_search_failure', {
+          category: 'error',
+          flow: 'food_search',
+          step: 'search',
+          status: 'failure',
+          metadata: {
+            query: searchTerm.trim(),
+            tab: activeTab,
+            message: error?.response?.data?.message ?? error?.message,
+          },
+        });
         handleApiError(error);
       } finally {
         setIsLoading(false);
@@ -259,14 +311,24 @@ const FoodSearchScreen = (): React.ReactElement => {
     return (
       <Animated.View entering={FadeInDown.delay(index * 40).duration(300)} layout={Layout.springify()}>
         <Pressable
-          onPress={() =>
+          onPress={() => {
+            trackEvent('food_detail_opened', {
+              flow: 'food_search',
+              step: 'food_detail',
+              status: 'opened',
+              metadata: {
+                foodId: item.id,
+                source: item.source,
+                foodName: item.name,
+              },
+            });
             navigation.navigate('FoodDetail', {
               foodId: item.id,
               source: item.source,
               selectedDate,
               returnToDiaryOnSave,
-            })
-          }
+            });
+          }}
           style={({ pressed }) => [S.resultCard, pressed && { opacity: 0.85, transform: [{ scale: 0.98 }] }]}
         >
           <View style={S.resultCardLeft}>

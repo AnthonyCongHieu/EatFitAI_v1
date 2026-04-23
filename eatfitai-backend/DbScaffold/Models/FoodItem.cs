@@ -21,6 +21,8 @@ public partial class FoodItem
 
     public decimal FatPer100g { get; set; }
 
+    public string? Barcode { get; set; }
+
     public string? ThumbNail { get; set; }
 
     public bool IsActive { get; set; }

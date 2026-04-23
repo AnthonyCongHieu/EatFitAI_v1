@@ -23,10 +23,12 @@ import Tilt3DCard, { ParallaxLayer } from '../../../components/ui/Tilt3DCard';
 import { useAppTheme } from '../../../theme/ThemeProvider';
 import { ThemedText } from '../../../components/ThemedText';
 import Screen from '../../../components/Screen';
+import { trackEvent } from '../../../services/analytics';
 import { useAuthStore } from '../../../store/useAuthStore';
 import type { RootStackParamList } from '../../types';
 import { handleApiError } from '../../../utils/errorHandler';
 import { TEST_IDS } from '../../../testing/testIds';
+import logger from '../../../utils/logger';
 
 const LoginSchema = z.object({
   email: z.string().email('Email không hợp lệ'),
@@ -76,9 +78,24 @@ const LoginScreen = ({ navigation }: Props): React.ReactElement => {
 
   const onSubmit = useCallback(
     async (values: LoginValues) => {
+      trackEvent('auth_login_submit', {
+        flow: 'auth',
+        step: 'login',
+        status: 'submitted',
+        metadata: { method: 'password' },
+      });
       try {
         setLoading(true);
         const result = await login(values.email, values.password);
+        trackEvent('auth_login_success', {
+          flow: 'auth',
+          step: 'login',
+          status: 'success',
+          metadata: {
+            method: 'password',
+            needsOnboarding: Boolean(result.needsOnboarding),
+          },
+        });
         Toast.show({
           type: 'success',
           text1: 'Chào mừng trở lại!',
@@ -92,6 +109,16 @@ const LoginScreen = ({ navigation }: Props): React.ReactElement => {
           });
         }
       } catch (e: any) {
+        trackEvent('auth_login_failure', {
+          category: 'error',
+          flow: 'auth',
+          step: 'login',
+          status: 'failure',
+          metadata: {
+            method: 'password',
+            message: e?.message,
+          },
+        });
         handleApiError(e);
       } finally {
         setLoading(false);
@@ -101,10 +128,25 @@ const LoginScreen = ({ navigation }: Props): React.ReactElement => {
   );
 
   const onGoogle = useCallback(async () => {
+    trackEvent('auth_login_submit', {
+      flow: 'auth',
+      step: 'login',
+      status: 'submitted',
+      metadata: { method: 'google' },
+    });
     try {
       setLoading(true);
-      console.log('[LoginScreen] Starting Google Sign-In...');
+      logger.info('[LoginScreen] Starting Google Sign-In...');
       const result = await signInWithGoogle();
+      trackEvent('auth_login_success', {
+        flow: 'auth',
+        step: 'login',
+        status: 'success',
+        metadata: {
+          method: 'google',
+          needsOnboarding: Boolean(result.needsOnboarding),
+        },
+      });
       Toast.show({
         type: 'success',
         text1: 'Đăng nhập với Google thành công',
@@ -118,8 +160,17 @@ const LoginScreen = ({ navigation }: Props): React.ReactElement => {
         });
       }
     } catch (e: any) {
-      console.error('[LoginScreen] Google Sign-In error:', e);
-      console.error('[LoginScreen] Error message:', e?.message);
+      logger.error('[LoginScreen] Google Sign-In error:', e);
+      trackEvent('auth_login_failure', {
+        category: 'error',
+        flow: 'auth',
+        step: 'login',
+        status: 'failure',
+        metadata: {
+          method: 'google',
+          message: e?.message,
+        },
+      });
 
       Toast.show({
         type: 'error',

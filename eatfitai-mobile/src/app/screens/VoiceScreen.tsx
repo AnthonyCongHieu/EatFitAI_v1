@@ -35,6 +35,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Toast from 'react-native-toast-message';
 
 import { ThemedText } from '../../components/ThemedText';
+import { trackEvent } from '../../services/analytics';
 
 import VoiceResultCard from '../../components/voice/VoiceResultCard';
 import { useVoiceRecognition } from '../../hooks/useVoiceRecognition';
@@ -95,6 +96,7 @@ const VoiceScreen = (): React.ReactElement => {
   const navigation = useNavigation<VoiceNavigationProp>();
   const route = useRoute<VoiceRouteProp>();
   const chatScrollRef = useRef<ScrollView>(null);
+  const lastReviewSignatureRef = useRef('');
 
   const {
     status,
@@ -245,6 +247,14 @@ const VoiceScreen = (): React.ReactElement => {
       return;
     }
 
+    trackEvent('voice_parse_start', {
+      flow: 'voice',
+      step: 'record',
+      status: 'started',
+      metadata: {
+        source: route.params?.source ?? 'microphone',
+      },
+    });
     await startRecording();
   };
 
@@ -254,6 +264,14 @@ const VoiceScreen = (): React.ReactElement => {
   };
 
   const handleExecute = async () => {
+    trackEvent('voice_execute_submit', {
+      flow: 'voice',
+      step: 'execute',
+      status: 'submitted',
+      metadata: {
+        intent: parsedCommand?.intent,
+      },
+    });
     await executeCommand();
     const {
       status: newStatus,
@@ -268,6 +286,15 @@ const VoiceScreen = (): React.ReactElement => {
         text2: lastExecutedAction || 'Đã thực hiện lệnh.',
         visibilityTime: 3000,
       });
+      trackEvent('voice_execute_success', {
+        flow: 'voice',
+        step: 'execute',
+        status: 'success',
+        metadata: {
+          intent: parsedCommand?.intent,
+          action: executedData?.type,
+        },
+      });
 
       queryClient.invalidateQueries({ queryKey: ['home-summary'] });
       queryClient.invalidateQueries({ queryKey: ['diary-entries'] });
@@ -277,6 +304,16 @@ const VoiceScreen = (): React.ReactElement => {
     }
 
     if (newStatus === 'error' && execError) {
+      trackEvent('voice_execute_failure', {
+        category: 'error',
+        flow: 'voice',
+        step: 'execute',
+        status: 'failure',
+        metadata: {
+          intent: parsedCommand?.intent,
+          message: execError,
+        },
+      });
       Toast.show({
         type: 'error',
         text1: 'Lỗi',
@@ -286,6 +323,15 @@ const VoiceScreen = (): React.ReactElement => {
   };
 
   const handleQuickCommand = (text: string) => {
+    trackEvent('voice_parse_start', {
+      flow: 'voice',
+      step: 'parse',
+      status: 'started',
+      metadata: {
+        inputMode: 'quick_command',
+        textLength: text.length,
+      },
+    });
     setRecognizedText(text);
     processText(text);
   };
@@ -293,11 +339,43 @@ const VoiceScreen = (): React.ReactElement => {
   const handleSendText = async () => {
     if (recognizedText.trim()) {
       const textToProcess = recognizedText.trim();
+      trackEvent('voice_parse_start', {
+        flow: 'voice',
+        step: 'parse',
+        status: 'started',
+        metadata: {
+          inputMode: 'text',
+          textLength: textToProcess.length,
+        },
+      });
       reset();
       setRecognizedText(textToProcess);
       await processText(textToProcess);
     }
   };
+
+  useEffect(() => {
+    if (status !== 'review' || !parsedCommand) {
+      return;
+    }
+
+    const signature = `${parsedCommand.intent}:${parsedCommand.rawText}`;
+    if (lastReviewSignatureRef.current === signature) {
+      return;
+    }
+
+    lastReviewSignatureRef.current = signature;
+    trackEvent('voice_review_ready', {
+      flow: 'voice',
+      step: 'review',
+      status: 'ready',
+      metadata: {
+        intent: parsedCommand.intent,
+        confidence: parsedCommand.confidence,
+        source: parsedCommand.source,
+      },
+    });
+  }, [parsedCommand, status]);
 
   const formatDuration = (seconds: number): string => {
     const mins = Math.floor(seconds / 60);

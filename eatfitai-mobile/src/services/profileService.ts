@@ -2,6 +2,10 @@
 // Chu thich tieng Viet toan bo
 
 import apiClient from './apiClient';
+import { loadWithOfflineFallback, offlineCache } from './offlineCache';
+
+const PROFILE_CACHE_KEY = '@eatfit_cache:profile';
+const BODY_METRICS_HISTORY_CACHE_PREFIX = '@eatfit_cache:body-metrics:';
 
 export type UserProfile = {
   id: string;
@@ -71,8 +75,10 @@ const normalizeProfile = (data: any): UserProfile => ({
 export const profileService = {
   // Lay thong tin ho so cua chinh nguoi dung
   async getProfile(): Promise<UserProfile> {
-    const response = await apiClient.get('/api/profile');
-    return normalizeProfile(response.data);
+    return loadWithOfflineFallback(PROFILE_CACHE_KEY, async () => {
+      const response = await apiClient.get('/api/profile');
+      return normalizeProfile(response.data);
+    });
   },
 
   // Cap nhat ho so (PUT /api/profile)
@@ -91,7 +97,9 @@ export const profileService = {
       targetWeightKg: payload.targetWeightKg ?? null,
     };
     const response = await apiClient.put('/api/profile', req);
-    return normalizeProfile(response.data);
+    const profile = normalizeProfile(response.data);
+    await offlineCache.set(PROFILE_CACHE_KEY, profile);
+    return profile;
   },
 
   // Upload avatar image (multipart/form-data)
@@ -132,14 +140,16 @@ export const profileService = {
 
   // Lay lich su can do (GET /api/body-metrics/history)
   async getBodyMetricsHistory(limit: number = 30): Promise<BodyMetricsPayload[]> {
-    const response = await apiClient.get(`/api/body-metrics/history?limit=${limit}`);
-    // Backend tra ve array cua BodyMetricDto
-    return (response.data || []).map((item: any) => ({
-      heightCm: item.heightCm,
-      weightKg: item.weightKg,
-      measuredDate: item.measuredDate,
-      note: item.note,
-    }));
+    return loadWithOfflineFallback(`${BODY_METRICS_HISTORY_CACHE_PREFIX}${limit}`, async () => {
+      const response = await apiClient.get(`/api/body-metrics/history?limit=${limit}`);
+      // Backend tra ve array cua BodyMetricDto
+      return (response.data || []).map((item: any) => ({
+        heightCm: item.heightCm,
+        weightKg: item.weightKg,
+        measuredDate: item.measuredDate,
+        note: item.note,
+      }));
+    });
   },
 
   // --- User Preferences (Dietary Restrictions) ---

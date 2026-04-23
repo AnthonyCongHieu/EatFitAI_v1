@@ -18,6 +18,7 @@ from werkzeug.utils import secure_filename
 from uuid import uuid4
 import os
 from dotenv import load_dotenv
+from runtime_config import get_yolo_confidence_threshold
 
 # Cấu hình logging
 logging.basicConfig(
@@ -48,6 +49,7 @@ def env_flag(name: str, default: bool = False) -> bool:
 
 app: Flask = Flask(__name__)
 os.makedirs("uploads", exist_ok=True)
+YOLO_CONFIDENCE_THRESHOLD = get_yolo_confidence_threshold()
 
 # Hằng số validate file
 ALLOWED_EXTENSIONS = {'jpg', 'jpeg', 'png', 'webp', 'bmp'}
@@ -291,7 +293,7 @@ def detect() -> Response | tuple[Dict[str, str], int]:
         if model is None:
             return {"error": "model not loaded"}, 500
         
-        res: Any = model(path, conf=0.50)
+        res: Any = model(path, conf=YOLO_CONFIDENCE_THRESHOLD)
         names: Dict[int, str] = res[0].names
         
         out: List[Dict[str, float | str]] = [

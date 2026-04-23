@@ -32,6 +32,7 @@ import { ThemedText } from '../../../components/ThemedText';
 import Screen from '../../../components/Screen';
 import { useAppTheme } from '../../../theme/ThemeProvider';
 import type { RootStackParamList } from '../../types';
+import { trackEvent } from '../../../services/analytics';
 import { foodService, type FoodDetail } from '../../../services/foodService';
 import { invalidateDiaryQueries } from '../../../services/diaryFlowService';
 import { MEAL_TYPES, MEAL_TYPE_LABELS, type MealTypeId } from '../../../types';
@@ -131,6 +132,23 @@ const FoodDetailScreen = (): React.ReactElement | null => {
     }
   }, [error, navigation]);
 
+  useEffect(() => {
+    if (!detail) {
+      return;
+    }
+
+    trackEvent('food_detail_loaded', {
+      flow: 'food_detail',
+      step: 'view',
+      status: 'loaded',
+      metadata: {
+        foodId: detail.id,
+        source: route.params.source ?? 'catalog',
+        foodName: detail.name,
+      },
+    });
+  }, [detail, route.params.source]);
+
   const { control, handleSubmit, watch, setValue, formState: { errors } } = useForm<FormValues>({
     resolver: zodResolver(FormSchema),
     defaultValues: {
@@ -205,6 +223,17 @@ const FoodDetailScreen = (): React.ReactElement | null => {
         text1: 'Đã thêm món vào nhật ký',
         text2: 'Tiếp tục theo dõi dinh dưỡng của bạn!',
       });
+      trackEvent('diary_add_from_food_detail_success', {
+        flow: 'food_detail',
+        step: 'save',
+        status: 'success',
+        metadata: {
+          foodId: detail.id,
+          source: route.params.source ?? 'catalog',
+          mealType: values.mealType,
+          grams: Number(values.grams),
+        },
+      });
       await invalidateDiaryQueries(queryClient);
       if (returnToDiaryOnSave && selectedDate) {
         navigation.navigate('MealDiary', { selectedDate });
@@ -212,11 +241,24 @@ const FoodDetailScreen = (): React.ReactElement | null => {
       }
       navigation.goBack();
     } catch (err: any) {
+      trackEvent('diary_add_from_food_detail_failure', {
+        category: 'error',
+        flow: 'food_detail',
+        step: 'save',
+        status: 'failure',
+        metadata: {
+          foodId: detail.id,
+          source: route.params.source ?? 'catalog',
+          mealType: values.mealType,
+          grams: Number(values.grams),
+          message: err?.message,
+        },
+      });
       handleApiError(err);
     } finally {
       setIsSubmitting(false);
     }
-  }, [detail, displayCalories, displayProtein, displayCarbs, displayFat, navigation, queryClient, returnToDiaryOnSave, selectedDate]);
+  }, [detail, navigation, queryClient, returnToDiaryOnSave, route.params.source, selectedDate]);
 
   if (isLoading) {
     return (

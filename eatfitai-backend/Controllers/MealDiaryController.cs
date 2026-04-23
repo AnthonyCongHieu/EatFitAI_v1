@@ -1,5 +1,6 @@
 ﻿using System.Security.Claims;
 using EatFitAI.API.DTOs.MealDiary;
+using EatFitAI.API.Helpers;
 using EatFitAI.API.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -27,9 +28,13 @@ namespace EatFitAI.API.Controllers
                 var mealDiaries = await _mealDiaryService.GetUserMealDiariesAsync(userId, date);
                 return Ok(mealDiaries);
             }
-            catch (Exception ex)
+            catch (UnauthorizedAccessException ex)
             {
-                return StatusCode(500, new { message = "Đã xảy ra lỗi khi lấy nhật ký bữa ăn", error = ex.Message });
+                return Unauthorized(new { message = ex.Message });
+            }
+            catch (Exception)
+            {
+                return StatusCode(500, ErrorResponseHelper.SafeError("Đã xảy ra lỗi khi lấy nhật ký bữa ăn", HttpContext));
             }
         }
 
@@ -46,9 +51,13 @@ namespace EatFitAI.API.Controllers
             {
                 return NotFound(new { message = ex.Message });
             }
-            catch (Exception ex)
+            catch (UnauthorizedAccessException ex)
             {
-                return StatusCode(500, new { message = "Đã xảy ra lỗi khi lấy chi tiết nhật ký bữa ăn", error = ex.Message });
+                return Unauthorized(new { message = ex.Message });
+            }
+            catch (Exception)
+            {
+                return StatusCode(500, ErrorResponseHelper.SafeError("Đã xảy ra lỗi khi lấy chi tiết nhật ký bữa ăn", HttpContext));
             }
         }
 
@@ -61,9 +70,13 @@ namespace EatFitAI.API.Controllers
                 var mealDiary = await _mealDiaryService.CreateMealDiaryAsync(userId, request);
                 return CreatedAtAction(nameof(GetMealDiary), new { id = mealDiary.MealDiaryId }, mealDiary);
             }
-            catch (Exception ex)
+            catch (UnauthorizedAccessException ex)
             {
-                return StatusCode(500, new { message = "Đã xảy ra lỗi khi tạo nhật ký bữa ăn", error = ex.Message });
+                return Unauthorized(new { message = ex.Message });
+            }
+            catch (Exception)
+            {
+                return StatusCode(500, ErrorResponseHelper.SafeError("Đã xảy ra lỗi khi tạo nhật ký bữa ăn", HttpContext));
             }
         }
 
@@ -80,9 +93,13 @@ namespace EatFitAI.API.Controllers
             {
                 return NotFound(new { message = ex.Message });
             }
-            catch (Exception ex)
+            catch (UnauthorizedAccessException ex)
             {
-                return StatusCode(500, new { message = "Đã xảy ra lỗi khi cập nhật nhật ký bữa ăn", error = ex.Message });
+                return Unauthorized(new { message = ex.Message });
+            }
+            catch (Exception)
+            {
+                return StatusCode(500, ErrorResponseHelper.SafeError("Đã xảy ra lỗi khi cập nhật nhật ký bữa ăn", HttpContext));
             }
         }
 
@@ -99,9 +116,13 @@ namespace EatFitAI.API.Controllers
             {
                 return NotFound(new { message = ex.Message });
             }
-            catch (Exception ex)
+            catch (UnauthorizedAccessException ex)
             {
-                return StatusCode(500, new { message = "Đã xảy ra lỗi khi xóa nhật ký bữa ăn", error = ex.Message });
+                return Unauthorized(new { message = ex.Message });
+            }
+            catch (Exception)
+            {
+                return StatusCode(500, ErrorResponseHelper.SafeError("Đã xảy ra lỗi khi xóa nhật ký bữa ăn", HttpContext));
             }
         }
 

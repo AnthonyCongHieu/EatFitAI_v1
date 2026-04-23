@@ -5,6 +5,8 @@ using EatFitAI.API.Repositories.Interfaces;
 using EatFitAI.API.Services;
 using AutoMapper;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using Moq;
 using Xunit;
 
@@ -19,6 +21,9 @@ namespace EatFitAI.API.Tests.Unit.Services
         private readonly Mock<IUserFoodItemRepository> _userFoodItemRepositoryMock;
         private readonly EatFitAIDbContext _context;
         private readonly Mock<IMapper> _mapperMock;
+        private readonly Mock<IHttpClientFactory> _httpClientFactoryMock;
+        private readonly IConfiguration _configuration;
+        private readonly Mock<ILogger<FoodService>> _loggerMock;
         private readonly FoodService _foodService;
 
         public FoodServiceTests()
@@ -26,6 +31,9 @@ namespace EatFitAI.API.Tests.Unit.Services
             _foodItemRepositoryMock = new Mock<IFoodItemRepository>();
             _userFoodItemRepositoryMock = new Mock<IUserFoodItemRepository>();
             _mapperMock = new Mock<IMapper>();
+            _httpClientFactoryMock = new Mock<IHttpClientFactory>();
+            _configuration = new ConfigurationBuilder().AddInMemoryCollection().Build();
+            _loggerMock = new Mock<ILogger<FoodService>>();
 
             // Setup in-memory database
             var options = new DbContextOptionsBuilder<EatFitAIDbContext>()
@@ -38,7 +46,10 @@ namespace EatFitAI.API.Tests.Unit.Services
                 _foodItemRepositoryMock.Object,
                 _userFoodItemRepositoryMock.Object,
                 _context,
-                _mapperMock.Object);
+                _mapperMock.Object,
+                _httpClientFactoryMock.Object,
+                _configuration,
+                _loggerMock.Object);
         }
 
         public void Dispose()
@@ -198,6 +209,33 @@ namespace EatFitAI.API.Tests.Unit.Services
             // Act & Assert - Kiểm tra exception được throw
             await Assert.ThrowsAsync<KeyNotFoundException>(() => 
                 _foodService.GetFoodItemWithServingsAsync(invalidId));
+        }
+
+        [Fact]
+        public async Task LookupByBarcodeAsync_LocalCatalogHit_ReturnsMappedFood()
+        {
+            var food = _context.FoodItems.First();
+            food.Barcode = "8938505974198";
+            await _context.SaveChangesAsync();
+
+            _mapperMock
+                .Setup(m => m.Map<FoodItemDto>(It.IsAny<FoodItem>()))
+                .Returns((FoodItem item) => new FoodItemDto
+                {
+                    FoodItemId = item.FoodItemId,
+                    FoodName = item.FoodName,
+                    CaloriesPer100g = item.CaloriesPer100g
+                });
+            _mapperMock
+                .Setup(m => m.Map<IEnumerable<FoodServingDto>>(It.IsAny<IEnumerable<FoodServing>>()))
+                .Returns(Array.Empty<FoodServingDto>());
+
+            var result = await _foodService.LookupByBarcodeAsync("8938505974198");
+
+            Assert.NotNull(result);
+            Assert.Equal("8938505974198", result.Barcode);
+            Assert.Equal("catalog", result.Source);
+            Assert.NotNull(result.FoodItem);
         }
 
         #endregion

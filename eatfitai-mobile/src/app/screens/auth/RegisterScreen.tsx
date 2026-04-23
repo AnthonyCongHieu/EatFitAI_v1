@@ -22,10 +22,12 @@ import Tilt3DCard, { ParallaxLayer } from '../../../components/ui/Tilt3DCard';
 import { useAppTheme } from '../../../theme/ThemeProvider';
 import { ThemedText } from '../../../components/ThemedText';
 import Screen from '../../../components/Screen';
+import { trackEvent } from '../../../services/analytics';
 import apiClient from '../../../services/apiClient';
 import type { RootStackParamList } from '../../types';
 import { t } from '../../../i18n/vi';
 import { TEST_IDS } from '../../../testing/testIds';
+import logger from '../../../utils/logger';
 
 const RegisterSchema = z
   .object({
@@ -104,6 +106,11 @@ const RegisterScreen = ({ navigation }: Props): React.ReactElement => {
 
   const onSubmit = useCallback(
     async (values: RegisterValues) => {
+      trackEvent('auth_register_submit', {
+        flow: 'auth',
+        step: 'register',
+        status: 'submitted',
+      });
       try {
         setLoading(true);
         const resp = await apiClient.post<RegisterResponse>(
@@ -116,6 +123,15 @@ const RegisterScreen = ({ navigation }: Props): React.ReactElement => {
         );
 
         const data = resp.data;
+        trackEvent('auth_register_success', {
+          flow: 'auth',
+          step: 'register',
+          status: 'success',
+          metadata: {
+            email: values.email,
+            hasVerificationCode: Boolean(data.verificationCode),
+          },
+        });
 
         Toast.show({
           type: 'success',
@@ -128,7 +144,7 @@ const RegisterScreen = ({ navigation }: Props): React.ReactElement => {
           verificationCode: data.verificationCode,
         });
       } catch (e: any) {
-        console.error('Registration error:', e);
+        logger.error('Registration error:', e);
         let message = t('auth.registerFailed');
         const responseData = e?.response?.data;
         if (responseData?.detail) {
@@ -143,6 +159,16 @@ const RegisterScreen = ({ navigation }: Props): React.ReactElement => {
         if (message.includes('Email')) {
           message = 'Email này đã được sử dụng hoặc không hợp lệ.';
         }
+        trackEvent('auth_register_failure', {
+          category: 'error',
+          flow: 'auth',
+          step: 'register',
+          status: 'failure',
+          metadata: {
+            email: values.email,
+            message,
+          },
+        });
         Toast.show({
           type: 'error',
           text1: 'Đăng ký thất bại',

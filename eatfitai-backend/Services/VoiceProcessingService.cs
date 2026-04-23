@@ -4,6 +4,7 @@
  */
 
 using System.Text.RegularExpressions;
+using EatFitAI.API.Helpers;
 using EatFitAI.DTOs;
 
 namespace EatFitAI.Services
@@ -144,7 +145,7 @@ namespace EatFitAI.Services
                         FoodName = foodName,
                         Quantity = quantity,
                         MealType = mealType,
-                        Date = DateTime.Now.Date,  // Dùng local time thay vì UTC
+                        Date = DateTimeHelper.GetVietnamNow().Date,
                     },
                     SuggestedAction = $"Thêm {quantity} {foodName} vào {GetMealLabel(mealType)}",
                 };
@@ -174,7 +175,7 @@ namespace EatFitAI.Services
                     Entities = new VoiceCommandEntities
                     {
                         Weight = weight,
-                        Date = DateTime.Now.Date,  // Dùng local time
+                        Date = DateTimeHelper.GetVietnamNow().Date,
                     },
                     SuggestedAction = $"Ghi cân nặng {weight} kg",
                 };
@@ -203,7 +204,7 @@ namespace EatFitAI.Services
                     Confidence = 0.85,
                     Entities = new VoiceCommandEntities
                     {
-                        Date = DateTime.Now.Date,  // Dùng local time
+                        Date = DateTimeHelper.GetVietnamNow().Date,
                     },
                     SuggestedAction = "Xem tổng calories hôm nay",
                 };

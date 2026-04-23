@@ -52,7 +52,9 @@ import { AUTH_NEEDS_ONBOARDING_KEY, useAuthStore } from '../../../store/useAuthS
 import apiClient, { aiApiClient } from '../../../services/apiClient';
 import { aiService } from '../../../services/aiService';
 import { profileService } from '../../../services/profileService';
+import { trackEvent } from '../../../services/analytics';
 import { showSuccess } from '../../../utils/errorHandler';
+import logger from '../../../utils/logger';
 import { t } from '../../../i18n/vi';
 import { TEST_IDS } from '../../../testing/testIds';
 import Tilt3DCard, { ParallaxLayer } from '../../../components/ui/Tilt3DCard';
@@ -542,6 +544,17 @@ const OnboardingScreen = (): React.ReactElement => {
   const calculateNutrition = async () => {
     setIsCalculating(true);
     setCalculationError(null);
+    trackEvent('onboarding_nutrition_calculation_start', {
+      category: 'product',
+      flow: 'onboarding',
+      step: 'nutrition_target',
+      status: 'started',
+      screen: 'Onboarding',
+      metadata: {
+        goal: data.goal,
+        activityLevel: data.activityLevel,
+      },
+    });
     try {
       // Gọi qua backend API thay vì AI provider trực tiếp
       // Backend sẽ proxy đến AI Provider (Ollama)
@@ -563,6 +576,18 @@ const OnboardingScreen = (): React.ReactElement => {
 
       if (response.data?.calories > 0) {
         setAiResult(response.data);
+        trackEvent('onboarding_nutrition_calculation_result', {
+          category: 'product',
+          flow: 'onboarding',
+          step: 'nutrition_target',
+          status: response.data.offlineMode ? 'fallback' : 'success',
+          screen: 'Onboarding',
+          metadata: {
+            source: response.data.source ?? 'unknown',
+            offlineMode: response.data.offlineMode ?? false,
+            explanation: response.data.explanation ?? null,
+          },
+        });
         if (response.data.offlineMode) {
           Toast.show({
             type: 'info',
@@ -576,6 +601,16 @@ const OnboardingScreen = (): React.ReactElement => {
         setCalculationError(
           'Không thể tính mục tiêu dinh dưỡng lúc này. Vui lòng thử lại.',
         );
+        trackEvent('onboarding_nutrition_calculation_result', {
+          category: 'product',
+          flow: 'onboarding',
+          step: 'nutrition_target',
+          status: 'invalid',
+          screen: 'Onboarding',
+          metadata: {
+            response: response.data ?? null,
+          },
+        });
         Toast.show({
           type: 'error',
           text1: 'Dịch vụ AI hiện không khả dụng',
@@ -585,6 +620,16 @@ const OnboardingScreen = (): React.ReactElement => {
     } catch (error) {
       setAiResult(null);
       setCalculationError('Không thể kết nối AI. Kiểm tra backend rồi thử lại.');
+      trackEvent('onboarding_nutrition_calculation_result', {
+        category: 'product',
+        flow: 'onboarding',
+        step: 'nutrition_target',
+        status: 'failure',
+        screen: 'Onboarding',
+        metadata: {
+          message: error instanceof Error ? error.message : String(error),
+        },
+      });
       // KHÔNG fallback - hiển thị lỗi kết nối
       Toast.show({
         type: 'error',
@@ -597,6 +642,19 @@ const OnboardingScreen = (): React.ReactElement => {
   };
 
   const handleComplete = async () => {
+    trackEvent('onboarding_complete_submit', {
+      category: 'product',
+      flow: 'onboarding',
+      step: 'complete',
+      status: 'started',
+      screen: 'Onboarding',
+      metadata: {
+        goal: data.goal,
+        activityLevel: data.activityLevel,
+        nutritionSource: aiResult?.source ?? null,
+        nutritionOfflineMode: aiResult?.offlineMode ?? false,
+      },
+    });
     try {
       // Map activityLevel string sang activityLevelId
       const activityLevelMap: Record<string, number> = {
@@ -628,7 +686,7 @@ const OnboardingScreen = (): React.ReactElement => {
         // Cloud /api/profile đang không ổn định; giữ onboarding tiếp tục bằng cách
         // ít nhất lưu body metrics để home/diary và nutrition lane không bị chặn.
         if (__DEV__) {
-          console.warn(
+          logger.warn(
             '[Onboarding] updateProfile failed, falling back to body metrics only:',
             profileError,
           );
@@ -653,11 +711,11 @@ const OnboardingScreen = (): React.ReactElement => {
           });
           // Log only in development mode
           if (__DEV__) {
-            console.log('[Onboarding] NutritionTarget created successfully');
+            logger.info('[Onboarding] NutritionTarget created successfully');
           }
         } catch (nutritionError) {
           if (__DEV__) {
-            console.warn(
+            logger.warn(
               '[Onboarding] Failed to create NutritionTarget:',
               nutritionError,
             );
@@ -670,12 +728,23 @@ const OnboardingScreen = (): React.ReactElement => {
       try {
         await apiClient.post('/api/auth/mark-onboarding-completed');
         if (__DEV__) {
-          console.log('[Onboarding] Server onboarding status updated');
+          logger.info('[Onboarding] Server onboarding status updated');
         }
       } catch (apiError) {
         if (__DEV__) {
-          console.warn('[Onboarding] Failed to update server:', apiError);
+          logger.warn('[Onboarding] Failed to update server:', apiError);
         }
+        trackEvent('onboarding_complete_failure', {
+          category: 'product',
+          flow: 'onboarding',
+          step: 'complete',
+          status: 'failure',
+          screen: 'Onboarding',
+          metadata: {
+            reason: 'server_mark_onboarding_failed',
+            message: apiError instanceof Error ? apiError.message : String(apiError),
+          },
+        });
         Alert.alert('Lỗi', 'Không thể hoàn tất onboarding. Vui lòng thử lại.');
         return;
       }
@@ -698,13 +767,26 @@ const OnboardingScreen = (): React.ReactElement => {
         showSuccess('settings_saved', { text1: '🎉 Thiết lập hoàn tất!' });
       }
 
+      trackEvent('onboarding_complete_success', {
+        category: 'product',
+        flow: 'onboarding',
+        step: 'complete',
+        status: profileSavedWithFallback ? 'fallback' : 'success',
+        screen: 'Onboarding',
+        metadata: {
+          profileSavedWithFallback,
+          nutritionSource: aiResult?.source ?? null,
+          nutritionOfflineMode: aiResult?.offlineMode ?? false,
+        },
+      });
+
       invalidateProfile();
       // Calling fetchProfile ensures state is updated globally.
       try {
         await fetchProfile({ force: true });
       } catch (profileRefreshError) {
         if (__DEV__) {
-          console.warn(
+          logger.warn(
             '[Onboarding] Failed to refresh profile after completion:',
             profileRefreshError,
           );
@@ -716,6 +798,16 @@ const OnboardingScreen = (): React.ReactElement => {
         navigation.goBack();
       }
     } catch (error) {
+      trackEvent('onboarding_complete_failure', {
+        category: 'product',
+        flow: 'onboarding',
+        step: 'complete',
+        status: 'failure',
+        screen: 'Onboarding',
+        metadata: {
+          message: error instanceof Error ? error.message : String(error),
+        },
+      });
       Alert.alert('Lỗi', 'Không thể lưu thông tin. Vui lòng thử lại.');
     }
   };

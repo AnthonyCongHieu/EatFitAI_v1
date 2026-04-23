@@ -1,4 +1,5 @@
 ﻿using EatFitAI.API.DTOs.Auth;
+using EatFitAI.API.Helpers;
 using EatFitAI.API.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -31,7 +32,18 @@ namespace EatFitAI.API.Controllers
             }
             catch (InvalidOperationException ex)
             {
-                return StatusCode(503, new { code = "smtp_unavailable", message = ex.Message });
+                _logger.LogWarning(ex, "Forgot password email unavailable for {Email}", request.Email);
+                return StatusCode(503, ErrorResponseHelper.SafeError(
+                    "smtp_unavailable",
+                    "Không thể gửi email đặt lại mật khẩu lúc này.",
+                    HttpContext));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Unexpected error during forgot password for {Email}", request.Email);
+                return StatusCode(500, ErrorResponseHelper.SafeError(
+                    "Đã xảy ra lỗi khi xử lý quên mật khẩu",
+                    HttpContext));
             }
         }
 
@@ -48,6 +60,13 @@ namespace EatFitAI.API.Controllers
             {
                 return Unauthorized(new { message = ex.Message });
             }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Unexpected error during verify reset code for {Email}", request.Email);
+                return StatusCode(500, ErrorResponseHelper.SafeError(
+                    "Đã xảy ra lỗi khi xác minh mã đặt lại mật khẩu",
+                    HttpContext));
+            }
         }
 
         [AllowAnonymous]
@@ -62,6 +81,13 @@ namespace EatFitAI.API.Controllers
             catch (UnauthorizedAccessException ex)
             {
                 return Unauthorized(new { message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Unexpected error during reset password for {Email}", request.Email);
+                return StatusCode(500, ErrorResponseHelper.SafeError(
+                    "Đã xảy ra lỗi khi đặt lại mật khẩu",
+                    HttpContext));
             }
         }
 
@@ -93,7 +119,9 @@ namespace EatFitAI.API.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Unexpected error during registration for email: {Email}", request.Email);
-                throw;
+                return StatusCode(500, ErrorResponseHelper.SafeError(
+                    "Đã xảy ra lỗi khi đăng ký tài khoản",
+                    HttpContext));
             }
         }
 
@@ -116,7 +144,9 @@ namespace EatFitAI.API.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error during registration with verification");
-                throw;
+                return StatusCode(500, ErrorResponseHelper.SafeError(
+                    "Đã xảy ra lỗi khi đăng ký tài khoản",
+                    HttpContext));
             }
         }
 
@@ -138,7 +168,18 @@ namespace EatFitAI.API.Controllers
             }
             catch (InvalidOperationException ex)
             {
-                return StatusCode(503, new { message = ex.Message });
+                _logger.LogWarning(ex, "Verify email temporarily unavailable for {Email}", request.Email);
+                return StatusCode(503, ErrorResponseHelper.SafeError(
+                    "verification_unavailable",
+                    "Không thể xác minh email lúc này.",
+                    HttpContext));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Unexpected error during verify email for {Email}", request.Email);
+                return StatusCode(500, ErrorResponseHelper.SafeError(
+                    "Đã xảy ra lỗi khi xác minh email",
+                    HttpContext));
             }
         }
 
@@ -162,10 +203,20 @@ namespace EatFitAI.API.Controllers
             {
                 if (ex.Message.Contains("Không gửi được email", StringComparison.OrdinalIgnoreCase))
                 {
-                    return StatusCode(503, new { code = "smtp_unavailable", message = ex.Message });
+                    return StatusCode(503, ErrorResponseHelper.SafeError(
+                        "smtp_unavailable",
+                        "Không thể gửi lại email xác minh lúc này.",
+                        HttpContext));
                 }
 
                 return BadRequest(new { message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Unexpected error during resend verification for {Email}", request.Email);
+                return StatusCode(500, ErrorResponseHelper.SafeError(
+                    "Đã xảy ra lỗi khi gửi lại mã xác minh",
+                    HttpContext));
             }
         }
 
@@ -189,7 +240,10 @@ namespace EatFitAI.API.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { message = ex.Message });
+                _logger.LogError(ex, "Unexpected error while marking onboarding completed");
+                return StatusCode(500, ErrorResponseHelper.SafeError(
+                    "Đã xảy ra lỗi khi cập nhật trạng thái onboarding",
+                    HttpContext));
             }
         }
 
@@ -205,6 +259,13 @@ namespace EatFitAI.API.Controllers
             {
                 return Unauthorized(new { message = ex.Message });
             }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Unexpected error during login for {Email}", request.Email);
+                return StatusCode(500, ErrorResponseHelper.SafeError(
+                    "Đã xảy ra lỗi khi đăng nhập",
+                    HttpContext));
+            }
         }
 
         [HttpPost("logout")]
@@ -217,7 +278,10 @@ namespace EatFitAI.API.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { message = "Đã xảy ra lỗi khi đăng xuất", error = ex.Message });
+                _logger.LogError(ex, "Unexpected error during logout");
+                return StatusCode(500, ErrorResponseHelper.SafeError(
+                    "Đã xảy ra lỗi khi đăng xuất",
+                    HttpContext));
             }
         }
 
@@ -236,7 +300,10 @@ namespace EatFitAI.API.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { message = "Đã xảy ra lỗi khi làm mới token", error = ex.Message });
+                _logger.LogError(ex, "Unexpected error during refresh token");
+                return StatusCode(500, ErrorResponseHelper.SafeError(
+                    "Đã xảy ra lỗi khi làm mới token",
+                    HttpContext));
             }
         }
 
@@ -258,7 +325,10 @@ namespace EatFitAI.API.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { message = "Đã xảy ra lỗi khi đăng nhập bằng Google", error = ex.Message });
+                _logger.LogError(ex, "Unexpected error during Google login");
+                return StatusCode(500, ErrorResponseHelper.SafeError(
+                    "Đã xảy ra lỗi khi đăng nhập bằng Google",
+                    HttpContext));
             }
         }
 
@@ -287,7 +357,9 @@ namespace EatFitAI.API.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error changing password");
-                return StatusCode(500, new { message = "Đã xảy ra lỗi khi đổi mật khẩu" });
+                return StatusCode(500, ErrorResponseHelper.SafeError(
+                    "Đã xảy ra lỗi khi đổi mật khẩu",
+                    HttpContext));
             }
         }
     }

@@ -2,6 +2,7 @@ using System.Security.Claims;
 using EatFitAI.API.DbScaffold.Data;
 using EatFitAI.API.DTOs;
 using EatFitAI.API.DTOs.AI;
+using EatFitAI.API.Helpers;
 using EatFitAI.API.Services;
 using EatFitAI.API.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
@@ -61,7 +62,7 @@ public class AIReviewController : ControllerBase
         catch (Exception ex)
         {
             _logger.LogError(ex, "[AIReview] Error checking trigger");
-            return StatusCode(500, new { error = ex.Message });
+            return StatusCode(500, ErrorResponseHelper.SafeError("Đã xảy ra lỗi khi kiểm tra weekly review", HttpContext));
         }
     }
 
@@ -84,7 +85,7 @@ public class AIReviewController : ControllerBase
         catch (Exception ex)
         {
             _logger.LogError(ex, "[AIReview] Error getting review");
-            return StatusCode(500, new { error = ex.Message });
+            return StatusCode(500, ErrorResponseHelper.SafeError("Đã xảy ra lỗi khi lấy weekly review", HttpContext));
         }
     }
 
@@ -155,7 +156,7 @@ public class AIReviewController : ControllerBase
         catch (Exception ex)
         {
             _logger.LogError(ex, "[AIReview] Error applying suggestions");
-            return StatusCode(500, new { error = ex.Message });
+            return StatusCode(500, ErrorResponseHelper.SafeError("Đã xảy ra lỗi khi áp dụng gợi ý AI", HttpContext));
         }
     }
 }

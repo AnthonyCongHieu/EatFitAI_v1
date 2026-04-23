@@ -208,3 +208,47 @@ Uu tien kinh doanh hop ly nhat hien tai:
 - Cronometer product pages
 - YAZIO food diary va AI calorie tracking pages
 - Noom free features pages
+
+## 9. Progress update - 2026-04-23
+
+### Tien do sprint dang lam
+
+- Khoang **85%** scope code-only cua stabilization sprint + first product wave da xong
+- P0 trong checklist nay da dat muc **ship-ready ve code**, nhung **chua dong full release gate tren device/cloud that**
+
+### Da xong theo checklist
+
+- [x] Product analytics that:
+  screen views, onboarding funnel, register -> verify -> login -> onboarding complete, search -> food detail -> add diary, AI scan start -> result -> save, voice parse -> preview -> execute
+- [x] Crash / error tracking lane that:
+  mobile runtime errors, backend API failures, AI provider failures
+- [x] Barcode scanner
+- [x] Weekly review / progress summary cho user
+- [x] Better nutrition targets UX:
+  ro nguon AI / fallback, co retry / fallback messaging
+- [x] AI fallback policy da duoc codify trong response contract + mobile UX + smoke metrics
+- [x] Release metrics da co auth/search/scan/nutrition/fallback/evidence gates va voice latency thresholds
+
+### Da xong mot phan
+
+- [~] Cloud strategy / production lane:
+  code da harden, nhung paid plan / keep-alive / manual ops chua thuc hien
+- [~] AI scan reliability:
+  barcode flow, telemetry, fallback, smoke metrics da co; full device/cloud gate chua chay
+- [~] Manual logging speed:
+  chua lam favorites / recent foods / same as yesterday
+
+### Chua xong / defer
+
+- [ ] Full device/cloud smoke gate voi moi truong that
+- [ ] Meal planner
+- [ ] Grocery list
+- [ ] Intermittent fasting
+- [ ] Wearable / Apple Health / Health Connect sync
+- [ ] Progress photos / body scan
+- [ ] Buddies / accountability
+- [ ] Premium tiering
+- [ ] Micronutrients va charts sau hon
+- [ ] Export / CSV / PDF
+- [ ] Coach / expert dashboard
+- [ ] Admin analytics / cohort retention dashboard

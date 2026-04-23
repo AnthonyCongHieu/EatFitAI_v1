@@ -26,6 +26,9 @@ export interface NutritionTargetDto {
   carb?: number | null; // Backend DTO dùng "Carb" không có 's'
   fat?: number | null;
   explanation?: string | null; // Lý do gợi ý từ AI
+  source?: string | null;
+  offlineMode?: boolean | null;
+  message?: string | null;
   caloriesKcal?: number | null;
   proteinGrams?: number | null;
   carbohydrateGrams?: number | null;
@@ -37,6 +40,9 @@ export interface NutritionTargetResponse {
   protein?: number | null;
   carbs?: number | null;
   fat?: number | null;
+  source?: string | null;
+  offlineMode?: boolean | null;
+  explanation?: string | null;
 }
 
 export type AiHealthState = 'HEALTHY' | 'DEGRADED' | 'DOWN';

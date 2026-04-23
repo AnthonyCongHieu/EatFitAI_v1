@@ -14,6 +14,7 @@
  */
 
 import { GOOGLE_CONFIG, validateGoogleConfig } from '../config/google.config';
+import logger from '../utils/logger';
 
 // Type definitions for Google Sign-in
 interface _GoogleUser {
@@ -54,7 +55,7 @@ const loadGoogleModule = async (): Promise<boolean> => {
     statusCodes = module.statusCodes;
     return true;
   } catch (error) {
-    console.warn('[GoogleAuth] Package not installed. Using fallback.');
+    logger.warn('[GoogleAuth] Package not installed. Using fallback.');
     return false;
   }
 };
@@ -173,14 +174,14 @@ export const googleAuthService = {
       // Validate config
       const validation = validateGoogleConfig();
       if (!validation.valid) {
-        console.error('[GoogleAuth] Config errors:', validation.errors);
+        logger.error('[GoogleAuth] Config errors:', validation.errors);
         return false;
       }
 
       // Load module
       const available = await googleAuthService.isAvailable();
       if (!available || !GoogleSignin) {
-        console.warn('[GoogleAuth] Package not installed');
+        logger.warn('[GoogleAuth] Package not installed');
         return false;
       }
 
@@ -193,10 +194,10 @@ export const googleAuthService = {
         scopes: GOOGLE_CONFIG.scopes,
       });
 
-      console.log('[GoogleAuth] Configured successfully');
+      logger.info('[GoogleAuth] Configured successfully');
       return true;
     } catch (error: any) {
-      console.error('[GoogleAuth] Configure error:', error);
+      logger.error('[GoogleAuth] Configure error:', error);
       return false;
     }
   },
@@ -211,7 +212,7 @@ export const googleAuthService = {
       await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
       return true;
     } catch (error) {
-      console.warn('[GoogleAuth] Play Services not available');
+      logger.warn('[GoogleAuth] Play Services not available');
       return false;
     }
   },
@@ -241,7 +242,7 @@ export const googleAuthService = {
       const user = userInfo.user || userInfo;
 
       if (!user || !user.email) {
-        console.error('[GoogleAuth] No user email in response:', {
+        logger.error('[GoogleAuth] No user email in response:', {
           hasUser: Boolean(user),
           hasIdToken: Boolean(userInfo.idToken || response.idToken),
           hasServerAuthCode: Boolean(userInfo.serverAuthCode || response.serverAuthCode),
@@ -253,7 +254,7 @@ export const googleAuthService = {
         };
       }
 
-      console.log('[GoogleAuth] Sign in success:', user.email);
+      logger.info('[GoogleAuth] Sign in success:', user.email);
 
       return {
         success: true,
@@ -267,7 +268,7 @@ export const googleAuthService = {
         serverAuthCode: userInfo.serverAuthCode || response.serverAuthCode || undefined,
       };
     } catch (error: any) {
-      console.error('[GoogleAuth] Sign in error:', error);
+      logger.error('[GoogleAuth] Sign in error:', error);
 
       // Handle specific error codes
       if (statusCodes) {
@@ -335,10 +336,10 @@ export const googleAuthService = {
     try {
       if (!GoogleSignin) return true;
       await GoogleSignin.signOut();
-      console.log('[GoogleAuth] Signed out');
+      logger.info('[GoogleAuth] Signed out');
       return true;
     } catch (error) {
-      console.error('[GoogleAuth] Sign out error:', error);
+      logger.error('[GoogleAuth] Sign out error:', error);
       return false;
     }
   },
@@ -353,7 +354,7 @@ export const googleAuthService = {
       await GoogleSignin.signOut();
       return true;
     } catch (error) {
-      console.error('[GoogleAuth] Revoke error:', error);
+      logger.error('[GoogleAuth] Revoke error:', error);
       return false;
     }
   },

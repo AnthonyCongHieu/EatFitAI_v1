@@ -1,3 +1,5 @@
+using EatFitAI.API.Helpers;
+
 namespace EatFitAI.API.DTOs.User
 {
     public class UserDto
@@ -10,9 +12,7 @@ namespace EatFitAI.API.DTOs.User
         // Profile fields for AI nutrition
         public string? Gender { get; set; }
         public DateOnly? DateOfBirth { get; set; }
-        public int? Age => DateOfBirth.HasValue 
-            ? (int)((DateTime.Today - DateOfBirth.Value.ToDateTime(TimeOnly.MinValue)).TotalDays / 365.25)
-            : null;
+        public int? Age => DateTimeHelper.GetAge(DateOfBirth);
         public int? ActivityLevelId { get; set; }
         public double? ActivityFactor { get; set; } // From ActivityLevel table
         public string? Goal { get; set; }

@@ -9,6 +9,53 @@ const DEFAULT_OUTPUT_ROOT = path.resolve(
   'production-smoke',
 );
 
+function resolveThresholdNumber(name, fallback) {
+  const raw = trim(process.env[name]);
+  if (!raw) {
+    return fallback;
+  }
+
+  const parsed = Number(raw);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+}
+
+const RELEASE_THRESHOLDS = {
+  auth: {
+    requiredChecks: 3,
+  },
+  search: {
+    positivePassRateMin: 100,
+    emptyPassRateMin: 100,
+  },
+  voice: {
+    parseSuccessRateMin: 100,
+    executeSuccessRateMin: 100,
+    parseLatencyP95MaxMs: resolveThresholdNumber(
+      'EATFITAI_SMOKE_VOICE_PARSE_P95_MS',
+      3000,
+    ),
+    executeLatencyP95MaxMs: resolveThresholdNumber(
+      'EATFITAI_SMOKE_VOICE_EXECUTE_P95_MS',
+      4000,
+    ),
+  },
+  scan: {
+    primaryPassedMin: 1,
+    requireManualScanToSave: true,
+  },
+  nutrition: {
+    suggestSuccessRateMin: 100,
+    applySuccessRateMin: 100,
+    allowManualApplyOverride: true,
+  },
+  riskScenarios: {
+    requiredKeys: ['aiDownFallback', 'networkLag', 'dataCorrupt'],
+  },
+  evidence: {
+    requiredCount: 7,
+  },
+};
+
 function trim(value) {
   return String(value || '').trim();
 }
@@ -176,7 +223,15 @@ function summarizeSearch(regression) {
       .length,
     latencyAvgMs: average(latencies),
     latencyP95Ms: percentile(latencies, 95),
-    gatePass: entries.length > 0 && entries.every((entry) => entry.passed),
+    thresholds: RELEASE_THRESHOLDS.search,
+    gatePass:
+      entries.length > 0 &&
+      (positive.length === 0 ||
+        Number(rate(positive.filter((entry) => entry.passed).length, positive.length) ?? 0) >=
+          RELEASE_THRESHOLDS.search.positivePassRateMin) &&
+      (empty.length === 0 ||
+        Number(rate(empty.filter((entry) => entry.passed).length, empty.length) ?? 0) >=
+          RELEASE_THRESHOLDS.search.emptyPassRateMin),
   };
 }
 
@@ -248,13 +303,29 @@ function summarizeVoice(regression) {
     executeLatencyP95Ms: percentile(executeLatencies, 95),
     validationMode: 'backend-proxy-text',
     audioSttReleaseGate: false,
+    thresholds: RELEASE_THRESHOLDS.voice,
     gatePass:
       entries.length > 0 &&
       failedParse.length === 0 &&
       failedExecute.length === 0 &&
       skippedMutations.length === 0 &&
       diaryReadbackFailed.length === 0 &&
-      missingDiaryReadback.length === 0,
+      missingDiaryReadback.length === 0 &&
+      Number(
+        rate(entries.filter((entry) => entry.parse?.passed).length, entries.length) ?? 0,
+      ) >= RELEASE_THRESHOLDS.voice.parseSuccessRateMin &&
+      (executeAttempted.length === 0 ||
+        Number(
+          rate(
+            executeAttempted.filter((entry) => entry.execute?.passed).length,
+            executeAttempted.length,
+          ) ?? 0,
+        ) >= RELEASE_THRESHOLDS.voice.executeSuccessRateMin) &&
+      ((percentile(parseLatencies, 95) ?? Number.POSITIVE_INFINITY) <=
+        RELEASE_THRESHOLDS.voice.parseLatencyP95MaxMs) &&
+      (executeAttempted.length === 0 ||
+        (percentile(executeLatencies, 95) ?? Number.POSITIVE_INFINITY) <=
+          RELEASE_THRESHOLDS.voice.executeLatencyP95MaxMs),
   };
 }
 
@@ -279,12 +350,15 @@ function summarizeNutrition(regression, observations) {
     applySuccessRate: rate(applyPassed.length, applyAttempted.length),
     manualNutritionApplyPassed: manualPassed,
     skippedMutations: skippedMutations.map((entry) => entry.key),
+    thresholds: RELEASE_THRESHOLDS.nutrition,
     gatePass:
       (entries.length > 0 &&
-        suggested.length === entries.length &&
+        Number(rate(suggested.length, entries.length) ?? 0) >=
+          RELEASE_THRESHOLDS.nutrition.suggestSuccessRateMin &&
         applyAttempted.length > 0 &&
-        applyPassed.length === applyAttempted.length) ||
-      manualPassed,
+        Number(rate(applyPassed.length, applyAttempted.length) ?? 0) >=
+          RELEASE_THRESHOLDS.nutrition.applySuccessRateMin) ||
+      (RELEASE_THRESHOLDS.nutrition.allowManualApplyOverride && manualPassed),
   };
 }
 
@@ -315,13 +389,16 @@ function summarizeScan(regression, observations) {
     diaryReadbackPassed: Boolean(manual.diaryReadbackPassed),
     manualFixtureKey: trim(manual.fixtureKey),
     scanToSaveCompletionPassed: completionPassed,
-    gatePass: primary.filter((entry) => entry.passed).length >= 1 && completionPassed,
+    thresholds: RELEASE_THRESHOLDS.scan,
+    gatePass:
+      primary.filter((entry) => entry.passed).length >= RELEASE_THRESHOLDS.scan.primaryPassedMin &&
+      (!RELEASE_THRESHOLDS.scan.requireManualScanToSave || completionPassed),
   };
 }
 
 function summarizeRiskScenarios(observations) {
   const risk = observations?.riskScenarios || {};
-  const entries = ['aiDownFallback', 'networkLag', 'dataCorrupt'].map((key) => ({
+  const entries = RELEASE_THRESHOLDS.riskScenarios.requiredKeys.map((key) => ({
     key,
     attempted: Boolean(risk[key]?.attempted),
     passed: Boolean(risk[key]?.passed),
@@ -330,8 +407,10 @@ function summarizeRiskScenarios(observations) {
 
   return {
     entries,
+    thresholds: RELEASE_THRESHOLDS.riskScenarios,
     gatePass:
-      entries.length === 3 && entries.every((entry) => entry.attempted && entry.passed),
+      entries.length === RELEASE_THRESHOLDS.riskScenarios.requiredKeys.length &&
+      entries.every((entry) => entry.attempted && entry.passed),
   };
 }
 
@@ -378,6 +457,7 @@ function buildMarkdown(report) {
     `- Voice diary readback: ${report.productMetrics.voice.diaryReadbackPassed ?? 'n/a'} / ${report.productMetrics.voice.diaryReadbackAttempted ?? 'n/a'}`,
     `- Voice parse latency avg/p95: ${report.productMetrics.voice.parseLatencyAvgMs ?? 'n/a'} / ${report.productMetrics.voice.parseLatencyP95Ms ?? 'n/a'} ms`,
     `- Voice execute latency avg/p95: ${report.productMetrics.voice.executeLatencyAvgMs ?? 'n/a'} / ${report.productMetrics.voice.executeLatencyP95Ms ?? 'n/a'} ms`,
+    `- Voice latency thresholds (p95): parse <= ${report.thresholds.voice.parseLatencyP95MaxMs} ms, execute <= ${report.thresholds.voice.executeLatencyP95MaxMs} ms`,
     '- Voice gate on VM uses backend proxy parse/execute/confirm-weight instead of live microphone capture.',
     `- Nutrition suggest success rate: ${report.productMetrics.nutrition.suggestSuccessRate ?? 'n/a'}%`,
     `- Nutrition apply success rate: ${report.productMetrics.nutrition.applySuccessRate ?? 'n/a'}%`,
@@ -439,6 +519,7 @@ function main() {
     outputDir,
     backendUrl: preflight.backendUrl || regression.backendUrl || '',
     cloudPath: preflight.cloudPath || '',
+    thresholds: RELEASE_THRESHOLDS,
     productMetrics: {
       search: searchSummary,
       scan: scanSummary,

@@ -28,6 +28,7 @@ import Tilt3DCard, { ParallaxLayer } from '../../../components/ui/Tilt3DCard';
 import { useAppTheme } from '../../../theme/ThemeProvider';
 import { ThemedText } from '../../../components/ThemedText';
 import Screen from '../../../components/Screen';
+import { trackEvent } from '../../../services/analytics';
 import type { RootStackParamList } from '../../types';
 import apiClient from '../../../services/apiClient';
 import { tokenStorage } from '../../../services/secureStore';
@@ -35,6 +36,7 @@ import { setAccessTokenMem } from '../../../services/authTokens';
 import { AUTH_NEEDS_ONBOARDING_KEY, useAuthStore } from '../../../store/useAuthStore';
 import { handleApiError } from '../../../utils/errorHandler';
 import { TEST_IDS } from '../../../testing/testIds';
+import logger from '../../../utils/logger';
 
 const CODE_LENGTH = 6;
 
@@ -176,6 +178,12 @@ const VerifyEmailScreen = ({ navigation, route }: Props): React.ReactElement => 
 
     setLoading(true);
     try {
+      trackEvent('auth_verify_submit', {
+        flow: 'auth',
+        step: 'verify_email',
+        status: 'submitted',
+        metadata: { email },
+      });
       const resp = await apiClient.post<VerifyEmailResponse>('/api/auth/verify-email', {
         Email: email,
         VerificationCode: fullCode,
@@ -194,7 +202,7 @@ const VerifyEmailScreen = ({ navigation, route }: Props): React.ReactElement => 
       };
 
       if (__DEV__) {
-        console.log('[VerifyEmail] Verification succeeded:', {
+        logger.debug('[VerifyEmail] Verification succeeded:', {
           email: data.email,
           needsOnboarding,
           backendNeedsOnboarding,
@@ -206,6 +214,15 @@ const VerifyEmailScreen = ({ navigation, route }: Props): React.ReactElement => 
           ).NeedsOnboarding,
         });
       }
+      trackEvent('auth_verify_success', {
+        flow: 'auth',
+        step: 'verify_email',
+        status: 'success',
+        metadata: {
+          email: data.email,
+          needsOnboarding,
+        },
+      });
 
       const accessToken = data.accessToken || data.token;
       const accessTokenExpiresAt = data.accessTokenExpiresAt || data.expiresAt;
@@ -239,6 +256,16 @@ const VerifyEmailScreen = ({ navigation, route }: Props): React.ReactElement => 
       }, 50);
     } catch (err: any) {
       const message = err?.response?.data?.message || handleApiError(err);
+      trackEvent('auth_verify_failure', {
+        category: 'error',
+        flow: 'auth',
+        step: 'verify_email',
+        status: 'failure',
+        metadata: {
+          email,
+          message,
+        },
+      });
       Toast.show({ type: 'error', text1: 'Xác minh thất bại', text2: message });
     } finally {
       setLoading(false);
@@ -254,6 +281,12 @@ const VerifyEmailScreen = ({ navigation, route }: Props): React.ReactElement => 
         Email: email,
       });
       const data = resp.data as any;
+      trackEvent('auth_verify_resend', {
+        flow: 'auth',
+        step: 'verify_email',
+        status: 'success',
+        metadata: { email },
+      });
 
       if (data?.verificationCode) {
         Toast.show({
@@ -274,6 +307,16 @@ const VerifyEmailScreen = ({ navigation, route }: Props): React.ReactElement => 
       setCode(Array(CODE_LENGTH).fill(''));
     } catch (err: any) {
       const message = err?.response?.data?.message || handleApiError(err);
+      trackEvent('auth_verify_resend_failure', {
+        category: 'error',
+        flow: 'auth',
+        step: 'verify_email',
+        status: 'failure',
+        metadata: {
+          email,
+          message,
+        },
+      });
       Toast.show({ type: 'error', text1: 'Gửi lại thất bại', text2: message });
     } finally {
       setResendLoading(false);

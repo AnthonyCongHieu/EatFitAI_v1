@@ -1060,6 +1060,58 @@ Tạo **2 monitors** với cấu hình:
 
 ---
 
+## Cập nhật triển khai (2026-04-23)
+
+### Tiến độ sprint hiện tại
+
+- **~85%** scope code-only của sprint ổn định hóa + product wave đầu tiên đã được implement
+- **~88-90%** phần code-applicable trong tài liệu này đã xong
+- Phần còn lại chủ yếu là **manual ops** hoặc cần **môi trường release thật** để verify
+
+### Đã triển khai
+
+| Hạng mục | Trạng thái | Ghi chú |
+|---|---|---|
+| Security headers middleware | ✅ Xong | Thêm `SecurityHeadersMiddleware` và đăng ký trong `Program.cs` |
+| ex.Message / raw 5xx cleanup | ✅ Xong phần trọng yếu | Sanitize các nhánh 500/503/504 chính ở backend auth / analytics / meal / user / nutrition / water / AI |
+| DateTimeHelper cho VN timezone | ✅ Xong | Thêm helper và thay các điểm nhạy timezone liên quan profile / voice / water |
+| Water target theo cân nặng | ✅ Xong | Dùng `weightKg * 30`, fallback `2000ml` |
+| Direct Supabase water bypass | ✅ Xong | Mobile chỉ đi qua backend |
+| aiApiClient 401 refresh parity | ✅ Xong | AI client có retry/refresh giống API client thường |
+| Logger production-safe | ✅ Xong | Giảm `console.*` noise trong service chính, vẫn giữ error logging |
+| Telemetry v1 (backend + mobile queue) | ✅ Xong | Có endpoint backend, queue local, flush retry, telemetry cho funnel chính |
+| Weekly review API + mobile surface | ✅ Xong | Có API backend, StatsScreen, notification deep-link, telemetry open/complete |
+| Barcode lookup + barcode mode | ✅ Xong | Có `/api/food/barcode/{barcode}` và barcode mode trên `AIScanScreen` |
+| AI activity mapping fix | ✅ Xong | Online path dùng đúng `request.ActivityLevel` |
+| AI formula parity / Gemini fallback | ✅ Xong | Python AI provider khớp backend hơn, fallback reachable, upper-bound validation |
+| YOLO confidence env config | ✅ Xong | Không còn hardcode threshold |
+| Offline readonly cache | ✅ Xong v1 | Cache profile / summary / diary / nutrition reads |
+| Release metrics thresholds | ✅ Xong | Voice latency thresholds được ghi rõ trong smoke metrics |
+
+### Đã verify
+
+- `dotnet build` backend: ✅ pass
+- Focused `dotnet test` cho auth / analytics / food / barcode / weekly-review: ✅ pass
+- `npm run typecheck` mobile: ✅ pass
+- Focused mobile Jest (telemetry / ai client retry / ai service / water / summary / food / logger): ✅ pass
+- `python -m unittest` cho AI provider parity + runtime config: ✅ pass
+- `node --check` cho release gate scripts: ✅ pass
+
+### Chưa hoàn tất
+
+| Hạng mục | Trạng thái | Ghi chú |
+|---|---|---|
+| Full device smoke gate | ⬜ Chưa chạy | Cần Android release-like build, thiết bị/emulator, Maestro/Appium lane |
+| Full cloud smoke gate | ⬜ Chưa chạy | Cần backend/AI provider thật, secret thật, smoke account thật, artifact lane `_logs/production-smoke` |
+| Manual ops cloud | ⬜ Chưa làm | UptimeRobot, keep-alive/ping, Render paid strategy, env/secrets ngoài code |
+| P2/P3 backlog | ⏩ Deferred | Meal planner, grocery, fasting, wearable sync, premium, micronutrients, coach dashboard |
+
+### Ghi chú quan trọng
+
+- 3 file store `useAuthStore.ts`, `useProfileStore.ts`, `useStatsStore.ts` đã được làm sạch trạng thái Git; trước đó chỉ dirty do line-ending/working-tree metadata, không phải thay đổi logic.
+
+---
+
 ## Lịch sử thảo luận
 
 | Ngày | Mục | Quyết định |

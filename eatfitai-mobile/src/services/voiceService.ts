@@ -2,6 +2,8 @@ import type { AxiosError } from 'axios';
 
 import { API_BASE_URL, assertBackendApiBaseUrl } from '../config/env';
 import apiClient, { fetchWithAuthRetry, getCurrentApiUrl } from './apiClient';
+import { captureError } from './errorTracking';
+import logger from '../utils/logger';
 
 const getApiBaseUrl = (): string => {
   const baseUrl = getCurrentApiUrl() ?? API_BASE_URL;
@@ -127,7 +129,7 @@ export interface TranscriptionResponse {
 export const voiceService = {
   async transcribeAudio(audioUri: string): Promise<TranscriptionResponse> {
     if (__DEV__) {
-      console.info('[voiceService] STT is disabled; skipping transcription for:', audioUri);
+      logger.info('[voiceService] STT is disabled; skipping transcription for:', audioUri);
     }
 
     return {
@@ -159,6 +161,9 @@ export const voiceService = {
         reviewReason: data.reviewReason,
       };
     } catch (error: unknown) {
+      captureError(error, 'voiceService.parseWithOllama', {
+        textLength: text.length,
+      });
       return {
         intent: 'UNKNOWN',
         entities: {},
@@ -201,6 +206,9 @@ export const voiceService = {
       );
       return response.data;
     } catch (error: unknown) {
+      captureError(error, 'voiceService.executeCommand', {
+        intent: command.intent,
+      });
       return {
         success: false,
         error: getApiErrorMessage(error, 'Không thể thực hiện lệnh giọng nói.'),
@@ -231,6 +239,9 @@ export const voiceService = {
       );
       return response.data;
     } catch (error: unknown) {
+      captureError(error, 'voiceService.confirmWeight', {
+        newWeight,
+      });
       return {
         success: false,
         error: getApiErrorMessage(error, 'Không thể lưu cân nặng.'),
