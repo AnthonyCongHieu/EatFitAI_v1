@@ -474,7 +474,7 @@ async function main() {
 
     if (gateName === 'cloud') {
       gateResult.commands.push(
-        runCommand('Render verify', 'npm', ['run', 'smoke:render:verify', '--', outputDir], {
+        runCommand('Render verify', 'npm', ['run', 'smoke:render:verify'], {
           cwd: mobileRoot,
           env,
           timeoutMs: 20 * 60 * 1000,
@@ -482,7 +482,7 @@ async function main() {
       );
       if (gateResult.commands.at(-1).ok) {
         gateResult.commands.push(
-          runCommand('Cloud preflight', 'npm', ['run', 'smoke:preflight', '--', outputDir], {
+          runCommand('Cloud preflight', 'npm', ['run', 'smoke:preflight'], {
             cwd: mobileRoot,
             env,
             timeoutMs: 20 * 60 * 1000,
@@ -491,7 +491,7 @@ async function main() {
       }
       if (gateResult.commands.every((entry) => entry.ok)) {
         gateResult.commands.push(
-          runCommand('Cloud regression', 'npm', ['run', 'smoke:regression', '--', outputDir], {
+          runCommand('Cloud regression', 'npm', ['run', 'smoke:regression'], {
             cwd: mobileRoot,
             env,
             timeoutMs: 45 * 60 * 1000,
@@ -500,7 +500,7 @@ async function main() {
       }
       if (gateResult.commands.every((entry) => entry.ok)) {
         gateResult.commands.push(
-          runCommand('Cloud metrics', 'npm', ['run', 'smoke:metrics', '--', outputDir], {
+          runCommand('Cloud metrics', 'npm', ['run', 'smoke:metrics'], {
             cwd: mobileRoot,
             env,
             timeoutMs: 10 * 60 * 1000,
@@ -509,7 +509,7 @@ async function main() {
       }
       if (gateResult.commands.every((entry) => entry.ok)) {
         gateResult.commands.push(
-          runCommand('Cloud rehearsal', 'npm', ['run', 'smoke:rehearsal', '--', outputDir], {
+          runCommand('Cloud rehearsal', 'npm', ['run', 'smoke:rehearsal'], {
             cwd: mobileRoot,
             env,
             timeoutMs: 10 * 60 * 1000,

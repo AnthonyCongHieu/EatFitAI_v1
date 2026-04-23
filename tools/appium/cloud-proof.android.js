@@ -46,6 +46,38 @@ function trim(value) {
   return String(value || '').trim();
 }
 
+function readJsonIfExists(filePath) {
+  if (!fs.existsSync(filePath)) {
+    return null;
+  }
+
+  return JSON.parse(fs.readFileSync(filePath, 'utf8'));
+}
+
+function writeJson(filePath, value) {
+  fs.writeFileSync(filePath, JSON.stringify(value, null, 2), 'utf8');
+}
+
+function updateObservations(evidenceRoot, patch) {
+  const observationsPath = path.join(evidenceRoot, 'session-observations.json');
+  const observations = readJsonIfExists(observationsPath) || {};
+  const next = {
+    ...observations,
+    ...patch,
+    evidence: {
+      ...(observations.evidence || {}),
+      ...(patch.evidence || {}),
+      notes: [
+        ...((observations.evidence && Array.isArray(observations.evidence.notes))
+          ? observations.evidence.notes
+          : []),
+        ...((patch.evidence && Array.isArray(patch.evidence.notes)) ? patch.evidence.notes : []),
+      ],
+    },
+  };
+  writeJson(observationsPath, next);
+}
+
 function resolveEvidenceRoot(cliValue) {
   const explicit = trim(cliValue) || trim(process.env.EATFITAI_SMOKE_OUTPUT_DIR);
   if (explicit) {
@@ -388,6 +420,39 @@ async function run() {
     };
     const summaryPath = path.join(evidenceRoot, 'cloud-proof-auth.summary.json');
     fs.writeFileSync(summaryPath, JSON.stringify(summary, null, 2), 'utf8');
+
+    updateObservations(evidenceRoot, {
+      operator: 'codex',
+      reopenHome: {
+        attempted: true,
+        passed: true,
+        notes: 'Appium cloud-proof reopened the authenticated app to home successfully.',
+      },
+      scanToSave: {
+        attempted: true,
+        fixtureKey: path.parse(scanFixturePath).name,
+        passed: true,
+        diaryReadbackPassed: true,
+        mealType: 'unspecified',
+        notes: 'Appium cloud-proof completed gallery -> result -> add to diary -> diary readback.',
+      },
+      evidence: {
+        homeScreenshot: homeEvidence.screenshotPath,
+        aiResultScreenshot: scanResultEvidence.screenshotPath,
+        diaryScreenshot: diaryEvidence.screenshotPath,
+        logcatPath,
+        notes: [
+          `Cloud-proof summary: ${summaryPath}`,
+          `Reopen evidence: ${finalReopenEvidence.screenshotPath || reopenEvidence.screenshotPath || ''}`,
+          `Vision evidence: ${visionEvidence.screenshotPath || ''}`,
+        ].filter(Boolean),
+      },
+      stability: {
+        crashObserved: false,
+        freezeObserved: false,
+        notes: 'Appium cloud-proof completed without crash or freeze.',
+      },
+    });
 
     console.log(JSON.stringify(summary, null, 2));
     console.log(`[cloud-proof.android] Wrote ${summaryPath}`);

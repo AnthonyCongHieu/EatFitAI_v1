@@ -40,7 +40,7 @@ public sealed class ProductSchemaBootstrapper
             "SessionId" varchar(120) NULL,
             "MetadataJson" text NULL,
             "RequestId" varchar(120) NULL,
-            "CreatedAt" timestamp without time zone NOT NULL DEFAULT NOW() AT TIME ZONE 'UTC'
+            "CreatedAt" timestamp without time zone NOT NULL DEFAULT (NOW() AT TIME ZONE 'UTC')
         );
 
         CREATE INDEX IF NOT EXISTS "IX_TelemetryEvent_OccurredAt"

@@ -671,7 +671,18 @@ async function runDisposableRegisterMode(driver, outputDir, options) {
     throw new Error('Register entry point was not reachable from intro/welcome flow.');
   }
 
-  await waitForAny(driver, [TEST_IDS.auth.registerScreen], 20000);
+  await waitForAny(
+    driver,
+    [
+      TEST_IDS.auth.registerScreen,
+      TEST_IDS.auth.registerNameInput,
+      TEST_IDS.auth.registerEmailInput,
+      TEST_IDS.auth.registerPasswordInput,
+      TEST_IDS.auth.registerConfirmPasswordInput,
+      TEST_IDS.auth.registerSubmitButton,
+    ],
+    20000,
+  );
   await setValueByTestId(driver, TEST_IDS.auth.registerNameInput, options.displayName);
   await setValueByTestId(driver, TEST_IDS.auth.registerEmailInput, mailbox.address);
   await setValueByTestId(driver, TEST_IDS.auth.registerPasswordInput, options.password);
@@ -702,7 +713,15 @@ async function runDisposableRegisterMode(driver, outputDir, options) {
   );
   updateBudget(outputDir, 'registerWithVerification', `register ${mailbox.address}`);
 
-  await waitForAny(driver, [TEST_IDS.auth.verifyScreen], 30000);
+  await waitForAny(
+    driver,
+    [
+      TEST_IDS.auth.verifyScreen,
+      `${TEST_IDS.auth.verifyCodeInputPrefix}-0`,
+      TEST_IDS.auth.verifySubmitButton,
+    ],
+    30000,
+  );
   const verifyScreenScreenshot = await saveScreenshot(
     driver,
     outputDir,
