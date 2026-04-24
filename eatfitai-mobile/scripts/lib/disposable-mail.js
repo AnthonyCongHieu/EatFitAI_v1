@@ -44,12 +44,19 @@ function extractSixDigitCode(message) {
 
 function selectNewestMatchingMessage(items, options = {}) {
   const subjectIncludes = trim(options.subjectIncludes);
+  const introIncludes = trim(options.introIncludes);
   const createdAfterIso = trim(options.createdAfterIso);
   const createdAfterMs = createdAfterIso ? Date.parse(createdAfterIso) : Number.NaN;
+  const minimumMatches = Number.parseInt(String(options.minimumMatches || 1), 10) || 1;
 
-  return [...(Array.isArray(items) ? items : [])]
-    .filter((item) => {
+  const matches = [...(Array.isArray(items) ? items : [])]
+    .map((item, index) => ({ item, index }))
+    .filter(({ item }) => {
       if (subjectIncludes && !String(item?.subject || '').includes(subjectIncludes)) {
+        return false;
+      }
+
+      if (introIncludes && !String(item?.intro || '').includes(introIncludes)) {
         return false;
       }
 
@@ -59,8 +66,15 @@ function selectNewestMatchingMessage(items, options = {}) {
 
       const createdAtMs = Date.parse(item?.createdAt || 0);
       return Number.isFinite(createdAtMs) && createdAtMs >= createdAfterMs - 1000;
-    })
-    .sort((left, right) => {
+    });
+
+  if (matches.length < minimumMatches) {
+    return null;
+  }
+
+  return matches.sort((leftEntry, rightEntry) => {
+      const left = leftEntry.item;
+      const right = rightEntry.item;
       const rightUpdatedAt = Date.parse(right?.updatedAt || right?.createdAt || 0);
       const leftUpdatedAt = Date.parse(left?.updatedAt || left?.createdAt || 0);
       if (rightUpdatedAt !== leftUpdatedAt) {
@@ -73,8 +87,8 @@ function selectNewestMatchingMessage(items, options = {}) {
         return rightCreatedAt - leftCreatedAt;
       }
 
-      return String(right?.id || '').localeCompare(String(left?.id || ''));
-    })[0] || null;
+      return leftEntry.index - rightEntry.index;
+    })[0]?.item || null;
 }
 
 async function requestJson(url, options = {}) {
@@ -206,7 +220,9 @@ async function waitForMatchingMessage(options) {
     if (messages.ok) {
       const newest = selectNewestMatchingMessage(getMailItems(messages.body), {
         subjectIncludes: options?.subjectIncludes,
+        introIncludes: options?.introIncludes,
         createdAfterIso: options?.createdAfterIso,
+        minimumMatches: options?.minimumMatches,
       });
 
       if (newest?.id) {
