@@ -114,9 +114,21 @@ public sealed class AiHealthService : IAiHealthService
             ? statusProp.GetString()
             : null;
         var modelLoaded = root.TryGetProperty("model_loaded", out var modelProp) && modelProp.ValueKind == JsonValueKind.True;
+        var modelFile = root.TryGetProperty("model_file", out var modelFileProp)
+            ? modelFileProp.GetString()
+            : null;
+        var modelLoadError = root.TryGetProperty("model_load_error", out var modelLoadErrorProp)
+            && modelLoadErrorProp.ValueKind != JsonValueKind.Null
+                ? modelLoadErrorProp.GetString()
+                : null;
+        var modelLazyPending =
+            !modelLoaded
+            && string.Equals(modelFile, "not-loaded", StringComparison.OrdinalIgnoreCase)
+            && string.IsNullOrWhiteSpace(modelLoadError);
+        var modelReady = modelLoaded || modelLazyPending;
         var geminiConfigured = root.TryGetProperty("gemini_configured", out var geminiProp) && geminiProp.ValueKind == JsonValueKind.True;
 
-        if (string.Equals(providerStatus, "ok", StringComparison.OrdinalIgnoreCase) && modelLoaded && geminiConfigured)
+        if (string.Equals(providerStatus, "ok", StringComparison.OrdinalIgnoreCase) && modelReady && geminiConfigured)
         {
             lock (_sync)
             {
@@ -124,9 +136,11 @@ public sealed class AiHealthService : IAiHealthService
                 _lastCheckedAt = checkedAt;
                 _lastHealthyAt = checkedAt;
                 _consecutiveFailures = 0;
-                _modelLoaded = true;
+                _modelLoaded = modelLoaded;
                 _geminiConfigured = true;
-                _message = "AI provider healthy.";
+                _message = modelLazyPending
+                    ? "AI provider healthy; vision model sẽ lazy-load khi scan đầu tiên."
+                    : "AI provider healthy.";
             }
             return;
         }
@@ -136,9 +150,11 @@ public sealed class AiHealthService : IAiHealthService
         {
             reasons.Add("status khác ok");
         }
-        if (!modelLoaded)
+        if (!modelReady)
         {
-            reasons.Add("model chưa sẵn sàng");
+            reasons.Add(string.IsNullOrWhiteSpace(modelLoadError)
+                ? "model chưa sẵn sàng"
+                : $"model lỗi: {modelLoadError}");
         }
         if (!geminiConfigured)
         {

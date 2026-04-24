@@ -114,6 +114,8 @@ export const TEST_IDS = {
     todayTabButton: 'stats-today-tab-button',
     weekTabButton: 'stats-week-tab-button',
     monthTabButton: 'stats-month-tab-button',
+    weeklyReviewCard: 'stats-weekly-review-card',
+    weeklyReviewDoneButton: 'stats-weekly-review-done-button',
   },
   profile: {
     screen: 'profile-screen',

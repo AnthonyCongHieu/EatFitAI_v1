@@ -20,8 +20,8 @@ threads = 2
 timeout = 120
 graceful_timeout = 30
 
-# Preload app so the single worker loads the YOLO model before serving traffic.
-preload_app = True
+# Do not preload the app: /healthz must come up before the lazy YOLO model load.
+preload_app = False
 
 # Access log
 accesslog = "-"  # stdout

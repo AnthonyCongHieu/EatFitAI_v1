@@ -24,6 +24,7 @@ from internal_auth import (
     internal_auth_missing,
     is_internal_request_authorized,
 )
+from model_policy import allow_generic_yolo_fallback, pending_model_readiness_error
 from runtime_config import get_yolo_confidence_threshold, get_yolo_image_size
 
 # Cấu hình logging
@@ -60,6 +61,7 @@ os.makedirs("uploads", exist_ok=True)
 YOLO_CONFIDENCE_THRESHOLD = get_yolo_confidence_threshold()
 YOLO_IMAGE_SIZE = get_yolo_image_size()
 YOLO_INFERENCE_LOCK = threading.Lock()
+YOLO_MODEL_LOAD_LOCK = threading.Lock()
 
 # Hằng số validate file
 ALLOWED_EXTENSIONS = {'jpg', 'jpeg', 'png', 'webp', 'bmp'}
@@ -118,6 +120,7 @@ def _download_model_from_supabase(filename: str = "best.pt") -> bool:
 # ============== LOAD YOLO MODEL ==============
 model: YOLO | None = None
 model_file: str = ""
+model_load_error: str | None = None
 
 # GPU detection - Cloud chạy CPU, local có thể có GPU
 import torch
@@ -136,30 +139,52 @@ def get_optimal_device():
 
 DEVICE = get_optimal_device()
 
-# Nếu best.pt chưa có (trên cloud) → tự động download từ Supabase Storage
-if not os.path.exists("best.pt"):
-    logger.info("📦 best.pt không tìm thấy → thử download từ Supabase Storage...")
-    _download_model_from_supabase("best.pt")
+def _load_yolo_model() -> YOLO | None:
+    """Load YOLO on demand so /healthz stays fast during Render deploys."""
+    global model, model_file, model_load_error
 
-try:
-    if os.path.exists("best.pt"):
-        logger.info("Loading custom trained model: best.pt")
-        model = YOLO("best.pt")
-        model_file = "best.pt"
-    else:
-        logger.warning("⚠️ best.pt không có → fallback sang yolov8s.pt (model chung, KHÔNG phải food model)")
-        model = YOLO("yolov8s.pt")
-        model_file = "yolov8s.pt"
-    
-    # Đẩy model lên device tối ưu
-    if model and DEVICE != "cpu":
-        model.to(DEVICE)
-        logger.info(f"✅ Model moved to {DEVICE}")
-    
-    logger.info(f"Model loaded successfully: {model_file} on {DEVICE}")
-except Exception as e:
-    logger.error(f"Failed to load model: {e}", exc_info=True)
-    raise
+    if model is not None:
+        return model
+
+    with YOLO_MODEL_LOAD_LOCK:
+        if model is not None:
+            return model
+
+        model_load_error = None
+
+        try:
+            # Nếu best.pt chưa có (trên cloud) → tự động download từ Supabase Storage
+            if not os.path.exists("best.pt"):
+                logger.info("📦 best.pt không tìm thấy → thử download từ Supabase Storage...")
+                _download_model_from_supabase("best.pt")
+
+            if os.path.exists("best.pt"):
+                logger.info("Loading custom trained model: best.pt")
+                loaded_model = YOLO("best.pt")
+                loaded_model_file = "best.pt"
+            elif not allow_generic_yolo_fallback():
+                raise FileNotFoundError(
+                    "best.pt is required in production. Configure SUPABASE_URL and "
+                    "SUPABASE_SERVICE_KEY so the model can be downloaded."
+                )
+            else:
+                logger.warning("⚠️ best.pt không có → fallback sang yolov8s.pt (model chung, KHÔNG phải food model)")
+                loaded_model = YOLO("yolov8s.pt")
+                loaded_model_file = "yolov8s.pt"
+
+            # Đẩy model lên device tối ưu
+            if DEVICE != "cpu":
+                loaded_model.to(DEVICE)
+                logger.info(f"✅ Model moved to {DEVICE}")
+
+            model = loaded_model
+            model_file = loaded_model_file
+            logger.info(f"Model loaded successfully: {model_file} on {DEVICE}")
+            return model
+        except Exception as e:
+            model_load_error = str(e)
+            logger.error(f"Failed to load model: {e}", exc_info=True)
+            return None
 
 # ============== ROUTES ==============
 
@@ -173,20 +198,31 @@ def root() -> Dict[str, Any]:
 
 @app.get("/healthz")
 def healthz() -> Dict[str, Any]:
-    """Health check với model và GPU status"""
-    model_classes = list(model.names.values()) if model else []
+    """Health check nhẹ, không load YOLO trong lúc Render deploy."""
+    loaded_model = model
+    model_classes = list(loaded_model.names.values()) if loaded_model else []
     gemini_status = _get_gemini_health_status()
+    current_model_file = model_file or "not-loaded"
+    current_model_error = pending_model_readiness_error(
+        best_model_exists=os.path.exists("best.pt"),
+        model_loaded=loaded_model is not None,
+        model_load_error=model_load_error,
+    )
     
     return {
         "status": "ok",
-        "model_loaded": model is not None,
-        "model_file": model_file,
+        "model_loaded": loaded_model is not None,
+        "model_file": current_model_file,
+        "model_load_error": current_model_error,
         "model_classes_count": len(model_classes),
-        "model_type": "yolov8-custom-eatfitai" if "best.pt" in model_file else "yolov8-pretrained",
+        "model_type": "not-loaded" if not model_file else (
+            "yolov8-custom-eatfitai" if "best.pt" in model_file else "yolov8-pretrained"
+        ),
+        "generic_yolo_fallback_allowed": allow_generic_yolo_fallback(),
         "yolo_confidence_threshold": YOLO_CONFIDENCE_THRESHOLD,
         "yolo_image_size": YOLO_IMAGE_SIZE,
         "cuda_available": torch.cuda.is_available(),
-        "device": str(model.device) if model else "unknown",
+        "device": str(loaded_model.device) if loaded_model else DEVICE,
         "gpu_name": torch.cuda.get_device_name(0) if torch.cuda.is_available() else None,
         "llm_provider": "gemini",
         **gemini_status,
@@ -302,11 +338,15 @@ def detect() -> Response | tuple[Dict[str, str], int]:
         f.save(path)
         logger.info(f"Processing image: {name} ({size / 1024:.1f}KB)")
         
-        if model is None:
-            return {"error": "model not loaded"}, 500
+        loaded_model = _load_yolo_model()
+        if loaded_model is None:
+            return {
+                "error": "model unavailable",
+                "detail": model_load_error or "YOLO model could not be loaded",
+            }, 503
         
         with YOLO_INFERENCE_LOCK:
-            res: Any = model(path, conf=YOLO_CONFIDENCE_THRESHOLD, imgsz=YOLO_IMAGE_SIZE)
+            res: Any = loaded_model(path, conf=YOLO_CONFIDENCE_THRESHOLD, imgsz=YOLO_IMAGE_SIZE)
         names: Dict[int, str] = res[0].names
         
         out: List[Dict[str, float | str]] = [
@@ -510,7 +550,7 @@ def transcribe_audio():
 
 if __name__ == "__main__":
     logger.info(f"Starting AI Provider on port 5050")
-    logger.info(f"Model: {model_file}")
+    logger.info(f"Model: {model_file or 'not loaded'}")
     logger.info(f"Device: {DEVICE}")
     logger.info(f"Nutrition LLM: {'Available (Gemini)' if NUTRITION_LLM_AVAILABLE else 'Not available'}")
     logger.info(f"Voice Parsing: {'Available' if VOICE_PARSE_AVAILABLE else 'Not available'}")

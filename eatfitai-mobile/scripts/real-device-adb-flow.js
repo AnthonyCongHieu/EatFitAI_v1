@@ -162,14 +162,34 @@ function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+function pause(ms) {
+  Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
+}
+
 function safeName(name) {
   return String(name).replace(/[^a-z0-9._-]+/gi, '-').replace(/^-|-$/g, '');
+}
+
+function wakeDevice(adb, serial) {
+  runAdb(adb, serial, ['shell', 'input', 'keyevent', 'KEYCODE_WAKEUP'], { timeoutMs: 10000 });
+  runAdb(adb, serial, ['shell', 'wm', 'dismiss-keyguard'], { timeoutMs: 10000 });
+  runAdb(adb, serial, ['shell', 'svc', 'power', 'stayon', 'true'], { timeoutMs: 10000 });
+  pause(1000);
+}
+
+function fileSize(filePath) {
+  try {
+    return fs.statSync(filePath).size;
+  } catch {
+    return 0;
+  }
 }
 
 function captureScreenshot(adb, serial, outputDir, name) {
   const fileName = `${safeName(name)}.png`;
   const remotePath = `/sdcard/eatfitai-${fileName}`;
   const localPath = path.join(outputDir, fileName);
+  wakeDevice(adb, serial);
   const shot = runAdb(adb, serial, ['shell', 'screencap', '-p', remotePath], { timeoutMs: 20000 });
   if (!shot.ok) {
     return { ok: false, name, path: localPath, error: shot.stderr || shot.error };
@@ -177,7 +197,14 @@ function captureScreenshot(adb, serial, outputDir, name) {
 
   const pull = runAdb(adb, serial, ['pull', remotePath, localPath], { timeoutMs: 20000 });
   runAdb(adb, serial, ['shell', 'rm', remotePath], { timeoutMs: 10000 });
-  return { ok: pull.ok, name, path: localPath, error: pull.stderr || pull.error };
+  const size = fileSize(localPath);
+  return {
+    ok: pull.ok && size > 0,
+    name,
+    path: localPath,
+    bytes: size,
+    error: pull.ok && size > 0 ? '' : pull.stderr || pull.error || 'screenshot was empty',
+  };
 }
 
 function captureUiDump(adb, serial, outputDir, name) {
@@ -201,6 +228,44 @@ function captureUiDump(adb, serial, outputDir, name) {
     path: localPath,
     warning: pull.ok ? '' : pull.stderr || pull.error,
   };
+}
+
+function readTextFileIfExists(filePath) {
+  try {
+    return fs.readFileSync(filePath, 'utf8');
+  } catch {
+    return '';
+  }
+}
+
+function currentFocus(adb, serial) {
+  const result = runAdb(adb, serial, ['shell', 'dumpsys', 'window'], { timeoutMs: 15000 });
+  const text = `${result.stdout}\n${result.stderr}`;
+  const focusLine =
+    text.split(/\r?\n/).find((line) => /mCurrentFocus|mFocusedApp/i.test(line)) || '';
+
+  return {
+    ok: result.ok,
+    line: trim(focusLine),
+    appForeground: focusLine.includes(APP_PACKAGE),
+  };
+}
+
+function addForegroundStep(report, adb, serial, name) {
+  const focus = currentFocus(adb, serial);
+  report.steps.push({
+    name,
+    ok: focus.ok && focus.appForeground,
+    focus: focus.line,
+  });
+  return focus;
+}
+
+async function tapStep(report, adb, serial, size, name, xRatio, yRatio, waitMs = 1200) {
+  const result = tap(adb, serial, size, xRatio, yRatio);
+  await sleep(waitMs);
+  report.steps.push({ name, tap: result });
+  return result;
 }
 
 function captureLogcat(adb, serial, outputDir, name, args) {
@@ -261,8 +326,7 @@ async function runProbe(context) {
   const { adb, serial, outputDir, report, record } = context;
   const recording = startRecording(adb, serial, outputDir, record);
   runAdb(adb, serial, ['logcat', '-c']);
-  runAdb(adb, serial, ['shell', 'input', 'keyevent', 'KEYCODE_WAKEUP']);
-  runAdb(adb, serial, ['shell', 'wm', 'dismiss-keyguard']);
+  wakeDevice(adb, serial);
   runAdb(adb, serial, ['shell', 'am', 'force-stop', APP_PACKAGE]);
   const launch = runAdb(adb, serial, [
     'shell',
@@ -275,6 +339,7 @@ async function runProbe(context) {
   ]);
   report.steps.push({ name: 'launch', ok: launch.ok, stdout: launch.stdout, stderr: launch.stderr });
   await sleep(6000);
+  addForegroundStep(report, adb, serial, 'foreground-after-launch');
   report.artifacts.push(captureScreenshot(adb, serial, outputDir, '01-launch'));
   report.artifacts.push(captureUiDump(adb, serial, outputDir, 'ui'));
   report.artifacts.push(captureLogcat(adb, serial, outputDir, 'crash-logcat.txt', ['-b', 'crash']));
@@ -283,6 +348,35 @@ async function runProbe(context) {
   if (video) {
     report.artifacts.push(video);
   }
+}
+
+async function ensureLoginScreen(context) {
+  const { adb, serial, outputDir, report } = context;
+  const size = readScreenSize(adb, serial);
+
+  addForegroundStep(report, adb, serial, 'auth-entry-foreground-before-navigation');
+
+  // First-run state is often the intro carousel. These taps are no-ops on the
+  // login screen, but move intro -> welcome -> email login on a fresh install.
+  await tapStep(report, adb, serial, size, 'intro-start-or-noop', 0.5, 0.925, 2500);
+  report.artifacts.push(captureScreenshot(adb, serial, outputDir, '02-after-intro-start'));
+
+  await tapStep(report, adb, serial, size, 'welcome-email-or-noop', 0.5, 0.692, 2500);
+  report.artifacts.push(captureScreenshot(adb, serial, outputDir, '03-login-screen'));
+
+  const loginUi = captureUiDump(adb, serial, outputDir, 'login-ui');
+  report.artifacts.push(loginUi);
+  const loginXml = loginUi.ok ? readTextFileIfExists(loginUi.path) : '';
+  report.steps.push({
+    name: 'login-screen-detected',
+    ok:
+      addForegroundStep(report, adb, serial, 'auth-entry-foreground-after-navigation')
+        .appForeground &&
+      (!loginUi.ok ||
+        loginXml.includes('auth-login-email-input') ||
+        loginXml.includes('Chào mừng trở lại')),
+    uiDumpOk: loginUi.ok,
+  });
 }
 
 async function runAuthEntry(context) {
@@ -296,10 +390,13 @@ async function runAuthEntry(context) {
 
   await runProbe(context);
   const recording = startRecording(adb, serial, outputDir, record);
+  await ensureLoginScreen(context);
 
   const emailTap = tap(adb, serial, size, 0.5, 0.395);
   await sleep(800);
   const emailInput = inputText(adb, serial, email);
+  await sleep(800);
+  runAdb(adb, serial, ['shell', 'input', 'keyevent', 'KEYCODE_BACK']);
   await sleep(800);
   report.steps.push({ name: 'email', tap: emailTap, inputOk: emailInput.ok });
   report.artifacts.push(captureScreenshot(adb, serial, outputDir, '02-email'));
@@ -317,6 +414,7 @@ async function runAuthEntry(context) {
   await sleep(5000);
   report.steps.push({ name: 'login-tap', tap: loginTap });
   report.artifacts.push(captureScreenshot(adb, serial, outputDir, '04-after-login-tap'));
+  addForegroundStep(report, adb, serial, 'foreground-after-login-tap');
   report.artifacts.push(captureUiDump(adb, serial, outputDir, 'auth-entry-ui'));
   report.artifacts.push(captureLogcat(adb, serial, outputDir, 'auth-entry-tail-logcat.txt', ['-t', '800']));
   const video = stopRecording(adb, serial, recording);
@@ -325,7 +423,7 @@ async function runAuthEntry(context) {
   }
 }
 
-function buildDoctorChecks(adb, serial, online) {
+function buildDoctorChecks(adb, serial, online, outputDir) {
   const checks = [];
   const scrcpy = resolveScrcpy();
   const scrcpyVersion = run(scrcpy, ['--version'], { timeoutMs: 10000 });
@@ -360,12 +458,13 @@ function buildDoctorChecks(adb, serial, online) {
     detail: ui.ok ? 'UI tree captured.' : ui.warning,
   });
 
-  const screencap = runAdb(adb, serial, ['shell', 'screencap', '-p', '/sdcard/eatfitai-doctor.png']);
-  runAdb(adb, serial, ['shell', 'rm', '/sdcard/eatfitai-doctor.png']);
+  const screencap = captureScreenshot(adb, serial, outputDir, 'doctor-screen');
   checks.push({
     name: 'screencap',
     status: screencap.ok ? 'OK' : 'FAIL',
-    detail: screencap.ok ? 'Device screenshot command works.' : screencap.stderr || screencap.error,
+    detail: screencap.ok
+      ? `Device screenshot command works (${screencap.bytes} bytes).`
+      : screencap.error,
   });
 
   const screenrecord = runAdb(adb, serial, ['shell', 'screenrecord', '--help'], { timeoutMs: 10000 });
@@ -412,7 +511,7 @@ async function main() {
   const record = process.argv.includes('--record');
 
   if (mode === 'doctor') {
-    report.checks = buildDoctorChecks(adb, serial, online);
+    report.checks = buildDoctorChecks(adb, serial, online, outputDir);
   } else if (mode === 'probe') {
     await runProbe({ adb, serial, outputDir, report, record });
   } else {
@@ -421,7 +520,8 @@ async function main() {
 
   report.passed =
     !report.steps.some((step) => step.ok === false || step.tap?.ok === false || step.inputOk === false) &&
-    !report.checks.some((check) => check.status === 'FAIL');
+    !report.checks.some((check) => check.status === 'FAIL') &&
+    !report.artifacts.some((artifact) => artifact.name && artifact.ok === false);
   writeJson(path.join(outputDir, 'report.json'), report);
 
   console.log(`REAL_DEVICE_ADB_OUTPUT_DIR=${outputDir}`);

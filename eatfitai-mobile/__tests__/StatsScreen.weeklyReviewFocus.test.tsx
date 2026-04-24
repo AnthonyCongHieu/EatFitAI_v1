@@ -1,5 +1,6 @@
 import React from 'react';
 import { fireEvent, render, waitFor } from '@testing-library/react-native';
+import { TEST_IDS } from '../src/testing/testIds';
 
 const mockNavigation = {
   navigate: jest.fn(),
@@ -274,14 +275,12 @@ describe('StatsScreen weekly review focus', () => {
 
     const screen = render(<StatsScreen />);
 
-    await waitFor(() => {
-      expect(screen.getByText(/xem/i)).toBeTruthy();
-    });
+    expect(await screen.findByTestId(TEST_IDS.stats.weeklyReviewCard)).toBeTruthy();
 
-    fireEvent.press(screen.getByTestId('stats-today-tab-button'));
+    fireEvent.press(screen.getByTestId(TEST_IDS.stats.todayTabButton));
 
     await waitFor(() => {
-      expect(screen.queryByText(/xem/i)).toBeNull();
+      expect(screen.queryByTestId(TEST_IDS.stats.weeklyReviewCard)).toBeNull();
     });
   });
 });

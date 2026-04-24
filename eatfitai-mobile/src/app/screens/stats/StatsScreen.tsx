@@ -817,6 +817,7 @@ const StatsScreen = (): React.ReactElement => {
                   activeTouch={false}
                 >
                   <View
+                    testID={TEST_IDS.stats.weeklyReviewCard}
                     style={[
                       S.weeklyReviewCard,
                       isWeeklyReviewFocused && S.weeklyReviewCardFocused,
@@ -891,6 +892,7 @@ const StatsScreen = (): React.ReactElement => {
                       </ThemedText>
                       <Pressable
                         onPress={handleWeeklyReviewComplete}
+                        testID={TEST_IDS.stats.weeklyReviewDoneButton}
                         style={[
                           S.weeklyReviewButton,
                           weeklyReviewAcknowledged && S.weeklyReviewButtonDone,

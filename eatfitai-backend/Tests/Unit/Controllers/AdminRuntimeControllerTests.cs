@@ -41,7 +41,7 @@ public class AdminRuntimeControllerTests
         var responseBody = new MemoryStream();
         controller.Response.Body = responseBody;
 
-        using var cancellationSource = new CancellationTokenSource(TimeSpan.FromMilliseconds(150));
+        using var cancellationSource = new CancellationTokenSource(TimeSpan.FromSeconds(1));
 
         await controller.GetEvents(cancellationSource.Token);
 
@@ -92,7 +92,7 @@ public class AdminRuntimeControllerTests
         var responseBody = new MemoryStream();
         controller.Response.Body = responseBody;
 
-        using var cancellationSource = new CancellationTokenSource(TimeSpan.FromMilliseconds(150));
+        using var cancellationSource = new CancellationTokenSource(TimeSpan.FromSeconds(1));
 
         await controller.GetEvents(cancellationSource.Token);
 

@@ -104,6 +104,70 @@ public class AiHealthServiceTests
         Assert.Contains("https://example-ai.onrender.com/healthz", status.Message, StringComparison.Ordinal);
     }
 
+    [Fact]
+    public async Task RefreshAsync_TreatsLazyVisionModelAsHealthy()
+    {
+        var handler = new QueueMessageHandler();
+        handler.Enqueue(new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new StringContent("""
+                {"status":"ok","model_loaded":false,"model_file":"not-loaded","model_load_error":null,"gemini_configured":true}
+                """)
+        });
+
+        var configuration = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["AIProvider:VisionBaseUrl"] = "https://example-ai.onrender.com"
+            })
+            .Build();
+
+        var service = new AiHealthService(
+            new StubHttpClientFactory(handler),
+            configuration,
+            NullLogger<AiHealthService>.Instance);
+
+        await service.RefreshAsync();
+
+        var status = service.GetStatus();
+        Assert.Equal("HEALTHY", status.State);
+        Assert.False(status.ModelLoaded);
+        Assert.True(status.GeminiConfigured);
+        Assert.Contains("lazy-load", status.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task RefreshAsync_DegradesWhenLazyModelLoadErrorIsReported()
+    {
+        var handler = new QueueMessageHandler();
+        handler.Enqueue(new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new StringContent("""
+                {"status":"ok","model_loaded":false,"model_file":"not-loaded","model_load_error":"weights missing","gemini_configured":true}
+                """)
+        });
+
+        var configuration = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["AIProvider:VisionBaseUrl"] = "https://example-ai.onrender.com"
+            })
+            .Build();
+
+        var service = new AiHealthService(
+            new StubHttpClientFactory(handler),
+            configuration,
+            NullLogger<AiHealthService>.Instance);
+
+        await service.RefreshAsync();
+
+        var status = service.GetStatus();
+        Assert.Equal("DEGRADED", status.State);
+        Assert.False(status.ModelLoaded);
+        Assert.True(status.GeminiConfigured);
+        Assert.Contains("weights missing", status.Message, StringComparison.Ordinal);
+    }
+
     private sealed class StubHttpClientFactory : IHttpClientFactory
     {
         private readonly HttpMessageHandler _handler;
