@@ -222,7 +222,7 @@ Uu tien kinh doanh hop ly nhat hien tai:
 
 - Khoang **95%** scope code-only cua stabilization sprint + first product wave da xong
 - P0 trong checklist nay da dat muc **ship-ready ve code**
-- Automation framework chinh thuc chuyen sang **Appium (WebDriverIO + UiAutomator2)** — Maestro la legacy/manual
+- Automation device lane chinh thuc chuyen sang **ADB + UIAutomator best-effort + scrcpy**
 - Chua dong full release gate tren device/cloud that
 
 ### Da xong theo checklist

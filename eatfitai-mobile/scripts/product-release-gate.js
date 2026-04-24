@@ -1,12 +1,10 @@
 const fs = require('fs');
-const net = require('net');
 const path = require('path');
 const { spawnSync } = require('child_process');
 const { resolveEnv } = require('../../tools/automation/resolveEnv');
 
 const repoRoot = path.resolve(__dirname, '..', '..');
 const mobileRoot = path.resolve(__dirname, '..');
-const appiumToolsRoot = path.resolve(repoRoot, 'tools', 'appium');
 const buildAndroidPreviewScript = path.resolve(mobileRoot, 'scripts', 'build-android-preview.ps1');
 const installAndroidPreviewScript = path.resolve(
   mobileRoot,
@@ -14,6 +12,7 @@ const installAndroidPreviewScript = path.resolve(
   'install-android-preview.ps1',
 );
 const outputRoot = path.resolve(repoRoot, '_logs', 'production-smoke');
+const realDeviceOutputRoot = path.resolve(repoRoot, '_logs', 'real-device-adb');
 const gateArg = String(process.argv[2] || 'all').trim().toLowerCase();
 const stageOrder = ['environment', 'code', 'android', 'device', 'cloud'];
 function trim(value) {
@@ -142,14 +141,6 @@ function resolveInstalledApkPath(commandResult) {
   return '';
 }
 
-function readAppiumServerConfig(env) {
-  const rawPort = Number.parseInt(trim(env.APPIUM_PORT) || '4723', 10);
-  return {
-    host: trim(env.APPIUM_HOST) || '127.0.0.1',
-    port: Number.isFinite(rawPort) && rawPort > 0 ? rawPort : 4723,
-  };
-}
-
 function buildSyntheticCommandResult(label, command, ok, stderr, stdout = '') {
   return {
     label,
@@ -174,7 +165,7 @@ function parseOnlineAndroidDevices(adbDevicesOutput) {
 
 function readAndroidTargetMode(env) {
   const rawMode = trim(
-    env.EATFITAI_ANDROID_TARGET || env.EATFITAI_ANDROID_TARGET_MODE || 'emulator',
+    env.EATFITAI_ANDROID_TARGET || env.EATFITAI_ANDROID_TARGET_MODE || 'real-device',
   ).toLowerCase();
 
   if (['emulator', 'avd'].includes(rawMode)) {
@@ -354,29 +345,6 @@ function resolveAndroidTarget(baseEnv) {
   };
 }
 
-function isTcpServerReachable(host, port, timeoutMs = 1200) {
-  return new Promise((resolve) => {
-    const socket = new net.Socket();
-    let settled = false;
-
-    const finish = (reachable) => {
-      if (settled) {
-        return;
-      }
-
-      settled = true;
-      socket.destroy();
-      resolve(reachable);
-    };
-
-    socket.setTimeout(timeoutMs);
-    socket.once('connect', () => finish(true));
-    socket.once('timeout', () => finish(false));
-    socket.once('error', () => finish(false));
-    socket.connect(port, host);
-  });
-}
-
 function resolveOutputDir() {
   const explicit = trim(process.env.EATFITAI_SMOKE_OUTPUT_DIR);
   if (explicit) {
@@ -399,78 +367,41 @@ function looksLikePath(value) {
   return /[\\/]/.test(value) || /\.[A-Za-z0-9]+$/.test(value);
 }
 
-function evidenceExists(outputDir, value) {
-  const raw = trim(value);
-  if (!raw) {
-    return false;
-  }
-
-  if (!looksLikePath(raw)) {
-    return true;
-  }
-
-  const candidates = [path.resolve(raw), path.resolve(outputDir, raw), path.resolve(repoRoot, raw)];
-  return candidates.some((candidate) => fs.existsSync(candidate));
-}
-
 function evaluateDeviceEvidence(outputDir) {
-  const requiredFiles = [
-    'preflight-results.json',
-    'request-budget.json',
-    'session-observations.json',
-    'regression-run.json',
-    'metrics-baseline.json',
-  ];
-  const missingFiles = requiredFiles.filter(
-    (fileName) => !fs.existsSync(path.join(outputDir, fileName)),
+  const reports = fs.existsSync(realDeviceOutputRoot)
+    ? fs
+        .readdirSync(realDeviceOutputRoot, { withFileTypes: true })
+        .filter((entry) => entry.isDirectory())
+        .map((entry) => path.join(realDeviceOutputRoot, entry.name, 'report.json'))
+        .filter((filePath) => fs.existsSync(filePath))
+        .sort((left, right) => fs.statSync(right).mtimeMs - fs.statSync(left).mtimeMs)
+    : [];
+  const latestReportPath = reports[0] || '';
+  const latestReport = latestReportPath ? readJsonIfExists(latestReportPath) || {} : {};
+  const artifacts = Array.isArray(latestReport.artifacts) ? latestReport.artifacts : [];
+  const hasLaunchScreenshot = artifacts.some(
+    (artifact) => artifact.name === '01-launch' && artifact.ok !== false && artifact.path,
   );
-  const observations =
-    readJsonIfExists(path.join(outputDir, 'session-observations.json')) || {};
-  const metrics = readJsonIfExists(path.join(outputDir, 'metrics-baseline.json')) || {};
-  const evidence = observations.evidence || {};
-  const requiredEvidenceKeys = [
-    'mailboxScreenshot',
-    'verificationScreenshot',
-    'onboardingScreenshot',
-    'homeScreenshot',
-    'aiResultScreenshot',
-    'diaryScreenshot',
-    'logcatPath',
-  ];
-  const missingEvidence = requiredEvidenceKeys.filter(
-    (key) => !evidenceExists(outputDir, evidence[key]),
+  const hasCrashLog = artifacts.some(
+    (artifact) => typeof artifact.path === 'string' && artifact.path.endsWith('crash-logcat.txt'),
   );
-  const gates = metrics.gates || {};
-
-  const passed =
-    missingFiles.length === 0 &&
-    missingEvidence.length === 0 &&
-    Boolean(observations.reopenHome?.passed) &&
-    Boolean(observations.scanToSave?.passed) &&
-    Boolean(observations.scanToSave?.diaryReadbackPassed) &&
-    Boolean(observations.nutritionApply?.passed) &&
-    !Boolean(observations.stability?.crashObserved) &&
-    !Boolean(observations.stability?.freezeObserved) &&
-    gates.evidenceComplete === true &&
-    gates.stabilityPass === true &&
-    gates.voiceGatePass === true &&
-    gates.scanGatePass === true &&
-    gates.nutritionGatePass === true;
+  const failedSteps = Array.isArray(latestReport.steps)
+    ? latestReport.steps.filter((step) => step.ok === false || step.tap?.ok === false || step.inputOk === false)
+    : [];
 
   return {
     outputDir,
-    passed,
-    missingFiles,
-    missingEvidence,
-    observations: {
-      reopenHomePassed: Boolean(observations.reopenHome?.passed),
-      scanToSavePassed: Boolean(observations.scanToSave?.passed),
-      diaryReadbackPassed: Boolean(observations.scanToSave?.diaryReadbackPassed),
-      nutritionApplyPassed: Boolean(observations.nutritionApply?.passed),
-      crashObserved: Boolean(observations.stability?.crashObserved),
-      freezeObserved: Boolean(observations.stability?.freezeObserved),
-    },
-    gates,
+    realDeviceOutputRoot,
+    latestReportPath,
+    passed: Boolean(latestReport.passed) && hasLaunchScreenshot && hasCrashLog && failedSteps.length === 0,
+    missingEvidence: [
+      latestReportPath ? '' : 'report.json',
+      hasLaunchScreenshot ? '' : '01-launch.png',
+      hasCrashLog ? '' : 'crash-logcat.txt',
+    ].filter(Boolean),
+    mode: latestReport.mode || '',
+    serial: latestReport.serial || '',
+    failedSteps,
   };
 }
 
@@ -541,15 +472,6 @@ async function main() {
         }),
       );
       if (gateResult.commands.at(-1).ok) {
-        gateResult.commands.push(
-          runCommand('Appium workspace install', 'npm', ['install'], {
-            cwd: appiumToolsRoot,
-            env,
-            timeoutMs: 15 * 60 * 1000,
-          }),
-        );
-      }
-      if (gateResult.commands.every((entry) => entry.ok)) {
         gateResult.commands.push(
           runCommand('automation doctor', 'npm', ['run', 'automation:doctor'], {
             cwd: mobileRoot,
@@ -703,29 +625,8 @@ async function main() {
         );
       }
       if (gateResult.commands.at(-1).ok) {
-        const appiumServer = readAppiumServerConfig(releaseLikeAndroidEnv);
-        const appiumServerReachable = await isTcpServerReachable(
-          appiumServer.host,
-          appiumServer.port,
-        );
-
-        if (!appiumServerReachable) {
-          gateResult.commands.push({
-            label: 'Appium availability',
-            command: `http://${appiumServer.host}:${appiumServer.port}/`,
-            cwd: mobileRoot,
-            durationMs: 0,
-            ok: false,
-            exitCode: 1,
-            stdout: '',
-            stderr: `Appium server is not reachable at http://${appiumServer.host}:${appiumServer.port}/.`,
-            error: '',
-          });
-        }
-      }
-      if (gateResult.commands.every((entry) => entry.ok)) {
         gateResult.commands.push(
-          runCommand('Appium sanity', 'npm', ['run', 'appium:smoke'], {
+          runCommand('Real-device ADB probe', 'npm', ['run', 'device:probe:android'], {
             cwd: mobileRoot,
             env: releaseLikeAndroidEnv,
             timeoutMs: 20 * 60 * 1000,

@@ -44,7 +44,7 @@ This risk acceptance is valid only when all conditions below are true:
 - No `high` or `critical` production advisory is present.
 - Moderate findings are documented here or in a linked release note.
 - Expo package updates are applied only through compatible SDK 54 patch/minor updates or an explicit Expo SDK upgrade.
-- Android preview build, Appium smoke, and cloud smoke pass after dependency changes.
+- Android preview build, real-device ADB probe, and cloud smoke pass after dependency changes.
 
 ## Revisit Triggers
 

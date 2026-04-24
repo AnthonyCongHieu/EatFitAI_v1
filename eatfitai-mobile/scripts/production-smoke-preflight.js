@@ -20,7 +20,7 @@ const DEFAULT_REQUEST_BUDGET = {
 };
 const DEFAULT_FIXTURE_MANIFEST = {
   version: 1,
-  fixtureRootHint: 'tools/appium/fixtures/scan-demo',
+  fixtureRootHint: 'tools/fixtures/scan-demo',
   galleryRules: {
     maxFileSizeMb: 10,
     singleDishOnly: true,

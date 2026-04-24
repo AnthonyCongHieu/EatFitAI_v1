@@ -54,7 +54,7 @@ If the existing pool is already rate-limited, set `GEMINI_EXHAUSTED_PROJECT_IDS`
 
 `GEMINI_PROBE_MIN_INTERVAL_SECONDS`, `GEMINI_PROBE_MAX_PER_PROJECT_PER_DAY`, and `GEMINI_PROBE_PROMPT` control the bounded revalidation path. The probe only runs when a project is pending verification after a daily reset or after an exhausted project reaches its expected provider reset window.
 
-`ENABLE_STT=false` is the recommended local default for the emulator/Appium lane so the service can boot quickly without downloading the PhoWhisper model. Set it to `true` only when you are explicitly validating voice transcription. `ROBOFLOW_API_KEY` is only required when you run `download_dataset.py`.
+`ENABLE_STT=false` is the recommended local default for Android smoke/debug lanes so the service can boot quickly without downloading the PhoWhisper model. Set it to `true` only when you are explicitly validating voice transcription. `ROBOFLOW_API_KEY` is only required when you run `download_dataset.py`.
 
 ## Start locally
 

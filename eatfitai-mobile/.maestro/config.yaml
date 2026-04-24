@@ -1,8 +1,0 @@
-flows:
-  - 'smoke/*.yaml'
-  - 'regression/*.yaml'
-  - 'device/*.yaml'
-testOutputDir: artifacts/default
-platform:
-  android:
-    disableAnimations: true

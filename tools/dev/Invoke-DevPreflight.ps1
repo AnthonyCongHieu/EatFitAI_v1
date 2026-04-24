@@ -103,7 +103,7 @@ function Get-PreferredCommandInfo {
         "adb" { @((Join-Path $androidSdkRoot "platform-tools\adb.exe")) }
         "emulator" { @((Join-Path $androidSdkRoot "emulator\emulator.exe")) }
         "ollama" { @((Join-Path $env:LOCALAPPDATA "Programs\Ollama\ollama.exe")) }
-        "appium" { @((Join-Path $env:APPDATA "npm\appium.cmd"), (Join-Path $env:APPDATA "npm\appium.ps1")) }
+        "scrcpy" { @() }
         default { @() }
     }
 
@@ -166,7 +166,7 @@ Test-CommandVersion -Name "java" -Command "java" -Arguments @("-version") -Expec
 Test-CommandVersion -Name "sqlcmd" -Command "sqlcmd" -Arguments @("-?")
 Test-CommandVersion -Name "ollama" -Command "ollama" -Arguments @("--version")
 
-foreach ($tool in @("adb", "emulator", "appium")) {
+foreach ($tool in @("adb", "emulator", "scrcpy")) {
     $cmd = Get-PreferredCommandInfo -Command $tool
     if ($cmd) {
         Write-CheckResult -Name $tool -Ok $true -Details (Get-CommandPathSafe -CommandInfo $cmd -Fallback $tool)
@@ -190,7 +190,7 @@ if ($emulatorCmd) {
     if ($LASTEXITCODE -eq 0 -and -not [string]::IsNullOrWhiteSpace($emulatorList)) {
         Write-CheckResult -Name "Android AVDs" -Ok $true -Details (($emulatorList -split '\r?\n' | Where-Object { $_.Trim() } | Select-Object -First 5) -join ", ")
     } else {
-        $warnings.Add("No Android AVD was found. Create the EatFitAI_API_34 profile before running Appium.")
+        $warnings.Add("No Android AVD was found. Create the EatFitAI_API_34 profile if you need emulator validation.")
         Write-CheckResult -Name "Android AVDs" -Ok $false -Details "no AVDs listed"
     }
 }

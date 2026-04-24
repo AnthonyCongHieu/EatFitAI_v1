@@ -309,7 +309,7 @@ function resolveFixtureDir(outputDir, manifest) {
 
   const hint = trim(manifest.fixtureRootHint);
   if (!hint) {
-    return path.resolve(__dirname, '..', '..', 'tools', 'appium', 'fixtures');
+    return path.resolve(__dirname, '..', '..', 'tools', 'fixtures');
   }
 
   return path.resolve(__dirname, '..', '..', hint);

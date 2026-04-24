@@ -1,350 +1,164 @@
-# Testing and Release
+# Testing And Release
 
-Updated: `2026-04-24`
+Cập nhật: `2026-04-24`
 
-## Overview
+Tài liệu này là runbook hiện hành cho kiểm thử và phát hành EatFitAI. Android UI automation hiện dùng **ADB + UIAutomator best-effort + scrcpy**, không dùng framework helper APK.
 
-This document consolidates the testing and release processes for EatFitAI:
+## Gates Chính
 
-- Product-grade testing gate
-- Real device operation runbook
-- Production smoke via cloud
-- Automation framework (Appium primary, Maestro legacy)
-- Keep-alive strategy for Render Free Tier
+| Gate | Mục tiêu | Lệnh |
+|---|---|---|
+| Code | Backend, mobile, AI unit/static checks | `npm --prefix .\eatfitai-mobile run release:gate -- code` |
+| Android build | Build/install preview APK và probe máy thật | `npm --prefix .\eatfitai-mobile run release:gate -- android` |
+| Device evidence | Đọc evidence ADB mới nhất | `npm --prefix .\eatfitai-mobile run release:gate -- device` |
+| Cloud | Render verify, preflight, regression, metrics, rehearsal | `npm --prefix .\eatfitai-mobile run release:gate -- cloud` |
 
-Latest execution snapshot:
-
-- [Product Progress 2026-04-24](archive/26_PRODUCT_PROGRESS_2026-04-24.md)
-
----
-
-## Testing Gate
-
-### Gate 0 — Environment
+Full gate:
 
 ```powershell
-npm --prefix .\eatfitai-mobile install
-npm --prefix .\tools\appium install
-npm --prefix .\eatfitai-mobile run automation:doctor
+npm --prefix .\eatfitai-mobile run release:gate -- all
 ```
 
-Notes:
-- If the app on an Android device is built as `DEBUGGABLE`, `automation:doctor` must see Metro listening on `http://127.0.0.1:8081`
-- For Android release gate, the build must be `release-like` and not `DEBUGGABLE`
+## Android Real-Device Lane
 
-### Gate 1 — Code
+### Cài công cụ
+
+ADB đến từ Android SDK `platform-tools`. Cài `scrcpy` để quan sát và điều khiển live:
 
 ```powershell
-dotnet test .\EatFitAI_v1.sln
-python .\scripts\cloud\check_dotnet_vulnerabilities.py
-npm --prefix .\eatfitai-mobile run typecheck
-npm --prefix .\eatfitai-mobile run lint
-npm --prefix .\eatfitai-mobile audit --omit=dev --audit-level=high
-npm --prefix .\eatfitai-mobile run guard:no-direct-ai-provider
-python .\scripts\cloud\check_mojibake.py
-python .\scripts\cloud\check_secret_tracking.py
-Push-Location .\ai-provider
-python -m unittest discover -s tests
-Pop-Location
+winget install --id Genymobile.scrcpy -e
 ```
 
-Moderate npm advisories are tracked in `docs/NPM_AUDIT_RISK_ACCEPTANCE.md`.
-
-### Gate 2 — Android automation
+Khi có nhiều thiết bị Android, luôn pin serial:
 
 ```powershell
-npm --prefix .\eatfitai-mobile run build:android:preview
-npm --prefix .\eatfitai-mobile run install:android:preview
-npm --prefix .\eatfitai-mobile run automation:doctor
-npm --prefix .\eatfitai-mobile run appium:smoke
+$env:ANDROID_SERIAL="a12c6888629b"
+$env:EATFITAI_ANDROID_TARGET="real-device"
 ```
 
-Before running this gate on a clean checkout, restore local-only Android files:
+Với Xiaomi/MIUI, bật trên điện thoại:
 
-- `eatfitai-mobile/android/app/google-services.json`: download it from Firebase Console for package `com.eatfitai.app`.
-- `eatfitai-mobile/android/app/debug.keystore`: generate it locally if missing:
+- Developer options
+- USB debugging
+- USB debugging (Security settings)
+- Install via USB nếu cần cài APK
+
+### Doctor
 
 ```powershell
-keytool -genkeypair -v -storetype JKS -keystore .\eatfitai-mobile\android\app\debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
+npm --prefix .\eatfitai-mobile run device:doctor:android
 ```
 
-These files are intentionally ignored and must not be committed.
+Doctor kiểm tra:
 
-The default Android lane for the release gate is currently **Appium-only** (WebDriverIO + UiAutomator2).
+- `adb` và thiết bị online
+- app `com.eatfitai.app` đã cài
+- `scrcpy`
+- `screencap`
+- `screenrecord`
+- UIAutomator dump best-effort
+- cảnh báo MIUI/device policy
 
-Main framework: `tools/appium/`
-- `sanity.android.js` — Basic smoke/sanity test
-- `cloud-proof.android.js` — Evidence capture for cloud verification
-- `lib/common.js` (755 lines) — Helpers: element fallbacks, ADB fallback, gesture, screenshot, logcat
+UIAutomator dump có thể báo `could not get idle state` trên một số ROM. Đây là warning, không tự động kết luận app fail.
 
-The `appium:edge:android` and `cloud-proof:android` flows are still useful for deep debug/evidence, but are no longer on the critical path of Gate 2.
+### Quan sát live bằng scrcpy
 
-### Gate 3 — Real device certification
+```powershell
+npm --prefix .\eatfitai-mobile run device:scrcpy:android
+```
 
-The evidence bundle in `_logs/production-smoke/<timestamp>` must contain:
+Lệnh này wake/unlock, launch app mặc định, rồi mở cửa sổ scrcpy theo serial đang chọn.
 
-- `preflight-results.json`
-- `request-budget.json`
-- `session-observations.json`
-- `regression-run.json`
-- `metrics-baseline.json`
-- Screenshots and logcat according to the checklist
+### Probe không phá dữ liệu
 
-Minimum passing conditions in `session-observations.json`:
+```powershell
+npm --prefix .\eatfitai-mobile run device:probe:android
+```
 
-- `reopenHome.passed = true`
-- `scanToSave.passed = true`
-- `scanToSave.diaryReadbackPassed = true`
-- `nutritionApply.passed = true`
-- `stability.crashObserved = false`
-- `stability.freezeObserved = false`
+Probe thực hiện:
 
-### Gate 4 — Cloud
+- clear logcat
+- wake/unlock
+- force-stop app
+- launch app bằng `monkey`
+- chụp `01-launch.png`
+- thử dump `ui.xml`
+- lưu `crash-logcat.txt`
+- lưu `tail-logcat.txt`
+- ghi `report.json`
+
+### Auth-entry flow nhỏ
+
+```powershell
+npm --prefix .\eatfitai-mobile run device:auth-entry:android
+```
+
+Flow này chỉ kiểm tra khả năng tap/type vào màn login:
+
+- launch app
+- tap ô email
+- nhập `EATFITAI_DEVICE_PROBE_EMAIL` hoặc mặc định `probe@demo.com`
+- tap ô password
+- nhập `EATFITAI_DEVICE_PROBE_PASSWORD` hoặc mặc định `Probe12345`
+- hide keyboard
+- tap `Đăng nhập`
+- chụp screenshot sau từng bước
+
+ADB text đi qua bàn phím Android thật. Nếu bàn phím đang ở tiếng Việt/Telex, một số chuỗi có thể bị rewrite. Vì vậy flow luôn lưu screenshot để xác minh text thực tế.
+
+## Evidence
+
+Evidence mới nằm ở:
+
+```text
+_logs/real-device-adb/<timestamp>-<mode>/
+```
+
+Các file quan trọng:
+
+- `report.json`
+- `01-launch.png`
+- `02-email.png`
+- `03-password.png`
+- `04-after-login-tap.png`
+- `crash-logcat.txt`
+- `tail-logcat.txt`
+- `ui.xml` hoặc warning trong `report.json`
+- `screenrecord.mp4` nếu chạy helper với `--record`
+
+`_logs/` là generated evidence và không commit.
+
+## Production Smoke API
+
+Cloud/API smoke không phụ thuộc Android UI framework.
 
 ```powershell
 npm --prefix .\eatfitai-mobile run smoke:render:verify
 npm --prefix .\eatfitai-mobile run smoke:preflight
-npm --prefix .\eatfitai-mobile run smoke:regression
-npm --prefix .\eatfitai-mobile run smoke:metrics
-npm --prefix .\eatfitai-mobile run smoke:rehearsal
+npm --prefix .\eatfitai-mobile run smoke:auth:api
+npm --prefix .\eatfitai-mobile run smoke:user:api
+npm --prefix .\eatfitai-mobile run smoke:ai:api
 ```
 
-A combined gate command:
+Fixture ảnh dùng cho AI smoke nằm ở:
 
-```powershell
-npm --prefix .\eatfitai-mobile run release:gate
+```text
+tools/fixtures/scan-demo
 ```
 
-Or run each gate individually:
+Nếu cần override manifest:
 
-```powershell
-node .\eatfitai-mobile\scripts\product-release-gate.js environment
-node .\eatfitai-mobile\scripts\product-release-gate.js code
-node .\eatfitai-mobile\scripts\product-release-gate.js android
-node .\eatfitai-mobile\scripts\product-release-gate.js device
-node .\eatfitai-mobile\scripts\product-release-gate.js cloud
+```json
+{
+  "fixtureRootHint": "tools/fixtures/scan-demo"
+}
 ```
 
----
-
-## Legacy Maestro Suites
-
-| Suite | Command | Notes |
-|---|---|---|
-| Comprehensive | `maestro:hero:android` | Run all |
-| Full Auth | `maestro:auth-full:android` | Clear app data first |
-| Onboarding | `maestro:onboarding:android` | Clear app data first |
-| Manual Diary | `maestro:manual-diary:android` | Uses authenticated lane |
-| AI scan save | `maestro:ai-scan-save:android` | Contract lane for scan entry screen |
-| Nutrition | `maestro:nutrition:android` | Uses authenticated lane |
-| Voice text | `maestro:voice-text:android` | Uses authenticated lane |
-| Profile & Stats | `maestro:profile-stats:android` | Uses authenticated lane |
-
-Notes:
-- **This is a legacy/manual lane**, no longer an official Android release gate (since 2026-04-23)
-- Replacement framework: Appium (WebDriverIO + UiAutomator2) — see Gate 2
-- Reason for migration: Appium is stronger than Maestro in fallback cascades (element click → mobile gesture → pointer actions → adb tap), integrated artifacts (screenshot + page source + logcat), and handling stale elements
-- For real Android devices, the device must be unlocked and developer options must allow installing helper APKs via USB/ADB
-- Debug build + Metro is only for debugging, not eligible to pass Android release gate
-
----
-
-## Real Device Runbook
-
-### Preparation
-
-1. Plug in real Android device via USB
-2. Enable `USB debugging`
-3. Ensure computer and phone are on the same LAN if using Metro via `--host lan`
-4. Use Node `20.x`
-
-Check:
-
-```powershell
-adb devices -l
-```
-
-### Start local backend
-
-The backend auth flow does not require AI provider to test login/forgot/reset.
-
-```powershell
-Invoke-WebRequest http://127.0.0.1:5247/health -UseBasicParsing
-```
-
-### Start Metro for real device
-
-```powershell
-cd .\eatfitai-mobile
-npm run dev:device -- --clear --port 8081
-```
-
-Reverse port:
-
-```powershell
-adb reverse tcp:8081 tcp:8081
-```
-
-### Launch app
-
-```powershell
-adb shell am start -S -W -n com.eatfitai.app/.MainActivity
-```
-
-### Mandatory rules after each restart
-
-1. Cold-launch app
-2. Check state immediately after restart
-3. If seeing the `Open debugger to view warnings.` warning → click `x` first
-4. Continue to intro/welcome/login only after the warning disappears
-
-### UI Debugging Principles
-
-1. Prioritize Appium `getPageSource()` + screenshots
-2. Do not trust `adb uiautomator dump` on Xiaomi/MIUI devices
-3. If needing to attach to an already open app, use WebdriverIO `remote()` with `appium:autoLaunch=false` and `appium:noReset=true`
-4. If `UiAutomator2` crashes → use `adb logcat -d` and `adb shell dumpsys` to confirm actual flow
-
----
-
-## Production Smoke via Cloud
-
-### Execution rules
-
-1. Do not modify `.env.development` to change default lanes
-2. Only use the dedicated lane `start-mobile-cloud-smoke.ps1` for production smoke
-3. Each run must use 1 newly created disposable account
-
-### Launch session
-
-```powershell
-powershell -ExecutionPolicy Bypass -File .\start-mobile-cloud-smoke.ps1
-```
-
-### Official health contract
-
-- Backend: `GET /health/live = 200`, `GET /health/ready = 200`
-- AI provider: `GET /healthz = 200`
-
-### Default request budget
-
-| Endpoint | Limit |
-|---|---:|
-| Health per endpoint | 2 |
-| Register with verification | 1 |
-| Resend verification | 1 |
-| Verify email | 2 |
-| Login | 1 |
-| Refresh | 1 |
-| AI status | 1 |
-| Vision detect | 8 |
-| Meal diary write | 3 |
-
-### Minimum passing conditions
-
-- Public health points all return `200`
-- Register does not hang
-- Temp-Mail receives the code within the waiting window
-- Verification succeeds and proceeds to onboarding
-- Onboarding yields a `result card`
-- Reopening the app goes straight to `home-screen`
-- Login and refresh succeed
-- At least 1 primary fixture completes the `gallery → result → AddMealFromVision → diary` flow
-
-### Immediate failure conditions
-
-- Register hangs for too long
-- Mail does not arrive after waiting window expires and resend was followed correctly
-- Onboarding only yields an `error card`
-- AI scan hangs, drops out of flow, or shows clear network failure
-- Exceeds request budget
-
----
-
-## Secret contract
-
-Required:
-
-- `RENDER_API_KEY`
-- `EATFITAI_DEMO_EMAIL` / `EATFITAI_DEMO_PASSWORD`
-- `EATFITAI_SMOKE_EMAIL` / `EATFITAI_SMOKE_PASSWORD`
-
-Conventions:
-
-- `RENDER_API_KEY` is read from shell env or Windows user env
-- Do not write keys to repo, tracked `.env`, markdown, JSON, or screenshots
-
----
-
-## Current cloud status
-
-- `eatfitai-backend`: service id `srv-d7arf2svjg8s73em138g`, branch `hieu_deploy/production`, auto deploy `yes`
-- `eatfitai-ai-provider`: service id `srv-d7arf2kvjg8s73em1360`, branch `hieu_deploy/production`, auto deploy `yes`
-
-Pushing branch `hieu_deploy/production` to `origin` will automatically trigger a cloud rollout for both services.
-
-### AI provider free-plan tuning
-
-- `gunicorn.conf.py` uses `workers=1` and `threads=2`; the Flask app serializes only the YOLO model call with an in-process lock so health checks can stay responsive while avoiding overlapping CPU-heavy scans.
-- `YOLO_CONFIDENCE_THRESHOLD=0.35` and `YOLO_IMAGE_SIZE=512` in `render.yaml` are the release-smoke values. Local probe evidence on optimized upload fixtures showed banana, egg, and rice still produce usable detections at this setting while reducing inference work versus 640px.
-- Tradeoff: lower confidence improves recall but can increase false positives. Primary scan fixtures with stable model labels include expected labels in `production-smoke-manifest.template.json`; keep `smoke:metrics` as the acceptance gate after every model update.
-
----
-
-## Keep-alive strategy
-
-### Problem
-
-Render Free Tier spins down services after 15 minutes of no inbound traffic. Cold-start wake-up takes ~30-60 seconds.
-
-### Options
-
-| Option | Tool | Pros | Cons |
-|---|---|---|---|
-| **A. UptimeRobot** | [uptimerobot.com](https://uptimerobot.com) | Monitoring + Alert + Uptime report | Minimum interval is 5 minutes |
-| **B. Cron-job** | [cron-job.org](https://cron-job.org) | Active ping, intervals from 1 minute | No uptime reporting |
-| **C. Both (recommended)** | UptimeRobot + cron-job.org | Guaranteed keep-alive + monitoring | Requires accounts on both |
-
-### Endpoints to ping
-
-| Service | Endpoint | Interval |
-|---|---|---|
-| Backend | `https://<backend-url>/health/live` | 5 minutes |
-| AI Provider | `https://<ai-provider-url>/healthz` | Optional monitor only |
-
-### Instance hours warning
-
-Render Free provides 750 hours/month/workspace. Keep-alive **2 always-on services** = ~1440 hours → **EXCEEDS budget**.
-
-Solution:
-- Only keep-alive the **backend** (critical), let AI provider sleep + use fallback formula
-- Or upgrade 1 service to Render Starter ($7/month)
-
-Security note:
-- Do not ping protected AI workload endpoints from external monitors. Only backend-to-AI traffic may call `/detect`, `/nutrition-advice`, `/meal-insight`, `/cooking-instructions`, `/voice/parse`, `/voice/transcribe`, and `/internal/runtime/status`, and those calls must include `X-Internal-Token`.
-- Render must set the same secret value in backend `AIProvider__InternalToken` and AI provider `AI_PROVIDER_INTERNAL_TOKEN`.
-- Admin runtime views are allowed to show a local fallback snapshot, but must surface `runtimeStatusSource=local-runtime-fallback` plus `runtimeStatusWarning`/`runtimeStatusError` so provider auth/config failures are not hidden.
-- Backend AI proxy controllers that spend AI resources must use the stricter partitioned `AIPolicy`, not only the global limiter.
-
-Detailed guide: see Appendix A (UptimeRobot) and Appendix B (Cron-job) in `STABILIZATION_PLAN.md`.
-
----
-
-## Recommended release order
-
-1. Run Gate 0 and Gate 1
-2. Run Gate 2 on Android automation
-3. Run real-device lane and update evidence bundle
-4. Run Gate 4 after Render rollout finishes
-5. Consider the lane stable only when `smoke:rehearsal` confirms the last 3 sessions all pass
-
----
-
-## Voice: source of truth
-
-From `2026-04-16`, test lanes and release gates must adhere to current code:
-
-- mobile → backend `/api/voice/transcribe`
-- mobile → backend `/api/voice/parse`
-
-Do not test according to old documentation describing mobile calling AI provider directly for voice parse/transcribe.
+## Debug Khi Fail
+
+1. Mở scrcpy để nhìn màn hình thật.
+2. Chạy `device:probe:android` để lấy baseline screenshot/logcat.
+3. Nếu UI tree fail, đọc screenshot trước; không coi UIAutomator warning là app crash.
+4. Nếu text nhập sai, đổi keyboard sang English hoặc dùng probe credentials ASCII ít ký tự dễ bị Telex rewrite.
+5. Nếu app không launch, kiểm tra `adb shell cmd package resolve-activity --brief com.eatfitai.app`.
+6. Nếu logcat crash trống nhưng UI sai, lưu screenshot và note trạng thái trong release evidence.

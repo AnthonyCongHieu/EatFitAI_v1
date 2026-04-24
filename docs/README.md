@@ -1,6 +1,6 @@
 # Chỉ mục tài liệu EatFitAI
 
-Cập nhật: `2026-04-23`
+Cập nhật: `2026-04-24`
 
 Thư mục `docs/` tập trung các tài liệu kỹ thuật phục vụ phát triển, kiểm thử, và vận hành dự án.
 
@@ -13,7 +13,7 @@ Thư mục `docs/` tập trung các tài liệu kỹ thuật phục vụ phát t
 | [AI_FLOW.md](AI_FLOW.md) | Luồng AI vision, nutrition, voice, fallback | Cần hiểu lane AI và các điểm trust/risk |
 | [SECRETS_SETUP.md](SECRETS_SETUP.md) | Quản lý secrets cho tất cả runtime (backend, mobile, AI, admin) | Cần setup secrets cho máy mới hoặc deploy |
 | [AUTH_AND_INFRA.md](AUTH_AND_INFRA.md) | Xác thực (Google, email, forgot-password) và hạ tầng triển khai | Cần đối chiếu auth hoặc fix infra |
-| [TESTING_AND_RELEASE.md](TESTING_AND_RELEASE.md) | Gate kiểm thử, Appium E2E, runbook thiết bị thật, smoke production, keep-alive strategy | Cần chạy test hoặc chốt release readiness |
+| [TESTING_AND_RELEASE.md](TESTING_AND_RELEASE.md) | Gate kiểm thử, ADB/UIAutomator/scrcpy runbook thiết bị thật, smoke production, keep-alive strategy | Cần chạy test hoặc chốt release readiness |
 | [STABILIZATION_PLAN.md](STABILIZATION_PLAN.md) | Kế hoạch ổn định tổng thể, audit code, quyết định kỹ thuật, phụ lục ops | Cần tra cứu quyết định kiến trúc hoặc ops |
 | [19_SECURITY_AUDIT_BASELINE_2026-04-16.md](19_SECURITY_AUDIT_BASELINE_2026-04-16.md) | Baseline security audit — findings và evidence | Cần đối chiếu bảo mật hoặc remediation |
 | [20_SECURITY_REMEDIATION_REPORT_2026-04-16.md](20_SECURITY_REMEDIATION_REPORT_2026-04-16.md) | Báo cáo remediation đã thực hiện | Xem lại những gì đã sửa và còn tồn đọng |

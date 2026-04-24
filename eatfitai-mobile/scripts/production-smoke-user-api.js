@@ -37,7 +37,6 @@ const JPEG_FIXTURE_PATH = path.resolve(
   '..',
   '..',
   'tools',
-  'appium',
   'fixtures',
   'scan-demo',
   'ai-primary-banana-01.jpg',

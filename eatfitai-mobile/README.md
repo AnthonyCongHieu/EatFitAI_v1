@@ -40,10 +40,10 @@ Useful scripts:
 - `npm run test`
 - `npm run api:health`
 - `npm run typegen`
-- `npm run appium:smoke`
-- `npm run appium:edge:android`
-- `npm run appium:cloud-proof:android`
 - `npm run automation:doctor`
+- `npm run device:doctor:android`
+- `npm run device:probe:android`
+- `npm run device:auth-entry:android`
 
 ## Environment files
 
@@ -59,7 +59,7 @@ Automation should target a development build or APK. Do not use Expo Go as the a
 
 ### Selector contract
 
-Automation selectors live in [src/testing/testIds.ts](/D:/EatFitAI_v1/eatfitai-mobile/src/testing/testIds.ts). Maestro and Appium both use this contract.
+Automation selectors live in [src/testing/testIds.ts](/D:/EatFitAI_v1/eatfitai-mobile/src/testing/testIds.ts). API and device evidence lanes should keep using this contract where the app exposes stable test IDs.
 
 Rules:
 
@@ -68,29 +68,26 @@ Rules:
 - keep screen-level `screen` selectors for every major route
 - only add `accessible` when a nested touch target needs it
 
-### Appium
+### Real-device ADB lane
 
-Appium is the primary Android automation lane:
+The primary Android debug/evidence lane uses ADB, UIAutomator best-effort dumps, screenshots, logcat, screenrecord, and scrcpy:
 
 - lane-alive sanity for release-like APKs
-- authenticated smoke on real devices
-- process-death and resume diagnostics
-- device/system interactions and evidence capture
+- login-screen tap/type probe on real devices
+- device/system interaction without helper APKs
+- screenshot and logcat evidence capture
 
 Recommended local loop:
 
 ```powershell
 npm run automation:doctor
-npm run appium:smoke
+npm run device:doctor:android
+npm run device:probe:android
 ```
 
 Extended lanes:
 
-- `npm run appium:edge:android`
-- `npm run appium:cloud-proof:android`
+- `npm run device:scrcpy:android`
+- `npm run device:auth-entry:android`
 
-The dedicated Appium docs live in [tools/appium/README.md](/D:/EatFitAI_v1/tools/appium/README.md).
-
-### Legacy Maestro
-
-Maestro flows remain in the repo for historical coverage and ad hoc experimentation, but they are no longer the default Android release gate on Xiaomi/real-device verification.
+The dedicated release runbook lives in [docs/TESTING_AND_RELEASE.md](/D:/EatFitAI_v1/docs/TESTING_AND_RELEASE.md).

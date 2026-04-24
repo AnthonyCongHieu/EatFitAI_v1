@@ -339,7 +339,7 @@ function loadFixtureManifest(outputDir) {
 
 function resolveFixtureDir(outputDir) {
   const manifest = loadFixtureManifest(outputDir);
-  const hint = trim(manifest.fixtureRootHint) || 'tools/appium/fixtures/scan-demo';
+  const hint = trim(manifest.fixtureRootHint) || 'tools/fixtures/scan-demo';
   return path.resolve(__dirname, '..', '..', hint);
 }
 

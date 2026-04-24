@@ -1107,7 +1107,7 @@ Tạo **2 monitors** với cấu hình:
 
 | Hạng mục | Trạng thái | Ghi chú |
 |---|---|---|
-| Full device smoke gate (Appium) | 🟡 Partially done | Build + install APK ✅. Appium sanity khởi chạy được nhưng chưa chạy trọn flow do cloud cold-start |
+| Full device smoke gate (ADB real-device) | 🟡 Partially done | Build + install APK ✅. ADB probe/auth-entry lane thay thế helper-framework UI automation |
 | Full cloud smoke gate | ⬜ Chưa chạy | Cần backend/AI provider thật, secret thật, smoke account thật, artifact lane `_logs/production-smoke` |
 | Manual ops cloud (keep-alive) | 🟡 Đang chọn phương án | 2 phương án: **UptimeRobot** (xem [Phụ lục A](#phụ-lục-a-hướng-dẫn-uptimerobot)) hoặc **Cron-job** (xem [Phụ lục B](#phụ-lục-b-cron-job-keep-alive)) |
 | P2/P3 backlog | ⏩ Deferred | Meal planner, grocery, fasting, wearable sync, premium, micronutrients, coach dashboard |
@@ -1116,12 +1116,11 @@ Tạo **2 monitors** với cấu hình:
 
 - 3 file store `useAuthStore.ts`, `useProfileStore.ts`, `useStatsStore.ts` đã được làm sạch trạng thái Git; trước đó chỉ dirty do line-ending/working-tree metadata, không phải thay đổi logic.
 
-### Quyết định automation framework (2026-04-23)
+### Quyết định automation framework (2026-04-24)
 
-- **Maestro**: Chuyển sang trạng thái **Legacy/Manual** — không còn trên critical path release gate
-- **Appium (WebDriverIO + UiAutomator2)**: Trở thành **framework chính** cho Gate 2 (Android automation)
-- Lý do: Appium mạnh hơn Maestro ở khả năng điều khiển device, fallback cascade (element click → mobile gesture → pointer actions → adb tap), và tích hợp artifact (screenshot + page source + logcat)
-- Hạ tầng Appium đã sẵn sàng: `tools/appium/` với `sanity.android.js`, `cloud-proof.android.js`, `lib/common.js` (755 dòng helpers)
+- Android UI evidence chuyển sang **ADB + UIAutomator best-effort + scrcpy**
+- Lý do: thiết bị thật Xiaomi/MIUI ổn định hơn khi dùng ADB tap/screenshot/logcat trực tiếp, còn UIAutomator dump chỉ là nguồn phụ vì có thể fail `could not get idle state`
+- Hạ tầng hiện hành: `eatfitai-mobile/scripts/real-device-adb-flow.js`, `device:doctor:android`, `device:probe:android`, `device:auth-entry:android`
 
 ---
 
