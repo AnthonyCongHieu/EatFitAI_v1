@@ -66,11 +66,17 @@ const suites = {
     output: '.maestro/artifacts/hero/profile-stats.junit.xml',
     bootstrapAuthenticatedState: true,
   },
+  'miui-auth-entry': {
+    flow: '.maestro/miui/auth-entry.yaml',
+    output: '.maestro/artifacts/miui/auth-entry.junit.xml',
+    bootstrapAuthenticatedState: false,
+    clearAppData: true,
+  },
 };
 
 if (!suite || !suites[suite]) {
   console.error(
-    'Usage: node scripts/run-maestro.js <smoke|regression|hero|auth-full|onboarding|manual-diary|ai-scan-save|nutrition|voice-text|profile-stats>',
+    'Usage: node scripts/run-maestro.js <smoke|regression|hero|auth-full|onboarding|manual-diary|ai-scan-save|nutrition|voice-text|profile-stats|miui-auth-entry>',
   );
   process.exit(1);
 }
@@ -177,7 +183,13 @@ function runAdb(args, { allowFailure = false } = {}) {
 }
 
 function launchAndroidApp(startupDelayMs = 5000) {
-  runAdb(['shell', 'am', 'start', '-W', '-n', `${APP_ID}/.MainActivity`]);
+  const launcherResult = runAdb(
+    ['shell', 'monkey', '-p', APP_ID, '-c', 'android.intent.category.LAUNCHER', '1'],
+    { allowFailure: true },
+  );
+  if (launcherResult.status !== 0) {
+    runAdb(['shell', 'am', 'start', '-W', '-n', `${APP_ID}/.MainActivity`]);
+  }
   if (startupDelayMs > 0) {
     sleep(startupDelayMs);
   }
@@ -186,6 +198,11 @@ function launchAndroidApp(startupDelayMs = 5000) {
 function prepareAndroidApp(selectedSuite) {
   runAdb(['wait-for-device']);
   runAdb(['reverse', 'tcp:8081', 'tcp:8081'], { allowFailure: true });
+  runAdb(['shell', 'input', 'keyevent', 'KEYCODE_WAKEUP'], { allowFailure: true });
+  runAdb(['shell', 'wm', 'dismiss-keyguard'], { allowFailure: true });
+  if (selectedSuite.clearAppData) {
+    runAdb(['shell', 'pm', 'clear', APP_ID], { allowFailure: true });
+  }
   const permissions = [
     'android.permission.CAMERA',
     'android.permission.RECORD_AUDIO',
@@ -195,9 +212,6 @@ function prepareAndroidApp(selectedSuite) {
   ];
   for (const permission of permissions) {
     runAdb(['shell', 'pm', 'grant', APP_ID, permission], { allowFailure: true });
-  }
-  if (selectedSuite.clearAppData) {
-    runAdb(['shell', 'pm', 'clear', APP_ID], { allowFailure: true });
   }
   runAdb(['shell', 'input', 'keyevent', 'KEYCODE_HOME'], { allowFailure: true });
   runAdb(['shell', 'am', 'force-stop', APP_ID], { allowFailure: true });
@@ -248,6 +262,11 @@ if (selectedSuite.config) {
 }
 
 args.push('--format', 'JUNIT', '--output', selectedSuite.output);
+
+const debugOutput = resolveEnv('MAESTRO_DEBUG_OUTPUT') || process.env.MAESTRO_DEBUG_OUTPUT;
+if (debugOutput) {
+  args.push('--debug-output', debugOutput, '--flatten-debug-output');
+}
 
 const loginEmail = resolveEnv(selectedSuite.loginEmailEnv || 'EATFITAI_DEMO_EMAIL');
 const loginPassword = resolveEnv(

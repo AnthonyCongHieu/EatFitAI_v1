@@ -499,6 +499,7 @@ const LoginScreen = ({ navigation }: Props): React.ReactElement => {
               variant="bodySmall"
               weight="700"
               onPress={() => navigation.navigate('Register')}
+              testID={TEST_IDS.auth.registerLink}
               style={{ color: C.primary }}
             >
               Đăng ký

@@ -1,0 +1,50 @@
+appId: com.eatfitai.app
+name: miui-auth-entry
+tags:
+  - miui
+  - android
+  - smoke
+---
+- waitForAnimationToEnd:
+    timeout: 10000
+- runFlow:
+    when:
+      visible:
+        id: auth-register-email-input
+    commands:
+      - back
+      - waitForAnimationToEnd:
+          timeout: 5000
+- runFlow:
+    when:
+      visible:
+        id: auth-intro-start-button
+    commands:
+      - tapOn:
+          id: auth-intro-start-button
+          retryTapIfNoChange: true
+- runFlow:
+    when:
+      visible:
+        id: auth-welcome-login-button
+    commands:
+      - tapOn:
+          id: auth-welcome-login-button
+          retryTapIfNoChange: true
+- extendedWaitUntil:
+    visible:
+      id: auth-login-email-input
+    timeout: 60000
+- assertVisible:
+    id: auth-login-email-input
+- assertVisible:
+    id: auth-login-password-input
+- tapOn:
+    id: auth-login-register-link
+    retryTapIfNoChange: true
+- extendedWaitUntil:
+    visible:
+      id: auth-register-email-input
+    timeout: 20000
+- assertVisible:
+    id: auth-register-email-input
