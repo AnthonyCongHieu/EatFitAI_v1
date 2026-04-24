@@ -12,7 +12,6 @@ $ErrorActionPreference = "Stop"
 $scriptRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
 $projectRoot = (Resolve-Path (Join-Path $scriptRoot "..")).Path
 $repoRoot = (Resolve-Path (Join-Path $projectRoot "..")).Path
-$windowTitle = "EatFitAI MIUI real device"
 
 function Resolve-AdbExecutable {
   $bundledAdb = Join-Path $repoRoot "_tooling\android-sdk\platform-tools\adb.exe"
@@ -52,13 +51,21 @@ $scrcpy = Resolve-ScrcpyExecutable
 
 if ([string]::IsNullOrWhiteSpace($Serial)) {
   $devicesOutput = & $adb devices
-  $Serial = ($devicesOutput | Select-String -Pattern "^\S+\s+device$" | Select-Object -First 1).ToString().Split()[0]
+  $devices = @($devicesOutput | Select-String -Pattern "^\S+\s+device$" | ForEach-Object { $_.ToString().Split()[0] })
+  if ($devices.Count -gt 1) {
+    throw "Multiple Android devices are connected. Set ANDROID_SERIAL or pass -Serial. Devices: $($devices -join ', ')"
+  }
+
+  if ($devices.Count -eq 1) {
+    $Serial = $devices[0]
+  }
 }
 
 if ([string]::IsNullOrWhiteSpace($Serial)) {
   throw "No Android device is connected over ADB."
 }
 
+$windowTitle = "EatFitAI MIUI real device - $Serial"
 $adbSerialArgs = @("-s", $Serial)
 & $adb @adbSerialArgs wait-for-device | Out-Null
 & $adb @adbSerialArgs shell input keyevent KEYCODE_WAKEUP | Out-Null
@@ -91,14 +98,10 @@ if (-not $NoStayAwake) {
   $scrcpyArgs += "-w"
 }
 
-Start-Process -FilePath $scrcpy -ArgumentList $scrcpyArgs | Out-Null
-Start-Sleep -Seconds 2
+$startedScrcpy = Start-Process -FilePath $scrcpy -ArgumentList $scrcpyArgs -PassThru
+Start-Sleep -Seconds 3
 
-$startedScrcpy = Get-Process scrcpy -ErrorAction SilentlyContinue |
-  Where-Object { $_.MainWindowTitle -eq $windowTitle } |
-  Select-Object -First 1
-
-if (-not $startedScrcpy) {
+if ($startedScrcpy.HasExited) {
   throw "scrcpy did not stay open. Run '$scrcpy -s $Serial --no-audio --max-size $MaxSize' to inspect its stderr."
 }
 

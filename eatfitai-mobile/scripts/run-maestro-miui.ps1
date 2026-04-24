@@ -32,9 +32,23 @@ function Resolve-AdbExecutable {
 
 $adb = Resolve-AdbExecutable
 $adbSerialArgs = @()
-if (-not [string]::IsNullOrWhiteSpace($Serial)) {
-  $adbSerialArgs = @("-s", $Serial)
+if ([string]::IsNullOrWhiteSpace($Serial)) {
+  $devicesOutput = & $adb devices
+  $devices = @($devicesOutput | Select-String -Pattern "^\S+\s+device$" | ForEach-Object { $_.ToString().Split()[0] })
+  if ($devices.Count -gt 1) {
+    throw "Multiple Android devices are connected. Set ANDROID_SERIAL or pass -Serial. Devices: $($devices -join ', ')"
+  }
+
+  if ($devices.Count -eq 1) {
+    $Serial = $devices[0]
+  }
 }
+
+if ([string]::IsNullOrWhiteSpace($Serial)) {
+  throw "No Android device is connected over ADB."
+}
+
+$adbSerialArgs = @("-s", $Serial)
 
 function Invoke-AdbText {
   param([string[]]$Arguments)
@@ -153,6 +167,24 @@ Write-Output "[miui-maestro] Running suite '$Suite' on serial '$Serial'."
 Write-Output "[miui-maestro] Log: $logFile"
 
 $process = [System.Diagnostics.Process]::Start($processInfo)
+$stdoutBuilder = New-Object System.Text.StringBuilder
+$stderrBuilder = New-Object System.Text.StringBuilder
+$stdoutHandler = [System.Diagnostics.DataReceivedEventHandler]{
+  param($sender, $eventArgs)
+  if ($null -ne $eventArgs.Data) {
+    [void]$stdoutBuilder.AppendLine($eventArgs.Data)
+  }
+}
+$stderrHandler = [System.Diagnostics.DataReceivedEventHandler]{
+  param($sender, $eventArgs)
+  if ($null -ne $eventArgs.Data) {
+    [void]$stderrBuilder.AppendLine($eventArgs.Data)
+  }
+}
+$process.add_OutputDataReceived($stdoutHandler)
+$process.add_ErrorDataReceived($stderrHandler)
+$process.BeginOutputReadLine()
+$process.BeginErrorReadLine()
 $deadline = [DateTime]::UtcNow.AddSeconds($PromptWatchSeconds)
 $promptAttempts = 0
 
@@ -173,9 +205,10 @@ if (-not $process.HasExited) {
 
 if (-not $process.HasExited) {
   $process.Kill()
+  [void]$process.WaitForExit()
   Write-Output "[miui-maestro] Timed out waiting for Maestro to finish."
-  $stdout = $process.StandardOutput.ReadToEnd()
-  $stderr = $process.StandardError.ReadToEnd()
+  $stdout = $stdoutBuilder.ToString()
+  $stderr = $stderrBuilder.ToString()
   Set-Content -LiteralPath $logFile -Value ($stdout + $stderr) -Encoding UTF8
   Copy-Item -Path (Join-Path $maestroDebugRoot "*") -Destination $debugRoot -Recurse -Force -ErrorAction SilentlyContinue
   Write-Output ($stdout + $stderr)
@@ -185,8 +218,9 @@ if (-not $process.HasExited) {
   exit 124
 }
 
-$stdout = $process.StandardOutput.ReadToEnd()
-$stderr = $process.StandardError.ReadToEnd()
+$process.WaitForExit()
+$stdout = $stdoutBuilder.ToString()
+$stderr = $stderrBuilder.ToString()
 Set-Content -LiteralPath $logFile -Value ($stdout + $stderr) -Encoding UTF8
 Copy-Item -Path (Join-Path $maestroDebugRoot "*") -Destination $debugRoot -Recurse -Force -ErrorAction SilentlyContinue
 Write-Output ($stdout + $stderr)
