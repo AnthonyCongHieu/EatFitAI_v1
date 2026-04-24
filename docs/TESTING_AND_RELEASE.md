@@ -12,6 +12,10 @@ This document consolidates the testing and release processes for EatFitAI:
 - Automation framework (Appium primary, Maestro legacy)
 - Keep-alive strategy for Render Free Tier
 
+Latest execution snapshot:
+
+- [Product Progress 2026-04-24](archive/26_PRODUCT_PROGRESS_2026-04-24.md)
+
 ---
 
 ## Testing Gate
