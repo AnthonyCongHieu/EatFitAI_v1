@@ -234,14 +234,14 @@ const CustomDishScreen = (): React.ReactElement => {
               style={{
                 marginTop: theme.spacing.md,
                 backgroundColor: isDark
-                  ? 'rgba(74, 144, 226, 0.08)'
-                  : 'rgba(59, 130, 246, 0.04)',
+                  ? 'rgba(75, 226, 119, 0.08)'
+                  : 'rgba(34, 197, 94, 0.04)',
                 borderRadius: 16,
                 padding: 14,
                 borderWidth: 1,
                 borderColor: isDark
-                  ? 'rgba(74, 144, 226, 0.15)'
-                  : 'rgba(59, 130, 246, 0.08)',
+                  ? 'rgba(75, 226, 119, 0.15)'
+                  : 'rgba(34, 197, 94, 0.08)',
               }}
             >
               <View

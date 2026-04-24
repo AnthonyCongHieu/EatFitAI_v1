@@ -366,6 +366,20 @@ async function main() {
       );
       if (gateResult.commands.at(-1).ok) {
         gateResult.commands.push(
+          runCommand(
+            'NuGet vulnerability gate',
+            'python',
+            ['scripts/cloud/check_dotnet_vulnerabilities.py'],
+            {
+              cwd: repoRoot,
+              env,
+              timeoutMs: 5 * 60 * 1000,
+            },
+          ),
+        );
+      }
+      if (gateResult.commands.at(-1).ok) {
+        gateResult.commands.push(
           runCommand('mobile typecheck', 'npm', ['run', 'typecheck'], {
             cwd: mobileRoot,
             env,
@@ -394,6 +408,51 @@ async function main() {
               timeoutMs: 5 * 60 * 1000,
             },
           ),
+        );
+      }
+      if (gateResult.commands.every((entry) => entry.ok)) {
+        gateResult.commands.push(
+          runCommand('mobile unit tests', 'npm', ['test', '--', '--ci', '--runInBand'], {
+            cwd: mobileRoot,
+            env,
+            timeoutMs: 15 * 60 * 1000,
+          }),
+        );
+      }
+      if (gateResult.commands.every((entry) => entry.ok)) {
+        gateResult.commands.push(
+          runCommand('mobile production audit', 'npm', ['audit', '--omit=dev', '--audit-level=high'], {
+            cwd: mobileRoot,
+            env,
+            timeoutMs: 10 * 60 * 1000,
+          }),
+        );
+      }
+      if (gateResult.commands.every((entry) => entry.ok)) {
+        gateResult.commands.push(
+          runCommand('mojibake guard', 'python', ['scripts/cloud/check_mojibake.py'], {
+            cwd: repoRoot,
+            env,
+            timeoutMs: 5 * 60 * 1000,
+          }),
+        );
+      }
+      if (gateResult.commands.every((entry) => entry.ok)) {
+        gateResult.commands.push(
+          runCommand('secret tracking guard', 'python', ['scripts/cloud/check_secret_tracking.py'], {
+            cwd: repoRoot,
+            env,
+            timeoutMs: 5 * 60 * 1000,
+          }),
+        );
+      }
+      if (gateResult.commands.every((entry) => entry.ok)) {
+        gateResult.commands.push(
+          runCommand('AI provider unit tests', 'python', ['-m', 'unittest', 'discover', '-s', 'tests'], {
+            cwd: path.join(repoRoot, 'ai-provider'),
+            env,
+            timeoutMs: 10 * 60 * 1000,
+          }),
         );
       }
     }

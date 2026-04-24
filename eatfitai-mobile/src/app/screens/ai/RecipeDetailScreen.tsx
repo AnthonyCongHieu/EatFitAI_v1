@@ -18,8 +18,6 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Toast from 'react-native-toast-message';
 
 import { ThemedText } from '../../../components/ThemedText';
-import Screen from '../../../components/Screen';
-import { useAppTheme } from '../../../theme/ThemeProvider';
 import { aiService } from '../../../services/aiService';
 import { foodService } from '../../../services/foodService';
 import { invalidateDiaryQueries } from '../../../services/diaryFlowService';
@@ -58,14 +56,13 @@ const P = {
 };
 
 const DUMMY_IMAGES = [
-  "https://lh3.googleusercontent.com/aida-public/AB6AXuDkPxIplDyeONp_vJiPgRP9EW8RoZM3JbhwNM_m-RuN4-VbxdI0wZ7GSo-ZaJC1FiQg0qZAaXoa5bDcNN7yFtfjv0COjoDcA7mV2jJxznij2k8eFuar5HgcugqzCUrUw0DDBN7LHa9PV9WHN7XtXYo16jZpLXq9Yp41P2LoigkRXdviz1dDzRD2ciDCo4kb5d4PxtXlFpLSu6Y9EKlH2nf8ZdRPtV-KBl_Me3V7z0vo6v7Z5kAb8pgQgPy-GW_HNrY3GrbxpKaVAVQ",
-  "https://lh3.googleusercontent.com/aida-public/AB6AXuAukILvQNoq71Oq5m173g7C5FBqvtI4EI6F99iYC5D_rxoimx2XLrR-naIwXyc7HU8gwk-lW_RVQcIEB03s0vU-6VN6qLrt3B-sLVM9or1_aHo3vcxXoSLiqM0NHbSpz6x3eqN7hHGNs2ZFFFSYbiuN8OylajF-6_keIerdbIye7Vf49E4WK21rRkzottpDUNOK4OsMS-N1F4XIFvx47oE4MqL-Xn7WTjv7kS4kjZ6I5wFX7BsoKhsLRtaxWz94VwNMuvw6mIAN064",
-  "https://lh3.googleusercontent.com/aida-public/AB6AXuB3hPK0Hob1eHqbdkBE-ckh0GdR84ek_HNKh1Pl0wKDWHrNshSGfOc6lB38EvpD-FKGK5hvdJWtDO5M7M9s377sx1bEQvuYk24Cv3B52ogRpHPnUMr4--h6JirsfpGJB-PZ8nhx5GTmqj_i7w0VYkHnx5w62gFzhdm3luXM8T2MA6UB_HFl4waKj-sxAaGpX6-Y1xtgGVDcgUTdiFsGivqmp7P69DgEEx75Z1ZSRAzQTX-J4X06yyLd7xANQjxxTLuoNyF5FASMXWg",
-  "https://lh3.googleusercontent.com/aida-public/AB6AXuC1oYs0RykK8I-wEhX1LQnzONtN6EiE1cvMhm5W145lb1jvI8giPgzWHB5khpzmBAqWhHynXB_wBGubDuPqE_Kr46LYUwkaTQfvxBRTMH_1wHv0IdVwIKkQNfrOAB6FMWNXTbPwxrVRMBi2Tl8-BWHpqVI9P39HwRi3PxbmCK5XetFuYsNdcyMe4P-hbbISlEt7vi08RVlOKucOPh4OY4bPfosnfjMju8Qt4jKXoWLgB3cyqT9JbGN0LCSMJcL2xIgewveqIIhDyLw"
+  'https://lh3.googleusercontent.com/aida-public/AB6AXuDkPxIplDyeONp_vJiPgRP9EW8RoZM3JbhwNM_m-RuN4-VbxdI0wZ7GSo-ZaJC1FiQg0qZAaXoa5bDcNN7yFtfjv0COjoDcA7mV2jJxznij2k8eFuar5HgcugqzCUrUw0DDBN7LHa9PV9WHN7XtXYo16jZpLXq9Yp41P2LoigkRXdviz1dDzRD2ciDCo4kb5d4PxtXlFpLSu6Y9EKlH2nf8ZdRPtV-KBl_Me3V7z0vo6v7Z5kAb8pgQgPy-GW_HNrY3GrbxpKaVAVQ',
+  'https://lh3.googleusercontent.com/aida-public/AB6AXuAukILvQNoq71Oq5m173g7C5FBqvtI4EI6F99iYC5D_rxoimx2XLrR-naIwXyc7HU8gwk-lW_RVQcIEB03s0vU-6VN6qLrt3B-sLVM9or1_aHo3vcxXoSLiqM0NHbSpz6x3eqN7hHGNs2ZFFFSYbiuN8OylajF-6_keIerdbIye7Vf49E4WK21rRkzottpDUNOK4OsMS-N1F4XIFvx47oE4MqL-Xn7WTjv7kS4kjZ6I5wFX7BsoKhsLRtaxWz94VwNMuvw6mIAN064',
+  'https://lh3.googleusercontent.com/aida-public/AB6AXuB3hPK0Hob1eHqbdkBE-ckh0GdR84ek_HNKh1Pl0wKDWHrNshSGfOc6lB38EvpD-FKGK5hvdJWtDO5M7M9s377sx1bEQvuYk24Cv3B52ogRpHPnUMr4--h6JirsfpGJB-PZ8nhx5GTmqj_i7w0VYkHnx5w62gFzhdm3luXM8T2MA6UB_HFl4waKj-sxAaGpX6-Y1xtgGVDcgUTdiFsGivqmp7P69DgEEx75Z1ZSRAzQTX-J4X06yyLd7xANQjxxTLuoNyF5FASMXWg',
+  'https://lh3.googleusercontent.com/aida-public/AB6AXuC1oYs0RykK8I-wEhX1LQnzONtN6EiE1cvMhm5W145lb1jvI8giPgzWHB5khpzmBAqWhHynXB_wBGubDuPqE_Kr46LYUwkaTQfvxBRTMH_1wHv0IdVwIKkQNfrOAB6FMWNXTbPwxrVRMBi2Tl8-BWHpqVI9P39HwRi3PxbmCK5XetFuYsNdcyMe4P-hbbISlEt7vi08RVlOKucOPh4OY4bPfosnfjMju8Qt4jKXoWLgB3cyqT9JbGN0LCSMJcL2xIgewveqIIhDyLw',
 ];
 
 const RecipeDetailScreen = (): React.ReactElement => {
-  const { theme } = useAppTheme();
   const route = useRoute<RouteProps>();
   const navigation = useNavigation<NavigationProp>();
   const insets = useSafeAreaInsets();
@@ -278,7 +275,7 @@ const RecipeDetailScreen = (): React.ReactElement => {
           {/* Cooking Instructions */}
           <Animated.View entering={FadeInDown.delay(400)} style={S.glassCard}>
             <ThemedText style={S.sectionTitle}>Hướng dẫn nấu</ThemedText>
-            
+
             {aiInstructions.isLoading ? (
               <View style={{ flexDirection: 'row', alignItems: 'center', marginVertical: 10 }}>
                 <ActivityIndicator size="small" color={P.primary} />
@@ -343,7 +340,7 @@ export default RecipeDetailScreen;
 const S = StyleSheet.create({
   container: { flex: 1, backgroundColor: P.surface },
   center: { flex: 1, backgroundColor: P.surface, alignItems: 'center', justifyContent: 'center' },
-  
+
   header: {
     position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10,
     flexDirection: 'row', justifyContent: 'space-between',
@@ -357,12 +354,12 @@ const S = StyleSheet.create({
   },
 
   scrollContent: { paddingBottom: 60 },
-  
+
   heroContainer: { width: '100%', height: 350, position: 'relative' },
   heroImage: { width: '100%', height: '100%', resizeMode: 'cover' },
   gradientMask: { ...StyleSheet.absoluteFillObject },
   heroTextWrap: {
-    position: 'absolute', bottom: 20, left: 24, right: 24, gap: 12
+    position: 'absolute', bottom: 20, left: 24, right: 24, gap: 12,
   },
   heroMainTitle: { fontSize: 32, fontFamily: 'Inter_800ExtraBold', color: P.onSurface, lineHeight: 40 },
   badgeWrap: {
@@ -370,7 +367,7 @@ const S = StyleSheet.create({
     backgroundColor: P.surfaceContainerHigh,
     alignSelf: 'flex-start',
     paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20,
-    borderWidth: 1, borderColor: P.glassBorder
+    borderWidth: 1, borderColor: P.glassBorder,
   },
   badgeText: { fontSize: 13, fontFamily: 'Inter_600SemiBold', color: P.onSurface },
 
@@ -379,7 +376,7 @@ const S = StyleSheet.create({
   macrosRow: { flexDirection: 'row', gap: 10, justifyContent: 'space-between', marginTop: 8 },
   macroBox: {
     flex: 1, borderRadius: 16, paddingVertical: 12, borderWidth: 1,
-    alignItems: 'center', justifyContent: 'center', gap: 2
+    alignItems: 'center', justifyContent: 'center', gap: 2,
   },
   macroVal: { fontSize: 16, fontFamily: 'Inter_800ExtraBold' },
   macroLabel: { fontSize: 11, fontFamily: 'Inter_500Medium', color: P.onSurfaceVariant },
@@ -403,7 +400,7 @@ const S = StyleSheet.create({
   stepNumberWrap: {
     width: 28, height: 28, borderRadius: 14, backgroundColor: P.primary + '20',
     alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: P.primary + '40',
-    marginTop: 2
+    marginTop: 2,
   },
   stepNumberText: { fontSize: 12, fontFamily: 'Inter_800ExtraBold', color: P.primary },
   stepContentText: { flex: 1, fontSize: 14, fontFamily: 'Inter_500Medium', color: P.onSurfaceVariant, lineHeight: 22 },

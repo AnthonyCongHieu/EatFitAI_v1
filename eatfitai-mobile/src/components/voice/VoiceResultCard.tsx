@@ -30,7 +30,7 @@ interface VoiceResultCardProps {
 
 const INTENT_CONFIG: Record<VoiceIntent, { label: string; color: string }> = {
   ADD_FOOD: { label: 'Thêm món ăn', color: '#10B981' },
-  LOG_WEIGHT: { label: 'Ghi cân nặng', color: '#3B82F6' },
+  LOG_WEIGHT: { label: 'Ghi cân nặng', color: '#22C55E' },
   ASK_CALORIES: { label: 'Xem calo', color: '#F59E0B' },
   ASK_NUTRITION: { label: 'Xem dinh dưỡng', color: '#8B5CF6' },
   UNKNOWN: { label: 'Không hiểu lệnh', color: '#6B7280' },

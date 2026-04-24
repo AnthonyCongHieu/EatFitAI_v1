@@ -180,7 +180,7 @@ export const AddRecipeToDiarySheet = ({
 
             {/* Carbs */}
             <View style={{ alignItems: 'center' }}>
-              <ThemedText variant="h4" weight="700" style={{ color: '#3B82F6' }}>
+              <ThemedText variant="h4" weight="700" style={{ color: '#22C55E' }}>
                 {calculatedNutrition.carbs}g
               </ThemedText>
               <ThemedText variant="caption" color="textSecondary">

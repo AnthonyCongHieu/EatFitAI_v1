@@ -5,7 +5,6 @@ import {
   Dimensions,
   ScrollView,
   Pressable,
-  Platform,
 } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -27,7 +26,6 @@ import Animated, {
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { useAppTheme } from '../../../theme/ThemeProvider';
 import { ThemedText } from '../../../components/ThemedText';
 import type { RootStackParamList } from '../../types';
 import { TEST_IDS } from '../../../testing/testIds';
@@ -147,7 +145,6 @@ const GoogleLogo = () => (
  * Emerald Nebula design with 3D parallax interaction
  */
 const WelcomeScreen = ({ navigation }: Props): React.ReactElement => {
-  const { theme } = useAppTheme();
   const insets = useSafeAreaInsets();
 
   /* ─── Glow pulse animation ─── */

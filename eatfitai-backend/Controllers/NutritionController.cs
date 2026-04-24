@@ -10,6 +10,7 @@ using EatFitAI.API.Helpers;
 using EatFitAI.API.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 
 namespace EatFitAI.API.Controllers
@@ -17,6 +18,7 @@ namespace EatFitAI.API.Controllers
     [ApiController]
     [Route("api/ai/nutrition")]
     [Authorize]
+    [EnableRateLimiting("AIPolicy")]
     public sealed class NutritionController : ControllerBase
     {
         private readonly IHttpClientFactory _httpClientFactory;
@@ -87,8 +89,13 @@ namespace EatFitAI.API.Controllers
                 var content = new StringContent(json, Encoding.UTF8, "application/json");
                 
                 _logger.LogInformation("Calling AI Provider for nutrition suggest: {Url}", $"{aiProviderUrl}/nutrition-advice");
-                
-                var response = await client.PostAsync($"{aiProviderUrl}/nutrition-advice", content);
+
+                using var providerRequest = new HttpRequestMessage(HttpMethod.Post, $"{aiProviderUrl}/nutrition-advice")
+                {
+                    Content = content
+                };
+                AiProviderRequestHelper.AddInternalTokenHeader(providerRequest, _configuration, _logger);
+                var response = await client.SendAsync(providerRequest, HttpContext.RequestAborted);
                 
                 if (response.IsSuccessStatusCode)
                 {

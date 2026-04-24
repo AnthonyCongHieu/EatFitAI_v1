@@ -111,9 +111,9 @@ export const AppCard = ({
     variant === 'outlined'
       ? {
           // Solid colors thay vì rgba
-          backgroundColor: isDark ? '#1A2744' : '#F8FAFF',
+          backgroundColor: isDark ? '#1A1F2F' : '#F8FBF7',
           borderWidth: 1,
-          borderColor: isDark ? '#2A3F68' : 'rgba(0, 0, 0, 0.06)',
+          borderColor: isDark ? '#3D4A3D' : 'rgba(0, 0, 0, 0.06)',
         }
       : variant === 'filled'
         ? {
@@ -122,10 +122,10 @@ export const AppCard = ({
             borderColor: isDark ? '#2A4A3A' : 'rgba(16, 185, 129, 0.2)',
           }
         : {
-            // Default elevated - solid navy blue
-            backgroundColor: isDark ? '#1A2744' : '#EEF4FF',
+            // Default elevated - solid dark emerald surface
+            backgroundColor: isDark ? '#1A1F2F' : '#EEF8F0',
             borderWidth: 1,
-            borderColor: isDark ? '#2A3F68' : 'rgba(59, 130, 246, 0.15)',
+            borderColor: isDark ? '#3D4A3D' : 'rgba(34, 197, 94, 0.15)',
           };
 
   const cardStyle: ViewStyle = {

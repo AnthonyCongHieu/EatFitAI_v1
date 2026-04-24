@@ -19,13 +19,15 @@
         "key": "banana",
         "fileName": "ai-primary-banana-01.jpg",
         "relativePath": "scan-demo/ai-primary-banana-01.jpg",
-        "targetOutcome": "mapped-or-usable-result"
+        "targetOutcome": "mapped-or-usable-result",
+        "expectedLabels": ["banana"]
       },
       {
         "key": "rice",
         "fileName": "ai-primary-rice-01.jpg",
         "relativePath": "scan-demo/ai-primary-rice-01.jpg",
-        "targetOutcome": "mapped-or-usable-result"
+        "targetOutcome": "mapped-or-usable-result",
+        "expectedLabels": ["rice"]
       },
       {
         "key": "broccoli",

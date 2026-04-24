@@ -214,9 +214,9 @@ const S = StyleSheet.create({
   headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 16 },
   iconBtn: { padding: 8, borderRadius: 20 },
   headerTitle: { fontSize: 22, fontFamily: 'Inter_700Bold', color: P.onSurface, letterSpacing: -0.5 },
-  
+
   content: { padding: 20, gap: 20, paddingBottom: 120, paddingTop: 16 },
-  
+
   card: {
     backgroundColor: P.surfaceContainerHigh,
     borderRadius: 24,
@@ -227,7 +227,7 @@ const S = StyleSheet.create({
   sectionTitleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 },
   sectionTitle: { fontSize: 18, fontFamily: 'Inter_700Bold', color: P.onSurface },
   subtitle: { fontSize: 14, fontFamily: 'Inter_500Medium', color: P.onSurfaceVariant, marginBottom: 20, lineHeight: 22 },
-  
+
   chipsContainer: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
   chip: {
     paddingHorizontal: 16,

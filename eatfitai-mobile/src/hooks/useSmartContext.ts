@@ -123,7 +123,7 @@ export const useSmartContext = (summary?: DaySummary | null): SmartContext => {
       fabAction = {
         icon: 'fitness-outline',
         label: 'Thiếu protein',
-        color: '#3B82F6', // Blue
+        color: '#22C55E', // Emerald
         hint: 'Cần bổ sung protein',
       };
       quickSuggestion = '💪 Bạn đang thiếu protein - thử thịt gà, cá, hoặc đậu!';

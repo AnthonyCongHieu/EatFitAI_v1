@@ -2,6 +2,7 @@ using System.Text;
 using System.Threading.Channels;
 using EatFitAI.API.Controllers;
 using EatFitAI.API.DTOs.Admin;
+using EatFitAI.API.DTOs.Common;
 using EatFitAI.API.Services.Interfaces;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -100,5 +101,44 @@ public class AdminRuntimeControllerTests
         Assert.Contains("event: runtime.snapshot", responseText);
         Assert.Contains("event: runtime.health.updated", responseText);
         Assert.Contains("gemini-primary", responseText);
+    }
+
+    [Fact]
+    public async Task GetSnapshot_WhenCacheHasWarning_ReturnsWarningMetadata()
+    {
+        var snapshot = new AdminRuntimeSnapshotDto
+        {
+            PoolHealth = "Healthy",
+            ActiveProject = "gemini-primary",
+            RuntimeStatusSource = "local-runtime-fallback",
+            RuntimeStatusWarning = "ai_provider_runtime_status_unavailable",
+            RuntimeStatusError = "http_403",
+        };
+
+        var runtimeSnapshotCache = new Mock<IAdminRuntimeSnapshotCache>();
+        runtimeSnapshotCache
+            .Setup(cache => cache.GetLatestAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(snapshot);
+        runtimeSnapshotCache
+            .Setup(cache => cache.GetState())
+            .Returns(new AdminRuntimeSnapshotCacheState
+            {
+                Snapshot = snapshot,
+                LastWarning = "ai_provider_runtime_status_unavailable: http_403",
+            });
+
+        var controller = new AdminRuntimeController(
+            runtimeSnapshotCache.Object,
+            Mock.Of<IAdminRealtimeEventBus>(),
+            Mock.Of<ILogger<AdminRuntimeController>>());
+
+        var result = await controller.GetSnapshot(CancellationToken.None);
+
+        var ok = Assert.IsType<OkObjectResult>(result);
+        var response = Assert.IsType<ApiResponse<AdminRuntimeSnapshotDto>>(ok.Value);
+        Assert.NotNull(response.Warnings);
+        Assert.Contains("ai_provider_runtime_status_unavailable: http_403", response.Warnings);
+        Assert.Equal("local-runtime-fallback", response.Data?.RuntimeStatusSource);
+        Assert.Equal("http_403", response.Data?.RuntimeStatusError);
     }
 }

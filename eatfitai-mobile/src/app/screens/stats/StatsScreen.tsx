@@ -20,7 +20,6 @@ import {
   View,
 } from 'react-native';
 import Animated, {
-  FadeIn,
   FadeInDown,
   FadeInUp,
 } from 'react-native-reanimated';
@@ -47,13 +46,11 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { ThemedText } from '../../../components/ThemedText';
 import { useStatsStore } from '../../../store/useStatsStore';
 import { useDiaryStore } from '../../../store/useDiaryStore';
-import { useProfileStore } from '../../../store/useProfileStore';
 import { summaryService } from '../../../services/summaryService';
 import type { WeeklyReview } from '../../../services/summaryService';
 import { trackEvent } from '../../../services/analytics';
 import { handleApiError } from '../../../utils/errorHandler';
 import { StatsSkeleton } from '../../../components/skeletons/StatsSkeleton';
-import { CalendarHeatmap } from '../../../components/stats';
 import Tilt3DCard from '../../../components/ui/Tilt3DCard';
 import { TEST_IDS } from '../../../testing/testIds';
 import type { RootStackParamList } from '../../types';
@@ -267,9 +264,6 @@ const StatsScreen = (): React.ReactElement => {
   const statsWaterTarget = statsWaterData?.targetMl ?? 2000;
 
   /* ─── Data: Profile ─── */
-  const profile = useProfileStore((s) => s.profile);
-  const profileWeight = profile?.weightKg || 0;
-  const profileTargetWeight = profile?.targetWeightKg || 0;
 
   /* ─── Data: Month extras (weight change + water average) ─── */
   const [monthlyWater, setMonthlyWater] = useState<MonthlyWaterData | null>(null);
@@ -326,13 +320,13 @@ const StatsScreen = (): React.ReactElement => {
       const history = await profileService.getBodyMetricsHistory(60);
       if (history.length >= 2) {
         const sorted = [...history].sort((a, b) =>
-          (a.measuredDate || '').localeCompare(b.measuredDate || '')
+          (a.measuredDate || '').localeCompare(b.measuredDate || ''),
         );
         const first = sorted[0]?.weightKg;
         const last = sorted[sorted.length - 1]?.weightKg;
         if (first && last) setWeightChange(Number((last - first).toFixed(1)));
       }
-    } catch (e) { 
+    } catch (e) {
       logger.warn('[StatsScreen] fetchMonthExtras failed', e);
     }
   }, [currentMonth]);
@@ -725,7 +719,7 @@ const StatsScreen = (): React.ReactElement => {
                   <View style={S.waterHead}>
                     <View style={S.waterLeft}>
                       <View style={S.waterIconBox}>
-                        <Ionicons name="water" size={20} color="#3b82f6" />
+                        <Ionicons name="water" size={20} color="#22c55e" />
                       </View>
                       <ThemedText style={S.waterLabel}>LƯỢNG NƯỚC</ThemedText>
                     </View>
@@ -747,7 +741,7 @@ const StatsScreen = (): React.ReactElement => {
                           key={i}
                           name="water"
                           size={28}
-                          color={filled ? '#3b82f6' : P.surfaceContainerHighest}
+                          color={filled ? '#22c55e' : P.surfaceContainerHighest}
                         />
                       );
                     })}
@@ -765,9 +759,6 @@ const StatsScreen = (): React.ReactElement => {
           const wkProgress = wkTargetCal > 0 ? Math.min(1, wkTotalCal / wkTargetCal) : 0;
           const wkDashOffset = RING_CIRCUMFERENCE * (1 - wkProgress);
           const wkLoggedDays = weekSummary.days.filter(d => d.calories > 0);
-          const wkAvgCal = wkLoggedDays.length > 0
-            ? Math.round(wkLoggedDays.reduce((s, d) => s + d.calories, 0) / wkLoggedDays.length)
-            : 0;
           const wkMaxDay = Math.max(...weekSummary.days.map(d => d.calories), 1);
           // Scale chart so the target is always visible in the upper half
           const wkMaxC = Math.max(wkMaxDay, (typeof targetCal === 'number' && targetCal > 0 ? targetCal * 1.2 : 1));
@@ -1371,13 +1362,13 @@ const StatsScreen = (): React.ReactElement => {
                             const firstDayFormat = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1).getDay();
                             const emptyPrefixDays = firstDayFormat === 0 ? 6 : firstDayFormat - 1;
                             const d = i - emptyPrefixDays + 1;
-                            
+
                             const isRealDay = d > 0 && d <= daysInMonth;
-                            
+
                             let bgColor = 'rgba(255,255,255,0.03)'; // Default
                             let txtColor = P.textSlate500;
                             let opacity = 0.5;
-                            
+
                             if (isRealDay) {
                               const dData = monthData?.days.find(md => {
                                  const dateObj = new Date(md.date);
@@ -1394,10 +1385,10 @@ const StatsScreen = (): React.ReactElement => {
                                 else bgColor = P.primary; // Tuyệt đối
                               }
                             }
-                            
+
                             return (
-                              <View 
-                                key={i} 
+                              <View
+                                key={i}
                                 style={{
                                   width: (cardW - 48) / 7 - 8,
                                   aspectRatio: 1,
@@ -1405,8 +1396,8 @@ const StatsScreen = (): React.ReactElement => {
                                   backgroundColor: isRealDay ? bgColor : 'transparent',
                                   margin: 4,
                                   alignItems: 'center',
-                                  justifyContent: 'center'
-                                }} 
+                                  justifyContent: 'center',
+                                }}
                               >
                                 {isRealDay && (
                                   <ThemedText style={{ fontSize: 11, fontWeight: '700', color: txtColor, opacity }}>
@@ -1499,11 +1490,11 @@ const StatsScreen = (): React.ReactElement => {
                           <ThemedText style={S.mthEnergyUnit}> ml/ngày</ThemedText>
                         </View>
                       </View>
-                      <View style={[S.mthEnergyIcon, { backgroundColor: 'rgba(59, 130, 246, 0.1)' }]}>
+                      <View style={[S.mthEnergyIcon, { backgroundColor: 'rgba(34, 197, 94, 0.1)' }]}>
                         <Ionicons
                           name="water-outline"
                           size={24}
-                          color="#3b82f6"
+                          color="#22c55e"
                         />
                       </View>
                     </View>
@@ -1515,7 +1506,7 @@ const StatsScreen = (): React.ReactElement => {
               {monthData && (
                 <Animated.View entering={FadeInUp.delay(400).springify()} style={{ marginTop: 12 }}>
                   <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12 }}>
-                    
+
                     {/* Chip 1: Tổng Calo Tiêu Thụ */}
                     <Tilt3DCard width={(cardW - 12) / 2} height={140} maxTilt={5} showReflection={false} useDeviceMotion activeTouch={false}>
                       <View style={[S.mthUniformCard, { width: (cardW - 12) / 2 }]}>
@@ -1571,7 +1562,7 @@ const StatsScreen = (): React.ReactElement => {
                     {/* Chip 4: Nước uống (Tổng lượng tháng) */}
                     <Tilt3DCard width={(cardW - 12) / 2} height={140} maxTilt={5} showReflection={false} useDeviceMotion activeTouch={false}>
                       <View style={[S.mthUniformCard, { width: (cardW - 12) / 2 }]}>
-                        <Ionicons name="water" size={24} color="#3b82f6" style={{ marginBottom: 8 }} />
+                        <Ionicons name="water" size={24} color="#22c55e" style={{ marginBottom: 8 }} />
                         <ThemedText style={S.mthUniformLabel} numberOfLines={1} adjustsFontSizeToFit>TỔNG NƯỚC UỐNG</ThemedText>
                         <View style={{ flex: 1, justifyContent: 'flex-end' }}>
                           <ThemedText style={S.mthUniformVal} numberOfLines={1} adjustsFontSizeToFit>
@@ -1638,23 +1629,6 @@ const MacroBar = ({
         ]}
       />
     </View>
-  </View>
-);
-
-/** Summary chip for week/month */
-const SummaryChip = ({
-  emoji,
-  value,
-  label,
-}: {
-  emoji: string;
-  value: string;
-  label: string;
-}) => (
-  <View style={S.sumCard}>
-    <ThemedText style={{ fontSize: 20 }}>{emoji}</ThemedText>
-    <ThemedText style={S.sumVal}>{value}</ThemedText>
-    <ThemedText style={S.sumLbl}>{label}</ThemedText>
   </View>
 );
 

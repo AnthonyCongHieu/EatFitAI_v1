@@ -17,9 +17,7 @@ import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
 
-import { ThemedText } from '../ThemedText';
 import Icon from '../Icon';
-import { useAppTheme } from '../../theme/ThemeProvider';
 import { useIngredientBasketStore } from '../../store/useIngredientBasketStore';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
@@ -30,7 +28,6 @@ interface IngredientBasketFabProps {
 }
 
 export const IngredientBasketFab: React.FC<IngredientBasketFabProps> = ({ onPress }) => {
-  const { theme } = useAppTheme();
   const count = useIngredientBasketStore((s) => s.getCount());
   const scale = useSharedValue(1);
 

@@ -15,4 +15,5 @@ public sealed class AdminRuntimeSnapshotCacheState
     public DateTimeOffset? LastAttemptAt { get; init; }
     public DateTimeOffset? LastSuccessAt { get; init; }
     public string? LastError { get; init; }
+    public string? LastWarning { get; init; }
 }

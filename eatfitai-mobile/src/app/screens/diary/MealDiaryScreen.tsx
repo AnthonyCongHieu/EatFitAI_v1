@@ -16,7 +16,6 @@ import {
   ScrollView,
   StatusBar,
   StyleSheet,
-  TouchableOpacity,
   View,
 } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
@@ -44,7 +43,6 @@ import * as Haptics from 'expo-haptics';
 import { ThemedText } from '../../../components/ThemedText';
 import { BottomSheet } from '../../../components/BottomSheet';
 import { ThemedTextInput } from '../../../components/ThemedTextInput';
-import { Button } from '../../../components/Button';
 import { diaryService, type DiaryEntry, type DaySummary, type DiaryMealGroup } from '../../../services/diaryService';
 import { invalidateDiaryQueries } from '../../../services/diaryFlowService';
 import { MEAL_TYPE_LABELS, type MealTypeId } from '../../../types';
@@ -564,7 +562,7 @@ const MealDiaryScreen = (): React.ReactElement => {
                     {/* Food entries */}
                     {group.entries.length > 0 ? (
                       <View style={styles.mealContent}>
-                        {group.entries.map((entry, eIdx) => (
+                        {group.entries.map((entry) => (
                           <Pressable
                             key={entry.id}
                             style={styles.entryRow}

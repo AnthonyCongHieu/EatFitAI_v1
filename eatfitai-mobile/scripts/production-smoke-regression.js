@@ -98,6 +98,41 @@ function average(values) {
   return Math.round(values.reduce((sum, value) => sum + value, 0) / values.length);
 }
 
+function resolveIntegerEnv(name, fallback) {
+  const value = Number.parseInt(String(process.env[name] || ''), 10);
+  return Number.isFinite(value) ? value : fallback;
+}
+
+function summarizeResponseDiagnostics(response) {
+  const body = response?.body && typeof response.body === 'object' ? response.body : null;
+  const rawText = typeof response?.rawText === 'string' ? response.rawText : '';
+  const rawSnippet = rawText.replace(/\s+/g, ' ').slice(0, 240);
+  const safeSnippet = rawSnippet
+    ? rawSnippet
+        .replace(/eyJ[A-Za-z0-9_-]+(?:\.[A-Za-z0-9_-]+){2}/g, '<redacted-jwt>')
+        .replace(/(access|refresh|id)[_-]?token/gi, '<redacted-token-key>')
+    : null;
+
+  return {
+    bodyKeys: body ? Object.keys(body).sort() : [],
+    errorCode: body?.error || body?.code || null,
+    rawTextSnippet: safeSnippet,
+  };
+}
+
+function normalizeLabel(value) {
+  return trim(value).toLowerCase();
+}
+
+function getResponseLabels(items, unmappedLabels) {
+  return [
+    ...items.map((item) => item?.label),
+    ...unmappedLabels,
+  ]
+    .map(normalizeLabel)
+    .filter(Boolean);
+}
+
 function guessMimeType(filePath) {
   const extension = path.extname(filePath).toLowerCase();
   switch (extension) {
@@ -195,6 +230,7 @@ async function requestMultipart(url, filePath, token) {
   const formData = new FormData();
   const buffer = fs.readFileSync(filePath);
   const mimeType = guessMimeType(filePath);
+  const retryCount = Math.max(0, resolveIntegerEnv('EATFITAI_SCAN_RETRY_COUNT', 0));
   formData.append(
     'file',
     new Blob([buffer], { type: mimeType }),
@@ -207,6 +243,7 @@ async function requestMultipart(url, filePath, token) {
       Authorization: `Bearer ${token}`,
     },
     body: formData,
+    retryCount,
   });
 }
 
@@ -837,6 +874,14 @@ async function runScanCases(backendUrl, manifest, token, fixtureDir, outputDir) 
         ? response.body.unmappedLabels
         : [];
       const usableResult = items.length > 0 || unmappedLabels.length > 0;
+      const expectedLabels = Array.isArray(fixture.expectedLabels)
+        ? fixture.expectedLabels.map(normalizeLabel).filter(Boolean)
+        : [];
+      const responseLabels = getResponseLabels(items, unmappedLabels);
+      const expectedLabelMatched =
+        expectedLabels.length === 0 ||
+        responseLabels.some((label) => expectedLabels.includes(label));
+      const requiresExpectedLabel = bucket === 'primary' && expectedLabels.length > 0;
 
       result.status = response.status;
       result.latencyMs = response.durationMs;
@@ -845,6 +890,11 @@ async function runScanCases(backendUrl, manifest, token, fixtureDir, outputDir) 
       result.uploadBytes = upload.uploadSize;
       result.optimizedUpload = upload.optimized;
       result.optimizationError = upload.optimizationError || null;
+      result.responseDiagnostics = summarizeResponseDiagnostics(response);
+      result.expectedLabels = expectedLabels;
+      result.detectedLabels = responseLabels;
+      result.expectedLabelMatched = expectedLabelMatched;
+      result.requiresExpectedLabel = requiresExpectedLabel;
       result.mappedCount = items.filter((item) =>
         Boolean(item?.isMatched ?? item?.foodItemId),
       ).length;
@@ -853,7 +903,11 @@ async function runScanCases(backendUrl, manifest, token, fixtureDir, outputDir) 
       result.passed =
         bucket === 'benchmark'
           ? Boolean(response.ok)
-          : Boolean(response.ok && usableResult);
+          : Boolean(
+              response.ok &&
+                usableResult &&
+                (!requiresExpectedLabel || expectedLabelMatched),
+            );
       result.error = response.error || null;
       results.push(result);
     }

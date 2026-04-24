@@ -54,7 +54,7 @@ export const EN = {
   errorContainer: 'rgba(147, 0, 10, 0.3)', // P.errorContainer
   success: '#4be277',
   warning: '#fbbf24',
-  info: '#60a5fa',
+  info: '#2dd4bf',
 } as const;
 
 /* ─────────────────────────────────────────────────────

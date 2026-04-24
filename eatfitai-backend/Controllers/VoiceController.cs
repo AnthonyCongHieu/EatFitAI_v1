@@ -17,12 +17,14 @@ using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace EatFitAI.API.Controllers
 {
     [Authorize]
     [ApiController]
     [Route("api/[controller]")]
+    [EnableRateLimiting("AIPolicy")]
     public class VoiceController : ControllerBase
     {
         private readonly IVoiceProcessingService _voiceService;
@@ -104,7 +106,12 @@ namespace EatFitAI.API.Controllers
                 });
 
                 using var content = new StringContent(payload, Encoding.UTF8, "application/json");
-                using var response = await client.PostAsync(providerUrl, content, cancellationToken);
+                using var providerRequest = new HttpRequestMessage(HttpMethod.Post, providerUrl)
+                {
+                    Content = content
+                };
+                AiProviderRequestHelper.AddInternalTokenHeader(providerRequest, _configuration, _logger);
+                using var response = await client.SendAsync(providerRequest, cancellationToken);
                 var responseBody = await response.Content.ReadAsStringAsync(cancellationToken);
 
                 if (response.IsSuccessStatusCode)
@@ -134,6 +141,16 @@ namespace EatFitAI.API.Controllers
                     userId,
                     (int)response.StatusCode,
                     responseBody);
+
+                if (AiProviderRequestHelper.IsInternalAuthFailure(response.StatusCode, responseBody))
+                {
+                    return StatusCode(
+                        StatusCodes.Status503ServiceUnavailable,
+                        ErrorResponseHelper.SafeError(
+                            "voice_provider_auth_error",
+                            "Dich vu AI giong noi chua duoc cau hinh an toan.",
+                            HttpContext));
+                }
 
                 var providerErrorFallback = await BuildFallbackCommandAsync(
                     request,
@@ -329,7 +346,12 @@ namespace EatFitAI.API.Controllers
                     audio.ContentType ?? "application/octet-stream");
                 content.Add(streamContent, "audio", audio.FileName);
 
-                using var response = await client.PostAsync(providerUrl, content, cancellationToken);
+                using var providerRequest = new HttpRequestMessage(HttpMethod.Post, providerUrl)
+                {
+                    Content = content
+                };
+                AiProviderRequestHelper.AddInternalTokenHeader(providerRequest, _configuration, _logger);
+                using var response = await client.SendAsync(providerRequest, cancellationToken);
                 var responseBody = await response.Content.ReadAsStringAsync(cancellationToken);
 
                 if (!response.IsSuccessStatusCode)
@@ -339,6 +361,17 @@ namespace EatFitAI.API.Controllers
                         userId,
                         (int)response.StatusCode,
                         responseBody);
+
+                    if (AiProviderRequestHelper.IsInternalAuthFailure(response.StatusCode, responseBody))
+                    {
+                        return StatusCode(StatusCodes.Status503ServiceUnavailable, new
+                        {
+                            success = false,
+                            error = "voice_provider_auth_error",
+                            message = "Dich vu AI giong noi chua duoc cau hinh an toan.",
+                            requestId = HttpContext.TraceIdentifier,
+                        });
+                    }
 
                     return StatusCode((int)response.StatusCode, new
                     {

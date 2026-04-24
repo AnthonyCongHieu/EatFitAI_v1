@@ -1,5 +1,6 @@
 using System.Text.Json;
 using EatFitAI.API.DTOs.Admin;
+using EatFitAI.API.Helpers;
 using EatFitAI.API.Services.Interfaces;
 
 namespace EatFitAI.API.Services;
@@ -31,11 +32,7 @@ public sealed class AiRuntimeStatusService : IAiRuntimeStatusService
                 client.Timeout = TimeSpan.FromSeconds(10);
 
                 using var request = new HttpRequestMessage(HttpMethod.Get, $"{providerBaseUrl}/internal/runtime/status");
-                var internalToken = _configuration["AIProvider:InternalToken"];
-                if (!string.IsNullOrWhiteSpace(internalToken))
-                {
-                    request.Headers.Add("X-Internal-Token", internalToken);
-                }
+                AiProviderRequestHelper.AddInternalTokenHeader(request, _configuration, _logger);
 
                 using var response = await client.SendAsync(request, cancellationToken);
                 response.EnsureSuccessStatusCode();
@@ -81,7 +78,12 @@ public sealed class AiRuntimeStatusService : IAiRuntimeStatusService
             AvailableProjectCount = availableCount,
             ExhaustedProjectCount = exhaustedCount,
             CooldownProjectCount = cooldownCount,
+            AuthInvalidProjectCount = ReadInt(
+                root,
+                "gemini_auth_invalid_project_count",
+                projects.Count(project => string.Equals(project.State, "auth_invalid", StringComparison.OrdinalIgnoreCase))),
             DistinctProjectCount = ReadInt(root, "gemini_distinct_project_count"),
+            RuntimeStatusSource = "ai-provider",
             Limits = new RuntimeLimitsDto
             {
                 Rpm = ReadNestedInt(root, "gemini_limits", "rpm"),

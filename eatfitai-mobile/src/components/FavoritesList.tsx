@@ -48,11 +48,11 @@ const FavoriteCard = ({
         style={[
           styles.card,
           {
-            // Blue tint glassmorphism effect
+            // Emerald tint glassmorphism effect
             backgroundColor: isDark
-              ? 'rgba(74, 144, 226, 0.12)'
-              : 'rgba(59, 130, 246, 0.06)',
-            borderColor: isDark ? 'rgba(74, 144, 226, 0.2)' : 'rgba(59, 130, 246, 0.1)',
+              ? 'rgba(75, 226, 119, 0.12)'
+              : 'rgba(34, 197, 94, 0.06)',
+            borderColor: isDark ? 'rgba(75, 226, 119, 0.2)' : 'rgba(34, 197, 94, 0.1)',
             // Shadow for depth
             shadowColor: '#000',
             shadowOffset: { width: 0, height: 4 },

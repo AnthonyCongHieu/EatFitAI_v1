@@ -161,10 +161,10 @@ export const glassStyles = (isDark: boolean) =>
   StyleSheet.create({
     card: {
       // Solid colors thay vì rgba để tránh lỗi 2 màu trên Android
-      backgroundColor: isDark ? '#1A2744' : '#EEF4FF',
+      backgroundColor: isDark ? '#1A1F2F' : '#EEF8F0',
       borderRadius: 24,
       borderWidth: 1,
-      borderColor: isDark ? '#2A3F68' : 'rgba(59, 130, 246, 0.15)',
+      borderColor: isDark ? '#3D4A3D' : 'rgba(34, 197, 94, 0.15)',
       padding: 16,
       shadowColor: '#000',
       shadowOffset: { width: 0, height: 8 },

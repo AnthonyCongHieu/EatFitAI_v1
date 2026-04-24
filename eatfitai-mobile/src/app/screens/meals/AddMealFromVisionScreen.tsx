@@ -526,12 +526,12 @@ const AddMealFromVisionScreen = (): React.ReactElement => {
             {
               backgroundColor:
                 theme.mode === 'dark'
-                  ? 'rgba(59, 130, 246, 0.12)'
-                  : 'rgba(59, 130, 246, 0.08)',
+                  ? 'rgba(34, 197, 94, 0.12)'
+                  : 'rgba(34, 197, 94, 0.08)',
               borderColor:
                 theme.mode === 'dark'
-                  ? 'rgba(59, 130, 246, 0.28)'
-                  : 'rgba(59, 130, 246, 0.16)',
+                  ? 'rgba(34, 197, 94, 0.28)'
+                  : 'rgba(34, 197, 94, 0.16)',
             },
           ]}
         >

@@ -34,7 +34,7 @@ describe('tokenService', () => {
 
     let postRefreshToken!: typeof import('../src/services/tokenService').postRefreshToken;
     jest.isolateModules(() => {
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
+
       ({ postRefreshToken } = require('../src/services/tokenService'));
     });
 
@@ -74,7 +74,7 @@ describe('tokenService', () => {
 
     let postRefreshToken!: typeof import('../src/services/tokenService').postRefreshToken;
     jest.isolateModules(() => {
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
+
       ({ postRefreshToken } = require('../src/services/tokenService'));
     });
 

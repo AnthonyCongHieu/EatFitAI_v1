@@ -60,7 +60,7 @@ const loadGoogleModule = async (): Promise<boolean> => {
   }
 };
 
-const readString = (...values: Array<unknown>): string => {
+const readString = (...values: unknown[]): string => {
   for (const value of values) {
     if (typeof value === 'string' && value.trim()) {
       return value;
@@ -69,7 +69,7 @@ const readString = (...values: Array<unknown>): string => {
   return '';
 };
 
-const readBoolean = (...values: Array<unknown>): boolean => {
+const readBoolean = (...values: unknown[]): boolean => {
   for (const value of values) {
     if (typeof value === 'boolean') {
       return value;

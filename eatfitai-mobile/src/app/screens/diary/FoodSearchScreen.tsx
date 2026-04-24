@@ -9,16 +9,11 @@ import {
   ScrollView,
   StyleSheet,
   View,
-  Text,
   TextInput,
 } from 'react-native';
 import Animated, {
-  FadeIn,
   FadeInDown,
   Layout,
-  useSharedValue,
-  useAnimatedStyle,
-  withTiming,
 } from 'react-native-reanimated';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RouteProp, useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
@@ -27,8 +22,6 @@ import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ThemedText } from '../../../components/ThemedText';
-import Screen from '../../../components/Screen';
-import { useAppTheme } from '../../../theme/ThemeProvider';
 import { AppImage } from '../../../components/ui/AppImage';
 import type { RootStackParamList } from '../../types';
 import { trackEvent } from '../../../services/analytics';
@@ -45,7 +38,6 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { AnimatedEmptyState } from '../../../components/ui/AnimatedEmptyState';
 import { t } from '../../../i18n/vi';
-import { TEST_IDS } from '../../../testing/testIds';
 import { useUserPreferenceStore } from '../../../store/useUserPreferenceStore';
 import { filterFoodsByPreferences } from '../../../utils/foodPreferenceFilter';
 
@@ -79,7 +71,6 @@ const P = {
 };
 
 const FoodSearchScreen = (): React.ReactElement => {
-  const { theme } = useAppTheme();
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<FoodSearchRouteProp>();
   const queryClient = useQueryClient();
@@ -93,7 +84,7 @@ const FoodSearchScreen = (): React.ReactElement => {
   const [commonMeals, setCommonMeals] = useState<CommonMealTemplate[]>([]);
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [hasSearched, setHasSearched] = useState(false);
+  const [, setHasSearched] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const [activeTab, setActiveTab] = useState<'search' | 'favorites'>('search');
@@ -147,7 +138,7 @@ const FoodSearchScreen = (): React.ReactElement => {
 
   const saveRecentSearch = async (term: string) => {
     try {
-      const filtered = recentSearches.filter(t => t.toLowerCase() !== term.toLowerCase());
+      const filtered = recentSearches.filter(searchTerm => searchTerm.toLowerCase() !== term.toLowerCase());
       const newSearches = [term, ...filtered].slice(0, 10);
       setRecentSearches(newSearches);
       await AsyncStorage.setItem(RECENT_SEARCHES_KEY, JSON.stringify(newSearches));
@@ -364,7 +355,7 @@ const FoodSearchScreen = (): React.ReactElement => {
         setIsLoading(false);
       }
     },
-    [activeTab]
+    [activeTab],
   );
 
   const handleSearch = useCallback(() => {
@@ -377,7 +368,7 @@ const FoodSearchScreen = (): React.ReactElement => {
       setQuery(nextQuery);
       runSearch(nextQuery, false).catch(() => {});
     },
-    [runSearch]
+    [runSearch],
   );
 
   useFocusEffect(
@@ -441,7 +432,7 @@ const FoodSearchScreen = (): React.ReactElement => {
             </View>
             <View style={S.resultInfo}>
               <ThemedText style={S.resultTitle} numberOfLines={1}>{item.name}</ThemedText>
-              
+
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 6 }}>
                 <ThemedText style={S.per100g}>100g</ThemedText>
                 <ThemedText style={S.resultCaloriesSmall}>
@@ -473,10 +464,10 @@ const FoodSearchScreen = (): React.ReactElement => {
                 onPress={() => handleToggleFavorite(item)}
                 style={({ pressed }) => [
                   { padding: 4, marginRight: 8 },
-                  pressed && { transform: [{ scale: 0.7 }], opacity: 0.7 }
+                  pressed && { transform: [{ scale: 0.7 }], opacity: 0.7 },
                 ]}
               >
-                <Ionicons name={isFav ? "heart" : "heart-outline"} size={20} color={isFav ? P.primary : P.onSurfaceVariant} />
+                <Ionicons name={isFav ? 'heart' : 'heart-outline'} size={20} color={isFav ? P.primary : P.onSurfaceVariant} />
               </Pressable>
             )}
 
@@ -569,7 +560,7 @@ const FoodSearchScreen = (): React.ReactElement => {
       </View>
 
       <ScrollView contentContainerStyle={S.scrollContent} showsVerticalScrollIndicator={false}>
-        
+
         {/* ═══ Search Input Area ═══ */}
         {activeTab === 'search' && (
           <View style={S.searchArea}>
@@ -749,7 +740,7 @@ const S = StyleSheet.create({
   headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 16 },
   iconBtn: { padding: 8, borderRadius: 20 },
   headerTitle: { fontSize: 22, fontFamily: 'Inter_700Bold', color: P.onSurface, letterSpacing: -0.5 },
-  
+
   scrollContent: { paddingHorizontal: 20, paddingTop: 16, paddingBottom: 40 },
 
   searchArea: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 20 },
@@ -865,7 +856,7 @@ const S = StyleSheet.create({
   macroText: { fontSize: 11, fontFamily: 'Inter_600SemiBold', color: P.onSurfaceVariant },
 
   resultCardRight: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  resultCaloriesSmall: { fontSize: 13, fontFamily: 'Inter_600SemiBold', color: P.primary },  
+  resultCaloriesSmall: { fontSize: 13, fontFamily: 'Inter_600SemiBold', color: P.primary },
   addBtn: { width: 32, height: 32, backgroundColor: P.primary + '20', borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
 
   centerBox: { paddingTop: 40, alignItems: 'center' },

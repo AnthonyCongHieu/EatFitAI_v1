@@ -81,6 +81,7 @@ public class AIVisionControllerTests : IClassFixture<WebApplicationFactory<Progr
 
         response.EnsureSuccessStatusCode();
         Assert.Equal(1, httpClientFactory.CallCount);
+        Assert.Equal("test-token", httpClientFactory.LastInternalToken);
 
         var body = await response.Content.ReadFromJsonAsync<VisionDetectResultDto>();
         Assert.NotNull(body);
@@ -193,6 +194,7 @@ public class AIVisionControllerTests : IClassFixture<WebApplicationFactory<Progr
                 config.AddInMemoryCollection(new Dictionary<string, string?>
                 {
                     ["AIProvider:VisionBaseUrl"] = "https://provider.test",
+                    ["AIProvider:InternalToken"] = "test-token",
                     ["AIProvider:HealthGateFreshnessSeconds"] = "60",
                 });
             });
@@ -328,6 +330,7 @@ public class AIVisionControllerTests : IClassFixture<WebApplicationFactory<Progr
         }
 
         public int CallCount => _handler.CallCount;
+        public string? LastInternalToken => _handler.LastInternalToken;
 
         public HttpClient CreateClient(string name)
         {
@@ -348,10 +351,14 @@ public class AIVisionControllerTests : IClassFixture<WebApplicationFactory<Progr
         }
 
         public int CallCount { get; private set; }
+        public string? LastInternalToken { get; private set; }
 
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
             CallCount++;
+            LastInternalToken = request.Headers.TryGetValues("X-Internal-Token", out var values)
+                ? values.SingleOrDefault()
+                : null;
             return _responseFactory(request, cancellationToken);
         }
     }

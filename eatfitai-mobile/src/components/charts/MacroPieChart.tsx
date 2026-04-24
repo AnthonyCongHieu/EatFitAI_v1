@@ -23,9 +23,9 @@ export const MacroPieChart: React.FC<MacroPieChartProps> = ({ protein, carbs, fa
 
   // Colors matching the theme
   const colorScale = [
-    theme.colors.success, // Protein (Green)
-    theme.colors.warning, // Carbs (Yellow/Orange)
-    theme.colors.info, // Fat (Blue)
+    theme.colors.success, // Protein (Emerald)
+    theme.colors.warning, // Carbs (Amber)
+    theme.colors.info, // Fat (Teal)
   ];
 
   if (total === 0) {
@@ -125,8 +125,8 @@ export const MacroPieChart: React.FC<MacroPieChartProps> = ({ protein, carbs, fa
           style={[
             styles.legendCard,
             {
-              backgroundColor: theme.mode === 'dark' ? '#1A2540' : '#E3F2FD',
-              borderColor: theme.mode === 'dark' ? '#2A3F68' : '#BBDEFB',
+              backgroundColor: theme.mode === 'dark' ? '#1A2540' : '#ECFDF5',
+              borderColor: theme.mode === 'dark' ? '#3D4A3D' : '#BBF7D0',
             },
           ]}
         >

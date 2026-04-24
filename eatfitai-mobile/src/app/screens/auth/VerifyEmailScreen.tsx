@@ -25,7 +25,6 @@ import { Ionicons } from '@expo/vector-icons';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import Tilt3DCard, { ParallaxLayer } from '../../../components/ui/Tilt3DCard';
 
-import { useAppTheme } from '../../../theme/ThemeProvider';
 import { ThemedText } from '../../../components/ThemedText';
 import Screen from '../../../components/Screen';
 import { trackEvent } from '../../../services/analytics';
@@ -71,7 +70,6 @@ const resolveNeedsOnboarding = (
 };
 
 const VerifyEmailScreen = ({ navigation, route }: Props): React.ReactElement => {
-  const { theme } = useAppTheme();
   const { email, verificationCode: devCode } = route.params;
 
   /* ─── Colors (Emerald Nebula palette) ─── */

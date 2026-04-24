@@ -63,10 +63,10 @@ const WeekStatsScreen = (): React.ReactElement => {
       alignItems: 'center',
       padding: theme.spacing.md,
       // Solid colors avoid Android gradient banding artifacts
-      backgroundColor: isDark ? '#1A2744' : '#F8FAFF',
+      backgroundColor: isDark ? '#1A1F2F' : '#F8FBF7',
       borderRadius: 20,
       borderWidth: 1,
-      borderColor: isDark ? '#2A3F68' : '#E0E0E0',
+      borderColor: isDark ? '#3D4A3D' : '#E0E0E0',
     },
     weekNavigation: {
       flexDirection: 'row',
@@ -75,10 +75,10 @@ const WeekStatsScreen = (): React.ReactElement => {
       paddingHorizontal: theme.spacing.md,
       paddingVertical: theme.spacing.sm,
       // Solid colors avoid Android gradient banding artifacts
-      backgroundColor: isDark ? '#1A2744' : '#F8FAFF',
+      backgroundColor: isDark ? '#1A1F2F' : '#F8FBF7',
       borderRadius: 16,
       borderWidth: 1,
-      borderColor: isDark ? '#2A3F68' : '#E0E0E0',
+      borderColor: isDark ? '#3D4A3D' : '#E0E0E0',
       marginBottom: theme.spacing.lg,
     },
     navButton: {
@@ -239,7 +239,7 @@ const WeekStatsScreen = (): React.ReactElement => {
                 width: 12,
                 height: 12,
                 borderRadius: 3,
-                backgroundColor: isDark ? '#1E3050' : '#D0D0D5',
+                backgroundColor: isDark ? '#25293A' : '#D0D0D5',
               }}
             />
             <ThemedText variant="caption" color="textSecondary">
@@ -375,7 +375,7 @@ const WeekStatsScreen = (): React.ReactElement => {
               paddingTop: theme.spacing.md,
               borderTopWidth: 1,
               // Solid colors avoid Android gradient banding artifacts
-              borderTopColor: isDark ? '#2A3F68' : '#E0E0E0',
+              borderTopColor: isDark ? '#3D4A3D' : '#E0E0E0',
             }}
           >
             {/* Average per day */}
@@ -384,8 +384,8 @@ const WeekStatsScreen = (): React.ReactElement => {
                 flex: 1,
                 alignItems: 'center',
                 padding: theme.spacing.sm,
-                // Solid navy blue
-                backgroundColor: isDark ? '#1A2744' : '#EEF4FF',
+                // Solid dark emerald surface
+                backgroundColor: isDark ? '#1A1F2F' : '#EEF8F0',
                 borderRadius: 12,
               }}
             >
@@ -393,7 +393,7 @@ const WeekStatsScreen = (): React.ReactElement => {
               <ThemedText
                 variant="h4"
                 weight="700"
-                style={{ color: '#3b82f6', marginTop: 2 }}
+                style={{ color: '#22c55e', marginTop: 2 }}
               >
                 {Math.round(
                   weekSummary.days.reduce((sum, day) => sum + day.calories, 0) /

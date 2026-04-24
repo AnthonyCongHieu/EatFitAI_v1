@@ -18,10 +18,6 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import Toast from 'react-native-toast-message';
 import Animated, {
   FadeInDown,
-  FadeInUp,
-  useAnimatedStyle,
-  useSharedValue,
-  withTiming,
 } from 'react-native-reanimated';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -29,8 +25,6 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 
 import { ThemedText } from '../../../components/ThemedText';
-import Screen from '../../../components/Screen';
-import { useAppTheme } from '../../../theme/ThemeProvider';
 import type { RootStackParamList } from '../../types';
 import { trackEvent } from '../../../services/analytics';
 import { foodService, type FoodDetail } from '../../../services/foodService';
@@ -38,7 +32,6 @@ import { invalidateDiaryQueries } from '../../../services/diaryFlowService';
 import { MEAL_TYPES, MEAL_TYPE_LABELS, type MealTypeId } from '../../../types';
 import { handleApiError } from '../../../utils/errorHandler';
 import { favoritesService } from '../../../services/favoritesService';
-import { TEST_IDS } from '../../../testing/testIds';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 type RouteProps = RouteProp<RootStackParamList, 'FoodDetail'>;
@@ -83,19 +76,18 @@ const P = {
   onPrimary: '#003915',
   glassBorder: 'rgba(255,255,255,0.1)',
   glassHeader: 'rgba(14, 19, 34, 0.4)',
-  
+
   macroP: '#34d399', // emerald
   macroC: '#38bdf8', // sky
   macroF: '#fbbf24', // amber
 };
 
 const FoodDetailScreen = (): React.ReactElement | null => {
-  const { theme } = useAppTheme();
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<RouteProps>();
   const queryClient = useQueryClient();
   const insets = useSafeAreaInsets();
-  
+
   const selectedDate = route.params.selectedDate;
   const returnToDiaryOnSave = route.params.returnToDiaryOnSave ?? false;
   const foodKey = `${route.params.source ?? 'catalog'}:${route.params.foodId}`;
@@ -180,7 +172,7 @@ const FoodDetailScreen = (): React.ReactElement | null => {
   const displayCarbs = (detail?.perServingCarbs ?? detail?.carbs ?? 0) * multiplier;
   const displayFat = (detail?.perServingFat ?? detail?.fat ?? 0) * multiplier;
   const displayCalories = (detail?.perServingCalories ?? detail?.calories ?? 0) * multiplier;
-  
+
   const totalMacros = Math.max(displayProtein + displayCarbs + displayFat, 1);
 
   // Handlers for stepper
@@ -279,7 +271,7 @@ const FoodDetailScreen = (): React.ReactElement | null => {
         <ThemedText style={S.headerTitle}>Chi tiết món ăn</ThemedText>
         {!isUserFood ? (
           <Pressable style={S.iconBtn} onPress={toggleFavorite}>
-            <Ionicons name={isFavorite ? "heart" : "heart-outline"} size={22} color={P.primary} />
+            <Ionicons name={isFavorite ? 'heart' : 'heart-outline'} size={22} color={P.primary} />
           </Pressable>
         ) : (
           <View style={S.iconBtn} />

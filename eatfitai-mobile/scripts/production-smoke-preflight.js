@@ -145,6 +145,43 @@ function sanitizeHeaders(headers) {
   return copy;
 }
 
+function sanitizeBody(value) {
+  if (Array.isArray(value)) {
+    return value.map((item) => sanitizeBody(item));
+  }
+
+  if (!value || typeof value !== 'object') {
+    return value;
+  }
+
+  return Object.fromEntries(
+    Object.entries(value).map(([key, entryValue]) => {
+      if (isSensitiveBodyKey(key)) {
+        return [key, '<redacted>'];
+      }
+
+      return [key, sanitizeBody(entryValue)];
+    }),
+  );
+}
+
+function isSensitiveBodyKey(key) {
+  const normalized = String(key || '').toLowerCase();
+
+  return (
+    normalized.includes('accesstoken') ||
+    normalized.includes('refreshtoken') ||
+    normalized === 'token' ||
+    normalized.endsWith('_token') ||
+    normalized.endsWith('token') ||
+    normalized.includes('password') ||
+    normalized.includes('authorization') ||
+    normalized.includes('secret') ||
+    normalized.includes('apikey') ||
+    normalized.includes('api_key')
+  );
+}
+
 function writeJson(filePath, value) {
   fs.writeFileSync(filePath, JSON.stringify(value, null, 2), 'utf8');
 }
@@ -363,7 +400,7 @@ async function fetchJsonWithDetails(url, options = {}) {
       json = null;
     }
 
-    return {
+    const result = {
       ok: response.ok,
       status: response.status,
       statusText: response.statusText,
@@ -372,9 +409,14 @@ async function fetchJsonWithDetails(url, options = {}) {
       completedAt,
       durationMs,
       headers: sanitizeHeaders(options.headers),
-      body: json,
+      body: sanitizeBody(json),
       rawText: json ? undefined : rawText,
     };
+    Object.defineProperty(result, 'rawBody', {
+      value: json,
+      enumerable: false,
+    });
+    return result;
   } catch (error) {
     const completedAt = new Date().toISOString();
     const durationMs = Date.now() - startedAtMs;
@@ -460,6 +502,8 @@ async function runAuthChecks(context) {
     };
   }
 
+  const timeoutMs = resolveNumberEnv('EATFITAI_SMOKE_TIMEOUT_MS', DEFAULT_TIMEOUT_MS);
+
   const loginResponse = await fetchJsonWithDetails(
     `${context.backendUrl}/api/auth/login`,
     {
@@ -472,11 +516,12 @@ async function runAuthChecks(context) {
         email: context.email,
         password: context.password,
       }),
+      timeoutMs,
     },
   );
 
-  const accessToken = loginResponse.body?.accessToken;
-  const refreshToken = loginResponse.body?.refreshToken;
+  const accessToken = loginResponse.rawBody?.accessToken;
+  const refreshToken = loginResponse.rawBody?.refreshToken;
 
   const aiStatusResponse = accessToken
     ? await fetchJsonWithDetails(`${context.backendUrl}/api/ai/status`, {
@@ -484,6 +529,7 @@ async function runAuthChecks(context) {
           Accept: 'application/json',
           Authorization: `Bearer ${accessToken}`,
         },
+        timeoutMs,
       })
     : {
         skipped: true,
@@ -500,6 +546,7 @@ async function runAuthChecks(context) {
         body: JSON.stringify({
           refreshToken,
         }),
+        timeoutMs,
       })
     : {
         skipped: true,

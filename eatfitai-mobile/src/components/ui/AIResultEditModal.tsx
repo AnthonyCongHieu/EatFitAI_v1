@@ -107,8 +107,8 @@ export const AIResultEditModal: React.FC<AIResultEditModalProps> = ({
               styles.gramsCard,
               {
                 backgroundColor: isDark
-                  ? 'rgba(59, 130, 246, 0.15)'
-                  : 'rgba(59, 130, 246, 0.08)',
+                  ? 'rgba(34, 197, 94, 0.15)'
+                  : 'rgba(34, 197, 94, 0.08)',
                 borderColor: theme.colors.primary + '30',
               },
             ]}
@@ -164,7 +164,7 @@ export const AIResultEditModal: React.FC<AIResultEditModalProps> = ({
 
             {/* Protein */}
             <View style={styles.nutritionItem}>
-              <ThemedText variant="body" weight="700" style={{ color: '#3B82F6' }}>
+              <ThemedText variant="body" weight="700" style={{ color: '#22C55E' }}>
                 {calculatedNutrition.protein}g
               </ThemedText>
               <ThemedText variant="caption" color="textSecondary">

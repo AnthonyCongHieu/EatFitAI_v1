@@ -1,6 +1,5 @@
 import React, { useCallback, useEffect, useRef } from 'react';
 import {
-  Dimensions,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -19,11 +18,9 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 
 import Animated, {
-  Easing,
   FadeIn,
   FadeInDown,
   FadeInUp,
-  FadeOut,
   useAnimatedStyle,
   useSharedValue,
   withRepeat,
@@ -40,7 +37,6 @@ import { trackEvent } from '../../services/analytics';
 import VoiceResultCard from '../../components/voice/VoiceResultCard';
 import { useVoiceRecognition } from '../../hooks/useVoiceRecognition';
 import { useVoiceStore } from '../../store/useVoiceStore';
-import { useAppTheme } from '../../theme/ThemeProvider';
 import type { AppTabsParamList } from '../navigation/AppTabs';
 import { TEST_IDS } from '../../testing/testIds';
 
@@ -48,8 +44,6 @@ const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 type VoiceNavigationProp = BottomTabNavigationProp<AppTabsParamList, 'VoiceTab'>;
 type VoiceRouteProp = RouteProp<AppTabsParamList, 'VoiceTab'>;
-
-const { width: SW } = Dimensions.get('window');
 
 /* ═══════════════════════════════════════════════
    Emerald Nebula Palette
@@ -90,7 +84,6 @@ interface ChatMessage {
 }
 
 const VoiceScreen = (): React.ReactElement => {
-  const { theme } = useAppTheme();
   const insets = useSafeAreaInsets();
   const queryClient = useQueryClient();
   const navigation = useNavigation<VoiceNavigationProp>();
@@ -217,22 +210,6 @@ const VoiceScreen = (): React.ReactElement => {
 
   const buttonAnimatedStyle = useAnimatedStyle(() => ({
     transform: [{ scale: buttonScale.value }],
-  }));
-
-  const waveStyle1 = useAnimatedStyle(() => ({
-    transform: [{ scaleY: waveBar1.value }],
-  }));
-  const waveStyle2 = useAnimatedStyle(() => ({
-    transform: [{ scaleY: waveBar2.value }],
-  }));
-  const waveStyle3 = useAnimatedStyle(() => ({
-    transform: [{ scaleY: waveBar3.value }],
-  }));
-  const waveStyle4 = useAnimatedStyle(() => ({
-    transform: [{ scaleY: waveBar4.value }],
-  }));
-  const waveStyle5 = useAnimatedStyle(() => ({
-    transform: [{ scaleY: waveBar5.value }],
   }));
 
   /* ═══ Handlers ═══ */

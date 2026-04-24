@@ -45,9 +45,9 @@ export const SettingsSection: React.FC<SettingsSectionProps> = ({
     content: {
       borderRadius: 16,
       overflow: 'hidden',
-      backgroundColor: isDark ? 'rgba(74, 144, 226, 0.15)' : 'rgba(59, 130, 246, 0.08)',
+      backgroundColor: isDark ? 'rgba(75, 226, 119, 0.15)' : 'rgba(34, 197, 94, 0.08)',
       borderWidth: 1,
-      borderColor: isDark ? 'rgba(74, 144, 226, 0.2)' : 'rgba(59, 130, 246, 0.1)',
+      borderColor: isDark ? 'rgba(75, 226, 119, 0.2)' : 'rgba(34, 197, 94, 0.1)',
       padding: 4,
     },
   });

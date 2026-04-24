@@ -17,8 +17,14 @@ from werkzeug.datastructures import FileStorage
 from werkzeug.utils import secure_filename
 from uuid import uuid4
 import os
+from functools import wraps
 from dotenv import load_dotenv
-from runtime_config import get_yolo_confidence_threshold
+from internal_auth import (
+    INTERNAL_TOKEN_HEADER,
+    internal_auth_missing,
+    is_internal_request_authorized,
+)
+from runtime_config import get_yolo_confidence_threshold, get_yolo_image_size
 
 # Cấu hình logging
 logging.basicConfig(
@@ -29,32 +35,37 @@ logger = logging.getLogger(__name__)
 load_dotenv()
 
 
-def _get_internal_runtime_token() -> str:
-    return os.getenv("AI_PROVIDER_INTERNAL_TOKEN", "").strip()
-
-
 def _is_internal_request_authorized() -> bool:
-    expected = _get_internal_runtime_token()
-    if not expected:
-        return True
+    return is_internal_request_authorized(request.headers.get(INTERNAL_TOKEN_HEADER))
 
-    provided = request.headers.get("X-Internal-Token", "").strip()
-    return bool(provided) and provided == expected
 
-def env_flag(name: str, default: bool = False) -> bool:
-    raw = os.getenv(name)
-    if raw is None:
-        return default
-    return raw.strip().lower() in {"1", "true", "yes", "on"}
+def _internal_auth_failure_response():
+    status_code = 503 if internal_auth_missing() else 403
+    error = "service_unavailable" if status_code == 503 else "forbidden"
+    return jsonify({"error": error}), status_code
+
+
+def require_internal_token(handler):
+    @wraps(handler)
+    def wrapper(*args, **kwargs):
+        if not _is_internal_request_authorized():
+            return _internal_auth_failure_response()
+
+        return handler(*args, **kwargs)
+
+    return wrapper
 
 app: Flask = Flask(__name__)
 os.makedirs("uploads", exist_ok=True)
 YOLO_CONFIDENCE_THRESHOLD = get_yolo_confidence_threshold()
+YOLO_IMAGE_SIZE = get_yolo_image_size()
+YOLO_INFERENCE_LOCK = threading.Lock()
 
 # Hằng số validate file
 ALLOWED_EXTENSIONS = {'jpg', 'jpeg', 'png', 'webp', 'bmp'}
 ALLOWED_AUDIO_EXTENSIONS = {'m4a', 'mp3', 'wav', 'webm', 'ogg', 'flac'}
 MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB
+app.config["MAX_CONTENT_LENGTH"] = MAX_FILE_SIZE
 
 def allowed_file(filename: str) -> bool:
     """Kiểm tra extension file hình"""
@@ -172,6 +183,8 @@ def healthz() -> Dict[str, Any]:
         "model_file": model_file,
         "model_classes_count": len(model_classes),
         "model_type": "yolov8-custom-eatfitai" if "best.pt" in model_file else "yolov8-pretrained",
+        "yolo_confidence_threshold": YOLO_CONFIDENCE_THRESHOLD,
+        "yolo_image_size": YOLO_IMAGE_SIZE,
         "cuda_available": torch.cuda.is_available(),
         "device": str(model.device) if model else "unknown",
         "gpu_name": torch.cuda.get_device_name(0) if torch.cuda.is_available() else None,
@@ -233,10 +246,8 @@ def _gemini_service_error_response(exc: Exception):
 
 
 @app.get("/internal/runtime/status")
+@require_internal_token
 def internal_runtime_status():
-    if not _is_internal_request_authorized():
-        return jsonify({"error": "forbidden"}), 403
-
     status = _get_gemini_health_status()
     runtime_status = {
         "checkedAt": time.time(),
@@ -245,6 +256,7 @@ def internal_runtime_status():
     return jsonify(runtime_status), 200
 
 @app.post("/detect")
+@require_internal_token
 def detect() -> Response | tuple[Dict[str, str], int]:
     """Detect objects trong ảnh upload"""
     path: str = ""
@@ -293,7 +305,8 @@ def detect() -> Response | tuple[Dict[str, str], int]:
         if model is None:
             return {"error": "model not loaded"}, 500
         
-        res: Any = model(path, conf=YOLO_CONFIDENCE_THRESHOLD)
+        with YOLO_INFERENCE_LOCK:
+            res: Any = model(path, conf=YOLO_CONFIDENCE_THRESHOLD, imgsz=YOLO_IMAGE_SIZE)
         names: Dict[int, str] = res[0].names
         
         out: List[Dict[str, float | str]] = [
@@ -336,6 +349,7 @@ except ImportError as e:
 
 
 @app.post("/nutrition-advice")
+@require_internal_token
 def nutrition_advice():
     """AI nutrition target recommendations"""
     try:
@@ -372,6 +386,7 @@ def nutrition_advice():
 
 
 @app.post("/meal-insight")
+@require_internal_token
 def meal_insight():
     """AI insights về bữa ăn"""
     try:
@@ -411,6 +426,7 @@ except ImportError as e:
 
 
 @app.route("/cooking-instructions", methods=["POST"])
+@require_internal_token
 def cooking_instructions():
     """Generate cooking instructions using Gemini AI"""
     if not COOKING_INSTRUCTIONS_AVAILABLE:
@@ -447,6 +463,7 @@ def cooking_instructions():
 # ============== VOICE COMMAND PARSING (Gemini thay Ollama) ==============
 
 @app.post("/voice/parse")
+@require_internal_token
 def voice_parse():
     """Parse Vietnamese voice command bằng Gemini AI."""
     if not VOICE_PARSE_AVAILABLE:
@@ -482,6 +499,7 @@ WHISPER_AVAILABLE = False
 logger.info("ℹ️  Whisper STT disabled (cloud mode - dùng Google Speech API nếu cần)")
 
 @app.route('/voice/transcribe', methods=['POST'])
+@require_internal_token
 def transcribe_audio():
     """STT disabled trên production cloud"""
     return {

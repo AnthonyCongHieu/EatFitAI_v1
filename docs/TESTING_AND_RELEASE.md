@@ -1,6 +1,6 @@
 # Testing and Release
 
-Updated: `2026-04-23`
+Updated: `2026-04-24`
 
 ## Overview
 
@@ -32,10 +32,19 @@ Notes:
 
 ```powershell
 dotnet test .\EatFitAI_v1.sln
+python .\scripts\cloud\check_dotnet_vulnerabilities.py
 npm --prefix .\eatfitai-mobile run typecheck
 npm --prefix .\eatfitai-mobile run lint
+npm --prefix .\eatfitai-mobile audit --omit=dev --audit-level=high
 npm --prefix .\eatfitai-mobile run guard:no-direct-ai-provider
+python .\scripts\cloud\check_mojibake.py
+python .\scripts\cloud\check_secret_tracking.py
+Push-Location .\ai-provider
+python -m unittest discover -s tests
+Pop-Location
 ```
+
+Moderate npm advisories are tracked in `docs/NPM_AUDIT_RISK_ACCEPTANCE.md`.
 
 ### Gate 2 — Android automation
 
@@ -45,6 +54,17 @@ npm --prefix .\eatfitai-mobile run install:android:preview
 npm --prefix .\eatfitai-mobile run automation:doctor
 npm --prefix .\eatfitai-mobile run appium:smoke
 ```
+
+Before running this gate on a clean checkout, restore local-only Android files:
+
+- `eatfitai-mobile/android/app/google-services.json`: download it from Firebase Console for package `com.eatfitai.app`.
+- `eatfitai-mobile/android/app/debug.keystore`: generate it locally if missing:
+
+```powershell
+keytool -genkeypair -v -storetype JKS -keystore .\eatfitai-mobile\android\app\debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
+```
+
+These files are intentionally ignored and must not be committed.
 
 The default Android lane for the release gate is currently **Appium-only** (WebDriverIO + UiAutomator2).
 
@@ -259,6 +279,12 @@ Conventions:
 
 Pushing branch `hieu_deploy/production` to `origin` will automatically trigger a cloud rollout for both services.
 
+### AI provider free-plan tuning
+
+- `gunicorn.conf.py` uses `workers=1` and `threads=2`; the Flask app serializes only the YOLO model call with an in-process lock so health checks can stay responsive while avoiding overlapping CPU-heavy scans.
+- `YOLO_CONFIDENCE_THRESHOLD=0.35` and `YOLO_IMAGE_SIZE=512` in `render.yaml` are the release-smoke values. Local probe evidence on optimized upload fixtures showed banana, egg, and rice still produce usable detections at this setting while reducing inference work versus 640px.
+- Tradeoff: lower confidence improves recall but can increase false positives. Primary scan fixtures with stable model labels include expected labels in `production-smoke-manifest.template.json`; keep `smoke:metrics` as the acceptance gate after every model update.
+
 ---
 
 ## Keep-alive strategy
@@ -280,7 +306,7 @@ Render Free Tier spins down services after 15 minutes of no inbound traffic. Col
 | Service | Endpoint | Interval |
 |---|---|---|
 | Backend | `https://<backend-url>/health/live` | 5 minutes |
-| AI Provider | `https://<ai-provider-url>/healthz` | 5 minutes |
+| AI Provider | `https://<ai-provider-url>/healthz` | Optional monitor only |
 
 ### Instance hours warning
 
@@ -289,6 +315,12 @@ Render Free provides 750 hours/month/workspace. Keep-alive **2 always-on service
 Solution:
 - Only keep-alive the **backend** (critical), let AI provider sleep + use fallback formula
 - Or upgrade 1 service to Render Starter ($7/month)
+
+Security note:
+- Do not ping protected AI workload endpoints from external monitors. Only backend-to-AI traffic may call `/detect`, `/nutrition-advice`, `/meal-insight`, `/cooking-instructions`, `/voice/parse`, `/voice/transcribe`, and `/internal/runtime/status`, and those calls must include `X-Internal-Token`.
+- Render must set the same secret value in backend `AIProvider__InternalToken` and AI provider `AI_PROVIDER_INTERNAL_TOKEN`.
+- Admin runtime views are allowed to show a local fallback snapshot, but must surface `runtimeStatusSource=local-runtime-fallback` plus `runtimeStatusWarning`/`runtimeStatusError` so provider auth/config failures are not hidden.
+- Backend AI proxy controllers that spend AI resources must use the stricter partitioned `AIPolicy`, not only the global limiter.
 
 Detailed guide: see Appendix A (UptimeRobot) and Appendix B (Cron-job) in `STABILIZATION_PLAN.md`.
 

@@ -12,7 +12,6 @@ import Toast from 'react-native-toast-message';
 
 import { BottomSheet } from '../BottomSheet';
 import { ThemedText } from '../ThemedText';
-import { Button } from '../Button';
 import Icon from '../Icon';
 import { LinearGradient } from 'expo-linear-gradient';
 import {
@@ -80,7 +79,7 @@ export const IngredientBasketSheet: React.FC<IngredientBasketSheetProps> = ({
           <View style={styles.iconBg}>
             <Icon name="restaurant-outline" size="sm" color="text" />
           </View>
-          
+
           <View style={styles.ingredientInfo}>
             <ThemedText style={styles.ingredientName} numberOfLines={1}>
               {item.name}

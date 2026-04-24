@@ -4,6 +4,10 @@
 > **Nguyên tắc**: Thảo luận → Chốt → Code → Commit dần. KHÔNG push vội.  
 > **Trạng thái**: 🟢 Code ~95% xong — còn manual ops (keep-alive) + full release gate verification trên môi trường thật
 
+> **Cập nhật 2026-04-24**: Backend/AI provider production hardening đã được đồng bộ lại: AI workload endpoints yêu cầu `X-Internal-Token`, admin keep-alive không còn anonymous/table inventory, rate limiting đã partition theo user/IP, và UI canonical là Emerald.
+
+> **Runtime ops note 2026-04-24**: Admin runtime snapshots may fall back to local runtime project state, but must expose `runtimeStatusSource=local-runtime-fallback`, `runtimeStatusWarning`, and `runtimeStatusError`; AI proxy controllers use the stricter partitioned `AIPolicy`.
+
 ---
 
 ## Mục lục & Trạng thái
@@ -33,7 +37,7 @@ Sau khi đọc `Program.cs` (1137 dòng) và `HealthController.cs` — **hầu h
 | Health ready check (DB query) | ✅ ĐÃ CÓ | `Program.cs:684-688` — `AddNpgSql()` tag `"ready"` |
 | EnableRetryOnFailure | ✅ ĐÃ CÓ | `Program.cs:599, 605` |
 | render.yaml Brevo | ✅ ĐÃ ĐÚNG | `render.yaml:47-52` |
-| Rate limiting Auth/AI/General | ✅ ĐÃ CÓ | `Program.cs:514-544` |
+| Rate limiting Auth/AI/General | ✅ ĐÃ CÓ | Partition theo user/IP trong `Program.cs` |
 | Production config validation | ✅ ĐÃ CÓ | `Program.cs:375-426` |
 | Connection mode detection | ✅ ĐÃ CÓ | `Program.cs:355-373` |
 
@@ -65,10 +69,10 @@ Sau khi đọc `Program.cs` (1137 dòng) và `HealthController.cs` — **hầu h
 |---|---|---|
 | SEC-009 ex.Message cleanup | ⚠️ **~50 chỗ cần sửa** | Log lỗi vào Render Logs, trả message chung cho client |
 | SEC-010 Security headers | ⚠️ **CHƯA CÓ** | Thêm middleware: nosniff + X-Frame-Options + HSTS |
-| SEC-010 Rate limiting | ✅ ĐÃ CÓ | Auth 10/min, AI 20/min, General 100/min (`Program.cs:514-544`) |
+| SEC-010 Rate limiting | ✅ ĐÃ CÓ | Auth 10/min, AI 20/min, General 120/min, partition user/IP |
 | SEC-017 Token storage | ✅ ĐÃ AN TOÀN | `expo-secure-store` — LOẠI BỎ khỏi plan |
 | SEC-020 dotnet | ✅ SẠCH | 0 vulnerabilities |
-| SEC-020 npm | ⚠️ 19 lỗ hổng (hầu hết dev tools) | `npm audit fix` — risk thấp |
+| SEC-020 npm | ⚠️ 19 moderate production-tree advisories | CI gate chỉ chặn high/critical; không dùng `npm audit fix --force` vì kéo lệch Expo/RN |
 
 ### Commit 2A → 2J: SEC-009 — ex.Message cleanup (chia theo controller)
 
@@ -108,7 +112,7 @@ catch (Exception ex) {
 | `Middleware/SecurityHeadersMiddleware.cs` | **[NEW]** Thêm nosniff, X-Frame-Options, HSTS |
 | `Program.cs` | Thêm 1 dòng `app.UseMiddleware<SecurityHeadersMiddleware>()` |
 
-### Commit 2L: SEC-020 — npm audit fix
+### Commit 2L: SEC-020 — npm audit gate
 
 | File | Thay đổi |
 |---|---|
@@ -414,9 +418,9 @@ if (calories < 1000 or calories > 5000 or
 
 **Fix**:
 ```python
-YOLO_CONFIDENCE = float(os.environ.get("YOLO_CONFIDENCE", "0.50"))
+YOLO_CONFIDENCE_THRESHOLD = float(os.environ.get("YOLO_CONFIDENCE_THRESHOLD", "0.50"))
 # ...
-res = model(path, conf=YOLO_CONFIDENCE)
+res = model(path, conf=YOLO_CONFIDENCE_THRESHOLD)
 ```
 
 **Files sửa**: `ai-provider/app.py` (line 294)
@@ -1188,7 +1192,7 @@ Tạo **2 monitors** với cấu hình:
 | 2026-04-20 | SEC-009 | ✅ Chốt — chia commit theo controller (B) |
 | 2026-04-20 | SEC-010 | ✅ Chốt — thêm security headers middleware |
 | 2026-04-20 | SEC-017 | ❌ Loại bỏ — `expo-secure-store` đã an toàn |
-| 2026-04-20 | SEC-020 | ✅ Chốt — dotnet sạch, npm audit fix |
+| 2026-04-20 | SEC-020 | ✅ Chốt — dotnet sạch, npm high/critical gate |
 | 2026-04-20 | TEL (Mục 3) | ✅ Chốt — Firebase Analytics + Crashlytics, ghi hướng dẫn |
 | 2026-04-20 | AUTH (Mục 4) | ✅ Chốt — Đã hoạt động, không cần thay đổi |
 | 2026-04-20 | AI (Mục 5) | ✅ Chốt — Tất cả features đã implement |

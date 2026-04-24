@@ -418,6 +418,7 @@ static void EnsureRequiredProductionConfiguration(
 
     RequireValue("Jwt:Key");
     RequireValue("Encryption:Key");
+    RequireValue("AIProvider:InternalToken");
     RequireHttpsUrl("AIProvider:VisionBaseUrl");
 
     if (errors.Count > 0)
@@ -512,37 +513,113 @@ builder.Services.AddCors(o =>
         .AllowCredentials());
 });
 
-// Rate Limiting - Prevent brute force and abuse
+static bool ShouldBypassRateLimit(HttpContext context)
+{
+    if (HttpMethods.IsOptions(context.Request.Method))
+    {
+        return true;
+    }
+
+    var path = context.Request.Path;
+    return path.StartsWithSegments("/health", StringComparison.OrdinalIgnoreCase)
+        || path.StartsWithSegments("/swagger", StringComparison.OrdinalIgnoreCase)
+        || path.StartsWithSegments("/discovery", StringComparison.OrdinalIgnoreCase);
+}
+
+static string GetRateLimitPartitionKey(HttpContext context, string policy)
+{
+    var userId = context.User.FindFirstValue(ClaimTypes.NameIdentifier)
+        ?? context.User.FindFirstValue("sub")
+        ?? context.User.FindFirstValue("http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier");
+
+    if (!string.IsNullOrWhiteSpace(userId))
+    {
+        return $"{policy}:user:{userId}";
+    }
+
+    var ip = context.Connection.RemoteIpAddress?.ToString();
+    if (!string.IsNullOrWhiteSpace(ip))
+    {
+        return $"{policy}:ip:{ip}";
+    }
+
+    return $"{policy}:anonymous";
+}
+
+static FixedWindowRateLimiterOptions BuildFixedWindowOptions(
+    int permitLimit,
+    int queueLimit,
+    TimeSpan window)
+{
+    return new FixedWindowRateLimiterOptions
+    {
+        PermitLimit = permitLimit,
+        QueueLimit = queueLimit,
+        QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+        Window = window,
+        AutoReplenishment = true
+    };
+}
+
+// Rate Limiting - partition by authenticated user, then client IP.
 builder.Services.AddRateLimiter(options =>
 {
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
-
-    // Auth endpoints: 10 requests per minute (prevent brute force)
-    options.AddFixedWindowLimiter("AuthPolicy", opt =>
+    options.OnRejected = async (context, cancellationToken) =>
     {
-        opt.Window = TimeSpan.FromMinutes(1);
-        opt.PermitLimit = 10;
-        opt.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
-        opt.QueueLimit = 2;
+        context.HttpContext.Response.StatusCode = StatusCodes.Status429TooManyRequests;
+        context.HttpContext.Response.ContentType = "application/json";
+
+        if (context.Lease.TryGetMetadata(MetadataName.RetryAfter, out var retryAfter))
+        {
+            var seconds = Math.Max(1, (int)Math.Ceiling(retryAfter.TotalSeconds));
+            context.HttpContext.Response.Headers.RetryAfter = seconds.ToString();
+        }
+
+        var payload = new
+        {
+            code = "rate_limit_exceeded",
+            message = "Too many requests. Please wait a moment and try again.",
+            requestId = context.HttpContext.TraceIdentifier
+        };
+
+        await context.HttpContext.Response.WriteAsync(
+            JsonSerializer.Serialize(payload),
+            cancellationToken);
+    };
+
+    options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(context =>
+    {
+        if (ShouldBypassRateLimit(context))
+        {
+            return RateLimitPartition.GetNoLimiter("general:bypass");
+        }
+
+        return RateLimitPartition.GetFixedWindowLimiter(
+            GetRateLimitPartitionKey(context, "general"),
+            _ => BuildFixedWindowOptions(120, 10, TimeSpan.FromMinutes(1)));
     });
 
-    // AI endpoints: 20 requests per minute (expensive operations)
-    options.AddFixedWindowLimiter("AIPolicy", opt =>
-    {
-        opt.Window = TimeSpan.FromMinutes(1);
-        opt.PermitLimit = 20;
-        opt.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
-        opt.QueueLimit = 5;
-    });
+    options.AddPolicy("AuthPolicy", context =>
+        ShouldBypassRateLimit(context)
+            ? RateLimitPartition.GetNoLimiter("auth:bypass")
+            : RateLimitPartition.GetFixedWindowLimiter(
+                GetRateLimitPartitionKey(context, "auth"),
+                _ => BuildFixedWindowOptions(10, 2, TimeSpan.FromMinutes(1))));
 
-    // General API: 100 requests per minute
-    options.AddFixedWindowLimiter("GeneralPolicy", opt =>
-    {
-        opt.Window = TimeSpan.FromMinutes(1);
-        opt.PermitLimit = 100;
-        opt.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
-        opt.QueueLimit = 10;
-    });
+    options.AddPolicy("AIPolicy", context =>
+        ShouldBypassRateLimit(context)
+            ? RateLimitPartition.GetNoLimiter("ai:bypass")
+            : RateLimitPartition.GetFixedWindowLimiter(
+                GetRateLimitPartitionKey(context, "ai"),
+                _ => BuildFixedWindowOptions(20, 5, TimeSpan.FromMinutes(1))));
+
+    options.AddPolicy("GeneralPolicy", context =>
+        ShouldBypassRateLimit(context)
+            ? RateLimitPartition.GetNoLimiter("general:bypass")
+            : RateLimitPartition.GetFixedWindowLimiter(
+                GetRateLimitPartitionKey(context, "general-policy"),
+                _ => BuildFixedWindowOptions(120, 10, TimeSpan.FromMinutes(1))));
 });
 
 // Add Swagger
@@ -1072,9 +1149,6 @@ else
 // Add routing
 app.UseRouting();
 
-// Rate Limiting middleware (must be before CORS and Auth)
-app.UseRateLimiter();
-
 // CORS - Use environment-appropriate policy
 if (app.Environment.IsDevelopment())
 {
@@ -1087,6 +1161,10 @@ else
 
 // Add authentication and authorization middleware
 app.UseAuthentication();
+
+// Rate limiting uses authenticated user ID when available, then falls back to client IP.
+app.UseRateLimiter();
+
 app.UseAuthorization();
 
 // Serve static files (for uploaded images under wwwroot)

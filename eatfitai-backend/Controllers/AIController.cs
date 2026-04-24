@@ -113,7 +113,12 @@ namespace EatFitAI.API.Controllers
             HttpResponseMessage response;
             try
             {
-                response = await client.PostAsync(url, content, HttpContext.RequestAborted);
+                using var request = new HttpRequestMessage(HttpMethod.Post, url)
+                {
+                    Content = content
+                };
+                AiProviderRequestHelper.AddInternalTokenHeader(request, _configuration, _logger);
+                response = await client.SendAsync(request, HttpContext.RequestAborted);
             }
             catch (OperationCanceledException ex) when (!HttpContext.RequestAborted.IsCancellationRequested)
             {
@@ -372,7 +377,12 @@ namespace EatFitAI.API.Controllers
                 HttpResponseMessage response;
                 try
                 {
-                    response = await client.PostAsync($"{aiProviderUrl}/nutrition-advice", content);
+                    using var providerRequest = new HttpRequestMessage(HttpMethod.Post, $"{aiProviderUrl}/nutrition-advice")
+                    {
+                        Content = content
+                    };
+                    AiProviderRequestHelper.AddInternalTokenHeader(providerRequest, _configuration, _logger);
+                    response = await client.SendAsync(providerRequest, HttpContext.RequestAborted);
                 }
                 catch (HttpRequestException ex)
                 {
@@ -387,6 +397,22 @@ namespace EatFitAI.API.Controllers
 
                 if (!response.IsSuccessStatusCode)
                 {
+                    var errorContent = await response.Content.ReadAsStringAsync(HttpContext.RequestAborted);
+                    _logger.LogWarning(
+                        "AI Provider nutrition advice returned error: {StatusCode} - {Error}",
+                        response.StatusCode,
+                        errorContent);
+
+                    if (AiProviderRequestHelper.IsInternalAuthFailure(response.StatusCode, errorContent))
+                    {
+                        return StatusCode(
+                            StatusCodes.Status503ServiceUnavailable,
+                            ErrorResponseHelper.SafeError(
+                                "ai-provider_auth_error",
+                                "Dich vu AI chua duoc cau hinh an toan.",
+                                HttpContext));
+                    }
+
                     return BuildOfflineFallback("Dịch vụ AI hiện không khả dụng, đã chuyển sang công thức offline.");
                 }
                 
@@ -724,8 +750,13 @@ namespace EatFitAI.API.Controllers
                 
                 var json = System.Text.Json.JsonSerializer.Serialize(payload);
                 var content = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
-                
-                var response = await client.PostAsync($"{aiProviderUrl}/cooking-instructions", content, cancellationToken);
+
+                using var providerRequest = new HttpRequestMessage(HttpMethod.Post, $"{aiProviderUrl}/cooking-instructions")
+                {
+                    Content = content
+                };
+                AiProviderRequestHelper.AddInternalTokenHeader(providerRequest, _configuration, _logger);
+                var response = await client.SendAsync(providerRequest, cancellationToken);
                 
                 if (response.IsSuccessStatusCode)
                 {

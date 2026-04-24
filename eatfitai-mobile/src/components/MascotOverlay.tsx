@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { View, Pressable, StyleSheet, Dimensions } from 'react-native';
+import { View, Pressable, StyleSheet } from 'react-native';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -16,16 +16,12 @@ import { useNavigation } from '@react-navigation/native';
 import { useQueryClient } from '@tanstack/react-query';
 import Toast from 'react-native-toast-message';
 
-import { useAppTheme } from '../theme/ThemeProvider';
 import QuickActionsOverlay from './home/QuickActionsOverlay';
 import { waterService } from '../services/waterService';
 import type { WaterIntakeData } from '../services/waterService';
 import { TEST_IDS } from '../testing/testIds';
 
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
-
 const MascotOverlay = () => {
-  const { theme } = useAppTheme();
   const navigation = useNavigation<any>();
   const queryClient = useQueryClient();
   const [showQuickActions, setShowQuickActions] = useState(false);
@@ -71,13 +67,13 @@ const MascotOverlay = () => {
 
   const handleAddWater = useCallback(async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    
+
     // Optimistic Update
     const prevData = queryClient.getQueryData<WaterIntakeData>(['water-intake-today']);
     queryClient.setQueryData<WaterIntakeData>(['water-intake-today'], (old) => ({
       amountMl: (old?.amountMl ?? 0) + 200,
       targetMl: old?.targetMl ?? 2000,
-      date: old?.date ?? new Date().toISOString().split('T')[0]!
+      date: old?.date ?? new Date().toISOString().split('T')[0]!,
     }));
 
     try {

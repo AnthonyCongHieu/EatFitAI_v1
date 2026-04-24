@@ -769,7 +769,15 @@ public class AdminController : ControllerBase
             runtime = await _runtimeSnapshotCache.GetLatestAsync();
             if (runtime != null)
             {
-                health.AiProviderStatus = runtime.AvailableProjectCount > 0 ? "Live" : "Down";
+                health.AiProviderStatus = string.Equals(
+                    runtime.RuntimeStatusSource,
+                    "local-runtime-fallback",
+                    StringComparison.OrdinalIgnoreCase)
+                        ? "Degraded"
+                        : runtime.AvailableProjectCount > 0 ? "Live" : "Down";
+                health.RuntimeStatusSource = runtime.RuntimeStatusSource;
+                health.RuntimeStatusWarning = runtime.RuntimeStatusWarning;
+                health.RuntimeStatusError = runtime.RuntimeStatusError;
                 health.ActiveProject = runtime.ActiveProject;
                 health.AvailableProjectCount = runtime.AvailableProjectCount;
                 health.ExhaustedProjectCount = runtime.ExhaustedProjectCount;
@@ -857,30 +865,14 @@ public class AdminController : ControllerBase
 
     // ===================== KEEP-ALIVE =====================
 
-    [AllowAnonymous]
     [HttpGet("keep-alive")]
-    public async Task<IActionResult> KeepAlive()
+    public IActionResult KeepAlive()
     {
-        var results = new Dictionary<string, string>();
-        
-        // Ping database
-        try { await _context.Database.ExecuteSqlRawAsync("SELECT 1"); results["database"] = "alive"; } 
-        catch { results["database"] = "error"; }
-        
-        // Touch key tables to keep EF Core connection pool warm
-        try { var _ = await _context.GeminiKeys.CountAsync(); results["gemini_keys"] = "alive"; }
-        catch { results["gemini_keys"] = "error"; }
-        
-        try { var _ = await _context.FoodItems.CountAsync(); results["food_items"] = "alive"; }
-        catch { results["food_items"] = "error"; }
-        
-        try { var _ = await _context.Users.CountAsync(); results["users"] = "alive"; }
-        catch { results["users"] = "error"; }
-
-        return Ok(new { 
-            status = "alive", 
+        return Ok(new
+        {
+            status = "alive",
             timestamp = DateTime.UtcNow,
-            services = results
+            requestId = HttpContext.TraceIdentifier
         });
     }
 

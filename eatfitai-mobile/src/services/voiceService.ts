@@ -1,7 +1,7 @@
 import type { AxiosError } from 'axios';
 
 import { API_BASE_URL, assertBackendApiBaseUrl } from '../config/env';
-import apiClient, { fetchWithAuthRetry, getCurrentApiUrl } from './apiClient';
+import apiClient, { getCurrentApiUrl } from './apiClient';
 import { captureError } from './errorTracking';
 import logger from '../utils/logger';
 

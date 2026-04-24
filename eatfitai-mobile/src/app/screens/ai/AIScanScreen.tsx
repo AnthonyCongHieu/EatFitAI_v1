@@ -8,7 +8,6 @@ import {
   Dimensions,
   Modal,
   TextInput,
-  ScrollView,
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
@@ -23,12 +22,10 @@ import * as ImageManipulator from 'expo-image-manipulator';
 import Animated, {
   FadeIn,
   FadeInDown,
-  FadeInUp,
   SlideInUp,
   useAnimatedStyle,
   useSharedValue,
   withRepeat,
-  withSequence,
   withSpring,
   withTiming,
   Easing,
@@ -44,7 +41,6 @@ import { trackEvent } from '../../../services/analytics';
 import Button from '../../../components/Button';
 import Icon from '../../../components/Icon';
 import { AiStatusBadge } from '../../../components/ai/AiStatusBadge';
-import { useAppTheme } from '../../../theme/ThemeProvider';
 import { aiService, isAiOfflineError } from '../../../services/aiService';
 import { useAiStatus } from '../../../hooks/useAiStatus';
 import {
@@ -53,7 +49,6 @@ import {
 } from '../../../services/diaryFlowService';
 import { handleApiErrorWithCustomMessage } from '../../../utils/errorHandler';
 import { AppImage } from '../../../components/ui/AppImage';
-import { AnimatedEmptyState } from '../../../components/ui/AnimatedEmptyState';
 import type { RootStackParamList } from '../../types';
 import type { MappedFoodItem } from '../../../types/ai';
 import { foodService } from '../../../services/foodService';
@@ -96,7 +91,6 @@ const P = {
 const SCANNER_SIZE = SW * 0.72;
 
 const AIScanScreen: React.FC = () => {
-  const { theme } = useAppTheme();
   const navigation = useNavigation<NavigationProp>();
   const queryClient = useQueryClient();
   const cameraRef = useRef<CameraViewInstance | null>(null);

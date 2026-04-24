@@ -12,6 +12,9 @@ public class AdminRuntimeSnapshotDto
     public int CooldownProjectCount { get; set; }
     public int AuthInvalidProjectCount { get; set; }
     public int DistinctProjectCount { get; set; }
+    public string RuntimeStatusSource { get; set; } = "unknown";
+    public string? RuntimeStatusWarning { get; set; }
+    public string? RuntimeStatusError { get; set; }
     public RuntimeLimitsDto Limits { get; set; } = new();
     public List<RuntimeProjectStateDto> Projects { get; set; } = new();
 }
