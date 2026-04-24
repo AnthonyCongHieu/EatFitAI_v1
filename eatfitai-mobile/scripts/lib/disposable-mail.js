@@ -60,7 +60,21 @@ function selectNewestMatchingMessage(items, options = {}) {
       const createdAtMs = Date.parse(item?.createdAt || 0);
       return Number.isFinite(createdAtMs) && createdAtMs >= createdAfterMs - 1000;
     })
-    .sort((left, right) => Date.parse(right?.createdAt || 0) - Date.parse(left?.createdAt || 0))[0] || null;
+    .sort((left, right) => {
+      const rightUpdatedAt = Date.parse(right?.updatedAt || right?.createdAt || 0);
+      const leftUpdatedAt = Date.parse(left?.updatedAt || left?.createdAt || 0);
+      if (rightUpdatedAt !== leftUpdatedAt) {
+        return rightUpdatedAt - leftUpdatedAt;
+      }
+
+      const rightCreatedAt = Date.parse(right?.createdAt || 0);
+      const leftCreatedAt = Date.parse(left?.createdAt || 0);
+      if (rightCreatedAt !== leftCreatedAt) {
+        return rightCreatedAt - leftCreatedAt;
+      }
+
+      return String(right?.id || '').localeCompare(String(left?.id || ''));
+    })[0] || null;
 }
 
 async function requestJson(url, options = {}) {

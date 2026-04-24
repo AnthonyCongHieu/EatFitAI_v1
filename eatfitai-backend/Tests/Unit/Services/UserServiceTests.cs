@@ -14,6 +14,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using Xunit;
 using AdminPasswordResetCode = EatFitAI.API.Models.PasswordResetCode;
+using AdminTelemetryEvent = EatFitAI.API.Models.TelemetryEvent;
 using AdminUser = EatFitAI.API.Models.User;
 using AdminUserAccessControl = EatFitAI.API.Models.UserAccessControl;
 using AdminUserPreference = EatFitAI.API.Models.UserPreference;
@@ -309,6 +310,15 @@ namespace EatFitAI.API.Tests.Unit.Services
                 TargetMl = 2000,
                 UpdatedAt = DateTime.UtcNow
             });
+            await _adminContext.TelemetryEvents.AddAsync(new AdminTelemetryEvent
+            {
+                TelemetryEventId = Guid.NewGuid(),
+                UserId = _testUserId,
+                Name = "auth.login",
+                Category = "auth",
+                OccurredAt = DateTime.UtcNow,
+                CreatedAt = DateTime.UtcNow
+            });
             await _adminContext.SaveChangesAsync();
 
             var aiLog = new AILog
@@ -371,6 +381,7 @@ namespace EatFitAI.API.Tests.Unit.Services
             Assert.Empty(_adminContext.PasswordResetCodes.Where(x => x.UserId == _testUserId));
             Assert.Empty(_adminContext.UserAccessControls.Where(x => x.UserId == _testUserId));
             Assert.Empty(_adminContext.WaterIntakes.Where(x => x.UserId == _testUserId));
+            Assert.Empty(_adminContext.TelemetryEvents.Where(x => x.UserId == _testUserId));
         }
 
         [Fact]

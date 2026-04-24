@@ -245,6 +245,15 @@ namespace EatFitAI.API.Controllers
                 return Unauthorized();
             }
 
+            if (string.IsNullOrWhiteSpace(request.IdToken))
+            {
+                return BadRequest(new GoogleAuthResponse
+                {
+                    Success = false,
+                    Error = "Token Google không hợp lệ"
+                });
+            }
+
             try
             {
                 var configuredAudiences = GetConfiguredGoogleAudiences();

@@ -287,6 +287,7 @@ namespace EatFitAI.API.Services
             await DeleteFromQueryAsync(_context, _context.UserFavoriteFoods.Where(x => x.UserId == userId));
             await DeleteFromQueryAsync(_context, _context.UserFoodItems.Where(x => x.UserId == userId));
             await DeleteFromQueryAsync(_context, _context.UserRecentFoods.Where(x => x.UserId == userId));
+            await DeleteFromQueryAsync(_adminContext, _adminContext.TelemetryEvents.Where(x => x.UserId == userId));
 
             await DeleteFromQueryAsync(_adminContext, _adminContext.PasswordResetCodes.Where(x => x.UserId == userId));
             await DeleteFromQueryAsync(_adminContext, _adminContext.UserAccessControls.Where(x => x.UserId == userId));
@@ -331,6 +332,7 @@ namespace EatFitAI.API.Services
             await DeleteFromQueryAsync(_adminContext, _adminContext.UserFavoriteFoods.Where(x => x.UserId == userId));
             await DeleteFromQueryAsync(_adminContext, _adminContext.UserFoodItems.Where(x => x.UserId == userId));
             await DeleteFromQueryAsync(_adminContext, _adminContext.UserRecentFoods.Where(x => x.UserId == userId));
+            await DeleteFromQueryAsync(_adminContext, _adminContext.TelemetryEvents.Where(x => x.UserId == userId));
             await DeleteFromQueryAsync(_adminContext, _adminContext.PasswordResetCodes.Where(x => x.UserId == userId));
             await DeleteFromQueryAsync(_adminContext, _adminContext.UserAccessControls.Where(x => x.UserId == userId));
             await DeleteFromQueryAsync(_adminContext, _adminContext.UserPreferences.Where(x => x.UserId == userId));
