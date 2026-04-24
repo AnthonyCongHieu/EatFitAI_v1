@@ -253,9 +253,13 @@ namespace EatFitAI.API.Services
 
             if (_adminContext.Database.IsRelational())
             {
-                await using var transaction = await _adminContext.Database.BeginTransactionAsync();
-                await DeleteUserRowsFromAdminContextAsync(userId);
-                await transaction.CommitAsync();
+                var strategy = _adminContext.Database.CreateExecutionStrategy();
+                await strategy.ExecuteAsync(async () =>
+                {
+                    await using var transaction = await _adminContext.Database.BeginTransactionAsync();
+                    await DeleteUserRowsFromAdminContextAsync(userId);
+                    await transaction.CommitAsync();
+                });
                 return;
             }
 
