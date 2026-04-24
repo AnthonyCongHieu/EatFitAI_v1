@@ -14,7 +14,14 @@ const DEFAULT_OUTPUT_ROOT = path.resolve(
   '_logs',
   'production-smoke',
 );
-const DEFAULT_REQUEST_TIMEOUT_MS = 30000;
+const DEFAULT_REQUEST_TIMEOUT_MS = parsePositiveInteger(
+  process.env.EATFITAI_SMOKE_AUTH_TIMEOUT_MS,
+  30000,
+);
+const RESET_PASSWORD_TIMEOUT_MS = parsePositiveInteger(
+  process.env.EATFITAI_SMOKE_AUTH_RESET_TIMEOUT_MS,
+  120000,
+);
 const DEFAULT_MAIL_SUBJECT_VERIFY = 'Mã xác minh';
 const DEFAULT_MAIL_SUBJECT_RESET = 'Mã đặt lại mật khẩu';
 const DEFAULT_DISPLAY_NAME = 'Smoke API Disposable';
@@ -26,6 +33,11 @@ const GOOGLE_NEGATIVE_TOKEN = '';
 
 function trim(value) {
   return String(value || '').trim();
+}
+
+function parsePositiveInteger(value, fallback) {
+  const parsed = Number.parseInt(value || '', 10);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
 }
 
 function parseArgs(argv) {
@@ -84,26 +96,54 @@ function normalizeBaseUrl(value, fallback) {
   return trim(value || fallback).replace(/\/+$/, '');
 }
 
+function isSensitiveKey(key) {
+  const normalized = String(key || '').toLowerCase();
+  return new Set([
+    'authorization',
+    'password',
+    'initialpassword',
+    'resetpassword',
+    'finalpassword',
+    'currentpassword',
+    'newpassword',
+    'token',
+    'accesstoken',
+    'refreshtoken',
+    'idtoken',
+    'matoken',
+    'marefreshtoken',
+    'verificationcode',
+    'resetcode',
+  ]).has(normalized);
+}
+
 function sanitizeBody(body) {
   if (!body || typeof body !== 'object' || Array.isArray(body)) {
     return body;
   }
 
-  const copy = { ...body };
-  if (Object.prototype.hasOwnProperty.call(copy, 'accessToken')) {
-    copy.accessToken = copy.accessToken ? '<redacted>' : copy.accessToken;
-  }
-  if (Object.prototype.hasOwnProperty.call(copy, 'refreshToken')) {
-    copy.refreshToken = copy.refreshToken ? '<redacted>' : copy.refreshToken;
-  }
-  if (Object.prototype.hasOwnProperty.call(copy, 'VerificationCode')) {
-    copy.VerificationCode = copy.VerificationCode ? '<redacted>' : copy.VerificationCode;
-  }
-  if (Object.prototype.hasOwnProperty.call(copy, 'ResetCode')) {
-    copy.ResetCode = copy.ResetCode ? '<redacted>' : copy.ResetCode;
+  return Object.fromEntries(
+    Object.entries(body).map(([key, value]) => [
+      key,
+      isSensitiveKey(key) && value ? '<redacted>' : value,
+    ]),
+  );
+}
+
+function sanitizeReport(value) {
+  if (Array.isArray(value)) {
+    return value.map((item) => sanitizeReport(item));
   }
 
-  return copy;
+  if (!value || typeof value !== 'object') {
+    return value;
+  }
+
+  return sanitizeBody(
+    Object.fromEntries(
+      Object.entries(value).map(([key, entryValue]) => [key, sanitizeReport(entryValue)]),
+    ),
+  );
 }
 
 function sanitizeHeaders(headers) {
@@ -155,7 +195,7 @@ async function requestJson(url, options = {}) {
       status: response.status,
       statusText: response.statusText,
       durationMs: Date.now() - startedAt,
-      body: sanitizeBody(body),
+      body,
       rawText: body ? undefined : rawText,
       headers: sanitizeHeaders(options.headers),
     };
@@ -281,6 +321,49 @@ function summarizeResponse(response) {
     durationMs: response.durationMs || 0,
     body: summarizeAuthResponse(response.body),
     error: response.error || '',
+  };
+}
+
+async function loginForCleanup(backendUrl, email, passwordCandidates) {
+  const attempts = [];
+
+  for (const candidate of passwordCandidates) {
+    if (!candidate?.password) {
+      continue;
+    }
+
+    const response = await requestJson(`${backendUrl}/api/auth/login`, {
+      method: 'POST',
+      body: JSON.stringify({
+        email,
+        password: candidate.password,
+      }),
+    });
+    attempts.push({
+      source: candidate.source,
+      status: response.status,
+      ok: response.ok,
+    });
+
+    const accessToken =
+      response.body?.accessToken ||
+      response.body?.AccessToken ||
+      response.body?.token ||
+      response.body?.Token ||
+      '';
+    if (response.ok && accessToken) {
+      return {
+        accessToken,
+        source: candidate.source,
+        attempts,
+      };
+    }
+  }
+
+  return {
+    accessToken: '',
+    source: '',
+    attempts,
   };
 }
 
@@ -608,6 +691,7 @@ async function main() {
             resetCode,
             newPassword: resetPassword,
           }),
+          timeoutMs: RESET_PASSWORD_TIMEOUT_MS,
         })
       : null;
     const resetPasswordPassed =
@@ -743,14 +827,22 @@ async function main() {
       });
     }
 
-    report.cleanup.possible = Boolean(latestAccessToken);
-    if (latestAccessToken) {
+    const cleanupLogin = await loginForCleanup(backendUrl, mailbox.address, [
+      { source: 'finalPassword', password: finalPassword },
+      { source: 'resetPassword', password: resetPassword },
+      { source: 'initialPassword', password: initialPassword },
+    ]);
+    const cleanupAccessToken = cleanupLogin.accessToken || latestAccessToken;
+    report.cleanup.loginAttempts = cleanupLogin.attempts;
+    report.cleanup.loginPasswordSource = cleanupLogin.source || 'latestAccessToken';
+    report.cleanup.possible = Boolean(cleanupAccessToken);
+    if (cleanupAccessToken) {
       cleanupAttempted = true;
       report.cleanup.attempted = true;
       const cleanupResponse = await requestJson(`${backendUrl}/api/profile`, {
         method: 'DELETE',
         headers: {
-          Authorization: `Bearer ${latestAccessToken}`,
+          Authorization: `Bearer ${cleanupAccessToken}`,
         },
       });
       report.cleanup.ok = Boolean(cleanupResponse.ok && cleanupResponse.status === 200);
@@ -782,7 +874,7 @@ async function main() {
     }
 
     report.passed = report.failures.length === 0 && report.cleanup.ok;
-    writeJson(reportPath, report);
+    writeJson(reportPath, sanitizeReport(report));
 
     console.log(`[production-smoke-auth-api] Wrote ${reportPath}`);
     console.log(
@@ -793,7 +885,7 @@ async function main() {
           backendUrl: report.backendUrl,
           passed: report.passed,
           failureCount: report.failures.length,
-          cleanup: report.cleanup,
+          cleanup: sanitizeReport(report.cleanup),
         },
         null,
         2,
@@ -806,7 +898,7 @@ async function main() {
     if (!report.failures.length) {
       pushFailure(report, 'fatal', report.cleanup.error, {});
     }
-    writeJson(reportPath, report);
+    writeJson(reportPath, sanitizeReport(report));
     console.error('[production-smoke-auth-api] Failed:', error);
     process.exitCode = 1;
   }

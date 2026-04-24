@@ -13,8 +13,11 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using Xunit;
+using AdminPasswordResetCode = EatFitAI.API.Models.PasswordResetCode;
 using AdminUser = EatFitAI.API.Models.User;
+using AdminUserAccessControl = EatFitAI.API.Models.UserAccessControl;
 using AdminUserPreference = EatFitAI.API.Models.UserPreference;
+using AdminWaterIntake = EatFitAI.API.Models.WaterIntake;
 
 namespace EatFitAI.API.Tests.Unit.Services
 {
@@ -287,8 +290,49 @@ namespace EatFitAI.API.Tests.Unit.Services
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow
             });
+            await _adminContext.PasswordResetCodes.AddAsync(new AdminPasswordResetCode
+            {
+                UserId = _testUserId,
+                CodeHash = "hash",
+                ExpiresAt = DateTime.UtcNow.AddMinutes(10)
+            });
+            await _adminContext.UserAccessControls.AddAsync(new AdminUserAccessControl
+            {
+                UserId = _testUserId,
+                AccessState = "active"
+            });
+            await _adminContext.WaterIntakes.AddAsync(new AdminWaterIntake
+            {
+                UserId = _testUserId,
+                IntakeDate = DateOnly.FromDateTime(DateTime.Today),
+                AmountMl = 500,
+                TargetMl = 2000,
+                UpdatedAt = DateTime.UtcNow
+            });
             await _adminContext.SaveChangesAsync();
 
+            var aiLog = new AILog
+            {
+                UserId = _testUserId,
+                Action = "scan",
+                CreatedAt = DateTime.UtcNow
+            };
+            await _context.AILogs.AddAsync(aiLog);
+            await _context.SaveChangesAsync();
+            await _context.ImageDetections.AddAsync(new ImageDetection
+            {
+                AILogId = aiLog.AILogId,
+                Label = "apple",
+                Confidence = 0.9m
+            });
+            await _context.AiCorrectionEvents.AddAsync(new AiCorrectionEvent
+            {
+                UserId = _testUserId,
+                Label = "apple",
+                SelectedFoodName = "Apple",
+                Source = "smoke",
+                CreatedAt = DateTime.UtcNow
+            });
             await _context.BodyMetrics.AddAsync(new BodyMetric
             {
                 UserId = _testUserId,
@@ -318,9 +362,15 @@ namespace EatFitAI.API.Tests.Unit.Services
             await _userService.DeleteUserAsync(_testUserId);
 
             _userRepositoryMock.Verify(r => r.Remove(It.IsAny<User>()), Times.Once);
+            Assert.Empty(_context.AiCorrectionEvents.Where(x => x.UserId == _testUserId));
+            Assert.Empty(_context.AILogs.Where(x => x.UserId == _testUserId));
+            Assert.Empty(_context.ImageDetections.Where(x => x.AILogId == aiLog.AILogId));
             Assert.Empty(_context.BodyMetrics.Where(x => x.UserId == _testUserId));
             Assert.Empty(_context.UserFoodItems.Where(x => x.UserId == _testUserId));
             Assert.Empty(_adminContext.UserPreferences.Where(x => x.UserId == _testUserId));
+            Assert.Empty(_adminContext.PasswordResetCodes.Where(x => x.UserId == _testUserId));
+            Assert.Empty(_adminContext.UserAccessControls.Where(x => x.UserId == _testUserId));
+            Assert.Empty(_adminContext.WaterIntakes.Where(x => x.UserId == _testUserId));
         }
 
         [Fact]

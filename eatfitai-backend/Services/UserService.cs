@@ -251,53 +251,105 @@ namespace EatFitAI.API.Services
 
             await _schemaBootstrapper.EnsureSchemaAsync();
 
-            // Delete all related records first (due to ClientSetNull delete behavior)
-            // Delete AILogs
-            var aiLogs = await _context.AILogs.Where(x => x.UserId == userId).ToListAsync();
-            _context.AILogs.RemoveRange(aiLogs);
+            if (_adminContext.Database.IsRelational())
+            {
+                await using var transaction = await _adminContext.Database.BeginTransactionAsync();
+                await DeleteUserRowsFromAdminContextAsync(userId);
+                await transaction.CommitAsync();
+                return;
+            }
 
-            // Delete BodyMetrics
-            var bodyMetrics = await _context.BodyMetrics.Where(x => x.UserId == userId).ToListAsync();
-            _context.BodyMetrics.RemoveRange(bodyMetrics);
-
-            // Delete MealDiaries
-            var mealDiaries = await _context.MealDiaries
+            var aiLogIds = await _context.AILogs
                 .Where(x => x.UserId == userId)
+                .Select(x => x.AILogId)
                 .ToListAsync();
-            _context.MealDiaries.RemoveRange(mealDiaries);
+            if (aiLogIds.Count > 0)
+            {
+                await DeleteFromQueryAsync(_context, _context.ImageDetections.Where(x => aiLogIds.Contains(x.AILogId)));
+                await DeleteFromQueryAsync(_context, _context.AISuggestions.Where(x => aiLogIds.Contains(x.AILogId)));
+            }
 
-            // Delete NutritionTargets
-            var nutritionTargets = await _context.NutritionTargets.Where(x => x.UserId == userId).ToListAsync();
-            _context.NutritionTargets.RemoveRange(nutritionTargets);
-
-            // Delete UserDishes
-            var userDishes = await _context.UserDishes.Where(x => x.UserId == userId).ToListAsync();
-            _context.UserDishes.RemoveRange(userDishes);
-
-            // Delete UserFavoriteFoods
-            var userFavoriteFoods = await _context.UserFavoriteFoods.Where(x => x.UserId == userId).ToListAsync();
-            _context.UserFavoriteFoods.RemoveRange(userFavoriteFoods);
-
-            // Delete UserFoodItems
-            var userFoodItems = await _context.UserFoodItems.Where(x => x.UserId == userId).ToListAsync();
-            _context.UserFoodItems.RemoveRange(userFoodItems);
-
-            // Delete UserRecentFoods
-            var userRecentFoods = await _context.UserRecentFoods.Where(x => x.UserId == userId).ToListAsync();
-            _context.UserRecentFoods.RemoveRange(userRecentFoods);
-
-            // Delete user preferences from the admin context first so profile delete
-            // does not fail on stale preference rows in production.
-            var userPreferences = await _adminContext.UserPreferences
+            var userDishIds = await _context.UserDishes
                 .Where(x => x.UserId == userId)
+                .Select(x => x.UserDishId)
                 .ToListAsync();
-            _adminContext.UserPreferences.RemoveRange(userPreferences);
+            if (userDishIds.Count > 0)
+            {
+                await DeleteFromQueryAsync(_context, _context.UserDishIngredients.Where(x => userDishIds.Contains(x.UserDishId)));
+            }
 
-            await _adminContext.SaveChangesAsync();
+            await DeleteFromQueryAsync(_context, _context.AiCorrectionEvents.Where(x => x.UserId == userId));
+            await DeleteFromQueryAsync(_context, _context.AILogs.Where(x => x.UserId == userId));
+            await DeleteFromQueryAsync(_context, _context.BodyMetrics.Where(x => x.UserId == userId));
+            await DeleteFromQueryAsync(_context, _context.MealDiaries.Where(x => x.UserId == userId));
+            await DeleteFromQueryAsync(_context, _context.NutritionTargets.Where(x => x.UserId == userId));
+            await DeleteFromQueryAsync(_context, _context.UserDishes.Where(x => x.UserId == userId));
+            await DeleteFromQueryAsync(_context, _context.UserFavoriteFoods.Where(x => x.UserId == userId));
+            await DeleteFromQueryAsync(_context, _context.UserFoodItems.Where(x => x.UserId == userId));
+            await DeleteFromQueryAsync(_context, _context.UserRecentFoods.Where(x => x.UserId == userId));
+
+            await DeleteFromQueryAsync(_adminContext, _adminContext.PasswordResetCodes.Where(x => x.UserId == userId));
+            await DeleteFromQueryAsync(_adminContext, _adminContext.UserAccessControls.Where(x => x.UserId == userId));
+            await DeleteFromQueryAsync(_adminContext, _adminContext.UserPreferences.Where(x => x.UserId == userId));
+            await DeleteFromQueryAsync(_adminContext, _adminContext.WaterIntakes.Where(x => x.UserId == userId));
 
             // Finally, delete the user
             _userRepository.Remove(user);
             await _context.SaveChangesAsync();
+        }
+
+        private async Task DeleteUserRowsFromAdminContextAsync(Guid userId)
+        {
+            // Delete all related records first (due to ClientSetNull delete behavior).
+            // Use server-side deletes because production schemas can have older nullable
+            // columns that should not be materialized just to delete.
+            var aiLogIds = await _adminContext.AILogs
+                .Where(x => x.UserId == userId)
+                .Select(x => x.AILogId)
+                .ToListAsync();
+            if (aiLogIds.Count > 0)
+            {
+                await DeleteFromQueryAsync(_adminContext, _adminContext.ImageDetections.Where(x => aiLogIds.Contains(x.AILogId)));
+                await DeleteFromQueryAsync(_adminContext, _adminContext.AISuggestions.Where(x => aiLogIds.Contains(x.AILogId)));
+            }
+
+            var userDishIds = await _adminContext.UserDishes
+                .Where(x => x.UserId == userId)
+                .Select(x => x.UserDishId)
+                .ToListAsync();
+            if (userDishIds.Count > 0)
+            {
+                await DeleteFromQueryAsync(_adminContext, _adminContext.UserDishIngredients.Where(x => userDishIds.Contains(x.UserDishId)));
+            }
+
+            await DeleteFromQueryAsync(_adminContext, _adminContext.AiCorrectionEvents.Where(x => x.UserId == userId));
+            await DeleteFromQueryAsync(_adminContext, _adminContext.AILogs.Where(x => x.UserId == userId));
+            await DeleteFromQueryAsync(_adminContext, _adminContext.BodyMetrics.Where(x => x.UserId == userId));
+            await DeleteFromQueryAsync(_adminContext, _adminContext.MealDiaries.Where(x => x.UserId == userId));
+            await DeleteFromQueryAsync(_adminContext, _adminContext.NutritionTargets.Where(x => x.UserId == userId));
+            await DeleteFromQueryAsync(_adminContext, _adminContext.UserDishes.Where(x => x.UserId == userId));
+            await DeleteFromQueryAsync(_adminContext, _adminContext.UserFavoriteFoods.Where(x => x.UserId == userId));
+            await DeleteFromQueryAsync(_adminContext, _adminContext.UserFoodItems.Where(x => x.UserId == userId));
+            await DeleteFromQueryAsync(_adminContext, _adminContext.UserRecentFoods.Where(x => x.UserId == userId));
+            await DeleteFromQueryAsync(_adminContext, _adminContext.PasswordResetCodes.Where(x => x.UserId == userId));
+            await DeleteFromQueryAsync(_adminContext, _adminContext.UserAccessControls.Where(x => x.UserId == userId));
+            await DeleteFromQueryAsync(_adminContext, _adminContext.UserPreferences.Where(x => x.UserId == userId));
+            await DeleteFromQueryAsync(_adminContext, _adminContext.WaterIntakes.Where(x => x.UserId == userId));
+            await DeleteFromQueryAsync(_adminContext, _adminContext.Users.Where(x => x.UserId == userId));
+        }
+
+        private static async Task DeleteFromQueryAsync<TEntity>(DbContext context, IQueryable<TEntity> query)
+            where TEntity : class
+        {
+            if (context.Database.IsRelational())
+            {
+                await query.ExecuteDeleteAsync();
+                return;
+            }
+
+            var rows = await query.ToListAsync();
+            context.RemoveRange(rows);
+            await context.SaveChangesAsync();
         }
 
         private async Task<string> SaveAvatarAsync(IFormFile file, Guid userId, string? uploadsRoot)
