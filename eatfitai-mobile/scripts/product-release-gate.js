@@ -150,6 +150,210 @@ function readAppiumServerConfig(env) {
   };
 }
 
+function buildSyntheticCommandResult(label, command, ok, stderr, stdout = '') {
+  return {
+    label,
+    command,
+    cwd: mobileRoot,
+    durationMs: 0,
+    ok,
+    exitCode: ok ? 0 : 1,
+    stdout,
+    stderr,
+    error: '',
+  };
+}
+
+function parseOnlineAndroidDevices(adbDevicesOutput) {
+  return String(adbDevicesOutput || '')
+    .split(/\r?\n/)
+    .map(trim)
+    .map((line) => line.match(/^(\S+)\s+device(?:\s|$)/)?.[1])
+    .filter(Boolean);
+}
+
+function readAndroidTargetMode(env) {
+  const rawMode = trim(
+    env.EATFITAI_ANDROID_TARGET || env.EATFITAI_ANDROID_TARGET_MODE || 'emulator',
+  ).toLowerCase();
+
+  if (['emulator', 'avd'].includes(rawMode)) {
+    return 'emulator';
+  }
+
+  if (['real', 'real-device', 'device', 'usb'].includes(rawMode)) {
+    return 'real-device';
+  }
+
+  return '';
+}
+
+function resolveAndroidTarget(baseEnv) {
+  const commands = [];
+  const targetMode = readAndroidTargetMode(baseEnv);
+  const devices = runCommand('Resolve Android devices', 'adb', ['devices'], {
+    cwd: mobileRoot,
+    env: baseEnv,
+    timeoutMs: 30 * 1000,
+  });
+  commands.push(devices);
+
+  if (!devices.ok) {
+    return {
+      commands,
+      env: baseEnv,
+    };
+  }
+
+  if (!targetMode) {
+    commands.push(
+      buildSyntheticCommandResult(
+        'Validate Android target mode',
+        'EATFITAI_ANDROID_TARGET',
+        false,
+        'Unsupported EATFITAI_ANDROID_TARGET. Use emulator or real-device.',
+      ),
+    );
+    return {
+      commands,
+      env: baseEnv,
+    };
+  }
+
+  const requestedSerial = trim(baseEnv.ANDROID_SERIAL);
+  const onlineDevices = parseOnlineAndroidDevices(devices.stdout);
+  const emulatorDevices = onlineDevices.filter((serial) => /^emulator-\d+$/.test(serial));
+  const realDevices = onlineDevices.filter((serial) => !/^emulator-\d+$/.test(serial));
+  let selectedSerial = '';
+
+  if (requestedSerial) {
+    if (!onlineDevices.includes(requestedSerial)) {
+      commands.push(
+        buildSyntheticCommandResult(
+          'Validate Android target',
+          `ANDROID_SERIAL=${requestedSerial}`,
+          false,
+          `ANDROID_SERIAL=${requestedSerial} is not an online adb device.`,
+        ),
+      );
+      return {
+        commands,
+        env: baseEnv,
+      };
+    }
+
+    selectedSerial = requestedSerial;
+  } else if (targetMode === 'emulator' && emulatorDevices.length === 1) {
+    selectedSerial = emulatorDevices[0];
+  } else {
+    const expectedDevices = targetMode === 'emulator' ? emulatorDevices : realDevices;
+    const targetLabel = targetMode === 'emulator' ? 'Android emulator' : 'Android real device';
+    commands.push(
+      buildSyntheticCommandResult(
+        'Validate Android target',
+        'adb devices',
+        false,
+        targetMode === 'real-device'
+          ? 'Real-device Gate 2 requires explicit ANDROID_SERIAL with EATFITAI_ANDROID_TARGET=real-device.'
+          : expectedDevices.length === 0
+            ? `No online ${targetLabel} was found. Connect the target or set EATFITAI_ANDROID_TARGET correctly before Gate 2.`
+            : `Multiple or mixed Android targets found (${onlineDevices.join(', ')}). Set ANDROID_SERIAL to the intended ${targetLabel} before Gate 2.`,
+      ),
+    );
+    return {
+      commands,
+      env: baseEnv,
+    };
+  }
+
+  if (targetMode === 'emulator' && !/^emulator-\d+$/.test(selectedSerial)) {
+    commands.push(
+      buildSyntheticCommandResult(
+        'Validate Android emulator target',
+        `ANDROID_SERIAL=${selectedSerial}`,
+        false,
+        `Gate 2 only runs on Android emulators by default. Refusing non-emulator adb target: ${selectedSerial}.`,
+      ),
+    );
+    return {
+      commands,
+      env: baseEnv,
+    };
+  }
+
+  if (targetMode === 'real-device' && /^emulator-\d+$/.test(selectedSerial)) {
+    commands.push(
+      buildSyntheticCommandResult(
+        'Validate Android real-device target',
+        `ANDROID_SERIAL=${selectedSerial}`,
+        false,
+        `Gate 2 real-device mode refuses emulator adb target: ${selectedSerial}.`,
+      ),
+    );
+    return {
+      commands,
+      env: baseEnv,
+    };
+  }
+
+  const qemu = runCommand(
+    targetMode === 'emulator' ? 'Verify Android emulator target' : 'Verify Android real-device target',
+    'adb',
+    ['-s', selectedSerial, 'shell', 'getprop', 'ro.kernel.qemu'],
+    {
+      cwd: mobileRoot,
+      env: baseEnv,
+      timeoutMs: 30 * 1000,
+    },
+  );
+  commands.push(qemu);
+
+  const qemuValue = trim(qemu.stdout);
+  if (!qemu.ok || (targetMode === 'emulator' && qemuValue !== '1')) {
+    commands.push(
+      buildSyntheticCommandResult(
+        'Validate Android emulator target',
+        `adb -s ${selectedSerial} shell getprop ro.kernel.qemu`,
+        false,
+        `ADB target ${selectedSerial} did not report ro.kernel.qemu=1.`,
+        qemu.stdout,
+      ),
+    );
+    return {
+      commands,
+      env: baseEnv,
+    };
+  }
+
+  if (targetMode === 'real-device' && qemuValue === '1') {
+    commands.push(
+      buildSyntheticCommandResult(
+        'Validate Android real-device target',
+        `adb -s ${selectedSerial} shell getprop ro.kernel.qemu`,
+        false,
+        `ADB target ${selectedSerial} reported ro.kernel.qemu=1, so it is not a real USB device.`,
+        qemu.stdout,
+      ),
+    );
+    return {
+      commands,
+      env: baseEnv,
+    };
+  }
+
+  return {
+    commands,
+    env: withExtraEnv(baseEnv, {
+      ANDROID_SERIAL: selectedSerial,
+      ANDROID_DEVICE_NAME:
+        baseEnv.ANDROID_DEVICE_NAME ||
+        (targetMode === 'emulator' ? 'Android Emulator' : 'Android Device'),
+      EATFITAI_ANDROID_TARGET: targetMode,
+      EATFITAI_REQUIRE_ANDROID_EMULATOR: targetMode === 'emulator' ? '1' : '0',
+    }),
+  };
+}
+
 function isTcpServerReachable(host, port, timeoutMs = 1200) {
   return new Promise((resolve) => {
     const socket = new net.Socket();
@@ -458,17 +662,21 @@ async function main() {
     }
 
     if (gateName === 'android') {
-      const releaseLikeAndroidEnv = withExtraEnv(env, {
+      const androidTarget = resolveAndroidTarget(env);
+      gateResult.commands.push(...androidTarget.commands);
+      const releaseLikeAndroidEnv = withExtraEnv(androidTarget.env, {
         EATFITAI_REQUIRE_RELEASE_LIKE_BUILD: '1',
       });
 
-      gateResult.commands.push(
-        runPowerShellScript('Build Android preview candidate', buildAndroidPreviewScript, [], {
-          cwd: mobileRoot,
-          env: releaseLikeAndroidEnv,
-          timeoutMs: 45 * 60 * 1000,
-        }),
-      );
+      if (gateResult.commands.every((entry) => entry.ok)) {
+        gateResult.commands.push(
+          runPowerShellScript('Build Android preview candidate', buildAndroidPreviewScript, [], {
+            cwd: mobileRoot,
+            env: releaseLikeAndroidEnv,
+            timeoutMs: 45 * 60 * 1000,
+          }),
+        );
+      }
       if (gateResult.commands.at(-1).ok) {
         const builtApkPath = resolveInstalledApkPath(gateResult.commands.at(-1));
         const installArgs = builtApkPath ? ['-ApkPath', builtApkPath] : [];

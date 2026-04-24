@@ -49,6 +49,7 @@ function resolveGlobalCliExecutable(commandName) {
 
 function buildToolingEnv() {
   const hasBundledJdk = fs.existsSync(bundledJdkBin);
+  const androidSerial = resolveEnv('ANDROID_SERIAL');
   const pathParts = [
     hasBundledJdk ? bundledJdkBin : null,
     bundledAndroidPlatformTools,
@@ -66,6 +67,10 @@ function buildToolingEnv() {
     ANDROID_USER_HOME: path.join(repoRoot, '_state', 'android-user-home'),
     PATH: pathParts.join(path.delimiter),
   };
+
+  if (androidSerial) {
+    env.ANDROID_SERIAL = androidSerial.trim();
+  }
 
   if (hasBundledJdk) {
     env.JAVA_HOME = bundledJdkHome;
@@ -265,6 +270,32 @@ function readRequireReleaseLikeBuild() {
     .toLowerCase() === 'true';
 }
 
+function readRequireAndroidEmulator() {
+  return String(resolveEnv('EATFITAI_REQUIRE_ANDROID_EMULATOR') || '')
+    .trim()
+    .toLowerCase() === '1' || String(resolveEnv('EATFITAI_REQUIRE_ANDROID_EMULATOR') || '')
+    .trim()
+    .toLowerCase() === 'true';
+}
+
+function readAndroidTargetMode() {
+  const rawMode = String(
+    resolveEnv('EATFITAI_ANDROID_TARGET') || resolveEnv('EATFITAI_ANDROID_TARGET_MODE') || '',
+  )
+    .trim()
+    .toLowerCase();
+
+  if (['emulator', 'avd'].includes(rawMode)) {
+    return 'emulator';
+  }
+
+  if (['real', 'real-device', 'device', 'usb'].includes(rawMode)) {
+    return 'real-device';
+  }
+
+  return '';
+}
+
 function readMetroServerConfig() {
   const rawPort = Number.parseInt(String(resolveEnv('RCT_METRO_PORT') || '8081').trim(), 10);
   return {
@@ -368,6 +399,8 @@ function isTcpServerReachable(host, port, timeoutMs = 1200) {
 async function main() {
   const checks = [];
   const requireReleaseLikeBuild = readRequireReleaseLikeBuild();
+  const requireAndroidEmulator = readRequireAndroidEmulator();
+  const androidTargetMode = readAndroidTargetMode();
   const bundledMaestro =
     resolveBundledExecutable(['_tooling', 'maestro', 'maestro', 'bin', 'maestro.bat']) ||
     resolveBundledExecutable(['_tooling', 'maestro', 'maestro', 'bin', 'maestro']);
@@ -423,6 +456,32 @@ async function main() {
     });
 
     if (activeDevices.length > 0) {
+      if (requireAndroidEmulator || androidTargetMode === 'emulator') {
+        const androidSerial = String(resolveEnv('ANDROID_SERIAL') || '').trim();
+        const qemu = androidSerial ? readAndroidSystemProperty(bundledAdb || 'adb', 'ro.kernel.qemu') : '';
+        checks.push({
+          name: 'Android emulator target',
+          status: /^emulator-\d+$/.test(androidSerial) && qemu === '1' ? 'OK' : 'FAIL',
+          detail:
+            /^emulator-\d+$/.test(androidSerial) && qemu === '1'
+              ? `Pinned to emulator target ${androidSerial}.`
+              : 'Gate requires ANDROID_SERIAL to point at an online emulator-* device with ro.kernel.qemu=1.',
+        });
+      }
+
+      if (androidTargetMode === 'real-device') {
+        const androidSerial = String(resolveEnv('ANDROID_SERIAL') || '').trim();
+        const qemu = androidSerial ? readAndroidSystemProperty(bundledAdb || 'adb', 'ro.kernel.qemu') : '';
+        checks.push({
+          name: 'Android real-device target',
+          status: androidSerial && !/^emulator-\d+$/.test(androidSerial) && qemu !== '1' ? 'OK' : 'FAIL',
+          detail:
+            androidSerial && !/^emulator-\d+$/.test(androidSerial) && qemu !== '1'
+              ? `Pinned to real Android target ${androidSerial}.`
+              : 'Real-device gate requires ANDROID_SERIAL to point at a non-emulator adb device.',
+        });
+      }
+
       installedBuild = readInstalledAndroidBuildStatus(bundledAdb || 'adb');
       checks.push({
         name: 'Installed Android build',

@@ -1,6 +1,7 @@
 param(
     [string]$ApkPath = '',
     [string]$PackageName = 'com.eatfitai.app',
+    [string]$DeviceSerial = '',
     [switch]$UninstallOnSignatureMismatch
 )
 
@@ -17,16 +18,25 @@ if (-not (Test-Path $ApkPath)) {
     throw "APK not found: $ApkPath"
 }
 
+if (-not $DeviceSerial -and $env:ANDROID_SERIAL) {
+    $DeviceSerial = $env:ANDROID_SERIAL.Trim()
+}
+
 function Invoke-Adb {
     param(
         [Parameter(Mandatory = $true)]
         [string[]]$Arguments
     )
 
+    $adbArguments = $Arguments
+    if ($DeviceSerial) {
+        $adbArguments = @('-s', $DeviceSerial) + $Arguments
+    }
+
     $previousErrorActionPreference = $ErrorActionPreference
     $ErrorActionPreference = 'Continue'
     try {
-        $output = & adb @Arguments 2>&1
+        $output = & adb @adbArguments 2>&1
         $exitCode = $LASTEXITCODE
     } finally {
         $ErrorActionPreference = $previousErrorActionPreference
@@ -38,7 +48,7 @@ function Invoke-Adb {
     return [pscustomobject]@{
         ExitCode = $exitCode
         Output = ($output -join "`n")
-        Command = "adb $($Arguments -join ' ')"
+        Command = "adb $($adbArguments -join ' ')"
     }
 }
 
@@ -56,8 +66,70 @@ function Invoke-AdbChecked {
     return $result
 }
 
+function Test-TruthyEnv {
+    param(
+        [string]$Value
+    )
+
+    if (-not $Value) {
+        return $false
+    }
+
+    return $Value.Trim().ToLowerInvariant() -in @('1', 'true')
+}
+
+function Resolve-AndroidTargetMode {
+    $rawMode = $env:EATFITAI_ANDROID_TARGET
+    if (-not $rawMode) {
+        $rawMode = $env:EATFITAI_ANDROID_TARGET_MODE
+    }
+
+    if (-not $rawMode) {
+        return ''
+    }
+
+    switch ($rawMode.Trim().ToLowerInvariant()) {
+        { $_ -in @('emulator', 'avd') } { return 'emulator' }
+        { $_ -in @('real', 'real-device', 'device', 'usb') } { return 'real-device' }
+        default { throw "Unsupported EATFITAI_ANDROID_TARGET '$rawMode'. Use emulator or real-device." }
+    }
+}
+
 $allowUninstallOnSignatureMismatch =
-    $UninstallOnSignatureMismatch -or $env:EATFITAI_ALLOW_UNINSTALL_ON_SIGNATURE_MISMATCH -eq '1'
+    $UninstallOnSignatureMismatch -or (Test-TruthyEnv -Value $env:EATFITAI_ALLOW_UNINSTALL_ON_SIGNATURE_MISMATCH)
+
+$androidTargetMode = Resolve-AndroidTargetMode
+if (Test-TruthyEnv -Value $env:EATFITAI_REQUIRE_ANDROID_EMULATOR) {
+    $androidTargetMode = 'emulator'
+}
+
+if ($androidTargetMode -eq 'emulator') {
+    if (-not $DeviceSerial) {
+        throw 'EATFITAI_REQUIRE_ANDROID_EMULATOR=1 requires ANDROID_SERIAL or -DeviceSerial.'
+    }
+
+    if ($DeviceSerial -notmatch '^emulator-\d+$') {
+        throw "Refusing to install on non-emulator adb target while EATFITAI_REQUIRE_ANDROID_EMULATOR=1: $DeviceSerial"
+    }
+
+    $qemu = (Invoke-AdbChecked -Arguments @('shell', 'getprop', 'ro.kernel.qemu')).Output.Trim()
+    if ($qemu -ne '1') {
+        throw "Refusing to install because adb target $DeviceSerial did not report ro.kernel.qemu=1."
+    }
+} elseif ($androidTargetMode -eq 'real-device') {
+    if (-not $DeviceSerial) {
+        throw 'EATFITAI_ANDROID_TARGET=real-device requires ANDROID_SERIAL or -DeviceSerial.'
+    }
+
+    if ($DeviceSerial -match '^emulator-\d+$') {
+        throw "Refusing to install on emulator adb target while EATFITAI_ANDROID_TARGET=real-device: $DeviceSerial"
+    }
+
+    $qemu = (Invoke-AdbChecked -Arguments @('shell', 'getprop', 'ro.kernel.qemu')).Output.Trim()
+    if ($qemu -eq '1') {
+        throw "Refusing to install because adb target $DeviceSerial reported ro.kernel.qemu=1."
+    }
+}
 
 $installResult = Invoke-Adb -Arguments @('install', '-r', $ApkPath)
 if ($installResult.ExitCode -ne 0) {
