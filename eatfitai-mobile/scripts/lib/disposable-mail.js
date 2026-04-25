@@ -210,50 +210,66 @@ async function waitForMatchingMessage(options) {
     Number.parseInt(String(options?.pollIntervalMs || 10000), 10) || 10000;
   const deadline = Date.now() + timeoutMs;
 
-  while (Date.now() < deadline) {
+  async function readMatchingMessage() {
     const messages = await requestJson(`${apiBaseUrl}/messages`, {
       headers: {
         Authorization: `Bearer ${mailbox.token}`,
       },
     });
 
-    if (messages.ok) {
-      const newest = selectNewestMatchingMessage(getMailItems(messages.body), {
-        subjectIncludes: options?.subjectIncludes,
-        introIncludes: options?.introIncludes,
-        createdAfterIso: options?.createdAfterIso,
-        minimumMatches: options?.minimumMatches,
-      });
+    if (!messages.ok) {
+      return null;
+    }
 
-      if (newest?.id) {
-        const detail = await requestJson(`${apiBaseUrl}/messages/${newest.id}`, {
-          headers: {
-            Authorization: `Bearer ${mailbox.token}`,
-          },
-        });
+    const newest = selectNewestMatchingMessage(getMailItems(messages.body), {
+      subjectIncludes: options?.subjectIncludes,
+      introIncludes: options?.introIncludes,
+      createdAfterIso: options?.createdAfterIso,
+      minimumMatches: options?.minimumMatches,
+    });
 
-        if (detail.ok) {
-          const code = extractSixDigitCode(detail.body);
-          const artifact = {
-            generatedAt: new Date().toISOString(),
-            mailbox: mailbox.address,
-            messageId: newest.id,
-            subject: detail.body?.subject || newest.subject || '',
-            code,
-            message: detail.body,
-          };
+    if (!newest?.id) {
+      return null;
+    }
 
-          if (outputDir) {
-            fs.mkdirSync(outputDir, { recursive: true });
-            writeJson(path.join(outputDir, artifactName), artifact);
-          }
+    const detail = await requestJson(`${apiBaseUrl}/messages/${newest.id}`, {
+      headers: {
+        Authorization: `Bearer ${mailbox.token}`,
+      },
+    });
 
-          return artifact;
-        }
-      }
+    const messageBody = detail.ok ? detail.body : newest;
+    const code = extractSixDigitCode(messageBody) || extractSixDigitCode(newest);
+    const artifact = {
+      generatedAt: new Date().toISOString(),
+      mailbox: mailbox.address,
+      messageId: newest.id,
+      subject: messageBody?.subject || newest.subject || '',
+      code,
+      message: messageBody,
+      source: detail.ok ? 'message-detail' : 'message-list',
+    };
+
+    if (outputDir) {
+      fs.mkdirSync(outputDir, { recursive: true });
+      writeJson(path.join(outputDir, artifactName), artifact);
+    }
+
+    return artifact;
+  }
+
+  while (Date.now() < deadline) {
+    const artifact = await readMatchingMessage();
+    if (artifact) {
+      return artifact;
     }
 
     await sleep(pollIntervalMs);
+  }
+
+  const finalArtifact = await readMatchingMessage();
+  if (finalArtifact) {
+    return finalArtifact;
   }
 
   throw new Error('Timed out waiting for disposable mailbox message.');

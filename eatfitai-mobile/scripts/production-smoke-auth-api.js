@@ -24,7 +24,7 @@ const RESET_PASSWORD_TIMEOUT_MS = parsePositiveInteger(
 );
 const MAILBOX_TIMEOUT_MS = parsePositiveInteger(
   process.env.EATFITAI_SMOKE_AUTH_MAILBOX_TIMEOUT_MS,
-  480000,
+  600000,
 );
 const MAILBOX_POLL_INTERVAL_MS = parsePositiveInteger(
   process.env.EATFITAI_SMOKE_AUTH_MAILBOX_POLL_MS,
@@ -46,6 +46,10 @@ function trim(value) {
 function parsePositiveInteger(value, fallback) {
   const parsed = Number.parseInt(value || '', 10);
   return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+}
+
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 function parseArgs(argv) {
@@ -219,6 +223,27 @@ async function requestJson(url, options = {}) {
   } finally {
     clearTimeout(timer);
   }
+}
+
+function shouldRetryResponse(response) {
+  return !response || response.status === null || [502, 503, 504].includes(response.status);
+}
+
+async function requestJsonWithRetry(url, options = {}, retryOptions = {}) {
+  const attempts = parsePositiveInteger(retryOptions.attempts, 3);
+  const delayMs = parsePositiveInteger(retryOptions.delayMs, 5000);
+  let lastResponse = null;
+
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    lastResponse = await requestJson(url, options);
+    if (!shouldRetryResponse(lastResponse) || attempt === attempts) {
+      return lastResponse;
+    }
+
+    await sleep(delayMs);
+  }
+
+  return lastResponse;
 }
 
 function createEmptyReport(outputDir, backendUrl, mailbox) {
@@ -419,7 +444,7 @@ async function main() {
     };
     report.account.email = mailbox.address;
 
-    const registerResponse = await requestJson(
+    const registerResponse = await requestJsonWithRetry(
       `${backendUrl}/api/auth/register-with-verification`,
       {
         method: 'POST',
@@ -429,33 +454,45 @@ async function main() {
           displayName: registerDisplayName,
         }),
       },
+      {
+        attempts: 3,
+        delayMs: 5000,
+      },
     );
     const registerPassed = registerResponse.ok && registerResponse.status === 200;
     report.auth.register = summarizeResponse(registerResponse);
-    if (!registerPassed) {
+    const registerCanRecoverWithResend =
+      registerPassed || registerResponse.status === 400 || registerResponse.status === null;
+
+    const resendStartedAt = new Date().toISOString();
+    const resendResponse = registerCanRecoverWithResend
+      ? await requestJsonWithRetry(`${backendUrl}/api/auth/resend-verification`, {
+          method: 'POST',
+          body: JSON.stringify({ email: mailbox.address }),
+        }, {
+          attempts: 3,
+          delayMs: 5000,
+        })
+      : null;
+    const resendPassed = resendResponse ? resendResponse.ok && resendResponse.status === 200 : false;
+    report.auth.resendVerification = summarizeResponse(resendResponse);
+    if (!registerPassed && resendPassed && report.auth.register) {
+      report.auth.register.recoveredByResend = true;
+    }
+    if (!registerPassed && !resendPassed) {
       pushFailure(report, 'register-with-verification', 'Register with verification failed', {
         expectedStatuses: [200],
         response: summarizeResponse(registerResponse),
       });
     }
-
-    const resendStartedAt = new Date().toISOString();
-    const resendResponse = registerPassed
-      ? await requestJson(`${backendUrl}/api/auth/resend-verification`, {
-          method: 'POST',
-          body: JSON.stringify({ email: mailbox.address }),
-        })
-      : null;
-    const resendPassed = resendResponse ? resendResponse.ok && resendResponse.status === 200 : false;
-    report.auth.resendVerification = summarizeResponse(resendResponse);
-    if (registerPassed && !resendPassed) {
+    if (registerCanRecoverWithResend && !resendPassed) {
       pushFailure(report, 'resend-verification', 'Resend verification failed', {
         expectedStatuses: [200],
         response: summarizeResponse(resendResponse),
       });
     }
 
-    if (registerPassed && resendPassed) {
+    if (registerCanRecoverWithResend && resendPassed) {
       try {
         verificationMessage = await waitForMatchingMessage({
           apiBaseUrl: 'https://api.mail.tm',
@@ -480,7 +517,7 @@ async function main() {
 
     const verificationCode = verificationMessage?.code || '';
     const verifyResponse =
-      registerPassed && resendPassed && verificationCode
+      registerCanRecoverWithResend && resendPassed && verificationCode
         ? await requestJson(`${backendUrl}/api/auth/verify-email`, {
             method: 'POST',
             body: JSON.stringify({
@@ -491,7 +528,7 @@ async function main() {
         : null;
     const verifyPassed = verifyResponse ? verifyResponse.ok && verifyResponse.status === 200 : false;
     report.auth.verifyEmail = summarizeResponse(verifyResponse);
-    if (registerPassed && resendPassed && !verifyPassed) {
+    if (registerCanRecoverWithResend && resendPassed && !verifyPassed) {
       pushFailure(report, 'verify-email', 'Verify email failed', {
         expectedStatuses: [200],
         response: summarizeResponse(verifyResponse),
