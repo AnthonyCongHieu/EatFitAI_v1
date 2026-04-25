@@ -573,6 +573,22 @@ static FixedWindowRateLimiterOptions BuildFixedWindowOptions(
     };
 }
 
+static int GetPositiveConfigInt(IConfiguration configuration, string key, int fallback)
+{
+    var configured = configuration.GetValue<int?>(key);
+    return configured.HasValue && configured.Value > 0 ? configured.Value : fallback;
+}
+
+static int GetNonNegativeConfigInt(IConfiguration configuration, string key, int fallback)
+{
+    var configured = configuration.GetValue<int?>(key);
+    return configured.HasValue && configured.Value >= 0 ? configured.Value : fallback;
+}
+
+var authRateLimitPermitLimit = GetPositiveConfigInt(builder.Configuration, "RateLimiting:AuthPermitLimit", 10);
+var authRateLimitQueueLimit = GetNonNegativeConfigInt(builder.Configuration, "RateLimiting:AuthQueueLimit", 2);
+var authRateLimitWindowSeconds = GetPositiveConfigInt(builder.Configuration, "RateLimiting:AuthWindowSeconds", 60);
+
 // Rate Limiting - partition by authenticated user, then client IP.
 builder.Services.AddRateLimiter(options =>
 {
@@ -617,7 +633,10 @@ builder.Services.AddRateLimiter(options =>
             ? RateLimitPartition.GetNoLimiter("auth:bypass")
             : RateLimitPartition.GetFixedWindowLimiter(
                 GetRateLimitPartitionKey(context, "auth"),
-                _ => BuildFixedWindowOptions(10, 2, TimeSpan.FromMinutes(1))));
+                _ => BuildFixedWindowOptions(
+                    authRateLimitPermitLimit,
+                    authRateLimitQueueLimit,
+                    TimeSpan.FromSeconds(authRateLimitWindowSeconds))));
 
     options.AddPolicy("AIPolicy", context =>
         ShouldBypassRateLimit(context)
