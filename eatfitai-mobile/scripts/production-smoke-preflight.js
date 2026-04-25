@@ -2,8 +2,8 @@ const fs = require('fs');
 const path = require('path');
 const { resolveSmokeCredentials } = require('./lib/smoke-credentials');
 
-const DEFAULT_BACKEND_URL = 'https://eatfitai-backend.onrender.com';
-const DEFAULT_AI_PROVIDER_URL = 'https://eatfitai-ai-provider.onrender.com';
+const DEFAULT_BACKEND_URL = 'https://eatfitai-backend-dev.onrender.com';
+const DEFAULT_AI_PROVIDER_URL = 'https://eatfitai-ai-provider-dev.onrender.com';
 const DEFAULT_TIMEOUT_MS = 30000;
 const DEFAULT_ATTEMPTS = 2;
 const DEFAULT_RETRY_DELAY_MS = 5000;

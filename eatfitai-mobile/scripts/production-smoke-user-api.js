@@ -2,7 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const { resolveSmokeCredentials } = require('./lib/smoke-credentials');
 
-const DEFAULT_BACKEND_URL = 'https://eatfitai-backend.onrender.com';
+const DEFAULT_BACKEND_URL = 'https://eatfitai-backend-dev.onrender.com';
 const DEFAULT_OUTPUT_ROOT = path.resolve(
   __dirname,
   '..',
@@ -316,6 +316,10 @@ function resolveCredentials() {
   return credentials;
 }
 
+function shouldDeleteAccountBeforeRun() {
+  return trim(process.env.EATFITAI_USER_API_DELETE_BEFORE_RUN).toLowerCase() === '1';
+}
+
 function buildFoodLookup(items) {
   const catalog = Array.isArray(items) ? items : [];
   return catalog.map((item) => ({
@@ -380,6 +384,7 @@ async function main() {
     DEFAULT_BACKEND_URL,
   );
   const credentials = resolveCredentials();
+  const deleteAccountBeforeRun = shouldDeleteAccountBeforeRun();
 
   fs.mkdirSync(outputDir, { recursive: true });
 
@@ -490,24 +495,38 @@ async function main() {
     return;
   }
 
-  const deleteResult = await deleteProfile(backendUrl, token);
-  report.reset.deleted = deleteResult.ok;
-  report.steps.push({
-    step: 'reset-delete-profile',
-    ok: deleteResult.ok,
-    status: deleteResult.status,
-    durationMs: deleteResult.durationMs,
-    body: summarizeBody(deleteResult.body),
-    error: deleteResult.error || deleteResult.body?.message || null,
-  });
-  if (deleteResult.ok) {
-    report.reset.notes.push('Existing sandbox profile deleted before reseed.');
-    await sleep(1500);
-  } else if (deleteResult.status !== 404) {
-    report.failures.push({
+  if (deleteAccountBeforeRun) {
+    const deleteResult = await deleteProfile(backendUrl, token);
+    report.reset.deleted = deleteResult.ok;
+    report.steps.push({
       step: 'reset-delete-profile',
+      ok: deleteResult.ok,
       status: deleteResult.status,
-      message: deleteResult.error || deleteResult.body?.message || 'reset delete failed',
+      durationMs: deleteResult.durationMs,
+      body: summarizeBody(deleteResult.body),
+      error: deleteResult.error || deleteResult.body?.message || null,
+    });
+    if (deleteResult.ok) {
+      report.reset.notes.push('Existing sandbox profile deleted before reseed.');
+      await sleep(1500);
+    } else if (deleteResult.status !== 404) {
+      report.failures.push({
+        step: 'reset-delete-profile',
+        status: deleteResult.status,
+        message: deleteResult.error || deleteResult.body?.message || 'reset delete failed',
+      });
+    }
+  } else {
+    report.reset.deleted = false;
+    report.reset.notes.push(
+      'Preserved authenticated smoke account; set EATFITAI_USER_API_DELETE_BEFORE_RUN=1 to opt into destructive reset.',
+    );
+    report.steps.push({
+      step: 'reset-delete-profile',
+      ok: true,
+      status: null,
+      durationMs: 0,
+      skipped: true,
     });
   }
 

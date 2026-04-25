@@ -53,6 +53,33 @@ public class AiRuntimeStatusServiceTests
         Assert.Equal("primary", snapshot.ActiveProject);
     }
 
+    [Fact]
+    public async Task GetSnapshotAsync_WhenConfiguredProviderFails_DoesNotProbeProductionFallback()
+    {
+        var requestedHosts = new List<string>();
+        var service = new AiRuntimeStatusService(
+            new FakeHttpClientFactory(request =>
+            {
+                requestedHosts.Add(request.RequestUri?.Host ?? string.Empty);
+                return new HttpResponseMessage(HttpStatusCode.ServiceUnavailable)
+                {
+                    Content = new StringContent("warming up", Encoding.UTF8, "text/plain")
+                };
+            }),
+            new ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string?>
+                {
+                    ["AIProvider:VisionBaseUrl"] = "https://provider-dev.test",
+                    ["AIProvider:InternalToken"] = "test-token",
+                })
+                .Build(),
+            Mock.Of<ILogger<AiRuntimeStatusService>>());
+
+        await Assert.ThrowsAsync<AggregateException>(() => service.GetSnapshotAsync());
+
+        Assert.Equal(["provider-dev.test"], requestedHosts);
+    }
+
     private sealed class FakeHttpClientFactory : IHttpClientFactory
     {
         private readonly Func<HttpRequestMessage, HttpResponseMessage> _responseFactory;

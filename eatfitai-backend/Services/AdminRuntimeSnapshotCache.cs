@@ -130,11 +130,20 @@ public sealed class AdminRuntimeSnapshotCache : IAdminRuntimeSnapshotCache
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(
-                ex,
-                "Failed to refresh admin runtime snapshot from AI provider; falling back to local runtime project state.");
-
             var providerStatusError = SanitizeRuntimeStatusError(ex);
+            if (IsTransientRuntimeStatusError(providerStatusError))
+            {
+                _logger.LogInformation(
+                    ex,
+                    "AI provider runtime status is temporarily unavailable; falling back to local runtime project state.");
+            }
+            else
+            {
+                _logger.LogWarning(
+                    ex,
+                    "Failed to refresh admin runtime snapshot from AI provider; falling back to local runtime project state.");
+            }
+
             var runtimeProjectService = services.GetRequiredService<IGeminiRuntimeProjectService>();
             var fallbackSnapshot = await runtimeProjectService.BuildSnapshotAsync(cancellationToken);
             fallbackSnapshot.RuntimeStatusSource = LocalFallbackSource;
@@ -185,6 +194,16 @@ public sealed class AdminRuntimeSnapshotCache : IAdminRuntimeSnapshotCache
             TimeoutException => "timeout",
             _ => exception.GetType().Name,
         };
+    }
+
+    private static bool IsTransientRuntimeStatusError(string providerStatusError)
+    {
+        return providerStatusError is "timeout"
+            or "http_408"
+            or "http_429"
+            or "http_502"
+            or "http_503"
+            or "http_504";
     }
 }
 

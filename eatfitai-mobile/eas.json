@@ -16,7 +16,7 @@
       "distribution": "internal",
       "env": {
         "APP_ENV": "preview",
-        "EXPO_PUBLIC_API_BASE_URL": "https://eatfitai-backend.onrender.com",
+        "EXPO_PUBLIC_API_BASE_URL": "https://eatfitai-backend-dev.onrender.com",
         "EXPO_PUBLIC_SUPABASE_URL": "https://bjlmndmafrajjysenpbm.supabase.co"
       },
       "android": {

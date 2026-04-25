@@ -6,7 +6,7 @@ const {
   waitForMatchingMessage,
 } = require('./lib/disposable-mail');
 
-const DEFAULT_BACKEND_URL = 'https://eatfitai-backend.onrender.com';
+const DEFAULT_BACKEND_URL = 'https://eatfitai-backend-dev.onrender.com';
 const DEFAULT_OUTPUT_ROOT = path.resolve(
   __dirname,
   '..',
@@ -324,15 +324,6 @@ function summarizeResponse(response) {
   };
 }
 
-function formatMailTimestamp(value) {
-  const timestamp = Date.parse(value || '');
-  if (!Number.isFinite(timestamp)) {
-    return '';
-  }
-
-  return new Date(timestamp).toISOString().slice(0, 19).replace('T', ' ');
-}
-
 async function loginForCleanup(backendUrl, email, passwordCandidates) {
   const attempts = [];
 
@@ -458,17 +449,12 @@ async function main() {
 
     if (registerPassed && resendPassed) {
       try {
-        const resendExpiresAt = formatMailTimestamp(
-          resendResponse?.body?.verificationCodeExpiresAt ||
-            resendResponse?.body?.VerificationCodeExpiresAt,
-        );
         verificationMessage = await waitForMatchingMessage({
           apiBaseUrl: 'https://api.mail.tm',
           mailbox,
           outputDir,
           artifactName: 'auth-verification-mail.json',
           subjectIncludes: DEFAULT_MAIL_SUBJECT_VERIFY,
-          introIncludes: resendExpiresAt,
           createdAfterIso: resendStartedAt,
         });
         report.artifacts.verificationMailboxMessagePath = path.join(
@@ -905,6 +891,9 @@ async function main() {
         2,
       ),
     );
+    if (!report.passed) {
+      process.exitCode = 1;
+    }
   } catch (error) {
     report.passed = false;
     report.cleanup.attempted = cleanupAttempted;

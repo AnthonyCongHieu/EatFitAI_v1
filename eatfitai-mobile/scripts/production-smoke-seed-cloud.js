@@ -1,7 +1,14 @@
 const fs = require('fs');
 const path = require('path');
+const {
+  buildSafeMailboxArtifact,
+  buildSafeVerificationArtifact,
+  createMailboxUnavailableError,
+  getErrorReason,
+  isEmailUnverifiedLogin,
+} = require('./lib/seed-verification');
 
-const DEFAULT_BACKEND_URL = 'https://eatfitai-backend.onrender.com';
+const DEFAULT_BACKEND_URL = 'https://eatfitai-backend-dev.onrender.com';
 const DEFAULT_OUTPUT_ROOT = path.resolve(
   __dirname,
   '..',
@@ -15,6 +22,7 @@ const DEFAULT_DEMO_DISPLAY_NAME = 'Scan Demo Reliability';
 const DEFAULT_MAIL_API = 'https://api.mail.tm';
 const VERIFY_TIMEOUT_MS = 240000;
 const VERIFY_POLL_INTERVAL_MS = 10000;
+let pendingFailureReport = null;
 
 const DEFAULT_PROFILE = {
   displayName: DEFAULT_DEMO_DISPLAY_NAME,
@@ -731,19 +739,16 @@ async function resolveDisposableMailbox(credentials, outputDir) {
 
   const tokenResult = await requestMailboxToken(mailApi, email, password);
   if (!tokenResult?.ok || !tokenResult.body?.token) {
-    throw new Error(
-      `Failed to create disposable mailbox token for ${email}. Status=${tokenResult?.status || 'unknown'} Error=${tokenResult?.error || tokenResult?.rawText || ''}`,
+    throw createMailboxUnavailableError(
+      `failed to create mailbox token for ${email}. Status=${tokenResult?.status || 'unknown'}`,
     );
   }
 
-  const artifact = {
-    generatedAt: new Date().toISOString(),
-    provider: 'mail.tm',
+  const artifact = buildSafeMailboxArtifact({
     address: email,
-    password,
     token: tokenResult.body.token,
     mailApi,
-  };
+  });
   const artifactPath = path.join(outputDir, 'disposable-mailbox.json');
   writeJson(artifactPath, artifact);
 
@@ -755,7 +760,25 @@ async function resolveDisposableMailbox(credentials, outputDir) {
   };
 }
 
-async function waitForVerificationMessage(mailbox, outputDir) {
+function selectNewestVerificationMessage(items, createdAfterIso = '') {
+  const createdAfterMs = createdAfterIso ? Date.parse(createdAfterIso) : Number.NaN;
+  return [...(Array.isArray(items) ? items : [])]
+    .filter((item) => {
+      if (!Number.isFinite(createdAfterMs)) {
+        return true;
+      }
+
+      const createdAtMs = Date.parse(item?.createdAt || item?.updatedAt || 0);
+      return Number.isFinite(createdAtMs) && createdAtMs >= createdAfterMs - 1000;
+    })
+    .sort((left, right) => {
+      const rightMs = Date.parse(right?.updatedAt || right?.createdAt || 0);
+      const leftMs = Date.parse(left?.updatedAt || left?.createdAt || 0);
+      return (Number.isFinite(rightMs) ? rightMs : 0) - (Number.isFinite(leftMs) ? leftMs : 0);
+    })[0] || null;
+}
+
+async function waitForVerificationMessage(mailbox, outputDir, options = {}) {
   const startedAt = Date.now();
   while (Date.now() - startedAt < VERIFY_TIMEOUT_MS) {
     const messages = await requestJson(`${mailbox.mailApi}/messages`, {
@@ -766,7 +789,7 @@ async function waitForVerificationMessage(mailbox, outputDir) {
 
     if (messages.ok) {
       const items = getMailItems(messages.body);
-      const newest = items[0];
+      const newest = selectNewestVerificationMessage(items, options.createdAfterIso);
       if (newest?.id) {
         const detail = await requestJson(`${mailbox.mailApi}/messages/${newest.id}`, {
           headers: {
@@ -776,15 +799,13 @@ async function waitForVerificationMessage(mailbox, outputDir) {
 
         if (detail.ok) {
           const verificationCode = extractVerificationCode(detail.body);
-          const artifact = {
-            generatedAt: new Date().toISOString(),
+          const artifact = buildSafeVerificationArtifact({
             mailbox: mailbox.address,
             messageCount: items.length,
             newestMessageId: newest.id,
             subject: detail.body?.subject || newest.subject || '',
             verificationCode,
-            message: detail.body,
-          };
+          });
           const artifactPath = path.join(outputDir, 'disposable-mail-message.json');
           writeJson(artifactPath, artifact);
 
@@ -845,6 +866,16 @@ async function verifyEmailCode(backendUrl, email, verificationCode) {
   });
 }
 
+async function resendVerification(backendUrl, email) {
+  return requestJson(`${backendUrl}/api/auth/resend-verification`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ email }),
+  });
+}
+
 function authHeaders(token) {
   return {
     Authorization: `Bearer ${token}`,
@@ -897,6 +928,79 @@ async function resetAccount(backendUrl, credentials, events) {
   };
 }
 
+async function recoverUnverifiedExistingAccount(backendUrl, credentials, events, outputDir) {
+  const mailbox = await resolveDisposableMailbox(credentials, outputDir);
+  if (!mailbox) {
+    throw createMailboxUnavailableError(
+      `mail.tm-compatible mailbox is required for ${credentials.email}`,
+    );
+  }
+
+  const resendTriggeredAt = new Date().toISOString();
+  const resendResult = await resendVerification(backendUrl, credentials.email);
+  events.push({
+    step: 'resend-verification-existing-demo-account',
+    ok: resendResult.ok,
+    status: resendResult.status,
+    durationMs: resendResult.durationMs,
+    error: resendResult.error || resendResult.body?.message || null,
+  });
+  if (!resendResult.ok) {
+    throw new Error(
+      `Cloud resend verification failed. Status=${resendResult.status} Error=${resendResult.error || resendResult.body?.message || resendResult.rawText || 'unknown'}`,
+    );
+  }
+
+  let verificationCode = trim(resendResult.body?.verificationCode);
+  let verificationArtifactPath = '';
+  if (!verificationCode) {
+    const message = await waitForVerificationMessage(mailbox, outputDir, {
+      createdAfterIso: resendTriggeredAt,
+    });
+    verificationCode = message.verificationCode;
+    verificationArtifactPath = message.artifactPath;
+  }
+
+  const verifyResult = await verifyEmailCode(backendUrl, credentials.email, verificationCode);
+  events.push({
+    step: 'verify-existing-demo-account-email',
+    ok: verifyResult.ok,
+    status: verifyResult.status,
+    durationMs: verifyResult.durationMs,
+    error: verifyResult.error || verifyResult.body?.message || null,
+  });
+  if (!verifyResult.ok) {
+    throw new Error(
+      `Cloud verify existing demo account failed. Status=${verifyResult.status} Error=${verifyResult.error || verifyResult.body?.message || verifyResult.rawText || 'unknown'}`,
+    );
+  }
+
+  const loginResult = await login(backendUrl, credentials.email, credentials.password);
+  events.push({
+    step: 'login-after-existing-email-verify',
+    ok: loginResult.ok,
+    status: loginResult.status,
+    durationMs: loginResult.durationMs,
+    error: loginResult.error || loginResult.body?.message || null,
+  });
+
+  const accessToken = loginResult.body?.accessToken || loginResult.body?.token || '';
+  if (!loginResult.ok || !accessToken) {
+    throw new Error(
+      `Cloud relogin failed after existing account verify. Status=${loginResult.status} Error=${loginResult.error || loginResult.body?.message || 'unknown'}`,
+    );
+  }
+
+  return {
+    accessToken,
+    refreshToken: loginResult.body?.refreshToken || '',
+    source: 'resend-verify-relogin',
+    response: loginResult,
+    mailboxArtifactPath: mailbox.artifactPath || '',
+    verificationArtifactPath,
+  };
+}
+
 function isLegacyRegistrationGone(registerResult) {
   const message = trim(registerResult?.body?.message || registerResult?.rawText || '').toLowerCase();
   return registerResult?.status === 410 || message.includes('register-with-verification');
@@ -909,6 +1013,7 @@ async function authenticateFreshAccountWithVerification(
   outputDir,
 ) {
   const mailbox = await resolveDisposableMailbox(credentials, outputDir);
+  const registerTriggeredAt = new Date().toISOString();
   let registerResult = await registerWithVerification(
     backendUrl,
     credentials.email,
@@ -956,12 +1061,14 @@ async function authenticateFreshAccountWithVerification(
   let verificationArtifactPath = '';
   if (!verificationCode) {
     if (!mailbox) {
-      throw new Error(
-        'Cloud seed now requires an email-verification mailbox. Use a mail.tm mailbox in EATFITAI_DEMO_EMAIL/EATFITAI_DEMO_PASSWORD or set EATFITAI_DEMO_MAIL_API to a compatible provider.',
+      throw createMailboxUnavailableError(
+        'Cloud seed now requires a mail.tm-compatible email-verification mailbox in EATFITAI_DEMO_EMAIL/EATFITAI_DEMO_PASSWORD.',
       );
     }
 
-    const message = await waitForVerificationMessage(mailbox, outputDir);
+    const message = await waitForVerificationMessage(mailbox, outputDir, {
+      createdAfterIso: registerTriggeredAt,
+    });
     verificationCode = message.verificationCode;
     verificationArtifactPath = message.artifactPath;
   }
@@ -1189,6 +1296,11 @@ async function main() {
       'MealDiary sourceMethod for catalog items is normalized by backend services, so manual/voice/vision source intent is preserved in note text for seeded entries.',
     ],
   };
+  const outputPath = path.join(outputDir, 'demo-seed.json');
+  pendingFailureReport = {
+    outputPath,
+    report,
+  };
 
   const resetResult = await resetAccount(backendUrl, credentials, report.events);
   report.reset = {
@@ -1196,11 +1308,14 @@ async function main() {
     deletedExistingAccount: resetResult.deleted,
   };
 
-  const auth = await authenticateFreshAccount(backendUrl, credentials, report.events, outputDir);
+  const auth = isEmailUnverifiedLogin(resetResult.loginResult)
+    ? await recoverUnverifiedExistingAccount(backendUrl, credentials, report.events, outputDir)
+    : await authenticateFreshAccount(backendUrl, credentials, report.events, outputDir);
   const token = auth.accessToken;
   report.auth = {
     source: auth.source,
     refreshTokenPresent: Boolean(auth.refreshToken),
+    existingUnverifiedRecovered: auth.source === 'resend-verify-relogin',
     mailboxArtifactPath: auth.mailboxArtifactPath || '',
     verificationArtifactPath: auth.verificationArtifactPath || '',
   };
@@ -1405,8 +1520,8 @@ async function main() {
     needsOnboarding: Boolean(verifyLogin.body?.needsOnboarding),
   };
 
-  const outputPath = path.join(outputDir, 'demo-seed.json');
   writeJson(outputPath, report);
+  pendingFailureReport = null;
 
   console.log(`[production-smoke-seed-cloud] Wrote ${outputPath}`);
   console.log(
@@ -1440,6 +1555,21 @@ async function main() {
 }
 
 main().catch((error) => {
+  if (pendingFailureReport?.outputPath && pendingFailureReport?.report) {
+    pendingFailureReport.report.failure = {
+      reason: getErrorReason(error) || 'seed-cloud-failed',
+      message: error instanceof Error ? error.message : String(error),
+    };
+    try {
+      writeJson(pendingFailureReport.outputPath, pendingFailureReport.report);
+      console.error(`[production-smoke-seed-cloud] Wrote failure report ${pendingFailureReport.outputPath}`);
+    } catch (writeError) {
+      console.error(
+        '[production-smoke-seed-cloud] Failed to write failure report:',
+        writeError instanceof Error ? writeError.message : String(writeError),
+      );
+    }
+  }
   console.error('[production-smoke-seed-cloud] Failed:', error);
   process.exit(1);
 });

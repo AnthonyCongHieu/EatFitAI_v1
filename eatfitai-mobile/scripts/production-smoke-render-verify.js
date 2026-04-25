@@ -2,6 +2,13 @@ const fs = require('fs');
 const path = require('path');
 const { execFileSync } = require('child_process');
 const { resolveEnv } = require('../../tools/automation/resolveEnv');
+const {
+  buildGitDeployReadiness,
+  buildDockerPathAssessment,
+  buildRootDirAssessment,
+  parseAheadBehind,
+  resolveExpectedRootDir,
+} = require('./lib/render-rc');
 
 const DEFAULT_OUTPUT_ROOT = path.resolve(
   __dirname,
@@ -87,6 +94,39 @@ function getExpectedCommit() {
   return trim(resolveEnv('RENDER_EXPECTED_COMMIT')) || tryReadGitValue(['rev-parse', 'HEAD']);
 }
 
+function isTruthy(value) {
+  return ['1', 'true', 'yes', 'y'].includes(trim(value).toLowerCase());
+}
+
+function getGitState() {
+  const statusPorcelain = tryReadGitValue(['status', '--porcelain']);
+  const upstream = tryReadGitValue([
+    'rev-parse',
+    '--abbrev-ref',
+    '--symbolic-full-name',
+    '@{u}',
+  ]);
+  const aheadBehind = upstream
+    ? parseAheadBehind(tryReadGitValue(['rev-list', '--left-right', '--count', '@{u}...HEAD']))
+    : { behind: 0, ahead: 0 };
+  const dirtyLines = statusPorcelain
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+
+  return {
+    branch: getExpectedBranch(),
+    head: getExpectedCommit(),
+    upstream,
+    ahead: aheadBehind.ahead,
+    behind: aheadBehind.behind,
+    dirty: dirtyLines.length > 0,
+    dirtyFileCount: dirtyLines.length,
+    dirtyFiles: dirtyLines.slice(0, 30),
+    allDirtyFiles: dirtyLines,
+  };
+}
+
 async function requestJson(url, apiKey) {
   const response = await fetch(url, {
     method: 'GET',
@@ -132,6 +172,51 @@ function normalizeDeploy(entry) {
 
 async function getServiceInfo(baseUrl, serviceId, apiKey) {
   return requestJson(`${baseUrl}/services/${serviceId}`, apiKey);
+}
+
+async function getServiceEvents(baseUrl, serviceId, apiKey) {
+  try {
+    return await requestJson(`${baseUrl}/services/${serviceId}/events?limit=10`, apiKey);
+  } catch (error) {
+    return {
+      error: error instanceof Error ? error.message : String(error),
+    };
+  }
+}
+
+function summarizeServiceEvents(payload, latestDeployId) {
+  if (!Array.isArray(payload)) {
+    return {
+      failureReason: '',
+      events: [],
+      error: payload?.error || '',
+    };
+  }
+
+  const events = payload
+    .map((entry) => entry?.event || entry)
+    .filter(Boolean)
+    .slice(0, 6)
+    .map((event) => ({
+      id: trim(event.id),
+      type: trim(event.type),
+      timestamp: trim(event.timestamp),
+      deployId: trim(event.details?.deployId),
+      deployStatus: trim(event.details?.deployStatus),
+      status: event.details?.status ?? null,
+    }));
+  const related = events.filter(
+    (event) => !latestDeployId || !event.deployId || event.deployId === latestDeployId,
+  );
+  const failureReason = related.find((event) => event.type === 'pipeline_minutes_exhausted')
+    ? 'pipeline_minutes_exhausted'
+    : '';
+
+  return {
+    failureReason,
+    events,
+    error: '',
+  };
 }
 
 async function getLatestDeploy(baseUrl, serviceId, apiKey) {
@@ -185,12 +270,21 @@ async function main() {
   const baseUrl = normalizeBaseUrl(renderTargets.baseUrl || 'https://api.render.com/v1');
   const expectedBranch = getExpectedBranch();
   const expectedCommit = getExpectedCommit();
+  const gitState = getGitState();
+  const gitDeployReadiness = buildGitDeployReadiness(gitState, {
+    allowDirtyWorktree: isTruthy(resolveEnv('RENDER_ALLOW_DIRTY_WORKTREE')),
+    allowUnpushedHead: isTruthy(resolveEnv('RENDER_ALLOW_UNPUSHED_HEAD')),
+  });
 
   const report = {
     generatedAt: new Date().toISOString(),
     outputDir,
     expectedBranch,
     expectedCommit,
+    git: {
+      ...gitState,
+      deployReadiness: gitDeployReadiness,
+    },
     services: {},
     summary: {
       passed: false,
@@ -212,22 +306,46 @@ async function main() {
     const branch = trim(serviceInfo.branch);
     const autoDeploy = trim(serviceInfo.autoDeploy).toLowerCase();
     const autoDeployTrigger = trim(serviceInfo.autoDeployTrigger).toLowerCase();
+    const expectedAutoDeploy = trim(serviceTarget.expectedAutoDeploy || 'yes').toLowerCase();
+    const expectedAutoDeployTrigger = trim(
+      serviceTarget.expectedAutoDeployTrigger || 'commit',
+    ).toLowerCase();
     const serviceUrl =
       trim(serviceInfo.serviceDetails?.url) || trim(serviceInfo.serviceUrl) || '';
     const runtime =
       trim(serviceInfo.serviceDetails?.runtime) || trim(serviceInfo.serviceDetails?.env);
     const suspended = trim(serviceInfo.suspended).toLowerCase();
+    const rootDirAssessment = buildRootDirAssessment(
+      serviceInfo,
+      resolveExpectedRootDir(serviceKey, serviceTarget),
+    );
+    const dockerPathAssessment = buildDockerPathAssessment(serviceInfo, serviceTarget);
     const deployStatus = latestDeploy?.status || '';
     const deployPassed = SUCCESS_STATES.has(deployStatus);
+    const eventSummary = deployPassed
+      ? { failureReason: '', events: [], error: '' }
+      : summarizeServiceEvents(
+          await getServiceEvents(baseUrl, serviceTarget.id, apiKey),
+          latestDeploy?.id,
+        );
     const branchMatches = !expectedBranch || branch === expectedBranch;
     const commitMatches =
       !expectedCommit || !latestDeploy?.commitId || latestDeploy.commitId === expectedCommit;
+    const ownerMatches =
+      !trim(serviceTarget.ownerId) || trim(serviceInfo.ownerId) === trim(serviceTarget.ownerId);
+    const autoDeployMatches = autoDeploy === expectedAutoDeploy;
+    const autoDeployTriggerMatches = autoDeployTrigger === expectedAutoDeployTrigger;
     const passed =
       branchMatches &&
-      autoDeploy === 'yes' &&
-      autoDeployTrigger === 'commit' &&
+      ownerMatches &&
+      autoDeployMatches &&
+      autoDeployTriggerMatches &&
       suspended === 'not_suspended' &&
-      deployPassed;
+      rootDirAssessment.rootDirMatches &&
+      dockerPathAssessment.dockerPathsMatch &&
+      deployPassed &&
+      commitMatches &&
+      gitDeployReadiness.passed;
 
     if (!passed) {
       report.summary.failedServices.push(serviceKey);
@@ -236,16 +354,30 @@ async function main() {
     report.services[serviceKey] = {
       id: trim(serviceInfo.id),
       name: trim(serviceInfo.name),
+      ownerId: trim(serviceInfo.ownerId),
+      expectedOwnerId: trim(serviceTarget.ownerId),
+      ownerMatches,
       branch,
       branchMatches,
       autoDeploy,
+      expectedAutoDeploy,
+      autoDeployMatches,
       autoDeployTrigger,
+      expectedAutoDeployTrigger,
+      autoDeployTriggerMatches,
       suspended,
       runtime,
+      ...rootDirAssessment,
+      ...dockerPathAssessment,
       serviceUrl,
       dashboardUrl: trim(serviceInfo.dashboardUrl),
       latestDeploy,
+      deployFailureReason: eventSummary.failureReason,
+      recentEvents: eventSummary.events,
+      recentEventsError: eventSummary.error,
       commitMatches,
+      gitDeployReadiness: gitDeployReadiness.passed,
+      gitDeployReadinessFailures: gitDeployReadiness.failures,
       passed,
     };
   }

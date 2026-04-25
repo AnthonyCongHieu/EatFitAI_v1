@@ -12,6 +12,7 @@ using EatFitAI.Services; // Voice processing service
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
@@ -225,6 +226,17 @@ builder.Services.AddControllers()
     });
 builder.Services.AddHttpClient();
 builder.Services.AddEndpointsApiExplorer();
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+    options.ForwardLimit = 1;
+    options.KnownNetworks.Clear();
+    options.KnownProxies.Clear();
+});
+builder.Services.AddHttpsRedirection(options =>
+{
+    options.HttpsPort = 443;
+});
 
 
 // CORS from config (supports exact match and simple wildcard suffix/prefix, e.g. exp://* or http://localhost:*)
@@ -1119,6 +1131,7 @@ using (var scope = app.Services.CreateScope())
 
 
 // Response compression — phải đặt trước middleware khác để compress output
+app.UseForwardedHeaders();
 app.UseResponseCompression();
 
 // Add custom middleware

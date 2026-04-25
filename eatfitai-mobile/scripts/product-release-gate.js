@@ -2,6 +2,10 @@ const fs = require('fs');
 const path = require('path');
 const { spawnSync } = require('child_process');
 const { resolveEnv } = require('../../tools/automation/resolveEnv');
+const {
+  evaluateRcDeviceReports,
+  readRcDeviceReportsFromRoot,
+} = require('./lib/device-rc-evidence');
 
 const repoRoot = path.resolve(__dirname, '..', '..');
 const mobileRoot = path.resolve(__dirname, '..');
@@ -49,6 +53,12 @@ function buildBaseEnv(outputDir) {
     'RENDER_API_KEY',
     'EATFITAI_DEMO_EMAIL',
     'EATFITAI_DEMO_PASSWORD',
+    'EATFITAI_DEMO_MAIL_API',
+    'EATFITAI_SMOKE_BACKEND_URL',
+    'EATFITAI_SMOKE_AI_PROVIDER_URL',
+    'EATFITAI_DEVICE_BACKEND_URL',
+    'EATFITAI_DEVICE_LOGIN_EMAIL',
+    'EATFITAI_DEVICE_LOGIN_PASSWORD',
     'EATFITAI_ONBOARDING_EMAIL',
     'EATFITAI_ONBOARDING_PASSWORD',
     'EATFITAI_SMOKE_EMAIL',
@@ -60,6 +70,17 @@ function buildBaseEnv(outputDir) {
     if (value) {
       env[key] = value;
     }
+  }
+
+  if (!trim(env.EATFITAI_DEVICE_LOGIN_EMAIL) && trim(env.EATFITAI_DEMO_EMAIL)) {
+    env.EATFITAI_DEVICE_LOGIN_EMAIL = trim(env.EATFITAI_DEMO_EMAIL);
+  }
+  if (!trim(env.EATFITAI_DEVICE_LOGIN_PASSWORD) && trim(env.EATFITAI_DEMO_PASSWORD)) {
+    env.EATFITAI_DEVICE_LOGIN_PASSWORD = trim(env.EATFITAI_DEMO_PASSWORD);
+  }
+  if (!trim(env.EATFITAI_DEVICE_BACKEND_URL)) {
+    env.EATFITAI_DEVICE_BACKEND_URL =
+      trim(env.EATFITAI_SMOKE_BACKEND_URL) || 'https://eatfitai-backend-dev.onrender.com';
   }
 
   return env;
@@ -355,53 +376,29 @@ function resolveOutputDir() {
   return path.join(outputRoot, stamp);
 }
 
-function readJsonIfExists(filePath) {
-  if (!filePath || !fs.existsSync(filePath)) {
-    return null;
-  }
-
-  return JSON.parse(fs.readFileSync(filePath, 'utf8'));
-}
-
 function looksLikePath(value) {
   return /[\\/]/.test(value) || /\.[A-Za-z0-9]+$/.test(value);
 }
 
 function evaluateDeviceEvidence(outputDir) {
-  const reports = fs.existsSync(realDeviceOutputRoot)
-    ? fs
-        .readdirSync(realDeviceOutputRoot, { withFileTypes: true })
-        .filter((entry) => entry.isDirectory())
-        .map((entry) => path.join(realDeviceOutputRoot, entry.name, 'report.json'))
-        .filter((filePath) => fs.existsSync(filePath))
-        .sort((left, right) => fs.statSync(right).mtimeMs - fs.statSync(left).mtimeMs)
-    : [];
-  const latestReportPath = reports[0] || '';
-  const latestReport = latestReportPath ? readJsonIfExists(latestReportPath) || {} : {};
-  const artifacts = Array.isArray(latestReport.artifacts) ? latestReport.artifacts : [];
-  const hasLaunchScreenshot = artifacts.some(
-    (artifact) => artifact.name === '01-launch' && artifact.ok !== false && artifact.path,
-  );
-  const hasCrashLog = artifacts.some(
-    (artifact) => typeof artifact.path === 'string' && artifact.path.endsWith('crash-logcat.txt'),
-  );
-  const failedSteps = Array.isArray(latestReport.steps)
-    ? latestReport.steps.filter((step) => step.ok === false || step.tap?.ok === false || step.inputOk === false)
-    : [];
+  const reports = readRcDeviceReportsFromRoot(realDeviceOutputRoot);
+  const rcEvaluation = evaluateRcDeviceReports(reports);
+  const sortedReports = [...reports].sort((left, right) => Number(right.mtimeMs || 0) - Number(left.mtimeMs || 0));
+  const latestReport = sortedReports[0] || {};
 
   return {
     outputDir,
     realDeviceOutputRoot,
-    latestReportPath,
-    passed: Boolean(latestReport.passed) && hasLaunchScreenshot && hasCrashLog && failedSteps.length === 0,
-    missingEvidence: [
-      latestReportPath ? '' : 'report.json',
-      hasLaunchScreenshot ? '' : '01-launch.png',
-      hasCrashLog ? '' : 'crash-logcat.txt',
-    ].filter(Boolean),
+    latestReportPath: latestReport.reportPath || '',
+    status: rcEvaluation.passed ? 'pass' : 'fail',
+    passed: rcEvaluation.passed,
+    missingEvidence: rcEvaluation.missingModes.map((mode) => `${mode}/report.json`),
     mode: latestReport.mode || '',
     serial: latestReport.serial || '',
-    failedSteps,
+    requiredModes: rcEvaluation.requiredModes,
+    missingModes: rcEvaluation.missingModes,
+    failedModes: rcEvaluation.failedModes,
+    modeResults: rcEvaluation.modeResults,
   };
 }
 
@@ -638,6 +635,10 @@ async function main() {
     if (gateName === 'device') {
       gateResult.deviceEvidence = evaluateDeviceEvidence(outputDir);
       gateResult.status = gateResult.deviceEvidence.passed ? 'passed' : 'failed';
+      if (gateResult.deviceEvidence.status === 'degraded') {
+        gateResult.warning =
+          'Latest real-device ADB report is degraded. Gate continues because no critical failure was reported.';
+      }
     }
 
     if (gateName === 'cloud') {
@@ -654,6 +655,51 @@ async function main() {
             cwd: mobileRoot,
             env,
             timeoutMs: 20 * 60 * 1000,
+          }),
+        );
+      }
+      if (gateResult.commands.every((entry) => entry.ok)) {
+        gateResult.commands.push(
+          runCommand('Cloud seed', 'npm', ['run', 'smoke:seed:cloud'], {
+            cwd: mobileRoot,
+            env,
+            timeoutMs: 30 * 60 * 1000,
+          }),
+        );
+      }
+      if (gateResult.commands.every((entry) => entry.ok)) {
+        gateResult.commands.push(
+          runCommand('Cloud auth API', 'npm', ['run', 'smoke:auth:api'], {
+            cwd: mobileRoot,
+            env,
+            timeoutMs: 30 * 60 * 1000,
+          }),
+        );
+      }
+      if (gateResult.commands.every((entry) => entry.ok)) {
+        gateResult.commands.push(
+          runCommand('Cloud user API', 'npm', ['run', 'smoke:user:api'], {
+            cwd: mobileRoot,
+            env,
+            timeoutMs: 30 * 60 * 1000,
+          }),
+        );
+      }
+      if (gateResult.commands.every((entry) => entry.ok)) {
+        gateResult.commands.push(
+          runCommand('Cloud AI API', 'npm', ['run', 'smoke:ai:api'], {
+            cwd: mobileRoot,
+            env,
+            timeoutMs: 45 * 60 * 1000,
+          }),
+        );
+      }
+      if (gateResult.commands.every((entry) => entry.ok)) {
+        gateResult.commands.push(
+          runCommand('AI benchmark', 'npm', ['run', 'benchmark:ai'], {
+            cwd: mobileRoot,
+            env,
+            timeoutMs: 10 * 60 * 1000,
           }),
         );
       }

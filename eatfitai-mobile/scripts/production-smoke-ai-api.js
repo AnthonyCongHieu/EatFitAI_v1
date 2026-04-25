@@ -2,7 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const { resolveSmokeCredentials } = require('./lib/smoke-credentials');
 
-const DEFAULT_BACKEND_URL = 'https://eatfitai-backend.onrender.com';
+const DEFAULT_BACKEND_URL = 'https://eatfitai-backend-dev.onrender.com';
 const DEFAULT_OUTPUT_ROOT = path.resolve(
   __dirname,
   '..',
@@ -568,7 +568,34 @@ function finalizeSummary(report) {
 
   report.summary.averageLatencyMs = average(latencyValues);
   report.summary.p95LatencyMs = percentile(latencyValues, 95);
-  report.passed = report.summary.failed === 0;
+
+  if (report.login && report.login.ok === false && !report.failures.some((failure) => failure.group === 'login')) {
+    report.failures.push({
+      group: 'login',
+      name: 'api/auth/login',
+      status: report.login.status,
+      reason: report.login.error || 'login-failed',
+      details: null,
+    });
+    report.summary.failed += 1;
+  }
+
+  if (report.fatalError && !report.failures.some((failure) => failure.group === 'fatal')) {
+    report.failures.push({
+      group: 'fatal',
+      name: 'production-smoke-ai-api',
+      status: null,
+      reason: report.fatalError,
+      details: null,
+    });
+    report.summary.failed += 1;
+  }
+
+  report.passed =
+    report.summary.failed === 0 &&
+    report.summary.attempted > 0 &&
+    report.fatalError == null &&
+    (!report.login || report.login.ok !== false);
   return report;
 }
 
@@ -1705,7 +1732,8 @@ async function main() {
     finalizeSummary(report);
     writeJson(reportPath, report);
     console.error('[production-smoke-ai-api] Failed:', error);
-    process.exit(1);
+    process.exitCode = 1;
+    return;
   }
 
   writeJson(reportPath, report);
@@ -1733,5 +1761,5 @@ async function main() {
 
 main().catch((error) => {
   console.error('[production-smoke-ai-api] Unhandled failure:', error);
-  process.exit(1);
+  process.exitCode = 1;
 });

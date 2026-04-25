@@ -3,7 +3,7 @@ const path = require('path');
 const { execFileSync } = require('child_process');
 const { resolveSmokeCredentials } = require('./lib/smoke-credentials');
 
-const DEFAULT_BACKEND_URL = 'https://eatfitai-backend.onrender.com';
+const DEFAULT_BACKEND_URL = 'https://eatfitai-backend-dev.onrender.com';
 const DEFAULT_OUTPUT_ROOT = path.resolve(
   __dirname,
   '..',

@@ -102,6 +102,10 @@ public class EncryptionService : IEncryptionService
         {
             return false;
         }
+        catch (DecoderFallbackException)
+        {
+            return false;
+        }
     }
 
     internal static string NormalizeKey(string? rawKey)
@@ -159,7 +163,10 @@ public class EncryptionService : IEncryptionService
 
         using var memoryStream = new MemoryStream(cipher);
         using var cryptoStream = new CryptoStream(memoryStream, aes.CreateDecryptor(), CryptoStreamMode.Read);
-        using var streamReader = new StreamReader(cryptoStream);
+        using var streamReader = new StreamReader(
+            cryptoStream,
+            new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true),
+            detectEncodingFromByteOrderMarks: false);
 
         return streamReader.ReadToEnd();
     }

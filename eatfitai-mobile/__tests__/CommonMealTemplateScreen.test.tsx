@@ -137,7 +137,7 @@ describe('CommonMealTemplateScreen', () => {
   it('creates a common meal template from selected ingredients', async () => {
     const queryClient = new QueryClient({
       defaultOptions: {
-        queries: { retry: false },
+        queries: { retry: false, gcTime: Infinity },
       },
     });
 

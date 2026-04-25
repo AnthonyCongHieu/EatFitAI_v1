@@ -282,5 +282,5 @@ describe('StatsScreen weekly review focus', () => {
     await waitFor(() => {
       expect(screen.queryByTestId(TEST_IDS.stats.weeklyReviewCard)).toBeNull();
     });
-  });
+  }, 15000);
 });

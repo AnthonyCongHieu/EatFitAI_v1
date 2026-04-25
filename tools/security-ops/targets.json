@@ -16,8 +16,17 @@
     "baseUrl": "https://api.render.com/v1",
     "services": {
       "backend": {
-        "name": "eatfitai-backend",
-        "id": "srv-d7arf2svjg8s73em138g",
+        "name": "eatfitai-backend-dev",
+        "id": "srv-d7m33abrjlhs739qve7g",
+        "ownerName": "eatfitai-dev",
+        "ownerId": "tea-d7m2pkosfn5c73dam90g",
+        "serviceUrl": "https://eatfitai-backend-dev.onrender.com",
+        "expectedRootDir": "",
+        "expectedDockerContext": "./eatfitai-backend",
+        "expectedDockerfilePath": "./eatfitai-backend/Dockerfile",
+        "expectedAutoDeploy": "no",
+        "expectedAutoDeployTrigger": "off",
+        "triggerDeploy": false,
         "criticalEnvKeys": [
           "ConnectionStrings__DefaultConnection",
           "AIProvider__InternalToken",
@@ -26,8 +35,17 @@
         ]
       },
       "aiProvider": {
-        "name": "eatfitai-ai-provider",
-        "id": "srv-d7arf2kvjg8s73em1360",
+        "name": "eatfitai-ai-provider-dev",
+        "id": "srv-d7m33fjeo5us73ejbv4g",
+        "ownerName": "eatfitai-dev",
+        "ownerId": "tea-d7m2pkosfn5c73dam90g",
+        "serviceUrl": "https://eatfitai-ai-provider-dev.onrender.com",
+        "expectedRootDir": "",
+        "expectedDockerContext": "./ai-provider",
+        "expectedDockerfilePath": "./ai-provider/Dockerfile",
+        "expectedAutoDeploy": "no",
+        "expectedAutoDeployTrigger": "off",
+        "triggerDeploy": false,
         "criticalEnvKeys": [
           "AI_PROVIDER_INTERNAL_TOKEN",
           "GEMINI_API_KEY"
