@@ -1,6 +1,6 @@
 # Chỉ mục tài liệu EatFitAI
 
-Cập nhật: `2026-04-24`
+Cập nhật: `2026-04-25`
 
 Thư mục `docs/` tập trung các tài liệu kỹ thuật phục vụ phát triển, kiểm thử, và vận hành dự án.
 
@@ -18,6 +18,10 @@ Thư mục `docs/` tập trung các tài liệu kỹ thuật phục vụ phát t
 | [19_SECURITY_AUDIT_BASELINE_2026-04-16.md](19_SECURITY_AUDIT_BASELINE_2026-04-16.md) | Baseline security audit — findings và evidence | Cần đối chiếu bảo mật hoặc remediation |
 | [20_SECURITY_REMEDIATION_REPORT_2026-04-16.md](20_SECURITY_REMEDIATION_REPORT_2026-04-16.md) | Báo cáo remediation đã thực hiện | Xem lại những gì đã sửa và còn tồn đọng |
 | [21_PRODUCT_CHECKLIST_2026-04-19.md](21_PRODUCT_CHECKLIST_2026-04-19.md) | Checklist sản phẩm, benchmark, roadmap tính năng | Cần đánh giá tiến độ hoặc ưu tiên feature |
+| [23_QA_FULL_APP_AUDIT_2026-04-25.md](23_QA_FULL_APP_AUDIT_2026-04-25.md) | QA audit toàn app: inventory, evidence matrix, AI scorecards, UI backlog, cleanup log, release recommendation | Cần chốt tình trạng QA/release gate ngày 2026-04-25 |
+| [24_TOKEN_SAVING_TOOLS_ASSESSMENT_2026-04-25.md](24_TOKEN_SAVING_TOOLS_ASSESSMENT_2026-04-25.md) | Đánh giá Serena, RTK, Context Mode và các repo tiết kiệm token cho workflow Codex/EatFitAI | Cần quyết định có nên cài tool giảm token/context hay không |
+| [25_TOKEN_TOOLING_PILOT_RESULTS_2026-04-25.md](25_TOKEN_TOOLING_PILOT_RESULTS_2026-04-25.md) | Kết quả setup/pilot Serena, RTK, Codebase-Memory trên Windows cho EatFitAI | Cần xem tool nào giữ, pilot, defer hoặc rollback |
+| [26_RC_STABILIZATION_REPORT_2026-04-25.md](26_RC_STABILIZATION_REPORT_2026-04-25.md) | Báo cáo RC Phase 2 với evidence thật: code gates pass, Android/cloud/auth blockers, AI benchmark, UI backlog | Cần quyết định unblock seed/auth/deploy trước khi chốt internal RC |
 
 ## Thư mục phụ
 
