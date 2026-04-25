@@ -29,11 +29,11 @@ const VISION_DETECT_TIMEOUT_MS = AI_TIMEOUTS.visionDetectTimeoutMs;
 const VISION_DETECT_RETRY_COUNT = AI_TIMEOUTS.visionDetectRetryCount;
 const DEFAULT_RETRY_DELAY_MS = 1500;
 const DEFAULT_PRIMARY_FIXTURES = [
-  { key: 'egg', fileName: 'ai-primary-egg-01.jpg' },
-  { key: 'banana', fileName: 'ai-primary-banana-01.jpg' },
-  { key: 'rice', fileName: 'ai-primary-rice-01.jpg' },
-  { key: 'broccoli', fileName: 'ai-primary-broccoli-01.jpg' },
-  { key: 'spinach', fileName: 'ai-primary-spinach-01.jpg' },
+  { key: 'banana-small', fileName: 'ai-primary-banana-02.jpg' },
+  { key: 'apple-benchmark', fileName: 'ai-benchmark-apple-01.jpg' },
+  { key: 'orange-benchmark', fileName: 'ai-benchmark-orange-01.jpg' },
+  { key: 'broccoli-benchmark', fileName: 'ai-benchmark-broccoli-01.jpg' },
+  { key: 'apple-primary', fileName: 'ai-primary-apple-01.jpg' },
 ];
 const DEFAULT_INGREDIENT_FALLBACKS = [
   'Chicken Breast',
