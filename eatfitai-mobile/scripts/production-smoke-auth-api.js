@@ -22,6 +22,14 @@ const RESET_PASSWORD_TIMEOUT_MS = parsePositiveInteger(
   process.env.EATFITAI_SMOKE_AUTH_RESET_TIMEOUT_MS,
   120000,
 );
+const MAILBOX_TIMEOUT_MS = parsePositiveInteger(
+  process.env.EATFITAI_SMOKE_AUTH_MAILBOX_TIMEOUT_MS,
+  480000,
+);
+const MAILBOX_POLL_INTERVAL_MS = parsePositiveInteger(
+  process.env.EATFITAI_SMOKE_AUTH_MAILBOX_POLL_MS,
+  5000,
+);
 const DEFAULT_MAIL_SUBJECT_VERIFY = 'Mã xác minh';
 const DEFAULT_MAIL_SUBJECT_RESET = 'Mã đặt lại mật khẩu';
 const DEFAULT_DISPLAY_NAME = 'Smoke API Disposable';
@@ -456,6 +464,8 @@ async function main() {
           artifactName: 'auth-verification-mail.json',
           subjectIncludes: DEFAULT_MAIL_SUBJECT_VERIFY,
           createdAfterIso: resendStartedAt,
+          timeoutMs: MAILBOX_TIMEOUT_MS,
+          pollIntervalMs: MAILBOX_POLL_INTERVAL_MS,
         });
         report.artifacts.verificationMailboxMessagePath = path.join(
           outputDir,
@@ -629,6 +639,8 @@ async function main() {
           artifactName: 'auth-reset-mail.json',
           subjectIncludes: DEFAULT_MAIL_SUBJECT_RESET,
           createdAfterIso: forgotPasswordRequestedAt,
+          timeoutMs: MAILBOX_TIMEOUT_MS,
+          pollIntervalMs: MAILBOX_POLL_INTERVAL_MS,
         });
         report.artifacts.resetMailboxMessagePath = path.join(outputDir, 'auth-reset-mail.json');
       } catch (error) {
