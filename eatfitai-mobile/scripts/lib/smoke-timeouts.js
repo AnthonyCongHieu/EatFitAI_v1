@@ -40,7 +40,7 @@ function resolveAiSmokeTimeouts(env = process.env) {
     requestRetryCount: parseNonNegativeInteger(env.EATFITAI_SMOKE_AI_RETRY_COUNT, 1),
     visionDetectTimeoutMs: parsePositiveInteger(
       env.EATFITAI_SMOKE_AI_DETECT_TIMEOUT_MS,
-      25000,
+      40000,
     ),
     visionDetectRetryCount: parseNonNegativeInteger(
       env.EATFITAI_SMOKE_AI_DETECT_RETRY_COUNT,

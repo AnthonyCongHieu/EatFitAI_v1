@@ -306,7 +306,7 @@ describe('RC unblock helpers', () => {
     expect(resolveAiSmokeTimeouts({})).toEqual({
       requestTimeoutMs: 20000,
       requestRetryCount: 1,
-      visionDetectTimeoutMs: 25000,
+      visionDetectTimeoutMs: 40000,
       visionDetectRetryCount: 1,
     });
     expect(
