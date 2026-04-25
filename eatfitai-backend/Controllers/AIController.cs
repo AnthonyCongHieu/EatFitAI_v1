@@ -968,7 +968,7 @@ namespace EatFitAI.API.Controllers
             var configuredSeconds = _configuration.GetValue<int?>("AIProvider:VisionDetectTimeoutSeconds");
             return configuredSeconds.HasValue && configuredSeconds.Value > 0
                 ? TimeSpan.FromSeconds(configuredSeconds.Value)
-                : TimeSpan.FromSeconds(12);
+                : TimeSpan.FromSeconds(20);
         }
 
         private static string MapActivityLevelToProviderLabel(double? activityLevel)
