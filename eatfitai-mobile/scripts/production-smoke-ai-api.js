@@ -1,6 +1,12 @@
 const fs = require('fs');
 const path = require('path');
+const { shouldStopVisionFixtureSweep } = require('./lib/ai-smoke-timeouts');
+const {
+  extractStringsFromMealDiary,
+  mealDiaryRowsContainFoodName,
+} = require('./lib/ai-smoke-readback');
 const { resolveSmokeCredentials } = require('./lib/smoke-credentials');
+const { resolveAiSmokeTimeouts } = require('./lib/smoke-timeouts');
 
 const DEFAULT_BACKEND_URL = 'https://eatfitai-backend-dev.onrender.com';
 const DEFAULT_OUTPUT_ROOT = path.resolve(
@@ -12,8 +18,11 @@ const DEFAULT_OUTPUT_ROOT = path.resolve(
 );
 const DEFAULT_DEMO_EMAIL = 'scan-demo@redacted.local';
 const DEFAULT_DEMO_PASSWORD = 'SET_IN_SEED_SCRIPT';
-const DEFAULT_TIMEOUT_MS = 30000;
-const DEFAULT_ATTEMPTS = 2;
+const AI_TIMEOUTS = resolveAiSmokeTimeouts(process.env);
+const DEFAULT_TIMEOUT_MS = AI_TIMEOUTS.requestTimeoutMs;
+const DEFAULT_ATTEMPTS = AI_TIMEOUTS.requestRetryCount;
+const VISION_DETECT_TIMEOUT_MS = AI_TIMEOUTS.visionDetectTimeoutMs;
+const VISION_DETECT_RETRY_COUNT = AI_TIMEOUTS.visionDetectRetryCount;
 const DEFAULT_RETRY_DELAY_MS = 1500;
 const DEFAULT_PRIMARY_FIXTURES = [
   { key: 'egg', fileName: 'ai-primary-egg-01.jpg' },
@@ -301,7 +310,7 @@ async function requestJson(url, options = {}) {
   );
 }
 
-async function requestMultipart(url, filePath, token, fieldName = 'file') {
+async function requestMultipart(url, filePath, token, fieldName = 'file', requestOptions = {}) {
   const formData = new FormData();
   const buffer = fs.readFileSync(filePath);
   formData.append(
@@ -311,12 +320,14 @@ async function requestMultipart(url, filePath, token, fieldName = 'file') {
   );
 
   return requestJson(url, {
+    ...requestOptions,
     method: 'POST',
     headers: {
       Authorization: `Bearer ${token}`,
+      ...(requestOptions.headers || {}),
     },
-      body: formData,
-    });
+    body: formData,
+  });
 }
 
 async function requestMultipartForm(url, token, formData) {
@@ -377,21 +388,6 @@ function normalizeMealTypeName(value) {
   }
 
   return raw;
-}
-
-function extractStringsFromMealDiary(rows) {
-  const items = [];
-  for (const row of Array.isArray(rows) ? rows : []) {
-    const names = [row?.FoodItemName, row?.RecipeName, row?.UserDishName, row?.Note];
-    for (const name of names) {
-      const trimmed = trim(name);
-      if (trimmed) {
-        items.push(trimmed);
-      }
-    }
-  }
-
-  return [...new Set(items)];
 }
 
 function selectFirstSuggestionLabel(payload) {
@@ -713,6 +709,11 @@ async function main() {
         `${backendUrl}/api/ai/vision/detect`,
         path.resolve(resolveFixtureDir(outputDir), DEFAULT_PRIMARY_FIXTURES[0].fileName),
         token,
+        'file',
+        {
+          timeoutMs: VISION_DETECT_TIMEOUT_MS,
+          retryCount: VISION_DETECT_RETRY_COUNT,
+        },
       );
       addEndpointSummary(report, 'vision/provider-down-contract', {
         name: 'api/ai/vision/detect',
@@ -758,11 +759,28 @@ async function main() {
     report.fixtureDir = fixtureDir;
 
     const detectResults = [];
+    let visionFixtureSweepStoppedReason = '';
     for (const fixture of primaryFixtures) {
       const filePath = path.resolve(
         fixtureDir,
         fixture.relativePath.replace(/^scan-demo[\\/]/, ''),
       );
+      if (visionFixtureSweepStoppedReason) {
+        addEndpointSummary(report, 'vision/detect', {
+          name: fixture.key,
+          filePath,
+          passed: false,
+          blocked: true,
+          status: null,
+          latencyMs: 0,
+          reason: visionFixtureSweepStoppedReason,
+          details: {
+            skippedAfterTimeout: true,
+          },
+        });
+        continue;
+      }
+
       if (!fs.existsSync(filePath)) {
         addEndpointSummary(report, 'vision/detect', {
           name: fixture.key,
@@ -780,6 +798,11 @@ async function main() {
         `${backendUrl}/api/ai/vision/detect`,
         filePath,
         token,
+        'file',
+        {
+          timeoutMs: VISION_DETECT_TIMEOUT_MS,
+          retryCount: VISION_DETECT_RETRY_COUNT,
+        },
       );
       const items = Array.isArray(response.body?.items) ? response.body.items : [];
       const unmappedLabels = Array.isArray(response.body?.unmappedLabels)
@@ -792,6 +815,7 @@ async function main() {
         blocked: false,
         status: response.status,
         latencyMs: response.durationMs,
+        reason: shouldStopVisionFixtureSweep(response) ? 'vision-detect-timeout' : null,
         details: {
           itemCount: items.length,
           unmappedCount: unmappedLabels.length,
@@ -813,6 +837,10 @@ async function main() {
         items,
         unmappedLabels,
       });
+
+      if (!entry.passed && shouldStopVisionFixtureSweep(response)) {
+        visionFixtureSweepStoppedReason = 'vision-detect-timeout-circuit-breaker';
+      }
     }
 
     const allDetectedItems = detectResults.flatMap((result) => result.items || []);
@@ -1597,10 +1625,9 @@ async function main() {
     const voiceAddFoodReadbackRows = Array.isArray(voiceAddFoodReadbackResponse.body)
       ? voiceAddFoodReadbackResponse.body
       : [];
-    const voiceAddFoodReadbackMatched = voiceAddFoodReadbackRows.some((row) =>
-      extractStringsFromMealDiary([row]).some((value) =>
-        normalizeName(value).includes(normalizeName(voiceAddFoodName)),
-      ),
+    const voiceAddFoodReadbackMatched = mealDiaryRowsContainFoodName(
+      voiceAddFoodReadbackRows,
+      voiceAddFoodName,
     );
     report.voiceExecuteAddFoodReadback = {
       status: voiceAddFoodReadbackResponse.status,

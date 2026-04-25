@@ -463,7 +463,7 @@ namespace EatFitAI.API.Services
             var codeHash = HashResetCode(code);
 
             _logger.LogInformation("Đã tạo reset code cho user {UserId}, hết hạn {ExpiresAt:O}", user.UserId, expiresAt);
-            var includeCodeInResponse = _env.IsDevelopment(); // hỗ trợ demo/dev, prod sẽ không trả mã
+            var includeCodeInResponse = ShouldIncludeAuthCodeInResponse(user.Email); // hỗ trợ demo/dev hoặc smoke flag có chủ đích
 
             try
             {
@@ -547,6 +547,25 @@ namespace EatFitAI.API.Services
             return new string(digits);
         }
 
+        private bool ShouldIncludeAuthCodeInResponse(string email)
+        {
+            if (_env.IsDevelopment())
+            {
+                return true;
+            }
+
+            var enabled = _configuration.GetValue<bool>("Auth:AllowAuthCodesInResponse");
+            if (!enabled)
+            {
+                return false;
+            }
+
+            _logger.LogWarning(
+                "Auth code response is enabled by configuration for {Email}. Use only for controlled smoke environments.",
+                email);
+            return true;
+        }
+
         private string HashResetCode(string code)
         {
             using var sha256 = SHA256.Create();
@@ -621,7 +640,7 @@ namespace EatFitAI.API.Services
         public async Task<RegisterResponse> RegisterWithVerificationAsync(RegisterRequest request)
         {
             _logger.LogInformation("Đăng ký với email verification cho: {Email}", request.Email);
-            var includeCodeInResponse = _env.IsDevelopment();
+            var includeCodeInResponse = ShouldIncludeAuthCodeInResponse(request.Email);
 
             // Check if email already exists
             var existingUser = await _userRepository.GetByEmailAsync(request.Email);
@@ -807,7 +826,7 @@ namespace EatFitAI.API.Services
 
             var verificationCode = GenerateNumericCode(6);
             var verificationCodeExpiry = DateTime.UtcNow.Add(VerificationCodeLifetime);
-            var includeCodeInResponse = _env.IsDevelopment();
+            var includeCodeInResponse = ShouldIncludeAuthCodeInResponse(request.Email);
             var emailDelivered = false;
 
             try

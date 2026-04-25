@@ -5,6 +5,8 @@ const {
   createDisposableMailbox,
   waitForMatchingMessage,
 } = require('./lib/disposable-mail');
+const { resolveAuthCode } = require('./lib/auth-smoke-codes');
+const { resolveAuthSmokeTimeouts } = require('./lib/smoke-timeouts');
 
 const DEFAULT_BACKEND_URL = 'https://eatfitai-backend-dev.onrender.com';
 const DEFAULT_OUTPUT_ROOT = path.resolve(
@@ -14,22 +16,11 @@ const DEFAULT_OUTPUT_ROOT = path.resolve(
   '_logs',
   'production-smoke',
 );
-const DEFAULT_REQUEST_TIMEOUT_MS = parsePositiveInteger(
-  process.env.EATFITAI_SMOKE_AUTH_TIMEOUT_MS,
-  30000,
-);
-const RESET_PASSWORD_TIMEOUT_MS = parsePositiveInteger(
-  process.env.EATFITAI_SMOKE_AUTH_RESET_TIMEOUT_MS,
-  120000,
-);
-const MAILBOX_TIMEOUT_MS = parsePositiveInteger(
-  process.env.EATFITAI_SMOKE_AUTH_MAILBOX_TIMEOUT_MS,
-  600000,
-);
-const MAILBOX_POLL_INTERVAL_MS = parsePositiveInteger(
-  process.env.EATFITAI_SMOKE_AUTH_MAILBOX_POLL_MS,
-  5000,
-);
+const AUTH_TIMEOUTS = resolveAuthSmokeTimeouts(process.env);
+const DEFAULT_REQUEST_TIMEOUT_MS = AUTH_TIMEOUTS.requestTimeoutMs;
+const RESET_PASSWORD_TIMEOUT_MS = AUTH_TIMEOUTS.resetPasswordTimeoutMs;
+const MAILBOX_TIMEOUT_MS = AUTH_TIMEOUTS.mailboxTimeoutMs;
+const MAILBOX_POLL_INTERVAL_MS = AUTH_TIMEOUTS.mailboxPollIntervalMs;
 const DEFAULT_MAIL_SUBJECT_VERIFY = 'Mã xác minh';
 const DEFAULT_MAIL_SUBJECT_RESET = 'Mã đặt lại mật khẩu';
 const DEFAULT_DISPLAY_NAME = 'Smoke API Disposable';
@@ -455,8 +446,8 @@ async function main() {
         }),
       },
       {
-        attempts: 3,
-        delayMs: 5000,
+        attempts: AUTH_TIMEOUTS.requestRetryAttempts,
+        delayMs: AUTH_TIMEOUTS.requestRetryDelayMs,
       },
     );
     const registerPassed = registerResponse.ok && registerResponse.status === 200;
@@ -470,8 +461,8 @@ async function main() {
           method: 'POST',
           body: JSON.stringify({ email: mailbox.address }),
         }, {
-          attempts: 3,
-          delayMs: 5000,
+          attempts: AUTH_TIMEOUTS.requestRetryAttempts,
+          delayMs: AUTH_TIMEOUTS.requestRetryDelayMs,
         })
       : null;
     const resendPassed = resendResponse ? resendResponse.ok && resendResponse.status === 200 : false;
@@ -492,7 +483,16 @@ async function main() {
       });
     }
 
-    if (registerCanRecoverWithResend && resendPassed) {
+    const verificationCodeResolutionBeforeMailbox = resolveAuthCode({
+      responseBodies: [resendResponse?.body, registerResponse?.body],
+      responseKey: 'verificationCode',
+      mailboxMessage: null,
+    });
+    if (
+      registerCanRecoverWithResend &&
+      resendPassed &&
+      !verificationCodeResolutionBeforeMailbox.code
+    ) {
       try {
         verificationMessage = await waitForMatchingMessage({
           apiBaseUrl: 'https://api.mail.tm',
@@ -515,7 +515,13 @@ async function main() {
       }
     }
 
-    const verificationCode = verificationMessage?.code || '';
+    const verificationCodeResolution = resolveAuthCode({
+      responseBodies: [resendResponse?.body, registerResponse?.body],
+      responseKey: 'verificationCode',
+      mailboxMessage: verificationMessage,
+    });
+    const verificationCode = verificationCodeResolution.code;
+    report.artifacts.verificationCodeSource = verificationCodeResolution.source;
     const verifyResponse =
       registerCanRecoverWithResend && resendPassed && verificationCode
         ? await requestJson(`${backendUrl}/api/auth/verify-email`, {
@@ -667,7 +673,12 @@ async function main() {
       });
     }
 
-    if (forgotPasswordPassed) {
+    const resetCodeResolutionBeforeMailbox = resolveAuthCode({
+      responseBodies: [forgotPasswordResponse?.body],
+      responseKey: 'resetCode',
+      mailboxMessage: null,
+    });
+    if (forgotPasswordPassed && !resetCodeResolutionBeforeMailbox.code) {
       try {
         resetMessage = await waitForMatchingMessage({
           apiBaseUrl: 'https://api.mail.tm',
@@ -687,7 +698,13 @@ async function main() {
       }
     }
 
-    const resetCode = resetMessage?.code || '';
+    const resetCodeResolution = resolveAuthCode({
+      responseBodies: [forgotPasswordResponse?.body],
+      responseKey: 'resetCode',
+      mailboxMessage: resetMessage,
+    });
+    const resetCode = resetCodeResolution.code;
+    report.artifacts.resetCodeSource = resetCodeResolution.source;
     const wrongResetResponse = resetCode
       ? await requestJson(`${backendUrl}/api/auth/verify-reset-code`, {
           method: 'POST',

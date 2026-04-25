@@ -118,7 +118,9 @@ namespace EatFitAI.API.Controllers
                     Content = content
                 };
                 AiProviderRequestHelper.AddInternalTokenHeader(request, _configuration, _logger);
-                response = await client.SendAsync(request, HttpContext.RequestAborted);
+                using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(HttpContext.RequestAborted);
+                timeoutCts.CancelAfter(GetVisionDetectTimeout());
+                response = await client.SendAsync(request, timeoutCts.Token);
             }
             catch (OperationCanceledException ex) when (!HttpContext.RequestAborted.IsCancellationRequested)
             {
@@ -953,6 +955,20 @@ namespace EatFitAI.API.Controllers
             return configuredSeconds.HasValue && configuredSeconds.Value > 0
                 ? TimeSpan.FromSeconds(configuredSeconds.Value)
                 : TimeSpan.FromSeconds(60);
+        }
+
+        private TimeSpan GetVisionDetectTimeout()
+        {
+            var configuredMilliseconds = _configuration.GetValue<int?>("AIProvider:VisionDetectTimeoutMilliseconds");
+            if (configuredMilliseconds.HasValue && configuredMilliseconds.Value > 0)
+            {
+                return TimeSpan.FromMilliseconds(configuredMilliseconds.Value);
+            }
+
+            var configuredSeconds = _configuration.GetValue<int?>("AIProvider:VisionDetectTimeoutSeconds");
+            return configuredSeconds.HasValue && configuredSeconds.Value > 0
+                ? TimeSpan.FromSeconds(configuredSeconds.Value)
+                : TimeSpan.FromSeconds(12);
         }
 
         private static string MapActivityLevelToProviderLabel(double? activityLevel)

@@ -217,4 +217,166 @@ describe('RC unblock helpers', () => {
       ]).failedModes,
     ).toContain('scan-save-readback');
   });
+
+  it('builds run-scoped smoke names so cloud seed data can be rerun safely', () => {
+    const {
+      buildUserApiSmokeNames,
+      buildRunScopedSmokeName,
+    } = require('../scripts/lib/user-smoke-data');
+
+    expect(buildRunScopedSmokeName('Smoke Lane Banana Egg Bowl', '2026-04-25T14-05-01-234Z')).toBe(
+      'Smoke Lane Banana Egg Bowl 20260425T140501234Z',
+    );
+    expect(buildRunScopedSmokeName('Smoke Lane Banana Egg Bowl', 'same-run')).toBe(
+      buildRunScopedSmokeName('Smoke Lane Banana Egg Bowl', 'same-run'),
+    );
+    expect(buildRunScopedSmokeName('Smoke Lane Banana Egg Bowl', 'first-run')).not.toBe(
+      buildRunScopedSmokeName('Smoke Lane Banana Egg Bowl', 'second-run'),
+    );
+    expect(buildRunScopedSmokeName('Smoke Lane Banana Egg Bowl', 'x'.repeat(300))).toHaveLength(255);
+
+    const seedNames = buildUserApiSmokeNames('2026-04-25T14-18-15-903Z');
+    expect(seedNames).toEqual({
+      customDishName: 'Smoke Lane Banana Egg Bowl 20260425T141815903Z',
+      primaryFoodName: 'Smoke Lane Yogurt Cup 20260425T141815903Z',
+      primaryFoodUpdatedName: 'Smoke Lane Yogurt Cup v2 20260425T141815903Z',
+      scratchFoodName: 'Smoke Lane Scratch Berry 20260425T141815903Z',
+    });
+    expect(new Set(Object.values(seedNames)).size).toBe(Object.values(seedNames).length);
+    expect(Object.values(seedNames).every((name) => name.length <= 255)).toBe(true);
+  });
+
+  it('matches voice add-food readback rows from camelCase meal diary payloads', () => {
+    const {
+      extractStringsFromMealDiary,
+      mealDiaryRowsContainFoodName,
+    } = require('../scripts/lib/ai-smoke-readback');
+
+    const rows = [
+      {
+        mealDiaryId: 3128,
+        foodItemName: 'Chuối (tươi)',
+        note: 'Voice AI: them 100g Chuối (tươi) bua trua',
+      },
+      {
+        MealDiaryId: 3129,
+        UserDishName: 'Smoke Lane Bowl',
+      },
+    ];
+
+    expect(extractStringsFromMealDiary(rows)).toEqual([
+      'Chuối (tươi)',
+      'Voice AI: them 100g Chuối (tươi) bua trua',
+      'Smoke Lane Bowl',
+    ]);
+    expect(mealDiaryRowsContainFoodName(rows, 'Chuối (tươi)')).toBe(true);
+    expect(mealDiaryRowsContainFoodName(rows, 'Apple')).toBe(false);
+  });
+
+  it('uses fail-fast smoke timeout defaults with env overrides', () => {
+    const {
+      resolveAiSmokeTimeouts,
+      resolveAuthSmokeTimeouts,
+    } = require('../scripts/lib/smoke-timeouts');
+
+    expect(resolveAuthSmokeTimeouts({})).toEqual({
+      requestTimeoutMs: 20000,
+      resetPasswordTimeoutMs: 45000,
+      mailboxTimeoutMs: 90000,
+      mailboxPollIntervalMs: 5000,
+      requestRetryAttempts: 2,
+      requestRetryDelayMs: 3000,
+    });
+    expect(resolveAiSmokeTimeouts({})).toEqual({
+      requestTimeoutMs: 20000,
+      requestRetryCount: 1,
+      visionDetectTimeoutMs: 15000,
+      visionDetectRetryCount: 0,
+    });
+    expect(
+      resolveAiSmokeTimeouts({
+        EATFITAI_SMOKE_AI_DETECT_TIMEOUT_MS: '25000',
+        EATFITAI_SMOKE_AI_DETECT_RETRY_COUNT: '2',
+      }),
+    ).toEqual(expect.objectContaining({
+      visionDetectTimeoutMs: 25000,
+      visionDetectRetryCount: 2,
+    }));
+  });
+
+  it('stops the vision fixture sweep after timeout-like provider failures', () => {
+    const {
+      isTimeoutLikeResponse,
+      shouldStopVisionFixtureSweep,
+    } = require('../scripts/lib/ai-smoke-timeouts');
+
+    expect(isTimeoutLikeResponse({ ok: false, status: null, error: 'This operation was aborted' })).toBe(true);
+    expect(isTimeoutLikeResponse({ ok: false, status: 504 })).toBe(true);
+    expect(isTimeoutLikeResponse({ ok: false, status: 503 })).toBe(false);
+    expect(shouldStopVisionFixtureSweep({ ok: false, status: null })).toBe(true);
+    expect(shouldStopVisionFixtureSweep({ ok: true, status: 200 })).toBe(false);
+  });
+
+  it('writes disposable mailbox artifacts without secrets or one-time codes', () => {
+    const {
+      buildSafeMailboxArtifact,
+      buildSafeMessageArtifact,
+    } = require('../scripts/lib/disposable-mail');
+
+    const mailboxArtifact = buildSafeMailboxArtifact({
+      generatedAt: '2026-04-25T00:00:00.000Z',
+      provider: 'mail.tm',
+      address: 'smoke@example.com',
+      password: 'secret-password',
+      token: 'secret-token',
+      domain: 'example.com',
+    });
+    const messageArtifact = buildSafeMessageArtifact({
+      generatedAt: '2026-04-25T00:01:00.000Z',
+      mailbox: 'smoke@example.com',
+      messageId: 'message-1',
+      subject: 'Mã xác minh 123456',
+      code: '123456',
+      message: {
+        text: 'Use code 123456',
+      },
+      source: 'message-detail',
+    });
+
+    const serialized = JSON.stringify({ mailboxArtifact, messageArtifact });
+    expect(serialized).toContain('smoke@example.com');
+    expect(serialized).not.toContain('secret-password');
+    expect(serialized).not.toContain('secret-token');
+    expect(serialized).not.toContain('123456');
+    expect(mailboxArtifact.tokenPresent).toBe(true);
+    expect(messageArtifact.codeFound).toBe(true);
+  });
+
+  it('extracts auth smoke codes from response before falling back to mailbox', () => {
+    const {
+      extractResponseCode,
+      resolveAuthCode,
+    } = require('../scripts/lib/auth-smoke-codes');
+
+    expect(extractResponseCode({ verificationCode: '123456' }, 'verificationCode')).toBe('123456');
+    expect(extractResponseCode({ VerificationCode: '234567' }, 'verificationCode')).toBe('234567');
+    expect(extractResponseCode({ resetCode: '345678' }, 'resetCode')).toBe('345678');
+    expect(extractResponseCode({ verificationCode: '<redacted>' }, 'verificationCode')).toBe('');
+    expect(resolveAuthCode({
+      responseBodies: [{ verificationCode: '' }, { VerificationCode: '456789' }],
+      responseKey: 'verificationCode',
+      mailboxMessage: { code: '999999' },
+    })).toEqual({
+      code: '456789',
+      source: 'response',
+    });
+    expect(resolveAuthCode({
+      responseBodies: [{ verificationCode: '' }],
+      responseKey: 'verificationCode',
+      mailboxMessage: { code: '999999' },
+    })).toEqual({
+      code: '999999',
+      source: 'mailbox',
+    });
+  });
 });

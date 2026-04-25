@@ -1,6 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const { resolveSmokeCredentials } = require('./lib/smoke-credentials');
+const { buildUserApiSmokeNames } = require('./lib/user-smoke-data');
 
 const DEFAULT_BACKEND_URL = 'https://eatfitai-backend-dev.onrender.com';
 const DEFAULT_OUTPUT_ROOT = path.resolve(
@@ -379,6 +380,8 @@ async function getFoodDetail(backendUrl, token, foodId) {
 
 async function main() {
   const outputDir = resolveOutputDir(process.argv[2]);
+  const runId = path.basename(outputDir);
+  const smokeNames = buildUserApiSmokeNames(runId);
   const backendUrl = normalizeBaseUrl(
     process.env.EATFITAI_SMOKE_BACKEND_URL || process.env.EXPO_PUBLIC_API_BASE_URL,
     DEFAULT_BACKEND_URL,
@@ -676,7 +679,7 @@ async function main() {
   };
 
   const customDishRequest = {
-    dishName: 'Smoke Lane Banana Egg Bowl',
+    dishName: smokeNames.customDishName,
     description: 'Seeded custom dish for downstream AI checks',
     ingredients: [
       {
@@ -706,7 +709,7 @@ async function main() {
   const userFoodPrimaryCreate = await requestMultipart(`${backendUrl}/api/user-food-items`, {
     headers: authHeaders(token),
     fields: [
-      { name: 'FoodName', value: 'Smoke Lane Yogurt Cup' },
+      { name: 'FoodName', value: smokeNames.primaryFoodName },
       { name: 'UnitType', value: 'g' },
       { name: 'CaloriesPer100', value: 98 },
       { name: 'ProteinPer100', value: 9.1 },
@@ -735,7 +738,7 @@ async function main() {
         method: 'PUT',
         headers: authHeaders(token),
         fields: [
-          { name: 'FoodName', value: 'Smoke Lane Yogurt Cup v2' },
+          { name: 'FoodName', value: smokeNames.primaryFoodUpdatedName },
           { name: 'UnitType', value: 'g' },
           { name: 'CaloriesPer100', value: 101 },
           { name: 'ProteinPer100', value: 9.4 },
@@ -766,7 +769,7 @@ async function main() {
   const userFoodScratchCreate = await requestMultipart(`${backendUrl}/api/user-food-items`, {
     headers: authHeaders(token),
     fields: [
-      { name: 'FoodName', value: 'Smoke Lane Scratch Berry' },
+      { name: 'FoodName', value: smokeNames.scratchFoodName },
       { name: 'UnitType', value: 'g' },
       { name: 'CaloriesPer100', value: 55 },
       { name: 'ProteinPer100', value: 1.0 },

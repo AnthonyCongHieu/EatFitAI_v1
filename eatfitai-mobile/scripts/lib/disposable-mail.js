@@ -1,7 +1,9 @@
 const fs = require('fs');
 const path = require('path');
+const { parsePositiveInteger } = require('./smoke-timeouts');
 
 const DEFAULT_MAIL_API = 'https://api.mail.tm';
+const DEFAULT_REQUEST_TIMEOUT_MS = 15000;
 
 function trim(value) {
   return String(value || '').trim();
@@ -13,6 +15,10 @@ function writeJson(filePath, value) {
 
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function redactSixDigitCodes(value) {
+  return String(value || '').replace(/\b\d{6}\b/g, '<code>');
 }
 
 function getMailItems(body) {
@@ -93,6 +99,10 @@ function selectNewestMatchingMessage(items, options = {}) {
 
 async function requestJson(url, options = {}) {
   const startedAtMs = Date.now();
+  const timeoutMs = parsePositiveInteger(options.timeoutMs, DEFAULT_REQUEST_TIMEOUT_MS);
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+
   try {
     const response = await fetch(url, {
       method: options.method || 'GET',
@@ -101,6 +111,7 @@ async function requestJson(url, options = {}) {
         ...(options.headers || {}),
       },
       body: options.body,
+      signal: controller.signal,
     });
     const rawText = await response.text();
     let body = null;
@@ -127,7 +138,31 @@ async function requestJson(url, options = {}) {
       rawText: '',
       error: error instanceof Error ? error.message : String(error),
     };
+  } finally {
+    clearTimeout(timer);
   }
+}
+
+function buildSafeMailboxArtifact(mailbox) {
+  return {
+    generatedAt: mailbox?.generatedAt || new Date().toISOString(),
+    provider: mailbox?.provider || 'mail.tm',
+    address: trim(mailbox?.address),
+    domain: trim(mailbox?.domain),
+    tokenPresent: Boolean(mailbox?.token),
+    passwordPresent: Boolean(mailbox?.password),
+  };
+}
+
+function buildSafeMessageArtifact(messageArtifact) {
+  return {
+    generatedAt: messageArtifact?.generatedAt || new Date().toISOString(),
+    mailbox: trim(messageArtifact?.mailbox),
+    messageId: trim(messageArtifact?.messageId),
+    subject: redactSixDigitCodes(messageArtifact?.subject),
+    codeFound: Boolean(messageArtifact?.code),
+    source: trim(messageArtifact?.source),
+  };
 }
 
 async function createDisposableMailbox(options = {}) {
@@ -194,7 +229,7 @@ async function createDisposableMailbox(options = {}) {
 
   if (outputDir) {
     fs.mkdirSync(outputDir, { recursive: true });
-    writeJson(path.join(outputDir, artifactName), artifact);
+    writeJson(path.join(outputDir, artifactName), buildSafeMailboxArtifact(artifact));
   }
 
   return artifact;
@@ -252,7 +287,7 @@ async function waitForMatchingMessage(options) {
 
     if (outputDir) {
       fs.mkdirSync(outputDir, { recursive: true });
-      writeJson(path.join(outputDir, artifactName), artifact);
+      writeJson(path.join(outputDir, artifactName), buildSafeMessageArtifact(artifact));
     }
 
     return artifact;
@@ -277,6 +312,8 @@ async function waitForMatchingMessage(options) {
 
 module.exports = {
   DEFAULT_MAIL_API,
+  buildSafeMailboxArtifact,
+  buildSafeMessageArtifact,
   createDisposableMailbox,
   extractSixDigitCode,
   getMailItems,
