@@ -44,7 +44,7 @@ function resolveAiSmokeTimeouts(env = process.env) {
     ),
     visionDetectRetryCount: parseNonNegativeInteger(
       env.EATFITAI_SMOKE_AI_DETECT_RETRY_COUNT,
-      0,
+      1,
     ),
   };
 }

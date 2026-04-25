@@ -1,5 +1,9 @@
 const fs = require('fs');
 const path = require('path');
+const {
+  buildNoonUtcIsoForDateOnly,
+  toVietnamDateOnly,
+} = require('./lib/ai-smoke-dates');
 const { shouldStopVisionFixtureSweep } = require('./lib/ai-smoke-timeouts');
 const {
   extractStringsFromMealDiary,
@@ -84,12 +88,6 @@ function writeJson(filePath, value) {
 
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-function toLocalDateOnly(date = new Date()) {
-  const local = new Date(date);
-  local.setUTCHours(local.getUTCHours() + 7);
-  return local.toISOString().slice(0, 10);
 }
 
 function average(values) {
@@ -444,7 +442,7 @@ async function login(backendUrl, credentials, report) {
 }
 
 async function loadUserContext(backendUrl, token) {
-  const localDate = toLocalDateOnly();
+  const localDate = toVietnamDateOnly();
   const [profileResult, favoritesResult, mealDiaryResult] = await Promise.all([
     requestJson(`${backendUrl}/api/profile`, {
       headers: authHeaders(token),
@@ -1571,13 +1569,14 @@ async function main() {
           ]);
     const voiceAddFoodName =
       trim(voiceAddFoodTarget?.foodName) || DEFAULT_INGREDIENT_FALLBACKS[0];
+    const voiceAddFoodDate = toVietnamDateOnly();
     const voiceAddFoodPayload = {
       intent: 'ADD_FOOD',
       entities: {
         foodName: voiceAddFoodName,
         weight: 100,
         mealType: 'Lunch',
-        date: new Date().toISOString(),
+        date: buildNoonUtcIsoForDateOnly(voiceAddFoodDate),
       },
       confidence: 0.95,
       rawText: `them 100g ${voiceAddFoodName} bua trua`,
@@ -1617,7 +1616,7 @@ async function main() {
     });
 
     const voiceAddFoodReadbackResponse = await requestJson(
-      `${backendUrl}/api/meal-diary?date=${encodeURIComponent(toLocalDateOnly())}`,
+      `${backendUrl}/api/meal-diary?date=${encodeURIComponent(voiceAddFoodDate)}`,
       {
         headers: authHeaders(token),
       },

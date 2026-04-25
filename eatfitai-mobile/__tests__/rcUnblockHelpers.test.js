@@ -273,6 +273,22 @@ describe('RC unblock helpers', () => {
     expect(mealDiaryRowsContainFoodName(rows, 'Apple')).toBe(false);
   });
 
+  it('builds stable voice add-food dates for readback across Vietnam midnight', () => {
+    const {
+      buildNoonUtcIsoForDateOnly,
+      toVietnamDateOnly,
+    } = require('../scripts/lib/ai-smoke-dates');
+
+    const utcLateEvening = new Date('2026-04-25T17:05:00.000Z');
+    const dateOnly = toVietnamDateOnly(utcLateEvening);
+
+    expect(dateOnly).toBe('2026-04-26');
+    expect(buildNoonUtcIsoForDateOnly(dateOnly)).toBe('2026-04-26T12:00:00.000Z');
+    expect(new Date(buildNoonUtcIsoForDateOnly(dateOnly)).toISOString().slice(0, 10)).toBe(
+      dateOnly,
+    );
+  });
+
   it('uses fail-fast smoke timeout defaults with env overrides', () => {
     const {
       resolveAiSmokeTimeouts,
@@ -291,7 +307,7 @@ describe('RC unblock helpers', () => {
       requestTimeoutMs: 20000,
       requestRetryCount: 1,
       visionDetectTimeoutMs: 15000,
-      visionDetectRetryCount: 0,
+      visionDetectRetryCount: 1,
     });
     expect(
       resolveAiSmokeTimeouts({
