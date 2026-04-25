@@ -39,7 +39,7 @@ const JPEG_FIXTURE_PATH = path.resolve(
   'tools',
   'fixtures',
   'scan-demo',
-  'ai-primary-banana-01.jpg',
+  'ai-primary-banana-02.jpg',
 );
 const MEAL_TYPE_IDS = {
   Breakfast: 1,

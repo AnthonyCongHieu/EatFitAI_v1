@@ -88,7 +88,6 @@ namespace EatFitAI.API.Services
                     existingItem.ThumbnailUrl = thumbnailUrl;
                 }
 
-                _context.UserFoodItems.Update(existingItem);
                 await _context.SaveChangesAsync();
 
                 return _mapper.Map<UserFoodItemDto>(existingItem);
@@ -140,7 +139,6 @@ namespace EatFitAI.API.Services
 
             entity.UpdatedAt = DateTime.UtcNow;
 
-            _context.UserFoodItems.Update(entity);
             await _context.SaveChangesAsync();
 
             return _mapper.Map<UserFoodItemDto>(entity);
@@ -154,7 +152,6 @@ namespace EatFitAI.API.Services
 
             entity.IsDeleted = true;
             entity.UpdatedAt = DateTime.UtcNow;
-            _context.UserFoodItems.Update(entity);
             await _context.SaveChangesAsync();
         }
 

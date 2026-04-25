@@ -413,7 +413,6 @@ namespace EatFitAI.API.Tests.Unit.Services
             };
 
             _mealDiaryRepositoryMock.Setup(r => r.GetByIdAsync(1)).ReturnsAsync(existingDiary);
-            _mealDiaryRepositoryMock.Setup(r => r.Update(It.IsAny<MealDiary>()));
             _mealDiaryRepositoryMock.Setup(r => r.GetByIdWithIncludesAsync(1)).ReturnsAsync(existingDiary);
             _mapperMock.Setup(m => m.Map<MealDiaryDto>(It.IsAny<MealDiary>()))
                 .Returns(new MealDiaryDto { MealDiaryId = 1, Grams = 300, Note = "An them mot chut" });
@@ -423,6 +422,7 @@ namespace EatFitAI.API.Tests.Unit.Services
             Assert.NotNull(result);
             Assert.Equal(300, result.Grams);
             Assert.Equal("An them mot chut", result.Note);
+            _mealDiaryRepositoryMock.Verify(r => r.Update(It.IsAny<MealDiary>()), Times.Never);
         }
 
         [Fact]
@@ -451,7 +451,6 @@ namespace EatFitAI.API.Tests.Unit.Services
             };
 
             _mealDiaryRepositoryMock.Setup(r => r.GetByIdAsync(1)).ReturnsAsync(existingDiary);
-            _mealDiaryRepositoryMock.Setup(r => r.Update(It.IsAny<MealDiary>()));
             _mealDiaryRepositoryMock.Setup(r => r.GetByIdWithIncludesAsync(1)).ReturnsAsync(existingDiary);
             _mapperMock.Setup(m => m.Map<MealDiaryDto>(It.IsAny<MealDiary>()))
                 .Returns(new MealDiaryDto { MealDiaryId = 1, Grams = 350 });
@@ -463,6 +462,7 @@ namespace EatFitAI.API.Tests.Unit.Services
             Assert.Equal(1, existingDiary.UserFoodItemId);
             Assert.Null(existingDiary.UserDishId);
             Assert.Null(existingDiary.RecipeId);
+            _mealDiaryRepositoryMock.Verify(r => r.Update(It.IsAny<MealDiary>()), Times.Never);
         }
 
         [Fact]

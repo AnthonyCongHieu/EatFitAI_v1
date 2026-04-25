@@ -21,9 +21,16 @@ public sealed class SupabaseSchemaBootstrapper
 
     public static string SchemaSql => """
         ALTER TABLE IF EXISTS "UserPreference"
-            ADD COLUMN IF NOT EXISTS "Allergies" text NULL;
+            ADD COLUMN IF NOT EXISTS "DietaryRestrictions" text NULL,
+            ADD COLUMN IF NOT EXISTS "Allergies" text NULL,
+            ADD COLUMN IF NOT EXISTS "PreferredMealsPerDay" integer NOT NULL DEFAULT 3,
+            ADD COLUMN IF NOT EXISTS "PreferredCuisine" character varying(100) NULL,
+            ADD COLUMN IF NOT EXISTS "CreatedAt" timestamp(3) with time zone NOT NULL DEFAULT (NOW() AT TIME ZONE 'UTC'),
+            ADD COLUMN IF NOT EXISTS "UpdatedAt" timestamp(3) with time zone NOT NULL DEFAULT (NOW() AT TIME ZONE 'UTC');
 
         ALTER TABLE IF EXISTS "AILog"
+            ADD COLUMN IF NOT EXISTS "InputJson" text NULL,
+            ADD COLUMN IF NOT EXISTS "OutputJson" text NULL,
             ADD COLUMN IF NOT EXISTS "DurationMs" integer NULL;
 
         NOTIFY pgrst, 'reload schema';

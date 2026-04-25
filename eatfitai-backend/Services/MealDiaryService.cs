@@ -199,8 +199,6 @@ namespace EatFitAI.API.Services
             mealDiary.UpdatedAt = DateTime.UtcNow;
 
             await ComputeAndAssignMacrosAsync(mealDiary, userId);
-            _mealDiaryRepository.Update(mealDiary);
-
             if (mealDiary.FoodItemId.HasValue && originalFoodItemId != mealDiary.FoodItemId)
             {
                 await TrackRecentFoodsAsync(userId, new[] { mealDiary.FoodItemId });
