@@ -306,6 +306,33 @@ function recordNegativeCase(report, name, result, expectedStatuses) {
   return passed;
 }
 
+function buildUserPrimaryPathReadiness(report) {
+  const failures = report.failures.map((failure) =>
+    failure.step || failure.reason || failure.message || 'user-primary-path-failed',
+  );
+
+  return {
+    passed: failures.length === 0,
+    failures,
+    covered: [
+      'profile',
+      'avatar',
+      'body-metrics',
+      'preferences',
+      'food-search',
+      'food-detail',
+      'custom-dish',
+      'user-food-items',
+      'favorites',
+      'meal-diary',
+      'water-intake',
+      'summary-day',
+      'summary-week',
+      'analytics',
+    ],
+  };
+}
+
 function resolveCredentials() {
   const credentials = resolveSmokeCredentials({ allowLocalDefaults: false });
   if (!credentials?.email || !credentials?.password) {
@@ -466,7 +493,8 @@ async function main() {
       status: loginResult.status,
       message: loginResult.error || loginResult.body?.message || 'sandbox login failed',
     });
-    report.passed = false;
+    report.primaryPath = buildUserPrimaryPathReadiness(report);
+    report.passed = report.primaryPath.passed;
     const outputPath = path.join(outputDir, 'user-api-report.json');
     fs.writeFileSync(outputPath, JSON.stringify(report, null, 2), 'utf8');
 
@@ -477,6 +505,7 @@ async function main() {
           outputDir,
           backendUrl,
           passed: report.passed,
+          primaryPath: report.primaryPath,
           failures: report.failures.length,
           selectedFood: null,
           seeded: {
@@ -1137,7 +1166,6 @@ async function main() {
   };
 
   const chosenProfile = profileGetAfter.body || profileUpdate.body || profileGetBefore.body || {};
-  const requiredFailures = report.failures.length;
   report.seeded.profile = {
     before: summarizeBody(profileGetBefore.body),
     after: summarizeBody(profileGetAfter.body),
@@ -1147,7 +1175,8 @@ async function main() {
     selectedUserId: chosenProfile.userId || chosenProfile.UserId || null,
   };
 
-  report.passed = requiredFailures === 0;
+  report.primaryPath = buildUserPrimaryPathReadiness(report);
+  report.passed = report.primaryPath.passed;
 
   const outputPath = path.join(outputDir, 'user-api-report.json');
   fs.writeFileSync(outputPath, JSON.stringify(report, null, 2), 'utf8');
@@ -1159,6 +1188,7 @@ async function main() {
         outputDir,
         backendUrl,
         passed: report.passed,
+        primaryPath: report.primaryPath,
         failures: report.failures.length,
         selectedFood: selectedFood
           ? { id: selectedFoodId, foodName: selectedFoodName }

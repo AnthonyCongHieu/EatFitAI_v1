@@ -51,6 +51,9 @@ public class AIVisionControllerTests : IClassFixture<WebApplicationFactory<Progr
 
         var body = await response.Content.ReadFromJsonAsync<JsonElement>();
         Assert.Equal("ai_provider_down", body.GetProperty("error").GetString());
+        Assert.Equal("ai_provider_down", body.GetProperty("code").GetString());
+        Assert.False(string.IsNullOrWhiteSpace(body.GetProperty("requestId").GetString()));
+        Assert.False(body.TryGetProperty("aiStatus", out _));
     }
 
     [Fact]

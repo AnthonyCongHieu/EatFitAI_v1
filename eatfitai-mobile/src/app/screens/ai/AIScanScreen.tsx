@@ -51,6 +51,7 @@ import { handleApiErrorWithCustomMessage } from '../../../utils/errorHandler';
 import { AppImage } from '../../../components/ui/AppImage';
 import type { RootStackParamList } from '../../types';
 import type { MappedFoodItem } from '../../../types/ai';
+import { getAiFeatureAvailability } from '../../../utils/aiAvailability';
 import { foodService } from '../../../services/foodService';
 import { IngredientBasketFab } from '../../../components/scan/IngredientBasketFab';
 import { IngredientBasketSheet } from '../../../components/scan/IngredientBasketSheet';
@@ -128,7 +129,7 @@ const AIScanScreen: React.FC = () => {
   const [showProcessingBanner, setShowProcessingBanner] = useState(false);
 
   const hasPermission = permission?.granted === true;
-  const isAiDown = aiStatus?.state === 'DOWN';
+  const visionAvailability = getAiFeatureAvailability(aiStatus, 'vision');
   const isBarcodeMode = captureLane === 'barcode';
 
   /* ── Scanning line animation ── */
@@ -157,15 +158,50 @@ const AIScanScreen: React.FC = () => {
 
   /* ── All business-logic handlers ── */
 
-  const notifyAiDown = useCallback(() => {
+  const notifyVisionUnavailable = useCallback(() => {
     Toast.show({
       type: 'info',
-      text1: 'AI tạm dừng',
-      text2: 'EatFitAI vẫn sẽ thử phân tích; nếu chưa sẵn sàng bạn có thể tìm thủ công.',
+      text1: visionAvailability.title,
+      text2:
+        visionAvailability.message ??
+        'Bạn vẫn có thể tìm món thủ công trong lúc chờ AI sẵn sàng.',
     });
-  }, []);
+  }, [visionAvailability.message, visionAvailability.title]);
+
+  const guardVisionAiReady = useCallback(
+    (source: 'camera' | 'gallery') => {
+      if (visionAvailability.canUseAi) {
+        return true;
+      }
+
+      notifyVisionUnavailable();
+      trackEvent('ai_scan_blocked', {
+        flow: 'ai_scan',
+        step: 'detect',
+        status: 'blocked',
+        metadata: {
+          source,
+          availabilityState: visionAvailability.state,
+          reason: visionAvailability.title,
+        },
+      });
+      navigation.navigate('FoodSearch');
+      return false;
+    },
+    [
+      navigation,
+      notifyVisionUnavailable,
+      visionAvailability.canUseAi,
+      visionAvailability.state,
+      visionAvailability.title,
+    ],
+  );
 
   const processImage = useCallback(async (uri: string, source: 'camera' | 'gallery') => {
+    if (!guardVisionAiReady(source)) {
+      return;
+    }
+
     setMode('preview');
     setIsProcessing(true);
     setShowProcessingBanner(true);
@@ -229,9 +265,10 @@ const AIScanScreen: React.FC = () => {
         });
         setMode('results');
         trackEvent('ai_scan_result', {
+          category: 'error',
           flow: 'ai_scan',
           step: 'detect',
-          status: 'fallback',
+          status: 'failure',
           metadata: {
             source,
             reason: 'ai_offline',
@@ -258,7 +295,7 @@ const AIScanScreen: React.FC = () => {
     } finally {
       setIsProcessing(false);
     }
-  }, []);
+  }, [guardVisionAiReady]);
 
   const handleCaptureInternal = useCallback(async () => {
     if (!cameraRef.current) return;
@@ -287,8 +324,8 @@ const AIScanScreen: React.FC = () => {
   }, [processImage]);
 
   const handleCapture = useCallback(async () => {
-    if (isAiDown) {
-      notifyAiDown();
+    if (!guardVisionAiReady('camera')) {
+      return;
     }
 
     if (!cameraRef.current) {
@@ -301,11 +338,11 @@ const AIScanScreen: React.FC = () => {
     captureScale.value = withSpring(0.9, { damping: 10 });
     await handleCaptureInternal();
     captureScale.value = withSpring(1, { damping: 15 });
-  }, [captureScale, handleCaptureInternal, isAiDown, notifyAiDown]);
+  }, [captureScale, guardVisionAiReady, handleCaptureInternal]);
 
   const handlePickImage = useCallback(async () => {
-    if (isAiDown) {
-      notifyAiDown();
+    if (!guardVisionAiReady('gallery')) {
+      return;
     }
 
     if (!galleryPermission?.granted) {
@@ -336,7 +373,7 @@ const AIScanScreen: React.FC = () => {
         unknown: { text1: 'Không thể chọn ảnh', text2: 'Vui lòng thử lại' },
       });
     }
-  }, [galleryPermission, isAiDown, notifyAiDown, processImage, requestGalleryPermission]);
+  }, [galleryPermission, guardVisionAiReady, processImage, requestGalleryPermission]);
 
   const handleBarcodeScanned = useCallback(
     async (scanningResult: BarcodeScanningResult) => {
@@ -709,6 +746,12 @@ const AIScanScreen: React.FC = () => {
                 compact
                 testID={TEST_IDS.aiScan.statusBadge}
               />
+              {!isBarcodeMode && !visionAvailability.canUseAi && (
+                <ThemedText style={S.aiAvailabilityHint}>
+                  {visionAvailability.message ??
+                    'Bạn vẫn có thể tìm món thủ công trong lúc chờ AI sẵn sàng.'}
+                </ThemedText>
+              )}
             </View>
           )}
         </Animated.View>
@@ -1194,6 +1237,15 @@ const S = StyleSheet.create({
     paddingHorizontal: 4,
     marginTop: 10,
     alignItems: 'center',
+  },
+  aiAvailabilityHint: {
+    marginTop: 8,
+    maxWidth: 280,
+    textAlign: 'center',
+    fontSize: 12,
+    fontWeight: '600',
+    color: P.onSurfaceVariant,
+    lineHeight: 17,
   },
 
   /* ═══ SCANNER FRAME ═══ */

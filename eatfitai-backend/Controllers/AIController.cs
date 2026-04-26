@@ -95,8 +95,9 @@ namespace EatFitAI.API.Controllers
                 return StatusCode(StatusCodes.Status503ServiceUnavailable, new
                 {
                     error = "ai_provider_down",
+                    code = "ai_provider_down",
                     message = "AI provider hiện đang DOWN. Không thể nhận diện ảnh lúc này.",
-                    aiStatus
+                    requestId = HttpContext.TraceIdentifier
                 });
             }
 
@@ -349,7 +350,7 @@ namespace EatFitAI.API.Controllers
 
             try
             {
-                // Gọi AI Provider để tính toán bằng Ollama (không dùng công thức local)
+                // Gọi AI Provider để tính mục tiêu dinh dưỡng bằng provider AI hiện tại.
                 var aiStatus = _aiHealthService.GetStatus();
                 if (string.Equals(aiStatus.State, AiHealthState.Down.ToString().ToUpperInvariant(), StringComparison.Ordinal))
                 {

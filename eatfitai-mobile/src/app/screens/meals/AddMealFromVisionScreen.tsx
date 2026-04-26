@@ -32,6 +32,13 @@ import {
 } from '../../../services/diaryFlowService';
 import { handleApiErrorWithCustomMessage } from '../../../utils/errorHandler';
 import { translateIngredient } from '../../../utils/translate';
+import {
+  buildVisionReviewItems,
+  calculateVisionReviewCalories,
+  clampVisionGrams,
+  getVisionReviewSaveBlocker,
+  type VisionReviewItem,
+} from '../../../utils/visionReview';
 import { TEST_IDS } from '../../../testing/testIds';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
@@ -46,19 +53,6 @@ const MEAL_TYPE_OPTIONS: { id: MealTypeId; label: string }[] = [
   { id: MEAL_TYPES.SNACK, label: 'Snack' },
 ];
 
-type DetectionItem = {
-  item: MappedFoodItem;
-  selected: boolean;
-  grams: number;
-};
-
-const toDetectionItems = (items: MappedFoodItem[]): DetectionItem[] =>
-  items.map((item) => ({
-    item,
-    selected: item.isMatched,
-    grams: 100,
-  }));
-
 const AddMealFromVisionScreen = (): React.ReactElement => {
   const { theme } = useAppTheme();
   const navigation = useNavigation<NavigationProp>();
@@ -68,8 +62,8 @@ const AddMealFromVisionScreen = (): React.ReactElement => {
   const { imageUri, result } = route.params;
 
   const [loading, setLoading] = useState(false);
-  const [detectionItems, setDetectionItems] = useState<DetectionItem[]>(() =>
-    toDetectionItems(result.items),
+  const [detectionItems, setDetectionItems] = useState<VisionReviewItem[]>(() =>
+    buildVisionReviewItems(result.items),
   );
   const [selectedMealType, setSelectedMealType] = useState<MealTypeId>(MEAL_TYPES.LUNCH);
   const [teachLabelVisible, setTeachLabelVisible] = useState(false);
@@ -84,16 +78,20 @@ const AddMealFromVisionScreen = (): React.ReactElement => {
   );
 
   const totalCalories = useMemo(
-    () =>
-      selectedItems.reduce((sum, detection) => {
-        const caloriesPer100g = detection.item.caloriesPer100g ?? 0;
-        return sum + (caloriesPer100g * detection.grams) / 100;
-      }, 0),
-    [selectedItems],
+    () => calculateVisionReviewCalories(detectionItems),
+    [detectionItems],
   );
 
-  const matchedItems = detectionItems.filter((detection) => detection.item.isMatched);
-  const unmatchedItems = detectionItems.filter((detection) => !detection.item.isMatched);
+  const indexedDetectionItems = useMemo(
+    () => detectionItems.map((detection, index) => ({ detection, index })),
+    [detectionItems],
+  );
+  const matchedItems = indexedDetectionItems.filter(
+    ({ detection }) => detection.item.isMatched,
+  );
+  const unmatchedItems = indexedDetectionItems.filter(
+    ({ detection }) => !detection.item.isMatched,
+  );
 
   const currentReplaceQuery = useMemo(() => {
     if (replaceTargetIndex === null) {
@@ -113,7 +111,7 @@ const AddMealFromVisionScreen = (): React.ReactElement => {
   }, []);
 
   const updateDetectionItem = useCallback(
-    (index: number, updater: (current: DetectionItem) => DetectionItem) => {
+    (index: number, updater: (current: VisionReviewItem) => VisionReviewItem) => {
       setDetectionItems((previous) =>
         previous.map((item, currentIndex) =>
           currentIndex === index ? updater(item) : item,
@@ -151,7 +149,7 @@ const AddMealFromVisionScreen = (): React.ReactElement => {
     (index: number, delta: number) => {
       updateDetectionItem(index, (current) => ({
         ...current,
-        grams: Math.min(1000, Math.max(25, current.grams + delta)),
+        grams: clampVisionGrams(current.grams + delta),
       }));
     },
     [updateDetectionItem],
@@ -214,7 +212,7 @@ const AddMealFromVisionScreen = (): React.ReactElement => {
         setLoading(true);
         try {
           const refreshedResult = await aiService.detectFoodByImage(imageUri);
-          setDetectionItems(toDetectionItems(refreshedResult.items));
+          setDetectionItems(buildVisionReviewItems(refreshedResult.items));
         } catch {
           Toast.show({
             type: 'info',
@@ -277,15 +275,12 @@ const AddMealFromVisionScreen = (): React.ReactElement => {
       return;
     }
 
-    const hasUnresolvedItem = selectedItems.some(
-      (detection) => !detection.item.foodItemId || Number(detection.item.foodItemId) <= 0,
-    );
-
-    if (hasUnresolvedItem) {
+    const saveBlocker = getVisionReviewSaveBlocker(selectedItems);
+    if (saveBlocker) {
       Toast.show({
         type: 'info',
         text1: 'Còn món cần sửa',
-        text2: 'Hãy đổi món bằng Search hoặc bỏ chọn món chưa được map.',
+        text2: saveBlocker,
       });
       return;
     }
@@ -319,7 +314,7 @@ const AddMealFromVisionScreen = (): React.ReactElement => {
     }
   }, [navigation, queryClient, selectedItems, selectedMealType, totalCalories]);
 
-  const renderFoodItem = (detection: DetectionItem, index: number) => {
+  const renderFoodItem = (detection: VisionReviewItem, index: number) => {
     const displayName = getDisplayName(detection.item);
     const calories = Math.round(
       ((detection.item.caloriesPer100g ?? 0) * detection.grams) / 100,
@@ -552,7 +547,9 @@ const AddMealFromVisionScreen = (): React.ReactElement => {
                     Đã map được ({matchedItems.length})
                   </ThemedText>
                 </View>
-                {matchedItems.map((detection, index) => renderFoodItem(detection, index))}
+                {matchedItems.map(({ detection, index }) =>
+                  renderFoodItem(detection, index),
+                )}
               </>
             ) : null}
 
@@ -563,8 +560,8 @@ const AddMealFromVisionScreen = (): React.ReactElement => {
                     Cần xác nhận ({unmatchedItems.length})
                   </ThemedText>
                 </View>
-                {unmatchedItems.map((detection, index) =>
-                  renderFoodItem(detection, index + matchedItems.length),
+                {unmatchedItems.map(({ detection, index }) =>
+                  renderFoodItem(detection, index),
                 )}
               </>
             ) : null}

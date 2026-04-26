@@ -8,6 +8,23 @@ function readSource(relativePath) {
 }
 
 describe('real-device automation markers', () => {
+  it('covers every current main function group in the real-device smoke script', () => {
+    const source = readSource('scripts/real-device-adb-flow.js');
+    const expectedMainFlowMarkers = [
+      'home-screen',
+      'meal-diary-screen',
+      'food-search-screen',
+      'ai-scan-screen',
+      'voice-screen',
+      'stats-screen',
+      'profile-screen',
+    ];
+
+    expectedMainFlowMarkers.forEach((marker) => {
+      expect(source).toContain(marker);
+    });
+  });
+
   it('exposes stable Food Search markers used by the ADB UI readback flow', () => {
     const source = readSource('src/app/screens/diary/FoodSearchScreen.tsx');
 

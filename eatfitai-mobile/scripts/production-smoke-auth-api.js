@@ -291,6 +291,32 @@ function createEmptyReport(outputDir, backendUrl, mailbox) {
   };
 }
 
+function buildAuthPrimaryPathReadiness(report) {
+  const failureIds = report.failures.map((failure) =>
+    failure.id || failure.step || failure.message || 'auth-primary-path-failed',
+  );
+
+  if (!report.cleanup.ok && !failureIds.includes('cleanup-delete-profile')) {
+    failureIds.push('cleanup-delete-profile');
+  }
+
+  return {
+    passed: failureIds.length === 0,
+    failures: failureIds,
+    covered: [
+      'register',
+      'verify-email',
+      'login',
+      'refresh-or-session',
+      'protected-auth-route',
+      'forgot-password',
+      'reset-password',
+      'change-password',
+      'cleanup',
+    ],
+  };
+}
+
 function pushFailure(report, id, message, extra = {}) {
   report.failures.push({
     id,
@@ -939,7 +965,8 @@ async function main() {
       };
     }
 
-    report.passed = report.failures.length === 0 && report.cleanup.ok;
+    report.primaryPath = buildAuthPrimaryPathReadiness(report);
+    report.passed = report.primaryPath.passed;
     writeJson(reportPath, sanitizeReport(report));
 
     console.log(`[production-smoke-auth-api] Wrote ${reportPath}`);
@@ -950,6 +977,7 @@ async function main() {
           outputDir: report.outputDir,
           backendUrl: report.backendUrl,
           passed: report.passed,
+          primaryPath: report.primaryPath,
           failureCount: report.failures.length,
           cleanup: sanitizeReport(report.cleanup),
         },
@@ -967,6 +995,7 @@ async function main() {
     if (!report.failures.length) {
       pushFailure(report, 'fatal', report.cleanup.error, {});
     }
+    report.primaryPath = buildAuthPrimaryPathReadiness(report);
     writeJson(reportPath, sanitizeReport(report));
     console.error('[production-smoke-auth-api] Failed:', error);
     process.exitCode = 1;

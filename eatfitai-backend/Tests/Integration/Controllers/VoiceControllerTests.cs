@@ -150,6 +150,34 @@ public class VoiceControllerTests : IClassFixture<WebApplicationFactory<Program>
         Assert.False(body.TryGetProperty("source", out _));
     }
 
+    [Fact]
+    public async Task ParseWithProvider_WhenProviderGatewayFails_ReturnsRuleFallbackWithReview()
+    {
+        using var factory = CreateFactoryWithHttpClient(_ => new HttpResponseMessage(HttpStatusCode.BadGateway)
+        {
+            Content = new StringContent(
+                """{"error":"upstream temporarily unavailable"}""",
+                Encoding.UTF8,
+                "application/json"),
+        });
+        using var client = CreateAuthorizedClient(factory, Guid.NewGuid());
+
+        var response = await client.PostAsJsonAsync("/api/voice/parse", new VoiceProcessRequest
+        {
+            Text = "ghi 1 banana vao bua sang",
+            Language = "vi",
+        });
+
+        response.EnsureSuccessStatusCode();
+
+        var body = await response.Content.ReadFromJsonAsync<ParsedVoiceCommand>();
+        Assert.NotNull(body);
+        Assert.Equal(VoiceIntent.ADD_FOOD, body.Intent);
+        Assert.Equal("backend-rule-fallback", body.Source);
+        Assert.True(body.ReviewRequired);
+        Assert.Contains("AI provider lỗi 502", body.ReviewReason, StringComparison.OrdinalIgnoreCase);
+    }
+
     private WebApplicationFactory<Program> CreateFactoryWithHttpClient(
         Func<HttpRequestMessage, HttpResponseMessage> responseFactory)
     {

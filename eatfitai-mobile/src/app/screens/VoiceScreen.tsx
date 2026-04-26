@@ -36,7 +36,9 @@ import { trackEvent } from '../../services/analytics';
 
 import VoiceResultCard from '../../components/voice/VoiceResultCard';
 import { useVoiceRecognition } from '../../hooks/useVoiceRecognition';
+import { useAiStatus } from '../../hooks/useAiStatus';
 import { useVoiceStore } from '../../store/useVoiceStore';
+import { getAiFeatureAvailability } from '../../utils/aiAvailability';
 import type { AppTabsParamList } from '../navigation/AppTabs';
 import { TEST_IDS } from '../../testing/testIds';
 
@@ -112,11 +114,64 @@ const VoiceScreen = (): React.ReactElement => {
     stopRecording,
     cancelRecording,
   } = useVoiceRecognition();
+  const { data: aiStatus, isLoading: isAiStatusLoading } = useAiStatus();
+  const voiceAvailability = getAiFeatureAvailability(aiStatus, 'voice');
+  const isVoiceAiBlocked = !voiceAvailability.canUseAi;
+
+  const notifyVoiceUnavailable = useCallback(
+    (inputMode: 'microphone' | 'text' | 'quick_command' | 'auto_start') => {
+      Toast.show({
+        type: 'info',
+        text1: isAiStatusLoading && !aiStatus ? 'AI đang kiểm tra' : voiceAvailability.title,
+        text2:
+          voiceAvailability.message ??
+          'Bạn vẫn có thể nhập nhật ký thủ công trong lúc chờ AI sẵn sàng.',
+      });
+      trackEvent('voice_ai_blocked', {
+        flow: 'voice',
+        step: 'availability',
+        status: 'blocked',
+        metadata: {
+          inputMode,
+          availabilityState: voiceAvailability.state,
+          reason: voiceAvailability.title,
+        },
+      });
+    },
+    [
+      aiStatus,
+      isAiStatusLoading,
+      voiceAvailability.message,
+      voiceAvailability.state,
+      voiceAvailability.title,
+    ],
+  );
+
+  const guardVoiceAiReady = useCallback(
+    (inputMode: 'microphone' | 'text' | 'quick_command' | 'auto_start') => {
+      if (voiceAvailability.canUseAi) {
+        return true;
+      }
+
+      notifyVoiceUnavailable(inputMode);
+      return false;
+    },
+    [notifyVoiceUnavailable, voiceAvailability.canUseAi],
+  );
 
   /* ── Auto-start from deep link ── */
   useFocusEffect(
     useCallback(() => {
       if (!route.params?.autoStart || isRecording) {
+        return undefined;
+      }
+
+      if (isAiStatusLoading && !aiStatus) {
+        return undefined;
+      }
+
+      if (!guardVoiceAiReady('auto_start')) {
+        navigation.setParams({ autoStart: undefined, source: undefined });
         return undefined;
       }
 
@@ -133,7 +188,16 @@ const VoiceScreen = (): React.ReactElement => {
         active = false;
         clearTimeout(timer);
       };
-    }, [isRecording, navigation, reset, route.params?.autoStart, startRecording]),
+    }, [
+      guardVoiceAiReady,
+      aiStatus,
+      isAiStatusLoading,
+      isRecording,
+      navigation,
+      reset,
+      route.params?.autoStart,
+      startRecording,
+    ]),
   );
 
   /* ═══ Animated Values ═══ */
@@ -224,6 +288,10 @@ const VoiceScreen = (): React.ReactElement => {
       return;
     }
 
+    if (!guardVoiceAiReady('microphone')) {
+      return;
+    }
+
     trackEvent('voice_parse_start', {
       flow: 'voice',
       step: 'record',
@@ -300,6 +368,10 @@ const VoiceScreen = (): React.ReactElement => {
   };
 
   const handleQuickCommand = (text: string) => {
+    if (!guardVoiceAiReady('quick_command')) {
+      return;
+    }
+
     trackEvent('voice_parse_start', {
       flow: 'voice',
       step: 'parse',
@@ -315,6 +387,10 @@ const VoiceScreen = (): React.ReactElement => {
 
   const handleSendText = async () => {
     if (recognizedText.trim()) {
+      if (!guardVoiceAiReady('text')) {
+        return;
+      }
+
       const textToProcess = recognizedText.trim();
       trackEvent('voice_parse_start', {
         flow: 'voice',
@@ -425,6 +501,24 @@ const VoiceScreen = (): React.ReactElement => {
       >
 
 
+        {isVoiceAiBlocked && !isRecording && (
+          <Animated.View
+            entering={FadeInUp.delay(80)}
+            style={[S.statusCard, S.availabilityCard]}
+          >
+            <Ionicons name="cloud-offline-outline" size={18} color={P.primary} />
+            <View style={{ flex: 1 }}>
+              <ThemedText style={S.availabilityTitle}>
+                {isAiStatusLoading && !aiStatus ? 'AI đang kiểm tra' : voiceAvailability.title}
+              </ThemedText>
+              <ThemedText style={S.availabilityText}>
+                {voiceAvailability.message ??
+                  'Bạn vẫn có thể nhập nhật ký thủ công trong lúc chờ AI sẵn sàng.'}
+              </ThemedText>
+            </View>
+          </Animated.View>
+        )}
+
         {/* ═══ CHAT HISTORY ═══ */}
         {chatMessages.length > 0 && (
           <Animated.View entering={FadeInUp.delay(100)} style={S.chatArea}>
@@ -494,10 +588,15 @@ const VoiceScreen = (): React.ReactElement => {
               </View>
               <Pressable
                 onPress={handleSendText}
-                disabled={!recognizedText.trim() || status === 'parsing'}
+                disabled={!recognizedText.trim() || status === 'parsing' || isVoiceAiBlocked}
                 style={[
                   S.sendBtn,
-                  { opacity: !recognizedText.trim() || status === 'parsing' ? 0.4 : 1 },
+                  {
+                    opacity:
+                      !recognizedText.trim() || status === 'parsing' || isVoiceAiBlocked
+                        ? 0.4
+                        : 1,
+                  },
                 ]}
               >
                 <LinearGradient
@@ -524,7 +623,7 @@ const VoiceScreen = (): React.ReactElement => {
               {QUICK_COMMANDS.map((cmd) => (
                 <Pressable
                   key={cmd}
-                  style={S.chip}
+                  style={[S.chip, isVoiceAiBlocked && S.disabledControl]}
                   onPress={() => handleQuickCommand(cmd)}
                 >
                   <ThemedText style={S.chipText}>{cmd}</ThemedText>
@@ -560,7 +659,11 @@ const VoiceScreen = (): React.ReactElement => {
           {/* Main mic button */}
           <AnimatedPressable
             onPress={handleToggleRecording}
-            style={[S.micBtnOuter, buttonAnimatedStyle]}
+            style={[
+              S.micBtnOuter,
+              buttonAnimatedStyle,
+              isVoiceAiBlocked && !isRecording && S.disabledControl,
+            ]}
             testID="voice-mic-button"
           >
             <View style={S.micBtnGlassWrap}>
@@ -640,10 +743,15 @@ const VoiceScreen = (): React.ReactElement => {
             </Pressable>
             <Pressable
               onPress={handleSendText}
-              disabled={!recognizedText.trim() || status === 'parsing'}
+              disabled={!recognizedText.trim() || status === 'parsing' || isVoiceAiBlocked}
               style={[
                 S.analyzeBtn,
-                { opacity: !recognizedText.trim() || status === 'parsing' ? 0.5 : 1 },
+                {
+                  opacity:
+                    !recognizedText.trim() || status === 'parsing' || isVoiceAiBlocked
+                      ? 0.5
+                      : 1,
+                },
               ]}
               testID={TEST_IDS.voice.processButton}
             >
@@ -809,6 +917,23 @@ const S = StyleSheet.create({
     fontSize: 13,
     fontWeight: '600',
     color: P.primary,
+  },
+  availabilityCard: {
+    alignItems: 'flex-start',
+    marginBottom: 18,
+    borderColor: P.primary + '35',
+  },
+  availabilityTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: P.primary,
+    marginBottom: 2,
+  },
+  availabilityText: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: P.onSurfaceVariant,
+    lineHeight: 17,
   },
 
   /* ═══ TEXT INPUT ═══ */
@@ -1132,6 +1257,9 @@ const S = StyleSheet.create({
     shadowOpacity: 0.6,
     shadowRadius: 8,
     elevation: 4,
+  },
+  disabledControl: {
+    opacity: 0.55,
   },
 });
 

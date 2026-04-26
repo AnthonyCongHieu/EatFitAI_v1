@@ -9,6 +9,9 @@ const {
   extractStringsFromMealDiary,
   mealDiaryRowsContainFoodName,
 } = require('./lib/ai-smoke-readback');
+const {
+  evaluateAiPrimaryPathReadiness,
+} = require('./lib/primary-path-readiness');
 const { resolveSmokeCredentials } = require('./lib/smoke-credentials');
 const { resolveAiSmokeTimeouts } = require('./lib/smoke-timeouts');
 
@@ -585,8 +588,28 @@ function finalizeSummary(report) {
     report.summary.failed += 1;
   }
 
+  report.primaryPath = evaluateAiPrimaryPathReadiness(report);
+  if (!report.primaryPath.passed) {
+    for (const reason of report.primaryPath.failures) {
+      const exists = report.failures.some(
+        (failure) => failure.group === 'primary-path' && failure.reason === reason,
+      );
+      if (!exists) {
+        report.failures.push({
+          group: 'primary-path',
+          name: 'ai-primary-path',
+          status: null,
+          reason,
+          details: report.primaryPath,
+        });
+        report.summary.failed += 1;
+      }
+    }
+  }
+
   report.passed =
     report.summary.failed === 0 &&
+    report.primaryPath.passed === true &&
     report.summary.attempted > 0 &&
     report.fatalError == null &&
     (!report.login || report.login.ok !== false);
@@ -1770,6 +1793,7 @@ async function main() {
         outputDir,
         backendUrl,
         passed: report.passed,
+        primaryPath: report.primaryPath,
         summary: report.summary,
         blockedCoverageItems: report.blockedCoverageItems.map((item) => item.key),
         failures: report.failures.map((failure) => ({
@@ -1783,6 +1807,10 @@ async function main() {
       2,
     ),
   );
+
+  if (!report.passed) {
+    process.exitCode = 1;
+  }
 }
 
 main().catch((error) => {

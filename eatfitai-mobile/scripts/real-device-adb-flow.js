@@ -2,7 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const { spawn, spawnSync } = require('child_process');
 const { resolveEnv } = require('../../tools/automation/resolveEnv');
-const { logcatContainsAppCrash } = require('./lib/device-logcat');
+const { logcatContainsAppCrash, redactLogcatText } = require('./lib/device-logcat');
 
 const repoRoot = path.resolve(__dirname, '..', '..');
 const mobileRoot = path.resolve(__dirname, '..');
@@ -921,7 +921,8 @@ function captureLogcat(adb, serial, outputDir, name, args) {
     encoding: 'utf8',
   });
   const filePath = path.join(outputDir, name);
-  fs.writeFileSync(filePath, `${result.stdout}${result.stderr ? `\n${result.stderr}` : ''}`, 'utf8');
+  const rawText = `${result.stdout}${result.stderr ? `\n${result.stderr}` : ''}`;
+  fs.writeFileSync(filePath, redactLogcatText(rawText), 'utf8');
   return {
     type: 'logcat',
     critical: name.includes('crash-logcat'),

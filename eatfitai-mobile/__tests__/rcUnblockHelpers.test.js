@@ -303,6 +303,17 @@ describe('RC unblock helpers', () => {
     ).toBe(true);
   });
 
+  it('redacts token-like values before storing logcat artifacts', () => {
+    const { redactLogcatLine, redactLogcatText } = require('../scripts/lib/device-logcat');
+
+    expect(redactLogcatLine('Authorization: Bearer abc.def-ghi_token and token=secret-value')).toBe(
+      'Authorization: Bearer [REDACTED] and token=[REDACTED]',
+    );
+    expect(
+      redactLogcatText('POST /x?access_token=cloud-token\n{"refreshToken":"mobile-refresh"}'),
+    ).toBe('POST /x?access_token=[REDACTED]\n{"refreshToken":"[REDACTED]"}');
+  });
+
   it('matches voice add-food readback rows from camelCase meal diary payloads', () => {
     const {
       extractStringsFromMealDiary,

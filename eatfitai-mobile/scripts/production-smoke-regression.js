@@ -2,6 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const { execFileSync } = require('child_process');
 const { resolveSmokeCredentials } = require('./lib/smoke-credentials');
+const { isFallbackSource } = require('./lib/primary-path-readiness');
 
 const DEFAULT_BACKEND_URL = 'https://eatfitai-backend-dev.onrender.com';
 const DEFAULT_OUTPUT_ROOT = path.resolve(
@@ -979,6 +980,72 @@ function buildSummary(results) {
   };
 }
 
+function buildPrimaryPathReadiness(results) {
+  const failures = [];
+  const summary = results.summary || {};
+  const search = summary.search || {};
+  const scan = summary.scan || {};
+  const voice = summary.voice || {};
+  const nutrition = summary.nutrition || {};
+
+  if (results.credentialsSource === 'local-default-demo-account') {
+    failures.push('local-default-credentials');
+  }
+
+  if (search.positiveCases === 0 || search.positivePassed !== search.positiveCases) {
+    failures.push('search-primary-cases-failed');
+  }
+
+  if (
+    scan.primaryAttempted === 0 ||
+    scan.primaryPassed !== scan.primaryAttempted ||
+    scan.usablePrimaryResults !== scan.primaryAttempted
+  ) {
+    failures.push('scan-primary-cases-failed');
+  }
+
+  for (const entry of Array.isArray(results.scan) ? results.scan : []) {
+    if (
+      entry.bucket === 'primary' &&
+      entry.requiresExpectedLabel &&
+      !entry.expectedLabelMatched
+    ) {
+      failures.push(`scan-${entry.key || 'primary'}-expected-label-missing`);
+    }
+  }
+
+  if (voice.attempted > 0 && voice.parsePassed !== voice.attempted) {
+    failures.push('voice-parse-primary-cases-failed');
+  }
+  if (voice.executeAttempted > 0 && voice.executePassed !== voice.executeAttempted) {
+    failures.push('voice-execute-primary-cases-failed');
+  }
+  if (
+    voice.diaryReadbackAttempted > 0 &&
+    voice.diaryReadbackPassed !== voice.diaryReadbackAttempted
+  ) {
+    failures.push('voice-diary-readback-primary-cases-failed');
+  }
+  for (const entry of Array.isArray(results.voice) ? results.voice : []) {
+    if (isFallbackSource(entry?.parse?.source)) {
+      failures.push(`voice-${entry.key || 'case'}-used-fallback`);
+    }
+  }
+
+  if (nutrition.attempted > 0 && nutrition.suggestPassed !== nutrition.attempted) {
+    failures.push('nutrition-primary-cases-failed');
+  }
+  if (nutrition.applyAttempted > 0 && nutrition.applyPassed !== nutrition.applyAttempted) {
+    failures.push('nutrition-apply-primary-cases-failed');
+  }
+
+  return {
+    passed: failures.length === 0,
+    failures: [...new Set(failures)],
+    covered: ['search', 'scan', 'voice', 'nutrition'],
+  };
+}
+
 async function main() {
   const outputDir = resolveOutputDir(process.argv[2]);
   const preflight =
@@ -1043,6 +1110,8 @@ async function main() {
   };
 
   results.summary = buildSummary(results);
+  results.primaryPath = buildPrimaryPathReadiness(results);
+  results.passed = results.primaryPath.passed;
 
   const outputPath = path.join(outputDir, 'regression-run.json');
   writeJson(outputPath, results);
@@ -1056,12 +1125,18 @@ async function main() {
         fixtureDir,
         allowMutations,
         credentialsSource: results.credentialsSource,
+        passed: results.passed,
+        primaryPath: results.primaryPath,
         summary: results.summary,
       },
       null,
       2,
     ),
   );
+
+  if (!results.passed) {
+    process.exitCode = 1;
+  }
 }
 
 main().catch((error) => {

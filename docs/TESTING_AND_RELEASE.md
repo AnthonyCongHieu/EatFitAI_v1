@@ -126,6 +126,20 @@ RC proof chạy lần lượt các mode bắt buộc:
 - `stats-profile-smoke`
 - `backend-frontend-live-check`
 
+Các lệnh riêng tương ứng với từng mode trong `device:rc-proof`:
+
+```powershell
+npm --prefix .\eatfitai-mobile run device:login-real:android
+npm --prefix .\eatfitai-mobile run device:home-smoke:android
+npm --prefix .\eatfitai-mobile run device:full-tab-ui-smoke:android
+npm --prefix .\eatfitai-mobile run device:food-diary-readback:android
+npm --prefix .\eatfitai-mobile run device:food-search-ui-readback:android
+npm --prefix .\eatfitai-mobile run device:scan-save-readback:android
+npm --prefix .\eatfitai-mobile run device:voice-text-readback:android
+npm --prefix .\eatfitai-mobile run device:stats-profile-smoke:android
+npm --prefix .\eatfitai-mobile run device:backend-frontend-live-check:android
+```
+
 Có thể chạy riêng các mode mới khi debug:
 
 ```powershell
@@ -199,6 +213,19 @@ Nếu cần override manifest:
   "fixtureRootHint": "tools/fixtures/scan-demo"
 }
 ```
+
+## Validation Log
+
+### 2026-04-26 Function/AI improvement validation
+
+- Mobile focused Jest batch: PASS, 13 suites / 83 tests.
+- Mobile typecheck: PASS.
+- Mobile lint and no-direct-AI-provider guard: PASS.
+- Backend targeted AI/voice/diary/auth/analytics batch: PASS, 61 tests.
+- Mojibake guard: PASS.
+- Secret tracking guard: PASS.
+- Primary-path readiness unit gate: PASS via `primaryPathReadiness.test.js` and `backendNonUiSummary.test.js`.
+- Cloud primary-path smoke and real-device RC proof: not run in this local validation pass because they require live smoke credentials, deployed services, and/or a connected Android device. Release readiness must still require those reports to show `primaryPath.passed === true`; fallback/offline/local evidence is not accepted as pass.
 
 ## Debug Khi Fail
 

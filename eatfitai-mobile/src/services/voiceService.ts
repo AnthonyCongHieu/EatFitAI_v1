@@ -141,7 +141,7 @@ export const voiceService = {
     };
   },
 
-  async parseWithOllama(text: string): Promise<ParsedVoiceCommand> {
+  async parseWithProvider(text: string): Promise<ParsedVoiceCommand> {
     try {
       getApiBaseUrl();
       const response = await apiClient.post('/api/voice/parse', {
@@ -161,7 +161,7 @@ export const voiceService = {
         reviewReason: data.reviewReason,
       };
     } catch (error: unknown) {
-      captureError(error, 'voiceService.parseWithOllama', {
+      captureError(error, 'voiceService.parseWithProvider', {
         textLength: text.length,
       });
       return {
@@ -175,6 +175,10 @@ export const voiceService = {
         reviewReason: getApiErrorMessage(error, 'Không thể phân tích lệnh giọng nói.'),
       };
     }
+  },
+
+  async parseWithOllama(text: string): Promise<ParsedVoiceCommand> {
+    return this.parseWithProvider(text);
   },
 
   async executeCommand(command: ParsedVoiceCommand): Promise<VoiceProcessResponse> {
@@ -217,7 +221,7 @@ export const voiceService = {
   },
 
   async processVoiceText(request: { text: string }): Promise<VoiceProcessResponse> {
-    const command = await this.parseWithOllama(request.text);
+    const command = await this.parseWithProvider(request.text);
 
     return {
       success: command.intent !== 'UNKNOWN',

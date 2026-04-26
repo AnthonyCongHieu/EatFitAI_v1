@@ -18,6 +18,28 @@ function logcatContainsAppCrash(text, packageName = 'com.eatfitai.app') {
   });
 }
 
+function redactLogcatLine(line) {
+  return String(line || '')
+    .replace(/\bBearer\s+[A-Za-z0-9._~+/=-]+/gi, 'Bearer [REDACTED]')
+    .replace(
+      /\b(access_token|refresh_token|id_token|token|api_key|apikey|password)=([^&\s]+)/gi,
+      '$1=[REDACTED]',
+    )
+    .replace(
+      /("(?:accessToken|refreshToken|idToken|token|apiKey|password)"\s*:\s*")[^"]+"/gi,
+      '$1[REDACTED]"',
+    );
+}
+
+function redactLogcatText(text) {
+  return String(text || '')
+    .split(/\r?\n/)
+    .map(redactLogcatLine)
+    .join('\n');
+}
+
 module.exports = {
   logcatContainsAppCrash,
+  redactLogcatLine,
+  redactLogcatText,
 };

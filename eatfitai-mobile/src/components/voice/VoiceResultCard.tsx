@@ -7,6 +7,10 @@ import { ThemedText } from '../ThemedText';
 import { AppCard } from '../ui/AppCard';
 import type { ParsedVoiceCommand, VoiceIntent } from '../../services/voiceService';
 import { useAppTheme } from '../../theme/ThemeProvider';
+import {
+  getVoiceReviewMessage,
+  shouldRequireVoiceConfirmation,
+} from '../../utils/voiceCommandReview';
 import { TEST_IDS } from '../../testing/testIds';
 
 interface ExecutedData {
@@ -57,17 +61,14 @@ export const VoiceResultCard = ({
   const needsWeightConfirm =
     executedData?.type === 'LOG_WEIGHT_CONFIRM' && executedData?.requireConfirm;
   const isLowConfidence = command.confidence <= 0 || command.confidence < 0.75;
-  const requiresManualReview =
-    Boolean(command.reviewRequired) ||
-    command.intent === 'ADD_FOOD' ||
-    command.intent === 'LOG_WEIGHT' ||
-    isLowConfidence;
+  const requiresManualReview = shouldRequireVoiceConfirmation(command);
+  const reviewMessage = getVoiceReviewMessage(command);
 
   const reviewTitle = isLowConfidence
     ? 'Độ tin cậy chưa cao, hãy kiểm tra kỹ trước khi lưu.'
-    : 'Voice Beta luôn cần bạn xác nhận trước khi lưu.';
+    : 'Kiểm tra trước khi lưu';
   const reviewBody =
-    command.reviewReason ||
+    reviewMessage ||
     (command.intent === 'ADD_FOOD'
       ? 'Xác nhận lại món ăn, khẩu phần và bữa ăn trước khi ghi nhật ký.'
       : 'Xác nhận lại dữ liệu trước khi tiếp tục.');
