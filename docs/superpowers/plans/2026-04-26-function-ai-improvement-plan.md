@@ -2,9 +2,9 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Improve the current normal app functions and AI functions after the visual inventory, while keeping the repo clean and reducing regression risk with tests beside each change.
+**Goal:** Improve the current normal app functions and AI functions after the visual inventory, while keeping the repo clean and proving the primary path for every core function is stable, not merely covered by fallback behavior.
 
-**Architecture:** Keep the current boundary: Expo mobile calls the ASP.NET Core backend, and the backend proxies AI provider calls. Improvements should be small, testable layers around existing services, screens, and controllers instead of rewrites.
+**Architecture:** Keep the current boundary: Expo mobile calls the ASP.NET Core backend, and the backend proxies AI provider calls. Fallback paths stay as safety nets, but release/readiness must be judged by primary-path success for auth, diary, stats/profile, vision, nutrition, recipe, and voice flows.
 
 **Tech Stack:** Expo / React Native / TypeScript / Jest, ASP.NET Core 9 / xUnit, Flask AI provider, Mermaid docs, Android ADB smoke scripts.
 
@@ -38,6 +38,19 @@ python scripts\cloud\check_mojibake.py docs eatfitai-mobile\src eatfitai-backend
 | Release/automation | 8.0/10 | Real-device ADB lanes and smoke scripts are present. | The largest automation script needs more focused tests around markers, logcat evidence, and non-fragile waits. |
 | Encoding safety | 9.0/10 | Mojibake guard exists and passed. | Keep Vietnamese strings in UTF-8 and include the guard in every validation batch. |
 
+## Primary-Path Stability Requirement
+
+Fallback is not a success criterion. It is useful evidence that the app degrades safely, but the task is not complete until the primary path is proven stable.
+
+Primary-path pass means:
+
+- Auth works through real backend auth, email verification, login, refresh/session bootstrap, and protected route access.
+- Normal app functions work through backend and database read/write paths: food search, food detail, custom dish, meal diary create/update/delete/readback, summary/stats, profile/body metrics/goals, favorites, water intake, and telemetry where applicable.
+- Vision works through `Mobile -> Backend -> AI provider /detect -> YOLO custom model -> backend food mapping -> review -> diary save/readback`.
+- Nutrition, recipe, and cooking AI work through Gemini-backed provider paths when configured. Formula output is allowed only as a safety fallback and must be reported as degraded, not passed.
+- Voice parse works through `Mobile -> Backend -> AI provider /voice/parse -> backend execute/readback`. Rule parser fallback is allowed only for resilience and must be reported as degraded, not passed.
+- Release evidence must expose `primaryPath.passed` for each protected gate. A run can only be marked release-ready when every required gate has `primaryPath.passed === true`.
+
 ## File Structure
 
 - `docs/USERFLOW.md`: keep as the source visual map for current normal and AI functions.
@@ -57,6 +70,14 @@ python scripts\cloud\check_mojibake.py docs eatfitai-mobile\src eatfitai-backend
 - `eatfitai-mobile/__tests__/voiceCommandReview.test.ts`: unit tests for add-food, log-weight, ask-calories, and unknown commands.
 - `eatfitai-backend/Tests/Integration/Controllers/VoiceControllerTests.cs`: extend provider fallback contract tests.
 - `eatfitai-backend/Tests/Integration/Controllers/AIVisionControllerTests.cs`: extend AI provider-down and cache behavior tests.
+- `eatfitai-mobile/scripts/lib/primary-path-readiness.js`: new smoke-report evaluator that fails readiness when a feature only passed through fallback/offline behavior.
+- `eatfitai-mobile/__tests__/primaryPathReadiness.test.js`: unit tests for primary-path versus fallback/degraded evidence.
+- `eatfitai-mobile/scripts/production-smoke-auth-api.js`: attach auth primary-path readiness for register/verify/login/session coverage.
+- `eatfitai-mobile/scripts/production-smoke-user-api.js`: attach normal-function primary-path readiness for profile, food, diary, summary, analytics, water, and favorites coverage.
+- `eatfitai-mobile/scripts/production-smoke-ai-api.js`: attach primary-path readiness to `ai-api-report.json` and fail the AI smoke when AI features only hit fallback.
+- `eatfitai-mobile/scripts/production-smoke-regression.js`: attach regression primary-path readiness for fixture-driven search, scan, nutrition, and voice cases.
+- `eatfitai-mobile/scripts/lib/backend-non-ui-summary.js`: include `primaryPath.passed` in the final cloud functional gate.
+- `eatfitai-mobile/__tests__/backendNonUiSummary.test.js`: lock the final summary behavior so fallback/degraded AI does not count as release-ready.
 - `docs/TESTING_AND_RELEASE.md`: add the final validation command set after code changes land.
 
 ---
@@ -1040,7 +1061,515 @@ git commit -m "test: strengthen real-device evidence gates"
 
 ---
 
-### Task 9: Final Full Validation Batch
+### Task 9: Add Primary-Path Readiness Gates
+
+**Files:**
+- Create: `eatfitai-mobile/scripts/lib/primary-path-readiness.js`
+- Create: `eatfitai-mobile/__tests__/primaryPathReadiness.test.js`
+- Modify: `eatfitai-mobile/scripts/production-smoke-ai-api.js`
+- Modify: `eatfitai-mobile/scripts/production-smoke-auth-api.js`
+- Modify: `eatfitai-mobile/scripts/production-smoke-user-api.js`
+- Modify: `eatfitai-mobile/scripts/production-smoke-regression.js`
+- Modify: `eatfitai-mobile/scripts/lib/backend-non-ui-summary.js`
+- Modify: `eatfitai-mobile/__tests__/backendNonUiSummary.test.js`
+- Test: `eatfitai-mobile/__tests__/primaryPathReadiness.test.js`
+- Test: `eatfitai-mobile/__tests__/backendNonUiSummary.test.js`
+
+- [ ] **Step 1: Write failing primary-path readiness tests**
+
+Create `eatfitai-mobile/__tests__/primaryPathReadiness.test.js`:
+
+```javascript
+const {
+  evaluateAiPrimaryPathReadiness,
+  evaluateCloudPrimaryPathReadiness,
+} = require('../scripts/lib/primary-path-readiness');
+
+describe('primary path readiness', () => {
+  const healthyAiReport = {
+    aiStatus: {
+      ok: true,
+      state: 'HEALTHY',
+      modelLoaded: true,
+      geminiConfigured: true,
+    },
+    summary: {
+      attempted: 12,
+      failed: 0,
+      blocked: 0,
+    },
+    readback: {
+      detectedLabels: 5,
+      recipeSuggestionCount: 2,
+      voiceExecuteAddFoodMatched: true,
+    },
+    aiNutritionRecalculate: {
+      source: 'gemini',
+      offlineMode: false,
+      calories: 2100,
+      protein: 120,
+      carbs: 240,
+      fat: 70,
+    },
+    voiceParse: {
+      source: 'ai-provider-proxy',
+      intent: 'ASK_CALORIES',
+      confidence: 0.91,
+    },
+    voiceExecuteAddFood: {
+      success: true,
+      executedActionType: 'ADD_FOOD',
+    },
+  };
+
+  it('passes when AI smoke proves the full primary path', () => {
+    expect(evaluateAiPrimaryPathReadiness(healthyAiReport)).toEqual({
+      passed: true,
+      failures: [],
+      degraded: [],
+    });
+  });
+
+  it('fails when nutrition only used formula fallback', () => {
+    const result = evaluateAiPrimaryPathReadiness({
+      ...healthyAiReport,
+      aiNutritionRecalculate: {
+        ...healthyAiReport.aiNutritionRecalculate,
+        source: 'formula',
+        offlineMode: true,
+      },
+    });
+
+    expect(result.passed).toBe(false);
+    expect(result.failures).toContain('nutrition-primary-path-used-fallback');
+  });
+
+  it('fails when voice parse only used backend rule fallback', () => {
+    const result = evaluateAiPrimaryPathReadiness({
+      ...healthyAiReport,
+      voiceParse: {
+        ...healthyAiReport.voiceParse,
+        source: 'backend-rule-fallback',
+      },
+    });
+
+    expect(result.passed).toBe(false);
+    expect(result.failures).toContain('voice-primary-path-used-fallback');
+  });
+
+  it('fails cloud readiness when any required gate lacks primaryPath pass', () => {
+    const result = evaluateCloudPrimaryPathReadiness({
+      authApi: { passed: true, primaryPath: { passed: true } },
+      userApi: { passed: true, primaryPath: { passed: true } },
+      aiApi: { passed: true, primaryPath: { passed: false } },
+      regression: { passed: true, primaryPath: { passed: true } },
+    });
+
+    expect(result.passed).toBe(false);
+    expect(result.failures).toContain('ai-api-primary-path-failed');
+  });
+
+  it('fails cloud readiness when a required gate has no primaryPath evidence', () => {
+    const result = evaluateCloudPrimaryPathReadiness({
+      authApi: { passed: true, primaryPath: { passed: true } },
+      userApi: { passed: true },
+      aiApi: { passed: true, primaryPath: { passed: true } },
+      regression: { passed: true, primaryPath: { passed: true } },
+    });
+
+    expect(result.passed).toBe(false);
+    expect(result.failures).toContain('user-api-primary-path-failed');
+  });
+});
+```
+
+- [ ] **Step 2: Run tests to verify they fail**
+
+Run:
+
+```powershell
+npm --prefix .\eatfitai-mobile test -- primaryPathReadiness.test.js
+```
+
+Expected before implementation: FAIL with `Cannot find module '../scripts/lib/primary-path-readiness'`.
+
+- [ ] **Step 3: Implement the primary-path evaluator**
+
+Create `eatfitai-mobile/scripts/lib/primary-path-readiness.js`:
+
+```javascript
+function trim(value) {
+  return String(value || '').trim();
+}
+
+function normalize(value) {
+  return trim(value).toLowerCase();
+}
+
+function isFallbackSource(value) {
+  const source = normalize(value);
+  return (
+    source.includes('fallback') ||
+    source.includes('offline') ||
+    source === 'formula' ||
+    source === 'backend-rule-parser'
+  );
+}
+
+function evaluateAiPrimaryPathReadiness(report = {}) {
+  const failures = [];
+  const degraded = [];
+  const aiStatus = report.aiStatus || {};
+  const nutrition = report.aiNutritionRecalculate || {};
+  const voiceParse = report.voiceParse || {};
+  const readback = report.readback || {};
+
+  if (normalize(aiStatus.state) !== 'healthy') {
+    failures.push('ai-status-not-healthy');
+  }
+
+  if (!aiStatus.modelLoaded) {
+    failures.push('vision-model-not-loaded');
+  }
+
+  if (!aiStatus.geminiConfigured) {
+    failures.push('gemini-not-configured');
+  }
+
+  if (Number(readback.detectedLabels || 0) <= 0) {
+    failures.push('vision-primary-path-no-detections');
+  }
+
+  if (nutrition.offlineMode || isFallbackSource(nutrition.source)) {
+    failures.push('nutrition-primary-path-used-fallback');
+  }
+
+  if (isFallbackSource(voiceParse.source)) {
+    failures.push('voice-primary-path-used-fallback');
+  }
+
+  if (!readback.voiceExecuteAddFoodMatched) {
+    failures.push('voice-add-food-readback-missing');
+  }
+
+  if (Number(readback.recipeSuggestionCount || 0) <= 0) {
+    degraded.push('recipe-suggestions-empty');
+  }
+
+  return {
+    passed: failures.length === 0,
+    failures,
+    degraded,
+  };
+}
+
+function gatePrimaryPathPassed(gate) {
+  if (!gate || gate.passed !== true) {
+    return false;
+  }
+
+  if (!gate.primaryPath) {
+    return false;
+  }
+
+  return gate.primaryPath.passed === true;
+}
+
+function evaluateCloudPrimaryPathReadiness(gates = {}) {
+  const required = [
+    ['auth-api', gates.authApi],
+    ['user-api', gates.userApi],
+    ['ai-api', gates.aiApi],
+    ['regression', gates.regression],
+  ];
+  const failures = [];
+
+  for (const [name, gate] of required) {
+    if (!gatePrimaryPathPassed(gate)) {
+      failures.push(`${name}-primary-path-failed`);
+    }
+  }
+
+  return {
+    passed: failures.length === 0,
+    failures,
+  };
+}
+
+module.exports = {
+  evaluateAiPrimaryPathReadiness,
+  evaluateCloudPrimaryPathReadiness,
+  isFallbackSource,
+};
+```
+
+- [ ] **Step 4: Attach primary-path readiness to auth, user, AI, and regression smoke reports**
+
+In `eatfitai-mobile/scripts/production-smoke-auth-api.js`, replace the existing `report.passed = report.failures.length === 0 && report.cleanup.ok;` line with:
+
+```javascript
+    report.primaryPath = {
+      passed: report.failures.length === 0 && report.cleanup.ok,
+      failures: report.failures.map((failure) =>
+        failure.id || failure.step || failure.message || 'auth-primary-path-failed',
+      ),
+      covered: [
+        'register',
+        'verify-email',
+        'login',
+        'refresh-or-session',
+        'protected-auth-route',
+        'cleanup',
+      ],
+    };
+    report.passed = report.primaryPath.passed;
+```
+
+In `eatfitai-mobile/scripts/production-smoke-user-api.js`, set primary path immediately before the existing `report.passed = requiredFailures === 0;` line:
+
+```javascript
+  report.primaryPath = {
+    passed: requiredFailures === 0,
+    failures: report.failures.map((failure) =>
+      failure.step || failure.reason || failure.message || 'user-primary-path-failed',
+    ),
+    covered: [
+      'profile',
+      'body-metrics',
+      'food-search',
+      'food-detail',
+      'custom-dish',
+      'meal-diary',
+      'summary-day',
+      'summary-week',
+      'analytics',
+      'water-intake',
+      'favorites',
+    ],
+  };
+```
+
+Replace the existing `report.passed = requiredFailures === 0;` line with:
+
+```javascript
+  report.passed = report.primaryPath.passed;
+```
+
+In `eatfitai-mobile/scripts/production-smoke-regression.js`, add this helper near `buildSummary`:
+
+```javascript
+function buildPrimaryPathReadiness(summary) {
+  const failures = [];
+
+  if (
+    summary.search.positiveCases === 0 ||
+    summary.search.positivePassed !== summary.search.positiveCases
+  ) {
+    failures.push('search-primary-cases-failed');
+  }
+
+  if (
+    summary.scan.primaryAttempted === 0 ||
+    summary.scan.primaryPassed !== summary.scan.primaryAttempted
+  ) {
+    failures.push('scan-primary-cases-failed');
+  }
+
+  if (
+    summary.voice.attempted > 0 &&
+    summary.voice.parsePassed !== summary.voice.attempted
+  ) {
+    failures.push('voice-parse-primary-cases-failed');
+  }
+
+  if (
+    summary.voice.executeAttempted > 0 &&
+    summary.voice.executePassed !== summary.voice.executeAttempted
+  ) {
+    failures.push('voice-execute-primary-cases-failed');
+  }
+
+  if (
+    summary.voice.diaryReadbackAttempted > 0 &&
+    summary.voice.diaryReadbackPassed !== summary.voice.diaryReadbackAttempted
+  ) {
+    failures.push('voice-diary-readback-primary-cases-failed');
+  }
+
+  if (
+    summary.nutrition.attempted > 0 &&
+    summary.nutrition.suggestPassed !== summary.nutrition.attempted
+  ) {
+    failures.push('nutrition-primary-cases-failed');
+  }
+
+  return {
+    passed: failures.length === 0,
+    failures,
+    covered: ['search', 'scan', 'voice', 'nutrition'],
+  };
+}
+```
+
+After `results.summary = buildSummary(results);`, add:
+
+```javascript
+  results.primaryPath = buildPrimaryPathReadiness(results.summary);
+  if (!results.primaryPath.passed) {
+    process.exitCode = 1;
+  }
+```
+
+In `eatfitai-mobile/scripts/production-smoke-ai-api.js`, add the import:
+
+```javascript
+const {
+  evaluateAiPrimaryPathReadiness,
+} = require('./lib/primary-path-readiness');
+```
+
+At the end of `finalizeSummary(report)`, before `report.passed = ...`, add:
+
+```javascript
+  report.primaryPath = evaluateAiPrimaryPathReadiness(report);
+  if (!report.primaryPath.passed) {
+    for (const reason of report.primaryPath.failures) {
+      if (!report.failures.some((failure) => failure.reason === reason)) {
+        report.failures.push({
+          group: 'primary-path',
+          name: 'ai-primary-path',
+          status: null,
+          reason,
+          details: report.primaryPath,
+        });
+      }
+    }
+    report.summary.failed += report.primaryPath.failures.length;
+  }
+```
+
+Update `report.passed` in the same function so it includes:
+
+```javascript
+    report.primaryPath.passed === true &&
+```
+
+- [ ] **Step 5: Include primary-path readiness in backend non-UI summary**
+
+In `eatfitai-mobile/scripts/lib/backend-non-ui-summary.js`, import:
+
+```javascript
+const {
+  evaluateCloudPrimaryPathReadiness,
+} = require('./primary-path-readiness');
+```
+
+Preserve primary-path evidence in `normalizeGate`:
+
+```javascript
+function normalizeGate(name, gate) {
+  return {
+    name,
+    passed: Boolean(gate?.passed),
+    failures: cloneFailures(gate?.failures),
+    primaryPath: gate?.primaryPath
+      ? {
+          ...gate.primaryPath,
+          failures: cloneFailures(gate.primaryPath.failures),
+        }
+      : null,
+  };
+}
+```
+
+Add regression to the `gates` object:
+
+```javascript
+    regression: normalizeGate('regression', input?.regression),
+```
+
+When building the final summary object, add:
+
+```javascript
+const primaryPath = evaluateCloudPrimaryPathReadiness({
+  authApi: gates.authApi,
+  userApi: gates.userApi,
+  aiApi: gates.aiApi,
+  regression: gates.regression,
+});
+```
+
+Set:
+
+```javascript
+summary.primaryPath = primaryPath;
+summary.overallPassed = summary.overallPassed && primaryPath.passed;
+```
+
+Assign the existing returned object to `summary`, add the two lines above before `return summary;`, and keep `cleanup` in `cloudGate` but out of `primaryPath`.
+
+- [ ] **Step 6: Extend backend summary tests**
+
+Append to `eatfitai-mobile/__tests__/backendNonUiSummary.test.js`:
+
+```javascript
+it('fails overall readiness when AI gate only passed fallback safety', () => {
+  const summary = buildBackendNonUiSummary({
+    outputDir: 'D:/tmp/session',
+    preflight: createGate({ name: 'preflight' }),
+    authApi: createGate({
+      name: 'auth-api',
+      primaryPath: { passed: true },
+    }),
+    userApi: createGate({
+      name: 'user-api',
+      primaryPath: { passed: true },
+    }),
+    aiApi: createGate({
+      name: 'ai-api',
+      primaryPath: {
+        passed: false,
+        failures: ['nutrition-primary-path-used-fallback'],
+      },
+    }),
+    cleanup: createGate({ name: 'cleanup' }),
+    regression: createGate({
+      name: 'regression',
+      primaryPath: { passed: true },
+    }),
+    codeHealth: {
+      dotnetTests: { passed: true },
+      pythonUnitTests: { passed: true },
+    },
+  });
+
+  expect(summary.primaryPath.passed).toBe(false);
+  expect(summary.overallPassed).toBe(false);
+  expect(summary.primaryPath.failures).toContain('ai-api-primary-path-failed');
+});
+```
+
+- [ ] **Step 7: Run focused tests**
+
+Run:
+
+```powershell
+npm --prefix .\eatfitai-mobile test -- primaryPathReadiness.test.js backendNonUiSummary.test.js
+python scripts\cloud\check_mojibake.py eatfitai-mobile\scripts eatfitai-mobile\__tests__
+```
+
+Expected: PASS and no mojibake markers.
+
+- [ ] **Step 8: Commit**
+
+```powershell
+git add eatfitai-mobile\scripts\lib\primary-path-readiness.js eatfitai-mobile\__tests__\primaryPathReadiness.test.js eatfitai-mobile\scripts\production-smoke-auth-api.js eatfitai-mobile\scripts\production-smoke-user-api.js eatfitai-mobile\scripts\production-smoke-ai-api.js eatfitai-mobile\scripts\production-smoke-regression.js eatfitai-mobile\scripts\lib\backend-non-ui-summary.js eatfitai-mobile\__tests__\backendNonUiSummary.test.js
+git commit -m "test: require primary path readiness"
+```
+
+---
+
+### Task 10: Final Full Validation Batch
 
 **Files:**
 - Modify: `docs/TESTING_AND_RELEASE.md`
@@ -1050,6 +1579,7 @@ git commit -m "test: strengthen real-device evidence gates"
 
 ```powershell
 npm --prefix .\eatfitai-mobile test -- aiService.test.ts voiceService.test.ts diaryService.test.ts summaryService.test.ts useStatsStore.test.ts aiAvailability.test.ts visionReview.test.ts voiceCommandReview.test.ts userflowDocsInventory.test.js deviceAutomationMarkers.test.js rcUnblockHelpers.test.js
+npm --prefix .\eatfitai-mobile test -- primaryPathReadiness.test.js backendNonUiSummary.test.js
 ```
 
 Expected: all listed suites pass.
@@ -1080,7 +1610,30 @@ python scripts\cloud\check_secret_tracking.py
 
 Expected: no mojibake markers and no tracked secret findings.
 
-- [ ] **Step 5: Record results in docs**
+- [ ] **Step 5: Run primary-path cloud smoke gates**
+
+Run these only after backend, AI provider, and smoke credentials are configured:
+
+```powershell
+npm --prefix .\eatfitai-mobile run smoke:preflight
+npm --prefix .\eatfitai-mobile run smoke:auth:api
+npm --prefix .\eatfitai-mobile run smoke:user:api
+npm --prefix .\eatfitai-mobile run smoke:ai:api
+npm --prefix .\eatfitai-mobile run smoke:regression
+npm --prefix .\eatfitai-mobile run smoke:backend:non-ui
+```
+
+Expected:
+
+- `auth-api-report.json` has `"primaryPath": { "passed": true }`.
+- `user-api-report.json` has `"primaryPath": { "passed": true }`.
+- `ai-api-report.json` has `"primaryPath": { "passed": true }`.
+- `regression-run.json` has `"primaryPath": { "passed": true }`.
+- `backend-non-ui-summary.json` has `"primaryPath": { "passed": true }`.
+- `backend-non-ui-summary.json` has `"overallPassed": true`.
+- No AI smoke item is counted as release-ready when `source` is `formula`, `backend-rule-fallback`, `backend-rule-parser`, or any offline/fallback source.
+
+- [ ] **Step 6: Record results in docs**
 
 Append a short dated validation entry to `docs/TESTING_AND_RELEASE.md`:
 
@@ -1088,14 +1641,16 @@ Append a short dated validation entry to `docs/TESTING_AND_RELEASE.md`:
 ### 2026-04-26 Function/AI improvement validation
 
 - Mobile focused Jest batch: PASS
+- Primary-path readiness Jest batch: PASS
 - Mobile typecheck: PASS
 - Mobile lint / no-direct-ai-provider guard: PASS
 - Backend targeted AI/voice/diary/auth/analytics batch: PASS
 - Mojibake guard: PASS
 - Secret tracking guard: PASS
+- Cloud primary-path smoke: PASS
 ```
 
-- [ ] **Step 6: Commit final validation docs**
+- [ ] **Step 7: Commit final validation docs**
 
 ```powershell
 git add docs\TESTING_AND_RELEASE.md
@@ -1108,6 +1663,7 @@ git commit -m "docs: record function ai validation results"
 - Voice write intents must keep explicit confirmation before saving diary or weight changes.
 - Vision review must never save unmapped detections without a selected catalog/user food ID.
 - Do not reintroduce direct mobile-to-AI-provider calls; the backend proxy is the current architecture.
+- Do not count formula nutrition, rule parser voice, offline AI, blocked coverage, or manual fallback as release-ready primary-path success.
 - Preserve Vietnamese strings exactly; run the mojibake guard after every task touching user-facing text.
 
 ## Recommended Execution Order
@@ -1116,7 +1672,9 @@ git commit -m "docs: record function ai validation results"
 2. Task 3 and Task 4 next: user-visible AI availability messaging.
 3. Task 5 and Task 6 next: extract pure helpers from large mobile screens with tests.
 4. Task 7 after mobile helper extraction: backend error contract hardening.
-5. Task 8 and Task 9 last: release evidence and full validation.
+5. Task 8 strengthens release evidence.
+6. Task 9 adds the explicit primary-path gate so fallback cannot count as success.
+7. Task 10 runs final validation and records evidence.
 
 ## Execution Choice
 
