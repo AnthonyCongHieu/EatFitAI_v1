@@ -643,6 +643,9 @@ const MealDiaryScreen = (): React.ReactElement => {
               setShowQuickActions(true);
             }}
             testID={TEST_IDS.mealDiary.addManualButton}
+            nativeID={TEST_IDS.mealDiary.addManualButton}
+            accessibilityLabel={TEST_IDS.mealDiary.addManualButton}
+            collapsable={false}
           >
             {/* Robot face */}
             <View style={styles.robotFace}>

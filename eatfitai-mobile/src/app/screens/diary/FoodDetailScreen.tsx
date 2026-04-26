@@ -32,6 +32,7 @@ import { invalidateDiaryQueries } from '../../../services/diaryFlowService';
 import { MEAL_TYPES, MEAL_TYPE_LABELS, type MealTypeId } from '../../../types';
 import { handleApiError } from '../../../utils/errorHandler';
 import { favoritesService } from '../../../services/favoritesService';
+import { TEST_IDS } from '../../../testing/testIds';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 type RouteProps = RouteProp<RootStackParamList, 'FoodDetail'>;
@@ -262,7 +263,13 @@ const FoodDetailScreen = (): React.ReactElement | null => {
   if (!detail) return null;
 
   return (
-    <View style={S.container}>
+    <View
+      style={S.container}
+      testID={TEST_IDS.foodDetail.screen}
+      nativeID={TEST_IDS.foodDetail.screen}
+      accessibilityLabel={TEST_IDS.foodDetail.screen}
+      collapsable={false}
+    >
       {/* ═══ Top App Bar ═══ */}
       <View style={[S.header, { paddingTop: insets.top + 10 }]}>
         <Pressable style={S.iconBtn} onPress={() => navigation.goBack()}>
@@ -322,6 +329,9 @@ const FoodDetailScreen = (): React.ReactElement | null => {
                   render={({ field: { onChange, onBlur, value } }) => (
                     <View style={S.stepperInputWrapper}>
                       <TextInput
+                        testID={TEST_IDS.foodDetail.gramsInput}
+                        nativeID={TEST_IDS.foodDetail.gramsInput}
+                        accessibilityLabel={TEST_IDS.foodDetail.gramsInput}
                         style={S.stepperInput}
                         keyboardType="numeric"
                         value={value}
@@ -420,6 +430,9 @@ const FoodDetailScreen = (): React.ReactElement | null => {
       {/* ═══ Sticky Bottom Action ═══ */}
       <View style={S.bottomActions}>
         <Pressable
+          testID={TEST_IDS.foodDetail.submitButton}
+          nativeID={TEST_IDS.foodDetail.submitButton}
+          accessibilityLabel={TEST_IDS.foodDetail.submitButton}
           style={({ pressed }) => [S.submitBtn, pressed && { opacity: 0.8, transform: [{ scale: 0.98 }] }]}
           onPress={handleSubmit(submit)}
           disabled={isSubmitting}

@@ -29,7 +29,7 @@ ADB đến từ Android SDK `platform-tools`. Cài `scrcpy` để quan sát và 
 winget install --id Genymobile.scrcpy -e
 ```
 
-Khi có nhiều thiết bị Android, luôn pin serial:
+Real-device lane luôn yêu cầu pin serial rõ ràng:
 
 ```powershell
 $env:ANDROID_SERIAL="a12c6888629b"
@@ -60,6 +60,8 @@ Doctor kiểm tra:
 - cảnh báo MIUI/device policy
 
 UIAutomator dump có thể báo `could not get idle state` trên một số ROM. Đây là warning, không tự động kết luận app fail.
+
+Nếu `ANDROID_SERIAL` hoặc `EATFITAI_ANDROID_TARGET=real-device` chưa được set, real-device lane sẽ dừng sớm để tránh chạy nhầm emulator hoặc thiết bị khác.
 
 ### Quan sát live bằng scrcpy
 
@@ -106,6 +108,47 @@ Flow này chỉ kiểm tra khả năng tap/type vào màn login:
 
 ADB text đi qua bàn phím Android thật. Nếu bàn phím đang ở tiếng Việt/Telex, một số chuỗi có thể bị rewrite. Vì vậy flow luôn lưu screenshot để xác minh text thực tế.
 
+### RC proof trên giao diện thật
+
+```powershell
+npm --prefix .\eatfitai-mobile run device:rc-proof:android
+```
+
+RC proof chạy lần lượt các mode bắt buộc:
+
+- `login-real`
+- `home-smoke`
+- `full-tab-ui-smoke`
+- `food-diary-readback`
+- `food-search-ui-readback`
+- `scan-save-readback`
+- `voice-text-readback`
+- `stats-profile-smoke`
+- `backend-frontend-live-check`
+
+Có thể chạy riêng các mode mới khi debug:
+
+```powershell
+npm --prefix .\eatfitai-mobile run device:full-tab-ui-smoke:android
+npm --prefix .\eatfitai-mobile run device:food-search-ui-readback:android
+npm --prefix .\eatfitai-mobile run device:backend-frontend-live-check:android
+```
+
+Vòng debug nhanh trên thiết bị flaky không nên chờ UIAutomator quá lâu:
+
+```powershell
+$env:EATFITAI_DEVICE_FAST_ADB="1"
+$env:EATFITAI_DEVICE_SKIP_UI_DUMP="1"
+$env:EATFITAI_DEVICE_WAIT_CAP_MS="1800"
+$env:EATFITAI_DEVICE_ADB_TIMEOUT_CAP_MS="6000"
+$env:EATFITAI_DEVICE_API_TIMEOUT_MS="15000"
+npm --prefix .\eatfitai-mobile run device:food-search-ui-readback:android
+```
+
+Fast mode bỏ qua perf snapshot và dùng screenshot + foreground làm evidence degraded; RC proof cuối cùng vẫn nên chạy không bật `EATFITAI_DEVICE_FAST_ADB` để lấy đủ `gfxinfo`, `framestats`, và `meminfo`.
+
+Các mode readback bắt buộc phải chứng minh được đăng nhập, Home marker, không có crash logcat, và API readback mandatory thành công. `backend-frontend-live-check` ghi thêm checkpoint theo từng màn hình gồm timestamp, screenshot, UI dump, logcat tail, API latency/readback, cùng snapshot `gfxinfo`, `framestats`, và `meminfo`.
+
 ## Evidence
 
 Evidence mới nằm ở:
@@ -125,6 +168,7 @@ Các file quan trọng:
 - `tail-logcat.txt`
 - `ui.xml` hoặc warning trong `report.json`
 - `screenrecord.mp4` nếu chạy helper với `--record`
+- `startup-am-start-w.txt`, `*-gfxinfo.txt`, `*-gfxinfo-framestats.txt`, `*-meminfo.txt` khi mode có performance evidence
 
 `_logs/` là generated evidence và không commit.
 
@@ -161,6 +205,6 @@ Nếu cần override manifest:
 1. Mở scrcpy để nhìn màn hình thật.
 2. Chạy `device:probe:android` để lấy baseline screenshot/logcat.
 3. Nếu UI tree fail, đọc screenshot trước; không coi UIAutomator warning là app crash.
-4. Nếu text nhập sai, đổi keyboard sang English hoặc dùng probe credentials ASCII ít ký tự dễ bị Telex rewrite.
+4. Nếu text nhập sai, đổi keyboard sang English hoặc bật `EATFITAI_DEVICE_TAP_KEYBOARD_GLOBE=1` trước `login-real`; runner cũng dùng `CTRL+A` + delete để tránh append text cũ.
 5. Nếu app không launch, kiểm tra `adb shell cmd package resolve-activity --brief com.eatfitai.app`.
 6. Nếu logcat crash trống nhưng UI sai, lưu screenshot và note trạng thái trong release evidence.

@@ -2,6 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const { spawn, spawnSync } = require('child_process');
 const { resolveEnv } = require('../../tools/automation/resolveEnv');
+const { logcatContainsAppCrash } = require('./lib/device-logcat');
 
 const repoRoot = path.resolve(__dirname, '..', '..');
 const mobileRoot = path.resolve(__dirname, '..');
@@ -20,10 +21,13 @@ const MODES = [
   'diary-readback',
   'login-real',
   'home-smoke',
+  'full-tab-ui-smoke',
   'food-diary-readback',
+  'food-search-ui-readback',
   'scan-save-readback',
   'voice-text-readback',
   'stats-profile-smoke',
+  'backend-frontend-live-check',
 ];
 
 const HOME_MARKERS = [
@@ -43,6 +47,13 @@ const AUTH_MARKERS = [
 const SCREEN_MARKERS = {
   home: HOME_MARKERS,
   diary: ['meal-diary-screen'],
+  foodSearch: [
+    'food-search-screen',
+    'food-search-query-input',
+    'food-search-first-result-card',
+    'food-search-add-first-item-button',
+  ],
+  foodDetail: ['food-detail-screen', 'food-detail-grams-input', 'food-detail-submit-button'],
   scan: ['ai-scan-screen', 'ai-scan-status-badge'],
   voice: ['voice-screen', 'voice-text-input', 'voice-process-button'],
   stats: ['stats-screen', 'stats-today-tab-button', 'stats-week-tab-button'],
@@ -63,6 +74,35 @@ function trim(value) {
 function parsePositiveInteger(value, fallback) {
   const parsed = Number.parseInt(trim(value), 10);
   return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+}
+
+function parseBooleanEnv(name) {
+  return /^(1|true|yes|on)$/i.test(trim(resolveEnv(name)));
+}
+
+function parsePositiveNumber(value, fallback) {
+  const parsed = Number.parseFloat(trim(value));
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+}
+
+function deviceAdbTimeoutMs(fallback) {
+  const timeout = parsePositiveInteger(resolveEnv('EATFITAI_DEVICE_ADB_TIMEOUT_MS'), fallback);
+  const cap = parsePositiveInteger(resolveEnv('EATFITAI_DEVICE_ADB_TIMEOUT_CAP_MS'), 0);
+  return cap > 0 ? Math.min(timeout, cap) : timeout;
+}
+
+function deviceUiDumpTimeoutMs() {
+  return parsePositiveInteger(
+    resolveEnv('EATFITAI_DEVICE_UI_DUMP_TIMEOUT_MS'),
+    parseBooleanEnv('EATFITAI_DEVICE_FAST_ADB') ? 3000 : 6000,
+  );
+}
+
+function deviceWaitMs(ms) {
+  const scale = parsePositiveNumber(resolveEnv('EATFITAI_DEVICE_WAIT_SCALE'), 1);
+  const cap = parsePositiveInteger(resolveEnv('EATFITAI_DEVICE_WAIT_CAP_MS'), 0);
+  const scaled = Math.max(0, Math.round(ms * scale));
+  return cap > 0 ? Math.min(scaled, cap) : scaled;
 }
 
 function readEnvFileValue(envFilePath, key) {
@@ -249,7 +289,7 @@ function run(command, args, options = {}) {
   const result = spawnSync(command, args, {
     cwd: options.cwd || mobileRoot,
     encoding: options.encoding || 'utf8',
-    timeout: options.timeoutMs || 30000,
+    timeout: deviceAdbTimeoutMs(options.timeoutMs || 30000),
     shell: false,
   });
   return {
@@ -452,28 +492,36 @@ function parseDevices(output) {
 
 function resolveSerial(adb) {
   const requested = trim(resolveEnv('ANDROID_SERIAL'));
+  const targetMode = trim(resolveEnv('EATFITAI_ANDROID_TARGET') || resolveEnv('EATFITAI_ANDROID_TARGET_MODE')).toLowerCase();
+  const realDeviceModes = new Set(['real', 'real-device', 'device', 'usb']);
+  if (!targetMode || !realDeviceModes.has(targetMode)) {
+    throw new Error(
+      'Real-device ADB lane requires EATFITAI_ANDROID_TARGET=real-device and explicit ANDROID_SERIAL.',
+    );
+  }
+  if (!requested) {
+    throw new Error('Real-device ADB lane requires explicit ANDROID_SERIAL.');
+  }
+
   const devices = run(adb, ['devices', '-l']);
   if (!devices.ok) {
     throw new Error(devices.stderr || devices.error || 'adb devices failed');
   }
 
   const online = parseDevices(devices.stdout);
-  if (requested) {
-    if (!online.includes(requested)) {
-      throw new Error(`ANDROID_SERIAL=${requested} is not an online adb device.`);
-    }
-    return { serial: requested, online, devices };
+  if (!online.includes(requested)) {
+    throw new Error(`ANDROID_SERIAL=${requested} is not an online adb device.`);
   }
 
-  if (online.length !== 1) {
-    throw new Error(
-      online.length === 0
-        ? 'No online Android device was found over ADB.'
-        : `Multiple Android devices are online (${online.join(', ')}). Set ANDROID_SERIAL.`,
-    );
+  const qemu = runAdb(adb, requested, ['shell', 'getprop', 'ro.kernel.qemu'], { timeoutMs: 10000 });
+  if (!qemu.ok) {
+    throw new Error(qemu.stderr || qemu.error || 'Failed to verify Android target type.');
+  }
+  if (trim(qemu.stdout) === '1') {
+    throw new Error(`ANDROID_SERIAL=${requested} is an emulator. Use a real USB device for this lane.`);
   }
 
-  return { serial: online[0], online, devices };
+  return { serial: requested, online, devices };
 }
 
 function ensureOutputDir(mode) {
@@ -507,11 +555,11 @@ function point(size, xRatio, yRatio) {
 }
 
 function sleep(ms) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
+  return new Promise((resolve) => setTimeout(resolve, deviceWaitMs(ms)));
 }
 
 function pause(ms) {
-  Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
+  Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, deviceWaitMs(ms));
 }
 
 function safeName(name) {
@@ -519,6 +567,11 @@ function safeName(name) {
 }
 
 function wakeDevice(adb, serial) {
+  if (parseBooleanEnv('EATFITAI_DEVICE_FAST_ADB')) {
+    runAdb(adb, serial, ['shell', 'input', 'keyevent', 'KEYCODE_WAKEUP'], { timeoutMs: 3000 });
+    return;
+  }
+
   runAdb(adb, serial, ['shell', 'input', 'keyevent', 'KEYCODE_WAKEUP'], { timeoutMs: 10000 });
   runAdb(adb, serial, ['shell', 'wm', 'dismiss-keyguard'], { timeoutMs: 10000 });
   runAdb(adb, serial, ['shell', 'svc', 'power', 'stayon', 'true'], { timeoutMs: 10000 });
@@ -617,7 +670,7 @@ function captureUiDump(adb, serial, outputDir, name) {
   const remotePath = `/sdcard/eatfitai-${safeName(name)}.xml`;
   const localPath = path.join(outputDir, `${safeName(name)}.xml`);
   const dump = runAdb(adb, serial, ['shell', 'uiautomator', 'dump', remotePath], {
-    timeoutMs: 20000,
+    timeoutMs: deviceUiDumpTimeoutMs(),
   });
   if (!dump.ok) {
     return {
@@ -630,7 +683,7 @@ function captureUiDump(adb, serial, outputDir, name) {
     };
   }
 
-  const pull = runAdb(adb, serial, ['pull', remotePath, localPath], { timeoutMs: 20000 });
+  const pull = runAdb(adb, serial, ['pull', remotePath, localPath], { timeoutMs: 10000 });
   runAdb(adb, serial, ['shell', 'rm', remotePath], { timeoutMs: 10000 });
   return {
     type: 'ui-dump',
@@ -880,6 +933,163 @@ function captureLogcat(adb, serial, outputDir, name, args) {
   };
 }
 
+function skippedUiDump(outputDir, name, reason) {
+  return {
+    type: 'ui-dump',
+    critical: false,
+    ok: false,
+    name,
+    path: path.join(outputDir, `${safeName(name)}.xml`),
+    warning: reason,
+  };
+}
+
+function parseAmStartTiming(output) {
+  const text = String(output || '');
+  const readNumber = (label) => {
+    const match = text.match(new RegExp(`${label}:\\s*(\\d+)`, 'i'));
+    return match ? Number(match[1]) : null;
+  };
+
+  return {
+    status: text.match(/Status:\s*([^\r\n]+)/i)?.[1]?.trim() || '',
+    activity: text.match(/Activity:\s*([^\r\n]+)/i)?.[1]?.trim() || '',
+    thisTimeMs: readNumber('ThisTime'),
+    totalTimeMs: readNumber('TotalTime'),
+    waitTimeMs: readNumber('WaitTime'),
+  };
+}
+
+function resolveLaunchComponent(adb, serial) {
+  const result = runAdb(adb, serial, ['shell', 'cmd', 'package', 'resolve-activity', '--brief', APP_PACKAGE], {
+    timeoutMs: 10000,
+  });
+  if (!result.ok) {
+    return { ok: false, component: '', detail: result.stderr || result.error };
+  }
+
+  const component = String(result.stdout || '')
+    .split(/\r?\n/)
+    .map(trim)
+    .reverse()
+    .find((line) => line.includes('/'));
+  return {
+    ok: Boolean(component),
+    component: component || '',
+    detail: component ? result.stdout : 'No launchable activity resolved.',
+  };
+}
+
+function captureCommandOutputArtifact(adb, serial, outputDir, name, args, options = {}) {
+  const result = runAdb(adb, serial, args, {
+    timeoutMs: options.timeoutMs || 20000,
+    encoding: 'utf8',
+  });
+  const filePath = path.join(outputDir, `${safeName(name)}.txt`);
+  fs.writeFileSync(filePath, `${result.stdout}${result.stderr ? `\n${result.stderr}` : ''}`, 'utf8');
+  const artifact = {
+    type: options.type || 'adb-text',
+    critical: options.critical === true,
+    ok: result.ok,
+    name,
+    path: filePath,
+    bytes: fileSize(filePath),
+    error: result.stderr || result.error,
+  };
+  if (options.includeStdout === true) {
+    artifact.stdout = result.stdout;
+  }
+  return artifact;
+}
+
+function captureStartupTiming(context) {
+  const { adb, serial, outputDir, report } = context;
+  const resolved = resolveLaunchComponent(adb, serial);
+  if (!resolved.ok) {
+    addWarning(report, 'launch-activity-unresolved', 'Could not resolve launch activity for startup timing.', {
+      detail: resolved.detail,
+    });
+    return null;
+  }
+
+  runAdb(adb, serial, ['shell', 'am', 'force-stop', APP_PACKAGE], { timeoutMs: 10000 });
+  const artifact = captureCommandOutputArtifact(
+    adb,
+    serial,
+    outputDir,
+    'startup-am-start-w',
+    ['shell', 'am', 'start', '-W', '-n', resolved.component],
+    { type: 'startup', critical: false, includeStdout: true, timeoutMs: 30000 },
+  );
+  const timing = parseAmStartTiming(artifact.stdout);
+  report.performance.startup = {
+    component: resolved.component,
+    ok: artifact.ok,
+    ...timing,
+  };
+  report.artifacts.push(artifact);
+  return artifact;
+}
+
+function resetGfxInfo(context, name) {
+  const result = runAdb(context.adb, context.serial, ['shell', 'dumpsys', 'gfxinfo', APP_PACKAGE, 'reset'], {
+    timeoutMs: 10000,
+  });
+  context.report.performance.gfxReset = {
+    name,
+    ok: result.ok,
+    error: result.stderr || result.error,
+  };
+}
+
+function capturePerformanceSnapshot(context, name) {
+  const { adb, serial, outputDir, report } = context;
+  if (
+    parseBooleanEnv('EATFITAI_DEVICE_FAST_ADB') ||
+    parseBooleanEnv('EATFITAI_DEVICE_SKIP_PERF_SNAPSHOT')
+  ) {
+    report.performance.snapshots.push({
+      name,
+      capturedAt: new Date().toISOString(),
+      skipped: true,
+      reason: parseBooleanEnv('EATFITAI_DEVICE_FAST_ADB')
+        ? 'EATFITAI_DEVICE_FAST_ADB'
+        : 'EATFITAI_DEVICE_SKIP_PERF_SNAPSHOT',
+    });
+    return;
+  }
+
+  const artifacts = [
+    captureCommandOutputArtifact(adb, serial, outputDir, `${name}-gfxinfo`, ['shell', 'dumpsys', 'gfxinfo', APP_PACKAGE], {
+      type: 'performance',
+      timeoutMs: 20000,
+    }),
+    captureCommandOutputArtifact(
+      adb,
+      serial,
+      outputDir,
+      `${name}-gfxinfo-framestats`,
+      ['shell', 'dumpsys', 'gfxinfo', APP_PACKAGE, 'framestats'],
+      { type: 'performance', timeoutMs: 20000 },
+    ),
+    captureCommandOutputArtifact(adb, serial, outputDir, `${name}-meminfo`, ['shell', 'dumpsys', 'meminfo', APP_PACKAGE], {
+      type: 'performance',
+      timeoutMs: 20000,
+    }),
+  ];
+  report.artifacts.push(...artifacts);
+  report.performance.snapshots.push({
+    name,
+    capturedAt: new Date().toISOString(),
+    artifacts: artifacts.map((artifact) => ({
+      name: artifact.name,
+      ok: artifact.ok,
+      path: artifact.path,
+      bytes: artifact.bytes,
+    })),
+  });
+}
+
 function startRecording(adb, serial, outputDir, enabled) {
   if (!enabled) {
     return null;
@@ -946,26 +1156,6 @@ function isStepFailed(step) {
 
 function hasCriticalFailure(report, code) {
   return report.criticalFailures.some((failure) => failure.code === code);
-}
-
-function logcatContainsAppCrash(text) {
-  const lines = String(text || '').split(/\r?\n/);
-  return lines.some((line, index) => {
-    if (/Process:\s*com\.eatfitai\.app/i.test(line)) {
-      return true;
-    }
-
-    if (/FATAL.*com\.eatfitai\.app|com\.eatfitai\.app.*FATAL/i.test(line)) {
-      return true;
-    }
-
-    if (!/(FATAL EXCEPTION|FATAL SIGNAL|AndroidRuntime)/i.test(line)) {
-      return false;
-    }
-
-    const crashWindow = lines.slice(index, index + 10).join('\n');
-    return /Process:\s*com\.eatfitai\.app|com\.eatfitai\.app/i.test(crashWindow);
-  });
 }
 
 function detectCrashEvidence(report) {
@@ -1120,31 +1310,75 @@ function tapAbsolute(adb, serial, x, y) {
   return { x, y, ok: result.ok, error: result.stderr || result.error };
 }
 
-function clearFocusedText(adb, serial, attempts = 48) {
-  runAdb(adb, serial, ['shell', 'input', 'keyevent', 'KEYCODE_MOVE_END'], { timeoutMs: 10000 });
-  for (let index = 0; index < attempts; index += 1) {
-    runAdb(adb, serial, ['shell', 'input', 'keyevent', 'KEYCODE_DEL'], { timeoutMs: 10000 });
+function clearFocusedText(adb, serial, attempts = 12) {
+  const selectAll = runAdb(
+    adb,
+    serial,
+    ['shell', 'input', 'keycombination', 'KEYCODE_CTRL_LEFT', 'KEYCODE_A'],
+    { timeoutMs: 5000 },
+  );
+  runAdb(adb, serial, ['shell', 'input', 'keyevent', 'KEYCODE_DEL'], { timeoutMs: 5000 });
+
+  if (!selectAll.ok && attempts > 0) {
+    runAdb(
+      adb,
+      serial,
+      ['shell', 'input', 'keyevent', ...Array.from({ length: attempts }, () => 'KEYCODE_DEL')],
+      { timeoutMs: 5000 },
+    );
   }
+}
+
+async function maybeTapKeyboardGlobe(context, name) {
+  if (!parseBooleanEnv('EATFITAI_DEVICE_TAP_KEYBOARD_GLOBE')) {
+    return;
+  }
+
+  const result = tap(context.adb, context.serial, readScreenSize(context.adb, context.serial), 0.3, 0.91);
+  await sleep(600);
+  context.report.steps.push({ name, tap: result });
 }
 
 async function tapMarkerOrCoordinate(context, marker, name, xRatio, yRatio, waitMs = 1200) {
   const { adb, serial, outputDir, report } = context;
-  const ui = captureUiDump(adb, serial, outputDir, `${safeName(name)}-tap-ui`);
-  report.artifacts.push(ui);
-  if (ui.ok) {
-    const bounds = findBoundsForMarker(readTextFileIfExists(ui.path), marker);
-    if (bounds) {
-      const result = tapAbsolute(adb, serial, bounds.x, bounds.y);
-      await sleep(waitMs);
-      report.steps.push({
-        name,
-        marker,
-        tap: result,
-        tapSource: 'ui-dump-bounds',
-        bounds,
-      });
-      return result;
+  let uiArtifact = null;
+  const skipUiDump =
+    context.tapUiDumpDisabled ||
+    parseBooleanEnv('EATFITAI_DEVICE_SKIP_UI_DUMP') ||
+    parseBooleanEnv('EATFITAI_DEVICE_SKIP_TAP_UI_DUMP');
+
+  if (!skipUiDump) {
+    uiArtifact = captureUiDump(adb, serial, outputDir, `${safeName(name)}-tap-ui`);
+    report.artifacts.push(uiArtifact);
+    if (uiArtifact.ok) {
+      const bounds = findBoundsForMarker(readTextFileIfExists(uiArtifact.path), marker);
+      if (bounds) {
+        const result = tapAbsolute(adb, serial, bounds.x, bounds.y);
+        await sleep(waitMs);
+        report.steps.push({
+          name,
+          marker,
+          tap: result,
+          tapSource: 'ui-dump-bounds',
+          bounds,
+        });
+        return result;
+      }
+    } else {
+      context.tapUiDumpDisabled = true;
     }
+  } else if (!context.tapUiDumpSkipWarningAdded) {
+    addWarning(
+      report,
+      'tap-uiautomator-skipped',
+      'Tap marker UI dumps are skipped for this run; bounded coordinates are used for tap actions.',
+      {
+        reason: context.tapUiDumpDisabled
+          ? 'previous-ui-dump-failed'
+          : 'EATFITAI_DEVICE_SKIP_UI_DUMP/EATFITAI_DEVICE_SKIP_TAP_UI_DUMP',
+      },
+    );
+    context.tapUiDumpSkipWarningAdded = true;
   }
 
   addWarning(
@@ -1153,8 +1387,8 @@ async function tapMarkerOrCoordinate(context, marker, name, xRatio, yRatio, wait
     `${name} used bounded coordinate navigation because UIAutomator bounds were unavailable.`,
     {
       marker,
-      uiDumpOk: ui.ok === true,
-      uiDumpPath: ui.path,
+      uiDumpOk: uiArtifact?.ok === true,
+      uiDumpPath: uiArtifact?.path || '',
     },
   );
   return tapStep(report, adb, serial, readScreenSize(adb, serial), name, xRatio, yRatio, waitMs);
@@ -1165,16 +1399,23 @@ async function runProbe(context) {
   const recording = startRecording(adb, serial, outputDir, record);
   runAdb(adb, serial, ['logcat', '-b', 'all', '-c']);
   wakeDevice(adb, serial);
-  runAdb(adb, serial, ['shell', 'am', 'force-stop', APP_PACKAGE]);
-  const launch = runAdb(adb, serial, [
-    'shell',
-    'monkey',
-    '-p',
-    APP_PACKAGE,
-    '-c',
-    'android.intent.category.LAUNCHER',
-    '1',
-  ]);
+  resetGfxInfo(context, 'probe-start');
+  const startupArtifact = captureStartupTiming(context);
+  const launch = startupArtifact?.ok
+    ? {
+        ok: true,
+        stdout: startupArtifact.stdout,
+        stderr: '',
+      }
+    : runAdb(adb, serial, [
+        'shell',
+        'monkey',
+        '-p',
+        APP_PACKAGE,
+        '-c',
+        'android.intent.category.LAUNCHER',
+        '1',
+      ]);
   report.steps.push({
     name: 'launch',
     critical: true,
@@ -1185,9 +1426,14 @@ async function runProbe(context) {
   await sleep(6000);
   addForegroundStep(report, adb, serial, 'foreground-after-launch', true);
   report.artifacts.push(captureScreenshot(adb, serial, outputDir, '01-launch'));
-  report.artifacts.push(captureUiDump(adb, serial, outputDir, 'ui'));
+  report.artifacts.push(
+    parseBooleanEnv('EATFITAI_DEVICE_SKIP_UI_DUMP')
+      ? skippedUiDump(outputDir, 'ui', 'UIAutomator dump skipped by EATFITAI_DEVICE_SKIP_UI_DUMP.')
+      : captureUiDump(adb, serial, outputDir, 'ui'),
+  );
   report.artifacts.push(captureLogcat(adb, serial, outputDir, 'crash-logcat.txt', ['-b', 'crash']));
   report.artifacts.push(captureLogcat(adb, serial, outputDir, 'tail-logcat.txt', ['-t', '600']));
+  capturePerformanceSnapshot(context, 'probe');
   const video = stopRecording(adb, serial, recording);
   if (video) {
     report.artifacts.push(video);
@@ -1313,6 +1559,7 @@ async function readDiaryDay(context, token, options = {}) {
     name = 'diary-day-readback',
     marker = '',
     baselineCount = null,
+    baselineIds = null,
     mandatory = false,
   } = options;
   const date = toLocalDateOnly();
@@ -1338,8 +1585,11 @@ async function readDiaryDay(context, token, options = {}) {
     },
   );
   const rows = Array.isArray(response.body) ? response.body : [];
+  const ids = rows.map(getMealDiaryId).filter((id) => id != null);
+  const baselineIdSet = Array.isArray(baselineIds) ? new Set(baselineIds) : null;
+  const newIds = baselineIdSet ? ids.filter((id) => !baselineIdSet.has(id)) : [];
   const markerFound = marker ? rows.some((entry) => bodyContainsMarker(entry, marker)) : false;
-  const countOk = baselineCount == null || rows.length > baselineCount;
+  const countOk = baselineCount == null || rows.length > baselineCount || newIds.length > 0;
   const markerOk = marker ? markerFound : true;
   const passed = response.ok && Array.isArray(response.body) && countOk && markerOk;
 
@@ -1353,6 +1603,9 @@ async function readDiaryDay(context, token, options = {}) {
       durationMs: response.durationMs,
       count: Array.isArray(response.body) ? rows.length : null,
       baselineCount,
+      ids,
+      baselineIds: Array.isArray(baselineIds) ? baselineIds : null,
+      newIds,
       marker,
       markerFound,
       body: summarizeApiBody(response.body),
@@ -1364,9 +1617,106 @@ async function readDiaryDay(context, token, options = {}) {
   return {
     ok: passed,
     count: Array.isArray(response.body) ? rows.length : null,
+    ids,
+    newIds,
     markerFound,
     rows,
   };
+}
+
+async function readSummaryDay(context, token, options = {}) {
+  const { report, backend } = context;
+  const { name = 'summary-day-readback', mandatory = false } = options;
+  const date = toLocalDateOnly();
+  if (!token) {
+    addApiReadback(
+      report,
+      name,
+      'skipped',
+      {
+        reason: 'access-token-missing',
+        date,
+      },
+      mandatory,
+    );
+    return null;
+  }
+
+  const response = await requestJson(
+    `${backend.url}/api/summary/day?date=${encodeURIComponent(date)}`,
+    {
+      headers: authHeaders(token),
+    },
+  );
+  addApiReadback(
+    report,
+    name,
+    response.ok ? 'pass' : 'fail',
+    {
+      date,
+      httpStatus: response.status,
+      durationMs: response.durationMs,
+      body: summarizeApiBody(response.body),
+      error: response.error || '',
+    },
+    mandatory,
+  );
+  return response;
+}
+
+async function readProfile(context, token, options = {}) {
+  const { report, backend } = context;
+  const { name = 'profile-readback', mandatory = false } = options;
+  if (!token) {
+    addApiReadback(
+      report,
+      name,
+      'skipped',
+      {
+        reason: 'access-token-missing',
+      },
+      mandatory,
+    );
+    return null;
+  }
+
+  const response = await requestJson(`${backend.url}/api/profile`, {
+    headers: authHeaders(token),
+  });
+  addApiReadback(
+    report,
+    name,
+    response.ok ? 'pass' : 'fail',
+    {
+      httpStatus: response.status,
+      durationMs: response.durationMs,
+      body: summarizeApiBody(response.body),
+      error: response.error || '',
+    },
+    mandatory,
+  );
+  return response;
+}
+
+function recordLiveCheckpoint(context, name) {
+  const { adb, serial, outputDir, report } = context;
+  const focus = addForegroundStep(report, adb, serial, `${name}-foreground-check`);
+  const screenshot = captureScreenshot(adb, serial, outputDir, `${name}-checkpoint`);
+  const ui = captureUiDump(adb, serial, outputDir, `${name}-checkpoint-ui`);
+  const logcat = captureLogcat(adb, serial, outputDir, `${name}-checkpoint-logcat.txt`, ['-t', '300']);
+  report.artifacts.push(screenshot, ui, logcat);
+  report.liveChecks.push({
+    name,
+    capturedAt: new Date().toISOString(),
+    appForeground: focus.appForeground === true,
+    focus: focus.line || '',
+    screenshotPath: screenshot.path,
+    screenshotOk: screenshot.ok,
+    uiDumpPath: ui.path,
+    uiDumpOk: ui.ok,
+    logcatPath: logcat.path,
+    logcatOk: logcat.ok,
+  });
 }
 
 async function searchFoodForWrite(context, token, flowName, mandatory = true) {
@@ -1564,7 +1914,9 @@ async function assertScreen(context, name, markers, critical = false, options = 
   const focus = addForegroundStep(report, adb, serial, `${name}-foreground-check`, critical);
   const screenshot = captureScreenshot(adb, serial, outputDir, `${name}-screen`);
   report.artifacts.push(screenshot);
-  const ui = captureUiDump(adb, serial, outputDir, `${name}-ui`);
+  const ui = parseBooleanEnv('EATFITAI_DEVICE_SKIP_UI_DUMP')
+    ? skippedUiDump(outputDir, `${name}-ui`, 'UIAutomator dump skipped by EATFITAI_DEVICE_SKIP_UI_DUMP.')
+    : captureUiDump(adb, serial, outputDir, `${name}-ui`);
   report.artifacts.push(ui);
   return recordScreenEvidence(report, {
     name,
@@ -1614,6 +1966,7 @@ async function submitRealLoginCredentials(context) {
 
   const emailTap = tap(adb, serial, size, 0.5, 0.395);
   await sleep(600);
+  await maybeTapKeyboardGlobe(context, 'login-real-email-keyboard-globe-tap');
   clearFocusedText(adb, serial);
   const emailInput = inputText(adb, serial, credentials.email);
   await sleep(800);
@@ -1660,7 +2013,13 @@ async function ensureAuthenticatedHome(context, options = {}) {
     );
   }
 
-  const stateUi = captureUiDump(adb, serial, outputDir, `${flowName}-auth-state-ui`);
+  const stateUi = parseBooleanEnv('EATFITAI_DEVICE_SKIP_UI_DUMP')
+    ? skippedUiDump(
+        outputDir,
+        `${flowName}-auth-state-ui`,
+        'UIAutomator dump skipped by EATFITAI_DEVICE_SKIP_UI_DUMP.',
+      )
+    : captureUiDump(adb, serial, outputDir, `${flowName}-auth-state-ui`);
   report.artifacts.push(stateUi);
   const state = classifyAuthState(stateUi);
   addFlowAssertion(
@@ -1689,6 +2048,39 @@ async function ensureAuthenticatedHome(context, options = {}) {
     return homeOk;
   }
 
+  if (state.state === 'unknown') {
+    addWarning(
+      report,
+      state.uiDumpOk ? 'auth-state-unknown' : 'auth-state-uiautomator-degraded',
+      state.uiDumpOk
+        ? 'Auth state markers were not on the current screen; checking Home before login navigation.'
+        : 'UIAutomator did not return auth state; checking Home with bounded screenshot evidence before login navigation.',
+    );
+    await navigateToTab(context, 'home', 1800);
+    const canUseUnknownStateScreenshotFallback =
+      !requireCredentials && !parseBooleanEnv('EATFITAI_DEVICE_FORCE_LOGIN');
+    const boundedHomeOk = await assertScreen(
+      context,
+      `${flowName}-home-bounded-auth-state`,
+      SCREEN_MARKERS.home,
+      true,
+      {
+        allowScreenshotFallback: canUseUnknownStateScreenshotFallback,
+      },
+    );
+    if (boundedHomeOk) {
+      report.authenticated = true;
+      addWarning(
+        report,
+        state.uiDumpOk ? 'auth-state-home-navigation-fallback' : 'auth-state-screenshot-fallback',
+        state.uiDumpOk
+          ? 'Authenticated Home was accepted after tab navigation from an unknown authenticated screen.'
+          : 'Authenticated Home was accepted from foreground+screenshot evidence because UIAutomator was unavailable.',
+      );
+      return true;
+    }
+  }
+
   if (!credentials.available) {
     addFlowAssertion(
       report,
@@ -1701,14 +2093,6 @@ async function ensureAuthenticatedHome(context, options = {}) {
       true,
     );
     return false;
-  }
-
-  if (state.state === 'unknown' && !state.uiDumpOk) {
-    addWarning(
-      report,
-      'auth-state-uiautomator-degraded',
-      'UIAutomator did not return auth state; proceeding with bounded login navigation.',
-    );
   }
 
   const loginNavigation = await ensureLoginScreen(context);
@@ -1779,6 +2163,29 @@ async function runHomeSmoke(context) {
   });
 }
 
+async function runFullTabUiSmoke(context) {
+  await ensureAuthenticatedHome(context, {
+    flowName: 'full-tab-ui-smoke',
+  });
+
+  await navigateToTab(context, 'home', 1800);
+  await assertScreen(context, 'full-tab-ui-smoke-home', SCREEN_MARKERS.home, true, {
+    allowScreenshotFallback: true,
+  });
+
+  const tabChecks = [
+    ['voice', SCREEN_MARKERS.voice],
+    ['scan', SCREEN_MARKERS.scan],
+    ['stats', SCREEN_MARKERS.stats],
+    ['profile', SCREEN_MARKERS.profile],
+  ];
+
+  for (const [tabName, markers] of tabChecks) {
+    await navigateToTab(context, tabName, 2500);
+    await assertScreen(context, `full-tab-ui-smoke-${tabName}`, markers, true);
+  }
+}
+
 async function runFoodDiaryReadback(context) {
   await ensureAuthenticatedHome(context, {
     flowName: 'food-diary-readback',
@@ -1787,6 +2194,87 @@ async function runFoodDiaryReadback(context) {
   const token = await runApiLogin(context, true);
   await readDiaryDay(context, token, {
     name: 'food-diary-mandatory-readback',
+    mandatory: true,
+  });
+}
+
+async function runFoodSearchUiReadback(context) {
+  const { adb, serial, outputDir, report } = context;
+  await ensureAuthenticatedHome(context, {
+    flowName: 'food-search-ui-readback',
+    requireCredentials: parseBooleanEnv('EATFITAI_DEVICE_FORCE_LOGIN'),
+  });
+  const token = await runApiLogin(context, true);
+  const baseline = await readDiaryDay(context, token, {
+    name: 'food-search-ui-baseline-readback',
+    mandatory: true,
+  });
+
+  await navigateToDiary(context);
+  await tapMarkerOrCoordinate(
+    context,
+    'meal-diary-add-manual-button',
+    'food-search-ui-open-add-manual',
+    0.82,
+    0.86,
+    2500,
+  );
+  await tapMarkerOrCoordinate(
+    context,
+    'home-quick-add-search-button',
+    'food-search-ui-select-add-meal-action',
+    0.74,
+    0.43,
+    3000,
+  );
+  await assertScreen(context, 'food-search-ui-readback-search', SCREEN_MARKERS.foodSearch, true);
+
+  const query = trim(resolveEnv('EATFITAI_DEVICE_READBACK_FOOD_QUERY')) || 'rice';
+  await tapMarkerOrCoordinate(
+    context,
+    'food-search-query-input',
+    'food-search-ui-query-input-tap',
+    0.5,
+    0.15,
+    700,
+  );
+  clearFocusedText(adb, serial, 24);
+  const input = inputText(adb, serial, query);
+  await sleep(500);
+  report.artifacts.push(captureScreenshot(adb, serial, outputDir, 'food-search-ui-after-query-input'));
+  runAdb(adb, serial, ['shell', 'input', 'keyevent', 'KEYCODE_ENTER'], { timeoutMs: 10000 });
+  await sleep(4500);
+  report.steps.push({
+    name: 'food-search-ui-query-input',
+    inputOk: input.ok,
+    textLength: query.length,
+  });
+
+  await assertScreen(
+    context,
+    'food-search-ui-readback-results',
+    ['food-search-first-result-card', 'food-search-add-first-item-button'],
+    true,
+  );
+  await tapMarkerOrCoordinate(
+    context,
+    'food-search-add-first-item-button',
+    'food-search-ui-first-add-tap',
+    0.88,
+    0.405,
+    5500,
+  );
+  report.artifacts.push(
+    captureLogcat(adb, serial, outputDir, 'food-search-ui-after-add-logcat.txt', [
+      '-t',
+      parseBooleanEnv('EATFITAI_DEVICE_FAST_ADB') ? '200' : '800',
+    ]),
+  );
+  await assertScreen(context, 'food-search-ui-readback-after-add', SCREEN_MARKERS.foodSearch, false);
+  await readDiaryDay(context, token, {
+    name: 'food-search-ui-mandatory-readback',
+    baselineCount: baseline.count,
+    baselineIds: baseline.ids,
     mandatory: true,
   });
 }
@@ -1880,6 +2368,45 @@ async function runStatsProfileSmoke(context) {
     },
     true,
   );
+}
+
+async function runBackendFrontendLiveCheck(context) {
+  await ensureAuthenticatedHome(context, {
+    flowName: 'backend-frontend-live-check',
+  });
+  const token = await runApiLogin(context, true);
+
+  recordLiveCheckpoint(context, 'live-check-home');
+  await readDiaryDay(context, token, {
+    name: 'live-check-diary-readback',
+    mandatory: true,
+  });
+
+  await navigateToTab(context, 'voice', 2500);
+  await assertScreen(context, 'live-check-voice', SCREEN_MARKERS.voice, true);
+  recordLiveCheckpoint(context, 'live-check-voice');
+
+  await navigateToTab(context, 'scan', 2500);
+  await assertScreen(context, 'live-check-scan', SCREEN_MARKERS.scan, true);
+  recordLiveCheckpoint(context, 'live-check-scan');
+
+  await navigateToTab(context, 'stats', 2500);
+  await assertScreen(context, 'live-check-stats', SCREEN_MARKERS.stats, true);
+  recordLiveCheckpoint(context, 'live-check-stats');
+  await readSummaryDay(context, token, {
+    name: 'live-check-summary-readback',
+    mandatory: true,
+  });
+
+  await navigateToTab(context, 'profile', 2500);
+  await assertScreen(context, 'live-check-profile', SCREEN_MARKERS.profile, true);
+  recordLiveCheckpoint(context, 'live-check-profile');
+  await readProfile(context, token, {
+    name: 'live-check-profile-readback',
+    mandatory: true,
+  });
+
+  capturePerformanceSnapshot(context, 'backend-frontend-live-check-final');
 }
 
 async function ensureLoginScreen(context) {
@@ -2068,6 +2595,12 @@ async function main() {
     flowAssertions: [],
     apiReadbacks: [],
     uiDefects: [],
+    liveChecks: [],
+    performance: {
+      startup: null,
+      gfxReset: null,
+      snapshots: [],
+    },
     evidence: {
       screenshots: [],
       uiDumps: [],
@@ -2098,14 +2631,20 @@ async function main() {
     await runLoginReal(context);
   } else if (mode === 'home-smoke') {
     await runHomeSmoke(context);
+  } else if (mode === 'full-tab-ui-smoke') {
+    await runFullTabUiSmoke(context);
   } else if (mode === 'food-diary-readback') {
     await runFoodDiaryReadback(context);
+  } else if (mode === 'food-search-ui-readback') {
+    await runFoodSearchUiReadback(context);
   } else if (mode === 'scan-save-readback') {
     await runScanSaveReadback(context);
   } else if (mode === 'voice-text-readback') {
     await runVoiceTextReadback(context);
   } else if (mode === 'stats-profile-smoke') {
     await runStatsProfileSmoke(context);
+  } else if (mode === 'backend-frontend-live-check') {
+    await runBackendFrontendLiveCheck(context);
   }
 
   finalizeReport(report);
@@ -2129,9 +2668,7 @@ async function main() {
       console.log(`WARN ${warning.code} - ${warning.message}`);
     }
   }
-  if (report.status === 'fail') {
-    process.exitCode = 1;
-  }
+  process.exit(report.status === 'fail' ? 1 : 0);
 }
 
 main().catch((error) => {

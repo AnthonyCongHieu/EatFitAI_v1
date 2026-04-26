@@ -300,7 +300,10 @@ const LoginScreen = ({ navigation }: Props): React.ReactElement => {
                             placeholder="Địa chỉ Email"
                             placeholderTextColor="#475569"
                             autoCapitalize="none"
+                            autoCorrect={false}
+                            autoComplete="email"
                             keyboardType="email-address"
+                            textContentType="username"
                             onBlur={onBlur}
                             onChangeText={onChange}
                             value={value}
@@ -350,7 +353,11 @@ const LoginScreen = ({ navigation }: Props): React.ReactElement => {
                             testID={TEST_IDS.auth.passwordInput}
                             placeholder="Mật khẩu"
                             placeholderTextColor="#475569"
+                            autoCapitalize="none"
+                            autoCorrect={false}
+                            autoComplete="password"
                             secureTextEntry={!passwordVisible}
+                            textContentType="password"
                             onBlur={onBlur}
                             onChangeText={onChange}
                             value={value}

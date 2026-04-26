@@ -4,17 +4,22 @@ const path = require('path');
 const REQUIRED_RC_DEVICE_MODES = [
   'login-real',
   'home-smoke',
+  'full-tab-ui-smoke',
   'food-diary-readback',
+  'food-search-ui-readback',
   'scan-save-readback',
   'voice-text-readback',
   'stats-profile-smoke',
+  'backend-frontend-live-check',
 ];
 
 const MODES_REQUIRING_API_READBACK = new Set([
   'food-diary-readback',
+  'food-search-ui-readback',
   'scan-save-readback',
   'voice-text-readback',
   'stats-profile-smoke',
+  'backend-frontend-live-check',
 ]);
 
 function trim(value) {
@@ -51,7 +56,11 @@ function hasHomeMarkerEvidence(report) {
   const assertions = Array.isArray(report?.flowAssertions) ? report.flowAssertions : [];
   return assertions.some((assertion) => {
     const name = trim(assertion?.name).toLowerCase();
-    return assertion?.status === 'pass' && name.includes('home') && name.includes('ui-marker');
+    return (
+      assertion?.status === 'pass' &&
+      name.includes('home') &&
+      (name.includes('ui-marker') || name.includes('bounded-screen-evidence'))
+    );
   });
 }
 

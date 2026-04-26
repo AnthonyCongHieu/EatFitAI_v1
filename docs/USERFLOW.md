@@ -2,7 +2,7 @@
 
 Updated: `2026-04-23`
 
-Tai lieu nay tom tat user flow hien tai cua app theo runtime trong repo. Khi co khac biet, uu tien:
+Tài liệu này tóm tắt user flow hiện tại của app theo runtime trong repo. Khi có khác biệt, ưu tiên:
 
 - `docs/ARCHITECTURE.md`
 - `docs/TESTING_AND_RELEASE.md`
@@ -34,7 +34,90 @@ Active screen groups reflected by architecture:
 - Stats: `Stats`, `WeekStats`, `MonthStats`
 - Profile: `Profile`, `EditProfile`, `BodyMetrics`, `GoalSettings`, `WeightHistory`, `ChangePassword`, `Notifications`, `About`, `PrivacyPolicy`
 
-Historical names such as `WeeklyHistory` and `AddMealFromVision` should not be used as current source of truth.
+`AddMealFromVision` đang là màn hỗ trợ sau scan trong `AppNavigator`, không phải tab chính. Tên lịch sử như `WeeklyHistory` không nên dùng làm source of truth hiện tại.
+
+### 2.1 Bản đồ chức năng thường
+
+```mermaid
+flowchart TB
+    Launch["Mở app"] --> Session{"Có session hợp lệ?"}
+    Session -->|Không| Auth["Auth: Welcome, Login, Register, VerifyEmail, ForgotPassword"]
+    Auth --> Onboarding["Onboarding / IntroCarousel"]
+    Session -->|Có| MainTabs["AppTabs"]
+    Onboarding --> MainTabs
+
+    MainTabs --> Home["Home"]
+    MainTabs --> Diary["MealDiary"]
+    MainTabs --> Stats["Stats: Today / Week / Month"]
+    MainTabs --> Profile["Profile"]
+
+    Home --> QuickAdd["Quick actions / Smart add"]
+    Diary --> FoodSearch["FoodSearch"]
+    Diary --> FoodDetail["FoodDetail"]
+    Diary --> CustomDish["CustomDish"]
+    Diary --> CommonMeals["CommonMeals / CommonMealTemplate"]
+    Diary --> RecentFood["Recent foods / copy previous day"]
+
+    Profile --> BodyMetrics["BodyMetrics / WeightHistory"]
+    Profile --> Goals["GoalSettings / BasicInfo"]
+    Profile --> Account["ChangePassword / Notifications / About / PrivacyPolicy"]
+
+    FoodSearch --> BackendFood["Backend food, favorites, user foods"]
+    FoodDetail --> BackendDiary["Backend meal diary"]
+    CustomDish --> BackendDiary
+    RecentFood --> BackendDiary
+    Stats --> BackendAnalytics["Backend analytics / summary"]
+    Profile --> BackendProfile["Backend profile / body metrics"]
+```
+
+### 2.2 Bản đồ chức năng AI
+
+```mermaid
+flowchart TB
+    MainTabs["AppTabs"] --> AiScan["AIScan / AiCamera"]
+    MainTabs --> Voice["Voice"]
+    MainTabs --> AiScreens["NutritionInsights / RecipeSuggestions / VisionHistory"]
+
+    AiScan --> VisionDetect["POST /api/ai/vision/detect"]
+    VisionDetect --> VisionCache{"Có cache ảnh?"}
+    VisionCache -->|Có| MappedResult["Kết quả đã map món ăn"]
+    VisionCache -->|Không| ProviderDetect["AI provider POST /detect"]
+    ProviderDetect --> Yolo["YOLO best.pt, fallback yolov8s.pt khi được bật"]
+    Yolo --> FoodMap["Backend map label sang food catalog"]
+    FoodMap --> MappedResult
+    MappedResult --> AddFromVision["AddMealFromVision: review, đổi món, chỉnh gram"]
+    AddFromVision --> TeachAI["Dạy AI: POST /api/ai/labels/teach"]
+    AddFromVision --> SaveDiary["Lưu vào MealDiary"]
+
+    AiScreens --> Recipes["POST /api/ai/recipes/suggest"]
+    Recipes --> RecipeDetail["GET /api/ai/recipes/{recipeId}"]
+    RecipeDetail --> Cooking["POST /api/ai/cooking-instructions"]
+
+    AiScreens --> Nutrition["Nutrition target, insights, adaptive target"]
+    Nutrition --> GeminiNutrition["Gemini-first, fallback công thức khi AI lỗi"]
+
+    Voice --> VoiceInput["Text command; STT local đang tắt mặc định"]
+    VoiceInput --> VoiceParse["POST /api/voice/parse"]
+    VoiceParse --> GeminiVoice["AI provider POST /voice/parse"]
+    GeminiVoice --> VoiceFallback{"Kết quả đủ tin cậy?"}
+    VoiceFallback -->|Có| VoiceExecute["POST /api/voice/execute"]
+    VoiceFallback -->|Không| RuleParser["Backend rule fallback + cần review"]
+    RuleParser --> VoiceExecute
+    VoiceExecute --> VoiceActions["Thêm món, ghi cân nặng, hỏi calo"]
+```
+
+### 2.3 Ranh giới runtime
+
+```mermaid
+flowchart LR
+    Mobile["Expo React Native mobile"] --> Backend["ASP.NET Core API"]
+    Backend --> Database["PostgreSQL/Supabase production hoặc SQL Server local"]
+    Backend --> AiProvider["Flask AI provider"]
+    AiProvider --> VisionModel["YOLO vision"]
+    AiProvider --> Gemini["Gemini nutrition, cooking, voice parse"]
+    AiProvider --> OptionalSTT["Voice transcribe optional; ENABLE_STT=false mặc định local"]
+    Mobile -. "Không gọi trực tiếp AI provider cho app feature" .-> AiProvider
+```
 
 ## 3. Authentication Flow
 

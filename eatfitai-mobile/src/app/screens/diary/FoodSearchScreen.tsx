@@ -40,6 +40,7 @@ import { AnimatedEmptyState } from '../../../components/ui/AnimatedEmptyState';
 import { t } from '../../../i18n/vi';
 import { useUserPreferenceStore } from '../../../store/useUserPreferenceStore';
 import { filterFoodsByPreferences } from '../../../utils/foodPreferenceFilter';
+import { TEST_IDS } from '../../../testing/testIds';
 
 const PAGE_SIZE = 20;
 const RECENT_SEARCHES_KEY = '@eatfit_recent_searches';
@@ -399,6 +400,9 @@ const FoodSearchScreen = (): React.ReactElement => {
     return (
       <Animated.View entering={FadeInDown.delay(index * 40).duration(300)} layout={Layout.springify()}>
         <Pressable
+          testID={index === 0 ? TEST_IDS.foodSearch.firstResultCard : undefined}
+          nativeID={index === 0 ? TEST_IDS.foodSearch.firstResultCard : undefined}
+          accessibilityLabel={index === 0 ? TEST_IDS.foodSearch.firstResultCard : undefined}
           onPress={() => {
             trackEvent('food_detail_opened', {
               flow: 'food_search',
@@ -472,6 +476,9 @@ const FoodSearchScreen = (): React.ReactElement => {
             )}
 
             <Pressable
+              testID={index === 0 ? TEST_IDS.foodSearch.firstAddButton : undefined}
+              nativeID={index === 0 ? TEST_IDS.foodSearch.firstAddButton : undefined}
+              accessibilityLabel={index === 0 ? TEST_IDS.foodSearch.firstAddButton : undefined}
               hitSlop={8}
               onPress={() => handleQuickAdd(item)}
               disabled={isQuickAdding === item.id}
@@ -542,7 +549,13 @@ const FoodSearchScreen = (): React.ReactElement => {
   };
 
   return (
-    <View style={[S.container, { paddingTop: insets.top }]}>
+    <View
+      style={[S.container, { paddingTop: insets.top }]}
+      testID={TEST_IDS.foodSearch.screen}
+      nativeID={TEST_IDS.foodSearch.screen}
+      accessibilityLabel={TEST_IDS.foodSearch.screen}
+      collapsable={false}
+    >
       {/* ═══ Header ═══ */}
       <View style={S.header}>
         <View style={S.headerLeft}>
@@ -567,6 +580,9 @@ const FoodSearchScreen = (): React.ReactElement => {
             <View style={S.searchInputBox}>
               <Ionicons name="search" size={20} color={P.onSurfaceVariant} style={{ marginRight: 10 }} />
               <TextInput
+                testID={TEST_IDS.foodSearch.queryInput}
+                nativeID={TEST_IDS.foodSearch.queryInput}
+                accessibilityLabel={TEST_IDS.foodSearch.queryInput}
                 style={S.searchInput}
                 placeholder="Tìm kiếm món ăn, công thức..."
                 placeholderTextColor={P.onSurfaceVariant + '80'}

@@ -55,6 +55,8 @@ function buildEnv() {
   if (devicePassword) {
     env.EATFITAI_DEVICE_LOGIN_PASSWORD = devicePassword;
   }
+  env.EATFITAI_ANDROID_TARGET =
+    trim(resolveEnv('EATFITAI_ANDROID_TARGET')) || env.EATFITAI_ANDROID_TARGET || 'real-device';
   env.EATFITAI_DEVICE_BACKEND_URL = deviceBackendUrl;
 
   return env;

@@ -167,6 +167,7 @@ describe('RC unblock helpers', () => {
     const {
       REQUIRED_RC_DEVICE_MODES,
       evaluateRcDeviceReports,
+      hasHomeMarkerEvidence,
     } = require('../scripts/lib/device-rc-evidence');
     const makeReport = (mode, apiReadbacks = []) => ({
       mode,
@@ -184,8 +185,12 @@ describe('RC unblock helpers', () => {
     const reports = [
       makeReport('login-real'),
       makeReport('home-smoke'),
+      makeReport('full-tab-ui-smoke'),
       makeReport('food-diary-readback', [
         { name: 'food-diary-mandatory-readback', status: 'pass', mandatory: true },
+      ]),
+      makeReport('food-search-ui-readback', [
+        { name: 'food-search-ui-mandatory-readback', status: 'pass', mandatory: true },
       ]),
       makeReport('scan-save-readback', [
         { name: 'scan-save-readback-mandatory-readback', status: 'pass', mandatory: true },
@@ -197,25 +202,58 @@ describe('RC unblock helpers', () => {
         { name: 'stats-summary-day-readback', status: 'pass', mandatory: true },
         { name: 'profile-readback', status: 'pass', mandatory: true },
       ]),
+      makeReport('backend-frontend-live-check', [
+        { name: 'live-check-diary-readback', status: 'pass', mandatory: true },
+        { name: 'live-check-summary-readback', status: 'pass', mandatory: true },
+        { name: 'live-check-profile-readback', status: 'pass', mandatory: true },
+      ]),
     ];
 
-    expect(REQUIRED_RC_DEVICE_MODES).toHaveLength(6);
+    expect(REQUIRED_RC_DEVICE_MODES).toEqual([
+      'login-real',
+      'home-smoke',
+      'full-tab-ui-smoke',
+      'food-diary-readback',
+      'food-search-ui-readback',
+      'scan-save-readback',
+      'voice-text-readback',
+      'stats-profile-smoke',
+      'backend-frontend-live-check',
+    ]);
     expect(evaluateRcDeviceReports(reports).passed).toBe(true);
-    expect(evaluateRcDeviceReports(reports.slice(0, 5))).toEqual(
+    expect(evaluateRcDeviceReports(reports.slice(0, 8))).toEqual(
       expect.objectContaining({
         passed: false,
-        missingModes: ['stats-profile-smoke'],
+        missingModes: ['backend-frontend-live-check'],
       }),
     );
     expect(
       evaluateRcDeviceReports([
-        ...reports.slice(0, 3),
+        ...reports.slice(0, 5),
         makeReport('scan-save-readback', [
           { name: 'scan-save-readback-mandatory-readback', status: 'fail', mandatory: true },
         ]),
-        ...reports.slice(4),
+        ...reports.slice(6),
       ]).failedModes,
     ).toContain('scan-save-readback');
+    expect(
+      evaluateRcDeviceReports([
+        ...reports.slice(0, 4),
+        makeReport('food-search-ui-readback'),
+        ...reports.slice(5),
+      ]).failedModes,
+    ).toContain('food-search-ui-readback');
+    expect(
+      hasHomeMarkerEvidence({
+        flowAssertions: [
+          {
+            name: 'login-real-home-after-login-bounded-screen-evidence',
+            status: 'pass',
+            evidence: 'foreground+screenshot',
+          },
+        ],
+      }),
+    ).toBe(true);
   });
 
   it('builds run-scoped smoke names so cloud seed data can be rerun safely', () => {
@@ -244,6 +282,25 @@ describe('RC unblock helpers', () => {
     });
     expect(new Set(Object.values(seedNames)).size).toBe(Object.values(seedNames).length);
     expect(Object.values(seedNames).every((name) => name.length <= 255)).toBe(true);
+  });
+
+  it('does not classify shell AndroidRuntime noise as an app crash', () => {
+    const { logcatContainsAppCrash } = require('../scripts/lib/device-logcat');
+
+    expect(
+      logcatContainsAppCrash(`
+04-26 13:11:48.493 13984 13984 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+04-26 13:11:48.544  8082 14594 D collectorManager: ThermalScenarioValue setForegroundCounts: com.eatfitai.app
+04-26 13:11:51.581 14011 14011 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+`),
+    ).toBe(false);
+
+    expect(
+      logcatContainsAppCrash(`
+04-26 13:15:00.000 111 222 E AndroidRuntime: FATAL EXCEPTION: main
+04-26 13:15:00.001 111 222 E AndroidRuntime: Process: com.eatfitai.app, PID: 111
+`),
+    ).toBe(true);
   });
 
   it('matches voice add-food readback rows from camelCase meal diary payloads', () => {
