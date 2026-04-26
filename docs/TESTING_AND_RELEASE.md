@@ -132,6 +132,8 @@ Các file quan trọng:
 
 Cloud/API smoke không phụ thuộc Android UI framework.
 
+Runbook RC cloud đã khóa nằm ở [27_RC_CLOUD_RUNBOOK_2026-04-26.md](27_RC_CLOUD_RUNBOOK_2026-04-26.md). Khi cần chốt RC sau deploy, ưu tiên runbook đó vì nó bao gồm cả deploy backend + AI provider, Render verify, warm-up AI provider, và thứ tự smoke tuần tự.
+
 ```powershell
 npm --prefix .\eatfitai-mobile run smoke:render:verify
 npm --prefix .\eatfitai-mobile run smoke:preflight
