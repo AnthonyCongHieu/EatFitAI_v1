@@ -75,6 +75,8 @@ _chrome_profile_clone/
 _tmp/
 _tmp_*.png
 .playwright-cli/
+.worktrees
+.worktrees/
 tmp/
 @AutomationLog.txt
 
