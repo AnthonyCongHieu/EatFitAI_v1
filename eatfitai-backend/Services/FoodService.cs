@@ -183,6 +183,7 @@ namespace EatFitAI.API.Services
                 FoodName = c.FoodName,
                 // Map ThumbNail -> ThumbnailUrl if present
                 ThumbnailUrl = c.ThumbNail,
+                ImageVariants = MediaVariantHelper.FromThumbUrl(c.ThumbNail),
                 UnitType = "g",
                 CaloriesPer100 = c.CaloriesPer100g,
                 ProteinPer100 = c.ProteinPer100g,
@@ -200,6 +201,7 @@ namespace EatFitAI.API.Services
                     Id = u.UserFoodItemId,
                     FoodName = u.FoodName,
                     ThumbnailUrl = u.ThumbnailUrl,
+                    ImageVariants = MediaVariantHelper.FromThumbUrl(u.ThumbnailUrl),
                     UnitType = u.UnitType,
                     CaloriesPer100 = u.CaloriesPer100,
                     ProteinPer100 = u.ProteinPer100,
@@ -232,6 +234,7 @@ namespace EatFitAI.API.Services
                     Id = item.FoodItemId,
                     FoodName = item.FoodItem.FoodName,
                     ThumbnailUrl = item.FoodItem.ThumbNail,
+                    ImageVariants = MediaVariantHelper.FromThumbUrl(item.FoodItem.ThumbNail),
                     UnitType = "g",
                     CaloriesPer100 = item.FoodItem.CaloriesPer100g,
                     ProteinPer100 = item.FoodItem.ProteinPer100g,
@@ -267,6 +270,7 @@ namespace EatFitAI.API.Services
                         Id = userFood.UserFoodItemId,
                         FoodName = userFood.FoodName,
                         ThumbnailUrl = userFood.ThumbnailUrl,
+                        ImageVariants = MediaVariantHelper.FromThumbUrl(userFood.ThumbnailUrl),
                         UnitType = string.IsNullOrWhiteSpace(userFood.UnitType) ? "g" : userFood.UnitType,
                         CaloriesPer100 = userFood.CaloriesPer100,
                         ProteinPer100 = userFood.ProteinPer100,
@@ -450,6 +454,7 @@ namespace EatFitAI.API.Services
             public int Id { get; init; }
             public string FoodName { get; init; } = string.Empty;
             public string? ThumbnailUrl { get; init; }
+            public ImageVariantsDto? ImageVariants { get; init; }
             public string UnitType { get; init; } = "g";
             public decimal CaloriesPer100 { get; init; }
             public decimal ProteinPer100 { get; init; }
@@ -466,6 +471,7 @@ namespace EatFitAI.API.Services
                     Id = Id,
                     FoodName = FoodName,
                     ThumbnailUrl = ThumbnailUrl,
+                    ImageVariants = ImageVariants,
                     UnitType = UnitType,
                     CaloriesPer100 = CaloriesPer100,
                     ProteinPer100 = ProteinPer100,

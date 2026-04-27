@@ -27,7 +27,8 @@ namespace EatFitAI.API.Services
         private readonly EatFitAIDbContext _context;
         private readonly ApplicationDbContext _adminContext;
         private readonly IMapper _mapper;
-        private readonly ISupabaseStorageService _supabaseStorageService;
+        private readonly IMediaImageProcessor _mediaImageProcessor;
+        private readonly IMediaStorageService _mediaStorageService;
         private readonly IHostEnvironment _environment;
         private readonly SupabaseSchemaBootstrapper _schemaBootstrapper;
         private readonly ILogger<UserService> _logger;
@@ -37,7 +38,8 @@ namespace EatFitAI.API.Services
             EatFitAIDbContext context,
             ApplicationDbContext adminContext,
             IMapper mapper,
-            ISupabaseStorageService supabaseStorageService,
+            IMediaImageProcessor mediaImageProcessor,
+            IMediaStorageService mediaStorageService,
             IHostEnvironment environment,
             SupabaseSchemaBootstrapper schemaBootstrapper,
             ILogger<UserService> logger)
@@ -46,7 +48,8 @@ namespace EatFitAI.API.Services
             _context = context;
             _adminContext = adminContext;
             _mapper = mapper;
-            _supabaseStorageService = supabaseStorageService;
+            _mediaImageProcessor = mediaImageProcessor;
+            _mediaStorageService = mediaStorageService;
             _environment = environment;
             _schemaBootstrapper = schemaBootstrapper;
             _logger = logger;
@@ -382,10 +385,29 @@ namespace EatFitAI.API.Services
                 };
             }
 
-            if (_supabaseStorageService.IsConfigured)
+            if (_mediaStorageService.IsConfigured)
             {
-                var objectPath = $"avatars/{userId:N}/{Guid.NewGuid():N}{extension.ToLowerInvariant()}";
-                return await _supabaseStorageService.UploadUserFoodImageAsync(file, objectPath);
+                var mediaId = Guid.NewGuid().ToString("N");
+                var variants = await _mediaImageProcessor.CreateVariantsAsync(file);
+                var thumbObjectPath = $"avatars/v2/{userId:N}/thumb/{mediaId}.webp";
+                var mediumObjectPath = $"avatars/v2/{userId:N}/medium/{mediaId}.webp";
+
+                var thumbUrl = await _mediaStorageService.UploadAsync(new MediaUploadObject
+                {
+                    Bucket = "user-food",
+                    ObjectPath = thumbObjectPath,
+                    Bytes = variants.Thumb.Bytes,
+                    ContentType = variants.Thumb.ContentType
+                });
+                await _mediaStorageService.UploadAsync(new MediaUploadObject
+                {
+                    Bucket = "user-food",
+                    ObjectPath = mediumObjectPath,
+                    Bytes = variants.Medium.Bytes,
+                    ContentType = variants.Medium.ContentType
+                });
+
+                return thumbUrl;
             }
 
             if (_environment.IsProduction())

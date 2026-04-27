@@ -153,6 +153,29 @@ describe('foodService', () => {
       });
       expect(result.items).toHaveLength(2);
     });
+
+    it('prefers optimized thumb variants for search result thumbnails', async () => {
+      const mockData = [
+        {
+          source: 'catalog',
+          id: 1,
+          foodName: 'Cơm trắng',
+          imageVariants: {
+            thumbUrl: 'https://media.example.com/food-images/v2/thumb/rice.webp',
+            mediumUrl: 'https://media.example.com/food-images/v2/medium/rice.webp',
+          },
+          thumbnailUrl: 'rice.png',
+        },
+      ];
+
+      (apiClient.get as jest.Mock).mockResolvedValue({ data: mockData });
+
+      const result = await foodService.searchAllFoods('cơm');
+
+      expect(result.items[0]?.thumbnail).toBe(
+        'https://media.example.com/food-images/v2/thumb/rice.webp',
+      );
+    });
   });
 
   describe('getRecentFoods', () => {

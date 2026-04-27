@@ -747,9 +747,20 @@ builder.Services.Configure<GzipCompressionProviderOptions>(options =>
 // Email settings & service
 builder.Services.Configure<BrevoOptions>(builder.Configuration.GetSection("Brevo"));
 builder.Services.Configure<SupabaseOptions>(builder.Configuration.GetSection("Supabase"));
+builder.Services.Configure<MediaOptions>(builder.Configuration.GetSection("Media"));
+builder.Services.Configure<R2Options>(builder.Configuration.GetSection("Media:R2"));
+builder.Services.Configure<MediaImageOptions>(builder.Configuration.GetSection("Media:Image"));
 builder.Services.Configure<AdminGovernanceOptions>(builder.Configuration.GetSection("AdminGovernance"));
 builder.Services.AddHttpClient<IEmailService, EmailService>();
 builder.Services.AddScoped<ISupabaseStorageService, SupabaseStorageService>();
+builder.Services.AddScoped<IMediaImageProcessor, MediaImageProcessor>();
+builder.Services.AddScoped<IMediaStorageService>(services =>
+{
+    var mediaOptions = services.GetRequiredService<IOptions<MediaOptions>>().Value;
+    return string.Equals(mediaOptions.Provider, "r2", StringComparison.OrdinalIgnoreCase)
+        ? ActivatorUtilities.CreateInstance<R2MediaStorageService>(services)
+        : ActivatorUtilities.CreateInstance<SupabaseMediaStorageService>(services);
+});
 
 // Add AutoMapper
 builder.Services.AddAutoMapper(_ => { }, typeof(MappingProfile));

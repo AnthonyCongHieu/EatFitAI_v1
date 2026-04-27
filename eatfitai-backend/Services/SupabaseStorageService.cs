@@ -73,6 +73,45 @@ namespace EatFitAI.API.Services
             return BuildPublicUrl(_options.UserFoodBucket, objectPath);
         }
 
+        public async Task<string> UploadObjectAsync(
+            string bucket,
+            string objectPath,
+            byte[] bytes,
+            string contentType,
+            string cacheControl,
+            CancellationToken cancellationToken = default)
+        {
+            if (!IsConfigured)
+            {
+                throw new InvalidOperationException("Supabase storage is not configured.");
+            }
+
+            var client = _httpClientFactory.CreateClient();
+            var requestUri = BuildObjectEndpoint(bucket, objectPath);
+
+            using var request = new HttpRequestMessage(HttpMethod.Post, requestUri);
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _options.ServiceRoleKey);
+            request.Headers.TryAddWithoutValidation("apikey", _options.ServiceRoleKey);
+            request.Headers.TryAddWithoutValidation("x-upsert", "true");
+            request.Headers.TryAddWithoutValidation("cache-control", cacheControl);
+            request.Content = new ByteArrayContent(bytes);
+            request.Content.Headers.ContentType = new MediaTypeHeaderValue(contentType);
+
+            using var response = await client.SendAsync(request, cancellationToken);
+            var responseBody = await response.Content.ReadAsStringAsync(cancellationToken);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                _logger.LogError(
+                    "Supabase upload failed. Status={StatusCode}, Body={Body}",
+                    (int)response.StatusCode,
+                    responseBody);
+                throw new InvalidOperationException("Supabase upload failed for media object.");
+            }
+
+            return BuildPublicUrl(bucket, objectPath);
+        }
+
         private string BuildObjectEndpoint(string bucket, string objectPath)
         {
             return $"{_options.Url.TrimEnd('/')}/storage/v1/object/{EncodePathSegment(bucket)}/{EncodeObjectPath(objectPath)}";

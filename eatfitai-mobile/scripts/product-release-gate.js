@@ -23,6 +23,10 @@ function trim(value) {
   return String(value || '').trim();
 }
 
+function isTruthy(value) {
+  return ['1', 'true', 'yes', 'on'].includes(trim(value).toLowerCase());
+}
+
 function writeJson(filePath, value) {
   fs.writeFileSync(filePath, JSON.stringify(value, null, 2), 'utf8');
 }
@@ -510,6 +514,15 @@ async function main() {
           }),
         );
       }
+      if (gateResult.commands.at(-1).ok) {
+        gateResult.commands.push(
+          runCommand('media egress guard', 'npm', ['run', 'guard:media-egress'], {
+            cwd: mobileRoot,
+            env,
+            timeoutMs: 5 * 60 * 1000,
+          }),
+        );
+      }
       if (gateResult.commands.every((entry) => entry.ok)) {
         gateResult.commands.push(
           runCommand('mobile lint', 'npm', ['run', 'lint'], {
@@ -567,6 +580,20 @@ async function main() {
             env,
             timeoutMs: 5 * 60 * 1000,
           }),
+        );
+      }
+      if (gateResult.commands.every((entry) => entry.ok) && isTruthy(env.EATFITAI_ENABLE_MEDIA_AUDIT_GATE)) {
+        gateResult.commands.push(
+          runCommand(
+            'media egress audit',
+            'python',
+            ['scripts/cloud/media_egress_migrate.py', 'catalog-audit', '--fail-on-violations'],
+            {
+              cwd: repoRoot,
+              env,
+              timeoutMs: 10 * 60 * 1000,
+            },
+          ),
         );
       }
       if (gateResult.commands.every((entry) => entry.ok)) {

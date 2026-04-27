@@ -10,5 +10,13 @@ namespace EatFitAI.API.Services.Interfaces
             IFormFile file,
             string objectPath,
             CancellationToken cancellationToken = default);
+
+        Task<string> UploadObjectAsync(
+            string bucket,
+            string objectPath,
+            byte[] bytes,
+            string contentType,
+            string cacheControl,
+            CancellationToken cancellationToken = default);
     }
 }

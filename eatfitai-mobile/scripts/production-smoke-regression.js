@@ -3,6 +3,7 @@ const path = require('path');
 const { execFileSync } = require('child_process');
 const { resolveSmokeCredentials } = require('./lib/smoke-credentials');
 const { isFallbackSource } = require('./lib/primary-path-readiness');
+const { runMediaEgressGuard } = require('./lib/media-egress-guard');
 
 const DEFAULT_BACKEND_URL = 'https://eatfitai-backend-dev.onrender.com';
 const DEFAULT_OUTPUT_ROOT = path.resolve(
@@ -1047,6 +1048,8 @@ function buildPrimaryPathReadiness(results) {
 }
 
 async function main() {
+  runMediaEgressGuard({ label: 'production-smoke-regression' });
+
   const outputDir = resolveOutputDir(process.argv[2]);
   const preflight =
     readJsonIfExists(path.join(outputDir, 'preflight-results.json')) || {};

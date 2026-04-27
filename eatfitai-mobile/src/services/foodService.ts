@@ -2,6 +2,7 @@ import apiClient from './apiClient';
 import type { FoodItemDto, MealTypeId } from '../types';
 import type { FoodItemDtoExtended } from '../types/food';
 import type {
+  ApiImageVariants,
   ApiFoodSearchItem,
   ApiSearchResponse,
   ApiUserFoodDetail,
@@ -32,10 +33,35 @@ export type FoodItem = {
   carbs?: number | null;
   fat?: number | null;
   thumbnail?: string | null;
+  imageVariants?: ApiImageVariants | null;
   isActive?: boolean | null;
   createdAt?: string | null;
   updatedAt?: string | null;
   source?: 'catalog' | 'user';
+};
+
+type ImageVariantSource = {
+  imageVariants?: ApiImageVariants | null;
+  thumbnailUrl?: string | null;
+  thumbNail?: string | null;
+  thumbnail?: string | null;
+};
+
+const selectFoodImageUrl = (
+  data: ImageVariantSource,
+  size: 'thumb' | 'medium',
+): string | null => {
+  const variantUrl =
+    size === 'thumb'
+      ? data?.imageVariants?.thumbUrl
+      : data?.imageVariants?.mediumUrl ?? data?.imageVariants?.thumbUrl;
+
+  return (
+    sanitizeFoodImageUrl(
+      variantUrl ?? data?.thumbnailUrl ?? data?.thumbNail ?? data?.thumbnail ?? null,
+      size,
+    ) ?? null
+  );
 };
 
 export type FoodDetail = FoodItem & {
@@ -97,7 +123,8 @@ const normalizeFoodItem = (data: FoodItemDtoExtended): FoodItem => ({
   protein: data?.proteinPer100g ?? null,
   carbs: data?.carbPer100g ?? null,
   fat: data?.fatPer100g ?? null,
-  thumbnail: sanitizeFoodImageUrl(data?.thumbNail),
+  thumbnail: selectFoodImageUrl(data as ImageVariantSource, 'thumb'),
+  imageVariants: (data as ImageVariantSource)?.imageVariants ?? null,
   isActive: data?.isActive ?? null,
   createdAt: data?.createdAt ?? null,
   updatedAt: data?.updatedAt ?? null,
@@ -106,6 +133,7 @@ const normalizeFoodItem = (data: FoodItemDtoExtended): FoodItem => ({
 
 const normalizeFoodDetail = (data: FoodItemDtoExtended): FoodDetail => ({
   ...normalizeFoodItem(data),
+  thumbnail: selectFoodImageUrl(data as ImageVariantSource, 'medium'),
   description: null,
   servingSizeGram: 100,
   servingUnit: 'gram',
@@ -134,7 +162,8 @@ const normalizeUserFoodDetail = (data: ApiUserFoodDetail): FoodDetail => ({
   perServingProtein: data?.proteinPer100 ?? null,
   perServingCarbs: data?.carbPer100 ?? null,
   perServingFat: data?.fatPer100 ?? null,
-  thumbnail: sanitizeFoodImageUrl(data?.thumbnailUrl),
+  thumbnail: selectFoodImageUrl(data, 'medium'),
+  imageVariants: data?.imageVariants ?? null,
 });
 
 const normalizeSearchFoodItem = (data: ApiFoodSearchItem): FoodItem => ({
@@ -146,7 +175,8 @@ const normalizeSearchFoodItem = (data: ApiFoodSearchItem): FoodItem => ({
   protein: toNumber(data?.proteinPer100),
   carbs: toNumber(data?.carbPer100),
   fat: toNumber(data?.fatPer100),
-  thumbnail: sanitizeFoodImageUrl(data?.thumbnailUrl),
+  thumbnail: selectFoodImageUrl(data, 'thumb'),
+  imageVariants: data?.imageVariants ?? null,
   isActive: null,
   createdAt: null,
   updatedAt: null,
@@ -178,7 +208,7 @@ const normalizeCommonMealTemplateDetail = (data: any): CommonMealTemplateDetail 
         proteinPer100g: toNumber(ingredient?.proteinPer100g),
         carbPer100g: toNumber(ingredient?.carbPer100g),
         fatPer100g: toNumber(ingredient?.fatPer100g),
-        thumbnail: sanitizeFoodImageUrl(ingredient?.thumbnailUrl ?? null),
+        thumbnail: selectFoodImageUrl(ingredient, 'thumb'),
       }))
     : [],
 });
@@ -377,7 +407,8 @@ export const foodService = {
       protein: item?.proteinPer100g ?? item?.protein ?? null,
       carbs: item?.carbPer100g ?? item?.carbs ?? null,
       fat: item?.fatPer100g ?? item?.fat ?? null,
-      thumbnail: sanitizeFoodImageUrl(item?.thumbNail ?? item?.thumbnail ?? null),
+      thumbnail: selectFoodImageUrl(item, 'thumb'),
+      imageVariants: item?.imageVariants ?? null,
       isActive: item?.isActive ?? null,
       createdAt: item?.createdAt ?? null,
       updatedAt: item?.updatedAt ?? null,

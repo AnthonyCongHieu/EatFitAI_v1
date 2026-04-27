@@ -46,6 +46,30 @@ services:
         value: food-images
       - key: Supabase__UserFoodBucket
         value: user-food
+      - key: Media__Provider
+        value: supabase
+      - key: Media__PublicBaseUrl
+        sync: false
+      - key: Media__Image__MaxUploadBytes
+        value: "8388608"
+      - key: Media__Image__ThumbMaxWidth
+        value: "320"
+      - key: Media__Image__MediumMaxWidth
+        value: "1080"
+      - key: Media__Image__ThumbMaxBytes
+        value: "102400"
+      - key: Media__Image__MediumMaxBytes
+        value: "358400"
+      - key: Media__Image__WebpQuality
+        value: "75"
+      - key: Media__R2__AccountId
+        sync: false
+      - key: Media__R2__Bucket
+        value: eatfitai-media
+      - key: Media__R2__AccessKeyId
+        sync: false
+      - key: Media__R2__SecretAccessKey
+        sync: false
       - key: Brevo__ApiKey
         sync: false
       - key: Brevo__SenderEmail

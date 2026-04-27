@@ -28,7 +28,8 @@ namespace EatFitAI.API.Tests.Unit.Services
         private readonly EatFitAIDbContext _context;
         private readonly ApplicationDbContext _adminContext;
         private readonly Mock<IMapper> _mapperMock;
-        private readonly Mock<ISupabaseStorageService> _supabaseStorageServiceMock;
+        private readonly Mock<IMediaImageProcessor> _mediaImageProcessorMock;
+        private readonly Mock<IMediaStorageService> _mediaStorageServiceMock;
         private readonly Mock<IHostEnvironment> _environmentMock;
         private readonly Mock<ILogger<UserService>> _loggerMock;
         private readonly UserService _userService;
@@ -38,7 +39,8 @@ namespace EatFitAI.API.Tests.Unit.Services
         {
             _userRepositoryMock = new Mock<IUserRepository>();
             _mapperMock = new Mock<IMapper>();
-            _supabaseStorageServiceMock = new Mock<ISupabaseStorageService>();
+            _mediaImageProcessorMock = new Mock<IMediaImageProcessor>();
+            _mediaStorageServiceMock = new Mock<IMediaStorageService>();
             _environmentMock = new Mock<IHostEnvironment>();
             _loggerMock = new Mock<ILogger<UserService>>();
 
@@ -52,7 +54,7 @@ namespace EatFitAI.API.Tests.Unit.Services
                 .Options;
             _adminContext = new ApplicationDbContext(adminOptions);
 
-            _supabaseStorageServiceMock.SetupGet(s => s.IsConfigured).Returns(false);
+            _mediaStorageServiceMock.SetupGet(s => s.IsConfigured).Returns(false);
             _environmentMock.SetupGet(e => e.EnvironmentName).Returns(Environments.Development);
 
             _userService = new UserService(
@@ -60,7 +62,8 @@ namespace EatFitAI.API.Tests.Unit.Services
                 _context,
                 _adminContext,
                 _mapperMock.Object,
-                _supabaseStorageServiceMock.Object,
+                _mediaImageProcessorMock.Object,
+                _mediaStorageServiceMock.Object,
                 _environmentMock.Object,
                 new SupabaseSchemaBootstrapper(_adminContext, NullLogger<SupabaseSchemaBootstrapper>.Instance),
                 _loggerMock.Object);
@@ -256,6 +259,63 @@ namespace EatFitAI.API.Tests.Unit.Services
             Assert.StartsWith("/uploads/avatars/", avatarUrl);
             Assert.Equal(avatarUrl, trackedUser.AvatarUrl);
             Assert.True(Directory.Exists(uploadsRoot));
+        }
+
+        [Fact]
+        public async Task UpdateAvatarAsync_ConfiguredMediaStorage_UploadsOptimizedVariants()
+        {
+            var trackedUser = await _context.Users.SingleAsync(u => u.UserId == _testUserId);
+            _userRepositoryMock.Setup(r => r.GetByIdAsync(_testUserId)).ReturnsAsync(trackedUser);
+            _userRepositoryMock.Setup(r => r.Update(It.IsAny<User>()));
+            _mediaStorageServiceMock.SetupGet(s => s.IsConfigured).Returns(true);
+            _mediaImageProcessorMock
+                .Setup(p => p.CreateVariantsAsync(It.IsAny<IFormFile>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new MediaImageVariants
+                {
+                    Thumb = new MediaImageVariant
+                    {
+                        Bytes = new byte[] { 1, 2, 3 },
+                        ContentType = "image/webp"
+                    },
+                    Medium = new MediaImageVariant
+                    {
+                        Bytes = new byte[] { 4, 5, 6 },
+                        ContentType = "image/webp"
+                    }
+                });
+            _mediaStorageServiceMock
+                .Setup(s => s.UploadAsync(
+                    It.Is<MediaUploadObject>(upload =>
+                        upload.Bucket == "user-food"
+                        && upload.ObjectPath.StartsWith($"avatars/v2/{_testUserId:N}/thumb/")
+                        && upload.ObjectPath.EndsWith(".webp")
+                        && upload.ContentType == "image/webp"),
+                    It.IsAny<CancellationToken>()))
+                .ReturnsAsync("https://media.example.com/user-food/avatars/v2/thumb.webp");
+            _mediaStorageServiceMock
+                .Setup(s => s.UploadAsync(
+                    It.Is<MediaUploadObject>(upload =>
+                        upload.Bucket == "user-food"
+                        && upload.ObjectPath.StartsWith($"avatars/v2/{_testUserId:N}/medium/")
+                        && upload.ObjectPath.EndsWith(".webp")
+                        && upload.ContentType == "image/webp"),
+                    It.IsAny<CancellationToken>()))
+                .ReturnsAsync("https://media.example.com/user-food/avatars/v2/medium.webp");
+
+            await using var imageStream = new MemoryStream(new byte[] { 1, 2, 3, 4 });
+            var formFile = new FormFile(imageStream, 0, imageStream.Length, "file", "avatar.png")
+            {
+                Headers = new HeaderDictionary(),
+                ContentType = "image/png"
+            };
+
+            var avatarUrl = await _userService.UpdateAvatarAsync(_testUserId, formFile, null);
+
+            Assert.Equal("https://media.example.com/user-food/avatars/v2/thumb.webp", avatarUrl);
+            Assert.Equal(avatarUrl, trackedUser.AvatarUrl);
+            _mediaStorageServiceMock.Verify(
+                s => s.UploadAsync(It.IsAny<MediaUploadObject>(), It.IsAny<CancellationToken>()),
+                Times.Exactly(2));
         }
 
         [Fact]

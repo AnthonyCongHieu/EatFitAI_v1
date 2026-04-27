@@ -2,6 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const { resolveSmokeCredentials } = require('./lib/smoke-credentials');
 const { buildUserApiSmokeNames } = require('./lib/user-smoke-data');
+const { runMediaEgressGuard } = require('./lib/media-egress-guard');
 
 const DEFAULT_BACKEND_URL = 'https://eatfitai-backend-dev.onrender.com';
 const DEFAULT_OUTPUT_ROOT = path.resolve(
@@ -406,6 +407,8 @@ async function getFoodDetail(backendUrl, token, foodId) {
 }
 
 async function main() {
+  runMediaEgressGuard({ label: 'production-smoke-user-api' });
+
   const outputDir = resolveOutputDir(process.argv[2]);
   const runId = path.basename(outputDir);
   const smokeNames = buildUserApiSmokeNames(runId);

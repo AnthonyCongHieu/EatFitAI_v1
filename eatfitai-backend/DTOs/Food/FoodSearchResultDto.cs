@@ -11,6 +11,7 @@ namespace EatFitAI.API.DTOs.Food
         public decimal ProteinPer100 { get; set; }
         public decimal CarbPer100 { get; set; }
         public decimal FatPer100 { get; set; }
+        public ImageVariantsDto? ImageVariants { get; set; }
     }
 }
 
