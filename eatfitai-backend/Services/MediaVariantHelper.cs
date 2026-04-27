@@ -8,6 +8,8 @@ namespace EatFitAI.API.Services
         private const string MediumSegment = "/v2/medium/";
         private const string RelativeThumbSegment = "v2/thumb/";
         private const string RelativeMediumSegment = "v2/medium/";
+        private const string NestedThumbSegment = "/thumb/";
+        private const string NestedMediumSegment = "/medium/";
 
         public static ImageVariantsDto? FromThumbUrl(string? thumbUrl)
         {
@@ -40,6 +42,19 @@ namespace EatFitAI.API.Services
             if (thumbUrl.StartsWith(RelativeThumbSegment, StringComparison.OrdinalIgnoreCase))
             {
                 return ReplaceIgnoreCase(thumbUrl, RelativeThumbSegment, RelativeMediumSegment);
+            }
+
+            var v2Index = thumbUrl.IndexOf("/v2/", StringComparison.OrdinalIgnoreCase);
+            var nestedThumbIndex = thumbUrl.IndexOf(NestedThumbSegment, StringComparison.OrdinalIgnoreCase);
+            if (v2Index >= 0 && nestedThumbIndex > v2Index)
+            {
+                return ReplaceIgnoreCase(thumbUrl, NestedThumbSegment, NestedMediumSegment);
+            }
+
+            if (thumbUrl.StartsWith("v2/", StringComparison.OrdinalIgnoreCase)
+                && thumbUrl.Contains(NestedThumbSegment, StringComparison.OrdinalIgnoreCase))
+            {
+                return ReplaceIgnoreCase(thumbUrl, NestedThumbSegment, NestedMediumSegment);
             }
 
             return null;
