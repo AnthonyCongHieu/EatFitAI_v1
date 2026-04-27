@@ -47,7 +47,7 @@ services:
       - key: Supabase__UserFoodBucket
         value: user-food
       - key: Media__Provider
-        value: supabase
+        value: r2
       - key: Media__PublicBaseUrl
         sync: false
       - key: Media__Image__MaxUploadBytes

@@ -11,6 +11,8 @@ This script is intentionally conservative:
 from __future__ import annotations
 
 import argparse
+import hashlib
+import hmac
 import json
 import os
 import sys
@@ -23,7 +25,7 @@ from datetime import datetime, timezone
 from io import BytesIO
 from pathlib import Path
 from typing import Any
-from urllib.parse import unquote, urlparse
+from urllib.parse import quote, unquote, urlparse
 
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -452,11 +454,101 @@ def resize_webp_variants(source_bytes: bytes) -> tuple[bytes, bytes]:
     return encode(320, THUMB_MAX_BYTES), encode(1080, MEDIUM_MAX_BYTES)
 
 
+def build_r2_put_request(settings: R2Settings, key: str, payload: bytes) -> tuple[str, dict[str, str]]:
+    now = datetime.now(timezone.utc)
+    amz_date = now.strftime("%Y%m%dT%H%M%SZ")
+    date_stamp = now.strftime("%Y%m%d")
+    payload_hash = hashlib.sha256(payload).hexdigest()
+    host = f"{settings.account_id}.r2.cloudflarestorage.com"
+    canonical_uri = f"/{settings.bucket.strip('/')}/{quote(key.lstrip('/'), safe='/-_.~')}"
+
+    canonical_headers = {
+        "cache-control": CACHE_CONTROL_IMMUTABLE,
+        "content-type": "image/webp",
+        "host": host,
+        "x-amz-content-sha256": payload_hash,
+        "x-amz-date": amz_date,
+    }
+    signed_headers = ";".join(sorted(canonical_headers))
+    canonical_headers_blob = "".join(
+        f"{header}:{canonical_headers[header]}\n" for header in sorted(canonical_headers)
+    )
+    canonical_request = "\n".join(
+        [
+            "PUT",
+            canonical_uri,
+            "",
+            canonical_headers_blob,
+            signed_headers,
+            payload_hash,
+        ]
+    )
+
+    credential_scope = f"{date_stamp}/auto/s3/aws4_request"
+    string_to_sign = "\n".join(
+        [
+            "AWS4-HMAC-SHA256",
+            amz_date,
+            credential_scope,
+            hashlib.sha256(canonical_request.encode("utf-8")).hexdigest(),
+        ]
+    )
+
+    def sign(key_bytes: bytes, value: str) -> bytes:
+        return hmac.new(key_bytes, value.encode("utf-8"), hashlib.sha256).digest()
+
+    signing_key = sign(
+        sign(
+            sign(
+                sign(("AWS4" + settings.secret_access_key).encode("utf-8"), date_stamp),
+                "auto",
+            ),
+            "s3",
+        ),
+        "aws4_request",
+    )
+    signature = hmac.new(
+        signing_key,
+        string_to_sign.encode("utf-8"),
+        hashlib.sha256,
+    ).hexdigest()
+    authorization = (
+        "AWS4-HMAC-SHA256 "
+        f"Credential={settings.access_key_id}/{credential_scope}, "
+        f"SignedHeaders={signed_headers}, "
+        f"Signature={signature}"
+    )
+
+    url = f"https://{host}{canonical_uri}"
+    headers = {
+        "Authorization": authorization,
+        "Cache-Control": CACHE_CONTROL_IMMUTABLE,
+        "Content-Type": "image/webp",
+        "x-amz-content-sha256": payload_hash,
+        "x-amz-date": amz_date,
+    }
+    return url, headers
+
+
+def upload_r2_object_via_sigv4(settings: R2Settings, key: str, payload: bytes) -> None:
+    url, headers = build_r2_put_request(settings, key, payload)
+    request = urllib.request.Request(url, data=payload, headers=headers, method="PUT")
+    try:
+        with urllib.request.urlopen(request, timeout=HTTP_TIMEOUT) as response:
+            response.read()
+    except urllib.error.HTTPError as exc:
+        details = exc.read().decode("utf-8", errors="replace")
+        raise RuntimeError(f"R2 upload failed for {key}: HTTP {exc.code} {details}") from exc
+    except urllib.error.URLError as exc:
+        raise RuntimeError(f"R2 upload failed for {key}: {exc}") from exc
+
+
 def upload_r2_object(settings: R2Settings, key: str, payload: bytes) -> None:
     try:
         import boto3
     except ImportError as exc:  # pragma: no cover - import guard for operator machines
-        raise SystemExit("Missing dependency: boto3. Install with `pip install boto3`.") from exc
+        upload_r2_object_via_sigv4(settings, key, payload)
+        return
 
     client = boto3.client(
         "s3",
