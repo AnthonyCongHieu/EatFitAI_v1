@@ -119,6 +119,32 @@ class GeminiPoolTests(unittest.TestCase):
         self.assertEqual(status["gemini_active_project"], "backup")
         self.assertIn("primary->backup", status["gemini_last_failover_reason"])
 
+    def test_generate_parts_sends_multimodal_payload(self) -> None:
+        captured = {}
+
+        def requester(*args, **kwargs):
+            captured["json"] = kwargs["json"]
+            return ok_response('{"detections":[]}')
+
+        pool = GeminiPoolManager(
+            [GeminiPoolEntry("primary", "project-a", "slot-1", "key-1", DEFAULT_MODEL)],
+            requester=requester,
+        )
+
+        result = pool.generate_parts(
+            [
+                {"text": "identify food"},
+                {"inline_data": {"mime_type": "image/jpeg", "data": "abc123"}},
+            ],
+            estimated_prompt_tokens=100,
+            max_output_tokens=20,
+        )
+
+        self.assertEqual(result, '{"detections":[]}')
+        parts = captured["json"]["contents"][0]["parts"]
+        self.assertEqual(parts[0]["text"], "identify food")
+        self.assertEqual(parts[1]["inline_data"]["mime_type"], "image/jpeg")
+
     def test_disables_project_on_auth_error(self) -> None:
         responses = [
             FakeResponse(403, {"error": {"message": "forbidden"}}),

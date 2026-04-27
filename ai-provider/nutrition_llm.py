@@ -11,7 +11,7 @@ import logging
 import hashlib
 import time
 import re
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 from gemini_pool import (
     DEFAULT_MODEL,
@@ -136,6 +136,35 @@ def query_gemini(prompt: str, use_cache: bool = True, cache_ttl: int = None) -> 
         return None
     except Exception as exc:
         logger.error(f"Gemini query failed: {exc}")
+        return None
+
+
+def query_gemini_parts(
+    parts: List[Dict[str, Any]],
+    *,
+    estimated_prompt_tokens: int = 1200,
+    temperature: float = 0.1,
+    max_output_tokens: int = 500,
+) -> Optional[str]:
+    """Query Gemini with multimodal parts. Quota/cooldown handling stays in the shared pool."""
+    try:
+        response = _get_gemini_pool().generate_parts(
+            parts,
+            estimated_prompt_tokens=estimated_prompt_tokens,
+            temperature=temperature,
+            max_output_tokens=max_output_tokens,
+        )
+        if response:
+            return response
+        logger.warning("Gemini parts request returned empty response")
+        return None
+    except (GeminiQuotaExhaustedError, GeminiUnavailableError):
+        raise
+    except GeminiPoolError as exc:
+        logger.error(f"Gemini pool rejected parts request: {exc}")
+        return None
+    except Exception as exc:
+        logger.error(f"Gemini parts request failed: {exc}")
         return None
 
 

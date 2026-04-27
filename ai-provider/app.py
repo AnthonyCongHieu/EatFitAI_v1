@@ -6,8 +6,12 @@ EatFitAI AI Provider - Production Service
 """
 from __future__ import annotations
 
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
+import base64
+import json
 import logging
+import mimetypes
+import re
 import time
 import threading
 
@@ -60,6 +64,9 @@ app: Flask = Flask(__name__)
 os.makedirs("uploads", exist_ok=True)
 YOLO_CONFIDENCE_THRESHOLD = get_yolo_confidence_threshold()
 YOLO_IMAGE_SIZE = get_yolo_image_size()
+GEMINI_VISION_ENABLED = os.getenv("GEMINI_VISION_ENABLED", "true").strip().lower() not in {"0", "false", "no"}
+GEMINI_VISION_MIN_CONFIDENCE = float(os.getenv("GEMINI_VISION_MIN_CONFIDENCE", "0.35"))
+GEMINI_VISION_MAX_OUTPUT_TOKENS = int(os.getenv("GEMINI_VISION_MAX_OUTPUT_TOKENS", "300"))
 YOLO_INFERENCE_LOCK = threading.Lock()
 YOLO_MODEL_LOAD_LOCK = threading.Lock()
 
@@ -291,6 +298,110 @@ def internal_runtime_status():
     }
     return jsonify(runtime_status), 200
 
+
+def _extract_json_object(raw_text: str) -> Optional[Dict[str, Any]]:
+    text = (raw_text or "").strip()
+    if not text:
+        return None
+    text = re.sub(r"^```(?:json)?\s*", "", text, flags=re.IGNORECASE)
+    text = re.sub(r"\s*```$", "", text)
+    start = text.find("{")
+    end = text.rfind("}")
+    if start < 0 or end <= start:
+        return None
+    try:
+        payload = json.loads(text[start : end + 1])
+    except json.JSONDecodeError:
+        logger.warning("Gemini vision returned non-JSON text: %s", text[:200])
+        return None
+    return payload if isinstance(payload, dict) else None
+
+
+def _normalize_gemini_detection(item: Any) -> Optional[Dict[str, float | str]]:
+    if not isinstance(item, dict):
+        return None
+    label = re.sub(r"\s+", " ", str(item.get("label", "")).strip().lower())
+    if not label or len(label) > 80:
+        return None
+
+    try:
+        confidence = float(item.get("confidence", 0))
+    except (TypeError, ValueError):
+        confidence = 0.0
+
+    if confidence > 1:
+        confidence = confidence / 100.0
+    confidence = max(0.0, min(1.0, confidence))
+    if confidence < GEMINI_VISION_MIN_CONFIDENCE:
+        return None
+
+    return {"label": label, "confidence": confidence}
+
+
+def _detect_with_gemini_vision(path: str) -> Optional[List[Dict[str, float | str]]]:
+    if not GEMINI_VISION_ENABLED or not NUTRITION_LLM_AVAILABLE:
+        return None
+
+    try:
+        mime_type = mimetypes.guess_type(path)[0] or "image/jpeg"
+        with open(path, "rb") as image_file:
+            image_data = base64.b64encode(image_file.read()).decode("ascii")
+
+        prompt = (
+            "You are a food ingredient detector for a nutrition diary. "
+            "Identify visible food items in this image. Prefer specific raw ingredient labels "
+            "when the image shows uncooked meat. Use labels such as raw beef, beef, raw chicken, "
+            "chicken, banana, rice, egg, pork, fish, tofu, broccoli, carrot, potato, tomato, "
+            "bread, milk, yogurt, apple, orange, or avocado when appropriate. "
+            "Return only JSON in this exact shape: "
+            "{\"detections\":[{\"label\":\"raw chicken\",\"confidence\":0.92}]}. "
+            "If there is no visible food or you are not sure, return {\"detections\":[]}."
+        )
+
+        response_text = query_gemini_parts(
+            [
+                {"text": prompt},
+                {
+                    "inline_data": {
+                        "mime_type": mime_type,
+                        "data": image_data,
+                    }
+                },
+            ],
+            estimated_prompt_tokens=1600,
+            temperature=0.0,
+            max_output_tokens=GEMINI_VISION_MAX_OUTPUT_TOKENS,
+        )
+        payload = _extract_json_object(response_text or "")
+        if not payload:
+            return None
+
+        raw_detections = payload.get("detections")
+        if not isinstance(raw_detections, list):
+            return None
+
+        detections: List[Dict[str, float | str]] = []
+        seen_labels: set[str] = set()
+        for item in raw_detections:
+            detection = _normalize_gemini_detection(item)
+            if not detection:
+                continue
+            label = str(detection["label"])
+            if label in seen_labels:
+                continue
+            seen_labels.add(label)
+            detections.append(detection)
+            if len(detections) >= 5:
+                break
+
+        return detections
+    except (GeminiQuotaExhaustedError, GeminiUnavailableError) as exc:
+        logger.warning("Gemini vision unavailable, falling back to YOLO: %s", exc)
+        return None
+    except Exception as exc:
+        logger.warning("Gemini vision detection failed, falling back to YOLO: %s", exc)
+        return None
+
 @app.post("/detect")
 @require_internal_token
 def detect() -> Response | tuple[Dict[str, str], int]:
@@ -337,6 +448,11 @@ def detect() -> Response | tuple[Dict[str, str], int]:
         path = os.path.join("uploads", name)
         f.save(path)
         logger.info(f"Processing image: {name} ({size / 1024:.1f}KB)")
+
+        gemini_detections = _detect_with_gemini_vision(path)
+        if gemini_detections:
+            logger.info(f"Gemini vision detected {len(gemini_detections)} objects in {name}")
+            return jsonify({"detections": gemini_detections})
         
         loaded_model = _load_yolo_model()
         if loaded_model is None:
@@ -376,6 +492,7 @@ try:
         get_meal_insight,
         get_gemini_runtime_status,
         parse_voice_command_llm,
+        query_gemini_parts,
         GeminiQuotaExhaustedError,
         GeminiUnavailableError,
     )

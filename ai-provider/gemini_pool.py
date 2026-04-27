@@ -931,6 +931,122 @@ class GeminiPoolManager:
             model=self.default_model,
         )
 
+    def generate_parts(
+        self,
+        parts: List[Dict[str, Any]],
+        *,
+        estimated_prompt_tokens: int = 1200,
+        temperature: float = 0.1,
+        max_output_tokens: int = 500,
+    ) -> str:
+        if not parts:
+            raise GeminiPoolError(
+                "gemini_request_invalid",
+                "Gemini parts request cannot be empty",
+                model=self.default_model,
+            )
+
+        probe_targets: List[GeminiPoolEntry] = []
+        with self._lock:
+            now = _utcnow()
+            self._refresh_locked(now)
+            estimated_tokens = max(1, int(estimated_prompt_tokens)) + max(0, int(max_output_tokens))
+            if self.tpm_limit > 0 and estimated_tokens > self.tpm_limit:
+                raise GeminiPoolError(
+                    "gemini_request_invalid",
+                    "Estimated request size exceeds configured TPM limit",
+                    model=self.default_model,
+                )
+            candidates = self._candidate_entries_locked(now, estimated_tokens)
+            self._refresh_retry_after_locked(now, estimated_tokens)
+            if not self._entries:
+                raise GeminiUnavailableError(
+                    "gemini_not_configured",
+                    "Gemini key pool is not configured",
+                    model=self.default_model,
+                )
+            if not candidates:
+                probe_targets = self._probe_targets_locked(now)
+                if not probe_targets:
+                    raise GeminiQuotaExhaustedError(
+                        "gemini_quota_exhausted",
+                        "All Gemini projects are quota-exhausted or cooling down",
+                        retry_after=self._last_retry_after,
+                        model=self.default_model,
+                    )
+
+        if probe_targets:
+            self._run_probe_pass(probe_targets)
+            with self._lock:
+                now = _utcnow()
+                self._refresh_locked(now)
+                candidates = self._candidate_entries_locked(now, estimated_tokens)
+                self._refresh_retry_after_locked(now, estimated_tokens)
+                if not candidates:
+                    raise GeminiQuotaExhaustedError(
+                        "gemini_quota_exhausted",
+                        "All Gemini projects are quota-exhausted or cooling down",
+                        retry_after=self._last_retry_after,
+                        model=self.default_model,
+                    )
+
+        previous_active_project = self._active_project_id
+        last_failed_entry: Optional[GeminiPoolEntry] = None
+        last_failed_kind: Optional[str] = None
+        last_retry_after: Optional[str] = None
+        saw_quota_issue = False
+
+        for entry in candidates:
+            with self._lock:
+                request_id = entry.reserve_usage(_utcnow(), estimated_tokens)
+                self._save_usage_state_locked()
+            try:
+                text = self._generate_parts_with_entry(
+                    entry,
+                    parts,
+                    temperature=temperature,
+                    max_output_tokens=max_output_tokens,
+                    estimated_tokens=estimated_tokens,
+                    request_id=request_id,
+                )
+                with self._lock:
+                    self._active_project_id = entry.project_id
+                    if last_failed_entry and previous_active_project != entry.project_id:
+                        self._last_failover_reason = (
+                            f"{last_failed_kind}:{last_failed_entry.project_alias}->{entry.project_alias}"
+                        )
+                    self._last_retry_after = None
+                    self._save_usage_state_locked()
+                return text
+            except GeminiPoolError as exc:
+                with self._lock:
+                    self._apply_error_state_locked(entry, exc)
+                    self._refresh_retry_after_locked(_utcnow(), estimated_tokens)
+                    self._save_usage_state_locked()
+                last_failed_entry = entry
+                last_failed_kind = exc.code
+                last_retry_after = exc.retry_after or last_retry_after
+                if exc.code == "gemini_quota_exhausted":
+                    saw_quota_issue = True
+                if exc.code == "gemini_request_invalid":
+                    raise
+
+        with self._lock:
+            self._last_retry_after = last_retry_after or self._last_retry_after
+        if saw_quota_issue:
+            raise GeminiQuotaExhaustedError(
+                "gemini_quota_exhausted",
+                "All Gemini projects are quota-exhausted or cooling down",
+                retry_after=self._last_retry_after,
+                model=self.default_model,
+            )
+        raise GeminiUnavailableError(
+            "gemini_unavailable",
+            "Gemini is unavailable on every configured project",
+            retry_after=self._last_retry_after,
+            model=self.default_model,
+        )
+
     def _generate_with_entry(
         self,
         entry: GeminiPoolEntry,
@@ -961,6 +1077,36 @@ class GeminiPoolManager:
         assert last_exc is not None
         raise last_exc
 
+    def _generate_parts_with_entry(
+        self,
+        entry: GeminiPoolEntry,
+        parts: List[Dict[str, Any]],
+        *,
+        temperature: float,
+        max_output_tokens: int,
+        estimated_tokens: int,
+        request_id: str,
+    ) -> str:
+        attempts = 2
+        last_exc: Optional[GeminiPoolError] = None
+        for attempt in range(attempts):
+            try:
+                return self._perform_parts_request(
+                    entry,
+                    parts,
+                    temperature=temperature,
+                    max_output_tokens=max_output_tokens,
+                    estimated_tokens=estimated_tokens,
+                    request_id=request_id,
+                )
+            except GeminiPoolError as exc:
+                last_exc = exc
+                if exc.code == "gemini_transient_error" and attempt < attempts - 1:
+                    continue
+                raise
+        assert last_exc is not None
+        raise last_exc
+
     def _perform_request(
         self,
         entry: GeminiPoolEntry,
@@ -974,6 +1120,68 @@ class GeminiPoolManager:
         url = GENERATE_URL_TEMPLATE.format(model=quote(entry.model, safe="-_."))
         payload = {
             "contents": [{"parts": [{"text": prompt}]}],
+            "generationConfig": {
+                "temperature": temperature,
+                "maxOutputTokens": max_output_tokens,
+            },
+        }
+
+        try:
+            response = self._requester(
+                url,
+                params={"key": entry.api_key},
+                json=payload,
+                timeout=self.timeout_seconds,
+            )
+        except requests.Timeout as exc:
+            raise GeminiPoolError(
+                "gemini_transient_error",
+                "Gemini request timed out",
+                project_alias=entry.project_alias,
+                project_id=entry.project_id,
+                model=entry.model,
+            ) from exc
+        except requests.RequestException as exc:
+            raise GeminiPoolError(
+                "gemini_transient_error",
+                "Gemini request failed",
+                project_alias=entry.project_alias,
+                project_id=entry.project_id,
+                model=entry.model,
+            ) from exc
+
+        if response.status_code >= 400:
+            self._raise_for_error_response(entry, response)
+
+        data = response.json()
+        actual_tokens = _extract_total_tokens(data)
+        with self._lock:
+            entry.reconcile_usage(_utcnow(), request_id, estimated_tokens, actual_tokens)
+            self._save_usage_state_locked()
+        text = _extract_text(data)
+        if not text:
+            raise GeminiPoolError(
+                "gemini_request_invalid",
+                "Gemini returned empty response",
+                project_alias=entry.project_alias,
+                project_id=entry.project_id,
+                model=entry.model,
+            )
+        return text
+
+    def _perform_parts_request(
+        self,
+        entry: GeminiPoolEntry,
+        parts: List[Dict[str, Any]],
+        *,
+        temperature: float,
+        max_output_tokens: int,
+        estimated_tokens: int,
+        request_id: str,
+    ) -> str:
+        url = GENERATE_URL_TEMPLATE.format(model=quote(entry.model, safe="-_."))
+        payload = {
+            "contents": [{"parts": parts}],
             "generationConfig": {
                 "temperature": temperature,
                 "maxOutputTokens": max_output_tokens,
