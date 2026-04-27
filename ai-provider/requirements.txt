@@ -2,6 +2,7 @@ flask==3.0.3
 ultralytics==8.3.234
 pillow==10.4.0
 opencv-python-headless==4.10.0.84
+onnxruntime==1.23.2
 werkzeug==3.0.3
 google-generativeai==0.8.3
 python-dotenv==1.0.1

@@ -13,6 +13,7 @@ import threading
 
 import cv2
 import numpy as np
+import onnxruntime as ort
 from flask import Flask, Response, jsonify, request
 from ultralytics import YOLO
 from werkzeug.datastructures import FileStorage
@@ -207,11 +208,11 @@ def _download_model_from_supabase(filename: str = "best.pt") -> bool:
 model: YOLO | None = None
 model_file: str = ""
 model_load_error: str | None = None
-onnx_model: cv2.dnn.Net | None = None
+onnx_model: ort.InferenceSession | None = None
 onnx_model_load_error: str | None = None
 
 
-def _load_onnx_model() -> cv2.dnn.Net | None:
+def _load_onnx_model() -> ort.InferenceSession | None:
     """Load the exported YOLO ONNX model for fast CPU inference on Render."""
     global onnx_model, onnx_model_load_error, model_file
 
@@ -230,10 +231,15 @@ def _load_onnx_model() -> cv2.dnn.Net | None:
             return None
 
         try:
-            loaded_net = cv2.dnn.readNetFromONNX(YOLO_ONNX_MODEL_FILE)
-            loaded_net.setPreferableBackend(cv2.dnn.DNN_BACKEND_OPENCV)
-            loaded_net.setPreferableTarget(cv2.dnn.DNN_TARGET_CPU)
-            onnx_model = loaded_net
+            session_options = ort.SessionOptions()
+            session_options.intra_op_num_threads = int(os.getenv("YOLO_ONNX_INTRA_OP_THREADS", "1"))
+            session_options.inter_op_num_threads = int(os.getenv("YOLO_ONNX_INTER_OP_THREADS", "1"))
+            session_options.graph_optimization_level = ort.GraphOptimizationLevel.ORT_ENABLE_ALL
+            onnx_model = ort.InferenceSession(
+                YOLO_ONNX_MODEL_FILE,
+                sess_options=session_options,
+                providers=["CPUExecutionProvider"],
+            )
             model_file = YOLO_ONNX_MODEL_FILE
             logger.info(f"Loaded YOLO ONNX model: {YOLO_ONNX_MODEL_FILE}")
             return onnx_model
@@ -271,8 +277,8 @@ def _detect_with_onnx(path: str, confidence_threshold: float, image_size: int) -
     input_image, scale, pad_x, pad_y = _letterbox_image(image, image_size)
     blob = cv2.dnn.blobFromImage(input_image, scalefactor=1 / 255.0, size=(image_size, image_size), swapRB=True)
 
-    net.setInput(blob)
-    output = net.forward()
+    input_name = net.get_inputs()[0].name
+    output = net.run(None, {input_name: blob})[0]
     predictions = np.squeeze(output)
     if predictions.ndim != 2:
         return []
