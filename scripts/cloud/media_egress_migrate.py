@@ -182,6 +182,23 @@ def parse_supabase_public_object_path(value: str, bucket: str) -> str | None:
     return unquote(strip_query(parsed_path.split(marker, 1)[1]).lstrip("/")) or None
 
 
+def parse_public_bucket_object_path(value: str, bucket: str) -> str | None:
+    raw = trim(value)
+    if not raw:
+        return None
+
+    try:
+        parsed_path = urlparse(raw).path
+    except ValueError:
+        return None
+
+    marker = f"/{bucket}/"
+    if marker not in parsed_path:
+        return None
+
+    return unquote(strip_query(parsed_path.split(marker, 1)[1]).lstrip("/")) or None
+
+
 def resolve_food_thumbnail_object_path(value: str | None) -> str | None:
     raw = trim(value)
     if not raw:
@@ -191,7 +208,13 @@ def resolve_food_thumbnail_object_path(value: str | None) -> str | None:
     if full_path:
         return full_path
 
-    if raw.startswith(("http://", "https://", "data:")):
+    if raw.startswith(("http://", "https://")):
+        public_path = parse_public_bucket_object_path(raw, FOOD_BUCKET)
+        if public_path:
+            return public_path
+        return None
+
+    if raw.startswith("data:"):
         return None
 
     relative = unquote(strip_query(raw).replace("\\", "/").lstrip("/"))

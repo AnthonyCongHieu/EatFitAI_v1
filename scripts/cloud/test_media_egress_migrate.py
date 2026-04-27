@@ -32,6 +32,21 @@ class MediaEgressMigrateTests(unittest.TestCase):
             "v2/thumb/42.webp",
         )
 
+    def test_resolve_food_thumbnail_object_path_handles_r2_public_url(self) -> None:
+        self.assertEqual(
+            media_egress_migrate.resolve_food_thumbnail_object_path(
+                "https://pub-9081bce8ff6b4db5b4403ca7adae7b80.r2.dev/food-images/v2/thumb/42.webp"
+            ),
+            "v2/thumb/42.webp",
+        )
+
+    def test_resolve_food_thumbnail_object_path_ignores_external_url(self) -> None:
+        self.assertIsNone(
+            media_egress_migrate.resolve_food_thumbnail_object_path(
+                "https://cdn.example.com/assets/banana.webp"
+            )
+        )
+
     def test_resolve_food_thumbnail_object_path_maps_legacy_relative_filename(self) -> None:
         self.assertEqual(
             media_egress_migrate.resolve_food_thumbnail_object_path("pho-bo.jpg"),
