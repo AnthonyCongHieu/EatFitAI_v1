@@ -93,7 +93,7 @@ namespace EatFitAI.API.Services
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _options.ServiceRoleKey);
             request.Headers.TryAddWithoutValidation("apikey", _options.ServiceRoleKey);
             request.Headers.TryAddWithoutValidation("x-upsert", "true");
-            request.Headers.TryAddWithoutValidation("cache-control", cacheControl);
+            request.Headers.TryAddWithoutValidation("cache-control", NormalizeCacheControlSeconds(cacheControl));
             request.Content = new ByteArrayContent(bytes);
             request.Content.Headers.ContentType = new MediaTypeHeaderValue(contentType);
 
@@ -134,6 +134,32 @@ namespace EatFitAI.API.Services
         private static string EncodePathSegment(string segment)
         {
             return Uri.EscapeDataString(segment.Trim());
+        }
+
+        private static string NormalizeCacheControlSeconds(string cacheControl)
+        {
+            var trimmed = (cacheControl ?? string.Empty).Trim();
+            if (long.TryParse(trimmed, out var seconds) && seconds > 0)
+            {
+                return seconds.ToString();
+            }
+
+            foreach (var part in trimmed.Split(',', StringSplitOptions.RemoveEmptyEntries))
+            {
+                var token = part.Trim();
+                if (!token.StartsWith("max-age=", StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
+                var value = token["max-age=".Length..].Trim();
+                if (long.TryParse(value, out seconds) && seconds > 0)
+                {
+                    return seconds.ToString();
+                }
+            }
+
+            return "31536000";
         }
 
         private static bool IsPlaceholder(string? value)

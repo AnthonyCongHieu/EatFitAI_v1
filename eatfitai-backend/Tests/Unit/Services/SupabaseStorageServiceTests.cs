@@ -47,7 +47,7 @@ namespace EatFitAI.API.Tests.Unit.Services
                 publicUrl);
             Assert.NotNull(capturedRequest);
             Assert.True(capturedRequest!.Headers.TryGetValues("cache-control", out var values));
-            Assert.Equal("public, max-age=31536000, immutable", Assert.Single(values));
+            Assert.Equal("31536000", Assert.Single(values));
             Assert.Equal("image/webp", capturedRequest.Content?.Headers.ContentType?.MediaType);
         }
 
