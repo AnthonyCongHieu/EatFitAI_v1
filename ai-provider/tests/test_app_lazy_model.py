@@ -1,4 +1,5 @@
 import io
+from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
 
@@ -60,6 +61,67 @@ class LazyYoloModelTests(unittest.TestCase):
         payload = response.get_json()
         self.assertEqual(payload["error"], "model unavailable")
         self.assertEqual(payload["detail"], "model boot failed")
+
+    def test_detect_runs_yolo_recovery_pass_when_primary_is_empty(self):
+        calls = []
+
+        def fake_model(*args, **kwargs):
+            calls.append(kwargs)
+            if len(calls) == 1:
+                return [SimpleNamespace(names={0: "beef"}, boxes=[])]
+            return [
+                SimpleNamespace(
+                    names={0: "beef", 1: "papaya"},
+                    boxes=[
+                        SimpleNamespace(cls=0, conf=0.07),
+                        SimpleNamespace(cls=1, conf=0.40),
+                    ],
+                )
+            ]
+
+        with (
+            patch.object(app_module, "_is_internal_request_authorized", return_value=True),
+            patch.object(app_module, "_load_yolo_model", return_value=fake_model),
+        ):
+            response = self.client.post(
+                "/detect",
+                data={"file": (io.BytesIO(b"image-bytes"), "beef.jpg")},
+                content_type="multipart/form-data",
+            )
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.get_json()
+        self.assertEqual(payload["detections"], [{"label": "beef", "confidence": 0.07}])
+        self.assertEqual(calls[0]["conf"], app_module.YOLO_CONFIDENCE_THRESHOLD)
+        self.assertEqual(calls[1]["conf"], app_module.YOLO_RECOVERY_CONFIDENCE_THRESHOLD)
+        self.assertTrue(calls[1]["augment"])
+
+    def test_detect_does_not_run_recovery_when_primary_detects_food(self):
+        calls = []
+
+        def fake_model(*args, **kwargs):
+            calls.append(kwargs)
+            return [
+                SimpleNamespace(
+                    names={0: "banana"},
+                    boxes=[SimpleNamespace(cls=0, conf=0.82)],
+                )
+            ]
+
+        with (
+            patch.object(app_module, "_is_internal_request_authorized", return_value=True),
+            patch.object(app_module, "_load_yolo_model", return_value=fake_model),
+        ):
+            response = self.client.post(
+                "/detect",
+                data={"file": (io.BytesIO(b"image-bytes"), "banana.jpg")},
+                content_type="multipart/form-data",
+            )
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.get_json()
+        self.assertEqual(payload["detections"], [{"label": "banana", "confidence": 0.82}])
+        self.assertEqual(len(calls), 1)
 
 
 if __name__ == "__main__":

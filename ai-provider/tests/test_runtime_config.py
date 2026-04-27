@@ -12,6 +12,10 @@ from runtime_config import get_yolo_confidence_threshold, get_yolo_image_size
 
 
 class RuntimeConfigTests(unittest.TestCase):
+    def test_yolo_confidence_defaults_to_scan_safe_threshold(self) -> None:
+        with patch.dict(os.environ, {}, clear=True):
+            self.assertEqual(get_yolo_confidence_threshold(), 0.40)
+
     def test_yolo_confidence_reads_env_override(self) -> None:
         with patch.dict(os.environ, {"YOLO_CONFIDENCE_THRESHOLD": "0.72"}, clear=False):
             self.assertEqual(get_yolo_confidence_threshold(), 0.72)

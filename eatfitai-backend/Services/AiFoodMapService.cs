@@ -54,8 +54,27 @@ namespace EatFitAI.API.Services
                 .Distinct()
                 .ToList();
 
-            var rows = await _db.vw_AiFoodMaps
-                .Where(v => labelKeys.Contains(v.Label))
+            var rows = await _db.AiLabelMaps
+                .AsNoTracking()
+                .Where(map => labelKeys.Contains(map.Label))
+                .GroupJoin(
+                    _db.FoodItems.AsNoTracking(),
+                    map => map.FoodItemId,
+                    food => food.FoodItemId,
+                    (map, foods) => new { map, foods })
+                .SelectMany(
+                    item => item.foods.DefaultIfEmpty(),
+                    (item, food) => new vw_AiFoodMap
+                    {
+                        Label = item.map.Label,
+                        MinConfidence = item.map.MinConfidence,
+                        FoodItemId = item.map.FoodItemId,
+                        FoodName = food != null ? food.FoodName : null,
+                        CaloriesPer100g = food != null ? food.CaloriesPer100g : null,
+                        ProteinPer100g = food != null ? food.ProteinPer100g : null,
+                        CarbPer100g = food != null ? food.CarbPer100g : null,
+                        FatPer100g = food != null ? food.FatPer100g : null
+                    })
                 .ToListAsync(cancellationToken);
 
             var byLabel = rows

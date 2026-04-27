@@ -60,6 +60,14 @@ app: Flask = Flask(__name__)
 os.makedirs("uploads", exist_ok=True)
 YOLO_CONFIDENCE_THRESHOLD = get_yolo_confidence_threshold()
 YOLO_IMAGE_SIZE = get_yolo_image_size()
+YOLO_RECOVERY_ENABLED = os.getenv("YOLO_RECOVERY_ENABLED", "true").strip().lower() not in {"0", "false", "no"}
+YOLO_RECOVERY_CONFIDENCE_THRESHOLD = float(os.getenv("YOLO_RECOVERY_CONFIDENCE_THRESHOLD", "0.05"))
+YOLO_RECOVERY_IMAGE_SIZE = int(os.getenv("YOLO_RECOVERY_IMAGE_SIZE", "320"))
+YOLO_RECOVERY_AUGMENT = os.getenv("YOLO_RECOVERY_AUGMENT", "true").strip().lower() not in {"0", "false", "no"}
+YOLO_RECOVERY_LABEL_MIN_CONFIDENCE: Dict[str, float] = {
+    "beef": 0.05,
+    "chicken": 0.05,
+}
 YOLO_INFERENCE_LOCK = threading.Lock()
 YOLO_MODEL_LOAD_LOCK = threading.Lock()
 
@@ -291,6 +299,36 @@ def internal_runtime_status():
     }
     return jsonify(runtime_status), 200
 
+
+def _detections_from_yolo_result(result: Any) -> List[Dict[str, float | str]]:
+    names: Dict[int, str] = result[0].names
+    detections: List[Dict[str, float | str]] = []
+    for box in result[0].boxes:
+        label = str(names[int(box.cls)]).strip().lower()
+        if not label:
+            continue
+        detections.append({"label": label, "confidence": float(box.conf)})
+    return detections
+
+
+def _filter_recovery_detections(detections: List[Dict[str, float | str]]) -> List[Dict[str, float | str]]:
+    best_by_label: Dict[str, Dict[str, float | str]] = {}
+    for detection in detections:
+        label = str(detection.get("label", "")).strip().lower()
+        if label not in YOLO_RECOVERY_LABEL_MIN_CONFIDENCE:
+            continue
+        try:
+            confidence = float(detection.get("confidence", 0.0))
+        except (TypeError, ValueError):
+            continue
+        if confidence < YOLO_RECOVERY_LABEL_MIN_CONFIDENCE[label]:
+            continue
+        existing = best_by_label.get(label)
+        if existing is None or confidence > float(existing["confidence"]):
+            best_by_label[label] = {"label": label, "confidence": confidence}
+
+    return sorted(best_by_label.values(), key=lambda item: float(item["confidence"]), reverse=True)
+
 @app.post("/detect")
 @require_internal_token
 def detect() -> Response | tuple[Dict[str, str], int]:
@@ -347,12 +385,18 @@ def detect() -> Response | tuple[Dict[str, str], int]:
         
         with YOLO_INFERENCE_LOCK:
             res: Any = loaded_model(path, conf=YOLO_CONFIDENCE_THRESHOLD, imgsz=YOLO_IMAGE_SIZE)
-        names: Dict[int, str] = res[0].names
-        
-        out: List[Dict[str, float | str]] = [
-            {"label": names[int(b.cls)], "confidence": float(b.conf)}
-            for b in res[0].boxes
-        ]
+            out = _detections_from_yolo_result(res)
+
+            if not out and YOLO_RECOVERY_ENABLED:
+                recovery_res: Any = loaded_model(
+                    path,
+                    conf=YOLO_RECOVERY_CONFIDENCE_THRESHOLD,
+                    imgsz=YOLO_RECOVERY_IMAGE_SIZE,
+                    augment=YOLO_RECOVERY_AUGMENT,
+                )
+                out = _filter_recovery_detections(_detections_from_yolo_result(recovery_res))
+                if out:
+                    logger.info(f"YOLO recovery pass detected {len(out)} objects in {name}")
         
         logger.info(f"Detected {len(out)} objects in {name}")
         return jsonify({"detections": out})

@@ -69,6 +69,11 @@ type ScanResultNotice = {
   description: string;
 };
 
+const SCAN_IMAGE_UPLOAD_WIDTH = 1600;
+const SCAN_IMAGE_UPLOAD_QUALITY = 0.95;
+const isUsableVisionItem = (item: MappedFoodItem): boolean =>
+  Boolean(item.isMatched || item.foodItemId || item.foodName) || item.confidence > 0.4;
+
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 const { width: SW } = Dimensions.get('window');
 
@@ -219,8 +224,11 @@ const AIScanScreen: React.FC = () => {
     try {
       const manipulatedResult = await ImageManipulator.manipulateAsync(
         uri,
-        [{ resize: { width: 800 } }],
-        { compress: 0.7, format: ImageManipulator.SaveFormat.JPEG },
+        [{ resize: { width: SCAN_IMAGE_UPLOAD_WIDTH } }],
+        {
+          compress: SCAN_IMAGE_UPLOAD_QUALITY,
+          format: ImageManipulator.SaveFormat.JPEG,
+        },
       );
       processedUri = manipulatedResult.uri;
       setCapturedUri(processedUri);
@@ -231,7 +239,7 @@ const AIScanScreen: React.FC = () => {
 
     try {
       const result = await aiService.detectFoodByImage(processedUri);
-      const filteredItems = result.items.filter((item) => item.confidence > 0.4);
+      const filteredItems = result.items.filter(isUsableVisionItem);
 
       setDetectionResult({
         ...result,
@@ -307,7 +315,7 @@ const AIScanScreen: React.FC = () => {
     try {
       const result = await cameraRef.current.takePictureAsync({
         base64: false,
-        quality: 0.7,
+        quality: SCAN_IMAGE_UPLOAD_QUALITY,
       });
 
       if (!result?.uri) throw new Error('Không đọc được ảnh');
@@ -363,7 +371,7 @@ const AIScanScreen: React.FC = () => {
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsEditing: false,
-        quality: 0.7,
+        quality: SCAN_IMAGE_UPLOAD_QUALITY,
       });
 
       if (!result.canceled && result.assets?.[0]?.uri) {

@@ -4,7 +4,7 @@ import os
 
 
 def get_yolo_confidence_threshold() -> float:
-    raw = os.getenv("YOLO_CONFIDENCE_THRESHOLD", "0.50").strip()
+    raw = os.getenv("YOLO_CONFIDENCE_THRESHOLD", "0.40").strip()
     try:
         value = float(raw)
     except ValueError:

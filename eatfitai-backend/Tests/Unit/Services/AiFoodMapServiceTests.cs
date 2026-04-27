@@ -151,6 +151,44 @@ namespace EatFitAI.API.Tests.Unit.Services
             Assert.True(item.IsMatched);
         }
 
+        [Fact]
+        public async Task MapDetectionsAsync_AllowsSeededYoloRecoveryLabelBelowCatalogThreshold()
+        {
+            _context.FoodItems.Add(new FoodItem
+            {
+                FoodItemId = 505,
+                FoodName = "Beef",
+                FoodNameUnsigned = "beef",
+                CaloriesPer100g = 187,
+                ProteinPer100g = 20,
+                CarbPer100g = 0,
+                FatPer100g = 12,
+                IsActive = true,
+                IsDeleted = false,
+                CredibilityScore = 95
+            });
+            _context.AiLabelMaps.Add(new AiLabelMap
+            {
+                Label = "beef",
+                FoodItemId = 505,
+                MinConfidence = 0.05m,
+                CreatedAt = DateTime.UtcNow
+            });
+            await _context.SaveChangesAsync();
+
+            var service = new AiFoodMapService(_context, _mediaUrlResolver.Object);
+
+            var mapped = await service.MapDetectionsAsync(new[]
+            {
+                new VisionDetectionDto { Label = "beef", Confidence = 0.08f }
+            });
+
+            var item = Assert.Single(mapped);
+            Assert.Equal(505, item.FoodItemId);
+            Assert.Equal("Beef", item.FoodName);
+            Assert.True(item.IsMatched);
+        }
+
         public void Dispose()
         {
             _context.Dispose();
