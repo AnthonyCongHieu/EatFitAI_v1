@@ -4,18 +4,38 @@ Ngày lập: 2026-04-27
 
 Tài liệu này ghi lại sự cố cached egress vừa gặp, kết quả kiểm tra hạ tầng hiện tại, nghiên cứu các lựa chọn storage/CDN, và chiến lược production để EatFitAI vừa tối ưu chi phí vừa tránh lặp lại tình trạng vượt quota.
 
+## Cập nhật triển khai 2026-04-27
+
+Trạng thái sau khi triển khai R2 media offload:
+
+- Đã tạo Cloudflare R2 bucket `eatfitai-media` và bật Public Development URL tạm thời: `https://pub-9081bce8ff6b4db5b4403ca7adae7b80.r2.dev`.
+- Backend đã có provider-neutral media layer, hỗ trợ `Media__Provider=r2` và upload optimized variants sang R2.
+- User-uploaded avatar và user-food image đã đi qua backend image processor, tạo WebP `thumb`/`medium`, và public URL trả về từ R2.
+- Catalog migration đã chạy xong bằng local Supabase storage archive, không tải lại ảnh từ Supabase Storage trong lúc quota đang vượt.
+- Audit sau migration: `73/73` catalog thumbnails là `food-images/v2/thumb/*.webp`, `0` violations.
+- Dev backend smoke end-to-end đã pass trên `https://eatfitai-backend-dev.onrender.com`, bao gồm profile, avatar upload, food search/detail, user-food upload/update, favorites, meal diary, water, summary và analytics.
+- Production API hiện đã trả `thumbNail` là R2 URL cho catalog search/detail vì DB đã được cập nhật, nhưng production service chưa redeploy được code mới do Render báo `pipeline_minutes_exhausted`.
+
+Những việc còn lại để đóng hoàn toàn production:
+
+1. Khi Render có lại pipeline minutes hoặc được nâng quota, redeploy `eatfitai-backend` để production runtime nhận code mới có `imageVariants`.
+2. Đổi R2 Public Development URL sang custom domain trước public production; `r2.dev` chỉ nên dùng cho dev/internal beta.
+3. Theo dõi Supabase cached egress trong 24-72 giờ đầu và 7 ngày đầu chu kỳ billing mới; mục tiêu là không tăng do catalog media path.
+4. Rotate/revoke các token/key đã từng dán vào chat: Supabase token, Render API key, Cloudflare R2 token/access key.
+5. Giữ release gate: block nếu primary thumbnail > `100 KB`, detail image > `350 KB`, hoặc smoke/dev flow trỏ lại Supabase Storage media.
+
 ## Tóm tắt quyết định
 
 Sự cố vừa rồi không phải do database lớn, auth nhiều user, hay Supabase yếu. Vấn đề chính là media egress: app đang tải ảnh public từ Supabase Storage, trong đó nhiều file nằm dưới `food-images/thumbnails` có kích thước khoảng 4-5 MB dù được dùng như thumbnail. Với kích thước này, chỉ một lượng user hoặc smoke test nhỏ cũng có thể vượt quota cached egress 5 GB.
 
-Hướng đúng là không chuyển toàn bộ app sang nền tảng khác ngay. Nên giữ kiến trúc Render + Supabase hiện tại, sửa pipeline ảnh triệt để, rồi thêm lớp `MediaStorageProvider` để sau này có thể chuyển riêng media sang Cloudflare R2 nếu usage tăng.
+Hướng đã chọn là không chuyển toàn bộ app sang nền tảng khác ngay. Giữ kiến trúc Render + Supabase hiện tại cho backend, DB, auth và metadata; chuyển public media sang Cloudflare R2 sau khi tạo đúng `thumb`/`medium` variants.
 
 Quyết định đề xuất:
 
 1. Sửa gốc vấn đề media trước: tạo ảnh `thumb` và `medium` đúng kích thước, backend bắt buộc resize ảnh upload, set cache header dài.
 2. Giữ Supabase cho Postgres/Auth/metadata.
 3. Giữ Firebase cho Crashlytics/Google mobile integration, không dùng Firebase Storage làm media store mặc định.
-4. Chuẩn bị Cloudflare R2 làm đích offload media khi public traffic tăng.
+4. Dùng Cloudflare R2 làm đích offload public media; Supabase Storage chỉ còn là legacy/fallback path, không phải primary media path.
 5. Xem Render Free và Gemini free quota hiện tại là beta-only, không phải production bền vững.
 
 ## Tình trạng lỗi vừa gặp
@@ -58,6 +78,7 @@ Kết quả rà soát repo cho thấy ngoài Render và Supabase, app còn dùng
 | --- | --- | --- |
 | Render | Host `.NET` backend và Python AI provider | Giữ, nhưng không dùng Free cho public production |
 | Supabase | Postgres, Storage, service-role storage access | Giữ DB/Auth/metadata; tối ưu hoặc offload media |
+| Cloudflare R2 | Public media offload cho catalog, avatar và user-food variants | Giữ cho media; cần custom domain trước public production |
 | Firebase | Crashlytics, Android config, Google mobile integration | Giữ Crashlytics; không thêm Firebase Storage mặc định |
 | Google Sign-In | Đăng nhập Google | Giữ |
 | Expo/EAS | Build/release mobile app | Giữ |
@@ -65,9 +86,8 @@ Kết quả rà soát repo cho thấy ngoài Render và Supabase, app còn dùng
 | Brevo | Gửi email backend | Giữ nếu deliverability ổn |
 | Vercel | Admin/ops target | Tách khỏi đường tải media của mobile |
 
-Chưa thấy các provider media này trong main code path:
+Chưa dùng các provider media này trong main code path:
 
-- Cloudflare R2
 - Cloudinary
 - ImageKit
 - Bunny Storage/CDN
