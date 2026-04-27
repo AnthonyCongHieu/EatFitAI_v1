@@ -33,11 +33,8 @@ class ModelPolicyTests(unittest.TestCase):
         )
 
         self.assertIsNotNone(error)
-        self.assertIn("best.pt is required", error)
-        self.assertEqual(
-            missing_supabase_model_keys(env),
-            ["SUPABASE_URL", "SUPABASE_SERVICE_KEY"],
-        )
+        self.assertIn("best.pt or best.onnx is required", error)
+        self.assertEqual(missing_supabase_model_keys(env), [])
 
     def test_pending_error_is_clear_after_load_failure(self):
         error = pending_model_readiness_error(
@@ -49,7 +46,7 @@ class ModelPolicyTests(unittest.TestCase):
 
         self.assertEqual(error, "download failed")
 
-    def test_pending_error_allows_configured_production_download(self):
+    def test_pending_error_requires_packaged_model_even_when_supabase_is_configured(self):
         error = pending_model_readiness_error(
             best_model_exists=False,
             model_loaded=False,
@@ -57,7 +54,15 @@ class ModelPolicyTests(unittest.TestCase):
             env={"RENDER": "true", "SUPABASE_URL": "x", "SUPABASE_SERVICE_KEY": "y"},
         )
 
-        self.assertIsNone(error)
+        self.assertIn("packaged with the service", error)
+
+    def test_supabase_download_keys_are_only_required_when_download_is_explicitly_enabled(self):
+        env = {"RENDER": "true", "ALLOW_SUPABASE_MODEL_DOWNLOAD": "true"}
+
+        self.assertEqual(
+            missing_supabase_model_keys(env),
+            ["SUPABASE_URL", "SUPABASE_SERVICE_KEY"],
+        )
 
 
 if __name__ == "__main__":

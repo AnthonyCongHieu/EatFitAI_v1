@@ -20,15 +20,18 @@ class LazyYoloModelTests(unittest.TestCase):
         self.previous_model = app_module.model
         self.previous_model_file = app_module.model_file
         self.previous_model_load_error = app_module.model_load_error
+        self.previous_onnx_enabled = app_module.YOLO_ONNX_ENABLED
         app_module.model = None
         app_module.model_file = ""
         app_module.model_load_error = None
+        app_module.YOLO_ONNX_ENABLED = False
         self.client = app_module.app.test_client()
 
     def tearDown(self):
         app_module.model = self.previous_model
         app_module.model_file = self.previous_model_file
         app_module.model_load_error = self.previous_model_load_error
+        app_module.YOLO_ONNX_ENABLED = self.previous_onnx_enabled
 
     def test_healthz_does_not_load_yolo_model(self):
         with patch.object(

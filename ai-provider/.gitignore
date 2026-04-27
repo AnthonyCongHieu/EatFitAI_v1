@@ -29,6 +29,7 @@ ENV/
 !best.pt
 last.pt
 *.onnx
+!best.onnx
 *.tflite
 *.torchscript
 *.mlmodel

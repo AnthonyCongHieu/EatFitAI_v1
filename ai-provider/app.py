@@ -11,6 +11,8 @@ import logging
 import time
 import threading
 
+import cv2
+import numpy as np
 from flask import Flask, Response, jsonify, request
 from ultralytics import YOLO
 from werkzeug.datastructures import FileStorage
@@ -68,8 +70,84 @@ YOLO_RECOVERY_LABEL_MIN_CONFIDENCE: Dict[str, float] = {
     "beef": 0.05,
     "chicken": 0.05,
 }
+YOLO_ONNX_ENABLED = os.getenv("YOLO_ONNX_ENABLED", "true").strip().lower() not in {"0", "false", "no"}
+YOLO_MODEL_FILE = os.getenv("YOLO_MODEL_FILE", "best.pt")
+YOLO_ONNX_MODEL_FILE = os.getenv("YOLO_ONNX_MODEL_FILE", "best.onnx")
+YOLO_ONNX_IMAGE_SIZE = int(os.getenv("YOLO_ONNX_IMAGE_SIZE", "320"))
+ALLOW_SUPABASE_MODEL_DOWNLOAD = os.getenv("ALLOW_SUPABASE_MODEL_DOWNLOAD", "false").strip().lower() in {
+    "1",
+    "true",
+    "yes",
+}
+YOLO_NMS_THRESHOLD = float(os.getenv("YOLO_NMS_THRESHOLD", "0.45"))
+YOLO_CLASS_NAMES = [
+    "apple",
+    "avocado",
+    "banana",
+    "bayleaf",
+    "beans",
+    "beef",
+    "beet",
+    "bell_pepper",
+    "blueberry",
+    "broccoli",
+    "cabbage",
+    "carrot",
+    "cauliflower",
+    "celery",
+    "cherry",
+    "chicken",
+    "chickpeas",
+    "cloves",
+    "coriander",
+    "corn",
+    "cranberry",
+    "cucumber",
+    "curry_powder",
+    "egg",
+    "eggplant",
+    "fish",
+    "garlic",
+    "ginger",
+    "gooseberry",
+    "grape",
+    "guava",
+    "kumquat",
+    "lamb",
+    "leek",
+    "lemon",
+    "lettuce",
+    "mango",
+    "marrow",
+    "mulberry",
+    "okra",
+    "onion",
+    "orange",
+    "papaya",
+    "peanut",
+    "pear",
+    "peas",
+    "pepper",
+    "pineapple",
+    "pork",
+    "potato",
+    "pumpkin",
+    "radish",
+    "raspberry",
+    "rice",
+    "salad",
+    "salt",
+    "shrimp",
+    "spinach",
+    "spring_onion",
+    "squash",
+    "strawberry",
+    "tomato",
+    "turmeric",
+]
 YOLO_INFERENCE_LOCK = threading.Lock()
 YOLO_MODEL_LOAD_LOCK = threading.Lock()
+YOLO_ONNX_MODEL_LOAD_LOCK = threading.Lock()
 
 # Hằng số validate file
 ALLOWED_EXTENSIONS = {'jpg', 'jpeg', 'png', 'webp', 'bmp'}
@@ -129,6 +207,123 @@ def _download_model_from_supabase(filename: str = "best.pt") -> bool:
 model: YOLO | None = None
 model_file: str = ""
 model_load_error: str | None = None
+onnx_model: cv2.dnn.Net | None = None
+onnx_model_load_error: str | None = None
+
+
+def _load_onnx_model() -> cv2.dnn.Net | None:
+    """Load the exported YOLO ONNX model for fast CPU inference on Render."""
+    global onnx_model, onnx_model_load_error, model_file
+
+    if not YOLO_ONNX_ENABLED:
+        return None
+    if onnx_model is not None:
+        return onnx_model
+
+    with YOLO_ONNX_MODEL_LOAD_LOCK:
+        if onnx_model is not None:
+            return onnx_model
+
+        onnx_model_load_error = None
+        if not os.path.exists(YOLO_ONNX_MODEL_FILE):
+            onnx_model_load_error = f"{YOLO_ONNX_MODEL_FILE} not found"
+            return None
+
+        try:
+            loaded_net = cv2.dnn.readNetFromONNX(YOLO_ONNX_MODEL_FILE)
+            loaded_net.setPreferableBackend(cv2.dnn.DNN_BACKEND_OPENCV)
+            loaded_net.setPreferableTarget(cv2.dnn.DNN_TARGET_CPU)
+            onnx_model = loaded_net
+            model_file = YOLO_ONNX_MODEL_FILE
+            logger.info(f"Loaded YOLO ONNX model: {YOLO_ONNX_MODEL_FILE}")
+            return onnx_model
+        except Exception as exc:
+            onnx_model_load_error = str(exc)
+            logger.error(f"Failed to load YOLO ONNX model: {exc}", exc_info=True)
+            return None
+
+
+def _letterbox_image(image: np.ndarray, size: int) -> tuple[np.ndarray, float, int, int]:
+    height, width = image.shape[:2]
+    if height <= 0 or width <= 0:
+        raise ValueError("invalid image dimensions")
+
+    scale = min(size / width, size / height)
+    resized_width = max(1, int(round(width * scale)))
+    resized_height = max(1, int(round(height * scale)))
+    resized = cv2.resize(image, (resized_width, resized_height), interpolation=cv2.INTER_LINEAR)
+    canvas = np.full((size, size, 3), 114, dtype=np.uint8)
+    pad_x = (size - resized_width) // 2
+    pad_y = (size - resized_height) // 2
+    canvas[pad_y : pad_y + resized_height, pad_x : pad_x + resized_width] = resized
+    return canvas, scale, pad_x, pad_y
+
+
+def _detect_with_onnx(path: str, confidence_threshold: float, image_size: int) -> List[Dict[str, float | str]]:
+    net = _load_onnx_model()
+    if net is None:
+        return []
+
+    image = cv2.imread(path)
+    if image is None:
+        raise ValueError("uploaded image could not be decoded")
+
+    input_image, scale, pad_x, pad_y = _letterbox_image(image, image_size)
+    blob = cv2.dnn.blobFromImage(input_image, scalefactor=1 / 255.0, size=(image_size, image_size), swapRB=True)
+
+    net.setInput(blob)
+    output = net.forward()
+    predictions = np.squeeze(output)
+    if predictions.ndim != 2:
+        return []
+    if predictions.shape[0] == 4 + len(YOLO_CLASS_NAMES):
+        predictions = predictions.T
+
+    boxes: List[List[int]] = []
+    confidences: List[float] = []
+    labels: List[str] = []
+    image_height, image_width = image.shape[:2]
+
+    for row in predictions:
+        class_scores = row[4 : 4 + len(YOLO_CLASS_NAMES)]
+        if class_scores.size == 0:
+            continue
+        class_id = int(np.argmax(class_scores))
+        confidence = float(class_scores[class_id])
+        if confidence < confidence_threshold or class_id >= len(YOLO_CLASS_NAMES):
+            continue
+
+        cx, cy, width, height = map(float, row[:4])
+        left = (cx - width / 2 - pad_x) / scale
+        top = (cy - height / 2 - pad_y) / scale
+        box_width = width / scale
+        box_height = height / scale
+
+        x = max(0, min(int(round(left)), image_width - 1))
+        y = max(0, min(int(round(top)), image_height - 1))
+        w = max(1, min(int(round(box_width)), image_width - x))
+        h = max(1, min(int(round(box_height)), image_height - y))
+
+        boxes.append([x, y, w, h])
+        confidences.append(confidence)
+        labels.append(YOLO_CLASS_NAMES[class_id])
+
+    if not boxes:
+        return []
+
+    selected = cv2.dnn.NMSBoxes(boxes, confidences, confidence_threshold, YOLO_NMS_THRESHOLD)
+    if len(selected) == 0:
+        return []
+
+    best_by_label: Dict[str, Dict[str, float | str]] = {}
+    for index in np.array(selected).flatten().tolist():
+        label = labels[index].strip().lower()
+        confidence = confidences[index]
+        existing = best_by_label.get(label)
+        if existing is None or confidence > float(existing["confidence"]):
+            best_by_label[label] = {"label": label, "confidence": confidence}
+
+    return sorted(best_by_label.values(), key=lambda item: float(item["confidence"]), reverse=True)
 
 # GPU detection - Cloud chạy CPU, local có thể có GPU
 import torch
@@ -161,19 +356,18 @@ def _load_yolo_model() -> YOLO | None:
         model_load_error = None
 
         try:
-            # Nếu best.pt chưa có (trên cloud) → tự động download từ Supabase Storage
-            if not os.path.exists("best.pt"):
-                logger.info("📦 best.pt không tìm thấy → thử download từ Supabase Storage...")
-                _download_model_from_supabase("best.pt")
+            if not os.path.exists(YOLO_MODEL_FILE) and ALLOW_SUPABASE_MODEL_DOWNLOAD:
+                logger.warning("YOLO model file is missing; explicit Supabase model download is enabled.")
+                _download_model_from_supabase(YOLO_MODEL_FILE)
 
-            if os.path.exists("best.pt"):
-                logger.info("Loading custom trained model: best.pt")
-                loaded_model = YOLO("best.pt")
-                loaded_model_file = "best.pt"
+            if os.path.exists(YOLO_MODEL_FILE):
+                logger.info(f"Loading custom trained model: {YOLO_MODEL_FILE}")
+                loaded_model = YOLO(YOLO_MODEL_FILE)
+                loaded_model_file = YOLO_MODEL_FILE
             elif not allow_generic_yolo_fallback():
                 raise FileNotFoundError(
-                    "best.pt is required in production. Configure SUPABASE_URL and "
-                    "SUPABASE_SERVICE_KEY so the model can be downloaded."
+                    f"{YOLO_MODEL_FILE} is required in production. Package the model with the service image; "
+                    "Supabase Storage model download is disabled by default."
                 )
             else:
                 logger.warning("⚠️ best.pt không có → fallback sang yolov8s.pt (model chung, KHÔNG phải food model)")
@@ -211,24 +405,31 @@ def healthz() -> Dict[str, Any]:
     model_classes = list(loaded_model.names.values()) if loaded_model else []
     gemini_status = _get_gemini_health_status()
     current_model_file = model_file or "not-loaded"
+    packaged_model_exists = os.path.exists(YOLO_MODEL_FILE) or os.path.exists(YOLO_ONNX_MODEL_FILE)
     current_model_error = pending_model_readiness_error(
-        best_model_exists=os.path.exists("best.pt"),
-        model_loaded=loaded_model is not None,
-        model_load_error=model_load_error,
+        best_model_exists=packaged_model_exists,
+        model_loaded=loaded_model is not None or onnx_model is not None,
+        model_load_error=model_load_error or onnx_model_load_error,
     )
     
     return {
         "status": "ok",
-        "model_loaded": loaded_model is not None,
+        "model_loaded": loaded_model is not None or onnx_model is not None,
         "model_file": current_model_file,
         "model_load_error": current_model_error,
-        "model_classes_count": len(model_classes),
+        "model_classes_count": len(model_classes) or len(YOLO_CLASS_NAMES),
         "model_type": "not-loaded" if not model_file else (
-            "yolov8-custom-eatfitai" if "best.pt" in model_file else "yolov8-pretrained"
+            "yolov8-custom-eatfitai-onnx" if model_file.endswith(".onnx") else (
+                "yolov8-custom-eatfitai" if YOLO_MODEL_FILE in model_file else "yolov8-pretrained"
+            )
         ),
+        "yolo_onnx_enabled": YOLO_ONNX_ENABLED,
+        "yolo_onnx_model_exists": os.path.exists(YOLO_ONNX_MODEL_FILE),
+        "supabase_model_download_enabled": ALLOW_SUPABASE_MODEL_DOWNLOAD,
         "generic_yolo_fallback_allowed": allow_generic_yolo_fallback(),
         "yolo_confidence_threshold": YOLO_CONFIDENCE_THRESHOLD,
         "yolo_image_size": YOLO_IMAGE_SIZE,
+        "yolo_onnx_image_size": YOLO_ONNX_IMAGE_SIZE,
         "cuda_available": torch.cuda.is_available(),
         "device": str(loaded_model.device) if loaded_model else DEVICE,
         "gpu_name": torch.cuda.get_device_name(0) if torch.cuda.is_available() else None,
@@ -376,27 +577,37 @@ def detect() -> Response | tuple[Dict[str, str], int]:
         f.save(path)
         logger.info(f"Processing image: {name} ({size / 1024:.1f}KB)")
         
-        loaded_model = _load_yolo_model()
-        if loaded_model is None:
-            return {
-                "error": "model unavailable",
-                "detail": model_load_error or "YOLO model could not be loaded",
-            }, 503
-        
         with YOLO_INFERENCE_LOCK:
-            res: Any = loaded_model(path, conf=YOLO_CONFIDENCE_THRESHOLD, imgsz=YOLO_IMAGE_SIZE)
-            out = _detections_from_yolo_result(res)
+            out: List[Dict[str, float | str]] = []
+            if YOLO_ONNX_ENABLED and os.path.exists(YOLO_ONNX_MODEL_FILE):
+                out = _detect_with_onnx(path, YOLO_CONFIDENCE_THRESHOLD, YOLO_ONNX_IMAGE_SIZE)
+                if not out and YOLO_RECOVERY_ENABLED:
+                    out = _filter_recovery_detections(
+                        _detect_with_onnx(path, YOLO_RECOVERY_CONFIDENCE_THRESHOLD, YOLO_RECOVERY_IMAGE_SIZE)
+                    )
+                    if out:
+                        logger.info(f"YOLO ONNX recovery pass detected {len(out)} objects in {name}")
+            else:
+                loaded_model = _load_yolo_model()
+                if loaded_model is None:
+                    return {
+                        "error": "model unavailable",
+                        "detail": model_load_error or onnx_model_load_error or "YOLO model could not be loaded",
+                    }, 503
 
-            if not out and YOLO_RECOVERY_ENABLED:
-                recovery_res: Any = loaded_model(
-                    path,
-                    conf=YOLO_RECOVERY_CONFIDENCE_THRESHOLD,
-                    imgsz=YOLO_RECOVERY_IMAGE_SIZE,
-                    augment=YOLO_RECOVERY_AUGMENT,
-                )
-                out = _filter_recovery_detections(_detections_from_yolo_result(recovery_res))
-                if out:
-                    logger.info(f"YOLO recovery pass detected {len(out)} objects in {name}")
+                res: Any = loaded_model(path, conf=YOLO_CONFIDENCE_THRESHOLD, imgsz=YOLO_IMAGE_SIZE)
+                out = _detections_from_yolo_result(res)
+
+                if not out and YOLO_RECOVERY_ENABLED:
+                    recovery_res: Any = loaded_model(
+                        path,
+                        conf=YOLO_RECOVERY_CONFIDENCE_THRESHOLD,
+                        imgsz=YOLO_RECOVERY_IMAGE_SIZE,
+                        augment=YOLO_RECOVERY_AUGMENT,
+                    )
+                    out = _filter_recovery_detections(_detections_from_yolo_result(recovery_res))
+                    if out:
+                        logger.info(f"YOLO recovery pass detected {len(out)} objects in {name}")
         
         logger.info(f"Detected {len(out)} objects in {name}")
         return jsonify({"detections": out})

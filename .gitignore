@@ -52,6 +52,7 @@ ai-provider/uploads/*.png
 ai-provider/training.log
 *.pt
 !ai-provider/best.pt
+!ai-provider/best.onnx
 
 # Build outputs
 TestRunner/bin/
