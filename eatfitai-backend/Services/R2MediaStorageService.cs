@@ -59,7 +59,9 @@ namespace EatFitAI.API.Services
                 Key = objectKey,
                 InputStream = stream,
                 ContentType = upload.ContentType,
-                AutoCloseStream = false
+                AutoCloseStream = false,
+                DisablePayloadSigning = true,
+                DisableDefaultChecksumValidation = true
             };
             request.Headers.CacheControl = upload.CacheControl;
 

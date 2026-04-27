@@ -74,6 +74,8 @@ namespace EatFitAI.API.Tests.Unit.Services
             Assert.Equal("food-images/v2/thumb/42.webp", capturedRequest.Key);
             Assert.Equal("image/webp", capturedRequest.ContentType);
             Assert.Equal("public, max-age=31536000, immutable", capturedRequest.Headers.CacheControl);
+            Assert.True(capturedRequest.DisablePayloadSigning);
+            Assert.True(capturedRequest.DisableDefaultChecksumValidation);
         }
 
         private sealed class TestR2MediaStorageService : R2MediaStorageService
