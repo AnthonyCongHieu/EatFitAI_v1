@@ -792,21 +792,83 @@ def voice_parse():
         return {"error": "Internal server error"}, 500
 
 
-# ============== STT - Disabled trên cloud ==============
-# Whisper STT quá nặng (~1.5GB) cho Render free/starter tier
-# Nếu cần STT, nên dùng Google Cloud Speech-to-Text API
-ENABLE_STT = False
-WHISPER_AVAILABLE = False
-logger.info("ℹ️  Whisper STT disabled (cloud mode - dùng Google Speech API nếu cần)")
+# ============== STT - Gemini Audio API ==============
+# Thay Whisper bằng Gemini Audio API (nhẹ, không cần tải model 1.5GB)
+from stt_service import transcribe_audio as gemini_transcribe_audio, is_stt_available
+
+ENABLE_STT = True
+WHISPER_AVAILABLE = False  # Whisper vẫn disabled, dùng Gemini thay thế
+STT_ENGINE = "gemini-audio"
+logger.info("ℹ️  STT enabled via Gemini Audio API (no model download needed)")
 
 @app.route('/voice/transcribe', methods=['POST'])
 @require_internal_token
 def transcribe_audio():
-    """STT disabled trên production cloud"""
-    return {
-        "error": "Speech-to-Text không khả dụng trên cloud. Dùng Google Cloud Speech-to-Text API.",
-        "success": False
-    }, 503
+    """Chuyển audio → text bằng Gemini Audio API."""
+    # Kiểm tra Gemini pool có sẵn sàng
+    if not is_stt_available():
+        return {
+            "error": "Speech-to-Text tạm thời không khả dụng (Gemini pool exhausted).",
+            "success": False,
+            "engine": STT_ENGINE,
+        }, 503
+
+    # Kiểm tra file upload
+    if 'file' not in request.files:
+        return {"error": "Không tìm thấy file audio.", "success": False}, 400
+
+    audio_file = request.files['file']
+    if not audio_file.filename:
+        return {"error": "File audio không có tên.", "success": False}, 400
+
+    # Lưu file tạm
+    import tempfile
+    temp_path = None
+    try:
+        ext = os.path.splitext(audio_file.filename)[1].lower() or ".wav"
+        temp_fd, temp_path = tempfile.mkstemp(suffix=ext, dir="uploads")
+        os.close(temp_fd)
+        audio_file.save(temp_path)
+
+        file_size = os.path.getsize(temp_path)
+        logger.info("STT request: %s, %s bytes", audio_file.filename, file_size)
+
+        # Gọi Gemini transcribe
+        start_time = time.time()
+        text = gemini_transcribe_audio(temp_path)
+        duration = time.time() - start_time
+
+        if text:
+            return {
+                "text": text,
+                "language": "vi",
+                "duration": round(duration, 2),
+                "success": True,
+                "engine": STT_ENGINE,
+            }
+        else:
+            return {
+                "text": "",
+                "language": "vi",
+                "duration": round(duration, 2),
+                "success": False,
+                "error": "Không thể nhận dạng giọng nói. Hãy thử nói rõ hơn.",
+                "engine": STT_ENGINE,
+            }
+    except Exception as exc:
+        logger.error("STT transcribe error: %s", exc)
+        return {
+            "error": f"Lỗi xử lý audio: {type(exc).__name__}",
+            "success": False,
+            "engine": STT_ENGINE,
+        }, 500
+    finally:
+        # Dọn file tạm
+        if temp_path and os.path.exists(temp_path):
+            try:
+                os.unlink(temp_path)
+            except OSError:
+                pass
 
 
 if __name__ == "__main__":

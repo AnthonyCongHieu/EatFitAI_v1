@@ -3,7 +3,6 @@ import type { AxiosError } from 'axios';
 import { API_BASE_URL, assertBackendApiBaseUrl } from '../config/env';
 import apiClient, { getCurrentApiUrl } from './apiClient';
 import { captureError } from './errorTracking';
-import logger from '../utils/logger';
 
 const getApiBaseUrl = (): string => {
   const baseUrl = getCurrentApiUrl() ?? API_BASE_URL;
@@ -128,17 +127,49 @@ export interface TranscriptionResponse {
 
 export const voiceService = {
   async transcribeAudio(audioUri: string): Promise<TranscriptionResponse> {
-    if (__DEV__) {
-      logger.info('[voiceService] STT is disabled; skipping transcription for:', audioUri);
-    }
+    try {
+      // Validate API URL đã được cấu hình
+      getApiBaseUrl();
+      const formData = new FormData();
+      // React Native FormData cần file object đặc biệt
+      const fileName = audioUri.split('/').pop() || 'audio.wav';
+      const fileType = fileName.endsWith('.m4a')
+        ? 'audio/mp4'
+        : fileName.endsWith('.mp3')
+          ? 'audio/mp3'
+          : fileName.endsWith('.ogg')
+            ? 'audio/ogg'
+            : 'audio/wav';
 
-    return {
-      text: '',
-      language: 'vi',
-      duration: 0,
-      success: false,
-      error: 'Chức năng chuyển giọng nói hiện đang tạm tắt. Hãy nhập lệnh bằng text.',
-    };
+      formData.append('file', {
+        uri: audioUri,
+        name: fileName,
+        type: fileType,
+      } as unknown as Blob);
+
+      const response = await apiClient.post<TranscriptionResponse>(
+        '/api/voice/transcribe',
+        formData,
+        {
+          headers: { 'Content-Type': 'multipart/form-data' },
+          timeout: 45000, // Audio transcription có thể mất lâu hơn
+        },
+      );
+
+      return response.data;
+    } catch (error: unknown) {
+      captureError(error, 'voiceService.transcribeAudio', { audioUri });
+      return {
+        text: '',
+        language: 'vi',
+        duration: 0,
+        success: false,
+        error: getApiErrorMessage(
+          error,
+          'Không thể chuyển giọng nói thành văn bản. Hãy nhập lệnh bằng text.',
+        ),
+      };
+    }
   },
 
   async parseWithProvider(text: string): Promise<ParsedVoiceCommand> {

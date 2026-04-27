@@ -88,9 +88,6 @@ def ensure_gemini_service_available() -> Dict[str, Any]:
     pool.ensure_service_available()
     return pool.get_runtime_status()
 
-def _init_gemini():
-    """Khởi tạo Gemini client (lazy init)"""
-    return is_gemini_available()
 
 def is_gemini_available() -> bool:
     """Kiểm tra Gemini API có sẵn sàng không"""
