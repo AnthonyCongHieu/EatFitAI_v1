@@ -1,4 +1,3 @@
-using Amazon;
 using Amazon.Runtime;
 using Amazon.S3;
 using Amazon.S3.Model;
@@ -83,8 +82,7 @@ namespace EatFitAI.API.Services
             {
                 ServiceURL = $"https://{_r2Options.AccountId}.r2.cloudflarestorage.com",
                 ForcePathStyle = true,
-                AuthenticationRegion = "auto",
-                RegionEndpoint = RegionEndpoint.USEast1
+                AuthenticationRegion = "auto"
             };
 
             return new AmazonS3Client(credentials, config);
