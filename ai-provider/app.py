@@ -63,7 +63,7 @@ YOLO_IMAGE_SIZE = get_yolo_image_size()
 YOLO_RECOVERY_ENABLED = os.getenv("YOLO_RECOVERY_ENABLED", "true").strip().lower() not in {"0", "false", "no"}
 YOLO_RECOVERY_CONFIDENCE_THRESHOLD = float(os.getenv("YOLO_RECOVERY_CONFIDENCE_THRESHOLD", "0.05"))
 YOLO_RECOVERY_IMAGE_SIZE = int(os.getenv("YOLO_RECOVERY_IMAGE_SIZE", "320"))
-YOLO_RECOVERY_AUGMENT = os.getenv("YOLO_RECOVERY_AUGMENT", "true").strip().lower() not in {"0", "false", "no"}
+YOLO_RECOVERY_AUGMENT = os.getenv("YOLO_RECOVERY_AUGMENT", "false").strip().lower() not in {"0", "false", "no"}
 YOLO_RECOVERY_LABEL_MIN_CONFIDENCE: Dict[str, float] = {
     "beef": 0.05,
     "chicken": 0.05,

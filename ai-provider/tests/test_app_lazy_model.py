@@ -94,7 +94,7 @@ class LazyYoloModelTests(unittest.TestCase):
         self.assertEqual(payload["detections"], [{"label": "beef", "confidence": 0.07}])
         self.assertEqual(calls[0]["conf"], app_module.YOLO_CONFIDENCE_THRESHOLD)
         self.assertEqual(calls[1]["conf"], app_module.YOLO_RECOVERY_CONFIDENCE_THRESHOLD)
-        self.assertTrue(calls[1]["augment"])
+        self.assertEqual(calls[1]["augment"], app_module.YOLO_RECOVERY_AUGMENT)
 
     def test_detect_does_not_run_recovery_when_primary_detects_food(self):
         calls = []
