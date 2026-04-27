@@ -177,11 +177,11 @@ if (-not $apiBaseUrl) {
 }
 $env:EXPO_PUBLIC_API_BASE_URL = $apiBaseUrl
 
-$supabaseUrl = Resolve-BuildValue -Name 'EXPO_PUBLIC_SUPABASE_URL' -ProfileEnv $previewProfileEnv
-if (-not $supabaseUrl) {
-    throw 'EXPO_PUBLIC_SUPABASE_URL is missing for the preview release build.'
+$mediaPublicBaseUrl = Resolve-BuildValue -Name 'EXPO_PUBLIC_MEDIA_PUBLIC_BASE_URL' -ProfileEnv $previewProfileEnv
+if (-not $mediaPublicBaseUrl) {
+    throw 'EXPO_PUBLIC_MEDIA_PUBLIC_BASE_URL is missing for the preview release build.'
 }
-$env:EXPO_PUBLIC_SUPABASE_URL = $supabaseUrl
+$env:EXPO_PUBLIC_MEDIA_PUBLIC_BASE_URL = $mediaPublicBaseUrl
 
 $googleWebClientId = Resolve-BuildValue -Name 'EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID' -ProfileEnv $previewProfileEnv
 if (-not $googleWebClientId) {

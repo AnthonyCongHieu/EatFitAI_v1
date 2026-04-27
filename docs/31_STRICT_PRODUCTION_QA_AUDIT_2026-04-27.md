@@ -228,6 +228,7 @@ Follow-up code fix applied in repo:
 | `eatfitai-backend/Controllers/AdminController.cs` | Normalizes admin user avatar URL responses. |
 | `eatfitai-backend/Controllers/AdminMealController.cs` | Normalizes admin meal photo URL responses. |
 | `eatfitai-mobile/src/utils/imageHelpers.ts` | Replaces mobile Supabase URL construction with media public base/R2 URL construction and rewrites legacy Supabase object URLs. |
+| `eatfitai-mobile/app.config.js`, `eas.json`, `scripts/build-android-preview.ps1`, `scripts/validate-release-config.js`, `scripts/automation-doctor.js` | Preview/production build/release config now requires `EXPO_PUBLIC_MEDIA_PUBLIC_BASE_URL` instead of `EXPO_PUBLIC_SUPABASE_URL`. |
 
 Strict live status after code fix: **not yet closed live** until backend redeploy is done and these API samples return `0` `*.supabase.co/storage/v1/object` URLs. Existing Supabase dashboard counters are cumulative by billing cycle, so the graph will not drop immediately even after correct deploy.
 

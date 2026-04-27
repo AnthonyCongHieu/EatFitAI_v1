@@ -182,7 +182,7 @@ function readProductionEnvStatus() {
   const profile = readBuildProfile();
   const requiredVars = [
     'EXPO_PUBLIC_API_BASE_URL',
-    'EXPO_PUBLIC_SUPABASE_URL',
+    'EXPO_PUBLIC_MEDIA_PUBLIC_BASE_URL',
     'EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID',
     'EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID',
   ];

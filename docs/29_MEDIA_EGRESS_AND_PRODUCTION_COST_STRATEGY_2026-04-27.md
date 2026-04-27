@@ -39,6 +39,7 @@ Follow-up fix trong repo sau real-device QA:
 - Thêm `IMediaUrlResolver`/`MediaUrlResolver` để mọi response backend có thể chuẩn hóa legacy Supabase public Storage URL sang `Media__PublicBaseUrl` khi object key thuộc `user-food/` hoặc `food-images/`.
 - Áp dụng resolver cho `UserFoodItemService`, `FoodService`, `FavoritesController`, `CustomDishService`, `MealDiaryService`, `AiFoodMapService`, `UserService`, `AdminController`, và `AdminMealController`.
 - Mobile `imageHelpers` không còn tự dựng `*.supabase.co/storage/v1/object/public/...` từ thumbnail tương đối; image runtime dùng `EXPO_PUBLIC_MEDIA_PUBLIC_BASE_URL`/R2 và rewrite legacy Supabase Storage URL qua media base khi object key thuộc `food-images/` hoặc `user-food/`.
+- Android preview/production build env trong `app.config.js`, `eas.json`, `scripts/build-android-preview.ps1`, `scripts/validate-release-config.js`, và `scripts/automation-doctor.js` đã đổi sang `EXPO_PUBLIC_MEDIA_PUBLIC_BASE_URL`; không còn bắt buộc `EXPO_PUBLIC_SUPABASE_URL` ở build/release lane này.
 - Việc này đóng đường API trả URL Supabase cho user-food/search/recent/favorites/custom-dish/diary ở tầng serialization. Tuy nhiên, live production chỉ được coi là đóng khi backend đã redeploy và API readback thật cho các endpoint trên trả `0` URL `*.supabase.co/storage/v1/object`.
 - Nếu object cũ chưa có trên R2, cần chạy migration/upload dữ liệu tương ứng; không được chỉ đổi URL rồi bỏ qua kiểm tra ảnh 200 OK.
 
