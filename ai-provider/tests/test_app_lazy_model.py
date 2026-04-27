@@ -1,5 +1,4 @@
 import io
-from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
 
@@ -49,7 +48,6 @@ class LazyYoloModelTests(unittest.TestCase):
 
         with (
             patch.object(app_module, "_is_internal_request_authorized", return_value=True),
-            patch.object(app_module, "_detect_with_gemini_vision", return_value=None),
             patch.object(app_module, "_load_yolo_model", return_value=None),
         ):
             response = self.client.post(
@@ -62,53 +60,6 @@ class LazyYoloModelTests(unittest.TestCase):
         payload = response.get_json()
         self.assertEqual(payload["error"], "model unavailable")
         self.assertEqual(payload["detail"], "model boot failed")
-
-    def test_detect_uses_gemini_vision_before_yolo_model(self):
-        with (
-            patch.object(app_module, "_is_internal_request_authorized", return_value=True),
-            patch.object(
-                app_module,
-                "_detect_with_gemini_vision",
-                return_value=[{"label": "raw chicken", "confidence": 0.93}],
-            ),
-            patch.object(
-                app_module,
-                "_load_yolo_model",
-                side_effect=AssertionError("YOLO should not load when Gemini vision detects food"),
-            ),
-        ):
-            response = self.client.post(
-                "/detect",
-                data={"file": (io.BytesIO(b"image-bytes"), "chicken.jpg")},
-                content_type="multipart/form-data",
-            )
-
-        self.assertEqual(response.status_code, 200)
-        payload = response.get_json()
-        self.assertEqual(payload["detections"], [{"label": "raw chicken", "confidence": 0.93}])
-
-    def test_detect_falls_back_to_yolo_when_gemini_returns_empty(self):
-        fake_model = lambda *args, **kwargs: [
-            SimpleNamespace(
-                names={0: "banana"},
-                boxes=[SimpleNamespace(cls=0, conf=0.88)],
-            )
-        ]
-
-        with (
-            patch.object(app_module, "_is_internal_request_authorized", return_value=True),
-            patch.object(app_module, "_detect_with_gemini_vision", return_value=[]),
-            patch.object(app_module, "_load_yolo_model", return_value=fake_model),
-        ):
-            response = self.client.post(
-                "/detect",
-                data={"file": (io.BytesIO(b"image-bytes"), "banana.jpg")},
-                content_type="multipart/form-data",
-            )
-
-        self.assertEqual(response.status_code, 200)
-        payload = response.get_json()
-        self.assertEqual(payload["detections"], [{"label": "banana", "confidence": 0.88}])
 
 
 if __name__ == "__main__":
