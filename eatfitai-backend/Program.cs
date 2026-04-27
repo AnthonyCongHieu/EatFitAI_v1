@@ -754,6 +754,7 @@ builder.Services.Configure<AdminGovernanceOptions>(builder.Configuration.GetSect
 builder.Services.AddHttpClient<IEmailService, EmailService>();
 builder.Services.AddScoped<ISupabaseStorageService, SupabaseStorageService>();
 builder.Services.AddScoped<IMediaImageProcessor, MediaImageProcessor>();
+builder.Services.AddScoped<IMediaUrlResolver, MediaUrlResolver>();
 builder.Services.AddScoped<IMediaStorageService>(services =>
 {
     var mediaOptions = services.GetRequiredService<IOptions<MediaOptions>>().Value;

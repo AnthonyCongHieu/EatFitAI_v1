@@ -20,12 +20,18 @@ public class AdminMealController : ControllerBase
     private readonly ApplicationDbContext _context;
     private readonly IAdminRealtimeEventBus _eventBus;
     private readonly IAdminAuditService _auditService;
+    private readonly IMediaUrlResolver _mediaUrlResolver;
 
-    public AdminMealController(ApplicationDbContext context, IAdminRealtimeEventBus eventBus, IAdminAuditService auditService)
+    public AdminMealController(
+        ApplicationDbContext context,
+        IAdminRealtimeEventBus eventBus,
+        IAdminAuditService auditService,
+        IMediaUrlResolver mediaUrlResolver)
     {
         _context = context;
         _eventBus = eventBus;
         _auditService = auditService;
+        _mediaUrlResolver = mediaUrlResolver;
     }
 
     [HttpGet]
@@ -92,7 +98,7 @@ public class AdminMealController : ControllerBase
             Carb = m.Carb,
             Fat = m.Fat,
             SourceMethod = m.SourceMethod,
-            PhotoUrl = m.PhotoUrl,
+            PhotoUrl = _mediaUrlResolver.NormalizePublicUrl(m.PhotoUrl),
             Note = m.Note,
             CreatedAt = m.CreatedAt,
             IsDeleted = m.IsDeleted

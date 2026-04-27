@@ -85,7 +85,17 @@ namespace EatFitAI.API.Controllers
             if (cachedResult != null)
             {
                 _logger.LogInformation("Returning cached detection for user {UserId}, hash: {Hash}", userId, imageHash);
-                return Ok(cachedResult);
+                var refreshedCachedResult = await RefreshVisionMappingAsync(cachedResult, HttpContext.RequestAborted);
+                try
+                {
+                    await _visionCacheService.CacheDetectionAsync(imageHash, refreshedCachedResult, userId, HttpContext.RequestAborted);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Failed to refresh cached detection mapping");
+                }
+
+                return Ok(refreshedCachedResult);
             }
 
             var aiStatus = _aiHealthService.GetStatus();
@@ -948,6 +958,36 @@ namespace EatFitAI.API.Controllers
             }
 
             return DateTimeOffset.UtcNow - aiStatus.LastCheckedAt.Value <= GetVisionHealthGateFreshnessWindow();
+        }
+
+        private async Task<EatFitAI.API.DTOs.AI.VisionDetectResultDto> RefreshVisionMappingAsync(
+            EatFitAI.API.DTOs.AI.VisionDetectResultDto cachedResult,
+            CancellationToken cancellationToken)
+        {
+            var detections = cachedResult.Items
+                .Where(item => !string.IsNullOrWhiteSpace(item.Label))
+                .Select(item => new EatFitAI.API.DTOs.AI.VisionDetectionDto
+                {
+                    Label = item.Label,
+                    Confidence = item.Confidence
+                })
+                .ToList();
+
+            if (detections.Count == 0)
+            {
+                return cachedResult;
+            }
+
+            var items = await _aiFoodMapService.MapDetectionsAsync(detections, cancellationToken);
+            return new EatFitAI.API.DTOs.AI.VisionDetectResultDto
+            {
+                Items = items,
+                UnmappedLabels = items
+                    .Where(item => !item.IsMatched)
+                    .Select(item => item.Label)
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .ToList()
+            };
         }
 
         private TimeSpan GetVisionHealthGateFreshnessWindow()

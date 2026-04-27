@@ -19,6 +19,7 @@ namespace EatFitAI.API.Services
         private readonly IMapper _mapper;
         private readonly IMediaImageProcessor _mediaImageProcessor;
         private readonly IMediaStorageService _mediaStorageService;
+        private readonly IMediaUrlResolver _mediaUrlResolver;
         private readonly IWebHostEnvironment _environment;
         private readonly ILogger<UserFoodItemService> _logger;
 
@@ -28,6 +29,7 @@ namespace EatFitAI.API.Services
             IMapper mapper,
             IMediaImageProcessor mediaImageProcessor,
             IMediaStorageService mediaStorageService,
+            IMediaUrlResolver mediaUrlResolver,
             IWebHostEnvironment environment,
             ILogger<UserFoodItemService> logger)
         {
@@ -36,6 +38,7 @@ namespace EatFitAI.API.Services
             _mapper = mapper;
             _mediaImageProcessor = mediaImageProcessor;
             _mediaStorageService = mediaStorageService;
+            _mediaUrlResolver = mediaUrlResolver;
             _environment = environment;
             _logger = logger;
         }
@@ -48,7 +51,7 @@ namespace EatFitAI.API.Services
 
             var items = await _repo.SearchByUserAsync(userId, search, skip, pageSize);
             var total = await _repo.CountByUserAsync(userId, search);
-            return (_mapper.Map<IEnumerable<UserFoodItemDto>>(items), total);
+            return (_mapper.Map<IEnumerable<UserFoodItemDto>>(items).Select(NormalizeMediaUrls).ToList(), total);
         }
 
         public async Task<UserFoodItemDto> GetAsync(Guid userId, int id)
@@ -57,7 +60,7 @@ namespace EatFitAI.API.Services
             if (entity == null)
                 throw new KeyNotFoundException("Không tìm thấy món ăn tự tạo");
 
-            return _mapper.Map<UserFoodItemDto>(entity);
+            return NormalizeMediaUrls(_mapper.Map<UserFoodItemDto>(entity));
         }
 
         public async Task<UserFoodItemDto> CreateAsync(Guid userId, CreateUserFoodItemRequest request, string? uploadsRoot)
@@ -93,7 +96,7 @@ namespace EatFitAI.API.Services
 
                 await _context.SaveChangesAsync();
 
-                return _mapper.Map<UserFoodItemDto>(existingItem);
+                return NormalizeMediaUrls(_mapper.Map<UserFoodItemDto>(existingItem));
             }
 
             // Chưa tồn tại → tạo mới
@@ -115,7 +118,7 @@ namespace EatFitAI.API.Services
             await _context.UserFoodItems.AddAsync(entity);
             await _context.SaveChangesAsync();
 
-            return _mapper.Map<UserFoodItemDto>(entity);
+            return NormalizeMediaUrls(_mapper.Map<UserFoodItemDto>(entity));
         }
 
         public async Task<UserFoodItemDto> UpdateAsync(Guid userId, int id, UpdateUserFoodItemRequest request, string? uploadsRoot)
@@ -144,7 +147,7 @@ namespace EatFitAI.API.Services
 
             await _context.SaveChangesAsync();
 
-            return _mapper.Map<UserFoodItemDto>(entity);
+            return NormalizeMediaUrls(_mapper.Map<UserFoodItemDto>(entity));
         }
 
         public async Task DeleteAsync(Guid userId, int id)
@@ -165,6 +168,13 @@ namespace EatFitAI.API.Services
             {
                 throw new ArgumentException("Đơn vị phải là 'g' hoặc 'ml'");
             }
+        }
+
+        private UserFoodItemDto NormalizeMediaUrls(UserFoodItemDto dto)
+        {
+            dto.ThumbnailUrl = _mediaUrlResolver.NormalizePublicUrl(dto.ThumbnailUrl);
+            dto.ImageVariants = MediaVariantHelper.FromThumbUrl(dto.ThumbnailUrl);
+            return dto;
         }
 
         private async Task<string> SaveImageAsync(IFormFile file, Guid userId, string? uploadsRoot)

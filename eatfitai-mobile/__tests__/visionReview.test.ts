@@ -26,6 +26,10 @@ describe('visionReview', () => {
     const matched = makeMappedFood({
       label: 'Chicken breast',
       foodItemId: 1,
+      caloriesPer100g: 165,
+      proteinPer100g: 31,
+      carbPer100g: 0,
+      fatPer100g: 3.6,
       isMatched: true,
     });
     const unresolved = makeMappedFood({
@@ -46,12 +50,18 @@ describe('visionReview', () => {
         label: 'Rice',
         foodItemId: 1,
         caloriesPer100g: 130,
+        proteinPer100g: 2.7,
+        carbPer100g: 28,
+        fatPer100g: 0.3,
         isMatched: true,
       }),
       makeMappedFood({
         label: 'Fish',
         foodItemId: 2,
         caloriesPer100g: 200,
+        proteinPer100g: 20,
+        carbPer100g: 0,
+        fatPer100g: 12,
         isMatched: true,
       }),
       makeMappedFood({
@@ -75,6 +85,10 @@ describe('visionReview', () => {
       makeMappedFood({
         label: 'Mapped food',
         foodItemId: 1,
+        caloriesPer100g: 165,
+        proteinPer100g: 31,
+        carbPer100g: 0,
+        fatPer100g: 3.6,
         isMatched: true,
       }),
       makeMappedFood({

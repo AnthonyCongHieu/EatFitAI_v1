@@ -3,6 +3,7 @@ using EatFitAI.API.DTOs.Food;
 using EatFitAI.API.DbScaffold.Models;
 using EatFitAI.API.Repositories.Interfaces;
 using EatFitAI.API.Services;
+using EatFitAI.API.Services.Interfaces;
 using AutoMapper;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -22,6 +23,7 @@ namespace EatFitAI.API.Tests.Unit.Services
         private readonly EatFitAIDbContext _context;
         private readonly Mock<IMapper> _mapperMock;
         private readonly Mock<IHttpClientFactory> _httpClientFactoryMock;
+        private readonly Mock<IMediaUrlResolver> _mediaUrlResolverMock;
         private readonly IConfiguration _configuration;
         private readonly Mock<ILogger<FoodService>> _loggerMock;
         private readonly FoodService _foodService;
@@ -32,6 +34,10 @@ namespace EatFitAI.API.Tests.Unit.Services
             _userFoodItemRepositoryMock = new Mock<IUserFoodItemRepository>();
             _mapperMock = new Mock<IMapper>();
             _httpClientFactoryMock = new Mock<IHttpClientFactory>();
+            _mediaUrlResolverMock = new Mock<IMediaUrlResolver>();
+            _mediaUrlResolverMock
+                .Setup(r => r.NormalizePublicUrl(It.IsAny<string?>()))
+                .Returns((string? url) => url);
             _configuration = new ConfigurationBuilder().AddInMemoryCollection().Build();
             _loggerMock = new Mock<ILogger<FoodService>>();
 
@@ -49,6 +55,7 @@ namespace EatFitAI.API.Tests.Unit.Services
                 _mapperMock.Object,
                 _httpClientFactoryMock.Object,
                 _configuration,
+                _mediaUrlResolverMock.Object,
                 _loggerMock.Object);
         }
 
@@ -355,6 +362,40 @@ namespace EatFitAI.API.Tests.Unit.Services
             Assert.Equal(2, resultList.Count);
             Assert.Contains(resultList, r => r.Source == "catalog");
             Assert.Contains(resultList, r => r.Source == "user");
+        }
+
+        [Fact]
+        public async Task SearchAllAsync_UserFoodThumbnail_RewritesSupabaseStorageUrl()
+        {
+            var searchTerm = "beef";
+            var userId = Guid.NewGuid();
+            const string supabaseThumb =
+                "https://bjlmndmafrajjysenpbm.supabase.co/storage/v1/object/public/user-food/v2/user-1/thumb/beef.webp";
+            const string mediaThumb =
+                "https://media.example.com/user-food/v2/user-1/thumb/beef.webp";
+
+            _foodItemRepositoryMock.Setup(r => r.SearchByNameAsync(searchTerm, 20))
+                .ReturnsAsync(new List<FoodItem>());
+            _userFoodItemRepositoryMock.Setup(r => r.SearchByUserAsync(userId, searchTerm, 0, 20))
+                .ReturnsAsync(new List<UserFoodItem>
+                {
+                    new UserFoodItem
+                    {
+                        UserFoodItemId = 7,
+                        FoodName = "Beef test",
+                        ThumbnailUrl = supabaseThumb,
+                        UnitType = "g"
+                    }
+                });
+            _mediaUrlResolverMock.Setup(r => r.NormalizePublicUrl(supabaseThumb))
+                .Returns(mediaThumb);
+
+            var result = (await _foodService.SearchAllAsync(searchTerm, userId, 20)).Single();
+
+            Assert.Equal(mediaThumb, result.ThumbnailUrl);
+            Assert.DoesNotContain("supabase.co", result.ThumbnailUrl, StringComparison.OrdinalIgnoreCase);
+            Assert.NotNull(result.ImageVariants);
+            Assert.Equal("https://media.example.com/user-food/v2/user-1/medium/beef.webp", result.ImageVariants!.MediumUrl);
         }
 
         [Fact]

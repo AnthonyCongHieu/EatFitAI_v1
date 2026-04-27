@@ -20,6 +20,7 @@ namespace EatFitAI.API.Services
         private readonly IMapper _mapper;
         private readonly IHttpClientFactory _httpClientFactory;
         private readonly IConfiguration _configuration;
+        private readonly IMediaUrlResolver _mediaUrlResolver;
         private readonly ILogger<FoodService> _logger;
 
         public FoodService(
@@ -29,6 +30,7 @@ namespace EatFitAI.API.Services
             IMapper mapper,
             IHttpClientFactory httpClientFactory,
             IConfiguration configuration,
+            IMediaUrlResolver mediaUrlResolver,
             ILogger<FoodService> logger)
         {
             _foodItemRepository = foodItemRepository;
@@ -37,13 +39,14 @@ namespace EatFitAI.API.Services
             _mapper = mapper;
             _httpClientFactory = httpClientFactory;
             _configuration = configuration;
+            _mediaUrlResolver = mediaUrlResolver;
             _logger = logger;
         }
 
         public async Task<IEnumerable<FoodItemDto>> SearchFoodItemsAsync(string searchTerm, int limit = 50)
         {
             var foodItems = await _foodItemRepository.SearchByNameAsync(searchTerm, limit);
-            return _mapper.Map<IEnumerable<FoodItemDto>>(foodItems);
+            return _mapper.Map<IEnumerable<FoodItemDto>>(foodItems).Select(NormalizeFoodItemDto).ToList();
         }
 
         public async Task<(FoodItemDto FoodItem, IEnumerable<FoodServingDto> Servings)> GetFoodItemWithServingsAsync(int id)
@@ -54,7 +57,7 @@ namespace EatFitAI.API.Services
                 throw new KeyNotFoundException("Food item not found");
             }
 
-            var foodItemDto = _mapper.Map<FoodItemDto>(foodItem);
+            var foodItemDto = NormalizeFoodItemDto(_mapper.Map<FoodItemDto>(foodItem));
             var servingDtos = _mapper.Map<IEnumerable<FoodServingDto>>(servings);
 
             return (foodItemDto, servingDtos);
@@ -90,7 +93,7 @@ namespace EatFitAI.API.Services
                 {
                     Barcode = normalizedBarcode,
                     Source = "catalog",
-                    FoodItem = _mapper.Map<FoodItemDto>(foodItem),
+                    FoodItem = NormalizeFoodItemDto(_mapper.Map<FoodItemDto>(foodItem)),
                     Servings = _mapper.Map<IEnumerable<FoodServingDto>>(servings),
                 };
             }
@@ -213,6 +216,7 @@ namespace EatFitAI.API.Services
             var combined = catalogResults.Concat(userResults)
                 .OrderBy(x => x.FoodName)
                 .Take(limit)
+                .Select(NormalizeSearchResult)
                 .ToList();
 
             return combined;
@@ -287,6 +291,7 @@ namespace EatFitAI.API.Services
                 .ThenByDescending(item => item.UsedCount)
                 .Take(normalizedLimit)
                 .Select(item => item.ToDto())
+                .Select(NormalizeSearchResult)
                 .ToList();
         }
 
@@ -446,6 +451,20 @@ namespace EatFitAI.API.Services
                     .Trim()
                     .Where(char.IsLetterOrDigit)
                     .ToArray());
+        }
+
+        private FoodItemDto NormalizeFoodItemDto(FoodItemDto dto)
+        {
+            dto.ThumbNail = _mediaUrlResolver.NormalizePublicUrl(dto.ThumbNail);
+            dto.ImageVariants = MediaVariantHelper.FromThumbUrl(dto.ThumbNail);
+            return dto;
+        }
+
+        private FoodSearchResultDto NormalizeSearchResult(FoodSearchResultDto dto)
+        {
+            dto.ThumbnailUrl = _mediaUrlResolver.NormalizePublicUrl(dto.ThumbnailUrl);
+            dto.ImageVariants = MediaVariantHelper.FromThumbUrl(dto.ThumbnailUrl);
+            return dto;
         }
 
         private sealed class RecentFoodProjection

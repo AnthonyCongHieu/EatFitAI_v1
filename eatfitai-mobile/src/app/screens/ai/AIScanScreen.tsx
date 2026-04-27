@@ -58,6 +58,7 @@ import { IngredientBasketSheet } from '../../../components/scan/IngredientBasket
 import { useIngredientBasketStore } from '../../../store/useIngredientBasketStore';
 import { translateIngredient } from '../../../utils/translate';
 import { TEST_IDS } from '../../../testing/testIds';
+import { hasUsableVisionNutrition } from '../../../utils/visionReview';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 type CameraViewInstance = InstanceType<typeof CameraView>;
@@ -471,7 +472,11 @@ const AIScanScreen: React.FC = () => {
 
     const topItem = [...detectionResult.items]
       .sort((a, b) => b.confidence - a.confidence)[0];
-    if (!topItem?.foodItemId || Number(topItem.foodItemId) <= 0) {
+    if (
+      !topItem?.foodItemId ||
+      Number(topItem.foodItemId) <= 0 ||
+      !hasUsableVisionNutrition(topItem)
+    ) {
       // Navigate to detailed add screen
       navigation.navigate('AddMealFromVision', {
         imageUri: capturedUri,

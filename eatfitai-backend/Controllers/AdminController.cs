@@ -114,19 +114,22 @@ public class AdminController : ControllerBase
     private readonly IAdminRuntimeSnapshotCache _runtimeSnapshotCache;
     private readonly IAdminRealtimeEventBus _eventBus;
     private readonly IAdminAuditService _auditService;
+    private readonly IMediaUrlResolver _mediaUrlResolver;
 
     public AdminController(
         ApplicationDbContext context,
         IHttpClientFactory httpClientFactory,
         IAdminRuntimeSnapshotCache runtimeSnapshotCache,
         IAdminRealtimeEventBus eventBus,
-        IAdminAuditService auditService)
+        IAdminAuditService auditService,
+        IMediaUrlResolver mediaUrlResolver)
     {
         _context = context;
         _httpClientFactory = httpClientFactory;
         _runtimeSnapshotCache = runtimeSnapshotCache;
         _eventBus = eventBus;
         _auditService = auditService;
+        _mediaUrlResolver = mediaUrlResolver;
     }
 
     [HttpGet("session")]
@@ -326,7 +329,7 @@ public class AdminController : ControllerBase
             LastActive = u.CreatedAt.ToString("MMM dd, yyyy"),
             TotalMealsLogged = mealsLogged,
             OnboardingCompleted = u.OnboardingCompleted,
-            AvatarUrl = u.AvatarUrl,
+            AvatarUrl = _mediaUrlResolver.NormalizePublicUrl(u.AvatarUrl),
             CreatedAt = u.CreatedAt,
             SuspendedAt = accessControl?.SuspendedAt,
             SuspendedReason = accessControl?.SuspendedReason,
@@ -427,7 +430,7 @@ public class AdminController : ControllerBase
                 LastActive = user.CreatedAt.ToString("MMM dd, yyyy"),
                 TotalMealsLogged = mealsLogged,
                 OnboardingCompleted = user.OnboardingCompleted,
-                AvatarUrl = user.AvatarUrl,
+                AvatarUrl = _mediaUrlResolver.NormalizePublicUrl(user.AvatarUrl),
                 CreatedAt = user.CreatedAt,
                 SuspendedAt = accessControl?.SuspendedAt,
                 SuspendedReason = accessControl?.SuspendedReason,

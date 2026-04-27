@@ -22,17 +22,20 @@ namespace EatFitAI.API.Services
         private readonly EatFitAIDbContext _context;
         private readonly IMapper _mapper;
         private readonly IStreakService _streakService;
+        private readonly IMediaUrlResolver _mediaUrlResolver;
 
         public MealDiaryService(
             IMealDiaryRepository mealDiaryRepository,
             EatFitAIDbContext context,
             IMapper mapper,
-            IStreakService streakService)
+            IStreakService streakService,
+            IMediaUrlResolver mediaUrlResolver)
         {
             _mealDiaryRepository = mealDiaryRepository;
             _context = context;
             _mapper = mapper;
             _streakService = streakService;
+            _mediaUrlResolver = mediaUrlResolver;
         }
 
         public async Task<IEnumerable<MealDiaryDto>> GetUserMealDiariesAsync(Guid userId, DateTime? date = null)
@@ -40,7 +43,7 @@ namespace EatFitAI.API.Services
             var mealDiaries = await _mealDiaryRepository.GetByUserIdAsync(userId, date);
             var dtos = _mapper.Map<List<MealDiaryDto>>(mealDiaries);
             await PopulateUserFoodNamesAsync(userId, mealDiaries, dtos);
-            return dtos;
+            return NormalizeMediaUrls(dtos);
         }
 
         public async Task<MealDiaryDto> GetMealDiaryByIdAsync(int id, Guid userId)
@@ -53,7 +56,7 @@ namespace EatFitAI.API.Services
 
             var dto = _mapper.Map<MealDiaryDto>(mealDiary);
             await PopulateUserFoodNamesAsync(userId, new[] { mealDiary }, new[] { dto });
-            return dto;
+            return NormalizeMediaUrls(dto);
         }
 
         public async Task<MealDiaryDto> CreateMealDiaryAsync(Guid userId, CreateMealDiaryRequest request)
@@ -349,7 +352,7 @@ namespace EatFitAI.API.Services
 
             var dto = _mapper.Map<MealDiaryDto>(mealDiary);
             await PopulateUserFoodNamesAsync(userId, new[] { mealDiary }, new[] { dto });
-            return dto;
+            return NormalizeMediaUrls(dto);
         }
 
         private async Task<List<MealDiaryDto>> GetMappedMealDiariesAsync(Guid userId, IReadOnlyCollection<int> mealDiaryIds)
@@ -374,6 +377,23 @@ namespace EatFitAI.API.Services
 
             var dtos = _mapper.Map<List<MealDiaryDto>>(mealDiaries);
             await PopulateUserFoodNamesAsync(userId, mealDiaries, dtos);
+            return NormalizeMediaUrls(dtos);
+        }
+
+        private MealDiaryDto NormalizeMediaUrls(MealDiaryDto dto)
+        {
+            dto.FoodItemThumbNail = _mediaUrlResolver.NormalizePublicUrl(dto.FoodItemThumbNail);
+            dto.PhotoUrl = _mediaUrlResolver.NormalizePublicUrl(dto.PhotoUrl);
+            return dto;
+        }
+
+        private List<MealDiaryDto> NormalizeMediaUrls(List<MealDiaryDto> dtos)
+        {
+            foreach (var dto in dtos)
+            {
+                NormalizeMediaUrls(dto);
+            }
+
             return dtos;
         }
 
@@ -604,19 +624,20 @@ namespace EatFitAI.API.Services
             var userFoodItemIds = pairs.Select(pair => pair.UserFoodItemId).Distinct().ToList();
             var userFoods = await _context.UserFoodItems
                 .Where(item => item.UserId == userId && userFoodItemIds.Contains(item.UserFoodItemId))
-                .Select(item => new { item.UserFoodItemId, item.FoodName })
+                .Select(item => new { item.UserFoodItemId, item.FoodName, item.ThumbnailUrl })
                 .ToListAsync();
-            var nameById = userFoods.ToDictionary(item => item.UserFoodItemId, item => item.FoodName);
+            var byId = userFoods.ToDictionary(item => item.UserFoodItemId);
 
             var nameByDiaryId = pairs
-                .Where(pair => nameById.ContainsKey(pair.UserFoodItemId))
-                .ToDictionary(pair => pair.MealDiaryId, pair => nameById[pair.UserFoodItemId]);
+                .Where(pair => byId.ContainsKey(pair.UserFoodItemId))
+                .ToDictionary(pair => pair.MealDiaryId, pair => byId[pair.UserFoodItemId]);
 
             foreach (var dto in dtos)
             {
-                if (nameByDiaryId.TryGetValue(dto.MealDiaryId, out var name))
+                if (nameByDiaryId.TryGetValue(dto.MealDiaryId, out var userFood))
                 {
-                    dto.FoodItemName = name;
+                    dto.FoodItemName = userFood.FoodName;
+                    dto.FoodItemThumbNail = userFood.ThumbnailUrl;
                 }
             }
         }

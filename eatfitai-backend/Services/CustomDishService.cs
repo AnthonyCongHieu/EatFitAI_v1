@@ -11,11 +11,16 @@ namespace EatFitAI.API.Services
     {
         private readonly EatFitAIDbContext _context;
         private readonly IMealDiaryService _mealDiaryService;
+        private readonly IMediaUrlResolver _mediaUrlResolver;
 
-        public CustomDishService(EatFitAIDbContext context, IMealDiaryService mealDiaryService)
+        public CustomDishService(
+            EatFitAIDbContext context,
+            IMealDiaryService mealDiaryService,
+            IMediaUrlResolver mediaUrlResolver)
         {
             _context = context;
             _mealDiaryService = mealDiaryService;
+            _mediaUrlResolver = mediaUrlResolver;
         }
 
         public async Task<IEnumerable<CustomDishSummaryDto>> GetCustomDishesAsync(Guid userId)
@@ -251,7 +256,7 @@ namespace EatFitAI.API.Services
             }
         }
 
-        private static CustomDishResponseDto MapResponse(UserDish userDish)
+        private CustomDishResponseDto MapResponse(UserDish userDish)
         {
             return new CustomDishResponseDto
             {
@@ -271,7 +276,7 @@ namespace EatFitAI.API.Services
                         ProteinPer100g = ingredient.FoodItem?.ProteinPer100g,
                         CarbPer100g = ingredient.FoodItem?.CarbPer100g,
                         FatPer100g = ingredient.FoodItem?.FatPer100g,
-                        ThumbnailUrl = ingredient.FoodItem?.ThumbNail
+                        ThumbnailUrl = _mediaUrlResolver.NormalizePublicUrl(ingredient.FoodItem?.ThumbNail)
                     })
                     .ToList()
             };

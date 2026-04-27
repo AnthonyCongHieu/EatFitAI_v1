@@ -29,6 +29,7 @@ namespace EatFitAI.API.Services
         private readonly IMapper _mapper;
         private readonly IMediaImageProcessor _mediaImageProcessor;
         private readonly IMediaStorageService _mediaStorageService;
+        private readonly IMediaUrlResolver _mediaUrlResolver;
         private readonly IHostEnvironment _environment;
         private readonly SupabaseSchemaBootstrapper _schemaBootstrapper;
         private readonly ILogger<UserService> _logger;
@@ -40,6 +41,7 @@ namespace EatFitAI.API.Services
             IMapper mapper,
             IMediaImageProcessor mediaImageProcessor,
             IMediaStorageService mediaStorageService,
+            IMediaUrlResolver mediaUrlResolver,
             IHostEnvironment environment,
             SupabaseSchemaBootstrapper schemaBootstrapper,
             ILogger<UserService> logger)
@@ -50,6 +52,7 @@ namespace EatFitAI.API.Services
             _mapper = mapper;
             _mediaImageProcessor = mediaImageProcessor;
             _mediaStorageService = mediaStorageService;
+            _mediaUrlResolver = mediaUrlResolver;
             _environment = environment;
             _schemaBootstrapper = schemaBootstrapper;
             _logger = logger;
@@ -161,6 +164,7 @@ namespace EatFitAI.API.Services
             userProfile.TargetWeightKg = user.TargetWeightKg;
             userProfile.CurrentStreak = user.CurrentStreak;
             userProfile.LongestStreak = user.LongestStreak;
+            userProfile.AvatarUrl = _mediaUrlResolver.NormalizePublicUrl(userProfile.AvatarUrl);
 
             return userProfile;
         }
@@ -173,7 +177,7 @@ namespace EatFitAI.API.Services
             if (userProfileDto.DisplayName != null)
                 user.DisplayName = userProfileDto.DisplayName;
             if (userProfileDto.AvatarUrl != null)
-                user.AvatarUrl = userProfileDto.AvatarUrl;
+                user.AvatarUrl = _mediaUrlResolver.NormalizePublicUrl(userProfileDto.AvatarUrl);
             
             // Update profile fields for AI nutrition
             if (userProfileDto.Gender != null)
@@ -241,7 +245,7 @@ namespace EatFitAI.API.Services
             await EnsureAvatarUrlColumnAsync();
             await _context.SaveChangesAsync();
 
-            return avatarUrl;
+            return _mediaUrlResolver.NormalizePublicUrl(avatarUrl) ?? avatarUrl;
         }
 
         public async Task DeleteUserAsync(Guid userId)

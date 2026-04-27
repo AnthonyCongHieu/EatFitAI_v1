@@ -4,6 +4,7 @@ using EatFitAI.API.DbScaffold.Models;
 using EatFitAI.API.DTOs.MealDiary;
 using EatFitAI.API.Repositories.Interfaces;
 using EatFitAI.API.Services;
+using EatFitAI.API.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using Moq;
 using Xunit;
@@ -16,6 +17,7 @@ namespace EatFitAI.API.Tests.Unit.Services
         private readonly EatFitAIDbContext _context;
         private readonly Mock<IMapper> _mapperMock;
         private readonly Mock<IStreakService> _streakServiceMock;
+        private readonly Mock<IMediaUrlResolver> _mediaUrlResolverMock;
         private readonly MealDiaryService _mealDiaryService;
         private readonly Guid _testUserId = Guid.NewGuid();
 
@@ -24,6 +26,10 @@ namespace EatFitAI.API.Tests.Unit.Services
             _mealDiaryRepositoryMock = new Mock<IMealDiaryRepository>();
             _mapperMock = new Mock<IMapper>();
             _streakServiceMock = new Mock<IStreakService>();
+            _mediaUrlResolverMock = new Mock<IMediaUrlResolver>();
+            _mediaUrlResolverMock
+                .Setup(r => r.NormalizePublicUrl(It.IsAny<string?>()))
+                .Returns((string? url) => url);
 
             var options = new DbContextOptionsBuilder<EatFitAIDbContext>()
                 .UseInMemoryDatabase(Guid.NewGuid().ToString())
@@ -34,7 +40,8 @@ namespace EatFitAI.API.Tests.Unit.Services
                 _mealDiaryRepositoryMock.Object,
                 _context,
                 _mapperMock.Object,
-                _streakServiceMock.Object);
+                _streakServiceMock.Object,
+                _mediaUrlResolverMock.Object);
 
             SeedTestData();
         }
@@ -174,6 +181,51 @@ namespace EatFitAI.API.Tests.Unit.Services
 
             Assert.Single(result);
             _mealDiaryRepositoryMock.Verify(r => r.GetByUserIdAsync(_testUserId, filterDate), Times.Once);
+        }
+
+        [Fact]
+        public async Task GetUserMealDiariesAsync_RewritesUserFoodThumbnailUrl()
+        {
+            const string supabaseThumb =
+                "https://bjlmndmafrajjysenpbm.supabase.co/storage/v1/object/public/user-food/v2/user-1/thumb/beef.webp";
+            const string mediaThumb =
+                "https://media.example.com/user-food/v2/user-1/thumb/beef.webp";
+
+            var userFood = await _context.UserFoodItems.SingleAsync(item => item.UserFoodItemId == 1);
+            userFood.ThumbnailUrl = supabaseThumb;
+            await _context.SaveChangesAsync();
+
+            var mealDiaries = new List<MealDiary>
+            {
+                new MealDiary
+                {
+                    MealDiaryId = 12,
+                    UserId = _testUserId,
+                    UserFoodItemId = 1,
+                    Grams = 100,
+                    Calories = 420
+                }
+            };
+
+            _mealDiaryRepositoryMock.Setup(r => r.GetByUserIdAsync(_testUserId, null))
+                .ReturnsAsync(mealDiaries);
+            _mapperMock.Setup(m => m.Map<List<MealDiaryDto>>(It.IsAny<IEnumerable<MealDiary>>()))
+                .Returns(new List<MealDiaryDto>
+                {
+                    new MealDiaryDto
+                    {
+                        MealDiaryId = 12,
+                        UserId = _testUserId
+                    }
+                });
+            _mediaUrlResolverMock.Setup(r => r.NormalizePublicUrl(supabaseThumb))
+                .Returns(mediaThumb);
+
+            var result = (await _mealDiaryService.GetUserMealDiariesAsync(_testUserId)).Single();
+
+            Assert.Equal("Pho bo tu lam", result.FoodItemName);
+            Assert.Equal(mediaThumb, result.FoodItemThumbNail);
+            Assert.DoesNotContain("supabase.co", result.FoodItemThumbNail, StringComparison.OrdinalIgnoreCase);
         }
 
         [Fact]

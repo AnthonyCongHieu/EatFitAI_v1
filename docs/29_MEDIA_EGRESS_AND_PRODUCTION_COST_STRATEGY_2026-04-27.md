@@ -24,6 +24,24 @@ Những việc còn lại để đóng hoàn toàn production:
 4. Rotate/revoke các token/key đã từng dán vào chat: Supabase token, Render API key, Cloudflare R2 token/access key.
 5. Giữ release gate: block nếu primary thumbnail > `100 KB`, detail image > `350 KB`, hoặc smoke/dev flow trỏ lại Supabase Storage media.
 
+### Cập nhật follow-up sau audit QA 2026-04-27
+
+Ảnh dashboard mới cho thấy Cached Egress đã lên khoảng `7.71 GB / 5 GB (154%)`, cao hơn số `7.42 GB` ghi nhận ban đầu. Kiểm tra live API sau đó cho thấy catalog sample và favorites đã trả R2 URL, nhưng vẫn còn đường rò ở dữ liệu user:
+
+- `/api/user-food-items?page=1&pageSize=20` trên production trả 3/5 `thumbnailUrl` mẫu là Supabase Storage URL dưới `storage/v1/object/public/user-food/...`.
+- `/api/food/recent?limit=20` trên production trả 3 mẫu recent thumbnail là Supabase Storage URL.
+- `/api/food/search-all?q=a&limit=20` trên production còn 1/20 mẫu URL là Supabase Storage.
+
+Kết luận bổ sung: fix trước đó đã xử lý tốt catalog/R2 path chính, nhưng chưa đóng hoàn toàn cached egress vì còn row `user-food` cũ hoặc mixed recent/search path trỏ về Supabase Storage. Dashboard Supabase cũng cộng dồn theo chu kỳ billing và refresh theo giờ, nên số đã phát sinh không giảm ngay sau khi sửa. Không được coi sự cố đã đóng cho đến khi tất cả API media path chính trả `0` URL `*.supabase.co/storage/v1/object`.
+
+Follow-up fix trong repo sau real-device QA:
+
+- Thêm `IMediaUrlResolver`/`MediaUrlResolver` để mọi response backend có thể chuẩn hóa legacy Supabase public Storage URL sang `Media__PublicBaseUrl` khi object key thuộc `user-food/` hoặc `food-images/`.
+- Áp dụng resolver cho `UserFoodItemService`, `FoodService`, `FavoritesController`, `CustomDishService`, `MealDiaryService`, `AiFoodMapService`, `UserService`, `AdminController`, và `AdminMealController`.
+- Mobile `imageHelpers` không còn tự dựng `*.supabase.co/storage/v1/object/public/...` từ thumbnail tương đối; image runtime dùng `EXPO_PUBLIC_MEDIA_PUBLIC_BASE_URL`/R2 và rewrite legacy Supabase Storage URL qua media base khi object key thuộc `food-images/` hoặc `user-food/`.
+- Việc này đóng đường API trả URL Supabase cho user-food/search/recent/favorites/custom-dish/diary ở tầng serialization. Tuy nhiên, live production chỉ được coi là đóng khi backend đã redeploy và API readback thật cho các endpoint trên trả `0` URL `*.supabase.co/storage/v1/object`.
+- Nếu object cũ chưa có trên R2, cần chạy migration/upload dữ liệu tương ứng; không được chỉ đổi URL rồi bỏ qua kiểm tra ảnh 200 OK.
+
 ## Tóm tắt quyết định
 
 Sự cố vừa rồi không phải do database lớn, auth nhiều user, hay Supabase yếu. Vấn đề chính là media egress: app đang tải ảnh public từ Supabase Storage, trong đó nhiều file nằm dưới `food-images/thumbnails` có kích thước khoảng 4-5 MB dù được dùng như thumbnail. Với kích thước này, chỉ một lượng user hoặc smoke test nhỏ cũng có thể vượt quota cached egress 5 GB.

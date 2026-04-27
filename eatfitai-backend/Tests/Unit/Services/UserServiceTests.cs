@@ -30,6 +30,7 @@ namespace EatFitAI.API.Tests.Unit.Services
         private readonly Mock<IMapper> _mapperMock;
         private readonly Mock<IMediaImageProcessor> _mediaImageProcessorMock;
         private readonly Mock<IMediaStorageService> _mediaStorageServiceMock;
+        private readonly Mock<IMediaUrlResolver> _mediaUrlResolverMock;
         private readonly Mock<IHostEnvironment> _environmentMock;
         private readonly Mock<ILogger<UserService>> _loggerMock;
         private readonly UserService _userService;
@@ -41,6 +42,7 @@ namespace EatFitAI.API.Tests.Unit.Services
             _mapperMock = new Mock<IMapper>();
             _mediaImageProcessorMock = new Mock<IMediaImageProcessor>();
             _mediaStorageServiceMock = new Mock<IMediaStorageService>();
+            _mediaUrlResolverMock = new Mock<IMediaUrlResolver>();
             _environmentMock = new Mock<IHostEnvironment>();
             _loggerMock = new Mock<ILogger<UserService>>();
 
@@ -55,6 +57,9 @@ namespace EatFitAI.API.Tests.Unit.Services
             _adminContext = new ApplicationDbContext(adminOptions);
 
             _mediaStorageServiceMock.SetupGet(s => s.IsConfigured).Returns(false);
+            _mediaUrlResolverMock
+                .Setup(r => r.NormalizePublicUrl(It.IsAny<string?>()))
+                .Returns((string? value) => value);
             _environmentMock.SetupGet(e => e.EnvironmentName).Returns(Environments.Development);
 
             _userService = new UserService(
@@ -64,6 +69,7 @@ namespace EatFitAI.API.Tests.Unit.Services
                 _mapperMock.Object,
                 _mediaImageProcessorMock.Object,
                 _mediaStorageServiceMock.Object,
+                _mediaUrlResolverMock.Object,
                 _environmentMock.Object,
                 new SupabaseSchemaBootstrapper(_adminContext, NullLogger<SupabaseSchemaBootstrapper>.Instance),
                 _loggerMock.Object);
@@ -259,6 +265,29 @@ namespace EatFitAI.API.Tests.Unit.Services
             Assert.StartsWith("/uploads/avatars/", avatarUrl);
             Assert.Equal(avatarUrl, trackedUser.AvatarUrl);
             Assert.True(Directory.Exists(uploadsRoot));
+        }
+
+        [Fact]
+        public async Task GetUserProfileAsync_NormalizesAvatarUrl()
+        {
+            const string legacyAvatarUrl =
+                "https://bjlmndmafrajjysenpbm.supabase.co/storage/v1/object/public/user-food/avatars/v2/thumb.webp";
+            const string normalizedAvatarUrl =
+                "https://media.example.com/user-food/avatars/v2/thumb.webp";
+
+            _mapperMock.Setup(m => m.Map<UserProfileDto>(It.IsAny<User>()))
+                .Returns(new UserProfileDto
+                {
+                    DisplayName = "Test User",
+                    AvatarUrl = legacyAvatarUrl
+                });
+            _mediaUrlResolverMock
+                .Setup(r => r.NormalizePublicUrl(legacyAvatarUrl))
+                .Returns(normalizedAvatarUrl);
+
+            var result = await _userService.GetUserProfileAsync(_testUserId);
+
+            Assert.Equal(normalizedAvatarUrl, result.AvatarUrl);
         }
 
         [Fact]
