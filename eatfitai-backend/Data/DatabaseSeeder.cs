@@ -216,9 +216,10 @@ namespace EatFitAI.API.Data
                 .Where(food => food.IsActive && !food.IsDeleted)
                 .ToListAsync();
 
-            var chicken = foodItems.FirstOrDefault(food =>
-                food.FoodName.Contains("Chicken", StringComparison.OrdinalIgnoreCase)
-                || (food.FoodNameUnsigned?.Contains("thit ga", StringComparison.OrdinalIgnoreCase) ?? false));
+            var chicken = foodItems
+                .Where(IsChickenCatalogItem)
+                .OrderByDescending(ScoreChickenCatalogItem)
+                .FirstOrDefault();
             var beef = foodItems.FirstOrDefault(food =>
                 food.FoodName.Contains("Beef", StringComparison.OrdinalIgnoreCase)
                 || (food.FoodNameUnsigned?.Contains("thit bo", StringComparison.OrdinalIgnoreCase) ?? false));
@@ -279,6 +280,38 @@ namespace EatFitAI.API.Data
             }
 
             await context.SaveChangesAsync();
+        }
+
+        private static bool IsChickenCatalogItem(FoodItem food)
+        {
+            var name = food.FoodName ?? string.Empty;
+            var unsigned = food.FoodNameUnsigned ?? string.Empty;
+            return name.Contains("Chicken", StringComparison.OrdinalIgnoreCase)
+                || unsigned.Contains("chicken", StringComparison.OrdinalIgnoreCase)
+                || unsigned.Contains("uc ga", StringComparison.OrdinalIgnoreCase)
+                || unsigned.Contains("canh ga", StringComparison.OrdinalIgnoreCase)
+                || unsigned.Contains("dui ga", StringComparison.OrdinalIgnoreCase)
+                || unsigned.Contains(" ga", StringComparison.OrdinalIgnoreCase)
+                || unsigned.StartsWith("ga ", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static int ScoreChickenCatalogItem(FoodItem food)
+        {
+            var name = food.FoodName ?? string.Empty;
+            var unsigned = food.FoodNameUnsigned ?? string.Empty;
+            if (name.Contains("Chicken Breast", StringComparison.OrdinalIgnoreCase)
+                || unsigned.Contains("uc ga", StringComparison.OrdinalIgnoreCase))
+            {
+                return 100;
+            }
+
+            if (unsigned.Contains("canh ga", StringComparison.OrdinalIgnoreCase)
+                || unsigned.Contains("dui ga", StringComparison.OrdinalIgnoreCase))
+            {
+                return 80;
+            }
+
+            return 10;
         }
 
         private static async Task SeedFoodServingsAsync(EatFitAIDbContext context)

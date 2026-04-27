@@ -69,8 +69,8 @@ type ScanResultNotice = {
   description: string;
 };
 
-const SCAN_IMAGE_UPLOAD_WIDTH = 1600;
-const SCAN_IMAGE_UPLOAD_QUALITY = 0.95;
+const SCAN_IMAGE_UPLOAD_WIDTH = 1024;
+const SCAN_IMAGE_UPLOAD_QUALITY = 0.85;
 const isUsableVisionItem = (item: MappedFoodItem): boolean =>
   Boolean(item.isMatched || item.foodItemId || item.foodName) || item.confidence > 0.4;
 
