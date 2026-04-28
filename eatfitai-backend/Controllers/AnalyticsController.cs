@@ -1,4 +1,4 @@
-﻿using System.Security.Claims;
+using System.Security.Claims;
 using EatFitAI.API.DTOs;
 using EatFitAI.API.DTOs.Analytics;
 using EatFitAI.API.Helpers;
@@ -44,9 +44,9 @@ namespace EatFitAI.API.Controllers
                 var summary = await _analyticsService.GetNutritionSummaryAsync(userId, normalizedStartDate, effectiveEndDate);
                 return Ok(summary);
             }
-            catch (UnauthorizedAccessException ex)
+            catch (UnauthorizedAccessException)
             {
-                return Unauthorized(new { message = ex.Message });
+                return Unauthorized(ErrorResponseHelper.SafeError("Không có quyền truy cập", HttpContext));
             }
             catch (Exception)
             {
@@ -63,9 +63,9 @@ namespace EatFitAI.API.Controllers
                 var review = await _analyticsService.GetWeeklyReviewAsync(userId);
                 return Ok(review);
             }
-            catch (UnauthorizedAccessException ex)
+            catch (UnauthorizedAccessException)
             {
-                return Unauthorized(new { message = ex.Message });
+                return Unauthorized(ErrorResponseHelper.SafeError("Không có quyền truy cập", HttpContext));
             }
             catch (Exception)
             {

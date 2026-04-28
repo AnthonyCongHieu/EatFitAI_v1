@@ -61,6 +61,9 @@ def require_internal_token(handler):
 
 app: Flask = Flask(__name__)
 os.makedirs("uploads", exist_ok=True)
+
+# ONNX Runtime CPU-only — no GPU on Render free tier
+DEVICE = "cpu"
 YOLO_CONFIDENCE_THRESHOLD = get_yolo_confidence_threshold()
 YOLO_IMAGE_SIZE = get_yolo_image_size()
 YOLO_RECOVERY_ENABLED = os.getenv("YOLO_RECOVERY_ENABLED", "true").strip().lower() not in {"0", "false", "no"}
@@ -161,47 +164,8 @@ def allowed_file(filename: str) -> bool:
     return '.' in filename and \
            filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
-# ============== AUTO-DOWNLOAD MODEL TỪ SUPABASE STORAGE ==============
-
-def _download_model_from_supabase(filename: str = "best.pt") -> bool:
-    """
-    Download model weights từ Supabase Storage private bucket.
-    Chỉ chạy trên cloud khi file chưa tồn tại local.
-    Dùng Supabase Python SDK để truy cập bucket private 'ml-models'.
-    """
-    try:
-        from supabase import create_client, Client
-    except ImportError:
-        logger.error("❌ Thư viện 'supabase' chưa được cài đặt. Chạy `pip install supabase`")
-        return False
-
-    url: str = os.getenv("SUPABASE_URL", "")
-    key: str = os.getenv("SUPABASE_SERVICE_KEY", "")
-
-    if not url or not key:
-        logger.warning("⚠️ SUPABASE_URL hoặc SUPABASE_SERVICE_KEY chưa set → bỏ qua download model")
-        return False
-
-    logger.info(f"⬇️  Downloading {filename} từ Supabase Storage bằng official SDK...")
-
-    try:
-        supabase: Client = create_client(url, key)
-        # Download data dưới dạng bytes
-        res = supabase.storage.from_("ml-models").download(filename)
-        
-        with open(filename, "wb") as f:
-            f.write(res)
-
-        size_mb = len(res) / (1024 * 1024)
-        logger.info(f"✅ Downloaded {filename} thành công ({size_mb:.1f} MB)")
-        return True
-
-    except Exception as e:
-        logger.error(f"❌ Download {filename} thất bại: {e}")
-        # Xóa file lỗi nếu có
-        if os.path.exists(filename) and os.path.getsize(filename) == 0:
-            os.remove(filename)
-        return False
+# [REMOVED] _download_model_from_supabase — dead code, never called.
+# Model files are packaged at build time or pulled from R2 by CI.
 
 
 # ============== LOAD YOLO MODEL (ONNX only) ==============

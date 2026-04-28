@@ -1,4 +1,4 @@
-﻿using System.Security.Claims;
+using System.Security.Claims;
 using EatFitAI.API.DTOs.MealDiary;
 using EatFitAI.API.Helpers;
 using EatFitAI.API.Services.Interfaces;
@@ -28,9 +28,9 @@ namespace EatFitAI.API.Controllers
                 var mealDiaries = await _mealDiaryService.GetUserMealDiariesAsync(userId, date);
                 return Ok(mealDiaries);
             }
-            catch (UnauthorizedAccessException ex)
+            catch (UnauthorizedAccessException)
             {
-                return Unauthorized(new { message = ex.Message });
+                return Unauthorized(ErrorResponseHelper.SafeError("Token người dùng không hợp lệ", HttpContext));
             }
             catch (Exception)
             {
@@ -47,13 +47,13 @@ namespace EatFitAI.API.Controllers
                 var mealDiary = await _mealDiaryService.GetMealDiaryByIdAsync(id, userId);
                 return Ok(mealDiary);
             }
-            catch (KeyNotFoundException ex)
+            catch (KeyNotFoundException)
             {
-                return NotFound(new { message = ex.Message });
+                return NotFound(ErrorResponseHelper.SafeError("Không tìm thấy nhật ký bữa ăn", HttpContext));
             }
-            catch (UnauthorizedAccessException ex)
+            catch (UnauthorizedAccessException)
             {
-                return Unauthorized(new { message = ex.Message });
+                return Unauthorized(ErrorResponseHelper.SafeError("Token người dùng không hợp lệ", HttpContext));
             }
             catch (Exception)
             {
@@ -70,9 +70,9 @@ namespace EatFitAI.API.Controllers
                 var mealDiary = await _mealDiaryService.CreateMealDiaryAsync(userId, request);
                 return CreatedAtAction(nameof(GetMealDiary), new { id = mealDiary.MealDiaryId }, mealDiary);
             }
-            catch (UnauthorizedAccessException ex)
+            catch (UnauthorizedAccessException)
             {
-                return Unauthorized(new { message = ex.Message });
+                return Unauthorized(ErrorResponseHelper.SafeError("Token người dùng không hợp lệ", HttpContext));
             }
             catch (Exception)
             {
@@ -94,21 +94,21 @@ namespace EatFitAI.API.Controllers
                 var copiedEntries = await _mealDiaryService.CopyPreviousDayAsync(userId, request);
                 return Ok(copiedEntries);
             }
-            catch (KeyNotFoundException ex)
+            catch (KeyNotFoundException)
             {
-                return NotFound(new { message = ex.Message });
+                return NotFound(ErrorResponseHelper.SafeError("Không tìm thấy dữ liệu ngày trước", HttpContext));
             }
-            catch (ArgumentException ex)
+            catch (ArgumentException)
             {
-                return BadRequest(new { message = ex.Message });
+                return BadRequest(ErrorResponseHelper.SafeError("Dữ liệu yêu cầu không hợp lệ", HttpContext));
             }
-            catch (InvalidOperationException ex)
+            catch (InvalidOperationException)
             {
-                return Conflict(new { message = ex.Message });
+                return Conflict(ErrorResponseHelper.SafeError("Dữ liệu ngày này đã tồn tại", HttpContext));
             }
-            catch (UnauthorizedAccessException ex)
+            catch (UnauthorizedAccessException)
             {
-                return Unauthorized(new { message = ex.Message });
+                return Unauthorized(ErrorResponseHelper.SafeError("Token người dùng không hợp lệ", HttpContext));
             }
             catch (Exception)
             {
@@ -125,13 +125,13 @@ namespace EatFitAI.API.Controllers
                 var mealDiary = await _mealDiaryService.UpdateMealDiaryAsync(id, userId, request);
                 return Ok(mealDiary);
             }
-            catch (KeyNotFoundException ex)
+            catch (KeyNotFoundException)
             {
-                return NotFound(new { message = ex.Message });
+                return NotFound(ErrorResponseHelper.SafeError("Không tìm thấy nhật ký bữa ăn", HttpContext));
             }
-            catch (UnauthorizedAccessException ex)
+            catch (UnauthorizedAccessException)
             {
-                return Unauthorized(new { message = ex.Message });
+                return Unauthorized(ErrorResponseHelper.SafeError("Token người dùng không hợp lệ", HttpContext));
             }
             catch (Exception)
             {
@@ -148,13 +148,13 @@ namespace EatFitAI.API.Controllers
                 await _mealDiaryService.DeleteMealDiaryAsync(id, userId);
                 return NoContent();
             }
-            catch (KeyNotFoundException ex)
+            catch (KeyNotFoundException)
             {
-                return NotFound(new { message = ex.Message });
+                return NotFound(ErrorResponseHelper.SafeError("Không tìm thấy nhật ký bữa ăn", HttpContext));
             }
-            catch (UnauthorizedAccessException ex)
+            catch (UnauthorizedAccessException)
             {
-                return Unauthorized(new { message = ex.Message });
+                return Unauthorized(ErrorResponseHelper.SafeError("Token người dùng không hợp lệ", HttpContext));
             }
             catch (Exception)
             {

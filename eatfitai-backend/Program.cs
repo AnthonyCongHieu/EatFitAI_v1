@@ -458,22 +458,27 @@ static IReadOnlyList<string> GetMissingOptionalProductionConfiguration(WebApplic
     }
 
     var missingStorage = new List<string>();
-    if (!HasConfiguredHttpsUrl(builder.Configuration["Supabase:Url"]))
+    if (!HasConfiguredValue(builder.Configuration["Media:PublicBaseUrl"]))
     {
-        missingStorage.Add("Supabase:Url");
+        missingStorage.Add("Media:PublicBaseUrl");
     }
 
-    if (!HasConfiguredValue(builder.Configuration["Supabase:ServiceRoleKey"]))
+    if (!HasConfiguredValue(builder.Configuration["Media:R2:AccessKeyId"]))
     {
-        missingStorage.Add("Supabase:ServiceRoleKey");
+        missingStorage.Add("Media:R2:AccessKeyId");
     }
 
-    if (!HasConfiguredValue(builder.Configuration["Supabase:UserFoodBucket"]))
+    if (!HasConfiguredValue(builder.Configuration["Media:R2:SecretAccessKey"]))
     {
-        missingStorage.Add("Supabase:UserFoodBucket");
+        missingStorage.Add("Media:R2:SecretAccessKey");
     }
 
-    AddWarning("Supabase storage uploads disabled", missingStorage.ToArray());
+    if (!HasConfiguredValue(builder.Configuration["Media:R2:AccountId"]))
+    {
+        missingStorage.Add("Media:R2:AccountId");
+    }
+
+    AddWarning("R2 storage uploads disabled", missingStorage.ToArray());
 
     var missingGoogle = new[]
     {

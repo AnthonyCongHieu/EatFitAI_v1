@@ -866,18 +866,9 @@ public class AdminController : ControllerBase
             requestId: HttpContext.TraceIdentifier));
     }
 
-    // ===================== KEEP-ALIVE =====================
+    // Keep-alive removed — use /health/live for liveness checks
 
-    [HttpGet("keep-alive")]
-    public IActionResult KeepAlive()
-    {
-        return Ok(new
-        {
-            status = "alive",
-            timestamp = DateTime.UtcNow,
-            requestId = HttpContext.TraceIdentifier
-        });
-    }
+
 
     private void PublishResourceUpdated(string entityType, string entityId, object payload)
     {

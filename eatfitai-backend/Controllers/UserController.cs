@@ -1,4 +1,4 @@
-﻿using System.Security.Claims;
+using System.Security.Claims;
 using EatFitAI.API.DTOs.User;
 using EatFitAI.API.Helpers;
 using EatFitAI.API.Services.Interfaces;
@@ -31,13 +31,13 @@ namespace EatFitAI.API.Controllers
                 var user = await _userService.GetUserProfileAsync(userId);
                 return Ok(user);
             }
-            catch (KeyNotFoundException ex)
+            catch (KeyNotFoundException)
             {
-                return NotFound(new { message = ex.Message });
+                return NotFound(ErrorResponseHelper.SafeError("Không tìm thấy hồ sơ người dùng", HttpContext));
             }
-            catch (UnauthorizedAccessException ex)
+            catch (UnauthorizedAccessException)
             {
-                return Unauthorized(new { message = ex.Message });
+                return Unauthorized(ErrorResponseHelper.SafeError("Token người dùng không hợp lệ", HttpContext));
             }
         }
 
@@ -50,13 +50,13 @@ namespace EatFitAI.API.Controllers
                 var updatedUser = await _userService.UpdateUserProfileAsync(userId, userDto);
                 return Ok(updatedUser);
             }
-            catch (KeyNotFoundException ex)
+            catch (KeyNotFoundException)
             {
-                return NotFound(new { message = ex.Message });
+                return NotFound(ErrorResponseHelper.SafeError("Không tìm thấy hồ sơ người dùng", HttpContext));
             }
-            catch (UnauthorizedAccessException ex)
+            catch (UnauthorizedAccessException)
             {
-                return Unauthorized(new { message = ex.Message });
+                return Unauthorized(ErrorResponseHelper.SafeError("Token người dùng không hợp lệ", HttpContext));
             }
             catch (Exception)
             {
@@ -86,9 +86,9 @@ namespace EatFitAI.API.Controllers
                 var avatarUrl = await _userService.UpdateAvatarAsync(userId, file, uploadsRoot);
                 return Ok(new { avatarUrl });
             }
-            catch (ArgumentException ex)
+            catch (ArgumentException)
             {
-                return BadRequest(new { message = ex.Message });
+                return BadRequest(ErrorResponseHelper.SafeError("Dữ liệu avatar không hợp lệ", HttpContext));
             }
             catch (InvalidOperationException)
             {
@@ -97,13 +97,13 @@ namespace EatFitAI.API.Controllers
                     "Không thể tải avatar lúc này.",
                     HttpContext));
             }
-            catch (KeyNotFoundException ex)
+            catch (KeyNotFoundException)
             {
-                return NotFound(new { message = ex.Message });
+                return NotFound(ErrorResponseHelper.SafeError("Không tìm thấy hồ sơ người dùng", HttpContext));
             }
-            catch (UnauthorizedAccessException ex)
+            catch (UnauthorizedAccessException)
             {
-                return Unauthorized(new { message = ex.Message });
+                return Unauthorized(ErrorResponseHelper.SafeError("Token người dùng không hợp lệ", HttpContext));
             }
             catch (Exception)
             {
@@ -122,13 +122,13 @@ namespace EatFitAI.API.Controllers
                 var recordedMetrics = await _userService.RecordBodyMetricsAsync(userId, bodyMetricDto);
                 return Ok(recordedMetrics);
             }
-            catch (KeyNotFoundException ex)
+            catch (KeyNotFoundException)
             {
-                return NotFound(new { message = ex.Message });
+                return NotFound(ErrorResponseHelper.SafeError("Không tìm thấy hồ sơ người dùng", HttpContext));
             }
-            catch (UnauthorizedAccessException ex)
+            catch (UnauthorizedAccessException)
             {
-                return Unauthorized(new { message = ex.Message });
+                return Unauthorized(ErrorResponseHelper.SafeError("Token người dùng không hợp lệ", HttpContext));
             }
             catch (Exception)
             {
@@ -145,13 +145,13 @@ namespace EatFitAI.API.Controllers
                 var history = await _userService.GetBodyMetricsHistoryAsync(userId, limit);
                 return Ok(history);
             }
-            catch (KeyNotFoundException ex)
+            catch (KeyNotFoundException)
             {
-                return NotFound(new { message = ex.Message });
+                return NotFound(ErrorResponseHelper.SafeError("Không tìm thấy hồ sơ người dùng", HttpContext));
             }
-            catch (UnauthorizedAccessException ex)
+            catch (UnauthorizedAccessException)
             {
-                return Unauthorized(new { message = ex.Message });
+                return Unauthorized(ErrorResponseHelper.SafeError("Token người dùng không hợp lệ", HttpContext));
             }
             catch (Exception)
             {
@@ -169,13 +169,13 @@ namespace EatFitAI.API.Controllers
                 await _userService.DeleteUserAsync(userId);
                 return Ok(new { message = "Tài khoản đã được xóa thành công" });
             }
-            catch (KeyNotFoundException ex)
+            catch (KeyNotFoundException)
             {
-                return NotFound(new { message = ex.Message });
+                return NotFound(ErrorResponseHelper.SafeError("Không tìm thấy hồ sơ người dùng", HttpContext));
             }
-            catch (UnauthorizedAccessException ex)
+            catch (UnauthorizedAccessException)
             {
-                return Unauthorized(new { message = ex.Message });
+                return Unauthorized(ErrorResponseHelper.SafeError("Token người dùng không hợp lệ", HttpContext));
             }
         }
 

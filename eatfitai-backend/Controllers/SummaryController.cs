@@ -1,4 +1,4 @@
-﻿using System.Security.Claims;
+using System.Security.Claims;
 using EatFitAI.API.DTOs.Analytics;
 using EatFitAI.API.Helpers;
 using EatFitAI.API.Services.Interfaces;
@@ -34,9 +34,9 @@ namespace EatFitAI.API.Controllers
                 var summary = await _analyticsService.GetDaySummaryWithMealsAsync(userId, date);
                 return Ok(summary);
             }
-            catch (UnauthorizedAccessException ex)
+            catch (UnauthorizedAccessException)
             {
-                return Unauthorized(new { message = ex.Message });
+                return Unauthorized(ErrorResponseHelper.SafeError("Token người dùng không hợp lệ", HttpContext));
             }
             catch (Exception)
             {
@@ -58,9 +58,9 @@ namespace EatFitAI.API.Controllers
                 var summary = await _analyticsService.GetWeekSummaryAsync(userId, date);
                 return Ok(summary);
             }
-            catch (UnauthorizedAccessException ex)
+            catch (UnauthorizedAccessException)
             {
-                return Unauthorized(new { message = ex.Message });
+                return Unauthorized(ErrorResponseHelper.SafeError("Token người dùng không hợp lệ", HttpContext));
             }
             catch (Exception)
             {

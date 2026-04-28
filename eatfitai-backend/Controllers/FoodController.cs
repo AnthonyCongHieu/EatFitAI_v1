@@ -30,7 +30,7 @@ namespace EatFitAI.API.Controllers
         {
             if (string.IsNullOrWhiteSpace(q))
             {
-                return BadRequest(new { message = "Từ khóa tìm kiếm là bắt buộc" });
+                return BadRequest(new { message = "T廙� kh籀a t穫m ki廕禦 l� b廕眩 bu廙緽" });
             }
 
             try
@@ -40,7 +40,7 @@ namespace EatFitAI.API.Controllers
             }
             catch (Exception)
             {
-                return StatusCode(500, ErrorResponseHelper.SafeError("Đã xảy ra lỗi khi tìm kiếm món ăn", HttpContext));
+                return StatusCode(500, ErrorResponseHelper.SafeError("�瓊 x廕ㄊ ra l廙𡟙 khi t穫m ki廕禦 m籀n �n", HttpContext));
             }
         }
 
@@ -51,7 +51,7 @@ namespace EatFitAI.API.Controllers
         {
             if (string.IsNullOrWhiteSpace(q))
             {
-                return BadRequest(new { message = "Từ khóa tìm kiếm là bắt buộc" });
+                return BadRequest(new { message = "T廙� kh籀a t穫m ki廕禦 l� b廕眩 bu廙緽" });
             }
 
             try
@@ -69,7 +69,7 @@ namespace EatFitAI.API.Controllers
             }
             catch (Exception)
             {
-                return StatusCode(500, ErrorResponseHelper.SafeError("Đã xảy ra lỗi khi tìm kiếm món ăn", HttpContext));
+                return StatusCode(500, ErrorResponseHelper.SafeError("�瓊 x廕ㄊ ra l廙𡟙 khi t穫m ki廕禦 m籀n �n", HttpContext));
             }
         }
 
@@ -80,7 +80,7 @@ namespace EatFitAI.API.Controllers
         {
             if (string.IsNullOrWhiteSpace(barcode))
             {
-                return BadRequest(new { message = "Barcode là bắt buộc." });
+                return BadRequest(new { message = "Barcode l� b廕眩 bu廙緽." });
             }
 
             try
@@ -88,7 +88,7 @@ namespace EatFitAI.API.Controllers
                 var result = await _foodService.LookupByBarcodeAsync(barcode, cancellationToken);
                 if (result == null)
                 {
-                    return NotFound(new { message = "Không tìm thấy sản phẩm cho mã vạch này." });
+                    return NotFound(new { message = "Kh繫ng t穫m th廕句 s廕τ ph廕姓 cho m瓊 v廕︷h n�y." });
                 }
 
                 return Ok(result);
@@ -98,12 +98,12 @@ namespace EatFitAI.API.Controllers
                 return StatusCode(
                     StatusCodes.Status503ServiceUnavailable,
                     ErrorResponseHelper.SafeError(
-                        "Dịch vụ tra cứu mã vạch tạm thời không khả dụng. Vui lòng thử lại sau.",
+                        "D廙醶h v廙� tra c廙季 m瓊 v廕︷h t廕《 th廙𩥉 kh繫ng kh廕� d廙叩g. Vui l簷ng th廙� l廕【 sau.",
                         HttpContext));
             }
             catch (Exception)
             {
-                return StatusCode(500, ErrorResponseHelper.SafeError("Đã xảy ra lỗi khi tra cứu mã vạch", HttpContext));
+                return StatusCode(500, ErrorResponseHelper.SafeError("�瓊 x廕ㄊ ra l廙𡟙 khi tra c廙季 m瓊 v廕︷h", HttpContext));
             }
         }
 
@@ -117,13 +117,13 @@ namespace EatFitAI.API.Controllers
                 var result = await _foodService.GetRecentFoodsAsync(userId, limit);
                 return Ok(result);
             }
-            catch (UnauthorizedAccessException ex)
+            catch (UnauthorizedAccessException)
             {
-                return Unauthorized(new { message = ex.Message });
+                return Unauthorized(ErrorResponseHelper.SafeError("Kh繫ng c籀 quy廙� truy c廕計", HttpContext));
             }
             catch (Exception)
             {
-                return StatusCode(500, ErrorResponseHelper.SafeError("Đã xảy ra lỗi khi lấy món ăn gần đây", HttpContext));
+                return StatusCode(500, ErrorResponseHelper.SafeError("�瓊 x廕ㄊ ra l廙𡟙 khi l廕句 m籀n �n g廕吵 �璽y", HttpContext));
             }
         }
 
@@ -136,13 +136,13 @@ namespace EatFitAI.API.Controllers
                 var (foodItem, servings) = await _foodService.GetFoodItemWithServingsAsync(id);
                 return Ok(new { foodItem, servings });
             }
-            catch (KeyNotFoundException ex)
+            catch (KeyNotFoundException)
             {
-                return NotFound(new { message = ex.Message });
+                return NotFound(ErrorResponseHelper.SafeError("Kh\u00f4ng t\u00ecm th\u1ea5y th\u00f4ng tin m\u00f3n \u0103n", HttpContext));
             }
             catch (Exception)
             {
-                return StatusCode(500, ErrorResponseHelper.SafeError("Đã xảy ra lỗi khi lấy thông tin món ăn", HttpContext));
+                return StatusCode(500, ErrorResponseHelper.SafeError("�瓊 x廕ㄊ ra l廙𡟙 khi l廕句 th繫ng tin m籀n �n", HttpContext));
             }
         }
 
@@ -156,25 +156,25 @@ namespace EatFitAI.API.Controllers
                 var customDish = await _customDishService.CreateCustomDishAsync(userId, customDishDto);
                 return Ok(customDish);
             }
-            catch (KeyNotFoundException ex)
+            catch (KeyNotFoundException)
             {
-                return NotFound(new { message = ex.Message });
+                return NotFound(ErrorResponseHelper.SafeError("Kh繫ng t穫m th廕句 m籀n �n ho廕搾 th�nh ph廕吵", HttpContext));
             }
-            catch (ArgumentException ex)
+            catch (ArgumentException)
             {
-                return BadRequest(new { message = ex.Message });
+                return BadRequest(ErrorResponseHelper.SafeError("Th繫ng tin m籀n th⑹廙𩵚g d羅ng kh繫ng h廙φ l廙�", HttpContext));
             }
-            catch (InvalidOperationException ex)
+            catch (InvalidOperationException)
             {
-                return Conflict(new { message = ex.Message });
+                return Conflict(ErrorResponseHelper.SafeError("M籀n th⑹廙𩵚g d羅ng �瓊 t廙忛 t廕【 ho廕搾 xung �廙脌 d廙� li廙杮", HttpContext));
             }
-            catch (UnauthorizedAccessException ex)
+            catch (UnauthorizedAccessException)
             {
-                return Unauthorized(new { message = ex.Message });
+                return Unauthorized(ErrorResponseHelper.SafeError("Kh繫ng c籀 quy廙� truy c廕計", HttpContext));
             }
             catch (Exception)
             {
-                return StatusCode(500, ErrorResponseHelper.SafeError("Đã xảy ra lỗi khi tạo món thường dùng", HttpContext));
+                return StatusCode(500, ErrorResponseHelper.SafeError("�瓊 x廕ㄊ ra l廙𡟙 khi t廕︽ m籀n th⑹廙𩵚g d羅ng", HttpContext));
             }
         }
 
@@ -188,13 +188,13 @@ namespace EatFitAI.API.Controllers
                 var customDishes = await _customDishService.GetCustomDishesAsync(userId);
                 return Ok(customDishes);
             }
-            catch (UnauthorizedAccessException ex)
+            catch (UnauthorizedAccessException)
             {
-                return Unauthorized(new { message = ex.Message });
+                return Unauthorized(ErrorResponseHelper.SafeError("Kh繫ng c籀 quy廙� truy c廕計", HttpContext));
             }
             catch (Exception)
             {
-                return StatusCode(500, ErrorResponseHelper.SafeError("Đã xảy ra lỗi khi lấy món thường dùng", HttpContext));
+                return StatusCode(500, ErrorResponseHelper.SafeError("�瓊 x廕ㄊ ra l廙𡟙 khi l廕句 m籀n th⑹廙𩵚g d羅ng", HttpContext));
             }
         }
 
@@ -208,21 +208,21 @@ namespace EatFitAI.API.Controllers
                 var customDish = await _customDishService.GetCustomDishAsync(userId, id);
                 return Ok(customDish);
             }
-            catch (KeyNotFoundException ex)
+            catch (KeyNotFoundException)
             {
-                return NotFound(new { message = ex.Message });
+                return NotFound(ErrorResponseHelper.SafeError("Kh繫ng t穫m th廕句 m籀n th⑹廙𩵚g d羅ng", HttpContext));
             }
-            catch (UnauthorizedAccessException ex)
+            catch (UnauthorizedAccessException)
             {
-                return Unauthorized(new { message = ex.Message });
+                return Unauthorized(ErrorResponseHelper.SafeError("Kh繫ng c籀 quy廙� truy c廕計", HttpContext));
             }
-            catch (InvalidOperationException ex)
+            catch (InvalidOperationException)
             {
-                return Conflict(new { message = ex.Message });
+                return Conflict(ErrorResponseHelper.SafeError("Xung �廙脌 d廙� li廙杮 khi truy c廕計 m籀n th⑹廙𩵚g d羅ng", HttpContext));
             }
             catch (Exception)
             {
-                return StatusCode(500, ErrorResponseHelper.SafeError("Đã xảy ra lỗi khi lấy chi tiết món thường dùng", HttpContext));
+                return StatusCode(500, ErrorResponseHelper.SafeError("�瓊 x廕ㄊ ra l廙𡟙 khi l廕句 chi ti廕篙 m籀n th⑹廙𩵚g d羅ng", HttpContext));
             }
         }
 
@@ -236,25 +236,25 @@ namespace EatFitAI.API.Controllers
                 var customDish = await _customDishService.UpdateCustomDishAsync(userId, id, customDishDto);
                 return Ok(customDish);
             }
-            catch (KeyNotFoundException ex)
+            catch (KeyNotFoundException)
             {
-                return NotFound(new { message = ex.Message });
+                return NotFound(ErrorResponseHelper.SafeError("Kh繫ng t穫m th廕句 m籀n th⑹廙𩵚g d羅ng �廙� c廕計 nh廕負", HttpContext));
             }
-            catch (ArgumentException ex)
+            catch (ArgumentException)
             {
-                return BadRequest(new { message = ex.Message });
+                return BadRequest(ErrorResponseHelper.SafeError("Th繫ng tin c廕計 nh廕負 kh繫ng h廙φ l廙�", HttpContext));
             }
-            catch (InvalidOperationException ex)
+            catch (InvalidOperationException)
             {
-                return Conflict(new { message = ex.Message });
+                return Conflict(ErrorResponseHelper.SafeError("Xung �廙脌 d廙� li廙杮 khi c廕計 nh廕負", HttpContext));
             }
-            catch (UnauthorizedAccessException ex)
+            catch (UnauthorizedAccessException)
             {
-                return Unauthorized(new { message = ex.Message });
+                return Unauthorized(ErrorResponseHelper.SafeError("Kh繫ng c籀 quy廙� c廕計 nh廕負 m籀n n�y", HttpContext));
             }
             catch (Exception)
             {
-                return StatusCode(500, ErrorResponseHelper.SafeError("Đã xảy ra lỗi khi cập nhật món thường dùng", HttpContext));
+                return StatusCode(500, ErrorResponseHelper.SafeError("�瓊 x廕ㄊ ra l廙𡟙 khi c廕計 nh廕負 m籀n th⑹廙𩵚g d羅ng", HttpContext));
             }
         }
 
@@ -268,17 +268,17 @@ namespace EatFitAI.API.Controllers
                 await _customDishService.DeleteCustomDishAsync(userId, id);
                 return NoContent();
             }
-            catch (KeyNotFoundException ex)
+            catch (KeyNotFoundException)
             {
-                return NotFound(new { message = ex.Message });
+                return NotFound(ErrorResponseHelper.SafeError("Kh繫ng t穫m th廕句 m籀n th⑹廙𩵚g d羅ng �廙� x籀a", HttpContext));
             }
-            catch (UnauthorizedAccessException ex)
+            catch (UnauthorizedAccessException)
             {
-                return Unauthorized(new { message = ex.Message });
+                return Unauthorized(ErrorResponseHelper.SafeError("Kh繫ng c籀 quy廙� x籀a m籀n n�y", HttpContext));
             }
             catch (Exception)
             {
-                return StatusCode(500, ErrorResponseHelper.SafeError("Đã xảy ra lỗi khi xóa món thường dùng", HttpContext));
+                return StatusCode(500, ErrorResponseHelper.SafeError("�瓊 x廕ㄊ ra l廙𡟙 khi x籀a m籀n th⑹廙𩵚g d羅ng", HttpContext));
             }
         }
 
@@ -297,25 +297,25 @@ namespace EatFitAI.API.Controllers
                 var mealDiary = await _customDishService.ApplyCustomDishAsync(userId, id, request);
                 return Ok(mealDiary);
             }
-            catch (KeyNotFoundException ex)
+            catch (KeyNotFoundException)
             {
-                return NotFound(new { message = ex.Message });
+                return NotFound(ErrorResponseHelper.SafeError("Kh繫ng t穫m th廕句 m籀n th⑹廙𩵚g d羅ng �廙� 獺p d廙叩g", HttpContext));
             }
-            catch (ArgumentException ex)
+            catch (ArgumentException)
             {
-                return BadRequest(new { message = ex.Message });
+                return BadRequest(ErrorResponseHelper.SafeError("Th繫ng tin 獺p d廙叩g kh繫ng h廙φ l廙�", HttpContext));
             }
-            catch (InvalidOperationException ex)
+            catch (InvalidOperationException)
             {
-                return Conflict(new { message = ex.Message });
+                return Conflict(ErrorResponseHelper.SafeError("Xung �廙脌 d廙� li廙杮 khi 獺p d廙叩g m籀n th⑹廙𩵚g d羅ng", HttpContext));
             }
-            catch (UnauthorizedAccessException ex)
+            catch (UnauthorizedAccessException)
             {
-                return Unauthorized(new { message = ex.Message });
+                return Unauthorized(ErrorResponseHelper.SafeError("Kh繫ng c籀 quy廙� 獺p d廙叩g m籀n n�y", HttpContext));
             }
             catch (Exception)
             {
-                return StatusCode(500, ErrorResponseHelper.SafeError("Đã xảy ra lỗi khi thêm món thường dùng vào nhật ký", HttpContext));
+                return StatusCode(500, ErrorResponseHelper.SafeError("�瓊 x廕ㄊ ra l廙𡟙 khi th礙m m籀n th⑹廙𩵚g d羅ng v�o nh廕負 k羸", HttpContext));
             }
         }
 
@@ -326,7 +326,7 @@ namespace EatFitAI.API.Controllers
 
             if (string.IsNullOrEmpty(userIdClaim) || !Guid.TryParse(userIdClaim, out var userId))
             {
-                throw new UnauthorizedAccessException("Token người dùng không hợp lệ");
+                throw new UnauthorizedAccessException("Token ng⑹廙𩥉 d羅ng kh繫ng h廙φ l廙�");
             }
 
             return userId;

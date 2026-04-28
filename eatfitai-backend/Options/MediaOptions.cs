@@ -2,7 +2,7 @@ namespace EatFitAI.API.Options
 {
     public class MediaOptions
     {
-        public string Provider { get; set; } = "supabase";
+        public string Provider { get; set; } = "r2";
         public string PublicBaseUrl { get; set; } = string.Empty;
     }
 

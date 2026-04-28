@@ -1,4 +1,4 @@
-﻿using AutoMapper;
+using AutoMapper;
 using EatFitAI.API.DbScaffold.Data;
 using EatFitAI.API.DbScaffold.Models;
 using EatFitAI.API.DTOs.Food;
@@ -224,13 +224,13 @@ namespace EatFitAI.API.Services
             if (_environment.IsProduction())
             {
                 _logger.LogError(
-                    "Supabase storage is not configured in Production. Rejecting user food thumbnail upload.");
+                    "Cloud storage (R2) is not configured in Production. Rejecting user food thumbnail upload.");
                 throw new InvalidOperationException(
                     "Cloud storage is not configured for user food thumbnail uploads.");
             }
 
             _logger.LogWarning(
-                "Supabase storage is not configured. Falling back to local filesystem for user food thumbnail uploads.");
+                "Cloud storage (R2) is not configured. Falling back to local filesystem for user food thumbnail uploads.");
 
             if (uploadsRoot == null)
             {

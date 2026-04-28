@@ -528,10 +528,10 @@ namespace EatFitAI.API.Controllers
 
                 return Ok(insights);
             }
-            catch (InvalidOperationException ex)
+            catch (InvalidOperationException)
             {
-                _logger.LogWarning(ex, "No nutrition target found for user");
-                return BadRequest(new { message = ex.Message });
+                _logger.LogWarning("No nutrition target found for user");
+                return BadRequest(ErrorResponseHelper.SafeError("Chưa thiết lập mục tiêu dinh dưỡng", HttpContext));
             }
             catch (Exception ex)
             {
@@ -566,10 +566,10 @@ namespace EatFitAI.API.Controllers
 
                 return Ok(adaptiveTarget);
             }
-            catch (InvalidOperationException ex)
+            catch (InvalidOperationException)
             {
-                _logger.LogWarning(ex, "No nutrition target found for user");
-                return BadRequest(new { message = ex.Message });
+                _logger.LogWarning("No nutrition target found for user");
+                return BadRequest(ErrorResponseHelper.SafeError("Chưa thiết lập mục tiêu dinh dưỡng", HttpContext));
             }
             catch (Exception ex)
             {

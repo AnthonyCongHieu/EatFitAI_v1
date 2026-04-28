@@ -1,4 +1,4 @@
-﻿using EatFitAI.API.DTOs.Auth;
+using EatFitAI.API.DTOs.Auth;
 using EatFitAI.API.Helpers;
 using EatFitAI.API.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
@@ -56,9 +56,9 @@ namespace EatFitAI.API.Controllers
                 await _authService.VerifyResetCodeAsync(request);
                 return Ok(new { message = "Mã hợp lệ" });
             }
-            catch (UnauthorizedAccessException ex)
+            catch (UnauthorizedAccessException)
             {
-                return Unauthorized(new { message = ex.Message });
+                return Unauthorized(ErrorResponseHelper.SafeError("Mã xác minh không hợp lệ hoặc đã hết hạn", HttpContext));
             }
             catch (Exception ex)
             {
@@ -78,9 +78,9 @@ namespace EatFitAI.API.Controllers
                 await _authService.ResetPasswordAsync(request);
                 return Ok(new { message = "Đặt lại mật khẩu thành công" });
             }
-            catch (UnauthorizedAccessException ex)
+            catch (UnauthorizedAccessException)
             {
-                return Unauthorized(new { message = ex.Message });
+                return Unauthorized(ErrorResponseHelper.SafeError("Yêu cầu đặt lại mật khẩu không hợp lệ hoặc đã hết hạn", HttpContext));
             }
             catch (Exception ex)
             {
@@ -100,21 +100,21 @@ namespace EatFitAI.API.Controllers
                 var result = await _authService.RegisterAsync(request);
                 return Ok(result);
             }
-            catch (NotSupportedException ex)
+            catch (NotSupportedException)
             {
                 _logger.LogWarning("Legacy registration blocked for email: {Email}", request.Email);
-                return StatusCode(StatusCodes.Status410Gone, new { message = ex.Message });
+                return StatusCode(StatusCodes.Status410Gone, ErrorResponseHelper.SafeError("Phương thức đăng ký này không còn được hỗ trợ", HttpContext));
             }
             catch (InvalidOperationException ex)
             {
                 // Email đã tồn tại - trả về 400 thay vì 500
                 _logger.LogWarning("Registration failed for email: {Email}, error: {Error}", request.Email, ex.Message);
-                return BadRequest(new { message = ex.Message });
+                return BadRequest(ErrorResponseHelper.SafeError("Không thể đăng ký với thông tin đã cung cấp", HttpContext));
             }
             catch (ArgumentException ex)
             {
                 _logger.LogWarning("Registration failed for email: {Email}, error: {Error}", request.Email, ex.Message);
-                return BadRequest(new { message = ex.Message });
+                return BadRequest(ErrorResponseHelper.SafeError("Thông tin đăng ký không hợp lệ", HttpContext));
             }
             catch (Exception ex)
             {
@@ -137,9 +137,9 @@ namespace EatFitAI.API.Controllers
                 var result = await _authService.RegisterWithVerificationAsync(request);
                 return Ok(result);
             }
-            catch (InvalidOperationException ex)
+            catch (InvalidOperationException)
             {
-                return BadRequest(new { message = ex.Message });
+                return BadRequest(ErrorResponseHelper.SafeError("Không thể đăng ký với thông tin đã cung cấp", HttpContext));
             }
             catch (Exception ex)
             {
@@ -162,9 +162,9 @@ namespace EatFitAI.API.Controllers
                 var result = await _authService.VerifyEmailAsync(request);
                 return Ok(result);
             }
-            catch (UnauthorizedAccessException ex)
+            catch (UnauthorizedAccessException)
             {
-                return Unauthorized(new { message = ex.Message });
+                return Unauthorized(ErrorResponseHelper.SafeError("Mã xác minh không hợp lệ hoặc đã hết hạn", HttpContext));
             }
             catch (InvalidOperationException ex)
             {
@@ -195,9 +195,9 @@ namespace EatFitAI.API.Controllers
                 var result = await _authService.ResendVerificationAsync(request);
                 return Ok(result);
             }
-            catch (UnauthorizedAccessException ex)
+            catch (UnauthorizedAccessException)
             {
-                return Unauthorized(new { message = ex.Message });
+                return Unauthorized(ErrorResponseHelper.SafeError("Yêu cầu không hợp lệ", HttpContext));
             }
             catch (InvalidOperationException ex)
             {
@@ -209,7 +209,7 @@ namespace EatFitAI.API.Controllers
                         HttpContext));
                 }
 
-                return BadRequest(new { message = ex.Message });
+                return BadRequest(ErrorResponseHelper.SafeError("Không thể gửi lại mã xác minh", HttpContext));
             }
             catch (Exception ex)
             {
@@ -255,9 +255,9 @@ namespace EatFitAI.API.Controllers
                 var result = await _authService.LoginAsync(request);
                 return Ok(result);
             }
-            catch (UnauthorizedAccessException ex)
+            catch (UnauthorizedAccessException)
             {
-                return Unauthorized(new { message = ex.Message });
+                return Unauthorized(ErrorResponseHelper.SafeError("Email hoặc mật khẩu không đúng", HttpContext));
             }
             catch (Exception ex)
             {
@@ -294,9 +294,9 @@ namespace EatFitAI.API.Controllers
                 var result = await _authService.RefreshTokenAsync(request.RefreshToken);
                 return Ok(result);
             }
-            catch (UnauthorizedAccessException ex)
+            catch (UnauthorizedAccessException)
             {
-                return Unauthorized(new { message = ex.Message });
+                return Unauthorized(ErrorResponseHelper.SafeError("Phiên đăng nhập đã hết hạn", HttpContext));
             }
             catch (Exception ex)
             {
@@ -315,13 +315,13 @@ namespace EatFitAI.API.Controllers
                 var result = await _authService.GoogleLoginAsync(idToken);
                 return Ok(result);
             }
-            catch (NotSupportedException ex)
+            catch (NotSupportedException)
             {
-                return StatusCode(StatusCodes.Status410Gone, new { message = ex.Message });
+                return StatusCode(StatusCodes.Status410Gone, ErrorResponseHelper.SafeError("Phương thức đăng nhập Google không còn được hỗ trợ", HttpContext));
             }
-            catch (UnauthorizedAccessException ex)
+            catch (UnauthorizedAccessException)
             {
-                return Unauthorized(new { message = ex.Message });
+                return Unauthorized(ErrorResponseHelper.SafeError("Đăng nhập Google không thành công", HttpContext));
             }
             catch (Exception ex)
             {
@@ -350,9 +350,9 @@ namespace EatFitAI.API.Controllers
                 await _authService.ChangePasswordAsync(userGuid, request.CurrentPassword, request.NewPassword);
                 return Ok(new { message = "Đổi mật khẩu thành công" });
             }
-            catch (UnauthorizedAccessException ex)
+            catch (UnauthorizedAccessException)
             {
-                return Unauthorized(new { message = ex.Message });
+                return Unauthorized(ErrorResponseHelper.SafeError("Mật khẩu hiện tại không đúng", HttpContext));
             }
             catch (Exception ex)
             {
