@@ -343,10 +343,24 @@ namespace EatFitAI.API.Services
                     return null;
                 }
 
+                // Double-check: barcode có thể đã được lưu bởi concurrent request
+                var existingByBarcode = await _context.FoodItems
+                    .FirstOrDefaultAsync(f => f.Barcode == barcode && !f.IsDeleted, cancellationToken);
+                if (existingByBarcode != null)
+                {
+                    return new BarcodeLookupResultDto
+                    {
+                        Barcode = barcode,
+                        Source = "catalog",
+                        FoodItem = NormalizeFoodItemDto(_mapper.Map<FoodItemDto>(existingByBarcode)),
+                    };
+                }
+
                 // Luôn lưu FoodItem mới từ provider vào database để có ID thực tế
                 var newFoodItemEntity = new FoodItem
                 {
                     FoodName = foodItem.FoodName,
+                    FoodNameEn = foodItem.FoodNameEn,
                     Barcode = barcode,
                     CaloriesPer100g = foodItem.CaloriesPer100g,
                     ProteinPer100g = foodItem.ProteinPer100g,
@@ -432,6 +446,7 @@ namespace EatFitAI.API.Services
             {
                 FoodItemId = 0,
                 FoodName = name,
+                FoodNameEn = ReadString(product, "product_name_en", "product_name_en_imported"),
                 Barcode = barcode,
                 CaloriesPer100g = ReadNutriment("energy-kcal_100g", "energy_kcal_100g", "calories_100g", "calories") ?? 0m,
                 ProteinPer100g = ReadNutriment("proteins_100g", "protein_100g", "protein") ?? 0m,
@@ -473,7 +488,7 @@ namespace EatFitAI.API.Services
             return new string(
                 barcode
                     .Trim()
-                    .Where(char.IsLetterOrDigit)
+                    .Where(char.IsDigit)
                     .ToArray());
         }
 

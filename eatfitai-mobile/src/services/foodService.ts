@@ -344,12 +344,20 @@ export const foodService = {
 
     const response = await apiClient.get(`/api/food/barcode/${encodeURIComponent(trimmedBarcode)}`);
     const data = response.data;
-    const foodItem = data?.foodItem ?? data;
+    const foodItem = data?.foodItem ?? data?.FoodItem ?? data;
     if (!foodItem) {
       return null;
     }
 
-    return normalizeFoodDetail(foodItem as FoodItemDtoExtended);
+    const detail = normalizeFoodDetail(foodItem as FoodItemDtoExtended);
+    // Preserve barcode + source info from backend response
+    detail.barcode = trimmedBarcode;
+    if (data?.source === 'provider') {
+      detail.source = 'catalog'; // Provider results are saved to catalog
+      (detail as any)._fromProvider = true;
+      (detail as any)._providerName = data?.providerName;
+    }
+    return detail;
   },
 
   async createCustomDish(payload: {

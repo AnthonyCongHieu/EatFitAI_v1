@@ -17,6 +17,7 @@ export type RootStackParamList = {
         showQuickSuggestions?: boolean;
         selectedDate?: string;
         returnToDiaryOnSave?: boolean;
+        initialQuery?: string;
       }
     | undefined;
   FoodDetail: {

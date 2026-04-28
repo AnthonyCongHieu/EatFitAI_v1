@@ -99,6 +99,7 @@ const FoodSearchScreen = (): React.ReactElement => {
   const showQuickSuggestions = route.params?.showQuickSuggestions ?? true;
   const selectedDate = route.params?.selectedDate;
   const returnToDiaryOnSave = route.params?.returnToDiaryOnSave ?? false;
+  const initialQuery = route.params?.initialQuery;
 
   const loadRecentSearches = async () => {
     try {
@@ -136,6 +137,15 @@ const FoodSearchScreen = (): React.ReactElement => {
       loadCommonMeals().catch(() => undefined);
     }
   }, [initialTab, loadCommonMeals, loadRecentFoods, showQuickSuggestions]);
+
+  // When navigated with initialQuery (e.g. from barcode scan fallback), auto-search
+  useEffect(() => {
+    if (initialQuery && initialQuery.trim()) {
+      setQuery(initialQuery.trim());
+      runSearch(initialQuery.trim(), false).catch(() => {});
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialQuery]);
 
   const saveRecentSearch = async (term: string) => {
     try {

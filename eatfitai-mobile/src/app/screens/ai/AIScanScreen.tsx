@@ -416,8 +416,10 @@ const AIScanScreen: React.FC = () => {
           Toast.show({
             type: 'info',
             text1: 'Chưa có món cho mã vạch này',
-            text2: 'Bạn có thể tìm thủ công hoặc thử mã khác.',
+            text2: 'Đang chuyển sang tìm kiếm thủ công...',
           });
+          // Navigate to search screen pre-filled with barcode
+          navigation.navigate('FoodSearch', { initialQuery: barcode });
           return;
         }
 
@@ -433,7 +435,9 @@ const AIScanScreen: React.FC = () => {
         });
         Toast.show({
           type: 'success',
-          text1: 'Đã nhận diện mã vạch',
+          text1: (foodDetail as any)?._fromProvider
+            ? '🌐 Đã tìm thấy từ OpenFoodFacts'
+            : '✅ Đã nhận diện mã vạch',
           text2: foodDetail.name,
         });
         navigation.navigate('FoodDetail', {
@@ -459,9 +463,11 @@ const AIScanScreen: React.FC = () => {
         });
       } finally {
         setIsProcessing(false);
+        // Release lock after a longer debounce to prevent rapid re-scans
+        // during slow network (cold start can take 30-60s)
         setTimeout(() => {
           barcodeLockRef.current = false;
-        }, 1200);
+        }, 2500);
       }
     },
     [isBarcodeMode, mode, navigation],
