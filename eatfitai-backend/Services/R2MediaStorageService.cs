@@ -7,7 +7,7 @@ using Microsoft.Extensions.Options;
 
 namespace EatFitAI.API.Services
 {
-    public class R2MediaStorageService : IMediaStorageService
+    public class R2MediaStorageService : IMediaStorageService, IDisposable
     {
         private static readonly HashSet<string> PlaceholderValues = new(StringComparer.OrdinalIgnoreCase)
         {
@@ -22,6 +22,7 @@ namespace EatFitAI.API.Services
         private readonly MediaOptions _mediaOptions;
         private readonly R2Options _r2Options;
         private readonly ILogger<R2MediaStorageService> _logger;
+        private readonly Lazy<IAmazonS3> _s3Client;
 
         public R2MediaStorageService(
             IOptions<MediaOptions> mediaOptions,
@@ -31,6 +32,7 @@ namespace EatFitAI.API.Services
             _mediaOptions = mediaOptions.Value;
             _r2Options = r2Options.Value;
             _logger = logger;
+            _s3Client = new Lazy<IAmazonS3>(CreateClient);
         }
 
         public bool IsConfigured =>
@@ -50,7 +52,7 @@ namespace EatFitAI.API.Services
             }
 
             var objectKey = BuildObjectKey(upload.Bucket, upload.ObjectPath);
-            using var client = CreateClient();
+            var client = _s3Client.Value;
             await using var stream = new MemoryStream(upload.Bytes);
             var request = new PutObjectRequest
             {
@@ -86,7 +88,7 @@ namespace EatFitAI.API.Services
             }
 
             var objectKey = BuildObjectKey(bucket, objectPath);
-            using var client = CreateClient();
+            var client = _s3Client.Value;
             
             var request = new GetPreSignedUrlRequest
             {
@@ -131,6 +133,14 @@ namespace EatFitAI.API.Services
         {
             return !string.IsNullOrWhiteSpace(value)
                 && !PlaceholderValues.Contains(value.Trim());
+        }
+
+        public void Dispose()
+        {
+            if (_s3Client.IsValueCreated && _s3Client.Value is IDisposable disposable)
+            {
+                disposable.Dispose();
+            }
         }
     }
 }

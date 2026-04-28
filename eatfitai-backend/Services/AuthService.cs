@@ -36,6 +36,21 @@ namespace EatFitAI.API.Services
         private const int PasswordSaltSize = 16;
         private const int PasswordKeySize = 32;
 
+        /// <summary>
+        /// Masks an email address for safe logging (e.g. "u***r@domain.com").
+        /// </summary>
+        private static string MaskEmail(string? email)
+        {
+            if (string.IsNullOrWhiteSpace(email)) return "***";
+            var atIndex = email.IndexOf('@');
+            if (atIndex <= 0) return "***";
+            var local = email.Substring(0, atIndex);
+            var domain = email.Substring(atIndex);
+            return local.Length <= 2
+                ? $"{local[0]}***{domain}"
+                : $"{local[0]}***{local[^1]}{domain}";
+        }
+
         public AuthService(
             IUserRepository userRepository,
             EatFitAIDbContext context,
@@ -60,11 +75,11 @@ namespace EatFitAI.API.Services
 
         public async Task<AuthResponse> RegisterAsync(RegisterRequest request)
         {
-            _logger.LogInformation("Bắt đầu đăng ký cho email: {Email}", request.Email);
+            _logger.LogInformation("Bắt đầu đăng ký cho email: {Email}", MaskEmail(request.Email));
 
             if (!_env.IsDevelopment())
             {
-                _logger.LogWarning("Legacy register endpoint is disabled outside Development for email: {Email}", request.Email);
+                _logger.LogWarning("Legacy register endpoint is disabled outside Development for email: {Email}", MaskEmail(request.Email));
                 throw new NotSupportedException("Endpoint đăng ký cũ đã bị vô hiệu hóa. Hãy dùng /api/auth/register-with-verification.");
             }
 
@@ -74,7 +89,7 @@ namespace EatFitAI.API.Services
                 // Kiểm tra email đã tồn tại chưa
                 if (await _userRepository.EmailExistsAsync(request.Email))
                 {
-                    _logger.LogWarning("Email đã tồn tại: {Email}", request.Email);
+                    _logger.LogWarning("Email đã tồn tại: {Email}", MaskEmail(request.Email));
                     throw new InvalidOperationException("Email already exists");
                 }
 
@@ -120,7 +135,7 @@ namespace EatFitAI.API.Services
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Lỗi đăng ký cho email: {Email}", request.Email);
+                _logger.LogError(ex, "Lỗi đăng ký cho email: {Email}", MaskEmail(request.Email));
                 throw;
             }
         }
@@ -152,7 +167,7 @@ namespace EatFitAI.API.Services
             // Kiểm tra email đã được xác minh chưa
             if (!user.EmailVerified)
             {
-                _logger.LogWarning("Login bị từ chối - Email chưa verify: {Email}", request.Email);
+                _logger.LogWarning("Login bị từ chối - Email chưa verify: {Email}", MaskEmail(request.Email));
                 throw new UnauthorizedAccessException("Email chưa được xác minh. Vui lòng kiểm tra email và nhập mã xác minh.");
             }
 
@@ -441,12 +456,12 @@ namespace EatFitAI.API.Services
 
         public async Task<ForgotPasswordResponse> ForgotPasswordAsync(ForgotPasswordRequest request)
         {
-            _logger.LogInformation("ForgotPassword cho email: {Email}", request.Email);
+            _logger.LogInformation("ForgotPassword cho email: {Email}", MaskEmail(request.Email));
             var user = await _userRepository.GetByEmailAsync(request.Email);
             
             if (user == null)
             {
-                _logger.LogDebug("ForgotPassword - Email không tồn tại: {Email}", request.Email);
+                _logger.LogDebug("ForgotPassword - Email không tồn tại: {Email}", MaskEmail(request.Email));
                 return new ForgotPasswordResponse
                 {
                     Success = true,
@@ -639,7 +654,7 @@ namespace EatFitAI.API.Services
         /// </summary>
         public async Task<RegisterResponse> RegisterWithVerificationAsync(RegisterRequest request)
         {
-            _logger.LogInformation("Đăng ký với email verification cho: {Email}", request.Email);
+            _logger.LogInformation("Đăng ký với email verification cho: {Email}", MaskEmail(request.Email));
             var includeCodeInResponse = ShouldIncludeAuthCodeInResponse(request.Email);
 
             // Check if email already exists
@@ -649,7 +664,7 @@ namespace EatFitAI.API.Services
                 // If email exists but NOT verified, allow re-registration by resetting verification code
                 if (!existingUser.EmailVerified)
                 {
-                    _logger.LogInformation("Email tồn tại nhưng chưa verify, gửi lại mã: {Email}", request.Email);
+                    _logger.LogInformation("Email tồn tại nhưng chưa verify, gửi lại mã: {Email}", MaskEmail(request.Email));
                     
                     // Update password and display name if provided
                     existingUser.PasswordHash = HashPassword(request.Password);
@@ -693,7 +708,7 @@ namespace EatFitAI.API.Services
                 }
                 
                 // Email exists and already verified
-                _logger.LogWarning("Email đã được đăng ký và verify: {Email}", request.Email);
+                _logger.LogWarning("Email đã được đăng ký và verify: {Email}", MaskEmail(request.Email));
                 throw new InvalidOperationException("Email đã được đăng ký");
             }
             // Tạo user mới nhưng chưa verified
@@ -750,7 +765,7 @@ namespace EatFitAI.API.Services
         /// </summary>
         public async Task<AuthResponse> VerifyEmailAsync(VerifyEmailRequest request)
         {
-            _logger.LogInformation("Xác minh email cho: {Email}", request.Email);
+            _logger.LogInformation("Xác minh email cho: {Email}", MaskEmail(request.Email));
 
             var user = await _userRepository.GetByEmailAsync(request.Email);
             if (user == null)
@@ -780,7 +795,7 @@ namespace EatFitAI.API.Services
             user.VerificationCodeExpiry = null;
             await _context.SaveChangesAsync();
 
-            _logger.LogInformation("Email đã xác minh thành công cho: {Email}", request.Email);
+            _logger.LogInformation("Email đã xác minh thành công cho: {Email}", MaskEmail(request.Email));
 
             // Generate JWT token
             var token = GenerateJwtToken(user);
@@ -811,7 +826,7 @@ namespace EatFitAI.API.Services
         /// </summary>
         public async Task<RegisterResponse> ResendVerificationAsync(ResendVerificationRequest request)
         {
-            _logger.LogInformation("Gửi lại mã xác minh cho: {Email}", request.Email);
+            _logger.LogInformation("Gửi lại mã xác minh cho: {Email}", MaskEmail(request.Email));
 
             var user = await _userRepository.GetByEmailAsync(request.Email);
             if (user == null)
