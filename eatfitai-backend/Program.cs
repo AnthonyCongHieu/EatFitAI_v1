@@ -825,10 +825,14 @@ builder.Services.AddHostedService<AdminRuntimeSnapshotBackgroundService>();
 
 // Health checks (used by HealthController and readiness endpoints)
 builder.Services.AddSingleton<StartupHealthState>();
+builder.Services.AddScoped<EatFitAI.API.HealthChecks.SupabaseHealthCheck>();
 builder.Services.AddHealthChecks()
     .AddCheck<StartupBootstrapHealthCheck>(
         "startup-bootstrap",
         tags: new[] { "ready" })
+    .AddCheck<EatFitAI.API.HealthChecks.SupabaseHealthCheck>(
+        "supabase",
+        tags: new[] { "ready", "external" })
     .AddNpgSql(
         defaultConnectionString!,
         name: "postgres",

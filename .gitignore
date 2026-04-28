@@ -92,3 +92,8 @@ artifacts-device-latest.png
 # Firebase config — chứa API key, không track trong git
 google-services.json
 
+
+# Temporary migrations
+MigrateToR2/
+temp_migration/
+migrate-user-food.ps1
