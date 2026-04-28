@@ -374,9 +374,9 @@ def healthz() -> Dict[str, Any]:
         "yolo_confidence_threshold": YOLO_CONFIDENCE_THRESHOLD,
         "yolo_image_size": YOLO_IMAGE_SIZE,
         "yolo_onnx_image_size": YOLO_ONNX_IMAGE_SIZE,
-        "cuda_available": torch.cuda.is_available(),
-        "device": str(loaded_model.device) if loaded_model else DEVICE,
-        "gpu_name": torch.cuda.get_device_name(0) if torch.cuda.is_available() else None,
+        "cuda_available": False,
+        "device": "cpu",
+        "gpu_name": None,
         "llm_provider": "gemini",
         **gemini_status,
     }
