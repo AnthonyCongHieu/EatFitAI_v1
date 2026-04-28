@@ -1,16 +1,13 @@
-// VoiceInput component - Voice logging for meals with real STT
-// Sử dụng Native Device Speech-to-Text (Google/Apple)
+// VoiceInput component - Voice logging cho meals
+// Chuyển từ simulation sang text input thực tế gọi parseWithProvider
 
 import React, { useState, useCallback } from 'react';
-import { View, StyleSheet, Pressable, Alert } from 'react-native';
+import { View, StyleSheet, Pressable, TextInput, Keyboard } from 'react-native';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withSpring,
-  withRepeat,
-  withSequence,
   withTiming,
-  cancelAnimation,
 } from 'react-native-reanimated';
 import { useAppTheme } from '../theme/ThemeProvider';
 import { ThemedText } from './ThemedText';
@@ -24,149 +21,66 @@ interface VoiceInputProps {
   disabled?: boolean;
 }
 
-type RecordingState = 'idle' | 'recording' | 'processing';
+type InputState = 'idle' | 'processing';
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 /**
  * VoiceInput Component
  *
- * Hiện tại sử dụng simulation cho Expo Go.
- * Khi build production với EAS, có thể tích hợp:
- * - @jamsch/expo-speech-recognition
- * - @react-native-voice/voice
+ * Text input + AI parse. User nhập lệnh → gọi Gemini parse intent.
+ * Khi tích hợp @jamsch/expo-speech-recognition (EAS build),
+ * có thể thêm nút mic ghi âm thật gọi voiceService.transcribeAudio().
  */
 const VoiceInput: React.FC<VoiceInputProps> = ({
   onResult,
   onError,
-  placeholder = 'Nhấn và giữ để nói...',
+  placeholder = 'Nhập lệnh: "Thêm 1 bát phở bữa trưa"...',
   disabled = false,
 }) => {
   const { theme } = useAppTheme();
-  const [recordingState, setRecordingState] = useState<RecordingState>('idle');
-  const [recognizedText, setRecognizedText] = useState<string>('');
+  const [inputState, setInputState] = useState<InputState>('idle');
+  const [inputText, setInputText] = useState<string>('');
+  const [lastParsedText, setLastParsedText] = useState<string>('');
 
   // Animation values
   const scale = useSharedValue(1);
-  const pulseScale = useSharedValue(1);
-  const opacity = useSharedValue(1);
 
-  // Start recording/listening
-  const startRecording = useCallback(async () => {
-    if (disabled) return;
+  // Xử lý gửi lệnh text
+  const handleSubmit = useCallback(async () => {
+    const trimmed = inputText.trim();
+    if (!trimmed || disabled || inputState === 'processing') return;
 
-    setRecordingState('recording');
-    setRecognizedText('');
-    scale.value = withSpring(1.1, { damping: 18, stiffness: 400 });
+    Keyboard.dismiss();
+    setInputState('processing');
+    scale.value = withSpring(0.95, { damping: 18, stiffness: 400 });
 
-    // Pulse animation while recording
-    pulseScale.value = withRepeat(
-      withSequence(withTiming(1.3, { duration: 600 }), withTiming(1, { duration: 600 })),
-      -1,
-      false,
-    );
-
-    console.log('[VoiceInput] Started recording...');
-
-    // TODO: Khi không dùng Expo Go, uncomment để dùng real STT:
-    // try {
-    //   await ExpoSpeechRecognition.start({ language: 'vi-VN' });
-    // } catch (err) {
-    //   console.error('STT start failed:', err);
-    // }
-  }, [disabled, scale, pulseScale]);
-
-  // Stop recording and process
-  const stopRecording = useCallback(async () => {
-    if (recordingState !== 'recording') return;
-
-    setRecordingState('processing');
-    scale.value = withSpring(1, { damping: 18, stiffness: 400 });
-    cancelAnimation(pulseScale);
-    pulseScale.value = withTiming(1, { duration: 200 });
-
-    console.log('[VoiceInput] Stopped recording, processing...');
-
-    // TODO: Khi không dùng Expo Go, uncomment:
-    // await ExpoSpeechRecognition.stop();
-
-    // SIMULATION: Dùng text giả để demo
-    // Trong production, text này sẽ từ STT engine
-    const simulatedText = getSimulatedText();
-    setRecognizedText(simulatedText);
+    console.log('[VoiceInput] Parsing text command:', trimmed);
 
     try {
-      // Parse intent using Ollama AI
-      const command = await voiceService.parseWithOllama(simulatedText);
+      // Parse intent bằng Gemini AI qua backend
+      const command = await voiceService.parseWithProvider(trimmed);
 
       console.log('[VoiceInput] Parsed command:', command);
-
-      setRecordingState('idle');
-      onResult(simulatedText, command);
+      setLastParsedText(trimmed);
+      setInputText('');
+      setInputState('idle');
+      scale.value = withSpring(1, { damping: 18, stiffness: 400 });
+      onResult(trimmed, command);
     } catch (error) {
       console.error('[VoiceInput] Parse error:', error);
-      setRecordingState('idle');
-      onError?.('Không thể xử lý lệnh giọng nói');
+      setInputState('idle');
+      scale.value = withSpring(1, { damping: 18, stiffness: 400 });
+      onError?.('Không thể xử lý lệnh. Vui lòng thử lại.');
     }
-  }, [recordingState, scale, pulseScale, onResult, onError]);
-
-  // Demo: Simulation text cho testing
-  const getSimulatedText = (): string => {
-    const samples: string[] = [
-      'Thêm 1 bát phở bò vào bữa trưa',
-      'Ghi 2 quả trứng bữa sáng',
-      'Cân nặng 65 kg',
-      'Hôm nay bao nhiêu calo',
-    ];
-    const index = Math.floor(Math.random() * samples.length);
-    return samples[index] as string;
-  };
-
-  const handleLongPress = useCallback(() => {
-    startRecording();
-  }, [startRecording]);
-
-  const handlePressOut = useCallback(() => {
-    if (recordingState === 'recording') {
-      stopRecording();
-    }
-  }, [recordingState, stopRecording]);
-
-  // Quick tap - show instructions
-  const handlePress = useCallback(() => {
-    if (recordingState === 'idle') {
-      Alert.alert(
-        '🎤 Hướng dẫn Voice',
-        'Nhấn và GIỮ nút mic để nói lệnh.\n\nVí dụ:\n• "Thêm 1 phở bò bữa trưa"\n• "Cân nặng 65 kg"\n• "Hôm nay bao nhiêu calo"',
-        [{ text: 'Đã hiểu' }],
-      );
-    }
-  }, [recordingState]);
+  }, [inputText, disabled, inputState, scale, onResult, onError]);
 
   const buttonStyle = useAnimatedStyle(() => ({
     transform: [{ scale: scale.value }],
   }));
 
-  const pulseStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: pulseScale.value }],
-    opacity: opacity.value * 0.3,
-  }));
-
-  const getStateText = (): string => {
-    switch (recordingState) {
-      case 'recording':
-        return 'Đang nghe...';
-      case 'processing':
-        return 'Đang xử lý...';
-      default:
-        return placeholder;
-    }
-  };
-
   const getStateColor = (): string => {
-    switch (recordingState) {
-      case 'recording':
-        return theme.colors.danger;
+    switch (inputState) {
       case 'processing':
         return theme.colors.warning;
       default:
@@ -176,77 +90,71 @@ const VoiceInput: React.FC<VoiceInputProps> = ({
 
   return (
     <View style={styles.container}>
-      <View style={styles.buttonContainer}>
-        {/* Pulse effect behind button */}
-        {recordingState === 'recording' && (
-          <Animated.View
-            style={[
-              styles.pulse,
-              pulseStyle,
-              {
-                backgroundColor: theme.colors.danger,
-              },
-            ]}
-          />
-        )}
+      {/* Text input */}
+      <View style={[styles.inputRow, { borderColor: theme.colors.border }]}>
+        <TextInput
+          style={[
+            styles.textInput,
+            {
+              color: theme.colors.text,
+              backgroundColor: theme.colors.card,
+            },
+          ]}
+          placeholder={placeholder}
+          placeholderTextColor={theme.colors.textSecondary}
+          value={inputText}
+          onChangeText={setInputText}
+          onSubmitEditing={handleSubmit}
+          returnKeyType="send"
+          editable={!disabled && inputState !== 'processing'}
+          multiline={false}
+        />
 
+        {/* Nút gửi */}
         <AnimatedPressable
-          onPress={handlePress}
-          onLongPress={handleLongPress}
-          onPressOut={handlePressOut}
-          delayLongPress={200}
-          disabled={disabled || recordingState === 'processing'}
+          onPress={handleSubmit}
+          disabled={disabled || inputState === 'processing' || !inputText.trim()}
           style={[
             buttonStyle,
-            styles.button,
+            styles.sendButton,
             {
               backgroundColor: getStateColor(),
-              opacity: disabled ? 0.5 : 1,
-              ...theme.shadows.md,
+              opacity: disabled || !inputText.trim() ? 0.5 : 1,
             },
           ]}
           accessibilityRole="button"
-          accessibilityLabel="Voice input"
-          accessibilityHint="Nhấn và giữ để nói tên món ăn"
+          accessibilityLabel="Gửi lệnh"
+          accessibilityHint="Nhấn để gửi lệnh text cho AI phân tích"
         >
           <Icon
-            name={recordingState === 'recording' ? 'mic' : 'mic-outline'}
-            size="lg"
+            name={inputState === 'processing' ? 'hourglass-outline' : 'send'}
+            size="md"
             color="card"
           />
         </AnimatedPressable>
       </View>
 
+      {/* Trạng thái */}
       <ThemedText variant="bodySmall" color="textSecondary" style={styles.stateText}>
-        {getStateText()}
+        {inputState === 'processing' ? 'Đang xử lý...' : 'Nhập lệnh và nhấn gửi'}
       </ThemedText>
 
-      {/* Show recognized text */}
-      {recognizedText && recordingState === 'idle' && (
+      {/* Kết quả parsed gần nhất */}
+      {lastParsedText && inputState === 'idle' && (
         <View
           style={[styles.resultBox, { backgroundColor: theme.colors.success + '20' }]}
         >
           <ThemedText variant="bodySmall" color="success">
-            "{recognizedText}"
+            ✓ "{lastParsedText}"
           </ThemedText>
         </View>
       )}
 
-      {/* Instructions */}
-      {recordingState === 'idle' && !recognizedText && (
+      {/* Hướng dẫn */}
+      {inputState === 'idle' && !lastParsedText && (
         <View style={styles.instructions}>
           <ThemedText variant="caption" color="muted">
-            Ví dụ: "Thêm 1 bát phở bò bữa trưa"
-          </ThemedText>
-        </View>
-      )}
-
-      {/* Recording indicator */}
-      {recordingState === 'recording' && (
-        <View style={[styles.indicator, { backgroundColor: theme.colors.danger + '20' }]}>
-          <View style={[styles.indicatorDot, { backgroundColor: theme.colors.danger }]} />
-          <ThemedText variant="caption" color="danger">
-            Đang ghi âm
+            Ví dụ: "Thêm 1 bát phở bò bữa trưa" • "Cân nặng 65 kg"
           </ThemedText>
         </View>
       )}
@@ -256,25 +164,25 @@ const VoiceInput: React.FC<VoiceInputProps> = ({
 
 const styles = StyleSheet.create({
   container: {
+    gap: 8,
+    paddingHorizontal: 16,
+  },
+  inputRow: {
+    flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: 8,
   },
-  buttonContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: 80,
-    height: 80,
+  textInput: {
+    flex: 1,
+    height: 48,
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    fontSize: 15,
   },
-  pulse: {
-    position: 'absolute',
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-  },
-  button: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
+  sendButton: {
+    width: 48,
+    height: 48,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -282,26 +190,14 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   instructions: {
-    paddingHorizontal: 16,
+    paddingHorizontal: 4,
+    alignItems: 'center',
   },
   resultBox: {
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 8,
     marginTop: 4,
-  },
-  indicator: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
-    gap: 6,
-  },
-  indicatorDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
   },
 });
 

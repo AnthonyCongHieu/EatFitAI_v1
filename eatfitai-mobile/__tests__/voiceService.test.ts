@@ -66,18 +66,5 @@ describe('voiceService', () => {
     expect(result.source).toBe('ai-provider-proxy');
   });
 
-  it('parseWithOllama remains a compatibility alias for parseWithProvider', async () => {
-    const parseWithProvider = jest
-      .spyOn(voiceService, 'parseWithProvider')
-      .mockResolvedValue({
-        intent: 'UNKNOWN',
-        entities: {},
-        confidence: 0,
-        rawText: 'xin chào',
-      });
-
-    await voiceService.parseWithOllama('xin chào');
-
-    expect(parseWithProvider).toHaveBeenCalledWith('xin chào');
-  });
+  // parseWithOllama test đã xóa — method deprecated
 });

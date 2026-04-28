@@ -1,4 +1,4 @@
-﻿import apiClient, {
+import apiClient, {
   aiApiClient,
   fetchWithAuthRetry,
   getCurrentApiUrl,
@@ -511,12 +511,7 @@ export const aiService = {
     }
   },
 
-  async detectIngredients(_imageBase64: string): Promise<IngredientItem[]> {
-    logger.warn(
-      'detectIngredients is deprecated. Use detectFoodByImage with imageUri instead.',
-    );
-    return [];
-  },
+  // detectIngredients đã xóa — deprecated, dùng detectFoodByImage() thay thế
 
   async suggestRecipes(ingredients: string[]): Promise<SuggestedRecipe[]> {
     const response = await apiClient.post<

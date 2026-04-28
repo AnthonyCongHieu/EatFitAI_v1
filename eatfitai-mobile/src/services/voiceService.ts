@@ -208,9 +208,7 @@ export const voiceService = {
     }
   },
 
-  async parseWithOllama(text: string): Promise<ParsedVoiceCommand> {
-    return this.parseWithProvider(text);
-  },
+  // parseWithOllama đã xóa — dùng parseWithProvider() trực tiếp
 
   async executeCommand(command: ParsedVoiceCommand): Promise<VoiceProcessResponse> {
     try {

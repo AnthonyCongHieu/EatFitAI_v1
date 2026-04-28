@@ -311,6 +311,8 @@ namespace EatFitAI.API.Services
                 StringComparison.OrdinalIgnoreCase);
 
             using var client = _httpClientFactory.CreateClient();
+            // OpenFoodFacts yêu cầu User-Agent header — thiếu sẽ bị 403
+            client.DefaultRequestHeaders.UserAgent.ParseAdd("EatFitAI/1.0 (eatfitai-backend)");
 
             try
             {

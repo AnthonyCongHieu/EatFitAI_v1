@@ -15,7 +15,7 @@ import cv2
 import numpy as np
 import onnxruntime as ort
 from flask import Flask, Response, jsonify, request
-from ultralytics import YOLO
+# ultralytics YOLO đã thay bằng ONNX Runtime — không cần import
 from werkzeug.datastructures import FileStorage
 from werkzeug.utils import secure_filename
 from uuid import uuid4
@@ -146,8 +146,8 @@ YOLO_CLASS_NAMES = [
     "tomato",
     "turmeric",
 ]
-YOLO_INFERENCE_LOCK = threading.Lock()
-YOLO_MODEL_LOAD_LOCK = threading.Lock()
+# YOLO_INFERENCE_LOCK đã bỏ — ONNX Runtime thread-safe (ort.InferenceSession)
+# YOLO_MODEL_LOAD_LOCK đã xóa — _load_yolo_model() đã loại bỏ
 YOLO_ONNX_MODEL_LOAD_LOCK = threading.Lock()
 
 # Hằng số validate file
@@ -204,12 +204,11 @@ def _download_model_from_supabase(filename: str = "best.pt") -> bool:
         return False
 
 
-# ============== LOAD YOLO MODEL ==============
-model: YOLO | None = None
-model_file: str = ""
-model_load_error: str | None = None
+# ============== LOAD YOLO MODEL (ONNX only) ==============
+# model PyTorch đã loại bỏ — chỉ dùng ONNX Runtime
 onnx_model: ort.InferenceSession | None = None
 onnx_model_load_error: str | None = None
+model_file: str = ""  # Dùng chung cho health check
 
 
 def _load_onnx_model() -> ort.InferenceSession | None:
@@ -331,68 +330,9 @@ def _detect_with_onnx(path: str, confidence_threshold: float, image_size: int) -
 
     return sorted(best_by_label.values(), key=lambda item: float(item["confidence"]), reverse=True)
 
-# GPU detection - Cloud chạy CPU, local có thể có GPU
-import torch
-
-def get_optimal_device():
-    """Chọn device tối ưu: GPU nếu có, fallback CPU"""
-    if torch.cuda.is_available():
-        device = "cuda:0"
-        gpu_name = torch.cuda.get_device_name(0)
-        vram = torch.cuda.get_device_properties(0).total_memory / (1024**3)
-        logger.info(f"✅ GPU detected: {gpu_name} ({vram:.1f}GB VRAM)")
-        return device
-    else:
-        logger.info("🔧 Chạy trên CPU (production cloud mode)")
-        return "cpu"
-
-DEVICE = get_optimal_device()
-
-def _load_yolo_model() -> YOLO | None:
-    """Load YOLO on demand so /healthz stays fast during Render deploys."""
-    global model, model_file, model_load_error
-
-    if model is not None:
-        return model
-
-    with YOLO_MODEL_LOAD_LOCK:
-        if model is not None:
-            return model
-
-        model_load_error = None
-
-        try:
-            if not os.path.exists(YOLO_MODEL_FILE) and ALLOW_SUPABASE_MODEL_DOWNLOAD:
-                logger.warning("YOLO model file is missing; explicit Supabase model download is enabled.")
-                _download_model_from_supabase(YOLO_MODEL_FILE)
-
-            if os.path.exists(YOLO_MODEL_FILE):
-                logger.info(f"Loading custom trained model: {YOLO_MODEL_FILE}")
-                loaded_model = YOLO(YOLO_MODEL_FILE)
-                loaded_model_file = YOLO_MODEL_FILE
-            elif not allow_generic_yolo_fallback():
-                raise FileNotFoundError(
-                    f"{YOLO_MODEL_FILE} is required in production. Package the model with the service image; "
-                    "Supabase Storage model download is disabled by default."
-                )
-            else:
-                logger.warning("⚠️ best.pt không có → fallback sang yolov8s.pt (model chung, KHÔNG phải food model)")
-                loaded_model = YOLO("yolov8s.pt")
-                loaded_model_file = "yolov8s.pt"
-
-            # Đẩy model lên device tối ưu
-            if DEVICE != "cpu":
-                loaded_model.to(DEVICE)
-                logger.info(f"✅ Model moved to {DEVICE}")
-
-            model = loaded_model
-            model_file = loaded_model_file
-            logger.info(f"Model loaded successfully: {model_file} on {DEVICE}")
-            return model
-        except Exception as e:
-            model_load_error = str(e)
-            logger.error(f"Failed to load model: {e}", exc_info=True)
-            return None
+# PyTorch/ultralytics đã loại bỏ — ONNX Runtime là inference engine duy nhất.
+# Tiết kiệm ~260MB RAM (torch + torchvision + ultralytics).
+# DEVICE luôn là CPU trên Render free tier.
 
 # ============== ROUTES ==============
 
@@ -407,23 +347,21 @@ def root() -> Dict[str, Any]:
 @app.get("/healthz")
 def healthz() -> Dict[str, Any]:
     """Health check nhẹ, không load YOLO trong lúc Render deploy."""
-    loaded_model = model
-    model_classes = list(loaded_model.names.values()) if loaded_model else []
     gemini_status = _get_gemini_health_status()
     current_model_file = model_file or "not-loaded"
     packaged_model_exists = os.path.exists(YOLO_MODEL_FILE) or os.path.exists(YOLO_ONNX_MODEL_FILE)
     current_model_error = pending_model_readiness_error(
         best_model_exists=packaged_model_exists,
-        model_loaded=loaded_model is not None or onnx_model is not None,
-        model_load_error=model_load_error or onnx_model_load_error,
+        model_loaded=onnx_model is not None,
+        model_load_error=onnx_model_load_error,
     )
     
     return {
         "status": "ok",
-        "model_loaded": loaded_model is not None or onnx_model is not None,
+        "model_loaded": onnx_model is not None,
         "model_file": current_model_file,
         "model_load_error": current_model_error,
-        "model_classes_count": len(model_classes) or len(YOLO_CLASS_NAMES),
+        "model_classes_count": len(YOLO_CLASS_NAMES),
         "model_type": "not-loaded" if not model_file else (
             "yolov8-custom-eatfitai-onnx" if model_file.endswith(".onnx") else (
                 "yolov8-custom-eatfitai" if YOLO_MODEL_FILE in model_file else "yolov8-pretrained"
@@ -583,37 +521,21 @@ def detect() -> Response | tuple[Dict[str, str], int]:
         f.save(path)
         logger.info(f"Processing image: {name} ({size / 1024:.1f}KB)")
         
-        with YOLO_INFERENCE_LOCK:
-            out: List[Dict[str, float | str]] = []
-            if YOLO_ONNX_ENABLED and os.path.exists(YOLO_ONNX_MODEL_FILE):
-                out = _detect_with_onnx(path, YOLO_CONFIDENCE_THRESHOLD, YOLO_ONNX_IMAGE_SIZE)
-                if not out and YOLO_RECOVERY_ENABLED:
-                    out = _filter_recovery_detections(
-                        _detect_with_onnx(path, YOLO_RECOVERY_CONFIDENCE_THRESHOLD, YOLO_RECOVERY_IMAGE_SIZE)
-                    )
-                    if out:
-                        logger.info(f"YOLO ONNX recovery pass detected {len(out)} objects in {name}")
-            else:
-                loaded_model = _load_yolo_model()
-                if loaded_model is None:
-                    return {
-                        "error": "model unavailable",
-                        "detail": model_load_error or onnx_model_load_error or "YOLO model could not be loaded",
-                    }, 503
+        # ONNX Runtime thread-safe — không cần YOLO_INFERENCE_LOCK
+        out: List[Dict[str, float | str]] = []
+        if not os.path.exists(YOLO_ONNX_MODEL_FILE):
+            return {
+                "error": "model unavailable",
+                "detail": onnx_model_load_error or f"{YOLO_ONNX_MODEL_FILE} not found",
+            }, 503
 
-                res: Any = loaded_model(path, conf=YOLO_CONFIDENCE_THRESHOLD, imgsz=YOLO_IMAGE_SIZE)
-                out = _detections_from_yolo_result(res)
-
-                if not out and YOLO_RECOVERY_ENABLED:
-                    recovery_res: Any = loaded_model(
-                        path,
-                        conf=YOLO_RECOVERY_CONFIDENCE_THRESHOLD,
-                        imgsz=YOLO_RECOVERY_IMAGE_SIZE,
-                        augment=YOLO_RECOVERY_AUGMENT,
-                    )
-                    out = _filter_recovery_detections(_detections_from_yolo_result(recovery_res))
-                    if out:
-                        logger.info(f"YOLO recovery pass detected {len(out)} objects in {name}")
+        out = _detect_with_onnx(path, YOLO_CONFIDENCE_THRESHOLD, YOLO_ONNX_IMAGE_SIZE)
+        if not out and YOLO_RECOVERY_ENABLED:
+            out = _filter_recovery_detections(
+                _detect_with_onnx(path, YOLO_RECOVERY_CONFIDENCE_THRESHOLD, YOLO_RECOVERY_IMAGE_SIZE)
+            )
+            if out:
+                logger.info(f"YOLO ONNX recovery pass detected {len(out)} objects in {name}")
         
         logger.info(f"Detected {len(out)} objects in {name}")
         return jsonify({"detections": out})

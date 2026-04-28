@@ -73,7 +73,8 @@ def _get_gemini_pool() -> GeminiPoolManager:
     """Lazy init Gemini pool manager."""
     global _gemini_pool
     if _gemini_pool is None:
-        _gemini_pool = GeminiPoolManager.from_env()
+        from shared_gemini_pool import get_shared_pool
+        _gemini_pool = get_shared_pool()
     return _gemini_pool
 
 
