@@ -3,6 +3,7 @@ import type { AxiosError } from 'axios';
 import { API_BASE_URL, assertBackendApiBaseUrl } from '../config/env';
 import apiClient, { getCurrentApiUrl } from './apiClient';
 import { captureError } from './errorTracking';
+import storageService from './storageService';
 
 const getApiBaseUrl = (): string => {
   const baseUrl = getCurrentApiUrl() ?? API_BASE_URL;
@@ -130,8 +131,7 @@ export const voiceService = {
     try {
       // Validate API URL đã được cấu hình
       getApiBaseUrl();
-      const formData = new FormData();
-      // React Native FormData cần file object đặc biệt
+      
       const fileName = audioUri.split('/').pop() || 'audio.wav';
       const fileType = fileName.endsWith('.m4a')
         ? 'audio/mp4'
@@ -141,17 +141,15 @@ export const voiceService = {
             ? 'audio/ogg'
             : 'audio/wav';
 
-      formData.append('file', {
-        uri: audioUri,
-        name: fileName,
-        type: fileType,
-      } as unknown as Blob);
+      // 1. Upload via Presigned URL
+      const publicUrl = await storageService.uploadMedia(audioUri, fileName, fileType);
 
+      // 2. Transcribe using the public URL
       const response = await apiClient.post<TranscriptionResponse>(
         '/api/voice/transcribe',
-        formData,
+        { AudioUrl: publicUrl },
         {
-          headers: { 'Content-Type': 'multipart/form-data' },
+          headers: { 'Content-Type': 'application/json' },
           timeout: 45000, // Audio transcription có thể mất lâu hơn
         },
       );

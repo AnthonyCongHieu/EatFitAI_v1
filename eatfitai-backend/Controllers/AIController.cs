@@ -68,17 +68,16 @@ namespace EatFitAI.API.Controllers
         [Consumes("multipart/form-data")]
         [ProducesResponseType(typeof(EatFitAI.API.DTOs.AI.VisionDetectResultDto), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(object), StatusCodes.Status400BadRequest)]
-        public async Task<ActionResult<EatFitAI.API.DTOs.AI.VisionDetectResultDto>> DetectVision(DetectVisionRequest input)
+        public async Task<ActionResult<EatFitAI.API.DTOs.AI.VisionDetectResultDto>> DetectVision([FromBody] DetectVisionRequest input)
         {
-            var file = input.File;
-            if (file == null || file.Length == 0)
+            var imageUrl = input.ImageUrl;
+            if (string.IsNullOrWhiteSpace(imageUrl))
             {
-                return BadRequest(new { error = "no file" });
+                return BadRequest(new { error = "no image_url provided" });
             }
 
-            // Compute image hash for caching
-            var imageHash = ComputeImageHash(file);
             var userId = GetUserIdFromToken();
+            var imageHash = input.ImageHash ?? imageUrl; // Fallback to URL if hash not provided
 
             // Check cache first
             var cachedResult = await _visionCacheService.GetCachedDetectionAsync(imageHash);
@@ -115,11 +114,8 @@ namespace EatFitAI.API.Controllers
             var url = $"{baseUrl}/detect";
 
             using var client = _httpClientFactory.CreateClient();
-            using var content = new MultipartFormDataContent();
-            await using var stream = file.OpenReadStream();
-            var streamContent = new StreamContent(stream);
-            streamContent.Headers.ContentType = new MediaTypeHeaderValue(file.ContentType ?? "application/octet-stream");
-            content.Add(streamContent, "file", file.FileName);
+            var payload = new { image_url = imageUrl };
+            var content = new StringContent(JsonSerializer.Serialize(payload), System.Text.Encoding.UTF8, "application/json");
 
             HttpResponseMessage response;
             try

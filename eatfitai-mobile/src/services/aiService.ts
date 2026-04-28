@@ -23,6 +23,7 @@ import { loadWithOfflineFallback, offlineCache } from './offlineCache';
 import { captureError } from './errorTracking';
 import { sanitizeFoodImageUrl } from '../utils/imageHelpers';
 import logger from '../utils/logger';
+import storageService from './storageService';
 
 const CURRENT_NUTRITION_TARGET_CACHE_KEY = '@eatfit_cache:nutrition:current';
 const NUTRITION_INSIGHTS_CACHE_PREFIX = '@eatfit_cache:nutrition:insights:';
@@ -429,26 +430,27 @@ const buildFallbackCookingInstructions = (
 
 export async function detectFoodByImage(imageUri: string): Promise<VisionDetectResult> {
   try {
+    if (__DEV__) {
+      logger.info('[aiService] detectFoodByImage imageUri:', imageUri);
+    }
+
+    // 1. Upload via Presigned URL
+    const publicUrl = await storageService.uploadMedia(imageUri, 'photo.jpg', 'image/jpeg');
+
     const baseUrl = getApiBaseUrl();
     const url = `${baseUrl}/api/ai/vision/detect`;
 
     if (__DEV__) {
-      logger.info('[aiService] detectFoodByImage calling:', url);
-      logger.info('[aiService] imageUri:', imageUri);
+      logger.info('[aiService] detectFoodByImage calling:', url, 'with ImageUrl:', publicUrl);
     }
 
+    // 2. Call backend with JSON payload containing ImageUrl
     const response = await fetchWithAuthRetry(url, () => {
-      const formData = new FormData();
-      formData.append('file', {
-        uri: imageUri,
-        name: 'photo.jpg',
-        type: 'image/jpeg',
-      } as unknown as Blob);
-
       return {
         method: 'POST',
-        body: formData,
+        body: JSON.stringify({ ImageUrl: publicUrl }),
         headers: {
+          'Content-Type': 'application/json',
           Accept: 'application/json',
         },
       };

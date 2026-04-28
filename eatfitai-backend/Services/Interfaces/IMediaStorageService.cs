@@ -7,6 +7,13 @@ namespace EatFitAI.API.Services.Interfaces
         Task<string> UploadAsync(
             MediaUploadObject upload,
             CancellationToken cancellationToken = default);
+
+        Task<(string PresignedUrl, string PublicUrl)> GetPresignedUrlAsync(
+            string bucket,
+            string objectPath,
+            string contentType,
+            TimeSpan expiresIn,
+            CancellationToken cancellationToken = default);
     }
 
     public sealed class MediaUploadObject

@@ -481,45 +481,64 @@ def detect() -> Response | tuple[Dict[str, str], int]:
     path: str = ""
     
     try:
-        f: FileStorage | None = request.files.get("file")
-        if not f:
-            return {"error": "no file provided"}, 400
+        data = request.get_json(silent=True) or {}
+        image_url = data.get("image_url")
         
-        if not f.filename:
-            logger.warning("File uploaded without filename")
-            filename = f"upload_{uuid4().hex}.jpg"
+        if image_url:
+            import requests
+            resp = requests.get(image_url, stream=True, timeout=15)
+            resp.raise_for_status()
+            size = int(resp.headers.get("Content-Length", 0))
+            if size > MAX_FILE_SIZE:
+                return {"error": "file too large", "detail": f"Max size: {MAX_FILE_SIZE / 1024 / 1024:.1f}MB"}, 400
+                
+            filename = f"url_upload_{uuid4().hex}.jpg"
+            path = os.path.join("uploads", filename)
+            with open(path, "wb") as f_out:
+                for chunk in resp.iter_content(chunk_size=8192):
+                    f_out.write(chunk)
+            name = filename
+            logger.info(f"Processing image from URL: {name} ({size / 1024:.1f}KB)")
         else:
-            timestamp = int(time.time())
-            filename = f"{timestamp}_{f.filename}"
-        
-        if not allowed_file(filename):
-            return {
-                "error": "invalid file type", 
-                "detail": f"Allowed types: {', '.join(ALLOWED_EXTENSIONS)}"
-            }, 400
-        
-        # Validate file size
-        f.seek(0, 2)
-        size = f.tell()
-        f.seek(0)
-        
-        if size > MAX_FILE_SIZE:
-            return {
-                "error": "file too large", 
-                "detail": f"Max size: {MAX_FILE_SIZE / 1024 / 1024:.1f}MB"
-            }, 400
-        
-        if size == 0:
-            return {"error": "empty file"}, 400
-        
-        # Save và detect
-        name: str = secure_filename(filename)
-        if not name:
-            name = f"upload_{uuid4().hex}.jpg"
-        
-        path = os.path.join("uploads", name)
-        f.save(path)
-        logger.info(f"Processing image: {name} ({size / 1024:.1f}KB)")
+            f: FileStorage | None = request.files.get("file")
+            if not f:
+                return {"error": "no file or image_url provided"}, 400
+            
+            if not f.filename:
+                logger.warning("File uploaded without filename")
+                filename = f"upload_{uuid4().hex}.jpg"
+            else:
+                timestamp = int(time.time())
+                filename = f"{timestamp}_{f.filename}"
+            
+            if not allowed_file(filename):
+                return {
+                    "error": "invalid file type", 
+                    "detail": f"Allowed types: {', '.join(ALLOWED_EXTENSIONS)}"
+                }, 400
+            
+            # Validate file size
+            f.seek(0, 2)
+            size = f.tell()
+            f.seek(0)
+            
+            if size > MAX_FILE_SIZE:
+                return {
+                    "error": "file too large", 
+                    "detail": f"Max size: {MAX_FILE_SIZE / 1024 / 1024:.1f}MB"
+                }, 400
+            
+            if size == 0:
+                return {"error": "empty file"}, 400
+            
+            # Save và detect
+            name: str = secure_filename(filename)
+            if not name:
+                name = f"upload_{uuid4().hex}.jpg"
+            
+            path = os.path.join("uploads", name)
+            f.save(path)
+            logger.info(f"Processing image from upload: {name} ({size / 1024:.1f}KB)")
         
         # ONNX Runtime thread-safe — không cần YOLO_INFERENCE_LOCK
         out: List[Dict[str, float | str]] = []
@@ -735,25 +754,46 @@ def transcribe_audio():
             "engine": STT_ENGINE,
         }, 503
 
-    # Kiểm tra file upload
-    if 'file' not in request.files:
-        return {"error": "Không tìm thấy file audio.", "success": False}, 400
-
-    audio_file = request.files['file']
-    if not audio_file.filename:
-        return {"error": "File audio không có tên.", "success": False}, 400
-
-    # Lưu file tạm
+    # Kiểm tra payload
+    data = request.get_json(silent=True) or {}
+    audio_url = data.get("audio_url")
     import tempfile
     temp_path = None
+    
     try:
-        ext = os.path.splitext(audio_file.filename)[1].lower() or ".wav"
-        temp_fd, temp_path = tempfile.mkstemp(suffix=ext, dir="uploads")
-        os.close(temp_fd)
-        audio_file.save(temp_path)
-
-        file_size = os.path.getsize(temp_path)
-        logger.info("STT request: %s, %s bytes", audio_file.filename, file_size)
+        if audio_url:
+            import requests
+            resp = requests.get(audio_url, stream=True, timeout=15)
+            resp.raise_for_status()
+            size = int(resp.headers.get("Content-Length", 0))
+            if size > MAX_FILE_SIZE:
+                return {"error": "file too large", "success": False}, 400
+            
+            ext = os.path.splitext(audio_url.split('?')[0])[1].lower() or ".m4a"
+            temp_fd, temp_path = tempfile.mkstemp(suffix=ext, dir="uploads")
+            os.close(temp_fd)
+            
+            with open(temp_path, "wb") as f_out:
+                for chunk in resp.iter_content(chunk_size=8192):
+                    f_out.write(chunk)
+            
+            filename = f"url_audio_{uuid4().hex}{ext}"
+            logger.info("STT request via URL: %s, %s bytes", filename, size)
+        else:
+            if 'audio' not in request.files and 'file' not in request.files:
+                return {"error": "Không tìm thấy file audio hoặc audio_url.", "success": False}, 400
+        
+            audio_file = request.files.get('audio') or request.files.get('file')
+            if not audio_file.filename:
+                return {"error": "File audio không có tên.", "success": False}, 400
+        
+            ext = os.path.splitext(audio_file.filename)[1].lower() or ".wav"
+            temp_fd, temp_path = tempfile.mkstemp(suffix=ext, dir="uploads")
+            os.close(temp_fd)
+            audio_file.save(temp_path)
+            
+            file_size = os.path.getsize(temp_path)
+            logger.info("STT request via upload: %s, %s bytes", audio_file.filename, file_size)
 
         # Gọi Gemini transcribe
         start_time = time.time()

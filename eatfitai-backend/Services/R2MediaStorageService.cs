@@ -73,6 +73,35 @@ namespace EatFitAI.API.Services
             return BuildPublicUrl(objectKey);
         }
 
+        public Task<(string PresignedUrl, string PublicUrl)> GetPresignedUrlAsync(
+            string bucket,
+            string objectPath,
+            string contentType,
+            TimeSpan expiresIn,
+            CancellationToken cancellationToken = default)
+        {
+            if (!IsConfigured)
+            {
+                throw new InvalidOperationException("Cloudflare R2 media storage is not configured.");
+            }
+
+            var objectKey = BuildObjectKey(bucket, objectPath);
+            using var client = CreateClient();
+            
+            var request = new GetPreSignedUrlRequest
+            {
+                BucketName = _r2Options.Bucket,
+                Key = objectKey,
+                Expires = DateTime.UtcNow.Add(expiresIn),
+                Verb = HttpVerb.PUT,
+                ContentType = contentType
+            };
+
+            var url = client.GetPreSignedURL(request);
+            var publicUrl = BuildPublicUrl(objectKey);
+            return Task.FromResult((url, publicUrl));
+        }
+
         protected virtual IAmazonS3 CreateClient()
         {
             var credentials = new BasicAWSCredentials(

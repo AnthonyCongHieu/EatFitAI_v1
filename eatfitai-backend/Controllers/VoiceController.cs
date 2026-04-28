@@ -308,14 +308,17 @@ namespace EatFitAI.API.Controllers
             return "Voice Beta cần bạn xác nhận trước khi lưu.";
         }
 
+    public class TranscribeRequest
+    {
+        public string? AudioUrl { get; set; }
+    }
+
         /// <summary>
         /// Proxy audio transcription to external AI provider.
         /// </summary>
         [HttpPost("transcribe")]
-        [RequestSizeLimit(25_000_000)]
-        [Consumes("multipart/form-data")]
         public async Task<IActionResult> TranscribeWithProvider(
-            [FromForm] IFormFile? audio,
+            [FromBody] TranscribeRequest request,
             CancellationToken cancellationToken)
         {
             var userId = GetUserId();
@@ -324,12 +327,13 @@ namespace EatFitAI.API.Controllers
                 return Unauthorized(new { error = "Bạn chưa đăng nhập" });
             }
 
-            if (audio == null || audio.Length == 0)
+            var audioUrl = request.AudioUrl;
+            if (string.IsNullOrWhiteSpace(audioUrl))
             {
                 return BadRequest(new
                 {
                     success = false,
-                    error = "Tệp âm thanh là bắt buộc"
+                    error = "Đường dẫn âm thanh là bắt buộc"
                 });
             }
 
@@ -339,12 +343,8 @@ namespace EatFitAI.API.Controllers
                 using var client = _httpClientFactory.CreateClient();
                 client.Timeout = TimeSpan.FromSeconds(120);
 
-                using var content = new MultipartFormDataContent();
-                await using var stream = audio.OpenReadStream();
-                using var streamContent = new StreamContent(stream);
-                streamContent.Headers.ContentType = new MediaTypeHeaderValue(
-                    audio.ContentType ?? "application/octet-stream");
-                content.Add(streamContent, "audio", audio.FileName);
+                var payload = new { audio_url = audioUrl };
+                var content = new StringContent(JsonSerializer.Serialize(payload), System.Text.Encoding.UTF8, "application/json");
 
                 using var providerRequest = new HttpRequestMessage(HttpMethod.Post, providerUrl)
                 {
