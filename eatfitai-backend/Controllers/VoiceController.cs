@@ -385,7 +385,7 @@ namespace EatFitAI.API.Controllers
                 _logger.LogInformation(
                     "Voice transcribe proxy succeeded for user {UserId} with file {FileName}",
                     userId,
-                    audio.FileName);
+                    request.AudioUrl);
 
                 return Content(
                     responseBody,

@@ -25,5 +25,15 @@ namespace EatFitAI.API.Services
                 upload.CacheControl,
                 cancellationToken);
         }
+
+        public Task<(string PresignedUrl, string PublicUrl)> GetPresignedUrlAsync(
+            string bucket,
+            string objectPath,
+            string contentType,
+            TimeSpan expiresIn,
+            CancellationToken cancellationToken = default)
+        {
+            throw new NotSupportedException("Presigned URLs are currently only supported via R2 storage provider.");
+        }
     }
 }

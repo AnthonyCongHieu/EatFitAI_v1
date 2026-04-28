@@ -205,9 +205,8 @@ namespace EatFitAI.API.Controllers
                 {
                     Image = new
                     {
-                        FileName = file.FileName,
-                        ContentType = file.ContentType,
-                        Size = file.Length
+                        ImageUrl = imageUrl,
+                        ImageHash = imageHash
                     },
                     RawDetections = detections,
                     MappedItems = result.Items,

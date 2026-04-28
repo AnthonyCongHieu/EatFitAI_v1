@@ -343,6 +343,28 @@ namespace EatFitAI.API.Services
                     return null;
                 }
 
+                // Luôn lưu FoodItem mới từ provider vào database để có ID thực tế
+                var newFoodItemEntity = new FoodItem
+                {
+                    FoodName = foodItem.FoodName,
+                    Barcode = barcode,
+                    CaloriesPer100g = foodItem.CaloriesPer100g,
+                    ProteinPer100g = foodItem.ProteinPer100g,
+                    CarbPer100g = foodItem.CarbPer100g,
+                    FatPer100g = foodItem.FatPer100g,
+                    ThumbNail = foodItem.ThumbNail,
+                    IsActive = true,
+                    IsVerified = false,
+                    IsDeleted = false,
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow,
+                    CredibilityScore = 50
+                };
+                _context.FoodItems.Add(newFoodItemEntity);
+                await _context.SaveChangesAsync(cancellationToken);
+
+                foodItem.FoodItemId = newFoodItemEntity.FoodItemId;
+
                 return new BarcodeLookupResultDto
                 {
                     Barcode = barcode,
