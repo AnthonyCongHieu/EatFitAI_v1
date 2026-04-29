@@ -45,7 +45,7 @@ namespace EatFitAI.API.Services
 
         public async Task<IEnumerable<FoodItemDto>> SearchFoodItemsAsync(string searchTerm, int limit = 50)
         {
-            var foodItems = await _foodItemRepository.SearchByNameAsync(searchTerm, limit);
+            var foodItems = await _foodItemRepository.SearchByNameAsync(searchTerm, 0, limit);
             return _mapper.Map<IEnumerable<FoodItemDto>>(foodItems).Select(NormalizeFoodItemDto).ToList();
         }
 
@@ -177,7 +177,7 @@ namespace EatFitAI.API.Services
 
         public async Task<IEnumerable<FoodSearchResultDto>> SearchAllAsync(string searchTerm, Guid? userId, int limit = 50)
         {
-            var catalog = await _foodItemRepository.SearchByNameAsync(searchTerm, limit);
+            var catalog = await _foodItemRepository.SearchByNameAsync(searchTerm, 0, limit);
 
             var catalogResults = catalog.Select(c => new FoodSearchResultDto
             {
