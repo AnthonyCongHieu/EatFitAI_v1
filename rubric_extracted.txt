@@ -1,0 +1,384 @@
+ 
+​ ​
+​
+​
+​
+​
+​
+​
+​
+​
+ KHOA CÔNG NGHỆ THÔNG TIN​
+ 
+PHIẾU ĐÁNH GIÁ HỌC PHẦN TỐT NGHIỆP 
+​
+  ​
+​
+​
+​
+ ​
+​
+​
+​
+​
+​
+         (Dành cho GVHD) 
+ 
+Họ tên sinh viên: «HỌ» «TÊN» ​​
+​
+​
+​
+ 
+Lớp: «LỚP»                             ​
+ 
+MSSV: «MSSV» 
+Giáo viên hướng dẫn: ​
+ 
+Tên đề tài thực hiện: ​
+ 
+​
+ 
+Lĩnh vực:  
+□ Web Application​​
+​
+​
+​
+ 
+□ Mobile Application​
+​
+​
+​
+​
+ 
+□ Network​ ​
+ 
+□ iOT 
+□ Academic Research/Solution 
+□ Khác: ​
+ 
+ 
+HÌNH THỨC TRÌNH BÀY BÁO CÁO  
+1.5 
+STT 
+TIÊU CHÍ ĐÁNH GIÁ 
+Chưa đạt  
+0 điểm 
+Cần cải thiện 
+0.25 điểm 
+Tốt  
+0.5 điểm 
+KẾT QUẢ 
+1 
+Bố cục báo cáo  
+-​ Bố cục không rõ ràng  
+-​ Nội dung chưa được sắp xếp hợp 
+lý  
+-​ Bố cục được phân chia rõ ràng, dễ 
+đọc 
+-​ Nội dung chưa được sắp xếp hợp 
+lý 
+-​ Bố cục được phân chia rõ ràng, 
+dễ đọc 
+-​ Nội dung được sắp xếp hợp lý, 
+dễ hiểu. 
+ 
+2 
+Chính tả và định dạng   
+-​ Định dạng chưa đúng quy định 
+hoặc trên 10 lỗi chính tả  
+-​ Định dạng đúng quy định 
+-​ Từ 5 - 10 lỗi chính tả; 
+-​ Định dạng đúng quy định  
+-​ Dưới 5 lỗi chính tả 
+ 
+3 
+Văn phong trình bày 
+-​ Sử dụng không đúng văn phong 
+viết báo cáo 
+-​ Sử dụng thuật ngữ chưa phù hợp 
+với chuyên ngành; 
+-​ Sử dụng đúng văn phong viết báo 
+cáo 
+-​ Sử dụng thuật ngữ chưa phù hợp 
+với chuyên ngành; 
+-​ Sử dụng đúng văn phong viết 
+báo cáo 
+-​ Sử dụng thuật ngữ phù hợp với 
+chuyên ngành; 
+ 
+THÁI ĐỘ LÀM VIỆC 
+1.5 
+1 
+Tính trách nhiệm  
+-​ Trễ tiến độ hoàn thành công việc 
+từ 3 lần trở lên 
+-​ Trễ tiến độ hoàn thành công việc 2 
+lần trở xuống 
+-​ Luôn hoàn thành công việc 
+đúng tiến độ đề ra 
+ 
+2 
+Tính tự giác  
+-​ Ít liên hệ trao đổi/báo cáo với 
+GVHD 
+-​ Chủ động liên hệ trao đổi/báo cáo 
+với GVHD dưới 2 lần/tháng 
+-​ Chủ động liên hệ trao đổi/báo 
+cáo với GVHD 2 lần/tháng trở 
+lên 
+ 
+3 
+Tính tập trung  
+-​ SV chưa chuyên tâm vào việc làm 
+báo cáo. 
+-​ SV đáp ứng đầy đủ các yêu cầu 
+của GVHD nhưng chỉ ở mức độ 
+hoàn thành nhiệm vụ.  
+-​ SV đầu tư nhiều thời gian và 
+công sức vào việc làm báo cáo 
+để đạt kết quả tốt nhất 
+ 
+      Điểm: …….. ​
+​
+Bằng chữ: …………​
+​
+​
+​
+​
+​
+Đồng Nai, ngày…… tháng ……năm 202… 
+ 
+​
+Giáo viên hướng dẫn 
+​
+​
+(Ký & ghi rõ họ tên)​​
+ 
+ 
+ 
+KHOA CÔNG NGHỆ THÔNG TIN  
+PHIẾU ĐÁNH GIÁ HỌC PHẦN TỐT NGHIỆP 
+(Dành cho Hội đồng)  ​​
+​
+​
+​
+​
+          
+Họ tên sinh viên: «HỌ» «TÊN» ​​
+​
+​
+Lớp: «LỚP»                             ​
+MSSV: «MSSV» 
+Ngày báo cáo: ……./……./20….. 
+Tên đề tài thực hiện: ​
+ 
+​
+ 
+RUBRIC ĐÁNH GIÁ THEO CÁC NỘI DUNG: 
+-​
+Chất lượng chuyên môn (Nội dung đồ án)  (8 điểm) 
+o​ Tính đầy đủ   
+▪​
+Đầy đủ về các giai đoạn thực hiện/thành phần đề tài (Khảo sát, phân tích, thiết kế, cài đặt) (4 điểm) đáp ứng chất lượng chuyên môn 
+▪​
+Đáp ứng đầy đủ các mục tiêu đề ra (1 điểm) 
+o​ Tính chính xác    
+▪​
+Chính xác về kết quả thực thi chương trình – Kiểm thử (1 điểm) 
+▪​
+Biết phân tích và diễn giải kết quả thực thi (1 điểm) 
+o​ Tính sáng tạo (0.5 điểm) 
+o​ Tính ứng dụng (0.5 điểm) 
+-​
+Kỹ năng thuyết trình  (2 điểm) 
+o​ Cách trình bày nội dung (1) 
+o​ Sự tự tin và nắm vững kiến thức để trả lời câu hỏi (1)
+ 
+ 
+ 
+​
+CHẤT LƯỢNG CHUYÊN MÔN CỦA ĐỒ ÁN 
+8 
+TT 
+NHÓM  
+TIÊU CHÍ ĐÁNH 
+GIÁ 
+Chưa đạt 
+0 điểm 
+Cần cải thiện 
+0.5 điểm 
+Tốt 
+1  điểm 
+KẾT 
+QUẢ 
+1 
+ 
+Tính đầy đủ 
+trong quy trình 
+thực hiện dự án  
+Khảo sát  
+-​ Không có khảo sát yêu cầu 
+chức năng 
+-​ Có khảo sát yêu cầu chức năng 
+nhưng phương pháp chưa có độ 
+tin cậy cao. 
+-​ Có khảo sát yêu cầu chức 
+năng và dùng phương pháp 
+khảo sát phù hợp. 
+ 
+Phân tích     
+-​ Không có phần phân tích  hệ 
+thống 
+-​ Có phân tích hệ thống nhưng 
+chưa đầy đủ các yêu cầu chức 
+năng so với mục tiêu đề ra 
+-​ Có phân tích đầy đủ các yêu 
+cầu chức năng của hệ thống 
+phù hợp mục tiêu đề ra 
+ 
+Thiết kế   
+-​ Không có phần thiết kế hệ 
+thống 
+-​ Có phần thiết kế nhưng vẫn còn 
+một vài thiết kế chưa  đáp ứng yêu 
+cầu chức năng.  
+-​ Thiết kế hợp lý và đầy đủ các 
+yêu cầu chức năng của hệ 
+thống. 
+ 
+Cài đặt  
+-​ Ứng dụng chạy ổn định ≤ 
+70% số yêu cầu chức năng 
+-​ Ứng dụng chạy ổn định được từ 
+60% - 90% số yêu cầu chức năng 
+-​ Ứng dụng chạy ổn định được 
+≥ 90% số yêu cầu chức năng 
+trở lên 
+ 
+Mục Tiêu   
+-​ Đề tài không có mục tiêu rõ 
+ràng. 
+-​ Đề tài có mục tiêu rõ ràng, nhưng 
+tính khả thi chưa cao. 
+-​ Đề tài có mục tiêu rõ ràng, có 
+tính khả thi cao. 
+ 
+ 
+2 
+Tính chính xác 
+trong việc thực 
+thi 
+Kiểm thử 
+(Dựa trên số chức 
+năng và số trường hợp 
+testing cho từng chức 
+năng) 
+-​ Chỉ kiểm thử ≤ 70% số chức 
+năng của chương trình. 
+-​ Có kiểm thử  ≥ 70% các chức năng 
+đã thực hiện 
+-​ Phương pháp kiểm thử chưa phù 
+hợp hoặc chưa đầy đủ các trường 
+hợp.  
+-​ Có kiểm thử ≥ 70% các chức 
+năng đã thực hiện. 
+-​ Phương pháp kiểm thử phù 
+hợp và đầy đủ các trường 
+hợp. 
+ 
+Đánh giá 
+(Phân tích & Diễn giải 
+kết quả  thực thi sau 
+khi kiểm thử) 
+ 
+-​ Không đưa ra các đánh giá 
+hoặc không đưa ra hướng 
+phát triển 
+-​ Có đánh giá đầy đủ các chức 
+năng. 
+-​ Chưa có hướng phát triển, cải 
+thiện chương trình 
+-​ Có đánh giá đầy đủ các chức 
+năng. 
+-​ Có hướng phát triển, cải thiện 
+chương trình. 
+ 
+ 
+ 
+ 
+3 
+Tính Ứng dụng & 
+Sáng tạo 
+Khả năng áp dụng 
+chương trình vào 
+thực tế và giá trị 
+mới đóng góp cho 
+xã hội. 
+-​ Khó triển khai vì nhiều lý do 
+-​ Chưa có tính sáng tạo 
+-​ Dễ dàng triển khai 
+-​ Đề tài có sáng tạo trong việc xây 
+dựng một vài chức năng của 
+chương trình.  
+-​ Dễ dàng triển khai 
+-​ Đề tài có ý tưởng mới (Phạm 
+vi trong Việt Nam), hoặc có 
+sáng tạo trong phương pháp 
+thực hiện. 
+ 
+ 
+KỸ NĂNG THUYẾT TRÌNH (PI 3.2) 
+2 
+TT 
+TIÊU CHÍ ĐÁNH GIÁ 
+Chưa đạt 
+0 điểm 
+Cần cải thiện 
+0.5 điểm 
+Tốt 
+1 điểm 
+KẾT 
+QUẢ 
+1 
+Nội dung trình bày 
+-​ Không có hoặc sử dụng phương 
+tiện truyền thông (image, video, 
+chart, diagram,…) không hợp lý 
+trong bài thuyết trình 
+-​ Nội dung trình bày không chặt chẽ, 
+mạch lạc làm người nghe khó hiểu. 
+-​ Sử dụng phương tiện truyền thông 
+(image, video, chart, diagram,…) 
+hiệu quả trong bài thuyết trình 
+-​ Nội dung trình bày chưa chặt chẽ, 
+mạch lạc làm người nghe chưa hiểu 
+rõ ý tưởng của đề tài. 
+-​ Sử dụng phương tiện truyền thông 
+(image, video, chart, diagram,…) hiệu 
+quả trong bài thuyết trình 
+-​ Nội dung trình bày chặt chẽ, mạch lạc 
+làm người nghe dễ hiểu. 
+ 
+2 
+Khả năng thuyết trình 
+-​ Thuyết trình thiếu tự tin 
+-​ Không trả lời được hết các câu hỏi 
+từ hội đồng 
+-​ Thuyết trình tự tin 
+-​ Không trả lời được hết các câu hỏi 
+từ hội đồng 
+-​ Thuyết trình tự tin 
+-​ Trả lời được các câu hỏi từ hội đồng  
+ 
+ 
+Điểm: ……… ​​
+Bằng chữ: ……………… 
+  
+​
+​ Đồng Nai, ngày…… tháng ……năm 
+202… 
+​
+Thành viên hội đồng 
+​
+​ (Ký & ghi rõ họ tên) 
+ 
