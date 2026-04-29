@@ -9,6 +9,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using System.Net;
 using System.Text.Json;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace EatFitAI.API.Services
 {
@@ -22,6 +23,7 @@ namespace EatFitAI.API.Services
         private readonly IConfiguration _configuration;
         private readonly IMediaUrlResolver _mediaUrlResolver;
         private readonly ILogger<FoodService> _logger;
+        private readonly IMemoryCache _cache;
 
         public FoodService(
             IFoodItemRepository foodItemRepository,
@@ -31,7 +33,8 @@ namespace EatFitAI.API.Services
             IHttpClientFactory httpClientFactory,
             IConfiguration configuration,
             IMediaUrlResolver mediaUrlResolver,
-            ILogger<FoodService> logger)
+            ILogger<FoodService> logger,
+            IMemoryCache cache)
         {
             _foodItemRepository = foodItemRepository;
             _userFoodItemRepository = userFoodItemRepository;
@@ -41,12 +44,27 @@ namespace EatFitAI.API.Services
             _configuration = configuration;
             _mediaUrlResolver = mediaUrlResolver;
             _logger = logger;
+            _cache = cache;
         }
 
         public async Task<IEnumerable<FoodItemDto>> SearchFoodItemsAsync(string searchTerm, int limit = 50)
         {
+            var cacheKey = $"FoodSearch_{searchTerm?.ToLower().Trim()}_{limit}";
+
+            if (_cache.TryGetValue(cacheKey, out IEnumerable<FoodItemDto> cachedResult))
+            {
+                return cachedResult;
+            }
+
             var foodItems = await _foodItemRepository.SearchByNameAsync(searchTerm, 0, limit);
-            return _mapper.Map<IEnumerable<FoodItemDto>>(foodItems).Select(NormalizeFoodItemDto).ToList();
+            var result = _mapper.Map<IEnumerable<FoodItemDto>>(foodItems).Select(NormalizeFoodItemDto).ToList();
+
+            var cacheEntryOptions = new MemoryCacheEntryOptions()
+                .SetAbsoluteExpiration(TimeSpan.FromMinutes(5));
+
+            _cache.Set(cacheKey, result, cacheEntryOptions);
+
+            return result;
         }
 
         public async Task<(FoodItemDto FoodItem, IEnumerable<FoodServingDto> Servings)> GetFoodItemWithServingsAsync(int id)

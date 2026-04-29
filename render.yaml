@@ -135,4 +135,4 @@ services:
       - key: ALLOW_GENERIC_YOLO_FALLBACK
         value: "false"
       - key: ENABLE_STT
-        value: "false"
+        value: "true"
