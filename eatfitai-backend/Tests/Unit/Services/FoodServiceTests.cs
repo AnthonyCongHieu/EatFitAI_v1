@@ -113,7 +113,7 @@ namespace EatFitAI.API.Tests.Unit.Services
                 new FoodItemDto { FoodItemId = 2, FoodName = "Cơm chiên", CaloriesPer100g = 180 }
             };
 
-            _foodItemRepositoryMock.Setup(r => r.SearchByNameAsync(searchTerm, 50))
+            _foodItemRepositoryMock.Setup(r => r.SearchByNameAsync(searchTerm, 0, 50))
                 .ReturnsAsync(foodItems);
             _mapperMock.Setup(m => m.Map<IEnumerable<FoodItemDto>>(It.IsAny<IEnumerable<FoodItem>>()))
                 .Returns(expectedDtos);
@@ -124,7 +124,7 @@ namespace EatFitAI.API.Tests.Unit.Services
             // Assert - Kiểm tra kết quả
             Assert.NotNull(result);
             Assert.Equal(2, result.Count());
-            _foodItemRepositoryMock.Verify(r => r.SearchByNameAsync(searchTerm, 50), Times.Once);
+            _foodItemRepositoryMock.Verify(r => r.SearchByNameAsync(searchTerm, 0, 50), Times.Once);
         }
 
         [Fact]
@@ -132,7 +132,7 @@ namespace EatFitAI.API.Tests.Unit.Services
         {
             // Arrange - Query trống sẽ trả về list rỗng
             var searchTerm = "";
-            _foodItemRepositoryMock.Setup(r => r.SearchByNameAsync(searchTerm, 50))
+            _foodItemRepositoryMock.Setup(r => r.SearchByNameAsync(searchTerm, 0, 50))
                 .ReturnsAsync(new List<FoodItem>());
             _mapperMock.Setup(m => m.Map<IEnumerable<FoodItemDto>>(It.IsAny<IEnumerable<FoodItem>>()))
                 .Returns(new List<FoodItemDto>());
@@ -152,7 +152,7 @@ namespace EatFitAI.API.Tests.Unit.Services
             var searchTerm = "gà";
             var limit = 10;
 
-            _foodItemRepositoryMock.Setup(r => r.SearchByNameAsync(searchTerm, limit))
+            _foodItemRepositoryMock.Setup(r => r.SearchByNameAsync(searchTerm, 0, limit))
                 .ReturnsAsync(new List<FoodItem>());
             _mapperMock.Setup(m => m.Map<IEnumerable<FoodItemDto>>(It.IsAny<IEnumerable<FoodItem>>()))
                 .Returns(new List<FoodItemDto>());
@@ -161,7 +161,7 @@ namespace EatFitAI.API.Tests.Unit.Services
             await _foodService.SearchFoodItemsAsync(searchTerm, limit);
 
             // Assert - Verify repository được gọi với limit đúng
-            _foodItemRepositoryMock.Verify(r => r.SearchByNameAsync(searchTerm, limit), Times.Once);
+            _foodItemRepositoryMock.Verify(r => r.SearchByNameAsync(searchTerm, 0, limit), Times.Once);
         }
 
         #endregion
@@ -348,7 +348,7 @@ namespace EatFitAI.API.Tests.Unit.Services
                 new UserFoodItem { UserFoodItemId = 1, FoodName = "Thịt heo nướng", CaloriesPer100 = 280 }
             };
 
-            _foodItemRepositoryMock.Setup(r => r.SearchByNameAsync(searchTerm, 50))
+            _foodItemRepositoryMock.Setup(r => r.SearchByNameAsync(searchTerm, 0, 50))
                 .ReturnsAsync(catalogItems);
             _userFoodItemRepositoryMock.Setup(r => r.SearchByUserAsync(userId, searchTerm, 0, 50))
                 .ReturnsAsync(userItems);
@@ -374,7 +374,7 @@ namespace EatFitAI.API.Tests.Unit.Services
             const string mediaThumb =
                 "https://media.example.com/user-food/v2/user-1/thumb/beef.webp";
 
-            _foodItemRepositoryMock.Setup(r => r.SearchByNameAsync(searchTerm, 20))
+            _foodItemRepositoryMock.Setup(r => r.SearchByNameAsync(searchTerm, 0, 20))
                 .ReturnsAsync(new List<FoodItem>());
             _userFoodItemRepositoryMock.Setup(r => r.SearchByUserAsync(userId, searchTerm, 0, 20))
                 .ReturnsAsync(new List<UserFoodItem>
@@ -410,7 +410,7 @@ namespace EatFitAI.API.Tests.Unit.Services
                 new FoodItem { FoodItemId = 2, FoodName = "Cá thu", CaloriesPer100g = 185 }
             };
 
-            _foodItemRepositoryMock.Setup(r => r.SearchByNameAsync(searchTerm, 50))
+            _foodItemRepositoryMock.Setup(r => r.SearchByNameAsync(searchTerm, 0, 50))
                 .ReturnsAsync(catalogItems);
 
             // Act
@@ -437,7 +437,7 @@ namespace EatFitAI.API.Tests.Unit.Services
                 new FoodItem { FoodItemId = 4, FoodName = "Rau bina" }
             };
 
-            _foodItemRepositoryMock.Setup(r => r.SearchByNameAsync(searchTerm, limit))
+            _foodItemRepositoryMock.Setup(r => r.SearchByNameAsync(searchTerm, 0, limit))
                 .ReturnsAsync(catalogItems);
 
             // Act
