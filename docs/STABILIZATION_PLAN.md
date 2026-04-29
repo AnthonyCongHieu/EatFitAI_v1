@@ -2,7 +2,11 @@
 
 > **Bắt đầu**: 2026-04-20  
 > **Nguyên tắc**: Thảo luận → Chốt → Code → Commit dần. KHÔNG push vội.  
-> **Trạng thái**: 🟡 Đang thảo luận từng mục
+> **Trạng thái**: 🟢 Code ~95% xong — còn manual ops (keep-alive) + full release gate verification trên môi trường thật
+
+> **Cập nhật 2026-04-24**: Backend/AI provider production hardening đã được đồng bộ lại: AI workload endpoints yêu cầu `X-Internal-Token`, admin keep-alive không còn anonymous/table inventory, rate limiting đã partition theo user/IP, và UI canonical là Emerald.
+
+> **Runtime ops note 2026-04-24**: Admin runtime snapshots may fall back to local runtime project state, but must expose `runtimeStatusSource=local-runtime-fallback`, `runtimeStatusWarning`, and `runtimeStatusError`; AI proxy controllers use the stricter partitioned `AIPolicy`.
 
 ---
 
@@ -33,7 +37,7 @@ Sau khi đọc `Program.cs` (1137 dòng) và `HealthController.cs` — **hầu h
 | Health ready check (DB query) | ✅ ĐÃ CÓ | `Program.cs:684-688` — `AddNpgSql()` tag `"ready"` |
 | EnableRetryOnFailure | ✅ ĐÃ CÓ | `Program.cs:599, 605` |
 | render.yaml Brevo | ✅ ĐÃ ĐÚNG | `render.yaml:47-52` |
-| Rate limiting Auth/AI/General | ✅ ĐÃ CÓ | `Program.cs:514-544` |
+| Rate limiting Auth/AI/General | ✅ ĐÃ CÓ | Partition theo user/IP trong `Program.cs` |
 | Production config validation | ✅ ĐÃ CÓ | `Program.cs:375-426` |
 | Connection mode detection | ✅ ĐÃ CÓ | `Program.cs:355-373` |
 
@@ -65,10 +69,10 @@ Sau khi đọc `Program.cs` (1137 dòng) và `HealthController.cs` — **hầu h
 |---|---|---|
 | SEC-009 ex.Message cleanup | ⚠️ **~50 chỗ cần sửa** | Log lỗi vào Render Logs, trả message chung cho client |
 | SEC-010 Security headers | ⚠️ **CHƯA CÓ** | Thêm middleware: nosniff + X-Frame-Options + HSTS |
-| SEC-010 Rate limiting | ✅ ĐÃ CÓ | Auth 10/min, AI 20/min, General 100/min (`Program.cs:514-544`) |
+| SEC-010 Rate limiting | ✅ ĐÃ CÓ | Auth 10/min, AI 20/min, General 120/min, partition user/IP |
 | SEC-017 Token storage | ✅ ĐÃ AN TOÀN | `expo-secure-store` — LOẠI BỎ khỏi plan |
 | SEC-020 dotnet | ✅ SẠCH | 0 vulnerabilities |
-| SEC-020 npm | ⚠️ 19 lỗ hổng (hầu hết dev tools) | `npm audit fix` — risk thấp |
+| SEC-020 npm | ⚠️ 19 moderate production-tree advisories | CI gate chỉ chặn high/critical; không dùng `npm audit fix --force` vì kéo lệch Expo/RN |
 
 ### Commit 2A → 2J: SEC-009 — ex.Message cleanup (chia theo controller)
 
@@ -108,7 +112,7 @@ catch (Exception ex) {
 | `Middleware/SecurityHeadersMiddleware.cs` | **[NEW]** Thêm nosniff, X-Frame-Options, HSTS |
 | `Program.cs` | Thêm 1 dòng `app.UseMiddleware<SecurityHeadersMiddleware>()` |
 
-### Commit 2L: SEC-020 — npm audit fix
+### Commit 2L: SEC-020 — npm audit gate
 
 | File | Thay đổi |
 |---|---|
@@ -414,9 +418,9 @@ if (calories < 1000 or calories > 5000 or
 
 **Fix**:
 ```python
-YOLO_CONFIDENCE = float(os.environ.get("YOLO_CONFIDENCE", "0.50"))
+YOLO_CONFIDENCE_THRESHOLD = float(os.environ.get("YOLO_CONFIDENCE_THRESHOLD", "0.50"))
 # ...
-res = model(path, conf=YOLO_CONFIDENCE)
+res = model(path, conf=YOLO_CONFIDENCE_THRESHOLD)
 ```
 
 **Files sửa**: `ai-provider/app.py` (line 294)
@@ -1060,6 +1064,122 @@ Tạo **2 monitors** với cấu hình:
 
 ---
 
+## Cập nhật triển khai (2026-04-23)
+
+### Tiến độ sprint hiện tại
+
+- **~90%** scope code-only của sprint ổn định hóa + product wave đầu tiên đã được implement
+- **~92%** phần code-applicable trong tài liệu này đã xong
+- Phần còn lại chủ yếu là **manual ops** (keep-alive / cron) và **full release gate verification** trên môi trường thật
+
+### Đã triển khai
+
+| Hạng mục | Trạng thái | Ghi chú |
+|---|---|---|
+| Security headers middleware | ✅ Xong | Thêm `SecurityHeadersMiddleware` và đăng ký trong `Program.cs` |
+| ex.Message / raw 5xx cleanup | ✅ Xong phần trọng yếu | Sanitize các nhánh 500/503/504 chính ở backend auth / analytics / meal / user / nutrition / water / AI |
+| DateTimeHelper cho VN timezone | ✅ Xong | Thêm helper và thay các điểm nhạy timezone liên quan profile / voice / water |
+| Water target theo cân nặng | ✅ Xong | Dùng `weightKg * 30`, fallback `2000ml` |
+| Direct Supabase water bypass | ✅ Xong | Mobile chỉ đi qua backend |
+| aiApiClient 401 refresh parity | ✅ Xong | AI client có retry/refresh giống API client thường |
+| Logger production-safe | ✅ Xong | Giảm `console.*` noise trong service chính, vẫn giữ error logging |
+| Telemetry v1 (backend + mobile queue) | ✅ Xong | Có endpoint backend, queue local, flush retry, telemetry cho funnel chính |
+| Weekly review API + mobile surface | ✅ Xong | Có API backend, StatsScreen, notification deep-link, telemetry open/complete |
+| Barcode lookup + barcode mode | ✅ Xong | Có `/api/food/barcode/{barcode}` và barcode mode trên `AIScanScreen` |
+| AI activity mapping fix | ✅ Xong | Online path dùng đúng `request.ActivityLevel` |
+| AI formula parity / Gemini fallback | ✅ Xong | Python AI provider khớp backend hơn, fallback reachable, upper-bound validation |
+| YOLO confidence env config | ✅ Xong | Không còn hardcode threshold |
+| Offline readonly cache | ✅ Xong v1 | Cache profile / summary / diary / nutrition reads |
+| Release metrics thresholds | ✅ Xong | Voice latency thresholds được ghi rõ trong smoke metrics |
+
+### Đã verify
+
+- `dotnet build` backend: ✅ pass
+- Focused `dotnet test` cho auth / analytics / food / barcode / weekly-review: ✅ pass
+- `npm run typecheck` mobile: ✅ pass
+- Focused mobile Jest (telemetry / ai client retry / ai service / water / summary / food / logger): ✅ pass
+- `python -m unittest` cho AI provider parity + runtime config: ✅ pass
+- `node --check` cho release gate scripts: ✅ pass
+- Android preview APK build: ✅ pass (2026-04-23)
+- Android APK install lên emulator: ✅ pass (2026-04-23)
+
+### Chưa hoàn tất
+
+| Hạng mục | Trạng thái | Ghi chú |
+|---|---|---|
+| Full device smoke gate (ADB real-device) | 🟡 Partially done | Build + install APK ✅. ADB probe/auth-entry lane thay thế helper-framework UI automation |
+| Full cloud smoke gate | ⬜ Chưa chạy | Cần backend/AI provider thật, secret thật, smoke account thật, artifact lane `_logs/production-smoke` |
+| Manual ops cloud (keep-alive) | 🟡 Đang chọn phương án | 2 phương án: **UptimeRobot** (xem [Phụ lục A](#phụ-lục-a-hướng-dẫn-uptimerobot)) hoặc **Cron-job** (xem [Phụ lục B](#phụ-lục-b-cron-job-keep-alive)) |
+| P2/P3 backlog | ⏩ Deferred | Meal planner, grocery, fasting, wearable sync, premium, micronutrients, coach dashboard |
+
+### Ghi chú quan trọng
+
+- 3 file store `useAuthStore.ts`, `useProfileStore.ts`, `useStatsStore.ts` đã được làm sạch trạng thái Git; trước đó chỉ dirty do line-ending/working-tree metadata, không phải thay đổi logic.
+
+### Quyết định automation framework (2026-04-24)
+
+- Android UI evidence chuyển sang **ADB + UIAutomator best-effort + scrcpy**
+- Lý do: thiết bị thật Xiaomi/MIUI ổn định hơn khi dùng ADB tap/screenshot/logcat trực tiếp, còn UIAutomator dump chỉ là nguồn phụ vì có thể fail `could not get idle state`
+- Hạ tầng hiện hành: `eatfitai-mobile/scripts/real-device-adb-flow.js`, `device:doctor:android`, `device:probe:android`, `device:auth-entry:android`
+
+---
+
+## Phụ lục B: Cron-job Keep-Alive
+
+> Phương án thay thế UptimeRobot — sử dụng dịch vụ cron miễn phí bên ngoài để ping giữ server không ngủ.
+
+### Tại sao dùng Cron-job?
+
+| So sánh | UptimeRobot | Cron-job (cron-job.org / Easycron) |
+|---|---|---|
+| Chức năng chính | Monitoring + Alert khi server down | Lên lịch gọi HTTP theo thời gian cố định |
+| Interval tối thiểu (free) | 5 phút | 1 phút (cron-job.org) |
+| Alert khi fail | ✅ Email / Webhook | ✅ Email |
+| Giao diện | Dashboard trực quan | Dashboard đơn giản |
+| Giá | Free (50 monitors) | Free (5 jobs cron-job.org, 200 calls/tháng Easycron) |
+| Ưu điểm | Monitoring chuyên nghiệp, uptime report | Ping chủ động, interval ngắn hơn, phù hợp keep-alive |
+| Nhược điểm | Chỉ ping, không có scheduling logic | Không có uptime reporting chi tiết |
+
+**Khuyến nghị**: Dùng **cả hai** — Cron-job để giữ server thức (keep-alive), UptimeRobot để giám sát uptime và nhận alert.
+
+### Bước 1: Tạo tài khoản cron-job.org
+
+1. Truy cập [cron-job.org](https://cron-job.org)
+2. Đăng ký free (hỗ trợ 5 cron jobs miễn phí)
+
+### Bước 2: Tạo cron jobs
+
+**Job 1 — Backend Keep-Alive**:
+
+| Field | Giá trị |
+|---|---|
+| Title | EatFitAI Backend Ping |
+| URL | `https://<backend-url>/health/live` |
+| Schedule | Every 5 minutes (`*/5 * * * *`) |
+| Request Method | GET |
+| Notification | On failure |
+
+**Job 2 — AI Provider Keep-Alive**:
+
+| Field | Giá trị |
+|---|---|
+| Title | EatFitAI AI Provider Ping |
+| URL | `https://<ai-provider-url>/healthz` |
+| Schedule | Every 5 minutes (`*/5 * * * *`) |
+| Request Method | GET |
+| Notification | On failure |
+
+### Lưu ý quan trọng
+
+- **Render Free Tier spin-down**: Sau 15 phút không có request → service ngủ. Cron ping 5 phút đảm bảo **luôn dưới ngưỡng 15 phút** → server không bao giờ ngủ.
+- **Instance hours**: Render Free cấp 750 giờ/tháng/workspace. Nếu chạy **2 services always-on** → 2 × 720 giờ = **1440 giờ** → **VƯỢT budget**. Cần cân nhắc:
+  - Chỉ keep-alive backend (critical), cho AI provider ngủ + dùng fallback formula
+  - Hoặc nâng lên Render Starter ($7/service/tháng) cho 1 service
+- **Alternatives miễn phí**: [Easycron](https://www.easycron.com/), [Google Cloud Scheduler](https://cloud.google.com/scheduler) (nếu có GCP project)
+- Cron-job **không thay thế** monitoring — vẫn nên dùng UptimeRobot để biết khi nào server thật sự down.
+
+---
+
 ## Lịch sử thảo luận
 
 | Ngày | Mục | Quyết định |
@@ -1071,7 +1191,7 @@ Tạo **2 monitors** với cấu hình:
 | 2026-04-20 | SEC-009 | ✅ Chốt — chia commit theo controller (B) |
 | 2026-04-20 | SEC-010 | ✅ Chốt — thêm security headers middleware |
 | 2026-04-20 | SEC-017 | ❌ Loại bỏ — `expo-secure-store` đã an toàn |
-| 2026-04-20 | SEC-020 | ✅ Chốt — dotnet sạch, npm audit fix |
+| 2026-04-20 | SEC-020 | ✅ Chốt — dotnet sạch, npm high/critical gate |
 | 2026-04-20 | TEL (Mục 3) | ✅ Chốt — Firebase Analytics + Crashlytics, ghi hướng dẫn |
 | 2026-04-20 | AUTH (Mục 4) | ✅ Chốt — Đã hoạt động, không cần thay đổi |
 | 2026-04-20 | AI (Mục 5) | ✅ Chốt — Tất cả features đã implement |

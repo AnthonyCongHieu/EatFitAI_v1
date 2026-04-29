@@ -1,7 +1,7 @@
 // BodyMetricsScreen — "Hồ sơ thể chất"
 // Emerald Nebula 3D: Basic info card + Weight goals section
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import {
   ScrollView,
   StyleSheet,
@@ -127,7 +127,7 @@ const BodyMetricsScreen = (): React.ReactElement => {
 
   const profile = useProfileStore((s) => s.profile);
   const fetchProfile = useProfileStore((s) => s.fetchProfile);
-  
+
   // Instantly load summary from store instead of waiting for API call to prevent layout blinks
   const summary = useDiaryStore((s) => s.summary);
 

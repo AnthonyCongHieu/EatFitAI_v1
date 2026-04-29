@@ -35,7 +35,9 @@ const getMeta = (status?: AiHealthStatus | null) => {
     case 'DOWN':
       return {
         label: 'AI tạm dừng',
-        caption: status.message || 'Ứng dụng sẽ dùng chế độ fallback nếu có.',
+        caption:
+          status.message ||
+          'Các thao tác AI sẽ tạm khóa; bạn vẫn có thể nhập thủ công.',
         dotColor: '#EF4444',
         bgColor: 'rgba(239, 68, 68, 0.14)',
         borderColor: 'rgba(239, 68, 68, 0.28)',

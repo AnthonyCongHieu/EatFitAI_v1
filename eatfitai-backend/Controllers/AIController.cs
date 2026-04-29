@@ -68,24 +68,33 @@ namespace EatFitAI.API.Controllers
         [Consumes("multipart/form-data")]
         [ProducesResponseType(typeof(EatFitAI.API.DTOs.AI.VisionDetectResultDto), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(object), StatusCodes.Status400BadRequest)]
-        public async Task<ActionResult<EatFitAI.API.DTOs.AI.VisionDetectResultDto>> DetectVision(DetectVisionRequest input)
+        public async Task<ActionResult<EatFitAI.API.DTOs.AI.VisionDetectResultDto>> DetectVision([FromBody] DetectVisionRequest input)
         {
-            var file = input.File;
-            if (file == null || file.Length == 0)
+            var imageUrl = input.ImageUrl;
+            if (string.IsNullOrWhiteSpace(imageUrl))
             {
-                return BadRequest(new { error = "no file" });
+                return BadRequest(new { error = "no image_url provided" });
             }
 
-            // Compute image hash for caching
-            var imageHash = ComputeImageHash(file);
             var userId = GetUserIdFromToken();
+            var imageHash = input.ImageHash ?? imageUrl; // Fallback to URL if hash not provided
 
             // Check cache first
             var cachedResult = await _visionCacheService.GetCachedDetectionAsync(imageHash);
             if (cachedResult != null)
             {
                 _logger.LogInformation("Returning cached detection for user {UserId}, hash: {Hash}", userId, imageHash);
-                return Ok(cachedResult);
+                var refreshedCachedResult = await RefreshVisionMappingAsync(cachedResult, HttpContext.RequestAborted);
+                try
+                {
+                    await _visionCacheService.CacheDetectionAsync(imageHash, refreshedCachedResult, userId, HttpContext.RequestAborted);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Failed to refresh cached detection mapping");
+                }
+
+                return Ok(refreshedCachedResult);
             }
 
             var aiStatus = _aiHealthService.GetStatus();
@@ -95,8 +104,9 @@ namespace EatFitAI.API.Controllers
                 return StatusCode(StatusCodes.Status503ServiceUnavailable, new
                 {
                     error = "ai_provider_down",
+                    code = "ai_provider_down",
                     message = "AI provider hiện đang DOWN. Không thể nhận diện ảnh lúc này.",
-                    aiStatus
+                    requestId = HttpContext.TraceIdentifier
                 });
             }
 
@@ -104,16 +114,20 @@ namespace EatFitAI.API.Controllers
             var url = $"{baseUrl}/detect";
 
             using var client = _httpClientFactory.CreateClient();
-            using var content = new MultipartFormDataContent();
-            await using var stream = file.OpenReadStream();
-            var streamContent = new StreamContent(stream);
-            streamContent.Headers.ContentType = new MediaTypeHeaderValue(file.ContentType ?? "application/octet-stream");
-            content.Add(streamContent, "file", file.FileName);
+            var payload = new { image_url = imageUrl };
+            var content = new StringContent(JsonSerializer.Serialize(payload), System.Text.Encoding.UTF8, "application/json");
 
             HttpResponseMessage response;
             try
             {
-                response = await client.PostAsync(url, content, HttpContext.RequestAborted);
+                using var request = new HttpRequestMessage(HttpMethod.Post, url)
+                {
+                    Content = content
+                };
+                AiProviderRequestHelper.AddInternalTokenHeader(request, _configuration, _logger);
+                using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(HttpContext.RequestAborted);
+                timeoutCts.CancelAfter(GetVisionDetectTimeout());
+                response = await client.SendAsync(request, timeoutCts.Token);
             }
             catch (OperationCanceledException ex) when (!HttpContext.RequestAborted.IsCancellationRequested)
             {
@@ -191,9 +205,8 @@ namespace EatFitAI.API.Controllers
                 {
                     Image = new
                     {
-                        FileName = file.FileName,
-                        ContentType = file.ContentType,
-                        Size = file.Length
+                        ImageUrl = imageUrl,
+                        ImageHash = imageHash
                     },
                     RawDetections = detections,
                     MappedItems = result.Items,
@@ -246,7 +259,7 @@ namespace EatFitAI.API.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error suggesting recipes");
-                return StatusCode(500, new { message = "Đã xảy ra lỗi khi gợi ý công thức", error = ex.Message });
+                return StatusCode(500, ErrorResponseHelper.SafeError("Đã xảy ra lỗi khi gợi ý công thức", HttpContext));
             }
         }
 
@@ -274,7 +287,7 @@ namespace EatFitAI.API.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error getting recipe detail for RecipeId {RecipeId}", recipeId);
-                return StatusCode(500, new { message = "Đã xảy ra lỗi khi lấy chi tiết công thức", error = ex.Message });
+                return StatusCode(500, ErrorResponseHelper.SafeError("Đã xảy ra lỗi khi lấy chi tiết công thức", HttpContext));
             }
         }
 
@@ -284,7 +297,7 @@ namespace EatFitAI.API.Controllers
         var userId = GetUserIdFromToken();
         using var scope = HttpContext.RequestServices.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<EatFitAI.API.DbScaffold.Data.EatFitAIDbContext>();
-        var today = DateOnly.FromDateTime(DateTime.UtcNow.Date);
+        var today = DateTimeHelper.GetVietnamToday();
         var current = await db.NutritionTargets
             .Where(t => t.UserId == userId && t.EffectiveFrom <= today && (t.EffectiveTo == null || t.EffectiveTo >= today))
             .OrderByDescending(t => t.EffectiveFrom)
@@ -342,7 +355,7 @@ namespace EatFitAI.API.Controllers
 
             try
             {
-                // Gọi AI Provider để tính toán bằng Ollama (không dùng công thức local)
+                // Gọi AI Provider để tính mục tiêu dinh dưỡng bằng provider AI hiện tại.
                 var aiStatus = _aiHealthService.GetStatus();
                 if (string.Equals(aiStatus.State, AiHealthState.Down.ToString().ToUpperInvariant(), StringComparison.Ordinal))
                 {
@@ -360,8 +373,7 @@ namespace EatFitAI.API.Controllers
                     age = request.Age ?? 25,
                     height = request.HeightCm ?? 170,
                     weight = request.WeightKg ?? 65,
-                    activity = request.Goal?.ToLower() == "cut" ? "moderate" : 
-                              request.Goal?.ToLower() == "bulk" ? "active" : "moderate",
+                    activity = MapActivityLevelToProviderLabel(request.ActivityLevel),
                     goal = request.Goal ?? "maintain"
                 };
                 
@@ -373,7 +385,12 @@ namespace EatFitAI.API.Controllers
                 HttpResponseMessage response;
                 try
                 {
-                    response = await client.PostAsync($"{aiProviderUrl}/nutrition-advice", content);
+                    using var providerRequest = new HttpRequestMessage(HttpMethod.Post, $"{aiProviderUrl}/nutrition-advice")
+                    {
+                        Content = content
+                    };
+                    AiProviderRequestHelper.AddInternalTokenHeader(providerRequest, _configuration, _logger);
+                    response = await client.SendAsync(providerRequest, HttpContext.RequestAborted);
                 }
                 catch (HttpRequestException ex)
                 {
@@ -388,6 +405,22 @@ namespace EatFitAI.API.Controllers
 
                 if (!response.IsSuccessStatusCode)
                 {
+                    var errorContent = await response.Content.ReadAsStringAsync(HttpContext.RequestAborted);
+                    _logger.LogWarning(
+                        "AI Provider nutrition advice returned error: {StatusCode} - {Error}",
+                        response.StatusCode,
+                        errorContent);
+
+                    if (AiProviderRequestHelper.IsInternalAuthFailure(response.StatusCode, errorContent))
+                    {
+                        return StatusCode(
+                            StatusCodes.Status503ServiceUnavailable,
+                            ErrorResponseHelper.SafeError(
+                                "ai-provider_auth_error",
+                                "Dich vu AI chua duoc cau hinh an toan.",
+                                HttpContext));
+                    }
+
                     return BuildOfflineFallback("Dịch vụ AI hiện không khả dụng, đã chuyển sang công thức offline.");
                 }
                 
@@ -397,6 +430,15 @@ namespace EatFitAI.API.Controllers
                     var result = System.Text.Json.JsonSerializer.Deserialize<System.Text.Json.JsonElement>(resultJson);
                     
                     var source = result.TryGetProperty("source", out var srcProp) ? srcProp.GetString() : "unknown";
+                    var offlineMode =
+                        result.TryGetProperty("offlineMode", out var offlineProp) &&
+                        offlineProp.ValueKind is System.Text.Json.JsonValueKind.True or System.Text.Json.JsonValueKind.False
+                            ? offlineProp.GetBoolean()
+                            : !string.Equals(source, "gemini", StringComparison.OrdinalIgnoreCase);
+                    var explanation =
+                        result.TryGetProperty("explanation", out var expProp) ? expProp.GetString() : null;
+                    var message =
+                        result.TryGetProperty("message", out var msgProp) ? msgProp.GetString() : null;
                     _logger.LogInformation("AI Provider returned nutrition advice from source: {Source}", source);
                     
                     // Helper function để parse số từ JSON (handle number, double, string)
@@ -435,26 +477,27 @@ namespace EatFitAI.API.Controllers
                         carbs,
                         fat,
                         source = source,
-                        offlineMode = false,
-                        explanation = result.TryGetProperty("explanation", out var expProp) ? expProp.GetString() : null
+                        offlineMode = offlineMode,
+                        explanation = explanation,
+                        message = message
                     });
                 }
                 else
                 {
                     var errorContent = await response.Content.ReadAsStringAsync();
                     _logger.LogWarning("AI Provider returned error: {StatusCode} - {Error}", response.StatusCode, errorContent);
-                    return StatusCode(503, new { message = "Dịch vụ AI hiện không khả dụng", error = errorContent });
+                    return StatusCode(503, ErrorResponseHelper.SafeError("ai-provider_error", "Dịch vụ AI hiện không khả dụng", HttpContext));
                 }
             }
             catch (HttpRequestException ex)
             {
                 _logger.LogError(ex, "Failed to connect to AI Provider");
-                return StatusCode(503, new { message = "Không thể kết nối đến dịch vụ AI. Hãy đảm bảo Ollama đang chạy.", error = ex.Message });
+                return StatusCode(503, ErrorResponseHelper.SafeError("ai-provider_error", "Không thể kết nối đến dịch vụ AI.", HttpContext));
             }
             catch (TaskCanceledException ex)
             {
                 _logger.LogError(ex, "AI Provider request timed out");
-                return StatusCode(504, new { message = "Dịch vụ AI phản hồi quá chậm", error = ex.Message });
+                return StatusCode(504, ErrorResponseHelper.SafeError("ai-provider_timeout", "Dịch vụ AI phản hồi quá chậm", HttpContext));
             }
         }
 
@@ -485,15 +528,15 @@ namespace EatFitAI.API.Controllers
 
                 return Ok(insights);
             }
-            catch (InvalidOperationException ex)
+            catch (InvalidOperationException)
             {
-                _logger.LogWarning(ex, "No nutrition target found for user");
-                return BadRequest(new { message = ex.Message });
+                _logger.LogWarning("No nutrition target found for user");
+                return BadRequest(ErrorResponseHelper.SafeError("Chưa thiết lập mục tiêu dinh dưỡng", HttpContext));
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error generating nutrition insights");
-                return StatusCode(500, new { message = "Đã xảy ra lỗi khi tạo phân tích dinh dưỡng", error = ex.Message });
+                return StatusCode(500, ErrorResponseHelper.SafeError("Đã xảy ra lỗi khi tạo phân tích dinh dưỡng", HttpContext));
             }
         }
 
@@ -523,15 +566,15 @@ namespace EatFitAI.API.Controllers
 
                 return Ok(adaptiveTarget);
             }
-            catch (InvalidOperationException ex)
+            catch (InvalidOperationException)
             {
-                _logger.LogWarning(ex, "No nutrition target found for user");
-                return BadRequest(new { message = ex.Message });
+                _logger.LogWarning("No nutrition target found for user");
+                return BadRequest(ErrorResponseHelper.SafeError("Chưa thiết lập mục tiêu dinh dưỡng", HttpContext));
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error calculating adaptive target");
-                return StatusCode(500, new { message = "Đã xảy ra lỗi khi tính mục tiêu thích ứng", error = ex.Message });
+                return StatusCode(500, ErrorResponseHelper.SafeError("Đã xảy ra lỗi khi tính mục tiêu thích ứng", HttpContext));
             }
         }
 
@@ -559,7 +602,7 @@ namespace EatFitAI.API.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error applying nutrition target");
-                return StatusCode(500, new { message = "Đã xảy ra lỗi khi áp dụng mục tiêu", error = ex.Message });
+                return StatusCode(500, ErrorResponseHelper.SafeError("Đã xảy ra lỗi khi áp dụng mục tiêu", HttpContext));
             }
         }
 
@@ -587,7 +630,7 @@ namespace EatFitAI.API.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error retrieving detection history");
-                return StatusCode(500, new { message = "Đã xảy ra lỗi khi lấy lịch sử", error = ex.Message });
+                return StatusCode(500, ErrorResponseHelper.SafeError("Đã xảy ra lỗi khi lấy lịch sử", HttpContext));
             }
         }
 
@@ -615,7 +658,7 @@ namespace EatFitAI.API.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error retrieving unmapped labels stats");
-                return StatusCode(500, new { message = "Đã xảy ra lỗi khi lấy thống kê", error = ex.Message });
+                return StatusCode(500, ErrorResponseHelper.SafeError("Đã xảy ra lỗi khi lấy thống kê", HttpContext));
             }
         }
 
@@ -640,7 +683,7 @@ namespace EatFitAI.API.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error suggesting food items for label");
-                return StatusCode(500, new { message = "Đã xảy ra lỗi khi gợi ý món ăn", error = ex.Message });
+                return StatusCode(500, ErrorResponseHelper.SafeError("Đã xảy ra lỗi khi gợi ý món ăn", HttpContext));
             }
         }
 
@@ -715,8 +758,13 @@ namespace EatFitAI.API.Controllers
                 
                 var json = System.Text.Json.JsonSerializer.Serialize(payload);
                 var content = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
-                
-                var response = await client.PostAsync($"{aiProviderUrl}/cooking-instructions", content, cancellationToken);
+
+                using var providerRequest = new HttpRequestMessage(HttpMethod.Post, $"{aiProviderUrl}/cooking-instructions")
+                {
+                    Content = content
+                };
+                AiProviderRequestHelper.AddInternalTokenHeader(providerRequest, _configuration, _logger);
+                var response = await client.SendAsync(providerRequest, cancellationToken);
                 
                 if (response.IsSuccessStatusCode)
                 {
@@ -738,18 +786,18 @@ namespace EatFitAI.API.Controllers
                     var errorContent = await response.Content.ReadAsStringAsync(cancellationToken);
                     _logger.LogWarning("AI Provider cooking-instructions error: {StatusCode} - {Error}", 
                         response.StatusCode, errorContent);
-                    return StatusCode(503, new { message = "Dịch vụ AI hiện không khả dụng", error = errorContent });
+                    return StatusCode(503, ErrorResponseHelper.SafeError("ai-provider_error", "Dịch vụ AI hiện không khả dụng", HttpContext));
                 }
             }
             catch (HttpRequestException ex)
             {
                 _logger.LogError(ex, "Failed to connect to AI Provider for cooking instructions");
-                return StatusCode(503, new { message = "Không thể kết nối đến dịch vụ AI", error = ex.Message });
+                return StatusCode(503, ErrorResponseHelper.SafeError("ai-provider_error", "Không thể kết nối đến dịch vụ AI", HttpContext));
             }
             catch (TaskCanceledException ex)
             {
                 _logger.LogError(ex, "AI Provider cooking-instructions request timed out");
-                return StatusCode(504, new { message = "Dịch vụ AI phản hồi quá chậm", error = ex.Message });
+                return StatusCode(504, ErrorResponseHelper.SafeError("ai-provider_timeout", "Dịch vụ AI phản hồi quá chậm", HttpContext));
             }
         }
 
@@ -907,12 +955,83 @@ namespace EatFitAI.API.Controllers
             return DateTimeOffset.UtcNow - aiStatus.LastCheckedAt.Value <= GetVisionHealthGateFreshnessWindow();
         }
 
+        private async Task<EatFitAI.API.DTOs.AI.VisionDetectResultDto> RefreshVisionMappingAsync(
+            EatFitAI.API.DTOs.AI.VisionDetectResultDto cachedResult,
+            CancellationToken cancellationToken)
+        {
+            var detections = cachedResult.Items
+                .Where(item => !string.IsNullOrWhiteSpace(item.Label))
+                .Select(item => new EatFitAI.API.DTOs.AI.VisionDetectionDto
+                {
+                    Label = item.Label,
+                    Confidence = item.Confidence
+                })
+                .ToList();
+
+            if (detections.Count == 0)
+            {
+                return cachedResult;
+            }
+
+            var items = await _aiFoodMapService.MapDetectionsAsync(detections, cancellationToken);
+            return new EatFitAI.API.DTOs.AI.VisionDetectResultDto
+            {
+                Items = items,
+                UnmappedLabels = items
+                    .Where(item => !item.IsMatched)
+                    .Select(item => item.Label)
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .ToList()
+            };
+        }
+
         private TimeSpan GetVisionHealthGateFreshnessWindow()
         {
             var configuredSeconds = _configuration.GetValue<int?>("AIProvider:HealthGateFreshnessSeconds");
             return configuredSeconds.HasValue && configuredSeconds.Value > 0
                 ? TimeSpan.FromSeconds(configuredSeconds.Value)
                 : TimeSpan.FromSeconds(60);
+        }
+
+        private TimeSpan GetVisionDetectTimeout()
+        {
+            var configuredMilliseconds = _configuration.GetValue<int?>("AIProvider:VisionDetectTimeoutMilliseconds");
+            if (configuredMilliseconds.HasValue && configuredMilliseconds.Value > 0)
+            {
+                return TimeSpan.FromMilliseconds(configuredMilliseconds.Value);
+            }
+
+            var configuredSeconds = _configuration.GetValue<int?>("AIProvider:VisionDetectTimeoutSeconds");
+            return configuredSeconds.HasValue && configuredSeconds.Value > 0
+                ? TimeSpan.FromSeconds(configuredSeconds.Value)
+                : TimeSpan.FromSeconds(35);
+        }
+
+        private static string MapActivityLevelToProviderLabel(double? activityLevel)
+        {
+            var factor = activityLevel is > 0 ? activityLevel.Value : 1.55;
+
+            if (factor < 1.3)
+            {
+                return "sedentary";
+            }
+
+            if (factor < 1.5)
+            {
+                return "light";
+            }
+
+            if (factor < 1.7)
+            {
+                return "moderate";
+            }
+
+            if (factor < 1.9)
+            {
+                return "active";
+            }
+
+            return "very_active";
         }
 
         /// <summary>

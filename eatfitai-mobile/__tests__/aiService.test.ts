@@ -29,6 +29,32 @@ jest.mock('../src/utils/imageHelpers', () => ({
   sanitizeFoodImageUrl: jest.fn((value: string | null) => value),
 }));
 
+jest.mock('../src/utils/logger', () => ({
+  __esModule: true,
+  default: {
+    debug: jest.fn(),
+    info: jest.fn(),
+    warn: jest.fn(),
+    error: jest.fn(),
+  },
+}));
+
+jest.mock('../src/services/offlineCache', () => ({
+  loadWithOfflineFallback: jest.fn(async (_key: string, loader: () => Promise<unknown>) =>
+    loader(),
+  ),
+  offlineCache: {
+    set: jest.fn(),
+    get: jest.fn(),
+    remove: jest.fn(),
+  },
+}));
+
+jest.mock('../src/services/errorTracking', () => ({
+  captureError: jest.fn(),
+  initErrorTracking: jest.fn(),
+}));
+
 describe('aiService', () => {
   const mockedApiClient = apiClient as unknown as {
     get: jest.Mock;
@@ -258,6 +284,8 @@ describe('aiService', () => {
       carbs: 350,
       fat: 80,
       explanation: 'AI-based target',
+      source: 'ai',
+      offlineMode: false,
     });
   });
 

@@ -23,13 +23,16 @@ jobs:
           dotnet-version: 9.0.x
 
       - name: Restore
-        run: dotnet restore
+        run: dotnet restore EatFitAI.API.Tests.csproj
 
       - name: Build API
         run: dotnet build EatFitAI.API.csproj --no-restore --configuration Release
 
+      - name: NuGet vulnerability gate
+        run: python ../scripts/cloud/check_dotnet_vulnerabilities.py
+
       - name: Test
-        run: dotnet test EatFitAI.API.Tests.csproj --no-build --configuration Release --logger "trx;LogFileName=test-results.trx"
+        run: dotnet test EatFitAI.API.Tests.csproj --configuration Release --logger "trx;LogFileName=test-results.trx"
 
   mobile:
     name: Mobile Typecheck & Test
@@ -54,14 +57,20 @@ jobs:
       - name: Expo release config smoke
         run: node scripts/validate-release-config.js
 
+      - name: Lint
+        run: npm run lint
+
       - name: Typecheck
         run: npm run typecheck
 
       - name: Test
         run: npm run test -- --ci
 
+      - name: Production dependency audit
+        run: npm audit --omit=dev --audit-level=high
+
   ai_provider:
-    name: AI Provider Syntax Check
+    name: AI Provider Checks
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -75,5 +84,29 @@ jobs:
         with:
           python-version: "3.11"
 
+      - name: Install test dependencies
+        run: pip install requests
+
       - name: Compile Check
         run: python -m py_compile app.py nutrition_llm.py stt_service.py
+
+      - name: Unit tests
+        run: python -m unittest discover -s tests
+
+  repo_safety:
+    name: Repository Safety Checks
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Mojibake guard
+        run: python scripts/cloud/check_mojibake.py
+
+      - name: Secret tracking guard
+        run: python scripts/cloud/check_secret_tracking.py

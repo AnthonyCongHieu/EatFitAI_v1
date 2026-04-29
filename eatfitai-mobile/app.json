@@ -34,9 +34,7 @@
       "permissions": [
         "android.permission.INTERNET",
         "android.permission.ACCESS_NETWORK_STATE",
-        "android.permission.CAMERA",
-        "android.permission.READ_EXTERNAL_STORAGE",
-        "android.permission.WRITE_EXTERNAL_STORAGE"
+        "android.permission.CAMERA"
       ],
       "certificateHash": "83:FF:A6:99:53:2E:D1:05:1A:38:53:5C:7B:01:E2:1D:5F:41:C5:1F"
     },
@@ -50,6 +48,8 @@
       }
     },
     "plugins": [
+      "@react-native-firebase/app",
+      "@react-native-firebase/crashlytics",
       "expo-secure-store",
       "expo-localization",
       "@react-native-google-signin/google-signin",

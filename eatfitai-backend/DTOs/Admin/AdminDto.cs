@@ -194,6 +194,9 @@ public class SystemHealthDto
     public string BackendStatus { get; set; } = "Unknown";
     public string DatabaseStatus { get; set; } = "Unknown";
     public string AiProviderStatus { get; set; } = "Unknown";
+    public string RuntimeStatusSource { get; set; } = "unknown";
+    public string? RuntimeStatusWarning { get; set; }
+    public string? RuntimeStatusError { get; set; }
     public string? ActiveProject { get; set; }
     public int AvailableProjectCount { get; set; }
     public int ExhaustedProjectCount { get; set; }

@@ -8,11 +8,7 @@ const projectRoot = path.resolve(__dirname, '..');
 const appJsonPath = path.join(projectRoot, 'app.json');
 const packageJsonPath = path.join(projectRoot, 'package.json');
 const packageLockPath = path.join(projectRoot, 'package-lock.json');
-const configPath = path.join(projectRoot, '.maestro', 'config.yaml');
 const repoRoot = path.resolve(projectRoot, '..');
-const appiumToolsRoot = path.join(repoRoot, 'tools', 'appium');
-const appiumPackageJsonPath = path.join(appiumToolsRoot, 'package.json');
-const appiumPackageLockPath = path.join(appiumToolsRoot, 'package-lock.json');
 const bundledJdkHome = path.join(repoRoot, '_tooling', 'jdk-17');
 const bundledJdkBin = path.join(bundledJdkHome, 'bin');
 const bundledAndroidCmdline = path.join(
@@ -30,7 +26,6 @@ const bundledAndroidPlatformTools = path.join(
   'platform-tools',
 );
 const bundledAndroidEmulator = path.join(repoRoot, '_tooling', 'android-sdk', 'emulator');
-const bundledMaestroBin = path.join(repoRoot, '_tooling', 'maestro', 'maestro', 'bin');
 const APP_ID = 'com.eatfitai.app';
 
 function resolveBundledExecutable(relativeSegments) {
@@ -49,12 +44,12 @@ function resolveGlobalCliExecutable(commandName) {
 
 function buildToolingEnv() {
   const hasBundledJdk = fs.existsSync(bundledJdkBin);
+  const androidSerial = resolveEnv('ANDROID_SERIAL');
   const pathParts = [
     hasBundledJdk ? bundledJdkBin : null,
     bundledAndroidPlatformTools,
     bundledAndroidEmulator,
     bundledAndroidCmdline,
-    bundledMaestroBin,
     process.env.APPDATA ? path.join(process.env.APPDATA, 'npm') : null,
     process.env.PATH || '',
   ].filter(Boolean);
@@ -66,6 +61,10 @@ function buildToolingEnv() {
     ANDROID_USER_HOME: path.join(repoRoot, '_state', 'android-user-home'),
     PATH: pathParts.join(path.delimiter),
   };
+
+  if (androidSerial) {
+    env.ANDROID_SERIAL = androidSerial.trim();
+  }
 
   if (hasBundledJdk) {
     env.JAVA_HOME = bundledJdkHome;
@@ -183,7 +182,7 @@ function readProductionEnvStatus() {
   const profile = readBuildProfile();
   const requiredVars = [
     'EXPO_PUBLIC_API_BASE_URL',
-    'EXPO_PUBLIC_SUPABASE_URL',
+    'EXPO_PUBLIC_MEDIA_PUBLIC_BASE_URL',
     'EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID',
     'EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID',
   ];
@@ -249,20 +248,38 @@ function printCheck(name, status, detail) {
   console.log(`${status.padEnd(5)} ${name}${detail ? ` - ${detail}` : ''}`);
 }
 
-function readAppiumServerConfig() {
-  const rawPort = Number.parseInt(String(resolveEnv('APPIUM_PORT') || '4723').trim(), 10);
-  return {
-    host: String(resolveEnv('APPIUM_HOST') || '127.0.0.1').trim(),
-    port: Number.isFinite(rawPort) && rawPort > 0 ? rawPort : 4723,
-  };
-}
-
 function readRequireReleaseLikeBuild() {
   return String(resolveEnv('EATFITAI_REQUIRE_RELEASE_LIKE_BUILD') || '')
     .trim()
     .toLowerCase() === '1' || String(resolveEnv('EATFITAI_REQUIRE_RELEASE_LIKE_BUILD') || '')
     .trim()
     .toLowerCase() === 'true';
+}
+
+function readRequireAndroidEmulator() {
+  return String(resolveEnv('EATFITAI_REQUIRE_ANDROID_EMULATOR') || '')
+    .trim()
+    .toLowerCase() === '1' || String(resolveEnv('EATFITAI_REQUIRE_ANDROID_EMULATOR') || '')
+    .trim()
+    .toLowerCase() === 'true';
+}
+
+function readAndroidTargetMode() {
+  const rawMode = String(
+    resolveEnv('EATFITAI_ANDROID_TARGET') || resolveEnv('EATFITAI_ANDROID_TARGET_MODE') || '',
+  )
+    .trim()
+    .toLowerCase();
+
+  if (['emulator', 'avd'].includes(rawMode)) {
+    return 'emulator';
+  }
+
+  if (['real', 'real-device', 'device', 'usb'].includes(rawMode)) {
+    return 'real-device';
+  }
+
+  return '';
 }
 
 function readMetroServerConfig() {
@@ -323,7 +340,7 @@ function readAndroidInstallPolicyHint(adbExecutable) {
   if (miuiVersion) {
     return {
       status: 'WARN',
-      detail: `Detected ${manufacturer || 'Xiaomi'} ${miuiVersion}. MIUI devices commonly block Maestro/Appium helper APK installs until "Install via USB" and "USB debugging (Security settings)" are enabled on the unlocked device.${ownerSummary ? ` Device policy owner: ${ownerSummary}.` : ''}`,
+      detail: `Detected ${manufacturer || 'Xiaomi'} ${miuiVersion}. Enable "USB debugging" and "USB debugging (Security settings)" on the unlocked device so ADB input can tap and type reliably.${ownerSummary ? ` Device policy owner: ${ownerSummary}.` : ''}`,
     };
   }
 
@@ -340,6 +357,39 @@ function readAndroidInstallPolicyHint(adbExecutable) {
       ? `${manufacturer} device detected. No OEM install-policy warning was inferred.`
       : 'No Android install-policy warning was inferred.',
   };
+}
+
+function resolveScrcpyExecutable() {
+  const command = resolveGlobalCliExecutable('scrcpy');
+  if (command) {
+    return command;
+  }
+
+  if (process.platform === 'win32' && process.env.LOCALAPPDATA) {
+    const wingetPackages = path.join(process.env.LOCALAPPDATA, 'Microsoft', 'WinGet', 'Packages');
+    if (fs.existsSync(wingetPackages)) {
+      const result = spawnSync(
+        'powershell.exe',
+        [
+          '-NoLogo',
+          '-NoProfile',
+          '-Command',
+          `Get-ChildItem -LiteralPath '${wingetPackages.replace(/'/g, "''")}' -Recurse -Filter scrcpy.exe -ErrorAction SilentlyContinue | Select-Object -First 1 -ExpandProperty FullName`,
+        ],
+        {
+          cwd: projectRoot,
+          encoding: 'utf8',
+          shell: false,
+        },
+      );
+      const found = (result.stdout || '').trim();
+      if (found) {
+        return found;
+      }
+    }
+  }
+
+  return 'scrcpy';
 }
 
 function isTcpServerReachable(host, port, timeoutMs = 1200) {
@@ -368,37 +418,17 @@ function isTcpServerReachable(host, port, timeoutMs = 1200) {
 async function main() {
   const checks = [];
   const requireReleaseLikeBuild = readRequireReleaseLikeBuild();
-  const bundledMaestro =
-    resolveBundledExecutable(['_tooling', 'maestro', 'maestro', 'bin', 'maestro.bat']) ||
-    resolveBundledExecutable(['_tooling', 'maestro', 'maestro', 'bin', 'maestro']);
-  const maestroExecutable = bundledMaestro || resolveGlobalCliExecutable('maestro') || 'maestro';
-  const maestro = runCommand(maestroExecutable, ['--version'], 30000);
-  checks.push({
-    name: 'Maestro CLI',
-    status: maestro.ok ? 'OK' : 'FAIL',
-    detail: maestro.ok
-      ? `${maestro.stdout}${bundledMaestro ? ' (bundled)' : ''}`
-      : maestro.stderr || maestro.error || 'maestro not found',
-  });
+  const requireAndroidEmulator = readRequireAndroidEmulator();
+  const androidTargetMode = readAndroidTargetMode();
 
-  const appiumExecutable = resolveGlobalCliExecutable('appium') || 'appium';
-  const appium = runCommand(appiumExecutable, ['--version'], 30000);
+  const scrcpyExecutable = resolveScrcpyExecutable();
+  const scrcpy = runCommand(scrcpyExecutable, ['--version'], 30000);
   checks.push({
-    name: 'Appium CLI',
-    status: appium.ok ? 'OK' : 'FAIL',
-    detail: appium.ok
-      ? appium.stdout
-      : appium.stderr || appium.error || 'appium not found',
-  });
-
-  const appiumServer = readAppiumServerConfig();
-  const appiumServerReachable = await isTcpServerReachable(appiumServer.host, appiumServer.port);
-  checks.push({
-    name: 'Appium server',
-    status: appiumServerReachable ? 'OK' : 'WARN',
-    detail: appiumServerReachable
-      ? `Listening at http://${appiumServer.host}:${appiumServer.port}/`
-      : `Not reachable at http://${appiumServer.host}:${appiumServer.port}/. Appium diagnostics lane will stay optional until the server is started.`,
+    name: 'scrcpy',
+    status: scrcpy.ok ? 'OK' : 'WARN',
+    detail: scrcpy.ok
+      ? scrcpy.stdout.split(/\r?\n/)[0]
+      : 'scrcpy not found. Install with: winget install --id Genymobile.scrcpy -e',
   });
 
   const bundledAdb =
@@ -423,6 +453,32 @@ async function main() {
     });
 
     if (activeDevices.length > 0) {
+      if (requireAndroidEmulator || androidTargetMode === 'emulator') {
+        const androidSerial = String(resolveEnv('ANDROID_SERIAL') || '').trim();
+        const qemu = androidSerial ? readAndroidSystemProperty(bundledAdb || 'adb', 'ro.kernel.qemu') : '';
+        checks.push({
+          name: 'Android emulator target',
+          status: /^emulator-\d+$/.test(androidSerial) && qemu === '1' ? 'OK' : 'FAIL',
+          detail:
+            /^emulator-\d+$/.test(androidSerial) && qemu === '1'
+              ? `Pinned to emulator target ${androidSerial}.`
+              : 'Gate requires ANDROID_SERIAL to point at an online emulator-* device with ro.kernel.qemu=1.',
+        });
+      }
+
+      if (androidTargetMode === 'real-device') {
+        const androidSerial = String(resolveEnv('ANDROID_SERIAL') || '').trim();
+        const qemu = androidSerial ? readAndroidSystemProperty(bundledAdb || 'adb', 'ro.kernel.qemu') : '';
+        checks.push({
+          name: 'Android real-device target',
+          status: androidSerial && !/^emulator-\d+$/.test(androidSerial) && qemu !== '1' ? 'OK' : 'FAIL',
+          detail:
+            androidSerial && !/^emulator-\d+$/.test(androidSerial) && qemu !== '1'
+              ? `Pinned to real Android target ${androidSerial}.`
+              : 'Real-device gate requires ANDROID_SERIAL to point at a non-emulator adb device.',
+        });
+      }
+
       installedBuild = readInstalledAndroidBuildStatus(bundledAdb || 'adb');
       checks.push({
         name: 'Installed Android build',
@@ -439,6 +495,47 @@ async function main() {
       checks.push({
         name: 'Android install policy',
         ...readAndroidInstallPolicyHint(bundledAdb || 'adb'),
+      });
+
+      const uiDump = runCommand(bundledAdb || 'adb', [
+        'shell',
+        'uiautomator',
+        'dump',
+        '/sdcard/eatfitai-doctor-ui.xml',
+      ], 30000);
+      checks.push({
+        name: 'UIAutomator dump',
+        status: uiDump.ok ? 'OK' : 'WARN',
+        detail: uiDump.ok
+          ? 'UI tree can be captured.'
+          : uiDump.stderr || uiDump.stdout || uiDump.error || 'UI tree capture failed; screenshot/logcat lane can still run.',
+      });
+      runCommand(bundledAdb || 'adb', ['shell', 'rm', '/sdcard/eatfitai-doctor-ui.xml']);
+
+      const screencap = runCommand(bundledAdb || 'adb', [
+        'shell',
+        'screencap',
+        '-p',
+        '/sdcard/eatfitai-doctor.png',
+      ]);
+      checks.push({
+        name: 'screencap',
+        status: screencap.ok ? 'OK' : 'FAIL',
+        detail: screencap.ok
+          ? 'Device screenshot command works.'
+          : screencap.stderr || screencap.error || 'screencap failed',
+      });
+      runCommand(bundledAdb || 'adb', ['shell', 'rm', '/sdcard/eatfitai-doctor.png']);
+
+      const screenrecord = runCommand(bundledAdb || 'adb', [
+        'shell',
+        'screenrecord',
+        '--help',
+      ]);
+      checks.push({
+        name: 'screenrecord',
+        status: screenrecord.ok || screenrecord.stdout || screenrecord.stderr ? 'OK' : 'WARN',
+        detail: 'Use device probe/auth-entry with --record when video evidence is needed.',
       });
     }
   } else {
@@ -457,21 +554,8 @@ async function main() {
   });
 
   checks.push({
-    name: 'Maestro workspace',
-    status: fs.existsSync(configPath) ? 'OK' : 'FAIL',
-    detail: fs.existsSync(configPath)
-      ? '.maestro/config.yaml found.'
-      : 'Missing .maestro/config.yaml',
-  });
-
-  checks.push({
     name: 'Node modules parity',
     ...readDependencyInstallStatus(projectRoot, packageJsonPath, packageLockPath),
-  });
-
-  checks.push({
-    name: 'Appium workspace deps',
-    ...readDependencyInstallStatus(appiumToolsRoot, appiumPackageJsonPath, appiumPackageLockPath),
   });
 
   checks.push({

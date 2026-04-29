@@ -931,6 +931,175 @@ class GeminiPoolManager:
             model=self.default_model,
         )
 
+    def generate_with_audio(
+        self,
+        prompt: str,
+        *,
+        audio_base64: str,
+        audio_mime_type: str = "audio/wav",
+        temperature: float = 0.0,
+        max_output_tokens: int = 500,
+    ) -> str:
+        """
+        Gửi multimodal request (text + audio) tới Gemini.
+        Dùng cho STT: gửi audio file → nhận text transcription.
+        Sử dụng cùng pool/failover/quota với generate_text.
+        """
+        # Ước lượng tokens cao hơn vì audio tốn nhiều tokens hơn text
+        estimated_tokens = max_output_tokens + 2000  # audio thường ~1000-2000 tokens
+        probe_targets: List[GeminiPoolEntry] = []
+        with self._lock:
+            now = _utcnow()
+            self._refresh_locked(now)
+            candidates = self._candidate_entries_locked(now, estimated_tokens)
+            self._refresh_retry_after_locked(now, estimated_tokens)
+            if not self._entries:
+                raise GeminiUnavailableError(
+                    "gemini_not_configured",
+                    "Gemini key pool chưa được cấu hình",
+                    model=self.default_model,
+                )
+            if not candidates:
+                probe_targets = self._probe_targets_locked(now)
+                if not probe_targets:
+                    raise GeminiQuotaExhaustedError(
+                        "gemini_quota_exhausted",
+                        "Toàn bộ Gemini project đã chạm quota hoặc đang cooldown",
+                        retry_after=self._last_retry_after,
+                        model=self.default_model,
+                    )
+
+        if probe_targets:
+            self._run_probe_pass(probe_targets)
+            with self._lock:
+                now = _utcnow()
+                self._refresh_locked(now)
+                candidates = self._candidate_entries_locked(now, estimated_tokens)
+                self._refresh_retry_after_locked(now, estimated_tokens)
+                if not candidates:
+                    raise GeminiQuotaExhaustedError(
+                        "gemini_quota_exhausted",
+                        "Toàn bộ Gemini project đã chạm quota hoặc đang cooldown",
+                        retry_after=self._last_retry_after,
+                        model=self.default_model,
+                    )
+
+        # Thử từng entry trong pool (failover)
+        last_exc: Optional[GeminiPoolError] = None
+        for entry in candidates:
+            with self._lock:
+                request_id = entry.reserve_usage(_utcnow(), estimated_tokens)
+                self._save_usage_state_locked()
+            try:
+                text = self._perform_multimodal_request(
+                    entry,
+                    prompt,
+                    audio_base64=audio_base64,
+                    audio_mime_type=audio_mime_type,
+                    temperature=temperature,
+                    max_output_tokens=max_output_tokens,
+                    estimated_tokens=estimated_tokens,
+                    request_id=request_id,
+                )
+                with self._lock:
+                    self._active_project_id = entry.project_id
+                    self._last_retry_after = None
+                    self._save_usage_state_locked()
+                return text
+            except GeminiPoolError as exc:
+                with self._lock:
+                    self._apply_error_state_locked(entry, exc)
+                    self._refresh_retry_after_locked(_utcnow(), estimated_tokens)
+                    self._save_usage_state_locked()
+                last_exc = exc
+                if exc.code == "gemini_request_invalid":
+                    raise
+
+        if last_exc:
+            raise last_exc
+        raise GeminiUnavailableError(
+            "gemini_unavailable",
+            "Gemini hiện không khả dụng trên tất cả project trong pool",
+            retry_after=self._last_retry_after,
+            model=self.default_model,
+        )
+
+    def _perform_multimodal_request(
+        self,
+        entry: GeminiPoolEntry,
+        prompt: str,
+        *,
+        audio_base64: str,
+        audio_mime_type: str,
+        temperature: float,
+        max_output_tokens: int,
+        estimated_tokens: int,
+        request_id: str,
+    ) -> str:
+        """Gửi multimodal request (text + audio inline) tới Gemini REST API."""
+        url = GENERATE_URL_TEMPLATE.format(model=quote(entry.model, safe="-_."))
+        # Payload multimodal: text prompt + audio inline_data
+        payload = {
+            "contents": [{
+                "parts": [
+                    {"text": prompt},
+                    {
+                        "inline_data": {
+                            "mime_type": audio_mime_type,
+                            "data": audio_base64,
+                        }
+                    },
+                ]
+            }],
+            "generationConfig": {
+                "temperature": temperature,
+                "maxOutputTokens": max_output_tokens,
+            },
+        }
+
+        try:
+            response = self._requester(
+                url,
+                params={"key": entry.api_key},
+                json=payload,
+                timeout=self.timeout_seconds + 15,  # Audio request cần timeout dài hơn
+            )
+        except requests.Timeout as exc:
+            raise GeminiPoolError(
+                "gemini_transient_error",
+                "Gemini multimodal request timed out",
+                project_alias=entry.project_alias,
+                project_id=entry.project_id,
+                model=entry.model,
+            ) from exc
+        except requests.RequestException as exc:
+            raise GeminiPoolError(
+                "gemini_transient_error",
+                "Gemini multimodal request failed",
+                project_alias=entry.project_alias,
+                project_id=entry.project_id,
+                model=entry.model,
+            ) from exc
+
+        if response.status_code >= 400:
+            self._raise_for_error_response(entry, response)
+
+        data = response.json()
+        actual_tokens = _extract_total_tokens(data)
+        with self._lock:
+            entry.reconcile_usage(_utcnow(), request_id, estimated_tokens, actual_tokens)
+            self._save_usage_state_locked()
+        text = _extract_text(data)
+        if not text:
+            raise GeminiPoolError(
+                "gemini_request_invalid",
+                "Gemini returned empty response for audio transcription",
+                project_alias=entry.project_alias,
+                project_id=entry.project_id,
+                model=entry.model,
+            )
+        return text
+
     def _generate_with_entry(
         self,
         entry: GeminiPoolEntry,

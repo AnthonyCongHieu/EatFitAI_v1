@@ -1,10 +1,12 @@
-import { useEffect, type ComponentType } from 'react';
+import { useEffect, useRef, type ComponentType } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../types';
 import { useAppTheme } from '../../theme/ThemeProvider';
 import { E2E_AUTOMATION_ENABLED } from '../../config/automation';
 import { useAuthStore } from '../../store/useAuthStore';
+import { trackScreen } from '../../services/analytics';
+import { flushPendingNotificationNavigation } from '../../services/notificationService';
 import LoginScreen from '../screens/auth/LoginScreen';
 import RegisterScreen from '../screens/auth/RegisterScreen';
 import VerifyEmailScreen from '../screens/auth/VerifyEmailScreen';
@@ -15,8 +17,27 @@ import OnboardingScreen from '../screens/auth/OnboardingScreen';
 import SplashScreen from '../screens/SplashScreen';
 import MascotOverlay from '../../components/MascotOverlay';
 import { t } from '../../i18n/vi';
+import { getActiveRouteName, navigationRef } from './navigationRef';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
+
+const AUTH_FLOW_ROUTES = new Set([
+  'IntroCarousel',
+  'Welcome',
+  'Login',
+  'Register',
+  'VerifyEmail',
+  'ForgotPassword',
+  'Onboarding',
+]);
+
+const inferScreenFlow = (routeName: string | undefined): string => {
+  if (!routeName) {
+    return 'navigation';
+  }
+
+  return AUTH_FLOW_ROUTES.has(routeName) ? 'auth' : 'app';
+};
 
 const lazyScreen = (
   loader: () => { default: ComponentType<any> },
@@ -34,6 +55,12 @@ const getFoodDetailScreen = lazyScreen(() =>
 );
 const getCustomDishScreen = lazyScreen(() =>
   require('../screens/diary/CustomDishScreen'),
+);
+const getCommonMealsScreen = lazyScreen(() =>
+  require('../screens/diary/CommonMealsScreen'),
+);
+const getCommonMealTemplateScreen = lazyScreen(() =>
+  require('../screens/diary/CommonMealTemplateScreen'),
 );
 const getMealDiaryScreen = lazyScreen(() => require('../screens/diary/MealDiaryScreen'));
 const getAIScanScreen = lazyScreen(() => require('../screens/ai/AIScanScreen'));
@@ -94,6 +121,7 @@ const AppNavigator = (): React.ReactElement => {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const needsOnboarding = useAuthStore((s) => s.needsOnboarding);
   const init = useAuthStore((s) => s.init);
+  const lastRouteNameRef = useRef<string | undefined>(undefined);
 
   const isInAuthFlow = !isAuthenticated || needsOnboarding;
   const navigatorKey = isInitializing
@@ -116,7 +144,37 @@ const AppNavigator = (): React.ReactElement => {
   }, [init]);
 
   return (
-    <NavigationContainer key={navigatorKey} theme={navigationTheme}>
+    <NavigationContainer
+      key={navigatorKey}
+      ref={navigationRef}
+      theme={navigationTheme}
+      onReady={() => {
+        flushPendingNotificationNavigation();
+        const routeName = getActiveRouteName();
+        lastRouteNameRef.current = routeName;
+        if (routeName) {
+          trackScreen(routeName, {
+            flow: inferScreenFlow(routeName),
+            step: routeName,
+            status: 'viewed',
+          });
+        }
+      }}
+      onStateChange={() => {
+        flushPendingNotificationNavigation();
+        const routeName = getActiveRouteName();
+        if (!routeName || routeName === lastRouteNameRef.current) {
+          return;
+        }
+
+        lastRouteNameRef.current = routeName;
+        trackScreen(routeName, {
+          flow: inferScreenFlow(routeName),
+          step: routeName,
+          status: 'viewed',
+        });
+      }}
+    >
       {isInitializing ? (
         <SplashScreen />
       ) : (
@@ -169,6 +227,16 @@ const AppNavigator = (): React.ReactElement => {
               <Stack.Screen
                 name="CustomDish"
                 getComponent={getCustomDishScreen}
+                options={{ headerShown: false }}
+              />
+              <Stack.Screen
+                name="CommonMeals"
+                getComponent={getCommonMealsScreen}
+                options={{ headerShown: false }}
+              />
+              <Stack.Screen
+                name="CommonMealTemplate"
+                getComponent={getCommonMealTemplateScreen}
                 options={{ headerShown: false }}
               />
               <Stack.Screen

@@ -17,7 +17,7 @@ Các phiên bản mặc định:
 - Python `3.11`
 - Java `17`
 - SQL Server 2022 Developer (local instance)
-- Android emulator first, thiết bị thật là fallback
+- Android thiết bị thật qua ADB + scrcpy; emulator vẫn dùng cho dev khi cần
 
 ## Khởi chạy nhanh
 
@@ -54,7 +54,7 @@ powershell -ExecutionPolicy Bypass -File .\tools\dev\Start-EatFitAI-PhysicalDevi
 - [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) — Kiến trúc hệ thống
 - [docs/TESTING_AND_RELEASE.md](docs/TESTING_AND_RELEASE.md) — Kiểm thử và phát hành
 - [ai-provider/README.md](ai-provider/README.md) — AI provider
-- [tools/appium/README.md](tools/appium/README.md) — Appium smoke lane
+- [docs/TESTING_AND_RELEASE.md](docs/TESTING_AND_RELEASE.md) — ADB + UIAutomator + scrcpy release lane
 
 ## Xác minh local
 
@@ -72,5 +72,5 @@ powershell -ExecutionPolicy Bypass -File .\tools\dev\Restore-EatFitAI-PortableSn
 
 - `sqdate13thang3t.sql` chỉ là snapshot tham chiếu, không phải bootstrap flow chuẩn
 - Backend machine-specific values phải nằm trong `user-secrets`, không phải file JSON tracked
-- Appium + MCP được hỗ trợ qua emulator-first lane trong `tools/appium`
+- Android UI debug hiện dùng `adb`, UIAutomator best-effort, screenshot/logcat, và `scrcpy`
 - Smoke production nên dùng `start-mobile-cloud-smoke.ps1`

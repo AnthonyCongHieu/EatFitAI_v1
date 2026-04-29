@@ -1,5 +1,7 @@
-﻿using System.Security.Claims;
+using System.Security.Claims;
+using EatFitAI.API.DTOs;
 using EatFitAI.API.DTOs.Analytics;
+using EatFitAI.API.Helpers;
 using EatFitAI.API.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -42,13 +44,32 @@ namespace EatFitAI.API.Controllers
                 var summary = await _analyticsService.GetNutritionSummaryAsync(userId, normalizedStartDate, effectiveEndDate);
                 return Ok(summary);
             }
-            catch (UnauthorizedAccessException ex)
+            catch (UnauthorizedAccessException)
             {
-                return Unauthorized(new { message = ex.Message });
+                return Unauthorized(ErrorResponseHelper.SafeError("Không có quyền truy cập", HttpContext));
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                return StatusCode(500, new { message = "Đã xảy ra lỗi khi lấy tổng hợp dinh dưỡng", error = ex.Message });
+                return StatusCode(500, ErrorResponseHelper.SafeError("Đã xảy ra lỗi khi lấy tổng hợp dinh dưỡng", HttpContext));
+            }
+        }
+
+        [HttpGet("weekly-review")]
+        public async Task<ActionResult<WeeklyReviewDto>> GetWeeklyReview()
+        {
+            try
+            {
+                var userId = GetUserIdFromToken();
+                var review = await _analyticsService.GetWeeklyReviewAsync(userId);
+                return Ok(review);
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return Unauthorized(ErrorResponseHelper.SafeError("Không có quyền truy cập", HttpContext));
+            }
+            catch (Exception)
+            {
+                return StatusCode(500, ErrorResponseHelper.SafeError("Đã xảy ra lỗi khi lấy weekly review", HttpContext));
             }
         }
 

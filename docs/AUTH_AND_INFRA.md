@@ -1,6 +1,6 @@
 # Xác thực và hạ tầng
 
-Cập nhật: `2026-04-18`
+Cập nhật: `2026-04-23`
 
 ## Tổng quan
 
@@ -66,11 +66,11 @@ Tài liệu này ghi nhận hiện trạng xác thực (auth) và hạ tầng tr
 - `AdminRuntimeSnapshotCache` refresh mỗi 5 giây
 - Ngay cả khi chưa có user traffic, backend đã tạo hoạt động nền liên tục
 
-### 4. Reset password chưa an toàn đa instance
+### 4. ~~Reset password chưa an toàn đa instance~~ → ĐÃ SỬA
 
-Password reset codes được lưu trong `IMemoryCache`, không phải database. Nếu Render restart hoặc scale ra nhiều instance, mã reset sẽ bị mất.
+> **[2026-04-24 Audit verified]** Password reset codes hiện đã được lưu trong **database** (bảng `PasswordResetCodes` qua `AdminDbContext`), KHÔNG PHẢI `IMemoryCache`. `AuthService.cs` dùng `_adminContext.PasswordResetCodes` cho cả generate và verify. An toàn khi restart/scale.
 
-**Khuyến nghị:** Chuyển sang lưu trong database (bảng `PasswordResetCode` đã tồn tại).
+~~Password reset codes được lưu trong `IMemoryCache`, không phải database.~~
 
 ---
 
@@ -79,8 +79,8 @@ Password reset codes được lưu trong `IMemoryCache`, không phải database.
 ### Giai đoạn 0: Dọn rủi ro ẩn
 
 1. ✅ Đã rotate credential Supabase bị lộ trong `appsettings.Development.json`
-2. Sửa `render.yaml` — đổi `Smtp__*` thành `Brevo__*`
-3. Đảm bảo không còn credential thật trong code tracked
+2. ✅ Đã sửa `render.yaml` — đã dùng Brevo, không còn SMTP config sai
+3. ✅ Đã thay thế secret trong file tracked bằng placeholder (xem `20_SECURITY_REMEDIATION_REPORT`)
 
 ### Giai đoạn 1: Hoàn tất auth đúng
 
@@ -88,15 +88,15 @@ Password reset codes được lưu trong `IMemoryCache`, không phải database.
 2. Sửa forgot-password UX: verify step phải gọi backend kiểm tra mã trước khi sang màn đặt mật khẩu mới
 3. Thêm rate limit cho forgot-password và resend verification
 
-### Giai đoạn 2: Auth chịu được restart/scale
+### ~~Giai đoạn 2: Auth chịu được restart/scale~~ → DONE
 
-1. Chuyển password reset codes từ `IMemoryCache` sang database
-2. Giữ email verification trong database (đã đúng)
+1. ✅ ~~Chuyển password reset codes từ `IMemoryCache` sang database~~ → Đã dùng DB (`PasswordResetCodes`)
+2. ✅ Giữ email verification trong database (đã đúng)
 
 ### Giai đoạn 3: Chuẩn hóa kết nối database
 
-1. Dùng Supavisor session mode (`5432`) cho long-lived backend
-2. Bỏ `Pooling=false`
+1. ✅ Đã dùng Supavisor session mode (`5432`) cho backend production
+2. ✅ Đã bỏ `Pooling=false` — `Program.cs` đã có `EnableRetryOnFailure`
 3. Giữ health checks nhẹ, không amplify incident load
 
 ### Giai đoạn 4: Giảm tải nền không cần thiết

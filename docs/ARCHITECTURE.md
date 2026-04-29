@@ -1,44 +1,44 @@
-# Kiến trúc hiện tại của EatFitAI
+# Current Architecture of EatFitAI
 
-Cập nhật: `2026-04-19`
+Updated: `2026-04-23`
 
-Tài liệu này mô tả trạng thái code hiện tại của repo, dựa trên source và tài liệu đang có. Đây không phải là roadmap.
+This document describes the current architecture of the repository. When there are discrepancies, prioritize:
 
-## 1) Tổng quan
+## 1) Overview
 
-EatFitAI hiện là hệ thống local-first với 4 phần chính:
+EatFitAI is currently a local-first system with 4 main parts:
 
-1. `eatfitai-mobile` - app Expo / React Native.
+1. `eatfitai-mobile` - Expo / React Native app.
 2. `eatfitai-backend` - ASP.NET Core Web API.
-3. `ai-provider` - Flask service cho vision, nutrition và voice.
-4. SQL Server local - lưu user, diary, profile, food, metrics và các bảng domain khác.
+3. `ai-provider` - Flask service for vision, nutrition, and voice.
+4. PostgreSQL (Supabase) - stores user, diary, profile, food, metrics, and other domain tables. (Local dev can use SQL Server or local PostgreSQL.)
 
-Luồng runtime chính:
+Main runtime flows:
 
-- Mobile -> Backend -> SQL Server
+- Mobile -> Backend -> PostgreSQL (Supabase)
 - Mobile -> Backend -> AI provider
 - Mobile voice -> Backend proxy -> AI provider
 
-Các lane smoke và release dùng dữ liệu trong `_logs/production-smoke/<timestamp>` và được mô tả thêm trong [TESTING_AND_RELEASE.md](TESTING_AND_RELEASE.md).
+The smoke and release lanes use data in `_logs/production-smoke/<timestamp>` and are described further in [TESTING_AND_RELEASE.md](TESTING_AND_RELEASE.md).
 
-## 2) Cấu trúc repo
+## 2) Repository Structure
 
-- `eatfitai-mobile/src/app` - navigation, screens và flow UI.
-- `eatfitai-mobile/src/components` - component dùng lại.
+- `eatfitai-mobile/src/app` - navigation, screens, and UI flows.
+- `eatfitai-mobile/src/components` - reusable components.
 - `eatfitai-mobile/src/services` - API client, auth, diary, voice, AI, profile, stats.
 - `eatfitai-mobile/src/store` - Zustand stores.
-- `eatfitai-mobile/src/i18n` - chuỗi ngôn ngữ, hiện có tiếng Việt.
-- `eatfitai-backend/Controllers` - endpoint HTTP.
+- `eatfitai-mobile/src/i18n` - language strings, currently containing Vietnamese.
+- `eatfitai-backend/Controllers` - HTTP endpoints.
 - `eatfitai-backend/Services` - business logic.
-- `eatfitai-backend/Repositories` - truy cập dữ liệu.
-- `eatfitai-backend/DbScaffold` và `Migrations` - mô hình EF / schema đang dùng.
-- `ai-provider/app.py` - entrypoint Flask và route AI.
-- `scripts/cloud` - guard và script kiểm tra encoding / mojibake.
-- `eatfitai-mobile/scripts` - smoke, release gate và helper chạy cloud/local.
+- `eatfitai-backend/Repositories` - data access.
+- `eatfitai-backend/DbScaffold` and `Migrations` - current EF models / schema.
+- `ai-provider/app.py` - Flask entrypoint and AI routes.
+- `scripts/cloud` - guards and scripts to check encoding / mojibake.
+- `eatfitai-mobile/scripts` - smoke, release gates, and helpers to run cloud/local.
 
-## 3) Mobile app
+## 3) Mobile App
 
-Mobile app là frontend chính của sản phẩm. Những khối đáng chú ý:
+The mobile app is the main frontend of the product. Notable blocks:
 
 - Navigation: `AppNavigator`, `AppTabs`, `StatsNavigator`.
 - Auth flow: `Welcome`, `Login`, `Register`, `VerifyEmail`, `ForgotPassword`, `Onboarding`, `IntroCarousel`.
@@ -47,14 +47,14 @@ Mobile app là frontend chính của sản phẩm. Những khối đáng chú ý
 - Profile flow: `Profile`, `EditProfile`, `BodyMetrics`, `GoalSettings`, `WeightHistory`, `ChangePassword`, `Notifications`, `About`, `PrivacyPolicy`.
 - Stats flow: `Stats`, `WeekStats`, `MonthStats`.
 
-Data/state pattern:
+Data/state patterns:
 
-- `apiClient.ts` giữ URL backend hiện tại, retry và discovery cache.
-- `ipScanner.ts` scan LAN và verify `/discovery`.
-- `authTokens.ts`, `authSession.ts` và `secureStore.ts` giữ token an toàn.
-- `useAuthStore`, `useDiaryStore`, `useProfileStore`, `useStatsStore`, `useVoiceStore` giữ state cục bộ.
+- `apiClient.ts` holds the current backend URL, retries, and discovery cache.
+- `ipScanner.ts` scans LAN and verifies `/discovery`.
+- `authTokens.ts`, `authSession.ts`, and `secureStore.ts` keep tokens secure.
+- `useAuthStore`, `useDiaryStore`, `useProfileStore`, `useStatsStore`, `useVoiceStore` hold local state.
 
-Voice hiện tại đi qua backend proxy:
+Voice currently goes through the backend proxy:
 
 - `POST /api/voice/transcribe`
 - `POST /api/voice/parse`
@@ -63,62 +63,62 @@ Voice hiện tại đi qua backend proxy:
 
 ## 4) Backend
 
-Backend là lớp business logic và API chuẩn của hệ thống.
+The backend is the business logic layer and standard API of the system.
 
-### 4.1 Các mảng chính
+### 4.1 Main areas
 
-- Auth: đăng ký, xác minh email, đăng nhập, refresh token, quên mật khẩu, đổi mật khẩu.
-- Google auth: luồng riêng cho sign-in/link Google.
-- Profile: đọc/cập nhật/xóa hồ sơ, body metrics.
+- Auth: registration, email verification, login, refresh token, forgot password, change password.
+- Google auth: separate flows for Google sign-in/link.
+- Profile: read/update/delete profiles, body metrics.
 - Diary / food: search, custom dish, meal diary, favorites, water intake.
 - AI: status, nutrition, vision, voice proxy, summary.
-- Health/discovery: health checks và discovery endpoint cho mobile LAN scan.
+- Health/discovery: health checks and discovery endpoints for LAN scan by mobile.
 
-### 4.2 Cấu trúc thư mục
+### 4.2 Directory structure
 
-- `Controllers` - ánh xạ HTTP endpoints.
-- `Services` - xử lý nghiệp vụ và orchestration.
-- `Repositories` - truy vấn dữ liệu.
-- `Models` / `DTOs` - contract giữa tầng HTTP và data.
-- `Tests` - test backend hiện có.
+- `Controllers` - map to HTTP endpoints.
+- `Services` - handle business logic and orchestration.
+- `Repositories` - data queries.
+- `Models` / `DTOs` - contract between HTTP layer and data.
+- `Tests` - existing backend tests.
 
-### 4.3 Auth và Google
+### 4.3 Auth and Google
 
-Hiện code vẫn có hai lớp Google auth:
+Currently, the codebase still has two layers of Google auth:
 
-- `POST /api/auth/google/signin` và `POST /api/auth/google/link` trong `GoogleAuthController`.
-- `GET /api/auth/google` trong `AuthController` vẫn tồn tại như nhánh legacy.
+- `POST /api/auth/google/signin` and `POST /api/auth/google/link` in `GoogleAuthController`.
+- `GET /api/auth/google` in `AuthController` still exists as a legacy branch.
 
-`docs/AUTH_AND_INFRA.md` và code backend là nguồn phù hợp nhất khi cần quyết định luồng auth nào đang sống.
+`docs/AUTH_AND_INFRA.md` and the backend code are the most relevant sources when deciding which auth flow is active.
 
-## 5) AI provider
+## 5) AI Provider
 
-`ai-provider` là service Python Flask cho các chức năng AI.
+`ai-provider` is a Python Flask service for AI functionalities.
 
-Những route và năng lực chính:
+Main routes and capabilities:
 
 - `GET /healthz`
 - `GET /healthz/gemini`
 - vision detection / nutrition advice / meal insight / cooking instructions
 - voice parse / transcription support
 
-Các module nổi bật:
+Notable modules:
 
-- `app.py` - Flask app và route wiring.
-- `nutrition_llm.py` - logic dinh dưỡng.
+- `app.py` - Flask app and route wiring.
+- `nutrition_llm.py` - nutrition logic.
 - `stt_service.py` - speech-to-text.
-- `gemini_pool.py` - quản lý pool / gọi Gemini.
+- `gemini_pool.py` - manages pool / calls to Gemini.
 
-## 6) Dữ liệu và lưu trữ
+## 6) Data and Storage
 
-- SQL Server là DB runtime chính.
-- Backend dùng EF Core và có cả DbContext / scaffold hiện hữu trong repo.
-- Mobile lưu token và một số cache discovery trong `AsyncStorage` / `SecureStore`.
-- Smoke scripts ghi evidence vào `_logs/production-smoke/<timestamp>` để phục vụ release gate và hậu kiểm.
+- PostgreSQL (Supabase) is the primary production runtime DB. Local dev can use SQL Server or PostgreSQL.
+- The backend uses EF Core (Npgsql provider for production) and has the DbContext / scaffold present in the repo.
+- Mobile saves tokens and some discovery cache in `AsyncStorage` / `SecureStore`.
+- Smoke scripts log evidence into `_logs/production-smoke/<timestamp>` for release gating and post-checks.
 
-## 7) Smoke và release infra
+## 7) Smoke and Release Infra
 
-Trong `eatfitai-mobile/scripts` có các lane smoke chính:
+In `eatfitai-mobile/scripts`, there are main smoke lanes:
 
 - `production-smoke-preflight.js`
 - `production-smoke-auth-api.js`
@@ -131,7 +131,7 @@ Trong `eatfitai-mobile/scripts` có các lane smoke chính:
 - `production-smoke-metrics.js`
 - `production-smoke-rehearsal.js`
 
-Contract artifact thường gặp:
+Common contract artifacts:
 
 - `preflight-results.json`
 - `auth-api-report.json`
@@ -143,16 +143,16 @@ Contract artifact thường gặp:
 - `regression-run.json`
 - `metrics-baseline.json`
 
-Mô hình hiện tại:
+Current model:
 
-- `auth-api` sở hữu luồng đăng ký/xác minh email bằng mailbox disposable.
-- `user-api` dùng credentials đã có sẵn và không tự dựa vào legacy `POST /api/auth/register`.
-- `backend-non-ui` tổng hợp cloud gate riêng với baseline code health riêng.
+- `auth-api` owns the registration/email verification flow using a disposable mailbox.
+- `user-api` uses existing credentials and doesn't rely directly on the legacy `POST /api/auth/register`.
+- `backend-non-ui` aggregates separate cloud gates with a separate code health baseline.
 
-## 8) Điểm cần lưu ý khi thay đổi
+## 8) Important Notes When Making Changes
 
-- Voice hiện đã chuyển qua backend proxy, nên đổi endpoint ở backend trước khi đổi client.
-- Nếu đụng auth Google, cần kiểm tra cả luồng legacy và luồng `GoogleAuthController`.
-- Smoke reports nên tránh ghi secrets thô vào JSON/console summary.
-- Khi sửa encoding, ưu tiên sửa guard và source thật thay vì “phục hồi dấu” từ text bị hỏng.
-- Gate chuẩn cho release vẫn nằm trong [TESTING_AND_RELEASE.md](TESTING_AND_RELEASE.md).
+- Voice has now migrated to a backend proxy, so change endpoints on the backend before the client.
+- If touching Google auth, verify both the legacy flow and the `GoogleAuthController` flow.
+- Smoke reports should avoid writing raw secrets to JSON/console summaries.
+- When fixing encoding issues, prioritize fixing the guard and the actual source rather than "recovering marks" from corrupted text.
+- The standard gate for release is still located in [TESTING_AND_RELEASE.md](TESTING_AND_RELEASE.md).

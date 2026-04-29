@@ -115,12 +115,12 @@ const GlassButton: React.FC<{
           // Glass border with glow
           borderWidth: 1.5,
           borderColor: isDark
-            ? 'rgba(74, 144, 226, 0.25)' // Primary blue glow
-            : 'rgba(59, 130, 246, 0.15)',
+            ? 'rgba(75, 226, 119, 0.25)' // Primary emerald glow
+            : 'rgba(34, 197, 94, 0.15)',
           // Enhanced shadow with primary color glow
           ...Platform.select({
             ios: {
-              shadowColor: isDark ? '#4A90D9' : '#3B82F6',
+              shadowColor: isDark ? '#4BE277' : '#22C55E',
               shadowOffset: { width: 0, height: 3 },
               shadowOpacity: isDark ? 0.25 : 0.15,
               shadowRadius: 8,
@@ -203,16 +203,16 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
       case 'hero':
         return {
           backgroundColor: isDark
-            ? 'rgba(10, 22, 40, 0.94)' // Navy blue tint
+            ? 'rgba(14, 19, 34, 0.94)' // Dark emerald tint
             : 'rgba(248, 250, 255, 0.96)',
           // Enhanced glow border - 2025 trend
           borderBottomWidth: 1.5,
           borderBottomColor: isDark
-            ? 'rgba(74, 144, 226, 0.35)' // Primary blue glow
-            : 'rgba(59, 130, 246, 0.2)',
+            ? 'rgba(75, 226, 119, 0.35)' // Primary emerald glow
+            : 'rgba(34, 197, 94, 0.2)',
           ...Platform.select({
             ios: {
-              shadowColor: isDark ? '#4A90D9' : '#3B82F6',
+              shadowColor: isDark ? '#4BE277' : '#22C55E',
               shadowOffset: { width: 0, height: 6 },
               shadowOpacity: 0.25,
               shadowRadius: 16,
@@ -420,10 +420,10 @@ const createStyles = (theme: any, isDark: boolean) =>
       paddingVertical: 6,
       borderRadius: 14, // Softer
       backgroundColor: isDark
-        ? 'rgba(74, 144, 226, 0.12)' // Primary tint
-        : 'rgba(59, 130, 246, 0.08)',
+        ? 'rgba(75, 226, 119, 0.12)' // Primary tint
+        : 'rgba(34, 197, 94, 0.08)',
       borderWidth: 1,
-      borderColor: isDark ? 'rgba(74, 144, 226, 0.15)' : 'rgba(59, 130, 246, 0.1)',
+      borderColor: isDark ? 'rgba(75, 226, 119, 0.15)' : 'rgba(34, 197, 94, 0.1)',
     },
     subtitle: {
       textAlign: 'center',

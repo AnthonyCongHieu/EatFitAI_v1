@@ -12,6 +12,7 @@ using EatFitAI.Services; // Voice processing service
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
@@ -25,8 +26,10 @@ using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Threading;
+using System.IO.Compression;
 using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Options;
@@ -223,6 +226,17 @@ builder.Services.AddControllers()
     });
 builder.Services.AddHttpClient();
 builder.Services.AddEndpointsApiExplorer();
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+    options.ForwardLimit = 1;
+    options.KnownNetworks.Clear();
+    options.KnownProxies.Clear();
+});
+builder.Services.AddHttpsRedirection(options =>
+{
+    options.HttpsPort = 443;
+});
 
 
 // CORS from config (supports exact match and simple wildcard suffix/prefix, e.g. exp://* or http://localhost:*)
@@ -416,6 +430,7 @@ static void EnsureRequiredProductionConfiguration(
 
     RequireValue("Jwt:Key");
     RequireValue("Encryption:Key");
+    RequireValue("AIProvider:InternalToken");
     RequireHttpsUrl("AIProvider:VisionBaseUrl");
 
     if (errors.Count > 0)
@@ -443,22 +458,27 @@ static IReadOnlyList<string> GetMissingOptionalProductionConfiguration(WebApplic
     }
 
     var missingStorage = new List<string>();
-    if (!HasConfiguredHttpsUrl(builder.Configuration["Supabase:Url"]))
+    if (!HasConfiguredValue(builder.Configuration["Media:PublicBaseUrl"]))
     {
-        missingStorage.Add("Supabase:Url");
+        missingStorage.Add("Media:PublicBaseUrl");
     }
 
-    if (!HasConfiguredValue(builder.Configuration["Supabase:ServiceRoleKey"]))
+    if (!HasConfiguredValue(builder.Configuration["Media:R2:AccessKeyId"]))
     {
-        missingStorage.Add("Supabase:ServiceRoleKey");
+        missingStorage.Add("Media:R2:AccessKeyId");
     }
 
-    if (!HasConfiguredValue(builder.Configuration["Supabase:UserFoodBucket"]))
+    if (!HasConfiguredValue(builder.Configuration["Media:R2:SecretAccessKey"]))
     {
-        missingStorage.Add("Supabase:UserFoodBucket");
+        missingStorage.Add("Media:R2:SecretAccessKey");
     }
 
-    AddWarning("Supabase storage uploads disabled", missingStorage.ToArray());
+    if (!HasConfiguredValue(builder.Configuration["Media:R2:AccountId"]))
+    {
+        missingStorage.Add("Media:R2:AccountId");
+    }
+
+    AddWarning("R2 storage uploads disabled", missingStorage.ToArray());
 
     var missingGoogle = new[]
     {
@@ -510,37 +530,132 @@ builder.Services.AddCors(o =>
         .AllowCredentials());
 });
 
-// Rate Limiting - Prevent brute force and abuse
+static bool ShouldBypassRateLimit(HttpContext context)
+{
+    if (HttpMethods.IsOptions(context.Request.Method))
+    {
+        return true;
+    }
+
+    var path = context.Request.Path;
+    return path.StartsWithSegments("/health", StringComparison.OrdinalIgnoreCase)
+        || path.StartsWithSegments("/swagger", StringComparison.OrdinalIgnoreCase)
+        || path.StartsWithSegments("/discovery", StringComparison.OrdinalIgnoreCase);
+}
+
+static string GetRateLimitPartitionKey(HttpContext context, string policy)
+{
+    var userId = context.User.FindFirstValue(ClaimTypes.NameIdentifier)
+        ?? context.User.FindFirstValue("sub")
+        ?? context.User.FindFirstValue("http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier");
+
+    if (!string.IsNullOrWhiteSpace(userId))
+    {
+        return $"{policy}:user:{userId}";
+    }
+
+    var ip = context.Connection.RemoteIpAddress?.ToString();
+    if (!string.IsNullOrWhiteSpace(ip))
+    {
+        return $"{policy}:ip:{ip}";
+    }
+
+    return $"{policy}:anonymous";
+}
+
+static FixedWindowRateLimiterOptions BuildFixedWindowOptions(
+    int permitLimit,
+    int queueLimit,
+    TimeSpan window)
+{
+    return new FixedWindowRateLimiterOptions
+    {
+        PermitLimit = permitLimit,
+        QueueLimit = queueLimit,
+        QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+        Window = window,
+        AutoReplenishment = true
+    };
+}
+
+static int GetPositiveConfigInt(IConfiguration configuration, string key, int fallback)
+{
+    var configured = configuration.GetValue<int?>(key);
+    return configured.HasValue && configured.Value > 0 ? configured.Value : fallback;
+}
+
+static int GetNonNegativeConfigInt(IConfiguration configuration, string key, int fallback)
+{
+    var configured = configuration.GetValue<int?>(key);
+    return configured.HasValue && configured.Value >= 0 ? configured.Value : fallback;
+}
+
+var authRateLimitPermitLimit = GetPositiveConfigInt(builder.Configuration, "RateLimiting:AuthPermitLimit", 10);
+var authRateLimitQueueLimit = GetNonNegativeConfigInt(builder.Configuration, "RateLimiting:AuthQueueLimit", 2);
+var authRateLimitWindowSeconds = GetPositiveConfigInt(builder.Configuration, "RateLimiting:AuthWindowSeconds", 60);
+
+// Rate Limiting - partition by authenticated user, then client IP.
 builder.Services.AddRateLimiter(options =>
 {
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
-
-    // Auth endpoints: 10 requests per minute (prevent brute force)
-    options.AddFixedWindowLimiter("AuthPolicy", opt =>
+    options.OnRejected = async (context, cancellationToken) =>
     {
-        opt.Window = TimeSpan.FromMinutes(1);
-        opt.PermitLimit = 10;
-        opt.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
-        opt.QueueLimit = 2;
+        context.HttpContext.Response.StatusCode = StatusCodes.Status429TooManyRequests;
+        context.HttpContext.Response.ContentType = "application/json";
+
+        if (context.Lease.TryGetMetadata(MetadataName.RetryAfter, out var retryAfter))
+        {
+            var seconds = Math.Max(1, (int)Math.Ceiling(retryAfter.TotalSeconds));
+            context.HttpContext.Response.Headers.RetryAfter = seconds.ToString();
+        }
+
+        var payload = new
+        {
+            code = "rate_limit_exceeded",
+            message = "Too many requests. Please wait a moment and try again.",
+            requestId = context.HttpContext.TraceIdentifier
+        };
+
+        await context.HttpContext.Response.WriteAsync(
+            JsonSerializer.Serialize(payload),
+            cancellationToken);
+    };
+
+    options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(context =>
+    {
+        if (ShouldBypassRateLimit(context))
+        {
+            return RateLimitPartition.GetNoLimiter("general:bypass");
+        }
+
+        return RateLimitPartition.GetFixedWindowLimiter(
+            GetRateLimitPartitionKey(context, "general"),
+            _ => BuildFixedWindowOptions(120, 10, TimeSpan.FromMinutes(1)));
     });
 
-    // AI endpoints: 20 requests per minute (expensive operations)
-    options.AddFixedWindowLimiter("AIPolicy", opt =>
-    {
-        opt.Window = TimeSpan.FromMinutes(1);
-        opt.PermitLimit = 20;
-        opt.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
-        opt.QueueLimit = 5;
-    });
+    options.AddPolicy("AuthPolicy", context =>
+        ShouldBypassRateLimit(context)
+            ? RateLimitPartition.GetNoLimiter("auth:bypass")
+            : RateLimitPartition.GetFixedWindowLimiter(
+                GetRateLimitPartitionKey(context, "auth"),
+                _ => BuildFixedWindowOptions(
+                    authRateLimitPermitLimit,
+                    authRateLimitQueueLimit,
+                    TimeSpan.FromSeconds(authRateLimitWindowSeconds))));
 
-    // General API: 100 requests per minute
-    options.AddFixedWindowLimiter("GeneralPolicy", opt =>
-    {
-        opt.Window = TimeSpan.FromMinutes(1);
-        opt.PermitLimit = 100;
-        opt.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
-        opt.QueueLimit = 10;
-    });
+    options.AddPolicy("AIPolicy", context =>
+        ShouldBypassRateLimit(context)
+            ? RateLimitPartition.GetNoLimiter("ai:bypass")
+            : RateLimitPartition.GetFixedWindowLimiter(
+                GetRateLimitPartitionKey(context, "ai"),
+                _ => BuildFixedWindowOptions(20, 5, TimeSpan.FromMinutes(1))));
+
+    options.AddPolicy("GeneralPolicy", context =>
+        ShouldBypassRateLimit(context)
+            ? RateLimitPartition.GetNoLimiter("general:bypass")
+            : RateLimitPartition.GetFixedWindowLimiter(
+                GetRateLimitPartitionKey(context, "general-policy"),
+                _ => BuildFixedWindowOptions(120, 10, TimeSpan.FromMinutes(1))));
 });
 
 // Add Swagger
@@ -613,15 +728,45 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
     }
 });
 
-// Caching for features like password reset
+// In-memory cache cho lookup cache (food search, etc.) — password reset đã dùng DB
 builder.Services.AddMemoryCache();
+
+// Response compression — giảm bandwidth cho mobile clients (3G/4G)
+builder.Services.AddResponseCompression(options =>
+{
+    options.EnableForHttps = true;
+    options.Providers.Add<BrotliCompressionProvider>();
+    options.Providers.Add<GzipCompressionProvider>();
+    options.MimeTypes = ResponseCompressionDefaults.MimeTypes.Concat(new[]
+    {
+        "application/json",
+        "application/problem+json",
+        "image/svg+xml"
+    });
+});
+builder.Services.Configure<BrotliCompressionProviderOptions>(options =>
+    options.Level = CompressionLevel.Fastest);
+builder.Services.Configure<GzipCompressionProviderOptions>(options =>
+    options.Level = CompressionLevel.SmallestSize);
 
 // Email settings & service
 builder.Services.Configure<BrevoOptions>(builder.Configuration.GetSection("Brevo"));
 builder.Services.Configure<SupabaseOptions>(builder.Configuration.GetSection("Supabase"));
+builder.Services.Configure<MediaOptions>(builder.Configuration.GetSection("Media"));
+builder.Services.Configure<R2Options>(builder.Configuration.GetSection("Media:R2"));
+builder.Services.Configure<MediaImageOptions>(builder.Configuration.GetSection("Media:Image"));
 builder.Services.Configure<AdminGovernanceOptions>(builder.Configuration.GetSection("AdminGovernance"));
 builder.Services.AddHttpClient<IEmailService, EmailService>();
 builder.Services.AddScoped<ISupabaseStorageService, SupabaseStorageService>();
+builder.Services.AddScoped<IMediaImageProcessor, MediaImageProcessor>();
+builder.Services.AddScoped<IMediaUrlResolver, MediaUrlResolver>();
+builder.Services.AddScoped<IMediaStorageService>(services =>
+{
+    var mediaOptions = services.GetRequiredService<IOptions<MediaOptions>>().Value;
+    return string.Equals(mediaOptions.Provider, "r2", StringComparison.OrdinalIgnoreCase)
+        ? ActivatorUtilities.CreateInstance<R2MediaStorageService>(services)
+        : ActivatorUtilities.CreateInstance<SupabaseMediaStorageService>(services);
+});
 
 // Add AutoMapper
 builder.Services.AddAutoMapper(_ => { }, typeof(MappingProfile));
@@ -639,6 +784,7 @@ builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IMealDiaryService, MealDiaryService>();
 builder.Services.AddScoped<IFoodService, FoodService>();
+builder.Services.AddScoped<ICustomDishService, CustomDishService>();
 builder.Services.AddScoped<IAnalyticsService, AnalyticsService>();
 builder.Services.AddScoped<IUserFoodItemService, UserFoodItemService>();
 builder.Services.AddScoped<IAiFoodMapService, AiFoodMapService>();
@@ -662,6 +808,8 @@ builder.Services.AddScoped<INutritionCalcService, NutritionCalcService>();
 builder.Services.AddScoped<IAiLogService, AiLogService>();
 builder.Services.AddScoped<IAdminAuditService, AdminAuditService>();
 builder.Services.AddScoped<SupabaseSchemaBootstrapper>();
+builder.Services.AddScoped<ProductSchemaBootstrapper>();
+builder.Services.AddScoped<ITelemetryService, TelemetryService>();
 
 // Lookup cache service (Singleton for shared cache)
 builder.Services.AddSingleton<ILookupCacheService, LookupCacheService>();
@@ -677,10 +825,14 @@ builder.Services.AddHostedService<AdminRuntimeSnapshotBackgroundService>();
 
 // Health checks (used by HealthController and readiness endpoints)
 builder.Services.AddSingleton<StartupHealthState>();
+builder.Services.AddScoped<EatFitAI.API.HealthChecks.SupabaseHealthCheck>();
 builder.Services.AddHealthChecks()
     .AddCheck<StartupBootstrapHealthCheck>(
         "startup-bootstrap",
         tags: new[] { "ready" })
+    .AddCheck<EatFitAI.API.HealthChecks.SupabaseHealthCheck>(
+        "supabase",
+        tags: new[] { "ready", "external" })
     .AddNpgSql(
         defaultConnectionString!,
         name: "postgres",
@@ -891,12 +1043,14 @@ if (adminGovernanceBootstrapRequested)
     var governanceBootstrapper = scope.ServiceProvider.GetRequiredService<AdminGovernanceBootstrapper>();
     var authInfrastructureBootstrapper = scope.ServiceProvider.GetRequiredService<AuthInfrastructureBootstrapper>();
     var supabaseSchemaBootstrapper = scope.ServiceProvider.GetRequiredService<SupabaseSchemaBootstrapper>();
+    var productSchemaBootstrapper = scope.ServiceProvider.GetRequiredService<ProductSchemaBootstrapper>();
     var governanceOptions = scope.ServiceProvider.GetRequiredService<IOptions<AdminGovernanceOptions>>().Value;
 
     await adminAuditService.EnsureTableAsync();
     await governanceBootstrapper.EnsureSchemaAsync();
     await authInfrastructureBootstrapper.EnsureSchemaAsync();
     await supabaseSchemaBootstrapper.EnsureSchemaAsync();
+    await productSchemaBootstrapper.EnsureSchemaAsync();
 
     var report = new
     {
@@ -937,6 +1091,7 @@ using (var scope = app.Services.CreateScope())
     var governanceBootstrapper = scope.ServiceProvider.GetRequiredService<AdminGovernanceBootstrapper>();
     var authInfrastructureBootstrapper = scope.ServiceProvider.GetRequiredService<AuthInfrastructureBootstrapper>();
     var supabaseSchemaBootstrapper = scope.ServiceProvider.GetRequiredService<SupabaseSchemaBootstrapper>();
+    var productSchemaBootstrapper = scope.ServiceProvider.GetRequiredService<ProductSchemaBootstrapper>();
 
     if (await TryRunTrackedStartupPhaseAsync(
             "admin-audit-bootstrap",
@@ -953,6 +1108,9 @@ using (var scope = app.Services.CreateScope())
     await TryRunTrackedStartupPhaseAsync(
         "supabase-schema-bootstrap",
         () => supabaseSchemaBootstrapper.EnsureSchemaAsync());
+    await TryRunTrackedStartupPhaseAsync(
+        "product-schema-bootstrap",
+        () => productSchemaBootstrapper.EnsureSchemaAsync());
 }
 
 foreach (var warning in optionalProductionWarnings)
@@ -984,6 +1142,7 @@ using (var scope = app.Services.CreateScope())
     var governanceBootstrapper = services.GetRequiredService<AdminGovernanceBootstrapper>();
     var authInfrastructureBootstrapper = services.GetRequiredService<AuthInfrastructureBootstrapper>();
     var supabaseSchemaBootstrapper = services.GetRequiredService<SupabaseSchemaBootstrapper>();
+    var productSchemaBootstrapper = services.GetRequiredService<ProductSchemaBootstrapper>();
 
     if (await TryRunTrackedStartupPhaseAsync(
             "database-seed",
@@ -1004,12 +1163,21 @@ using (var scope = app.Services.CreateScope())
         "supabase-schema-bootstrap",
         () => supabaseSchemaBootstrapper.EnsureSchemaAsync(),
         LogLevel.Error);
+    await TryRunTrackedStartupPhaseAsync(
+        "product-schema-bootstrap",
+        () => productSchemaBootstrapper.EnsureSchemaAsync(),
+        LogLevel.Error);
 }
 
+
+// Response compression — phải đặt trước middleware khác để compress output
+app.UseForwardedHeaders();
+app.UseResponseCompression();
 
 // Add custom middleware
 app.UseMiddleware<ExceptionHandlingMiddleware>();
 app.UseMiddleware<RequestLoggingMiddleware>();
+app.UseMiddleware<SecurityHeadersMiddleware>();
 
 if (app.Environment.IsDevelopment())
 {
@@ -1034,9 +1202,6 @@ else
 // Add routing
 app.UseRouting();
 
-// Rate Limiting middleware (must be before CORS and Auth)
-app.UseRateLimiter();
-
 // CORS - Use environment-appropriate policy
 if (app.Environment.IsDevelopment())
 {
@@ -1049,6 +1214,10 @@ else
 
 // Add authentication and authorization middleware
 app.UseAuthentication();
+
+// Rate limiting uses authenticated user ID when available, then falls back to client IP.
+app.UseRateLimiter();
+
 app.UseAuthorization();
 
 // Serve static files (for uploaded images under wwwroot)

@@ -47,24 +47,18 @@ namespace EatFitAI.API.Middleware
                 case KeyNotFoundException:
                     statusCode = (int)HttpStatusCode.NotFound;
                     title = "Not Found";
-                    detail = !string.IsNullOrEmpty(exception.Message) 
-                        ? exception.Message 
-                        : "The requested resource was not found.";
+                    detail = "The requested resource was not found.";
                     break;
                 case UnauthorizedAccessException:
                     statusCode = (int)HttpStatusCode.Unauthorized;
                     title = "Unauthorized";
-                    detail = !string.IsNullOrEmpty(exception.Message) 
-                        ? exception.Message 
-                        : "You are not authorized to perform this action.";
+                    detail = "You are not authorized to perform this action.";
                     break;
                 case InvalidOperationException:
                 case ArgumentException:
                     statusCode = (int)HttpStatusCode.BadRequest;
                     title = "Bad Request";
-                    detail = !string.IsNullOrEmpty(exception.Message) 
-                        ? exception.Message 
-                        : "The request data is invalid.";
+                    detail = "The request data is invalid.";
                     break;
             }
 

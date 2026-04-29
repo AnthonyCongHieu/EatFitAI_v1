@@ -14,6 +14,8 @@ services:
         value: Production
       - key: ConnectionStrings__DefaultConnection
         sync: false
+      - key: DOTNET_hostBuilder__reloadConfigOnChange
+        value: "false"
       - key: Jwt__Key
         sync: false
       - key: Jwt__PreviousKeys
@@ -44,6 +46,30 @@ services:
         value: food-images
       - key: Supabase__UserFoodBucket
         value: user-food
+      - key: Media__Provider
+        value: r2
+      - key: Media__PublicBaseUrl
+        sync: false
+      - key: Media__Image__MaxUploadBytes
+        value: "8388608"
+      - key: Media__Image__ThumbMaxWidth
+        value: "320"
+      - key: Media__Image__MediumMaxWidth
+        value: "1080"
+      - key: Media__Image__ThumbMaxBytes
+        value: "102400"
+      - key: Media__Image__MediumMaxBytes
+        value: "358400"
+      - key: Media__Image__WebpQuality
+        value: "75"
+      - key: Media__R2__AccountId
+        sync: false
+      - key: Media__R2__Bucket
+        value: eatfitai-media
+      - key: Media__R2__AccessKeyId
+        sync: false
+      - key: Media__R2__SecretAccessKey
+        sync: false
       - key: Brevo__ApiKey
         sync: false
       - key: Brevo__SenderEmail
@@ -60,6 +86,8 @@ services:
     plan: free
     healthCheckPath: /healthz
     envVars:
+      - key: AI_PROVIDER_INTERNAL_TOKEN
+        sync: false
       - key: GEMINI_API_KEY
         sync: false
       - key: GEMINI_API_KEY_PROJECT_ID
@@ -96,5 +124,15 @@ services:
         value: "3"
       - key: GEMINI_PROBE_PROMPT
         value: ping
-      - key: ENABLE_STT
+      - key: YOLO_CONFIDENCE_THRESHOLD
+        value: "0.35"
+      - key: YOLO_IMAGE_SIZE
+        value: "512"
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_KEY
+        sync: false
+      - key: ALLOW_GENERIC_YOLO_FALLBACK
         value: "false"
+      - key: ENABLE_STT
+        value: "true"

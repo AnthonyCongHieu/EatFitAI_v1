@@ -1,10 +1,13 @@
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using EatFitAI.API.DbScaffold.Data;
 using EatFitAI.API.DbScaffold.Models;
 using EatFitAI.API.DTOs.AI;
+using EatFitAI.API.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
 namespace EatFitAI.API.Services
@@ -17,8 +20,16 @@ namespace EatFitAI.API.Services
 
     public sealed class AiFoodMapService : IAiFoodMapService
     {
+        private const decimal CatalogMinConfidence = 0.60m;
+
         private readonly EatFitAIDbContext _db;
-        public AiFoodMapService(EatFitAIDbContext db) => _db = db;
+        private readonly IMediaUrlResolver _mediaUrlResolver;
+
+        public AiFoodMapService(EatFitAIDbContext db, IMediaUrlResolver mediaUrlResolver)
+        {
+            _db = db;
+            _mediaUrlResolver = mediaUrlResolver;
+        }
 
         public async Task<List<MappedFoodDto>> MapDetectionsAsync(IEnumerable<VisionDetectionDto> detections, CancellationToken cancellationToken = default)
         {
@@ -31,31 +42,65 @@ namespace EatFitAI.API.Services
             }
 
             var normalizedLabels = list
-                .Select(d => (Original: d, Normalized: (d.Label ?? string.Empty).Trim().ToLowerInvariant()))
+                .Select(d => (
+                    Original: d,
+                    ExactKey: (d.Label ?? string.Empty).Trim().ToLowerInvariant(),
+                    SearchKey: NormalizeSearchKey(d.Label)))
                 .ToList();
 
             var labelKeys = normalizedLabels
-                .Select(x => x.Normalized)
+                .Select(x => x.ExactKey)
                 .Where(s => !string.IsNullOrWhiteSpace(s))
                 .Distinct()
                 .ToList();
 
-            var rows = await _db.vw_AiFoodMaps
-                .Where(v => labelKeys.Contains(v.Label))
+            var rows = await _db.AiLabelMaps
+                .AsNoTracking()
+                .Where(map => labelKeys.Contains(map.Label))
+                .GroupJoin(
+                    _db.FoodItems.AsNoTracking(),
+                    map => map.FoodItemId,
+                    food => food.FoodItemId,
+                    (map, foods) => new { map, foods })
+                .SelectMany(
+                    item => item.foods.DefaultIfEmpty(),
+                    (item, food) => new vw_AiFoodMap
+                    {
+                        Label = item.map.Label,
+                        MinConfidence = item.map.MinConfidence,
+                        FoodItemId = item.map.FoodItemId,
+                        FoodName = food != null ? food.FoodName : null,
+                        CaloriesPer100g = food != null ? food.CaloriesPer100g : null,
+                        ProteinPer100g = food != null ? food.ProteinPer100g : null,
+                        CarbPer100g = food != null ? food.CarbPer100g : null,
+                        FatPer100g = food != null ? food.FatPer100g : null
+                    })
                 .ToListAsync(cancellationToken);
 
             var byLabel = rows
                 .GroupBy(r => r.Label)
                 .ToDictionary(g => g.Key, g => g.First());
 
+            var catalogResolutions = await ResolveCatalogCandidatesAsync(normalizedLabels
+                .Where(x => !string.IsNullOrWhiteSpace(x.SearchKey))
+                .Select(x => x.SearchKey)
+                .Distinct()
+                .ToList(), cancellationToken);
+
             var result = new List<MappedFoodDto>(list.Count);
 
-            foreach (var (original, normalized) in normalizedLabels)
+            foreach (var (original, exactKey, searchKey) in normalizedLabels)
             {
-                if (!string.IsNullOrWhiteSpace(normalized) && byLabel.TryGetValue(normalized, out var row))
+                if (!string.IsNullOrWhiteSpace(exactKey) && byLabel.TryGetValue(exactKey, out var row))
                 {
                     var confDec = (decimal)original.Confidence;
-                    if (confDec >= row.MinConfidence)
+                    if (confDec >= row.MinConfidence
+                        && row.FoodItemId.HasValue
+                        && HasUsableNutrition(
+                            row.CaloriesPer100g,
+                            row.ProteinPer100g,
+                            row.CarbPer100g,
+                            row.FatPer100g))
                     {
                         result.Add(new MappedFoodDto
                         {
@@ -70,6 +115,25 @@ namespace EatFitAI.API.Services
                         });
                         continue;
                     }
+                }
+
+                if ((decimal)original.Confidence >= CatalogMinConfidence
+                    && !string.IsNullOrWhiteSpace(searchKey)
+                    && catalogResolutions.TryGetValue(searchKey, out var catalogMatch))
+                {
+                    result.Add(new MappedFoodDto
+                    {
+                        Label = original.Label,
+                        Confidence = original.Confidence,
+                        FoodItemId = catalogMatch.FoodItemId,
+                        FoodName = catalogMatch.FoodName,
+                        CaloriesPer100g = catalogMatch.CaloriesPer100g,
+                        ProteinPer100g = catalogMatch.ProteinPer100g,
+                        FatPer100g = catalogMatch.FatPer100g,
+                        CarbPer100g = catalogMatch.CarbPer100g,
+                        ThumbNail = _mediaUrlResolver.NormalizePublicUrl(catalogMatch.ThumbNail)
+                    });
+                    continue;
                 }
 
                 result.Add(new MappedFoodDto
@@ -102,7 +166,7 @@ namespace EatFitAI.API.Services
                 {
                     if (item.FoodItemId.HasValue && thumbnails.TryGetValue(item.FoodItemId.Value, out var thumb))
                     {
-                        item.ThumbNail = thumb;
+                        item.ThumbNail = _mediaUrlResolver.NormalizePublicUrl(thumb);
                     }
                 }
             }
@@ -142,6 +206,196 @@ namespace EatFitAI.API.Services
             }
 
             await _db.SaveChangesAsync(cancellationToken);
+        }
+
+        private async Task<Dictionary<string, FoodCatalogMatch>> ResolveCatalogCandidatesAsync(
+            IReadOnlyCollection<string> searchKeys,
+            CancellationToken cancellationToken)
+        {
+            if (searchKeys.Count == 0)
+            {
+                return new Dictionary<string, FoodCatalogMatch>();
+            }
+
+            var candidates = await _db.FoodItems
+                .AsNoTracking()
+                .Where(food =>
+                    food.IsActive &&
+                    !food.IsDeleted &&
+                    food.CaloriesPer100g > 0 &&
+                    (food.ProteinPer100g > 0 || food.CarbPer100g > 0 || food.FatPer100g > 0) &&
+                    food.ProteinPer100g >= 0 &&
+                    food.CarbPer100g >= 0 &&
+                    food.FatPer100g >= 0)
+                .Select(food => new FoodCatalogMatch
+                {
+                    FoodItemId = food.FoodItemId,
+                    FoodName = food.FoodName,
+                    FoodNameEn = food.FoodNameEn,
+                    FoodNameUnsigned = food.FoodNameUnsigned,
+                    CaloriesPer100g = food.CaloriesPer100g,
+                    ProteinPer100g = food.ProteinPer100g,
+                    CarbPer100g = food.CarbPer100g,
+                    FatPer100g = food.FatPer100g,
+                    ThumbNail = food.ThumbNail,
+                    CredibilityScore = food.CredibilityScore
+                })
+                .ToListAsync(cancellationToken);
+
+            candidates = candidates
+                .Where(candidate => HasUsableNutrition(
+                    candidate.CaloriesPer100g,
+                    candidate.ProteinPer100g,
+                    candidate.CarbPer100g,
+                    candidate.FatPer100g))
+                .ToList();
+
+            var result = new Dictionary<string, FoodCatalogMatch>();
+            foreach (var key in searchKeys)
+            {
+                var match = candidates
+                    .Select(candidate => new
+                    {
+                        Candidate = candidate,
+                        Score = ScoreCatalogMatch(key, candidate)
+                    })
+                    .Where(match => match.Score > 0)
+                    .OrderByDescending(match => match.Score)
+                    .ThenByDescending(match => match.Candidate.CredibilityScore)
+                    .ThenBy(match => match.Candidate.FoodName.Length)
+                    .Select(match => match.Candidate)
+                    .FirstOrDefault();
+
+                if (match != null)
+                {
+                    result[key] = match;
+                }
+            }
+
+            return result;
+        }
+
+        private static int ScoreCatalogMatch(string labelKey, FoodCatalogMatch candidate)
+        {
+            if (labelKey.Length < 4)
+            {
+                return 0;
+            }
+
+            var names = new[]
+            {
+                candidate.FoodName,
+                candidate.FoodNameUnsigned,
+                candidate.FoodNameEn
+            }
+                .Select(NormalizeSearchKey)
+                .Where(value => !string.IsNullOrWhiteSpace(value))
+                .Distinct()
+                .ToList();
+
+            if (names.Any(name => name.Equals(labelKey, System.StringComparison.Ordinal)))
+            {
+                return 1000;
+            }
+
+            if (names.Any(name => name.StartsWith(labelKey + " ", System.StringComparison.Ordinal)))
+            {
+                return 900;
+            }
+
+            if (names.Any(name => name.Contains(" " + labelKey + " ", System.StringComparison.Ordinal)
+                || name.EndsWith(" " + labelKey, System.StringComparison.Ordinal)))
+            {
+                return 800;
+            }
+
+            if (names.Any(name => name.Contains(labelKey, System.StringComparison.Ordinal)))
+            {
+                return 700;
+            }
+
+            return 0;
+        }
+
+        private static bool HasUsableNutrition(
+            decimal? caloriesPer100g,
+            decimal? proteinPer100g,
+            decimal? carbPer100g,
+            decimal? fatPer100g)
+        {
+            return caloriesPer100g.HasValue
+                && caloriesPer100g.Value > 0
+                && proteinPer100g.GetValueOrDefault() >= 0
+                && carbPer100g.GetValueOrDefault() >= 0
+                && fatPer100g.GetValueOrDefault() >= 0
+                && (proteinPer100g.GetValueOrDefault() > 0
+                    || carbPer100g.GetValueOrDefault() > 0
+                    || fatPer100g.GetValueOrDefault() > 0);
+        }
+
+        private static string NormalizeSearchKey(string? value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return string.Empty;
+            }
+
+            var lower = RemoveDiacritics(value.Trim().ToLowerInvariant());
+            var builder = new StringBuilder(lower.Length);
+            var lastWasSpace = true;
+
+            foreach (var c in lower)
+            {
+                if (char.IsLetterOrDigit(c))
+                {
+                    builder.Append(c);
+                    lastWasSpace = false;
+                }
+                else if (!lastWasSpace)
+                {
+                    builder.Append(' ');
+                    lastWasSpace = true;
+                }
+            }
+
+            var normalized = builder.ToString().Trim();
+            return normalized switch
+            {
+                "beef" or "raw beef" or "beef meat" => "thit bo",
+                "ga" or "chicken" or "raw chicken" or "chicken meat" => "thit ga",
+                _ => normalized
+            };
+        }
+
+        private static string RemoveDiacritics(string value)
+        {
+            var normalized = value.Normalize(NormalizationForm.FormD);
+            var builder = new StringBuilder(normalized.Length);
+
+            foreach (var c in normalized)
+            {
+                var category = CharUnicodeInfo.GetUnicodeCategory(c);
+                if (category != UnicodeCategory.NonSpacingMark)
+                {
+                    builder.Append(c == 'đ' ? 'd' : c);
+                }
+            }
+
+            return builder.ToString().Normalize(NormalizationForm.FormC);
+        }
+
+        private sealed class FoodCatalogMatch
+        {
+            public int FoodItemId { get; init; }
+            public string FoodName { get; init; } = string.Empty;
+            public string? FoodNameEn { get; init; }
+            public string? FoodNameUnsigned { get; init; }
+            public decimal CaloriesPer100g { get; init; }
+            public decimal ProteinPer100g { get; init; }
+            public decimal CarbPer100g { get; init; }
+            public decimal FatPer100g { get; init; }
+            public string? ThumbNail { get; init; }
+            public int CredibilityScore { get; init; }
         }
     }
 }

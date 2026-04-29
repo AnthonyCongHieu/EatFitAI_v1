@@ -145,6 +145,15 @@ export const SmartAddSheet: React.FC<SmartAddSheetProps> = ({ visible, onClose }
                 </ThemedText>
               </Pressable>
             </View>
+
+            <Pressable
+              style={[styles.utilityButton, { borderColor: theme.colors.border }]}
+              onPress={() => navigateAfterClose('CommonMeals')}
+            >
+              <ThemedText variant="bodySmall" weight="600">
+                Món thường dùng
+              </ThemedText>
+            </Pressable>
           </View>
         </Animated.View>
       </View>

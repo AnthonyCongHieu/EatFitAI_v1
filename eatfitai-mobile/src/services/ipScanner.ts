@@ -7,6 +7,7 @@
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { assertBackendApiBaseUrl } from '../config/env';
+import logger from '../utils/logger';
 
 const PORT = 5247;
 const CACHE_KEY = '@eatfitai_api_url';
@@ -68,7 +69,7 @@ const tryIp = async (ip: string): Promise<boolean> => {
     if (res.ok) {
       const data = await res.json();
       if (data.appId === 'eatfitai') {
-        console.log(`[IPScanner] ✅ Found backend at ${ip}:${PORT}`);
+        logger.info(`[IPScanner] Found backend at ${ip}:${PORT}`);
         return true;
       }
     }
@@ -126,7 +127,7 @@ export const preloadCachedUrl = async (): Promise<void> => {
   const saved = await AsyncStorage.getItem(CACHE_KEY);
   if (saved) {
     cachedUrl = saved;
-    console.log(`[IPScanner] Preloaded cached URL: ${saved}`);
+    logger.info(`[IPScanner] Preloaded cached URL: ${saved}`);
   }
 };
 
@@ -135,7 +136,7 @@ export const preloadCachedUrl = async (): Promise<void> => {
  * Ví dụ: 192.168.1.1, 192.168.1.6, 192.168.0.1, ...
  */
 const quickScan = async (): Promise<string | null> => {
-  console.log('[IPScanner] ⚡ Quick scan các IP phổ biến...');
+  logger.info('[IPScanner] Quick scan các IP phổ biến...');
 
   // Tạo danh sách IP ưu tiên từ tất cả subnet
   const priorityIps: string[] = [];
@@ -153,7 +154,7 @@ const quickScan = async (): Promise<string | null> => {
   const foundIp = results.find((ip) => ip !== null);
   if (foundIp) {
     const url = `http://${foundIp}:${PORT}`;
-    console.log(`[IPScanner] ⚡ Quick scan tìm thấy: ${url}`);
+    logger.info(`[IPScanner] Quick scan tìm thấy: ${url}`);
     return url;
   }
 
@@ -164,7 +165,7 @@ const quickScan = async (): Promise<string | null> => {
  * Scan tất cả subnet để tìm backend (chạy song song các subnet)
  */
 const doScan = async (): Promise<string | null> => {
-  console.log('[IPScanner] Bắt đầu scan...');
+  logger.info('[IPScanner] Bắt đầu scan...');
 
   try {
     // BƯỚC 1: Quick scan các IP phổ biến trước (< 1 giây)
@@ -173,12 +174,12 @@ const doScan = async (): Promise<string | null> => {
       await AsyncStorage.setItem(CACHE_KEY, quickResult);
       cachedUrl = quickResult;
       hasFoundBackend = true;
-      console.log(`[IPScanner] ✅ Tìm thấy EatFitAI backend: ${quickResult}`);
+      logger.info(`[IPScanner] Tìm thấy EatFitAI backend: ${quickResult}`);
       return quickResult;
     }
 
     // BƯỚC 2: Full scan nếu quick scan không tìm thấy
-    console.log('[IPScanner] Quick scan không tìm thấy, full scan...');
+    logger.info('[IPScanner] Quick scan không tìm thấy, full scan...');
     const results = await Promise.all(
       COMMON_SUBNETS.map(async (subnet) => {
         const ip = await scanSubnet(subnet);
@@ -192,14 +193,14 @@ const doScan = async (): Promise<string | null> => {
       await AsyncStorage.setItem(CACHE_KEY, foundUrl);
       cachedUrl = foundUrl;
       hasFoundBackend = true;
-      console.log(`[IPScanner] ✅ Tìm thấy EatFitAI backend: ${foundUrl}`);
+      logger.info(`[IPScanner] Tìm thấy EatFitAI backend: ${foundUrl}`);
       return foundUrl;
     }
   } catch (error) {
-    console.error('[IPScanner] Scan error:', error);
+    logger.error('[IPScanner] Scan error:', error);
   }
 
-  console.log('[IPScanner] ❌ Không tìm thấy backend trong các subnet phổ biến');
+  logger.info('[IPScanner] Không tìm thấy backend trong các subnet phổ biến');
   return null;
 };
 
@@ -216,18 +217,18 @@ export const scanForBackend = async (): Promise<string | null> => {
   // 1. Kiểm tra cooldown - BYPASS nếu chưa tìm thấy backend
   // Điều này cho phép app tự động quét lại khi IP thay đổi
   if (now - lastScanTime < SCAN_COOLDOWN_MS && !isScanning && hasFoundBackend) {
-    console.log('[IPScanner] Scan đang trong thời gian cooldown, trả về cached...');
+    logger.info('[IPScanner] Scan đang trong thời gian cooldown, trả về cached...');
     return cachedUrl;
   }
 
   // Nếu chưa tìm thấy backend, log và tiếp tục scan
   if (!hasFoundBackend) {
-    console.log('[IPScanner] Backend chưa được tìm thấy, bypass cooldown và scan lại...');
+    logger.info('[IPScanner] Backend chưa được tìm thấy, bypass cooldown và scan lại...');
   }
 
   // 2. Nếu đang scan, trả về promise hiện tại
   if (isScanning && scanPromise) {
-    console.log('[IPScanner] Scan đang chạy, waiting...');
+    logger.info('[IPScanner] Scan đang chạy, waiting...');
     return scanPromise;
   }
 
@@ -277,10 +278,10 @@ export const getApiUrl = async (): Promise<string | null> => {
       if (isValid) {
         cachedUrl = urlToCheck;
         hasFoundBackend = true;
-        console.log(`[IPScanner] ✅ URL verified successfully: ${urlToCheck}`);
+        logger.info(`[IPScanner] URL verified successfully: ${urlToCheck}`);
         return urlToCheck;
       } else {
-        console.log('[IPScanner] ⚠️ Cached URL invalid, resetting state và scan lại...');
+        logger.warn('[IPScanner] Cached URL invalid, resetting state và scan lại...');
         // Reset TẤT CẢ state để cho phép scan lại ngay lập tức
         cachedUrl = null;
         hasFoundBackend = false;
@@ -297,7 +298,7 @@ export const getApiUrl = async (): Promise<string | null> => {
   }
 
   // 4. Không có cache hoặc cache invalid, scan mạng
-  console.log('[IPScanner] Bắt đầu scan mạng...');
+  logger.info('[IPScanner] Bắt đầu scan mạng...');
   return scanForBackend();
 };
 
@@ -309,7 +310,7 @@ export const resetScanState = async (): Promise<void> => {
     return;
   }
 
-  console.log('[IPScanner] Đang reset toàn bộ scan state...');
+  logger.info('[IPScanner] Đang reset toàn bộ scan state...');
   cachedUrl = null;
   hasFoundBackend = false;
   hasVerifiedThisSession = false;
@@ -325,7 +326,7 @@ export const forceRescan = async (): Promise<string | null> => {
     return null;
   }
 
-  console.log('[IPScanner] Force re-scan...');
+  logger.info('[IPScanner] Force re-scan...');
   await resetScanState();
   return scanForBackend();
 };
@@ -342,5 +343,5 @@ export const setManualApiUrl = async (url: string): Promise<void> => {
   const safeUrl = assertBackendApiBaseUrl(url, 'Manual API URL');
   cachedUrl = safeUrl;
   await AsyncStorage.setItem(CACHE_KEY, safeUrl);
-  console.log(`[IPScanner] Manual URL set: ${safeUrl}`);
+  logger.info(`[IPScanner] Manual URL set: ${safeUrl}`);
 };

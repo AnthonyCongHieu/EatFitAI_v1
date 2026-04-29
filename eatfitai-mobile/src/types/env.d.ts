@@ -11,7 +11,8 @@ declare global {
       EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID?: string;
       EXPO_PUBLIC_GOOGLE_OFFLINE_ACCESS?: 'true' | 'false';
       EXPO_PUBLIC_GOOGLE_FORCE_CODE_FOR_REFRESH_TOKEN?: 'true' | 'false';
-      EXPO_PUBLIC_SUPABASE_URL?: string;
+      EXPO_PUBLIC_MEDIA_PUBLIC_BASE_URL?: string;
+      EXPO_PUBLIC_MEDIA_BUDGET_MODE?: string;
       EXPO_PUBLIC_DEBUG_LOGS?: 'true' | 'false';
     }
   }

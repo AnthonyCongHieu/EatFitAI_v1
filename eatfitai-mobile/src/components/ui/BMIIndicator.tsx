@@ -33,7 +33,7 @@ const getBMICategory = (
   color: string;
   labelVi: string;
 } => {
-  if (bmi < 18.5) return { label: 'Underweight', color: '#3B82F6', labelVi: 'Thiếu cân' };
+  if (bmi < 18.5) return { label: 'Underweight', color: '#22C55E', labelVi: 'Thiếu cân' };
   if (bmi < 25) return { label: 'Normal', color: '#22C55E', labelVi: 'Bình thường' };
   if (bmi < 30) return { label: 'Overweight', color: '#F59E0B', labelVi: 'Thừa cân' };
   return { label: 'Obese', color: '#EF4444', labelVi: 'Béo phì' };
@@ -209,7 +209,7 @@ export const BMIIndicator: React.FC<BMIIndicatorProps> = ({
       {/* Gauge bar */}
       <View style={styles.gaugeContainer}>
         <View style={styles.gaugeTrack}>
-          <View style={[styles.gaugeSegment, { backgroundColor: '#3B82F6' }]} />
+          <View style={[styles.gaugeSegment, { backgroundColor: '#22C55E' }]} />
           <View style={[styles.gaugeSegment, { backgroundColor: '#22C55E' }]} />
           <View style={[styles.gaugeSegment, { backgroundColor: '#F59E0B' }]} />
           <View style={[styles.gaugeSegment, { backgroundColor: '#EF4444' }]} />

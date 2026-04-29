@@ -1,0 +1,100 @@
+{
+  "version": 1,
+  "name": "scan-demo-ai-benchmark",
+  "fixtureRoot": "tools/fixtures/scan-demo",
+  "description": "Offline deterministic fixture manifest for the Phase 2 minimal AI benchmark harness.",
+  "visionThresholds": {
+    "top1": {
+      "minimumCorrect": 4,
+      "total": 5
+    },
+    "top3": {
+      "minimumCorrect": 5,
+      "total": 5
+    }
+  },
+  "fixtures": {
+    "benchmark": [
+      {
+        "id": "benchmark-apple-01",
+        "fileName": "ai-benchmark-apple-01.jpg",
+        "expectedLabels": ["apple"],
+        "acceptedTop3Labels": ["apple", "red apple", "fruit"]
+      },
+      {
+        "id": "benchmark-beef-01",
+        "fileName": "ai-benchmark-beef-01.jpg",
+        "expectedLabels": ["beef"],
+        "acceptedTop3Labels": ["beef", "steak", "red meat"]
+      },
+      {
+        "id": "benchmark-broccoli-01",
+        "fileName": "ai-benchmark-broccoli-01.jpg",
+        "expectedLabels": ["broccoli"],
+        "acceptedTop3Labels": ["broccoli", "vegetable", "green vegetable"]
+      },
+      {
+        "id": "benchmark-chicken-01",
+        "fileName": "ai-benchmark-chicken-01.jpg",
+        "expectedLabels": ["chicken"],
+        "acceptedTop3Labels": ["chicken", "chicken breast", "poultry"]
+      },
+      {
+        "id": "benchmark-orange-01",
+        "fileName": "ai-benchmark-orange-01.jpg",
+        "expectedLabels": ["orange"],
+        "acceptedTop3Labels": ["orange", "citrus", "fruit"]
+      }
+    ],
+    "primary": [
+      {
+        "id": "primary-apple-01",
+        "fileName": "ai-primary-apple-01.jpg",
+        "expectedLabels": ["apple"],
+        "acceptedTop3Labels": ["apple", "red apple", "fruit"]
+      },
+      {
+        "id": "primary-banana-01",
+        "fileName": "ai-primary-banana-01.jpg",
+        "expectedLabels": ["banana"],
+        "acceptedTop3Labels": ["banana", "fruit"]
+      },
+      {
+        "id": "primary-banana-02",
+        "fileName": "ai-primary-banana-02.jpg",
+        "expectedLabels": ["banana"],
+        "acceptedTop3Labels": ["banana", "fruit"]
+      },
+      {
+        "id": "primary-broccoli-01",
+        "fileName": "ai-primary-broccoli-01.jpg",
+        "expectedLabels": ["broccoli"],
+        "acceptedTop3Labels": ["broccoli", "vegetable", "green vegetable"]
+      },
+      {
+        "id": "primary-egg-01",
+        "fileName": "ai-primary-egg-01.jpg",
+        "expectedLabels": ["egg"],
+        "acceptedTop3Labels": ["egg", "boiled egg", "protein"]
+      },
+      {
+        "id": "primary-orange-01",
+        "fileName": "ai-primary-orange-01.jpg",
+        "expectedLabels": ["orange"],
+        "acceptedTop3Labels": ["orange", "citrus", "fruit"]
+      },
+      {
+        "id": "primary-rice-01",
+        "fileName": "ai-primary-rice-01.jpg",
+        "expectedLabels": ["rice"],
+        "acceptedTop3Labels": ["rice", "cooked rice", "brown rice"]
+      },
+      {
+        "id": "primary-spinach-01",
+        "fileName": "ai-primary-spinach-01.jpg",
+        "expectedLabels": ["spinach"],
+        "acceptedTop3Labels": ["spinach", "leafy green", "vegetable"]
+      }
+    ]
+  }
+}

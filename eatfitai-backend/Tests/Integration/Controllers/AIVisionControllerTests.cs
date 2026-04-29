@@ -51,6 +51,9 @@ public class AIVisionControllerTests : IClassFixture<WebApplicationFactory<Progr
 
         var body = await response.Content.ReadFromJsonAsync<JsonElement>();
         Assert.Equal("ai_provider_down", body.GetProperty("error").GetString());
+        Assert.Equal("ai_provider_down", body.GetProperty("code").GetString());
+        Assert.False(string.IsNullOrWhiteSpace(body.GetProperty("requestId").GetString()));
+        Assert.False(body.TryGetProperty("aiStatus", out _));
     }
 
     [Fact]
@@ -81,6 +84,7 @@ public class AIVisionControllerTests : IClassFixture<WebApplicationFactory<Progr
 
         response.EnsureSuccessStatusCode();
         Assert.Equal(1, httpClientFactory.CallCount);
+        Assert.Equal("test-token", httpClientFactory.LastInternalToken);
 
         var body = await response.Content.ReadFromJsonAsync<VisionDetectResultDto>();
         Assert.NotNull(body);
@@ -181,20 +185,72 @@ public class AIVisionControllerTests : IClassFixture<WebApplicationFactory<Progr
         Assert.Equal("ai-provider_timeout", body.GetProperty("code").GetString());
     }
 
+    [Fact]
+    public async Task DetectVision_ProviderExceedsConfiguredTimeout_Returns504()
+    {
+        var httpClientFactory = new RecordingHttpClientFactory(async (_, cancellationToken) =>
+        {
+            await Task.Delay(TimeSpan.FromSeconds(2), cancellationToken);
+            return new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent(
+                    """
+                    {"detections":[{"label":"banana","confidence":0.91}]}
+                    """,
+                    Encoding.UTF8,
+                    "application/json")
+            };
+        });
+
+        using var factory = CreateFactory(
+            new AiHealthStatusDto
+            {
+                State = "DOWN",
+                LastCheckedAt = DateTimeOffset.UtcNow.AddMinutes(-5),
+                Message = "stale down"
+            },
+            httpClientFactory,
+            new FakeVisionCacheService(),
+            new Dictionary<string, string?>
+            {
+                ["AIProvider:VisionDetectTimeoutMilliseconds"] = "50",
+            });
+        using var client = CreateAuthorizedClient(factory, Guid.NewGuid());
+        using var response = await client.PostAsync("/api/ai/vision/detect", CreateImageContent());
+
+        Assert.Equal(HttpStatusCode.GatewayTimeout, response.StatusCode);
+        Assert.Equal(1, httpClientFactory.CallCount);
+
+        var body = await response.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal("ai-provider_timeout", body.GetProperty("code").GetString());
+    }
+
     private WebApplicationFactory<Program> CreateFactory(
         AiHealthStatusDto snapshot,
         RecordingHttpClientFactory httpClientFactory,
-        FakeVisionCacheService cacheService)
+        FakeVisionCacheService cacheService,
+        Dictionary<string, string?>? configurationOverrides = null)
     {
         return _factory.WithWebHostBuilder(builder =>
         {
             builder.ConfigureAppConfiguration((_, config) =>
             {
-                config.AddInMemoryCollection(new Dictionary<string, string?>
+                var values = new Dictionary<string, string?>
                 {
                     ["AIProvider:VisionBaseUrl"] = "https://provider.test",
+                    ["AIProvider:InternalToken"] = "test-token",
                     ["AIProvider:HealthGateFreshnessSeconds"] = "60",
-                });
+                };
+
+                if (configurationOverrides != null)
+                {
+                    foreach (var pair in configurationOverrides)
+                    {
+                        values[pair.Key] = pair.Value;
+                    }
+                }
+
+                config.AddInMemoryCollection(values);
             });
 
             builder.ConfigureServices(services =>
@@ -328,6 +384,7 @@ public class AIVisionControllerTests : IClassFixture<WebApplicationFactory<Progr
         }
 
         public int CallCount => _handler.CallCount;
+        public string? LastInternalToken => _handler.LastInternalToken;
 
         public HttpClient CreateClient(string name)
         {
@@ -348,10 +405,14 @@ public class AIVisionControllerTests : IClassFixture<WebApplicationFactory<Progr
         }
 
         public int CallCount { get; private set; }
+        public string? LastInternalToken { get; private set; }
 
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
             CallCount++;
+            LastInternalToken = request.Headers.TryGetValues("X-Internal-Token", out var values)
+                ? values.SingleOrDefault()
+                : null;
             return _responseFactory(request, cancellationToken);
         }
     }

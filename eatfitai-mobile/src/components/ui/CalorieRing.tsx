@@ -136,7 +136,7 @@ const CalorieRing: React.FC<CalorieRingProps> = ({
             cx={center}
             cy={center}
             r={radius}
-            stroke={isDark ? '#2A3F68' : '#E0E0E0'}
+            stroke={isDark ? '#3D4A3D' : '#E0E0E0'}
             strokeWidth={strokeWidth}
             fill="none"
           />
@@ -224,7 +224,7 @@ const CalorieRing: React.FC<CalorieRingProps> = ({
                 styles.macroSegment,
                 {
                   width: `${proteinPct}%`,
-                  backgroundColor: '#3B82F6',
+                  backgroundColor: '#22C55E',
                   borderTopLeftRadius: 4,
                   borderBottomLeftRadius: 4,
                 },
@@ -250,7 +250,7 @@ const CalorieRing: React.FC<CalorieRingProps> = ({
           </View>
           <View style={styles.macroLabels}>
             <View style={styles.macroLabel}>
-              <View style={[styles.macroDot, { backgroundColor: '#3B82F6' }]} />
+              <View style={[styles.macroDot, { backgroundColor: '#22C55E' }]} />
               <ThemedText variant="caption" color="textSecondary">
                 P {Math.round(protein)}g
               </ThemedText>
@@ -318,7 +318,7 @@ const getStyles = (theme: any, size: number, isDark: boolean) =>
       borderRadius: 4,
       flexDirection: 'row',
       overflow: 'hidden',
-      backgroundColor: isDark ? '#1E3050' : '#F0F0F0',
+      backgroundColor: isDark ? '#25293A' : '#F0F0F0',
     },
     macroSegment: {
       height: '100%',

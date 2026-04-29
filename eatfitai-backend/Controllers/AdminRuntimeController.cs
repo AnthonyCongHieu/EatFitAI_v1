@@ -36,16 +36,23 @@ public class AdminRuntimeController : ControllerBase
     public async Task<IActionResult> GetSnapshot(CancellationToken cancellationToken)
     {
         var snapshot = await _runtimeSnapshotCache.GetLatestAsync(cancellationToken);
+        var cacheState = _runtimeSnapshotCache.GetState();
         if (snapshot == null)
         {
-            var cacheState = _runtimeSnapshotCache.GetState();
             return StatusCode(
                 StatusCodes.Status503ServiceUnavailable,
                 ApiResponse<object>.ErrorResponse(
                     $"Runtime snapshot hiện chưa sẵn sàng. {cacheState.LastError ?? "Chưa có runtime snapshot nào được cache."}"));
         }
 
-        return Ok(ApiResponse<AdminRuntimeSnapshotDto>.SuccessResponse(snapshot, "Runtime snapshot đã sẵn sàng."));
+        var warnings = string.IsNullOrWhiteSpace(cacheState.LastWarning)
+            ? null
+            : new List<string> { cacheState.LastWarning };
+
+        return Ok(ApiResponse<AdminRuntimeSnapshotDto>.SuccessResponse(
+            snapshot,
+            "Runtime snapshot đã sẵn sàng.",
+            warnings: warnings));
     }
 
     [HttpGet("events")]
@@ -114,6 +121,10 @@ public class AdminRuntimeController : ControllerBase
                             cacheState.Snapshot.ExhaustedProjectCount,
                             cacheState.Snapshot.CooldownProjectCount,
                             cacheState.Snapshot.AuthInvalidProjectCount,
+                            cacheState.Snapshot.RuntimeStatusSource,
+                            cacheState.Snapshot.RuntimeStatusWarning,
+                            cacheState.Snapshot.RuntimeStatusError,
+                            Warning = cacheState.LastWarning,
                         },
                     });
 

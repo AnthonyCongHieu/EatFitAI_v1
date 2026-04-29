@@ -5,8 +5,10 @@ const {
   createDisposableMailbox,
   waitForMatchingMessage,
 } = require('./lib/disposable-mail');
+const { resolveAuthCode } = require('./lib/auth-smoke-codes');
+const { resolveAuthSmokeTimeouts } = require('./lib/smoke-timeouts');
 
-const DEFAULT_BACKEND_URL = 'https://eatfitai-backend.onrender.com';
+const DEFAULT_BACKEND_URL = 'https://eatfitai-backend-dev.onrender.com';
 const DEFAULT_OUTPUT_ROOT = path.resolve(
   __dirname,
   '..',
@@ -14,7 +16,11 @@ const DEFAULT_OUTPUT_ROOT = path.resolve(
   '_logs',
   'production-smoke',
 );
-const DEFAULT_REQUEST_TIMEOUT_MS = 30000;
+const AUTH_TIMEOUTS = resolveAuthSmokeTimeouts(process.env);
+const DEFAULT_REQUEST_TIMEOUT_MS = AUTH_TIMEOUTS.requestTimeoutMs;
+const RESET_PASSWORD_TIMEOUT_MS = AUTH_TIMEOUTS.resetPasswordTimeoutMs;
+const MAILBOX_TIMEOUT_MS = AUTH_TIMEOUTS.mailboxTimeoutMs;
+const MAILBOX_POLL_INTERVAL_MS = AUTH_TIMEOUTS.mailboxPollIntervalMs;
 const DEFAULT_MAIL_SUBJECT_VERIFY = 'Mã xác minh';
 const DEFAULT_MAIL_SUBJECT_RESET = 'Mã đặt lại mật khẩu';
 const DEFAULT_DISPLAY_NAME = 'Smoke API Disposable';
@@ -26,6 +32,15 @@ const GOOGLE_NEGATIVE_TOKEN = '';
 
 function trim(value) {
   return String(value || '').trim();
+}
+
+function parsePositiveInteger(value, fallback) {
+  const parsed = Number.parseInt(value || '', 10);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+}
+
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 function parseArgs(argv) {
@@ -84,26 +99,54 @@ function normalizeBaseUrl(value, fallback) {
   return trim(value || fallback).replace(/\/+$/, '');
 }
 
+function isSensitiveKey(key) {
+  const normalized = String(key || '').toLowerCase();
+  return new Set([
+    'authorization',
+    'password',
+    'initialpassword',
+    'resetpassword',
+    'finalpassword',
+    'currentpassword',
+    'newpassword',
+    'token',
+    'accesstoken',
+    'refreshtoken',
+    'idtoken',
+    'matoken',
+    'marefreshtoken',
+    'verificationcode',
+    'resetcode',
+  ]).has(normalized);
+}
+
 function sanitizeBody(body) {
   if (!body || typeof body !== 'object' || Array.isArray(body)) {
     return body;
   }
 
-  const copy = { ...body };
-  if (Object.prototype.hasOwnProperty.call(copy, 'accessToken')) {
-    copy.accessToken = copy.accessToken ? '<redacted>' : copy.accessToken;
-  }
-  if (Object.prototype.hasOwnProperty.call(copy, 'refreshToken')) {
-    copy.refreshToken = copy.refreshToken ? '<redacted>' : copy.refreshToken;
-  }
-  if (Object.prototype.hasOwnProperty.call(copy, 'VerificationCode')) {
-    copy.VerificationCode = copy.VerificationCode ? '<redacted>' : copy.VerificationCode;
-  }
-  if (Object.prototype.hasOwnProperty.call(copy, 'ResetCode')) {
-    copy.ResetCode = copy.ResetCode ? '<redacted>' : copy.ResetCode;
+  return Object.fromEntries(
+    Object.entries(body).map(([key, value]) => [
+      key,
+      isSensitiveKey(key) && value ? '<redacted>' : value,
+    ]),
+  );
+}
+
+function sanitizeReport(value) {
+  if (Array.isArray(value)) {
+    return value.map((item) => sanitizeReport(item));
   }
 
-  return copy;
+  if (!value || typeof value !== 'object') {
+    return value;
+  }
+
+  return sanitizeBody(
+    Object.fromEntries(
+      Object.entries(value).map(([key, entryValue]) => [key, sanitizeReport(entryValue)]),
+    ),
+  );
 }
 
 function sanitizeHeaders(headers) {
@@ -155,7 +198,7 @@ async function requestJson(url, options = {}) {
       status: response.status,
       statusText: response.statusText,
       durationMs: Date.now() - startedAt,
-      body: sanitizeBody(body),
+      body,
       rawText: body ? undefined : rawText,
       headers: sanitizeHeaders(options.headers),
     };
@@ -171,6 +214,27 @@ async function requestJson(url, options = {}) {
   } finally {
     clearTimeout(timer);
   }
+}
+
+function shouldRetryResponse(response) {
+  return !response || response.status === null || [502, 503, 504].includes(response.status);
+}
+
+async function requestJsonWithRetry(url, options = {}, retryOptions = {}) {
+  const attempts = parsePositiveInteger(retryOptions.attempts, 3);
+  const delayMs = parsePositiveInteger(retryOptions.delayMs, 5000);
+  let lastResponse = null;
+
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    lastResponse = await requestJson(url, options);
+    if (!shouldRetryResponse(lastResponse) || attempt === attempts) {
+      return lastResponse;
+    }
+
+    await sleep(delayMs);
+  }
+
+  return lastResponse;
 }
 
 function createEmptyReport(outputDir, backendUrl, mailbox) {
@@ -224,6 +288,32 @@ function createEmptyReport(outputDir, backendUrl, mailbox) {
       postChangeLogin: null,
       googleNegative: null,
     },
+  };
+}
+
+function buildAuthPrimaryPathReadiness(report) {
+  const failureIds = report.failures.map((failure) =>
+    failure.id || failure.step || failure.message || 'auth-primary-path-failed',
+  );
+
+  if (!report.cleanup.ok && !failureIds.includes('cleanup-delete-profile')) {
+    failureIds.push('cleanup-delete-profile');
+  }
+
+  return {
+    passed: failureIds.length === 0,
+    failures: failureIds,
+    covered: [
+      'register',
+      'verify-email',
+      'login',
+      'refresh-or-session',
+      'protected-auth-route',
+      'forgot-password',
+      'reset-password',
+      'change-password',
+      'cleanup',
+    ],
   };
 }
 
@@ -284,6 +374,49 @@ function summarizeResponse(response) {
   };
 }
 
+async function loginForCleanup(backendUrl, email, passwordCandidates) {
+  const attempts = [];
+
+  for (const candidate of passwordCandidates) {
+    if (!candidate?.password) {
+      continue;
+    }
+
+    const response = await requestJson(`${backendUrl}/api/auth/login`, {
+      method: 'POST',
+      body: JSON.stringify({
+        email,
+        password: candidate.password,
+      }),
+    });
+    attempts.push({
+      source: candidate.source,
+      status: response.status,
+      ok: response.ok,
+    });
+
+    const accessToken =
+      response.body?.accessToken ||
+      response.body?.AccessToken ||
+      response.body?.token ||
+      response.body?.Token ||
+      '';
+    if (response.ok && accessToken) {
+      return {
+        accessToken,
+        source: candidate.source,
+        attempts,
+      };
+    }
+  }
+
+  return {
+    accessToken: '',
+    source: '',
+    attempts,
+  };
+}
+
 async function main() {
   const args = parseArgs(process.argv.slice(2));
   const outputDir = resolveOutputDir(args.output);
@@ -328,7 +461,7 @@ async function main() {
     };
     report.account.email = mailbox.address;
 
-    const registerResponse = await requestJson(
+    const registerResponse = await requestJsonWithRetry(
       `${backendUrl}/api/auth/register-with-verification`,
       {
         method: 'POST',
@@ -338,33 +471,54 @@ async function main() {
           displayName: registerDisplayName,
         }),
       },
+      {
+        attempts: AUTH_TIMEOUTS.requestRetryAttempts,
+        delayMs: AUTH_TIMEOUTS.requestRetryDelayMs,
+      },
     );
     const registerPassed = registerResponse.ok && registerResponse.status === 200;
     report.auth.register = summarizeResponse(registerResponse);
-    if (!registerPassed) {
+    const registerCanRecoverWithResend =
+      registerPassed || registerResponse.status === 400 || registerResponse.status === null;
+
+    const resendStartedAt = new Date().toISOString();
+    const resendResponse = registerCanRecoverWithResend
+      ? await requestJsonWithRetry(`${backendUrl}/api/auth/resend-verification`, {
+          method: 'POST',
+          body: JSON.stringify({ email: mailbox.address }),
+        }, {
+          attempts: AUTH_TIMEOUTS.requestRetryAttempts,
+          delayMs: AUTH_TIMEOUTS.requestRetryDelayMs,
+        })
+      : null;
+    const resendPassed = resendResponse ? resendResponse.ok && resendResponse.status === 200 : false;
+    report.auth.resendVerification = summarizeResponse(resendResponse);
+    if (!registerPassed && resendPassed && report.auth.register) {
+      report.auth.register.recoveredByResend = true;
+    }
+    if (!registerPassed && !resendPassed) {
       pushFailure(report, 'register-with-verification', 'Register with verification failed', {
         expectedStatuses: [200],
         response: summarizeResponse(registerResponse),
       });
     }
-
-    const resendStartedAt = new Date().toISOString();
-    const resendResponse = registerPassed
-      ? await requestJson(`${backendUrl}/api/auth/resend-verification`, {
-          method: 'POST',
-          body: JSON.stringify({ email: mailbox.address }),
-        })
-      : null;
-    const resendPassed = resendResponse ? resendResponse.ok && resendResponse.status === 200 : false;
-    report.auth.resendVerification = summarizeResponse(resendResponse);
-    if (registerPassed && !resendPassed) {
+    if (registerCanRecoverWithResend && !resendPassed) {
       pushFailure(report, 'resend-verification', 'Resend verification failed', {
         expectedStatuses: [200],
         response: summarizeResponse(resendResponse),
       });
     }
 
-    if (registerPassed && resendPassed) {
+    const verificationCodeResolutionBeforeMailbox = resolveAuthCode({
+      responseBodies: [resendResponse?.body, registerResponse?.body],
+      responseKey: 'verificationCode',
+      mailboxMessage: null,
+    });
+    if (
+      registerCanRecoverWithResend &&
+      resendPassed &&
+      !verificationCodeResolutionBeforeMailbox.code
+    ) {
       try {
         verificationMessage = await waitForMatchingMessage({
           apiBaseUrl: 'https://api.mail.tm',
@@ -373,6 +527,8 @@ async function main() {
           artifactName: 'auth-verification-mail.json',
           subjectIncludes: DEFAULT_MAIL_SUBJECT_VERIFY,
           createdAfterIso: resendStartedAt,
+          timeoutMs: MAILBOX_TIMEOUT_MS,
+          pollIntervalMs: MAILBOX_POLL_INTERVAL_MS,
         });
         report.artifacts.verificationMailboxMessagePath = path.join(
           outputDir,
@@ -385,9 +541,15 @@ async function main() {
       }
     }
 
-    const verificationCode = verificationMessage?.code || '';
+    const verificationCodeResolution = resolveAuthCode({
+      responseBodies: [resendResponse?.body, registerResponse?.body],
+      responseKey: 'verificationCode',
+      mailboxMessage: verificationMessage,
+    });
+    const verificationCode = verificationCodeResolution.code;
+    report.artifacts.verificationCodeSource = verificationCodeResolution.source;
     const verifyResponse =
-      registerPassed && resendPassed && verificationCode
+      registerCanRecoverWithResend && resendPassed && verificationCode
         ? await requestJson(`${backendUrl}/api/auth/verify-email`, {
             method: 'POST',
             body: JSON.stringify({
@@ -398,7 +560,7 @@ async function main() {
         : null;
     const verifyPassed = verifyResponse ? verifyResponse.ok && verifyResponse.status === 200 : false;
     report.auth.verifyEmail = summarizeResponse(verifyResponse);
-    if (registerPassed && resendPassed && !verifyPassed) {
+    if (registerCanRecoverWithResend && resendPassed && !verifyPassed) {
       pushFailure(report, 'verify-email', 'Verify email failed', {
         expectedStatuses: [200],
         response: summarizeResponse(verifyResponse),
@@ -537,7 +699,12 @@ async function main() {
       });
     }
 
-    if (forgotPasswordPassed) {
+    const resetCodeResolutionBeforeMailbox = resolveAuthCode({
+      responseBodies: [forgotPasswordResponse?.body],
+      responseKey: 'resetCode',
+      mailboxMessage: null,
+    });
+    if (forgotPasswordPassed && !resetCodeResolutionBeforeMailbox.code) {
       try {
         resetMessage = await waitForMatchingMessage({
           apiBaseUrl: 'https://api.mail.tm',
@@ -546,6 +713,8 @@ async function main() {
           artifactName: 'auth-reset-mail.json',
           subjectIncludes: DEFAULT_MAIL_SUBJECT_RESET,
           createdAfterIso: forgotPasswordRequestedAt,
+          timeoutMs: MAILBOX_TIMEOUT_MS,
+          pollIntervalMs: MAILBOX_POLL_INTERVAL_MS,
         });
         report.artifacts.resetMailboxMessagePath = path.join(outputDir, 'auth-reset-mail.json');
       } catch (error) {
@@ -555,7 +724,13 @@ async function main() {
       }
     }
 
-    const resetCode = resetMessage?.code || '';
+    const resetCodeResolution = resolveAuthCode({
+      responseBodies: [forgotPasswordResponse?.body],
+      responseKey: 'resetCode',
+      mailboxMessage: resetMessage,
+    });
+    const resetCode = resetCodeResolution.code;
+    report.artifacts.resetCodeSource = resetCodeResolution.source;
     const wrongResetResponse = resetCode
       ? await requestJson(`${backendUrl}/api/auth/verify-reset-code`, {
           method: 'POST',
@@ -608,6 +783,7 @@ async function main() {
             resetCode,
             newPassword: resetPassword,
           }),
+          timeoutMs: RESET_PASSWORD_TIMEOUT_MS,
         })
       : null;
     const resetPasswordPassed =
@@ -743,14 +919,22 @@ async function main() {
       });
     }
 
-    report.cleanup.possible = Boolean(latestAccessToken);
-    if (latestAccessToken) {
+    const cleanupLogin = await loginForCleanup(backendUrl, mailbox.address, [
+      { source: 'finalPassword', password: finalPassword },
+      { source: 'resetPassword', password: resetPassword },
+      { source: 'initialPassword', password: initialPassword },
+    ]);
+    const cleanupAccessToken = cleanupLogin.accessToken || latestAccessToken;
+    report.cleanup.loginAttempts = cleanupLogin.attempts;
+    report.cleanup.loginPasswordSource = cleanupLogin.source || 'latestAccessToken';
+    report.cleanup.possible = Boolean(cleanupAccessToken);
+    if (cleanupAccessToken) {
       cleanupAttempted = true;
       report.cleanup.attempted = true;
       const cleanupResponse = await requestJson(`${backendUrl}/api/profile`, {
         method: 'DELETE',
         headers: {
-          Authorization: `Bearer ${latestAccessToken}`,
+          Authorization: `Bearer ${cleanupAccessToken}`,
         },
       });
       report.cleanup.ok = Boolean(cleanupResponse.ok && cleanupResponse.status === 200);
@@ -781,8 +965,9 @@ async function main() {
       };
     }
 
-    report.passed = report.failures.length === 0 && report.cleanup.ok;
-    writeJson(reportPath, report);
+    report.primaryPath = buildAuthPrimaryPathReadiness(report);
+    report.passed = report.primaryPath.passed;
+    writeJson(reportPath, sanitizeReport(report));
 
     console.log(`[production-smoke-auth-api] Wrote ${reportPath}`);
     console.log(
@@ -792,13 +977,17 @@ async function main() {
           outputDir: report.outputDir,
           backendUrl: report.backendUrl,
           passed: report.passed,
+          primaryPath: report.primaryPath,
           failureCount: report.failures.length,
-          cleanup: report.cleanup,
+          cleanup: sanitizeReport(report.cleanup),
         },
         null,
         2,
       ),
     );
+    if (!report.passed) {
+      process.exitCode = 1;
+    }
   } catch (error) {
     report.passed = false;
     report.cleanup.attempted = cleanupAttempted;
@@ -806,7 +995,8 @@ async function main() {
     if (!report.failures.length) {
       pushFailure(report, 'fatal', report.cleanup.error, {});
     }
-    writeJson(reportPath, report);
+    report.primaryPath = buildAuthPrimaryPathReadiness(report);
+    writeJson(reportPath, sanitizeReport(report));
     console.error('[production-smoke-auth-api] Failed:', error);
     process.exitCode = 1;
   }

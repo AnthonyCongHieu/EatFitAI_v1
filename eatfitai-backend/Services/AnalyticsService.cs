@@ -1,5 +1,6 @@
 using EatFitAI.API.DTOs.Analytics;
 using EatFitAI.API.DTOs.MealDiary;
+using EatFitAI.API.DTOs;
 using EatFitAI.API.Repositories.Interfaces;
 using EatFitAI.API.Services.Interfaces;
 using EatFitAI.API.DbScaffold.Data;
@@ -12,15 +13,18 @@ namespace EatFitAI.API.Services
         private readonly IAnalyticsRepository _analyticsRepository;
         private readonly IMealDiaryService _mealDiaryService;
         private readonly EatFitAIDbContext _dbContext;
+        private readonly AIReviewService _aiReviewService;
 
         public AnalyticsService(
             IAnalyticsRepository analyticsRepository,
             IMealDiaryService mealDiaryService,
-            EatFitAIDbContext dbContext)
+            EatFitAIDbContext dbContext,
+            AIReviewService aiReviewService)
         {
             _analyticsRepository = analyticsRepository;
             _mealDiaryService = mealDiaryService;
             _dbContext = dbContext;
+            _aiReviewService = aiReviewService;
         }
 
         public async Task<NutritionSummaryDto> GetNutritionSummaryAsync(Guid userId, DateTime startDate, DateTime endDate)
@@ -115,9 +119,6 @@ namespace EatFitAI.API.Services
                 .OrderBy(g => g.MealTypeId)
                 .ToList();
 
-            // DEBUG: Log target values
-            Console.WriteLine($"[DEBUG] DaySummary - User: {userId}, TargetCalories: {targetCalories}, TargetProtein: {targetProtein}, TargetCarbs: {targetCarbs}, TargetFat: {targetFat}");
-
             return new DaySummaryDto
             {
                 Date = date,
@@ -133,6 +134,11 @@ namespace EatFitAI.API.Services
                 CaloriesByMealType = summary.CaloriesByMealType,
                 Meals = mealGroups
             };
+        }
+
+        public Task<WeeklyReviewDto> GetWeeklyReviewAsync(Guid userId)
+        {
+            return _aiReviewService.AnalyzeWeeklyProgress(userId);
         }
     }
 }

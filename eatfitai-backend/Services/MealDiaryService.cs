@@ -1,7 +1,7 @@
 using AutoMapper;
 using EatFitAI.API.DbScaffold.Data;
-using EatFitAI.API.DTOs.MealDiary;
 using EatFitAI.API.DbScaffold.Models;
+using EatFitAI.API.DTOs.MealDiary;
 using EatFitAI.API.Repositories.Interfaces;
 using EatFitAI.API.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
@@ -21,18 +21,21 @@ namespace EatFitAI.API.Services
         private readonly IMealDiaryRepository _mealDiaryRepository;
         private readonly EatFitAIDbContext _context;
         private readonly IMapper _mapper;
-        private readonly IStreakService _streakService;  // Profile 2026 - Streak tracking
+        private readonly IStreakService _streakService;
+        private readonly IMediaUrlResolver _mediaUrlResolver;
 
         public MealDiaryService(
             IMealDiaryRepository mealDiaryRepository,
             EatFitAIDbContext context,
             IMapper mapper,
-            IStreakService streakService)  // Profile 2026 - Streak tracking
+            IStreakService streakService,
+            IMediaUrlResolver mediaUrlResolver)
         {
             _mealDiaryRepository = mealDiaryRepository;
             _context = context;
             _mapper = mapper;
             _streakService = streakService;
+            _mediaUrlResolver = mediaUrlResolver;
         }
 
         public async Task<IEnumerable<MealDiaryDto>> GetUserMealDiariesAsync(Guid userId, DateTime? date = null)
@@ -40,7 +43,7 @@ namespace EatFitAI.API.Services
             var mealDiaries = await _mealDiaryRepository.GetByUserIdAsync(userId, date);
             var dtos = _mapper.Map<List<MealDiaryDto>>(mealDiaries);
             await PopulateUserFoodNamesAsync(userId, mealDiaries, dtos);
-            return dtos;
+            return NormalizeMediaUrls(dtos);
         }
 
         public async Task<MealDiaryDto> GetMealDiaryByIdAsync(int id, Guid userId)
@@ -53,7 +56,7 @@ namespace EatFitAI.API.Services
 
             var dto = _mapper.Map<MealDiaryDto>(mealDiary);
             await PopulateUserFoodNamesAsync(userId, new[] { mealDiary }, new[] { dto });
-            return dto;
+            return NormalizeMediaUrls(dto);
         }
 
         public async Task<MealDiaryDto> CreateMealDiaryAsync(Guid userId, CreateMealDiaryRequest request)
@@ -66,17 +69,89 @@ namespace EatFitAI.API.Services
                 request.UserFoodItemId,
                 request.UserDishId,
                 request.RecipeId);
+
             await ComputeAndAssignMacrosAsync(mealDiary, userId);
-
             await _mealDiaryRepository.AddAsync(mealDiary);
+            await TrackRecentFoodsAsync(userId, new[] { mealDiary.FoodItemId });
             await _context.SaveChangesAsync();
-
-            // Update streak sau khi log meal thành công (Profile 2026)
             await _streakService.UpdateStreakOnMealLogAsync(userId);
 
-            // Fetch with includes for the response
-            var createdMealDiary = await _mealDiaryRepository.GetByIdWithIncludesAsync(mealDiary.MealDiaryId);
-            return _mapper.Map<MealDiaryDto>(createdMealDiary);
+            return await GetMappedMealDiaryAsync(mealDiary.MealDiaryId, userId);
+        }
+
+        public async Task<IEnumerable<MealDiaryDto>> CopyPreviousDayAsync(Guid userId, CopyPreviousDayRequest request)
+        {
+            if (request == null)
+            {
+                throw new ArgumentException("Request body is required");
+            }
+
+            if (request.TargetDate == default)
+            {
+                throw new ArgumentException("Target date is required");
+            }
+
+            if (request.MealTypeId is <= 0)
+            {
+                throw new ArgumentException("Meal type is invalid");
+            }
+
+            var targetDate = DateOnly.FromDateTime(request.TargetDate.Date);
+            var sourceDate = targetDate.AddDays(-1);
+
+            var sourceQuery = _context.MealDiaries
+                .AsNoTracking()
+                .Where(mealDiary =>
+                    mealDiary.UserId == userId &&
+                    !mealDiary.IsDeleted &&
+                    mealDiary.EatenDate == sourceDate);
+
+            if (request.MealTypeId.HasValue)
+            {
+                sourceQuery = sourceQuery.Where(mealDiary => mealDiary.MealTypeId == request.MealTypeId.Value);
+            }
+
+            var sourceEntries = await sourceQuery
+                .OrderBy(mealDiary => mealDiary.MealTypeId)
+                .ThenBy(mealDiary => mealDiary.CreatedAt)
+                .ToListAsync();
+
+            if (sourceEntries.Count == 0)
+            {
+                throw new KeyNotFoundException("No meal diary entries found for the previous day");
+            }
+
+            var existingTargetQuery = _context.MealDiaries.Where(mealDiary =>
+                mealDiary.UserId == userId &&
+                !mealDiary.IsDeleted &&
+                mealDiary.EatenDate == targetDate);
+
+            if (request.MealTypeId.HasValue)
+            {
+                existingTargetQuery = existingTargetQuery.Where(mealDiary => mealDiary.MealTypeId == request.MealTypeId.Value);
+            }
+
+            if (await existingTargetQuery.AnyAsync())
+            {
+                throw new InvalidOperationException("Target date already has meal diary entries for the requested scope");
+            }
+
+            var copiedEntries = new List<MealDiary>(sourceEntries.Count);
+            foreach (var sourceEntry in sourceEntries)
+            {
+                var copiedEntry = CloneMealDiary(sourceEntry, targetDate);
+                await ComputeAndAssignMacrosAsync(copiedEntry, userId);
+                copiedEntries.Add(copiedEntry);
+            }
+
+            await _context.MealDiaries.AddRangeAsync(copiedEntries);
+            await TrackRecentFoodsAsync(userId, copiedEntries.Select(entry => entry.FoodItemId));
+            await _context.SaveChangesAsync();
+            await _streakService.UpdateStreakOnMealLogAsync(userId);
+
+            return await GetMappedMealDiariesAsync(
+                userId,
+                copiedEntries.Select(entry => entry.MealDiaryId).ToList());
         }
 
         public async Task<MealDiaryDto> UpdateMealDiaryAsync(int id, Guid userId, UpdateMealDiaryRequest request)
@@ -87,8 +162,8 @@ namespace EatFitAI.API.Services
                 throw new KeyNotFoundException("Meal diary entry not found");
             }
 
-            // Manual mapping - chỉ update các fields được gửi để tránh FK violation
-            // Không dùng AutoMapper vì nullable int bị map thành 0 (default)
+            var originalFoodItemId = mealDiary.FoodItemId;
+
             if (request.EatenDate.HasValue)
                 mealDiary.EatenDate = DateOnly.FromDateTime(request.EatenDate.Value);
             if (request.MealTypeId.HasValue)
@@ -123,15 +198,17 @@ namespace EatFitAI.API.Services
                     request.UserDishId,
                     request.RecipeId);
             }
+
             mealDiary.UpdatedAt = DateTime.UtcNow;
 
             await ComputeAndAssignMacrosAsync(mealDiary, userId);
-            _mealDiaryRepository.Update(mealDiary);
-            await _context.SaveChangesAsync();
+            if (mealDiary.FoodItemId.HasValue && originalFoodItemId != mealDiary.FoodItemId)
+            {
+                await TrackRecentFoodsAsync(userId, new[] { mealDiary.FoodItemId });
+            }
 
-            // Fetch with includes for the response
-            var updatedMealDiary = await _mealDiaryRepository.GetByIdWithIncludesAsync(id);
-            return _mapper.Map<MealDiaryDto>(updatedMealDiary);
+            await _context.SaveChangesAsync();
+            return await GetMappedMealDiaryAsync(id, userId);
         }
 
         public async Task DeleteMealDiaryAsync(int id, Guid userId)
@@ -200,6 +277,126 @@ namespace EatFitAI.API.Services
             mealDiary.RecipeId = recipeId;
         }
 
+        private static MealDiary CloneMealDiary(MealDiary sourceEntry, DateOnly targetDate)
+        {
+            var utcNow = DateTime.UtcNow;
+
+            return new MealDiary
+            {
+                UserId = sourceEntry.UserId,
+                EatenDate = targetDate,
+                MealTypeId = sourceEntry.MealTypeId,
+                FoodItemId = sourceEntry.FoodItemId,
+                UserFoodItemId = sourceEntry.UserFoodItemId,
+                UserDishId = sourceEntry.UserDishId,
+                RecipeId = sourceEntry.RecipeId,
+                ServingUnitId = sourceEntry.ServingUnitId,
+                PortionQuantity = sourceEntry.PortionQuantity,
+                Grams = sourceEntry.Grams,
+                Calories = sourceEntry.Calories,
+                Protein = sourceEntry.Protein,
+                Carb = sourceEntry.Carb,
+                Fat = sourceEntry.Fat,
+                Note = sourceEntry.Note,
+                PhotoUrl = sourceEntry.PhotoUrl,
+                SourceMethod = sourceEntry.SourceMethod,
+                CreatedAt = utcNow,
+                UpdatedAt = utcNow,
+                IsDeleted = false
+            };
+        }
+
+        private async Task TrackRecentFoodsAsync(Guid userId, IEnumerable<int?> foodItemIds)
+        {
+            var groupedIds = foodItemIds
+                .Where(foodItemId => foodItemId.HasValue)
+                .Select(foodItemId => foodItemId!.Value)
+                .GroupBy(foodItemId => foodItemId)
+                .ToList();
+
+            if (groupedIds.Count == 0)
+            {
+                return;
+            }
+
+            var recentFoodIds = groupedIds.Select(group => group.Key).ToList();
+            var existingRows = await _context.UserRecentFoods
+                .Where(item => item.UserId == userId && recentFoodIds.Contains(item.FoodItemId))
+                .ToListAsync();
+
+            var utcNow = DateTime.UtcNow;
+            foreach (var group in groupedIds)
+            {
+                var existingRow = existingRows.FirstOrDefault(item => item.FoodItemId == group.Key);
+                if (existingRow == null)
+                {
+                    await _context.UserRecentFoods.AddAsync(new UserRecentFood
+                    {
+                        UserId = userId,
+                        FoodItemId = group.Key,
+                        LastUsedAt = utcNow,
+                        UsedCount = group.Count()
+                    });
+                    continue;
+                }
+
+                existingRow.LastUsedAt = utcNow;
+                existingRow.UsedCount += group.Count();
+            }
+        }
+
+        private async Task<MealDiaryDto> GetMappedMealDiaryAsync(int mealDiaryId, Guid userId)
+        {
+            var mealDiary = await _mealDiaryRepository.GetByIdWithIncludesAsync(mealDiaryId)
+                ?? throw new KeyNotFoundException("Meal diary entry not found");
+
+            var dto = _mapper.Map<MealDiaryDto>(mealDiary);
+            await PopulateUserFoodNamesAsync(userId, new[] { mealDiary }, new[] { dto });
+            return NormalizeMediaUrls(dto);
+        }
+
+        private async Task<List<MealDiaryDto>> GetMappedMealDiariesAsync(Guid userId, IReadOnlyCollection<int> mealDiaryIds)
+        {
+            if (mealDiaryIds.Count == 0)
+            {
+                return new List<MealDiaryDto>();
+            }
+
+            var mealDiaries = await _context.MealDiaries
+                .Where(mealDiary => mealDiaryIds.Contains(mealDiary.MealDiaryId) && !mealDiary.IsDeleted)
+                .Include(mealDiary => mealDiary.FoodItem)
+                .Include(mealDiary => mealDiary.UserDish)
+                .Include(mealDiary => mealDiary.Recipe)
+                .Include(mealDiary => mealDiary.ServingUnit)
+                .Include(mealDiary => mealDiary.MealType)
+                .AsSplitQuery()
+                .AsNoTracking()
+                .OrderBy(mealDiary => mealDiary.MealTypeId)
+                .ThenBy(mealDiary => mealDiary.CreatedAt)
+                .ToListAsync();
+
+            var dtos = _mapper.Map<List<MealDiaryDto>>(mealDiaries);
+            await PopulateUserFoodNamesAsync(userId, mealDiaries, dtos);
+            return NormalizeMediaUrls(dtos);
+        }
+
+        private MealDiaryDto NormalizeMediaUrls(MealDiaryDto dto)
+        {
+            dto.FoodItemThumbNail = _mediaUrlResolver.NormalizePublicUrl(dto.FoodItemThumbNail);
+            dto.PhotoUrl = _mediaUrlResolver.NormalizePublicUrl(dto.PhotoUrl);
+            return dto;
+        }
+
+        private List<MealDiaryDto> NormalizeMediaUrls(List<MealDiaryDto> dtos)
+        {
+            foreach (var dto in dtos)
+            {
+                NormalizeMediaUrls(dto);
+            }
+
+            return dtos;
+        }
+
         private static MealDiarySourceKind? GetSourceKind(MealDiary mealDiary)
         {
             var sourceCount = new[]
@@ -241,7 +438,6 @@ namespace EatFitAI.API.Services
                 throw new InvalidOperationException("Meal diary must reference exactly one food source");
             }
 
-            // Validation: grams phải > 0
             if (mealDiary.Grams <= 0)
             {
                 Console.WriteLine($"[MealDiaryService] Warning: grams <= 0 ({mealDiary.Grams}), skipping macro compute");
@@ -257,44 +453,44 @@ namespace EatFitAI.API.Services
             {
                 case MealDiarySourceKind.UserFoodItem:
                 {
-                    var ufi = await _context.UserFoodItems
+                    var userFoodItem = await _context.UserFoodItems
                         .AsNoTracking()
                         .FirstOrDefaultAsync(item =>
                             item.UserFoodItemId == mealDiary.UserFoodItemId!.Value &&
                             item.UserId == userId &&
                             !item.IsDeleted);
-                    if (ufi == null)
+                    if (userFoodItem == null)
                     {
                         throw new KeyNotFoundException("User food item not found");
                     }
 
                     mealDiary.Grams = grams;
-                    mealDiary.Calories = Math.Round(ufi.CaloriesPer100 * factor, 2);
-                    mealDiary.Protein = Math.Round(ufi.ProteinPer100 * factor, 2);
-                    mealDiary.Carb = Math.Round(ufi.CarbPer100 * factor, 2);
-                    mealDiary.Fat = Math.Round(ufi.FatPer100 * factor, 2);
+                    mealDiary.Calories = Math.Round(userFoodItem.CaloriesPer100 * factor, 2);
+                    mealDiary.Protein = Math.Round(userFoodItem.ProteinPer100 * factor, 2);
+                    mealDiary.Carb = Math.Round(userFoodItem.CarbPer100 * factor, 2);
+                    mealDiary.Fat = Math.Round(userFoodItem.FatPer100 * factor, 2);
                     mealDiary.SourceMethod = "user";
                     return;
                 }
 
                 case MealDiarySourceKind.FoodItem:
                 {
-                    var fi = await _context.FoodItems
+                    var foodItem = await _context.FoodItems
                         .AsNoTracking()
                         .FirstOrDefaultAsync(item =>
                             item.FoodItemId == mealDiary.FoodItemId!.Value &&
                             !item.IsDeleted &&
                             item.IsActive);
-                    if (fi == null)
+                    if (foodItem == null)
                     {
                         throw new KeyNotFoundException("Food item not found");
                     }
 
                     mealDiary.Grams = grams;
-                    mealDiary.Calories = Math.Round(fi.CaloriesPer100g * factor, 2);
-                    mealDiary.Protein = Math.Round(fi.ProteinPer100g * factor, 2);
-                    mealDiary.Carb = Math.Round(fi.CarbPer100g * factor, 2);
-                    mealDiary.Fat = Math.Round(fi.FatPer100g * factor, 2);
+                    mealDiary.Calories = Math.Round(foodItem.CaloriesPer100g * factor, 2);
+                    mealDiary.Protein = Math.Round(foodItem.ProteinPer100g * factor, 2);
+                    mealDiary.Carb = Math.Round(foodItem.CarbPer100g * factor, 2);
+                    mealDiary.Fat = Math.Round(foodItem.FatPer100g * factor, 2);
                     mealDiary.SourceMethod = "catalog";
                     return;
                 }
@@ -303,12 +499,12 @@ namespace EatFitAI.API.Services
                 {
                     var userDish = await _context.UserDishes
                         .AsNoTracking()
-                        .Include(ud => ud.UserDishIngredients)
-                        .ThenInclude(udi => udi.FoodItem)
-                        .FirstOrDefaultAsync(ud =>
-                            ud.UserDishId == mealDiary.UserDishId!.Value &&
-                            ud.UserId == userId &&
-                            !ud.IsDeleted);
+                        .Include(dish => dish.UserDishIngredients)
+                        .ThenInclude(ingredient => ingredient.FoodItem)
+                        .FirstOrDefaultAsync(dish =>
+                            dish.UserDishId == mealDiary.UserDishId!.Value &&
+                            dish.UserId == userId &&
+                            !dish.IsDeleted);
 
                     if (userDish == null)
                     {
@@ -320,21 +516,26 @@ namespace EatFitAI.API.Services
                         throw new InvalidOperationException("User dish must contain at least one ingredient");
                     }
 
-                    decimal totalCal = 0, totalPro = 0, totalCarb = 0, totalFat = 0, totalGrams = 0;
-                    foreach (var ing in userDish.UserDishIngredients)
+                    decimal totalCalories = 0m;
+                    decimal totalProtein = 0m;
+                    decimal totalCarb = 0m;
+                    decimal totalFat = 0m;
+                    decimal totalGrams = 0m;
+
+                    foreach (var ingredient in userDish.UserDishIngredients)
                     {
-                        if (ing.FoodItem == null)
+                        if (ingredient.FoodItem == null)
                         {
                             throw new KeyNotFoundException("User dish ingredient food item not found");
                         }
 
-                        var ingGrams = ing.Grams;
-                        totalGrams += ingGrams;
-                        var ingFactor = ingGrams / 100m;
-                        totalCal += ing.FoodItem.CaloriesPer100g * ingFactor;
-                        totalPro += ing.FoodItem.ProteinPer100g * ingFactor;
-                        totalCarb += ing.FoodItem.CarbPer100g * ingFactor;
-                        totalFat += ing.FoodItem.FatPer100g * ingFactor;
+                        var ingredientGrams = ingredient.Grams;
+                        totalGrams += ingredientGrams;
+                        var ingredientFactor = ingredientGrams / 100m;
+                        totalCalories += ingredient.FoodItem.CaloriesPer100g * ingredientFactor;
+                        totalProtein += ingredient.FoodItem.ProteinPer100g * ingredientFactor;
+                        totalCarb += ingredient.FoodItem.CarbPer100g * ingredientFactor;
+                        totalFat += ingredient.FoodItem.FatPer100g * ingredientFactor;
                     }
 
                     if (totalGrams <= 0)
@@ -344,8 +545,8 @@ namespace EatFitAI.API.Services
 
                     var scaleFactor = grams / totalGrams;
                     mealDiary.Grams = grams;
-                    mealDiary.Calories = Math.Round(totalCal * scaleFactor, 2);
-                    mealDiary.Protein = Math.Round(totalPro * scaleFactor, 2);
+                    mealDiary.Calories = Math.Round(totalCalories * scaleFactor, 2);
+                    mealDiary.Protein = Math.Round(totalProtein * scaleFactor, 2);
                     mealDiary.Carb = Math.Round(totalCarb * scaleFactor, 2);
                     mealDiary.Fat = Math.Round(totalFat * scaleFactor, 2);
                     mealDiary.SourceMethod = "user_dish";
@@ -356,9 +557,9 @@ namespace EatFitAI.API.Services
                 {
                     var recipe = await _context.Recipes
                         .AsNoTracking()
-                        .Include(r => r.RecipeIngredients)
-                        .ThenInclude(ri => ri.FoodItem)
-                        .FirstOrDefaultAsync(r => r.RecipeId == mealDiary.RecipeId!.Value);
+                        .Include(item => item.RecipeIngredients)
+                        .ThenInclude(ingredient => ingredient.FoodItem)
+                        .FirstOrDefaultAsync(item => item.RecipeId == mealDiary.RecipeId!.Value);
 
                     if (recipe == null)
                     {
@@ -370,21 +571,26 @@ namespace EatFitAI.API.Services
                         throw new InvalidOperationException("Recipe must contain at least one ingredient");
                     }
 
-                    decimal totalCal = 0, totalPro = 0, totalCarb = 0, totalFat = 0, totalGrams = 0;
-                    foreach (var ri in recipe.RecipeIngredients)
+                    decimal totalCalories = 0m;
+                    decimal totalProtein = 0m;
+                    decimal totalCarb = 0m;
+                    decimal totalFat = 0m;
+                    decimal totalGrams = 0m;
+
+                    foreach (var ingredient in recipe.RecipeIngredients)
                     {
-                        if (ri.FoodItem == null)
+                        if (ingredient.FoodItem == null)
                         {
                             throw new KeyNotFoundException("Recipe ingredient food item not found");
                         }
 
-                        var riGrams = ri.Grams;
-                        totalGrams += riGrams;
-                        var riFactor = riGrams / 100m;
-                        totalCal += ri.FoodItem.CaloriesPer100g * riFactor;
-                        totalPro += ri.FoodItem.ProteinPer100g * riFactor;
-                        totalCarb += ri.FoodItem.CarbPer100g * riFactor;
-                        totalFat += ri.FoodItem.FatPer100g * riFactor;
+                        var ingredientGrams = ingredient.Grams;
+                        totalGrams += ingredientGrams;
+                        var ingredientFactor = ingredientGrams / 100m;
+                        totalCalories += ingredient.FoodItem.CaloriesPer100g * ingredientFactor;
+                        totalProtein += ingredient.FoodItem.ProteinPer100g * ingredientFactor;
+                        totalCarb += ingredient.FoodItem.CarbPer100g * ingredientFactor;
+                        totalFat += ingredient.FoodItem.FatPer100g * ingredientFactor;
                     }
 
                     if (totalGrams <= 0)
@@ -394,8 +600,8 @@ namespace EatFitAI.API.Services
 
                     var scaleFactor = grams / totalGrams;
                     mealDiary.Grams = grams;
-                    mealDiary.Calories = Math.Round(totalCal * scaleFactor, 2);
-                    mealDiary.Protein = Math.Round(totalPro * scaleFactor, 2);
+                    mealDiary.Calories = Math.Round(totalCalories * scaleFactor, 2);
+                    mealDiary.Protein = Math.Round(totalProtein * scaleFactor, 2);
                     mealDiary.Carb = Math.Round(totalCarb * scaleFactor, 2);
                     mealDiary.Fat = Math.Round(totalFat * scaleFactor, 2);
                     mealDiary.SourceMethod = "recipe";
@@ -404,33 +610,34 @@ namespace EatFitAI.API.Services
             }
         }
 
-
         private async Task PopulateUserFoodNamesAsync(Guid userId, IEnumerable<MealDiary> entities, IEnumerable<MealDiaryDto> dtos)
         {
-            // Build map: MealDiaryId -> UserFoodItemId
             var pairs = entities
-                .Where(e => e.UserFoodItemId.HasValue)
-                .Select(e => new { e.MealDiaryId, e.UserFoodItemId!.Value })
+                .Where(entity => entity.UserFoodItemId.HasValue)
+                .Select(entity => new { entity.MealDiaryId, UserFoodItemId = entity.UserFoodItemId!.Value })
                 .ToList();
-            if (pairs.Count == 0) return;
+            if (pairs.Count == 0)
+            {
+                return;
+            }
 
-            var userFoodItemIds = pairs.Select(p => p.Value).Distinct().ToList();
+            var userFoodItemIds = pairs.Select(pair => pair.UserFoodItemId).Distinct().ToList();
             var userFoods = await _context.UserFoodItems
-                .Where(ufi => ufi.UserId == userId && userFoodItemIds.Contains(ufi.UserFoodItemId))
-                .Select(ufi => new { ufi.UserFoodItemId, ufi.FoodName })
+                .Where(item => item.UserId == userId && userFoodItemIds.Contains(item.UserFoodItemId))
+                .Select(item => new { item.UserFoodItemId, item.FoodName, item.ThumbnailUrl })
                 .ToListAsync();
-            var nameById = userFoods.ToDictionary(x => x.UserFoodItemId, x => x.FoodName);
+            var byId = userFoods.ToDictionary(item => item.UserFoodItemId);
 
-            // Map MealDiaryId -> name
             var nameByDiaryId = pairs
-                .Where(p => nameById.ContainsKey(p.Value))
-                .ToDictionary(p => p.MealDiaryId, p => nameById[p.Value]);
+                .Where(pair => byId.ContainsKey(pair.UserFoodItemId))
+                .ToDictionary(pair => pair.MealDiaryId, pair => byId[pair.UserFoodItemId]);
 
             foreach (var dto in dtos)
             {
-                if (nameByDiaryId.TryGetValue(dto.MealDiaryId, out var name))
+                if (nameByDiaryId.TryGetValue(dto.MealDiaryId, out var userFood))
                 {
-                    dto.FoodItemName = name;
+                    dto.FoodItemName = userFood.FoodName;
+                    dto.FoodItemThumbNail = userFood.ThumbnailUrl;
                 }
             }
         }

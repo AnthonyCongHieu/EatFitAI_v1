@@ -13,8 +13,12 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using Xunit;
+using AdminPasswordResetCode = EatFitAI.API.Models.PasswordResetCode;
+using AdminTelemetryEvent = EatFitAI.API.Models.TelemetryEvent;
 using AdminUser = EatFitAI.API.Models.User;
+using AdminUserAccessControl = EatFitAI.API.Models.UserAccessControl;
 using AdminUserPreference = EatFitAI.API.Models.UserPreference;
+using AdminWaterIntake = EatFitAI.API.Models.WaterIntake;
 
 namespace EatFitAI.API.Tests.Unit.Services
 {
@@ -24,7 +28,9 @@ namespace EatFitAI.API.Tests.Unit.Services
         private readonly EatFitAIDbContext _context;
         private readonly ApplicationDbContext _adminContext;
         private readonly Mock<IMapper> _mapperMock;
-        private readonly Mock<ISupabaseStorageService> _supabaseStorageServiceMock;
+        private readonly Mock<IMediaImageProcessor> _mediaImageProcessorMock;
+        private readonly Mock<IMediaStorageService> _mediaStorageServiceMock;
+        private readonly Mock<IMediaUrlResolver> _mediaUrlResolverMock;
         private readonly Mock<IHostEnvironment> _environmentMock;
         private readonly Mock<ILogger<UserService>> _loggerMock;
         private readonly UserService _userService;
@@ -34,7 +40,9 @@ namespace EatFitAI.API.Tests.Unit.Services
         {
             _userRepositoryMock = new Mock<IUserRepository>();
             _mapperMock = new Mock<IMapper>();
-            _supabaseStorageServiceMock = new Mock<ISupabaseStorageService>();
+            _mediaImageProcessorMock = new Mock<IMediaImageProcessor>();
+            _mediaStorageServiceMock = new Mock<IMediaStorageService>();
+            _mediaUrlResolverMock = new Mock<IMediaUrlResolver>();
             _environmentMock = new Mock<IHostEnvironment>();
             _loggerMock = new Mock<ILogger<UserService>>();
 
@@ -48,7 +56,10 @@ namespace EatFitAI.API.Tests.Unit.Services
                 .Options;
             _adminContext = new ApplicationDbContext(adminOptions);
 
-            _supabaseStorageServiceMock.SetupGet(s => s.IsConfigured).Returns(false);
+            _mediaStorageServiceMock.SetupGet(s => s.IsConfigured).Returns(false);
+            _mediaUrlResolverMock
+                .Setup(r => r.NormalizePublicUrl(It.IsAny<string?>()))
+                .Returns((string? value) => value);
             _environmentMock.SetupGet(e => e.EnvironmentName).Returns(Environments.Development);
 
             _userService = new UserService(
@@ -56,7 +67,9 @@ namespace EatFitAI.API.Tests.Unit.Services
                 _context,
                 _adminContext,
                 _mapperMock.Object,
-                _supabaseStorageServiceMock.Object,
+                _mediaImageProcessorMock.Object,
+                _mediaStorageServiceMock.Object,
+                _mediaUrlResolverMock.Object,
                 _environmentMock.Object,
                 new SupabaseSchemaBootstrapper(_adminContext, NullLogger<SupabaseSchemaBootstrapper>.Instance),
                 _loggerMock.Object);
@@ -255,6 +268,86 @@ namespace EatFitAI.API.Tests.Unit.Services
         }
 
         [Fact]
+        public async Task GetUserProfileAsync_NormalizesAvatarUrl()
+        {
+            const string legacyAvatarUrl =
+                "https://bjlmndmafrajjysenpbm.supabase.co/storage/v1/object/public/user-food/avatars/v2/thumb.webp";
+            const string normalizedAvatarUrl =
+                "https://media.example.com/user-food/avatars/v2/thumb.webp";
+
+            _mapperMock.Setup(m => m.Map<UserProfileDto>(It.IsAny<User>()))
+                .Returns(new UserProfileDto
+                {
+                    DisplayName = "Test User",
+                    AvatarUrl = legacyAvatarUrl
+                });
+            _mediaUrlResolverMock
+                .Setup(r => r.NormalizePublicUrl(legacyAvatarUrl))
+                .Returns(normalizedAvatarUrl);
+
+            var result = await _userService.GetUserProfileAsync(_testUserId);
+
+            Assert.Equal(normalizedAvatarUrl, result.AvatarUrl);
+        }
+
+        [Fact]
+        public async Task UpdateAvatarAsync_ConfiguredMediaStorage_UploadsOptimizedVariants()
+        {
+            var trackedUser = await _context.Users.SingleAsync(u => u.UserId == _testUserId);
+            _userRepositoryMock.Setup(r => r.GetByIdAsync(_testUserId)).ReturnsAsync(trackedUser);
+            _userRepositoryMock.Setup(r => r.Update(It.IsAny<User>()));
+            _mediaStorageServiceMock.SetupGet(s => s.IsConfigured).Returns(true);
+            _mediaImageProcessorMock
+                .Setup(p => p.CreateVariantsAsync(It.IsAny<IFormFile>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new MediaImageVariants
+                {
+                    Thumb = new MediaImageVariant
+                    {
+                        Bytes = new byte[] { 1, 2, 3 },
+                        ContentType = "image/webp"
+                    },
+                    Medium = new MediaImageVariant
+                    {
+                        Bytes = new byte[] { 4, 5, 6 },
+                        ContentType = "image/webp"
+                    }
+                });
+            _mediaStorageServiceMock
+                .Setup(s => s.UploadAsync(
+                    It.Is<MediaUploadObject>(upload =>
+                        upload.Bucket == "user-food"
+                        && upload.ObjectPath.StartsWith($"avatars/v2/{_testUserId:N}/thumb/")
+                        && upload.ObjectPath.EndsWith(".webp")
+                        && upload.ContentType == "image/webp"),
+                    It.IsAny<CancellationToken>()))
+                .ReturnsAsync("https://media.example.com/user-food/avatars/v2/thumb.webp");
+            _mediaStorageServiceMock
+                .Setup(s => s.UploadAsync(
+                    It.Is<MediaUploadObject>(upload =>
+                        upload.Bucket == "user-food"
+                        && upload.ObjectPath.StartsWith($"avatars/v2/{_testUserId:N}/medium/")
+                        && upload.ObjectPath.EndsWith(".webp")
+                        && upload.ContentType == "image/webp"),
+                    It.IsAny<CancellationToken>()))
+                .ReturnsAsync("https://media.example.com/user-food/avatars/v2/medium.webp");
+
+            await using var imageStream = new MemoryStream(new byte[] { 1, 2, 3, 4 });
+            var formFile = new FormFile(imageStream, 0, imageStream.Length, "file", "avatar.png")
+            {
+                Headers = new HeaderDictionary(),
+                ContentType = "image/png"
+            };
+
+            var avatarUrl = await _userService.UpdateAvatarAsync(_testUserId, formFile, null);
+
+            Assert.Equal("https://media.example.com/user-food/avatars/v2/thumb.webp", avatarUrl);
+            Assert.Equal(avatarUrl, trackedUser.AvatarUrl);
+            _mediaStorageServiceMock.Verify(
+                s => s.UploadAsync(It.IsAny<MediaUploadObject>(), It.IsAny<CancellationToken>()),
+                Times.Exactly(2));
+        }
+
+        [Fact]
         public async Task UpdateUserProfileAsync_InvalidUser_ThrowsKeyNotFoundException()
         {
             var invalidId = Guid.NewGuid();
@@ -287,8 +380,58 @@ namespace EatFitAI.API.Tests.Unit.Services
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow
             });
+            await _adminContext.PasswordResetCodes.AddAsync(new AdminPasswordResetCode
+            {
+                UserId = _testUserId,
+                CodeHash = "hash",
+                ExpiresAt = DateTime.UtcNow.AddMinutes(10)
+            });
+            await _adminContext.UserAccessControls.AddAsync(new AdminUserAccessControl
+            {
+                UserId = _testUserId,
+                AccessState = "active"
+            });
+            await _adminContext.WaterIntakes.AddAsync(new AdminWaterIntake
+            {
+                UserId = _testUserId,
+                IntakeDate = DateOnly.FromDateTime(DateTime.Today),
+                AmountMl = 500,
+                TargetMl = 2000,
+                UpdatedAt = DateTime.UtcNow
+            });
+            await _adminContext.TelemetryEvents.AddAsync(new AdminTelemetryEvent
+            {
+                TelemetryEventId = Guid.NewGuid(),
+                UserId = _testUserId,
+                Name = "auth.login",
+                Category = "auth",
+                OccurredAt = DateTime.UtcNow,
+                CreatedAt = DateTime.UtcNow
+            });
             await _adminContext.SaveChangesAsync();
 
+            var aiLog = new AILog
+            {
+                UserId = _testUserId,
+                Action = "scan",
+                CreatedAt = DateTime.UtcNow
+            };
+            await _context.AILogs.AddAsync(aiLog);
+            await _context.SaveChangesAsync();
+            await _context.ImageDetections.AddAsync(new ImageDetection
+            {
+                AILogId = aiLog.AILogId,
+                Label = "apple",
+                Confidence = 0.9m
+            });
+            await _context.AiCorrectionEvents.AddAsync(new AiCorrectionEvent
+            {
+                UserId = _testUserId,
+                Label = "apple",
+                SelectedFoodName = "Apple",
+                Source = "smoke",
+                CreatedAt = DateTime.UtcNow
+            });
             await _context.BodyMetrics.AddAsync(new BodyMetric
             {
                 UserId = _testUserId,
@@ -318,9 +461,16 @@ namespace EatFitAI.API.Tests.Unit.Services
             await _userService.DeleteUserAsync(_testUserId);
 
             _userRepositoryMock.Verify(r => r.Remove(It.IsAny<User>()), Times.Once);
+            Assert.Empty(_context.AiCorrectionEvents.Where(x => x.UserId == _testUserId));
+            Assert.Empty(_context.AILogs.Where(x => x.UserId == _testUserId));
+            Assert.Empty(_context.ImageDetections.Where(x => x.AILogId == aiLog.AILogId));
             Assert.Empty(_context.BodyMetrics.Where(x => x.UserId == _testUserId));
             Assert.Empty(_context.UserFoodItems.Where(x => x.UserId == _testUserId));
             Assert.Empty(_adminContext.UserPreferences.Where(x => x.UserId == _testUserId));
+            Assert.Empty(_adminContext.PasswordResetCodes.Where(x => x.UserId == _testUserId));
+            Assert.Empty(_adminContext.UserAccessControls.Where(x => x.UserId == _testUserId));
+            Assert.Empty(_adminContext.WaterIntakes.Where(x => x.UserId == _testUserId));
+            Assert.Empty(_adminContext.TelemetryEvents.Where(x => x.UserId == _testUserId));
         }
 
         [Fact]

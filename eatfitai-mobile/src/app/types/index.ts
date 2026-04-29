@@ -17,6 +17,7 @@ export type RootStackParamList = {
         showQuickSuggestions?: boolean;
         selectedDate?: string;
         returnToDiaryOnSave?: boolean;
+        initialQuery?: string;
       }
     | undefined;
   FoodDetail: {
@@ -26,6 +27,8 @@ export type RootStackParamList = {
     returnToDiaryOnSave?: boolean;
   };
   CustomDish: undefined;
+  CommonMeals: undefined;
+  CommonMealTemplate: { templateId?: string } | undefined;
   AiCamera: undefined;
   AddMealFromVision: import('../../types/navigation').AddMealFromVisionParams;
   MealDiary: { selectedDate?: string } | undefined;

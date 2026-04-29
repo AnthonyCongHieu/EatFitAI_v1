@@ -1,4 +1,4 @@
-﻿using AutoMapper;
+using AutoMapper;
 using EatFitAI.API.DbScaffold.Data;
 using EatFitAI.API.DbScaffold.Models;
 using EatFitAI.API.DTOs.Food;
@@ -17,7 +17,9 @@ namespace EatFitAI.API.Services
         private readonly IUserFoodItemRepository _repo;
         private readonly EatFitAIDbContext _context;
         private readonly IMapper _mapper;
-        private readonly ISupabaseStorageService _supabaseStorageService;
+        private readonly IMediaImageProcessor _mediaImageProcessor;
+        private readonly IMediaStorageService _mediaStorageService;
+        private readonly IMediaUrlResolver _mediaUrlResolver;
         private readonly IWebHostEnvironment _environment;
         private readonly ILogger<UserFoodItemService> _logger;
 
@@ -25,14 +27,18 @@ namespace EatFitAI.API.Services
             IUserFoodItemRepository repo,
             EatFitAIDbContext context,
             IMapper mapper,
-            ISupabaseStorageService supabaseStorageService,
+            IMediaImageProcessor mediaImageProcessor,
+            IMediaStorageService mediaStorageService,
+            IMediaUrlResolver mediaUrlResolver,
             IWebHostEnvironment environment,
             ILogger<UserFoodItemService> logger)
         {
             _repo = repo;
             _context = context;
             _mapper = mapper;
-            _supabaseStorageService = supabaseStorageService;
+            _mediaImageProcessor = mediaImageProcessor;
+            _mediaStorageService = mediaStorageService;
+            _mediaUrlResolver = mediaUrlResolver;
             _environment = environment;
             _logger = logger;
         }
@@ -45,7 +51,7 @@ namespace EatFitAI.API.Services
 
             var items = await _repo.SearchByUserAsync(userId, search, skip, pageSize);
             var total = await _repo.CountByUserAsync(userId, search);
-            return (_mapper.Map<IEnumerable<UserFoodItemDto>>(items), total);
+            return (_mapper.Map<IEnumerable<UserFoodItemDto>>(items).Select(NormalizeMediaUrls).ToList(), total);
         }
 
         public async Task<UserFoodItemDto> GetAsync(Guid userId, int id)
@@ -54,7 +60,7 @@ namespace EatFitAI.API.Services
             if (entity == null)
                 throw new KeyNotFoundException("Không tìm thấy món ăn tự tạo");
 
-            return _mapper.Map<UserFoodItemDto>(entity);
+            return NormalizeMediaUrls(_mapper.Map<UserFoodItemDto>(entity));
         }
 
         public async Task<UserFoodItemDto> CreateAsync(Guid userId, CreateUserFoodItemRequest request, string? uploadsRoot)
@@ -88,10 +94,9 @@ namespace EatFitAI.API.Services
                     existingItem.ThumbnailUrl = thumbnailUrl;
                 }
 
-                _context.UserFoodItems.Update(existingItem);
                 await _context.SaveChangesAsync();
 
-                return _mapper.Map<UserFoodItemDto>(existingItem);
+                return NormalizeMediaUrls(_mapper.Map<UserFoodItemDto>(existingItem));
             }
 
             // Chưa tồn tại → tạo mới
@@ -113,7 +118,7 @@ namespace EatFitAI.API.Services
             await _context.UserFoodItems.AddAsync(entity);
             await _context.SaveChangesAsync();
 
-            return _mapper.Map<UserFoodItemDto>(entity);
+            return NormalizeMediaUrls(_mapper.Map<UserFoodItemDto>(entity));
         }
 
         public async Task<UserFoodItemDto> UpdateAsync(Guid userId, int id, UpdateUserFoodItemRequest request, string? uploadsRoot)
@@ -140,10 +145,9 @@ namespace EatFitAI.API.Services
 
             entity.UpdatedAt = DateTime.UtcNow;
 
-            _context.UserFoodItems.Update(entity);
             await _context.SaveChangesAsync();
 
-            return _mapper.Map<UserFoodItemDto>(entity);
+            return NormalizeMediaUrls(_mapper.Map<UserFoodItemDto>(entity));
         }
 
         public async Task DeleteAsync(Guid userId, int id)
@@ -154,7 +158,6 @@ namespace EatFitAI.API.Services
 
             entity.IsDeleted = true;
             entity.UpdatedAt = DateTime.UtcNow;
-            _context.UserFoodItems.Update(entity);
             await _context.SaveChangesAsync();
         }
 
@@ -165,6 +168,13 @@ namespace EatFitAI.API.Services
             {
                 throw new ArgumentException("Đơn vị phải là 'g' hoặc 'ml'");
             }
+        }
+
+        private UserFoodItemDto NormalizeMediaUrls(UserFoodItemDto dto)
+        {
+            dto.ThumbnailUrl = _mediaUrlResolver.NormalizePublicUrl(dto.ThumbnailUrl);
+            dto.ImageVariants = MediaVariantHelper.FromThumbUrl(dto.ThumbnailUrl);
+            return dto;
         }
 
         private async Task<string> SaveImageAsync(IFormFile file, Guid userId, string? uploadsRoot)
@@ -186,22 +196,41 @@ namespace EatFitAI.API.Services
                 };
             }
 
-            if (_supabaseStorageService.IsConfigured)
+            if (_mediaStorageService.IsConfigured)
             {
-                var objectPath = $"{userId:N}/{Guid.NewGuid():N}{ext}";
-                return await _supabaseStorageService.UploadUserFoodImageAsync(file, objectPath);
+                var mediaId = Guid.NewGuid().ToString("N");
+                var variants = await _mediaImageProcessor.CreateVariantsAsync(file);
+                var thumbObjectPath = $"v2/{userId:N}/thumb/{mediaId}.webp";
+                var mediumObjectPath = $"v2/{userId:N}/medium/{mediaId}.webp";
+
+                var thumbUrl = await _mediaStorageService.UploadAsync(new MediaUploadObject
+                {
+                    Bucket = "user-food",
+                    ObjectPath = thumbObjectPath,
+                    Bytes = variants.Thumb.Bytes,
+                    ContentType = variants.Thumb.ContentType
+                });
+                await _mediaStorageService.UploadAsync(new MediaUploadObject
+                {
+                    Bucket = "user-food",
+                    ObjectPath = mediumObjectPath,
+                    Bytes = variants.Medium.Bytes,
+                    ContentType = variants.Medium.ContentType
+                });
+
+                return thumbUrl;
             }
 
             if (_environment.IsProduction())
             {
                 _logger.LogError(
-                    "Supabase storage is not configured in Production. Rejecting user food thumbnail upload.");
+                    "Cloud storage (R2) is not configured in Production. Rejecting user food thumbnail upload.");
                 throw new InvalidOperationException(
                     "Cloud storage is not configured for user food thumbnail uploads.");
             }
 
             _logger.LogWarning(
-                "Supabase storage is not configured. Falling back to local filesystem for user food thumbnail uploads.");
+                "Cloud storage (R2) is not configured. Falling back to local filesystem for user food thumbnail uploads.");
 
             if (uploadsRoot == null)
             {

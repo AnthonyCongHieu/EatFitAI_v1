@@ -1,5 +1,6 @@
-﻿using System.Security.Claims;
+using System.Security.Claims;
 using EatFitAI.API.DTOs.Food;
+using EatFitAI.API.Helpers;
 using EatFitAI.API.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -29,9 +30,13 @@ namespace EatFitAI.API.Controllers
                 var (items, total) = await _service.ListAsync(userId, q, page, pageSize);
                 return Ok(new { items, total, page, pageSize });
             }
-            catch (Exception ex)
+            catch (UnauthorizedAccessException)
             {
-                return StatusCode(500, new { message = "Đã xảy ra lỗi khi lấy danh sách món ăn tự tạo", error = ex.Message });
+                return Unauthorized(ErrorResponseHelper.SafeError("Token người dùng không hợp lệ", HttpContext));
+            }
+            catch (Exception)
+            {
+                return StatusCode(500, ErrorResponseHelper.SafeError("Đã xảy ra lỗi khi lấy danh sách món ăn tự tạo", HttpContext));
             }
         }
 
@@ -44,13 +49,17 @@ namespace EatFitAI.API.Controllers
                 var item = await _service.GetAsync(userId, id);
                 return Ok(item);
             }
-            catch (KeyNotFoundException ex)
+            catch (KeyNotFoundException)
             {
-                return NotFound(new { message = ex.Message });
+                return NotFound(ErrorResponseHelper.SafeError("Không tìm thấy món ăn tự tạo", HttpContext));
             }
-            catch (Exception ex)
+            catch (UnauthorizedAccessException)
             {
-                return StatusCode(500, new { message = "Đã xảy ra lỗi khi lấy món ăn tự tạo", error = ex.Message });
+                return Unauthorized(ErrorResponseHelper.SafeError("Token người dùng không hợp lệ", HttpContext));
+            }
+            catch (Exception)
+            {
+                return StatusCode(500, ErrorResponseHelper.SafeError("Đã xảy ra lỗi khi lấy món ăn tự tạo", HttpContext));
             }
         }
 
@@ -65,13 +74,17 @@ namespace EatFitAI.API.Controllers
                 var created = await _service.CreateAsync(userId, request, uploadsRoot);
                 return Ok(created);
             }
-            catch (ArgumentException ex)
+            catch (ArgumentException)
             {
-                return BadRequest(new { message = ex.Message });
+                return BadRequest(ErrorResponseHelper.SafeError("Dữ liệu món ăn không hợp lệ", HttpContext));
             }
-            catch (Exception ex)
+            catch (UnauthorizedAccessException)
             {
-                return StatusCode(500, new { message = "Đã xảy ra lỗi khi tạo món ăn tự tạo", error = ex.Message });
+                return Unauthorized(ErrorResponseHelper.SafeError("Token người dùng không hợp lệ", HttpContext));
+            }
+            catch (Exception)
+            {
+                return StatusCode(500, ErrorResponseHelper.SafeError("Đã xảy ra lỗi khi tạo món ăn tự tạo", HttpContext));
             }
         }
 
@@ -86,17 +99,21 @@ namespace EatFitAI.API.Controllers
                 var updated = await _service.UpdateAsync(userId, id, request, uploadsRoot);
                 return Ok(updated);
             }
-            catch (KeyNotFoundException ex)
+            catch (KeyNotFoundException)
             {
-                return NotFound(new { message = ex.Message });
+                return NotFound(ErrorResponseHelper.SafeError("Không tìm thấy món ăn tự tạo", HttpContext));
             }
-            catch (ArgumentException ex)
+            catch (ArgumentException)
             {
-                return BadRequest(new { message = ex.Message });
+                return BadRequest(ErrorResponseHelper.SafeError("Dữ liệu món ăn không hợp lệ", HttpContext));
             }
-            catch (Exception ex)
+            catch (UnauthorizedAccessException)
             {
-                return StatusCode(500, new { message = "Đã xảy ra lỗi khi cập nhật món ăn tự tạo", error = ex.Message });
+                return Unauthorized(ErrorResponseHelper.SafeError("Token người dùng không hợp lệ", HttpContext));
+            }
+            catch (Exception)
+            {
+                return StatusCode(500, ErrorResponseHelper.SafeError("Đã xảy ra lỗi khi cập nhật món ăn tự tạo", HttpContext));
             }
         }
 
@@ -109,13 +126,17 @@ namespace EatFitAI.API.Controllers
                 await _service.DeleteAsync(userId, id);
                 return NoContent();
             }
-            catch (KeyNotFoundException ex)
+            catch (KeyNotFoundException)
             {
-                return NotFound(new { message = ex.Message });
+                return NotFound(ErrorResponseHelper.SafeError("Không tìm thấy món ăn tự tạo", HttpContext));
             }
-            catch (Exception ex)
+            catch (UnauthorizedAccessException)
             {
-                return StatusCode(500, new { message = "Đã xảy ra lỗi khi xóa món ăn tự tạo", error = ex.Message });
+                return Unauthorized(ErrorResponseHelper.SafeError("Token người dùng không hợp lệ", HttpContext));
+            }
+            catch (Exception)
+            {
+                return StatusCode(500, ErrorResponseHelper.SafeError("Đã xảy ra lỗi khi xóa món ăn tự tạo", HttpContext));
             }
         }
 

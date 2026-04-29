@@ -2,6 +2,7 @@ import { AppState, AppStateStatus } from 'react-native';
 import { clearAccessTokenMem, setAccessTokenMem } from './authTokens';
 import { tokenStorage } from './secureStore';
 import { postRefreshToken } from './tokenService';
+import logger from '../utils/logger';
 
 // Silent refresh: schedule before access token expires; also trigger on foreground
 
@@ -44,13 +45,13 @@ const notifyAuthExpired = (): void => {
   }
 
   if (__DEV__) {
-    console.log('[EatFitAI] Triggering auth expired callback (auto-logout)...');
+    logger.info('[EatFitAI] Triggering auth expired callback (auto-logout)...');
   }
 
   try {
     onAuthExpiredCallback();
   } catch (callbackError) {
-    console.error('[EatFitAI] Auth expired callback error:', callbackError);
+    logger.error('[EatFitAI] Auth expired callback error:', callbackError);
   }
 };
 
@@ -58,7 +59,7 @@ const clearStoredAuthState = async (): Promise<void> => {
   try {
     await tokenStorage.clearAll();
   } catch (clearError) {
-    console.warn('[EatFitAI] Failed to clear stored auth state:', clearError);
+    logger.warn('[EatFitAI] Failed to clear stored auth state:', clearError);
   }
 
   clearAccessTokenMem();
@@ -89,7 +90,7 @@ const runSharedRefresh = async (): Promise<string> => {
     refreshPromise = (async () => {
       const refreshToken = await tokenStorage.getRefreshToken();
       if (__DEV__) {
-        console.log('[EatFitAI] Refresh attempt - has refresh token:', !!refreshToken);
+        logger.info('[EatFitAI] Refresh attempt - has refresh token:', !!refreshToken);
       }
 
       if (!refreshToken) {
@@ -102,7 +103,7 @@ const runSharedRefresh = async (): Promise<string> => {
 
       const data = await postRefreshToken(refreshToken);
       if (__DEV__) {
-        console.log('[EatFitAI] Refresh response received:', {
+        logger.info('[EatFitAI] Refresh response received:', {
           hasAccessToken: !!data.accessToken,
           hasRefreshToken: !!data.refreshToken,
           accessExp: data.accessTokenExpiresAt,
@@ -120,13 +121,13 @@ const runSharedRefresh = async (): Promise<string> => {
       }
 
       if (data.accessTokenExpiresAt && isNaN(Date.parse(data.accessTokenExpiresAt))) {
-        console.warn(
+        logger.warn(
           '[EatFitAI] Invalid access token expiration format:',
           data.accessTokenExpiresAt,
         );
       }
       if (data.refreshTokenExpiresAt && isNaN(Date.parse(data.refreshTokenExpiresAt))) {
-        console.warn(
+        logger.warn(
           '[EatFitAI] Định dạng thời hạn refresh token không hợp lệ:',
           data.refreshTokenExpiresAt,
         );
@@ -135,7 +136,7 @@ const runSharedRefresh = async (): Promise<string> => {
       try {
         await updateSessionFromAuthResponse(data);
       } catch (sessionError) {
-        console.warn(
+        logger.warn(
           '[EatFitAI] Refresh succeeded but session persistence failed; continuing with in-memory token.',
           sessionError,
         );
@@ -163,7 +164,7 @@ export const refreshAccessToken = async (): Promise<string> => {
     return await runSharedRefresh();
   } catch (err) {
     if (__DEV__) {
-      console.error('[EatFitAI] Refresh failed:', err);
+      logger.error('[EatFitAI] Refresh failed:', err);
     }
 
     await clearStoredAuthState();

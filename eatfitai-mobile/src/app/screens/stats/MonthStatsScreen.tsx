@@ -475,7 +475,7 @@ const MonthStatsScreen = (): React.ReactElement => {
             <AppCard>
               <SectionHeader title={'Tổng kết tháng'} />
               <View style={styles.summaryGrid}>
-                {/* Total Calories - Blue gradient */}
+                {/* Total Calories - Emerald gradient */}
                 <LinearGradient
                   colors={theme.statsCards.calories.gradient}
                   start={{ x: 0, y: 0 }}

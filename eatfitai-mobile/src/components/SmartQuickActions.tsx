@@ -98,13 +98,13 @@ const QuickActionButton = ({
                 ? theme.colors.primary
                 : // Solid colors để fix 2 màu trên Android
                   theme.mode === 'dark'
-                  ? '#1A2744'
-                  : '#EEF4FF',
+                  ? '#1A1F2F'
+                  : '#EEF8F0',
               borderColor: isPrimary
                 ? theme.colors.primary
                 : theme.mode === 'dark'
-                  ? '#2A3F68'
-                  : '#D0E4FF',
+                  ? '#3D4A3D'
+                  : '#BBF7D0',
               ...theme.shadows.sm,
             },
           ]}
@@ -208,8 +208,8 @@ const SmartQuickActions: React.FC<SmartQuickActionsProps> = ({
               styles.secondaryButton,
               {
                 // Solid colors để fix 2 màu trên Android
-                backgroundColor: theme.mode === 'dark' ? '#1A2744' : '#EEF4FF',
-                borderColor: theme.mode === 'dark' ? '#2A3F68' : '#D0E4FF',
+                backgroundColor: theme.mode === 'dark' ? '#1A1F2F' : '#EEF8F0',
+                borderColor: theme.mode === 'dark' ? '#3D4A3D' : '#BBF7D0',
               },
             ]}
             accessibilityRole="button"

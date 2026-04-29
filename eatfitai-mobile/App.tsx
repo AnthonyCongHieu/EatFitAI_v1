@@ -26,6 +26,7 @@ import { initAnalytics } from './src/services/analytics';
 import { initializeApiClient } from './src/services/apiClient';
 import { initErrorTracking } from './src/services/errorTracking';
 import { healthService } from './src/services/healthService';
+import { initializeNotifications } from './src/services/notificationService';
 import { ThemeProvider, useAppTheme } from './src/theme/ThemeProvider';
 
 const createQueryClient = () =>
@@ -82,6 +83,7 @@ const AppInner = () => {
     SystemUI.setBackgroundColorAsync(theme.colors.background).catch(() => {});
     initErrorTracking().catch(() => {});
     initAnalytics().catch(() => {});
+    initializeNotifications().catch(() => {});
   }, [theme.colors.background]);
 
   useEffect(() => {

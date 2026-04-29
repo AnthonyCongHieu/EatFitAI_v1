@@ -165,6 +165,7 @@ public partial class EatFitAIDbContext : DbContext
 
             entity.HasIndex(e => e.FoodName, "IX_FoodItem_Name").HasFilter("\"IsDeleted\" = false");
 
+            entity.Property(e => e.Barcode).HasMaxLength(64);
             entity.Property(e => e.CaloriesPer100g).HasColumnType("decimal(10, 2)");
             entity.Property(e => e.CarbPer100g).HasColumnType("decimal(10, 2)");
             entity.Property(e => e.CredibilityScore).HasDefaultValue(50);

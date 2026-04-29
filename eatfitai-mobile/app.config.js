@@ -80,7 +80,7 @@ module.exports = ({ config }) => {
     easBuildProfile ||
     (nodeEnv === 'production' ? 'production' : 'development');
   const explicitApiBaseUrl = readTrimmedEnv('EXPO_PUBLIC_API_BASE_URL');
-  const explicitSupabaseUrl = readTrimmedEnv('EXPO_PUBLIC_SUPABASE_URL');
+  const explicitMediaPublicBaseUrl = readTrimmedEnv('EXPO_PUBLIC_MEDIA_PUBLIC_BASE_URL');
   const fallbackApiPort = readTrimmedEnv('EXPO_PUBLIC_API_PORT') || '5247';
   const fallbackApiScheme = readTrimmedEnv('EXPO_PUBLIC_API_SCHEME') || 'http';
   const e2eAutomation = readTrimmedEnv('EXPO_PUBLIC_E2E_AUTOMATION') || '0';
@@ -88,7 +88,7 @@ module.exports = ({ config }) => {
 
   if (productionLike) {
     assertRequiredProductionEnv('EXPO_PUBLIC_API_BASE_URL', explicitApiBaseUrl);
-    assertRequiredProductionEnv('EXPO_PUBLIC_SUPABASE_URL', explicitSupabaseUrl);
+    assertRequiredProductionEnv('EXPO_PUBLIC_MEDIA_PUBLIC_BASE_URL', explicitMediaPublicBaseUrl);
     assertRequiredProductionEnv(
       'EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID',
       readTrimmedEnv('EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID'),
@@ -138,7 +138,7 @@ module.exports = ({ config }) => {
       apiPort: resolvedApiPort || undefined,
       apiScheme: resolvedApiScheme || undefined,
       apiBaseUrl: apiBaseUrl || undefined,
-      supabaseUrl: explicitSupabaseUrl || undefined,
+      mediaPublicBaseUrl: explicitMediaPublicBaseUrl || undefined,
       appEnv: appProfile,
       e2eAutomation,
     },

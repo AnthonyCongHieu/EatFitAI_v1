@@ -1,271 +1,237 @@
-# Kiểm thử và phát hành
+# Testing And Release
 
-Cập nhật: `2026-04-18`
+Cập nhật: `2026-04-24`
 
-## Tổng quan
+Tài liệu này là runbook hiện hành cho kiểm thử và phát hành EatFitAI. Android UI automation hiện dùng **ADB + UIAutomator best-effort + scrcpy**, không dùng framework helper APK.
 
-Tài liệu này gộp các quy trình kiểm thử và phát hành cho EatFitAI:
+## Gates Chính
 
-- Gate kiểm thử product-grade
-- Runbook vận hành thiết bị thật
-- Smoke production qua cloud
-- Maestro automation suites
+| Gate | Mục tiêu | Lệnh |
+|---|---|---|
+| Code | Backend, mobile, AI unit/static checks | `npm --prefix .\eatfitai-mobile run release:gate -- code` |
+| Android build | Build/install preview APK và probe máy thật | `npm --prefix .\eatfitai-mobile run release:gate -- android` |
+| Device evidence | Đọc evidence ADB mới nhất | `npm --prefix .\eatfitai-mobile run release:gate -- device` |
+| Cloud | Render verify, preflight, regression, metrics, rehearsal | `npm --prefix .\eatfitai-mobile run release:gate -- cloud` |
 
----
-
-## Gate kiểm thử
-
-### Gate 0 — Môi trường
+Full gate:
 
 ```powershell
-npm --prefix .\eatfitai-mobile install
-npm --prefix .\tools\appium install
-npm --prefix .\eatfitai-mobile run automation:doctor
+npm --prefix .\eatfitai-mobile run release:gate -- all
 ```
 
-Lưu ý:
-- Nếu app trên máy Android là build `DEBUGGABLE`, `automation:doctor` phải thấy Metro đang listen ở `http://127.0.0.1:8081`
-- Cho release gate Android, build phải là `release-like` không `DEBUGGABLE`
+## Android Real-Device Lane
 
-### Gate 1 — Code
+### Cài công cụ
+
+ADB đến từ Android SDK `platform-tools`. Cài `scrcpy` để quan sát và điều khiển live:
 
 ```powershell
-dotnet test .\EatFitAI_v1.sln
-npm --prefix .\eatfitai-mobile run typecheck
-npm --prefix .\eatfitai-mobile run lint
-npm --prefix .\eatfitai-mobile run guard:no-direct-ai-provider
+winget install --id Genymobile.scrcpy -e
 ```
 
-### Gate 2 — Android automation
+Real-device lane luôn yêu cầu pin serial rõ ràng:
 
 ```powershell
-npm --prefix .\eatfitai-mobile run build:android:preview
-npm --prefix .\eatfitai-mobile run install:android:preview
-npm --prefix .\eatfitai-mobile run maestro:smoke:android
-npm --prefix .\eatfitai-mobile run maestro:regression:android
-npm --prefix .\eatfitai-mobile run maestro:hero:android
-npm --prefix .\eatfitai-mobile run appium:smoke
-npm --prefix .\tools\appium run cloud-proof:android
+$env:ANDROID_SERIAL="a12c6888629b"
+$env:EATFITAI_ANDROID_TARGET="real-device"
 ```
 
-### Gate 3 — Chứng nhận thiết bị thật
+Với Xiaomi/MIUI, bật trên điện thoại:
 
-Evidence bundle trong `_logs/production-smoke/<timestamp>` phải có:
+- Developer options
+- USB debugging
+- USB debugging (Security settings)
+- Install via USB nếu cần cài APK
 
-- `preflight-results.json`
-- `request-budget.json`
-- `session-observations.json`
-- `regression-run.json`
-- `metrics-baseline.json`
-- Screenshot và logcat theo checklist
+### Doctor
 
-Điều kiện pass tối thiểu trong `session-observations.json`:
+```powershell
+npm --prefix .\eatfitai-mobile run device:doctor:android
+```
 
-- `reopenHome.passed = true`
-- `scanToSave.passed = true`
-- `scanToSave.diaryReadbackPassed = true`
-- `nutritionApply.passed = true`
-- `stability.crashObserved = false`
-- `stability.freezeObserved = false`
+Doctor kiểm tra:
 
-### Gate 4 — Cloud
+- `adb` và thiết bị online
+- app `com.eatfitai.app` đã cài
+- `scrcpy`
+- `screencap`
+- `screenrecord`
+- UIAutomator dump best-effort
+- cảnh báo MIUI/device policy
+
+UIAutomator dump có thể báo `could not get idle state` trên một số ROM. Đây là warning, không tự động kết luận app fail.
+
+Nếu `ANDROID_SERIAL` hoặc `EATFITAI_ANDROID_TARGET=real-device` chưa được set, real-device lane sẽ dừng sớm để tránh chạy nhầm emulator hoặc thiết bị khác.
+
+### Quan sát live bằng scrcpy
+
+```powershell
+npm --prefix .\eatfitai-mobile run device:scrcpy:android
+```
+
+Lệnh này wake/unlock, launch app mặc định, rồi mở cửa sổ scrcpy theo serial đang chọn.
+
+### Probe không phá dữ liệu
+
+```powershell
+npm --prefix .\eatfitai-mobile run device:probe:android
+```
+
+Probe thực hiện:
+
+- clear logcat
+- wake/unlock
+- force-stop app
+- launch app bằng `monkey`
+- chụp `01-launch.png`
+- thử dump `ui.xml`
+- lưu `crash-logcat.txt`
+- lưu `tail-logcat.txt`
+- ghi `report.json`
+
+### Auth-entry flow nhỏ
+
+```powershell
+npm --prefix .\eatfitai-mobile run device:auth-entry:android
+```
+
+Flow này chỉ kiểm tra khả năng tap/type vào màn login:
+
+- launch app
+- tap ô email
+- nhập `EATFITAI_DEVICE_PROBE_EMAIL` hoặc mặc định `probe@demo.com`
+- tap ô password
+- nhập `EATFITAI_DEVICE_PROBE_PASSWORD` hoặc mặc định `Probe12345`
+- hide keyboard
+- tap `Đăng nhập`
+- chụp screenshot sau từng bước
+
+ADB text đi qua bàn phím Android thật. Nếu bàn phím đang ở tiếng Việt/Telex, một số chuỗi có thể bị rewrite. Vì vậy flow luôn lưu screenshot để xác minh text thực tế.
+
+### RC proof trên giao diện thật
+
+```powershell
+npm --prefix .\eatfitai-mobile run device:rc-proof:android
+```
+
+RC proof chạy lần lượt các mode bắt buộc:
+
+- `login-real`
+- `home-smoke`
+- `full-tab-ui-smoke`
+- `food-diary-readback`
+- `food-search-ui-readback`
+- `scan-save-readback`
+- `voice-text-readback`
+- `stats-profile-smoke`
+- `backend-frontend-live-check`
+
+Các lệnh riêng tương ứng với từng mode trong `device:rc-proof`:
+
+```powershell
+npm --prefix .\eatfitai-mobile run device:login-real:android
+npm --prefix .\eatfitai-mobile run device:home-smoke:android
+npm --prefix .\eatfitai-mobile run device:full-tab-ui-smoke:android
+npm --prefix .\eatfitai-mobile run device:food-diary-readback:android
+npm --prefix .\eatfitai-mobile run device:food-search-ui-readback:android
+npm --prefix .\eatfitai-mobile run device:scan-save-readback:android
+npm --prefix .\eatfitai-mobile run device:voice-text-readback:android
+npm --prefix .\eatfitai-mobile run device:stats-profile-smoke:android
+npm --prefix .\eatfitai-mobile run device:backend-frontend-live-check:android
+```
+
+Có thể chạy riêng các mode mới khi debug:
+
+```powershell
+npm --prefix .\eatfitai-mobile run device:full-tab-ui-smoke:android
+npm --prefix .\eatfitai-mobile run device:food-search-ui-readback:android
+npm --prefix .\eatfitai-mobile run device:backend-frontend-live-check:android
+```
+
+Vòng debug nhanh trên thiết bị flaky không nên chờ UIAutomator quá lâu:
+
+```powershell
+$env:EATFITAI_DEVICE_FAST_ADB="1"
+$env:EATFITAI_DEVICE_SKIP_UI_DUMP="1"
+$env:EATFITAI_DEVICE_WAIT_CAP_MS="1800"
+$env:EATFITAI_DEVICE_ADB_TIMEOUT_CAP_MS="6000"
+$env:EATFITAI_DEVICE_API_TIMEOUT_MS="15000"
+npm --prefix .\eatfitai-mobile run device:food-search-ui-readback:android
+```
+
+Fast mode bỏ qua perf snapshot và dùng screenshot + foreground làm evidence degraded; RC proof cuối cùng vẫn nên chạy không bật `EATFITAI_DEVICE_FAST_ADB` để lấy đủ `gfxinfo`, `framestats`, và `meminfo`.
+
+Các mode readback bắt buộc phải chứng minh được đăng nhập, Home marker, không có crash logcat, và API readback mandatory thành công. `backend-frontend-live-check` ghi thêm checkpoint theo từng màn hình gồm timestamp, screenshot, UI dump, logcat tail, API latency/readback, cùng snapshot `gfxinfo`, `framestats`, và `meminfo`.
+
+## Evidence
+
+Evidence mới nằm ở:
+
+```text
+_logs/real-device-adb/<timestamp>-<mode>/
+```
+
+Các file quan trọng:
+
+- `report.json`
+- `01-launch.png`
+- `02-email.png`
+- `03-password.png`
+- `04-after-login-tap.png`
+- `crash-logcat.txt`
+- `tail-logcat.txt`
+- `ui.xml` hoặc warning trong `report.json`
+- `screenrecord.mp4` nếu chạy helper với `--record`
+- `startup-am-start-w.txt`, `*-gfxinfo.txt`, `*-gfxinfo-framestats.txt`, `*-meminfo.txt` khi mode có performance evidence
+
+`_logs/` là generated evidence và không commit.
+
+## Production Smoke API
+
+Cloud/API smoke không phụ thuộc Android UI framework.
+
+Runbook RC cloud đã khóa nằm ở [27_RC_CLOUD_RUNBOOK_2026-04-26.md](27_RC_CLOUD_RUNBOOK_2026-04-26.md). Khi cần chốt RC sau deploy, ưu tiên runbook đó vì nó bao gồm cả deploy backend + AI provider, Render verify, warm-up AI provider, và thứ tự smoke tuần tự.
 
 ```powershell
 npm --prefix .\eatfitai-mobile run smoke:render:verify
 npm --prefix .\eatfitai-mobile run smoke:preflight
-npm --prefix .\eatfitai-mobile run smoke:regression
-npm --prefix .\eatfitai-mobile run smoke:metrics
-npm --prefix .\eatfitai-mobile run smoke:rehearsal
+npm --prefix .\eatfitai-mobile run smoke:auth:api
+npm --prefix .\eatfitai-mobile run smoke:user:api
+npm --prefix .\eatfitai-mobile run smoke:ai:api
 ```
 
-Một lệnh gộp gate:
+Fixture ảnh dùng cho AI smoke nằm ở:
 
-```powershell
-npm --prefix .\eatfitai-mobile run release:gate
+```text
+tools/fixtures/scan-demo
 ```
 
-Hoặc chạy từng gate:
+Nếu cần override manifest:
 
-```powershell
-node .\eatfitai-mobile\scripts\product-release-gate.js environment
-node .\eatfitai-mobile\scripts\product-release-gate.js code
-node .\eatfitai-mobile\scripts\product-release-gate.js android
-node .\eatfitai-mobile\scripts\product-release-gate.js device
-node .\eatfitai-mobile\scripts\product-release-gate.js cloud
+```json
+{
+  "fixtureRootHint": "tools/fixtures/scan-demo"
+}
 ```
 
----
+## Validation Log
 
-## Maestro Suites
+### 2026-04-26 Function/AI improvement validation
 
-| Suite | Lệnh | Ghi chú |
-|---|---|---|
-| Tổng hợp | `maestro:hero:android` | Chạy tất cả |
-| Auth đầy đủ | `maestro:auth-full:android` | Clear app data trước |
-| Onboarding | `maestro:onboarding:android` | Clear app data trước |
-| Nhật ký thủ công | `maestro:manual-diary:android` | Dùng lane authenticated |
-| AI scan lưu | `maestro:ai-scan-save:android` | Contract lane cho màn scan entry |
-| Dinh dưỡng | `maestro:nutrition:android` | Dùng lane authenticated |
-| Voice text | `maestro:voice-text:android` | Dùng lane authenticated |
-| Profile & Stats | `maestro:profile-stats:android` | Dùng lane authenticated |
+- Mobile focused Jest batch: PASS, 13 suites / 83 tests.
+- Mobile typecheck: PASS.
+- Mobile lint and no-direct-AI-provider guard: PASS.
+- Backend targeted AI/voice/diary/auth/analytics batch: PASS, 61 tests.
+- Mojibake guard: PASS.
+- Secret tracking guard: PASS.
+- Primary-path readiness unit gate: PASS via `primaryPathReadiness.test.js` and `backendNonUiSummary.test.js`.
+- Cloud primary-path smoke and real-device RC proof: not run in this local validation pass because they require live smoke credentials, deployed services, and/or a connected Android device. Release readiness must still require those reports to show `primaryPath.passed === true`; fallback/offline/local evidence is not accepted as pass.
 
-Lưu ý:
-- Với máy Android thật, phải mở khóa máy và bật tùy chọn developer cho phép cài helper APK qua USB/ADB
-- Build debug + Metro chỉ để debug, không đủ điều kiện pass release gate Android
+## Debug Khi Fail
 
----
-
-## Runbook thiết bị thật
-
-### Chuẩn bị
-
-1. Cắm thiết bị Android thật qua USB
-2. Bật `USB debugging`
-3. Đảm bảo máy tính và điện thoại cùng LAN nếu dùng Metro qua `--host lan`
-4. Dùng Node `20.x`
-
-Kiểm tra:
-
-```powershell
-adb devices -l
-```
-
-### Khởi động backend local
-
-Backend auth flow không cần AI provider để test login/forgot/reset.
-
-```powershell
-Invoke-WebRequest http://127.0.0.1:5247/health -UseBasicParsing
-```
-
-### Khởi động Metro cho thiết bị thật
-
-```powershell
-cd .\eatfitai-mobile
-npm run dev:device -- --clear --port 8081
-```
-
-Reverse cổng:
-
-```powershell
-adb reverse tcp:8081 tcp:8081
-```
-
-### Khởi chạy app
-
-```powershell
-adb shell am start -S -W -n com.eatfitai.app/.MainActivity
-```
-
-### Quy tắc bắt buộc sau mỗi lần restart
-
-1. Cold-launch app
-2. Kiểm tra state ngay sau restart
-3. Nếu thấy warning `Open debugger to view warnings.` → bấm `x` trước
-4. Chỉ sau khi warning biến mất mới tiếp tục vào intro/welcome/login
-
-### Nguyên tắc debug UI
-
-1. Ưu tiên Appium `getPageSource()` + screenshot
-2. Không tin `adb uiautomator dump` trên máy Xiaomi/MIUI
-3. Nếu cần attach vào app đang mở, dùng WebdriverIO `remote()` với `appium:autoLaunch=false` và `appium:noReset=true`
-4. Nếu `UiAutomator2` crash → dùng `adb logcat -d` và `adb shell dumpsys` để xác nhận flow thực tế
-
----
-
-## Smoke Production qua Cloud
-
-### Quy tắc chạy
-
-1. Không sửa `.env.development` để đổi lane mặc định
-2. Chỉ dùng lane riêng `start-mobile-cloud-smoke.ps1` cho smoke production
-3. Mỗi run chỉ dùng 1 account disposable mới tạo
-
-### Khởi chạy session
-
-```powershell
-powershell -ExecutionPolicy Bypass -File .\start-mobile-cloud-smoke.ps1
-```
-
-### Health contract chính thức
-
-- Backend: `GET /health/live = 200`, `GET /health/ready = 200`
-- AI provider: `GET /healthz = 200`
-
-### Request budget mặc định
-
-| Endpoint | Giới hạn |
-|---|---:|
-| Health mỗi endpoint | 2 |
-| Register with verification | 1 |
-| Resend verification | 1 |
-| Verify email | 2 |
-| Login | 1 |
-| Refresh | 1 |
-| AI status | 1 |
-| Vision detect | 8 |
-| Meal diary write | 3 |
-
-### Điều kiện pass tối thiểu
-
-- Health công khai đều `200`
-- Register không treo
-- Temp-Mail nhận được mã trong cửa sổ chờ
-- Verify thành công và vào onboarding
-- Onboarding ra `result card`
-- Mở lại app vào thẳng `home-screen`
-- Login và refresh thành công
-- Ít nhất 1 primary fixture đi trọn `gallery → result → AddMealFromVision → diary`
-
-### Điều kiện fail ngay
-
-- Register treo quá lâu
-- Mail không tới sau khi hết cửa sổ chờ và đã resend đúng quy trình
-- Onboarding chỉ ra `error card`
-- AI scan treo, rơi khỏi flow, hoặc báo network fail rõ ràng
-- Vượt budget request
-
----
-
-## Secret contract
-
-Bắt buộc:
-
-- `RENDER_API_KEY`
-- `EATFITAI_DEMO_EMAIL` / `EATFITAI_DEMO_PASSWORD`
-- `EATFITAI_SMOKE_EMAIL` / `EATFITAI_SMOKE_PASSWORD`
-
-Quy ước:
-
-- `RENDER_API_KEY` đọc từ shell env hoặc Windows user env
-- Không ghi key vào repo, `.env` tracked, markdown, JSON hay screenshot
-
----
-
-## Trạng thái cloud hiện tại
-
-- `eatfitai-backend`: service id `srv-d7arf2svjg8s73em138g`, branch `hieu_deploy/production`, auto deploy `yes`
-- `eatfitai-ai-provider`: service id `srv-d7arf2kvjg8s73em1360`, branch `hieu_deploy/production`, auto deploy `yes`
-
-Push branch `hieu_deploy/production` lên `origin` sẽ tự động rollout cloud cho cả 2 service.
-
----
-
-## Thứ tự release khuyến nghị
-
-1. Chạy Gate 0 và Gate 1
-2. Chạy Gate 2 trên Android automation
-3. Chạy lane real-device và cập nhật evidence bundle
-4. Chạy Gate 4 sau khi Render rollout xong
-5. Chỉ coi lane ổn định khi `smoke:rehearsal` xác nhận 3 session gần nhất đều pass
-
----
-
-## Voice: nguồn sự thật
-
-Từ ngày `2026-04-16`, lane test và release gate phải bám code hiện tại:
-
-- mobile → backend `/api/voice/transcribe`
-- mobile → backend `/api/voice/parse`
-
-Không test theo tài liệu cũ mô tả mobile gọi trực tiếp AI provider cho voice parse/transcribe.
+1. Mở scrcpy để nhìn màn hình thật.
+2. Chạy `device:probe:android` để lấy baseline screenshot/logcat.
+3. Nếu UI tree fail, đọc screenshot trước; không coi UIAutomator warning là app crash.
+4. Nếu text nhập sai, đổi keyboard sang English hoặc bật `EATFITAI_DEVICE_TAP_KEYBOARD_GLOBE=1` trước `login-real`; runner cũng dùng `CTRL+A` + delete để tránh append text cũ.
+5. Nếu app không launch, kiểm tra `adb shell cmd package resolve-activity --brief com.eatfitai.app`.
+6. Nếu logcat crash trống nhưng UI sai, lưu screenshot và note trạng thái trong release evidence.

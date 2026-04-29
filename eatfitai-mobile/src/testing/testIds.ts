@@ -17,6 +17,7 @@ export const TEST_IDS = {
     emailInput: 'auth-login-email-input',
     passwordInput: 'auth-login-password-input',
     submitButton: 'auth-login-submit-button',
+    registerLink: 'auth-login-register-link',
     forgotPasswordButton: 'auth-login-forgot-password-button',
     googleButton: 'auth-login-google-button',
     forgotPasswordScreen: 'auth-forgot-password-screen',
@@ -113,6 +114,8 @@ export const TEST_IDS = {
     todayTabButton: 'stats-today-tab-button',
     weekTabButton: 'stats-week-tab-button',
     monthTabButton: 'stats-month-tab-button',
+    weeklyReviewCard: 'stats-weekly-review-card',
+    weeklyReviewDoneButton: 'stats-weekly-review-done-button',
   },
   profile: {
     screen: 'profile-screen',

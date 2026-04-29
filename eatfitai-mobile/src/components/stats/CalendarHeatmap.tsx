@@ -74,7 +74,7 @@ export const CalendarHeatmap: React.FC<CalendarHeatmapProps> = ({
   const getHeatColor = (calories: number) => {
     if (calories === 0) {
       // Solid colors để fix 2 màu trên Android
-      return isDark ? '#1E3050' : '#F5F5F5';
+      return isDark ? theme.colors.glass.backgroundAlt : '#F5F5F5';
     }
     const intensity = Math.min(calories / maxCalories, 1);
     if (intensity < 0.25) return theme.colors.success + '30';
@@ -124,7 +124,7 @@ export const CalendarHeatmap: React.FC<CalendarHeatmapProps> = ({
       paddingTop: theme.spacing.md,
       borderTopWidth: 1,
       // Solid colors để fix 2 màu trên Android
-      borderTopColor: isDark ? '#2A3F68' : '#E0E0E0',
+      borderTopColor: isDark ? '#3D4A3D' : '#E0E0E0',
     },
     legendItem: {
       flexDirection: 'row',
@@ -201,7 +201,7 @@ export const CalendarHeatmap: React.FC<CalendarHeatmapProps> = ({
           <View
             style={[
               styles.legendDot,
-              { backgroundColor: isDark ? '#1E3050' : '#E0E0E0' },
+              { backgroundColor: isDark ? theme.colors.glass.backgroundAlt : '#E0E0E0' },
             ]}
           />
           <ThemedText variant="caption" color="textSecondary">

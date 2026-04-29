@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { View, StyleSheet, Pressable, ActivityIndicator } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -12,6 +12,8 @@ import { AnimatedEmptyState } from '../../../components/ui/AnimatedEmptyState';
 import SubScreenLayout from '../../../components/ui/SubScreenLayout';
 import { EN, enStyles } from '../../../theme/emeraldNebula';
 import { aiService, isAiOfflineError } from '../../../services/aiService';
+import { useAiStatus } from '../../../hooks/useAiStatus';
+import { getAiFeatureAvailability } from '../../../utils/aiAvailability';
 import type { RootStackParamList } from '../../types';
 import type {
   NutritionInsight,
@@ -93,10 +95,8 @@ const NutritionInsightsScreen = (): React.ReactElement => {
   const [applying, setApplying] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [aiOffline, setAiOffline] = useState(false);
-
-  useEffect(() => {
-    void loadData();
-  }, []);
+  const { data: aiStatus, isLoading: isAiStatusLoading } = useAiStatus();
+  const nutritionAvailability = getAiFeatureAvailability(aiStatus, 'nutrition');
 
   const formatTargetMetric = (value: number | null | undefined): string =>
     typeof value === 'number' && Number.isFinite(value) && value > 0
@@ -122,11 +122,25 @@ const NutritionInsightsScreen = (): React.ReactElement => {
       target.targetFat > 0,
     );
 
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
+    if (isAiStatusLoading && !aiStatus) {
+      setLoading(true);
+      return;
+    }
+
     setLoading(true);
     setError(null);
     setNotice(null);
     setAiOffline(false);
+
+    if (!nutritionAvailability.canUseAi) {
+      setInsights(null);
+      setAdaptiveTarget(null);
+      setAiOffline(true);
+      setError(nutritionAvailability.title);
+      setLoading(false);
+      return;
+    }
 
     try {
       const [insightsResult, adaptiveResult] = await Promise.allSettled([
@@ -179,7 +193,16 @@ const NutritionInsightsScreen = (): React.ReactElement => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [
+    aiStatus,
+    isAiStatusLoading,
+    nutritionAvailability.canUseAi,
+    nutritionAvailability.title,
+  ]);
+
+  useEffect(() => {
+    void loadData();
+  }, [loadData]);
 
   const applyAdaptiveTarget = async () => {
     if (!adaptiveTarget || !hasCompleteTarget(adaptiveTarget.suggestedTarget)) return;
@@ -259,8 +282,11 @@ const NutritionInsightsScreen = (): React.ReactElement => {
           ) : aiOffline ? (
             <AnimatedEmptyState
               variant="offline"
-              title="AI tạm offline"
-              description="Ứng dụng vẫn an toàn và bạn có thể thử lại sau. Các tính năng có AI sẽ quay lại khi backend AI sẵn sàng."
+              title={error}
+              description={
+                nutritionAvailability.message ??
+                'Các phân tích AI sẽ quay lại khi backend AI sẵn sàng.'
+              }
               primaryAction={{
                 label: t('nutrition_insights.retry'),
                 onPress: loadData,

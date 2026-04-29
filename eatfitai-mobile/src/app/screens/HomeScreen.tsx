@@ -12,18 +12,12 @@ import {
 } from 'react-native';
 import Animated, {
   FadeInUp,
-  FadeIn,
   useSharedValue,
-  useAnimatedStyle,
   withTiming,
-  withRepeat,
-  withSequence,
-  Easing,
 } from 'react-native-reanimated';
 import Toast from 'react-native-toast-message';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Svg, { Circle, Defs, LinearGradient as SvgGradient, Stop, Path } from 'react-native-svg';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -41,7 +35,6 @@ import { handleApiErrorWithCustomMessage } from '../../utils/errorHandler';
 import { useGamificationStore } from '../../store/useGamificationStore';
 import { HomeSkeleton } from '../../components/skeletons/HomeSkeleton';
 import { WelcomeHeader } from '../../components/home/WelcomeHeader';
-import { useSmartContext } from '../../hooks/useSmartContext';
 import Tilt3DCard from '../../components/ui/Tilt3DCard';
 import * as Haptics from 'expo-haptics';
 import { TEST_IDS } from '../../testing/testIds';
@@ -212,7 +205,7 @@ const weekStyles = StyleSheet.create({
 });
 
 const WaterGlassIcon = ({ isPlus }: { isPlus: boolean }) => {
-  const color = isPlus ? '#3b82f6' : '#64748b';
+  const color = isPlus ? '#22c55e' : '#64748b';
   const liquidOpacity = isPlus ? 0.9 : 0.4;
   return (
     <View style={{ width: 22, height: 26, alignItems: 'center', justifyContent: 'center' }}>
@@ -247,24 +240,22 @@ const HomeScreen = (): React.ReactElement => {
   const [selectedDate, setSelectedDate] = useState(new Date());
 
   // Water intake state
-  const { data: waterData, refetch: refetchWater } = useQuery<WaterIntakeData>({
+  const { data: waterData } = useQuery<WaterIntakeData>({
     queryKey: ['water-intake-today'],
     queryFn: () => waterService.getWaterIntake(new Date()),
-    staleTime: 30000,
+    staleTime: 2 * 60 * 1000, // 2 phút — water data chỉ thay đổi khi user bấm (đã có optimistic update)
   });
   const waterAmount = waterData?.amountMl ?? 0;
-  const waterTarget = waterData?.targetMl ?? 2000;
-  const waterProgress = Math.min(1, waterAmount / Math.max(waterTarget, 1));
 
   const handleAddWater = useCallback(async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    
+
     // Optimistic Update
     const prevData = queryClient.getQueryData<WaterIntakeData>(['water-intake-today']);
     queryClient.setQueryData<WaterIntakeData>(['water-intake-today'], (old) => ({
       amountMl: (old?.amountMl ?? 0) + 200,
       targetMl: old?.targetMl ?? 2000,
-      date: old?.date ?? new Date().toISOString().split('T')[0]!
+      date: old?.date ?? new Date().toISOString().split('T')[0]!,
     }));
 
     try {
@@ -275,18 +266,18 @@ const HomeScreen = (): React.ReactElement => {
       }
       Toast.show({ type: 'error', text1: 'Lỗi', text2: 'Không thể cập nhật lượng nước' });
     }
-  }, [queryClient, refetchWater]);
+  }, [queryClient]);
 
   const handleSubtractWater = useCallback(async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    
+
     // Optimistic Update
     const prevData = queryClient.getQueryData<WaterIntakeData>(['water-intake-today']);
     const newAmount = Math.max(0, (prevData?.amountMl ?? 0) - 200);
     queryClient.setQueryData<WaterIntakeData>(['water-intake-today'], (old) => ({
       amountMl: newAmount,
       targetMl: old?.targetMl ?? 2000,
-      date: old?.date ?? new Date().toISOString().split('T')[0]!
+      date: old?.date ?? new Date().toISOString().split('T')[0]!,
     }));
 
     try {
@@ -297,11 +288,8 @@ const HomeScreen = (): React.ReactElement => {
       }
       Toast.show({ type: 'error', text1: 'Lỗi', text2: 'Không thể cập nhật lượng nước' });
     }
-  }, [queryClient, refetchWater]);
-  const { currentStreak, longestStreak, weeklyLogs, checkStreak, fetchWeeklyLogs } =
-    useGamificationStore();
-
-  const smartContext = useSmartContext(summary);
+  }, [queryClient]);
+  const { currentStreak, checkStreak, fetchWeeklyLogs } = useGamificationStore();
 
   useEffect(() => {
     checkStreak();
@@ -657,7 +645,6 @@ const HomeScreen = (): React.ReactElement => {
             ) : todayEntries.length > 0 ? (
               <View style={{ gap: 0 }}>
                 {todayEntries.map((entry, index) => {
-                  const mealLabel = getMealLabelFromEntry(entry);
                   const emoji = getFoodEmoji(entry.foodName);
                   const isLast = index === todayEntries.length - 1;
 
@@ -756,7 +743,7 @@ const HomeScreen = (): React.ReactElement => {
           <View style={styles.waterCard}>
             {/* Left: icon + label + value */}
             <View style={styles.waterLeft}>
-              <Ionicons name="water" size={28} color="#3b82f6" />
+              <Ionicons name="water" size={28} color="#22c55e" />
               <View style={styles.waterLabelWrap}>
                 <ThemedText style={styles.waterTitle}>Uống nước</ThemedText>
                 <ThemedText style={styles.waterValue}>{waterAmount} ml</ThemedText>

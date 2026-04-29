@@ -4,20 +4,16 @@ import {
   StyleSheet,
   TouchableOpacity,
   ScrollView,
-  RefreshControl,
   TextInput,
   Image,
 } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
-import Animated, { FadeInDown, Layout, FadeOut } from 'react-native-reanimated';
+import Animated, { FadeInDown, FadeOut } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import Screen from '../../../components/Screen';
 import { ThemedText } from '../../../components/ThemedText';
-import { useAppTheme } from '../../../theme/ThemeProvider';
 import { aiService } from '../../../services/aiService';
 import type { RootStackParamList } from '../../types';
 import type { RecipeSuggestion } from '../../../types/aiEnhanced';
@@ -53,10 +49,10 @@ const P = {
 };
 
 const DUMMY_IMAGES = [
-  "https://lh3.googleusercontent.com/aida-public/AB6AXuDkPxIplDyeONp_vJiPgRP9EW8RoZM3JbhwNM_m-RuN4-VbxdI0wZ7GSo-ZaJC1FiQg0qZAaXoa5bDcNN7yFtfjv0COjoDcA7mV2jJxznij2k8eFuar5HgcugqzCUrUw0DDBN7LHa9PV9WHN7XtXYo16jZpLXq9Yp41P2LoigkRXdviz1dDzRD2ciDCo4kb5d4PxtXlFpLSu6Y9EKlH2nf8ZdRPtV-KBl_Me3V7z0vo6v7Z5kAb8pgQgPy-GW_HNrY3GrbxpKaVAVQ",
-  "https://lh3.googleusercontent.com/aida-public/AB6AXuAukILvQNoq71Oq5m173g7C5FBqvtI4EI6F99iYC5D_rxoimx2XLrR-naIwXyc7HU8gwk-lW_RVQcIEB03s0vU-6VN6qLrt3B-sLVM9or1_aHo3vcxXoSLiqM0NHbSpz6x3eqN7hHGNs2ZFFFSYbiuN8OylajF-6_keIerdbIye7Vf49E4WK21rRkzottpDUNOK4OsMS-N1F4XIFvx47oE4MqL-Xn7WTjv7kS4kjZ6I5wFX7BsoKhsLRtaxWz94VwNMuvw6mIAN064",
-  "https://lh3.googleusercontent.com/aida-public/AB6AXuB3hPK0Hob1eHqbdkBE-ckh0GdR84ek_HNKh1Pl0wKDWHrNshSGfOc6lB38EvpD-FKGK5hvdJWtDO5M7M9s377sx1bEQvuYk24Cv3B52ogRpHPnUMr4--h6JirsfpGJB-PZ8nhx5GTmqj_i7w0VYkHnx5w62gFzhdm3luXM8T2MA6UB_HFl4waKj-sxAaGpX6-Y1xtgGVDcgUTdiFsGivqmp7P69DgEEx75Z1ZSRAzQTX-J4X06yyLd7xANQjxxTLuoNyF5FASMXWg",
-  "https://lh3.googleusercontent.com/aida-public/AB6AXuC1oYs0RykK8I-wEhX1LQnzONtN6EiE1cvMhm5W145lb1jvI8giPgzWHB5khpzmBAqWhHynXB_wBGubDuPqE_Kr46LYUwkaTQfvxBRTMH_1wHv0IdVwIKkQNfrOAB6FMWNXTbPwxrVRMBi2Tl8-BWHpqVI9P39HwRi3PxbmCK5XetFuYsNdcyMe4P-hbbISlEt7vi08RVlOKucOPh4OY4bPfosnfjMju8Qt4jKXoWLgB3cyqT9JbGN0LCSMJcL2xIgewveqIIhDyLw"
+  'https://lh3.googleusercontent.com/aida-public/AB6AXuDkPxIplDyeONp_vJiPgRP9EW8RoZM3JbhwNM_m-RuN4-VbxdI0wZ7GSo-ZaJC1FiQg0qZAaXoa5bDcNN7yFtfjv0COjoDcA7mV2jJxznij2k8eFuar5HgcugqzCUrUw0DDBN7LHa9PV9WHN7XtXYo16jZpLXq9Yp41P2LoigkRXdviz1dDzRD2ciDCo4kb5d4PxtXlFpLSu6Y9EKlH2nf8ZdRPtV-KBl_Me3V7z0vo6v7Z5kAb8pgQgPy-GW_HNrY3GrbxpKaVAVQ',
+  'https://lh3.googleusercontent.com/aida-public/AB6AXuAukILvQNoq71Oq5m173g7C5FBqvtI4EI6F99iYC5D_rxoimx2XLrR-naIwXyc7HU8gwk-lW_RVQcIEB03s0vU-6VN6qLrt3B-sLVM9or1_aHo3vcxXoSLiqM0NHbSpz6x3eqN7hHGNs2ZFFFSYbiuN8OylajF-6_keIerdbIye7Vf49E4WK21rRkzottpDUNOK4OsMS-N1F4XIFvx47oE4MqL-Xn7WTjv7kS4kjZ6I5wFX7BsoKhsLRtaxWz94VwNMuvw6mIAN064',
+  'https://lh3.googleusercontent.com/aida-public/AB6AXuB3hPK0Hob1eHqbdkBE-ckh0GdR84ek_HNKh1Pl0wKDWHrNshSGfOc6lB38EvpD-FKGK5hvdJWtDO5M7M9s377sx1bEQvuYk24Cv3B52ogRpHPnUMr4--h6JirsfpGJB-PZ8nhx5GTmqj_i7w0VYkHnx5w62gFzhdm3luXM8T2MA6UB_HFl4waKj-sxAaGpX6-Y1xtgGVDcgUTdiFsGivqmp7P69DgEEx75Z1ZSRAzQTX-J4X06yyLd7xANQjxxTLuoNyF5FASMXWg',
+  'https://lh3.googleusercontent.com/aida-public/AB6AXuC1oYs0RykK8I-wEhX1LQnzONtN6EiE1cvMhm5W145lb1jvI8giPgzWHB5khpzmBAqWhHynXB_wBGubDuPqE_Kr46LYUwkaTQfvxBRTMH_1wHv0IdVwIKkQNfrOAB6FMWNXTbPwxrVRMBi2Tl8-BWHpqVI9P39HwRi3PxbmCK5XetFuYsNdcyMe4P-hbbISlEt7vi08RVlOKucOPh4OY4bPfosnfjMju8Qt4jKXoWLgB3cyqT9JbGN0LCSMJcL2xIgewveqIIhDyLw',
 ];
 
 const RecipeSuggestionsScreen = (): React.ReactElement => {
@@ -71,6 +67,7 @@ const RecipeSuggestionsScreen = (): React.ReactElement => {
   );
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const featuredRecipe = recipes[0] ?? null;
 
   async function searchRecipes(overrideIngredients?: string[]) {
     const ingredientsToUse = overrideIngredients ?? ingredients;
@@ -234,7 +231,7 @@ const RecipeSuggestionsScreen = (): React.ReactElement => {
             </View>
           ) : (
             <>
-              {/* Featured AI Card (Index 0) */}
+              {featuredRecipe && (
               <Animated.View entering={FadeInDown.springify()} style={S.featuredCard}>
                 <View style={S.featuredContent}>
                   {/* Left Side / Top - Image Space */}
@@ -248,7 +245,7 @@ const RecipeSuggestionsScreen = (): React.ReactElement => {
                       <ThemedText style={S.aiBadgeText}>AI RECOMMENDED FOR YOU</ThemedText>
                     </View>
                     <ThemedText style={S.featuredTitle} numberOfLines={2}>
-                      {recipes[0]?.recipeName}
+                      {featuredRecipe.recipeName}
                     </ThemedText>
                     <View style={S.tagsRow}>
                       <View style={S.tagSubBadge}>
@@ -265,18 +262,19 @@ const RecipeSuggestionsScreen = (): React.ReactElement => {
                       </View>
                       <View style={S.metric}>
                         <Ionicons name="flame-outline" size={14} color={P.onSurfaceVariant} />
-                        <ThemedText style={S.metricText}>{Math.round(recipes[0]?.totalCalories || 0)} kcal</ThemedText>
+                        <ThemedText style={S.metricText}>{Math.round(featuredRecipe.totalCalories || 0)} kcal</ThemedText>
                       </View>
                     </View>
                     <TouchableOpacity
                       style={S.viewRecipeBtn}
-                      onPress={() => navigation.navigate('RecipeDetail', { recipeId: recipes[0]?.recipeId!, recipeName: recipes[0]?.recipeName! })}
+                      onPress={() => navigation.navigate('RecipeDetail', { recipeId: featuredRecipe.recipeId, recipeName: featuredRecipe.recipeName })}
                     >
                       <ThemedText style={S.viewRecipeBtnText}>Xem Công Thức</ThemedText>
                     </TouchableOpacity>
                   </View>
                 </View>
               </Animated.View>
+              )}
 
               {/* Grid 2 Columns for Explore More */}
               {recipes.length > 1 && (

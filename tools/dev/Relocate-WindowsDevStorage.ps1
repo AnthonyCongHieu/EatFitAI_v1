@@ -133,14 +133,8 @@ function Stop-ToolingProcesses {
     Get-Process emulator -ErrorAction SilentlyContinue | Stop-Process -Force
     Get-Process ollama -ErrorAction SilentlyContinue | Stop-Process -Force
 
-    $appiumProcessIds = Get-NetTCPConnection -LocalPort 4723 -ErrorAction SilentlyContinue |
-        Select-Object -ExpandProperty OwningProcess -Unique
-    if ($appiumProcessIds) {
-        Stop-Process -Id $appiumProcessIds -Force -ErrorAction SilentlyContinue
-    }
-
     $sdkJavaProcesses = Get-CimInstance Win32_Process |
-        Where-Object { $_.CommandLine -match 'sdkmanager|avdmanager|uiautomator2|appium --address 127.0.0.1 --port 4723' } |
+        Where-Object { $_.CommandLine -match 'sdkmanager|avdmanager' } |
         Select-Object -ExpandProperty ProcessId -Unique
     if ($sdkJavaProcesses) {
         Stop-Process -Id $sdkJavaProcesses -Force -ErrorAction SilentlyContinue

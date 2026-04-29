@@ -1,6 +1,6 @@
 # Hướng dẫn thiết lập EatFitAI trên Windows
 
-Cập nhật: `2026-04-18`
+Cập nhật: `2026-04-24`
 
 Đây là hướng dẫn onboarding chính thức cho phát triển local.
 
@@ -12,7 +12,7 @@ Nếu máy đã cài sẵn các runtime cần thiết, bootstrap môi trường 
 powershell -ExecutionPolicy Bypass -File .\tools\dev\Setup-WindowsPortableDevEnvironment.ps1
 ```
 
-Script này provision lane Appium, sửa chữa Android SDK command-line toolchain, tạo AVD chuẩn, và chạy preflight.
+Script này cài `scrcpy`, sửa chữa Android SDK command-line toolchain, tạo AVD chuẩn, và chạy preflight.
 
 Để chuyển storage nặng (Android/Ollama) từ `C:` sang `D:`:
 
@@ -68,7 +68,6 @@ Xem chi tiết tại [docs/SECRETS_SETUP.md](docs/SECRETS_SETUP.md).
 | Backend | `5247` |
 | AI provider | `5050` |
 | Metro (mobile) | `8081` |
-| Appium | `4723` |
 
 ## 3. SQL Server local
 
@@ -157,7 +156,7 @@ npm install
 npm run dev
 ```
 
-## 7. Android emulator-first lane
+## 7. Android tooling
 
 AVD khuyến nghị:
 
@@ -171,29 +170,35 @@ Provision hoặc sửa chữa Android SDK:
 powershell -ExecutionPolicy Bypass -File .\tools\dev\Install-AndroidSdkComponents.ps1 -PersistUserEnvironment
 ```
 
-Emulator là lane mặc định cho dev + Appium.
-Thiết bị thật chỉ dùng cho sanity checks, camera validation, và live demo rehearsal.
+Emulator vẫn hữu ích cho dev nhanh. Release-style UI evidence hiện ưu tiên thiết bị thật qua ADB + scrcpy.
 
-## 8. Appium + MCP
+## 8. Thiết bị thật với ADB + scrcpy
 
-Repo có lane Appium smoke trong `tools/appium`.
-
-Thiết lập:
+Cài scrcpy nếu bootstrap chưa cài:
 
 ```powershell
-npm install -g appium
-appium driver install uiautomator2
-cd .\tools\appium
-npm install
+winget install --id Genymobile.scrcpy -e
 ```
 
-Khởi chạy Appium:
+Kiểm tra thiết bị:
 
 ```powershell
-appium
+npm --prefix .\eatfitai-mobile run device:doctor:android
 ```
 
-Xem [tools/appium/README.md](tools/appium/README.md) để biết selectors, env vars, và smoke flow.
+Mở màn hình live:
+
+```powershell
+npm --prefix .\eatfitai-mobile run device:scrcpy:android
+```
+
+Chạy probe evidence:
+
+```powershell
+npm --prefix .\eatfitai-mobile run device:probe:android
+```
+
+Xem [docs/TESTING_AND_RELEASE.md](docs/TESTING_AND_RELEASE.md) để biết runbook đầy đủ.
 
 ## 9. Preflight một lệnh
 
@@ -214,4 +219,4 @@ Môi trường được coi là sẵn sàng khi preflight báo:
 - Backend buildable
 - Android tooling available
 - Android AVD available
-- Appium tooling available
+- scrcpy available hoặc có warning cài đặt rõ ràng

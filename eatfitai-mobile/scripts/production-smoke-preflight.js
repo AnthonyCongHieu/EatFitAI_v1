@@ -2,8 +2,8 @@ const fs = require('fs');
 const path = require('path');
 const { resolveSmokeCredentials } = require('./lib/smoke-credentials');
 
-const DEFAULT_BACKEND_URL = 'https://eatfitai-backend.onrender.com';
-const DEFAULT_AI_PROVIDER_URL = 'https://eatfitai-ai-provider.onrender.com';
+const DEFAULT_BACKEND_URL = 'https://eatfitai-backend-dev.onrender.com';
+const DEFAULT_AI_PROVIDER_URL = 'https://eatfitai-ai-provider-dev.onrender.com';
 const DEFAULT_TIMEOUT_MS = 30000;
 const DEFAULT_ATTEMPTS = 2;
 const DEFAULT_RETRY_DELAY_MS = 5000;
@@ -20,7 +20,7 @@ const DEFAULT_REQUEST_BUDGET = {
 };
 const DEFAULT_FIXTURE_MANIFEST = {
   version: 1,
-  fixtureRootHint: 'tools/appium/fixtures/scan-demo',
+  fixtureRootHint: 'tools/fixtures/scan-demo',
   galleryRules: {
     maxFileSizeMb: 10,
     singleDishOnly: true,
@@ -30,34 +30,39 @@ const DEFAULT_FIXTURE_MANIFEST = {
   fixtures: {
     primary: [
       {
-        key: 'egg',
-        fileName: 'ai-primary-egg-01.jpg',
-        relativePath: 'scan-demo/ai-primary-egg-01.jpg',
+        key: 'banana-small',
+        fileName: 'ai-primary-banana-02.jpg',
+        relativePath: 'scan-demo/ai-primary-banana-02.jpg',
         targetOutcome: 'mapped-or-usable-result',
+        expectedLabels: ['banana'],
       },
       {
-        key: 'banana',
-        fileName: 'ai-primary-banana-01.jpg',
-        relativePath: 'scan-demo/ai-primary-banana-01.jpg',
+        key: 'apple-benchmark',
+        fileName: 'ai-benchmark-apple-01.jpg',
+        relativePath: 'scan-demo/ai-benchmark-apple-01.jpg',
         targetOutcome: 'mapped-or-usable-result',
+        expectedLabels: ['apple'],
       },
       {
-        key: 'rice',
-        fileName: 'ai-primary-rice-01.jpg',
-        relativePath: 'scan-demo/ai-primary-rice-01.jpg',
+        key: 'orange-benchmark',
+        fileName: 'ai-benchmark-orange-01.jpg',
+        relativePath: 'scan-demo/ai-benchmark-orange-01.jpg',
         targetOutcome: 'mapped-or-usable-result',
+        expectedLabels: ['orange'],
       },
       {
-        key: 'broccoli',
-        fileName: 'ai-primary-broccoli-01.jpg',
-        relativePath: 'scan-demo/ai-primary-broccoli-01.jpg',
+        key: 'broccoli-benchmark',
+        fileName: 'ai-benchmark-broccoli-01.jpg',
+        relativePath: 'scan-demo/ai-benchmark-broccoli-01.jpg',
         targetOutcome: 'mapped-or-usable-result',
+        expectedLabels: ['broccoli'],
       },
       {
-        key: 'spinach',
-        fileName: 'ai-primary-spinach-01.jpg',
-        relativePath: 'scan-demo/ai-primary-spinach-01.jpg',
+        key: 'apple-primary',
+        fileName: 'ai-primary-apple-01.jpg',
+        relativePath: 'scan-demo/ai-primary-apple-01.jpg',
         targetOutcome: 'mapped-or-usable-result',
+        expectedLabels: ['apple'],
       },
     ],
     benchmark: [
@@ -92,7 +97,13 @@ const MANIFEST_TEMPLATE_PATH = path.resolve(
 
 function trimEnv(name) {
   const value = process.env[name];
-  return value ? value.trim() : '';
+  if (!value) {
+    return '';
+  }
+
+  const normalized = value.trim();
+  const quotedMatch = normalized.match(/^"(.*)"$/);
+  return quotedMatch ? quotedMatch[1] : normalized;
 }
 
 function normalizeBaseUrl(value, fallback) {
@@ -137,6 +148,43 @@ function sanitizeHeaders(headers) {
     copy.Authorization = '<redacted>';
   }
   return copy;
+}
+
+function sanitizeBody(value) {
+  if (Array.isArray(value)) {
+    return value.map((item) => sanitizeBody(item));
+  }
+
+  if (!value || typeof value !== 'object') {
+    return value;
+  }
+
+  return Object.fromEntries(
+    Object.entries(value).map(([key, entryValue]) => {
+      if (isSensitiveBodyKey(key)) {
+        return [key, '<redacted>'];
+      }
+
+      return [key, sanitizeBody(entryValue)];
+    }),
+  );
+}
+
+function isSensitiveBodyKey(key) {
+  const normalized = String(key || '').toLowerCase();
+
+  return (
+    normalized.includes('accesstoken') ||
+    normalized.includes('refreshtoken') ||
+    normalized === 'token' ||
+    normalized.endsWith('_token') ||
+    normalized.endsWith('token') ||
+    normalized.includes('password') ||
+    normalized.includes('authorization') ||
+    normalized.includes('secret') ||
+    normalized.includes('apikey') ||
+    normalized.includes('api_key')
+  );
 }
 
 function writeJson(filePath, value) {
@@ -357,7 +405,7 @@ async function fetchJsonWithDetails(url, options = {}) {
       json = null;
     }
 
-    return {
+    const result = {
       ok: response.ok,
       status: response.status,
       statusText: response.statusText,
@@ -366,9 +414,14 @@ async function fetchJsonWithDetails(url, options = {}) {
       completedAt,
       durationMs,
       headers: sanitizeHeaders(options.headers),
-      body: json,
+      body: sanitizeBody(json),
       rawText: json ? undefined : rawText,
     };
+    Object.defineProperty(result, 'rawBody', {
+      value: json,
+      enumerable: false,
+    });
+    return result;
   } catch (error) {
     const completedAt = new Date().toISOString();
     const durationMs = Date.now() - startedAtMs;
@@ -454,6 +507,8 @@ async function runAuthChecks(context) {
     };
   }
 
+  const timeoutMs = resolveNumberEnv('EATFITAI_SMOKE_TIMEOUT_MS', DEFAULT_TIMEOUT_MS);
+
   const loginResponse = await fetchJsonWithDetails(
     `${context.backendUrl}/api/auth/login`,
     {
@@ -466,11 +521,12 @@ async function runAuthChecks(context) {
         email: context.email,
         password: context.password,
       }),
+      timeoutMs,
     },
   );
 
-  const accessToken = loginResponse.body?.accessToken;
-  const refreshToken = loginResponse.body?.refreshToken;
+  const accessToken = loginResponse.rawBody?.accessToken;
+  const refreshToken = loginResponse.rawBody?.refreshToken;
 
   const aiStatusResponse = accessToken
     ? await fetchJsonWithDetails(`${context.backendUrl}/api/ai/status`, {
@@ -478,6 +534,7 @@ async function runAuthChecks(context) {
           Accept: 'application/json',
           Authorization: `Bearer ${accessToken}`,
         },
+        timeoutMs,
       })
     : {
         skipped: true,
@@ -494,6 +551,7 @@ async function runAuthChecks(context) {
         body: JSON.stringify({
           refreshToken,
         }),
+        timeoutMs,
       })
     : {
         skipped: true,

@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import sys
+import subprocess
 from collections.abc import Iterator
 from pathlib import Path
 
@@ -18,7 +19,30 @@ SCAN_ROOTS = (
     REPO_ROOT / "eatfitai-mobile" / "src",
     REPO_ROOT / "ai-provider",
 )
-SOURCE_SUFFIXES = {".cs", ".ts", ".tsx", ".js", ".jsx", ".json", ".py", ".md", ".txt"}
+SOURCE_SUFFIXES = {
+    ".cs",
+    ".ts",
+    ".tsx",
+    ".js",
+    ".jsx",
+    ".json",
+    ".py",
+    ".md",
+    ".txt",
+    ".yml",
+    ".yaml",
+    ".xml",
+    ".props",
+    ".targets",
+    ".csproj",
+    ".sln",
+    ".html",
+    ".css",
+    ".sql",
+    ".ps1",
+    ".sh",
+}
+SOURCE_FILENAMES = {"dockerfile", ".gitignore", ".gitattributes"}
 EXCLUDED_PARTS = {
     "node_modules",
     ".venv",
@@ -27,7 +51,9 @@ EXCLUDED_PARTS = {
     "obj",
     "dist",
     "build",
+    "_logs",
     "_state",
+    "_tooling",
     "__pycache__",
     "site-packages",
 }
@@ -73,7 +99,7 @@ REPLACEMENT_CHARACTER = "\ufffd"
 def should_scan(path: Path) -> bool:
     return (
         path.is_file()
-        and path.suffix.lower() in SOURCE_SUFFIXES
+        and (path.suffix.lower() in SOURCE_SUFFIXES or path.name.casefold() in SOURCE_FILENAMES)
         and not any(part.casefold() in EXCLUDED_PARTS for part in path.parts)
     )
 
@@ -103,15 +129,40 @@ def iter_hits(root: Path) -> Iterator[tuple[Path, int, str]]:
             yield path, 0, "<UTF-8 decode error>"
             continue
 
+        if ALLOW_MARKER in text:
+            continue
+
         for line_no, line in iter_line_hits(text):
             yield path, line_no, line
+
+
+def iter_tracked_paths() -> Iterator[Path]:
+    try:
+        output = subprocess.check_output(
+            ["git", "ls-files"],
+            cwd=REPO_ROOT,
+            encoding="utf-8",
+            errors="strict",
+        )
+    except (OSError, subprocess.CalledProcessError, UnicodeDecodeError):
+        return
+
+    for line in output.splitlines():
+        relative = line.strip()
+        if relative:
+            yield REPO_ROOT / relative
 
 
 def main() -> int:
     sys.stdout.reconfigure(encoding="utf-8")
     hits = []
-    for root in SCAN_ROOTS:
-        hits.extend(iter_hits(root))
+    tracked_paths = list(iter_tracked_paths())
+    if tracked_paths:
+        for path in tracked_paths:
+            hits.extend(iter_hits(path))
+    else:
+        for root in SCAN_ROOTS:
+            hits.extend(iter_hits(root))
 
     if not hits:
         print("No mojibake markers found in repo-owned source.")

@@ -40,6 +40,8 @@ public partial class ApplicationDbContext : DbContext
 
     public virtual DbSet<ServingUnit> ServingUnits { get; set; }
 
+    public virtual DbSet<TelemetryEvent> TelemetryEvents { get; set; }
+
     public virtual DbSet<User> Users { get; set; }
     public virtual DbSet<UserAccessControl> UserAccessControls { get; set; }
     public virtual DbSet<PasswordResetCode> PasswordResetCodes { get; set; }
@@ -165,6 +167,7 @@ public partial class ApplicationDbContext : DbContext
 
             entity.HasIndex(e => e.FoodName, "IX_FoodItem_Name").HasFilter("\"IsDeleted\" = false");
 
+            entity.Property(e => e.Barcode).HasMaxLength(64);
             entity.Property(e => e.CaloriesPer100g).HasColumnType("decimal(10, 2)");
             entity.Property(e => e.CarbPer100g).HasColumnType("decimal(10, 2)");
             entity.Property(e => e.CreatedAt)
@@ -651,6 +654,38 @@ public partial class ApplicationDbContext : DbContext
             entity.Property(e => e.UpdatedAt)
                 .HasPrecision(3)
                 .HasDefaultValueSql("NOW() AT TIME ZONE 'UTC'");
+        });
+
+        modelBuilder.Entity<TelemetryEvent>(entity =>
+        {
+            entity.ToTable("TelemetryEvent");
+
+            entity.HasKey(e => e.TelemetryEventId);
+
+            entity.HasIndex(e => e.OccurredAt, "IX_TelemetryEvent_OccurredAt");
+            entity.HasIndex(e => new { e.UserId, e.OccurredAt }, "IX_TelemetryEvent_UserId_OccurredAt");
+            entity.HasIndex(e => new { e.Category, e.OccurredAt }, "IX_TelemetryEvent_Category_OccurredAt");
+
+            entity.Property(e => e.TelemetryEventId)
+                .HasDefaultValueSql("gen_random_uuid()");
+            entity.Property(e => e.Name).HasMaxLength(120);
+            entity.Property(e => e.Category).HasMaxLength(60);
+            entity.Property(e => e.Screen).HasMaxLength(120);
+            entity.Property(e => e.Flow).HasMaxLength(120);
+            entity.Property(e => e.Step).HasMaxLength(120);
+            entity.Property(e => e.Status).HasMaxLength(60);
+            entity.Property(e => e.SessionId).HasMaxLength(120);
+            entity.Property(e => e.RequestId).HasMaxLength(120);
+            entity.Property(e => e.MetadataJson).HasColumnType("text");
+            entity.Property(e => e.CreatedAt)
+                .HasPrecision(3)
+                .HasDefaultValueSql("NOW() AT TIME ZONE 'UTC'");
+
+            entity.HasOne(d => d.User)
+                .WithMany()
+                .HasForeignKey(d => d.UserId)
+                .OnDelete(DeleteBehavior.SetNull)
+                .HasConstraintName("FK_TelemetryEvent_User");
         });
 
         modelBuilder.Entity<WaterIntake>(entity =>

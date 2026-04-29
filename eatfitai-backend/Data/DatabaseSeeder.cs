@@ -18,6 +18,7 @@ namespace EatFitAI.API.Data
             await SeedServingUnitsAsync(context);
             await SeedMealTypesAsync(context);
             await SeedFoodItemsAsync(context);
+            await SeedAiLabelMapsAsync(context);
             await SeedFoodServingsAsync(context);
             await SeedRecipesAsync(context);  // Thêm seed recipes
             await SeedDefaultUserPasswordsAsync(context, env);
@@ -207,6 +208,110 @@ namespace EatFitAI.API.Data
 
             await context.FoodItems.AddRangeAsync(foodItems);
             await context.SaveChangesAsync();
+        }
+
+        private static async Task SeedAiLabelMapsAsync(EatFitAIDbContext context)
+        {
+            var foodItems = await context.FoodItems
+                .Where(food => food.IsActive && !food.IsDeleted)
+                .ToListAsync();
+
+            var chicken = foodItems
+                .Where(IsChickenCatalogItem)
+                .OrderByDescending(ScoreChickenCatalogItem)
+                .FirstOrDefault();
+            var beef = foodItems.FirstOrDefault(food =>
+                food.FoodName.Contains("Beef", StringComparison.OrdinalIgnoreCase)
+                || (food.FoodNameUnsigned?.Contains("thit bo", StringComparison.OrdinalIgnoreCase) ?? false));
+
+            if (beef == null)
+            {
+                beef = new FoodItem
+                {
+                    FoodName = "Beef",
+                    FoodNameEn = "Beef",
+                    FoodNameUnsigned = "beef",
+                    CaloriesPer100g = 187m,
+                    ProteinPer100g = 20m,
+                    CarbPer100g = 0m,
+                    FatPer100g = 12m,
+                    IsActive = true,
+                    IsDeleted = false,
+                    IsVerified = true,
+                    VerifiedBy = "Seed",
+                    CredibilityScore = 90,
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow
+                };
+                await context.FoodItems.AddAsync(beef);
+                await context.SaveChangesAsync();
+            }
+
+            var maps = new List<(string Label, int FoodItemId, decimal MinConfidence)>();
+            if (chicken != null)
+            {
+                maps.Add(("chicken", chicken.FoodItemId, 0.05m));
+                maps.Add(("raw chicken", chicken.FoodItemId, 0.05m));
+            }
+            if (beef != null)
+            {
+                maps.Add(("beef", beef.FoodItemId, 0.05m));
+                maps.Add(("raw beef", beef.FoodItemId, 0.05m));
+            }
+
+            foreach (var (label, foodItemId, minConfidence) in maps)
+            {
+                var existing = await context.AiLabelMaps.FindAsync(label);
+                if (existing == null)
+                {
+                    await context.AiLabelMaps.AddAsync(new AiLabelMap
+                    {
+                        Label = label,
+                        FoodItemId = foodItemId,
+                        MinConfidence = minConfidence,
+                        CreatedAt = DateTime.UtcNow
+                    });
+                }
+                else
+                {
+                    existing.FoodItemId = foodItemId;
+                    existing.MinConfidence = Math.Min(existing.MinConfidence, minConfidence);
+                }
+            }
+
+            await context.SaveChangesAsync();
+        }
+
+        private static bool IsChickenCatalogItem(FoodItem food)
+        {
+            var name = food.FoodName ?? string.Empty;
+            var unsigned = food.FoodNameUnsigned ?? string.Empty;
+            return name.Contains("Chicken", StringComparison.OrdinalIgnoreCase)
+                || unsigned.Contains("chicken", StringComparison.OrdinalIgnoreCase)
+                || unsigned.Contains("uc ga", StringComparison.OrdinalIgnoreCase)
+                || unsigned.Contains("canh ga", StringComparison.OrdinalIgnoreCase)
+                || unsigned.Contains("dui ga", StringComparison.OrdinalIgnoreCase)
+                || unsigned.Contains(" ga", StringComparison.OrdinalIgnoreCase)
+                || unsigned.StartsWith("ga ", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static int ScoreChickenCatalogItem(FoodItem food)
+        {
+            var name = food.FoodName ?? string.Empty;
+            var unsigned = food.FoodNameUnsigned ?? string.Empty;
+            if (name.Contains("Chicken Breast", StringComparison.OrdinalIgnoreCase)
+                || unsigned.Contains("uc ga", StringComparison.OrdinalIgnoreCase))
+            {
+                return 100;
+            }
+
+            if (unsigned.Contains("canh ga", StringComparison.OrdinalIgnoreCase)
+                || unsigned.Contains("dui ga", StringComparison.OrdinalIgnoreCase))
+            {
+                return 80;
+            }
+
+            return 10;
         }
 
         private static async Task SeedFoodServingsAsync(EatFitAIDbContext context)

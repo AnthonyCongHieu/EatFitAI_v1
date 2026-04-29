@@ -12,7 +12,6 @@ import Animated, {
   Easing,
   interpolate,
   Extrapolation,
-  FadeIn,
   FadeInUp,
 } from 'react-native-reanimated';
 import { ThemedText } from '../../components/ThemedText';

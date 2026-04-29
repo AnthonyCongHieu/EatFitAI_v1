@@ -9,42 +9,38 @@ import {
   ScrollView,
   StyleSheet,
   View,
-  Text,
   TextInput,
 } from 'react-native';
 import Animated, {
-  FadeIn,
   FadeInDown,
   Layout,
-  useSharedValue,
-  useAnimatedStyle,
-  withTiming,
 } from 'react-native-reanimated';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
+import { RouteProp, useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
 import Toast from 'react-native-toast-message';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ThemedText } from '../../../components/ThemedText';
-import Screen from '../../../components/Screen';
-import { useAppTheme } from '../../../theme/ThemeProvider';
 import { AppImage } from '../../../components/ui/AppImage';
 import type { RootStackParamList } from '../../types';
-import { foodService, type FoodItem } from '../../../services/foodService';
+import { trackEvent } from '../../../services/analytics';
+import { foodService, type CommonMealTemplate, type FoodItem } from '../../../services/foodService';
 import { getFoodImageUrl } from '../../../utils/imageHelpers';
 import { handleApiError } from '../../../utils/errorHandler';
 import {
   addItemsToTodayDiary,
+  getSuggestedMealType,
+  getTodayDate,
   invalidateDiaryQueries,
 } from '../../../services/diaryFlowService';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { AnimatedEmptyState } from '../../../components/ui/AnimatedEmptyState';
 import { t } from '../../../i18n/vi';
-import { TEST_IDS } from '../../../testing/testIds';
 import { useUserPreferenceStore } from '../../../store/useUserPreferenceStore';
 import { filterFoodsByPreferences } from '../../../utils/foodPreferenceFilter';
+import { TEST_IDS } from '../../../testing/testIds';
 
 const PAGE_SIZE = 20;
 const RECENT_SEARCHES_KEY = '@eatfit_recent_searches';
@@ -76,7 +72,6 @@ const P = {
 };
 
 const FoodSearchScreen = (): React.ReactElement => {
-  const { theme } = useAppTheme();
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<FoodSearchRouteProp>();
   const queryClient = useQueryClient();
@@ -86,14 +81,17 @@ const FoodSearchScreen = (): React.ReactElement => {
 
   const [query, setQuery] = useState('');
   const [items, setItems] = useState<FoodItem[]>([]);
+  const [recentFoods, setRecentFoods] = useState<FoodItem[]>([]);
+  const [commonMeals, setCommonMeals] = useState<CommonMealTemplate[]>([]);
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [hasSearched, setHasSearched] = useState(false);
+  const [, setHasSearched] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const [activeTab, setActiveTab] = useState<'search' | 'favorites'>('search');
   const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set());
   const [isQuickAdding, setIsQuickAdding] = useState<string | null>(null);
+  const [applyingCommonMealId, setApplyingCommonMealId] = useState<string | null>(null);
 
   // Read quick-add preferences
   const initialTab = route.params?.initialTab;
@@ -101,12 +99,7 @@ const FoodSearchScreen = (): React.ReactElement => {
   const showQuickSuggestions = route.params?.showQuickSuggestions ?? true;
   const selectedDate = route.params?.selectedDate;
   const returnToDiaryOnSave = route.params?.returnToDiaryOnSave ?? false;
-
-  useEffect(() => {
-    loadFavorites(initialTab === 'favorites');
-    if (initialTab === 'favorites') setActiveTab('favorites');
-    loadRecentSearches();
-  }, [initialTab]);
+  const initialQuery = route.params?.initialQuery;
 
   const loadRecentSearches = async () => {
     try {
@@ -117,9 +110,46 @@ const FoodSearchScreen = (): React.ReactElement => {
     } catch (e) {}
   };
 
+  const loadRecentFoods = useCallback(async () => {
+    try {
+      const foods = await foodService.getRecentFoods(PAGE_SIZE);
+      setRecentFoods(foods);
+    } catch (error) {
+      setRecentFoods([]);
+    }
+  }, []);
+
+  const loadCommonMeals = useCallback(async () => {
+    try {
+      const templates = await foodService.getCommonMeals();
+      setCommonMeals(templates);
+    } catch (error) {
+      setCommonMeals([]);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadFavorites(initialTab === 'favorites');
+    if (initialTab === 'favorites') setActiveTab('favorites');
+    loadRecentSearches();
+    if (showQuickSuggestions) {
+      loadRecentFoods().catch(() => undefined);
+      loadCommonMeals().catch(() => undefined);
+    }
+  }, [initialTab, loadCommonMeals, loadRecentFoods, showQuickSuggestions]);
+
+  // When navigated with initialQuery (e.g. from barcode scan fallback), auto-search
+  useEffect(() => {
+    if (initialQuery && initialQuery.trim()) {
+      setQuery(initialQuery.trim());
+      runSearch(initialQuery.trim(), false).catch(() => {});
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialQuery]);
+
   const saveRecentSearch = async (term: string) => {
     try {
-      const filtered = recentSearches.filter(t => t.toLowerCase() !== term.toLowerCase());
+      const filtered = recentSearches.filter(searchTerm => searchTerm.toLowerCase() !== term.toLowerCase());
       const newSearches = [term, ...filtered].slice(0, 10);
       setRecentSearches(newSearches);
       await AsyncStorage.setItem(RECENT_SEARCHES_KEY, JSON.stringify(newSearches));
@@ -185,14 +215,82 @@ const FoodSearchScreen = (): React.ReactElement => {
         text1: t('food_search.quick_add_success'),
         text2: `${item.name} (100g) - ${item.calories || 0} kcal`,
       });
+      trackEvent('diary_add_quick_success', {
+        flow: 'food_search',
+        step: 'quick_add',
+        status: 'success',
+        metadata: {
+          foodId: item.id,
+          source: item.source,
+          foodName: item.name,
+        },
+      });
+      await invalidateDiaryQueries(queryClient);
+      if (showQuickSuggestions) {
+        await loadRecentFoods();
+      }
+      if (returnToDiaryOnSave) {
+        navigation.replace('MealDiary', selectedDate ? { selectedDate } : undefined);
+      }
+    } catch (error) {
+      trackEvent('diary_add_quick_failure', {
+        category: 'error',
+        flow: 'food_search',
+        step: 'quick_add',
+        status: 'failure',
+        metadata: {
+          foodId: item.id,
+          source: item.source,
+          message: (error as { message?: string } | null)?.message,
+        },
+      });
+      handleApiError(error);
+    } finally {
+      setIsQuickAdding(null);
+    }
+  };
+
+  const handleApplyCommonMeal = async (template: CommonMealTemplate) => {
+    setApplyingCommonMealId(template.id);
+    try {
+      await foodService.applyCommonMeal({
+        customDishId: template.id,
+        targetDate: selectedDate ?? getTodayDate(),
+        mealTypeId: getSuggestedMealType(),
+        grams: template.defaultGrams > 0 ? template.defaultGrams : undefined,
+      });
+      Toast.show({
+        type: 'success',
+        text1: 'Đã thêm món thường dùng',
+        text2: `${template.name} (${Math.round(template.defaultGrams || 0)}g)`,
+      });
+      trackEvent('common_meal_apply_success', {
+        flow: 'food_search',
+        step: 'common_meal',
+        status: 'success',
+        metadata: {
+          customDishId: template.id,
+          templateName: template.name,
+        },
+      });
       await invalidateDiaryQueries(queryClient);
       if (returnToDiaryOnSave) {
         navigation.replace('MealDiary', selectedDate ? { selectedDate } : undefined);
       }
     } catch (error) {
+      trackEvent('common_meal_apply_failure', {
+        category: 'error',
+        flow: 'food_search',
+        step: 'common_meal',
+        status: 'failure',
+        metadata: {
+          customDishId: template.id,
+          message: (error as { message?: string } | null)?.message,
+        },
+      });
       handleApiError(error);
     } finally {
-      setIsQuickAdding(null);
+      setApplyingCommonMealId(null);
     }
   };
 
@@ -202,6 +300,10 @@ const FoodSearchScreen = (): React.ReactElement => {
     setHasSearched(false);
     setErrorMessage(null);
     if (tab === 'favorites') loadFavorites(true);
+    if (tab === 'search' && showQuickSuggestions) {
+      loadRecentFoods().catch(() => undefined);
+      loadCommonMeals().catch(() => undefined);
+    }
   };
 
   const runSearch = useCallback(
@@ -217,11 +319,30 @@ const FoodSearchScreen = (): React.ReactElement => {
       }
       setIsLoading(true);
       setErrorMessage(null);
+      trackEvent('food_search_submit', {
+        flow: 'food_search',
+        step: 'search',
+        status: append ? 'paginate' : 'submitted',
+        metadata: {
+          query: searchTerm.trim(),
+          tab: activeTab,
+        },
+      });
       try {
         const result = await foodService.searchAllFoods(searchTerm.trim(), PAGE_SIZE);
         setItems((prev) => (append ? [...prev, ...result.items] : result.items));
         setHasSearched(true);
         setErrorMessage(null);
+        trackEvent('food_search_results', {
+          flow: 'food_search',
+          step: 'results',
+          status: 'success',
+          metadata: {
+            query: searchTerm.trim(),
+            resultCount: result.items.length,
+            tab: activeTab,
+          },
+        });
         if (!append && result.items.length > 0) {
           saveRecentSearch(searchTerm.trim());
         }
@@ -229,12 +350,23 @@ const FoodSearchScreen = (): React.ReactElement => {
         setHasSearched(true);
         setItems([]);
         setErrorMessage(error?.response?.data?.message ?? error?.message ?? t('common.tryAgainLater'));
+        trackEvent('food_search_failure', {
+          category: 'error',
+          flow: 'food_search',
+          step: 'search',
+          status: 'failure',
+          metadata: {
+            query: searchTerm.trim(),
+            tab: activeTab,
+            message: error?.response?.data?.message ?? error?.message,
+          },
+        });
         handleApiError(error);
       } finally {
         setIsLoading(false);
       }
     },
-    [activeTab]
+    [activeTab],
   );
 
   const handleSearch = useCallback(() => {
@@ -247,11 +379,30 @@ const FoodSearchScreen = (): React.ReactElement => {
       setQuery(nextQuery);
       runSearch(nextQuery, false).catch(() => {});
     },
-    [runSearch]
+    [runSearch],
   );
 
+  useFocusEffect(
+    useCallback(() => {
+      if (showQuickSuggestions && activeTab === 'search') {
+        loadRecentFoods().catch(() => undefined);
+        loadCommonMeals().catch(() => undefined);
+      }
+    }, [activeTab, loadCommonMeals, loadRecentFoods, showQuickSuggestions]),
+  );
+
+  const handleOpenCommonMeals = useCallback(() => {
+    navigation.navigate('CommonMeals');
+  }, [navigation]);
+
   const filteredResults = useMemo(() => filterFoodsByPreferences(items, preferences), [items, preferences]);
+  const filteredRecentFoods = useMemo(
+    () => filterFoodsByPreferences(recentFoods, preferences),
+    [recentFoods, preferences],
+  );
   const visibleItems = filteredResults.items;
+  const visibleRecentFoods = filteredRecentFoods.items;
+  const shouldShowSuggestionShelves = activeTab === 'search' && !query.trim();
 
   // ═══ Render ═══ //
   const renderItem = ({ item, index }: { item: FoodItem; index: number }) => {
@@ -259,14 +410,27 @@ const FoodSearchScreen = (): React.ReactElement => {
     return (
       <Animated.View entering={FadeInDown.delay(index * 40).duration(300)} layout={Layout.springify()}>
         <Pressable
-          onPress={() =>
+          testID={index === 0 ? TEST_IDS.foodSearch.firstResultCard : undefined}
+          nativeID={index === 0 ? TEST_IDS.foodSearch.firstResultCard : undefined}
+          accessibilityLabel={index === 0 ? TEST_IDS.foodSearch.firstResultCard : undefined}
+          onPress={() => {
+            trackEvent('food_detail_opened', {
+              flow: 'food_search',
+              step: 'food_detail',
+              status: 'opened',
+              metadata: {
+                foodId: item.id,
+                source: item.source,
+                foodName: item.name,
+              },
+            });
             navigation.navigate('FoodDetail', {
               foodId: item.id,
               source: item.source,
               selectedDate,
               returnToDiaryOnSave,
-            })
-          }
+            });
+          }}
           style={({ pressed }) => [S.resultCard, pressed && { opacity: 0.85, transform: [{ scale: 0.98 }] }]}
         >
           <View style={S.resultCardLeft}>
@@ -282,7 +446,7 @@ const FoodSearchScreen = (): React.ReactElement => {
             </View>
             <View style={S.resultInfo}>
               <ThemedText style={S.resultTitle} numberOfLines={1}>{item.name}</ThemedText>
-              
+
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 6 }}>
                 <ThemedText style={S.per100g}>100g</ThemedText>
                 <ThemedText style={S.resultCaloriesSmall}>
@@ -314,14 +478,17 @@ const FoodSearchScreen = (): React.ReactElement => {
                 onPress={() => handleToggleFavorite(item)}
                 style={({ pressed }) => [
                   { padding: 4, marginRight: 8 },
-                  pressed && { transform: [{ scale: 0.7 }], opacity: 0.7 }
+                  pressed && { transform: [{ scale: 0.7 }], opacity: 0.7 },
                 ]}
               >
-                <Ionicons name={isFav ? "heart" : "heart-outline"} size={20} color={isFav ? P.primary : P.onSurfaceVariant} />
+                <Ionicons name={isFav ? 'heart' : 'heart-outline'} size={20} color={isFav ? P.primary : P.onSurfaceVariant} />
               </Pressable>
             )}
 
             <Pressable
+              testID={index === 0 ? TEST_IDS.foodSearch.firstAddButton : undefined}
+              nativeID={index === 0 ? TEST_IDS.foodSearch.firstAddButton : undefined}
+              accessibilityLabel={index === 0 ? TEST_IDS.foodSearch.firstAddButton : undefined}
               hitSlop={8}
               onPress={() => handleQuickAdd(item)}
               disabled={isQuickAdding === item.id}
@@ -339,8 +506,66 @@ const FoodSearchScreen = (): React.ReactElement => {
     );
   };
 
+  const renderCommonMeal = ({
+    template,
+    index,
+  }: {
+    template: CommonMealTemplate;
+    index: number;
+  }) => {
+    return (
+      <Animated.View entering={FadeInDown.delay(index * 40).duration(300)} layout={Layout.springify()}>
+        <View style={S.resultCard}>
+          <View style={S.resultCardLeft}>
+            <View style={S.thumbnailBox}>
+              <Ionicons name="restaurant" size={24} color={P.primary} />
+            </View>
+            <View style={S.resultInfo}>
+              <ThemedText style={S.resultTitle} numberOfLines={1}>{template.name}</ThemedText>
+              {template.description ? (
+                <ThemedText style={S.templateDescription} numberOfLines={2}>
+                  {template.description}
+                </ThemedText>
+              ) : null}
+              <View style={S.templateMetaRow}>
+                <ThemedText style={S.per100g}>{Math.round(template.defaultGrams || 0)}g</ThemedText>
+                <ThemedText style={S.resultCaloriesSmall}>
+                  {template.calories != null ? Math.round(template.calories) : '--'} kcal
+                </ThemedText>
+              </View>
+              <ThemedText style={S.templateMetaText}>
+                {template.ingredientCount} nguyên liệu
+              </ThemedText>
+            </View>
+          </View>
+
+          <View style={S.resultCardRight}>
+            <Pressable
+              hitSlop={8}
+              onPress={() => handleApplyCommonMeal(template)}
+              disabled={applyingCommonMealId === template.id}
+              style={({ pressed }) => [S.addBtn, pressed && { transform: [{ scale: 0.9 }], opacity: 0.7 }]}
+            >
+              {applyingCommonMealId === template.id ? (
+                <ActivityIndicator size="small" color={P.primary} />
+              ) : (
+                <Ionicons name="add-circle" size={28} color={P.primary} />
+              )}
+            </Pressable>
+          </View>
+        </View>
+      </Animated.View>
+    );
+  };
+
   return (
-    <View style={[S.container, { paddingTop: insets.top }]}>
+    <View
+      style={[S.container, { paddingTop: insets.top }]}
+      testID={TEST_IDS.foodSearch.screen}
+      nativeID={TEST_IDS.foodSearch.screen}
+      accessibilityLabel={TEST_IDS.foodSearch.screen}
+      collapsable={false}
+    >
       {/* ═══ Header ═══ */}
       <View style={S.header}>
         <View style={S.headerLeft}>
@@ -358,13 +583,16 @@ const FoodSearchScreen = (): React.ReactElement => {
       </View>
 
       <ScrollView contentContainerStyle={S.scrollContent} showsVerticalScrollIndicator={false}>
-        
+
         {/* ═══ Search Input Area ═══ */}
         {activeTab === 'search' && (
           <View style={S.searchArea}>
             <View style={S.searchInputBox}>
               <Ionicons name="search" size={20} color={P.onSurfaceVariant} style={{ marginRight: 10 }} />
               <TextInput
+                testID={TEST_IDS.foodSearch.queryInput}
+                nativeID={TEST_IDS.foodSearch.queryInput}
+                accessibilityLabel={TEST_IDS.foodSearch.queryInput}
                 style={S.searchInput}
                 placeholder="Tìm kiếm món ăn, công thức..."
                 placeholderTextColor={P.onSurfaceVariant + '80'}
@@ -419,7 +647,7 @@ const FoodSearchScreen = (): React.ReactElement => {
               primaryAction={{ label: 'Thử lại', onPress: () => activeTab === 'favorites' ? loadFavorites(true) : handleSearch() }}
             />
           </View>
-        ) : items.length > 0 ? (
+        ) : !shouldShowSuggestionShelves && items.length > 0 ? (
           <View style={S.resultsArea}>
             <View style={S.sectionHeader}>
               <ThemedText style={S.sectionTitle}>
@@ -434,10 +662,58 @@ const FoodSearchScreen = (): React.ReactElement => {
           </View>
         ) : (
           /* Empty / Default States */
-          activeTab === 'search' && !hasSearched ? (
+          shouldShowSuggestionShelves ? (
             <View style={S.recentArea}>
+              {showQuickSuggestions && visibleRecentFoods.length > 0 && (
+                <View style={S.resultsArea}>
+                  <View style={S.sectionHeader}>
+                    <ThemedText style={S.sectionTitle}>MÓN GẦN ĐÂY</ThemedText>
+                  </View>
+                  <View style={{ gap: 12 }}>
+                    {visibleRecentFoods.map((item, idx) => (
+                      <View key={getFoodItemKey(item)}>{renderItem({ item, index: idx })}</View>
+                    ))}
+                  </View>
+                </View>
+              )}
+              {showQuickSuggestions && (
+                <View style={S.resultsArea}>
+                  <View style={S.sectionHeader}>
+                    <ThemedText style={S.sectionTitle}>Món thường dùng</ThemedText>
+                    <Pressable onPress={handleOpenCommonMeals} hitSlop={8}>
+                      <ThemedText style={S.sectionAction}>Quản lý</ThemedText>
+                    </Pressable>
+                  </View>
+                  {commonMeals.length > 0 ? (
+                    <View style={{ gap: 12 }}>
+                      {commonMeals.map((template, idx) => (
+                        <View key={template.id}>{renderCommonMeal({ template, index: idx })}</View>
+                      ))}
+                    </View>
+                  ) : (
+                    <View style={S.commonMealEmptyCard}>
+                      <ThemedText style={S.commonMealEmptyTitle}>
+                        Chưa có món thường dùng nào
+                      </ThemedText>
+                      <ThemedText style={S.commonMealEmptyDescription}>
+                        Tạo mẫu bữa ăn bạn hay lặp lại để thêm nhanh vào nhật ký.
+                      </ThemedText>
+                      <Pressable
+                        onPress={handleOpenCommonMeals}
+                        style={({ pressed }) => [
+                          S.commonMealEmptyButton,
+                          pressed && { opacity: 0.85 },
+                        ]}
+                      >
+                        <Ionicons name="add-circle-outline" size={16} color={P.primary} />
+                        <ThemedText style={S.commonMealEmptyButtonText}>Tạo món thường dùng</ThemedText>
+                      </Pressable>
+                    </View>
+                  )}
+                </View>
+              )}
               <View style={S.sectionHeader}>
-                <ThemedText style={S.sectionTitle}>TÌM KIẾM GẦN ĐÂY</ThemedText>
+                <ThemedText style={S.sectionTitle}>Tìm kiếm gần đây</ThemedText>
               </View>
               <View style={{ gap: 8 }}>
                 {recentSearches.length > 0 ? recentSearches.map((term, i) => (
@@ -490,7 +766,7 @@ const S = StyleSheet.create({
   headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 16 },
   iconBtn: { padding: 8, borderRadius: 20 },
   headerTitle: { fontSize: 22, fontFamily: 'Inter_700Bold', color: P.onSurface, letterSpacing: -0.5 },
-  
+
   scrollContent: { paddingHorizontal: 20, paddingTop: 16, paddingBottom: 40 },
 
   searchArea: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 20 },
@@ -531,6 +807,7 @@ const S = StyleSheet.create({
 
   sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12 },
   sectionTitle: { fontSize: 13, fontFamily: 'Inter_700Bold', color: P.onSurfaceVariant, letterSpacing: 1.5, textTransform: 'uppercase' },
+  sectionAction: { fontSize: 12, fontFamily: 'Inter_700Bold', color: P.primary },
 
   recentArea: { gap: 12 },
   recentItem: {
@@ -569,6 +846,35 @@ const S = StyleSheet.create({
   thumbnail: { width: '100%', height: '100%', borderRadius: 18 },
   resultInfo: { flex: 1 },
   resultTitle: { fontSize: 16, fontFamily: 'Inter_700Bold', color: P.onSurface, marginBottom: 4 },
+  templateDescription: { fontSize: 12, fontFamily: 'Inter_400Regular', color: P.onSurfaceVariant, marginBottom: 6 },
+  templateMetaRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 4 },
+  templateMetaText: { fontSize: 11, fontFamily: 'Inter_600SemiBold', color: P.onSurfaceVariant },
+  commonMealEmptyCard: {
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: P.glassBorder,
+    backgroundColor: P.glassBg,
+    padding: 16,
+    gap: 10,
+  },
+  commonMealEmptyTitle: { fontSize: 14, fontFamily: 'Inter_700Bold', color: P.onSurface },
+  commonMealEmptyDescription: {
+    fontSize: 12,
+    fontFamily: 'Inter_400Regular',
+    color: P.onSurfaceVariant,
+    lineHeight: 18,
+  },
+  commonMealEmptyButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    alignSelf: 'flex-start',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 999,
+    backgroundColor: 'rgba(75, 226, 119, 0.12)',
+  },
+  commonMealEmptyButtonText: { fontSize: 12, fontFamily: 'Inter_700Bold', color: P.primary },
   macroRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   per100g: { fontSize: 13, fontFamily: 'Inter_500Medium', color: P.onSurfaceVariant },
   macroDots: { flexDirection: 'row', alignItems: 'center', gap: 4 },
@@ -576,7 +882,7 @@ const S = StyleSheet.create({
   macroText: { fontSize: 11, fontFamily: 'Inter_600SemiBold', color: P.onSurfaceVariant },
 
   resultCardRight: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  resultCaloriesSmall: { fontSize: 13, fontFamily: 'Inter_600SemiBold', color: P.primary },  
+  resultCaloriesSmall: { fontSize: 13, fontFamily: 'Inter_600SemiBold', color: P.primary },
   addBtn: { width: 32, height: 32, backgroundColor: P.primary + '20', borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
 
   centerBox: { paddingTop: 40, alignItems: 'center' },

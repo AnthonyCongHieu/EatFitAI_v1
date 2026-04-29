@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using EatFitAI.API.Data;
+using EatFitAI.API.Helpers;
 using EatFitAI.API.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -30,8 +31,9 @@ namespace EatFitAI.API.Controllers
             {
                 var userId = GetUserIdFromToken();
                 var targetDate = date.HasValue
-                    ? DateOnly.FromDateTime(date.Value)
-                    : DateOnly.FromDateTime(DateTime.UtcNow.AddHours(7)); // UTC+7 Hanoi
+                    ? DateTimeHelper.ToVietnamDateOnly(date.Value)
+                    : DateTimeHelper.GetVietnamToday();
+                var targetMl = await GetDailyTargetMlAsync(userId);
 
                 var record = await _db.WaterIntakes
                     .FirstOrDefaultAsync(w => w.UserId == userId && w.IntakeDate == targetDate);
@@ -40,16 +42,16 @@ namespace EatFitAI.API.Controllers
                 {
                     date = targetDate.ToString("yyyy-MM-dd"),
                     amountMl = record?.AmountMl ?? 0,
-                    targetMl = record?.TargetMl ?? 2000,
+                    targetMl = record?.TargetMl > 0 ? record.TargetMl : targetMl,
                 });
             }
             catch (UnauthorizedAccessException)
             {
                 return Unauthorized(new { message = "Token không hợp lệ" });
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                return StatusCode(500, new { message = "Lỗi khi lấy lượng nước", error = ex.Message });
+                return StatusCode(500, ErrorResponseHelper.SafeError("Lỗi khi lấy lượng nước", HttpContext));
             }
         }
 
@@ -66,11 +68,12 @@ namespace EatFitAI.API.Controllers
                 var userId = GetUserIdFromToken();
                 var targetDate = request?.Date != null
                     ? DateOnly.Parse(request.Date)
-                    : DateOnly.FromDateTime(DateTime.UtcNow.AddHours(7));
+                    : DateTimeHelper.GetVietnamToday();
+                var targetMl = await GetDailyTargetMlAsync(userId);
 
                 await _db.Database.ExecuteSqlInterpolatedAsync($@"
                     INSERT INTO ""WaterIntake"" (""UserId"", ""IntakeDate"", ""AmountMl"", ""TargetMl"", ""UpdatedAt"")
-                    VALUES ({userId}, {targetDate}, 200, 2000, NOW() AT TIME ZONE 'UTC')
+                    VALUES ({userId}, {targetDate}, 200, {targetMl}, NOW() AT TIME ZONE 'UTC')
                     ON CONFLICT (""UserId"", ""IntakeDate"")
                     DO UPDATE SET
                         ""AmountMl"" = ""WaterIntake"".""AmountMl"" + EXCLUDED.""AmountMl"",
@@ -85,16 +88,16 @@ namespace EatFitAI.API.Controllers
                 {
                     date = targetDate.ToString("yyyy-MM-dd"),
                     amountMl = record?.AmountMl ?? 0,
-                    targetMl = record?.TargetMl ?? 2000,
+                    targetMl = record?.TargetMl > 0 ? record.TargetMl : targetMl,
                 });
             }
             catch (UnauthorizedAccessException)
             {
                 return Unauthorized(new { message = "Token không hợp lệ" });
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                return StatusCode(500, new { message = "Lỗi khi thêm nước", error = ex.Message });
+                return StatusCode(500, ErrorResponseHelper.SafeError("Lỗi khi thêm nước", HttpContext));
             }
         }
 
@@ -111,7 +114,8 @@ namespace EatFitAI.API.Controllers
                 var userId = GetUserIdFromToken();
                 var targetDate = request?.Date != null
                     ? DateOnly.Parse(request.Date)
-                    : DateOnly.FromDateTime(DateTime.UtcNow.AddHours(7));
+                    : DateTimeHelper.GetVietnamToday();
+                var targetMl = await GetDailyTargetMlAsync(userId);
 
                 var affectedRows = await _db.Database.ExecuteSqlInterpolatedAsync($@"
                     UPDATE ""WaterIntake""
@@ -127,7 +131,7 @@ namespace EatFitAI.API.Controllers
                     {
                         date = targetDate.ToString("yyyy-MM-dd"),
                         amountMl = 0,
-                        targetMl = 2000,
+                        targetMl,
                     });
                 }
 
@@ -139,16 +143,16 @@ namespace EatFitAI.API.Controllers
                 {
                     date = targetDate.ToString("yyyy-MM-dd"),
                     amountMl = record?.AmountMl ?? 0,
-                    targetMl = record?.TargetMl ?? 2000,
+                    targetMl = record?.TargetMl > 0 ? record.TargetMl : targetMl,
                 });
             }
             catch (UnauthorizedAccessException)
             {
                 return Unauthorized(new { message = "Token không hợp lệ" });
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                return StatusCode(500, new { message = "Lỗi khi bớt nước", error = ex.Message });
+                return StatusCode(500, ErrorResponseHelper.SafeError("Lỗi khi bớt nước", HttpContext));
             }
         }
 
@@ -193,10 +197,24 @@ namespace EatFitAI.API.Controllers
             {
                 return Unauthorized(new { message = "Token không hợp lệ" });
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                return StatusCode(500, new { message = "Lỗi khi lấy dữ liệu nước tháng", error = ex.Message });
+                return StatusCode(500, ErrorResponseHelper.SafeError("Lỗi khi lấy dữ liệu nước tháng", HttpContext));
             }
+        }
+
+        private async Task<int> GetDailyTargetMlAsync(Guid userId)
+        {
+            var weightKg = await _db.BodyMetrics
+                .Where(metric => metric.UserId == userId && metric.WeightKg.HasValue && metric.WeightKg > 0)
+                .OrderByDescending(metric => metric.MeasuredDate)
+                .ThenByDescending(metric => metric.BodyMetricId)
+                .Select(metric => metric.WeightKg)
+                .FirstOrDefaultAsync();
+
+            return weightKg.HasValue && weightKg.Value > 0
+                ? (int)Math.Round(weightKg.Value * 30, MidpointRounding.AwayFromZero)
+                : 2000;
         }
 
         private Guid GetUserIdFromToken()

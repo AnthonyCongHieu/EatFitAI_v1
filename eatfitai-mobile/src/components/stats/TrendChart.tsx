@@ -76,7 +76,7 @@ export const TrendChart: React.FC<TrendChartProps> = ({
       paddingTop: theme.spacing.md,
       borderTopWidth: 1,
       // Solid colors để fix 2 màu trên Android
-      borderTopColor: isDark ? '#2A3F68' : '#E0E0E0',
+      borderTopColor: isDark ? '#3D4A3D' : '#E0E0E0',
     },
     legendItem: {
       flexDirection: 'row',
@@ -91,14 +91,14 @@ export const TrendChart: React.FC<TrendChartProps> = ({
   });
 
   const getBarColor = (index: number, calories: number, _target?: number) => {
-    // Highest day = blue (primary)
+    // Highest day uses the semantic primary color.
     if (highlightBest && index === bestDayIndex && calories > 0) {
       return theme.colors.primary;
     }
     // No data = solid dim color
     if (calories === 0) {
       // Solid colors để fix 2 màu trên Android
-      return isDark ? '#1E3050' : '#E0E0E0';
+      return isDark ? theme.colors.glass.backgroundAlt : '#E0E0E0';
     }
     // Normal days = green
     return '#22C55E';

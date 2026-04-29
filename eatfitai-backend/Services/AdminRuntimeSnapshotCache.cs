@@ -7,6 +7,9 @@ namespace EatFitAI.API.Services;
 
 public sealed class AdminRuntimeSnapshotCache : IAdminRuntimeSnapshotCache
 {
+    private const string LocalFallbackSource = "local-runtime-fallback";
+    private const string ProviderStatusUnavailableWarning = "ai_provider_runtime_status_unavailable";
+
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly IAdminRealtimeEventBus _eventBus;
     private readonly ILogger<AdminRuntimeSnapshotCache> _logger;
@@ -18,6 +21,7 @@ public sealed class AdminRuntimeSnapshotCache : IAdminRuntimeSnapshotCache
     private DateTimeOffset? _lastAttemptAt;
     private DateTimeOffset? _lastSuccessAt;
     private string? _lastError;
+    private string? _lastWarning;
 
     public AdminRuntimeSnapshotCache(
         IServiceScopeFactory scopeFactory,
@@ -51,8 +55,8 @@ public sealed class AdminRuntimeSnapshotCache : IAdminRuntimeSnapshotCache
             }
 
             using var scope = _scopeFactory.CreateScope();
-            var runtimeProjectService = scope.ServiceProvider.GetRequiredService<IGeminiRuntimeProjectService>();
-            var snapshot = await runtimeProjectService.BuildSnapshotAsync(cancellationToken);
+            var result = await BuildSnapshotAsync(scope.ServiceProvider, cancellationToken);
+            var snapshot = result.Snapshot;
             var fingerprint = JsonSerializer.Serialize(snapshot);
             var now = DateTimeOffset.UtcNow;
             var changed = false;
@@ -64,11 +68,12 @@ public sealed class AdminRuntimeSnapshotCache : IAdminRuntimeSnapshotCache
                 _snapshotFingerprint = fingerprint;
                 _lastSuccessAt = now;
                 _lastError = null;
+                _lastWarning = result.Warning;
             }
 
             if (changed)
             {
-                PublishSnapshotEvents(snapshot);
+                PublishSnapshotEvents(snapshot, result.Warning);
             }
 
             return snapshot;
@@ -82,6 +87,7 @@ public sealed class AdminRuntimeSnapshotCache : IAdminRuntimeSnapshotCache
             lock (_sync)
             {
                 _lastError = ex.Message;
+                _lastWarning = null;
             }
 
             _logger.LogWarning(ex, "Failed to refresh cached admin runtime snapshot.");
@@ -103,11 +109,54 @@ public sealed class AdminRuntimeSnapshotCache : IAdminRuntimeSnapshotCache
                 LastAttemptAt = _lastAttemptAt,
                 LastSuccessAt = _lastSuccessAt,
                 LastError = _lastError,
+                LastWarning = _lastWarning,
             };
         }
     }
 
-    private void PublishSnapshotEvents(AdminRuntimeSnapshotDto snapshot)
+    private async Task<(AdminRuntimeSnapshotDto Snapshot, string? Warning)> BuildSnapshotAsync(
+        IServiceProvider services,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var runtimeStatusService = services.GetRequiredService<IAiRuntimeStatusService>();
+            var snapshot = await runtimeStatusService.GetSnapshotAsync(cancellationToken);
+            return (snapshot, null);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            var providerStatusError = SanitizeRuntimeStatusError(ex);
+            if (IsTransientRuntimeStatusError(providerStatusError))
+            {
+                _logger.LogInformation(
+                    ex,
+                    "AI provider runtime status is temporarily unavailable; falling back to local runtime project state.");
+            }
+            else
+            {
+                _logger.LogWarning(
+                    ex,
+                    "Failed to refresh admin runtime snapshot from AI provider; falling back to local runtime project state.");
+            }
+
+            var runtimeProjectService = services.GetRequiredService<IGeminiRuntimeProjectService>();
+            var fallbackSnapshot = await runtimeProjectService.BuildSnapshotAsync(cancellationToken);
+            fallbackSnapshot.RuntimeStatusSource = LocalFallbackSource;
+            fallbackSnapshot.RuntimeStatusWarning = ProviderStatusUnavailableWarning;
+            fallbackSnapshot.RuntimeStatusError = providerStatusError;
+
+            return (
+                fallbackSnapshot,
+                $"{ProviderStatusUnavailableWarning}: {providerStatusError}");
+        }
+    }
+
+    private void PublishSnapshotEvents(AdminRuntimeSnapshotDto snapshot, string? warning)
     {
         _eventBus.Publish("runtime.snapshot", "runtime", "global", snapshot);
         _eventBus.Publish("runtime.health.updated", "runtime-health", "global", new
@@ -120,7 +169,41 @@ public sealed class AdminRuntimeSnapshotCache : IAdminRuntimeSnapshotCache
             snapshot.ExhaustedProjectCount,
             snapshot.CooldownProjectCount,
             snapshot.AuthInvalidProjectCount,
+            snapshot.RuntimeStatusSource,
+            snapshot.RuntimeStatusWarning,
+            snapshot.RuntimeStatusError,
+            Warning = warning,
         });
+    }
+
+    private static string SanitizeRuntimeStatusError(Exception exception)
+    {
+        if (exception is AggregateException aggregate && aggregate.InnerExceptions.Count > 0)
+        {
+            exception = aggregate.InnerExceptions[0];
+        }
+
+        if (exception is HttpRequestException httpException && httpException.StatusCode.HasValue)
+        {
+            return $"http_{(int)httpException.StatusCode.Value}";
+        }
+
+        return exception switch
+        {
+            TaskCanceledException => "timeout",
+            TimeoutException => "timeout",
+            _ => exception.GetType().Name,
+        };
+    }
+
+    private static bool IsTransientRuntimeStatusError(string providerStatusError)
+    {
+        return providerStatusError is "timeout"
+            or "http_408"
+            or "http_429"
+            or "http_502"
+            or "http_503"
+            or "http_504";
     }
 }
 

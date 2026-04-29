@@ -6,6 +6,7 @@
 
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using EatFitAI.API.Helpers;
 using EatFitAI.DTOs;
 using EatFitAI.API.DTOs.MealDiary;
 using EatFitAI.Services;
@@ -16,12 +17,14 @@ using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace EatFitAI.API.Controllers
 {
     [Authorize]
     [ApiController]
     [Route("api/[controller]")]
+    [EnableRateLimiting("AIPolicy")]
     public class VoiceController : ControllerBase
     {
         private readonly IVoiceProcessingService _voiceService;
@@ -103,7 +106,12 @@ namespace EatFitAI.API.Controllers
                 });
 
                 using var content = new StringContent(payload, Encoding.UTF8, "application/json");
-                using var response = await client.PostAsync(providerUrl, content, cancellationToken);
+                using var providerRequest = new HttpRequestMessage(HttpMethod.Post, providerUrl)
+                {
+                    Content = content
+                };
+                AiProviderRequestHelper.AddInternalTokenHeader(providerRequest, _configuration, _logger);
+                using var response = await client.SendAsync(providerRequest, cancellationToken);
                 var responseBody = await response.Content.ReadAsStringAsync(cancellationToken);
 
                 if (response.IsSuccessStatusCode)
@@ -133,6 +141,16 @@ namespace EatFitAI.API.Controllers
                     userId,
                     (int)response.StatusCode,
                     responseBody);
+
+                if (AiProviderRequestHelper.IsInternalAuthFailure(response.StatusCode, responseBody))
+                {
+                    return StatusCode(
+                        StatusCodes.Status503ServiceUnavailable,
+                        ErrorResponseHelper.SafeError(
+                            "voice_provider_auth_error",
+                            "Dich vu AI giong noi chua duoc cau hinh an toan.",
+                            HttpContext));
+                }
 
                 var providerErrorFallback = await BuildFallbackCommandAsync(
                     request,
@@ -290,14 +308,17 @@ namespace EatFitAI.API.Controllers
             return "Voice Beta cần bạn xác nhận trước khi lưu.";
         }
 
+    public class TranscribeRequest
+    {
+        public string? AudioUrl { get; set; }
+    }
+
         /// <summary>
         /// Proxy audio transcription to external AI provider.
         /// </summary>
         [HttpPost("transcribe")]
-        [RequestSizeLimit(25_000_000)]
-        [Consumes("multipart/form-data")]
         public async Task<IActionResult> TranscribeWithProvider(
-            [FromForm] IFormFile? audio,
+            [FromBody] TranscribeRequest request,
             CancellationToken cancellationToken)
         {
             var userId = GetUserId();
@@ -306,12 +327,13 @@ namespace EatFitAI.API.Controllers
                 return Unauthorized(new { error = "Bạn chưa đăng nhập" });
             }
 
-            if (audio == null || audio.Length == 0)
+            var audioUrl = request.AudioUrl;
+            if (string.IsNullOrWhiteSpace(audioUrl))
             {
                 return BadRequest(new
                 {
                     success = false,
-                    error = "Tệp âm thanh là bắt buộc"
+                    error = "Đường dẫn âm thanh là bắt buộc"
                 });
             }
 
@@ -321,14 +343,15 @@ namespace EatFitAI.API.Controllers
                 using var client = _httpClientFactory.CreateClient();
                 client.Timeout = TimeSpan.FromSeconds(120);
 
-                using var content = new MultipartFormDataContent();
-                await using var stream = audio.OpenReadStream();
-                using var streamContent = new StreamContent(stream);
-                streamContent.Headers.ContentType = new MediaTypeHeaderValue(
-                    audio.ContentType ?? "application/octet-stream");
-                content.Add(streamContent, "audio", audio.FileName);
+                var payload = new { audio_url = audioUrl };
+                var content = new StringContent(JsonSerializer.Serialize(payload), System.Text.Encoding.UTF8, "application/json");
 
-                using var response = await client.PostAsync(providerUrl, content, cancellationToken);
+                using var providerRequest = new HttpRequestMessage(HttpMethod.Post, providerUrl)
+                {
+                    Content = content
+                };
+                AiProviderRequestHelper.AddInternalTokenHeader(providerRequest, _configuration, _logger);
+                using var response = await client.SendAsync(providerRequest, cancellationToken);
                 var responseBody = await response.Content.ReadAsStringAsync(cancellationToken);
 
                 if (!response.IsSuccessStatusCode)
@@ -339,18 +362,30 @@ namespace EatFitAI.API.Controllers
                         (int)response.StatusCode,
                         responseBody);
 
+                    if (AiProviderRequestHelper.IsInternalAuthFailure(response.StatusCode, responseBody))
+                    {
+                        return StatusCode(StatusCodes.Status503ServiceUnavailable, new
+                        {
+                            success = false,
+                            error = "voice_provider_auth_error",
+                            message = "Dich vu AI giong noi chua duoc cau hinh an toan.",
+                            requestId = HttpContext.TraceIdentifier,
+                        });
+                    }
+
                     return StatusCode((int)response.StatusCode, new
                     {
                         success = false,
                         error = "voice_provider_error",
-                        detail = responseBody
+                        message = "AI giọng nói gặp lỗi khi xử lý yêu cầu.",
+                        requestId = HttpContext.TraceIdentifier,
                     });
                 }
 
                 _logger.LogInformation(
                     "Voice transcribe proxy succeeded for user {UserId} with file {FileName}",
                     userId,
-                    audio.FileName);
+                    request.AudioUrl);
 
                 return Content(
                     responseBody,
@@ -363,7 +398,8 @@ namespace EatFitAI.API.Controllers
                 {
                     success = false,
                     error = "voice_provider_unavailable",
-                    detail = ex.Message
+                    message = "AI giọng nói hiện không khả dụng.",
+                    requestId = HttpContext.TraceIdentifier,
                 });
             }
             catch (TaskCanceledException ex)
@@ -373,7 +409,8 @@ namespace EatFitAI.API.Controllers
                 {
                     success = false,
                     error = "voice_provider_timeout",
-                    detail = ex.Message
+                    message = "AI giọng nói phản hồi quá chậm.",
+                    requestId = HttpContext.TraceIdentifier,
                 });
             }
         }
@@ -511,7 +548,7 @@ namespace EatFitAI.API.Controllers
                         // Query DaySummary để lấy cả calo và mục tiêu
                         try
                         {
-                            var today = command.Entities.Date ?? DateTime.Today;
+                            var today = command.Entities.Date ?? DateTimeHelper.GetVietnamNow().Date;
                             var daySummary = await _analyticsService.GetDaySummaryWithMealsAsync(userId, today);
                             var totalCalories = daySummary.TotalCalories;
                             var targetCalories = daySummary.TargetCalories ?? 2000;
@@ -574,7 +611,7 @@ namespace EatFitAI.API.Controllers
                 var bodyMetric = new EatFitAI.API.DTOs.User.BodyMetricDto
                 {
                     WeightKg = request.NewWeight,
-                    MeasuredDate = DateTime.Now
+                    MeasuredDate = DateTimeHelper.GetVietnamNow()
                 };
                 await _userService.RecordBodyMetricsAsync(userId, bodyMetric);
                 
@@ -590,7 +627,7 @@ namespace EatFitAI.API.Controllers
                         Data = new Dictionary<string, object>
                         {
                             ["savedWeight"] = request.NewWeight,
-                            ["savedAt"] = DateTime.Now.ToString("yyyy-MM-dd HH:mm")
+                            ["savedAt"] = DateTimeHelper.GetVietnamNow().ToString("yyyy-MM-dd HH:mm")
                         }
                     }
                 });
@@ -686,7 +723,7 @@ namespace EatFitAI.API.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error adding food via voice");
-                return (null, $"Lỗi khi thêm món ăn: {ex.Message}");
+                return (null, "Lỗi khi thêm món ăn. Vui lòng thử lại.");
             }
         }
 

@@ -18,10 +18,6 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import Toast from 'react-native-toast-message';
 import Animated, {
   FadeInDown,
-  FadeInUp,
-  useAnimatedStyle,
-  useSharedValue,
-  withTiming,
 } from 'react-native-reanimated';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -29,9 +25,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 
 import { ThemedText } from '../../../components/ThemedText';
-import Screen from '../../../components/Screen';
-import { useAppTheme } from '../../../theme/ThemeProvider';
 import type { RootStackParamList } from '../../types';
+import { trackEvent } from '../../../services/analytics';
 import { foodService, type FoodDetail } from '../../../services/foodService';
 import { invalidateDiaryQueries } from '../../../services/diaryFlowService';
 import { MEAL_TYPES, MEAL_TYPE_LABELS, type MealTypeId } from '../../../types';
@@ -82,19 +77,18 @@ const P = {
   onPrimary: '#003915',
   glassBorder: 'rgba(255,255,255,0.1)',
   glassHeader: 'rgba(14, 19, 34, 0.4)',
-  
+
   macroP: '#34d399', // emerald
   macroC: '#38bdf8', // sky
   macroF: '#fbbf24', // amber
 };
 
 const FoodDetailScreen = (): React.ReactElement | null => {
-  const { theme } = useAppTheme();
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<RouteProps>();
   const queryClient = useQueryClient();
   const insets = useSafeAreaInsets();
-  
+
   const selectedDate = route.params.selectedDate;
   const returnToDiaryOnSave = route.params.returnToDiaryOnSave ?? false;
   const foodKey = `${route.params.source ?? 'catalog'}:${route.params.foodId}`;
@@ -131,6 +125,23 @@ const FoodDetailScreen = (): React.ReactElement | null => {
     }
   }, [error, navigation]);
 
+  useEffect(() => {
+    if (!detail) {
+      return;
+    }
+
+    trackEvent('food_detail_loaded', {
+      flow: 'food_detail',
+      step: 'view',
+      status: 'loaded',
+      metadata: {
+        foodId: detail.id,
+        source: route.params.source ?? 'catalog',
+        foodName: detail.name,
+      },
+    });
+  }, [detail, route.params.source]);
+
   const { control, handleSubmit, watch, setValue, formState: { errors } } = useForm<FormValues>({
     resolver: zodResolver(FormSchema),
     defaultValues: {
@@ -162,7 +173,7 @@ const FoodDetailScreen = (): React.ReactElement | null => {
   const displayCarbs = (detail?.perServingCarbs ?? detail?.carbs ?? 0) * multiplier;
   const displayFat = (detail?.perServingFat ?? detail?.fat ?? 0) * multiplier;
   const displayCalories = (detail?.perServingCalories ?? detail?.calories ?? 0) * multiplier;
-  
+
   const totalMacros = Math.max(displayProtein + displayCarbs + displayFat, 1);
 
   // Handlers for stepper
@@ -205,6 +216,17 @@ const FoodDetailScreen = (): React.ReactElement | null => {
         text1: 'Đã thêm món vào nhật ký',
         text2: 'Tiếp tục theo dõi dinh dưỡng của bạn!',
       });
+      trackEvent('diary_add_from_food_detail_success', {
+        flow: 'food_detail',
+        step: 'save',
+        status: 'success',
+        metadata: {
+          foodId: detail.id,
+          source: route.params.source ?? 'catalog',
+          mealType: values.mealType,
+          grams: Number(values.grams),
+        },
+      });
       await invalidateDiaryQueries(queryClient);
       if (returnToDiaryOnSave && selectedDate) {
         navigation.navigate('MealDiary', { selectedDate });
@@ -212,11 +234,24 @@ const FoodDetailScreen = (): React.ReactElement | null => {
       }
       navigation.goBack();
     } catch (err: any) {
+      trackEvent('diary_add_from_food_detail_failure', {
+        category: 'error',
+        flow: 'food_detail',
+        step: 'save',
+        status: 'failure',
+        metadata: {
+          foodId: detail.id,
+          source: route.params.source ?? 'catalog',
+          mealType: values.mealType,
+          grams: Number(values.grams),
+          message: err?.message,
+        },
+      });
       handleApiError(err);
     } finally {
       setIsSubmitting(false);
     }
-  }, [detail, displayCalories, displayProtein, displayCarbs, displayFat, navigation, queryClient, returnToDiaryOnSave, selectedDate]);
+  }, [detail, navigation, queryClient, returnToDiaryOnSave, route.params.source, selectedDate]);
 
   if (isLoading) {
     return (
@@ -228,7 +263,13 @@ const FoodDetailScreen = (): React.ReactElement | null => {
   if (!detail) return null;
 
   return (
-    <View style={S.container}>
+    <View
+      style={S.container}
+      testID={TEST_IDS.foodDetail.screen}
+      nativeID={TEST_IDS.foodDetail.screen}
+      accessibilityLabel={TEST_IDS.foodDetail.screen}
+      collapsable={false}
+    >
       {/* ═══ Top App Bar ═══ */}
       <View style={[S.header, { paddingTop: insets.top + 10 }]}>
         <Pressable style={S.iconBtn} onPress={() => navigation.goBack()}>
@@ -237,7 +278,7 @@ const FoodDetailScreen = (): React.ReactElement | null => {
         <ThemedText style={S.headerTitle}>Chi tiết món ăn</ThemedText>
         {!isUserFood ? (
           <Pressable style={S.iconBtn} onPress={toggleFavorite}>
-            <Ionicons name={isFavorite ? "heart" : "heart-outline"} size={22} color={P.primary} />
+            <Ionicons name={isFavorite ? 'heart' : 'heart-outline'} size={22} color={P.primary} />
           </Pressable>
         ) : (
           <View style={S.iconBtn} />
@@ -288,6 +329,9 @@ const FoodDetailScreen = (): React.ReactElement | null => {
                   render={({ field: { onChange, onBlur, value } }) => (
                     <View style={S.stepperInputWrapper}>
                       <TextInput
+                        testID={TEST_IDS.foodDetail.gramsInput}
+                        nativeID={TEST_IDS.foodDetail.gramsInput}
+                        accessibilityLabel={TEST_IDS.foodDetail.gramsInput}
                         style={S.stepperInput}
                         keyboardType="numeric"
                         value={value}
@@ -386,6 +430,9 @@ const FoodDetailScreen = (): React.ReactElement | null => {
       {/* ═══ Sticky Bottom Action ═══ */}
       <View style={S.bottomActions}>
         <Pressable
+          testID={TEST_IDS.foodDetail.submitButton}
+          nativeID={TEST_IDS.foodDetail.submitButton}
+          accessibilityLabel={TEST_IDS.foodDetail.submitButton}
           style={({ pressed }) => [S.submitBtn, pressed && { opacity: 0.8, transform: [{ scale: 0.98 }] }]}
           onPress={handleSubmit(submit)}
           disabled={isSubmitting}

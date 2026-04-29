@@ -15,6 +15,7 @@ namespace EatFitAI.API.DTOs.Food
         public decimal FatPer100 { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime UpdatedAt { get; set; }
+        public ImageVariantsDto? ImageVariants { get; set; }
     }
 
     // Used for creation via multipart/form-data

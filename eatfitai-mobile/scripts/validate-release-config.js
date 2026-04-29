@@ -117,9 +117,9 @@ function main() {
   assert(productionEnv.APP_ENV === 'production', 'production must set APP_ENV=production');
   assert(e2eTestEnv.APP_ENV === 'preview', 'e2e-test must inherit APP_ENV=preview');
   assertCloudUrl('preview EXPO_PUBLIC_API_BASE_URL', previewEnv.EXPO_PUBLIC_API_BASE_URL);
-  assertCloudUrl('preview EXPO_PUBLIC_SUPABASE_URL', previewEnv.EXPO_PUBLIC_SUPABASE_URL);
+  assertCloudUrl('preview EXPO_PUBLIC_MEDIA_PUBLIC_BASE_URL', previewEnv.EXPO_PUBLIC_MEDIA_PUBLIC_BASE_URL);
   assertCloudUrl('production EXPO_PUBLIC_API_BASE_URL', productionEnv.EXPO_PUBLIC_API_BASE_URL);
-  assertCloudUrl('production EXPO_PUBLIC_SUPABASE_URL', productionEnv.EXPO_PUBLIC_SUPABASE_URL);
+  assertCloudUrl('production EXPO_PUBLIC_MEDIA_PUBLIC_BASE_URL', productionEnv.EXPO_PUBLIC_MEDIA_PUBLIC_BASE_URL);
   assert(
     buildProfiles.preview.android?.buildType === 'apk',
     'preview must keep android.buildType=apk',
@@ -135,7 +135,7 @@ function main() {
     EAS_BUILD_PLATFORM: 'android',
     APP_ENV: previewEnv.APP_ENV,
     EXPO_PUBLIC_API_BASE_URL: previewEnv.EXPO_PUBLIC_API_BASE_URL,
-    EXPO_PUBLIC_SUPABASE_URL: previewEnv.EXPO_PUBLIC_SUPABASE_URL,
+    EXPO_PUBLIC_MEDIA_PUBLIC_BASE_URL: previewEnv.EXPO_PUBLIC_MEDIA_PUBLIC_BASE_URL,
     EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID: 'ci-preview-web-client-id',
   });
 
@@ -145,8 +145,8 @@ function main() {
     'preview app.config.js must resolve API base URL from eas.json',
   );
   assert(
-    previewResolved.extra?.supabaseUrl === previewEnv.EXPO_PUBLIC_SUPABASE_URL,
-    'preview app.config.js must resolve Supabase URL from eas.json',
+    previewResolved.extra?.mediaPublicBaseUrl === previewEnv.EXPO_PUBLIC_MEDIA_PUBLIC_BASE_URL,
+    'preview app.config.js must resolve media public base URL from eas.json',
   );
   assert(
     previewResolved.extra?.eas?.projectId === expectedProjectId,
@@ -159,7 +159,7 @@ function main() {
     EAS_BUILD_PLATFORM: 'android',
     APP_ENV: productionEnv.APP_ENV,
     EXPO_PUBLIC_API_BASE_URL: productionEnv.EXPO_PUBLIC_API_BASE_URL,
-    EXPO_PUBLIC_SUPABASE_URL: productionEnv.EXPO_PUBLIC_SUPABASE_URL,
+    EXPO_PUBLIC_MEDIA_PUBLIC_BASE_URL: productionEnv.EXPO_PUBLIC_MEDIA_PUBLIC_BASE_URL,
     EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID: 'ci-production-web-client-id',
   });
 
@@ -172,8 +172,8 @@ function main() {
     'production app.config.js must resolve API base URL from eas.json',
   );
   assert(
-    productionResolved.extra?.supabaseUrl === productionEnv.EXPO_PUBLIC_SUPABASE_URL,
-    'production app.config.js must resolve Supabase URL from eas.json',
+    productionResolved.extra?.mediaPublicBaseUrl === productionEnv.EXPO_PUBLIC_MEDIA_PUBLIC_BASE_URL,
+    'production app.config.js must resolve media public base URL from eas.json',
   );
   assert(
     productionResolved.extra?.eas?.projectId === expectedProjectId,
@@ -186,7 +186,7 @@ function main() {
     EAS_BUILD_PLATFORM: 'ios',
     APP_ENV: productionEnv.APP_ENV,
     EXPO_PUBLIC_API_BASE_URL: productionEnv.EXPO_PUBLIC_API_BASE_URL,
-    EXPO_PUBLIC_SUPABASE_URL: productionEnv.EXPO_PUBLIC_SUPABASE_URL,
+    EXPO_PUBLIC_MEDIA_PUBLIC_BASE_URL: productionEnv.EXPO_PUBLIC_MEDIA_PUBLIC_BASE_URL,
     EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID: 'ci-production-web-client-id',
     EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID: 'ci-production-ios-client-id',
   });
@@ -200,8 +200,8 @@ function main() {
     'production iOS app.config.js must resolve API base URL from eas.json',
   );
   assert(
-    productionIosResolved.extra?.supabaseUrl === productionEnv.EXPO_PUBLIC_SUPABASE_URL,
-    'production iOS app.config.js must resolve Supabase URL from eas.json',
+    productionIosResolved.extra?.mediaPublicBaseUrl === productionEnv.EXPO_PUBLIC_MEDIA_PUBLIC_BASE_URL,
+    'production iOS app.config.js must resolve media public base URL from eas.json',
   );
   assert(
     productionIosResolved.extra?.eas?.projectId === expectedProjectId,

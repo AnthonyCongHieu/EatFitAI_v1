@@ -20,7 +20,6 @@ import {
   View,
 } from 'react-native';
 import Animated, {
-  FadeIn,
   FadeInDown,
   FadeInUp,
 } from 'react-native-reanimated';
@@ -34,29 +33,37 @@ import Svg, {
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
+import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
+import {
+  CompositeNavigationProp,
+  RouteProp,
+  useNavigation,
+  useRoute,
+} from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
 import { ThemedText } from '../../../components/ThemedText';
 import { useStatsStore } from '../../../store/useStatsStore';
 import { useDiaryStore } from '../../../store/useDiaryStore';
-import { useProfileStore } from '../../../store/useProfileStore';
 import { summaryService } from '../../../services/summaryService';
+import type { WeeklyReview } from '../../../services/summaryService';
+import { trackEvent } from '../../../services/analytics';
 import { handleApiError } from '../../../utils/errorHandler';
 import { StatsSkeleton } from '../../../components/skeletons/StatsSkeleton';
-import { CalendarHeatmap } from '../../../components/stats';
 import Tilt3DCard from '../../../components/ui/Tilt3DCard';
 import { TEST_IDS } from '../../../testing/testIds';
 import type { RootStackParamList } from '../../types';
 import { waterService, type WaterIntakeData, type MonthlyWaterData } from '../../../services/waterService';
 import { profileService } from '../../../services/profileService';
 import { useQuery } from '@tanstack/react-query';
+import logger from '../../../utils/logger';
 import {
   formatShortWeekdayLabel,
   formatWeekRangeLabel,
 } from '../../../utils/dateDisplay';
 import { formatLocalDate } from '../../../utils/localDate';
+import type { AppTabsParamList } from '../../navigation/AppTabs';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -134,6 +141,11 @@ const formatViDate = (): string => {
 
 const cardW = SCREEN_WIDTH - 48; // px-6 * 2
 
+type StatsScreenNavigationProp = CompositeNavigationProp<
+  BottomTabNavigationProp<AppTabsParamList, 'StatsTab'>,
+  NativeStackNavigationProp<RootStackParamList>
+>;
+
 /* ─── Month helpers ─── */
 interface WeekAvg { label: string; avg: number; }
 
@@ -207,9 +219,16 @@ const RING_CIRCUMFERENCE = 2 * Math.PI * RING_RADIUS;
    ═══════════════════════════════════════════════ */
 const StatsScreen = (): React.ReactElement => {
   const insets = useSafeAreaInsets();
-  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const navigation = useNavigation<StatsScreenNavigationProp>();
+  const route = useRoute<RouteProp<AppTabsParamList, 'StatsTab'>>();
+  const weeklyReviewSource = route.params?.source ?? 'stats';
+  const focusWeeklyReview = route.params?.focusWeeklyReview === true;
 
   const [activeTab, setActiveTab] = useState<TabOption>('today');
+  const [hasTrackedWeeklyReviewOpen, setHasTrackedWeeklyReviewOpen] = useState(false);
+  const [weeklyReviewAcknowledged, setWeeklyReviewAcknowledged] = useState(false);
+  const [pendingWeeklyReviewFocus, setPendingWeeklyReviewFocus] = useState(focusWeeklyReview);
+  const [isWeeklyReviewFocused, setIsWeeklyReviewFocused] = useState(focusWeeklyReview);
 
   /* ─── Data: Today ─── */
   const summary = useDiaryStore((s) => s.summary);
@@ -238,25 +257,56 @@ const StatsScreen = (): React.ReactElement => {
   const { data: statsWaterData } = useQuery<WaterIntakeData>({
     queryKey: ['water-intake-today'],
     queryFn: () => waterService.getWaterIntake(new Date()),
-    staleTime: 30000,
+    staleTime: 2 * 60 * 1000, // 2 phút — share cache với HomeScreen
     enabled: activeTab === 'today',
   });
   const statsWaterAmount = statsWaterData?.amountMl ?? 0;
   const statsWaterTarget = statsWaterData?.targetMl ?? 2000;
 
   /* ─── Data: Profile ─── */
-  const profile = useProfileStore((s) => s.profile);
-  const profileWeight = profile?.weightKg || 0;
-  const profileTargetWeight = profile?.targetWeightKg || 0;
 
   /* ─── Data: Month extras (weight change + water average) ─── */
   const [monthlyWater, setMonthlyWater] = useState<MonthlyWaterData | null>(null);
   const [weightChange, setWeightChange] = useState<number | null>(null);
+  const {
+    data: weeklyReview,
+    isFetching: isFetchingWeeklyReview,
+    refetch: refetchWeeklyReview,
+  } = useQuery<WeeklyReview>({
+    queryKey: ['analytics', 'weekly-review'],
+    queryFn: () => summaryService.getWeeklyReview(),
+    staleTime: 5 * 60 * 1000,
+    enabled: activeTab === 'week',
+  });
 
   useEffect(() => {
     fetchWeekSummary();
     fetchSummary();
   }, []);
+
+  useEffect(() => {
+    if (!focusWeeklyReview) {
+      return;
+    }
+
+    setPendingWeeklyReviewFocus(true);
+    setIsWeeklyReviewFocused(true);
+  }, [focusWeeklyReview]);
+
+  useEffect(() => {
+    if (!pendingWeeklyReviewFocus) {
+      return;
+    }
+
+    if (activeTab !== 'week') {
+      setActiveTab('week');
+    }
+
+    setPendingWeeklyReviewFocus(false);
+    navigation.setParams({
+      focusWeeklyReview: undefined,
+    });
+  }, [activeTab, navigation, pendingWeeklyReviewFocus]);
 
   /** Fetch monthly water average + weight change */
   const fetchMonthExtras = useCallback(async () => {
@@ -270,14 +320,14 @@ const StatsScreen = (): React.ReactElement => {
       const history = await profileService.getBodyMetricsHistory(60);
       if (history.length >= 2) {
         const sorted = [...history].sort((a, b) =>
-          (a.measuredDate || '').localeCompare(b.measuredDate || '')
+          (a.measuredDate || '').localeCompare(b.measuredDate || ''),
         );
         const first = sorted[0]?.weightKg;
         const last = sorted[sorted.length - 1]?.weightKg;
         if (first && last) setWeightChange(Number((last - first).toFixed(1)));
       }
-    } catch (e) { 
-      console.log('fetchMonthExtras Error:', e);
+    } catch (e) {
+      logger.warn('[StatsScreen] fetchMonthExtras failed', e);
     }
   }, [currentMonth]);
 
@@ -315,6 +365,34 @@ const StatsScreen = (): React.ReactElement => {
       fetchMonthExtras();
     }
   }, [activeTab, monthData, fetchMonthData, fetchMonthExtras]);
+
+  useEffect(() => {
+    if (activeTab !== 'week' || !weeklyReview || hasTrackedWeeklyReviewOpen) {
+      return;
+    }
+
+    trackEvent('weekly_review_open', {
+      category: 'product',
+      flow: 'retention',
+      step: 'weekly_review',
+      status: 'opened',
+      screen: 'StatsScreen',
+      metadata: {
+        source: weeklyReviewSource,
+        focused: isWeeklyReviewFocused,
+        reviewStatus: weeklyReview.status,
+        confidence: weeklyReview.confidence,
+        dataQuality: weeklyReview.dataQuality,
+      },
+    });
+    setHasTrackedWeeklyReviewOpen(true);
+  }, [
+    activeTab,
+    hasTrackedWeeklyReviewOpen,
+    isWeeklyReviewFocused,
+    weeklyReview,
+    weeklyReviewSource,
+  ]);
 
   /* ─── Derived values ─── */
   const todayCal = Number(summary?.totalCalories ?? 0);
@@ -357,15 +435,21 @@ const StatsScreen = (): React.ReactElement => {
   /* ─── Handlers ─── */
   const handleTabChange = (tab: TabOption) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    if (tab !== 'week' && isWeeklyReviewFocused) {
+      setIsWeeklyReviewFocused(false);
+    }
     setActiveTab(tab);
   };
 
   const handleRefresh = useCallback(() => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     if (activeTab === 'today') { fetchSummary(); fetchWeekSummary(); }
-    else if (activeTab === 'week') fetchWeekSummary();
+    else if (activeTab === 'week') {
+      fetchWeekSummary();
+      void refetchWeeklyReview();
+    }
     else fetchMonthData();
-  }, [activeTab, fetchSummary, fetchWeekSummary, fetchMonthData]);
+  }, [activeTab, fetchSummary, fetchWeekSummary, fetchMonthData, refetchWeeklyReview]);
 
   const handleDayPress = useCallback(
     (date: string) => {
@@ -375,7 +459,26 @@ const StatsScreen = (): React.ReactElement => {
     [navigation],
   );
 
-  const isLoading = activeTab === 'month' ? isLoadingMonth : isLoadingWeek;
+  const handleWeeklyReviewComplete = useCallback(() => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setWeeklyReviewAcknowledged(true);
+    trackEvent('weekly_review_complete', {
+      category: 'product',
+      flow: 'retention',
+      step: 'weekly_review',
+      status: 'completed',
+      screen: 'StatsScreen',
+      metadata: {
+        source: weeklyReviewSource,
+        reviewStatus: weeklyReview?.status ?? null,
+      },
+    });
+  }, [weeklyReview?.status, weeklyReviewSource]);
+
+  const isLoading =
+    activeTab === 'month'
+      ? isLoadingMonth
+      : isLoadingWeek || (activeTab === 'week' && isFetchingWeeklyReview);
 
   if (isLoading && !weekSummary && !monthData && !summary) return <StatsSkeleton />;
 
@@ -616,7 +719,7 @@ const StatsScreen = (): React.ReactElement => {
                   <View style={S.waterHead}>
                     <View style={S.waterLeft}>
                       <View style={S.waterIconBox}>
-                        <Ionicons name="water" size={20} color="#3b82f6" />
+                        <Ionicons name="water" size={20} color="#22c55e" />
                       </View>
                       <ThemedText style={S.waterLabel}>LƯỢNG NƯỚC</ThemedText>
                     </View>
@@ -638,7 +741,7 @@ const StatsScreen = (): React.ReactElement => {
                           key={i}
                           name="water"
                           size={28}
-                          color={filled ? '#3b82f6' : P.surfaceContainerHighest}
+                          color={filled ? '#22c55e' : P.surfaceContainerHighest}
                         />
                       );
                     })}
@@ -656,9 +759,6 @@ const StatsScreen = (): React.ReactElement => {
           const wkProgress = wkTargetCal > 0 ? Math.min(1, wkTotalCal / wkTargetCal) : 0;
           const wkDashOffset = RING_CIRCUMFERENCE * (1 - wkProgress);
           const wkLoggedDays = weekSummary.days.filter(d => d.calories > 0);
-          const wkAvgCal = wkLoggedDays.length > 0
-            ? Math.round(wkLoggedDays.reduce((s, d) => s + d.calories, 0) / wkLoggedDays.length)
-            : 0;
           const wkMaxDay = Math.max(...weekSummary.days.map(d => d.calories), 1);
           // Scale chart so the target is always visible in the upper half
           const wkMaxC = Math.max(wkMaxDay, (typeof targetCal === 'number' && targetCal > 0 ? targetCal * 1.2 : 1));
@@ -705,6 +805,108 @@ const StatsScreen = (): React.ReactElement => {
                 </Pressable>
               </View>
             </Animated.View>
+
+            {weeklyReview && (
+              <Animated.View entering={FadeInDown.delay(125).springify()}>
+                <Tilt3DCard
+                  width={cardW}
+                  height={245}
+                  maxTilt={4}
+                  showReflection={false}
+                  useDeviceMotion
+                  activeTouch={false}
+                >
+                  <View
+                    testID={TEST_IDS.stats.weeklyReviewCard}
+                    style={[
+                      S.weeklyReviewCard,
+                      isWeeklyReviewFocused && S.weeklyReviewCardFocused,
+                    ]}
+                  >
+                    <LinearGradient
+                      colors={['rgba(75, 226, 119, 0.12)', 'rgba(255,255,255,0.02)']}
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 1, y: 1 }}
+                      style={[StyleSheet.absoluteFill, { borderRadius: 24 }]}
+                    />
+
+                    <View style={S.weeklyReviewHeader}>
+                      <View>
+                        <ThemedText style={S.weeklyReviewEyebrow}>
+                          Báo cáo tuần
+                        </ThemedText>
+                        <ThemedText style={S.weeklyReviewTitle}>
+                          {weeklyReview.message}
+                        </ThemedText>
+                      </View>
+                      <View style={S.weeklyReviewBadge}>
+                        <ThemedText style={S.weeklyReviewBadgeText}>
+                          {Math.round(weeklyReview.dataQuality)}% dữ liệu
+                        </ThemedText>
+                      </View>
+                    </View>
+
+                    <View style={S.weeklyReviewMetrics}>
+                      <View style={S.weeklyReviewMetric}>
+                        <ThemedText style={S.weeklyReviewMetricValue}>
+                          {Math.round(weeklyReview.confidence)}%
+                        </ThemedText>
+                        <ThemedText style={S.weeklyReviewMetricLabel}>
+                          Độ tin cậy
+                        </ThemedText>
+                      </View>
+                      <View style={S.weeklyReviewMetric}>
+                        <ThemedText style={S.weeklyReviewMetricValue}>
+                          {Math.round(weeklyReview.insights.complianceScore ?? 0)}%
+                        </ThemedText>
+                        <ThemedText style={S.weeklyReviewMetricLabel}>
+                          Tuân thủ
+                        </ThemedText>
+                      </View>
+                      <View style={S.weeklyReviewMetric}>
+                        <ThemedText style={S.weeklyReviewMetricValue}>
+                          {weeklyReview.insights.energyLevel ?? 'Ổn định'}
+                        </ThemedText>
+                        <ThemedText style={S.weeklyReviewMetricLabel}>
+                          Năng lượng
+                        </ThemedText>
+                      </View>
+                    </View>
+
+                    <View style={S.weeklyReviewRecommendations}>
+                      {weeklyReview.insights.recommendations.slice(0, 2).map((item) => (
+                        <View key={item} style={S.weeklyReviewRecommendationRow}>
+                          <View style={S.weeklyReviewRecommendationDot} />
+                          <ThemedText style={S.weeklyReviewRecommendationText}>
+                            {item}
+                          </ThemedText>
+                        </View>
+                      ))}
+                    </View>
+
+                    <View style={S.weeklyReviewFooter}>
+                      <ThemedText style={S.weeklyReviewFooterHint}>
+                        {weeklyReview.suggestedActions?.newTargetCalories
+                          ? `Gợi ý mục tiêu mới: ${Math.round(weeklyReview.suggestedActions.newTargetCalories).toLocaleString()} kcal`
+                          : 'Mở tab Tuần để xem tiến độ và giữ nhịp theo dõi.'}
+                      </ThemedText>
+                      <Pressable
+                        onPress={handleWeeklyReviewComplete}
+                        testID={TEST_IDS.stats.weeklyReviewDoneButton}
+                        style={[
+                          S.weeklyReviewButton,
+                          weeklyReviewAcknowledged && S.weeklyReviewButtonDone,
+                        ]}
+                      >
+                        <ThemedText style={S.weeklyReviewButtonText}>
+                          {weeklyReviewAcknowledged ? 'Đã xem' : 'Đánh dấu đã xem'}
+                        </ThemedText>
+                      </Pressable>
+                    </View>
+                  </View>
+                </Tilt3DCard>
+              </Animated.View>
+            )}
 
             {/* ── VITALITY RING CARD ── */}
             <Animated.View entering={FadeInDown.delay(150).springify()}>
@@ -1162,13 +1364,13 @@ const StatsScreen = (): React.ReactElement => {
                             const firstDayFormat = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1).getDay();
                             const emptyPrefixDays = firstDayFormat === 0 ? 6 : firstDayFormat - 1;
                             const d = i - emptyPrefixDays + 1;
-                            
+
                             const isRealDay = d > 0 && d <= daysInMonth;
-                            
+
                             let bgColor = 'rgba(255,255,255,0.03)'; // Default
                             let txtColor = P.textSlate500;
                             let opacity = 0.5;
-                            
+
                             if (isRealDay) {
                               const dData = monthData?.days.find(md => {
                                  const dateObj = new Date(md.date);
@@ -1185,10 +1387,10 @@ const StatsScreen = (): React.ReactElement => {
                                 else bgColor = P.primary; // Tuyệt đối
                               }
                             }
-                            
+
                             return (
-                              <View 
-                                key={i} 
+                              <View
+                                key={i}
                                 style={{
                                   width: (cardW - 48) / 7 - 8,
                                   aspectRatio: 1,
@@ -1196,8 +1398,8 @@ const StatsScreen = (): React.ReactElement => {
                                   backgroundColor: isRealDay ? bgColor : 'transparent',
                                   margin: 4,
                                   alignItems: 'center',
-                                  justifyContent: 'center'
-                                }} 
+                                  justifyContent: 'center',
+                                }}
                               >
                                 {isRealDay && (
                                   <ThemedText style={{ fontSize: 11, fontWeight: '700', color: txtColor, opacity }}>
@@ -1290,11 +1492,11 @@ const StatsScreen = (): React.ReactElement => {
                           <ThemedText style={S.mthEnergyUnit}> ml/ngày</ThemedText>
                         </View>
                       </View>
-                      <View style={[S.mthEnergyIcon, { backgroundColor: 'rgba(59, 130, 246, 0.1)' }]}>
+                      <View style={[S.mthEnergyIcon, { backgroundColor: 'rgba(34, 197, 94, 0.1)' }]}>
                         <Ionicons
                           name="water-outline"
                           size={24}
-                          color="#3b82f6"
+                          color="#22c55e"
                         />
                       </View>
                     </View>
@@ -1306,7 +1508,7 @@ const StatsScreen = (): React.ReactElement => {
               {monthData && (
                 <Animated.View entering={FadeInUp.delay(400).springify()} style={{ marginTop: 12 }}>
                   <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12 }}>
-                    
+
                     {/* Chip 1: Tổng Calo Tiêu Thụ */}
                     <Tilt3DCard width={(cardW - 12) / 2} height={140} maxTilt={5} showReflection={false} useDeviceMotion activeTouch={false}>
                       <View style={[S.mthUniformCard, { width: (cardW - 12) / 2 }]}>
@@ -1362,7 +1564,7 @@ const StatsScreen = (): React.ReactElement => {
                     {/* Chip 4: Nước uống (Tổng lượng tháng) */}
                     <Tilt3DCard width={(cardW - 12) / 2} height={140} maxTilt={5} showReflection={false} useDeviceMotion activeTouch={false}>
                       <View style={[S.mthUniformCard, { width: (cardW - 12) / 2 }]}>
-                        <Ionicons name="water" size={24} color="#3b82f6" style={{ marginBottom: 8 }} />
+                        <Ionicons name="water" size={24} color="#22c55e" style={{ marginBottom: 8 }} />
                         <ThemedText style={S.mthUniformLabel} numberOfLines={1} adjustsFontSizeToFit>TỔNG NƯỚC UỐNG</ThemedText>
                         <View style={{ flex: 1, justifyContent: 'flex-end' }}>
                           <ThemedText style={S.mthUniformVal} numberOfLines={1} adjustsFontSizeToFit>
@@ -1429,23 +1631,6 @@ const MacroBar = ({
         ]}
       />
     </View>
-  </View>
-);
-
-/** Summary chip for week/month */
-const SummaryChip = ({
-  emoji,
-  value,
-  label,
-}: {
-  emoji: string;
-  value: string;
-  label: string;
-}) => (
-  <View style={S.sumCard}>
-    <ThemedText style={{ fontSize: 20 }}>{emoji}</ThemedText>
-    <ThemedText style={S.sumVal}>{value}</ThemedText>
-    <ThemedText style={S.sumLbl}>{label}</ThemedText>
   </View>
 );
 
@@ -1639,6 +1824,128 @@ const S = StyleSheet.create({
   },
   wkBtn: { padding: 8, borderRadius: 12 },
   wkTitle: { fontSize: 15, fontWeight: '800', color: P.onSurface },
+
+  weeklyReviewCard: {
+    backgroundColor: 'rgba(22, 27, 43, 0.6)',
+    borderRadius: 24,
+    padding: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(75, 226, 119, 0.12)',
+    overflow: 'hidden',
+  },
+  weeklyReviewCardFocused: {
+    borderColor: 'rgba(75, 226, 119, 0.4)',
+    shadowColor: P.primary,
+    shadowOpacity: 0.25,
+    shadowRadius: 14,
+    elevation: 4,
+  },
+  weeklyReviewHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    gap: 12,
+    marginBottom: 18,
+  },
+  weeklyReviewEyebrow: {
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 1.8,
+    textTransform: 'uppercase',
+    color: P.primary,
+    marginBottom: 6,
+  },
+  weeklyReviewTitle: {
+    flexShrink: 1,
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#fff',
+    lineHeight: 24,
+  },
+  weeklyReviewBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 999,
+    backgroundColor: 'rgba(75, 226, 119, 0.12)',
+    borderWidth: 1,
+    borderColor: 'rgba(75, 226, 119, 0.18)',
+  },
+  weeklyReviewBadgeText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: P.primary,
+  },
+  weeklyReviewMetrics: {
+    flexDirection: 'row',
+    gap: 12,
+    marginBottom: 18,
+  },
+  weeklyReviewMetric: {
+    flex: 1,
+    padding: 12,
+    borderRadius: 16,
+    backgroundColor: 'rgba(255,255,255,0.04)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.04)',
+  },
+  weeklyReviewMetricValue: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#fff',
+    marginBottom: 4,
+  },
+  weeklyReviewMetricLabel: {
+    fontSize: 11,
+    color: P.textSlate400,
+  },
+  weeklyReviewRecommendations: {
+    gap: 8,
+    marginBottom: 16,
+  },
+  weeklyReviewRecommendationRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 10,
+  },
+  weeklyReviewRecommendationDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    marginTop: 7,
+    backgroundColor: P.primary,
+  },
+  weeklyReviewRecommendationText: {
+    flex: 1,
+    fontSize: 13,
+    lineHeight: 18,
+    color: P.onSurface,
+  },
+  weeklyReviewFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  weeklyReviewFooterHint: {
+    flex: 1,
+    fontSize: 12,
+    lineHeight: 17,
+    color: P.textSlate400,
+  },
+  weeklyReviewButton: {
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 14,
+    backgroundColor: P.primary,
+  },
+  weeklyReviewButtonDone: {
+    backgroundColor: P.surfaceContainerHighest,
+  },
+  weeklyReviewButtonText: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#fff',
+  },
 
   chartCard: {
     backgroundColor: P.surfaceContainerHigh,

@@ -10,7 +10,6 @@ namespace EatFitAI.API.Services;
 
 public class EncryptionService : IEncryptionService
 {
-    private const string DefaultEncryptionKey = "  ";
     private readonly string _encryptionKey;
     private readonly string[] _decryptionKeys;
     private readonly ILogger<EncryptionService> _logger;
@@ -102,16 +101,41 @@ public class EncryptionService : IEncryptionService
         {
             return false;
         }
+        catch (DecoderFallbackException)
+        {
+            return false;
+        }
     }
 
+    /// <summary>
+    /// Normalizes a raw encryption key to exactly 32 bytes (AES-256).
+    /// In Production, missing or short keys will cause a hard failure (fail-closed).
+    /// In Development/Test, a deterministic fallback is used for convenience.
+    /// </summary>
     internal static string NormalizeKey(string? rawKey)
     {
-        var value = string.IsNullOrWhiteSpace(rawKey)
-            ? DefaultEncryptionKey
-            : rawKey.Trim();
+        if (string.IsNullOrWhiteSpace(rawKey))
+        {
+            var env = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT");
+            if (string.Equals(env, "Production", StringComparison.OrdinalIgnoreCase))
+            {
+                throw new InvalidOperationException(
+                    "Encryption:Key is not configured. Encryption cannot operate without a valid key in Production.");
+            }
+            // Development/test fallback — deterministic but weak
+            rawKey = "DevOnlyFallbackKey__NOT_FOR_PROD";
+        }
+
+        var value = rawKey.Trim();
 
         if (value.Length < 32)
         {
+            var env = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT");
+            if (string.Equals(env, "Production", StringComparison.OrdinalIgnoreCase))
+            {
+                throw new InvalidOperationException(
+                    $"Encryption:Key must be at least 32 characters (got {value.Length}). Refusing to pad in Production.");
+            }
             return value.PadRight(32, 'X');
         }
 
@@ -159,7 +183,10 @@ public class EncryptionService : IEncryptionService
 
         using var memoryStream = new MemoryStream(cipher);
         using var cryptoStream = new CryptoStream(memoryStream, aes.CreateDecryptor(), CryptoStreamMode.Read);
-        using var streamReader = new StreamReader(cryptoStream);
+        using var streamReader = new StreamReader(
+            cryptoStream,
+            new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true),
+            detectEncodingFromByteOrderMarks: false);
 
         return streamReader.ReadToEnd();
     }

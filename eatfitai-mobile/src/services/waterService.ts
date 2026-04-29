@@ -1,6 +1,5 @@
-import axios from 'axios';
 import apiClient from './apiClient';
-import { useAuthStore } from '../store/useAuthStore';
+import logger from '../utils/logger';
 
 export interface WaterIntakeData {
   date: string;
@@ -43,59 +42,15 @@ export const waterService = {
     return data;
   },
 
-  /** Lấy tổng hợp nước uống theo tháng trực tiếp từ Supabase REST */
+  /** Lấy tổng hợp nước uống theo tháng từ backend */
   async getMonthlyWaterIntake(year: number, month: number): Promise<MonthlyWaterData> {
-    const userId = useAuthStore.getState().user?.id;
-    const url = process.env.EXPO_PUBLIC_SUPABASE_URL;
-    const anonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
-
-    // Ưu tiên gọi trực tiếp lên Supabase để lấy dữ liệu (vì người dùng không dùng backend local nữa)
-    if (userId && url && anonKey) {
-      try {
-        const startDate = `${year}-${String(month).padStart(2, '0')}-01`;
-        const m = month + 1;
-        const y = m > 12 ? year + 1 : year;
-        const nextMonthStr = `${y}-${String(m > 12 ? 1 : m).padStart(2, '0')}-01`;
-
-        const { data } = await axios.get(`${url}/rest/v1/WaterIntake`, {
-          params: {
-            UserId: `eq.${userId}`,
-            IntakeDate: `gte.${startDate}`,
-            select: 'AmountMl,IntakeDate',
-          },
-          headers: {
-            apikey: anonKey,
-            Authorization: `Bearer ${anonKey}`,
-          },
-        });
-
-        const validRecords = Array.isArray(data)
-          ? data.filter((d: any) => d.IntakeDate < nextMonthStr)
-          : [];
-
-        const totalMl = validRecords.reduce((acc, curr) => acc + (curr.AmountMl || 0), 0);
-        const daysWithData = validRecords.filter((d: any) => d.AmountMl > 0).length;
-        const averageMl = daysWithData > 0 ? totalMl / daysWithData : 0;
-
-        return {
-          year,
-          month,
-          totalMl,
-          averageMl,
-          daysWithData,
-        };
-      } catch (err) {
-        console.warn('[waterService] Supabase fallback fetch failed:', err);
-      }
-    }
-
-    // Nếu thất bại hoặc không có config, fallback về gọi API backend (phòng trường hợp sau này deploy code mới cho /monthly)
     try {
       const { data } = await apiClient.get<MonthlyWaterData>('/api/water-intake/monthly', {
         params: { year, month },
       });
       return data;
-    } catch {
+    } catch (error) {
+      logger.warn('[waterService] Monthly water fetch failed', error);
       return { year, month, totalMl: 0, averageMl: 0, daysWithData: 0 };
     }
   },

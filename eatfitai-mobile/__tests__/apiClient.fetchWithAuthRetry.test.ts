@@ -11,6 +11,16 @@ const mockAuthSessionState = {
   onAuthExpiredCallback: null as (() => void) | null,
 };
 
+jest.mock('../src/utils/logger', () => ({
+  __esModule: true,
+  default: {
+    debug: jest.fn(),
+    info: jest.fn(),
+    warn: jest.fn(),
+    error: jest.fn(),
+  },
+}));
+
 jest.mock('../src/config/env', () => ({
   API_BASE_URL: 'http://mock-api.local',
 }));

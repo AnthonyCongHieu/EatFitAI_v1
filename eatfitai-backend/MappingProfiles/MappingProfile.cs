@@ -5,6 +5,7 @@ using EatFitAI.API.DTOs.Food;
 using EatFitAI.API.DTOs.MealDiary;
 using EatFitAI.API.DTOs.User;
 using EatFitAI.API.DbScaffold.Models;
+using EatFitAI.API.Services;
 
 namespace EatFitAI.API.MappingProfiles
 {
@@ -26,6 +27,9 @@ namespace EatFitAI.API.MappingProfiles
             // Food mappings
             CreateMap<FoodItem, FoodItemDto>()
                 .ForMember(
+                    dest => dest.ImageVariants,
+                    opt => opt.MapFrom(src => MediaVariantHelper.FromThumbUrl(src.ThumbNail)))
+                .ForMember(
                     dest => dest.ReliabilityScore,
                     opt => opt.MapFrom(src => src.CredibilityScore / 100.0));
             CreateMap<FoodServing, FoodServingDto>()
@@ -33,7 +37,10 @@ namespace EatFitAI.API.MappingProfiles
                 .ForMember(dest => dest.ServingUnitSymbol, opt => opt.MapFrom(src => src.ServingUnit!.Symbol));
 
             // UserFoodItem mappings
-            CreateMap<UserFoodItem, DTOs.Food.UserFoodItemDto>();
+            CreateMap<UserFoodItem, DTOs.Food.UserFoodItemDto>()
+                .ForMember(
+                    dest => dest.ImageVariants,
+                    opt => opt.MapFrom(src => MediaVariantHelper.FromThumbUrl(src.ThumbnailUrl)));
 
             // MealDiary mappings
             CreateMap<MealDiary, MealDiaryDto>()

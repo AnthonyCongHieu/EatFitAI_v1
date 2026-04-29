@@ -16,7 +16,6 @@ import {
   ScrollView,
   StatusBar,
   StyleSheet,
-  TouchableOpacity,
   View,
 } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
@@ -44,7 +43,6 @@ import * as Haptics from 'expo-haptics';
 import { ThemedText } from '../../../components/ThemedText';
 import { BottomSheet } from '../../../components/BottomSheet';
 import { ThemedTextInput } from '../../../components/ThemedTextInput';
-import { Button } from '../../../components/Button';
 import { diaryService, type DiaryEntry, type DaySummary, type DiaryMealGroup } from '../../../services/diaryService';
 import { invalidateDiaryQueries } from '../../../services/diaryFlowService';
 import { MEAL_TYPE_LABELS, type MealTypeId } from '../../../types';
@@ -163,6 +161,8 @@ const MealDiaryScreen = (): React.ReactElement => {
   const [showEditSheet, setShowEditSheet] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [showQuickActions, setShowQuickActions] = useState(false);
+  const [isCopyingDay, setIsCopyingDay] = useState(false);
+  const [copyingMealType, setCopyingMealType] = useState<MealTypeId | null>(null);
 
   const dateKey = useMemo(() => formatDateForApi(selectedDate), [selectedDate]);
 
@@ -273,6 +273,68 @@ const MealDiaryScreen = (): React.ReactElement => {
       returnToDiaryOnSave: true,
     });
   }, [dateKey, navigation]);
+
+  const runCopyPreviousDay = useCallback(async (mealTypeId?: MealTypeId) => {
+    if (mealTypeId != null) {
+      setCopyingMealType(mealTypeId);
+    } else {
+      setIsCopyingDay(true);
+    }
+
+    try {
+      const copiedEntries = await diaryService.copyPreviousDay(dateKey, mealTypeId);
+      await invalidateDiaryQueries(queryClient);
+      await refetch();
+      Toast.show({
+        type: 'success',
+        text1: 'Đã sao chép hôm qua',
+        text2:
+          copiedEntries.length > 0
+            ? mealTypeId != null
+              ? `${copiedEntries.length} món đã được thêm vào ${MEAL_TYPE_LABELS[mealTypeId]}.`
+              : `${copiedEntries.length} món đã được thêm vào ngày đang xem.`
+            : mealTypeId != null
+              ? `Không có món nào để sao chép cho ${MEAL_TYPE_LABELS[mealTypeId]}.`
+              : 'Không có món nào để sao chép từ hôm qua.',
+      });
+    } catch (error: any) {
+      const status = Number(error?.response?.status ?? 0);
+      const message =
+        error?.response?.data?.detail ??
+        error?.response?.data?.title ??
+        error?.response?.data?.message ??
+        error?.message ??
+        'Vui lòng thử lại sau.';
+      Toast.show({
+        type: status === 409 ? 'info' : 'error',
+        text1: status === 409 ? 'Không thể sao chép' : 'Lỗi sao chép',
+        text2: message,
+      });
+    } finally {
+      if (mealTypeId != null) {
+        setCopyingMealType(null);
+      } else {
+        setIsCopyingDay(false);
+      }
+    }
+  }, [dateKey, queryClient, refetch]);
+
+  const confirmCopyPreviousDay = useCallback((mealTypeId?: MealTypeId) => {
+    const title = mealTypeId != null ? 'Sao chép bữa từ hôm qua' : 'Sao chép ngày hôm qua';
+    const message = mealTypeId != null
+      ? `Thêm ${MEAL_TYPE_LABELS[mealTypeId]} từ hôm qua vào ${dateKey}?`
+      : `Thêm toàn bộ bữa ăn của hôm qua vào ${dateKey}?`;
+
+    Alert.alert(title, message, [
+      { text: 'Hủy', style: 'cancel' },
+      {
+        text: 'Sao chép',
+        onPress: () => {
+          runCopyPreviousDay(mealTypeId).catch(() => undefined);
+        },
+      },
+    ]);
+  }, [runCopyPreviousDay]);
 
   const handleEditGrams = useCallback((entry: DiaryEntry) => {
     setEditingEntry(entry);
@@ -434,6 +496,24 @@ const MealDiaryScreen = (): React.ReactElement => {
                   </View>
                 </View>
               </Tilt3DCard>
+              <Pressable
+                onPress={() => confirmCopyPreviousDay()}
+                disabled={isCopyingDay || copyingMealType !== null}
+                style={({ pressed }) => [
+                  styles.copyDayButton,
+                  pressed && !(isCopyingDay || copyingMealType !== null) && { opacity: 0.85, transform: [{ scale: 0.98 }] },
+                  (isCopyingDay || copyingMealType !== null) && { opacity: 0.6 },
+                ]}
+              >
+                {isCopyingDay ? (
+                  <ActivityIndicator color={C.onPrimary} size="small" />
+                ) : (
+                  <>
+                    <Ionicons name="copy-outline" size={16} color={C.onPrimary} />
+                    <ThemedText style={styles.copyDayButtonText}>Sao chép hôm qua</ThemedText>
+                  </>
+                )}
+              </Pressable>
             </Animated.View>
 
             {/* ── Meal Sections ── */}
@@ -454,15 +534,35 @@ const MealDiaryScreen = (): React.ReactElement => {
                         />
                         <ThemedText style={styles.mealTitle}>{group.title}</ThemedText>
                       </View>
-                      <ThemedText style={styles.mealCalories}>
-                        {Math.round(group.totalCalories)} kcal
-                      </ThemedText>
+                      <View style={styles.mealHeaderActions}>
+                        <Pressable
+                          style={({ pressed }) => [
+                            styles.copyMealButton,
+                            pressed && !(isCopyingDay || copyingMealType !== null) && { opacity: 0.85 },
+                            (isCopyingDay || copyingMealType !== null) && { opacity: 0.6 },
+                          ]}
+                          onPress={() => confirmCopyPreviousDay(group.mealType)}
+                          disabled={isCopyingDay || copyingMealType !== null}
+                        >
+                          {copyingMealType === group.mealType ? (
+                            <ActivityIndicator color={C.primary} size="small" />
+                          ) : (
+                            <>
+                              <Ionicons name="copy-outline" size={14} color={C.primary} />
+                              <ThemedText style={styles.copyMealButtonText}>Hôm qua</ThemedText>
+                            </>
+                          )}
+                        </Pressable>
+                        <ThemedText style={styles.mealCalories}>
+                          {Math.round(group.totalCalories)} kcal
+                        </ThemedText>
+                      </View>
                     </View>
 
                     {/* Food entries */}
                     {group.entries.length > 0 ? (
                       <View style={styles.mealContent}>
-                        {group.entries.map((entry, eIdx) => (
+                        {group.entries.map((entry) => (
                           <Pressable
                             key={entry.id}
                             style={styles.entryRow}
@@ -543,6 +643,9 @@ const MealDiaryScreen = (): React.ReactElement => {
               setShowQuickActions(true);
             }}
             testID={TEST_IDS.mealDiary.addManualButton}
+            nativeID={TEST_IDS.mealDiary.addManualButton}
+            accessibilityLabel={TEST_IDS.mealDiary.addManualButton}
+            collapsable={false}
           >
             {/* Robot face */}
             <View style={styles.robotFace}>
@@ -871,6 +974,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 10,
   },
+  mealHeaderActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
   mealTitle: {
     fontSize: 15,
     fontWeight: '800',
@@ -949,6 +1057,7 @@ const styles = StyleSheet.create({
   /* ─── Meal empty state ─── */
   mealEmptyWrap: {
     padding: 12,
+    gap: 10,
   },
   mealEmptyBtn: {
     width: '100%',
@@ -973,6 +1082,40 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '800',
     color: C.textMuted,
+  },
+  copyDayButton: {
+    marginTop: 12,
+    alignSelf: 'center',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: C.primary,
+    paddingHorizontal: 18,
+    paddingVertical: 12,
+    borderRadius: 999,
+  },
+  copyDayButtonText: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: C.onPrimary,
+  },
+  copyMealButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(75,226,119,0.28)',
+    backgroundColor: 'rgba(75,226,119,0.08)',
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+  },
+  copyMealButtonText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: C.primary,
   },
 
   /* ─── Floating AI Robot FAB ─── */

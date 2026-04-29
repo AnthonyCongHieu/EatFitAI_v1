@@ -11,7 +11,7 @@ Local Python service for:
 
 - host: `http://127.0.0.1:5050`
 - primary model file: `best.pt`
-- fallback model file: `yolov8s.pt`
+- local/debug fallback model file: `yolov8s.pt`
 - default Gemini model: `gemini-2.5-flash`
 
 ## Local env file
@@ -42,6 +42,9 @@ GEMINI_PROBE_MAX_PER_PROJECT_PER_DAY=3
 GEMINI_PROBE_PROMPT=ping
 GEMINI_KEY_POOL_JSON=[{"projectAlias":"gemini-primary","projectId":"project-1","keyAlias":"slot-a","apiKey":"replace_me","model":"gemini-2.5-flash","enabled":true}]
 ENABLE_STT=false
+ALLOW_GENERIC_YOLO_FALLBACK=false
+SUPABASE_URL=
+SUPABASE_SERVICE_KEY=
 ```
 
 If both `GEMINI_KEY_POOL_JSON` and `GEMINI_API_KEY` are set, the single key is appended as one more pool entry. Use `GEMINI_API_KEY_PROJECT_ID` with a new Gemini project so quota rotation treats it as an independent source.
@@ -54,7 +57,7 @@ If the existing pool is already rate-limited, set `GEMINI_EXHAUSTED_PROJECT_IDS`
 
 `GEMINI_PROBE_MIN_INTERVAL_SECONDS`, `GEMINI_PROBE_MAX_PER_PROJECT_PER_DAY`, and `GEMINI_PROBE_PROMPT` control the bounded revalidation path. The probe only runs when a project is pending verification after a daily reset or after an exhausted project reaches its expected provider reset window.
 
-`ENABLE_STT=false` is the recommended local default for the emulator/Appium lane so the service can boot quickly without downloading the PhoWhisper model. Set it to `true` only when you are explicitly validating voice transcription. `ROBOFLOW_API_KEY` is only required when you run `download_dataset.py`.
+`ENABLE_STT=false` is the recommended local default for Android smoke/debug lanes so the service can boot quickly without downloading the PhoWhisper model. Set it to `true` only when you are explicitly validating voice transcription. `ROBOFLOW_API_KEY` is only required when you run `download_dataset.py`.
 
 ## Start locally
 
@@ -68,7 +71,8 @@ python app.py
 ## Required assets
 
 - `best.pt` should be present when you want the custom Vietnamese-food model
-- `yolov8s.pt` can act as the local fallback
+- production requires `best.pt`; on Render, configure `SUPABASE_URL` and `SUPABASE_SERVICE_KEY` so the service can download `best.pt` from the `ml-models` bucket
+- `yolov8s.pt` can act as a local/debug fallback only when `ALLOW_GENERIC_YOLO_FALLBACK=true`
 
 `best.pt` is intentionally not committed to git.
 
@@ -83,6 +87,8 @@ Expected fields include:
 - `status`
 - `model_loaded`
 - `model_file`
+- `model_load_error`
+- `generic_yolo_fallback_allowed`
 - `device`
 - `cuda_available`
 - `gemini_usage_entries`

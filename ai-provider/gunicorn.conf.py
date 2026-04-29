@@ -13,15 +13,15 @@ bind = f"0.0.0.0:{port}"
 # Nhiều worker sẽ duplicate model trong mỗi process → OOM
 workers = 1
 
-# Threads - dùng thread thay vì multi-process cho model sharing
+# Threads - keep a small amount of request concurrency so health checks stay responsive.
 threads = 2
 
 # Timeout cao vì YOLO inference có thể chậm trên CPU
 timeout = 120
 graceful_timeout = 30
 
-# Preload app để share YOLO model giữa các threads
-preload_app = True
+# Do not preload the app: /healthz must come up before the lazy YOLO model load.
+preload_app = False
 
 # Access log
 accesslog = "-"  # stdout

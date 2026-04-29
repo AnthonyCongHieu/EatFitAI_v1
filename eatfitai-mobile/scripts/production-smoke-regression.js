@@ -2,8 +2,10 @@ const fs = require('fs');
 const path = require('path');
 const { execFileSync } = require('child_process');
 const { resolveSmokeCredentials } = require('./lib/smoke-credentials');
+const { isFallbackSource } = require('./lib/primary-path-readiness');
+const { runMediaEgressGuard } = require('./lib/media-egress-guard');
 
-const DEFAULT_BACKEND_URL = 'https://eatfitai-backend.onrender.com';
+const DEFAULT_BACKEND_URL = 'https://eatfitai-backend-dev.onrender.com';
 const DEFAULT_OUTPUT_ROOT = path.resolve(
   __dirname,
   '..',
@@ -15,7 +17,13 @@ const DEFAULT_DEMO_EMAIL = 'scan-demo@redacted.local';
 const DEFAULT_DEMO_PASSWORD = 'SET_IN_SEED_SCRIPT';
 
 function trim(value) {
-  return String(value || '').trim();
+  const normalized = String(value || '').trim();
+  const quotedMatch = normalized.match(/^"(.*)"$/);
+  return quotedMatch ? quotedMatch[1] : normalized;
+}
+
+function normalizePathArg(value) {
+  return trim(value).replace(/\\"/g, '"').replace(/"/g, '');
 }
 
 function normalizeBaseUrl(value, fallback) {
@@ -24,7 +32,8 @@ function normalizeBaseUrl(value, fallback) {
 }
 
 function resolveOutputDir(cliValue) {
-  const explicit = trim(cliValue) || trim(process.env.EATFITAI_SMOKE_OUTPUT_DIR);
+  const explicit =
+    normalizePathArg(cliValue) || normalizePathArg(process.env.EATFITAI_SMOKE_OUTPUT_DIR);
   if (explicit) {
     return path.resolve(explicit);
   }
@@ -65,7 +74,8 @@ function readJsonIfExists(filePath) {
     return null;
   }
 
-  return JSON.parse(fs.readFileSync(filePath, 'utf8'));
+  const content = fs.readFileSync(filePath, 'utf8');
+  return JSON.parse(content.charCodeAt(0) === 0xFEFF ? content.slice(1) : content);
 }
 
 function writeJson(filePath, value) {
@@ -88,6 +98,41 @@ function average(values) {
   }
 
   return Math.round(values.reduce((sum, value) => sum + value, 0) / values.length);
+}
+
+function resolveIntegerEnv(name, fallback) {
+  const value = Number.parseInt(String(process.env[name] || ''), 10);
+  return Number.isFinite(value) ? value : fallback;
+}
+
+function summarizeResponseDiagnostics(response) {
+  const body = response?.body && typeof response.body === 'object' ? response.body : null;
+  const rawText = typeof response?.rawText === 'string' ? response.rawText : '';
+  const rawSnippet = rawText.replace(/\s+/g, ' ').slice(0, 240);
+  const safeSnippet = rawSnippet
+    ? rawSnippet
+        .replace(/eyJ[A-Za-z0-9_-]+(?:\.[A-Za-z0-9_-]+){2}/g, '<redacted-jwt>')
+        .replace(/(access|refresh|id)[_-]?token/gi, '<redacted-token-key>')
+    : null;
+
+  return {
+    bodyKeys: body ? Object.keys(body).sort() : [],
+    errorCode: body?.error || body?.code || null,
+    rawTextSnippet: safeSnippet,
+  };
+}
+
+function normalizeLabel(value) {
+  return trim(value).toLowerCase();
+}
+
+function getResponseLabels(items, unmappedLabels) {
+  return [
+    ...items.map((item) => item?.label),
+    ...unmappedLabels,
+  ]
+    .map(normalizeLabel)
+    .filter(Boolean);
 }
 
 function guessMimeType(filePath) {
@@ -187,6 +232,7 @@ async function requestMultipart(url, filePath, token) {
   const formData = new FormData();
   const buffer = fs.readFileSync(filePath);
   const mimeType = guessMimeType(filePath);
+  const retryCount = Math.max(0, resolveIntegerEnv('EATFITAI_SCAN_RETRY_COUNT', 0));
   formData.append(
     'file',
     new Blob([buffer], { type: mimeType }),
@@ -199,6 +245,7 @@ async function requestMultipart(url, filePath, token) {
       Authorization: `Bearer ${token}`,
     },
     body: formData,
+    retryCount,
   });
 }
 
@@ -264,7 +311,7 @@ function resolveFixtureDir(outputDir, manifest) {
 
   const hint = trim(manifest.fixtureRootHint);
   if (!hint) {
-    return path.resolve(__dirname, '..', '..', 'tools', 'appium', 'fixtures');
+    return path.resolve(__dirname, '..', '..', 'tools', 'fixtures');
   }
 
   return path.resolve(__dirname, '..', '..', hint);
@@ -829,6 +876,14 @@ async function runScanCases(backendUrl, manifest, token, fixtureDir, outputDir) 
         ? response.body.unmappedLabels
         : [];
       const usableResult = items.length > 0 || unmappedLabels.length > 0;
+      const expectedLabels = Array.isArray(fixture.expectedLabels)
+        ? fixture.expectedLabels.map(normalizeLabel).filter(Boolean)
+        : [];
+      const responseLabels = getResponseLabels(items, unmappedLabels);
+      const expectedLabelMatched =
+        expectedLabels.length === 0 ||
+        responseLabels.some((label) => expectedLabels.includes(label));
+      const requiresExpectedLabel = bucket === 'primary' && expectedLabels.length > 0;
 
       result.status = response.status;
       result.latencyMs = response.durationMs;
@@ -837,6 +892,11 @@ async function runScanCases(backendUrl, manifest, token, fixtureDir, outputDir) 
       result.uploadBytes = upload.uploadSize;
       result.optimizedUpload = upload.optimized;
       result.optimizationError = upload.optimizationError || null;
+      result.responseDiagnostics = summarizeResponseDiagnostics(response);
+      result.expectedLabels = expectedLabels;
+      result.detectedLabels = responseLabels;
+      result.expectedLabelMatched = expectedLabelMatched;
+      result.requiresExpectedLabel = requiresExpectedLabel;
       result.mappedCount = items.filter((item) =>
         Boolean(item?.isMatched ?? item?.foodItemId),
       ).length;
@@ -845,7 +905,11 @@ async function runScanCases(backendUrl, manifest, token, fixtureDir, outputDir) 
       result.passed =
         bucket === 'benchmark'
           ? Boolean(response.ok)
-          : Boolean(response.ok && usableResult);
+          : Boolean(
+              response.ok &&
+                usableResult &&
+                (!requiresExpectedLabel || expectedLabelMatched),
+            );
       result.error = response.error || null;
       results.push(result);
     }
@@ -917,7 +981,75 @@ function buildSummary(results) {
   };
 }
 
+function buildPrimaryPathReadiness(results) {
+  const failures = [];
+  const summary = results.summary || {};
+  const search = summary.search || {};
+  const scan = summary.scan || {};
+  const voice = summary.voice || {};
+  const nutrition = summary.nutrition || {};
+
+  if (results.credentialsSource === 'local-default-demo-account') {
+    failures.push('local-default-credentials');
+  }
+
+  if (search.positiveCases === 0 || search.positivePassed !== search.positiveCases) {
+    failures.push('search-primary-cases-failed');
+  }
+
+  if (
+    scan.primaryAttempted === 0 ||
+    scan.primaryPassed !== scan.primaryAttempted ||
+    scan.usablePrimaryResults !== scan.primaryAttempted
+  ) {
+    failures.push('scan-primary-cases-failed');
+  }
+
+  for (const entry of Array.isArray(results.scan) ? results.scan : []) {
+    if (
+      entry.bucket === 'primary' &&
+      entry.requiresExpectedLabel &&
+      !entry.expectedLabelMatched
+    ) {
+      failures.push(`scan-${entry.key || 'primary'}-expected-label-missing`);
+    }
+  }
+
+  if (voice.attempted > 0 && voice.parsePassed !== voice.attempted) {
+    failures.push('voice-parse-primary-cases-failed');
+  }
+  if (voice.executeAttempted > 0 && voice.executePassed !== voice.executeAttempted) {
+    failures.push('voice-execute-primary-cases-failed');
+  }
+  if (
+    voice.diaryReadbackAttempted > 0 &&
+    voice.diaryReadbackPassed !== voice.diaryReadbackAttempted
+  ) {
+    failures.push('voice-diary-readback-primary-cases-failed');
+  }
+  for (const entry of Array.isArray(results.voice) ? results.voice : []) {
+    if (isFallbackSource(entry?.parse?.source)) {
+      failures.push(`voice-${entry.key || 'case'}-used-fallback`);
+    }
+  }
+
+  if (nutrition.attempted > 0 && nutrition.suggestPassed !== nutrition.attempted) {
+    failures.push('nutrition-primary-cases-failed');
+  }
+  if (nutrition.applyAttempted > 0 && nutrition.applyPassed !== nutrition.applyAttempted) {
+    failures.push('nutrition-apply-primary-cases-failed');
+  }
+
+  return {
+    passed: failures.length === 0,
+    failures: [...new Set(failures)],
+    covered: ['search', 'scan', 'voice', 'nutrition'],
+  };
+}
+
 async function main() {
+  runMediaEgressGuard({ label: 'production-smoke-regression' });
+
   const outputDir = resolveOutputDir(process.argv[2]);
   const preflight =
     readJsonIfExists(path.join(outputDir, 'preflight-results.json')) || {};
@@ -981,6 +1113,8 @@ async function main() {
   };
 
   results.summary = buildSummary(results);
+  results.primaryPath = buildPrimaryPathReadiness(results);
+  results.passed = results.primaryPath.passed;
 
   const outputPath = path.join(outputDir, 'regression-run.json');
   writeJson(outputPath, results);
@@ -994,12 +1128,18 @@ async function main() {
         fixtureDir,
         allowMutations,
         credentialsSource: results.credentialsSource,
+        passed: results.passed,
+        primaryPath: results.primaryPath,
         summary: results.summary,
       },
       null,
       2,
     ),
   );
+
+  if (!results.passed) {
+    process.exitCode = 1;
+  }
 }
 
 main().catch((error) => {

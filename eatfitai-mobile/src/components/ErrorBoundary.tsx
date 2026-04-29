@@ -42,7 +42,12 @@ class ErrorBoundaryClass extends Component<Props, State> {
       console.error('ErrorBoundary caught an error:', error, errorInfo);
     }
 
-    captureError(error, 'ErrorBoundary');
+    captureError(error, 'ErrorBoundary', {
+      componentStack:
+        typeof errorInfo?.componentStack === 'string'
+          ? errorInfo.componentStack
+          : undefined,
+    });
     this.props.onError?.(error, errorInfo);
   }
 

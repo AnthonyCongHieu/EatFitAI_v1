@@ -1,5 +1,6 @@
 module.exports = {
   root: true,
+  ignorePatterns: ['src/_archive/**'],
   extends: [
     'expo',
     'plugin:react/recommended',
@@ -41,4 +42,14 @@ module.exports = {
     radix: 'off',
     'no-alert': 'off',
   },
+  overrides: [
+    {
+      files: ['__tests__/**/*.ts', '__tests__/**/*.tsx'],
+      rules: {
+        '@typescript-eslint/no-var-requires': 'off',
+        '@typescript-eslint/no-require-imports': 'off',
+        '@typescript-eslint/no-shadow': 'off',
+      },
+    },
+  ],
 };

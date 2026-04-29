@@ -168,6 +168,9 @@ const QuickActionsOverlay: React.FC<QuickActionsOverlayProps> = ({
                 ]}
                 onPress={() => handleAction(action)}
                 testID={action.testID}
+                nativeID={action.testID}
+                accessibilityLabel={action.testID}
+                collapsable={false}
               >
                 {/* Icon container */}
                 <View style={styles.iconBox}>

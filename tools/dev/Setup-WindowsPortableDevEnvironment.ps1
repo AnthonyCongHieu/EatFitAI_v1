@@ -2,7 +2,7 @@
 param(
     [string]$AndroidSdkRoot = "",
     [string]$AvdName = "EatFitAI_API_34",
-    [switch]$SkipAppiumInstall,
+    [switch]$SkipScrcpyInstall,
     [switch]$SkipAndroidInstall,
     [switch]$SkipPreflight
 )
@@ -12,11 +12,11 @@ $ErrorActionPreference = "Stop"
 
 $scriptRoot = $PSScriptRoot
 
-if (-not $SkipAppiumInstall) {
-    Write-Host "== Appium =="
-    & (Join-Path $scriptRoot "Install-Appium.ps1")
+if (-not $SkipScrcpyInstall) {
+    Write-Host "== scrcpy =="
+    winget install --id Genymobile.scrcpy -e --accept-source-agreements --accept-package-agreements
     if ($LASTEXITCODE -ne 0) {
-        throw "Appium installation failed."
+        throw "scrcpy installation failed."
     }
 }
 

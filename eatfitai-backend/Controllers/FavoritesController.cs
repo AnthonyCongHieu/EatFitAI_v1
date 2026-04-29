@@ -2,6 +2,8 @@
 using EatFitAI.API.DbScaffold.Data;
 using EatFitAI.API.DbScaffold.Models;
 using EatFitAI.API.DTOs.Food;
+using EatFitAI.API.Services;
+using EatFitAI.API.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -14,11 +16,16 @@ namespace EatFitAI.API.Controllers
     public class FavoritesController : ControllerBase
     {
         private readonly EatFitAIDbContext _context;
+        private readonly IMediaUrlResolver _mediaUrlResolver;
         private readonly ILogger<FavoritesController> _logger;
 
-        public FavoritesController(EatFitAIDbContext context, ILogger<FavoritesController> logger)
+        public FavoritesController(
+            EatFitAIDbContext context,
+            IMediaUrlResolver mediaUrlResolver,
+            ILogger<FavoritesController> logger)
         {
             _context = context;
+            _mediaUrlResolver = mediaUrlResolver;
             _logger = logger;
         }
 
@@ -45,23 +52,39 @@ namespace EatFitAI.API.Controllers
                     .Include(f => f.FoodItem)
                     .Where(f => f.UserId == userId)
                     .OrderByDescending(f => f.CreatedAt)
-                    .Select(f => new FoodItemDto
+                    .Select(f => new
                     {
-                        FoodItemId = f.FoodItem.FoodItemId,
-                        FoodName = f.FoodItem.FoodName,
-
-                        CaloriesPer100g = f.FoodItem.CaloriesPer100g,
-                        ProteinPer100g = f.FoodItem.ProteinPer100g,
-                        CarbPer100g = f.FoodItem.CarbPer100g,
-                        FatPer100g = f.FoodItem.FatPer100g,
-                        ThumbNail = f.FoodItem.ThumbNail,
-                        IsActive = f.FoodItem.IsActive,
-                        CreatedAt = f.FoodItem.CreatedAt,
-                        UpdatedAt = f.FoodItem.UpdatedAt
+                        f.FoodItem.FoodItemId,
+                        f.FoodItem.FoodName,
+                        f.FoodItem.CaloriesPer100g,
+                        f.FoodItem.ProteinPer100g,
+                        f.FoodItem.CarbPer100g,
+                        f.FoodItem.FatPer100g,
+                        f.FoodItem.ThumbNail,
+                        f.FoodItem.IsActive,
+                        f.FoodItem.CreatedAt,
+                        f.FoodItem.UpdatedAt
                     })
                     .ToListAsync();
 
-                return Ok(favorites);
+                return Ok(favorites.Select(f =>
+                {
+                    var thumbNail = _mediaUrlResolver.NormalizePublicUrl(f.ThumbNail);
+                    return new FoodItemDto
+                    {
+                        FoodItemId = f.FoodItemId,
+                        FoodName = f.FoodName,
+                        CaloriesPer100g = f.CaloriesPer100g,
+                        ProteinPer100g = f.ProteinPer100g,
+                        CarbPer100g = f.CarbPer100g,
+                        FatPer100g = f.FatPer100g,
+                        ThumbNail = thumbNail,
+                        ImageVariants = MediaVariantHelper.FromThumbUrl(thumbNail),
+                        IsActive = f.IsActive,
+                        CreatedAt = f.CreatedAt,
+                        UpdatedAt = f.UpdatedAt
+                    };
+                }));
             }
             catch (Exception ex)
             {

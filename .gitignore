@@ -1,4 +1,4 @@
-node_modules/
+﻿node_modules/
 .expo/
 bin/
 obj/
@@ -51,6 +51,8 @@ ai-provider/uploads/*.jpg
 ai-provider/uploads/*.png
 ai-provider/training.log
 *.pt
+!ai-provider/best.pt
+!ai-provider/best.onnx
 
 # Build outputs
 TestRunner/bin/
@@ -69,12 +71,14 @@ errors.txt
 tools/dev/logs/
 tools/dev/device-app-logcat.txt
 tools/dev/device-current.png
-tools/appium/fixtures/scan-demo/fixture-sources.json
+tools/fixtures/scan-demo/fixture-sources.json
 _cdp_render_profile/
 _chrome_profile_clone/
 _tmp/
 _tmp_*.png
 .playwright-cli/
+.worktrees
+.worktrees/
 tmp/
 @AutomationLog.txt
 
@@ -84,3 +88,12 @@ data_chunks/
 !eatfitai-backend/supabase_schema.sql
 !eatfitai-backend/supabase_storage.sql
 artifacts-device-latest.png
+
+# Firebase config — chứa API key, không track trong git
+google-services.json
+
+
+# Temporary migrations
+MigrateToR2/
+temp_migration/
+migrate-user-food.ps1

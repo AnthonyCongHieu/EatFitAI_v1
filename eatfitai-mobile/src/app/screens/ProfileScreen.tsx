@@ -14,7 +14,7 @@ import {
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import Animated, { FadeIn, FadeInDown, FadeInUp } from 'react-native-reanimated';
+import Animated, { FadeIn, FadeInUp } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -22,7 +22,6 @@ import * as ImagePicker from 'expo-image-picker';
 import Toast from 'react-native-toast-message';
 
 import { ThemedText } from '../../components/ThemedText';
-import { useAppTheme } from '../../theme/ThemeProvider';
 import { useAuthStore } from '../../store/useAuthStore';
 import { useProfileStore } from '../../store/useProfileStore';
 import { profileService } from '../../services/profileService';
@@ -60,10 +59,10 @@ const calcBMI = (kg?: number, cm?: number): number | null => {
 };
 
 const bmiColor = (bmi: number): string => {
-  if (bmi < 18.5) return '#60a5fa';   // Blue — underweight
-  if (bmi < 25) return '#4be277';     // Green — normal
-  if (bmi < 30) return '#fbbf24';     // Yellow — overweight
-  return '#ef4444';                   // Red — obese
+  if (bmi < 18.5) return '#2dd4bf';   // Teal - underweight
+  if (bmi < 25) return '#4be277';     // Emerald - normal
+  if (bmi < 30) return '#fbbf24';     // Amber - overweight
+  return '#ef4444';                   // Red - obese
 };
 
 /* ═══ Reusable menu row ═══ */
@@ -111,7 +110,6 @@ const MenuRow = ({
    ProfileScreen
    ═══════════════════════════════════════════════ */
 const ProfileScreen = (): React.ReactElement => {
-  const { theme } = useAppTheme();
   const navigation = useNavigation<NavigationProp>();
   const insets = useSafeAreaInsets();
 

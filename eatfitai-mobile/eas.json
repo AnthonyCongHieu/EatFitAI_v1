@@ -16,8 +16,8 @@
       "distribution": "internal",
       "env": {
         "APP_ENV": "preview",
-        "EXPO_PUBLIC_API_BASE_URL": "https://eatfitai-backend.onrender.com",
-        "EXPO_PUBLIC_SUPABASE_URL": "https://bjlmndmafrajjysenpbm.supabase.co"
+        "EXPO_PUBLIC_API_BASE_URL": "https://eatfitai-backend-dev.onrender.com",
+        "EXPO_PUBLIC_MEDIA_PUBLIC_BASE_URL": "https://pub-9081bce8ff6b4db5b4403ca7adae7b80.r2.dev"
       },
       "android": {
         "buildType": "apk"
@@ -29,7 +29,7 @@
       "env": {
         "APP_ENV": "production",
         "EXPO_PUBLIC_API_BASE_URL": "https://eatfitai-backend.onrender.com",
-        "EXPO_PUBLIC_SUPABASE_URL": "https://bjlmndmafrajjysenpbm.supabase.co"
+        "EXPO_PUBLIC_MEDIA_PUBLIC_BASE_URL": "https://pub-9081bce8ff6b4db5b4403ca7adae7b80.r2.dev"
       }
     },
     "e2e-test": {

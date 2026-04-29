@@ -1,7 +1,9 @@
 import type { AxiosError } from 'axios';
 
 import { API_BASE_URL, assertBackendApiBaseUrl } from '../config/env';
-import apiClient, { fetchWithAuthRetry, getCurrentApiUrl } from './apiClient';
+import apiClient, { getCurrentApiUrl } from './apiClient';
+import { captureError } from './errorTracking';
+import storageService from './storageService';
 
 const getApiBaseUrl = (): string => {
   const baseUrl = getCurrentApiUrl() ?? API_BASE_URL;
@@ -126,20 +128,49 @@ export interface TranscriptionResponse {
 
 export const voiceService = {
   async transcribeAudio(audioUri: string): Promise<TranscriptionResponse> {
-    if (__DEV__) {
-      console.info('[voiceService] STT is disabled; skipping transcription for:', audioUri);
-    }
+    try {
+      // Validate API URL đã được cấu hình
+      getApiBaseUrl();
+      
+      const fileName = audioUri.split('/').pop() || 'audio.wav';
+      const fileType = fileName.endsWith('.m4a')
+        ? 'audio/mp4'
+        : fileName.endsWith('.mp3')
+          ? 'audio/mp3'
+          : fileName.endsWith('.ogg')
+            ? 'audio/ogg'
+            : 'audio/wav';
 
-    return {
-      text: '',
-      language: 'vi',
-      duration: 0,
-      success: false,
-      error: 'Chức năng chuyển giọng nói hiện đang tạm tắt. Hãy nhập lệnh bằng text.',
-    };
+      // 1. Upload via Presigned URL
+      const publicUrl = await storageService.uploadMedia(audioUri, fileName, fileType);
+
+      // 2. Transcribe using the public URL
+      const response = await apiClient.post<TranscriptionResponse>(
+        '/api/voice/transcribe',
+        { AudioUrl: publicUrl },
+        {
+          headers: { 'Content-Type': 'application/json' },
+          timeout: 45000, // Audio transcription có thể mất lâu hơn
+        },
+      );
+
+      return response.data;
+    } catch (error: unknown) {
+      captureError(error, 'voiceService.transcribeAudio', { audioUri });
+      return {
+        text: '',
+        language: 'vi',
+        duration: 0,
+        success: false,
+        error: getApiErrorMessage(
+          error,
+          'Không thể chuyển giọng nói thành văn bản. Hãy nhập lệnh bằng text.',
+        ),
+      };
+    }
   },
 
-  async parseWithOllama(text: string): Promise<ParsedVoiceCommand> {
+  async parseWithProvider(text: string): Promise<ParsedVoiceCommand> {
     try {
       getApiBaseUrl();
       const response = await apiClient.post('/api/voice/parse', {
@@ -159,6 +190,9 @@ export const voiceService = {
         reviewReason: data.reviewReason,
       };
     } catch (error: unknown) {
+      captureError(error, 'voiceService.parseWithProvider', {
+        textLength: text.length,
+      });
       return {
         intent: 'UNKNOWN',
         entities: {},
@@ -171,6 +205,8 @@ export const voiceService = {
       };
     }
   },
+
+  // parseWithOllama đã xóa — dùng parseWithProvider() trực tiếp
 
   async executeCommand(command: ParsedVoiceCommand): Promise<VoiceProcessResponse> {
     try {
@@ -201,6 +237,9 @@ export const voiceService = {
       );
       return response.data;
     } catch (error: unknown) {
+      captureError(error, 'voiceService.executeCommand', {
+        intent: command.intent,
+      });
       return {
         success: false,
         error: getApiErrorMessage(error, 'Không thể thực hiện lệnh giọng nói.'),
@@ -209,7 +248,7 @@ export const voiceService = {
   },
 
   async processVoiceText(request: { text: string }): Promise<VoiceProcessResponse> {
-    const command = await this.parseWithOllama(request.text);
+    const command = await this.parseWithProvider(request.text);
 
     return {
       success: command.intent !== 'UNKNOWN',
@@ -231,6 +270,9 @@ export const voiceService = {
       );
       return response.data;
     } catch (error: unknown) {
+      captureError(error, 'voiceService.confirmWeight', {
+        newWeight,
+      });
       return {
         success: false,
         error: getApiErrorMessage(error, 'Không thể lưu cân nặng.'),

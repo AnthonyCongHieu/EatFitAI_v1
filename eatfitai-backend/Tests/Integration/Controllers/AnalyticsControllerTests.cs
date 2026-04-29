@@ -20,7 +20,7 @@ namespace EatFitAI.API.Tests.Integration.Controllers
         [Fact]
         public async Task GetNutritionSummary_WithoutStartDate_ReturnsBadRequest()
         {
-            var client = CreateAuthenticatedClient();
+            var client = await CreateAuthenticatedClientAsync();
 
             var response = await client.GetAsync("/api/analytics/nutrition-summary");
 
@@ -30,7 +30,7 @@ namespace EatFitAI.API.Tests.Integration.Controllers
         [Fact]
         public async Task GetNutritionSummary_EndDateBeforeStartDate_ReturnsBadRequest()
         {
-            var client = CreateAuthenticatedClient();
+            var client = await CreateAuthenticatedClientAsync();
 
             var response = await client.GetAsync(
                 "/api/analytics/nutrition-summary?startDate=2026-03-20&endDate=2026-03-19");
@@ -41,7 +41,7 @@ namespace EatFitAI.API.Tests.Integration.Controllers
         [Fact]
         public async Task GetNutritionSummary_ValidDateRange_ReturnsOk()
         {
-            var client = CreateAuthenticatedClient();
+            var client = await CreateAuthenticatedClientAsync();
 
             var response = await client.GetAsync(
                 "/api/analytics/nutrition-summary?startDate=2026-03-19&endDate=2026-03-20");
@@ -49,15 +49,34 @@ namespace EatFitAI.API.Tests.Integration.Controllers
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         }
 
-        private HttpClient CreateAuthenticatedClient()
+        [Fact]
+        public async Task GetWeeklyReview_WithAuthentication_ReturnsOk()
+        {
+            var client = await CreateAuthenticatedClientAsync();
+
+            var response = await client.GetAsync("/api/analytics/weekly-review");
+
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        }
+
+        private async Task<HttpClient> CreateAuthenticatedClientAsync()
         {
             var userId = Guid.NewGuid();
+            var email = $"analyticstest_{userId:N}@example.com";
+            const string displayName = "Analytics Test User";
+
+            await IntegrationTestHost.EnsureAdminUserAsync(
+                _factory.Services,
+                userId,
+                email,
+                displayName);
+
             var client = _factory.CreateClient();
             var token = IntegrationTestHost.CreateJwtToken(
                 _factory.Services,
                 userId,
-                $"analyticstest_{userId:N}@example.com",
-                "Analytics Test User");
+                email,
+                displayName);
 
             client.DefaultRequestHeaders.Authorization =
                 new AuthenticationHeaderValue("Bearer", token);

@@ -40,11 +40,10 @@ Useful scripts:
 - `npm run test`
 - `npm run api:health`
 - `npm run typegen`
-- `npm run maestro:smoke:android`
-- `npm run maestro:regression:android`
-- `npm run maestro:studio`
-- `npm run appium:edge:android`
 - `npm run automation:doctor`
+- `npm run device:doctor:android`
+- `npm run device:probe:android`
+- `npm run device:auth-entry:android`
 
 ## Environment files
 
@@ -60,7 +59,7 @@ Automation should target a development build or APK. Do not use Expo Go as the a
 
 ### Selector contract
 
-Automation selectors live in [src/testing/testIds.ts](/D:/EatFitAI_v1/eatfitai-mobile/src/testing/testIds.ts). Maestro and Appium both use this contract.
+Automation selectors live in [src/testing/testIds.ts](/D:/EatFitAI_v1/eatfitai-mobile/src/testing/testIds.ts). API and device evidence lanes should keep using this contract where the app exposes stable test IDs.
 
 Rules:
 
@@ -69,35 +68,26 @@ Rules:
 - keep screen-level `screen` selectors for every major route
 - only add `accessible` when a nested touch target needs it
 
-### Maestro
+### Real-device ADB lane
 
-Maestro is the primary UI automation lane:
+The primary Android debug/evidence lane uses ADB, UIAutomator best-effort dumps, screenshots, logcat, screenrecord, and scrcpy:
 
-- `.maestro/smoke`: PR-safe happy path coverage
-- `.maestro/regression`: broader UI contract checks
-- `.maestro/device`: physical-device-safe flows
+- lane-alive sanity for release-like APKs
+- login-screen tap/type probe on real devices
+- device/system interaction without helper APKs
+- screenshot and logcat evidence capture
 
 Recommended local loop:
 
 ```powershell
 npm run automation:doctor
-npm run maestro:smoke:android
+npm run device:doctor:android
+npm run device:probe:android
 ```
 
-EAS workflow config lives in `.eas/workflows/e2e-test-android.yml` and uses the `e2e-test` build profile from `eas.json`.
+Extended lanes:
 
-Authenticated Maestro flows expect:
+- `npm run device:scrcpy:android`
+- `npm run device:auth-entry:android`
 
-- `EATFITAI_DEMO_EMAIL`
-- `EATFITAI_DEMO_PASSWORD`
-- `EXPO_EAS_PROJECT_ID` for real EAS linkage
-
-### Appium
-
-Appium is the secondary lane for edge/debug coverage:
-
-- lane-alive sanity
-- process-death and resume diagnostics
-- device/system interactions that are harder or flakier in Maestro
-
-Use Appium after Maestro passes locally, or when you need a device-level repro. The dedicated Appium docs live in [tools/appium/README.md](/D:/EatFitAI_v1/tools/appium/README.md).
+The dedicated release runbook lives in [docs/TESTING_AND_RELEASE.md](/D:/EatFitAI_v1/docs/TESTING_AND_RELEASE.md).

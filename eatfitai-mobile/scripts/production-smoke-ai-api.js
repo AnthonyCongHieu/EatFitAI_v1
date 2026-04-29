@@ -1,8 +1,21 @@
 const fs = require('fs');
 const path = require('path');
+const {
+  buildNoonUtcIsoForDateOnly,
+  toVietnamDateOnly,
+} = require('./lib/ai-smoke-dates');
+const { shouldStopVisionFixtureSweep } = require('./lib/ai-smoke-timeouts');
+const {
+  extractStringsFromMealDiary,
+  mealDiaryRowsContainFoodName,
+} = require('./lib/ai-smoke-readback');
+const {
+  evaluateAiPrimaryPathReadiness,
+} = require('./lib/primary-path-readiness');
 const { resolveSmokeCredentials } = require('./lib/smoke-credentials');
+const { resolveAiSmokeTimeouts } = require('./lib/smoke-timeouts');
 
-const DEFAULT_BACKEND_URL = 'https://eatfitai-backend.onrender.com';
+const DEFAULT_BACKEND_URL = 'https://eatfitai-backend-dev.onrender.com';
 const DEFAULT_OUTPUT_ROOT = path.resolve(
   __dirname,
   '..',
@@ -12,15 +25,18 @@ const DEFAULT_OUTPUT_ROOT = path.resolve(
 );
 const DEFAULT_DEMO_EMAIL = 'scan-demo@redacted.local';
 const DEFAULT_DEMO_PASSWORD = 'SET_IN_SEED_SCRIPT';
-const DEFAULT_TIMEOUT_MS = 30000;
-const DEFAULT_ATTEMPTS = 2;
+const AI_TIMEOUTS = resolveAiSmokeTimeouts(process.env);
+const DEFAULT_TIMEOUT_MS = AI_TIMEOUTS.requestTimeoutMs;
+const DEFAULT_ATTEMPTS = AI_TIMEOUTS.requestRetryCount;
+const VISION_DETECT_TIMEOUT_MS = AI_TIMEOUTS.visionDetectTimeoutMs;
+const VISION_DETECT_RETRY_COUNT = AI_TIMEOUTS.visionDetectRetryCount;
 const DEFAULT_RETRY_DELAY_MS = 1500;
 const DEFAULT_PRIMARY_FIXTURES = [
-  { key: 'egg', fileName: 'ai-primary-egg-01.jpg' },
-  { key: 'banana', fileName: 'ai-primary-banana-01.jpg' },
-  { key: 'rice', fileName: 'ai-primary-rice-01.jpg' },
-  { key: 'broccoli', fileName: 'ai-primary-broccoli-01.jpg' },
-  { key: 'spinach', fileName: 'ai-primary-spinach-01.jpg' },
+  { key: 'banana-small', fileName: 'ai-primary-banana-02.jpg' },
+  { key: 'apple-benchmark', fileName: 'ai-benchmark-apple-01.jpg' },
+  { key: 'orange-benchmark', fileName: 'ai-benchmark-orange-01.jpg' },
+  { key: 'broccoli-benchmark', fileName: 'ai-benchmark-broccoli-01.jpg' },
+  { key: 'apple-primary', fileName: 'ai-primary-apple-01.jpg' },
 ];
 const DEFAULT_INGREDIENT_FALLBACKS = [
   'Chicken Breast',
@@ -75,12 +91,6 @@ function writeJson(filePath, value) {
 
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-function toLocalDateOnly(date = new Date()) {
-  const local = new Date(date);
-  local.setUTCHours(local.getUTCHours() + 7);
-  return local.toISOString().slice(0, 10);
 }
 
 function average(values) {
@@ -301,7 +311,7 @@ async function requestJson(url, options = {}) {
   );
 }
 
-async function requestMultipart(url, filePath, token, fieldName = 'file') {
+async function requestMultipart(url, filePath, token, fieldName = 'file', requestOptions = {}) {
   const formData = new FormData();
   const buffer = fs.readFileSync(filePath);
   formData.append(
@@ -311,12 +321,14 @@ async function requestMultipart(url, filePath, token, fieldName = 'file') {
   );
 
   return requestJson(url, {
+    ...requestOptions,
     method: 'POST',
     headers: {
       Authorization: `Bearer ${token}`,
+      ...(requestOptions.headers || {}),
     },
-      body: formData,
-    });
+    body: formData,
+  });
 }
 
 async function requestMultipartForm(url, token, formData) {
@@ -339,7 +351,7 @@ function loadFixtureManifest(outputDir) {
 
 function resolveFixtureDir(outputDir) {
   const manifest = loadFixtureManifest(outputDir);
-  const hint = trim(manifest.fixtureRootHint) || 'tools/appium/fixtures/scan-demo';
+  const hint = trim(manifest.fixtureRootHint) || 'tools/fixtures/scan-demo';
   return path.resolve(__dirname, '..', '..', hint);
 }
 
@@ -377,21 +389,6 @@ function normalizeMealTypeName(value) {
   }
 
   return raw;
-}
-
-function extractStringsFromMealDiary(rows) {
-  const items = [];
-  for (const row of Array.isArray(rows) ? rows : []) {
-    const names = [row?.FoodItemName, row?.RecipeName, row?.UserDishName, row?.Note];
-    for (const name of names) {
-      const trimmed = trim(name);
-      if (trimmed) {
-        items.push(trimmed);
-      }
-    }
-  }
-
-  return [...new Set(items)];
 }
 
 function selectFirstSuggestionLabel(payload) {
@@ -448,7 +445,7 @@ async function login(backendUrl, credentials, report) {
 }
 
 async function loadUserContext(backendUrl, token) {
-  const localDate = toLocalDateOnly();
+  const localDate = toVietnamDateOnly();
   const [profileResult, favoritesResult, mealDiaryResult] = await Promise.all([
     requestJson(`${backendUrl}/api/profile`, {
       headers: authHeaders(token),
@@ -568,7 +565,54 @@ function finalizeSummary(report) {
 
   report.summary.averageLatencyMs = average(latencyValues);
   report.summary.p95LatencyMs = percentile(latencyValues, 95);
-  report.passed = report.summary.failed === 0;
+
+  if (report.login && report.login.ok === false && !report.failures.some((failure) => failure.group === 'login')) {
+    report.failures.push({
+      group: 'login',
+      name: 'api/auth/login',
+      status: report.login.status,
+      reason: report.login.error || 'login-failed',
+      details: null,
+    });
+    report.summary.failed += 1;
+  }
+
+  if (report.fatalError && !report.failures.some((failure) => failure.group === 'fatal')) {
+    report.failures.push({
+      group: 'fatal',
+      name: 'production-smoke-ai-api',
+      status: null,
+      reason: report.fatalError,
+      details: null,
+    });
+    report.summary.failed += 1;
+  }
+
+  report.primaryPath = evaluateAiPrimaryPathReadiness(report);
+  if (!report.primaryPath.passed) {
+    for (const reason of report.primaryPath.failures) {
+      const exists = report.failures.some(
+        (failure) => failure.group === 'primary-path' && failure.reason === reason,
+      );
+      if (!exists) {
+        report.failures.push({
+          group: 'primary-path',
+          name: 'ai-primary-path',
+          status: null,
+          reason,
+          details: report.primaryPath,
+        });
+        report.summary.failed += 1;
+      }
+    }
+  }
+
+  report.passed =
+    report.summary.failed === 0 &&
+    report.primaryPath.passed === true &&
+    report.summary.attempted > 0 &&
+    report.fatalError == null &&
+    (!report.login || report.login.ok !== false);
   return report;
 }
 
@@ -686,6 +730,11 @@ async function main() {
         `${backendUrl}/api/ai/vision/detect`,
         path.resolve(resolveFixtureDir(outputDir), DEFAULT_PRIMARY_FIXTURES[0].fileName),
         token,
+        'file',
+        {
+          timeoutMs: VISION_DETECT_TIMEOUT_MS,
+          retryCount: VISION_DETECT_RETRY_COUNT,
+        },
       );
       addEndpointSummary(report, 'vision/provider-down-contract', {
         name: 'api/ai/vision/detect',
@@ -731,11 +780,28 @@ async function main() {
     report.fixtureDir = fixtureDir;
 
     const detectResults = [];
+    let visionFixtureSweepStoppedReason = '';
     for (const fixture of primaryFixtures) {
       const filePath = path.resolve(
         fixtureDir,
         fixture.relativePath.replace(/^scan-demo[\\/]/, ''),
       );
+      if (visionFixtureSweepStoppedReason) {
+        addEndpointSummary(report, 'vision/detect', {
+          name: fixture.key,
+          filePath,
+          passed: false,
+          blocked: true,
+          status: null,
+          latencyMs: 0,
+          reason: visionFixtureSweepStoppedReason,
+          details: {
+            skippedAfterTimeout: true,
+          },
+        });
+        continue;
+      }
+
       if (!fs.existsSync(filePath)) {
         addEndpointSummary(report, 'vision/detect', {
           name: fixture.key,
@@ -753,6 +819,11 @@ async function main() {
         `${backendUrl}/api/ai/vision/detect`,
         filePath,
         token,
+        'file',
+        {
+          timeoutMs: VISION_DETECT_TIMEOUT_MS,
+          retryCount: VISION_DETECT_RETRY_COUNT,
+        },
       );
       const items = Array.isArray(response.body?.items) ? response.body.items : [];
       const unmappedLabels = Array.isArray(response.body?.unmappedLabels)
@@ -765,6 +836,7 @@ async function main() {
         blocked: false,
         status: response.status,
         latencyMs: response.durationMs,
+        reason: shouldStopVisionFixtureSweep(response) ? 'vision-detect-timeout' : null,
         details: {
           itemCount: items.length,
           unmappedCount: unmappedLabels.length,
@@ -786,6 +858,10 @@ async function main() {
         items,
         unmappedLabels,
       });
+
+      if (!entry.passed && shouldStopVisionFixtureSweep(response)) {
+        visionFixtureSweepStoppedReason = 'vision-detect-timeout-circuit-breaker';
+      }
     }
 
     const allDetectedItems = detectResults.flatMap((result) => result.items || []);
@@ -1516,13 +1592,14 @@ async function main() {
           ]);
     const voiceAddFoodName =
       trim(voiceAddFoodTarget?.foodName) || DEFAULT_INGREDIENT_FALLBACKS[0];
+    const voiceAddFoodDate = toVietnamDateOnly();
     const voiceAddFoodPayload = {
       intent: 'ADD_FOOD',
       entities: {
         foodName: voiceAddFoodName,
         weight: 100,
         mealType: 'Lunch',
-        date: new Date().toISOString(),
+        date: buildNoonUtcIsoForDateOnly(voiceAddFoodDate),
       },
       confidence: 0.95,
       rawText: `them 100g ${voiceAddFoodName} bua trua`,
@@ -1562,7 +1639,7 @@ async function main() {
     });
 
     const voiceAddFoodReadbackResponse = await requestJson(
-      `${backendUrl}/api/meal-diary?date=${encodeURIComponent(toLocalDateOnly())}`,
+      `${backendUrl}/api/meal-diary?date=${encodeURIComponent(voiceAddFoodDate)}`,
       {
         headers: authHeaders(token),
       },
@@ -1570,10 +1647,9 @@ async function main() {
     const voiceAddFoodReadbackRows = Array.isArray(voiceAddFoodReadbackResponse.body)
       ? voiceAddFoodReadbackResponse.body
       : [];
-    const voiceAddFoodReadbackMatched = voiceAddFoodReadbackRows.some((row) =>
-      extractStringsFromMealDiary([row]).some((value) =>
-        normalizeName(value).includes(normalizeName(voiceAddFoodName)),
-      ),
+    const voiceAddFoodReadbackMatched = mealDiaryRowsContainFoodName(
+      voiceAddFoodReadbackRows,
+      voiceAddFoodName,
     );
     report.voiceExecuteAddFoodReadback = {
       status: voiceAddFoodReadbackResponse.status,
@@ -1705,7 +1781,8 @@ async function main() {
     finalizeSummary(report);
     writeJson(reportPath, report);
     console.error('[production-smoke-ai-api] Failed:', error);
-    process.exit(1);
+    process.exitCode = 1;
+    return;
   }
 
   writeJson(reportPath, report);
@@ -1716,6 +1793,7 @@ async function main() {
         outputDir,
         backendUrl,
         passed: report.passed,
+        primaryPath: report.primaryPath,
         summary: report.summary,
         blockedCoverageItems: report.blockedCoverageItems.map((item) => item.key),
         failures: report.failures.map((failure) => ({
@@ -1729,9 +1807,13 @@ async function main() {
       2,
     ),
   );
+
+  if (!report.passed) {
+    process.exitCode = 1;
+  }
 }
 
 main().catch((error) => {
   console.error('[production-smoke-ai-api] Unhandled failure:', error);
-  process.exit(1);
+  process.exitCode = 1;
 });

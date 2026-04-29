@@ -4,6 +4,7 @@ namespace EatFitAI.API.DTOs.Food
     {
         public int FoodItemId { get; set; }
         public string FoodName { get; set; } = string.Empty;
+        public string? FoodNameEn { get; set; }
         public decimal CaloriesPer100g { get; set; }
         public decimal ProteinPer100g { get; set; }
         public decimal CarbPer100g { get; set; }
@@ -20,6 +21,7 @@ namespace EatFitAI.API.DTOs.Food
         public bool IsActive { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime UpdatedAt { get; set; }
+        public ImageVariantsDto? ImageVariants { get; set; }
     }
 
     public class FoodServingDto

@@ -1,8 +1,10 @@
 const fs = require('fs');
 const path = require('path');
 const { resolveSmokeCredentials } = require('./lib/smoke-credentials');
+const { buildUserApiSmokeNames } = require('./lib/user-smoke-data');
+const { runMediaEgressGuard } = require('./lib/media-egress-guard');
 
-const DEFAULT_BACKEND_URL = 'https://eatfitai-backend.onrender.com';
+const DEFAULT_BACKEND_URL = 'https://eatfitai-backend-dev.onrender.com';
 const DEFAULT_OUTPUT_ROOT = path.resolve(
   __dirname,
   '..',
@@ -37,10 +39,9 @@ const JPEG_FIXTURE_PATH = path.resolve(
   '..',
   '..',
   'tools',
-  'appium',
   'fixtures',
   'scan-demo',
-  'ai-primary-banana-01.jpg',
+  'ai-primary-banana-02.jpg',
 );
 const MEAL_TYPE_IDS = {
   Breakfast: 1,
@@ -306,6 +307,33 @@ function recordNegativeCase(report, name, result, expectedStatuses) {
   return passed;
 }
 
+function buildUserPrimaryPathReadiness(report) {
+  const failures = report.failures.map((failure) =>
+    failure.step || failure.reason || failure.message || 'user-primary-path-failed',
+  );
+
+  return {
+    passed: failures.length === 0,
+    failures,
+    covered: [
+      'profile',
+      'avatar',
+      'body-metrics',
+      'preferences',
+      'food-search',
+      'food-detail',
+      'custom-dish',
+      'user-food-items',
+      'favorites',
+      'meal-diary',
+      'water-intake',
+      'summary-day',
+      'summary-week',
+      'analytics',
+    ],
+  };
+}
+
 function resolveCredentials() {
   const credentials = resolveSmokeCredentials({ allowLocalDefaults: false });
   if (!credentials?.email || !credentials?.password) {
@@ -315,6 +343,10 @@ function resolveCredentials() {
   }
 
   return credentials;
+}
+
+function shouldDeleteAccountBeforeRun() {
+  return trim(process.env.EATFITAI_USER_API_DELETE_BEFORE_RUN).toLowerCase() === '1';
 }
 
 function buildFoodLookup(items) {
@@ -375,12 +407,17 @@ async function getFoodDetail(backendUrl, token, foodId) {
 }
 
 async function main() {
+  runMediaEgressGuard({ label: 'production-smoke-user-api' });
+
   const outputDir = resolveOutputDir(process.argv[2]);
+  const runId = path.basename(outputDir);
+  const smokeNames = buildUserApiSmokeNames(runId);
   const backendUrl = normalizeBaseUrl(
     process.env.EATFITAI_SMOKE_BACKEND_URL || process.env.EXPO_PUBLIC_API_BASE_URL,
     DEFAULT_BACKEND_URL,
   );
   const credentials = resolveCredentials();
+  const deleteAccountBeforeRun = shouldDeleteAccountBeforeRun();
 
   fs.mkdirSync(outputDir, { recursive: true });
 
@@ -459,7 +496,8 @@ async function main() {
       status: loginResult.status,
       message: loginResult.error || loginResult.body?.message || 'sandbox login failed',
     });
-    report.passed = false;
+    report.primaryPath = buildUserPrimaryPathReadiness(report);
+    report.passed = report.primaryPath.passed;
     const outputPath = path.join(outputDir, 'user-api-report.json');
     fs.writeFileSync(outputPath, JSON.stringify(report, null, 2), 'utf8');
 
@@ -470,6 +508,7 @@ async function main() {
           outputDir,
           backendUrl,
           passed: report.passed,
+          primaryPath: report.primaryPath,
           failures: report.failures.length,
           selectedFood: null,
           seeded: {
@@ -491,24 +530,38 @@ async function main() {
     return;
   }
 
-  const deleteResult = await deleteProfile(backendUrl, token);
-  report.reset.deleted = deleteResult.ok;
-  report.steps.push({
-    step: 'reset-delete-profile',
-    ok: deleteResult.ok,
-    status: deleteResult.status,
-    durationMs: deleteResult.durationMs,
-    body: summarizeBody(deleteResult.body),
-    error: deleteResult.error || deleteResult.body?.message || null,
-  });
-  if (deleteResult.ok) {
-    report.reset.notes.push('Existing sandbox profile deleted before reseed.');
-    await sleep(1500);
-  } else if (deleteResult.status !== 404) {
-    report.failures.push({
+  if (deleteAccountBeforeRun) {
+    const deleteResult = await deleteProfile(backendUrl, token);
+    report.reset.deleted = deleteResult.ok;
+    report.steps.push({
       step: 'reset-delete-profile',
+      ok: deleteResult.ok,
       status: deleteResult.status,
-      message: deleteResult.error || deleteResult.body?.message || 'reset delete failed',
+      durationMs: deleteResult.durationMs,
+      body: summarizeBody(deleteResult.body),
+      error: deleteResult.error || deleteResult.body?.message || null,
+    });
+    if (deleteResult.ok) {
+      report.reset.notes.push('Existing sandbox profile deleted before reseed.');
+      await sleep(1500);
+    } else if (deleteResult.status !== 404) {
+      report.failures.push({
+        step: 'reset-delete-profile',
+        status: deleteResult.status,
+        message: deleteResult.error || deleteResult.body?.message || 'reset delete failed',
+      });
+    }
+  } else {
+    report.reset.deleted = false;
+    report.reset.notes.push(
+      'Preserved authenticated smoke account; set EATFITAI_USER_API_DELETE_BEFORE_RUN=1 to opt into destructive reset.',
+    );
+    report.steps.push({
+      step: 'reset-delete-profile',
+      ok: true,
+      status: null,
+      durationMs: 0,
+      skipped: true,
     });
   }
 
@@ -658,7 +711,7 @@ async function main() {
   };
 
   const customDishRequest = {
-    dishName: 'Smoke Lane Banana Egg Bowl',
+    dishName: smokeNames.customDishName,
     description: 'Seeded custom dish for downstream AI checks',
     ingredients: [
       {
@@ -688,7 +741,7 @@ async function main() {
   const userFoodPrimaryCreate = await requestMultipart(`${backendUrl}/api/user-food-items`, {
     headers: authHeaders(token),
     fields: [
-      { name: 'FoodName', value: 'Smoke Lane Yogurt Cup' },
+      { name: 'FoodName', value: smokeNames.primaryFoodName },
       { name: 'UnitType', value: 'g' },
       { name: 'CaloriesPer100', value: 98 },
       { name: 'ProteinPer100', value: 9.1 },
@@ -717,7 +770,7 @@ async function main() {
         method: 'PUT',
         headers: authHeaders(token),
         fields: [
-          { name: 'FoodName', value: 'Smoke Lane Yogurt Cup v2' },
+          { name: 'FoodName', value: smokeNames.primaryFoodUpdatedName },
           { name: 'UnitType', value: 'g' },
           { name: 'CaloriesPer100', value: 101 },
           { name: 'ProteinPer100', value: 9.4 },
@@ -748,7 +801,7 @@ async function main() {
   const userFoodScratchCreate = await requestMultipart(`${backendUrl}/api/user-food-items`, {
     headers: authHeaders(token),
     fields: [
-      { name: 'FoodName', value: 'Smoke Lane Scratch Berry' },
+      { name: 'FoodName', value: smokeNames.scratchFoodName },
       { name: 'UnitType', value: 'g' },
       { name: 'CaloriesPer100', value: 55 },
       { name: 'ProteinPer100', value: 1.0 },
@@ -1116,7 +1169,6 @@ async function main() {
   };
 
   const chosenProfile = profileGetAfter.body || profileUpdate.body || profileGetBefore.body || {};
-  const requiredFailures = report.failures.length;
   report.seeded.profile = {
     before: summarizeBody(profileGetBefore.body),
     after: summarizeBody(profileGetAfter.body),
@@ -1126,7 +1178,8 @@ async function main() {
     selectedUserId: chosenProfile.userId || chosenProfile.UserId || null,
   };
 
-  report.passed = requiredFailures === 0;
+  report.primaryPath = buildUserPrimaryPathReadiness(report);
+  report.passed = report.primaryPath.passed;
 
   const outputPath = path.join(outputDir, 'user-api-report.json');
   fs.writeFileSync(outputPath, JSON.stringify(report, null, 2), 'utf8');
@@ -1138,6 +1191,7 @@ async function main() {
         outputDir,
         backendUrl,
         passed: report.passed,
+        primaryPath: report.primaryPath,
         failures: report.failures.length,
         selectedFood: selectedFood
           ? { id: selectedFoodId, foodName: selectedFoodName }

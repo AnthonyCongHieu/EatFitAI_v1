@@ -1,6 +1,5 @@
 import React, { useCallback, useEffect, useRef } from 'react';
 import {
-  Dimensions,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -19,11 +18,9 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 
 import Animated, {
-  Easing,
   FadeIn,
   FadeInDown,
   FadeInUp,
-  FadeOut,
   useAnimatedStyle,
   useSharedValue,
   withRepeat,
@@ -35,11 +32,13 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Toast from 'react-native-toast-message';
 
 import { ThemedText } from '../../components/ThemedText';
+import { trackEvent } from '../../services/analytics';
 
 import VoiceResultCard from '../../components/voice/VoiceResultCard';
 import { useVoiceRecognition } from '../../hooks/useVoiceRecognition';
+import { useAiStatus } from '../../hooks/useAiStatus';
 import { useVoiceStore } from '../../store/useVoiceStore';
-import { useAppTheme } from '../../theme/ThemeProvider';
+import { getAiFeatureAvailability } from '../../utils/aiAvailability';
 import type { AppTabsParamList } from '../navigation/AppTabs';
 import { TEST_IDS } from '../../testing/testIds';
 
@@ -47,8 +46,6 @@ const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 type VoiceNavigationProp = BottomTabNavigationProp<AppTabsParamList, 'VoiceTab'>;
 type VoiceRouteProp = RouteProp<AppTabsParamList, 'VoiceTab'>;
-
-const { width: SW } = Dimensions.get('window');
 
 /* ═══════════════════════════════════════════════
    Emerald Nebula Palette
@@ -89,12 +86,12 @@ interface ChatMessage {
 }
 
 const VoiceScreen = (): React.ReactElement => {
-  const { theme } = useAppTheme();
   const insets = useSafeAreaInsets();
   const queryClient = useQueryClient();
   const navigation = useNavigation<VoiceNavigationProp>();
   const route = useRoute<VoiceRouteProp>();
   const chatScrollRef = useRef<ScrollView>(null);
+  const lastReviewSignatureRef = useRef('');
 
   const {
     status,
@@ -117,11 +114,64 @@ const VoiceScreen = (): React.ReactElement => {
     stopRecording,
     cancelRecording,
   } = useVoiceRecognition();
+  const { data: aiStatus, isLoading: isAiStatusLoading } = useAiStatus();
+  const voiceAvailability = getAiFeatureAvailability(aiStatus, 'voice');
+  const isVoiceAiBlocked = !voiceAvailability.canUseAi;
+
+  const notifyVoiceUnavailable = useCallback(
+    (inputMode: 'microphone' | 'text' | 'quick_command' | 'auto_start') => {
+      Toast.show({
+        type: 'info',
+        text1: isAiStatusLoading && !aiStatus ? 'AI đang kiểm tra' : voiceAvailability.title,
+        text2:
+          voiceAvailability.message ??
+          'Bạn vẫn có thể nhập nhật ký thủ công trong lúc chờ AI sẵn sàng.',
+      });
+      trackEvent('voice_ai_blocked', {
+        flow: 'voice',
+        step: 'availability',
+        status: 'blocked',
+        metadata: {
+          inputMode,
+          availabilityState: voiceAvailability.state,
+          reason: voiceAvailability.title,
+        },
+      });
+    },
+    [
+      aiStatus,
+      isAiStatusLoading,
+      voiceAvailability.message,
+      voiceAvailability.state,
+      voiceAvailability.title,
+    ],
+  );
+
+  const guardVoiceAiReady = useCallback(
+    (inputMode: 'microphone' | 'text' | 'quick_command' | 'auto_start') => {
+      if (voiceAvailability.canUseAi) {
+        return true;
+      }
+
+      notifyVoiceUnavailable(inputMode);
+      return false;
+    },
+    [notifyVoiceUnavailable, voiceAvailability.canUseAi],
+  );
 
   /* ── Auto-start from deep link ── */
   useFocusEffect(
     useCallback(() => {
       if (!route.params?.autoStart || isRecording) {
+        return undefined;
+      }
+
+      if (isAiStatusLoading && !aiStatus) {
+        return undefined;
+      }
+
+      if (!guardVoiceAiReady('auto_start')) {
+        navigation.setParams({ autoStart: undefined, source: undefined });
         return undefined;
       }
 
@@ -138,7 +188,16 @@ const VoiceScreen = (): React.ReactElement => {
         active = false;
         clearTimeout(timer);
       };
-    }, [isRecording, navigation, reset, route.params?.autoStart, startRecording]),
+    }, [
+      guardVoiceAiReady,
+      aiStatus,
+      isAiStatusLoading,
+      isRecording,
+      navigation,
+      reset,
+      route.params?.autoStart,
+      startRecording,
+    ]),
   );
 
   /* ═══ Animated Values ═══ */
@@ -217,22 +276,6 @@ const VoiceScreen = (): React.ReactElement => {
     transform: [{ scale: buttonScale.value }],
   }));
 
-  const waveStyle1 = useAnimatedStyle(() => ({
-    transform: [{ scaleY: waveBar1.value }],
-  }));
-  const waveStyle2 = useAnimatedStyle(() => ({
-    transform: [{ scaleY: waveBar2.value }],
-  }));
-  const waveStyle3 = useAnimatedStyle(() => ({
-    transform: [{ scaleY: waveBar3.value }],
-  }));
-  const waveStyle4 = useAnimatedStyle(() => ({
-    transform: [{ scaleY: waveBar4.value }],
-  }));
-  const waveStyle5 = useAnimatedStyle(() => ({
-    transform: [{ scaleY: waveBar5.value }],
-  }));
-
   /* ═══ Handlers ═══ */
   const handleToggleRecording = async () => {
     buttonScale.value = withSequence(
@@ -245,6 +288,18 @@ const VoiceScreen = (): React.ReactElement => {
       return;
     }
 
+    if (!guardVoiceAiReady('microphone')) {
+      return;
+    }
+
+    trackEvent('voice_parse_start', {
+      flow: 'voice',
+      step: 'record',
+      status: 'started',
+      metadata: {
+        source: route.params?.source ?? 'microphone',
+      },
+    });
     await startRecording();
   };
 
@@ -254,6 +309,14 @@ const VoiceScreen = (): React.ReactElement => {
   };
 
   const handleExecute = async () => {
+    trackEvent('voice_execute_submit', {
+      flow: 'voice',
+      step: 'execute',
+      status: 'submitted',
+      metadata: {
+        intent: parsedCommand?.intent,
+      },
+    });
     await executeCommand();
     const {
       status: newStatus,
@@ -268,6 +331,15 @@ const VoiceScreen = (): React.ReactElement => {
         text2: lastExecutedAction || 'Đã thực hiện lệnh.',
         visibilityTime: 3000,
       });
+      trackEvent('voice_execute_success', {
+        flow: 'voice',
+        step: 'execute',
+        status: 'success',
+        metadata: {
+          intent: parsedCommand?.intent,
+          action: executedData?.type,
+        },
+      });
 
       queryClient.invalidateQueries({ queryKey: ['home-summary'] });
       queryClient.invalidateQueries({ queryKey: ['diary-entries'] });
@@ -277,6 +349,16 @@ const VoiceScreen = (): React.ReactElement => {
     }
 
     if (newStatus === 'error' && execError) {
+      trackEvent('voice_execute_failure', {
+        category: 'error',
+        flow: 'voice',
+        step: 'execute',
+        status: 'failure',
+        metadata: {
+          intent: parsedCommand?.intent,
+          message: execError,
+        },
+      });
       Toast.show({
         type: 'error',
         text1: 'Lỗi',
@@ -286,18 +368,67 @@ const VoiceScreen = (): React.ReactElement => {
   };
 
   const handleQuickCommand = (text: string) => {
+    if (!guardVoiceAiReady('quick_command')) {
+      return;
+    }
+
+    trackEvent('voice_parse_start', {
+      flow: 'voice',
+      step: 'parse',
+      status: 'started',
+      metadata: {
+        inputMode: 'quick_command',
+        textLength: text.length,
+      },
+    });
     setRecognizedText(text);
     processText(text);
   };
 
   const handleSendText = async () => {
     if (recognizedText.trim()) {
+      if (!guardVoiceAiReady('text')) {
+        return;
+      }
+
       const textToProcess = recognizedText.trim();
+      trackEvent('voice_parse_start', {
+        flow: 'voice',
+        step: 'parse',
+        status: 'started',
+        metadata: {
+          inputMode: 'text',
+          textLength: textToProcess.length,
+        },
+      });
       reset();
       setRecognizedText(textToProcess);
       await processText(textToProcess);
     }
   };
+
+  useEffect(() => {
+    if (status !== 'review' || !parsedCommand) {
+      return;
+    }
+
+    const signature = `${parsedCommand.intent}:${parsedCommand.rawText}`;
+    if (lastReviewSignatureRef.current === signature) {
+      return;
+    }
+
+    lastReviewSignatureRef.current = signature;
+    trackEvent('voice_review_ready', {
+      flow: 'voice',
+      step: 'review',
+      status: 'ready',
+      metadata: {
+        intent: parsedCommand.intent,
+        confidence: parsedCommand.confidence,
+        source: parsedCommand.source,
+      },
+    });
+  }, [parsedCommand, status]);
 
   const formatDuration = (seconds: number): string => {
     const mins = Math.floor(seconds / 60);
@@ -370,6 +501,24 @@ const VoiceScreen = (): React.ReactElement => {
       >
 
 
+        {isVoiceAiBlocked && !isRecording && (
+          <Animated.View
+            entering={FadeInUp.delay(80)}
+            style={[S.statusCard, S.availabilityCard]}
+          >
+            <Ionicons name="cloud-offline-outline" size={18} color={P.primary} />
+            <View style={{ flex: 1 }}>
+              <ThemedText style={S.availabilityTitle}>
+                {isAiStatusLoading && !aiStatus ? 'AI đang kiểm tra' : voiceAvailability.title}
+              </ThemedText>
+              <ThemedText style={S.availabilityText}>
+                {voiceAvailability.message ??
+                  'Bạn vẫn có thể nhập nhật ký thủ công trong lúc chờ AI sẵn sàng.'}
+              </ThemedText>
+            </View>
+          </Animated.View>
+        )}
+
         {/* ═══ CHAT HISTORY ═══ */}
         {chatMessages.length > 0 && (
           <Animated.View entering={FadeInUp.delay(100)} style={S.chatArea}>
@@ -439,10 +588,15 @@ const VoiceScreen = (): React.ReactElement => {
               </View>
               <Pressable
                 onPress={handleSendText}
-                disabled={!recognizedText.trim() || status === 'parsing'}
+                disabled={!recognizedText.trim() || status === 'parsing' || isVoiceAiBlocked}
                 style={[
                   S.sendBtn,
-                  { opacity: !recognizedText.trim() || status === 'parsing' ? 0.4 : 1 },
+                  {
+                    opacity:
+                      !recognizedText.trim() || status === 'parsing' || isVoiceAiBlocked
+                        ? 0.4
+                        : 1,
+                  },
                 ]}
               >
                 <LinearGradient
@@ -469,7 +623,7 @@ const VoiceScreen = (): React.ReactElement => {
               {QUICK_COMMANDS.map((cmd) => (
                 <Pressable
                   key={cmd}
-                  style={S.chip}
+                  style={[S.chip, isVoiceAiBlocked && S.disabledControl]}
                   onPress={() => handleQuickCommand(cmd)}
                 >
                   <ThemedText style={S.chipText}>{cmd}</ThemedText>
@@ -505,7 +659,11 @@ const VoiceScreen = (): React.ReactElement => {
           {/* Main mic button */}
           <AnimatedPressable
             onPress={handleToggleRecording}
-            style={[S.micBtnOuter, buttonAnimatedStyle]}
+            style={[
+              S.micBtnOuter,
+              buttonAnimatedStyle,
+              isVoiceAiBlocked && !isRecording && S.disabledControl,
+            ]}
             testID="voice-mic-button"
           >
             <View style={S.micBtnGlassWrap}>
@@ -585,10 +743,15 @@ const VoiceScreen = (): React.ReactElement => {
             </Pressable>
             <Pressable
               onPress={handleSendText}
-              disabled={!recognizedText.trim() || status === 'parsing'}
+              disabled={!recognizedText.trim() || status === 'parsing' || isVoiceAiBlocked}
               style={[
                 S.analyzeBtn,
-                { opacity: !recognizedText.trim() || status === 'parsing' ? 0.5 : 1 },
+                {
+                  opacity:
+                    !recognizedText.trim() || status === 'parsing' || isVoiceAiBlocked
+                      ? 0.5
+                      : 1,
+                },
               ]}
               testID={TEST_IDS.voice.processButton}
             >
@@ -754,6 +917,23 @@ const S = StyleSheet.create({
     fontSize: 13,
     fontWeight: '600',
     color: P.primary,
+  },
+  availabilityCard: {
+    alignItems: 'flex-start',
+    marginBottom: 18,
+    borderColor: P.primary + '35',
+  },
+  availabilityTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: P.primary,
+    marginBottom: 2,
+  },
+  availabilityText: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: P.onSurfaceVariant,
+    lineHeight: 17,
   },
 
   /* ═══ TEXT INPUT ═══ */
@@ -1077,6 +1257,9 @@ const S = StyleSheet.create({
     shadowOpacity: 0.6,
     shadowRadius: 8,
     elevation: 4,
+  },
+  disabledControl: {
+    opacity: 0.55,
   },
 });
 

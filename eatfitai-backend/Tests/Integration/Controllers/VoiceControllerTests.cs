@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text;
+using System.Text.Json;
 using EatFitAI.API.Tests.Integration;
 using EatFitAI.DTOs;
 using Microsoft.AspNetCore.Mvc.Testing;
@@ -97,6 +98,84 @@ public class VoiceControllerTests : IClassFixture<WebApplicationFactory<Program>
         Assert.True(body.ReviewRequired);
         Assert.Contains("Voice Beta", body.ReviewReason, StringComparison.OrdinalIgnoreCase);
         Assert.Equal("chuối", body.Entities.FoodName);
+    }
+
+    [Fact]
+    public async Task ParseWithProvider_WhenProviderAuthFails_Returns503WithoutRuleFallback()
+    {
+        using var factory = CreateFactoryWithHttpClient(_ => new HttpResponseMessage(HttpStatusCode.Forbidden)
+        {
+            Content = new StringContent(
+                """{"error":"forbidden"}""",
+                Encoding.UTF8,
+                "application/json"),
+        });
+        using var client = CreateAuthorizedClient(factory, Guid.NewGuid());
+
+        var response = await client.PostAsJsonAsync("/api/voice/parse", new VoiceProcessRequest
+        {
+            Text = "ghi 1 banana vao bua sang",
+            Language = "vi",
+        });
+
+        Assert.Equal(HttpStatusCode.ServiceUnavailable, response.StatusCode);
+
+        var body = await response.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal("voice_provider_auth_error", body.GetProperty("code").GetString());
+        Assert.False(body.TryGetProperty("source", out _));
+    }
+
+    [Fact]
+    public async Task ParseWithProvider_WhenProviderInternalAuthMissing_Returns503WithoutRuleFallback()
+    {
+        using var factory = CreateFactoryWithHttpClient(_ => new HttpResponseMessage(HttpStatusCode.ServiceUnavailable)
+        {
+            Content = new StringContent(
+                """{"error":"service_unavailable"}""",
+                Encoding.UTF8,
+                "application/json"),
+        });
+        using var client = CreateAuthorizedClient(factory, Guid.NewGuid());
+
+        var response = await client.PostAsJsonAsync("/api/voice/parse", new VoiceProcessRequest
+        {
+            Text = "ghi 1 banana vao bua sang",
+            Language = "vi",
+        });
+
+        Assert.Equal(HttpStatusCode.ServiceUnavailable, response.StatusCode);
+
+        var body = await response.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal("voice_provider_auth_error", body.GetProperty("code").GetString());
+        Assert.False(body.TryGetProperty("source", out _));
+    }
+
+    [Fact]
+    public async Task ParseWithProvider_WhenProviderGatewayFails_ReturnsRuleFallbackWithReview()
+    {
+        using var factory = CreateFactoryWithHttpClient(_ => new HttpResponseMessage(HttpStatusCode.BadGateway)
+        {
+            Content = new StringContent(
+                """{"error":"upstream temporarily unavailable"}""",
+                Encoding.UTF8,
+                "application/json"),
+        });
+        using var client = CreateAuthorizedClient(factory, Guid.NewGuid());
+
+        var response = await client.PostAsJsonAsync("/api/voice/parse", new VoiceProcessRequest
+        {
+            Text = "ghi 1 banana vao bua sang",
+            Language = "vi",
+        });
+
+        response.EnsureSuccessStatusCode();
+
+        var body = await response.Content.ReadFromJsonAsync<ParsedVoiceCommand>();
+        Assert.NotNull(body);
+        Assert.Equal(VoiceIntent.ADD_FOOD, body.Intent);
+        Assert.Equal("backend-rule-fallback", body.Source);
+        Assert.True(body.ReviewRequired);
+        Assert.Contains("AI provider lỗi 502", body.ReviewReason, StringComparison.OrdinalIgnoreCase);
     }
 
     private WebApplicationFactory<Program> CreateFactoryWithHttpClient(

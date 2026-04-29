@@ -2,6 +2,7 @@
 // Tất cả chú thích bằng tiếng Việt theo yêu cầu
 
 import * as SecureStore from 'expo-secure-store';
+import logger from '../utils/logger';
 
 // Khóa cố định để lưu trữ token
 const ACCESS_TOKEN_KEY = 'eatfitai.accessToken';
@@ -25,7 +26,7 @@ export const tokenStorage = {
       refreshToken &&
       (typeof refreshToken !== 'string' || refreshToken.trim().length === 0)
     ) {
-      console.warn('[EatFitAI] Refresh token đưa vào saveTokens không hợp lệ, bỏ qua');
+      logger.warn('[EatFitAI] Refresh token đưa vào saveTokens không hợp lệ, bỏ qua');
       refreshToken = undefined;
     }
     await SecureStore.setItemAsync(ACCESS_TOKEN_KEY, accessToken);
@@ -59,7 +60,7 @@ export const tokenStorage = {
       typeof accessTokenExpiresAt === 'string' &&
       isNaN(Date.parse(accessTokenExpiresAt))
     ) {
-      console.warn(
+      logger.warn(
         '[EatFitAI] Invalid access token expiration date format:',
         accessTokenExpiresAt,
       );
@@ -69,7 +70,7 @@ export const tokenStorage = {
       typeof refreshTokenExpiresAt === 'string' &&
       isNaN(Date.parse(refreshTokenExpiresAt))
     ) {
-      console.warn(
+      logger.warn(
         '[EatFitAI] Định dạng ngày hết hạn refresh token không hợp lệ:',
         refreshTokenExpiresAt,
       );
@@ -80,14 +81,14 @@ export const tokenStorage = {
       refreshToken &&
       (typeof refreshToken !== 'string' || refreshToken.trim().length === 0)
     ) {
-      console.warn(
+      logger.warn(
         '[EatFitAI] Refresh token đưa vào saveTokensFull không hợp lệ, bỏ qua',
       );
     }
 
     await SecureStore.setItemAsync(ACCESS_TOKEN_KEY, accessToken);
     if (__DEV__) {
-      console.log('[SecureStore] Saved access token:', {
+      logger.info('[SecureStore] Saved access token:', {
         tokenLength: accessToken.length,
         hasExpiry: !!accessTokenExpiresAt,
       });
@@ -105,13 +106,13 @@ export const tokenStorage = {
     ) {
       await SecureStore.setItemAsync(REFRESH_TOKEN_KEY, refreshToken);
       if (__DEV__) {
-        console.log('[SecureStore] Saved refresh token:', {
+        logger.info('[SecureStore] Saved refresh token:', {
           tokenLength: refreshToken.length,
           hasExpiry: !!refreshTokenExpiresAt,
         });
       }
     } else if (__DEV__) {
-      console.warn(
+      logger.warn(
         '[SecureStore] No valid refresh token to save - this will cause auth issues later!',
       );
     }
@@ -127,7 +128,7 @@ export const tokenStorage = {
   async getAccessToken(): Promise<string | null> {
     const token = await SecureStore.getItemAsync(ACCESS_TOKEN_KEY);
     if (__DEV__) {
-      console.log('[EatFitAI] Getting access token from storage:', {
+      logger.info('[EatFitAI] Getting access token from storage:', {
         hasToken: !!token,
         tokenLength: token ? token.length : 0,
       });
@@ -139,7 +140,7 @@ export const tokenStorage = {
   async getRefreshToken(): Promise<string | null> {
     const token = await SecureStore.getItemAsync(REFRESH_TOKEN_KEY);
     if (__DEV__) {
-      console.log('[EatFitAI] Getting refresh token from storage:', {
+      logger.info('[EatFitAI] Getting refresh token from storage:', {
         hasToken: !!token,
         tokenLength: token ? token.length : 0,
       });

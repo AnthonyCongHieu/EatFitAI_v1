@@ -7,6 +7,7 @@ import apiClient from '../services/apiClient';
 import { setAccessTokenMem } from '../services/authTokens';
 import { googleAuthService, normalizeGoogleAuthResponse } from '../services/googleAuthService';
 import { useProfileStore } from './useProfileStore';
+import { setErrorTrackingUser } from '../services/errorTracking';
 import { tokenStorage } from '../services/secureStore';
 import {
   initAuthSession,
@@ -153,6 +154,7 @@ export const useAuthStore = create<AuthState>((set: any) => ({
         if (isTokenStillValid(accessTokenExpiresAt)) {
           setAccessTokenMem(token);
           await syncProfileCacheForUser(persistedUser?.id ?? null);
+          if (persistedUser?.id) setErrorTrackingUser(persistedUser.id);
           set({ isAuthenticated: true, needsOnboarding: persistedNeedsOnboarding, user: persistedUser });
         } else if (refreshToken && isTokenStillValid(refreshTokenExpiresAt)) {
           try {
@@ -162,6 +164,7 @@ export const useAuthStore = create<AuthState>((set: any) => ({
             }
 
             await syncProfileCacheForUser(persistedUser?.id ?? null);
+            if (persistedUser?.id) setErrorTrackingUser(persistedUser.id);
             set({ isAuthenticated: true, needsOnboarding: persistedNeedsOnboarding, user: persistedUser });
           } catch (error) {
             if (__DEV__) {
@@ -281,6 +284,7 @@ export const useAuthStore = create<AuthState>((set: any) => ({
     await syncProfileCacheForUser(extractedUser.id || null);
     if (extractedUser.id) {
       await AsyncStorage.setItem(AUTH_USER_KEY, JSON.stringify(extractedUser));
+      setErrorTrackingUser(extractedUser.id);
     }
 
     set({
@@ -363,6 +367,7 @@ export const useAuthStore = create<AuthState>((set: any) => ({
     await syncProfileCacheForUser(extractedUser.id || null);
     if (extractedUser.id) {
       await AsyncStorage.setItem(AUTH_USER_KEY, JSON.stringify(extractedUser));
+      setErrorTrackingUser(extractedUser.id);
     }
 
     set({ isAuthenticated: true, needsOnboarding, user: extractedUser.id ? extractedUser : null });

@@ -114,19 +114,22 @@ public class AdminController : ControllerBase
     private readonly IAdminRuntimeSnapshotCache _runtimeSnapshotCache;
     private readonly IAdminRealtimeEventBus _eventBus;
     private readonly IAdminAuditService _auditService;
+    private readonly IMediaUrlResolver _mediaUrlResolver;
 
     public AdminController(
         ApplicationDbContext context,
         IHttpClientFactory httpClientFactory,
         IAdminRuntimeSnapshotCache runtimeSnapshotCache,
         IAdminRealtimeEventBus eventBus,
-        IAdminAuditService auditService)
+        IAdminAuditService auditService,
+        IMediaUrlResolver mediaUrlResolver)
     {
         _context = context;
         _httpClientFactory = httpClientFactory;
         _runtimeSnapshotCache = runtimeSnapshotCache;
         _eventBus = eventBus;
         _auditService = auditService;
+        _mediaUrlResolver = mediaUrlResolver;
     }
 
     [HttpGet("session")]
@@ -326,7 +329,7 @@ public class AdminController : ControllerBase
             LastActive = u.CreatedAt.ToString("MMM dd, yyyy"),
             TotalMealsLogged = mealsLogged,
             OnboardingCompleted = u.OnboardingCompleted,
-            AvatarUrl = u.AvatarUrl,
+            AvatarUrl = _mediaUrlResolver.NormalizePublicUrl(u.AvatarUrl),
             CreatedAt = u.CreatedAt,
             SuspendedAt = accessControl?.SuspendedAt,
             SuspendedReason = accessControl?.SuspendedReason,
@@ -427,7 +430,7 @@ public class AdminController : ControllerBase
                 LastActive = user.CreatedAt.ToString("MMM dd, yyyy"),
                 TotalMealsLogged = mealsLogged,
                 OnboardingCompleted = user.OnboardingCompleted,
-                AvatarUrl = user.AvatarUrl,
+                AvatarUrl = _mediaUrlResolver.NormalizePublicUrl(user.AvatarUrl),
                 CreatedAt = user.CreatedAt,
                 SuspendedAt = accessControl?.SuspendedAt,
                 SuspendedReason = accessControl?.SuspendedReason,
@@ -769,7 +772,15 @@ public class AdminController : ControllerBase
             runtime = await _runtimeSnapshotCache.GetLatestAsync();
             if (runtime != null)
             {
-                health.AiProviderStatus = runtime.AvailableProjectCount > 0 ? "Live" : "Down";
+                health.AiProviderStatus = string.Equals(
+                    runtime.RuntimeStatusSource,
+                    "local-runtime-fallback",
+                    StringComparison.OrdinalIgnoreCase)
+                        ? "Degraded"
+                        : runtime.AvailableProjectCount > 0 ? "Live" : "Down";
+                health.RuntimeStatusSource = runtime.RuntimeStatusSource;
+                health.RuntimeStatusWarning = runtime.RuntimeStatusWarning;
+                health.RuntimeStatusError = runtime.RuntimeStatusError;
                 health.ActiveProject = runtime.ActiveProject;
                 health.AvailableProjectCount = runtime.AvailableProjectCount;
                 health.ExhaustedProjectCount = runtime.ExhaustedProjectCount;
@@ -855,34 +866,9 @@ public class AdminController : ControllerBase
             requestId: HttpContext.TraceIdentifier));
     }
 
-    // ===================== KEEP-ALIVE =====================
+    // Keep-alive removed — use /health/live for liveness checks
 
-    [AllowAnonymous]
-    [HttpGet("keep-alive")]
-    public async Task<IActionResult> KeepAlive()
-    {
-        var results = new Dictionary<string, string>();
-        
-        // Ping database
-        try { await _context.Database.ExecuteSqlRawAsync("SELECT 1"); results["database"] = "alive"; } 
-        catch { results["database"] = "error"; }
-        
-        // Touch key tables to keep EF Core connection pool warm
-        try { var _ = await _context.GeminiKeys.CountAsync(); results["gemini_keys"] = "alive"; }
-        catch { results["gemini_keys"] = "error"; }
-        
-        try { var _ = await _context.FoodItems.CountAsync(); results["food_items"] = "alive"; }
-        catch { results["food_items"] = "error"; }
-        
-        try { var _ = await _context.Users.CountAsync(); results["users"] = "alive"; }
-        catch { results["users"] = "error"; }
 
-        return Ok(new { 
-            status = "alive", 
-            timestamp = DateTime.UtcNow,
-            services = results
-        });
-    }
 
     private void PublishResourceUpdated(string entityType, string entityId, object payload)
     {

@@ -7,7 +7,6 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 
 import { ThemedText } from '../../../components/ThemedText';
-import { showSuccess, showInfo } from '../../../utils/errorHandler';
 import {
   scheduleNotifications,
   requestNotificationPermissions,
@@ -80,7 +79,7 @@ const NotificationsScreen = (): React.ReactElement => {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const [settings, setSettings] = useState<NotificationSettings>(defaultSettings);
-  const [isSaving, setIsSaving] = useState(false);
+  const [, setIsSaving] = useState(false);
 
   useEffect(() => { loadSettings(); }, []);
 
@@ -170,7 +169,7 @@ const NotificationsScreen = (): React.ReactElement => {
           {/* Meal Reminders Card */}
           <Animated.View entering={FadeInDown.delay(200)} style={S.glassCard}>
             <ThemedText style={S.sectionLabel}>NHẮC NHỞ BỮA ĂN</ThemedText>
-            
+
             <View style={S.gapLarge}>
               {[
                 { label: 'Nhắc ăn sáng', timeKey: 'breakfastTime', toggleKey: 'breakfastEnabled', icon: 'restaurant-outline' },
@@ -183,7 +182,7 @@ const NotificationsScreen = (): React.ReactElement => {
                     <View style={[S.iconBoxDark, item.dim && !settings[item.toggleKey as keyof NotificationSettings] && { opacity: 0.6 }]}>
                       <Ionicons name={item.icon as any} size={20} color={P.primary} />
                     </View>
-                    <ThemedText 
+                    <ThemedText
                       style={[S.itemText, !settings[item.toggleKey as keyof NotificationSettings] && { color: P.slate400, fontFamily: 'Inter_500Medium' }, { flex: 1 }]}
                       numberOfLines={1}
                     >
@@ -192,10 +191,10 @@ const NotificationsScreen = (): React.ReactElement => {
                   </View>
                   <View style={S.rowCenterGap}>
                     <ThemedText style={S.timeText}>{formatTime(settings[item.timeKey as keyof NotificationSettings] as string)}</ThemedText>
-                    <CustomToggle 
-                      value={settings[item.toggleKey as keyof NotificationSettings] as boolean} 
-                      onValueChange={(val) => updateSetting(item.toggleKey as keyof NotificationSettings, val)} 
-                      disabled={!settings.enabled} 
+                    <CustomToggle
+                      value={settings[item.toggleKey as keyof NotificationSettings] as boolean}
+                      onValueChange={(val) => updateSetting(item.toggleKey as keyof NotificationSettings, val)}
+                      disabled={!settings.enabled}
                     />
                   </View>
                 </View>
@@ -220,10 +219,10 @@ const NotificationsScreen = (): React.ReactElement => {
               ].map((item) => (
                 <View key={item.label} style={S.rowBetween}>
                   <ThemedText style={[S.itemTextStandard, { flex: 1, paddingRight: 16 }]} numberOfLines={2}>{item.label}</ThemedText>
-                  <CustomToggle 
-                    value={settings[item.key as keyof NotificationSettings] as boolean} 
-                    onValueChange={(val) => updateSetting(item.key as keyof NotificationSettings, val)} 
-                    disabled={!settings.enabled} 
+                  <CustomToggle
+                    value={settings[item.key as keyof NotificationSettings] as boolean}
+                    onValueChange={(val) => updateSetting(item.key as keyof NotificationSettings, val)}
+                    disabled={!settings.enabled}
                   />
                 </View>
               ))}
@@ -243,10 +242,10 @@ const NotificationsScreen = (): React.ReactElement => {
                   <ThemedText style={[S.itemTextStandard, !settings[item.key as keyof NotificationSettings] && { color: P.slate400 }, { flex: 1, paddingRight: 16 }]} numberOfLines={2}>
                     {item.label}
                   </ThemedText>
-                  <CustomToggle 
-                    value={settings[item.key as keyof NotificationSettings] as boolean} 
-                    onValueChange={(val) => updateSetting(item.key as keyof NotificationSettings, val)} 
-                    disabled={!settings.enabled} 
+                  <CustomToggle
+                    value={settings[item.key as keyof NotificationSettings] as boolean}
+                    onValueChange={(val) => updateSetting(item.key as keyof NotificationSettings, val)}
+                    disabled={!settings.enabled}
                   />
                 </View>
               ))}
@@ -260,10 +259,10 @@ const NotificationsScreen = (): React.ReactElement => {
                 <ThemedText style={S.titleWhite}>Giờ yên tĩnh</ThemedText>
                 <ThemedText style={S.subText}>Không làm phiền trong thời gian này</ThemedText>
               </View>
-              <CustomToggle 
-                value={settings.quietHoursEnabled} 
-                onValueChange={(val) => updateSetting('quietHoursEnabled', val)} 
-                disabled={!settings.enabled} 
+              <CustomToggle
+                value={settings.quietHoursEnabled}
+                onValueChange={(val) => updateSetting('quietHoursEnabled', val)}
+                disabled={!settings.enabled}
               />
             </View>
 
@@ -295,7 +294,7 @@ const S = StyleSheet.create({
   },
   headerCenter: { flex: 1, alignItems: 'center' },
   headerTitle: { fontFamily: 'Inter_800ExtraBold', fontSize: 22, color: P.primary, letterSpacing: -0.5 },
-  
+
   scrollContent: { paddingHorizontal: 20, paddingBottom: 120, gap: 24 },
 
   glassCard: {
@@ -305,14 +304,14 @@ const S = StyleSheet.create({
     shadowColor: P.primary, shadowOpacity: 0.05, shadowRadius: 20, elevation: 5,
   },
   masterCard: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  
+
   iconBoxPrimary: { width: 48, height: 48, borderRadius: 16, backgroundColor: P.primary + '33', alignItems: 'center', justifyContent: 'center' },
   iconBoxDark: { width: 40, height: 40, borderRadius: 12, backgroundColor: P.surfaceContainerHighest, alignItems: 'center', justifyContent: 'center' },
 
   titleWhite: { fontSize: 18, fontFamily: 'Inter_700Bold', color: '#fff' },
   subText: { fontSize: 13, fontFamily: 'Inter_400Regular', color: P.slate400, marginTop: 4 },
   sectionLabel: { fontSize: 11, fontFamily: 'Inter_800ExtraBold', color: P.slate500, letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 20 },
-  
+
   rowBetween: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   rowBetweenStart: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' },
   rowCenter: { flexDirection: 'row', alignItems: 'center' },
@@ -331,7 +330,7 @@ const S = StyleSheet.create({
   quietBox: {
     flex: 1, backgroundColor: P.surfaceContainerLowest,
     borderWidth: 1, borderColor: P.glassBorder, borderRadius: 16,
-    padding: 16, gap: 4
+    padding: 16, gap: 4,
   },
   quietLabel: { fontSize: 11, fontFamily: 'Inter_600SemiBold', color: P.slate500, textTransform: 'uppercase' },
   quietTime: { fontSize: 18, fontFamily: 'Inter_700Bold', color: '#fff' },

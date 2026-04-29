@@ -3,6 +3,7 @@
 
 import apiClient from './apiClient';
 import { sanitizeFoodImageUrl } from '../utils/imageHelpers';
+import type { ApiImageVariants } from '../types/api';
 
 export interface FavoriteItem {
   foodItemId: number;
@@ -13,6 +14,7 @@ export interface FavoriteItem {
   carbPer100g: number;
   fatPer100g: number;
   thumbNail?: string | null;
+  imageVariants?: ApiImageVariants | null;
   isActive: boolean;
 }
 
@@ -33,7 +35,9 @@ export const favoritesService = {
     return Array.isArray(response.data)
       ? response.data.map((item) => ({
           ...item,
-          thumbNail: sanitizeFoodImageUrl(item?.thumbNail ?? null),
+          thumbNail: sanitizeFoodImageUrl(
+            item?.imageVariants?.thumbUrl ?? item?.thumbNail ?? null,
+          ),
         }))
       : [];
   },

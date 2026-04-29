@@ -15,27 +15,39 @@ namespace EatFitAI.API.Repositories
         {
         }
 
-        public async Task<IEnumerable<FoodItem>> SearchByNameAsync(string searchTerm, int limit = 50)
+        public async Task<IEnumerable<FoodItem>> SearchByNameAsync(string searchTerm, int skip = 0, int limit = 50)
         {
-            var normalizedSearchTerm = searchTerm.Trim();
+            var rawSearch = searchTerm.Trim();
+            var unsignedSearch = NormalizeForSearch(rawSearch);
+            
+            var rawPattern = $"%{rawSearch}%";
+            var unsignedPattern = $"%{unsignedSearch}%";
 
-            // PostgreSQL & InMemory: dùng client-side search cho accent-insensitive
-            // Data set nhỏ (<500 items) nên hiệu suất vẫn tốt
-            var items = await _context.FoodItems
+            if (_context.Database.IsInMemory())
+            {
+                var items = await _context.FoodItems
+                    .Where(fi => fi.IsActive && !fi.IsDeleted)
+                    .ToListAsync();
+
+                return items
+                    .Where(fi => fi.FoodName.Contains(rawSearch, StringComparison.OrdinalIgnoreCase) ||
+                                 (fi.FoodNameEn != null && fi.FoodNameEn.Contains(rawSearch, StringComparison.OrdinalIgnoreCase)) ||
+                                 NormalizeForSearch(fi.FoodName).Contains(unsignedSearch, StringComparison.OrdinalIgnoreCase))
+                    .OrderBy(fi => fi.FoodName)
+                    .Skip(skip)
+                    .Take(limit)
+                    .ToList();
+            }
+
+            return await _context.FoodItems
                 .Where(fi => fi.IsActive && !fi.IsDeleted)
-                .ToListAsync();
-
-            return items
-                .Where(fi =>
-                    MatchesSearch(fi.FoodName, normalizedSearchTerm) ||
-                    MatchesSearch(fi.FoodNameEn, normalizedSearchTerm) ||
-                    MatchesSearch(fi.FoodNameUnsigned, normalizedSearchTerm))
-                .OrderByDescending(fi => StartsWithNormalized(fi.FoodName, normalizedSearchTerm))
-                .ThenByDescending(fi => StartsWithNormalized(fi.FoodNameEn, normalizedSearchTerm))
-                .ThenByDescending(fi => StartsWithNormalized(fi.FoodNameUnsigned, normalizedSearchTerm))
-                .ThenBy(fi => fi.FoodName)
+                .Where(fi => EF.Functions.ILike(fi.FoodName, rawPattern) ||
+                             (fi.FoodNameEn != null && EF.Functions.ILike(fi.FoodNameEn, rawPattern)) ||
+                             (fi.FoodNameUnsigned != null && EF.Functions.ILike(fi.FoodNameUnsigned, unsignedPattern)))
+                .OrderBy(fi => fi.FoodName)
+                .Skip(skip)
                 .Take(limit)
-                .ToList();
+                .ToListAsync();
         }
 
         public async Task<IEnumerable<FoodItem>> GetActiveAsync()
@@ -57,48 +69,6 @@ namespace EatFitAI.API.Repositories
                 .ToListAsync();
 
             return (foodItem, foodServings);
-        }
-
-        private static string BuildContainsPattern(string searchTerm)
-        {
-            return $"%{EscapeLikeValue(searchTerm)}%";
-        }
-
-        private static string BuildStartsWithPattern(string searchTerm)
-        {
-            return $"{EscapeLikeValue(searchTerm)}%";
-        }
-
-        private static string EscapeLikeValue(string value)
-        {
-            return value
-                .Replace("[", "[[]", StringComparison.Ordinal)
-                .Replace("%", "[%]", StringComparison.Ordinal)
-                .Replace("_", "[_]", StringComparison.Ordinal);
-        }
-
-        private static bool MatchesSearch(string? candidate, string searchTerm)
-        {
-            if (string.IsNullOrWhiteSpace(candidate))
-            {
-                return false;
-            }
-
-            return NormalizeForSearch(candidate).Contains(
-                NormalizeForSearch(searchTerm),
-                StringComparison.Ordinal);
-        }
-
-        private static bool StartsWithNormalized(string? candidate, string searchTerm)
-        {
-            if (string.IsNullOrWhiteSpace(candidate))
-            {
-                return false;
-            }
-
-            return NormalizeForSearch(candidate).StartsWith(
-                NormalizeForSearch(searchTerm),
-                StringComparison.Ordinal);
         }
 
         private static string NormalizeForSearch(string value)

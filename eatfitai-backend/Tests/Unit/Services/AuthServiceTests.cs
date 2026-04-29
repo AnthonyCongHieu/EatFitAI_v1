@@ -53,6 +53,7 @@ namespace EatFitAI.API.Tests.Unit.Services
             _configurationMock.Setup(c => c["Jwt:PreviousKeys"]).Returns(PreviousJwtKey);
             _configurationMock.Setup(c => c["Jwt:Issuer"]).Returns("EatFitAI");
             _configurationMock.Setup(c => c["Jwt:Audience"]).Returns("EatFitAI");
+            SetupConfigurationValue("Auth:AllowAuthCodesInResponse", "false");
 
             var options = new DbContextOptionsBuilder<EatFitAIDbContext>()
                 .UseInMemoryDatabase(Guid.NewGuid().ToString())
@@ -180,6 +181,31 @@ namespace EatFitAI.API.Tests.Unit.Services
             Assert.True(result.Success);
             Assert.Equal(request.Email, result.Email);
             Assert.False(string.IsNullOrWhiteSpace(result.VerificationCode));
+        }
+
+        [Fact]
+        public async Task RegisterWithVerificationAsync_EmailSendFailsInProductionWithSmokeCodeFlag_ReturnsVerificationCode()
+        {
+            var request = new RegisterRequest
+            {
+                Email = "verify-smoke@example.com",
+                Password = "password123",
+                DisplayName = "Verify Smoke"
+            };
+
+            _envMock.SetupGet(e => e.EnvironmentName).Returns(Environments.Production);
+            SetupConfigurationValue("Auth:AllowAuthCodesInResponse", "true");
+            _userRepositoryMock.Setup(r => r.GetByEmailAsync(request.Email)).ReturnsAsync((User?)null);
+            _userRepositoryMock.Setup(r => r.AddAsync(It.IsAny<User>())).Returns(Task.CompletedTask);
+            _emailServiceMock
+                .Setup(s => s.SendVerificationCodeAsync(request.Email, It.IsAny<string>(), It.IsAny<DateTime>()))
+                .ThrowsAsync(new TimeoutException("SMTP verification send timed out."));
+
+            var result = await _authService.RegisterWithVerificationAsync(request);
+
+            Assert.True(result.Success);
+            Assert.Equal(request.Email, result.Email);
+            Assert.Matches("^\\d{6}$", result.VerificationCode);
         }
 
         [Fact]
@@ -361,6 +387,35 @@ namespace EatFitAI.API.Tests.Unit.Services
             Assert.Equal(
                 "Không gửi được email đặt lại mật khẩu. Vui lòng thử lại sau hoặc kiểm tra cấu hình SMTP.",
                 ex.Message);
+        }
+
+        [Fact]
+        public async Task ForgotPasswordAsync_EmailSendFailsInProductionWithSmokeCodeFlag_ReturnsResetCode()
+        {
+            var request = new ForgotPasswordRequest { Email = "reset-smoke@example.com" };
+            var user = new User
+            {
+                UserId = Guid.NewGuid(),
+                Email = request.Email,
+                PasswordHash = HashLegacyPassword("password123"),
+                EmailVerified = true,
+                CreatedAt = DateTime.UtcNow
+            };
+
+            _envMock.SetupGet(e => e.EnvironmentName).Returns(Environments.Production);
+            SetupConfigurationValue("Auth:AllowAuthCodesInResponse", "true");
+            _userRepositoryMock.Setup(r => r.GetByEmailAsync(request.Email)).ReturnsAsync(user);
+            _emailServiceMock
+                .Setup(s => s.SendResetCodeAsync(request.Email, It.IsAny<string>(), It.IsAny<DateTime>()))
+                .ThrowsAsync(new TimeoutException("SMTP reset send timed out."));
+
+            var result = await _authService.ForgotPasswordAsync(request);
+
+            Assert.True(result.Success);
+            Assert.Matches("^\\d{6}$", result.ResetCode);
+
+            var storedCode = await _adminContext.PasswordResetCodes.SingleAsync(item => item.UserId == user.UserId);
+            Assert.Null(storedCode.ConsumedAt);
         }
 
         [Fact]
@@ -556,6 +611,13 @@ namespace EatFitAI.API.Tests.Unit.Services
             using var sha256 = SHA256.Create();
             var hashedBytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(password));
             return Convert.ToBase64String(hashedBytes);
+        }
+
+        private void SetupConfigurationValue(string key, string? value)
+        {
+            var section = new Mock<IConfigurationSection>();
+            section.SetupGet(s => s.Value).Returns(value);
+            _configurationMock.Setup(c => c.GetSection(key)).Returns(section.Object);
         }
 
         private async Task<User> AddTrackedUserAsync(string email, string password = "password123")

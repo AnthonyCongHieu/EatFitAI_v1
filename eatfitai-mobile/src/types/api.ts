@@ -1,6 +1,11 @@
 // API Response Type Definitions
 // Auto-generated types for backend API responses
 
+export interface ApiImageVariants {
+  thumbUrl?: string | null;
+  mediumUrl?: string | null;
+}
+
 // ============================================
 // FOOD SERVICE TYPES
 // ============================================
@@ -14,6 +19,7 @@ export interface ApiFoodSearchItem {
   fatPer100: number;
   source?: 'catalog' | 'user';
   thumbnailUrl?: string | null;
+  imageVariants?: ApiImageVariants | null;
 }
 
 export interface ApiUserFoodDetail {
@@ -30,6 +36,7 @@ export interface ApiUserFoodDetail {
   updatedAt?: string;
   servingSizeGram?: number;
   thumbnailUrl?: string | null;
+  imageVariants?: ApiImageVariants | null;
 }
 
 export interface ApiFoodDetail {

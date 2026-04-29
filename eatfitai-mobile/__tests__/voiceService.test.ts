@@ -1,4 +1,5 @@
 import voiceService from '../src/services/voiceService';
+import apiClient from '../src/services/apiClient';
 import {
   fetchWithAuthRetry,
   getCurrentApiUrl,
@@ -23,6 +24,7 @@ describe('voiceService', () => {
   const mockedFetchWithAuthRetry = fetchWithAuthRetry as jest.Mock;
   const mockedGetCurrentApiUrl = getCurrentApiUrl as jest.Mock;
   const mockedAssertBackendApiBaseUrl = assertBackendApiBaseUrl as jest.Mock;
+  const mockedPost = apiClient.post as jest.Mock;
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -43,4 +45,26 @@ describe('voiceService', () => {
       error: 'Chức năng chuyển giọng nói hiện đang tạm tắt. Hãy nhập lệnh bằng text.',
     });
   });
+
+  it('parseWithProvider sends text through the backend AI provider proxy', async () => {
+    mockedPost.mockResolvedValue({
+      data: {
+        intent: 'ADD_FOOD',
+        entities: { foodName: 'phở bò' },
+        confidence: 0.91,
+        rawText: 'thêm phở bò',
+        source: 'ai-provider-proxy',
+      },
+    });
+
+    const result = await voiceService.parseWithProvider('thêm phở bò');
+
+    expect(mockedPost).toHaveBeenCalledWith('/api/voice/parse', {
+      text: 'thêm phở bò',
+      language: 'vi',
+    });
+    expect(result.source).toBe('ai-provider-proxy');
+  });
+
+  // parseWithOllama test đã xóa — method deprecated
 });

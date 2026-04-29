@@ -1,6 +1,8 @@
 using System.Text.Json;
 using EatFitAI.API.DTOs.Admin;
+using EatFitAI.API.Helpers;
 using EatFitAI.API.Services.Interfaces;
+using System.Net;
 
 namespace EatFitAI.API.Services;
 
@@ -31,11 +33,7 @@ public sealed class AiRuntimeStatusService : IAiRuntimeStatusService
                 client.Timeout = TimeSpan.FromSeconds(10);
 
                 using var request = new HttpRequestMessage(HttpMethod.Get, $"{providerBaseUrl}/internal/runtime/status");
-                var internalToken = _configuration["AIProvider:InternalToken"];
-                if (!string.IsNullOrWhiteSpace(internalToken))
-                {
-                    request.Headers.Add("X-Internal-Token", internalToken);
-                }
+                AiProviderRequestHelper.AddInternalTokenHeader(request, _configuration, _logger);
 
                 using var response = await client.SendAsync(request, cancellationToken);
                 response.EnsureSuccessStatusCode();
@@ -48,7 +46,17 @@ public sealed class AiRuntimeStatusService : IAiRuntimeStatusService
             catch (Exception ex) when (ex is not OperationCanceledException)
             {
                 exceptions.Add(ex);
-                _logger.LogWarning(ex, "Failed to fetch runtime status from {ProviderBaseUrl}", providerBaseUrl);
+                if (IsTransientProviderStatusException(ex))
+                {
+                    _logger.LogInformation(
+                        ex,
+                        "AI runtime status is temporarily unavailable from {ProviderBaseUrl}",
+                        providerBaseUrl);
+                }
+                else
+                {
+                    _logger.LogWarning(ex, "Failed to fetch runtime status from {ProviderBaseUrl}", providerBaseUrl);
+                }
             }
         }
 
@@ -81,7 +89,12 @@ public sealed class AiRuntimeStatusService : IAiRuntimeStatusService
             AvailableProjectCount = availableCount,
             ExhaustedProjectCount = exhaustedCount,
             CooldownProjectCount = cooldownCount,
+            AuthInvalidProjectCount = ReadInt(
+                root,
+                "gemini_auth_invalid_project_count",
+                projects.Count(project => string.Equals(project.State, "auth_invalid", StringComparison.OrdinalIgnoreCase))),
             DistinctProjectCount = ReadInt(root, "gemini_distinct_project_count"),
+            RuntimeStatusSource = "ai-provider",
             Limits = new RuntimeLimitsDto
             {
                 Rpm = ReadNestedInt(root, "gemini_limits", "rpm"),
@@ -183,13 +196,13 @@ public sealed class AiRuntimeStatusService : IAiRuntimeStatusService
     private IEnumerable<string> GetRuntimeStatusBaseUrls()
     {
         var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var yieldedAny = false;
 
         IEnumerable<string?> candidates =
         [
             _configuration["AIProvider:VisionBaseUrl"],
             _configuration["AIProvider:PublicBaseUrl"],
             Environment.GetEnvironmentVariable("RENDER_EXTERNAL_AI_PROVIDER_URL"),
-            "https://eatfitai-ai-provider.onrender.com",
         ];
 
         foreach (var candidate in candidates)
@@ -207,6 +220,7 @@ public sealed class AiRuntimeStatusService : IAiRuntimeStatusService
 
             if (seen.Add(normalized))
             {
+                yieldedAny = true;
                 yield return normalized;
             }
         }
@@ -223,7 +237,30 @@ public sealed class AiRuntimeStatusService : IAiRuntimeStatusService
 
         if (!string.IsNullOrWhiteSpace(configuredBaseUrl) && seen.Add(configuredBaseUrl))
         {
+            yieldedAny = true;
             yield return configuredBaseUrl;
         }
+
+        if (!yieldedAny)
+        {
+            yield return "https://eatfitai-ai-provider.onrender.com";
+        }
+    }
+
+    private static bool IsTransientProviderStatusException(Exception exception)
+    {
+        if (exception is HttpRequestException
+            {
+                StatusCode: HttpStatusCode.TooManyRequests
+                    or HttpStatusCode.RequestTimeout
+                    or HttpStatusCode.BadGateway
+                    or HttpStatusCode.ServiceUnavailable
+                    or HttpStatusCode.GatewayTimeout
+            })
+        {
+            return true;
+        }
+
+        return exception is TimeoutException or TaskCanceledException;
     }
 }

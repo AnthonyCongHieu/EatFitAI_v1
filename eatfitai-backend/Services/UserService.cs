@@ -3,6 +3,7 @@ using EatFitAI.API.Data;
 using EatFitAI.API.DbScaffold.Data;
 using EatFitAI.API.DTOs.User;
 using EatFitAI.API.DbScaffold.Models;
+using EatFitAI.API.Helpers;
 using EatFitAI.API.Repositories.Interfaces;
 using EatFitAI.API.Services.Interfaces;
 using Microsoft.AspNetCore.Http;
@@ -26,7 +27,9 @@ namespace EatFitAI.API.Services
         private readonly EatFitAIDbContext _context;
         private readonly ApplicationDbContext _adminContext;
         private readonly IMapper _mapper;
-        private readonly ISupabaseStorageService _supabaseStorageService;
+        private readonly IMediaImageProcessor _mediaImageProcessor;
+        private readonly IMediaStorageService _mediaStorageService;
+        private readonly IMediaUrlResolver _mediaUrlResolver;
         private readonly IHostEnvironment _environment;
         private readonly SupabaseSchemaBootstrapper _schemaBootstrapper;
         private readonly ILogger<UserService> _logger;
@@ -36,7 +39,9 @@ namespace EatFitAI.API.Services
             EatFitAIDbContext context,
             ApplicationDbContext adminContext,
             IMapper mapper,
-            ISupabaseStorageService supabaseStorageService,
+            IMediaImageProcessor mediaImageProcessor,
+            IMediaStorageService mediaStorageService,
+            IMediaUrlResolver mediaUrlResolver,
             IHostEnvironment environment,
             SupabaseSchemaBootstrapper schemaBootstrapper,
             ILogger<UserService> logger)
@@ -45,7 +50,9 @@ namespace EatFitAI.API.Services
             _context = context;
             _adminContext = adminContext;
             _mapper = mapper;
-            _supabaseStorageService = supabaseStorageService;
+            _mediaImageProcessor = mediaImageProcessor;
+            _mediaStorageService = mediaStorageService;
+            _mediaUrlResolver = mediaUrlResolver;
             _environment = environment;
             _schemaBootstrapper = schemaBootstrapper;
             _logger = logger;
@@ -157,6 +164,7 @@ namespace EatFitAI.API.Services
             userProfile.TargetWeightKg = user.TargetWeightKg;
             userProfile.CurrentStreak = user.CurrentStreak;
             userProfile.LongestStreak = user.LongestStreak;
+            userProfile.AvatarUrl = _mediaUrlResolver.NormalizePublicUrl(userProfile.AvatarUrl);
 
             return userProfile;
         }
@@ -169,7 +177,7 @@ namespace EatFitAI.API.Services
             if (userProfileDto.DisplayName != null)
                 user.DisplayName = userProfileDto.DisplayName;
             if (userProfileDto.AvatarUrl != null)
-                user.AvatarUrl = userProfileDto.AvatarUrl;
+                user.AvatarUrl = _mediaUrlResolver.NormalizePublicUrl(userProfileDto.AvatarUrl);
             
             // Update profile fields for AI nutrition
             if (userProfileDto.Gender != null)
@@ -213,7 +221,7 @@ namespace EatFitAI.API.Services
                         UserId = userId,
                         HeightCm = newHeight,
                         WeightKg = newWeight,
-                        MeasuredDate = DateOnly.FromDateTime(DateTime.Now),
+                        MeasuredDate = DateTimeHelper.GetVietnamToday(),
                         Note = "Cập nhật từ Hồ sơ"
                     };
                     await _context.BodyMetrics.AddAsync(newMetric);
@@ -237,7 +245,7 @@ namespace EatFitAI.API.Services
             await EnsureAvatarUrlColumnAsync();
             await _context.SaveChangesAsync();
 
-            return avatarUrl;
+            return _mediaUrlResolver.NormalizePublicUrl(avatarUrl) ?? avatarUrl;
         }
 
         public async Task DeleteUserAsync(Guid userId)
@@ -250,53 +258,111 @@ namespace EatFitAI.API.Services
 
             await _schemaBootstrapper.EnsureSchemaAsync();
 
-            // Delete all related records first (due to ClientSetNull delete behavior)
-            // Delete AILogs
-            var aiLogs = await _context.AILogs.Where(x => x.UserId == userId).ToListAsync();
-            _context.AILogs.RemoveRange(aiLogs);
+            if (_adminContext.Database.IsRelational())
+            {
+                var strategy = _adminContext.Database.CreateExecutionStrategy();
+                await strategy.ExecuteAsync(async () =>
+                {
+                    await using var transaction = await _adminContext.Database.BeginTransactionAsync();
+                    await DeleteUserRowsFromAdminContextAsync(userId);
+                    await transaction.CommitAsync();
+                });
+                return;
+            }
 
-            // Delete BodyMetrics
-            var bodyMetrics = await _context.BodyMetrics.Where(x => x.UserId == userId).ToListAsync();
-            _context.BodyMetrics.RemoveRange(bodyMetrics);
-
-            // Delete MealDiaries
-            var mealDiaries = await _context.MealDiaries
+            var aiLogIds = await _context.AILogs
                 .Where(x => x.UserId == userId)
+                .Select(x => x.AILogId)
                 .ToListAsync();
-            _context.MealDiaries.RemoveRange(mealDiaries);
+            if (aiLogIds.Count > 0)
+            {
+                await DeleteFromQueryAsync(_context, _context.ImageDetections.Where(x => aiLogIds.Contains(x.AILogId)));
+                await DeleteFromQueryAsync(_context, _context.AISuggestions.Where(x => aiLogIds.Contains(x.AILogId)));
+            }
 
-            // Delete NutritionTargets
-            var nutritionTargets = await _context.NutritionTargets.Where(x => x.UserId == userId).ToListAsync();
-            _context.NutritionTargets.RemoveRange(nutritionTargets);
-
-            // Delete UserDishes
-            var userDishes = await _context.UserDishes.Where(x => x.UserId == userId).ToListAsync();
-            _context.UserDishes.RemoveRange(userDishes);
-
-            // Delete UserFavoriteFoods
-            var userFavoriteFoods = await _context.UserFavoriteFoods.Where(x => x.UserId == userId).ToListAsync();
-            _context.UserFavoriteFoods.RemoveRange(userFavoriteFoods);
-
-            // Delete UserFoodItems
-            var userFoodItems = await _context.UserFoodItems.Where(x => x.UserId == userId).ToListAsync();
-            _context.UserFoodItems.RemoveRange(userFoodItems);
-
-            // Delete UserRecentFoods
-            var userRecentFoods = await _context.UserRecentFoods.Where(x => x.UserId == userId).ToListAsync();
-            _context.UserRecentFoods.RemoveRange(userRecentFoods);
-
-            // Delete user preferences from the admin context first so profile delete
-            // does not fail on stale preference rows in production.
-            var userPreferences = await _adminContext.UserPreferences
+            var userDishIds = await _context.UserDishes
                 .Where(x => x.UserId == userId)
+                .Select(x => x.UserDishId)
                 .ToListAsync();
-            _adminContext.UserPreferences.RemoveRange(userPreferences);
+            if (userDishIds.Count > 0)
+            {
+                await DeleteFromQueryAsync(_context, _context.UserDishIngredients.Where(x => userDishIds.Contains(x.UserDishId)));
+            }
 
-            await _adminContext.SaveChangesAsync();
+            await DeleteFromQueryAsync(_context, _context.AiCorrectionEvents.Where(x => x.UserId == userId));
+            await DeleteFromQueryAsync(_context, _context.AILogs.Where(x => x.UserId == userId));
+            await DeleteFromQueryAsync(_context, _context.BodyMetrics.Where(x => x.UserId == userId));
+            await DeleteFromQueryAsync(_context, _context.MealDiaries.Where(x => x.UserId == userId));
+            await DeleteFromQueryAsync(_context, _context.NutritionTargets.Where(x => x.UserId == userId));
+            await DeleteFromQueryAsync(_context, _context.UserDishes.Where(x => x.UserId == userId));
+            await DeleteFromQueryAsync(_context, _context.UserFavoriteFoods.Where(x => x.UserId == userId));
+            await DeleteFromQueryAsync(_context, _context.UserFoodItems.Where(x => x.UserId == userId));
+            await DeleteFromQueryAsync(_context, _context.UserRecentFoods.Where(x => x.UserId == userId));
+            await DeleteFromQueryAsync(_adminContext, _adminContext.TelemetryEvents.Where(x => x.UserId == userId));
+
+            await DeleteFromQueryAsync(_adminContext, _adminContext.PasswordResetCodes.Where(x => x.UserId == userId));
+            await DeleteFromQueryAsync(_adminContext, _adminContext.UserAccessControls.Where(x => x.UserId == userId));
+            await DeleteFromQueryAsync(_adminContext, _adminContext.UserPreferences.Where(x => x.UserId == userId));
+            await DeleteFromQueryAsync(_adminContext, _adminContext.WaterIntakes.Where(x => x.UserId == userId));
 
             // Finally, delete the user
             _userRepository.Remove(user);
             await _context.SaveChangesAsync();
+        }
+
+        private async Task DeleteUserRowsFromAdminContextAsync(Guid userId)
+        {
+            // Delete all related records first (due to ClientSetNull delete behavior).
+            // Use server-side deletes because production schemas can have older nullable
+            // columns that should not be materialized just to delete.
+            var aiLogIds = await _adminContext.AILogs
+                .Where(x => x.UserId == userId)
+                .Select(x => x.AILogId)
+                .ToListAsync();
+            if (aiLogIds.Count > 0)
+            {
+                await DeleteFromQueryAsync(_adminContext, _adminContext.ImageDetections.Where(x => aiLogIds.Contains(x.AILogId)));
+                await DeleteFromQueryAsync(_adminContext, _adminContext.AISuggestions.Where(x => aiLogIds.Contains(x.AILogId)));
+            }
+
+            var userDishIds = await _adminContext.UserDishes
+                .Where(x => x.UserId == userId)
+                .Select(x => x.UserDishId)
+                .ToListAsync();
+            if (userDishIds.Count > 0)
+            {
+                await DeleteFromQueryAsync(_adminContext, _adminContext.UserDishIngredients.Where(x => userDishIds.Contains(x.UserDishId)));
+            }
+
+            await DeleteFromQueryAsync(_adminContext, _adminContext.AiCorrectionEvents.Where(x => x.UserId == userId));
+            await DeleteFromQueryAsync(_adminContext, _adminContext.AILogs.Where(x => x.UserId == userId));
+            await DeleteFromQueryAsync(_adminContext, _adminContext.BodyMetrics.Where(x => x.UserId == userId));
+            await DeleteFromQueryAsync(_adminContext, _adminContext.MealDiaries.Where(x => x.UserId == userId));
+            await DeleteFromQueryAsync(_adminContext, _adminContext.NutritionTargets.Where(x => x.UserId == userId));
+            await DeleteFromQueryAsync(_adminContext, _adminContext.UserDishes.Where(x => x.UserId == userId));
+            await DeleteFromQueryAsync(_adminContext, _adminContext.UserFavoriteFoods.Where(x => x.UserId == userId));
+            await DeleteFromQueryAsync(_adminContext, _adminContext.UserFoodItems.Where(x => x.UserId == userId));
+            await DeleteFromQueryAsync(_adminContext, _adminContext.UserRecentFoods.Where(x => x.UserId == userId));
+            await DeleteFromQueryAsync(_adminContext, _adminContext.TelemetryEvents.Where(x => x.UserId == userId));
+            await DeleteFromQueryAsync(_adminContext, _adminContext.PasswordResetCodes.Where(x => x.UserId == userId));
+            await DeleteFromQueryAsync(_adminContext, _adminContext.UserAccessControls.Where(x => x.UserId == userId));
+            await DeleteFromQueryAsync(_adminContext, _adminContext.UserPreferences.Where(x => x.UserId == userId));
+            await DeleteFromQueryAsync(_adminContext, _adminContext.WaterIntakes.Where(x => x.UserId == userId));
+            await DeleteFromQueryAsync(_adminContext, _adminContext.Users.Where(x => x.UserId == userId));
+        }
+
+        private static async Task DeleteFromQueryAsync<TEntity>(DbContext context, IQueryable<TEntity> query)
+            where TEntity : class
+        {
+            if (context.Database.IsRelational())
+            {
+                await query.ExecuteDeleteAsync();
+                return;
+            }
+
+            var rows = await query.ToListAsync();
+            context.RemoveRange(rows);
+            await context.SaveChangesAsync();
         }
 
         private async Task<string> SaveAvatarAsync(IFormFile file, Guid userId, string? uploadsRoot)
@@ -323,10 +389,29 @@ namespace EatFitAI.API.Services
                 };
             }
 
-            if (_supabaseStorageService.IsConfigured)
+            if (_mediaStorageService.IsConfigured)
             {
-                var objectPath = $"avatars/{userId:N}/{Guid.NewGuid():N}{extension.ToLowerInvariant()}";
-                return await _supabaseStorageService.UploadUserFoodImageAsync(file, objectPath);
+                var mediaId = Guid.NewGuid().ToString("N");
+                var variants = await _mediaImageProcessor.CreateVariantsAsync(file);
+                var thumbObjectPath = $"avatars/v2/{userId:N}/thumb/{mediaId}.webp";
+                var mediumObjectPath = $"avatars/v2/{userId:N}/medium/{mediaId}.webp";
+
+                var thumbUrl = await _mediaStorageService.UploadAsync(new MediaUploadObject
+                {
+                    Bucket = "user-food",
+                    ObjectPath = thumbObjectPath,
+                    Bytes = variants.Thumb.Bytes,
+                    ContentType = variants.Thumb.ContentType
+                });
+                await _mediaStorageService.UploadAsync(new MediaUploadObject
+                {
+                    Bucket = "user-food",
+                    ObjectPath = mediumObjectPath,
+                    Bytes = variants.Medium.Bytes,
+                    ContentType = variants.Medium.ContentType
+                });
+
+                return thumbUrl;
             }
 
             if (_environment.IsProduction())

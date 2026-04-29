@@ -50,10 +50,10 @@ export const StatsHeroCard: React.FC<StatsHeroCardProps> = ({
       alignItems: 'center',
       paddingVertical: theme.spacing.xl,
       paddingHorizontal: theme.spacing.lg,
-      backgroundColor: isDark ? '#1A2744' : '#EEF4FF',
+      backgroundColor: isDark ? '#1A1F2F' : '#EEF8F0',
       borderRadius: theme.radius.xl,
       borderWidth: 1,
-      borderColor: isDark ? '#2A3F68' : '#D0E4FF',
+      borderColor: isDark ? '#3D4A3D' : '#BBF7D0',
       gap: theme.spacing.sm,
     },
     progressContainer: {
@@ -75,7 +75,7 @@ export const StatsHeroCard: React.FC<StatsHeroCardProps> = ({
       marginTop: theme.spacing.lg,
       paddingTop: theme.spacing.md,
       borderTopWidth: 1,
-      borderTopColor: isDark ? '#2A3F68' : '#E0E0E0',
+      borderTopColor: isDark ? '#3D4A3D' : '#E0E0E0',
     },
     statItem: {
       alignItems: 'center',
@@ -102,7 +102,7 @@ export const StatsHeroCard: React.FC<StatsHeroCardProps> = ({
             cx={size / 2}
             cy={size / 2}
             r={radius}
-            stroke={isDark ? '#2A3F68' : '#E0E0E0'}
+            stroke={isDark ? '#3D4A3D' : '#E0E0E0'}
             strokeWidth={strokeWidth}
             fill="transparent"
           />

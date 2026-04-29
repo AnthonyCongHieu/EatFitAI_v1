@@ -116,6 +116,13 @@ async function main() {
       cwd: mobileRoot,
       reportPath: path.join(outputDir, 'ai-api-report.json'),
     },
+    {
+      label: 'regression',
+      command: 'node',
+      args: [path.join(mobileRoot, 'scripts', 'production-smoke-regression.js'), outputDir],
+      cwd: mobileRoot,
+      reportPath: path.join(outputDir, 'regression-run.json'),
+    },
   ];
   const cleanupStep = {
     label: 'cleanup',
@@ -182,11 +189,12 @@ async function main() {
   const userApi = readJsonIfExists(path.join(outputDir, 'user-api-report.json'));
   const aiApi = readJsonIfExists(path.join(outputDir, 'ai-api-report.json'));
   const cleanup = readJsonIfExists(path.join(outputDir, 'cleanup-report.json'));
+  const regression = readJsonIfExists(path.join(outputDir, 'regression-run.json'));
 
   const summary = buildBackendNonUiSummary({
     outputDir,
     backendUrl: preflight?.backendUrl || authApi?.backendUrl || userApi?.backendUrl || '',
-    aiProviderUrl: preflight?.aiProviderUrl || aiApi?.aiProviderUrl || '',
+    aiProviderUrl: preflight?.aiProviderUrl || aiApi?.aiStatus?.providerUrl || aiApi?.aiProviderUrl || '',
     preflight: gateFromReport('preflight', {
       passed:
         preflight?.checks?.health?.backendReady?.ok &&
@@ -199,10 +207,11 @@ async function main() {
           : false),
       failures: [],
     }),
-    authApi: gateFromReport('auth-api', authApi),
-    userApi: gateFromReport('user-api', userApi),
-    aiApi: gateFromReport('ai-api', aiApi),
-    cleanup: gateFromReport('cleanup', cleanup),
+    authApi: authApi || gateFromReport('auth-api', authApi),
+    userApi: userApi || gateFromReport('user-api', userApi),
+    aiApi: aiApi || gateFromReport('ai-api', aiApi),
+    cleanup: cleanup || gateFromReport('cleanup', cleanup),
+    regression,
     codeHealth: {
       dotnetTests: {
         passed: dotnetResult.ok,
@@ -225,6 +234,7 @@ async function main() {
       authApi: path.join(outputDir, 'auth-api-report.json'),
       userApi: path.join(outputDir, 'user-api-report.json'),
       aiApi: path.join(outputDir, 'ai-api-report.json'),
+      regression: path.join(outputDir, 'regression-run.json'),
       cleanup: path.join(outputDir, 'cleanup-report.json'),
     },
   };
@@ -238,6 +248,7 @@ async function main() {
       {
         outputDir,
         cloudGatePass: finalReport.cloudGatePass,
+        primaryPathPass: finalReport.primaryPathGate?.passed,
         codeHealthPass: finalReport.codeHealthPass,
         overallPassed: finalReport.overallPassed,
         failedGates: finalReport.failedGates,

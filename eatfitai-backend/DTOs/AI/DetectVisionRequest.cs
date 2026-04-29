@@ -4,7 +4,8 @@ namespace EatFitAI.API.DTOs.AI
 {
     public class DetectVisionRequest
     {
-        public IFormFile? File { get; set; }
+        public string? ImageUrl { get; set; }
+        public string? ImageHash { get; set; }
     }
 }
 
