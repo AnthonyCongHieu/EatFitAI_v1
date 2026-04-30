@@ -449,11 +449,6 @@ namespace EatFitAI.API.Services
             };
         }
 
-        public Task<AuthResponse> GoogleLoginAsync(string idToken)
-        {
-            return Task.FromException<AuthResponse>(new NotSupportedException("Tính năng đăng nhập Google qua endpoint cũ đã bị vô hiệu hóa. Hãy dùng /api/auth/google/signin."));
-        }
-
         public async Task<ForgotPasswordResponse> ForgotPasswordAsync(ForgotPasswordRequest request)
         {
             _logger.LogInformation("ForgotPassword cho email: {Email}", MaskEmail(request.Email));

@@ -110,15 +110,18 @@ namespace EatFitAI.API.Tests.Integration.Controllers
         }
 
         [Fact]
-        public async Task GoogleLogin_LegacyEndpoint_ReturnsGone()
+        public async Task GoogleLogin_LegacyEndpoint_IsRemoved()
         {
             var client = _factory.CreateClient();
 
             var response = await client.GetAsync("/api/auth/google?idToken=legacy-test-token");
 
-            Assert.Equal(HttpStatusCode.Gone, response.StatusCode);
-            Assert.True(response.Headers.TryGetValues("X-EatFitAI-Deprecated-Endpoint", out var values));
-            Assert.Contains("/api/auth/google/signin", values.Single());
+            Assert.Contains(response.StatusCode, new[]
+            {
+                HttpStatusCode.NotFound,
+                HttpStatusCode.MethodNotAllowed
+            });
+            Assert.False(response.Headers.Contains("X-EatFitAI-Deprecated-Endpoint"));
         }
 
         [Fact]

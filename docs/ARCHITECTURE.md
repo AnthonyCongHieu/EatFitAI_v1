@@ -84,10 +84,10 @@ The backend is the business logic layer and standard API of the system.
 
 ### 4.3 Auth and Google
 
-Currently, the codebase still has two layers of Google auth:
+Canonical Google auth now uses only these backend endpoints:
 
 - `POST /api/auth/google/signin` and `POST /api/auth/google/link` in `GoogleAuthController`.
-- `GET /api/auth/google` in `AuthController` still exists as a legacy branch.
+- `GET /api/auth/google` was removed in Phase B and should return `404` or `405`.
 
 `docs/AUTH_AND_INFRA.md` and the backend code are the most relevant sources when deciding which auth flow is active.
 

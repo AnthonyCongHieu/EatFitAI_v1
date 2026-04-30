@@ -208,16 +208,16 @@ $env:EATFITAI_SCHEMA_BOOTSTRAP_REPORT="_logs/production-smoke/<timestamp>/schema
 dotnet run --project .\eatfitai-backend\EatFitAI.API.csproj -- --schema-bootstrap --schema-bootstrap-report $env:EATFITAI_SCHEMA_BOOTSTRAP_REPORT
 ```
 
-Auth smoke now also verifies the Phase A legacy Google contract: `GET /api/auth/google` must return `410 Gone` with `X-EatFitAI-Deprecated-Endpoint` pointing to `POST /api/auth/google/signin`. Only remove the legacy route after this smoke evidence and backend logs show no unexpected legacy callers.
+Auth smoke now verifies Phase B removal of the legacy Google endpoint: `GET /api/auth/google` must return `404` or `405`. The canonical Google flows are only `POST /api/auth/google/signin` and `POST /api/auth/google/link`.
 
-For Phase B after deleting the legacy route, switch the auth smoke expectation before running it:
+Phase B is the default smoke expectation. For a local Phase A rehearsal against an older backend that still returns `410 Gone`, override the expectation explicitly:
 
 ```powershell
-$env:EATFITAI_AUTH_LEGACY_GOOGLE_PHASE="phase-b"
+$env:EATFITAI_AUTH_LEGACY_GOOGLE_PHASE="phase-a"
 npm --prefix .\eatfitai-mobile run smoke:auth:api
 ```
 
-Phase B expects `GET /api/auth/google` to return `404` or `405`. Keep Phase A as the default until production evidence confirms there are no legacy callers.
+Unset `EATFITAI_AUTH_LEGACY_GOOGLE_PHASE` before production smoke so the default Phase B removal check is used.
 
 For AI provider production, configure Gemini usage state with:
 
@@ -228,13 +228,15 @@ GEMINI_USAGE_STATE_DATABASE_URL=<Supabase/PostgreSQL connection string>
 
 After deploy, verify `/healthz/gemini` reports `gemini_usage_state_store=postgres` and `gemini_usage_state_store_degraded=false`. Local development can keep `GEMINI_USAGE_STATE_STORE=file`.
 
-After preflight/auth smoke and the one-shot schema bootstrap report are present in the same `_logs/production-smoke/<timestamp>` folder, run the infra hardening gate before any Phase B cleanup:
+After preflight/auth smoke and the one-shot schema bootstrap report are present in the same `_logs/production-smoke/<timestamp>` folder, run the infra hardening gate:
 
 ```powershell
 npm --prefix .\eatfitai-mobile run smoke:infra:gate -- _logs\production-smoke\<timestamp>
 ```
 
-The gate checks backend/AI health, `/healthz/gemini`, the Phase A legacy Google contract, `schema-bootstrap-report.json`, and `render.yaml` production config (`r2`, schema startup disabled, Gemini state store on Postgres). Set `EATFITAI_REQUIRE_SCHEMA_REPORT=0` only for local rehearsal where no production schema bootstrap was executed.
+The gate checks backend/AI health, `/healthz/gemini`, Phase B removal of `GET /api/auth/google`, `schema-bootstrap-report.json`, and `render.yaml` production config (`r2`, schema startup disabled, Gemini state store on Postgres). Set `EATFITAI_REQUIRE_SCHEMA_REPORT=0` only for local rehearsal where no production schema bootstrap was executed.
+
+For a local gate rehearsal against an older Phase A auth smoke artifact, set `EATFITAI_INFRA_PHASE=phase-a` explicitly.
 
 Fixture ảnh dùng cho AI smoke nằm ở:
 

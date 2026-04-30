@@ -151,7 +151,10 @@ function buildMarkdown(report) {
 
 function main() {
   const outputDir = resolveOutputDir(process.argv[2]);
-  const phase = trim(process.env.EATFITAI_INFRA_PHASE || 'phase-a').toLowerCase();
+  const phase =
+    trim(process.env.EATFITAI_INFRA_PHASE).toLowerCase() === 'phase-a'
+      ? 'phase-a'
+      : 'phase-b';
   const requireSchemaReport = trim(process.env.EATFITAI_REQUIRE_SCHEMA_REPORT || '1') !== '0';
   const preflight = readJsonIfExists(path.join(outputDir, 'preflight-results.json')) || {};
   const authReport = readJsonIfExists(path.join(outputDir, 'auth-api-report.json')) || {};

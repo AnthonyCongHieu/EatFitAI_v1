@@ -307,37 +307,6 @@ namespace EatFitAI.API.Controllers
             }
         }
 
-        [HttpGet("google")]
-        public async Task<ActionResult<AuthResponse>> GoogleLogin([FromQuery] string idToken)
-        {
-            try
-            {
-                Response.Headers["X-EatFitAI-Deprecated-Endpoint"] = "Use POST /api/auth/google/signin";
-                _logger.LogWarning(
-                    "legacy_google_auth_hit path={Path} remoteIp={RemoteIp}",
-                    HttpContext.Request.Path.Value,
-                    HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown");
-
-                var result = await _authService.GoogleLoginAsync(idToken);
-                return Ok(result);
-            }
-            catch (NotSupportedException)
-            {
-                return StatusCode(StatusCodes.Status410Gone, ErrorResponseHelper.SafeError("Phương thức đăng nhập Google không còn được hỗ trợ", HttpContext));
-            }
-            catch (UnauthorizedAccessException)
-            {
-                return Unauthorized(ErrorResponseHelper.SafeError("Đăng nhập Google không thành công", HttpContext));
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Unexpected error during Google login");
-                return StatusCode(500, ErrorResponseHelper.SafeError(
-                    "Đã xảy ra lỗi khi đăng nhập bằng Google",
-                    HttpContext));
-            }
-        }
-
         /// <summary>
         /// Đổi mật khẩu cho user đã đăng nhập
         /// </summary>

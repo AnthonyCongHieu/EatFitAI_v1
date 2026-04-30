@@ -352,9 +352,9 @@ function statusMatches(status, expectedStatuses) {
 
 function resolveLegacyGooglePhase(value) {
   const normalized = trim(value).toLowerCase();
-  return normalized === LEGACY_GOOGLE_PHASE_B
-    ? LEGACY_GOOGLE_PHASE_B
-    : LEGACY_GOOGLE_PHASE_A;
+  return normalized === LEGACY_GOOGLE_PHASE_A
+    ? LEGACY_GOOGLE_PHASE_A
+    : LEGACY_GOOGLE_PHASE_B;
 }
 
 function evaluateLegacyGoogleEndpoint(response, phase) {

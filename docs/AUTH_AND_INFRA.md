@@ -1,6 +1,6 @@
 # Xác thực và hạ tầng
 
-Cập nhật: `2026-04-23`
+Cập nhật: `2026-04-30`
 
 ## Tổng quan
 
@@ -31,7 +31,7 @@ Tài liệu này ghi nhận hiện trạng xác thực (auth) và hạ tầng tr
 
 - `POST /api/auth/google/signin` là endpoint đăng nhập Google duy nhất cho mobile.
 - `POST /api/auth/google/link` là endpoint liên kết Google cho tài khoản đã đăng nhập.
-- `GET /api/auth/google` là endpoint legacy, chỉ còn trả `410 Gone` trong Phase A và log marker `legacy_google_auth_hit`. Chỉ xóa route này sau khi production smoke/release evidence xác nhận không còn request legacy.
+- `GET /api/auth/google` là endpoint legacy đã được xóa trong Phase B; production smoke mặc định xem `404` hoặc `405` là kết quả đúng.
 
 ### Quên mật khẩu / Đặt lại mật khẩu
 
