@@ -191,13 +191,18 @@ function main() {
   );
 
   const legacyGoogle = getNested(authReport, ['auth', 'legacyGoogleEndpoint']);
+  const phaseALegacyPassed =
+    Boolean(legacyGoogle?.passed) &&
+    legacyGoogle?.status === 410 &&
+    trim(legacyGoogle?.deprecatedEndpoint).includes('/api/auth/google/signin');
+  const phaseBLegacyPassed =
+    Boolean(legacyGoogle?.passed) && [404, 405].includes(legacyGoogle?.status);
   pushCheck(
     checks,
-    'legacy-google-phase-a-contract',
-    phase !== 'phase-a' ||
-      (Boolean(legacyGoogle?.passed) &&
-        legacyGoogle?.status === 410 &&
-        trim(legacyGoogle?.deprecatedEndpoint).includes('/api/auth/google/signin')),
+    phase === 'phase-b'
+      ? 'legacy-google-phase-b-removed'
+      : 'legacy-google-phase-a-contract',
+    phase === 'phase-b' ? phaseBLegacyPassed : phaseALegacyPassed,
     {
       phase,
       status: legacyGoogle?.status ?? null,

@@ -29,6 +29,8 @@ const DEFAULT_FINAL_PASSWORD = `SmokeApi#${Date.now().toString().slice(-6)}Bb`;
 const DEFAULT_RESET_PASSWORD = `SmokeApi@${Date.now().toString().slice(-6)}Cc`;
 const WRONG_RESET_CODE = '000000';
 const GOOGLE_NEGATIVE_TOKEN = '';
+const LEGACY_GOOGLE_PHASE_A = 'phase-a';
+const LEGACY_GOOGLE_PHASE_B = 'phase-b';
 
 function trim(value) {
   return String(value || '').trim();
@@ -348,6 +350,37 @@ function statusMatches(status, expectedStatuses) {
   return expectedStatuses.includes(status);
 }
 
+function resolveLegacyGooglePhase(value) {
+  const normalized = trim(value).toLowerCase();
+  return normalized === LEGACY_GOOGLE_PHASE_B
+    ? LEGACY_GOOGLE_PHASE_B
+    : LEGACY_GOOGLE_PHASE_A;
+}
+
+function evaluateLegacyGoogleEndpoint(response, phase) {
+  const deprecatedEndpoint = trim(
+    response?.responseHeaders?.['x-eatfitai-deprecated-endpoint'],
+  );
+
+  if (phase === LEGACY_GOOGLE_PHASE_B) {
+    return {
+      phase,
+      expectedStatuses: [404, 405],
+      deprecatedEndpoint,
+      passed: statusMatches(response?.status, [404, 405]),
+    };
+  }
+
+  return {
+    phase,
+    expectedStatuses: [410],
+    deprecatedEndpoint,
+    passed:
+      response?.status === 410 &&
+      deprecatedEndpoint.includes('/api/auth/google/signin'),
+  };
+}
+
 function summarizeAuthResponse(body) {
   if (!body || typeof body !== 'object') {
     return body;
@@ -438,6 +471,9 @@ async function main() {
   const backendUrl = normalizeBaseUrl(
     args.backend || process.env.EATFITAI_SMOKE_BACKEND_URL,
     DEFAULT_BACKEND_URL,
+  );
+  const legacyGooglePhase = resolveLegacyGooglePhase(
+    args.legacyGooglePhase || process.env.EATFITAI_AUTH_LEGACY_GOOGLE_PHASE,
   );
   const reportPath = path.join(outputDir, 'auth-api-report.json');
   const registerDisplayName =
@@ -937,23 +973,23 @@ async function main() {
     const legacyGoogleResponse = await requestJson(
       `${backendUrl}/api/auth/google?idToken=legacy-negative-token`,
     );
-    const legacyGoogleDeprecatedEndpoint = trim(
-      legacyGoogleResponse.responseHeaders?.['x-eatfitai-deprecated-endpoint'],
+    const legacyGoogleContract = evaluateLegacyGoogleEndpoint(
+      legacyGoogleResponse,
+      legacyGooglePhase,
     );
-    const legacyGooglePassed =
-      legacyGoogleResponse.status === 410 &&
-      legacyGoogleDeprecatedEndpoint.includes('/api/auth/google/signin');
     report.auth.legacyGoogleEndpoint = {
       ...summarizeResponse(legacyGoogleResponse),
-      passed: legacyGooglePassed,
+      phase: legacyGoogleContract.phase,
+      expectedStatuses: legacyGoogleContract.expectedStatuses,
+      passed: legacyGoogleContract.passed,
     };
-    if (!legacyGooglePassed) {
+    if (!legacyGoogleContract.passed) {
       pushFailure(
         report,
         'legacy-google-endpoint-contract',
-        'Legacy Google endpoint did not return the phase-A deprecation contract',
+        `Legacy Google endpoint did not return the ${legacyGooglePhase} contract`,
         {
-          expectedStatuses: [410],
+          expectedStatuses: legacyGoogleContract.expectedStatuses,
           response: summarizeResponse(legacyGoogleResponse),
         },
       );
