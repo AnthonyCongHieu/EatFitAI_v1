@@ -842,6 +842,7 @@ class GeminiPoolManager:
         *,
         temperature: float = 0.1,
         max_output_tokens: int = 500,
+        response_mime_type: Optional[str] = None,
     ) -> str:
         probe_targets: List[GeminiPoolEntry] = []
         with self._lock:
@@ -903,6 +904,7 @@ class GeminiPoolManager:
                     prompt,
                     temperature=temperature,
                     max_output_tokens=max_output_tokens,
+                    response_mime_type=response_mime_type,
                     estimated_tokens=estimated_tokens,
                     request_id=request_id,
                 )
@@ -1120,6 +1122,7 @@ class GeminiPoolManager:
         *,
         temperature: float,
         max_output_tokens: int,
+        response_mime_type: Optional[str],
         estimated_tokens: int,
         request_id: str,
     ) -> str:
@@ -1132,6 +1135,7 @@ class GeminiPoolManager:
                     prompt,
                     temperature=temperature,
                     max_output_tokens=max_output_tokens,
+                    response_mime_type=response_mime_type,
                     estimated_tokens=estimated_tokens,
                     request_id=request_id,
                 )
@@ -1150,16 +1154,21 @@ class GeminiPoolManager:
         *,
         temperature: float,
         max_output_tokens: int,
+        response_mime_type: Optional[str],
         estimated_tokens: int,
         request_id: str,
     ) -> str:
+        generation_config: Dict[str, Any] = {
+            "temperature": temperature,
+            "maxOutputTokens": max_output_tokens,
+        }
+        if response_mime_type:
+            generation_config["responseMimeType"] = response_mime_type
+
         url = GENERATE_URL_TEMPLATE.format(model=quote(entry.model, safe="-_."))
         payload = {
             "contents": [{"parts": [{"text": prompt}]}],
-            "generationConfig": {
-                "temperature": temperature,
-                "maxOutputTokens": max_output_tokens,
-            },
+            "generationConfig": generation_config,
         }
 
         try:

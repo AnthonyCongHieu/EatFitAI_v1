@@ -116,6 +116,7 @@ def query_gemini(prompt: str, use_cache: bool = True, cache_ttl: int = None) -> 
             prompt,
             temperature=0.1,
             max_output_tokens=500,
+            response_mime_type="application/json",
         )
         
         if response:

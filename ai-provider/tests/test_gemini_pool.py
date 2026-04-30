@@ -123,6 +123,26 @@ class GeminiPoolTests(unittest.TestCase):
         pool = GeminiPoolManager([GeminiPoolEntry("primary", "project-a", "slot-1", "key-1", DEFAULT_MODEL)])
         self.assertEqual(pool.get_runtime_status()["gemini_model"], "gemini-2.5-flash")
 
+    def test_generate_text_can_request_json_response_mime_type(self) -> None:
+        captured_payload = {}
+
+        def requester(*_args, **kwargs):
+            captured_payload.update(kwargs.get("json") or {})
+            return ok_response('{"ok":true}')
+
+        pool = GeminiPoolManager(
+            [GeminiPoolEntry("primary", "project-a", "slot-1", "key-1", DEFAULT_MODEL)],
+            requester=requester,
+        )
+
+        result = pool.generate_text("return json", response_mime_type="application/json")
+
+        self.assertEqual(result, '{"ok":true}')
+        self.assertEqual(
+            captured_payload["generationConfig"]["responseMimeType"],
+            "application/json",
+        )
+
     def test_fails_over_on_429(self) -> None:
         responses = [
             FakeResponse(429, {"error": {"message": "quota exceeded"}}),
