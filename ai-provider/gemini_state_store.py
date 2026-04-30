@@ -201,7 +201,7 @@ class PostgresGeminiUsageStateStore(GeminiUsageStateStore):
         except ImportError as exc:
             raise RuntimeError("psycopg is required for GEMINI_USAGE_STATE_STORE=postgres") from exc
 
-        return psycopg.connect(database_url)
+        return psycopg.connect(database_url, prepare_threshold=None)
 
     @staticmethod
     def _ensure_table(connection: Any) -> None:

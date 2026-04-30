@@ -5,7 +5,9 @@ import os
 from pathlib import Path
 import sys
 import tempfile
+from types import SimpleNamespace
 import unittest
+from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
@@ -153,6 +155,23 @@ class GeminiStateStoreTests(unittest.TestCase):
         self.assertIn("password=secret", dsn)
         self.assertIn("sslmode=require", dsn)
         self.assertNotIn("Host=", dsn)
+
+    def test_default_postgres_connect_disables_prepared_statements(self) -> None:
+        captured = {}
+
+        def fake_connect(*args, **kwargs):
+            captured["args"] = args
+            captured["kwargs"] = kwargs
+            return FakeConnection()
+
+        fake_psycopg = SimpleNamespace(connect=fake_connect)
+        with patch.dict(sys.modules, {"psycopg": fake_psycopg}):
+            connection = PostgresGeminiUsageStateStore._default_connect("postgres://example")
+
+        self.assertIsInstance(connection, FakeConnection)
+        self.assertEqual(captured["args"], ("postgres://example",))
+        self.assertIn("prepare_threshold", captured["kwargs"])
+        self.assertIsNone(captured["kwargs"].get("prepare_threshold"))
 
 
 if __name__ == "__main__":
