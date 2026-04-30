@@ -165,6 +165,18 @@ function sanitizeHeaders(headers) {
   return copy;
 }
 
+function collectResponseHeaders(headers) {
+  const result = {};
+  if (!headers || typeof headers.forEach !== 'function') {
+    return result;
+  }
+
+  headers.forEach((value, key) => {
+    result[key.toLowerCase()] = value;
+  });
+  return result;
+}
+
 async function requestJson(url, options = {}) {
   const startedAt = Date.now();
   const timeoutMs = Number(options.timeoutMs || DEFAULT_REQUEST_TIMEOUT_MS);
@@ -201,6 +213,7 @@ async function requestJson(url, options = {}) {
       body,
       rawText: body ? undefined : rawText,
       headers: sanitizeHeaders(options.headers),
+      responseHeaders: collectResponseHeaders(response.headers),
     };
   } catch (error) {
     return {
@@ -287,6 +300,7 @@ function createEmptyReport(outputDir, backendUrl, mailbox) {
       changePassword: null,
       postChangeLogin: null,
       googleNegative: null,
+      legacyGoogleEndpoint: null,
     },
   };
 }
@@ -371,6 +385,7 @@ function summarizeResponse(response) {
     durationMs: response.durationMs || 0,
     body: summarizeAuthResponse(response.body),
     error: response.error || '',
+    deprecatedEndpoint: response.responseHeaders?.['x-eatfitai-deprecated-endpoint'] || '',
   };
 }
 
@@ -917,6 +932,31 @@ async function main() {
         expectedStatuses: [400, 401, 503],
         response: summarizeResponse(googleLinkResponse),
       });
+    }
+
+    const legacyGoogleResponse = await requestJson(
+      `${backendUrl}/api/auth/google?idToken=legacy-negative-token`,
+    );
+    const legacyGoogleDeprecatedEndpoint = trim(
+      legacyGoogleResponse.responseHeaders?.['x-eatfitai-deprecated-endpoint'],
+    );
+    const legacyGooglePassed =
+      legacyGoogleResponse.status === 410 &&
+      legacyGoogleDeprecatedEndpoint.includes('/api/auth/google/signin');
+    report.auth.legacyGoogleEndpoint = {
+      ...summarizeResponse(legacyGoogleResponse),
+      passed: legacyGooglePassed,
+    };
+    if (!legacyGooglePassed) {
+      pushFailure(
+        report,
+        'legacy-google-endpoint-contract',
+        'Legacy Google endpoint did not return the phase-A deprecation contract',
+        {
+          expectedStatuses: [410],
+          response: summarizeResponse(legacyGoogleResponse),
+        },
+      );
     }
 
     const cleanupLogin = await loginForCleanup(backendUrl, mailbox.address, [

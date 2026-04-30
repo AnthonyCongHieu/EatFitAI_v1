@@ -312,6 +312,12 @@ namespace EatFitAI.API.Controllers
         {
             try
             {
+                Response.Headers["X-EatFitAI-Deprecated-Endpoint"] = "Use POST /api/auth/google/signin";
+                _logger.LogWarning(
+                    "legacy_google_auth_hit path={Path} remoteIp={RemoteIp}",
+                    HttpContext.Request.Path.Value,
+                    HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown");
+
                 var result = await _authService.GoogleLoginAsync(idToken);
                 return Ok(result);
             }

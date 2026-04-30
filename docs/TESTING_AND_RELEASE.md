@@ -200,6 +200,16 @@ npm --prefix .\eatfitai-mobile run smoke:user:api
 npm --prefix .\eatfitai-mobile run smoke:ai:api
 ```
 
+Before deploying a backend runtime that depends on schema drift repair, run schema bootstrap as a one-shot operation and keep its JSON report with the smoke artifacts:
+
+```powershell
+$env:EATFITAI_SCHEMA_BOOTSTRAP="1"
+$env:EATFITAI_SCHEMA_BOOTSTRAP_REPORT="_logs/production-smoke/<timestamp>/schema-bootstrap-report.json"
+dotnet run --project .\eatfitai-backend\EatFitAI.API.csproj -- --schema-bootstrap --schema-bootstrap-report $env:EATFITAI_SCHEMA_BOOTSTRAP_REPORT
+```
+
+Auth smoke now also verifies the Phase A legacy Google contract: `GET /api/auth/google` must return `410 Gone` with `X-EatFitAI-Deprecated-Endpoint` pointing to `POST /api/auth/google/signin`. Only remove the legacy route after this smoke evidence and backend logs show no unexpected legacy callers.
+
 Fixture ảnh dùng cho AI smoke nằm ở:
 
 ```text
