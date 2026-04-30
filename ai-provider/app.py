@@ -7,9 +7,12 @@ EatFitAI AI Provider - Production Service
 from __future__ import annotations
 
 from typing import Any, Dict, List
+import ipaddress
 import logging
 import time
 import threading
+import socket
+from urllib.parse import urlparse
 
 import cv2
 import numpy as np
@@ -78,11 +81,6 @@ YOLO_ONNX_ENABLED = os.getenv("YOLO_ONNX_ENABLED", "true").strip().lower() not i
 YOLO_MODEL_FILE = os.getenv("YOLO_MODEL_FILE", "best.pt")
 YOLO_ONNX_MODEL_FILE = os.getenv("YOLO_ONNX_MODEL_FILE", "best.onnx")
 YOLO_ONNX_IMAGE_SIZE = int(os.getenv("YOLO_ONNX_IMAGE_SIZE", "320"))
-ALLOW_SUPABASE_MODEL_DOWNLOAD = os.getenv("ALLOW_SUPABASE_MODEL_DOWNLOAD", "false").strip().lower() in {
-    "1",
-    "true",
-    "yes",
-}
 YOLO_NMS_THRESHOLD = float(os.getenv("YOLO_NMS_THRESHOLD", "0.45"))
 YOLO_CLASS_NAMES = [
     "apple",
@@ -159,10 +157,92 @@ ALLOWED_AUDIO_EXTENSIONS = {'m4a', 'mp3', 'wav', 'webm', 'ogg', 'flac'}
 MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB
 app.config["MAX_CONTENT_LENGTH"] = MAX_FILE_SIZE
 
+IMAGE_RESPONSE_CONTENT_TYPES = {"image/jpeg", "image/png", "image/webp", "image/bmp"}
+AUDIO_RESPONSE_CONTENT_TYPES = {
+    "audio/aac",
+    "audio/flac",
+    "audio/m4a",
+    "audio/mp3",
+    "audio/mp4",
+    "audio/mpeg",
+    "audio/ogg",
+    "audio/wav",
+    "audio/webm",
+    "audio/x-m4a",
+    "audio/x-wav",
+}
+
 def allowed_file(filename: str) -> bool:
     """Kiểm tra extension file hình"""
     return '.' in filename and \
            filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+
+def _allowed_media_hosts() -> set[str]:
+    hosts: set[str] = set()
+
+    raw_hosts = os.getenv("AI_PROVIDER_ALLOWED_MEDIA_HOSTS", "")
+    for item in raw_hosts.split(","):
+        host = item.strip().lower().rstrip(".")
+        if host:
+            hosts.add(host)
+
+    for key in ("MEDIA_PUBLIC_BASE_URL", "R2_PUBLIC_BASE_URL"):
+        raw_url = os.getenv(key, "").strip()
+        if not raw_url:
+            continue
+        parsed = urlparse(raw_url)
+        if parsed.hostname:
+            hosts.add(parsed.hostname.lower().rstrip("."))
+
+    return hosts
+
+
+def _host_resolves_to_private(hostname: str) -> bool:
+    try:
+        addresses = {ipaddress.ip_address(hostname)}
+    except ValueError:
+        try:
+            addresses = {
+                ipaddress.ip_address(item[4][0])
+                for item in socket.getaddrinfo(hostname, None)
+            }
+        except OSError:
+            return True
+
+    return any(
+        address.is_private
+        or address.is_loopback
+        or address.is_link_local
+        or address.is_multicast
+        or address.is_reserved
+        or address.is_unspecified
+        for address in addresses
+    )
+
+
+def _is_safe_remote_media_url(remote_url: str) -> bool:
+    parsed = urlparse(remote_url.strip())
+    if parsed.scheme.lower() != "https" or not parsed.hostname:
+        return False
+
+    if parsed.username or parsed.password:
+        return False
+
+    hostname = parsed.hostname.lower().rstrip(".")
+    allowed_hosts = _allowed_media_hosts()
+    if not allowed_hosts or hostname not in allowed_hosts:
+        return False
+
+    return not _host_resolves_to_private(hostname)
+
+
+def _is_safe_remote_image_url(image_url: str) -> bool:
+    return _is_safe_remote_media_url(image_url)
+
+
+def _is_safe_remote_audio_url(audio_url: str) -> bool:
+    return _is_safe_remote_media_url(audio_url)
 
 # [REMOVED] _download_model_from_supabase — dead code, never called.
 # Model files are packaged at build time or pulled from R2 by CI.
@@ -333,7 +413,7 @@ def healthz() -> Dict[str, Any]:
         ),
         "yolo_onnx_enabled": YOLO_ONNX_ENABLED,
         "yolo_onnx_model_exists": os.path.exists(YOLO_ONNX_MODEL_FILE),
-        "supabase_model_download_enabled": ALLOW_SUPABASE_MODEL_DOWNLOAD,
+        "supabase_model_download_enabled": False,
         "generic_yolo_fallback_allowed": allow_generic_yolo_fallback(),
         "yolo_confidence_threshold": YOLO_CONFIDENCE_THRESHOLD,
         "yolo_image_size": YOLO_IMAGE_SIZE,
@@ -450,17 +530,44 @@ def detect() -> Response | tuple[Dict[str, str], int]:
         
         if image_url:
             import requests
-            resp = requests.get(image_url, stream=True, timeout=15)
-            resp.raise_for_status()
-            size = int(resp.headers.get("Content-Length", 0))
-            if size > MAX_FILE_SIZE:
-                return {"error": "file too large", "detail": f"Max size: {MAX_FILE_SIZE / 1024 / 1024:.1f}MB"}, 400
-                
-            filename = f"url_upload_{uuid4().hex}.jpg"
-            path = os.path.join("uploads", filename)
-            with open(path, "wb") as f_out:
-                for chunk in resp.iter_content(chunk_size=8192):
-                    f_out.write(chunk)
+
+            if not isinstance(image_url, str) or not _is_safe_remote_image_url(image_url):
+                return {"error": "invalid image_url"}, 400
+
+            with requests.get(image_url, stream=True, timeout=15, allow_redirects=False) as resp:
+                if 300 <= resp.status_code < 400:
+                    return {"error": "redirect not allowed"}, 400
+
+                resp.raise_for_status()
+                content_type = resp.headers.get("Content-Type", "").split(";", 1)[0].strip().lower()
+                if content_type and content_type not in IMAGE_RESPONSE_CONTENT_TYPES:
+                    return {"error": "invalid file type", "detail": "Remote URL did not return a supported image type"}, 400
+
+                size = int(resp.headers.get("Content-Length", 0) or 0)
+                if size > MAX_FILE_SIZE:
+                    return {"error": "file too large", "detail": f"Max size: {MAX_FILE_SIZE / 1024 / 1024:.1f}MB"}, 400
+
+                filename = f"url_upload_{uuid4().hex}.jpg"
+                path = os.path.join("uploads", filename)
+                bytes_written = 0
+                with open(path, "wb") as f_out:
+                    for chunk in resp.iter_content(chunk_size=8192):
+                        if not chunk:
+                            continue
+
+                        bytes_written += len(chunk)
+                        if bytes_written > MAX_FILE_SIZE:
+                            return {
+                                "error": "file too large",
+                                "detail": f"Max size: {MAX_FILE_SIZE / 1024 / 1024:.1f}MB"
+                            }, 400
+
+                        f_out.write(chunk)
+
+                size = bytes_written
+                if size == 0:
+                    return {"error": "empty file"}, 400
+
             name = filename
             logger.info(f"Processing image from URL: {name} ({size / 1024:.1f}KB)")
         else:
@@ -727,19 +834,58 @@ def transcribe_audio():
     try:
         if audio_url:
             import requests
-            resp = requests.get(audio_url, stream=True, timeout=15)
-            resp.raise_for_status()
-            size = int(resp.headers.get("Content-Length", 0))
-            if size > MAX_FILE_SIZE:
-                return {"error": "file too large", "success": False}, 400
-            
-            ext = os.path.splitext(audio_url.split('?')[0])[1].lower() or ".m4a"
+
+            if not isinstance(audio_url, str) or not _is_safe_remote_audio_url(audio_url):
+                return {"error": "invalid audio_url", "success": False}, 400
+
+            parsed_audio_url = urlparse(audio_url.strip())
+            ext = os.path.splitext(parsed_audio_url.path)[1].lower() or ".m4a"
+            if ext.lstrip(".") not in ALLOWED_AUDIO_EXTENSIONS:
+                return {
+                    "error": "invalid file type",
+                    "detail": f"Allowed types: {', '.join(sorted(ALLOWED_AUDIO_EXTENSIONS))}",
+                    "success": False,
+                }, 400
+
             temp_fd, temp_path = tempfile.mkstemp(suffix=ext, dir="uploads")
             os.close(temp_fd)
-            
-            with open(temp_path, "wb") as f_out:
-                for chunk in resp.iter_content(chunk_size=8192):
-                    f_out.write(chunk)
+
+            with requests.get(audio_url, stream=True, timeout=15, allow_redirects=False) as resp:
+                if 300 <= resp.status_code < 400:
+                    return {"error": "redirect not allowed", "success": False}, 400
+
+                resp.raise_for_status()
+                content_type = resp.headers.get("Content-Type", "").split(";", 1)[0].strip().lower()
+                if content_type and content_type not in AUDIO_RESPONSE_CONTENT_TYPES:
+                    return {
+                        "error": "invalid file type",
+                        "detail": "Remote URL did not return a supported audio type",
+                        "success": False,
+                    }, 400
+
+                try:
+                    size = int(resp.headers.get("Content-Length", 0) or 0)
+                except ValueError:
+                    size = 0
+
+                if size > MAX_FILE_SIZE:
+                    return {"error": "file too large", "success": False}, 400
+
+                bytes_written = 0
+                with open(temp_path, "wb") as f_out:
+                    for chunk in resp.iter_content(chunk_size=8192):
+                        if not chunk:
+                            continue
+
+                        bytes_written += len(chunk)
+                        if bytes_written > MAX_FILE_SIZE:
+                            return {"error": "file too large", "success": False}, 400
+
+                        f_out.write(chunk)
+
+                size = bytes_written
+                if size == 0:
+                    return {"error": "empty file", "success": False}, 400
             
             filename = f"url_audio_{uuid4().hex}{ext}"
             logger.info("STT request via URL: %s, %s bytes", filename, size)

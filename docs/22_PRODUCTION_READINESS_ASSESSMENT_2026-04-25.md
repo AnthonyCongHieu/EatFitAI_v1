@@ -163,15 +163,15 @@ Mức đạt cloud/ops hiện tại: **55-65%**.
 Điểm đã tốt:
 
 - `app.py` đã lazy-load YOLO khi gọi `/detect`, giúp `/healthz` nhẹ hơn cho Render health check.
-- Production policy yêu cầu `best.pt`; generic YOLO fallback bị tắt bằng `ALLOW_GENERIC_YOLO_FALLBACK=false`.
-- `render.yaml` đã khai báo `SUPABASE_URL`, `SUPABASE_SERVICE_KEY`, và `ALLOW_GENERIC_YOLO_FALLBACK=false` cho AI provider.
-- Live old artifact hiện có `best.pt` loaded.
+- Production policy yêu cầu model asset đóng gói sẵn (`best.onnx` hoặc `best.pt`); generic YOLO fallback bị tắt bằng `ALLOW_GENERIC_YOLO_FALLBACK=false`.
+- `render.yaml` không còn khai báo `SUPABASE_URL` / `SUPABASE_SERVICE_KEY` cho AI provider; Supabase Storage model download đã bị loại bỏ khỏi runtime.
+- Live artifact cũ có thể vẫn đang chạy model/config cũ cho tới khi deploy mới thành công.
 
 Rủi ro còn lại:
 
 - Commit mới chứa lazy-load/policy chưa deploy thành công lên production.
 - Cần chạy scan thật sau deploy mới để xác nhận:
-  - `/detect` tải đúng `best.pt`.
+  - `/detect` tải đúng model asset đóng gói sẵn.
   - Không fallback sang `yolov8s.pt`.
   - Backend mapping + scan-to-save + diary readback pass.
 - AI provider vẫn dùng torch/ultralytics trong Docker image, khá nặng cho free tier/starter thấp.

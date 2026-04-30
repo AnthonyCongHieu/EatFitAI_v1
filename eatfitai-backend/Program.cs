@@ -45,9 +45,15 @@ public partial class Program
         var adminGovernanceBootstrapRequested =
             args.Any(arg => string.Equals(arg, "--admin-governance-bootstrap", StringComparison.OrdinalIgnoreCase))
             || string.Equals(Environment.GetEnvironmentVariable("EATFITAI_ADMIN_GOVERNANCE_BOOTSTRAP"), "1", StringComparison.OrdinalIgnoreCase);
+        var schemaBootstrapRequested =
+            args.Any(arg => string.Equals(arg, "--schema-bootstrap", StringComparison.OrdinalIgnoreCase))
+            || string.Equals(Environment.GetEnvironmentVariable("EATFITAI_SCHEMA_BOOTSTRAP"), "1", StringComparison.OrdinalIgnoreCase);
         var adminGovernanceBootstrapReportPath =
             TryGetOptionValue(args, "--admin-governance-report")
             ?? Environment.GetEnvironmentVariable("EATFITAI_ADMIN_GOVERNANCE_REPORT");
+        var schemaBootstrapReportPath =
+            TryGetOptionValue(args, "--schema-bootstrap-report")
+            ?? Environment.GetEnvironmentVariable("EATFITAI_SCHEMA_BOOTSTRAP_REPORT");
 
         static string? TryGetOptionValue(string[] cliArgs, string optionName)
         {
@@ -427,11 +433,26 @@ static void EnsureRequiredProductionConfiguration(
     {
         errors.Add("AllowedOrigins");
     }
+    else if (productionAllowedOrigins.Any(origin => origin.Contains('*')))
+    {
+        errors.Add("AllowedOrigins (wildcard origins are not allowed with Production credentialed CORS)");
+    }
 
     RequireValue("Jwt:Key");
     RequireValue("Encryption:Key");
     RequireValue("AIProvider:InternalToken");
     RequireHttpsUrl("AIProvider:VisionBaseUrl");
+    RequireHttpsUrl("Supabase:Url");
+    RequireValue("Supabase:ServiceRoleKey");
+
+    if (string.Equals(builder.Configuration["Media:Provider"], "r2", StringComparison.OrdinalIgnoreCase))
+    {
+        RequireHttpsUrl("Media:PublicBaseUrl");
+        RequireValue("Media:R2:AccountId");
+        RequireValue("Media:R2:Bucket");
+        RequireValue("Media:R2:AccessKeyId");
+        RequireValue("Media:R2:SecretAccessKey");
+    }
 
     if (errors.Count > 0)
     {
@@ -1034,27 +1055,69 @@ async Task<bool> TryRunTrackedStartupPhaseAsync(
     }
 }
 
-if (adminGovernanceBootstrapRequested)
+async Task RunSchemaBootstrapDirectAsync(IServiceProvider services)
 {
-    startupLogger.LogInformation("Running admin governance bootstrap in one-shot mode.");
-
-    using var scope = app.Services.CreateScope();
-    var adminAuditService = scope.ServiceProvider.GetRequiredService<IAdminAuditService>();
-    var governanceBootstrapper = scope.ServiceProvider.GetRequiredService<AdminGovernanceBootstrapper>();
-    var authInfrastructureBootstrapper = scope.ServiceProvider.GetRequiredService<AuthInfrastructureBootstrapper>();
-    var supabaseSchemaBootstrapper = scope.ServiceProvider.GetRequiredService<SupabaseSchemaBootstrapper>();
-    var productSchemaBootstrapper = scope.ServiceProvider.GetRequiredService<ProductSchemaBootstrapper>();
-    var governanceOptions = scope.ServiceProvider.GetRequiredService<IOptions<AdminGovernanceOptions>>().Value;
+    var adminAuditService = services.GetRequiredService<IAdminAuditService>();
+    var governanceBootstrapper = services.GetRequiredService<AdminGovernanceBootstrapper>();
+    var authInfrastructureBootstrapper = services.GetRequiredService<AuthInfrastructureBootstrapper>();
+    var supabaseSchemaBootstrapper = services.GetRequiredService<SupabaseSchemaBootstrapper>();
+    var productSchemaBootstrapper = services.GetRequiredService<ProductSchemaBootstrapper>();
 
     await adminAuditService.EnsureTableAsync();
     await governanceBootstrapper.EnsureSchemaAsync();
     await authInfrastructureBootstrapper.EnsureSchemaAsync();
     await supabaseSchemaBootstrapper.EnsureSchemaAsync();
     await productSchemaBootstrapper.EnsureSchemaAsync();
+}
+
+async Task RunTrackedSchemaBootstrapAsync(
+    IServiceProvider services,
+    LogLevel failureLogLevel = LogLevel.Warning)
+{
+    var adminAuditService = services.GetRequiredService<IAdminAuditService>();
+    var governanceBootstrapper = services.GetRequiredService<AdminGovernanceBootstrapper>();
+    var authInfrastructureBootstrapper = services.GetRequiredService<AuthInfrastructureBootstrapper>();
+    var supabaseSchemaBootstrapper = services.GetRequiredService<SupabaseSchemaBootstrapper>();
+    var productSchemaBootstrapper = services.GetRequiredService<ProductSchemaBootstrapper>();
+
+    if (await TryRunTrackedStartupPhaseAsync(
+            "admin-audit-bootstrap",
+            () => adminAuditService.EnsureTableAsync(),
+            failureLogLevel)
+        && await TryRunTrackedStartupPhaseAsync(
+            "admin-governance-bootstrap",
+            () => governanceBootstrapper.EnsureSchemaAsync(),
+            failureLogLevel))
+    {
+        await TryRunTrackedStartupPhaseAsync(
+            "auth-infrastructure-bootstrap",
+            () => authInfrastructureBootstrapper.EnsureSchemaAsync(),
+            failureLogLevel);
+    }
+
+    await TryRunTrackedStartupPhaseAsync(
+        "supabase-schema-bootstrap",
+        () => supabaseSchemaBootstrapper.EnsureSchemaAsync(),
+        failureLogLevel);
+    await TryRunTrackedStartupPhaseAsync(
+        "product-schema-bootstrap",
+        () => productSchemaBootstrapper.EnsureSchemaAsync(),
+        failureLogLevel);
+}
+
+if (schemaBootstrapRequested || adminGovernanceBootstrapRequested)
+{
+    var actionName = schemaBootstrapRequested ? "schema-bootstrap" : "admin-governance-bootstrap";
+    startupLogger.LogInformation("Running {ActionName} in one-shot mode.", actionName);
+
+    using var scope = app.Services.CreateScope();
+    await RunSchemaBootstrapDirectAsync(scope.ServiceProvider);
+
+    var governanceOptions = scope.ServiceProvider.GetRequiredService<IOptions<AdminGovernanceOptions>>().Value;
 
     var report = new
     {
-        action = "admin-governance-bootstrap",
+        action = actionName,
         executedAt = DateTimeOffset.UtcNow,
         environment = app.Environment.EnvironmentName,
         configuredSeedMembershipCount = governanceOptions.SeedMemberships.Count,
@@ -1069,9 +1132,13 @@ if (adminGovernanceBootstrapRequested)
         WriteIndented = true
     });
 
-    if (!string.IsNullOrWhiteSpace(adminGovernanceBootstrapReportPath))
+    var reportPath = schemaBootstrapRequested
+        ? schemaBootstrapReportPath
+        : adminGovernanceBootstrapReportPath;
+
+    if (!string.IsNullOrWhiteSpace(reportPath))
     {
-        var fullReportPath = Path.GetFullPath(adminGovernanceBootstrapReportPath);
+        var fullReportPath = Path.GetFullPath(reportPath);
         var reportDirectory = Path.GetDirectoryName(fullReportPath);
         if (!string.IsNullOrWhiteSpace(reportDirectory))
         {
@@ -1085,32 +1152,17 @@ if (adminGovernanceBootstrapRequested)
     return;
 }
 
-using (var scope = app.Services.CreateScope())
+var schemaBootstrapRanOnStartup = false;
+if (SchemaBootstrapStartupGate.ShouldRunOnStartup(builder.Configuration, app.Environment))
 {
-    var adminAuditService = scope.ServiceProvider.GetRequiredService<IAdminAuditService>();
-    var governanceBootstrapper = scope.ServiceProvider.GetRequiredService<AdminGovernanceBootstrapper>();
-    var authInfrastructureBootstrapper = scope.ServiceProvider.GetRequiredService<AuthInfrastructureBootstrapper>();
-    var supabaseSchemaBootstrapper = scope.ServiceProvider.GetRequiredService<SupabaseSchemaBootstrapper>();
-    var productSchemaBootstrapper = scope.ServiceProvider.GetRequiredService<ProductSchemaBootstrapper>();
-
-    if (await TryRunTrackedStartupPhaseAsync(
-            "admin-audit-bootstrap",
-            () => adminAuditService.EnsureTableAsync())
-        && await TryRunTrackedStartupPhaseAsync(
-            "admin-governance-bootstrap",
-            () => governanceBootstrapper.EnsureSchemaAsync()))
-    {
-        await TryRunTrackedStartupPhaseAsync(
-            "auth-infrastructure-bootstrap",
-            () => authInfrastructureBootstrapper.EnsureSchemaAsync());
-    }
-
-    await TryRunTrackedStartupPhaseAsync(
-        "supabase-schema-bootstrap",
-        () => supabaseSchemaBootstrapper.EnsureSchemaAsync());
-    await TryRunTrackedStartupPhaseAsync(
-        "product-schema-bootstrap",
-        () => productSchemaBootstrapper.EnsureSchemaAsync());
+    using var scope = app.Services.CreateScope();
+    await RunTrackedSchemaBootstrapAsync(scope.ServiceProvider);
+    schemaBootstrapRanOnStartup = true;
+}
+else
+{
+    startupLogger.LogInformation(
+        "Skipping schema bootstrap on startup. Set SchemaBootstrap:RunOnStartup=true or EATFITAI_SCHEMA_BOOTSTRAP=1 to run it explicitly.");
 }
 
 foreach (var warning in optionalProductionWarnings)
@@ -1124,6 +1176,11 @@ using (var scope = app.Services.CreateScope())
     var services = scope.ServiceProvider;
     if (scanDemoSeedOptions != null)
     {
+        if (!schemaBootstrapRanOnStartup)
+        {
+            await RunTrackedSchemaBootstrapAsync(services, LogLevel.Error);
+        }
+
         await DatabaseSeeder.SeedAsync(services);
         var seedResult = await ScanDemoReliabilitySeeder.SeedAsync(services, scanDemoSeedOptions);
         Console.WriteLine(JsonSerializer.Serialize(new
@@ -1139,33 +1196,9 @@ using (var scope = app.Services.CreateScope())
         return;
     }
 
-    var governanceBootstrapper = services.GetRequiredService<AdminGovernanceBootstrapper>();
-    var authInfrastructureBootstrapper = services.GetRequiredService<AuthInfrastructureBootstrapper>();
-    var supabaseSchemaBootstrapper = services.GetRequiredService<SupabaseSchemaBootstrapper>();
-    var productSchemaBootstrapper = services.GetRequiredService<ProductSchemaBootstrapper>();
-
-    if (await TryRunTrackedStartupPhaseAsync(
-            "database-seed",
-            () => DatabaseSeeder.SeedAsync(services),
-            LogLevel.Error)
-        && await TryRunTrackedStartupPhaseAsync(
-            "admin-governance-bootstrap",
-            () => governanceBootstrapper.EnsureSchemaAsync(),
-            LogLevel.Error))
-    {
-        await TryRunTrackedStartupPhaseAsync(
-            "auth-infrastructure-bootstrap",
-            () => authInfrastructureBootstrapper.EnsureSchemaAsync(),
-            LogLevel.Error);
-    }
-
     await TryRunTrackedStartupPhaseAsync(
-        "supabase-schema-bootstrap",
-        () => supabaseSchemaBootstrapper.EnsureSchemaAsync(),
-        LogLevel.Error);
-    await TryRunTrackedStartupPhaseAsync(
-        "product-schema-bootstrap",
-        () => productSchemaBootstrapper.EnsureSchemaAsync(),
+        "database-seed",
+        () => DatabaseSeeder.SeedAsync(services),
         LogLevel.Error);
 }
 

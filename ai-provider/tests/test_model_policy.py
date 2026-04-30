@@ -3,8 +3,8 @@ import unittest
 from model_policy import (
     allow_generic_yolo_fallback,
     is_cloud_runtime,
-    missing_supabase_model_keys,
     pending_model_readiness_error,
+    supabase_model_download_requested,
 )
 
 
@@ -34,7 +34,6 @@ class ModelPolicyTests(unittest.TestCase):
 
         self.assertIsNotNone(error)
         self.assertIn("best.pt or best.onnx is required", error)
-        self.assertEqual(missing_supabase_model_keys(env), [])
 
     def test_pending_error_is_clear_after_load_failure(self):
         error = pending_model_readiness_error(
@@ -56,12 +55,18 @@ class ModelPolicyTests(unittest.TestCase):
 
         self.assertIn("packaged with the service", error)
 
-    def test_supabase_download_keys_are_only_required_when_download_is_explicitly_enabled(self):
+    def test_supabase_download_flag_is_reported_as_removed(self):
         env = {"RENDER": "true", "ALLOW_SUPABASE_MODEL_DOWNLOAD": "true"}
 
+        self.assertTrue(supabase_model_download_requested(env))
         self.assertEqual(
-            missing_supabase_model_keys(env),
-            ["SUPABASE_URL", "SUPABASE_SERVICE_KEY"],
+            pending_model_readiness_error(
+                best_model_exists=False,
+                model_loaded=False,
+                model_load_error=None,
+                env=env,
+            ),
+            "Supabase model download has been removed; package best.pt or best.onnx with the service",
         )
 
 

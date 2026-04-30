@@ -49,14 +49,15 @@ namespace EatFitAI.API.Services
 
         public async Task<IEnumerable<FoodItemDto>> SearchFoodItemsAsync(string searchTerm, int limit = 50)
         {
-            var cacheKey = $"FoodSearch_{searchTerm?.ToLower().Trim()}_{limit}";
+            var safeSearchTerm = searchTerm ?? string.Empty;
+            var cacheKey = $"FoodSearch_{safeSearchTerm.ToLower().Trim()}_{limit}";
 
-            if (_cache.TryGetValue(cacheKey, out IEnumerable<FoodItemDto> cachedResult))
+            if (_cache.TryGetValue(cacheKey, out IEnumerable<FoodItemDto>? cachedResult) && cachedResult != null)
             {
                 return cachedResult;
             }
 
-            var foodItems = await _foodItemRepository.SearchByNameAsync(searchTerm, 0, limit);
+            var foodItems = await _foodItemRepository.SearchByNameAsync(safeSearchTerm, 0, limit);
             var result = _mapper.Map<IEnumerable<FoodItemDto>>(foodItems).Select(NormalizeFoodItemDto).ToList();
 
             var cacheEntryOptions = new MemoryCacheEntryOptions()

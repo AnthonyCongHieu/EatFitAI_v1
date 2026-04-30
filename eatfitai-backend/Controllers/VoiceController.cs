@@ -36,6 +36,17 @@ namespace EatFitAI.API.Controllers
         private readonly IConfiguration _configuration;
         private readonly ILogger<VoiceController> _logger;
         private const double VoiceReviewConfidenceThreshold = 0.75;
+        private static readonly HashSet<string> AllowedVoiceAudioExtensions = new(StringComparer.OrdinalIgnoreCase)
+        {
+            ".aac",
+            ".flac",
+            ".m4a",
+            ".mp3",
+            ".ogg",
+            ".wav",
+            ".webm"
+        };
+
         private static readonly JsonSerializerOptions VoiceParseSerializerOptions = new()
         {
             PropertyNameCaseInsensitive = true,
@@ -71,6 +82,121 @@ namespace EatFitAI.API.Controllers
         private string GetVoiceProviderBaseUrl()
         {
             return AiProviderUrlResolver.GetVoiceBaseUrl(_configuration);
+        }
+
+        private bool TryResolveVoiceObjectKey(
+            TranscribeRequest input,
+            Guid userId,
+            out string objectKey)
+        {
+            objectKey = string.Empty;
+            var requestedObjectKey = input.ObjectKey;
+
+            if (string.IsNullOrWhiteSpace(requestedObjectKey)
+                && !string.IsNullOrWhiteSpace(input.AudioUrl)
+                && !TryExtractObjectKeyFromConfiguredMediaUrl(input.AudioUrl, out requestedObjectKey))
+            {
+                return false;
+            }
+
+            if (string.IsNullOrWhiteSpace(requestedObjectKey)
+                || !TryNormalizeObjectKey(requestedObjectKey, out var normalizedObjectKey)
+                || !IsUserVoiceObjectKey(normalizedObjectKey, userId))
+            {
+                return false;
+            }
+
+            objectKey = normalizedObjectKey;
+            return true;
+        }
+
+        private bool TryExtractObjectKeyFromConfiguredMediaUrl(string mediaUrl, out string objectKey)
+        {
+            objectKey = string.Empty;
+
+            if (!TryGetPublicMediaBaseUri(out var baseUri)
+                || !Uri.TryCreate(mediaUrl.Trim(), UriKind.Absolute, out var uri)
+                || !string.Equals(uri.Scheme, baseUri.Scheme, StringComparison.OrdinalIgnoreCase)
+                || !string.Equals(uri.Host, baseUri.Host, StringComparison.OrdinalIgnoreCase)
+                || uri.Port != baseUri.Port
+                || !string.IsNullOrEmpty(uri.Query)
+                || !string.IsNullOrEmpty(uri.Fragment))
+            {
+                return false;
+            }
+
+            var basePath = baseUri.AbsolutePath.EndsWith("/", StringComparison.Ordinal)
+                ? baseUri.AbsolutePath
+                : $"{baseUri.AbsolutePath}/";
+
+            if (!uri.AbsolutePath.StartsWith(basePath, StringComparison.Ordinal))
+            {
+                return false;
+            }
+
+            objectKey = Uri.UnescapeDataString(uri.AbsolutePath[basePath.Length..]).TrimStart('/');
+            return true;
+        }
+
+        private bool TryBuildPublicMediaUrl(string objectKey, out string mediaUrl)
+        {
+            mediaUrl = string.Empty;
+            if (!TryGetPublicMediaBaseUri(out var baseUri))
+            {
+                return false;
+            }
+
+            var encodedObjectKey = Uri.EscapeDataString(objectKey)
+                .Replace("%2F", "/", StringComparison.Ordinal);
+            mediaUrl = $"{baseUri.ToString().TrimEnd('/')}/{encodedObjectKey}";
+            return true;
+        }
+
+        private bool TryGetPublicMediaBaseUri(out Uri baseUri)
+        {
+            baseUri = null!;
+            var publicBaseUrl = _configuration["Media:PublicBaseUrl"];
+
+            if (string.IsNullOrWhiteSpace(publicBaseUrl)
+                || !Uri.TryCreate(publicBaseUrl.Trim().TrimEnd('/') + "/", UriKind.Absolute, out var parsedBaseUri)
+                || !string.Equals(parsedBaseUri.Scheme, Uri.UriSchemeHttps, StringComparison.OrdinalIgnoreCase))
+            {
+                return false;
+            }
+
+            baseUri = parsedBaseUri;
+            return true;
+        }
+
+        private static bool TryNormalizeObjectKey(string value, out string objectKey)
+        {
+            objectKey = string.Empty;
+            try
+            {
+                objectKey = Uri.UnescapeDataString(value.Trim()).Trim('/');
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+
+            if (objectKey.Length == 0
+                || objectKey.Length > 512
+                || objectKey.Contains('\\')
+                || objectKey.Contains("//", StringComparison.Ordinal)
+                || objectKey.Split('/').Any(segment => segment is "." or ".."))
+            {
+                objectKey = string.Empty;
+                return false;
+            }
+
+            return true;
+        }
+
+        private static bool IsUserVoiceObjectKey(string objectKey, Guid userId)
+        {
+            return objectKey.StartsWith($"voice/{userId:N}/", StringComparison.Ordinal)
+                && AllowedVoiceAudioExtensions.Contains(Path.GetExtension(objectKey));
         }
 
         /// <summary>
@@ -311,6 +437,8 @@ namespace EatFitAI.API.Controllers
     public class TranscribeRequest
     {
         public string? AudioUrl { get; set; }
+        public string? ObjectKey { get; set; }
+        public string? UploadId { get; set; }
     }
 
         /// <summary>
@@ -327,13 +455,24 @@ namespace EatFitAI.API.Controllers
                 return Unauthorized(new { error = "Bạn chưa đăng nhập" });
             }
 
-            var audioUrl = request.AudioUrl;
-            if (string.IsNullOrWhiteSpace(audioUrl))
+            if (!TryResolveVoiceObjectKey(request, userId, out var objectKey))
             {
                 return BadRequest(new
                 {
                     success = false,
-                    error = "Đường dẫn âm thanh là bắt buộc"
+                    error = "invalid_audio_reference",
+                    message = "Tham chiếu audio không hợp lệ."
+                });
+            }
+
+            if (!TryBuildPublicMediaUrl(objectKey, out var audioUrl))
+            {
+                return StatusCode(StatusCodes.Status503ServiceUnavailable, new
+                {
+                    success = false,
+                    error = "media_storage_not_configured",
+                    message = "Kho media chưa được cấu hình an toàn.",
+                    requestId = HttpContext.TraceIdentifier,
                 });
             }
 
@@ -383,9 +522,9 @@ namespace EatFitAI.API.Controllers
                 }
 
                 _logger.LogInformation(
-                    "Voice transcribe proxy succeeded for user {UserId} with file {FileName}",
+                    "Voice transcribe proxy succeeded for user {UserId} with object {ObjectKey}",
                     userId,
-                    request.AudioUrl);
+                    objectKey);
 
                 return Content(
                     responseBody,

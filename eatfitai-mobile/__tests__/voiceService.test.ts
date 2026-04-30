@@ -5,6 +5,7 @@ import {
   getCurrentApiUrl,
 } from '../src/services/apiClient';
 import { assertBackendApiBaseUrl } from '../src/config/env';
+import storageService from '../src/services/storageService';
 
 jest.mock('../src/services/apiClient', () => ({
   __esModule: true,
@@ -20,29 +21,74 @@ jest.mock('../src/config/env', () => ({
   assertBackendApiBaseUrl: jest.fn((value: string) => value),
 }));
 
+jest.mock('../src/services/storageService', () => ({
+  __esModule: true,
+  default: {
+    uploadMediaObject: jest.fn(),
+  },
+}));
+
 describe('voiceService', () => {
   const mockedFetchWithAuthRetry = fetchWithAuthRetry as jest.Mock;
   const mockedGetCurrentApiUrl = getCurrentApiUrl as jest.Mock;
   const mockedAssertBackendApiBaseUrl = assertBackendApiBaseUrl as jest.Mock;
   const mockedPost = apiClient.post as jest.Mock;
+  const mockedStorageService = storageService as unknown as {
+    uploadMediaObject: jest.Mock;
+  };
 
   beforeEach(() => {
     jest.clearAllMocks();
     mockedGetCurrentApiUrl.mockReturnValue('http://mock-api.local');
     mockedAssertBackendApiBaseUrl.mockImplementation((value: string) => value);
+    mockedStorageService.uploadMediaObject.mockResolvedValue({
+      presignedUrl: 'https://r2-upload.local/put',
+      publicUrl: 'https://media.local/voice/user/audio.m4a',
+      objectKey: 'voice/user/audio.m4a',
+      uploadId: 'voice-upload-123',
+      expiresInSeconds: 300,
+    });
   });
 
-  it('transcribeAudio returns the disabled-STT response without calling backend', async () => {
+  it('transcribeAudio uploads voice media and sends scoped ObjectKey to backend', async () => {
+    mockedPost.mockResolvedValue({
+      data: {
+        text: 'xin chào',
+        language: 'vi',
+        duration: 0.4,
+        success: true,
+      },
+    });
+
     const result = await voiceService.transcribeAudio('file:///recording.m4a');
 
-    expect(mockedAssertBackendApiBaseUrl).not.toHaveBeenCalled();
+    expect(mockedAssertBackendApiBaseUrl).toHaveBeenCalledWith(
+      'http://mock-api.local',
+      'Voice API base URL',
+    );
     expect(mockedFetchWithAuthRetry).not.toHaveBeenCalled();
+    expect(mockedStorageService.uploadMediaObject).toHaveBeenCalledWith(
+      'file:///recording.m4a',
+      'recording.m4a',
+      'audio/mp4',
+      'voice',
+    );
+    expect(mockedPost).toHaveBeenCalledWith(
+      '/api/voice/transcribe',
+      {
+        ObjectKey: 'voice/user/audio.m4a',
+        UploadId: 'voice-upload-123',
+      },
+      expect.objectContaining({
+        headers: { 'Content-Type': 'application/json' },
+        timeout: 45000,
+      }),
+    );
     expect(result).toEqual({
-      text: '',
+      text: 'xin chào',
       language: 'vi',
-      duration: 0,
-      success: false,
-      error: 'Chức năng chuyển giọng nói hiện đang tạm tắt. Hãy nhập lệnh bằng text.',
+      duration: 0.4,
+      success: true,
     });
   });
 

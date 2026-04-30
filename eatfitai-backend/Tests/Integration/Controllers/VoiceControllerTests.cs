@@ -6,6 +6,7 @@ using System.Text.Json;
 using EatFitAI.API.Tests.Integration;
 using EatFitAI.DTOs;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Xunit;
@@ -21,6 +22,106 @@ public class VoiceControllerTests : IClassFixture<WebApplicationFactory<Program>
         _factory = IntegrationTestHost.CreateFactory(
             factory,
             $"VoiceControllerTests_{Guid.NewGuid():N}");
+    }
+
+    [Fact]
+    public async Task TranscribeWithProvider_ObjectKeyBuildsScopedMediaUrl_ForProvider()
+    {
+        var userId = Guid.NewGuid();
+        var objectKey = $"voice/{userId:N}/2026/04/30/{Guid.NewGuid():N}_audio.m4a";
+        var httpClientFactory = new FakeHttpClientFactory(_ => new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new StringContent(
+                """{"text":"xin chao","language":"vi","duration":0.1,"success":true}""",
+                Encoding.UTF8,
+                "application/json"),
+        });
+
+        using var factory = CreateFactoryWithHttpClient(httpClientFactory);
+        using var client = CreateAuthorizedClient(factory, userId);
+
+        var response = await client.PostAsJsonAsync("/api/voice/transcribe", new
+        {
+            ObjectKey = objectKey,
+            UploadId = "upload-test"
+        });
+
+        response.EnsureSuccessStatusCode();
+
+        Assert.Equal(1, httpClientFactory.CallCount);
+        Assert.Contains(
+            $"\"audio_url\":\"https://media.example.com/{objectKey}\"",
+            httpClientFactory.LastRequestBody);
+        Assert.Equal("test-token", httpClientFactory.LastInternalToken);
+    }
+
+    [Fact]
+    public async Task TranscribeWithProvider_RejectsExternalAudioUrl_WithoutCallingProvider()
+    {
+        var httpClientFactory = new FakeHttpClientFactory(_ => throw new InvalidOperationException("External audio URL must not be proxied"));
+        using var factory = CreateFactoryWithHttpClient(httpClientFactory);
+        using var client = CreateAuthorizedClient(factory, Guid.NewGuid());
+
+        var response = await client.PostAsJsonAsync("/api/voice/transcribe", new
+        {
+            AudioUrl = "https://evil.example.com/audio.m4a"
+        });
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.Equal(0, httpClientFactory.CallCount);
+
+        var body = await response.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal("invalid_audio_reference", body.GetProperty("error").GetString());
+    }
+
+    [Fact]
+    public async Task TranscribeWithProvider_RejectsObjectKeyForAnotherUser_WithoutCallingProvider()
+    {
+        var userId = Guid.NewGuid();
+        var otherUserId = Guid.NewGuid();
+        var httpClientFactory = new FakeHttpClientFactory(_ => throw new InvalidOperationException("Cross-user object key must not be proxied"));
+        using var factory = CreateFactoryWithHttpClient(httpClientFactory);
+        using var client = CreateAuthorizedClient(factory, userId);
+
+        var response = await client.PostAsJsonAsync("/api/voice/transcribe", new
+        {
+            ObjectKey = $"voice/{otherUserId:N}/2026/04/30/audio.m4a"
+        });
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.Equal(0, httpClientFactory.CallCount);
+
+        var body = await response.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal("invalid_audio_reference", body.GetProperty("error").GetString());
+    }
+
+    [Fact]
+    public async Task TranscribeWithProvider_LegacyAudioUrlMustResolveToScopedMediaObject()
+    {
+        var userId = Guid.NewGuid();
+        var objectKey = $"voice/{userId:N}/2026/04/30/audio.mp3";
+        var httpClientFactory = new FakeHttpClientFactory(_ => new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new StringContent(
+                """{"text":"ok","language":"vi","duration":0.1,"success":true}""",
+                Encoding.UTF8,
+                "application/json"),
+        });
+
+        using var factory = CreateFactoryWithHttpClient(httpClientFactory);
+        using var client = CreateAuthorizedClient(factory, userId);
+
+        var response = await client.PostAsJsonAsync("/api/voice/transcribe", new
+        {
+            AudioUrl = $"https://media.example.com/{objectKey}"
+        });
+
+        response.EnsureSuccessStatusCode();
+
+        Assert.Equal(1, httpClientFactory.CallCount);
+        Assert.Contains(
+            $"\"audio_url\":\"https://media.example.com/{objectKey}\"",
+            httpClientFactory.LastRequestBody);
     }
 
     [Fact]
@@ -181,13 +282,29 @@ public class VoiceControllerTests : IClassFixture<WebApplicationFactory<Program>
     private WebApplicationFactory<Program> CreateFactoryWithHttpClient(
         Func<HttpRequestMessage, HttpResponseMessage> responseFactory)
     {
+        return CreateFactoryWithHttpClient(new FakeHttpClientFactory(responseFactory));
+    }
+
+    private WebApplicationFactory<Program> CreateFactoryWithHttpClient(
+        FakeHttpClientFactory httpClientFactory)
+    {
         return _factory.WithWebHostBuilder(builder =>
         {
+            builder.ConfigureAppConfiguration((_, config) =>
+            {
+                config.AddInMemoryCollection(new Dictionary<string, string?>
+                {
+                    ["AIProvider:VisionBaseUrl"] = "https://voice-provider.test",
+                    ["AIProvider:VoiceBaseUrl"] = "https://voice-provider.test",
+                    ["AIProvider:InternalToken"] = "test-token",
+                    ["Media:PublicBaseUrl"] = "https://media.example.com",
+                });
+            });
+
             builder.ConfigureServices(services =>
             {
                 services.RemoveAll<IHttpClientFactory>();
-                services.AddSingleton<IHttpClientFactory>(
-                    new FakeHttpClientFactory(responseFactory));
+                services.AddSingleton<IHttpClientFactory>(httpClientFactory);
             });
         });
     }
@@ -213,9 +330,23 @@ public class VoiceControllerTests : IClassFixture<WebApplicationFactory<Program>
             _responseFactory = responseFactory;
         }
 
+        public int CallCount { get; private set; }
+        public string? LastInternalToken { get; private set; }
+        public string? LastRequestBody { get; private set; }
+
         public HttpClient CreateClient(string name)
         {
-            return new HttpClient(new FakeHttpMessageHandler(_responseFactory))
+            return new HttpClient(new FakeHttpMessageHandler(async request =>
+            {
+                CallCount++;
+                LastInternalToken = request.Headers.TryGetValues("X-Internal-Token", out var values)
+                    ? values.SingleOrDefault()
+                    : null;
+                LastRequestBody = request.Content == null
+                    ? null
+                    : await request.Content.ReadAsStringAsync();
+                return _responseFactory(request);
+            }))
             {
                 BaseAddress = new Uri("https://voice-provider.test"),
             };
@@ -224,18 +355,18 @@ public class VoiceControllerTests : IClassFixture<WebApplicationFactory<Program>
 
     private sealed class FakeHttpMessageHandler : HttpMessageHandler
     {
-        private readonly Func<HttpRequestMessage, HttpResponseMessage> _responseFactory;
+        private readonly Func<HttpRequestMessage, Task<HttpResponseMessage>> _responseFactory;
 
-        public FakeHttpMessageHandler(Func<HttpRequestMessage, HttpResponseMessage> responseFactory)
+        public FakeHttpMessageHandler(Func<HttpRequestMessage, Task<HttpResponseMessage>> responseFactory)
         {
             _responseFactory = responseFactory;
         }
 
-        protected override Task<HttpResponseMessage> SendAsync(
+        protected override async Task<HttpResponseMessage> SendAsync(
             HttpRequestMessage request,
             CancellationToken cancellationToken)
         {
-            return Task.FromResult(_responseFactory(request));
+            return await _responseFactory(request);
         }
     }
 }

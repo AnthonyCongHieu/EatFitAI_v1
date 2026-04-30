@@ -6,6 +6,7 @@ using EatFitAI.API.Services;
 using EatFitAI.API.Services.Interfaces;
 using AutoMapper;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Moq;
@@ -26,6 +27,7 @@ namespace EatFitAI.API.Tests.Unit.Services
         private readonly Mock<IMediaUrlResolver> _mediaUrlResolverMock;
         private readonly IConfiguration _configuration;
         private readonly Mock<ILogger<FoodService>> _loggerMock;
+        private readonly IMemoryCache _cache;
         private readonly FoodService _foodService;
 
         public FoodServiceTests()
@@ -40,6 +42,7 @@ namespace EatFitAI.API.Tests.Unit.Services
                 .Returns((string? url) => url);
             _configuration = new ConfigurationBuilder().AddInMemoryCollection().Build();
             _loggerMock = new Mock<ILogger<FoodService>>();
+            _cache = new MemoryCache(new MemoryCacheOptions());
 
             // Setup in-memory database
             var options = new DbContextOptionsBuilder<EatFitAIDbContext>()
@@ -56,11 +59,13 @@ namespace EatFitAI.API.Tests.Unit.Services
                 _httpClientFactoryMock.Object,
                 _configuration,
                 _mediaUrlResolverMock.Object,
-                _loggerMock.Object);
+                _loggerMock.Object,
+                _cache);
         }
 
         public void Dispose()
         {
+            _cache.Dispose();
             _context.Dispose();
         }
 

@@ -22,6 +22,14 @@ namespace EatFitAI.API.Controllers
     [EnableRateLimiting("AIPolicy")]
     public class AIController : ControllerBase
     {
+        private static readonly HashSet<string> AllowedVisionImageExtensions = new(StringComparer.OrdinalIgnoreCase)
+        {
+            ".jpg",
+            ".jpeg",
+            ".png",
+            ".webp"
+        };
+
         private readonly IHttpClientFactory _httpClientFactory;
         private readonly IConfiguration _configuration;
         private readonly ILogger<AIController> _logger;
@@ -65,19 +73,27 @@ namespace EatFitAI.API.Controllers
 
         [HttpPost("vision/detect")]
         [RequestSizeLimit(25_000_000)]
-        [Consumes("multipart/form-data")]
+        [Consumes("application/json")]
         [ProducesResponseType(typeof(EatFitAI.API.DTOs.AI.VisionDetectResultDto), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(object), StatusCodes.Status400BadRequest)]
         public async Task<ActionResult<EatFitAI.API.DTOs.AI.VisionDetectResultDto>> DetectVision([FromBody] DetectVisionRequest input)
         {
-            var imageUrl = input.ImageUrl;
-            if (string.IsNullOrWhiteSpace(imageUrl))
+            var userId = GetUserIdFromToken();
+            if (!TryResolveVisionObjectKey(input, userId, out var objectKey))
             {
-                return BadRequest(new { error = "no image_url provided" });
+                return BadRequest(new { error = "invalid_image_reference" });
             }
 
-            var userId = GetUserIdFromToken();
-            var imageHash = input.ImageHash ?? imageUrl; // Fallback to URL if hash not provided
+            if (!TryBuildPublicMediaUrl(objectKey, out var imageUrl))
+            {
+                return StatusCode(StatusCodes.Status503ServiceUnavailable, new
+                {
+                    error = "media_storage_not_configured",
+                    message = "Media public base URL is not configured."
+                });
+            }
+
+            var imageHash = $"{userId:N}:{(string.IsNullOrWhiteSpace(input.ImageHash) ? objectKey : input.ImageHash.Trim())}";
 
             // Check cache first
             var cachedResult = await _visionCacheService.GetCachedDetectionAsync(imageHash);
@@ -206,6 +222,7 @@ namespace EatFitAI.API.Controllers
                     Image = new
                     {
                         ImageUrl = imageUrl,
+                        ObjectKey = objectKey,
                         ImageHash = imageHash
                     },
                     RawDetections = detections,
@@ -698,6 +715,121 @@ namespace EatFitAI.API.Controllers
             }
 
             return userId;
+        }
+
+        private bool TryResolveVisionObjectKey(
+            DetectVisionRequest input,
+            Guid userId,
+            out string objectKey)
+        {
+            objectKey = string.Empty;
+            var requestedObjectKey = input.ObjectKey;
+
+            if (string.IsNullOrWhiteSpace(requestedObjectKey)
+                && !string.IsNullOrWhiteSpace(input.ImageUrl)
+                && !TryExtractObjectKeyFromConfiguredMediaUrl(input.ImageUrl, out requestedObjectKey))
+            {
+                return false;
+            }
+
+            if (string.IsNullOrWhiteSpace(requestedObjectKey)
+                || !TryNormalizeObjectKey(requestedObjectKey, out var normalizedObjectKey)
+                || !IsUserVisionObjectKey(normalizedObjectKey, userId))
+            {
+                return false;
+            }
+
+            objectKey = normalizedObjectKey;
+            return true;
+        }
+
+        private bool TryExtractObjectKeyFromConfiguredMediaUrl(string imageUrl, out string objectKey)
+        {
+            objectKey = string.Empty;
+
+            if (!TryGetPublicMediaBaseUri(out var baseUri)
+                || !Uri.TryCreate(imageUrl.Trim(), UriKind.Absolute, out var uri)
+                || !string.Equals(uri.Scheme, baseUri.Scheme, StringComparison.OrdinalIgnoreCase)
+                || !string.Equals(uri.Host, baseUri.Host, StringComparison.OrdinalIgnoreCase)
+                || uri.Port != baseUri.Port
+                || !string.IsNullOrEmpty(uri.Query)
+                || !string.IsNullOrEmpty(uri.Fragment))
+            {
+                return false;
+            }
+
+            var basePath = baseUri.AbsolutePath.EndsWith("/", StringComparison.Ordinal)
+                ? baseUri.AbsolutePath
+                : $"{baseUri.AbsolutePath}/";
+
+            if (!uri.AbsolutePath.StartsWith(basePath, StringComparison.Ordinal))
+            {
+                return false;
+            }
+
+            objectKey = Uri.UnescapeDataString(uri.AbsolutePath[basePath.Length..]).TrimStart('/');
+            return true;
+        }
+
+        private bool TryBuildPublicMediaUrl(string objectKey, out string imageUrl)
+        {
+            imageUrl = string.Empty;
+            if (!TryGetPublicMediaBaseUri(out var baseUri))
+            {
+                return false;
+            }
+
+            var encodedObjectKey = Uri.EscapeDataString(objectKey)
+                .Replace("%2F", "/", StringComparison.Ordinal);
+            imageUrl = $"{baseUri.ToString().TrimEnd('/')}/{encodedObjectKey}";
+            return true;
+        }
+
+        private bool TryGetPublicMediaBaseUri(out Uri baseUri)
+        {
+            baseUri = null!;
+            var publicBaseUrl = _configuration["Media:PublicBaseUrl"];
+
+            if (string.IsNullOrWhiteSpace(publicBaseUrl)
+                || !Uri.TryCreate(publicBaseUrl.Trim().TrimEnd('/') + "/", UriKind.Absolute, out var parsedBaseUri)
+                || !string.Equals(parsedBaseUri.Scheme, Uri.UriSchemeHttps, StringComparison.OrdinalIgnoreCase))
+            {
+                return false;
+            }
+
+            baseUri = parsedBaseUri;
+            return true;
+        }
+
+        private static bool TryNormalizeObjectKey(string value, out string objectKey)
+        {
+            objectKey = string.Empty;
+            try
+            {
+                objectKey = Uri.UnescapeDataString(value.Trim()).Trim('/');
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+
+            if (objectKey.Length == 0
+                || objectKey.Length > 512
+                || objectKey.Contains('\\')
+                || objectKey.Contains("//", StringComparison.Ordinal)
+                || objectKey.Split('/').Any(segment => segment is "." or ".."))
+            {
+                objectKey = string.Empty;
+                return false;
+            }
+
+            return true;
+        }
+
+        private static bool IsUserVisionObjectKey(string objectKey, Guid userId)
+        {
+            return objectKey.StartsWith($"vision/{userId:N}/", StringComparison.Ordinal)
+                && AllowedVisionImageExtensions.Contains(Path.GetExtension(objectKey));
         }
 
         private async Task LogAiActivityBestEffortAsync(

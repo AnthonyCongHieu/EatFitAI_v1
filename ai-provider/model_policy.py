@@ -39,12 +39,8 @@ def allow_generic_yolo_fallback(env: Mapping[str, str] | None = None) -> bool:
     return not is_cloud_runtime(env)
 
 
-def missing_supabase_model_keys(env: Mapping[str, str] | None = None) -> list[str]:
-    if not _is_truthy(_value(env, "ALLOW_SUPABASE_MODEL_DOWNLOAD")):
-        return []
-
-    required = ["SUPABASE_URL", "SUPABASE_SERVICE_KEY"]
-    return [key for key in required if not _value(env, key)]
+def supabase_model_download_requested(env: Mapping[str, str] | None = None) -> bool:
+    return _is_truthy(_value(env, "ALLOW_SUPABASE_MODEL_DOWNLOAD"))
 
 
 def pending_model_readiness_error(
@@ -60,8 +56,7 @@ def pending_model_readiness_error(
     if model_loaded or best_model_exists or allow_generic_yolo_fallback(env):
         return None
 
-    missing = missing_supabase_model_keys(env)
-    if missing:
-        return f"best.pt is required in production; Supabase model download is enabled but missing {', '.join(missing)}"
+    if supabase_model_download_requested(env):
+        return "Supabase model download has been removed; package best.pt or best.onnx with the service"
 
     return "best.pt or best.onnx is required in production and must be packaged with the service"

@@ -16,6 +16,8 @@ services:
         sync: false
       - key: DOTNET_hostBuilder__reloadConfigOnChange
         value: "false"
+      - key: SchemaBootstrap__RunOnStartup
+        value: "false"
       - key: Jwt__Key
         sync: false
       - key: Jwt__PreviousKeys
@@ -128,9 +130,9 @@ services:
         value: "0.35"
       - key: YOLO_IMAGE_SIZE
         value: "512"
-      - key: SUPABASE_URL
+      - key: MEDIA_PUBLIC_BASE_URL
         sync: false
-      - key: SUPABASE_SERVICE_KEY
+      - key: AI_PROVIDER_ALLOWED_MEDIA_HOSTS
         sync: false
       - key: ALLOW_GENERIC_YOLO_FALLBACK
         value: "false"

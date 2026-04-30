@@ -5,6 +5,7 @@ import apiClient, {
   getCurrentApiUrl,
 } from '../src/services/apiClient';
 import { assertBackendApiBaseUrl } from '../src/config/env';
+import storageService from '../src/services/storageService';
 
 jest.mock('../src/services/apiClient', () => ({
   __esModule: true,
@@ -55,6 +56,13 @@ jest.mock('../src/services/errorTracking', () => ({
   initErrorTracking: jest.fn(),
 }));
 
+jest.mock('../src/services/storageService', () => ({
+  __esModule: true,
+  default: {
+    uploadMediaObject: jest.fn(),
+  },
+}));
+
 describe('aiService', () => {
   const mockedApiClient = apiClient as unknown as {
     get: jest.Mock;
@@ -67,11 +75,21 @@ describe('aiService', () => {
   const mockedFetchWithAuthRetry = fetchWithAuthRetry as jest.Mock;
   const mockedGetCurrentApiUrl = getCurrentApiUrl as jest.Mock;
   const mockedAssertBackendApiBaseUrl = assertBackendApiBaseUrl as jest.Mock;
+  const mockedStorageService = storageService as unknown as {
+    uploadMediaObject: jest.Mock;
+  };
 
   beforeEach(() => {
     jest.clearAllMocks();
     mockedGetCurrentApiUrl.mockReturnValue('http://mock-api.local');
     mockedAssertBackendApiBaseUrl.mockImplementation((value: string) => value);
+    mockedStorageService.uploadMediaObject.mockResolvedValue({
+      presignedUrl: 'https://r2-upload.local/put',
+      publicUrl: 'https://media.local/vision/user/photo.jpg',
+      objectKey: 'vision/user/photo.jpg',
+      uploadId: 'upload-123',
+      expiresInSeconds: 300,
+    });
   });
 
   it('detectFoodByImage uses fetch and normalizes the payload', async () => {
@@ -106,6 +124,12 @@ describe('aiService', () => {
       'http://mock-api.local/api/ai/vision/detect',
       expect.any(Function),
     );
+    const requestFactory = mockedFetchWithAuthRetry.mock.calls[0][1];
+    const request = requestFactory();
+    expect(JSON.parse(String(request.body))).toEqual({
+      ObjectKey: 'vision/user/photo.jpg',
+      ImageHash: 'upload-123',
+    });
     expect(result.items).toHaveLength(1);
     expect(result.items[0]).toMatchObject({
       label: 'Rice',

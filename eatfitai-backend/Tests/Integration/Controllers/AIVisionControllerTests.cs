@@ -29,6 +29,7 @@ public class AIVisionControllerTests : IClassFixture<WebApplicationFactory<Progr
     [Fact]
     public async Task DetectVision_FreshDown_Returns503WithoutCallingProvider()
     {
+        var userId = Guid.NewGuid();
         var httpClientFactory = new RecordingHttpClientFactory(
             (_, _) => Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)));
         var cacheService = new FakeVisionCacheService();
@@ -42,8 +43,8 @@ public class AIVisionControllerTests : IClassFixture<WebApplicationFactory<Progr
             },
             httpClientFactory,
             cacheService);
-        using var client = CreateAuthorizedClient(factory, Guid.NewGuid());
-        using var response = await client.PostAsync("/api/ai/vision/detect", CreateImageContent());
+        using var client = CreateAuthorizedClient(factory, userId);
+        using var response = await client.PostAsync("/api/ai/vision/detect", CreateVisionRequest(userId));
 
         Assert.Equal(HttpStatusCode.ServiceUnavailable, response.StatusCode);
         Assert.Equal(0, httpClientFactory.CallCount);
@@ -59,6 +60,7 @@ public class AIVisionControllerTests : IClassFixture<WebApplicationFactory<Progr
     [Fact]
     public async Task DetectVision_StaleDown_CallsProviderAndReturns200()
     {
+        var userId = Guid.NewGuid();
         var httpClientFactory = new RecordingHttpClientFactory(
             (_, _) => Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
             {
@@ -79,12 +81,15 @@ public class AIVisionControllerTests : IClassFixture<WebApplicationFactory<Progr
             },
             httpClientFactory,
             new FakeVisionCacheService());
-        using var client = CreateAuthorizedClient(factory, Guid.NewGuid());
-        using var response = await client.PostAsync("/api/ai/vision/detect", CreateImageContent());
+        using var client = CreateAuthorizedClient(factory, userId);
+        using var response = await client.PostAsync("/api/ai/vision/detect", CreateVisionRequest(userId));
 
         response.EnsureSuccessStatusCode();
         Assert.Equal(1, httpClientFactory.CallCount);
         Assert.Equal("test-token", httpClientFactory.LastInternalToken);
+        Assert.Contains(
+            $"\"image_url\":\"https://media.example.com/vision/{userId:N}/",
+            httpClientFactory.LastRequestBody);
 
         var body = await response.Content.ReadFromJsonAsync<VisionDetectResultDto>();
         Assert.NotNull(body);
@@ -96,6 +101,7 @@ public class AIVisionControllerTests : IClassFixture<WebApplicationFactory<Progr
     [Fact]
     public async Task DetectVision_CacheHit_Returns200EvenWhenHealthIsFreshDown()
     {
+        var userId = Guid.NewGuid();
         var httpClientFactory = new RecordingHttpClientFactory(
             (_, _) => Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)));
         var cacheService = new FakeVisionCacheService(new VisionDetectResultDto
@@ -121,8 +127,8 @@ public class AIVisionControllerTests : IClassFixture<WebApplicationFactory<Progr
             },
             httpClientFactory,
             cacheService);
-        using var client = CreateAuthorizedClient(factory, Guid.NewGuid());
-        using var response = await client.PostAsync("/api/ai/vision/detect", CreateImageContent());
+        using var client = CreateAuthorizedClient(factory, userId);
+        using var response = await client.PostAsync("/api/ai/vision/detect", CreateVisionRequest(userId));
 
         response.EnsureSuccessStatusCode();
         Assert.Equal(0, httpClientFactory.CallCount);
@@ -138,6 +144,7 @@ public class AIVisionControllerTests : IClassFixture<WebApplicationFactory<Progr
     [Fact]
     public async Task DetectVision_ProviderConnectionFailureAfterBypass_Returns503()
     {
+        var userId = Guid.NewGuid();
         var httpClientFactory = new RecordingHttpClientFactory(
             (_, _) => Task.FromException<HttpResponseMessage>(new HttpRequestException("connection failed")));
 
@@ -150,8 +157,8 @@ public class AIVisionControllerTests : IClassFixture<WebApplicationFactory<Progr
             },
             httpClientFactory,
             new FakeVisionCacheService());
-        using var client = CreateAuthorizedClient(factory, Guid.NewGuid());
-        using var response = await client.PostAsync("/api/ai/vision/detect", CreateImageContent());
+        using var client = CreateAuthorizedClient(factory, userId);
+        using var response = await client.PostAsync("/api/ai/vision/detect", CreateVisionRequest(userId));
 
         Assert.Equal(HttpStatusCode.ServiceUnavailable, response.StatusCode);
         Assert.Equal(1, httpClientFactory.CallCount);
@@ -163,6 +170,7 @@ public class AIVisionControllerTests : IClassFixture<WebApplicationFactory<Progr
     [Fact]
     public async Task DetectVision_ProviderTimeoutAfterBypass_Returns504()
     {
+        var userId = Guid.NewGuid();
         var httpClientFactory = new RecordingHttpClientFactory(
             (_, _) => Task.FromException<HttpResponseMessage>(new TaskCanceledException("timed out")));
 
@@ -175,8 +183,8 @@ public class AIVisionControllerTests : IClassFixture<WebApplicationFactory<Progr
             },
             httpClientFactory,
             new FakeVisionCacheService());
-        using var client = CreateAuthorizedClient(factory, Guid.NewGuid());
-        using var response = await client.PostAsync("/api/ai/vision/detect", CreateImageContent());
+        using var client = CreateAuthorizedClient(factory, userId);
+        using var response = await client.PostAsync("/api/ai/vision/detect", CreateVisionRequest(userId));
 
         Assert.Equal(HttpStatusCode.GatewayTimeout, response.StatusCode);
         Assert.Equal(1, httpClientFactory.CallCount);
@@ -188,6 +196,7 @@ public class AIVisionControllerTests : IClassFixture<WebApplicationFactory<Progr
     [Fact]
     public async Task DetectVision_ProviderExceedsConfiguredTimeout_Returns504()
     {
+        var userId = Guid.NewGuid();
         var httpClientFactory = new RecordingHttpClientFactory(async (_, cancellationToken) =>
         {
             await Task.Delay(TimeSpan.FromSeconds(2), cancellationToken);
@@ -215,14 +224,72 @@ public class AIVisionControllerTests : IClassFixture<WebApplicationFactory<Progr
             {
                 ["AIProvider:VisionDetectTimeoutMilliseconds"] = "50",
             });
-        using var client = CreateAuthorizedClient(factory, Guid.NewGuid());
-        using var response = await client.PostAsync("/api/ai/vision/detect", CreateImageContent());
+        using var client = CreateAuthorizedClient(factory, userId);
+        using var response = await client.PostAsync("/api/ai/vision/detect", CreateVisionRequest(userId));
 
         Assert.Equal(HttpStatusCode.GatewayTimeout, response.StatusCode);
         Assert.Equal(1, httpClientFactory.CallCount);
 
         var body = await response.Content.ReadFromJsonAsync<JsonElement>();
         Assert.Equal("ai-provider_timeout", body.GetProperty("code").GetString());
+    }
+
+    [Fact]
+    public async Task DetectVision_ExternalImageUrl_Returns400WithoutCallingProvider()
+    {
+        var userId = Guid.NewGuid();
+        var httpClientFactory = new RecordingHttpClientFactory(
+            (_, _) => Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)));
+
+        using var factory = CreateFactory(
+            new AiHealthStatusDto
+            {
+                State = "HEALTHY",
+                LastCheckedAt = DateTimeOffset.UtcNow,
+                Message = "healthy"
+            },
+            httpClientFactory,
+            new FakeVisionCacheService());
+        using var client = CreateAuthorizedClient(factory, userId);
+        using var response = await client.PostAsJsonAsync("/api/ai/vision/detect", new
+        {
+            ImageUrl = "http://127.0.0.1/latest/meta-data"
+        });
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.Equal(0, httpClientFactory.CallCount);
+
+        var body = await response.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal("invalid_image_reference", body.GetProperty("error").GetString());
+    }
+
+    [Fact]
+    public async Task DetectVision_ObjectKeyForDifferentUser_Returns400WithoutCallingProvider()
+    {
+        var userId = Guid.NewGuid();
+        var otherUserId = Guid.NewGuid();
+        var httpClientFactory = new RecordingHttpClientFactory(
+            (_, _) => Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)));
+
+        using var factory = CreateFactory(
+            new AiHealthStatusDto
+            {
+                State = "HEALTHY",
+                LastCheckedAt = DateTimeOffset.UtcNow,
+                Message = "healthy"
+            },
+            httpClientFactory,
+            new FakeVisionCacheService());
+        using var client = CreateAuthorizedClient(factory, userId);
+        using var response = await client.PostAsync(
+            "/api/ai/vision/detect",
+            CreateVisionRequest(userId, $"vision/{otherUserId:N}/2026/04/30/photo.jpg"));
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.Equal(0, httpClientFactory.CallCount);
+
+        var body = await response.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal("invalid_image_reference", body.GetProperty("error").GetString());
     }
 
     private WebApplicationFactory<Program> CreateFactory(
@@ -240,6 +307,7 @@ public class AIVisionControllerTests : IClassFixture<WebApplicationFactory<Progr
                     ["AIProvider:VisionBaseUrl"] = "https://provider.test",
                     ["AIProvider:InternalToken"] = "test-token",
                     ["AIProvider:HealthGateFreshnessSeconds"] = "60",
+                    ["Media:PublicBaseUrl"] = "https://media.example.com",
                 };
 
                 if (configurationOverrides != null)
@@ -282,13 +350,12 @@ public class AIVisionControllerTests : IClassFixture<WebApplicationFactory<Progr
         return client;
     }
 
-    private static MultipartFormDataContent CreateImageContent()
+    private static JsonContent CreateVisionRequest(Guid userId, string? objectKey = null)
     {
-        var content = new MultipartFormDataContent();
-        var fileContent = new ByteArrayContent(Encoding.UTF8.GetBytes("fake-image-bytes"));
-        fileContent.Headers.ContentType = new MediaTypeHeaderValue("image/jpeg");
-        content.Add(fileContent, "file", "scan.jpg");
-        return content;
+        return JsonContent.Create(new
+        {
+            ObjectKey = objectKey ?? $"vision/{userId:N}/2026/04/30/photo.jpg"
+        });
     }
 
     private sealed class FakeAiHealthService : IAiHealthService
@@ -385,6 +452,7 @@ public class AIVisionControllerTests : IClassFixture<WebApplicationFactory<Progr
 
         public int CallCount => _handler.CallCount;
         public string? LastInternalToken => _handler.LastInternalToken;
+        public string? LastRequestBody => _handler.LastRequestBody;
 
         public HttpClient CreateClient(string name)
         {
@@ -406,14 +474,18 @@ public class AIVisionControllerTests : IClassFixture<WebApplicationFactory<Progr
 
         public int CallCount { get; private set; }
         public string? LastInternalToken { get; private set; }
+        public string? LastRequestBody { get; private set; }
 
-        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
             CallCount++;
             LastInternalToken = request.Headers.TryGetValues("X-Internal-Token", out var values)
                 ? values.SingleOrDefault()
                 : null;
-            return _responseFactory(request, cancellationToken);
+            LastRequestBody = request.Content == null
+                ? null
+                : await request.Content.ReadAsStringAsync(cancellationToken);
+            return await _responseFactory(request, cancellationToken);
         }
     }
 }

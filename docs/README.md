@@ -1,6 +1,6 @@
 # Chỉ mục tài liệu EatFitAI
 
-Cập nhật: `2026-04-26`
+Cập nhật: `2026-04-30`
 
 Thư mục `docs/` tập trung các tài liệu kỹ thuật phục vụ phát triển, kiểm thử, và vận hành dự án.
 
@@ -23,6 +23,7 @@ Thư mục `docs/` tập trung các tài liệu kỹ thuật phục vụ phát t
 | [25_TOKEN_TOOLING_PILOT_RESULTS_2026-04-25.md](25_TOKEN_TOOLING_PILOT_RESULTS_2026-04-25.md) | Kết quả setup/pilot Serena, RTK, Codebase-Memory trên Windows cho EatFitAI | Cần xem tool nào giữ, pilot, defer hoặc rollback |
 | [26_RC_STABILIZATION_REPORT_2026-04-25.md](26_RC_STABILIZATION_REPORT_2026-04-25.md) | Báo cáo RC Phase 2 với evidence thật: code gates pass, Android/cloud/auth blockers, AI benchmark, UI backlog | Cần quyết định unblock seed/auth/deploy trước khi chốt internal RC |
 | [27_RC_CLOUD_RUNBOOK_2026-04-26.md](27_RC_CLOUD_RUNBOOK_2026-04-26.md) | Runbook cloud RC đã khóa: deploy backend/AI provider, Render verify, warm-up AI provider, smoke preflight/auth/user/AI tuần tự | Cần chạy lại cloud RC gate hoặc chuẩn bị demo/release smoke |
+| [41_RUBRIC_PRODUCTION_AUDIT_AND_FIX_PLAN_2026-04-30.md](41_RUBRIC_PRODUCTION_AUDIT_AND_FIX_PLAN_2026-04-30.md) | Checklist tổng hợp rubric tốt nghiệp, production score, egress root cause, và thứ tự fix P0-P2 | Cần theo dõi đợt audit/fix cuối trước beta/production |
 
 ## Thư mục phụ
 

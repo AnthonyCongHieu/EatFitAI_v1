@@ -141,13 +141,16 @@ export const voiceService = {
             ? 'audio/ogg'
             : 'audio/wav';
 
-      // 1. Upload via Presigned URL
-      const publicUrl = await storageService.uploadMedia(audioUri, fileName, fileType);
+      // 1. Upload via Presigned URL and keep scoped metadata for backend validation.
+      const upload = await storageService.uploadMediaObject(audioUri, fileName, fileType, 'voice');
 
-      // 2. Transcribe using the public URL
+      // 2. Transcribe using a backend-built media URL from the scoped object key.
       const response = await apiClient.post<TranscriptionResponse>(
         '/api/voice/transcribe',
-        { AudioUrl: publicUrl },
+        {
+          ObjectKey: upload.objectKey,
+          UploadId: upload.uploadId,
+        },
         {
           headers: { 'Content-Type': 'application/json' },
           timeout: 45000, // Audio transcription có thể mất lâu hơn

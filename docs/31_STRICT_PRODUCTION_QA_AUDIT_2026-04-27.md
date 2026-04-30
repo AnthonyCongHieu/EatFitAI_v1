@@ -28,7 +28,7 @@ Production-ready requires no P0/P1 blockers and fresh runtime evidence for every
 | YOLO detection | Added low-confidence YOLO recovery for beef/chicken. | `e9573f89` | Local beef/chicken detection restored. |
 | Model egress | Packaged `ai-provider/best.pt`; stopped relying on Supabase Storage model download. | `3765bfb8` | Render no longer needs Supabase Storage for model cold start. |
 | Provider speed | Added exported YOLO ONNX model and ONNX Runtime CPU inference. | `d4653fd8`, `dfc215c7` | Local ONNX detects beef/chicken in ~0.2-0.4s; live provider small images returns 200. |
-| Supabase model leak | `ALLOW_SUPABASE_MODEL_DOWNLOAD=false` by default. | `d4653fd8` | Health shows `supabase_model_download_enabled=false`. |
+| Supabase model leak | Supabase model download removed from runtime; legacy env flag no longer enables downloads. | `d4653fd8` + current audit patch | Health shows `supabase_model_download_enabled=false`. |
 | Media egress | Prior live API media audit found 0 Supabase Storage URLs after R2 migration. | prior task | Catalog/user media path no longer leaks Supabase Storage URLs in sampled endpoints. |
 | Chicken mapping | Seeder now recognizes Vietnamese chicken catalog names such as `uc ga`, `canh ga`, `dui ga`. | `19b3c64c` | Code fixed; live DB also received `POST /api/ai/labels/teach` for `chicken`. |
 | Mobile scan payload | Scan preprocessing tuned from 1600/0.95 to 1024/0.85. | `19b3c64c` | Matches tested backend payload profile and reduces upload instability risk. |

@@ -435,20 +435,28 @@ export async function detectFoodByImage(imageUri: string): Promise<VisionDetectR
     }
 
     // 1. Upload via Presigned URL
-    const publicUrl = await storageService.uploadMedia(imageUri, 'photo.jpg', 'image/jpeg');
+    const upload = await storageService.uploadMediaObject(
+      imageUri,
+      'photo.jpg',
+      'image/jpeg',
+      'vision',
+    );
 
     const baseUrl = getApiBaseUrl();
     const url = `${baseUrl}/api/ai/vision/detect`;
 
     if (__DEV__) {
-      logger.info('[aiService] detectFoodByImage calling:', url, 'with ImageUrl:', publicUrl);
+      logger.info('[aiService] detectFoodByImage calling:', url, 'with ObjectKey:', upload.objectKey);
     }
 
-    // 2. Call backend with JSON payload containing ImageUrl
+    // 2. Call backend with JSON payload containing the scoped object key
     const response = await fetchWithAuthRetry(url, () => {
       return {
         method: 'POST',
-        body: JSON.stringify({ ImageUrl: publicUrl }),
+        body: JSON.stringify({
+          ObjectKey: upload.objectKey,
+          ImageHash: upload.uploadId,
+        }),
         headers: {
           'Content-Type': 'application/json',
           Accept: 'application/json',

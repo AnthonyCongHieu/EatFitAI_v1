@@ -43,8 +43,6 @@ GEMINI_PROBE_PROMPT=ping
 GEMINI_KEY_POOL_JSON=[{"projectAlias":"gemini-primary","projectId":"project-1","keyAlias":"slot-a","apiKey":"replace_me","model":"gemini-2.5-flash","enabled":true}]
 ENABLE_STT=false
 ALLOW_GENERIC_YOLO_FALLBACK=false
-SUPABASE_URL=
-SUPABASE_SERVICE_KEY=
 ```
 
 If both `GEMINI_KEY_POOL_JSON` and `GEMINI_API_KEY` are set, the single key is appended as one more pool entry. Use `GEMINI_API_KEY_PROJECT_ID` with a new Gemini project so quota rotation treats it as an independent source.
@@ -70,11 +68,11 @@ python app.py
 
 ## Required assets
 
-- `best.pt` should be present when you want the custom Vietnamese-food model
-- production requires `best.pt`; on Render, configure `SUPABASE_URL` and `SUPABASE_SERVICE_KEY` so the service can download `best.pt` from the `ml-models` bucket
+- `best.onnx` or `best.pt` should be packaged with the service when you want the custom Vietnamese-food model
+- production requires a packaged model asset; Supabase Storage model download has been removed and should not be re-enabled
 - `yolov8s.pt` can act as a local/debug fallback only when `ALLOW_GENERIC_YOLO_FALLBACK=true`
 
-`best.pt` is intentionally not committed to git.
+Large model assets are intentionally not committed to git.
 
 ## Health check
 
