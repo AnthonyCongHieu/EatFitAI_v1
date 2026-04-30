@@ -24,6 +24,30 @@ from gemini_pool import (
 )
 
 
+class FakeUsageStateStore:
+    name = "fake"
+
+    def __init__(self) -> None:
+        self.payload = None
+        self.saved_payloads = []
+        self.degraded = False
+        self.error = ""
+
+    def load(self):
+        return self.payload
+
+    def save(self, payload):
+        self.saved_payloads.append(payload)
+        self.payload = payload
+
+    def status(self):
+        return {
+            "name": self.name,
+            "degraded": self.degraded,
+            "error": self.error,
+        }
+
+
 class FakeResponse:
     def __init__(self, status_code: int, payload: dict, headers: dict | None = None) -> None:
         self.status_code = status_code
@@ -186,6 +210,24 @@ class GeminiPoolTests(unittest.TestCase):
         self.assertEqual(status["gemini_distinct_project_count"], 6)
         self.assertEqual(status["gemini_rate_limit_scope"], "project")
 
+    def test_from_env_uses_degraded_postgres_store_without_database_url(self) -> None:
+        with patch.dict(
+            os.environ,
+            {
+                "GEMINI_USAGE_STATE_STORE": "postgres",
+                "GEMINI_KEY_POOL_JSON": (
+                    '[{"projectAlias":"primary","projectId":"project-a","keyAlias":"slot-1","apiKey":"key-1","model":"gemini-2.5-flash","enabled":true}]'
+                ),
+            },
+            clear=True,
+        ):
+            pool = GeminiPoolManager.from_env()
+
+        status = pool.get_runtime_status()
+        self.assertEqual(status["gemini_usage_state_store"], "postgres")
+        self.assertTrue(status["gemini_usage_state_store_degraded"])
+        self.assertIn("GEMINI_USAGE_STATE_DATABASE_URL", status["gemini_usage_state_store_error"])
+
     def test_pre_exhausted_projects_are_skipped_on_boot(self) -> None:
         with patch.dict(
             os.environ,
@@ -328,6 +370,46 @@ class GeminiPoolTests(unittest.TestCase):
             self.assertEqual(status["totalRequests"], 1)
             self.assertEqual(status["totalTokens"], 7)
             self.assertEqual(status["rollingEventsCount"], 1)
+
+    def test_persists_project_usage_state_through_store(self) -> None:
+        clock = MutableClock(datetime(2026, 4, 10, 12, 0, 0))
+        store = FakeUsageStateStore()
+        responses = [ok_response("primary", total_tokens=7)]
+        pool = GeminiPoolManager(
+            [GeminiPoolEntry("primary", "project-a", "slot-1", "key-1", DEFAULT_MODEL)],
+            usage_state_store=store,
+            requester=lambda *args, **kwargs: responses.pop(0),
+        )
+
+        with patch("gemini_pool._utcnow", side_effect=clock):
+            self.assertEqual(pool.generate_text("hello", max_output_tokens=3), "primary")
+
+        with patch("gemini_pool._utcnow", side_effect=clock):
+            reloaded = GeminiPoolManager(
+                [GeminiPoolEntry("primary", "project-a", "slot-1", "key-1", DEFAULT_MODEL)],
+                usage_state_store=store,
+            )
+            status = reloaded.get_runtime_status()["gemini_usage_entries"][0]
+
+        self.assertGreaterEqual(len(store.saved_payloads), 1)
+        self.assertEqual(status["totalRequests"], 1)
+        self.assertEqual(status["totalTokens"], 7)
+        self.assertEqual(status["rollingEventsCount"], 1)
+
+    def test_runtime_status_reports_usage_state_store_health(self) -> None:
+        store = FakeUsageStateStore()
+        store.degraded = True
+        store.error = "db unavailable"
+        pool = GeminiPoolManager(
+            [GeminiPoolEntry("primary", "project-a", "slot-1", "key-1", DEFAULT_MODEL)],
+            usage_state_store=store,
+        )
+
+        status = pool.get_runtime_status()
+
+        self.assertEqual(status["gemini_usage_state_store"], "fake")
+        self.assertTrue(status["gemini_usage_state_store_degraded"])
+        self.assertEqual(status["gemini_usage_state_store_error"], "db unavailable")
 
     def test_probe_success_unlocks_project_and_marks_probe_confirmed(self) -> None:
         clock = MutableClock(datetime(2026, 4, 10, 15, 0, 0))

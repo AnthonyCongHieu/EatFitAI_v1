@@ -210,6 +210,15 @@ dotnet run --project .\eatfitai-backend\EatFitAI.API.csproj -- --schema-bootstra
 
 Auth smoke now also verifies the Phase A legacy Google contract: `GET /api/auth/google` must return `410 Gone` with `X-EatFitAI-Deprecated-Endpoint` pointing to `POST /api/auth/google/signin`. Only remove the legacy route after this smoke evidence and backend logs show no unexpected legacy callers.
 
+For AI provider production, configure Gemini usage state with:
+
+```text
+GEMINI_USAGE_STATE_STORE=postgres
+GEMINI_USAGE_STATE_DATABASE_URL=<Supabase/PostgreSQL connection string>
+```
+
+After deploy, verify `/healthz/gemini` reports `gemini_usage_state_store=postgres` and `gemini_usage_state_store_degraded=false`. Local development can keep `GEMINI_USAGE_STATE_STORE=file`.
+
 Fixture ảnh dùng cho AI smoke nằm ở:
 
 ```text

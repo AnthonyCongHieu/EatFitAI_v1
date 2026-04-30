@@ -118,6 +118,10 @@ services:
         value: "30"
       - key: GEMINI_SHORT_COOLDOWN_SECONDS
         value: "90"
+      - key: GEMINI_USAGE_STATE_STORE
+        value: postgres
+      - key: GEMINI_USAGE_STATE_DATABASE_URL
+        sync: false
       - key: GEMINI_USAGE_STATE_PATH
         value: uploads/gemini-usage-state.json
       - key: GEMINI_PROBE_MIN_INTERVAL_SECONDS

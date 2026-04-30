@@ -5,7 +5,6 @@ from datetime import datetime, timedelta, timezone
 import json
 import logging
 import os
-from pathlib import Path
 from threading import RLock
 from typing import Any, Callable, Dict, Iterable, List, Optional
 from urllib.parse import quote
@@ -13,6 +12,12 @@ from uuid import uuid4
 from zoneinfo import ZoneInfo
 
 import requests
+
+from gemini_state_store import (
+    FileGeminiUsageStateStore,
+    GeminiUsageStateStore,
+    PostgresGeminiUsageStateStore,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -635,6 +640,7 @@ class GeminiPoolManager:
         tpm_limit: int = DEFAULT_TPM_LIMIT,
         rpd_limit: int = DEFAULT_RPD_LIMIT,
         usage_state_path: Optional[str] = None,
+        usage_state_store: Optional[GeminiUsageStateStore] = None,
         probe_min_interval_seconds: int = DEFAULT_PROBE_MIN_INTERVAL_SECONDS,
         probe_max_per_project_per_day: int = DEFAULT_PROBE_MAX_PER_PROJECT_PER_DAY,
         probe_prompt: str = DEFAULT_PROBE_PROMPT,
@@ -647,6 +653,9 @@ class GeminiPoolManager:
         self.tpm_limit = tpm_limit
         self.rpd_limit = rpd_limit
         self.usage_state_path = usage_state_path
+        self.usage_state_store = usage_state_store or (
+            FileGeminiUsageStateStore(usage_state_path) if usage_state_path else None
+        )
         self.probe_min_interval_seconds = max(1, probe_min_interval_seconds)
         self.probe_max_per_project_per_day = max(1, probe_max_per_project_per_day)
         self.probe_prompt = probe_prompt or DEFAULT_PROBE_PROMPT
@@ -670,7 +679,7 @@ class GeminiPoolManager:
         rpm_limit = _safe_int(os.getenv("GEMINI_RPM_LIMIT"), DEFAULT_RPM_LIMIT)
         tpm_limit = _safe_int(os.getenv("GEMINI_TPM_LIMIT"), DEFAULT_TPM_LIMIT)
         rpd_limit = _safe_int(os.getenv("GEMINI_RPD_LIMIT"), DEFAULT_RPD_LIMIT)
-        usage_state_path = os.getenv("GEMINI_USAGE_STATE_PATH", "").strip() or DEFAULT_USAGE_STATE_PATH
+        usage_state_store = _build_usage_state_store_from_env()
         probe_min_interval_seconds = _safe_int(
             os.getenv("GEMINI_PROBE_MIN_INTERVAL_SECONDS"),
             DEFAULT_PROBE_MIN_INTERVAL_SECONDS,
@@ -721,7 +730,7 @@ class GeminiPoolManager:
             rpm_limit=rpm_limit,
             tpm_limit=tpm_limit,
             rpd_limit=rpd_limit,
-            usage_state_path=usage_state_path,
+            usage_state_store=usage_state_store,
             probe_min_interval_seconds=probe_min_interval_seconds,
             probe_max_per_project_per_day=probe_max_per_project_per_day,
             probe_prompt=probe_prompt,
@@ -769,6 +778,7 @@ class GeminiPoolManager:
                 for entry in self._entries
             ]
             states = [item["state"] for item in usage_entries]
+            store_status = self._usage_state_store_status()
             return {
                 "gemini_configured": bool(self._entries),
                 "gemini_model": active.model if active else self.default_model,
@@ -796,6 +806,9 @@ class GeminiPoolManager:
                     }
                 ),
                 "gemini_auth_invalid_project_count": sum(1 for state in states if state == STATE_AUTH_INVALID),
+                "gemini_usage_state_store": store_status["name"],
+                "gemini_usage_state_store_degraded": store_status["degraded"],
+                "gemini_usage_state_store_error": store_status["error"],
                 "gemini_rolling_window_seconds": ROLLING_WINDOW_SECONDS,
                 "gemini_limits": {
                     "rpm": self.rpm_limit,
@@ -1561,19 +1574,11 @@ class GeminiPoolManager:
         self._last_retry_after = min(retry_after_candidates).isoformat() if retry_after_candidates else None
 
     def _load_usage_state_locked(self) -> None:
-        if not self.usage_state_path:
+        if self.usage_state_store is None:
             return
 
-        state_path = Path(self.usage_state_path)
-        if not state_path.is_absolute():
-            state_path = Path.cwd() / state_path
-        if not state_path.exists():
-            return
-
-        try:
-            payload = json.loads(state_path.read_text(encoding="utf8"))
-        except Exception as exc:
-            logger.warning("Failed to load Gemini usage state: %s", exc)
+        payload = self.usage_state_store.load()
+        if not payload:
             return
 
         entries_by_project = {
@@ -1621,13 +1626,8 @@ class GeminiPoolManager:
             entry.refresh_usage_windows(now)
 
     def _save_usage_state_locked(self) -> None:
-        if not self.usage_state_path:
+        if self.usage_state_store is None:
             return
-
-        state_path = Path(self.usage_state_path)
-        if not state_path.is_absolute():
-            state_path = Path.cwd() / state_path
-        state_path.parent.mkdir(parents=True, exist_ok=True)
 
         payload = {
             "generatedAt": _utcnow().isoformat(),
@@ -1671,7 +1671,17 @@ class GeminiPoolManager:
                 for entry in self._entries
             ],
         }
-        state_path.write_text(json.dumps(payload, indent=2), encoding="utf8")
+        self.usage_state_store.save(payload)
+
+    def _usage_state_store_status(self) -> Dict[str, Any]:
+        if self.usage_state_store is None:
+            return {
+                "name": "none",
+                "degraded": False,
+                "error": "",
+            }
+
+        return self.usage_state_store.status()
 
 
 def _safe_int(raw: Optional[str], default: int) -> int:
@@ -1679,6 +1689,19 @@ def _safe_int(raw: Optional[str], default: int) -> int:
         return int(raw or default)
     except (TypeError, ValueError):
         return default
+
+
+def _build_usage_state_store_from_env() -> GeminiUsageStateStore:
+    store_name = os.getenv("GEMINI_USAGE_STATE_STORE", "file").strip().lower() or "file"
+    if store_name == "postgres":
+        database_url = (
+            os.getenv("GEMINI_USAGE_STATE_DATABASE_URL", "").strip()
+            or os.getenv("DATABASE_URL", "").strip()
+        )
+        return PostgresGeminiUsageStateStore(database_url)
+
+    usage_state_path = os.getenv("GEMINI_USAGE_STATE_PATH", "").strip() or DEFAULT_USAGE_STATE_PATH
+    return FileGeminiUsageStateStore(usage_state_path)
 
 
 def _utcnow() -> datetime:
