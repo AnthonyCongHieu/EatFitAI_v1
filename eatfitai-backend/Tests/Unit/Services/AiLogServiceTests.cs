@@ -2,6 +2,9 @@ using EatFitAI.API.Data;
 using EatFitAI.API.DbScaffold.Data;
 using EatFitAI.API.Services;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.FileProviders;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging.Abstractions;
 using Xunit;
 
@@ -27,7 +30,11 @@ public class AiLogServiceTests : IDisposable
 
         _service = new AiLogService(
             _db,
-            new SupabaseSchemaBootstrapper(_adminDb, NullLogger<SupabaseSchemaBootstrapper>.Instance));
+            new SupabaseSchemaBootstrapper(
+                _adminDb,
+                new ConfigurationBuilder().Build(),
+                new FakeHostEnvironment(),
+                NullLogger<SupabaseSchemaBootstrapper>.Instance));
     }
 
     public void Dispose()
@@ -56,5 +63,13 @@ public class AiLogServiceTests : IDisposable
         Assert.Contains("pho", entry.InputJson ?? string.Empty, StringComparison.Ordinal);
         Assert.Contains("totalCalories", entry.OutputJson ?? string.Empty, StringComparison.Ordinal);
         Assert.Contains("420", entry.OutputJson ?? string.Empty, StringComparison.Ordinal);
+    }
+
+    private sealed class FakeHostEnvironment : IHostEnvironment
+    {
+        public string EnvironmentName { get; set; } = Environments.Development;
+        public string ApplicationName { get; set; } = "EatFitAI";
+        public string ContentRootPath { get; set; } = Directory.GetCurrentDirectory();
+        public IFileProvider ContentRootFileProvider { get; set; } = new NullFileProvider();
     }
 }

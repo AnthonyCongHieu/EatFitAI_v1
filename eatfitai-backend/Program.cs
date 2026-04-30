@@ -451,6 +451,10 @@ static void EnsureRequiredProductionConfiguration(
         RequireValue("Media:R2:AccessKeyId");
         RequireValue("Media:R2:SecretAccessKey");
     }
+    else
+    {
+        errors.Add("Media:Provider (production must use r2)");
+    }
 
     if (errors.Count > 0)
     {
@@ -1077,8 +1081,8 @@ async Task RunSchemaBootstrapDirectAsync(IServiceProvider services)
     await adminAuditService.EnsureTableAsync();
     await governanceBootstrapper.EnsureSchemaAsync();
     await authInfrastructureBootstrapper.EnsureSchemaAsync();
-    await supabaseSchemaBootstrapper.EnsureSchemaAsync();
-    await productSchemaBootstrapper.EnsureSchemaAsync();
+    await supabaseSchemaBootstrapper.EnsureSchemaAsync(force: true);
+    await productSchemaBootstrapper.EnsureSchemaAsync(force: true);
 }
 
 async Task RunTrackedSchemaBootstrapAsync(
@@ -1108,11 +1112,11 @@ async Task RunTrackedSchemaBootstrapAsync(
 
     await TryRunTrackedStartupPhaseAsync(
         "supabase-schema-bootstrap",
-        () => supabaseSchemaBootstrapper.EnsureSchemaAsync(),
+        () => supabaseSchemaBootstrapper.EnsureSchemaAsync(force: true),
         failureLogLevel);
     await TryRunTrackedStartupPhaseAsync(
         "product-schema-bootstrap",
-        () => productSchemaBootstrapper.EnsureSchemaAsync(),
+        () => productSchemaBootstrapper.EnsureSchemaAsync(force: true),
         failureLogLevel);
 }
 

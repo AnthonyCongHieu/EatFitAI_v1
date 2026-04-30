@@ -21,4 +21,21 @@ public static class SchemaBootstrapStartupGate
         var configured = configuration.GetValue<bool?>("SchemaBootstrap:RunOnStartup");
         return configured ?? !environment.IsProduction();
     }
+
+    public static bool ShouldAllowRuntimeRepair(
+        IConfiguration configuration,
+        IHostEnvironment environment,
+        bool force = false)
+    {
+        ArgumentNullException.ThrowIfNull(configuration);
+        ArgumentNullException.ThrowIfNull(environment);
+
+        if (force)
+        {
+            return true;
+        }
+
+        var configured = configuration.GetValue<bool?>("SchemaBootstrap:AllowRuntimeRepair");
+        return configured ?? !environment.IsProduction();
+    }
 }

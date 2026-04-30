@@ -3,6 +3,10 @@ using EatFitAI.API.DTOs.User;
 using EatFitAI.API.Models;
 using EatFitAI.API.Services;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.FileProviders;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging.Abstractions;
 using Xunit;
 
 namespace EatFitAI.API.Tests.Unit.Services;
@@ -20,7 +24,13 @@ public class UserPreferenceServiceTests : IDisposable
             .Options;
 
         _db = new ApplicationDbContext(options);
-        _service = new UserPreferenceService(_db, new SupabaseSchemaBootstrapper(_db, Microsoft.Extensions.Logging.Abstractions.NullLogger<SupabaseSchemaBootstrapper>.Instance));
+        _service = new UserPreferenceService(
+            _db,
+            new SupabaseSchemaBootstrapper(
+                _db,
+                new ConfigurationBuilder().Build(),
+                new FakeHostEnvironment(),
+                NullLogger<SupabaseSchemaBootstrapper>.Instance));
     }
 
     public void Dispose()
@@ -66,5 +76,13 @@ public class UserPreferenceServiceTests : IDisposable
         Assert.Contains("vegetarian", result.DietaryRestrictions ?? []);
         Assert.Contains("peanut", result.Allergies ?? []);
         Assert.Equal("vietnamese", result.PreferredCuisine);
+    }
+
+    private sealed class FakeHostEnvironment : IHostEnvironment
+    {
+        public string EnvironmentName { get; set; } = Environments.Development;
+        public string ApplicationName { get; set; } = "EatFitAI";
+        public string ContentRootPath { get; set; } = Directory.GetCurrentDirectory();
+        public IFileProvider ContentRootFileProvider { get; set; } = new NullFileProvider();
     }
 }

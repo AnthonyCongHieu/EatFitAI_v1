@@ -1,5 +1,7 @@
 using EatFitAI.API.Data;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Hosting;
 
 namespace EatFitAI.API.Services;
 
@@ -9,13 +11,19 @@ public sealed class ProductSchemaBootstrapper
     private static bool _schemaInitialized;
 
     private readonly ApplicationDbContext _context;
+    private readonly IConfiguration _configuration;
+    private readonly IHostEnvironment _environment;
     private readonly ILogger<ProductSchemaBootstrapper> _logger;
 
     public ProductSchemaBootstrapper(
         ApplicationDbContext context,
+        IConfiguration configuration,
+        IHostEnvironment environment,
         ILogger<ProductSchemaBootstrapper> logger)
     {
         _context = context;
+        _configuration = configuration;
+        _environment = environment;
         _logger = logger;
     }
 
@@ -55,9 +63,14 @@ public sealed class ProductSchemaBootstrapper
         NOTIFY pgrst, 'reload schema';
         """;
 
-    public async Task EnsureSchemaAsync(CancellationToken cancellationToken = default)
+    public async Task EnsureSchemaAsync(CancellationToken cancellationToken = default, bool force = false)
     {
         if (_schemaInitialized || !_context.Database.IsRelational())
+        {
+            return;
+        }
+
+        if (!SchemaBootstrapStartupGate.ShouldAllowRuntimeRepair(_configuration, _environment, force))
         {
             return;
         }
@@ -66,6 +79,11 @@ public sealed class ProductSchemaBootstrapper
         try
         {
             if (_schemaInitialized || !_context.Database.IsRelational())
+            {
+                return;
+            }
+
+            if (!SchemaBootstrapStartupGate.ShouldAllowRuntimeRepair(_configuration, _environment, force))
             {
                 return;
             }
