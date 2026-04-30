@@ -134,6 +134,26 @@ class GeminiStateStoreTests(unittest.TestCase):
         self.assertTrue(status["degraded"])
         self.assertIn("db unavailable", status["error"])
 
+    def test_postgres_store_normalizes_dotnet_connection_string_before_connecting(self) -> None:
+        captured = []
+        fake_connection = FakeConnection()
+        store = PostgresGeminiUsageStateStore(
+            "Host=db.example.com;Port=5432;Database=eatfit;Username=app;Password=secret;SSL Mode=Require;Trust Server Certificate=true",
+            connect_factory=lambda value: captured.append(value) or fake_connection,
+        )
+
+        store.save({"entries": []})
+
+        self.assertEqual(len(captured), 1)
+        dsn = captured[0]
+        self.assertIn("host=db.example.com", dsn)
+        self.assertIn("port=5432", dsn)
+        self.assertIn("dbname=eatfit", dsn)
+        self.assertIn("user=app", dsn)
+        self.assertIn("password=secret", dsn)
+        self.assertIn("sslmode=require", dsn)
+        self.assertNotIn("Host=", dsn)
+
 
 if __name__ == "__main__":
     unittest.main()

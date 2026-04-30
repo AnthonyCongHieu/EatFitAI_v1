@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import logging
 from pathlib import Path
+import re
 from typing import Any, Callable, Dict, Optional
 
 logger = logging.getLogger(__name__)
@@ -87,7 +88,7 @@ class PostgresGeminiUsageStateStore(GeminiUsageStateStore):
             return None
 
         try:
-            with self._connect_factory(self.database_url) as connection:
+            with self._connect_factory(self._connect_dsn()) as connection:
                 self._ensure_table(connection)
                 with connection.cursor() as cursor:
                     cursor.execute(
@@ -136,7 +137,7 @@ class PostgresGeminiUsageStateStore(GeminiUsageStateStore):
             entries = payload.get("entries", [])
             limits_json = json.dumps(payload.get("limits", {}))
             generated_at = str(payload.get("generatedAt") or "")
-            with self._connect_factory(self.database_url) as connection:
+            with self._connect_factory(self._connect_dsn()) as connection:
                 self._ensure_table(connection)
                 with connection.cursor() as cursor:
                     for entry in entries:
@@ -182,6 +183,9 @@ class PostgresGeminiUsageStateStore(GeminiUsageStateStore):
             "error": self._last_error,
         }
 
+    def _connect_dsn(self) -> str:
+        return _normalize_postgres_dsn(self.database_url)
+
     @staticmethod
     def _loads(value: Any) -> Any:
         if value is None:
@@ -215,3 +219,72 @@ class PostgresGeminiUsageStateStore(GeminiUsageStateStore):
                 )
                 """
             )
+
+
+def _normalize_postgres_dsn(value: str) -> str:
+    raw = str(value or "").strip()
+    if not raw or "://" in raw or "=" not in raw or ";" not in raw:
+        return raw
+
+    aliases = {
+        "host": "host",
+        "server": "host",
+        "port": "port",
+        "database": "dbname",
+        "initial catalog": "dbname",
+        "dbname": "dbname",
+        "username": "user",
+        "user id": "user",
+        "userid": "user",
+        "user": "user",
+        "password": "password",
+        "pwd": "password",
+        "ssl mode": "sslmode",
+        "sslmode": "sslmode",
+    }
+    ignored = {
+        "trust server certificate",
+        "include error detail",
+        "pooling",
+        "maximum pool size",
+        "minimum pool size",
+        "command timeout",
+        "timeout",
+        "search path",
+        "application name",
+    }
+    ssl_modes = {
+        "disable": "disable",
+        "allow": "allow",
+        "prefer": "prefer",
+        "require": "require",
+        "verify-ca": "verify-ca",
+        "verify-full": "verify-full",
+    }
+    parts = []
+
+    for segment in raw.split(";"):
+        if not segment.strip() or "=" not in segment:
+            continue
+        key, part_value = segment.split("=", 1)
+        normalized_key = " ".join(key.strip().lower().split())
+        target_key = aliases.get(normalized_key)
+        if not target_key:
+            if normalized_key not in ignored:
+                logger.debug("Ignoring unsupported Postgres connection option: %s", key)
+            continue
+
+        normalized_value = part_value.strip()
+        if target_key == "sslmode":
+            normalized_value = ssl_modes.get(normalized_value.lower(), normalized_value.lower())
+        parts.append(f"{target_key}={_quote_dsn_value(normalized_value)}")
+
+    return " ".join(parts) if parts else raw
+
+
+def _quote_dsn_value(value: str) -> str:
+    if value == "":
+        return "''"
+    if re.search(r"\s|'", value):
+        return "'" + value.replace("\\", "\\\\").replace("'", "\\'") + "'"
+    return value
