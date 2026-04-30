@@ -11,6 +11,7 @@ import logging
 import hashlib
 import time
 import re
+import unicodedata
 from typing import Any, Dict, Optional
 
 from gemini_pool import (
@@ -285,7 +286,10 @@ THÔNG TIN: {gender}, {age} tuổi, {height_cm}cm, {weight_kg}kg, {activity_leve
 TRẢ LỜI JSON (chỉ JSON, không giải thích thêm):
 {{"calories": int, "protein": int, "carbs": int, "fat": int, "explanation": "giải thích ngắn gọn"}}"""
 
-    response = query_gemini(prompt, cache_ttl=600)
+    # Do not cache the raw Gemini response here. The response must pass domain
+    # validation first; otherwise one malformed model response can stick and
+    # force formula fallback until the process cache expires.
+    response = query_gemini(prompt, use_cache=False)
     
     if response:
         try:
@@ -597,14 +601,19 @@ def preprocess_vietnamese_numbers(text: str) -> str:
     return result
 
 
+def _fold_vietnamese_text(text: str) -> str:
+    folded = unicodedata.normalize("NFD", text.lower())
+    return "".join(ch for ch in folded if unicodedata.category(ch) != "Mn").replace("đ", "d")
+
+
 def try_parse_weight_regex(text: str) -> Dict[str, Any] | None:
     """Regex để parse LOG_WEIGHT."""
-    lower = text.lower().strip()
+    lower = _fold_vietnamese_text(text).strip()
     
     if "calo" in lower or "calories" in lower or "kcal" in lower:
         return None
     
-    pattern_number = r"(?:cân nặng|tôi|nặng)\s*(?:là\s+)?(\d+(?:\.\d+)?)\s*(?:ký|kg|kilogram)?"
+    pattern_number = r"(?:can nang|toi|nang)\s*(?:la\s+)?(\d+(?:\.\d+)?)\s*(?:ky|kg|kilogram)?"
     match = re.search(pattern_number, lower, re.IGNORECASE)
     if match:
         weight = float(match.group(1))
@@ -617,7 +626,7 @@ def try_parse_weight_regex(text: str) -> Dict[str, Any] | None:
                 "source": "regex"
             }
     
-    pattern_text = r"(?:cân nặng|tôi|nặng)\s*((?:một|hai|ba|bốn|năm|sáu|bảy|tám|chín|mười|mươi|lăm|mốt|trăm|linh|lẻ|\s)+)\s*(?:ký|kg|kilogram)"
+    pattern_text = r"(?:can nang|toi|nang)\s*((?:mot|hai|ba|bon|nam|sau|bay|tam|chin|muoi|muoi|lam|mot|tram|linh|le|\s)+)\s*(?:ky|kg|kilogram)"
     match = re.search(pattern_text, lower, re.IGNORECASE)
     if match:
         weight = parse_vietnamese_number(match.group(1))
@@ -637,9 +646,9 @@ def try_parse_weight_regex(text: str) -> Dict[str, Any] | None:
 
 def try_parse_ask_calories_regex(text: str) -> Dict[str, Any] | None:
     """Regex để parse ASK_CALORIES."""
-    lower = text.lower().strip()
+    lower = _fold_vietnamese_text(text).strip()
     
-    pattern = r"(?:ăn|tiêu thụ|nạp|uống)?\s*(?:được\s+|đã\s+)?(?:bao nhiêu|tổng|hết|mấy)\s*(?:calo|calories|kcal|năng lượng)"
+    pattern = r"(?:an|tieu thu|nap|uong)?\s*(?:duoc\s+|da\s+)?(?:bao nhieu|tong|het|may)\s*(?:calo|calories|kcal|nang luong)"
     
     if re.search(pattern, lower, re.IGNORECASE):
         return {

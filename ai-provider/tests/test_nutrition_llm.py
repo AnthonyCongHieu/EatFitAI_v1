@@ -12,6 +12,8 @@ from nutrition_llm import (
     calculate_nutrition_mifflin,
     get_nutrition_advice,
     get_nutrition_advice_gemini,
+    try_parse_ask_calories_regex,
+    try_parse_weight_regex,
 )
 
 
@@ -66,7 +68,7 @@ class NutritionLlmTests(unittest.TestCase):
         with patch(
             "nutrition_llm.query_gemini",
             return_value='{"calories": 15000, "protein": 900, "carbs": 1500, "fat": 400, "explanation": "bad"}',
-        ):
+        ) as query_gemini:
             result = get_nutrition_advice_gemini(
                 gender="male",
                 age=30,
@@ -79,6 +81,19 @@ class NutritionLlmTests(unittest.TestCase):
         self.assertEqual(result["source"], "formula_validated")
         self.assertTrue(result["offlineMode"])
         self.assertIn("công thức chuẩn", result["message"])
+        query_gemini.assert_called_once()
+        self.assertIs(query_gemini.call_args.kwargs.get("use_cache"), False)
+
+    def test_voice_regex_accepts_unaccented_smoke_phrases(self) -> None:
+        calories = try_parse_ask_calories_regex("hom nay toi an bao nhieu calo")
+        self.assertIsNotNone(calories)
+        self.assertEqual(calories["intent"], "ASK_CALORIES")
+        self.assertEqual(calories["source"], "regex")
+
+        weight = try_parse_weight_regex("can nang 70 kg")
+        self.assertIsNotNone(weight)
+        self.assertEqual(weight["intent"], "LOG_WEIGHT")
+        self.assertEqual(weight["entities"]["weight"], 70)
 
 
 if __name__ == "__main__":

@@ -12,6 +12,9 @@ const {
 const {
   evaluateAiPrimaryPathReadiness,
 } = require('./lib/primary-path-readiness');
+const {
+  requestVisionDetectFromFile,
+} = require('./lib/media-upload-smoke');
 const { resolveSmokeCredentials } = require('./lib/smoke-credentials');
 const { resolveAiSmokeTimeouts } = require('./lib/smoke-timeouts');
 
@@ -35,7 +38,7 @@ const DEFAULT_PRIMARY_FIXTURES = [
   { key: 'banana-small', fileName: 'ai-primary-banana-02.jpg' },
   { key: 'apple-benchmark', fileName: 'ai-benchmark-apple-01.jpg' },
   { key: 'orange-benchmark', fileName: 'ai-benchmark-orange-01.jpg' },
-  { key: 'broccoli-benchmark', fileName: 'ai-benchmark-broccoli-01.jpg' },
+  { key: 'rice-primary', fileName: 'ai-primary-rice-01.jpg' },
   { key: 'apple-primary', fileName: 'ai-primary-apple-01.jpg' },
 ];
 const DEFAULT_INGREDIENT_FALLBACKS = [
@@ -326,16 +329,6 @@ async function requestMultipart(url, filePath, token, fieldName = 'file', reques
     headers: {
       Authorization: `Bearer ${token}`,
       ...(requestOptions.headers || {}),
-    },
-    body: formData,
-  });
-}
-
-async function requestMultipartForm(url, token, formData) {
-  return requestJson(url, {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${token}`,
     },
     body: formData,
   });
@@ -726,16 +719,14 @@ async function main() {
       aiStatus.body?.lastCheckedAt &&
       Number.isFinite(Date.parse(aiStatus.body.lastCheckedAt));
     if (providerDownGateActive) {
-      const providerDownVisionResponse = await requestMultipart(
-        `${backendUrl}/api/ai/vision/detect`,
-        path.resolve(resolveFixtureDir(outputDir), DEFAULT_PRIMARY_FIXTURES[0].fileName),
+      const providerDownVisionResponse = await requestVisionDetectFromFile({
+        requestJson,
+        backendUrl,
+        filePath: path.resolve(resolveFixtureDir(outputDir), DEFAULT_PRIMARY_FIXTURES[0].fileName),
         token,
-        'file',
-        {
-          timeoutMs: VISION_DETECT_TIMEOUT_MS,
-          retryCount: VISION_DETECT_RETRY_COUNT,
-        },
-      );
+        timeoutMs: VISION_DETECT_TIMEOUT_MS,
+        retryCount: VISION_DETECT_RETRY_COUNT,
+      });
       addEndpointSummary(report, 'vision/provider-down-contract', {
         name: 'api/ai/vision/detect',
         passed: providerDownVisionResponse.status === 503,
@@ -757,11 +748,11 @@ async function main() {
       });
     }
 
-    const negativeVision = await requestMultipartForm(
-      `${backendUrl}/api/ai/vision/detect`,
-      token,
-      new FormData(),
-    );
+    const negativeVision = await requestJson(`${backendUrl}/api/ai/vision/detect`, {
+      method: 'POST',
+      headers: authHeaders(token, { 'Content-Type': 'application/json' }),
+      body: JSON.stringify({}),
+    });
 
     addEndpointSummary(report, 'vision/detect-negative', {
       name: 'api/ai/vision/detect',
@@ -815,16 +806,15 @@ async function main() {
         continue;
       }
 
-      const response = await requestMultipart(
-        `${backendUrl}/api/ai/vision/detect`,
+      const response = await requestVisionDetectFromFile({
+        requestJson,
+        backendUrl,
         filePath,
         token,
-        'file',
-        {
-          timeoutMs: VISION_DETECT_TIMEOUT_MS,
-          retryCount: VISION_DETECT_RETRY_COUNT,
-        },
-      );
+        imageHash: `${fixture.key}:${path.basename(filePath)}`,
+        timeoutMs: VISION_DETECT_TIMEOUT_MS,
+        retryCount: VISION_DETECT_RETRY_COUNT,
+      });
       const items = Array.isArray(response.body?.items) ? response.body.items : [];
       const unmappedLabels = Array.isArray(response.body?.unmappedLabels)
         ? response.body.unmappedLabels
@@ -849,6 +839,7 @@ async function main() {
               }
             : null,
           responsePreview: responseTextPreview(response),
+          mediaUpload: response.mediaUpload || null,
         },
       };
       addEndpointSummary(report, 'vision/detect', entry);
@@ -1702,11 +1693,11 @@ async function main() {
     });
 
     const voiceTranscribeFixture = trim(process.env.EATFITAI_VOICE_AUDIO_FIXTURE);
-    const voiceTranscribeNegative = await requestMultipartForm(
-      `${backendUrl}/api/voice/transcribe`,
-      token,
-      new FormData(),
-    );
+    const voiceTranscribeNegative = await requestJson(`${backendUrl}/api/voice/transcribe`, {
+      method: 'POST',
+      headers: authHeaders(token, { 'Content-Type': 'application/json' }),
+      body: JSON.stringify({}),
+    });
     addEndpointSummary(report, 'voice/transcribe-negative', {
       name: 'api/voice/transcribe',
       passed: voiceTranscribeNegative.status === 400,

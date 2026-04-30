@@ -4,6 +4,7 @@ const { execFileSync } = require('child_process');
 const { resolveSmokeCredentials } = require('./lib/smoke-credentials');
 const { isFallbackSource } = require('./lib/primary-path-readiness');
 const { runMediaEgressGuard } = require('./lib/media-egress-guard');
+const { requestVisionDetectFromFile } = require('./lib/media-upload-smoke');
 
 const DEFAULT_BACKEND_URL = 'https://eatfitai-backend-dev.onrender.com';
 const DEFAULT_OUTPUT_ROOT = path.resolve(
@@ -100,11 +101,6 @@ function average(values) {
   return Math.round(values.reduce((sum, value) => sum + value, 0) / values.length);
 }
 
-function resolveIntegerEnv(name, fallback) {
-  const value = Number.parseInt(String(process.env[name] || ''), 10);
-  return Number.isFinite(value) ? value : fallback;
-}
-
 function summarizeResponseDiagnostics(response) {
   const body = response?.body && typeof response.body === 'object' ? response.body : null;
   const rawText = typeof response?.rawText === 'string' ? response.rawText : '';
@@ -133,22 +129,6 @@ function getResponseLabels(items, unmappedLabels) {
   ]
     .map(normalizeLabel)
     .filter(Boolean);
-}
-
-function guessMimeType(filePath) {
-  const extension = path.extname(filePath).toLowerCase();
-  switch (extension) {
-    case '.png':
-      return 'image/png';
-    case '.webp':
-      return 'image/webp';
-    case '.bmp':
-      return 'image/bmp';
-    case '.jpg':
-    case '.jpeg':
-    default:
-      return 'image/jpeg';
-  }
 }
 
 function sleep(ms) {
@@ -226,27 +206,6 @@ async function requestJson(url, options = {}) {
       error: 'request failed without result',
     }
   );
-}
-
-async function requestMultipart(url, filePath, token) {
-  const formData = new FormData();
-  const buffer = fs.readFileSync(filePath);
-  const mimeType = guessMimeType(filePath);
-  const retryCount = Math.max(0, resolveIntegerEnv('EATFITAI_SCAN_RETRY_COUNT', 0));
-  formData.append(
-    'file',
-    new Blob([buffer], { type: mimeType }),
-    path.basename(filePath),
-  );
-
-  return requestJson(url, {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-    body: formData,
-    retryCount,
-  });
 }
 
 function prepareFixtureForUpload(filePath, outputDir) {
@@ -866,11 +825,13 @@ async function runScanCases(backendUrl, manifest, token, fixtureDir, outputDir) 
         `regression detect ${bucket}:${fixture.key}`,
       );
       const upload = prepareFixtureForUpload(filePath, outputDir);
-      const response = await requestMultipart(
-        `${backendUrl}/api/ai/vision/detect`,
-        upload.uploadPath,
+      const response = await requestVisionDetectFromFile({
+        requestJson,
+        backendUrl,
+        filePath: upload.uploadPath,
         token,
-      );
+        imageHash: `${bucket}:${fixture.key}:${path.basename(upload.uploadPath)}`,
+      });
       const items = Array.isArray(response.body?.items) ? response.body.items : [];
       const unmappedLabels = Array.isArray(response.body?.unmappedLabels)
         ? response.body.unmappedLabels
@@ -892,6 +853,7 @@ async function runScanCases(backendUrl, manifest, token, fixtureDir, outputDir) 
       result.uploadBytes = upload.uploadSize;
       result.optimizedUpload = upload.optimized;
       result.optimizationError = upload.optimizationError || null;
+      result.mediaUpload = response.mediaUpload || null;
       result.responseDiagnostics = summarizeResponseDiagnostics(response);
       result.expectedLabels = expectedLabels;
       result.detectedLabels = responseLabels;

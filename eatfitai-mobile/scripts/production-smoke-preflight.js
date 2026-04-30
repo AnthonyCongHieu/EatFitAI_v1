@@ -51,11 +51,11 @@ const DEFAULT_FIXTURE_MANIFEST = {
         expectedLabels: ['orange'],
       },
       {
-        key: 'broccoli-benchmark',
-        fileName: 'ai-benchmark-broccoli-01.jpg',
-        relativePath: 'scan-demo/ai-benchmark-broccoli-01.jpg',
+        key: 'rice-primary',
+        fileName: 'ai-primary-rice-01.jpg',
+        relativePath: 'scan-demo/ai-primary-rice-01.jpg',
         targetOutcome: 'mapped-or-usable-result',
-        expectedLabels: ['broccoli'],
+        expectedLabels: ['rice'],
       },
       {
         key: 'apple-primary',
