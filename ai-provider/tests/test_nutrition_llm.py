@@ -12,6 +12,7 @@ from nutrition_llm import (
     calculate_nutrition_mifflin,
     get_nutrition_advice,
     get_nutrition_advice_gemini,
+    try_parse_add_food_regex,
     try_parse_ask_calories_regex,
     try_parse_weight_regex,
 )
@@ -94,6 +95,19 @@ class NutritionLlmTests(unittest.TestCase):
         self.assertIsNotNone(weight)
         self.assertEqual(weight["intent"], "LOG_WEIGHT")
         self.assertEqual(weight["entities"]["weight"], 70)
+
+    def test_add_food_regex_accepts_unaccented_smoke_phrases(self) -> None:
+        command = try_parse_add_food_regex("ghi 1 banana vao bua sang")
+
+        self.assertIsNotNone(command)
+        self.assertEqual(command["intent"], "ADD_FOOD")
+        self.assertEqual(command["source"], "regex")
+        self.assertEqual(command["entities"]["foodName"], "banana")
+        self.assertEqual(command["entities"]["quantity"], 1.0)
+        self.assertEqual(command["entities"]["mealType"], "Breakfast")
+
+        snack = try_parse_add_food_regex("ghi 1 tao vao bua phu")
+        self.assertEqual(snack["entities"]["mealType"], "Snack")
 
 
 if __name__ == "__main__":

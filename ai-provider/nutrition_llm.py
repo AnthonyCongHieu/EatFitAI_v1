@@ -663,6 +663,59 @@ def try_parse_ask_calories_regex(text: str) -> Dict[str, Any] | None:
     return None
 
 
+def try_parse_add_food_regex(text: str) -> Dict[str, Any] | None:
+    """Regex cho lệnh ADD_FOOD ngắn, bao gồm câu không dấu trong smoke."""
+    lower = _fold_vietnamese_text(text).strip()
+
+    pattern = (
+        r"^(?:ghi|them|an|log)\s+"
+        r"(?:(\d+(?:[\.,]\d+)?)\s+)?"
+        r"(.+?)"
+        r"(?:\s+(?:vao|cho|trong)\s+((?:bua\s+)?(?:sang|trua|toi|phu)|snack))?$"
+    )
+    match = re.search(pattern, lower, re.IGNORECASE)
+    if not match:
+        return None
+
+    quantity_text, food_name, meal_text = match.groups()
+    food_name = (food_name or "").strip()
+    if not food_name:
+        return None
+
+    meal_type = None
+    normalized_meal = (meal_text or "").strip()
+    if normalized_meal in {"sang", "bua sang"}:
+        meal_type = "Breakfast"
+    elif normalized_meal in {"trua", "bua trua"}:
+        meal_type = "Lunch"
+    elif normalized_meal in {"toi", "bua toi"}:
+        meal_type = "Dinner"
+    elif normalized_meal in {"phu", "bua phu", "snack"}:
+        meal_type = "Snack"
+
+    quantity = 1.0
+    if quantity_text:
+        try:
+            quantity = float(quantity_text.replace(",", "."))
+        except ValueError:
+            quantity = 1.0
+
+    entities: Dict[str, Any] = {
+        "foodName": food_name,
+        "quantity": quantity,
+    }
+    if meal_type:
+        entities["mealType"] = meal_type
+
+    return {
+        "intent": "ADD_FOOD",
+        "entities": entities,
+        "confidence": 0.85,
+        "rawText": text,
+        "source": "regex",
+    }
+
+
 def parse_voice_command_llm(text: str) -> Dict[str, Any]:
     """
     Parse Vietnamese voice command: regex trước, Gemini LLM fallback.
@@ -679,6 +732,11 @@ def parse_voice_command_llm(text: str) -> Dict[str, Any]:
     if calories_result:
         logger.info(f"Voice parsed by REGEX: ASK_CALORIES")
         return calories_result
+
+    add_food_result = try_parse_add_food_regex(text)
+    if add_food_result:
+        logger.info("Voice parsed by REGEX: ADD_FOOD")
+        return add_food_result
     
     # Bước 2: Gemini LLM cho ADD_FOOD và complex cases
     ensure_gemini_service_available()
