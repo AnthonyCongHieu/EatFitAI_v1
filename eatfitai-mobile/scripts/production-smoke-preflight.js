@@ -304,7 +304,7 @@ function buildChecklistMarkdown(context) {
     '- Stop the run when a limit reaches zero remaining.',
     '',
     '## Fixture order',
-    '- Primary gate: egg, banana, rice, broccoli, spinach.',
+    '- Primary gate: banana, apple, orange, rice, apple.',
     '- Benchmark only: chicken, beef, pork.',
     '',
     '## Regression + metrics',
