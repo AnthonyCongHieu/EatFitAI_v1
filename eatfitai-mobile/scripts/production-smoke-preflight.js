@@ -495,6 +495,14 @@ async function runHealthChecks(context) {
       attempts,
       retryDelayMs,
     }),
+    aiProviderGeminiHealthz: await fetchWithRetries(
+      `${context.aiProviderUrl}/healthz/gemini`,
+      {
+        timeoutMs,
+        attempts,
+        retryDelayMs,
+      },
+    ),
   };
 }
 
@@ -613,6 +621,8 @@ async function main() {
         outputDir,
         healthSummary: {
           aiProviderHealthz: results.checks.health.aiProviderHealthz.status,
+          aiProviderGeminiHealthz:
+            results.checks.health.aiProviderGeminiHealthz.status,
           backendLive: results.checks.health.backendLive.status,
           backendReady: results.checks.health.backendReady.status,
         },

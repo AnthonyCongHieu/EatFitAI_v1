@@ -27,6 +27,12 @@ Tài liệu này ghi nhận hiện trạng xác thực (auth) và hạ tầng tr
 - Cập nhật Render backend env: `Google__WebClientId`, `Google__AndroidClientId`, `Google__IosClientId`
 - iOS chưa đủ thông tin client/file native
 
+**Canonical backend endpoints:**
+
+- `POST /api/auth/google/signin` là endpoint đăng nhập Google duy nhất cho mobile.
+- `POST /api/auth/google/link` là endpoint liên kết Google cho tài khoản đã đăng nhập.
+- `GET /api/auth/google` là endpoint legacy, chỉ còn trả `410 Gone` trong Phase A và log marker `legacy_google_auth_hit`. Chỉ xóa route này sau khi production smoke/release evidence xác nhận không còn request legacy.
+
 ### Quên mật khẩu / Đặt lại mật khẩu
 
 **Đã hoạt động** trên production (xác nhận ngày 2026-04-15):

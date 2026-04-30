@@ -36,6 +36,8 @@ GEMINI_EXHAUSTED_UNTIL=
 GEMINI_RPM_LIMIT=5
 GEMINI_TPM_LIMIT=250000
 GEMINI_RPD_LIMIT=20
+GEMINI_USAGE_STATE_STORE=file
+GEMINI_USAGE_STATE_DATABASE_URL=
 GEMINI_USAGE_STATE_PATH=uploads/gemini-usage-state.json
 GEMINI_PROBE_MIN_INTERVAL_SECONDS=600
 GEMINI_PROBE_MAX_PER_PROJECT_PER_DAY=3
@@ -52,6 +54,8 @@ Use `GEMINI_EXTRA_KEY_POOL_JSON` when you need one or more extra backup keys bey
 If the existing pool is already rate-limited, set `GEMINI_EXHAUSTED_PROJECT_IDS` so the service starts with operator evidence for those project IDs. The override is bootstrap state only: once that reset window passes, the entry moves into a pending-probe state and must be revalidated before the pool will route traffic back to it.
 
 `GEMINI_RPM_LIMIT`, `GEMINI_TPM_LIMIT`, and `GEMINI_RPD_LIMIT` are enforced locally per project before each request. The pool uses a rolling 60-second window for RPM and TPM, resets RPD at Pacific midnight, rotates to the next project immediately when any one limit is exhausted, and persists counters plus recovery timestamps to `GEMINI_USAGE_STATE_PATH`.
+
+`GEMINI_USAGE_STATE_STORE=file` keeps the quota/runtime state in `GEMINI_USAGE_STATE_PATH` for local development. Production should use `GEMINI_USAGE_STATE_STORE=postgres` with `GEMINI_USAGE_STATE_DATABASE_URL` pointing at the Supabase/PostgreSQL connection string so quota exhaustion and probe state survive Render restarts. If the Postgres store is unavailable, the service keeps running and `/healthz/gemini` reports `gemini_usage_state_store_degraded=true`.
 
 `GEMINI_PROBE_MIN_INTERVAL_SECONDS`, `GEMINI_PROBE_MAX_PER_PROJECT_PER_DAY`, and `GEMINI_PROBE_PROMPT` control the bounded revalidation path. The probe only runs when a project is pending verification after a daily reset or after an exhausted project reaches its expected provider reset window.
 

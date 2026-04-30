@@ -61,6 +61,59 @@ public class SchemaBootstrapStartupGateTests
         Assert.True(shouldRun);
     }
 
+    [Fact]
+    public void ShouldAllowRuntimeRepair_DefaultsFalseInProduction()
+    {
+        var configuration = BuildConfiguration();
+        var environment = new FakeHostEnvironment("Production");
+
+        var shouldRun = SchemaBootstrapStartupGate.ShouldAllowRuntimeRepair(configuration, environment);
+
+        Assert.False(shouldRun);
+    }
+
+    [Fact]
+    public void ShouldAllowRuntimeRepair_DefaultsTrueOutsideProduction()
+    {
+        var configuration = BuildConfiguration();
+        var environment = new FakeHostEnvironment("Development");
+
+        var shouldRun = SchemaBootstrapStartupGate.ShouldAllowRuntimeRepair(configuration, environment);
+
+        Assert.True(shouldRun);
+    }
+
+    [Fact]
+    public void ShouldAllowRuntimeRepair_UsesExplicitConfiguration()
+    {
+        var configuration = BuildConfiguration(new Dictionary<string, string?>
+        {
+            ["SchemaBootstrap:AllowRuntimeRepair"] = "true",
+        });
+        var environment = new FakeHostEnvironment("Production");
+
+        var shouldRun = SchemaBootstrapStartupGate.ShouldAllowRuntimeRepair(configuration, environment);
+
+        Assert.True(shouldRun);
+    }
+
+    [Fact]
+    public void ShouldAllowRuntimeRepair_ForceOverridesProductionDefault()
+    {
+        var configuration = BuildConfiguration(new Dictionary<string, string?>
+        {
+            ["SchemaBootstrap:AllowRuntimeRepair"] = "false",
+        });
+        var environment = new FakeHostEnvironment("Production");
+
+        var shouldRun = SchemaBootstrapStartupGate.ShouldAllowRuntimeRepair(
+            configuration,
+            environment,
+            force: true);
+
+        Assert.True(shouldRun);
+    }
+
     private static IConfiguration BuildConfiguration(Dictionary<string, string?>? values = null)
     {
         return new ConfigurationBuilder()

@@ -117,6 +117,8 @@ namespace EatFitAI.API.Tests.Integration.Controllers
             var response = await client.GetAsync("/api/auth/google?idToken=legacy-test-token");
 
             Assert.Equal(HttpStatusCode.Gone, response.StatusCode);
+            Assert.True(response.Headers.TryGetValues("X-EatFitAI-Deprecated-Endpoint", out var values));
+            Assert.Contains("/api/auth/google/signin", values.Single());
         }
 
         [Fact]

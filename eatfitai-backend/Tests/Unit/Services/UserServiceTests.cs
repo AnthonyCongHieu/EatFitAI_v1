@@ -8,6 +8,7 @@ using EatFitAI.API.Services;
 using EatFitAI.API.Services.Interfaces;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -71,7 +72,11 @@ namespace EatFitAI.API.Tests.Unit.Services
                 _mediaStorageServiceMock.Object,
                 _mediaUrlResolverMock.Object,
                 _environmentMock.Object,
-                new SupabaseSchemaBootstrapper(_adminContext, NullLogger<SupabaseSchemaBootstrapper>.Instance),
+                new SupabaseSchemaBootstrapper(
+                    _adminContext,
+                    new ConfigurationBuilder().Build(),
+                    _environmentMock.Object,
+                    NullLogger<SupabaseSchemaBootstrapper>.Instance),
                 _loggerMock.Object);
 
             SeedTestData();
