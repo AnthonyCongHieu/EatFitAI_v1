@@ -442,8 +442,6 @@ static void EnsureRequiredProductionConfiguration(
     RequireValue("Encryption:Key");
     RequireValue("AIProvider:InternalToken");
     RequireHttpsUrl("AIProvider:VisionBaseUrl");
-    RequireHttpsUrl("Supabase:Url");
-    RequireValue("Supabase:ServiceRoleKey");
 
     if (string.Equals(builder.Configuration["Media:Provider"], "r2", StringComparison.OrdinalIgnoreCase))
     {
@@ -500,6 +498,19 @@ static IReadOnlyList<string> GetMissingOptionalProductionConfiguration(WebApplic
     }
 
     AddWarning("R2 storage uploads disabled", missingStorage.ToArray());
+
+    var missingSupabase = new List<string>();
+    if (!HasConfiguredHttpsUrl(builder.Configuration["Supabase:Url"]))
+    {
+        missingSupabase.Add("Supabase:Url");
+    }
+
+    if (!HasConfiguredValue(builder.Configuration["Supabase:ServiceRoleKey"]))
+    {
+        missingSupabase.Add("Supabase:ServiceRoleKey");
+    }
+
+    AddWarning("Supabase dependency health unavailable", missingSupabase.ToArray());
 
     var missingGoogle = new[]
     {
@@ -853,7 +864,7 @@ builder.Services.AddHealthChecks()
         tags: new[] { "ready" })
     .AddCheck<EatFitAI.API.HealthChecks.SupabaseHealthCheck>(
         "supabase",
-        tags: new[] { "ready", "external" })
+        tags: new[] { "external" })
     .AddNpgSql(
         defaultConnectionString!,
         name: "postgres",
