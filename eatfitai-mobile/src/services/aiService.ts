@@ -79,6 +79,14 @@ const toNumber = (value: unknown): number | null => {
 const toNumberOr = (value: unknown, fallback: number): number =>
   toNumber(value) ?? fallback;
 
+const toPositiveNumber = (value: unknown): number | null => {
+  const parsed = toNumber(value);
+  return parsed != null && parsed > 0 ? parsed : null;
+};
+
+const toStringOrNull = (value: unknown): string | null =>
+  value == null ? null : String(value);
+
 const clamp = (value: number, min: number, max: number): number =>
   Math.min(Math.max(value, min), max);
 
@@ -156,18 +164,69 @@ const toAiOfflineError = (error: unknown, message: string): AiOfflineError => {
   return tagged;
 };
 
-const normalizeMappedFoodItem = (item: any): MappedFoodItem => ({
-  label: String(item?.label ?? 'unknown'),
-  confidence: clamp(toNumber(item?.confidence) ?? 0, 0, 1),
-  foodItemId: toNumber(item?.foodItemId),
-  foodName: item?.foodName ? String(item.foodName) : null,
-  caloriesPer100g: toNumber(item?.caloriesPer100g),
-  proteinPer100g: toNumber(item?.proteinPer100g),
-  fatPer100g: toNumber(item?.fatPer100g),
-  carbPer100g: toNumber(item?.carbPer100g),
-  thumbNail: sanitizeFoodImageUrl(item?.thumbNail ? String(item.thumbNail) : null),
-  isMatched: Boolean(item?.isMatched ?? item?.foodItemId ?? item?.foodName),
-});
+export const normalizeMappedFoodItem = (item: any): MappedFoodItem => {
+  const defaultServingUnitName = toStringOrNull(item?.defaultServingUnitName);
+  const defaultServingUnitSymbol = toStringOrNull(item?.defaultServingUnitSymbol);
+
+  return {
+    label: String(item?.label ?? 'unknown'),
+    confidence: clamp(toNumber(item?.confidence) ?? 0, 0, 1),
+    bbox: (() => {
+      const raw = item?.bbox ?? item?.boundingBox ?? item?.box;
+      if (!raw || typeof raw !== 'object') return null;
+
+      if (Array.isArray(raw)) {
+        const [rawX, rawY, rawWidth, rawHeight] = raw;
+        const x = toNumber(rawX);
+        const y = toNumber(rawY);
+        const width = toNumber(rawWidth);
+        const height = toNumber(rawHeight);
+
+        if (x == null || y == null || width == null || height == null) {
+          return null;
+        }
+
+        return { x, y, width, height };
+      }
+
+      const x = toNumber(raw.x ?? raw.left);
+      const y = toNumber(raw.y ?? raw.top);
+      const width = toNumber(raw.width ?? raw.w);
+      const height = toNumber(raw.height ?? raw.h);
+
+      if (x == null || y == null || width == null || height == null) {
+        return null;
+      }
+
+      return { x, y, width, height };
+    })(),
+    foodItemId: toNumber(item?.foodItemId),
+    userFoodItemId: toNumber(item?.userFoodItemId),
+    foodName: item?.foodName ? String(item.foodName) : null,
+    source: item?.source === 'user' ? 'user' : item?.source === 'catalog' ? 'catalog' : null,
+    defaultGrams: toPositiveNumber(
+      item?.defaultGrams ??
+        item?.defaultServingGrams ??
+        item?.servingSizeGram ??
+        item?.servingSize,
+    ),
+    servingSizeGram: toPositiveNumber(item?.servingSizeGram ?? item?.servingSize),
+    servingUnit:
+      toStringOrNull(item?.servingUnit) ??
+      defaultServingUnitSymbol ??
+      defaultServingUnitName,
+    defaultServingUnitId: toNumber(item?.defaultServingUnitId),
+    defaultServingUnitName,
+    defaultServingUnitSymbol,
+    defaultPortionQuantity: toPositiveNumber(item?.defaultPortionQuantity),
+    caloriesPer100g: toNumber(item?.caloriesPer100g),
+    proteinPer100g: toNumber(item?.proteinPer100g),
+    fatPer100g: toNumber(item?.fatPer100g),
+    carbPer100g: toNumber(item?.carbPer100g),
+    thumbNail: sanitizeFoodImageUrl(item?.thumbNail ? String(item.thumbNail) : null),
+    isMatched: Boolean(item?.isMatched ?? item?.foodItemId ?? item?.foodName),
+  };
+};
 
 const normalizeVisionResult = (data: any): VisionDetectResult => ({
   items: Array.isArray(data?.items) ? data.items.map(normalizeMappedFoodItem) : [],

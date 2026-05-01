@@ -109,6 +109,87 @@ namespace EatFitAI.API.Tests.Integration.Controllers
         }
 
         [Fact]
+        public async Task CreateMealDiariesBulk_ValidRequest_ReturnsCreatedEntries()
+        {
+            var userId = Guid.NewGuid();
+            var client = await CreateAuthenticatedClientAsync(userId);
+            var mealTypeId = await GetAnyMealTypeIdAsync();
+            var foodItemId = await GetAnyFoodItemIdAsync();
+            var eatenDate = new DateTime(2026, 4, 1);
+
+            var response = await client.PostAsJsonAsync("/api/meal-diary/bulk", new
+            {
+                items = new object[]
+                {
+                    new
+                    {
+                        eatenDate,
+                        mealTypeId,
+                        foodItemId,
+                        grams = 100
+                    },
+                    new
+                    {
+                        eatenDate,
+                        mealTypeId,
+                        foodItemId,
+                        grams = 150
+                    }
+                }
+            });
+
+            response.EnsureSuccessStatusCode();
+            var created = await response.Content.ReadFromJsonAsync<List<MealDiaryDto>>();
+
+            Assert.NotNull(created);
+            Assert.Equal(2, created.Count);
+            Assert.All(created, item => Assert.Equal(userId, item.UserId));
+            Assert.Equal(2, created.Select(item => item.MealDiaryId).Distinct().Count());
+        }
+
+        [Fact]
+        public async Task CreateMealDiariesBulk_WithInvalidItem_ReturnsBadRequestAndDoesNotPartiallySave()
+        {
+            var userId = Guid.NewGuid();
+            var client = await CreateAuthenticatedClientAsync(userId);
+            var mealTypeId = await GetAnyMealTypeIdAsync();
+            var foodItemId = await GetAnyFoodItemIdAsync();
+            var eatenDate = new DateTime(2026, 4, 2);
+
+            var response = await client.PostAsJsonAsync("/api/meal-diary/bulk", new
+            {
+                items = new object[]
+                {
+                    new
+                    {
+                        eatenDate,
+                        mealTypeId,
+                        foodItemId,
+                        grams = 100
+                    },
+                    new
+                    {
+                        eatenDate,
+                        mealTypeId,
+                        foodItemId,
+                        userFoodItemId = 1,
+                        grams = 100
+                    }
+                }
+            });
+
+            Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+
+            using var scope = _factory.Services.CreateScope();
+            var context = scope.ServiceProvider.GetRequiredService<EatFitAIDbContext>();
+            var savedCount = await context.MealDiaries.CountAsync(item =>
+                item.UserId == userId &&
+                item.EatenDate == DateOnly.FromDateTime(eatenDate));
+
+            Assert.Equal(0, savedCount);
+        }
+
+        [Fact]
         public async Task UpdateMealDiary_NonExistentId_ReturnsNotFound()
         {
             var client = await CreateAuthenticatedClientAsync();

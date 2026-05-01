@@ -79,6 +79,58 @@ namespace EatFitAI.API.Services
             return await GetMappedMealDiaryAsync(mealDiary.MealDiaryId, userId);
         }
 
+        public async Task<IEnumerable<MealDiaryDto>> CreateMealDiariesAsync(Guid userId, BulkCreateMealDiaryRequest request)
+        {
+            if (request?.Items == null)
+            {
+                throw new ArgumentException("Request body is required");
+            }
+
+            if (request.Items.Count == 0)
+            {
+                throw new ArgumentException("At least one meal diary entry is required");
+            }
+
+            if (request.Items.Count > 20)
+            {
+                throw new ArgumentException("Bulk meal diary creation supports up to 20 entries");
+            }
+
+            var mealDiaryIds = await ExecuteInTransactionAsync(async () =>
+            {
+                var mealDiaries = new List<MealDiary>(request.Items.Count);
+
+                foreach (var item in request.Items)
+                {
+                    if (item == null)
+                    {
+                        throw new ArgumentException("Meal diary entry is required");
+                    }
+
+                    var mealDiary = _mapper.Map<MealDiary>(item);
+                    mealDiary.UserId = userId;
+                    ApplyExclusiveSource(
+                        mealDiary,
+                        item.FoodItemId,
+                        item.UserFoodItemId,
+                        item.UserDishId,
+                        item.RecipeId);
+
+                    await ComputeAndAssignMacrosAsync(mealDiary, userId);
+                    mealDiaries.Add(mealDiary);
+                }
+
+                await _context.MealDiaries.AddRangeAsync(mealDiaries);
+                await TrackRecentFoodsAsync(userId, mealDiaries.Select(entry => entry.FoodItemId));
+                await _context.SaveChangesAsync();
+                await _streakService.UpdateStreakOnMealLogAsync(userId);
+
+                return mealDiaries.Select(entry => entry.MealDiaryId).ToList();
+            });
+
+            return await GetMappedMealDiariesAsync(userId, mealDiaryIds);
+        }
+
         public async Task<IEnumerable<MealDiaryDto>> CopyPreviousDayAsync(Guid userId, CopyPreviousDayRequest request)
         {
             if (request == null)
@@ -304,6 +356,33 @@ namespace EatFitAI.API.Services
                 UpdatedAt = utcNow,
                 IsDeleted = false
             };
+        }
+
+        private async Task<T> ExecuteInTransactionAsync<T>(Func<Task<T>> operation)
+        {
+            if (IsInMemoryProvider())
+            {
+                return await operation();
+            }
+
+            await using var transaction = await _context.Database.BeginTransactionAsync();
+            try
+            {
+                var result = await operation();
+                await transaction.CommitAsync();
+                return result;
+            }
+            catch
+            {
+                await transaction.RollbackAsync();
+                throw;
+            }
+        }
+
+        private bool IsInMemoryProvider()
+        {
+            return (_context.Database.ProviderName ?? string.Empty)
+                .Contains("InMemory", StringComparison.OrdinalIgnoreCase);
         }
 
         private async Task TrackRecentFoodsAsync(Guid userId, IEnumerable<int?> foodItemIds)

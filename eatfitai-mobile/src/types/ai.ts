@@ -1,9 +1,24 @@
 export interface MappedFoodItem {
   label: string;
   confidence: number;
+  bbox?: {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  } | null;
 
   foodItemId?: number | null;
+  userFoodItemId?: number | null;
   foodName?: string | null;
+  source?: 'catalog' | 'user' | null;
+  defaultGrams?: number | null;
+  servingSizeGram?: number | null;
+  servingUnit?: string | null;
+  defaultServingUnitId?: number | null;
+  defaultServingUnitName?: string | null;
+  defaultServingUnitSymbol?: string | null;
+  defaultPortionQuantity?: number | null;
 
   caloriesPer100g?: number | null;
   proteinPer100g?: number | null;

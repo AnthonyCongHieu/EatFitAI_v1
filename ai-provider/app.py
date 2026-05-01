@@ -308,7 +308,7 @@ def _letterbox_image(image: np.ndarray, size: int) -> tuple[np.ndarray, float, i
     return canvas, scale, pad_x, pad_y
 
 
-def _detect_with_onnx(path: str, confidence_threshold: float, image_size: int) -> List[Dict[str, float | str]]:
+def _detect_with_onnx(path: str, confidence_threshold: float, image_size: int) -> List[Dict[str, Any]]:
     net = _load_onnx_model()
     if net is None:
         return []
@@ -364,13 +364,18 @@ def _detect_with_onnx(path: str, confidence_threshold: float, image_size: int) -
     if len(selected) == 0:
         return []
 
-    best_by_label: Dict[str, Dict[str, float | str]] = {}
+    best_by_label: Dict[str, Dict[str, Any]] = {}
     for index in np.array(selected).flatten().tolist():
         label = labels[index].strip().lower()
         confidence = confidences[index]
         existing = best_by_label.get(label)
         if existing is None or confidence > float(existing["confidence"]):
-            best_by_label[label] = {"label": label, "confidence": confidence}
+            x, y, w, h = boxes[index]
+            best_by_label[label] = {
+                "label": label,
+                "confidence": confidence,
+                "bbox": {"x": x, "y": y, "width": w, "height": h},
+            }
 
     return sorted(best_by_label.values(), key=lambda item: float(item["confidence"]), reverse=True)
 
@@ -489,19 +494,31 @@ def internal_runtime_status():
     return jsonify(runtime_status), 200
 
 
-def _detections_from_yolo_result(result: Any) -> List[Dict[str, float | str]]:
+def _detections_from_yolo_result(result: Any) -> List[Dict[str, Any]]:
     names: Dict[int, str] = result[0].names
-    detections: List[Dict[str, float | str]] = []
+    detections: List[Dict[str, Any]] = []
     for box in result[0].boxes:
         label = str(names[int(box.cls)]).strip().lower()
         if not label:
             continue
-        detections.append({"label": label, "confidence": float(box.conf)})
+        detection: Dict[str, Any] = {"label": label, "confidence": float(box.conf)}
+        try:
+            xyxy = box.xyxy[0].tolist()
+            x1, y1, x2, y2 = [float(value) for value in xyxy[:4]]
+            detection["bbox"] = {
+                "x": max(0.0, x1),
+                "y": max(0.0, y1),
+                "width": max(0.0, x2 - x1),
+                "height": max(0.0, y2 - y1),
+            }
+        except Exception:
+            pass
+        detections.append(detection)
     return detections
 
 
-def _filter_recovery_detections(detections: List[Dict[str, float | str]]) -> List[Dict[str, float | str]]:
-    best_by_label: Dict[str, Dict[str, float | str]] = {}
+def _filter_recovery_detections(detections: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    best_by_label: Dict[str, Dict[str, Any]] = {}
     for detection in detections:
         label = str(detection.get("label", "")).strip().lower()
         if label not in YOLO_RECOVERY_LABEL_MIN_CONFIDENCE:
@@ -514,7 +531,10 @@ def _filter_recovery_detections(detections: List[Dict[str, float | str]]) -> Lis
             continue
         existing = best_by_label.get(label)
         if existing is None or confidence > float(existing["confidence"]):
-            best_by_label[label] = {"label": label, "confidence": confidence}
+            filtered = {"label": label, "confidence": confidence}
+            if "bbox" in detection:
+                filtered["bbox"] = detection["bbox"]
+            best_by_label[label] = filtered
 
     return sorted(best_by_label.values(), key=lambda item: float(item["confidence"]), reverse=True)
 

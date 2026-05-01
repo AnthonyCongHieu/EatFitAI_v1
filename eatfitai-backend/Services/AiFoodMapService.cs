@@ -106,6 +106,7 @@ namespace EatFitAI.API.Services
                         {
                             Label = original.Label,
                             Confidence = original.Confidence,
+                            Bbox = original.Bbox,
                             FoodItemId = row.FoodItemId,
                             FoodName = row.FoodName,
                             CaloriesPer100g = row.CaloriesPer100g,
@@ -125,6 +126,7 @@ namespace EatFitAI.API.Services
                     {
                         Label = original.Label,
                         Confidence = original.Confidence,
+                        Bbox = original.Bbox,
                         FoodItemId = catalogMatch.FoodItemId,
                         FoodName = catalogMatch.FoodName,
                         CaloriesPer100g = catalogMatch.CaloriesPer100g,
@@ -140,6 +142,7 @@ namespace EatFitAI.API.Services
                 {
                     Label = original.Label,
                     Confidence = original.Confidence,
+                    Bbox = original.Bbox,
                     FoodItemId = null,
                     FoodName = null,
                     CaloriesPer100g = null,
@@ -168,6 +171,29 @@ namespace EatFitAI.API.Services
                     {
                         item.ThumbNail = _mediaUrlResolver.NormalizePublicUrl(thumb);
                     }
+                }
+
+                var defaultServings = await LoadDefaultServingsAsync(mappedFoodIds, cancellationToken);
+                foreach (var item in result)
+                {
+                    if (!item.FoodItemId.HasValue)
+                    {
+                        continue;
+                    }
+
+                    if (defaultServings.TryGetValue(item.FoodItemId.Value, out var serving))
+                    {
+                        item.DefaultServingUnitId = serving.ServingUnitId;
+                        item.DefaultServingUnitName = serving.ServingUnitName;
+                        item.DefaultServingUnitSymbol = serving.ServingUnitSymbol;
+                        item.DefaultGrams = serving.Grams;
+                    }
+                    else
+                    {
+                        item.DefaultGrams = 100;
+                    }
+
+                    item.DefaultPortionQuantity = 1;
                 }
             }
 
@@ -273,6 +299,50 @@ namespace EatFitAI.API.Services
             }
 
             return result;
+        }
+
+        private async Task<Dictionary<int, DefaultServingInfo>> LoadDefaultServingsAsync(
+            IReadOnlyCollection<int> foodItemIds,
+            CancellationToken cancellationToken)
+        {
+            if (foodItemIds.Count == 0)
+            {
+                return new Dictionary<int, DefaultServingInfo>();
+            }
+
+            var servings = await _db.FoodServings
+                .AsNoTracking()
+                .Where(serving => foodItemIds.Contains(serving.FoodItemId) && serving.GramsPerUnit > 0)
+                .Include(serving => serving.ServingUnit)
+                .Select(serving => new
+                {
+                    serving.FoodItemId,
+                    serving.ServingUnitId,
+                    serving.GramsPerUnit,
+                    ServingUnitName = serving.ServingUnit.Name,
+                    ServingUnitSymbol = serving.ServingUnit.Symbol
+                })
+                .ToListAsync(cancellationToken);
+
+            return servings
+                .Where(serving => !string.Equals(serving.ServingUnitName, "gram", System.StringComparison.OrdinalIgnoreCase))
+                .GroupBy(serving => serving.FoodItemId)
+                .ToDictionary(
+                    group => group.Key,
+                    group =>
+                    {
+                        var selected = group
+                            .OrderBy(serving => serving.ServingUnitId)
+                            .First();
+
+                        return new DefaultServingInfo
+                        {
+                            ServingUnitId = selected.ServingUnitId,
+                            ServingUnitName = selected.ServingUnitName,
+                            ServingUnitSymbol = selected.ServingUnitSymbol,
+                            Grams = selected.GramsPerUnit
+                        };
+                    });
         }
 
         private static int ScoreCatalogMatch(string labelKey, FoodCatalogMatch candidate)
@@ -396,6 +466,14 @@ namespace EatFitAI.API.Services
             public decimal FatPer100g { get; init; }
             public string? ThumbNail { get; init; }
             public int CredibilityScore { get; init; }
+        }
+
+        private sealed class DefaultServingInfo
+        {
+            public int ServingUnitId { get; init; }
+            public string ServingUnitName { get; init; } = string.Empty;
+            public string? ServingUnitSymbol { get; init; }
+            public decimal Grams { get; init; }
         }
     }
 }

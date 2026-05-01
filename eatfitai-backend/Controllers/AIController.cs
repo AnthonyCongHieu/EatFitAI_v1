@@ -1065,11 +1065,111 @@ namespace EatFitAI.API.Controllers
                 var conf = item.TryGetProperty("confidence", out var c) && (c.ValueKind == JsonValueKind.Number) ? (float)c.GetDouble() : (float?)null;
                 if (!string.IsNullOrWhiteSpace(label) && conf.HasValue)
                 {
-                    list.Add(new EatFitAI.API.DTOs.AI.VisionDetectionDto { Label = label!, Confidence = conf.Value });
+                    list.Add(new EatFitAI.API.DTOs.AI.VisionDetectionDto
+                    {
+                        Label = label!,
+                        Confidence = conf.Value,
+                        Bbox = TryReadBoundingBox(item)
+                    });
                 }
             }
 
             return list;
+        }
+
+        private static EatFitAI.API.DTOs.AI.BoundingBoxDto? TryReadBoundingBox(JsonElement item)
+        {
+            if (TryGetPropertyCaseInsensitive(item, "bbox", out var bbox)
+                || TryGetPropertyCaseInsensitive(item, "box", out bbox))
+            {
+                return bbox.ValueKind switch
+                {
+                    JsonValueKind.Object => TryReadBoundingBoxObject(bbox),
+                    JsonValueKind.Array => TryReadBoundingBoxArray(bbox),
+                    _ => null
+                };
+            }
+
+            return null;
+        }
+
+        private static EatFitAI.API.DTOs.AI.BoundingBoxDto? TryReadBoundingBoxObject(JsonElement box)
+        {
+            var x = TryReadFloatProperty(box, "x");
+            var y = TryReadFloatProperty(box, "y");
+            var width = TryReadFloatProperty(box, "width") ?? TryReadFloatProperty(box, "w");
+            var height = TryReadFloatProperty(box, "height") ?? TryReadFloatProperty(box, "h");
+
+            if (!x.HasValue || !y.HasValue || !width.HasValue || !height.HasValue)
+            {
+                return null;
+            }
+
+            return new EatFitAI.API.DTOs.AI.BoundingBoxDto
+            {
+                X = x.Value,
+                Y = y.Value,
+                Width = width.Value,
+                Height = height.Value
+            };
+        }
+
+        private static EatFitAI.API.DTOs.AI.BoundingBoxDto? TryReadBoundingBoxArray(JsonElement box)
+        {
+            if (box.GetArrayLength() < 4)
+            {
+                return null;
+            }
+
+            var values = box.EnumerateArray()
+                .Take(4)
+                .Select(TryReadFloat)
+                .ToList();
+
+            if (values.Any(value => !value.HasValue))
+            {
+                return null;
+            }
+
+            return new EatFitAI.API.DTOs.AI.BoundingBoxDto
+            {
+                X = values[0]!.Value,
+                Y = values[1]!.Value,
+                Width = values[2]!.Value,
+                Height = values[3]!.Value
+            };
+        }
+
+        private static float? TryReadFloatProperty(JsonElement element, string propertyName)
+        {
+            return TryGetPropertyCaseInsensitive(element, propertyName, out var property)
+                ? TryReadFloat(property)
+                : null;
+        }
+
+        private static float? TryReadFloat(JsonElement element)
+        {
+            return element.ValueKind == JsonValueKind.Number && element.TryGetSingle(out var value)
+                ? value
+                : null;
+        }
+
+        private static bool TryGetPropertyCaseInsensitive(JsonElement element, string propertyName, out JsonElement value)
+        {
+            if (element.ValueKind == JsonValueKind.Object)
+            {
+                foreach (var property in element.EnumerateObject())
+                {
+                    if (string.Equals(property.Name, propertyName, StringComparison.OrdinalIgnoreCase))
+                    {
+                        value = property.Value;
+                        return true;
+                    }
+                }
+            }
+
+            value = default;
+            return false;
         }
 
         private bool ShouldBlockVisionDetection(AiHealthStatusDto aiStatus)
@@ -1096,7 +1196,8 @@ namespace EatFitAI.API.Controllers
                 .Select(item => new EatFitAI.API.DTOs.AI.VisionDetectionDto
                 {
                     Label = item.Label,
-                    Confidence = item.Confidence
+                    Confidence = item.Confidence,
+                    Bbox = item.Bbox
                 })
                 .ToList();
 

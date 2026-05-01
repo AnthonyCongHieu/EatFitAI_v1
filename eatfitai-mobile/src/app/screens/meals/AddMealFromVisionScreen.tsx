@@ -16,7 +16,6 @@ import Toast from 'react-native-toast-message';
 import Button from '../../../components/Button';
 import Icon from '../../../components/Icon';
 import Screen from '../../../components/Screen';
-import { Skeleton } from '../../../components/Skeleton';
 import { ThemedText } from '../../../components/ThemedText';
 import { FoodPickerBottomSheet } from '../../../components/ui/FoodPickerBottomSheet';
 import { TeachLabelBottomSheet } from '../../../components/ui/TeachLabelBottomSheet';
@@ -36,6 +35,8 @@ import {
   buildVisionReviewItems,
   calculateVisionReviewCalories,
   clampVisionGrams,
+  getDefaultVisionGrams,
+  getVisionQuickPortions,
   getVisionReviewSaveBlocker,
   type VisionReviewItem,
 } from '../../../utils/visionReview';
@@ -61,13 +62,13 @@ const AddMealFromVisionScreen = (): React.ReactElement => {
 
   const { imageUri, result } = route.params;
 
-  const [loading, setLoading] = useState(false);
   const [detectionItems, setDetectionItems] = useState<VisionReviewItem[]>(() =>
     buildVisionReviewItems(result.items),
   );
   const [selectedMealType, setSelectedMealType] = useState<MealTypeId>(MEAL_TYPES.LUNCH);
   const [teachLabelVisible, setTeachLabelVisible] = useState(false);
   const [currentTeachItem, setCurrentTeachItem] = useState<MappedFoodItem | null>(null);
+  const [currentTeachIndex, setCurrentTeachIndex] = useState<number | null>(null);
   const [replacePickerVisible, setReplacePickerVisible] = useState(false);
   const [replaceTargetIndex, setReplaceTargetIndex] = useState<number | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -155,8 +156,9 @@ const AddMealFromVisionScreen = (): React.ReactElement => {
     [updateDetectionItem],
   );
 
-  const openTeachLabelSheet = useCallback((item: MappedFoodItem) => {
+  const openTeachLabelSheet = useCallback((item: MappedFoodItem, index: number) => {
     setCurrentTeachItem(item);
+    setCurrentTeachIndex(index);
     InteractionManager.runAfterInteractions(() => {
       setTeachLabelVisible(true);
     });
@@ -165,6 +167,7 @@ const AddMealFromVisionScreen = (): React.ReactElement => {
   const closeTeachLabelSheet = useCallback(() => {
     setTeachLabelVisible(false);
     setCurrentTeachItem(null);
+    setCurrentTeachIndex(null);
   }, []);
 
   const openReplacePicker = useCallback((index: number) => {
@@ -181,14 +184,53 @@ const AddMealFromVisionScreen = (): React.ReactElement => {
 
   const handleTeachLabel = useCallback(
     async (foodItem: FoodItem) => {
-      if (!currentTeachItem) {
+      if (!currentTeachItem || currentTeachIndex === null) {
         throw new Error('No teach label item selected');
+      }
+
+      if (foodItem.source === 'user') {
+        Toast.show({
+          type: 'info',
+          text1: 'Chọn món trong thư viện',
+          text2: 'Dạy AI cần món catalog để lưu mapping dùng chung.',
+        });
+        return;
       }
 
       const foodItemId = Number.parseInt(foodItem.id, 10);
       if (Number.isNaN(foodItemId)) {
         throw new Error('Invalid food item id');
       }
+
+      const previousReviewItem = detectionItems[currentTeachIndex];
+      if (!previousReviewItem) {
+        throw new Error('Teach label item no longer exists');
+      }
+
+      const optimisticReviewItem: VisionReviewItem = {
+        ...previousReviewItem,
+        selected: true,
+        grams:
+          previousReviewItem.grams > 0
+            ? previousReviewItem.grams
+            : getDefaultVisionGrams(previousReviewItem.item),
+        item: {
+          ...previousReviewItem.item,
+          source: 'catalog',
+          foodItemId,
+          userFoodItemId: null,
+          foodName: foodItem.name,
+          caloriesPer100g: foodItem.calories ?? previousReviewItem.item.caloriesPer100g ?? 0,
+          proteinPer100g: foodItem.protein ?? previousReviewItem.item.proteinPer100g ?? 0,
+          carbPer100g: foodItem.carbs ?? previousReviewItem.item.carbPer100g ?? 0,
+          fatPer100g: foodItem.fat ?? previousReviewItem.item.fatPer100g ?? 0,
+          thumbNail: foodItem.thumbnail ?? previousReviewItem.item.thumbNail ?? null,
+          isMatched: true,
+        },
+      };
+
+      updateDetectionItem(currentTeachIndex, () => optimisticReviewItem);
+      closeTeachLabelSheet();
 
       try {
         const request: TeachLabelRequest = {
@@ -201,28 +243,14 @@ const AddMealFromVisionScreen = (): React.ReactElement => {
         };
 
         await aiService.teachLabel(request);
-        closeTeachLabelSheet();
 
         Toast.show({
           type: 'success',
           text1: 'Đã dạy AI',
           text2: `"${currentTeachItem.label}" -> ${foodItem.name}`,
         });
-
-        setLoading(true);
-        try {
-          const refreshedResult = await aiService.detectFoodByImage(imageUri);
-          setDetectionItems(buildVisionReviewItems(refreshedResult.items));
-        } catch {
-          Toast.show({
-            type: 'info',
-            text1: 'Đã lưu chỉnh sửa',
-            text2: 'Chưa thể tải lại kết quả AI ngay bây giờ.',
-          });
-        } finally {
-          setLoading(false);
-        }
       } catch (error) {
+        updateDetectionItem(currentTeachIndex, () => previousReviewItem);
         handleApiErrorWithCustomMessage(error, {
           server_error: { text1: 'Lỗi', text2: 'Máy chủ gặp sự cố' },
           network_error: { text1: 'Không có kết nối', text2: 'Kiểm tra mạng và thử lại' },
@@ -230,7 +258,13 @@ const AddMealFromVisionScreen = (): React.ReactElement => {
         });
       }
     },
-    [closeTeachLabelSheet, currentTeachItem, imageUri],
+    [
+      closeTeachLabelSheet,
+      currentTeachIndex,
+      currentTeachItem,
+      detectionItems,
+      updateDetectionItem,
+    ],
   );
 
   const handleReplaceFood = useCallback(
@@ -239,17 +273,20 @@ const AddMealFromVisionScreen = (): React.ReactElement => {
         throw new Error('No replace target selected');
       }
 
-      const foodItemId = Number.parseInt(foodItem.id, 10);
-      if (Number.isNaN(foodItemId)) {
+      const selectedFoodId = Number.parseInt(foodItem.id, 10);
+      if (Number.isNaN(selectedFoodId)) {
         throw new Error('Invalid food item id');
       }
 
+      const isUserFood = foodItem.source === 'user';
       updateDetectionItem(replaceTargetIndex, (current) => ({
         ...current,
         selected: true,
         item: {
           ...current.item,
-          foodItemId,
+          source: isUserFood ? 'user' : 'catalog',
+          foodItemId: isUserFood ? null : selectedFoodId,
+          userFoodItemId: isUserFood ? selectedFoodId : null,
           foodName: foodItem.name,
           caloriesPer100g: foodItem.calories ?? current.item.caloriesPer100g ?? 0,
           proteinPer100g: foodItem.protein ?? current.item.proteinPer100g ?? 0,
@@ -288,10 +325,22 @@ const AddMealFromVisionScreen = (): React.ReactElement => {
     setIsSubmitting(true);
     try {
       await addItemsToTodayDiary(
-        selectedItems.map((detection) => ({
-          foodItemId: Number(detection.item.foodItemId),
-          grams: detection.grams,
-        })),
+        selectedItems.map((detection) => {
+          const userFoodItemId = Number(detection.item.userFoodItemId);
+          if (detection.item.source === 'user' || userFoodItemId > 0) {
+            return {
+              source: 'user' as const,
+              userFoodItemId,
+              grams: detection.grams,
+            };
+          }
+
+          return {
+            source: 'catalog' as const,
+            foodItemId: Number(detection.item.foodItemId),
+            grams: detection.grams,
+          };
+        }),
         { mealTypeId: selectedMealType },
       );
 
@@ -321,6 +370,7 @@ const AddMealFromVisionScreen = (): React.ReactElement => {
     );
     const confidence = Math.round((detection.item.confidence ?? 0) * 100);
     const isMatched = detection.item.isMatched;
+    const quickPortions = getVisionQuickPortions(detection.item);
 
     return (
       <View
@@ -457,7 +507,7 @@ const AddMealFromVisionScreen = (): React.ReactElement => {
                 }}
                 onPress={(event) => {
                   event.stopPropagation();
-                  openTeachLabelSheet(detection.item);
+                  openTeachLabelSheet(detection.item, index);
                 }}
                 style={[
                   styles.actionChip,
@@ -480,19 +530,49 @@ const AddMealFromVisionScreen = (): React.ReactElement => {
             ) : null}
           </View>
         </View>
+
+        <View style={styles.quickPortionRow}>
+          {quickPortions.map((portion) => {
+            const selected = portion.grams === detection.grams;
+            return (
+              <Pressable
+                key={`${portion.label}-${portion.grams}`}
+                onPressIn={(event) => {
+                  event.stopPropagation();
+                }}
+                onPress={(event) => {
+                  event.stopPropagation();
+                  updateDetectionItem(index, (current) => ({
+                    ...current,
+                    grams: portion.grams,
+                  }));
+                }}
+                style={[
+                  styles.quickPortionChip,
+                  {
+                    borderColor: selected ? theme.colors.primary : theme.colors.border,
+                    backgroundColor: selected
+                      ? theme.colors.primary + '14'
+                      : theme.colors.background,
+                  },
+                ]}
+              >
+                <ThemedText
+                  variant="caption"
+                  weight="700"
+                  style={{
+                    color: selected ? theme.colors.primary : theme.colors.textSecondary,
+                  }}
+                >
+                  {portion.label} · {portion.grams}g
+                </ThemedText>
+              </Pressable>
+            );
+          })}
+        </View>
       </View>
     );
   };
-
-  const renderSkeleton = () => (
-    <View style={styles.skeletonContainer}>
-      {Array.from({ length: 3 }).map((_, index) => (
-        <View key={index} style={styles.skeletonCard}>
-          <Skeleton height={108} style={{ borderRadius: 16 }} />
-        </View>
-      ))}
-    </View>
-  );
 
   return (
     <Screen
@@ -536,37 +616,31 @@ const AddMealFromVisionScreen = (): React.ReactElement => {
           </ThemedText>
         </View>
 
-        {loading ? (
-          renderSkeleton()
-        ) : (
+        {matchedItems.length > 0 ? (
           <>
-            {matchedItems.length > 0 ? (
-              <>
-                <View style={styles.sectionTitle}>
-                  <ThemedText variant="h4" weight="700">
-                    Đã map được ({matchedItems.length})
-                  </ThemedText>
-                </View>
-                {matchedItems.map(({ detection, index }) =>
-                  renderFoodItem(detection, index),
-                )}
-              </>
-            ) : null}
-
-            {unmatchedItems.length > 0 ? (
-              <>
-                <View style={styles.sectionTitle}>
-                  <ThemedText variant="h4" weight="700" color="warning">
-                    Cần xác nhận ({unmatchedItems.length})
-                  </ThemedText>
-                </View>
-                {unmatchedItems.map(({ detection, index }) =>
-                  renderFoodItem(detection, index),
-                )}
-              </>
-            ) : null}
+            <View style={styles.sectionTitle}>
+              <ThemedText variant="h4" weight="700">
+                Đã map được ({matchedItems.length})
+              </ThemedText>
+            </View>
+            {matchedItems.map(({ detection, index }) =>
+              renderFoodItem(detection, index),
+            )}
           </>
-        )}
+        ) : null}
+
+        {unmatchedItems.length > 0 ? (
+          <>
+            <View style={styles.sectionTitle}>
+              <ThemedText variant="h4" weight="700" color="warning">
+                Cần xác nhận ({unmatchedItems.length})
+              </ThemedText>
+            </View>
+            {unmatchedItems.map(({ detection, index }) =>
+              renderFoodItem(detection, index),
+            )}
+          </>
+        ) : null}
       </ScrollView>
 
       <View
@@ -780,11 +854,19 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     borderWidth: 1,
   },
-  skeletonContainer: {
-    paddingHorizontal: 16,
+  quickPortionRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginTop: 12,
   },
-  skeletonCard: {
-    marginBottom: 10,
+  quickPortionChip: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 10,
+    borderWidth: 1,
+    paddingHorizontal: 6,
+    paddingVertical: 8,
   },
   bottomBar: {
     position: 'absolute',
