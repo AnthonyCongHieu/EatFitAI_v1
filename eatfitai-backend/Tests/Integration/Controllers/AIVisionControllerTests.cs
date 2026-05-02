@@ -27,11 +27,19 @@ public class AIVisionControllerTests : IClassFixture<WebApplicationFactory<Progr
     }
 
     [Fact]
-    public async Task DetectVision_FreshDown_Returns503WithoutCallingProvider()
+    public async Task DetectVision_FreshDown_AttemptsProviderAndReturns200()
     {
         var userId = Guid.NewGuid();
         var httpClientFactory = new RecordingHttpClientFactory(
-            (_, _) => Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)));
+            (_, _) => Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent(
+                    """
+                    {"detections":[{"label":"banana","confidence":0.91,"bbox":{"x":10,"y":20,"width":30,"height":40}}]}
+                    """,
+                    Encoding.UTF8,
+                    "application/json")
+            }));
         var cacheService = new FakeVisionCacheService();
 
         using var factory = CreateFactory(
@@ -46,15 +54,17 @@ public class AIVisionControllerTests : IClassFixture<WebApplicationFactory<Progr
         using var client = CreateAuthorizedClient(factory, userId);
         using var response = await client.PostAsync("/api/ai/vision/detect", CreateVisionRequest(userId));
 
-        Assert.Equal(HttpStatusCode.ServiceUnavailable, response.StatusCode);
-        Assert.Equal(0, httpClientFactory.CallCount);
+        response.EnsureSuccessStatusCode();
+        Assert.Equal(1, httpClientFactory.CallCount);
         Assert.Equal(1, cacheService.LookupCount);
+        Assert.Equal("test-token", httpClientFactory.LastInternalToken);
 
-        var body = await response.Content.ReadFromJsonAsync<JsonElement>();
-        Assert.Equal("ai_provider_down", body.GetProperty("error").GetString());
-        Assert.Equal("ai_provider_down", body.GetProperty("code").GetString());
-        Assert.False(string.IsNullOrWhiteSpace(body.GetProperty("requestId").GetString()));
-        Assert.False(body.TryGetProperty("aiStatus", out _));
+        var body = await response.Content.ReadFromJsonAsync<VisionDetectResultDto>();
+        Assert.NotNull(body);
+        var item = Assert.Single(body.Items);
+        Assert.Equal("banana", item.Label);
+        Assert.NotNull(item.Bbox);
+        Assert.True(item.IsMatched);
     }
 
     [Fact]
@@ -66,7 +76,7 @@ public class AIVisionControllerTests : IClassFixture<WebApplicationFactory<Progr
             {
                 Content = new StringContent(
                     """
-                    {"detections":[{"label":"banana","confidence":0.91}]}
+                    {"detections":[{"label":"banana","confidence":0.91,"bbox":{"x":10,"y":20,"width":30,"height":40}}]}
                     """,
                     Encoding.UTF8,
                     "application/json")
@@ -95,6 +105,11 @@ public class AIVisionControllerTests : IClassFixture<WebApplicationFactory<Progr
         Assert.NotNull(body);
         var item = Assert.Single(body.Items);
         Assert.Equal("banana", item.Label);
+        Assert.NotNull(item.Bbox);
+        Assert.Equal(10, item.Bbox!.X);
+        Assert.Equal(20, item.Bbox.Y);
+        Assert.Equal(30, item.Bbox.Width);
+        Assert.Equal(40, item.Bbox.Height);
         Assert.True(item.IsMatched);
     }
 
@@ -381,6 +396,7 @@ public class AIVisionControllerTests : IClassFixture<WebApplicationFactory<Progr
                 {
                     Label = detection.Label,
                     Confidence = detection.Confidence,
+                    Bbox = detection.Bbox,
                     FoodItemId = index + 1,
                     FoodName = $"{detection.Label}-mapped"
                 })

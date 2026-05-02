@@ -58,7 +58,12 @@ import { IngredientBasketSheet } from '../../../components/scan/IngredientBasket
 import { useIngredientBasketStore } from '../../../store/useIngredientBasketStore';
 import { translateIngredient } from '../../../utils/translate';
 import { TEST_IDS } from '../../../testing/testIds';
-import { hasUsableVisionNutrition } from '../../../utils/visionReview';
+import {
+  clampVisionGrams,
+  getDefaultVisionGrams,
+  getVisionQuickPortions,
+  shouldAllowVisionQuickSave,
+} from '../../../utils/visionReview';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 type CameraViewInstance = InstanceType<typeof CameraView>;
@@ -71,6 +76,11 @@ type ScanResultNotice = {
 
 const SCAN_IMAGE_UPLOAD_WIDTH = 1024;
 const SCAN_IMAGE_UPLOAD_QUALITY = 0.85;
+const AI_PROCESSING_MESSAGES = [
+  'Đang tối ưu ảnh...',
+  'AI đang nhận diện món ăn...',
+  'Đang ghép món với dữ liệu dinh dưỡng...',
+];
 const isUsableVisionItem = (item: MappedFoodItem): boolean =>
   Boolean(item.isMatched || item.foodItemId || item.foodName) || item.confidence > 0.4;
 
@@ -133,6 +143,7 @@ const AIScanScreen: React.FC = () => {
 
   // Inline processing banner state
   const [showProcessingBanner, setShowProcessingBanner] = useState(false);
+  const [processingMessageIndex, setProcessingMessageIndex] = useState(0);
 
   const hasPermission = permission?.granted === true;
   const visionAvailability = getAiFeatureAvailability(aiStatus, 'vision');
@@ -162,6 +173,21 @@ const AIScanScreen: React.FC = () => {
     }
   }, [mode]);
 
+  useEffect(() => {
+    if (!isProcessing || mode !== 'preview') {
+      setProcessingMessageIndex(0);
+      return;
+    }
+
+    const timer = setInterval(() => {
+      setProcessingMessageIndex((current) =>
+        Math.min(current + 1, AI_PROCESSING_MESSAGES.length - 1),
+      );
+    }, 1800);
+
+    return () => clearInterval(timer);
+  }, [isProcessing, mode]);
+
   /* ── All business-logic handlers ── */
 
   const notifyVisionUnavailable = useCallback(() => {
@@ -184,18 +210,16 @@ const AIScanScreen: React.FC = () => {
       trackEvent('ai_scan_blocked', {
         flow: 'ai_scan',
         step: 'detect',
-        status: 'blocked',
+        status: 'degraded_attempt',
         metadata: {
           source,
           availabilityState: visionAvailability.state,
           reason: visionAvailability.title,
         },
       });
-      navigation.navigate('FoodSearch');
-      return false;
+      return true;
     },
     [
-      navigation,
       notifyVisionUnavailable,
       visionAvailability.canUseAi,
       visionAvailability.state,
@@ -211,6 +235,7 @@ const AIScanScreen: React.FC = () => {
     setMode('preview');
     setIsProcessing(true);
     setShowProcessingBanner(true);
+    setProcessingMessageIndex(0);
     setDetectionResult(null);
     setResultNotice(null);
     trackEvent('ai_scan_start', {
@@ -253,7 +278,10 @@ const AIScanScreen: React.FC = () => {
             }
           : null,
       );
-      setResultGrams(100);
+      const topDetectedItem = [...filteredItems].sort(
+        (a, b) => b.confidence - a.confidence,
+      )[0];
+      setResultGrams(getDefaultVisionGrams(topDetectedItem));
       setMode('results');
       trackEvent('ai_scan_result', {
         flow: 'ai_scan',
@@ -486,12 +514,7 @@ const AIScanScreen: React.FC = () => {
 
     const topItem = [...detectionResult.items]
       .sort((a, b) => b.confidence - a.confidence)[0];
-    if (
-      !topItem?.foodItemId ||
-      Number(topItem.foodItemId) <= 0 ||
-      !hasUsableVisionNutrition(topItem)
-    ) {
-      // Navigate to detailed add screen
+    if (!topItem || !shouldAllowVisionQuickSave(detectionResult)) {
       navigation.navigate('AddMealFromVision', {
         imageUri: capturedUri,
         result: detectionResult,
@@ -500,11 +523,19 @@ const AIScanScreen: React.FC = () => {
     }
 
     try {
+      const userFoodItemId = Number(topItem.userFoodItemId);
       await addItemsToTodayDiary([
-        {
-          foodItemId: Number(topItem.foodItemId),
-          grams: resultGrams,
-        },
+        topItem.source === 'user' || userFoodItemId > 0
+          ? {
+              source: 'user',
+              userFoodItemId,
+              grams: resultGrams,
+            }
+          : {
+              source: 'catalog',
+              foodItemId: Number(topItem.foodItemId),
+              grams: resultGrams,
+            },
       ]);
 
       const ratio = resultGrams / 100;
@@ -567,8 +598,8 @@ const AIScanScreen: React.FC = () => {
 
   const handleGramModalConfirm = useCallback(() => {
     const parsed = parseInt(gramInputValue, 10);
-    if (!isNaN(parsed) && parsed > 0 && parsed <= 5000) {
-      setResultGrams(parsed);
+    if (!isNaN(parsed) && parsed > 0) {
+      setResultGrams(clampVisionGrams(parsed));
     }
     setShowGramModal(false);
   }, [gramInputValue]);
@@ -583,6 +614,8 @@ const AIScanScreen: React.FC = () => {
     : [];
   const hasDetectedItems = topResults.length > 0;
   const topItem = topResults[0] ?? null;
+  const quickPortions = getVisionQuickPortions(topItem);
+  const processingText = AI_PROCESSING_MESSAGES[processingMessageIndex];
 
   // Compute macros based on current grams
   const ratio = resultGrams / 100;
@@ -751,7 +784,7 @@ const AIScanScreen: React.FC = () => {
             <Animated.View entering={FadeIn.duration(300)} style={S.inlineBanner}>
               <ActivityIndicator size="small" color={P.primary} />
               <ThemedText style={S.inlineBannerText}>
-                Đã chụp! AI đang nhận diện món ăn...
+                {processingText}
               </ThemedText>
             </Animated.View>
           )}
@@ -800,7 +833,7 @@ const AIScanScreen: React.FC = () => {
             {isProcessing && (
               <Animated.View entering={FadeIn} style={S.processingPill}>
                 <ActivityIndicator size="small" color={P.primary} />
-                <ThemedText style={S.processingText}>AI đang nhận diện...</ThemedText>
+                <ThemedText style={S.processingText}>{processingText}</ThemedText>
               </Animated.View>
             )}
 
@@ -908,7 +941,7 @@ const AIScanScreen: React.FC = () => {
                   <View style={S.qtyControl}>
                     <Pressable
                       style={S.qtyBtnMinus}
-                      onPress={() => setResultGrams((g) => Math.max(25, g - 100))}
+                      onPress={() => setResultGrams((g) => clampVisionGrams(g - 25))}
                     >
                       <Icon name="remove" size="sm" color="text" />
                     </Pressable>
@@ -922,11 +955,36 @@ const AIScanScreen: React.FC = () => {
                     </Pressable>
                     <Pressable
                       style={S.qtyBtnPlus}
-                      onPress={() => setResultGrams((g) => Math.min(5000, g + 100))}
+                      onPress={() => setResultGrams((g) => clampVisionGrams(g + 25))}
                     >
                       <Icon name="add" size="sm" color="background" />
                     </Pressable>
                   </View>
+                </View>
+
+                <View style={S.quickPortionRow}>
+                  {quickPortions.map((portion) => {
+                    const selected = portion.grams === resultGrams;
+                    return (
+                      <Pressable
+                        key={`${portion.label}-${portion.grams}`}
+                        onPress={() => setResultGrams(portion.grams)}
+                        style={[
+                          S.quickPortionChip,
+                          selected ? S.quickPortionChipActive : null,
+                        ]}
+                      >
+                        <ThemedText
+                          style={[
+                            S.quickPortionText,
+                            selected ? S.quickPortionTextActive : null,
+                          ]}
+                        >
+                          {portion.label} · {portion.grams}g
+                        </ThemedText>
+                      </Pressable>
+                    );
+                  })}
                 </View>
 
                 {/* Macro visualization */}
@@ -1624,6 +1682,34 @@ const S = StyleSheet.create({
     backgroundColor: P.primary,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  quickPortionRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 16,
+  },
+  quickPortionChip: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)',
+    backgroundColor: P.surfaceContainerLow,
+    paddingVertical: 9,
+    paddingHorizontal: 6,
+  },
+  quickPortionChipActive: {
+    borderColor: P.primary,
+    backgroundColor: 'rgba(75, 226, 119, 0.16)',
+  },
+  quickPortionText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: P.onSurfaceVariant,
+  },
+  quickPortionTextActive: {
+    color: P.primary,
   },
 
   /* Macro cards */

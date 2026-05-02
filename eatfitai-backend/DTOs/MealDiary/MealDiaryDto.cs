@@ -51,6 +51,11 @@ namespace EatFitAI.API.DTOs.MealDiary
         public string? SourceMethod { get; set; }
     }
 
+    public class BulkCreateMealDiaryRequest
+    {
+        public List<CreateMealDiaryRequest>? Items { get; set; }
+    }
+
     public class UpdateMealDiaryRequest
     {
         public DateTime? EatenDate { get; set; }

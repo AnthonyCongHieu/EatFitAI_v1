@@ -36,12 +36,16 @@ const blocked = (): AiFeatureAvailability => ({
   message: MANUAL_FALLBACK_MESSAGE,
 });
 
-const degraded = (title: string): AiFeatureAvailability => ({
+const degraded = (
+  title: string,
+  canUseAi = false,
+  message = MANUAL_FALLBACK_MESSAGE,
+): AiFeatureAvailability => ({
   state: 'degraded',
-  canUseAi: false,
+  canUseAi,
   allowsManualFallback: true,
   title,
-  message: MANUAL_FALLBACK_MESSAGE,
+  message,
 });
 
 export function getAiFeatureAvailability(
@@ -57,7 +61,11 @@ export function getAiFeatureAvailability(
   }
 
   if (feature === 'vision' && status.state !== 'HEALTHY') {
-    return degraded('AI nhận diện chưa sẵn sàng');
+    return degraded(
+      'AI nhận diện đang suy giảm',
+      true,
+      'Bạn vẫn có thể thử quét ảnh; nếu lỗi, hãy tìm món thủ công.',
+    );
   }
 
   if (feature !== 'vision' && !status.geminiConfigured) {
