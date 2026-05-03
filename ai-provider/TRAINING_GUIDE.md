@@ -26,6 +26,16 @@
 | [VietFood67 Roboflow mirror / Food Data](https://universe.roboflow.com/truongvo/food-data-e2kl5-vqaqp) | 8,205 ảnh / 31 class | Món Việt rõ, visual sát nhu cầu; nên review bbox từng class trước khi merge |
 | [DETECTION_15_VIETNAMESE_FOOD](https://universe.roboflow.com/aiapplication/detection_15_vietnamese_food) | 2,889 ảnh / 15 class | Ít class nhưng đúng domain Việt, dùng tốt để bổ sung món phổ biến |
 | [Vietnamese Food 5 classes](https://universe.roboflow.com/foodaitonghop/vietnamese-food-0nsuo) | 1,000 ảnh / 5 class | Có bánh mì, bột chiên, bún, gỏi cuốn, phở; dùng nếu class này còn thiếu |
+| [vietnamese-food-calories](https://universe.roboflow.com/toby-b9kw2/vietnamese-food-calories-suwt6) | 947 ảnh / 33 class | Món Việt rõ như bánh bao, bánh bèo, bánh mì, bún bò, cơm tấm, nem rán, phở, thịt kho tàu |
+| [RawData - My Khanh Nguyen](https://universe.roboflow.com/my-khanh-nguyen-tjmam/rawdata-8vvya) | 3,019 ảnh / 50 class | Nguồn miền Tây rất đáng lấy: bánh canh ghẹ, bánh khọt, bánh pía, bún bò cay, cá kho tộ, canh chua, gỏi cuốn, hủ tiếu Mỹ Tho, lẩu mắm |
+| [Food - Prethesis](https://universe.roboflow.com/prethesis-avz0w/food-4otph) | 8,738 ảnh / 68 class | Nguồn lớn cho món Việt; dùng sau khi loại class nhiễu như `Con_nguoi`, `Hamburger`, `Salad` |
+| [Food Items - FoodRecognitionPreThesis](https://universe.roboflow.com/foodrecognitionprethesis/food-items-j9iud) | 1,360 ảnh / 52 class | Tốt cho cơm phần/món nhà: canh chua, cơm tấm sườn trứng, đậu hũ nhồi thịt, gà kho, rau muống xào |
+| [canteen_menu](https://universe.roboflow.com/nhanbeo/canteen_menu) | 3,369 ảnh / 9 class | Rất sát bữa ăn Việt: cá hú kho, canh cải, canh chua, đậu hũ sốt cà, gà chiên, thịt kho trứng |
+| [Food - Khoa](https://universe.roboflow.com/khoa-fbrvv/food-jfsxy) | 997 ảnh / 10 class | Bổ sung nhóm bánh Việt: bánh bèo, bánh bò, bánh bột lọc, bánh căn, bánh canh, bánh cuốn |
+| [banh-dan-gian-nb](https://universe.roboflow.com/nhtdanh/banh-dan-gian-nb) | 882 ảnh / 20 class | Bổ sung bánh dân gian: bánh bò, bánh cam, bánh chuối hấp, bánh da lợn, bánh khọt, bánh pía, bánh tét, bánh xèo |
+| [Bánh dân gian miền Tây](https://universe.roboflow.com/fruitnetyolov8/banh-dan-gian-mien-tay) | 462 ảnh / 12 class | Dùng để vá class bánh miền Tây hiếm: bánh bèo ngọt, bánh cam, bánh chuối, bánh da lợn, bánh ít trần, bánh khoai mì nướng |
+| [Food-Detection-bobotnhan](https://universe.roboflow.com/fooddetection-3q4jo/food-detection-bobotnhan) | 4,836 ảnh / 35 class | Bổ sung món/nguyên liệu Việt như bánh mì, bún/phở/mì, canh, chả/nem/xúc xích, cơm, đậu phụ, mực, tôm, trứng |
+| [Food_AI_Tong_Hop](https://universe.roboflow.com/foodaitonghop/food_ai_tong_hop) | 1,929 ảnh / 6 class | Dùng để tăng ảnh cho bánh mì, bột chiên, bún, cơm tấm, gỏi cuốn, phở; không lấy project `Banh-Mi` riêng vì class public bị lỗi |
 | [Thai-Food-Project](https://universe.roboflow.com/baimint/thai-food-project) | 3,803 ảnh / 21 class | Món châu Á gần domain Việt; cherry-pick class visual rõ như shrimp, egg-tofu, grill-shrimp |
 
 **General food phổ biến ở Việt Nam — dùng sau khi lọc class**

@@ -100,6 +100,32 @@ plate (Dataset E: 300 ảnh) ❌ LOẠI
 | 27 | [Fish aephx](https://universe.roboflow.com/project-3rfep/fish-aephx) | Roboflow | 984 / 1 | Khá | ✅ Bổ sung fish nếu thiếu | Một class, dễ dùng để tăng recall cho fish |
 | 28 | [Food Image Dataset Indian YOLO](https://www.kaggle.com/datasets/josephvettom/food-image-dataset) | Kaggle | YOLO / 20 class | Khá trên preview | ⚠️ Optional | Món Ấn nhưng một số món phổ biến; download để xem class map |
 
+### Bổ sung món Việt — kiểm tra thêm 2026-05-03
+
+> Lý do bổ sung: danh sách ban đầu còn thiên về general food/ingredient, tỷ lệ món Việt quá thấp. Nhóm dưới đây ưu tiên dataset Roboflow public còn sống, task là Object Detection, có class món Việt rõ. Các bộ nhỏ hoặc trùng class vẫn có giá trị để tăng recall cho món Việt hiếm, nhưng cần dedup và review bbox trước khi merge.
+
+| # | Dataset | Nguồn | Ảnh / class public | Dùng? | Ghi chú |
+|---:|---|---|---:|---|---|
+| 29 | [vietnamese-food-calories](https://universe.roboflow.com/toby-b9kw2/vietnamese-food-calories-suwt6) | Roboflow | 947 / 33 | ✅ Bổ sung VN | Có `banh_bao`, `banh_beo`, `banh_canh`, `banh_chung`, `banh_gio`, `banh_khot`, `banh_mi`, `bun_bo`, `com_tam`, `nem_ran`, `pho`, `thit_kho_tau`, `tom`, `trung_chien`; loại class số `0`, `25` nếu không có ý nghĩa |
+| 30 | [RawData - My Khanh Nguyen](https://universe.roboflow.com/my-khanh-nguyen-tjmam/rawdata-8vvya) | Roboflow | 3,019 / 50 | ✅ Core miền Tây | Rất đáng lấy cho món Việt miền Tây: `Bánh Canh Ghẹ`, `Bánh Khọt`, `Bánh Pía`, `Bánh Tét Lá Cẩm`, `Bánh Xèo`, `Bún Bò Cay`, `Cá Kho Tộ`, `Canh Chua`, `Cơm Tấm Long Xuyên`, `Gỏi Cuốn`, `Hủ Tiếu Mỹ Tho`, `Lẩu Mắm`, `Vịt Nấu Chao` |
+| 31 | [Food - Prethesis](https://universe.roboflow.com/prethesis-avz0w/food-4otph) | Roboflow | 8,738 / 68 | ✅ Core sau lọc | Nguồn lớn cho món Việt: `Banh_canh`, `Banh_chung`, `Banh_cuon`, `Banh_khot`, `Banh_mi`, `Banh_trang_tron`, `Banh_xeo`, `Bo_kho`, `Bun_bo_Hue`, `Bun_cha`, `Bun_dau`, `Bun_mam`, `Bun_rieu`, `Com_tam`, `Goi_cuon`, `Hu_tieu`, `Pho`; loại `Con_nguoi`, `Hamburger`, `Salad` nếu không dùng |
+| 32 | [Food Items - FoodRecognitionPreThesis](https://universe.roboflow.com/foodrecognitionprethesis/food-items-j9iud) | Roboflow | 1,360 / 52 | ✅ Bổ sung cơm phần | Tốt cho món gia đình/canteen: `ba-roi-kho-ruoc`, `bap-cai-xao`, `ca-basa-kho-hanh`, `canh-chua`, `com-tam-suon-trung`, `dau-hu-nhoi-thit`, `ga-kho`, `heo-quay`, `rau-muong-xao`, `suon-non-kho-cai-chua`, `xiu-mai-boc-trung` |
+| 33 | [canteen_menu](https://universe.roboflow.com/nhanbeo/canteen_menu) | Roboflow | 3,369 / 9 | ✅ Core cơm nhà | Ít class nhưng sát domain Việt: `ca_hu_kho`, `canh_cai`, `canh_chua`, `dau_hu_sot_ca`, `ga_chien`, `rau_muong_xao`, `thit_kho`, `thit_kho_trung`, `trung_chien` |
+| 34 | [Food - Khoa](https://universe.roboflow.com/khoa-fbrvv/food-jfsxy) | Roboflow | 997 / 10 | ✅ Bổ sung bánh Việt | Có nhiều bánh dân gian: `banh_beo`, `banh_bo`, `banh_bot_loc`, `banh_can`, `banh_canh`, `banh_chung`, `banh_cong`, `banh_cuon`, `banh_da_lon`, `banh_duc` |
+| 35 | [VietNamfood - Duy2902](https://universe.roboflow.com/duy2902/vietnamfood-w3i0a) | Roboflow | 320 / 3 | ⚠️ Nhỏ, dùng bổ sung | Chỉ có `food`, `Banh_beo`, `Banh_bot_loc`; loại hoặc bỏ qua class generic `food` khi merge |
+| 36 | [phanloai](https://universe.roboflow.com/new-workspace-bfa6s/phanloai-pybzl) | Roboflow | 250 / 11 | ⚠️ Nhỏ, class hiếm | Có `banh beo`, `banh cuon`, `banh trang tron`, `banh xeo`, `bun rieu`, `canh kho qua`, `com chien`, `hu tieu`, `mi quang`, `thit kho tau`; loại class `food` |
+| 37 | [banh-dan-gian-nb](https://universe.roboflow.com/nhtdanh/banh-dan-gian-nb) | Roboflow | 882 / 20 | ✅ Bổ sung bánh dân gian | Tốt cho nhóm bánh: `Banh Bo`, `Banh Cam`, `Banh Chuoi Hap`, `Banh Cong1`, `Banh Cong2`, `Banh Cuon Ngot`, `Banh Da Lon`, `Banh Duc Man`, `Banh It Tran`, `Banh Khoai Mi Nuong`, `Banh Khot`, `Banh Pia`, `Banh Tet`, `Banh Xeo` |
+| 38 | [Bánh dân gian miền Tây](https://universe.roboflow.com/fruitnetyolov8/banh-dan-gian-mien-tay) | Roboflow | 462 / 12 | ✅ Bổ sung bánh miền Tây | Có `Banh_beo_ngot`, `Banh_bot_bang`, `Banh_cam`, `Banh_chuoi`, `Banh_cuon_ngot`, `Banh_da_lon`, `Banh_duc_gan`, `Banh_it_tran`, `Banh_khoai_mi_nuong`, `Banh_la`, `Banh_phu_the` |
+| 39 | [Banh Nhan Gian](https://universe.roboflow.com/nhandangmonan/banh-nhan-gian) | Roboflow | 109 / 11 | ⚠️ Chỉ lấy nếu thiếu | Có `banh-bo-xop`, `banh-cong`, `banh-cung`, `banh-da-lon`, `banh-duc-gan`, `banh-it`, `banh-la-dua`, `banh-lot`, `banh-tai-heo`, `banh-tai-yen`; loại class lỗi `\` |
+| 40 | [Food-Detection-bobotnhan](https://universe.roboflow.com/fooddetection-3q4jo/food-detection-bobotnhan) | Roboflow | 4,836 / 35 | ✅ Bổ sung VN + nguyên liệu | Hữu ích cho `banh_mi`, `bun_pho_mi`, `canh`, `cha_nem_xucxich`, `com`, `dau_phu`, `muc`, `rau`, `thit_ga`, `thit_lon`, `tom`, `trung`; loại `pizza`, `salad` nếu không cần |
+| 41 | [ver6 - TrukTruong](https://universe.roboflow.com/truktruong/ver6-hyapb) | Roboflow | 5,859 / 200 | ⚠️ Cherry-pick mạnh | Nhiều món Việt nhưng 200 class rất dễ confuse; chỉ chọn class thiếu như `Banh Beo`, `Banh Bot Loc`, `Banh Canh Cua`, `Banh Hoi`, `Banh Mi`, `Banh Xeo`, `Bun Cha`, `Ca Kho`, `Canh`, `Cha Gio`, `Goi Cuon` |
+| 42 | [Food_AI_Tong_Hop](https://universe.roboflow.com/foodaitonghop/food_ai_tong_hop) | Roboflow | 1,929 / 6 | ✅ Bổ sung trùng class trọng yếu | Dùng để tăng ảnh cho `Banh-Mi`, `Bot Chien`, `Bun`, `Com-Tam`, `Goi-Cuon`, `Pho`. Không lấy project riêng `Banh-Mi` 807 ảnh trong cùng workspace vì public class bị lỗi `label`, `3` |
+
+**Kết luận bổ sung 2026-05-03**:
+- Ưu tiên đưa vào vòng QC trước: #29, #30, #31, #32, #33, #34, #37, #38, #40, #42.
+- Chỉ dùng để vá class thiếu: #35, #36, #39.
+- Chỉ cherry-pick rất mạnh: #41 vì quá nhiều class.
+
 **Kết luận Step 1.1**:
 - Nhóm tạm loại: #11 (class map không rõ), #24/#25 (không phải YOLO bbox).
 - **Tất cả dataset còn lại đều dùng** — toàn bộ hoặc cherry-pick class phù hợp.
