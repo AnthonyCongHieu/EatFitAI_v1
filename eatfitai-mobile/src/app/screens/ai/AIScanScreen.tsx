@@ -463,9 +463,7 @@ const AIScanScreen: React.FC = () => {
         });
         Toast.show({
           type: 'success',
-          text1: (foodDetail as any)?._fromProvider
-            ? '🌐 Đã tìm thấy từ OpenFoodFacts'
-            : '✅ Đã nhận diện mã vạch',
+          text1: '✅ Đã nhận diện mã vạch',
           text2: foodDetail.name,
         });
         navigation.navigate('FoodDetail', {
