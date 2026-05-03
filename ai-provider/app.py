@@ -1,8 +1,9 @@
 """
 EatFitAI AI Provider - Production Service
-- YOLO Object Detection (CPU-only)  
+- YOLO11 Object Detection via ONNX Runtime (CPU-only, upgrade từ YOLOv8)
 - Gemini API cho Nutrition LLM (thay thế Ollama local)
 - Không chạy Whisper STT trên cloud (quá nặng)
+- Barcode: Sẵn sàng tích hợp — chỉ cần cắm API provider
 """
 from __future__ import annotations
 
@@ -380,6 +381,7 @@ def _detect_with_onnx(path: str, confidence_threshold: float, image_size: int) -
     return sorted(best_by_label.values(), key=lambda item: float(item["confidence"]), reverse=True)
 
 # PyTorch/ultralytics đã loại bỏ — ONNX Runtime là inference engine duy nhất.
+# Model YOLO11 export ONNX có cùng output format với YOLOv8 → zero code change.
 # Tiết kiệm ~260MB RAM (torch + torchvision + ultralytics).
 # DEVICE luôn là CPU trên Render free tier.
 
@@ -411,9 +413,10 @@ def healthz() -> Dict[str, Any]:
         "model_file": current_model_file,
         "model_load_error": current_model_error,
         "model_classes_count": len(YOLO_CLASS_NAMES),
+        # YOLO11 — upgrade từ YOLOv8. ONNX output format tương thích 100%.
         "model_type": "not-loaded" if not model_file else (
-            "yolov8-custom-eatfitai-onnx" if model_file.endswith(".onnx") else (
-                "yolov8-custom-eatfitai" if YOLO_MODEL_FILE in model_file else "yolov8-pretrained"
+            "yolo11-custom-eatfitai-onnx" if model_file.endswith(".onnx") else (
+                "yolo11-custom-eatfitai" if YOLO_MODEL_FILE in model_file else "yolo11-pretrained"
             )
         ),
         "yolo_onnx_enabled": YOLO_ONNX_ENABLED,
