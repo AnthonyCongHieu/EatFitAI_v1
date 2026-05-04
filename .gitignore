@@ -75,6 +75,7 @@ tools/fixtures/scan-demo/fixture-sources.json
 _cdp_render_profile/
 _chrome_profile_clone/
 _tmp/
+_tmp_kaggle_kernel/
 _tmp_*.png
 .playwright-cli/
 .worktrees
