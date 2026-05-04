@@ -1,0 +1,14 @@
+{
+  "id": "hiuinhcng/eatfitai-check-duplicates",
+  "title": "eatfitai-check-duplicates",
+  "code_file": "check.py",
+  "language": "python",
+  "kernel_type": "script",
+  "is_private": "true",
+  "enable_gpu": "false",
+  "enable_internet": "false",
+  "dataset_sources": ["hiuinhcng/eatfitai-food-dataset"],
+  "competition_sources": [],
+  "kernel_sources": [],
+  "model_sources": []
+}

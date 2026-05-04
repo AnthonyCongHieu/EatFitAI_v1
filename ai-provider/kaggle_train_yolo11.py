@@ -24,7 +24,7 @@ print(f"  CUDA:     {torch.cuda.is_available()}")
 print(f"  GPU count: {torch.cuda.device_count()}")
 for i in range(torch.cuda.device_count()):
     props = torch.cuda.get_device_properties(i)
-    print(f"  GPU {i}: {props.name} — {props.total_mem / 1024**3:.1f} GB VRAM")
+    print(f"  GPU {i}: {props.name} — {props.total_memory / 1024**3:.1f} GB VRAM")
 
 # === ĐƯỜNG DẪN KAGGLE ===
 # /kaggle/input/  → dữ liệu input (READ-ONLY)
@@ -33,7 +33,7 @@ KAGGLE_INPUT = "/kaggle/input"
 KAGGLE_WORK  = "/kaggle/working"
 
 # Tên dataset trên Kaggle (slug từ URL)
-DATASET_NAME = "eatfitai-food-dataset"
+DATASET_NAME = "datasets/hiuinhcng/eatfitai-food-dataset"
 
 # === BƯỚC 1: Giải nén tar nếu cần ===
 TAR_PATH = None
