@@ -1,0 +1,15 @@
+{
+  "id": "hiuinhcng/eatfitai-yolo11m-clean-v1",
+  "title": "EatFitAI YOLO11m Clean V1",
+  "code_file": "kaggle_yolo11m_train.py",
+  "language": "python",
+  "kernel_type": "script",
+  "is_private": true,
+  "enable_gpu": true,
+  "enable_internet": true,
+  "dataset_sources": [
+    "hiuinhcng/eatfitai-food-detection-clean-v1"
+  ],
+  "competition_sources": [],
+  "kernel_sources": []
+}

@@ -50,7 +50,13 @@ ai-provider/runs/
 ai-provider/uploads/*.jpg
 ai-provider/uploads/*.png
 ai-provider/training.log
+_dataset_v2_work/
+_dataset_v2_reports/
+_dataset_v2_kaggle_package/
+_dataset_v2_raw_package/
+_dataset_v2_downloads/
 *.pt
+*.onnx
 !ai-provider/best.pt
 !ai-provider/best.onnx
 

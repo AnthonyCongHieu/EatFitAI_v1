@@ -1,0 +1,26 @@
+roboflow_sources:
+  detection_15_vietnamese_food_v2:
+    workspace: aiapplication-gzusw
+    project: detection_15_vietnamese_food_v2
+    version: 1
+    format: yolov11
+    output_name: detection_15_vietnamese_food_v2.v1i.yolov11.zip
+    role: vietnamese_dish_coverage
+    decision: download_then_audit
+    notes: Prefer v1 non-augmented split for first clean dataset audit.
+  food_ingredients_v1:
+    workspace: food-recipe-ingredient-images-0gnku
+    project: food-ingredients-dataset
+    version: 1
+    format: yolov11
+    output_name: food_ingredients_dataset.v1i.yolov11.zip
+    role: ingredient_spice_supplement
+    decision: cherry_pick_audit
+    notes: Use conservative v1 first; larger augmented versions can be audited later if needed.
+kaggle_sources:
+  vietfood67:
+    dataset: thomasnguyen6868/vietfood68
+    output_name: VietFood67_kaggle_download.zip
+    role: vietnamese_dish_backbone
+    decision: audit_for_graduation_project
+    notes: License is CC BY-NC-SA 4.0; acceptable for graduation project, track attribution.

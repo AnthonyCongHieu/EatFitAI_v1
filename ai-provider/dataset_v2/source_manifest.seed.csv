@@ -1,0 +1,13 @@
+source_slug,priority,source_type,source_url,drive_zip_name,expected_role,initial_decision,notes
+vietfood67,1,kaggle,https://www.kaggle.com/datasets/thomasnguyen6868/vietfood68,VietFood67.ZIP,vietnamese_dish_backbone,PENDING_AUDIT,Must verify license and YOLO bbox format before use
+food_data_truongvo,2,roboflow,https://universe.roboflow.com/truongvo/food-data-e2kl5-vqaqp,01_food_data_vn.zip.zip,vietnamese_dish_backbone,PENDING_AUDIT,Strong Vietnamese source candidate
+detection_15_vietnamese_food_v2,3,roboflow,https://universe.roboflow.com/aiapplication-gzusw/detection_15_vietnamese_food_v2,,vietnamese_dish_coverage,PENDING_DOWNLOAD,Use only Object Detection export
+vietnamese_food_5,4,roboflow,,03_vietnamese_food_5.zip,core_vietnamese_classes,PENDING_AUDIT,Verify exact public source and class names
+food_ai_tong_hop,5,roboflow,,Food_AI_Tong_Hop.v1-banh_mi.yolov11.zip,core_recall_booster,PENDING_AUDIT,Control duplicates with Vietnamese Food 5 classes
+food_items,6,roboflow,https://universe.roboflow.com/foodrecognitionprethesis/food-items-j9iud,Food Items.v11i.yolov11.zip,home_meal_classes,PENDING_AUDIT,Watch low images per class
+canteen_menu,7,roboflow,,canteen_menu.v4i.yolov11.zip,canteen_meal_scenes,PENDING_AUDIT,Verify exact source and class map
+banh_dan_gian_nb,8,roboflow,,banh-dan-gian-nb.v1i.yolov11.zip,vietnamese_cake_tail,PENDING_AUDIT,Use only if sample bbox quality is good
+food_kcmrd,9,roboflow,https://universe.roboflow.com/helo-helo/food-kcmrd,04_food_kcmrd.zip,ingredient_protein_vegetable_spice,PENDING_AUDIT,Cherry-pick useful classes
+food_ingredients,10,roboflow,https://universe.roboflow.com/food-recipe-ingredient-images-0gnku/food-ingredients-dataset,,ingredient_spice_supplement,PENDING_DOWNLOAD,Prefer raw version; avoid noisy augmented full merge
+food_detection_3_old,99,roboflow,,11_food_detection_3.zip,old_problem_source,QUARANTINE,Prior logs showed severe duplicate labels
+food_union_fruit_old,99,roboflow,,17_food_union_fruit.zip,old_problem_source,QUARANTINE,Prior logs showed severe duplicate labels

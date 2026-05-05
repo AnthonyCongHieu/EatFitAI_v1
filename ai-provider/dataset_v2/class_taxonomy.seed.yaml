@@ -1,0 +1,77 @@
+canonical_rules:
+  naming:
+    - lowercase
+    - ascii_slug
+    - underscore_separator
+  reject_generic:
+    - food
+    - dish
+    - meal
+    - snack
+    - fruit
+    - vegetable
+    - object
+    - objects
+    - label
+    - plate
+    - bowl
+    - fork
+    - spoon
+    - knife
+    - table
+    - person
+    - hand
+    - logo
+    - brand
+    - packaging
+minimum_instances:
+  keep_default: 300
+  keep_if_useful: 100
+  keep_if_critical: 50
+  reject_or_merge_below: 50
+aliases:
+  banh_mi:
+    - banh-mi
+    - banhmi
+    - bánh-mì
+    - vietnamese_sandwich
+  pho:
+    - phở
+    - vietnamese_pho
+  ca_chua:
+    - tomato
+    - tomatoes
+  ca_rot:
+    - carrot
+    - carrots
+  hanh:
+    - onion
+    - green_onion
+    - shallot
+  toi:
+    - garlic
+  gung:
+    - ginger
+  sa:
+    - lemongrass
+  ot:
+    - chili
+    - chilli
+    - chili_pepper
+  ga:
+    - chicken
+  ca:
+    - fish
+  tom:
+    - shrimp
+    - prawn
+  muc:
+    - squid
+  thit_heo:
+    - pork
+  thit_bo:
+    - beef
+  trung:
+    - egg
+  dau_hu:
+    - tofu

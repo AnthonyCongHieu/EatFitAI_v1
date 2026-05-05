@@ -1,0 +1,16 @@
+{
+  "id": "hiuinhcng/eatfitai-dataset-v2-raw-audit",
+  "title": "EatFitAI Dataset V2 Raw Audit",
+  "code_file": "kaggle_raw_audit_kernel.py",
+  "language": "python",
+  "kernel_type": "script",
+  "is_private": true,
+  "enable_gpu": false,
+  "enable_internet": true,
+  "dataset_sources": [
+    "hiuinhcng/eatfitai-dataset-v2-raw-sources",
+    "hiuinhcng/eatfitai-dataset-v2-pipeline-code"
+  ],
+  "competition_sources": [],
+  "kernel_sources": []
+}
