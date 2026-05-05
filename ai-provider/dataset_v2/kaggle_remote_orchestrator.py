@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import argparse
+import builtins
+import contextlib
 import json
 import shutil
 import time
@@ -90,13 +92,31 @@ def wait_kernel(kernel_id: str, poll_seconds: int, timeout_seconds: int) -> str:
         time.sleep(poll_seconds)
 
 
-def download_kernel_output(kernel_id: str, out_dir: Path) -> None:
+def download_kernel_output(kernel_id: str, out_dir: Path, api: object | None = None) -> None:
     out_dir.mkdir(parents=True, exist_ok=True)
-    api = get_api()
-    files, log = api.kernels_output(kernel_id, str(out_dir), force=True, quiet=False)
-    print(log)
+    api = api or get_api()
+    with default_text_open_utf8():
+        files, log = api.kernels_output(kernel_id, str(out_dir), force=True, quiet=True)
+    if log:
+        print(str(log).encode("utf-8", errors="replace").decode("utf-8", errors="replace"))
     for file in files:
         print(file)
+
+
+@contextlib.contextmanager
+def default_text_open_utf8():
+    original_open = builtins.open
+
+    def open_utf8(file, mode="r", *args, **kwargs):
+        if "b" not in mode and "encoding" not in kwargs:
+            kwargs["encoding"] = "utf-8"
+        return original_open(file, mode, *args, **kwargs)
+
+    builtins.open = open_utf8
+    try:
+        yield
+    finally:
+        builtins.open = original_open
 
 
 def main() -> int:
@@ -109,6 +129,12 @@ def main() -> int:
     ds = sub.add_parser("dataset")
     ds.add_argument("--folder", type=Path, required=True)
     ds.add_argument("--message", default="EatFitAI Dataset V2 automated version")
+
+    prep = sub.add_parser("prepare-kernel")
+    prep.add_argument("--source-dir", type=Path, default=Path("ai-provider/dataset_v2"))
+    prep.add_argument("--out-dir", type=Path, default=Path("_dataset_v2_raw_audit_kernel"))
+    prep.add_argument("--kernel-metadata", type=Path, default=Path("ai-provider/dataset_v2/kaggle_raw_audit_kernel_metadata.json"))
+    prep.add_argument("--extra-files", type=Path, nargs="*", default=[])
 
     push = sub.add_parser("push-kernel")
     push.add_argument("--folder", type=Path, required=True)
@@ -130,6 +156,9 @@ def main() -> int:
             print(getattr(item, "ref", ""), "|", getattr(item, "title", ""))
     elif args.cmd == "dataset":
         create_or_version_dataset(args.folder, args.message)
+    elif args.cmd == "prepare-kernel":
+        prepare_kernel_folder(args.source_dir, args.out_dir, args.kernel_metadata, args.extra_files)
+        print(json.dumps({"folder": str(args.out_dir), "prepared": True}, ensure_ascii=False, indent=2))
     elif args.cmd == "push-kernel":
         print(push_kernel(args.folder))
     elif args.cmd == "wait-kernel":

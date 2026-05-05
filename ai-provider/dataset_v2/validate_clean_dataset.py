@@ -73,6 +73,7 @@ def validate(dataset: Path) -> dict[str, Any]:
     if missing_from_valid:
         summary["warnings"].append({"classes_missing_from_valid": missing_from_valid})
     empty_splits = [split for split, stats in summary["splits"].items() if stats["images"] == 0]
+    summary["empty_splits"] = empty_splits
     if empty_splits:
         summary["warnings"].append({"empty_splits": empty_splits})
     hard_keys = [
@@ -85,7 +86,12 @@ def validate(dataset: Path) -> dict[str, Any]:
         "image_open_failed",
         "cross_split_exact_duplicate_images",
     ]
-    summary["hard_gate_passed"] = all(summary[key] == 0 for key in hard_keys) and summary["class_ids_contiguous"] and summary["data_yaml_portable"]
+    summary["hard_gate_passed"] = (
+        all(summary[key] == 0 for key in hard_keys)
+        and not empty_splits
+        and summary["class_ids_contiguous"]
+        and summary["data_yaml_portable"]
+    )
     return summary
 
 

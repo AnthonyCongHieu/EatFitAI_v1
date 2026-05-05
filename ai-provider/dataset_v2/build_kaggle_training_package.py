@@ -12,6 +12,16 @@ def add_dir_to_tar(tar: tarfile.TarFile, source: Path, arc_root: str) -> None:
         tar.add(path, arcname=str(Path(arc_root) / path.relative_to(source)))
 
 
+def assert_passing_final_audit(reports: Path) -> dict:
+    summary_path = reports / "final_audit_summary.json"
+    if not summary_path.exists():
+        raise FileNotFoundError(f"Missing final audit summary: {summary_path}")
+    summary = json.loads(summary_path.read_text(encoding="utf-8"))
+    if not summary.get("hard_gate_passed"):
+        raise RuntimeError(f"Final audit hard gate did not pass: {summary_path}")
+    return summary
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Package clean EatFitAI dataset for Kaggle dataset upload.")
     parser.add_argument("--dataset", type=Path, required=True)
@@ -23,6 +33,7 @@ def main() -> int:
 
     if not (args.dataset / "data.yaml").exists():
         raise SystemExit(f"Missing clean data.yaml: {args.dataset / 'data.yaml'}")
+    assert_passing_final_audit(args.reports)
     args.out_dir.mkdir(parents=True, exist_ok=True)
     tar_path = args.out_dir / "eatfitai_clean_v1.tar"
     with tarfile.open(tar_path, "w") as tar:
@@ -31,6 +42,12 @@ def main() -> int:
     copies = {
         args.reports / "final_audit_summary.json": args.out_dir / "audit_summary.json",
         args.reports / "class_distribution_after_filter.csv": args.out_dir / "class_distribution.csv",
+        args.reports / "source_audit.csv": args.out_dir / "source_audit.csv",
+        args.reports / "source_audit.json": args.out_dir / "source_audit.json",
+        args.reports / "raw_inventory.csv": args.out_dir / "raw_inventory.csv",
+        args.reports / "class_candidates.csv": args.out_dir / "class_candidates.csv",
+        args.reports / "label_issues.csv": args.out_dir / "label_issues.csv",
+        args.reports / "duplicate_report.csv": args.out_dir / "duplicate_report.csv",
     }
     for src, dst in copies.items():
         if src.exists():

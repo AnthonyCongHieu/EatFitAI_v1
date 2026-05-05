@@ -61,6 +61,14 @@ def find_raw_dataset_dir() -> Path:
     raise FileNotFoundError("No raw source dataset found under /kaggle/input")
 
 
+def find_raw_manifest(raw_root: Path) -> Path | None:
+    direct = raw_root / "raw_source_manifest.csv"
+    if direct.exists():
+        return direct
+    manifests = sorted(raw_root.rglob("raw_source_manifest.csv"))
+    return manifests[0] if manifests else None
+
+
 def main() -> int:
     print("Kaggle input directories:")
     for path in sorted(KAGGLE_INPUT.iterdir()):
@@ -73,7 +81,10 @@ def main() -> int:
         print(" -", path.name)
 
     raw_dir = find_raw_dataset_dir()
+    raw_manifest = find_raw_manifest(raw_dir)
     print("Raw dataset:", raw_dir)
+    if raw_manifest:
+        print("Raw manifest:", raw_manifest)
     print("Raw zip files:")
     for path in sorted(raw_dir.rglob("*.zip")):
         print(" -", path.name, path.stat().st_size)
@@ -84,18 +95,19 @@ def main() -> int:
     audit_script = code_dir / "audit_sources.py"
     grid_script = code_dir / "make_sample_grids.py"
 
-    run(
-        [
-            sys.executable,
-            str(audit_script),
-            "--raw-dir",
-            str(raw_dir),
-            "--work-dir",
-            str(WORK_DIR),
-            "--out-dir",
-            str(REPORT_DIR),
-        ]
-    )
+    audit_cmd = [
+        sys.executable,
+        str(audit_script),
+        "--raw-dir",
+        str(raw_dir),
+        "--work-dir",
+        str(WORK_DIR),
+        "--out-dir",
+        str(REPORT_DIR),
+    ]
+    if raw_manifest:
+        audit_cmd.extend(["--manifest", str(raw_manifest)])
+    run(audit_cmd)
     run(
         [
             sys.executable,

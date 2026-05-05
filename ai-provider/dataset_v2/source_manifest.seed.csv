@@ -1,13 +1,26 @@
 source_slug,priority,source_type,source_url,drive_zip_name,expected_role,initial_decision,notes
-vietfood67,1,kaggle,https://www.kaggle.com/datasets/thomasnguyen6868/vietfood68,VietFood67.ZIP,vietnamese_dish_backbone,PENDING_AUDIT,Must verify license and YOLO bbox format before use
-food_data_truongvo,2,roboflow,https://universe.roboflow.com/truongvo/food-data-e2kl5-vqaqp,01_food_data_vn.zip.zip,vietnamese_dish_backbone,PENDING_AUDIT,Strong Vietnamese source candidate
-detection_15_vietnamese_food_v2,3,roboflow,https://universe.roboflow.com/aiapplication-gzusw/detection_15_vietnamese_food_v2,,vietnamese_dish_coverage,PENDING_DOWNLOAD,Use only Object Detection export
-vietnamese_food_5,4,roboflow,,03_vietnamese_food_5.zip,core_vietnamese_classes,PENDING_AUDIT,Verify exact public source and class names
-food_ai_tong_hop,5,roboflow,,Food_AI_Tong_Hop.v1-banh_mi.yolov11.zip,core_recall_booster,PENDING_AUDIT,Control duplicates with Vietnamese Food 5 classes
-food_items,6,roboflow,https://universe.roboflow.com/foodrecognitionprethesis/food-items-j9iud,Food Items.v11i.yolov11.zip,home_meal_classes,PENDING_AUDIT,Watch low images per class
-canteen_menu,7,roboflow,,canteen_menu.v4i.yolov11.zip,canteen_meal_scenes,PENDING_AUDIT,Verify exact source and class map
-banh_dan_gian_nb,8,roboflow,,banh-dan-gian-nb.v1i.yolov11.zip,vietnamese_cake_tail,PENDING_AUDIT,Use only if sample bbox quality is good
-food_kcmrd,9,roboflow,https://universe.roboflow.com/helo-helo/food-kcmrd,04_food_kcmrd.zip,ingredient_protein_vegetable_spice,PENDING_AUDIT,Cherry-pick useful classes
-food_ingredients,10,roboflow,https://universe.roboflow.com/food-recipe-ingredient-images-0gnku/food-ingredients-dataset,,ingredient_spice_supplement,PENDING_DOWNLOAD,Prefer raw version; avoid noisy augmented full merge
+food_data_truongvo,1,roboflow,https://universe.roboflow.com/truongvo/food-data-e2kl5-vqaqp,01_food_data_vn.zip.zip,vietnamese_dish_backbone,PENDING_AUDIT,Strong Vietnamese source candidate
+food_detection_bobotnhan,2,roboflow,https://universe.roboflow.com/fooddetection-3q4jo/food-detection-bobotnhan,Food-Detection-bobotnhan.v7i.yolov11.zip,core_vietnamese_dish_coverage,PENDING_AUDIT,Verify public page/license/class map before using
+food_items,3,roboflow,https://universe.roboflow.com/foodrecognitionprethesis/food-items-j9iud,Food Items.v11i.yolov11.zip,home_meal_classes,PENDING_AUDIT,Watch low images per class
+food_kcmrd,4,roboflow,https://universe.roboflow.com/helo-helo/food-kcmrd,04_food_kcmrd.zip,ingredient_protein_vegetable_spice,PENDING_AUDIT,Cherry-pick useful classes
+canteen_menu,5,roboflow,https://universe.roboflow.com/nhanbeo/canteen_menu,canteen_menu.v4i.yolov11.zip,canteen_meal_scenes,PENDING_AUDIT,Verify exact source and class map
+detection_15_vietnamese_food_v2,6,roboflow,https://universe.roboflow.com/aiapplication-gzusw/detection_15_vietnamese_food_v2,,vietnamese_dish_coverage,PENDING_DOWNLOAD,Use only Object Detection export
+vietnamese_food_5,7,roboflow,https://universe.roboflow.com/foodaitonghop/vietnamese-food-0nsuo,03_vietnamese_food_5.zip,core_vietnamese_classes,PENDING_AUDIT,Verify exact public source and class names
+food_ai_tong_hop,8,roboflow,https://universe.roboflow.com/foodaitonghop/food_ai_tong_hop,Food_AI_Tong_Hop.v1-banh_mi.yolov11.zip,core_recall_booster,PENDING_AUDIT,Control duplicates with Vietnamese Food 5 classes
+rawdata_my_khanh,9,roboflow,https://universe.roboflow.com/search?q=like%3Anhandangmonan%2Fbanh-nhan-gian,RawData.v12i.yolov11.zip,mekong_vietnamese_dish_coverage,PENDING_AUDIT,Verify exact source page/license
+food_prethesis,10,roboflow,https://universe.roboflow.com/prethesis-avz0w/food-4otph,Food.v6i.yolov11.zip,vietnamese_broad_dish_coverage,PENDING_AUDIT,Reject noisy/non-food classes after audit
+food_prethesis_v3,11,roboflow,https://universe.roboflow.com/prethesis-avz0w/food-4otph,Food.v3i.yolov11.zip,vietnamese_broad_dish_coverage,PENDING_AUDIT,Audit separately from Food v6 and de-duplicate overlap
+vietnamese_food_calories,12,roboflow,https://universe.roboflow.com/toby-b9kw2/vietnamese-food-calories-suwt6,vietnamese-food-calories.v1i.yolov11.zip,vietnamese_dish_tail,PENDING_AUDIT,Keep only clean stable food labels
+vegetable_detection,13,roboflow,https://universe.roboflow.com/area51-npwti/vegetable-object-detection-ybszt,05_vegetable_detection.zip,vegetable_ingredient_supplement,PENDING_AUDIT,Cherry-pick nutrition-aligned vegetable labels
+fish,14,roboflow,,06_fish.zip,fish_protein_supplement,PENDING_AUDIT,Use only if bbox and class names are stable
+food_ingredients,15,roboflow,https://universe.roboflow.com/food-recipe-ingredient-images-0gnku/food-ingredients-dataset,,ingredient_spice_supplement,PENDING_DOWNLOAD,Prefer raw version; avoid noisy augmented full merge
+banh_dan_gian_nb,16,roboflow,https://universe.roboflow.com/nhtdanh,banh-dan-gian-nb.v1i.yolov11.zip,vietnamese_cake_tail,PENDING_AUDIT,Use only if sample bbox quality is good
+banh_dan_gian_mien_tay,17,roboflow,https://universe.roboflow.com/fruitnetyolov8/banh-dan-gian-mien-tay,Banh dan gian mien Tay.v5i.yolov11.zip,vietnamese_cake_tail,PENDING_AUDIT,Tail patch source only
+food_detection_xt7yz,20,roboflow,https://universe.roboflow.com/science-fair-48u9f/food-detection-xt7yz,16_food_detection_xt7yz.zip,general_food_supplement,LOW_PRIORITY_CHERRY_PICK,Use only after Vietnamese/domain sources are insufficient
+uecfood256,21,roboflow,https://universe.roboflow.com/japon-gi1n7/uecfood256,07_uecfood256.zip,general_asian_food_large,LOW_PRIORITY_CHERRY_PICK,Large broad source; cherry-pick only
+food_detection_64,22,roboflow,,10_food_detection_64.zip,general_food_supplement,LOW_PRIORITY_CHERRY_PICK,Low-priority filler after core audit
+thai_food,23,roboflow,,12_thai_food.zip,asian_food_supplement,LOW_PRIORITY_CHERRY_PICK,Use only if overlapping target foods pass audit
+npg_project,24,roboflow,,15_npg_project.zip,general_food_supplement,LOW_PRIORITY_CHERRY_PICK,Unverified general export; audit late
+vietfood67,50,kaggle,https://www.kaggle.com/datasets/thomasnguyen6868/vietfood68,VietFood67.ZIP,vietnamese_dish_backbone,LICENSE_RISK_AUDIT_ONLY,Non-commercial/share-alike license; exclude from production unless explicitly compatible
 food_detection_3_old,99,roboflow,,11_food_detection_3.zip,old_problem_source,QUARANTINE,Prior logs showed severe duplicate labels
 food_union_fruit_old,99,roboflow,,17_food_union_fruit.zip,old_problem_source,QUARANTINE,Prior logs showed severe duplicate labels

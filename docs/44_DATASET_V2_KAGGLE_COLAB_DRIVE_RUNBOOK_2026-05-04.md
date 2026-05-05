@@ -772,7 +772,7 @@ Encoding:
 
 - đọc/ghi text bằng UTF-8;
 - không dùng `errors="ignore"` khi file quan trọng;
-- detect mojibake như `Ã`, `Ä`, `áº`, `�`;
+- detect mojibake bằng escaped markers như `U+00C3`, `U+00C4`, `U+00E1 U+00BA`, `U+FFFD`;
 - preserve Vietnamese labels nếu có, nhưng class machine names nên dùng lowercase underscore không dấu nếu phục vụ model/runtime.
 
 ---

@@ -1,0 +1,6 @@
+kaggle
+pyyaml
+requests
+pillow
+opencv-python-headless
+ultralytics

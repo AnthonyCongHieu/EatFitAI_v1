@@ -1,4 +1,14 @@
 roboflow_sources:
+  food_data_truongvo:
+    workspace: truongvo
+    project: food-data-e2kl5-vqaqp
+    version: 1
+    format: yolov11
+    output_name: food_data_truongvo.v1i.yolov11.zip
+    expected_export_size_bytes: 992057392
+    role: vietnamese_dish_backbone
+    decision: download_then_audit
+    notes: Prefer Roboflow export over Drive zip; API export HEAD was under 1GB on 2026-05-05.
   detection_15_vietnamese_food_v2:
     workspace: aiapplication-gzusw
     project: detection_15_vietnamese_food_v2
@@ -17,6 +27,78 @@ roboflow_sources:
     role: ingredient_spice_supplement
     decision: cherry_pick_audit
     notes: Use conservative v1 first; larger augmented versions can be audited later if needed.
+  food_ingredient_recognition:
+    workspace: test-image-preprocessing
+    project: food-ingredient-recognition-51ngf
+    version: 4
+    format: yolov11
+    output_name: food_ingredient_recognition.v4i.yolov11.zip
+    role: ingredient_supplement
+    decision: supplement_audit
+    notes: Audit for ingredient coverage only; reject invalid or duplicate class names before clean merge.
+  food_ingredient_3qyxj:
+    workspace: food-4pya3
+    project: food-ingredient-3qyxj
+    version: 5
+    format: yolov8
+    output_name: food_ingredient_3qyxj.v5i.yolov8.zip
+    role: ingredient_supplement
+    decision: supplement_audit
+    notes: Ingredient-only candidate; do not treat as Vietnamese backbone.
+  mon_chung:
+    workspace: foodai-aditx
+    project: mon-chung-cqbt6
+    version: 2
+    format: yolov11
+    output_name: mon_chung.v2i.yolov11.zip
+    role: vietnamese_multi_object_plate
+    decision: download_then_audit
+    notes: Drop generic objects class if present; verify meal-scene co-occurrence in sample grids.
+  vietnamese_food_nhh:
+    workspace: nhh
+    project: vietnamese-food
+    version: 1
+    format: yolov11
+    output_name: vietnamese_food_nhh.v1i.yolov11.zip
+    role: vietnamese_booster
+    decision: booster_audit
+    notes: Small focused source; use only if it adds cleaner samples than existing Vietnamese boosters.
+  khoa_food_jfsxy:
+    workspace: khoa-fbrvv
+    project: food-jfsxy
+    version: 3
+    format: yolov11
+    output_name: khoa_food_jfsxy.v3i.yolov11.zip
+    role: vietnamese_cake_tail
+    decision: booster_audit
+    notes: Focused Vietnamese cake classes; use as tail booster after dedupe with large Vietnamese backbones.
+  spice_caezr:
+    workspace: spiceso
+    project: spice-caezr
+    version: 1
+    format: yolov11
+    output_name: spice_caezr.v1i.yolov11.zip
+    role: spice_supplement
+    decision: supplement_audit
+    notes: Map non-English spice labels before any clean merge.
+  ingredient_v0h5a:
+    workspace: nurs-workspace-vavv5
+    project: ingredient-v0h5a
+    version: 1
+    format: yolov11
+    output_name: ingredient_v0h5a.v1i.yolov11.zip
+    role: ingredient_supplement
+    decision: supplement_audit
+    notes: Public-domain practical ingredients; verify whether samples are meal/prep scenes or isolated objects.
+  vegetable_object_detection_ybszt:
+    workspace: area51-npwti
+    project: vegetable-object-detection-ybszt
+    version: 1
+    format: yolov11
+    output_name: vegetable_object_detection_ybszt.v1i.yolov11.zip
+    role: vegetable_ingredient_supplement
+    decision: cherry_pick_audit
+    notes: Download only if the existing Drive vegetable zip is missing or needs a fresh audit export.
 kaggle_sources:
   vietfood67:
     dataset: thomasnguyen6868/vietfood68

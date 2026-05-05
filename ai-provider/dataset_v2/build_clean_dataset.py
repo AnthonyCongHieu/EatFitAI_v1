@@ -22,6 +22,7 @@ from common import (
     sha256_file,
     write_csv,
 )
+from audit_sources import safe_extract_zip, source_zip_reference
 
 ACTIVE_DECISIONS = {"ACCEPT_FULL", "ACCEPT_FILTERED", "CHERRY_PICK"}
 
@@ -53,6 +54,28 @@ def split_for_hash(image_hash: str) -> str:
     if value < 95:
         return "valid"
     return "test"
+
+
+def ensure_extracted_sources(audit_rows: list[dict[str, Any]], raw_dir: Path | None, work_dir: Path) -> None:
+    if raw_dir is None:
+        return
+    extracted_root = work_dir / "raw_extracted"
+    extracted_root.mkdir(parents=True, exist_ok=True)
+    for source in audit_rows:
+        if source.get("decision") not in ACTIVE_DECISIONS:
+            continue
+        current_root = Path(source.get("extracted_path", ""))
+        if current_root.exists():
+            continue
+        zip_name = source_zip_reference(source)
+        if not zip_name:
+            continue
+        zip_path = raw_dir / zip_name
+        if not zip_path.exists():
+            continue
+        extracted_path = extracted_root / source["source_slug"]
+        safe_extract_zip(zip_path, extracted_path)
+        source["extracted_path"] = str(extracted_path)
 
 
 def clean_dataset(audit_rows: list[dict[str, Any]], taxonomy: dict[str, Any], out_dataset: Path, out_reports: Path) -> dict[str, Any]:
@@ -168,11 +191,14 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Build a deduped YOLO detect-only clean dataset from audited sources.")
     parser.add_argument("--audit-json", type=Path, required=True)
     parser.add_argument("--taxonomy", type=Path, required=True)
+    parser.add_argument("--raw-dir", type=Path, default=None, help="Optional raw zip folder used to re-extract missing audit paths.")
+    parser.add_argument("--work-dir", type=Path, default=Path("_dataset_v2_work"))
     parser.add_argument("--out-dataset", type=Path, default=Path("_dataset_v2_work/clean_dataset"))
     parser.add_argument("--out-reports", type=Path, default=Path("_dataset_v2_reports"))
     args = parser.parse_args()
 
     audit_rows = json.loads(args.audit_json.read_text(encoding="utf-8"))
+    ensure_extracted_sources(audit_rows, args.raw_dir.resolve() if args.raw_dir else None, args.work_dir)
     taxonomy = load_yaml(args.taxonomy)
     summary = clean_dataset(audit_rows, taxonomy, args.out_dataset, args.out_reports)
     print(json.dumps(summary, ensure_ascii=False, indent=2))

@@ -11,7 +11,15 @@ from typing import Any, Iterable
 
 IMAGE_EXTS = {".jpg", ".jpeg", ".png", ".webp"}
 SPLIT_ALIASES = {"train": "train", "valid": "valid", "val": "valid", "test": "test"}
-BAD_TEXT_MARKERS = ("�", "Ã", "Â", "ã‚", "ãƒ")
+BAD_TEXT_MARKERS = (
+    "\ufffd",
+    "\u00c3\u00a1\u00c2\u00ba",
+    "\u00c3\u00a1\u00c2\u00bb",
+    "\u00c3",
+    "\u00c2",
+    "\u00e1\u00ba",
+    "\u00e1\u00bb",
+)
 
 
 def read_text(path: Path) -> str:
@@ -181,6 +189,19 @@ def find_split_dirs(root: Path) -> dict[str, tuple[Path, Path]]:
         label_dir = directory / "labels"
         if image_dir.is_dir() and label_dir.is_dir():
             splits[SPLIT_ALIASES[directory.name.lower()]] = (image_dir, label_dir)
+    for image_parent in [root / "images", *[path for path in root.rglob("images") if path.is_dir()]]:
+        if not image_parent.is_dir():
+            continue
+        label_parent = image_parent.parent / "labels"
+        if not label_parent.is_dir():
+            continue
+        for image_dir in sorted(path for path in image_parent.iterdir() if path.is_dir()):
+            split_name = SPLIT_ALIASES.get(image_dir.name.lower())
+            if not split_name:
+                continue
+            label_dir = label_parent / image_dir.name
+            if label_dir.is_dir():
+                splits[split_name] = (image_dir, label_dir)
     return splits
 
 

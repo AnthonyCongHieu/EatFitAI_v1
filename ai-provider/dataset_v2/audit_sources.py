@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Any
 
 from common import (
+    IMAGE_EXTS,
     decide_source,
     find_data_yaml,
     find_split_dirs,
@@ -28,6 +29,7 @@ from common import (
 AUDIT_FIELDS = [
     "source_slug",
     "zip_name",
+    "package_path",
     "zip_size_bytes",
     "zip_sha256",
     "data_yaml_found",
@@ -85,21 +87,77 @@ def load_manifest(manifest_path: Path | None, raw_dir: Path | None) -> list[dict
     return read_csv(manifest_path)
 
 
-def audit_source(source: dict[str, str], zip_path: Path, extracted_root: Path) -> tuple[dict[str, Any], list[dict[str, Any]]]:
+def source_zip_reference(source: dict[str, str]) -> str:
+    return (
+        source.get("package_path", "")
+        or source.get("drive_zip_name", "")
+        or source.get("zip_name", "")
+        or source.get("output_name", "")
+        or source.get("extracted_path", "")
+    )
+
+
+def is_auditable_manifest_row(source: dict[str, str]) -> bool:
+    status = source.get("status", "").strip().lower()
+    if status and status not in {"copied", "found"}:
+        return False
+    decision_text = " ".join(
+        source.get(key, "")
+        for key in (
+            "initial_decision",
+            "public_decision",
+            "decision",
+        )
+    ).upper()
+    return "QUARANTINE" not in decision_text and "REJECT" not in decision_text
+
+
+def parse_optional_int(value: object) -> int | None:
+    text = str(value or "").strip()
+    if not text:
+        return None
+    try:
+        parsed = int(text)
+    except ValueError:
+        return None
+    return parsed if parsed > 0 else None
+
+
+def parse_bool(value: object) -> bool:
+    return str(value or "").strip().lower() in {"1", "true", "yes", "y"}
+
+
+def list_images_limited(root: Path, limit: int) -> list[Path]:
+    images: list[Path] = []
+    for path in root.rglob("*"):
+        if path.is_file() and path.suffix.lower() in IMAGE_EXTS:
+            images.append(path)
+            if len(images) >= limit:
+                break
+    return images
+
+
+def audit_extracted_tree(
+    source: dict[str, str],
+    extracted_path: Path,
+    package_path: str,
+    zip_path: Path | None = None,
+) -> tuple[dict[str, Any], list[dict[str, Any]]]:
     source_slug = source["source_slug"]
-    extracted_path = extracted_root / source_slug
-    if not extracted_path.exists():
-        safe_extract_zip(zip_path, extracted_path)
 
     data_yaml = find_data_yaml(extracted_path)
     names, text_warnings = parse_data_yaml_names(data_yaml)
     splits = find_split_dirs(extracted_path)
+    audit_image_limit = parse_optional_int(source.get("audit_image_limit"))
+    audit_fast_sample = parse_bool(source.get("audit_fast_sample"))
+    remaining_images = audit_image_limit
 
     metrics: dict[str, Any] = {
         "source_slug": source_slug,
-        "zip_name": zip_path.name,
-        "zip_size_bytes": zip_path.stat().st_size,
-        "zip_sha256": sha256_file(zip_path),
+        "zip_name": zip_path.name if zip_path else "",
+        "package_path": package_path,
+        "zip_size_bytes": zip_path.stat().st_size if zip_path else "",
+        "zip_sha256": sha256_file(zip_path) if zip_path else "",
         "data_yaml_found": data_yaml is not None,
         "task_type_detected": "unknown",
         "class_count": len(names),
@@ -126,21 +184,39 @@ def audit_source(source: dict[str, str], zip_path: Path, extracted_root: Path) -
         "decision_reason": "",
         "text_warnings": ";".join(sorted(set(text_warnings))),
         "extracted_path": str(extracted_path),
+        "audit_image_limit": audit_image_limit or "",
+        "audit_image_count_skipped": 0,
+        "audit_scope": "full",
+        "audit_fast_sample": audit_fast_sample,
     }
     all_rows: list[dict[str, Any]] = []
     label_files_seen: set[Path] = set()
     image_class_sets: defaultdict[str, set[str]] = defaultdict(set)
 
     for image_dir, label_dir in splits.values():
-        images = list_images(image_dir)
-        labels = sorted(label_dir.rglob("*.txt"))
+        if remaining_images is None:
+            all_images = list_images(image_dir)
+            images = all_images
+            labels = sorted(label_dir.rglob("*.txt"))
+        else:
+            take = max(remaining_images, 0)
+            if audit_fast_sample:
+                images = list_images_limited(image_dir, take)
+                metrics["audit_image_count_skipped"] = ""
+            else:
+                all_images = list_images(image_dir)
+                images = all_images[:take]
+                metrics["audit_image_count_skipped"] += max(len(all_images) - len(images), 0)
+            remaining_images -= len(images)
+            labels = [label_for_image(image, image_dir, label_dir) for image in images if label_for_image(image, image_dir, label_dir).exists()]
         metrics["image_count"] += len(images)
         metrics["label_count"] += len(labels)
         label_files_seen.update(labels)
 
         image_stems = {image.relative_to(image_dir).with_suffix("").as_posix() for image in images}
         label_stems = {label.relative_to(label_dir).with_suffix("").as_posix() for label in labels}
-        metrics["orphan_label_count"] += len(label_stems - image_stems)
+        if remaining_images is None:
+            metrics["orphan_label_count"] += len(label_stems - image_stems)
 
         for image in images:
             ok, _size = image_opens(image)
@@ -182,6 +258,8 @@ def audit_source(source: dict[str, str], zip_path: Path, extracted_root: Path) -
                     metrics["empty_label_count"] += value
 
     metrics["task_type_detected"] = "mixed_detect_segment" if metrics["segment_row_count"] and metrics["detect_row_count"] else ("segment" if metrics["segment_row_count"] else "detect")
+    if audit_image_limit and (audit_fast_sample or metrics["audit_image_count_skipped"]):
+        metrics["audit_scope"] = "sampled"
     metrics["instances_per_class"] = json.dumps(summarize_class_counts(all_rows, names), ensure_ascii=False)
     metrics["images_per_class"] = json.dumps({name: len(paths) for name, paths in sorted(image_class_sets.items())}, ensure_ascii=False)
     decision, reason = decide_source(metrics, source.get("initial_decision", ""))
@@ -206,6 +284,18 @@ def audit_source(source: dict[str, str], zip_path: Path, extracted_root: Path) -
     return metrics, class_candidate_rows
 
 
+def audit_source(source: dict[str, str], zip_path: Path, extracted_root: Path) -> tuple[dict[str, Any], list[dict[str, Any]]]:
+    source_slug = source["source_slug"]
+    extracted_path = extracted_root / source_slug
+    if not extracted_path.exists():
+        safe_extract_zip(zip_path, extracted_path)
+    return audit_extracted_tree(source, extracted_path, source_zip_reference(source), zip_path)
+
+
+def audit_mounted_source(source: dict[str, str], extracted_path: Path) -> tuple[dict[str, Any], list[dict[str, Any]]]:
+    return audit_extracted_tree(source, extracted_path, source_zip_reference(source), None)
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Audit raw YOLO source zips without modifying raw archives.")
     parser.add_argument("--raw-dir", type=Path, default=None)
@@ -225,15 +315,29 @@ def main() -> int:
     class_candidate_rows: list[dict[str, Any]] = []
 
     for source in sources:
-        zip_name = source.get("drive_zip_name", "")
+        if not is_auditable_manifest_row(source):
+            inventory_rows.append({**source, "audit_status": "skipped_by_manifest_decision"})
+            continue
+        extracted_path_text = source.get("extracted_path", "").strip()
+        if extracted_path_text:
+            extracted_path = Path(extracted_path_text)
+            if not extracted_path.exists():
+                inventory_rows.append({**source, "audit_status": "missing_extracted_path"})
+                continue
+            inventory_rows.append({**source, "audit_status": "found", "package_path": extracted_path.as_posix()})
+            metrics, class_rows = audit_mounted_source(source, extracted_path)
+            audit_rows.append(metrics)
+            class_candidate_rows.extend(class_rows)
+            continue
+        zip_name = source_zip_reference(source)
         if not zip_name or raw_dir is None:
-            inventory_rows.append({**source, "status": "missing_local_zip"})
+            inventory_rows.append({**source, "audit_status": "missing_local_zip"})
             continue
         zip_path = raw_dir / zip_name
         if not zip_path.exists():
-            inventory_rows.append({**source, "status": "missing_local_zip"})
+            inventory_rows.append({**source, "audit_status": "missing_local_zip"})
             continue
-        inventory_rows.append({**source, "status": "found", "zip_size_bytes": zip_path.stat().st_size})
+        inventory_rows.append({**source, "audit_status": "found", "zip_size_bytes": zip_path.stat().st_size})
         metrics, candidates = audit_source(source, zip_path, extracted_root)
         audit_rows.append(metrics)
         class_candidate_rows.extend(candidates)

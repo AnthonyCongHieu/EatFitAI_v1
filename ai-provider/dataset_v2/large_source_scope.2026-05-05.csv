@@ -1,0 +1,3 @@
+source_slug,audit_mode,source_ref,kaggle_input_slug,preferred_subdir,cache_policy,license,initial_decision,audit_image_limit,audit_fast_sample,notes
+food_data_truongvo,roboflow_export,roboflow:truongvo/food-data-e2kl5-vqaqp,,,cache_after_audit,CC BY 4.0,PENDING_AUDIT,,,Use Roboflow export because Drive zip is quota-blocked and oversized while API export is under 1GB.
+vietfood67,kaggle_dataset_direct,kaggle:thomasnguyen6868/vietfood68,vietfood68,dataset,no_raw_cache,CC BY-NC-SA 4.0,LICENSE_RISK_AUDIT_ONLY,3000,true,Audit mounted Kaggle dataset directly with a fast capped first pass; keep license in manifest and do not raw-cache.

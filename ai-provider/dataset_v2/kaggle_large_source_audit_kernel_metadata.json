@@ -1,0 +1,14 @@
+{
+  "id": "hiuinhcng/eatfitai-dataset-v2-large-source-audit",
+  "title": "EatFitAI Dataset V2 Large Source Audit",
+  "code_file": "kaggle_large_source_audit_kernel.py",
+  "language": "python",
+  "kernel_type": "script",
+  "is_private": true,
+  "enable_gpu": false,
+  "enable_internet": true,
+  "dataset_sources": [
+    "hiuinhcng/eatfitai-dataset-v2-pipeline-code",
+    "thomasnguyen6868/vietfood68"
+  ]
+}

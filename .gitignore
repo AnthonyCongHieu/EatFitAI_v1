@@ -54,7 +54,13 @@ _dataset_v2_work/
 _dataset_v2_reports/
 _dataset_v2_kaggle_package/
 _dataset_v2_raw_package/
+_dataset_v2_raw_sources_package/
+_dataset_v2_pipeline_code_package/
+_dataset_v2_raw_audit_kernel/
+_dataset_v2_public_drive_raw_audit_kernel/
+_dataset_v2_large_source_audit_kernel/
 _dataset_v2_downloads/
+EatFitAI-Training/
 *.pt
 *.onnx
 !ai-provider/best.pt

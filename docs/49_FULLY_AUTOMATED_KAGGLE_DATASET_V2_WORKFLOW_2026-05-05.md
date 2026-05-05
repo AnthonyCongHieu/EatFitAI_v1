@@ -63,11 +63,35 @@ This is sufficient for:
 - polling status,
 - downloading outputs.
 
+## Cloud-Only Decision
+
+If local raw downloads are not allowed, use a Google Colab cloud bridge:
+
+1. Colab mounts private Google Drive in `/content/drive`.
+2. `ai-provider/dataset_v2/colab_cloud_bridge.py` packages Drive raw zips into a private Kaggle dataset from Colab temp storage.
+3. The same bridge versions the Kaggle pipeline-code dataset and pushes the raw-audit kernel.
+4. Kaggle runs raw audit and writes outputs back to the user's Kaggle account.
+5. The bridge can poll and copy kernel outputs back to Drive.
+
+This keeps raw zips out of the local machine. Local Codex remains for source-code edits, tests, and small Kaggle API checks only.
+
+## Public Drive Direct Path
+
+If the Drive raw folder is temporarily public by link, Kaggle can download raw zips directly:
+
+1. Keep `public_drive_raw_sources.csv` as the exact allow-list of raw zip file IDs.
+2. Version the private Kaggle pipeline-code dataset.
+3. Push `kaggle_public_drive_raw_audit_kernel.py`.
+4. The kernel installs `gdown`, downloads only allow-listed raw zips into Kaggle working storage, and runs raw audit/sample grid generation.
+5. Download Kaggle output reports and then revoke public Drive sharing.
+
+This path avoids both local raw downloads and Colab. It is operationally easiest, but Drive links should be public only for the audit window.
+
 ## Current Decision
 
 Proceed with Kaggle-first automation.
 
-Do not depend on Colab unless the private Drive transfer becomes the only practical route.
+Use Colab only as the private Drive-to-Kaggle bridge when local raw data is disallowed.
 
 ## Safe Token Policy
 
