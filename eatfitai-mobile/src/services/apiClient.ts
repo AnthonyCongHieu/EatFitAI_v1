@@ -234,6 +234,8 @@ apiClient.interceptors.request.use(async (config: InternalAxiosRequestConfig) =>
       '/api/auth/forgot-password',
       '/api/auth/verify-reset-code',
       '/api/auth/reset-password',
+      '/api/auth/google/signin',
+      '/api/auth/google/link',
       '/api/search',
       '/api/food/search',
       '/api/food/search-all',

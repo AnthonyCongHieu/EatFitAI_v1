@@ -5,7 +5,7 @@ import { create } from 'zustand';
 
 import apiClient from '../services/apiClient';
 import { setAccessTokenMem } from '../services/authTokens';
-import { googleAuthService, normalizeGoogleAuthResponse } from '../services/googleAuthService';
+import { googleAuthService } from '../services/googleAuthService';
 import { useProfileStore } from './useProfileStore';
 import { setErrorTrackingUser } from '../services/errorTracking';
 import { tokenStorage } from '../services/secureStore';
@@ -338,9 +338,10 @@ export const useAuthStore = create<AuthState>((set: any) => ({
     );
 
     const data = resp.data;
-    const normalized = normalizeGoogleAuthResponse(data);
-    const accessToken = data?.accessToken || data?.token;
+    const raw = data as Record<string, any>;
 
+    // Handle both camelCase and PascalCase (matching login flow)
+    const accessToken = raw.accessToken || raw.AccessToken || raw.token;
     if (!accessToken) {
       console.error('[useAuthStore] Google signin response missing token:', data);
       throw new Error(t('auth.missingAccessToken'));
@@ -349,19 +350,20 @@ export const useAuthStore = create<AuthState>((set: any) => ({
     console.log('[useAuthStore] Google Sign-In successful, saving tokens...');
     await tokenStorage.saveTokensFull({
       accessToken,
-      accessTokenExpiresAt: data?.accessTokenExpiresAt ?? null,
-      refreshToken: data?.refreshToken ?? null,
-      refreshTokenExpiresAt: data?.refreshTokenExpiresAt ?? null,
+      accessTokenExpiresAt: (raw.accessTokenExpiresAt || raw.AccessTokenExpiresAt || raw.expiresAt || raw.ExpiresAt) ?? null,
+      refreshToken: raw.refreshToken ?? raw.RefreshToken ?? null,
+      refreshTokenExpiresAt: raw.refreshTokenExpiresAt ?? raw.RefreshTokenExpiresAt ?? null,
     });
     setAccessTokenMem(accessToken);
+    await updateSessionFromAuthResponse(data as AuthResponse);
 
-    const needsOnboarding = normalized.needsOnboarding;
+    const needsOnboarding = readNeedsOnboardingFlag(raw, false);
     await persistNeedsOnboarding(needsOnboarding);
 
     const extractedUser: AuthUser = {
-      id: String(normalized.userId || normalized.user?.id || ''),
-      email: String(normalized.email || normalized.user?.email || ''),
-      name: String(normalized.displayName || normalized.user?.name || result.user?.name || ''),
+      id: String(raw.UserId ?? raw.userId ?? ''),
+      email: String(raw.Email ?? raw.email ?? ''),
+      name: String(raw.DisplayName ?? raw.displayName ?? result.user?.name ?? ''),
     };
 
     await syncProfileCacheForUser(extractedUser.id || null);

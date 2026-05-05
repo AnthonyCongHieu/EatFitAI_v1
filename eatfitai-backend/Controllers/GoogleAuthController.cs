@@ -17,6 +17,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Cryptography;
 using System.Text;
 using Microsoft.IdentityModel.Tokens;
+using System.Text.Json.Serialization;
 
 namespace EatFitAI.API.Controllers
 {
@@ -61,6 +62,7 @@ namespace EatFitAI.API.Controllers
             public string? Error { get; set; }
             public bool IsNewUser { get; set; }
             public bool NeedsOnboarding { get; set; }
+            [JsonPropertyName("accessTokenExpiresAt")]
             public DateTime? ExpiresAt { get; set; }
         }
 
