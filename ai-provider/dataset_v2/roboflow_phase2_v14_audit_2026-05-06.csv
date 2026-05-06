@@ -1,0 +1,6 @@
+source_slug,download_status,audit_status,audit_decision,class_count,image_count,box_count,segment_row_count,empty_label_count,cache_status,source_scope,verified_at
+mon_chung,downloaded_roboflow_export,audited,ACCEPT_FILTERED,6,2966,2504,594,566,cached_to_kaggle_dataset,roboflow_source_scope.active_2026-05-06.csv,2026-05-06
+food_ingredient_recognition,downloaded_roboflow_export,audited,ACCEPT_FILTERED,61,13007,78444,0,429,cached_to_kaggle_dataset,roboflow_source_scope.active_2026-05-06.csv,2026-05-06
+food_ingredient_3qyxj,downloaded_roboflow_export,audited,ACCEPT_FILTERED,10,23983,59985,1740,120,cached_to_kaggle_dataset,roboflow_source_scope.active_2026-05-06.csv,2026-05-06
+spice_caezr,downloaded_roboflow_export,audited,ACCEPT_FILTERED,12,4383,49842,1789,39,cached_to_kaggle_dataset,roboflow_source_scope.active_2026-05-06.csv,2026-05-06
+ingredient_v0h5a,downloaded_roboflow_export,audited,CHERRY_PICK,12,3838,4398,95304,0,cached_to_kaggle_dataset,roboflow_source_scope.active_2026-05-06.csv,2026-05-06

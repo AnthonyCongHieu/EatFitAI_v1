@@ -299,6 +299,39 @@ Report snapshot committed in:
 ai-provider/dataset_v2/roboflow_phase2_v13_audit_2026-05-06.csv
 ```
 
+Verified phase-2 success status after UI secret enablement:
+
+```json
+{
+  "download_status_counts": {
+    "downloaded_roboflow_export": 5
+  },
+  "audit_status_counts": {
+    "audited": 5
+  },
+  "cache_upload": {
+    "cache_status": "cached_to_kaggle_dataset",
+    "dataset_id": "hiuinhcng/eatfitai-dataset-v2-raw-audit-cache"
+  }
+}
+```
+
+Phase-2 source results:
+
+| source_slug | decision | classes | images | boxes | notes |
+| --- | --- | ---: | ---: | ---: | --- |
+| `mon_chung` | `ACCEPT_FILTERED` | 6 | 2966 | 2504 | meal-component supplement; 566 empty labels and 594 segment rows |
+| `food_ingredient_recognition` | `ACCEPT_FILTERED` | 61 | 13007 | 78444 | large ingredient supplement; dense repeated boxes |
+| `food_ingredient_3qyxj` | `ACCEPT_FILTERED` | 10 | 23983 | 59985 | ingredient supplement; 1740 segment rows and 120 empty labels |
+| `spice_caezr` | `ACCEPT_FILTERED` | 12 | 4383 | 49842 | spice/aromatic supplement; non-English labels need mapping |
+| `ingredient_v0h5a` | `CHERRY_PICK` | 12 | 3838 | 4398 | public-domain ingredient cherry-pick; 95304 segment rows |
+
+Report snapshot committed in:
+
+```text
+ai-provider/dataset_v2/roboflow_phase2_v14_audit_2026-05-06.csv
+```
+
 Kaggle kernel cleanup performed on 2026-05-06:
 
 - deleted obsolete/test kernels: `eatfitai-smoke-check`,
@@ -335,7 +368,7 @@ Kaggle kernel cleanup performed on 2026-05-06:
 | blocker | affected lane | status |
 | --- | --- | --- |
 | Roboflow secret not attached to API-pushed large-source versions | Roboflow phase 1 | resolved by UI Save Version with `ROBOFLOW_API_KEY` enabled; v12 audited/cache 4 sources |
-| Roboflow secret not attached to API-pushed large-source versions | Roboflow phase 2 | blocked until UI Save Version with `ROBOFLOW_API_KEY` and `KAGGLE_API_TOKEN` enabled |
+| Roboflow secret not attached to API-pushed large-source versions | Roboflow phase 2 | resolved by UI Save Version with `ROBOFLOW_API_KEY` and `KAGGLE_API_TOKEN` enabled; v14 audited/cache 5 sources |
 | manual sample-grid judgement | all accepted candidates | pending after fresh reports |
 | class mapping and segment-to-bbox conversion | accepted Drive/Roboflow candidates | pending before clean build |
 | exact license verification | unresolved Drive-origin candidates | pending before public release |
