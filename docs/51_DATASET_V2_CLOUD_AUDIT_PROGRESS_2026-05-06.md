@@ -40,30 +40,36 @@ Current verified output:
 | source_slug | status | decision | classes | images | boxes | notes |
 | --- | --- | --- | ---: | ---: | ---: | --- |
 | `vietfood67` | audited | `ACCEPT_FILTERED` | 68 | 3002 | 5241 | `data_yaml_missing;external_class_map_used` |
-| `food_data_truongvo` | not audited | blocked | | | | `roboflow_secret_missing` |
+| `food_data_truongvo` | audited | `ACCEPT_FILTERED` | 30 | 8205 | 11181 | cached to private Kaggle raw-audit cache |
 
 Interpretation:
 
 - `vietfood67` is now correctly audited through the mounted Kaggle dataset.
 - The missing `data.yaml` is expected and is handled by
   `ai-provider/dataset_v2/source_class_maps.yaml`.
-- `food_data_truongvo` is still blocked until the target Kaggle notebook has
-  `ROBOFLOW_API_KEY` attached and enabled.
+- `food_data_truongvo` now uses the Roboflow export path instead of the
+  oversized Drive zip. It downloaded `992057392` bytes in Kaggle, audited
+  cleanly, generated `sample_grids/food_data_truongvo.jpg`, and uploaded the
+  raw zip to private Kaggle Dataset cache
+  `hiuinhcng/eatfitai-dataset-v2-raw-audit-cache`.
 
-Required user action before the next run:
+Completed action:
 
-1. Open `https://www.kaggle.com/code/hiuinhcng/eatfitai-dataset-v2-large-source-audit/edit`.
-2. Add or enable Kaggle Secret `ROBOFLOW_API_KEY`.
-3. Save Version for the notebook.
+1. `ROBOFLOW_API_KEY` was enabled on the large-source notebook.
+2. Kaggle version 8 completed.
+3. Reports were downloaded to a local temp report folder only; no raw zip was
+   downloaded locally.
 
-After that, run:
+Reproduce report download:
 
 ```powershell
 python ai-provider\dataset_v2\kaggle_remote_orchestrator.py output --kernel-id "hiuinhcng/eatfitai-dataset-v2-large-source-audit" --out-dir "_dataset_v2_reports\kaggle_large_source_audit"
 ```
 
-Then inspect `large_source_audit_status.csv`, `source_audit.csv`, and
-`sample_grids`.
+Manual gate still required before clean merge: inspect `sample_grids`, map class
+names to the final taxonomy, cap source weight, and keep `vietfood67` out of
+production/commercial clean data unless the `CC BY-NC-SA 4.0` license lane is
+explicitly accepted.
 
 ## Public Drive OAuth Cache Lane
 
@@ -130,31 +136,27 @@ and merge decisions.
 
 ## Next Execution Order
 
-1. Enable `ROBOFLOW_API_KEY` on the large-source notebook and Save Version.
-2. Download and inspect the new large-source reports.
-3. Enable `RCLONE_DRIVE_CONF` and `KAGGLE_API_TOKEN` on the public-drive raw
+1. Enable `RCLONE_DRIVE_CONF` and `KAGGLE_API_TOKEN` on the public-drive raw
    audit notebook and Save Version.
-4. Download and inspect the new public-drive OAuth/cache reports.
-5. Merge report evidence from:
+2. Download and inspect the new public-drive OAuth/cache reports.
+3. Merge report evidence from:
    - 23 Drive candidates.
    - Roboflow discovery candidates.
    - Kaggle discovery candidates.
    - large-source lane.
-6. Promote only top-tier clean candidates:
+4. Promote only top-tier clean candidates:
    - strong Vietnamese-food fit;
    - moderate class count;
    - useful mix of finished dishes, ingredients, spices, and food materials;
    - high Vietnamese/common-Vietnamese ratio;
    - clean labels and sample grids;
    - license tracked and acceptable for the intended private training lane.
-7. Build a clean candidate YOLO dataset.
-8. Validate gates before YOLO11m training.
+5. Build a clean candidate YOLO dataset.
+6. Validate gates before YOLO11m training.
 
 ## Current Blockers
 
 | blocker | affected lane | status |
 | --- | --- | --- |
-| `ROBOFLOW_API_KEY` not enabled on large-source notebook | `food_data_truongvo` | waiting for notebook secret enable |
 | `RCLONE_DRIVE_CONF` not reachable on public-drive notebook | 19 Drive OAuth/cache sources | waiting for notebook secret enable |
 | manual sample-grid judgement | all accepted candidates | pending after fresh reports |
-

@@ -113,8 +113,10 @@ class DatasetV2SourceFileTests(unittest.TestCase):
         ]:
             self.assertEqual(by_slug[slug]["source_state"], "cached_audited")
 
-        self.assertEqual(by_slug["food_data_truongvo"]["source_state"], "deferred_oversize")
-        self.assertEqual(by_slug["vietfood67"]["source_state"], "deferred_oversize_license_risk")
+        self.assertEqual(by_slug["food_data_truongvo"]["source_state"], "cached_audited_large_source")
+        self.assertEqual(by_slug["food_data_truongvo"]["audit_decision"], "ACCEPT_FILTERED")
+        self.assertEqual(by_slug["vietfood67"]["source_state"], "audited_direct_no_raw_cache")
+        self.assertEqual(by_slug["vietfood67"]["audit_decision"], "ACCEPT_FILTERED")
         self.assertEqual(by_slug["food_detection_3_old"]["clean_tier"], "quarantine")
         self.assertEqual(by_slug["food_union_fruit_old"]["clean_tier"], "quarantine")
 
