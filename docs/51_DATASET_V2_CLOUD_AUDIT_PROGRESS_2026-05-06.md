@@ -360,7 +360,11 @@ Kaggle kernel cleanup performed on 2026-05-06:
    - high Vietnamese/common-Vietnamese ratio;
    - clean labels and sample grids;
    - license tracked and acceptable for the intended private training lane.
-5. Build a clean candidate YOLO dataset.
+   Current promotion artifacts:
+   - `ai-provider/dataset_v2/clean_candidate_sources_2026-05-06.csv`
+   - `ai-provider/dataset_v2/class_taxonomy.clean_candidate_2026-05-06.yaml`
+5. Build a clean candidate YOLO dataset with `--source-policy` so hold,
+   quarantine, and non-commercial-only lanes cannot enter by accident.
 6. Validate gates before YOLO11m training.
 
 ## Current Blockers
@@ -370,5 +374,6 @@ Kaggle kernel cleanup performed on 2026-05-06:
 | Roboflow secret not attached to API-pushed large-source versions | Roboflow phase 1 | resolved by UI Save Version with `ROBOFLOW_API_KEY` enabled; v12 audited/cache 4 sources |
 | Roboflow secret not attached to API-pushed large-source versions | Roboflow phase 2 | resolved by UI Save Version with `ROBOFLOW_API_KEY` and `KAGGLE_API_TOKEN` enabled; v14 audited/cache 5 sources |
 | manual sample-grid judgement | all accepted candidates | pending after fresh reports |
-| class mapping and segment-to-bbox conversion | accepted Drive/Roboflow candidates | pending before clean build |
+| class mapping | accepted Drive/Roboflow candidates | first clean taxonomy seed created in `class_taxonomy.clean_candidate_2026-05-06.yaml`; still needs clean-build output review |
+| segment-to-bbox conversion and dense/crowd caps | accepted Drive/Roboflow candidates | handled by audit/clean parsing for segments; dense/crowd caps still need output review |
 | exact license verification | unresolved Drive-origin candidates | pending before public release |

@@ -32,11 +32,11 @@ minimum_instances:
 aliases:
   banh_mi:
     - banh-mi
+    - banh mi
     - banhmi
-    - bánh-mì
     - vietnamese_sandwich
   pho:
-    - phở
+    - pho
     - vietnamese_pho
   ca_chua:
     - tomato

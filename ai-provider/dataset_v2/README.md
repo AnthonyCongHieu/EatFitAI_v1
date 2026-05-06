@@ -57,6 +57,36 @@ python ai-provider\dataset_v2\discover_kaggle_sources.py --top-per-query 12 --qu
 
 Keep the reviewed shortlist in `top_tier_dataset_candidates_2026-05-05.csv`. The shortlist separates `BACKBONE_AUDIT`, `BOOSTER_AUDIT`, and `INGREDIENT_SUPPLEMENT_AUDIT` lanes so ingredient-only sources cannot be mistaken for Vietnamese backbone sources. A source can move from metadata candidate to clean candidate only after raw audit, sample-grid review, class whitelist/mapping, and license decision. Roboflow/Kaggle metadata is only a first gate; it must not bypass raw label quality checks.
 
+## Clean Candidate Gate
+
+The first clean-build candidate set is intentionally smaller than the full
+audited pool. Keep the source policy in:
+
+```text
+ai-provider/dataset_v2/clean_candidate_sources_2026-05-06.csv
+```
+
+The default clean lane includes only audited/cache-backed sources that passed
+sample-grid review and can be filtered by an explicit taxonomy. Sources with
+`include_in_default_clean=no` remain hold/cherry-pick lanes until a concrete
+filter exists. `vietfood67` is marked `noncommercial_only`; it is excluded from
+default production clean data unless `--include-noncommercial` is passed for a
+private/non-commercial experiment.
+
+Use the ASCII taxonomy seed for the first clean candidate build:
+
+```text
+ai-provider/dataset_v2/class_taxonomy.clean_candidate_2026-05-06.yaml
+```
+
+```powershell
+python ai-provider\dataset_v2\build_clean_dataset.py --audit-json "_dataset_v2_reports\source_audit.json" --taxonomy "ai-provider\dataset_v2\class_taxonomy.clean_candidate_2026-05-06.yaml" --source-policy "ai-provider\dataset_v2\clean_candidate_sources_2026-05-06.csv" --out-dataset "_dataset_v2_work\clean_dataset" --out-reports "_dataset_v2_reports"
+```
+
+Do not add public Drive/gdown fallback paths to this build. Raw source material
+must come from Kaggle inputs/cache or from Kaggle-mounted datasets, and local
+downloads remain limited to reports, logs, and sample grids.
+
 ## Large Source Audit
 
 Use this for the two sources that should not go through the small Drive cache path:

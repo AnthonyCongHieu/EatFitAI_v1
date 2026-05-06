@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import csv
 import json
 import random
 import shutil
@@ -25,6 +26,56 @@ from common import (
 from audit_sources import safe_extract_zip, source_zip_reference
 
 ACTIVE_DECISIONS = {"ACCEPT_FULL", "ACCEPT_FILTERED", "CHERRY_PICK"}
+TRUTHY = {"1", "true", "yes", "y"}
+NONCOMMERCIAL_LANES = {"noncommercial_only", "license_risk_noncommercial"}
+
+
+def load_source_policy(policy_path: Path) -> dict[str, dict[str, str]]:
+    with policy_path.open("r", encoding="utf-8-sig", newline="") as f:
+        rows = list(csv.DictReader(f))
+    policy: dict[str, dict[str, str]] = {}
+    for row in rows:
+        slug = (row.get("source_slug") or "").strip()
+        if slug:
+            policy[slug] = row
+    return policy
+
+
+def should_include_source_policy(row: dict[str, str], include_noncommercial: bool = False) -> bool:
+    include = (row.get("include_in_default_clean") or "").strip().lower()
+    if include not in TRUTHY:
+        return False
+    license_lane = (row.get("license_lane") or "").strip().lower()
+    if license_lane in NONCOMMERCIAL_LANES and not include_noncommercial:
+        return False
+    return True
+
+
+def filter_audit_rows_by_policy(
+    audit_rows: list[dict[str, Any]],
+    policy: dict[str, dict[str, str]],
+    include_noncommercial: bool = False,
+) -> list[dict[str, Any]]:
+    if not policy:
+        return audit_rows
+
+    filtered: list[dict[str, Any]] = []
+    for source in audit_rows:
+        row = policy.get(str(source.get("source_slug") or ""))
+        if not row or not should_include_source_policy(row, include_noncommercial=include_noncommercial):
+            continue
+        merged = dict(source)
+        for key in (
+            "clean_lane",
+            "license_lane",
+            "source_weight_cap",
+            "required_filters",
+            "reason",
+        ):
+            if key in row:
+                merged[key] = row.get(key, "")
+        filtered.append(merged)
+    return filtered
 
 
 def taxonomy_classes(taxonomy: dict[str, Any]) -> list[str]:
@@ -213,6 +264,12 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Build a deduped YOLO detect-only clean dataset from audited sources.")
     parser.add_argument("--audit-json", type=Path, required=True)
     parser.add_argument("--taxonomy", type=Path, required=True)
+    parser.add_argument("--source-policy", type=Path, default=None, help="Optional reviewed clean-candidate source policy CSV.")
+    parser.add_argument(
+        "--include-noncommercial",
+        action="store_true",
+        help="Allow non-commercial/license-risk lanes from --source-policy. Default keeps them out.",
+    )
     parser.add_argument("--raw-dir", type=Path, default=None, help="Optional raw zip folder used to re-extract missing audit paths.")
     parser.add_argument("--work-dir", type=Path, default=Path("_dataset_v2_work"))
     parser.add_argument("--out-dataset", type=Path, default=Path("_dataset_v2_work/clean_dataset"))
@@ -220,6 +277,15 @@ def main() -> int:
     args = parser.parse_args()
 
     audit_rows = json.loads(args.audit_json.read_text(encoding="utf-8"))
+    if args.source_policy:
+        source_policy = load_source_policy(args.source_policy)
+        audit_rows = filter_audit_rows_by_policy(
+            audit_rows,
+            source_policy,
+            include_noncommercial=args.include_noncommercial,
+        )
+        if not audit_rows:
+            raise RuntimeError("Source policy removed every audit row; refusing to build an empty clean dataset.")
     ensure_extracted_sources(audit_rows, args.raw_dir.resolve() if args.raw_dir else None, args.work_dir)
     taxonomy = load_yaml(args.taxonomy)
     summary = clean_dataset(audit_rows, taxonomy, args.out_dataset, args.out_reports)

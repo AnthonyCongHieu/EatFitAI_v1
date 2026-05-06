@@ -1,0 +1,505 @@
+version: 2026-05-06-clean-candidate
+source_policy: clean_candidate_sources_2026-05-06.csv
+notes:
+  - ASCII canonical slugs only to avoid Vietnamese mojibake in training artifacts.
+  - Default production clean excludes noncommercial_only sources unless --include-noncommercial is explicitly passed.
+  - Generic labels such as food dish meal fruit vegetable person hand table plate bowl and packaging remain rejected.
+classes:
+  - banh_mi
+  - pho
+  - bun
+  - bot_chien
+  - goi_cuon
+  - fried_rice
+  - com_tam
+  - thit_kho
+  - ca_kho
+  - canh
+  - banh_beo
+  - banh_bo
+  - banh_bot_loc
+  - banh_can
+  - banh_canh
+  - banh_chung
+  - banh_cong
+  - banh_cuon
+  - banh_da_lon
+  - banh_duc
+  - banh_khot
+  - banh_tet
+  - banh_xeo
+  - banh_trang
+  - banh_trang_tron
+  - bo_kho
+  - bo_la_lot
+  - bun_bo_hue
+  - bun_cha
+  - bun_dau
+  - bun_mam
+  - bun_rieu
+  - cha_gio
+  - hu_tieu
+  - lau
+  - mi_quang
+  - cao_lau
+  - xoi
+  - chao_long
+  - sup_cua
+  - bitter_melon_soup
+  - caramelized_fish_clay_pot
+  - chicken_rice
+  - pumpkin_soup
+  - purple_yam_soup
+  - steamed_pork_belly_taro
+  - sizzling_beef_steak
+  - hollow_fried_sesame_donut
+  - nuoc_cham
+  - rice
+  - noodles
+  - chicken
+  - beef
+  - pork
+  - pork_belly
+  - pork_rib
+  - grilled_pork_belly
+  - fish
+  - shrimp
+  - crab
+  - squid
+  - egg
+  - fried_egg
+  - tofu
+  - tempeh
+  - tomato
+  - cucumber
+  - carrot
+  - potato
+  - sweet_potato
+  - spinach
+  - water_spinach
+  - bokchoy
+  - cabbage
+  - cauliflower
+  - broccoli
+  - eggplant
+  - bitter_gourd
+  - bottle_gourd
+  - pumpkin
+  - radish
+  - long_beans
+  - beans
+  - peas
+  - mushroom
+  - chayote
+  - corn
+  - onion
+  - shallot
+  - green_onion
+  - garlic
+  - chili
+  - ginger
+  - galangal
+  - lemongrass
+  - leek
+  - lime_leaf
+  - coriander_seed
+  - fennel_seed
+  - star_anise
+  - cinnamon
+  - clove
+  - turmeric
+  - bell_pepper
+  - lime
+aliases:
+  banh_mi:
+    - Banh-Mi
+    - Banh mi
+    - Banh mi (Vietnamese baguette sandwich)
+    - Vietnamese baguette sandwich
+    - vietnamese_baguette_sandwich
+    - Vietnamese sandwich
+    - vietnamese_sandwich
+    - banhmi
+  pho:
+    - Pho
+    - Pho (Vietnamese noodle soup)
+    - Vietnamese noodle soup
+    - Vietnamese beef noodle soup
+    - vietnamese_beef_noodle_soup
+  bun:
+    - Bun
+    - Bun (Rice vermicelli)
+    - Rice vermicelli
+  bot_chien:
+    - Bot chien
+    - Bot-Chien
+  goi_cuon:
+    - Goi-Cuon
+    - Goi cuon
+    - Goi cuon (Fresh spring rolls)
+    - Fresh spring rolls
+    - fresh_spring_rolls
+  fried_rice:
+    - Fried rice
+    - Com chien duong chau (Yangzhou fried rice)
+    - Com chien ga (Fried rice with chicken)
+  com_tam:
+    - Com tam
+    - Com tam (Broken rice)
+    - Broken rice
+  thit_kho:
+    - Thit kho
+    - Thit kho (Braised pork)
+    - Thit kho tau
+    - Braised pork
+  ca_kho:
+    - Ca kho
+  canh:
+    - Canh
+    - Canh (Soup)
+    - Soup
+  banh_beo:
+    - Banh beo
+    - Banh beo (Vietnamese savory steamed rice cake)
+  banh_bo:
+    - Banh bo
+  banh_bot_loc:
+    - Banh bot loc
+    - Banh loc
+  banh_can:
+    - Banh can
+  banh_canh:
+    - Banh canh
+    - Banh canh (Vietnamese thick noodle soup)
+  banh_chung:
+    - Banh chung
+    - Banh chung (Square sticky rice cake)
+  banh_cong:
+    - Banh cong
+  banh_cuon:
+    - Banh cuon
+    - Banh cuon (Rolled rice pancake)
+  banh_da_lon:
+    - Banh da lon
+  banh_duc:
+    - Banh duc
+  banh_khot:
+    - Banh khot
+    - Banh khot (Mini savory pancakes)
+  banh_tet:
+    - Banh tet
+  banh_xeo:
+    - Banh xeo
+    - Banh xeo (Vietnamese sizzling pancake)
+  banh_trang:
+    - Banh trang
+    - Banh trang (Rice paper)
+  banh_trang_tron:
+    - Banh trang tron
+    - Banh trang tron (Rice paper salad)
+  bo_kho:
+    - Bo kho
+    - Bo kho (Beef stew)
+  bo_la_lot:
+    - Bo la lot
+    - Bo la lot (Grilled beef wrapped in betel leaves)
+    - Grilled beef wrapped in betel leaves
+  bun_bo_hue:
+    - Bun bo Hue
+    - Bun bo Hue (Hue beef noodle soup)
+    - Hue beef noodle soup
+  bun_cha:
+    - Bun cha
+    - Bun cha (Grilled pork with vermicelli)
+    - Grilled pork with vermicelli
+  bun_dau:
+    - Bun dau
+    - Bun dau (Vermicelli with tofu)
+    - Vermicelli with tofu
+  bun_mam:
+    - Bun mam
+    - Bun mam (Fermented fish noodle soup)
+    - Fermented fish noodle soup
+  bun_rieu:
+    - Bun rieu
+    - Bun rieu (Crab noodle soup)
+    - Crab noodle soup
+    - Crab paste vermicelli soup
+  cha_gio:
+    - Cha gio
+    - Cha gio (Spring rolls)
+    - Spring rolls
+    - Fried spring rolls
+  hu_tieu:
+    - Hu tieu
+    - Hu tieu (Clear rice noodle soup)
+    - Clear rice noodle soup
+  lau:
+    - Lau
+    - Lau (Hotpot)
+    - Hotpot
+  mi_quang:
+    - Mi Quang
+    - Mi Quang (Quang-style noodles)
+  cao_lau:
+    - Cao lau
+    - Cao lau (Cao lau noodles)
+  xoi:
+    - Xoi
+    - Xoi (Sticky rice)
+    - Sticky rice
+  chao_long:
+    - Chao long
+    - Chao long (Pork organ congee)
+  sup_cua:
+    - Sup cua
+    - Sup cua (Crab soup)
+    - Crab soup
+  bitter_melon_soup:
+    - Bitter melon soup
+    - bitter_melon_soup
+    - Kho qua thit
+    - Kho qua thit (Stuffed bitter melon soup)
+  caramelized_fish_clay_pot:
+    - Caramelized fish in clay pot
+    - caramelized_fish_in_clay_pot
+  chicken_rice:
+    - Chicken rice with oily scallion topping
+    - chicken_rice_with_oily_scallion_topping
+  pumpkin_soup:
+    - Pumpkin soup
+    - pumpkin_soup
+  purple_yam_soup:
+    - Purple yam soup
+    - purple_yam_soup
+  steamed_pork_belly_taro:
+    - Steamed pork belly with taro
+    - steamed_pork_belly_with_taro
+  sizzling_beef_steak:
+    - Sizzling beef steak
+    - sizzling_beef_steak
+  hollow_fried_sesame_donut:
+    - Hollow fried sesame donut
+    - hollow_fried_sesame_donut
+  nuoc_cham:
+    - nuoc_cham
+    - Nuoc cham
+    - dipping sauce
+  rice:
+    - Com
+    - Com (Rice)
+    - com
+    - Rice
+    - Rice -Chamal-
+    - rice_chamal
+    - white rice
+  noodles:
+    - Mi
+    - Mi (Egg noodles)
+    - Egg noodles
+    - noodles
+  chicken:
+    - Thit ga
+    - Thit ga (Chicken)
+    - chicken
+    - ga
+  beef:
+    - Thit bo
+    - Thit bo (Beef)
+    - beef
+  pork:
+    - Thit heo
+    - Thit heo (Pork)
+    - pork
+  pork_belly:
+    - pork belly
+    - pork_belly
+    - ba chi
+  pork_rib:
+    - suon
+    - ribs
+    - pork rib
+  grilled_pork_belly:
+    - Ba chi nuong
+    - grilled pork belly
+  fish:
+    - Ca
+    - Ca (Fish)
+    - fish
+  shrimp:
+    - Tom
+    - Tom (Shrimp)
+    - shrimp
+    - prawn
+  crab:
+    - Cua
+    - Cua (Crab)
+    - crab
+  squid:
+    - Muc
+    - Muc (Squid)
+    - squid
+  egg:
+    - Trung
+    - Trung (Egg)
+    - egg
+  fried_egg:
+    - trung_op_la
+    - Trung op la
+    - trung chien
+    - fried egg
+  tofu:
+    - Dau hu
+    - Dau hu (Tofu)
+    - tofu
+  tempeh:
+    - tempeh
+  tomato:
+    - Ca chua
+    - Ca chua (Tomato)
+    - ca_chua
+    - tomato
+    - tomatoes
+  cucumber:
+    - Dua leo
+    - Dua leo (Cucumber)
+    - dua_leo
+    - cucumber
+  carrot:
+    - Ca rot
+    - Ca rot (Carrot)
+    - carrot
+  potato:
+    - potato
+    - potatoes
+  sweet_potato:
+    - sweet potato
+    - sweet_potato
+  spinach:
+    - spinach
+  water_spinach:
+    - rau muong
+    - water spinach
+  bokchoy:
+    - bokchoy
+    - bok choy
+  cabbage:
+    - cabbage
+  cauliflower:
+    - Bong cai
+    - Bong cai (Cauliflower)
+    - cauliflower
+  broccoli:
+    - broccoli
+  eggplant:
+    - Ca phao
+    - Ca phao (Pickled eggplant)
+    - eggplant
+  bitter_gourd:
+    - bitter gourd
+    - bitter melon
+  bottle_gourd:
+    - bottle gourd
+  pumpkin:
+    - pumpkin
+  radish:
+    - radish
+  long_beans:
+    - long beans
+    - long_beans
+  beans:
+    - beans
+  peas:
+    - peas
+  mushroom:
+    - Nam
+    - Nam (Mushroom)
+    - mushroom
+  chayote:
+    - chayote
+  corn:
+    - corn
+  onion:
+    - onion
+    - bawang besar
+  shallot:
+    - shallot
+    - bawang merah
+  green_onion:
+    - green onion
+    - spring onion
+    - Cu kieu
+    - Cu kieu (Pickled scallion head)
+  garlic:
+    - garlic
+    - bawang putih
+  chili:
+    - chili
+    - chilli
+    - chili pepper
+    - Ot chuong
+    - Ot chuong (Bell pepper)
+    - cili
+  ginger:
+    - ginger
+    - halia
+  galangal:
+    - galangal
+    - lengkuas
+  lemongrass:
+    - lemongrass
+    - serai
+  leek:
+    - leek
+  lime_leaf:
+    - lime leaf
+    - daun limau purut
+  coriander_seed:
+    - coriander seed
+    - biji ketumbar
+  fennel_seed:
+    - fennel seed
+    - jintan manis
+  star_anise:
+    - star anise
+    - bunga lawang
+  cinnamon:
+    - cinnamon
+    - kulit kayu manis
+  clove:
+    - clove
+    - bunga cengkih
+  turmeric:
+    - turmeric
+    - kunyit
+  bell_pepper:
+    - bell pepper
+  lime:
+    - Chanh
+    - Chanh (Lime)
+    - lime
+reject_aliases:
+  - food
+  - dish
+  - meal
+  - snack
+  - fruit
+  - vegetable
+  - vegetables
+  - person
+  - human
+  - Con nguoi
+  - Con nguoi (Human)
+  - hand
+  - table
+  - plate
+  - bowl
+  - hamburger
+  - Hamburger
+  - salad
+  - Salad
+  - Salad (Salad)
+  - cheese
+  - Pho mai
+  - Pho mai (Cheese)
+  - packaging

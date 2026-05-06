@@ -10,7 +10,7 @@ if str(DATASET_V2_DIR) not in sys.path:
     sys.path.insert(0, str(DATASET_V2_DIR))
 
 from audit_sources import is_auditable_manifest_row, source_zip_reference  # noqa: E402
-from build_clean_dataset import clean_dataset  # noqa: E402
+from build_clean_dataset import clean_dataset, filter_audit_rows_by_policy  # noqa: E402
 from build_kaggle_training_package import assert_passing_final_audit  # noqa: E402
 from kaggle_raw_audit_kernel import find_raw_manifest  # noqa: E402
 from make_sample_grids import add_diverse_sample, compact_label, select_diverse_samples, source_class_names  # noqa: E402
@@ -116,6 +116,37 @@ class DatasetV2PipelineHandoffTests(unittest.TestCase):
         self.assertEqual(summary["retained_instances"], 1)
         self.assertEqual(len(labels), 1)
         self.assertTrue(label_text.startswith("0 "))
+
+    def test_source_policy_filters_default_and_noncommercial_lanes(self):
+        audit_rows = [
+            {"source_slug": "core", "decision": "ACCEPT_FILTERED"},
+            {"source_slug": "held", "decision": "ACCEPT_FILTERED"},
+            {"source_slug": "vietfood67", "decision": "ACCEPT_FILTERED"},
+        ]
+        policy = {
+            "core": {
+                "include_in_default_clean": "yes",
+                "license_lane": "cc_by_4",
+                "clean_lane": "FIRST_CLEAN_CORE",
+            },
+            "held": {
+                "include_in_default_clean": "no",
+                "license_lane": "cc_by_4",
+                "clean_lane": "HOLD",
+            },
+            "vietfood67": {
+                "include_in_default_clean": "yes",
+                "license_lane": "noncommercial_only",
+                "clean_lane": "NONCOMMERCIAL_PRIVATE_BACKBONE",
+            },
+        }
+
+        default_rows = filter_audit_rows_by_policy(audit_rows, policy)
+        private_rows = filter_audit_rows_by_policy(audit_rows, policy, include_noncommercial=True)
+
+        self.assertEqual([row["source_slug"] for row in default_rows], ["core"])
+        self.assertEqual([row["source_slug"] for row in private_rows], ["core", "vietfood67"])
+        self.assertEqual(private_rows[1]["clean_lane"], "NONCOMMERCIAL_PRIVATE_BACKBONE")
 
     def test_sample_grid_uses_audit_class_names_when_data_yaml_is_missing(self):
         with tempfile.TemporaryDirectory() as tmp:

@@ -1,4 +1,5 @@
 import csv
+import re
 import sys
 import unittest
 from pathlib import Path
@@ -8,7 +9,7 @@ DATASET_V2_DIR = Path(__file__).resolve().parents[1] / "dataset_v2"
 if str(DATASET_V2_DIR) not in sys.path:
     sys.path.insert(0, str(DATASET_V2_DIR))
 
-from common import load_yaml  # noqa: E402
+from common import load_yaml, normalize_label  # noqa: E402
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -18,6 +19,8 @@ REGISTRY = ROOT / "ai-provider" / "dataset_v2" / "raw_source_registry.yaml"
 OAUTH_SHORTLIST = ROOT / "ai-provider" / "dataset_v2" / "source_shortlist.oauth_audit_2026-05-05.csv"
 TOP_TIER_SHORTLIST = ROOT / "ai-provider" / "dataset_v2" / "top_tier_dataset_candidates_2026-05-05.csv"
 SAMPLE_GRID_REVIEW = ROOT / "ai-provider" / "dataset_v2" / "sample_grid_quality_review_2026-05-06.csv"
+CLEAN_CANDIDATES = ROOT / "ai-provider" / "dataset_v2" / "clean_candidate_sources_2026-05-06.csv"
+CLEAN_TAXONOMY = ROOT / "ai-provider" / "dataset_v2" / "class_taxonomy.clean_candidate_2026-05-06.yaml"
 
 
 EXPECTED_DRIVE_ZIPS = {
@@ -175,6 +178,67 @@ class DatasetV2SourceFileTests(unittest.TestCase):
             if row["stage"].startswith("deferred"):
                 continue
             self.assertIn(row["source_slug"], roboflow_sources)
+
+    def test_clean_candidate_sources_keep_top_tier_and_hold_risky_lanes(self):
+        rows = read_csv(CLEAN_CANDIDATES)
+        by_slug = {row["source_slug"]: row for row in rows}
+
+        for slug in [
+            "food_data_truongvo",
+            "detection_15_vietnamese_food_v2",
+            "rawdata_my_khanh",
+            "food_items",
+            "canteen_menu",
+            "food_prethesis",
+            "food_ingredient_recognition",
+            "spice_caezr",
+        ]:
+            self.assertEqual(by_slug[slug]["include_in_default_clean"], "yes")
+            self.assertNotIn("fallback", by_slug[slug]["required_filters"].lower())
+
+        self.assertEqual(by_slug["vegetable_detection"]["include_in_default_clean"], "no")
+        self.assertEqual(by_slug["food_detection_64"]["include_in_default_clean"], "no")
+        self.assertEqual(by_slug["food_union_fruit_old"]["clean_lane"], "EXCLUDE")
+        self.assertEqual(by_slug["food_detection_3_old"]["clean_lane"], "EXCLUDE")
+        self.assertEqual(by_slug["vietfood67"]["license_lane"], "noncommercial_only")
+
+    def test_clean_candidate_taxonomy_is_moderate_ascii_and_maps_known_labels(self):
+        taxonomy = load_yaml(CLEAN_TAXONOMY)
+        classes = taxonomy["classes"]
+        aliases = taxonomy["aliases"]
+        alias_lookup = {
+            normalize_label(alias): canonical
+            for canonical, source_aliases in aliases.items()
+            for alias in source_aliases
+        }
+
+        self.assertGreaterEqual(len(classes), 60)
+        self.assertLessEqual(len(classes), 120)
+        for class_name in classes:
+            self.assertRegex(class_name, r"^[a-z0-9_]+$")
+            self.assertEqual(class_name, normalize_label(class_name))
+
+        for required in [
+            "banh_mi",
+            "pho",
+            "goi_cuon",
+            "rice",
+            "nuoc_cham",
+            "garlic",
+            "galangal",
+            "star_anise",
+        ]:
+            self.assertIn(required, classes)
+
+        self.assertEqual(alias_lookup["vietnamese_baguette_sandwich"], "banh_mi")
+        self.assertEqual(alias_lookup["fresh_spring_rolls"], "goi_cuon")
+        self.assertEqual(alias_lookup["rice_chamal"], "rice")
+        self.assertEqual(alias_lookup["bawang_putih"], "garlic")
+        self.assertEqual(alias_lookup["bunga_lawang"], "star_anise")
+
+        serialized = CLEAN_TAXONOMY.read_text(encoding="utf-8")
+        bad_fragments = ["\u00c3", "\u00c2", "\u00e1\u00bb", "\u00e1\u00ba"]
+        self.assertFalse(any(fragment in serialized for fragment in bad_fragments))
 
 
 if __name__ == "__main__":
