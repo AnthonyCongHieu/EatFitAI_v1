@@ -527,6 +527,18 @@ Cache collision fix:
 - The clean-build kernel can resolve old mounted cache folders, direct zip
   roots, and the new wrapper zip -> raw zip -> YOLO folder layout.
 
+Post-fix Kaggle sync:
+
+- Pipeline-code dataset
+  `hiuinhcng/eatfitai-dataset-v2-pipeline-code` was versioned with the
+  source-scoped wrapper cache implementation and the 19-source
+  `public_drive_source_scope.csv`.
+- `EatFitAI Dataset V2 Public Drive Raw Audit` was pushed as Kaggle kernel
+  version 15.
+- `EatFitAI Dataset V2 Large Source Audit` was pushed as Kaggle kernel
+  version 15.
+- `EatFitAI Dataset V2 Clean Build` was pushed as Kaggle kernel version 3.
+
 ## Current Blockers
 
 | blocker | affected lane | status |
