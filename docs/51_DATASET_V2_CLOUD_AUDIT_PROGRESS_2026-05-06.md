@@ -371,6 +371,42 @@ Kaggle kernel cleanup performed on 2026-05-06:
    quarantine, and non-commercial-only lanes cannot enter by accident.
 6. Validate gates before YOLO11m training.
 
+## Clean-Build Kernel Status
+
+Added cloud clean-build entrypoint:
+
+```text
+ai-provider/dataset_v2/kaggle_clean_build_kernel.py
+ai-provider/dataset_v2/kaggle_clean_build_kernel_metadata.json
+```
+
+The kernel mounts:
+
+- `hiuinhcng/eatfitai-dataset-v2-pipeline-code`
+- `hiuinhcng/eatfitai-dataset-v2-raw-audit-cache`
+- `thomasnguyen6868/vietfood68`
+
+It runs a hard preflight before building. If any source marked
+`include_in_default_clean=yes` is absent from the mounted raw-audit cache or
+direct Kaggle mount, it writes `clean_build_preflight_summary.json` with
+`status=blocked_missing_sources` and does not build a partial dataset.
+
+Current raw-audit cache reality checked through the Kaggle API on 2026-05-06:
+
+```text
+detection_15_vietnamese_food_v2.v1i.yolov11
+food_ingredients_dataset.v1i.yolov11
+khoa_food_jfsxy.v3i.yolov11
+vietnamese_food_nhh.v1i.yolov11
+```
+
+Interpretation: the latest cache version currently exposes only the Roboflow
+phase-1 roots. Drive OAuth sources, large-source `food_data_truongvo`, and
+Roboflow phase-2 sources were previously audited successfully, but they are not
+visible in the latest raw-audit cache listing. The next cloud clean-build run is
+expected to preflight this accurately; a complete build requires a cumulative
+cache version or a rerun that reconstructs the raw-audit cache in cloud.
+
 ## Current Blockers
 
 | blocker | affected lane | status |
@@ -381,3 +417,4 @@ Kaggle kernel cleanup performed on 2026-05-06:
 | class mapping | accepted Drive/Roboflow candidates | first clean taxonomy seed created in `class_taxonomy.clean_candidate_2026-05-06.yaml`; still needs clean-build output review |
 | segment-to-bbox conversion and dense/crowd caps | accepted Drive/Roboflow candidates | handled by audit/clean parsing for segments; dense/crowd caps still need output review |
 | exact license verification | unresolved Drive-origin candidates | pending before public release |
+| raw-audit cache latest version is not cumulative | cloud clean-build | preflight kernel added; complete build needs cumulative cache or rerun of cache lanes |

@@ -1,0 +1,17 @@
+{
+  "id": "hiuinhcng/eatfitai-dataset-v2-clean-build",
+  "title": "EatFitAI Dataset V2 Clean Build",
+  "code_file": "kaggle_clean_build_kernel.py",
+  "language": "python",
+  "kernel_type": "script",
+  "is_private": true,
+  "enable_gpu": false,
+  "enable_internet": true,
+  "dataset_sources": [
+    "hiuinhcng/eatfitai-dataset-v2-pipeline-code",
+    "hiuinhcng/eatfitai-dataset-v2-raw-audit-cache",
+    "thomasnguyen6868/vietfood68"
+  ],
+  "competition_sources": [],
+  "kernel_sources": []
+}

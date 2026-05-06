@@ -89,6 +89,21 @@ Do not add public Drive/gdown fallback paths to this build. Raw source material
 must come from Kaggle inputs/cache or from Kaggle-mounted datasets, and local
 downloads remain limited to reports, logs, and sample grids.
 
+Cloud clean-build uses the private raw-audit cache plus the direct VietFood67
+Kaggle mount:
+
+```powershell
+python ai-provider\dataset_v2\prepare_kaggle_packages.py pipeline-code --out-dir "_dataset_v2_pipeline_code_package"
+python ai-provider\dataset_v2\kaggle_remote_orchestrator.py dataset --folder "_dataset_v2_pipeline_code_package" --message "Dataset V2 pipeline code with clean-build gate"
+python ai-provider\dataset_v2\kaggle_remote_orchestrator.py prepare-kernel --kernel-metadata ai-provider\dataset_v2\kaggle_clean_build_kernel_metadata.json --out-dir "_dataset_v2_clean_build_kernel"
+python ai-provider\dataset_v2\kaggle_remote_orchestrator.py push-kernel --folder "_dataset_v2_clean_build_kernel"
+```
+
+The clean-build kernel first writes `clean_build_preflight_summary.json`. If the
+latest raw-audit cache is incomplete, it stops with
+`blocked_missing_sources` and lists the exact missing source slugs instead of
+building a partial clean dataset.
+
 ## Large Source Audit
 
 Use this for the two sources that should not go through the small Drive cache path:

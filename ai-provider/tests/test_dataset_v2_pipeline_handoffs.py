@@ -13,6 +13,12 @@ from audit_sources import is_auditable_manifest_row, source_zip_reference  # noq
 from build_clean_dataset import clean_dataset, filter_audit_rows_by_policy  # noqa: E402
 from build_kaggle_training_package import assert_passing_final_audit  # noqa: E402
 from kaggle_raw_audit_kernel import find_raw_manifest  # noqa: E402
+from kaggle_clean_build_kernel import (  # noqa: E402
+    collect_cache_entries,
+    resolve_cache_source_path,
+    source_policy_included_slugs,
+    strip_zip_suffixes,
+)
 from make_sample_grids import add_diverse_sample, compact_label, select_diverse_samples, source_class_names  # noqa: E402
 from validate_clean_dataset import validate  # noqa: E402
 
@@ -147,6 +153,31 @@ class DatasetV2PipelineHandoffTests(unittest.TestCase):
         self.assertEqual([row["source_slug"] for row in default_rows], ["core"])
         self.assertEqual([row["source_slug"] for row in private_rows], ["core", "vietfood67"])
         self.assertEqual(private_rows[1]["clean_lane"], "NONCOMMERCIAL_PRIVATE_BACKBONE")
+
+    def test_clean_build_kernel_resolves_mounted_cache_folder_names(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            cache_dir = Path(tmp) / "cache"
+            source_dir = cache_dir / "Food.v6i.yolov11"
+            source_dir.mkdir(parents=True)
+
+            cache_entries = collect_cache_entries(cache_dir)
+            resolved = resolve_cache_source_path(
+                "food_prethesis",
+                {"food_prethesis": {"expected_name": "Food.v6i.yolov11.zip"}},
+                cache_entries,
+            )
+
+        self.assertEqual(strip_zip_suffixes("Food.v6i.yolov11.zip.zip"), "Food.v6i.yolov11")
+        self.assertEqual(resolved, source_dir)
+
+    def test_clean_build_kernel_policy_includes_private_vietfood_lane(self):
+        rows = [
+            {"source_slug": "food_data_truongvo", "include_in_default_clean": "yes"},
+            {"source_slug": "vietfood67", "include_in_default_clean": "yes", "license_lane": "private_noncommercial_accepted"},
+            {"source_slug": "vegetable_detection", "include_in_default_clean": "no"},
+        ]
+
+        self.assertEqual(source_policy_included_slugs(rows), ["food_data_truongvo", "vietfood67"])
 
     def test_sample_grid_uses_audit_class_names_when_data_yaml_is_missing(self):
         with tempfile.TemporaryDirectory() as tmp:
