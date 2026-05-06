@@ -68,9 +68,11 @@ python ai-provider\dataset_v2\kaggle_remote_orchestrator.py output --kernel-id "
 ```
 
 Manual gate still required before clean merge: inspect `sample_grids`, map class
-names to the final taxonomy, cap source weight, and keep `vietfood67` out of
-production/commercial clean data unless the `CC BY-NC-SA 4.0` license lane is
-explicitly accepted.
+names to the final taxonomy, and cap source weight. `vietfood67` is accepted
+for the current private/non-commercial training lane after explicit user
+approval, while the `CC BY-NC-SA 4.0` warning remains tracked. Do not treat a
+build containing it as public or commercial clean data without a separate
+license decision.
 
 ## Public Drive OAuth Cache Lane
 
@@ -363,6 +365,8 @@ Kaggle kernel cleanup performed on 2026-05-06:
    Current promotion artifacts:
    - `ai-provider/dataset_v2/clean_candidate_sources_2026-05-06.csv`
    - `ai-provider/dataset_v2/class_taxonomy.clean_candidate_2026-05-06.yaml`
+   - `vietfood67` is included in this private clean candidate lane as
+     `private_noncommercial_accepted`.
 5. Build a clean candidate YOLO dataset with `--source-policy` so hold,
    quarantine, and non-commercial-only lanes cannot enter by accident.
 6. Validate gates before YOLO11m training.

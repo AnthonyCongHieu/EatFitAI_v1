@@ -200,7 +200,9 @@ class DatasetV2SourceFileTests(unittest.TestCase):
         self.assertEqual(by_slug["food_detection_64"]["include_in_default_clean"], "no")
         self.assertEqual(by_slug["food_union_fruit_old"]["clean_lane"], "EXCLUDE")
         self.assertEqual(by_slug["food_detection_3_old"]["clean_lane"], "EXCLUDE")
-        self.assertEqual(by_slug["vietfood67"]["license_lane"], "noncommercial_only")
+        self.assertEqual(by_slug["vietfood67"]["include_in_default_clean"], "yes")
+        self.assertEqual(by_slug["vietfood67"]["license_lane"], "private_noncommercial_accepted")
+        self.assertIn("private_noncommercial_lane", by_slug["vietfood67"]["required_filters"])
 
     def test_clean_candidate_taxonomy_is_moderate_ascii_and_maps_known_labels(self):
         taxonomy = load_yaml(CLEAN_TAXONOMY)

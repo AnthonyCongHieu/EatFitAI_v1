@@ -66,12 +66,14 @@ audited pool. Keep the source policy in:
 ai-provider/dataset_v2/clean_candidate_sources_2026-05-06.csv
 ```
 
-The default clean lane includes only audited/cache-backed sources that passed
-sample-grid review and can be filtered by an explicit taxonomy. Sources with
-`include_in_default_clean=no` remain hold/cherry-pick lanes until a concrete
-filter exists. `vietfood67` is marked `noncommercial_only`; it is excluded from
-default production clean data unless `--include-noncommercial` is passed for a
-private/non-commercial experiment.
+The default clean lane for this project is a private training lane. It includes
+only audited/cache-backed sources that passed sample-grid review and can be
+filtered by an explicit taxonomy. Sources with `include_in_default_clean=no`
+remain hold/cherry-pick lanes until a concrete filter exists. `vietfood67` is
+marked `private_noncommercial_accepted` after explicit user approval, so it is
+included in the private clean candidate build while preserving the
+`CC BY-NC-SA 4.0` license warning. Do not treat that default private build as a
+public or commercial clean dataset without a separate license decision.
 
 Use the ASCII taxonomy seed for the first clean candidate build:
 
