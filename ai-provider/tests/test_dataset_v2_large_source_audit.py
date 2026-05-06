@@ -92,7 +92,7 @@ class DatasetV2LargeSourceAuditTests(unittest.TestCase):
         self.assertTrue(all(row["cache_policy"] == "cache_after_audit" for row in rows))
 
         active_rows = read_csv(ROBOFLOW_ACTIVE)
-        self.assertEqual({row["source_slug"] for row in active_rows}, expected)
+        self.assertEqual({row["source_slug"] for row in active_rows}, expected | {"food_data_truongvo"})
 
     def test_registry_has_food_data_truongvo_export_metadata(self):
         registry = load_yaml(REGISTRY)

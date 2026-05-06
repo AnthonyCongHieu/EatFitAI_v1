@@ -296,11 +296,17 @@ class PublicDriveKernelTests(unittest.TestCase):
             )
         )
 
-    def test_public_drive_kernel_metadata_uses_pipeline_code_only(self):
+    def test_public_drive_kernel_metadata_mounts_pipeline_code_and_cache(self):
         metadata = json.loads(PUBLIC_KERNEL_METADATA.read_text(encoding="utf-8"))
 
         self.assertEqual(metadata["code_file"], "kaggle_public_drive_raw_audit_kernel.py")
-        self.assertEqual(metadata["dataset_sources"], ["hiuinhcng/eatfitai-dataset-v2-pipeline-code"])
+        self.assertEqual(
+            metadata["dataset_sources"],
+            [
+                "hiuinhcng/eatfitai-dataset-v2-pipeline-code",
+                "hiuinhcng/eatfitai-dataset-v2-raw-audit-cache",
+            ],
+        )
         self.assertTrue(metadata["enable_internet"])
 
     def test_drive_secret_smoke_kernel_metadata_uses_pipeline_code_only(self):

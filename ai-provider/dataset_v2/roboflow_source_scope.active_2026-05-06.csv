@@ -1,4 +1,5 @@
 source_slug,audit_mode,source_ref,kaggle_input_slug,preferred_subdir,cache_policy,license,initial_decision,audit_image_limit,audit_fast_sample,notes,class_names_file,class_names_key
+food_data_truongvo,roboflow_export,roboflow:truongvo/food-data-e2kl5-vqaqp,,,cache_after_audit,CC BY 4.0,PENDING_AUDIT,,,Active cache repair source; include the large Vietnamese backbone in the cumulative raw-audit cache.,,
 mon_chung,roboflow_export,roboflow:foodai-aditx/mon-chung-cqbt6,,,cache_after_audit,CC BY 4.0,PENDING_AUDIT,,,Active phase 2 Vietnamese multi-object plate candidate; drop generic objects class if present.,,
 food_ingredient_recognition,roboflow_export,roboflow:test-image-preprocessing/food-ingredient-recognition-51ngf,,,cache_after_audit,CC BY 4.0,PENDING_AUDIT,,,Active phase 2 large ingredient source; audit for ingredient coverage only and reject invalid class names before clean merge.,,
 food_ingredient_3qyxj,roboflow_export,roboflow:food-4pya3/food-ingredient-3qyxj,,,cache_after_audit,CC BY 4.0,PENDING_AUDIT,,,Active phase 2 moderate ingredient source; do not treat as Vietnamese backbone.,,

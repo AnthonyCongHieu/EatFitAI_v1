@@ -104,6 +104,11 @@ latest raw-audit cache is incomplete, it stops with
 `blocked_missing_sources` and lists the exact missing source slugs instead of
 building a partial clean dataset.
 
+If preflight shows the raw-audit cache is not cumulative, rerun the cache lanes
+after versioning the updated pipeline code. The public-drive and large-source
+audit kernels now mount the existing raw-audit cache and seed new cache uploads
+from it before adding newly audited sources.
+
 ## Large Source Audit
 
 Use this for the two sources that should not go through the small Drive cache path:

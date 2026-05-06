@@ -1,4 +1,5 @@
 import csv
+import json
 import re
 import sys
 import unittest
@@ -21,6 +22,10 @@ TOP_TIER_SHORTLIST = ROOT / "ai-provider" / "dataset_v2" / "top_tier_dataset_can
 SAMPLE_GRID_REVIEW = ROOT / "ai-provider" / "dataset_v2" / "sample_grid_quality_review_2026-05-06.csv"
 CLEAN_CANDIDATES = ROOT / "ai-provider" / "dataset_v2" / "clean_candidate_sources_2026-05-06.csv"
 CLEAN_TAXONOMY = ROOT / "ai-provider" / "dataset_v2" / "class_taxonomy.clean_candidate_2026-05-06.yaml"
+PUBLIC_DRIVE_KERNEL_METADATA = ROOT / "ai-provider" / "dataset_v2" / "kaggle_public_drive_raw_audit_kernel_metadata.json"
+LARGE_SOURCE_KERNEL_METADATA = ROOT / "ai-provider" / "dataset_v2" / "kaggle_large_source_audit_kernel_metadata.json"
+CLEAN_BUILD_KERNEL_METADATA = ROOT / "ai-provider" / "dataset_v2" / "kaggle_clean_build_kernel_metadata.json"
+ROBOFLOW_ACTIVE_SCOPE = ROOT / "ai-provider" / "dataset_v2" / "roboflow_source_scope.active_2026-05-06.csv"
 
 
 EXPECTED_DRIVE_ZIPS = {
@@ -241,6 +246,16 @@ class DatasetV2SourceFileTests(unittest.TestCase):
         serialized = CLEAN_TAXONOMY.read_text(encoding="utf-8")
         bad_fragments = ["\u00c3", "\u00c2", "\u00e1\u00bb", "\u00e1\u00ba"]
         self.assertFalse(any(fragment in serialized for fragment in bad_fragments))
+
+    def test_cache_repair_kernels_mount_existing_raw_cache(self):
+        for path in [PUBLIC_DRIVE_KERNEL_METADATA, LARGE_SOURCE_KERNEL_METADATA, CLEAN_BUILD_KERNEL_METADATA]:
+            metadata = json.loads(path.read_text(encoding="utf-8"))
+            self.assertIn("hiuinhcng/eatfitai-dataset-v2-raw-audit-cache", metadata["dataset_sources"])
+
+        active_rows = read_csv(ROBOFLOW_ACTIVE_SCOPE)
+        active_slugs = {row["source_slug"] for row in active_rows}
+        self.assertIn("food_data_truongvo", active_slugs)
+        self.assertIn("mon_chung", active_slugs)
 
 
 if __name__ == "__main__":

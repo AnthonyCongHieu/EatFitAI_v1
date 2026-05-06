@@ -33,6 +33,7 @@ RCLONE_BIN_DIR = RCLONE_ROOT / "bin"
 RCLONE_DOWNLOAD_URL = "https://downloads.rclone.org/rclone-current-linux-amd64.zip"
 RAW_CACHE_DATASET_ID = "hiuinhcng/eatfitai-dataset-v2-raw-audit-cache"
 RAW_CACHE_PACKAGE_DIR = TEMP_ROOT / "raw_audit_cache_dataset"
+RAW_CACHE_INPUT_SLUG = "eatfitai-dataset-v2-raw-audit-cache"
 
 
 class KaggleSecretUnavailable(RuntimeError):
@@ -256,6 +257,50 @@ def link_or_copy(source: Path, destination: Path) -> None:
         shutil.copy2(source, destination)
 
 
+def find_input_dir(root: Path, slug: str) -> Path | None:
+    for path in sorted(root.iterdir(), key=lambda item: item.name.lower()):
+        if path.is_dir() and path.name == slug:
+            return path
+    for path in sorted(root.iterdir(), key=lambda item: item.name.lower()):
+        if path.is_dir() and slug in path.name:
+            return path
+    for path in sorted(root.rglob("*"), key=lambda item: (len(item.as_posix()), item.name.lower())):
+        if path.is_dir() and path.name == slug:
+            return path
+    for path in sorted(root.rglob("*"), key=lambda item: (len(item.as_posix()), item.name.lower())):
+        if path.is_dir() and slug in path.name:
+            return path
+    return None
+
+
+def copy_cache_entry(source: Path, destination: Path) -> None:
+    if destination.exists():
+        return
+    if source.is_dir():
+        shutil.copytree(source, destination)
+    else:
+        link_or_copy(source, destination)
+
+
+def seed_existing_raw_cache_dataset(
+    cache_dir: Path,
+    input_root: Path = KAGGLE_INPUT,
+    input_slug: str = RAW_CACHE_INPUT_SLUG,
+) -> dict[str, object]:
+    existing_cache = find_input_dir(input_root, input_slug)
+    if existing_cache is None:
+        return {"seed_status": "existing_cache_not_mounted", "seeded_entries": 0}
+    cache_dir.mkdir(parents=True, exist_ok=True)
+    seeded = 0
+    for entry in sorted(existing_cache.iterdir(), key=lambda item: item.name.lower()):
+        if entry.name == "dataset-metadata.json":
+            continue
+        copy_cache_entry(entry, cache_dir / entry.name)
+        seeded += 1
+    write_raw_cache_dataset_metadata(cache_dir)
+    return {"seed_status": "seeded_existing_cache", "seeded_entries": seeded, "existing_cache_path": existing_cache.as_posix()}
+
+
 def add_raw_zip_to_cache_package(source: Mapping[str, str], zip_path: Path) -> dict[str, object]:
     write_raw_cache_dataset_metadata(RAW_CACHE_PACKAGE_DIR)
     destination = RAW_CACHE_PACKAGE_DIR / zip_path.name
@@ -296,6 +341,9 @@ def upload_raw_cache_dataset(
     os.environ["KAGGLE_API_TOKEN"] = token
 
     try:
+        seed_result = seed_existing_raw_cache_dataset(cache_dir)
+        write_raw_cache_dataset_metadata(cache_dir, dataset_id=dataset_id)
+
         from kaggle.api.kaggle_api_extended import KaggleApi  # type: ignore
 
         api = KaggleApi()
@@ -318,7 +366,7 @@ def upload_raw_cache_dataset(
             )
     except Exception as exc:
         return {"cache_status": "cache_upload_failed", "error": sanitize_error_message(exc)}
-    return {"cache_status": "cached_to_kaggle_dataset", "dataset_id": dataset_id}
+    return {"cache_status": "cached_to_kaggle_dataset", "dataset_id": dataset_id, **seed_result}
 
 
 def decision_text(row: Mapping[str, str]) -> str:

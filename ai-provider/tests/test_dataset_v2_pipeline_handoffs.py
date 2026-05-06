@@ -20,6 +20,7 @@ from kaggle_clean_build_kernel import (  # noqa: E402
     source_policy_included_slugs,
     strip_zip_suffixes,
 )
+from kaggle_public_drive_raw_audit_kernel import seed_existing_raw_cache_dataset  # noqa: E402
 from make_sample_grids import add_diverse_sample, compact_label, select_diverse_samples, source_class_names  # noqa: E402
 from validate_clean_dataset import validate  # noqa: E402
 
@@ -187,6 +188,21 @@ class DatasetV2PipelineHandoffTests(unittest.TestCase):
             nested.mkdir(parents=True)
 
             self.assertEqual(find_input_dir(root, "eatfitai-dataset-v2-raw-audit-cache"), nested)
+
+    def test_raw_cache_upload_can_seed_existing_mounted_cache(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            existing = root / "datasets" / "hiuinhcng" / "eatfitai-dataset-v2-raw-audit-cache" / "existing_source"
+            existing.mkdir(parents=True)
+            (existing / "marker.txt").write_text("ok\n", encoding="utf-8")
+            cache_dir = root / "new_cache_package"
+
+            result = seed_existing_raw_cache_dataset(cache_dir, input_root=root)
+
+            self.assertEqual(result["seed_status"], "seeded_existing_cache")
+            self.assertEqual(result["seeded_entries"], 1)
+            self.assertTrue((cache_dir / "existing_source" / "marker.txt").exists())
+            self.assertTrue((cache_dir / "dataset-metadata.json").exists())
 
     def test_sample_grid_uses_audit_class_names_when_data_yaml_is_missing(self):
         with tempfile.TemporaryDirectory() as tmp:

@@ -393,7 +393,43 @@ direct Kaggle mount, it writes `clean_build_preflight_summary.json` with
 
 Clean-build v1 completed but found Kaggle inputs under the newer nested
 `/kaggle/input/datasets/<owner>/<dataset>` layout. The kernel input discovery
-has been updated to search nested Kaggle dataset directories before rerunning.
+was updated and v2 completed successfully as a preflight run.
+
+Clean-build v2 preflight result:
+
+```json
+{
+  "status": "blocked_missing_sources",
+  "included_source_count": 20,
+  "found_source_count": 5
+}
+```
+
+Found sources:
+
+- `detection_15_vietnamese_food_v2`
+- `khoa_food_jfsxy`
+- `vietnamese_food_nhh`
+- `food_ingredients_v1`
+- `vietfood67`
+
+Missing from latest raw-audit cache:
+
+- `food_data_truongvo`
+- `rawdata_my_khanh`
+- `food_items`
+- `canteen_menu`
+- `food_prethesis`
+- `vietnamese_food_calories`
+- `banh_dan_gian_nb`
+- `vietnamese_food_5`
+- `food_ai_tong_hop`
+- `food_kcmrd`
+- `mon_chung`
+- `food_ingredient_recognition`
+- `food_ingredient_3qyxj`
+- `spice_caezr`
+- `ingredient_v0h5a`
 
 Current raw-audit cache reality checked through the Kaggle API on 2026-05-06:
 
@@ -410,6 +446,18 @@ Roboflow phase-2 sources were previously audited successfully, but they are not
 visible in the latest raw-audit cache listing. The next cloud clean-build run is
 expected to preflight this accurately; a complete build requires a cumulative
 cache version or a rerun that reconstructs the raw-audit cache in cloud.
+
+Cache repair implementation:
+
+- `kaggle_public_drive_raw_audit_kernel.py` now seeds the outgoing raw cache
+  package from the mounted existing raw-audit cache before adding newly audited
+  zips.
+- public-drive and large-source audit metadata now mount
+  `hiuinhcng/eatfitai-dataset-v2-raw-audit-cache`, so future cache uploads can
+  be cumulative instead of replacing the cache with only the current run.
+- `roboflow_source_scope.active_2026-05-06.csv` now includes
+  `food_data_truongvo` plus the Roboflow phase-2 sources for a cache-repair
+  rerun.
 
 ## Current Blockers
 
