@@ -254,6 +254,51 @@ Report snapshot committed in:
 ai-provider/dataset_v2/roboflow_phase1_v12_audit_2026-05-06.csv
 ```
 
+Next active Roboflow scope:
+
+```text
+ai-provider/dataset_v2/roboflow_source_scope.active_2026-05-06.csv
+ai-provider/dataset_v2/roboflow_source_scope.phase2_2026-05-06.csv
+```
+
+The active scope now points to phase 2 only:
+
+- `mon_chung`
+- `food_ingredient_recognition`
+- `food_ingredient_3qyxj`
+- `spice_caezr`
+- `ingredient_v0h5a`
+
+Runtime scope selection now prefers `active`, then `phase2`, then `phase1`,
+then the full Roboflow scope. This keeps phase-1 evidence immutable while
+allowing the large-source notebook to run the remaining Roboflow candidates.
+
+Verified phase-2 API-push status:
+
+```json
+{
+  "download_status_counts": {
+    "roboflow_secret_missing": 5
+  },
+  "audit_status_counts": {
+    "not_audited": 5
+  },
+  "source_scope": "roboflow_source_scope.active_2026-05-06.csv"
+}
+```
+
+Interpretation: version 13 used the correct active phase-2 scope, but the API
+push again did not carry the `ROBOFLOW_API_KEY` notebook secret into runtime.
+The next retry must be saved from the Kaggle UI after confirming
+`ROBOFLOW_API_KEY` and `KAGGLE_API_TOKEN` are enabled on the exact
+large-source notebook.
+
+Report snapshot committed in:
+
+```text
+ai-provider/dataset_v2/roboflow_phase2_v13_audit_2026-05-06.csv
+```
+
 Kaggle kernel cleanup performed on 2026-05-06:
 
 - deleted obsolete/test kernels: `eatfitai-smoke-check`,
@@ -290,6 +335,7 @@ Kaggle kernel cleanup performed on 2026-05-06:
 | blocker | affected lane | status |
 | --- | --- | --- |
 | Roboflow secret not attached to API-pushed large-source versions | Roboflow phase 1 | resolved by UI Save Version with `ROBOFLOW_API_KEY` enabled; v12 audited/cache 4 sources |
+| Roboflow secret not attached to API-pushed large-source versions | Roboflow phase 2 | blocked until UI Save Version with `ROBOFLOW_API_KEY` and `KAGGLE_API_TOKEN` enabled |
 | manual sample-grid judgement | all accepted candidates | pending after fresh reports |
 | class mapping and segment-to-bbox conversion | accepted Drive/Roboflow candidates | pending before clean build |
 | exact license verification | unresolved Drive-origin candidates | pending before public release |

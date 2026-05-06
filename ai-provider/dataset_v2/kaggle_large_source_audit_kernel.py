@@ -21,7 +21,9 @@ SOURCE_REPORT_ROOT = TEMP_ROOT / "source_reports"
 RAW_CACHE_PACKAGE_DIR = TEMP_ROOT / "raw_audit_cache_dataset"
 RAW_CACHE_DATASET_ID = "hiuinhcng/eatfitai-dataset-v2-raw-audit-cache"
 LARGE_SOURCE_SCOPE = "large_source_scope.2026-05-05.csv"
+ROBOFLOW_ACTIVE_SCOPE = "roboflow_source_scope.active_2026-05-06.csv"
 ROBOFLOW_PHASE1_SCOPE = "roboflow_source_scope.phase1_2026-05-06.csv"
+ROBOFLOW_PHASE2_SCOPE = "roboflow_source_scope.phase2_2026-05-06.csv"
 ROBOFLOW_SOURCE_SCOPE = "roboflow_source_scope.2026-05-06.csv"
 RAW_SOURCE_REGISTRY = "raw_source_registry.yaml"
 SOURCE_AUDIT_JSON = "source_audit.json"
@@ -105,6 +107,12 @@ def build_roboflow_export_endpoint(source: Mapping[str, object]) -> str:
 
 
 def selected_source_scope_path(code_dir: Path) -> Path:
+    active_scope = code_dir / ROBOFLOW_ACTIVE_SCOPE
+    if active_scope.exists():
+        return active_scope
+    phase2_scope = code_dir / ROBOFLOW_PHASE2_SCOPE
+    if phase2_scope.exists():
+        return phase2_scope
     phase1_scope = code_dir / ROBOFLOW_PHASE1_SCOPE
     if phase1_scope.exists():
         return phase1_scope
