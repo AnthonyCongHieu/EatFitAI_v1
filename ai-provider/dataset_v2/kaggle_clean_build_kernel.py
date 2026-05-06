@@ -82,6 +82,12 @@ def find_input_dir(root: Path, slug: str) -> Path | None:
     for path in sorted(root.iterdir(), key=lambda item: item.name.lower()):
         if path.is_dir() and slug in path.name:
             return path
+    for path in sorted(root.rglob("*"), key=lambda item: (len(item.as_posix()), item.name.lower())):
+        if path.is_dir() and path.name == slug:
+            return path
+    for path in sorted(root.rglob("*"), key=lambda item: (len(item.as_posix()), item.name.lower())):
+        if path.is_dir() and slug in path.name:
+            return path
     return None
 
 

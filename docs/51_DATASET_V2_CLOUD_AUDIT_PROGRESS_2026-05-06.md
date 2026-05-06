@@ -391,6 +391,10 @@ It runs a hard preflight before building. If any source marked
 direct Kaggle mount, it writes `clean_build_preflight_summary.json` with
 `status=blocked_missing_sources` and does not build a partial dataset.
 
+Clean-build v1 completed but found Kaggle inputs under the newer nested
+`/kaggle/input/datasets/<owner>/<dataset>` layout. The kernel input discovery
+has been updated to search nested Kaggle dataset directories before rerunning.
+
 Current raw-audit cache reality checked through the Kaggle API on 2026-05-06:
 
 ```text

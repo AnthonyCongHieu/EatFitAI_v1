@@ -15,6 +15,7 @@ from build_kaggle_training_package import assert_passing_final_audit  # noqa: E4
 from kaggle_raw_audit_kernel import find_raw_manifest  # noqa: E402
 from kaggle_clean_build_kernel import (  # noqa: E402
     collect_cache_entries,
+    find_input_dir,
     resolve_cache_source_path,
     source_policy_included_slugs,
     strip_zip_suffixes,
@@ -178,6 +179,14 @@ class DatasetV2PipelineHandoffTests(unittest.TestCase):
         ]
 
         self.assertEqual(source_policy_included_slugs(rows), ["food_data_truongvo", "vietfood67"])
+
+    def test_clean_build_kernel_finds_nested_kaggle_input_dataset_dirs(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            nested = root / "datasets" / "hiuinhcng" / "eatfitai-dataset-v2-raw-audit-cache"
+            nested.mkdir(parents=True)
+
+            self.assertEqual(find_input_dir(root, "eatfitai-dataset-v2-raw-audit-cache"), nested)
 
     def test_sample_grid_uses_audit_class_names_when_data_yaml_is_missing(self):
         with tempfile.TemporaryDirectory() as tmp:
