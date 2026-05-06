@@ -135,6 +135,12 @@ Required Kaggle Secrets attached to the notebook:
 - `RCLONE_DRIVE_CONF`
 - `KAGGLE_API_TOKEN`
 
+Kaggle secrets are notebook-scoped. A successful drive-secret smoke run does
+not automatically enable the same secrets on the public-drive raw audit
+notebook. If the report shows `drive_secret_unreachable`, open the target
+notebook in Kaggle, enable both secrets from Add-ons -> Secrets, then Save
+Version again.
+
 Keep the raw cache private and use license `unknown` for the cache package because source licenses are mixed/unverified. Final clean datasets must remain private until the per-source license manifest is resolved.
 
 ```powershell
