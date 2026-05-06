@@ -222,6 +222,38 @@ confirming `ROBOFLOW_API_KEY` is enabled on the exact large-source notebook.
 Do not push another API version after that UI save unless the secret is
 re-enabled again in the UI.
 
+Verified phase-1 success status after UI secret enablement:
+
+```json
+{
+  "download_status_counts": {
+    "downloaded_roboflow_export": 4
+  },
+  "audit_status_counts": {
+    "audited": 4
+  },
+  "cache_upload": {
+    "cache_status": "cached_to_kaggle_dataset",
+    "dataset_id": "hiuinhcng/eatfitai-dataset-v2-raw-audit-cache"
+  }
+}
+```
+
+Phase-1 source results:
+
+| source_slug | decision | classes | images | boxes | notes |
+| --- | --- | ---: | ---: | ---: | --- |
+| `detection_15_vietnamese_food_v2` | `ACCEPT_FILTERED` | 15 | 3036 | 4264 | Vietnamese dish source; sample grid generated |
+| `khoa_food_jfsxy` | `ACCEPT_FILTERED` | 10 | 997 | 1472 | Vietnamese cake/tail booster; 32 empty labels |
+| `vietnamese_food_nhh` | `ACCEPT_FILTERED` | 5 | 1000 | 1411 | focused Vietnamese booster |
+| `food_ingredients_v1` | `ACCEPT_FILTERED` | 60 | 626 | 1845 | ingredient supplement; requires class mapping |
+
+Report snapshot committed in:
+
+```text
+ai-provider/dataset_v2/roboflow_phase1_v12_audit_2026-05-06.csv
+```
+
 Kaggle kernel cleanup performed on 2026-05-06:
 
 - deleted obsolete/test kernels: `eatfitai-smoke-check`,
@@ -257,7 +289,7 @@ Kaggle kernel cleanup performed on 2026-05-06:
 
 | blocker | affected lane | status |
 | --- | --- | --- |
-| Roboflow secret not attached to API-pushed large-source versions | Roboflow phase 1 | blocked until UI Save Version with `ROBOFLOW_API_KEY` enabled |
+| Roboflow secret not attached to API-pushed large-source versions | Roboflow phase 1 | resolved by UI Save Version with `ROBOFLOW_API_KEY` enabled; v12 audited/cache 4 sources |
 | manual sample-grid judgement | all accepted candidates | pending after fresh reports |
 | class mapping and segment-to-bbox conversion | accepted Drive/Roboflow candidates | pending before clean build |
 | exact license verification | unresolved Drive-origin candidates | pending before public release |
