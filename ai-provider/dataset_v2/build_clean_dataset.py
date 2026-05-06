@@ -47,6 +47,26 @@ def alias_map(taxonomy: dict[str, Any], classes: list[str]) -> dict[str, str]:
     return mapping
 
 
+def parse_audit_class_names(source: dict[str, Any]) -> dict[int, str]:
+    raw = source.get("class_names_raw", {})
+    if isinstance(raw, str):
+        try:
+            raw = json.loads(raw)
+        except json.JSONDecodeError:
+            return {}
+    if isinstance(raw, list):
+        return {idx: str(name) for idx, name in enumerate(raw)}
+    if isinstance(raw, dict):
+        parsed: dict[int, str] = {}
+        for key, value in raw.items():
+            try:
+                parsed[int(key)] = str(value)
+            except (TypeError, ValueError):
+                continue
+        return dict(sorted(parsed.items()))
+    return {}
+
+
 def split_for_hash(image_hash: str) -> str:
     value = int(image_hash[:12], 16) % 100
     if value < 85:
@@ -98,6 +118,8 @@ def clean_dataset(audit_rows: list[dict[str, Any]], taxonomy: dict[str, Any], ou
             issue_rows.append({"source_slug": source_slug, "issue": "extracted_path_missing", "path": str(root)})
             continue
         names, _warnings = parse_data_yaml_names(find_data_yaml(root))
+        if not names:
+            names = parse_audit_class_names(source)
         for image_dir, label_dir in find_split_dirs(root).values():
             for image_path in list_images(image_dir):
                 ok, _size = image_opens(image_path)

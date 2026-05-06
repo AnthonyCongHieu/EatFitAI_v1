@@ -5,7 +5,68 @@ import csv
 import json
 from pathlib import Path
 
-from common import find_data_yaml, find_split_dirs, label_for_image, list_images, parse_data_yaml_names, read_label_rows
+from build_clean_dataset import parse_audit_class_names
+from common import IMAGE_EXTS, find_data_yaml, find_split_dirs, label_for_image, parse_data_yaml_names, read_label_rows
+
+
+def source_class_names(source: dict, root: Path) -> dict[int, str]:
+    names, _warnings = parse_data_yaml_names(find_data_yaml(root))
+    return names or parse_audit_class_names(source)
+
+
+def compact_label(label: str) -> str:
+    return str(label).split(" (", 1)[0]
+
+
+def parse_positive_int(value: object) -> int | None:
+    try:
+        parsed = int(str(value or "").strip())
+    except ValueError:
+        return None
+    return parsed if parsed > 0 else None
+
+
+def iter_images_limited(root: Path, limit: int | None):
+    count = 0
+    for path in root.rglob("*"):
+        if not path.is_file() or path.suffix.lower() not in IMAGE_EXTS:
+            continue
+        yield path
+        count += 1
+        if limit is not None and count >= limit:
+            break
+
+
+def select_diverse_samples(samples: list[tuple[Path, list[dict]]], max_images: int) -> list[tuple[Path, list[dict]]]:
+    selected: list[tuple[Path, list[dict]]] = []
+    fallback: list[tuple[Path, list[dict]]] = []
+    covered_classes: set[int] = set()
+    for image_path, label_rows in samples:
+        class_ids = {int(row["class_id"]) for row in label_rows if "class_id" in row}
+        if class_ids - covered_classes:
+            selected.append((image_path, label_rows))
+            covered_classes.update(class_ids)
+            if len(selected) >= max_images:
+                return selected
+        elif len(fallback) < max_images:
+            fallback.append((image_path, label_rows))
+    return (selected + fallback)[:max_images]
+
+
+def add_diverse_sample(
+    selected: list[tuple[Path, list[dict]]],
+    fallback: list[tuple[Path, list[dict]]],
+    covered_classes: set[int],
+    image_path: Path,
+    label_rows: list[dict],
+    max_images: int,
+) -> None:
+    class_ids = {int(row["class_id"]) for row in label_rows if "class_id" in row}
+    if class_ids - covered_classes:
+        selected.append((image_path, label_rows))
+        covered_classes.update(class_ids)
+    elif len(fallback) < max_images:
+        fallback.append((image_path, label_rows))
 
 
 def draw_source_grid(source: dict, out_dir: Path, max_images: int) -> str:
@@ -18,19 +79,25 @@ def draw_source_grid(source: dict, out_dir: Path, max_images: int) -> str:
     root = Path(source.get("extracted_path", ""))
     if not root.exists():
         return ""
-    names, _warnings = parse_data_yaml_names(find_data_yaml(root))
-    samples = []
+    names = source_class_names(source, root)
+    selected: list[tuple[Path, list[dict]]] = []
+    fallback: list[tuple[Path, list[dict]]] = []
+    covered_classes: set[int] = set()
+    scan_limit = parse_positive_int(source.get("audit_image_limit")) or max_images * 200
+    scanned = 0
     for image_dir, label_dir in find_split_dirs(root).values():
-        for image_path in list_images(image_dir):
+        for image_path in iter_images_limited(image_dir, max(scan_limit - scanned, 0)):
+            scanned += 1
             label_path = label_for_image(image_path, image_dir, label_dir)
             if label_path.exists():
                 rows, _counts = read_label_rows(label_path, len(names) if names else None)
                 if rows:
-                    samples.append((image_path, rows))
-            if len(samples) >= max_images:
+                    add_diverse_sample(selected, fallback, covered_classes, image_path, rows, max_images)
+            if len(selected) >= max_images or scanned >= scan_limit:
                 break
-        if len(samples) >= max_images:
+        if len(selected) >= max_images or scanned >= scan_limit:
             break
+    samples = (selected + fallback)[:max_images]
     if not samples:
         return ""
 
@@ -59,7 +126,7 @@ def draw_source_grid(source: dict, out_dir: Path, max_images: int) -> str:
                 right = offset_x + (x + w / 2) * original_w * scale_x
                 bottom = offset_y + (y + h / 2) * original_h * scale_y
                 draw.rectangle([left, top, right, bottom], outline="red", width=2)
-                label = names.get(row["class_id"], str(row["class_id"]))
+                label = compact_label(names.get(row["class_id"], str(row["class_id"])))
                 draw.text((left + 2, max(top + 2, offset_y)), label, fill="yellow", font=font, stroke_width=1, stroke_fill="black")
     out_dir.mkdir(parents=True, exist_ok=True)
     out_path = out_dir / f"{source_slug}.jpg"

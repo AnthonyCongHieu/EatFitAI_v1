@@ -294,7 +294,7 @@ def image_opens(path: Path) -> tuple[bool, tuple[int, int] | None]:
 def decide_source(metrics: dict[str, Any], initial_decision: str = "") -> tuple[str, str]:
     if initial_decision == "QUARANTINE":
         return "QUARANTINE", "Initial manifest quarantines this source"
-    if not metrics.get("data_yaml_found"):
+    if not metrics.get("data_yaml_found") and not metrics.get("class_names_external_found"):
         return "QUARANTINE", "Missing data.yaml"
     if metrics.get("image_count", 0) == 0 or metrics.get("label_count", 0) == 0:
         return "QUARANTINE", "No usable YOLO image/label split found"

@@ -15,6 +15,7 @@ from common import (
     image_opens,
     label_for_image,
     list_images,
+    load_yaml,
     normalize_label,
     parse_data_yaml_names,
     read_csv,
@@ -33,6 +34,8 @@ AUDIT_FIELDS = [
     "zip_size_bytes",
     "zip_sha256",
     "data_yaml_found",
+    "class_names_external_found",
+    "class_names_source",
     "task_type_detected",
     "class_count",
     "class_names_raw",
@@ -137,6 +140,56 @@ def list_images_limited(root: Path, limit: int) -> list[Path]:
     return images
 
 
+def parse_class_names_value(value: object) -> tuple[dict[int, str], list[str]]:
+    warnings: list[str] = []
+    if isinstance(value, list):
+        return {idx: str(name) for idx, name in enumerate(value)}, warnings
+    if isinstance(value, dict):
+        parsed: dict[int, str] = {}
+        for key, name in value.items():
+            try:
+                parsed[int(key)] = str(name)
+            except (TypeError, ValueError):
+                warnings.append(f"invalid_external_class_id:{key}")
+        return dict(sorted(parsed.items())), warnings
+    warnings.append("invalid_external_class_names")
+    return {}, warnings
+
+
+def resolve_class_names_file(path_text: str) -> Path | None:
+    raw_path = Path(path_text)
+    candidates = [raw_path] if raw_path.is_absolute() else [Path.cwd() / raw_path, Path(__file__).resolve().parent / raw_path]
+    for path in candidates:
+        if path.exists():
+            return path
+    return None
+
+
+def load_manifest_class_names(source: dict[str, str]) -> tuple[dict[int, str], list[str], str]:
+    class_names_file = source.get("class_names_file", "").strip()
+    if not class_names_file:
+        return {}, [], ""
+    path = resolve_class_names_file(class_names_file)
+    if path is None:
+        return {}, [f"class_names_file_missing:{class_names_file}"], ""
+    try:
+        data = load_yaml(path)
+    except Exception as exc:
+        return {}, [f"class_names_file_parse_failed:{type(exc).__name__}"], path.as_posix()
+    class_names_key = source.get("class_names_key", "").strip() or source.get("source_slug", "").strip()
+    selected = data
+    if isinstance(data, dict) and class_names_key in data:
+        selected = data[class_names_key]
+    if isinstance(selected, dict) and "names" in selected:
+        selected = selected["names"]
+    names, warnings = parse_class_names_value(selected)
+    if names:
+        warnings.append("external_class_map_used")
+    else:
+        warnings.append(f"external_class_map_missing:{class_names_key}")
+    return names, warnings, f"{path.as_posix()}#{class_names_key}"
+
+
 def audit_extracted_tree(
     source: dict[str, str],
     extracted_path: Path,
@@ -147,6 +200,15 @@ def audit_extracted_tree(
 
     data_yaml = find_data_yaml(extracted_path)
     names, text_warnings = parse_data_yaml_names(data_yaml)
+    class_names_external_found = False
+    class_names_source = data_yaml.as_posix() if data_yaml else ""
+    if not names:
+        external_names, external_warnings, external_source = load_manifest_class_names(source)
+        text_warnings.extend(external_warnings)
+        if external_names:
+            names = external_names
+            class_names_external_found = True
+            class_names_source = external_source
     splits = find_split_dirs(extracted_path)
     audit_image_limit = parse_optional_int(source.get("audit_image_limit"))
     audit_fast_sample = parse_bool(source.get("audit_fast_sample"))
@@ -159,6 +221,8 @@ def audit_extracted_tree(
         "zip_size_bytes": zip_path.stat().st_size if zip_path else "",
         "zip_sha256": sha256_file(zip_path) if zip_path else "",
         "data_yaml_found": data_yaml is not None,
+        "class_names_external_found": class_names_external_found,
+        "class_names_source": class_names_source,
         "task_type_detected": "unknown",
         "class_count": len(names),
         "class_names_raw": json.dumps(names, ensure_ascii=False),

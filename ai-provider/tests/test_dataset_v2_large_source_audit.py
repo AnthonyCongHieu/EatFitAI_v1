@@ -221,6 +221,60 @@ class DatasetV2LargeSourceAuditTests(unittest.TestCase):
         self.assertEqual(rows[0]["image_count"], 1)
         self.assertEqual(rows[0]["detect_row_count"], 1)
 
+    def test_audit_sources_uses_manifest_class_map_when_data_yaml_is_missing(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            source_dir = root / "mounted" / "dataset"
+            image_dir = source_dir / "images" / "test"
+            label_dir = source_dir / "labels" / "test"
+            image_dir.mkdir(parents=True)
+            label_dir.mkdir(parents=True)
+            image_bytes = (
+                b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01"
+                b"\x08\x02\x00\x00\x00\x90wS\xde\x00\x00\x00\x0cIDATx\x9cc\xf8\xff\xff?"
+                b"\x00\x05\xfe\x02\xfeA\xe2`\x82\x00\x00\x00\x00IEND\xaeB`\x82"
+            )
+            (image_dir / "sample.png").write_bytes(image_bytes)
+            (label_dir / "sample.txt").write_text("1 0.5 0.5 0.5 0.5\n", encoding="utf-8")
+            class_map = root / "source_class_maps.yaml"
+            class_map.write_text(
+                "vietfood67:\n"
+                "  names:\n"
+                "    - pho\n"
+                "    - banh mi\n",
+                encoding="utf-8",
+            )
+            manifest = root / "manifest.csv"
+            manifest.write_text(
+                "source_slug,extracted_path,status,initial_decision,class_names_file,class_names_key\n"
+                f"vietfood67,{source_dir.as_posix()},found,LICENSE_RISK_AUDIT_ONLY,{class_map.as_posix()},vietfood67\n",
+                encoding="utf-8",
+            )
+            out_dir = root / "reports"
+
+            subprocess.run(
+                [
+                    sys.executable,
+                    str(DATASET_V2_DIR / "audit_sources.py"),
+                    "--manifest",
+                    str(manifest),
+                    "--work-dir",
+                    str(root / "work"),
+                    "--out-dir",
+                    str(out_dir),
+                ],
+                check=True,
+            )
+            rows = json.loads((out_dir / "source_audit.json").read_text(encoding="utf-8"))
+            with (out_dir / "class_candidates.csv").open("r", encoding="utf-8") as f:
+                candidates = list(csv.DictReader(f))
+
+        self.assertFalse(rows[0]["data_yaml_found"])
+        self.assertEqual(rows[0]["class_count"], 2)
+        self.assertEqual(rows[0]["class_names_external_found"], True)
+        self.assertNotEqual(rows[0]["decision"], "QUARANTINE")
+        self.assertEqual(candidates[0]["raw_class_name"], "banh mi")
+
     def test_audit_sources_respects_manifest_image_limit_for_large_mounts(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)

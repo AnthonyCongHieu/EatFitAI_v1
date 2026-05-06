@@ -64,6 +64,8 @@ Use this for the two sources that should not go through the small Drive cache pa
 - `food_data_truongvo`: download the Roboflow YOLO export in Kaggle with the `ROBOFLOW_API_KEY` secret, then audit/cache only after audit succeeds.
 - `vietfood67`: mount `thomasnguyen6868/vietfood68` directly as a Kaggle input, audit the extracted YOLO folder with a capped first pass, keep the `CC BY-NC-SA 4.0` license in reports, and do not raw-cache it.
 
+The Kaggle VietFood67 mount has YOLO labels but no `data.yaml`. Keep its class names in `source_class_maps.yaml` and reference that file from `large_source_scope.2026-05-05.csv`; the audit report will keep `data_yaml_found=false` plus `external_class_map_used` so provenance remains visible.
+
 ```powershell
 python ai-provider\dataset_v2\prepare_kaggle_packages.py pipeline-code --out-dir "_dataset_v2_pipeline_code_package"
 python ai-provider\dataset_v2\kaggle_remote_orchestrator.py dataset --folder "_dataset_v2_pipeline_code_package" --message "Dataset V2 pipeline code with large source audit"
@@ -73,6 +75,7 @@ python ai-provider\dataset_v2\kaggle_remote_orchestrator.py output --kernel-id "
 ```
 
 Attach Kaggle Secret `ROBOFLOW_API_KEY` before saving/running this notebook. Do not paste or print the key in notebooks, logs, CSV, or reports.
+Local `ROBOFLOW_API_KEY` is not inherited by Kaggle; add the same key through Kaggle notebook secrets and enable it for this notebook before `Save Version`.
 
 ## Kaggle-First Package Prep
 
