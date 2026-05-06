@@ -134,6 +134,30 @@ Key audit cautions before clean merge:
   `food_detection_64`, `uecfood256`, and `food_kcmrd`.
 - sample-grid/manual class review remains required before promotion to clean.
 
+## Sample Grid Review Lane
+
+First-pass visual review from the OAuth Drive v11 sample grids is recorded in:
+
+```text
+ai-provider/dataset_v2/sample_grid_quality_review_2026-05-06.csv
+```
+
+Current clean-candidate interpretation:
+
+- first clean core: `food_data_truongvo`, `rawdata_my_khanh`, `food_items`,
+  `canteen_menu`, and filtered `food_prethesis`.
+- tail/booster candidates: `vietnamese_food_calories`,
+  `banh_dan_gian_nb`, `banh_dan_gian_mien_tay`, `vietnamese_food_5`,
+  and `food_ai_tong_hop`.
+- ingredient/supplement candidates: `food_kcmrd` and selected overlap from
+  `thai_food`.
+- hold/cherry-pick only: `uecfood256`, `vegetable_detection`,
+  `food_detection_64`, `food_detection_xt7yz`, `npg_project`, and `fish`.
+- excluded: `food_union_fruit_old` and `food_detection_3_old`.
+
+This visual review does not override audit decisions by itself. It is the
+gate used before class mapping and clean-build inclusion.
+
 ## Roboflow Small Raw Audit Lane
 
 Kernel: `EatFitAI Dataset V2 Raw Audit`

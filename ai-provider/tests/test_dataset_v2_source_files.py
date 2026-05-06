@@ -17,6 +17,7 @@ MANIFEST = ROOT / "ai-provider" / "dataset_v2" / "source_manifest.seed.csv"
 REGISTRY = ROOT / "ai-provider" / "dataset_v2" / "raw_source_registry.yaml"
 OAUTH_SHORTLIST = ROOT / "ai-provider" / "dataset_v2" / "source_shortlist.oauth_audit_2026-05-05.csv"
 TOP_TIER_SHORTLIST = ROOT / "ai-provider" / "dataset_v2" / "top_tier_dataset_candidates_2026-05-05.csv"
+SAMPLE_GRID_REVIEW = ROOT / "ai-provider" / "dataset_v2" / "sample_grid_quality_review_2026-05-06.csv"
 
 
 EXPECTED_DRIVE_ZIPS = {
@@ -141,6 +142,27 @@ class DatasetV2SourceFileTests(unittest.TestCase):
 
         self.assertTrue(rows)
         self.assertTrue(required.issubset(rows[0].keys()))
+
+    def test_sample_grid_review_tracks_clean_actions(self):
+        rows = read_csv(SAMPLE_GRID_REVIEW)
+        by_slug = {row["source_slug"]: row for row in rows}
+
+        for slug in [
+            "food_data_truongvo",
+            "rawdata_my_khanh",
+            "food_items",
+            "canteen_menu",
+            "food_prethesis",
+            "vegetable_detection",
+            "food_detection_64",
+            "food_union_fruit_old",
+            "food_detection_3_old",
+        ]:
+            self.assertIn(slug, by_slug)
+
+        self.assertEqual(by_slug["food_items"]["clean_action"], "FIRST_CLEAN_CORE")
+        self.assertEqual(by_slug["vegetable_detection"]["clean_action"], "HOLD_CROWDED_INGREDIENT")
+        self.assertEqual(by_slug["food_union_fruit_old"]["clean_action"], "EXCLUDE")
 
     def test_new_roboflow_shortlist_entries_are_registry_ready_or_deferred(self):
         rows = read_csv(TOP_TIER_SHORTLIST)
