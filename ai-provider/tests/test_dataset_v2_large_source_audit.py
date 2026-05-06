@@ -15,11 +15,14 @@ from common import load_yaml  # noqa: E402
 from kaggle_large_source_audit_kernel import (  # noqa: E402
     LARGE_SOURCE_SCOPE,
     KAGGLE_LARGE_REPORTS_ZIP,
+    ROBOFLOW_SOURCE_SCOPE,
     add_large_source_to_cache_package,
     build_kaggle_direct_manifest_row,
     build_roboflow_export_endpoint,
+    extract_roboflow_download_link,
     find_kaggle_dataset_source_dir,
     is_safe_cloud_path,
+    selected_source_scope_path,
     should_cache_large_source,
 )
 
@@ -27,6 +30,7 @@ from kaggle_large_source_audit_kernel import (  # noqa: E402
 ROOT = Path(__file__).resolve().parents[2]
 REGISTRY = ROOT / "ai-provider" / "dataset_v2" / "raw_source_registry.yaml"
 LARGE_SCOPE = ROOT / "ai-provider" / "dataset_v2" / "large_source_scope.2026-05-05.csv"
+ROBOFLOW_SCOPE = ROOT / "ai-provider" / "dataset_v2" / "roboflow_source_scope.2026-05-06.csv"
 LARGE_KERNEL_METADATA = ROOT / "ai-provider" / "dataset_v2" / "kaggle_large_source_audit_kernel_metadata.json"
 
 
@@ -47,6 +51,22 @@ class DatasetV2LargeSourceAuditTests(unittest.TestCase):
         self.assertEqual(by_slug["vietfood67"]["cache_policy"], "no_raw_cache")
         self.assertIn("CC BY-NC-SA", by_slug["vietfood67"]["license"])
 
+    def test_roboflow_scope_records_new_cloud_audit_candidates(self):
+        rows = read_csv(ROBOFLOW_SCOPE)
+        by_slug = {row["source_slug"]: row for row in rows}
+
+        for slug in [
+            "detection_15_vietnamese_food_v2",
+            "mon_chung",
+            "food_ingredient_recognition",
+            "food_ingredient_3qyxj",
+            "spice_caezr",
+            "ingredient_v0h5a",
+        ]:
+            self.assertIn(slug, by_slug)
+            self.assertEqual(by_slug[slug]["audit_mode"], "roboflow_export")
+            self.assertEqual(by_slug[slug]["cache_policy"], "cache_after_audit")
+
     def test_registry_has_food_data_truongvo_export_metadata(self):
         registry = load_yaml(REGISTRY)
         row = registry["roboflow_sources"]["food_data_truongvo"]
@@ -64,6 +84,11 @@ class DatasetV2LargeSourceAuditTests(unittest.TestCase):
 
         self.assertEqual(endpoint, "https://api.roboflow.com/truongvo/food-data-e2kl5-vqaqp/1/yolov11")
         self.assertNotIn("api_key", endpoint)
+
+    def test_roboflow_export_link_parser_accepts_common_shapes(self):
+        self.assertEqual(extract_roboflow_download_link({"export": {"link": "https://example.test/a.zip"}}), "https://example.test/a.zip")
+        self.assertEqual(extract_roboflow_download_link({"download": "https://example.test/b.zip"}), "https://example.test/b.zip")
+        self.assertEqual(extract_roboflow_download_link({}), "")
 
     def test_large_source_cache_policy_only_caches_roboflow_lane(self):
         self.assertTrue(should_cache_large_source({"source_slug": "food_data_truongvo", "cache_policy": "cache_after_audit"}))
@@ -116,6 +141,20 @@ class DatasetV2LargeSourceAuditTests(unittest.TestCase):
         self.assertFalse(is_safe_cloud_path(Path("relative/raw.zip")))
         self.assertEqual(KAGGLE_LARGE_REPORTS_ZIP.as_posix(), "/kaggle/working/dataset_v2_large_source_audit_reports.zip")
         self.assertEqual(LARGE_SOURCE_SCOPE, "large_source_scope.2026-05-05.csv")
+        self.assertEqual(ROBOFLOW_SOURCE_SCOPE, "roboflow_source_scope.2026-05-06.csv")
+
+    def test_selected_source_scope_prefers_roboflow_runtime_scope(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            old_scope = root / LARGE_SOURCE_SCOPE
+            old_scope.write_text("source_slug\nold\n", encoding="utf-8")
+
+            self.assertEqual(selected_source_scope_path(root), old_scope)
+
+            roboflow_scope = root / ROBOFLOW_SOURCE_SCOPE
+            roboflow_scope.write_text("source_slug\nnew\n", encoding="utf-8")
+
+            self.assertEqual(selected_source_scope_path(root), roboflow_scope)
 
     def test_large_source_cache_package_uses_requested_cache_dir(self):
         with tempfile.TemporaryDirectory() as tmp:

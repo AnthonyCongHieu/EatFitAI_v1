@@ -1,0 +1,10 @@
+source_slug,audit_mode,source_ref,kaggle_input_slug,preferred_subdir,cache_policy,license,initial_decision,audit_image_limit,audit_fast_sample,notes,class_names_file,class_names_key
+detection_15_vietnamese_food_v2,roboflow_export,roboflow:aiapplication-gzusw/detection_15_vietnamese_food_v2,,,cache_after_audit,CC BY 4.0,PENDING_AUDIT,,,Focused Vietnamese dish source; re-audit/cache through Roboflow export before clean merge.,,
+mon_chung,roboflow_export,roboflow:foodai-aditx/mon-chung-cqbt6,,,cache_after_audit,CC BY 4.0,PENDING_AUDIT,,,Vietnamese multi-object plate candidate; drop generic objects class if present.,,
+khoa_food_jfsxy,roboflow_export,roboflow:khoa-fbrvv/food-jfsxy,,,cache_after_audit,CC BY 4.0,PENDING_AUDIT,,,Focused Vietnamese cake/tail booster; dedupe against banh-heavy Drive sources.,,
+vietnamese_food_nhh,roboflow_export,roboflow:nhh/vietnamese-food,,,cache_after_audit,CC BY 4.0,PENDING_AUDIT,,,Small Vietnamese booster; use only if cleaner than existing 5-class booster.,,
+food_ingredients_v1,roboflow_export,roboflow:food-recipe-ingredient-images-0gnku/food-ingredients-dataset,,,cache_after_audit,CC BY 4.0,PENDING_AUDIT,,,Small ingredient/spice supplement already metadata-approved; re-audit/cache for clean-build parity.,,
+food_ingredient_recognition,roboflow_export,roboflow:test-image-preprocessing/food-ingredient-recognition-51ngf,,,cache_after_audit,CC BY 4.0,PENDING_AUDIT,,,Large ingredient source; audit for ingredient coverage only and reject invalid class names before clean merge.,,
+food_ingredient_3qyxj,roboflow_export,roboflow:food-4pya3/food-ingredient-3qyxj,,,cache_after_audit,CC BY 4.0,PENDING_AUDIT,,,Moderate ingredient source; do not treat as Vietnamese backbone.,,
+spice_caezr,roboflow_export,roboflow:spiceso/spice-caezr,,,cache_after_audit,CC BY 4.0,PENDING_AUDIT,,,Spice supplement lane; map non-English spice labels before clean merge.,,
+ingredient_v0h5a,roboflow_export,roboflow:nurs-workspace-vavv5/ingredient-v0h5a,,,cache_after_audit,Public Domain,PENDING_AUDIT,,,Public-domain ingredient supplement; verify whether samples are meal/prep scenes or isolated objects.,,

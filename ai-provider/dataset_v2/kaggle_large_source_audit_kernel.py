@@ -6,6 +6,7 @@ import os
 import shutil
 import subprocess
 import sys
+import time
 import urllib.request
 from pathlib import Path
 from typing import Any, Mapping
@@ -20,6 +21,7 @@ SOURCE_REPORT_ROOT = TEMP_ROOT / "source_reports"
 RAW_CACHE_PACKAGE_DIR = TEMP_ROOT / "raw_audit_cache_dataset"
 RAW_CACHE_DATASET_ID = "hiuinhcng/eatfitai-dataset-v2-raw-audit-cache"
 LARGE_SOURCE_SCOPE = "large_source_scope.2026-05-05.csv"
+ROBOFLOW_SOURCE_SCOPE = "roboflow_source_scope.2026-05-06.csv"
 RAW_SOURCE_REGISTRY = "raw_source_registry.yaml"
 SOURCE_AUDIT_JSON = "source_audit.json"
 ROBOFLOW_SECRET_LABEL = "ROBOFLOW_API_KEY"
@@ -101,6 +103,13 @@ def build_roboflow_export_endpoint(source: Mapping[str, object]) -> str:
     return f"https://api.roboflow.com/{workspace}/{project}/{version}/{export_format}"
 
 
+def selected_source_scope_path(code_dir: Path) -> Path:
+    roboflow_scope = code_dir / ROBOFLOW_SOURCE_SCOPE
+    if roboflow_scope.exists():
+        return roboflow_scope
+    return code_dir / LARGE_SOURCE_SCOPE
+
+
 def get_kaggle_secret(label: str) -> str | None:
     try:
         from kaggle_secrets import UserSecretsClient  # type: ignore
@@ -111,19 +120,34 @@ def get_kaggle_secret(label: str) -> str | None:
         return None
 
 
-def roboflow_export_link(endpoint: str, api_key: str) -> str:
-    import requests
-
-    response = requests.get(endpoint, params={"api_key": api_key}, timeout=60)
-    response.raise_for_status()
-    data = response.json()
+def extract_roboflow_download_link(data: Mapping[str, object]) -> str:
     export = data.get("export")
     if isinstance(export, dict) and export.get("link"):
         return str(export["link"])
     for key in ("link", "url", "download"):
         if data.get(key):
             return str(data[key])
-    raise RuntimeError("Roboflow export response did not include a download link")
+    return ""
+
+
+def roboflow_export_link(endpoint: str, api_key: str, attempts: int = 20, delay_seconds: int = 30) -> str:
+    import requests
+
+    last_status = ""
+    for attempt in range(1, attempts + 1):
+        response = requests.get(endpoint, params={"api_key": api_key}, timeout=60)
+        last_status = str(response.status_code)
+        if response.status_code not in {200, 202}:
+            response.raise_for_status()
+        link = extract_roboflow_download_link(response.json())
+        if link:
+            return link
+        if response.status_code == 202 or attempt < attempts:
+            print(f"Roboflow export not ready yet; attempt {attempt}/{attempts}", flush=True)
+            time.sleep(delay_seconds)
+            continue
+        break
+    raise RuntimeError(f"Roboflow export response did not include a download link; last_status={last_status}")
 
 
 def download_url(url: str, output: Path) -> None:
@@ -310,7 +334,9 @@ def main() -> int:
     SOURCE_REPORT_ROOT.mkdir(parents=True, exist_ok=True)
 
     registry = load_yaml(code_dir / RAW_SOURCE_REGISTRY)
-    scope_rows = read_csv(code_dir / LARGE_SOURCE_SCOPE)
+    source_scope_path = selected_source_scope_path(code_dir)
+    print("Source scope:", source_scope_path)
+    scope_rows = read_csv(source_scope_path)
     download_rows: list[dict[str, object]] = []
     inventory_rows: list[dict[str, object]] = []
     audit_rows: list[dict[str, object]] = []
@@ -406,7 +432,7 @@ def main() -> int:
             "download_status_counts": download_counts,
             "audit_status_counts": audit_counts,
             "cache_upload": cache_upload_result,
-            "source_scope": LARGE_SOURCE_SCOPE,
+            "source_scope": source_scope_path.name,
             "source_audit": str(REPORT_DIR / SOURCE_AUDIT_JSON),
             "sample_grids": str(REPORT_DIR / "sample_grids"),
         },

@@ -173,6 +173,25 @@ These are not enough to build the final clean set by themselves. They are
 accepted audit candidates and still require sample-grid review, class mapping,
 and merge decisions.
 
+Next Roboflow cloud-audit scope:
+
+```text
+ai-provider/dataset_v2/roboflow_source_scope.2026-05-06.csv
+```
+
+This scope covers the new Roboflow top-tier candidates that are still
+metadata-only or need raw-cache parity:
+
+- Vietnamese/booster lane: `detection_15_vietnamese_food_v2`, `mon_chung`,
+  `khoa_food_jfsxy`, `vietnamese_food_nhh`.
+- Ingredient/spice lane: `food_ingredients_v1`, `food_ingredient_recognition`,
+  `food_ingredient_3qyxj`, `spice_caezr`, `ingredient_v0h5a`.
+
+Local API HEAD checks on 2026-05-06 showed known export sizes below 2GB for the
+sources that returned links immediately. `mon_chung`, `spice_caezr`, and
+`ingredient_v0h5a` returned `202` first, so the Kaggle kernel now polls
+Roboflow export generation instead of treating that as a hard failure.
+
 ## Next Execution Order
 
 1. Enable `RCLONE_DRIVE_CONF` and `KAGGLE_API_TOKEN` on the public-drive raw
