@@ -15,6 +15,7 @@ codex/yolo11m-dataset-v2
 Relevant recent commits:
 
 ```text
+5fc9bebd docs: update dataset v2 large source audit results
 f41485c0 Create 50_PRODUCTION_INFRASTRUCTURE_COST_PLAN_2026-05-06.md
 fa9d71cd Fix VietFood67 external class audit
 b513c4b0 Implement dataset v2 cloud audit workflow
@@ -80,44 +81,58 @@ Current verified output:
 ```json
 {
   "download_status_counts": {
-    "drive_secret_unreachable": 19
+    "resource_blocked_expected_size": 2,
+    "downloaded_oauth_drive": 19,
+    "skipped_by_decision": 2
   },
   "audit_status_counts": {
-    "not_audited": 19
+    "not_audited": 4,
+    "audited": 19
+  },
+  "cache_status_counts": {
+    "cached_to_kaggle_dataset": 19
   },
   "cache_upload": {
-    "cache_status": "no_cache_candidates"
+    "cache_status": "cached_to_kaggle_dataset",
+    "dataset_id": "hiuinhcng/eatfitai-dataset-v2-raw-audit-cache"
   }
 }
 ```
 
 Interpretation:
 
-- The Drive smoke notebook has already proven `RCLONE_DRIVE_CONF` can work:
-  `drive_oauth_ok`.
-- The public-drive raw audit notebook itself still cannot reach the Kaggle
-  secrets service, so the secret must be attached and enabled on that notebook
-  too. Kaggle secrets are notebook-scoped.
+- `RCLONE_DRIVE_CONF` and `KAGGLE_API_TOKEN` are now enabled on the
+  public-drive raw audit notebook.
+- Kaggle version 11 completed.
+- OAuth Drive downloaded and audited 19 Drive sources in Kaggle.
+- All 19 successful OAuth Drive sources were uploaded to the private Kaggle
+  raw-audit cache dataset:
+  `hiuinhcng/eatfitai-dataset-v2-raw-audit-cache`.
+- `vietfood67` and `food_data_truongvo` remain blocked on the Drive zip lane
+  by the expected `>20GB` gate, but both are already handled by the large-source
+  lane (`vietfood67` through Kaggle direct, `food_data_truongvo` through
+  Roboflow export/cache).
+- `food_union_fruit_old` and `food_detection_3_old` were skipped by existing
+  quarantine decisions.
 
-Required user action before the next public-drive cache pass:
+Report snapshot committed in:
 
-1. Open `https://www.kaggle.com/code/hiuinhcng/eatfitai-dataset-v2-public-drive-raw-audit/edit`.
-2. Enable Kaggle Secrets `RCLONE_DRIVE_CONF` and `KAGGLE_API_TOKEN`.
-3. Save Version for the notebook.
-
-After that, run:
-
-```powershell
-python ai-provider\dataset_v2\kaggle_remote_orchestrator.py output --kernel-id "hiuinhcng/eatfitai-dataset-v2-public-drive-raw-audit" --out-dir "_dataset_v2_reports\kaggle_public_drive_raw_audit"
+```text
+ai-provider/dataset_v2/public_drive_oauth_audit_2026-05-06.csv
 ```
 
-Expected next state:
+Reproduce report download:
 
-- download statuses should move from `drive_secret_unreachable` to
-  `downloaded_oauth_drive`, `resource_blocked_expected_size`,
-  `drive_oauth_failed`, or another explicit per-source status.
-- successful, non-quarantined small sources should be prepared for the private
-  Kaggle raw audit cache dataset.
+```powershell
+python ai-provider\dataset_v2\kaggle_remote_orchestrator.py output --kernel-id "hiuinhcng/eatfitai-dataset-v2-public-drive-raw-audit" --out-dir "_dataset_v2_reports\kaggle_public_drive_raw_audit_after_secret"
+```
+
+Key audit cautions before clean merge:
+
+- mixed detect/segment rows need bbox conversion on several sources.
+- duplicate label row cleanup is required on `food_prethesis`,
+  `food_detection_64`, `uecfood256`, and `food_kcmrd`.
+- sample-grid/manual class review remains required before promotion to clean.
 
 ## Roboflow Small Raw Audit Lane
 
@@ -137,8 +152,9 @@ and merge decisions.
 ## Next Execution Order
 
 1. Enable `RCLONE_DRIVE_CONF` and `KAGGLE_API_TOKEN` on the public-drive raw
-   audit notebook and Save Version.
-2. Download and inspect the new public-drive OAuth/cache reports.
+   audit notebook and Save Version. DONE on 2026-05-06.
+2. Download and inspect the new public-drive OAuth/cache reports. DONE for
+   version 11.
 3. Merge report evidence from:
    - 23 Drive candidates.
    - Roboflow discovery candidates.
@@ -158,5 +174,6 @@ and merge decisions.
 
 | blocker | affected lane | status |
 | --- | --- | --- |
-| `RCLONE_DRIVE_CONF` not reachable on public-drive notebook | 19 Drive OAuth/cache sources | waiting for notebook secret enable |
 | manual sample-grid judgement | all accepted candidates | pending after fresh reports |
+| class mapping and segment-to-bbox conversion | accepted Drive/Roboflow candidates | pending before clean build |
+| exact license verification | unresolved Drive-origin candidates | pending before public release |

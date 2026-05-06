@@ -1,0 +1,24 @@
+source_slug,drive_zip_name,download_status,cache_status,decision,class_count,image_count,label_count,detect_row_count,segment_row_count,empty_label_count,decision_reason
+vietfood67,VietFood67.ZIP,resource_blocked_expected_size,,,,,,,,,
+food_detection_bobotnhan,Food-Detection-bobotnhan.v7i.yolov11.zip,downloaded_oauth_drive,cached_to_kaggle_dataset,ACCEPT_FILTERED,32,11722,11722,24692,10,82,Segmentation rows require bbox conversion
+food_prethesis,Food.v6i.yolov11.zip,downloaded_oauth_drive,cached_to_kaggle_dataset,ACCEPT_FILTERED,68,45434,45434,244996,0,36,Duplicate label rows require cleanup
+food_ai_tong_hop,Food_AI_Tong_Hop.v1-banh_mi.yolov11.zip,downloaded_oauth_drive,cached_to_kaggle_dataset,ACCEPT_FILTERED,1,806,806,930,0,0,Audit clean; sample grid/manual review still required before full accept
+banh_dan_gian_mien_tay,Banh dan gian mien Tay.v5i.yolov11.zip,downloaded_oauth_drive,cached_to_kaggle_dataset,ACCEPT_FILTERED,12,1112,1112,8,8412,1,Segmentation rows require bbox conversion
+banh_dan_gian_nb,banh-dan-gian-nb.v1i.yolov11.zip,downloaded_oauth_drive,cached_to_kaggle_dataset,ACCEPT_FILTERED,17,757,757,885,0,1,Audit clean; sample grid/manual review still required before full accept
+canteen_menu,canteen_menu.v4i.yolov11.zip,downloaded_oauth_drive,cached_to_kaggle_dataset,ACCEPT_FILTERED,9,3369,3369,1895,1214,351,Segmentation rows require bbox conversion
+food_prethesis_v3,Food.v3i.yolov11.zip,downloaded_oauth_drive,cached_to_kaggle_dataset,ACCEPT_FILTERED,10,997,997,1472,0,32,Audit clean; sample grid/manual review still required before full accept
+food_items,Food Items.v11i.yolov11.zip,downloaded_oauth_drive,cached_to_kaggle_dataset,ACCEPT_FILTERED,48,2983,2983,0,11891,33,Segmentation rows require bbox conversion
+rawdata_my_khanh,RawData.v12i.yolov11.zip,downloaded_oauth_drive,cached_to_kaggle_dataset,ACCEPT_FILTERED,50,7142,7142,16867,584,0,Segmentation rows require bbox conversion
+vietnamese_food_calories,vietnamese-food-calories.v1i.yolov11.zip,downloaded_oauth_drive,cached_to_kaggle_dataset,ACCEPT_FILTERED,14,1342,1342,4505,1882,0,Segmentation rows require bbox conversion
+food_union_fruit_old,17_food_union_fruit.zip,skipped_by_decision,,,,,,,,,
+food_detection_xt7yz,16_food_detection_xt7yz.zip,downloaded_oauth_drive,cached_to_kaggle_dataset,ACCEPT_FILTERED,36,8669,8669,27066,0,0,Audit clean; sample grid/manual review still required before full accept
+npg_project,15_npg_project.zip,downloaded_oauth_drive,cached_to_kaggle_dataset,ACCEPT_FILTERED,101,8828,8828,18075,1205,45,Segmentation rows require bbox conversion
+thai_food,12_thai_food.zip,downloaded_oauth_drive,cached_to_kaggle_dataset,ACCEPT_FILTERED,19,10183,10183,18469,837,91,Segmentation rows require bbox conversion
+food_detection_64,10_food_detection_64.zip,downloaded_oauth_drive,cached_to_kaggle_dataset,ACCEPT_FILTERED,64,23466,23466,65224,0,8,Duplicate label rows require cleanup
+food_detection_3_old,11_food_detection_3.zip,skipped_by_decision,,,,,,,,,
+uecfood256,07_uecfood256.zip,downloaded_oauth_drive,cached_to_kaggle_dataset,ACCEPT_FILTERED,253,76300,76300,80857,0,414,Duplicate label rows require cleanup
+fish,06_fish.zip,downloaded_oauth_drive,cached_to_kaggle_dataset,ACCEPT_FILTERED,1,984,984,981,0,57,Audit clean; sample grid/manual review still required before full accept
+vegetable_detection,05_vegetable_detection.zip,downloaded_oauth_drive,cached_to_kaggle_dataset,ACCEPT_FILTERED,22,8269,8269,204010,29,0,Segmentation rows require bbox conversion
+food_kcmrd,04_food_kcmrd.zip,downloaded_oauth_drive,cached_to_kaggle_dataset,ACCEPT_FILTERED,78,10858,10858,27260,0,1,Duplicate label rows require cleanup
+vietnamese_food_5,03_vietnamese_food_5.zip,downloaded_oauth_drive,cached_to_kaggle_dataset,ACCEPT_FILTERED,5,1000,1000,1411,0,0,Audit clean; sample grid/manual review still required before full accept
+food_data_truongvo,01_food_data_vn.zip.zip,resource_blocked_expected_size,,,,,,,,,
