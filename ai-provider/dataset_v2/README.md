@@ -107,7 +107,10 @@ building a partial clean dataset.
 If preflight shows the raw-audit cache is not cumulative, rerun the cache lanes
 after versioning the updated pipeline code. The public-drive and large-source
 audit kernels now mount the existing raw-audit cache and seed new cache uploads
-from it before adding newly audited sources.
+from it before adding newly audited sources. Cache entries are uploaded as
+source-scoped wrapper zip files, for example `food_prethesis.zip` containing
+`food_prethesis/Food.v6i.yolov11.zip`, so Kaggle does not flatten multiple
+YOLO archives that all contain common filenames such as `data.yaml`.
 
 ## Large Source Audit
 
@@ -203,6 +206,11 @@ notebook in Kaggle, enable both secrets from Add-ons -> Secrets, then Save
 Version again.
 
 Keep the raw cache private and use license `unknown` for the cache package because source licenses are mixed/unverified. Final clean datasets must remain private until the per-source license manifest is resolved.
+
+If Kaggle shows `File already exists` while creating a raw-cache version, use a
+pipeline-code version that includes the source-scoped wrapper zip cache layout,
+then rerun the public-drive/large-source cache lane. The clean-build kernel can
+read both older mounted cache folders and the new nested wrapper zip layout.
 
 ```powershell
 python ai-provider\dataset_v2\prepare_kaggle_packages.py pipeline-code --out-dir "_dataset_v2_pipeline_code_package" --public-drive-scope "ai-provider\dataset_v2\public_drive_source_scope.oauth_retry_2026-05-05.csv"

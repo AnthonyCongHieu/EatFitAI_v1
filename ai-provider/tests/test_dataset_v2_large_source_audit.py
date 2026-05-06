@@ -5,6 +5,7 @@ import sys
 import tempfile
 import types
 import unittest
+import zipfile
 from pathlib import Path
 from unittest import mock
 
@@ -232,8 +233,11 @@ class DatasetV2LargeSourceAuditTests(unittest.TestCase):
                 cache_dir=cache_dir,
             )
 
-            self.assertEqual(row["cache_path"], zip_path.name)
-            self.assertTrue((cache_dir / zip_path.name).exists())
+            self.assertEqual(row["cache_path"], "food_data_truongvo.zip")
+            self.assertTrue((cache_dir / "food_data_truongvo.zip").exists())
+            self.assertFalse((cache_dir / zip_path.name).exists())
+            with zipfile.ZipFile(cache_dir / "food_data_truongvo.zip") as zf:
+                self.assertEqual(zf.namelist(), ["food_data_truongvo/food_data_truongvo.v1i.yolov11.zip"])
             self.assertTrue((cache_dir / "dataset-metadata.json").exists())
 
     def test_audit_sources_accepts_extracted_path_manifest(self):

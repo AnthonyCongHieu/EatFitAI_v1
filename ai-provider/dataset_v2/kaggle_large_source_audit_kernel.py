@@ -220,10 +220,10 @@ def add_large_source_to_cache_package(
     zip_path: Path,
     cache_dir: Path = RAW_CACHE_PACKAGE_DIR,
 ) -> dict[str, object]:
-    write_raw_cache_dataset_metadata(cache_dir)
-    destination = cache_dir / zip_path.name
-    if not destination.exists():
-        link_or_copy(zip_path, destination)
+    from kaggle_public_drive_raw_audit_kernel import add_cache_path_to_package  # type: ignore
+
+    source_slug = source.get("source_slug", "") or zip_path.stem
+    destination = add_cache_path_to_package(source_slug, zip_path, cache_dir)
     return {
         "source_slug": source.get("source_slug", ""),
         "license": source.get("license", ""),

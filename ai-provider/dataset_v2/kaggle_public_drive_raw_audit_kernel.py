@@ -257,6 +257,53 @@ def link_or_copy(source: Path, destination: Path) -> None:
         shutil.copy2(source, destination)
 
 
+def safe_cache_source_name(value: str) -> str:
+    raw = Path(value.strip() or "source").name
+    while raw.lower().endswith(".zip"):
+        raw = raw[:-4]
+    safe = "".join(ch if ch.isalnum() or ch in "._-" else "_" for ch in raw)
+    return safe.strip("._-") or "source"
+
+
+def cache_wrapper_path(cache_dir: Path, source_slug: str) -> Path:
+    return cache_dir / f"{safe_cache_source_name(source_slug)}.zip"
+
+
+def zip_entry_has_safe_prefix(zip_path: Path, prefix: str) -> bool:
+    prefix_text = f"{safe_cache_source_name(prefix)}/"
+    try:
+        with zipfile.ZipFile(zip_path) as zf:
+            names = [name for name in zf.namelist() if name and not name.endswith("/")]
+    except zipfile.BadZipFile:
+        return False
+    return bool(names) and all(name.startswith(prefix_text) for name in names)
+
+
+def write_cache_wrapper_zip(source: Path, destination: Path, source_slug: str) -> None:
+    if destination.exists():
+        return
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    prefix = safe_cache_source_name(source_slug)
+    with zipfile.ZipFile(destination, "w", compression=zipfile.ZIP_STORED, allowZip64=True) as zf:
+        if source.is_dir():
+            for item in sorted(source.rglob("*"), key=lambda path: path.as_posix()):
+                if item.is_file():
+                    zf.write(item, f"{prefix}/{item.relative_to(source).as_posix()}")
+        else:
+            zf.write(source, f"{prefix}/{source.name}")
+
+
+def add_cache_path_to_package(source_slug: str, source_path: Path, cache_dir: Path = RAW_CACHE_PACKAGE_DIR) -> Path:
+    write_raw_cache_dataset_metadata(cache_dir)
+    destination = cache_wrapper_path(cache_dir, source_slug)
+    if source_path.is_file() and source_path.suffix.lower() == ".zip" and zip_entry_has_safe_prefix(source_path, source_slug):
+        if not destination.exists():
+            link_or_copy(source_path, destination)
+    else:
+        write_cache_wrapper_zip(source_path, destination, source_slug)
+    return destination
+
+
 def find_input_dir(root: Path, slug: str) -> Path | None:
     for path in sorted(root.iterdir(), key=lambda item: item.name.lower()):
         if path.is_dir() and path.name == slug:
@@ -295,17 +342,15 @@ def seed_existing_raw_cache_dataset(
     for entry in sorted(existing_cache.iterdir(), key=lambda item: item.name.lower()):
         if entry.name == "dataset-metadata.json":
             continue
-        copy_cache_entry(entry, cache_dir / entry.name)
+        add_cache_path_to_package(safe_cache_source_name(entry.name), entry, cache_dir)
         seeded += 1
     write_raw_cache_dataset_metadata(cache_dir)
     return {"seed_status": "seeded_existing_cache", "seeded_entries": seeded, "existing_cache_path": existing_cache.as_posix()}
 
 
 def add_raw_zip_to_cache_package(source: Mapping[str, str], zip_path: Path) -> dict[str, object]:
-    write_raw_cache_dataset_metadata(RAW_CACHE_PACKAGE_DIR)
-    destination = RAW_CACHE_PACKAGE_DIR / zip_path.name
-    if not destination.exists():
-        link_or_copy(zip_path, destination)
+    source_slug = source.get("source_slug", "") or zip_path.stem
+    destination = add_cache_path_to_package(source_slug, zip_path, RAW_CACHE_PACKAGE_DIR)
     return {
         "source_slug": source.get("source_slug", ""),
         "drive_zip_name": source.get("drive_zip_name", ""),
@@ -329,7 +374,7 @@ def upload_raw_cache_dataset(
     dataset_id: str = RAW_CACHE_DATASET_ID,
     secret_getter=get_kaggle_secret,
 ) -> dict[str, object]:
-    if not cache_dir.exists() or not any(path.suffix.lower() == ".zip" for path in cache_dir.iterdir()):
+    if not cache_dir.exists() or not any(path.is_file() and path.suffix.lower() == ".zip" for path in cache_dir.rglob("*")):
         return {"cache_status": "no_cache_candidates"}
 
     try:
@@ -354,7 +399,7 @@ def upload_raw_cache_dataset(
                 version_notes="Cache authenticated Drive raw zips after successful source audit",
                 quiet=True,
                 convert_to_csv=False,
-                dir_mode="zip",
+                dir_mode="skip",
             )
         else:
             api.dataset_create_new(
@@ -362,7 +407,7 @@ def upload_raw_cache_dataset(
                 public=False,
                 quiet=True,
                 convert_to_csv=False,
-                dir_mode="zip",
+                dir_mode="skip",
             )
     except Exception as exc:
         return {"cache_status": "cache_upload_failed", "error": sanitize_error_message(exc)}

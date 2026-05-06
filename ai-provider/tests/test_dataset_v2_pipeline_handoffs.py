@@ -2,7 +2,9 @@ import json
 import sys
 import tempfile
 import unittest
+import zipfile
 from pathlib import Path
+from unittest import mock
 
 
 DATASET_V2_DIR = Path(__file__).resolve().parents[1] / "dataset_v2"
@@ -14,12 +16,14 @@ from build_clean_dataset import clean_dataset, filter_audit_rows_by_policy  # no
 from build_kaggle_training_package import assert_passing_final_audit  # noqa: E402
 from kaggle_raw_audit_kernel import find_raw_manifest  # noqa: E402
 from kaggle_clean_build_kernel import (  # noqa: E402
+    cache_source_yolo_root,
     collect_cache_entries,
     find_input_dir,
     resolve_cache_source_path,
     source_policy_included_slugs,
     strip_zip_suffixes,
 )
+import kaggle_public_drive_raw_audit_kernel as public_drive_kernel  # noqa: E402
 from kaggle_public_drive_raw_audit_kernel import seed_existing_raw_cache_dataset  # noqa: E402
 from make_sample_grids import add_diverse_sample, compact_label, select_diverse_samples, source_class_names  # noqa: E402
 from validate_clean_dataset import validate  # noqa: E402
@@ -201,8 +205,57 @@ class DatasetV2PipelineHandoffTests(unittest.TestCase):
 
             self.assertEqual(result["seed_status"], "seeded_existing_cache")
             self.assertEqual(result["seeded_entries"], 1)
-            self.assertTrue((cache_dir / "existing_source" / "marker.txt").exists())
+            wrapper = cache_dir / "existing_source.zip"
+            self.assertTrue(wrapper.exists())
+            with zipfile.ZipFile(wrapper) as zf:
+                self.assertIn("existing_source/marker.txt", zf.namelist())
             self.assertTrue((cache_dir / "dataset-metadata.json").exists())
+
+    def test_public_drive_cache_package_wraps_zip_by_source_slug(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            cache_dir = root / "cache"
+            zip_path = root / "Food.v6i.yolov11.zip"
+            zip_path.write_bytes(b"zip-bytes")
+
+            with mock.patch.object(public_drive_kernel, "RAW_CACHE_PACKAGE_DIR", cache_dir):
+                row = public_drive_kernel.add_raw_zip_to_cache_package(
+                    {"source_slug": "food_prethesis", "drive_zip_name": zip_path.name},
+                    zip_path,
+                )
+
+            wrapper = cache_dir / "food_prethesis.zip"
+            self.assertEqual(row["cache_path"], wrapper.name)
+            self.assertTrue(wrapper.exists())
+            self.assertFalse((cache_dir / zip_path.name).exists())
+            with zipfile.ZipFile(wrapper) as zf:
+                self.assertEqual(zf.namelist(), ["food_prethesis/Food.v6i.yolov11.zip"])
+
+    def test_clean_build_extracts_wrapped_nested_cache_zip(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            cache_dir = root / "cache"
+            cache_dir.mkdir()
+            raw_zip = root / "Food.v6i.yolov11.zip"
+            with zipfile.ZipFile(raw_zip, "w") as zf:
+                zf.writestr("Food.v6i.yolov11/data.yaml", "names:\n  0: pho\n")
+                zf.writestr("Food.v6i.yolov11/train/images/sample.jpg", b"image")
+                zf.writestr("Food.v6i.yolov11/train/labels/sample.txt", "0 0.5 0.5 0.5 0.5\n")
+            wrapper = cache_dir / "food_prethesis.zip"
+            with zipfile.ZipFile(wrapper, "w") as zf:
+                zf.write(raw_zip, "food_prethesis/Food.v6i.yolov11.zip")
+
+            cache_entries = collect_cache_entries(cache_dir)
+            resolved = resolve_cache_source_path(
+                "food_prethesis",
+                {"food_prethesis": {"expected_name": raw_zip.name}},
+                cache_entries,
+            )
+            yolo_root = cache_source_yolo_root("food_prethesis", resolved, extract_root=root / "extract")
+
+            self.assertEqual(resolved, wrapper)
+            self.assertEqual(yolo_root.name, "Food.v6i.yolov11")
+            self.assertTrue((yolo_root / "train" / "images").is_dir())
 
     def test_sample_grid_uses_audit_class_names_when_data_yaml_is_missing(self):
         with tempfile.TemporaryDirectory() as tmp:

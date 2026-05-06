@@ -484,6 +484,49 @@ the next public-drive cache-repair run must be saved from the Kaggle UI after
 confirming `RCLONE_DRIVE_CONF` and `KAGGLE_API_TOKEN` are enabled on the exact
 public-drive raw-audit notebook. No public Drive/gdown fallback was attempted.
 
+Public-drive user rerun v14 result:
+
+```json
+{
+  "download_status_counts": {
+    "resource_blocked_expected_size": 2,
+    "downloaded_oauth_drive": 19,
+    "skipped_by_decision": 2
+  },
+  "audit_status_counts": {
+    "not_audited": 4,
+    "audited": 19
+  },
+  "cache_status_counts": {
+    "cached_to_kaggle_dataset": 19
+  },
+  "cache_upload": {
+    "cache_status": "cached_to_kaggle_dataset",
+    "dataset_id": "hiuinhcng/eatfitai-dataset-v2-raw-audit-cache",
+    "seed_status": "existing_cache_not_mounted",
+    "seeded_entries": 0
+  }
+}
+```
+
+Reality check after v14: the Drive OAuth audit itself worked and produced 19
+audited small Drive sources, but the private raw-audit cache did not expose
+those sources in the latest Kaggle dataset listing. The Kaggle UI reported a
+separate raw-cache dataset creation failure with `File already exists`, which
+matches a cache packaging collision risk: several YOLO archives contain common
+root filenames such as `data.yaml`.
+
+Cache collision fix:
+
+- Raw-cache uploads now store each source as a wrapper zip named by source
+  slug, for example `food_prethesis.zip` containing
+  `food_prethesis/Food.v6i.yolov11.zip`.
+- Dataset uploads use `dir_mode="skip"` so the wrapper zips are uploaded as
+  files instead of asking the Kaggle client to zip folders again.
+- Existing mounted cache entries are reseeded into the same wrapper layout.
+- The clean-build kernel can resolve old mounted cache folders, direct zip
+  roots, and the new wrapper zip -> raw zip -> YOLO folder layout.
+
 ## Current Blockers
 
 | blocker | affected lane | status |
@@ -494,4 +537,4 @@ public-drive raw-audit notebook. No public Drive/gdown fallback was attempted.
 | class mapping | accepted Drive/Roboflow candidates | first clean taxonomy seed created in `class_taxonomy.clean_candidate_2026-05-06.yaml`; still needs clean-build output review |
 | segment-to-bbox conversion and dense/crowd caps | accepted Drive/Roboflow candidates | handled by audit/clean parsing for segments; dense/crowd caps still need output review |
 | exact license verification | unresolved Drive-origin candidates | pending before public release |
-| raw-audit cache latest version is not cumulative | cloud clean-build | preflight kernel added; complete build needs cumulative cache or rerun of cache lanes |
+| raw-audit cache latest version is not cumulative / v14 cache creation collision | cloud clean-build | wrapper-zip cache layout implemented; rerun public-drive and large-source cache lanes with the new pipeline-code version |

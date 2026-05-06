@@ -2,8 +2,10 @@ from __future__ import annotations
 
 import csv
 import json
+import shutil
 import subprocess
 import sys
+import zipfile
 from pathlib import Path
 from typing import Any, Mapping
 
@@ -106,9 +108,18 @@ def candidate_keys_for_name(name: str) -> set[str]:
 
 
 def has_yolo_layout(path: Path) -> bool:
-    return any(child.is_dir() and child.name == "images" for child in path.rglob("images")) and any(
-        child.is_dir() and child.name == "labels" for child in path.rglob("labels")
-    )
+    if not path.is_dir():
+        return False
+    has_images = any(child.is_dir() and child.name == "images" for child in path.rglob("images"))
+    has_labels = any(child.is_dir() and child.name == "labels" for child in path.rglob("labels"))
+    if any((path / name).exists() for name in ("data.yaml", "data.yml")) and has_images and has_labels:
+        return True
+    if (path / "images").is_dir() and (path / "labels").is_dir():
+        return True
+    for split in ("train", "valid", "val", "test"):
+        if (path / split / "images").is_dir() and (path / split / "labels").is_dir():
+            return True
+    return False
 
 
 def collect_cache_entries(cache_dir: Path | None) -> dict[str, Path]:
@@ -182,6 +193,64 @@ def find_yolo_root(path: Path) -> Path:
         if candidate.is_dir() and has_yolo_layout(candidate):
             return candidate
     raise FileNotFoundError(f"No YOLO images/labels layout found under {path}")
+
+
+def safe_extract_name(value: str) -> str:
+    safe = "".join(ch if ch.isalnum() or ch in "._-" else "_" for ch in (value.strip() or "source"))
+    return safe.strip("._-") or "source"
+
+
+def safe_extract_zip(zip_path: Path, destination: Path) -> None:
+    destination.mkdir(parents=True, exist_ok=True)
+    root = destination.resolve()
+    with zipfile.ZipFile(zip_path) as zf:
+        for member in zf.infolist():
+            target = (destination / member.filename).resolve()
+            if target != root and root not in target.parents:
+                raise ValueError(f"Refusing unsafe zip member path: {member.filename}")
+            if member.is_dir():
+                target.mkdir(parents=True, exist_ok=True)
+                continue
+            target.parent.mkdir(parents=True, exist_ok=True)
+            with zf.open(member) as src, target.open("wb") as dst:
+                shutil.copyfileobj(src, dst)
+
+
+def first_nested_zip(path: Path) -> Path | None:
+    if path.is_file() and path.suffix.lower() == ".zip":
+        return path
+    if path.is_dir():
+        for candidate in sorted(path.rglob("*.zip"), key=lambda item: (len(item.as_posix()), item.name.lower())):
+            if candidate.is_file():
+                return candidate
+    return None
+
+
+def cache_source_yolo_root(slug: str, source_path: Path | None, extract_root: Path = WORK_DIR / "raw_cache_extract") -> Path:
+    if source_path is None:
+        raise FileNotFoundError(f"No raw cache path resolved for {slug}")
+    current = source_path
+    last_error: FileNotFoundError | None = None
+    for depth in range(4):
+        if current.is_dir():
+            try:
+                return find_yolo_root(current)
+            except FileNotFoundError as exc:
+                last_error = exc
+                nested_zip = first_nested_zip(current)
+                if nested_zip is None:
+                    raise
+                current = nested_zip
+        if current.is_file() and current.suffix.lower() == ".zip":
+            target = extract_root / safe_extract_name(slug) / f"level_{depth}" / strip_zip_suffixes(current.name)
+            if not target.exists() or not any(target.iterdir()):
+                safe_extract_zip(current, target)
+            current = target
+            continue
+        break
+    if last_error is not None:
+        raise last_error
+    raise FileNotFoundError(f"No YOLO images/labels layout found under {source_path}")
 
 
 def find_vietfood_dir(input_root: Path) -> Path | None:
@@ -283,7 +352,7 @@ def main() -> int:
             inventory_rows.append({"source_slug": slug, "source_status": "missing_raw_cache", "expected": expected})
             continue
         try:
-            yolo_root = find_yolo_root(source_path)
+            yolo_root = cache_source_yolo_root(slug, source_path)
         except FileNotFoundError as exc:
             missing_sources.append(slug)
             inventory_rows.append({"source_slug": slug, "source_status": "invalid_raw_cache_layout", "path": source_path.as_posix(), "error": str(exc)})
