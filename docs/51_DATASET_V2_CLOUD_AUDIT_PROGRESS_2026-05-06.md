@@ -459,6 +459,31 @@ Cache repair implementation:
   `food_data_truongvo` plus the Roboflow phase-2 sources for a cache-repair
   rerun.
 
+Public-drive cache-repair v13 result:
+
+```json
+{
+  "download_status_counts": {
+    "resource_blocked_expected_size": 2,
+    "drive_secret_unreachable": 19,
+    "skipped_by_decision": 2
+  },
+  "audit_status_counts": {
+    "not_audited": 23
+  },
+  "cache_upload": {
+    "cache_status": "no_cache_candidates"
+  }
+}
+```
+
+Interpretation: the API-pushed version mounted the existing raw-audit cache
+correctly, but the notebook runtime could not read `RCLONE_DRIVE_CONF`. This is
+the same Kaggle notebook-secret attachment behavior seen in the Roboflow lane:
+the next public-drive cache-repair run must be saved from the Kaggle UI after
+confirming `RCLONE_DRIVE_CONF` and `KAGGLE_API_TOKEN` are enabled on the exact
+public-drive raw-audit notebook. No public Drive/gdown fallback was attempted.
+
 ## Current Blockers
 
 | blocker | affected lane | status |
