@@ -3,8 +3,10 @@ import json
 import subprocess
 import sys
 import tempfile
+import types
 import unittest
 from pathlib import Path
+from unittest import mock
 
 
 DATASET_V2_DIR = Path(__file__).resolve().parents[1] / "dataset_v2"
@@ -22,6 +24,7 @@ from kaggle_large_source_audit_kernel import (  # noqa: E402
     build_roboflow_export_endpoint,
     extract_roboflow_download_link,
     find_kaggle_dataset_source_dir,
+    get_kaggle_secret,
     is_safe_cloud_path,
     selected_source_scope_path,
     should_cache_large_source,
@@ -99,6 +102,24 @@ class DatasetV2LargeSourceAuditTests(unittest.TestCase):
         self.assertEqual(extract_roboflow_download_link({"export": {"link": "https://example.test/a.zip"}}), "https://example.test/a.zip")
         self.assertEqual(extract_roboflow_download_link({"download": "https://example.test/b.zip"}), "https://example.test/b.zip")
         self.assertEqual(extract_roboflow_download_link({}), "")
+
+    def test_kaggle_secret_retry_handles_transient_connection_error(self):
+        class FakeSecretsClient:
+            calls = 0
+
+            def get_secret(self, label: str) -> str:
+                FakeSecretsClient.calls += 1
+                if FakeSecretsClient.calls == 1:
+                    raise ConnectionError("temporary secret service issue")
+                return "secret-value"
+
+        fake_module = types.SimpleNamespace(UserSecretsClient=FakeSecretsClient)
+
+        with mock.patch.dict(sys.modules, {"kaggle_secrets": fake_module}):
+            secret = get_kaggle_secret("ROBOFLOW_API_KEY", attempts=2, delay_seconds=0, sleep_fn=lambda _: None)
+
+        self.assertEqual(secret, "secret-value")
+        self.assertEqual(FakeSecretsClient.calls, 2)
 
     def test_large_source_cache_policy_only_caches_roboflow_lane(self):
         self.assertTrue(should_cache_large_source({"source_slug": "food_data_truongvo", "cache_policy": "cache_after_audit"}))

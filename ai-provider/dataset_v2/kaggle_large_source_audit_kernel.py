@@ -114,14 +114,28 @@ def selected_source_scope_path(code_dir: Path) -> Path:
     return code_dir / LARGE_SOURCE_SCOPE
 
 
-def get_kaggle_secret(label: str) -> str | None:
-    try:
-        from kaggle_secrets import UserSecretsClient  # type: ignore
+def get_kaggle_secret(
+    label: str,
+    attempts: int = 6,
+    delay_seconds: int = 15,
+    sleep_fn: object = time.sleep,
+) -> str | None:
+    last_error = ""
+    for attempt in range(1, attempts + 1):
+        try:
+            from kaggle_secrets import UserSecretsClient  # type: ignore
 
-        return UserSecretsClient().get_secret(label)
-    except Exception as exc:
-        print(f"Kaggle secret {label} unavailable: {type(exc).__name__}", flush=True)
-        return None
+            return UserSecretsClient().get_secret(label)
+        except Exception as exc:
+            last_error = type(exc).__name__
+            if attempt < attempts:
+                print(
+                    f"Kaggle secret {label} unavailable: {last_error}; retry {attempt}/{attempts}",
+                    flush=True,
+                )
+                sleep_fn(delay_seconds)  # type: ignore[operator]
+    print(f"Kaggle secret {label} unavailable after {attempts} attempts: {last_error}", flush=True)
+    return None
 
 
 def extract_roboflow_download_link(data: Mapping[str, object]) -> str:

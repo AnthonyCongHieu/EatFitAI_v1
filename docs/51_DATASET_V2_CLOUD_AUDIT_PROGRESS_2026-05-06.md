@@ -199,6 +199,39 @@ too long without partial logs. Phase 1 contains only known-ready small exports:
 `vietnamese_food_nhh`, and `food_ingredients_v1`. Phase 2 should handle the
 larger and initially-`202` sources after phase 1 is verified.
 
+Verified phase-1 retry status on 2026-05-06:
+
+```json
+{
+  "download_status_counts": {
+    "roboflow_secret_missing": 4
+  },
+  "audit_status_counts": {
+    "not_audited": 4
+  },
+  "source_scope": "roboflow_source_scope.phase1_2026-05-06.csv"
+}
+```
+
+Version 11 was pushed through the Kaggle API after adding bounded retry around
+`UserSecretsClient().get_secret("ROBOFLOW_API_KEY")`. The run still could not
+read the Roboflow secret, so the practical conclusion is that API-pushed
+versions are not a reliable way to carry the notebook secret attachment for
+this lane. The next Roboflow retry must be saved from the Kaggle UI after
+confirming `ROBOFLOW_API_KEY` is enabled on the exact large-source notebook.
+Do not push another API version after that UI save unless the secret is
+re-enabled again in the UI.
+
+Kaggle kernel cleanup performed on 2026-05-06:
+
+- deleted obsolete/test kernels: `eatfitai-smoke-check`,
+  `train-eatfitai-l-n-1`, `notebook217f244714`, and
+  `eatfitai-check-duplicates`.
+- retained active/evidence kernels: `eatfitai-dataset-v2-large-source-audit`,
+  `eatfitai-dataset-v2-public-drive-raw-audit`,
+  `eatfitai-dataset-v2-raw-audit`, and
+  `eatfitai-dataset-v2-drive-secret-smoke`.
+
 ## Next Execution Order
 
 1. Enable `RCLONE_DRIVE_CONF` and `KAGGLE_API_TOKEN` on the public-drive raw
@@ -224,6 +257,7 @@ larger and initially-`202` sources after phase 1 is verified.
 
 | blocker | affected lane | status |
 | --- | --- | --- |
+| Roboflow secret not attached to API-pushed large-source versions | Roboflow phase 1 | blocked until UI Save Version with `ROBOFLOW_API_KEY` enabled |
 | manual sample-grid judgement | all accepted candidates | pending after fresh reports |
 | class mapping and segment-to-bbox conversion | accepted Drive/Roboflow candidates | pending before clean build |
 | exact license verification | unresolved Drive-origin candidates | pending before public release |
