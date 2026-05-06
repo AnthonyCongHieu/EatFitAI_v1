@@ -77,12 +77,14 @@ python ai-provider\dataset_v2\kaggle_remote_orchestrator.py output --kernel-id "
 Attach Kaggle Secret `ROBOFLOW_API_KEY` before saving/running this notebook. Do not paste or print the key in notebooks, logs, CSV, or reports.
 Local `ROBOFLOW_API_KEY` is not inherited by Kaggle; add the same key through Kaggle notebook secrets and enable it for this notebook before `Save Version`.
 
-The same kernel can also run the 2026-05-06 Roboflow top-tier audit scope when
+The same kernel can also run the 2026-05-06 Roboflow top-tier audit scopes when
+`roboflow_source_scope.phase1_2026-05-06.csv` or
 `roboflow_source_scope.2026-05-06.csv` is present in the pipeline-code package.
-That scope is used for Roboflow-only candidates that passed metadata review but
-still need raw audit/sample grids/cache before clean merge. The kernel polls
-Roboflow export generation when the API returns `202` instead of failing early.
-Use this lane only with `ROBOFLOW_API_KEY` attached to the Kaggle notebook.
+Phase 1 is intentionally small and uses only known-ready exports. The full scope
+is used for Roboflow-only candidates that passed metadata review but still need
+raw audit/sample grids/cache before clean merge. The kernel polls Roboflow
+export generation when the API returns `202` instead of failing early. Use this
+lane only with `ROBOFLOW_API_KEY` attached to the Kaggle notebook.
 
 ## Kaggle-First Package Prep
 

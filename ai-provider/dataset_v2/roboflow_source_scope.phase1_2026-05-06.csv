@@ -1,0 +1,5 @@
+source_slug,audit_mode,source_ref,kaggle_input_slug,preferred_subdir,cache_policy,license,initial_decision,audit_image_limit,audit_fast_sample,notes,class_names_file,class_names_key
+detection_15_vietnamese_food_v2,roboflow_export,roboflow:aiapplication-gzusw/detection_15_vietnamese_food_v2,,,cache_after_audit,CC BY 4.0,PENDING_AUDIT,,,Phase 1 known-ready export; focused Vietnamese dish source.,,
+khoa_food_jfsxy,roboflow_export,roboflow:khoa-fbrvv/food-jfsxy,,,cache_after_audit,CC BY 4.0,PENDING_AUDIT,,,Phase 1 known-ready export; focused Vietnamese cake/tail booster.,,
+vietnamese_food_nhh,roboflow_export,roboflow:nhh/vietnamese-food,,,cache_after_audit,CC BY 4.0,PENDING_AUDIT,,,Phase 1 known-ready export; small Vietnamese booster.,,
+food_ingredients_v1,roboflow_export,roboflow:food-recipe-ingredient-images-0gnku/food-ingredients-dataset,,,cache_after_audit,CC BY 4.0,PENDING_AUDIT,,,Phase 1 known-ready export; small ingredient/spice supplement.,,

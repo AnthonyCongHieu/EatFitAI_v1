@@ -15,6 +15,7 @@ from common import load_yaml  # noqa: E402
 from kaggle_large_source_audit_kernel import (  # noqa: E402
     LARGE_SOURCE_SCOPE,
     KAGGLE_LARGE_REPORTS_ZIP,
+    ROBOFLOW_PHASE1_SCOPE,
     ROBOFLOW_SOURCE_SCOPE,
     add_large_source_to_cache_package,
     build_kaggle_direct_manifest_row,
@@ -31,6 +32,7 @@ ROOT = Path(__file__).resolve().parents[2]
 REGISTRY = ROOT / "ai-provider" / "dataset_v2" / "raw_source_registry.yaml"
 LARGE_SCOPE = ROOT / "ai-provider" / "dataset_v2" / "large_source_scope.2026-05-05.csv"
 ROBOFLOW_SCOPE = ROOT / "ai-provider" / "dataset_v2" / "roboflow_source_scope.2026-05-06.csv"
+ROBOFLOW_PHASE1 = ROOT / "ai-provider" / "dataset_v2" / "roboflow_source_scope.phase1_2026-05-06.csv"
 LARGE_KERNEL_METADATA = ROOT / "ai-provider" / "dataset_v2" / "kaggle_large_source_audit_kernel_metadata.json"
 
 
@@ -66,6 +68,14 @@ class DatasetV2LargeSourceAuditTests(unittest.TestCase):
             self.assertIn(slug, by_slug)
             self.assertEqual(by_slug[slug]["audit_mode"], "roboflow_export")
             self.assertEqual(by_slug[slug]["cache_policy"], "cache_after_audit")
+
+    def test_roboflow_phase1_scope_uses_known_ready_exports(self):
+        rows = read_csv(ROBOFLOW_PHASE1)
+        self.assertEqual(
+            {row["source_slug"] for row in rows},
+            {"detection_15_vietnamese_food_v2", "khoa_food_jfsxy", "vietnamese_food_nhh", "food_ingredients_v1"},
+        )
+        self.assertTrue(all(row["cache_policy"] == "cache_after_audit" for row in rows))
 
     def test_registry_has_food_data_truongvo_export_metadata(self):
         registry = load_yaml(REGISTRY)
@@ -141,9 +151,10 @@ class DatasetV2LargeSourceAuditTests(unittest.TestCase):
         self.assertFalse(is_safe_cloud_path(Path("relative/raw.zip")))
         self.assertEqual(KAGGLE_LARGE_REPORTS_ZIP.as_posix(), "/kaggle/working/dataset_v2_large_source_audit_reports.zip")
         self.assertEqual(LARGE_SOURCE_SCOPE, "large_source_scope.2026-05-05.csv")
+        self.assertEqual(ROBOFLOW_PHASE1_SCOPE, "roboflow_source_scope.phase1_2026-05-06.csv")
         self.assertEqual(ROBOFLOW_SOURCE_SCOPE, "roboflow_source_scope.2026-05-06.csv")
 
-    def test_selected_source_scope_prefers_roboflow_runtime_scope(self):
+    def test_selected_source_scope_prefers_phase1_then_roboflow_runtime_scope(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             old_scope = root / LARGE_SOURCE_SCOPE
@@ -155,6 +166,11 @@ class DatasetV2LargeSourceAuditTests(unittest.TestCase):
             roboflow_scope.write_text("source_slug\nnew\n", encoding="utf-8")
 
             self.assertEqual(selected_source_scope_path(root), roboflow_scope)
+
+            phase1_scope = root / ROBOFLOW_PHASE1_SCOPE
+            phase1_scope.write_text("source_slug\nphase1\n", encoding="utf-8")
+
+            self.assertEqual(selected_source_scope_path(root), phase1_scope)
 
     def test_large_source_cache_package_uses_requested_cache_dir(self):
         with tempfile.TemporaryDirectory() as tmp:

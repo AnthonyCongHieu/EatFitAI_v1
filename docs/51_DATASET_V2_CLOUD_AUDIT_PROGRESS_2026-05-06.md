@@ -177,6 +177,7 @@ Next Roboflow cloud-audit scope:
 
 ```text
 ai-provider/dataset_v2/roboflow_source_scope.2026-05-06.csv
+ai-provider/dataset_v2/roboflow_source_scope.phase1_2026-05-06.csv
 ```
 
 This scope covers the new Roboflow top-tier candidates that are still
@@ -191,6 +192,12 @@ Local API HEAD checks on 2026-05-06 showed known export sizes below 2GB for the
 sources that returned links immediately. `mon_chung`, `spice_caezr`, and
 `ingredient_v0h5a` returned `202` first, so the Kaggle kernel now polls
 Roboflow export generation instead of treating that as a hard failure.
+
+Execution is split into phases after the first 9-source batch stayed `RUNNING`
+too long without partial logs. Phase 1 contains only known-ready small exports:
+`detection_15_vietnamese_food_v2`, `khoa_food_jfsxy`,
+`vietnamese_food_nhh`, and `food_ingredients_v1`. Phase 2 should handle the
+larger and initially-`202` sources after phase 1 is verified.
 
 ## Next Execution Order
 
