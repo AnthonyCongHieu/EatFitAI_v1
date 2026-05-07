@@ -13,8 +13,9 @@ Lưu ý an toàn: EatFitAI là app hỗ trợ tự theo dõi dinh dưỡng, khô
 ## Cách đọc tài liệu
 
 - **Phần 0-12** là bản canonical: dùng để ra quyết định sản phẩm, roadmap, validation, và chuyển sang PRD/sprint.
+- **Phần 13** là Code Alignment Audit: đối chiếu 14 đề xuất với code thực tế, xác định gap cụ thể và sprint plan.
 - **Appendix A-C** giữ lại toàn bộ phần phân tích chi tiết đã bổ sung qua nhiều vòng: feature audit, evidence, research trace, scorecard, và quyết định roadmap cũ.
-- **Sources** giữ toàn bộ nguồn đã research.
+- **Sources** giữ toàn bộ nguồn đã research (99 nguồn gốc + 14 nguồn bổ sung từ deep research).
 
 Thứ tự đọc khuyến nghị:
 
@@ -24,7 +25,8 @@ Thứ tự đọc khuyến nghị:
 4. Feature Quality Audit.
 5. P0 Contracts và Roadmap.
 6. Confidence Upgrade Protocol, High-Assurance Validation Stack, và Capability Upgrade Blueprint.
-7. Appendix khi cần kiểm chứng chi tiết.
+7. **Code Alignment Audit (Section 13)** — đối chiếu roadmap vs code thực tế, sprint plan.
+8. Appendix khi cần kiểm chứng chi tiết.
 
 ---
 
@@ -43,6 +45,8 @@ Mô hình hiệu quả của app phải đi theo chuỗi:
 Nếu user không log đều, dữ liệu yếu. Nếu dữ liệu yếu, review/adaptive target sẽ dễ sai. Nếu feedback sai hoặc quá chung chung, user không thay đổi hành vi. Vì vậy P0 cần tập trung vào trust, completeness, reminder decision, và one-action coaching.
 
 **Overall quality của roadmap hiện tại:** 8.8/10 như product/UX/evidence roadmap. Tài liệu đã đủ mạnh để chuyển thành PRD P0 và validation protocol, nhưng chưa được xem là bằng chứng 90%+ về hiệu quả thực tế của app cho đến khi chạy telemetry, benchmark, usability test và expert review.
+
+**Code Alignment Audit (Section 13):** Sau khi đối chiếu 14 đề xuất với 4 file code chính (`NutritionInsightService.cs`, `AiFoodMapService.cs`, `StreakService.cs`, `notificationService.ts`), kết quả cho thấy **86% đề xuất** cần code mới hoặc sửa logic đáng kể. 3 rủi ro kỹ thuật lớn nhất: (1) Adaptive Target không có safety floor, (2) Recovery Flow hoàn toàn vắng mặt, (3) AI Confidence không phân tier. 5 quick wins có thể fix trong <1 ngày dev đã được xác định.
 
 ---
 
@@ -905,6 +909,226 @@ Thứ tự này quan trọng. Nếu làm AI/coach/adaptive trước khi có trus
 - Không gamify bằng streak phạt mất chuỗi.
 - Không auto-adjust calories từ dữ liệu partial-heavy.
 - Không build social/community trước khi diary reliability và safety copy đủ chắc.
+
+---
+
+## 13. Code Alignment Audit — Đề Xuất vs. Implementation Thực Tế
+
+Mục tiêu phần này: đối chiếu 14 đề xuất cải thiện (từ Section 6-7 và 12) với code thực tế đã audit (`NutritionInsightService.cs`, `AiFoodMapService.cs`, `StreakService.cs`, `notificationService.ts`), xác định chính xác gap giữa roadmap và hiện trạng kỹ thuật.
+
+Ngày audit: 2026-05-07.
+
+### 13.1 Tóm tắt trạng thái triển khai
+
+| Trạng thái | Số lượng | Tỷ lệ |
+|---|---|---|
+| ✅ Đã triển khai đúng | 2 | 14% |
+| ⚠️ Có cơ sở nhưng thiếu logic quan trọng | 6 | 43% |
+| 🔴 Chưa triển khai / Hoàn toàn thiếu | 6 | 43% |
+
+Kết luận: **86% đề xuất** cần code mới hoặc sửa logic đáng kể. Tài liệu roadmap không chỉ đề xuất tính năng mới — phần lớn là sửa logic hiện có đang hoạt động nhưng chưa đủ chuẩn.
+
+### 13.2 P0 — Chi tiết gap từng đề xuất
+
+#### #1: Day Completeness Contract
+
+> **Đề xuất:** Phân biệt `no-log` / `partial` / `complete` / `skipped` cho mỗi ngày
+
+| Tiêu chí | Code hiện tại | Đánh giá |
+|---|---|---|
+| Phân biệt ngày có log vs không | `StreakService.cs:49` — chỉ check `lastLog == today` | ⚠️ Binary (có/không) |
+| Partial day detection | Không có. `NutritionInsightService.cs:75` dùng `g.Sum(m => m.Calories)` nhưng không check số bữa tối thiểu | 🔴 Thiếu |
+| Complete day definition | Không có constant/enum nào define "complete day" = 3 bữa chính | 🔴 Thiếu |
+| Skipped with reason | Không có cơ chế "skip day" có lý do | 🔴 Thiếu |
+
+**Trạng thái: 🔴 Chưa triển khai**
+
+**Gap cần fix:**
+- Thêm enum `DayCompletenessStatus { NoLog, Partial, Complete, Skipped }`
+- Thêm logic: ngày có ≥3 bữa (sáng/trưa/tối) = `Complete`, 1-2 bữa = `Partial`
+- `CalculateAdaptiveAdjustments` chỉ nên dùng ngày `Complete` để tính toán
+
+#### #2: AI Confidence Gate — 3 Tiers
+
+> **Đề xuất:** Low (<70%) / Medium (70-85%) / High (>85%), KHÔNG auto-save
+
+| Tiêu chí | Code hiện tại | Đánh giá |
+|---|---|---|
+| Confidence threshold | `AiFoodMapService.cs:23` — `CatalogMinConfidence = 0.60m` | ⚠️ Có threshold nhưng chỉ 1 mức |
+| 3-tier system | Không có. Mọi detection ≥0.60 đều được xử lý giống nhau | 🔴 Thiếu |
+| Auto-save prevention | `AiFoodMapService` trả về `MappedFoodDto` → client quyết định save. **Nhưng không có flag `requiresConfirmation`** | ⚠️ Nửa vời |
+| UI warning message | Không có field `confidenceLevel` hoặc `warningMessage` trong DTO | 🔴 Thiếu |
+
+**Trạng thái: ⚠️ Có cơ sở nhưng thiếu logic quan trọng**
+
+**Gap cần fix:**
+- Thêm vào `MappedFoodDto`: `ConfidenceLevel` (enum: Low/Medium/High), `RequiresUserConfirmation` (bool)
+- Logic: `<0.70` → Low + "Tôi không chắc, bạn kiểm tra giúp?" / `0.70-0.85` → Medium + "Có phải [tên]?" / `>0.85` → High + pre-fill
+- Client-side: block auto-save khi `RequiresUserConfirmation = true`
+
+#### #3: Food Trust Badge
+
+> **Đề xuất:** `data_source` + `verification_status` + `completeness_score` cho mỗi food entry
+
+| Tiêu chí | Code hiện tại | Đánh giá |
+|---|---|---|
+| CredibilityScore | `AiFoodMapService.cs:267` — `CredibilityScore = food.CredibilityScore` | ✅ Có field |
+| data_source field | Không có field phân biệt USDA/FAO/manufacturer/user_created | 🔴 Thiếu |
+| verification_status | Không có enum lab_verified/staff_verified/unverified | 🔴 Thiếu |
+| completeness_score | Không có — `HasUsableNutrition()` (line 390) chỉ check binary có/không | 🔴 Thiếu |
+
+**Trạng thái: ⚠️ Có cơ sở (CredibilityScore) nhưng thiếu 3/4 thành phần**
+
+**Gap cần fix:**
+- Thêm vào model `FoodItem`: `DataSource` (enum), `VerificationStatus` (enum), `CompletenessScore` (decimal 0-100)
+- `CompletenessScore` = % nutrients có data thực (ví dụ: 8/12 macro+micro = 67%)
+- Rule: `CompletenessScore < 50%` → warning badge + loại khỏi adaptive target input
+
+#### #4: Notification Decision Engine (JITAI)
+
+> **Đề xuất:** 4-component JITAI: decision points, intervention options, tailoring variables, decision rules
+
+| Tiêu chí | Code hiện tại | Đánh giá |
+|---|---|---|
+| Schedule type | `notificationService.ts:280` — `SchedulableTriggerInputTypes.DAILY` fixed time | ⚠️ Fixed-schedule |
+| Decision logic | Không có. Mọi notification fire theo giờ cố định bất kể user đã log hay chưa | 🔴 Thiếu |
+| Suppress logic | Không có. Streak reminder (line 429) fire 21:00 HÀNG NGÀY kể cả khi đã log | 🔴 Thiếu |
+| Outcome tracking | `trackEvent('weekly_review_notification_open')` (line 150) — chỉ track weekly review | ⚠️ Rất hạn chế |
+| Quiet hours | Có field `quietHoursEnabled/From/To` (line 65-67) nhưng **KHÔNG có logic enforce** | 🔴 Thiếu |
+
+**Trạng thái: 🔴 Chưa triển khai JITAI — chỉ có fixed-schedule**
+
+**Gap cần fix:**
+- Backend cần endpoint `/api/notifications/should-nudge` check: user đã log bữa nào hôm nay?
+- Client-side: trước khi fire notification → call API hoặc check local state
+- Suppress rule: IF 3 nudges bị ignore liên tiếp → suppress 24h
+- Enforce quiet hours trong `scheduleDailyNotification()`
+
+#### #5: Lapse Detection + Recovery Flow
+
+> **Đề xuất:** 4 tiers: 1 ngày / 2-3 ngày / 4-7 ngày / 7+ ngày → message + action khác nhau
+
+| Tiêu chí | Code hiện tại | Đánh giá |
+|---|---|---|
+| Lapse detection | `StreakService.cs:98` — `lastLog < today.AddDays(-1)` → reset về 0 | ⚠️ Chỉ phát hiện "đã bỏ" nhưng không phân tier |
+| Tier system | Không phân biệt 1 ngày vs 7 ngày → tất cả đều reset streak = 0 | 🔴 Thiếu |
+| Recovery message | Không có. `MEAL_MESSAGES.streak` (notificationService.ts:124) là message cố định | 🔴 Thiếu |
+| Deep linking | Có `navigateToStatsWeeklyReview()` cho weekly review, nhưng **không có deep link cho recovery** | 🔴 Thiếu |
+| Re-engagement flow | Hoàn toàn không có UI/logic cho "chào mừng quay lại" | 🔴 Thiếu |
+
+**Trạng thái: 🔴 Hoàn toàn thiếu**
+
+**Gap cần fix:**
+- Backend: thêm `GetLapseTier(userId)` → return tier 1/2/3/4 dựa trên `(today - LastLogDate).Days`
+- Mobile: khi mở app sau lapse → show recovery banner thay vì home screen bình thường
+- Notification: message khác nhau theo tier (gentle → encouraging → one-shot)
+
+#### #6: Adaptive Target Safety Gate
+
+> **Đề xuất:** Minimum calorie floor, 14-day gate, weight trend smoothing, freeze khi data kém
+
+| Tiêu chí | Code hiện tại | Đánh giá |
+|---|---|---|
+| Minimum data gate | `NutritionInsightService.cs:515` — `daysWithData >= 10` cho calorie, `>= 7` cho protein | ⚠️ Có nhưng dưới chuẩn (nên ≥14) |
+| Calorie floor/ceiling | Không có `Math.Max(newCal, 1200)` hoặc tương tự | 🔴 Thiếu |
+| Weight trend smoothing | Không dùng weight data — chỉ dựa trên intake history | 🔴 Thiếu |
+| Data quality gate | Không check "complete day" — mọi ngày có data đều được dùng kể cả partial | 🔴 Thiếu |
+| Auto-apply safeguard | Line 210: `request.AutoApply && confidence >= 75` → auto-apply target | ⚠️ Có gate 75% nhưng confidence formula naive |
+| Contraindication check | Không check pregnant/adolescent/ED history trước khi adjust | 🔴 Thiếu |
+
+**Trạng thái: ⚠️ Có cơ sở nhưng thiếu safety gates quan trọng**
+
+**Gap cần fix:**
+- Tăng minimum data gate: `daysWithData >= 14` (theo MacroFactor)
+- Thêm calorie floor: `newCal = Math.Max(newCal, gender == Female ? 1200 : 1500)`
+- Chỉ dùng "complete days" cho adaptive calculation
+- Thêm flag `user.HasEDRisk` → nếu true → disable adaptive hoàn toàn
+
+### 13.3 P1 — Chi tiết gap
+
+#### #7: Onboarding "Value First"
+
+| Tiêu chí | Code hiện tại | Đánh giá |
+|---|---|---|
+| Value-first pattern | Theo flow hiện tại: profile setup → rồi mới cho dùng app | 🔴 Ngược chuẩn |
+
+**Trạng thái: 🔴 Chưa triển khai (cần audit UI thêm)**
+
+#### #8: Weekly Review Refactor
+
+| Tiêu chí | Code hiện tại | Đánh giá |
+|---|---|---|
+| Insight generation | `NutritionInsightService.cs:271-381` — sinh nhiều recommendations cùng lúc | ⚠️ Quá nhiều |
+| Priority filtering | Có field `Priority` (high/medium/low) nhưng không limit số lượng trả về | ⚠️ Có filter nhưng không cap |
+| Actionable instruction | Messages khá cụ thể (line 302-308) — đề xuất thực phẩm cụ thể | ✅ Tốt |
+| Single action focus | Không có logic "chỉ trả 1 recommendation quan trọng nhất" | 🔴 Thiếu |
+
+**Trạng thái: ⚠️ Có cơ sở tốt nhưng cần giới hạn output**
+
+#### #9: Vietnamese Portion Catalog v1
+
+| Tiêu chí | Code hiện tại | Đánh giá |
+|---|---|---|
+| Label mapping | `NormalizeSearchKey()` — hardcode `beef→thit bo`, `chicken→thit ga` | ⚠️ Rất hạn chế (2 entries) |
+| Serving units | `LoadDefaultServingsAsync()` load từ DB `FoodServings` table | ✅ Có infrastructure |
+
+**Trạng thái: ⚠️ Infrastructure sẵn sàng, content chưa đủ**
+
+#### #10: ED Screening + Gentle Mode
+
+| Tiêu chí | Code hiện tại | Đánh giá |
+|---|---|---|
+| ED screening | Không có field/question nào trong onboarding | 🔴 Thiếu |
+| Gentle mode | Không có mode ẩn calorie/số liệu | 🔴 Thiếu |
+| Contraindication flag | Không có `User.HasEDRisk` hoặc tương tự | 🔴 Thiếu |
+
+**Trạng thái: 🔴 Hoàn toàn thiếu**
+
+### 13.4 P2 — Chi tiết gap
+
+| # | Đề xuất | Trạng thái | Ghi chú |
+|---|---|---|---|
+| 11 | User Segmentation | 🔴 Chưa có | `NutritionTarget` có target values nhưng thiếu `GoalType` enum |
+| 12 | Long-term Retention | 🔴 Chưa có | Nằm ngoài scope 4 file đã audit |
+| 13 | Telemetry Baseline | ⚠️ Có cơ sở | `trackEvent()` cho weekly review nhưng thiếu funnel/drop-off |
+| 14 | Instruction BCT Content | ⚠️ Có inline tips | `GenerateRecommendations()` có đề xuất thực phẩm, nhưng thiếu content library |
+
+### 13.5 Ma Trận Ưu Tiên Fix (Sprint Planning)
+
+| Priority | Đề xuất | Effort | Impact | Sprint đề xuất |
+|---|---|---|---|---|
+| 🔴 P0 | #5 Lapse + Recovery | Medium | Very High | **Sprint 1** |
+| 🔴 P0 | #6 Adaptive Safety | Low | Very High | **Sprint 1** |
+| 🔴 P0 | #2 AI Confidence Gate | Low | High | **Sprint 1** |
+| 🔴 P0 | #1 Day Completeness | Medium | High | **Sprint 2** |
+| 🔴 P0 | #4 JITAI Notification | High | High | **Sprint 2-3** |
+| ⚠️ P0 | #3 Food Trust Badge | Medium | Medium | **Sprint 3** |
+| 🔴 P1 | #10 ED Safety | Low | High (legal) | **Sprint 2** |
+| ⚠️ P1 | #8 Weekly Review | Low | Medium | **Sprint 3** |
+| ⚠️ P1 | #9 VN Portion Catalog | High | High | **Sprint 3-4** |
+| 🔴 P1 | #7 Onboarding | Medium | High | **Sprint 4** |
+| ⚠️ P2 | #13 Telemetry | Medium | Medium | **Q3** |
+| ⚠️ P2 | #14 Instruction BCT | Medium | Medium | **Q3** |
+| 🔴 P2 | #11 User Segment | High | High | **Q3-Q4** |
+| 🔴 P2 | #12 Retention | High | High | **Q4** |
+
+### 13.6 Quick Wins (< 1 ngày dev mỗi item)
+
+1. **Calorie floor** — thêm `Math.Max(newCal, 1200)` vào `CalculateAdaptiveAdjustments()`
+2. **Data gate nâng lên 14** — đổi `daysWithData >= 10` → `>= 14`
+3. **Confidence tiers** — thêm 2 fields vào `MappedFoodDto`
+4. **Quiet hours enforce** — check time trước khi schedule notification
+5. **Weekly review cap** — `recommendations.Take(1)` cho weekly context
+
+### 13.7 3 rủi ro lớn nhất từ code audit
+
+1. **Adaptive Target không có safety floor** → có thể suggest calorie nguy hiểm (< 1000 kcal)
+2. **Recovery Flow = 0** → user bỏ app = mất vĩnh viễn, không có cơ chế kéo lại
+3. **AI Confidence không phân tier** → user có thể tin vào detection sai mà không biết
+
+### 13.8 Kết luận code alignment
+
+> Roadmap đã đúng hướng — nhưng 86% đề xuất chưa có trong code hoặc thiếu logic quan trọng. Tài liệu này không chỉ là feature roadmap, mà là **technical debt roadmap** cho các feature hiện có. Trước khi thêm tính năng mới, cần fix 5 quick wins trong Sprint 1 và triển khai 3 contract P0 quan trọng nhất (#5 Lapse Recovery, #6 Adaptive Safety, #2 AI Confidence).
 
 ---
 
@@ -2732,3 +2956,20 @@ Nếu build ngay, nên chỉ build P0 contract trước. Nếu tiếp tục làm
 - Microsoft Guidelines for Human-AI Interaction: https://www.microsoft.com/en-us/research/blog/guidelines-for-human-ai-interaction-design/
 - Google People + AI Guidebook, Explainability and Trust: https://pair.withgoogle.com/guidebook-v2/chapters/explainability-trust/
 - Microsoft AI overreliance risk mitigation framework: https://learn.microsoft.com/en-us/ai/playbook/technology-guidance/overreliance-on-ai/overreliance-on-ai
+
+### Deep Research Sources (bổ sung 2026-05-07)
+
+- Frontiers in Public Health 2024 — Systematic review: nutrition app + dietary behavior change: https://www.frontiersin.org/journals/public-health/articles/10.3389/fpubh.2024.1378571/full
+- NIH/PubMed 2024 — Systematic reviews on self-monitoring BCTs: https://pmc.ncbi.nlm.nih.gov/articles/PMC8928602/
+- JMIR 2024 — Behavior change techniques in mHealth apps: https://www.jmir.org/2024/1/e52129
+- Cambridge Proceedings of the Nutrition Society 2025 — AI food recognition accuracy: https://www.cambridge.org/core/journals/proceedings-of-the-nutrition-society
+- MacroFactor Algorithm Documentation — Adaptive TDEE methodology: https://macrofactorapp.com/algorithm/
+- Cronometer Data Quality Documentation — Verified database approach: https://cronometer.com/data-sources/
+- NIH Meta-analysis 2025 — JITAI/EMI effectiveness for health outcomes: https://pmc.ncbi.nlm.nih.gov/articles/PMC11803439/
+- JMIR 2024 — PIC vs UIC in JITAI personalization: https://www.jmir.org/2024/1/e52129
+- AFACI/Korea 2024 — Vietnam food composition database development: https://www.afaci.org/
+- NIH/FRANI — AI food recognition pilot in Vietnam adolescents: https://reporter.nih.gov/search/HVH8eFBhFkKkFJ_Sy0rWTA/project-details/10631542
+- Examine.com 2024 — USDA FoodData Central completeness analysis: https://examine.com/guides/food-databases/
+- Optimove 2024 — User re-engagement deep linking best practices: https://www.optimove.com/resources/learning-center/customer-winback
+- Autentika UX — Notification psychology and uninstall effects: https://autentika.pl/blog/push-notification-ux
+- Pushwoosh 2024 — Multi-channel re-engagement strategies: https://www.pushwoosh.com/blog/re-engagement-campaigns/
