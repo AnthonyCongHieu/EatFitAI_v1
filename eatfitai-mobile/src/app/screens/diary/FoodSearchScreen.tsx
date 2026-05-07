@@ -144,7 +144,6 @@ const FoodSearchScreen = (): React.ReactElement => {
       setQuery(initialQuery.trim());
       runSearch(initialQuery.trim(), false).catch(() => {});
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialQuery]);
 
   const saveRecentSearch = async (term: string) => {

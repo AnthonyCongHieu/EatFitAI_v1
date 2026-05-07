@@ -1,8 +1,25 @@
 # EATFITAI — COMPREHENSIVE AUDIT & 2026 ROADMAP
 
-> **Ngày tạo:** 2026-05-06 | **Cập nhật:** 2026-05-06 (đã verify toàn bộ bằng code thật)
+> **Ngày tạo:** 2026-05-06 | **Cập nhật:** 2026-05-07 (re-verify bằng source code, test gates, và nguồn official cho claim thị trường)
 > **Mục đích:** Phân tích toàn diện các vấn đề hạ tầng, UX, và tính năng. Đề xuất lộ trình phát triển để trở thành app dinh dưỡng chuyên nghiệp hàng đầu Việt Nam.
-> **Nguyên tắc:** Mọi claim đều có file path + line number cụ thể. Không phóng đại, không cherry-pick.
+> **Nguyên tắc:** Claim nội bộ phải có file path + line number cụ thể. Claim thị trường phải có nguồn official hoặc ghi rõ là giả định.
+
+## Re-verify 2026-05-07 — Điều chỉnh quan trọng
+
+**Gates đã chạy:**
+- `npm --prefix .\eatfitai-mobile run typecheck` → PASS
+- `npm --prefix .\eatfitai-mobile test -- --runInBand` → PASS, 42 suites / 178 tests
+- `dotnet test .\EatFitAI_v1.sln --no-restore` → PASS, 224 tests
+- `python -m pytest ai-provider\tests\test_dataset_v2_large_source_audit.py` → PASS, 23 tests
+- `npm --prefix .\eatfitai-mobile run lint` → PASS sau khi fix 5 warnings nhỏ (`FoodSearchScreen.tsx`, `VoiceInput.tsx`, `storageService.ts`, `voiceService.ts`)
+
+**Corrections so với bản 2026-05-06:**
+- Barcode không còn là "missing": `AIScanScreen.tsx` đã có lane barcode bằng `CameraView.onBarcodeScanned`, gọi `foodService.lookupByBarcode()`, backend có `GET /api/food/barcode/{barcode}` và OpenFoodFacts provider config.
+- Weekly insight không còn là "không có": backend có `AIReviewController` / `AnalyticsController`, mobile `StatsScreen` hiển thị card "Báo cáo tuần"; phần còn thiếu là push/deep-link/release QA.
+- Photo-to-Diary 1-tap đã có một phần: `AIScanScreen` quick-save khi chỉ có một match đủ tin cậy; multi-item vẫn đi qua review screen.
+- Voice logging không phải unique toàn thị trường: MyFitnessPal có Voice Logging và MacroFactor có speech-to-text food logging. Điểm khác biệt của EatFitAI nên viết là "Vietnamese/localized voice flow", không phải "không app nào khác có".
+- Tài liệu có 1 lỗi text: `ĐÃ CỐ` phải là `ĐÃ CÓ`.
+- Lint gate từng fail vì warnings nhỏ, đã remediated trong re-verify 2026-05-07.
 
 ---
 
@@ -79,14 +96,12 @@ useFocusEffect(useCallback(() => { warmUpBackend({...}); }, []));  // mỗi lầ
 ```
 
 **Thực tế:**
-- [healthService.ts:115-143](../eatfitai-mobile/src/services/healthService.ts#L115-L143) có **3 lớp deduplication**:
-  1. Time-based cache: 60 giây (`CLOUD_WARMUP_CACHE_MS = 60000`)
-  2. Promise deduplication: nếu đang có call trong flight → return cùng promise
-  3. Non-cloud shortcut: localhost/LAN bypass dedup
-- Kết quả: duplicate call chỉ là **code smell**, KHÔNG phải double network request
-- Worst case thực tế: 1 call × (2 attempts × 3s delay + 12s timeout) = **18 giây** (không phải 36)
+- [healthService.ts:115-143](../eatfitai-mobile/src/services/healthService.ts#L115-L143) có cache/promise dedup **chỉ cho cloud target**.
+- Với localhost/LAN, `warmUpBackend()` return sớm ở branch `!isCloudBackendTarget()` trước khi đụng `warmUpPromise` / `lastWarmUpSuccessAt`.
+- Kết quả: cloud target gần như không double network request; local/LAN có thể chạy 2 health sequences khi mount + focus xảy ra gần nhau.
+- Rủi ro vẫn thấp vì đây chủ yếu là local/dev flow và health endpoints nhẹ, nhưng claim "không phải double network request" chỉ đúng cho cloud target.
 
-**Giải pháp:** Bỏ duplicate trong `useFocusEffect`. Hoặc giữ nguyên (dedup đã xử lý).
+**Giải pháp:** Bỏ duplicate trong `useFocusEffect`, hoặc đưa cache/promise dedup lên trước non-cloud shortcut nếu muốn giữ cả mount + focus.
 
 **Severity:** LOW (code smell, không ảnh hưởng UX)
 **Effort:** 30 phút
@@ -167,12 +182,12 @@ var candidates = await _db.FoodItems
 Đã verify:
 - [errorHandler.ts:171-176](../eatfitai-mobile/src/utils/errorHandler.ts#L171-L176): `logError` là no-op trong production
 - Grep confirm: `logError` **0 callers** — dead code hoàn toàn
-- [errorTracking.ts](../eatfitai-mobile/src/services/errorTracking.ts): `captureError` đã tích hợp Firebase Crashlytics — **hoạt động tốt**
+- [errorTracking.ts](../eatfitai-mobile/src/services/errorTracking.ts): `captureError` đã tích hợp Firebase Crashlytics + telemetry trong source
 - Nhưng `captureError` chỉ được gọi ở **4 files**: aiService, voiceService, storageService, ErrorBoundary
 - Screen-level catch blocks (FoodSearchScreen, MonthStatsScreen, useStatsStore) **không gọi** `captureError`
 
 **Thực tế:**
-- Crashlytics **đã có** và **hoạt động** cho backend services
+- Crashlytics **đã wired trong mobile source** cho service-level errors; tài liệu này chưa có bằng chứng Firebase dashboard để kết luận delivery production.
 - Nhưng user-facing screen errors → **invisible** với Crashlytics
 - `handleApiError` chỉ show Toast → không report
 
@@ -204,12 +219,12 @@ var candidates = await _db.FoodItems
 - Lines 136-137 là **duplicate** của catch blocks 117-118 và 126-127 (double silencing)
 - Lines 110, 156: AsyncStorage failures → user không cần biết (acceptable)
 - Lines 117-127: API failures → user thấy list trống (acceptable UX, nhưng nên log)
-- Line 145: search failure → user thấy loading state treo (bad UX)
+- Line 145: caller-level `.catch(() => {})` nuốt lỗi auto-search, nhưng `runSearch()` đã set `errorMessage` và `finally setIsLoading(false)` nên không treo loading.
 - [useStatsStore.ts:71](../eatfitai-mobile/src/store/useStatsStore.ts#L71): background refresh fail → user thấy stale data (acceptable nếu có indicator)
 
 **Giải pháp:**
 - Lines 136-137: bỏ duplicate `.catch()` vì catch block bên trong đã xử lý
-- Line 145: thêm error state cho search
+- Line 145: bỏ silent caller catch hoặc thêm `captureError()` context `food_search_initial_query`
 - Line 71 (useStatsStore): thêm "stale data" indicator
 - Tất cả: thêm `captureError()` cho API failures
 
@@ -233,13 +248,13 @@ const handleSearch = useCallback(() => {
 
 **Thực tế:**
 - `handleSearch` được gọi khi user nhấn nút search (không phải onKeyPress)
-- Nếu có auto-search on type → cần debounce. Nếu chỉ search on submit → ít vấn đề hơn
-- Nhưng vẫn nên thêm debounce cho edge cases
+- `TextInput` hiện chỉ `onChangeText={setQuery}` và `onSubmitEditing={handleSearch}`; quick suggestion intentionally chạy ngay khi user tap chip.
+- Nếu sau này đổi sang auto-search on type → cần debounce. Hiện tại chưa cần đưa vào quick-win bắt buộc.
 
-**Giải pháp:** Thêm `useDebounce` 300ms.
+**Giải pháp:** Defer. Chỉ thêm `useDebounce` 300ms nếu triển khai auto-search on type.
 
-**Severity:** LOW-MEDIUM (không phải critical — search on submit, không phải on type)
-**Effort:** 30 phút
+**Severity:** LOW (search on submit, không phải on type)
+**Effort:** 0 phút hiện tại / 30 phút nếu đổi UX sang auto-search
 
 ---
 
@@ -261,7 +276,7 @@ const handleSearch = useCallback(() => {
 - 4 API calls + 1 local storage (không phải 5 API calls)
 - Chạy parallel → total latency = max(4 calls), không phải sum
 - Trên Render free tier: ~1-2 giây
-- Có skeleton loading (`FoodSearchSkeleton`) đã tồn tại
+- Có loading state bằng `ActivityIndicator`; chưa tìm thấy `FoodSearchSkeleton` trong source.
 
 **Giải pháp:** Hiện tại acceptable. Nếu muốn optimize → batch endpoint, nhưng effort cao hơn benefit.
 
@@ -421,12 +436,12 @@ var supabaseUrl = HasConfiguredHttpsUrl(configuredSupabaseUrl)
 
 **Thực tế:**
 - JWT tokens đã dùng `expo-secure-store` (tốt)
-- Health data: low sensitivity cho graduation project
-- Không vi phạm GDPR nếu không collect data từ EU users
+- Health/diary/weight data là dữ liệu nhạy cảm về mặt niềm tin người dùng, dù scope hiện tại là graduation project.
+- Không nên chỉ dựa vào giả định "VN-only / không EU users" để hạ rủi ro privacy. Với beta/production, cần data minimization, TTL, và strategy mã hóa cache rõ ràng.
 
-**Giải pháp:** Khi cần compliance → dùng `expo-secure-store` cho health data.
+**Giải pháp:** Ngắn hạn thêm TTL + eviction. Khi lên beta/production, phân loại cache: dữ liệu nhỏ/nhạy cảm dùng secure storage; dữ liệu lớn dùng encrypted storage hoặc không cache nếu không cần offline.
 
-**Severity:** LOW (graduation project, single-user, VN-only)
+**Severity:** LOW với demo/graduation, MEDIUM nếu public beta/production
 **Effort:** 1 ngày (khi cần)
 
 ---
@@ -532,9 +547,9 @@ Dựa trên phân tích các app hàng đầu: **MyFitnessPal** (14M+ foods), **
 - **Cần cải thiện:** Verification workflow cho user-submitted foods
 
 ### 2. Barcode Scanner
-- **EatFitAI hiện tại:** OpenFoodFacts API đã cấu hình, CHƯA có UI
-- **Cần thêm:** expo-camera barcode scanning + UI
-- **Effort:** 3-5 ngày (không phải 1 ngày)
+- **EatFitAI hiện tại:** ĐÃ CÓ UI cơ bản trong `AIScanScreen` (`captureLane='barcode'`, `CameraView.onBarcodeScanned`) + `foodService.lookupByBarcode()` + backend `/api/food/barcode/{barcode}` + OpenFoodFacts provider.
+- **Cần cải thiện:** real-device QA, scan-area feedback, retry/not-found UX, provider rate-limit handling, analytics/readback evidence.
+- **Effort:** 1-2 ngày hardening (không phải build từ số 0)
 
 ### 3. Photo-Based Food Recognition
 - **EatFitAI hiện tại:** ĐÃ CÓ — YOLO11 detect 64 ingredients
@@ -553,7 +568,7 @@ Dựa trên phân tích các app hàng đầu: **MyFitnessPal** (14M+ foods), **
 - **Cần cải thiện:** TTL cho cache entries
 
 ### 7. Water Intake Tracking
-- **EatFitAI hiện tại:** ĐÃ CỐ — WaterIntake model + tracking
+- **EatFitAI hiện tại:** ĐÃ CÓ — WaterIntake model + tracking
 - **Cần cải thiện:** Smart reminders
 
 ---
@@ -561,7 +576,7 @@ Dựa trên phân tích các app hàng đầu: **MyFitnessPal** (14M+ foods), **
 ## D2. SMART FEATURES — Tạo sự khác biệt
 
 ### 8. AI Nutrition Advisor
-- **Hiện tại:** Gemini đã tích hợp, chỉ hiển thị số liệu
+- **Hiện tại:** Gemini đã tích hợp; đã có nutrition insights/weekly review, nhưng chưa có chat advisor đầy đủ.
 - **Nâng cấp:** Chat interface, AI phân tích diary → gợi ý cụ thể
 - **Effort:** 5-7 ngày (UI + prompt engineering + testing)
 
@@ -571,14 +586,14 @@ Dựa trên phân tích các app hàng đầu: **MyFitnessPal** (14M+ foods), **
 - **Effort:** 1 ngày
 
 ### 10. Photo-to-Diary 1-Tap
-- **Hiện tại:** Scan → detect → user phải tự thêm (3 bước)
-- **Nâng cấp:** Scan → detect → 1 nút "Thêm vào bữa [sáng/trưa/tối]"
-- **Effort:** 3-4 ngày
+- **Hiện tại:** Đã có quick-save cho single confident match trong `AIScanScreen`; multi-item vẫn qua review `AddMealFromVisionScreen`.
+- **Nâng cấp:** Cho chọn bữa ngay trong quick-save, batch-save nhiều item sau review nhanh, và chứng minh bằng real-device readback.
+- **Effort:** 1-2 ngày hardening / 3-4 ngày nếu làm lại toàn bộ UX
 
 ### 11. Weekly Insight Report
-- **Hiện tại:** Không có
-- **Nâng cấp:** Push notification tóm tắt tuần
-- **Effort:** 2 ngày
+- **Hiện tại:** Đã có backend weekly review và card "Báo cáo tuần" trong `StatsScreen`.
+- **Nâng cấp:** Push notification/deep link vào weekly card, acknowledged state bền vững, và cloud/device evidence.
+- **Effort:** 1-2 ngày
 
 ### 12. Conversational Food Logging
 - **Hiện tại:** Voice commands limited
@@ -613,16 +628,16 @@ Dựa trên phân tích các app hàng đầu: **MyFitnessPal** (14M+ foods), **
 | Tính năng | MyFitnessPal | Cronometer | MacroFactor | Noom | EatFitAI | Gap |
 |---|---|---|---|---|---|---|
 | Food database | 14M+ (crowdsourced) | Curated (USDA) | Curated | Limited | Vietnamese-focused | ✅ OK |
-| Barcode scan | ✅ | ✅ | ✅ | ❌ | ❌ | **MISSING** |
-| Photo recognition | ✅ | ❌ | ❌ | ❌ | ✅ (YOLO) | ✅ OK |
-| AI advisor | ❌ | ❌ | ✅ (TDEE) | ✅ (coaching) | ✅ (Gemini) | ✅ OK |
+| Barcode scan | ✅ | ✅ | ✅ | ❌ | ⚠️ (UI cơ bản) | **PARTIAL** |
+| Photo recognition | ✅ | ❌ | ✅ | ❌ | ✅ (YOLO) | ✅ OK |
+| AI advisor | ❌ | ❌ | ✅ (TDEE/coaching) | ✅ (coaching) | ⚠️ (insights, chưa chat) | **PARTIAL** |
 | Adaptive targets | ❌ | ❌ | ✅ | ✅ | ⚠️ (sai formula) | **BROKEN** |
 | Offline support | ✅ | ✅ | ✅ | ✅ | ✅ (no TTL) | **WEAK** |
 | Water tracking | ✅ | ✅ | ❌ | ✅ | ✅ | ✅ OK |
 | Streak/gamification | ✅ | ❌ | ❌ | ✅ | ✅ | ✅ OK |
-| Voice logging | ❌ | ❌ | ❌ | ❌ | ✅ | **UNIQUE** |
+| Voice logging | ✅ (Premium/English) | ❌ | ✅ (speech-to-text) | ❌ | ✅ (Vietnamese/local flow) | **DIFFERENTIATOR** |
 | Meal planning | ✅ (premium) | ❌ | ❌ | ✅ | ❌ | **MISSING** |
-| Weekly insights | ✅ | ✅ | ✅ | ✅ | ❌ | **MISSING** |
+| Weekly insights | ✅ | ✅ | ✅ | ✅ | ⚠️ (card có, push thiếu) | **PARTIAL** |
 | Error tracking | ✅ | ✅ | ✅ | ✅ | ⚠️ (partial) | **WEAK** |
 
 ---
@@ -650,8 +665,9 @@ Dựa trên phân tích các app hàng đầu: **MyFitnessPal** (14M+ foods), **
 ### Ngày 4-5: UX Quick Wins
 | Task | File | Effort |
 |---|---|---|
-| Thêm debounce cho search | `FoodSearchScreen.tsx` | 30 phút |
+| Giữ lint gate clean sau remediation 2026-05-07 | `FoodSearchScreen.tsx`, `VoiceInput.tsx`, `storageService.ts`, `voiceService.ts` | done |
 | Bỏ duplicate catch blocks | `FoodSearchScreen.tsx:136-137` | 15 phút |
+| Thêm `captureError` cho auto-search/API failures | `FoodSearchScreen.tsx`, `useStatsStore.ts` | 1 giờ |
 | Thêm FlatList performance props | 4 FlatLists | 30 phút |
 | Bỏ duplicate health check | `HomeScreen.tsx:321-339` | 30 phút |
 
@@ -687,6 +703,7 @@ Dựa trên phân tích các app hàng đầu: **MyFitnessPal** (14M+ foods), **
 | Vision cache database fallback | 2 giờ |
 | YOLO model load at startup | 1 giờ |
 | Console.log cleanup | 1 giờ |
+| Barcode scanner hardening + real-device evidence | 1-2 ngày |
 
 ---
 
@@ -695,7 +712,7 @@ Dựa trên phân tích các app hàng đầu: **MyFitnessPal** (14M+ foods), **
 ### Tháng 2: Advanced Features
 | Task | Effort |
 |---|---|
-| Barcode scanner UI | 3-5 ngày |
+| Barcode scanner polish nếu QA còn lỗi | 1-2 ngày |
 | Conversational food logging | 3-4 ngày |
 | Adaptive TDEE estimation | 3 ngày |
 
@@ -724,22 +741,23 @@ Dựa trên phân tích các app hàng đầu: **MyFitnessPal** (14M+ foods), **
 | 8 | Supabase URL hardcoded | **MEDIUM** | 30 phút | Leak project ID |
 | 9 | Vision cache no DB fallback | **MEDIUM** | 2 giờ | Re-compute sau restart |
 | 10 | Offline cache no TTL | **LOW** | 2 giờ | Stale data khi API fail |
-| 11 | Search no debounce | **LOW** | 30 phút | Search on submit, không phải on type |
-| 12 | Health check duplicate | **LOW** | 30 phút | Code smell, dedup đã xử lý |
+| 11 | Lint warnings chặn mobile lint gate | **DONE** | 30 phút | Đã fix trong re-verify 2026-05-07 |
+| 12 | Health check duplicate | **LOW** | 30 phút | Code smell; cloud dedup OK, local/LAN còn có thể double |
 | 13 | StyleSheet.create in render | **LOW** | 1 giờ | Ít re-render |
 | 14 | 38 console.log | **LOW** | 1 giờ | Performance negligible |
 | 15 | Gemini cache no max-size | **LOW** | 30 phút | Low traffic, entries expire nhanh |
 | 16 | YOLO model lazy load | **LOW** | 1 giờ | Chỉ ảnh hưởng lần đầu |
 | 17 | gemini_pool.py 2010 lines | **LOW** | 2 ngày | Solo dev OK, refactor khi có team |
+| 18 | Search no debounce | **DEFER** | 30 phút nếu đổi UX | Hiện search on submit, không phải on type |
 
 ## Ưu Tiên Tính Năng Mới
 
 | # | Tính năng | Impact | Effort | Priority |
 |---|---|---|---|---|
 | F1 | AI Advisor chat | HIGH | 5-7 ngày | P2 |
-| F2 | Photo-to-Diary 1-tap | HIGH | 3-4 ngày | P2 |
-| F3 | Weekly insight push | HIGH | 2 ngày | P2 |
-| F4 | Barcode scanner | HIGH | 3-5 ngày | P2 |
+| F2 | Photo-to-Diary quick-save hardening | HIGH | 1-2 ngày | P2 |
+| F3 | Weekly insight push/deep link | HIGH | 1-2 ngày | P2 |
+| F4 | Barcode scanner hardening | HIGH | 1-2 ngày | P2 |
 | F5 | Smart meal suggestions | MEDIUM | 1 ngày | P2 |
 | F6 | Conversational logging | MEDIUM | 3-4 ngày | P3 |
 | F7 | Adaptive TDEE | MEDIUM | 3 ngày | P3 |
@@ -755,24 +773,31 @@ Dựa trên phân tích các app hàng đầu: **MyFitnessPal** (14M+ foods), **
 
 **EatFitAI có foundation tốt:**
 - Architecture 3-tier với proper separation
-- Firebase Crashlytics đã tích hợp (chỉ cần wiring thêm)
+- Firebase Crashlytics đã tích hợp trong source (cần verify dashboard/delivery ở release lane)
 - YOLO detection hoạt động tốt (64 classes)
-- Voice logging là UNIQUE feature (không app nào khác có)
+- Voice logging tiếng Việt/localized flow là differentiator; không phải unique toàn thị trường
 - Vietnamese-focused food database
 
 **Vấn đề chính:**
 1. **Formula inconsistency** giữa mobile và backend (fix 1 ngày)
 2. **Error tracking gap** — Crashlytics có nhưng screen-level không report (fix 1 ngày)
 3. **Gemini dùng cho deterministic calculation** (fix 1 ngày)
-4. **Missing features** so với competitors: barcode, weekly insights, meal planning
+4. **Partial/missing features** so với competitors: barcode hardening, weekly insight push, meal planning
 
 **Ưu tiên:**
-- **Tuần 1:** Fix 3 vấn đề trên + quick wins (debounce, FlatList, Image)
+- **Tuần 1:** Fix 3 vấn đề trên + quick wins (lint gate, FlatList, Image, FoodSearch logging)
 - **Tháng 1:** Gemini optimization + AI Advisor + Photo-to-Diary
 - **Tháng 2-3:** Barcode + Conversational logging + Advanced features
 
 ---
 
-*Tài liệu này được verify bằng cách đọc trực tiếp source code. Mọi claim đều có file path + line number. Không phóng đại, không cherry-pick.*
+*Tài liệu này được re-verify bằng cách đọc trực tiếp source code, chạy các gate nhẹ, và đối chiếu nguồn official cho claim thị trường. Claim nội bộ nên giữ file path + line number; claim thị trường nên giữ link nguồn.*
 
-*Nguồn research: Google Think with Google, Nielsen Norman Group, OWASP, Google SRE Book, Shopify FlashList, PostgreSQL pg_trgm, Ultralytics YOLO Docs, Martin Fowler.*
+*Nguồn research gốc: Google Think with Google, Nielsen Norman Group, OWASP, Google SRE Book, Shopify FlashList, PostgreSQL pg_trgm, Ultralytics YOLO Docs, Martin Fowler.*
+
+*Nguồn official bổ sung 2026-05-07:*
+- *Expo Camera docs — `CameraView` barcode scanning: https://docs.expo.dev/versions/latest/sdk/camera/*
+- *MyFitnessPal Meal Scan FAQ: https://support.myfitnesspal.com/hc/en-us/articles/360045761612-Meal-Scan-FAQ*
+- *MyFitnessPal Voice Logging FAQ: https://support.myfitnesspal.com/hc/en-us/articles/30332897072269-Voice-Logging*
+- *MacroFactor food logging / barcode scanner: https://help.macrofactorapp.com/en/articles/215-how-to-log-food-in-macrofactor*
+- *MacroFactor AI food logging: https://help.macrofactorapp.com/en/articles/258-ai-food-logging*

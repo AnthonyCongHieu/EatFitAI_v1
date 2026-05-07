@@ -1,0 +1,16 @@
+{
+  "id": "hiuinhcng/eatfitai-yolo11m-clean-v1-smoke",
+  "title": "EatFitAI YOLO11m Clean V1 Smoke",
+  "code_file": "kaggle_yolo11m_smoke_train.py",
+  "language": "python",
+  "kernel_type": "script",
+  "is_private": true,
+  "enable_gpu": true,
+  "machine_shape": "NvidiaTeslaT4Highmem",
+  "enable_internet": true,
+  "dataset_sources": [],
+  "competition_sources": [],
+  "kernel_sources": [
+    "hiuinhcng/eatfitai-dataset-v2-clean-build"
+  ]
+}

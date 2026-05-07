@@ -131,7 +131,7 @@ export const voiceService = {
     try {
       // Validate API URL đã được cấu hình
       getApiBaseUrl();
-      
+
       const fileName = audioUri.split('/').pop() || 'audio.wav';
       const fileType = fileName.endsWith('.m4a')
         ? 'audio/mp4'

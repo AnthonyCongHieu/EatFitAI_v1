@@ -40,7 +40,7 @@ export const storageService = {
     try {
       // Fetch file as blob
       const fileBlob = await fetch(fileUri).then(r => r.blob());
-      
+
       // Upload to R2 via PUT request
       const response = await fetch(presignedUrl, {
         method: 'PUT',
@@ -85,7 +85,7 @@ export const storageService = {
   ): Promise<string> {
     const upload = await this.uploadMediaObject(fileUri, fileName, contentType, purpose);
     return upload.publicUrl;
-  }
+  },
 };
 
 export default storageService;

@@ -1,0 +1,5 @@
+source_slug,download_status,audit_status,audit_decision,class_count,image_count,box_count,empty_label_count,cache_status,source_scope,verified_at
+detection_15_vietnamese_food_v2,downloaded_roboflow_export,audited,ACCEPT_FILTERED,15,3036,4264,1,cached_to_kaggle_dataset,roboflow_source_scope.phase1_2026-05-06.csv,2026-05-06
+khoa_food_jfsxy,downloaded_roboflow_export,audited,ACCEPT_FILTERED,10,997,1472,32,cached_to_kaggle_dataset,roboflow_source_scope.phase1_2026-05-06.csv,2026-05-06
+vietnamese_food_nhh,downloaded_roboflow_export,audited,ACCEPT_FILTERED,5,1000,1411,0,cached_to_kaggle_dataset,roboflow_source_scope.phase1_2026-05-06.csv,2026-05-06
+food_ingredients_v1,downloaded_roboflow_export,audited,ACCEPT_FILTERED,60,626,1845,0,cached_to_kaggle_dataset,roboflow_source_scope.phase1_2026-05-06.csv,2026-05-06
