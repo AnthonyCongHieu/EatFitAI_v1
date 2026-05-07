@@ -5,12 +5,15 @@ import { Platform } from 'react-native';
 // This file stores the detected local IP at Metro startup time
 let GENERATED_API_BASE_URL: string | undefined;
 try {
-  // Dynamic import avoids errors when the generated file does not exist yet
-  // eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-require-imports
-  const generatedConfig = require('./generated-api-config');
-  GENERATED_API_BASE_URL = generatedConfig.GENERATED_API_BASE_URL;
-  if (__DEV__ && GENERATED_API_BASE_URL) {
-    console.log('[EatFitAI] Using generated API config:', GENERATED_API_BASE_URL);
+  if (__DEV__) {
+    // Dynamic import avoids errors when the generated file does not exist yet.
+    // Generated config is dev-only because it can contain a stale LAN IP.
+    // eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-require-imports
+    const generatedConfig = require('./generated-api-config');
+    GENERATED_API_BASE_URL = generatedConfig.GENERATED_API_BASE_URL;
+    if (GENERATED_API_BASE_URL) {
+      console.log('[EatFitAI] Using generated API config:', GENERATED_API_BASE_URL);
+    }
   }
 } catch {
   // Generated file is missing; fall back to runtime detection
@@ -198,18 +201,7 @@ export const API_BASE_URL: string | undefined = (() => {
     return explicit;
   }
 
-  // 2. Next priority: generated config from the pre-start script
-  if (GENERATED_API_BASE_URL) {
-    const generated = toSafeBackendApiUrl(
-      GENERATED_API_BASE_URL,
-      'generated API base URL',
-    );
-    if (generated) {
-      return generated;
-    }
-  }
-
-  // 3. app.config.js extra values (auto-detected IP when Metro starts)
+  // 2. app.config.js extra values (auto-detected IP when Metro starts)
   // Try multiple paths because Expo returns different structures by context
   const expoConfig: any = Constants;
   const possibleExtras = [
@@ -236,6 +228,19 @@ export const API_BASE_URL: string | undefined = (() => {
         console.log('[EatFitAI] Using API URL from app.config.js extra:', fromExtra);
       }
       return fromExtra;
+    }
+  }
+
+  // 3. Dev-only generated config from the pre-start script.
+  // Keep this below Expo extra so a stale generated LAN IP cannot override
+  // the active cloud/local target from app.config.js.
+  if (__DEV__ && GENERATED_API_BASE_URL) {
+    const generated = toSafeBackendApiUrl(
+      GENERATED_API_BASE_URL,
+      'generated API base URL',
+    );
+    if (generated) {
+      return generated;
     }
   }
 

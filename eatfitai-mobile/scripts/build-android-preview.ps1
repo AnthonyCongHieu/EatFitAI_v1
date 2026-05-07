@@ -35,20 +35,42 @@ function Resolve-GoogleWebClientId {
     $json = Get-Content -Raw $googleServicesPath | ConvertFrom-Json
     foreach ($client in @($json.client)) {
         foreach ($oauthClient in @($client.oauth_client)) {
-            if ($oauthClient.client_id) {
+            if ($oauthClient.client_id -and $oauthClient.client_type -eq 3) {
                 return [string]$oauthClient.client_id
             }
         }
 
         $otherClients = $client.services.appinvite_service.other_platform_oauth_client
         foreach ($oauthClient in @($otherClients)) {
-            if ($oauthClient.client_id) {
+            if ($oauthClient.client_id -and $oauthClient.client_type -eq 3) {
                 return [string]$oauthClient.client_id
             }
         }
     }
 
     return ''
+}
+
+function Test-GoogleClientIdIsAndroidClient {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$ClientId
+    )
+
+    if (-not $ClientId -or -not (Test-Path $googleServicesPath)) {
+        return $false
+    }
+
+    $json = Get-Content -Raw $googleServicesPath | ConvertFrom-Json
+    foreach ($client in @($json.client)) {
+        foreach ($oauthClient in @($client.oauth_client)) {
+            if ($oauthClient.client_id -eq $ClientId -and $oauthClient.client_type -eq 1) {
+                return $true
+            }
+        }
+    }
+
+    return $false
 }
 
 function Get-EasBuildConfig {
@@ -184,8 +206,17 @@ if (-not $mediaPublicBaseUrl) {
 $env:EXPO_PUBLIC_MEDIA_PUBLIC_BASE_URL = $mediaPublicBaseUrl
 
 $googleWebClientId = Resolve-BuildValue -Name 'EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID' -ProfileEnv $previewProfileEnv
+$googleServicesWebClientId = Resolve-GoogleWebClientId
+if ($googleWebClientId -and (Test-GoogleClientIdIsAndroidClient -ClientId $googleWebClientId)) {
+    if (-not $googleServicesWebClientId) {
+        throw 'EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID points to an Android OAuth client and no Web OAuth client could be derived from google-services.json.'
+    }
+
+    Write-Warning 'EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID points to an Android OAuth client. Using the Web OAuth client from google-services.json instead.'
+    $googleWebClientId = $googleServicesWebClientId
+}
 if (-not $googleWebClientId) {
-    $googleWebClientId = Resolve-GoogleWebClientId
+    $googleWebClientId = $googleServicesWebClientId
 }
 if (-not $googleWebClientId) {
     throw 'EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID is missing and could not be derived from google-services.json.'

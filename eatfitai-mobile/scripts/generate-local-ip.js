@@ -35,6 +35,48 @@ function readEnvFileValue(envFilePath, key) {
   return undefined;
 }
 
+function getEnvFileCandidates() {
+  const root = path.join(__dirname, '..');
+  const lifecycle = String(process.env.npm_lifecycle_event || '').toLowerCase();
+  const envFile = (name) => path.join(root, name);
+
+  if (lifecycle.includes('local') || lifecycle.includes('device')) {
+    return [
+      envFile('.env.development.local'),
+      envFile('.env.development'),
+      envFile('.env'),
+    ];
+  }
+
+  if (lifecycle === 'prestart' || lifecycle === 'start') {
+    return [
+      envFile('.env'),
+      envFile('.env.development'),
+      envFile('.env.development.local'),
+    ];
+  }
+
+  return [
+    envFile('.env.development'),
+    envFile('.env'),
+    envFile('.env.development.local'),
+  ];
+}
+
+function readEnvValue(key) {
+  for (const envFilePath of getEnvFileCandidates()) {
+    const value = readEnvFileValue(envFilePath, key);
+    if (value !== undefined) {
+      return {
+        value,
+        source: path.basename(envFilePath),
+      };
+    }
+  }
+
+  return undefined;
+}
+
 function getLocalIpAddress() {
   const interfaces = os.networkInterfaces();
   const candidates = [];
@@ -91,13 +133,20 @@ function getLocalIpAddress() {
 
 // Lấy IP và các config
 const localIp = getLocalIpAddress();
-const developmentEnvPath = path.join(__dirname, '..', '.env.development');
-const explicitBaseUrl =
-  process.env.EXPO_PUBLIC_API_BASE_URL ||
-  readEnvFileValue(developmentEnvPath, 'EXPO_PUBLIC_API_BASE_URL');
-const apiPort = process.env.EXPO_PUBLIC_API_PORT || '5247';
-const apiScheme = process.env.EXPO_PUBLIC_API_SCHEME || 'http';
+const envBaseUrl = readEnvValue('EXPO_PUBLIC_API_BASE_URL');
+const envApiPort = readEnvValue('EXPO_PUBLIC_API_PORT');
+const envApiScheme = readEnvValue('EXPO_PUBLIC_API_SCHEME');
+const explicitBaseUrl = process.env.EXPO_PUBLIC_API_BASE_URL || envBaseUrl?.value;
+const apiPort = process.env.EXPO_PUBLIC_API_PORT || envApiPort?.value || '5247';
+const apiScheme = process.env.EXPO_PUBLIC_API_SCHEME || envApiScheme?.value || 'http';
 const apiBaseUrl = explicitBaseUrl || `${apiScheme}://${localIp}:${apiPort}`;
+
+if (explicitBaseUrl) {
+  const source = process.env.EXPO_PUBLIC_API_BASE_URL
+    ? 'process.env'
+    : envBaseUrl?.source || 'env file';
+  console.log(`[generate-local-ip] Using explicit API base URL from ${source}`);
+}
 
 // Generate file TypeScript
 const outputPath = path.join(__dirname, '..', 'src', 'config', 'generated-api-config.ts');
