@@ -9,7 +9,7 @@ import sys
 import time
 import urllib.request
 from pathlib import Path
-from typing import Any, Mapping
+from typing import Any, Callable, Mapping
 
 
 KAGGLE_INPUT = Path("/kaggle/input")
@@ -19,7 +19,7 @@ REPORT_DIR = Path("/kaggle/working/_dataset_v2_large_source_reports")
 RAW_ZIP_DIR = TEMP_ROOT / "raw_zips"
 SOURCE_REPORT_ROOT = TEMP_ROOT / "source_reports"
 RAW_CACHE_PACKAGE_DIR = TEMP_ROOT / "raw_audit_cache_dataset"
-RAW_CACHE_DATASET_ID = "hiuinhcng/eatfitai-dataset-v2-raw-audit-cache"
+RAW_CACHE_DATASET_ID = "hiuinhcng/eatfitai-dataset-v2-large-source-raw-cache-v2"
 LARGE_SOURCE_SCOPE = "large_source_scope.2026-05-05.csv"
 ROBOFLOW_ACTIVE_SCOPE = "roboflow_source_scope.active_2026-05-06.csv"
 ROBOFLOW_PHASE1_SCOPE = "roboflow_source_scope.phase1_2026-05-06.csv"
@@ -29,6 +29,37 @@ RAW_SOURCE_REGISTRY = "raw_source_registry.yaml"
 SOURCE_AUDIT_JSON = "source_audit.json"
 ROBOFLOW_SECRET_LABEL = "ROBOFLOW_API_KEY"
 KAGGLE_LARGE_REPORTS_ZIP = Path("/kaggle/working/dataset_v2_large_source_audit_reports.zip")
+PIPELINE_CODE_DATASET_ID = "hiuinhcng/eatfitai-dataset-v2-pipeline-code"
+PIPELINE_CODE_INPUT_SLUG = "eatfitai-dataset-v2-pipeline-code"
+
+
+def unique_existing_dirs(paths: list[Path]) -> list[Path]:
+    seen: set[str] = set()
+    existing: list[Path] = []
+    for path in paths:
+        key = path.as_posix()
+        if key in seen:
+            continue
+        seen.add(key)
+        if path.is_dir():
+            existing.append(path)
+    return existing
+
+
+def kaggle_dataset_input_candidates(input_root: Path, dataset_slug: str, owner_slug: str | None = None) -> list[Path]:
+    paths = [input_root / dataset_slug, input_root / "datasets" / dataset_slug]
+    if owner_slug:
+        paths.extend([input_root / owner_slug / dataset_slug, input_root / "datasets" / owner_slug / dataset_slug])
+    datasets_root = input_root / "datasets"
+    if datasets_root.is_dir():
+        paths.extend(owner_dir / dataset_slug for owner_dir in sorted(datasets_root.iterdir()) if owner_dir.is_dir())
+    if input_root.is_dir():
+        paths.extend(owner_dir / dataset_slug for owner_dir in sorted(input_root.iterdir()) if owner_dir.is_dir())
+    return unique_existing_dirs(paths)
+
+
+def is_pipeline_code_dir(candidate: Path) -> bool:
+    return (candidate / "audit_sources.py").exists() and (candidate / RAW_SOURCE_REGISTRY).exists()
 
 
 def run(cmd: list[str]) -> None:
@@ -45,12 +76,18 @@ def install_runtime_dependencies(code_dir: Path) -> None:
 
 
 def find_code_dir_under(input_root: Path) -> Path:
-    candidates = [Path.cwd(), *[path for path in sorted(input_root.iterdir()) if path.is_dir()]]
+    owner_slug, _dataset_slug = PIPELINE_CODE_DATASET_ID.split("/", 1)
+    shallow_input_dirs = [path for path in sorted(input_root.iterdir()) if path.is_dir()] if input_root.exists() else []
+    candidates = [
+        Path.cwd(),
+        *kaggle_dataset_input_candidates(input_root, PIPELINE_CODE_INPUT_SLUG, owner_slug),
+        *shallow_input_dirs,
+    ]
     for candidate in candidates:
-        if (candidate / "audit_sources.py").exists() and (candidate / RAW_SOURCE_REGISTRY).exists():
+        if is_pipeline_code_dir(candidate):
             return candidate
     for candidate in sorted(input_root.rglob("*")):
-        if candidate.is_dir() and (candidate / "audit_sources.py").exists() and (candidate / RAW_SOURCE_REGISTRY).exists():
+        if candidate.is_dir() and is_pipeline_code_dir(candidate):
             return candidate
     raise FileNotFoundError("No pipeline code dataset with raw source registry found under /kaggle/input")
 
@@ -144,6 +181,17 @@ def get_kaggle_secret(
                 sleep_fn(delay_seconds)  # type: ignore[operator]
     print(f"Kaggle secret {label} unavailable after {attempts} attempts: {last_error}", flush=True)
     return None
+
+
+def resolve_kaggle_secret_once(
+    label: str,
+    cached_secret: str | None,
+    already_checked: bool,
+    secret_getter: Callable[[str], str | None] = get_kaggle_secret,
+) -> tuple[str | None, bool]:
+    if cached_secret or already_checked:
+        return cached_secret, already_checked
+    return secret_getter(label), True
 
 
 def extract_roboflow_download_link(data: Mapping[str, object]) -> str:
@@ -247,9 +295,9 @@ def has_yolo_layout(path: Path) -> bool:
 
 
 def find_kaggle_dataset_source_dir(input_root: Path, dataset_slug: str, preferred_subdir: str = "dataset") -> Path:
-    candidates: list[Path] = []
+    candidates: list[Path] = kaggle_dataset_input_candidates(input_root, dataset_slug)
     direct = input_root / dataset_slug
-    if direct.exists():
+    if direct.exists() and direct not in candidates:
         candidates.append(direct)
     for child in sorted(input_root.iterdir()) if input_root.exists() else []:
         if child.is_dir() and dataset_slug.lower() in child.name.lower() and child not in candidates:
@@ -350,6 +398,7 @@ def main() -> int:
     sys.path.insert(0, str(code_dir))
 
     from kaggle_public_drive_raw_audit_kernel import (  # type: ignore
+        cache_package_summary,
         cleanup_paths,
         upload_raw_cache_dataset,
     )
@@ -371,12 +420,16 @@ def main() -> int:
     cache_rows: list[dict[str, object]] = []
 
     roboflow_secret: str | None = None
+    roboflow_secret_checked = False
     for row in scope_rows:
         source_slug = row["source_slug"]
         audit_mode = row.get("audit_mode", "")
         if audit_mode == "roboflow_export":
-            if roboflow_secret is None:
-                roboflow_secret = get_kaggle_secret(ROBOFLOW_SECRET_LABEL)
+            roboflow_secret, roboflow_secret_checked = resolve_kaggle_secret_once(
+                ROBOFLOW_SECRET_LABEL,
+                roboflow_secret,
+                roboflow_secret_checked,
+            )
             if not roboflow_secret:
                 status = {"source_slug": source_slug, "audit_status": "not_audited", "reason": "roboflow_secret_missing"}
                 audit_status_rows.append(status)
@@ -404,7 +457,7 @@ def main() -> int:
             class_rows.extend(one_classes)
             audit_status_rows.append(audit_status)
             if audit_status.get("audit_status") == "audited" and should_cache_large_source(row):
-                cache_rows.append(add_large_source_to_cache_package(manifest_row, output))
+                cache_rows.append(add_large_source_to_cache_package(manifest_row, output, cache_dir=RAW_CACHE_PACKAGE_DIR))
             cleanup_paths(output, WORK_DIR / source_slug, SOURCE_REPORT_ROOT / source_slug)
         elif audit_mode == "kaggle_dataset_direct":
             dataset_slug = row.get("kaggle_input_slug", "vietfood68")
@@ -430,7 +483,20 @@ def main() -> int:
         write_csv(REPORT_DIR / "large_source_download_manifest.csv", download_rows)
         write_csv(REPORT_DIR / "large_source_audit_status.csv", audit_status_rows)
 
-    cache_upload_result = upload_raw_cache_dataset(cache_dir=RAW_CACHE_PACKAGE_DIR) if cache_rows else {"cache_status": "no_cache_candidates"}
+    if cache_rows:
+        prepared_cache_summary = cache_package_summary(RAW_CACHE_PACKAGE_DIR)
+        print("Large source prepared cache:", json.dumps(prepared_cache_summary, ensure_ascii=False), flush=True)
+
+    cache_upload_result = (
+        upload_raw_cache_dataset(
+            cache_dir=RAW_CACHE_PACKAGE_DIR,
+            dataset_id=RAW_CACHE_DATASET_ID,
+            seed_existing=False,
+            allow_existing_dataset_version=False,
+        )
+        if cache_rows
+        else {"cache_status": "no_cache_candidates"}
+    )
     if cache_rows:
         for row in cache_rows:
             row["cache_status"] = cache_upload_result.get("cache_status", "")

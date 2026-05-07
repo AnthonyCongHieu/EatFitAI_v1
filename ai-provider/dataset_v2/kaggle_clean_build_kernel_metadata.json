@@ -9,7 +9,9 @@
   "enable_internet": true,
   "dataset_sources": [
     "hiuinhcng/eatfitai-dataset-v2-pipeline-code",
-    "hiuinhcng/eatfitai-dataset-v2-raw-audit-cache",
+    "hiuinhcng/eatfitai-dataset-v2-raw-audit-cache-v2",
+    "hiuinhcng/eatfitai-dataset-v2-large-source-raw-cache-v2",
+    "hiuinhcng/eatfitai-dataset-v2-public-drive-raw-cache-v2",
     "thomasnguyen6868/vietfood68"
   ],
   "competition_sources": [],

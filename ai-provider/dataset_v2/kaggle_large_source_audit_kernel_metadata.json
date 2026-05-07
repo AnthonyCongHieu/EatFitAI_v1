@@ -9,7 +9,6 @@
   "enable_internet": true,
   "dataset_sources": [
     "hiuinhcng/eatfitai-dataset-v2-pipeline-code",
-    "hiuinhcng/eatfitai-dataset-v2-raw-audit-cache",
     "thomasnguyen6868/vietfood68"
   ]
 }

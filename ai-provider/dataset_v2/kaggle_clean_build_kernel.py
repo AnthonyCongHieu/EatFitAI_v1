@@ -24,8 +24,14 @@ PUBLIC_DRIVE_SOURCES = "public_drive_raw_sources.csv"
 RAW_SOURCE_REGISTRY = "raw_source_registry.yaml"
 SOURCE_CLASS_MAPS = "source_class_maps.yaml"
 
-RAW_CACHE_INPUT_SLUG = "eatfitai-dataset-v2-raw-audit-cache"
+RAW_CACHE_INPUT_SLUG = "eatfitai-dataset-v2-raw-audit-cache-v2"
+RAW_CACHE_INPUT_SLUGS = [
+    RAW_CACHE_INPUT_SLUG,
+    "eatfitai-dataset-v2-large-source-raw-cache-v2",
+    "eatfitai-dataset-v2-public-drive-raw-cache-v2",
+]
 VIETFOOD_INPUT_SLUG = "vietfood68"
+CACHE_WRAPPER_SUFFIX = ".zip.cache"
 
 
 def run(cmd: list[str]) -> None:
@@ -95,6 +101,11 @@ def find_input_dir(root: Path, slug: str) -> Path | None:
 
 def strip_zip_suffixes(name: str) -> str:
     lowered = name.lower()
+    for suffix in (CACHE_WRAPPER_SUFFIX, ".cache"):
+        if lowered.endswith(suffix):
+            name = name[: -len(suffix)]
+            lowered = name.lower()
+            break
     while lowered.endswith(".zip"):
         name = name[:-4]
         lowered = name.lower()
@@ -133,6 +144,39 @@ def collect_cache_entries(cache_dir: Path | None) -> dict[str, Path]:
             for key in candidate_keys_for_name(path.name):
                 entries.setdefault(key, path)
     return entries
+
+
+def collect_cache_entries_from_dirs(cache_dirs: list[Path]) -> tuple[dict[str, Path], list[dict[str, str]]]:
+    entries: dict[str, Path] = {}
+    duplicate_rows: list[dict[str, str]] = []
+    for cache_dir in cache_dirs:
+        for key, path in collect_cache_entries(cache_dir).items():
+            previous = entries.get(key)
+            if previous is not None and previous != path:
+                duplicate_rows.append(
+                    {
+                        "cache_key": key,
+                        "previous_path": previous.as_posix(),
+                        "replacement_path": path.as_posix(),
+                    }
+                )
+            entries[key] = path
+    return entries, duplicate_rows
+
+
+def find_cache_input_dirs(input_root: Path, slugs: list[str]) -> list[Path]:
+    cache_dirs: list[Path] = []
+    seen: set[str] = set()
+    for slug in slugs:
+        cache_dir = find_input_dir(input_root, slug)
+        if cache_dir is None:
+            continue
+        resolved = cache_dir.resolve().as_posix()
+        if resolved in seen:
+            continue
+        seen.add(resolved)
+        cache_dirs.append(cache_dir)
+    return cache_dirs
 
 
 def source_policy_included_slugs(policy_rows: list[Mapping[str, str]]) -> list[str]:
@@ -217,11 +261,12 @@ def safe_extract_zip(zip_path: Path, destination: Path) -> None:
 
 
 def first_nested_zip(path: Path) -> Path | None:
-    if path.is_file() and path.suffix.lower() == ".zip":
+    if path.is_file() and zipfile.is_zipfile(path):
         return path
     if path.is_dir():
-        for candidate in sorted(path.rglob("*.zip"), key=lambda item: (len(item.as_posix()), item.name.lower())):
-            if candidate.is_file():
+        candidates = sorted(path.rglob("*"), key=lambda item: (len(item.as_posix()), item.name.lower()))
+        for candidate in candidates:
+            if candidate.is_file() and ".zip" in candidate.name.lower() and zipfile.is_zipfile(candidate):
                 return candidate
     return None
 
@@ -241,7 +286,7 @@ def cache_source_yolo_root(slug: str, source_path: Path | None, extract_root: Pa
                 if nested_zip is None:
                     raise
                 current = nested_zip
-        if current.is_file() and current.suffix.lower() == ".zip":
+        if current.is_file() and zipfile.is_zipfile(current):
             target = extract_root / safe_extract_name(slug) / f"level_{depth}" / strip_zip_suffixes(current.name)
             if not target.exists() or not any(target.iterdir()):
                 safe_extract_zip(current, target)
@@ -328,20 +373,36 @@ def main() -> int:
     policy_rows = read_csv(policy_path)
     included_slugs = source_policy_included_slugs(policy_rows)
     lookup = build_source_lookup(code_dir)
-    cache_dir = find_input_dir(KAGGLE_INPUT, RAW_CACHE_INPUT_SLUG)
-    cache_entries = collect_cache_entries(cache_dir)
+    cache_dirs = find_cache_input_dirs(KAGGLE_INPUT, RAW_CACHE_INPUT_SLUGS)
+    cache_entries, duplicate_cache_rows = collect_cache_entries_from_dirs(cache_dirs)
     vietfood_dir = find_vietfood_dir(KAGGLE_INPUT)
+    print(
+        "Clean build preflight:",
+        json.dumps(
+            {
+                "included_source_count": len(included_slugs),
+                "raw_cache_inputs": [path.as_posix() for path in cache_dirs],
+                "raw_cache_entry_count": len(cache_entries),
+                "raw_cache_duplicate_key_count": len(duplicate_cache_rows),
+                "vietfood67_input": vietfood_dir.as_posix() if vietfood_dir else "",
+            },
+            ensure_ascii=False,
+        ),
+        flush=True,
+    )
 
     inventory_rows: list[dict[str, object]] = []
     audit_inputs: list[dict[str, str]] = []
     missing_sources: list[str] = []
 
     for slug in included_slugs:
+        print(f"Resolving clean source: {slug}", flush=True)
         if slug == "vietfood67":
             if vietfood_dir is None:
                 missing_sources.append(slug)
                 inventory_rows.append({"source_slug": slug, "source_status": "missing_kaggle_dataset_direct", "expected": VIETFOOD_INPUT_SLUG})
                 continue
+            print(f"Resolved clean source {slug}: {vietfood_dir}", flush=True)
             audit_inputs.append(manifest_row_for_source(slug, vietfood_dir, "kaggle_dataset_direct", lookup, code_dir))
             inventory_rows.append({"source_slug": slug, "source_status": "found_kaggle_dataset_direct", "path": vietfood_dir.as_posix()})
             continue
@@ -352,11 +413,13 @@ def main() -> int:
             inventory_rows.append({"source_slug": slug, "source_status": "missing_raw_cache", "expected": expected})
             continue
         try:
+            print(f"Extracting clean source {slug} from cache path: {source_path}", flush=True)
             yolo_root = cache_source_yolo_root(slug, source_path)
         except FileNotFoundError as exc:
             missing_sources.append(slug)
             inventory_rows.append({"source_slug": slug, "source_status": "invalid_raw_cache_layout", "path": source_path.as_posix(), "error": str(exc)})
             continue
+        print(f"Resolved clean source {slug}: {yolo_root}", flush=True)
         audit_inputs.append(manifest_row_for_source(slug, yolo_root, "raw_cache", lookup, code_dir))
         inventory_rows.append({"source_slug": slug, "source_status": "found_raw_cache", "path": yolo_root.as_posix()})
 
@@ -368,21 +431,28 @@ def main() -> int:
             "included_source_count": len(included_slugs),
             "found_source_count": len(audit_inputs),
             "missing_sources": missing_sources,
-            "raw_cache_input": cache_dir.as_posix() if cache_dir else "",
+            "raw_cache_input_slugs": RAW_CACHE_INPUT_SLUGS,
+            "raw_cache_inputs": [path.as_posix() for path in cache_dirs],
+            "raw_cache_entry_count": len(cache_entries),
+            "raw_cache_duplicate_key_count": len(duplicate_cache_rows),
             "vietfood67_input": vietfood_dir.as_posix() if vietfood_dir else "",
             "source_policy": policy_path.as_posix(),
             "taxonomy": taxonomy_path.as_posix(),
         },
     )
+    write_csv(REPORT_DIR / "clean_build_raw_cache_duplicates.csv", duplicate_cache_rows)
 
     if missing_sources:
         print("Clean build blocked. Missing included source(s):", ", ".join(missing_sources), flush=True)
         run(["zip", "-qr", REPORTS_ZIP.as_posix(), str(REPORT_DIR)])
         return 0
 
+    print(f"Clean build source resolution ready: {len(audit_inputs)} source(s)", flush=True)
     audit_rows, _class_rows = audit_mounted_sources(audit_inputs, REPORT_DIR)
+    print(f"Clean build audit complete: {len(audit_rows)} source audit row(s)", flush=True)
     policy = load_source_policy(policy_path)
     selected_audit_rows = filter_audit_rows_by_policy(audit_rows, policy)
+    print(f"Clean build selected audit rows: {len(selected_audit_rows)}", flush=True)
     taxonomy = load_yaml(taxonomy_path)
     summary = clean_dataset(selected_audit_rows, taxonomy, CLEAN_DATASET_DIR, REPORT_DIR)
     validation_summary = validate(CLEAN_DATASET_DIR)

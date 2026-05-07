@@ -207,12 +207,12 @@ class PublicDriveKernelTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             metadata_path = write_raw_cache_dataset_metadata(
                 Path(tmp),
-                dataset_id="hiuinhcng/eatfitai-dataset-v2-raw-audit-cache",
+                dataset_id="hiuinhcng/eatfitai-dataset-v2-raw-audit-cache-v2",
             )
 
             metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
 
-        self.assertEqual(metadata["id"], "hiuinhcng/eatfitai-dataset-v2-raw-audit-cache")
+        self.assertEqual(metadata["id"], "hiuinhcng/eatfitai-dataset-v2-raw-audit-cache-v2")
         self.assertEqual(metadata["licenses"], [{"name": "unknown"}])
         self.assertIn("private raw audit cache", metadata["description"])
 
@@ -300,13 +300,7 @@ class PublicDriveKernelTests(unittest.TestCase):
         metadata = json.loads(PUBLIC_KERNEL_METADATA.read_text(encoding="utf-8"))
 
         self.assertEqual(metadata["code_file"], "kaggle_public_drive_raw_audit_kernel.py")
-        self.assertEqual(
-            metadata["dataset_sources"],
-            [
-                "hiuinhcng/eatfitai-dataset-v2-pipeline-code",
-                "hiuinhcng/eatfitai-dataset-v2-raw-audit-cache",
-            ],
-        )
+        self.assertEqual(metadata["dataset_sources"], ["hiuinhcng/eatfitai-dataset-v2-pipeline-code"])
         self.assertTrue(metadata["enable_internet"])
 
     def test_drive_secret_smoke_kernel_metadata_uses_pipeline_code_only(self):

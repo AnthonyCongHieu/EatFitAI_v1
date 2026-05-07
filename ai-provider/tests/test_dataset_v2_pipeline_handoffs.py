@@ -1,6 +1,7 @@
 import json
 import sys
 import tempfile
+import types
 import unittest
 import zipfile
 from pathlib import Path
@@ -18,6 +19,7 @@ from kaggle_raw_audit_kernel import find_raw_manifest  # noqa: E402
 from kaggle_clean_build_kernel import (  # noqa: E402
     cache_source_yolo_root,
     collect_cache_entries,
+    collect_cache_entries_from_dirs,
     find_input_dir,
     resolve_cache_source_path,
     source_policy_included_slugs,
@@ -174,7 +176,24 @@ class DatasetV2PipelineHandoffTests(unittest.TestCase):
             )
 
         self.assertEqual(strip_zip_suffixes("Food.v6i.yolov11.zip.zip"), "Food.v6i.yolov11")
+        self.assertEqual(strip_zip_suffixes("Food.v6i.yolov11.zip.cache"), "Food.v6i.yolov11")
         self.assertEqual(resolved, source_dir)
+
+    def test_clean_build_kernel_merges_cache_inputs_with_later_dirs_preferred(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            seed_cache = root / "seed_cache"
+            large_cache = root / "large_cache"
+            old_source = seed_cache / "food_data_truongvo"
+            new_source = large_cache / "food_data_truongvo"
+            old_source.mkdir(parents=True)
+            new_source.mkdir(parents=True)
+
+            cache_entries, duplicate_rows = collect_cache_entries_from_dirs([seed_cache, large_cache])
+            resolved = resolve_cache_source_path("food_data_truongvo", {}, cache_entries)
+
+        self.assertEqual(resolved, new_source)
+        self.assertTrue(any(row["cache_key"] == "food_data_truongvo" for row in duplicate_rows))
 
     def test_clean_build_kernel_policy_includes_private_vietfood_lane(self):
         rows = [
@@ -188,15 +207,24 @@ class DatasetV2PipelineHandoffTests(unittest.TestCase):
     def test_clean_build_kernel_finds_nested_kaggle_input_dataset_dirs(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
-            nested = root / "datasets" / "hiuinhcng" / "eatfitai-dataset-v2-raw-audit-cache"
+            nested = root / "datasets" / "hiuinhcng" / "eatfitai-dataset-v2-raw-audit-cache-v2"
             nested.mkdir(parents=True)
 
-            self.assertEqual(find_input_dir(root, "eatfitai-dataset-v2-raw-audit-cache"), nested)
+            self.assertEqual(find_input_dir(root, "eatfitai-dataset-v2-raw-audit-cache-v2"), nested)
+
+    def test_public_drive_kernel_finds_direct_nested_cache_input_without_rglob(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            nested = root / "datasets" / "hiuinhcng" / "eatfitai-dataset-v2-raw-audit-cache-v2"
+            nested.mkdir(parents=True)
+
+            with mock.patch.object(Path, "rglob", side_effect=AssertionError("rglob should not be needed")):
+                self.assertEqual(public_drive_kernel.find_input_dir(root, "eatfitai-dataset-v2-raw-audit-cache-v2"), nested)
 
     def test_raw_cache_upload_can_seed_existing_mounted_cache(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
-            existing = root / "datasets" / "hiuinhcng" / "eatfitai-dataset-v2-raw-audit-cache" / "existing_source"
+            existing = root / "datasets" / "hiuinhcng" / "eatfitai-dataset-v2-raw-audit-cache-v2" / "existing_source"
             existing.mkdir(parents=True)
             (existing / "marker.txt").write_text("ok\n", encoding="utf-8")
             cache_dir = root / "new_cache_package"
@@ -205,11 +233,139 @@ class DatasetV2PipelineHandoffTests(unittest.TestCase):
 
             self.assertEqual(result["seed_status"], "seeded_existing_cache")
             self.assertEqual(result["seeded_entries"], 1)
-            wrapper = cache_dir / "existing_source.zip"
+            wrapper = cache_dir / "existing_source.zip.cache"
             self.assertTrue(wrapper.exists())
             with zipfile.ZipFile(wrapper) as zf:
                 self.assertIn("existing_source/marker.txt", zf.namelist())
             self.assertTrue((cache_dir / "dataset-metadata.json").exists())
+
+    def test_raw_cache_upload_can_seed_existing_cache_from_remote_fallback(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            remote_cache = root / "downloaded_cache"
+            existing = remote_cache / "existing_source"
+            existing.mkdir(parents=True)
+            (existing / "marker.txt").write_text("ok\n", encoding="utf-8")
+            cache_dir = root / "new_cache_package"
+
+            result = seed_existing_raw_cache_dataset(
+                cache_dir,
+                input_root=root / "missing_mount",
+                remote_cache_getter=lambda: remote_cache,
+            )
+
+            self.assertEqual(result["seed_status"], "seeded_existing_cache_remote")
+            self.assertEqual(result["seeded_entries"], 1)
+            wrapper = cache_dir / "existing_source.zip.cache"
+            self.assertTrue(wrapper.exists())
+            with zipfile.ZipFile(wrapper) as zf:
+                self.assertIn("existing_source/marker.txt", zf.namelist())
+            self.assertTrue((cache_dir / "dataset-metadata.json").exists())
+
+    def test_raw_cache_upload_fails_when_dataset_version_does_not_advance(self):
+        class FakeApi:
+            def __init__(self):
+                self.create_calls = 0
+
+            def authenticate(self):
+                return None
+
+            def dataset_list(self, search: str, user: str):
+                return [
+                    types.SimpleNamespace(
+                        ref="hiuinhcng/eatfitai-dataset-v2-raw-audit-cache-v2",
+                        id=10333160,
+                        current_version_number=4,
+                        total_bytes=123,
+                        last_updated="2026-05-06T00:00:00Z",
+                    )
+                ]
+
+            def dataset_list_files(self, dataset_id: str, page_token=None, page_size: int = 1000):
+                return types.SimpleNamespace(files=[types.SimpleNamespace(name="old_source/file.txt")], next_page_token=None)
+
+            def dataset_status(self, dataset_id: str):
+                return "ready"
+
+            def dataset_create_version(self, *args, **kwargs):
+                self.create_calls += 1
+                return types.SimpleNamespace(status="ok")
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            cache_dir = root / "cache_package"
+            cache_dir.mkdir()
+            (cache_dir / "new_source.zip.cache").write_bytes(b"zip-bytes")
+            fake_api = FakeApi()
+
+            result = public_drive_kernel.upload_raw_cache_dataset(
+                cache_dir=cache_dir,
+                dataset_id="hiuinhcng/eatfitai-dataset-v2-raw-audit-cache-v2",
+                secret_getter=lambda _label: "token",
+                api_factory=lambda: fake_api,
+                remote_cache_getter=lambda: None,
+                verify_timeout_seconds=0,
+                verify_interval_seconds=0,
+                sleep_fn=lambda _seconds: None,
+            )
+
+        self.assertEqual(result["cache_status"], "cache_upload_failed")
+        self.assertIn("publish was not verified", result["error"])
+        self.assertEqual(fake_api.create_calls, 1)
+        self.assertEqual(result["pre_upload"]["current_version_number"], 4)
+        self.assertEqual(result["post_upload"]["current_version_number"], 4)
+
+    def test_raw_cache_upload_can_create_immutable_batch_without_seeding(self):
+        class FakeApi:
+            def __init__(self):
+                self.create_new_calls = 0
+
+            def authenticate(self):
+                return None
+
+            def dataset_list(self, search: str, user: str):
+                return [
+                    types.SimpleNamespace(
+                        ref="hiuinhcng/other-cache",
+                        id=1,
+                        current_version_number=1,
+                        total_bytes=1,
+                        last_updated="2026-05-06T00:00:00Z",
+                    )
+                ]
+
+            def dataset_list_files(self, dataset_id: str, page_token=None, page_size: int = 1000):
+                return types.SimpleNamespace(files=[types.SimpleNamespace(name="new_source/file.txt")], next_page_token=None)
+
+            def dataset_status(self, dataset_id: str):
+                return "ready"
+
+            def dataset_create_new(self, *args, **kwargs):
+                self.create_new_calls += 1
+                return types.SimpleNamespace(status="ok")
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            cache_dir = root / "cache_package"
+            cache_dir.mkdir()
+            (cache_dir / "new_source.zip.cache").write_bytes(b"zip-bytes")
+            fake_api = FakeApi()
+
+            result = public_drive_kernel.upload_raw_cache_dataset(
+                cache_dir=cache_dir,
+                dataset_id="hiuinhcng/new-immutable-cache",
+                secret_getter=lambda _label: "token",
+                api_factory=lambda: fake_api,
+                seed_existing=False,
+                verify_timeout_seconds=0,
+                verify_interval_seconds=0,
+                sleep_fn=lambda _seconds: None,
+            )
+
+        self.assertEqual(fake_api.create_new_calls, 1)
+        self.assertEqual(result["seed_status"], "seed_skipped")
+        self.assertEqual(result["cache_status"], "cache_upload_failed")
+        self.assertEqual(result["dataset_id"], "hiuinhcng/new-immutable-cache")
 
     def test_public_drive_cache_package_wraps_zip_by_source_slug(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -224,7 +380,7 @@ class DatasetV2PipelineHandoffTests(unittest.TestCase):
                     zip_path,
                 )
 
-            wrapper = cache_dir / "food_prethesis.zip"
+            wrapper = cache_dir / "food_prethesis.zip.cache"
             self.assertEqual(row["cache_path"], wrapper.name)
             self.assertTrue(wrapper.exists())
             self.assertFalse((cache_dir / zip_path.name).exists())
@@ -241,7 +397,7 @@ class DatasetV2PipelineHandoffTests(unittest.TestCase):
                 zf.writestr("Food.v6i.yolov11/data.yaml", "names:\n  0: pho\n")
                 zf.writestr("Food.v6i.yolov11/train/images/sample.jpg", b"image")
                 zf.writestr("Food.v6i.yolov11/train/labels/sample.txt", "0 0.5 0.5 0.5 0.5\n")
-            wrapper = cache_dir / "food_prethesis.zip"
+            wrapper = cache_dir / "food_prethesis.zip.cache"
             with zipfile.ZipFile(wrapper, "w") as zf:
                 zf.write(raw_zip, "food_prethesis/Food.v6i.yolov11.zip")
 

@@ -247,10 +247,18 @@ class DatasetV2SourceFileTests(unittest.TestCase):
         bad_fragments = ["\u00c3", "\u00c2", "\u00e1\u00bb", "\u00e1\u00ba"]
         self.assertFalse(any(fragment in serialized for fragment in bad_fragments))
 
-    def test_cache_repair_kernels_mount_existing_raw_cache(self):
-        for path in [PUBLIC_DRIVE_KERNEL_METADATA, LARGE_SOURCE_KERNEL_METADATA, CLEAN_BUILD_KERNEL_METADATA]:
+    def test_clean_build_kernel_mounts_existing_raw_cache_seed(self):
+        metadata = json.loads(CLEAN_BUILD_KERNEL_METADATA.read_text(encoding="utf-8"))
+        for dataset_id in [
+            "hiuinhcng/eatfitai-dataset-v2-raw-audit-cache-v2",
+            "hiuinhcng/eatfitai-dataset-v2-large-source-raw-cache-v2",
+            "hiuinhcng/eatfitai-dataset-v2-public-drive-raw-cache-v2",
+        ]:
+            self.assertIn(dataset_id, metadata["dataset_sources"])
+
+        for path in [PUBLIC_DRIVE_KERNEL_METADATA, LARGE_SOURCE_KERNEL_METADATA]:
             metadata = json.loads(path.read_text(encoding="utf-8"))
-            self.assertIn("hiuinhcng/eatfitai-dataset-v2-raw-audit-cache", metadata["dataset_sources"])
+            self.assertNotIn("hiuinhcng/eatfitai-dataset-v2-raw-audit-cache-v2", metadata["dataset_sources"])
 
         active_rows = read_csv(ROBOFLOW_ACTIVE_SCOPE)
         active_slugs = {row["source_slug"] for row in active_rows}

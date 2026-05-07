@@ -26,9 +26,11 @@ from kaggle_large_source_audit_kernel import (  # noqa: E402
     build_kaggle_direct_manifest_row,
     build_roboflow_export_endpoint,
     extract_roboflow_download_link,
+    find_code_dir_under,
     find_kaggle_dataset_source_dir,
     get_kaggle_secret,
     is_safe_cloud_path,
+    resolve_kaggle_secret_once,
     selected_source_scope_path,
     should_cache_large_source,
 )
@@ -93,7 +95,17 @@ class DatasetV2LargeSourceAuditTests(unittest.TestCase):
         self.assertTrue(all(row["cache_policy"] == "cache_after_audit" for row in rows))
 
         active_rows = read_csv(ROBOFLOW_ACTIVE)
-        self.assertEqual({row["source_slug"] for row in active_rows}, expected | {"food_data_truongvo"})
+        self.assertEqual(
+            {row["source_slug"] for row in active_rows},
+            expected
+            | {
+                "food_data_truongvo",
+                "detection_15_vietnamese_food_v2",
+                "khoa_food_jfsxy",
+                "vietnamese_food_nhh",
+                "food_ingredients_v1",
+            },
+        )
 
     def test_registry_has_food_data_truongvo_export_metadata(self):
         registry = load_yaml(REGISTRY)
@@ -136,6 +148,20 @@ class DatasetV2LargeSourceAuditTests(unittest.TestCase):
         self.assertEqual(secret, "secret-value")
         self.assertEqual(FakeSecretsClient.calls, 2)
 
+    def test_roboflow_secret_missing_is_checked_once_per_run(self):
+        calls = []
+
+        def missing_secret(label: str) -> None:
+            calls.append(label)
+            return None
+
+        secret, checked = resolve_kaggle_secret_once("ROBOFLOW_API_KEY", None, False, missing_secret)
+        secret, checked = resolve_kaggle_secret_once("ROBOFLOW_API_KEY", secret, checked, missing_secret)
+
+        self.assertIsNone(secret)
+        self.assertTrue(checked)
+        self.assertEqual(calls, ["ROBOFLOW_API_KEY"])
+
     def test_large_source_cache_policy_only_caches_roboflow_lane(self):
         self.assertTrue(should_cache_large_source({"source_slug": "food_data_truongvo", "cache_policy": "cache_after_audit"}))
         self.assertFalse(should_cache_large_source({"source_slug": "vietfood67", "cache_policy": "no_raw_cache"}))
@@ -168,6 +194,17 @@ class DatasetV2LargeSourceAuditTests(unittest.TestCase):
             (dataset / "data.yaml").write_text("names: ['pho']\n", encoding="utf-8")
 
             self.assertEqual(find_kaggle_dataset_source_dir(root, "vietfood68", "dataset"), dataset)
+
+    def test_large_kernel_finds_direct_pipeline_code_input_without_rglob(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            code_dir = root / "datasets" / "hiuinhcng" / "eatfitai-dataset-v2-pipeline-code"
+            code_dir.mkdir(parents=True)
+            (code_dir / "audit_sources.py").write_text("# audit\n", encoding="utf-8")
+            (code_dir / "raw_source_registry.yaml").write_text("roboflow_sources: {}\n", encoding="utf-8")
+
+            with mock.patch.object(Path, "rglob", side_effect=AssertionError("rglob should not be needed")):
+                self.assertEqual(find_code_dir_under(root), code_dir)
 
     def test_kaggle_direct_manifest_row_uses_extracted_path_and_no_raw_cache(self):
         row = build_kaggle_direct_manifest_row(
@@ -233,10 +270,10 @@ class DatasetV2LargeSourceAuditTests(unittest.TestCase):
                 cache_dir=cache_dir,
             )
 
-            self.assertEqual(row["cache_path"], "food_data_truongvo.zip")
-            self.assertTrue((cache_dir / "food_data_truongvo.zip").exists())
+            self.assertEqual(row["cache_path"], "food_data_truongvo.zip.cache")
+            self.assertTrue((cache_dir / "food_data_truongvo.zip.cache").exists())
             self.assertFalse((cache_dir / zip_path.name).exists())
-            with zipfile.ZipFile(cache_dir / "food_data_truongvo.zip") as zf:
+            with zipfile.ZipFile(cache_dir / "food_data_truongvo.zip.cache") as zf:
                 self.assertEqual(zf.namelist(), ["food_data_truongvo/food_data_truongvo.v1i.yolov11.zip"])
             self.assertTrue((cache_dir / "dataset-metadata.json").exists())
 

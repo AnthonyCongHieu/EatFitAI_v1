@@ -7,8 +7,10 @@ import os
 import shutil
 import subprocess
 import sys
+import time
 import urllib.request
 import zipfile
+from collections.abc import Callable
 from pathlib import Path
 from typing import Mapping
 
@@ -19,6 +21,7 @@ WORK_DIR = TEMP_ROOT / "work"
 REPORT_DIR = Path("/kaggle/working/_dataset_v2_reports")
 RAW_ZIP_DIR = TEMP_ROOT / "raw_zips"
 SOURCE_REPORT_ROOT = TEMP_ROOT / "source_reports"
+REMOTE_CACHE_DOWNLOAD_DIR = TEMP_ROOT / "existing_raw_cache_download"
 DOWNLOAD_MANIFEST = REPORT_DIR / "public_drive_download_manifest.csv"
 CACHE_MANIFEST = REPORT_DIR / "raw_audit_cache_manifest.csv"
 PUBLIC_DRIVE_SOURCES = "public_drive_raw_sources.csv"
@@ -31,9 +34,12 @@ RCLONE_ROOT = Path("/tmp/eatfitai_rclone")
 RCLONE_CONFIG_PATH = RCLONE_ROOT / "rclone.conf"
 RCLONE_BIN_DIR = RCLONE_ROOT / "bin"
 RCLONE_DOWNLOAD_URL = "https://downloads.rclone.org/rclone-current-linux-amd64.zip"
-RAW_CACHE_DATASET_ID = "hiuinhcng/eatfitai-dataset-v2-raw-audit-cache"
+RAW_CACHE_DATASET_ID = "hiuinhcng/eatfitai-dataset-v2-public-drive-raw-cache-v2"
 RAW_CACHE_PACKAGE_DIR = TEMP_ROOT / "raw_audit_cache_dataset"
-RAW_CACHE_INPUT_SLUG = "eatfitai-dataset-v2-raw-audit-cache"
+RAW_CACHE_INPUT_SLUG = "eatfitai-dataset-v2-raw-audit-cache-v2"
+RAW_CACHE_UPLOAD_VERIFY_TIMEOUT_SECONDS = 900
+RAW_CACHE_UPLOAD_VERIFY_INTERVAL_SECONDS = 30
+CACHE_WRAPPER_SUFFIX = ".zip.cache"
 
 
 class KaggleSecretUnavailable(RuntimeError):
@@ -257,8 +263,21 @@ def link_or_copy(source: Path, destination: Path) -> None:
         shutil.copy2(source, destination)
 
 
+def strip_cache_archive_suffixes(name: str) -> str:
+    lowered = name.lower()
+    for suffix in (CACHE_WRAPPER_SUFFIX, ".cache"):
+        if lowered.endswith(suffix):
+            name = name[: -len(suffix)]
+            lowered = name.lower()
+            break
+    while lowered.endswith(".zip"):
+        name = name[:-4]
+        lowered = name.lower()
+    return name
+
+
 def safe_cache_source_name(value: str) -> str:
-    raw = Path(value.strip() or "source").name
+    raw = strip_cache_archive_suffixes(Path(value.strip() or "source").name)
     while raw.lower().endswith(".zip"):
         raw = raw[:-4]
     safe = "".join(ch if ch.isalnum() or ch in "._-" else "_" for ch in raw)
@@ -266,7 +285,7 @@ def safe_cache_source_name(value: str) -> str:
 
 
 def cache_wrapper_path(cache_dir: Path, source_slug: str) -> Path:
-    return cache_dir / f"{safe_cache_source_name(source_slug)}.zip"
+    return cache_dir / f"{safe_cache_source_name(source_slug)}{CACHE_WRAPPER_SUFFIX}"
 
 
 def zip_entry_has_safe_prefix(zip_path: Path, prefix: str) -> bool:
@@ -296,7 +315,7 @@ def write_cache_wrapper_zip(source: Path, destination: Path, source_slug: str) -
 def add_cache_path_to_package(source_slug: str, source_path: Path, cache_dir: Path = RAW_CACHE_PACKAGE_DIR) -> Path:
     write_raw_cache_dataset_metadata(cache_dir)
     destination = cache_wrapper_path(cache_dir, source_slug)
-    if source_path.is_file() and source_path.suffix.lower() == ".zip" and zip_entry_has_safe_prefix(source_path, source_slug):
+    if source_path.is_file() and zipfile.is_zipfile(source_path) and zip_entry_has_safe_prefix(source_path, source_slug):
         if not destination.exists():
             link_or_copy(source_path, destination)
     else:
@@ -305,6 +324,18 @@ def add_cache_path_to_package(source_slug: str, source_path: Path, cache_dir: Pa
 
 
 def find_input_dir(root: Path, slug: str) -> Path | None:
+    if not root.exists():
+        return None
+    owner = RAW_CACHE_DATASET_ID.split("/", 1)[0]
+    direct_candidates = [
+        root / slug,
+        root / owner / slug,
+        root / "datasets" / slug,
+        root / "datasets" / owner / slug,
+    ]
+    for candidate in direct_candidates:
+        if candidate.is_dir():
+            return candidate
     for path in sorted(root.iterdir(), key=lambda item: item.name.lower()):
         if path.is_dir() and path.name == slug:
             return path
@@ -333,10 +364,17 @@ def seed_existing_raw_cache_dataset(
     cache_dir: Path,
     input_root: Path = KAGGLE_INPUT,
     input_slug: str = RAW_CACHE_INPUT_SLUG,
+    remote_cache_getter: Callable[[], Path | None] | None = None,
 ) -> dict[str, object]:
     existing_cache = find_input_dir(input_root, input_slug)
+    seed_status = "seeded_existing_cache"
     if existing_cache is None:
-        return {"seed_status": "existing_cache_not_mounted", "seeded_entries": 0}
+        if remote_cache_getter is None:
+            return {"seed_status": "existing_cache_not_mounted", "seeded_entries": 0}
+        existing_cache = remote_cache_getter()
+        if existing_cache is None or not existing_cache.exists():
+            return {"seed_status": "existing_cache_unavailable", "seeded_entries": 0}
+        seed_status = "seeded_existing_cache_remote"
     cache_dir.mkdir(parents=True, exist_ok=True)
     seeded = 0
     for entry in sorted(existing_cache.iterdir(), key=lambda item: item.name.lower()):
@@ -345,7 +383,26 @@ def seed_existing_raw_cache_dataset(
         add_cache_path_to_package(safe_cache_source_name(entry.name), entry, cache_dir)
         seeded += 1
     write_raw_cache_dataset_metadata(cache_dir)
-    return {"seed_status": "seeded_existing_cache", "seeded_entries": seeded, "existing_cache_path": existing_cache.as_posix()}
+    return {"seed_status": seed_status, "seeded_entries": seeded, "existing_cache_path": existing_cache.as_posix()}
+
+
+def download_existing_raw_cache_dataset(
+    dataset_id: str = RAW_CACHE_DATASET_ID,
+    out_dir: Path = REMOTE_CACHE_DOWNLOAD_DIR,
+) -> Path | None:
+    try:
+        if out_dir.exists():
+            shutil.rmtree(out_dir, ignore_errors=True)
+        out_dir.mkdir(parents=True, exist_ok=True)
+
+        from kaggle.api.kaggle_api_extended import KaggleApi  # type: ignore
+
+        api = KaggleApi()
+        api.authenticate()
+        api.dataset_download_files(dataset_id, path=str(out_dir), force=True, quiet=True, unzip=True)
+    except Exception:
+        return None
+    return out_dir if any(path.name != "dataset-metadata.json" for path in out_dir.iterdir()) else None
 
 
 def add_raw_zip_to_cache_package(source: Mapping[str, str], zip_path: Path) -> dict[str, object]:
@@ -369,13 +426,149 @@ def dataset_exists(api: object, dataset_id: str) -> bool:
     return False
 
 
+def json_safe_value(value: object) -> object:
+    if value is None or isinstance(value, (str, int, float, bool)):
+        return value
+    if hasattr(value, "isoformat"):
+        try:
+            iso_value = value.isoformat()  # type: ignore[attr-defined]
+            if isinstance(iso_value, str):
+                return iso_value
+        except Exception:
+            pass
+    return str(value)
+
+
+def cache_package_summary(cache_dir: Path) -> dict[str, object]:
+    zip_paths = sorted(path for path in cache_dir.rglob("*") if path.is_file() and path.name != "dataset-metadata.json")
+    return {
+        "zip_count": len(zip_paths),
+        "total_zip_bytes": sum(path.stat().st_size for path in zip_paths),
+        "zip_names_sample": [path.name for path in zip_paths[:30]],
+    }
+
+
+def api_response_summary(response: object) -> dict[str, object]:
+    summary: dict[str, object] = {}
+    for attr in ("status", "url", "error", "error_message", "message", "version_number"):
+        value = getattr(response, attr, None)
+        if value.__class__.__module__.startswith("unittest.mock"):
+            continue
+        if value not in (None, ""):
+            summary[attr] = json_safe_value(value)
+    if not summary:
+        summary["repr"] = str(response)[:500]
+    return summary
+
+
+def dataset_fingerprint(api: object, dataset_id: str) -> dict[str, object]:
+    owner, slug = dataset_id.split("/", 1)
+    fingerprint: dict[str, object] = {"dataset_id": dataset_id, "exists": False}
+    try:
+        for item in api.dataset_list(search=slug, user=owner) or []:
+            if getattr(item, "ref", "") != dataset_id:
+                continue
+            fingerprint.update(
+                {
+                    "exists": True,
+                    "id": json_safe_value(getattr(item, "id", None)),
+                    "current_version_number": json_safe_value(getattr(item, "current_version_number", None)),
+                    "total_bytes": json_safe_value(getattr(item, "total_bytes", None)),
+                    "last_updated": json_safe_value(getattr(item, "last_updated", None)),
+                }
+            )
+            break
+    except Exception as exc:
+        fingerprint["metadata_error"] = sanitize_error_message(exc)
+    try:
+        page = api.dataset_list_files(dataset_id, page_size=1000)
+        files = list(getattr(page, "files", []) or [])
+        roots = sorted({str(getattr(file_info, "name", "")).split("/", 1)[0] for file_info in files if getattr(file_info, "name", "")})
+        fingerprint["file_count_sample"] = len(files)
+        fingerprint["file_roots_sample"] = roots[:50]
+        fingerprint["has_more_files"] = bool(getattr(page, "next_page_token", None))
+    except Exception as exc:
+        fingerprint["files_error"] = sanitize_error_message(exc)
+    return fingerprint
+
+
+def int_or_none(value: object) -> int | None:
+    try:
+        if value is None or value == "":
+            return None
+        return int(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def dataset_publish_changed(before: Mapping[str, object], after: Mapping[str, object]) -> bool:
+    if not before.get("exists"):
+        return bool(after.get("exists"))
+    before_version = int_or_none(before.get("current_version_number"))
+    after_version = int_or_none(after.get("current_version_number"))
+    if before_version is not None and after_version is not None:
+        return after_version > before_version
+    if before.get("last_updated") and after.get("last_updated") and before.get("last_updated") != after.get("last_updated"):
+        return True
+    if before.get("total_bytes") is not None and after.get("total_bytes") is not None:
+        return before.get("total_bytes") != after.get("total_bytes")
+    return False
+
+
+def safe_dataset_status(api: object, dataset_id: str) -> str:
+    try:
+        return str(api.dataset_status(dataset_id))
+    except Exception as exc:
+        return f"status_unavailable: {sanitize_error_message(exc)}"
+
+
+def wait_for_dataset_publish(
+    api: object,
+    dataset_id: str,
+    before: Mapping[str, object],
+    timeout_seconds: int = RAW_CACHE_UPLOAD_VERIFY_TIMEOUT_SECONDS,
+    interval_seconds: int = RAW_CACHE_UPLOAD_VERIFY_INTERVAL_SECONDS,
+    sleep_fn: Callable[[float], None] = time.sleep,
+) -> dict[str, object]:
+    deadline = time.monotonic() + max(0, timeout_seconds)
+    while True:
+        after = dataset_fingerprint(api, dataset_id)
+        after["dataset_status"] = safe_dataset_status(api, dataset_id)
+        if dataset_publish_changed(before, after):
+            after["publish_verified"] = True
+            return after
+        if time.monotonic() >= deadline:
+            after["publish_verified"] = False
+            return after
+        sleep_fn(max(1, interval_seconds))
+
+
 def upload_raw_cache_dataset(
     cache_dir: Path = RAW_CACHE_PACKAGE_DIR,
     dataset_id: str = RAW_CACHE_DATASET_ID,
     secret_getter=get_kaggle_secret,
+    api_factory: Callable[[], object] | None = None,
+    remote_cache_getter: Callable[[], Path | None] | None = None,
+    seed_existing: bool = True,
+    allow_existing_dataset_version: bool = True,
+    verify_timeout_seconds: int = RAW_CACHE_UPLOAD_VERIFY_TIMEOUT_SECONDS,
+    verify_interval_seconds: int = RAW_CACHE_UPLOAD_VERIFY_INTERVAL_SECONDS,
+    sleep_fn: Callable[[float], None] = time.sleep,
 ) -> dict[str, object]:
-    if not cache_dir.exists() or not any(path.is_file() and path.suffix.lower() == ".zip" for path in cache_dir.rglob("*")):
-        return {"cache_status": "no_cache_candidates"}
+    cache_files = (
+        sorted(path for path in cache_dir.rglob("*") if path.is_file() and path.name != "dataset-metadata.json")
+        if cache_dir.exists()
+        else []
+    )
+    if not cache_files:
+        all_files = sorted(path for path in cache_dir.rglob("*") if path.is_file()) if cache_dir.exists() else []
+        return {
+            "cache_status": "no_cache_candidates",
+            "cache_dir": cache_dir.as_posix(),
+            "cache_dir_exists": cache_dir.exists(),
+            "cache_file_count": 0,
+            "cache_dir_files_sample": [path.name for path in all_files[:30]],
+        }
 
     try:
         token = secret_getter(KAGGLE_TOKEN_SECRET_LABEL)
@@ -385,33 +578,118 @@ def upload_raw_cache_dataset(
         return {"cache_status": "cache_upload_failed", "error": "missing KAGGLE_API_TOKEN secret"}
     os.environ["KAGGLE_API_TOKEN"] = token
 
+    api: object | None = None
+    package_summary: dict[str, object] = {}
+    before_upload: dict[str, object] = {}
+    seed_result: dict[str, object] = {}
     try:
-        seed_result = seed_existing_raw_cache_dataset(cache_dir)
+        if seed_existing:
+            if remote_cache_getter is None:
+                remote_cache_getter = lambda: download_existing_raw_cache_dataset(dataset_id)
+            seed_result = seed_existing_raw_cache_dataset(
+                cache_dir,
+                remote_cache_getter=remote_cache_getter,
+            )
+        else:
+            seed_result = {"seed_status": "seed_skipped", "seeded_entries": 0}
         write_raw_cache_dataset_metadata(cache_dir, dataset_id=dataset_id)
 
-        from kaggle.api.kaggle_api_extended import KaggleApi  # type: ignore
+        if api_factory is None:
+            from kaggle.api.kaggle_api_extended import KaggleApi  # type: ignore
 
-        api = KaggleApi()
+            api_factory = KaggleApi
+
+        api = api_factory()
         api.authenticate()
-        if dataset_exists(api, dataset_id):
-            api.dataset_create_version(
+        package_summary = cache_package_summary(cache_dir)
+        before_upload = dataset_fingerprint(api, dataset_id)
+        dataset_already_exists = bool(before_upload.get("exists"))
+        print("Raw cache upload package:", json.dumps(package_summary, ensure_ascii=False), flush=True)
+        print("Raw cache dataset before upload:", json.dumps(before_upload, ensure_ascii=False), flush=True)
+        if dataset_already_exists:
+            if not allow_existing_dataset_version:
+                return {
+                    "cache_status": "cache_upload_failed",
+                    "error": "cache dataset already exists; choose a new immutable cache dataset id",
+                    "dataset_id": dataset_id,
+                    "package_summary": package_summary,
+                    "pre_upload": before_upload,
+                    **seed_result,
+                }
+            response = api.dataset_create_version(
                 str(cache_dir),
                 version_notes="Cache authenticated Drive raw zips after successful source audit",
-                quiet=True,
+                quiet=False,
                 convert_to_csv=False,
                 dir_mode="skip",
             )
         else:
-            api.dataset_create_new(
+            response = api.dataset_create_new(
                 str(cache_dir),
                 public=False,
-                quiet=True,
+                quiet=False,
                 convert_to_csv=False,
                 dir_mode="skip",
             )
+        response_summary = api_response_summary(response)
+        if response_summary:
+            print("Raw cache upload response:", json.dumps(response_summary, ensure_ascii=False), flush=True)
+        post_upload = wait_for_dataset_publish(
+            api,
+            dataset_id,
+            before_upload,
+            timeout_seconds=verify_timeout_seconds,
+            interval_seconds=verify_interval_seconds,
+            sleep_fn=sleep_fn,
+        )
+        print("Raw cache dataset after upload:", json.dumps(post_upload, ensure_ascii=False), flush=True)
     except Exception as exc:
-        return {"cache_status": "cache_upload_failed", "error": sanitize_error_message(exc)}
-    return {"cache_status": "cached_to_kaggle_dataset", "dataset_id": dataset_id, **seed_result}
+        upload_error = sanitize_error_message(exc)
+        expected_file_count = int_or_none(package_summary.get("zip_count"))
+        if api is not None and expected_file_count:
+            try:
+                post_upload = wait_for_dataset_publish(
+                    api,
+                    dataset_id,
+                    before_upload,
+                    timeout_seconds=min(verify_timeout_seconds, 180),
+                    interval_seconds=verify_interval_seconds,
+                    sleep_fn=sleep_fn,
+                )
+                print("Raw cache dataset after upload exception:", json.dumps(post_upload, ensure_ascii=False), flush=True)
+                published_file_count = int_or_none(post_upload.get("file_count_sample"))
+                if post_upload.get("exists") and published_file_count is not None and published_file_count >= expected_file_count:
+                    post_upload["publish_verified"] = True
+                    return {
+                        "cache_status": "cached_to_kaggle_dataset",
+                        "dataset_id": dataset_id,
+                        "package_summary": package_summary,
+                        "pre_upload": before_upload,
+                        "post_upload": post_upload,
+                        "upload_warning": upload_error,
+                        **seed_result,
+                    }
+            except Exception as verify_exc:
+                upload_error = f"{upload_error}; verify_after_exception={sanitize_error_message(verify_exc)}"
+        return {"cache_status": "cache_upload_failed", "error": upload_error}
+    if not post_upload.get("publish_verified"):
+        return {
+            "cache_status": "cache_upload_failed",
+            "error": "raw cache dataset publish was not verified after Kaggle upload",
+            "dataset_id": dataset_id,
+            "package_summary": package_summary,
+            "pre_upload": before_upload,
+            "post_upload": post_upload,
+            **seed_result,
+        }
+    return {
+        "cache_status": "cached_to_kaggle_dataset",
+        "dataset_id": dataset_id,
+        "package_summary": package_summary,
+        "pre_upload": before_upload,
+        "post_upload": post_upload,
+        **seed_result,
+    }
 
 
 def decision_text(row: Mapping[str, str]) -> str:
@@ -645,7 +923,11 @@ def main() -> int:
             cache_rows.append(add_raw_zip_to_cache_package(source, zip_path))
         cleanup_paths(zip_path, WORK_DIR / source["source_slug"], SOURCE_REPORT_ROOT / source["source_slug"])
 
-    cache_upload_result = upload_raw_cache_dataset() if cache_rows else {"cache_status": "no_cache_candidates"}
+    cache_upload_result = (
+        upload_raw_cache_dataset(seed_existing=False, allow_existing_dataset_version=False)
+        if cache_rows
+        else {"cache_status": "no_cache_candidates"}
+    )
     if cache_rows:
         for row in cache_rows:
             row["cache_status"] = cache_upload_result.get("cache_status", "")

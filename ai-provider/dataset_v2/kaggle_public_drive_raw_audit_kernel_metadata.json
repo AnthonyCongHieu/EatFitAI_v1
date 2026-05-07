@@ -8,8 +8,7 @@
   "enable_gpu": false,
   "enable_internet": true,
   "dataset_sources": [
-    "hiuinhcng/eatfitai-dataset-v2-pipeline-code",
-    "hiuinhcng/eatfitai-dataset-v2-raw-audit-cache"
+    "hiuinhcng/eatfitai-dataset-v2-pipeline-code"
   ],
   "competition_sources": [],
   "kernel_sources": []
