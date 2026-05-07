@@ -131,6 +131,48 @@ class DatasetV2PipelineHandoffTests(unittest.TestCase):
         self.assertEqual(len(labels), 1)
         self.assertTrue(label_text.startswith("0 "))
 
+    def test_clean_build_can_cap_output_images_by_source_weight(self):
+        from PIL import Image  # type: ignore
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            audit_rows = []
+            for source_slug, weight_cap, color_offset in (("large_source", "0.20", 0), ("small_source", "1.00", 80)):
+                source_dir = root / source_slug
+                image_dir = source_dir / "images" / "train"
+                label_dir = source_dir / "labels" / "train"
+                image_dir.mkdir(parents=True)
+                label_dir.mkdir(parents=True)
+                (source_dir / "data.yaml").write_text(
+                    "path: .\ntrain: train/images\nval: train/images\ntest: train/images\nnames:\n  0: apple\n",
+                    encoding="utf-8",
+                )
+                for idx in range(5):
+                    image_path = image_dir / f"sample_{idx}.png"
+                    Image.new("RGB", (64, 64), color=(color_offset + idx, 20, 20)).save(image_path)
+                    (label_dir / f"sample_{idx}.txt").write_text("0 0.5 0.5 0.5 0.5\n", encoding="utf-8")
+                audit_rows.append(
+                    {
+                        "source_slug": source_slug,
+                        "decision": "ACCEPT_FILTERED",
+                        "extracted_path": source_dir.as_posix(),
+                        "source_weight_cap": weight_cap,
+                    }
+                )
+
+            out_dataset = root / "clean"
+            summary = clean_dataset(audit_rows, {"classes": ["apple"]}, out_dataset, root / "reports", max_images=5)
+            manifest_rows = [
+                json.loads(line)
+                for line in (out_dataset / "manifest.jsonl").read_text(encoding="utf-8").splitlines()
+                if line.strip()
+            ]
+
+        large_count = sum(1 for row in manifest_rows if row["source_slug"] == "large_source")
+        self.assertEqual(summary["images"], 5)
+        self.assertEqual(len(manifest_rows), 5)
+        self.assertLessEqual(large_count, 1)
+
     def test_source_policy_filters_default_and_noncommercial_lanes(self):
         audit_rows = [
             {"source_slug": "core", "decision": "ACCEPT_FILTERED"},

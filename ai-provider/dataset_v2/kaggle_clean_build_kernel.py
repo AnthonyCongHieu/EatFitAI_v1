@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import csv
 import json
+import os
 import shutil
 import subprocess
 import sys
@@ -17,6 +18,8 @@ REPORT_DIR = Path("/kaggle/working/_dataset_v2_clean_build_reports")
 CLEAN_DATASET_DIR = Path("/kaggle/working/eatfitai_dataset_v2_clean_candidate")
 CLEAN_DATASET_ZIP = Path("/kaggle/working/eatfitai_dataset_v2_clean_candidate.zip")
 REPORTS_ZIP = Path("/kaggle/working/eatfitai_dataset_v2_clean_build_reports.zip")
+CLEAN_MAX_IMAGES = int(os.environ.get("EATFITAI_CLEAN_MAX_IMAGES", "25000"))
+CLEAN_MIN_FREE_GB_AFTER_BUILD = float(os.environ.get("EATFITAI_CLEAN_MIN_FREE_GB_AFTER_BUILD", "4"))
 
 CLEAN_SOURCE_POLICY = "clean_candidate_sources_2026-05-06.csv"
 CLEAN_TAXONOMY = "class_taxonomy.clean_candidate_2026-05-06.yaml"
@@ -454,7 +457,16 @@ def main() -> int:
     selected_audit_rows = filter_audit_rows_by_policy(audit_rows, policy)
     print(f"Clean build selected audit rows: {len(selected_audit_rows)}", flush=True)
     taxonomy = load_yaml(taxonomy_path)
-    summary = clean_dataset(selected_audit_rows, taxonomy, CLEAN_DATASET_DIR, REPORT_DIR)
+    print(f"Clean build max output images: {CLEAN_MAX_IMAGES}", flush=True)
+    print(f"Clean build min free GB after build: {CLEAN_MIN_FREE_GB_AFTER_BUILD}", flush=True)
+    summary = clean_dataset(
+        selected_audit_rows,
+        taxonomy,
+        CLEAN_DATASET_DIR,
+        REPORT_DIR,
+        max_images=CLEAN_MAX_IMAGES,
+        min_free_bytes_after_build=int(CLEAN_MIN_FREE_GB_AFTER_BUILD * 1024 * 1024 * 1024),
+    )
     validation_summary = validate(CLEAN_DATASET_DIR)
     write_json(REPORT_DIR / "clean_build_summary.json", {"build": summary, "validation": validation_summary})
     run(["zip", "-qr", CLEAN_DATASET_ZIP.as_posix(), str(CLEAN_DATASET_DIR)])

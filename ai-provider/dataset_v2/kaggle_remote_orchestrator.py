@@ -65,9 +65,9 @@ def prepare_kernel_folder(source_dir: Path, out_dir: Path, kernel_metadata: Path
         shutil.copy2(seed, out_dir / seed.name)
 
 
-def push_kernel(folder: Path) -> str:
+def push_kernel(folder: Path, timeout: str | None = None, accelerator: str | None = None) -> str:
     api = get_api()
-    response = api.kernels_push(str(folder))
+    response = api.kernels_push(str(folder), timeout=timeout, acc=accelerator)
     print(response)
     metadata = json.loads((folder / "kernel-metadata.json").read_text(encoding="utf-8"))
     return metadata["id"]
@@ -138,6 +138,8 @@ def main() -> int:
 
     push = sub.add_parser("push-kernel")
     push.add_argument("--folder", type=Path, required=True)
+    push.add_argument("--timeout", default=None)
+    push.add_argument("--accelerator", default=None)
 
     wait = sub.add_parser("wait-kernel")
     wait.add_argument("--kernel-id", required=True)
@@ -160,7 +162,7 @@ def main() -> int:
         prepare_kernel_folder(args.source_dir, args.out_dir, args.kernel_metadata, args.extra_files)
         print(json.dumps({"folder": str(args.out_dir), "prepared": True}, ensure_ascii=False, indent=2))
     elif args.cmd == "push-kernel":
-        print(push_kernel(args.folder))
+        print(push_kernel(args.folder, timeout=args.timeout, accelerator=args.accelerator))
     elif args.cmd == "wait-kernel":
         print(wait_kernel(args.kernel_id, args.poll_seconds, args.timeout_seconds))
     elif args.cmd == "output":

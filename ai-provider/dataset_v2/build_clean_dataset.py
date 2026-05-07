@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import csv
 import json
+import math
 import random
 import shutil
 from collections import Counter
@@ -28,6 +29,7 @@ from audit_sources import safe_extract_zip, source_zip_reference
 ACTIVE_DECISIONS = {"ACCEPT_FULL", "ACCEPT_FILTERED", "CHERRY_PICK"}
 TRUTHY = {"1", "true", "yes", "y"}
 NONCOMMERCIAL_LANES = {"noncommercial_only", "license_risk_noncommercial"}
+DEFAULT_MIN_FREE_BYTES_AFTER_BUILD = 2 * 1024 * 1024 * 1024
 
 
 def load_source_policy(policy_path: Path) -> dict[str, dict[str, str]]:
@@ -127,6 +129,65 @@ def split_for_hash(image_hash: str) -> str:
     return "test"
 
 
+def parse_source_weight_cap(value: Any) -> float | None:
+    try:
+        cap = float(str(value or "").strip())
+    except (TypeError, ValueError):
+        return None
+    if cap < 0:
+        return 0.0
+    if cap > 1:
+        return 1.0
+    return cap
+
+
+def cap_records_by_source(records: list[dict[str, Any]], max_images: int | None) -> list[dict[str, Any]]:
+    if max_images is None or max_images <= 0 or len(records) <= max_images:
+        return records
+
+    selected: list[dict[str, Any]] = []
+    source_counts: Counter[str] = Counter()
+    source_limits: dict[str, int] = {}
+    for record in records:
+        source_slug = str(record.get("source_slug") or "")
+        if source_slug in source_limits:
+            continue
+        cap = parse_source_weight_cap(record.get("source_weight_cap"))
+        if cap is not None:
+            source_limits[source_slug] = math.ceil(max_images * cap)
+
+    for record in records:
+        source_slug = str(record.get("source_slug") or "")
+        limit = source_limits.get(source_slug)
+        if limit is not None and source_counts[source_slug] >= limit:
+            continue
+        selected.append(record)
+        source_counts[source_slug] += 1
+        if len(selected) >= max_images:
+            break
+    return selected
+
+
+def require_output_disk_space(out_dataset: Path, records: list[dict[str, Any]], min_free_bytes_after_build: int) -> None:
+    if not records:
+        return
+    out_dataset.parent.mkdir(parents=True, exist_ok=True)
+    usage = shutil.disk_usage(out_dataset.parent)
+    estimated_image_bytes = sum(Path(record["image_path"]).stat().st_size for record in records)
+    estimated_label_bytes = sum(max(64, len(record["rows"]) * 64) for record in records)
+    estimated_manifest_bytes = max(4096, len(records) * 256)
+    estimated_total_bytes = estimated_image_bytes + estimated_label_bytes + estimated_manifest_bytes
+    required_free_bytes = estimated_total_bytes + min_free_bytes_after_build
+    if usage.free < required_free_bytes:
+        raise RuntimeError(
+            "clean_output_disk_preflight_failed:"
+            f" free_bytes={usage.free}"
+            f" estimated_output_bytes={estimated_total_bytes}"
+            f" min_free_bytes_after_build={min_free_bytes_after_build}"
+            f" selected_images={len(records)}"
+        )
+
+
 def ensure_extracted_sources(audit_rows: list[dict[str, Any]], raw_dir: Path | None, work_dir: Path) -> None:
     if raw_dir is None:
         return
@@ -149,7 +210,15 @@ def ensure_extracted_sources(audit_rows: list[dict[str, Any]], raw_dir: Path | N
         source["extracted_path"] = str(extracted_path)
 
 
-def clean_dataset(audit_rows: list[dict[str, Any]], taxonomy: dict[str, Any], out_dataset: Path, out_reports: Path) -> dict[str, Any]:
+def clean_dataset(
+    audit_rows: list[dict[str, Any]],
+    taxonomy: dict[str, Any],
+    out_dataset: Path,
+    out_reports: Path,
+    max_images: int | None = None,
+    min_free_bytes_after_build: int = DEFAULT_MIN_FREE_BYTES_AFTER_BUILD,
+    progress_interval: int = 1000,
+) -> dict[str, Any]:
     classes = taxonomy_classes(taxonomy)
     class_to_id = {name: idx for idx, name in enumerate(classes)}
     aliases = alias_map(taxonomy, classes)
@@ -164,15 +233,20 @@ def clean_dataset(audit_rows: list[dict[str, Any]], taxonomy: dict[str, Any], ou
         if source.get("decision") not in ACTIVE_DECISIONS:
             continue
         source_slug = source["source_slug"]
+        source_weight_cap = source.get("source_weight_cap")
+        source_seen_images = 0
+        source_retained_images = 0
         root = Path(source.get("extracted_path", ""))
         if not root.exists():
             issue_rows.append({"source_slug": source_slug, "issue": "extracted_path_missing", "path": str(root)})
             continue
+        print(f"Clean build scanning source {source_slug}: {root}", flush=True)
         names, _warnings = parse_data_yaml_names(find_data_yaml(root))
         if not names:
             names = parse_audit_class_names(source)
         for image_dir, label_dir in find_split_dirs(root).values():
             for image_path in list_images(image_dir):
+                source_seen_images += 1
                 ok, _size = image_opens(image_path)
                 if not ok:
                     issue_rows.append({"source_slug": source_slug, "image_path": str(image_path), "issue": "image_open_failed"})
@@ -210,16 +284,37 @@ def clean_dataset(audit_rows: list[dict[str, Any]], taxonomy: dict[str, Any], ou
                     duplicate_rows.append({"source_slug": source_slug, "image_path": str(image_path), "issue": "duplicate_image_hash"})
                     continue
                 seen_hashes.add(image_hash)
-                records.append({"source_slug": source_slug, "image_path": image_path, "rows": clean_rows, "image_hash": image_hash})
+                source_retained_images += 1
+                records.append(
+                    {
+                        "source_slug": source_slug,
+                        "source_weight_cap": source_weight_cap,
+                        "image_path": image_path,
+                        "rows": clean_rows,
+                        "image_hash": image_hash,
+                    }
+                )
+        print(
+            f"Clean build source scanned {source_slug}: seen_images={source_seen_images} retained_candidates={source_retained_images}",
+            flush=True,
+        )
 
     random.Random(20260504).shuffle(records)
+    uncapped_image_count = len(records)
+    records = cap_records_by_source(records, max_images)
+    print(
+        f"Clean build output selection: uncapped_images={uncapped_image_count} selected_images={len(records)} max_images={max_images or ''}",
+        flush=True,
+    )
+    require_output_disk_space(out_dataset, records, min_free_bytes_after_build)
     for split in ("train", "valid", "test"):
         (out_dataset / split / "images").mkdir(parents=True, exist_ok=True)
         (out_dataset / split / "labels").mkdir(parents=True, exist_ok=True)
 
     manifest_path = out_dataset / "manifest.jsonl"
+    output_counter: Counter[str] = Counter()
     with manifest_path.open("w", encoding="utf-8") as manifest:
-        for record in records:
+        for index, record in enumerate(records, start=1):
             split = split_for_hash(record["image_hash"])
             src: Path = record["image_path"]
             dst_stem = f"{record['source_slug']}_{record['image_hash'][:16]}"
@@ -228,6 +323,8 @@ def clean_dataset(audit_rows: list[dict[str, Any]], taxonomy: dict[str, Any], ou
             shutil.copy2(src, dst_img)
             label_lines = [f"{class_id} {' '.join(f'{value:.6f}' for value in bbox)}" for class_id, bbox in record["rows"]]
             dst_label.write_text("\n".join(label_lines) + "\n", encoding="utf-8")
+            for class_id, _bbox in record["rows"]:
+                output_counter[classes[class_id]] += 1
             manifest.write(
                 json.dumps(
                     {
@@ -242,6 +339,9 @@ def clean_dataset(audit_rows: list[dict[str, Any]], taxonomy: dict[str, Any], ou
                 )
                 + "\n"
             )
+            if progress_interval > 0 and index % progress_interval == 0:
+                print(f"Clean build copied output images: {index}/{len(records)}", flush=True)
+    print(f"Clean build copied output images: {len(records)}/{len(records)}", flush=True)
 
     dump_yaml(
         out_dataset / "data.yaml",
@@ -254,10 +354,16 @@ def clean_dataset(audit_rows: list[dict[str, Any]], taxonomy: dict[str, Any], ou
         },
     )
     write_csv(out_reports / "class_distribution_before_filter.csv", [{"class_name": k, "instances": v} for k, v in sorted(before_counter.items())])
-    write_csv(out_reports / "class_distribution_after_filter.csv", [{"class_name": k, "instances": v} for k, v in sorted(after_counter.items())])
+    write_csv(out_reports / "class_distribution_after_filter.csv", [{"class_name": k, "instances": v} for k, v in sorted(output_counter.items())])
     write_csv(out_reports / "duplicate_report.csv", duplicate_rows)
     write_csv(out_reports / "label_issues.csv", issue_rows)
-    return {"images": len(records), "classes": len(classes), "retained_instances": sum(after_counter.values())}
+    return {
+        "images": len(records),
+        "classes": len(classes),
+        "retained_instances": sum(output_counter.values()),
+        "uncapped_images": uncapped_image_count,
+        "max_images": max_images or "",
+    }
 
 
 def main() -> int:
@@ -274,6 +380,13 @@ def main() -> int:
     parser.add_argument("--work-dir", type=Path, default=Path("_dataset_v2_work"))
     parser.add_argument("--out-dataset", type=Path, default=Path("_dataset_v2_work/clean_dataset"))
     parser.add_argument("--out-reports", type=Path, default=Path("_dataset_v2_reports"))
+    parser.add_argument("--max-images", type=int, default=None, help="Optional deterministic cap for clean output images.")
+    parser.add_argument(
+        "--min-free-gb-after-build",
+        type=float,
+        default=2.0,
+        help="Fail before output copy unless this much free disk remains after the estimated clean output.",
+    )
     args = parser.parse_args()
 
     audit_rows = json.loads(args.audit_json.read_text(encoding="utf-8"))
@@ -288,7 +401,14 @@ def main() -> int:
             raise RuntimeError("Source policy removed every audit row; refusing to build an empty clean dataset.")
     ensure_extracted_sources(audit_rows, args.raw_dir.resolve() if args.raw_dir else None, args.work_dir)
     taxonomy = load_yaml(args.taxonomy)
-    summary = clean_dataset(audit_rows, taxonomy, args.out_dataset, args.out_reports)
+    summary = clean_dataset(
+        audit_rows,
+        taxonomy,
+        args.out_dataset,
+        args.out_reports,
+        max_images=args.max_images,
+        min_free_bytes_after_build=int(args.min_free_gb_after_build * 1024 * 1024 * 1024),
+    )
     print(json.dumps(summary, ensure_ascii=False, indent=2))
     return 0
 

@@ -9,7 +9,8 @@ DATASET_V2_DIR = Path(__file__).resolve().parents[1] / "dataset_v2"
 if str(DATASET_V2_DIR) not in sys.path:
     sys.path.insert(0, str(DATASET_V2_DIR))
 
-from kaggle_remote_orchestrator import download_kernel_output  # noqa: E402
+import kaggle_remote_orchestrator  # noqa: E402
+from kaggle_remote_orchestrator import download_kernel_output, push_kernel  # noqa: E402
 
 
 class FakeKaggleApi:
@@ -27,6 +28,15 @@ class LogWritingKaggleApi:
         with open(log_path, "w") as f:
             f.write("gia vị")
         return [str(log_path)], ""
+
+
+class FakePushKaggleApi:
+    def __init__(self):
+        self.calls = []
+
+    def kernels_push(self, folder, timeout=None, acc=None):
+        self.calls.append({"folder": folder, "timeout": timeout, "acc": acc})
+        return {"error": None}
 
 
 class KaggleRemoteOrchestratorTests(unittest.TestCase):
@@ -52,6 +62,17 @@ class KaggleRemoteOrchestratorTests(unittest.TestCase):
             log_text = (Path(tmp) / "owner-kernel.log").read_text(encoding="utf-8")
 
         self.assertEqual(log_text, "gia vị")
+
+
+    def test_push_kernel_can_request_specific_accelerator(self):
+        api = FakePushKaggleApi()
+        with tempfile.TemporaryDirectory() as tmp:
+            folder = Path(tmp)
+            (folder / "kernel-metadata.json").write_text('{"id": "owner/kernel"}\n', encoding="utf-8")
+            with unittest.mock.patch.object(kaggle_remote_orchestrator, "get_api", return_value=api):
+                self.assertEqual(push_kernel(folder, accelerator="NvidiaTeslaT4Highmem"), "owner/kernel")
+
+        self.assertEqual(api.calls[0]["acc"], "NvidiaTeslaT4Highmem")
 
 
 if __name__ == "__main__":
