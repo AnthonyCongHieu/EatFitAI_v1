@@ -13,7 +13,7 @@ import { AppChip } from './AppChip';
 import { AppStepper } from './AppStepper';
 import type { MappedFoodItem } from '../../types/ai';
 import type { MealTypeId } from '../../types';
-import { translateIngredient } from '../../utils/translate';
+import { getVisionFoodDisplayName } from '../../utils/translate';
 
 type AiDetectionCardProps = {
   item: MappedFoodItem;
@@ -73,6 +73,14 @@ const AiDetectionCardComponent = ({
         title: {
           flex: 1,
         },
+        trustBadge: {
+          alignSelf: 'flex-start',
+          marginTop: theme.spacing.xs,
+          paddingHorizontal: theme.spacing.sm,
+          paddingVertical: 3,
+          borderRadius: theme.radius.sm,
+          backgroundColor: theme.colors.glass.backgroundAlt,
+        },
         teachLabel: {
           textDecorationLine: 'underline',
         },
@@ -130,6 +138,8 @@ const AiDetectionCardComponent = ({
   const protein = item.proteinPer100g ?? 0;
   const carbs = item.carbPer100g ?? 0;
   const fat = item.fatPer100g ?? 0;
+  const displayName = getVisionFoodDisplayName(item);
+  const trustLabel = item.trustSummary?.label;
 
   return (
     <Animated.View style={animatedStyle}>
@@ -148,9 +158,16 @@ const AiDetectionCardComponent = ({
           </Pressable>
 
           <View style={styles.titleContainer}>
-            <ThemedText variant="h4" style={styles.title}>
-              {item.foodName || translateIngredient(item.label)}
-            </ThemedText>
+            <View style={styles.title}>
+              <ThemedText variant="h4">{displayName}</ThemedText>
+              {trustLabel ? (
+                <View style={styles.trustBadge}>
+                  <ThemedText variant="caption" color="textSecondary">
+                    {trustLabel}
+                  </ThemedText>
+                </View>
+              ) : null}
+            </View>
             {!item.isMatched && onTeachLabel && (
               <Pressable onPress={onTeachLabel}>
                 <ThemedText variant="bodySmall" color="primary" style={styles.teachLabel}>

@@ -13,7 +13,7 @@ import { useAppTheme } from '../../theme/ThemeProvider';
 import { ThemedText } from '../ThemedText';
 import Icon from '../Icon';
 import type { MappedFoodItem } from '../../types/ai';
-import { translateIngredient } from '../../utils/translate';
+import { getVisionFoodDisplayName } from '../../utils/translate';
 
 interface AIResultEditModalProps {
   visible: boolean;
@@ -65,7 +65,7 @@ export const AIResultEditModal: React.FC<AIResultEditModalProps> = ({
 
   if (!item) return null;
 
-  const displayName = item.foodName || translateIngredient(item.label);
+  const displayName = getVisionFoodDisplayName(item);
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>

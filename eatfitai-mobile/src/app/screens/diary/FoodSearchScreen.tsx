@@ -41,6 +41,7 @@ import { t } from '../../../i18n/vi';
 import { useUserPreferenceStore } from '../../../store/useUserPreferenceStore';
 import { filterFoodsByPreferences } from '../../../utils/foodPreferenceFilter';
 import { TEST_IDS } from '../../../testing/testIds';
+import type { MealTypeId } from '../../../types';
 
 const PAGE_SIZE = 20;
 const RECENT_SEARCHES_KEY = '@eatfit_recent_searches';
@@ -100,7 +101,7 @@ const FoodSearchScreen = (): React.ReactElement => {
   const selectedDate = route.params?.selectedDate;
   const returnToDiaryOnSave = route.params?.returnToDiaryOnSave ?? false;
   const initialQuery = route.params?.initialQuery;
-  const defaultMealType = route.params?.defaultMealType;
+  const defaultMealType = route.params?.defaultMealType as MealTypeId | undefined;
 
   const loadRecentSearches = async () => {
     try {

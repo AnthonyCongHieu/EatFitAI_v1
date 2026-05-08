@@ -1,4 +1,4 @@
-import { aiService } from '../src/services/aiService';
+import { aiService, normalizeMappedFoodItem } from '../src/services/aiService';
 import apiClient, {
   aiApiClient,
   fetchWithAuthRetry,
@@ -6,6 +6,7 @@ import apiClient, {
 } from '../src/services/apiClient';
 import { assertBackendApiBaseUrl } from '../src/config/env';
 import storageService from '../src/services/storageService';
+import { getVisionFoodDisplayName, translateIngredient } from '../src/utils/translate';
 
 jest.mock('../src/services/apiClient', () => ({
   __esModule: true,
@@ -100,12 +101,22 @@ describe('aiService', () => {
           {
             label: 'Rice',
             confidence: '0.9',
+            detectedLabelVi: 'Cơm trắng',
             foodItemId: '12',
             foodName: 'Rice bowl',
             caloriesPer100g: '130',
             proteinPer100g: '4',
             fatPer100g: '1',
             carbPer100g: '28',
+            missingNutrients: [],
+            nutrientCompletenessScore: '100',
+            trustSummary: {
+              status: 'trusted',
+              label: 'Đáng tin cậy',
+              score: '88',
+              needsReview: false,
+              missingNutrients: [],
+            },
             thumbNail: 'http://image.local/rice.jpg',
           },
         ],
@@ -134,15 +145,70 @@ describe('aiService', () => {
     expect(result.items[0]).toMatchObject({
       label: 'Rice',
       confidence: 0.9,
+      detectedLabelVi: 'Cơm trắng',
       foodItemId: 12,
       foodName: 'Rice bowl',
       caloriesPer100g: 130,
       proteinPer100g: 4,
       fatPer100g: 1,
       carbPer100g: 28,
+      missingNutrients: [],
+      nutrientCompletenessScore: 100,
+      trustSummary: expect.objectContaining({
+        status: 'trusted',
+        label: 'Đáng tin cậy',
+        score: 88,
+        needsReview: false,
+      }),
       isMatched: true,
     });
     expect(result.unmappedLabels).toEqual(['unknown']);
+  });
+
+  it('normalizes PascalCase vision trust fields from cached or alternate backend payloads', () => {
+    const item = normalizeMappedFoodItem({
+      Label: 'com_tam',
+      Confidence: '0.91',
+      DetectedLabelVi: 'Cơm tấm',
+      FoodItemId: '123',
+      FoodName: 'Cơm tấm',
+      CaloriesPer100g: '165',
+      ProteinPer100g: '7',
+      FatPer100g: '5',
+      CarbPer100g: '22',
+      MissingNutrients: [],
+      NutrientCompletenessScore: '100',
+      TrustSummary: {
+        Status: 'trusted_reference',
+        Label: 'Đã kiểm chứng',
+        Score: '80',
+        NeedsReview: false,
+        MissingNutrients: [],
+      },
+    });
+
+    expect(item).toMatchObject({
+      label: 'com_tam',
+      detectedLabelVi: 'Cơm tấm',
+      foodName: 'Cơm tấm',
+      caloriesPer100g: 165,
+      trustSummary: expect.objectContaining({
+        label: 'Đã kiểm chứng',
+        score: 80,
+        needsReview: false,
+      }),
+      isMatched: true,
+    });
+  });
+
+  it('falls back from YOLO slug to Vietnamese display name when backend fields are missing', () => {
+    const item = normalizeMappedFoodItem({
+      label: 'com_tam',
+      confidence: 0.91,
+    });
+
+    expect(translateIngredient('com_tam')).toBe('Cơm tấm');
+    expect(getVisionFoodDisplayName(item)).toBe('Cơm tấm');
   });
 
   it('detectFoodByImage maps network errors to the offline message', async () => {

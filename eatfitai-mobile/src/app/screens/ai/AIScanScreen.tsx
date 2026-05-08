@@ -56,7 +56,7 @@ import { foodService } from '../../../services/foodService';
 import { IngredientBasketFab } from '../../../components/scan/IngredientBasketFab';
 import { IngredientBasketSheet } from '../../../components/scan/IngredientBasketSheet';
 import { useIngredientBasketStore } from '../../../store/useIngredientBasketStore';
-import { translateIngredient } from '../../../utils/translate';
+import { getVisionFoodDisplayName } from '../../../utils/translate';
 import { TEST_IDS } from '../../../testing/testIds';
 import {
   clampVisionGrams,
@@ -541,7 +541,7 @@ const AIScanScreen: React.FC = () => {
       Toast.show({
         type: 'success',
         text1: 'Đã thêm vào nhật ký',
-        text2: `${topItem.foodName || translateIngredient(topItem.label)} - ${resultGrams}g (${actualCal} kcal)`,
+        text2: `${getVisionFoodDisplayName(topItem)} - ${resultGrams}g (${actualCal} kcal)`,
       });
       trackEvent('ai_scan_save_success', {
         flow: 'ai_scan',
@@ -577,7 +577,7 @@ const AIScanScreen: React.FC = () => {
 
   const handleAddToBasket = useCallback(
     (item: MappedFoodItem) => {
-      const displayName = item.foodName || translateIngredient(item.label);
+      const displayName = getVisionFoodDisplayName(item);
       addIngredient({
         name: displayName,
         confidence: item.confidence,
@@ -925,8 +925,15 @@ const AIScanScreen: React.FC = () => {
                 <View style={S.drawerTitleRow}>
                   <View style={{ flex: 1 }}>
                     <ThemedText style={S.drawerFoodName} numberOfLines={2}>
-                      {topItem.foodName || translateIngredient(topItem.label)}
+                      {getVisionFoodDisplayName(topItem)}
                     </ThemedText>
+                    {topItem.trustSummary?.label ? (
+                      <View style={S.trustBadge}>
+                        <ThemedText style={S.trustBadgeText}>
+                          {topItem.trustSummary.label}
+                        </ThemedText>
+                      </View>
+                    ) : null}
                     <View style={{ flexDirection: 'row', alignItems: 'baseline', marginTop: 4 }}>
                       <ThemedText style={S.drawerKcal}>
                         {computedCal} kcal
@@ -1634,8 +1641,22 @@ const S = StyleSheet.create({
     fontSize: 22,
     fontWeight: '800',
     color: P.onSurface,
-    letterSpacing: -0.5,
     lineHeight: 28,
+  },
+  trustBadge: {
+    alignSelf: 'flex-start',
+    marginTop: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
+    backgroundColor: P.surfaceContainerLow,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)',
+  },
+  trustBadgeText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: P.onSurfaceVariant,
   },
   drawerKcal: {
     fontSize: 20,

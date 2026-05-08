@@ -31,7 +31,7 @@ import {
   getSuggestedMealType,
 } from '../../../services/diaryFlowService';
 import { handleApiErrorWithCustomMessage } from '../../../utils/errorHandler';
-import { translateIngredient } from '../../../utils/translate';
+import { getVisionFoodDisplayName } from '../../../utils/translate';
 import {
   buildVisionReviewItems,
   calculateVisionReviewCalories,
@@ -105,11 +105,11 @@ const AddMealFromVisionScreen = (): React.ReactElement => {
       return '';
     }
 
-    return target.item.foodName || target.item.label || translateIngredient(target.item.label);
+    return getVisionFoodDisplayName(target.item);
   }, [detectionItems, replaceTargetIndex]);
 
   const getDisplayName = useCallback((item: MappedFoodItem) => {
-    return item.foodName || translateIngredient(item.label);
+    return getVisionFoodDisplayName(item);
   }, []);
 
   const updateDetectionItem = useCallback(

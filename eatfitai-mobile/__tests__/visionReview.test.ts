@@ -5,6 +5,7 @@ import {
   calculateVisionReviewCalories,
   clampVisionGrams,
   getVisionReviewSaveBlocker,
+  shouldAllowVisionQuickSave,
 } from '../src/utils/visionReview';
 
 const makeMappedFood = (
@@ -12,6 +13,7 @@ const makeMappedFood = (
 ): MappedFoodItem => ({
   label: overrides.label ?? 'Food',
   confidence: overrides.confidence ?? 0.9,
+  detectedLabelVi: overrides.detectedLabelVi ?? null,
   foodItemId: overrides.foodItemId ?? null,
   foodName: overrides.foodName ?? null,
   caloriesPer100g: overrides.caloriesPer100g ?? null,
@@ -19,6 +21,9 @@ const makeMappedFood = (
   fatPer100g: overrides.fatPer100g ?? null,
   carbPer100g: overrides.carbPer100g ?? null,
   thumbNail: overrides.thumbNail ?? null,
+  missingNutrients: overrides.missingNutrients ?? null,
+  nutrientCompletenessScore: overrides.nutrientCompletenessScore ?? null,
+  trustSummary: overrides.trustSummary ?? null,
   isMatched: overrides.isMatched ?? false,
 });
 
@@ -169,5 +174,59 @@ describe('visionReview', () => {
 
     expect(basket.mainItems).toHaveLength(3);
     expect(basket.needsReviewItems.map((entry) => entry.item.label)).toContain('Sauce');
+  });
+
+  it('requires review and blocks quick save for generic estimated scan items', () => {
+    const item = makeMappedFood({
+      label: 'canh',
+      detectedLabelVi: 'Canh',
+      foodItemId: 5,
+      foodName: 'Canh',
+      caloriesPer100g: 35,
+      proteinPer100g: 1.5,
+      carbPer100g: 5,
+      fatPer100g: 1,
+      confidence: 0.9,
+      isMatched: true,
+      trustSummary: {
+        status: 'low_confidence',
+        label: 'Ước tính',
+        score: 50,
+        needsReview: true,
+        missingNutrients: [],
+      },
+    });
+
+    expect(buildVisionReviewItems([item])[0]?.selected).toBe(false);
+    expect(shouldAllowVisionQuickSave({ items: [item], unmappedLabels: [] })).toBe(false);
+  });
+
+  it('blocks saving selected items with missing nutrients', () => {
+    const item = makeMappedFood({
+      label: 'rice',
+      foodItemId: 6,
+      foodName: 'Cơm trắng',
+      caloriesPer100g: 130,
+      proteinPer100g: 0,
+      carbPer100g: 28,
+      fatPer100g: 0.3,
+      confidence: 0.94,
+      isMatched: true,
+      missingNutrients: ['protein'],
+      nutrientCompletenessScore: 75,
+      trustSummary: {
+        status: 'needs_review',
+        label: 'Cần kiểm tra',
+        score: 65,
+        needsReview: true,
+        missingNutrients: ['protein'],
+      },
+    });
+
+    const blocker = getVisionReviewSaveBlocker([{ item, selected: true, grams: 150 }]);
+
+    expect(blocker).toBe(
+      'Món đã chọn chưa có dữ liệu dinh dưỡng đủ tin cậy. Hãy đổi món bằng Search hoặc bỏ chọn món đó.',
+    );
   });
 });

@@ -87,6 +87,13 @@ const toPositiveNumber = (value: unknown): number | null => {
 const toStringOrNull = (value: unknown): string | null =>
   value == null ? null : String(value);
 
+const readField = (source: any, ...keys: string[]): unknown => {
+  for (const key of keys) {
+    if (source?.[key] != null) return source[key];
+  }
+  return undefined;
+};
+
 const toStringArray = (value: unknown): string[] => {
   if (!Array.isArray(value)) return [];
   return value.map((item) => String(item).trim()).filter(Boolean);
@@ -94,20 +101,14 @@ const toStringArray = (value: unknown): string[] => {
 
 const normalizeFoodTrustSummary = (value: unknown): MappedFoodItem['trustSummary'] => {
   if (!value || typeof value !== 'object') return null;
-  const data = value as {
-    status?: unknown;
-    label?: unknown;
-    score?: unknown;
-    needsReview?: unknown;
-    missingNutrients?: unknown;
-  };
+  const data = value as Record<string, unknown>;
 
   return {
-    status: String(data.status ?? 'low_confidence'),
-    label: String(data.label ?? 'Độ tin cậy thấp'),
-    score: toNumber(data.score) ?? 0,
-    needsReview: Boolean(data.needsReview),
-    missingNutrients: toStringArray(data.missingNutrients),
+    status: String(readField(data, 'status', 'Status') ?? 'low_confidence'),
+    label: String(readField(data, 'label', 'Label') ?? 'Độ tin cậy thấp'),
+    score: toNumber(readField(data, 'score', 'Score')) ?? 0,
+    needsReview: Boolean(readField(data, 'needsReview', 'NeedsReview')),
+    missingNutrients: toStringArray(readField(data, 'missingNutrients', 'MissingNutrients')),
   };
 };
 
@@ -189,12 +190,16 @@ const toAiOfflineError = (error: unknown, message: string): AiOfflineError => {
 };
 
 export const normalizeMappedFoodItem = (item: any): MappedFoodItem => {
-  const defaultServingUnitName = toStringOrNull(item?.defaultServingUnitName);
-  const defaultServingUnitSymbol = toStringOrNull(item?.defaultServingUnitSymbol);
+  const defaultServingUnitName = toStringOrNull(
+    readField(item, 'defaultServingUnitName', 'DefaultServingUnitName'),
+  );
+  const defaultServingUnitSymbol = toStringOrNull(
+    readField(item, 'defaultServingUnitSymbol', 'DefaultServingUnitSymbol'),
+  );
 
   return {
-    label: String(item?.label ?? 'unknown'),
-    confidence: clamp(toNumber(item?.confidence) ?? 0, 0, 1),
+    label: String(readField(item, 'label', 'Label') ?? 'unknown'),
+    confidence: clamp(toNumber(readField(item, 'confidence', 'Confidence')) ?? 0, 0, 1),
     bbox: (() => {
       const raw = item?.bbox ?? item?.boundingBox ?? item?.box;
       if (!raw || typeof raw !== 'object') return null;
@@ -224,43 +229,68 @@ export const normalizeMappedFoodItem = (item: any): MappedFoodItem => {
 
       return { x, y, width, height };
     })(),
-    foodItemId: toNumber(item?.foodItemId),
-    userFoodItemId: toNumber(item?.userFoodItemId),
-    foodName: item?.foodName ? String(item.foodName) : null,
+    detectedLabelVi: toStringOrNull(readField(item, 'detectedLabelVi', 'DetectedLabelVi')),
+    foodItemId: toNumber(readField(item, 'foodItemId', 'FoodItemId')),
+    userFoodItemId: toNumber(readField(item, 'userFoodItemId', 'UserFoodItemId')),
+    foodName: toStringOrNull(readField(item, 'foodName', 'FoodName')),
     source: item?.source === 'user' ? 'user' : item?.source === 'catalog' ? 'catalog' : null,
     defaultGrams: toPositiveNumber(
-      item?.defaultGrams ??
-        item?.defaultServingGrams ??
-        item?.servingSizeGram ??
-        item?.servingSize,
+      readField(
+        item,
+        'defaultGrams',
+        'DefaultGrams',
+        'defaultServingGrams',
+        'DefaultServingGrams',
+        'servingSizeGram',
+        'ServingSizeGram',
+        'servingSize',
+        'ServingSize',
+      ),
     ),
-    servingSizeGram: toPositiveNumber(item?.servingSizeGram ?? item?.servingSize),
+    servingSizeGram: toPositiveNumber(
+      readField(item, 'servingSizeGram', 'ServingSizeGram', 'servingSize', 'ServingSize'),
+    ),
     servingUnit:
-      toStringOrNull(item?.servingUnit) ??
+      toStringOrNull(readField(item, 'servingUnit', 'ServingUnit')) ??
       defaultServingUnitSymbol ??
       defaultServingUnitName,
-    defaultServingUnitId: toNumber(item?.defaultServingUnitId),
+    defaultServingUnitId: toNumber(readField(item, 'defaultServingUnitId', 'DefaultServingUnitId')),
     defaultServingUnitName,
     defaultServingUnitSymbol,
-    defaultPortionQuantity: toPositiveNumber(item?.defaultPortionQuantity),
-    caloriesPer100g: toNumber(item?.caloriesPer100g),
-    proteinPer100g: toNumber(item?.proteinPer100g),
-    fatPer100g: toNumber(item?.fatPer100g),
-    carbPer100g: toNumber(item?.carbPer100g),
-    thumbNail: sanitizeFoodImageUrl(item?.thumbNail ? String(item.thumbNail) : null),
-    missingNutrients: toStringArray(item?.missingNutrients),
-    nutrientCompletenessScore: toNumber(item?.nutrientCompletenessScore),
-    trustSummary: normalizeFoodTrustSummary(item?.trustSummary),
-    isMatched: Boolean(item?.isMatched ?? item?.foodItemId ?? item?.foodName),
+    defaultPortionQuantity: toPositiveNumber(
+      readField(item, 'defaultPortionQuantity', 'DefaultPortionQuantity'),
+    ),
+    caloriesPer100g: toNumber(readField(item, 'caloriesPer100g', 'CaloriesPer100g')),
+    proteinPer100g: toNumber(readField(item, 'proteinPer100g', 'ProteinPer100g')),
+    fatPer100g: toNumber(readField(item, 'fatPer100g', 'FatPer100g')),
+    carbPer100g: toNumber(readField(item, 'carbPer100g', 'CarbPer100g')),
+    thumbNail: sanitizeFoodImageUrl(
+      toStringOrNull(readField(item, 'thumbNail', 'ThumbNail', 'thumbnail', 'Thumbnail')),
+    ),
+    missingNutrients: toStringArray(readField(item, 'missingNutrients', 'MissingNutrients')),
+    nutrientCompletenessScore: toNumber(
+      readField(item, 'nutrientCompletenessScore', 'NutrientCompletenessScore'),
+    ),
+    trustSummary: normalizeFoodTrustSummary(readField(item, 'trustSummary', 'TrustSummary')),
+    isMatched: Boolean(
+      readField(item, 'isMatched', 'IsMatched') ??
+        readField(item, 'foodItemId', 'FoodItemId') ??
+        readField(item, 'foodName', 'FoodName'),
+    ),
   };
 };
 
-const normalizeVisionResult = (data: any): VisionDetectResult => ({
-  items: Array.isArray(data?.items) ? data.items.map(normalizeMappedFoodItem) : [],
-  unmappedLabels: Array.isArray(data?.unmappedLabels)
-    ? data.unmappedLabels.map((label: unknown) => String(label))
-    : [],
-});
+const normalizeVisionResult = (data: any): VisionDetectResult => {
+  const rawItems = readField(data, 'items', 'Items');
+  const rawUnmappedLabels = readField(data, 'unmappedLabels', 'UnmappedLabels');
+
+  return {
+    items: Array.isArray(rawItems) ? rawItems.map(normalizeMappedFoodItem) : [],
+    unmappedLabels: Array.isArray(rawUnmappedLabels)
+      ? rawUnmappedLabels.map((label: unknown) => String(label))
+      : [],
+  };
+};
 
 const normalizeNutritionInsight = (data: any): NutritionInsight => ({
   adherenceScore: clamp(toNumberOr(data?.adherenceScore, 0), 0, 100),

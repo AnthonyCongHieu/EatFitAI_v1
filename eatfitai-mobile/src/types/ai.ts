@@ -3,6 +3,7 @@ import type { ApiFoodTrustSummary } from './api';
 export interface MappedFoodItem {
   label: string;
   confidence: number;
+  detectedLabelVi?: string | null;
   bbox?: {
     x: number;
     y: number;
