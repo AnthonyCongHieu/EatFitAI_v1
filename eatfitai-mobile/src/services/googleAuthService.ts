@@ -185,12 +185,14 @@ export const googleAuthService = {
         return false;
       }
 
+      const offlineAccess = GOOGLE_CONFIG.offlineAccess;
+
       // Configure
       GoogleSignin.configure({
         webClientId: GOOGLE_CONFIG.webClientId,
         iosClientId: GOOGLE_CONFIG.iosClientId,
-        offlineAccess: GOOGLE_CONFIG.offlineAccess,
-        forceCodeForRefreshToken: GOOGLE_CONFIG.forceCodeForRefreshToken,
+        offlineAccess,
+        forceCodeForRefreshToken: offlineAccess && GOOGLE_CONFIG.forceCodeForRefreshToken,
         scopes: GOOGLE_CONFIG.scopes,
       });
 
@@ -254,7 +256,7 @@ export const googleAuthService = {
         };
       }
 
-      logger.info('[GoogleAuth] Sign in success:', user.email);
+      logger.info('[GoogleAuth] Sign in success');
 
       return {
         success: true,

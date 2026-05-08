@@ -228,8 +228,8 @@ if ($googleIosClientId) {
     $env:EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID = $googleIosClientId
 }
 
-$env:EXPO_PUBLIC_GOOGLE_OFFLINE_ACCESS = Resolve-BuildValue -Name 'EXPO_PUBLIC_GOOGLE_OFFLINE_ACCESS' -ProfileEnv $previewProfileEnv -Default 'true'
-$env:EXPO_PUBLIC_GOOGLE_FORCE_CODE_FOR_REFRESH_TOKEN = Resolve-BuildValue -Name 'EXPO_PUBLIC_GOOGLE_FORCE_CODE_FOR_REFRESH_TOKEN' -ProfileEnv $previewProfileEnv -Default 'true'
+$env:EXPO_PUBLIC_GOOGLE_OFFLINE_ACCESS = Resolve-BuildValue -Name 'EXPO_PUBLIC_GOOGLE_OFFLINE_ACCESS' -ProfileEnv $previewProfileEnv -Default 'false'
+$env:EXPO_PUBLIC_GOOGLE_FORCE_CODE_FOR_REFRESH_TOKEN = Resolve-BuildValue -Name 'EXPO_PUBLIC_GOOGLE_FORCE_CODE_FOR_REFRESH_TOKEN' -ProfileEnv $previewProfileEnv -Default 'false'
 
 Remove-StalePreviewBuildOutputs
 
