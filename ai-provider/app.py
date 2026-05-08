@@ -82,6 +82,7 @@ YOLO_ONNX_ENABLED = os.getenv("YOLO_ONNX_ENABLED", "true").strip().lower() not i
 YOLO_MODEL_FILE = os.getenv("YOLO_MODEL_FILE", "best.pt")
 YOLO_ONNX_MODEL_FILE = os.getenv("YOLO_ONNX_MODEL_FILE", "best.onnx")
 YOLO_ONNX_IMAGE_SIZE = int(os.getenv("YOLO_ONNX_IMAGE_SIZE", "640"))
+YOLO_ONNX_LOW_MEMORY = os.getenv("YOLO_ONNX_LOW_MEMORY", "true").strip().lower() not in {"0", "false", "no"}
 YOLO_NMS_THRESHOLD = float(os.getenv("YOLO_NMS_THRESHOLD", "0.45"))
 YOLO_CLASS_NAMES = [
     "banh_mi",
@@ -298,6 +299,24 @@ onnx_model_load_error: str | None = None
 model_file: str = ""  # Dùng chung cho health check
 
 
+def _build_onnx_session_options() -> ort.SessionOptions:
+    session_options = ort.SessionOptions()
+    session_options.intra_op_num_threads = int(os.getenv("YOLO_ONNX_INTRA_OP_THREADS", "1"))
+    session_options.inter_op_num_threads = int(os.getenv("YOLO_ONNX_INTER_OP_THREADS", "1"))
+
+    if YOLO_ONNX_LOW_MEMORY:
+        # Render Free is capped at 512Mi. CPU memory arena can retain a large
+        # inference buffer after the first YOLO11m run and trigger OOM kills.
+        session_options.execution_mode = ort.ExecutionMode.ORT_SEQUENTIAL
+        session_options.enable_cpu_mem_arena = False
+        session_options.enable_mem_pattern = False
+        session_options.graph_optimization_level = ort.GraphOptimizationLevel.ORT_ENABLE_EXTENDED
+    else:
+        session_options.graph_optimization_level = ort.GraphOptimizationLevel.ORT_ENABLE_ALL
+
+    return session_options
+
+
 def _load_onnx_model() -> ort.InferenceSession | None:
     """Load the exported YOLO ONNX model for fast CPU inference on Render."""
     global onnx_model, onnx_model_load_error, model_file
@@ -317,10 +336,7 @@ def _load_onnx_model() -> ort.InferenceSession | None:
             return None
 
         try:
-            session_options = ort.SessionOptions()
-            session_options.intra_op_num_threads = int(os.getenv("YOLO_ONNX_INTRA_OP_THREADS", "1"))
-            session_options.inter_op_num_threads = int(os.getenv("YOLO_ONNX_INTER_OP_THREADS", "1"))
-            session_options.graph_optimization_level = ort.GraphOptimizationLevel.ORT_ENABLE_ALL
+            session_options = _build_onnx_session_options()
             onnx_model = ort.InferenceSession(
                 YOLO_ONNX_MODEL_FILE,
                 sess_options=session_options,
@@ -468,6 +484,7 @@ def healthz() -> Dict[str, Any]:
         "yolo_confidence_threshold": YOLO_CONFIDENCE_THRESHOLD,
         "yolo_image_size": YOLO_IMAGE_SIZE,
         "yolo_onnx_image_size": YOLO_ONNX_IMAGE_SIZE,
+        "yolo_onnx_low_memory": YOLO_ONNX_LOW_MEMORY,
         "cuda_available": False,
         "device": "cpu",
         "gpu_name": None,

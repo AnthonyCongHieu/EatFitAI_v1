@@ -47,6 +47,23 @@ class LazyYoloModelTests(unittest.TestCase):
         self.assertFalse(payload["model_loaded"])
         self.assertEqual(payload["model_file"], "not-loaded")
         self.assertEqual(payload["model_type"], "not-loaded")
+        self.assertTrue(payload["yolo_onnx_low_memory"])
+
+    def test_onnx_session_options_use_low_memory_defaults(self):
+        previous_low_memory = app_module.YOLO_ONNX_LOW_MEMORY
+        try:
+            app_module.YOLO_ONNX_LOW_MEMORY = True
+            options = app_module._build_onnx_session_options()
+
+            self.assertEqual(options.execution_mode, app_module.ort.ExecutionMode.ORT_SEQUENTIAL)
+            self.assertFalse(options.enable_cpu_mem_arena)
+            self.assertFalse(options.enable_mem_pattern)
+            self.assertEqual(
+                options.graph_optimization_level,
+                app_module.ort.GraphOptimizationLevel.ORT_ENABLE_EXTENDED,
+            )
+        finally:
+            app_module.YOLO_ONNX_LOW_MEMORY = previous_low_memory
 
     def test_detect_returns_503_when_onnx_model_is_missing(self):
         app_module.YOLO_ONNX_MODEL_FILE = "missing-test-model.onnx"

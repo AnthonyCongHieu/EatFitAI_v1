@@ -13,8 +13,9 @@ bind = f"0.0.0.0:{port}"
 # Nhiều worker sẽ duplicate model trong mỗi process → OOM
 workers = 1
 
-# Threads - keep a small amount of request concurrency so health checks stay responsive.
-threads = 2
+# Threads - keep single request execution on Render Free to avoid overlapping
+# YOLO11m inference memory spikes in the 512MB container.
+threads = 1
 
 # Timeout cao vì YOLO inference có thể chậm trên CPU
 timeout = 120
