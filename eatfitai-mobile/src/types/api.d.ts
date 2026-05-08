@@ -575,6 +575,14 @@ export interface components {
       carbPer100g?: number;
       /** Format: double */
       fatPer100g?: number;
+      verificationStatus?: string | null;
+      /** Format: double */
+      nutrientCompletenessScore?: number;
+      missingNutrients?: string[] | null;
+      trustSummary?: components['schemas']['FoodTrustSummaryDto'];
+      trustDetails?: components['schemas']['FoodTrustDetailsDto'];
+      /** Format: date-time */
+      lastReviewedAt?: string | null;
       isActive?: boolean;
       /** Format: date-time */
       createdAt?: string;
@@ -636,11 +644,35 @@ export interface components {
       note?: string | null;
       photoUrl?: string | null;
       sourceMethod?: string | null;
+      trustSummary?: components['schemas']['FoodTrustSummaryDto'];
       /** Format: date-time */
       createdAt?: string;
       /** Format: date-time */
       updatedAt?: string;
       isDeleted?: boolean;
+    };
+    FoodTrustSummaryDto: {
+      status?: string | null;
+      label?: string | null;
+      /** Format: double */
+      score?: number;
+      needsReview?: boolean;
+      missingNutrients?: string[] | null;
+    };
+    FoodTrustDetailsDto: {
+      summary?: components['schemas']['FoodTrustSummaryDto'];
+      nutrientCompleteness?: components['schemas']['NutrientCompletenessDto'];
+      source?: string | null;
+      verifiedBy?: string | null;
+      /** Format: date-time */
+      lastReviewedAt?: string | null;
+      explanation?: string | null;
+    };
+    NutrientCompletenessDto: {
+      /** Format: double */
+      score?: number;
+      missingNutrients?: string[] | null;
+      hasMissingRequiredNutrients?: boolean;
     };
     NutritionSummaryDto: {
       /** Format: double */

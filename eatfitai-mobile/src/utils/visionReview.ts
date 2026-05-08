@@ -6,6 +6,12 @@ export type VisionReviewItem = {
   grams: number;
 };
 
+export type CompactVisionMealBasket = {
+  mainItems: VisionReviewItem[];
+  needsReviewItems: VisionReviewItem[];
+  hiddenItemCount: number;
+};
+
 const hasVisionFoodSource = (item: MappedFoodItem): boolean =>
   (item.foodItemId ?? 0) > 0 || (item.userFoodItemId ?? 0) > 0;
 
@@ -39,6 +45,31 @@ export const buildVisionReviewItems = (
     selected: item.isMatched && hasUsableVisionNutrition(item),
     grams: getDefaultVisionGrams(item),
   }));
+
+export const buildCompactVisionMealBasket = (
+  items: MappedFoodItem[],
+  maxMainItems = 3,
+): CompactVisionMealBasket => {
+  const reviewItems = buildVisionReviewItems(
+    [...items].sort((a, b) => (b.confidence ?? 0) - (a.confidence ?? 0)),
+  );
+  const mainItems = reviewItems
+    .filter((reviewItem) => reviewItem.selected && !reviewItem.item.trustSummary?.needsReview)
+    .slice(0, maxMainItems);
+  const mainKeys = new Set(
+    mainItems.map((reviewItem) => `${reviewItem.item.foodItemId ?? reviewItem.item.label}`),
+  );
+  const needsReviewItems = reviewItems.filter((reviewItem) => {
+    const key = `${reviewItem.item.foodItemId ?? reviewItem.item.label}`;
+    return !mainKeys.has(key);
+  });
+
+  return {
+    mainItems,
+    needsReviewItems,
+    hiddenItemCount: Math.max(0, reviewItems.length - mainItems.length - needsReviewItems.length),
+  };
+};
 
 export type VisionQuickPortion = {
   label: 'Ít' | 'Vừa' | 'Nhiều';

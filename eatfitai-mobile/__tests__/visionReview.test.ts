@@ -1,5 +1,6 @@
 import type { MappedFoodItem } from '../src/types/ai';
 import {
+  buildCompactVisionMealBasket,
   buildVisionReviewItems,
   calculateVisionReviewCalories,
   clampVisionGrams,
@@ -111,5 +112,62 @@ describe('visionReview', () => {
   it('clamps vision grams between 25 and 1000', () => {
     expect(clampVisionGrams(10)).toBe(25);
     expect(clampVisionGrams(1200)).toBe(1000);
+  });
+
+  it('keeps AI scan basket compact with at most three main items', () => {
+    const items = [
+      makeMappedFood({
+        label: 'Rice',
+        foodItemId: 1,
+        caloriesPer100g: 130,
+        proteinPer100g: 2.7,
+        carbPer100g: 28,
+        fatPer100g: 0.3,
+        confidence: 0.96,
+        isMatched: true,
+      }),
+      makeMappedFood({
+        label: 'Chicken',
+        foodItemId: 2,
+        caloriesPer100g: 165,
+        proteinPer100g: 31,
+        carbPer100g: 0,
+        fatPer100g: 3.6,
+        confidence: 0.94,
+        isMatched: true,
+      }),
+      makeMappedFood({
+        label: 'Egg',
+        foodItemId: 3,
+        caloriesPer100g: 155,
+        proteinPer100g: 13,
+        carbPer100g: 1,
+        fatPer100g: 11,
+        confidence: 0.91,
+        isMatched: true,
+      }),
+      makeMappedFood({
+        label: 'Sauce',
+        foodItemId: 4,
+        caloriesPer100g: 80,
+        proteinPer100g: 0,
+        carbPer100g: 12,
+        fatPer100g: 0,
+        confidence: 0.8,
+        isMatched: true,
+        trustSummary: {
+          status: 'needs_review',
+          label: 'Cần kiểm tra',
+          score: 50,
+          needsReview: true,
+          missingNutrients: ['protein', 'fat'],
+        },
+      }),
+    ];
+
+    const basket = buildCompactVisionMealBasket(items);
+
+    expect(basket.mainItems).toHaveLength(3);
+    expect(basket.needsReviewItems.map((entry) => entry.item.label)).toContain('Sauce');
   });
 });

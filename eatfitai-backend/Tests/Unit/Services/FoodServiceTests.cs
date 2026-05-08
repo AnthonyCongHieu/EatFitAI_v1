@@ -250,6 +250,62 @@ namespace EatFitAI.API.Tests.Unit.Services
             Assert.NotNull(result.FoodItem);
         }
 
+        [Fact]
+        public async Task LookupByBarcodeAsync_ProviderMissingMacros_PreservesMissingNutrientsContract()
+        {
+            var configuration = new ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string?>
+                {
+                    ["FoodBarcodeProvider:TemplateUrl"] = "https://barcode.example.test/{barcode}",
+                    ["FoodBarcodeProvider:Name"] = "OpenFoodFacts"
+                })
+                .Build();
+
+            using var httpClient = new HttpClient(new StubHttpMessageHandler(_ =>
+                new HttpResponseMessage(System.Net.HttpStatusCode.OK)
+                {
+                    Content = new StringContent(
+                        """
+                        {
+                          "product": {
+                            "product_name": "Yogurt test",
+                            "nutriments": {
+                              "energy-kcal_100g": 90,
+                              "carbohydrates_100g": 12
+                            }
+                          }
+                        }
+                        """)
+                }));
+
+            var httpClientFactory = new Mock<IHttpClientFactory>();
+            httpClientFactory.Setup(factory => factory.CreateClient(It.IsAny<string>()))
+                .Returns(httpClient);
+
+            var service = new FoodService(
+                _foodItemRepositoryMock.Object,
+                _userFoodItemRepositoryMock.Object,
+                _context,
+                _mapperMock.Object,
+                httpClientFactory.Object,
+                configuration,
+                _mediaUrlResolverMock.Object,
+                _loggerMock.Object,
+                _cache);
+
+            var result = await service.LookupByBarcodeAsync("8938505974198");
+
+            Assert.NotNull(result);
+            Assert.Equal("provider", result.Source);
+            Assert.Equal(90, result.FoodItem.CaloriesPer100g);
+            Assert.Equal(0, result.FoodItem.ProteinPer100g);
+            Assert.Equal(12, result.FoodItem.CarbPer100g);
+            Assert.Equal(0, result.FoodItem.FatPer100g);
+            Assert.Contains("protein", result.FoodItem.MissingNutrients);
+            Assert.Contains("fat", result.FoodItem.MissingNutrients);
+            Assert.Equal(FoodTrustStatus.NeedsReview, result.FoodItem.TrustSummary?.Status);
+        }
+
         #endregion
 
         #region CreateCustomDishAsync Tests
@@ -454,5 +510,22 @@ namespace EatFitAI.API.Tests.Unit.Services
         }
 
         #endregion
+
+        private sealed class StubHttpMessageHandler : HttpMessageHandler
+        {
+            private readonly Func<HttpRequestMessage, HttpResponseMessage> _handler;
+
+            public StubHttpMessageHandler(Func<HttpRequestMessage, HttpResponseMessage> handler)
+            {
+                _handler = handler;
+            }
+
+            protected override Task<HttpResponseMessage> SendAsync(
+                HttpRequestMessage request,
+                CancellationToken cancellationToken)
+            {
+                return Task.FromResult(_handler(request));
+            }
+        }
     }
 }

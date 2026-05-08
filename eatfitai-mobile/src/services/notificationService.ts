@@ -9,6 +9,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { navigateToStatsWeeklyReview } from '../app/navigation/navigationRef';
 import logger from '../utils/logger';
+import apiClient from './apiClient';
 import { trackEvent } from './analytics';
 
 // Lazy import để tránh crash trong Expo Go
@@ -70,6 +71,14 @@ export interface NotificationSettings {
 export interface ScheduledNotification {
   identifier: string;
   mealType: string;
+}
+
+export interface NotificationDecision {
+  shouldNudge: boolean;
+  reason: string;
+  suppressUntil?: string | null;
+  suggestedMessage: string;
+  deepLink: string;
 }
 
 // Notification identifiers để quản lý
@@ -342,6 +351,28 @@ async function cancelNotification(identifier: string): Promise<void> {
 /**
  * Schedule notifications dựa trên settings
  */
+export async function shouldNudgeFromBackend(input: {
+  localDate: string;
+  localTime: string;
+  nudgeType?: string;
+  quietHoursStart?: string;
+  quietHoursEnd?: string;
+}): Promise<NotificationDecision | null> {
+  try {
+    const response = await apiClient.post('/api/notifications/should-nudge', {
+      localDate: input.localDate,
+      localTime: input.localTime,
+      nudgeType: input.nudgeType ?? 'meal',
+      quietHoursStart: input.quietHoursStart,
+      quietHoursEnd: input.quietHoursEnd,
+    });
+    return response.data as NotificationDecision;
+  } catch (error) {
+    logger.warn('[NotificationService] Backend nudge decision unavailable', error);
+    return null;
+  }
+}
+
 export async function scheduleNotifications(
   settings: NotificationSettings,
 ): Promise<void> {

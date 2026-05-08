@@ -210,7 +210,10 @@ namespace EatFitAI.API.Services
                 CaloriesPer100 = c.CaloriesPer100g,
                 ProteinPer100 = c.ProteinPer100g,
                 CarbPer100 = c.CarbPer100g,
-                FatPer100 = c.FatPer100g
+                FatPer100 = c.FatPer100g,
+                NutrientCompletenessScore = c.NutrientCompletenessScore,
+                MissingNutrients = FoodTrustBuilder.ParseMissingNutrients(c.MissingNutrients),
+                TrustSummary = FoodTrustBuilder.BuildSummary(ToTrustFoodItemDto(c))
             });
 
             IEnumerable<FoodSearchResultDto> userResults = Enumerable.Empty<FoodSearchResultDto>();
@@ -228,7 +231,15 @@ namespace EatFitAI.API.Services
                     CaloriesPer100 = u.CaloriesPer100,
                     ProteinPer100 = u.ProteinPer100,
                     CarbPer100 = u.CarbPer100,
-                    FatPer100 = u.FatPer100
+                    FatPer100 = u.FatPer100,
+                    NutrientCompletenessScore = 100,
+                    TrustSummary = FoodTrustBuilder.BuildSummary(new FoodItemDto
+                    {
+                        FoodName = u.FoodName,
+                        Source = "user",
+                        ReliabilityScore = 0.7,
+                        NutrientCompletenessScore = 100
+                    })
                 });
             }
 
@@ -263,6 +274,12 @@ namespace EatFitAI.API.Services
                     ProteinPer100 = item.FoodItem.ProteinPer100g,
                     CarbPer100 = item.FoodItem.CarbPer100g,
                     FatPer100 = item.FoodItem.FatPer100g,
+                    IsVerified = item.FoodItem.IsVerified,
+                    VerifiedBy = item.FoodItem.VerifiedBy,
+                    CredibilityScore = item.FoodItem.CredibilityScore,
+                    NutrientCompletenessScore = item.FoodItem.NutrientCompletenessScore,
+                    MissingNutrientsCsv = item.FoodItem.MissingNutrients,
+                    LastReviewedAt = item.FoodItem.LastReviewedAt,
                     LastUsedAt = item.LastUsedAt,
                     UsedCount = item.UsedCount
                 })
@@ -299,6 +316,8 @@ namespace EatFitAI.API.Services
                         ProteinPer100 = userFood.ProteinPer100,
                         CarbPer100 = userFood.CarbPer100,
                         FatPer100 = userFood.FatPer100,
+                        CredibilityScore = 70,
+                        NutrientCompletenessScore = 100,
                         LastUsedAt = recent.LastUsedAt,
                         UsedCount = recent.UsedCount
                     })
@@ -391,7 +410,10 @@ namespace EatFitAI.API.Services
                     IsDeleted = false,
                     CreatedAt = DateTime.UtcNow,
                     UpdatedAt = DateTime.UtcNow,
-                    CredibilityScore = 50
+                    CredibilityScore = 50,
+                    MissingNutrients = FoodTrustBuilder.SerializeMissingNutrients(foodItem.MissingNutrients),
+                    NutrientCompletenessScore = foodItem.NutrientCompletenessScore,
+                    VerificationStatus = foodItem.TrustSummary?.Status ?? FoodTrustStatus.NeedsReview
                 };
                 _context.FoodItems.Add(newFoodItemEntity);
                 await _context.SaveChangesAsync(cancellationToken);
@@ -461,22 +483,39 @@ namespace EatFitAI.API.Services
                 return null;
             }
 
-            return new FoodItemDto
+            var calories = ReadNutriment("energy-kcal_100g", "energy_kcal_100g", "calories_100g", "calories");
+            var protein = ReadNutriment("proteins_100g", "protein_100g", "protein");
+            var carb = ReadNutriment("carbohydrates_100g", "carbs_100g", "carbs");
+            var fat = ReadNutriment("fat_100g", "fats_100g", "fat");
+            var missing = new List<string>();
+            if (!calories.HasValue) missing.Add("calories");
+            if (!protein.HasValue) missing.Add("protein");
+            if (!carb.HasValue) missing.Add("carb");
+            if (!fat.HasValue) missing.Add("fat");
+
+            var completenessScore = Math.Round(((4 - missing.Count) / 4m) * 100m, 0);
+
+            var dto = new FoodItemDto
             {
                 FoodItemId = 0,
                 FoodName = name,
                 FoodNameEn = ReadString(product, "product_name_en", "product_name_en_imported"),
                 Barcode = barcode,
-                CaloriesPer100g = ReadNutriment("energy-kcal_100g", "energy_kcal_100g", "calories_100g", "calories") ?? 0m,
-                ProteinPer100g = ReadNutriment("proteins_100g", "protein_100g", "protein") ?? 0m,
-                CarbPer100g = ReadNutriment("carbohydrates_100g", "carbs_100g", "carbs") ?? 0m,
-                FatPer100g = ReadNutriment("fat_100g", "fats_100g", "fat") ?? 0m,
+                CaloriesPer100g = calories ?? 0m,
+                ProteinPer100g = protein ?? 0m,
+                CarbPer100g = carb ?? 0m,
+                FatPer100g = fat ?? 0m,
                 ThumbNail = ReadString(product, "image_url", "image_front_url", "image"),
                 Source = "provider",
                 IsActive = true,
                 IsVerified = false,
                 ReliabilityScore = 0.5d,
+                MissingNutrients = missing,
+                NutrientCompletenessScore = completenessScore,
             };
+            dto.TrustSummary = FoodTrustBuilder.BuildSummary(dto);
+            dto.TrustDetails = FoodTrustBuilder.BuildDetails(dto);
+            return dto;
         }
 
         private static string? ReadString(JsonElement element, params string[] keys)
@@ -515,6 +554,13 @@ namespace EatFitAI.API.Services
         {
             dto.ThumbNail = _mediaUrlResolver.NormalizePublicUrl(dto.ThumbNail);
             dto.ImageVariants = MediaVariantHelper.FromThumbUrl(dto.ThumbNail);
+            dto.MissingNutrients = FoodTrustBuilder.ParseMissingNutrients(
+                FoodTrustBuilder.SerializeMissingNutrients(dto.MissingNutrients));
+            dto.NutrientCompletenessScore = dto.NutrientCompletenessScore <= 0
+                ? (dto.MissingNutrients.Count == 0 ? 100 : Math.Round(((4 - dto.MissingNutrients.Count) / 4m) * 100m, 0))
+                : dto.NutrientCompletenessScore;
+            dto.TrustSummary = FoodTrustBuilder.BuildSummary(dto);
+            dto.TrustDetails = FoodTrustBuilder.BuildDetails(dto);
             return dto;
         }
 
@@ -522,7 +568,34 @@ namespace EatFitAI.API.Services
         {
             dto.ThumbnailUrl = _mediaUrlResolver.NormalizePublicUrl(dto.ThumbnailUrl);
             dto.ImageVariants = MediaVariantHelper.FromThumbUrl(dto.ThumbnailUrl);
+            dto.MissingNutrients = FoodTrustBuilder.ParseMissingNutrients(
+                FoodTrustBuilder.SerializeMissingNutrients(dto.MissingNutrients));
+            dto.NutrientCompletenessScore = dto.NutrientCompletenessScore <= 0 ? 100 : dto.NutrientCompletenessScore;
+            dto.TrustSummary ??= FoodTrustBuilder.BuildSummary(new FoodItemDto
+            {
+                FoodName = dto.FoodName,
+                Source = dto.Source,
+                ReliabilityScore = dto.Source == "user" ? 0.7 : 0.5,
+                NutrientCompletenessScore = dto.NutrientCompletenessScore,
+                MissingNutrients = dto.MissingNutrients
+            });
             return dto;
+        }
+
+        private static FoodItemDto ToTrustFoodItemDto(FoodItem item)
+        {
+            return new FoodItemDto
+            {
+                FoodItemId = item.FoodItemId,
+                FoodName = item.FoodName,
+                IsVerified = item.IsVerified,
+                VerifiedBy = item.VerifiedBy,
+                VerificationStatus = item.VerificationStatus,
+                ReliabilityScore = item.CredibilityScore / 100.0,
+                NutrientCompletenessScore = item.NutrientCompletenessScore,
+                MissingNutrients = FoodTrustBuilder.ParseMissingNutrients(item.MissingNutrients),
+                LastReviewedAt = item.LastReviewedAt
+            };
         }
 
         private sealed class RecentFoodProjection
@@ -537,11 +610,18 @@ namespace EatFitAI.API.Services
             public decimal ProteinPer100 { get; init; }
             public decimal CarbPer100 { get; init; }
             public decimal FatPer100 { get; init; }
+            public bool IsVerified { get; init; }
+            public string? VerifiedBy { get; init; }
+            public int CredibilityScore { get; init; } = 50;
+            public decimal NutrientCompletenessScore { get; init; } = 100;
+            public string? MissingNutrientsCsv { get; init; }
+            public DateTime? LastReviewedAt { get; init; }
             public DateTime LastUsedAt { get; init; }
             public int UsedCount { get; init; }
 
             public FoodSearchResultDto ToDto()
             {
+                var missing = FoodTrustBuilder.ParseMissingNutrients(MissingNutrientsCsv);
                 return new FoodSearchResultDto
                 {
                     Source = Source,
@@ -553,7 +633,20 @@ namespace EatFitAI.API.Services
                     CaloriesPer100 = CaloriesPer100,
                     ProteinPer100 = ProteinPer100,
                     CarbPer100 = CarbPer100,
-                    FatPer100 = FatPer100
+                    FatPer100 = FatPer100,
+                    NutrientCompletenessScore = NutrientCompletenessScore,
+                    MissingNutrients = missing,
+                    TrustSummary = FoodTrustBuilder.BuildSummary(new FoodItemDto
+                    {
+                        FoodName = FoodName,
+                        Source = Source,
+                        IsVerified = IsVerified,
+                        VerifiedBy = VerifiedBy,
+                        ReliabilityScore = CredibilityScore / 100.0,
+                        NutrientCompletenessScore = NutrientCompletenessScore,
+                        MissingNutrients = missing,
+                        LastReviewedAt = LastReviewedAt
+                    })
                 };
             }
         }

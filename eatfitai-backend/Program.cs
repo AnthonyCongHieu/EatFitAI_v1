@@ -832,6 +832,9 @@ builder.Services.AddScoped<IRecipeSuggestionService, RecipeSuggestionService>();
 builder.Services.AddScoped<INutritionInsightService, NutritionInsightService>();
 builder.Services.AddScoped<AIReviewService>(); // AI Weekly Review
 builder.Services.AddScoped<IVisionCacheService, VisionCacheService>();
+builder.Services.AddScoped<IDayCompletenessService, DayCompletenessService>();
+builder.Services.AddScoped<INotificationDecisionService, NotificationDecisionService>();
+builder.Services.AddScoped<ILapseRecoveryService, LapseRecoveryService>();
 builder.Services.AddScoped<IStreakService, StreakService>();  // Profile 2026 - Streak tracking
 
 // Voice AI service

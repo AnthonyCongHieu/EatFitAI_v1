@@ -6,6 +6,27 @@ export interface ApiImageVariants {
   mediumUrl?: string | null;
 }
 
+export interface ApiFoodTrustSummary {
+  status: 'verified' | 'trusted' | 'needs_review' | 'low_confidence' | string;
+  label: string;
+  score: number;
+  needsReview: boolean;
+  missingNutrients: string[];
+}
+
+export interface ApiFoodTrustDetails {
+  summary: ApiFoodTrustSummary;
+  nutrientCompleteness: {
+    score: number;
+    missingNutrients: string[];
+    hasMissingRequiredNutrients: boolean;
+  };
+  source?: string | null;
+  verifiedBy?: string | null;
+  lastReviewedAt?: string | null;
+  explanation: string;
+}
+
 // ============================================
 // FOOD SERVICE TYPES
 // ============================================
@@ -20,6 +41,9 @@ export interface ApiFoodSearchItem {
   source?: 'catalog' | 'user';
   thumbnailUrl?: string | null;
   imageVariants?: ApiImageVariants | null;
+  missingNutrients?: string[] | null;
+  nutrientCompletenessScore?: number | null;
+  trustSummary?: ApiFoodTrustSummary | null;
 }
 
 export interface ApiUserFoodDetail {
@@ -37,6 +61,10 @@ export interface ApiUserFoodDetail {
   servingSizeGram?: number;
   thumbnailUrl?: string | null;
   imageVariants?: ApiImageVariants | null;
+  missingNutrients?: string[] | null;
+  nutrientCompletenessScore?: number | null;
+  trustSummary?: ApiFoodTrustSummary | null;
+  trustDetails?: ApiFoodTrustDetails | null;
 }
 
 export interface ApiFoodDetail {
@@ -49,6 +77,10 @@ export interface ApiFoodDetail {
   carbPer100g: number;
   fatPer100g: number;
   servingSizeGram?: number;
+  missingNutrients?: string[] | null;
+  nutrientCompletenessScore?: number | null;
+  trustSummary?: ApiFoodTrustSummary | null;
+  trustDetails?: ApiFoodTrustDetails | null;
 }
 
 export interface ApiSearchResponse<T> {

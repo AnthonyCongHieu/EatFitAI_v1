@@ -175,11 +175,17 @@ public partial class EatFitAIDbContext : DbContext
             entity.Property(e => e.FatPer100g).HasColumnType("decimal(10, 2)");
             entity.Property(e => e.FoodName).HasMaxLength(255);
             entity.Property(e => e.IsActive).HasDefaultValue(true);
+            entity.Property(e => e.LastReviewedAt).HasPrecision(3);
+            entity.Property(e => e.MissingNutrients).HasMaxLength(120);
+            entity.Property(e => e.NutrientCompletenessScore)
+                .HasColumnType("decimal(5, 2)")
+                .HasDefaultValue(100m);
             entity.Property(e => e.ProteinPer100g).HasColumnType("decimal(10, 2)");
             entity.Property(e => e.ThumbNail).HasMaxLength(255);
             entity.Property(e => e.UpdatedAt)
                 .HasPrecision(3)
                 .HasDefaultValueSql("NOW() AT TIME ZONE 'UTC'");
+            entity.Property(e => e.VerificationStatus).HasMaxLength(50);
         });
 
         modelBuilder.Entity<FoodServing>(entity =>
@@ -355,6 +361,8 @@ public partial class EatFitAIDbContext : DbContext
             entity.Property(e => e.RefreshToken).HasColumnType("text");
             entity.Property(e => e.RefreshTokenExpiryTime).HasPrecision(3);
             entity.Property(e => e.Goal).HasMaxLength(50);
+            entity.Property(e => e.HasEDRisk).HasDefaultValue(false);
+            entity.Property(e => e.LastReviewDate).HasPrecision(3);
             entity.Property(e => e.TargetWeightKg).HasColumnType("numeric");
 
             entity.HasOne(d => d.ActivityLevel)

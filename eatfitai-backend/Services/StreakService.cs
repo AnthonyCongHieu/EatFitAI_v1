@@ -46,6 +46,20 @@ namespace EatFitAI.API.Services
             var today = DateTime.UtcNow.Date;
             var lastLog = user.LastLogDate?.Date;
 
+            var todayMeals = await _context.MealDiaries
+                .AsNoTracking()
+                .Where(meal => meal.UserId == userId
+                    && meal.EatenDate == DateOnly.FromDateTime(today)
+                    && !meal.IsDeleted)
+                .Select(meal => new { meal.MealTypeId, meal.Calories })
+                .ToListAsync();
+
+            if (!DayCompletenessService.IsCompleteDay(
+                    todayMeals.Select(meal => (meal.MealTypeId, meal.Calories))))
+            {
+                return;
+            }
+
             if (lastLog == today)
             {
                 // Đã log hôm nay rồi, không cần update streak

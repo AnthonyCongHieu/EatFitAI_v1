@@ -1,3 +1,5 @@
+import type { ApiFoodTrustSummary } from './api';
+
 export interface MappedFoodItem {
   label: string;
   confidence: number;
@@ -25,6 +27,9 @@ export interface MappedFoodItem {
   fatPer100g?: number | null;
   carbPer100g?: number | null;
   thumbNail?: string | null;
+  missingNutrients?: string[] | null;
+  nutrientCompletenessScore?: number | null;
+  trustSummary?: ApiFoodTrustSummary | null;
 
   isMatched: boolean;
 }

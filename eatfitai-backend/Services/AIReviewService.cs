@@ -138,6 +138,33 @@ public class AIReviewService
         };
     }
 
+    public async Task<ReviewActionResponseDto> RecordReviewAction(Guid userId, string action)
+    {
+        var normalizedAction = (action ?? string.Empty).Trim().ToLowerInvariant();
+        var allowed = new HashSet<string> { "accept", "done", "snooze", "useful" };
+        if (!allowed.Contains(normalizedAction))
+        {
+            throw new ArgumentException("Unsupported review action", nameof(action));
+        }
+
+        var user = await _db.Users.FindAsync(userId)
+            ?? throw new Exception("Không tìm thấy người dùng");
+
+        var now = DateTime.UtcNow;
+        if (normalizedAction is "accept" or "done" or "useful")
+        {
+            user.LastReviewDate = now;
+        }
+
+        await _db.SaveChangesAsync();
+
+        return new ReviewActionResponseDto
+        {
+            Action = normalizedAction,
+            RecordedAt = now
+        };
+    }
+
     #region Analysis Methods
 
     private WeeklyReviewDto AnalyzeWeightLoss(UserWeekDataDto data, int quality)
@@ -342,8 +369,20 @@ public class AIReviewService
         
         // Get meal diary data (last 7 days)
         var weekAgo = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(-7));
-        var mealData = await _db.MealDiaries
+        var recentMeals = await _db.MealDiaries
             .Where(m => m.UserId == userId && m.EatenDate >= weekAgo && !m.IsDeleted)
+            .Select(m => new
+            {
+                m.EatenDate,
+                m.MealTypeId,
+                m.Calories,
+                m.Protein,
+                m.Carb,
+                m.Fat
+            })
+            .ToListAsync();
+
+        var mealData = recentMeals
             .GroupBy(m => m.EatenDate)
             .Select(g => new
             {
@@ -351,9 +390,12 @@ public class AIReviewService
                 Calories = g.Sum(m => m.Calories),
                 Protein = g.Sum(m => m.Protein),
                 Carbs = g.Sum(m => m.Carb),
-                Fat = g.Sum(m => m.Fat)
+                Fat = g.Sum(m => m.Fat),
+                Meals = g.Select(m => new { m.MealTypeId, m.Calories }).ToList()
             })
-            .ToListAsync();
+            .Where(day => DayCompletenessService.IsCompleteDay(
+                day.Meals.Select(meal => (meal.MealTypeId, meal.Calories))))
+            .ToList();
         
         var daysLogged = mealData.Count;
         
@@ -396,7 +438,7 @@ public class AIReviewService
             
             Goal = goal,
             
-            LastReviewDate = null // TODO: Track in DB
+            LastReviewDate = user.LastReviewDate
         };
     }
 
