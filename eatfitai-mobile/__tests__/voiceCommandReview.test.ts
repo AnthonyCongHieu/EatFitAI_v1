@@ -1,5 +1,6 @@
 import type { ParsedVoiceCommand } from '../src/services/voiceService';
 import {
+  getVoicePortionClarificationMessage,
   getVoiceReviewMessage,
   shouldRequireVoiceConfirmation,
 } from '../src/utils/voiceCommandReview';
@@ -52,6 +53,23 @@ describe('voiceCommandReview', () => {
 
     expect(getVoiceReviewMessage(command)).toBe(
       'Độ tin cậy chưa cao. Hãy kiểm tra trước khi lưu.',
+    );
+  });
+
+  it('asks for clarification when multi-food voice log is missing portions', () => {
+    const command = createCommand({
+      intent: 'ADD_FOOD',
+      confidence: 0.92,
+      entities: {
+        foods: [
+          { foodName: 'cơm', quantity: 1, unit: 'bát' },
+          { foodName: 'gà' },
+        ],
+      },
+    });
+
+    expect(getVoicePortionClarificationMessage(command)).toBe(
+      'Bạn muốn ghi khẩu phần bao nhiêu? Hãy nói số gram hoặc khẩu phần như 1 bát, 1 phần. (gà)',
     );
   });
 });

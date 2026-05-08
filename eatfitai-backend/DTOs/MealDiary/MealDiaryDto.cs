@@ -1,3 +1,5 @@
+using EatFitAI.API.DTOs.Common;
+
 namespace EatFitAI.API.DTOs.MealDiary
 {
     public class MealDiaryDto
@@ -26,6 +28,7 @@ namespace EatFitAI.API.DTOs.MealDiary
         public string? PhotoUrl { get; set; }
         public string? SourceMethod { get; set; }
         public string? FoodItemThumbNail { get; set; }
+        public FoodTrustSummaryDto? TrustSummary { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime UpdatedAt { get; set; }
         public bool IsDeleted { get; set; }

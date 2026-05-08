@@ -39,12 +39,12 @@
 
 ## A5. AI Scan UX (Section 12.2, #2, §16.1)
 
-- [ ] **A5.1** UI 3-tier confidence: Low (đỏ) / Medium (vàng) / High (xanh) với message rõ
-- [ ] **A5.2** Low confidence: "Tôi không chắc, bạn kiểm tra giúp?" + search fallback
-- [ ] **A5.3** Medium: "Có phải [tên món]?" + top-3 candidates
-- [ ] **A5.4** High: pre-fill, cho phép save nhanh
-- [ ] **A5.5** Block auto-save button khi `RequiresUserConfirmation = true`
-- [ ] **A5.6** Sau scan: 3 option rõ — save exact / edit portion / save rough estimate
+- [ ] **A5.1** Kết quả scan hiển thị dạng compact meal basket, không hiển thị full detail từng món ngay màn đầu
+- [ ] **A5.2** Mỗi dòng chỉ có: checkbox, tên món, khẩu phần ước tính, kcal, 1 badge nhỏ (`Đã kiểm chứng` / `Ước tính` / `Cần kiểm tra`)
+- [ ] **A5.3** Mặc định chỉ show tối đa 3 món chính; món dư/không chắc gom vào nhóm "Cần kiểm tra"
+- [ ] **A5.4** Trust/source/missing nutrients chỉ mở trong bottom sheet khi user tap badge, không dàn ra list scan
+- [ ] **A5.5** Block auto-save khi mobile review guard yêu cầu user xác nhận
+- [ ] **A5.6** Sau scan: 3 action rõ — lưu món đã chọn / sửa khẩu phần / chụp lại hoặc tìm thủ công
 - [ ] **A5.7** Portion prompt theo preset Việt: tô nhỏ/vừa/lớn, chén, phần (Ref: §2.3)
 - [ ] **A5.8** Ảnh không có đồ ăn → message "Không thấy món ăn" rõ ràng (Ref: §16.1)
 - [ ] **A5.9** Processing > 3 giây → hint "đang nhận diện, bạn có thể nhập voice/manual"
@@ -125,6 +125,17 @@
 
 # ⚙️ NHÁNH B: CẢI THIỆN LOGIC + THÔNG MINH + CLOUD + CODING
 
+## B0. Foundation & Rollout Readiness
+
+- [ ] **B0.1** Chốt nguồn sự thật cho schema hiện tại: `FoodItem`, `MealDiary`, `NutritionTarget`, `User`, `UserRecentFood`, `FoodServing`
+- [ ] **B0.2** Lập migration/backfill plan trước khi thêm field mới: default value, nullable/non-nullable, dữ liệu cũ sẽ hiển thị thế nào
+- [ ] **B0.3** Chốt quy tắc ngày theo user-local date cho day completeness, streak, lapse, weekly review, notification
+- [ ] **B0.4** Chốt API contract giữa backend và mobile: DTO backend, TypeScript types, normalize mapper trong service mobile
+- [ ] **B0.5** Lập test matrix theo từng flow: backend unit, backend integration, mobile Jest, smoke trên device/emulator
+- [ ] **B0.6** Chốt rollout/rollback plan cho logic ảnh hưởng dữ liệu thật: feature flag, staged release, cách tắt nhanh nếu sai
+- [ ] **B0.7** Kiểm tra encoding/mojibake trước và sau khi sửa các text tiếng Việt user-facing
+- [ ] **B0.8** Cập nhật docs/architecture nếu contract mới thay đổi API, DB, hoặc luồng mobile-backend
+
 ## B1. Day Completeness Contract — Backend (Section #1, §13.2)
 
 - [ ] **B1.1** Thêm enum `DayCompletenessStatus { NoLog, Partial, Complete, Rough, Skipped, LowConfidence }`
@@ -134,22 +145,15 @@
 - [ ] **B1.5** Streak logic dùng Day Completeness thay vì `calories > 0` (Ref: §12.4)
 - [ ] **B1.6** Unit tests: verify ngày partial không được tính là complete
 
-## B2. AI Confidence Gate — Backend (Section #2, §13.2)
-
-- [ ] **B2.1** Thêm vào `MappedFoodDto`: `ConfidenceLevel` (enum Low/Medium/High), `RequiresUserConfirmation` (bool)
-- [ ] **B2.2** Logic: <0.70 → Low / 0.70-0.85 → Medium / >0.85 → High
-- [ ] **B2.3** `RequiresUserConfirmation = true` khi Low hoặc Medium
-- [ ] **B2.4** Warning message field trong DTO theo tier
-- [ ] **B2.5** Unit tests: verify confidence tier mapping
-
 ## B3. Food Trust Contract — Backend (Section #3, §13.2)
 
-- [ ] **B3.1** Thêm vào model `FoodItem`: `DataSource` enum (USDA/FAO/Manufacturer/UserCreated/AIEstimate)
-- [ ] **B3.2** Thêm `VerificationStatus` enum (LabVerified/StaffVerified/Unverified/NeedsReview)
-- [ ] **B3.3** Thêm `CompletenessScore` (decimal 0-100) = % nutrients có data thực
-- [ ] **B3.4** Rule: `CompletenessScore < 50%` → loại khỏi adaptive target input
-- [ ] **B3.5** Migration DB cho các field mới
-- [ ] **B3.6** API expose trust fields trong food search/diary responses
+- [ ] **B3.1** Audit field trust hiện có: `FoodItem.IsVerified`, `CredibilityScore`, `FoodItemDto.Source`, `ReliabilityScore`, `MealDiary.SourceMethod`
+- [ ] **B3.2** Chốt contract trust theo 2 lớp: `trustSummary` ngắn cho list UI, `trustDetails` đầy đủ cho bottom sheet/detail screen
+- [ ] **B3.3** Chỉ thêm DB field mới nếu không derive được từ field hiện có: ví dụ `VerificationStatus`, `NutrientCompletenessScore`, `MissingNutrients`, `LastReviewedAt`
+- [ ] **B3.4** Tính `CompletenessScore` = % calories/protein/carb/fat/sodium/fiber có data thật; missing không được xem là 0
+- [ ] **B3.5** Rule: data thiếu hoặc trust thấp chỉ hiển thị warning, không dùng cho adaptive/weekly conclusion mạnh
+- [ ] **B3.6** API expose trust summary trong food search/barcode/diary responses, expose trust details chỉ khi màn detail cần
+- [ ] **B3.7** Migration/backfill + unit/integration tests cho trust fields và missing nutrients
 
 ## B4. Barcode Missing-vs-Zero Contract (Section §12.4, §13.2)
 
@@ -238,7 +242,7 @@
 
 - [ ] **B13.1** Nâng recovery threshold (hiện 0.05) hoặc bắt buộc review-only cho recovery
 - [ ] **B13.2** Correction memory: lưu user correction → ưu tiên món/portion lần sau
-- [ ] **B13.3** Multi-food detection: tạo basket theo từng món
+- [ ] **B13.3** Multi-food detection: tạo compact meal basket, mặc định chọn tối đa 3 món chính và gom món không chắc vào "Cần kiểm tra"
 - [ ] **B13.4** Negative benchmark: test với ảnh bàn trống, tay, bao bì, nước uống
 
 ## B14. Voice Logic Improvements (Section §16.2)
@@ -261,7 +265,7 @@
 - [ ] **B16.2** Test: adaptive target không chạy trên partial-heavy data
 - [ ] **B16.3** Test: notification suppress nếu user đã log hoặc quiet hours
 - [ ] **B16.4** Test: streak không dùng calories > 0 làm nguồn duy nhất
-- [ ] **B16.5** Test: AI confidence tier mapping chính xác
+- [ ] **B16.5** Test: food trust fields expose đúng trong search/diary responses
 - [ ] **B16.6** Test: calorie floor/ceiling enforced
 
 ---
@@ -270,9 +274,9 @@
 
 | Sprint | Nhánh A (UI/UX) | Nhánh B (Logic/Code) |
 |--------|-----------------|----------------------|
-| **Sprint 1** | A5 (AI Scan UX), A9 (Recovery Flow) | B2 (AI Confidence), B6 (Lapse Recovery), B7.1-B7.2 (Quick wins: calorie floor + data gate 14) |
-| **Sprint 2** | A4 (Day Completeness UI), A14 (Safety UX) | B1 (Day Completeness), B4 (Missing-vs-Zero), B15 (ED Safety), B9 (Streak fix) |
-| **Sprint 3** | A3 (Trust Badge), A10 (Weekly Review), A7 (Barcode UX) | B3 (Food Trust), B5 (JITAI Notification), B8 (Weekly Review refactor) |
+| **Sprint 1** | A9 (Recovery Flow), A14 (Safety UX) | B0 (Foundation), B6 (Lapse Recovery), B7.1-B7.2 (Quick wins: calorie floor + data gate 14) |
+| **Sprint 2** | A4 (Day Completeness UI), A7 (Barcode UX) | B1 (Day Completeness), B4 (Missing-vs-Zero), B15 (ED Safety), B9 (Streak fix) |
+| **Sprint 3** | A3 (Trust Badge), A10 (Weekly Review) | B3 (Food Trust), B5 (JITAI Notification), B8 (Weekly Review refactor) |
 | **Sprint 4** | A1 (Onboarding), A2 (Home), A11 (Notification settings) | B10 (VN Portion), B11 (Telemetry), B12 (Infrastructure) |
 | **Q3** | A6 (Voice UX), A8 (Search UX), A12 (Diary), A13 (Adaptive UX) | B13 (AI Scan logic), B14 (Voice logic), B16 (Contract tests) |
 
@@ -282,7 +286,6 @@
 
 - [ ] `Math.Max(newCal, 1200)` vào `CalculateAdaptiveAdjustments()` → B7.2
 - [ ] `daysWithData >= 10` → `>= 14` → B7.1
-- [ ] Thêm `ConfidenceLevel` + `RequiresUserConfirmation` vào `MappedFoodDto` → B2.1
 - [ ] Enforce quiet hours trong `scheduleDailyNotification()` → B5.3
 - [ ] `recommendations.Take(1)` cho weekly context → B8.1
 
@@ -291,4 +294,4 @@
 > **3 rủi ro lớn nhất cần fix trước** (Ref: §13.7):
 > 1. 🔴 Adaptive Target không có safety floor → suggest calorie < 1000 kcal
 > 2. 🔴 Recovery Flow = 0 → user bỏ app = mất vĩnh viễn
-> 3. 🔴 AI Confidence không phân tier → user tin detection sai
+> 3. 🔴 Barcode missing nutrient bị hiểu thành 0 → user tin dữ liệu dinh dưỡng sai

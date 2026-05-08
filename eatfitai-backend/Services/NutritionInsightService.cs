@@ -156,22 +156,48 @@ namespace EatFitAI.API.Services
                 throw new InvalidOperationException("Không tìm thấy mục tiêu dinh dưỡng đang áp dụng cho người dùng");
             }
 
+            var user = await _db.Users
+                .AsNoTracking()
+                .Where(item => item.UserId == userId)
+                .Select(item => new { item.HasEDRisk, item.Gender })
+                .FirstOrDefaultAsync(cancellationToken);
+
+            if (user?.HasEDRisk == true)
+            {
+                return BuildUnchangedAdaptiveTarget(
+                    currentTarget,
+                    "Tạm tắt điều chỉnh tự động để ưu tiên an toàn dinh dưỡng.",
+                    confidence: 0);
+            }
+
             // Get meal history
             var mealHistory = await _db.MealDiaries
                 .Where(m => m.UserId == userId && m.EatenDate >= startDate && m.EatenDate <= today)
                 .ToListAsync(cancellationToken);
 
-            // Calculate averages
+            // Calculate averages from complete local days only. Partial-heavy logs should never move targets.
             var dailyStats = mealHistory
                 .GroupBy(m => m.EatenDate)
                 .Select(g => new
                 {
+                    Date = g.Key,
                     TotalCalories = g.Sum(m => m.Calories),
                     TotalProtein = g.Sum(m => m.Protein),
                     TotalCarbs = g.Sum(m => m.Carb),
-                    TotalFat = g.Sum(m => m.Fat)
+                    TotalFat = g.Sum(m => m.Fat),
+                    Meals = g.Select(m => new { m.MealTypeId, m.Calories }).ToList()
                 })
+                .Where(day => DayCompletenessService.IsCompleteDay(
+                    day.Meals.Select(meal => (meal.MealTypeId, meal.Calories))))
                 .ToList();
+
+            if (dailyStats.Count < 14)
+            {
+                return BuildUnchangedAdaptiveTarget(
+                    currentTarget,
+                    $"Cần ít nhất 14 ngày hoàn chỉnh để điều chỉnh mục tiêu. Hiện có {dailyStats.Count}/14 ngày.",
+                    confidence: Math.Min(50, dailyStats.Count * 4));
+            }
 
             var avgCalories = dailyStats.Any() ? dailyStats.Average(d => d.TotalCalories) : 0;
             var avgProtein = dailyStats.Any() ? dailyStats.Average(d => d.TotalProtein) : 0;
@@ -184,6 +210,9 @@ namespace EatFitAI.API.Services
                     avgCalories, avgProtein, avgCarbs, avgFat,
                     currentTarget.TargetCalories, currentTarget.TargetProtein, currentTarget.TargetCarb, currentTarget.TargetFat,
                     dailyStats.Count);
+
+            suggestedCalories = ClampCalories(suggestedCalories, user?.Gender);
+            RebalanceMacrosForCalories(ref suggestedProtein, ref suggestedCarbs, ref suggestedFat, suggestedCalories);
 
             var adaptiveTarget = new AdaptiveTargetDto
             {
@@ -250,6 +279,55 @@ namespace EatFitAI.API.Services
             await _db.SaveChangesAsync(cancellationToken);
 
             _logger.LogInformation("Applied adaptive nutrition target for user {UserId}", userId);
+        }
+
+        private static AdaptiveTargetDto BuildUnchangedAdaptiveTarget(
+            DbScaffold.Models.NutritionTarget currentTarget,
+            string reason,
+            decimal confidence)
+        {
+            var target = new NutritionTargetDto
+            {
+                TargetCalories = currentTarget.TargetCalories,
+                TargetProtein = currentTarget.TargetProtein,
+                TargetCarbs = currentTarget.TargetCarb,
+                TargetFat = currentTarget.TargetFat
+            };
+
+            return new AdaptiveTargetDto
+            {
+                CurrentTarget = target,
+                SuggestedTarget = new NutritionTargetDto
+                {
+                    TargetCalories = target.TargetCalories,
+                    TargetProtein = target.TargetProtein,
+                    TargetCarbs = target.TargetCarbs,
+                    TargetFat = target.TargetFat
+                },
+                AdjustmentReasons = new List<string> { reason },
+                ConfidenceScore = confidence,
+                Applied = false
+            };
+        }
+
+        private static int ClampCalories(int calories, string? gender)
+        {
+            var normalizedGender = gender?.Trim().ToLowerInvariant();
+            var floor = normalizedGender == "female" ? 1200 : 1500;
+            const int ceiling = 4500;
+            return Math.Clamp(calories, floor, ceiling);
+        }
+
+        private static void RebalanceMacrosForCalories(
+            ref int protein,
+            ref int carbs,
+            ref int fat,
+            int calories)
+        {
+            protein = Math.Max(30, protein);
+            var remainingCalories = Math.Max(0, calories - protein * 4);
+            carbs = Math.Max(0, (int)Math.Round(remainingCalories * 0.5m / 4m));
+            fat = Math.Max(20, (int)Math.Round(remainingCalories * 0.5m / 9m));
         }
 
         #region Private Helper Methods

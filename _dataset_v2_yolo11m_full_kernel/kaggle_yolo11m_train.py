@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import glob
+import json
 import os
 import shutil
 import subprocess
@@ -223,11 +224,54 @@ def copy_training_artifacts(run_dir: Path, working_dir: Path = KAGGLE_WORKING, c
         shutil.copy2(src, checkpoint_dir / src.name)
         root_name = f"yolo11m_{src.name}" if src.name in {"last.pt", "best.pt"} else src.name
         shutil.copy2(src, working_dir / root_name)
+        if src.name in {"last.pt", "best.pt"}:
+            shutil.copy2(src, working_dir / f"yolo11m_resume_{src.name}")
+    for src in sorted(weights.glob("*.onnx")) if weights.exists() else []:
+        shutil.copy2(src, working_dir / src.name)
     for name in ("results.csv", "args.yaml"):
         src = run_dir / name
         if src.exists():
             shutil.copy2(src, checkpoint_dir / name)
             shutil.copy2(src, working_dir / f"yolo11m_{name}")
+    write_resume_manifest(run_dir, working_dir)
+
+
+def last_recorded_epoch(results_csv: Path) -> int | None:
+    if not results_csv.exists():
+        return None
+    last_epoch: int | None = None
+    for line in results_csv.read_text(encoding="utf-8").splitlines()[1:]:
+        parts = [part.strip() for part in line.split(",")]
+        if not parts or not parts[0]:
+            continue
+        try:
+            last_epoch = int(float(parts[0]))
+        except ValueError:
+            continue
+    return last_epoch
+
+
+def write_resume_manifest(run_dir: Path, working_dir: Path = KAGGLE_WORKING) -> None:
+    weights = run_dir / "weights"
+    last_src = weights / "last.pt"
+    best_src = weights / "best.pt"
+    onnx_src = weights / "best.onnx"
+    manifest = {
+        "status": "checkpoint_available" if last_src.exists() else "no_checkpoint_yet",
+        "run_dir": str(run_dir),
+        "last_checkpoint": "yolo11m_resume_last.pt" if last_src.exists() else None,
+        "best_checkpoint": "yolo11m_resume_best.pt" if best_src.exists() else None,
+        "onnx_export": "best.onnx" if onnx_src.exists() else None,
+        "last_recorded_epoch": last_recorded_epoch(run_dir / "results.csv"),
+        "resume_note": (
+            "Attach this Kaggle output as an input dataset on the next run; "
+            "the script will auto-discover _yolo11m_checkpoints/last.pt."
+        ),
+    }
+    (working_dir / "yolo11m_resume_manifest.json").write_text(
+        json.dumps(manifest, ensure_ascii=False, indent=2) + "\n",
+        encoding="utf-8",
+    )
 
 
 def register_checkpoint_callbacks(model: object, run_dir: Path) -> None:

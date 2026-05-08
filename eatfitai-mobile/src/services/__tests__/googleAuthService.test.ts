@@ -38,3 +38,118 @@ describe('normalizeGoogleAuthResponse', () => {
     expect(response.user?.name).toBe('Top Name');
   });
 });
+
+describe('googleAuthService Android Credential Manager path', () => {
+  const originalEnv = process.env;
+
+  beforeEach(() => {
+    jest.resetModules();
+    process.env = {
+      ...originalEnv,
+      EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID: 'web-client.apps.googleusercontent.com',
+      EXPO_PUBLIC_GOOGLE_OFFLINE_ACCESS: 'false',
+      EXPO_PUBLIC_GOOGLE_FORCE_CODE_FOR_REFRESH_TOKEN: 'false',
+    };
+  });
+
+  afterEach(() => {
+    process.env = originalEnv;
+    jest.dontMock('react-native');
+    jest.dontMock('@react-native-google-signin/google-signin');
+  });
+
+  it('uses Android Credential Manager before the legacy Google Sign-In module', async () => {
+    const credentialSignIn = jest.fn().mockResolvedValue({
+      idToken: 'modern-id-token',
+      user: {
+        id: 'google-user-1',
+        email: 'modern@example.com',
+        name: 'Modern User',
+        photo: 'https://example.com/avatar.png',
+      },
+    });
+    const legacySignIn = jest.fn();
+
+    jest.doMock('react-native', () => {
+      return {
+        Platform: { OS: 'android' },
+        NativeModules: {
+          EatFitCredentialManager: {
+            signIn: credentialSignIn,
+            clearCredentialState: jest.fn(),
+          },
+        },
+      };
+    });
+
+    jest.doMock('@react-native-google-signin/google-signin', () => ({
+      GoogleSignin: {
+        configure: jest.fn(),
+        hasPlayServices: jest.fn().mockResolvedValue(true),
+        signIn: legacySignIn,
+      },
+      statusCodes: {},
+    }));
+
+    const { googleAuthService } = require('../googleAuthService');
+
+    await expect(googleAuthService.configure()).resolves.toBe(true);
+    await expect(googleAuthService.signIn()).resolves.toMatchObject({
+      success: true,
+      idToken: 'modern-id-token',
+      user: {
+        email: 'modern@example.com',
+      },
+    });
+
+    expect(credentialSignIn).toHaveBeenCalledWith('web-client.apps.googleusercontent.com');
+    expect(legacySignIn).not.toHaveBeenCalled();
+  });
+
+  it('falls back to legacy Google Sign-In when Credential Manager is unavailable', async () => {
+    const legacySignIn = jest.fn().mockResolvedValue({
+      type: 'success',
+      data: {
+        idToken: 'legacy-id-token',
+        serverAuthCode: null,
+        user: {
+          id: 'legacy-user-1',
+          email: 'legacy@example.com',
+          name: 'Legacy User',
+          photo: null,
+        },
+      },
+    });
+
+    jest.doMock('react-native', () => {
+      return {
+        Platform: { OS: 'android' },
+        NativeModules: {
+          EatFitCredentialManager: undefined,
+        },
+      };
+    });
+
+    jest.doMock('@react-native-google-signin/google-signin', () => ({
+      GoogleSignin: {
+        configure: jest.fn(),
+        hasPlayServices: jest.fn().mockResolvedValue(true),
+        signIn: legacySignIn,
+      },
+      statusCodes: {},
+    }));
+
+    const { googleAuthService } = require('../googleAuthService');
+
+    await expect(googleAuthService.configure()).resolves.toBe(true);
+    await expect(googleAuthService.signIn()).resolves.toMatchObject({
+      success: true,
+      idToken: 'legacy-id-token',
+      user: {
+        email: 'legacy@example.com',
+      },
+    });
+
+    expect(legacySignIn).toHaveBeenCalledTimes(1);
+  });
+});

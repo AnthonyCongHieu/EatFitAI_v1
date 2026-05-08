@@ -1,3 +1,5 @@
+using EatFitAI.API.DTOs.Common;
+
 namespace EatFitAI.API.DTOs.Food
 {
     public class FoodSearchResultDto
@@ -11,6 +13,9 @@ namespace EatFitAI.API.DTOs.Food
         public decimal ProteinPer100 { get; set; }
         public decimal CarbPer100 { get; set; }
         public decimal FatPer100 { get; set; }
+        public decimal NutrientCompletenessScore { get; set; } = 100;
+        public List<string> MissingNutrients { get; set; } = new();
+        public FoodTrustSummaryDto? TrustSummary { get; set; }
         public ImageVariantsDto? ImageVariants { get; set; }
     }
 }

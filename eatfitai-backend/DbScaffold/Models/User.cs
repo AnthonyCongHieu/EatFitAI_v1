@@ -50,6 +50,9 @@ public partial class User
     public int LongestStreak { get; set; } = 0;
     public DateTime? LastLogDate { get; set; }  // Ngày cuối cùng ghi nhật ký
 
+    public bool HasEDRisk { get; set; } = false;
+    public DateTime? LastReviewDate { get; set; }
+
     public virtual ICollection<AILog> AILogs { get; set; } = new List<AILog>();
 
     public virtual ICollection<BodyMetric> BodyMetrics { get; set; } = new List<BodyMetric>();

@@ -6,8 +6,8 @@
     "release-base": {
       "env": {
         "NODE_ENV": "production",
-        "EXPO_PUBLIC_GOOGLE_OFFLINE_ACCESS": "true",
-        "EXPO_PUBLIC_GOOGLE_FORCE_CODE_FOR_REFRESH_TOKEN": "true"
+        "EXPO_PUBLIC_GOOGLE_OFFLINE_ACCESS": "false",
+        "EXPO_PUBLIC_GOOGLE_FORCE_CODE_FOR_REFRESH_TOKEN": "false"
       }
     },
     "preview": {

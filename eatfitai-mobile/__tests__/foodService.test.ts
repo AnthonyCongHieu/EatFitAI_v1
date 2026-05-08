@@ -132,6 +132,44 @@ describe('foodService', () => {
         calories: 90,
       });
     });
+
+    it('preserves barcode trust and missing nutrient fields', async () => {
+      (apiClient.get as jest.Mock).mockResolvedValue({
+        data: {
+          barcode: '8938505974198',
+          source: 'provider',
+          foodItem: {
+            foodItemId: 12,
+            foodName: 'Sữa chua',
+            caloriesPer100g: 90,
+            proteinPer100g: 0,
+            carbPer100g: 12,
+            fatPer100g: 0,
+            missingNutrients: ['protein', 'fat'],
+            nutrientCompletenessScore: 50,
+            trustSummary: {
+              status: 'needs_review',
+              label: 'Cần kiểm tra',
+              score: 50,
+              needsReview: true,
+              missingNutrients: ['protein', 'fat'],
+            },
+          },
+        },
+      });
+
+      const result = await foodService.lookupByBarcode('8938505974198');
+
+      expect(result).toMatchObject({
+        missingNutrients: ['protein', 'fat'],
+        nutrientCompletenessScore: 50,
+        trustSummary: {
+          status: 'needs_review',
+          label: 'Cần kiểm tra',
+          needsReview: true,
+        },
+      });
+    });
   });
 
   describe('searchAllFoods', () => {

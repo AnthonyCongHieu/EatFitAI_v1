@@ -80,3 +80,14 @@ public class UserWeekDataDto
     
     public DateTime? LastReviewDate { get; set; }
 }
+
+public sealed class ReviewActionRequestDto
+{
+    public string Action { get; set; } = string.Empty; // accept, done, snooze, useful
+}
+
+public sealed class ReviewActionResponseDto
+{
+    public string Action { get; set; } = string.Empty;
+    public DateTime RecordedAt { get; set; }
+}

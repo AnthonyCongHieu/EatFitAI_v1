@@ -23,10 +23,10 @@ export const GOOGLE_CONFIG = {
   webClientId: normalizeClientId(process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID),
   iosClientId: normalizeClientId(process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID),
   scopes: ['profile', 'email'],
-  offlineAccess: readBooleanEnv(process.env.EXPO_PUBLIC_GOOGLE_OFFLINE_ACCESS, true),
+  offlineAccess: readBooleanEnv(process.env.EXPO_PUBLIC_GOOGLE_OFFLINE_ACCESS, false),
   forceCodeForRefreshToken: readBooleanEnv(
     process.env.EXPO_PUBLIC_GOOGLE_FORCE_CODE_FOR_REFRESH_TOKEN,
-    true,
+    false,
   ),
 };
 
@@ -55,7 +55,8 @@ export const GOOGLE_SETUP_GUIDE = `
 1. Tao OAuth client IDs trong Google Cloud Console.
 2. Set EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID trong env development/production.
 3. Set EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID cho iOS builds.
-4. Rebuild app sau khi cap nhat credentials native.
+4. Chi bat EXPO_PUBLIC_GOOGLE_OFFLINE_ACCESS khi backend can serverAuthCode.
+5. Rebuild app sau khi cap nhat credentials native.
 `;
 
 export default GOOGLE_CONFIG;

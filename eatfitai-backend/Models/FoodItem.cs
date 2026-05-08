@@ -35,7 +35,13 @@ public partial class FoodItem
 
     public bool IsVerified { get; set; }
 
+    public string? VerifiedBy { get; set; }
+
     public int CredibilityScore { get; set; } = 50;
+    public string? VerificationStatus { get; set; }
+    public decimal NutrientCompletenessScore { get; set; } = 100;
+    public string? MissingNutrients { get; set; }
+    public DateTime? LastReviewedAt { get; set; }
 
     public virtual ICollection<AISuggestion> AISuggestions { get; set; } = new List<AISuggestion>();
 

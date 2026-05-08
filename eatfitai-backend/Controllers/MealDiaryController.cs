@@ -1,6 +1,8 @@
 using System.Security.Claims;
+using EatFitAI.API.DTOs.Common;
 using EatFitAI.API.DTOs.MealDiary;
 using EatFitAI.API.Helpers;
+using EatFitAI.API.Services;
 using EatFitAI.API.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -13,10 +15,14 @@ namespace EatFitAI.API.Controllers
     public class MealDiaryController : ControllerBase
     {
         private readonly IMealDiaryService _mealDiaryService;
+        private readonly IDayCompletenessService _dayCompletenessService;
 
-        public MealDiaryController(IMealDiaryService mealDiaryService)
+        public MealDiaryController(
+            IMealDiaryService mealDiaryService,
+            IDayCompletenessService dayCompletenessService)
         {
             _mealDiaryService = mealDiaryService;
+            _dayCompletenessService = dayCompletenessService;
         }
 
         [HttpGet]
@@ -35,6 +41,28 @@ namespace EatFitAI.API.Controllers
             catch (Exception)
             {
                 return StatusCode(500, ErrorResponseHelper.SafeError("Đã xảy ra lỗi khi lấy nhật ký bữa ăn", HttpContext));
+            }
+        }
+
+        [HttpGet("day-state")]
+        public async Task<ActionResult<DayCompletenessDto>> GetDayState([FromQuery] DateTime? date)
+        {
+            try
+            {
+                var userId = GetUserIdFromToken();
+                var localDate = DateOnly.FromDateTime(date ?? DateTime.UtcNow);
+                var dayState = await _dayCompletenessService.GetDayCompletenessAsync(userId, localDate);
+                return Ok(dayState);
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return Unauthorized(ErrorResponseHelper.SafeError("Token người dùng không hợp lệ", HttpContext));
+            }
+            catch (Exception)
+            {
+                return StatusCode(500, ErrorResponseHelper.SafeError(
+                    "Đã xảy ra lỗi khi lấy trạng thái ngày",
+                    HttpContext));
             }
         }
 

@@ -87,6 +87,30 @@ const toPositiveNumber = (value: unknown): number | null => {
 const toStringOrNull = (value: unknown): string | null =>
   value == null ? null : String(value);
 
+const toStringArray = (value: unknown): string[] => {
+  if (!Array.isArray(value)) return [];
+  return value.map((item) => String(item).trim()).filter(Boolean);
+};
+
+const normalizeFoodTrustSummary = (value: unknown): MappedFoodItem['trustSummary'] => {
+  if (!value || typeof value !== 'object') return null;
+  const data = value as {
+    status?: unknown;
+    label?: unknown;
+    score?: unknown;
+    needsReview?: unknown;
+    missingNutrients?: unknown;
+  };
+
+  return {
+    status: String(data.status ?? 'low_confidence'),
+    label: String(data.label ?? 'Độ tin cậy thấp'),
+    score: toNumber(data.score) ?? 0,
+    needsReview: Boolean(data.needsReview),
+    missingNutrients: toStringArray(data.missingNutrients),
+  };
+};
+
 const clamp = (value: number, min: number, max: number): number =>
   Math.min(Math.max(value, min), max);
 
@@ -224,6 +248,9 @@ export const normalizeMappedFoodItem = (item: any): MappedFoodItem => {
     fatPer100g: toNumber(item?.fatPer100g),
     carbPer100g: toNumber(item?.carbPer100g),
     thumbNail: sanitizeFoodImageUrl(item?.thumbNail ? String(item.thumbNail) : null),
+    missingNutrients: toStringArray(item?.missingNutrients),
+    nutrientCompletenessScore: toNumber(item?.nutrientCompletenessScore),
+    trustSummary: normalizeFoodTrustSummary(item?.trustSummary),
     isMatched: Boolean(item?.isMatched ?? item?.foodItemId ?? item?.foodName),
   };
 };

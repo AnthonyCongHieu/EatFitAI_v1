@@ -118,6 +118,32 @@ class DatasetV2Yolo11mTrainHandoffTests(unittest.TestCase):
             self.assertTrue((checkpoint_dir / "epoch1.pt").exists())
             self.assertTrue((checkpoint_dir / "results.csv").exists())
 
+    def test_training_kernel_writes_unambiguous_resume_bundle_manifest(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            run_dir = root / "runs" / "food-detection" / "yolo11m-eatfitai-clean-v1"
+            weights = run_dir / "weights"
+            weights.mkdir(parents=True)
+            (weights / "last.pt").write_bytes(b"last")
+            (weights / "best.pt").write_bytes(b"best")
+            (weights / "best.onnx").write_bytes(b"onnx")
+            (run_dir / "results.csv").write_text("epoch,box_loss\n0,1.2\n1,0.9\n", encoding="utf-8")
+
+            checkpoint_dir = root / "working" / "_yolo11m_checkpoints"
+            train_kernel.copy_training_artifacts(run_dir, root / "working", checkpoint_dir)
+
+            manifest_path = root / "working" / "yolo11m_resume_manifest.json"
+            self.assertTrue(manifest_path.exists())
+            manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+
+            self.assertEqual((root / "working" / "yolo11m_resume_last.pt").read_bytes(), b"last")
+            self.assertEqual((root / "working" / "yolo11m_resume_best.pt").read_bytes(), b"best")
+            self.assertEqual(manifest["status"], "checkpoint_available")
+            self.assertEqual(manifest["last_checkpoint"], "yolo11m_resume_last.pt")
+            self.assertEqual(manifest["best_checkpoint"], "yolo11m_resume_best.pt")
+            self.assertEqual(manifest["onnx_export"], "best.onnx")
+            self.assertEqual(manifest["last_recorded_epoch"], 1)
+
     def test_training_kernel_rejects_dataset_extract_when_disk_room_is_insufficient(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
@@ -189,7 +215,7 @@ class DatasetV2Yolo11mTrainHandoffTests(unittest.TestCase):
         self.assertTrue(metadata["enable_gpu"])
         self.assertEqual(metadata.get("machine_shape"), "NvidiaTeslaT4")
         self.assertIn("hiuinhcng/eatfitai-dataset-v2-clean-build", metadata["kernel_sources"])
-        self.assertEqual(metadata.get("dataset_sources", []), [])
+        self.assertIn("hiuinhcng/eatfitai-yolo11m-clean-v1-checkpoint", metadata["dataset_sources"])
 
 
 if __name__ == "__main__":

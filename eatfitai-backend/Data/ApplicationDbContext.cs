@@ -176,11 +176,18 @@ public partial class ApplicationDbContext : DbContext
             entity.Property(e => e.FatPer100g).HasColumnType("decimal(10, 2)");
             entity.Property(e => e.FoodName).HasMaxLength(255);
             entity.Property(e => e.IsActive).HasDefaultValue(true);
+            entity.Property(e => e.LastReviewedAt).HasPrecision(3);
+            entity.Property(e => e.MissingNutrients).HasMaxLength(120);
+            entity.Property(e => e.NutrientCompletenessScore)
+                .HasColumnType("decimal(5, 2)")
+                .HasDefaultValue(100m);
             entity.Property(e => e.ProteinPer100g).HasColumnType("decimal(10, 2)");
             entity.Property(e => e.ThumbNail).HasMaxLength(255);
             entity.Property(e => e.UpdatedAt)
                 .HasPrecision(3)
                 .HasDefaultValueSql("NOW() AT TIME ZONE 'UTC'");
+            entity.Property(e => e.VerificationStatus).HasMaxLength(50);
+            entity.Property(e => e.VerifiedBy).HasMaxLength(100);
         });
 
         modelBuilder.Entity<FoodServing>(entity =>
@@ -350,6 +357,8 @@ public partial class ApplicationDbContext : DbContext
             entity.Property(e => e.Email).HasMaxLength(256);
             entity.Property(e => e.PasswordHash).HasMaxLength(256);
             entity.Property(e => e.Role).HasMaxLength(80).HasDefaultValue("user");
+            entity.Property(e => e.HasEDRisk).HasDefaultValue(false);
+            entity.Property(e => e.LastReviewDate).HasPrecision(3);
             entity.Property(e => e.TargetWeightKg).HasColumnType("numeric");
             entity.Property(e => e.VerificationCode)
                 .HasColumnName("EmailVerificationToken");

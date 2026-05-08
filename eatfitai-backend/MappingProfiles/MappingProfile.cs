@@ -31,7 +31,38 @@ namespace EatFitAI.API.MappingProfiles
                     opt => opt.MapFrom(src => MediaVariantHelper.FromThumbUrl(src.ThumbNail)))
                 .ForMember(
                     dest => dest.ReliabilityScore,
-                    opt => opt.MapFrom(src => src.CredibilityScore / 100.0));
+                    opt => opt.MapFrom(src => src.CredibilityScore / 100.0))
+                .ForMember(
+                    dest => dest.MissingNutrients,
+                    opt => opt.MapFrom(src => FoodTrustBuilder.ParseMissingNutrients(src.MissingNutrients)))
+                .ForMember(
+                    dest => dest.TrustSummary,
+                    opt => opt.MapFrom(src => FoodTrustBuilder.BuildSummary(new FoodItemDto
+                    {
+                        FoodItemId = src.FoodItemId,
+                        FoodName = src.FoodName,
+                        IsVerified = src.IsVerified,
+                        VerifiedBy = src.VerifiedBy,
+                        VerificationStatus = src.VerificationStatus,
+                        ReliabilityScore = src.CredibilityScore / 100.0,
+                        NutrientCompletenessScore = src.NutrientCompletenessScore,
+                        MissingNutrients = FoodTrustBuilder.ParseMissingNutrients(src.MissingNutrients),
+                        LastReviewedAt = src.LastReviewedAt
+                    })))
+                .ForMember(
+                    dest => dest.TrustDetails,
+                    opt => opt.MapFrom(src => FoodTrustBuilder.BuildDetails(new FoodItemDto
+                    {
+                        FoodItemId = src.FoodItemId,
+                        FoodName = src.FoodName,
+                        IsVerified = src.IsVerified,
+                        VerifiedBy = src.VerifiedBy,
+                        VerificationStatus = src.VerificationStatus,
+                        ReliabilityScore = src.CredibilityScore / 100.0,
+                        NutrientCompletenessScore = src.NutrientCompletenessScore,
+                        MissingNutrients = FoodTrustBuilder.ParseMissingNutrients(src.MissingNutrients),
+                        LastReviewedAt = src.LastReviewedAt
+                    })));
             CreateMap<FoodServing, FoodServingDto>()
                 .ForMember(dest => dest.ServingUnitName, opt => opt.MapFrom(src => src.ServingUnit!.Name))
                 .ForMember(dest => dest.ServingUnitSymbol, opt => opt.MapFrom(src => src.ServingUnit!.Symbol));
@@ -47,6 +78,20 @@ namespace EatFitAI.API.MappingProfiles
                 .ForMember(dest => dest.MealTypeName, opt => opt.MapFrom(src => src.MealType!.Name))
                 .ForMember(dest => dest.FoodItemName, opt => opt.MapFrom(src => src.FoodItem != null ? src.FoodItem.FoodName : null))
                 .ForMember(dest => dest.FoodItemThumbNail, opt => opt.MapFrom(src => src.FoodItem != null ? src.FoodItem.ThumbNail : null))
+                .ForMember(dest => dest.TrustSummary, opt => opt.MapFrom(src => src.FoodItem != null
+                    ? FoodTrustBuilder.BuildSummary(new FoodItemDto
+                    {
+                        FoodItemId = src.FoodItem.FoodItemId,
+                        FoodName = src.FoodItem.FoodName,
+                        IsVerified = src.FoodItem.IsVerified,
+                        VerifiedBy = src.FoodItem.VerifiedBy,
+                        VerificationStatus = src.FoodItem.VerificationStatus,
+                        ReliabilityScore = src.FoodItem.CredibilityScore / 100.0,
+                        NutrientCompletenessScore = src.FoodItem.NutrientCompletenessScore,
+                        MissingNutrients = FoodTrustBuilder.ParseMissingNutrients(src.FoodItem.MissingNutrients),
+                        LastReviewedAt = src.FoodItem.LastReviewedAt
+                    })
+                    : null))
                 .ForMember(dest => dest.UserDishName, opt => opt.MapFrom(src => src.UserDish != null ? src.UserDish.DishName : null))
                 .ForMember(dest => dest.RecipeName, opt => opt.MapFrom(src => src.Recipe != null ? src.Recipe.RecipeName : null))
                 .ForMember(dest => dest.ServingUnitName, opt => opt.MapFrom(src => src.ServingUnit != null ? src.ServingUnit.Name : null))

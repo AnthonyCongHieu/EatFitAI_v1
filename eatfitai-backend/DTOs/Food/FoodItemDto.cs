@@ -1,3 +1,5 @@
+using EatFitAI.API.DTOs.Common;
+
 namespace EatFitAI.API.DTOs.Food
 {
     public class FoodItemDto
@@ -15,7 +17,13 @@ namespace EatFitAI.API.DTOs.Food
         public bool IsVerified { get; set; }
         public string? Source { get; set; }
         public string? VerifiedBy { get; set; }
+        public string? VerificationStatus { get; set; }
         public double ReliabilityScore { get; set; }
+        public decimal NutrientCompletenessScore { get; set; } = 100;
+        public List<string> MissingNutrients { get; set; } = new();
+        public FoodTrustSummaryDto? TrustSummary { get; set; }
+        public FoodTrustDetailsDto? TrustDetails { get; set; }
+        public DateTime? LastReviewedAt { get; set; }
         public bool IsDeleted { get; set; }
         public string? ThumbNail { get; set; }
         public bool IsActive { get; set; }

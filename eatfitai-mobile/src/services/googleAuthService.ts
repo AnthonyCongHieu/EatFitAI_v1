@@ -15,6 +15,7 @@
 
 import { GOOGLE_CONFIG, validateGoogleConfig } from '../config/google.config';
 import logger from '../utils/logger';
+import { NativeModules, Platform } from 'react-native';
 
 // Type definitions for Google Sign-in
 interface _GoogleUser {
@@ -41,16 +42,22 @@ interface GoogleSignInModule {
   isSignedIn?: () => Promise<boolean>;
 }
 
+interface CredentialManagerModule {
+  signIn: (webClientId: string) => Promise<any>;
+  clearCredentialState?: () => Promise<boolean>;
+}
+
 // Placeholder - will be replaced with actual import when package is installed
 let GoogleSignin: GoogleSignInModule | null = null;
 let statusCodes: any = null;
+let legacyGoogleConfigured = false;
 
 /**
  * Try to load Google Sign-in module
  */
 const loadGoogleModule = async (): Promise<boolean> => {
   try {
-    const module = await import('@react-native-google-signin/google-signin');
+    const module = require('@react-native-google-signin/google-signin');
     GoogleSignin = module.GoogleSignin as any as GoogleSignInModule;
     statusCodes = module.statusCodes;
     return true;
@@ -58,6 +65,19 @@ const loadGoogleModule = async (): Promise<boolean> => {
     logger.warn('[GoogleAuth] Package not installed. Using fallback.');
     return false;
   }
+};
+
+const getCredentialManagerModule = (): CredentialManagerModule | null => {
+  if (Platform.OS !== 'android') {
+    return null;
+  }
+
+  const module = NativeModules.EatFitCredentialManager as CredentialManagerModule | undefined;
+  if (!module || typeof module.signIn !== 'function') {
+    return null;
+  }
+
+  return module;
 };
 
 const readString = (...values: unknown[]): string => {
@@ -76,6 +96,49 @@ const readBoolean = (...values: unknown[]): boolean => {
     }
   }
   return false;
+};
+
+const normalizeNativeGoogleUser = (payload: any): NonNullable<GoogleAuthResult['user']> => {
+  const source = payload ?? {};
+  const nestedUser = source.user ?? null;
+  return {
+    id: readString(nestedUser?.id, source.id, source.userId),
+    email: readString(nestedUser?.email, source.email),
+    name: readString(nestedUser?.name, nestedUser?.displayName, source.name, source.displayName) || null,
+    photo: readString(nestedUser?.photo, nestedUser?.photoUrl, source.photo, source.photoUrl) || null,
+  };
+};
+
+const configureLegacyGoogleSignIn = async (): Promise<boolean> => {
+  const available = await googleAuthService.isAvailable();
+  if (!available || !GoogleSignin) {
+    logger.warn('[GoogleAuth] Package not installed');
+    return false;
+  }
+
+  const offlineAccess = GOOGLE_CONFIG.offlineAccess;
+
+  GoogleSignin.configure({
+    webClientId: GOOGLE_CONFIG.webClientId,
+    iosClientId: GOOGLE_CONFIG.iosClientId,
+    offlineAccess,
+    forceCodeForRefreshToken: offlineAccess && GOOGLE_CONFIG.forceCodeForRefreshToken,
+    scopes: GOOGLE_CONFIG.scopes,
+  });
+
+  legacyGoogleConfigured = true;
+  return true;
+};
+
+const shouldFallbackFromCredentialManager = (error: any): boolean => {
+  const code = readString(error?.code, error?.message).toLowerCase();
+  return (
+    code.includes('no_credential') ||
+    code.includes('unavailable') ||
+    code.includes('unsupported') ||
+    code.includes('missing_activity') ||
+    code.includes('unknown')
+  );
 };
 
 export type NormalizedGoogleAuthResponse = GoogleAuthResult & {
@@ -178,24 +241,16 @@ export const googleAuthService = {
         return false;
       }
 
-      // Load module
-      const available = await googleAuthService.isAvailable();
-      if (!available || !GoogleSignin) {
-        logger.warn('[GoogleAuth] Package not installed');
-        return false;
+      if (getCredentialManagerModule()) {
+        logger.info('[GoogleAuth] Android Credential Manager configured successfully');
+        return true;
       }
 
-      // Configure
-      GoogleSignin.configure({
-        webClientId: GOOGLE_CONFIG.webClientId,
-        iosClientId: GOOGLE_CONFIG.iosClientId,
-        offlineAccess: GOOGLE_CONFIG.offlineAccess,
-        forceCodeForRefreshToken: GOOGLE_CONFIG.forceCodeForRefreshToken,
-        scopes: GOOGLE_CONFIG.scopes,
-      });
-
-      logger.info('[GoogleAuth] Configured successfully');
-      return true;
+      const legacyConfigured = await configureLegacyGoogleSignIn();
+      if (legacyConfigured) {
+        logger.info('[GoogleAuth] Legacy Google Sign-In configured successfully');
+      }
+      return legacyConfigured;
     } catch (error: any) {
       logger.error('[GoogleAuth] Configure error:', error);
       return false;
@@ -222,12 +277,71 @@ export const googleAuthService = {
    */
   signIn: async (): Promise<GoogleAuthResult> => {
     try {
+      const credentialManager = getCredentialManagerModule();
+      if (credentialManager) {
+        try {
+          const nativeResponse = await credentialManager.signIn(GOOGLE_CONFIG.webClientId);
+          const user = normalizeNativeGoogleUser(nativeResponse);
+          const idToken = readString(nativeResponse?.idToken, nativeResponse?.data?.idToken);
+
+          if (!idToken || !user.email) {
+            logger.error('[GoogleAuth] Credential Manager response missing required fields:', {
+              hasIdToken: Boolean(idToken),
+              hasEmail: Boolean(user.email),
+            });
+            return {
+              success: false,
+              error:
+                'Không thể lấy thông tin đăng nhập từ Google. Vui lòng thử lại.',
+            };
+          }
+
+          logger.info('[GoogleAuth] Credential Manager sign in success');
+
+          return {
+            success: true,
+            user,
+            idToken,
+            serverAuthCode: undefined,
+          };
+        } catch (error: any) {
+          if (!shouldFallbackFromCredentialManager(error)) {
+            logger.warn('[GoogleAuth] Credential Manager sign in did not complete:', error?.code);
+            return {
+              success: false,
+              error: error?.message || 'Đăng nhập Google thất bại',
+            };
+          }
+
+          logger.warn('[GoogleAuth] Credential Manager unavailable, falling back to legacy sign-in');
+        }
+      }
+
       const available = await googleAuthService.isAvailable();
       if (!available || !GoogleSignin) {
         return {
           success: false,
           error:
             'Google Sign-in kh\u00f4ng kh\u1ea3 d\u1ee5ng. H\u00e3y c\u00e0i \u0111\u1eb7t package tr\u01b0\u1edbc.',
+        };
+      }
+
+      if (!legacyGoogleConfigured) {
+        const legacyConfigured = await configureLegacyGoogleSignIn();
+        if (!legacyConfigured) {
+          return {
+            success: false,
+            error:
+              'Google Sign-in không khả dụng. Hãy cài đặt package trước.',
+          };
+        }
+      }
+
+      if (!GoogleSignin) {
+        return {
+          success: false,
+          error:
+            'Google Sign-in không khả dụng. Hãy cài đặt package trước.',
         };
       }
 
@@ -254,7 +368,7 @@ export const googleAuthService = {
         };
       }
 
-      logger.info('[GoogleAuth] Sign in success:', user.email);
+      logger.info('[GoogleAuth] Sign in success');
 
       return {
         success: true,

@@ -832,6 +832,9 @@ builder.Services.AddScoped<IRecipeSuggestionService, RecipeSuggestionService>();
 builder.Services.AddScoped<INutritionInsightService, NutritionInsightService>();
 builder.Services.AddScoped<AIReviewService>(); // AI Weekly Review
 builder.Services.AddScoped<IVisionCacheService, VisionCacheService>();
+builder.Services.AddScoped<IDayCompletenessService, DayCompletenessService>();
+builder.Services.AddScoped<INotificationDecisionService, NotificationDecisionService>();
+builder.Services.AddScoped<ILapseRecoveryService, LapseRecoveryService>();
 builder.Services.AddScoped<IStreakService, StreakService>();  // Profile 2026 - Streak tracking
 
 // Voice AI service
@@ -855,6 +858,7 @@ builder.Services.AddSingleton<IEncryptionService, EncryptionService>();
 builder.Services.AddSingleton<IAdminRealtimeEventBus, AdminRealtimeEventBus>();
 builder.Services.AddSingleton<IAdminRuntimeSnapshotCache, AdminRuntimeSnapshotCache>();
 builder.Services.AddSingleton<IGeminiRuntimeProjectService, GeminiRuntimeProjectService>();
+builder.Services.AddScoped<IAdminQuotaOverviewService, AdminQuotaOverviewService>();
 builder.Services.AddScoped<IAiRuntimeStatusService, AiRuntimeStatusService>();
 builder.Services.AddScoped<IGeminiPoolManager, GeminiPoolManager>();
 builder.Services.AddHostedService<AdminRuntimeSnapshotBackgroundService>();

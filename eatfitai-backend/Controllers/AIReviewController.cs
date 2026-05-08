@@ -159,6 +159,28 @@ public class AIReviewController : ControllerBase
             return StatusCode(500, ErrorResponseHelper.SafeError("Đã xảy ra lỗi khi áp dụng gợi ý AI", HttpContext));
         }
     }
+
+    [HttpPost("actions")]
+    public async Task<ActionResult<ReviewActionResponseDto>> RecordAction([FromBody] ReviewActionRequestDto request)
+    {
+        try
+        {
+            var userId = GetUserId();
+            if (userId == Guid.Empty) return Unauthorized();
+
+            var result = await _reviewService.RecordReviewAction(userId, request.Action);
+            return Ok(result);
+        }
+        catch (ArgumentException)
+        {
+            return BadRequest(new { message = "Action không hợp lệ. Hỗ trợ: accept, done, snooze, useful." });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "[AIReview] Error recording review action");
+            return StatusCode(500, ErrorResponseHelper.SafeError("Đã xảy ra lỗi khi lưu phản hồi weekly review", HttpContext));
+        }
+    }
 }
 
 public class ApplySuggestionsRequest

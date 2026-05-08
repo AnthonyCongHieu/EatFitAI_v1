@@ -2,12 +2,17 @@ import apiClient from './apiClient';
 import type { FoodItemDto, MealTypeId } from '../types';
 import type { FoodItemDtoExtended } from '../types/food';
 import type {
+  ApiFoodTrustDetails,
+  ApiFoodTrustSummary,
   ApiImageVariants,
   ApiFoodSearchItem,
   ApiSearchResponse,
   ApiUserFoodDetail,
 } from '../types/api';
 import { sanitizeFoodImageUrl } from '../utils/imageHelpers';
+import { rankVietnameseFoodName } from '../utils/vietnameseFoodSearch';
+import { enqueueFoodWrite } from './localFoodQueue';
+import { offlineCache } from './offlineCache';
 
 const toNumber = (value: unknown): number | null => {
   if (typeof value === 'number' && !Number.isNaN(value)) {
@@ -38,6 +43,10 @@ export type FoodItem = {
   createdAt?: string | null;
   updatedAt?: string | null;
   source?: 'catalog' | 'user';
+  missingNutrients?: string[];
+  nutrientCompletenessScore?: number | null;
+  trustSummary?: ApiFoodTrustSummary | null;
+  trustDetails?: ApiFoodTrustDetails | null;
 };
 
 type ImageVariantSource = {
@@ -54,7 +63,7 @@ const selectFoodImageUrl = (
   const variantUrl =
     size === 'thumb'
       ? data?.imageVariants?.thumbUrl
-      : data?.imageVariants?.mediumUrl ?? data?.imageVariants?.thumbUrl;
+      : (data?.imageVariants?.mediumUrl ?? data?.imageVariants?.thumbUrl);
 
   return (
     sanitizeFoodImageUrl(
@@ -62,6 +71,45 @@ const selectFoodImageUrl = (
       size,
     ) ?? null
   );
+};
+
+const normalizeStringArray = (value: unknown): string[] => {
+  if (!Array.isArray(value)) return [];
+  return value.map((item) => String(item).trim()).filter(Boolean);
+};
+
+const normalizeTrustSummary = (value: unknown): ApiFoodTrustSummary | null => {
+  if (!value || typeof value !== 'object') return null;
+  const data = value as Partial<ApiFoodTrustSummary>;
+  return {
+    status: String(data.status ?? 'low_confidence'),
+    label: String(data.label ?? 'Độ tin cậy thấp'),
+    score: toNumber(data.score) ?? 0,
+    needsReview: Boolean(data.needsReview),
+    missingNutrients: normalizeStringArray(data.missingNutrients),
+  };
+};
+
+const normalizeTrustDetails = (value: unknown): ApiFoodTrustDetails | null => {
+  if (!value || typeof value !== 'object') return null;
+  const data = value as Partial<ApiFoodTrustDetails>;
+  const summary = normalizeTrustSummary(data.summary);
+  if (!summary) return null;
+
+  return {
+    summary,
+    nutrientCompleteness: {
+      score: toNumber(data.nutrientCompleteness?.score) ?? summary.score,
+      missingNutrients: normalizeStringArray(data.nutrientCompleteness?.missingNutrients),
+      hasMissingRequiredNutrients: Boolean(
+        data.nutrientCompleteness?.hasMissingRequiredNutrients,
+      ),
+    },
+    source: data.source ?? null,
+    verifiedBy: data.verifiedBy ?? null,
+    lastReviewedAt: data.lastReviewedAt ?? null,
+    explanation: data.explanation ?? '',
+  };
 };
 
 export type FoodDetail = FoodItem & {
@@ -113,10 +161,12 @@ const getDefaultEatenDate = (): string => {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 };
 
-const normalizeFoodItem = (data: FoodItemDtoExtended): FoodItem => ({
+const RECENT_FOODS_CACHE_KEY = '@eatfitai_recent_foods';
+
+const normalizeFoodItem = (data: FoodItemDto): FoodItem => ({
   id: String(data?.foodItemId ?? ''),
   name: data?.foodName ?? 'Món ăn',
-  nameEn: data?.foodNameEn ?? null,
+  nameEn: (data as FoodItemDtoExtended)?.foodNameEn ?? null,
   brand: null,
   barcode: (data as FoodItemDtoExtended & { barcode?: string | null })?.barcode ?? null,
   calories: data?.caloriesPer100g ?? null,
@@ -129,6 +179,10 @@ const normalizeFoodItem = (data: FoodItemDtoExtended): FoodItem => ({
   createdAt: data?.createdAt ?? null,
   updatedAt: data?.updatedAt ?? null,
   source: 'catalog',
+  missingNutrients: normalizeStringArray(data?.missingNutrients),
+  nutrientCompletenessScore: toNumber(data?.nutrientCompletenessScore),
+  trustSummary: normalizeTrustSummary(data?.trustSummary),
+  trustDetails: normalizeTrustDetails(data?.trustDetails),
 });
 
 const normalizeFoodDetail = (data: FoodItemDtoExtended): FoodDetail => ({
@@ -164,6 +218,10 @@ const normalizeUserFoodDetail = (data: ApiUserFoodDetail): FoodDetail => ({
   perServingFat: data?.fatPer100 ?? null,
   thumbnail: selectFoodImageUrl(data, 'medium'),
   imageVariants: data?.imageVariants ?? null,
+  missingNutrients: normalizeStringArray(data?.missingNutrients),
+  nutrientCompletenessScore: toNumber(data?.nutrientCompletenessScore),
+  trustSummary: normalizeTrustSummary(data?.trustSummary),
+  trustDetails: normalizeTrustDetails(data?.trustDetails),
 });
 
 const normalizeSearchFoodItem = (data: ApiFoodSearchItem): FoodItem => ({
@@ -181,6 +239,9 @@ const normalizeSearchFoodItem = (data: ApiFoodSearchItem): FoodItem => ({
   createdAt: null,
   updatedAt: null,
   source: data?.source === 'user' ? 'user' : 'catalog',
+  missingNutrients: normalizeStringArray(data?.missingNutrients),
+  nutrientCompletenessScore: toNumber(data?.nutrientCompletenessScore),
+  trustSummary: normalizeTrustSummary(data?.trustSummary),
 });
 
 const normalizeCommonMealTemplate = (data: any): CommonMealTemplate => ({
@@ -226,16 +287,30 @@ export const foodService = {
       params: { q: query, limit },
     });
     const rows = Array.isArray(response.data) ? response.data : [];
-    const items = rows.map((row: ApiFoodSearchItem) => normalizeSearchFoodItem(row));
+    const items = rows
+      .map((row: ApiFoodSearchItem) => normalizeSearchFoodItem(row))
+      .sort(
+        (a, b) =>
+          rankVietnameseFoodName(query, b.name) - rankVietnameseFoodName(query, a.name),
+      );
     return { items, totalCount: rows.length };
   },
 
   async getRecentFoods(limit = 10): Promise<FoodItem[]> {
-    const response = await apiClient.get('/api/food/recent', {
-      params: { limit },
-    });
-    const rows = Array.isArray(response.data) ? response.data : [];
-    return rows.map((row: ApiFoodSearchItem) => normalizeSearchFoodItem(row));
+    try {
+      const response = await apiClient.get('/api/food/recent', {
+        params: { limit },
+      });
+      const rows = Array.isArray(response.data) ? response.data : [];
+      const foods = rows.map((row: ApiFoodSearchItem) => normalizeSearchFoodItem(row));
+      await offlineCache.set(RECENT_FOODS_CACHE_KEY, foods);
+      return foods;
+    } catch (error: any) {
+      if (!error?.response) {
+        return (await offlineCache.get<FoodItem[]>(RECENT_FOODS_CACHE_KEY)) ?? [];
+      }
+      throw error;
+    }
   },
 
   async getCommonMeals(): Promise<CommonMealTemplate[]> {
@@ -311,13 +386,27 @@ export const foodService = {
     note?: string;
     eatenDate?: string;
   }): Promise<void> {
-    await apiClient.post('/api/meal-diary', {
+    const requestBody = {
       eatenDate: payload.eatenDate ?? getDefaultEatenDate(),
       mealTypeId: payload.mealTypeId,
       foodItemId: parseInt(payload.foodId, 10),
       grams: payload.grams,
       note: payload.note ?? null,
-    });
+    };
+
+    try {
+      await apiClient.post('/api/meal-diary', requestBody);
+    } catch (error: any) {
+      if (!error?.response) {
+        await enqueueFoodWrite({
+          endpoint: '/api/meal-diary',
+          method: 'POST',
+          payload: requestBody,
+        });
+        return;
+      }
+      throw error;
+    }
   },
 
   async addDiaryEntryFromUserFoodItem(payload: {
@@ -327,13 +416,27 @@ export const foodService = {
     note?: string;
     eatenDate?: string;
   }): Promise<void> {
-    await apiClient.post('/api/meal-diary', {
+    const requestBody = {
       eatenDate: payload.eatenDate ?? getDefaultEatenDate(),
       mealTypeId: payload.mealTypeId,
       userFoodItemId: parseInt(payload.userFoodItemId, 10),
       grams: payload.grams,
       note: payload.note ?? null,
-    });
+    };
+
+    try {
+      await apiClient.post('/api/meal-diary', requestBody);
+    } catch (error: any) {
+      if (!error?.response) {
+        await enqueueFoodWrite({
+          endpoint: '/api/meal-diary',
+          method: 'POST',
+          payload: requestBody,
+        });
+        return;
+      }
+      throw error;
+    }
   },
 
   async lookupByBarcode(barcode: string): Promise<FoodDetail | null> {
@@ -342,7 +445,9 @@ export const foodService = {
       return null;
     }
 
-    const response = await apiClient.get(`/api/food/barcode/${encodeURIComponent(trimmedBarcode)}`);
+    const response = await apiClient.get(
+      `/api/food/barcode/${encodeURIComponent(trimmedBarcode)}`,
+    );
     const data = response.data;
     const foodItem = data?.foodItem ?? data?.FoodItem ?? data;
     if (!foodItem) {

@@ -8,7 +8,9 @@
   "enable_gpu": true,
   "machine_shape": "NvidiaTeslaT4",
   "enable_internet": true,
-  "dataset_sources": [],
+  "dataset_sources": [
+    "hiuinhcng/eatfitai-yolo11m-clean-v1-checkpoint"
+  ],
   "competition_sources": [],
   "kernel_sources": [
     "hiuinhcng/eatfitai-dataset-v2-clean-build"
