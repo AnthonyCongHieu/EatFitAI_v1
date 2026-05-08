@@ -550,3 +550,60 @@ Post-fix Kaggle sync:
 | segment-to-bbox conversion and dense/crowd caps | accepted Drive/Roboflow candidates | handled by audit/clean parsing for segments; dense/crowd caps still need output review |
 | exact license verification | unresolved Drive-origin candidates | pending before public release |
 | raw-audit cache latest version is not cumulative / v14 cache creation collision | cloud clean-build | wrapper-zip cache layout implemented; rerun public-drive and large-source cache lanes with the new pipeline-code version |
+
+## YOLO11m Full Training Resume Status - 2026-05-08
+
+Latest local commit baseline checked from `hieu_deploy/production`:
+
+```text
+6a9f55e2 Create 53_DETAILED_TASK_CHECKLIST_2_BRANCHES_2026-05-08.md
+```
+
+The first full `EatFitAI YOLO11m Clean V1` Kaggle run was stopped by Kaggle's
+12-hour limit:
+
+```text
+KernelWorkerStatus.CANCEL_ACKNOWLEDGED
+Your notebook was stopped because it exceeded the max allowed execution duration.
+```
+
+The run did produce usable YOLO11m checkpoints before timeout. A filtered output
+probe downloaded the training artifacts:
+
+```text
+runs/food-detection/yolo11m-eatfitai-clean-v1/weights/last.pt
+runs/food-detection/yolo11m-eatfitai-clean-v1/weights/best.pt
+runs/food-detection/yolo11m-eatfitai-clean-v1/results.csv
+runs/food-detection/yolo11m-eatfitai-clean-v1/args.yaml
+```
+
+Last recorded training row:
+
+```text
+epoch=84
+precision(B)=0.69819
+recall(B)=0.67191
+mAP50(B)=0.71835
+mAP50-95(B)=0.56739
+```
+
+Resume hardening completed locally:
+
+- `kaggle_yolo11m_train.py` now writes `yolo11m_resume_manifest.json`.
+- Root output aliases are now unambiguous: `yolo11m_resume_last.pt` and
+  `yolo11m_resume_best.pt`.
+- The checkpoint bundle was uploaded as Kaggle dataset
+  `hiuinhcng/eatfitai-yolo11m-clean-v1-checkpoint`.
+- Full kernel metadata now mounts that checkpoint dataset so
+  `find_resume_checkpoint()` can discover `_yolo11m_checkpoints/last.pt`.
+- Kaggle kernel `hiuinhcng/eatfitai-yolo11m-clean-v1` was pushed as version 2
+  and reported `KernelWorkerStatus.RUNNING` after push.
+
+Next check:
+
+1. Read the Kaggle logs and confirm `Resume checkpoint discovered`.
+2. Let the run continue toward epoch 150 or timeout with a refreshed checkpoint.
+3. If it completes, download `best.pt`, exported `best.onnx`, `results.csv`, and
+   class list for `ai-provider/app.py` integration.
+4. If it times out again, repeat the checkpoint dataset version/update and
+   push another resume version.
