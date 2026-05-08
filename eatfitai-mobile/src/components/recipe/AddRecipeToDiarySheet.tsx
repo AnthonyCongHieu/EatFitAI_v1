@@ -17,6 +17,9 @@ interface AddRecipeToDiarySheetProps {
     fat: number;
   };
   onConfirm: (mealTypeId: MealTypeId, servings: number) => void;
+  defaultMealType?: number;
+  diaryEntryId?: string;
+  currentGrams?: number;
 }
 
 const MEAL_TYPES: { id: MealTypeId; label: string; icon: string }[] = [
@@ -34,10 +37,13 @@ export const AddRecipeToDiarySheet = ({
   recipeName,
   nutrition,
   onConfirm,
+  defaultMealType,
+  diaryEntryId,
+  currentGrams,
 }: AddRecipeToDiarySheetProps): React.ReactElement => {
   const { theme } = useAppTheme();
-  const [selectedMealType, setSelectedMealType] = useState<MealTypeId>(2); // Default: lunch
-  const [selectedServings, setSelectedServings] = useState(1);
+  const [selectedMealType, setSelectedMealType] = useState<MealTypeId | undefined>(defaultMealType as MealTypeId | undefined);
+  const [selectedServings, setSelectedServings] = useState(currentGrams ? currentGrams / 100 : 1);
 
   const calculatedNutrition = {
     calories: Math.round(nutrition.calories * selectedServings),
@@ -47,6 +53,7 @@ export const AddRecipeToDiarySheet = ({
   };
 
   const handleConfirm = () => {
+    if (selectedMealType === undefined) return;
     onConfirm(selectedMealType, selectedServings);
     onClose();
   };
@@ -209,10 +216,11 @@ export const AddRecipeToDiarySheet = ({
             style={{ flex: 1, marginRight: 8 }}
           />
           <Button
-            title="Thêm"
+            title={diaryEntryId ? "Cập nhật" : "Thêm"}
             variant="primary"
             onPress={handleConfirm}
             style={{ flex: 1.5 }}
+            disabled={selectedMealType === undefined}
           />
         </View>
       </ScrollView>

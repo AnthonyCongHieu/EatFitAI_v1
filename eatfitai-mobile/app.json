@@ -23,7 +23,6 @@
       }
     },
     "android": {
-      "googleServicesFile": "./android/app/google-services.json",
       "adaptiveIcon": {
         "foregroundImage": "./src/assets/adaptive-icon.png",
         "backgroundColor": "#090E1C"
@@ -48,11 +47,8 @@
       }
     },
     "plugins": [
-      "@react-native-firebase/app",
-      "@react-native-firebase/crashlytics",
       "expo-secure-store",
       "expo-localization",
-      "@react-native-google-signin/google-signin",
       [
         "expo-camera",
         {

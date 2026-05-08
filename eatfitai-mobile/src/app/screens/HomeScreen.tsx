@@ -705,15 +705,18 @@ const HomeScreen = (): React.ReactElement => {
                           <ThemedText style={styles.entryFoodName} numberOfLines={1}>
                             {entry.foodName}
                           </ThemedText>
-                          <View style={styles.entryMacros}>
-                            <View style={styles.entryMacroChipV2}>
-                              <ThemedText style={styles.entryMacroTextV2}>Đ: {Math.round(entry.protein || 0)}g</ThemedText>
+                          <View style={{ flexDirection: 'row', gap: 12, marginTop: 4, alignItems: 'center' }}>
+                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                              <Ionicons name="flash" size={14} color="#ef4444" />
+                              <ThemedText style={{ fontSize: 13, color: C.textMuted, fontWeight: '500' }}>{Math.round(entry.protein || 0)}g</ThemedText>
                             </View>
-                            <View style={styles.entryMacroChipV2}>
-                              <ThemedText style={styles.entryMacroTextV2}>T: {Math.round(entry.carbs || 0)}g</ThemedText>
+                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                              <Ionicons name="leaf" size={14} color="#3b82f6" />
+                              <ThemedText style={{ fontSize: 13, color: C.textMuted, fontWeight: '500' }}>{Math.round(entry.carbs || 0)}g</ThemedText>
                             </View>
-                            <View style={styles.entryMacroChipV2}>
-                              <ThemedText style={styles.entryMacroTextV2}>B: {Math.round(entry.fat || 0)}g</ThemedText>
+                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                              <Ionicons name="water" size={14} color="#fbbf24" />
+                              <ThemedText style={{ fontSize: 13, color: C.textMuted, fontWeight: '500' }}>{Math.round(entry.fat || 0)}g</ThemedText>
                             </View>
                           </View>
                         </View>

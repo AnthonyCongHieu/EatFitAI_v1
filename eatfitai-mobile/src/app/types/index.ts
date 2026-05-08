@@ -18,6 +18,7 @@ export type RootStackParamList = {
         selectedDate?: string;
         returnToDiaryOnSave?: boolean;
         initialQuery?: string;
+        defaultMealType?: number;
       }
     | undefined;
   FoodDetail: {
@@ -25,6 +26,9 @@ export type RootStackParamList = {
     source?: 'catalog' | 'user';
     selectedDate?: string;
     returnToDiaryOnSave?: boolean;
+    defaultMealType?: number;
+    diaryEntryId?: string;
+    currentGrams?: number;
   };
   CustomDish: undefined;
   CommonMeals: undefined;
@@ -36,7 +40,7 @@ export type RootStackParamList = {
     ingredients?: string[];
     recipes?: import('../../services/aiService').SuggestedRecipe[];
   };
-  RecipeDetail: { recipeId: number; recipeName: string };
+  RecipeDetail: { recipeId: number; recipeName: string; defaultMealType?: number; diaryEntryId?: string; currentGrams?: number };
   NutritionInsights: undefined;
   VisionHistory: undefined;
   NutritionSettings: undefined;

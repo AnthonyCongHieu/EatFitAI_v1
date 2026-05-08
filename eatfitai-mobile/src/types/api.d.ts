@@ -607,6 +607,8 @@ export interface components {
       password: string;
     };
     MealDiaryDto: {
+      foodItemThumbNail: string | null | undefined;
+      PhotoUrl: string | null | undefined;
       /** Format: int32 */
       mealDiaryId?: number;
       /** Format: uuid */
