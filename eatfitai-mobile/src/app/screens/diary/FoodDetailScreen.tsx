@@ -28,7 +28,8 @@ import { ThemedText } from '../../../components/ThemedText';
 import type { RootStackParamList } from '../../types';
 import { trackEvent } from '../../../services/analytics';
 import { foodService, type FoodDetail } from '../../../services/foodService';
-import { invalidateDiaryQueries } from '../../../services/diaryFlowService';
+import { invalidateDiaryQueries, getSuggestedMealType } from '../../../services/diaryFlowService';
+import { diaryService } from '../../../services/diaryService';
 import { MEAL_TYPES, MEAL_TYPE_LABELS, type MealTypeId } from '../../../types';
 import { handleApiError } from '../../../utils/errorHandler';
 import { favoritesService } from '../../../services/favoritesService';
@@ -57,7 +58,7 @@ const FormSchema = z.object({
       },
     ),
   mealType: z
-    .number()
+    .number({ required_error: 'Vui lòng chọn bữa ăn', invalid_type_error: 'Vui lòng chọn bữa ăn' })
     .refine((value) => [1, 2, 3, 4].includes(value), { message: 'Bữa ăn không hợp lệ' }),
   note: z.string().trim().max(200, 'Ghi chú tối đa 200 ký tự').optional(),
 });
@@ -145,8 +146,8 @@ const FoodDetailScreen = (): React.ReactElement | null => {
   const { control, handleSubmit, watch, setValue, formState: { errors } } = useForm<FormValues>({
     resolver: zodResolver(FormSchema),
     defaultValues: {
-      grams: '100',
-      mealType: MEAL_TYPES.LUNCH,
+      grams: route.params.currentGrams ? String(route.params.currentGrams) : '100',
+      mealType: route.params.defaultMealType,
       note: '',
     },
   });
@@ -156,10 +157,10 @@ const FoodDetailScreen = (): React.ReactElement | null => {
 
   // Initialize grams if servingSizeGram is provided by the API
   useEffect(() => {
-    if (detail?.servingSizeGram && detail.servingSizeGram > 0 && gramsValue === '100') {
+    if (!route.params.currentGrams && detail?.servingSizeGram && detail.servingSizeGram > 0 && gramsValue === '100') {
       setValue('grams', String(Math.round(detail.servingSizeGram)));
     }
-  }, [detail?.servingSizeGram, setValue]);
+  }, [detail?.servingSizeGram, setValue, route.params.currentGrams]);
 
   const multiplier = useMemo(() => {
     const gramsNumber = Number(gramsValue);
@@ -199,22 +200,29 @@ const FoodDetailScreen = (): React.ReactElement | null => {
         eatenDate: selectedDate,
       };
 
-      if (isUserFood) {
-        await foodService.addDiaryEntryFromUserFoodItem({
-          ...payload,
-          userFoodItemId: detail.id,
+      if (route.params.diaryEntryId) {
+        await diaryService.updateEntry(route.params.diaryEntryId, {
+          grams: Number(values.grams),
+          note: values.note ?? undefined,
         });
       } else {
-        await foodService.addDiaryEntry({
-          ...payload,
-          foodId: detail.id,
-        });
+        if (isUserFood) {
+          await foodService.addDiaryEntryFromUserFoodItem({
+            ...payload,
+            userFoodItemId: detail.id,
+          });
+        } else {
+          await foodService.addDiaryEntry({
+            ...payload,
+            foodId: detail.id,
+          });
+        }
       }
 
       Toast.show({
         type: 'success',
-        text1: 'Đã thêm món vào nhật ký',
-        text2: 'Tiếp tục theo dõi dinh dưỡng của bạn!',
+        text1: route.params.diaryEntryId ? 'Đã cập nhật khẩu phần' : 'Đã thêm món vào nhật ký',
+        text2: route.params.diaryEntryId ? 'Đã lưu thay đổi của bạn.' : 'Tiếp tục theo dõi dinh dưỡng của bạn!',
       });
       trackEvent('diary_add_from_food_detail_success', {
         flow: 'food_detail',
@@ -421,6 +429,11 @@ const FoodDetailScreen = (): React.ReactElement | null => {
                 );
               })}
             </ScrollView>
+            {errors.mealType && (
+              <ThemedText style={{ color: '#ffb4ab', fontSize: 13, marginTop: 12, marginLeft: 20 }}>
+                {errors.mealType.message}
+              </ThemedText>
+            )}
           </Animated.View>
         </View>
 
@@ -442,7 +455,9 @@ const FoodDetailScreen = (): React.ReactElement | null => {
           ) : (
             <>
               <Ionicons name="add-circle" size={24} color={P.onPrimary} />
-              <ThemedText style={S.submitText}>Thêm vào Nhật ký</ThemedText>
+              <ThemedText style={S.submitText}>
+                {route.params.diaryEntryId ? 'Cập nhật khẩu phần' : 'Thêm vào Nhật ký'}
+              </ThemedText>
             </>
           )}
         </Pressable>

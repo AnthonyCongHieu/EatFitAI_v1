@@ -100,6 +100,7 @@ const FoodSearchScreen = (): React.ReactElement => {
   const selectedDate = route.params?.selectedDate;
   const returnToDiaryOnSave = route.params?.returnToDiaryOnSave ?? false;
   const initialQuery = route.params?.initialQuery;
+  const defaultMealType = route.params?.defaultMealType;
 
   const loadRecentSearches = async () => {
     try {
@@ -207,7 +208,7 @@ const FoodSearchScreen = (): React.ReactElement => {
         item.source === 'user'
           ? [{ source: 'user', userFoodItemId: Number(item.id), grams: 100 }]
           : [{ source: 'catalog', foodItemId: Number(item.id), grams: 100 }],
-        { date: selectedDate },
+        { date: selectedDate, mealTypeId: defaultMealType },
       );
       Toast.show({
         type: 'success',
@@ -428,6 +429,7 @@ const FoodSearchScreen = (): React.ReactElement => {
               source: item.source,
               selectedDate,
               returnToDiaryOnSave,
+              defaultMealType,
             });
           }}
           style={({ pressed }) => [S.resultCard, pressed && { opacity: 0.85, transform: [{ scale: 0.98 }] }]}

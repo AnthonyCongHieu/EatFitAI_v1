@@ -28,6 +28,7 @@ import { aiService, type TeachLabelRequest } from '../../../services/aiService';
 import {
   addItemsToTodayDiary,
   invalidateDiaryQueries,
+  getSuggestedMealType,
 } from '../../../services/diaryFlowService';
 import { handleApiErrorWithCustomMessage } from '../../../utils/errorHandler';
 import { translateIngredient } from '../../../utils/translate';
@@ -65,7 +66,7 @@ const AddMealFromVisionScreen = (): React.ReactElement => {
   const [detectionItems, setDetectionItems] = useState<VisionReviewItem[]>(() =>
     buildVisionReviewItems(result.items),
   );
-  const [selectedMealType, setSelectedMealType] = useState<MealTypeId>(MEAL_TYPES.LUNCH);
+  const [selectedMealType, setSelectedMealType] = useState<MealTypeId>(() => getSuggestedMealType(new Date()));
   const [teachLabelVisible, setTeachLabelVisible] = useState(false);
   const [currentTeachItem, setCurrentTeachItem] = useState<MappedFoodItem | null>(null);
   const [currentTeachIndex, setCurrentTeachIndex] = useState<number | null>(null);

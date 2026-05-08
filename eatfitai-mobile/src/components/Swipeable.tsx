@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { View, StyleSheet } from 'react-native';
+import { View, StyleSheet, Pressable } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
   useAnimatedStyle,
@@ -38,6 +38,7 @@ export const Swipeable = ({
   threshold = 100,
 }: SwipeableProps): React.ReactElement => {
   const translateX = useSharedValue(0);
+  const contextX = useSharedValue(0);
 
   const maxLeftSwipe = leftActions.length * 80;
   const maxRightSwipe = rightActions.length * 80;
@@ -45,17 +46,28 @@ export const Swipeable = ({
   // Dùng Gesture API mới (react-native-gesture-handler v2+)
   const panGesture = Gesture.Pan()
     .onStart(() => {
+      contextX.value = translateX.value;
       if (onSwipeStart) {
         runOnJS(onSwipeStart)();
       }
     })
     .onUpdate((event) => {
-      const translationX = event.translationX / friction;
+      const newTranslateX = contextX.value + event.translationX / friction;
 
-      if (leftActions.length > 0 && translationX > 0) {
-        translateX.value = Math.min(translationX, maxLeftSwipe);
-      } else if (rightActions.length > 0 && translationX < 0) {
-        translateX.value = Math.max(translationX, -maxRightSwipe);
+      if (newTranslateX > 0) {
+        if (leftActions.length > 0) {
+          translateX.value = Math.min(newTranslateX, maxLeftSwipe);
+        } else {
+          translateX.value = 0;
+        }
+      } else if (newTranslateX < 0) {
+        if (rightActions.length > 0) {
+          translateX.value = Math.max(newTranslateX, -maxRightSwipe);
+        } else {
+          translateX.value = 0;
+        }
+      } else {
+        translateX.value = 0;
       }
     })
     .onEnd((event) => {
@@ -97,24 +109,34 @@ export const Swipeable = ({
         position: 'absolute' as const,
         top: 0,
         bottom: 0,
-        [isLeft ? 'right' : 'left']: index * 80,
+        [isLeft ? 'left' : 'right']: index * 80,
       };
 
       return (
         <Animated.View key={action.key} style={actionStyle}>
-          {action.icon && <View style={styles.actionIcon}>{action.icon}</View>}
-          <ThemedText
-            style={[
-              styles.actionLabel,
-              {
-                color: '#fff',
-                fontSize: 12,
-                fontFamily: 'Inter_600SemiBold',
-              },
-            ]}
+          <Pressable
+            style={{ flex: 1, width: '100%', justifyContent: 'center', alignItems: 'center' }}
+            onPress={() => {
+              if (action.onPress) {
+                runOnJS(action.onPress)();
+              }
+              translateX.value = withSpring(0, { damping: 20, stiffness: 200 });
+            }}
           >
-            {action.label}
-          </ThemedText>
+            {action.icon && <View style={styles.actionIcon}>{action.icon}</View>}
+            <ThemedText
+              style={[
+                styles.actionLabel,
+                {
+                  color: '#fff',
+                  fontSize: 12,
+                  fontFamily: 'Inter_600SemiBold',
+                },
+              ]}
+            >
+              {action.label}
+            </ThemedText>
+          </Pressable>
         </Animated.View>
       );
     });

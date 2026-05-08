@@ -17,6 +17,7 @@ export type DiaryEntry = {
   foodName: string;
   note?: string | null;
   quantityText?: string | null;
+  grams?: number | null;
   calories?: number | null;
   protein?: number | null;
   carbs?: number | null;
@@ -27,6 +28,9 @@ export type DiaryEntry = {
   isDeleted?: boolean | null;
   sourceMethod?: string | null;
   photoUrl?: string | null;
+  foodItemId?: number | null;
+  userDishId?: number | null;
+  recipeId?: number | null;
 };
 
 export type DiaryMealGroup = {
@@ -81,6 +85,7 @@ const normalizeEntry = (data: MealDiaryDto): DiaryEntry => ({
   quantityText: data?.portionQuantity
     ? `${data.portionQuantity} ${data.servingUnitName ?? 'serving'}`
     : `${data.grams}g`,
+  grams: data?.grams ?? null,
   calories: data?.calories ?? null,
   protein: data?.protein ?? null,
   carbs: data?.carb ?? null,
@@ -90,7 +95,10 @@ const normalizeEntry = (data: MealDiaryDto): DiaryEntry => ({
   updatedAt: data?.updatedAt ?? null,
   isDeleted: data?.isDeleted ?? null,
   sourceMethod: data?.sourceMethod ?? null,
-  photoUrl: data?.photoUrl ?? null,
+  photoUrl: data?.photoUrl || data?.PhotoUrl || data?.foodItemThumbNail || null,
+  foodItemId: data?.foodItemId ?? null,
+  userDishId: data?.userDishId ?? null,
+  recipeId: data?.recipeId ?? null,
 });
 
 const normalizeMeal = (data: any): DiaryMealGroup => {

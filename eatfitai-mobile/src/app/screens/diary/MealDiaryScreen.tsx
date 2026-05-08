@@ -23,20 +23,14 @@ import Animated, {
   FadeIn,
   FadeInDown,
   FadeInUp,
-  useSharedValue,
-  useAnimatedStyle,
-  withTiming,
-  withRepeat,
-  withSequence,
-  Easing,
 } from 'react-native-reanimated';
-import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import type { NavigationProp } from '@react-navigation/native';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import Swipeable from '../../../components/Swipeable';
 import Toast from 'react-native-toast-message';
 import * as Haptics from 'expo-haptics';
 
@@ -49,7 +43,6 @@ import { MEAL_TYPE_LABELS, type MealTypeId } from '../../../types';
 import type { RootStackParamList } from '../../types';
 import Tilt3DCard from '../../../components/ui/Tilt3DCard';
 import { TEST_IDS } from '../../../testing/testIds';
-import QuickActionsOverlay from '../../../components/home/QuickActionsOverlay';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -156,54 +149,9 @@ const MealDiaryScreen = (): React.ReactElement => {
 
   const [selectedDate, setSelectedDate] = useState(initialDate);
   const [showDatePicker, setShowDatePicker] = useState(false);
-  const [editingEntry, setEditingEntry] = useState<DiaryEntry | null>(null);
-  const [editGrams, setEditGrams] = useState('');
-  const [showEditSheet, setShowEditSheet] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
-  const [showQuickActions, setShowQuickActions] = useState(false);
-  const [isCopyingDay, setIsCopyingDay] = useState(false);
-  const [copyingMealType, setCopyingMealType] = useState<MealTypeId | null>(null);
 
   const dateKey = useMemo(() => formatDateForApi(selectedDate), [selectedDate]);
-
-  // Robot FAB floating animation & Drag gesture
-  const floatAnim = useSharedValue(0);
-  const robotOffsetX = useSharedValue(0);
-  const robotOffsetY = useSharedValue(0);
-  const robotSavedX = useSharedValue(0);
-  const robotSavedY = useSharedValue(0);
-
-  React.useEffect(() => {
-    floatAnim.value = withRepeat(
-      withSequence(
-        withTiming(-10, { duration: 1500, easing: Easing.inOut(Easing.ease) }),
-        withTiming(0, { duration: 1500, easing: Easing.inOut(Easing.ease) }),
-      ),
-      -1,
-      true,
-    );
-  }, []);
-
-  const floatStyle = useAnimatedStyle(() => ({
-    transform: [
-      { translateX: robotOffsetX.value },
-      { translateY: floatAnim.value + robotOffsetY.value },
-    ],
-  }));
-
-  const robotPanGesture = useMemo(
-    () =>
-      Gesture.Pan()
-        .onUpdate((e) => {
-          robotOffsetX.value = robotSavedX.value + e.translationX;
-          robotOffsetY.value = robotSavedY.value + e.translationY;
-        })
-        .onEnd(() => {
-          robotSavedX.value = robotOffsetX.value;
-          robotSavedY.value = robotOffsetY.value;
-        }),
-    [robotOffsetX, robotOffsetY, robotSavedX, robotSavedY],
-  );
 
   /* ─── Data fetching ─── */
   const { data: daySummary, isLoading, refetch } = useQuery<DaySummary>({
@@ -245,12 +193,18 @@ const MealDiaryScreen = (): React.ReactElement => {
 
     // Ensure all 4 meal types exist
     const allTypes: MealTypeId[] = [1, 2, 3, 4];
-    return allTypes.map((mt) => ({
-      mealType: mt,
-      title: MEAL_TYPE_LABELS[mt],
-      entries: groups.get(mt) || [],
-      totalCalories: (groups.get(mt) || []).reduce((s, e) => s + (e.calories || 0), 0),
-    }));
+    return allTypes.map((mt) => {
+      const groupEntries = groups.get(mt) || [];
+      return {
+        mealType: mt,
+        title: MEAL_TYPE_LABELS[mt],
+        entries: groupEntries,
+        totalCalories: groupEntries.reduce((s, e) => s + (e.calories || 0), 0),
+        totalProtein: groupEntries.reduce((s, e) => s + (e.protein || 0), 0),
+        totalCarbs: groupEntries.reduce((s, e) => s + (e.carbs || 0), 0),
+        totalFat: groupEntries.reduce((s, e) => s + (e.fat || 0), 0),
+      };
+    });
   }, [entries]);
 
   const weekDays = useMemo(() => getWeekDays(), []);
@@ -267,99 +221,55 @@ const MealDiaryScreen = (): React.ReactElement => {
     setSelectedDate(date);
   }, []);
 
-  const handleAddManual = useCallback(() => {
+  const handleAddManual = useCallback((defaultMealType?: MealTypeId) => {
     navigation.navigate('FoodSearch', {
       selectedDate: dateKey,
       returnToDiaryOnSave: true,
+      defaultMealType,
     });
   }, [dateKey, navigation]);
 
-  const runCopyPreviousDay = useCallback(async (mealTypeId?: MealTypeId) => {
-    if (mealTypeId != null) {
-      setCopyingMealType(mealTypeId);
-    } else {
-      setIsCopyingDay(true);
-    }
-
-    try {
-      const copiedEntries = await diaryService.copyPreviousDay(dateKey, mealTypeId);
-      await invalidateDiaryQueries(queryClient);
-      await refetch();
-      Toast.show({
-        type: 'success',
-        text1: 'Đã sao chép hôm qua',
-        text2:
-          copiedEntries.length > 0
-            ? mealTypeId != null
-              ? `${copiedEntries.length} món đã được thêm vào ${MEAL_TYPE_LABELS[mealTypeId]}.`
-              : `${copiedEntries.length} món đã được thêm vào ngày đang xem.`
-            : mealTypeId != null
-              ? `Không có món nào để sao chép cho ${MEAL_TYPE_LABELS[mealTypeId]}.`
-              : 'Không có món nào để sao chép từ hôm qua.',
+  const navigateToDetail = useCallback((entry: DiaryEntry) => {
+    if (entry.recipeId) {
+      navigation.navigate('RecipeDetail', {
+        recipeId: entry.recipeId,
+        recipeName: entry.foodName,
+        diaryEntryId: entry.id,
+        currentGrams: entry.grams ?? undefined,
       });
-    } catch (error: any) {
-      const status = Number(error?.response?.status ?? 0);
-      const message =
-        error?.response?.data?.detail ??
-        error?.response?.data?.title ??
-        error?.response?.data?.message ??
-        error?.message ??
-        'Vui lòng thử lại sau.';
-      Toast.show({
-        type: status === 409 ? 'info' : 'error',
-        text1: status === 409 ? 'Không thể sao chép' : 'Lỗi sao chép',
-        text2: message,
-      });
-    } finally {
-      if (mealTypeId != null) {
-        setCopyingMealType(null);
-      } else {
-        setIsCopyingDay(false);
-      }
-    }
-  }, [dateKey, queryClient, refetch]);
-
-  const confirmCopyPreviousDay = useCallback((mealTypeId?: MealTypeId) => {
-    const title = mealTypeId != null ? 'Sao chép bữa từ hôm qua' : 'Sao chép ngày hôm qua';
-    const message = mealTypeId != null
-      ? `Thêm ${MEAL_TYPE_LABELS[mealTypeId]} từ hôm qua vào ${dateKey}?`
-      : `Thêm toàn bộ bữa ăn của hôm qua vào ${dateKey}?`;
-
-    Alert.alert(title, message, [
-      { text: 'Hủy', style: 'cancel' },
-      {
-        text: 'Sao chép',
-        onPress: () => {
-          runCopyPreviousDay(mealTypeId).catch(() => undefined);
-        },
-      },
-    ]);
-  }, [runCopyPreviousDay]);
-
-  const handleEditGrams = useCallback((entry: DiaryEntry) => {
-    setEditingEntry(entry);
-    const rawValue = entry.quantityText?.split(' ')[0] || '';
-    setEditGrams(rawValue.replace(/[^0-9.]/g, ''));
-    setShowEditSheet(true);
-  }, []);
-
-  const handleSaveGrams = useCallback(async () => {
-    if (!editingEntry) return;
-    const grams = parseFloat(editGrams.replace(/[^0-9.]/g, ''));
-    if (isNaN(grams) || grams <= 0) {
-      Toast.show({ type: 'error', text1: 'Số gram không hợp lệ', text2: 'Vui lòng nhập số lớn hơn 0' });
       return;
     }
-    try {
-      await diaryService.updateEntry(editingEntry.id, { grams });
-      await invalidateDiaryQueries(queryClient);
-      setShowEditSheet(false);
-      setEditingEntry(null);
-      Toast.show({ type: 'success', text1: 'Đã cập nhật', text2: `Khẩu phần: ${grams}g` });
-    } catch (error: any) {
-      Toast.show({ type: 'error', text1: 'Lỗi cập nhật', text2: error?.message || 'Thử lại sau.' });
+    
+    let source: 'catalog' | 'user' = 'catalog';
+    let foodId: number | null | string = entry.foodItemId ?? null;
+
+    if (entry.userDishId) {
+      source = 'user';
+      foodId = entry.userDishId;
+    } else if (entry.sourceMethod === 'user') {
+       source = 'user';
     }
-  }, [editingEntry, editGrams, queryClient]);
+
+    if (!foodId && entry.id) {
+       // fallback, could be useful if backend maps properly
+       foodId = entry.id;
+    }
+
+    if (!foodId) {
+      Toast.show({ type: 'info', text1: 'Không có dữ liệu chi tiết' });
+      return;
+    }
+
+    navigation.navigate('FoodDetail', {
+      foodId: String(foodId),
+      source,
+      selectedDate: dateKey,
+      returnToDiaryOnSave: true,
+      diaryEntryId: entry.id,
+      currentGrams: entry.grams ?? undefined,
+      defaultMealType: entry.mealType,
+    });
+  }, [navigation, dateKey]);
 
   const handleDeleteEntry = useCallback(async (entry: DiaryEntry) => {
     Alert.alert('Xóa món ăn', `Bạn có chắc muốn xóa "${entry.foodName}"?`, [
@@ -496,24 +406,6 @@ const MealDiaryScreen = (): React.ReactElement => {
                   </View>
                 </View>
               </Tilt3DCard>
-              <Pressable
-                onPress={() => confirmCopyPreviousDay()}
-                disabled={isCopyingDay || copyingMealType !== null}
-                style={({ pressed }) => [
-                  styles.copyDayButton,
-                  pressed && !(isCopyingDay || copyingMealType !== null) && { opacity: 0.85, transform: [{ scale: 0.98 }] },
-                  (isCopyingDay || copyingMealType !== null) && { opacity: 0.6 },
-                ]}
-              >
-                {isCopyingDay ? (
-                  <ActivityIndicator color={C.onPrimary} size="small" />
-                ) : (
-                  <>
-                    <Ionicons name="copy-outline" size={16} color={C.onPrimary} />
-                    <ThemedText style={styles.copyDayButtonText}>Sao chép hôm qua</ThemedText>
-                  </>
-                )}
-              </Pressable>
             </Animated.View>
 
             {/* ── Meal Sections ── */}
@@ -525,7 +417,13 @@ const MealDiaryScreen = (): React.ReactElement => {
                 <Tilt3DCard width={cardWidth} height={group.entries.length > 0 ? 300 : 180} maxTilt={5} showReflection={false} useDeviceMotion={true} activeTouch={false}>
                   <View style={styles.mealCard}>
                     {/* Meal Header */}
-                    <View style={styles.mealHeader}>
+                    <Pressable
+                      style={({ pressed }) => [
+                        styles.mealHeader,
+                        pressed && { opacity: 0.8 },
+                      ]}
+                      onPress={() => handleAddManual(group.mealType)}
+                    >
                       <View style={styles.mealTitleRow}>
                         <Ionicons
                           name={MEAL_ICONS[group.mealType].icon as any}
@@ -535,67 +433,79 @@ const MealDiaryScreen = (): React.ReactElement => {
                         <ThemedText style={styles.mealTitle}>{group.title}</ThemedText>
                       </View>
                       <View style={styles.mealHeaderActions}>
-                        <Pressable
-                          style={({ pressed }) => [
-                            styles.copyMealButton,
-                            pressed && !(isCopyingDay || copyingMealType !== null) && { opacity: 0.85 },
-                            (isCopyingDay || copyingMealType !== null) && { opacity: 0.6 },
-                          ]}
-                          onPress={() => confirmCopyPreviousDay(group.mealType)}
-                          disabled={isCopyingDay || copyingMealType !== null}
-                        >
-                          {copyingMealType === group.mealType ? (
-                            <ActivityIndicator color={C.primary} size="small" />
-                          ) : (
-                            <>
-                              <Ionicons name="copy-outline" size={14} color={C.primary} />
-                              <ThemedText style={styles.copyMealButtonText}>Hôm qua</ThemedText>
-                            </>
-                          )}
-                        </Pressable>
-                        <ThemedText style={styles.mealCalories}>
-                          {Math.round(group.totalCalories)} kcal
-                        </ThemedText>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                           <View style={{ flexDirection: 'row', gap: 6 }}>
+                             <ThemedText style={{ fontSize: 12, color: C.textMuted }}><Ionicons name="flash" size={12} color="#ef4444" /> {Math.round(group.totalProtein || 0)}g</ThemedText>
+                             <ThemedText style={{ fontSize: 12, color: C.textMuted }}><Ionicons name="leaf" size={12} color="#3b82f6" /> {Math.round(group.totalCarbs || 0)}g</ThemedText>
+                             <ThemedText style={{ fontSize: 12, color: C.textMuted }}><Ionicons name="water" size={12} color="#fbbf24" /> {Math.round(group.totalFat || 0)}g</ThemedText>
+                           </View>
+                           <ThemedText style={styles.mealCalories}>
+                             {Math.round(group.totalCalories)} kcal
+                           </ThemedText>
+                        </View>
                       </View>
-                    </View>
+                    </Pressable>
 
                     {/* Food entries */}
                     {group.entries.length > 0 ? (
                       <View style={styles.mealContent}>
                         {group.entries.map((entry) => (
-                          <Pressable
-                            key={entry.id}
-                            style={styles.entryRow}
-                            onPress={() => handleEditGrams(entry)}
+                          <View key={entry.id} style={{ borderRadius: 16, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', marginBottom: 12, overflow: 'hidden' }}>
+                            <Swipeable
+                              rightActions={[
+                              {
+                                key: 'delete',
+                                label: 'Xóa',
+                                color: '#ef4444',
+                                icon: <Ionicons name="trash-outline" size={20} color="#fff" />,
+                                onPress: () => handleDeleteEntry(entry),
+                              },
+                            ]}
                           >
-                            {/* Food image */}
-                            <View style={styles.entryImageWrap}>
-                              {entry.photoUrl ? (
-                                <Image
-                                  source={{ uri: entry.photoUrl }}
-                                  style={styles.entryImage}
-                                  resizeMode="cover"
-                                />
-                              ) : (
-                                <ThemedText style={{ fontSize: 28 }}>{getFoodEmoji(entry.foodName)}</ThemedText>
-                              )}
-                            </View>
-
-                            {/* Info */}
-                            <View style={styles.entryInfo}>
-                              <ThemedText style={styles.entryName} numberOfLines={1}>
-                                {entry.foodName}
-                              </ThemedText>
-                              <ThemedText style={styles.entryQuantity}>
-                                {entry.quantityText || `${entry.calories}kcal`}
-                              </ThemedText>
-                            </View>
-
-                            {/* Calories */}
-                            <ThemedText style={styles.entryCalories}>
-                              {Math.round(entry.calories || 0)} kcal
-                            </ThemedText>
-                          </Pressable>
+                            <Pressable
+                              style={[styles.entryRow, { paddingVertical: 12, paddingHorizontal: 16, backgroundColor: C.surfaceHigh }]}
+                              onPress={() => navigateToDetail(entry)}
+                            >
+                              {/* Food image */}
+                              <View style={[styles.entryImageWrap, { width: 60, height: 60, borderRadius: 12 }]}>
+                                {entry.photoUrl ? (
+                                  <Image
+                                    source={{ uri: entry.photoUrl }}
+                                    style={[styles.entryImage, { width: 60, height: 60, borderRadius: 12 }]}
+                                    resizeMode="cover"
+                                  />
+                                ) : (
+                                  <ThemedText style={{ fontSize: 32 }}>{getFoodEmoji(entry.foodName)}</ThemedText>
+                                )}
+                              </View>
+  
+                              {/* Info */}
+                              <View style={[styles.entryInfo, { marginLeft: 12, justifyContent: 'space-between', paddingVertical: 2 }]}>
+                                <ThemedText style={[styles.entryName, { fontSize: 16, fontWeight: '700' }]} numberOfLines={1}>
+                                  {entry.foodName}
+                                </ThemedText>
+                                <ThemedText style={{ color: C.textMuted, fontSize: 13, marginTop: 4 }}>
+                                  {entry.quantityText || '1 khẩu phần'} • {Math.round(entry.calories || 0)} cal
+                                </ThemedText>
+                                
+                                <View style={{ flexDirection: 'row', gap: 12, marginTop: 6, alignItems: 'center' }}>
+                                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                                    <Ionicons name="flash" size={14} color="#ef4444" />
+                                    <ThemedText style={{ fontSize: 13, color: C.textMuted, fontWeight: '500' }}>{Math.round(entry.protein || 0)}g</ThemedText>
+                                  </View>
+                                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                                    <Ionicons name="leaf" size={14} color="#3b82f6" />
+                                    <ThemedText style={{ fontSize: 13, color: C.textMuted, fontWeight: '500' }}>{Math.round(entry.carbs || 0)}g</ThemedText>
+                                  </View>
+                                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                                    <Ionicons name="water" size={14} color="#fbbf24" />
+                                    <ThemedText style={{ fontSize: 13, color: C.textMuted, fontWeight: '500' }}>{Math.round(entry.fat || 0)}g</ThemedText>
+                                  </View>
+                                </View>
+                              </View>
+                            </Pressable>
+                            </Swipeable>
+                          </View>
                         ))}
 
 
@@ -608,7 +518,7 @@ const MealDiaryScreen = (): React.ReactElement => {
                             styles.mealEmptyBtn,
                             pressed && { backgroundColor: 'rgba(75,226,119,0.06)' },
                           ]}
-                          onPress={() => handleAddManual()}
+                          onPress={() => handleAddManual(group.mealType)}
                         >
                           <View style={styles.mealEmptyIcon}>
                             <Ionicons name="add" size={24} color={C.primary} />
@@ -626,46 +536,6 @@ const MealDiaryScreen = (): React.ReactElement => {
           </>
         )}
       </ScrollView>
-
-      {/* ══════════ FLOATING AI ROBOT FAB ══════════ */}
-      <GestureDetector gesture={robotPanGesture}>
-        <Animated.View
-          entering={FadeInUp.delay(500).springify()}
-          style={[styles.fabContainer, floatStyle]}
-        >
-          <Pressable
-            style={({ pressed }) => [
-              styles.fab,
-              pressed && { transform: [{ scale: 0.95 }], opacity: 0.9 },
-            ]}
-            onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-              setShowQuickActions(true);
-            }}
-            testID={TEST_IDS.mealDiary.addManualButton}
-            nativeID={TEST_IDS.mealDiary.addManualButton}
-            accessibilityLabel={TEST_IDS.mealDiary.addManualButton}
-            collapsable={false}
-          >
-            {/* Robot face */}
-            <View style={styles.robotFace}>
-              {/* Eyes area */}
-              <View style={styles.robotVisor}>
-                <View style={styles.robotEye} />
-                <View style={styles.robotEye} />
-              </View>
-              {/* Mouth */}
-              <View style={styles.robotMouth} />
-            </View>
-
-            {/* Ping dot */}
-            <View style={styles.fabPingContainer}>
-              <Animated.View entering={FadeIn.delay(800)} style={styles.fabPing} />
-              <View style={styles.fabDot} />
-            </View>
-          </Pressable>
-        </Animated.View>
-      </GestureDetector>
 
       {/* ══════════ BACK TO TODAY ══════════ */}
       {!isToday(selectedDate) && (
@@ -709,91 +579,7 @@ const MealDiaryScreen = (): React.ReactElement => {
         </View>
       )}
 
-      {/* ══════════ EDIT BOTTOM SHEET ══════════ */}
-      <BottomSheet
-        visible={showEditSheet}
-        onClose={() => setShowEditSheet(false)}
-        title="Chỉnh sửa khẩu phần"
-        height={320}
-      >
-        <View style={{ gap: 20 }}>
-          <View style={{ gap: 8 }}>
-            <ThemedText style={{ fontWeight: '600', color: C.onSurface }}>
-              Nhập số gram mới:
-            </ThemedText>
-            <ThemedTextInput
-              value={editGrams}
-              onChangeText={(t) => setEditGrams(t.replace(/[^0-9.]/g, ''))}
-              placeholder="Ví dụ: 150"
-              keyboardType="decimal-pad"
-              returnKeyType="done"
-              onSubmitEditing={handleSaveGrams}
-              style={{
-                backgroundColor: C.bg,
-                borderWidth: 1,
-                borderColor: C.surfaceHighest,
-                color: C.onSurface,
-              }}
-            />
-          </View>
-          <View style={{ flexDirection: 'row', gap: 12, marginTop: 4 }}>
-            <Pressable
-              onPress={() => {
-                setShowEditSheet(false);
-                if (editingEntry) handleDeleteEntry(editingEntry);
-              }}
-              style={({ pressed }) => [
-                {
-                  flex: 1,
-                  paddingVertical: 14,
-                  borderRadius: 16,
-                  borderWidth: 1.5,
-                  borderColor: 'rgba(255,107,107,0.4)',
-                  backgroundColor: 'rgba(255,107,107,0.1)',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                },
-                pressed && { opacity: 0.7 },
-              ]}
-            >
-              <ThemedText style={{ color: C.danger, fontWeight: '700', fontSize: 15 }}>
-                Xóa món ăn
-              </ThemedText>
-            </Pressable>
 
-            <Pressable
-              onPress={handleSaveGrams}
-              style={({ pressed }) => [
-                {
-                  flex: 1,
-                  paddingVertical: 14,
-                  borderRadius: 16,
-                  backgroundColor: C.primary,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                },
-                pressed && { opacity: 0.8 },
-              ]}
-            >
-              <ThemedText style={{ color: C.onPrimary, fontWeight: '700', fontSize: 15 }}>
-                Lưu thay đổi
-              </ThemedText>
-            </Pressable>
-          </View>
-        </View>
-      </BottomSheet>
-
-      {/* ══════════ QUICK ACTIONS OVERLAY ══════════ */}
-      <QuickActionsOverlay
-        visible={showQuickActions}
-        onClose={() => setShowQuickActions(false)}
-        onScanFood={() => navigation.navigate('AiCamera')}
-        onAddMeal={() => navigation.navigate('FoodSearch', { autoFocus: true, showQuickSuggestions: true, returnToDiaryOnSave: true })}
-        onRecipes={() => navigation.navigate('RecipeSuggestions', {})}
-        onWater={() => {
-          Toast.show({ type: 'info', text1: 'Sắp ra mắt', text2: 'Tính năng theo dõi lượng nước sẽ sớm có mặt!' });
-        }}
-      />
     </View>
   );
 };

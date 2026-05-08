@@ -1,7 +1,62 @@
-import crashlytics from '@react-native-firebase/crashlytics';
+/**
+ * Error tracking service – safe for both Expo Go and production builds.
+ *
+ * Firebase Crashlytics requires native modules that are NOT available in
+ * Expo Go. This module lazily resolves the native module and gracefully
+ * falls back to console-only + telemetry tracking when running inside
+ * Expo Go (development).
+ */
 
 import logger from '../utils/logger';
 import { initTelemetryService, trackTelemetryEvent } from './telemetryService';
+
+// ---------------------------------------------------------------------------
+// Lazy, safe Crashlytics accessor
+// ---------------------------------------------------------------------------
+
+// Using `any` intentionally – we cannot reference the Firebase type without
+// causing Metro to bundle the native module (which crashes Expo Go).
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let _crashlytics: any = null;
+let _crashlyticsResolved = false;
+
+import Constants, { ExecutionEnvironment } from 'expo-constants';
+
+function getCrashlytics(): any {
+  if (_crashlyticsResolved) return _crashlytics;
+  _crashlyticsResolved = true;
+
+  try {
+    // If running in Expo Go, do not even attempt to require the module,
+    // to prevent the underlying firebase library from logging console errors.
+    const isExpoGo = Constants.executionEnvironment === ExecutionEnvironment.StoreClient;
+    if (isExpoGo) {
+      logger.info(
+        '[ErrorTracking] Crashlytics native module not available – running without it (Expo Go).',
+      );
+      _crashlytics = null;
+      return _crashlytics;
+    }
+
+    // Dynamic require so the module-level import doesn't throw when the
+    // native module (RNFBAppModule) is absent (i.e. Expo Go).
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const mod = require('@react-native-firebase/crashlytics');
+    const factory = mod.default ?? mod;
+    _crashlytics = factory();
+  } catch {
+    logger.info(
+      '[ErrorTracking] Crashlytics native module not available – running without it (Expo Go?).',
+    );
+    _crashlytics = null;
+  }
+
+  return _crashlytics;
+}
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
 
 const serializeError = (error: unknown): Record<string, unknown> => {
   if (error instanceof Error) {
@@ -21,14 +76,20 @@ const serializeError = (error: unknown): Record<string, unknown> => {
   };
 };
 
+// ---------------------------------------------------------------------------
+// Public API
+// ---------------------------------------------------------------------------
+
 /**
  * Khởi tạo error tracking: bật Crashlytics + telemetry tự build.
  * Crashlytics chạy ở tầng native → không phụ thuộc backend.
  */
 export const initErrorTracking = async (): Promise<void> => {
   try {
-    // Bật Crashlytics collection (mặc định đã bật, nhưng gọi rõ ràng)
-    await crashlytics().setCrashlyticsCollectionEnabled(true);
+    const cr = getCrashlytics();
+    if (cr) {
+      await cr.setCrashlyticsCollectionEnabled(true);
+    }
   } catch (error) {
     // Crashlytics init fail không block app
     logger.warn('[ErrorTracking] Crashlytics init failed, fallback to telemetry only', error);
@@ -52,28 +113,29 @@ export const captureError = (
 
   // --- Firebase Crashlytics (đáng tin cậy hơn, chạy offline) ---
   try {
-    const cr = crashlytics();
-
-    // Gắn context để dễ filter trên Firebase Console
-    if (context) {
-      cr.setAttribute('context', context);
-    }
-
-    // Gắn thêm metadata nếu có
-    if (extras) {
-      for (const [key, value] of Object.entries(extras)) {
-        cr.setAttribute(key, String(value));
+    const cr = getCrashlytics();
+    if (cr) {
+      // Gắn context để dễ filter trên Firebase Console
+      if (context) {
+        cr.setAttribute('context', context);
       }
-    }
 
-    if (error instanceof Error) {
-      // Ghi lại error có stack trace → hiện trên Crashlytics dashboard
-      cr.recordError(error);
-    } else {
-      // Error không phải Error object → tạo Error wrapper
-      const wrapped = new Error(typeof error === 'string' ? error : JSON.stringify(error));
-      wrapped.name = context ?? 'NonStandardError';
-      cr.recordError(wrapped);
+      // Gắn thêm metadata nếu có
+      if (extras) {
+        for (const [key, value] of Object.entries(extras)) {
+          cr.setAttribute(key, String(value));
+        }
+      }
+
+      if (error instanceof Error) {
+        // Ghi lại error có stack trace → hiện trên Crashlytics dashboard
+        cr.recordError(error);
+      } else {
+        // Error không phải Error object → tạo Error wrapper
+        const wrapped = new Error(typeof error === 'string' ? error : JSON.stringify(error));
+        wrapped.name = context ?? 'NonStandardError';
+        cr.recordError(wrapped);
+      }
     }
   } catch (crashlyticsError) {
     // Crashlytics fail → không block, telemetry vẫn chạy
@@ -101,7 +163,10 @@ export const captureError = (
  */
 export const setErrorTrackingUser = (userId: string): void => {
   try {
-    crashlytics().setUserId(userId);
+    const cr = getCrashlytics();
+    if (cr) {
+      cr.setUserId(userId);
+    }
   } catch (error) {
     logger.warn('[ErrorTracking] Failed to set Crashlytics userId', error);
   }
@@ -113,7 +178,10 @@ export const setErrorTrackingUser = (userId: string): void => {
  */
 export const logBreadcrumb = (message: string): void => {
   try {
-    crashlytics().log(message);
+    const cr = getCrashlytics();
+    if (cr) {
+      cr.log(message);
+    }
   } catch {
     // Im lặng, breadcrumb không critical
   }

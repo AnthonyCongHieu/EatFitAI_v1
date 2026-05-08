@@ -21,6 +21,7 @@ import { ThemedText } from '../../../components/ThemedText';
 import { aiService } from '../../../services/aiService';
 import { foodService } from '../../../services/foodService';
 import { invalidateDiaryQueries } from '../../../services/diaryFlowService';
+import { diaryService } from '../../../services/diaryService';
 import type { RootStackParamList } from '../../types';
 import type { RecipeDetail } from '../../../types/aiEnhanced';
 import type { MealTypeId } from '../../../types';
@@ -123,38 +124,48 @@ const RecipeDetailScreen = (): React.ReactElement => {
   const handleAddToDiary = async (mealTypeId: MealTypeId, servings: number) => {
     if (!recipe) return;
     try {
-      const formData = new FormData();
-      formData.append('foodName', recipe.recipeName);
-      formData.append('description', recipe.description || `Công thức: ${recipe.recipeName}`);
-      formData.append('caloriesPer100', String(recipe.totalCalories ?? 0));
-      formData.append('proteinPer100', String(recipe.totalProtein ?? 0));
-      formData.append('carbPer100', String(recipe.totalCarbs ?? 0));
-      formData.append('fatPer100', String(recipe.totalFat ?? 0));
-      formData.append('unitType', 'g');
-
-      const createdItem = await foodService.createUserFoodItem(formData);
       const totalGrams = 100 * servings;
       const ratio = totalGrams / 100;
 
-      const diaryPayload = {
-        mealTypeId,
-        userFoodItemId: String(createdItem.userFoodItemId),
-        grams: totalGrams,
-        calories: Number((recipe.totalCalories ?? 0) * ratio) || 0,
-        protein: Number((recipe.totalProtein ?? 0) * ratio) || 0,
-        carb: Number((recipe.totalCarbs ?? 0) * ratio) || 0,
-        fat: Number((recipe.totalFat ?? 0) * ratio) || 0,
-        note: `Từ công thức: ${recipe.recipeName}`,
-      };
+      if (route.params.diaryEntryId) {
+        await diaryService.updateEntry(route.params.diaryEntryId, {
+          grams: totalGrams,
+        });
+      } else {
+        const formData = new FormData();
+        formData.append('foodName', recipe.recipeName);
+        formData.append('description', recipe.description || `Công thức: ${recipe.recipeName}`);
+        formData.append('caloriesPer100', String(recipe.totalCalories ?? 0));
+        formData.append('proteinPer100', String(recipe.totalProtein ?? 0));
+        formData.append('carbPer100', String(recipe.totalCarbs ?? 0));
+        formData.append('fatPer100', String(recipe.totalFat ?? 0));
+        formData.append('unitType', 'g');
 
-      await foodService.addDiaryEntryFromUserFoodItem(diaryPayload);
+        const createdItem = await foodService.createUserFoodItem(formData);
+
+        const diaryPayload = {
+          mealTypeId,
+          userFoodItemId: String(createdItem.userFoodItemId),
+          grams: totalGrams,
+          calories: Number((recipe.totalCalories ?? 0) * ratio) || 0,
+          protein: Number((recipe.totalProtein ?? 0) * ratio) || 0,
+          carb: Number((recipe.totalCarbs ?? 0) * ratio) || 0,
+          fat: Number((recipe.totalFat ?? 0) * ratio) || 0,
+          note: `Từ công thức: ${recipe.recipeName}`,
+        };
+
+        await foodService.addDiaryEntryFromUserFoodItem(diaryPayload);
+      }
+
       await invalidateDiaryQueries(queryClient);
 
       Toast.show({
         type: 'success',
-        text1: 'Đã thêm vào nhật ký',
+        text1: route.params.diaryEntryId ? 'Đã cập nhật khẩu phần' : 'Đã thêm vào nhật ký',
         text2: `${recipe.recipeName} (${servings} khẩu phần)`,
       });
+      setShowAddToDiarySheet(false);
+      navigation.goBack();
     } catch (err: any) {
       Toast.show({
         type: 'error',
@@ -328,6 +339,9 @@ const RecipeDetailScreen = (): React.ReactElement => {
           recipeName={recipe.recipeName}
           nutrition={{ calories: recipe.totalCalories, protein: recipe.totalProtein, carbs: recipe.totalCarbs, fat: recipe.totalFat }}
           onConfirm={handleAddToDiary}
+          defaultMealType={route.params.defaultMealType}
+          diaryEntryId={route.params.diaryEntryId}
+          currentGrams={route.params.currentGrams}
         />
       )}
     </View>
