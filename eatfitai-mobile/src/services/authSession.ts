@@ -1,5 +1,5 @@
 import { AppState, AppStateStatus } from 'react-native';
-import { clearAccessTokenMem, setAccessTokenMem } from './authTokens';
+import { clearAccessTokenMem, getAccessTokenMem, setAccessTokenMem } from './authTokens';
 import { tokenStorage } from './secureStore';
 import { postRefreshToken } from './tokenService';
 import logger from '../utils/logger';
@@ -18,6 +18,26 @@ const parseDate = (value?: string | null): number | null => {
   if (!value) return null;
   const t = Date.parse(value);
   return Number.isNaN(t) ? null : t;
+};
+
+const readAuthField = (
+  data: any,
+  camelCaseKey: string,
+  pascalCaseKey: string,
+): string | undefined => {
+  const value = data?.[camelCaseKey] ?? data?.[pascalCaseKey];
+  return typeof value === 'string' && value.trim().length > 0 ? value : undefined;
+};
+
+const hasUsableAccessToken = async (): Promise<boolean> => {
+  const accessToken =
+    getAccessTokenMem() ?? (await tokenStorage.getAccessToken()) ?? null;
+  if (!accessToken || accessToken.trim().length === 0) {
+    return false;
+  }
+
+  const expMs = parseDate(await tokenStorage.getAccessTokenExpiresAt());
+  return expMs === null || expMs > Date.now();
 };
 
 const clearRefreshTimer = () => {
@@ -70,10 +90,18 @@ export const setAuthExpiredCallback = (callback: (() => void) | null): void => {
 };
 
 export const updateSessionFromAuthResponse = async (data: any): Promise<void> => {
-  const accessToken = data?.accessToken as string | undefined;
-  const refreshToken = data?.refreshToken as string | undefined;
-  const accessTokenExpiresAt = data?.accessTokenExpiresAt as string | undefined;
-  const refreshTokenExpiresAt = data?.refreshTokenExpiresAt as string | undefined;
+  const accessToken = readAuthField(data, 'accessToken', 'AccessToken');
+  const refreshToken = readAuthField(data, 'refreshToken', 'RefreshToken');
+  const accessTokenExpiresAt = readAuthField(
+    data,
+    'accessTokenExpiresAt',
+    'AccessTokenExpiresAt',
+  );
+  const refreshTokenExpiresAt = readAuthField(
+    data,
+    'refreshTokenExpiresAt',
+    'RefreshTokenExpiresAt',
+  );
   if (!accessToken) return;
   setAccessTokenMem(accessToken);
   await tokenStorage.saveTokensFull({
@@ -163,6 +191,16 @@ export const refreshAccessToken = async (): Promise<string> => {
   try {
     return await runSharedRefresh();
   } catch (err) {
+    if (err instanceof Error && err.message === 'Missing refresh token') {
+      const canKeepCurrentSession = await hasUsableAccessToken();
+      if (canKeepCurrentSession) {
+        logger.warn(
+          '[EatFitAI] Refresh token is missing, but the current access token is still usable. Keeping the local session active.',
+        );
+        throw err;
+      }
+    }
+
     if (__DEV__) {
       logger.error('[EatFitAI] Refresh failed:', err);
     }

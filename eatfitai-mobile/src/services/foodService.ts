@@ -63,7 +63,7 @@ const selectFoodImageUrl = (
   const variantUrl =
     size === 'thumb'
       ? data?.imageVariants?.thumbUrl
-      : data?.imageVariants?.mediumUrl ?? data?.imageVariants?.thumbUrl;
+      : (data?.imageVariants?.mediumUrl ?? data?.imageVariants?.thumbUrl);
 
   return (
     sanitizeFoodImageUrl(
@@ -163,10 +163,10 @@ const getDefaultEatenDate = (): string => {
 
 const RECENT_FOODS_CACHE_KEY = '@eatfitai_recent_foods';
 
-const normalizeFoodItem = (data: FoodItemDtoExtended): FoodItem => ({
+const normalizeFoodItem = (data: FoodItemDto): FoodItem => ({
   id: String(data?.foodItemId ?? ''),
   name: data?.foodName ?? 'Món ăn',
-  nameEn: data?.foodNameEn ?? null,
+  nameEn: (data as FoodItemDtoExtended)?.foodNameEn ?? null,
   brand: null,
   barcode: (data as FoodItemDtoExtended & { barcode?: string | null })?.barcode ?? null,
   calories: data?.caloriesPer100g ?? null,
@@ -445,7 +445,9 @@ export const foodService = {
       return null;
     }
 
-    const response = await apiClient.get(`/api/food/barcode/${encodeURIComponent(trimmedBarcode)}`);
+    const response = await apiClient.get(
+      `/api/food/barcode/${encodeURIComponent(trimmedBarcode)}`,
+    );
     const data = response.data;
     const foodItem = data?.foodItem ?? data?.FoodItem ?? data;
     if (!foodItem) {

@@ -155,7 +155,11 @@ export const useAuthStore = create<AuthState>((set: any) => ({
           setAccessTokenMem(token);
           await syncProfileCacheForUser(persistedUser?.id ?? null);
           if (persistedUser?.id) setErrorTrackingUser(persistedUser.id);
-          set({ isAuthenticated: true, needsOnboarding: persistedNeedsOnboarding, user: persistedUser });
+          set({
+            isAuthenticated: true,
+            needsOnboarding: persistedNeedsOnboarding,
+            user: persistedUser,
+          });
         } else if (refreshToken && isTokenStillValid(refreshTokenExpiresAt)) {
           try {
             const refreshedAccessToken = await tryRefreshAccessToken();
@@ -165,7 +169,11 @@ export const useAuthStore = create<AuthState>((set: any) => ({
 
             await syncProfileCacheForUser(persistedUser?.id ?? null);
             if (persistedUser?.id) setErrorTrackingUser(persistedUser.id);
-            set({ isAuthenticated: true, needsOnboarding: persistedNeedsOnboarding, user: persistedUser });
+            set({
+              isAuthenticated: true,
+              needsOnboarding: persistedNeedsOnboarding,
+              user: persistedUser,
+            });
           } catch (error) {
             if (__DEV__) {
               console.warn(
@@ -229,7 +237,7 @@ export const useAuthStore = create<AuthState>((set: any) => ({
     const raw = data as Record<string, any>;
 
     // Backend trả accessToken (JsonPropertyName) không phải token
-    const accessToken = raw.accessToken || raw.token;
+    const accessToken = raw.accessToken || raw.AccessToken || raw.token;
     if (!accessToken) {
       console.error('[useAuthStore] Login response missing token:', data);
       throw new Error(t('auth.missingAccessToken'));
@@ -238,17 +246,20 @@ export const useAuthStore = create<AuthState>((set: any) => ({
     console.log('[useAuthStore] Login successful, saving tokens...');
     await tokenStorage.saveTokensFull({
       accessToken,
-      accessTokenExpiresAt: (raw.accessTokenExpiresAt || raw.expiresAt) ?? null,
+      accessTokenExpiresAt:
+        (raw.accessTokenExpiresAt ||
+          raw.AccessTokenExpiresAt ||
+          raw.expiresAt ||
+          raw.ExpiresAt) ??
+        null,
       refreshToken: raw.refreshToken ?? raw.RefreshToken ?? null,
-      refreshTokenExpiresAt: raw.refreshTokenExpiresAt ?? raw.RefreshTokenExpiresAt ?? null,
+      refreshTokenExpiresAt:
+        raw.refreshTokenExpiresAt ?? raw.RefreshTokenExpiresAt ?? null,
     });
     setAccessTokenMem(accessToken);
     await updateSessionFromAuthResponse(data as AuthResponse);
 
-    const needsOnboarding = readNeedsOnboardingFlag(
-      raw,
-      false,
-    );
+    const needsOnboarding = readNeedsOnboardingFlag(raw, false);
     await persistNeedsOnboarding(needsOnboarding);
 
     // Backend uses PascalCase by default (System.Text.Json)
@@ -258,7 +269,12 @@ export const useAuthStore = create<AuthState>((set: any) => ({
     const userId = String(raw.UserId ?? raw.userId ?? '');
 
     if (__DEV__) {
-      console.log('[useAuthStore] Extracted from login response:', { userId, userEmail, userName, rawKeys: Object.keys(raw) });
+      console.log('[useAuthStore] Extracted from login response:', {
+        userId,
+        userEmail,
+        userName,
+        rawKeys: Object.keys(raw),
+      });
     }
 
     // If displayName is still empty, fetch user profile as fallback
@@ -266,7 +282,13 @@ export const useAuthStore = create<AuthState>((set: any) => ({
       try {
         const profileResp = await apiClient.get('/api/profile');
         const profile = profileResp.data as Record<string, any>;
-        userName = String(profile?.DisplayName ?? profile?.displayName ?? profile?.Email ?? profile?.email ?? '');
+        userName = String(
+          profile?.DisplayName ??
+            profile?.displayName ??
+            profile?.Email ??
+            profile?.email ??
+            '',
+        );
         if (__DEV__) {
           console.log('[useAuthStore] Fetched profile fallback name:', userName);
         }
@@ -350,9 +372,15 @@ export const useAuthStore = create<AuthState>((set: any) => ({
     console.log('[useAuthStore] Google Sign-In successful, saving tokens...');
     await tokenStorage.saveTokensFull({
       accessToken,
-      accessTokenExpiresAt: (raw.accessTokenExpiresAt || raw.AccessTokenExpiresAt || raw.expiresAt || raw.ExpiresAt) ?? null,
+      accessTokenExpiresAt:
+        (raw.accessTokenExpiresAt ||
+          raw.AccessTokenExpiresAt ||
+          raw.expiresAt ||
+          raw.ExpiresAt) ??
+        null,
       refreshToken: raw.refreshToken ?? raw.RefreshToken ?? null,
-      refreshTokenExpiresAt: raw.refreshTokenExpiresAt ?? raw.RefreshTokenExpiresAt ?? null,
+      refreshTokenExpiresAt:
+        raw.refreshTokenExpiresAt ?? raw.RefreshTokenExpiresAt ?? null,
     });
     setAccessTokenMem(accessToken);
     await updateSessionFromAuthResponse(data as AuthResponse);
@@ -372,7 +400,11 @@ export const useAuthStore = create<AuthState>((set: any) => ({
       setErrorTrackingUser(extractedUser.id);
     }
 
-    set({ isAuthenticated: true, needsOnboarding, user: extractedUser.id ? extractedUser : null });
+    set({
+      isAuthenticated: true,
+      needsOnboarding,
+      user: extractedUser.id ? extractedUser : null,
+    });
 
     // Return needsOnboarding flag for navigation decision
     return { needsOnboarding };
