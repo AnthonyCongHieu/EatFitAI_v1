@@ -132,6 +132,8 @@ services:
         value: ping
       - key: YOLO_CONFIDENCE_THRESHOLD
         value: "0.35"
+      - key: YOLO_ONNX_IMAGE_SIZE
+        value: "640"
       - key: YOLO_IMAGE_SIZE
         value: "512"
       - key: MEDIA_PUBLIC_BASE_URL

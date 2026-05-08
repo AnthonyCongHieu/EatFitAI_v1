@@ -2,7 +2,9 @@ using EatFitAI.API.DbScaffold.Models;
 using EatFitAI.API.DbScaffold.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Hosting;
+using System.Globalization;
 using System.Security.Cryptography;
+using System.Text;
 
 namespace EatFitAI.API.Data
 {
@@ -210,57 +212,192 @@ namespace EatFitAI.API.Data
             await context.SaveChangesAsync();
         }
 
+        private static readonly string[] Yolo11mCleanV1Labels =
+        [
+            "banh_mi",
+            "pho",
+            "bun",
+            "bot_chien",
+            "goi_cuon",
+            "fried_rice",
+            "com_tam",
+            "thit_kho",
+            "ca_kho",
+            "canh",
+            "banh_beo",
+            "banh_bo",
+            "banh_bot_loc",
+            "banh_can",
+            "banh_canh",
+            "banh_chung",
+            "banh_cong",
+            "banh_cuon",
+            "banh_da_lon",
+            "banh_duc",
+            "banh_khot",
+            "banh_tet",
+            "banh_xeo",
+            "banh_trang",
+            "banh_trang_tron",
+            "bo_kho",
+            "bo_la_lot",
+            "bun_bo_hue",
+            "bun_cha",
+            "bun_dau",
+            "bun_mam",
+            "bun_rieu",
+            "cha_gio",
+            "hu_tieu",
+            "lau",
+            "mi_quang",
+            "cao_lau",
+            "xoi",
+            "chao_long",
+            "sup_cua",
+            "bitter_melon_soup",
+            "caramelized_fish_clay_pot",
+            "chicken_rice",
+            "pumpkin_soup",
+            "purple_yam_soup",
+            "steamed_pork_belly_taro",
+            "sizzling_beef_steak",
+            "hollow_fried_sesame_donut",
+            "nuoc_cham",
+            "rice",
+            "noodles",
+            "chicken",
+            "beef",
+            "pork",
+            "pork_belly",
+            "pork_rib",
+            "grilled_pork_belly",
+            "fish",
+            "shrimp",
+            "crab",
+            "squid",
+            "egg",
+            "fried_egg",
+            "tofu",
+            "tempeh",
+            "tomato",
+            "cucumber",
+            "carrot",
+            "potato",
+            "sweet_potato",
+            "spinach",
+            "water_spinach",
+            "bokchoy",
+            "cabbage",
+            "cauliflower",
+            "broccoli",
+            "eggplant",
+            "bitter_gourd",
+            "bottle_gourd",
+            "pumpkin",
+            "radish",
+            "long_beans",
+            "beans",
+            "peas",
+            "mushroom",
+            "chayote",
+            "corn",
+            "onion",
+            "shallot",
+            "green_onion",
+            "garlic",
+            "chili",
+            "ginger",
+            "galangal",
+            "lemongrass",
+            "leek",
+            "lime_leaf",
+            "coriander_seed",
+            "fennel_seed",
+            "star_anise",
+            "cinnamon",
+            "clove",
+            "turmeric",
+            "bell_pepper",
+            "lime",
+        ];
+
+        private static readonly IReadOnlyDictionary<string, string[]> Yolo11mCleanV1Aliases =
+            new Dictionary<string, string[]>(StringComparer.OrdinalIgnoreCase)
+            {
+                ["banh_mi"] = ["banh mi"],
+                ["goi_cuon"] = ["goi cuon"],
+                ["fried_rice"] = ["com chien", "fried rice"],
+                ["com_tam"] = ["com tam"],
+                ["thit_kho"] = ["thit kho"],
+                ["ca_kho"] = ["ca kho"],
+                ["bo_kho"] = ["bo kho", "thit bo kho"],
+                ["bo_la_lot"] = ["bo la lot"],
+                ["bun_bo_hue"] = ["bun bo hue"],
+                ["bun_cha"] = ["bun cha"],
+                ["bun_dau"] = ["bun dau"],
+                ["bun_mam"] = ["bun mam"],
+                ["bun_rieu"] = ["bun rieu"],
+                ["cha_gio"] = ["cha gio"],
+                ["hu_tieu"] = ["hu tieu"],
+                ["mi_quang"] = ["mi quang"],
+                ["cao_lau"] = ["cao lau"],
+                ["chao_long"] = ["chao long"],
+                ["sup_cua"] = ["sup cua"],
+                ["bitter_melon_soup"] = ["canh kho qua", "bitter melon soup"],
+                ["caramelized_fish_clay_pot"] = ["ca kho to", "caramelized fish clay pot"],
+                ["chicken_rice"] = ["com ga", "chicken rice"],
+                ["pumpkin_soup"] = ["canh bi do", "pumpkin soup"],
+                ["purple_yam_soup"] = ["canh khoai mo", "purple yam soup"],
+                ["steamed_pork_belly_taro"] = ["thit ba chi hap khoai mon", "steamed pork belly taro"],
+                ["sizzling_beef_steak"] = ["bo bit tet", "sizzling beef steak"],
+                ["hollow_fried_sesame_donut"] = ["banh tieu", "hollow fried sesame donut"],
+                ["nuoc_cham"] = ["nuoc cham"],
+                ["rice"] = ["com", "rice"],
+                ["noodles"] = ["mi", "noodles"],
+                ["chicken"] = ["thit ga", "uc ga", "chicken"],
+                ["beef"] = ["thit bo", "beef"],
+                ["pork"] = ["thit heo", "thit lon", "pork"],
+                ["pork_belly"] = ["thit ba chi", "pork belly"],
+                ["pork_rib"] = ["suon heo", "pork rib"],
+                ["grilled_pork_belly"] = ["thit ba chi nuong", "grilled pork belly"],
+                ["fish"] = ["ca", "fish"],
+                ["shrimp"] = ["tom", "shrimp"],
+                ["crab"] = ["cua", "crab"],
+                ["squid"] = ["muc", "squid"],
+                ["egg"] = ["trung", "egg"],
+                ["fried_egg"] = ["trung chien", "fried egg"],
+                ["tofu"] = ["dau hu", "tofu"],
+                ["sweet_potato"] = ["khoai lang", "sweet potato"],
+                ["water_spinach"] = ["rau muong", "water spinach"],
+                ["bitter_gourd"] = ["kho qua", "bitter gourd"],
+                ["bottle_gourd"] = ["bau", "bottle gourd"],
+                ["long_beans"] = ["dau dua", "long beans"],
+                ["mushroom"] = ["nam", "mushroom"],
+                ["green_onion"] = ["hanh la", "green onion"],
+                ["shallot"] = ["hanh tim", "shallot"],
+                ["chili"] = ["ot", "chili"],
+                ["galangal"] = ["rieng", "galangal"],
+                ["lemongrass"] = ["sa", "lemongrass"],
+                ["lime_leaf"] = ["la chanh", "lime leaf"],
+                ["coriander_seed"] = ["hat ngo", "coriander seed"],
+                ["fennel_seed"] = ["hat thi la", "fennel seed"],
+                ["star_anise"] = ["hoa hoi", "star anise"],
+                ["cinnamon"] = ["que", "cinnamon"],
+                ["clove"] = ["dinh huong", "clove"],
+                ["lime"] = ["chanh", "lime"],
+            };
+
         private static async Task SeedAiLabelMapsAsync(EatFitAIDbContext context)
         {
             var foodItems = await context.FoodItems
                 .Where(food => food.IsActive && !food.IsDeleted)
                 .ToListAsync();
 
-            var chicken = foodItems
-                .Where(IsChickenCatalogItem)
-                .OrderByDescending(ScoreChickenCatalogItem)
-                .FirstOrDefault();
-            var beef = foodItems.FirstOrDefault(food =>
-                food.FoodName.Contains("Beef", StringComparison.OrdinalIgnoreCase)
-                || (food.FoodNameUnsigned?.Contains("thit bo", StringComparison.OrdinalIgnoreCase) ?? false));
-
-            if (beef == null)
+            foreach (var label in Yolo11mCleanV1Labels)
             {
-                beef = new FoodItem
-                {
-                    FoodName = "Beef",
-                    FoodNameEn = "Beef",
-                    FoodNameUnsigned = "beef",
-                    CaloriesPer100g = 187m,
-                    ProteinPer100g = 20m,
-                    CarbPer100g = 0m,
-                    FatPer100g = 12m,
-                    IsActive = true,
-                    IsDeleted = false,
-                    IsVerified = true,
-                    VerifiedBy = "Seed",
-                    CredibilityScore = 90,
-                    CreatedAt = DateTime.UtcNow,
-                    UpdatedAt = DateTime.UtcNow
-                };
-                await context.FoodItems.AddAsync(beef);
-                await context.SaveChangesAsync();
-            }
-
-            var maps = new List<(string Label, int FoodItemId, decimal MinConfidence)>();
-            if (chicken != null)
-            {
-                maps.Add(("chicken", chicken.FoodItemId, 0.05m));
-                maps.Add(("raw chicken", chicken.FoodItemId, 0.05m));
-            }
-            if (beef != null)
-            {
-                maps.Add(("beef", beef.FoodItemId, 0.05m));
-                maps.Add(("raw beef", beef.FoodItemId, 0.05m));
-            }
-
-            foreach (var (label, foodItemId, minConfidence) in maps)
-            {
+                var foodItem = FindCatalogFood(label, foodItems);
+                var foodItemId = foodItem?.FoodItemId;
+                var minConfidence = GetSeedMinConfidence(label, foodItemId);
                 var existing = await context.AiLabelMaps.FindAsync(label);
                 if (existing == null)
                 {
@@ -274,7 +411,11 @@ namespace EatFitAI.API.Data
                 }
                 else
                 {
-                    existing.FoodItemId = foodItemId;
+                    if (!existing.FoodItemId.HasValue && foodItemId.HasValue)
+                    {
+                        existing.FoodItemId = foodItemId;
+                    }
+
                     existing.MinConfidence = Math.Min(existing.MinConfidence, minConfidence);
                 }
             }
@@ -282,36 +423,116 @@ namespace EatFitAI.API.Data
             await context.SaveChangesAsync();
         }
 
-        private static bool IsChickenCatalogItem(FoodItem food)
+        private static decimal GetSeedMinConfidence(string label, int? foodItemId)
         {
-            var name = food.FoodName ?? string.Empty;
-            var unsigned = food.FoodNameUnsigned ?? string.Empty;
-            return name.Contains("Chicken", StringComparison.OrdinalIgnoreCase)
-                || unsigned.Contains("chicken", StringComparison.OrdinalIgnoreCase)
-                || unsigned.Contains("uc ga", StringComparison.OrdinalIgnoreCase)
-                || unsigned.Contains("canh ga", StringComparison.OrdinalIgnoreCase)
-                || unsigned.Contains("dui ga", StringComparison.OrdinalIgnoreCase)
-                || unsigned.Contains(" ga", StringComparison.OrdinalIgnoreCase)
-                || unsigned.StartsWith("ga ", StringComparison.OrdinalIgnoreCase);
+            if (!foodItemId.HasValue)
+            {
+                return 0.60m;
+            }
+
+            return label is "beef" or "chicken" ? 0.05m : 0.60m;
         }
 
-        private static int ScoreChickenCatalogItem(FoodItem food)
+        private static FoodItem? FindCatalogFood(string label, IReadOnlyCollection<FoodItem> foodItems)
         {
-            var name = food.FoodName ?? string.Empty;
-            var unsigned = food.FoodNameUnsigned ?? string.Empty;
-            if (name.Contains("Chicken Breast", StringComparison.OrdinalIgnoreCase)
-                || unsigned.Contains("uc ga", StringComparison.OrdinalIgnoreCase))
+            var aliases = BuildCatalogAliases(label);
+
+            return foodItems
+                .Select(food => new
+                {
+                    Food = food,
+                    Score = ScoreCatalogFood(food, aliases)
+                })
+                .Where(match => match.Score > 0)
+                .OrderByDescending(match => match.Score)
+                .ThenByDescending(match => match.Food.CredibilityScore)
+                .ThenBy(match => match.Food.FoodName.Length)
+                .Select(match => match.Food)
+                .FirstOrDefault();
+        }
+
+        private static IReadOnlyList<string> BuildCatalogAliases(string label)
+        {
+            var aliases = new List<string> { label.Replace('_', ' ') };
+            if (Yolo11mCleanV1Aliases.TryGetValue(label, out var extraAliases))
             {
-                return 100;
+                aliases.AddRange(extraAliases);
             }
 
-            if (unsigned.Contains("canh ga", StringComparison.OrdinalIgnoreCase)
-                || unsigned.Contains("dui ga", StringComparison.OrdinalIgnoreCase))
+            return aliases
+                .Select(NormalizeCatalogKey)
+                .Where(alias => !string.IsNullOrWhiteSpace(alias))
+                .Distinct(StringComparer.Ordinal)
+                .ToList();
+        }
+
+        private static int ScoreCatalogFood(FoodItem food, IReadOnlyCollection<string> aliases)
+        {
+            var names = new[]
             {
-                return 80;
+                food.FoodName,
+                food.FoodNameUnsigned,
+                food.FoodNameEn
+            }
+                .Select(NormalizeCatalogKey)
+                .Where(value => !string.IsNullOrWhiteSpace(value))
+                .Distinct(StringComparer.Ordinal)
+                .ToList();
+
+            foreach (var alias in aliases)
+            {
+                if (names.Any(name => name.Equals(alias, StringComparison.Ordinal)))
+                {
+                    return 1000;
+                }
+
+                if (names.Any(name => name.StartsWith(alias + " ", StringComparison.Ordinal)))
+                {
+                    return 900;
+                }
+
+                if (names.Any(name => name.Contains(" " + alias + " ", StringComparison.Ordinal)
+                    || name.EndsWith(" " + alias, StringComparison.Ordinal)))
+                {
+                    return 800;
+                }
             }
 
-            return 10;
+            return 0;
+        }
+
+        private static string NormalizeCatalogKey(string? value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return string.Empty;
+            }
+
+            var lower = value.Trim().ToLowerInvariant().Normalize(NormalizationForm.FormD);
+            var builder = new StringBuilder(lower.Length);
+            var lastWasSpace = true;
+
+            foreach (var c in lower)
+            {
+                if (CharUnicodeInfo.GetUnicodeCategory(c) == UnicodeCategory.NonSpacingMark)
+                {
+                    continue;
+                }
+
+                var normalized = c == 'đ' ? 'd' : c;
+                if (char.IsLetterOrDigit(normalized))
+                {
+                    builder.Append(normalized);
+                    lastWasSpace = false;
+                }
+                else if (!lastWasSpace)
+                {
+                    builder.Append(' ');
+                    lastWasSpace = true;
+                }
+            }
+
+            return builder.ToString().Trim().Normalize(NormalizationForm.FormC);
         }
 
         private static async Task SeedFoodServingsAsync(EatFitAIDbContext context)

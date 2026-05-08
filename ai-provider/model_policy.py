@@ -36,7 +36,7 @@ def allow_generic_yolo_fallback(env: Mapping[str, str] | None = None) -> bool:
     if raw:
         return _is_truthy(raw) and not _is_falsy(raw)
 
-    return not is_cloud_runtime(env)
+    return False
 
 
 def supabase_model_download_requested(env: Mapping[str, str] | None = None) -> bool:
@@ -57,6 +57,6 @@ def pending_model_readiness_error(
         return None
 
     if supabase_model_download_requested(env):
-        return "Supabase model download has been removed; package best.pt or best.onnx with the service"
+        return "Supabase model download has been removed; package best.onnx with the service"
 
-    return "best.pt or best.onnx is required in production and must be packaged with the service"
+    return "best.onnx is required in production and must be packaged with the service"

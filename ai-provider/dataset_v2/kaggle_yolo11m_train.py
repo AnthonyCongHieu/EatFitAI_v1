@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import argparse
-import glob
 import json
 import os
 import shutil
@@ -21,6 +20,9 @@ RUN_NAME = "yolo11m-eatfitai-clean-v1"
 CHECKPOINT_DIR = KAGGLE_WORKING / "_yolo11m_checkpoints"
 REQUIRE_T4X2 = os.environ.get("EATFITAI_REQUIRE_T4X2", "1").strip().lower() not in {"0", "false", "no"}
 MIN_FREE_BYTES_AFTER_EXTRACT = int(float(os.environ.get("EATFITAI_MIN_FREE_GB_AFTER_EXTRACT", "2")) * 1024**3)
+TRAIN_EPOCHS = int(os.environ.get("EATFITAI_YOLO11M_EPOCHS", "150"))
+SAVE_PERIOD = int(os.environ.get("EATFITAI_SAVE_PERIOD", "-1"))
+SKIP_SMOKE_ON_RESUME = os.environ.get("EATFITAI_SKIP_SMOKE_ON_RESUME", "1").strip().lower() not in {"0", "false", "no"}
 PREFERRED_ARCHIVE_PATTERNS = (
     "**/eatfitai_clean_v1.tar",
     "**/eatfitai_dataset_v2_clean_candidate.zip",
@@ -220,20 +222,49 @@ def copy_training_artifacts(run_dir: Path, working_dir: Path = KAGGLE_WORKING, c
     checkpoint_dir.mkdir(parents=True, exist_ok=True)
     working_dir.mkdir(parents=True, exist_ok=True)
 
-    for src in sorted(weights.glob("*.pt")) if weights.exists() else []:
+    cleanup_epoch_checkpoints(weights, checkpoint_dir, working_dir)
+
+    for src in (weights / "last.pt", weights / "best.pt"):
+        if not src.exists():
+            continue
         shutil.copy2(src, checkpoint_dir / src.name)
-        root_name = f"yolo11m_{src.name}" if src.name in {"last.pt", "best.pt"} else src.name
-        shutil.copy2(src, working_dir / root_name)
-        if src.name in {"last.pt", "best.pt"}:
-            shutil.copy2(src, working_dir / f"yolo11m_resume_{src.name}")
+        shutil.copy2(src, working_dir / f"yolo11m_{src.name}")
+        shutil.copy2(src, working_dir / f"yolo11m_resume_{src.name}")
     for src in sorted(weights.glob("*.onnx")) if weights.exists() else []:
         shutil.copy2(src, working_dir / src.name)
+        shutil.copy2(src, working_dir / f"yolo11m_{src.name}")
     for name in ("results.csv", "args.yaml"):
         src = run_dir / name
         if src.exists():
             shutil.copy2(src, checkpoint_dir / name)
             shutil.copy2(src, working_dir / f"yolo11m_{name}")
     write_resume_manifest(run_dir, working_dir)
+    print_disk_summary("artifact_sync", working_dir)
+
+
+def cleanup_epoch_checkpoints(*directories: Path) -> None:
+    removed = 0
+    for directory in directories:
+        if not directory.exists():
+            continue
+        for checkpoint in directory.glob("epoch*.pt"):
+            checkpoint.unlink(missing_ok=True)
+            removed += 1
+    if removed:
+        print(f"Removed {removed} per-epoch checkpoint artifact(s); last/best are retained.", flush=True)
+
+
+def print_disk_summary(label: str, path: Path = KAGGLE_WORKING) -> None:
+    usage = shutil.disk_usage(path)
+    print(
+        {
+            "disk_label": label,
+            "free_gb": round(usage.free / 1024**3, 3),
+            "used_gb": round(usage.used / 1024**3, 3),
+            "total_gb": round(usage.total / 1024**3, 3),
+        },
+        flush=True,
+    )
 
 
 def last_recorded_epoch(results_csv: Path) -> int | None:
@@ -249,6 +280,50 @@ def last_recorded_epoch(results_csv: Path) -> int | None:
         except ValueError:
             continue
     return last_epoch
+
+
+def resume_results_csv(resume_checkpoint: Path) -> Path | None:
+    for candidate in (
+        resume_checkpoint.parent / "results.csv",
+        resume_checkpoint.parent.parent / "results.csv",
+        resume_checkpoint.parent.parent / "yolo11m_results.csv",
+    ):
+        if candidate.exists():
+            return candidate
+    return None
+
+
+def resume_checkpoint_reached_target(resume_checkpoint: Path, target_epochs: int = TRAIN_EPOCHS) -> bool:
+    results_csv = resume_results_csv(resume_checkpoint)
+    if results_csv is None:
+        return False
+    last_epoch = last_recorded_epoch(results_csv)
+    return last_epoch is not None and last_epoch >= target_epochs
+
+
+def stage_completed_resume_artifacts(resume_checkpoint: Path, run_dir: Path) -> None:
+    weights = run_dir / "weights"
+    weights.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(resume_checkpoint, weights / "last.pt")
+
+    best_candidates = (
+        resume_checkpoint.parent / "best.pt",
+        resume_checkpoint.parent / "yolo11m_resume_best.pt",
+        resume_checkpoint.parent.parent / "best.pt",
+        resume_checkpoint.parent.parent / "yolo11m_resume_best.pt",
+    )
+    for best_checkpoint in best_candidates:
+        if best_checkpoint.exists():
+            shutil.copy2(best_checkpoint, weights / "best.pt")
+            break
+
+    results_csv = resume_results_csv(resume_checkpoint)
+    if results_csv is not None:
+        shutil.copy2(results_csv, run_dir / "results.csv")
+    for candidate in (resume_checkpoint.parent / "args.yaml", resume_checkpoint.parent.parent / "yolo11m_args.yaml"):
+        if candidate.exists():
+            shutil.copy2(candidate, run_dir / "args.yaml")
+            break
 
 
 def write_resume_manifest(run_dir: Path, working_dir: Path = KAGGLE_WORKING) -> None:
@@ -288,32 +363,46 @@ def register_checkpoint_callbacks(model: object, run_dir: Path) -> None:
 def train_model(data_yaml: Path, device: object, batch: int, skip_smoke: bool, skip_full: bool) -> Path | None:
     from ultralytics import YOLO
 
+    resume_checkpoint = find_resume_checkpoint()
     if not skip_smoke:
-        smoke = YOLO("yolo11s.pt")
-        smoke.train(
-            data=str(data_yaml),
-            epochs=3,
-            imgsz=640,
-            batch=max(4, batch // 2),
-            workers=4,
-            device=device,
-            fraction=0.15,
-            project=str(RUN_PROJECT),
-            name="smoke-yolo11s-clean-v1",
-            exist_ok=True,
-            cache=False,
-            amp=True,
-        )
+        if resume_checkpoint and SKIP_SMOKE_ON_RESUME:
+            print("Skipping smoke train because a resume checkpoint is mounted.")
+        else:
+            smoke = YOLO("yolo11s.pt")
+            smoke.train(
+                data=str(data_yaml),
+                epochs=3,
+                imgsz=640,
+                batch=max(4, batch // 2),
+                workers=4,
+                device=device,
+                fraction=0.15,
+                project=str(RUN_PROJECT),
+                name="smoke-yolo11s-clean-v1",
+                exist_ok=True,
+                cache=False,
+                amp=True,
+            )
     if skip_full:
         print("Skipping full train by request.")
         return None
     run_dir = RUN_PROJECT / RUN_NAME
-    resume_checkpoint = find_resume_checkpoint()
+
+    if resume_checkpoint and resume_checkpoint_reached_target(resume_checkpoint):
+        print(f"Resume checkpoint already reached target epoch {TRAIN_EPOCHS}; exporting compact artifacts only.")
+        stage_completed_resume_artifacts(resume_checkpoint, run_dir)
+        copy_training_artifacts(run_dir)
+        best = run_dir / "weights" / "best.pt"
+        if best.exists():
+            YOLO(str(best)).export(format="onnx")
+            copy_training_artifacts(run_dir)
+        return run_dir
+
     model = YOLO(str(resume_checkpoint) if resume_checkpoint else "yolo11m.pt")
     register_checkpoint_callbacks(model, run_dir)
     model.train(
         data=str(data_yaml),
-        epochs=150,
+        epochs=TRAIN_EPOCHS,
         imgsz=640,
         batch=batch,
         patience=30,
@@ -338,7 +427,7 @@ def train_model(data_yaml: Path, device: object, batch: int, skip_smoke: bool, s
         mosaic=1.0,
         mixup=0.05,
         save=True,
-        save_period=1,
+        save_period=SAVE_PERIOD,
         amp=True,
         resume=bool(resume_checkpoint),
     )
@@ -347,9 +436,7 @@ def train_model(data_yaml: Path, device: object, batch: int, skip_smoke: bool, s
     best = weights / "best.pt"
     if best.exists():
         YOLO(str(best)).export(format="onnx")
-    for pattern in [str(weights / "*.pt"), str(run_dir / "results.csv"), str(run_dir / "args.yaml"), str(weights / "*.onnx")]:
-        for src in glob.glob(pattern):
-            shutil.copy2(src, KAGGLE_WORKING / Path(src).name)
+        copy_training_artifacts(run_dir)
     return run_dir
 
 

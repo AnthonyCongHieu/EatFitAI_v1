@@ -115,7 +115,9 @@ class DatasetV2Yolo11mTrainHandoffTests(unittest.TestCase):
             self.assertEqual((root / "working" / "yolo11m_last.pt").read_bytes(), b"last")
             self.assertEqual((root / "working" / "yolo11m_best.pt").read_bytes(), b"best")
             self.assertEqual((checkpoint_dir / "last.pt").read_bytes(), b"last")
-            self.assertTrue((checkpoint_dir / "epoch1.pt").exists())
+            self.assertFalse((weights / "epoch1.pt").exists())
+            self.assertFalse((checkpoint_dir / "epoch1.pt").exists())
+            self.assertFalse((root / "working" / "epoch1.pt").exists())
             self.assertTrue((checkpoint_dir / "results.csv").exists())
 
     def test_training_kernel_writes_unambiguous_resume_bundle_manifest(self):

@@ -38,6 +38,7 @@ last.pt
 *_saved_model/
 *_openvino_model/
 *_paddle_model/
+model_backups/
 
 # Training runs
 runs/

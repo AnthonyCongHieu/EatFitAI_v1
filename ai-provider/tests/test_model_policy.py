@@ -15,9 +15,9 @@ class ModelPolicyTests(unittest.TestCase):
         self.assertTrue(is_cloud_runtime(env))
         self.assertFalse(allow_generic_yolo_fallback(env))
 
-    def test_local_runtime_allows_generic_fallback_by_default(self):
+    def test_local_runtime_disables_generic_fallback_by_default(self):
         self.assertFalse(is_cloud_runtime({}))
-        self.assertTrue(allow_generic_yolo_fallback({}))
+        self.assertFalse(allow_generic_yolo_fallback({}))
 
     def test_explicit_false_disables_generic_fallback_locally(self):
         self.assertFalse(allow_generic_yolo_fallback({"ALLOW_GENERIC_YOLO_FALLBACK": "false"}))
@@ -33,7 +33,7 @@ class ModelPolicyTests(unittest.TestCase):
         )
 
         self.assertIsNotNone(error)
-        self.assertIn("best.pt or best.onnx is required", error)
+        self.assertIn("best.onnx is required", error)
 
     def test_pending_error_is_clear_after_load_failure(self):
         error = pending_model_readiness_error(
@@ -53,7 +53,7 @@ class ModelPolicyTests(unittest.TestCase):
             env={"RENDER": "true", "SUPABASE_URL": "x", "SUPABASE_SERVICE_KEY": "y"},
         )
 
-        self.assertIn("packaged with the service", error)
+        self.assertIn("best.onnx", error)
 
     def test_supabase_download_flag_is_reported_as_removed(self):
         env = {"RENDER": "true", "ALLOW_SUPABASE_MODEL_DOWNLOAD": "true"}
@@ -66,7 +66,7 @@ class ModelPolicyTests(unittest.TestCase):
                 model_load_error=None,
                 env=env,
             ),
-            "Supabase model download has been removed; package best.pt or best.onnx with the service",
+            "Supabase model download has been removed; package best.onnx with the service",
         )
 
 

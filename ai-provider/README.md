@@ -10,8 +10,8 @@ Local Python service for:
 ## Local defaults
 
 - host: `http://127.0.0.1:5050`
-- primary model file: `best.pt`
-- local/debug fallback model file: `yolov8s.pt`
+- primary model file: `best.onnx`
+- active vision model: YOLO11m Clean V1, 105 classes, fixed 640x640 ONNX input
 - default Gemini model: `gemini-2.5-flash`
 
 ## Local env file
@@ -72,9 +72,9 @@ python app.py
 
 ## Required assets
 
-- `best.onnx` or `best.pt` should be packaged with the service when you want the custom Vietnamese-food model
+- `best.onnx` should be packaged with the service when you want the custom Vietnamese-food model
 - production requires a packaged model asset; Supabase Storage model download has been removed and should not be re-enabled
-- `yolov8s.pt` can act as a local/debug fallback only when `ALLOW_GENERIC_YOLO_FALLBACK=true`
+- legacy YOLOv8 assets should stay out of the active service root; the current local backup is `ai-provider/model_backups/yolov8_2026-05-08/`
 
 Large model assets are intentionally not committed to git.
 
