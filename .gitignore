@@ -95,6 +95,7 @@ tools/fixtures/scan-demo/fixture-sources.json
 _cdp_render_profile/
 _chrome_profile_clone/
 _tmp/
+_tmp_slide_thumbs/
 _tmp_kaggle_kernel/
 _tmp_*.png
 .playwright-cli/
@@ -109,6 +110,7 @@ data_chunks/
 !eatfitai-backend/supabase_schema.sql
 !eatfitai-backend/supabase_storage.sql
 artifacts-device-latest.png
+codesign-*.html
 
 # Firebase config — chứa API key, không track trong git
 google-services.json
