@@ -1,12 +1,18 @@
 using System.IdentityModel.Tokens.Jwt;
+using System.Net;
+using System.Net.Http.Headers;
+using System.Net.Http.Json;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using AutoMapper;
 using EatFitAI.API.DbScaffold.Data;
 using EatFitAI.API.DTOs.Auth;
 using EatFitAI.API.DbScaffold.Models;
 using EatFitAI.API.Data;
+using EatFitAI.API.Options;
 using EatFitAI.API.Repositories.Interfaces;
 using EatFitAI.API.Security;
 using EatFitAI.API.Services.Interfaces;
@@ -15,6 +21,7 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using AdminPasswordResetCode = EatFitAI.API.Models.PasswordResetCode;
 
 namespace EatFitAI.API.Services
@@ -29,6 +36,8 @@ namespace EatFitAI.API.Services
         private readonly IMemoryCache _memoryCache;
         private readonly IEmailService _emailService;
         private readonly IHostEnvironment _env;
+        private readonly IHttpClientFactory _httpClientFactory;
+        private readonly SupabaseOptions _supabaseOptions;
         private readonly ILogger<AuthService> _logger;
         private static readonly TimeSpan ResetCodeLifetime = TimeSpan.FromMinutes(10);
         private const string PasswordHashPrefix = "PBKDF2";
@@ -60,6 +69,8 @@ namespace EatFitAI.API.Services
             IMemoryCache memoryCache,
             IEmailService emailService,
             IHostEnvironment env,
+            IHttpClientFactory httpClientFactory,
+            IOptions<SupabaseOptions> supabaseOptions,
             ILogger<AuthService> logger)
         {
             _userRepository = userRepository;
@@ -70,6 +81,8 @@ namespace EatFitAI.API.Services
             _memoryCache = memoryCache;
             _emailService = emailService;
             _env = env;
+            _httpClientFactory = httpClientFactory;
+            _supabaseOptions = supabaseOptions.Value;
             _logger = logger;
         }
 
@@ -148,9 +161,15 @@ namespace EatFitAI.API.Services
                 throw new UnauthorizedAccessException("Email hoặc mật khẩu không đúng");
             }
 
+            var verifiedBySupabase = false;
             if (!VerifyPassword(request.Password, user.PasswordHash, out var needsRehash))
             {
-                throw new UnauthorizedAccessException("Email hoặc mật khẩu không đúng");
+                verifiedBySupabase = await VerifySupabasePasswordAsync(request.Email, request.Password);
+                if (!verifiedBySupabase)
+                {
+                    throw new UnauthorizedAccessException("Email hoặc mật khẩu không đúng");
+                }
+
             }
 
             var accessState = await GetAccessStateAsync(user.UserId);
@@ -159,16 +178,22 @@ namespace EatFitAI.API.Services
                 throw new UnauthorizedAccessException("Tai khoan hien khong the dang nhap vao he thong.");
             }
 
-            if (needsRehash)
-            {
-                user.PasswordHash = HashPassword(request.Password);
-            }
-
             // Kiểm tra email đã được xác minh chưa
             if (!user.EmailVerified)
             {
                 _logger.LogWarning("Login bị từ chối - Email chưa verify: {Email}", MaskEmail(request.Email));
                 throw new UnauthorizedAccessException("Email chưa được xác minh. Vui lòng kiểm tra email và nhập mã xác minh.");
+            }
+
+            if (needsRehash || verifiedBySupabase)
+            {
+                user.PasswordHash = HashPassword(request.Password);
+                if (verifiedBySupabase)
+                {
+                    _logger.LogInformation(
+                        "Local password hash mismatch repaired from Supabase Auth for user {UserId}",
+                        user.UserId);
+                }
             }
 
             // Generate JWT token
@@ -350,6 +375,88 @@ namespace EatFitAI.API.Services
             return isLegacyMatch;
         }
 
+        private async Task<bool> VerifySupabasePasswordAsync(string email, string password)
+        {
+            if (!TryCreateSupabasePasswordGrantUri(out var tokenUri)
+                || tokenUri == null
+                || IsPlaceholderSecret(_supabaseOptions.ServiceRoleKey))
+            {
+                _logger.LogWarning("Supabase Auth password fallback is not configured.");
+                return false;
+            }
+
+            try
+            {
+                using var request = new HttpRequestMessage(HttpMethod.Post, tokenUri);
+                request.Headers.TryAddWithoutValidation("apikey", _supabaseOptions.ServiceRoleKey);
+                request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _supabaseOptions.ServiceRoleKey);
+                request.Content = JsonContent.Create(new SupabasePasswordGrantRequest(email, password));
+
+                using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(12));
+                using var response = await _httpClientFactory
+                    .CreateClient(nameof(AuthService))
+                    .SendAsync(request, timeout.Token);
+
+                if (response.StatusCode is HttpStatusCode.BadRequest
+                    or HttpStatusCode.Unauthorized
+                    or HttpStatusCode.Forbidden)
+                {
+                    return false;
+                }
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    _logger.LogWarning(
+                        "Supabase Auth password fallback returned status {StatusCode}.",
+                        (int)response.StatusCode);
+                    return false;
+                }
+
+                var payload = await response.Content.ReadFromJsonAsync<SupabasePasswordGrantResponse>(
+                    cancellationToken: timeout.Token);
+
+                return !string.IsNullOrWhiteSpace(payload?.AccessToken);
+            }
+            catch (OperationCanceledException ex)
+            {
+                _logger.LogWarning(ex, "Supabase Auth password fallback timed out.");
+                return false;
+            }
+            catch (HttpRequestException ex)
+            {
+                _logger.LogWarning(ex, "Supabase Auth password fallback request failed.");
+                return false;
+            }
+            catch (JsonException ex)
+            {
+                _logger.LogWarning(ex, "Supabase Auth password fallback returned an invalid response.");
+                return false;
+            }
+        }
+
+        private bool TryCreateSupabasePasswordGrantUri(out Uri? tokenUri)
+        {
+            tokenUri = null;
+            if (IsPlaceholderSecret(_supabaseOptions.Url))
+            {
+                return false;
+            }
+
+            var url = $"{_supabaseOptions.Url.TrimEnd('/')}/auth/v1/token?grant_type=password";
+            if (!Uri.TryCreate(url, UriKind.Absolute, out var parsedUri))
+            {
+                return false;
+            }
+
+            if (parsedUri.Scheme != Uri.UriSchemeHttps && !_env.IsDevelopment())
+            {
+                return false;
+            }
+
+            tokenUri = parsedUri;
+            return true;
+        }
+
         private async Task<string> GetAccessStateAsync(Guid userId)
         {
             return await _adminContext.UserAccessControls
@@ -374,6 +481,13 @@ namespace EatFitAI.API.Services
                 || string.Equals(value, "YourSuperSecretKeyHereThatIsAtLeast32CharactersLongForProductionUse", StringComparison.OrdinalIgnoreCase)
                 || string.Equals(value, "YourSuperSecretKeyHereThatIsAtLeast32CharactersLongForDevelopmentUse", StringComparison.OrdinalIgnoreCase);
         }
+
+        private sealed record SupabasePasswordGrantRequest(
+            [property: JsonPropertyName("email")] string Email,
+            [property: JsonPropertyName("password")] string Password);
+
+        private sealed record SupabasePasswordGrantResponse(
+            [property: JsonPropertyName("access_token")] string? AccessToken);
 
         private byte[] GetJwtSigningKey()
         {
@@ -934,5 +1048,4 @@ namespace EatFitAI.API.Services
         }
     }
 }
-
 

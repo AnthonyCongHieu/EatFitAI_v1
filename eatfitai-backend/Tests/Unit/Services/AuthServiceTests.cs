@@ -1,4 +1,5 @@
 using System.IdentityModel.Tokens.Jwt;
+using System.Net;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
@@ -7,6 +8,7 @@ using EatFitAI.API.Data;
 using EatFitAI.API.DbScaffold.Data;
 using EatFitAI.API.DbScaffold.Models;
 using EatFitAI.API.DTOs.Auth;
+using EatFitAI.API.Options;
 using EatFitAI.API.Repositories.Interfaces;
 using EatFitAI.API.Services;
 using EatFitAI.API.Services.Interfaces;
@@ -15,6 +17,7 @@ using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Moq;
 using Xunit;
@@ -36,6 +39,8 @@ namespace EatFitAI.API.Tests.Unit.Services
         private readonly Mock<IEmailService> _emailServiceMock;
         private readonly Mock<IHostEnvironment> _envMock;
         private readonly Mock<ILogger<AuthService>> _loggerMock;
+        private readonly FakeHttpClientFactory _httpClientFactory;
+        private readonly IOptions<SupabaseOptions> _supabaseOptions;
         private readonly AuthService _authService;
 
         public AuthServiceTests()
@@ -47,6 +52,12 @@ namespace EatFitAI.API.Tests.Unit.Services
             _emailServiceMock = new Mock<IEmailService>();
             _envMock = new Mock<IHostEnvironment>();
             _loggerMock = new Mock<ILogger<AuthService>>();
+            _httpClientFactory = new FakeHttpClientFactory(_ => new HttpResponseMessage(HttpStatusCode.Unauthorized));
+            _supabaseOptions = Microsoft.Extensions.Options.Options.Create(new SupabaseOptions
+            {
+                Url = "https://project.supabase.co",
+                ServiceRoleKey = "service-role-secret"
+            });
 
             _envMock.SetupGet(e => e.EnvironmentName).Returns(Environments.Development);
             _configurationMock.Setup(c => c["Jwt:Key"]).Returns(TestJwtKey);
@@ -74,6 +85,8 @@ namespace EatFitAI.API.Tests.Unit.Services
                 _memoryCache,
                 _emailServiceMock.Object,
                 _envMock.Object,
+                _httpClientFactory,
+                _supabaseOptions,
                 _loggerMock.Object);
         }
 
@@ -275,6 +288,60 @@ namespace EatFitAI.API.Tests.Unit.Services
             _userRepositoryMock.Setup(r => r.GetByEmailAsync(request.Email)).ReturnsAsync(user);
 
             await Assert.ThrowsAsync<UnauthorizedAccessException>(() => _authService.LoginAsync(request));
+        }
+
+        [Fact]
+        public async Task LoginAsync_ValidSupabasePasswordWhenLocalHashIsStale_ReturnsSuccessAndRehashesLocalPassword()
+        {
+            var request = new LoginRequest
+            {
+                Email = "admin@eatfit.ai",
+                Password = "Admin@123"
+            };
+
+            var stalePasswordHash = HashLegacyPassword("old-password");
+            var user = new User
+            {
+                UserId = Guid.NewGuid(),
+                Email = request.Email,
+                PasswordHash = stalePasswordHash,
+                DisplayName = "Admin User",
+                Role = "super_admin",
+                CreatedAt = DateTime.UtcNow,
+                EmailVerified = true,
+                OnboardingCompleted = true
+            };
+
+            _userRepositoryMock.Setup(r => r.GetByEmailAsync(request.Email)).ReturnsAsync(user);
+            _httpClientFactory.ResponseFactory = requestMessage =>
+            {
+                Assert.Equal(HttpMethod.Post, requestMessage.Method);
+                Assert.Equal(
+                    "https://project.supabase.co/auth/v1/token?grant_type=password",
+                    requestMessage.RequestUri!.ToString());
+                Assert.True(requestMessage.Headers.TryGetValues("apikey", out var apiKeys));
+                Assert.Equal("service-role-secret", apiKeys.Single());
+
+                var body = requestMessage.Content!.ReadAsStringAsync().GetAwaiter().GetResult();
+                Assert.Contains("\"email\":\"admin@eatfit.ai\"", body);
+                Assert.Contains("\"password\":\"Admin@123\"", body);
+
+                return new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    Content = new StringContent(
+                        "{\"access_token\":\"supabase-access-token\",\"token_type\":\"bearer\",\"expires_in\":3600,\"refresh_token\":\"supabase-refresh-token\"}",
+                        Encoding.UTF8,
+                        "application/json")
+                };
+            };
+
+            var result = await _authService.LoginAsync(request);
+
+            Assert.Equal(request.Email, result.Email);
+            Assert.False(string.IsNullOrWhiteSpace(result.Token));
+            Assert.NotEqual(stalePasswordHash, user.PasswordHash);
+            Assert.StartsWith("PBKDF2$", user.PasswordHash, StringComparison.Ordinal);
+            Assert.Equal(1, _httpClientFactory.CallCount);
         }
 
         [Fact]
@@ -567,6 +634,8 @@ namespace EatFitAI.API.Tests.Unit.Services
                 new MemoryCache(new MemoryCacheOptions()),
                 _emailServiceMock.Object,
                 _envMock.Object,
+                _httpClientFactory,
+                _supabaseOptions,
                 _loggerMock.Object);
 
             await recreatedService.VerifyResetCodeAsync(new VerifyResetCodeRequest
@@ -686,6 +755,45 @@ namespace EatFitAI.API.Tests.Unit.Services
             using var sha256 = SHA256.Create();
             var hashedBytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(code));
             return Convert.ToBase64String(hashedBytes);
+        }
+
+        private sealed class FakeHttpClientFactory : IHttpClientFactory
+        {
+            public FakeHttpClientFactory(Func<HttpRequestMessage, HttpResponseMessage> responseFactory)
+            {
+                ResponseFactory = responseFactory;
+            }
+
+            public Func<HttpRequestMessage, HttpResponseMessage> ResponseFactory { get; set; }
+            public int CallCount { get; private set; }
+
+            public HttpClient CreateClient(string name)
+            {
+                return new HttpClient(new FakeHttpMessageHandler(this));
+            }
+
+            private HttpResponseMessage Send(HttpRequestMessage request)
+            {
+                CallCount++;
+                return ResponseFactory(request);
+            }
+
+            private sealed class FakeHttpMessageHandler : HttpMessageHandler
+            {
+                private readonly FakeHttpClientFactory _factory;
+
+                public FakeHttpMessageHandler(FakeHttpClientFactory factory)
+                {
+                    _factory = factory;
+                }
+
+                protected override Task<HttpResponseMessage> SendAsync(
+                    HttpRequestMessage request,
+                    CancellationToken cancellationToken)
+                {
+                    return Task.FromResult(_factory.Send(request));
+                }
+            }
         }
     }
 }
