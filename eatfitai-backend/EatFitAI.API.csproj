@@ -12,6 +12,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Update="Data\SeedData\*.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="AutoMapper" Version="16.1.1" />
     <PackageReference Include="AWSSDK.S3" Version="3.7.511.5" />
     <PackageReference Include="Google.Apis.Auth" Version="1.64.0" />

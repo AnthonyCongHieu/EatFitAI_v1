@@ -1,5 +1,6 @@
 using EatFitAI.API.DbScaffold.Models;
 using EatFitAI.API.DbScaffold.Data;
+using EatFitAI.API.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Hosting;
 using System.Globalization;
@@ -20,8 +21,10 @@ namespace EatFitAI.API.Data
             await SeedServingUnitsAsync(context);
             await SeedMealTypesAsync(context);
             await SeedFoodItemsAsync(context);
+            await SeedAiVisionCatalogFoodItemsAsync(context, env.ContentRootPath);
             await SeedAiLabelMapsAsync(context);
             await SeedFoodServingsAsync(context);
+            await SeedAiVisionCatalogServingsAsync(context, env.ContentRootPath);
             await SeedRecipesAsync(context);  // Thêm seed recipes
             await SeedDefaultUserPasswordsAsync(context, env);
         }
@@ -213,179 +216,7 @@ namespace EatFitAI.API.Data
         }
 
         private static readonly string[] Yolo11mCleanV1Labels =
-        [
-            "banh_mi",
-            "pho",
-            "bun",
-            "bot_chien",
-            "goi_cuon",
-            "fried_rice",
-            "com_tam",
-            "thit_kho",
-            "ca_kho",
-            "canh",
-            "banh_beo",
-            "banh_bo",
-            "banh_bot_loc",
-            "banh_can",
-            "banh_canh",
-            "banh_chung",
-            "banh_cong",
-            "banh_cuon",
-            "banh_da_lon",
-            "banh_duc",
-            "banh_khot",
-            "banh_tet",
-            "banh_xeo",
-            "banh_trang",
-            "banh_trang_tron",
-            "bo_kho",
-            "bo_la_lot",
-            "bun_bo_hue",
-            "bun_cha",
-            "bun_dau",
-            "bun_mam",
-            "bun_rieu",
-            "cha_gio",
-            "hu_tieu",
-            "lau",
-            "mi_quang",
-            "cao_lau",
-            "xoi",
-            "chao_long",
-            "sup_cua",
-            "bitter_melon_soup",
-            "caramelized_fish_clay_pot",
-            "chicken_rice",
-            "pumpkin_soup",
-            "purple_yam_soup",
-            "steamed_pork_belly_taro",
-            "sizzling_beef_steak",
-            "hollow_fried_sesame_donut",
-            "nuoc_cham",
-            "rice",
-            "noodles",
-            "chicken",
-            "beef",
-            "pork",
-            "pork_belly",
-            "pork_rib",
-            "grilled_pork_belly",
-            "fish",
-            "shrimp",
-            "crab",
-            "squid",
-            "egg",
-            "fried_egg",
-            "tofu",
-            "tempeh",
-            "tomato",
-            "cucumber",
-            "carrot",
-            "potato",
-            "sweet_potato",
-            "spinach",
-            "water_spinach",
-            "bokchoy",
-            "cabbage",
-            "cauliflower",
-            "broccoli",
-            "eggplant",
-            "bitter_gourd",
-            "bottle_gourd",
-            "pumpkin",
-            "radish",
-            "long_beans",
-            "beans",
-            "peas",
-            "mushroom",
-            "chayote",
-            "corn",
-            "onion",
-            "shallot",
-            "green_onion",
-            "garlic",
-            "chili",
-            "ginger",
-            "galangal",
-            "lemongrass",
-            "leek",
-            "lime_leaf",
-            "coriander_seed",
-            "fennel_seed",
-            "star_anise",
-            "cinnamon",
-            "clove",
-            "turmeric",
-            "bell_pepper",
-            "lime",
-        ];
-
-        private static readonly IReadOnlyDictionary<string, string[]> Yolo11mCleanV1Aliases =
-            new Dictionary<string, string[]>(StringComparer.OrdinalIgnoreCase)
-            {
-                ["banh_mi"] = ["banh mi"],
-                ["goi_cuon"] = ["goi cuon"],
-                ["fried_rice"] = ["com chien", "fried rice"],
-                ["com_tam"] = ["com tam"],
-                ["thit_kho"] = ["thit kho"],
-                ["ca_kho"] = ["ca kho"],
-                ["bo_kho"] = ["bo kho", "thit bo kho"],
-                ["bo_la_lot"] = ["bo la lot"],
-                ["bun_bo_hue"] = ["bun bo hue"],
-                ["bun_cha"] = ["bun cha"],
-                ["bun_dau"] = ["bun dau"],
-                ["bun_mam"] = ["bun mam"],
-                ["bun_rieu"] = ["bun rieu"],
-                ["cha_gio"] = ["cha gio"],
-                ["hu_tieu"] = ["hu tieu"],
-                ["mi_quang"] = ["mi quang"],
-                ["cao_lau"] = ["cao lau"],
-                ["chao_long"] = ["chao long"],
-                ["sup_cua"] = ["sup cua"],
-                ["bitter_melon_soup"] = ["canh kho qua", "bitter melon soup"],
-                ["caramelized_fish_clay_pot"] = ["ca kho to", "caramelized fish clay pot"],
-                ["chicken_rice"] = ["com ga", "chicken rice"],
-                ["pumpkin_soup"] = ["canh bi do", "pumpkin soup"],
-                ["purple_yam_soup"] = ["canh khoai mo", "purple yam soup"],
-                ["steamed_pork_belly_taro"] = ["thit ba chi hap khoai mon", "steamed pork belly taro"],
-                ["sizzling_beef_steak"] = ["bo bit tet", "sizzling beef steak"],
-                ["hollow_fried_sesame_donut"] = ["banh tieu", "hollow fried sesame donut"],
-                ["nuoc_cham"] = ["nuoc cham"],
-                ["rice"] = ["com", "rice"],
-                ["noodles"] = ["mi", "noodles"],
-                ["chicken"] = ["thit ga", "uc ga", "chicken"],
-                ["beef"] = ["thit bo", "beef"],
-                ["pork"] = ["thit heo", "thit lon", "pork"],
-                ["pork_belly"] = ["thit ba chi", "pork belly"],
-                ["pork_rib"] = ["suon heo", "pork rib"],
-                ["grilled_pork_belly"] = ["thit ba chi nuong", "grilled pork belly"],
-                ["fish"] = ["ca", "fish"],
-                ["shrimp"] = ["tom", "shrimp"],
-                ["crab"] = ["cua", "crab"],
-                ["squid"] = ["muc", "squid"],
-                ["egg"] = ["trung", "egg"],
-                ["fried_egg"] = ["trung chien", "fried egg"],
-                ["tofu"] = ["dau hu", "tofu"],
-                ["sweet_potato"] = ["khoai lang", "sweet potato"],
-                ["water_spinach"] = ["rau muong", "water spinach"],
-                ["bitter_gourd"] = ["kho qua", "bitter gourd"],
-                ["bottle_gourd"] = ["bau", "bottle gourd"],
-                ["long_beans"] = ["dau dua", "long beans"],
-                ["mushroom"] = ["nam", "mushroom"],
-                ["green_onion"] = ["hanh la", "green onion"],
-                ["shallot"] = ["hanh tim", "shallot"],
-                ["chili"] = ["ot", "chili"],
-                ["galangal"] = ["rieng", "galangal"],
-                ["lemongrass"] = ["sa", "lemongrass"],
-                ["lime_leaf"] = ["la chanh", "lime leaf"],
-                ["coriander_seed"] = ["hat ngo", "coriander seed"],
-                ["fennel_seed"] = ["hat thi la", "fennel seed"],
-                ["star_anise"] = ["hoa hoi", "star anise"],
-                ["cinnamon"] = ["que", "cinnamon"],
-                ["clove"] = ["dinh huong", "clove"],
-                ["lime"] = ["chanh", "lime"],
-            };
+            AiVisionLabelCatalog.Entries.Select(entry => entry.Label).ToArray();
 
         private static async Task SeedAiLabelMapsAsync(EatFitAIDbContext context)
         {
@@ -411,7 +242,11 @@ namespace EatFitAI.API.Data
                 }
                 else
                 {
-                    if (!existing.FoodItemId.HasValue && foodItemId.HasValue)
+                    var existingFood = existing.FoodItemId.HasValue
+                        ? foodItems.FirstOrDefault(food => food.FoodItemId == existing.FoodItemId.Value)
+                        : null;
+                    if ((!existing.FoodItemId.HasValue || IsLegacySeedMap(existingFood))
+                        && foodItemId.HasValue)
                     {
                         existing.FoodItemId = foodItemId;
                     }
@@ -430,7 +265,13 @@ namespace EatFitAI.API.Data
                 return 0.60m;
             }
 
-            return label is "beef" or "chicken" ? 0.05m : 0.60m;
+            if (label is "beef" or "chicken")
+            {
+                return 0.05m;
+            }
+
+            var catalogEntry = AiVisionLabelCatalog.Find(label);
+            return catalogEntry?.MinConfidence ?? 0.60m;
         }
 
         private static FoodItem? FindCatalogFood(string label, IReadOnlyCollection<FoodItem> foodItems)
@@ -454,9 +295,11 @@ namespace EatFitAI.API.Data
         private static IReadOnlyList<string> BuildCatalogAliases(string label)
         {
             var aliases = new List<string> { label.Replace('_', ' ') };
-            if (Yolo11mCleanV1Aliases.TryGetValue(label, out var extraAliases))
+            var entry = AiVisionLabelCatalog.Find(label);
+            if (entry != null)
             {
-                aliases.AddRange(extraAliases);
+                aliases.Add(entry.DisplayNameVi);
+                aliases.AddRange(entry.Aliases);
             }
 
             return aliases
@@ -534,6 +377,136 @@ namespace EatFitAI.API.Data
 
             return builder.ToString().Trim().Normalize(NormalizationForm.FormC);
         }
+
+        private static async Task SeedAiVisionCatalogFoodItemsAsync(EatFitAIDbContext context, string contentRootPath)
+        {
+            var seeds = AiVisionLabelCatalog.LoadFoodSeeds(contentRootPath);
+            if (seeds.Count == 0)
+            {
+                return;
+            }
+
+            var foodItems = await context.FoodItems.ToListAsync();
+            foreach (var seed in seeds)
+            {
+                var entry = AiVisionLabelCatalog.Find(seed.Label);
+                if (entry == null)
+                {
+                    continue;
+                }
+
+                var aliases = BuildCatalogAliases(seed.Label)
+                    .Append(AiVisionLabelCatalog.NormalizeKey(seed.FoodName))
+                    .Where(alias => !string.IsNullOrWhiteSpace(alias))
+                    .Distinct(StringComparer.Ordinal)
+                    .ToList();
+                var food = foodItems.FirstOrDefault(item =>
+                    aliases.Contains(NormalizeCatalogKey(item.FoodName)) ||
+                    aliases.Contains(NormalizeCatalogKey(item.FoodNameUnsigned)) ||
+                    aliases.Contains(NormalizeCatalogKey(item.FoodNameEn)));
+
+                if (food == null)
+                {
+                    food = new FoodItem
+                    {
+                        CreatedAt = DateTime.UtcNow,
+                    };
+                    foodItems.Add(food);
+                    await context.FoodItems.AddAsync(food);
+                }
+
+                food.FoodName = string.IsNullOrWhiteSpace(seed.FoodName) ? entry.DisplayNameVi : seed.FoodName.Trim();
+                food.FoodNameEn = string.IsNullOrWhiteSpace(seed.FoodNameEn) ? null : seed.FoodNameEn.Trim();
+                food.FoodNameUnsigned = AiVisionLabelCatalog.NormalizeKey(food.FoodName);
+                food.CaloriesPer100g = seed.CaloriesPer100g;
+                food.ProteinPer100g = seed.ProteinPer100g;
+                food.CarbPer100g = seed.CarbPer100g;
+                food.FatPer100g = seed.FatPer100g;
+                food.IsActive = true;
+                food.IsDeleted = false;
+                food.IsVerified = seed.IsVerified;
+                food.VerifiedBy = seed.VerifiedBy;
+                food.VerificationStatus = seed.VerificationStatus;
+                food.CredibilityScore = seed.CredibilityScore;
+                food.NutrientCompletenessScore = seed.NutrientCompletenessScore;
+                food.MissingNutrients = FoodTrustBuilder.SerializeMissingNutrients(seed.MissingNutrients);
+                food.UpdatedAt = DateTime.UtcNow;
+            }
+
+            await context.SaveChangesAsync();
+        }
+
+        private static async Task SeedAiVisionCatalogServingsAsync(EatFitAIDbContext context, string contentRootPath)
+        {
+            var seeds = AiVisionLabelCatalog.LoadFoodSeeds(contentRootPath);
+            if (seeds.Count == 0)
+            {
+                return;
+            }
+
+            var servingUnits = await context.ServingUnits.ToListAsync();
+            var foodItems = await context.FoodItems
+                .Where(food => food.IsActive && !food.IsDeleted)
+                .ToListAsync();
+
+            foreach (var seed in seeds)
+            {
+                var food = FindCatalogFood(seed.Label, foodItems);
+                var servingUnit = servingUnits.FirstOrDefault(unit =>
+                    string.Equals(unit.Name, seed.DefaultServingUnitName, StringComparison.OrdinalIgnoreCase));
+
+                if (food == null || servingUnit == null || seed.DefaultGrams <= 0)
+                {
+                    continue;
+                }
+
+                var existing = await context.FoodServings.FirstOrDefaultAsync(serving =>
+                    serving.FoodItemId == food.FoodItemId &&
+                    serving.ServingUnitId == servingUnit.ServingUnitId);
+
+                if (existing == null)
+                {
+                    await context.FoodServings.AddAsync(new FoodServing
+                    {
+                        FoodItemId = food.FoodItemId,
+                        ServingUnitId = servingUnit.ServingUnitId,
+                        GramsPerUnit = seed.DefaultGrams,
+                        Description = $"Mặc định AI scan: {food.FoodName}"
+                    });
+                }
+                else
+                {
+                    existing.GramsPerUnit = seed.DefaultGrams;
+                    existing.Description ??= $"Mặc định AI scan: {food.FoodName}";
+                }
+            }
+
+            await context.SaveChangesAsync();
+        }
+
+        private static bool IsLegacySeedMap(FoodItem? food)
+        {
+            if (food == null)
+            {
+                return false;
+            }
+
+            return LegacySeedFoodNames.Contains(food.FoodName);
+        }
+
+        private static readonly HashSet<string> LegacySeedFoodNames = new(StringComparer.OrdinalIgnoreCase)
+        {
+            "Chicken Breast",
+            "Brown Rice",
+            "Broccoli",
+            "Banana",
+            "Greek Yogurt",
+            "Almonds",
+            "Salmon",
+            "Sweet Potato",
+            "Spinach",
+            "Egg",
+        };
 
         private static async Task SeedFoodServingsAsync(EatFitAIDbContext context)
         {

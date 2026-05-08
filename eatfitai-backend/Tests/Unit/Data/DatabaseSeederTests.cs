@@ -42,6 +42,39 @@ public class DatabaseSeederTests
         Assert.DoesNotContain("apple", labels);
     }
 
+    [Fact]
+    public void AiVisionLabelCatalog_CoversEveryModelLabelWithVietnameseDisplayName()
+    {
+        Assert.Equal(ExpectedYolo11mCleanV1Labels.Length, AiVisionLabelCatalog.Entries.Count);
+        Assert.All(AiVisionLabelCatalog.Entries, entry =>
+        {
+            Assert.False(string.IsNullOrWhiteSpace(entry.Label));
+            Assert.False(string.IsNullOrWhiteSpace(entry.DisplayNameVi));
+            Assert.DoesNotContain("Ã", entry.DisplayNameVi);
+        });
+
+        var labels = AiVisionLabelCatalog.Entries.Select(entry => entry.Label).ToList();
+        foreach (var expectedLabel in ExpectedYolo11mCleanV1Labels)
+        {
+            Assert.Contains(expectedLabel, labels);
+        }
+
+        Assert.DoesNotContain("apple", labels);
+    }
+
+    [Fact]
+    public void AiVisionSeedData_CoversEveryModelLabel()
+    {
+        var seeds = AiVisionLabelCatalog.LoadFoodSeeds(Directory.GetCurrentDirectory());
+        Assert.Equal(ExpectedYolo11mCleanV1Labels.Length, seeds.Count);
+
+        var labels = seeds.Select(seed => seed.Label).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        foreach (var expectedLabel in ExpectedYolo11mCleanV1Labels)
+        {
+            Assert.Contains(expectedLabel, labels);
+        }
+    }
+
     private static readonly string[] ExpectedYolo11mCleanV1Labels =
     [
         "banh_mi",

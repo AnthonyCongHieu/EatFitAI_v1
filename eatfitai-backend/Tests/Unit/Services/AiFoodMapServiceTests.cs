@@ -59,6 +59,117 @@ namespace EatFitAI.API.Tests.Unit.Services
         }
 
         [Fact]
+        public async Task MapDetectionsAsync_ReturnsVietnameseTrustFieldsForSeededPho()
+        {
+            _context.ServingUnits.Add(new ServingUnit { ServingUnitId = 10, Name = "bowl", Symbol = "tô" });
+            _context.FoodItems.Add(new FoodItem
+            {
+                FoodItemId = 909,
+                FoodName = "Phở",
+                FoodNameUnsigned = "pho",
+                FoodNameEn = "Vietnamese pho",
+                CaloriesPer100g = 92,
+                ProteinPer100g = 5.5m,
+                CarbPer100g = 12,
+                FatPer100g = 2.3m,
+                IsActive = true,
+                IsDeleted = false,
+                CredibilityScore = 80,
+                NutrientCompletenessScore = 100,
+                VerificationStatus = "trusted_reference"
+            });
+            _context.FoodServings.Add(new FoodServing
+            {
+                FoodServingId = 10,
+                FoodItemId = 909,
+                ServingUnitId = 10,
+                GramsPerUnit = 550
+            });
+            _context.AiLabelMaps.Add(new AiLabelMap
+            {
+                Label = "pho",
+                FoodItemId = 909,
+                MinConfidence = 0.60m,
+                CreatedAt = DateTime.UtcNow
+            });
+            await _context.SaveChangesAsync();
+
+            var service = new AiFoodMapService(_context, _mediaUrlResolver.Object);
+
+            var mapped = await service.MapDetectionsAsync(new[]
+            {
+                new VisionDetectionDto { Label = "pho", Confidence = 0.91f }
+            });
+
+            var item = Assert.Single(mapped);
+            Assert.Equal("Phở", item.DetectedLabelVi);
+            Assert.Equal("Phở", item.FoodName);
+            Assert.Equal(92, item.CaloriesPer100g);
+            Assert.Equal(550, item.DefaultGrams);
+            Assert.False(item.TrustSummary?.NeedsReview);
+            Assert.Equal("trusted", item.TrustSummary?.Status);
+        }
+
+        [Fact]
+        public async Task MapDetectionsAsync_GenericCanhRequiresReview()
+        {
+            _context.FoodItems.Add(new FoodItem
+            {
+                FoodItemId = 910,
+                FoodName = "Canh",
+                FoodNameUnsigned = "canh",
+                FoodNameEn = "Vietnamese soup",
+                CaloriesPer100g = 35,
+                ProteinPer100g = 1.5m,
+                CarbPer100g = 5,
+                FatPer100g = 1,
+                IsActive = true,
+                IsDeleted = false,
+                CredibilityScore = 50,
+                NutrientCompletenessScore = 100,
+                VerificationStatus = "generic_estimate"
+            });
+            _context.AiLabelMaps.Add(new AiLabelMap
+            {
+                Label = "canh",
+                FoodItemId = 910,
+                MinConfidence = 0.60m,
+                CreatedAt = DateTime.UtcNow
+            });
+            await _context.SaveChangesAsync();
+
+            var service = new AiFoodMapService(_context, _mediaUrlResolver.Object);
+
+            var mapped = await service.MapDetectionsAsync(new[]
+            {
+                new VisionDetectionDto { Label = "canh", Confidence = 0.88f }
+            });
+
+            var item = Assert.Single(mapped);
+            Assert.Equal("Canh", item.DetectedLabelVi);
+            Assert.Equal("Canh", item.FoodName);
+            Assert.True(item.TrustSummary?.NeedsReview);
+            Assert.Equal("Ước tính", item.TrustSummary?.Label);
+        }
+
+        [Fact]
+        public async Task MapDetectionsAsync_UnmappedKnownLabelKeepsVietnameseDisplayName()
+        {
+            var service = new AiFoodMapService(_context, _mediaUrlResolver.Object);
+
+            var mapped = await service.MapDetectionsAsync(new[]
+            {
+                new VisionDetectionDto { Label = "com_tam", Confidence = 0.90f }
+            });
+
+            var item = Assert.Single(mapped);
+            Assert.Null(item.FoodItemId);
+            Assert.Equal("Cơm tấm", item.DetectedLabelVi);
+            Assert.True(item.TrustSummary?.NeedsReview);
+            Assert.Contains("calories", item.MissingNutrients);
+        }
+
+        [Fact]
         public async Task MapDetectionsAsync_DoesNotMatchCatalogItemWithEmptyNutrition()
         {
             _context.FoodItems.Add(new FoodItem

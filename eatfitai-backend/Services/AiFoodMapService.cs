@@ -4,9 +4,12 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using EatFitAI.API.Data;
 using EatFitAI.API.DbScaffold.Data;
 using EatFitAI.API.DbScaffold.Models;
 using EatFitAI.API.DTOs.AI;
+using EatFitAI.API.DTOs.Common;
+using EatFitAI.API.DTOs.Food;
 using EatFitAI.API.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
@@ -21,6 +24,7 @@ namespace EatFitAI.API.Services
     public sealed class AiFoodMapService : IAiFoodMapService
     {
         private const decimal CatalogMinConfidence = 0.60m;
+        private static readonly string[] RequiredMacroNutrients = ["calories", "protein", "carb", "fat"];
 
         private readonly EatFitAIDbContext _db;
         private readonly IMediaUrlResolver _mediaUrlResolver;
@@ -73,7 +77,15 @@ namespace EatFitAI.API.Services
                         CaloriesPer100g = food != null ? food.CaloriesPer100g : null,
                         ProteinPer100g = food != null ? food.ProteinPer100g : null,
                         CarbPer100g = food != null ? food.CarbPer100g : null,
-                        FatPer100g = food != null ? food.FatPer100g : null
+                        FatPer100g = food != null ? food.FatPer100g : null,
+                        FoodNameEn = food != null ? food.FoodNameEn : null,
+                        FoodNameUnsigned = food != null ? food.FoodNameUnsigned : null,
+                        IsVerified = food != null && food.IsVerified,
+                        VerifiedBy = food != null ? food.VerifiedBy : null,
+                        VerificationStatus = food != null ? food.VerificationStatus : null,
+                        CredibilityScore = food != null ? food.CredibilityScore : 0,
+                        NutrientCompletenessScore = food != null ? food.NutrientCompletenessScore : 0,
+                        MissingNutrients = food != null ? food.MissingNutrients : null
                     })
                 .ToListAsync(cancellationToken);
 
@@ -91,29 +103,18 @@ namespace EatFitAI.API.Services
 
             foreach (var (original, exactKey, searchKey) in normalizedLabels)
             {
+                var catalogEntry = AiVisionLabelCatalog.Find(original.Label);
                 if (!string.IsNullOrWhiteSpace(exactKey) && byLabel.TryGetValue(exactKey, out var row))
                 {
                     var confDec = (decimal)original.Confidence;
                     if (confDec >= row.MinConfidence
-                        && row.FoodItemId.HasValue
-                        && HasUsableNutrition(
-                            row.CaloriesPer100g,
-                            row.ProteinPer100g,
-                            row.CarbPer100g,
-                            row.FatPer100g))
+                        && row.FoodItemId.HasValue)
                     {
-                        result.Add(new MappedFoodDto
-                        {
-                            Label = original.Label,
-                            Confidence = original.Confidence,
-                            Bbox = original.Bbox,
-                            FoodItemId = row.FoodItemId,
-                            FoodName = row.FoodName,
-                            CaloriesPer100g = row.CaloriesPer100g,
-                            ProteinPer100g = row.ProteinPer100g,
-                            FatPer100g = row.FatPer100g,
-                            CarbPer100g = row.CarbPer100g
-                        });
+                        result.Add(CreateMappedFoodDto(
+                            original,
+                            catalogEntry,
+                            ToFoodCatalogMatch(row),
+                            row.MinConfidence));
                         continue;
                     }
                 }
@@ -127,13 +128,17 @@ namespace EatFitAI.API.Services
                         Label = original.Label,
                         Confidence = original.Confidence,
                         Bbox = original.Bbox,
+                        DetectedLabelVi = catalogEntry?.DisplayNameVi,
                         FoodItemId = catalogMatch.FoodItemId,
                         FoodName = catalogMatch.FoodName,
                         CaloriesPer100g = catalogMatch.CaloriesPer100g,
                         ProteinPer100g = catalogMatch.ProteinPer100g,
                         FatPer100g = catalogMatch.FatPer100g,
                         CarbPer100g = catalogMatch.CarbPer100g,
-                        ThumbNail = _mediaUrlResolver.NormalizePublicUrl(catalogMatch.ThumbNail)
+                        ThumbNail = _mediaUrlResolver.NormalizePublicUrl(catalogMatch.ThumbNail),
+                        MissingNutrients = FoodTrustBuilder.ParseMissingNutrients(catalogMatch.MissingNutrients),
+                        NutrientCompletenessScore = catalogMatch.NutrientCompletenessScore,
+                        TrustSummary = BuildTrustSummary(catalogMatch, catalogEntry, original.Confidence, CatalogMinConfidence)
                     });
                     continue;
                 }
@@ -143,12 +148,16 @@ namespace EatFitAI.API.Services
                     Label = original.Label,
                     Confidence = original.Confidence,
                     Bbox = original.Bbox,
+                    DetectedLabelVi = catalogEntry?.DisplayNameVi,
                     FoodItemId = null,
                     FoodName = null,
                     CaloriesPer100g = null,
                     ProteinPer100g = null,
                     FatPer100g = null,
-                    CarbPer100g = null
+                    CarbPer100g = null,
+                    MissingNutrients = RequiredMacroNutrients.ToList(),
+                    NutrientCompletenessScore = 0,
+                    TrustSummary = BuildUnmatchedTrustSummary(catalogEntry, original.Confidence)
                 });
             }
 
@@ -234,6 +243,104 @@ namespace EatFitAI.API.Services
             await _db.SaveChangesAsync(cancellationToken);
         }
 
+        private static MappedFoodDto CreateMappedFoodDto(
+            VisionDetectionDto detection,
+            AiVisionLabelCatalog.Entry? labelEntry,
+            FoodCatalogMatch food,
+            decimal minConfidence)
+        {
+            var missing = FoodTrustBuilder.ParseMissingNutrients(food.MissingNutrients);
+            return new MappedFoodDto
+            {
+                Label = detection.Label,
+                Confidence = detection.Confidence,
+                Bbox = detection.Bbox,
+                DetectedLabelVi = labelEntry?.DisplayNameVi,
+                FoodItemId = food.FoodItemId,
+                FoodName = food.FoodName,
+                CaloriesPer100g = food.CaloriesPer100g,
+                ProteinPer100g = food.ProteinPer100g,
+                FatPer100g = food.FatPer100g,
+                CarbPer100g = food.CarbPer100g,
+                MissingNutrients = missing,
+                NutrientCompletenessScore = food.NutrientCompletenessScore,
+                TrustSummary = BuildTrustSummary(food, labelEntry, detection.Confidence, minConfidence)
+            };
+        }
+
+        private static FoodCatalogMatch ToFoodCatalogMatch(vw_AiFoodMap row) =>
+            new()
+            {
+                FoodItemId = row.FoodItemId!.Value,
+                FoodName = row.FoodName ?? string.Empty,
+                FoodNameEn = row.FoodNameEn,
+                FoodNameUnsigned = row.FoodNameUnsigned,
+                CaloriesPer100g = row.CaloriesPer100g.GetValueOrDefault(),
+                ProteinPer100g = row.ProteinPer100g.GetValueOrDefault(),
+                CarbPer100g = row.CarbPer100g.GetValueOrDefault(),
+                FatPer100g = row.FatPer100g.GetValueOrDefault(),
+                IsVerified = row.IsVerified,
+                VerifiedBy = row.VerifiedBy,
+                VerificationStatus = row.VerificationStatus,
+                CredibilityScore = row.CredibilityScore,
+                NutrientCompletenessScore = row.NutrientCompletenessScore,
+                MissingNutrients = row.MissingNutrients
+            };
+
+        private static FoodTrustSummaryDto BuildTrustSummary(
+            FoodCatalogMatch food,
+            AiVisionLabelCatalog.Entry? labelEntry,
+            float confidence,
+            decimal minConfidence)
+        {
+            var missing = FoodTrustBuilder.ParseMissingNutrients(food.MissingNutrients);
+            var summary = FoodTrustBuilder.BuildSummary(new FoodItemDto
+            {
+                FoodItemId = food.FoodItemId,
+                FoodName = food.FoodName,
+                IsVerified = food.IsVerified,
+                VerifiedBy = food.VerifiedBy,
+                VerificationStatus = food.VerificationStatus,
+                ReliabilityScore = food.CredibilityScore / 100.0,
+                NutrientCompletenessScore = food.NutrientCompletenessScore,
+                MissingNutrients = missing
+            });
+
+            if ((decimal)confidence < minConfidence)
+            {
+                summary.Status = FoodTrustStatus.LowConfidence;
+                summary.Label = "Độ tin cậy thấp";
+                summary.Score = Math.Min(summary.Score, 50);
+                summary.NeedsReview = true;
+            }
+
+            if (labelEntry?.IsGeneric == true
+                || string.Equals(food.VerificationStatus, "generic_estimate", System.StringComparison.OrdinalIgnoreCase))
+            {
+                summary.Status = FoodTrustStatus.LowConfidence;
+                summary.Label = "Ước tính";
+                summary.Score = Math.Min(summary.Score, 60);
+                summary.NeedsReview = true;
+            }
+
+            return summary;
+        }
+
+        private static FoodTrustSummaryDto BuildUnmatchedTrustSummary(
+            AiVisionLabelCatalog.Entry? labelEntry,
+            float confidence)
+        {
+            var score = Math.Round((decimal)System.Math.Clamp(confidence, 0f, 1f) * 100m, 0);
+            return new FoodTrustSummaryDto
+            {
+                Status = FoodTrustStatus.LowConfidence,
+                Label = labelEntry == null ? "Độ tin cậy thấp" : "Cần kiểm tra",
+                Score = Math.Min(score, 50),
+                NeedsReview = true,
+                MissingNutrients = RequiredMacroNutrients.ToList(),
+            };
+        }
+
         private async Task<Dictionary<string, FoodCatalogMatch>> ResolveCatalogCandidatesAsync(
             IReadOnlyCollection<string> searchKeys,
             CancellationToken cancellationToken)
@@ -264,7 +371,12 @@ namespace EatFitAI.API.Services
                     CarbPer100g = food.CarbPer100g,
                     FatPer100g = food.FatPer100g,
                     ThumbNail = food.ThumbNail,
-                    CredibilityScore = food.CredibilityScore
+                    IsVerified = food.IsVerified,
+                    VerifiedBy = food.VerifiedBy,
+                    VerificationStatus = food.VerificationStatus,
+                    CredibilityScore = food.CredibilityScore,
+                    NutrientCompletenessScore = food.NutrientCompletenessScore,
+                    MissingNutrients = food.MissingNutrients
                 })
                 .ToListAsync(cancellationToken);
 
@@ -465,7 +577,12 @@ namespace EatFitAI.API.Services
             public decimal CarbPer100g { get; init; }
             public decimal FatPer100g { get; init; }
             public string? ThumbNail { get; init; }
+            public bool IsVerified { get; init; }
+            public string? VerifiedBy { get; init; }
+            public string? VerificationStatus { get; init; }
             public int CredibilityScore { get; init; }
+            public decimal NutrientCompletenessScore { get; init; } = 100;
+            public string? MissingNutrients { get; init; }
         }
 
         private sealed class DefaultServingInfo

@@ -4,6 +4,7 @@ using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
 using EatFitAI.API.DTOs.AI;
+using EatFitAI.API.DTOs.Common;
 using EatFitAI.API.Services;
 using EatFitAI.API.Services.Interfaces;
 using EatFitAI.API.Tests.Integration;
@@ -63,6 +64,8 @@ public class AIVisionControllerTests : IClassFixture<WebApplicationFactory<Progr
         Assert.NotNull(body);
         var item = Assert.Single(body.Items);
         Assert.Equal("banana", item.Label);
+        Assert.Equal("Chuối", item.DetectedLabelVi);
+        Assert.NotNull(item.TrustSummary);
         Assert.NotNull(item.Bbox);
         Assert.True(item.IsMatched);
     }
@@ -397,8 +400,16 @@ public class AIVisionControllerTests : IClassFixture<WebApplicationFactory<Progr
                     Label = detection.Label,
                     Confidence = detection.Confidence,
                     Bbox = detection.Bbox,
+                    DetectedLabelVi = "Chuối",
                     FoodItemId = index + 1,
-                    FoodName = $"{detection.Label}-mapped"
+                    FoodName = $"{detection.Label}-mapped",
+                    TrustSummary = new FoodTrustSummaryDto
+                    {
+                        Status = FoodTrustStatus.Trusted,
+                        Label = "Đáng tin cậy",
+                        Score = 80,
+                        NeedsReview = false,
+                    }
                 })
                 .ToList();
 

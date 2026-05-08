@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using EatFitAI.API.DTOs.Common;
 
 namespace EatFitAI.API.DTOs.AI
 {
@@ -22,6 +23,7 @@ namespace EatFitAI.API.DTOs.AI
         public string Label { get; set; } = default!;
         public float Confidence { get; set; }
         public BoundingBoxDto? Bbox { get; set; }
+        public string? DetectedLabelVi { get; set; }
 
         public int? FoodItemId { get; set; }
         public string? FoodName { get; set; }
@@ -36,6 +38,9 @@ namespace EatFitAI.API.DTOs.AI
         public string? DefaultServingUnitSymbol { get; set; }
         public decimal? DefaultPortionQuantity { get; set; }
         public decimal? DefaultGrams { get; set; }
+        public List<string> MissingNutrients { get; set; } = new();
+        public decimal? NutrientCompletenessScore { get; set; }
+        public FoodTrustSummaryDto? TrustSummary { get; set; }
 
         public bool IsMatched => FoodItemId.HasValue;
     }
