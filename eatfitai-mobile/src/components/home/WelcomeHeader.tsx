@@ -2,10 +2,11 @@
  * WelcomeHeader – Compact Emerald Nebula header bar
  */
 import React from 'react';
-import { View, StyleSheet, Pressable, Text } from 'react-native';
+import { View, StyleSheet, Pressable, Text, Image } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '../../store/useAuthStore';
+import { useProfileStore } from '../../store/useProfileStore';
 
 const C = {
   bg: '#0a0e1a',
@@ -22,38 +23,64 @@ interface WelcomeHeaderProps {
   onAvatarPress?: () => void;
 }
 
+/** Return a time-of-day icon using Ionicons */
+const getTimeIcon = (): { name: keyof typeof Ionicons.glyphMap; color: string } => {
+  const h = new Date().getHours();
+  if (h >= 5 && h < 12) return { name: 'partly-sunny', color: '#fbbf24' };   // Sáng – mặt trời nửa mây
+  if (h >= 12 && h < 15) return { name: 'sunny', color: '#f59e0b' };          // Trưa – full mặt trời
+  if (h >= 15 && h < 18) return { name: 'sunny-outline', color: '#fb923c' };  // Chiều – mặt trời hạ
+  if (h >= 18 && h < 22) return { name: 'moon', color: '#a78bfa' };           // Tối – mặt trăng
+  return { name: 'moon-outline', color: '#818cf8' };                           // Khuya
+};
+
+const getGreetingText = (): string => {
+  const h = new Date().getHours();
+  if (h >= 5 && h < 12) return 'CHÀO BUỔI SÁNG';
+  if (h >= 12 && h < 15) return 'CHÀO BUỔI TRƯA';
+  if (h >= 15 && h < 18) return 'CHÀO BUỔI CHIỀU';
+  if (h >= 18 && h < 22) return 'CHÀO BUỔI TỐI';
+  return 'KHUYA RỒI';
+};
+
 export const WelcomeHeader: React.FC<WelcomeHeaderProps> = ({
   streakCount = 0,
   onNotificationPress,
   onAvatarPress,
 }) => {
   const { user } = useAuthStore();
+  const { profile } = useProfileStore();
 
-  const getGreeting = (): string => {
-    const h = new Date().getHours();
-    if (h >= 5  && h < 12) return 'Chào buổi sáng 🌿';
-    if (h >= 12 && h < 17) return 'Chào buổi chiều ☀️';
-    if (h >= 17 && h < 22) return 'Chào buổi tối 🌙';
-    return 'Khuya rồi 🌃';
-  };
+  const displayName = profile?.fullName || user?.name || user?.email?.split('@')[0] || 'Bạn';
+  const initials = displayName.charAt(0).toUpperCase();
+  const avatarUrl = profile?.avatarUrl;
 
-  const userName = user?.name || user?.email?.split('@')[0] || 'Bạn';
-  const initials = userName.charAt(0).toUpperCase();
+  const timeIcon = getTimeIcon();
 
   return (
     <Animated.View entering={FadeInDown.delay(80).springify()} style={styles.container}>
       {/* Left: avatar + texts */}
-      <Pressable style={styles.left} onPress={onAvatarPress}>
+      <View style={styles.left}>
         <View style={styles.avatarRing}>
           <View style={styles.avatarInner}>
-            <Text style={styles.avatarText}>{initials}</Text>
+            {avatarUrl ? (
+              <Image
+                source={{ uri: avatarUrl }}
+                style={styles.avatarImage}
+                resizeMode="cover"
+              />
+            ) : (
+              <Text style={styles.avatarText}>{initials}</Text>
+            )}
           </View>
         </View>
         <View style={styles.texts}>
-          <Text style={styles.greeting}>{getGreeting()}</Text>
-          <Text style={styles.name} numberOfLines={1}>{userName}</Text>
+          <View style={styles.greetingRow}>
+            <Text style={styles.greeting}>{getGreetingText()}</Text>
+            <Ionicons name={timeIcon.name} size={14} color={timeIcon.color} style={{ marginLeft: 4 }} />
+          </View>
+          <Text style={styles.name} numberOfLines={1}>{displayName}</Text>
         </View>
-      </Pressable>
+      </View>
 
       {/* Right: streak + bell */}
       <View style={styles.right}>
@@ -106,21 +133,31 @@ const styles = StyleSheet.create({
     backgroundColor: C.surfaceHigh,
     alignItems: 'center',
     justifyContent: 'center',
+    overflow: 'hidden',
   },
   avatarText: {
     fontSize: 15,
     fontWeight: '700',
     color: C.primary,
   },
+  avatarImage: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 16,
+  },
 
   texts: { flex: 1 },
+  greetingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 1,
+  },
   greeting: {
     fontSize: 12,
     fontWeight: '700',
     color: C.primary,
     letterSpacing: 1,
     textTransform: 'uppercase',
-    marginBottom: 1,
   },
   name: {
     fontSize: 16,

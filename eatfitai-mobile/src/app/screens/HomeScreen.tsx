@@ -462,7 +462,6 @@ const HomeScreen = (): React.ReactElement => {
         <WelcomeHeader
           streakCount={currentStreak}
           onNotificationPress={() => navigation.navigate('NotificationsSettings')}
-          onAvatarPress={() => navigation.navigate('EditProfile')}
         />
 
         {/* ══════════ SERVER ERROR ══════════ */}
