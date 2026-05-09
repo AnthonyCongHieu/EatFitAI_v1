@@ -387,6 +387,38 @@ def _resolve_onnx_input(net: ort.InferenceSession, requested_image_size: int) ->
     return input_meta.name, resolved_image_size
 
 
+def _select_nms_indices_by_label(
+    boxes: List[List[int]],
+    confidences: List[float],
+    labels: List[str],
+    confidence_threshold: float,
+    nms_threshold: float,
+) -> List[int]:
+    selected_indices: List[int] = []
+    label_groups: Dict[str, List[int]] = {}
+    for index, label in enumerate(labels):
+        label_groups.setdefault(label, []).append(index)
+
+    for label_indices in label_groups.values():
+        label_boxes = [boxes[index] for index in label_indices]
+        label_confidences = [confidences[index] for index in label_indices]
+        selected = cv2.dnn.NMSBoxes(
+            label_boxes,
+            label_confidences,
+            confidence_threshold,
+            nms_threshold,
+        )
+        if len(selected) == 0:
+            continue
+
+        selected_indices.extend(
+            label_indices[int(selected_position)]
+            for selected_position in np.array(selected).flatten().tolist()
+        )
+
+    return selected_indices
+
+
 def _detect_with_onnx(path: str, confidence_threshold: float, image_size: int) -> List[Dict[str, Any]]:
     net = _load_onnx_model()
     if net is None:
@@ -444,12 +476,18 @@ def _detect_with_onnx(path: str, confidence_threshold: float, image_size: int) -
     if not boxes:
         return []
 
-    selected = cv2.dnn.NMSBoxes(boxes, confidences, confidence_threshold, YOLO_NMS_THRESHOLD)
-    if len(selected) == 0:
+    selected_indices = _select_nms_indices_by_label(
+        boxes,
+        confidences,
+        labels,
+        confidence_threshold,
+        YOLO_NMS_THRESHOLD,
+    )
+    if not selected_indices:
         return []
 
     best_by_label: Dict[str, Dict[str, Any]] = {}
-    for index in np.array(selected).flatten().tolist():
+    for index in selected_indices:
         label = labels[index].strip().lower()
         confidence = confidences[index]
         existing = best_by_label.get(label)

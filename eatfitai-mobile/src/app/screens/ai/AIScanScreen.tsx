@@ -7,6 +7,7 @@ import {
   ActivityIndicator,
   Dimensions,
   Modal,
+  ScrollView,
   TextInput,
   KeyboardAvoidingView,
   Platform,
@@ -59,7 +60,9 @@ import { useIngredientBasketStore } from '../../../store/useIngredientBasketStor
 import { getVisionFoodDisplayName } from '../../../utils/translate';
 import { TEST_IDS } from '../../../testing/testIds';
 import {
+  calculateVisionDefaultMacroTotals,
   clampVisionGrams,
+  getDistinctVisionResultItems,
   getDefaultVisionGrams,
   getVisionQuickPortions,
   shouldAllowVisionQuickSave,
@@ -127,6 +130,7 @@ const AIScanScreen: React.FC = () => {
   } | null>(null);
   const [showBasketSheet, setShowBasketSheet] = useState(false);
   const [resultNotice, setResultNotice] = useState<ScanResultNotice | null>(null);
+  const [showImagePreview, setShowImagePreview] = useState(false);
   const [flashOn, setFlashOn] = useState(false);
   const { data: aiStatus, isLoading: isAiStatusLoading } = useAiStatus();
 
@@ -503,6 +507,7 @@ const AIScanScreen: React.FC = () => {
     setCapturedUri(null);
     setDetectionResult(null);
     setResultNotice(null);
+    setShowImagePreview(false);
     setResultGrams(100);
     setMode('camera');
   }, []);
@@ -510,12 +515,15 @@ const AIScanScreen: React.FC = () => {
   const handleAddToDiary = useCallback(async () => {
     if (!capturedUri || !detectionResult) return;
 
-    const topItem = [...detectionResult.items]
-      .sort((a, b) => b.confidence - a.confidence)[0];
+    const distinctItems = getDistinctVisionResultItems(detectionResult.items);
+    const topItem = distinctItems[0];
     if (!topItem || !shouldAllowVisionQuickSave(detectionResult)) {
       navigation.navigate('AddMealFromVision', {
         imageUri: capturedUri,
-        result: detectionResult,
+        result: {
+          ...detectionResult,
+          items: distinctItems,
+        },
       });
       return;
     }
@@ -576,18 +584,28 @@ const AIScanScreen: React.FC = () => {
   }, [capturedUri, detectionResult, handleRetake, navigation, queryClient, resultGrams]);
 
   const handleAddToBasket = useCallback(
-    (item: MappedFoodItem) => {
-      const displayName = getVisionFoodDisplayName(item);
-      addIngredient({
-        name: displayName,
-        confidence: item.confidence,
-        imageUri: capturedUri || undefined,
+    (items: MappedFoodItem[]) => {
+      const validItems = items.filter(isUsableVisionItem);
+      if (validItems.length === 0) {
+        return;
+      }
+
+      validItems.forEach((item) => {
+        addIngredient({
+          name: getVisionFoodDisplayName(item),
+          confidence: item.confidence,
+          imageUri: capturedUri || undefined,
+        });
       });
+
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       Toast.show({
         type: 'success',
-        text1: '🧺 Đã thêm vào giỏ',
-        text2: displayName,
+        text1: validItems.length > 1 ? 'Đã thêm các món vào giỏ' : 'Đã thêm vào giỏ',
+        text2:
+          validItems.length > 1
+            ? `${validItems.length} món/nguyên liệu đã được ghi nhận`
+            : getVisionFoodDisplayName(validItems[0]!),
         visibilityTime: 1500,
       });
     },
@@ -607,20 +625,33 @@ const AIScanScreen: React.FC = () => {
   }));
 
   const isCameraMode = mode === 'camera';
-  const topResults = detectionResult
-    ? [...detectionResult.items].sort((a, b) => b.confidence - a.confidence).slice(0, 2)
+  const distinctResultItems = detectionResult
+    ? getDistinctVisionResultItems(detectionResult.items)
     : [];
-  const hasDetectedItems = topResults.length > 0;
-  const topItem = topResults[0] ?? null;
+  const resultListItems = distinctResultItems;
+  const hasDetectedItems = distinctResultItems.length > 0;
+  const hasMultipleDetectedItems = distinctResultItems.length > 1;
+  const topItem = distinctResultItems[0] ?? null;
   const quickPortions = getVisionQuickPortions(topItem);
   const processingText = AI_PROCESSING_MESSAGES[processingMessageIndex];
 
-  // Compute macros based on current grams
+  const mealMacroTotals = calculateVisionDefaultMacroTotals(distinctResultItems);
+  const useMealMacroTotals = hasMultipleDetectedItems;
+
+  // Compute macros based on current grams for a single item, or default portions for a meal scan.
   const ratio = resultGrams / 100;
-  const computedCal = topItem ? Math.round((topItem.caloriesPer100g ?? 0) * ratio) : 0;
-  const computedProtein = topItem ? Math.round((topItem.proteinPer100g ?? 0) * ratio) : 0;
-  const computedCarbs = topItem ? Math.round((topItem.carbPer100g ?? 0) * ratio) : 0;
-  const computedFat = topItem ? Math.round((topItem.fatPer100g ?? 0) * ratio) : 0;
+  const computedCal = useMealMacroTotals
+    ? Math.round(mealMacroTotals.calories)
+    : topItem ? Math.round((topItem.caloriesPer100g ?? 0) * ratio) : 0;
+  const computedProtein = useMealMacroTotals
+    ? Math.round(mealMacroTotals.protein)
+    : topItem ? Math.round((topItem.proteinPer100g ?? 0) * ratio) : 0;
+  const computedCarbs = useMealMacroTotals
+    ? Math.round(mealMacroTotals.carb)
+    : topItem ? Math.round((topItem.carbPer100g ?? 0) * ratio) : 0;
+  const computedFat = useMealMacroTotals
+    ? Math.round(mealMacroTotals.fat)
+    : topItem ? Math.round((topItem.fatPer100g ?? 0) * ratio) : 0;
 
   /* ═══════════════════════════════════════════════
      Permission screens
@@ -845,12 +876,7 @@ const AIScanScreen: React.FC = () => {
           </View>
         )}
 
-        {/* Notice: Image only, no floating bubbles */}
-        {mode === 'results' && topItem && (
-          <View style={S.scannerCenter} />
-        )}
-
-        <View style={S.spacer} />
+        {mode !== 'results' && <View style={S.spacer} />}
 
         {/* ═══ CAMERA CONTROLS ═══ */}
         {isCameraMode && (
@@ -910,22 +936,22 @@ const AIScanScreen: React.FC = () => {
           </Animated.View>
         )}
 
-        {/* ═══ RESULTS BOTTOM DRAWER ═══ */}
+        {/* ═══ RESULTS FULL SCREEN LIST ═══ */}
         {mode === 'results' && detectionResult && (
           <Animated.View
-            entering={SlideInUp.duration(300)}
-            style={S.drawer}
+            entering={SlideInUp.duration(360).springify().damping(18)}
+            style={S.resultPanel}
           >
-            {/* Drag handle */}
-            <View style={S.drawerHandle} />
-
             {hasDetectedItems && topItem ? (
               <View style={S.drawerContent}>
                 {/* Title row */}
                 <View style={S.drawerTitleRow}>
                   <View style={{ flex: 1 }}>
+                    <ThemedText style={S.resultEyebrow}>Kết quả nhận diện</ThemedText>
                     <ThemedText style={S.drawerFoodName} numberOfLines={2}>
-                      {getVisionFoodDisplayName(topItem)}
+                      {hasMultipleDetectedItems
+                        ? `${distinctResultItems.length} món trong ảnh`
+                        : getVisionFoodDisplayName(topItem)}
                     </ThemedText>
                     {topItem.trustSummary?.label ? (
                       <View style={S.trustBadge}>
@@ -938,59 +964,132 @@ const AIScanScreen: React.FC = () => {
                       <ThemedText style={S.drawerKcal}>
                         {computedCal} kcal
                       </ThemedText>
-                      <ThemedText style={S.drawerServing}> / {resultGrams}g</ThemedText>
+                      {hasMultipleDetectedItems ? (
+                        <ThemedText style={S.drawerServing}> / ước tính bữa</ThemedText>
+                      ) : (
+                        <Pressable
+                          onPress={() => {
+                            setGramInputValue(String(resultGrams));
+                            setShowGramModal(true);
+                          }}
+                          hitSlop={8}
+                        >
+                          <ThemedText style={S.drawerServing}> / {resultGrams}g</ThemedText>
+                        </Pressable>
+                      )}
                     </View>
                   </View>
 
-                  {/* Quantity control: - / grams / + */}
-                  <View style={S.qtyControl}>
+                  {capturedUri ? (
                     <Pressable
-                      style={S.qtyBtnMinus}
-                      onPress={() => setResultGrams((g) => clampVisionGrams(g - 25))}
+                      style={S.resultThumbButton}
+                      onPress={() => setShowImagePreview(true)}
+                      hitSlop={8}
                     >
-                      <Icon name="remove" size="sm" color="text" />
+                      <AppImage
+                        source={{ uri: capturedUri }}
+                        style={S.resultThumbImage}
+                        resizeMode="cover"
+                      />
+                      <View style={S.resultThumbOverlay}>
+                        <Icon name="open-outline" size="xs" color="#fff" />
+                      </View>
                     </Pressable>
-                    <Pressable
-                      onPress={() => {
-                        setGramInputValue(String(resultGrams));
-                        setShowGramModal(true);
-                      }}
-                    >
-                      <ThemedText style={S.qtyText}>{resultGrams}g</ThemedText>
-                    </Pressable>
-                    <Pressable
-                      style={S.qtyBtnPlus}
-                      onPress={() => setResultGrams((g) => clampVisionGrams(g + 25))}
-                    >
-                      <Icon name="add" size="sm" color="background" />
-                    </Pressable>
-                  </View>
+                  ) : null}
                 </View>
 
-                <View style={S.quickPortionRow}>
-                  {quickPortions.map((portion) => {
-                    const selected = portion.grams === resultGrams;
-                    return (
-                      <Pressable
-                        key={`${portion.label}-${portion.grams}`}
-                        onPress={() => setResultGrams(portion.grams)}
-                        style={[
-                          S.quickPortionChip,
-                          selected ? S.quickPortionChipActive : null,
-                        ]}
-                      >
-                        <ThemedText
+                <View style={S.detectedList}>
+                  <View style={S.detectedListHeader}>
+                    <ThemedText style={S.detectedListTitle}>Các món nhận diện</ThemedText>
+                    <ThemedText style={S.detectedListCount}>
+                      {distinctResultItems.length} món
+                    </ThemedText>
+                  </View>
+
+                  <ScrollView
+                    style={S.detectedListScroll}
+                    contentContainerStyle={S.detectedListScrollContent}
+                    showsVerticalScrollIndicator={false}
+                  >
+                    {resultListItems.map((item, index) => {
+                      const isPrimary = index === 0;
+                      const confidence = Math.round((item.confidence ?? 0) * 100);
+                      const itemGrams = getDefaultVisionGrams(item);
+                      const itemCalories = Math.round(
+                        ((item.caloriesPer100g ?? 0) * itemGrams) / 100,
+                      );
+                      const statusLabel = item.trustSummary?.label
+                        ?? (item.isMatched ? 'Đã khớp dinh dưỡng' : 'Cần xác nhận');
+                      const key = `${item.source ?? 'vision'}-${item.userFoodItemId ?? item.foodItemId ?? item.label}-${index}`;
+
+                      return (
+                        <View
+                          key={key}
                           style={[
-                            S.quickPortionText,
-                            selected ? S.quickPortionTextActive : null,
+                            S.detectedItem,
+                            isPrimary ? S.detectedItemPrimary : null,
                           ]}
                         >
-                          {portion.label} · {portion.grams}g
-                        </ThemedText>
-                      </Pressable>
-                    );
-                  })}
+                          <View
+                            style={[
+                              S.detectedRank,
+                              isPrimary ? S.detectedRankPrimary : null,
+                            ]}
+                          >
+                            <ThemedText
+                              style={[
+                                S.detectedRankText,
+                                isPrimary ? S.detectedRankTextPrimary : null,
+                              ]}
+                            >
+                              {index + 1}
+                            </ThemedText>
+                          </View>
+
+                          <View style={S.detectedItemBody}>
+                            <ThemedText style={S.detectedItemName} numberOfLines={1}>
+                              {getVisionFoodDisplayName(item)}
+                            </ThemedText>
+                            <ThemedText style={S.detectedItemMeta} numberOfLines={1}>
+                              {statusLabel} · {itemCalories} kcal / {itemGrams}g
+                            </ThemedText>
+                          </View>
+
+                          <ThemedText style={S.detectedConfidence}>
+                            {confidence}%
+                          </ThemedText>
+                        </View>
+                      );
+                    })}
+                  </ScrollView>
                 </View>
+
+                {!hasMultipleDetectedItems ? (
+                  <View style={S.quickPortionRow}>
+                    {quickPortions.map((portion) => {
+                      const selected = portion.grams === resultGrams;
+                      return (
+                        <Pressable
+                          key={`${portion.label}-${portion.grams}`}
+                          onPress={() => setResultGrams(portion.grams)}
+                          style={[
+                            S.quickPortionChip,
+                            selected ? S.quickPortionChipActive : null,
+                          ]}
+                        >
+                          <ThemedText
+                            style={[
+                              S.quickPortionText,
+                              selected ? S.quickPortionTextActive : null,
+                            ]}
+                          >
+                            {portion.label} · {portion.grams}g
+                          </ThemedText>
+                        </Pressable>
+                      );
+                    })}
+                  </View>
+                ) : null}
 
                 {/* Macro visualization */}
                 <View style={S.macroRow}>
@@ -1083,9 +1182,11 @@ const AIScanScreen: React.FC = () => {
                   {/* Add to basket — bordered, no icon */}
                   <Pressable
                     style={S.basketBtn}
-                    onPress={() => topItem && handleAddToBasket(topItem)}
+                    onPress={() => handleAddToBasket(resultListItems)}
                   >
-                    <ThemedText style={S.basketBtnText}>Thêm vào giỏ</ThemedText>
+                    <ThemedText style={S.basketBtnText}>
+                      {hasMultipleDetectedItems ? 'Thêm tất cả vào giỏ' : 'Thêm vào giỏ'}
+                    </ThemedText>
                   </Pressable>
 
                   {/* Search manually */}
@@ -1133,6 +1234,35 @@ const AIScanScreen: React.FC = () => {
           </Animated.View>
         )}
       </SafeAreaView>
+
+      <Modal
+        visible={showImagePreview}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowImagePreview(false)}
+      >
+        <Pressable
+          style={S.imagePreviewOverlay}
+          onPress={() => setShowImagePreview(false)}
+        >
+          <Pressable style={S.imagePreviewCard} onPress={(e) => e.stopPropagation()}>
+            {capturedUri ? (
+              <AppImage
+                source={{ uri: capturedUri }}
+                style={S.imagePreview}
+                resizeMode="contain"
+              />
+            ) : null}
+            <Pressable
+              style={S.imagePreviewClose}
+              onPress={() => setShowImagePreview(false)}
+              hitSlop={12}
+            >
+              <Icon name="close" size="md" color="#fff" />
+            </Pressable>
+          </Pressable>
+        </Pressable>
+      </Modal>
 
       {/* ═══ Gram Input Modal ═══ */}
       <Modal
@@ -1604,7 +1734,24 @@ const S = StyleSheet.create({
     backgroundColor: '#FFFFFF',
   },
 
-  /* ═══ RESULTS DRAWER ═══ */
+  /* ═══ RESULTS FULL SCREEN LIST ═══ */
+  resultPanel: {
+    flex: 1,
+    marginTop: 14,
+    backgroundColor: 'rgba(22, 27, 43, 0.96)',
+    borderTopLeftRadius: 32,
+    borderTopRightRadius: 32,
+    paddingTop: 18,
+    paddingHorizontal: 20,
+    paddingBottom: 98,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -10 },
+    shadowOpacity: 0.55,
+    shadowRadius: 36,
+    elevation: 20,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255,255,255,0.06)',
+  },
   drawer: {
     backgroundColor: 'rgba(22, 27, 43, 0.92)',
     borderTopLeftRadius: 40,
@@ -1642,6 +1789,41 @@ const S = StyleSheet.create({
     fontWeight: '800',
     color: P.onSurface,
     lineHeight: 28,
+  },
+  resultEyebrow: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: P.primary,
+    letterSpacing: 1.2,
+    textTransform: 'uppercase',
+    marginBottom: 6,
+  },
+  resultThumbButton: {
+    width: 86,
+    height: 112,
+    borderRadius: 20,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(75, 226, 119, 0.35)',
+    backgroundColor: P.surfaceContainerHigh,
+    marginLeft: 14,
+  },
+  resultThumbImage: {
+    width: '100%',
+    height: '100%',
+  },
+  resultThumbOverlay: {
+    position: 'absolute',
+    right: 6,
+    bottom: 6,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(0,0,0,0.62)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.2)',
   },
   trustBadge: {
     alignSelf: 'flex-start',
@@ -1729,6 +1911,103 @@ const S = StyleSheet.create({
   },
   quickPortionTextActive: {
     color: P.primary,
+  },
+  detectedList: {
+    borderRadius: 16,
+    backgroundColor: P.surfaceContainerLow,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.06)',
+    padding: 12,
+    marginBottom: 16,
+    gap: 8,
+  },
+  detectedListScroll: {
+    maxHeight: 260,
+  },
+  detectedListScrollContent: {
+    gap: 8,
+    paddingBottom: 2,
+  },
+  detectedListHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+    marginBottom: 2,
+  },
+  detectedListTitle: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: P.onSurface,
+  },
+  detectedListCount: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: P.primary,
+  },
+  detectedItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    minHeight: 46,
+    borderRadius: 12,
+    backgroundColor: P.surfaceContainer,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.04)',
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    gap: 10,
+  },
+  detectedItemPrimary: {
+    borderColor: 'rgba(75, 226, 119, 0.35)',
+    backgroundColor: 'rgba(75, 226, 119, 0.08)',
+  },
+  detectedRank: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: P.surfaceContainerHigh,
+  },
+  detectedRankPrimary: {
+    backgroundColor: P.primary,
+  },
+  detectedRankText: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: P.onSurfaceVariant,
+  },
+  detectedRankTextPrimary: {
+    color: '#003915',
+  },
+  detectedItemBody: {
+    flex: 1,
+    minWidth: 0,
+  },
+  detectedItemName: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: P.onSurface,
+  },
+  detectedItemMeta: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: P.onSurfaceVariant,
+    marginTop: 2,
+  },
+  detectedConfidence: {
+    minWidth: 38,
+    textAlign: 'right',
+    fontSize: 12,
+    fontWeight: '800',
+    color: P.primary,
+  },
+  detectedListMore: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: P.onSurfaceVariant,
+    textAlign: 'center',
+    paddingTop: 2,
   },
 
   /* Macro cards */
@@ -1921,6 +2200,39 @@ const S = StyleSheet.create({
   },
 
   /* ═══ GRAM INPUT MODAL ═══ */
+  imagePreviewOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.86)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 18,
+  },
+  imagePreviewCard: {
+    width: '100%',
+    height: '82%',
+    borderRadius: 24,
+    overflow: 'hidden',
+    backgroundColor: '#000',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.12)',
+  },
+  imagePreview: {
+    width: '100%',
+    height: '100%',
+  },
+  imagePreviewClose: {
+    position: 'absolute',
+    top: 12,
+    right: 12,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(0,0,0,0.62)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.16)',
+  },
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.6)',

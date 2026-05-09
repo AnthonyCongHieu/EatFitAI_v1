@@ -103,6 +103,50 @@ class LazyYoloModelTests(unittest.TestCase):
         self.assertEqual(observed["blob_shape"], (1, 3, 640, 640))
         self.assertEqual(fake_session.input_calls, 1)
 
+    def test_detect_with_onnx_keeps_overlapping_different_labels(self):
+        class_count = len(app_module.YOLO_CLASS_NAMES)
+
+        def prediction(cx, cy, width, height, class_id, confidence):
+            row = np.zeros(4 + class_count, dtype=np.float32)
+            row[:4] = [cx, cy, width, height]
+            row[4 + class_id] = confidence
+            return row
+
+        output = np.stack(
+            [
+                prediction(100, 100, 100, 100, 0, 0.91),
+                prediction(102, 102, 100, 100, 1, 0.89),
+                prediction(104, 104, 100, 100, 1, 0.78),
+            ],
+            axis=0,
+        )
+
+        class FakeInput:
+            name = "images"
+            shape = [1, 3, 640, 640]
+
+        class FakeSession:
+            def get_inputs(self):
+                return [FakeInput()]
+
+            def run(self, output_names, feeds):
+                return [output]
+
+        with (
+            patch.object(app_module, "_load_onnx_model", return_value=FakeSession()),
+            patch.object(app_module.cv2, "imread", return_value=np.zeros((640, 640, 3), dtype=np.uint8)),
+        ):
+            detections = app_module._detect_with_onnx("multi-food.jpg", 0.35, 640)
+
+        self.assertEqual(
+            [item["label"] for item in detections],
+            app_module.YOLO_CLASS_NAMES[:2],
+        )
+        self.assertEqual(
+            [round(float(item["confidence"]), 2) for item in detections],
+            [0.91, 0.89],
+        )
+
     def test_detect_returns_503_when_onnx_model_is_missing(self):
         app_module.YOLO_ONNX_MODEL_FILE = "missing-test-model.onnx"
         app_module.onnx_model_load_error = "model boot failed"
