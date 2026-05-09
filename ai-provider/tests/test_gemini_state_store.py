@@ -120,6 +120,9 @@ class GeminiStateStoreTests(unittest.TestCase):
         self.assertEqual(loaded["limits"], payload["limits"])
         self.assertEqual(loaded["entries"][0]["projectId"], "project-a")
         self.assertEqual(loaded["entries"][0]["state"], "provider_rpd_exhausted")
+        executed_sql = "\n".join(statement for statement, _ in fake_connection.statements)
+        self.assertIn('ALTER TABLE "GeminiProviderState" ENABLE ROW LEVEL SECURITY', executed_sql)
+        self.assertIn('REVOKE ALL ON TABLE "GeminiProviderState" FROM anon, authenticated', executed_sql)
         self.assertGreaterEqual(fake_connection.commits, 2)
         self.assertFalse(store.status()["degraded"])
 

@@ -43,6 +43,109 @@ public class DatabaseSeederTests
     }
 
     [Fact]
+    public async Task SeedAsync_MapsBroadLabelsToBroadFoodItems()
+    {
+        var databaseRoot = new InMemoryDatabaseRoot();
+        var databaseName = Guid.NewGuid().ToString();
+        var services = new ServiceCollection();
+        services.AddDbContext<EatFitAIDbContext>(options =>
+            options.UseInMemoryDatabase(databaseName, databaseRoot));
+        services.AddSingleton<IHostEnvironment>(new FakeHostEnvironment());
+
+        await using var provider = services.BuildServiceProvider();
+
+        await DatabaseSeeder.SeedAsync(provider);
+
+        using var scope = provider.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<EatFitAIDbContext>();
+        var maps = await context.AiLabelMaps
+            .Where(map => BroadLabelExpectations.Keys.Contains(map.Label))
+            .ToListAsync();
+        var foodIds = maps
+            .Where(map => map.FoodItemId.HasValue)
+            .Select(map => map.FoodItemId!.Value)
+            .Distinct()
+            .ToList();
+        var foods = await context.FoodItems
+            .Where(food => foodIds.Contains(food.FoodItemId))
+            .ToDictionaryAsync(food => food.FoodItemId);
+
+        foreach (var (label, expectedFoodName) in BroadLabelExpectations)
+        {
+            var map = Assert.Single(maps, item => item.Label == label);
+            Assert.True(map.FoodItemId.HasValue, $"Expected '{label}' to map to a broad FoodItem.");
+            Assert.Equal(expectedFoodName, foods[map.FoodItemId!.Value].FoodName);
+            Assert.True(map.MinConfidence >= 0.60m, $"Expected '{label}' to avoid low-confidence broad auto-mapping.");
+        }
+    }
+
+    [Fact]
+    public async Task SeedAsync_RaisesLegacyLowConfidenceLabelMaps()
+    {
+        var databaseRoot = new InMemoryDatabaseRoot();
+        var databaseName = Guid.NewGuid().ToString();
+        var services = new ServiceCollection();
+        services.AddDbContext<EatFitAIDbContext>(options =>
+            options.UseInMemoryDatabase(databaseName, databaseRoot));
+        services.AddSingleton<IHostEnvironment>(new FakeHostEnvironment());
+
+        await using var provider = services.BuildServiceProvider();
+
+        await DatabaseSeeder.SeedAsync(provider);
+
+        using (var scope = provider.CreateScope())
+        {
+            var context = scope.ServiceProvider.GetRequiredService<EatFitAIDbContext>();
+            var chicken = await context.AiLabelMaps.SingleAsync(map => map.Label == "chicken");
+            chicken.MinConfidence = 0.05m;
+            await context.SaveChangesAsync();
+        }
+
+        await DatabaseSeeder.SeedAsync(provider);
+
+        using (var scope = provider.CreateScope())
+        {
+            var context = scope.ServiceProvider.GetRequiredService<EatFitAIDbContext>();
+            var chicken = await context.AiLabelMaps.SingleAsync(map => map.Label == "chicken");
+            Assert.True(chicken.MinConfidence >= 0.60m);
+        }
+    }
+
+    [Fact]
+    public async Task SeedAsync_RepairsLegacyWrongFoodItemMaps()
+    {
+        var databaseRoot = new InMemoryDatabaseRoot();
+        var databaseName = Guid.NewGuid().ToString();
+        var services = new ServiceCollection();
+        services.AddDbContext<EatFitAIDbContext>(options =>
+            options.UseInMemoryDatabase(databaseName, databaseRoot));
+        services.AddSingleton<IHostEnvironment>(new FakeHostEnvironment());
+
+        await using var provider = services.BuildServiceProvider();
+
+        await DatabaseSeeder.SeedAsync(provider);
+
+        using (var scope = provider.CreateScope())
+        {
+            var context = scope.ServiceProvider.GetRequiredService<EatFitAIDbContext>();
+            var wrongFood = await context.FoodItems.SingleAsync(food => food.FoodName == "Rau muống");
+            var spinach = await context.AiLabelMaps.SingleAsync(map => map.Label == "spinach");
+            spinach.FoodItemId = wrongFood.FoodItemId;
+            await context.SaveChangesAsync();
+        }
+
+        await DatabaseSeeder.SeedAsync(provider);
+
+        using (var scope = provider.CreateScope())
+        {
+            var context = scope.ServiceProvider.GetRequiredService<EatFitAIDbContext>();
+            var spinach = await context.AiLabelMaps.SingleAsync(map => map.Label == "spinach");
+            var food = await context.FoodItems.SingleAsync(item => item.FoodItemId == spinach.FoodItemId);
+            Assert.Equal("Rau chân vịt", food.FoodName);
+        }
+    }
+
+    [Fact]
     public void AiVisionLabelCatalog_CoversEveryModelLabelWithVietnameseDisplayName()
     {
         Assert.Equal(ExpectedYolo11mCleanV1Labels.Length, AiVisionLabelCatalog.Entries.Count);
@@ -183,6 +286,17 @@ public class DatabaseSeederTests
         "bell_pepper",
         "lime",
     ];
+
+    private static readonly Dictionary<string, string> BroadLabelExpectations = new()
+    {
+        ["beans"] = "Đậu",
+        ["beef"] = "Thịt bò",
+        ["canh"] = "Canh",
+        ["chicken"] = "Thịt gà",
+        ["fish"] = "Cá",
+        ["noodles"] = "Mì/bún/phở",
+        ["pork"] = "Thịt heo",
+    };
 
     private sealed class FakeHostEnvironment : IHostEnvironment
     {

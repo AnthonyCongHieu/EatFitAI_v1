@@ -219,6 +219,8 @@ class PostgresGeminiUsageStateStore(GeminiUsageStateStore):
                 )
                 """
             )
+            cursor.execute('ALTER TABLE "GeminiProviderState" ENABLE ROW LEVEL SECURITY')
+            cursor.execute('REVOKE ALL ON TABLE "GeminiProviderState" FROM anon, authenticated')
 
 
 def _normalize_postgres_dsn(value: str) -> str:

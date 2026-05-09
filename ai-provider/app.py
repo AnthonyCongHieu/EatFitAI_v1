@@ -8,6 +8,7 @@ EatFitAI AI Provider - Production Service
 from __future__ import annotations
 
 from typing import Any, Dict, List
+import ast
 import ipaddress
 import logging
 import time
@@ -337,11 +338,13 @@ def _load_onnx_model() -> ort.InferenceSession | None:
 
         try:
             session_options = _build_onnx_session_options()
-            onnx_model = ort.InferenceSession(
+            candidate_model = ort.InferenceSession(
                 YOLO_ONNX_MODEL_FILE,
                 sess_options=session_options,
                 providers=["CPUExecutionProvider"],
             )
+            _validate_onnx_class_names(YOLO_CLASS_NAMES, _get_onnx_metadata_class_names(candidate_model))
+            onnx_model = candidate_model
             model_file = YOLO_ONNX_MODEL_FILE
             logger.info(f"Loaded YOLO ONNX model: {YOLO_ONNX_MODEL_FILE}")
             return onnx_model
@@ -349,6 +352,61 @@ def _load_onnx_model() -> ort.InferenceSession | None:
             onnx_model_load_error = str(exc)
             logger.error(f"Failed to load YOLO ONNX model: {exc}", exc_info=True)
             return None
+
+
+def _get_onnx_metadata_class_names(net: ort.InferenceSession) -> List[str]:
+    metadata = net.get_modelmeta().custom_metadata_map or {}
+    raw_names = metadata.get("names")
+    if not raw_names:
+        raise RuntimeError("YOLO class metadata missing from ONNX model")
+
+    try:
+        parsed_names = ast.literal_eval(raw_names)
+    except (SyntaxError, ValueError) as exc:
+        raise RuntimeError("YOLO class metadata names could not be parsed") from exc
+
+    if isinstance(parsed_names, dict):
+        try:
+            return [
+                str(name).strip().lower()
+                for _, name in sorted(
+                    ((int(index), name) for index, name in parsed_names.items()),
+                    key=lambda item: item[0],
+                )
+            ]
+        except (TypeError, ValueError) as exc:
+            raise RuntimeError("YOLO class metadata names had invalid class indexes") from exc
+
+    if isinstance(parsed_names, list):
+        return [str(name).strip().lower() for name in parsed_names]
+
+    raise RuntimeError("YOLO class metadata names had an unsupported format")
+
+
+def _validate_onnx_class_names(expected_names: List[str], actual_names: List[str]) -> None:
+    expected = [str(name).strip().lower() for name in expected_names]
+    actual = [str(name).strip().lower() for name in actual_names]
+    if expected == actual:
+        return
+
+    first_difference = next(
+        (
+            index
+            for index, expected_name in enumerate(expected)
+            if index >= len(actual) or actual[index] != expected_name
+        ),
+        None,
+    )
+    if first_difference is None and len(actual) != len(expected):
+        first_difference = min(len(expected), len(actual))
+
+    detail = f"configured={len(expected)} exported={len(actual)}"
+    if first_difference is not None:
+        expected_name = expected[first_difference] if first_difference < len(expected) else "<missing>"
+        actual_name = actual[first_difference] if first_difference < len(actual) else "<missing>"
+        detail += f" first_difference={first_difference}: expected {expected_name}, got {actual_name}"
+
+    raise RuntimeError(f"YOLO class metadata mismatch: {detail}")
 
 
 def _letterbox_image(image: np.ndarray, size: int) -> tuple[np.ndarray, float, int, int]:

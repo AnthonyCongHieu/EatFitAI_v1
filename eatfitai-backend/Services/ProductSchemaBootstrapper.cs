@@ -60,6 +60,72 @@ public sealed class ProductSchemaBootstrapper
         CREATE INDEX IF NOT EXISTS "IX_TelemetryEvent_Category_OccurredAt"
             ON "TelemetryEvent" ("Category", "OccurredAt");
 
+        DO $$
+        BEGIN
+            IF to_regclass('public."WaterIntake"') IS NOT NULL THEN
+                EXECUTE 'ALTER TABLE "WaterIntake" ENABLE ROW LEVEL SECURITY';
+                EXECUTE 'REVOKE ALL ON TABLE "WaterIntake" FROM anon, authenticated';
+                EXECUTE 'GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE "WaterIntake" TO authenticated';
+
+                IF to_regclass('public."WaterIntake_WaterIntakeId_seq"') IS NOT NULL THEN
+                    EXECUTE 'REVOKE ALL ON SEQUENCE "WaterIntake_WaterIntakeId_seq" FROM anon, authenticated';
+                    EXECUTE 'GRANT USAGE, SELECT ON SEQUENCE "WaterIntake_WaterIntakeId_seq" TO authenticated';
+                END IF;
+
+                EXECUTE 'DROP POLICY IF EXISTS "WaterIntake_authenticated_own_read" ON "WaterIntake"';
+                EXECUTE 'CREATE POLICY "WaterIntake_authenticated_own_read"
+                    ON "WaterIntake"
+                    FOR SELECT
+                    TO authenticated
+                    USING ((select auth.uid()) IS NOT NULL AND (select auth.uid()) = "UserId")';
+
+                EXECUTE 'DROP POLICY IF EXISTS "WaterIntake_authenticated_own_insert" ON "WaterIntake"';
+                EXECUTE 'CREATE POLICY "WaterIntake_authenticated_own_insert"
+                    ON "WaterIntake"
+                    FOR INSERT
+                    TO authenticated
+                    WITH CHECK ((select auth.uid()) IS NOT NULL AND (select auth.uid()) = "UserId")';
+
+                EXECUTE 'DROP POLICY IF EXISTS "WaterIntake_authenticated_own_update" ON "WaterIntake"';
+                EXECUTE 'CREATE POLICY "WaterIntake_authenticated_own_update"
+                    ON "WaterIntake"
+                    FOR UPDATE
+                    TO authenticated
+                    USING ((select auth.uid()) IS NOT NULL AND (select auth.uid()) = "UserId")
+                    WITH CHECK ((select auth.uid()) IS NOT NULL AND (select auth.uid()) = "UserId")';
+
+                EXECUTE 'DROP POLICY IF EXISTS "WaterIntake_authenticated_own_delete" ON "WaterIntake"';
+                EXECUTE 'CREATE POLICY "WaterIntake_authenticated_own_delete"
+                    ON "WaterIntake"
+                    FOR DELETE
+                    TO authenticated
+                    USING ((select auth.uid()) IS NOT NULL AND (select auth.uid()) = "UserId")';
+            END IF;
+
+            IF to_regclass('public."TelemetryEvent"') IS NOT NULL THEN
+                EXECUTE 'ALTER TABLE "TelemetryEvent" ENABLE ROW LEVEL SECURITY';
+                EXECUTE 'REVOKE ALL ON TABLE "TelemetryEvent" FROM anon, authenticated';
+                EXECUTE 'GRANT INSERT ON TABLE "TelemetryEvent" TO authenticated';
+
+                EXECUTE 'DROP POLICY IF EXISTS "TelemetryEvent_authenticated_own_insert" ON "TelemetryEvent"';
+                EXECUTE 'CREATE POLICY "TelemetryEvent_authenticated_own_insert"
+                    ON "TelemetryEvent"
+                    FOR INSERT
+                    TO authenticated
+                    WITH CHECK ((select auth.uid()) IS NOT NULL AND (select auth.uid()) = "UserId")';
+            END IF;
+
+            IF to_regclass('public."GeminiProviderState"') IS NOT NULL THEN
+                EXECUTE 'ALTER TABLE "GeminiProviderState" ENABLE ROW LEVEL SECURITY';
+                EXECUTE 'REVOKE ALL ON TABLE "GeminiProviderState" FROM anon, authenticated';
+            END IF;
+
+            IF to_regclass('public."__EFMigrationsHistory"') IS NOT NULL THEN
+                EXECUTE 'ALTER TABLE "__EFMigrationsHistory" ENABLE ROW LEVEL SECURITY';
+                EXECUTE 'REVOKE ALL ON TABLE "__EFMigrationsHistory" FROM anon, authenticated';
+            END IF;
+        END $$;
+
         NOTIFY pgrst, 'reload schema';
         """;
 

@@ -263,6 +263,46 @@ namespace EatFitAI.API.Tests.Unit.Services
         }
 
         [Fact]
+        public async Task MapDetectionsAsync_GenericChickenRequiresReview()
+        {
+            _context.FoodItems.Add(new FoodItem
+            {
+                FoodItemId = 203,
+                FoodName = "Thịt gà",
+                FoodNameUnsigned = "thit ga",
+                CaloriesPer100g = 165,
+                ProteinPer100g = 31,
+                CarbPer100g = 0,
+                FatPer100g = 3.6m,
+                IsActive = true,
+                IsDeleted = false,
+                CredibilityScore = 95,
+                VerificationStatus = "verified_reference",
+                NutrientCompletenessScore = 100
+            });
+            _context.AiLabelMaps.Add(new AiLabelMap
+            {
+                Label = "chicken",
+                FoodItemId = 203,
+                MinConfidence = 0.60m,
+                CreatedAt = DateTime.UtcNow
+            });
+            await _context.SaveChangesAsync();
+
+            var service = new AiFoodMapService(_context, _mediaUrlResolver.Object);
+
+            var mapped = await service.MapDetectionsAsync(new[]
+            {
+                new VisionDetectionDto { Label = "chicken", Confidence = 0.91f }
+            });
+
+            var item = Assert.Single(mapped);
+            Assert.True(item.IsMatched);
+            Assert.True(item.TrustSummary?.NeedsReview);
+            Assert.Equal(FoodTrustStatus.LowConfidence, item.TrustSummary?.Status);
+        }
+
+        [Fact]
         public async Task MapDetectionsAsync_AllowsSeededYoloRecoveryLabelBelowCatalogThreshold()
         {
             _context.FoodItems.Add(new FoodItem
