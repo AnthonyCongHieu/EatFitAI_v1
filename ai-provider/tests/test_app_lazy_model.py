@@ -2,6 +2,8 @@ import io
 import unittest
 from unittest.mock import patch
 
+import numpy as np
+
 try:
     import app as app_module
 except ModuleNotFoundError as exc:
@@ -64,6 +66,42 @@ class LazyYoloModelTests(unittest.TestCase):
             )
         finally:
             app_module.YOLO_ONNX_LOW_MEMORY = previous_low_memory
+
+    def test_detect_with_onnx_respects_static_model_input_size(self):
+        observed = {}
+
+        class FakeInput:
+            name = "images"
+            shape = [1, 3, 640, 640]
+
+        class FakeSession:
+            input_calls = 0
+
+            def get_inputs(self):
+                self.input_calls += 1
+                return [FakeInput()]
+
+            def run(self, output_names, feeds):
+                observed["blob_shape"] = feeds["images"].shape
+                return [np.zeros((1, 4 + len(app_module.YOLO_CLASS_NAMES), 0), dtype=np.float32)]
+
+        def fake_blob_from_image(image, scalefactor, size, swapRB):
+            observed["blob_size"] = size
+            return np.zeros((1, 3, size[1], size[0]), dtype=np.float32)
+
+        fake_session = FakeSession()
+
+        with (
+            patch.object(app_module, "_load_onnx_model", return_value=fake_session),
+            patch.object(app_module.cv2, "imread", return_value=np.zeros((50, 80, 3), dtype=np.uint8)),
+            patch.object(app_module.cv2.dnn, "blobFromImage", side_effect=fake_blob_from_image),
+        ):
+            detections = app_module._detect_with_onnx("food.jpg", 0.05, 320)
+
+        self.assertEqual(detections, [])
+        self.assertEqual(observed["blob_size"], (640, 640))
+        self.assertEqual(observed["blob_shape"], (1, 3, 640, 640))
+        self.assertEqual(fake_session.input_calls, 1)
 
     def test_detect_returns_503_when_onnx_model_is_missing(self):
         app_module.YOLO_ONNX_MODEL_FILE = "missing-test-model.onnx"

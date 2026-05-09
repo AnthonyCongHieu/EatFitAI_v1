@@ -367,19 +367,44 @@ def _letterbox_image(image: np.ndarray, size: int) -> tuple[np.ndarray, float, i
     return canvas, scale, pad_x, pad_y
 
 
+def _resolve_onnx_input(net: ort.InferenceSession, requested_image_size: int) -> tuple[str, int]:
+    input_meta = net.get_inputs()[0]
+    resolved_image_size = requested_image_size
+    shape = getattr(input_meta, "shape", None)
+
+    if isinstance(shape, (list, tuple)) and len(shape) >= 4:
+        height = shape[2]
+        width = shape[3]
+        if (
+            isinstance(height, int)
+            and isinstance(width, int)
+            and height > 0
+            and width > 0
+            and height == width
+        ):
+            resolved_image_size = height
+
+    return input_meta.name, resolved_image_size
+
+
 def _detect_with_onnx(path: str, confidence_threshold: float, image_size: int) -> List[Dict[str, Any]]:
     net = _load_onnx_model()
     if net is None:
         return []
+    input_name, effective_image_size = _resolve_onnx_input(net, image_size)
 
     image = cv2.imread(path)
     if image is None:
         raise ValueError("uploaded image could not be decoded")
 
-    input_image, scale, pad_x, pad_y = _letterbox_image(image, image_size)
-    blob = cv2.dnn.blobFromImage(input_image, scalefactor=1 / 255.0, size=(image_size, image_size), swapRB=True)
+    input_image, scale, pad_x, pad_y = _letterbox_image(image, effective_image_size)
+    blob = cv2.dnn.blobFromImage(
+        input_image,
+        scalefactor=1 / 255.0,
+        size=(effective_image_size, effective_image_size),
+        swapRB=True,
+    )
 
-    input_name = net.get_inputs()[0].name
     output = net.run(None, {input_name: blob})[0]
     predictions = np.squeeze(output)
     if predictions.ndim != 2:
