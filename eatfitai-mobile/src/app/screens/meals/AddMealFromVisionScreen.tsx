@@ -42,6 +42,7 @@ import {
   type VisionReviewItem,
 } from '../../../utils/visionReview';
 import { TEST_IDS } from '../../../testing/testIds';
+import { usePostFirstLogNotificationPrompt } from '../../../hooks/usePostFirstLogNotificationPrompt';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 type RouteProps = RouteProp<RootStackParamList, 'AddMealFromVision'>;
@@ -60,6 +61,7 @@ const AddMealFromVisionScreen = (): React.ReactElement => {
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<RouteProps>();
   const queryClient = useQueryClient();
+  const { promptIfFirstLog } = usePostFirstLogNotificationPrompt();
 
   const { imageUri, result } = route.params;
 
@@ -352,6 +354,8 @@ const AddMealFromVisionScreen = (): React.ReactElement => {
       });
 
       await invalidateDiaryQueries(queryClient);
+      // A1.3: Notification prompt after first diary log
+      promptIfFirstLog();
       navigation.navigate('MealDiary');
     } catch (error) {
       handleApiErrorWithCustomMessage(error, {

@@ -59,6 +59,7 @@ import { IngredientBasketSheet } from '../../../components/scan/IngredientBasket
 import { useIngredientBasketStore } from '../../../store/useIngredientBasketStore';
 import { getVisionFoodDisplayName } from '../../../utils/translate';
 import { TEST_IDS } from '../../../testing/testIds';
+import { usePostFirstLogNotificationPrompt } from '../../../hooks/usePostFirstLogNotificationPrompt';
 import {
   calculateVisionDefaultMacroTotals,
   clampVisionGrams,
@@ -134,6 +135,7 @@ const AIScanScreen: React.FC = () => {
   const [showImagePreview, setShowImagePreview] = useState(false);
   const [flashOn, setFlashOn] = useState(false);
   const { data: aiStatus, isLoading: isAiStatusLoading } = useAiStatus();
+  const { promptIfFirstLog } = usePostFirstLogNotificationPrompt();
 
   // Gram state for results drawer
   const [resultGrams, setResultGrams] = useState(100);
@@ -564,6 +566,8 @@ const AIScanScreen: React.FC = () => {
         },
       });
       await invalidateDiaryQueries(queryClient);
+      // A1.3: Notification prompt after first diary log
+      promptIfFirstLog();
       handleRetake();
     } catch (error) {
       trackEvent('ai_scan_save_failure', {

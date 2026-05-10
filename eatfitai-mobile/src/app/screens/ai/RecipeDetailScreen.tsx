@@ -26,6 +26,7 @@ import type { RootStackParamList } from '../../types';
 import type { RecipeDetail } from '../../../types/aiEnhanced';
 import type { MealTypeId } from '../../../types';
 import { AddRecipeToDiarySheet } from '../../../components/recipe/AddRecipeToDiarySheet';
+import { usePostFirstLogNotificationPrompt } from '../../../hooks/usePostFirstLogNotificationPrompt';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 type RouteProps = RouteProp<RootStackParamList, 'RecipeDetail'>;
@@ -68,6 +69,7 @@ const RecipeDetailScreen = (): React.ReactElement => {
   const navigation = useNavigation<NavigationProp>();
   const insets = useSafeAreaInsets();
   const queryClient = useQueryClient();
+  const { promptIfFirstLog } = usePostFirstLogNotificationPrompt();
 
   const [recipe, setRecipe] = useState<RecipeDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -158,6 +160,10 @@ const RecipeDetailScreen = (): React.ReactElement => {
       }
 
       await invalidateDiaryQueries(queryClient);
+      // A1.3: Notification prompt after first diary log (only for new entries)
+      if (!route.params.diaryEntryId) {
+        promptIfFirstLog();
+      }
 
       Toast.show({
         type: 'success',

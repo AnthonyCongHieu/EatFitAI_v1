@@ -33,6 +33,7 @@ import { diaryService } from '../../../services/diaryService';
 import { MEAL_TYPES, MEAL_TYPE_LABELS, type MealTypeId } from '../../../types';
 import { handleApiError } from '../../../utils/errorHandler';
 import { favoritesService } from '../../../services/favoritesService';
+import { usePostFirstLogNotificationPrompt } from '../../../hooks/usePostFirstLogNotificationPrompt';
 import { TEST_IDS } from '../../../testing/testIds';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
@@ -89,6 +90,7 @@ const FoodDetailScreen = (): React.ReactElement | null => {
   const route = useRoute<RouteProps>();
   const queryClient = useQueryClient();
   const insets = useSafeAreaInsets();
+  const { promptIfFirstLog } = usePostFirstLogNotificationPrompt();
 
   const selectedDate = route.params.selectedDate;
   const returnToDiaryOnSave = route.params.returnToDiaryOnSave ?? false;
@@ -236,6 +238,10 @@ const FoodDetailScreen = (): React.ReactElement | null => {
         },
       });
       await invalidateDiaryQueries(queryClient);
+      // A1.3: Hỏi notification permission sau bữa ăn đầu tiên (chỉ khi thêm mới, không phải cập nhật)
+      if (!route.params.diaryEntryId) {
+        promptIfFirstLog();
+      }
       if (returnToDiaryOnSave && selectedDate) {
         navigation.navigate('MealDiary', { selectedDate });
         return;
