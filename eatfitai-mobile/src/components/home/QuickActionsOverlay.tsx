@@ -1,6 +1,8 @@
 /**
  * QuickActionsOverlay – Full-screen blur overlay with 2×2 bento grid
  * Triggered by the floating AI robot FAB on the HomeScreen.
+ *
+ * A2.1: Hiển thị banner nhắc nhở bữa ăn còn thiếu phía trên lưới nút.
  */
 import React, { useCallback } from 'react';
 import {
@@ -22,6 +24,7 @@ import Animated, {
 import { BlurView } from 'expo-blur';
 import * as Haptics from 'expo-haptics';
 import { TEST_IDS } from '../../testing/testIds';
+import type { MealReminder } from '../../hooks/useMealReminders';
 
 const { width } = Dimensions.get('window');
 
@@ -38,6 +41,9 @@ const C = {
   onSurface: '#dee1f7',
   textMuted: '#94a3b8',
   outlineVariant: 'rgba(75,226,119,0.08)',
+  amber: '#f59e0b',
+  amberBg: 'rgba(245, 158, 11, 0.08)',
+  amberBorder: 'rgba(245, 158, 11, 0.2)',
 };
 
 interface QuickAction {
@@ -54,6 +60,8 @@ interface QuickActionsOverlayProps {
   onAddMeal: () => void;
   onRecipes: () => void;
   onWater: () => void;
+  /** A2.1: Danh sách nhắc nhở bữa ăn */
+  reminders?: MealReminder[];
 }
 
 const QuickActionsOverlay: React.FC<QuickActionsOverlayProps> = ({
@@ -63,6 +71,7 @@ const QuickActionsOverlay: React.FC<QuickActionsOverlayProps> = ({
   onAddMeal,
   onRecipes,
   onWater,
+  reminders = [],
 }) => {
   const actions: QuickAction[] = [
     {
@@ -95,7 +104,14 @@ const QuickActionsOverlay: React.FC<QuickActionsOverlayProps> = ({
     [onClose],
   );
 
+  const handleReminderPress = useCallback(() => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    onClose();
+    setTimeout(() => onAddMeal(), 200);
+  }, [onClose, onAddMeal]);
+
   const gridSize = (width - 48 - 16) / 2; // padding 24*2, gap 16
+  const hasReminders = reminders.length > 0;
 
   return (
     <Modal
@@ -150,15 +166,60 @@ const QuickActionsOverlay: React.FC<QuickActionsOverlayProps> = ({
           </Animated.Text>
         </Animated.View>
 
+        {/* ═══ A2.1: Reminder Banner (chỉ hiện khi có nhắc nhở) ═══ */}
+        {hasReminders && (
+          <Animated.View
+            entering={FadeInDown.delay(200).duration(400).springify()}
+            style={styles.reminderBanner}
+          >
+            <Pressable
+              style={({ pressed }) => [
+                styles.reminderContent,
+                pressed && styles.reminderPressed,
+              ]}
+              onPress={handleReminderPress}
+            >
+              <View style={styles.reminderIconRow}>
+                {reminders.map((r, i) => (
+                  <Animated.Text
+                    key={r.mealTypeId}
+                    entering={FadeIn.delay(300 + i * 100)}
+                    style={styles.reminderEmoji}
+                  >
+                    {r.emoji}
+                  </Animated.Text>
+                ))}
+              </View>
+
+              <View style={styles.reminderTextCol}>
+                <Animated.Text style={styles.reminderTitle}>
+                  {reminders.length === 1
+                    ? `Bạn chưa ghi ${reminders[0]!.label}`
+                    : `Còn ${reminders.length} bữa chưa ghi`}
+                </Animated.Text>
+                <Animated.Text style={styles.reminderSubtitle} numberOfLines={1}>
+                  {reminders.length === 1
+                    ? reminders[0]!.message
+                    : reminders.map((r) => r.label).join(', ')}
+                </Animated.Text>
+              </View>
+
+              <View style={styles.reminderArrow}>
+                <Ionicons name="chevron-forward" size={18} color={C.amber} />
+              </View>
+            </Pressable>
+          </Animated.View>
+        )}
+
         {/* 2×2 Bento Grid */}
         <Animated.View
-          entering={ZoomIn.delay(200).duration(400).springify()}
+          entering={ZoomIn.delay(hasReminders ? 300 : 200).duration(400).springify()}
           style={styles.grid}
         >
           {actions.map((action, index) => (
             <Animated.View
               key={action.label}
-              entering={FadeInDown.delay(250 + index * 80).duration(400)}
+              entering={FadeInDown.delay((hasReminders ? 350 : 250) + index * 80).duration(400)}
             >
               <Pressable
                 style={({ pressed }) => [
@@ -229,7 +290,7 @@ const styles = StyleSheet.create({
   /* Header */
   header: {
     alignItems: 'center',
-    marginBottom: 48,
+    marginBottom: 20,
   },
   title: {
     fontSize: 28,
@@ -243,6 +304,58 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     color: C.textMuted,
     letterSpacing: 0.1,
+  },
+
+  /* ── Reminder Banner ── */
+  reminderBanner: {
+    width: '100%',
+    marginBottom: 24,
+  },
+  reminderContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: C.amberBg,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: C.amberBorder,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    gap: 12,
+  },
+  reminderPressed: {
+    opacity: 0.7,
+    transform: [{ scale: 0.98 }],
+  },
+  reminderIconRow: {
+    flexDirection: 'row',
+    gap: 2,
+  },
+  reminderEmoji: {
+    fontSize: 22,
+  },
+  reminderTextCol: {
+    flex: 1,
+    gap: 2,
+  },
+  reminderTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: C.onSurface,
+    letterSpacing: -0.2,
+  },
+  reminderSubtitle: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: C.textMuted,
+    letterSpacing: 0.1,
+  },
+  reminderArrow: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: 'rgba(245, 158, 11, 0.12)',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 
   /* Grid */
