@@ -16,9 +16,7 @@ public sealed class AuthInfrastructureBootstrapper
         _logger = logger;
     }
 
-    public async Task EnsureSchemaAsync(CancellationToken cancellationToken = default)
-    {
-        const string sql = """
+    public static string SchemaSql => """
             CREATE TABLE IF NOT EXISTS "PasswordResetCode" (
                 "UserId" uuid PRIMARY KEY,
                 "CodeHash" varchar(88) NOT NULL,
@@ -33,11 +31,18 @@ public sealed class AuthInfrastructureBootstrapper
 
             CREATE INDEX IF NOT EXISTS "IX_PasswordResetCode_ConsumedAt"
             ON "PasswordResetCode" ("ConsumedAt");
+
+            ALTER TABLE "PasswordResetCode" ENABLE ROW LEVEL SECURITY;
+            REVOKE ALL ON TABLE "PasswordResetCode" FROM anon, authenticated;
+
+            NOTIFY pgrst, 'reload schema';
             """;
 
+    public async Task EnsureSchemaAsync(CancellationToken cancellationToken = default)
+    {
         try
         {
-            await _context.Database.ExecuteSqlRawAsync(sql, cancellationToken);
+            await _context.Database.ExecuteSqlRawAsync(SchemaSql, cancellationToken);
         }
         catch (Exception ex)
         {

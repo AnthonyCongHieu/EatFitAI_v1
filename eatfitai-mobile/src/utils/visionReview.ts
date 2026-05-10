@@ -52,6 +52,38 @@ export const buildVisionReviewItems = (
     grams: getDefaultVisionGrams(item),
   }));
 
+const getVisionResultIdentity = (item: MappedFoodItem): string => {
+  const userFoodItemId = Number(item.userFoodItemId);
+  if (Number.isFinite(userFoodItemId) && userFoodItemId > 0) {
+    return `user:${userFoodItemId}`;
+  }
+
+  const foodItemId = Number(item.foodItemId);
+  if (Number.isFinite(foodItemId) && foodItemId > 0) {
+    return `catalog:${foodItemId}`;
+  }
+
+  return `label:${String(item.label ?? '').trim().toLowerCase()}`;
+};
+
+export const getDistinctVisionResultItems = (
+  items: MappedFoodItem[],
+): MappedFoodItem[] => {
+  const bestByIdentity = new Map<string, MappedFoodItem>();
+
+  for (const item of items) {
+    const identity = getVisionResultIdentity(item);
+    const existing = bestByIdentity.get(identity);
+    if (!existing || (item.confidence ?? 0) > (existing.confidence ?? 0)) {
+      bestByIdentity.set(identity, item);
+    }
+  }
+
+  return [...bestByIdentity.values()].sort(
+    (a, b) => (b.confidence ?? 0) - (a.confidence ?? 0),
+  );
+};
+
 export const buildCompactVisionMealBasket = (
   items: MappedFoodItem[],
   maxMainItems = 3,
@@ -161,6 +193,40 @@ export const calculateVisionReviewCalories = (
       ((reviewItem.item.caloriesPer100g ?? 0) * reviewItem.grams) / 100
     );
   }, 0);
+
+export type VisionMacroTotals = {
+  calories: number;
+  protein: number;
+  carb: number;
+  fat: number;
+};
+
+const hasVisionMacroEstimate = (item: MappedFoodItem): boolean =>
+  hasVisionFoodSource(item) &&
+  (item.caloriesPer100g ?? 0) > 0 &&
+  (item.proteinPer100g ?? 0) >= 0 &&
+  (item.carbPer100g ?? 0) >= 0 &&
+  (item.fatPer100g ?? 0) >= 0;
+
+export const calculateVisionDefaultMacroTotals = (
+  items: MappedFoodItem[],
+): VisionMacroTotals =>
+  items.reduce<VisionMacroTotals>(
+    (total, item) => {
+      if (!hasVisionMacroEstimate(item)) {
+        return total;
+      }
+
+      const ratio = getDefaultVisionGrams(item) / 100;
+      return {
+        calories: total.calories + (item.caloriesPer100g ?? 0) * ratio,
+        protein: total.protein + (item.proteinPer100g ?? 0) * ratio,
+        carb: total.carb + (item.carbPer100g ?? 0) * ratio,
+        fat: total.fat + (item.fatPer100g ?? 0) * ratio,
+      };
+    },
+    { calories: 0, protein: 0, carb: 0, fat: 0 },
+  );
 
 export const getVisionReviewSaveBlocker = (
   items: VisionReviewItem[],

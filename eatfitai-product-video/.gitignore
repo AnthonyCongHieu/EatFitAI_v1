@@ -1,0 +1,8 @@
+node_modules
+dist
+.DS_Store
+.env
+
+# Keep only the final MP4 output in Git; preview stills are generated locally.
+out/*
+!out/eatfitai-product-intro.mp4

@@ -242,16 +242,12 @@ namespace EatFitAI.API.Data
                 }
                 else
                 {
-                    var existingFood = existing.FoodItemId.HasValue
-                        ? foodItems.FirstOrDefault(food => food.FoodItemId == existing.FoodItemId.Value)
-                        : null;
-                    if ((!existing.FoodItemId.HasValue || IsLegacySeedMap(existingFood))
-                        && foodItemId.HasValue)
+                    if (foodItemId.HasValue && existing.FoodItemId != foodItemId)
                     {
                         existing.FoodItemId = foodItemId;
                     }
 
-                    existing.MinConfidence = Math.Min(existing.MinConfidence, minConfidence);
+                    existing.MinConfidence = Math.Max(existing.MinConfidence, minConfidence);
                 }
             }
 
@@ -263,11 +259,6 @@ namespace EatFitAI.API.Data
             if (!foodItemId.HasValue)
             {
                 return 0.60m;
-            }
-
-            if (label is "beef" or "chicken")
-            {
-                return 0.05m;
             }
 
             var catalogEntry = AiVisionLabelCatalog.Find(label);
@@ -309,7 +300,7 @@ namespace EatFitAI.API.Data
                 .ToList();
         }
 
-        private static int ScoreCatalogFood(FoodItem food, IReadOnlyCollection<string> aliases)
+        private static int ScoreCatalogFood(FoodItem food, IReadOnlyList<string> aliases)
         {
             var names = new[]
             {
@@ -322,26 +313,31 @@ namespace EatFitAI.API.Data
                 .Distinct(StringComparer.Ordinal)
                 .ToList();
 
-            foreach (var alias in aliases)
+            var bestScore = 0;
+            for (var index = 0; index < aliases.Count; index++)
             {
+                var alias = aliases[index];
+                var aliasPriority = aliases.Count - index;
                 if (names.Any(name => name.Equals(alias, StringComparison.Ordinal)))
                 {
-                    return 1000;
+                    bestScore = Math.Max(bestScore, 3000 + aliasPriority);
+                    continue;
                 }
 
                 if (names.Any(name => name.StartsWith(alias + " ", StringComparison.Ordinal)))
                 {
-                    return 900;
+                    bestScore = Math.Max(bestScore, 2000 + aliasPriority);
+                    continue;
                 }
 
                 if (names.Any(name => name.Contains(" " + alias + " ", StringComparison.Ordinal)
                     || name.EndsWith(" " + alias, StringComparison.Ordinal)))
                 {
-                    return 800;
+                    bestScore = Math.Max(bestScore, 1000 + aliasPriority);
                 }
             }
 
-            return 0;
+            return bestScore;
         }
 
         private static string NormalizeCatalogKey(string? value)
@@ -395,15 +391,7 @@ namespace EatFitAI.API.Data
                     continue;
                 }
 
-                var aliases = BuildCatalogAliases(seed.Label)
-                    .Append(AiVisionLabelCatalog.NormalizeKey(seed.FoodName))
-                    .Where(alias => !string.IsNullOrWhiteSpace(alias))
-                    .Distinct(StringComparer.Ordinal)
-                    .ToList();
-                var food = foodItems.FirstOrDefault(item =>
-                    aliases.Contains(NormalizeCatalogKey(item.FoodName)) ||
-                    aliases.Contains(NormalizeCatalogKey(item.FoodNameUnsigned)) ||
-                    aliases.Contains(NormalizeCatalogKey(item.FoodNameEn)));
+                var food = FindSeedCatalogFood(seed, entry, foodItems);
 
                 if (food == null)
                 {
@@ -434,6 +422,33 @@ namespace EatFitAI.API.Data
             }
 
             await context.SaveChangesAsync();
+        }
+
+        private static FoodItem? FindSeedCatalogFood(
+            AiVisionLabelCatalog.FoodSeed seed,
+            AiVisionLabelCatalog.Entry entry,
+            IReadOnlyCollection<FoodItem> foodItems)
+        {
+            var seedKeys = new[]
+            {
+                seed.FoodName,
+                seed.FoodNameEn,
+                entry.DisplayNameVi
+            }
+                .Select(NormalizeCatalogKey)
+                .Where(key => !string.IsNullOrWhiteSpace(key))
+                .Distinct(StringComparer.Ordinal)
+                .ToHashSet(StringComparer.Ordinal);
+
+            if (seedKeys.Count == 0)
+            {
+                return null;
+            }
+
+            return foodItems.FirstOrDefault(item =>
+                seedKeys.Contains(NormalizeCatalogKey(item.FoodName)) ||
+                seedKeys.Contains(NormalizeCatalogKey(item.FoodNameUnsigned)) ||
+                seedKeys.Contains(NormalizeCatalogKey(item.FoodNameEn)));
         }
 
         private static async Task SeedAiVisionCatalogServingsAsync(EatFitAIDbContext context, string contentRootPath)
@@ -483,30 +498,6 @@ namespace EatFitAI.API.Data
 
             await context.SaveChangesAsync();
         }
-
-        private static bool IsLegacySeedMap(FoodItem? food)
-        {
-            if (food == null)
-            {
-                return false;
-            }
-
-            return LegacySeedFoodNames.Contains(food.FoodName);
-        }
-
-        private static readonly HashSet<string> LegacySeedFoodNames = new(StringComparer.OrdinalIgnoreCase)
-        {
-            "Chicken Breast",
-            "Brown Rice",
-            "Broccoli",
-            "Banana",
-            "Greek Yogurt",
-            "Almonds",
-            "Salmon",
-            "Sweet Potato",
-            "Spinach",
-            "Egg",
-        };
 
         private static async Task SeedFoodServingsAsync(EatFitAIDbContext context)
         {

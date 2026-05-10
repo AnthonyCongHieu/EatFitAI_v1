@@ -1,6 +1,8 @@
 import type { MappedFoodItem } from '../types/ai';
 import {
+  calculateVisionDefaultMacroTotals,
   buildVisionReviewItems,
+  getDistinctVisionResultItems,
   getVisionQuickPortions,
   getVisionReviewSaveBlocker,
   hasUsableVisionNutrition,
@@ -89,12 +91,59 @@ describe('visionReview', () => {
     expect(items[1]!.grams).toBe(100);
   });
 
+  it('keeps distinct vision result items sorted by confidence', () => {
+    const items = getDistinctVisionResultItems([
+      makeItem({ label: 'pho', foodItemId: 1, confidence: 0.72 }),
+      makeItem({ label: 'rice', foodItemId: 2, confidence: 0.91 }),
+      makeItem({ label: 'pho', foodItemId: 1, confidence: 0.84 }),
+      makeItem({ label: 'egg', foodItemId: null, foodName: null, confidence: 0.67, isMatched: false }),
+    ]);
+
+    expect(items.map((item) => item.label)).toEqual(['rice', 'pho', 'egg']);
+    expect(items.find((item) => item.label === 'pho')?.confidence).toBe(0.84);
+  });
+
   it('builds quick portions around the item default grams', () => {
     expect(getVisionQuickPortions(makeItem({ defaultGrams: 150 }))).toEqual([
       { label: 'Ít', grams: 75 },
       { label: 'Vừa', grams: 150 },
       { label: 'Nhiều', grams: 225 },
     ]);
+  });
+
+  it('calculates default macro totals for a multi-item meal scan', () => {
+    const totals = calculateVisionDefaultMacroTotals([
+      makeItem({
+        label: 'rice',
+        foodItemId: 1,
+        caloriesPer100g: 130,
+        proteinPer100g: 2.7,
+        carbPer100g: 28,
+        fatPer100g: 0.3,
+        defaultGrams: 150,
+      }),
+      makeItem({
+        label: 'chicken',
+        foodItemId: 2,
+        caloriesPer100g: 165,
+        proteinPer100g: 31,
+        carbPer100g: 0,
+        fatPer100g: 3.6,
+        defaultGrams: 100,
+      }),
+      makeItem({
+        label: 'unknown',
+        foodItemId: null,
+        caloriesPer100g: 500,
+        defaultGrams: 50,
+        isMatched: false,
+      }),
+    ]);
+
+    expect(Math.round(totals.calories)).toBe(360);
+    expect(Math.round(totals.protein)).toBe(35);
+    expect(Math.round(totals.carb)).toBe(42);
+    expect(Math.round(totals.fat)).toBe(4);
   });
 
   it('forces review for ambiguous or incomplete vision results', () => {
