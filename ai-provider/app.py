@@ -9,11 +9,14 @@ from __future__ import annotations
 
 from typing import Any, Dict, List
 import ast
+import base64
 import ipaddress
+import json
 import logging
 import time
 import threading
 import socket
+import tempfile
 from urllib.parse import urlparse
 
 import cv2
@@ -78,7 +81,33 @@ YOLO_RECOVERY_AUGMENT = os.getenv("YOLO_RECOVERY_AUGMENT", "false").strip().lowe
 YOLO_RECOVERY_LABEL_MIN_CONFIDENCE: Dict[str, float] = {
     "beef": 0.05,
     "chicken": 0.05,
+    "egg": 0.06,
+    "fried_egg": 0.08,
+    "water_spinach": 0.08,
+    "spinach": 0.08,
 }
+YOLO_SPARSE_RECOVERY_ENABLED = os.getenv("YOLO_SPARSE_RECOVERY_ENABLED", "true").strip().lower() not in {"0", "false", "no"}
+YOLO_SPARSE_RECOVERY_MAX_PRIMARY_DETECTIONS = int(os.getenv("YOLO_SPARSE_RECOVERY_MAX_PRIMARY_DETECTIONS", "1"))
+YOLO_CROP_RECOVERY_ENABLED = os.getenv("YOLO_CROP_RECOVERY_ENABLED", "true").strip().lower() not in {"0", "false", "no"}
+YOLO_CROP_RECOVERY_MAX_PRIMARY_DETECTIONS = int(os.getenv("YOLO_CROP_RECOVERY_MAX_PRIMARY_DETECTIONS", "2"))
+YOLO_SPARSE_RECOVERY_ANCHOR_LABELS = {
+    "rice",
+    "fried_rice",
+    "com_tam",
+    "chicken_rice",
+    "xoi",
+    "bun",
+    "noodles",
+    "pho",
+    "hu_tieu",
+    "mi_quang",
+    "cao_lau",
+}
+YOLO_GEMINI_VISION_FALLBACK_ENABLED = os.getenv("YOLO_GEMINI_VISION_FALLBACK_ENABLED", "true").strip().lower() not in {"0", "false", "no"}
+YOLO_GEMINI_VISION_MAX_PRIMARY_DETECTIONS = int(os.getenv("YOLO_GEMINI_VISION_MAX_PRIMARY_DETECTIONS", "3"))
+YOLO_GEMINI_VISION_CONFIDENCE = min(0.74, max(0.40, float(os.getenv("YOLO_GEMINI_VISION_CONFIDENCE", "0.62"))))
+YOLO_GEMINI_VISION_MIN_CONFIDENCE = min(1.0, max(0.0, float(os.getenv("YOLO_GEMINI_VISION_MIN_CONFIDENCE", "0.50"))))
+YOLO_GEMINI_VISION_MAX_DETECTIONS = int(os.getenv("YOLO_GEMINI_VISION_MAX_DETECTIONS", "6"))
 YOLO_ONNX_ENABLED = os.getenv("YOLO_ONNX_ENABLED", "true").strip().lower() not in {"0", "false", "no"}
 YOLO_MODEL_FILE = os.getenv("YOLO_MODEL_FILE", "best.pt")
 YOLO_ONNX_MODEL_FILE = os.getenv("YOLO_ONNX_MODEL_FILE", "best.onnx")
@@ -603,6 +632,9 @@ def healthz() -> Dict[str, Any]:
         "supabase_model_download_enabled": False,
         "generic_yolo_fallback_allowed": allow_generic_yolo_fallback(),
         "yolo_confidence_threshold": YOLO_CONFIDENCE_THRESHOLD,
+        "yolo_sparse_recovery_enabled": YOLO_SPARSE_RECOVERY_ENABLED,
+        "yolo_crop_recovery_enabled": YOLO_CROP_RECOVERY_ENABLED,
+        "yolo_gemini_vision_fallback_enabled": YOLO_GEMINI_VISION_FALLBACK_ENABLED,
         "yolo_image_size": YOLO_IMAGE_SIZE,
         "yolo_onnx_image_size": YOLO_ONNX_IMAGE_SIZE,
         "yolo_onnx_low_memory": YOLO_ONNX_LOW_MEMORY,
@@ -721,6 +753,287 @@ def _filter_recovery_detections(detections: List[Dict[str, Any]]) -> List[Dict[s
 
     return sorted(best_by_label.values(), key=lambda item: float(item["confidence"]), reverse=True)
 
+
+def _normalized_detection_label(detection: Dict[str, Any]) -> str:
+    return str(detection.get("label", "")).strip().lower()
+
+
+def _coerce_detection(detection: Dict[str, Any]) -> Dict[str, Any] | None:
+    label = _normalized_detection_label(detection)
+    if not label:
+        return None
+
+    try:
+        confidence = float(detection.get("confidence", 0.0))
+    except (TypeError, ValueError):
+        return None
+
+    coerced: Dict[str, Any] = {
+        "label": label,
+        "confidence": max(0.0, min(1.0, confidence)),
+    }
+    bbox = detection.get("bbox")
+    if isinstance(bbox, dict):
+        coerced["bbox"] = bbox
+    return coerced
+
+
+def _merge_detections(
+    primary: List[Dict[str, Any]],
+    candidates: List[Dict[str, Any]],
+) -> List[Dict[str, Any]]:
+    best_by_label: Dict[str, Dict[str, Any]] = {}
+
+    for detection in [*primary, *candidates]:
+        coerced = _coerce_detection(detection)
+        if coerced is None:
+            continue
+
+        label = str(coerced["label"])
+        existing = best_by_label.get(label)
+        if existing is None or float(coerced["confidence"]) > float(existing["confidence"]):
+            best_by_label[label] = coerced
+
+    return sorted(best_by_label.values(), key=lambda item: float(item["confidence"]), reverse=True)
+
+
+def _has_sparse_recovery_anchor(detections: List[Dict[str, Any]]) -> bool:
+    labels = {_normalized_detection_label(detection) for detection in detections}
+    return bool(labels.intersection(YOLO_SPARSE_RECOVERY_ANCHOR_LABELS))
+
+
+def _should_run_yolo_recovery(detections: List[Dict[str, Any]]) -> bool:
+    if not YOLO_RECOVERY_ENABLED:
+        return False
+    if not detections:
+        return True
+    if not YOLO_SPARSE_RECOVERY_ENABLED:
+        return False
+    if len(detections) > YOLO_SPARSE_RECOVERY_MAX_PRIMARY_DETECTIONS:
+        return False
+    return _has_sparse_recovery_anchor(detections)
+
+
+def _should_run_crop_recovery(detections: List[Dict[str, Any]]) -> bool:
+    if not YOLO_CROP_RECOVERY_ENABLED:
+        return False
+    if not detections:
+        return False
+    if len(detections) > YOLO_CROP_RECOVERY_MAX_PRIMARY_DETECTIONS:
+        return False
+    return _has_sparse_recovery_anchor(detections)
+
+
+def _should_run_gemini_vision_fallback(detections: List[Dict[str, Any]]) -> bool:
+    if not YOLO_GEMINI_VISION_FALLBACK_ENABLED:
+        return False
+    if not globals().get("NUTRITION_LLM_AVAILABLE", False):
+        return False
+    if not detections:
+        return True
+    if len(detections) > YOLO_GEMINI_VISION_MAX_PRIMARY_DETECTIONS:
+        return False
+    return _has_sparse_recovery_anchor(detections)
+
+
+def _image_mime_type_for_path(path: str) -> str:
+    ext = os.path.splitext(path)[1].lower()
+    if ext in {".jpg", ".jpeg"}:
+        return "image/jpeg"
+    if ext == ".png":
+        return "image/png"
+    if ext == ".webp":
+        return "image/webp"
+    if ext == ".bmp":
+        return "image/bmp"
+    return "image/jpeg"
+
+
+def _recovery_crop_boxes(width: int, height: int) -> List[tuple[str, int, int, int, int]]:
+    raw_boxes = [
+        ("left", 0, int(height * 0.18), int(width * 0.45), int(height * 0.72)),
+        ("center", int(width * 0.25), int(height * 0.18), int(width * 0.85), int(height * 0.62)),
+        ("top_right", int(width * 0.45), 0, width, int(height * 0.38)),
+    ]
+
+    boxes: List[tuple[str, int, int, int, int]] = []
+    for name, x1, y1, x2, y2 in raw_boxes:
+        x1 = max(0, min(width - 1, x1))
+        y1 = max(0, min(height - 1, y1))
+        x2 = max(x1 + 1, min(width, x2))
+        y2 = max(y1 + 1, min(height, y2))
+        if (x2 - x1) < 96 or (y2 - y1) < 96:
+            continue
+        boxes.append((name, x1, y1, x2, y2))
+    return boxes
+
+
+def _remap_crop_detection(
+    detection: Dict[str, Any],
+    offset_x: int,
+    offset_y: int,
+    image_width: int,
+    image_height: int,
+) -> Dict[str, Any]:
+    remapped = dict(detection)
+    bbox = detection.get("bbox")
+    if not isinstance(bbox, dict):
+        return remapped
+
+    try:
+        x = int(round(float(bbox.get("x", 0)))) + offset_x
+        y = int(round(float(bbox.get("y", 0)))) + offset_y
+        width = int(round(float(bbox.get("width", 1))))
+        height = int(round(float(bbox.get("height", 1))))
+    except (TypeError, ValueError):
+        return remapped
+
+    x = max(0, min(image_width - 1, x))
+    y = max(0, min(image_height - 1, y))
+    remapped["bbox"] = {
+        "x": x,
+        "y": y,
+        "width": max(1, min(width, image_width - x)),
+        "height": max(1, min(height, image_height - y)),
+    }
+    return remapped
+
+
+def _detect_with_onnx_crops(path: str, confidence_threshold: float, image_size: int) -> List[Dict[str, Any]]:
+    image = cv2.imread(path)
+    if image is None:
+        return []
+
+    image_height, image_width = image.shape[:2]
+    detections: List[Dict[str, Any]] = []
+    with tempfile.TemporaryDirectory() as tmpdir:
+        for name, x1, y1, x2, y2 in _recovery_crop_boxes(image_width, image_height):
+            crop = image[y1:y2, x1:x2]
+            crop_path = os.path.join(tmpdir, f"{name}.jpg")
+            if not cv2.imwrite(crop_path, crop):
+                continue
+
+            for detection in _detect_with_onnx(crop_path, confidence_threshold, image_size):
+                detections.append(
+                    _remap_crop_detection(detection, x1, y1, image_width, image_height)
+                )
+
+    return _filter_recovery_detections(detections)
+
+
+def _strip_json_response_fence(text: str) -> str:
+    stripped = (text or "").strip()
+    if stripped.startswith("```"):
+        lines = stripped.splitlines()
+        if lines and lines[0].strip().startswith("```"):
+            lines = lines[1:]
+        if lines and lines[-1].strip() == "```":
+            lines = lines[:-1]
+        stripped = "\n".join(lines).strip()
+
+    start = stripped.find("{")
+    end = stripped.rfind("}")
+    if start >= 0 and end > start:
+        return stripped[start : end + 1]
+    return stripped
+
+
+GEMINI_VISION_LABEL_ALIASES = {
+    "boiled_egg": "egg",
+    "white_rice": "rice",
+    "cooked_rice": "rice",
+    "chicken_leg": "chicken",
+    "chicken_drumstick": "chicken",
+    "fried_chicken": "chicken",
+    "grilled_chicken": "chicken",
+    "morning_glory": "water_spinach",
+    "rau_muong": "water_spinach",
+}
+
+
+def _parse_gemini_vision_detections(text: str) -> List[Dict[str, Any]]:
+    try:
+        data = json.loads(_strip_json_response_fence(text))
+    except (TypeError, ValueError, json.JSONDecodeError) as exc:
+        logger.warning(f"Gemini vision response was not valid JSON: {exc}")
+        return []
+
+    raw_detections: Any
+    if isinstance(data, dict):
+        raw_detections = data.get("detections", [])
+    else:
+        raw_detections = data
+
+    if not isinstance(raw_detections, list):
+        return []
+
+    allowed_labels = set(YOLO_CLASS_NAMES)
+    best_by_label: Dict[str, Dict[str, Any]] = {}
+    for item in raw_detections:
+        if not isinstance(item, dict):
+            continue
+
+        label = str(item.get("label", "")).strip().lower()
+        label = GEMINI_VISION_LABEL_ALIASES.get(label, label)
+        if label not in allowed_labels:
+            continue
+
+        try:
+            confidence = float(item.get("confidence", YOLO_GEMINI_VISION_CONFIDENCE))
+        except (TypeError, ValueError):
+            confidence = YOLO_GEMINI_VISION_CONFIDENCE
+        if confidence > 1.0 and confidence <= 100.0:
+            confidence = confidence / 100.0
+        confidence = max(0.0, min(1.0, confidence))
+        if confidence < YOLO_GEMINI_VISION_MIN_CONFIDENCE:
+            continue
+
+        review_confidence = min(confidence, YOLO_GEMINI_VISION_CONFIDENCE)
+        existing = best_by_label.get(label)
+        if existing is None or review_confidence > float(existing["confidence"]):
+            best_by_label[label] = {"label": label, "confidence": review_confidence}
+
+    return sorted(best_by_label.values(), key=lambda item: float(item["confidence"]), reverse=True)[
+        :YOLO_GEMINI_VISION_MAX_DETECTIONS
+    ]
+
+
+def _build_gemini_vision_prompt() -> str:
+    labels = ", ".join(YOLO_CLASS_NAMES)
+    return (
+        "You are a conservative food detector for Vietnamese meal logging. "
+        "Identify only clearly visible edible food components in the image. "
+        "Use only labels from this allowed list: "
+        f"{labels}. "
+        "Prefer separate component labels when foods are visibly separated on a plate "
+        "(for example rice, chicken, egg, water_spinach) instead of a combined dish label. "
+        "Ignore bowls, plates, spoons, sauce cups, table surfaces, and drinks. "
+        "Return JSON only with this shape: "
+        '{"detections":[{"label":"rice","confidence":0.0}]}. '
+        "Return at most 6 detections and omit any uncertain food."
+    )
+
+
+def _query_gemini_vision_detections(path: str) -> List[Dict[str, Any]]:
+    try:
+        from shared_gemini_pool import get_shared_pool
+
+        with open(path, "rb") as image_file:
+            image_base64 = base64.b64encode(image_file.read()).decode("ascii")
+
+        response_text = get_shared_pool().generate_with_audio(
+            _build_gemini_vision_prompt(),
+            audio_base64=image_base64,
+            audio_mime_type=_image_mime_type_for_path(path),
+            temperature=0.0,
+            max_output_tokens=400,
+        )
+        return _parse_gemini_vision_detections(response_text)
+    except Exception as exc:
+        logger.warning(f"Gemini vision fallback skipped: {exc}")
+        return []
+
+
 @app.post("/detect")
 @require_internal_token
 def detect() -> Response | tuple[Dict[str, str], int]:
@@ -823,12 +1136,44 @@ def detect() -> Response | tuple[Dict[str, str], int]:
             }, 503
 
         out = _detect_with_onnx(path, YOLO_CONFIDENCE_THRESHOLD, YOLO_ONNX_IMAGE_SIZE)
-        if not out and YOLO_RECOVERY_ENABLED:
-            out = _filter_recovery_detections(
+        if _should_run_yolo_recovery(out):
+            recovery_out = _filter_recovery_detections(
                 _detect_with_onnx(path, YOLO_RECOVERY_CONFIDENCE_THRESHOLD, YOLO_RECOVERY_IMAGE_SIZE)
             )
-            if out:
-                logger.info(f"YOLO ONNX recovery pass detected {len(out)} objects in {name}")
+            merged_out = _merge_detections(out, recovery_out)
+            if len(merged_out) > len(out):
+                logger.info(
+                    "YOLO ONNX recovery pass merged %s extra objects in %s",
+                    len(merged_out) - len(out),
+                    name,
+                )
+            out = merged_out
+
+        if _should_run_crop_recovery(out):
+            crop_out = _detect_with_onnx_crops(
+                path,
+                YOLO_RECOVERY_CONFIDENCE_THRESHOLD,
+                YOLO_RECOVERY_IMAGE_SIZE,
+            )
+            merged_out = _merge_detections(out, crop_out)
+            if len(merged_out) > len(out):
+                logger.info(
+                    "YOLO ONNX crop recovery merged %s extra objects in %s",
+                    len(merged_out) - len(out),
+                    name,
+                )
+            out = merged_out
+
+        if _should_run_gemini_vision_fallback(out):
+            gemini_out = _query_gemini_vision_detections(path)
+            merged_out = _merge_detections(out, gemini_out)
+            if len(merged_out) > len(out):
+                logger.info(
+                    "Gemini vision fallback merged %s extra objects in %s",
+                    len(merged_out) - len(out),
+                    name,
+                )
+            out = merged_out
         
         logger.info(f"Detected {len(out)} objects in {name}")
         return jsonify({"detections": out})

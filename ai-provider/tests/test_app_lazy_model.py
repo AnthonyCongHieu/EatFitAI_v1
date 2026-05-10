@@ -183,6 +183,7 @@ class LazyYoloModelTests(unittest.TestCase):
             patch.object(app_module, "_is_internal_request_authorized", return_value=True),
             patch.object(app_module.os.path, "exists", return_value=True),
             patch.object(app_module, "_detect_with_onnx", side_effect=fake_detect),
+            patch.object(app_module, "NUTRITION_LLM_AVAILABLE", False, create=True),
         ):
             response = self.client.post(
                 "/detect",
@@ -214,6 +215,7 @@ class LazyYoloModelTests(unittest.TestCase):
             patch.object(app_module, "_is_internal_request_authorized", return_value=True),
             patch.object(app_module.os.path, "exists", return_value=True),
             patch.object(app_module, "_detect_with_onnx", side_effect=fake_detect),
+            patch.object(app_module, "NUTRITION_LLM_AVAILABLE", False, create=True),
         ):
             response = self.client.post(
                 "/detect",
@@ -225,6 +227,138 @@ class LazyYoloModelTests(unittest.TestCase):
         payload = response.get_json()
         self.assertEqual(payload["detections"], [{"label": "banana", "confidence": 0.82}])
         self.assertEqual(len(calls), 1)
+
+    def test_detect_merges_sparse_recovery_when_primary_has_only_staple(self):
+        calls = []
+
+        def fake_detect(path, confidence_threshold, image_size):
+            calls.append(
+                {
+                    "confidence_threshold": confidence_threshold,
+                    "image_size": image_size,
+                }
+            )
+            if len(calls) == 1:
+                return [{"label": "rice", "confidence": 0.85}]
+            return [
+                {"label": "rice", "confidence": 0.30},
+                {"label": "egg", "confidence": 0.11},
+                {"label": "chicken", "confidence": 0.09},
+                {"label": "cucumber", "confidence": 0.04},
+            ]
+
+        with (
+            patch.object(app_module, "_is_internal_request_authorized", return_value=True),
+            patch.object(app_module.os.path, "exists", return_value=True),
+            patch.object(app_module, "_detect_with_onnx", side_effect=fake_detect),
+            patch.object(app_module, "NUTRITION_LLM_AVAILABLE", False, create=True),
+        ):
+            response = self.client.post(
+                "/detect",
+                data={"file": (io.BytesIO(b"image-bytes"), "rice-meal.jpg")},
+                content_type="multipart/form-data",
+            )
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.get_json()
+        self.assertEqual(
+            payload["detections"],
+            [
+                {"label": "rice", "confidence": 0.85},
+                {"label": "egg", "confidence": 0.11},
+                {"label": "chicken", "confidence": 0.09},
+            ],
+        )
+        self.assertEqual(len(calls), 2)
+        self.assertEqual(calls[1]["confidence_threshold"], app_module.YOLO_RECOVERY_CONFIDENCE_THRESHOLD)
+        self.assertEqual(calls[1]["image_size"], app_module.YOLO_RECOVERY_IMAGE_SIZE)
+
+    def test_detect_uses_gemini_vision_fallback_when_yolo_remains_sparse(self):
+        calls = []
+
+        def fake_detect(path, confidence_threshold, image_size):
+            calls.append(
+                {
+                    "confidence_threshold": confidence_threshold,
+                    "image_size": image_size,
+                }
+            )
+            return [{"label": "rice", "confidence": 0.85}]
+
+        with (
+            patch.object(app_module, "_is_internal_request_authorized", return_value=True),
+            patch.object(app_module.os.path, "exists", return_value=True),
+            patch.object(app_module, "_detect_with_onnx", side_effect=fake_detect),
+            patch.object(app_module, "NUTRITION_LLM_AVAILABLE", True, create=True),
+            patch.object(app_module, "YOLO_GEMINI_VISION_FALLBACK_ENABLED", True, create=True),
+            patch.object(
+                app_module,
+                "_query_gemini_vision_detections",
+                return_value=[
+                    {"label": "chicken", "confidence": 0.62},
+                    {"label": "egg", "confidence": 0.62},
+                    {"label": "water_spinach", "confidence": 0.62},
+                ],
+                create=True,
+            ) as gemini_detect,
+        ):
+            response = self.client.post(
+                "/detect",
+                data={"file": (io.BytesIO(b"image-bytes"), "rice-meal.jpg")},
+                content_type="multipart/form-data",
+            )
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.get_json()
+        self.assertEqual(
+            [item["label"] for item in payload["detections"]],
+            ["rice", "chicken", "egg", "water_spinach"],
+        )
+        self.assertEqual(len(calls), 2)
+        gemini_detect.assert_called_once()
+
+    def test_detect_merges_crop_recovery_when_full_recovery_still_sparse(self):
+        calls = []
+
+        def fake_detect(path, confidence_threshold, image_size):
+            calls.append(
+                {
+                    "confidence_threshold": confidence_threshold,
+                    "image_size": image_size,
+                }
+            )
+            if len(calls) == 1:
+                return [{"label": "rice", "confidence": 0.85}]
+            return [
+                {"label": "rice", "confidence": 0.30},
+                {"label": "chicken", "confidence": 0.29},
+            ]
+
+        with (
+            patch.object(app_module, "_is_internal_request_authorized", return_value=True),
+            patch.object(app_module.os.path, "exists", return_value=True),
+            patch.object(app_module, "_detect_with_onnx", side_effect=fake_detect),
+            patch.object(
+                app_module,
+                "_detect_with_onnx_crops",
+                return_value=[{"label": "egg", "confidence": 0.07}],
+                create=True,
+            ) as crop_detect,
+            patch.object(app_module, "NUTRITION_LLM_AVAILABLE", False, create=True),
+        ):
+            response = self.client.post(
+                "/detect",
+                data={"file": (io.BytesIO(b"image-bytes"), "rice-meal.jpg")},
+                content_type="multipart/form-data",
+            )
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.get_json()
+        self.assertEqual(
+            [item["label"] for item in payload["detections"]],
+            ["rice", "chicken", "egg"],
+        )
+        crop_detect.assert_called_once()
 
 
 if __name__ == "__main__":

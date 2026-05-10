@@ -85,7 +85,8 @@ const AI_PROCESSING_MESSAGES = [
   'Đang ghép món với dữ liệu dinh dưỡng...',
 ];
 const isUsableVisionItem = (item: MappedFoodItem): boolean =>
-  Boolean(item.isMatched || item.foodItemId || item.foodName) || item.confidence > 0.4;
+  Boolean(item.isMatched || item.foodItemId || item.foodName || item.detectedLabelVi) ||
+  item.confidence > 0.4;
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 const { width: SW } = Dimensions.get('window');
