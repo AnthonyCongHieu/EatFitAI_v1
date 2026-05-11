@@ -317,6 +317,31 @@ class LazyYoloModelTests(unittest.TestCase):
         self.assertEqual(len(calls), 2)
         gemini_detect.assert_called_once()
 
+    def test_detect_logs_timing_breakdown(self):
+        def fake_detect(path, confidence_threshold, image_size):
+            return [{"label": "banana", "confidence": 0.82}]
+
+        with (
+            patch.object(app_module, "_is_internal_request_authorized", return_value=True),
+            patch.object(app_module.os.path, "exists", return_value=True),
+            patch.object(app_module, "_detect_with_onnx", side_effect=fake_detect),
+            patch.object(app_module, "NUTRITION_LLM_AVAILABLE", False, create=True),
+        ):
+            with self.assertLogs(app_module.logger, level="INFO") as logs:
+                response = self.client.post(
+                    "/detect",
+                    data={"file": (io.BytesIO(b"image-bytes"), "banana.jpg")},
+                    content_type="multipart/form-data",
+                )
+
+        self.assertEqual(response.status_code, 200)
+        joined_logs = "\n".join(logs.output)
+        self.assertIn("AI provider detect timing", joined_logs)
+        self.assertIn("download_ms=", joined_logs)
+        self.assertIn("primary_onnx_ms=", joined_logs)
+        self.assertIn("total_ms=", joined_logs)
+        self.assertIn("image_bytes=", joined_logs)
+
     def test_detect_merges_crop_recovery_when_full_recovery_still_sparse(self):
         calls = []
 

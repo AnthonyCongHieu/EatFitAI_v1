@@ -253,6 +253,65 @@ public class AIVisionControllerTests : IClassFixture<WebApplicationFactory<Progr
     }
 
     [Fact]
+    public async Task DetectVision_WhenConcurrencyGateIsFull_Returns429WithoutCallingProviderAgain()
+    {
+        var userId = Guid.NewGuid();
+        var providerEntered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var releaseProvider = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var httpClientFactory = new RecordingHttpClientFactory(async (_, cancellationToken) =>
+        {
+            providerEntered.TrySetResult();
+            await releaseProvider.Task.WaitAsync(cancellationToken);
+            return new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent(
+                    """
+                    {"detections":[{"label":"banana","confidence":0.91}]}
+                    """,
+                    Encoding.UTF8,
+                    "application/json")
+            };
+        });
+
+        using var factory = CreateFactory(
+            new AiHealthStatusDto
+            {
+                State = "HEALTHY",
+                LastCheckedAt = DateTimeOffset.UtcNow,
+                Message = "healthy"
+            },
+            httpClientFactory,
+            new FakeVisionCacheService(),
+            new Dictionary<string, string?>
+            {
+                ["AIProvider:VisionMaxConcurrentRequests"] = "1",
+                ["AIProvider:VisionQueueLimit"] = "0",
+                ["AIProvider:VisionQueueTimeoutSeconds"] = "1",
+            });
+        using var client = CreateAuthorizedClient(factory, userId);
+
+        var firstRequest = client.PostAsync(
+            "/api/ai/vision/detect",
+            CreateVisionRequest(userId, $"vision/{userId:N}/2026/04/30/first.jpg"));
+        await providerEntered.Task.WaitAsync(TimeSpan.FromSeconds(5));
+
+        using var rejectedResponse = await client.PostAsync(
+            "/api/ai/vision/detect",
+            CreateVisionRequest(userId, $"vision/{userId:N}/2026/04/30/second.jpg"));
+
+        releaseProvider.TrySetResult();
+        using var completedResponse = await firstRequest;
+
+        Assert.Equal(HttpStatusCode.TooManyRequests, rejectedResponse.StatusCode);
+        Assert.True(rejectedResponse.Headers.RetryAfter?.Delta >= TimeSpan.FromSeconds(1));
+        Assert.Equal(1, httpClientFactory.CallCount);
+        completedResponse.EnsureSuccessStatusCode();
+
+        var body = await rejectedResponse.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal("ai-provider_busy", body.GetProperty("code").GetString());
+    }
+
+    [Fact]
     public async Task DetectVision_ExternalImageUrl_Returns400WithoutCallingProvider()
     {
         var userId = Guid.NewGuid();

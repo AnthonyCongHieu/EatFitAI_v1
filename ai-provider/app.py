@@ -1039,6 +1039,16 @@ def _query_gemini_vision_detections(path: str) -> List[Dict[str, Any]]:
 def detect() -> Response | tuple[Dict[str, str], int]:
     """Detect objects trong ảnh upload"""
     path: str = ""
+    started_at = time.perf_counter()
+    timings = {
+        "download_ms": 0.0,
+        "primary_onnx_ms": 0.0,
+        "recovery_ms": 0.0,
+        "crop_ms": 0.0,
+        "gemini_fallback_ms": 0.0,
+    }
+    size = 0
+    name = "unknown"
     
     try:
         data = request.get_json(silent=True) or {}
@@ -1050,6 +1060,7 @@ def detect() -> Response | tuple[Dict[str, str], int]:
             if not isinstance(image_url, str) or not _is_safe_remote_image_url(image_url):
                 return {"error": "invalid image_url"}, 400
 
+            download_started_at = time.perf_counter()
             with requests.get(image_url, stream=True, timeout=15, allow_redirects=False) as resp:
                 if 300 <= resp.status_code < 400:
                     return {"error": "redirect not allowed"}, 400
@@ -1083,6 +1094,7 @@ def detect() -> Response | tuple[Dict[str, str], int]:
                 size = bytes_written
                 if size == 0:
                     return {"error": "empty file"}, 400
+            timings["download_ms"] = (time.perf_counter() - download_started_at) * 1000
 
             name = filename
             logger.info(f"Processing image from URL: {name} ({size / 1024:.1f}KB)")
@@ -1135,11 +1147,15 @@ def detect() -> Response | tuple[Dict[str, str], int]:
                 "detail": onnx_model_load_error or f"{YOLO_ONNX_MODEL_FILE} not found",
             }, 503
 
+        primary_started_at = time.perf_counter()
         out = _detect_with_onnx(path, YOLO_CONFIDENCE_THRESHOLD, YOLO_ONNX_IMAGE_SIZE)
+        timings["primary_onnx_ms"] = (time.perf_counter() - primary_started_at) * 1000
         if _should_run_yolo_recovery(out):
+            recovery_started_at = time.perf_counter()
             recovery_out = _filter_recovery_detections(
                 _detect_with_onnx(path, YOLO_RECOVERY_CONFIDENCE_THRESHOLD, YOLO_RECOVERY_IMAGE_SIZE)
             )
+            timings["recovery_ms"] = (time.perf_counter() - recovery_started_at) * 1000
             merged_out = _merge_detections(out, recovery_out)
             if len(merged_out) > len(out):
                 logger.info(
@@ -1150,11 +1166,13 @@ def detect() -> Response | tuple[Dict[str, str], int]:
             out = merged_out
 
         if _should_run_crop_recovery(out):
+            crop_started_at = time.perf_counter()
             crop_out = _detect_with_onnx_crops(
                 path,
                 YOLO_RECOVERY_CONFIDENCE_THRESHOLD,
                 YOLO_RECOVERY_IMAGE_SIZE,
             )
+            timings["crop_ms"] = (time.perf_counter() - crop_started_at) * 1000
             merged_out = _merge_detections(out, crop_out)
             if len(merged_out) > len(out):
                 logger.info(
@@ -1165,7 +1183,9 @@ def detect() -> Response | tuple[Dict[str, str], int]:
             out = merged_out
 
         if _should_run_gemini_vision_fallback(out):
+            gemini_started_at = time.perf_counter()
             gemini_out = _query_gemini_vision_detections(path)
+            timings["gemini_fallback_ms"] = (time.perf_counter() - gemini_started_at) * 1000
             merged_out = _merge_detections(out, gemini_out)
             if len(merged_out) > len(out):
                 logger.info(
@@ -1175,6 +1195,22 @@ def detect() -> Response | tuple[Dict[str, str], int]:
                 )
             out = merged_out
         
+        total_ms = (time.perf_counter() - started_at) * 1000
+        logger.info(
+            "AI provider detect timing "
+            "download_ms=%.1f primary_onnx_ms=%.1f recovery_ms=%.1f "
+            "crop_ms=%.1f gemini_fallback_ms=%.1f total_ms=%.1f "
+            "image_bytes=%s detection_count=%s file=%s",
+            timings["download_ms"],
+            timings["primary_onnx_ms"],
+            timings["recovery_ms"],
+            timings["crop_ms"],
+            timings["gemini_fallback_ms"],
+            total_ms,
+            size,
+            len(out),
+            name,
+        )
         logger.info(f"Detected {len(out)} objects in {name}")
         return jsonify({"detections": out})
     
@@ -1489,6 +1525,22 @@ def transcribe_audio():
                 os.unlink(temp_path)
             except OSError:
                 pass
+
+
+def _preload_yolo_model_if_configured() -> None:
+    if os.getenv("YOLO_PRELOAD_ON_STARTUP", "false").strip().lower() in {"1", "true", "yes"}:
+        started_at = time.perf_counter()
+        model = _load_onnx_model()
+        elapsed_ms = (time.perf_counter() - started_at) * 1000
+        logger.info(
+            "YOLO startup preload completed model_loaded=%s elapsed_ms=%.1f model_file=%s",
+            model is not None,
+            elapsed_ms,
+            model_file or YOLO_ONNX_MODEL_FILE,
+        )
+
+
+_preload_yolo_model_if_configured()
 
 
 if __name__ == "__main__":
