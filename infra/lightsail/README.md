@@ -1,43 +1,149 @@
-# EatFitAI Lightsail $7 Runtime
+# EatFitAI Lightsail Runtime
 
-This folder documents the provider-first rollout on one Lightsail $7 Singapore instance.
+This folder documents the native Lightsail deployment used for the May 2026
+Render-to-Lightsail cutover.
 
-## What This Does
+## Production shape
 
-- Runs AI provider as the primary production provider.
-- Optionally runs a backend test service on the same instance for comparison with Render backend.
-- Uses native systemd services instead of Docker to reduce RAM pressure.
-- Keeps Render backend as production until the backend benchmark decision gate.
+The accepted runtime uses two AWS Lightsail Singapore $7 instances:
 
-## What This Must Not Do
+| Role | Instance | Public endpoint | Private endpoint |
+| --- | --- | --- | --- |
+| Backend | `eatfitai-backend-sg` | `https://api.18.141.119.165.nip.io` | `172.26.13.91` |
+| AI provider | `eatfitai-ai-provider-test-sg` | `https://ai.3.0.208.56.nip.io` | `172.26.11.92:5050` |
 
-- No second Lightsail instance.
-- No EC2, load balancer, managed database, extra disk, scheduled snapshots, or paid log pipeline.
-- No production EAS/mobile API URL change during provider rollout.
+Render runtime policy:
 
-## Runtime Layout
+- `eatfitai-ai-provider`: suspended cold backup only.
+- `eatfitai-backend`: temporary bridge until mobile production is published to
+  the Lightsail backend URL, then suspend.
+
+## Runtime layout
 
 ```text
 /opt/eatfitai/repo                 git checkout of release SHA
 /opt/eatfitai/backend-publish      dotnet publish output
-/opt/eatfitai/ai-provider.env      AI provider runtime env
-/opt/eatfitai/backend.env          backend test runtime env
-/etc/systemd/system/eatfitai-ai.service
+/opt/eatfitai/backend.env.json     backend runtime env, chmod 0600
+/opt/eatfitai/ai-provider.env      provider runtime env, chmod 0600
 /etc/systemd/system/eatfitai-backend.service
+/etc/systemd/system/eatfitai-ai.service
 /etc/caddy/Caddyfile
 ```
 
-## Domains
+Services are native systemd processes. Docker Compose is intentionally avoided
+to reduce RAM pressure on 1 GB instances.
 
-- `ai-provider.eatfitai.com` -> Lightsail static IP, proxied to private `:5050`.
-- `api-ls.eatfitai.com` -> Lightsail static IP, proxied to local backend test `:10000`.
+## Network
 
-## Benchmark Order
+Backend public HTTPS:
 
-1. Baseline Render AI provider direct.
-2. Baseline Render backend production.
-3. Deploy Lightsail AI provider and benchmark direct.
-4. Point Render backend to Lightsail AI provider and smoke scan.
-5. Suspend Render AI provider as cold backup.
-6. Deploy Lightsail backend test.
-7. Benchmark Render backend vs Lightsail backend with the same release SHA.
+```text
+api.18.141.119.165.nip.io {
+    reverse_proxy 127.0.0.1:10000
+}
+```
+
+Provider public HTTPS:
+
+```text
+ai.3.0.208.56.nip.io {
+    reverse_proxy 172.26.11.92:5050
+}
+```
+
+Backend calls provider over private Lightsail networking:
+
+```text
+AIProvider__VisionBaseUrl=http://172.26.11.92:5050
+AIProvider__VoiceBaseUrl=http://172.26.11.92:5050
+```
+
+Provider firewall allows `5050/tcp` only from backend private IP
+`172.26.13.91`.
+
+## Firewall baseline
+
+Both instances:
+
+```text
+22/tcp
+80/tcp
+443/tcp
+```
+
+Provider only:
+
+```text
+5050/tcp from 172.26.13.91
+```
+
+Do not open provider `5050` to the public internet.
+
+## Cost guard
+
+Allowed:
+
+- Two $7 Lightsail instances.
+- Two attached static IPs.
+- Built-in instance transfer.
+
+Not allowed for this rollout:
+
+- EC2.
+- Lightsail load balancer.
+- Managed database.
+- Extra block disk.
+- Scheduled snapshots.
+- Paid CloudWatch log pipeline.
+- Detached static IPs left allocated.
+
+Stopped Lightsail instances can still accrue charges. Delete unused resources
+instead of only stopping them when the intent is to stop billing.
+
+## Current verification
+
+Release SHA: `253039d6a837fd87ba4daaa37087243a1f53c778`
+
+Health:
+
+```text
+curl https://api.18.141.119.165.nip.io/health/ready
+curl https://ai.3.0.208.56.nip.io/healthz
+```
+
+Expected:
+
+- HTTP 200 for both.
+- `eatfitai-backend`, `eatfitai-ai`, and `caddy` active.
+- `NRestarts=0` after rollout smoke.
+
+Smoke evidence:
+
+- Render backend + Lightsail provider:
+  `_logs/production-smoke/2026-05-11T12-20-52-927Z-render-backend-ls-provider`
+- Lightsail backend + private provider:
+  `_logs/production-smoke/2026-05-11T12-22-20-777Z-lightsail-backend-private-provider`
+- Render backend post-cache:
+  `_logs/production-smoke/2026-05-11T12-23-48-293Z-render-backend-post-cache`
+
+The infrastructure checks passed, but the AI primary-path quality gate still
+has existing model/fixture failures. See
+`docs/53_YOLO_SCAN_LIGHTSAIL_ROLLOUT_2026-05-11.md`.
+
+## Release checklist
+
+1. Confirm both Lightsail services are healthy.
+2. Confirm Render backend is either a bridge or suspended, never the intended
+   long-term production runtime.
+3. Confirm `eatfitai-mobile/eas.json` production points to
+   `https://api.18.141.119.165.nip.io`.
+4. Login to EAS or provide `EXPO_TOKEN`.
+5. Publish the mobile production update/build.
+6. Smoke login, profile, R2 upload, scan, and diary save on a real device.
+7. Suspend Render backend only after the app is verified on Lightsail.
+8. Remove any temporary SSH keys used during rollout.
+
+Current rollout key status:
+
+- Key comment `codex-cutover-2026-05-11` was removed from both instances.
+- The temporary local key files were deleted after removal was verified.
