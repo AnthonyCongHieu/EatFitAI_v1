@@ -15,7 +15,17 @@ echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/package
   | sudo tee /etc/apt/sources.list.d/microsoft-prod.list >/dev/null
 
 sudo apt-get update
-sudo apt-get install -y dotnet-sdk-9.0 aspnetcore-runtime-9.0 caddy
+sudo apt-get install -y caddy
+
+if ! apt-cache show dotnet-sdk-9.0 >/dev/null 2>&1; then
+  curl -fsSL https://dot.net/v1/dotnet-install.sh -o /tmp/dotnet-install.sh
+  sudo install -d -m 0755 /opt/dotnet
+  sudo bash /tmp/dotnet-install.sh --channel 9.0 --install-dir /opt/dotnet
+  sudo ln -sf /opt/dotnet/dotnet /usr/local/bin/dotnet
+  sudo ln -sf /opt/dotnet/dotnet /usr/bin/dotnet
+else
+  sudo apt-get install -y dotnet-sdk-9.0 aspnetcore-runtime-9.0
+fi
 
 if [ ! -f /swapfile ]; then
   sudo fallocate -l 2G /swapfile
