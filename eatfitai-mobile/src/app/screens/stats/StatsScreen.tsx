@@ -719,7 +719,7 @@ const StatsScreen = (): React.ReactElement => {
                   <View style={S.waterHead}>
                     <View style={S.waterLeft}>
                       <View style={S.waterIconBox}>
-                        <Ionicons name="water" size={20} color="#22c55e" />
+                        <Ionicons name="water" size={20} color="#0EA5E9" />
                       </View>
                       <ThemedText style={S.waterLabel}>LƯỢNG NƯỚC</ThemedText>
                     </View>
@@ -741,7 +741,7 @@ const StatsScreen = (): React.ReactElement => {
                           key={i}
                           name="water"
                           size={28}
-                          color={filled ? '#22c55e' : P.surfaceContainerHighest}
+                          color={filled ? '#0EA5E9' : P.surfaceContainerHighest}
                         />
                       );
                     })}
@@ -1492,11 +1492,11 @@ const StatsScreen = (): React.ReactElement => {
                           <ThemedText style={S.mthEnergyUnit}> ml/ngày</ThemedText>
                         </View>
                       </View>
-                      <View style={[S.mthEnergyIcon, { backgroundColor: 'rgba(34, 197, 94, 0.1)' }]}>
+                      <View style={[S.mthEnergyIcon, { backgroundColor: 'rgba(14, 165, 233, 0.1)' }]}>
                         <Ionicons
                           name="water-outline"
                           size={24}
-                          color="#22c55e"
+                          color="#0EA5E9"
                         />
                       </View>
                     </View>
@@ -1564,7 +1564,7 @@ const StatsScreen = (): React.ReactElement => {
                     {/* Chip 4: Nước uống (Tổng lượng tháng) */}
                     <Tilt3DCard width={(cardW - 12) / 2} height={140} maxTilt={5} showReflection={false} useDeviceMotion activeTouch={false}>
                       <View style={[S.mthUniformCard, { width: (cardW - 12) / 2 }]}>
-                        <Ionicons name="water" size={24} color="#22c55e" style={{ marginBottom: 8 }} />
+                        <Ionicons name="water" size={24} color="#0EA5E9" style={{ marginBottom: 8 }} />
                         <ThemedText style={S.mthUniformLabel} numberOfLines={1} adjustsFontSizeToFit>TỔNG NƯỚC UỐNG</ThemedText>
                         <View style={{ flex: 1, justifyContent: 'flex-end' }}>
                           <ThemedText style={S.mthUniformVal} numberOfLines={1} adjustsFontSizeToFit>

@@ -1,36 +1,27 @@
 /**
- * useMealReminders – Task A2.1
+ * useSmartReminders – Task A2.1 (Mở rộng)
  *
- * Kiểm tra nhật ký bữa ăn hôm nay và trả về danh sách nhắc nhở
- * (thiếu bữa sáng/trưa/tối dựa theo giờ hiện tại).
- *
- * Sử dụng dữ liệu từ useDiaryStore (đã có sẵn cache từ HomeScreen).
+ * Kiểm tra nhật ký bữa ăn hôm nay & lượng nước để trả về nhắc nhở thông minh.
  */
 import { useMemo } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { useDiaryStore } from '../store/useDiaryStore';
 import { MEAL_TYPES, type MealTypeId } from '../types';
+import { waterService, type WaterIntakeData } from '../services/waterService';
 
-export interface MealReminder {
-  mealTypeId: MealTypeId;
+export interface SmartReminder {
+  id: string;
+  type: 'meal' | 'water';
   label: string;
   emoji: string;
   message: string;
 }
 
-/**
- * Quy tắc thời gian:
- * - Từ 09:00 trở đi mà chưa có Bữa sáng → nhắc
- * - Từ 13:00 trở đi mà chưa có Bữa trưa → nhắc
- * - Từ 19:00 trở đi mà chưa có Bữa tối → nhắc
- *
- * Ý nghĩa: Chỉ nhắc sau khi "đã quá giờ ăn" một khoảng hợp lý,
- * tránh nhắc quá sớm (ví dụ 6h sáng hỏi "bạn ăn chưa" thì vô nghĩa).
- */
 const MEAL_REMINDER_RULES: {
   mealTypeId: MealTypeId;
   label: string;
   emoji: string;
-  afterHour: number; // Bắt đầu nhắc từ giờ này
+  afterHour: number;
   message: string;
 }[] = [
   {
@@ -56,19 +47,25 @@ const MEAL_REMINDER_RULES: {
   },
 ];
 
-export function useMealReminders(): {
-  reminders: MealReminder[];
+export function useSmartReminders(): {
+  reminders: SmartReminder[];
   hasReminders: boolean;
-  /** Dòng text ngắn gọn cho bong bóng chat Mascot (ưu tiên nhắc bữa đầu tiên) */
   bubbleText: string | null;
 } {
   const summary = useDiaryStore((s) => s.summary);
 
+  const { data: waterData } = useQuery<WaterIntakeData>({
+    queryKey: ['water-intake-today'],
+    queryFn: () => waterService.getWaterIntake(new Date()),
+    staleTime: 2 * 60 * 1000,
+  });
+
   return useMemo(() => {
     const now = new Date();
     const currentHour = now.getHours();
+    const reminders: SmartReminder[] = [];
 
-    // Lấy danh sách mealTypeId đã có trong nhật ký hôm nay
+    // --- 1. NHẮC NHỞ BỮA ĂN ---
     const loggedMealTypes = new Set<number>();
     if (summary?.meals) {
       for (const mealGroup of summary.meals) {
@@ -78,13 +75,11 @@ export function useMealReminders(): {
       }
     }
 
-    const reminders: MealReminder[] = [];
-
     for (const rule of MEAL_REMINDER_RULES) {
-      // Chỉ nhắc nếu đã quá giờ ăn VÀ chưa có dữ liệu bữa đó
       if (currentHour >= rule.afterHour && !loggedMealTypes.has(rule.mealTypeId)) {
         reminders.push({
-          mealTypeId: rule.mealTypeId,
+          id: `meal-${rule.mealTypeId}`,
+          type: 'meal',
           label: rule.label,
           emoji: rule.emoji,
           message: rule.message,
@@ -92,9 +87,31 @@ export function useMealReminders(): {
       }
     }
 
+    // --- 2. NHẮC NHỞ UỐNG NƯỚC THÔNG MINH ---
+    const waterAmount = waterData?.amountMl ?? 0;
+    const waterTarget = waterData?.targetMl ?? 2000;
+
+    if (currentHour >= 20 && waterAmount < waterTarget * 0.75) {
+      reminders.push({
+        id: 'water-evening',
+        type: 'water',
+        label: 'Nước (Tối)',
+        emoji: '💧',
+        message: 'Gần hết ngày rồi, ráng uống thêm xíu nước nha!',
+      });
+    } else if (currentHour >= 15 && currentHour < 20 && waterAmount < waterTarget * 0.4) {
+      reminders.push({
+        id: 'water-afternoon',
+        type: 'water',
+        label: 'Nước (Chiều)',
+        emoji: '💧',
+        message: 'Bạn uống hơi ít nước rồi, bổ sung ngay nhé!',
+      });
+    }
+
     const hasReminders = reminders.length > 0;
     const bubbleText = hasReminders ? reminders[0]!.message : null;
 
     return { reminders, hasReminders, bubbleText };
-  }, [summary]);
+  }, [summary, waterData]);
 }

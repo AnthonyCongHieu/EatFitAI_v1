@@ -745,7 +745,7 @@ const HomeScreen = (): React.ReactElement => {
           <View style={styles.waterCard}>
             {/* Left: icon + label + value */}
             <View style={styles.waterLeft}>
-              <Ionicons name="water" size={28} color="#22c55e" />
+              <Ionicons name="water" size={28} color="#0EA5E9" />
               <View style={styles.waterLabelWrap}>
                 <ThemedText style={styles.waterTitle}>Uống nước</ThemedText>
                 <ThemedText style={styles.waterValue}>{waterAmount} ml</ThemedText>

@@ -24,14 +24,14 @@ import QuickActionsOverlay from './home/QuickActionsOverlay';
 import { waterService } from '../services/waterService';
 import type { WaterIntakeData } from '../services/waterService';
 import { TEST_IDS } from '../testing/testIds';
-import { useMealReminders } from '../hooks/useMealReminders';
+import { useSmartReminders } from '../hooks/useSmartReminders';
 import { ThemedText } from './ThemedText';
 
 const MascotOverlay = () => {
   const navigation = useNavigation<any>();
   const queryClient = useQueryClient();
   const [showQuickActions, setShowQuickActions] = useState(false);
-  const { reminders, hasReminders, bubbleText } = useMealReminders();
+  const { reminders, hasReminders, bubbleText } = useSmartReminders();
 
   // Robot FAB floating animation & Drag gesture
   const floatAnim = useSharedValue(0);

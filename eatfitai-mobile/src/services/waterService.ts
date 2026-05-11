@@ -1,4 +1,5 @@
 import apiClient from './apiClient';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import logger from '../utils/logger';
 
 export interface WaterIntakeData {
@@ -14,6 +15,8 @@ const formatDateForApi = (date: Date): string => {
   return `${y}-${m}-${d}`;
 };
 
+const WATER_TARGET_KEY = '@eatfitai_water_target_ml';
+
 export const waterService = {
   /** Lấy lượng nước uống theo ngày */
   async getWaterIntake(date?: Date): Promise<WaterIntakeData> {
@@ -21,6 +24,11 @@ export const waterService = {
     const { data } = await apiClient.get<WaterIntakeData>('/api/water-intake', {
       params: { date: dateStr },
     });
+    // Override targetMl with user's custom target if set
+    const customTarget = await this.getCustomWaterTarget();
+    if (customTarget !== null) {
+      data.targetMl = customTarget;
+    }
     return data;
   },
 
@@ -30,6 +38,10 @@ export const waterService = {
     const { data } = await apiClient.post<WaterIntakeData>('/api/water-intake/add', {
       date: dateStr,
     });
+    const customTarget = await this.getCustomWaterTarget();
+    if (customTarget !== null) {
+      data.targetMl = customTarget;
+    }
     return data;
   },
 
@@ -39,6 +51,10 @@ export const waterService = {
     const { data } = await apiClient.post<WaterIntakeData>('/api/water-intake/subtract', {
       date: dateStr,
     });
+    const customTarget = await this.getCustomWaterTarget();
+    if (customTarget !== null) {
+      data.targetMl = customTarget;
+    }
     return data;
   },
 
@@ -54,6 +70,29 @@ export const waterService = {
       return { year, month, totalMl: 0, averageMl: 0, daysWithData: 0 };
     }
   },
+
+  /** Lấy mục tiêu nước tùy chỉnh (local) */
+  async getCustomWaterTarget(): Promise<number | null> {
+    try {
+      const val = await AsyncStorage.getItem(WATER_TARGET_KEY);
+      return val !== null ? Number(val) : null;
+    } catch {
+      return null;
+    }
+  },
+
+  /** Lưu mục tiêu nước tùy chỉnh (local) — truyền null để reset về mặc định */
+  async setCustomWaterTarget(ml: number | null): Promise<void> {
+    try {
+      if (ml === null) {
+        await AsyncStorage.removeItem(WATER_TARGET_KEY);
+      } else {
+        await AsyncStorage.setItem(WATER_TARGET_KEY, String(ml));
+      }
+    } catch (e) {
+      logger.warn('[waterService] setCustomWaterTarget failed', e);
+    }
+  },
 };
 
 export interface MonthlyWaterData {
@@ -63,3 +102,4 @@ export interface MonthlyWaterData {
   averageMl: number;
   daysWithData: number;
 }
+
