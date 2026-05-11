@@ -33,6 +33,46 @@ python3 -m venv venv
 ./venv/bin/python -m pip install --upgrade pip
 ./venv/bin/pip install -r requirements.txt
 
+sudo tee "${APP_ROOT}/start-ai-provider.py" >/dev/null <<EOF
+#!/usr/bin/env python3
+import json
+import os
+import pathlib
+
+APP_ROOT = pathlib.Path("${APP_ROOT}")
+AI_DIR = APP_ROOT / "repo" / "ai-provider"
+ENV_JSON = APP_ROOT / "ai-provider.env.json"
+ENV_FILE = APP_ROOT / "ai-provider.env"
+
+
+def load_env_file(path):
+    data = {}
+    if not path.exists():
+        return data
+    for raw_line in path.read_text(encoding="utf-8").splitlines():
+        line = raw_line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, value = line.split("=", 1)
+        data[key.strip()] = value
+    return data
+
+
+if ENV_JSON.exists():
+    env_data = json.loads(ENV_JSON.read_text(encoding="utf-8"))
+else:
+    env_data = load_env_file(ENV_FILE)
+
+for key, value in env_data.items():
+    if key and key.replace("_", "").isalnum() and not key[0].isdigit():
+        os.environ[str(key)] = "" if value is None else str(value)
+
+os.chdir(AI_DIR)
+gunicorn = AI_DIR / "venv" / "bin" / "gunicorn"
+os.execv(str(gunicorn), [str(gunicorn), "-c", "gunicorn.conf.py", "app:app"])
+EOF
+sudo chmod 0750 "${APP_ROOT}/start-ai-provider.py"
+
 sudo tee /etc/systemd/system/eatfitai-ai.service >/dev/null <<EOF
 [Unit]
 Description=EatFitAI AI Provider
@@ -42,10 +82,9 @@ Wants=network-online.target
 [Service]
 User=${SUDO_USER:-$USER}
 WorkingDirectory=${APP_ROOT}/repo/ai-provider
-EnvironmentFile=${APP_ROOT}/ai-provider.env
 Restart=always
 RestartSec=5
-ExecStart=${APP_ROOT}/repo/ai-provider/venv/bin/gunicorn -c gunicorn.conf.py app:app
+ExecStart=/usr/bin/python3 ${APP_ROOT}/start-ai-provider.py
 
 [Install]
 WantedBy=multi-user.target
