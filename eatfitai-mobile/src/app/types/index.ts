@@ -45,6 +45,7 @@ export type RootStackParamList = {
   VisionHistory: undefined;
   NutritionSettings: undefined;
   Achievements: undefined;
+  AllAchievements: undefined;
   EditProfile: undefined;
   BodyMetrics: undefined;
   GoalSettings: undefined;

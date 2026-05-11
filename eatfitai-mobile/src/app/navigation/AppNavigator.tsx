@@ -85,6 +85,9 @@ const getNutritionSettingsScreen = lazyScreen(() =>
 const getAchievementsScreen = lazyScreen(() =>
   require('../screens/gamification/AchievementsScreen'),
 );
+const getAllAchievementsScreen = lazyScreen(() =>
+  require('../screens/gamification/AllAchievementsScreen'),
+);
 const getEditProfileScreen = lazyScreen(() =>
   require('../screens/profile/EditProfileScreen'),
 );
@@ -295,6 +298,11 @@ const AppNavigator = (): React.ReactElement => {
               <Stack.Screen
                 name="Achievements"
                 getComponent={getAchievementsScreen}
+                options={{ headerShown: false }}
+              />
+              <Stack.Screen
+                name="AllAchievements"
+                getComponent={getAllAchievementsScreen}
                 options={{ headerShown: false }}
               />
               <Stack.Screen

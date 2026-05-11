@@ -462,6 +462,7 @@ const HomeScreen = (): React.ReactElement => {
         <WelcomeHeader
           streakCount={currentStreak}
           onNotificationPress={() => navigation.navigate('NotificationsSettings')}
+          onStreakPress={() => navigation.navigate('Achievements')}
         />
 
         {/* ══════════ SERVER ERROR ══════════ */}

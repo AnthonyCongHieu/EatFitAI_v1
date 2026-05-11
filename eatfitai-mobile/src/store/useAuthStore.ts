@@ -7,6 +7,7 @@ import apiClient from '../services/apiClient';
 import { setAccessTokenMem } from '../services/authTokens';
 import { googleAuthService } from '../services/googleAuthService';
 import { useProfileStore } from './useProfileStore';
+import { useGamificationStore, clearGamificationStorage } from './useGamificationStore';
 import { setErrorTrackingUser } from '../services/errorTracking';
 import { tokenStorage } from '../services/secureStore';
 import {
@@ -427,6 +428,9 @@ export const useAuthStore = create<AuthState>((set: any) => ({
       ]);
       setAccessTokenMem(null);
       await clearProfileCache();
+      // Wipe persisted gamification data from SecureStore + reset in-memory state
+      await clearGamificationStorage();
+      try { useGamificationStore.getState().reset(); } catch { /* ignore */ }
       set({ isAuthenticated: false, needsOnboarding: false, user: null });
     }
   },

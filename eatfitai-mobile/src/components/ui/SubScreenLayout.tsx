@@ -103,7 +103,7 @@ const SubScreenLayout: React.FC<SubScreenLayoutProps> = ({
         </ThemedText>
 
         {/* Right slot — same 40×40 placeholder for centering */}
-        <View style={styles.headerBtn}>
+        <View style={[styles.headerBtn, !headerRight && { backgroundColor: 'transparent' }]}>
           {headerRight}
         </View>
       </View>
