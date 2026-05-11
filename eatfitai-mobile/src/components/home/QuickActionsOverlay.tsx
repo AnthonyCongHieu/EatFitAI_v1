@@ -24,7 +24,7 @@ import Animated, {
 import { BlurView } from 'expo-blur';
 import * as Haptics from 'expo-haptics';
 import { TEST_IDS } from '../../testing/testIds';
-import type { MealReminder } from '../../hooks/useMealReminders';
+import type { SmartReminder } from '../../hooks/useSmartReminders';
 
 const { width } = Dimensions.get('window');
 
@@ -60,8 +60,8 @@ interface QuickActionsOverlayProps {
   onAddMeal: () => void;
   onRecipes: () => void;
   onWater: () => void;
-  /** A2.1: Danh sách nhắc nhở bữa ăn */
-  reminders?: MealReminder[];
+  /** A2.1: Danh sách nhắc nhở thông minh */
+  reminders?: SmartReminder[];
 }
 
 const QuickActionsOverlay: React.FC<QuickActionsOverlayProps> = ({
@@ -104,11 +104,20 @@ const QuickActionsOverlay: React.FC<QuickActionsOverlayProps> = ({
     [onClose],
   );
 
-  const handleReminderPress = useCallback(() => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    onClose();
-    setTimeout(() => onAddMeal(), 200);
-  }, [onClose, onAddMeal]);
+  const handleReminderPress = useCallback(
+    (reminderType: 'meal' | 'water') => {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      onClose();
+      setTimeout(() => {
+        if (reminderType === 'water') {
+          onWater();
+        } else {
+          onAddMeal();
+        }
+      }, 200);
+    },
+    [onClose, onAddMeal, onWater],
+  );
 
   const gridSize = (width - 48 - 16) / 2; // padding 24*2, gap 16
   const hasReminders = reminders.length > 0;
@@ -175,14 +184,16 @@ const QuickActionsOverlay: React.FC<QuickActionsOverlayProps> = ({
             <Pressable
               style={({ pressed }) => [
                 styles.reminderContent,
+                // Color water reminders slightly blue instead of amber?
+                // actually, we will just use the same amber alert style to keep it consistent as an "Alert"
                 pressed && styles.reminderPressed,
               ]}
-              onPress={handleReminderPress}
+              onPress={() => handleReminderPress(reminders[0]!.type)}
             >
               <View style={styles.reminderIconRow}>
                 {reminders.map((r, i) => (
                   <Animated.Text
-                    key={r.mealTypeId}
+                    key={r.id}
                     entering={FadeIn.delay(300 + i * 100)}
                     style={styles.reminderEmoji}
                   >
@@ -194,8 +205,8 @@ const QuickActionsOverlay: React.FC<QuickActionsOverlayProps> = ({
               <View style={styles.reminderTextCol}>
                 <Animated.Text style={styles.reminderTitle}>
                   {reminders.length === 1
-                    ? `Bạn chưa ghi ${reminders[0]!.label}`
-                    : `Còn ${reminders.length} bữa chưa ghi`}
+                    ? (reminders[0]!.type === 'water' ? 'Trợ lý nhắc nhở' : `Bạn chưa ghi ${reminders[0]!.label}`)
+                    : `Bạn có ${reminders.length} nhắc nhở`}
                 </Animated.Text>
                 <Animated.Text style={styles.reminderSubtitle} numberOfLines={1}>
                   {reminders.length === 1
@@ -314,10 +325,10 @@ const styles = StyleSheet.create({
   reminderContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: C.amberBg,
+    backgroundColor: 'rgba(17, 24, 39, 0.7)',
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: C.amberBorder,
+    borderColor: C.outlineVariant,
     paddingHorizontal: 16,
     paddingVertical: 14,
     gap: 12,

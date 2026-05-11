@@ -3,6 +3,8 @@ import { createJSONStorage, persist } from 'zustand/middleware';
 import * as SecureStore from 'expo-secure-store';
 import { diaryService } from '../services/diaryService';
 
+export const GAMIFICATION_STORAGE_KEY = 'gamification-storage';
+
 // SecureStore adapter for Zustand
 const secureStorage = {
   getItem: async (name: string): Promise<string | null> => {
@@ -14,6 +16,13 @@ const secureStorage = {
   removeItem: async (name: string): Promise<void> => {
     await SecureStore.deleteItemAsync(name);
   },
+};
+
+/** Wipe persisted gamification data from SecureStore (call on logout) */
+export const clearGamificationStorage = async () => {
+  try {
+    await SecureStore.deleteItemAsync(GAMIFICATION_STORAGE_KEY);
+  } catch { /* ignore */ }
 };
 
 export interface Achievement {
@@ -31,6 +40,7 @@ interface GamificationState {
   longestStreak: number;
   lastLogDate: string | null;
   totalDaysLogged: number;
+  totalXP: number;
   achievements: Achievement[];
   /** 7 ngày gần nhất: true = đã log, false = chưa log (index 0 = 6 ngày trước, index 6 = hôm nay) */
   weeklyLogs: boolean[];
@@ -41,6 +51,7 @@ interface GamificationState {
   checkStreak: () => Promise<void>;
   fetchWeeklyLogs: () => Promise<void>;
   unlockAchievement: (id: string) => void;
+  addXP: (amount: number) => void;
   syncAchievementProgress: () => void;
   reset: () => void;
 }
@@ -71,12 +82,132 @@ const INITIAL_ACHIEVEMENTS: Achievement[] = [
     target: 7,
   },
   {
+    id: 'log_30_meals',
+    title: 'Khởi động tốt',
+    description: 'Ghi lại 30 món ăn',
+    icon: 'pizza',
+    progress: 0,
+    target: 30,
+  },
+  {
+    id: 'log_50_meals',
+    title: 'Người sành ăn',
+    description: 'Ghi lại 50 món ăn',
+    icon: 'fast-food',
+    progress: 0,
+    target: 50,
+  },
+  {
     id: 'log_100_meals',
     title: 'Chuyên gia dinh dưỡng',
     description: 'Ghi lại 100 món ăn',
     icon: 'restaurant',
     progress: 0,
     target: 100,
+  },
+  {
+    id: 'streak_14',
+    title: 'Gương mặt thân quen',
+    description: 'Duy trì chuỗi 14 ngày',
+    icon: 'star',
+    progress: 0,
+    target: 14,
+  },
+  {
+    id: 'streak_30',
+    title: 'Kỷ luật thép',
+    description: 'Duy trì chuỗi 30 ngày',
+    icon: 'shield-checkmark',
+    progress: 0,
+    target: 30,
+  },
+  {
+    id: 'streak_50',
+    title: 'Kiên trì',
+    description: 'Duy trì chuỗi 50 ngày',
+    icon: 'flame',
+    progress: 0,
+    target: 50,
+  },
+  {
+    id: 'streak_100',
+    title: 'Huyền thoại',
+    description: 'Duy trì chuỗi 100 ngày',
+    icon: 'trophy',
+    progress: 0,
+    target: 100,
+  },
+  {
+    id: 'streak_200',
+    title: 'Nửa năm kiên trì',
+    description: 'Duy trì chuỗi 200 ngày',
+    icon: 'ribbon',
+    progress: 0,
+    target: 200,
+  },
+  {
+    id: 'log_200_meals',
+    title: 'Chiến thần ăn kiêng',
+    description: 'Ghi lại 200 món ăn',
+    icon: 'restaurant',
+    progress: 0,
+    target: 200,
+  },
+  {
+    id: 'log_500_meals',
+    title: 'Thực thần',
+    description: 'Ghi lại 500 món ăn',
+    icon: 'medal',
+    progress: 0,
+    target: 500,
+  },
+  {
+    id: 'log_1000_meals',
+    title: 'Chuyên gia nghìn bữa',
+    description: 'Ghi lại 1000 món ăn',
+    icon: 'star-half',
+    progress: 0,
+    target: 1000,
+  },
+  {
+    id: 'water_master',
+    title: 'Bậc thầy cấp nước',
+    description: 'Đạt mục tiêu nước uống 7 ngày',
+    icon: 'water',
+    progress: 0,
+    target: 7,
+  },
+  {
+    id: 'water_30',
+    title: 'Đại dương xanh',
+    description: 'Đạt mục tiêu nước 30 ngày',
+    icon: 'water-outline',
+    progress: 0,
+    target: 30,
+  },
+  {
+    id: 'water_100',
+    title: 'Thủy thần',
+    description: 'Đạt mục tiêu nước 100 ngày',
+    icon: 'boat',
+    progress: 0,
+    target: 100,
+  },
+  {
+    id: 'early_bird',
+    title: 'Chim sớm',
+    description: 'Ghi lại bữa sáng trước 8 giờ',
+    icon: 'sunny',
+    progress: 0,
+    target: 1,
+  },
+  {
+    id: 'early_bird_7',
+    title: 'Thói quen tốt',
+    description: 'Ghi bữa sáng sớm 7 ngày',
+    icon: 'partly-sunny',
+    progress: 0,
+    target: 7,
   },
 ];
 
@@ -87,6 +218,7 @@ export const useGamificationStore = create<GamificationState>()(
       longestStreak: 0,
       lastLogDate: null,
       totalDaysLogged: 0,
+      totalXP: 0,
       achievements: INITIAL_ACHIEVEMENTS,
       weeklyLogs: [false, false, false, false, false, false, false],
       lastWeeklyFetch: 0,
@@ -224,17 +356,21 @@ export const useGamificationStore = create<GamificationState>()(
         set((state) => {
           const achievement = state.achievements.find((a) => a.id === id);
           if (achievement && !achievement.unlockedAt) {
-            // Show toast or notification here if needed
             return {
               achievements: state.achievements.map((a) =>
                 a.id === id
                   ? { ...a, unlockedAt: new Date().toISOString(), progress: a.target }
                   : a,
               ),
+              totalXP: state.totalXP + 50, // +50 XP per achievement
             };
           }
           return state;
         });
+      },
+
+      addXP: (amount: number) => {
+        set((state) => ({ totalXP: state.totalXP + amount }));
       },
 
       // Sync progress của achievements với state hiện tại (gọi khi vào AchievementsScreen)
@@ -269,14 +405,35 @@ export const useGamificationStore = create<GamificationState>()(
           longestStreak: 0,
           lastLogDate: null,
           totalDaysLogged: 0,
+          totalXP: 0,
           achievements: INITIAL_ACHIEVEMENTS,
           weeklyLogs: [false, false, false, false, false, false, false],
+          lastWeeklyFetch: 0,
+          lastStreakCheck: null,
         });
       },
     }),
     {
-      name: 'gamification-storage',
+      name: GAMIFICATION_STORAGE_KEY,
       storage: createJSONStorage(() => secureStorage),
+      merge: (persistedState: any, currentState: GamificationState) => {
+        if (!persistedState) return currentState;
+        // Ensure new achievements are added to existing persisted accounts
+        const persistedAchievements = persistedState.achievements || [];
+        const mergedAchievements = [...persistedAchievements];
+        
+        INITIAL_ACHIEVEMENTS.forEach((initialAchv) => {
+          if (!mergedAchievements.some((a) => a.id === initialAchv.id)) {
+            mergedAchievements.push(initialAchv);
+          }
+        });
+
+        return {
+          ...currentState,
+          ...persistedState,
+          achievements: mergedAchievements,
+        };
+      },
     },
   ),
 );

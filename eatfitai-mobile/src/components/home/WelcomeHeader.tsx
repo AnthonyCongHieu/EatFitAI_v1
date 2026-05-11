@@ -21,6 +21,7 @@ interface WelcomeHeaderProps {
   streakCount?: number;
   onNotificationPress?: () => void;
   onAvatarPress?: () => void;
+  onStreakPress?: () => void;
 }
 
 /** Return a time-of-day icon using Ionicons */
@@ -46,6 +47,7 @@ export const WelcomeHeader: React.FC<WelcomeHeaderProps> = ({
   streakCount = 0,
   onNotificationPress,
   onAvatarPress,
+  onStreakPress,
 }) => {
   const { user } = useAuthStore();
   const { profile } = useProfileStore();
@@ -85,10 +87,10 @@ export const WelcomeHeader: React.FC<WelcomeHeaderProps> = ({
       {/* Right: streak + bell */}
       <View style={styles.right}>
         {streakCount > 0 && (
-          <View style={styles.streak}>
+          <Pressable style={styles.streak} onPress={onStreakPress} hitSlop={8}>
             <Ionicons name="flame" size={16} color={C.primary} />
             <Text style={styles.streakText}>{streakCount}</Text>
-          </View>
+          </Pressable>
         )}
         <Pressable style={styles.bell} onPress={onNotificationPress} hitSlop={10}>
           <Ionicons name="notifications-outline" size={22} color={C.textMuted} />

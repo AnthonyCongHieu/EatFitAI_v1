@@ -24,14 +24,14 @@ import QuickActionsOverlay from './home/QuickActionsOverlay';
 import { waterService } from '../services/waterService';
 import type { WaterIntakeData } from '../services/waterService';
 import { TEST_IDS } from '../testing/testIds';
-import { useMealReminders } from '../hooks/useMealReminders';
+import { useSmartReminders } from '../hooks/useSmartReminders';
 import { ThemedText } from './ThemedText';
 
 const MascotOverlay = () => {
   const navigation = useNavigation<any>();
   const queryClient = useQueryClient();
   const [showQuickActions, setShowQuickActions] = useState(false);
-  const { reminders, hasReminders, bubbleText } = useMealReminders();
+  const { reminders, hasReminders, bubbleText } = useSmartReminders();
 
   // Robot FAB floating animation & Drag gesture
   const floatAnim = useSharedValue(0);
@@ -162,22 +162,24 @@ const MascotOverlay = () => {
               <View style={styles.robotMouth} />
             </View>
 
-            {/* Ping dot – đổi sang màu cảnh báo khi có reminder */}
-            <View style={styles.fabPingContainer}>
-              <Animated.View
-                entering={FadeIn.delay(800)}
-                style={[
-                  styles.fabPing,
-                  hasReminders && { backgroundColor: '#f59e0b' },
-                ]}
-              />
-              <View
-                style={[
-                  styles.fabDot,
-                  hasReminders && { backgroundColor: '#f59e0b' },
-                ]}
-              />
-            </View>
+            {/* Ping dot – chỉ hiện khi có reminder */}
+            {hasReminders && (
+              <View style={styles.fabPingContainer}>
+                <Animated.View
+                  entering={FadeIn.delay(800)}
+                  style={[
+                    styles.fabPing,
+                    { backgroundColor: '#f59e0b' },
+                  ]}
+                />
+                <View
+                  style={[
+                    styles.fabDot,
+                    { backgroundColor: '#f59e0b' },
+                  ]}
+                />
+              </View>
+            )}
           </Pressable>
         </Animated.View>
       </GestureDetector>

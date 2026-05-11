@@ -1,7 +1,7 @@
 // Màn hình Cài đặt dinh dưỡng hợp nhất
 // Cho phép xem, chỉnh sửa thủ công và sử dụng AI để gợi ý mục tiêu
 
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   View,
   StyleSheet,
@@ -18,12 +18,15 @@ import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import Animated, { FadeIn, FadeInDown, Layout } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
 
 import Button from '../../../components/Button';
 import { ThemedText } from '../../../components/ThemedText';
 import ThemedTextInput from '../../../components/ThemedTextInput';
 import { useAppTheme } from '../../../theme/ThemeProvider';
 import { aiService, type NutritionTarget } from '../../../services/aiService';
+import { waterService } from '../../../services/waterService';
 import {
   handleApiError,
   handleApiErrorWithCustomMessage,
@@ -35,6 +38,8 @@ import { AIExplanationCard } from '../../../components/ai/AIExplanationCard';
 import { AiStatusBadge } from '../../../components/ai/AiStatusBadge';
 import { useAiStatus } from '../../../hooks/useAiStatus';
 import { TEST_IDS } from '../../../testing/testIds';
+
+const WATER_BLUE = '#0EA5E9';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -74,6 +79,12 @@ const NutritionSettingsScreen = (): React.ReactElement => {
   const [suggestedTarget, setSuggestedTarget] = useState<NutritionTarget | null>(null);
   const { data: aiStatus, isLoading: isAiStatusLoading } = useAiStatus();
   const isAiDown = aiStatus?.state === 'DOWN';
+
+  // ── Water target state ──
+  const [waterTarget, setWaterTarget] = useState<number>(2000);
+  const [isEditingWater, setIsEditingWater] = useState(false);
+  const [waterInputValue, setWaterInputValue] = useState<string>('2000');
+  const [isSavingWater, setIsSavingWater] = useState(false);
 
   const {
     control,
@@ -116,6 +127,43 @@ const NutritionSettingsScreen = (): React.ReactElement => {
   useEffect(() => {
     if (error) handleApiError(error);
   }, [error]);
+
+  // Load water target
+  useEffect(() => {
+    (async () => {
+      try {
+        const custom = await waterService.getCustomWaterTarget();
+        if (custom !== null) {
+          setWaterTarget(custom);
+          setWaterInputValue(String(custom));
+        } else {
+          const data = await waterService.getWaterIntake(new Date());
+          setWaterTarget(data.targetMl);
+          setWaterInputValue(String(data.targetMl));
+        }
+      } catch {
+        setWaterTarget(2000);
+        setWaterInputValue('2000');
+      }
+    })();
+  }, []);
+
+  const handleSaveWater = useCallback(async () => {
+    const val = Number(waterInputValue);
+    if (val < 500 || val > 6000) return;
+    setIsSavingWater(true);
+    try {
+      await waterService.setCustomWaterTarget(val);
+      setWaterTarget(val);
+      queryClient.invalidateQueries({ queryKey: ['water-intake-today'] });
+      setIsEditingWater(false);
+      Alert.alert('Đã lưu', `Mục tiêu nước: ${(val / 1000).toFixed(1)}L / ngày`);
+    } catch {
+      Alert.alert('Lỗi', 'Không thể lưu mục tiêu nước');
+    } finally {
+      setIsSavingWater(false);
+    }
+  }, [waterInputValue, queryClient]);
 
   // AI Suggestion Mutation
   const suggestMutation = useMutation({
@@ -362,7 +410,7 @@ const NutritionSettingsScreen = (): React.ReactElement => {
           >
             <View style={{ flex: 1 }}>
               <ThemedText variant="h3">
-                {t('nutrition_settings.current_target')}
+                Mục tiêu dinh dưỡng
               </ThemedText>
             </View>
             {!isEditing && (
@@ -449,6 +497,114 @@ const NutritionSettingsScreen = (): React.ReactElement => {
                 <View style={styles.col}>
                   {renderMacroDisplay('Fat', currentTarget?.fat ?? 0)}
                 </View>
+              </View>
+            </Animated.View>
+          )}
+        </Animated.View>
+
+        {/* ═══ Water Target Section ═══ */}
+        <Animated.View entering={FadeInDown.delay(150)} style={styles.card}>
+          <View
+            style={{
+              flexDirection: 'row',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              marginBottom: theme.spacing.md,
+            }}
+          >
+            <View style={{ flex: 1 }}>
+              <ThemedText variant="h3">Mục tiêu lượng nước</ThemedText>
+            </View>
+            {!isEditingWater && (
+              <Button
+                variant="ghost"
+                title={t('nutrition_settings.edit')}
+                size="sm"
+                onPress={() => {
+                  setIsEditingWater(true);
+                  setWaterInputValue(String(waterTarget));
+                }}
+              />
+            )}
+          </View>
+
+          {isEditingWater ? (
+            <Animated.View entering={FadeIn} layout={Layout.springify()}>
+              <ThemedTextInput
+                label="Lượng nước mỗi ngày (ml)"
+                value={waterInputValue}
+                onChangeText={(text) => {
+                  const cleaned = text.replace(/[^0-9]/g, '');
+                  setWaterInputValue(cleaned);
+                }}
+                placeholder="2000"
+                keyboardType="numeric"
+                returnKeyType="done"
+                error={Number(waterInputValue) < 500 || Number(waterInputValue) > 6000}
+                helperText={
+                  Number(waterInputValue) < 500 || Number(waterInputValue) > 6000
+                    ? 'Nhập từ 500 đến 6000 ml'
+                    : undefined
+                }
+              />
+
+              {/* Hint */}
+              <View style={waterStyles.hint}>
+                <Ionicons name="information-circle-outline" size={16} color={theme.colors.textSecondary} />
+                <ThemedText variant="caption" color="textSecondary" style={{ flex: 1, lineHeight: 18 }}>
+                  Khuyến nghị: 30ml × cân nặng (kg)
+                </ThemedText>
+              </View>
+              <View style={[waterStyles.hint, { marginTop: 2 }]}>
+                <Ionicons name="information-circle-outline" size={16} color={'transparent'} />
+                <ThemedText variant="caption" color="textSecondary" style={{ flex: 1, lineHeight: 18 }}>
+                  Ví dụ: 60kg → 1800 ml/ngày
+                </ThemedText>
+              </View>
+
+              <View style={[styles.row, { marginTop: theme.spacing.lg }]}>
+                <Button
+                  variant="outline"
+                  title={t('nutrition_settings.cancel')}
+                  onPress={() => {
+                    setIsEditingWater(false);
+                    setWaterInputValue(String(waterTarget));
+                  }}
+                  style={styles.col}
+                />
+                <Button
+                  variant="primary"
+                  title={isSavingWater ? 'Đang lưu...' : t('nutrition_settings.save')}
+                  onPress={handleSaveWater}
+                  loading={isSavingWater}
+                  disabled={isSavingWater || Number(waterInputValue) < 500 || Number(waterInputValue) > 6000}
+                  style={styles.col}
+                />
+              </View>
+            </Animated.View>
+          ) : (
+            <Animated.View entering={FadeIn} layout={Layout.springify()}>
+              <View style={{ alignItems: 'center', marginBottom: theme.spacing.lg }}>
+                <ThemedText variant="h1" color="primary">
+                  {waterTarget}
+                </ThemedText>
+                <ThemedText variant="body" color="textSecondary">
+                  ml / ngày
+                </ThemedText>
+              </View>
+
+              {/* Hint */}
+              <View style={waterStyles.hint}>
+                <Ionicons name="information-circle-outline" size={16} color={theme.colors.textSecondary} />
+                <ThemedText variant="caption" color="textSecondary" style={{ flex: 1, lineHeight: 18 }}>
+                  Khuyến nghị: 30ml × cân nặng (kg)
+                </ThemedText>
+              </View>
+              <View style={[waterStyles.hint, { marginTop: 2 }]}>
+                <Ionicons name="information-circle-outline" size={16} color={'transparent'} />
+                <ThemedText variant="caption" color="textSecondary" style={{ flex: 1, lineHeight: 18 }}>
+                  Ví dụ: 60kg → 1800 ml/ngày
+                </ThemedText>
               </View>
             </Animated.View>
           )}
@@ -586,5 +742,15 @@ const NutritionSettingsScreen = (): React.ReactElement => {
     </>,
   );
 };
+
+const waterStyles = StyleSheet.create({
+  hint: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 8,
+    paddingHorizontal: 4,
+    marginTop: 4,
+  },
+});
 
 export default NutritionSettingsScreen;

@@ -1,10 +1,12 @@
-import React, { useState, useEffect } from 'react';
-import { ScrollView, StyleSheet, View, Switch, Pressable } from 'react-native';
+import React, { useState, useEffect, useCallback } from 'react';
+import { ScrollView, StyleSheet, View, Switch, Pressable, Modal, Platform } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import Animated, { FadeInDown } from 'react-native-reanimated';
+import Animated, { FadeInDown, FadeIn } from 'react-native-reanimated';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import DateTimePicker from '@react-native-community/datetimepicker';
+import * as Haptics from 'expo-haptics';
 
 import { ThemedText } from '../../../components/ThemedText';
 import {
@@ -75,11 +77,45 @@ const P = {
   slate400: '#94a3b8',
 };
 
+// Helpers
+const timeStringToDate = (time: string): Date => {
+  const parts = time.split(':');
+  const h = parseInt(parts[0] || '0', 10);
+  const m = parseInt(parts[1] || '0', 10);
+  const d = new Date();
+  d.setHours(h, m, 0, 0);
+  return d;
+};
+
+const dateToTimeString = (date: Date): string => {
+  const h = date.getHours().toString().padStart(2, '0');
+  const m = date.getMinutes().toString().padStart(2, '0');
+  return `${h}:${m}`;
+};
+
+type TimeKey = 'breakfastTime' | 'lunchTime' | 'dinnerTime' | 'snackTime' | 'quietHoursFrom' | 'quietHoursTo';
+
+const MEAL_ITEMS = [
+  { label: 'Nhắc ăn sáng', timeKey: 'breakfastTime' as TimeKey, toggleKey: 'breakfastEnabled' as keyof NotificationSettings, icon: 'restaurant-outline' },
+  { label: 'Nhắc ăn trưa', timeKey: 'lunchTime' as TimeKey, toggleKey: 'lunchEnabled' as keyof NotificationSettings, icon: 'nutrition-outline' },
+  { label: 'Nhắc ăn tối', timeKey: 'dinnerTime' as TimeKey, toggleKey: 'dinnerEnabled' as keyof NotificationSettings, icon: 'pizza-outline' },
+  { label: 'Nhắc bữa phụ', timeKey: 'snackTime' as TimeKey, toggleKey: 'snackEnabled' as keyof NotificationSettings, icon: 'cafe-outline', dim: true },
+];
+
 const NotificationsScreen = (): React.ReactElement => {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const [settings, setSettings] = useState<NotificationSettings>(defaultSettings);
   const [, setIsSaving] = useState(false);
+
+  // Time picker state
+  const [timePickerVisible, setTimePickerVisible] = useState(false);
+  const [editingTimeKey, setEditingTimeKey] = useState<TimeKey | null>(null);
+  const [editingTimeLabel, setEditingTimeLabel] = useState('');
+  const [tempDate, setTempDate] = useState(new Date());
+
+  // "Đổi giờ" mode — inline editing of meal times
+  const [isEditingMealTimes, setIsEditingMealTimes] = useState(false);
 
   useEffect(() => { loadSettings(); }, []);
 
@@ -126,6 +162,40 @@ const NotificationsScreen = (): React.ReactElement => {
     return `${formattedHour}:${m} ${period}`;
   };
 
+  const openTimePicker = useCallback((timeKey: TimeKey, label: string) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setEditingTimeKey(timeKey);
+    setEditingTimeLabel(label);
+    setTempDate(timeStringToDate(settings[timeKey] as string));
+    setTimePickerVisible(true);
+  }, [settings]);
+
+  const handleTimeChange = useCallback((_event: any, selectedDate?: Date) => {
+    if (Platform.OS === 'android') {
+      setTimePickerVisible(false);
+      if (selectedDate && editingTimeKey) {
+        updateSetting(editingTimeKey, dateToTimeString(selectedDate));
+      }
+      return;
+    }
+    // iOS — just update temp date, confirm on button press
+    if (selectedDate) {
+      setTempDate(selectedDate);
+    }
+  }, [editingTimeKey]);
+
+  const confirmTimePicker = useCallback(() => {
+    if (editingTimeKey) {
+      updateSetting(editingTimeKey, dateToTimeString(tempDate));
+    }
+    setTimePickerVisible(false);
+  }, [editingTimeKey, tempDate]);
+
+  const toggleEditMealTimes = useCallback(() => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setIsEditingMealTimes((prev) => !prev);
+  }, []);
+
   // Switch Toggle wrapper mimicking iOS/custom styling
   const CustomToggle = ({ value, onValueChange, disabled = false }: { value: boolean, onValueChange: (val: boolean) => void, disabled?: boolean }) => (
     <Switch
@@ -136,6 +206,8 @@ const NotificationsScreen = (): React.ReactElement => {
       thumbColor={'#fff'}
     />
   );
+
+  const disabledInner = !settings.enabled;
 
   return (
     <View style={S.container}>
@@ -151,49 +223,56 @@ const NotificationsScreen = (): React.ReactElement => {
       </View>
 
       <ScrollView contentContainerStyle={[S.scrollContent, { paddingTop: 20 }]} showsVerticalScrollIndicator={false}>
-        <View style={[{ gap: 24 }, !settings.enabled && { opacity: 0.5 }]}>
-          {/* Master Toggle Card */}
-          <Animated.View entering={FadeInDown.delay(100)} style={[S.glassCard, S.masterCard]}>
-            <View style={[S.rowCenter, { flex: 1 }]}>
-              <View style={S.iconBoxPrimary}>
-                <Ionicons name="notifications" size={24} color={P.primary} />
-              </View>
-              <View style={{ marginLeft: 16, flex: 1 }}>
-                <ThemedText style={S.titleWhite}>Tất cả thông báo</ThemedText>
-                <ThemedText style={S.subText}>Quản lý tùy chọn thông báo của bạn</ThemedText>
-              </View>
+        {/* Master Toggle Card — always full opacity */}
+        <Animated.View entering={FadeInDown.delay(100)} style={[S.glassCard, S.masterCard]}>
+          <View style={[S.rowCenter, { flex: 1 }]}>
+            <View style={S.iconBoxPrimary}>
+              <Ionicons name="notifications" size={24} color={P.primary} />
             </View>
-            <CustomToggle value={settings.enabled} onValueChange={(val) => updateSetting('enabled', val)} disabled={false} />
-          </Animated.View>
+            <View style={{ marginLeft: 16, flex: 1 }}>
+              <ThemedText style={S.titleWhite}>Tất cả thông báo</ThemedText>
+              <ThemedText style={S.subText}>Quản lý tùy chọn thông báo</ThemedText>
+            </View>
+          </View>
+          <CustomToggle value={settings.enabled} onValueChange={(val) => updateSetting('enabled', val)} disabled={false} />
+        </Animated.View>
 
+        {/* Inner content — dim when notifications off */}
+        <View style={{ marginTop: 24, opacity: disabledInner ? 0.45 : 1 }}>
           {/* Meal Reminders Card */}
-          <Animated.View entering={FadeInDown.delay(200)} style={S.glassCard}>
+          <View style={[S.glassCard, { marginBottom: 24 }]}>
             <ThemedText style={S.sectionLabel}>NHẮC NHỞ BỮA ĂN</ThemedText>
 
             <View style={S.gapLarge}>
-              {[
-                { label: 'Nhắc ăn sáng', timeKey: 'breakfastTime', toggleKey: 'breakfastEnabled', icon: 'restaurant-outline' },
-                { label: 'Nhắc ăn trưa', timeKey: 'lunchTime', toggleKey: 'lunchEnabled', icon: 'nutrition-outline' },
-                { label: 'Nhắc ăn tối', timeKey: 'dinnerTime', toggleKey: 'dinnerEnabled', icon: 'pizza-outline' },
-                { label: 'Nhắc bữa phụ', timeKey: 'snackTime', toggleKey: 'snackEnabled', icon: 'cafe-outline', dim: true },
-              ].map((item) => (
+              {MEAL_ITEMS.map((item) => (
                 <View key={item.label} style={S.rowBetween}>
                   <View style={[S.rowCenter, { flex: 1, marginRight: 8 }]}>
-                    <View style={[S.iconBoxDark, item.dim && !settings[item.toggleKey as keyof NotificationSettings] && { opacity: 0.6 }]}>
+                    <View style={[S.iconBoxDark, item.dim && !settings[item.toggleKey] && { opacity: 0.6 }]}>
                       <Ionicons name={item.icon as any} size={20} color={P.primary} />
                     </View>
                     <ThemedText
-                      style={[S.itemText, !settings[item.toggleKey as keyof NotificationSettings] && { color: P.slate400, fontFamily: 'Inter_500Medium' }, { flex: 1 }]}
+                      style={[S.itemText, !settings[item.toggleKey] && { color: P.slate400, fontFamily: 'Inter_500Medium' }, { flex: 1 }]}
                       numberOfLines={1}
                     >
                       {item.label}
                     </ThemedText>
                   </View>
                   <View style={S.rowCenterGap}>
-                    <ThemedText style={S.timeText}>{formatTime(settings[item.timeKey as keyof NotificationSettings] as string)}</ThemedText>
+                    {isEditingMealTimes ? (
+                      <Pressable
+                        onPress={() => openTimePicker(item.timeKey, item.label)}
+                        style={S.timeEditBtn}
+                        hitSlop={8}
+                        disabled={disabledInner}
+                      >
+                        <ThemedText style={S.timeEditText}>{formatTime(settings[item.timeKey] as string)}</ThemedText>
+                      </Pressable>
+                    ) : (
+                      <ThemedText style={S.timeText}>{formatTime(settings[item.timeKey] as string)}</ThemedText>
+                    )}
                     <CustomToggle
-                      value={settings[item.toggleKey as keyof NotificationSettings] as boolean}
-                      onValueChange={(val) => updateSetting(item.toggleKey as keyof NotificationSettings, val)}
+                      value={settings[item.toggleKey] as boolean}
+                      onValueChange={(val) => updateSetting(item.toggleKey, val)}
                       disabled={!settings.enabled}
                     />
                   </View>
@@ -201,14 +280,16 @@ const NotificationsScreen = (): React.ReactElement => {
               ))}
             </View>
 
-            <Pressable style={S.editBtn}>
-              <ThemedText style={S.editBtnText}>ĐỔI GIỜ</ThemedText>
-              <Ionicons name="pencil" size={12} color={P.primary} />
+            {/* "Đổi giờ" toggle button */}
+            <Pressable style={S.editBtn} onPress={toggleEditMealTimes} hitSlop={12} disabled={disabledInner}>
+              <ThemedText style={S.editBtnText}>
+                {isEditingMealTimes ? 'XONG' : 'ĐỔI GIỜ'}
+              </ThemedText>
             </Pressable>
-          </Animated.View>
+          </View>
 
           {/* Health Alerts Card */}
-          <Animated.View entering={FadeInDown.delay(300)} style={S.glassCard}>
+          <View style={[S.glassCard, { marginBottom: 24 }]}>
             <ThemedText style={S.sectionLabel}>CẢNH BÁO SỨC KHỎE</ThemedText>
             <View style={S.gapMedium}>
               {[
@@ -227,10 +308,10 @@ const NotificationsScreen = (): React.ReactElement => {
                 </View>
               ))}
             </View>
-          </Animated.View>
+          </View>
 
           {/* AI Insights Card */}
-          <Animated.View entering={FadeInDown.delay(400)} style={S.glassCard}>
+          <View style={[S.glassCard, { marginBottom: 24 }]}>
             <ThemedText style={S.sectionLabel}>AI & GỢI Ý</ThemedText>
             <View style={S.gapMedium}>
               {[
@@ -250,10 +331,10 @@ const NotificationsScreen = (): React.ReactElement => {
                 </View>
               ))}
             </View>
-          </Animated.View>
+          </View>
 
           {/* Quiet Hours Card */}
-          <Animated.View entering={FadeInDown.delay(500)} style={S.glassCard}>
+          <View style={[S.glassCard, { marginBottom: 24 }]}>
             <View style={S.rowBetweenStart}>
               <View style={{ flex: 1, paddingRight: 16 }}>
                 <ThemedText style={S.titleWhite}>Giờ yên tĩnh</ThemedText>
@@ -267,18 +348,65 @@ const NotificationsScreen = (): React.ReactElement => {
             </View>
 
             <View style={S.quietGrid}>
-              <View style={S.quietBox}>
+              <Pressable
+                style={S.quietBox}
+                onPress={() => openTimePicker('quietHoursFrom', 'Bắt đầu yên tĩnh')}
+                disabled={disabledInner || !settings.quietHoursEnabled}
+              >
                 <ThemedText style={S.quietLabel}>TỪ</ThemedText>
                 <ThemedText style={S.quietTime}>{formatTime(settings.quietHoursFrom)}</ThemedText>
-              </View>
-              <View style={S.quietBox}>
+              </Pressable>
+              <Pressable
+                style={S.quietBox}
+                onPress={() => openTimePicker('quietHoursTo', 'Kết thúc yên tĩnh')}
+                disabled={disabledInner || !settings.quietHoursEnabled}
+              >
                 <ThemedText style={S.quietLabel}>ĐẾN</ThemedText>
                 <ThemedText style={S.quietTime}>{formatTime(settings.quietHoursTo)}</ThemedText>
-              </View>
+              </Pressable>
             </View>
-          </Animated.View>
+          </View>
         </View>
       </ScrollView>
+
+      {/* ═══ Time Picker Modal (iOS) ═══ */}
+      {Platform.OS === 'ios' && timePickerVisible && (
+        <Modal transparent animationType="slide" visible={timePickerVisible}>
+          <View style={S.modalOverlay}>
+            <Animated.View entering={FadeIn.duration(200)} style={S.modalContent}>
+              <View style={S.modalHeader}>
+                <Pressable onPress={() => setTimePickerVisible(false)}>
+                  <ThemedText style={S.modalCancel}>Hủy</ThemedText>
+                </Pressable>
+                <ThemedText style={S.modalTitle}>{editingTimeLabel}</ThemedText>
+                <Pressable onPress={confirmTimePicker}>
+                  <ThemedText style={S.modalDone}>Xong</ThemedText>
+                </Pressable>
+              </View>
+              <DateTimePicker
+                value={tempDate}
+                mode="time"
+                display="spinner"
+                onChange={handleTimeChange}
+                textColor="#fff"
+                locale="vi"
+                style={{ height: 200 }}
+              />
+            </Animated.View>
+          </View>
+        </Modal>
+      )}
+
+      {/* ═══ Time Picker (Android) ═══ */}
+      {Platform.OS === 'android' && timePickerVisible && (
+        <DateTimePicker
+          value={tempDate}
+          mode="time"
+          display="default"
+          onChange={handleTimeChange}
+          is24Hour={false}
+        />
+      )}
     </View>
   );
 };
@@ -295,7 +423,7 @@ const S = StyleSheet.create({
   headerCenter: { flex: 1, alignItems: 'center' },
   headerTitle: { fontFamily: 'Inter_800ExtraBold', fontSize: 22, color: P.primary, letterSpacing: -0.5 },
 
-  scrollContent: { paddingHorizontal: 20, paddingBottom: 120, gap: 24 },
+  scrollContent: { paddingHorizontal: 20, paddingBottom: 120 },
 
   glassCard: {
     backgroundColor: P.surfaceGlass,
@@ -323,6 +451,15 @@ const S = StyleSheet.create({
   itemTextStandard: { fontSize: 16, fontFamily: 'Inter_500Medium', color: '#fff' },
   timeText: { fontSize: 14, fontFamily: 'Inter_600SemiBold', color: P.slate500 },
 
+  // Time edit button (when in editing mode)
+  timeEditBtn: {
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    backgroundColor: P.primary + '18', borderRadius: 10,
+    paddingHorizontal: 10, paddingVertical: 5,
+    borderWidth: 1, borderColor: P.primary + '40',
+  },
+  timeEditText: { fontSize: 14, fontFamily: 'Inter_700Bold', color: P.primary },
+
   editBtn: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 20 },
   editBtnText: { fontSize: 12, fontFamily: 'Inter_800ExtraBold', color: P.primary, letterSpacing: 1 },
 
@@ -332,6 +469,25 @@ const S = StyleSheet.create({
     borderWidth: 1, borderColor: P.glassBorder, borderRadius: 16,
     padding: 16, gap: 4,
   },
+  quietTimeRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   quietLabel: { fontSize: 11, fontFamily: 'Inter_600SemiBold', color: P.slate500, textTransform: 'uppercase' },
   quietTime: { fontSize: 18, fontFamily: 'Inter_700Bold', color: '#fff' },
+
+  // Modal styles for iOS time picker
+  modalOverlay: {
+    flex: 1, justifyContent: 'flex-end',
+    backgroundColor: 'rgba(0,0,0,0.5)',
+  },
+  modalContent: {
+    backgroundColor: '#1a1e30',
+    borderTopLeftRadius: 24, borderTopRightRadius: 24,
+    paddingBottom: 40,
+  },
+  modalHeader: {
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+    padding: 16, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.08)',
+  },
+  modalTitle: { fontSize: 16, fontFamily: 'Inter_700Bold', color: '#fff' },
+  modalCancel: { fontSize: 15, fontFamily: 'Inter_500Medium', color: P.slate400 },
+  modalDone: { fontSize: 15, fontFamily: 'Inter_700Bold', color: P.primary },
 });
