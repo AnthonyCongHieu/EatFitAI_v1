@@ -60,7 +60,8 @@
         {
           "photosPermission": "EatFitAI cần truy cập thư viện ảnh để chọn ảnh thực phẩm"
         }
-      ]
+      ],
+      "@react-native-community/datetimepicker"
     ],
     "updates": {
       "fallbackToCacheTimeout": 0
