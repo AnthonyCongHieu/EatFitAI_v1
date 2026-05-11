@@ -71,7 +71,16 @@ os.chdir(AI_DIR)
 gunicorn = AI_DIR / "venv" / "bin" / "gunicorn"
 os.execv(str(gunicorn), [str(gunicorn), "-c", "gunicorn.conf.py", "app:app"])
 EOF
+sudo chown "${SUDO_USER:-$USER}:${SUDO_USER:-$USER}" "${APP_ROOT}/start-ai-provider.py"
 sudo chmod 0750 "${APP_ROOT}/start-ai-provider.py"
+if [ -f "${APP_ROOT}/ai-provider.env.json" ]; then
+  sudo chown "${SUDO_USER:-$USER}:${SUDO_USER:-$USER}" "${APP_ROOT}/ai-provider.env.json"
+  sudo chmod 0600 "${APP_ROOT}/ai-provider.env.json"
+fi
+if [ -f "${APP_ROOT}/ai-provider.env" ]; then
+  sudo chown "${SUDO_USER:-$USER}:${SUDO_USER:-$USER}" "${APP_ROOT}/ai-provider.env"
+  sudo chmod 0600 "${APP_ROOT}/ai-provider.env"
+fi
 
 sudo tee /etc/systemd/system/eatfitai-ai.service >/dev/null <<EOF
 [Unit]
