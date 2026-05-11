@@ -162,22 +162,24 @@ const MascotOverlay = () => {
               <View style={styles.robotMouth} />
             </View>
 
-            {/* Ping dot – đổi sang màu cảnh báo khi có reminder */}
-            <View style={styles.fabPingContainer}>
-              <Animated.View
-                entering={FadeIn.delay(800)}
-                style={[
-                  styles.fabPing,
-                  hasReminders && { backgroundColor: '#f59e0b' },
-                ]}
-              />
-              <View
-                style={[
-                  styles.fabDot,
-                  hasReminders && { backgroundColor: '#f59e0b' },
-                ]}
-              />
-            </View>
+            {/* Ping dot – chỉ hiện khi có reminder */}
+            {hasReminders && (
+              <View style={styles.fabPingContainer}>
+                <Animated.View
+                  entering={FadeIn.delay(800)}
+                  style={[
+                    styles.fabPing,
+                    { backgroundColor: '#f59e0b' },
+                  ]}
+                />
+                <View
+                  style={[
+                    styles.fabDot,
+                    { backgroundColor: '#f59e0b' },
+                  ]}
+                />
+              </View>
+            )}
           </Pressable>
         </Animated.View>
       </GestureDetector>

@@ -314,10 +314,10 @@ const styles = StyleSheet.create({
   reminderContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: C.amberBg,
+    backgroundColor: 'rgba(17, 24, 39, 0.7)',
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: C.amberBorder,
+    borderColor: C.outlineVariant,
     paddingHorizontal: 16,
     paddingVertical: 14,
     gap: 12,
