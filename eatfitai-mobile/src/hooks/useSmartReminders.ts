@@ -53,14 +53,19 @@ export function useSmartReminders(): {
   bubbleText: string | null;
 } {
   const summary = useDiaryStore((s) => s.summary);
+  const isLoadingDiary = useDiaryStore((s) => s.isLoading);
 
-  const { data: waterData } = useQuery<WaterIntakeData>({
+  const { data: waterData, isPending: waterLoading } = useQuery<WaterIntakeData>({
     queryKey: ['water-intake-today'],
     queryFn: () => waterService.getWaterIntake(new Date()),
     staleTime: 2 * 60 * 1000,
   });
 
   return useMemo(() => {
+    if (isLoadingDiary || waterLoading) {
+      return { reminders: [], hasReminders: false, bubbleText: null };
+    }
+
     const now = new Date();
     const currentHour = now.getHours();
     const reminders: SmartReminder[] = [];
@@ -113,5 +118,5 @@ export function useSmartReminders(): {
     const bubbleText = hasReminders ? reminders[0]!.message : null;
 
     return { reminders, hasReminders, bubbleText };
-  }, [summary, waterData]);
+  }, [summary, waterData, isLoadingDiary, waterLoading]);
 }
