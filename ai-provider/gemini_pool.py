@@ -844,6 +844,7 @@ class GeminiPoolManager:
         max_output_tokens: int = 500,
         response_mime_type: Optional[str] = None,
         response_schema: Optional[Dict[str, Any]] = None,
+        thinking_budget: Optional[int] = None,
     ) -> str:
         probe_targets: List[GeminiPoolEntry] = []
         with self._lock:
@@ -907,6 +908,7 @@ class GeminiPoolManager:
                     max_output_tokens=max_output_tokens,
                     response_mime_type=response_mime_type,
                     response_schema=response_schema,
+                    thinking_budget=thinking_budget,
                     estimated_tokens=estimated_tokens,
                     request_id=request_id,
                 )
@@ -1126,6 +1128,7 @@ class GeminiPoolManager:
         max_output_tokens: int,
         response_mime_type: Optional[str],
         response_schema: Optional[Dict[str, Any]],
+        thinking_budget: Optional[int],
         estimated_tokens: int,
         request_id: str,
     ) -> str:
@@ -1140,6 +1143,7 @@ class GeminiPoolManager:
                     max_output_tokens=max_output_tokens,
                     response_mime_type=response_mime_type,
                     response_schema=response_schema,
+                    thinking_budget=thinking_budget,
                     estimated_tokens=estimated_tokens,
                     request_id=request_id,
                 )
@@ -1160,6 +1164,7 @@ class GeminiPoolManager:
         max_output_tokens: int,
         response_mime_type: Optional[str],
         response_schema: Optional[Dict[str, Any]],
+        thinking_budget: Optional[int],
         estimated_tokens: int,
         request_id: str,
     ) -> str:
@@ -1171,6 +1176,8 @@ class GeminiPoolManager:
             generation_config["responseMimeType"] = response_mime_type
         if response_schema:
             generation_config["responseSchema"] = response_schema
+        if thinking_budget is not None:
+            generation_config["thinkingConfig"] = {"thinkingBudget": thinking_budget}
 
         url = GENERATE_URL_TEMPLATE.format(model=quote(entry.model, safe="-_."))
         payload = {

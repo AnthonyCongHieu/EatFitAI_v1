@@ -115,6 +115,7 @@ def query_gemini(
     use_cache: bool = True,
     cache_ttl: int = None,
     response_schema: Optional[Dict[str, Any]] = None,
+    thinking_budget: Optional[int] = None,
 ) -> Optional[str]:
     """
     Query Gemini API với cache support.
@@ -134,6 +135,7 @@ def query_gemini(
             max_output_tokens=500,
             response_mime_type="application/json",
             response_schema=response_schema,
+            thinking_budget=thinking_budget,
         )
         
         if response:
@@ -360,6 +362,7 @@ TRẢ LỜI JSON (chỉ JSON, không giải thích thêm):
         prompt,
         use_cache=False,
         response_schema=NUTRITION_TARGET_SCHEMA,
+        thinking_budget=0,
     )
     
     if response:

@@ -143,6 +143,41 @@ class GeminiPoolTests(unittest.TestCase):
             "application/json",
         )
 
+    def test_generate_text_can_request_json_response_schema(self) -> None:
+        captured_payload = {}
+        schema = {
+            "type": "object",
+            "properties": {"calories": {"type": "integer"}},
+            "required": ["calories"],
+        }
+
+        def requester(*_args, **kwargs):
+            captured_payload.update(kwargs.get("json") or {})
+            return ok_response('{"calories":2200}')
+
+        pool = GeminiPoolManager(
+            [GeminiPoolEntry("primary", "project-a", "slot-1", "key-1", DEFAULT_MODEL)],
+            requester=requester,
+        )
+
+        result = pool.generate_text(
+            "return json",
+            response_mime_type="application/json",
+            response_schema=schema,
+            thinking_budget=0,
+        )
+
+        self.assertEqual(result, '{"calories":2200}')
+        self.assertEqual(
+            captured_payload["generationConfig"]["responseMimeType"],
+            "application/json",
+        )
+        self.assertEqual(captured_payload["generationConfig"]["responseSchema"], schema)
+        self.assertEqual(
+            captured_payload["generationConfig"]["thinkingConfig"],
+            {"thinkingBudget": 0},
+        )
+
     def test_fails_over_on_429(self) -> None:
         responses = [
             FakeResponse(429, {"error": {"message": "quota exceeded"}}),
