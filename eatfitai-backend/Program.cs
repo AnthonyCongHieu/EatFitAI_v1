@@ -1,5 +1,6 @@
 using EatFitAI.API.DbScaffold.Data;
 using EatFitAI.API.Data;
+using EatFitAI.API.Helpers;
 using EatFitAI.API.MappingProfiles;
 using EatFitAI.API.Middleware;
 using EatFitAI.API.Repositories;
@@ -423,6 +424,24 @@ static void EnsureRequiredProductionConfiguration(
         }
     }
 
+    void RequireHttpsOrPrivateHttpUrl(string key)
+    {
+        var value = builder.Configuration[key];
+        if (IsPlaceholderSecret(value)
+            || !Uri.TryCreate(value, UriKind.Absolute, out var uri))
+        {
+            errors.Add(key);
+            return;
+        }
+
+        var isPublicHttps = string.Equals(uri.Scheme, Uri.UriSchemeHttps, StringComparison.OrdinalIgnoreCase)
+            && !LooksLocalUrl(value);
+        if (!isPublicHttps && !PrivateNetworkUrlPolicy.IsPrivateHttpUrl(value))
+        {
+            errors.Add(key);
+        }
+    }
+
     var defaultConnection = builder.Configuration.GetConnectionString("DefaultConnection");
     if (IsPlaceholderSecret(defaultConnection) || LooksLocalConnectionString(defaultConnection))
     {
@@ -441,7 +460,7 @@ static void EnsureRequiredProductionConfiguration(
     RequireValue("Jwt:Key");
     RequireValue("Encryption:Key");
     RequireValue("AIProvider:InternalToken");
-    RequireHttpsUrl("AIProvider:VisionBaseUrl");
+    RequireHttpsOrPrivateHttpUrl("AIProvider:VisionBaseUrl");
 
     if (string.Equals(builder.Configuration["Media:Provider"], "r2", StringComparison.OrdinalIgnoreCase))
     {
@@ -826,6 +845,7 @@ builder.Services.AddScoped<IUserFoodItemService, UserFoodItemService>();
 builder.Services.AddScoped<IAiFoodMapService, AiFoodMapService>();
 builder.Services.AddScoped<IAiCorrectionService, AiCorrectionService>();
 builder.Services.AddSingleton<IAiHealthService, AiHealthService>();
+builder.Services.AddSingleton<VisionDetectConcurrencyGate>();
 builder.Services.AddHostedService<AiHealthBackgroundService>();
 builder.Services.AddScoped<IUserPreferenceService, UserPreferenceService>();
 builder.Services.AddScoped<IRecipeSuggestionService, RecipeSuggestionService>();

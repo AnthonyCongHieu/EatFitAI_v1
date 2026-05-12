@@ -5,17 +5,19 @@ Tối ưu cho Render.com starter tier (512MB RAM)
 import os
 import multiprocessing
 
-# Bind - Render cung cấp PORT env var
+# Bind - Render cung cấp PORT env var. Lightsail can pin this to the
+# instance private IP so port 5050 is not exposed on the public interface.
 port = os.getenv("PORT", "5050")
-bind = f"0.0.0.0:{port}"
+host = os.getenv("AI_PROVIDER_BIND_IP", "0.0.0.0")
+bind = f"{host}:{port}"
 
 # Workers - chỉ 1 worker vì YOLO model dùng nhiều RAM (~300MB)
 # Nhiều worker sẽ duplicate model trong mỗi process → OOM
-workers = 1
+workers = int(os.getenv("WEB_CONCURRENCY", "1"))
 
 # Threads - keep single request execution on Render Free to avoid overlapping
 # YOLO11m inference memory spikes in the 512MB container.
-threads = 1
+threads = int(os.getenv("GUNICORN_THREADS", "1"))
 
 # Timeout cao vì YOLO inference có thể chậm trên CPU
 timeout = 120

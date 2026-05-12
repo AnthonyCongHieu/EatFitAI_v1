@@ -1,6 +1,7 @@
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Security.Claims;
+using System.Diagnostics;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
@@ -42,6 +43,7 @@ namespace EatFitAI.API.Controllers
         private readonly INutritionCalcService _nutritionCalcService;
         private readonly IVisionCacheService _visionCacheService;
         private readonly IMemoryCache _cache;
+        private readonly VisionDetectConcurrencyGate _visionDetectConcurrencyGate;
 
         public AIController(
             IHttpClientFactory httpClientFactory,
@@ -55,7 +57,8 @@ namespace EatFitAI.API.Controllers
             INutritionInsightService nutritionInsightService,
             INutritionCalcService nutritionCalcService,
             IVisionCacheService visionCacheService,
-            IMemoryCache cache)
+            IMemoryCache cache,
+            VisionDetectConcurrencyGate visionDetectConcurrencyGate)
         {
             _httpClientFactory = httpClientFactory;
             _configuration = configuration;
@@ -69,6 +72,7 @@ namespace EatFitAI.API.Controllers
             _nutritionCalcService = nutritionCalcService;
             _visionCacheService = visionCacheService;
             _cache = cache;
+            _visionDetectConcurrencyGate = visionDetectConcurrencyGate;
         }
 
         [HttpPost("vision/detect")]
@@ -78,6 +82,7 @@ namespace EatFitAI.API.Controllers
         [ProducesResponseType(typeof(object), StatusCodes.Status400BadRequest)]
         public async Task<ActionResult<EatFitAI.API.DTOs.AI.VisionDetectResultDto>> DetectVision([FromBody] DetectVisionRequest input)
         {
+            var totalStopwatch = Stopwatch.StartNew();
             var userId = GetUserIdFromToken();
             if (!TryResolveVisionObjectKey(input, userId, out var objectKey))
             {
@@ -124,11 +129,22 @@ namespace EatFitAI.API.Controllers
             var baseUrl = AiProviderUrlResolver.GetVisionBaseUrl(_configuration);
             var url = $"{baseUrl}/detect";
 
+            using var providerLease = await _visionDetectConcurrencyGate.TryAcquireAsync(HttpContext.RequestAborted);
+            if (providerLease == null)
+            {
+                Response.Headers["Retry-After"] = Math.Ceiling(_visionDetectConcurrencyGate.RetryAfter.TotalSeconds)
+                    .ToString(System.Globalization.CultureInfo.InvariantCulture);
+                return StatusCode(
+                    StatusCodes.Status429TooManyRequests,
+                    ErrorResponseHelper.SafeError("ai-provider_busy", "Dich vu AI dang ban. Vui long thu lai sau.", HttpContext));
+            }
+
             using var client = _httpClientFactory.CreateClient();
             var payload = new { image_url = imageUrl };
             var content = new StringContent(JsonSerializer.Serialize(payload), System.Text.Encoding.UTF8, "application/json");
 
             HttpResponseMessage response;
+            var providerStopwatch = Stopwatch.StartNew();
             try
             {
                 using var request = new HttpRequestMessage(HttpMethod.Post, url)
@@ -142,6 +158,7 @@ namespace EatFitAI.API.Controllers
             }
             catch (OperationCanceledException ex) when (!HttpContext.RequestAborted.IsCancellationRequested)
             {
+                providerStopwatch.Stop();
                 _logger.LogWarning(ex, "AI provider detect timed out for {Url}", url);
                 return StatusCode(
                     StatusCodes.Status504GatewayTimeout,
@@ -149,6 +166,7 @@ namespace EatFitAI.API.Controllers
             }
             catch (HttpRequestException ex)
             {
+                providerStopwatch.Stop();
                 _logger.LogWarning(ex, "AI provider detect request failed for {Url}", url);
                 return StatusCode(
                     StatusCodes.Status503ServiceUnavailable,
@@ -157,6 +175,7 @@ namespace EatFitAI.API.Controllers
 
             using var resp = response;
             var body = await resp.Content.ReadAsStringAsync(HttpContext.RequestAborted);
+            providerStopwatch.Stop();
             if (!resp.IsSuccessStatusCode)
             {
                 _logger.LogWarning(
@@ -188,7 +207,9 @@ namespace EatFitAI.API.Controllers
                 _logger.LogWarning(ex, "AILog parse failure");
             }
 
+            var mappingStopwatch = Stopwatch.StartNew();
             var items = await _aiFoodMapService.MapDetectionsAsync(detections, HttpContext.RequestAborted);
+            mappingStopwatch.Stop();
             var result = new EatFitAI.API.DTOs.AI.VisionDetectResultDto
             {
                 Items = items,
@@ -230,6 +251,16 @@ namespace EatFitAI.API.Controllers
             catch
             {
             }
+
+            _logger.LogInformation(
+                "AI vision detect timing user={UserId} provider_ms={ProviderMs} mapping_ms={MappingMs} total_ms={TotalMs} detection_count={DetectionCount} mapped_count={MappedCount} object_key={ObjectKey}",
+                userId,
+                providerStopwatch.ElapsedMilliseconds,
+                mappingStopwatch.ElapsedMilliseconds,
+                totalStopwatch.ElapsedMilliseconds,
+                detections.Count,
+                result.Items.Count,
+                objectKey);
 
             return Ok(result);
         }

@@ -24,6 +24,7 @@ android/.kotlin/
 _tooling/
 _state/
 _logs/
+_artifacts/
 uploads/
 artifacts/
 eatfitai-mobile/artifacts/
