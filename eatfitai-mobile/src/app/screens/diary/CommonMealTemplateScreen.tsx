@@ -13,7 +13,7 @@ import { Ionicons } from '@expo/vector-icons';
 import Toast from 'react-native-toast-message';
 
 import Button from '../../../components/Button';
-import Screen from '../../../components/Screen';
+import SubScreenLayout from '../../../components/ui/SubScreenLayout';
 import { ThemedText } from '../../../components/ThemedText';
 import ThemedTextInput from '../../../components/ThemedTextInput';
 import { foodService, type FoodItem } from '../../../services/foodService';
@@ -45,7 +45,7 @@ const CommonMealTemplateScreen = (): React.ReactElement => {
   const isEditMode = !!templateId;
 
   const [dishName, setDishName] = useState('');
-  const [description, setDescription] = useState('');
+  const [description] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<FoodItem[]>([]);
   const [selectedIngredients, setSelectedIngredients] = useState<SelectedIngredient[]>([]);
@@ -65,7 +65,6 @@ const CommonMealTemplateScreen = (): React.ReactElement => {
     }
 
     setDishName(templateQuery.data.name);
-    setDescription(templateQuery.data.description ?? '');
     setSelectedIngredients(
       templateQuery.data.ingredients.map((ingredient) => ({
         foodItemId: ingredient.foodItemId,
@@ -87,8 +86,8 @@ const CommonMealTemplateScreen = (): React.ReactElement => {
     if (!trimmed) {
       Toast.show({
         type: 'info',
-        text1: 'Nhập nguyên liệu cần tìm',
-        text2: 'Tìm món trong catalog để thêm vào mẫu bữa ăn.',
+        text1: 'Nhập tên món cần tìm',
+        text2: 'Tìm món trong danh mục để thêm vào tổ hợp.',
       });
       return;
     }
@@ -171,7 +170,7 @@ const CommonMealTemplateScreen = (): React.ReactElement => {
     if (!normalizedName) {
       Toast.show({
         type: 'error',
-        text1: 'Thiếu tên mẫu bữa ăn',
+        text1: 'Thiếu tên tổ hợp',
         text2: 'Hãy đặt tên để bạn dễ tìm lại về sau.',
       });
       return;
@@ -180,8 +179,8 @@ const CommonMealTemplateScreen = (): React.ReactElement => {
     if (selectedIngredients.length === 0) {
       Toast.show({
         type: 'error',
-        text1: 'Chưa có nguyên liệu',
-        text2: 'Thêm ít nhất một món từ catalog để lưu mẫu.',
+        text1: 'Chưa có món nào',
+        text2: 'Thêm ít nhất một món từ danh mục để lưu tổ hợp.',
       });
       return;
     }
@@ -195,7 +194,7 @@ const CommonMealTemplateScreen = (): React.ReactElement => {
       Toast.show({
         type: 'error',
         text1: 'Khối lượng chưa hợp lệ',
-        text2: 'Mỗi nguyên liệu cần có số gram lớn hơn 0.',
+        text2: 'Mỗi món cần có số gram lớn hơn 0.',
       });
       return;
     }
@@ -223,7 +222,7 @@ const CommonMealTemplateScreen = (): React.ReactElement => {
 
       Toast.show({
         type: 'success',
-        text1: isEditMode ? 'Đã cập nhật món thường dùng' : 'Đã tạo món thường dùng',
+        text1: isEditMode ? 'Đã cập nhật tổ hợp món' : 'Đã tạo tổ hợp món',
         text2: normalizedName,
       });
       navigation.goBack();
@@ -234,114 +233,128 @@ const CommonMealTemplateScreen = (): React.ReactElement => {
     }
   }, [description, dishName, isEditMode, navigation, queryClient, selectedIngredients, templateId]);
 
-  const renderIngredientCard = (ingredient: SelectedIngredient) => (
-    <View key={ingredient.foodItemId} style={[styles.card, { borderColor: theme.colors.border }]}>
-      <View style={styles.ingredientHeader}>
-        <View style={{ flex: 1 }}>
-          <ThemedText weight="700">{ingredient.foodName}</ThemedText>
-          <ThemedText variant="bodySmall" color="textSecondary">
-            {Math.round(ingredient.caloriesPer100g ?? 0)} kcal / 100g
-          </ThemedText>
-        </View>
-        <Pressable
-          accessibilityRole="button"
-          hitSlop={8}
-          onPress={() => handleRemoveIngredient(ingredient.foodItemId)}
-          style={styles.iconButton}
-          testID={`common-meal-remove-ingredient-${ingredient.foodItemId}`}
-        >
-          <Ionicons name="trash-outline" size={18} color={theme.colors.danger} />
-        </Pressable>
-      </View>
+  const renderIngredientCard = (ingredient: SelectedIngredient) => {
+    const grams = Number.parseFloat(ingredient.gramsInput) || 0;
+    const factor = grams / 100;
 
-      <View style={styles.gramsRow}>
-        <ThemedText variant="bodySmall" color="textSecondary">
-          Khối lượng
-        </ThemedText>
-        <TextInput
-          keyboardType="decimal-pad"
-          onChangeText={(value) => handleChangeIngredientGrams(ingredient.foodItemId, value)}
-          style={[
-            styles.gramsInput,
-            {
-              borderColor: theme.colors.border,
-              color: theme.colors.text,
-              backgroundColor: theme.colors.card,
-            },
-          ]}
-          testID={`common-meal-grams-input-${ingredient.foodItemId}`}
-          value={ingredient.gramsInput}
-        />
+    const cal = Math.round((ingredient.caloriesPer100g ?? 0) * factor);
+    const p = Math.round((ingredient.proteinPer100g ?? 0) * factor);
+    const c = Math.round((ingredient.carbPer100g ?? 0) * factor);
+    const f = Math.round((ingredient.fatPer100g ?? 0) * factor);
+
+    return (
+      <View key={ingredient.foodItemId} style={[styles.card, { borderColor: theme.colors.border }]}>
+        <View style={styles.ingredientHeader}>
+          <View style={{ flex: 1 }}>
+            <ThemedText weight="700" style={{ fontSize: 16 }}>{ingredient.foodName}</ThemedText>
+            <View style={{ marginTop: 4 }}>
+              <ThemedText variant="bodySmall" color="textSecondary" style={{ marginBottom: 4 }}>
+                {cal} kcal
+              </ThemedText>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                  <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: '#34d399' }} />
+                  <ThemedText variant="bodySmall" color="textSecondary">P: {p}g</ThemedText>
+                </View>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                  <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: '#fbbf24' }} />
+                  <ThemedText variant="bodySmall" color="textSecondary">C: {c}g</ThemedText>
+                </View>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                  <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: '#fb7185' }} />
+                  <ThemedText variant="bodySmall" color="textSecondary">F: {f}g</ThemedText>
+                </View>
+              </View>
+            </View>
+          </View>
+          <Pressable
+            accessibilityRole="button"
+            hitSlop={8}
+            onPress={() => handleRemoveIngredient(ingredient.foodItemId)}
+            style={styles.iconButton}
+            testID={`common-meal-remove-ingredient-${ingredient.foodItemId}`}
+          >
+            <Ionicons name="trash-outline" size={18} color={theme.colors.danger} />
+          </Pressable>
+        </View>
+
+        <View style={styles.gramsRow}>
+          <ThemedText variant="bodySmall" color="textSecondary">
+            Khối lượng
+          </ThemedText>
+          <TextInput
+            keyboardType="decimal-pad"
+            onChangeText={(value) => handleChangeIngredientGrams(ingredient.foodItemId, value)}
+            selectTextOnFocus={true}
+            style={[
+              styles.gramsInput,
+              {
+                borderColor: theme.colors.border,
+                color: theme.colors.text,
+                backgroundColor: theme.colors.card,
+              },
+            ]}
+            testID={`common-meal-grams-input-${ingredient.foodItemId}`}
+            value={ingredient.gramsInput}
+          />
+        </View>
       </View>
-    </View>
-  );
+    );
+  };
 
   return (
-    <Screen contentContainerStyle={styles.content} hasHeader useGradient={false}>
-      <View style={styles.header}>
-        <Pressable hitSlop={8} onPress={() => navigation.goBack()} style={styles.iconButton}>
-          <Ionicons name="arrow-back" size={22} color={theme.colors.text} />
-        </Pressable>
-        <View style={{ flex: 1 }}>
-          <ThemedText variant="h3" weight="700">
-            {isEditMode ? 'Chỉnh sửa món thường dùng' : 'Tạo món thường dùng'}
-          </ThemedText>
-          <ThemedText variant="bodySmall" color="textSecondary">
-            Lưu các tổ hợp món bạn hay ăn để thêm nhanh vào nhật ký.
-          </ThemedText>
-        </View>
-      </View>
-
+    <SubScreenLayout
+      title={isEditMode ? 'Chỉnh sửa tổ hợp món' : 'Tạo tổ hợp món mới'}
+      subtitle="Lưu tổ hợp món bạn hay ăn để thêm nhanh"
+      keyboardAvoiding
+    >
       {templateQuery.isLoading ? (
         <View style={styles.loadingState}>
           <ActivityIndicator color={theme.colors.primary} />
           <ThemedText variant="bodySmall" color="textSecondary">
-            Đang tải mẫu bữa ăn...
+            Đang tải tổ hợp món...
           </ThemedText>
         </View>
       ) : (
         <>
           <View style={styles.formSection}>
             <ThemedTextInput
-              label="Tên món thường dùng"
+              label="Tên tổ hợp món"
               onChangeText={setDishName}
               testID="common-meal-name-input"
               value={dishName}
               placeholder="Ví dụ: Lunch Prep ức gà"
               required
             />
-            <ThemedTextInput
-              label="Ghi chú"
-              multiline
-              numberOfLines={3}
-              onChangeText={setDescription}
-              testID="common-meal-description-input"
-              value={description}
-              placeholder="Ví dụ: combo đi làm 3 ngày"
-            />
           </View>
 
           <View style={styles.formSection}>
             <ThemedText variant="body" weight="700">
-              Thêm nguyên liệu
+              Thêm món vào tổ hợp
             </ThemedText>
             <View style={styles.searchRow}>
               <View style={{ flex: 1 }}>
                 <ThemedTextInput
                   onChangeText={setSearchQuery}
-                  placeholder="Tìm món từ catalog"
+                  placeholder="Tìm món từ danh mục"
                   testID="common-meal-search-input"
                   value={searchQuery}
                 />
               </View>
-              <Button
-                fullWidth={false}
+              <Pressable
                 onPress={handleSearch}
-                loading={isSearching}
-                size="sm"
+                style={({ pressed }) => [
+                  styles.searchIconBtn,
+                  { backgroundColor: theme.colors.primary, opacity: pressed ? 0.85 : 1 },
+                ]}
                 testID="common-meal-search-button"
-                title="Tìm"
-              />
+              >
+                {isSearching ? (
+                  <ActivityIndicator color="#fff" size={18} />
+                ) : (
+                  <Ionicons name="search" size={18} color="#fff" />
+                )}
+              </Pressable>
             </View>
 
             {searchResults.length > 0 ? (
@@ -371,7 +384,7 @@ const CommonMealTemplateScreen = (): React.ReactElement => {
           <View style={styles.formSection}>
             <View style={styles.summaryHeader}>
               <ThemedText variant="body" weight="700">
-                Thành phần đã chọn
+                Món đã chọn
               </ThemedText>
               <ThemedText variant="bodySmall" color="textSecondary">
                 {selectedIngredients.length} món
@@ -381,7 +394,7 @@ const CommonMealTemplateScreen = (): React.ReactElement => {
             {selectedIngredients.length === 0 ? (
               <View style={[styles.emptyState, { borderColor: theme.colors.border }]}>
                 <ThemedText align="center" color="textSecondary">
-                  Chưa có nguyên liệu nào trong mẫu này.
+                  Chưa có món nào trong tổ hợp này.
                 </ThemedText>
               </View>
             ) : (
@@ -423,6 +436,12 @@ const CommonMealTemplateScreen = (): React.ReactElement => {
                 </ThemedText>
                 <ThemedText weight="700">{Math.round(nutritionSummary.carbs)}g</ThemedText>
               </View>
+              <View>
+                <ThemedText variant="bodySmall" color="textSecondary">
+                  Fat
+                </ThemedText>
+                <ThemedText weight="700">{Math.round(nutritionSummary.fat)}g</ThemedText>
+              </View>
             </View>
           </View>
 
@@ -430,26 +449,15 @@ const CommonMealTemplateScreen = (): React.ReactElement => {
             loading={isSaving}
             onPress={handleSave}
             testID="common-meal-save-button"
-            title={isEditMode ? 'Lưu thay đổi' : 'Tạo món thường dùng'}
+            title={isEditMode ? 'Lưu thay đổi' : 'Tạo tổ hợp món'}
           />
         </>
       )}
-    </Screen>
+    </SubScreenLayout>
   );
 };
 
 const styles = StyleSheet.create({
-  content: {
-    gap: 20,
-    paddingTop: 16,
-    paddingBottom: 32,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 12,
-    marginBottom: 8,
-  },
   iconButton: {
     width: 36,
     height: 36,
@@ -469,8 +477,15 @@ const styles = StyleSheet.create({
   },
   searchRow: {
     flexDirection: 'row',
-    alignItems: 'flex-end',
-    gap: 12,
+    alignItems: 'center',
+    gap: 10,
+  },
+  searchIconBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   resultsList: {
     gap: 10,
@@ -499,11 +514,12 @@ const styles = StyleSheet.create({
   },
   gramsInput: {
     borderWidth: 1,
-    borderRadius: 12,
-    minWidth: 84,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    borderRadius: 10,
+    minWidth: 60,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
     textAlign: 'right',
+    fontSize: 14,
   },
   summaryHeader: {
     flexDirection: 'row',

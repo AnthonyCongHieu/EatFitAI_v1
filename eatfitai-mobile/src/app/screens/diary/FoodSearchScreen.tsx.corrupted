@@ -296,7 +296,11 @@ const FoodSearchScreen = (): React.ReactElement => {
   };
 
   const handleTabChange = (tab: 'recent' | 'favorites' | 'common') => {
-    if (activeTab === tab) { setActiveTab(null); setItems([]); return; }
+    if (activeTab === tab) {
+      setActiveTab(null);
+      setItems([]);
+      return;
+    }
     setActiveTab(tab);
     setQuery('');
     setItems([]);
@@ -305,11 +309,9 @@ const FoodSearchScreen = (): React.ReactElement => {
     if (tab === 'favorites') loadFavorites(true);
   };
 
-
-
   const runSearch = useCallback(
     async (searchTerm: string, append = false) => {
-      setActiveTab(null);
+      if (activeTab === 'favorites') return;
       if (!searchTerm.trim()) {
         Toast.show({
           type: 'info',
@@ -371,9 +373,9 @@ const FoodSearchScreen = (): React.ReactElement => {
   );
 
   const handleSearch = useCallback(() => {
-
+    if (activeTab === 'favorites') return;
     runSearch(query, false).catch(() => {});
-  }, [query, runSearch]);
+  }, [activeTab, query, runSearch]);
 
   const handleQuickSuggestion = useCallback(
     (nextQuery: string) => {
@@ -385,11 +387,11 @@ const FoodSearchScreen = (): React.ReactElement => {
 
   useFocusEffect(
     useCallback(() => {
-      if (showQuickSuggestions) {
+      if (showQuickSuggestions && activeTab === 'recent') {
         loadRecentFoods().catch(() => undefined);
         loadCommonMeals().catch(() => undefined);
       }
-    }, [loadCommonMeals, loadRecentFoods, showQuickSuggestions]),
+    }, [activeTab, loadCommonMeals, loadRecentFoods, showQuickSuggestions]),
   );
 
   const handleOpenCommonMeals = useCallback(() => {
@@ -403,7 +405,6 @@ const FoodSearchScreen = (): React.ReactElement => {
   );
   const visibleItems = filteredResults.items;
   const visibleRecentFoods = filteredRecentFoods.items;
-
 
   // ═══ Render ═══ //
   const renderItem = ({ item, index }: { item: FoodItem; index: number }) => {
@@ -519,8 +520,8 @@ const FoodSearchScreen = (): React.ReactElement => {
       <Animated.View entering={FadeInDown.delay(index * 40).duration(300)} layout={Layout.springify()}>
         <View style={S.resultCard}>
           <View style={S.resultCardLeft}>
-            <View style={[S.thumbnailBox, { backgroundColor: P.primary + '15' }]}>
-              <Ionicons name="restaurant-outline" size={24} color={P.primary} />
+            <View style={S.thumbnailBox}>
+              <Ionicons name="restaurant" size={24} color={P.primary} />
             </View>
             <View style={S.resultInfo}>
               <ThemedText style={S.resultTitle} numberOfLines={1}>{template.name}</ThemedText>
@@ -530,26 +531,14 @@ const FoodSearchScreen = (): React.ReactElement => {
                 </ThemedText>
               ) : null}
               <View style={S.templateMetaRow}>
-                <ThemedText style={S.templateMetaText}>{template.ingredientCount} món</ThemedText>
                 <ThemedText style={S.per100g}>{Math.round(template.defaultGrams || 0)}g</ThemedText>
                 <ThemedText style={S.resultCaloriesSmall}>
                   {template.calories != null ? Math.round(template.calories) : '--'} kcal
                 </ThemedText>
               </View>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 4 }}>
-                <View style={S.macroDots}>
-                  <View style={[S.macroDot, { backgroundColor: P.macroP }]} />
-                  <ThemedText style={S.macroText}>P: {template.protein != null ? Math.round(template.protein) : '--'}g</ThemedText>
-                </View>
-                <View style={S.macroDots}>
-                  <View style={[S.macroDot, { backgroundColor: P.macroC }]} />
-                  <ThemedText style={S.macroText}>C: {template.carbs != null ? Math.round(template.carbs) : '--'}g</ThemedText>
-                </View>
-                <View style={S.macroDots}>
-                  <View style={[S.macroDot, { backgroundColor: P.macroF }]} />
-                  <ThemedText style={S.macroText}>F: {template.fat != null ? Math.round(template.fat) : '--'}g</ThemedText>
-                </View>
-              </View>
+              <ThemedText style={S.templateMetaText}>
+                {template.ingredientCount} nguyên liệu
+              </ThemedText>
             </View>
           </View>
 
@@ -583,54 +572,6 @@ const FoodSearchScreen = (): React.ReactElement => {
       {/* ═══ Header ═══ */}
       <View style={S.header}>
         <View style={S.headerLeft}>
-          <Pressable style={S.iconBtn} onPress={() => navigation.goBack()}>
-            <Ionicons name="arrow-back" size={24} color={P.onSurface} />
-          </Pressable>
-          <ThemedText style={S.headerTitle}>{t('food_search.title')}</ThemedText>
-        </View>
-        <Pressable
-          style={S.iconBtn}
-          onPress={() => navigation.navigate('DietaryRestrictions')}
-        >
-          <Ionicons name="options-outline" size={22} color={P.onSurfaceVariant} />
-        </Pressable>
-      </View>
-
-      <ScrollView contentContainerStyle={S.scrollContent} showsVerticalScrollIndicator={false}>
-
-        {/* ═══ Search Input Area ═══ */}
-
-          <View style={S.searchArea}>
-            <View style={S.searchInputBox}>
-              <Ionicons name="search" size={20} color={P.onSurfaceVariant} style={{ marginRight: 10 }} />
-              <TextInput
-                testID={TEST_IDS.foodSearch.queryInput}
-                nativeID={TEST_IDS.foodSearch.queryInput}
-                accessibilityLabel={TEST_IDS.foodSearch.queryInput}
-                style={S.searchInput}
-                placeholder="Tìm kiếm món ăn, công thức..."
-                placeholderTextColor={P.onSurfaceVariant + '80'}
-                value={query}
-                onChangeText={setQuery}
-                onSubmitEditing={handleSearch}
-                autoFocus={autoFocus}
-                returnKeyType="search"
-              />
-              {query.length > 0 && (
-                <Pressable onPress={() => setQuery('')} hitSlop={10}>
-                  <Ionicons name="close-circle" size={18} color={P.onSurfaceVariant} />
-                </Pressable>
-              )}
-            </View>
-          </View>
-
-
-        {/* ═══ Filter Chips ═══ */}
-        <View style={S.chipsWrapper}>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={S.chipsContent}>
-            <Pressable
-              style={[S.chip, activeTab === 'recent' && S.chipActive]}
-              onPress={() => handleTabChange('recent')}
             >
               <ThemedText style={[S.chipText, activeTab === 'recent' && S.chipTextActive]}>
                 Gần đây
@@ -640,10 +581,9 @@ const FoodSearchScreen = (): React.ReactElement => {
               style={[S.chip, activeTab === 'favorites' && S.chipActive]}
               onPress={() => handleTabChange('favorites')}
             >
-              <ThemedText style={[S.chipText, activeTab === 'favorites' && S.chipTextActive]}>
-                Yêu thích
-              </ThemedText>
+              <ThemedText style={[S.chipText, activeTab === 'favorites' && S.chipTextActive]}>Yêu thích</ThemedText>
             </Pressable>
+          
             <Pressable
               style={[S.chip, activeTab === 'common' && S.chipActive]}
               onPress={() => handleTabChange('common')}
@@ -652,7 +592,7 @@ const FoodSearchScreen = (): React.ReactElement => {
                 Thường dùng
               </ThemedText>
             </Pressable>
-          </ScrollView>
+</ScrollView>
         </View>
 
         {/* ═══ Content ═══ */}
@@ -702,7 +642,7 @@ const FoodSearchScreen = (): React.ReactElement => {
         ) : activeTab === 'common' ? (
           <View style={S.resultsArea}>
             <View style={S.sectionHeader}>
-              <ThemedText style={S.sectionTitle}>TỔ HỢP MÓN THƯỜNG DÙNG</ThemedText>
+              <ThemedText style={S.sectionTitle}>MÓN THƯỜNG DÙNG</ThemedText>
               <Pressable onPress={handleOpenCommonMeals} hitSlop={8}>
                 <ThemedText style={S.sectionAction}>Quản lý</ThemedText>
               </Pressable>
@@ -716,10 +656,10 @@ const FoodSearchScreen = (): React.ReactElement => {
             ) : (
               <View style={S.commonMealEmptyCard}>
                 <ThemedText style={S.commonMealEmptyTitle}>
-                  Chưa có tổ hợp món nào
+                  Chưa có món thường dùng nào
                 </ThemedText>
                 <ThemedText style={S.commonMealEmptyDescription}>
-                  Tạo tổ hợp các món bạn hay ăn cùng nhau để thêm nhanh vào nhật ký.
+                  Tạo mẫu bữa ăn bạn hay lặp lại để thêm nhanh vào nhật ký.
                 </ThemedText>
                 <Pressable
                   onPress={handleOpenCommonMeals}
@@ -729,7 +669,7 @@ const FoodSearchScreen = (): React.ReactElement => {
                   ]}
                 >
                   <Ionicons name="add-circle-outline" size={16} color={P.primary} />
-                  <ThemedText style={S.commonMealEmptyButtonText}>Tạo tổ hợp món</ThemedText>
+                  <ThemedText style={S.commonMealEmptyButtonText}>Tạo món thường dùng</ThemedText>
                 </Pressable>
               </View>
             )}
@@ -759,7 +699,7 @@ const FoodSearchScreen = (): React.ReactElement => {
               <ThemedText style={S.sectionTitle}>TÌM KIẾM GẦN ĐÂY</ThemedText>
             </View>
             <View style={{ gap: 8 }}>
-              {recentSearches.length > 0 ? recentSearches.slice(0, 3).map((term, i) => (
+              {recentSearches.length > 0 ? recentSearches.map((term, i) => (
                 <Pressable
                   key={i}
                   style={({ pressed }) => [S.recentItem, pressed && { backgroundColor: P.glassHover }]}
@@ -799,7 +739,7 @@ const S = StyleSheet.create({
   },
   headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 16 },
   iconBtn: { padding: 8, borderRadius: 20 },
-  headerTitle: { fontSize: 18, fontFamily: 'Inter_600SemiBold', color: P.primaryDark, letterSpacing: -0.3 },
+  headerTitle: { fontSize: 22, fontFamily: 'Inter_700Bold', color: P.onSurface, letterSpacing: -0.5 },
 
   scrollContent: { paddingHorizontal: 20, paddingTop: 16, paddingBottom: 40 },
 
@@ -822,10 +762,10 @@ const S = StyleSheet.create({
   cancelBtn: { color: P.primary, fontFamily: 'Inter_600SemiBold', fontSize: 15, paddingHorizontal: 4 },
 
   chipsWrapper: { marginBottom: 24, marginHorizontal: -20 },
-  chipsContent: { paddingHorizontal: 20, gap: 10 },
+  chipsContent: { paddingHorizontal: 20, gap: 12 },
   chip: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
+    paddingHorizontal: 24,
+    paddingVertical: 10,
     borderRadius: 24,
     backgroundColor: P.surfaceContainerHigh,
   },
@@ -841,7 +781,7 @@ const S = StyleSheet.create({
 
   sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12 },
   sectionTitle: { fontSize: 13, fontFamily: 'Inter_700Bold', color: P.onSurfaceVariant, letterSpacing: 1.5, textTransform: 'uppercase' },
-  sectionAction: { fontSize: 14, fontFamily: 'Inter_700Bold', color: P.primary },
+  sectionAction: { fontSize: 12, fontFamily: 'Inter_700Bold', color: P.primary },
 
   recentArea: { gap: 12 },
   recentItem: {
@@ -882,7 +822,7 @@ const S = StyleSheet.create({
   resultTitle: { fontSize: 16, fontFamily: 'Inter_700Bold', color: P.onSurface, marginBottom: 4 },
   templateDescription: { fontSize: 12, fontFamily: 'Inter_400Regular', color: P.onSurfaceVariant, marginBottom: 6 },
   templateMetaRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 4 },
-  templateMetaText: { fontSize: 13, fontFamily: 'Inter_600SemiBold', color: P.onSurfaceVariant },
+  templateMetaText: { fontSize: 11, fontFamily: 'Inter_600SemiBold', color: P.onSurfaceVariant },
   commonMealEmptyCard: {
     borderRadius: 18,
     borderWidth: 1,
@@ -891,12 +831,12 @@ const S = StyleSheet.create({
     padding: 16,
     gap: 10,
   },
-  commonMealEmptyTitle: { fontSize: 16, fontFamily: 'Inter_700Bold', color: P.onSurface },
+  commonMealEmptyTitle: { fontSize: 14, fontFamily: 'Inter_700Bold', color: P.onSurface },
   commonMealEmptyDescription: {
-    fontSize: 14,
+    fontSize: 12,
     fontFamily: 'Inter_400Regular',
     color: P.onSurfaceVariant,
-    lineHeight: 20,
+    lineHeight: 18,
   },
   commonMealEmptyButton: {
     flexDirection: 'row',
@@ -908,12 +848,12 @@ const S = StyleSheet.create({
     borderRadius: 999,
     backgroundColor: 'rgba(75, 226, 119, 0.12)',
   },
-  commonMealEmptyButtonText: { fontSize: 14, fontFamily: 'Inter_700Bold', color: P.primary },
+  commonMealEmptyButtonText: { fontSize: 12, fontFamily: 'Inter_700Bold', color: P.primary },
   macroRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   per100g: { fontSize: 13, fontFamily: 'Inter_500Medium', color: P.onSurfaceVariant },
   macroDots: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   macroDot: { width: 8, height: 8, borderRadius: 4 },
-  macroText: { fontSize: 13, fontFamily: 'Inter_600SemiBold', color: P.onSurfaceVariant },
+  macroText: { fontSize: 11, fontFamily: 'Inter_600SemiBold', color: P.onSurfaceVariant },
 
   resultCardRight: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   resultCaloriesSmall: { fontSize: 13, fontFamily: 'Inter_600SemiBold', color: P.primary },

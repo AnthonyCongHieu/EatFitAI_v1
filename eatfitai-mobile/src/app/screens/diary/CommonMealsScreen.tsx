@@ -13,7 +13,7 @@ import { Ionicons } from '@expo/vector-icons';
 import Toast from 'react-native-toast-message';
 
 import Button from '../../../components/Button';
-import Screen from '../../../components/Screen';
+import SubScreenLayout from '../../../components/ui/SubScreenLayout';
 import { ThemedText } from '../../../components/ThemedText';
 import { foodService } from '../../../services/foodService';
 import { useAppTheme } from '../../../theme/ThemeProvider';
@@ -42,7 +42,7 @@ const CommonMealsScreen = (): React.ReactElement => {
   const handleDelete = useCallback(
     (templateId: string, templateName: string) => {
       Alert.alert(
-        'Xóa món thường dùng',
+        'Xóa tổ hợp món',
         `Bạn có chắc muốn xóa "${templateName}" không?`,
         [
           { text: 'Hủy', style: 'cancel' },
@@ -56,7 +56,7 @@ const CommonMealsScreen = (): React.ReactElement => {
                 await commonMealsQuery.refetch();
                 Toast.show({
                   type: 'success',
-                  text1: 'Đã xóa món thường dùng',
+                  text1: 'Đã xóa tổ hợp món',
                   text2: templateName,
                 });
               } catch (error) {
@@ -71,34 +71,15 @@ const CommonMealsScreen = (): React.ReactElement => {
   );
 
   return (
-    <Screen contentContainerStyle={styles.content} hasHeader useGradient={false}>
-      <View style={styles.header}>
-        <Pressable hitSlop={8} onPress={() => navigation.goBack()} style={styles.iconButton}>
-          <Ionicons name="arrow-back" size={22} color={theme.colors.text} />
-        </Pressable>
-        <View style={{ flex: 1 }}>
-          <ThemedText variant="h3" weight="700">
-            Món thường dùng
-          </ThemedText>
-          <ThemedText variant="bodySmall" color="textSecondary">
-            Quản lý các mẫu bữa ăn để thêm nhanh vào nhật ký.
-          </ThemedText>
-        </View>
-      </View>
-
-      <Button
-        fullWidth={false}
-        icon="add-outline"
-        onPress={() => navigation.navigate('CommonMealTemplate')}
-        size="sm"
-        title="Tạo mẫu mới"
-      />
-
+    <SubScreenLayout
+      title="Tổ hợp món thường dùng"
+      subtitle="Quản lý tổ hợp món để thêm nhanh vào nhật ký"
+    >
       {commonMealsQuery.isLoading ? (
         <View style={styles.loadingState}>
           <ActivityIndicator color={theme.colors.primary} />
           <ThemedText variant="bodySmall" color="textSecondary">
-            Đang tải món thường dùng...
+            Đang tải tổ hợp món...
           </ThemedText>
         </View>
       ) : commonMealsQuery.data && commonMealsQuery.data.length > 0 ? (
@@ -130,51 +111,68 @@ const CommonMealsScreen = (): React.ReactElement => {
                 </Pressable>
               </View>
 
-              <View style={styles.metaRow}>
-                <ThemedText variant="bodySmall" color="textSecondary">
-                  {template.ingredientCount} nguyên liệu
-                </ThemedText>
-                <ThemedText variant="bodySmall" color="textSecondary">
-                  {Math.round(template.defaultGrams)}g
-                </ThemedText>
-                <ThemedText variant="bodySmall" color="textSecondary">
+              <View style={{ gap: 4 }}>
+                <View style={{ flexDirection: 'row', gap: 12 }}>
+                  <ThemedText variant="bodySmall" color="textSecondary">
+                    {template.ingredientCount} món
+                  </ThemedText>
+                  <ThemedText variant="bodySmall" color="textSecondary">
+                    {Math.round(template.defaultGrams)}g
+                  </ThemedText>
+                </View>
+
+                <ThemedText variant="bodySmall" weight="600" style={{ color: theme.colors.primary }}>
                   {Math.round(template.calories ?? 0)} kcal
                 </ThemedText>
+
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 2 }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                    <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: '#34d399' }} />
+                    <ThemedText variant="bodySmall" color="textSecondary">P: {Math.round(template.protein ?? 0)}g</ThemedText>
+                  </View>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                    <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: '#fbbf24' }} />
+                    <ThemedText variant="bodySmall" color="textSecondary">C: {Math.round(template.carbs ?? 0)}g</ThemedText>
+                  </View>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                    <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: '#fb7185' }} />
+                    <ThemedText variant="bodySmall" color="textSecondary">F: {Math.round(template.fat ?? 0)}g</ThemedText>
+                  </View>
+                </View>
               </View>
             </Pressable>
           ))}
+          <View style={{ marginTop: 8 }}>
+            <Button
+              fullWidth={true}
+              icon="add-outline"
+              onPress={() => navigation.navigate('CommonMealTemplate')}
+              size="md"
+              title="Tạo tổ hợp mới"
+            />
+          </View>
         </View>
       ) : (
         <View style={[styles.emptyState, { borderColor: theme.colors.border }]}>
           <ThemedText variant="body" weight="700" align="center">
-            Chưa có món thường dùng nào
+            Chưa có tổ hợp món nào
           </ThemedText>
           <ThemedText variant="bodySmall" color="textSecondary" align="center">
-            Tạo mẫu đầu tiên để biến các bữa ăn lặp lại thành thao tác thêm nhanh một chạm.
+            Tạo tổ hợp đầu tiên để lưu lại những món bạn hay ăn cùng nhau.
           </ThemedText>
           <Button
             fullWidth={false}
             onPress={() => navigation.navigate('CommonMealTemplate')}
             size="sm"
-            title="Tạo món đầu tiên"
+            title="Tạo tổ hợp đầu tiên"
           />
         </View>
       )}
-    </Screen>
+    </SubScreenLayout>
   );
 };
 
 const styles = StyleSheet.create({
-  content: {
-    gap: 18,
-    paddingTop: 16,
-    paddingBottom: 32,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 12,
-  },
   iconButton: {
     width: 36,
     height: 36,
@@ -194,12 +192,12 @@ const styles = StyleSheet.create({
   card: {
     borderWidth: 1,
     borderRadius: 18,
-    padding: 16,
-    gap: 10,
+    padding: 12,
+    gap: 6,
   },
   cardHeader: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
+    alignItems: 'center',
     gap: 12,
   },
   metaRow: {

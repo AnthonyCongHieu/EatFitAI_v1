@@ -43,6 +43,15 @@ const getGreetingText = (): string => {
   return 'KHUYA RỒI';
 };
 
+const getStreakColor = (streak: number) => {
+  if (streak >= 100) return '#c084fc'; // Purple (Legendary)
+  if (streak >= 50) return '#f43f5e';  // Rose/Red
+  if (streak >= 14) return '#f97316';  // Orange
+  if (streak >= 7) return '#eab308';   // Yellow
+  if (streak >= 3) return '#10b981';   // Emerald
+  return '#fff'; // Default
+};
+
 export const WelcomeHeader: React.FC<WelcomeHeaderProps> = ({
   streakCount = 0,
   onNotificationPress,
@@ -88,8 +97,8 @@ export const WelcomeHeader: React.FC<WelcomeHeaderProps> = ({
       <View style={styles.right}>
         {streakCount > 0 && (
           <Pressable style={styles.streak} onPress={onStreakPress} hitSlop={8}>
-            <Ionicons name="flame" size={16} color={C.primary} />
-            <Text style={styles.streakText}>{streakCount}</Text>
+            <Ionicons name="flame" size={16} color="#ef4444" />
+            <Text style={[styles.streakText, { color: getStreakColor(streakCount) }]}>{streakCount}</Text>
           </Pressable>
         )}
         <Pressable style={styles.bell} onPress={onNotificationPress} hitSlop={10}>

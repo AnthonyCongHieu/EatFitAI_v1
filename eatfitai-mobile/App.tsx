@@ -17,6 +17,7 @@ import {
   useFonts,
 } from '@expo-google-fonts/be-vietnam-pro';
 import Toast from 'react-native-toast-message';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import AppNavigator from './src/app/navigation/AppNavigator';
 import ErrorBoundary from './src/components/ErrorBoundary';
@@ -28,6 +29,7 @@ import { initErrorTracking } from './src/services/errorTracking';
 import { healthService } from './src/services/healthService';
 import { initializeNotifications } from './src/services/notificationService';
 import { ThemeProvider, useAppTheme } from './src/theme/ThemeProvider';
+import { toastConfig } from './src/config/toastConfig';
 
 const createQueryClient = () =>
   new QueryClient({
@@ -78,6 +80,7 @@ if (__DEV__) {
 
 const AppInner = () => {
   const { theme } = useAppTheme();
+  const insets = useSafeAreaInsets();
 
   useEffect(() => {
     SystemUI.setBackgroundColorAsync(theme.colors.background).catch(() => {});
@@ -124,7 +127,7 @@ const AppInner = () => {
     <>
       <AppNavigator />
       <StatusBar style={theme.statusBarStyle} />
-      <Toast position="bottom" />
+      <Toast position="top" topOffset={insets.top + 10} config={toastConfig} />
     </>
   );
 };

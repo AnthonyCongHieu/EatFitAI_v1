@@ -6,4 +6,5 @@ import type { VisionDetectResult } from './ai';
 export interface AddMealFromVisionParams {
   imageUri: string;
   result: VisionDetectResult;
+  initialGrams?: number;
 }

@@ -65,12 +65,21 @@ const BADGE_CONFIG: Record<string, { icon: string; color: string; bgColor: strin
   log_1000_meals: { icon: 'star-half', color: '#8b5cf6', bgColor: 'rgba(139,92,246,0.15)' },
 };
 
+const getStreakColor = (streak: number) => {
+  if (streak >= 100) return '#c084fc'; // Purple (Legendary)
+  if (streak >= 50) return '#f43f5e';  // Rose/Red
+  if (streak >= 14) return '#f97316';  // Orange
+  if (streak >= 7) return '#eab308';   // Yellow
+  if (streak >= 3) return '#10b981';   // Emerald
+  return P.primaryLight; // Default
+};
+
 /* ═══ Component ═══ */
 const AchievementsScreen = (): React.ReactElement => {
   const navigation = useNavigation<Nav>();
   const insets = useSafeAreaInsets();
   const viewRef = useRef(null);
-  const { achievements, currentStreak, totalDaysLogged, totalXP, checkStreak, syncAchievementProgress } = useGamificationStore();
+  const { achievements, currentStreak, totalDaysLogged, totalXP, checkStreak, syncAchievementProgress, dailyQuestsClaimed, claimDailyQuest } = useGamificationStore();
   const summary = useDiaryStore((s) => s.summary);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -116,6 +125,16 @@ const AchievementsScreen = (): React.ReactElement => {
     { id: 'q2', title: 'Uống đủ nước', reward: '30 XP', icon: 'water-outline' as const, iconColor: P.primaryLight, progress: Math.min(waterAmount, waterTarget), target: waterTarget, completed: waterAmount >= waterTarget },
   ], [todayMealCount, waterAmount, waterTarget]);
 
+  // Auto-claim daily quests
+  useEffect(() => {
+    const todayStr = new Date().toISOString().split('T')[0]!;
+    dailyQuests.forEach(q => {
+      if (q.completed && dailyQuestsClaimed?.[q.id] !== todayStr) {
+        claimDailyQuest(q.id, parseInt(q.reward.replace(/[^0-9]/g, ''), 10));
+      }
+    });
+  }, [dailyQuests, dailyQuestsClaimed, claimDailyQuest]);
+
   const getBadge = (id: string) => BADGE_CONFIG[id] ?? { icon: 'trophy-outline', color: P.textMuted, bgColor: 'rgba(148,163,184,0.1)' };
 
   return (
@@ -137,7 +156,7 @@ const AchievementsScreen = (): React.ReactElement => {
         <View style={S.heroBanner}>
           <ThemedText style={S.heroLabel}>TIẾN ĐỘ CỦA BẠN</ThemedText>
           <View style={S.streakRow}>
-            <ThemedText style={S.streakNumber}>{currentStreak}</ThemedText>
+            <ThemedText style={[S.streakNumber, { color: getStreakColor(currentStreak) }]}>{currentStreak}</ThemedText>
             <ThemedText style={S.streakText}>Ngày liên tiếp 🔥</ThemedText>
           </View>
           <View style={S.statsRow}>
@@ -301,8 +320,8 @@ const S = StyleSheet.create({
   activityTime: { fontSize: 13, color: P.textMuted, marginTop: 3 },
   badgesContainer: { backgroundColor: P.surfaceLow, borderRadius: 24, padding: 22 },
   badgesHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
-  badgesTitle: { fontSize: 22, fontWeight: '800', color: '#fff' },
-  badgesCount: { fontSize: 18, fontWeight: '500', color: P.primaryLight },
+  badgesTitle: { fontSize: 20, fontWeight: '800', color: '#fff' },
+  badgesCount: { fontSize: 20, fontWeight: '500', color: P.primaryLight },
   viewAllBtn: { fontSize: 15, fontWeight: '700', color: P.primary },
   badgesGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 14 },
   badgeCard: { width: '47%' as any, backgroundColor: P.surfaceHigh, borderRadius: 20, paddingVertical: 22, paddingHorizontal: 14, alignItems: 'center', borderWidth: 1, borderColor: 'transparent' },

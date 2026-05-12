@@ -21,17 +21,9 @@ import type { RecipeSuggestion } from '../../../types/aiEnhanced';
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 type RouteProps = RouteProp<RootStackParamList, 'RecipeSuggestions'>;
 
-const POPULAR_INGREDIENTS = [
-  'Trứng',
-  'Thịt gà',
-  'Thịt bò',
-  'Cà chua',
-  'Khoai tây',
-  'Hành tây',
-  'Tỏi',
-  'Gạo',
-  'Đậu phụ',
-];
+
+
+
 
 const P = {
   primary: '#4be277',
@@ -47,13 +39,6 @@ const P = {
   glassHeader: 'rgba(22, 27, 43, 0.6)',
   danger: '#ffb4ab',
 };
-
-const DUMMY_IMAGES = [
-  'https://lh3.googleusercontent.com/aida-public/AB6AXuDkPxIplDyeONp_vJiPgRP9EW8RoZM3JbhwNM_m-RuN4-VbxdI0wZ7GSo-ZaJC1FiQg0qZAaXoa5bDcNN7yFtfjv0COjoDcA7mV2jJxznij2k8eFuar5HgcugqzCUrUw0DDBN7LHa9PV9WHN7XtXYo16jZpLXq9Yp41P2LoigkRXdviz1dDzRD2ciDCo4kb5d4PxtXlFpLSu6Y9EKlH2nf8ZdRPtV-KBl_Me3V7z0vo6v7Z5kAb8pgQgPy-GW_HNrY3GrbxpKaVAVQ',
-  'https://lh3.googleusercontent.com/aida-public/AB6AXuAukILvQNoq71Oq5m173g7C5FBqvtI4EI6F99iYC5D_rxoimx2XLrR-naIwXyc7HU8gwk-lW_RVQcIEB03s0vU-6VN6qLrt3B-sLVM9or1_aHo3vcxXoSLiqM0NHbSpz6x3eqN7hHGNs2ZFFFSYbiuN8OylajF-6_keIerdbIye7Vf49E4WK21rRkzottpDUNOK4OsMS-N1F4XIFvx47oE4MqL-Xn7WTjv7kS4kjZ6I5wFX7BsoKhsLRtaxWz94VwNMuvw6mIAN064',
-  'https://lh3.googleusercontent.com/aida-public/AB6AXuB3hPK0Hob1eHqbdkBE-ckh0GdR84ek_HNKh1Pl0wKDWHrNshSGfOc6lB38EvpD-FKGK5hvdJWtDO5M7M9s377sx1bEQvuYk24Cv3B52ogRpHPnUMr4--h6JirsfpGJB-PZ8nhx5GTmqj_i7w0VYkHnx5w62gFzhdm3luXM8T2MA6UB_HFl4waKj-sxAaGpX6-Y1xtgGVDcgUTdiFsGivqmp7P69DgEEx75Z1ZSRAzQTX-J4X06yyLd7xANQjxxTLuoNyF5FASMXWg',
-  'https://lh3.googleusercontent.com/aida-public/AB6AXuC1oYs0RykK8I-wEhX1LQnzONtN6EiE1cvMhm5W145lb1jvI8giPgzWHB5khpzmBAqWhHynXB_wBGubDuPqE_Kr46LYUwkaTQfvxBRTMH_1wHv0IdVwIKkQNfrOAB6FMWNXTbPwxrVRMBi2Tl8-BWHpqVI9P39HwRi3PxbmCK5XetFuYsNdcyMe4P-hbbISlEt7vi08RVlOKucOPh4OY4bPfosnfjMju8Qt4jKXoWLgB3cyqT9JbGN0LCSMJcL2xIgewveqIIhDyLw',
-];
 
 const RecipeSuggestionsScreen = (): React.ReactElement => {
   const navigation = useNavigation<NavigationProp>();
@@ -174,31 +159,29 @@ const RecipeSuggestionsScreen = (): React.ReactElement => {
           </View>
         </View>
 
-        {/* ═══ Categories / Ingredients Chips ═══ */}
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={S.chipsScroll}
-          style={S.chipsSection}
-        >
-          {POPULAR_INGREDIENTS.map((ing) => {
-            const isActive = ingredients.includes(ing);
-            return (
+
+        {/* ═══ Selected Ingredients Chips ═══ */}
+        {ingredients.length > 0 && (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={S.chipsScroll}
+            style={S.chipsSection}
+          >
+            {ingredients.map((ing) => (
               <TouchableOpacity
                 key={ing}
                 onPress={() => toggleIngredient(ing)}
-                style={[S.chipBadge, isActive && S.chipBadgeActive]}
+                style={[S.chipBadge, S.chipBadgeActive]}
               >
-                <ThemedText style={[S.chipBadgeText, isActive && S.chipBadgeTextActive]}>
+                <ThemedText style={[S.chipBadgeText, S.chipBadgeTextActive]}>
                   {ing}
                 </ThemedText>
-                {isActive && (
-                  <Ionicons name="close" size={14} color={P.onSurface} style={{ marginLeft: 4 }} />
-                )}
+                <Ionicons name="close" size={14} color={P.onPrimary} style={{ marginLeft: 4 }} />
               </TouchableOpacity>
-            );
-          })}
-        </ScrollView>
+            ))}
+          </ScrollView>
+        )}
 
         {/* Action Button If Ingredients Exist */}
         {ingredients.length > 0 && (
@@ -235,14 +218,15 @@ const RecipeSuggestionsScreen = (): React.ReactElement => {
               <Animated.View entering={FadeInDown.springify()} style={S.featuredCard}>
                 <View style={S.featuredContent}>
                   {/* Left Side / Top - Image Space */}
-                  <View style={S.featuredImageWrap}>
-                    <Image source={{ uri: DUMMY_IMAGES[0] }} style={S.cardImageFull} />
+                  <View style={[S.featuredImageWrap, { alignItems: 'center', justifyContent: 'center' }]}>
+                    <Ionicons name="image-outline" size={48} color={P.onSurfaceVariant} />
+                    <ThemedText style={{ color: P.onSurfaceVariant, fontSize: 12, marginTop: 8 }}>Chưa có ảnh</ThemedText>
                   </View>
                   {/* Right Side / Bottom - Details */}
                   <View style={S.featuredDetails}>
                     <View style={S.aiBadge}>
                       <Ionicons name="sparkles" size={12} color={P.primary} />
-                      <ThemedText style={S.aiBadgeText}>AI RECOMMENDED FOR YOU</ThemedText>
+                      <ThemedText style={S.aiBadgeText}>GỢI Ý TỪ AI</ThemedText>
                     </View>
                     <ThemedText style={S.featuredTitle} numberOfLines={2}>
                       {featuredRecipe.recipeName}
@@ -295,9 +279,8 @@ const RecipeSuggestionsScreen = (): React.ReactElement => {
                           activeOpacity={0.8}
                           onPress={() => navigation.navigate('RecipeDetail', { recipeId: item.recipeId, recipeName: item.recipeName })}
                         >
-                          <View style={S.gridImageWrap}>
-                            {/* Cycle through dummy images */}
-                            <Image source={{ uri: DUMMY_IMAGES[(idx + 1) % 4] }} style={S.cardImageFull} />
+                          <View style={[S.gridImageWrap, { alignItems: 'center', justifyContent: 'center', backgroundColor: P.surfaceContainerLow }]}>
+                            <Ionicons name="image-outline" size={32} color={P.onSurfaceVariant} />
                             <View style={S.glassOverlayTag}>
                               <ThemedText style={S.tagTextSmall}>{Math.round(item.matchPercentage)}% MATCH</ThemedText>
                             </View>

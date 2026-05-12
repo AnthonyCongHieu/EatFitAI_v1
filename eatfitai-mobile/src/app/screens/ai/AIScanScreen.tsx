@@ -519,74 +519,16 @@ const AIScanScreen: React.FC = () => {
     if (!capturedUri || !detectionResult) return;
 
     const distinctItems = getDistinctVisionResultItems(detectionResult.items);
-    const topItem = distinctItems[0];
-    if (!topItem || !shouldAllowVisionQuickSave(detectionResult)) {
-      navigation.navigate('AddMealFromVision', {
-        imageUri: capturedUri,
-        result: {
-          ...detectionResult,
-          items: distinctItems,
-        },
-      });
-      return;
-    }
-
-    try {
-      const userFoodItemId = Number(topItem.userFoodItemId);
-      await addItemsToTodayDiary([
-        topItem.source === 'user' || userFoodItemId > 0
-          ? {
-              source: 'user',
-              userFoodItemId,
-              grams: resultGrams,
-            }
-          : {
-              source: 'catalog',
-              foodItemId: Number(topItem.foodItemId),
-              grams: resultGrams,
-            },
-      ]);
-
-      const ratio = resultGrams / 100;
-      const actualCal = Math.round((topItem.caloriesPer100g || 0) * ratio);
-      Toast.show({
-        type: 'success',
-        text1: 'Đã thêm vào nhật ký',
-        text2: `${getVisionFoodDisplayName(topItem)} - ${resultGrams}g (${actualCal} kcal)`,
-      });
-      trackEvent('ai_scan_save_success', {
-        flow: 'ai_scan',
-        step: 'save',
-        status: 'success',
-        metadata: {
-          foodItemId: topItem.foodItemId,
-          label: topItem.label,
-          grams: resultGrams,
-          calories: actualCal,
-        },
-      });
-      await invalidateDiaryQueries(queryClient);
-      // A1.3: Notification prompt after first diary log
-      promptIfFirstLog();
-      handleRetake();
-    } catch (error) {
-      trackEvent('ai_scan_save_failure', {
-        category: 'error',
-        flow: 'ai_scan',
-        step: 'save',
-        status: 'failure',
-        metadata: {
-          foodItemId: topItem.foodItemId,
-          label: topItem.label,
-          grams: resultGrams,
-          message: (error as { message?: string } | null)?.message,
-        },
-      });
-      handleApiErrorWithCustomMessage(error, {
-        unknown: { text1: 'Lỗi', text2: 'Không thể thêm vào nhật ký' },
-      });
-    }
-  }, [capturedUri, detectionResult, handleRetake, navigation, queryClient, resultGrams]);
+    
+    navigation.navigate('AddMealFromVision', {
+      imageUri: capturedUri,
+      result: {
+        ...detectionResult,
+        items: distinctItems,
+      },
+      initialGrams: resultGrams,
+    });
+  }, [capturedUri, detectionResult, navigation, resultGrams]);
 
   const handleAddToBasket = useCallback(
     (items: MappedFoodItem[]) => {
@@ -944,7 +886,7 @@ const AIScanScreen: React.FC = () => {
         {/* ═══ RESULTS FULL SCREEN LIST ═══ */}
         {mode === 'results' && detectionResult && (
           <Animated.View
-            entering={SlideInUp.duration(360).springify().damping(18)}
+            entering={SlideInUp.duration(300).easing(Easing.out(Easing.ease))}
             style={S.resultPanel}
           >
             {hasDetectedItems && topItem ? (
@@ -1069,32 +1011,7 @@ const AIScanScreen: React.FC = () => {
                   </ScrollView>
                 </View>
 
-                {!hasMultipleDetectedItems ? (
-                  <View style={S.quickPortionRow}>
-                    {quickPortions.map((portion) => {
-                      const selected = portion.grams === resultGrams;
-                      return (
-                        <Pressable
-                          key={`${portion.label}-${portion.grams}`}
-                          onPress={() => setResultGrams(portion.grams)}
-                          style={[
-                            S.quickPortionChip,
-                            selected ? S.quickPortionChipActive : null,
-                          ]}
-                        >
-                          <ThemedText
-                            style={[
-                              S.quickPortionText,
-                              selected ? S.quickPortionTextActive : null,
-                            ]}
-                          >
-                            {portion.label} · {portion.grams}g
-                          </ThemedText>
-                        </Pressable>
-                      );
-                    })}
-                  </View>
-                ) : null}
+
 
                 {/* Macro visualization */}
                 <View style={S.macroRow}>

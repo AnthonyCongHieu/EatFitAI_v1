@@ -1,8 +1,6 @@
 import type { ReactNode } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View, Modal, KeyboardAvoidingView, Platform } from 'react-native';
 import Animated, {
-  FadeIn,
-  FadeOut,
   SlideInDown,
   SlideOutDown,
   useAnimatedStyle,
@@ -43,7 +41,6 @@ export const BottomSheet = ({
   const { theme } = useAppTheme();
 
   const translateY = useSharedValue(0);
-  const backdropOpacity = useSharedValue(0);
 
   const handleBackdropPress = () => {
     if (closeOnBackdropPress) {
@@ -72,39 +69,28 @@ export const BottomSheet = ({
     transform: [{ translateY: translateY.value }],
   }));
 
-  const backdropAnimatedStyle = useAnimatedStyle(() => ({
-    opacity: backdropOpacity.value,
-  }));
-
-  const enteringAnimation = animated ? SlideInDown.duration(200) : undefined;
-
-  const exitingAnimation = animated
-    ? SlideOutDown.duration(theme.animation.normal)
-    : undefined;
-
-  // Không render gì khi không visible - fix modal bị kẹt
-  if (!visible) {
-    return null;
-  }
-
   return (
-    <Animated.View
-      style={StyleSheet.absoluteFill}
-      entering={FadeIn.duration(theme.animation.fast)}
-      exiting={FadeOut.duration(theme.animation.fast)}
+    <Modal
+      visible={visible}
+      transparent
+      animationType="fade"
+      onRequestClose={onClose}
     >
       {/* Backdrop */}
       <AnimatedPressable
         style={[
           styles.backdrop,
-          backdropAnimatedStyle,
           { backgroundColor: 'rgba(0,0,0,0.6)' },
         ]}
         onPress={handleBackdropPress}
       />
 
-      {/* Bottom Sheet Content */}
-      <View style={styles.container}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        style={styles.container}
+        pointerEvents="box-none"
+      >
+        {/* Bottom Sheet Content */}
         <Animated.View
           style={[
             styles.content,
@@ -117,8 +103,6 @@ export const BottomSheet = ({
             },
             animatedStyle,
           ]}
-          entering={enteringAnimation}
-          exiting={exitingAnimation}
         >
           {/* Handle - only this is draggable */}
           <GestureDetector gesture={panGesture}>
@@ -154,8 +138,8 @@ export const BottomSheet = ({
           {/* Body - can contain ScrollView */}
           <View style={styles.body}>{children}</View>
         </Animated.View>
-      </View>
-    </Animated.View>
+      </KeyboardAvoidingView>
+    </Modal>
   );
 };
 
@@ -198,7 +182,6 @@ const styles = StyleSheet.create({
   body: {
     paddingHorizontal: 20,
     paddingBottom: 20,
-    flex: 1,
   },
 });
 

@@ -37,7 +37,6 @@ import {
   calculateVisionReviewCalories,
   clampVisionGrams,
   getDefaultVisionGrams,
-  getVisionQuickPortions,
   getVisionReviewSaveBlocker,
   type VisionReviewItem,
 } from '../../../utils/visionReview';
@@ -63,11 +62,15 @@ const AddMealFromVisionScreen = (): React.ReactElement => {
   const queryClient = useQueryClient();
   const { promptIfFirstLog } = usePostFirstLogNotificationPrompt();
 
-  const { imageUri, result } = route.params;
+  const { imageUri, result, initialGrams } = route.params;
 
-  const [detectionItems, setDetectionItems] = useState<VisionReviewItem[]>(() =>
-    buildVisionReviewItems(result.items),
-  );
+  const [detectionItems, setDetectionItems] = useState<VisionReviewItem[]>(() => {
+    const items = buildVisionReviewItems(result.items);
+    if (initialGrams !== undefined && items.length > 0 && items[0]) {
+      items[0].grams = initialGrams;
+    }
+    return items;
+  });
   const [selectedMealType, setSelectedMealType] = useState<MealTypeId>(() => getSuggestedMealType(new Date()));
   const [teachLabelVisible, setTeachLabelVisible] = useState(false);
   const [currentTeachItem, setCurrentTeachItem] = useState<MappedFoodItem | null>(null);
@@ -136,7 +139,7 @@ const AddMealFromVisionScreen = (): React.ReactElement => {
         Toast.show({
           type: 'info',
           text1: 'Cần xác nhận món',
-          text2: 'Hãy đổi món bằng Search hoặc dạy AI trước khi lưu.',
+          text2: 'Hãy Tìm kiếm món để xác nhận trước khi lưu.',
           visibilityTime: 2200,
         });
       }
@@ -312,6 +315,11 @@ const AddMealFromVisionScreen = (): React.ReactElement => {
 
   const handleAddToDiary = useCallback(async () => {
     if (selectedItems.length === 0) {
+      Toast.show({
+        type: 'info',
+        text1: 'Chưa chọn món nào',
+        text2: 'Vui lòng chọn ít nhất 1 món, hoặc dùng "Tìm kiếm món" cho món chưa rõ.',
+      });
       return;
     }
 
@@ -373,9 +381,17 @@ const AddMealFromVisionScreen = (): React.ReactElement => {
     const calories = Math.round(
       ((detection.item.caloriesPer100g ?? 0) * detection.grams) / 100,
     );
+    const protein = Math.round(
+      ((detection.item.proteinPer100g ?? 0) * detection.grams) / 100,
+    );
+    const carbs = Math.round(
+      ((detection.item.carbPer100g ?? 0) * detection.grams) / 100,
+    );
+    const fat = Math.round(
+      ((detection.item.fatPer100g ?? 0) * detection.grams) / 100,
+    );
     const confidence = Math.round((detection.item.confidence ?? 0) * 100);
     const isMatched = detection.item.isMatched;
-    const quickPortions = getVisionQuickPortions(detection.item);
 
     return (
       <View
@@ -408,12 +424,9 @@ const AddMealFromVisionScreen = (): React.ReactElement => {
           </View>
 
           <View style={styles.foodInfo}>
-            <ThemedText variant="body" weight="700" numberOfLines={1}>
-              {displayName}
-            </ThemedText>
-            <View style={styles.metaRow}>
-              <ThemedText variant="caption" color="textSecondary">
-                {calories} kcal / {detection.grams}g
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+              <ThemedText variant="body" weight="700" numberOfLines={1} style={{ flex: 1, paddingRight: 8 }}>
+                {displayName}
               </ThemedText>
               <View
                 style={[
@@ -436,145 +449,87 @@ const AddMealFromVisionScreen = (): React.ReactElement => {
                 </ThemedText>
               </View>
             </View>
-          </View>
-        </Pressable>
 
-        <View style={styles.controlsRow}>
-          <View style={[styles.gramsControl, { borderColor: theme.colors.border }]}>
-            <Pressable
-              onPressIn={(event) => {
-                event.stopPropagation();
-              }}
-              onPress={(event) => {
-                event.stopPropagation();
-                handleAdjustGrams(index, -25);
-              }}
-              style={styles.gramsButton}
-              testID={`${TEST_IDS.visionAddMeal.decreaseGramsButton}-${index}`}
-            >
-              <ThemedText variant="body" weight="700">
-                -
-              </ThemedText>
-            </Pressable>
-            <ThemedText variant="bodySmall" weight="700">
-              {detection.grams}g
-            </ThemedText>
-            <Pressable
-              onPressIn={(event) => {
-                event.stopPropagation();
-              }}
-              onPress={(event) => {
-                event.stopPropagation();
-                handleAdjustGrams(index, 25);
-              }}
-              style={styles.gramsButton}
-              testID={`${TEST_IDS.visionAddMeal.increaseGramsButton}-${index}`}
-            >
-              <ThemedText variant="body" weight="700">
-                +
-              </ThemedText>
-            </Pressable>
-          </View>
-
-          <View style={styles.actionRow}>
-            <Pressable
-              onPressIn={(event) => {
-                event.stopPropagation();
-              }}
-              onPress={(event) => {
-                event.stopPropagation();
-                openReplacePicker(index);
-              }}
-              style={[
-                styles.actionChip,
-                {
-                  backgroundColor: theme.colors.primary + '14',
-                  borderColor: theme.colors.primary + '35',
-                },
-              ]}
-              testID={`${TEST_IDS.visionAddMeal.replaceButton}-${index}`}
-            >
-              <Icon name="search-outline" size="xs" color="primary" />
-              <ThemedText
-                variant="caption"
-                weight="600"
-                color="primary"
-                style={{ marginLeft: 4 }}
-              >
-                Đổi món
-              </ThemedText>
-            </Pressable>
+            <View style={[styles.metaRow, { alignItems: 'flex-start' }]}>
+              <View style={{ flex: 1 }}>
+                <ThemedText variant="caption" color="textSecondary">
+                  {calories} kcal / {detection.grams}g
+                </ThemedText>
+                <ThemedText variant="caption" color="textSecondary" style={{ marginTop: 2 }}>
+                  P: {protein}g · C: {carbs}g · F: {fat}g
+                </ThemedText>
+              </View>
+              
+              <View style={[styles.gramsControl, { borderColor: theme.colors.border, marginTop: 0 }]}>
+                <Pressable
+                  onPressIn={(event) => {
+                    event.stopPropagation();
+                  }}
+                  onPress={(event) => {
+                    event.stopPropagation();
+                    handleAdjustGrams(index, -25);
+                  }}
+                  style={styles.gramsButton}
+                  testID={`${TEST_IDS.visionAddMeal.decreaseGramsButton}-${index}`}
+                >
+                  <ThemedText variant="body" weight="700">
+                    -
+                  </ThemedText>
+                </Pressable>
+                <ThemedText variant="bodySmall" weight="700">
+                  {detection.grams}g
+                </ThemedText>
+                <Pressable
+                  onPressIn={(event) => {
+                    event.stopPropagation();
+                  }}
+                  onPress={(event) => {
+                    event.stopPropagation();
+                    handleAdjustGrams(index, 25);
+                  }}
+                  style={styles.gramsButton}
+                  testID={`${TEST_IDS.visionAddMeal.increaseGramsButton}-${index}`}
+                >
+                  <ThemedText variant="body" weight="700">
+                    +
+                  </ThemedText>
+                </Pressable>
+              </View>
+            </View>
 
             {!isMatched ? (
-              <Pressable
-                onPressIn={(event) => {
-                  event.stopPropagation();
-                }}
-                onPress={(event) => {
-                  event.stopPropagation();
-                  openTeachLabelSheet(detection.item, index);
-                }}
-                style={[
-                  styles.actionChip,
-                  {
-                    backgroundColor: theme.colors.warning + '14',
-                    borderColor: theme.colors.warning + '35',
-                  },
-                ]}
-              >
-                <Icon name="school-outline" size="xs" color="warning" />
-                <ThemedText
-                  variant="caption"
-                  weight="600"
-                  color="warning"
-                  style={{ marginLeft: 4 }}
+              <View style={{ marginTop: 12 }}>
+                <Pressable
+                  onPressIn={(event) => {
+                    event.stopPropagation();
+                  }}
+                  onPress={(event) => {
+                    event.stopPropagation();
+                    openTeachLabelSheet(detection.item, index);
+                  }}
+                  style={[
+                    styles.actionChip,
+                    {
+                      backgroundColor: theme.colors.warning + '14',
+                      borderColor: theme.colors.warning + '35',
+                      alignSelf: 'flex-start',
+                    },
+                  ]}
                 >
-                  Dạy AI
-                </ThemedText>
-              </Pressable>
+                  <Icon name="search-outline" size="xs" color="warning" />
+                  <ThemedText
+                    variant="caption"
+                    weight="600"
+                    color="warning"
+                    style={{ marginLeft: 4 }}
+                  >
+                    Tìm kiếm món
+                  </ThemedText>
+                </Pressable>
+              </View>
             ) : null}
           </View>
-        </View>
-
-        <View style={styles.quickPortionRow}>
-          {quickPortions.map((portion) => {
-            const selected = portion.grams === detection.grams;
-            return (
-              <Pressable
-                key={`${portion.label}-${portion.grams}`}
-                onPressIn={(event) => {
-                  event.stopPropagation();
-                }}
-                onPress={(event) => {
-                  event.stopPropagation();
-                  updateDetectionItem(index, (current) => ({
-                    ...current,
-                    grams: portion.grams,
-                  }));
-                }}
-                style={[
-                  styles.quickPortionChip,
-                  {
-                    borderColor: selected ? theme.colors.primary : theme.colors.border,
-                    backgroundColor: selected
-                      ? theme.colors.primary + '14'
-                      : theme.colors.background,
-                  },
-                ]}
-              >
-                <ThemedText
-                  variant="caption"
-                  weight="700"
-                  style={{
-                    color: selected ? theme.colors.primary : theme.colors.textSecondary,
-                  }}
-                >
-                  {portion.label} · {portion.grams}g
-                </ThemedText>
-              </Pressable>
-            );
-          })}
-        </View>
+        </Pressable>
       </View>
     );
   };
@@ -595,7 +550,7 @@ const AddMealFromVisionScreen = (): React.ReactElement => {
           <View style={styles.imageOverlay}>
             <Icon name="scan-outline" size="sm" color="card" />
             <ThemedText variant="bodySmall" style={{ color: '#fff', marginLeft: 6 }}>
-              Review trước khi lưu · {detectionItems.length} món
+              Xác nhận món ăn · {detectionItems.length} món
             </ThemedText>
           </View>
         </View>
@@ -616,8 +571,7 @@ const AddMealFromVisionScreen = (): React.ReactElement => {
           ]}
         >
           <ThemedText variant="bodySmall" color="textSecondary">
-            Nếu AI đoán chưa đúng, hãy đổi món bằng Search, chỉnh gram và chọn bữa ăn
-            trước khi lưu.
+            Vui lòng kiểm tra lại thông tin, điều chỉnh khối lượng hoặc thêm bớt các món và chọn bữa ăn trước khi lưu vào nhật ký.
           </ThemedText>
         </View>
 
@@ -625,7 +579,7 @@ const AddMealFromVisionScreen = (): React.ReactElement => {
           <>
             <View style={styles.sectionTitle}>
               <ThemedText variant="h4" weight="700">
-                Đã map được ({matchedItems.length})
+                Các món nhận diện được ({matchedItems.length})
               </ThemedText>
             </View>
             {matchedItems.map(({ detection, index }) =>
@@ -697,7 +651,7 @@ const AddMealFromVisionScreen = (): React.ReactElement => {
 
         <View style={styles.summaryRow}>
           <ThemedText variant="body" color="textSecondary">
-            Sẽ thêm{' '}
+            Đã chọn:{' '}
             <ThemedText variant="body" weight="700" color="primary">
               {selectedItems.length}
             </ThemedText>{' '}
@@ -715,7 +669,7 @@ const AddMealFromVisionScreen = (): React.ReactElement => {
           variant="primary"
           title={isSubmitting ? 'Đang lưu...' : 'Lưu vào nhật ký'}
           onPress={handleAddToDiary}
-          disabled={selectedItems.length === 0 || isSubmitting}
+          disabled={isSubmitting}
           loading={isSubmitting}
           style={styles.addButton}
           testID={TEST_IDS.visionAddMeal.confirmButton}
