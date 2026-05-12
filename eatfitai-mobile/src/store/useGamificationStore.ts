@@ -46,12 +46,14 @@ interface GamificationState {
   weeklyLogs: boolean[];
   lastWeeklyFetch: number; // timestamp
   lastStreakCheck: string | null; // date string yyyy-MM-dd
+  dailyQuestsClaimed: Record<string, string>; // questId -> date string yyyy-MM-dd
 
   // Actions
   checkStreak: () => Promise<void>;
   fetchWeeklyLogs: () => Promise<void>;
   unlockAchievement: (id: string) => void;
   addXP: (amount: number) => void;
+  claimDailyQuest: (questId: string, xp: number) => void;
   syncAchievementProgress: () => void;
   reset: () => void;
 }
@@ -223,6 +225,7 @@ export const useGamificationStore = create<GamificationState>()(
       weeklyLogs: [false, false, false, false, false, false, false],
       lastWeeklyFetch: 0,
       lastStreakCheck: null,
+      dailyQuestsClaimed: {},
 
       fetchWeeklyLogs: async () => {
         try {
@@ -373,6 +376,22 @@ export const useGamificationStore = create<GamificationState>()(
         set((state) => ({ totalXP: state.totalXP + amount }));
       },
 
+      claimDailyQuest: (questId: string, xp: number) => {
+        const todayStr = new Date().toISOString().split('T')[0]!;
+        set((state) => {
+          const lastClaimed = state.dailyQuestsClaimed?.[questId];
+          if (lastClaimed === todayStr) return state; // Already claimed today
+          
+          return {
+            totalXP: state.totalXP + xp,
+            dailyQuestsClaimed: {
+              ...(state.dailyQuestsClaimed || {}),
+              [questId]: todayStr,
+            },
+          };
+        });
+      },
+
       // Sync progress của achievements với state hiện tại (gọi khi vào AchievementsScreen)
       syncAchievementProgress: () => {
         const { currentStreak, totalDaysLogged, achievements } = get();
@@ -410,6 +429,7 @@ export const useGamificationStore = create<GamificationState>()(
           weeklyLogs: [false, false, false, false, false, false, false],
           lastWeeklyFetch: 0,
           lastStreakCheck: null,
+          dailyQuestsClaimed: {},
         });
       },
     }),
