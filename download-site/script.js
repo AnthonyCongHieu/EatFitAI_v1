@@ -7,8 +7,8 @@
     packageName: "com.eatfitai.app",
     releaseTag: "android-v1.0.0",
     fileName: "EatFitAI-android-v1.0.0.apk",
-    fileSize: "124.90 MiB",
-    sha256: "aec55be7ec2756eb615136fd1f2eb95be80e94bcb5476a56023cfddc1c6eca6e",
+    fileSize: "121.55 MiB",
+    sha256: "ec57930eebd8f4595e74acde7abbc85e1d6c6f17040327f37f8e53526faf0795",
     downloadUrl:
       "https://github.com/anthonyconghieu/EatFitAI_v1/releases/download/android-v1.0.0/EatFitAI-android-v1.0.0.apk",
     releaseUrl: "https://github.com/anthonyconghieu/EatFitAI_v1/releases/tag/android-v1.0.0",
