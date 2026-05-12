@@ -8,7 +8,8 @@
         "NODE_ENV": "production",
         "EXPO_PUBLIC_GOOGLE_OFFLINE_ACCESS": "false",
         "EXPO_PUBLIC_GOOGLE_FORCE_CODE_FOR_REFRESH_TOKEN": "false"
-      }
+      },
+      "channel": "release-base"
     },
     "preview": {
       "extends": "release-base",
@@ -21,7 +22,8 @@
       },
       "android": {
         "buildType": "apk"
-      }
+      },
+      "channel": "preview"
     },
     "production": {
       "extends": "release-base",
@@ -30,7 +32,8 @@
         "APP_ENV": "production",
         "EXPO_PUBLIC_API_BASE_URL": "https://api.18.141.119.165.nip.io",
         "EXPO_PUBLIC_MEDIA_PUBLIC_BASE_URL": "https://pub-9081bce8ff6b4db5b4403ca7adae7b80.r2.dev"
-      }
+      },
+      "channel": "production"
     },
     "e2e-test": {
       "extends": "preview",
@@ -39,7 +42,8 @@
       },
       "ios": {
         "simulator": true
-      }
+      },
+      "channel": "e2e-test"
     }
   }
 }

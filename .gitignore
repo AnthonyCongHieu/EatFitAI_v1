@@ -17,6 +17,7 @@ obj/
 ios/Pods/
 android/app/build/
 android/.kotlin/
+eatfitai-mobile/android/.kotlin/
 .jdk17/
 .DS_Store
 
@@ -30,6 +31,9 @@ artifacts/
 eatfitai-mobile/artifacts/
 eatfitai-mobile/src/config/generated-api-config.ts
 eatfitai-mobile/android/keystore.properties
+*.apk
+*.aab
+*.apks
 *.jks
 *.keystore
 *.p12
@@ -115,6 +119,7 @@ codesign-*.html
 
 # Firebase config — chứa API key, không track trong git
 google-services.json
+!eatfitai-mobile/android/app/google-services.json
 
 
 # Temporary migrations

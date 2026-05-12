@@ -33,8 +33,9 @@ The mobile production build config now points to Lightsail backend in
 EXPO_PUBLIC_API_BASE_URL=https://api.18.141.119.165.nip.io
 ```
 
-Do not suspend Render backend until an EAS production update/build has been
-published and a real-device smoke passes against the Lightsail URL.
+Do not suspend Render backend until the successful EAS production native build
+has been installed/submitted and a real-device smoke passes against the
+Lightsail URL.
 
 ## Release
 
@@ -180,37 +181,77 @@ Backend-only timing was measured with repeated `health/ready`, `login`, and
 Render had a large `api/ai/status` outlier in this sample. Lightsail backend
 was more stable in this benchmark.
 
-## Remaining blockers
+## Mobile release update
 
-1. EAS is not logged in locally:
+EAS is now logged in locally as `anthonyconghieu`.
+
+Production Android OTA was published to channel `production`:
 
 ```text
-npx eas-cli@latest whoami
-Not logged in
+Update ID: 019e179c-9649-7ee0-a5c6-d4d86cc99fdf
+Group ID: 5b4753ce-581a-4c8d-a497-f876fb0b4565
+Runtime version: 1.0.0
+API base URL: https://api.18.141.119.165.nip.io
 ```
 
-Production mobile cannot be published from this machine until Expo/EAS login or
-an `EXPO_TOKEN` is provided. Render backend must remain live until the mobile
-release has been verified.
+The first native production build failed because EAS archive generation excluded
+`eatfitai-mobile/android/app/google-services.json`. Root cause: the root
+`.gitignore` ignored `google-services.json`, and EAS archive packaging applied
+that ignore pattern even though the nested Android file was tracked by Git.
 
-2. AWS Budget alert needs owner email confirmation.
+Fix applied:
+
+```text
+!eatfitai-mobile/android/app/google-services.json
+```
+
+The retry succeeded:
+
+```text
+Build ID: 31a487d9-9ed2-4ceb-9921-4a65782aaad5
+Status: FINISHED
+Artifact: https://expo.dev/artifacts/eas/78xCvjN9trgc9SKTrcVXGR.tar.gz
+Gradle: BUILD SUCCESSFUL in 21m 13s
+```
+
+Important limitation: older installed builds had `expo-updates` disabled, so
+they should not be expected to receive the OTA update. Use the successful native
+production build for release/verification.
+
+## Remaining blockers
+
+1. Lightsail auth/email delivery must be fixed and verified.
+
+Recent Lightsail auth smoke failed at registration/resend verification. The
+backend code sends verification/reset emails through Brevo HTTP API and throws
+in Production if `Brevo__ApiKey` or `Brevo__SenderEmail` is missing/placeholder,
+or if Brevo rejects the request. Confirm `/opt/eatfitai/backend.env` on
+`eatfitai-backend-sg` contains a valid `Brevo__ApiKey` and a Brevo-verified
+`Brevo__SenderEmail`, then restart `eatfitai-backend` and rerun auth smoke.
+
+2. Real-device smoke has not passed against the Lightsail URL.
+
+Validate login, profile, R2 upload, scan, and diary save using the successful
+native Android production build before suspending Render backend.
+
+3. AWS Budget alert needs owner email confirmation.
 
 CloudShell could not be used because account verification is still in progress.
 Create the budget from the AWS Billing UI or provide the notification email to
 finish it later.
 
-3. Free hostname risk remains.
+4. Free hostname risk remains.
 
 `nip.io` works now, but beta production reliability is better with an owned
 domain. This is not required for the current no-domain plan.
 
-4. Scan quality gate is still red.
+5. Scan quality gate is still red.
 
 Infrastructure is serving requests, but the primary-path smoke still records
 the same detection/nutrition fallback failures. Do not interpret the current
 infra rollout as a model-accuracy fix.
 
-5. Gemini free-tier quota is finite.
+6. Gemini free-tier quota is finite.
 
 The provider is healthy and has available Gemini projects, but one project was
 observed as provider RPD exhausted during smoke. The pool failover works, yet
@@ -227,7 +268,7 @@ backend on Render Free:
 - Lightsail backend is materially faster in the backend-only smoke.
 
 Keep Render backend live only as a temporary bridge until mobile production is
-released against `https://api.18.141.119.165.nip.io`, then suspend it.
+verified against `https://api.18.141.119.165.nip.io`, then suspend it.
 
 ## References
 

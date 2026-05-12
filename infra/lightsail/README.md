@@ -15,8 +15,9 @@ The accepted runtime uses two AWS Lightsail Singapore $7 instances:
 Render runtime policy:
 
 - `eatfitai-ai-provider`: suspended cold backup only.
-- `eatfitai-backend`: temporary bridge until mobile production is published to
-  the Lightsail backend URL, then suspend.
+- `eatfitai-backend`: temporary bridge until the native mobile production build
+  is installed/submitted and real-device smoke passes against the Lightsail
+  backend URL.
 
 ## Runtime layout
 
@@ -104,6 +105,14 @@ instead of only stopping them when the intent is to stop billing.
 
 Release SHA: `253039d6a837fd87ba4daaa37087243a1f53c778`
 
+Mobile release:
+
+- EAS account: `anthonyconghieu`
+- EAS project: `@anthonyconghieu/eatfitai-mobile`
+- Production Android OTA update: `019e179c-9649-7ee0-a5c6-d4d86cc99fdf`
+- Production Android native build: `31a487d9-9ed2-4ceb-9921-4a65782aaad5`
+- Build artifact: `https://expo.dev/artifacts/eas/78xCvjN9trgc9SKTrcVXGR.tar.gz`
+
 Health:
 
 ```text
@@ -126,8 +135,9 @@ Smoke evidence:
 - Render backend post-cache:
   `_logs/production-smoke/2026-05-11T12-23-48-293Z-render-backend-post-cache`
 
-The infrastructure checks passed, but the AI primary-path quality gate still
-has existing model/fixture failures. See
+The infrastructure checks passed, but Lightsail auth/email smoke is blocked by
+Brevo delivery/configuration on the backend instance. The AI primary-path
+quality gate also still has existing model/fixture failures. See
 `docs/53_YOLO_SCAN_LIGHTSAIL_ROLLOUT_2026-05-11.md`.
 
 ## Release checklist
@@ -137,9 +147,10 @@ has existing model/fixture failures. See
    long-term production runtime.
 3. Confirm `eatfitai-mobile/eas.json` production points to
    `https://api.18.141.119.165.nip.io`.
-4. Login to EAS or provide `EXPO_TOKEN`.
-5. Publish the mobile production update/build.
-6. Smoke login, profile, R2 upload, scan, and diary save on a real device.
+4. Confirm Lightsail backend Brevo settings:
+   `Brevo__ApiKey`, `Brevo__SenderEmail`, `Brevo__SenderName`.
+5. Smoke login, profile, R2 upload, scan, and diary save on a real device.
+6. Submit/install the successful production Android build.
 7. Suspend Render backend only after the app is verified on Lightsail.
 8. Remove any temporary SSH keys used during rollout.
 
