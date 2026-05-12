@@ -45,6 +45,19 @@ To sweep the agreed runtime tuning matrix before opening Clean V2, run:
 python ai-provider\dataset_v2\sweep_yolo_runtime_thresholds.py --manifest ai-provider\dataset_v2\golden_eval_manifest.csv --out-dir _dataset_v2_reports\runtime_threshold_sweep --summary-out _dataset_v2_reports\runtime_threshold_sweep_summary.json
 ```
 
+If real app scan photos are unavailable, build a public, license-attributed
+diagnostic seed before Clean V2 error mining. This uses Openverse first and only
+falls back to Wikimedia Commons when requested, with retry/backoff and partial
+manifest writes so rate limits do not lose progress:
+
+```powershell
+python ai-provider\dataset_v2\build_public_golden_seed.py --out-dir _dataset_v2_reports\golden_eval_public_web_seed --per-label 5 --search-limit 20 --max-images 80 --source-mode openverse
+```
+
+This public seed is for diagnosis and hard-mining only. Do not use it as the
+final production promote gate until labels and licenses have been manually
+audited.
+
 Use `decision.status` from `golden_eval_comparison.json` as the next-step gate:
 
 ```text

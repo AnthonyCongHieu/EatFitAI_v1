@@ -6,6 +6,7 @@ import hashlib
 import json
 import re
 import time
+import urllib.error
 import urllib.parse
 import urllib.request
 from pathlib import Path
@@ -13,6 +14,8 @@ from typing import Any
 
 
 COMMONS_API = "https://commons.wikimedia.org/w/api.php"
+COMMONS_REST_SEARCH = "https://commons.wikimedia.org/w/rest.php/v1/search/page"
+OPENVERSE_API = "https://api.openverse.engineering/v1/images/"
 USER_AGENT = "EatFitAI-YOLO11-GoldenSeed/1.0 (public benchmark builder)"
 
 
@@ -39,13 +42,144 @@ DEFAULT_QUERIES: dict[str, list[str]] = {
     "tofu": ["tofu food dish", "fried tofu food"],
 }
 
+DEFAULT_CATEGORIES: dict[str, list[str]] = {
+    "rice": ["Category:Rice dishes", "Category:Cooked rice"],
+    "beef": ["Category:Beef dishes", "Category:Steaks"],
+    "chicken": ["Category:Chicken dishes", "Category:Roast chicken"],
+    "fried_egg": ["Category:Fried eggs"],
+    "pork": ["Category:Pork dishes", "Category:Pork belly"],
+    "broccoli": ["Category:Broccoli", "Category:Broccoli dishes"],
+    "cabbage": ["Category:Cabbage", "Category:Cabbage dishes"],
+    "carrot": ["Category:Carrots", "Category:Carrot dishes"],
+    "tomato": ["Category:Tomatoes", "Category:Tomato dishes"],
+    "potato": ["Category:Potato dishes", "Category:Potatoes"],
+    "onion": ["Category:Onions", "Category:Onion dishes"],
+    "garlic": ["Category:Garlic"],
+    "ginger": ["Category:Ginger"],
+    "banh_mi": ["Category:Bánh mì"],
+    "com_tam": ["Category:Cơm tấm"],
+    "banh_xeo": ["Category:Bánh xèo"],
+    "pho": ["Category:Pho"],
+    "bun_bo_hue": ["Category:Bún bò Huế"],
+    "goi_cuon": ["Category:Gỏi cuốn", "Category:Spring rolls of Vietnam"],
+    "tofu": ["Category:Tofu dishes", "Category:Tofu"],
+}
+
 
 def slugify(value: str) -> str:
     value = re.sub(r"[^a-zA-Z0-9_+-]+", "_", value.strip().lower())
     return re.sub(r"_+", "_", value).strip("_")
 
 
+def retry_after_seconds(error: urllib.error.HTTPError, fallback: float) -> float:
+    raw = error.headers.get("Retry-After")
+    if raw:
+        try:
+            return max(float(raw), fallback)
+        except ValueError:
+            return fallback
+    return fallback
+
+
+def request_bytes(url: str, *, timeout: int, tries: int = 4) -> bytes:
+    delay = 2.0
+    last_error: Exception | None = None
+    for attempt in range(tries):
+        request = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
+        try:
+            with urllib.request.urlopen(request, timeout=timeout) as response:
+                return response.read()
+        except urllib.error.HTTPError as exc:
+            last_error = exc
+            if exc.code != 429 and exc.code < 500:
+                raise
+            if attempt == tries - 1:
+                raise
+            time.sleep(retry_after_seconds(exc, delay))
+            delay *= 2
+        except Exception as exc:
+            last_error = exc
+            if attempt == tries - 1:
+                raise
+            time.sleep(delay)
+            delay *= 2
+    raise RuntimeError(f"request failed: {url}") from last_error
+
+
 def request_json(url: str) -> dict[str, Any]:
+    return json.loads(request_bytes(url, timeout=30).decode("utf-8"))
+
+
+def openverse_search(query: str, limit: int) -> list[dict[str, Any]]:
+    params = {
+        "q": query,
+        "page_size": str(min(limit, 50)),
+        "license_type": "all",
+        "mature": "false",
+    }
+    url = f"{OPENVERSE_API}?{urllib.parse.urlencode(params)}"
+    try:
+        payload = request_json(url)
+    except urllib.error.HTTPError:
+        return []
+    except Exception:
+        return []
+    return list(payload.get("results") or [])
+
+
+def openverse_to_page(result: dict[str, Any]) -> dict[str, Any] | None:
+    url = result.get("thumbnail") or result.get("url")
+    if not url:
+        return None
+    filetype = str(result.get("filetype") or "").lower()
+    mime = {
+        "jpg": "image/jpeg",
+        "jpeg": "image/jpeg",
+        "png": "image/png",
+        "webp": "image/webp",
+    }.get(filetype)
+    if mime is None:
+        path = urllib.parse.urlparse(str(url)).path.lower()
+        if path.endswith((".jpg", ".jpeg")):
+            mime = "image/jpeg"
+        elif path.endswith(".png"):
+            mime = "image/png"
+        elif path.endswith(".webp"):
+            mime = "image/webp"
+        else:
+            mime = "image/jpeg"
+    return {
+        "title": f"Openverse:{result.get('id')}",
+        "imageinfo": [
+            {
+                "url": url,
+                "thumburl": url,
+                "mime": mime,
+                "descriptionurl": result.get("foreign_landing_url"),
+                "extmetadata": {
+                    "LicenseShortName": {"value": str(result.get("license") or "")},
+                    "LicenseUrl": {"value": str(result.get("license_url") or "")},
+                    "Artist": {"value": str(result.get("creator") or "")},
+                    "Credit": {"value": str(result.get("provider") or result.get("source") or "Openverse")},
+                    "AttributionRequired": {"value": "true" if result.get("license") != "cc0" else "false"},
+                    "Copyrighted": {"value": "true" if result.get("license") != "cc0" else "false"},
+                },
+                "openverse": result,
+            }
+        ],
+    }
+
+
+def openverse_pages(query: str, limit: int) -> list[dict[str, Any]]:
+    pages = []
+    for result in openverse_search(query, limit):
+        page = openverse_to_page(result)
+        if page is not None:
+            pages.append(page)
+    return pages
+
+
+def _unused_request_json_old(url: str) -> dict[str, Any]:
     request = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
     with urllib.request.urlopen(request, timeout=30) as response:
         return json.loads(response.read().decode("utf-8"))
@@ -64,7 +198,70 @@ def search_commons(query: str, limit: int) -> list[dict[str, Any]]:
         "iiurlwidth": "1024",
     }
     url = f"{COMMONS_API}?{urllib.parse.urlencode(params)}"
+    try:
+        payload = request_json(url)
+    except Exception:
+        return []
+    pages = payload.get("query", {}).get("pages", {})
+    return list(pages.values())
+
+
+def title_commons(title: str) -> dict[str, Any] | None:
+    params = {
+        "action": "query",
+        "format": "json",
+        "titles": title,
+        "prop": "imageinfo",
+        "iiprop": "url|mime|size|extmetadata",
+        "iiurlwidth": "1024",
+    }
+    url = f"{COMMONS_API}?{urllib.parse.urlencode(params)}"
     payload = request_json(url)
+    pages = payload.get("query", {}).get("pages", {})
+    for page in pages.values():
+        if "missing" not in page:
+            return page
+    return None
+
+
+def rest_search_commons(query: str, limit: int) -> list[dict[str, Any]]:
+    params = {"q": query, "limit": str(limit)}
+    url = f"{COMMONS_REST_SEARCH}?{urllib.parse.urlencode(params)}"
+    try:
+        payload = request_json(url)
+    except Exception:
+        return []
+    pages = []
+    for result in payload.get("pages", []):
+        title = str(result.get("title") or result.get("key") or "")
+        if not title.startswith("File:"):
+            continue
+        try:
+            page = title_commons(title)
+        except Exception:
+            page = None
+        if page is not None:
+            pages.append(page)
+    return pages
+
+
+def category_commons(category: str, limit: int) -> list[dict[str, Any]]:
+    params = {
+        "action": "query",
+        "format": "json",
+        "generator": "categorymembers",
+        "gcmtitle": category,
+        "gcmnamespace": "6",
+        "gcmlimit": str(limit),
+        "prop": "imageinfo",
+        "iiprop": "url|mime|size|extmetadata",
+        "iiurlwidth": "1024",
+    }
+    url = f"{COMMONS_API}?{urllib.parse.urlencode(params)}"
+    try:
+        payload = request_json(url)
+    except Exception:
+        return []
     pages = payload.get("query", {}).get("pages", {})
     return list(pages.values())
 
@@ -91,9 +288,7 @@ def image_info(page: dict[str, Any]) -> dict[str, Any] | None:
 
 
 def download_file(url: str, out_path: Path) -> str:
-    request = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
-    with urllib.request.urlopen(request, timeout=60) as response:
-        data = response.read()
+    data = request_bytes(url, timeout=20, tries=2)
     out_path.write_bytes(data)
     return hashlib.sha256(data).hexdigest()
 
@@ -106,73 +301,11 @@ def extension_for_mime(mime: str) -> str:
     }.get(mime, ".jpg")
 
 
-def build_seed(out_dir: Path, per_label: int, search_limit: int, sleep_seconds: float) -> dict[str, Any]:
-    images_dir = out_dir / "images"
-    images_dir.mkdir(parents=True, exist_ok=True)
-
-    manifest_rows: list[dict[str, str]] = []
-    metadata_rows: list[dict[str, Any]] = []
-    seen_titles: set[str] = set()
-    seen_hashes: set[str] = set()
-
-    for label, queries in DEFAULT_QUERIES.items():
-        accepted_for_label = 0
-        for query in queries:
-            if accepted_for_label >= per_label:
-                break
-            for page in search_commons(query, search_limit):
-                if accepted_for_label >= per_label:
-                    break
-                title = str(page.get("title") or "")
-                if not title or title in seen_titles:
-                    continue
-                info = image_info(page)
-                if info is None:
-                    continue
-
-                url = info.get("thumburl") or info.get("url")
-                filename = f"{label}_{accepted_for_label + 1:03d}_{slugify(title.removeprefix('File:'))[:80]}{extension_for_mime(info.get('mime', ''))}"
-                out_path = images_dir / filename
-                try:
-                    sha256 = download_file(str(url), out_path)
-                except Exception:
-                    continue
-                if sha256 in seen_hashes:
-                    out_path.unlink(missing_ok=True)
-                    continue
-
-                seen_titles.add(title)
-                seen_hashes.add(sha256)
-                accepted_for_label += 1
-                rel_path = out_path.relative_to(out_dir).as_posix()
-                manifest_rows.append(
-                    {
-                        "image_path": rel_path,
-                        "scenario": "public_commons_single_object_seed",
-                        "expected_objects": label,
-                        "notes": f"public Commons seed; query={query}; manual-audit-required",
-                    }
-                )
-                metadata_rows.append(
-                    {
-                        "label": label,
-                        "query": query,
-                        "title": title,
-                        "source_page": info.get("descriptionurl"),
-                        "download_url": url,
-                        "mime": info.get("mime"),
-                        "sha256": sha256,
-                        "license_short_name": metadata_value(page, "LicenseShortName"),
-                        "license_url": metadata_value(page, "LicenseUrl"),
-                        "artist": metadata_value(page, "Artist"),
-                        "credit": metadata_value(page, "Credit"),
-                        "attribution_required": metadata_value(page, "AttributionRequired"),
-                        "copyrighted": metadata_value(page, "Copyrighted"),
-                        "local_path": rel_path,
-                    }
-                )
-                time.sleep(sleep_seconds)
-
+def write_outputs(
+    out_dir: Path,
+    manifest_rows: list[dict[str, str]],
+    metadata_rows: list[dict[str, Any]],
+) -> dict[str, Any]:
     manifest_path = out_dir / "manifest.csv"
     with manifest_path.open("w", encoding="utf-8", newline="") as f:
         writer = csv.DictWriter(f, fieldnames=["image_path", "scenario", "expected_objects", "notes"])
@@ -193,15 +326,131 @@ def build_seed(out_dir: Path, per_label: int, search_limit: int, sleep_seconds: 
     return summary
 
 
+def build_seed(
+    out_dir: Path,
+    per_label: int,
+    search_limit: int,
+    sleep_seconds: float,
+    source_mode: str,
+    max_images: int | None,
+) -> dict[str, Any]:
+    images_dir = out_dir / "images"
+    images_dir.mkdir(parents=True, exist_ok=True)
+
+    manifest_rows: list[dict[str, str]] = []
+    metadata_rows: list[dict[str, Any]] = []
+    seen_titles: set[str] = set()
+    seen_hashes: set[str] = set()
+
+    def accept_pages(label: str, source_name: str, pages: list[dict[str, Any]], accepted_for_label: int) -> int:
+        for page in pages:
+            if accepted_for_label >= per_label:
+                break
+            if max_images is not None and len(manifest_rows) >= max_images:
+                break
+            title = str(page.get("title") or "")
+            if not title or title in seen_titles:
+                continue
+            info = image_info(page)
+            if info is None:
+                continue
+
+            url = info.get("thumburl") or info.get("url")
+            filename = f"{label}_{accepted_for_label + 1:03d}_{slugify(title.removeprefix('File:'))[:80]}{extension_for_mime(info.get('mime', ''))}"
+            out_path = images_dir / filename
+            try:
+                sha256 = download_file(str(url), out_path)
+            except Exception:
+                continue
+            if sha256 in seen_hashes:
+                out_path.unlink(missing_ok=True)
+                continue
+
+            seen_titles.add(title)
+            seen_hashes.add(sha256)
+            accepted_for_label += 1
+            rel_path = out_path.relative_to(out_dir).as_posix()
+            manifest_rows.append(
+                {
+                    "image_path": rel_path,
+                    "scenario": "public_commons_single_object_seed",
+                    "expected_objects": label,
+                    "notes": f"public Commons seed; source={source_name}; manual-audit-required",
+                }
+            )
+            metadata_rows.append(
+                {
+                    "label": label,
+                    "source": source_name,
+                    "title": title,
+                    "source_page": info.get("descriptionurl"),
+                    "download_url": url,
+                    "mime": info.get("mime"),
+                    "sha256": sha256,
+                    "license_short_name": metadata_value(page, "LicenseShortName"),
+                    "license_url": metadata_value(page, "LicenseUrl"),
+                    "artist": metadata_value(page, "Artist"),
+                    "credit": metadata_value(page, "Credit"),
+                    "attribution_required": metadata_value(page, "AttributionRequired"),
+                    "copyrighted": metadata_value(page, "Copyrighted"),
+                    "local_path": rel_path,
+                }
+            )
+            time.sleep(sleep_seconds)
+        return accepted_for_label
+
+    for label, queries in DEFAULT_QUERIES.items():
+        if max_images is not None and len(manifest_rows) >= max_images:
+            break
+        accepted_for_label = 0
+        for query in queries:
+            if accepted_for_label >= per_label:
+                break
+            accepted_for_label = accept_pages(label, f"openverse:{query}", openverse_pages(query, search_limit), accepted_for_label)
+            if accepted_for_label >= per_label:
+                break
+        write_outputs(out_dir, manifest_rows, metadata_rows)
+        if source_mode == "openverse":
+            continue
+        for query in queries:
+            if accepted_for_label >= per_label:
+                break
+            accepted_for_label = accept_pages(label, f"rest:{query}", rest_search_commons(query, search_limit), accepted_for_label)
+            if accepted_for_label >= per_label:
+                break
+            accepted_for_label = accept_pages(label, query, search_commons(query, search_limit), accepted_for_label)
+        for category in DEFAULT_CATEGORIES.get(label, []):
+            if accepted_for_label >= per_label:
+                break
+            accepted_for_label = accept_pages(
+                label,
+                category,
+                category_commons(category, search_limit),
+                accepted_for_label,
+            )
+        write_outputs(out_dir, manifest_rows, metadata_rows)
+
+    return write_outputs(out_dir, manifest_rows, metadata_rows)
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Build a public Wikimedia Commons seed set for YOLO11 golden eval.")
     parser.add_argument("--out-dir", type=Path, default=Path("_dataset_v2_reports/golden_eval_public_web_seed"))
     parser.add_argument("--per-label", type=int, default=15)
     parser.add_argument("--search-limit", type=int, default=40)
     parser.add_argument("--sleep-seconds", type=float, default=0.05)
+    parser.add_argument("--source-mode", choices=["openverse", "all"], default="openverse")
+    parser.add_argument("--max-images", type=int)
     args = parser.parse_args()
 
-    summary = build_seed(args.out_dir, args.per_label, args.search_limit, args.sleep_seconds)
+    summary = build_seed(
+        args.out_dir,
+        args.per_label,
+        args.search_limit,
+        args.sleep_seconds,
+        args.source_mode,
+        args.max_images,
+    )
     print(json.dumps(summary, ensure_ascii=False, indent=2))
     return 0
 
