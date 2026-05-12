@@ -1,5 +1,6 @@
 using System.Text;
 using EatFitAI.API.Middleware;
+using EatFitAI.API.Services;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Moq;
@@ -18,7 +19,8 @@ public class RequestLoggingMiddlewareTests
                 await context.Response.WriteAsync("stream-open");
                 await context.Response.Body.FlushAsync();
             },
-            Mock.Of<ILogger<RequestLoggingMiddleware>>());
+            Mock.Of<ILogger<RequestLoggingMiddleware>>(),
+            new NoopOpsMetricsRecorder());
 
         var context = new DefaultHttpContext();
         context.TraceIdentifier = "trace-sse";
@@ -41,7 +43,8 @@ public class RequestLoggingMiddlewareTests
             {
                 await context.Response.WriteAsync("ok");
             },
-            Mock.Of<ILogger<RequestLoggingMiddleware>>());
+            Mock.Of<ILogger<RequestLoggingMiddleware>>(),
+            new NoopOpsMetricsRecorder());
 
         var context = new DefaultHttpContext();
         context.TraceIdentifier = "trace-http";
@@ -52,5 +55,12 @@ public class RequestLoggingMiddlewareTests
         await middleware.InvokeAsync(context);
 
         Assert.Equal("ok", Encoding.UTF8.GetString(responseBody.ToArray()));
+    }
+
+    private sealed class NoopOpsMetricsRecorder : IOpsMetricsRecorder
+    {
+        public void Record(HttpContext context, long durationMs)
+        {
+        }
     }
 }

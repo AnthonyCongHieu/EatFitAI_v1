@@ -1,3 +1,6 @@
+using System.Diagnostics;
+using EatFitAI.API.Services;
+
 namespace EatFitAI.API.Middleware
 {
     public class RequestLoggingMiddleware
@@ -8,15 +11,21 @@ namespace EatFitAI.API.Middleware
 
         private readonly RequestDelegate _next;
         private readonly ILogger<RequestLoggingMiddleware> _logger;
+        private readonly IOpsMetricsRecorder _opsMetricsRecorder;
 
-        public RequestLoggingMiddleware(RequestDelegate next, ILogger<RequestLoggingMiddleware> logger)
+        public RequestLoggingMiddleware(
+            RequestDelegate next,
+            ILogger<RequestLoggingMiddleware> logger,
+            IOpsMetricsRecorder opsMetricsRecorder)
         {
             _next = next;
             _logger = logger;
+            _opsMetricsRecorder = opsMetricsRecorder;
         }
 
         public async Task InvokeAsync(HttpContext context)
         {
+            var stopwatch = Stopwatch.StartNew();
             var requestId = context.Request.Headers[RequestIdHeader].FirstOrDefault();
             if (string.IsNullOrWhiteSpace(requestId))
             {
@@ -46,14 +55,23 @@ namespace EatFitAI.API.Middleware
             // buffer prevents the initial event bytes from being flushed through Render.
             if (context.Request.Path.Equals(AdminRuntimeEventsPath))
             {
-                await _next(context);
+                try
+                {
+                    await _next(context);
 
-                _logger.LogInformation(
-                    "Response {RequestId}: {StatusCode} for {Method} {Path}",
-                    requestId,
-                    context.Response.StatusCode,
-                    context.Request.Method,
-                    context.Request.Path);
+                    _logger.LogInformation(
+                        "Response {RequestId}: {StatusCode} for {Method} {Path}",
+                        requestId,
+                        context.Response.StatusCode,
+                        context.Request.Method,
+                        context.Request.Path);
+                }
+                finally
+                {
+                    stopwatch.Stop();
+                    _opsMetricsRecorder.Record(context, stopwatch.ElapsedMilliseconds);
+                }
+
                 return;
             }
 
@@ -79,6 +97,8 @@ namespace EatFitAI.API.Middleware
             finally
             {
                 context.Response.Body = originalBodyStream;
+                stopwatch.Stop();
+                _opsMetricsRecorder.Record(context, stopwatch.ElapsedMilliseconds);
             }
         }
     }

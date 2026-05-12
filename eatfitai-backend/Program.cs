@@ -883,7 +883,14 @@ builder.Services.AddScoped<IAiLogService, AiLogService>();
 builder.Services.AddScoped<IAdminAuditService, AdminAuditService>();
 builder.Services.AddScoped<SupabaseSchemaBootstrapper>();
 builder.Services.AddScoped<ProductSchemaBootstrapper>();
+builder.Services.AddScoped<AdminControlPlaneBootstrapper>();
 builder.Services.AddScoped<ITelemetryService, TelemetryService>();
+builder.Services.AddSingleton<OpsMetricsBuffer>();
+builder.Services.AddSingleton<IOpsMetricsRecorder>(services => services.GetRequiredService<OpsMetricsBuffer>());
+builder.Services.AddScoped<AdminOpsMetricsService>();
+builder.Services.AddScoped<AdminAnalyticsOverviewService>();
+builder.Services.AddScoped<MobileRuntimeConfigService>();
+builder.Services.AddScoped<PushNotificationCampaignService>();
 
 // Lookup cache service (Singleton for shared cache)
 builder.Services.AddSingleton<ILookupCacheService, LookupCacheService>();
@@ -897,6 +904,8 @@ builder.Services.AddScoped<IAdminQuotaOverviewService, AdminQuotaOverviewService
 builder.Services.AddScoped<IAiRuntimeStatusService, AiRuntimeStatusService>();
 builder.Services.AddScoped<IGeminiPoolManager, GeminiPoolManager>();
 builder.Services.AddHostedService<AdminRuntimeSnapshotBackgroundService>();
+builder.Services.AddHostedService<OpsMetricsFlushService>();
+builder.Services.AddHostedService<PushCampaignBackgroundService>();
 
 // Health checks (used by HealthController and readiness endpoints)
 builder.Services.AddSingleton<StartupHealthState>();
@@ -1081,6 +1090,9 @@ builder.Services.AddAuthorization(options =>
     options.AddPolicy(AdminPolicies.RuntimeKeysDelete, builder => RequireCapability(builder, AdminCapabilities.RuntimeKeysDelete));
     options.AddPolicy(AdminPolicies.AuditRead, builder => RequireCapability(builder, AdminCapabilities.AuditRead));
     options.AddPolicy(AdminPolicies.SettingsRead, builder => RequireCapability(builder, AdminCapabilities.SettingsRead));
+    options.AddPolicy(AdminPolicies.SettingsWrite, builder => RequireCapability(builder, AdminCapabilities.SettingsWrite));
+    options.AddPolicy(AdminPolicies.OpsRead, builder => RequireCapability(builder, AdminCapabilities.OpsRead));
+    options.AddPolicy(AdminPolicies.NotificationsManage, builder => RequireCapability(builder, AdminCapabilities.NotificationsManage));
 });
 
 var app = builder.Build();
@@ -1116,12 +1128,14 @@ async Task RunSchemaBootstrapDirectAsync(IServiceProvider services)
     var authInfrastructureBootstrapper = services.GetRequiredService<AuthInfrastructureBootstrapper>();
     var supabaseSchemaBootstrapper = services.GetRequiredService<SupabaseSchemaBootstrapper>();
     var productSchemaBootstrapper = services.GetRequiredService<ProductSchemaBootstrapper>();
+    var adminControlPlaneBootstrapper = services.GetRequiredService<AdminControlPlaneBootstrapper>();
 
     await adminAuditService.EnsureTableAsync();
     await governanceBootstrapper.EnsureSchemaAsync();
     await authInfrastructureBootstrapper.EnsureSchemaAsync();
     await supabaseSchemaBootstrapper.EnsureSchemaAsync(force: true);
     await productSchemaBootstrapper.EnsureSchemaAsync(force: true);
+    await adminControlPlaneBootstrapper.EnsureSchemaAsync(force: true);
 }
 
 async Task RunTrackedSchemaBootstrapAsync(
@@ -1133,6 +1147,7 @@ async Task RunTrackedSchemaBootstrapAsync(
     var authInfrastructureBootstrapper = services.GetRequiredService<AuthInfrastructureBootstrapper>();
     var supabaseSchemaBootstrapper = services.GetRequiredService<SupabaseSchemaBootstrapper>();
     var productSchemaBootstrapper = services.GetRequiredService<ProductSchemaBootstrapper>();
+    var adminControlPlaneBootstrapper = services.GetRequiredService<AdminControlPlaneBootstrapper>();
 
     if (await TryRunTrackedStartupPhaseAsync(
             "admin-audit-bootstrap",
@@ -1156,6 +1171,10 @@ async Task RunTrackedSchemaBootstrapAsync(
     await TryRunTrackedStartupPhaseAsync(
         "product-schema-bootstrap",
         () => productSchemaBootstrapper.EnsureSchemaAsync(force: true),
+        failureLogLevel);
+    await TryRunTrackedStartupPhaseAsync(
+        "admin-control-plane-bootstrap",
+        () => adminControlPlaneBootstrapper.EnsureSchemaAsync(force: true),
         failureLogLevel);
 }
 

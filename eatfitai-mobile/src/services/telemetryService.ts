@@ -8,6 +8,7 @@ const TELEMETRY_QUEUE_KEY = '@eatfitai_telemetry_queue';
 const TELEMETRY_SESSION_KEY = '@eatfitai_telemetry_session';
 const MAX_QUEUE_SIZE = 200;
 const BATCH_SIZE = 25;
+const MIN_FLUSH_INTERVAL_MS = 60 * 1000;
 
 export type TelemetryMetadata = Record<string, unknown> | null | undefined;
 
@@ -39,6 +40,9 @@ let queue: TelemetryEventRecord[] = [];
 let queueLoaded = false;
 let isFlushing = false;
 let sessionIdPromise: Promise<string> | null = null;
+let lastFlushAttemptAt = 0;
+let scheduledFlush: ReturnType<typeof setTimeout> | null = null;
+let telemetrySampleRate = 1;
 
 const resolveBaseUrl = (): string | null => {
   const value = getCurrentApiUrl() ?? API_BASE_URL;
@@ -229,32 +233,77 @@ export const flushTelemetryQueue = async (): Promise<boolean> => {
   }
 };
 
+export const setTelemetrySampleRate = (value: number): void => {
+  telemetrySampleRate = Math.max(0, Math.min(1, Number.isFinite(value) ? value : 1));
+};
+
+const shouldKeepEvent = (event: TelemetryEventInput): boolean => {
+  if (event.category === 'error' || event.status === 'error') {
+    return true;
+  }
+
+  return telemetrySampleRate >= 1 || Math.random() <= telemetrySampleRate;
+};
+
+const scheduleTelemetryFlush = (): void => {
+  if (scheduledFlush) {
+    return;
+  }
+
+  const elapsed = Date.now() - lastFlushAttemptAt;
+  const delay = Math.max(MIN_FLUSH_INTERVAL_MS - elapsed, 5000);
+  scheduledFlush = setTimeout(() => {
+    scheduledFlush = null;
+    lastFlushAttemptAt = Date.now();
+    void flushTelemetryQueue();
+  }, delay);
+};
+
 export const trackTelemetryEvent = async (
   event: TelemetryEventInput,
 ): Promise<void> => {
+  if (!shouldKeepEvent(event)) {
+    return;
+  }
+
   await ensureQueueLoaded();
 
   const normalized = await normalizeEvent(event);
   queue = [...queue, normalized].slice(-MAX_QUEUE_SIZE);
   await persistQueue();
 
-  void flushTelemetryQueue();
+  if (queue.length >= BATCH_SIZE) {
+    lastFlushAttemptAt = Date.now();
+    void flushTelemetryQueue();
+  } else {
+    scheduleTelemetryFlush();
+  }
 };
 
 export const trackTelemetryEvents = async (
   events: TelemetryEventInput[],
 ): Promise<void> => {
+  const sampledEvents = events.filter(shouldKeepEvent);
+  if (sampledEvents.length === 0) {
+    return;
+  }
+
   await ensureQueueLoaded();
 
-  const normalized = await Promise.all(events.map(normalizeEvent));
+  const normalized = await Promise.all(sampledEvents.map(normalizeEvent));
   queue = [...queue, ...normalized].slice(-MAX_QUEUE_SIZE);
   await persistQueue();
 
-  void flushTelemetryQueue();
+  if (queue.length >= BATCH_SIZE) {
+    lastFlushAttemptAt = Date.now();
+    void flushTelemetryQueue();
+  } else {
+    scheduleTelemetryFlush();
+  }
 };
 
 export const initTelemetryService = async (): Promise<void> => {
   await ensureQueueLoaded();
   await ensureSessionId();
-  void flushTelemetryQueue();
+  scheduleTelemetryFlush();
 };

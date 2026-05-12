@@ -21,6 +21,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import AppNavigator from './src/app/navigation/AppNavigator';
 import ErrorBoundary from './src/components/ErrorBoundary';
+import MobileControlGate from './src/components/MobileControlGate';
 import { E2E_AUTOMATION_ENABLED } from './src/config/automation';
 import { t } from './src/i18n/vi';
 import { initAnalytics } from './src/services/analytics';
@@ -125,7 +126,9 @@ const AppInner = () => {
 
   return (
     <>
-      <AppNavigator />
+      <MobileControlGate>
+        <AppNavigator />
+      </MobileControlGate>
       <StatusBar style={theme.statusBarStyle} />
       <Toast position="top" topOffset={insets.top + 10} config={toastConfig} />
     </>

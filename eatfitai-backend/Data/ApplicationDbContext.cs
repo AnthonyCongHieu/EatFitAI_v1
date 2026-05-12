@@ -60,6 +60,11 @@ public partial class ApplicationDbContext : DbContext
     public virtual DbSet<GeminiKey> GeminiKeys { get; set; }
     public virtual DbSet<AdminAuditEvent> AdminAuditEvents { get; set; }
     public virtual DbSet<WaterIntake> WaterIntakes { get; set; }
+    public virtual DbSet<OpsMetricBucket> OpsMetricBuckets { get; set; }
+    public virtual DbSet<MobileRuntimeConfig> MobileRuntimeConfigs { get; set; }
+    public virtual DbSet<PushDevice> PushDevices { get; set; }
+    public virtual DbSet<PushCampaign> PushCampaigns { get; set; }
+    public virtual DbSet<PushCampaignDelivery> PushCampaignDeliveries { get; set; }
 
     public virtual DbSet<vw_DailyMacroShare> vw_DailyMacroShares { get; set; }
 
@@ -719,9 +724,147 @@ public partial class ApplicationDbContext : DbContext
                 .HasConstraintName("FK_WaterIntake_User");
         });
 
+        modelBuilder.Entity<OpsMetricBucket>(entity =>
+        {
+            entity.ToTable("OpsMetricBucket");
+            entity.HasKey(e => e.OpsMetricBucketId);
+            entity.HasIndex(e => new
+            {
+                e.Source,
+                e.Method,
+                e.RouteGroup,
+                e.StatusClass,
+                e.BucketStart,
+                e.Granularity
+            }, "UQ_OpsMetricBucket_Key").IsUnique();
+            entity.HasIndex(e => new { e.Granularity, e.BucketStart }, "IX_OpsMetricBucket_Granularity_BucketStart");
+            entity.Property(e => e.OpsMetricBucketId).HasDefaultValueSql("gen_random_uuid()");
+            entity.Property(e => e.Source).HasMaxLength(40);
+            entity.Property(e => e.Method).HasMaxLength(12);
+            entity.Property(e => e.RouteGroup).HasMaxLength(160);
+            entity.Property(e => e.StatusClass).HasMaxLength(12);
+            entity.Property(e => e.Granularity).HasMaxLength(20);
+            entity.Property(e => e.LatencyHistogramJson).HasColumnType("text");
+            entity.Property(e => e.BucketStart).HasPrecision(3);
+            entity.Property(e => e.CreatedAt)
+                .HasPrecision(3)
+                .HasDefaultValueSql("NOW() AT TIME ZONE 'UTC'");
+            entity.Property(e => e.UpdatedAt)
+                .HasPrecision(3)
+                .HasDefaultValueSql("NOW() AT TIME ZONE 'UTC'");
+        });
+
+        modelBuilder.Entity<MobileRuntimeConfig>(entity =>
+        {
+            entity.ToTable("MobileRuntimeConfig");
+            entity.HasKey(e => e.MobileRuntimeConfigId);
+            entity.HasIndex(e => new { e.Environment, e.Platform, e.Channel }, "UQ_MobileRuntimeConfig_Target").IsUnique();
+            entity.Property(e => e.MobileRuntimeConfigId).HasDefaultValueSql("gen_random_uuid()");
+            entity.Property(e => e.Environment).HasMaxLength(40);
+            entity.Property(e => e.Platform).HasMaxLength(40);
+            entity.Property(e => e.Channel).HasMaxLength(80);
+            entity.Property(e => e.MinSupportedVersion).HasMaxLength(40);
+            entity.Property(e => e.LatestVersion).HasMaxLength(40);
+            entity.Property(e => e.UpdatedBy).HasMaxLength(256);
+            entity.Property(e => e.FeatureFlagsJson).HasColumnType("text");
+            entity.Property(e => e.CreatedAt)
+                .HasPrecision(3)
+                .HasDefaultValueSql("NOW() AT TIME ZONE 'UTC'");
+            entity.Property(e => e.UpdatedAt)
+                .HasPrecision(3)
+                .HasDefaultValueSql("NOW() AT TIME ZONE 'UTC'");
+        });
+
+        modelBuilder.Entity<PushDevice>(entity =>
+        {
+            entity.ToTable("PushDevice");
+            entity.HasKey(e => e.PushDeviceId);
+            entity.HasIndex(e => e.ExpoPushToken, "UQ_PushDevice_Token").IsUnique();
+            entity.HasIndex(e => new { e.UserId, e.IsEnabled }, "IX_PushDevice_User_Enabled");
+            entity.Property(e => e.PushDeviceId).HasDefaultValueSql("gen_random_uuid()");
+            entity.Property(e => e.ExpoPushToken).HasMaxLength(256);
+            entity.Property(e => e.Platform).HasMaxLength(40);
+            entity.Property(e => e.DeviceId).HasMaxLength(160);
+            entity.Property(e => e.AppVersion).HasMaxLength(40);
+            entity.Property(e => e.RuntimeVersion).HasMaxLength(40);
+            entity.Property(e => e.Channel).HasMaxLength(80);
+            entity.Property(e => e.PermissionStatus).HasMaxLength(40);
+            entity.Property(e => e.DisabledReason).HasMaxLength(120);
+            entity.Property(e => e.CreatedAt)
+                .HasPrecision(3)
+                .HasDefaultValueSql("NOW() AT TIME ZONE 'UTC'");
+            entity.Property(e => e.UpdatedAt)
+                .HasPrecision(3)
+                .HasDefaultValueSql("NOW() AT TIME ZONE 'UTC'");
+            entity.Property(e => e.LastRegisteredAt).HasPrecision(3);
+            entity.Property(e => e.LastSeenAt).HasPrecision(3);
+            entity.HasOne(d => d.User)
+                .WithMany()
+                .HasForeignKey(d => d.UserId)
+                .OnDelete(DeleteBehavior.Cascade)
+                .HasConstraintName("FK_PushDevice_User");
+        });
+
+        modelBuilder.Entity<PushCampaign>(entity =>
+        {
+            entity.ToTable("PushCampaign");
+            entity.HasKey(e => e.PushCampaignId);
+            entity.HasIndex(e => new { e.Status, e.ScheduledAt }, "IX_PushCampaign_Status_ScheduledAt");
+            entity.Property(e => e.PushCampaignId).HasDefaultValueSql("gen_random_uuid()");
+            entity.Property(e => e.Title).HasMaxLength(120);
+            entity.Property(e => e.Body).HasMaxLength(512);
+            entity.Property(e => e.Status).HasMaxLength(40);
+            entity.Property(e => e.DataJson).HasColumnType("text");
+            entity.Property(e => e.AudienceFilterJson).HasColumnType("text");
+            entity.Property(e => e.CreatedBy).HasMaxLength(256);
+            entity.Property(e => e.UpdatedBy).HasMaxLength(256);
+            entity.Property(e => e.ScheduledAt).HasPrecision(3);
+            entity.Property(e => e.SentAt).HasPrecision(3);
+            entity.Property(e => e.CompletedAt).HasPrecision(3);
+            entity.Property(e => e.CreatedAt)
+                .HasPrecision(3)
+                .HasDefaultValueSql("NOW() AT TIME ZONE 'UTC'");
+            entity.Property(e => e.UpdatedAt)
+                .HasPrecision(3)
+                .HasDefaultValueSql("NOW() AT TIME ZONE 'UTC'");
+        });
+
+        modelBuilder.Entity<PushCampaignDelivery>(entity =>
+        {
+            entity.ToTable("PushCampaignDelivery");
+            entity.HasKey(e => e.PushCampaignDeliveryId);
+            entity.HasIndex(e => new { e.PushCampaignId, e.PushDeviceId }, "UQ_PushCampaignDelivery_Campaign_Device").IsUnique();
+            entity.HasIndex(e => new { e.Status, e.NextAttemptAt }, "IX_PushCampaignDelivery_Status_NextAttempt");
+            entity.HasIndex(e => e.TicketId, "IX_PushCampaignDelivery_TicketId");
+            entity.Property(e => e.PushCampaignDeliveryId).HasDefaultValueSql("gen_random_uuid()");
+            entity.Property(e => e.ExpoPushToken).HasMaxLength(256);
+            entity.Property(e => e.Status).HasMaxLength(40);
+            entity.Property(e => e.TicketId).HasMaxLength(120);
+            entity.Property(e => e.ErrorCode).HasMaxLength(120);
+            entity.Property(e => e.ErrorMessage).HasColumnType("text");
+            entity.Property(e => e.NextAttemptAt).HasPrecision(3);
+            entity.Property(e => e.LastAttemptAt).HasPrecision(3);
+            entity.Property(e => e.ReceiptCheckedAt).HasPrecision(3);
+            entity.Property(e => e.CreatedAt)
+                .HasPrecision(3)
+                .HasDefaultValueSql("NOW() AT TIME ZONE 'UTC'");
+            entity.Property(e => e.UpdatedAt)
+                .HasPrecision(3)
+                .HasDefaultValueSql("NOW() AT TIME ZONE 'UTC'");
+            entity.HasOne(d => d.Campaign)
+                .WithMany(p => p.Deliveries)
+                .HasForeignKey(d => d.PushCampaignId)
+                .OnDelete(DeleteBehavior.Cascade)
+                .HasConstraintName("FK_PushCampaignDelivery_Campaign");
+            entity.HasOne(d => d.Device)
+                .WithMany()
+                .HasForeignKey(d => d.PushDeviceId)
+                .OnDelete(DeleteBehavior.Cascade)
+                .HasConstraintName("FK_PushCampaignDelivery_Device");
+        });
+
         OnModelCreatingPartial(modelBuilder);
     }
 
     partial void OnModelCreatingPartial(ModelBuilder modelBuilder);
 }
-

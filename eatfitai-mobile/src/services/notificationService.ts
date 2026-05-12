@@ -4,6 +4,8 @@
 // LƯU Ý: Expo Go không hỗ trợ native modules, cần development build để test
 
 import * as Device from 'expo-device';
+import Constants from 'expo-constants';
+import * as Updates from 'expo-updates';
 import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -41,6 +43,7 @@ try {
 
 // Key lưu trữ cài đặt notifications
 const NOTIFICATIONS_SETTINGS_KEY = '@eatfitai_notifications';
+const PUSH_REGISTRATION_KEY = '@eatfitai_push_registration';
 
 // Types
 export interface NotificationSettings {
@@ -81,6 +84,15 @@ export interface NotificationDecision {
   deepLink: string;
 }
 
+interface PushRegistrationCache {
+  expoPushToken: string;
+  platform: string;
+  appVersion: string;
+  runtimeVersion: string;
+  channel: string;
+  permissionStatus: string;
+}
+
 // Notification identifiers để quản lý
 const NOTIFICATION_IDS = {
   breakfast: 'meal-reminder-breakfast',
@@ -99,6 +111,19 @@ type NotificationTarget = 'weekly-review';
 
 let notificationResponseSubscription: { remove: () => void } | null = null;
 let pendingNotificationTarget: NotificationTarget | null = null;
+
+const getExpoProjectId = (): string | undefined => {
+  const constantsWithEas = Constants as unknown as { easConfig?: { projectId?: string } };
+  return (
+    Constants.expoConfig?.extra?.eas?.projectId ??
+    constantsWithEas.easConfig?.projectId
+  );
+};
+
+const getAppVersion = (): string => Constants.expoConfig?.version ?? '1.0.0';
+const getRuntimeVersion = (): string =>
+  String(Constants.expoConfig?.runtimeVersion ?? Updates.runtimeVersion ?? getAppVersion());
+const getChannel = (): string => Updates.channel || 'production';
 
 // Meal reminder messages
 const MEAL_MESSAGES = {
@@ -240,12 +265,49 @@ export async function requestNotificationPermissions(): Promise<boolean> {
       });
     }
 
+    await registerExpoPushTokenIfNeeded(finalStatus);
     logger.info('[NotificationService] Đã được cấp quyền notification');
     return true;
   } catch (error) {
     // Handle gracefully khi native module không available (Expo Go)
     logger.warn('[NotificationService] Native module không available:', error);
     return false;
+  }
+}
+
+async function registerExpoPushTokenIfNeeded(permissionStatus: string): Promise<void> {
+  if (!Notifications || permissionStatus !== 'granted' || !Device.isDevice) {
+    return;
+  }
+
+  const projectId = getExpoProjectId();
+  if (!projectId) {
+    logger.warn('[NotificationService] Missing Expo projectId, skip push token registration');
+    return;
+  }
+
+  try {
+    const tokenResult = await Notifications.getExpoPushTokenAsync({ projectId });
+    const expoPushToken = tokenResult.data;
+    const payload: PushRegistrationCache = {
+      expoPushToken,
+      platform: Platform.OS,
+      appVersion: getAppVersion(),
+      runtimeVersion: getRuntimeVersion(),
+      channel: getChannel(),
+      permissionStatus,
+    };
+
+    const previousRaw = await AsyncStorage.getItem(PUSH_REGISTRATION_KEY);
+    if (previousRaw === JSON.stringify(payload)) {
+      return;
+    }
+
+    await apiClient.post('/api/notifications/register-device', payload);
+    await AsyncStorage.setItem(PUSH_REGISTRATION_KEY, JSON.stringify(payload));
+    logger.info('[NotificationService] Expo push token registered');
+  } catch (error) {
+    logger.warn('[NotificationService] Expo push token registration failed', error);
   }
 }
 

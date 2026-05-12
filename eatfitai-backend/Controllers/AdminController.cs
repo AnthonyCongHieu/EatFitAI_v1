@@ -107,6 +107,30 @@ public class AdminController : ControllerBase
             Rollback = "Áp lại giá trị dữ liệu gốc trước đó hoặc khôi phục từ bằng chứng audit.",
             AuditSchema = "master-data.v1",
         },
+        new()
+        {
+            Key = "mobile-config.update",
+            Category = "settings",
+            Label = "Cập nhật cấu hình mobile",
+            Description = "Bật maintenance, force update, feature flags và telemetry sampling qua backend có cache/audit.",
+            Capability = AdminCapabilities.SettingsWrite,
+            Severity = "high",
+            JustificationRequired = true,
+            Rollback = "Đưa cấu hình về phiên bản trước dựa trên audit trail.",
+            AuditSchema = "mobile-runtime-config.v1",
+        },
+        new()
+        {
+            Key = "push-campaign.manage",
+            Category = "notifications",
+            Label = "Quản lý push campaign",
+            Description = "Tạo, schedule hoặc hủy chiến dịch Expo push với audience preview và receipt tracking.",
+            Capability = AdminCapabilities.NotificationsManage,
+            Severity = "high",
+            JustificationRequired = true,
+            Rollback = "Hủy campaign chưa gửi hoặc tạo campaign điều chỉnh.",
+            AuditSchema = "push-campaign.v1",
+        },
     };
 
     private readonly ApplicationDbContext _context;

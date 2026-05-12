@@ -110,6 +110,9 @@ public static class AdminCapabilities
     public const string RuntimeKeysDelete = "runtime.keys.delete";
     public const string AuditRead = "audit.read";
     public const string SettingsRead = "settings.read";
+    public const string SettingsWrite = "settings.write";
+    public const string OpsRead = "ops.read";
+    public const string NotificationsManage = "notifications.manage";
 
     public static IReadOnlyList<string> GetForRole(string? role)
     {
@@ -134,6 +137,9 @@ public static class AdminCapabilities
                 RuntimeKeysDelete,
                 AuditRead,
                 SettingsRead,
+                SettingsWrite,
+                OpsRead,
+                NotificationsManage,
             },
             PlatformRoles.SupportAdmin => new[]
             {
@@ -147,6 +153,7 @@ public static class AdminCapabilities
                 AuditRead,
                 RuntimeRead,
                 SettingsRead,
+                OpsRead,
             },
             PlatformRoles.ContentAdmin => new[]
             {
@@ -159,6 +166,7 @@ public static class AdminCapabilities
                 RuntimeRead,
                 AuditRead,
                 SettingsRead,
+                NotificationsManage,
             },
             PlatformRoles.ReadOnlyAuditor => new[]
             {
@@ -171,6 +179,7 @@ public static class AdminCapabilities
                 RuntimeRead,
                 AuditRead,
                 SettingsRead,
+                OpsRead,
             },
             _ => Array.Empty<string>(),
         };
@@ -195,6 +204,9 @@ public static class AdminCapabilities
         RuntimeKeysDelete,
         AuditRead,
         SettingsRead,
+        SettingsWrite,
+        OpsRead,
+        NotificationsManage,
     };
 }
 
@@ -217,6 +229,9 @@ public static class AdminPolicies
     public const string RuntimeKeysDelete = "AdminRuntimeKeysDelete";
     public const string AuditRead = "AdminAuditRead";
     public const string SettingsRead = "AdminSettingsRead";
+    public const string SettingsWrite = "AdminSettingsWrite";
+    public const string OpsRead = "AdminOpsRead";
+    public const string NotificationsManage = "AdminNotificationsManage";
 }
 
 public static class AdminClaimsIdentityExtensions
