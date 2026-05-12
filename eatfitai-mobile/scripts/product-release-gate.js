@@ -2,6 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const { spawnSync } = require('child_process');
 const { resolveEnv } = require('../../tools/automation/resolveEnv');
+const { createDisposableMailbox } = require('./lib/disposable-mail');
 const {
   evaluateRcDeviceReports,
   readRcDeviceReportsFromRoot,
@@ -183,6 +184,37 @@ function buildSyntheticCommandResult(label, command, ok, stderr, stdout = '') {
 
 function shouldRunRenderVerifyGate(env) {
   return isTruthy(env.EATFITAI_RELEASE_GATE_RENDER_VERIFY);
+}
+
+function shouldProvisionDisposableCloudAuth(env) {
+  return !['0', 'false', 'no', 'off'].includes(
+    trim(env.EATFITAI_RELEASE_GATE_DISPOSABLE_AUTH || '1').toLowerCase(),
+  );
+}
+
+async function provisionDisposableCloudAuth(outputDir, env) {
+  const mailbox = await createDisposableMailbox({
+    apiBaseUrl: env.EATFITAI_DEMO_MAIL_API,
+    outputDir,
+    artifactName: 'release-gate-mailbox.json',
+  });
+  env.EATFITAI_DEMO_EMAIL = mailbox.address;
+  env.EATFITAI_DEMO_PASSWORD = mailbox.password;
+  env.EATFITAI_SMOKE_EMAIL = mailbox.address;
+  env.EATFITAI_SMOKE_PASSWORD = mailbox.password;
+  env.EATFITAI_REGRESSION_ALLOW_MUTATIONS = trim(env.EATFITAI_REGRESSION_ALLOW_MUTATIONS) || '1';
+  env.EATFITAI_SMOKE_AUTH_TIMEOUT_MS = trim(env.EATFITAI_SMOKE_AUTH_TIMEOUT_MS) || '60000';
+  env.EATFITAI_SMOKE_AUTH_RESET_TIMEOUT_MS =
+    trim(env.EATFITAI_SMOKE_AUTH_RESET_TIMEOUT_MS) || '60000';
+  env.EATFITAI_SMOKE_AUTH_MAILBOX_TIMEOUT_MS =
+    trim(env.EATFITAI_SMOKE_AUTH_MAILBOX_TIMEOUT_MS) || '240000';
+  env.EATFITAI_SMOKE_AUTH_MAILBOX_POLL_MS =
+    trim(env.EATFITAI_SMOKE_AUTH_MAILBOX_POLL_MS) || '10000';
+
+  return {
+    address: mailbox.address,
+    artifactPath: path.join(outputDir, 'release-gate-mailbox.json'),
+  };
 }
 
 function parseOnlineAndroidDevices(adbDevicesOutput) {
@@ -674,7 +706,33 @@ async function main() {
     }
 
     if (gateName === 'cloud') {
-      if (shouldRunRenderVerifyGate(env)) {
+      if (shouldProvisionDisposableCloudAuth(env)) {
+        try {
+          const auth = await provisionDisposableCloudAuth(outputDir, env);
+          gateResult.commands.push(
+            buildSyntheticCommandResult(
+              'Cloud disposable auth',
+              'mail.tm mailbox provision',
+              true,
+              '',
+              `Provisioned disposable release-gate mailbox ${auth.address}. Artifact: ${auth.artifactPath}`,
+            ),
+          );
+        } catch (error) {
+          gateResult.commands.push(
+            buildSyntheticCommandResult(
+              'Cloud disposable auth',
+              'mail.tm mailbox provision',
+              false,
+              error instanceof Error ? error.message : String(error),
+            ),
+          );
+        }
+      } else {
+        env.EATFITAI_REGRESSION_ALLOW_MUTATIONS =
+          trim(env.EATFITAI_REGRESSION_ALLOW_MUTATIONS) || '1';
+      }
+      if (gateResult.commands.every((entry) => entry.ok) && shouldRunRenderVerifyGate(env)) {
         gateResult.commands.push(
           runCommand('Render verify', 'npm', ['run', 'smoke:render:verify'], {
             cwd: mobileRoot,
@@ -682,7 +740,7 @@ async function main() {
             timeoutMs: 20 * 60 * 1000,
           }),
         );
-      } else {
+      } else if (gateResult.commands.every((entry) => entry.ok)) {
         gateResult.commands.push(
           buildSyntheticCommandResult(
             'Render verify',

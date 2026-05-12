@@ -105,6 +105,16 @@ class CloudSmokeTargetTests(unittest.TestCase):
         self.assertIn("Skipped by default for Lightsail primary cutover", content)
         self.assertIn("shouldRunRenderVerifyGate(env)", content)
 
+    def test_release_cloud_gate_provisions_disposable_auth_by_default(self) -> None:
+        content = (MOBILE_ROOT / "scripts" / "product-release-gate.js").read_text(
+            encoding="utf-8"
+        )
+
+        self.assertIn("createDisposableMailbox", content)
+        self.assertIn("EATFITAI_RELEASE_GATE_DISPOSABLE_AUTH", content)
+        self.assertIn("EATFITAI_REGRESSION_ALLOW_MUTATIONS", content)
+        self.assertIn("release-gate-mailbox.json", content)
+
     def test_eas_preview_and_production_default_to_duckdns(self) -> None:
         eas = json.loads((MOBILE_ROOT / "eas.json").read_text(encoding="utf-8"))
 
