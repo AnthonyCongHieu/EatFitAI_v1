@@ -519,8 +519,8 @@ const FoodSearchScreen = (): React.ReactElement => {
       <Animated.View entering={FadeInDown.delay(index * 40).duration(300)} layout={Layout.springify()}>
         <View style={S.resultCard}>
           <View style={S.resultCardLeft}>
-            <View style={S.thumbnailBox}>
-              <Ionicons name="restaurant" size={24} color={P.primary} />
+            <View style={[S.thumbnailBox, { backgroundColor: P.primary + '15' }]}>
+              <Ionicons name="restaurant-outline" size={24} color={P.primary} />
             </View>
             <View style={S.resultInfo}>
               <ThemedText style={S.resultTitle} numberOfLines={1}>{template.name}</ThemedText>
@@ -530,14 +530,26 @@ const FoodSearchScreen = (): React.ReactElement => {
                 </ThemedText>
               ) : null}
               <View style={S.templateMetaRow}>
+                <ThemedText style={S.templateMetaText}>{template.ingredientCount} món</ThemedText>
                 <ThemedText style={S.per100g}>{Math.round(template.defaultGrams || 0)}g</ThemedText>
                 <ThemedText style={S.resultCaloriesSmall}>
                   {template.calories != null ? Math.round(template.calories) : '--'} kcal
                 </ThemedText>
               </View>
-              <ThemedText style={S.templateMetaText}>
-                {template.ingredientCount} nguyên liệu
-              </ThemedText>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 4 }}>
+                <View style={S.macroDots}>
+                  <View style={[S.macroDot, { backgroundColor: P.macroP }]} />
+                  <ThemedText style={S.macroText}>P: {template.protein != null ? Math.round(template.protein) : '--'}g</ThemedText>
+                </View>
+                <View style={S.macroDots}>
+                  <View style={[S.macroDot, { backgroundColor: P.macroC }]} />
+                  <ThemedText style={S.macroText}>C: {template.carbs != null ? Math.round(template.carbs) : '--'}g</ThemedText>
+                </View>
+                <View style={S.macroDots}>
+                  <View style={[S.macroDot, { backgroundColor: P.macroF }]} />
+                  <ThemedText style={S.macroText}>F: {template.fat != null ? Math.round(template.fat) : '--'}g</ThemedText>
+                </View>
+              </View>
             </View>
           </View>
 
@@ -690,7 +702,7 @@ const FoodSearchScreen = (): React.ReactElement => {
         ) : activeTab === 'common' ? (
           <View style={S.resultsArea}>
             <View style={S.sectionHeader}>
-              <ThemedText style={S.sectionTitle}>MÓN THƯỜNG DÙNG</ThemedText>
+              <ThemedText style={S.sectionTitle}>TỔ HỢP MÓN THƯỜNG DÙNG</ThemedText>
               <Pressable onPress={handleOpenCommonMeals} hitSlop={8}>
                 <ThemedText style={S.sectionAction}>Quản lý</ThemedText>
               </Pressable>
@@ -704,10 +716,10 @@ const FoodSearchScreen = (): React.ReactElement => {
             ) : (
               <View style={S.commonMealEmptyCard}>
                 <ThemedText style={S.commonMealEmptyTitle}>
-                  Chưa có món thường dùng nào
+                  Chưa có tổ hợp món nào
                 </ThemedText>
                 <ThemedText style={S.commonMealEmptyDescription}>
-                  Tạo mẫu bữa ăn bạn hay lặp lại để thêm nhanh vào nhật ký.
+                  Tạo tổ hợp các món bạn hay ăn cùng nhau để thêm nhanh vào nhật ký.
                 </ThemedText>
                 <Pressable
                   onPress={handleOpenCommonMeals}
@@ -717,7 +729,7 @@ const FoodSearchScreen = (): React.ReactElement => {
                   ]}
                 >
                   <Ionicons name="add-circle-outline" size={16} color={P.primary} />
-                  <ThemedText style={S.commonMealEmptyButtonText}>Tạo món thường dùng</ThemedText>
+                  <ThemedText style={S.commonMealEmptyButtonText}>Tạo tổ hợp món</ThemedText>
                 </Pressable>
               </View>
             )}
@@ -787,7 +799,7 @@ const S = StyleSheet.create({
   },
   headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 16 },
   iconBtn: { padding: 8, borderRadius: 20 },
-  headerTitle: { fontSize: 22, fontFamily: 'Inter_700Bold', color: P.onSurface, letterSpacing: -0.5 },
+  headerTitle: { fontSize: 18, fontFamily: 'Inter_600SemiBold', color: P.primaryDark, letterSpacing: -0.3 },
 
   scrollContent: { paddingHorizontal: 20, paddingTop: 16, paddingBottom: 40 },
 
@@ -829,7 +841,7 @@ const S = StyleSheet.create({
 
   sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12 },
   sectionTitle: { fontSize: 13, fontFamily: 'Inter_700Bold', color: P.onSurfaceVariant, letterSpacing: 1.5, textTransform: 'uppercase' },
-  sectionAction: { fontSize: 12, fontFamily: 'Inter_700Bold', color: P.primary },
+  sectionAction: { fontSize: 14, fontFamily: 'Inter_700Bold', color: P.primary },
 
   recentArea: { gap: 12 },
   recentItem: {
@@ -870,7 +882,7 @@ const S = StyleSheet.create({
   resultTitle: { fontSize: 16, fontFamily: 'Inter_700Bold', color: P.onSurface, marginBottom: 4 },
   templateDescription: { fontSize: 12, fontFamily: 'Inter_400Regular', color: P.onSurfaceVariant, marginBottom: 6 },
   templateMetaRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 4 },
-  templateMetaText: { fontSize: 11, fontFamily: 'Inter_600SemiBold', color: P.onSurfaceVariant },
+  templateMetaText: { fontSize: 13, fontFamily: 'Inter_600SemiBold', color: P.onSurfaceVariant },
   commonMealEmptyCard: {
     borderRadius: 18,
     borderWidth: 1,
@@ -879,12 +891,12 @@ const S = StyleSheet.create({
     padding: 16,
     gap: 10,
   },
-  commonMealEmptyTitle: { fontSize: 14, fontFamily: 'Inter_700Bold', color: P.onSurface },
+  commonMealEmptyTitle: { fontSize: 16, fontFamily: 'Inter_700Bold', color: P.onSurface },
   commonMealEmptyDescription: {
-    fontSize: 12,
+    fontSize: 14,
     fontFamily: 'Inter_400Regular',
     color: P.onSurfaceVariant,
-    lineHeight: 18,
+    lineHeight: 20,
   },
   commonMealEmptyButton: {
     flexDirection: 'row',
@@ -896,12 +908,12 @@ const S = StyleSheet.create({
     borderRadius: 999,
     backgroundColor: 'rgba(75, 226, 119, 0.12)',
   },
-  commonMealEmptyButtonText: { fontSize: 12, fontFamily: 'Inter_700Bold', color: P.primary },
+  commonMealEmptyButtonText: { fontSize: 14, fontFamily: 'Inter_700Bold', color: P.primary },
   macroRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   per100g: { fontSize: 13, fontFamily: 'Inter_500Medium', color: P.onSurfaceVariant },
   macroDots: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   macroDot: { width: 8, height: 8, borderRadius: 4 },
-  macroText: { fontSize: 11, fontFamily: 'Inter_600SemiBold', color: P.onSurfaceVariant },
+  macroText: { fontSize: 13, fontFamily: 'Inter_600SemiBold', color: P.onSurfaceVariant },
 
   resultCardRight: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   resultCaloriesSmall: { fontSize: 13, fontFamily: 'Inter_600SemiBold', color: P.primary },

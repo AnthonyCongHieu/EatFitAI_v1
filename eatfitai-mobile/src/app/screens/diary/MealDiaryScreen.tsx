@@ -244,8 +244,10 @@ const MealDiaryScreen = (): React.ReactElement => {
     let foodId: number | null | string = entry.foodItemId ?? null;
 
     if (entry.userDishId) {
-      source = 'user';
-      foodId = entry.userDishId;
+      navigation.navigate('CommonMealTemplate', {
+        templateId: String(entry.userDishId),
+      });
+      return;
     } else if (entry.sourceMethod === 'user') {
        source = 'user';
     }
