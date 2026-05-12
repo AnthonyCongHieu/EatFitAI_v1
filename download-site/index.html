@@ -3,219 +3,303 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta
-      name="description"
-      content="Trang tải chính thức EatFitAI cho Android bằng file APK từ GitHub Releases."
-    />
-    <meta name="theme-color" content="#1f7a4d" />
-    <title>Tải EatFitAI cho Android</title>
+    <meta name="description" content="EatFitAI - Ứng dụng theo dõi dinh dưỡng thông minh. Chụp ảnh món ăn, nhận diện tức thì, theo dõi calories mỗi ngày." />
+    <meta name="theme-color" content="#0E1322" />
+    <title>EatFitAI — Theo dõi dinh dưỡng thông minh</title>
+    <link rel="icon" type="image/png" href="./assets/icon.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="./styles.css" />
     <script defer src="./script.js"></script>
   </head>
   <body>
-    <a class="skip-link" href="#main">Bỏ qua điều hướng</a>
+    <div class="ambient-bg" aria-hidden="true"><div class="ambient-glow glow-1"></div><div class="ambient-glow glow-2"></div></div>
 
-    <div class="page-shell" id="top">
-      <header class="site-header" aria-label="Thanh điều hướng">
-        <a class="brand" href="#top" aria-label="EatFitAI">
-          <span class="brand-mark" aria-hidden="true">
-            <span class="brand-dot"></span>
-          </span>
-          <span>
-            <strong>EatFitAI</strong>
-            <small>Android Download</small>
-          </span>
-        </a>
-
-        <nav class="top-nav" aria-label="Liên kết nhanh">
-          <a href="#release-info">Thông tin</a>
-          <a href="#install">Cài đặt</a>
-          <a href="#safety">An toàn</a>
-        </nav>
+    <div class="page-wrapper" id="top">
+      <!-- HEADER -->
+      <header class="site-header">
+        <div class="header-inner">
+          <a class="brand" href="#top">
+            <img src="./assets/icon.png" alt="EatFitAI" width="38" height="38" class="brand-icon" />
+            <div class="brand-text"><strong>EatFitAI</strong><span>Dinh dưỡng thông minh</span></div>
+          </a>
+          <nav class="nav-pills">
+            <a href="#features">Tính năng</a>
+            <a href="#how">Cách dùng</a>
+            <a href="#download">Tải về</a>
+          </nav>
+        </div>
       </header>
 
       <main id="main">
-        <section class="hero" aria-labelledby="page-title">
-          <div class="hero-copy">
-            <p class="eyebrow">APK Android chính thức</p>
-            <h1 id="page-title">Tải EatFitAI cho Android</h1>
-            <p class="hero-lede">
-              EatFitAI giúp nhận diện món ăn, theo dõi dinh dưỡng và quản lý bữa ăn hằng ngày.
-              Bản APK được phát hành qua GitHub Releases của dự án.
-            </p>
-
-            <div class="trust-strip" aria-label="Hạ tầng phát hành">
-              <span>Cloudflare Pages</span>
-              <span>GitHub Releases</span>
-              <span>APK ngoài CH Play</span>
-            </div>
-
-            <div class="hero-actions">
-              <a
-                class="button button-primary"
-                data-download-link
-                href="https://github.com/AnthonyCongHieu/EatFitAI_v1/releases/download/android-v1.0.0/EatFitAI-android-v1.0.0.apk"
-                rel="noopener noreferrer"
-              >
-                Tải APK
+        <!-- HERO -->
+        <section class="hero">
+          <div class="hero-content">
+            <div class="hero-badge"><span class="badge-dot"></span> Phiên bản <strong data-version>1.0.0</strong> · Miễn phí</div>
+            <h1>Chụp ảnh. Nhận diện.<br/><span class="gradient-text">Theo dõi dinh dưỡng.</span></h1>
+            <p class="hero-desc">EatFitAI giúp bạn chụp ảnh bất kỳ món ăn nào — từ phở, bún bò đến salad — và tự động phân tích calories, protein, carbs & fat trong vài giây. Hoàn toàn miễn phí.</p>
+            <div class="hero-cta">
+              <a class="btn btn-primary" data-download-link href="#" id="hero-download-btn">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                Tải APK miễn phí
               </a>
-              <a
-                class="button button-secondary"
-                data-release-link
-                href="https://github.com/AnthonyCongHieu/EatFitAI_v1/releases/tag/android-v1.0.0"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                Xem release
+              <a class="btn btn-ghost" data-release-link href="#" target="_blank" rel="noopener" id="hero-github-btn">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/></svg>
+                Xem trên GitHub
               </a>
             </div>
-
-            <p class="source-warning">
-              Chỉ tải APK từ trang này hoặc repository GitHub chính thức
-              <strong>AnthonyCongHieu/EatFitAI_v1</strong>.
-            </p>
+            <div class="hero-trust">
+              <div class="trust-item"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg> Mã nguồn mở</div>
+              <div class="trust-item"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> An toàn & Minh bạch</div>
+              <div class="trust-item"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12" y2="18"/></svg> Android 7.0+</div>
+            </div>
           </div>
-
-          <aside class="release-panel" aria-labelledby="release-title">
-            <div class="panel-topline">
-              <span class="status-dot" aria-hidden="true"></span>
-              <span data-release-status>Đang kiểm tra release</span>
-            </div>
-
-            <div class="app-badge" aria-hidden="true">
-              <span class="app-badge-leaf"></span>
-              <span class="app-badge-ring"></span>
-            </div>
-
-            <h2 id="release-title">EatFitAI APK</h2>
-            <p class="panel-copy">
-              Phiên bản <strong data-version>1.0.0</strong> cho Android package
-              <code data-package-name>com.eatfitai.app</code>.
-            </p>
-
-            <figure class="qr-box">
-              <img data-qr-image alt="QR tải EatFitAI APK" width="220" height="220" />
-              <figcaption>Quét QR để mở link tải trên điện thoại.</figcaption>
-            </figure>
-
-            <dl class="quick-meta">
-              <div>
-                <dt>File</dt>
-                <dd data-file-name>EatFitAI-android-v1.0.0.apk</dd>
-              </div>
-              <div>
-                <dt>Dung lượng</dt>
-                <dd data-file-size>Khoảng 100 MB</dd>
-              </div>
-            </dl>
-          </aside>
+          <div class="hero-visual">
+            <img src="./assets/hero-showcase.png" alt="EatFitAI trên điện thoại" class="hero-showcase-img" />
+          </div>
         </section>
 
-        <section class="section info-section" id="release-info" aria-labelledby="info-title">
-          <div class="section-heading">
-            <p class="eyebrow">Release</p>
-            <h2 id="info-title">Thông tin bản tải</h2>
-          </div>
-
-          <div class="info-grid">
-            <article class="info-card">
-              <h3>Link tải</h3>
-              <p>Asset APK được lưu trên GitHub Release, không commit trực tiếp vào repo.</p>
-              <code class="code-block" data-download-url>
-                https://github.com/AnthonyCongHieu/EatFitAI_v1/releases/download/android-v1.0.0/EatFitAI-android-v1.0.0.apk
-              </code>
-              <button class="copy-button" type="button" data-copy="downloadUrl">
-                Sao chép link tải
-              </button>
-            </article>
-
-            <article class="info-card">
-              <h3>Checksum SHA-256</h3>
-              <p>Dùng checksum để xác nhận file tải về không bị thay đổi.</p>
-              <code class="code-block" data-sha256>Cập nhật sau khi build và upload APK</code>
-              <button class="copy-button" type="button" data-copy="sha256">
-                Sao chép checksum
-              </button>
-            </article>
-
-            <article class="info-card">
-              <h3>Thông số Android</h3>
-              <dl class="detail-list">
-                <div>
-                  <dt>Version</dt>
-                  <dd data-version>1.0.0</dd>
-                </div>
-                <div>
-                  <dt>Package</dt>
-                  <dd data-package-name>com.eatfitai.app</dd>
-                </div>
-                <div>
-                  <dt>Release tag</dt>
-                  <dd data-release-tag>android-v1.0.0</dd>
-                </div>
-              </dl>
-            </article>
-          </div>
-
-          <p class="copy-feedback" role="status" aria-live="polite" data-copy-feedback></p>
+        <!-- STATS BAR -->
+        <section class="stats-bar">
+          <div class="stat-item"><span class="stat-num">500+</span><span class="stat-label">Món ăn Việt</span></div>
+          <div class="stat-divider"></div>
+          <div class="stat-item"><span class="stat-num">4</span><span class="stat-label">Chỉ số dinh dưỡng</span></div>
+          <div class="stat-divider"></div>
+          <div class="stat-item"><span class="stat-num">3s</span><span class="stat-label">Nhận diện tức thì</span></div>
+          <div class="stat-divider"></div>
+          <div class="stat-item"><span class="stat-num">100%</span><span class="stat-label">Miễn phí</span></div>
         </section>
 
-        <section class="section install-section" id="install" aria-labelledby="install-title">
-          <div class="section-heading">
-            <p class="eyebrow">Cài đặt</p>
-            <h2 id="install-title">Cài APK ngoài CH Play</h2>
+        <!-- FEATURES -->
+        <section class="section" id="features">
+          <div class="section-header">
+            <span class="label">Tính năng nổi bật</span>
+            <h2>Mọi thứ bạn cần để kiểm soát dinh dưỡng</h2>
+            <p class="section-sub">Từ nhận diện thức ăn đến phân tích chi tiết — tất cả trong một ứng dụng đơn giản.</p>
           </div>
 
-          <ol class="step-list">
-            <li>
-              <span class="step-number">1</span>
-              <div>
-                <h3>Tải file APK</h3>
-                <p>Nhấn nút tải hoặc quét QR bằng điện thoại Android.</p>
+          <!-- Feature 1: Scan -->
+          <div class="feature-row">
+            <div class="feature-text">
+              <div class="feature-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg></div>
+              <h3>Chụp ảnh & Nhận diện món ăn</h3>
+              <p>Chỉ cần chụp ảnh bất kỳ món ăn nào — hệ thống AI phân tích tên món, thành phần dinh dưỡng chỉ trong vài giây. Hỗ trợ hơn 500 món ăn Việt Nam phổ biến như phở, bún bò, cơm tấm, bánh mì...</p>
+              <ul class="feature-list">
+                <li>Nhận diện nhanh chỉ trong 3 giây</li>
+                <li>Hỗ trợ món Việt & món quốc tế</li>
+                <li>Phân tích chi tiết calories, protein, carbs, fat</li>
+              </ul>
+            </div>
+            <div class="feature-img-wrap">
+              <img src="./assets/screen-foodscan.png" alt="Màn hình quét thức ăn" class="feature-phone" />
+            </div>
+          </div>
+
+          <!-- Feature 2: Dashboard -->
+          <div class="feature-row feature-row--reverse">
+            <div class="feature-text">
+              <div class="feature-icon icon-teal"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 20V10M12 20V4M6 20v-6"/></svg></div>
+              <h3>Dashboard theo dõi trực quan</h3>
+              <p>Tổng quan calories & macro dinh dưỡng mỗi ngày qua biểu đồ tròn và thanh tiến trình. Đặt mục tiêu cá nhân và theo dõi tiến độ theo thời gian thực.</p>
+              <ul class="feature-list">
+                <li>Biểu đồ vòng tròn calories trực quan</li>
+                <li>Thanh tiến trình Protein, Carbs, Fat</li>
+                <li>Đặt mục tiêu dinh dưỡng cá nhân</li>
+              </ul>
+            </div>
+            <div class="feature-img-wrap">
+              <img src="./assets/screen-dashboard.png" alt="Màn hình dashboard" class="feature-phone" />
+            </div>
+          </div>
+
+          <!-- Feature 3: History -->
+          <div class="feature-row">
+            <div class="feature-text">
+              <div class="feature-icon icon-warm"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22c5.52 0 10-4.48 10-10S17.52 2 12 2 2 6.48 2 12s4.48 10 10 10z"/><path d="M12 6v6l4 2"/></svg></div>
+              <h3>Lịch sử & Quản lý bữa ăn</h3>
+              <p>Ghi nhận đầy đủ sáng, trưa, tối, bữa phụ. Xem lại lịch sử bữa ăn theo ngày, tuần với timeline trực quan. Dễ dàng thêm, sửa hoặc xóa bất kỳ bữa ăn nào.</p>
+              <ul class="feature-list">
+                <li>Timeline bữa ăn theo ngày</li>
+                <li>Biểu đồ xu hướng theo tuần/tháng</li>
+                <li>Quản lý và chỉnh sửa dễ dàng</li>
+              </ul>
+            </div>
+            <div class="feature-img-wrap">
+              <img src="./assets/screen-history.png" alt="Màn hình lịch sử" class="feature-phone" />
+            </div>
+          </div>
+        </section>
+
+        <!-- MORE FEATURES GRID -->
+        <section class="section">
+          <div class="mini-features">
+            <div class="mini-card">
+              <div class="mini-icon">🇻🇳</div>
+              <h4>Tiếng Việt 100%</h4>
+              <p>Giao diện hoàn toàn tiếng Việt, dễ sử dụng cho người Việt.</p>
+            </div>
+            <div class="mini-card">
+              <div class="mini-icon">🔒</div>
+              <h4>Bảo mật dữ liệu</h4>
+              <p>Dữ liệu dinh dưỡng được lưu trữ an toàn, riêng tư tuyệt đối.</p>
+            </div>
+            <div class="mini-card">
+              <div class="mini-icon">⚡</div>
+              <h4>Nhanh & Nhẹ</h4>
+              <p>Ứng dụng tối ưu, chạy mượt trên mọi thiết bị Android.</p>
+            </div>
+            <div class="mini-card">
+              <div class="mini-icon">📊</div>
+              <h4>Báo cáo chi tiết</h4>
+              <p>Xem thống kê dinh dưỡng theo ngày, tuần, tháng với biểu đồ.</p>
+            </div>
+            <div class="mini-card">
+              <div class="mini-icon">🎯</div>
+              <h4>Mục tiêu cá nhân</h4>
+              <p>Đặt mục tiêu calories & macro phù hợp với thể trạng của bạn.</p>
+            </div>
+            <div class="mini-card">
+              <div class="mini-icon">🆓</div>
+              <h4>Miễn phí hoàn toàn</h4>
+              <p>Không quảng cáo, không gói premium, mọi tính năng đều miễn phí.</p>
+            </div>
+          </div>
+        </section>
+
+        <!-- HOW IT WORKS -->
+        <section class="section" id="how">
+          <div class="section-header">
+            <span class="label">Cách sử dụng</span>
+            <h2>Đơn giản chỉ với 3 bước</h2>
+            <p class="section-sub">Không cần đăng ký phức tạp. Tải về, mở app và bắt đầu theo dõi dinh dưỡng ngay.</p>
+          </div>
+          <div class="how-steps">
+            <div class="how-card">
+              <div class="how-num">01</div>
+              <div class="how-body">
+                <h3>Chụp ảnh món ăn</h3>
+                <p>Mở camera trong app và chụp ảnh bất kỳ món ăn nào bạn đang ăn. AI sẽ tự động nhận diện.</p>
               </div>
-            </li>
-            <li>
-              <span class="step-number">2</span>
-              <div>
-                <h3>Cho phép cài từ nguồn này</h3>
-                <p>Khi Android hỏi quyền, chỉ cho phép trình duyệt hoặc ứng dụng quản lý file bạn đang dùng.</p>
+            </div>
+            <div class="how-arrow">→</div>
+            <div class="how-card">
+              <div class="how-num">02</div>
+              <div class="how-body">
+                <h3>Xác nhận kết quả</h3>
+                <p>Xem thông tin dinh dưỡng được phân tích: tên món, calories, protein, carbs, fat. Điều chỉnh nếu cần.</p>
               </div>
-            </li>
-            <li>
-              <span class="step-number">3</span>
-              <div>
-                <h3>Kiểm tra và mở EatFitAI</h3>
-                <p>Sau khi cài xong, mở ứng dụng EatFitAI và xác nhận đúng tên app, package, version.</p>
+            </div>
+            <div class="how-arrow">→</div>
+            <div class="how-card">
+              <div class="how-num">03</div>
+              <div class="how-body">
+                <h3>Theo dõi mỗi ngày</h3>
+                <p>Xem dashboard tổng quan, biểu đồ xu hướng và đạt mục tiêu dinh dưỡng cá nhân của bạn.</p>
               </div>
-            </li>
+            </div>
+          </div>
+        </section>
+
+        <!-- DOWNLOAD -->
+        <section class="section" id="download">
+          <div class="download-panel">
+            <div class="download-info">
+              <span class="label">Tải về ngay</span>
+              <h2>Sẵn sàng cho Android</h2>
+              <p>Ứng dụng miễn phí, phân phối qua GitHub Releases — nguồn chính thức, an toàn và minh bạch.</p>
+              <div class="download-meta">
+                <div class="meta-row"><span class="meta-label">Phiên bản</span><span class="meta-value" data-version>1.0.0</span></div>
+                <div class="meta-row"><span class="meta-label">Dung lượng</span><span class="meta-value" data-file-size>~125 MB</span></div>
+                <div class="meta-row"><span class="meta-label">Package</span><span class="meta-value mono" data-package-name>com.eatfitai.app</span></div>
+                <div class="meta-row"><span class="meta-label">Yêu cầu</span><span class="meta-value">Android 7.0+</span></div>
+              </div>
+              <div class="download-actions">
+                <a class="btn btn-primary btn-lg" data-download-link href="#" id="section-download-btn">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                  Tải APK cho Android
+                </a>
+                <a class="btn btn-ghost" data-release-link href="#" target="_blank" rel="noopener" id="section-release-btn">Xem Release Notes</a>
+              </div>
+            </div>
+            <div class="download-qr">
+              <div class="qr-card">
+                <img src="./assets/icon.png" alt="EatFitAI" width="48" height="48" class="qr-app-icon" />
+                <figure class="qr-figure">
+                  <img data-qr-image alt="QR tải EatFitAI" width="140" height="140" class="qr-img" />
+                  <figcaption>Quét mã QR để tải trên điện thoại</figcaption>
+                </figure>
+                <div class="qr-status"><span class="status-indicator"></span><span data-release-status>Đang kiểm tra</span></div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- INSTALL GUIDE -->
+        <section class="section" id="install">
+          <div class="section-header">
+            <span class="label">Hướng dẫn cài đặt</span>
+            <h2>Cài APK trên Android chỉ trong 3 bước</h2>
+          </div>
+          <ol class="steps">
+            <li class="step-card"><div class="step-num">1</div><div class="step-body"><h3>Tải file APK</h3><p>Nhấn nút "Tải APK" phía trên hoặc quét mã QR trên điện thoại Android.</p></div></li>
+            <li class="step-card"><div class="step-num">2</div><div class="step-body"><h3>Cho phép cài đặt</h3><p>Khi Android hỏi, hãy cho phép trình duyệt cài đặt từ nguồn này. Vào Cài đặt > Bảo mật > bật "Nguồn không xác định".</p></div></li>
+            <li class="step-card"><div class="step-num">3</div><div class="step-body"><h3>Mở & sử dụng</h3><p>Mở EatFitAI, tạo tài khoản và bắt đầu chụp ảnh món ăn đầu tiên!</p></div></li>
           </ol>
         </section>
 
-        <section class="section safety-section" id="safety" aria-labelledby="safety-title">
-          <div class="safety-panel">
-            <div>
-              <p class="eyebrow">An toàn</p>
-              <h2 id="safety-title">Tránh file APK giả mạo</h2>
+        <!-- FAQ -->
+        <section class="section" id="faq">
+          <div class="section-header">
+            <span class="label">Câu hỏi thường gặp</span>
+            <h2>Bạn cần biết gì?</h2>
+          </div>
+          <div class="faq-list">
+            <details class="faq-item"><summary>EatFitAI có miễn phí không?</summary><p>Hoàn toàn miễn phí! Không có quảng cáo, không gói premium. Mọi tính năng đều mở cho tất cả người dùng.</p></details>
+            <details class="faq-item"><summary>Ứng dụng nhận diện được bao nhiêu món?</summary><p>Hơn 500 món ăn Việt Nam phổ biến và hàng nghìn món quốc tế. Hệ thống AI liên tục được cập nhật để nhận diện chính xác hơn.</p></details>
+            <details class="faq-item"><summary>Tại sao tải APK thay vì từ Google Play?</summary><p>EatFitAI đang trong giai đoạn phát triển ban đầu. Việc phân phối qua GitHub giúp cập nhật nhanh hơn. Chúng tôi sẽ đưa lên Google Play Store khi sẵn sàng.</p></details>
+            <details class="faq-item"><summary>Dữ liệu của tôi có an toàn không?</summary><p>Dữ liệu dinh dưỡng được lưu trữ an toàn với mã hóa. Chúng tôi không bán hoặc chia sẻ dữ liệu cá nhân với bất kỳ bên thứ ba nào.</p></details>
+            <details class="faq-item"><summary>Ứng dụng có hoạt động offline không?</summary><p>Một số tính năng cơ bản hoạt động offline. Tuy nhiên, chức năng nhận diện món ăn bằng AI cần kết nối internet.</p></details>
+          </div>
+        </section>
+
+        <!-- SAFETY -->
+        <section class="section" id="safety">
+          <div class="safety-banner">
+            <div class="safety-icon-box"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
+            <div class="safety-content">
+              <h2>Lưu ý an toàn</h2>
+              <ul class="safety-list">
+                <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Chỉ tải APK từ trang này hoặc repository <strong>anthonyconghieu/EatFitAI_v1</strong></li>
+                <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Không cài file APK từ chat, link rút gọn hoặc nguồn không rõ ràng</li>
+                <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Kiểm tra domain và tên repository trước khi tải</li>
+              </ul>
             </div>
-            <ul class="safety-list">
-              <li>Không cài APK được gửi qua chat, link rút gọn hoặc nguồn không rõ.</li>
-              <li>Kiểm tra domain trang tải và repository GitHub trước khi cài đặt.</li>
-              <li>So khớp SHA-256 sau khi tải APK, nhất là khi chia sẻ cho tester hoặc người dùng sớm.</li>
-              <li>Nếu máy đã có bản EatFitAI ký bằng khóa khác, Android sẽ yêu cầu gỡ bản cũ trước khi cài; thao tác gỡ app có thể xóa dữ liệu local.</li>
-            </ul>
+          </div>
+        </section>
+
+        <!-- CTA BOTTOM -->
+        <section class="section cta-bottom">
+          <div class="cta-card">
+            <h2>Bắt đầu theo dõi dinh dưỡng ngay hôm nay</h2>
+            <p>Tải EatFitAI miễn phí và kiểm soát chế độ ăn uống của bạn chỉ bằng một bức ảnh.</p>
+            <a class="btn btn-primary btn-lg" data-download-link href="#" id="cta-download-btn">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              Tải APK miễn phí
+            </a>
           </div>
         </section>
       </main>
 
+      <!-- FOOTER -->
       <footer class="site-footer">
-        <span>EatFitAI Android Download</span>
-        <a
-          data-repo-link
-          href="https://github.com/AnthonyCongHieu/EatFitAI_v1"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          GitHub repository
+        <div class="footer-left">
+          <img src="./assets/icon.png" alt="" width="20" height="20" class="footer-icon" />
+          <span>EatFitAI &copy; 2025 · Phát triển bởi Anthony Cong Hieu</span>
+        </div>
+        <a data-repo-link href="https://github.com/anthonyconghieu/EatFitAI_v1" target="_blank" rel="noopener" class="footer-link">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/></svg>
+          GitHub
         </a>
       </footer>
     </div>

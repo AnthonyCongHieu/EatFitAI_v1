@@ -9,7 +9,7 @@ Static download page for the public Android APK. It is designed for Cloudflare P
 - GitHub release tag: `android-v1.0.0`
 - APK asset name: `EatFitAI-android-v1.0.0.apk`
 - APK URL:
-  `https://github.com/AnthonyCongHieu/EatFitAI_v1/releases/download/android-v1.0.0/EatFitAI-android-v1.0.0.apk`
+  `https://github.com/anthonyconghieu/EatFitAI_v1/releases/download/android-v1.0.0/EatFitAI-android-v1.0.0.apk`
 
 ## Publish the APK
 

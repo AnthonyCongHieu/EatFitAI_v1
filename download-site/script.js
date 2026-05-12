@@ -10,9 +10,9 @@
     fileSize: "124.90 MiB",
     sha256: "aec55be7ec2756eb615136fd1f2eb95be80e94bcb5476a56023cfddc1c6eca6e",
     downloadUrl:
-      "https://github.com/AnthonyCongHieu/EatFitAI_v1/releases/download/android-v1.0.0/EatFitAI-android-v1.0.0.apk",
-    releaseUrl: "https://github.com/AnthonyCongHieu/EatFitAI_v1/releases/tag/android-v1.0.0",
-    repositoryUrl: "https://github.com/AnthonyCongHieu/EatFitAI_v1",
+      "https://github.com/anthonyconghieu/EatFitAI_v1/releases/download/android-v1.0.0/EatFitAI-android-v1.0.0.apk",
+    releaseUrl: "https://github.com/anthonyconghieu/EatFitAI_v1/releases/tag/android-v1.0.0",
+    repositoryUrl: "https://github.com/anthonyconghieu/EatFitAI_v1",
   };
 
   const SHA256_PATTERN = /^[a-f0-9]{64}$/i;
