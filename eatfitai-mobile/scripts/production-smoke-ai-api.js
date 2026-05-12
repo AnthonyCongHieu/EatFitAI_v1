@@ -18,7 +18,7 @@ const {
 const { resolveSmokeCredentials } = require('./lib/smoke-credentials');
 const { resolveAiSmokeTimeouts } = require('./lib/smoke-timeouts');
 
-const DEFAULT_BACKEND_URL = 'https://eatfitai-backend-dev.onrender.com';
+const DEFAULT_BACKEND_URL = 'https://eatfitai-api.duckdns.org';
 const DEFAULT_OUTPUT_ROOT = path.resolve(
   __dirname,
   '..',
@@ -35,11 +35,11 @@ const VISION_DETECT_TIMEOUT_MS = AI_TIMEOUTS.visionDetectTimeoutMs;
 const VISION_DETECT_RETRY_COUNT = AI_TIMEOUTS.visionDetectRetryCount;
 const DEFAULT_RETRY_DELAY_MS = 1500;
 const DEFAULT_PRIMARY_FIXTURES = [
-  { key: 'banana-small', fileName: 'ai-primary-banana-02.jpg' },
-  { key: 'apple-benchmark', fileName: 'ai-benchmark-apple-01.jpg' },
-  { key: 'orange-benchmark', fileName: 'ai-benchmark-orange-01.jpg' },
   { key: 'rice-primary', fileName: 'ai-primary-rice-01.jpg' },
-  { key: 'apple-primary', fileName: 'ai-primary-apple-01.jpg' },
+  { key: 'beef-benchmark', fileName: 'ai-benchmark-beef-01.jpg' },
+  { key: 'broccoli-benchmark', fileName: 'ai-benchmark-broccoli-01.jpg' },
+  { key: 'egg-primary', fileName: 'ai-primary-egg-01.jpg' },
+  { key: 'spinach-primary', fileName: 'ai-primary-spinach-01.jpg' },
 ];
 const DEFAULT_INGREDIENT_FALLBACKS = [
   'Chicken Breast',

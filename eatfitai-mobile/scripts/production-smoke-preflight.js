@@ -2,8 +2,8 @@ const fs = require('fs');
 const path = require('path');
 const { resolveSmokeCredentials } = require('./lib/smoke-credentials');
 
-const DEFAULT_BACKEND_URL = 'https://eatfitai-backend-dev.onrender.com';
-const DEFAULT_AI_PROVIDER_URL = 'https://eatfitai-ai-provider-dev.onrender.com';
+const DEFAULT_BACKEND_URL = 'https://eatfitai-api.duckdns.org';
+const DEFAULT_AI_PROVIDER_URL = 'https://eatfitai-ai.duckdns.org';
 const DEFAULT_TIMEOUT_MS = 30000;
 const DEFAULT_ATTEMPTS = 2;
 const DEFAULT_RETRY_DELAY_MS = 5000;
@@ -30,27 +30,6 @@ const DEFAULT_FIXTURE_MANIFEST = {
   fixtures: {
     primary: [
       {
-        key: 'banana-small',
-        fileName: 'ai-primary-banana-02.jpg',
-        relativePath: 'scan-demo/ai-primary-banana-02.jpg',
-        targetOutcome: 'mapped-or-usable-result',
-        expectedLabels: ['banana'],
-      },
-      {
-        key: 'apple-benchmark',
-        fileName: 'ai-benchmark-apple-01.jpg',
-        relativePath: 'scan-demo/ai-benchmark-apple-01.jpg',
-        targetOutcome: 'mapped-or-usable-result',
-        expectedLabels: ['apple'],
-      },
-      {
-        key: 'orange-benchmark',
-        fileName: 'ai-benchmark-orange-01.jpg',
-        relativePath: 'scan-demo/ai-benchmark-orange-01.jpg',
-        targetOutcome: 'mapped-or-usable-result',
-        expectedLabels: ['orange'],
-      },
-      {
         key: 'rice-primary',
         fileName: 'ai-primary-rice-01.jpg',
         relativePath: 'scan-demo/ai-primary-rice-01.jpg',
@@ -58,11 +37,32 @@ const DEFAULT_FIXTURE_MANIFEST = {
         expectedLabels: ['rice'],
       },
       {
-        key: 'apple-primary',
-        fileName: 'ai-primary-apple-01.jpg',
-        relativePath: 'scan-demo/ai-primary-apple-01.jpg',
+        key: 'beef-benchmark',
+        fileName: 'ai-benchmark-beef-01.jpg',
+        relativePath: 'scan-demo/ai-benchmark-beef-01.jpg',
         targetOutcome: 'mapped-or-usable-result',
-        expectedLabels: ['apple'],
+        expectedLabels: ['beef'],
+      },
+      {
+        key: 'broccoli-benchmark',
+        fileName: 'ai-benchmark-broccoli-01.jpg',
+        relativePath: 'scan-demo/ai-benchmark-broccoli-01.jpg',
+        targetOutcome: 'mapped-or-usable-result',
+        expectedLabels: ['broccoli'],
+      },
+      {
+        key: 'egg-primary',
+        fileName: 'ai-primary-egg-01.jpg',
+        relativePath: 'scan-demo/ai-primary-egg-01.jpg',
+        targetOutcome: 'mapped-or-usable-result',
+        expectedLabels: ['fried_egg'],
+      },
+      {
+        key: 'spinach-primary',
+        fileName: 'ai-primary-spinach-01.jpg',
+        relativePath: 'scan-demo/ai-primary-spinach-01.jpg',
+        targetOutcome: 'mapped-or-usable-result',
+        expectedLabels: ['spinach'],
       },
     ],
     benchmark: [
@@ -79,9 +79,9 @@ const DEFAULT_FIXTURE_MANIFEST = {
         targetOutcome: 'benchmark-only',
       },
       {
-        key: 'pork',
-        fileName: 'ai-benchmark-pork-01.jpg',
-        relativePath: 'scan-demo/ai-benchmark-pork-01.jpg',
+        key: 'fruit-unsupported-control',
+        fileName: 'ai-benchmark-apple-01.jpg',
+        relativePath: 'scan-demo/ai-benchmark-apple-01.jpg',
         targetOutcome: 'benchmark-only',
       },
     ],
@@ -576,7 +576,7 @@ async function runAuthChecks(context) {
 
 async function main() {
   const backendUrl = normalizeBaseUrl(
-    trimEnv('EXPO_PUBLIC_API_BASE_URL') || trimEnv('EATFITAI_SMOKE_BACKEND_URL'),
+    trimEnv('EATFITAI_SMOKE_BACKEND_URL') || trimEnv('EXPO_PUBLIC_API_BASE_URL'),
     DEFAULT_BACKEND_URL,
   );
   const aiProviderUrl = normalizeBaseUrl(
@@ -600,7 +600,7 @@ async function main() {
     generatedAt: new Date().toISOString(),
     backendUrl,
     aiProviderUrl,
-    cloudPath: 'mobile -> render-backend -> render-ai-provider -> supabase',
+    cloudPath: 'mobile -> lightsail-backend -> private-lightsail-ai-provider -> supabase',
     requestBudget: DEFAULT_REQUEST_BUDGET,
     checks: {
       health: await runHealthChecks(context),

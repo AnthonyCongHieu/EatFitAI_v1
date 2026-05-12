@@ -1,0 +1,42 @@
+{
+  "policy": "Render is a cold backup only after Lightsail DuckDNS, auth, API, real-device, performance, and abuse gates pass.",
+  "suspendAfterGatesPass": true,
+  "services": [
+    {
+      "name": "eatfitai-backend",
+      "id": "srv-d7arf2svjg8s73em138g",
+      "ownerId": "tea-ctf45ortq21c73br6e1g",
+      "serviceUrl": "https://eatfitai-backend.onrender.com",
+      "role": "production-backend",
+      "expectedAutoDeploy": "no",
+      "expectedFinalState": "suspended"
+    },
+    {
+      "name": "eatfitai-ai-provider",
+      "id": "srv-d7arf2kvjg8s73em1360",
+      "ownerId": "tea-ctf45ortq21c73br6e1g",
+      "serviceUrl": "https://eatfitai-ai-provider.onrender.com",
+      "role": "production-ai-provider",
+      "expectedAutoDeploy": "no",
+      "expectedFinalState": "suspended"
+    },
+    {
+      "name": "eatfitai-backend-dev",
+      "id": "srv-d7m33abrjlhs739qve7g",
+      "ownerId": "tea-d7m2pkosfn5c73dam90g",
+      "serviceUrl": "https://eatfitai-backend-dev.onrender.com",
+      "role": "legacy-test-backend",
+      "expectedAutoDeploy": "no",
+      "expectedFinalState": "suspended"
+    },
+    {
+      "name": "eatfitai-ai-provider-dev",
+      "id": "srv-d7m33fjeo5us73ejbv4g",
+      "ownerId": "tea-d7m2pkosfn5c73dam90g",
+      "serviceUrl": "https://eatfitai-ai-provider-dev.onrender.com",
+      "role": "legacy-test-ai-provider",
+      "expectedAutoDeploy": "no",
+      "expectedFinalState": "suspended"
+    }
+  ]
+}

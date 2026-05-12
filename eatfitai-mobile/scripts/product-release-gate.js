@@ -67,6 +67,7 @@ function buildBaseEnv(outputDir) {
     'EATFITAI_ONBOARDING_PASSWORD',
     'EATFITAI_SMOKE_EMAIL',
     'EATFITAI_SMOKE_PASSWORD',
+    'EATFITAI_RELEASE_GATE_RENDER_VERIFY',
   ];
 
   for (const key of forwardKeys) {
@@ -84,7 +85,7 @@ function buildBaseEnv(outputDir) {
   }
   if (!trim(env.EATFITAI_DEVICE_BACKEND_URL)) {
     env.EATFITAI_DEVICE_BACKEND_URL =
-      trim(env.EATFITAI_SMOKE_BACKEND_URL) || 'https://eatfitai-backend-dev.onrender.com';
+      trim(env.EATFITAI_SMOKE_BACKEND_URL) || 'https://eatfitai-api.duckdns.org';
   }
 
   return env;
@@ -178,6 +179,10 @@ function buildSyntheticCommandResult(label, command, ok, stderr, stdout = '') {
     stderr,
     error: '',
   };
+}
+
+function shouldRunRenderVerifyGate(env) {
+  return isTruthy(env.EATFITAI_RELEASE_GATE_RENDER_VERIFY);
 }
 
 function parseOnlineAndroidDevices(adbDevicesOutput) {
@@ -669,13 +674,25 @@ async function main() {
     }
 
     if (gateName === 'cloud') {
-      gateResult.commands.push(
-        runCommand('Render verify', 'npm', ['run', 'smoke:render:verify'], {
-          cwd: mobileRoot,
-          env,
-          timeoutMs: 20 * 60 * 1000,
-        }),
-      );
+      if (shouldRunRenderVerifyGate(env)) {
+        gateResult.commands.push(
+          runCommand('Render verify', 'npm', ['run', 'smoke:render:verify'], {
+            cwd: mobileRoot,
+            env,
+            timeoutMs: 20 * 60 * 1000,
+          }),
+        );
+      } else {
+        gateResult.commands.push(
+          buildSyntheticCommandResult(
+            'Render verify',
+            'npm run smoke:render:verify',
+            true,
+            '',
+            'Skipped by default for Lightsail primary cutover. Set EATFITAI_RELEASE_GATE_RENDER_VERIFY=1 to verify Render backup services explicitly.',
+          ),
+        );
+      }
       if (gateResult.commands.at(-1).ok) {
         gateResult.commands.push(
           runCommand('Cloud preflight', 'npm', ['run', 'smoke:preflight'], {

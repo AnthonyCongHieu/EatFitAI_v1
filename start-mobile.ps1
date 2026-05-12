@@ -1,6 +1,6 @@
 . (Join-Path $PSScriptRoot '_config\dev-env.ps1')
 
-$env:EXPO_PUBLIC_API_BASE_URL = 'https://eatfitai-backend.onrender.com'
+$env:EXPO_PUBLIC_API_BASE_URL = 'https://eatfitai-api.duckdns.org'
 $env:EXPO_PUBLIC_API_PORT = ''
 $env:EXPO_PUBLIC_API_SCHEME = 'https'
 

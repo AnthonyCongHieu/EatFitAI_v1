@@ -11,8 +11,52 @@ The pipeline order is:
 5. Package for Kaggle.
 6. Run smoke training.
 7. Run full YOLO11m training.
+8. Gate the trained model with golden eval before freezing it or opening Clean V2.
 
 Do not commit raw datasets, Kaggle tokens, Roboflow tokens, model checkpoints, generated reports, or generated clean datasets.
+
+## YOLO11 Upgrade Completion Gate
+
+After YOLO11m Clean V1 is trained, exported, verified, and deployed, finish the
+upgrade through the golden-eval gate before starting a larger dataset or model.
+
+First validate the real-image manifest:
+
+```powershell
+python ai-provider\dataset_v2\evaluate_golden_set.py --manifest ai-provider\dataset_v2\golden_eval_manifest.csv --validate-only
+```
+
+Then compare the YOLOv8 rollback artifact against the active YOLO11m artifact:
+
+```powershell
+python ai-provider\dataset_v2\evaluate_golden_set.py --old-model ai-provider\model_backups\yolov8_rollback\best.pt --new-model ai-provider\best.onnx --manifest ai-provider\dataset_v2\golden_eval_manifest.csv --out _dataset_v2_reports\golden_eval_comparison.json --errors-out _dataset_v2_reports\golden_eval_errors.csv --conf 0.25
+```
+
+To evaluate the deployed provider behavior, including ONNX recovery and crop
+recovery, use the runtime mode. This does not call Gemini vision fallback:
+
+```powershell
+python ai-provider\dataset_v2\evaluate_golden_set.py --old-model ai-provider\model_backups\yolov8_rollback\best.pt --new-runtime-provider --manifest ai-provider\dataset_v2\golden_eval_manifest.csv --out _dataset_v2_reports\golden_eval_runtime_comparison.json --errors-out _dataset_v2_reports\golden_eval_runtime_errors.csv
+```
+
+To sweep the agreed runtime tuning matrix before opening Clean V2, run:
+
+```powershell
+python ai-provider\dataset_v2\sweep_yolo_runtime_thresholds.py --manifest ai-provider\dataset_v2\golden_eval_manifest.csv --out-dir _dataset_v2_reports\runtime_threshold_sweep --summary-out _dataset_v2_reports\runtime_threshold_sweep_summary.json
+```
+
+Use `decision.status` from `golden_eval_comparison.json` as the next-step gate:
+
+```text
+promote_yolo11m_clean_v1 -> freeze V1 as production and monitor.
+tune_runtime_thresholds_first -> adjust confidence/recovery policy, then rerun golden eval.
+build_yolo11m_clean_v2 -> hard-mine errors, expand/fix Dataset V2, train YOLO11m Clean V2.
+collect_more_golden_images -> add more real app photos before making a model decision.
+```
+
+Do not jump to YOLO11l from a failed Clean V1 eval. YOLO11l is only a capacity
+experiment after YOLO11m Clean V2 still fails accuracy gates and the remaining
+errors are not caused by missing data, bad labels, or threshold policy.
 
 ## Environment
 

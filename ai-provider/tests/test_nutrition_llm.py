@@ -85,6 +85,59 @@ class NutritionLlmTests(unittest.TestCase):
         query_gemini.assert_called_once()
         self.assertIs(query_gemini.call_args.kwargs.get("use_cache"), False)
 
+    def test_get_nutrition_advice_gemini_accepts_numeric_strings_with_units(self) -> None:
+        with patch(
+            "nutrition_llm.query_gemini",
+            return_value=(
+                '{"calories": "2,520 kcal", "protein": "126g", '
+                '"carbs": "346 g", "fat": "70g", "explanation": "ok"}'
+            ),
+        ) as query_gemini:
+            result = get_nutrition_advice_gemini(
+                gender="male",
+                age=30,
+                height_cm=170,
+                weight_kg=70,
+                activity_level="moderate",
+                goal="maintain",
+            )
+
+        self.assertEqual(result["source"], "gemini")
+        self.assertFalse(result["offlineMode"])
+        self.assertEqual(result["calories"], 2520)
+        self.assertEqual(result["protein"], 126)
+        self.assertEqual(result["carbs"], 346)
+        self.assertEqual(result["fat"], 70)
+        self.assertEqual(
+            query_gemini.call_args.kwargs.get("response_schema", {}).get("required"),
+            ["calories", "protein", "carbs", "fat", "explanation"],
+        )
+        self.assertEqual(query_gemini.call_args.kwargs.get("thinking_budget"), 0)
+
+    def test_get_nutrition_advice_gemini_recovers_partial_json_fields(self) -> None:
+        with patch(
+            "nutrition_llm.query_gemini",
+            return_value=(
+                '{"calories": 2520, "protein": 126, '
+                '"carbs": 346, "fat": 70, "explanation": "ok"'
+            ),
+        ):
+            result = get_nutrition_advice_gemini(
+                gender="male",
+                age=30,
+                height_cm=170,
+                weight_kg=70,
+                activity_level="moderate",
+                goal="maintain",
+            )
+
+        self.assertEqual(result["source"], "gemini")
+        self.assertFalse(result["offlineMode"])
+        self.assertEqual(result["calories"], 2520)
+        self.assertEqual(result["protein"], 126)
+        self.assertEqual(result["carbs"], 346)
+        self.assertEqual(result["fat"], 70)
+
     def test_voice_regex_accepts_unaccented_smoke_phrases(self) -> None:
         calories = try_parse_ask_calories_regex("hom nay toi an bao nhieu calo")
         self.assertIsNotNone(calories)

@@ -9,8 +9,8 @@ The accepted runtime uses two AWS Lightsail Singapore $7 instances:
 
 | Role | Instance | Public endpoint | Private endpoint |
 | --- | --- | --- | --- |
-| Backend | `eatfitai-backend-sg` | `https://api.18.141.119.165.nip.io` | `172.26.13.91` |
-| AI provider | `eatfitai-ai-provider-test-sg` | `https://ai.3.0.208.56.nip.io` | `172.26.11.92:5050` |
+| Backend | `eatfitai-backend-sg` | `https://eatfitai-api.duckdns.org` | `172.26.13.91` |
+| AI provider | `eatfitai-ai-provider-test-sg` | `https://eatfitai-ai.duckdns.org` for temporary smoke only | `172.26.11.92:5050` |
 
 Render runtime policy:
 
@@ -39,15 +39,16 @@ to reduce RAM pressure on 1 GB instances.
 Backend public HTTPS:
 
 ```text
-api.18.141.119.165.nip.io {
+eatfitai-api.duckdns.org {
     reverse_proxy 127.0.0.1:10000
 }
 ```
 
-Provider public HTTPS:
+Provider public HTTPS is optional and should only remain open while direct
+provider smoke is needed:
 
 ```text
-ai.3.0.208.56.nip.io {
+eatfitai-ai.duckdns.org {
     reverse_proxy 172.26.11.92:5050
 }
 ```
@@ -116,8 +117,8 @@ Mobile release:
 Health:
 
 ```text
-curl https://api.18.141.119.165.nip.io/health/ready
-curl https://ai.3.0.208.56.nip.io/healthz
+curl https://eatfitai-api.duckdns.org/health/ready
+curl https://eatfitai-ai.duckdns.org/healthz
 ```
 
 Expected:
@@ -135,10 +136,17 @@ Smoke evidence:
 - Render backend post-cache:
   `_logs/production-smoke/2026-05-11T12-23-48-293Z-render-backend-post-cache`
 
-The infrastructure checks passed, but Lightsail auth/email smoke is blocked by
-Brevo delivery/configuration on the backend instance. The AI primary-path
-quality gate also still has existing model/fixture failures. See
-`docs/53_YOLO_SCAN_LIGHTSAIL_ROLLOUT_2026-05-11.md`.
+The infrastructure checks passed. Lightsail Brevo env was mirrored from Render,
+and Brevo API allowlist now includes backend IPv4 `18.141.119.165` plus the
+observed AWS IPv6 egress `2406:da18:1e1f:9800:a190:253d:31f0:2907`.
+Brevo shows the verification mails as delivered, but the `mail.tm` smoke
+mailbox did not expose the messages to the harness. The AI primary-path quality
+gate failure was traced to smoke fixtures for fruit classes that the deployed
+ONNX model does not expose. The release smoke primary fixture set now uses
+the deployed model classes `rice`, `beef`, `broccoli`, `fried_egg`, and
+`spinach`; fruit detection remains a later dataset/model training task. See
+`docs/53_YOLO_SCAN_LIGHTSAIL_ROLLOUT_2026-05-11.md` and
+`docs/54_LIGHTSAIL_DUCKDNS_CUTOVER_RUNBOOK_2026-05-12.md`.
 
 ## Release checklist
 
@@ -146,13 +154,15 @@ quality gate also still has existing model/fixture failures. See
 2. Confirm Render backend is either a bridge or suspended, never the intended
    long-term production runtime.
 3. Confirm `eatfitai-mobile/eas.json` production points to
-   `https://api.18.141.119.165.nip.io`.
+   `https://eatfitai-api.duckdns.org`.
 4. Confirm Lightsail backend Brevo settings:
    `Brevo__ApiKey`, `Brevo__SenderEmail`, `Brevo__SenderName`.
-5. Smoke login, profile, R2 upload, scan, and diary save on a real device.
-6. Submit/install the successful production Android build.
-7. Suspend Render backend only after the app is verified on Lightsail.
-8. Remove any temporary SSH keys used during rollout.
+5. Confirm Brevo Transactional > Email > Real time shows verification mails as
+   delivered for the auth smoke recipient.
+6. Smoke login, profile, R2 upload, scan, and diary save on a real device.
+7. Submit/install the successful production Android build.
+8. Suspend Render backend only after the app is verified on Lightsail.
+9. Remove any temporary SSH keys used during rollout.
 
 Current rollout key status:
 

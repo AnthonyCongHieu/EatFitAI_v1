@@ -18,6 +18,17 @@ describe('media egress guard', () => {
     });
   });
 
+  it('treats the DuckDNS Lightsail backend as production', () => {
+    expect(
+      evaluateMediaEgressGuard({
+        EATFITAI_SMOKE_BACKEND_URL: 'https://eatfitai-api.duckdns.org',
+      }),
+    ).toMatchObject({
+      status: 'warn',
+      productionTarget: true,
+    });
+  });
+
   it('warns for production targets without placeholder mode when lockdown is not required', () => {
     expect(
       evaluateMediaEgressGuard({

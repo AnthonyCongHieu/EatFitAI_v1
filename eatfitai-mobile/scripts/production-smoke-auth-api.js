@@ -8,7 +8,7 @@ const {
 const { resolveAuthCode } = require('./lib/auth-smoke-codes');
 const { resolveAuthSmokeTimeouts } = require('./lib/smoke-timeouts');
 
-const DEFAULT_BACKEND_URL = 'https://eatfitai-backend-dev.onrender.com';
+const DEFAULT_BACKEND_URL = 'https://eatfitai-api.duckdns.org';
 const DEFAULT_OUTPUT_ROOT = path.resolve(
   __dirname,
   '..',
@@ -512,6 +512,7 @@ async function main() {
     };
     report.account.email = mailbox.address;
 
+    const registerStartedAt = new Date().toISOString();
     const registerResponse = await requestJsonWithRetry(
       `${backendUrl}/api/auth/register-with-verification`,
       {
@@ -532,8 +533,9 @@ async function main() {
     const registerCanRecoverWithResend =
       registerPassed || registerResponse.status === 400 || registerResponse.status === null;
 
-    const resendStartedAt = new Date().toISOString();
-    const resendResponse = registerCanRecoverWithResend
+    const shouldResendVerification = !registerPassed && registerCanRecoverWithResend;
+    const resendStartedAt = shouldResendVerification ? new Date().toISOString() : '';
+    const resendResponse = shouldResendVerification
       ? await requestJsonWithRetry(`${backendUrl}/api/auth/resend-verification`, {
           method: 'POST',
           body: JSON.stringify({ email: mailbox.address }),
@@ -542,7 +544,7 @@ async function main() {
           delayMs: AUTH_TIMEOUTS.requestRetryDelayMs,
         })
       : null;
-    const resendPassed = resendResponse ? resendResponse.ok && resendResponse.status === 200 : false;
+    const resendPassed = registerPassed || (resendResponse ? resendResponse.ok && resendResponse.status === 200 : false);
     report.auth.resendVerification = summarizeResponse(resendResponse);
     if (!registerPassed && resendPassed && report.auth.register) {
       report.auth.register.recoveredByResend = true;
@@ -577,7 +579,7 @@ async function main() {
           outputDir,
           artifactName: 'auth-verification-mail.json',
           subjectIncludes: DEFAULT_MAIL_SUBJECT_VERIFY,
-          createdAfterIso: resendStartedAt,
+          createdAfterIso: resendStartedAt || registerStartedAt,
           timeoutMs: MAILBOX_TIMEOUT_MS,
           pollIntervalMs: MAILBOX_POLL_INTERVAL_MS,
         });
@@ -813,6 +815,7 @@ async function main() {
             email: mailbox.address,
             resetCode,
           }),
+          timeoutMs: RESET_PASSWORD_TIMEOUT_MS,
         })
       : null;
     const verifyResetPassed =

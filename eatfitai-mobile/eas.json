@@ -17,7 +17,7 @@
       "distribution": "internal",
       "env": {
         "APP_ENV": "preview",
-        "EXPO_PUBLIC_API_BASE_URL": "https://eatfitai-backend-dev.onrender.com",
+        "EXPO_PUBLIC_API_BASE_URL": "https://eatfitai-api.duckdns.org",
         "EXPO_PUBLIC_MEDIA_PUBLIC_BASE_URL": "https://pub-9081bce8ff6b4db5b4403ca7adae7b80.r2.dev"
       },
       "android": {
@@ -30,7 +30,7 @@
       "distribution": "store",
       "env": {
         "APP_ENV": "production",
-        "EXPO_PUBLIC_API_BASE_URL": "https://api.18.141.119.165.nip.io",
+        "EXPO_PUBLIC_API_BASE_URL": "https://eatfitai-api.duckdns.org",
         "EXPO_PUBLIC_MEDIA_PUBLIC_BASE_URL": "https://pub-9081bce8ff6b4db5b4403ca7adae7b80.r2.dev"
       },
       "channel": "production"

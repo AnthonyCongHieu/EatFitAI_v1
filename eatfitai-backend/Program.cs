@@ -648,6 +648,12 @@ static int GetNonNegativeConfigInt(IConfiguration configuration, string key, int
 var authRateLimitPermitLimit = GetPositiveConfigInt(builder.Configuration, "RateLimiting:AuthPermitLimit", 10);
 var authRateLimitQueueLimit = GetNonNegativeConfigInt(builder.Configuration, "RateLimiting:AuthQueueLimit", 2);
 var authRateLimitWindowSeconds = GetPositiveConfigInt(builder.Configuration, "RateLimiting:AuthWindowSeconds", 60);
+var aiRateLimitPermitLimit = GetPositiveConfigInt(builder.Configuration, "RateLimiting:AiPermitLimit", 20);
+var aiRateLimitQueueLimit = GetNonNegativeConfigInt(builder.Configuration, "RateLimiting:AiQueueLimit", 5);
+var aiRateLimitWindowSeconds = GetPositiveConfigInt(builder.Configuration, "RateLimiting:AiWindowSeconds", 60);
+var generalRateLimitPermitLimit = GetPositiveConfigInt(builder.Configuration, "RateLimiting:GeneralPermitLimit", 120);
+var generalRateLimitQueueLimit = GetNonNegativeConfigInt(builder.Configuration, "RateLimiting:GeneralQueueLimit", 10);
+var generalRateLimitWindowSeconds = GetPositiveConfigInt(builder.Configuration, "RateLimiting:GeneralWindowSeconds", 60);
 
 // Rate Limiting - partition by authenticated user, then client IP.
 builder.Services.AddRateLimiter(options =>
@@ -685,7 +691,10 @@ builder.Services.AddRateLimiter(options =>
 
         return RateLimitPartition.GetFixedWindowLimiter(
             GetRateLimitPartitionKey(context, "general"),
-            _ => BuildFixedWindowOptions(120, 10, TimeSpan.FromMinutes(1)));
+            _ => BuildFixedWindowOptions(
+                generalRateLimitPermitLimit,
+                generalRateLimitQueueLimit,
+                TimeSpan.FromSeconds(generalRateLimitWindowSeconds)));
     });
 
     options.AddPolicy("AuthPolicy", context =>
@@ -703,14 +712,20 @@ builder.Services.AddRateLimiter(options =>
             ? RateLimitPartition.GetNoLimiter("ai:bypass")
             : RateLimitPartition.GetFixedWindowLimiter(
                 GetRateLimitPartitionKey(context, "ai"),
-                _ => BuildFixedWindowOptions(20, 5, TimeSpan.FromMinutes(1))));
+                _ => BuildFixedWindowOptions(
+                    aiRateLimitPermitLimit,
+                    aiRateLimitQueueLimit,
+                    TimeSpan.FromSeconds(aiRateLimitWindowSeconds))));
 
     options.AddPolicy("GeneralPolicy", context =>
         ShouldBypassRateLimit(context)
             ? RateLimitPartition.GetNoLimiter("general:bypass")
             : RateLimitPartition.GetFixedWindowLimiter(
                 GetRateLimitPartitionKey(context, "general-policy"),
-                _ => BuildFixedWindowOptions(120, 10, TimeSpan.FromMinutes(1))));
+                _ => BuildFixedWindowOptions(
+                    generalRateLimitPermitLimit,
+                    generalRateLimitQueueLimit,
+                    TimeSpan.FromSeconds(generalRateLimitWindowSeconds))));
 });
 
 // Add Swagger

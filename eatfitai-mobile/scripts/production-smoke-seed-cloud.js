@@ -8,7 +8,7 @@ const {
   isEmailUnverifiedLogin,
 } = require('./lib/seed-verification');
 
-const DEFAULT_BACKEND_URL = 'https://eatfitai-backend-dev.onrender.com';
+const DEFAULT_BACKEND_URL = 'https://eatfitai-api.duckdns.org';
 const DEFAULT_OUTPUT_ROOT = path.resolve(
   __dirname,
   '..',

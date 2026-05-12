@@ -4,7 +4,7 @@ const { resolveSmokeCredentials } = require('./lib/smoke-credentials');
 const { buildUserApiSmokeNames } = require('./lib/user-smoke-data');
 const { runMediaEgressGuard } = require('./lib/media-egress-guard');
 
-const DEFAULT_BACKEND_URL = 'https://eatfitai-backend-dev.onrender.com';
+const DEFAULT_BACKEND_URL = 'https://eatfitai-api.duckdns.org';
 const DEFAULT_OUTPUT_ROOT = path.resolve(
   __dirname,
   '..',

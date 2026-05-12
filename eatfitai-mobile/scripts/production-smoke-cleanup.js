@@ -9,7 +9,7 @@ const DEFAULT_OUTPUT_ROOT = path.resolve(
   '_logs',
   'production-smoke',
 );
-const DEFAULT_BACKEND_URL = 'https://eatfitai-backend-dev.onrender.com';
+const DEFAULT_BACKEND_URL = 'https://eatfitai-api.duckdns.org';
 
 function trim(value) {
   return String(value || '').trim();

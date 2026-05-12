@@ -199,6 +199,22 @@ class LazyYoloModelTests(unittest.TestCase):
         self.assertEqual(calls[1]["confidence_threshold"], app_module.YOLO_RECOVERY_CONFIDENCE_THRESHOLD)
         self.assertEqual(calls[1]["image_size"], app_module.YOLO_RECOVERY_IMAGE_SIZE)
 
+    def test_recovery_filter_keeps_tuned_labels_and_rejects_low_confidence(self):
+        detections = app_module._filter_recovery_detections(
+            [
+                {"label": "tomato", "confidence": 0.21},
+                {"label": "ginger", "confidence": 0.07},
+                {"label": "banh_xeo", "confidence": 0.25},
+                {"label": "garlic", "confidence": 0.99},
+                {"label": "tomato", "confidence": 0.19},
+            ]
+        )
+
+        self.assertEqual(
+            [item["label"] for item in detections],
+            ["banh_xeo", "tomato", "ginger"],
+        )
+
     def test_detect_does_not_run_recovery_when_primary_detects_food(self):
         calls = []
 

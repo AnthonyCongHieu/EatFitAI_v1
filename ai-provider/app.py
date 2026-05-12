@@ -83,6 +83,9 @@ YOLO_RECOVERY_LABEL_MIN_CONFIDENCE: Dict[str, float] = {
     "chicken": 0.05,
     "egg": 0.06,
     "fried_egg": 0.08,
+    "tomato": 0.20,
+    "ginger": 0.06,
+    "banh_xeo": 0.20,
     "water_spinach": 0.08,
     "spinach": 0.08,
 }

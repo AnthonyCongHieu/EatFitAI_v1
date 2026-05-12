@@ -3,8 +3,15 @@
 $timestamp = (Get-Date).ToUniversalTime().ToString('yyyy-MM-ddTHH-mm-ss-fffZ')
 $sessionOutputDir = Join-Path $PSScriptRoot "_logs\production-smoke\$timestamp"
 
+$backendUrl = if ($env:EATFITAI_SMOKE_BACKEND_URL) {
+    $env:EATFITAI_SMOKE_BACKEND_URL.Trim()
+} else {
+    'https://eatfitai-api.duckdns.org'
+}
+
 $env:APP_ENV = 'smoke'
-$env:EXPO_PUBLIC_API_BASE_URL = 'https://eatfitai-backend.onrender.com'
+$env:EATFITAI_SMOKE_BACKEND_URL = $backendUrl
+$env:EXPO_PUBLIC_API_BASE_URL = $backendUrl
 $env:EXPO_PUBLIC_API_PORT = ''
 $env:EXPO_PUBLIC_API_SCHEME = 'https'
 $env:EXPO_PUBLIC_E2E_AUTOMATION = '0'
@@ -36,8 +43,12 @@ node .\scripts\generate-local-ip.js
 Write-Host '[cloud-smoke] Verifying API target...'
 node .\scripts\check-api-target.js
 
-Write-Host '[cloud-smoke] Verifying Render deploy state...'
-node .\scripts\production-smoke-render-verify.js
+if ($backendUrl -match '\.onrender\.com/?$') {
+    Write-Host '[cloud-smoke] Verifying Render deploy state...'
+    node .\scripts\production-smoke-render-verify.js
+} else {
+    Write-Host "[cloud-smoke] Skipping Render deploy verification for non-Render target: $backendUrl"
+}
 
 Write-Host '[cloud-smoke] Running cloud health preflight...'
 node .\scripts\production-smoke-preflight.js

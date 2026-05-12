@@ -8,7 +8,7 @@ const repoRoot = path.resolve(__dirname, '..', '..');
 const mobileRoot = path.resolve(__dirname, '..');
 const outputRoot = path.resolve(repoRoot, '_logs', 'real-device-adb');
 const APP_PACKAGE = 'com.eatfitai.app';
-const DEFAULT_BACKEND_URL = 'https://eatfitai-backend-dev.onrender.com';
+const DEFAULT_BACKEND_URL = 'https://eatfitai-api.duckdns.org';
 const DEFAULT_EMAIL = 'probe@demo.com';
 const DEFAULT_PASSWORD = 'Probe12345';
 const MODES = [
@@ -685,6 +685,26 @@ function captureUiDump(adb, serial, outputDir, name) {
 
   const pull = runAdb(adb, serial, ['pull', remotePath, localPath], { timeoutMs: 10000 });
   runAdb(adb, serial, ['shell', 'rm', remotePath], { timeoutMs: 10000 });
+  if (!pull.ok) {
+    const execOut = runAdb(adb, serial, ['exec-out', 'uiautomator', 'dump', '/dev/tty'], {
+      timeoutMs: deviceUiDumpTimeoutMs(),
+    });
+    const xml = String(execOut.stdout || '')
+      .replace(/^UI hierchary dumped to:.*$/gm, '')
+      .trim();
+    if (execOut.ok && xml.includes('<hierarchy')) {
+      fs.writeFileSync(localPath, xml, 'utf8');
+      const size = fs.existsSync(localPath) ? fs.statSync(localPath).size : 0;
+      return {
+        type: 'ui-dump',
+        critical: false,
+        ok: size > 0,
+        name,
+        path: localPath,
+        warning: '',
+      };
+    }
+  }
   return {
     type: 'ui-dump',
     critical: false,
@@ -1309,6 +1329,34 @@ function tapAbsolute(adb, serial, x, y) {
     timeoutMs: 10000,
   });
   return { x, y, ok: result.ok, error: result.stderr || result.error };
+}
+
+function maybeClearAppDataForCredentialLogin(context, flowName, requireCredentials) {
+  if (!requireCredentials || !parseBooleanEnv('EATFITAI_DEVICE_CLEAR_APP_DATA_BEFORE_LOGIN')) {
+    return false;
+  }
+
+  const { adb, serial, report } = context;
+  const clearResult = runAdb(adb, serial, ['shell', 'pm', 'clear', APP_PACKAGE], {
+    timeoutMs: 20000,
+  });
+  const cameraGrant = runAdb(
+    adb,
+    serial,
+    ['shell', 'pm', 'grant', APP_PACKAGE, 'android.permission.CAMERA'],
+    { timeoutMs: 10000 },
+  );
+  report.steps.push({
+    name: `${flowName}-clear-app-data-before-login`,
+    critical: true,
+    ok: clearResult.ok,
+    stdout: clearResult.stdout,
+    stderr: clearResult.stderr,
+    cameraGrantOk: cameraGrant.ok,
+    cameraGrantError: cameraGrant.stderr || cameraGrant.error || '',
+  });
+  context.appDataClearedForCredentialLogin = clearResult.ok;
+  return clearResult.ok;
 }
 
 function clearFocusedText(adb, serial, attempts = 12) {
@@ -1996,9 +2044,18 @@ async function submitRealLoginCredentials(context) {
 
 async function ensureAuthenticatedHome(context, options = {}) {
   const { adb, serial, outputDir, report, credentials } = context;
-  const { flowName = 'authenticated-home', requireCredentials = false } = options;
+  const {
+    flowName = 'authenticated-home',
+    requireCredentials = false,
+    allowExistingSession = true,
+  } = options;
   report.screen = readScreenSize(adb, serial);
 
+  const appDataCleared = maybeClearAppDataForCredentialLogin(
+    context,
+    flowName,
+    requireCredentials,
+  );
   await runProbe(context);
 
   if (requireCredentials && !credentials.available) {
@@ -2035,6 +2092,21 @@ async function ensureAuthenticatedHome(context, options = {}) {
   );
 
   if (state.state === 'authenticated') {
+    if (requireCredentials && !allowExistingSession && !appDataCleared) {
+      addFlowAssertion(
+        report,
+        `${flowName}-fresh-credential-session`,
+        'fail',
+        {
+          reason: 'existing-session-not-accepted-for-api-readback',
+          remediation: 'Set EATFITAI_DEVICE_CLEAR_APP_DATA_BEFORE_LOGIN=true or log out on the device before this flow.',
+          markers: state.markers,
+        },
+        true,
+      );
+      return false;
+    }
+
     const homeOk = await assertScreen(context, `${flowName}-home`, SCREEN_MARKERS.home, true, {
       allowScreenshotFallback: false,
     });
@@ -2059,12 +2131,15 @@ async function ensureAuthenticatedHome(context, options = {}) {
     );
     await navigateToTab(context, 'home', 1800);
     const canUseUnknownStateScreenshotFallback =
-      !requireCredentials && !parseBooleanEnv('EATFITAI_DEVICE_FORCE_LOGIN');
+      !parseBooleanEnv('EATFITAI_DEVICE_FORCE_LOGIN') &&
+      allowExistingSession &&
+      (!requireCredentials ||
+        parseBooleanEnv('EATFITAI_DEVICE_ALLOW_EXISTING_SESSION_FALLBACK'));
     const boundedHomeOk = await assertScreen(
       context,
       `${flowName}-home-bounded-auth-state`,
       SCREEN_MARKERS.home,
-      true,
+      canUseUnknownStateScreenshotFallback,
       {
         allowScreenshotFallback: canUseUnknownStateScreenshotFallback,
       },
@@ -2096,7 +2171,9 @@ async function ensureAuthenticatedHome(context, options = {}) {
     return false;
   }
 
-  const loginNavigation = await ensureLoginScreen(context);
+  const loginNavigation = await ensureLoginScreen(context, {
+    allowUiDumpFailure: !requireCredentials || allowExistingSession || appDataCleared,
+  });
   if (loginNavigation.state.state === 'authenticated') {
     const homeOk = await assertScreen(
       context,
@@ -2145,7 +2222,8 @@ async function ensureAuthenticatedHome(context, options = {}) {
     screenshotArtifact: screenshot,
     focus,
     critical: true,
-    allowScreenshotFallback: false,
+    allowScreenshotFallback:
+      appDataCleared || parseBooleanEnv('EATFITAI_DEVICE_ALLOW_LOGIN_SCREENSHOT_FALLBACK'),
   });
   report.authenticated = homeOk;
   return homeOk;
@@ -2190,6 +2268,8 @@ async function runFullTabUiSmoke(context) {
 async function runFoodDiaryReadback(context) {
   await ensureAuthenticatedHome(context, {
     flowName: 'food-diary-readback',
+    requireCredentials: true,
+    allowExistingSession: false,
   });
   await navigateToDiary(context);
   const token = await runApiLogin(context, true);
@@ -2203,7 +2283,8 @@ async function runFoodSearchUiReadback(context) {
   const { adb, serial, outputDir, report } = context;
   await ensureAuthenticatedHome(context, {
     flowName: 'food-search-ui-readback',
-    requireCredentials: parseBooleanEnv('EATFITAI_DEVICE_FORCE_LOGIN'),
+    requireCredentials: true,
+    allowExistingSession: false,
   });
   const token = await runApiLogin(context, true);
   const baseline = await readDiaryDay(context, token, {
@@ -2283,6 +2364,8 @@ async function runFoodSearchUiReadback(context) {
 async function runScanSaveReadback(context) {
   await ensureAuthenticatedHome(context, {
     flowName: 'scan-save-readback',
+    requireCredentials: true,
+    allowExistingSession: false,
   });
   await navigateToTab(context, 'scan', 2500);
   await assertScreen(context, 'scan-save-readback-scan', SCREEN_MARKERS.scan, false);
@@ -2299,6 +2382,8 @@ async function runVoiceTextReadback(context) {
   const { adb, serial, report } = context;
   await ensureAuthenticatedHome(context, {
     flowName: 'voice-text-readback',
+    requireCredentials: true,
+    allowExistingSession: false,
   });
   await navigateToTab(context, 'voice', 2500);
   await assertScreen(context, 'voice-text-readback-voice', SCREEN_MARKERS.voice, false);
@@ -2324,6 +2409,8 @@ async function runVoiceTextReadback(context) {
 async function runStatsProfileSmoke(context) {
   await ensureAuthenticatedHome(context, {
     flowName: 'stats-profile-smoke',
+    requireCredentials: true,
+    allowExistingSession: false,
   });
   const token = await runApiLogin(context, true);
 
@@ -2374,6 +2461,8 @@ async function runStatsProfileSmoke(context) {
 async function runBackendFrontendLiveCheck(context) {
   await ensureAuthenticatedHome(context, {
     flowName: 'backend-frontend-live-check',
+    requireCredentials: true,
+    allowExistingSession: false,
   });
   const token = await runApiLogin(context, true);
 
@@ -2410,8 +2499,9 @@ async function runBackendFrontendLiveCheck(context) {
   capturePerformanceSnapshot(context, 'backend-frontend-live-check-final');
 }
 
-async function ensureLoginScreen(context) {
+async function ensureLoginScreen(context, options = {}) {
   const { adb, serial, outputDir, report } = context;
+  const { allowUiDumpFailure = true } = options;
   const size = readScreenSize(adb, serial);
 
   addForegroundStep(report, adb, serial, 'auth-entry-foreground-before-navigation');
@@ -2436,7 +2526,7 @@ async function ensureLoginScreen(context) {
   );
   const loginDetected =
     focusAfterNavigation.appForeground &&
-    (!loginUi.ok ||
+    ((allowUiDumpFailure && !loginUi.ok) ||
       loginXml.includes('auth-login-email-input') ||
       loginXml.includes('Chào mừng trở lại'));
   report.steps.push({

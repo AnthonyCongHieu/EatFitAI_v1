@@ -26,6 +26,17 @@ logger = logging.getLogger(__name__)
 
 # Configuration - Gemini API (thay thế Ollama)
 GEMINI_MODEL = os.getenv("GEMINI_MODEL", DEFAULT_MODEL).strip() or DEFAULT_MODEL
+NUTRITION_TARGET_SCHEMA: Dict[str, Any] = {
+    "type": "object",
+    "properties": {
+        "calories": {"type": "integer"},
+        "protein": {"type": "integer"},
+        "carbs": {"type": "integer"},
+        "fat": {"type": "integer"},
+        "explanation": {"type": "string"},
+    },
+    "required": ["calories", "protein", "carbs", "fat", "explanation"],
+}
 
 # ============== SIMPLE CACHE SYSTEM ==============
 # In-memory cache với TTL để giảm API calls và chi phí
@@ -99,7 +110,13 @@ def is_gemini_available() -> bool:
         logger.error(f"Gemini availability check failed: {exc}")
         return False
 
-def query_gemini(prompt: str, use_cache: bool = True, cache_ttl: int = None) -> Optional[str]:
+def query_gemini(
+    prompt: str,
+    use_cache: bool = True,
+    cache_ttl: int = None,
+    response_schema: Optional[Dict[str, Any]] = None,
+    thinking_budget: Optional[int] = None,
+) -> Optional[str]:
     """
     Query Gemini API với cache support.
     Returns None nếu lỗi.
@@ -117,6 +134,8 @@ def query_gemini(prompt: str, use_cache: bool = True, cache_ttl: int = None) -> 
             temperature=0.1,
             max_output_tokens=500,
             response_mime_type="application/json",
+            response_schema=response_schema,
+            thinking_budget=thinking_budget,
         )
         
         if response:
@@ -196,6 +215,55 @@ def _is_target_within_bounds(
 
     macro_calories = protein * 4 + carbs * 4 + fat * 9
     return calories * 0.55 <= macro_calories <= calories * 1.25
+
+
+def _coerce_nutrition_int(value: Any) -> int:
+    if isinstance(value, bool) or value is None:
+        return 0
+    if isinstance(value, (int, float)):
+        return int(round(float(value)))
+
+    text = str(value).strip().lower().replace(",", "")
+    match = re.search(r"-?\d+(?:\.\d+)?", text)
+    if not match:
+        return 0
+    try:
+        return int(round(float(match.group(0))))
+    except (TypeError, ValueError):
+        return 0
+
+
+def _parse_nutrition_target_response(response: str) -> Optional[Dict[str, Any]]:
+    start = response.find("{")
+    end = response.rfind("}") + 1
+    if start != -1 and end > start:
+        try:
+            return json.loads(response[start:end])
+        except json.JSONDecodeError:
+            logger.warning("Failed to parse Gemini response: %s", response[:100])
+
+    fields: Dict[str, Any] = {}
+    for key in ("calories", "protein", "carbs", "fat"):
+        match = re.search(
+            rf'"{key}"\s*:\s*("([^"]*)"|-?\d+(?:\.\d+)?)',
+            response,
+            flags=re.IGNORECASE,
+        )
+        if match:
+            fields[key] = match.group(2) if match.group(2) is not None else match.group(1)
+
+    if not all(key in fields for key in ("calories", "protein", "carbs", "fat")):
+        return None
+
+    explanation_match = re.search(
+        r'"explanation"\s*:\s*"([^"]*)',
+        response,
+        flags=re.IGNORECASE,
+    )
+    fields["explanation"] = explanation_match.group(1) if explanation_match else ""
+    fields["_recovered_from_partial_json"] = True
+    return fields
+
 
 def calculate_nutrition_mifflin(
     gender: str,
@@ -290,19 +358,60 @@ TRẢ LỜI JSON (chỉ JSON, không giải thích thêm):
     # Do not cache the raw Gemini response here. The response must pass domain
     # validation first; otherwise one malformed model response can stick and
     # force formula fallback until the process cache expires.
-    response = query_gemini(prompt, use_cache=False)
+    response = query_gemini(
+        prompt,
+        use_cache=False,
+        response_schema=NUTRITION_TARGET_SCHEMA,
+        thinking_budget=0,
+    )
     
     if response:
+        recovered_result = _parse_nutrition_target_response(response)
+        if recovered_result:
+            calories = _coerce_nutrition_int(recovered_result.get("calories", 0))
+            protein = _coerce_nutrition_int(recovered_result.get("protein", 0))
+            carbs = _coerce_nutrition_int(recovered_result.get("carbs", 0))
+            fat = _coerce_nutrition_int(recovered_result.get("fat", 0))
+
+            if not _is_target_within_bounds(calories, protein, carbs, fat, weight_kg):
+                logger.warning(
+                    "Gemini nutrition target out of bounds: cal=%s, p=%s, c=%s, f=%s",
+                    calories,
+                    protein,
+                    carbs,
+                    fat,
+                )
+                return _build_formula_result(
+                    gender,
+                    age,
+                    height_cm,
+                    weight_kg,
+                    activity_level,
+                    goal,
+                    source="formula_validated",
+                )
+
+            if recovered_result.pop("_recovered_from_partial_json", False):
+                logger.info("Recovered Gemini nutrition target from partial JSON response")
+            recovered_result["source"] = "gemini"
+            recovered_result["offlineMode"] = False
+            recovered_result["message"] = None
+            recovered_result["calories"] = calories
+            recovered_result["protein"] = protein
+            recovered_result["carbs"] = carbs
+            recovered_result["fat"] = fat
+            return recovered_result
+
         try:
             start = response.find("{")
             end = response.rfind("}") + 1
             if start != -1 and end > start:
                 result = json.loads(response[start:end])
                 
-                calories = int(result.get("calories", 0))
-                protein = int(result.get("protein", 0))
-                carbs = int(result.get("carbs", 0))
-                fat = int(result.get("fat", 0))
+                calories = _coerce_nutrition_int(result.get("calories", 0))
+                protein = _coerce_nutrition_int(result.get("protein", 0))
+                carbs = _coerce_nutrition_int(result.get("carbs", 0))
+                fat = _coerce_nutrition_int(result.get("fat", 0))
                 
                 if not _is_target_within_bounds(calories, protein, carbs, fat, weight_kg):
                     logger.warning(
@@ -334,6 +443,7 @@ TRẢ LỜI JSON (chỉ JSON, không giải thích thêm):
                 
         except json.JSONDecodeError:
             logger.warning(f"Failed to parse Gemini response: {response[:100]}")
+        logger.warning("Gemini response did not contain a JSON object: %s", response[:100])
     
     return _build_formula_result(
         gender,

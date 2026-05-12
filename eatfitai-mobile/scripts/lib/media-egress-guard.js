@@ -22,6 +22,7 @@ function hostLooksProduction(hostname) {
   return (
     host === 'eatfitai.com' ||
     host === 'api.eatfitai.com' ||
+    host === 'eatfitai-api.duckdns.org' ||
     host.includes('eatfitai-backend-prod') ||
     host.includes('eatfitai-production') ||
     host.includes('production') ||

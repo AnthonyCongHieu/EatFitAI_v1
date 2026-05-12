@@ -11,7 +11,7 @@ const {
 const repoRoot = path.resolve(__dirname, '..', '..');
 const mobileRoot = path.resolve(__dirname, '..');
 const outputRoot = path.resolve(repoRoot, '_logs', 'real-device-adb');
-const DEFAULT_BACKEND_URL = 'https://eatfitai-backend-dev.onrender.com';
+const DEFAULT_BACKEND_URL = 'https://eatfitai-api.duckdns.org';
 
 function trim(value) {
   return String(value || '').trim();

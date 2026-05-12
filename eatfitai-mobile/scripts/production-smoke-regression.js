@@ -6,7 +6,7 @@ const { isFallbackSource } = require('./lib/primary-path-readiness');
 const { runMediaEgressGuard } = require('./lib/media-egress-guard');
 const { requestVisionDetectFromFile } = require('./lib/media-upload-smoke');
 
-const DEFAULT_BACKEND_URL = 'https://eatfitai-backend-dev.onrender.com';
+const DEFAULT_BACKEND_URL = 'https://eatfitai-api.duckdns.org';
 const DEFAULT_OUTPUT_ROOT = path.resolve(
   __dirname,
   '..',
