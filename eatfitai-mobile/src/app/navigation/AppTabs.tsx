@@ -8,7 +8,12 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import CustomTabBar from '../../components/navigation/CustomTabBar';
 
 export type AppTabsParamList = {
-  HomeTab: undefined;
+  HomeTab:
+    | {
+        focusWaterRequestId?: number;
+        source?: 'water-quick-action';
+      }
+    | undefined;
   AIScanTab: undefined;
   VoiceTab:
     | {

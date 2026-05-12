@@ -1,4 +1,4 @@
-import type { ReactElement, ReactNode } from 'react';
+import type { ReactElement, ReactNode, Ref } from 'react';
 import type {
   RefreshControlProps,
   ScrollViewProps,
@@ -18,6 +18,7 @@ type ScreenProps = {
   contentContainerStyle?: ScrollViewProps['contentContainerStyle'];
   style?: ScrollViewProps['style'] & ViewProps['style'];
   refreshControl?: ReactElement<RefreshControlProps>;
+  scrollViewRef?: Ref<ScrollView>;
   scroll?: boolean;
   // Tùy chọn padding - mặc định true cho tất cả màn hình
   useSafeArea?: boolean;
@@ -35,6 +36,7 @@ export const Screen = ({
   contentContainerStyle,
   style,
   refreshControl,
+  scrollViewRef,
   scroll = true,
   useSafeArea = true,
   horizontalPadding = true,
@@ -74,6 +76,7 @@ export const Screen = ({
   // Render content based on scroll prop
   const content = scroll ? (
     <ScrollView
+      ref={scrollViewRef}
       style={styles.scrollView}
       contentContainerStyle={[contentStyle, contentContainerStyle]}
       refreshControl={refreshControl}

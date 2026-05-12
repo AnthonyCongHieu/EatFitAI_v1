@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   ActivityIndicator,
@@ -9,6 +9,7 @@ import {
   StyleSheet,
   View,
   Dimensions,
+  type ScrollView,
 } from 'react-native';
 import Animated, {
   FadeInUp,
@@ -16,7 +17,8 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import Toast from 'react-native-toast-message';
-import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { useNavigation, useFocusEffect, useRoute } from '@react-navigation/native';
+import type { RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import Svg, { Circle, Defs, LinearGradient as SvgGradient, Stop, Path } from 'react-native-svg';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -25,6 +27,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { ThemedText } from '../../components/ThemedText';
 import Screen from '../../components/Screen';
 import { useDiaryStore } from '../../store/useDiaryStore';
+import { useAuthStore } from '../../store/useAuthStore';
 import { useAppTheme } from '../../theme/ThemeProvider';
 import type { RootStackParamList } from '../types';
 import { MEAL_TYPE_LABELS, type MealTypeId } from '../../types';
@@ -39,6 +42,8 @@ import Tilt3DCard from '../../components/ui/Tilt3DCard';
 import * as Haptics from 'expo-haptics';
 import { TEST_IDS } from '../../testing/testIds';
 import { waterService, type WaterIntakeData } from '../../services/waterService';
+import type { AppTabsParamList } from '../navigation/AppTabs';
+import HomeFirstLoginTutorial from '../../components/home/HomeFirstLoginTutorial';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -225,9 +230,14 @@ const WaterGlassIcon = ({ isPlus }: { isPlus: boolean }) => {
 const HomeScreen = (): React.ReactElement => {
   const { theme } = useAppTheme();
   const navigation = useNavigation<NavigationProp>();
+  const route = useRoute<RouteProp<AppTabsParamList, 'HomeTab'>>();
+  const screenScrollRef = useRef<ScrollView>(null);
+  const lastHandledWaterFocusRequestRef = useRef<number | undefined>(undefined);
   const summary = useDiaryStore((s) => s.summary);
   const fetchSummary = useDiaryStore((s) => s.fetchSummary);
   const deleteEntry = useDiaryStore((s) => s.deleteEntry);
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const needsOnboarding = useAuthStore((s) => s.needsOnboarding);
   const queryClient = useQueryClient();
   const { isLoading, isFetching, isError, refetch } = useQuery<DaySummary | null>({
     queryKey: ['home-summary'],
@@ -238,6 +248,7 @@ const HomeScreen = (): React.ReactElement => {
   });
   const [serverDown, setServerDown] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date());
+  const [waterCardY, setWaterCardY] = useState<number | null>(null);
 
   // Water intake state
   const { data: waterData } = useQuery<WaterIntakeData>({
@@ -295,6 +306,24 @@ const HomeScreen = (): React.ReactElement => {
     checkStreak();
     fetchWeeklyLogs();
   }, [checkStreak, fetchWeeklyLogs]);
+
+  useEffect(() => {
+    const focusWaterRequestId = route.params?.focusWaterRequestId;
+    if (
+      !focusWaterRequestId
+      || waterCardY == null
+      || lastHandledWaterFocusRequestRef.current === focusWaterRequestId
+    ) {
+      return;
+    }
+
+    lastHandledWaterFocusRequestRef.current = focusWaterRequestId;
+    const timer = setTimeout(() => {
+      screenScrollRef.current?.scrollTo({ y: Math.max(waterCardY - 24, 0), animated: true });
+    }, 250);
+
+    return () => clearTimeout(timer);
+  }, [route.params?.focusWaterRequestId, waterCardY]);
 
   const showCommonErrors = useCallback(
     (error: any, fallback: { text1: string; text2: string }) => {
@@ -441,6 +470,7 @@ const HomeScreen = (): React.ReactElement => {
 
       <Screen
         testID={TEST_IDS.home.screen}
+        scrollViewRef={screenScrollRef}
         useGradient={false}
         horizontalPadding={false}
         useSafeArea={true}
@@ -742,7 +772,10 @@ const HomeScreen = (): React.ReactElement => {
         </View>
 
         {/* ══════════ WATER TRACKING ══════════ */}
-        <Animated.View entering={FadeInUp.delay(400).springify()}>
+        <Animated.View
+          entering={FadeInUp.delay(400).springify()}
+          onLayout={(e) => setWaterCardY(e.nativeEvent.layout.y)}
+        >
           <View style={styles.waterCard}>
             {/* Left: icon + label + value */}
             <View style={styles.waterLeft}>
@@ -780,6 +813,10 @@ const HomeScreen = (): React.ReactElement => {
           </View>
         </Animated.View>
       </Screen>
+      <HomeFirstLoginTutorial
+        isAuthenticated={isAuthenticated}
+        needsOnboarding={needsOnboarding}
+      />
     </View>
   );
 };

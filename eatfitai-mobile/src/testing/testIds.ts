@@ -66,6 +66,11 @@ export const TEST_IDS = {
     diaryButton: 'home-view-diary-button',
     quickAccessDiaryButton: 'home-open-diary-button',
     fabButton: 'home-smart-add-fab',
+    mascotButton: 'home-mascot-button',
+    tutorialOverlay: 'home-tutorial-overlay',
+    tutorialNextButton: 'home-tutorial-next-button',
+    tutorialSkipButton: 'home-tutorial-skip-button',
+    tutorialFinishButton: 'home-tutorial-finish-button',
   },
   foodSearch: {
     screen: 'food-search-screen',
