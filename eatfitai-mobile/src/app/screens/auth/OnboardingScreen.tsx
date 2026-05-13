@@ -54,6 +54,7 @@ import logger from '../../../utils/logger';
 import { t } from '../../../i18n/vi';
 import { TEST_IDS } from '../../../testing/testIds';
 import Tilt3DCard, { ParallaxLayer } from '../../../components/ui/Tilt3DCard';
+import { snapRulerOffset } from '../../../utils/rulerSnap';
 
 const { width } = Dimensions.get('window');
 
@@ -1063,6 +1064,51 @@ const OnboardingScreen = (): React.ReactElement => {
     },
   }, [targetMinWeight, targetMaxWeight]);
 
+  const snapHeightRulerToOffset = (offset: number) => {
+    const snap = snapRulerOffset({
+      offset,
+      minValue: 100,
+      maxValue: 250,
+      pixelsPerUnit: 12,
+      precision: 0,
+    });
+    if (Math.abs(snap.offset - offset) > 0.5) {
+      rulerScrollRef.current?.scrollTo({ x: snap.offset, animated: true });
+    }
+    setData((prev) => ({ ...prev, heightCm: String(snap.value) }));
+  };
+
+  const snapWeightRulerToOffset = (offset: number) => {
+    const snap = snapRulerOffset({
+      offset,
+      minValue: 30,
+      maxValue: 200,
+      pixelsPerUnit: 100,
+      precision: 1,
+    });
+    if (Math.abs(snap.offset - offset) > 0.5) {
+      weightRulerRef.current?.scrollTo({ x: snap.offset, animated: true });
+    }
+    setData((prev) => ({ ...prev, weightKg: String(snap.value) }));
+  };
+
+  const snapTargetWeightRulerToOffset = (offset: number) => {
+    const snap = snapRulerOffset({
+      offset,
+      minValue: targetMinWeight,
+      maxValue: targetMaxWeight,
+      pixelsPerUnit: 100,
+      precision: 1,
+    });
+    if (Math.abs(snap.offset - offset) > 0.5) {
+      targetWeightRulerRef.current?.scrollTo({ x: snap.offset, animated: true });
+    }
+    targetRulerScrollXRef.current = snap.offset;
+    targetRulerNativeScrollX.value = snap.offset;
+    setTargetDisplayWeight(snap.value);
+    setData((prev) => ({ ...prev, targetWeightKg: String(snap.value) }));
+  };
+
   const targetOverlayAnimatedStyle = useAnimatedStyle(() => {
     const origWeight = currentWeightVal;
     const ctrX = targetWeightRulerWidth / 2;
@@ -1362,6 +1408,7 @@ const OnboardingScreen = (): React.ReactElement => {
                       showsHorizontalScrollIndicator={false}
                       snapToInterval={12}
                       decelerationRate="fast"
+                      disableIntervalMomentum
                       contentOffset={{ x: ((parseInt(data.heightCm, 10) || 160) - 100) * 12, y: 0 }}
                       contentContainerStyle={{
                         paddingLeft: rulerContainerWidth / 2 - 6,
@@ -1370,16 +1417,10 @@ const OnboardingScreen = (): React.ReactElement => {
                         alignItems: 'flex-end',
                       }}
                       onMomentumScrollEnd={(e) => {
-                        const offset = e.nativeEvent.contentOffset.x;
-                        const val = Math.round(offset / 12) + 100;
-                        const clamped = Math.max(100, Math.min(250, val));
-                        setData((prev) => ({ ...prev, heightCm: String(clamped) }));
+                        snapHeightRulerToOffset(e.nativeEvent.contentOffset.x);
                       }}
                       onScrollEndDrag={(e) => {
-                        const offset = e.nativeEvent.contentOffset.x;
-                        const val = Math.round(offset / 12) + 100;
-                        const clamped = Math.max(100, Math.min(250, val));
-                        setData((prev) => ({ ...prev, heightCm: String(clamped) }));
+                        snapHeightRulerToOffset(e.nativeEvent.contentOffset.x);
                       }}
                       scrollEventThrottle={64}
                     >
@@ -1479,6 +1520,7 @@ const OnboardingScreen = (): React.ReactElement => {
                       showsHorizontalScrollIndicator={false}
                       snapToInterval={10}
                       decelerationRate="fast"
+                      disableIntervalMomentum
                       contentOffset={{ x: ((parseFloat(data.weightKg) || 60) - 30) * 100, y: 0 }}
                       contentContainerStyle={{
                         paddingLeft: weightRulerWidth / 2 - 5,
@@ -1487,16 +1529,10 @@ const OnboardingScreen = (): React.ReactElement => {
                         alignItems: 'flex-end',
                       }}
                       onMomentumScrollEnd={(e) => {
-                        const offset = e.nativeEvent.contentOffset.x;
-                        const val = Math.round((offset / 100 + 30) * 10) / 10;
-                        const clamped = Math.max(30, Math.min(200, val));
-                        setData((prev) => ({ ...prev, weightKg: String(clamped) }));
+                        snapWeightRulerToOffset(e.nativeEvent.contentOffset.x);
                       }}
                       onScrollEndDrag={(e) => {
-                        const offset = e.nativeEvent.contentOffset.x;
-                        const val = Math.round((offset / 100 + 30) * 10) / 10;
-                        const clamped = Math.max(30, Math.min(200, val));
-                        setData((prev) => ({ ...prev, weightKg: String(clamped) }));
+                        snapWeightRulerToOffset(e.nativeEvent.contentOffset.x);
                       }}
                       scrollEventThrottle={64}
                     >
@@ -1958,6 +1994,7 @@ const OnboardingScreen = (): React.ReactElement => {
                   showsHorizontalScrollIndicator={false}
                   snapToInterval={10}
                   decelerationRate="fast"
+                  disableIntervalMomentum
                   contentContainerStyle={{
                     paddingLeft: targetWeightRulerWidth / 2 - 5,
                     paddingRight: targetWeightRulerWidth / 2 - 5,
@@ -1966,18 +2003,10 @@ const OnboardingScreen = (): React.ReactElement => {
                   }}
                   onScroll={onTargetRulerScroll}
                   onMomentumScrollEnd={(e) => {
-                    const o = e.nativeEvent.contentOffset.x;
-                    const v = Math.round((o / 100 + targetMinWeight) * 10) / 10;
-                    const c = Math.max(targetMinWeight, Math.min(targetMaxWeight, v));
-                    setData((p) => ({ ...p, targetWeightKg: String(c) }));
-                    setTargetDisplayWeight(c);
+                    snapTargetWeightRulerToOffset(e.nativeEvent.contentOffset.x);
                   }}
                   onScrollEndDrag={(e) => {
-                    const o = e.nativeEvent.contentOffset.x;
-                    const v = Math.round((o / 100 + targetMinWeight) * 10) / 10;
-                    const c = Math.max(targetMinWeight, Math.min(targetMaxWeight, v));
-                    setData((p) => ({ ...p, targetWeightKg: String(c) }));
-                    setTargetDisplayWeight(c);
+                    snapTargetWeightRulerToOffset(e.nativeEvent.contentOffset.x);
                   }}
                   scrollEventThrottle={16}
                 >

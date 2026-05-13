@@ -239,7 +239,7 @@ const MealDiaryScreen = (): React.ReactElement => {
       });
       return;
     }
-    
+
     let source: 'catalog' | 'user' = 'catalog';
     let foodId: number | null | string = entry.foodItemId ?? null;
 
@@ -420,6 +420,10 @@ const MealDiaryScreen = (): React.ReactElement => {
                   <View style={styles.mealCard}>
                     {/* Meal Header */}
                     <Pressable
+                      testID={TEST_IDS.mealDiary.addManualButton}
+                      nativeID={TEST_IDS.mealDiary.addManualButton}
+                      accessibilityLabel={TEST_IDS.mealDiary.addManualButton}
+                      collapsable={false}
                       style={({ pressed }) => [
                         styles.mealHeader,
                         pressed && { opacity: 0.8 },
@@ -480,7 +484,7 @@ const MealDiaryScreen = (): React.ReactElement => {
                                   <ThemedText style={{ fontSize: 32 }}>{getFoodEmoji(entry.foodName)}</ThemedText>
                                 )}
                               </View>
-  
+
                               {/* Info */}
                               <View style={[styles.entryInfo, { marginLeft: 12, justifyContent: 'space-between', paddingVertical: 2 }]}>
                                 <ThemedText style={[styles.entryName, { fontSize: 16, fontWeight: '700' }]} numberOfLines={1}>
@@ -489,7 +493,7 @@ const MealDiaryScreen = (): React.ReactElement => {
                                 <ThemedText style={{ color: C.textMuted, fontSize: 13, marginTop: 4 }}>
                                   {entry.quantityText || '1 khẩu phần'} • {Math.round(entry.calories || 0)} cal
                                 </ThemedText>
-                                
+
                                 <View style={{ flexDirection: 'row', gap: 12, marginTop: 6, alignItems: 'center' }}>
                                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                                     <Ionicons name="flash" size={14} color="#ef4444" />

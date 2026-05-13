@@ -9,6 +9,7 @@ import Animated, { useAnimatedStyle, withSpring, useSharedValue } from 'react-na
 import { Ionicons } from '@expo/vector-icons';
 import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { TEST_IDS } from '../../testing/testIds';
+import { resolveBottomTabSafePadding } from './tabBarSafeArea';
 
 const C = {
   bg: '#0a0e1a',
@@ -92,7 +93,7 @@ const TabBtn = ({
 
 const CustomTabBar: React.FC<BottomTabBarProps> = ({ state, navigation }) => {
   const insets = useSafeAreaInsets();
-  const safeBottom = Platform.OS === 'ios' ? Math.max(insets.bottom, 0) : 4;
+  const safeBottom = resolveBottomTabSafePadding(Platform.OS, insets.bottom);
   const navigateTo = (name: string) => navigation.navigate(name);
   const current = state.routes[state.index]?.name ?? '';
   const centerTab = ALL_TABS[2]!;

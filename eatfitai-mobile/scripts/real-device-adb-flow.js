@@ -2,7 +2,14 @@ const fs = require('fs');
 const path = require('path');
 const { spawn, spawnSync } = require('child_process');
 const { resolveEnv } = require('../../tools/automation/resolveEnv');
+const { buildAsciiKeyEventArgs } = require('./lib/adb-text');
 const { logcatContainsAppCrash, redactLogcatText } = require('./lib/device-logcat');
+const {
+  VISUAL_AUDIT_FLOWS,
+  buildVisualBugMatrix,
+  renderVisualBugMatrixMarkdown,
+  resolveVisualAuditFlowNames,
+} = require('./lib/visual-ui-audit');
 
 const repoRoot = path.resolve(__dirname, '..', '..');
 const mobileRoot = path.resolve(__dirname, '..');
@@ -28,6 +35,7 @@ const MODES = [
   'voice-text-readback',
   'stats-profile-smoke',
   'backend-frontend-live-check',
+  'visual-ui-audit',
 ];
 
 const HOME_MARKERS = [
@@ -43,6 +51,24 @@ const AUTH_MARKERS = [
   'auth-login-email-input',
   'auth-login-password-input',
   'auth-onboarding-screen',
+];
+const ONBOARDING_INTRO_MARKERS = [
+  'auth-onboarding-screen',
+  'Bước 1 trên',
+  'Thông tin cơ bản',
+];
+const ONBOARDING_RULER_MARKERS = [
+  'auth-onboarding-screen',
+  'Bước 2 trên',
+  'auth-onboarding-height-input',
+  'auth-onboarding-weight-input',
+  'Chỉ số cơ thể',
+];
+const HOME_TUTORIAL_MARKERS = [
+  'Bỏ qua hướng dẫn',
+  'Tiếp tục hướng dẫn',
+  'Hoàn tất hướng dẫn',
+  'Chào mừng bạn đến với EatFitAI',
 ];
 const SCREEN_MARKERS = {
   home: HOME_MARKERS,
@@ -69,6 +95,21 @@ const TAB_TARGETS = {
 
 function trim(value) {
   return String(value || '').trim();
+}
+
+function readCliOption(name, fallback = '') {
+  const directPrefix = `${name}=`;
+  const direct = process.argv.find((arg) => arg.startsWith(directPrefix));
+  if (direct) {
+    return trim(direct.slice(directPrefix.length)) || fallback;
+  }
+
+  const index = process.argv.indexOf(name);
+  if (index !== -1 && process.argv[index + 1] && !process.argv[index + 1].startsWith('--')) {
+    return trim(process.argv[index + 1]) || fallback;
+  }
+
+  return fallback;
 }
 
 function parsePositiveInteger(value, fallback) {
@@ -219,6 +260,34 @@ function resolveLoginCredentials() {
     available: false,
     expectedSources: candidates.map((candidate) => `${candidate.emailName}/${candidate.passwordName}`),
   };
+}
+
+function resolveOnboardingLoginCredentials(fallbackCredentials) {
+  const candidates = [
+    {
+      emailName: 'EATFITAI_ONBOARDING_LOGIN_EMAIL',
+      passwordName: 'EATFITAI_ONBOARDING_LOGIN_PASSWORD',
+    },
+    {
+      emailName: 'EATFITAI_VISUAL_ONBOARDING_LOGIN_EMAIL',
+      passwordName: 'EATFITAI_VISUAL_ONBOARDING_LOGIN_PASSWORD',
+    },
+  ];
+
+  for (const candidate of candidates) {
+    const email = trim(resolveEnv(candidate.emailName));
+    const password = trim(resolveEnv(candidate.passwordName));
+    if (email && password) {
+      return {
+        email,
+        password,
+        source: `${candidate.emailName}/${candidate.passwordName}`,
+        available: true,
+      };
+    }
+  }
+
+  return fallbackCredentials;
 }
 
 function credentialReport(credentials) {
@@ -935,6 +1004,38 @@ async function tapStep(report, adb, serial, size, name, xRatio, yRatio, waitMs =
   return result;
 }
 
+async function swipeStep(report, adb, serial, size, name, x1Ratio, y1Ratio, x2Ratio, y2Ratio, durationMs, waitMs = 1200) {
+  const from = point(size, x1Ratio, y1Ratio);
+  const to = point(size, x2Ratio, y2Ratio);
+  const result = runAdb(
+    adb,
+    serial,
+    [
+      'shell',
+      'input',
+      'swipe',
+      String(from.x),
+      String(from.y),
+      String(to.x),
+      String(to.y),
+      String(durationMs),
+    ],
+    { timeoutMs: 10000 },
+  );
+  await sleep(waitMs);
+  report.steps.push({
+    name,
+    swipe: {
+      from,
+      to,
+      durationMs,
+      ok: result.ok,
+      error: result.stderr || result.error,
+    },
+  });
+  return result;
+}
+
 function captureLogcat(adb, serial, outputDir, name, args) {
   const result = runAdb(adb, serial, ['logcat', '-d', ...args], {
     timeoutMs: 20000,
@@ -1111,18 +1212,25 @@ function capturePerformanceSnapshot(context, name) {
   });
 }
 
-function startRecording(adb, serial, outputDir, enabled) {
+function startRecording(adb, serial, outputDir, enabled, name = 'screenrecord') {
   if (!enabled) {
     return null;
   }
 
+  const safeRecordingName = safeName(name || 'screenrecord') || 'screenrecord';
   const remotePath = `/sdcard/eatfitai-screenrecord-${Date.now()}.mp4`;
-  const child = spawn(adb, adbArgs(serial, ['shell', 'screenrecord', '--time-limit', '45', remotePath]), {
+  const timeLimit = parsePositiveInteger(resolveEnv('EATFITAI_DEVICE_SCREENRECORD_TIME_LIMIT_SECONDS'), 60);
+  const child = spawn(adb, adbArgs(serial, ['shell', 'screenrecord', '--time-limit', String(timeLimit), remotePath]), {
     cwd: mobileRoot,
     stdio: 'ignore',
     shell: false,
   });
-  return { child, remotePath, localPath: path.join(outputDir, 'screenrecord.mp4') };
+  return {
+    child,
+    remotePath,
+    localPath: path.join(outputDir, `${safeRecordingName}.mp4`),
+    name: safeRecordingName,
+  };
 }
 
 function stopRecording(adb, serial, recording) {
@@ -1143,7 +1251,7 @@ function stopRecording(adb, serial, recording) {
     type: 'video',
     critical: false,
     ok: pull.ok,
-    name: 'screenrecord',
+    name: recording.name || 'screenrecord',
     path: recording.localPath,
     bytes: fileSize(recording.localPath),
     error: pull.stderr || pull.error,
@@ -1316,6 +1424,21 @@ function inputText(adb, serial, text) {
   return runAdb(adb, serial, ['shell', 'input', 'text', value], { timeoutMs: 15000 });
 }
 
+function inputEmailText(adb, serial, email) {
+  const keyEventArgs = buildAsciiKeyEventArgs(email, { lowercase: true });
+  if (keyEventArgs) {
+    return {
+      ...runAdb(adb, serial, keyEventArgs, { timeoutMs: 20000 }),
+      method: 'ascii-keyevent',
+    };
+  }
+
+  return {
+    ...inputText(adb, serial, email),
+    method: 'adb-input-text',
+  };
+}
+
 function tap(adb, serial, size, xRatio, yRatio) {
   const target = point(size, xRatio, yRatio);
   const result = runAdb(adb, serial, ['shell', 'input', 'tap', String(target.x), String(target.y)], {
@@ -1331,11 +1454,20 @@ function tapAbsolute(adb, serial, x, y) {
   return { x, y, ok: result.ok, error: result.stderr || result.error };
 }
 
-function maybeClearAppDataForCredentialLogin(context, flowName, requireCredentials) {
-  if (!requireCredentials || !parseBooleanEnv('EATFITAI_DEVICE_CLEAR_APP_DATA_BEFORE_LOGIN')) {
-    return false;
+function collapseSystemOverlays(context, name) {
+  const result = runAdb(context.adb, context.serial, ['shell', 'cmd', 'statusbar', 'collapse'], {
+    timeoutMs: 10000,
+  });
+  if (!result.ok && !context.statusbarCollapseWarningAdded) {
+    addWarning(context.report, 'statusbar-collapse-unavailable', `${name} could not collapse Android system overlays.`, {
+      error: result.stderr || result.error,
+    });
+    context.statusbarCollapseWarningAdded = true;
   }
+  return result;
+}
 
+function clearAppDataForCredentialLogin(context, flowName) {
   const { adb, serial, report } = context;
   const clearResult = runAdb(adb, serial, ['shell', 'pm', 'clear', APP_PACKAGE], {
     timeoutMs: 20000,
@@ -1359,7 +1491,15 @@ function maybeClearAppDataForCredentialLogin(context, flowName, requireCredentia
   return clearResult.ok;
 }
 
-function clearFocusedText(adb, serial, attempts = 12) {
+function maybeClearAppDataForCredentialLogin(context, flowName, requireCredentials) {
+  if (!requireCredentials || !parseBooleanEnv('EATFITAI_DEVICE_CLEAR_APP_DATA_BEFORE_LOGIN')) {
+    return false;
+  }
+
+  return clearAppDataForCredentialLogin(context, flowName);
+}
+
+function clearFocusedText(adb, serial, attempts = 48) {
   const selectAll = runAdb(
     adb,
     serial,
@@ -1368,14 +1508,12 @@ function clearFocusedText(adb, serial, attempts = 12) {
   );
   runAdb(adb, serial, ['shell', 'input', 'keyevent', 'KEYCODE_DEL'], { timeoutMs: 5000 });
 
-  if (!selectAll.ok && attempts > 0) {
-    runAdb(
-      adb,
-      serial,
-      ['shell', 'input', 'keyevent', ...Array.from({ length: attempts }, () => 'KEYCODE_DEL')],
-      { timeoutMs: 5000 },
-    );
+  if (attempts > 0) {
+    const keyEvents = ['KEYCODE_MOVE_END', ...Array.from({ length: attempts }, () => 'KEYCODE_DEL')];
+    runAdb(adb, serial, ['shell', 'input', 'keyevent', ...keyEvents], { timeoutMs: 10000 });
   }
+
+  return selectAll;
 }
 
 async function maybeTapKeyboardGlobe(context, name) {
@@ -1386,6 +1524,24 @@ async function maybeTapKeyboardGlobe(context, name) {
   const result = tap(context.adb, context.serial, readScreenSize(context.adb, context.serial), 0.3, 0.91);
   await sleep(600);
   context.report.steps.push({ name, tap: result });
+}
+
+function tapLoginMarkerOrCoordinate(context, marker, xRatio, yRatio) {
+  const { adb, serial } = context;
+  const uiPath = context.loginUiArtifact?.ok ? context.loginUiArtifact.path : '';
+  const bounds = uiPath ? findBoundsForMarker(readTextFileIfExists(uiPath), marker) : null;
+  if (bounds) {
+    return {
+      ...tapAbsolute(adb, serial, bounds.x, bounds.y),
+      tapSource: 'login-ui-bounds',
+      bounds,
+    };
+  }
+
+  return {
+    ...tap(adb, serial, readScreenSize(adb, serial), xRatio, yRatio),
+    tapSource: 'coordinate-fallback',
+  };
 }
 
 async function tapMarkerOrCoordinate(context, marker, name, xRatio, yRatio, waitMs = 1200) {
@@ -1441,6 +1597,110 @@ async function tapMarkerOrCoordinate(context, marker, name, xRatio, yRatio, wait
     },
   );
   return tapStep(report, adb, serial, readScreenSize(adb, serial), name, xRatio, yRatio, waitMs);
+}
+
+async function dismissHomeFirstLoginTutorial(context, name, options = {}) {
+  const { adb, serial, outputDir, report } = context;
+  const coordinateFallback = options.coordinateFallback === true;
+  const waitMs = Number.isFinite(options.waitMs) ? options.waitMs : 1200;
+  const skipUiDump =
+    parseBooleanEnv('EATFITAI_DEVICE_SKIP_UI_DUMP') ||
+    parseBooleanEnv('EATFITAI_DEVICE_SKIP_TAP_UI_DUMP');
+  const uiArtifact = skipUiDump
+    ? skippedUiDump(
+        outputDir,
+        `${safeName(name)}-ui`,
+        'UIAutomator dump skipped by EATFITAI_DEVICE_SKIP_UI_DUMP/EATFITAI_DEVICE_SKIP_TAP_UI_DUMP.',
+      )
+    : captureUiDump(adb, serial, outputDir, `${safeName(name)}-ui`);
+  report.artifacts.push(uiArtifact);
+
+  if (uiArtifact.ok) {
+    const xml = readTextFileIfExists(uiArtifact.path);
+    const detectedMarkers = HOME_TUTORIAL_MARKERS.filter((marker) => xml.includes(marker));
+    const skipBounds =
+      findBoundsForMarker(xml, 'Bỏ qua hướng dẫn') || findBoundsForMarker(xml, 'Bỏ qua');
+
+    if (skipBounds) {
+      const result = tapAbsolute(adb, serial, skipBounds.x, skipBounds.y);
+      await sleep(waitMs);
+      report.steps.push({
+        name,
+        marker: 'Bỏ qua hướng dẫn',
+        tap: result,
+        tapSource: 'ui-dump-bounds',
+        bounds: skipBounds,
+        detectedMarkers,
+      });
+      report.artifacts.push(captureScreenshot(adb, serial, outputDir, `${safeName(name)}-after-dismiss`));
+      return true;
+    }
+
+    if (detectedMarkers.length > 0) {
+      addWarning(
+        report,
+        'home-tutorial-skip-marker-missing',
+        `${name} detected the first-login tutorial but could not find skip bounds.`,
+        {
+          markers: detectedMarkers,
+          uiDumpPath: uiArtifact.path,
+        },
+      );
+    }
+  }
+
+  if (!coordinateFallback) {
+    return false;
+  }
+
+  addWarning(
+    report,
+    'home-tutorial-coordinate-fallback',
+    `${name} used a bounded coordinate tap to dismiss the first-login tutorial if it is visible.`,
+    {
+      uiDumpOk: uiArtifact.ok === true,
+      uiDumpPath: uiArtifact.path,
+    },
+  );
+  await tapStep(report, adb, serial, readScreenSize(adb, serial), name, 0.84, 0.49, waitMs);
+  report.artifacts.push(captureScreenshot(adb, serial, outputDir, `${safeName(name)}-after-dismiss`));
+  return true;
+}
+
+async function launchAppForFlow(context, name) {
+  const { adb, serial, outputDir, report } = context;
+  wakeDevice(adb, serial);
+  const startupArtifact = captureStartupTiming(context);
+  const launch = startupArtifact?.ok
+    ? {
+        ok: true,
+        stdout: startupArtifact.stdout,
+        stderr: '',
+      }
+    : runAdb(adb, serial, [
+        'shell',
+        'monkey',
+        '-p',
+        APP_PACKAGE,
+        '-c',
+        'android.intent.category.LAUNCHER',
+        '1',
+      ]);
+  report.steps.push({
+    name: `${name}-launch`,
+    critical: true,
+    ok: launch.ok,
+    stdout: launch.stdout,
+    stderr: launch.stderr,
+  });
+  await sleep(6000);
+  addForegroundStep(report, adb, serial, `${name}-foreground-after-launch`, true);
+  report.artifacts.push(captureScreenshot(adb, serial, outputDir, `${name}-launch`));
+  report.artifacts.push(
+    parseBooleanEnv('EATFITAI_DEVICE_SKIP_UI_DUMP')
+      ? skippedUiDump(outputDir, `${name}-launch-ui`, 'UIAutomator dump skipped by EATFITAI_DEVICE_SKIP_UI_DUMP.')
+      : captureUiDump(adb, serial, outputDir, `${name}-launch-ui`),
+  );
 }
 
 async function runProbe(context) {
@@ -1600,6 +1860,51 @@ async function runApiLogin(context, mandatory = false) {
   );
 
   return response.ok ? token : '';
+}
+
+async function assertApiLoginNeedsOnboarding(context, flowName) {
+  const { report, credentials, backend } = context;
+  if (!backend?.url || !credentials?.available) {
+    addFlowAssertion(
+      report,
+      `${flowName}-fresh-onboarding-credentials`,
+      'fail',
+      {
+        reason: !backend?.url ? 'backend-url-missing' : 'credentials-missing',
+        credentialSource: credentials?.source || '',
+      },
+      true,
+    );
+    return false;
+  }
+
+  const response = await requestJson(`${backend.url}/api/auth/login`, {
+    method: 'POST',
+    json: {
+      email: credentials.email,
+      password: credentials.password,
+    },
+  });
+  const summary = summarizeLoginBody(response.body);
+  const ok = response.ok && summary.hasAccessToken === true && summary.needsOnboarding === true;
+  addApiReadback(
+    report,
+    `${flowName}-fresh-onboarding-login-readback`,
+    ok ? 'pass' : 'fail',
+    {
+      backendUrl: backend.url,
+      backendSource: backend.source,
+      credentialSource: credentials.source,
+      emailHint: maskEmail(credentials.email),
+      httpStatus: response.status,
+      durationMs: response.durationMs,
+      body: summary,
+      error: response.error || '',
+    },
+    true,
+  );
+
+  return ok;
 }
 
 async function readDiaryDay(context, token, options = {}) {
@@ -2000,8 +2305,8 @@ async function navigateToDiary(context) {
     context,
     'home-view-diary-button',
     'home-diary-button-tap',
-    0.5,
-    0.53,
+    0.86,
+    0.51,
     2500,
   );
   return assertScreen(context, 'food-diary', SCREEN_MARKERS.diary, true);
@@ -2009,24 +2314,28 @@ async function navigateToDiary(context) {
 
 async function submitRealLoginCredentials(context) {
   const { adb, serial, outputDir, report, credentials } = context;
-  const size = readScreenSize(adb, serial);
   report.inputWarning =
     'ADB text input passes through the active Android keyboard. Keep device login credentials ASCII and verify screenshots for IME rewriting.';
 
-  const emailTap = tap(adb, serial, size, 0.5, 0.395);
+  const emailTap = tapLoginMarkerOrCoordinate(context, 'auth-login-email-input', 0.5, 0.395);
   await sleep(600);
   await maybeTapKeyboardGlobe(context, 'login-real-email-keyboard-globe-tap');
-  clearFocusedText(adb, serial);
-  const emailInput = inputText(adb, serial, credentials.email);
+  clearFocusedText(adb, serial, 72);
+  const emailInput = inputEmailText(adb, serial, credentials.email);
   await sleep(800);
   runAdb(adb, serial, ['shell', 'input', 'keyevent', 'KEYCODE_BACK']);
   await sleep(700);
-  report.steps.push({ name: 'login-real-email', tap: emailTap, inputOk: emailInput.ok });
+  report.steps.push({
+    name: 'login-real-email',
+    tap: emailTap,
+    inputOk: emailInput.ok,
+    inputMethod: emailInput.method,
+  });
   report.artifacts.push(captureScreenshot(adb, serial, outputDir, 'login-real-email'));
 
-  const passwordTap = tap(adb, serial, size, 0.5, 0.485);
+  const passwordTap = tapLoginMarkerOrCoordinate(context, 'auth-login-password-input', 0.5, 0.485);
   await sleep(600);
-  clearFocusedText(adb, serial);
+  clearFocusedText(adb, serial, 48);
   const passwordInput = inputText(adb, serial, credentials.password);
   await sleep(800);
   runAdb(adb, serial, ['shell', 'input', 'keyevent', 'KEYCODE_BACK']);
@@ -2034,7 +2343,7 @@ async function submitRealLoginCredentials(context) {
   report.steps.push({ name: 'login-real-password', tap: passwordTap, inputOk: passwordInput.ok });
   report.artifacts.push(captureScreenshot(adb, serial, outputDir, 'login-real-password'));
 
-  const loginTap = tap(adb, serial, size, 0.5, 0.615);
+  const loginTap = tapLoginMarkerOrCoordinate(context, 'auth-login-submit-button', 0.5, 0.615);
   await sleep(7000);
   report.steps.push({ name: 'login-real-submit', tap: loginTap, critical: true });
   report.artifacts.push(captureScreenshot(adb, serial, outputDir, 'login-real-after-submit'));
@@ -2107,6 +2416,9 @@ async function ensureAuthenticatedHome(context, options = {}) {
       return false;
     }
 
+    await dismissHomeFirstLoginTutorial(context, `${flowName}-home-tutorial`, {
+      coordinateFallback: true,
+    });
     const homeOk = await assertScreen(context, `${flowName}-home`, SCREEN_MARKERS.home, true, {
       allowScreenshotFallback: false,
     });
@@ -2118,6 +2430,7 @@ async function ensureAuthenticatedHome(context, options = {}) {
         'login-real found an existing authenticated session and captured Home evidence without re-submitting credentials.',
       );
     }
+    context.authenticatedHomeVerified = homeOk;
     return homeOk;
   }
 
@@ -2133,7 +2446,8 @@ async function ensureAuthenticatedHome(context, options = {}) {
     const canUseUnknownStateScreenshotFallback =
       !parseBooleanEnv('EATFITAI_DEVICE_FORCE_LOGIN') &&
       allowExistingSession &&
-      (!requireCredentials ||
+      (context.authenticatedHomeVerified === true ||
+        !requireCredentials ||
         parseBooleanEnv('EATFITAI_DEVICE_ALLOW_EXISTING_SESSION_FALLBACK'));
     const boundedHomeOk = await assertScreen(
       context,
@@ -2146,6 +2460,7 @@ async function ensureAuthenticatedHome(context, options = {}) {
     );
     if (boundedHomeOk) {
       report.authenticated = true;
+      context.authenticatedHomeVerified = true;
       addWarning(
         report,
         state.uiDumpOk ? 'auth-state-home-navigation-fallback' : 'auth-state-screenshot-fallback',
@@ -2175,6 +2490,9 @@ async function ensureAuthenticatedHome(context, options = {}) {
     allowUiDumpFailure: !requireCredentials || allowExistingSession || appDataCleared,
   });
   if (loginNavigation.state.state === 'authenticated') {
+    await dismissHomeFirstLoginTutorial(context, `${flowName}-home-tutorial-after-navigation`, {
+      coordinateFallback: true,
+    });
     const homeOk = await assertScreen(
       context,
       `${flowName}-home-after-navigation`,
@@ -2192,6 +2510,7 @@ async function ensureAuthenticatedHome(context, options = {}) {
         'login-real navigation landed on an existing authenticated Home session; captured Home evidence without re-submitting credentials.',
       );
     }
+    context.authenticatedHomeVerified = homeOk;
     return homeOk;
   }
   if (!loginNavigation.loginDetected) {
@@ -2210,6 +2529,9 @@ async function ensureAuthenticatedHome(context, options = {}) {
     return false;
   }
   await submitRealLoginCredentials(context);
+  await dismissHomeFirstLoginTutorial(context, `${flowName}-home-tutorial-after-login`, {
+    coordinateFallback: true,
+  });
   const focus = addForegroundStep(report, adb, serial, `${flowName}-foreground-after-login`, true);
   const screenshot = captureScreenshot(adb, serial, outputDir, `${flowName}-home-after-login`);
   report.artifacts.push(screenshot);
@@ -2226,7 +2548,363 @@ async function ensureAuthenticatedHome(context, options = {}) {
       appDataCleared || parseBooleanEnv('EATFITAI_DEVICE_ALLOW_LOGIN_SCREENSHOT_FALLBACK'),
   });
   report.authenticated = homeOk;
+  context.authenticatedHomeVerified = homeOk;
   return homeOk;
+}
+
+async function ensureVisualAuthenticatedHome(context, flowName) {
+  const authenticated = await ensureAuthenticatedHome(context, {
+    flowName,
+    requireCredentials: true,
+    allowExistingSession: true,
+  });
+  if (!authenticated) {
+    throw new Error(`${flowName} could not reach an authenticated Home screen.`);
+  }
+  await dismissHomeFirstLoginTutorial(context, `${flowName}-home-tutorial-before-record`, {
+    coordinateFallback: true,
+  });
+}
+
+async function withTemporaryCredentials(context, credentials, action) {
+  const originalCredentials = context.credentials;
+  context.credentials = credentials;
+  try {
+    return await action();
+  } finally {
+    context.credentials = originalCredentials;
+  }
+}
+
+async function ensureFreshOnboardingIntroScreen(context, flowName) {
+  const onboardingCredentials = resolveOnboardingLoginCredentials(context.credentials);
+  return withTemporaryCredentials(context, onboardingCredentials, async () => {
+    const { adb, serial, outputDir, report, credentials } = context;
+    report.screen = readScreenSize(adb, serial);
+
+    if (!credentials.available) {
+      addFlowAssertion(
+        report,
+        `${flowName}-onboarding-credentials-available`,
+        'fail',
+        {
+          reason: 'missing-onboarding-login-credentials',
+          expectedSources: [
+            'EATFITAI_ONBOARDING_LOGIN_EMAIL/EATFITAI_ONBOARDING_LOGIN_PASSWORD',
+            'EATFITAI_VISUAL_ONBOARDING_LOGIN_EMAIL/EATFITAI_VISUAL_ONBOARDING_LOGIN_PASSWORD',
+            ...(credentials.expectedSources || []),
+          ],
+        },
+        true,
+      );
+      return false;
+    }
+
+    const needsOnboarding = await assertApiLoginNeedsOnboarding(context, flowName);
+    if (!needsOnboarding) {
+      return false;
+    }
+
+    clearAppDataForCredentialLogin(context, flowName);
+    await launchAppForFlow(context, flowName);
+
+    const loginNavigation = await ensureLoginScreen(context, {
+      allowUiDumpFailure: true,
+    });
+    if (!loginNavigation.loginDetected) {
+      addFlowAssertion(
+        report,
+        `${flowName}-login-screen-detected`,
+        'fail',
+        {
+          state: loginNavigation.state.state,
+          markers: loginNavigation.state.markers,
+          uiDumpOk: loginNavigation.state.uiDumpOk,
+          reason: 'fresh-onboarding-navigation-did-not-reach-login-screen',
+        },
+        true,
+      );
+      return false;
+    }
+
+    await submitRealLoginCredentials(context);
+    const focus = addForegroundStep(report, adb, serial, `${flowName}-onboarding-foreground-after-login`, true);
+    const screenshot = captureScreenshot(adb, serial, outputDir, `${flowName}-onboarding-after-login`);
+    const ui = parseBooleanEnv('EATFITAI_DEVICE_SKIP_UI_DUMP')
+      ? skippedUiDump(outputDir, `${flowName}-onboarding-after-login-ui`, 'UIAutomator dump skipped by EATFITAI_DEVICE_SKIP_UI_DUMP.')
+      : captureUiDump(adb, serial, outputDir, `${flowName}-onboarding-after-login-ui`);
+    report.artifacts.push(screenshot, ui);
+    return recordScreenEvidence(report, {
+      name: `${flowName}-onboarding-after-login`,
+      markers: ONBOARDING_INTRO_MARKERS,
+      uiArtifact: ui,
+      screenshotArtifact: screenshot,
+      focus,
+      critical: true,
+      allowScreenshotFallback: true,
+    });
+  });
+}
+
+function addVisualAuditArtifact(report, artifact) {
+  report.artifacts.push(artifact);
+  return artifact;
+}
+
+function recordVisualCheckpoint(context, flowName, checkpointName) {
+  const { adb, serial, outputDir, report } = context;
+  const name = `visual-${flowName}-${checkpointName}`;
+  collapseSystemOverlays(context, name);
+  pause(300);
+  const focus = addForegroundStep(report, adb, serial, `${name}-foreground`);
+  const screenshot = addVisualAuditArtifact(report, captureScreenshot(adb, serial, outputDir, name));
+  const ui = addVisualAuditArtifact(
+    report,
+    parseBooleanEnv('EATFITAI_DEVICE_SKIP_UI_DUMP')
+      ? skippedUiDump(outputDir, `${name}-ui`, 'UIAutomator dump skipped by EATFITAI_DEVICE_SKIP_UI_DUMP.')
+      : captureUiDump(adb, serial, outputDir, `${name}-ui`),
+  );
+
+  report.visualAudit.checkpoints.push({
+    flow: flowName,
+    checkpoint: checkpointName,
+    appForeground: focus.appForeground === true,
+    focus: focus.line || '',
+    screenshotPath: screenshot.path,
+    screenshotOk: screenshot.ok,
+    uiDumpPath: ui.path,
+    uiDumpOk: ui.ok,
+  });
+}
+
+async function recordVisualFlow(context, flowName, action) {
+  const { adb, serial, outputDir, report, record } = context;
+  const flow = {
+    name: flowName,
+    label: VISUAL_AUDIT_FLOWS[flowName]?.label || flowName,
+    startedAt: new Date().toISOString(),
+    status: 'fail',
+    videoPath: '',
+    logcatPath: '',
+  };
+  report.visualAudit.flows.push(flow);
+  runAdb(adb, serial, ['logcat', '-b', 'all', '-c']);
+  resetGfxInfo(context, `visual-${flowName}-start`);
+  const recording = startRecording(adb, serial, outputDir, record, `screenrecord-${flowName}`);
+  await sleep(800);
+
+  try {
+    await action();
+    flow.status = 'pass';
+  } catch (error) {
+    flow.status = 'fail';
+    flow.error = error instanceof Error ? error.message : String(error);
+    addCriticalFailure(report, 'visual-flow-failed', `${flowName} visual audit flow failed.`, {
+      error: flow.error,
+    });
+  } finally {
+    const video = stopRecording(adb, serial, recording);
+    if (video) {
+      flow.videoPath = video.path;
+      addVisualAuditArtifact(report, video);
+    }
+    const logcat = captureLogcat(adb, serial, outputDir, `visual-${flowName}-logcat.txt`, ['-t', '1000']);
+    flow.logcatPath = logcat.path;
+    addVisualAuditArtifact(report, logcat);
+    capturePerformanceSnapshot(context, `visual-${flowName}-final`);
+    flow.finishedAt = new Date().toISOString();
+  }
+}
+
+async function runVisualBottomNav(context) {
+  await ensureVisualAuthenticatedHome(context, 'visual-bottom-nav');
+
+  await recordVisualFlow(context, 'bottom-nav', async () => {
+    const { adb, serial, report } = context;
+    const size = readScreenSize(adb, serial);
+    await navigateToTab(context, 'home', 1200);
+    recordVisualCheckpoint(context, 'bottom-nav', 'home-start');
+    for (const tabName of ['voice', 'scan', 'stats', 'profile', 'home']) {
+      await navigateToTab(context, tabName, 1400);
+      recordVisualCheckpoint(context, 'bottom-nav', `${tabName}-tab`);
+    }
+    await swipeStep(report, adb, serial, size, 'visual-bottom-nav-home-scroll-down', 0.5, 0.78, 0.5, 0.34, 500, 1200);
+    recordVisualCheckpoint(context, 'bottom-nav', 'home-after-scroll-down');
+    await swipeStep(report, adb, serial, size, 'visual-bottom-nav-home-scroll-up', 0.5, 0.34, 0.5, 0.78, 500, 1200);
+    recordVisualCheckpoint(context, 'bottom-nav', 'home-after-scroll-up');
+  });
+}
+
+async function runVisualOnboardingRulers(context) {
+  const useLegacyProfileFlow = parseBooleanEnv('EATFITAI_VISUAL_ONBOARDING_LEGACY_PROFILE_FLOW');
+  if (useLegacyProfileFlow) {
+    addWarning(
+      context.report,
+      'visual-onboarding-rulers-legacy-profile-flow',
+      'onboarding-rulers is using the legacy Profile body-metrics path; fresh onboarding credentials are required for true ruler evidence.',
+    );
+    await ensureVisualAuthenticatedHome(context, 'visual-onboarding-rulers');
+  } else {
+    const ready = await ensureFreshOnboardingIntroScreen(context, 'visual-onboarding-rulers');
+    if (!ready) {
+      throw new Error(
+        'visual-onboarding-rulers could not reach a fresh onboarding intro screen. Provide an un-onboarded account via EATFITAI_ONBOARDING_LOGIN_EMAIL/PASSWORD.',
+      );
+    }
+  }
+
+  await recordVisualFlow(context, 'onboarding-rulers', async () => {
+    const { adb, serial, report } = context;
+    const size = readScreenSize(adb, serial);
+
+    if (useLegacyProfileFlow) {
+      await navigateToTab(context, 'profile', 1400);
+      recordVisualCheckpoint(context, 'onboarding-rulers', 'profile-before-body-metrics');
+      await tapMarkerOrCoordinate(
+        context,
+        'profile-body-metrics-button',
+        'visual-onboarding-open-body-metrics',
+        0.5,
+        0.58,
+        1800,
+      );
+      recordVisualCheckpoint(context, 'onboarding-rulers', 'body-metrics');
+      await tapStep(report, adb, serial, size, 'visual-onboarding-open-step-1', 0.91, 0.12, 2200);
+    } else {
+      recordVisualCheckpoint(context, 'onboarding-rulers', 'step-0-start');
+      await tapStep(report, adb, serial, size, 'visual-onboarding-step-0-select-gender', 0.31, 0.53, 1000);
+      recordVisualCheckpoint(context, 'onboarding-rulers', 'step-0-gender-selected');
+      await tapStep(report, adb, serial, size, 'visual-onboarding-step-0-next', 0.5, 0.91, 2500);
+      await assertScreen(context, 'visual-onboarding-rulers-step-1', ONBOARDING_RULER_MARKERS, true, {
+        allowScreenshotFallback: true,
+      });
+    }
+
+    recordVisualCheckpoint(context, 'onboarding-rulers', 'step-1-start');
+
+    await swipeStep(report, adb, serial, size, 'visual-height-ruler-slow-left', 0.72, 0.43, 0.28, 0.43, 900, 1500);
+    recordVisualCheckpoint(context, 'onboarding-rulers', 'height-slow-left');
+    await swipeStep(report, adb, serial, size, 'visual-height-ruler-flick-right', 0.28, 0.43, 0.78, 0.43, 130, 2200);
+    recordVisualCheckpoint(context, 'onboarding-rulers', 'height-flick-right');
+    await swipeStep(report, adb, serial, size, 'visual-weight-ruler-slow-left', 0.72, 0.66, 0.28, 0.66, 900, 1500);
+    recordVisualCheckpoint(context, 'onboarding-rulers', 'weight-slow-left');
+    await swipeStep(report, adb, serial, size, 'visual-weight-ruler-flick-right', 0.28, 0.66, 0.78, 0.66, 130, 2200);
+    recordVisualCheckpoint(context, 'onboarding-rulers', 'weight-flick-right');
+    recordVisualCheckpoint(context, 'onboarding-rulers', 'after-ruler-interactions');
+  });
+}
+
+async function runVisualCoreApp(context) {
+  await ensureVisualAuthenticatedHome(context, 'visual-core-app');
+
+  await recordVisualFlow(context, 'core-app', async () => {
+    const { adb, serial, report } = context;
+    const size = readScreenSize(adb, serial);
+    await navigateToTab(context, 'home', 1200);
+    recordVisualCheckpoint(context, 'core-app', 'home');
+    await swipeStep(report, adb, serial, size, 'visual-core-home-scroll-down', 0.5, 0.78, 0.5, 0.28, 650, 1200);
+    recordVisualCheckpoint(context, 'core-app', 'home-scrolled');
+
+    await navigateToDiary(context);
+    recordVisualCheckpoint(context, 'core-app', 'diary');
+    await tapMarkerOrCoordinate(context, 'meal-diary-add-manual-button', 'visual-core-diary-add-manual', 0.82, 0.86, 1500);
+    recordVisualCheckpoint(context, 'core-app', 'diary-add-manual');
+    runAdb(adb, serial, ['shell', 'input', 'keyevent', 'KEYCODE_BACK']);
+    await sleep(900);
+    runAdb(adb, serial, ['shell', 'input', 'keyevent', 'KEYCODE_BACK']);
+    await sleep(1200);
+    await navigateToTab(context, 'home', 1200);
+    recordVisualCheckpoint(context, 'core-app', 'home-after-diary-return');
+
+    await navigateToTab(context, 'scan', 1400);
+    recordVisualCheckpoint(context, 'core-app', 'scan');
+    await navigateToTab(context, 'voice', 1400);
+    recordVisualCheckpoint(context, 'core-app', 'voice');
+    await navigateToTab(context, 'stats', 1400);
+    recordVisualCheckpoint(context, 'core-app', 'stats-today');
+    await tapMarkerOrCoordinate(context, 'stats-week-tab-button', 'visual-core-stats-week', 0.5, 0.18, 1200);
+    recordVisualCheckpoint(context, 'core-app', 'stats-week');
+    await tapMarkerOrCoordinate(context, 'stats-month-tab-button', 'visual-core-stats-month', 0.75, 0.18, 1200);
+    recordVisualCheckpoint(context, 'core-app', 'stats-month');
+
+    await navigateToTab(context, 'profile', 1400);
+    recordVisualCheckpoint(context, 'core-app', 'profile');
+    await tapMarkerOrCoordinate(context, 'profile-body-metrics-button', 'visual-core-profile-body-metrics', 0.5, 0.58, 1300);
+    recordVisualCheckpoint(context, 'core-app', 'body-metrics');
+    runAdb(adb, serial, ['shell', 'input', 'keyevent', 'KEYCODE_BACK']);
+    await sleep(1000);
+    recordVisualCheckpoint(context, 'core-app', 'profile-after-back');
+  });
+}
+
+function writeVisualBugMatrix(context, flowNames) {
+  const { outputDir, report } = context;
+  const matrix = buildVisualBugMatrix(flowNames);
+  for (const item of matrix.items) {
+    const video = report.artifacts.find(
+      (artifact) => artifact.type === 'video' && artifact.name === `screenrecord-${item.flow}`,
+    );
+    const screenshot = report.artifacts.find(
+      (artifact) => artifact.type === 'screenshot' && artifact.name.startsWith(`visual-${item.flow}-`),
+    );
+    item.evidence.video = video?.path || '';
+    item.evidence.screenshot = screenshot?.path || '';
+  }
+
+  const jsonPath = path.join(outputDir, 'bug-matrix.json');
+  const markdownPath = path.join(outputDir, 'bug-matrix.md');
+  writeJson(jsonPath, sanitizeReport(matrix));
+  fs.writeFileSync(markdownPath, renderVisualBugMatrixMarkdown(matrix), 'utf8');
+  report.visualAudit.bugMatrixPath = jsonPath;
+  report.visualAudit.bugMatrixMarkdownPath = markdownPath;
+  report.artifacts.push({
+    type: 'other',
+    critical: false,
+    ok: true,
+    name: 'bug-matrix-json',
+    path: jsonPath,
+    bytes: fileSize(jsonPath),
+  });
+  report.artifacts.push({
+    type: 'other',
+    critical: false,
+    ok: true,
+    name: 'bug-matrix-md',
+    path: markdownPath,
+    bytes: fileSize(markdownPath),
+  });
+}
+
+async function runVisualUiAudit(context) {
+  const flowArg = readCliOption('--flow', 'all');
+  const flowNames = resolveVisualAuditFlowNames(flowArg);
+  context.report.visualAudit = {
+    flowArg,
+    flowNames,
+    flows: [],
+    checkpoints: [],
+    bugMatrixPath: '',
+    bugMatrixMarkdownPath: '',
+  };
+  if (!context.record) {
+    addWarning(
+      context.report,
+      'visual-audit-record-disabled',
+      'visual-ui-audit ran without --record, so MP4 evidence was not captured.',
+    );
+  }
+
+  for (const flowName of flowNames) {
+    if (flowName === 'bottom-nav') {
+      await runVisualBottomNav(context);
+    } else if (flowName === 'onboarding-rulers') {
+      await runVisualOnboardingRulers(context);
+    } else if (flowName === 'core-app') {
+      await runVisualCoreApp(context);
+    }
+  }
+
+  writeVisualBugMatrix(context, flowNames);
 }
 
 async function runLoginReal(context) {
@@ -2516,6 +3194,7 @@ async function ensureLoginScreen(context, options = {}) {
 
   const loginUi = captureUiDump(adb, serial, outputDir, 'login-ui');
   report.artifacts.push(loginUi);
+  context.loginUiArtifact = loginUi;
   const loginXml = loginUi.ok ? readTextFileIfExists(loginUi.path) : '';
   const state = classifyAuthState(loginUi);
   const focusAfterNavigation = addForegroundStep(
@@ -2556,17 +3235,19 @@ async function runAuthEntry(context) {
   const recording = startRecording(adb, serial, outputDir, record);
   await ensureLoginScreen(context);
 
-  const emailTap = tap(adb, serial, size, 0.5, 0.395);
+  const emailTap = tapLoginMarkerOrCoordinate(context, 'auth-login-email-input', 0.5, 0.395);
   await sleep(800);
-  const emailInput = inputText(adb, serial, email);
+  clearFocusedText(adb, serial, 72);
+  const emailInput = inputEmailText(adb, serial, email);
   await sleep(800);
   runAdb(adb, serial, ['shell', 'input', 'keyevent', 'KEYCODE_BACK']);
   await sleep(800);
-  report.steps.push({ name: 'email', tap: emailTap, inputOk: emailInput.ok });
+  report.steps.push({ name: 'email', tap: emailTap, inputOk: emailInput.ok, inputMethod: emailInput.method });
   report.artifacts.push(captureScreenshot(adb, serial, outputDir, '02-email'));
 
-  const passwordTap = tap(adb, serial, size, 0.5, 0.485);
+  const passwordTap = tapLoginMarkerOrCoordinate(context, 'auth-login-password-input', 0.5, 0.485);
   await sleep(800);
+  clearFocusedText(adb, serial, 48);
   const passwordInput = inputText(adb, serial, password);
   await sleep(800);
   runAdb(adb, serial, ['shell', 'input', 'keyevent', 'KEYCODE_BACK']);
@@ -2574,7 +3255,7 @@ async function runAuthEntry(context) {
   report.steps.push({ name: 'password', tap: passwordTap, inputOk: passwordInput.ok });
   report.artifacts.push(captureScreenshot(adb, serial, outputDir, '03-password'));
 
-  const loginTap = tap(adb, serial, size, 0.5, 0.615);
+  const loginTap = tapLoginMarkerOrCoordinate(context, 'auth-login-submit-button', 0.5, 0.615);
   await sleep(5000);
   report.steps.push({ name: 'login-tap', tap: loginTap });
   report.artifacts.push(captureScreenshot(adb, serial, outputDir, '04-after-login-tap'));
@@ -2656,7 +3337,7 @@ function buildDoctorChecks(adb, serial, online, outputDir, report) {
 async function main() {
   const mode = trim(process.argv[2]) || 'probe';
   if (!MODES.includes(mode)) {
-    throw new Error(`Usage: node scripts/real-device-adb-flow.js <${MODES.join('|')}> [--record]`);
+    throw new Error(`Usage: node scripts/real-device-adb-flow.js <${MODES.join('|')}> [--flow all|${Object.keys(VISUAL_AUDIT_FLOWS).join('|')}] [--record]`);
   }
 
   const adb = resolveAdb();
@@ -2687,6 +3368,7 @@ async function main() {
     apiReadbacks: [],
     uiDefects: [],
     liveChecks: [],
+    visualAudit: null,
     performance: {
       startup: null,
       gfxReset: null,
@@ -2736,6 +3418,8 @@ async function main() {
     await runStatsProfileSmoke(context);
   } else if (mode === 'backend-frontend-live-check') {
     await runBackendFrontendLiveCheck(context);
+  } else if (mode === 'visual-ui-audit') {
+    await runVisualUiAudit(context);
   }
 
   finalizeReport(report);

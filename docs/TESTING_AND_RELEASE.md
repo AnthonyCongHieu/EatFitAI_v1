@@ -163,6 +163,56 @@ Fast mode bỏ qua perf snapshot và dùng screenshot + foreground làm evidence
 
 Các mode readback bắt buộc phải chứng minh được đăng nhập, Home marker, không có crash logcat, và API readback mandatory thành công. `backend-frontend-live-check` ghi thêm checkpoint theo từng màn hình gồm timestamp, screenshot, UI dump, logcat tail, API latency/readback, cùng snapshot `gfxinfo`, `framestats`, và `meminfo`.
 
+### Visual UI audit bằng video ADB
+
+Khi cần soi lỗi hiển thị, animation hoặc transition trên thiết bị thật, chạy lane visual audit. Lane này chia video thành các clip ngắn theo flow, kèm screenshot checkpoint, logcat, `gfxinfo`, `framestats`, và bug matrix để review.
+
+Full visual pass:
+
+```powershell
+npm --prefix .\eatfitai-mobile run device:visual-ui-audit:android
+```
+
+Chạy riêng hai lỗi UI đang theo dõi:
+
+```powershell
+npm --prefix .\eatfitai-mobile run device:visual-ui-audit:bottom-nav:android
+npm --prefix .\eatfitai-mobile run device:visual-ui-audit:onboarding-rulers:android
+```
+
+Raw CLI tương ứng:
+
+```powershell
+node .\eatfitai-mobile\scripts\real-device-adb-flow.js visual-ui-audit --flow all --record
+node .\eatfitai-mobile\scripts\real-device-adb-flow.js visual-ui-audit --flow bottom-nav --record
+node .\eatfitai-mobile\scripts\real-device-adb-flow.js visual-ui-audit --flow onboarding-rulers --record
+```
+
+Flow hiện có:
+
+- `bottom-nav`: Home/Voice/Scan/Stats/Profile, scroll Home, kiểm tra tab bar so với Android navigation area.
+- `onboarding-rulers`: mở Onboarding step body metrics từ Profile, kéo chậm/flick chiều cao và cân nặng.
+- `core-app`: Home, Diary, Scan, Voice, Stats, Profile và các transition phổ biến.
+
+Evidence nằm trong:
+
+```text
+_logs/real-device-adb/<timestamp>-visual-ui-audit/
+```
+
+File quan trọng:
+
+- `screenrecord-bottom-nav.mp4`
+- `screenrecord-onboarding-rulers.mp4`
+- `screenrecord-core-app.mp4`
+- `bug-matrix.json`
+- `bug-matrix.md`
+- `visual-*-logcat.txt`
+- `visual-*-gfxinfo.txt`
+- `visual-*-gfxinfo-framestats.txt`
+
+`bug-matrix` có sẵn hai issue đã biết để review: bottom nav bị system navigation che và ruler không snap dứt khoát. Sau khi fix, chạy lại đúng focused flow và so sánh video trước/sau.
+
 ## Evidence
 
 Evidence mới nằm ở:
