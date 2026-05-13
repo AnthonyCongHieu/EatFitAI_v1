@@ -6,6 +6,8 @@ REPO_URL="${REPO_URL:-https://github.com/AnthonyCongHieu/EatFitAI_v1.git}"
 BRANCH="${BRANCH:-hieu_deploy/production}"
 APP_ROOT="${APP_ROOT:-/opt/eatfitai}"
 PRIVATE_IP="${PRIVATE_IP:-}"
+BACKEND_PUBLIC_HOST="${BACKEND_PUBLIC_HOST:-eatfitai-api.duckdns.org}"
+AI_PUBLIC_HOST="${AI_PUBLIC_HOST:-eatfitai-ai.duckdns.org}"
 
 if [ -z "${RELEASE_SHA}" ]; then
   echo "Usage: $0 <release-sha>" >&2
@@ -104,7 +106,7 @@ dotnet publish EatFitAI.API.csproj -c Release -o "${APP_ROOT}/backend-publish" -
 
 sudo tee /etc/systemd/system/eatfitai-backend.service >/dev/null <<EOF
 [Unit]
-Description=EatFitAI Backend Test
+Description=EatFitAI Backend API
 After=network-online.target eatfitai-ai.service
 Wants=network-online.target
 
@@ -121,11 +123,11 @@ WantedBy=multi-user.target
 EOF
 
 sudo tee /etc/caddy/Caddyfile >/dev/null <<EOF
-ai-provider.eatfitai.com {
+${AI_PUBLIC_HOST} {
   reverse_proxy ${PRIVATE_IP}:5050
 }
 
-api-ls.eatfitai.com {
+${BACKEND_PUBLIC_HOST} {
   reverse_proxy 127.0.0.1:10000
 }
 EOF

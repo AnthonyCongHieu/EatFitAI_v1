@@ -24,6 +24,7 @@ ACTIVE_SMOKE_SCRIPTS = [
     MOBILE_ROOT / "scripts" / "product-release-gate.js",
 ]
 RENDER_BACKUP_GATE = REPO_ROOT / "scripts" / "cloud" / "render_backup_gate.py"
+LIGHTSAIL_DEPLOY_SCRIPT = REPO_ROOT / "infra" / "lightsail" / "deploy-native-single-instance.sh"
 LIGHTSAIL_BACKEND_ENV_EXAMPLE = REPO_ROOT / "infra" / "lightsail" / "backend.env.example"
 SMOKE_MANIFEST_TEMPLATE = MOBILE_ROOT / "scripts" / "production-smoke-manifest.template.json"
 SCAN_FIXTURE_ROOT = REPO_ROOT / "tools" / "fixtures" / "scan-demo"
@@ -136,6 +137,14 @@ class CloudSmokeTargetTests(unittest.TestCase):
         ):
             with self.subTest(key=key):
                 self.assertIn(key, content)
+
+    def test_lightsail_native_deploy_uses_duckdns_hosts(self) -> None:
+        content = LIGHTSAIL_DEPLOY_SCRIPT.read_text(encoding="utf-8")
+
+        self.assertIn('BACKEND_PUBLIC_HOST="${BACKEND_PUBLIC_HOST:-eatfitai-api.duckdns.org}"', content)
+        self.assertIn('AI_PUBLIC_HOST="${AI_PUBLIC_HOST:-eatfitai-ai.duckdns.org}"', content)
+        self.assertNotIn("api-ls.eatfitai.com", content)
+        self.assertNotIn("ai-provider.eatfitai.com", content)
 
     def test_smoke_primary_fixtures_match_lightsail_yolo_classes(self) -> None:
         manifest = json.loads(SMOKE_MANIFEST_TEMPLATE.read_text(encoding="utf-8"))
