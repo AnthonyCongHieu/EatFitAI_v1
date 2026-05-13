@@ -75,10 +75,36 @@ def write_json(path: Path, payload: Any) -> None:
     path.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 
 
-def find_code_dir_under(root: Path) -> Path:
-    candidates = [path for path in root.rglob("build_clean_dataset.py") if (path.parent / CLEAN_SOURCE_POLICY).exists()]
+def clean_build_file_names(env: Mapping[str, str] | None = None, code_dir: Path | None = None) -> tuple[str, str]:
+    values = os.environ if env is None else env
+    env_source_policy = values.get("EATFITAI_CLEAN_SOURCE_POLICY")
+    env_taxonomy = values.get("EATFITAI_CLEAN_TAXONOMY")
+    if env_source_policy or env_taxonomy:
+        return (
+            env_source_policy or CLEAN_SOURCE_POLICY,
+            env_taxonomy or CLEAN_TAXONOMY,
+        )
+
+    if code_dir is not None:
+        configs = sorted(code_dir.glob("clean_build_config*.json"), key=lambda path: path.name)
+        if configs:
+            payload = json.loads(configs[0].read_text(encoding="utf-8"))
+            return (
+                payload.get("source_policy", CLEAN_SOURCE_POLICY),
+                payload.get("taxonomy", CLEAN_TAXONOMY),
+            )
+
+    return (
+        CLEAN_SOURCE_POLICY,
+        CLEAN_TAXONOMY,
+    )
+
+
+def find_code_dir_under(root: Path, source_policy_file: str | None = None) -> Path:
+    policy_file = source_policy_file or clean_build_file_names()[0]
+    candidates = [path for path in root.rglob("build_clean_dataset.py") if (path.parent / policy_file).exists()]
     if not candidates:
-        raise FileNotFoundError(f"No pipeline code dataset with {CLEAN_SOURCE_POLICY} found under {root}")
+        raise FileNotFoundError(f"No pipeline code dataset with {policy_file} found under {root}")
     return sorted({path.parent for path in candidates}, key=lambda item: len(item.as_posix()))[0]
 
 
@@ -358,8 +384,12 @@ def main() -> int:
     for path in sorted(KAGGLE_INPUT.iterdir(), key=lambda item: item.name.lower()):
         print(" -", path)
 
-    code_dir = find_code_dir()
+    clean_source_policy, _clean_taxonomy = clean_build_file_names()
+    code_dir = find_code_dir_under(KAGGLE_INPUT, clean_source_policy)
+    clean_source_policy, clean_taxonomy = clean_build_file_names(code_dir=code_dir)
     print("Pipeline code dataset:", code_dir)
+    print("Clean source policy:", clean_source_policy)
+    print("Clean taxonomy:", clean_taxonomy)
     install_runtime_dependencies(code_dir)
     if str(code_dir) not in sys.path:
         sys.path.insert(0, str(code_dir))
@@ -371,8 +401,8 @@ def main() -> int:
     REPORT_DIR.mkdir(parents=True, exist_ok=True)
     WORK_DIR.mkdir(parents=True, exist_ok=True)
 
-    policy_path = code_dir / CLEAN_SOURCE_POLICY
-    taxonomy_path = code_dir / CLEAN_TAXONOMY
+    policy_path = code_dir / clean_source_policy
+    taxonomy_path = code_dir / clean_taxonomy
     policy_rows = read_csv(policy_path)
     included_slugs = source_policy_included_slugs(policy_rows)
     lookup = build_source_lookup(code_dir)

@@ -161,6 +161,15 @@ latest raw-audit cache is incomplete, it stops with
 `blocked_missing_sources` and lists the exact missing source slugs instead of
 building a partial clean dataset.
 
+For the Clean V2 hard-mining pass from the 2026-05-12 public diagnostic seed,
+keep the 105-class scope and select the dated V2 files through an explicit
+config file. This avoids overwriting the reproducible Clean V1 defaults:
+
+```powershell
+python ai-provider\dataset_v2\kaggle_remote_orchestrator.py prepare-kernel --kernel-metadata ai-provider\dataset_v2\kaggle_clean_build_kernel_metadata.json --extra-file ai-provider\dataset_v2\clean_build_config.clean_v2_2026-05-12.json --out-dir "_dataset_v2_clean_build_kernel"
+python ai-provider\dataset_v2\kaggle_remote_orchestrator.py push-kernel --folder "_dataset_v2_clean_build_kernel"
+```
+
 If preflight shows the raw-audit cache is not cumulative, rerun the cache lanes
 after versioning the updated pipeline code. The public-drive and large-source
 audit kernels now mount the existing raw-audit cache and seed new cache uploads

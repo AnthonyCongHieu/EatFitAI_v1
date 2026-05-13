@@ -9,6 +9,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from evaluate_golden_set import resolve_rollback_model_path
+
 
 DEFAULT_PRIMARY_CONFIDENCES = [0.05, 0.08, 0.15, 0.25, 0.40]
 DEFAULT_RECOVERY_CONFIDENCES = [0.05]
@@ -40,6 +42,10 @@ def parse_int_list(raw: str) -> list[int]:
     if not values:
         raise argparse.ArgumentTypeError("at least one integer value is required")
     return values
+
+
+def resolve_old_model_path(repo_root: Path, requested: Path) -> Path:
+    return resolve_rollback_model_path(repo_root, requested)
 
 
 def build_candidates(
@@ -148,7 +154,7 @@ def main() -> int:
     args = parser.parse_args()
 
     repo_root = args.repo_root.resolve()
-    old_model = (repo_root / args.old_model).resolve() if not args.old_model.is_absolute() else args.old_model
+    old_model = resolve_old_model_path(repo_root, args.old_model)
     manifest = (repo_root / args.manifest).resolve() if not args.manifest.is_absolute() else args.manifest
     out_dir = (repo_root / args.out_dir).resolve() if not args.out_dir.is_absolute() else args.out_dir
     summary_out = (repo_root / args.summary_out).resolve() if not args.summary_out.is_absolute() else args.summary_out

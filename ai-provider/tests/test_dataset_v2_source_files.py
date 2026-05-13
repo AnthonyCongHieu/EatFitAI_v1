@@ -22,6 +22,9 @@ TOP_TIER_SHORTLIST = ROOT / "ai-provider" / "dataset_v2" / "top_tier_dataset_can
 SAMPLE_GRID_REVIEW = ROOT / "ai-provider" / "dataset_v2" / "sample_grid_quality_review_2026-05-06.csv"
 CLEAN_CANDIDATES = ROOT / "ai-provider" / "dataset_v2" / "clean_candidate_sources_2026-05-06.csv"
 CLEAN_TAXONOMY = ROOT / "ai-provider" / "dataset_v2" / "class_taxonomy.clean_candidate_2026-05-06.yaml"
+CLEAN_V2_CANDIDATES = ROOT / "ai-provider" / "dataset_v2" / "clean_candidate_sources_v2_2026-05-12.csv"
+CLEAN_V2_TAXONOMY = ROOT / "ai-provider" / "dataset_v2" / "class_taxonomy.clean_v2_2026-05-12.yaml"
+CLEAN_V2_CONFIG = ROOT / "ai-provider" / "dataset_v2" / "clean_build_config.clean_v2_2026-05-12.json"
 PUBLIC_DRIVE_KERNEL_METADATA = ROOT / "ai-provider" / "dataset_v2" / "kaggle_public_drive_raw_audit_kernel_metadata.json"
 LARGE_SOURCE_KERNEL_METADATA = ROOT / "ai-provider" / "dataset_v2" / "kaggle_large_source_audit_kernel_metadata.json"
 CLEAN_BUILD_KERNEL_METADATA = ROOT / "ai-provider" / "dataset_v2" / "kaggle_clean_build_kernel_metadata.json"
@@ -246,6 +249,50 @@ class DatasetV2SourceFileTests(unittest.TestCase):
         serialized = CLEAN_TAXONOMY.read_text(encoding="utf-8")
         bad_fragments = ["\u00c3", "\u00c2", "\u00e1\u00bb", "\u00e1\u00ba"]
         self.assertFalse(any(fragment in serialized for fragment in bad_fragments))
+
+    def test_clean_v2_files_hard_mine_existing_seed_gaps_without_widening_classes(self):
+        v1_taxonomy = load_yaml(CLEAN_TAXONOMY)
+        v2_taxonomy = load_yaml(CLEAN_V2_TAXONOMY)
+        v2_rows = read_csv(CLEAN_V2_CANDIDATES)
+        by_slug = {row["source_slug"]: row for row in v2_rows}
+
+        self.assertEqual(v1_taxonomy["classes"], v2_taxonomy["classes"])
+        self.assertEqual(v2_taxonomy["version"], "2026-05-12-clean-v2")
+
+        hard_mining = v2_taxonomy["hard_mining"]
+        self.assertEqual(hard_mining["action"], "boost_existing_classes_no_new_classes")
+        for label in [
+            "pork",
+            "potato",
+            "garlic",
+            "ginger",
+            "onion",
+            "cabbage",
+            "beef",
+            "fried_egg",
+            "chicken",
+        ]:
+            self.assertIn(label, hard_mining["target_existing_classes"])
+            self.assertIn(label, v2_taxonomy["classes"])
+
+        for slug in [
+            "mon_chung",
+            "food_kcmrd",
+            "food_ingredient_recognition",
+            "food_ingredient_3qyxj",
+            "spice_caezr",
+            "ingredient_v0h5a",
+        ]:
+            self.assertIn("hard_mine_public_seed_2026_05_12", by_slug[slug]["required_filters"])
+
+        self.assertEqual(by_slug["vegetable_detection"]["include_in_default_clean"], "no")
+        self.assertIn("hold_until_crowd_filter", by_slug["vegetable_detection"]["required_filters"])
+
+    def test_clean_v2_config_points_to_dated_policy_and_taxonomy(self):
+        config = json.loads(CLEAN_V2_CONFIG.read_text(encoding="utf-8"))
+
+        self.assertEqual(config["source_policy"], CLEAN_V2_CANDIDATES.name)
+        self.assertEqual(config["taxonomy"], CLEAN_V2_TAXONOMY.name)
 
     def test_clean_build_kernel_mounts_existing_raw_cache_seed(self):
         metadata = json.loads(CLEAN_BUILD_KERNEL_METADATA.read_text(encoding="utf-8"))

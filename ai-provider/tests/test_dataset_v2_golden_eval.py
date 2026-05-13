@@ -137,6 +137,21 @@ class DatasetV2GoldenEvalTests(unittest.TestCase):
         self.assertEqual(counts, Counter({"tomato": 1}))
         self.assertEqual(calls, [("tomato.jpg", 0.40, 640), ("tomato.jpg", 0.05, 320)])
 
+    def test_resolve_rollback_model_path_falls_back_to_current_backup_name(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            repo_root = Path(tmp)
+            backup_dir = repo_root / "ai-provider" / "model_backups" / "yolov8_2026-05-08"
+            backup_dir.mkdir(parents=True)
+            current_backup = backup_dir / "best.yolov8-or-previous.pt"
+            current_backup.write_bytes(b"fake model")
+
+            resolved = golden_eval.resolve_rollback_model_path(
+                repo_root,
+                Path("ai-provider/model_backups/yolov8_rollback/best.pt"),
+            )
+
+        self.assertEqual(resolved, current_backup)
+
 
 if __name__ == "__main__":
     unittest.main()

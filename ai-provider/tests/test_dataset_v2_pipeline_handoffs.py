@@ -18,6 +18,7 @@ from build_kaggle_training_package import assert_passing_final_audit  # noqa: E4
 from kaggle_raw_audit_kernel import find_raw_manifest  # noqa: E402
 from kaggle_clean_build_kernel import (  # noqa: E402
     cache_source_yolo_root,
+    clean_build_file_names,
     collect_cache_entries,
     collect_cache_entries_from_dirs,
     find_input_dir,
@@ -245,6 +246,39 @@ class DatasetV2PipelineHandoffTests(unittest.TestCase):
         ]
 
         self.assertEqual(source_policy_included_slugs(rows), ["food_data_truongvo", "vietfood67"])
+
+    def test_clean_build_kernel_can_select_clean_v2_policy_by_env(self):
+        self.assertEqual(
+            clean_build_file_names({}),
+            ("clean_candidate_sources_2026-05-06.csv", "class_taxonomy.clean_candidate_2026-05-06.yaml"),
+        )
+        self.assertEqual(
+            clean_build_file_names(
+                {
+                    "EATFITAI_CLEAN_SOURCE_POLICY": "clean_candidate_sources_v2_2026-05-12.csv",
+                    "EATFITAI_CLEAN_TAXONOMY": "class_taxonomy.clean_v2_2026-05-12.yaml",
+                }
+            ),
+            ("clean_candidate_sources_v2_2026-05-12.csv", "class_taxonomy.clean_v2_2026-05-12.yaml"),
+        )
+
+    def test_clean_build_kernel_can_select_clean_v2_policy_by_config_file(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            code_dir = Path(tmp)
+            (code_dir / "clean_build_config.clean_v2_2026-05-12.json").write_text(
+                json.dumps(
+                    {
+                        "source_policy": "clean_candidate_sources_v2_2026-05-12.csv",
+                        "taxonomy": "class_taxonomy.clean_v2_2026-05-12.yaml",
+                    }
+                ),
+                encoding="utf-8",
+            )
+
+            self.assertEqual(
+                clean_build_file_names({}, code_dir=code_dir),
+                ("clean_candidate_sources_v2_2026-05-12.csv", "class_taxonomy.clean_v2_2026-05-12.yaml"),
+            )
 
     def test_clean_build_kernel_finds_nested_kaggle_input_dataset_dirs(self):
         with tempfile.TemporaryDirectory() as tmp:

@@ -15,6 +15,11 @@ DEFAULT_MIN_NEW_HIT_RATE = 0.72
 DEFAULT_MAX_HIT_RATE_DROP = 0.02
 DEFAULT_MAX_NEW_EMPTY_RATE = 0.08
 DEFAULT_MAX_REGRESSION_RATE = 0.10
+DEFAULT_ROLLBACK_MODEL_CANDIDATES = [
+    Path("ai-provider/model_backups/yolov8_rollback/best.pt"),
+    Path("ai-provider/model_backups/yolov8_2026-05-08/best.pt"),
+    Path("ai-provider/model_backups/yolov8_2026-05-08/best.yolov8-or-previous.pt"),
+]
 
 
 def load_manifest(path: Path) -> list[dict[str, str]]:
@@ -34,6 +39,30 @@ def resolve_image_path(image_path: str, manifest_path: Path) -> Path:
     if path.is_absolute():
         return path
     return manifest_path.parent / path
+
+
+def _resolve_from_repo_root(repo_root: Path, path: Path) -> Path:
+    return path if path.is_absolute() else repo_root / path
+
+
+def resolve_rollback_model_path(repo_root: Path, requested: Path) -> Path:
+    resolved = _resolve_from_repo_root(repo_root, requested).resolve()
+    if resolved.exists():
+        return resolved
+
+    requested_parts = {part.lower() for part in requested.parts}
+    if "model_backups" not in requested_parts:
+        raise RuntimeError(f"Rollback model not found: {resolved}")
+
+    checked = [resolved]
+    for candidate in DEFAULT_ROLLBACK_MODEL_CANDIDATES:
+        candidate_path = _resolve_from_repo_root(repo_root, candidate).resolve()
+        checked.append(candidate_path)
+        if candidate_path.exists():
+            return candidate_path
+
+    preview = ", ".join(str(path) for path in checked)
+    raise RuntimeError(f"Rollback model not found. Checked: {preview}")
 
 
 def parse_expected_objects(expected_objects: str) -> Counter[str]:
@@ -335,7 +364,9 @@ def main() -> int:
 
     from ultralytics import YOLO
 
-    old_model = YOLO(str(args.old_model))
+    repo_root = Path.cwd().resolve()
+    old_model_path = resolve_rollback_model_path(repo_root, args.old_model)
+    old_model = YOLO(str(old_model_path))
     new_model = None if args.new_runtime_provider else YOLO(str(args.new_model))
     provider_app = load_provider_app() if args.new_runtime_provider else None
     results = []

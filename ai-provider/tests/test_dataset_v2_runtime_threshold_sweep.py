@@ -1,4 +1,5 @@
 import sys
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -73,6 +74,21 @@ class DatasetV2RuntimeThresholdSweepTests(unittest.TestCase):
         ]
 
         self.assertEqual(sorted(rows, key=sweep.sort_key)[0]["decision_status"], "promote_yolo11m_clean_v1")
+
+    def test_resolve_old_model_path_uses_current_yolov8_backup_alias(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            repo_root = Path(tmp)
+            backup_dir = repo_root / "ai-provider" / "model_backups" / "yolov8_2026-05-08"
+            backup_dir.mkdir(parents=True)
+            current_backup = backup_dir / "best.yolov8-or-previous.pt"
+            current_backup.write_bytes(b"fake model")
+
+            resolved = sweep.resolve_old_model_path(
+                repo_root,
+                Path("ai-provider/model_backups/yolov8_rollback/best.pt"),
+            )
+
+        self.assertEqual(resolved, current_backup)
 
 
 if __name__ == "__main__":
