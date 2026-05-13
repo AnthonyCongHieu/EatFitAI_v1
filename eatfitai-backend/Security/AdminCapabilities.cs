@@ -112,6 +112,10 @@ public static class AdminCapabilities
     public const string SettingsRead = "settings.read";
     public const string SettingsWrite = "settings.write";
     public const string OpsRead = "ops.read";
+    public const string OpsRefresh = "ops.refresh";
+    public const string OpsIncident = "ops.incident";
+    public const string QuotaWrite = "quota.write";
+    public const string NotificationsWrite = "notifications.write";
     public const string NotificationsManage = "notifications.manage";
 
     public static IReadOnlyList<string> GetForRole(string? role)
@@ -139,6 +143,10 @@ public static class AdminCapabilities
                 SettingsRead,
                 SettingsWrite,
                 OpsRead,
+                OpsRefresh,
+                OpsIncident,
+                QuotaWrite,
+                NotificationsWrite,
                 NotificationsManage,
             },
             PlatformRoles.SupportAdmin => new[]
@@ -154,6 +162,7 @@ public static class AdminCapabilities
                 RuntimeRead,
                 SettingsRead,
                 OpsRead,
+                OpsRefresh,
             },
             PlatformRoles.ContentAdmin => new[]
             {
@@ -166,6 +175,8 @@ public static class AdminCapabilities
                 RuntimeRead,
                 AuditRead,
                 SettingsRead,
+                QuotaWrite,
+                NotificationsWrite,
                 NotificationsManage,
             },
             PlatformRoles.ReadOnlyAuditor => new[]
@@ -206,6 +217,10 @@ public static class AdminCapabilities
         SettingsRead,
         SettingsWrite,
         OpsRead,
+        OpsRefresh,
+        OpsIncident,
+        QuotaWrite,
+        NotificationsWrite,
         NotificationsManage,
     };
 }
@@ -231,6 +246,10 @@ public static class AdminPolicies
     public const string SettingsRead = "AdminSettingsRead";
     public const string SettingsWrite = "AdminSettingsWrite";
     public const string OpsRead = "AdminOpsRead";
+    public const string OpsRefresh = "AdminOpsRefresh";
+    public const string OpsIncident = "AdminOpsIncident";
+    public const string QuotaWrite = "AdminQuotaWrite";
+    public const string NotificationsWrite = "AdminNotificationsWrite";
     public const string NotificationsManage = "AdminNotificationsManage";
 }
 

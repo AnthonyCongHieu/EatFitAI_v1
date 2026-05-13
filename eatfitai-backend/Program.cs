@@ -891,6 +891,7 @@ builder.Services.AddScoped<AdminOpsMetricsService>();
 builder.Services.AddScoped<AdminAnalyticsOverviewService>();
 builder.Services.AddScoped<MobileRuntimeConfigService>();
 builder.Services.AddScoped<PushNotificationCampaignService>();
+builder.Services.AddSingleton<IAdminControlPlaneService, AdminControlPlaneService>();
 
 // Lookup cache service (Singleton for shared cache)
 builder.Services.AddSingleton<ILookupCacheService, LookupCacheService>();
@@ -1092,6 +1093,10 @@ builder.Services.AddAuthorization(options =>
     options.AddPolicy(AdminPolicies.SettingsRead, builder => RequireCapability(builder, AdminCapabilities.SettingsRead));
     options.AddPolicy(AdminPolicies.SettingsWrite, builder => RequireCapability(builder, AdminCapabilities.SettingsWrite));
     options.AddPolicy(AdminPolicies.OpsRead, builder => RequireCapability(builder, AdminCapabilities.OpsRead));
+    options.AddPolicy(AdminPolicies.OpsRefresh, builder => RequireCapability(builder, AdminCapabilities.OpsRefresh));
+    options.AddPolicy(AdminPolicies.OpsIncident, builder => RequireCapability(builder, AdminCapabilities.OpsIncident));
+    options.AddPolicy(AdminPolicies.QuotaWrite, builder => RequireCapability(builder, AdminCapabilities.QuotaWrite));
+    options.AddPolicy(AdminPolicies.NotificationsWrite, builder => RequireCapability(builder, AdminCapabilities.NotificationsWrite));
     options.AddPolicy(AdminPolicies.NotificationsManage, builder => RequireCapability(builder, AdminCapabilities.NotificationsManage));
 });
 

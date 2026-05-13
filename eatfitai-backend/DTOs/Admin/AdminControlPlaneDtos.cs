@@ -145,6 +145,111 @@ public sealed class PushAudiencePreviewDto
     public int DistinctUserCount { get; set; }
 }
 
+public sealed class AdminControlPlaneSnapshotDto
+{
+    public DateTime CheckedAt { get; set; } = DateTime.UtcNow;
+    public string Environment { get; set; } = "unknown";
+    public int CacheTtlSeconds { get; set; } = 60;
+    public List<AdminControlPlaneServiceDto> Services { get; set; } = new();
+    public List<AdminControlPlaneQuotaDto> Quota { get; set; } = new();
+    public AdminControlPlaneReleaseDto Release { get; set; } = new();
+    public List<AdminControlPlaneIncidentDto> Incidents { get; set; } = new();
+    public List<AdminControlPlaneCleanupCandidateDto> CleanupCandidates { get; set; } = new();
+    public List<AdminControlPlaneEvidenceDto> Evidence { get; set; } = new();
+}
+
+public sealed class AdminControlPlaneServiceDto
+{
+    public string ServiceId { get; set; } = string.Empty;
+    public string Label { get; set; } = string.Empty;
+    public string Provider { get; set; } = string.Empty;
+    public string Criticality { get; set; } = "medium";
+    public string Status { get; set; } = "unknown";
+    public DateTime LastCheckedAt { get; set; } = DateTime.UtcNow;
+    public DateTime FreshUntil { get; set; } = DateTime.UtcNow;
+    public string Source { get; set; } = "backend";
+    public string RecommendedAction { get; set; } = string.Empty;
+    public List<AdminControlPlaneEvidenceDto> Evidence { get; set; } = new();
+}
+
+public sealed class AdminControlPlaneEvidenceDto
+{
+    public string EvidenceId { get; set; } = Guid.NewGuid().ToString("N");
+    public string Target { get; set; } = string.Empty;
+    public string Kind { get; set; } = "state";
+    public string Source { get; set; } = "backend";
+    public string Status { get; set; } = "unknown";
+    public string Summary { get; set; } = string.Empty;
+    public DateTime ObservedAt { get; set; } = DateTime.UtcNow;
+}
+
+public sealed class AdminControlPlaneQuotaDto
+{
+    public string Provider { get; set; } = string.Empty;
+    public string Status { get; set; } = "unknown";
+    public int? Used { get; set; }
+    public int? Remaining { get; set; }
+    public int? Limit { get; set; }
+    public string Window { get; set; } = string.Empty;
+    public DateTime LastCheckedAt { get; set; } = DateTime.UtcNow;
+    public string Source { get; set; } = "backend-cache";
+    public string RecommendedAction { get; set; } = string.Empty;
+}
+
+public sealed class AdminControlPlaneReleaseDto
+{
+    public string BackendSha { get; set; } = "unknown";
+    public string BackendVersion { get; set; } = "unknown";
+    public string MobileChannel { get; set; } = "production";
+    public string MobileBuild { get; set; } = "unknown";
+    public string RuntimeTarget { get; set; } = "aws-lightsail";
+    public string RollbackTarget { get; set; } = "render-cold-backup";
+    public DateTime CheckedAt { get; set; } = DateTime.UtcNow;
+}
+
+public sealed class AdminControlPlaneIncidentDto
+{
+    public string IncidentId { get; set; } = string.Empty;
+    public string Severity { get; set; } = "info";
+    public string Title { get; set; } = string.Empty;
+    public string Status { get; set; } = "open";
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public string Source { get; set; } = "admin";
+}
+
+public sealed class AdminControlPlaneCleanupCandidateDto
+{
+    public string CandidateId { get; set; } = string.Empty;
+    public string Area { get; set; } = string.Empty;
+    public string Title { get; set; } = string.Empty;
+    public string Evidence { get; set; } = string.Empty;
+    public string Risk { get; set; } = "medium";
+    public string Recommendation { get; set; } = string.Empty;
+    public string ApprovalState { get; set; } = "pending_approval";
+}
+
+public sealed class AdminControlPlaneRefreshRequest
+{
+    public List<string>? Targets { get; set; }
+    public string? Justification { get; set; }
+}
+
+public sealed class AdminControlPlaneRefreshResultDto
+{
+    public DateTime RequestedAt { get; set; } = DateTime.UtcNow;
+    public string Justification { get; set; } = string.Empty;
+    public List<AdminControlPlaneRefreshTargetResultDto> Targets { get; set; } = new();
+    public AdminControlPlaneSnapshotDto Snapshot { get; set; } = new();
+}
+
+public sealed class AdminControlPlaneRefreshTargetResultDto
+{
+    public string Target { get; set; } = string.Empty;
+    public string Status { get; set; } = "unknown";
+    public string Detail { get; set; } = string.Empty;
+    public DateTime? NextAllowedRefreshAt { get; set; }
+}
+
 internal static class AdminControlPlaneJson
 {
     public static string Serialize<T>(T value)
