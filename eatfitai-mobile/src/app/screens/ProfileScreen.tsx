@@ -351,6 +351,15 @@ const ProfileScreen = (): React.ReactElement => {
             onPress={() => navigation.navigate('About' as any)}
           />
           <MenuRow
+            icon="sparkles-outline"
+            label="Xem thử Mochi mascot"
+            iconBg={P.primary + '18'}
+            iconColor={P.primary}
+            chevronColor={P.primary + '80'}
+            onPress={() => navigation.navigate('MochiPreview')}
+            testID={TEST_IDS.profile.mochiPreviewButton}
+          />
+          <MenuRow
             icon="ribbon-outline"
             label="Quản lý Gói EatFit PRO"
             labelColor={P.primary}

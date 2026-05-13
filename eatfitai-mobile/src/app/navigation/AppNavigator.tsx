@@ -1,4 +1,4 @@
-import { useEffect, useRef, type ComponentType } from 'react';
+import { useEffect, useRef, useState, type ComponentType } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../types';
@@ -104,6 +104,9 @@ const getChangePasswordScreen = lazyScreen(() =>
   require('../screens/profile/ChangePasswordScreen'),
 );
 const getAboutScreen = lazyScreen(() => require('../screens/profile/AboutScreen'));
+const getMochiPreviewScreen = lazyScreen(() =>
+  require('../screens/dev/MochiPreviewScreen'),
+);
 const getPrivacyPolicyScreen = lazyScreen(() =>
   require('../screens/profile/PrivacyPolicyScreen'),
 );
@@ -125,6 +128,7 @@ const AppNavigator = (): React.ReactElement => {
   const needsOnboarding = useAuthStore((s) => s.needsOnboarding);
   const init = useAuthStore((s) => s.init);
   const lastRouteNameRef = useRef<string | undefined>(undefined);
+  const [currentRouteName, setCurrentRouteName] = useState<string | undefined>(undefined);
 
   const isInAuthFlow = !isAuthenticated || needsOnboarding;
   const navigatorKey = isInitializing
@@ -155,6 +159,7 @@ const AppNavigator = (): React.ReactElement => {
         flushPendingNotificationNavigation();
         const routeName = getActiveRouteName();
         lastRouteNameRef.current = routeName;
+        setCurrentRouteName(routeName);
         if (routeName) {
           trackScreen(routeName, {
             flow: inferScreenFlow(routeName),
@@ -171,6 +176,7 @@ const AppNavigator = (): React.ReactElement => {
         }
 
         lastRouteNameRef.current = routeName;
+        setCurrentRouteName(routeName);
         trackScreen(routeName, {
           flow: inferScreenFlow(routeName),
           step: routeName,
@@ -336,6 +342,11 @@ const AppNavigator = (): React.ReactElement => {
                 options={{ headerShown: false }}
               />
               <Stack.Screen
+                name="MochiPreview"
+                getComponent={getMochiPreviewScreen}
+                options={{ headerShown: false }}
+              />
+              <Stack.Screen
                 name="PrivacyPolicy"
                 getComponent={getPrivacyPolicyScreen}
                 options={{ headerShown: false }}
@@ -358,7 +369,7 @@ const AppNavigator = (): React.ReactElement => {
               </Stack.Group>
           )}
           </Stack.Navigator>
-          {!isInAuthFlow && <MascotOverlay />}
+          {!isInAuthFlow && currentRouteName !== 'MochiPreview' && <MascotOverlay />}
         </>
       )}
     </NavigationContainer>

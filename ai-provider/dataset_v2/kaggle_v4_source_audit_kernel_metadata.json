@@ -1,0 +1,30 @@
+{
+  "id": "hiuinhcng/eatfitai-v4-source-audit",
+  "title": "EatFitAI V4 Source Audit",
+  "code_file": "kaggle_v4_source_audit_kernel.py",
+  "language": "python",
+  "kernel_type": "script",
+  "is_private": true,
+  "enable_gpu": false,
+  "enable_internet": true,
+  "dataset_sources": [
+    "hiuinhcng/eatfitai-dataset-v2-pipeline-code",
+    "karos2504/100-vietnamese-food",
+    "meowluvmatcha/vnfood-30-100",
+    "phantrihieu/vnfood-combined-dataset",
+    "quandang/vietnamese-foods",
+    "awsaf49/food-recognition-2022-dataset",
+    "sainikhileshreddy/food-recognition-2022",
+    "fontainenathan/foodseg103",
+    "mochamadfaisalakbar/nutrition-dataset-yolo",
+    "kapturovalexander/fruits-by-yolo-fruits-detection",
+    "rajeevpaudel1/nepali-food-image-dataset",
+    "youssefahmed003/junk-food-object-detection-dataset-yolo-format",
+    "kmader/food41",
+    "yihfeng/chinesefoodnet",
+    "faldoae/padangfood",
+    "somboonthamgemmy/foodydudy"
+  ],
+  "competition_sources": [],
+  "kernel_sources": []
+}

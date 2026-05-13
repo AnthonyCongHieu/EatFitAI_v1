@@ -21,7 +21,7 @@ type TutorialStep = {
 const TUTORIAL_STEPS: TutorialStep[] = [
   {
     title: 'Chào mừng bạn đến với EatFitAI',
-    description: 'Mầm Fit sẽ đồng hành cùng bạn trong các thao tác ghi món, quét ảnh và theo dõi mục tiêu mỗi ngày.',
+    description: 'Mochi sẽ đồng hành cùng bạn trong các thao tác ghi món, quét ảnh và theo dõi mục tiêu mỗi ngày.',
     icon: 'sparkles',
     mascotState: 'wave',
   },

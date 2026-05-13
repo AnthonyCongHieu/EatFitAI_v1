@@ -8,6 +8,7 @@ def projectRoot = rootDir.getAbsoluteFile().getParentFile().getAbsolutePath()
 def keystorePropertiesFile = rootProject.file("keystore.properties")
 def keystoreProperties = new Properties()
 def hasReleaseKeystore = keystorePropertiesFile.exists()
+def allowDebugReleaseSigningFallback = (findProperty('eatfitai.allowDebugReleaseSigningFallback') ?: 'false').toBoolean()
 
 if (hasReleaseKeystore) {
     keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
@@ -129,9 +130,11 @@ android {
             signingConfig signingConfigs.debug
         }
         release {
-            // Prefer an external release keystore when configured; fall back to debug
-            // so the current local lane keeps working until commercial signing is ready.
-            signingConfig hasReleaseKeystore ? signingConfigs.release : signingConfigs.debug
+            if (hasReleaseKeystore) {
+                signingConfig signingConfigs.release
+            } else if (allowDebugReleaseSigningFallback) {
+                signingConfig signingConfigs.debug
+            }
             def enableShrinkResources = findProperty('android.enableShrinkResourcesInReleaseBuilds') ?: 'false'
             shrinkResources enableShrinkResources.toBoolean()
             minifyEnabled enableMinifyInReleaseBuilds
@@ -148,6 +151,15 @@ android {
     }
     androidResources {
         ignoreAssetsPattern '!.svn:!.git:!.ds_store:!*.scc:!CVS:!thumbs.db:!picasa.ini:!*~'
+    }
+}
+
+gradle.taskGraph.whenReady { taskGraph ->
+    def releaseTaskRequested = taskGraph.allTasks.any { task ->
+        task.name.toLowerCase().contains('release')
+    }
+    if (releaseTaskRequested && !hasReleaseKeystore && !allowDebugReleaseSigningFallback) {
+        throw new GradleException('Release-like Android builds require android/keystore.properties so every machine signs with the same OAuth-registered certificate. Configure the shared keystore, or pass -Peatfitai.allowDebugReleaseSigningFallback=true only for a throwaway build that must not be used for Google login.')
     }
 }
 

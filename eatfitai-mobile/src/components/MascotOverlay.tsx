@@ -123,7 +123,7 @@ const MascotOverlay = (): React.ReactElement => {
             testID={TEST_IDS.home.mascotButton}
             nativeID={TEST_IDS.home.fabButton}
             accessibilityRole="button"
-            accessibilityLabel="Mở trợ lý Mầm Fit"
+            accessibilityLabel="Mở trợ lý Mochi"
           >
             <MascotCharacter
               state={hasReminders ? 'reminder' : 'idle'}

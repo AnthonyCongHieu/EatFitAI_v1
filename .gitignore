@@ -43,6 +43,7 @@ eatfitai-mobile/android/keystore.properties
 .agent/
 .claude/
 .serena/
+.superpowers/
 
 # Python
 __pycache__/
@@ -68,6 +69,7 @@ _dataset_v2_clean_build_kernel/
 _dataset_v2_downloads/
 /_dataset_v2_*_package/
 /_dataset_v2_*_kernel_package/
+/_dataset_v2_*_kernel/
 /_dataset_v2_*_seed/
 /_tmp_kaggle_pull*/
 /_kaggle_outputs/

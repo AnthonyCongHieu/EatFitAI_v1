@@ -6,11 +6,15 @@ const readSource = (relativePath) => {
   return fs.existsSync(fullPath) ? fs.readFileSync(fullPath, 'utf8') : '';
 };
 
-describe('Mầm Fit mascot experience', () => {
-  it('defines a reusable mascot component with the planned animation states', () => {
+describe('Mochi mascot experience', () => {
+  it('defines a reusable sprite-backed Mochi component with the planned animation states', () => {
     const source = readSource('src/components/MascotCharacter.tsx');
 
     expect(source).toContain('export type MascotState');
+    expect(source).toContain('MOCHI_STATE_ASSETS');
+    expect(source).toContain('<Image');
+    expect(source).toContain('source={MOCHI_ASSETS[assetKey]}');
+    expect(source).toContain('contentFit="contain"');
     expect(source).toContain("'idle'");
     expect(source).toContain("'wave'");
     expect(source).toContain("'thinking'");
@@ -21,10 +25,33 @@ describe('Mầm Fit mascot experience', () => {
     expect(source).toContain('hasReminder?: boolean');
     expect(source).toContain('size?: number');
     expect(source).toContain('testID?: string');
-    expect(source).toContain('Mầm Fit');
+    expect(source).toContain('accessibilityLabel="Mochi"');
   });
 
-  it('uses Mầm Fit from the overlay instead of the old robot face', () => {
+  it('ships the Mochi source-sheet sprites as static app assets', () => {
+    const assetSource = readSource('src/assets/mascot/mochi/mochiAssets.ts');
+    const assetDir = path.join(__dirname, '..', 'src/assets/mascot/mochi/characters');
+
+    expect(assetSource).toContain('01_idle.png');
+    expect(assetSource).toContain('12_scan_food.png');
+    expect(assetSource).toContain('18_drink_water.png');
+    expect(assetSource).toContain('24_goal_complete.png');
+    expect(assetSource).toContain('sourceSheet');
+
+    [
+      '01_idle.png',
+      '02_hello.png',
+      '05_thinking.png',
+      '12_scan_food.png',
+      '18_drink_water.png',
+      '21_reminder.png',
+      '24_goal_complete.png',
+    ].forEach((fileName) => {
+      expect(fs.existsSync(path.join(assetDir, fileName))).toBe(true);
+    });
+  });
+
+  it('uses Mochi from the overlay instead of the old robot face', () => {
     const source = readSource('src/components/MascotOverlay.tsx');
 
     expect(source).toContain('import MascotCharacter');
@@ -33,6 +60,28 @@ describe('Mầm Fit mascot experience', () => {
     expect(source).toContain('TEST_IDS.home.mascotButton');
     expect(source).not.toContain('styles.robotFace');
     expect(source).not.toContain('styles.robotVisor');
+  });
+
+  it('exposes a real-device Mochi preview screen from the authenticated app', () => {
+    const typeSource = readSource('src/app/types/index.ts');
+    const navigatorSource = readSource('src/app/navigation/AppNavigator.tsx');
+    const profileSource = readSource('src/app/screens/ProfileScreen.tsx');
+    const previewSource = readSource('src/app/screens/dev/MochiPreviewScreen.tsx');
+    const testIdsSource = readSource('src/testing/testIds.ts');
+
+    expect(typeSource).toContain('MochiPreview: undefined');
+    expect(navigatorSource).toContain('getMochiPreviewScreen');
+    expect(navigatorSource).toContain('<Stack.Screen');
+    expect(navigatorSource).toContain('name="MochiPreview"');
+    expect(navigatorSource).toContain("currentRouteName !== 'MochiPreview'");
+    expect(profileSource).toContain("navigation.navigate('MochiPreview')");
+    expect(profileSource).toContain('TEST_IDS.profile.mochiPreviewButton');
+    expect(previewSource).toContain('MOCHI_PREVIEW_STATES');
+    expect(previewSource).toContain('<MascotCharacter');
+    expect(previewSource).toContain('MOCHI_ASSETS');
+    expect(previewSource).toContain('source-sheet crop');
+    expect(testIdsSource).toContain("mochiPreviewButton: 'profile-mochi-preview-button'");
+    expect(testIdsSource).toContain("mochiPreviewScreen: 'mochi-preview-screen'");
   });
 
   it('defines a first-login home tutorial with storage gate and expected controls', () => {
@@ -72,7 +121,7 @@ describe('Mầm Fit mascot experience', () => {
       .map(readSource)
       .join('\n');
 
-    expect(source).not.toMatch(/Ã|Â|Ä|á»|â”|â•|Æ/);
+    expect(source).not.toMatch(/[\u00c3\u00c2\u00c4\u00c6]|\u00e1\u00bb|\u00e2[\u201d\u2022]/u);
   });
 
   it('uses readable Vietnamese labels in the quick actions overlay', () => {

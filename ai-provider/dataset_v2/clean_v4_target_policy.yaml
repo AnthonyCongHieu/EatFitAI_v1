@@ -1,0 +1,45 @@
+target_class_count:
+  minimum_to_spend_gpu: 300
+  max_ceiling_goal: 340
+  upper_without_manual_review: 360
+  hard_stop_above: 420
+target_images:
+  max_ceiling_build_cap: 260000
+  stretch_build_cap_after_distribution_pass: 320000
+  target_average_images_per_class: 750
+new_class_gates:
+  detection_or_segmentation_source:
+    hold_images: 150
+    accept_images: 350
+    accept_instances: 500
+    priority_accept_images: 800
+  classification_pseudo_box_source:
+    hold_images: 300
+    accept_images: 700
+    priority_accept_images: 1200
+split_gates:
+  priority_new_class_min_valid_images: 30
+  priority_new_class_min_test_images: 15
+  reject_train_only_new_classes: true
+source_gates:
+  require_license_decision: true
+  require_source_format_adapter: true
+  require_sample_grid_review: true
+  reject_unknown_license_for_default_training: true
+class_design:
+  split_if_preparation_changes_calories_and_is_visual:
+    - luoc
+    - chien
+    - nuong
+    - kho
+    - quay
+    - xao
+  hold_generic_labels:
+    - food
+    - dish
+    - meal
+    - mon_an
+    - thit
+    - rau
+    - label
+    - person

@@ -15,9 +15,9 @@ from pathlib import Path
 KAGGLE_INPUT = Path("/kaggle/input")
 KAGGLE_WORKING = Path("/kaggle/working")
 DATASET_EXTRACT_DIR = Path(os.environ.get("EATFITAI_DATASET_EXTRACT_DIR", "/tmp/eatfitai_yolo11m_dataset"))
-DATASET_DIR = KAGGLE_WORKING / os.environ.get("EATFITAI_YOLO_DATASET_DIR_NAME", "eatfitai_clean_v1")
+DATASET_DIR = KAGGLE_WORKING / os.environ.get("EATFITAI_YOLO_DATASET_DIR_NAME", "eatfitai_clean_v2")
 RUN_PROJECT = KAGGLE_WORKING / "runs" / "food-detection"
-RUN_NAME = os.environ.get("EATFITAI_YOLO_RUN_NAME", "yolo11m-eatfitai-clean-v1")
+RUN_NAME = os.environ.get("EATFITAI_YOLO_RUN_NAME", "yolo11m-eatfitai-clean-v2")
 CHECKPOINT_DIR = KAGGLE_WORKING / "_yolo11m_checkpoints"
 REQUIRE_T4X2 = os.environ.get("EATFITAI_REQUIRE_T4X2", "1").strip().lower() not in {"0", "false", "no"}
 MIN_FREE_BYTES_AFTER_EXTRACT = int(float(os.environ.get("EATFITAI_MIN_FREE_GB_AFTER_EXTRACT", "2")) * 1024**3)
@@ -44,7 +44,7 @@ class CheckpointPlan:
 
 
 def checkpoint_mode() -> str:
-    mode = os.environ.get("EATFITAI_YOLO_CHECKPOINT_MODE", "resume").strip().lower()
+    mode = os.environ.get("EATFITAI_YOLO_CHECKPOINT_MODE", "finetune").strip().lower()
     if mode in {"resume", "finetune", "none"}:
         return mode
     raise ValueError("EATFITAI_YOLO_CHECKPOINT_MODE must be one of: resume, finetune, none")
