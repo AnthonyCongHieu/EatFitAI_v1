@@ -16,10 +16,18 @@ import type {
   MochiAnimation,
 } from './mochiCompanionEngine';
 import MochiRig, { type MochiRigExpression } from './MochiRig';
+import {
+  getMochiPoseFromAnimation,
+  type MochiPoseKey,
+  type MochiRendererMode,
+} from './mochiPoseCatalog';
 
 type MochiRoomSceneProps = {
   animation: MochiAnimation;
   activeAccessoryIds: MochiAccessoryId[];
+  pose?: MochiPoseKey;
+  rendererMode?: MochiRendererMode;
+  animated?: boolean;
 };
 
 export const MOCHI_ROOM_RENDERER = 'vector-rig';
@@ -39,6 +47,9 @@ const getRigExpression = (animation: MochiAnimation): MochiRigExpression => {
 const MochiRoomScene = ({
   animation,
   activeAccessoryIds,
+  pose,
+  rendererMode = 'vector',
+  animated = true,
 }: MochiRoomSceneProps): React.ReactElement => {
   const lift = useSharedValue(0);
   const rotate = useSharedValue(0);
@@ -49,6 +60,13 @@ const MochiRoomScene = ({
     cancelAnimation(lift);
     cancelAnimation(rotate);
     cancelAnimation(scale);
+
+    if (!animated) {
+      lift.value = 0;
+      rotate.value = 0;
+      scale.value = 1;
+      return;
+    }
 
     lift.value = withRepeat(
       withSequence(
@@ -113,7 +131,7 @@ const MochiRoomScene = ({
     } else {
       rotate.value = withTiming(0, { duration: 180, easing: Easing.out(Easing.ease) });
     }
-  }, [animation, intensity, lift, rotate, scale]);
+  }, [animated, animation, intensity, lift, rotate, scale]);
 
   const rigStyle = useAnimatedStyle(() => ({
     transform: [
@@ -124,6 +142,7 @@ const MochiRoomScene = ({
   }));
 
   const expression = getRigExpression(animation);
+  const resolvedPose = pose ?? getMochiPoseFromAnimation(animation);
 
   return (
     <LinearGradient
@@ -143,6 +162,9 @@ const MochiRoomScene = ({
       <Animated.View style={[styles.rigStage, rigStyle]}>
         <MochiRig
           expression={expression}
+          pose={resolvedPose}
+          rendererMode={rendererMode}
+          animated={animated}
           activeAccessoryIds={activeAccessoryIds}
           size={248}
           testID="mochi-room-3d-rig"

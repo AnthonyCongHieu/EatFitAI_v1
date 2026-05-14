@@ -145,6 +145,7 @@ describe('Mochi mascot experience', () => {
       'src/components/home/QuickActionsOverlay.tsx',
       'src/features/mochi/MochiRoomScene.tsx',
       'src/features/mochi/MochiRig.tsx',
+      'src/features/mochi/mochiPoseCatalog.ts',
       'src/app/screens/dev/MochiPreviewScreen.tsx',
       'src/testing/testIds.ts',
     ]
@@ -164,5 +165,58 @@ describe('Mochi mascot experience', () => {
     expect(source).toContain('Thao tác nhanh');
     expect(source).toContain('Bạn muốn thực hiện gì tiếp theo?');
     expect(source).toContain('CHẠM X ĐỂ QUAY LẠI');
+  });
+
+  it('defines the 24-pose Mochi source catalog when present', () => {
+    const catalogSource = readSource('src/features/mochi/mochiPoseCatalog.ts');
+
+    if (!catalogSource) {
+      return;
+    }
+
+    const poseOrderMatch = catalogSource.match(
+      /export const MOCHI_POSE_ORDER:[\s\S]*?=\s*\[([\s\S]*?)\];/,
+    );
+    const poseKeys = [...(poseOrderMatch?.[1] ?? '').matchAll(/'([^']+)'/g)].map(
+      ([, key]) => key,
+    );
+
+    expect(catalogSource).toContain('export const MOCHI_POSE_ORDER');
+    expect(catalogSource).toContain('export const MOCHI_POSE_CATALOG');
+    expect(catalogSource).toContain('export const MOCHI_ANIMATION_TO_POSE');
+    expect(poseKeys).toEqual([
+      'idle',
+      'hello',
+      'happy',
+      'excited',
+      'thinking',
+      'surprised',
+      'sleepy',
+      'notebook',
+      'logCalorieNote',
+      'holdPhone',
+      'openApp',
+      'scanFood',
+      'analyzeResult',
+      'showCalorie',
+      'breakfastLog',
+      'lunchLog',
+      'dinnerLog',
+      'drinkWater',
+      'healthyFood',
+      'smartChoice',
+      'reminder',
+      'exercise',
+      'streakTracking',
+      'goalComplete',
+    ]);
+    expect(new Set(poseKeys).size).toBe(24);
+    expect(catalogSource).toContain("labelVi: 'Đứng yên'");
+    expect(catalogSource).toContain("labelVi: 'Quét món ăn'");
+    expect(catalogSource).toContain("labelVi: 'Uống nước'");
+    expect(catalogSource).toContain("labelVi: 'Đạt mục tiêu'");
+    expect(catalogSource).toContain("accessibilityLabel: 'Mochi đạt mục tiêu'");
+    expect(catalogSource).toContain("drinkWater: 'drinkWater'");
+    expect(catalogSource).toContain("celebrate: 'goalComplete'");
   });
 });
