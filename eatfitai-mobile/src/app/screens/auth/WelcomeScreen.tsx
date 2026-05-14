@@ -30,6 +30,9 @@ import { ThemedText } from '../../../components/ThemedText';
 import type { RootStackParamList } from '../../types';
 import { TEST_IDS } from '../../../testing/testIds';
 import Tilt3DCard, { ParallaxLayer } from '../../../components/ui/Tilt3DCard';
+import { useAuthStore } from '../../../store/useAuthStore';
+import Toast from 'react-native-toast-message';
+import { logger } from '../../../utils/logger';
 
 const { width, height } = Dimensions.get('window');
 
@@ -146,6 +149,7 @@ const GoogleLogo = () => (
  */
 const WelcomeScreen = ({ navigation }: Props): React.ReactElement => {
   const insets = useSafeAreaInsets();
+  const signInWithGoogle = useAuthStore((s) => s.signInWithGoogle);
 
   /* ─── Glow pulse animation ─── */
   const glowPulse = useSharedValue(1);
@@ -166,9 +170,32 @@ const WelcomeScreen = ({ navigation }: Props): React.ReactElement => {
   }));
 
   /* ─── Navigation handlers ─── */
-  const handleGoogleLogin = useCallback(() => {
-    navigation.navigate('Login');
-  }, [navigation]);
+  const handleGoogleLogin = useCallback(async () => {
+    try {
+      logger.info('[WelcomeScreen] Starting Google Sign-In...');
+      const result = await signInWithGoogle();
+      
+      Toast.show({
+        type: 'success',
+        text1: 'Đăng nhập với Google thành công',
+        text2: 'Chào mừng bạn!',
+      });
+
+      if (result.needsOnboarding) {
+        navigation.reset({
+          index: 0,
+          routes: [{ name: 'Onboarding' }],
+        });
+      }
+    } catch (error: any) {
+      logger.error('[WelcomeScreen] Google Sign-In Error:', error);
+      Toast.show({
+        type: 'error',
+        text1: 'Đăng nhập thất bại',
+        text2: error?.message || 'Đã có lỗi xảy ra',
+      });
+    }
+  }, [navigation, signInWithGoogle]);
 
   const handleEmailLogin = useCallback(() => {
     navigation.navigate('Login');
