@@ -1,8 +1,6 @@
 import type { ReactNode } from 'react';
 import { Pressable, StyleSheet, View, Modal, KeyboardAvoidingView, Platform } from 'react-native';
 import Animated, {
-  SlideInDown,
-  SlideOutDown,
   useAnimatedStyle,
   useSharedValue,
   withTiming,
@@ -36,7 +34,7 @@ export const BottomSheet = ({
   showHandle = true,
   showCloseButton = true,
   closeOnBackdropPress = true,
-  animated = true,
+  animated: _animated = true,
 }: BottomSheetProps): React.ReactElement | null => {
   const { theme } = useAppTheme();
 

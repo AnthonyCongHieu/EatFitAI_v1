@@ -7,7 +7,6 @@ import {
   ActivityIndicator,
   Pressable,
   Linking,
-  ImageBackground,
 } from 'react-native';
 import { useRoute, useNavigation, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';

@@ -150,6 +150,16 @@ function Remove-StalePreviewBuildOutputs {
 }
 
 function Assert-EmbeddedUpdatesManifestHasMascotAssets {
+    $mascotCharacterPath = Join-Path $projectRoot 'src\components\MascotCharacter.tsx'
+    $mochiRigPath = Join-Path $projectRoot 'src\features\mochi\MochiRig.tsx'
+
+    if ((Test-Path $mascotCharacterPath) -and (Test-Path $mochiRigPath)) {
+        $mascotCharacterSource = Get-Content -Raw $mascotCharacterPath
+        if (($mascotCharacterSource -match 'MochiRig') -and ($mascotCharacterSource -notmatch 'MOCHI_ASSETS\[')) {
+            return
+        }
+    }
+
     $mascotAssetDir = Join-Path $projectRoot 'src\assets\mascot\mochi\characters'
     if (-not (Test-Path $mascotAssetDir)) {
         return

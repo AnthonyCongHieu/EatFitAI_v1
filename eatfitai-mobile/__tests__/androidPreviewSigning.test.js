@@ -19,7 +19,7 @@ const googleServices = {
           client_type: 1,
           android_info: {
             package_name: 'com.eatfitai.app',
-            certificate_hash: '83ffa699532ed1051a38535c7b01e21d5f41c51f',
+            certificate_hash: 'b09a9877e12ee0766c9f72f4ee929b404d3558f6',
           },
         },
         {
@@ -31,7 +31,7 @@ const googleServices = {
   ],
 };
 
-function createExecMock({ packageName = 'com.eatfitai.app', sha1 = '83:FF:A6:99:53:2E:D1:05:1A:38:53:5C:7B:01:E2:1D:5F:41:C5:1F' } = {}) {
+function createExecMock({ packageName = 'com.eatfitai.app', sha1 = 'B0:9A:98:77:E1:2E:E0:76:6C:9F:72:F4:EE:92:9B:40:4D:35:58:F6' } = {}) {
   return jest.fn((toolPath) => {
     const toolName = path.basename(toolPath).toLowerCase();
     if (toolName.startsWith('aapt')) {
@@ -54,7 +54,7 @@ describe('Android preview APK signing guard', () => {
 
     expect(parseGoogleServicesIdentity(googleServices)).toEqual({
       packageName: 'com.eatfitai.app',
-      certificateSha1: '83ffa699532ed1051a38535c7b01e21d5f41c51f',
+      certificateSha1: 'b09a9877e12ee0766c9f72f4ee929b404d3558f6',
     });
   });
 
@@ -73,8 +73,8 @@ describe('Android preview APK signing guard', () => {
       apkPath: 'app-release.apk',
       expectedPackageName: 'com.eatfitai.app',
       packageName: 'com.eatfitai.app',
-      expectedCertificateSha1: '83ffa699532ed1051a38535c7b01e21d5f41c51f',
-      certificateSha1: '83ffa699532ed1051a38535c7b01e21d5f41c51f',
+      expectedCertificateSha1: 'b09a9877e12ee0766c9f72f4ee929b404d3558f6',
+      certificateSha1: 'b09a9877e12ee0766c9f72f4ee929b404d3558f6',
     });
   });
 
@@ -101,7 +101,7 @@ describe('Android preview APK signing guard', () => {
         execFileSync: createExecMock({ sha1: '11:22:33:44' }),
         resolveBuildTool,
       }),
-    ).toThrow(/APK signing SHA-1 mismatch.*83ffa699532ed1051a38535c7b01e21d5f41c51f.*11223344/);
+    ).toThrow(/APK signing SHA-1 mismatch.*b09a9877e12ee0766c9f72f4ee929b404d3558f6.*11223344/);
   });
 
   it('wires the APK identity verifier into both build and install preview lanes', () => {
@@ -118,6 +118,8 @@ describe('Android preview APK signing guard', () => {
     expect(buildScript).toMatch(/createReleaseUpdatesResources/);
     expect(buildScript).toMatch(/mergeReleaseAssets/);
     expect(buildScript).toMatch(/Assert-EmbeddedUpdatesManifestHasMascotAssets/);
+    expect(buildScript).toMatch(/MochiRig/);
+    expect(buildScript).toMatch(/MOCHI_ASSETS\\\[/);
     expect(buildScript).toMatch(/src_assets_mascot_mochi_characters_/);
   });
 

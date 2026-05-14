@@ -196,6 +196,53 @@ The optimal next target is:
 - Prefer YOLO11m if the 30h quota is tight; use YOLO11l only if the estimated
   runtime fits the remaining quota or the user explicitly chooses to spend more.
 
+## Current Implementation Status
+
+Implemented local V4 candidate scoring after the Kaggle V4 source audit
+completed.
+
+Generated artifacts:
+
+- `ai-provider/dataset_v2/mine_clean_v4_candidates.py`
+- `ai-provider/dataset_v2/clean_v4_candidate_scorecard_2026-05-13.csv`
+- `ai-provider/dataset_v2/clean_v4_candidate_summary_2026-05-13.json`
+- `ai-provider/dataset_v2/class_taxonomy.clean_v4_expanded_2026-05-13.yaml`
+- `ai-provider/dataset_v2/clean_candidate_sources_v4_2026-05-13.csv`
+
+Default/commercial-safe scoring result after V4 source audit version 4:
+
+- Base classes: 105.
+- Accepted new classes: 32.
+- Final class count if applied: 137.
+- Decision status: `collect_more_v4_classes_before_gpu`.
+- Decision counts: 62 existing, 32 accepted/priority accepted, 5 generic
+  bucket holds, 39 manual nutrition-mapping holds, 79 more-data holds, 357
+  private/license holds, 459 rejects.
+
+Private/noncommercial what-if scoring result after V4 source audit version 4:
+
+- Accepted new classes: 43.
+- Final class count if applied: 148.
+- Still below the 300-class minimum to spend GPU.
+
+Completed V4 adapter improvements:
+
+- Food Recognition / COCO-style annotation categories now count annotation
+  instances and unique images per category.
+- FoodSeg103 semantic masks now produce class candidates from grayscale mask
+  ids, with train/test split counts.
+- Beverage, sauce-only, and condiment labels such as `water`, `coffee`,
+  `wine`, `sauce`, `jam`, `honey`, and `butter` are held for nutrition mapping
+  instead of entering the detector taxonomy.
+
+Decision:
+
+- Do not push Clean Build V4 yet.
+- Do not run YOLO11m V4 training yet.
+- The next task is to improve V4 adapters/source policy before another build:
+  class-name remapping for Food Recognition/FoodSeg103, targeted permissive
+  Vietnamese sources, and manual promotion of visually strong held classes.
+
 ## Source Links
 
 - Food-101 / ETH Zurich via Hugging Face:

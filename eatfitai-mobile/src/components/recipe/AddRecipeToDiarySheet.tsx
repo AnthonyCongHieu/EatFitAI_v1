@@ -216,7 +216,7 @@ export const AddRecipeToDiarySheet = ({
             style={{ flex: 1, marginRight: 8 }}
           />
           <Button
-            title={diaryEntryId ? "Cập nhật" : "Thêm"}
+            title={diaryEntryId ? 'Cập nhật' : 'Thêm'}
             variant="primary"
             onPress={handleConfirm}
             style={{ flex: 1.5 }}

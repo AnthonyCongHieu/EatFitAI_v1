@@ -23,7 +23,14 @@
     "kmader/food41",
     "yihfeng/chinesefoodnet",
     "faldoae/padangfood",
-    "somboonthamgemmy/foodydudy"
+    "somboonthamgemmy/foodydudy",
+    "henningheyen/lvis-fruits-and-vegetables-dataset",
+    "shashwatwork/segfood-dataset-for-semantic-food-segmentation",
+    "warcoder/fruit-recognition-and-calories-estimation",
+    "shanemarvinmay/food-image-dataset",
+    "nguyentrongdai/vietnamese-foods-dataset",
+    "keno31/vietnaemese-food-dataset",
+    "trainingdatapro/food-segmentation"
   ],
   "competition_sources": [],
   "kernel_sources": []

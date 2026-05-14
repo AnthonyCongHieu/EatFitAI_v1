@@ -176,13 +176,6 @@ const AddMealFromVisionScreen = (): React.ReactElement => {
     setCurrentTeachIndex(null);
   }, []);
 
-  const openReplacePicker = useCallback((index: number) => {
-    setReplaceTargetIndex(index);
-    InteractionManager.runAfterInteractions(() => {
-      setReplacePickerVisible(true);
-    });
-  }, []);
-
   const closeReplacePicker = useCallback(() => {
     setReplacePickerVisible(false);
     setReplaceTargetIndex(null);
@@ -459,7 +452,7 @@ const AddMealFromVisionScreen = (): React.ReactElement => {
                   P: {protein}g · C: {carbs}g · F: {fat}g
                 </ThemedText>
               </View>
-              
+
               <View style={[styles.gramsControl, { borderColor: theme.colors.border, marginTop: 0 }]}>
                 <Pressable
                   onPressIn={(event) => {

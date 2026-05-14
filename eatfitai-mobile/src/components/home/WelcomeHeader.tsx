@@ -71,7 +71,14 @@ export const WelcomeHeader: React.FC<WelcomeHeaderProps> = ({
     <Animated.View entering={FadeInDown.delay(80).springify()} style={styles.container}>
       {/* Left: avatar + texts */}
       <View style={styles.left}>
-        <View style={styles.avatarRing}>
+        <Pressable
+          style={styles.avatarRing}
+          onPress={onAvatarPress}
+          disabled={!onAvatarPress}
+          hitSlop={8}
+          accessibilityRole={onAvatarPress ? 'button' : 'image'}
+          accessibilityLabel="Mở hồ sơ"
+        >
           <View style={styles.avatarInner}>
             {avatarUrl ? (
               <Image
@@ -83,7 +90,7 @@ export const WelcomeHeader: React.FC<WelcomeHeaderProps> = ({
               <Text style={styles.avatarText}>{initials}</Text>
             )}
           </View>
-        </View>
+        </Pressable>
         <View style={styles.texts}>
           <View style={styles.greetingRow}>
             <Text style={styles.greeting}>{getGreetingText()}</Text>

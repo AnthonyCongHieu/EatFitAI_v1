@@ -19,7 +19,6 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import Animated, { FadeIn, FadeInDown, Layout } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import * as Haptics from 'expo-haptics';
 
 import Button from '../../../components/Button';
 import { ThemedText } from '../../../components/ThemedText';
@@ -38,8 +37,6 @@ import { AIExplanationCard } from '../../../components/ai/AIExplanationCard';
 import { AiStatusBadge } from '../../../components/ai/AiStatusBadge';
 import { useAiStatus } from '../../../hooks/useAiStatus';
 import { TEST_IDS } from '../../../testing/testIds';
-
-const WATER_BLUE = '#0EA5E9';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 

@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Claims;
+using System.Security.Cryptography;
 using System.Threading.Tasks;
 using EatFitAI.API.Data;
 using EatFitAI.API.DTOs.Admin;
@@ -18,6 +20,20 @@ namespace EatFitAI.API.Controllers;
 [Authorize(Policy = AdminPolicies.Access)]
 public class AdminController : ControllerBase
 {
+    private const int PasswordHashIterations = 100_000;
+    private const int PasswordSaltSize = 16;
+    private const int PasswordKeySize = 32;
+    private const string PasswordHashPrefix = "PBKDF2";
+    private static readonly HashSet<string> AllowedPlatformRoles = new(StringComparer.OrdinalIgnoreCase)
+    {
+        PlatformRoles.User,
+        PlatformRoles.SuperAdmin,
+        PlatformRoles.OpsAdmin,
+        PlatformRoles.SupportAdmin,
+        PlatformRoles.ContentAdmin,
+        PlatformRoles.ReadOnlyAuditor,
+    };
+
     private static readonly IReadOnlyList<AdminMutationDefinitionDto> MutationRegistry = new List<AdminMutationDefinitionDto>
     {
         new()
@@ -286,6 +302,64 @@ public class AdminController : ControllerBase
 
     // ===================== USERS CRUD =====================
 
+    [HttpPost("users")]
+    [Authorize(Policy = AdminPolicies.UsersWrite)]
+    public async Task<IActionResult> CreateUser([FromBody] CreateAdminUserRequest request)
+    {
+        var email = request.Email.Trim().ToLowerInvariant();
+        var displayName = request.DisplayName?.Trim();
+        var role = NormalizeRequestedRole(request.Role);
+
+        if (role == null)
+        {
+            return BadRequest(ApiResponse<object>.ErrorResponse("Vai trò người dùng không hợp lệ."));
+        }
+
+        if (role != PlatformRoles.User && !User.HasCapability(AdminCapabilities.UsersRoleManage))
+        {
+            await WriteAuditAsync("create-user", "user", email, "failed", "Actor thiếu quyền gán role admin.", severity: "warning", justification: request.Justification);
+            return StatusCode(StatusCodes.Status403Forbidden, ApiResponse<object>.ErrorResponse("Bạn không có quyền tạo user với role admin."));
+        }
+
+        if (await _context.Users.AnyAsync(item => item.Email.ToLower() == email))
+        {
+            await WriteAuditAsync("create-user", "user", email, "failed", "Email đã tồn tại.", severity: "warning", justification: request.Justification);
+            return BadRequest(ApiResponse<object>.ErrorResponse("Email đã tồn tại."));
+        }
+
+        var user = new Models.User
+        {
+            UserId = Guid.NewGuid(),
+            Email = email,
+            DisplayName = string.IsNullOrWhiteSpace(displayName) ? null : displayName,
+            PasswordHash = HashTemporaryPassword(request.TemporaryPassword),
+            CreatedAt = DateTime.UtcNow,
+            EmailVerified = true,
+            OnboardingCompleted = false,
+            Role = role,
+        };
+
+        var accessControl = new Models.UserAccessControl
+        {
+            UserId = user.UserId,
+            AccessState = AdminAccessStates.Active,
+            UpdatedAt = DateTime.UtcNow,
+        };
+
+        _context.Users.Add(user);
+        _context.UserAccessControls.Add(accessControl);
+        await _context.SaveChangesAsync();
+
+        var auditRef = await WriteAuditAsync("create-user", "user", user.UserId.ToString(), "success", $"Email={user.Email};Role={user.Role};AccessState={AdminAccessStates.Active}", severity: "high", justification: request.Justification);
+        PublishResourceUpdated("user", user.UserId.ToString(), new { user.UserId, user.Email, user.Role, AccessState = AdminAccessStates.Active });
+
+        return Ok(BuildMutationResponse(
+            "Đã tạo người dùng.",
+            "high",
+            auditRef,
+            BuildAdminUserDto(user, accessControl)));
+    }
+
     [HttpGet("users")]
     [Authorize(Policy = AdminPolicies.UsersRead)]
     [ProducesResponseType(typeof(ApiResponse<List<AdminUserDto>>), 200)]
@@ -311,23 +385,35 @@ public class AdminController : ControllerBase
             .Take(pageSize)
             .ToListAsync();
 
-        var result = users.Select(u =>
-        {
-            var accessControl = accessControlLookup.GetValueOrDefault(u.UserId);
-            return new AdminUserDto
-            {
-                Id = u.UserId,
-                Name = string.IsNullOrEmpty(u.DisplayName) ? "Chưa đặt tên" : u.DisplayName,
-                Email = u.Email,
-                Status = ResolveUserStatus(u, accessControl),
-                AccessState = accessControl?.AccessState ?? AdminAccessStates.Active,
-                Role = PlatformRoles.Normalize(u.Role),
-                Capabilities = AdminCapabilities.GetForRole(u.Role).ToList(),
-                LastActive = u.CreatedAt.ToString("MMM dd, yyyy")
-            };
-        }).ToList();
+        var result = users.Select(u => BuildAdminUserDto(u, accessControlLookup.GetValueOrDefault(u.UserId))).ToList();
 
         return Ok(ApiResponse<object>.SuccessResponse(new { data = result, total, page, pageSize }, "Thành công"));
+    }
+
+    [HttpPut("users/{id}")]
+    [Authorize(Policy = AdminPolicies.UsersWrite)]
+    public async Task<IActionResult> UpdateUserProfile(Guid id, [FromBody] UpdateAdminUserProfileRequest request)
+    {
+        var user = await _context.Users.FirstOrDefaultAsync(item => item.UserId == id);
+        if (user == null)
+        {
+            await WriteAuditAsync("update-profile", "user", id.ToString(), "failed", "Không tìm thấy người dùng.", severity: "warning");
+            return NotFound(ApiResponse<object>.ErrorResponse("Không tìm thấy người dùng."));
+        }
+
+        var previousDisplayName = user.DisplayName;
+        user.DisplayName = string.IsNullOrWhiteSpace(request.DisplayName) ? null : request.DisplayName.Trim();
+        await _context.SaveChangesAsync();
+
+        var accessControl = await _context.UserAccessControls.AsNoTracking().FirstOrDefaultAsync(item => item.UserId == id);
+        var auditRef = await WriteAuditAsync("update-profile", "user", user.UserId.ToString(), "success", $"DisplayName={previousDisplayName}->{user.DisplayName}", severity: "medium");
+        PublishResourceUpdated("user", user.UserId.ToString(), new { user.UserId, user.DisplayName });
+
+        return Ok(BuildMutationResponse(
+            "Đã cập nhật hồ sơ người dùng.",
+            "medium",
+            auditRef,
+            BuildAdminUserDto(user, accessControl)));
     }
 
     [HttpGet("users/{id}")]
@@ -484,9 +570,33 @@ public class AdminController : ControllerBase
             return NotFound(ApiResponse<object>.ErrorResponse("Không tìm thấy người dùng."));
         }
 
-        user.Role = PlatformRoles.Normalize(request.Role);
+        var normalizedRole = NormalizeRequestedRole(request.Role);
+        if (normalizedRole == null)
+        {
+            return BadRequest(ApiResponse<object>.ErrorResponse("Vai trò người dùng không hợp lệ."));
+        }
+
+        if (string.IsNullOrWhiteSpace(request.Justification))
+        {
+            return BadRequest(ApiResponse<object>.ErrorResponse("Cần nhập lý do đổi vai trò."));
+        }
+
+        var expectedConfirm = $"USER:{user.Email}:ROLE:{normalizedRole}".ToUpperInvariant();
+        if (!string.Equals(request.ConfirmText?.Trim(), expectedConfirm, StringComparison.OrdinalIgnoreCase))
+        {
+            return BadRequest(ApiResponse<object>.ErrorResponse($"Cụm xác nhận không khớp. Cần nhập {expectedConfirm}."));
+        }
+
+        if (IsCurrentAdminUser(user.UserId) && !AdminCapabilities.GetForRole(normalizedRole).Contains(AdminCapabilities.Access))
+        {
+            await WriteAuditAsync("update-role", "user", user.UserId.ToString(), "failed", "Admin không thể tự hạ quyền khỏi admin access.", severity: "critical", justification: request.Justification);
+            return BadRequest(ApiResponse<object>.ErrorResponse("Không thể tự hạ quyền khỏi admin access."));
+        }
+
+        var previousRole = PlatformRoles.Normalize(user.Role);
+        user.Role = normalizedRole;
         await _context.SaveChangesAsync();
-        var auditRef = await WriteAuditAsync("update-role", "user", user.UserId.ToString(), "success", $"Role={user.Role}", severity: "high", justification: request.Justification);
+        var auditRef = await WriteAuditAsync("update-role", "user", user.UserId.ToString(), "success", $"Role={previousRole}->{user.Role}", severity: "high", justification: request.Justification);
         PublishResourceUpdated("user", user.UserId.ToString(), new { user.UserId, user.Role });
         return Ok(BuildMutationResponse(
             "Đã cập nhật role.",
@@ -569,6 +679,17 @@ public class AdminController : ControllerBase
         }
 
         var normalizedState = NormalizeAccessState(request.AccessState);
+        if (normalizedState != AdminAccessStates.Active && IsCurrentAdminUser(user.UserId))
+        {
+            await WriteAuditAsync("update-access", "user", user.UserId.ToString(), "failed", "Admin không thể tự khóa hoặc vô hiệu hóa tài khoản của mình.", severity: "critical", justification: request.Justification);
+            return BadRequest(ApiResponse<object>.ErrorResponse("Không thể tự khóa hoặc vô hiệu hóa tài khoản đang đăng nhập."));
+        }
+
+        if (string.IsNullOrWhiteSpace(request.Justification))
+        {
+            return BadRequest(ApiResponse<object>.ErrorResponse("Cần nhập lý do thay đổi trạng thái truy cập."));
+        }
+
         var expectedConfirm = $"USER:{user.Email}:{normalizedState}".ToUpperInvariant();
         if (!string.Equals(request.ConfirmText?.Trim(), expectedConfirm, StringComparison.OrdinalIgnoreCase))
         {
@@ -585,6 +706,7 @@ public class AdminController : ControllerBase
             _context.UserAccessControls.Add(accessControl);
         }
 
+        var previousState = accessControl.AccessState;
         accessControl.AccessState = normalizedState;
         accessControl.UpdatedAt = DateTime.UtcNow;
         if (normalizedState == AdminAccessStates.Suspended)
@@ -610,7 +732,7 @@ public class AdminController : ControllerBase
         }
 
         await _context.SaveChangesAsync();
-        var auditRef = await WriteAuditAsync("update-access", "user", user.UserId.ToString(), "success", $"AccessState={normalizedState}", severity: "high", justification: request.Justification);
+        var auditRef = await WriteAuditAsync("update-access", "user", user.UserId.ToString(), "success", $"AccessState={previousState}->{normalizedState}", severity: "high", justification: request.Justification);
         var status = ResolveUserStatus(user, accessControl);
         PublishResourceUpdated("user", user.UserId.ToString(), new { user.UserId, Status = status, AccessState = normalizedState });
 
@@ -897,6 +1019,58 @@ public class AdminController : ControllerBase
     private void PublishResourceUpdated(string entityType, string entityId, object payload)
     {
         _eventBus.Publish("admin.resource.updated", entityType, entityId, payload);
+    }
+
+    private static AdminUserDto BuildAdminUserDto(Models.User user, Models.UserAccessControl? accessControl)
+    {
+        return new AdminUserDto
+        {
+            Id = user.UserId,
+            Name = string.IsNullOrWhiteSpace(user.DisplayName) ? "Chưa đặt tên" : user.DisplayName,
+            Email = user.Email,
+            Status = ResolveUserStatus(user, accessControl),
+            AccessState = accessControl?.AccessState ?? AdminAccessStates.Active,
+            Role = PlatformRoles.Normalize(user.Role),
+            Capabilities = AdminCapabilities.GetForRole(user.Role).ToList(),
+            LastActive = user.CreatedAt.ToString("MMM dd, yyyy"),
+        };
+    }
+
+    private static string HashTemporaryPassword(string password)
+    {
+        var salt = RandomNumberGenerator.GetBytes(PasswordSaltSize);
+        var hash = Rfc2898DeriveBytes.Pbkdf2(
+            password,
+            salt,
+            PasswordHashIterations,
+            HashAlgorithmName.SHA256,
+            PasswordKeySize);
+
+        return $"{PasswordHashPrefix}${PasswordHashIterations}${Convert.ToBase64String(salt)}${Convert.ToBase64String(hash)}";
+    }
+
+    private static string? NormalizeRequestedRole(string? role)
+    {
+        var normalized = role?.Trim().ToLowerInvariant();
+        if (string.IsNullOrWhiteSpace(normalized))
+        {
+            normalized = PlatformRoles.User;
+        }
+
+        return AllowedPlatformRoles.Contains(normalized) ? normalized : null;
+    }
+
+    private Guid? GetCurrentAdminUserId()
+    {
+        var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier)
+            ?? User.FindFirstValue("sub");
+
+        return Guid.TryParse(userIdClaim, out var userId) ? userId : null;
+    }
+
+    private bool IsCurrentAdminUser(Guid userId)
+    {
+        return GetCurrentAdminUserId() is { } currentUserId && currentUserId == userId;
     }
 
     private async Task<string?> WriteAuditAsync(

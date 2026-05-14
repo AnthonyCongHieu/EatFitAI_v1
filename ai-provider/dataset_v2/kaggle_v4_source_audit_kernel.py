@@ -29,6 +29,111 @@ SKIP_CLASS_DIR_NAMES = {
 }
 SPLIT_ALIASES = {"train": "train", "val": "valid", "valid": "valid", "test": "test"}
 SKIP_DECISION_PREFIXES = ("REJECT",)
+FOODSEG103_CLASSES = {
+    1: "candy",
+    2: "egg tart",
+    3: "french fries",
+    4: "chocolate",
+    5: "biscuit",
+    6: "popcorn",
+    7: "pudding",
+    8: "ice cream",
+    9: "cheese butter",
+    10: "cake",
+    11: "wine",
+    12: "milkshake",
+    13: "coffee",
+    14: "juice",
+    15: "milk",
+    16: "tea",
+    17: "almond",
+    18: "red beans",
+    19: "cashew",
+    20: "dried cranberries",
+    21: "soy",
+    22: "walnut",
+    23: "peanut",
+    24: "egg",
+    25: "apple",
+    26: "date",
+    27: "apricot",
+    28: "avocado",
+    29: "banana",
+    30: "strawberry",
+    31: "cherry",
+    32: "blueberry",
+    33: "raspberry",
+    34: "mango",
+    35: "olives",
+    36: "peach",
+    37: "lemon",
+    38: "pear",
+    39: "fig",
+    40: "pineapple",
+    41: "grape",
+    42: "kiwi",
+    43: "melon",
+    44: "orange",
+    45: "watermelon",
+    46: "steak",
+    47: "pork",
+    48: "chicken duck",
+    49: "sausage",
+    50: "fried meat",
+    51: "lamb",
+    52: "sauce",
+    53: "crab",
+    54: "fish",
+    55: "shellfish",
+    56: "shrimp",
+    57: "soup",
+    58: "bread",
+    59: "corn",
+    60: "hamburg",
+    61: "pizza",
+    62: "hanamaki baozi",
+    63: "wonton dumplings",
+    64: "pasta",
+    65: "noodles",
+    66: "rice",
+    67: "pie",
+    68: "tofu",
+    69: "eggplant",
+    70: "potato",
+    71: "garlic",
+    72: "cauliflower",
+    73: "tomato",
+    74: "kelp",
+    75: "seaweed",
+    76: "spring onion",
+    77: "rape",
+    78: "ginger",
+    79: "okra",
+    80: "lettuce",
+    81: "pumpkin",
+    82: "cucumber",
+    83: "white radish",
+    84: "carrot",
+    85: "asparagus",
+    86: "bamboo shoots",
+    87: "broccoli",
+    88: "celery stick",
+    89: "cilantro mint",
+    90: "snow peas",
+    91: "cabbage",
+    92: "bean sprouts",
+    93: "onion",
+    94: "pepper",
+    95: "green beans",
+    96: "French beans",
+    97: "king oyster mushroom",
+    98: "shiitake",
+    99: "enoki mushroom",
+    100: "oyster mushroom",
+    101: "white button mushroom",
+    102: "salad",
+    103: "other ingredients",
+}
 
 
 def find_code_dir(root: Path = KAGGLE_INPUT) -> Path:
@@ -303,9 +408,41 @@ def collect_category_names_from_json(value: Any, counts: Counter[str]) -> None:
             collect_category_names_from_json(child, counts)
 
 
+def collect_coco_category_stats(value: Any) -> dict[str, dict[str, Any]]:
+    if not isinstance(value, dict):
+        return {}
+    categories = value.get("categories")
+    annotations = value.get("annotations")
+    if not isinstance(categories, list) or not isinstance(annotations, list):
+        return {}
+
+    category_names: dict[Any, str] = {}
+    for item in categories:
+        if not isinstance(item, dict) or not item.get("name"):
+            continue
+        category_id = item.get("id")
+        if category_id is not None:
+            category_names[category_id] = str(item["name"])
+
+    stats: dict[str, dict[str, Any]] = defaultdict(lambda: {"instances": 0, "image_ids": set()})
+    for annotation in annotations:
+        if not isinstance(annotation, dict):
+            continue
+        category_id = annotation.get("category_id")
+        class_name = category_names.get(category_id)
+        if not class_name:
+            continue
+        stats[class_name]["instances"] += 1
+        image_id = annotation.get("image_id")
+        if image_id is not None:
+            stats[class_name]["image_ids"].add(image_id)
+    return stats
+
+
 def audit_annotation_or_file_pool_source(row: dict[str, str], mount_path: Path) -> tuple[dict[str, Any], list[dict[str, Any]]]:
     files = annotation_files(mount_path)
     category_counts: Counter[str] = Counter()
+    category_image_ids: dict[str, set[Any]] = defaultdict(set)
     warnings: list[str] = []
     for path in files:
         if path.suffix.lower() != ".json":
@@ -315,16 +452,22 @@ def audit_annotation_or_file_pool_source(row: dict[str, str], mount_path: Path) 
         except Exception as exc:
             warnings.append(f"json_parse_failed:{path.name}:{type(exc).__name__}")
             continue
-        collect_category_names_from_json(data, category_counts)
+        coco_stats = collect_coco_category_stats(data)
+        if coco_stats:
+            for class_name, stats in coco_stats.items():
+                category_counts[class_name] += int(stats["instances"])
+                category_image_ids[class_name].update(stats["image_ids"])
+        else:
+            collect_category_names_from_json(data, category_counts)
 
     image_count = count_images_under(mount_path)
     candidates = [
         class_candidate(
             row,
             raw_class_name=name,
-            images=0,
+            images=len(category_image_ids.get(name, set())),
             instances=count,
-            split_counts={},
+            split_counts={"all": len(category_image_ids.get(name, set()))} if category_image_ids.get(name) else {},
             candidate_origin="annotation_category_review",
         )
         for name, count in sorted(category_counts.items(), key=lambda item: normalize_label(item[0]))
@@ -343,11 +486,50 @@ def audit_annotation_or_file_pool_source(row: dict[str, str], mount_path: Path) 
 def audit_segmentation_source(row: dict[str, str], mount_path: Path) -> tuple[dict[str, Any], list[dict[str, Any]]]:
     image_count = count_images_under(mount_path)
     files = annotation_files(mount_path)
-    source_row = base_source_row(row, mount_path, "audited", "semantic_segmentation_pending_mask_to_bbox")
+    mask_stats: dict[int, dict[str, Any]] = defaultdict(lambda: {"images": 0, "instances": 0, "splits": Counter()})
+    warnings: list[str] = []
+    try:
+        from PIL import Image  # type: ignore
+    except Exception as exc:
+        Image = None  # type: ignore
+        warnings.append(f"pil_unavailable:{type(exc).__name__}")
+
+    if Image is not None:
+        for mask_path in sorted(path for path in mount_path.rglob("*.png") if "ann_dir" in path.as_posix()):
+            try:
+                with Image.open(mask_path) as img:
+                    values = set(img.convert("L").getdata())
+            except Exception as exc:
+                warnings.append(f"mask_read_failed:{mask_path.name}:{type(exc).__name__}")
+                continue
+            split_name = SPLIT_ALIASES.get(mask_path.parent.name.lower(), "all")
+            for class_id in sorted(value for value in values if value in FOODSEG103_CLASSES):
+                mask_stats[class_id]["images"] += 1
+                mask_stats[class_id]["instances"] += 1
+                mask_stats[class_id]["splits"][split_name] += 1
+
+    candidates = [
+        class_candidate(
+            row,
+            raw_class_name=FOODSEG103_CLASSES[class_id],
+            images=int(stats["images"]),
+            instances=int(stats["instances"]),
+            split_counts=dict(stats["splits"]),
+            candidate_origin="semantic_mask_to_bbox_review",
+        )
+        for class_id, stats in sorted(mask_stats.items())
+        if int(stats["images"]) > 0
+    ]
+    audit_mode = "semantic_segmentation_mask_to_bbox_audit" if candidates else "semantic_segmentation_pending_mask_to_bbox"
+    source_row = base_source_row(row, mount_path, "audited", audit_mode)
     source_row["image_count"] = image_count
     source_row["annotation_file_count"] = len(files)
-    source_row["warnings"] = "mask_to_bbox_adapter_required"
-    return source_row, []
+    source_row["class_count"] = len(candidates)
+    source_row["candidate_count"] = len(candidates)
+    source_row["warnings"] = "|".join(warnings[:20])
+    if not candidates:
+        source_row["warnings"] = "|".join([source_row["warnings"], "mask_to_bbox_adapter_required"]).strip("|")
+    return source_row, candidates
 
 
 def audit_source(row: dict[str, str], root: Path = KAGGLE_INPUT) -> tuple[dict[str, Any], list[dict[str, Any]]]:

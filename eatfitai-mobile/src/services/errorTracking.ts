@@ -7,6 +7,8 @@
  * Expo Go (development).
  */
 
+import Constants, { ExecutionEnvironment } from 'expo-constants';
+
 import logger from '../utils/logger';
 import { initTelemetryService, trackTelemetryEvent } from './telemetryService';
 
@@ -16,11 +18,8 @@ import { initTelemetryService, trackTelemetryEvent } from './telemetryService';
 
 // Using `any` intentionally – we cannot reference the Firebase type without
 // causing Metro to bundle the native module (which crashes Expo Go).
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 let _crashlytics: any = null;
 let _crashlyticsResolved = false;
-
-import Constants, { ExecutionEnvironment } from 'expo-constants';
 
 function getCrashlytics(): any {
   if (_crashlyticsResolved) return _crashlytics;
@@ -40,7 +39,7 @@ function getCrashlytics(): any {
 
     // Dynamic require so the module-level import doesn't throw when the
     // native module (RNFBAppModule) is absent (i.e. Expo Go).
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    // eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-require-imports
     const mod = require('@react-native-firebase/crashlytics');
     const factory = mod.default ?? mod;
     _crashlytics = factory();

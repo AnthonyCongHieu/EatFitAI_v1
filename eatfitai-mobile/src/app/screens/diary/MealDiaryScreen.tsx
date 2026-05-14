@@ -35,8 +35,6 @@ import Toast from 'react-native-toast-message';
 import * as Haptics from 'expo-haptics';
 
 import { ThemedText } from '../../../components/ThemedText';
-import { BottomSheet } from '../../../components/BottomSheet';
-import { ThemedTextInput } from '../../../components/ThemedTextInput';
 import { diaryService, type DiaryEntry, type DaySummary, type DiaryMealGroup } from '../../../services/diaryService';
 import { invalidateDiaryQueries } from '../../../services/diaryFlowService';
 import { MEAL_TYPE_LABELS, type MealTypeId } from '../../../types';

@@ -79,7 +79,7 @@ const AchievementsScreen = (): React.ReactElement => {
   const navigation = useNavigation<Nav>();
   const insets = useSafeAreaInsets();
   const viewRef = useRef(null);
-  const { achievements, currentStreak, totalDaysLogged, totalXP, checkStreak, syncAchievementProgress, dailyQuestsClaimed, claimDailyQuest } = useGamificationStore();
+  const { achievements, currentStreak, totalXP, checkStreak, syncAchievementProgress, dailyQuestsClaimed, claimDailyQuest } = useGamificationStore();
   const summary = useDiaryStore((s) => s.summary);
   const [refreshing, setRefreshing] = useState(false);
 

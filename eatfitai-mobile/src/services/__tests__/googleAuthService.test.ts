@@ -39,7 +39,7 @@ describe('normalizeGoogleAuthResponse', () => {
   });
 });
 
-describe('googleAuthService Android Credential Manager path', () => {
+describe('googleAuthService native sign-in paths', () => {
   const originalEnv = process.env;
 
   beforeEach(() => {
@@ -58,7 +58,7 @@ describe('googleAuthService Android Credential Manager path', () => {
     jest.dontMock('@react-native-google-signin/google-signin');
   });
 
-  it('uses Android Credential Manager before the legacy Google Sign-In module', async () => {
+  it('uses legacy Google Sign-In before Android Credential Manager when both are available', async () => {
     const credentialSignIn = jest.fn().mockResolvedValue({
       idToken: 'modern-id-token',
       user: {
@@ -68,7 +68,19 @@ describe('googleAuthService Android Credential Manager path', () => {
         photo: 'https://example.com/avatar.png',
       },
     });
-    const legacySignIn = jest.fn();
+    const legacySignIn = jest.fn().mockResolvedValue({
+      type: 'success',
+      data: {
+        idToken: 'legacy-id-token',
+        serverAuthCode: null,
+        user: {
+          id: 'legacy-user-1',
+          email: 'legacy@example.com',
+          name: 'Legacy User',
+          photo: null,
+        },
+      },
+    });
 
     jest.doMock('react-native', () => {
       return {
@@ -91,19 +103,20 @@ describe('googleAuthService Android Credential Manager path', () => {
       statusCodes: {},
     }));
 
+    // eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-require-imports
     const { googleAuthService } = require('../googleAuthService');
 
     await expect(googleAuthService.configure()).resolves.toBe(true);
     await expect(googleAuthService.signIn()).resolves.toMatchObject({
       success: true,
-      idToken: 'modern-id-token',
+      idToken: 'legacy-id-token',
       user: {
-        email: 'modern@example.com',
+        email: 'legacy@example.com',
       },
     });
 
-    expect(credentialSignIn).toHaveBeenCalledWith('web-client.apps.googleusercontent.com');
-    expect(legacySignIn).not.toHaveBeenCalled();
+    expect(legacySignIn).toHaveBeenCalledTimes(1);
+    expect(credentialSignIn).not.toHaveBeenCalled();
   });
 
   it('falls back to legacy Google Sign-In when Credential Manager is unavailable', async () => {
@@ -139,6 +152,7 @@ describe('googleAuthService Android Credential Manager path', () => {
       statusCodes: {},
     }));
 
+    // eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-require-imports
     const { googleAuthService } = require('../googleAuthService');
 
     await expect(googleAuthService.configure()).resolves.toBe(true);
