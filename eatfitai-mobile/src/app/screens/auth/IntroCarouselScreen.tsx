@@ -204,7 +204,7 @@ const s1 = StyleSheet.create({
     borderRadius: (RING_SIZE * 0.88) / 2,
     borderWidth: 1.5,
     borderColor: 'rgba(34,197,94,0.28)',
-    borderStyle: 'dashed',
+    borderStyle: 'solid', // Android: dashed+borderRadius không hoạt động, dùng solid
   },
   innerDark: {
     width: RING_SIZE * 0.78,

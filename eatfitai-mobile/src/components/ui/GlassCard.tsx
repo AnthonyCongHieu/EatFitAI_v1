@@ -4,7 +4,7 @@
  */
 
 import React from 'react';
-import { StyleSheet, View, ViewStyle, StyleProp } from 'react-native';
+import { StyleSheet, View, ViewStyle, StyleProp, Platform } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { FadeIn } from 'react-native-reanimated';
@@ -59,13 +59,24 @@ export const GlassCard: React.FC<GlassCardProps> = ({
           style={[StyleSheet.absoluteFill, { borderRadius }]}
         />
       )}
-      <BlurView
-        intensity={isDark ? intensity : intensity * 0.6}
-        tint={isDark ? 'dark' : 'light'}
-        style={glassStyle}
-      >
-        {children}
-      </BlurView>
+      {Platform.OS === 'ios' ? (
+        <BlurView
+          intensity={isDark ? intensity : intensity * 0.6}
+          tint={isDark ? 'dark' : 'light'}
+          style={glassStyle}
+        >
+          {children}
+        </BlurView>
+      ) : (
+        <View
+          style={[
+            glassStyle,
+            { backgroundColor: isDark ? '#1A1F2FE6' : '#EEF8F0E6' },
+          ]}
+        >
+          {children}
+        </View>
+      )}
     </View>
   );
 

@@ -1256,7 +1256,7 @@ const StatsScreen = (): React.ReactElement => {
                           <ThemedText style={{ ...S.mthGoalLabel, textAlign: 'right', marginBottom: 4 }}>
                             Mục tiêu: {Math.round(targetCal).toLocaleString()} kcal
                           </ThemedText>
-                          <View style={{ height: 1, width: '100%', borderStyle: 'dashed', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' }} />
+                          <View style={{ height: 1, width: '100%', borderStyle: 'solid', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' }} />
                         </View>
 
                         {/* SVG Spline Chart */}
@@ -1648,7 +1648,7 @@ const S = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 18,
-    fontWeight: '800',
+    fontWeight: '700',
     color: P.primary,
     letterSpacing: -0.3,
   },
@@ -1674,8 +1674,8 @@ const S = StyleSheet.create({
     shadowRadius: 15,
     elevation: 4,
   },
-  tabTxt: { fontSize: 14, fontWeight: '800', color: P.textSlate400 },
-  tabTxtOn: { color: P.onPrimaryContainer, fontWeight: '900' },
+  tabTxt: { fontSize: 14, fontWeight: '700', color: P.textSlate400 },
+  tabTxtOn: { color: P.onPrimaryContainer, fontWeight: '700' },
 
   /* Scroll */
   scroll: { paddingHorizontal: 24, paddingBottom: 140, gap: 20 },
@@ -1701,14 +1701,14 @@ const S = StyleSheet.create({
   ringCenter: { position: 'absolute', alignItems: 'center', justifyContent: 'center' },
   ringBig: {
     fontSize: 36,
-    fontWeight: '900',
+    fontWeight: '700',
     color: '#fff',
     letterSpacing: -2,
     lineHeight: 42,
   },
   ringUnit: {
     fontSize: 12,
-    fontWeight: '800',
+    fontWeight: '700',
     color: P.primary,
     letterSpacing: 2,
     textTransform: 'uppercase',
@@ -1722,12 +1722,12 @@ const S = StyleSheet.create({
   mBarHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end' },
   mBarLabel: {
     fontSize: 10,
-    fontWeight: '800',
+    fontWeight: '700',
     color: P.textSlate400,
     letterSpacing: 2,
     textTransform: 'uppercase',
   },
-  mBarValue: { fontSize: 14, fontWeight: '800' },
+  mBarValue: { fontSize: 14, fontWeight: '700' },
   mBarTrack: {
     height: 8,
     backgroundColor: P.surfaceContainerLowest,
@@ -1747,7 +1747,7 @@ const S = StyleSheet.create({
     borderColor: 'rgba(255, 255, 255, 0.05)',
   },
   distHead: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 16 },
-  distTitle: { fontSize: 16, fontWeight: '800', color: P.onSurface },
+  distTitle: { fontSize: 16, fontWeight: '700', color: P.onSurface },
   dotGreen: { width: 8, height: 8, borderRadius: 4, backgroundColor: P.primary },
 
   stackTrack: {
@@ -1764,12 +1764,12 @@ const S = StyleSheet.create({
   distDot: { width: 8, height: 8, borderRadius: 4 },
   distLabel: {
     fontSize: 10,
-    fontWeight: '800',
+    fontWeight: '700',
     color: P.textSlate400,
     letterSpacing: 1.5,
     textTransform: 'uppercase',
   },
-  distVal: { fontSize: 20, fontWeight: '800', color: P.onSurface, paddingLeft: 16 },
+  distVal: { fontSize: 20, fontWeight: '700', color: P.onSurface, paddingLeft: 16 },
 
   /* ── Lượng Nước ── */
   waterCard: {
@@ -1798,12 +1798,12 @@ const S = StyleSheet.create({
   },
   waterLabel: {
     fontSize: 11,
-    fontWeight: '800',
+    fontWeight: '700',
     color: P.onSurface,
     letterSpacing: 2,
     textTransform: 'uppercase',
   },
-  waterBig: { fontSize: 22, fontWeight: '800', color: '#fff' },
+  waterBig: { fontSize: 22, fontWeight: '700', color: '#fff' },
   waterSmall: { fontSize: 12, color: P.textSlate500 },
   waterDrops: {
     flexDirection: 'row',
@@ -1823,7 +1823,7 @@ const S = StyleSheet.create({
     borderColor: 'rgba(255,255,255,0.05)',
   },
   wkBtn: { padding: 8, borderRadius: 12 },
-  wkTitle: { fontSize: 15, fontWeight: '800', color: P.onSurface },
+  wkTitle: { fontSize: 15, fontWeight: '700', color: P.onSurface },
 
   weeklyReviewCard: {
     backgroundColor: 'rgba(22, 27, 43, 0.6)',
@@ -1849,7 +1849,7 @@ const S = StyleSheet.create({
   },
   weeklyReviewEyebrow: {
     fontSize: 11,
-    fontWeight: '800',
+    fontWeight: '700',
     letterSpacing: 1.8,
     textTransform: 'uppercase',
     color: P.primary,
@@ -1858,7 +1858,7 @@ const S = StyleSheet.create({
   weeklyReviewTitle: {
     flexShrink: 1,
     fontSize: 18,
-    fontWeight: '800',
+    fontWeight: '700',
     color: '#fff',
     lineHeight: 24,
   },
@@ -1890,7 +1890,7 @@ const S = StyleSheet.create({
   },
   weeklyReviewMetricValue: {
     fontSize: 16,
-    fontWeight: '800',
+    fontWeight: '700',
     color: '#fff',
     marginBottom: 4,
   },
@@ -1943,7 +1943,7 @@ const S = StyleSheet.create({
   },
   weeklyReviewButtonText: {
     fontSize: 12,
-    fontWeight: '800',
+    fontWeight: '700',
     color: '#fff',
   },
 
@@ -1955,7 +1955,7 @@ const S = StyleSheet.create({
     overflow: 'hidden',
     minHeight: 280,
   },
-  secTitle: { fontSize: 16, fontWeight: '800', color: P.onSurface, marginBottom: 8 },
+  secTitle: { fontSize: 16, fontWeight: '700', color: P.onSurface, marginBottom: 8 },
 
   bars: {
     flexDirection: 'row',
@@ -1965,7 +1965,7 @@ const S = StyleSheet.create({
     marginTop: 8,
   },
   barCol: { alignItems: 'center', flex: 1, gap: 4 },
-  barVal: { fontSize: 9, fontWeight: '800', color: P.textSlate400 },
+  barVal: { fontSize: 9, fontWeight: '700', color: P.textSlate400 },
   barTrack: {
     width: 20,
     height: 140,
@@ -1975,7 +1975,7 @@ const S = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   barFill: { width: '100%', borderRadius: 10 },
-  barLbl: { fontSize: 10, fontWeight: '800', color: P.textSlate400, textTransform: 'uppercase' },
+  barLbl: { fontSize: 10, fontWeight: '700', color: P.textSlate400, textTransform: 'uppercase' },
 
   /* Summary row */
   sumRow: { flexDirection: 'row', gap: 10 },
@@ -1989,8 +1989,8 @@ const S = StyleSheet.create({
     borderColor: 'rgba(255,255,255,0.05)',
     gap: 4,
   },
-  sumVal: { fontSize: 16, fontWeight: '800', color: P.onSurface },
-  sumLbl: { fontSize: 10, fontWeight: '800', color: P.textSlate400 },
+  sumVal: { fontSize: 16, fontWeight: '700', color: P.onSurface },
+  sumLbl: { fontSize: 10, fontWeight: '700', color: P.textSlate400 },
 
   /* Macro card */
   macroCard: {
@@ -2007,10 +2007,10 @@ const S = StyleSheet.create({
     marginTop: 20,
   },
   macroItem: { alignItems: 'center', gap: 6 },
-  macroV: { fontSize: 24, fontWeight: '800' },
+  macroV: { fontSize: 24, fontWeight: '700' },
   macroL: {
     fontSize: 10,
-    fontWeight: '800',
+    fontWeight: '700',
     color: P.textSlate400,
     letterSpacing: 1,
     textTransform: 'uppercase',
@@ -2036,12 +2036,12 @@ const S = StyleSheet.create({
     flex: 1,
     height: 1,
     borderWidth: 1,
-    borderStyle: 'dashed',
+    borderStyle: 'solid', // Android: dashed+borderRadius không hoạt động, dùng solid
     borderColor: 'rgba(75, 226, 119, 0.3)',
   },
   mthGoalLabel: {
     fontSize: 10,
-    fontWeight: '800',
+    fontWeight: '700',
     color: 'rgba(75, 226, 119, 0.6)',
   },
   mthWeekLabels: {
@@ -2052,7 +2052,7 @@ const S = StyleSheet.create({
   },
   mthWeekLbl: {
     fontSize: 10,
-    fontWeight: '800',
+    fontWeight: '700',
     color: P.textSlate500,
   },
 
@@ -2073,7 +2073,7 @@ const S = StyleSheet.create({
   },
   mthFloatLabel: {
     fontSize: 10,
-    fontWeight: '800',
+    fontWeight: '700',
     color: P.textSlate400,
     letterSpacing: 3,
     textTransform: 'uppercase',
@@ -2081,7 +2081,7 @@ const S = StyleSheet.create({
   },
   mthFloatPct: {
     fontSize: 40,
-    fontWeight: '900',
+    fontWeight: '700',
     color: P.primary,
     letterSpacing: -2,
     lineHeight: 46,
@@ -2103,7 +2103,7 @@ const S = StyleSheet.create({
   },
   mthHeatTitle: {
     fontSize: 13,
-    fontWeight: '800',
+    fontWeight: '700',
     color: P.onSurface,
     letterSpacing: 0.5,
     textTransform: 'uppercase',
@@ -2111,7 +2111,7 @@ const S = StyleSheet.create({
   },
   mthHeatBadge: {
     fontSize: 10,
-    fontWeight: '800',
+    fontWeight: '700',
     color: P.primary,
     letterSpacing: 0.5,
     textTransform: 'uppercase',
@@ -2138,7 +2138,7 @@ const S = StyleSheet.create({
   },
   mthEnergyLabel: {
     fontSize: 10,
-    fontWeight: '800',
+    fontWeight: '700',
     color: P.textSlate400,
     letterSpacing: 1.5,
     textTransform: 'uppercase',
@@ -2146,7 +2146,7 @@ const S = StyleSheet.create({
   },
   mthEnergyVal: {
     fontSize: 22,
-    fontWeight: '800',
+    fontWeight: '700',
     color: P.onSurface,
   },
   mthEnergyUnit: {
@@ -2182,26 +2182,26 @@ const S = StyleSheet.create({
   },
   mthUniformLabel: {
     fontSize: 10,
-    fontWeight: '800',
+    fontWeight: '700',
     color: P.textSlate400,
     letterSpacing: 1.5,
     textTransform: 'uppercase',
   },
   mthUniformVal: {
     fontSize: 24,
-    fontWeight: '900',
+    fontWeight: '700',
     color: P.onSurface,
   },
   mthUniformTagGray: {
     fontSize: 10,
-    fontWeight: '800',
+    fontWeight: '700',
     color: P.textSlate500,
     letterSpacing: 0.5,
     textTransform: 'uppercase',
   },
   mthUniformTagGreen: {
     fontSize: 10,
-    fontWeight: '800',
+    fontWeight: '700',
     color: '#34d399',
     letterSpacing: 0.5,
     textTransform: 'uppercase',
@@ -2233,7 +2233,7 @@ const S = StyleSheet.create({
   },
   wkRingTitle: {
     fontSize: 18,
-    fontWeight: '800',
+    fontWeight: '700',
     color: P.primary,
     marginTop: 8,
     letterSpacing: -0.3,
@@ -2270,7 +2270,7 @@ const S = StyleSheet.create({
   },
   wkChartTitle: {
     fontSize: 16,
-    fontWeight: '800',
+    fontWeight: '700',
     color: P.onSurface,
   },
   wkTargetBadge: {
@@ -2289,7 +2289,7 @@ const S = StyleSheet.create({
     width: 24,
     height: 1,
     borderWidth: 1,
-    borderStyle: 'dashed',
+    borderStyle: 'solid', // Android: dashed+borderRadius không hoạt động, dùng solid
     borderColor: P.primary,
   },
   wkBarsArea: {
@@ -2306,7 +2306,7 @@ const S = StyleSheet.create({
     left: 4,
     right: 4,
     borderTopWidth: 1,
-    borderStyle: 'dashed',
+    borderStyle: 'solid', // Android: dashed+borderRadius không hoạt động, dùng solid
     borderColor: 'rgba(75, 226, 119, 0.25)',
     zIndex: -1,
   },
@@ -2328,7 +2328,7 @@ const S = StyleSheet.create({
     left: '-25%',
     textAlign: 'center',
     fontSize: 10,
-    fontWeight: '800',
+    fontWeight: '700',
     color: P.primary,
     textTransform: 'uppercase',
   },
@@ -2340,7 +2340,7 @@ const S = StyleSheet.create({
   },
   wkDayLbl: {
     fontSize: 10,
-    fontWeight: '800',
+    fontWeight: '700',
     color: P.onSurfaceVariant,
     textTransform: 'uppercase',
     flex: 1,
@@ -2348,7 +2348,7 @@ const S = StyleSheet.create({
   },
   wkDayLblBest: {
     color: P.primary,
-    fontWeight: '900',
+    fontWeight: '700',
   },
 
   /* Protein card */
@@ -2375,7 +2375,7 @@ const S = StyleSheet.create({
   },
   wkProteinTitle: {
     fontSize: 14,
-    fontWeight: '800',
+    fontWeight: '700',
     color: P.onSurface,
   },
   wkProteinBottom: {
@@ -2386,7 +2386,7 @@ const S = StyleSheet.create({
   },
   wkProteinVal: {
     fontSize: 26,
-    fontWeight: '900',
+    fontWeight: '700',
     color: P.onSurface,
     paddingHorizontal: 4,
   },
@@ -2437,12 +2437,12 @@ const S = StyleSheet.create({
   },
   wkMiniMacroLabel: {
     fontSize: 12,
-    fontWeight: '800',
+    fontWeight: '700',
     color: P.onSurfaceVariant,
   },
   wkMiniMacroVal: {
     fontSize: 28,
-    fontWeight: '900',
+    fontWeight: '700',
     color: P.onSurface,
   },
   wkMiniMacroUnit: {

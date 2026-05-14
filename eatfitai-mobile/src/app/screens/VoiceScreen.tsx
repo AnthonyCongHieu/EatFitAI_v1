@@ -802,7 +802,7 @@ const S = StyleSheet.create({
   header: {
     paddingHorizontal: 20,
     paddingVertical: 12,
-    backgroundColor: 'rgba(14, 19, 34, 0.8)',
+    backgroundColor: '#0E1322', // Solid — tránh lỗi 2 màu trên Android
     borderBottomWidth: 1,
     borderBottomColor: P.glassBorder,
   },
@@ -1036,7 +1036,7 @@ const S = StyleSheet.create({
   ring: {
     position: 'absolute',
     borderRadius: 999,
-    borderStyle: 'dashed',
+    borderStyle: 'solid', // Android: dashed+borderRadius không hoạt động, dùng solid
   },
   ring1: {
     width: 150,
@@ -1055,7 +1055,7 @@ const S = StyleSheet.create({
     height: 250,
     borderWidth: 1,
     borderColor: P.primary + '12',
-    borderStyle: 'dotted',
+    borderStyle: 'solid', // Android: dotted+borderRadius không hoạt động, dùng solid
   },
 
   /* Mic button */

@@ -398,7 +398,7 @@ const S = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 16,
     height: 56,
-    backgroundColor: 'rgba(14, 19, 34, 0.8)',
+    backgroundColor: '#0E1322', // Solid — tránh lỗi 2 màu trên Android
   },
   headerBtn: {
     width: 40,

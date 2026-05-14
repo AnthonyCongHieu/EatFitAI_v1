@@ -141,7 +141,7 @@ const WeightHistoryScreen = (): React.ReactElement => {
     },
     statValue: {
       fontSize: 32,
-      fontWeight: '800',
+      fontWeight: '700',
       color: theme.colors.text,
       lineHeight: 40,
     },

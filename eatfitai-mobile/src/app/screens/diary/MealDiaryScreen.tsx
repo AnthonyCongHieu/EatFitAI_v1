@@ -854,7 +854,7 @@ const styles = StyleSheet.create({
   mealEmptyBtn: {
     width: '100%',
     borderWidth: 2,
-    borderStyle: 'dashed',
+    borderStyle: 'solid', // Android: dashed+borderRadius không hoạt động, dùng solid
     borderColor: C.outlineVariant,
     borderRadius: 16,
     paddingVertical: 24,

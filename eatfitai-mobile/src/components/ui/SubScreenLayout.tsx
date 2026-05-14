@@ -174,7 +174,7 @@ const styles = StyleSheet.create({
 
   /* ── Header (matches ProfileScreen S.header) ── */
   headerOuter: {
-    backgroundColor: 'rgba(14, 19, 34, 0.8)', // ProfileScreen exact value
+    backgroundColor: '#0E1322', // Solid color — tránh lỗi 2 màu trên Android
   },
   header: {
     flexDirection: 'row',

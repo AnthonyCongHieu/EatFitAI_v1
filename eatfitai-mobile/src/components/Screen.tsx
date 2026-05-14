@@ -100,7 +100,7 @@ export const Screen = ({
         end={{ x: 0.5, y: 1 }}
         style={[styles.gradient, style as ViewStyle]}
       >
-        <View style={containerStyle}>
+        <View style={[containerStyle, { backgroundColor: 'transparent' }]}>
           {testID && isFocused ? <AutomationMarker marker={testID} /> : null}
           {content}
         </View>

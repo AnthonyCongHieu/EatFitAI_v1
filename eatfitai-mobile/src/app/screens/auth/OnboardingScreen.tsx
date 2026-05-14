@@ -2475,7 +2475,7 @@ const OnboardingScreen = (): React.ReactElement => {
                       borderRadius: 85,
                       borderWidth: 1.5,
                       borderColor: 'rgba(75, 226, 119, 0.25)',
-                      borderStyle: 'dashed',
+                      borderStyle: 'solid', // Android: dashed+borderRadius không hoạt động, dùng solid
                     },
                     orbitalSpinReverseStyle,
                   ]}
