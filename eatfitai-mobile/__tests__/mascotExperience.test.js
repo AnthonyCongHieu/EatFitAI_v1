@@ -6,11 +6,15 @@ const readSource = (relativePath) => {
   return fs.existsSync(fullPath) ? fs.readFileSync(fullPath, 'utf8') : '';
 };
 
-describe('Mầm Fit mascot experience', () => {
-  it('defines a reusable mascot component with the planned animation states', () => {
+describe('Mochi mascot experience', () => {
+  it('defines a reusable vector-rig Mochi component with the planned animation states', () => {
     const source = readSource('src/components/MascotCharacter.tsx');
 
     expect(source).toContain('export type MascotState');
+    expect(source).toContain('MOCHI_STATE_ASSETS');
+    expect(source).toContain('MochiRig');
+    expect(source).not.toContain('<Image');
+    expect(source).not.toContain('MOCHI_ASSETS[');
     expect(source).toContain("'idle'");
     expect(source).toContain("'wave'");
     expect(source).toContain("'thinking'");
@@ -21,18 +25,90 @@ describe('Mầm Fit mascot experience', () => {
     expect(source).toContain('hasReminder?: boolean');
     expect(source).toContain('size?: number');
     expect(source).toContain('testID?: string');
-    expect(source).toContain('Mầm Fit');
+    expect(source).toContain('accessibilityLabel="Mochi"');
   });
 
-  it('uses Mầm Fit from the overlay instead of the old robot face', () => {
+  it('ships the Mochi source-sheet sprites as static app assets', () => {
+    const assetSource = readSource('src/assets/mascot/mochi/mochiAssets.ts');
+    const assetDir = path.join(__dirname, '..', 'src/assets/mascot/mochi/characters');
+
+    expect(assetSource).toContain('01_idle.png');
+    expect(assetSource).toContain('12_scan_food.png');
+    expect(assetSource).toContain('18_drink_water.png');
+    expect(assetSource).toContain('24_goal_complete.png');
+    expect(assetSource).toContain('sourceSheet');
+
+    [
+      '01_idle.png',
+      '02_hello.png',
+      '05_thinking.png',
+      '12_scan_food.png',
+      '18_drink_water.png',
+      '21_reminder.png',
+      '24_goal_complete.png',
+    ].forEach((fileName) => {
+      expect(fs.existsSync(path.join(assetDir, fileName))).toBe(true);
+    });
+  });
+
+  it('uses Mochi from the overlay instead of the old robot face', () => {
     const source = readSource('src/components/MascotOverlay.tsx');
 
     expect(source).toContain('import MascotCharacter');
     expect(source).toContain('<MascotCharacter');
     expect(source).toContain("state={hasReminders ? 'reminder' : 'idle'}");
+    expect(source).toContain('bottom: 170');
     expect(source).toContain('TEST_IDS.home.mascotButton');
     expect(source).not.toContain('styles.robotFace');
     expect(source).not.toContain('styles.robotVisor');
+  });
+
+  it('exposes a real-device Mochi room screen from the authenticated app', () => {
+    const typeSource = readSource('src/app/types/index.ts');
+    const navigatorSource = readSource('src/app/navigation/AppNavigator.tsx');
+    const profileSource = readSource('src/app/screens/ProfileScreen.tsx');
+    const previewSource = readSource('src/app/screens/dev/MochiPreviewScreen.tsx');
+    const testIdsSource = readSource('src/testing/testIds.ts');
+
+    expect(typeSource).toContain('MochiPreview: undefined');
+    expect(navigatorSource).toContain('getMochiPreviewScreen');
+    expect(navigatorSource).toContain('<Stack.Screen');
+    expect(navigatorSource).toContain('name="MochiPreview"');
+    expect(navigatorSource).toContain("currentRouteName !== 'MochiPreview'");
+    expect(profileSource).toContain("navigation.navigate('MochiPreview')");
+    expect(profileSource).toContain('TEST_IDS.profile.mochiPreviewButton');
+    expect(profileSource).toContain('Phòng Mochi');
+    expect(previewSource).toContain('MochiRoomScene');
+    expect(previewSource).toContain('getMochiCompanionState');
+    expect(previewSource).toContain('Cosmetic unlocks');
+    expect(previewSource).not.toContain('MochiFallback');
+    expect(previewSource).not.toContain('mochi-room-fallback-mascot');
+    expect(testIdsSource).toContain("mochiPreviewButton: 'profile-mochi-preview-button'");
+    expect(testIdsSource).toContain("mochiPreviewScreen: 'mochi-preview-screen'");
+  });
+
+  it('renders Mochi Room with a layered vector rig instead of PNG sprites or GLView', () => {
+    const roomSource = readSource('src/features/mochi/MochiRoomScene.tsx');
+    const rigSource = readSource('src/features/mochi/MochiRig.tsx');
+    const previewSource = readSource('src/app/screens/dev/MochiPreviewScreen.tsx');
+
+    expect(roomSource).toContain('LinearGradient');
+    expect(roomSource).toContain('MochiRig');
+    expect(roomSource).toContain('mochi-room-3d-rig');
+    expect(roomSource).not.toContain('GLView');
+    expect(roomSource).not.toContain('expo-gl');
+    expect(roomSource).not.toContain('CapsuleGeometry');
+    expect(previewSource).not.toContain('MascotCharacter');
+    expect(rigSource).toContain('MOCHI_VECTOR_LAYERS');
+    expect(rigSource).toContain('mochiHeadbandPink');
+    expect(rigSource).toContain('mochiInk');
+    expect(rigSource).toContain('MUZZLE');
+    expect(rigSource).toContain('renderEyes');
+    expect(rigSource).toContain("expression === 'drinkWater'");
+    expect(rigSource).toContain('activeAccessoryIds');
+    expect(rigSource).not.toContain('<Image');
+    expect(rigSource).not.toContain('.png');
+    expect(rigSource).not.toContain('mochiBellyCream');
   });
 
   it('defines a first-login home tutorial with storage gate and expected controls', () => {
@@ -67,12 +143,16 @@ describe('Mầm Fit mascot experience', () => {
       'src/components/MascotOverlay.tsx',
       'src/components/home/HomeFirstLoginTutorial.tsx',
       'src/components/home/QuickActionsOverlay.tsx',
+      'src/features/mochi/MochiRoomScene.tsx',
+      'src/features/mochi/MochiRig.tsx',
+      'src/features/mochi/mochiPoseCatalog.ts',
+      'src/app/screens/dev/MochiPreviewScreen.tsx',
       'src/testing/testIds.ts',
     ]
       .map(readSource)
       .join('\n');
 
-    expect(source).not.toMatch(/Ã|Â|Ä|á»|â”|â•|Æ/);
+    expect(source).not.toMatch(/[\u00c3\u00c2\u00c4\u00c6]|\u00e1\u00bb|\u00e2[\u201d\u2022]/u);
   });
 
   it('uses readable Vietnamese labels in the quick actions overlay', () => {
@@ -85,5 +165,58 @@ describe('Mầm Fit mascot experience', () => {
     expect(source).toContain('Thao tác nhanh');
     expect(source).toContain('Bạn muốn thực hiện gì tiếp theo?');
     expect(source).toContain('CHẠM X ĐỂ QUAY LẠI');
+  });
+
+  it('defines the 24-pose Mochi source catalog when present', () => {
+    const catalogSource = readSource('src/features/mochi/mochiPoseCatalog.ts');
+
+    if (!catalogSource) {
+      return;
+    }
+
+    const poseOrderMatch = catalogSource.match(
+      /export const MOCHI_POSE_ORDER:[\s\S]*?=\s*\[([\s\S]*?)\];/,
+    );
+    const poseKeys = [...(poseOrderMatch?.[1] ?? '').matchAll(/'([^']+)'/g)].map(
+      ([, key]) => key,
+    );
+
+    expect(catalogSource).toContain('export const MOCHI_POSE_ORDER');
+    expect(catalogSource).toContain('export const MOCHI_POSE_CATALOG');
+    expect(catalogSource).toContain('export const MOCHI_ANIMATION_TO_POSE');
+    expect(poseKeys).toEqual([
+      'idle',
+      'hello',
+      'happy',
+      'excited',
+      'thinking',
+      'surprised',
+      'sleepy',
+      'notebook',
+      'logCalorieNote',
+      'holdPhone',
+      'openApp',
+      'scanFood',
+      'analyzeResult',
+      'showCalorie',
+      'breakfastLog',
+      'lunchLog',
+      'dinnerLog',
+      'drinkWater',
+      'healthyFood',
+      'smartChoice',
+      'reminder',
+      'exercise',
+      'streakTracking',
+      'goalComplete',
+    ]);
+    expect(new Set(poseKeys).size).toBe(24);
+    expect(catalogSource).toContain("labelVi: 'Đứng yên'");
+    expect(catalogSource).toContain("labelVi: 'Quét món ăn'");
+    expect(catalogSource).toContain("labelVi: 'Uống nước'");
+    expect(catalogSource).toContain("labelVi: 'Đạt mục tiêu'");
+    expect(catalogSource).toContain("accessibilityLabel: 'Mochi đạt mục tiêu'");
+    expect(catalogSource).toContain("drinkWater: 'drinkWater'");
+    expect(catalogSource).toContain("celebrate: 'goalComplete'");
   });
 });

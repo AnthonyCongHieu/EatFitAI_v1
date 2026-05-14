@@ -1,0 +1,57 @@
+min_hold_images: 80
+min_accept_images: 500
+priority_accept_images: 800
+preferred_source_count: 2
+max_classes_without_manual_review: 260
+blocked_exact_labels:
+  - ""
+  - "'"
+  - "-"
+  - label
+  - labels
+  - con_nguoi
+  - human
+  - person
+  - people
+  - hamburger
+  - rau
+blocked_terms:
+  - person
+  - human
+  - people
+  - package
+  - packaged
+  - wrapper
+high_value_terms:
+  - banh
+  - bun
+  - canh
+  - ca
+  - chao
+  - com
+  - dau_hu
+  - ga
+  - goi
+  - heo
+  - hu_tieu
+  - kho
+  - lau
+  - mi
+  - nuong
+  - pho
+  - rang
+  - thit
+  - trung
+  - xao
+preparation_terms:
+  - boiled
+  - braised
+  - chien
+  - fried
+  - grilled
+  - kho
+  - luoc
+  - nuong
+  - roast
+  - roasted
+  - xao

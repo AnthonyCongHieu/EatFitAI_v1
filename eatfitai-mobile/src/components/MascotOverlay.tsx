@@ -123,7 +123,7 @@ const MascotOverlay = (): React.ReactElement => {
             testID={TEST_IDS.home.mascotButton}
             nativeID={TEST_IDS.home.fabButton}
             accessibilityRole="button"
-            accessibilityLabel="Mở trợ lý Mầm Fit"
+            accessibilityLabel="Mở trợ lý Mochi"
           >
             <MascotCharacter
               state={hasReminders ? 'reminder' : 'idle'}
@@ -182,7 +182,7 @@ const MascotOverlay = (): React.ReactElement => {
 const styles = StyleSheet.create({
   fabContainer: {
     position: 'absolute',
-    bottom: 100,
+    bottom: 170,
     right: 20,
     zIndex: 1000,
     elevation: 10,

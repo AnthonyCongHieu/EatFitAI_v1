@@ -381,7 +381,7 @@ export const useGamificationStore = create<GamificationState>()(
         set((state) => {
           const lastClaimed = state.dailyQuestsClaimed?.[questId];
           if (lastClaimed === todayStr) return state; // Already claimed today
-          
+
           return {
             totalXP: state.totalXP + xp,
             dailyQuestsClaimed: {
@@ -441,7 +441,7 @@ export const useGamificationStore = create<GamificationState>()(
         // Ensure new achievements are added to existing persisted accounts
         const persistedAchievements = persistedState.achievements || [];
         const mergedAchievements = [...persistedAchievements];
-        
+
         INITIAL_ACHIEVEMENTS.forEach((initialAchv) => {
           if (!mergedAchievements.some((a) => a.id === initialAchv.id)) {
             mergedAchievements.push(initialAchv);

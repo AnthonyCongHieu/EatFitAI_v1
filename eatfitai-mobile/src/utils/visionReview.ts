@@ -22,6 +22,7 @@ const hasTrustedVisionNutrition = (item: MappedFoodItem): boolean =>
 
 export const hasUsableVisionNutrition = (item: MappedFoodItem): boolean =>
   hasVisionFoodSource(item) &&
+  hasTrustedVisionNutrition(item) &&
   (item.caloriesPer100g ?? 0) > 0 &&
   (item.proteinPer100g ?? 0) >= 0 &&
   (item.carbPer100g ?? 0) >= 0 &&
@@ -236,7 +237,7 @@ export const getVisionReviewSaveBlocker = (
   );
 
   if (hasUnmappedSelectedItem) {
-    return 'Hãy "Tìm kiếm món" để chọn đúng món ăn này hoặc bỏ chọn nó.';
+    return 'Hãy đổi món bằng Search hoặc bỏ chọn món chưa được map.';
   }
 
   const hasInvalidNutrition = items.some(
@@ -245,7 +246,7 @@ export const getVisionReviewSaveBlocker = (
   );
 
   if (hasInvalidNutrition) {
-    return 'Món đã chọn chưa có dữ liệu dinh dưỡng. Hãy "Tìm kiếm món" hoặc bỏ chọn món đó.';
+    return 'Món đã chọn chưa có dữ liệu dinh dưỡng đủ tin cậy. Hãy đổi món bằng Search hoặc bỏ chọn món đó.';
   }
 
   return null;

@@ -1,0 +1,20 @@
+{
+  "id": "hiuinhcng/eatfitai-v4-targeted-vietnamese-source-audit",
+  "title": "EatFitAI V4 Targeted Vietnamese Source Audit",
+  "code_file": "kaggle_v4_targeted_vietnamese_source_audit_kernel.py",
+  "language": "python",
+  "kernel_type": "script",
+  "is_private": true,
+  "enable_gpu": false,
+  "enable_internet": true,
+  "dataset_sources": [
+    "hiuinhcng/eatfitai-dataset-v2-pipeline-code",
+    "thomasnguyen6868/vietfood68",
+    "kyoru4444/foodlensvn",
+    "phvngtngtm/foodlensvn",
+    "trungquncao/vietnamese-food",
+    "lenguyentrung/vietnamese-food"
+  ],
+  "competition_sources": [],
+  "kernel_sources": []
+}

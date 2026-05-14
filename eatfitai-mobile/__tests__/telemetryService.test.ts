@@ -34,12 +34,18 @@ jest.mock('../src/services/apiClient', () => ({
 
 describe('telemetryService', () => {
   beforeEach(() => {
+    jest.useFakeTimers();
     jest.resetModules();
     jest.clearAllMocks();
     Object.keys(storageState).forEach((key) => {
       delete storageState[key];
     });
     storageState['@eatfitai_telemetry_session'] = 'session-fixed';
+  });
+
+  afterEach(() => {
+    jest.clearAllTimers();
+    jest.useRealTimers();
   });
 
   it('stores queued events and flushes them to the backend', async () => {
@@ -69,21 +75,23 @@ describe('telemetryService', () => {
       metadata: { source: 'test' },
     });
 
-    await new Promise<void>((resolve) => {
-      setImmediate(() => resolve());
-    });
-
     expect(storageState['@eatfitai_telemetry_queue']).toContain('screen_view');
-    expect(fetchWithAuthRetryMock).toHaveBeenCalledTimes(1);
+    expect(fetchWithAuthRetryMock).not.toHaveBeenCalled();
 
     const flushed = await telemetry.flushTelemetryQueue();
 
-    expect(flushed).toBe(true);
-    expect(fetchWithAuthRetryMock).toHaveBeenCalledTimes(2);
-    expect(fetchWithAuthRetryMock).toHaveBeenLastCalledWith(
+    expect(flushed).toBe(false);
+    expect(fetchWithAuthRetryMock).toHaveBeenCalledTimes(1);
+    expect(fetchWithAuthRetryMock).toHaveBeenCalledWith(
       'http://mock-api.local/api/telemetry/events',
       expect.any(Function),
     );
+    expect(storageState['@eatfitai_telemetry_queue']).toContain('screen_view');
+
+    const retryFlushed = await telemetry.flushTelemetryQueue();
+
+    expect(retryFlushed).toBe(true);
+    expect(fetchWithAuthRetryMock).toHaveBeenCalledTimes(2);
     expect(storageState['@eatfitai_telemetry_queue']).toBe('[]');
   });
 });

@@ -1,4 +1,6 @@
 import json
+import os
+import importlib
 import sys
 import tempfile
 import types
@@ -97,6 +99,54 @@ class DatasetV2Yolo11mTrainHandoffTests(unittest.TestCase):
 
             self.assertEqual(train_kernel.find_resume_checkpoint(input_root), checkpoint)
 
+    def test_training_kernel_default_checkpoint_plan_resumes_completed_runs(self):
+        checkpoint = Path("/kaggle/input/previous-run/_yolo11m_checkpoints/last.pt")
+        with mock.patch.dict(os.environ, {}, clear=False):
+            plan = train_kernel.resolve_checkpoint_plan(checkpoint)
+
+        self.assertEqual(plan.model_source, checkpoint)
+        self.assertTrue(plan.resume_training)
+        self.assertTrue(plan.skip_when_target_reached)
+
+    def test_training_kernel_finetune_checkpoint_plan_starts_new_run_from_checkpoint(self):
+        checkpoint = Path("/kaggle/input/previous-run/_yolo11m_checkpoints/last.pt")
+        with mock.patch.dict(os.environ, {"EATFITAI_YOLO_CHECKPOINT_MODE": "finetune"}):
+            plan = train_kernel.resolve_checkpoint_plan(checkpoint)
+
+        self.assertEqual(plan.model_source, checkpoint)
+        self.assertFalse(plan.resume_training)
+        self.assertFalse(plan.skip_when_target_reached)
+
+    def test_training_kernel_finetune_mode_trains_even_if_checkpoint_reached_target(self):
+        checkpoint = Path("/kaggle/input/previous-run/_yolo11m_checkpoints/last.pt")
+        calls = []
+
+        class FakeYOLO:
+            def __init__(self, source):
+                calls.append(("init", source))
+
+            def train(self, **kwargs):
+                calls.append(("train", kwargs))
+
+        fake_ultralytics = types.SimpleNamespace(YOLO=FakeYOLO)
+        with tempfile.TemporaryDirectory() as tmp:
+            data_yaml = Path(tmp) / "data.yaml"
+            data_yaml.write_text("path: .\n", encoding="utf-8")
+            with mock.patch.dict(sys.modules, {"ultralytics": fake_ultralytics}), mock.patch.dict(
+                os.environ, {"EATFITAI_YOLO_CHECKPOINT_MODE": "finetune"}
+            ), mock.patch.object(train_kernel, "find_resume_checkpoint", return_value=checkpoint), mock.patch.object(
+                train_kernel, "resume_checkpoint_reached_target", return_value=True
+            ), mock.patch.object(
+                train_kernel, "register_checkpoint_callbacks"
+            ), mock.patch.object(
+                train_kernel, "copy_training_artifacts"
+            ):
+                train_kernel.train_model(data_yaml, device=0, batch=2, skip_smoke=True, skip_full=False)
+
+        self.assertIn(("init", str(checkpoint)), calls)
+        train_call = next(payload for name, payload in calls if name == "train")
+        self.assertFalse(train_call["resume"])
+
     def test_training_kernel_copies_resume_checkpoints_to_kaggle_output(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
@@ -165,6 +215,25 @@ class DatasetV2Yolo11mTrainHandoffTests(unittest.TestCase):
 
         self.assertNotIn("import kaggle_yolo11m_train", smoke_source)
 
+    def test_clean_v2_entrypoints_are_self_contained_for_kaggle_code_files(self):
+        clean_source = (DATASET_V2_DIR / "kaggle_clean_build_v2_kernel.py").read_text(encoding="utf-8")
+        train_source = (DATASET_V2_DIR / "kaggle_yolo11m_clean_v2_train.py").read_text(encoding="utf-8")
+
+        self.assertNotIn("kaggle_clean_build_kernel", clean_source)
+        self.assertNotIn("kaggle_yolo11m_train", train_source)
+
+    def test_clean_v3_entrypoints_are_self_contained_and_point_to_v3_assets(self):
+        clean_source = (DATASET_V2_DIR / "kaggle_clean_build_v3_kernel.py").read_text(encoding="utf-8")
+        train_source = (DATASET_V2_DIR / "kaggle_yolo11m_clean_v3_train.py").read_text(encoding="utf-8")
+
+        self.assertNotIn("kaggle_clean_build_kernel", clean_source)
+        self.assertNotIn("kaggle_yolo11m_train", train_source)
+        self.assertIn("clean_candidate_sources_v3_2026-05-13.csv", clean_source)
+        self.assertIn("class_taxonomy.clean_v3_expanded_2026-05-13.yaml", clean_source)
+        self.assertIn('"80000"', clean_source)
+        self.assertIn("eatfitai_clean_v3", train_source)
+        self.assertIn("yolo11m-eatfitai-clean-v3", train_source)
+
     def test_smoke_train_entrypoint_forces_skip_full(self):
         import kaggle_yolo11m_smoke_train as smoke_kernel
 
@@ -218,6 +287,48 @@ class DatasetV2Yolo11mTrainHandoffTests(unittest.TestCase):
         self.assertEqual(metadata.get("machine_shape"), "NvidiaTeslaT4")
         self.assertIn("hiuinhcng/eatfitai-dataset-v2-clean-build", metadata["kernel_sources"])
         self.assertIn("hiuinhcng/eatfitai-yolo11m-clean-v1-checkpoint", metadata["dataset_sources"])
+
+    def test_clean_build_kernel_supports_dated_policy_and_taxonomy_override(self):
+        import kaggle_clean_build_kernel as clean_kernel
+
+        with mock.patch.dict(
+            os.environ,
+            {
+                "EATFITAI_CLEAN_SOURCE_POLICY": "clean_candidate_sources_v2_2026-05-13.csv",
+                "EATFITAI_CLEAN_TAXONOMY": "class_taxonomy.clean_v2_2026-05-13.yaml",
+                "EATFITAI_CLEAN_MAX_IMAGES": "40000",
+            },
+        ):
+            clean_kernel = importlib.reload(clean_kernel)
+
+        try:
+            self.assertEqual(clean_kernel.CLEAN_SOURCE_POLICY, "clean_candidate_sources_v2_2026-05-13.csv")
+            self.assertEqual(clean_kernel.CLEAN_TAXONOMY, "class_taxonomy.clean_v2_2026-05-13.yaml")
+            self.assertEqual(clean_kernel.CLEAN_MAX_IMAGES, 40000)
+        finally:
+            importlib.reload(clean_kernel)
+
+    def test_clean_v2_kernel_metadata_uses_dedicated_clean_build_and_finetune_train(self):
+        clean_metadata = json.loads((DATASET_V2_DIR / "kaggle_clean_build_v2_kernel_metadata.json").read_text(encoding="utf-8"))
+        train_metadata = json.loads((DATASET_V2_DIR / "kaggle_yolo11m_clean_v2_train_metadata.json").read_text(encoding="utf-8"))
+
+        self.assertEqual(clean_metadata["code_file"], "kaggle_clean_build_v2_kernel.py")
+        self.assertEqual(clean_metadata["id"], "hiuinhcng/eatfitai-dataset-v2-clean-build-v2")
+        self.assertEqual(train_metadata["code_file"], "kaggle_yolo11m_clean_v2_train.py")
+        self.assertEqual(train_metadata["id"], "hiuinhcng/eatfitai-yolo11m-clean-v2")
+        self.assertIn("hiuinhcng/eatfitai-dataset-v2-clean-build-v2", train_metadata["kernel_sources"])
+        self.assertIn("hiuinhcng/eatfitai-yolo11m-clean-v1-checkpoint", train_metadata["dataset_sources"])
+
+    def test_clean_v3_kernel_metadata_uses_dedicated_clean_build_and_finetune_train(self):
+        clean_metadata = json.loads((DATASET_V2_DIR / "kaggle_clean_build_v3_kernel_metadata.json").read_text(encoding="utf-8"))
+        train_metadata = json.loads((DATASET_V2_DIR / "kaggle_yolo11m_clean_v3_train_metadata.json").read_text(encoding="utf-8"))
+
+        self.assertEqual(clean_metadata["code_file"], "kaggle_clean_build_v3_kernel.py")
+        self.assertEqual(clean_metadata["id"], "hiuinhcng/eatfitai-dataset-v2-clean-build-v3")
+        self.assertEqual(train_metadata["code_file"], "kaggle_yolo11m_clean_v3_train.py")
+        self.assertEqual(train_metadata["id"], "hiuinhcng/eatfitai-yolo11m-clean-v3")
+        self.assertIn("hiuinhcng/eatfitai-dataset-v2-clean-build-v3", train_metadata["kernel_sources"])
+        self.assertIn("hiuinhcng/eatfitai-yolo11m-clean-v1-checkpoint", train_metadata["dataset_sources"])
 
 
 if __name__ == "__main__":

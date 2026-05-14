@@ -1,0 +1,53 @@
+purpose: >
+  Nutrition-relevant class expansion hints for Clean V3. These are not accepted
+  automatically; audited label evidence and candidate gates decide what enters
+  the final taxonomy.
+priority_groups:
+  chicken_preparations:
+    parent: chicken
+    examples:
+      - ga_chien
+      - ga_luoc
+      - ga_nuong
+      - ga_kho
+      - fried_chicken
+      - boiled_chicken
+      - grilled_chicken
+  pork_preparations:
+    parent: pork
+    examples:
+      - heo_quay
+      - thit_kho_trung
+      - thit_kho_tau
+      - thit_nuong
+      - pork_belly
+      - grilled_pork
+      - braised_pork
+  fish_preparations:
+    parent: fish
+    examples:
+      - ca_kho_to
+      - ca_nuc_chien
+      - ca_loc_nuong
+      - fried_fish
+      - grilled_fish
+      - braised_fish
+  egg_and_tofu_preparations:
+    parent: egg
+    examples:
+      - trung_chien
+      - trung_op_la
+      - dau_hu_chien_sot_ca
+      - dau_hu_kho_trung_cut
+      - dau_hu_nhoi_thit
+  vietnamese_meals:
+    parent: ""
+    examples:
+      - bun_thit_nuong
+      - com_ga
+      - com_tam_suon_trung
+      - canh_chua
+      - ga_nau_cari
+      - bo_kho
+      - bun_bo_hue
+      - mi_quang

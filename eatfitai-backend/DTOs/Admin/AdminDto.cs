@@ -1,3 +1,5 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace EatFitAI.API.DTOs.Admin;
 
 public class AdminDashboardStatsDto
@@ -59,6 +61,7 @@ public class UpdateUserRoleRequest
 {
     public string Role { get; set; } = "user";
     public string? Justification { get; set; }
+    public string? ConfirmText { get; set; }
 }
 
 public class UpdateUserAccessRequest
@@ -66,6 +69,30 @@ public class UpdateUserAccessRequest
     public string AccessState { get; set; } = "active";
     public string? Justification { get; set; }
     public string? ConfirmText { get; set; }
+}
+
+public class CreateAdminUserRequest
+{
+    [Required]
+    [EmailAddress]
+    public string Email { get; set; } = string.Empty;
+
+    [StringLength(150)]
+    public string? DisplayName { get; set; }
+
+    [Required]
+    [MinLength(8)]
+    public string TemporaryPassword { get; set; } = string.Empty;
+
+    public string Role { get; set; } = "user";
+
+    public string? Justification { get; set; }
+}
+
+public class UpdateAdminUserProfileRequest
+{
+    [StringLength(150)]
+    public string? DisplayName { get; set; }
 }
 
 public class AdminMutationResponseDto

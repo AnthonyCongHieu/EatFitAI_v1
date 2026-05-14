@@ -14,11 +14,11 @@
       },
       "oauth_client": [
         {
-          "client_id": "304016580439-m3rsl2ej5v2m0vn8gh5oriqcikvf1rpe.apps.googleusercontent.com",
+          "client_id": "304016580439-5dm3j01ljif4jvb7ud72rj8ukdugtcoe.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
             "package_name": "com.eatfitai.app",
-            "certificate_hash": "83ffa699532ed1051a38535c7b01e21d5f41c51f"
+            "certificate_hash": "b09a9877e12ee0766c9f72f4ee929b404d3558f6"
           }
         },
         {

@@ -21,8 +21,8 @@ REPORTS_ZIP = Path("/kaggle/working/eatfitai_dataset_v2_clean_build_reports.zip"
 CLEAN_MAX_IMAGES = int(os.environ.get("EATFITAI_CLEAN_MAX_IMAGES", "25000"))
 CLEAN_MIN_FREE_GB_AFTER_BUILD = float(os.environ.get("EATFITAI_CLEAN_MIN_FREE_GB_AFTER_BUILD", "4"))
 
-CLEAN_SOURCE_POLICY = "clean_candidate_sources_2026-05-06.csv"
-CLEAN_TAXONOMY = "class_taxonomy.clean_candidate_2026-05-06.yaml"
+CLEAN_SOURCE_POLICY = os.environ.get("EATFITAI_CLEAN_SOURCE_POLICY", "clean_candidate_sources_2026-05-06.csv")
+CLEAN_TAXONOMY = os.environ.get("EATFITAI_CLEAN_TAXONOMY", "class_taxonomy.clean_candidate_2026-05-06.yaml")
 PUBLIC_DRIVE_SOURCES = "public_drive_raw_sources.csv"
 RAW_SOURCE_REGISTRY = "raw_source_registry.yaml"
 SOURCE_CLASS_MAPS = "source_class_maps.yaml"

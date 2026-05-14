@@ -13,9 +13,10 @@
  * 5. npx expo prebuild
  */
 
+import { NativeModules, Platform } from 'react-native';
+
 import { GOOGLE_CONFIG, validateGoogleConfig } from '../config/google.config';
 import logger from '../utils/logger';
-import { NativeModules, Platform } from 'react-native';
 
 // Type definitions for Google Sign-in
 interface _GoogleUser {
@@ -57,6 +58,8 @@ let legacyGoogleConfigured = false;
  */
 const loadGoogleModule = async (): Promise<boolean> => {
   try {
+    // Lazy require keeps Expo Go safe when the native Google module is absent.
+    // eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-require-imports
     const module = require('@react-native-google-signin/google-signin');
     GoogleSignin = module.GoogleSignin as any as GoogleSignInModule;
     statusCodes = module.statusCodes;
@@ -139,6 +142,57 @@ const shouldFallbackFromCredentialManager = (error: any): boolean => {
     code.includes('missing_activity') ||
     code.includes('unknown')
   );
+};
+
+const signInWithLegacyGoogle = async (): Promise<GoogleAuthResult | null> => {
+  const available = await googleAuthService.isAvailable();
+  if (!available || !GoogleSignin) {
+    return null;
+  }
+
+  if (!legacyGoogleConfigured) {
+    const legacyConfigured = await configureLegacyGoogleSignIn();
+    if (!legacyConfigured) {
+      return null;
+    }
+  }
+
+  if (!GoogleSignin) {
+    return null;
+  }
+
+  await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
+
+  const response = await GoogleSignin.signIn();
+  const userInfo = (response as any).data || response;
+  const user = userInfo.user || userInfo;
+
+  if (!user || !user.email) {
+    logger.error('[GoogleAuth] No user email in response:', {
+      hasUser: Boolean(user),
+      hasIdToken: Boolean(userInfo.idToken || response.idToken),
+      hasServerAuthCode: Boolean(userInfo.serverAuthCode || response.serverAuthCode),
+    });
+    return {
+      success: false,
+      error:
+        'Không thể lấy thông tin email từ Google. Vui lòng thử lại.',
+    };
+  }
+
+  logger.info('[GoogleAuth] Sign in success');
+
+  return {
+    success: true,
+    user: {
+      id: user.id || user.userId || '',
+      email: user.email,
+      name: user.name || user.displayName || null,
+      photo: user.photo || user.photoUrl || null,
+    },
+    idToken: userInfo.idToken || response.idToken || undefined,
+    serverAuthCode: userInfo.serverAuthCode || response.serverAuthCode || undefined,
+  };
 };
 
 export type NormalizedGoogleAuthResponse = GoogleAuthResult & {
@@ -241,16 +295,18 @@ export const googleAuthService = {
         return false;
       }
 
+      const legacyConfigured = await configureLegacyGoogleSignIn();
+      if (legacyConfigured) {
+        logger.info('[GoogleAuth] Legacy Google Sign-In configured successfully');
+        return true;
+      }
+
       if (getCredentialManagerModule()) {
         logger.info('[GoogleAuth] Android Credential Manager configured successfully');
         return true;
       }
 
-      const legacyConfigured = await configureLegacyGoogleSignIn();
-      if (legacyConfigured) {
-        logger.info('[GoogleAuth] Legacy Google Sign-In configured successfully');
-      }
-      return legacyConfigured;
+      return false;
     } catch (error: any) {
       logger.error('[GoogleAuth] Configure error:', error);
       return false;
@@ -277,6 +333,11 @@ export const googleAuthService = {
    */
   signIn: async (): Promise<GoogleAuthResult> => {
     try {
+      const legacyResult = await signInWithLegacyGoogle();
+      if (legacyResult) {
+        return legacyResult;
+      }
+
       const credentialManager = getCredentialManagerModule();
       if (credentialManager) {
         try {
@@ -317,69 +378,10 @@ export const googleAuthService = {
         }
       }
 
-      const available = await googleAuthService.isAvailable();
-      if (!available || !GoogleSignin) {
-        return {
-          success: false,
-          error:
-            'Google Sign-in kh\u00f4ng kh\u1ea3 d\u1ee5ng. H\u00e3y c\u00e0i \u0111\u1eb7t package tr\u01b0\u1edbc.',
-        };
-      }
-
-      if (!legacyGoogleConfigured) {
-        const legacyConfigured = await configureLegacyGoogleSignIn();
-        if (!legacyConfigured) {
-          return {
-            success: false,
-            error:
-              'Google Sign-in không khả dụng. Hãy cài đặt package trước.',
-          };
-        }
-      }
-
-      if (!GoogleSignin) {
-        return {
-          success: false,
-          error:
-            'Google Sign-in không khả dụng. Hãy cài đặt package trước.',
-        };
-      }
-
-      // Check Play Services
-      await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
-
-      // Sign in
-      const response = await GoogleSignin.signIn();
-
-      // Newer APIs may return data in response.data instead of response.user
-      const userInfo = (response as any).data || response;
-      const user = userInfo.user || userInfo;
-
-      if (!user || !user.email) {
-        logger.error('[GoogleAuth] No user email in response:', {
-          hasUser: Boolean(user),
-          hasIdToken: Boolean(userInfo.idToken || response.idToken),
-          hasServerAuthCode: Boolean(userInfo.serverAuthCode || response.serverAuthCode),
-        });
-        return {
-          success: false,
-          error:
-            'Kh\u00f4ng th\u1ec3 l\u1ea5y th\u00f4ng tin email t\u1eeb Google. Vui l\u00f2ng th\u1eed l\u1ea1i.',
-        };
-      }
-
-      logger.info('[GoogleAuth] Sign in success');
-
       return {
-        success: true,
-        user: {
-          id: user.id || user.userId || '',
-          email: user.email,
-          name: user.name || user.displayName || null,
-          photo: user.photo || user.photoUrl || null,
-        },
-        idToken: userInfo.idToken || response.idToken || undefined,
-        serverAuthCode: userInfo.serverAuthCode || response.serverAuthCode || undefined,
+        success: false,
+        error:
+          'Google Sign-in không khả dụng. Hãy cài đặt package trước.',
       };
     } catch (error: any) {
       logger.error('[GoogleAuth] Sign in error:', error);

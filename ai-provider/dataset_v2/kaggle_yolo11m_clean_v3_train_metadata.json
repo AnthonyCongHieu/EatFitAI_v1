@@ -1,0 +1,18 @@
+{
+  "id": "hiuinhcng/eatfitai-yolo11m-clean-v3",
+  "title": "EatFitAI YOLO11m Clean V3",
+  "code_file": "kaggle_yolo11m_clean_v3_train.py",
+  "language": "python",
+  "kernel_type": "script",
+  "is_private": true,
+  "enable_gpu": true,
+  "machine_shape": "NvidiaTeslaT4",
+  "enable_internet": true,
+  "dataset_sources": [
+    "hiuinhcng/eatfitai-yolo11m-clean-v1-checkpoint"
+  ],
+  "competition_sources": [],
+  "kernel_sources": [
+    "hiuinhcng/eatfitai-dataset-v2-clean-build-v3"
+  ]
+}

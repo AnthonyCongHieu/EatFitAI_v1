@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+from dataclasses import dataclass
 import json
 import os
 import shutil
@@ -14,9 +15,9 @@ from pathlib import Path
 KAGGLE_INPUT = Path("/kaggle/input")
 KAGGLE_WORKING = Path("/kaggle/working")
 DATASET_EXTRACT_DIR = Path(os.environ.get("EATFITAI_DATASET_EXTRACT_DIR", "/tmp/eatfitai_yolo11m_dataset"))
-DATASET_DIR = KAGGLE_WORKING / "eatfitai_clean_v1"
+DATASET_DIR = KAGGLE_WORKING / os.environ.get("EATFITAI_YOLO_DATASET_DIR_NAME", "eatfitai_clean_v1")
 RUN_PROJECT = KAGGLE_WORKING / "runs" / "food-detection"
-RUN_NAME = "yolo11m-eatfitai-clean-v1"
+RUN_NAME = os.environ.get("EATFITAI_YOLO_RUN_NAME", "yolo11m-eatfitai-clean-v1")
 CHECKPOINT_DIR = KAGGLE_WORKING / "_yolo11m_checkpoints"
 REQUIRE_T4X2 = os.environ.get("EATFITAI_REQUIRE_T4X2", "1").strip().lower() not in {"0", "false", "no"}
 MIN_FREE_BYTES_AFTER_EXTRACT = int(float(os.environ.get("EATFITAI_MIN_FREE_GB_AFTER_EXTRACT", "2")) * 1024**3)
@@ -33,6 +34,29 @@ RESUME_CHECKPOINT_PATTERNS = (
     "**/yolo11m_last.pt",
     "**/last.pt",
 )
+
+
+@dataclass(frozen=True)
+class CheckpointPlan:
+    model_source: Path | str
+    resume_training: bool
+    skip_when_target_reached: bool
+
+
+def checkpoint_mode() -> str:
+    mode = os.environ.get("EATFITAI_YOLO_CHECKPOINT_MODE", "resume").strip().lower()
+    if mode in {"resume", "finetune", "none"}:
+        return mode
+    raise ValueError("EATFITAI_YOLO_CHECKPOINT_MODE must be one of: resume, finetune, none")
+
+
+def resolve_checkpoint_plan(resume_checkpoint: Path | None) -> CheckpointPlan:
+    mode = checkpoint_mode()
+    if resume_checkpoint is None or mode == "none":
+        return CheckpointPlan("yolo11m.pt", resume_training=False, skip_when_target_reached=False)
+    if mode == "finetune":
+        return CheckpointPlan(resume_checkpoint, resume_training=False, skip_when_target_reached=False)
+    return CheckpointPlan(resume_checkpoint, resume_training=True, skip_when_target_reached=True)
 
 
 def ensure_ultralytics() -> None:
@@ -364,6 +388,7 @@ def train_model(data_yaml: Path, device: object, batch: int, skip_smoke: bool, s
     from ultralytics import YOLO
 
     resume_checkpoint = find_resume_checkpoint()
+    checkpoint_plan = resolve_checkpoint_plan(resume_checkpoint)
     if not skip_smoke:
         if resume_checkpoint and SKIP_SMOKE_ON_RESUME:
             print("Skipping smoke train because a resume checkpoint is mounted.")
@@ -388,7 +413,7 @@ def train_model(data_yaml: Path, device: object, batch: int, skip_smoke: bool, s
         return None
     run_dir = RUN_PROJECT / RUN_NAME
 
-    if resume_checkpoint and resume_checkpoint_reached_target(resume_checkpoint):
+    if resume_checkpoint and checkpoint_plan.skip_when_target_reached and resume_checkpoint_reached_target(resume_checkpoint):
         print(f"Resume checkpoint already reached target epoch {TRAIN_EPOCHS}; exporting compact artifacts only.")
         stage_completed_resume_artifacts(resume_checkpoint, run_dir)
         copy_training_artifacts(run_dir)
@@ -398,7 +423,7 @@ def train_model(data_yaml: Path, device: object, batch: int, skip_smoke: bool, s
             copy_training_artifacts(run_dir)
         return run_dir
 
-    model = YOLO(str(resume_checkpoint) if resume_checkpoint else "yolo11m.pt")
+    model = YOLO(str(checkpoint_plan.model_source))
     register_checkpoint_callbacks(model, run_dir)
     model.train(
         data=str(data_yaml),
@@ -429,7 +454,7 @@ def train_model(data_yaml: Path, device: object, batch: int, skip_smoke: bool, s
         save=True,
         save_period=SAVE_PERIOD,
         amp=True,
-        resume=bool(resume_checkpoint),
+        resume=checkpoint_plan.resume_training,
     )
     copy_training_artifacts(run_dir)
     weights = run_dir / "weights"

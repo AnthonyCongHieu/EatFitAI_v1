@@ -1,0 +1,22 @@
+{
+  "id": "hiuinhcng/eatfitai-v4-class-expansion-source-audit",
+  "title": "EatFitAI V4 Class Expansion Source Audit",
+  "code_file": "kaggle_v4_class_expansion_source_audit_kernel.py",
+  "language": "python",
+  "kernel_type": "script",
+  "is_private": true,
+  "enable_gpu": false,
+  "enable_internet": true,
+  "dataset_sources": [
+    "hiuinhcng/eatfitai-dataset-v2-pipeline-code",
+    "bjoernjostein/food-classification",
+    "raahimshah/desi-food-dataset-annotated",
+    "nikolasgegenava/popular-street-foods",
+    "zachaluza/cnfood-241",
+    "rkuo2000/uecfood256",
+    "patzer0/16-famous-chinese-dishes",
+    "jiezh2/common-chinese-food"
+  ],
+  "competition_sources": [],
+  "kernel_sources": []
+}

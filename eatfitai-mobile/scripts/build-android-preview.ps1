@@ -8,6 +8,9 @@ $apkPath = Join-Path $androidRoot 'app\build\outputs\apk\release\app-release.apk
 $googleServicesPath = Join-Path $androidRoot 'app\google-services.json'
 $generatedResPath = Join-Path $androidRoot 'app\build\generated\res\createBundleReleaseJsAndAssets'
 $generatedAssetsPath = Join-Path $androidRoot 'app\build\generated\assets\createBundleReleaseJsAndAssets'
+$generatedUpdatesResourcesPath = Join-Path $androidRoot 'app\build\generated\assets\createReleaseUpdatesResources'
+$mergedReleaseAssetsPath = Join-Path $androidRoot 'app\build\intermediates\assets\release\mergeReleaseAssets'
+$compressedReleaseAssetsPath = Join-Path $androidRoot 'app\build\intermediates\compressed_assets\release\compressReleaseAssets'
 $localPropertiesPath = Join-Path $androidRoot 'local.properties'
 $devEnvPath = Join-Path $repoRoot '_config\dev-env.ps1'
 
@@ -132,10 +135,57 @@ function Resolve-BuildValue {
 }
 
 function Remove-StalePreviewBuildOutputs {
-    foreach ($path in @($generatedResPath, $generatedAssetsPath, $apkPath)) {
+    foreach ($path in @(
+        $generatedResPath,
+        $generatedAssetsPath,
+        $generatedUpdatesResourcesPath,
+        $mergedReleaseAssetsPath,
+        $compressedReleaseAssetsPath,
+        $apkPath
+    )) {
         if (Test-Path $path) {
             Remove-Item -LiteralPath $path -Recurse -Force
         }
+    }
+}
+
+function Assert-EmbeddedUpdatesManifestHasMascotAssets {
+    $mascotCharacterPath = Join-Path $projectRoot 'src\components\MascotCharacter.tsx'
+    $mochiRigPath = Join-Path $projectRoot 'src\features\mochi\MochiRig.tsx'
+
+    if ((Test-Path $mascotCharacterPath) -and (Test-Path $mochiRigPath)) {
+        $mascotCharacterSource = Get-Content -Raw $mascotCharacterPath
+        if (($mascotCharacterSource -match 'MochiRig') -and ($mascotCharacterSource -notmatch 'MOCHI_ASSETS\[')) {
+            return
+        }
+    }
+
+    $mascotAssetDir = Join-Path $projectRoot 'src\assets\mascot\mochi\characters'
+    if (-not (Test-Path $mascotAssetDir)) {
+        return
+    }
+
+    $expectedMochiCount = @(Get-ChildItem -LiteralPath $mascotAssetDir -Filter '*.png' -File).Count
+    if ($expectedMochiCount -eq 0) {
+        return
+    }
+
+    $manifestPath = Join-Path $generatedUpdatesResourcesPath 'app.manifest'
+    if (-not (Test-Path $manifestPath)) {
+        throw "Embedded Expo Updates manifest was not created at $manifestPath"
+    }
+
+    $manifest = Get-Content -Raw $manifestPath | ConvertFrom-Json
+    $manifestAssets = @($manifest.assets)
+    $mochiAssets = @(
+        $manifestAssets | Where-Object {
+            ($_.subdirectory -like '*/assets/src/assets/mascot/mochi/characters*') -or
+            ($_.resourcesFilename -like 'src_assets_mascot_mochi_characters_*')
+        }
+    )
+
+    if ($mochiAssets.Count -lt $expectedMochiCount) {
+        throw "Embedded Expo Updates manifest is missing Mochi assets ($($mochiAssets.Count)/$expectedMochiCount). Rebuild after clearing stale createReleaseUpdatesResources outputs."
     }
 }
 
@@ -169,6 +219,20 @@ function Ensure-AndroidLocalProperties {
     }
 
     Set-Content -LiteralPath $localPropertiesPath -Value $content -Encoding ASCII
+}
+
+function Invoke-PreviewApkIdentityGuard {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$ApkToVerify
+    )
+
+    $verifyScript = Join-Path $projectRoot 'scripts\verify-android-preview-apk.js'
+    & node $verifyScript --apk $ApkToVerify
+    $verifyExitCode = $LASTEXITCODE
+    if ($verifyExitCode -ne 0) {
+        throw "Preview APK identity verification failed with exit code $verifyExitCode"
+    }
 }
 
 if (Test-Path $devEnvPath) {
@@ -246,8 +310,12 @@ if ($gradleExitCode -ne 0) {
     throw "Gradle assembleRelease failed with exit code $gradleExitCode"
 }
 
+Assert-EmbeddedUpdatesManifestHasMascotAssets
+
 if (-not (Test-Path $apkPath)) {
     throw "Preview APK was not created at $apkPath"
 }
+
+Invoke-PreviewApkIdentityGuard -ApkToVerify $apkPath
 
 Write-Output $apkPath

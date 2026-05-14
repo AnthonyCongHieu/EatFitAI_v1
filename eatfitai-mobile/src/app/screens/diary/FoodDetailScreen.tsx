@@ -28,7 +28,7 @@ import { ThemedText } from '../../../components/ThemedText';
 import type { RootStackParamList } from '../../types';
 import { trackEvent } from '../../../services/analytics';
 import { foodService, type FoodDetail } from '../../../services/foodService';
-import { invalidateDiaryQueries, getSuggestedMealType } from '../../../services/diaryFlowService';
+import { invalidateDiaryQueries } from '../../../services/diaryFlowService';
 import { diaryService } from '../../../services/diaryService';
 import { MEAL_TYPES, MEAL_TYPE_LABELS, type MealTypeId } from '../../../types';
 import { handleApiError } from '../../../utils/errorHandler';

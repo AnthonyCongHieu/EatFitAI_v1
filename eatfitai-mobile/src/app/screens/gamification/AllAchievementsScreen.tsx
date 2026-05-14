@@ -1,6 +1,6 @@
 // Tất cả huy hiệu — Emerald Nebula
 import React from 'react';
-import { View, StyleSheet, ScrollView } from 'react-native';
+import { View, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import SubScreenLayout from '../../../components/ui/SubScreenLayout';
@@ -109,7 +109,7 @@ const AllAchievementsScreen = (): React.ReactElement => {
                         <ThemedText style={[S.desc, { color: '#64748b' }]} numberOfLines={3}>{a.description}</ThemedText>
                       </View>
                     </View>
-                    
+
                     <View style={{ width: '100%', alignItems: 'center', marginTop: 12 }}>
                       <View style={S.progressBar}>
                         <LinearGradient

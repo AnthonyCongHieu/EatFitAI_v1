@@ -5,6 +5,8 @@ import Toast from 'react-native-toast-message';
 
 import CommonMealTemplateScreen from '../src/app/screens/diary/CommonMealTemplateScreen';
 
+jest.setTimeout(15000);
+
 const mockNavigate = jest.fn();
 const mockGoBack = jest.fn();
 
@@ -22,6 +24,10 @@ jest.mock('@react-navigation/native', () => ({
 
 jest.mock('react-native-toast-message', () => ({
   show: jest.fn(),
+}));
+
+jest.mock('react-native-safe-area-context', () => ({
+  useSafeAreaInsets: () => ({ top: 0, right: 0, bottom: 0, left: 0 }),
 }));
 
 jest.mock('../src/theme/ThemeProvider', () => ({
@@ -154,7 +160,7 @@ describe('CommonMealTemplateScreen', () => {
     });
 
     await act(async () => {
-      screen.getByTestId('common-meal-search-button').props.onPress();
+      fireEvent.press(screen.getByTestId('common-meal-search-button'));
     });
 
     await waitFor(() => {

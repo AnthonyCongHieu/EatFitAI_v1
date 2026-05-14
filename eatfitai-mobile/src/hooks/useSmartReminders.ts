@@ -51,17 +51,37 @@ export function useSmartReminders(): {
   reminders: SmartReminder[];
   hasReminders: boolean;
   bubbleText: string | null;
+};
+export function useSmartReminders(options: {
+  enabled?: boolean;
+}): {
+  reminders: SmartReminder[];
+  hasReminders: boolean;
+  bubbleText: string | null;
+};
+export function useSmartReminders(options?: {
+  enabled?: boolean;
+}): {
+  reminders: SmartReminder[];
+  hasReminders: boolean;
+  bubbleText: string | null;
 } {
+  const enabled = options?.enabled ?? true;
   const summary = useDiaryStore((s) => s.summary);
   const isLoadingDiary = useDiaryStore((s) => s.isLoading);
 
   const { data: waterData, isPending: waterLoading } = useQuery<WaterIntakeData>({
     queryKey: ['water-intake-today'],
     queryFn: () => waterService.getWaterIntake(new Date()),
+    enabled,
     staleTime: 2 * 60 * 1000,
   });
 
   return useMemo(() => {
+    if (!enabled) {
+      return { reminders: [], hasReminders: false, bubbleText: null };
+    }
+
     if (isLoadingDiary || waterLoading) {
       return { reminders: [], hasReminders: false, bubbleText: null };
     }
@@ -118,5 +138,5 @@ export function useSmartReminders(): {
     const bubbleText = hasReminders ? reminders[0]!.message : null;
 
     return { reminders, hasReminders, bubbleText };
-  }, [summary, waterData, isLoadingDiary, waterLoading]);
+  }, [enabled, summary, waterData, isLoadingDiary, waterLoading]);
 }

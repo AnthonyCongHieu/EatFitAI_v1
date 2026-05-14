@@ -10,6 +10,20 @@ $ErrorActionPreference = 'Stop'
 $projectRoot = Split-Path -Parent $PSScriptRoot
 $defaultApkPath = Join-Path $projectRoot 'android\app\build\outputs\apk\release\app-release.apk'
 
+function Invoke-PreviewApkIdentityGuard {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$ApkToVerify
+    )
+
+    $verifyScript = Join-Path $projectRoot 'scripts\verify-android-preview-apk.js'
+    & node $verifyScript --apk $ApkToVerify --package $PackageName
+    $verifyExitCode = $LASTEXITCODE
+    if ($verifyExitCode -ne 0) {
+        throw "Preview APK identity verification failed with exit code $verifyExitCode"
+    }
+}
+
 if (-not $ApkPath) {
     $ApkPath = $defaultApkPath
 }
@@ -22,10 +36,13 @@ if (-not $DeviceSerial -and $env:ANDROID_SERIAL) {
     $DeviceSerial = $env:ANDROID_SERIAL.Trim()
 }
 
+Invoke-PreviewApkIdentityGuard -ApkToVerify $ApkPath
+
 function Invoke-Adb {
     param(
         [Parameter(Mandatory = $true)]
-        [string[]]$Arguments
+        [string[]]$Arguments,
+        [switch]$EchoOutput
     )
 
     $adbArguments = $Arguments
@@ -41,8 +58,8 @@ function Invoke-Adb {
     } finally {
         $ErrorActionPreference = $previousErrorActionPreference
     }
-    if ($output) {
-        $output | ForEach-Object { Write-Output $_ }
+    if ($EchoOutput -and $output) {
+        $output | ForEach-Object { Write-Host $_ }
     }
 
     return [pscustomobject]@{
@@ -55,10 +72,11 @@ function Invoke-Adb {
 function Invoke-AdbChecked {
     param(
         [Parameter(Mandatory = $true)]
-        [string[]]$Arguments
+        [string[]]$Arguments,
+        [switch]$EchoOutput
     )
 
-    $result = Invoke-Adb -Arguments $Arguments
+    $result = Invoke-Adb -Arguments $Arguments -EchoOutput:$EchoOutput
     if ($result.ExitCode -ne 0) {
         throw "$($result.Command) failed with exit code $($result.ExitCode)"
     }
@@ -131,7 +149,7 @@ if ($androidTargetMode -eq 'emulator') {
     }
 }
 
-$installResult = Invoke-Adb -Arguments @('install', '-r', $ApkPath)
+$installResult = Invoke-Adb -Arguments @('install', '-r', $ApkPath) -EchoOutput
 if ($installResult.ExitCode -ne 0) {
     $isSignatureMismatch = $installResult.Output -match 'INSTALL_FAILED_UPDATE_INCOMPATIBLE'
     if (-not $isSignatureMismatch -or -not $allowUninstallOnSignatureMismatch) {
@@ -144,7 +162,7 @@ if ($installResult.ExitCode -ne 0) {
 
     Write-Warning "Signature mismatch detected for $PackageName. Uninstalling the existing package will clear local app data before retrying install."
     Invoke-AdbChecked -Arguments @('uninstall', $PackageName) | Out-Null
-    Invoke-AdbChecked -Arguments @('install', '-r', $ApkPath) | Out-Null
+    Invoke-AdbChecked -Arguments @('install', '-r', $ApkPath) -EchoOutput | Out-Null
 }
 
 $packageDump = (Invoke-AdbChecked -Arguments @('shell', 'dumpsys', 'package', $PackageName)).Output

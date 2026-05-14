@@ -124,11 +124,11 @@ def label_for_image(image_path: Path, image_dir: Path, label_dir: Path) -> Path:
 
 
 def find_data_yaml(root: Path) -> Path | None:
-    for name in ("data.yaml", "data.yml"):
+    for name in ("data.yaml", "data.yml", "dataset.yaml", "dataset.yml"):
         direct = root / name
         if direct.exists():
             return direct
-    candidates = sorted(root.rglob("data.y*ml"))
+    candidates = sorted([*root.rglob("data.y*ml"), *root.rglob("dataset.y*ml")])
     return candidates[0] if candidates else None
 
 

@@ -1,5 +1,4 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
 import {
   View,
   StyleSheet,
@@ -44,10 +43,6 @@ import Icon from '../../../components/Icon';
 import { AiStatusBadge } from '../../../components/ai/AiStatusBadge';
 import { aiService, isAiOfflineError } from '../../../services/aiService';
 import { useAiStatus } from '../../../hooks/useAiStatus';
-import {
-  addItemsToTodayDiary,
-  invalidateDiaryQueries,
-} from '../../../services/diaryFlowService';
 import { handleApiErrorWithCustomMessage } from '../../../utils/errorHandler';
 import { AppImage } from '../../../components/ui/AppImage';
 import type { RootStackParamList } from '../../types';
@@ -59,14 +54,11 @@ import { IngredientBasketSheet } from '../../../components/scan/IngredientBasket
 import { useIngredientBasketStore } from '../../../store/useIngredientBasketStore';
 import { getVisionFoodDisplayName } from '../../../utils/translate';
 import { TEST_IDS } from '../../../testing/testIds';
-import { usePostFirstLogNotificationPrompt } from '../../../hooks/usePostFirstLogNotificationPrompt';
 import {
   calculateVisionDefaultMacroTotals,
   clampVisionGrams,
   getDistinctVisionResultItems,
   getDefaultVisionGrams,
-  getVisionQuickPortions,
-  shouldAllowVisionQuickSave,
 } from '../../../utils/visionReview';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
@@ -114,7 +106,6 @@ const SCANNER_SIZE = SW * 0.72;
 
 const AIScanScreen: React.FC = () => {
   const navigation = useNavigation<NavigationProp>();
-  const queryClient = useQueryClient();
   const cameraRef = useRef<CameraViewInstance | null>(null);
 
   const [permission, requestPermission] = useCameraPermissions();
@@ -135,7 +126,6 @@ const AIScanScreen: React.FC = () => {
   const [showImagePreview, setShowImagePreview] = useState(false);
   const [flashOn, setFlashOn] = useState(false);
   const { data: aiStatus, isLoading: isAiStatusLoading } = useAiStatus();
-  const { promptIfFirstLog } = usePostFirstLogNotificationPrompt();
 
   // Gram state for results drawer
   const [resultGrams, setResultGrams] = useState(100);
@@ -519,7 +509,7 @@ const AIScanScreen: React.FC = () => {
     if (!capturedUri || !detectionResult) return;
 
     const distinctItems = getDistinctVisionResultItems(detectionResult.items);
-    
+
     navigation.navigate('AddMealFromVision', {
       imageUri: capturedUri,
       result: {
@@ -579,7 +569,6 @@ const AIScanScreen: React.FC = () => {
   const hasDetectedItems = distinctResultItems.length > 0;
   const hasMultipleDetectedItems = distinctResultItems.length > 1;
   const topItem = distinctResultItems[0] ?? null;
-  const quickPortions = getVisionQuickPortions(topItem);
   const processingText = AI_PROCESSING_MESSAGES[processingMessageIndex];
 
   const mealMacroTotals = calculateVisionDefaultMacroTotals(distinctResultItems);
